@@ -98,10 +98,12 @@ class AqaraBodySensor(CustomDevice, ListenableMixin):
                 IlluminanceMeasurement.cluster_id,
                 IasZone.cluster_id,
                 PowerConfiguration.cluster_id,
-                Identify.cluster_id],
+                Identify.cluster_id
+                ],
             'output_clusters': [
                 Basic.cluster_id,
-                Ota.cluster_id],
+                Ota.cluster_id
+                ],
         },
     }
 
@@ -114,7 +116,8 @@ class AqaraBodySensor(CustomDevice, ListenableMixin):
                     Identify.cluster_id,
                     IlluminanceMeasurement.cluster_id,
                     OccupancyCluster,
-                    MotionCluster],
+                    MotionCluster
+                    ],
             }
         },
     }

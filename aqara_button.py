@@ -24,21 +24,27 @@ class AqaraButton(CustomDevice):
         1: {
             'profile_id': zha.PROFILE_ID,
             'device_type': BUTTON_DEVICE_TYPE,
-            'input_clusters': [Basic.cluster_id,
-                               OnOff.cluster_id,
-                               XIAOMI_CLUSTER_ID],
-            'output_clusters': [Basic.cluster_id,
-                                Groups.cluster_id,
-                                XIAOMI_CLUSTER_ID],
+            'input_clusters': [
+                Basic.cluster_id,
+                OnOff.cluster_id,
+                XIAOMI_CLUSTER_ID
+               ],
+            'output_clusters': [
+                Basic.cluster_id,
+                Groups.cluster_id,
+                XIAOMI_CLUSTER_ID
+                ],
         },
     }
 
     replacement = {
         'endpoints': {
             1: {
-                'input_clusters': [Basic.cluster_id,
-                                   OnOff.cluster_id,
-                                   XIAOMI_CLUSTER_ID],
+                'input_clusters': [
+                    Basic.cluster_id,
+                    OnOff.cluster_id,
+                    XIAOMI_CLUSTER_ID
+                    ],
             }
         },
     }
