@@ -1,4 +1,5 @@
 import asyncio
+import logging
 
 from zigpy.zcl.clusters.measurement import IlluminanceMeasurement,\
     OccupancySensing
@@ -7,10 +8,16 @@ from zigpy.zcl.clusters.general import Basic, PowerConfiguration,\
     Identify, Ota
 from zigpy.quirks import CustomDevice, CustomCluster
 from zigpy.profiles import zha
+from zigpy.util import ListenableMixin
 
 import homeassistant.components.zha.const as zha_const
 
 XIAOMI_CLUSTER_ID = 0xFFFF
+_LOGGER = logging.getLogger(__name__)
+OCCUPANCY_STATE = 0
+ZONE_STATE = 0
+ON = 1
+OFF = 0
 
 if zha.PROFILE_ID not in zha_const.DEVICE_CLASS:
         zha_const.DEVICE_CLASS[zha.PROFILE_ID] = {}
@@ -19,7 +26,9 @@ zha_const.DEVICE_CLASS[zha.PROFILE_ID].update({
 })
 
 
-class AqaraBodySensor(CustomDevice):
+class AqaraBodySensor(CustomDevice, ListenableMixin):
+    _listeners = {}
+
     class OccupancyCluster(CustomCluster, OccupancySensing):
         cluster_id = OccupancySensing.cluster_id
 
@@ -29,16 +38,53 @@ class AqaraBodySensor(CustomDevice):
 
         def _update_attribute(self, attrid, value):
             super()._update_attribute(attrid, value)
-            if attrid == 0 and value == 1:
+
+            if attrid == OCCUPANCY_STATE and value == ON:
                 if self._timer_handle:
                     self._timer_handle.cancel()
-
+                self.endpoint.device.listener_event('motion_event')
                 loop = asyncio.get_event_loop()
-                self._timer_handle = loop.call_later(60, self._turn_off)
+                self._timer_handle = loop.call_later(600, self._turn_off)
 
         def _turn_off(self):
             self._timer_handle = None
-            self._update_attribute(0, 0)
+            self._update_attribute(OCCUPANCY_STATE, OFF)
+
+    class MotionCluster(CustomCluster, IasZone):
+        cluster_id = IasZone.cluster_id
+
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self._timer_handle = None
+            self.endpoint.device.add_listener(self)
+
+        def motion_event(self):
+            super().listener_event(
+                'cluster_command',
+                None,
+                ZONE_STATE,
+                [ON])
+
+            _LOGGER.debug("%s - Received motion event message",
+                          self.endpoint.device._ieee
+                          )
+
+            if self._timer_handle:
+                self._timer_handle.cancel()
+
+            loop = asyncio.get_event_loop()
+            self._timer_handle = loop.call_later(120, self._turn_off)
+
+        def _turn_off(self):
+            _LOGGER.debug("%s - Resetting motion sensor",
+                          self.endpoint.device._ieee
+                          )
+            self._timer_handle = None
+            super().listener_event(
+                'cluster_command',
+                None,
+                ZONE_STATE,
+                [OFF])
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=263 device_version=1 input_clusters=[0, 65535, 1030, 1024, 1280, 1, 3] output_clusters=[0, 25]>
@@ -67,7 +113,8 @@ class AqaraBodySensor(CustomDevice):
                     PowerConfiguration.cluster_id,
                     Identify.cluster_id,
                     IlluminanceMeasurement.cluster_id,
-                    OccupancyCluster],
+                    OccupancyCluster,
+                    MotionCluster],
             }
         },
     }
