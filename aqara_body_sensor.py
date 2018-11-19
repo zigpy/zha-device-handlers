@@ -9,8 +9,10 @@ from zigpy.zcl.clusters.general import Basic, PowerConfiguration,\
 from zigpy.quirks import CustomDevice, CustomCluster
 from zigpy.profiles import zha
 from zigpy.util import ListenableMixin
+from xiaomi_common import BasicCluster, PowerConfigurationCluster
 
 import homeassistant.components.zha.const as zha_const
+
 
 XIAOMI_CLUSTER_ID = 0xFFFF
 _LOGGER = logging.getLogger(__name__)
@@ -57,6 +59,9 @@ class AqaraBodySensor(CustomDevice, ListenableMixin):
             super().__init__(*args, **kwargs)
             self._timer_handle = None
             self.endpoint.device.add_listener(self)
+
+        def battery_reported(self, voltage):
+            pass
 
         def motion_event(self):
             super().listener_event(
@@ -111,8 +116,8 @@ class AqaraBodySensor(CustomDevice, ListenableMixin):
         'endpoints': {
             1: {
                 'input_clusters': [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
+                    BasicCluster,
+                    PowerConfigurationCluster,
                     Identify.cluster_id,
                     IlluminanceMeasurement.cluster_id,
                     OccupancyCluster,
