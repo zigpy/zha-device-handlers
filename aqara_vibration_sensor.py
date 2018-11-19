@@ -1,14 +1,24 @@
 import logging
 
-from zigpy.quirks import CustomDevice
+from zigpy.quirks import CustomCluster
 from zigpy.profiles import PROFILES, zha
-from zigpy.zcl.clusters.general import Basic, Groups, PowerConfiguration, \
+from zigpy.zcl.clusters.general import Basic, Groups, PowerConfiguration,\
     Identify, Ota, Scenes, MultistateInput
 from zigpy.zcl.clusters.closures import DoorLock
-from zigpy.util import ListenableMixin
-from xiaomi_common import BasicCluster, PowerConfigurationCluster
+from xiaomi_common import BasicCluster, PowerConfigurationCluster,\
+    TemperatureMeasurementCluster, XiaomiCustomDevice, Bus
 
-VIBE_DEVICE_TYPE = 0x5F02
+VIBE_DEVICE_TYPE = 0x5F02  # decimal = 24322
+RECENT_ACTIVITY_LEVEL_ATTR = 0x0505  # decimal = 1285
+ACCELEROMETER_ATTR = 0x0508  # decimal = 1288
+STATUS_TYPE_ATTR = 0x0055  # decimal = 85
+ROTATION_DEGREES_ATTR = 0x0503  # decimal = 1283
+MEASUREMENT_TYPE = {
+    0: "Stationary",
+    1: "Vibration",
+    2: "Tilt",
+    3: "Drop"
+}
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -42,8 +52,36 @@ PROFILES[zha.PROFILE_ID].CLUSTERS[VIBE_DEVICE_TYPE] = (
     ])
 
 
-class AqaraVibrationSensor(CustomDevice, ListenableMixin):
-    _listeners = {}
+class AqaraVibrationSensor(XiaomiCustomDevice):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    class MultistateInputCluster(CustomCluster, MultistateInput):
+        cluster_id = DoorLock.cluster_id
+
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self._currentState = {}
+
+        def _update_attribute(self, attrid, value):
+            super()._update_attribute(attrid, value)
+            _LOGGER.debug(
+                "%s - Received attribute report. attribute_id: [%s] value: [%s]",
+                self.endpoint.device._ieee,
+                attrid,
+                value
+                )
+            if attrid == STATUS_TYPE_ATTR:
+                _LOGGER.debug(
+                    "%s - Received status type report. attribute_id: [%s] value: [%s]",
+                    self.endpoint.device._ieee,
+                    attrid,
+                    MEASUREMENT_TYPE.get(value)
+                    )
+                self._currentState[STATUS_TYPE_ATTR] = MEASUREMENT_TYPE.get(
+                    value
+                    )
 
     signature = {
         1: {
@@ -86,8 +124,9 @@ class AqaraVibrationSensor(CustomDevice, ListenableMixin):
                 'input_clusters': [
                     BasicCluster,
                     PowerConfigurationCluster,
+                    TemperatureMeasurementCluster,
                     Identify.cluster_id,
-                    DoorLock.cluster_id
+                    MultistateInputCluster
                     ],
             }
         },

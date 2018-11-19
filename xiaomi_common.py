@@ -1,11 +1,16 @@
 import logging
 
 from zigpy.zcl.clusters.general import Basic, PowerConfiguration
-from zigpy.quirks import CustomCluster
+from zigpy.zcl.clusters.measurement import TemperatureMeasurement
+from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.util import ListenableMixin
 
 XIAOMI_ATTRIBUTE = 0xFF01
 BATTERY_REPORTED = 'battery_reported'
+TEMPERATURE_REPORTED = 'temperature_reported'
+TEMPERATURE_MEASURED_VALUE = 0x0000
 BATTERY_LEVEL = 'battery_level'
+TEMPERATURE = 'temperature'
 BATTERY_VOLTAGE_MV = 'battery_voltage_mV'
 XIAOMI_ATTR_4 = 'X-attrib-4'
 XIAOMI_ATTR_5 = 'X-attrib-5'
@@ -14,6 +19,21 @@ PATH = 'path'
 BATTERY_PERCENTAGE_REMAINING = 0x0021
 
 _LOGGER = logging.getLogger(__name__)
+
+
+class Bus(ListenableMixin):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._listeners = {}
+
+
+class XiaomiCustomDevice(CustomDevice):
+
+    def __init__(self, *args, **kwargs):
+        self.temperatureBus = Bus()
+        self.batteryBus = Bus()
+        super().__init__(*args, **kwargs)
 
 
 class BasicCluster(CustomCluster, Basic):
@@ -33,9 +53,14 @@ class BasicCluster(CustomCluster, Basic):
                 attributes
                 )
             if BATTERY_LEVEL in attributes:
-                self.endpoint.device.listener_event(
+                self.endpoint.device.batteryBus.listener_event(
                     BATTERY_REPORTED,
                     attributes[BATTERY_LEVEL]
+                    )
+            if TEMPERATURE in attributes:
+                self.endpoint.device.temperatureBus.listener_event(
+                    TEMPERATURE_REPORTED,
+                    attributes[TEMPERATURE]
                     )
 
     def _parse_attributes(self, value):
@@ -44,8 +69,9 @@ class BasicCluster(CustomCluster, Basic):
         from zigpy.zcl import foundation as f
         attributes = {}
         attribute_names = {
-            4: XIAOMI_ATTR_4,
             1: BATTERY_VOLTAGE_MV,
+            3: TEMPERATURE,
+            4: XIAOMI_ATTR_4,
             5: XIAOMI_ATTR_5,
             6: XIAOMI_ATTR_6,
             10: PATH
@@ -82,13 +108,19 @@ class PowerConfigurationCluster(CustomCluster, PowerConfiguration):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.endpoint.device.add_listener(self)
+        self.endpoint.device.batteryBus.add_listener(self)
 
     def battery_reported(self, voltage):
         self._update_attribute(BATTERY_PERCENTAGE_REMAINING, voltage)
 
-    def motion_event(self):
-        pass
 
-    def _update_attribute(self, attrid, value):
-        super()._update_attribute(attrid, value)
+class TemperatureMeasurementCluster(CustomCluster, TemperatureMeasurement):
+    cluster_id = TemperatureMeasurement.cluster_id
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.endpoint.device.temperatureBus.add_listener(self)
+
+    def temperature_reported(self, rawTemperature):
+        self._update_attribute(TEMPERATURE_MEASURED_VALUE,
+                               rawTemperature * 100)

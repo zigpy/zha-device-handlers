@@ -8,8 +8,8 @@ from zigpy.zcl.clusters.general import Basic, PowerConfiguration,\
     Identify, Ota
 from zigpy.quirks import CustomDevice, CustomCluster
 from zigpy.profiles import zha
-from zigpy.util import ListenableMixin
-from xiaomi_common import BasicCluster, PowerConfigurationCluster
+from xiaomi_common import BasicCluster, PowerConfigurationCluster,\
+    TemperatureMeasurementCluster, XiaomiCustomDevice, Bus
 
 import homeassistant.components.zha.const as zha_const
 
@@ -28,8 +28,11 @@ zha_const.DEVICE_CLASS[zha.PROFILE_ID].update({
 })
 
 
-class AqaraBodySensor(CustomDevice, ListenableMixin):
-    _listeners = {}
+class AqaraBodySensor(XiaomiCustomDevice):
+
+    def __init__(self, *args, **kwargs):
+        self.motionBus = Bus()
+        super().__init__(*args, **kwargs)
 
     class OccupancyCluster(CustomCluster, OccupancySensing):
         cluster_id = OccupancySensing.cluster_id
@@ -44,7 +47,7 @@ class AqaraBodySensor(CustomDevice, ListenableMixin):
             if attrid == OCCUPANCY_STATE and value == ON:
                 if self._timer_handle:
                     self._timer_handle.cancel()
-                self.endpoint.device.listener_event('motion_event')
+                self.endpoint.device.motionBus.listener_event('motion_event')
                 loop = asyncio.get_event_loop()
                 self._timer_handle = loop.call_later(600, self._turn_off)
 
@@ -58,10 +61,7 @@ class AqaraBodySensor(CustomDevice, ListenableMixin):
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
             self._timer_handle = None
-            self.endpoint.device.add_listener(self)
-
-        def battery_reported(self, voltage):
-            pass
+            self.endpoint.device.motionBus.add_listener(self)
 
         def motion_event(self):
             super().listener_event(
@@ -119,6 +119,7 @@ class AqaraBodySensor(CustomDevice, ListenableMixin):
                     BasicCluster,
                     PowerConfigurationCluster,
                     Identify.cluster_id,
+                    TemperatureMeasurementCluster,
                     IlluminanceMeasurement.cluster_id,
                     OccupancyCluster,
                     MotionCluster
