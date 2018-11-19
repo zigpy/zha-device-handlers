@@ -17,7 +17,8 @@ _LOGGER = logging.getLogger(__name__)
 # clusters are: [0x0000, 0x0004, 0xFFFF]. The goal is to read this
 # from a configuration file in the future
 PROFILES[zha.PROFILE_ID].CLUSTERS[BUTTON_DEVICE_TYPE] = (
-    [Basic.cluster_id, OnOff.cluster_id, XIAOMI_CLUSTER_ID],
+    [Basic.cluster_id, PowerConfiguration.cluster_id, OnOff.cluster_id,
+        XIAOMI_CLUSTER_ID],
     [Basic.cluster_id, Groups.cluster_id, XIAOMI_CLUSTER_ID]
     )
 
