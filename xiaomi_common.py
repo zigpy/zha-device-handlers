@@ -4,6 +4,7 @@ from zigpy.zcl.clusters.general import Basic, PowerConfiguration
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.util import ListenableMixin
+import zigpy.types as types
 
 XIAOMI_ATTRIBUTE = 0xFF01
 BATTERY_REPORTED = 'battery_reported'
@@ -36,6 +37,20 @@ class XiaomiCustomDevice(CustomDevice):
         super().__init__(*args, **kwargs)
 
 
+class LocalDataCluster(CustomCluster):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    async def read_attributes_raw(self, attributes, manufacturer=None):
+        attributes = [types.uint16_t(a) for a in attributes]
+        v = [self._attr_cache.get(attr) for attr in attributes]
+        return v
+
+    def _update_attribute(self, attrid, value):
+        super()._update_attribute(attrid, value)
+
+
 class BasicCluster(CustomCluster, Basic):
     cluster_id = Basic.cluster_id
 
@@ -47,21 +62,22 @@ class BasicCluster(CustomCluster, Basic):
         if attrid == XIAOMI_ATTRIBUTE:
             attributes = self._parse_attributes(value)
             _LOGGER.debug(
-                "%s - Received attribute report. attribute_id: [%s] value: [%s]",
+                "%s - Attribute report. attribute_id: [%s] value: [%s]",
                 self.endpoint.device._ieee,
                 attrid,
                 attributes
-                )
+            )
             if BATTERY_LEVEL in attributes:
                 self.endpoint.device.batteryBus.listener_event(
                     BATTERY_REPORTED,
-                    attributes[BATTERY_LEVEL]
-                    )
+                    attributes[BATTERY_LEVEL],
+                    attributes[BATTERY_VOLTAGE_MV]
+                )
             if TEMPERATURE in attributes:
                 self.endpoint.device.temperatureBus.listener_event(
                     TEMPERATURE_REPORTED,
                     attributes[TEMPERATURE]
-                    )
+                )
 
     def _parse_attributes(self, value):
         """ parse non standard atrributes."""
@@ -89,8 +105,8 @@ class BasicCluster(CustomCluster, Basic):
             attributes[BATTERY_LEVEL] = int(
                 self._calculate_remaining_battery_percentage(
                     attributes[BATTERY_VOLTAGE_MV]
-                    )
                 )
+            )
         return attributes
 
     def _calculate_remaining_battery_percentage(self, voltage):
@@ -103,18 +119,24 @@ class BasicCluster(CustomCluster, Basic):
         return percent
 
 
-class PowerConfigurationCluster(CustomCluster, PowerConfiguration):
+class PowerConfigurationCluster(LocalDataCluster, PowerConfiguration):
     cluster_id = PowerConfiguration.cluster_id
+    BATTERY_VOLTAGE_ATTR = 0x0020
+    BATTERY_SIZE_ATTR = 0x0031
+    BATTERY_QUANTITY_ATTR = 0x0033
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.endpoint.device.batteryBus.add_listener(self)
+        self._update_attribute(self.BATTERY_SIZE_ATTR, 0xff)
+        self._update_attribute(self.BATTERY_QUANTITY_ATTR, 1)
 
-    def battery_reported(self, voltage):
+    def battery_reported(self, voltage, rawVoltage):
         self._update_attribute(BATTERY_PERCENTAGE_REMAINING, voltage)
+        self._update_attribute(BATTERY_VOLTAGE_MV, rawVoltage)
 
 
-class TemperatureMeasurementCluster(CustomCluster, TemperatureMeasurement):
+class TemperatureMeasurementCluster(LocalDataCluster, TemperatureMeasurement):
     cluster_id = TemperatureMeasurement.cluster_id
 
     def __init__(self, *args, **kwargs):
@@ -122,5 +144,7 @@ class TemperatureMeasurementCluster(CustomCluster, TemperatureMeasurement):
         self.endpoint.device.temperatureBus.add_listener(self)
 
     def temperature_reported(self, rawTemperature):
-        self._update_attribute(TEMPERATURE_MEASURED_VALUE,
-                               rawTemperature * 100)
+        self._update_attribute(
+            TEMPERATURE_MEASURED_VALUE,
+            rawTemperature * 100
+        )

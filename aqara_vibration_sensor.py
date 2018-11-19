@@ -37,7 +37,8 @@ PROFILES[zha.PROFILE_ID].CLUSTERS[zha.DeviceType.DOOR_LOCK] = (
         Scenes.cluster_id,
         Ota.cluster_id,
         DoorLock.cluster_id
-    ])
+    ]
+)
 
 PROFILES[zha.PROFILE_ID].CLUSTERS[VIBE_DEVICE_TYPE] = (
     [
@@ -49,7 +50,8 @@ PROFILES[zha.PROFILE_ID].CLUSTERS[VIBE_DEVICE_TYPE] = (
         Groups.cluster_id,
         Scenes.cluster_id,
         MultistateInput.cluster_id
-    ])
+    ]
+)
 
 
 class AqaraVibrationSensor(XiaomiCustomDevice):
@@ -67,21 +69,21 @@ class AqaraVibrationSensor(XiaomiCustomDevice):
         def _update_attribute(self, attrid, value):
             super()._update_attribute(attrid, value)
             _LOGGER.debug(
-                "%s - Received attribute report. attribute_id: [%s] value: [%s]",
+                "%s - Attribute report. attribute_id: [%s] value: [%s]",
                 self.endpoint.device._ieee,
                 attrid,
                 value
-                )
+            )
             if attrid == STATUS_TYPE_ATTR:
                 _LOGGER.debug(
-                    "%s - Received status type report. attribute_id: [%s] value: [%s]",
+                    "%s - Status type report. attribute_id: [%s] value: [%s]",
                     self.endpoint.device._ieee,
                     attrid,
                     MEASUREMENT_TYPE.get(value)
-                    )
+                )
                 self._currentState[STATUS_TYPE_ATTR] = MEASUREMENT_TYPE.get(
                     value
-                    )
+                )
 
     signature = {
         1: {
@@ -92,7 +94,7 @@ class AqaraVibrationSensor(XiaomiCustomDevice):
                 Identify.cluster_id,
                 Ota.cluster_id,
                 DoorLock.cluster_id
-               ],
+            ],
             'output_clusters': [
                 Basic.cluster_id,
                 Identify.cluster_id,
@@ -100,7 +102,7 @@ class AqaraVibrationSensor(XiaomiCustomDevice):
                 Scenes.cluster_id,
                 Ota.cluster_id,
                 DoorLock.cluster_id
-                ],
+            ],
         },
         2: {
             'profile_id': zha.PROFILE_ID,
@@ -108,13 +110,13 @@ class AqaraVibrationSensor(XiaomiCustomDevice):
             'input_clusters': [
                 Identify.cluster_id,
                 MultistateInput.cluster_id
-               ],
+            ],
             'output_clusters': [
                 Identify.cluster_id,
                 Groups.cluster_id,
                 Scenes.cluster_id,
                 MultistateInput.cluster_id
-                ],
+            ],
         },
     }
 
@@ -127,7 +129,7 @@ class AqaraVibrationSensor(XiaomiCustomDevice):
                     TemperatureMeasurementCluster,
                     Identify.cluster_id,
                     MultistateInputCluster
-                    ],
+                ],
             }
         },
     }

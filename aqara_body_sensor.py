@@ -9,7 +9,7 @@ from zigpy.zcl.clusters.general import Basic, PowerConfiguration,\
 from zigpy.quirks import CustomDevice, CustomCluster
 from zigpy.profiles import zha
 from xiaomi_common import BasicCluster, PowerConfigurationCluster,\
-    TemperatureMeasurementCluster, XiaomiCustomDevice, Bus
+    TemperatureMeasurementCluster, XiaomiCustomDevice, Bus, LocalDataCluster
 
 import homeassistant.components.zha.const as zha_const
 
@@ -55,7 +55,7 @@ class AqaraBodySensor(XiaomiCustomDevice):
             self._timer_handle = None
             self._update_attribute(OCCUPANCY_STATE, OFF)
 
-    class MotionCluster(CustomCluster, IasZone):
+    class MotionCluster(LocalDataCluster, IasZone):
         cluster_id = IasZone.cluster_id
 
         def __init__(self, *args, **kwargs):
@@ -68,11 +68,13 @@ class AqaraBodySensor(XiaomiCustomDevice):
                 'cluster_command',
                 None,
                 ZONE_STATE,
-                [ON])
+                [ON]
+            )
 
-            _LOGGER.debug("%s - Received motion event message",
-                          self.endpoint.device._ieee
-                          )
+            _LOGGER.debug(
+                "%s - Received motion event message",
+                self.endpoint.device._ieee
+            )
 
             if self._timer_handle:
                 self._timer_handle.cancel()
@@ -81,18 +83,22 @@ class AqaraBodySensor(XiaomiCustomDevice):
             self._timer_handle = loop.call_later(120, self._turn_off)
 
         def _turn_off(self):
-            _LOGGER.debug("%s - Resetting motion sensor",
-                          self.endpoint.device._ieee
-                          )
+            _LOGGER.debug(
+                "%s - Resetting motion sensor",
+                self.endpoint.device._ieee
+            )
             self._timer_handle = None
             super().listener_event(
                 'cluster_command',
                 None,
                 ZONE_STATE,
-                [OFF])
+                [OFF]
+            )
 
     signature = {
-        #  <SimpleDescriptor endpoint=1 profile=260 device_type=263 device_version=1 input_clusters=[0, 65535, 1030, 1024, 1280, 1, 3] output_clusters=[0, 25]>
+        #  <SimpleDescriptor endpoint=1 profile=260 device_type=263
+        #  device_version=1 input_clusters=[0, 65535, 1030, 1024, 1280, 1, 3]
+        #  output_clusters=[0, 25]>
         1: {
             'profile_id': zha.PROFILE_ID,
             'device_type': zha.DeviceType.OCCUPANCY_SENSOR,
@@ -104,11 +110,11 @@ class AqaraBodySensor(XiaomiCustomDevice):
                 IasZone.cluster_id,
                 PowerConfiguration.cluster_id,
                 Identify.cluster_id
-                ],
+            ],
             'output_clusters': [
                 Basic.cluster_id,
                 Ota.cluster_id
-                ],
+            ],
         },
     }
 
@@ -123,7 +129,7 @@ class AqaraBodySensor(XiaomiCustomDevice):
                     IlluminanceMeasurement.cluster_id,
                     OccupancyCluster,
                     MotionCluster
-                    ],
+                ],
             }
         },
     }

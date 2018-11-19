@@ -26,7 +26,9 @@ class AqaraTemperatureHumiditySensor(XiaomiCustomDevice):
         super().__init__(*args, **kwargs)
 
     signature = {
-        #  <SimpleDescriptor endpoint=1 profile=260 device_type=24321 device_version=1 input_clusters=[0, 3, 65535, 1026, 1027, 1029] output_clusters=[0, 4, 65535]>
+        #  <SimpleDescriptor endpoint=1 profile=260 device_type=24321
+        #  device_version=1 input_clusters=[0, 3, 65535, 1026, 1027, 1029]
+        #  output_clusters=[0, 4, 65535]>
         1: {
             'profile_id': zha.PROFILE_ID,
             'device_type': TEMPERATURE_HUMIDITY_DEVICE_TYPE,

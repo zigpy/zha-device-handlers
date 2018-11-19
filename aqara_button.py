@@ -10,16 +10,18 @@ XIAOMI_CLUSTER_ID = 0xFFFF
 
 _LOGGER = logging.getLogger(__name__)
 
-# This registers a device that Xiaomi didn't follow the spec on.
-# Translated: For device type: 0x5F01 in the ZHA zigbee profile
-# the input clusters are: [0x0000, 0x0006, 0xFFFF] and the output
-# clusters are: [0x0000, 0x0004, 0xFFFF]. The goal is to read this
-# from a configuration file in the future
 PROFILES[zha.PROFILE_ID].CLUSTERS[BUTTON_DEVICE_TYPE] = (
-    [Basic.cluster_id, PowerConfiguration.cluster_id, OnOff.cluster_id,
-        XIAOMI_CLUSTER_ID],
-    [Basic.cluster_id, Groups.cluster_id, XIAOMI_CLUSTER_ID]
-    )
+    [
+        BasicCluster.cluster_id,
+        PowerConfigurationCluster.cluster_id,
+        TemperatureMeasurementCluster.cluster_id,
+        OnOff.cluster_id
+    ],
+    [
+        BasicCluster.cluster_id,
+        Groups.cluster_id
+    ]
+)
 
 
 class AqaraButton(XiaomiCustomDevice):
@@ -38,12 +40,12 @@ class AqaraButton(XiaomiCustomDevice):
                 Basic.cluster_id,
                 OnOff.cluster_id,
                 XIAOMI_CLUSTER_ID
-               ],
+            ],
             'output_clusters': [
                 Basic.cluster_id,
                 Groups.cluster_id,
                 XIAOMI_CLUSTER_ID
-                ],
+            ],
         },
     }
 
@@ -54,9 +56,8 @@ class AqaraButton(XiaomiCustomDevice):
                     BasicCluster,
                     PowerConfigurationCluster,
                     TemperatureMeasurementCluster,
-                    OnOff.cluster_id,
-                    XIAOMI_CLUSTER_ID
-                    ],
+                    OnOff.cluster_id
+                ],
             }
         },
     }
