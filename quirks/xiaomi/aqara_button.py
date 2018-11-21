@@ -2,8 +2,9 @@ import logging
 
 from zigpy.profiles import PROFILES, zha
 from zigpy.zcl.clusters.general import Basic, Groups, OnOff, PowerConfiguration
-from xiaomi_common import BasicCluster, PowerConfigurationCluster,\
+from quirks.xiaomi import BasicCluster, PowerConfigurationCluster,\
     TemperatureMeasurementCluster, XiaomiCustomDevice
+from quirks import EventableCluster
 
 BUTTON_DEVICE_TYPE = 0x5F01
 XIAOMI_CLUSTER_ID = 0xFFFF
@@ -25,6 +26,12 @@ PROFILES[zha.PROFILE_ID].CLUSTERS[BUTTON_DEVICE_TYPE] = (
 
 
 class AqaraButton(XiaomiCustomDevice):
+
+    class EventableOnOffCluster(EventableCluster, OnOff):
+        cluster_id = OnOff.cluster_id
+
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -56,7 +63,7 @@ class AqaraButton(XiaomiCustomDevice):
                     BasicCluster,
                     PowerConfigurationCluster,
                     TemperatureMeasurementCluster,
-                    OnOff.cluster_id
+                    EventableOnOffCluster
                 ],
             }
         },

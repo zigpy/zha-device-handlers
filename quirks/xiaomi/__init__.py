@@ -3,7 +3,7 @@ import logging
 from zigpy.zcl.clusters.general import Basic, PowerConfiguration
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.quirks import CustomCluster, CustomDevice
-from zigpy.util import ListenableMixin
+from quirks import LocalDataCluster, Bus
 import zigpy.types as types
 
 XIAOMI_ATTRIBUTE = 0xFF01
@@ -22,33 +22,12 @@ BATTERY_PERCENTAGE_REMAINING = 0x0021
 _LOGGER = logging.getLogger(__name__)
 
 
-class Bus(ListenableMixin):
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._listeners = {}
-
-
 class XiaomiCustomDevice(CustomDevice):
 
     def __init__(self, *args, **kwargs):
         self.temperatureBus = Bus()
         self.batteryBus = Bus()
         super().__init__(*args, **kwargs)
-
-
-class LocalDataCluster(CustomCluster):
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    async def read_attributes_raw(self, attributes, manufacturer=None):
-        attributes = [types.uint16_t(a) for a in attributes]
-        v = [self._attr_cache.get(attr) for attr in attributes]
-        return v
-
-    def _update_attribute(self, attrid, value):
-        super()._update_attribute(attrid, value)
 
 
 class BasicCluster(CustomCluster, Basic):
