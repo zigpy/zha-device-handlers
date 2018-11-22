@@ -31,7 +31,7 @@ class EventableCluster(CustomCluster):
         super().__init__(*args, **kwargs)
 
     def handle_cluster_request(self, tsn, command_id, args):
-        super.handle_cluster_request(self, tsn, command_id, args)
+        super().handle_cluster_request(tsn, command_id, args)
         self.listener_event(
             'zha_send_event',
             self,
