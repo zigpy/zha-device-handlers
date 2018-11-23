@@ -1,7 +1,7 @@
 
 from zigpy.profiles import PROFILES, zha
 from zigpy.zcl.clusters.general import Basic, Identify,\
-    PollControl, Ota, AnalogInput
+    PollControl, Ota, BinaryInput
 from quirks.smartthings import PowerConfigurationCluster
 from zigpy.quirks import CustomDevice
 
@@ -24,7 +24,7 @@ class SmartThingsTagV4(CustomDevice):
                 PowerConfigurationCluster.cluster_id,
                 Identify.cluster_id,
                 PollControl.cluster_id,
-                AnalogInput.cluster_id
+                BinaryInput.cluster_id
             ],
             'output_clusters': [
                 Identify.cluster_id,
