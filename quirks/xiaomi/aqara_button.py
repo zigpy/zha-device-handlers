@@ -14,8 +14,6 @@ _LOGGER = logging.getLogger(__name__)
 PROFILES[zha.PROFILE_ID].CLUSTERS[BUTTON_DEVICE_TYPE] = (
     [
         BasicCluster.cluster_id,
-        PowerConfigurationCluster.cluster_id,
-        TemperatureMeasurementCluster.cluster_id,
         OnOff.cluster_id
     ],
     [
@@ -38,7 +36,8 @@ class AqaraButton(XiaomiCustomDevice):
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=24321
-        # device_version=1 input_clusters=[0, 6, 65535]
+        # device_version=1
+        # input_clusters=[0, 6, 65535]
         # output_clusters=[0, 4, 65535]>
         1: {
             'profile_id': zha.PROFILE_ID,
@@ -64,6 +63,11 @@ class AqaraButton(XiaomiCustomDevice):
                     PowerConfigurationCluster,
                     TemperatureMeasurementCluster,
                     EventableOnOffCluster
+                ],
+                'output_clusters': [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    XIAOMI_CLUSTER_ID
                 ],
             }
         },

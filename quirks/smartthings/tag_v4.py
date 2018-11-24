@@ -20,8 +20,8 @@ class FastPollingPowerConfigurationCluster(PowerConfigurationCluster):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    async def configure_reporting(self, attribute, min_interval, max_interval,
-                                  reportable_change):
+    async def configure_reporting(self, attribute, min_interval,
+                                  max_interval, reportable_change):
         result = await super().configure_reporting(
             PowerConfigurationCluster.BATTERY_VOLTAGE_ATTR,
             self.FREQUENCY,
@@ -33,7 +33,9 @@ class FastPollingPowerConfigurationCluster(PowerConfigurationCluster):
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
         self.endpoint.device.trackingBus.listener_event(
-            'update_tracking'
+            'update_tracking',
+            attrid,
+            value
         )
 
 
@@ -45,7 +47,7 @@ class TrackingCluster(LocalDataCluster, BinaryInput):
         super().__init__(*args, **kwargs)
         self.endpoint.device.trackingBus.add_listener(self)
 
-    def update_tracking(self):
+    def update_tracking(self, attrid, value):
         self._update_attribute(None, None)
 
 
@@ -56,7 +58,10 @@ class SmartThingsTagV4(CustomDevice):
         super().__init__(*args, **kwargs)
 
     signature = {
-        #  <SimpleDescriptor endpoint=1 profile=260 device_type=12 device_version=0 input_clusters=[0, 1, 3, 15, 32] output_clusters=[3, 25]>
+        #  <SimpleDescriptor endpoint=1 profile=260 device_type=12
+        #  device_version=0
+        #  input_clusters=[0, 1, 3, 15, 32]
+        #  output_clusters=[3, 25]>
         1: {
             'profile_id': zha.PROFILE_ID,
             'device_type': zha.DeviceType.SIMPLE_SENSOR,
@@ -84,7 +89,11 @@ class SmartThingsTagV4(CustomDevice):
                     Identify.cluster_id,
                     PollControl.cluster_id,
                     TrackingCluster
-                ]
+                ],
+                'output_clusters': [
+                    Identify.cluster_id,
+                    Ota.cluster_id
+                ],
             }
         },
     }

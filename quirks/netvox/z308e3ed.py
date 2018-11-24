@@ -15,7 +15,10 @@ class Z308E3ED(CustomDevice):
         super().__init__(*args, **kwargs)
 
     signature = {
-        #  <SimpleDescriptor endpoint=1 profile=260 device_type=1026 device_version=0 input_clusters=[0, 1, 3, 21, 1280, 32, 2821] output_clusters=[]>
+        #  <SimpleDescriptor endpoint=1 profile=260 device_type=1026
+        #  device_version=0
+        #  input_clusters=[0, 1, 3, 21, 1280, 32, 2821]
+        #  output_clusters=[]>
         1: {
             'profile_id': zha.PROFILE_ID,
             'device_type': zha.DeviceType.IAS_ZONE,

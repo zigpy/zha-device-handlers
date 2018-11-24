@@ -98,7 +98,8 @@ class AqaraBodySensor(XiaomiCustomDevice):
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=263
-        #  device_version=1 input_clusters=[0, 65535, 1030, 1024, 1280, 1, 3]
+        #  device_version=1
+        #  input_clusters=[0, 65535, 1030, 1024, 1280, 1, 3]
         #  output_clusters=[0, 25]>
         1: {
             'profile_id': zha.PROFILE_ID,
@@ -130,6 +131,10 @@ class AqaraBodySensor(XiaomiCustomDevice):
                     IlluminanceMeasurement.cluster_id,
                     OccupancyCluster,
                     MotionCluster
+                ],
+                'output_clusters': [
+                    Basic.cluster_id,
+                    Ota.cluster_id
                 ],
             }
         },

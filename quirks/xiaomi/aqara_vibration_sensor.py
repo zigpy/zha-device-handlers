@@ -32,7 +32,6 @@ _LOGGER = logging.getLogger(__name__)
 PROFILES[zha.PROFILE_ID].CLUSTERS[VIBE_DEVICE_TYPE] = (
     [
         Basic.cluster_id,
-        PowerConfiguration.cluster_id,
         Identify.cluster_id,
         Ota.cluster_id,
         DoorLock.cluster_id,
@@ -198,6 +197,14 @@ class AqaraVibrationSensor(XiaomiCustomDevice):
                     Identify.cluster_id,
                     MultistateInputCluster,
                     MotionCluster
+                ],
+                'output_clusters': [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    Ota.cluster_id,
+                    DoorLock.cluster_id
                 ],
             }
         },

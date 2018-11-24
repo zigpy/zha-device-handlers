@@ -16,8 +16,10 @@ class CentraLite3326(CustomDevice):
         super().__init__(*args, **kwargs)
 
     signature = {
-        #  <SimpleDescriptor endpoint=1 profile=260 device_type=1026 device_version=0 input_clusters=[0, 1, 3, 32, 1026, 1280, 2821] output_clusters=[25]>
-        #  <SimpleDescriptor endpoint=2 profile=49887 device_type=263 device_version=0 input_clusters=[0, 1, 3, 2821, 64582] output_clusters=[3]>
+        #  <SimpleDescriptor endpoint=1 profile=260 device_type=1026
+        #  device_version=0
+        #  input_clusters=[0, 1, 3, 32, 1026, 1280, 2821]
+        #  output_clusters=[25]>
         1: {
             'profile_id': zha.PROFILE_ID,
             'device_type': zha.DeviceType.IAS_ZONE,
@@ -34,6 +36,10 @@ class CentraLite3326(CustomDevice):
                 Ota.cluster_id
             ],
         },
+        #  <SimpleDescriptor endpoint=2 profile=49887 device_type=263
+        #  device_version=0
+        #  input_clusters=[0, 1, 3, 2821, 64582]
+        #  output_clusters=[3]>
         2: {
             'profile_id': 49887,
             'device_type': 263,
@@ -72,6 +78,9 @@ class CentraLite3326(CustomDevice):
                     Identify.cluster_id,
                     DIAGNOSTICS_CLUSTER_ID,
                     64527
+                ],
+                'output_clusters': [
+                    Identify.cluster_id
                 ],
             }
         },
