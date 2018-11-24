@@ -1,6 +1,6 @@
 from zigpy.profiles import PROFILES, zha
 from zigpy.zcl.clusters.general import Basic, Identify,\
-    PollControl, Ota, LevelControl
+    PollControl, Ota
 from zigpy.zcl.clusters.security import IasZone
 from quirks.centralite import PowerConfigurationCluster
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement

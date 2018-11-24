@@ -97,7 +97,8 @@ PROFILES[zha.PROFILE_ID].CLUSTERS[ARRIVAL_SENSOR_DEVICE_TYPE] = (
         TrackingCluster.cluster_id
     ],
     [
-        Identify.cluster_id
+        Identify.cluster_id,
+        Ota.cluster_id
     ]
 )
 
