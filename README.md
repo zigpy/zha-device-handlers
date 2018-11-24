@@ -75,3 +75,10 @@ Example:
 ### SmartThings
 
 - tagV4 exposed as a device tracker in Home Assistant and reports battery. The current implementation will use batteries rapidly. 
+
+#
+### Thanks
+
+- Special thanks to damarco for the majority of the device tracker code
+- Special thanks to Yoda-x for the Xioami attribute parsing code
+- Special thanks to damarco and Adminiuga for allowing me to bounce ideas off of them and for listening to me ramble
