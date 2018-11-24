@@ -75,19 +75,7 @@ class AqaraVibrationSensor(XiaomiCustomDevice):
 
         def _update_attribute(self, attrid, value):
             super()._update_attribute(attrid, value)
-            _LOGGER.debug(
-                "%s - Attribute report. attribute_id: [%s] value: [%s]",
-                self.endpoint.device._ieee,
-                attrid,
-                value
-            )
             if attrid == STATUS_TYPE_ATTR:
-                _LOGGER.debug(
-                    "%s - Status type report. attribute_id: [%s] value: [%s]",
-                    self.endpoint.device._ieee,
-                    attrid,
-                    MEASUREMENT_TYPE.get(value)
-                )
                 self._currentState[STATUS_TYPE_ATTR] = MEASUREMENT_TYPE.get(
                     value
                 )
@@ -95,7 +83,14 @@ class AqaraVibrationSensor(XiaomiCustomDevice):
                     self.endpoint.device.motionBus.listener_event(
                         'motion_event'
                     )
-            if attrid == ROTATION_DEGREES_ATTR:
+                elif value == DROP_VALUE:
+                    self.listener_event(
+                        'zha_send_event',
+                        self,
+                        self._currentState[STATUS_TYPE_ATTR],
+                        {}
+                    )
+            elif attrid == ROTATION_DEGREES_ATTR:
                 self.listener_event(
                     'zha_send_event',
                     self,
@@ -136,11 +131,6 @@ class AqaraVibrationSensor(XiaomiCustomDevice):
                 [self.ON]
             )
 
-            _LOGGER.debug(
-                "%s - Received motion event message",
-                self.endpoint.device._ieee
-            )
-
             if self._timer_handle:
                 self._timer_handle.cancel()
 
@@ -148,10 +138,6 @@ class AqaraVibrationSensor(XiaomiCustomDevice):
             self._timer_handle = loop.call_later(75, self._turn_off)
 
         def _turn_off(self):
-            _LOGGER.debug(
-                "%s - Resetting motion sensor",
-                self.endpoint.device._ieee
-            )
             self._timer_handle = None
             super().listener_event(
                 'cluster_command',
