@@ -59,7 +59,6 @@ class CentraLite3130(CustomDevice):
                     PowerConfigurationCluster,
                     Identify.cluster_id,
                     PollControl.cluster_id,
-                    TemperatureMeasurement.cluster_id,
                     DIAGNOSTICS_CLUSTER_ID
                 ],
                 'output_clusters': [
