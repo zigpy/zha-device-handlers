@@ -35,13 +35,12 @@ class PowerConfigurationCluster(CustomCluster, PowerConfiguration):
         super().__init__(*args, **kwargs)
 
     def _update_attribute(self, attrid, value):
+        super()._update_attribute(attrid, value)
         if attrid == self.BATTERY_VOLTAGE_ATTR:
             super()._update_attribute(
                 self.BATTERY_PERCENTAGE_REMAINING,
                 self._calculate_battery_percentage(value)
             )
-        else:
-            super()._update_attribute(attrid, value)
 
     def _calculate_battery_percentage(self, rawValue):
         volts = rawValue
