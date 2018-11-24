@@ -1,6 +1,6 @@
 # ZHA Device Handlers For Home Assistant
 
-ZHA Device Handlers are quirks implementations for [Zigpy](https://github.com/zigpy/zigpy), the library that provides the [Zigbee](http://www.zigbee.org) support for the [ZHA](https://www.home-assistant.io/components/zha/) component in [Home Assistant](https://www.home-assistant.io).
+ZHA Device Handlers are quirks implementations for [Zigpy](https://github.com/zigpy/zigpy), the library that provides the [Zigbee](http://www.zigbee.org) support for the [ZHA](https://www.home-assistant.io/components/zha/) component in [Home Assistant](https://www.home-assistant.io). These device handlers are similar to the device handlers that exist as part of the Smart Things platform and they expose additional functionality that isn't provided OOTB by the existing integration between these platforms. See [Device Specifics](#Device-Specifics) for details. 
 
 These device handlers currently require the use of a custom [branch](https://github.com/dmulcahey/home-assistant/tree/dm/zha-sensor-playground) of Home Assistant. This will be remediated soon. 
 #
