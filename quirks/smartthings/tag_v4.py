@@ -1,17 +1,58 @@
-
+import logging
+import homeassistant.components.zha.const as zha_const
 from zigpy.profiles import PROFILES, zha
 from zigpy.zcl.clusters.general import Basic, Identify,\
     PollControl, Ota, BinaryInput
-from quirks.centralite import PowerConfigurationCluster
 from zigpy.quirks import CustomDevice
+from quirks import LocalDataCluster, Bus
+from quirks.centralite import PowerConfigurationCluster
+
+_LOGGER = logging.getLogger(__name__)
+
+ARRIVAL_SENSOR_DEVICE_TYPE = 0x8000
 
 
-DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
+class FastPollingPowerConfigurationCluster(PowerConfigurationCluster):
+    cluster_id = PowerConfigurationCluster.cluster_id
+    FREQUENCY = 45
+    MINIMUM_CHANGE = 1
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    async def configure_reporting(self, attribute, min_interval, max_interval,
+                                  reportable_change):
+        result = await super().configure_reporting(
+            PowerConfigurationCluster.BATTERY_VOLTAGE_ATTR,
+            self.FREQUENCY,
+            self.FREQUENCY,
+            self.MINIMUM_CHANGE
+        )
+        return result
+
+    def _update_attribute(self, attrid, value):
+        super()._update_attribute(attrid, value)
+        self.endpoint.device.trackingBus.listener_event(
+            'update_tracking'
+        )
+
+
+# stealing this for tracking alerts
+class TrackingCluster(LocalDataCluster, BinaryInput):
+    cluster_id = BinaryInput.cluster_id
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.endpoint.device.trackingBus.add_listener(self)
+
+    def update_tracking(self):
+        self._update_attribute(None, None)
 
 
 class SmartThingsTagV4(CustomDevice):
 
     def __init__(self, *args, **kwargs):
+        self.trackingBus = Bus()
         super().__init__(*args, **kwargs)
 
     signature = {
@@ -21,10 +62,10 @@ class SmartThingsTagV4(CustomDevice):
             'device_type': zha.DeviceType.SIMPLE_SENSOR,
             'input_clusters': [
                 Basic.cluster_id,
-                PowerConfigurationCluster.cluster_id,
+                FastPollingPowerConfigurationCluster.cluster_id,
                 Identify.cluster_id,
                 PollControl.cluster_id,
-                BinaryInput.cluster_id
+                TrackingCluster.cluster_id
             ],
             'output_clusters': [
                 Identify.cluster_id,
@@ -36,13 +77,35 @@ class SmartThingsTagV4(CustomDevice):
     replacement = {
         'endpoints': {
             1: {
+                'device_type': ARRIVAL_SENSOR_DEVICE_TYPE,
                 'input_clusters': [
                     Basic.cluster_id,
-                    PowerConfigurationCluster,
+                    FastPollingPowerConfigurationCluster,
                     Identify.cluster_id,
                     PollControl.cluster_id,
-                    BinaryInput.cluster_id
+                    TrackingCluster
                 ]
             }
         },
     }
+
+PROFILES[zha.PROFILE_ID].CLUSTERS[ARRIVAL_SENSOR_DEVICE_TYPE] = (
+    [
+        Basic.cluster_id,
+        Identify.cluster_id,
+        PollControl.cluster_id,
+        TrackingCluster.cluster_id
+    ],
+    [
+        Identify.cluster_id
+    ]
+)
+
+if zha.PROFILE_ID not in zha_const.DEVICE_CLASS:
+    zha_const.DEVICE_CLASS[zha.PROFILE_ID] = {}
+
+zha_const.DEVICE_CLASS[zha.PROFILE_ID].update(
+    {
+        ARRIVAL_SENSOR_DEVICE_TYPE: 'device_tracker'
+    }
+)
