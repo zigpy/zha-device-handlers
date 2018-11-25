@@ -108,6 +108,11 @@ class AqaraVibrationSensor(XiaomiCustomDevice):
                         'degrees': value
                     }
                 )
+            elif attrid == RECENT_ACTIVITY_LEVEL_ATTR:
+                # these seem to be sent every minute when vibration is active
+                self.endpoint.device.motionBus.listener_event(
+                    'motion_event'
+                )
 
     class MotionCluster(LocalDataCluster, IasZone):
         cluster_id = IasZone.cluster_id
