@@ -3,6 +3,7 @@ import logging
 import homeassistant.components.zha.const as zha_const
 from zigpy.quirks import CustomCluster
 from zigpy.profiles import PROFILES, zha
+import zigpy.types as types
 from zigpy.zcl.clusters.general import Basic, Groups, PowerConfiguration,\
     Identify, Ota, Scenes, MultistateInput
 from zigpy.zcl.clusters.closures import DoorLock
@@ -64,6 +65,15 @@ class AqaraVibrationSensor(XiaomiCustomDevice):
     def __init__(self, *args, **kwargs):
         self.motionBus = Bus()
         super().__init__(*args, **kwargs)
+
+    class VibrationBasicCluster(BasicCluster):
+        cluster_id = BasicCluster.cluster_id
+
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.attributes.update({
+                0xFF0D: ('sensitivity', types.uint8_t),
+            })
 
     class MultistateInputCluster(CustomCluster, MultistateInput):
         cluster_id = DoorLock.cluster_id
@@ -187,11 +197,13 @@ class AqaraVibrationSensor(XiaomiCustomDevice):
     }
 
     replacement = {
+        'manufacturer': 'LUMI',
+        'model': 'lumi.vibration.aq1',
         'endpoints': {
             1: {
                 'device_type': VIBE_DEVICE_TYPE,
                 'input_clusters': [
-                    BasicCluster,
+                    VibrationBasicCluster,
                     PowerConfigurationCluster,
                     TemperatureMeasurementCluster,
                     Identify.cluster_id,
@@ -199,7 +211,7 @@ class AqaraVibrationSensor(XiaomiCustomDevice):
                     MotionCluster
                 ],
                 'output_clusters': [
-                    Basic.cluster_id,
+                    VibrationBasicCluster,
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
