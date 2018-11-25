@@ -29,19 +29,31 @@ KNOCK_4_VALUE = 515  # aqara tableside
 KNOCK_5_VALUE = 516  # aqara facing me 90 left
 KNOCK_6_VALUE = 517  # aqara facing me upright
 
+SLIDE_1_VALUE = 256  # aqara skyside
+SLIDE_2_VALUE = 257  # aqara facing me 90 right
+SLIDE_3_VALUE = 258  # aqara facing me upside down
+SLIDE_4_VALUE = 259  # aqara tableside
+SLIDE_5_VALUE = 260  # aqara facing me 90 left
+SLIDE_6_VALUE = 261  # aqara facing me upright
+
 FLIP_BEGIN = 50
 FLIP_END = 180
 
 MOVEMENT_TYPE = {
     SHAKE_VALUE: "shake",
     DROP_VALUE: "drop",
-    SLIDE_VALUE: "slide",
+    SLIDE_1_VALUE: 'slide_1',
+    SLIDE_2_VALUE: 'slide_2',
+    SLIDE_3_VALUE: 'slide_3',
+    SLIDE_4_VALUE: 'slide_4',
+    SLIDE_5_VALUE: 'slide_5',
+    SLIDE_6_VALUE: 'slide_6',
     KNOCK_1_VALUE: 'knock_1',
     KNOCK_2_VALUE: 'knock_2',
     KNOCK_3_VALUE: 'knock_3',
     KNOCK_4_VALUE: 'knock_4',
     KNOCK_5_VALUE: 'knock_5',
-    KNOCK_6_VALUE: 'knock_6'
+    KNOCK_6_VALUE: 'knock_6',
 }
 
 ROTATE_RIGHT = 'rotate_right'
