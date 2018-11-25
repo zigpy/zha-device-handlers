@@ -1,5 +1,5 @@
 import logging
-
+import homeassistant.components.zha.const as zha_const
 from zigpy.profiles import PROFILES, zha
 from zigpy.zcl.clusters.general import Basic, Groups, OnOff, PowerConfiguration
 from quirks.xiaomi import BasicCluster, PowerConfigurationCluster,\
@@ -7,11 +7,12 @@ from quirks.xiaomi import BasicCluster, PowerConfigurationCluster,\
 from quirks import EventableCluster
 
 BUTTON_DEVICE_TYPE = 0x5F01
+BUTTON_DEVICE_TYPE_REPLACEMENT = 0x6FF1
 XIAOMI_CLUSTER_ID = 0xFFFF
 
 _LOGGER = logging.getLogger(__name__)
 
-PROFILES[zha.PROFILE_ID].CLUSTERS[BUTTON_DEVICE_TYPE] = (
+PROFILES[zha.PROFILE_ID].CLUSTERS[BUTTON_DEVICE_TYPE_REPLACEMENT] = (
     [
         BasicCluster.cluster_id,
         OnOff.cluster_id
@@ -20,6 +21,12 @@ PROFILES[zha.PROFILE_ID].CLUSTERS[BUTTON_DEVICE_TYPE] = (
         BasicCluster.cluster_id,
         Groups.cluster_id
     ]
+)
+
+zha_const.DEVICE_CLASS[zha.PROFILE_ID].update(
+    {
+        BUTTON_DEVICE_TYPE_REPLACEMENT: 'sensor'
+    }
 )
 
 
@@ -58,6 +65,7 @@ class AqaraButton(XiaomiCustomDevice):
     replacement = {
         'endpoints': {
             1: {
+                'device_type': BUTTON_DEVICE_TYPE_REPLACEMENT,
                 'input_clusters': [
                     BasicCluster,
                     PowerConfigurationCluster,
