@@ -31,7 +31,6 @@ class FastPollingPowerConfigurationCluster(PowerConfigurationCluster):
         return result
 
     def _update_attribute(self, attrid, value):
-        super()._update_attribute(attrid, value)
         self.endpoint.device.trackingBus.listener_event(
             'update_tracking',
             attrid,
@@ -48,7 +47,8 @@ class TrackingCluster(LocalDataCluster, BinaryInput):
         self.endpoint.device.trackingBus.add_listener(self)
 
     def update_tracking(self, attrid, value):
-        self._update_attribute(None, None)
+        # prevent unbounded null entries from going into zigbee.db
+        self._update_attribute(0, 1)
 
 
 class SmartThingsTagV4(CustomDevice):
