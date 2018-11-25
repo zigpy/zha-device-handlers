@@ -57,6 +57,8 @@ class CentraLite3315S(CustomDevice):
     }
 
     replacement = {
+        'manufacturer': 'CentraLite',
+        'model': '3315-S',
         'endpoints': {
             1: {
                 'input_clusters': [

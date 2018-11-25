@@ -121,6 +121,8 @@ class AqaraBodySensor(XiaomiCustomDevice):
     }
 
     replacement = {
+        'manufacturer': 'LUMI',
+        'model': 'lumi.sensor_motion.aq2',
         'endpoints': {
             1: {
                 'input_clusters': [

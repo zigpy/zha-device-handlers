@@ -57,6 +57,8 @@ class CentraLite3326(CustomDevice):
     }
 
     replacement = {
+        'manufacturer': 'CentraLite',
+        'model': '3326-L',
         'endpoints': {
             1: {
                 'input_clusters': [

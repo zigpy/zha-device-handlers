@@ -93,7 +93,6 @@ class AqaraCube(XiaomiCustomDevice):
                 self._currentState[STATUS_TYPE_ATTR] = MOVEMENT_TYPE.get(
                     value
                 )
-                _LOGGER.info('we have activity!!! attrid: %s value: %s')
                 # show something in the sensor in HA
                 super()._update_attribute(
                     0,
