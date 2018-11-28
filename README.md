@@ -19,8 +19,7 @@ These device handlers currently require the use of a custom [branch](https://git
 - [Contact Sensor](https://www.aqara.com/en/door_and_window_sensor-product.html): lumi.sensor_magnet.aq2
 - [Motion Sensor](https://www.aqara.com/en/motion_sensor.html): lumi.sensor_motion.aq2
 - [Temperature / Humidity Sensor](https://www.aqara.com/en/temperature_and_humidity_sensor-product.html): lumi.weather
-
-[Water Leak](https://www.aqara.com/en/water_leak_sensor.html): Coming soon! 
+- [Water Leak](https://www.aqara.com/en/water_leak_sensor.html): lumi.sensor_wleak.aq1 
 
 ### Osram
 - [OSRAM LIGHTIFY Dimming Switch](https://assets.osram-americas.com/assets/Documents/LTFY012.06c0d6e6-17c7-4dcb-bd2c-1fca7feecfb4.pdf): 
