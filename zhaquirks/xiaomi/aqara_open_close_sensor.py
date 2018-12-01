@@ -5,7 +5,7 @@ from zigpy.zcl.clusters.general import Basic, Groups, OnOff,\
     PowerConfiguration, Identify
 from zigpy import quirks
 from zigpy.quirks.xiaomi import AqaraOpenCloseSensor
-from quirks.xiaomi import BasicCluster, PowerConfigurationCluster,\
+from zhaquirks.xiaomi import BasicCluster, PowerConfigurationCluster,\
     TemperatureMeasurementCluster, XiaomiCustomDevice
 
 OPEN_CLOSE_DEVICE_TYPE = 0x5F01

@@ -7,7 +7,7 @@ from zigpy.zcl.clusters.measurement import TemperatureMeasurement,\
     PressureMeasurement, RelativeHumidity
 from zigpy import quirks
 from zigpy.quirks.xiaomi import AqaraTemperatureHumiditySensor
-from quirks.xiaomi import BasicCluster, PowerConfigurationCluster,\
+from zhaquirks.xiaomi import BasicCluster, PowerConfigurationCluster,\
     XiaomiCustomDevice
 
 TEMPERATURE_HUMIDITY_DEVICE_TYPE = 0x5F01

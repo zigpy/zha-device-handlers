@@ -2,7 +2,7 @@ from zigpy.profiles import PROFILES, zha, zll
 from zigpy.zcl.clusters.general import Basic, OnOff, Identify,\
     Ota, LevelControl, PowerConfiguration, Scenes, BinaryInput,\
     Groups
-from quirks import EventableCluster
+from zhaquirks import EventableCluster
 from zigpy.quirks import CustomDevice
 
 

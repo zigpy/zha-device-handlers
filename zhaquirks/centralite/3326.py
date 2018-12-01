@@ -2,7 +2,7 @@ from zigpy.profiles import PROFILES, zha
 from zigpy.zcl.clusters.general import Basic, Identify,\
     PollControl, Ota
 from zigpy.zcl.clusters.security import IasZone
-from quirks.centralite import PowerConfigurationCluster
+from zhaquirks.centralite import PowerConfigurationCluster
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.quirks import CustomDevice
 
@@ -10,7 +10,7 @@ from zigpy.quirks import CustomDevice
 DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
 
 
-class CentraLite3320(CustomDevice):
+class CentraLite3326(CustomDevice):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -36,19 +36,19 @@ class CentraLite3320(CustomDevice):
                 Ota.cluster_id
             ],
         },
-        #  <SimpleDescriptor endpoint=2 profile=49887 device_type=12
+        #  <SimpleDescriptor endpoint=2 profile=49887 device_type=263
         #  device_version=0
-        #  input_clusters=[0, 1, 3, 2821, 64527]
+        #  input_clusters=[0, 1, 3, 2821, 64582]
         #  output_clusters=[3]>
         2: {
             'profile_id': 49887,
-            'device_type': 12,
+            'device_type': 263,
             'input_clusters': [
                 Basic.cluster_id,
                 PowerConfigurationCluster.cluster_id,
                 Identify.cluster_id,
                 DIAGNOSTICS_CLUSTER_ID,
-                64527
+                64582
             ],
             'output_clusters': [
                 Identify.cluster_id
@@ -58,7 +58,7 @@ class CentraLite3320(CustomDevice):
 
     replacement = {
         'manufacturer': 'CentraLite',
-        'model': '3320-L',
+        'model': '3326-L',
         'endpoints': {
             1: {
                 'input_clusters': [

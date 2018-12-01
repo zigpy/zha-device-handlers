@@ -43,7 +43,7 @@ Example:
 
     ```
 
-3. Place the quirks directory from this repository in the folder created in the previous step.
+3. Place the zhaquirks directory from this repository in the folder created in the previous step.
 
 **NOTE:** Some devices will need to be unpaired and repaired in order to see sensor values populate in Home Assistant.
 

@@ -8,9 +8,9 @@ from zigpy.zcl.clusters.general import Basic, PowerConfiguration,\
     Identify, Ota
 from zigpy.quirks import CustomDevice, CustomCluster
 from zigpy.profiles import zha
-from quirks.xiaomi import BasicCluster, PowerConfigurationCluster,\
+from zhaquirks.xiaomi import BasicCluster, PowerConfigurationCluster,\
     TemperatureMeasurementCluster, XiaomiCustomDevice
-from quirks import Bus, LocalDataCluster
+from zhaquirks import Bus, LocalDataCluster
 
 import homeassistant.components.zha.const as zha_const
 

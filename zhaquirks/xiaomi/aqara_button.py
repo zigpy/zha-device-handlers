@@ -2,9 +2,9 @@ import logging
 import homeassistant.components.zha.const as zha_const
 from zigpy.profiles import PROFILES, zha
 from zigpy.zcl.clusters.general import Basic, Groups, OnOff, PowerConfiguration
-from quirks.xiaomi import BasicCluster, PowerConfigurationCluster,\
+from zhaquirks.xiaomi import BasicCluster, PowerConfigurationCluster,\
     TemperatureMeasurementCluster, XiaomiCustomDevice
-from quirks import EventableCluster
+from zhaquirks import EventableCluster
 
 BUTTON_DEVICE_TYPE = 0x5F01
 BUTTON_DEVICE_TYPE_REPLACEMENT = 0x6FF1

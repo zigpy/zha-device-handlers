@@ -1,9 +1,9 @@
 from zigpy.profiles import PROFILES, zha
 from zigpy.zcl.clusters.general import Basic, OnOff, Identify,\
     PollControl, Ota, LevelControl
-from quirks.centralite import PowerConfigurationCluster
+from zhaquirks.centralite import PowerConfigurationCluster
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
-from quirks import EventableCluster
+from zhaquirks import EventableCluster
 from zigpy.quirks import CustomDevice
 
 

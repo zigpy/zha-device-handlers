@@ -4,8 +4,8 @@ from zigpy.profiles import PROFILES, zha
 from zigpy.zcl.clusters.general import Basic, Identify,\
     PollControl, Ota, BinaryInput
 from zigpy.quirks import CustomDevice
-from quirks import LocalDataCluster, Bus
-from quirks.centralite import PowerConfigurationCluster
+from zhaquirks import LocalDataCluster, Bus
+from zhaquirks.centralite import PowerConfigurationCluster
 
 _LOGGER = logging.getLogger(__name__)
 

@@ -3,7 +3,7 @@ import logging
 from zigpy.zcl.clusters.general import Basic, PowerConfiguration
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.quirks import CustomCluster, CustomDevice
-from quirks import LocalDataCluster, Bus
+from zhaquirks import LocalDataCluster, Bus
 import zigpy.types as types
 
 XIAOMI_ATTRIBUTE = 0xFF01

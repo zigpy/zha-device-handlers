@@ -8,9 +8,9 @@ from zigpy.zcl.clusters.general import Basic, Groups, PowerConfiguration,\
     Identify, Ota, Scenes, MultistateInput
 from zigpy.zcl.clusters.closures import DoorLock
 from zigpy.zcl.clusters.security import IasZone
-from quirks.xiaomi import BasicCluster, PowerConfigurationCluster,\
+from zhaquirks.xiaomi import BasicCluster, PowerConfigurationCluster,\
     TemperatureMeasurementCluster, XiaomiCustomDevice
-from quirks import Bus, LocalDataCluster
+from zhaquirks import Bus, LocalDataCluster
 
 VIBE_DEVICE_TYPE = 0x5F02  # decimal = 24322
 RECENT_ACTIVITY_LEVEL_ATTR = 0x0505  # decimal = 1285

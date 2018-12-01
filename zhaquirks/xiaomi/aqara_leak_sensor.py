@@ -3,7 +3,7 @@ from zigpy.zcl.clusters.general import Basic, PowerConfiguration, Identify, Ota
 from zigpy.zcl.clusters.security import IasZone
 from zigpy import quirks
 from zigpy.quirks.xiaomi import AqaraWaterSensor
-from quirks.xiaomi import BasicCluster, PowerConfigurationCluster,\
+from zhaquirks.xiaomi import BasicCluster, PowerConfigurationCluster,\
     TemperatureMeasurementCluster, XiaomiCustomDevice
 
 #  remove the zigpy version of this device handler

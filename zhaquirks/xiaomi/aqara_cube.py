@@ -4,9 +4,9 @@ from zigpy.profiles import zha
 import homeassistant.components.zha.const as zha_const
 from zigpy.zcl.clusters.general import Groups, Identify, Ota,\
     MultistateInput, Scenes, AnalogInput
-from quirks.xiaomi import BasicCluster, PowerConfigurationCluster,\
+from zhaquirks.xiaomi import BasicCluster, PowerConfigurationCluster,\
     TemperatureMeasurementCluster, XiaomiCustomDevice
-from quirks import CustomCluster
+from zhaquirks import CustomCluster
 
 XIAOMI_SENSORS = 0x5F01  # decimal = 24321 ? sensors
 XIAOMI_MEASUREMENTS = 0x5F02  # decimal = 24322 ? multistate measurements
