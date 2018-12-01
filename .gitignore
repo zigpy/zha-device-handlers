@@ -1,2 +1,6 @@
 *.pyc
 *.DS_Store
+dist/*.*
+zha_quirks.egg-info/*.*
+zha_quirks.egg-info/PKG-INFO
+build/**/*.*
