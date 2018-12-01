@@ -31,20 +31,6 @@ These device handlers currently require the use of a custom [branch](https://git
 
 1. Update Home Assistant to use the ZHA component from this [branch](https://github.com/dmulcahey/home-assistant/tree/dm/zha-sensor-playground). Be sure to get the `zha.py` files from every component that ZHA supports.
 
-2. Create a directory anywhere on the machine that Home Assistant is running on. In configuration.yaml add  `device_handlers_path` as a key under `zha`. Set the value of this key to the folder you just created.  
-Example:
-
-    ```yaml
-
-    zha:
-      usb_path: /dev/tty.SLAB_USBtoUART4
-      database_path: zigbee.db
-      device_handlers_path: "/Volumes/development/zha_device_handlers"
-
-    ```
-
-3. Place the zhaquirks directory from this repository in the folder created in the previous step.
-
 **NOTE:** Some devices will need to be unpaired and repaired in order to see sensor values populate in Home Assistant.
 
 #
