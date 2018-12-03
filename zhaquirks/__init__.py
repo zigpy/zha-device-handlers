@@ -1,3 +1,5 @@
+import importlib
+import pkgutil
 from zigpy.quirks import CustomCluster
 from zigpy.util import ListenableMixin
 
@@ -53,3 +55,11 @@ class EventableCluster(CustomCluster):
                 'value': value
             }
         )
+
+name = __name__
+path = __path__
+for importer, modname, ispkg in pkgutil.walk_packages(
+        path=path,
+        prefix=name +'.'
+        ):
+    importlib.import_module(modname)
