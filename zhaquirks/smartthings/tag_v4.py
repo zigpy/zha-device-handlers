@@ -36,6 +36,7 @@ class FastPollingPowerConfigurationCluster(PowerConfigurationCluster):
             attrid,
             value
         )
+        super()._update_attribute(attrid, value)
 
 
 # stealing this for tracking alerts
