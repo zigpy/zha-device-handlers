@@ -21,6 +21,7 @@ if AqaraOpenCloseSensor in quirks._DEVICE_REGISTRY:
 class AqaraOpenCloseSensor(XiaomiCustomDevice):
 
     def __init__(self, *args, **kwargs):
+        self.battery_size = 11
         super().__init__(*args, **kwargs)
 
     signature = {

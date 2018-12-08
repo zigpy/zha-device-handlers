@@ -78,6 +78,7 @@ extend_dict(MOVEMENT_TYPE, 'flip', range(FLIP_BEGIN, FLIP_END))
 class AqaraCube(XiaomiCustomDevice):
 
     def __init__(self, *args, **kwargs):
+        self.battery_size = 9
         super().__init__(*args, **kwargs)
 
     class MultistateInputCluster(CustomCluster, MultistateInput):

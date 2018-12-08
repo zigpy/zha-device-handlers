@@ -27,6 +27,8 @@ class XiaomiCustomDevice(CustomDevice):
     def __init__(self, *args, **kwargs):
         self.temperatureBus = Bus()
         self.batteryBus = Bus()
+        if not hasattr(self, 'battery_size'):
+            self.battery_size = 10
         super().__init__(*args, **kwargs)
 
 
@@ -107,7 +109,13 @@ class PowerConfigurationCluster(LocalDataCluster, PowerConfiguration):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.endpoint.device.batteryBus.add_listener(self)
-        self._update_attribute(self.BATTERY_SIZE_ATTR, 0xff)
+        if hasattr(self.endpoint.device, 'battery_size'):
+            self._update_attribute(
+                self.BATTERY_SIZE_ATTR,
+                self.endpoint.device.battery_size
+            )
+        else:
+            self._update_attribute(self.BATTERY_SIZE_ATTR, 0xff)
         self._update_attribute(self.BATTERY_QUANTITY_ATTR, 1)
 
     def battery_reported(self, voltage, rawVoltage):
