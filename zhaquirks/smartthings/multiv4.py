@@ -22,7 +22,7 @@ class SmartThingsMultiV4(CustomDevice):
         # output_clusters=[25]>
         1: {
             'profile_id': zha.PROFILE_ID,
-            'device_type': zha.DeviceType.SIMPLE_SENSOR,
+            'device_type': zha.DeviceType.IAS_ZONE,
             'input_clusters': [
                 Basic.cluster_id,
                 PowerConfigurationCluster.cluster_id,
