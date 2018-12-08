@@ -3,6 +3,7 @@ from zigpy.zcl.clusters.general import Basic, Identify,\
     PollControl, Ota, BinaryInput
 from zigpy.zcl.clusters.security import IasZone
 from quirks.centralite import PowerConfigurationCluster
+from quirks.smartthings import SmartThingsAccelCluster
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.quirks import CustomDevice
 
