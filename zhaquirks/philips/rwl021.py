@@ -69,6 +69,8 @@ class PhilipsRWL021(CustomDevice):
     replacement = {
         'endpoints': {
             1: {
+                'manufacturer': 'Philips',
+                'model': 'RWL021',
                 'input_clusters': [
                     Basic.cluster_id
                 ],
@@ -82,6 +84,8 @@ class PhilipsRWL021(CustomDevice):
                 ],
             },
             2: {
+                'manufacturer': 'Philips',
+                'model': 'RWL021',
                 'input_clusters': [
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
