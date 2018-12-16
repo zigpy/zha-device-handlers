@@ -53,7 +53,7 @@ These device handlers currently require the use of a custom [branch](https://git
 - All supported devices report temperature but I am unsure if it is correct or accurate 
 - Vibration sensor exposes a binary sensor in Home Assistant that reports current vibration state
 - Vibration sensor sends `tilt` and `drop` events to Home Assistant
-- Cube sends the following events: `flip`, `rotate_left`, `rotate_right`, `knock_1` - `knock_6`, `drop`, `slide_1` - `slide_6` and `shake`
+- Cube sends the following events: `flip (90 and 180 degrees)`, `rotate_left`, `rotate_right`, `knock`, `drop`, `slide` and `shake`
 - Motion sensor exposes binary sensors for motion and occupancy.
 - Button sends events to Home Assistant
 
