@@ -8,7 +8,8 @@ from zigpy.quirks import CustomDevice
 
 
 DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
-
+MANUFACTURER_SPECIFIC_PROFILE_ID = 0xC2DF  # decimal = 49887
+MANUFACTURER_SPECIFIC_CLUSTER_ID = 0xFC46  # decimal = 64582
 
 class CentraLite3325S(CustomDevice):
 
@@ -41,14 +42,14 @@ class CentraLite3325S(CustomDevice):
         #  input_clusters=[0, 1, 3, 2821, 64582]
         #  output_clusters=[3]>
         2: {
-            'profile_id': 49887,
-            'device_type': 263,
+            'profile_id': MANUFACTURER_SPECIFIC_PROFILE_ID,
+            'device_type': zha.DeviceType.OCCUPANCY_SENSOR,
             'input_clusters': [
                 Basic.cluster_id,
                 PowerConfigurationCluster.cluster_id,
                 Identify.cluster_id,
                 DIAGNOSTICS_CLUSTER_ID,
-                64582
+                MANUFACTURER_SPECIFIC_CLUSTER_ID
             ],
             'output_clusters': [
                 Identify.cluster_id
@@ -57,10 +58,10 @@ class CentraLite3325S(CustomDevice):
     }
 
     replacement = {
-        'manufacturer': 'CentraLite',
-        'model': '3325-S',
         'endpoints': {
             1: {
+                'manufacturer': 'CentraLite',
+                'model': '3325-S',
                 'input_clusters': [
                     Basic.cluster_id,
                     PowerConfigurationCluster,
@@ -75,11 +76,13 @@ class CentraLite3325S(CustomDevice):
                 ],
             },
             2: {
+                'manufacturer': 'CentraLite',
+                'model': '3325-S',
                 'input_clusters': [
                     Basic.cluster_id,
                     Identify.cluster_id,
                     DIAGNOSTICS_CLUSTER_ID,
-                    64582
+                    MANUFACTURER_SPECIFIC_CLUSTER_ID
                 ],
                 'output_clusters': [
                     Identify.cluster_id
