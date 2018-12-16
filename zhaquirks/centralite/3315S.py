@@ -57,10 +57,10 @@ class CentraLite3315S(CustomDevice):
     }
 
     replacement = {
-        'manufacturer': 'CentraLite',
-        'model': '3315-S',
         'endpoints': {
             1: {
+                'manufacturer': 'CentraLite',
+                'model': '3315-S',
                 'input_clusters': [
                     Basic.cluster_id,
                     PowerConfigurationCluster,
@@ -75,6 +75,8 @@ class CentraLite3315S(CustomDevice):
                 ],
             },
             2: {
+                'manufacturer': 'CentraLite',
+                'model': '3315-S',
                 'input_clusters': [
                     Basic.cluster_id,
                     Identify.cluster_id,
