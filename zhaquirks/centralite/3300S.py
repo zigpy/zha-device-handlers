@@ -8,6 +8,7 @@ from zigpy.quirks import CustomDevice
 
 
 DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
+MANUFACTURER_SPECIFIC_PROFILE_ID = 0xC2DF  # decimal = 49887
 
 
 class CentraLite3300S(CustomDevice):
@@ -41,8 +42,8 @@ class CentraLite3300S(CustomDevice):
         #  input_clusters=[0, 1, 3, 15, 2821]
         #  output_clusters=[3]>
         2: {
-            'profile_id': 49887,
-            'device_type': 12,
+            'profile_id': MANUFACTURER_SPECIFIC_PROFILE_ID,
+            'device_type': zha.DeviceType.SIMPLE_SENSOR,
             'input_clusters': [
                 Basic.cluster_id,
                 PowerConfigurationCluster.cluster_id,
@@ -57,10 +58,10 @@ class CentraLite3300S(CustomDevice):
     }
 
     replacement = {
-        'manufacturer': 'CentraLite',
-        'model': '3300-S',
         'endpoints': {
             1: {
+                'manufacturer': 'CentraLite',
+                'model': '3300-S',
                 'input_clusters': [
                     Basic.cluster_id,
                     PowerConfigurationCluster,
@@ -75,6 +76,8 @@ class CentraLite3300S(CustomDevice):
                 ],
             },
             2: {
+                'manufacturer': 'CentraLite',
+                'model': '3300-S',
                 'input_clusters': [
                     Basic.cluster_id,
                     Identify.cluster_id,
