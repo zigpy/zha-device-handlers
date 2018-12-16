@@ -36,10 +36,10 @@ class AqaraLeakSensor(XiaomiCustomDevice):
     }
 
     replacement = {
-        'manufacturer': 'LUMI',
-        'model': 'lumi.sensor_wleak.aq1',
         'endpoints': {
             1: {
+                'manufacturer': 'LUMI',
+                'model': 'lumi.sensor_wleak.aq1',
                 'input_clusters': [
                     BasicCluster,
                     Identify.cluster_id,
