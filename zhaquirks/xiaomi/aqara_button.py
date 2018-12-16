@@ -63,10 +63,10 @@ class AqaraButton(XiaomiCustomDevice):
     }
 
     replacement = {
-        'manufacturer': 'LUMI',
-        'model': 'lumi.sensor_switch.aq2',
         'endpoints': {
             1: {
+                'manufacturer': 'LUMI',
+                'model': 'lumi.sensor_switch.aq2',
                 'device_type': BUTTON_DEVICE_TYPE_REPLACEMENT,
                 'input_clusters': [
                     BasicCluster,

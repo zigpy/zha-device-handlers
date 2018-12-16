@@ -202,10 +202,10 @@ class AqaraVibrationSensor(XiaomiCustomDevice):
     }
 
     replacement = {
-        'manufacturer': 'LUMI',
-        'model': 'lumi.vibration.aq1',
         'endpoints': {
             1: {
+                'manufacturer': 'LUMI',
+                'model': 'lumi.vibration.aq1',
                 'device_type': VIBE_DEVICE_TYPE,
                 'input_clusters': [
                     VibrationBasicCluster,

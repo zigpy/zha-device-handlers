@@ -37,10 +37,10 @@ class Z308E3ED(CustomDevice):
     }
 
     replacement = {
-        'manufacturer': 'netvox',
-        'model': 'Z308E3ED',
         'endpoints': {
             1: {
+                'manufacturer': 'netvox',
+                'model': 'Z308E3ED',
                 'input_clusters': [
                     Basic.cluster_id,
                     PowerConfigurationCluster,

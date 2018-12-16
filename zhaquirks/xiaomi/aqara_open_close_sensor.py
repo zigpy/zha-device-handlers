@@ -47,10 +47,10 @@ class AqaraOpenCloseSensor(XiaomiCustomDevice):
     }
 
     replacement = {
-        'manufacturer': 'LUMI',
-        'model': 'lumi.sensor_magnet.aq2',
         'endpoints': {
             1: {
+                'manufacturer': 'LUMI',
+                'model': 'lumi.sensor_magnet.aq2',
                 'input_clusters': [
                     BasicCluster,
                     Identify.cluster_id,
