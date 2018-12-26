@@ -7,9 +7,6 @@ from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.quirks import CustomDevice
 
 
-DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
-
-
 class SmartThingsMotionV4(CustomDevice):
 
     def __init__(self, *args, **kwargs):
@@ -39,10 +36,10 @@ class SmartThingsMotionV4(CustomDevice):
     }
 
     replacement = {
-        'manufacturer': 'SmartThings',
-        'model': 'motionv4',
         'endpoints': {
             1: {
+                'manufacturer': 'SmartThings',
+                'model': 'motionv4',
                 'input_clusters': [
                     Basic.cluster_id,
                     PowerConfigurationCluster,
