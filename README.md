@@ -12,9 +12,9 @@ These device handlers currently require the use of a custom [branch](https://git
 - [Dimmer Switch](https://centralite.com/products/smart-switch): CentraLite 3130
 - [Water Sensor](https://centralite.com/products/water-sensor): CentraLite 3315-S
 - [Contact Sensor](https://www.irisbylowes.com/support/?guideTitle=Iris-Contact-Sensor-3320-L-(2nd-Gen)&guideId=441744fa-3e2b-3bc9-87b2-a8fc76d85341): CentraLite 3320-L
-<!-- - [Contact Sensor](http://a.co/9PCEorM): CentraLite 3321-S -->
 - [Motion Sensor](http://a.co/iYjshAP): CentraLite 3325-S
 - [Motion Sensor](https://www.irisbylowes.com/support/?guideTitle=Iris-Motion-Sensor&guideId=4be71b61-5938-30b6-8154-bd90cb9b4796): CentraLite 3326-L
+<!-- - [Contact Sensor](http://a.co/9PCEorM): CentraLite 3321-S -->
 
 ### Xiaomi Aqara
 - [Cube](https://www.aqara.com/en/cube_controller-product.html): lumi.sensor_cube.aqgl01
@@ -66,7 +66,8 @@ These device handlers currently require the use of a custom [branch](https://git
 
 ### SmartThings
 
-- tagV4 exposed as a device tracker in Home Assistant and reports battery. The current implementation will use batteries rapidly.
+- All supported devices report battery level.
+- tagV4 exposed as a device tracker in Home Assistant. The current implementation will use batteries rapidly.
 
 #
 ### Thanks
