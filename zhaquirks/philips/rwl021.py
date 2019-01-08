@@ -2,7 +2,6 @@ from zigpy.profiles import PROFILES, zha, zll
 from zigpy.zcl.clusters.general import Basic, OnOff, Identify,\
     Ota, LevelControl, PowerConfiguration, Scenes, BinaryInput,\
     Groups
-from zhaquirks import EventableCluster
 from zigpy.quirks import CustomDevice
 
 
@@ -10,18 +9,6 @@ DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
 
 
 class PhilipsRWL021(CustomDevice):
-
-    class EventableOnOffCluster(EventableCluster, OnOff):
-        cluster_id = OnOff.cluster_id
-
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-
-    class EventableLevelControlCluster(EventableCluster, LevelControl):
-        cluster_id = LevelControl.cluster_id
-
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -41,8 +28,8 @@ class PhilipsRWL021(CustomDevice):
                 Basic.cluster_id,
                 Identify.cluster_id,
                 Groups.cluster_id,
-                EventableOnOffCluster.cluster_id,
-                EventableLevelControlCluster.cluster_id,
+                OnOff.cluster_id,
+                LevelControl.cluster_id,
                 Scenes.cluster_id
             ],
         },
@@ -78,8 +65,8 @@ class PhilipsRWL021(CustomDevice):
                     Basic.cluster_id,
                     Identify.cluster_id,
                     Groups.cluster_id,
-                    EventableOnOffCluster,
-                    EventableLevelControlCluster,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
                     Scenes.cluster_id
                 ],
             },

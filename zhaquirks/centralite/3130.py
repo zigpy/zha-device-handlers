@@ -3,7 +3,6 @@ from zigpy.zcl.clusters.general import Basic, OnOff, Identify,\
     PollControl, Ota, LevelControl
 from zhaquirks.centralite import PowerConfigurationCluster
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
-from zhaquirks import EventableCluster
 from zigpy.quirks import CustomDevice
 
 
@@ -11,18 +10,6 @@ DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
 
 
 class CentraLite3130(CustomDevice):
-
-    class EventableOnOffCluster(EventableCluster, OnOff):
-        cluster_id = OnOff.cluster_id
-
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-
-    class EventableLevelControlCluster(EventableCluster, LevelControl):
-        cluster_id = LevelControl.cluster_id
-
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -45,8 +32,8 @@ class CentraLite3130(CustomDevice):
             ],
             'output_clusters': [
                 Identify.cluster_id,
-                EventableOnOffCluster.cluster_id,
-                EventableLevelControlCluster.cluster_id,
+                OnOff.cluster_id,
+                LevelControl.cluster_id,
                 Ota.cluster_id
             ],
         },
@@ -66,8 +53,8 @@ class CentraLite3130(CustomDevice):
                 ],
                 'output_clusters': [
                     Identify.cluster_id,
-                    EventableOnOffCluster,
-                    EventableLevelControlCluster,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
                     Ota.cluster_id
                 ],
             }
