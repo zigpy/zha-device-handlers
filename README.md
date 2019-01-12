@@ -29,7 +29,7 @@ These device handlers currently require the use of a custom [branch](https://git
 #
 # Configuration:
 
-1. Update Home Assistant to use the ZHA component from this [branch](https://github.com/dmulcahey/home-assistant/tree/dm/zha-sensor-playground). Be sure to get the `zha.py` files from every component that ZHA supports.
+1. Update Home Assistant to 0.85.1 or a later version.
 
 **NOTE:** Some devices will need to be unpaired and repaired in order to see sensor values populate in Home Assistant.
 
