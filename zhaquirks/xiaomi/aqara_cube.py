@@ -141,7 +141,9 @@ class AqaraCube(XiaomiCustomDevice):
                             event_args['flip_degrees'] = 180
                         else:
                             event_args['flip_degrees'] = 90
-
+                        event_args['activated_face'] = (value % 8) + 1
+                            
+                            
                     self.listener_event(
                         'zha_send_event',
                         self,
