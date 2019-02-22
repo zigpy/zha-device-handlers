@@ -46,6 +46,9 @@ class AqaraLeakSensor(XiaomiCustomDevice):
                     TemperatureMeasurementCluster,
                     IasZone.cluster_id
                 ],
+                'output_clusters': [
+                    Ota.cluster_id
+                ],
             }
         },
     }

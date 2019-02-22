@@ -13,8 +13,6 @@ from zhaquirks.xiaomi import BasicCluster, PowerConfigurationCluster,\
     TemperatureMeasurementCluster, XiaomiCustomDevice
 from zhaquirks import Bus, LocalDataCluster
 
-import homeassistant.components.zha.const as zha_const
-
 
 XIAOMI_CLUSTER_ID = 0xFFFF
 _LOGGER = logging.getLogger(__name__)
@@ -22,12 +20,6 @@ OCCUPANCY_STATE = 0
 ZONE_STATE = 0
 ON = 1
 OFF = 0
-
-if zha.PROFILE_ID not in zha_const.DEVICE_CLASS:
-    zha_const.DEVICE_CLASS[zha.PROFILE_ID] = {}
-zha_const.DEVICE_CLASS[zha.PROFILE_ID].update({
-    zha.DeviceType.OCCUPANCY_SENSOR: 'binary_sensor'
-})
 
 
 class AqaraBodySensor(XiaomiCustomDevice):
@@ -143,7 +135,8 @@ class AqaraBodySensor(XiaomiCustomDevice):
                     TemperatureMeasurementCluster,
                     IlluminanceMeasurement.cluster_id,
                     OccupancyCluster,
-                    MotionCluster
+                    MotionCluster,
+                    XIAOMI_CLUSTER_ID
                 ],
                 'output_clusters': [
                     Basic.cluster_id,

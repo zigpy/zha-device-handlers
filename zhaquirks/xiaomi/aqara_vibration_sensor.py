@@ -1,9 +1,8 @@
 """Xiaomi aqara smart motion sensor device."""
 import asyncio
 import logging
-import homeassistant.components.zha.const as zha_const
 from zigpy.quirks import CustomCluster
-from zigpy.profiles import PROFILES, zha
+from zigpy.profiles import zha
 import zigpy.types as types
 from zigpy.zcl.clusters.general import Basic, Groups,\
     Identify, Ota, Scenes, MultistateInput
@@ -30,35 +29,6 @@ MEASUREMENT_TYPE = {
 }
 
 _LOGGER = logging.getLogger(__name__)
-
-PROFILES[zha.PROFILE_ID].CLUSTERS[VIBE_DEVICE_TYPE] = (
-    [
-        Basic.cluster_id,
-        Identify.cluster_id,
-        Ota.cluster_id,
-        DoorLock.cluster_id,
-        MultistateInput.cluster_id,
-        IasZone.cluster_id
-    ],
-    [
-        Basic.cluster_id,
-        Identify.cluster_id,
-        Groups.cluster_id,
-        Scenes.cluster_id,
-        Ota.cluster_id,
-        DoorLock.cluster_id,
-        MultistateInput.cluster_id
-    ]
-)
-
-if zha.PROFILE_ID not in zha_const.DEVICE_CLASS:
-    zha_const.DEVICE_CLASS[zha.PROFILE_ID] = {}
-
-zha_const.DEVICE_CLASS[zha.PROFILE_ID].update(
-    {
-        VIBE_DEVICE_TYPE: 'binary_sensor'
-    }
-)
 
 
 class AqaraVibrationSensor(XiaomiCustomDevice):
@@ -219,14 +189,15 @@ class AqaraVibrationSensor(XiaomiCustomDevice):
             1: {
                 'manufacturer': 'LUMI',
                 'model': 'lumi.vibration.aq1',
-                'device_type': VIBE_DEVICE_TYPE,
+                'device_type': zha.DeviceType.DOOR_LOCK,
                 'input_clusters': [
                     VibrationBasicCluster,
                     PowerConfigurationCluster,
                     TemperatureMeasurementCluster,
                     Identify.cluster_id,
-                    MultistateInputCluster,
-                    MotionCluster
+                    MotionCluster,
+                    Ota.cluster_id,
+                    MultistateInputCluster
                 ],
                 'output_clusters': [
                     VibrationBasicCluster,
@@ -235,6 +206,21 @@ class AqaraVibrationSensor(XiaomiCustomDevice):
                     Scenes.cluster_id,
                     Ota.cluster_id,
                     DoorLock.cluster_id
+                ],
+            },
+            2: {
+                'manufacturer': 'LUMI',
+                'model': 'lumi.vibration.aq1',
+                'device_type': VIBE_DEVICE_TYPE,
+                'input_clusters': [
+                    Identify.cluster_id,
+                    MultistateInputCluster
+                ],
+                'output_clusters': [
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    MultistateInput.cluster_id
                 ],
             }
         },

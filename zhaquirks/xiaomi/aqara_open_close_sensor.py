@@ -57,12 +57,14 @@ class AqaraOpenCloseSensor(XiaomiCustomDevice):
                     BasicCluster,
                     Identify.cluster_id,
                     PowerConfigurationCluster,
-                    TemperatureMeasurementCluster
+                    TemperatureMeasurementCluster,
+                    XIAOMI_CLUSTER_ID
                 ],
                 'output_clusters': [
                     BasicCluster,
                     Groups.cluster_id,
-                    OnOff.cluster_id
+                    OnOff.cluster_id,
+                    XIAOMI_CLUSTER_ID
                 ],
             }
         },

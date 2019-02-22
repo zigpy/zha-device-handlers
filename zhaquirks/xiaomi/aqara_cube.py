@@ -3,6 +3,8 @@ import logging
 
 from zigpy.profiles import zha
 import homeassistant.components.zha.const as zha_const
+from zigpy import quirks
+from zigpy.quirks.xiaomi import AqaraMagicCubeSensor
 from zigpy.zcl.clusters.general import Groups, Identify, Ota,\
     MultistateInput, Scenes, AnalogInput
 from zhaquirks.xiaomi import BasicCluster, PowerConfigurationCluster,\
@@ -108,6 +110,10 @@ def extend_dict(d, value, x):
 
 extend_dict(MOVEMENT_TYPE, 'flip', range(FLIP_BEGIN, FLIP_END))
 
+#  remove the zigpy version of this device handler
+if AqaraMagicCubeSensor in quirks._DEVICE_REGISTRY:
+    quirks._DEVICE_REGISTRY.remove(AqaraMagicCubeSensor)
+
 
 class AqaraCube(XiaomiCustomDevice):
     """Aqara magic cube device."""
@@ -149,8 +155,7 @@ class AqaraCube(XiaomiCustomDevice):
                         else:
                             event_args['flip_degrees'] = 90
                         event_args['activated_face'] = (value % 8) + 1
-                            
-                            
+
                     self.listener_event(
                         'zha_send_event',
                         self,
@@ -267,7 +272,9 @@ class AqaraCube(XiaomiCustomDevice):
                     BasicCluster,
                     PowerConfigurationCluster,
                     TemperatureMeasurementCluster,
-                    Identify.cluster_id
+                    Identify.cluster_id,
+                    Ota.cluster_id,
+                    MultistateInput.cluster_id
                 ],
                 'output_clusters': [
                     BasicCluster.cluster_id,

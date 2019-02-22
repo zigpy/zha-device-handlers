@@ -58,11 +58,13 @@ class AqaraTemperatureHumiditySensor(XiaomiCustomDevice):
                     Identify.cluster_id,
                     TemperatureMeasurement.cluster_id,
                     PressureMeasurement.cluster_id,
-                    RelativeHumidity.cluster_id
+                    RelativeHumidity.cluster_id,
+                    XIAOMI_CLUSTER_ID
                 ],
                 'output_clusters': [
                     BasicCluster.cluster_id,
-                    Groups.cluster_id
+                    Groups.cluster_id,
+                    XIAOMI_CLUSTER_ID
                 ],
             }
         },
