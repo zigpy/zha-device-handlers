@@ -94,10 +94,8 @@ class BasicCluster(CustomCluster, Basic):
         """calculate percentage."""
         min_voltage = 2500
         max_voltage = 3000
-        percent = (voltage - min_voltage) / (max_voltage - min_voltage) * 100
-        if percent > 100:
-            percent = 100
-        return percent
+        percent = (voltage - min_voltage) / (max_voltage - min_voltage) * 200
+        return min(200, percent)
 
 
 class PowerConfigurationCluster(LocalDataCluster, PowerConfiguration):
@@ -120,7 +118,8 @@ class PowerConfigurationCluster(LocalDataCluster, PowerConfiguration):
 
     def battery_reported(self, voltage, rawVoltage):
         self._update_attribute(BATTERY_PERCENTAGE_REMAINING, voltage)
-        self._update_attribute(BATTERY_VOLTAGE_MV, rawVoltage)
+        self._update_attribute(self.BATTERY_VOLTAGE_ATTR,
+                               int(rawVoltage / 100))
 
 
 class TemperatureMeasurementCluster(LocalDataCluster, TemperatureMeasurement):
