@@ -1,6 +1,7 @@
-from zigpy.profiles import PROFILES, zha
+"""Netvox device."""
+from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import Basic, Identify,\
-    PollControl, Ota, Commissioning
+    PollControl, Commissioning
 from zigpy.zcl.clusters.security import IasZone
 from zhaquirks.centralite import PowerConfigurationCluster
 from zigpy.quirks import CustomDevice
@@ -10,9 +11,7 @@ DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
 
 
 class Z308E3ED(CustomDevice):
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    """Netvox Z308E3ED."""
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=1026

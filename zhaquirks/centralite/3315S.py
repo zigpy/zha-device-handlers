@@ -1,4 +1,5 @@
-from zigpy.profiles import PROFILES, zha
+"""Device handler for centralite 3315."""
+from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import Basic, Identify,\
     PollControl, Ota
 from zigpy.zcl.clusters.security import IasZone
@@ -11,9 +12,7 @@ DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
 
 
 class CentraLite3315S(CustomDevice):
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    """Custom device representing centralite 3315."""
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=1026

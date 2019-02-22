@@ -1,4 +1,4 @@
-
+"""Centralite module for custom device handlers."""
 import logging
 
 from zigpy.zcl.clusters.general import PowerConfiguration
@@ -9,6 +9,8 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class PowerConfigurationCluster(CustomCluster, PowerConfiguration):
+    """Centralite power configuration cluster."""
+
     cluster_id = PowerConfiguration.cluster_id
     BATTERY_VOLTAGE_ATTR = 0x0020
     BATTERY_PERCENTAGE_REMAINING = 0x0021
@@ -30,9 +32,6 @@ class PowerConfigurationCluster(CustomCluster, PowerConfiguration):
         16: 1,
         15: 0
     }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
 
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)

@@ -1,7 +1,8 @@
+"""Xiaomi aqara button sensor."""
 import logging
 import homeassistant.components.zha.const as zha_const
 from zigpy.profiles import PROFILES, zha
-from zigpy.zcl.clusters.general import Basic, Groups, OnOff, PowerConfiguration
+from zigpy.zcl.clusters.general import Basic, Groups, OnOff
 from zhaquirks.xiaomi import BasicCluster, PowerConfigurationCluster,\
     TemperatureMeasurementCluster, XiaomiCustomDevice
 
@@ -30,9 +31,7 @@ zha_const.DEVICE_CLASS[zha.PROFILE_ID].update(
 
 
 class AqaraButton(XiaomiCustomDevice):
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    """Aqara button device."""
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=24321

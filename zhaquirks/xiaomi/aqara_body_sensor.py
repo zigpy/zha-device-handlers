@@ -1,3 +1,4 @@
+"""Xiaomi aqara body sensor."""
 import asyncio
 import logging
 
@@ -6,7 +7,7 @@ from zigpy.zcl.clusters.measurement import IlluminanceMeasurement,\
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.clusters.general import Basic, PowerConfiguration,\
     Identify, Ota
-from zigpy.quirks import CustomDevice, CustomCluster
+from zigpy.quirks import CustomCluster
 from zigpy.profiles import zha
 from zhaquirks.xiaomi import BasicCluster, PowerConfigurationCluster,\
     TemperatureMeasurementCluster, XiaomiCustomDevice
@@ -23,23 +24,28 @@ ON = 1
 OFF = 0
 
 if zha.PROFILE_ID not in zha_const.DEVICE_CLASS:
-        zha_const.DEVICE_CLASS[zha.PROFILE_ID] = {}
+    zha_const.DEVICE_CLASS[zha.PROFILE_ID] = {}
 zha_const.DEVICE_CLASS[zha.PROFILE_ID].update({
     zha.DeviceType.OCCUPANCY_SENSOR: 'binary_sensor'
 })
 
 
 class AqaraBodySensor(XiaomiCustomDevice):
+    """Custom device representing aqara body sensors."""
 
     def __init__(self, *args, **kwargs):
+        """Init."""
         self.battery_size = 9
         self.motionBus = Bus()
         super().__init__(*args, **kwargs)
 
     class OccupancyCluster(CustomCluster, OccupancySensing):
+        """Occupancy cluster."""
+
         cluster_id = OccupancySensing.cluster_id
 
         def __init__(self, *args, **kwargs):
+            """Init."""
             super().__init__(*args, **kwargs)
             self._timer_handle = None
 
@@ -58,14 +64,18 @@ class AqaraBodySensor(XiaomiCustomDevice):
             self._update_attribute(OCCUPANCY_STATE, OFF)
 
     class MotionCluster(LocalDataCluster, IasZone):
+        """Motion cluster."""
+
         cluster_id = IasZone.cluster_id
 
         def __init__(self, *args, **kwargs):
+            """Init."""
             super().__init__(*args, **kwargs)
             self._timer_handle = None
             self.endpoint.device.motionBus.add_listener(self)
 
         def motion_event(self):
+            """Motion event."""
             super().listener_event(
                 'cluster_command',
                 None,

@@ -1,5 +1,6 @@
-from zigpy.profiles import PROFILES, zha
-from zigpy.zcl.clusters.general import Basic, PowerConfiguration, Identify, Ota
+"""Xiaomi aqara leak sensor device."""
+from zigpy.profiles import zha
+from zigpy.zcl.clusters.general import Identify, Ota
 from zigpy.zcl.clusters.security import IasZone
 from zigpy import quirks
 from zigpy.quirks.xiaomi import AqaraWaterSensor
@@ -12,9 +13,7 @@ if AqaraWaterSensor in quirks._DEVICE_REGISTRY:
 
 
 class AqaraLeakSensor(XiaomiCustomDevice):
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    """Xiaomi aqara leak sensor device."""
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=1026

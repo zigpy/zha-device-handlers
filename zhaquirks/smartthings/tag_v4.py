@@ -1,3 +1,4 @@
+"""Device handler for smartthings tagV4 sensors."""
 import logging
 import homeassistant.components.zha.const as zha_const
 from zigpy.profiles import PROFILES, zha
@@ -13,15 +14,15 @@ ARRIVAL_SENSOR_DEVICE_TYPE = 0x8000
 
 
 class FastPollingPowerConfigurationCluster(PowerConfigurationCluster):
+    """FastPollingPowerConfigurationCluster."""
+
     cluster_id = PowerConfigurationCluster.cluster_id
     FREQUENCY = 45
     MINIMUM_CHANGE = 1
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
     async def configure_reporting(self, attribute, min_interval,
                                   max_interval, reportable_change):
+        """Configure reporting."""
         result = await super().configure_reporting(
             PowerConfigurationCluster.BATTERY_VOLTAGE_ATTR,
             self.FREQUENCY,
@@ -41,20 +42,26 @@ class FastPollingPowerConfigurationCluster(PowerConfigurationCluster):
 
 # stealing this for tracking alerts
 class TrackingCluster(LocalDataCluster, BinaryInput):
+    """Tracking cluster."""
+
     cluster_id = BinaryInput.cluster_id
 
     def __init__(self, *args, **kwargs):
+        """Init."""
         super().__init__(*args, **kwargs)
         self.endpoint.device.trackingBus.add_listener(self)
 
     def update_tracking(self, attrid, value):
+        """Update tracking info."""
         # prevent unbounded null entries from going into zigbee.db
         self._update_attribute(0, 1)
 
 
 class SmartThingsTagV4(CustomDevice):
+    """Custom device representing smartthings tagV4 sensors."""
 
     def __init__(self, *args, **kwargs):
+        """Init."""
         self.trackingBus = Bus()
         super().__init__(*args, **kwargs)
 
@@ -100,6 +107,7 @@ class SmartThingsTagV4(CustomDevice):
             }
         },
     }
+
 
 PROFILES[zha.PROFILE_ID].CLUSTERS[ARRIVAL_SENSOR_DEVICE_TYPE] = (
     [

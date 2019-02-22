@@ -1,10 +1,11 @@
+"""Xiaomi aqara smart motion sensor device."""
 import asyncio
 import logging
 import homeassistant.components.zha.const as zha_const
 from zigpy.quirks import CustomCluster
 from zigpy.profiles import PROFILES, zha
 import zigpy.types as types
-from zigpy.zcl.clusters.general import Basic, Groups, PowerConfiguration,\
+from zigpy.zcl.clusters.general import Basic, Groups,\
     Identify, Ota, Scenes, MultistateInput
 from zigpy.zcl.clusters.closures import DoorLock
 from zigpy.zcl.clusters.security import IasZone
@@ -61,24 +62,32 @@ zha_const.DEVICE_CLASS[zha.PROFILE_ID].update(
 
 
 class AqaraVibrationSensor(XiaomiCustomDevice):
+    """Xiaomi aqara smart motion sensor device."""
 
     def __init__(self, *args, **kwargs):
+        """Init."""
         self.motionBus = Bus()
         super().__init__(*args, **kwargs)
 
     class VibrationBasicCluster(BasicCluster):
+        """Vibration cluster."""
+
         cluster_id = BasicCluster.cluster_id
 
         def __init__(self, *args, **kwargs):
+            """Init."""
             super().__init__(*args, **kwargs)
             self.attributes.update({
                 0xFF0D: ('sensitivity', types.uint8_t),
             })
 
     class MultistateInputCluster(CustomCluster, MultistateInput):
+        """Multistate input cluster."""
+
         cluster_id = DoorLock.cluster_id
 
         def __init__(self, *args, **kwargs):
+            """Init."""
             self._currentState = {}
             super().__init__(*args, **kwargs)
 
@@ -115,6 +124,8 @@ class AqaraVibrationSensor(XiaomiCustomDevice):
                 )
 
     class MotionCluster(LocalDataCluster, IasZone):
+        """Motion cluster."""
+
         cluster_id = IasZone.cluster_id
         ZONE_STATE = 0x0000
         ZONE_TYPE = 0x0001
@@ -124,6 +135,7 @@ class AqaraVibrationSensor(XiaomiCustomDevice):
         OFF = 0
 
         def __init__(self, *args, **kwargs):
+            """Init."""
             super().__init__(*args, **kwargs)
             self._timer_handle = None
             self.endpoint.device.motionBus.add_listener(self)
@@ -132,6 +144,7 @@ class AqaraVibrationSensor(XiaomiCustomDevice):
             self._update_attribute(self.ZONE_STATUS, self.OFF)
 
         def motion_event(self):
+            """Motion event."""
             super().listener_event(
                 'cluster_command',
                 None,

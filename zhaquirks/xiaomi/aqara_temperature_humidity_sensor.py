@@ -1,8 +1,8 @@
+"""Xiaomi aqara weather sensor device."""
 import logging
 
-from zigpy.profiles import PROFILES, zha
-from zigpy.zcl.clusters.general import Basic, Groups,\
-    PowerConfiguration, Identify
+from zigpy.profiles import zha
+from zigpy.zcl.clusters.general import Groups, Identify
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement,\
     PressureMeasurement, RelativeHumidity
 from zigpy import quirks
@@ -21,9 +21,7 @@ if AqaraTemperatureHumiditySensor in quirks._DEVICE_REGISTRY:
 
 
 class AqaraTemperatureHumiditySensor(XiaomiCustomDevice):
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    """Xiaomi weather leak sensor device."""
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=24321

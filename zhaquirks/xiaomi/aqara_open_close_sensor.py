@@ -1,8 +1,8 @@
+"""Xiaomi aqara contact sensor device."""
 import logging
 
-from zigpy.profiles import PROFILES, zha
-from zigpy.zcl.clusters.general import Basic, Groups, OnOff,\
-    PowerConfiguration, Identify
+from zigpy.profiles import zha
+from zigpy.zcl.clusters.general import Groups, OnOff, Identify
 from zigpy import quirks
 from zigpy.quirks.xiaomi import AqaraOpenCloseSensor
 from zhaquirks.xiaomi import BasicCluster, PowerConfigurationCluster,\
@@ -19,8 +19,10 @@ if AqaraOpenCloseSensor in quirks._DEVICE_REGISTRY:
 
 
 class AqaraOpenCloseSensor(XiaomiCustomDevice):
+    """Xiaomi contact leak sensor device."""
 
     def __init__(self, *args, **kwargs):
+        """Init."""
         self.battery_size = 11
         super().__init__(*args, **kwargs)
 

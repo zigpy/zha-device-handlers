@@ -1,4 +1,5 @@
-from zigpy.profiles import PROFILES, zha, zll
+"""Phillips RWL021 device."""
+from zigpy.profiles import zha, zll
 from zigpy.zcl.clusters.general import Basic, OnOff, Identify,\
     Ota, LevelControl, PowerConfiguration, Scenes, BinaryInput,\
     Groups
@@ -9,9 +10,7 @@ DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
 
 
 class PhilipsRWL021(CustomDevice):
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    """Phillips RWL021 device."""
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=49246 device_type=2096

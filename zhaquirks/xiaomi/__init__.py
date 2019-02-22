@@ -1,10 +1,10 @@
+"""Xiaomi common components for custom device handlers."""
 import logging
 
 from zigpy.zcl.clusters.general import Basic, PowerConfiguration
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.quirks import CustomCluster, CustomDevice
 from zhaquirks import LocalDataCluster, Bus
-import zigpy.types as types
 
 XIAOMI_ATTRIBUTE = 0xFF01
 BATTERY_REPORTED = 'battery_reported'
@@ -23,8 +23,10 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class XiaomiCustomDevice(CustomDevice):
+    """Custom device representing xiaomi devices."""
 
     def __init__(self, *args, **kwargs):
+        """Init."""
         self.temperatureBus = Bus()
         self.batteryBus = Bus()
         if not hasattr(self, 'battery_size'):
@@ -33,10 +35,9 @@ class XiaomiCustomDevice(CustomDevice):
 
 
 class BasicCluster(CustomCluster, Basic):
-    cluster_id = Basic.cluster_id
+    """Xiaomi basic cluster implementation."""
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    cluster_id = Basic.cluster_id
 
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
@@ -61,8 +62,7 @@ class BasicCluster(CustomCluster, Basic):
                 )
 
     def _parse_attributes(self, value):
-        """ parse non standard atrributes."""
-        import zigpy.types as t
+        """Parse non standard atrributes."""
         from zigpy.zcl import foundation as f
         attributes = {}
         attribute_names = {
@@ -91,7 +91,7 @@ class BasicCluster(CustomCluster, Basic):
         return attributes
 
     def _calculate_remaining_battery_percentage(self, voltage):
-        """calculate percentage."""
+        """Calculate percentage."""
         min_voltage = 2500
         max_voltage = 3000
         percent = (voltage - min_voltage) / (max_voltage - min_voltage) * 200
@@ -99,12 +99,15 @@ class BasicCluster(CustomCluster, Basic):
 
 
 class PowerConfigurationCluster(LocalDataCluster, PowerConfiguration):
+    """Xiaomi power configuration cluster implementation."""
+
     cluster_id = PowerConfiguration.cluster_id
     BATTERY_VOLTAGE_ATTR = 0x0020
     BATTERY_SIZE_ATTR = 0x0031
     BATTERY_QUANTITY_ATTR = 0x0033
 
     def __init__(self, *args, **kwargs):
+        """Init."""
         super().__init__(*args, **kwargs)
         self.endpoint.device.batteryBus.add_listener(self)
         if hasattr(self.endpoint.device, 'battery_size'):
@@ -117,19 +120,24 @@ class PowerConfigurationCluster(LocalDataCluster, PowerConfiguration):
         self._update_attribute(self.BATTERY_QUANTITY_ATTR, 1)
 
     def battery_reported(self, voltage, rawVoltage):
+        """Battery reported."""
         self._update_attribute(BATTERY_PERCENTAGE_REMAINING, voltage)
         self._update_attribute(self.BATTERY_VOLTAGE_ATTR,
                                int(rawVoltage / 100))
 
 
 class TemperatureMeasurementCluster(LocalDataCluster, TemperatureMeasurement):
+    """Xiaomi temperature measurement cluster implementation."""
+
     cluster_id = TemperatureMeasurement.cluster_id
 
     def __init__(self, *args, **kwargs):
+        """Init."""
         super().__init__(*args, **kwargs)
         self.endpoint.device.temperatureBus.add_listener(self)
 
     def temperature_reported(self, rawTemperature):
+        """Temperature reported."""
         self._update_attribute(
             TEMPERATURE_MEASURED_VALUE,
             rawTemperature * 100

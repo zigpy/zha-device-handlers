@@ -1,3 +1,4 @@
+"""Xiaomi aqara magic cube device."""
 import logging
 
 from zigpy.profiles import zha
@@ -100,6 +101,7 @@ zha_const.SINGLE_INPUT_CLUSTER_DEVICE_CLASS.update({
 
 
 def extend_dict(d, value, x):
+    """Extend a dict."""
     for a in x:
         d[a] = value
 
@@ -108,15 +110,20 @@ extend_dict(MOVEMENT_TYPE, 'flip', range(FLIP_BEGIN, FLIP_END))
 
 
 class AqaraCube(XiaomiCustomDevice):
+    """Aqara magic cube device."""
 
     def __init__(self, *args, **kwargs):
+        """Init."""
         self.battery_size = 9
         super().__init__(*args, **kwargs)
 
     class MultistateInputCluster(CustomCluster, MultistateInput):
+        """Multistate input cluster."""
+
         cluster_id = MultistateInput.cluster_id
 
         def __init__(self, *args, **kwargs):
+            """Init."""
             self._currentState = {}
             super().__init__(*args, **kwargs)
 
@@ -158,9 +165,12 @@ class AqaraCube(XiaomiCustomDevice):
                 )
 
     class AnalogInputCluster(CustomCluster, AnalogInput):
+        """Analog input cluster."""
+
         cluster_id = AnalogInput.cluster_id
 
         def __init__(self, *args, **kwargs):
+            """Init."""
             self._currentState = {}
             super().__init__(*args, **kwargs)
 
