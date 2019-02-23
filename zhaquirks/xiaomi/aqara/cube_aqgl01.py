@@ -115,7 +115,7 @@ if AqaraMagicCubeSensor in quirks._DEVICE_REGISTRY:
     quirks._DEVICE_REGISTRY.remove(AqaraMagicCubeSensor)
 
 
-class AqaraCube(XiaomiCustomDevice):
+class CubeAQGL01(XiaomiCustomDevice):
     """Aqara magic cube device."""
 
     def __init__(self, *args, **kwargs):
@@ -207,6 +207,8 @@ class AqaraCube(XiaomiCustomDevice):
         #  input_clusters=[0, 3, 25, 18]
         #  output_clusters=[0, 4, 3, 5, 25, 18]>
         1: {
+            'manufacturer': 'LUMI',
+            'model': 'lumi.sensor_cube.aqgl01',
             'profile_id': zha.PROFILE_ID,
             'device_type': XIAOMI_SENSORS,
             'input_clusters': [

@@ -20,7 +20,7 @@ if AqaraTemperatureHumiditySensor in quirks._DEVICE_REGISTRY:
     quirks._DEVICE_REGISTRY.remove(AqaraTemperatureHumiditySensor)
 
 
-class AqaraTemperatureHumiditySensor(XiaomiCustomDevice):
+class Weather(XiaomiCustomDevice):
     """Xiaomi weather leak sensor device."""
 
     signature = {
@@ -29,6 +29,8 @@ class AqaraTemperatureHumiditySensor(XiaomiCustomDevice):
         #  input_clusters=[0, 3, 65535, 1026, 1027, 1029]
         #  output_clusters=[0, 4, 65535]>
         1: {
+            'manufacturer': 'LUMI',
+            'model': 'lumi.weather',
             'profile_id': zha.PROFILE_ID,
             'device_type': TEMPERATURE_HUMIDITY_DEVICE_TYPE,
             'input_clusters': [

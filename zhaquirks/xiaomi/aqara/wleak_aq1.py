@@ -12,7 +12,7 @@ if AqaraWaterSensor in quirks._DEVICE_REGISTRY:
     quirks._DEVICE_REGISTRY.remove(AqaraWaterSensor)
 
 
-class AqaraLeakSensor(XiaomiCustomDevice):
+class LeakAQ1(XiaomiCustomDevice):
     """Xiaomi aqara leak sensor device."""
 
     signature = {
@@ -21,6 +21,8 @@ class AqaraLeakSensor(XiaomiCustomDevice):
         #  input_clusters=[0, 3, 1]
         #  output_clusters=[25]>
         1: {
+            'manufacturer': 'LUMI',
+            'model': 'lumi.sensor_wleak.aq1',
             'profile_id': zha.PROFILE_ID,
             'device_type': zha.DeviceType.IAS_ZONE,
             'input_clusters': [

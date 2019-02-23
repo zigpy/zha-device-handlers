@@ -22,7 +22,7 @@ ON = 1
 OFF = 0
 
 
-class AqaraBodySensor(XiaomiCustomDevice):
+class MotionAQ2(XiaomiCustomDevice):
     """Custom device representing aqara body sensors."""
 
     def __init__(self, *args, **kwargs):
@@ -105,6 +105,8 @@ class AqaraBodySensor(XiaomiCustomDevice):
         #  input_clusters=[0, 65535, 1030, 1024, 1280, 1, 3]
         #  output_clusters=[0, 25]>
         1: {
+            'manufacturer': 'LUMI',
+            'model': 'lumi.sensor_motion.aq2',
             'profile_id': zha.PROFILE_ID,
             'device_type': zha.DeviceType.OCCUPANCY_SENSOR,
             'input_clusters': [

@@ -18,7 +18,7 @@ if AqaraOpenCloseSensor in quirks._DEVICE_REGISTRY:
     quirks._DEVICE_REGISTRY.remove(AqaraOpenCloseSensor)
 
 
-class AqaraOpenCloseSensor(XiaomiCustomDevice):
+class MagnetAQ2(XiaomiCustomDevice):
     """Xiaomi contact leak sensor device."""
 
     def __init__(self, *args, **kwargs):
@@ -32,6 +32,8 @@ class AqaraOpenCloseSensor(XiaomiCustomDevice):
         #  input_clusters=[0, 3, 65535, 6]
         #  output_clusters=[0, 4, 65535]>
         1: {
+            'manufacturer': 'LUMI',
+            'model': 'lumi.sensor_magnet.aq2',
             'profile_id': zha.PROFILE_ID,
             'device_type': OPEN_CLOSE_DEVICE_TYPE,
             'input_clusters': [

@@ -31,7 +31,7 @@ MEASUREMENT_TYPE = {
 _LOGGER = logging.getLogger(__name__)
 
 
-class AqaraVibrationSensor(XiaomiCustomDevice):
+class VibrationAQ1(XiaomiCustomDevice):
     """Xiaomi aqara smart motion sensor device."""
 
     def __init__(self, *args, **kwargs):
@@ -151,6 +151,8 @@ class AqaraVibrationSensor(XiaomiCustomDevice):
 
     signature = {
         1: {
+            'manufacturer': 'LUMI',
+            'model': 'lumi.vibration.aq1',
             'profile_id': zha.PROFILE_ID,
             'device_type': zha.DeviceType.DOOR_LOCK,
             'input_clusters': [
