@@ -32,7 +32,6 @@ class MijaButton(XiaomiCustomDevice):
             super().__init__(*args, **kwargs)
 
         def _update_attribute(self, attrid, value):
-            _LOGGER.debug("MijaOnOff _update_attribute: %s = %s",attrid, value)
             click_type = False
 
             # Handle Mija OnOff
@@ -72,6 +71,8 @@ class MijaButton(XiaomiCustomDevice):
         #       Level control (8)
         #       Ota (25)
         1: {
+            'manufacturer': 'LUMI',
+            'model': 'lumi.sensor_switch',
             'profile_id': zha.PROFILE_ID,
             'device_type': zha.DeviceType.DIMMER_SWITCH,
             'input_clusters': [
@@ -96,7 +97,7 @@ class MijaButton(XiaomiCustomDevice):
         'endpoints': {
             1: {
                 'manufacturer': 'LUMI',
-                'model': 'lumi.sensor_switch.v1',
+                'model': 'lumi.sensor_switch',
                 'device_type': zha.DeviceType.REMOTE_CONTROL,
                 'input_clusters': [
                     Identify.cluster_id,
