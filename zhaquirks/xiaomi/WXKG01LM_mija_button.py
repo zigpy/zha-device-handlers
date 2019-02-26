@@ -24,7 +24,7 @@ class MijaButton(XiaomiCustomDevice):
         self.battery_size = 9
         super().__init__(*args, **kwargs)
 
-    class MijaOnOff(OnOff, CustomCluster):
+    class MijaOnOff(CustomCluster, OnOff):
         cluster_id = OnOff.cluster_id
 
         def __init__(self, *args, **kwargs):
