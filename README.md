@@ -2,7 +2,7 @@
 
 ZHA Device Handlers are custom quirks implementations for [Zigpy](https://github.com/zigpy/zigpy), the library that provides the [Zigbee](http://www.zigbee.org) support for the [ZHA](https://www.home-assistant.io/components/zha/) component in [Home Assistant](https://www.home-assistant.io). 
 
-Custom quirks implementations for zigpy implemented as ZHA Device Handlers are similar to [Hub-connected Device Handlers for the SmartThings Classics platform](https://docs.smartthings.com/en/latest/device-type-developers-guide/), meaning they are virtual representation of a physical device that expose additional functionality that is not provided OOTB by the existing integration between these platforms. They is responsible for communicating between the actual device and Home Assistant. See [Device Specifics](#Device-Specifics) for details. 
+Custom quirks implementations for zigpy implemented as ZHA Device Handlers are similar to [Hub-connected Device Handlers for the SmartThings Classics platform](https://docs.smartthings.com/en/latest/device-type-developers-guide/), meaning they are virtual representation of a physical device that expose additional functionality that is not provided out-of-the-box by the existing integration between these platforms. See [Device Specifics](#Device-Specifics) for details. 
 
 These device handlers currently require the use of a custom [branch](https://github.com/dmulcahey/home-assistant/tree/dm/zha-sensor-playground) of Home Assistant. This will be remediated soon. 
 #
