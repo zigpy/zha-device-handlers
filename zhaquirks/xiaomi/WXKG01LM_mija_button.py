@@ -38,7 +38,7 @@ class MijaButton(XiaomiCustomDevice):
             # Handle Mija OnOff
             if(attrid == 0):
                 value = False if value else True
-                # click_type = 'single' if value == True else False
+                click_type = 'single' if value == True else False
 
             # Handle Multi Clicks
             elif(attrid == 32768):
