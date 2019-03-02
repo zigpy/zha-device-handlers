@@ -1,8 +1,9 @@
 """Xiaomi mija button device."""
 import logging
 from zigpy.profiles import zha
-from zigpy.zcl.clusters.general import LevelControl, Ota, Basic, Groups, OnOff,\
-     Identify, Scenes
+from zigpy.zcl.clusters.general import (
+    LevelControl, Ota, Basic, Groups, OnOff, Identify, Scenes
+)
 from zhaquirks.xiaomi import BasicCluster, PowerConfigurationCluster,\
      XiaomiCustomDevice
 from zhaquirks import CustomCluster

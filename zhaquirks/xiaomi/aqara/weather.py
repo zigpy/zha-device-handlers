@@ -21,7 +21,7 @@ if AqaraTemperatureHumiditySensor in quirks._DEVICE_REGISTRY:
 
 
 class Weather(XiaomiCustomDevice):
-    """Xiaomi weather leak sensor device."""
+    """Xiaomi weather sensor device."""
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=24321
