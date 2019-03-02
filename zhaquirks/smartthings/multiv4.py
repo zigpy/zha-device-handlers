@@ -32,7 +32,6 @@ class SmartThingsMultiV4(CustomDevice):
                 TemperatureMeasurement.cluster_id,
                 IasZone.cluster_id,
                 MANUFACTURER_SPECIFIC_ACCELERATION
-                #SmartThingsAccelCluster.cluster_id
             ],
             'output_clusters': [
                 Ota.cluster_id
@@ -54,7 +53,6 @@ class SmartThingsMultiV4(CustomDevice):
                     TemperatureMeasurement.cluster_id,
                     IasZone.cluster_id,
                     MANUFACTURER_SPECIFIC_ACCELERATION
-                    #SmartThingsAccelCluster.cluster_id
                 ],
                 'output_clusters': [
                     Ota.cluster_id
