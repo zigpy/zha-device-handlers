@@ -1,6 +1,8 @@
 # ZHA Device Handlers For Home Assistant
 
-ZHA Device Handlers are quirks implementations for [Zigpy](https://github.com/zigpy/zigpy), the library that provides the [Zigbee](http://www.zigbee.org) support for the [ZHA](https://www.home-assistant.io/components/zha/) component in [Home Assistant](https://www.home-assistant.io). These device handlers are similar to the device handlers that exist as part of the Smart Things platform and they expose additional functionality that isn't provided OOTB by the existing integration between these platforms. See [Device Specifics](#Device-Specifics) for details.
+ZHA Device Handlers are custom quirks implementations for [Zigpy](https://github.com/zigpy/zigpy), the library that provides the [Zigbee](http://www.zigbee.org) support for the [ZHA](https://www.home-assistant.io/components/zha/) component in [Home Assistant](https://www.home-assistant.io).
+
+Custom quirks implementations for zigpy implemented as ZHA Device Handlers are similar to [Hub-connected Device Handlers for the SmartThings Classics platform](https://docs.smartthings.com/en/latest/device-type-developers-guide/), meaning they are virtual representation of a physical device that expose additional functionality that is not provided out-of-the-box by the existing integration between these platforms. See [Device Specifics](#Device-Specifics) for details.
 
 These device handlers currently require the use of a custom [branch](https://github.com/dmulcahey/home-assistant/tree/dm/zha-sensor-playground) of Home Assistant. This will be remediated soon.
 #
@@ -29,7 +31,7 @@ These device handlers currently require the use of a custom [branch](https://git
 #
 # Configuration:
 
-1. Update Home Assistant to use the ZHA component from this [branch](https://github.com/dmulcahey/home-assistant/tree/dm/zha-sensor-playground). Be sure to get the `zha.py` files from every component that ZHA supports.
+1. Update Home Assistant to 0.85.1 or a later version.
 
 **NOTE:** Some devices will need to be unpaired and repaired in order to see sensor values populate in Home Assistant.
 
@@ -53,7 +55,7 @@ These device handlers currently require the use of a custom [branch](https://git
 - All supported devices report temperature but I am unsure if it is correct or accurate
 - Vibration sensor exposes a binary sensor in Home Assistant that reports current vibration state
 - Vibration sensor sends `tilt` and `drop` events to Home Assistant
-- Cube sends the following events: `flip`, `rotate_left`, `rotate_right`, `knock_1` - `knock_6`, `drop`, `slide_1` - `slide_6` and `shake`
+- Cube sends the following events: `flip (90 and 180 degrees)`, `rotate_left`, `rotate_right`, `knock`, `drop`, `slide` and `shake`
 - Motion sensor exposes binary sensors for motion and occupancy.
 - Button sends events to Home Assistant
 
