@@ -7,9 +7,6 @@ from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.quirks import CustomDevice
 
 
-MANUFACTURER_SPECIFIC_ACCELERATION = 0xFC02  # decimal = 64514
-
-
 class SmartThingsMultiV4(CustomDevice):
 
     def __init__(self, *args, **kwargs):
@@ -31,7 +28,7 @@ class SmartThingsMultiV4(CustomDevice):
                 PollControl.cluster_id,
                 TemperatureMeasurement.cluster_id,
                 IasZone.cluster_id,
-                MANUFACTURER_SPECIFIC_ACCELERATION
+                SmartThingsAccelCluster.cluster_id
             ],
             'output_clusters': [
                 Ota.cluster_id
@@ -52,7 +49,7 @@ class SmartThingsMultiV4(CustomDevice):
                     PollControl.cluster_id,
                     TemperatureMeasurement.cluster_id,
                     IasZone.cluster_id,
-                    MANUFACTURER_SPECIFIC_ACCELERATION
+                    SmartThingsAccelCluster
                 ],
                 'output_clusters': [
                     Ota.cluster_id
