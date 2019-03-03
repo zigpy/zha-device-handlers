@@ -2,14 +2,14 @@ from zigpy.profiles import PROFILES, zha
 from zigpy.zcl.clusters.general import Basic, Identify,\
     PollControl, Ota
 from zigpy.zcl.clusters.security import IasZone
-from quirks.centralite import PowerConfigurationCluster
+from zhaquirks.centralite import PowerConfigurationCluster
+from zhaquirks.smartthings import SmartThingsAccelCluster
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.quirks import CustomDevice
 
 
 DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
 MANUFACTURER_SPECIFIC_PROFILE_ID = 0xC2DF  # decimal = 49887
-MANUFACTURER_SPECIFIC_ACCELERATION = 0xC2DF  # decimal = 64514
 MANUFACTURER_SPECIFIC_CLUSTER_ID = 0xFC0F  # decimal = 64527
 
 class CentraLite3321S(CustomDevice):
@@ -33,7 +33,7 @@ class CentraLite3321S(CustomDevice):
                 TemperatureMeasurement.cluster_id,
                 IasZone.cluster_id,
                 DIAGNOSTICS_CLUSTER_ID,
-                MANUFACTURER_SPECIFIC_ACCELERATION
+                SmartThingsAccelCluster.cluster_id
             ],
             'output_clusters': [
                 Ota.cluster_id
@@ -72,7 +72,7 @@ class CentraLite3321S(CustomDevice):
                     TemperatureMeasurement.cluster_id,
                     IasZone.cluster_id,
                     DIAGNOSTICS_CLUSTER_ID,
-                    MANUFACTURER_SPECIFIC_ACCELERATION
+                    SmartThingsAccelCluster
                 ],
                 'output_clusters': [
                     Ota.cluster_id
