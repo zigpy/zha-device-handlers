@@ -2,15 +2,16 @@
 import asyncio
 import logging
 
-from zigpy.zcl.clusters.measurement import IlluminanceMeasurement,\
-    OccupancySensing
+from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
-from zigpy.zcl.clusters.general import Basic,\
-    Identify, Ota, Groups, Scenes, LevelControl, OnOff
+from zigpy.zcl.clusters.general import (
+    Basic, Identify, Ota, Groups, Scenes, LevelControl, OnOff
+)
 from zigpy.quirks import CustomCluster
 from zigpy.profiles import zha
-from zhaquirks.xiaomi import BasicCluster, PowerConfigurationCluster,\
-    TemperatureMeasurementCluster, XiaomiCustomDevice
+from zhaquirks.xiaomi import (
+    BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
+)
 from zhaquirks import Bus, LocalDataCluster
 
 
@@ -138,7 +139,6 @@ class Motion(XiaomiCustomDevice):
                     BasicCluster,
                     PowerConfigurationCluster,
                     Identify.cluster_id,
-                    TemperatureMeasurementCluster,
                     OccupancyCluster,
                     MotionCluster,
                     XIAOMI_CLUSTER_ID
