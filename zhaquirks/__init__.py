@@ -2,6 +2,7 @@ import importlib
 import pkgutil
 from zigpy.quirks import CustomCluster
 from zigpy.util import ListenableMixin
+import zigpy.types as types
 
 UNKNOWN = 'Unknown'
 
@@ -60,6 +61,6 @@ name = __name__
 path = __path__
 for importer, modname, ispkg in pkgutil.walk_packages(
         path=path,
-        prefix=name +'.'
+        prefix=name + '.'
         ):
     importlib.import_module(modname)

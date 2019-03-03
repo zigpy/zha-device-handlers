@@ -4,7 +4,6 @@ from zigpy.profiles import PROFILES, zha
 from zigpy.zcl.clusters.general import Basic, Groups, OnOff, PowerConfiguration
 from zhaquirks.xiaomi import BasicCluster, PowerConfigurationCluster,\
     TemperatureMeasurementCluster, XiaomiCustomDevice
-from zhaquirks import EventableCluster
 
 BUTTON_DEVICE_TYPE = 0x5F01
 BUTTON_DEVICE_TYPE_REPLACEMENT = 0x6FF1
@@ -32,12 +31,6 @@ zha_const.DEVICE_CLASS[zha.PROFILE_ID].update(
 
 class AqaraButton(XiaomiCustomDevice):
 
-    class EventableOnOffCluster(EventableCluster, OnOff):
-        cluster_id = OnOff.cluster_id
-
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -63,16 +56,16 @@ class AqaraButton(XiaomiCustomDevice):
     }
 
     replacement = {
-        'manufacturer': 'LUMI',
-        'model': 'lumi.sensor_switch.aq2',
         'endpoints': {
             1: {
+                'manufacturer': 'LUMI',
+                'model': 'lumi.sensor_switch.aq2',
                 'device_type': BUTTON_DEVICE_TYPE_REPLACEMENT,
                 'input_clusters': [
                     BasicCluster,
                     PowerConfigurationCluster,
                     TemperatureMeasurementCluster,
-                    EventableOnOffCluster
+                    OnOff.cluster_id
                 ],
                 'output_clusters': [
                     Basic.cluster_id,

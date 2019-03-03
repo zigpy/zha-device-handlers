@@ -21,6 +21,7 @@ if AqaraOpenCloseSensor in quirks._DEVICE_REGISTRY:
 class AqaraOpenCloseSensor(XiaomiCustomDevice):
 
     def __init__(self, *args, **kwargs):
+        self.battery_size = 11
         super().__init__(*args, **kwargs)
 
     signature = {
@@ -46,10 +47,10 @@ class AqaraOpenCloseSensor(XiaomiCustomDevice):
     }
 
     replacement = {
-        'manufacturer': 'LUMI',
-        'model': 'lumi.sensor_magnet.aq2',
         'endpoints': {
             1: {
+                'manufacturer': 'LUMI',
+                'model': 'lumi.sensor_magnet.aq2',
                 'input_clusters': [
                     BasicCluster,
                     Identify.cluster_id,

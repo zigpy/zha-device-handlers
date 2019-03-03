@@ -42,18 +42,50 @@ FLIP_END = 180
 MOVEMENT_TYPE = {
     SHAKE_VALUE: "shake",
     DROP_VALUE: "drop",
-    SLIDE_1_VALUE: 'slide_1',
-    SLIDE_2_VALUE: 'slide_2',
-    SLIDE_3_VALUE: 'slide_3',
-    SLIDE_4_VALUE: 'slide_4',
-    SLIDE_5_VALUE: 'slide_5',
-    SLIDE_6_VALUE: 'slide_6',
-    KNOCK_1_VALUE: 'knock_1',
-    KNOCK_2_VALUE: 'knock_2',
-    KNOCK_3_VALUE: 'knock_3',
-    KNOCK_4_VALUE: 'knock_4',
-    KNOCK_5_VALUE: 'knock_5',
-    KNOCK_6_VALUE: 'knock_6',
+    SLIDE_1_VALUE: 'slide',
+    SLIDE_2_VALUE: 'slide',
+    SLIDE_3_VALUE: 'slide',
+    SLIDE_4_VALUE: 'slide',
+    SLIDE_5_VALUE: 'slide',
+    SLIDE_6_VALUE: 'slide',
+    KNOCK_1_VALUE: 'knock',
+    KNOCK_2_VALUE: 'knock',
+    KNOCK_3_VALUE: 'knock',
+    KNOCK_4_VALUE: 'knock',
+    KNOCK_5_VALUE: 'knock',
+    KNOCK_6_VALUE: 'knock',
+}
+
+MOVEMENT_TYPE_DESCRIPTION = {
+    SHAKE_VALUE: "shake",
+    DROP_VALUE: "drop",
+    SLIDE_1_VALUE: 'aqara logo on top',
+    SLIDE_2_VALUE: 'aqara logo facing user rotated 90 degrees right',
+    SLIDE_3_VALUE: 'aqara logo facing user upside down',
+    SLIDE_4_VALUE: 'arara logo on bottom',
+    SLIDE_5_VALUE: 'aqara logo facing user rotated 90 degrees left',
+    SLIDE_6_VALUE: 'aqara logo facing user upright',
+    KNOCK_1_VALUE: 'aqara logo on top',
+    KNOCK_2_VALUE: 'aqara logo facing user rotated 90 degrees right',
+    KNOCK_3_VALUE: 'aqara logo facing user upside down',
+    KNOCK_4_VALUE: 'arara logo on bottom',
+    KNOCK_5_VALUE: 'aqara logo facing user rotated 90 degrees left',
+    KNOCK_6_VALUE: 'aqara logo facing user upright',
+}
+
+SIDES = {
+    SLIDE_1_VALUE: 1,
+    SLIDE_2_VALUE: 2,
+    SLIDE_3_VALUE: 3,
+    SLIDE_4_VALUE: 4,
+    SLIDE_5_VALUE: 5,
+    SLIDE_6_VALUE: 6,
+    KNOCK_1_VALUE: 1,
+    KNOCK_2_VALUE: 2,
+    KNOCK_3_VALUE: 3,
+    KNOCK_4_VALUE: 4,
+    KNOCK_5_VALUE: 5,
+    KNOCK_6_VALUE: 6,
 }
 
 ROTATE_RIGHT = 'rotate_right'
@@ -78,6 +110,7 @@ extend_dict(MOVEMENT_TYPE, 'flip', range(FLIP_BEGIN, FLIP_END))
 class AqaraCube(XiaomiCustomDevice):
 
     def __init__(self, *args, **kwargs):
+        self.battery_size = 9
         super().__init__(*args, **kwargs)
 
     class MultistateInputCluster(CustomCluster, MultistateInput):
@@ -90,21 +123,39 @@ class AqaraCube(XiaomiCustomDevice):
         def _update_attribute(self, attrid, value):
             super()._update_attribute(attrid, value)
             if attrid == STATUS_TYPE_ATTR:
-                self._currentState[STATUS_TYPE_ATTR] = MOVEMENT_TYPE.get(
-                    value
-                )
-                # show something in the sensor in HA
-                super()._update_attribute(
-                    0,
-                    self._currentState[STATUS_TYPE_ATTR]
-                )
-                if self._currentState[STATUS_TYPE_ATTR] is not None:
+                self._currentState[STATUS_TYPE_ATTR] = action = \
+                    MOVEMENT_TYPE.get(value)
+                event_args = {
+                    'value': value
+                }
+                if action is not None:
+
+                    if action == 'slide' or action == 'knock':
+                        event_args['description'] = MOVEMENT_TYPE_DESCRIPTION[
+                            value
+                        ]
+                        event_args['activated_face'] = SIDES[value]
+
+                    if action == 'flip':
+                        if value > 108:
+                            event_args['flip_degrees'] = 180
+                        else:
+                            event_args['flip_degrees'] = 90
+                        event_args['activated_face'] = (value % 8) + 1
+                            
+                            
                     self.listener_event(
                         'zha_send_event',
                         self,
-                        self._currentState[STATUS_TYPE_ATTR],
-                        {}
+                        action,
+                        event_args
                     )
+
+                # show something in the sensor in HA
+                super()._update_attribute(
+                    0,
+                    action
+                )
 
     class AnalogInputCluster(CustomCluster, AnalogInput):
         cluster_id = AnalogInput.cluster_id
@@ -197,10 +248,10 @@ class AqaraCube(XiaomiCustomDevice):
     }
 
     replacement = {
-        'manufacturer': 'LUMI',
-        'model': 'lumi.sensor_cube.aqgl01',
         'endpoints': {
             1: {
+                'manufacturer': 'LUMI',
+                'model': 'lumi.sensor_cube.aqgl01',
                 'device_type': XIAOMI_SENSORS_REPLACEMENT,
                 'input_clusters': [
                     BasicCluster,
@@ -218,6 +269,8 @@ class AqaraCube(XiaomiCustomDevice):
                 ],
             },
             2: {
+                'manufacturer': 'LUMI',
+                'model': 'lumi.sensor_cube.aqgl01',
                 'device_type': XIAOMI_MEASUREMENTS_REPLACEMENT,
                 'input_clusters': [
                     Identify.cluster_id,
@@ -231,6 +284,8 @@ class AqaraCube(XiaomiCustomDevice):
                 ],
             },
             3: {
+                'manufacturer': 'LUMI',
+                'model': 'lumi.sensor_cube.aqgl01',
                 'device_type': XIAOMI_ANALOG_REPLACEMENT,
                 'input_clusters': [
                     Identify.cluster_id,
