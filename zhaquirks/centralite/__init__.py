@@ -2,7 +2,7 @@
 import logging
 
 from zigpy.zcl.clusters.general import PowerConfiguration
-from zigpy.quirks import CustomDevice, CustomCluster
+from zigpy.quirks import CustomCluster
 import zigpy.types as t
 
 _LOGGER = logging.getLogger(__name__)
@@ -48,10 +48,15 @@ class PowerConfigurationCluster(CustomCluster, PowerConfiguration):
         elif rawValue > self.MAX_VOLTS:
             volts = self.MAX_VOLTS
 
-        return self.VOLTS_TO_PERCENT.get(volts, 'unknown')
+        percent = self.VOLTS_TO_PERCENT.get(volts, 'unknown')
+        if percent != 'unknown':
+            percent = percent * 2
+        return percent
 
 
 class CentraLiteAccelCluster(CustomCluster):
+    """Centralite acceleration cluster."""
+
     cluster_id = 0xfc02
     name = "CentraLite Accelerometer"
     ep_attribute = 'accelerometer'
