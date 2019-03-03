@@ -9,15 +9,14 @@ from zigpy.quirks import CustomDevice
 
 class SmartThingsMotionV4(CustomDevice):
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=1026
         #  device_version=0
         #  input_clusters=[0, 1, 3, 15, 1026, 1280, 32]
         #  output_clusters=[25]>
         1: {
+            'manufacturer': 'SmartThings',
+            'model': 'motionv4',
             'profile_id': zha.PROFILE_ID,
             'device_type': zha.DeviceType.IAS_ZONE,
             'input_clusters': [
