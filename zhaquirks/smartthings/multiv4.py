@@ -2,15 +2,13 @@ from zigpy.profiles import PROFILES, zha
 from zigpy.zcl.clusters.general import Basic, Identify,\
     PollControl, Ota, BinaryInput
 from zigpy.zcl.clusters.security import IasZone
-from zhaquirks.centralite import PowerConfigurationCluster
+from zhaquirks.centralite import PowerConfigurationCluster,\
+    CentraLiteAccelCluster
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.quirks import CustomDevice
 
 
 class SmartThingsMultiV4(CustomDevice):
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=1026
@@ -18,6 +16,8 @@ class SmartThingsMultiV4(CustomDevice):
         # input_clusters=[0, 1, 3, 15, 32, 1026, 1280, 64514]
         # output_clusters=[25]>
         1: {
+            'manufacturer': 'SmartThings',
+            'model': 'multiv4',
             'profile_id': zha.PROFILE_ID,
             'device_type': zha.DeviceType.IAS_ZONE,
             'input_clusters': [
@@ -28,7 +28,7 @@ class SmartThingsMultiV4(CustomDevice):
                 PollControl.cluster_id,
                 TemperatureMeasurement.cluster_id,
                 IasZone.cluster_id,
-                SmartThingsAccelCluster.cluster_id
+                CentraLiteAccelCluster.cluster_id
             ],
             'output_clusters': [
                 Ota.cluster_id
@@ -49,7 +49,7 @@ class SmartThingsMultiV4(CustomDevice):
                     PollControl.cluster_id,
                     TemperatureMeasurement.cluster_id,
                     IasZone.cluster_id,
-                    SmartThingsAccelCluster
+                    CentraLiteAccelCluster
                 ],
                 'output_clusters': [
                     Ota.cluster_id
