@@ -76,7 +76,6 @@ class Magnet(XiaomiCustomDevice):
                     OnOff.cluster_id,
                     Groups.cluster_id,
                     Identify.cluster_id,
-                    OnOff.cluster_id,
                     LevelControl.cluster_id,
                     Scenes.cluster_id,
                     Ota.cluster_id
