@@ -2,8 +2,8 @@ from zigpy.profiles import PROFILES, zha
 from zigpy.zcl.clusters.general import Basic, Identify,\
     PollControl, Ota
 from zigpy.zcl.clusters.security import IasZone
-from zhaquirks.centralite import PowerConfigurationCluster
-from zigpy.quirks.smartthings import SmartThingsAccelCluster
+from zhaquirks.centralite import PowerConfigurationCluster,\
+    CentraLiteAccelCluster
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.quirks import CustomDevice
 
@@ -14,15 +14,14 @@ MANUFACTURER_SPECIFIC_CLUSTER_ID = 0xFC0F  # decimal = 64527
 
 class CentraLite3321S(CustomDevice):
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=1026
         #  device_version=0
         #  input_clusters=[0, 1, 3, 1026, 1280, 32, 2821, 64514]
         #  output_clusters=[25]>
         1: {
+            'manufacturer': 'CentraLite',
+            'model': '3321-S',
             'profile_id': zha.PROFILE_ID,
             'device_type': zha.DeviceType.IAS_ZONE,
             'input_clusters': [
@@ -33,7 +32,7 @@ class CentraLite3321S(CustomDevice):
                 TemperatureMeasurement.cluster_id,
                 IasZone.cluster_id,
                 DIAGNOSTICS_CLUSTER_ID,
-                SmartThingsAccelCluster.cluster_id
+                CentraLiteAccelCluster.cluster_id
             ],
             'output_clusters': [
                 Ota.cluster_id
@@ -44,6 +43,8 @@ class CentraLite3321S(CustomDevice):
         #  input_clusters=[0, 1, 3, 2821, 64527]
         #  output_clusters=[3]>
         2: {
+            'manufacturer': 'CentraLite',
+            'model': '3321-S',
             'profile_id': MANUFACTURER_SPECIFIC_PROFILE_ID,
             'device_type': zha.DeviceType.SIMPLE_SENSOR,
             'input_clusters': [
@@ -72,7 +73,7 @@ class CentraLite3321S(CustomDevice):
                     TemperatureMeasurement.cluster_id,
                     IasZone.cluster_id,
                     DIAGNOSTICS_CLUSTER_ID,
-                    SmartThingsAccelCluster
+                    CentraLiteAccelCluster
                 ],
                 'output_clusters': [
                     Ota.cluster_id
