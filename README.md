@@ -49,7 +49,7 @@ Custom quirks implementations for zigpy implemented as ZHA Device Handlers are s
 - All supported devices report battery level
 - Dimmer Switch publishes events to Home Assistant
 - Dimmer Switch temperature sensor is removed because it is non functional
-- 3321-S reports acceleration. Currently only reported to logs until a sensor is developed.
+- 3321-S reports acceleration
 
 ### Osram
 
@@ -68,9 +68,9 @@ Custom quirks implementations for zigpy implemented as ZHA Device Handlers are s
 
 ### SmartThings
 
-- All supported devices report battery level.
-- tagV4 exposed as a device tracker in Home Assistant. The current implementation will use batteries rapidly.
-- MultiV4 reports acceleration. Currently only reported to logs until a sensor is developed.
+- All supported devices report battery level
+- tagV4 exposed as a device tracker in Home Assistant. The current implementation will use batteries rapidly
+- MultiV4 reports acceleration
 
 #
 ### Thanks
