@@ -1,10 +1,9 @@
 # ZHA Device Handlers For Home Assistant
 
-ZHA Device Handlers are custom quirks implementations for [Zigpy](https://github.com/zigpy/zigpy), the library that provides the [Zigbee](http://www.zigbee.org) support for the [ZHA](https://www.home-assistant.io/components/zha/) component in [Home Assistant](https://www.home-assistant.io). 
+ZHA Device Handlers are custom quirks implementations for [Zigpy](https://github.com/zigpy/zigpy), the library that provides the [Zigbee](http://www.zigbee.org) support for the [ZHA](https://www.home-assistant.io/components/zha/) component in [Home Assistant](https://www.home-assistant.io).
 
-Custom quirks implementations for zigpy implemented as ZHA Device Handlers are similar to [Hub-connected Device Handlers for the SmartThings Classics platform](https://docs.smartthings.com/en/latest/device-type-developers-guide/), meaning they are virtual representation of a physical device that expose additional functionality that is not provided out-of-the-box by the existing integration between these platforms. See [Device Specifics](#Device-Specifics) for details. 
+Custom quirks implementations for zigpy implemented as ZHA Device Handlers are similar to [Hub-connected Device Handlers for the SmartThings Classics platform](https://docs.smartthings.com/en/latest/device-type-developers-guide/), meaning they are virtual representation of a physical device that expose additional functionality that is not provided out-of-the-box by the existing integration between these platforms. See [Device Specifics](#Device-Specifics) for details.
 
-These device handlers currently require the use of a custom [branch](https://github.com/dmulcahey/home-assistant/tree/dm/zha-sensor-playground) of Home Assistant. This will be remediated soon.
 #
 # Currently Supported Devices:
 
@@ -16,7 +15,7 @@ These device handlers currently require the use of a custom [branch](https://git
 - [Contact Sensor](https://www.irisbylowes.com/support/?guideTitle=Iris-Contact-Sensor-3320-L-(2nd-Gen)&guideId=441744fa-3e2b-3bc9-87b2-a8fc76d85341): CentraLite 3320-L
 - [Motion Sensor](http://a.co/iYjshAP): CentraLite 3325-S
 - [Motion Sensor](https://www.irisbylowes.com/support/?guideTitle=Iris-Motion-Sensor&guideId=4be71b61-5938-30b6-8154-bd90cb9b4796): CentraLite 3326-L
-<!-- - [Contact Sensor](http://a.co/9PCEorM): CentraLite 3321-S -->
+- [Contact Sensor](http://a.co/9PCEorM): CentraLite 3321-S
 
 ### Xiaomi Aqara
 - [Cube](https://www.aqara.com/en/cube_controller-product.html): lumi.sensor_cube.aqgl01
@@ -33,7 +32,7 @@ These device handlers currently require the use of a custom [branch](https://git
 ### SmartThings
 - [Arrival Sensor](https://support.smartthings.com/hc/en-us/articles/212417083): tagv4
 - [Motion Sensor](http://a.co/65rSQjZ): MotionV4
-<!-- - [Multi Sensor](http://a.co/gez6SzW): MultiV4 -->
+- [Multi Sensor](http://a.co/gez6SzW): MultiV4
 
 #
 # Configuration:
@@ -50,6 +49,7 @@ These device handlers currently require the use of a custom [branch](https://git
 - All supported devices report battery level
 - Dimmer Switch publishes events to Home Assistant
 - Dimmer Switch temperature sensor is removed because it is non functional
+- 3321-S reports acceleration. Currently only reported to logs until a sensor is developed.
 
 ### Osram
 
@@ -70,6 +70,7 @@ These device handlers currently require the use of a custom [branch](https://git
 
 - All supported devices report battery level.
 - tagV4 exposed as a device tracker in Home Assistant. The current implementation will use batteries rapidly.
+- MultiV4 reports acceleration. Currently only reported to logs until a sensor is developed.
 
 #
 ### Thanks
