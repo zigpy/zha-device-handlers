@@ -139,7 +139,6 @@ class Motion(XiaomiCustomDevice):
                     PowerConfigurationCluster,
                     Identify.cluster_id,
                     TemperatureMeasurementCluster,
-                    IlluminanceMeasurement.cluster_id,
                     OccupancyCluster,
                     MotionCluster,
                     XIAOMI_CLUSTER_ID
