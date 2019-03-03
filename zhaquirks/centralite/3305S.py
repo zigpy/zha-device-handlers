@@ -3,14 +3,15 @@ from zigpy.zcl.clusters.general import Basic, Identify,\
     PollControl, Ota
 from zigpy.zcl.clusters.security import IasZone
 from zhaquirks.centralite import PowerConfigurationCluster
-from zigpy.zcl.clusters.measurement import TemperatureMeasurement
+from zigpy.zcl.clusters.measurement import TemperatureMeasurement,\
+    OccupancySensing
 from zigpy.quirks import CustomDevice
 
 
 DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
 
 
-class CentraLite3315S(CustomDevice):
+class CentraLite3305S(CustomDevice):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -36,19 +37,19 @@ class CentraLite3315S(CustomDevice):
                 Ota.cluster_id
             ],
         },
-        #  <SimpleDescriptor endpoint=2 profile=49887 device_type=12
+        #  <SimpleDescriptor endpoint=2 profile=260 device_type=263
         #  device_version=0
-        #  input_clusters=[0, 1, 3, 2821, 64527]
+        #  input_clusters=[0, 1, 3, 1030, 2821]
         #  output_clusters=[3]>
         2: {
-            'profile_id': 49887,
-            'device_type': 12,
+            'profile_id': zha.PROFILE_ID,
+            'device_type': zha.DeviceType.OCCUPANCY_SENSOR,
             'input_clusters': [
                 Basic.cluster_id,
                 PowerConfigurationCluster.cluster_id,
                 Identify.cluster_id,
-                DIAGNOSTICS_CLUSTER_ID,
-                64527
+                OccupancySensing.cluster_id,
+                DIAGNOSTICS_CLUSTER_ID
             ],
             'output_clusters': [
                 Identify.cluster_id
@@ -60,7 +61,7 @@ class CentraLite3315S(CustomDevice):
         'endpoints': {
             1: {
                 'manufacturer': 'CentraLite',
-                'model': '3315-S',
+                'model': '3305-S',
                 'input_clusters': [
                     Basic.cluster_id,
                     PowerConfigurationCluster,
@@ -76,12 +77,12 @@ class CentraLite3315S(CustomDevice):
             },
             2: {
                 'manufacturer': 'CentraLite',
-                'model': '3315-S',
+                'model': '3305-S',
                 'input_clusters': [
                     Basic.cluster_id,
                     Identify.cluster_id,
-                    DIAGNOSTICS_CLUSTER_ID,
-                    64527
+                    OccupancySensing.cluster_id,
+                    DIAGNOSTICS_CLUSTER_ID
                 ],
                 'output_clusters': [
                     Identify.cluster_id

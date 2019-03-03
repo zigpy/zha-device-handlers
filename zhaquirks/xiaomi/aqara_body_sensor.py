@@ -32,6 +32,7 @@ zha_const.DEVICE_CLASS[zha.PROFILE_ID].update({
 class AqaraBodySensor(XiaomiCustomDevice):
 
     def __init__(self, *args, **kwargs):
+        self.battery_size = 9
         self.motionBus = Bus()
         super().__init__(*args, **kwargs)
 
@@ -121,10 +122,10 @@ class AqaraBodySensor(XiaomiCustomDevice):
     }
 
     replacement = {
-        'manufacturer': 'LUMI',
-        'model': 'lumi.sensor_motion.aq2',
         'endpoints': {
             1: {
+                'manufacturer': 'LUMI',
+                'model': 'lumi.sensor_motion.aq2',
                 'input_clusters': [
                     BasicCluster,
                     PowerConfigurationCluster,

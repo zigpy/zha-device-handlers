@@ -50,10 +50,10 @@ class AqaraTemperatureHumiditySensor(XiaomiCustomDevice):
     }
 
     replacement = {
-        'manufacturer': 'LUMI',
-        'model': 'lumi.weather',
         'endpoints': {
             1: {
+                'manufacturer': 'LUMI',
+                'model': 'lumi.weather',
                 'input_clusters': [
                     BasicCluster,
                     PowerConfigurationCluster,

@@ -27,6 +27,8 @@ class XiaomiCustomDevice(CustomDevice):
     def __init__(self, *args, **kwargs):
         self.temperatureBus = Bus()
         self.batteryBus = Bus()
+        if not hasattr(self, 'battery_size'):
+            self.battery_size = 10
         super().__init__(*args, **kwargs)
 
 
@@ -92,10 +94,8 @@ class BasicCluster(CustomCluster, Basic):
         """calculate percentage."""
         min_voltage = 2500
         max_voltage = 3000
-        percent = (voltage - min_voltage) / (max_voltage - min_voltage) * 100
-        if percent > 100:
-            percent = 100
-        return percent
+        percent = (voltage - min_voltage) / (max_voltage - min_voltage) * 200
+        return min(200, percent)
 
 
 class PowerConfigurationCluster(LocalDataCluster, PowerConfiguration):
@@ -107,12 +107,19 @@ class PowerConfigurationCluster(LocalDataCluster, PowerConfiguration):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.endpoint.device.batteryBus.add_listener(self)
-        self._update_attribute(self.BATTERY_SIZE_ATTR, 0xff)
+        if hasattr(self.endpoint.device, 'battery_size'):
+            self._update_attribute(
+                self.BATTERY_SIZE_ATTR,
+                self.endpoint.device.battery_size
+            )
+        else:
+            self._update_attribute(self.BATTERY_SIZE_ATTR, 0xff)
         self._update_attribute(self.BATTERY_QUANTITY_ATTR, 1)
 
     def battery_reported(self, voltage, rawVoltage):
         self._update_attribute(BATTERY_PERCENTAGE_REMAINING, voltage)
-        self._update_attribute(BATTERY_VOLTAGE_MV, rawVoltage)
+        self._update_attribute(self.BATTERY_VOLTAGE_ATTR,
+                               int(rawVoltage / 100))
 
 
 class TemperatureMeasurementCluster(LocalDataCluster, TemperatureMeasurement):

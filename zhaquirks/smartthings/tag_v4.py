@@ -81,10 +81,10 @@ class SmartThingsTagV4(CustomDevice):
     }
 
     replacement = {
-        'manufacturer': 'SmartThings',
-        'model': 'tagv4',
         'endpoints': {
             1: {
+                'manufacturer': 'SmartThings',
+                'model': 'tagv4',
                 'device_type': ARRIVAL_SENSOR_DEVICE_TYPE,
                 'input_clusters': [
                     Basic.cluster_id,
