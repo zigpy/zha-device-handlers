@@ -61,7 +61,7 @@ These device handlers currently require the use of a custom [branch](https://git
 
 ### SmartThings
 
-- tagV4 exposed as a device tracker in Home Assistant and reports battery. The current implementation will use batteries rapidly.
+- tagV4 exposed as a device tracker in Home Assistant and reports battery. The current implementation will use batteries rapidly. 
 
 #
 ### Thanks
