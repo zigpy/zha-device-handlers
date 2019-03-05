@@ -31,11 +31,11 @@ class CentraLite3310S(CustomDevice):
             'profile_id': zha.PROFILE_ID,
             'device_type': zha.DeviceType.TEMPERATURE_SENSOR,
             'input_clusters': [
-                Basic.cluster_id, #0
-                PowerConfigurationCluster.cluster_id, #1
-                Identify.cluster_id, #3
-                PollControl.cluster_id, #32
-                TemperatureMeasurement.cluster_id, #1026
+                Basic.cluster_id,
+                PowerConfigurationCluster.cluster_id,
+                Identify.cluster_id,
+                PollControl.cluster_id,
+                TemperatureMeasurement.cluster_id,
                 DIAGNOSTICS_CLUSTER_ID,
                 SmartthingsRelativeHumidityCluster.cluster_id
             ],
@@ -53,7 +53,7 @@ class CentraLite3310S(CustomDevice):
                 'model': '3310-S',
                 'input_clusters': [
                     Basic.cluster_id,
-                    PowerConfigurationCluster.cluster_id,
+                    PowerConfigurationCluster,
                     Identify.cluster_id,
                     PollControl.cluster_id,
                     TemperatureMeasurement.cluster_id,
