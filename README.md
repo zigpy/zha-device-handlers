@@ -16,6 +16,7 @@ Custom quirks implementations for zigpy implemented as ZHA Device Handlers are s
 - [Motion Sensor](http://a.co/iYjshAP): CentraLite 3325-S
 - [Motion Sensor](https://www.irisbylowes.com/support/?guideTitle=Iris-Motion-Sensor&guideId=4be71b61-5938-30b6-8154-bd90cb9b4796): CentraLite 3326-L
 - [Contact Sensor](http://a.co/9PCEorM): CentraLite 3321-S
+- [Temperature / Humidity Sensor](https://bit.ly/2GYguGR): CentraLite 3310-S
 
 ### Xiaomi Aqara
 - [Cube](https://www.aqara.com/en/cube_controller-product.html): lumi.sensor_cube.aqgl01
@@ -50,6 +51,7 @@ Custom quirks implementations for zigpy implemented as ZHA Device Handlers are s
 - Dimmer Switch publishes events to Home Assistant
 - Dimmer Switch temperature sensor is removed because it is non functional
 - 3321-S reports acceleration
+- 3310-S reports humidity
 
 ### Osram
 
