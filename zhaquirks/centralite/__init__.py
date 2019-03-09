@@ -1,14 +1,16 @@
-
+"""Centralite module for custom device handlers."""
 import logging
 
 from zigpy.zcl.clusters.general import PowerConfiguration
-from zigpy.quirks import CustomDevice, CustomCluster
+from zigpy.quirks import CustomCluster
 import zigpy.types as t
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class PowerConfigurationCluster(CustomCluster, PowerConfiguration):
+    """Centralite power configuration cluster."""
+
     cluster_id = PowerConfiguration.cluster_id
     BATTERY_VOLTAGE_ATTR = 0x0020
     BATTERY_PERCENTAGE_REMAINING = 0x0021
@@ -31,9 +33,6 @@ class PowerConfigurationCluster(CustomCluster, PowerConfiguration):
         15: 0
     }
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
         if attrid == self.BATTERY_VOLTAGE_ATTR:
@@ -49,10 +48,15 @@ class PowerConfigurationCluster(CustomCluster, PowerConfiguration):
         elif rawValue > self.MAX_VOLTS:
             volts = self.MAX_VOLTS
 
-        return self.VOLTS_TO_PERCENT.get(volts, 'unknown')
+        percent = self.VOLTS_TO_PERCENT.get(volts, 'unknown')
+        if percent != 'unknown':
+            percent = percent * 2
+        return percent
 
 
 class CentraLiteAccelCluster(CustomCluster):
+    """Centralite acceleration cluster."""
+
     cluster_id = 0xfc02
     name = "CentraLite Accelerometer"
     ep_attribute = 'accelerometer'

@@ -1,3 +1,4 @@
+"""Xiaomi aqara body sensor."""
 import asyncio
 import logging
 
@@ -6,13 +7,11 @@ from zigpy.zcl.clusters.measurement import IlluminanceMeasurement,\
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.clusters.general import Basic, PowerConfiguration,\
     Identify, Ota
-from zigpy.quirks import CustomDevice, CustomCluster
+from zigpy.quirks import CustomCluster
 from zigpy.profiles import zha
 from zhaquirks.xiaomi import BasicCluster, PowerConfigurationCluster,\
     TemperatureMeasurementCluster, XiaomiCustomDevice
 from zhaquirks import Bus, LocalDataCluster
-
-import homeassistant.components.zha.const as zha_const
 
 
 XIAOMI_CLUSTER_ID = 0xFFFF
@@ -22,24 +21,23 @@ ZONE_STATE = 0
 ON = 1
 OFF = 0
 
-if zha.PROFILE_ID not in zha_const.DEVICE_CLASS:
-        zha_const.DEVICE_CLASS[zha.PROFILE_ID] = {}
-zha_const.DEVICE_CLASS[zha.PROFILE_ID].update({
-    zha.DeviceType.OCCUPANCY_SENSOR: 'binary_sensor'
-})
 
-
-class AqaraBodySensor(XiaomiCustomDevice):
+class MotionAQ2(XiaomiCustomDevice):
+    """Custom device representing aqara body sensors."""
 
     def __init__(self, *args, **kwargs):
+        """Init."""
         self.battery_size = 9
         self.motionBus = Bus()
         super().__init__(*args, **kwargs)
 
     class OccupancyCluster(CustomCluster, OccupancySensing):
+        """Occupancy cluster."""
+
         cluster_id = OccupancySensing.cluster_id
 
         def __init__(self, *args, **kwargs):
+            """Init."""
             super().__init__(*args, **kwargs)
             self._timer_handle = None
 
@@ -58,14 +56,18 @@ class AqaraBodySensor(XiaomiCustomDevice):
             self._update_attribute(OCCUPANCY_STATE, OFF)
 
     class MotionCluster(LocalDataCluster, IasZone):
+        """Motion cluster."""
+
         cluster_id = IasZone.cluster_id
 
         def __init__(self, *args, **kwargs):
+            """Init."""
             super().__init__(*args, **kwargs)
             self._timer_handle = None
             self.endpoint.device.motionBus.add_listener(self)
 
         def motion_event(self):
+            """Motion event."""
             super().listener_event(
                 'cluster_command',
                 None,
@@ -103,6 +105,8 @@ class AqaraBodySensor(XiaomiCustomDevice):
         #  input_clusters=[0, 65535, 1030, 1024, 1280, 1, 3]
         #  output_clusters=[0, 25]>
         1: {
+            'manufacturer': 'LUMI',
+            'model': 'lumi.sensor_motion.aq2',
             'profile_id': zha.PROFILE_ID,
             'device_type': zha.DeviceType.OCCUPANCY_SENSOR,
             'input_clusters': [
@@ -133,7 +137,8 @@ class AqaraBodySensor(XiaomiCustomDevice):
                     TemperatureMeasurementCluster,
                     IlluminanceMeasurement.cluster_id,
                     OccupancyCluster,
-                    MotionCluster
+                    MotionCluster,
+                    XIAOMI_CLUSTER_ID
                 ],
                 'output_clusters': [
                     Basic.cluster_id,

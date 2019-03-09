@@ -1,38 +1,18 @@
+"""Xiaomi aqara button sensor."""
 import logging
-import homeassistant.components.zha.const as zha_const
-from zigpy.profiles import PROFILES, zha
-from zigpy.zcl.clusters.general import Basic, Groups, OnOff, PowerConfiguration
+from zigpy.profiles import zha
+from zigpy.zcl.clusters.general import Basic, Groups, OnOff
 from zhaquirks.xiaomi import BasicCluster, PowerConfigurationCluster,\
     TemperatureMeasurementCluster, XiaomiCustomDevice
 
 BUTTON_DEVICE_TYPE = 0x5F01
-BUTTON_DEVICE_TYPE_REPLACEMENT = 0x6FF1
 XIAOMI_CLUSTER_ID = 0xFFFF
 
 _LOGGER = logging.getLogger(__name__)
 
-PROFILES[zha.PROFILE_ID].CLUSTERS[BUTTON_DEVICE_TYPE_REPLACEMENT] = (
-    [
-        BasicCluster.cluster_id,
-        OnOff.cluster_id
-    ],
-    [
-        BasicCluster.cluster_id,
-        Groups.cluster_id
-    ]
-)
 
-zha_const.DEVICE_CLASS[zha.PROFILE_ID].update(
-    {
-        BUTTON_DEVICE_TYPE_REPLACEMENT: 'sensor'
-    }
-)
-
-
-class AqaraButton(XiaomiCustomDevice):
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+class SwitchAQ2(XiaomiCustomDevice):
+    """Aqara button device."""
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=24321
@@ -40,6 +20,8 @@ class AqaraButton(XiaomiCustomDevice):
         # input_clusters=[0, 6, 65535]
         # output_clusters=[0, 4, 65535]>
         1: {
+            'manufacturer': 'LUMI',
+            'model': 'lumi.sensor_switch.aq2',
             'profile_id': zha.PROFILE_ID,
             'device_type': BUTTON_DEVICE_TYPE,
             'input_clusters': [
@@ -60,17 +42,18 @@ class AqaraButton(XiaomiCustomDevice):
             1: {
                 'manufacturer': 'LUMI',
                 'model': 'lumi.sensor_switch.aq2',
-                'device_type': BUTTON_DEVICE_TYPE_REPLACEMENT,
+                'device_type': zha.DeviceType.REMOTE_CONTROL,
                 'input_clusters': [
                     BasicCluster,
                     PowerConfigurationCluster,
                     TemperatureMeasurementCluster,
-                    OnOff.cluster_id
+                    XIAOMI_CLUSTER_ID
                 ],
                 'output_clusters': [
                     Basic.cluster_id,
                     Groups.cluster_id,
-                    XIAOMI_CLUSTER_ID
+                    XIAOMI_CLUSTER_ID,
+                    OnOff.cluster_id,
                 ],
             }
         },

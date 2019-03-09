@@ -1,7 +1,10 @@
+"""Xiaomi aqara magic cube device."""
 import logging
 
 from zigpy.profiles import zha
 import homeassistant.components.zha.const as zha_const
+from zigpy import quirks
+from zigpy.quirks.xiaomi import AqaraMagicCubeSensor
 from zigpy.zcl.clusters.general import Groups, Identify, Ota,\
     MultistateInput, Scenes, AnalogInput
 from zhaquirks.xiaomi import BasicCluster, PowerConfigurationCluster,\
@@ -100,23 +103,33 @@ zha_const.SINGLE_INPUT_CLUSTER_DEVICE_CLASS.update({
 
 
 def extend_dict(d, value, x):
+    """Extend a dict."""
     for a in x:
         d[a] = value
 
 
 extend_dict(MOVEMENT_TYPE, 'flip', range(FLIP_BEGIN, FLIP_END))
 
+#  remove the zigpy version of this device handler
+if AqaraMagicCubeSensor in quirks._DEVICE_REGISTRY:
+    quirks._DEVICE_REGISTRY.remove(AqaraMagicCubeSensor)
 
-class AqaraCube(XiaomiCustomDevice):
+
+class CubeAQGL01(XiaomiCustomDevice):
+    """Aqara magic cube device."""
 
     def __init__(self, *args, **kwargs):
+        """Init."""
         self.battery_size = 9
         super().__init__(*args, **kwargs)
 
     class MultistateInputCluster(CustomCluster, MultistateInput):
+        """Multistate input cluster."""
+
         cluster_id = MultistateInput.cluster_id
 
         def __init__(self, *args, **kwargs):
+            """Init."""
             self._currentState = {}
             super().__init__(*args, **kwargs)
 
@@ -142,8 +155,7 @@ class AqaraCube(XiaomiCustomDevice):
                         else:
                             event_args['flip_degrees'] = 90
                         event_args['activated_face'] = (value % 8) + 1
-                            
-                            
+
                     self.listener_event(
                         'zha_send_event',
                         self,
@@ -158,9 +170,12 @@ class AqaraCube(XiaomiCustomDevice):
                 )
 
     class AnalogInputCluster(CustomCluster, AnalogInput):
+        """Analog input cluster."""
+
         cluster_id = AnalogInput.cluster_id
 
         def __init__(self, *args, **kwargs):
+            """Init."""
             self._currentState = {}
             super().__init__(*args, **kwargs)
 
@@ -192,6 +207,8 @@ class AqaraCube(XiaomiCustomDevice):
         #  input_clusters=[0, 3, 25, 18]
         #  output_clusters=[0, 4, 3, 5, 25, 18]>
         1: {
+            'manufacturer': 'LUMI',
+            'model': 'lumi.sensor_cube.aqgl01',
             'profile_id': zha.PROFILE_ID,
             'device_type': XIAOMI_SENSORS,
             'input_clusters': [
@@ -257,7 +274,9 @@ class AqaraCube(XiaomiCustomDevice):
                     BasicCluster,
                     PowerConfigurationCluster,
                     TemperatureMeasurementCluster,
-                    Identify.cluster_id
+                    Identify.cluster_id,
+                    Ota.cluster_id,
+                    MultistateInput.cluster_id
                 ],
                 'output_clusters': [
                     BasicCluster.cluster_id,

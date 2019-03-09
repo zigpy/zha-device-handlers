@@ -1,4 +1,5 @@
-from zigpy.profiles import PROFILES, zha
+"""Device handler for centralite motion (only) sensors."""
+from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import Basic, Identify,\
     PollControl, Ota
 from zigpy.zcl.clusters.security import IasZone
@@ -13,9 +14,7 @@ MANUFACTURER_SPECIFIC_CLUSTER_ID = 0xFC46  # decimal = 64582
 
 
 class CentraLiteMotionSensor(CustomDevice):
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    """Custom device representing centralite motion (only) sensors."""
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=1026

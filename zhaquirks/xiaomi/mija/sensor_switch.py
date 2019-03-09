@@ -1,8 +1,9 @@
+"""Xiaomi mija button device."""
 import logging
-import homeassistant.components.zha.const as zha_const
-from zigpy.profiles import PROFILES, zha
-from zigpy.zcl.clusters.general import LevelControl, Ota, Basic, Groups, OnOff,\
-     Identify, Scenes
+from zigpy.profiles import zha
+from zigpy.zcl.clusters.general import (
+    LevelControl, Ota, Basic, Groups, OnOff, Identify, Scenes
+)
 from zhaquirks.xiaomi import BasicCluster, PowerConfigurationCluster,\
      XiaomiCustomDevice
 from zhaquirks import CustomCluster
@@ -11,23 +12,29 @@ XIAOMI_CLUSTER_ID = 0xFFFF
 
 _LOGGER = logging.getLogger(__name__)
 
-click_type_map = {
+CLICK_TYPE_MAP = {
  2: 'double',
  3: 'triple',
  4: 'quadruple',
  128: 'furious',
 }
 
+
 class MijaButton(XiaomiCustomDevice):
+    """Mija button device."""
 
     def __init__(self, *args, **kwargs):
+        """Init."""
         self.battery_size = 9
         super().__init__(*args, **kwargs)
 
     class MijaOnOff(CustomCluster, OnOff):
+        """Mija on off cluster."""
+
         cluster_id = OnOff.cluster_id
 
         def __init__(self, *args, **kwargs):
+            """Init."""
             self._currentState = {}
             super().__init__(*args, **kwargs)
 
@@ -37,22 +44,21 @@ class MijaButton(XiaomiCustomDevice):
             # Handle Mija OnOff
             if(attrid == 0):
                 value = False if value else True
-                click_type = 'single' if value == True else False
+                click_type = 'single' if value is True else False
 
             # Handle Multi Clicks
             elif(attrid == 32768):
-                click_type = click_type_map.get(value,'unknown')
+                click_type = CLICK_TYPE_MAP.get(value, 'unknown')
 
             if click_type:
                 self.listener_event(
                     'zha_send_event',
                     self,
                     'click',
-                    {'click_type':click_type}
+                    {'click_type': click_type}
                 )
 
             super()._update_attribute(attrid, value)
-
 
     signature = {
         # Endpoints:
