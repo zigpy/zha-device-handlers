@@ -1,12 +1,12 @@
-"""Setup module for ZHAQuirks"""
+"""Setup module for ZHAQuirks."""
 
 from setuptools import find_packages, setup
 
-VERSION = "0.0.6"
+VERSION = "0.0.7"
 
 
 def readme():
-    """print long description"""
+    """Print long description."""
     with open('README.md') as f:
         return f.read()
 
