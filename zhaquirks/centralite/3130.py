@@ -19,8 +19,6 @@ class CentraLite3130(CustomDevice):
         #  input_clusters=[0, 1, 3, 32, 1026, 2821]
         #  output_clusters=[3, 6, 8, 25]>
         1: {
-            'manufacturer': 'CentraLite',
-            'model': '3130',
             'profile_id': zha.PROFILE_ID,
             'device_type': zha.DeviceType.LEVEL_CONTROL_SWITCH,
             'input_clusters': [

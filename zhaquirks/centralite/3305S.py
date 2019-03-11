@@ -21,8 +21,6 @@ class CentraLite3305S(CustomDevice):
         #  input_clusters=[0, 1, 3, 1026, 1280, 32, 2821]
         #  output_clusters=[25]>
         1: {
-            'manufacturer': 'CentraLite',
-            'model': '3305-S',
             'profile_id': zha.PROFILE_ID,
             'device_type': zha.DeviceType.IAS_ZONE,
             'input_clusters': [
@@ -43,8 +41,6 @@ class CentraLite3305S(CustomDevice):
         #  input_clusters=[0, 1, 3, 1030, 2821]
         #  output_clusters=[3]>
         2: {
-            'manufacturer': 'CentraLite',
-            'model': '3305-S',
             'profile_id': zha.PROFILE_ID,
             'device_type': zha.DeviceType.OCCUPANCY_SENSOR,
             'input_clusters': [
