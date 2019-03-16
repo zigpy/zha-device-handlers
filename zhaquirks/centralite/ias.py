@@ -1,4 +1,4 @@
-"""Device handler for centralite contact (only) sensors."""
+"""Device handler for centralite ias sensors."""
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import (
     Basic, Identify, PollControl, Ota
@@ -13,7 +13,7 @@ DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
 
 
 class CentraLiteContactSensor(CustomDevice):
-    """Custom device representing centralite contact (only) sensors."""
+    """Custom device representing centralite ias sensors."""
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=1026
