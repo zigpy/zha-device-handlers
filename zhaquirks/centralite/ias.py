@@ -12,7 +12,7 @@ from zigpy.quirks import CustomDevice
 DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
 
 
-class CentraLiteContactSensor(CustomDevice):
+class CentraLiteIASSensor(CustomDevice):
     """Custom device representing centralite ias sensors."""
 
     signature = {
