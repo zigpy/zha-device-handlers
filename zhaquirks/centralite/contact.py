@@ -1,7 +1,8 @@
-"""Device handler for centralite 3320."""
+"""Device handler for centralite contact (only) sensors."""
 from zigpy.profiles import zha
-from zigpy.zcl.clusters.general import Basic, Identify,\
-    PollControl, Ota
+from zigpy.zcl.clusters.general import (
+    Basic, Identify, PollControl, Ota
+)
 from zigpy.zcl.clusters.security import IasZone
 from zhaquirks.centralite import PowerConfigurationCluster
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
@@ -11,14 +12,16 @@ from zigpy.quirks import CustomDevice
 DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
 
 
-class CentraLite3320(CustomDevice):
-    """Custom device representing centralite 3320."""
+class CentraLiteContactSensor(CustomDevice):
+    """Custom device representing centralite contact (only) sensors."""
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=1026
         #  device_version=0
         #  input_clusters=[0, 1, 3, 32, 1026, 1280, 2821]
         #  output_clusters=[25]>
+        #
+        #  Supported models: 3315-S, 3320-L
         1: {
             'profile_id': zha.PROFILE_ID,
             'device_type': zha.DeviceType.IAS_ZONE,
@@ -58,8 +61,6 @@ class CentraLite3320(CustomDevice):
     replacement = {
         'endpoints': {
             1: {
-                'manufacturer': 'CentraLite',
-                'model': '3320-L',
                 'input_clusters': [
                     Basic.cluster_id,
                     PowerConfigurationCluster,
@@ -74,8 +75,6 @@ class CentraLite3320(CustomDevice):
                 ],
             },
             2: {
-                'manufacturer': 'CentraLite',
-                'model': '3320-L',
                 'input_clusters': [
                     Basic.cluster_id,
                     Identify.cluster_id,
