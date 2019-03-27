@@ -37,14 +37,12 @@ Custom quirks implementations for zigpy implemented as ZHA Device Handlers are a
 - [Motion Sensor](http://a.co/65rSQjZ): MotionV4
 - [Multi Sensor](http://a.co/gez6SzW): MultiV4
 
-#
 # Configuration:
 
 1. Update Home Assistant to 0.85.1 or a later version.
 
 **NOTE:** Some devices will need to be unpaired and repaired in order to see sensor values populate in Home Assistant.
 
-#
 # Device Specifics:
 
 ### Centralite
@@ -76,7 +74,6 @@ Custom quirks implementations for zigpy implemented as ZHA Device Handlers are a
 - tagV4 exposed as a device tracker in Home Assistant. The current implementation will use batteries rapidly
 - MultiV4 reports acceleration
 
-#
 ### Thanks
 
 - Special thanks to damarco for the majority of the device tracker code
