@@ -1,1 +1,10 @@
 theme: jekyll-theme-architect
+plugins:
+  - jekyll-relative-links
+relative_links:
+  enabled: true
+  collections: true
+include:
+  - docs/CONTRIBUTING.md
+  - docs/README.md
+  - LICENSE.md
