@@ -35,8 +35,6 @@ class Weather(XiaomiCustomDevice):
         1: {
             'profile_id': zha.PROFILE_ID,
             'device_type': TEMPERATURE_HUMIDITY_DEVICE_TYPE,
-            'model': 'lumi.sensor_ht',
-            'manufacturer': 'LUMI',
             'input_clusters': [
                 BasicCluster.cluster_id,
                 Identify.cluster_id,
@@ -95,8 +93,6 @@ class Weather(XiaomiCustomDevice):
     replacement = {
         'endpoints': {
             1: {
-                'manufacturer': 'LUMI',
-                'model': 'lumi.sensor_ht',
                 'device_type': TEMPERATURE_HUMIDITY_DEVICE_TYPE2,
                 'input_clusters': [
                     BasicCluster,
@@ -120,8 +116,6 @@ class Weather(XiaomiCustomDevice):
                 ],
             },
             2: {
-                'manufacturer': 'LUMI',
-                'model': 'lumi.sensor_ht',
                 'device_type': TEMPERATURE_HUMIDITY_DEVICE_TYPE2,
                 'input_clusters': [
                     Identify.cluster_id,
@@ -139,8 +133,6 @@ class Weather(XiaomiCustomDevice):
             # input_clusters=[3, 12]
             # output_clusters=[4, 3, 5, 12]>
             3: {
-                'manufacturer': 'LUMI',
-                'model': 'lumi.sensor_ht',
                 'device_type': TEMPERATURE_HUMIDITY_DEVICE_TYPE3,
                 'input_clusters': [
                     Identify.cluster_id,
