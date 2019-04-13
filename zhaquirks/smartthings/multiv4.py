@@ -1,4 +1,5 @@
-from zigpy.profiles import PROFILES, zha
+"""Device handler for smartthings multiV4 sensors."""
+from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import Basic, Identify,\
     PollControl, Ota, BinaryInput
 from zigpy.zcl.clusters.security import IasZone
@@ -9,6 +10,7 @@ from zigpy.quirks import CustomDevice
 
 
 class SmartThingsMultiV4(CustomDevice):
+    """SmartThingsMultiV4."""
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=1026

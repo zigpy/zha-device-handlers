@@ -1,4 +1,4 @@
-"""Phillips RWL021 device."""
+"""GLEDOPTO Soposh Dual White and color 5W GU10 300lm device."""
 from zigpy.profiles import zll
 from zigpy.profiles.zll import DeviceType
 from zigpy.zcl.clusters.general import (
@@ -10,7 +10,7 @@ from zigpy.quirks import CustomDevice
 
 
 class SoposhGU10(CustomDevice):
-    """Phillips RWL021 device."""
+    """GLEDOPTO Soposh Dual White and color 5W GU10 300lm."""
 
     signature = {
         11: {
