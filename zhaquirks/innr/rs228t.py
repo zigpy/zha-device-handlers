@@ -10,7 +10,7 @@ from zigpy.zcl.clusters.lightlink import LightLink
 from zigpy.quirks import CustomDevice
 
 
-class SoposhGU10(CustomDevice):
+class RS228T(CustomDevice):
     """Innr RS 228 T device."""
 
     signature = {
@@ -19,6 +19,8 @@ class SoposhGU10(CustomDevice):
         # input_clusters=[0, 3, 4, 5, 6, 8, 768, 4096]
         # output_clusters=[25]>
         1: {
+            'manufacturer': 'innr',
+            'model': 'RS 228 T',
             'profile_id': zha.PROFILE_ID,
             'device_type': 268,
             'input_clusters': [
