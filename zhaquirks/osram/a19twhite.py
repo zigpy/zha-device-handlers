@@ -3,6 +3,7 @@ from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import (
     Basic, OnOff, Identify, LevelControl, Scenes, Groups, Ota
 )
+from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.lighting import Color
 from zigpy.quirks import CustomDevice
 from . import OsramLightCluster
@@ -26,6 +27,7 @@ class A19TunableWhite(CustomDevice):
                 OnOff.cluster_id,
                 LevelControl.cluster_id,
                 Color.cluster_id,
+                ElectricalMeasurement.cluster_id,
                 OsramLightCluster.cluster_id
             ],
             'output_clusters': [
@@ -47,6 +49,7 @@ class A19TunableWhite(CustomDevice):
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
                     Color.cluster_id,
+                    ElectricalMeasurement.cluster_id,
                     OsramLightCluster
                 ],
                 'output_clusters': [
