@@ -5,8 +5,9 @@ from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import (
     Groups, Identify, Ota, MultistateInput, Scenes, AnalogInput
 )
-from zigpy.zcl.clusters.measurement import TemperatureMeasurement,\
-    PressureMeasurement, RelativeHumidity
+from zigpy.zcl.clusters.measurement import (
+    TemperatureMeasurement, RelativeHumidity
+)
 from zigpy import quirks
 from zigpy.quirks.xiaomi import TemperatureHumiditySensor
 from zhaquirks.xiaomi import BasicCluster, PowerConfigurationCluster,\
@@ -35,8 +36,6 @@ class Weather(XiaomiCustomDevice):
         1: {
             'profile_id': zha.PROFILE_ID,
             'device_type': TEMPERATURE_HUMIDITY_DEVICE_TYPE,
-            'model': 'lumi.sensor_ht',
-            'manufacturer': 'LUMI',
             'input_clusters': [
                 BasicCluster.cluster_id,
                 Identify.cluster_id,
@@ -95,15 +94,12 @@ class Weather(XiaomiCustomDevice):
     replacement = {
         'endpoints': {
             1: {
-                'manufacturer': 'LUMI',
-                'model': 'lumi.sensor_ht',
                 'device_type': TEMPERATURE_HUMIDITY_DEVICE_TYPE2,
                 'input_clusters': [
                     BasicCluster,
                     PowerConfigurationCluster,
                     Identify.cluster_id,
                     TemperatureMeasurement.cluster_id,
-                    PressureMeasurement.cluster_id,
                     RelativeHumidity.cluster_id,
                     XIAOMI_CLUSTER_ID,
                     Ota.cluster_id,
@@ -120,8 +116,6 @@ class Weather(XiaomiCustomDevice):
                 ],
             },
             2: {
-                'manufacturer': 'LUMI',
-                'model': 'lumi.sensor_ht',
                 'device_type': TEMPERATURE_HUMIDITY_DEVICE_TYPE2,
                 'input_clusters': [
                     Identify.cluster_id,
@@ -139,8 +133,6 @@ class Weather(XiaomiCustomDevice):
             # input_clusters=[3, 12]
             # output_clusters=[4, 3, 5, 12]>
             3: {
-                'manufacturer': 'LUMI',
-                'model': 'lumi.sensor_ht',
                 'device_type': TEMPERATURE_HUMIDITY_DEVICE_TYPE3,
                 'input_clusters': [
                     Identify.cluster_id,
