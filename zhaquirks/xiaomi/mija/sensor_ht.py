@@ -5,8 +5,9 @@ from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import (
     Groups, Identify, Ota, MultistateInput, Scenes, AnalogInput
 )
-from zigpy.zcl.clusters.measurement import TemperatureMeasurement,\
-    PressureMeasurement, RelativeHumidity
+from zigpy.zcl.clusters.measurement import (
+    TemperatureMeasurement, RelativeHumidity
+)
 from zigpy import quirks
 from zigpy.quirks.xiaomi import TemperatureHumiditySensor
 from zhaquirks.xiaomi import BasicCluster, PowerConfigurationCluster,\
