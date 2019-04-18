@@ -99,7 +99,6 @@ class Weather(XiaomiCustomDevice):
                     PowerConfigurationCluster,
                     Identify.cluster_id,
                     TemperatureMeasurement.cluster_id,
-                    PressureMeasurement.cluster_id,
                     RelativeHumidity.cluster_id,
                     XIAOMI_CLUSTER_ID,
                     Ota.cluster_id,
