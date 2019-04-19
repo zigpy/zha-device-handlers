@@ -16,6 +16,8 @@ class LIGHTIFYA19RGBW(CustomDevice):
         # device_version=2 input_clusters=[0, 3, 4, 5, 6, 8, 768, 64527]
         # output_clusters=[25]>
         3: {
+            'manufacturer': 'OSRAM',
+            'model': 'LIGHTIFY A19 RGBW',
             'profile_id': zha.PROFILE_ID,
             'device_type': zha.DeviceType.COLOR_DIMMABLE_LIGHT,
             'input_clusters': [
