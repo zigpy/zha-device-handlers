@@ -45,8 +45,6 @@ class MOT003(CustomDevice):
     replacement = {
         'endpoints': {
             6: {
-                'manufacturer': 'SmartThings',
-                'model': 'motionv4',
                 'input_clusters': [
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
