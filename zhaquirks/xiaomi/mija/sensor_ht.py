@@ -34,6 +34,8 @@ class Weather(XiaomiCustomDevice):
         #  input_clusters=[0, 3, 25, 65535, 18]
         #  output_clusters=[0, 4, 3, 5, 25, 65535, 18]>
         1: {
+            'manufacturer': 'LUMI',
+            'model': 'lumi.sensor_ht',
             'profile_id': zha.PROFILE_ID,
             'device_type': TEMPERATURE_HUMIDITY_DEVICE_TYPE,
             'input_clusters': [
