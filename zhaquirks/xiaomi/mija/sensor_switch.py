@@ -25,7 +25,7 @@ class MijaButton(XiaomiCustomDevice):
 
     def __init__(self, *args, **kwargs):
         """Init."""
-        self.battery_size = 9
+        self.battery_size = 10
         super().__init__(*args, **kwargs)
 
     class MijaOnOff(CustomCluster, OnOff):
