@@ -1,4 +1,5 @@
-from zigpy.profiles import PROFILES, zha
+"""Centralite 3310S implementation."""
+from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import Basic, Identify,\
     PollControl, Ota
 from zhaquirks.centralite import PowerConfigurationCluster
@@ -18,6 +19,7 @@ if SmartthingsTemperatureHumiditySensor in quirks._DEVICE_REGISTRY:
 
 
 class CentraLite3310S(CustomDevice):
+    """CentraLite3310S custom device implementation."""
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=770

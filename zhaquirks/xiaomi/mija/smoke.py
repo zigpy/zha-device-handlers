@@ -1,19 +1,27 @@
+"""Xiaomi Mija smoke detector quirks implementations."""
 import logging
 
-from zigpy.profiles import PROFILES, zha
-from zigpy.zcl.clusters.general import Basic, AnalogInput,\
-    PowerConfiguration, Identify, MultistateInput, Ota
+from zigpy.profiles import zha
+from zigpy.zcl.clusters.general import (
+    AnalogInput, PowerConfiguration, Identify, MultistateInput, Ota
+)
 
 from zigpy.zcl.clusters.security import IasZone
-from zhaquirks.xiaomi import BasicCluster, PowerConfigurationCluster,\
-    TemperatureMeasurementCluster, XiaomiCustomDevice
+from zhaquirks.xiaomi import (
+    BasicCluster, PowerConfigurationCluster, TemperatureMeasurementCluster,
+    XiaomiCustomDevice
+)
 
 IAS_ZONE = 0x0402
 _LOGGER = logging.getLogger(__name__)
 
+
 class MijiaHoneywellSmokeDetectorSensor(XiaomiCustomDevice):
+    """MijiaHoneywellSmokeDetectorSensor custom device."""
+
     def __init__(self, *args, **kwargs):
-        self.battery_size = 8 #CR123a
+        """Init method."""
+        self.battery_size = 8  # CR123a
         super().__init__(*args, **kwargs)
 
     signature = {
