@@ -1,18 +1,21 @@
-from zigpy.profiles import PROFILES, zha
-from zigpy.zcl.clusters.general import Basic, Identify,\
-    PollControl, Ota
-from zigpy.zcl.clusters.security import IasZone
-from zhaquirks.centralite import PowerConfigurationCluster,\
-    CentraLiteAccelCluster
-from zigpy.zcl.clusters.measurement import TemperatureMeasurement
+"""Centralite 3321S quirk."""
+# pylint disable=C0103
+from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
+from zigpy.zcl.clusters.general import Basic, Identify, Ota, PollControl
+from zigpy.zcl.clusters.measurement import TemperatureMeasurement
+from zigpy.zcl.clusters.security import IasZone
 
+from zhaquirks.centralite import (
+    CentraLiteAccelCluster, PowerConfigurationCluster)
 
 DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
 MANUFACTURER_SPECIFIC_PROFILE_ID = 0xC2DF  # decimal = 49887
 MANUFACTURER_SPECIFIC_CLUSTER_ID = 0xFC0F  # decimal = 64527
 
+
 class CentraLite3321S(CustomDevice):
+    """CentraLite3321S custom device implementation."""
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=1026

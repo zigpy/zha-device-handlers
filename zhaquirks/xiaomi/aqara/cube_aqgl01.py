@@ -1,15 +1,17 @@
 """Xiaomi aqara magic cube device."""
 import logging
 
-from zigpy.profiles import zha
 import homeassistant.components.zha.const as zha_const
 from zigpy import quirks
+from zigpy.profiles import zha
 from zigpy.quirks.xiaomi import AqaraMagicCubeSensor
-from zigpy.zcl.clusters.general import Groups, Identify, Ota,\
-    MultistateInput, Scenes, AnalogInput
-from zhaquirks.xiaomi import BasicCluster, PowerConfigurationCluster,\
-    TemperatureMeasurementCluster, XiaomiCustomDevice
+from zigpy.zcl.clusters.general import (
+    AnalogInput, Groups, Identify, MultistateInput, Ota, Scenes)
+
 from zhaquirks import CustomCluster
+from zhaquirks.xiaomi import (
+    BasicCluster, PowerConfigurationCluster, TemperatureMeasurementCluster,
+    XiaomiCustomDevice)
 
 XIAOMI_SENSORS = 0x5F01  # decimal = 24321 ? sensors
 XIAOMI_MEASUREMENTS = 0x5F02  # decimal = 24322 ? multistate measurements
@@ -102,10 +104,10 @@ zha_const.SINGLE_INPUT_CLUSTER_DEVICE_CLASS.update({
 })
 
 
-def extend_dict(d, value, x):
+def extend_dict(dictionary, value, ranges):
     """Extend a dict."""
-    for a in x:
-        d[a] = value
+    for item in ranges:
+        dictionary[item] = value
 
 
 extend_dict(MOVEMENT_TYPE, 'flip', range(FLIP_BEGIN, FLIP_END))
@@ -130,20 +132,20 @@ class CubeAQGL01(XiaomiCustomDevice):
 
         def __init__(self, *args, **kwargs):
             """Init."""
-            self._currentState = {}
+            self._current_state = {}
             super().__init__(*args, **kwargs)
 
         def _update_attribute(self, attrid, value):
             super()._update_attribute(attrid, value)
             if attrid == STATUS_TYPE_ATTR:
-                self._currentState[STATUS_TYPE_ATTR] = action = \
+                self._current_state[STATUS_TYPE_ATTR] = action = \
                     MOVEMENT_TYPE.get(value)
                 event_args = {
                     'value': value
                 }
                 if action is not None:
 
-                    if action == 'slide' or action == 'knock':
+                    if action in ('slide', 'knock'):
                         event_args['description'] = MOVEMENT_TYPE_DESCRIPTION[
                             value
                         ]
@@ -176,26 +178,29 @@ class CubeAQGL01(XiaomiCustomDevice):
 
         def __init__(self, *args, **kwargs):
             """Init."""
-            self._currentState = {}
+            self._current_state = {}
             super().__init__(*args, **kwargs)
 
         def _update_attribute(self, attrid, value):
             super()._update_attribute(attrid, value)
             if attrid == STATUS_TYPE_ATTR:
                 if value > 0:
-                    self._currentState[STATUS_TYPE_ATTR] = ROTATE_RIGHT
+                    self._current_state[STATUS_TYPE_ATTR] = ROTATE_RIGHT
                 else:
-                    self._currentState[STATUS_TYPE_ATTR] = ROTATE_LEFT
+                    self._current_state[STATUS_TYPE_ATTR] = ROTATE_LEFT
                 # show something in the sensor in HA
                 super()._update_attribute(
                     0,
-                    '{}:{}'.format(self._currentState[STATUS_TYPE_ATTR], value)
+                    '{}:{}'.format(
+                        self._current_state[STATUS_TYPE_ATTR],
+                        value
+                    )
                 )
-                if self._currentState[STATUS_TYPE_ATTR] is not None:
+                if self._current_state[STATUS_TYPE_ATTR] is not None:
                     self.listener_event(
                         'zha_send_event',
                         self,
-                        self._currentState[STATUS_TYPE_ATTR],
+                        self._current_state[STATUS_TYPE_ATTR],
                         {
                             'relative_degrees': value
                         }

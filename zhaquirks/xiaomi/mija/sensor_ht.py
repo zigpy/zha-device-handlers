@@ -1,17 +1,16 @@
 """Xiaomi mija weather sensor device."""
 import logging
 
-from zigpy.profiles import zha
-from zigpy.zcl.clusters.general import (
-    Groups, Identify, Ota, MultistateInput, Scenes, AnalogInput
-)
-from zigpy.zcl.clusters.measurement import (
-    TemperatureMeasurement, RelativeHumidity
-)
 from zigpy import quirks
+from zigpy.profiles import zha
 from zigpy.quirks.xiaomi import TemperatureHumiditySensor
-from zhaquirks.xiaomi import BasicCluster, PowerConfigurationCluster,\
-    XiaomiCustomDevice
+from zigpy.zcl.clusters.general import (
+    AnalogInput, Groups, Identify, MultistateInput, Ota, Scenes)
+from zigpy.zcl.clusters.measurement import (
+    RelativeHumidity, TemperatureMeasurement)
+
+from zhaquirks.xiaomi import (
+    BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice)
 
 TEMPERATURE_HUMIDITY_DEVICE_TYPE = 0x5F01
 TEMPERATURE_HUMIDITY_DEVICE_TYPE2 = 0x5F02

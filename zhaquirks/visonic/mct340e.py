@@ -2,12 +2,11 @@
 import logging
 
 from zigpy.profiles import zha
+from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.zcl.clusters.general import (
-    Identify, Ota, Basic, PowerConfiguration, PollControl
-)
-from zigpy.zcl.clusters.security import IasZone
+    Basic, Identify, Ota, PollControl, PowerConfiguration)
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
-from zigpy.quirks import CustomDevice, CustomCluster
+from zigpy.zcl.clusters.security import IasZone
 
 OSRAM_DEVICE = 0x0810  # 2064 base 10
 OSRAM_CLUSTER = 0xFD00  # 64768 base 10
@@ -38,10 +37,10 @@ class MCT340E(CustomDevice):
                     self._calculate_battery_percentage(value)
                 )
 
-        def _calculate_battery_percentage(self, rawValue):
-            if rawValue == 0 or rawValue == 255:
+        def _calculate_battery_percentage(self, raw_value):
+            if raw_value in (0, 255):
                 return 'unknown'
-            volts = rawValue / 10
+            volts = raw_value / 10
             if volts < self.MIN_VOLTS:
                 volts = self.MIN_VOLTS
             elif volts > self.MAX_VOLTS:

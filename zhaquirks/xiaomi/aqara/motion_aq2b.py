@@ -1,12 +1,13 @@
 """Xiaomi aqara body sensor."""
 
-from zigpy.zcl.clusters.measurement import IlluminanceMeasurement,\
-    OccupancySensing
-
-from zigpy.zcl.clusters.general import Basic, Ota
 from zigpy.profiles import zha
-from zhaquirks.xiaomi import BasicCluster, XiaomiCustomDevice
+from zigpy.zcl.clusters.general import Basic, Ota
+from zigpy.zcl.clusters.measurement import (
+    IlluminanceMeasurement, OccupancySensing)
+
 from zhaquirks import Bus
+from zhaquirks.xiaomi import BasicCluster, XiaomiCustomDevice
+
 from .. import MotionCluster, OccupancyCluster
 
 XIAOMI_CLUSTER_ID = 0xFFFF
@@ -18,7 +19,7 @@ class MotionAQ2(XiaomiCustomDevice):
     def __init__(self, *args, **kwargs):
         """Init."""
         self.battery_size = 9
-        self.motionBus = Bus()
+        self.motion_bus = Bus()
         super().__init__(*args, **kwargs)
 
     signature = {

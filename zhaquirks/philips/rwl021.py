@@ -1,10 +1,9 @@
 """Phillips RWL021 device."""
 from zigpy.profiles import zha, zll
-from zigpy.zcl.clusters.general import Basic, OnOff, Identify,\
-    Ota, LevelControl, PowerConfiguration, Scenes, BinaryInput,\
-    Groups
 from zigpy.quirks import CustomDevice
-
+from zigpy.zcl.clusters.general import (
+    Basic, BinaryInput, Groups, Identify, LevelControl, OnOff, Ota,
+    PowerConfiguration, Scenes)
 
 DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
 

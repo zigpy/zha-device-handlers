@@ -2,13 +2,13 @@
 import asyncio
 import logging
 
+from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.zcl.clusters.general import Basic, PowerConfiguration
 from zigpy.zcl.clusters.measurement import (
-    TemperatureMeasurement, OccupancySensing
-)
+    OccupancySensing, TemperatureMeasurement)
 from zigpy.zcl.clusters.security import IasZone
-from zigpy.quirks import CustomCluster, CustomDevice
-from zhaquirks import LocalDataCluster, Bus
+
+from zhaquirks import Bus, LocalDataCluster
 
 XIAOMI_AQARA_ATTRIBUTE = 0xFF01
 XIAOMI_MIJA_ATTRIBUTE = 0xFF02
@@ -40,8 +40,8 @@ class XiaomiCustomDevice(CustomDevice):
 
     def __init__(self, *args, **kwargs):
         """Init."""
-        self.temperatureBus = Bus()
-        self.batteryBus = Bus()
+        self.temperature_bus = Bus()
+        self.battery_bus = Bus()
         if not hasattr(self, 'battery_size'):
             self.battery_size = 10
         super().__init__(*args, **kwargs)
@@ -64,18 +64,18 @@ class BasicCluster(CustomCluster, Basic):
 
         _LOGGER.debug(
             "%s - Attribute report. attribute_id: [%s] value: [%s]",
-            self.endpoint.device._ieee,
+            self.endpoint.device.ieee,
             attrid,
             attributes
         )
         if BATTERY_LEVEL in attributes:
-            self.endpoint.device.batteryBus.listener_event(
+            self.endpoint.device.battery_bus.listener_event(
                 BATTERY_REPORTED,
                 attributes[BATTERY_LEVEL],
                 attributes[BATTERY_VOLTAGE_MV]
             )
         if TEMPERATURE in attributes:
-            self.endpoint.device.temperatureBus.listener_event(
+            self.endpoint.device.temperature_bus.listener_event(
                 TEMPERATURE_REPORTED,
                 attributes[TEMPERATURE]
             )
@@ -97,10 +97,10 @@ class BasicCluster(CustomCluster, Basic):
             skey = int(value[0])
             svalue, value = f.TypeValue.deserialize(value[1:])
             result[skey] = svalue.value
-        for item, value in result.items():
+        for item, val in result.items():
             key = attribute_names[item] \
                 if item in attribute_names else "0xff01-" + str(item)
-            attributes[key] = value
+            attributes[key] = val
         if BATTERY_VOLTAGE_MV in attributes:
             attributes[BATTERY_LEVEL] = int(
                 self._calculate_remaining_battery_percentage(
@@ -135,7 +135,8 @@ class BasicCluster(CustomCluster, Basic):
 
         return attributes
 
-    def _calculate_remaining_battery_percentage(self, voltage):
+    @staticmethod
+    def _calculate_remaining_battery_percentage(voltage):
         """Calculate percentage."""
         min_voltage = 2500
         max_voltage = 3000
@@ -154,7 +155,7 @@ class PowerConfigurationCluster(LocalDataCluster, PowerConfiguration):
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
-        self.endpoint.device.batteryBus.add_listener(self)
+        self.endpoint.device.battery_bus.add_listener(self)
         if hasattr(self.endpoint.device, 'battery_size'):
             self._update_attribute(
                 self.BATTERY_SIZE_ATTR,
@@ -164,11 +165,11 @@ class PowerConfigurationCluster(LocalDataCluster, PowerConfiguration):
             self._update_attribute(self.BATTERY_SIZE_ATTR, 0xff)
         self._update_attribute(self.BATTERY_QUANTITY_ATTR, 1)
 
-    def battery_reported(self, voltage, rawVoltage):
+    def battery_reported(self, voltage, raw_voltage):
         """Battery reported."""
         self._update_attribute(BATTERY_PERCENTAGE_REMAINING, voltage)
         self._update_attribute(self.BATTERY_VOLTAGE_ATTR,
-                               int(rawVoltage / 100))
+                               int(raw_voltage / 100))
 
 
 class TemperatureMeasurementCluster(LocalDataCluster, TemperatureMeasurement):
@@ -179,13 +180,13 @@ class TemperatureMeasurementCluster(LocalDataCluster, TemperatureMeasurement):
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
-        self.endpoint.device.temperatureBus.add_listener(self)
+        self.endpoint.device.temperature_bus.add_listener(self)
 
-    def temperature_reported(self, rawTemperature):
+    def temperature_reported(self, raw_temperature):
         """Temperature reported."""
         self._update_attribute(
             TEMPERATURE_MEASURED_VALUE,
-            rawTemperature * 100
+            raw_temperature * 100
         )
 
 
@@ -205,7 +206,7 @@ class OccupancyCluster(CustomCluster, OccupancySensing):
         if attrid == OCCUPANCY_STATE and value == ON:
             if self._timer_handle:
                 self._timer_handle.cancel()
-            self.endpoint.device.motionBus.listener_event('motion_event')
+            self.endpoint.device.motion_bus.listener_event('motion_event')
             loop = asyncio.get_event_loop()
             self._timer_handle = loop.call_later(600, self._turn_off)
 
@@ -223,7 +224,7 @@ class MotionCluster(LocalDataCluster, IasZone):
         """Init."""
         super().__init__(*args, **kwargs)
         self._timer_handle = None
-        self.endpoint.device.motionBus.add_listener(self)
+        self.endpoint.device.motion_bus.add_listener(self)
         super()._update_attribute(ZONE_TYPE, MOTION_TYPE)
 
     def motion_event(self):
@@ -237,7 +238,7 @@ class MotionCluster(LocalDataCluster, IasZone):
 
         _LOGGER.debug(
             "%s - Received motion event message",
-            self.endpoint.device._ieee
+            self.endpoint.device.ieee
         )
 
         if self._timer_handle:
@@ -249,7 +250,7 @@ class MotionCluster(LocalDataCluster, IasZone):
     def _turn_off(self):
         _LOGGER.debug(
             "%s - Resetting motion sensor",
-            self.endpoint.device._ieee
+            self.endpoint.device.ieee
         )
         self._timer_handle = None
         super().listener_event(

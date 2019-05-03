@@ -1,11 +1,10 @@
 """GLEDOPTO GL-S-007Z device."""
-from zigpy.profiles import zll, zha
+from zigpy.profiles import zha, zll
+from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
-    Basic, OnOff, Identify, LevelControl, Scenes, Groups
-)
+    Basic, Groups, Identify, LevelControl, OnOff, Scenes)
 from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.lightlink import LightLink
-from zigpy.quirks import CustomDevice
 
 
 class GLS007Z(CustomDevice):

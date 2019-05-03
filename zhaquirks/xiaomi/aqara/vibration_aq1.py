@@ -1,16 +1,19 @@
 """Xiaomi aqara smart motion sensor device."""
 import asyncio
 import logging
-from zigpy.quirks import CustomCluster
+
 from zigpy.profiles import zha
+from zigpy.quirks import CustomCluster
 import zigpy.types as types
-from zigpy.zcl.clusters.general import Basic, Groups,\
-    Identify, Ota, Scenes, MultistateInput
 from zigpy.zcl.clusters.closures import DoorLock
+from zigpy.zcl.clusters.general import (
+    Basic, Groups, Identify, MultistateInput, Ota, Scenes)
 from zigpy.zcl.clusters.security import IasZone
-from zhaquirks.xiaomi import BasicCluster, PowerConfigurationCluster,\
-    TemperatureMeasurementCluster, XiaomiCustomDevice
+
 from zhaquirks import Bus, LocalDataCluster
+from zhaquirks.xiaomi import (
+    BasicCluster, PowerConfigurationCluster, TemperatureMeasurementCluster,
+    XiaomiCustomDevice)
 
 VIBE_DEVICE_TYPE = 0x5F02  # decimal = 24322
 RECENT_ACTIVITY_LEVEL_ATTR = 0x0505  # decimal = 1285
@@ -36,7 +39,7 @@ class VibrationAQ1(XiaomiCustomDevice):
 
     def __init__(self, *args, **kwargs):
         """Init."""
-        self.motionBus = Bus()
+        self.motion_bus = Bus()
         super().__init__(*args, **kwargs)
 
     class VibrationBasicCluster(BasicCluster):
@@ -58,38 +61,38 @@ class VibrationAQ1(XiaomiCustomDevice):
 
         def __init__(self, *args, **kwargs):
             """Init."""
-            self._currentState = {}
+            self._current_state = {}
             super().__init__(*args, **kwargs)
 
         def _update_attribute(self, attrid, value):
             super()._update_attribute(attrid, value)
             if attrid == STATUS_TYPE_ATTR:
-                self._currentState[STATUS_TYPE_ATTR] = MEASUREMENT_TYPE.get(
+                self._current_state[STATUS_TYPE_ATTR] = MEASUREMENT_TYPE.get(
                     value
                 )
                 if value == VIBE_VALUE:
-                    self.endpoint.device.motionBus.listener_event(
+                    self.endpoint.device.motion_bus.listener_event(
                         'motion_event'
                     )
                 elif value == DROP_VALUE:
                     self.listener_event(
                         'zha_send_event',
                         self,
-                        self._currentState[STATUS_TYPE_ATTR],
+                        self._current_state[STATUS_TYPE_ATTR],
                         {}
                     )
             elif attrid == ROTATION_DEGREES_ATTR:
                 self.listener_event(
                     'zha_send_event',
                     self,
-                    self._currentState[STATUS_TYPE_ATTR],
+                    self._current_state[STATUS_TYPE_ATTR],
                     {
                         'degrees': value
                     }
                 )
             elif attrid == RECENT_ACTIVITY_LEVEL_ATTR:
                 # these seem to be sent every minute when vibration is active
-                self.endpoint.device.motionBus.listener_event(
+                self.endpoint.device.motion_bus.listener_event(
                     'motion_event'
                 )
 
@@ -108,7 +111,7 @@ class VibrationAQ1(XiaomiCustomDevice):
             """Init."""
             super().__init__(*args, **kwargs)
             self._timer_handle = None
-            self.endpoint.device.motionBus.add_listener(self)
+            self.endpoint.device.motion_bus.add_listener(self)
             self._update_attribute(self.ZONE_STATE, self.OFF)
             self._update_attribute(self.ZONE_TYPE, self.VIBRATION_TYPE)
             self._update_attribute(self.ZONE_STATUS, self.OFF)

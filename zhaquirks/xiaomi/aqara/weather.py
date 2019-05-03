@@ -1,14 +1,15 @@
 """Xiaomi aqara weather sensor device."""
 import logging
 
-from zigpy.profiles import zha
-from zigpy.zcl.clusters.general import Groups, Identify
-from zigpy.zcl.clusters.measurement import TemperatureMeasurement,\
-    PressureMeasurement, RelativeHumidity
 from zigpy import quirks
+from zigpy.profiles import zha
 from zigpy.quirks.xiaomi import AqaraTemperatureHumiditySensor
-from zhaquirks.xiaomi import BasicCluster, PowerConfigurationCluster,\
-    XiaomiCustomDevice
+from zigpy.zcl.clusters.general import Groups, Identify
+from zigpy.zcl.clusters.measurement import (
+    PressureMeasurement, RelativeHumidity, TemperatureMeasurement)
+
+from zhaquirks.xiaomi import (
+    BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice)
 
 TEMPERATURE_HUMIDITY_DEVICE_TYPE = 0x5F01
 XIAOMI_CLUSTER_ID = 0xFFFF

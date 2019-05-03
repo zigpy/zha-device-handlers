@@ -1,14 +1,14 @@
 """
-This module handles quirks of the  Sinopé Technologies thermostat
+This module handles quirks of the  Sinopé Technologies thermostat.
 
 manufacturer specific cluster implements attributes to control displaying
 of outdoor temperature, setting occupancy on/off and setting device time.
 """
 
-import zigpy.types as t
 from zigpy.quirks import CustomCluster, CustomDevice
-from zigpy.zcl.clusters.general import (Basic, Groups, Identify, Ota,
-                                        PowerConfiguration, Scenes)
+import zigpy.types as t
+from zigpy.zcl.clusters.general import (
+    Basic, Groups, Identify, Ota, PowerConfiguration, Scenes)
 from zigpy.zcl.clusters.homeautomation import Diagnostic, ElectricalMeasurement
 from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
@@ -17,7 +17,11 @@ SINOPE_MANUFACTURER_CLUSTER_ID = 0xff01
 
 
 class SinopeTechnologiesThermostat(CustomDevice):
+    """SinopeTechnologiesThermostat custom device."""
+
     class SinopeTechnologiesManufacturerCluster(CustomCluster):
+        """SinopeTechnologiesManufacturerCluster manufacturer cluster."""
+
         cluster_id = SINOPE_MANUFACTURER_CLUSTER_ID
         name = "Sinopé Technologies Manufacturer specific"
         ep_attribute = 'sinope_manufacturer_specific'
@@ -29,6 +33,7 @@ class SinopeTechnologiesThermostat(CustomDevice):
         server_commands = {}
 
         def __init__(self, *args, **kwargs):
+            """Init method."""
             super().__init__(*args, **kwargs)
             self._attridx = {
                 attrname: attrid for attrid, (attrname, datatype)
@@ -36,7 +41,10 @@ class SinopeTechnologiesThermostat(CustomDevice):
             }
 
     class SinopeTechnologiesThermostatCluster(CustomCluster, Thermostat):
+        """SinopeTechnologiesThermostatCluster custom cluster."""
+
         def __init__(self, *args, **kwargs):
+            """Init method."""
             super().__init__(*args, **kwargs)
             self.attributes = Thermostat.attributes
             self.attributes[0x0400] = ('set_occupancy', t.enum8)
