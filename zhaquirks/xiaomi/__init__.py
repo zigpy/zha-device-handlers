@@ -206,7 +206,7 @@ class OccupancyCluster(CustomCluster, OccupancySensing):
         if attrid == OCCUPANCY_STATE and value == ON:
             if self._timer_handle:
                 self._timer_handle.cancel()
-            self.endpoint.device.motionBus.listener_event('motion_event')
+            self.endpoint.device.motion_bus.listener_event('motion_event')
             loop = asyncio.get_event_loop()
             self._timer_handle = loop.call_later(600, self._turn_off)
 
@@ -224,7 +224,7 @@ class MotionCluster(LocalDataCluster, IasZone):
         """Init."""
         super().__init__(*args, **kwargs)
         self._timer_handle = None
-        self.endpoint.device.motionBus.add_listener(self)
+        self.endpoint.device.motion_bus.add_listener(self)
         super()._update_attribute(ZONE_TYPE, MOTION_TYPE)
 
     def motion_event(self):
