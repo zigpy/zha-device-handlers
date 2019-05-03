@@ -1,0 +1,14 @@
+sudo: false
+dist: xenial
+matrix:
+  fast_finish: true
+  include:
+    - python: "3.5.3"
+      env: TOXENV=lint
+    - python: "3.5.3"
+      env: TOXENV=pylint
+
+cache: pip
+install: pip install -U tox
+language: python
+script: travis_wait 40 tox --develop
