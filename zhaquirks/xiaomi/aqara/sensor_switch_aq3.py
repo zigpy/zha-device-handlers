@@ -38,13 +38,13 @@ class SwitchAQ3(XiaomiCustomDevice):
 
         def __init__(self, *args, **kwargs):
             """Init."""
-            self._currentState = {}
+            self._current_state = {}
             super().__init__(*args, **kwargs)
 
         def _update_attribute(self, attrid, value):
             super()._update_attribute(attrid, value)
             if attrid == STATUS_TYPE_ATTR:
-                self._currentState[STATUS_TYPE_ATTR] = action = \
+                self._current_state[STATUS_TYPE_ATTR] = action = \
                     MOVEMENT_TYPE.get(value)
                 event_args = {
                     'value': value

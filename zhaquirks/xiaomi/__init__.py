@@ -64,7 +64,7 @@ class BasicCluster(CustomCluster, Basic):
 
         _LOGGER.debug(
             "%s - Attribute report. attribute_id: [%s] value: [%s]",
-            self.endpoint.device._ieee,
+            self.endpoint.device.ieee,
             attrid,
             attributes
         )
@@ -135,7 +135,8 @@ class BasicCluster(CustomCluster, Basic):
 
         return attributes
 
-    def _calculate_remaining_battery_percentage(self, voltage):
+    @staticmethod
+    def _calculate_remaining_battery_percentage(voltage):
         """Calculate percentage."""
         min_voltage = 2500
         max_voltage = 3000
@@ -237,7 +238,7 @@ class MotionCluster(LocalDataCluster, IasZone):
 
         _LOGGER.debug(
             "%s - Received motion event message",
-            self.endpoint.device._ieee
+            self.endpoint.device.ieee
         )
 
         if self._timer_handle:
@@ -249,7 +250,7 @@ class MotionCluster(LocalDataCluster, IasZone):
     def _turn_off(self):
         _LOGGER.debug(
             "%s - Resetting motion sensor",
-            self.endpoint.device._ieee
+            self.endpoint.device.ieee
         )
         self._timer_handle = None
         super().listener_event(

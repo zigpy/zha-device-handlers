@@ -41,21 +41,21 @@ class RemoteB286ACN01(XiaomiCustomDevice):
 
         def __init__(self, *args, **kwargs):
             """Init."""
-            self._currentState = None
+            self._current_state = None
             super().__init__(*args, **kwargs)
 
         def _update_attribute(self, attrid, value):
             super()._update_attribute(attrid, value)
             if attrid == STATUS_TYPE_ATTR:
-                self._currentState = PRESS_TYPE.get(value)
+                self._current_state = PRESS_TYPE.get(value)
                 button = ENDPOINTS.get(self.endpoint.endpoint_id)
                 event_args = {
                     'button': button,
-                    'press_type': self._currentState,
+                    'press_type': self._current_state,
                     'attr_id': attrid,
                     'value': value
                 }
-                action = "{}_{}".format(button, self._currentState)
+                action = "{}_{}".format(button, self._current_state)
                 self.listener_event(
                     'zha_send_event',
                     self,
