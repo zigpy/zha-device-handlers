@@ -1,12 +1,12 @@
 """Device handler for smartthings multiV4 sensors."""
+from zhaquirks.centralite import (CentraLiteAccelCluster,
+                                  PowerConfigurationCluster)
 from zigpy.profiles import zha
-from zigpy.zcl.clusters.general import Basic, Identify,\
-    PollControl, Ota, BinaryInput
-from zigpy.zcl.clusters.security import IasZone
-from zhaquirks.centralite import PowerConfigurationCluster,\
-    CentraLiteAccelCluster
-from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.quirks import CustomDevice
+from zigpy.zcl.clusters.general import (Basic, BinaryInput, Identify, Ota,
+                                        PollControl)
+from zigpy.zcl.clusters.measurement import TemperatureMeasurement
+from zigpy.zcl.clusters.security import IasZone
 
 
 class SmartThingsMultiV4(CustomDevice):

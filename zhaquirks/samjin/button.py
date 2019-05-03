@@ -2,12 +2,11 @@
 import logging
 
 from zigpy.profiles import zha
-from zigpy.zcl.clusters.general import (
-    Identify, Ota, Basic, PowerConfiguration, PollControl
-)
+from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.zcl.clusters.general import (Basic, Identify, Ota, PollControl,
+                                        PowerConfiguration)
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone
-from zigpy.quirks import CustomDevice, CustomCluster
 
 DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
 

@@ -1,12 +1,13 @@
 """Device handler for smartthings tagV4 sensors."""
 import logging
+
 import homeassistant.components.zha.const as zha_const
-from zigpy.profiles import PROFILES, zha
-from zigpy.zcl.clusters.general import Basic, Identify,\
-    PollControl, Ota, BinaryInput
-from zigpy.quirks import CustomDevice
-from zhaquirks import LocalDataCluster, Bus
+from zhaquirks import Bus, LocalDataCluster
 from zhaquirks.centralite import PowerConfigurationCluster
+from zigpy.profiles import PROFILES, zha
+from zigpy.quirks import CustomDevice
+from zigpy.zcl.clusters.general import (Basic, BinaryInput, Identify, Ota,
+                                        PollControl)
 
 _LOGGER = logging.getLogger(__name__)
 

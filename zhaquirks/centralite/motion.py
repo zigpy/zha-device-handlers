@@ -1,12 +1,10 @@
 """Device handler for centralite motion (only) sensors."""
-from zigpy.profiles import zha
-from zigpy.zcl.clusters.general import Basic, Identify,\
-    PollControl, Ota
-from zigpy.zcl.clusters.security import IasZone
 from zhaquirks.centralite import PowerConfigurationCluster
-from zigpy.zcl.clusters.measurement import TemperatureMeasurement
+from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
-
+from zigpy.zcl.clusters.general import Basic, Identify, Ota, PollControl
+from zigpy.zcl.clusters.measurement import TemperatureMeasurement
+from zigpy.zcl.clusters.security import IasZone
 
 DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
 MANUFACTURER_SPECIFIC_PROFILE_ID = 0xC2DF  # decimal = 49887

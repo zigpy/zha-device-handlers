@@ -1,12 +1,12 @@
 """Xiaomi aqara body sensor."""
 
-from zigpy.zcl.clusters.measurement import IlluminanceMeasurement,\
-    OccupancySensing
-
-from zigpy.zcl.clusters.general import Basic, Ota
-from zigpy.profiles import zha
-from zhaquirks.xiaomi import BasicCluster, XiaomiCustomDevice
 from zhaquirks import Bus
+from zhaquirks.xiaomi import BasicCluster, XiaomiCustomDevice
+from zigpy.profiles import zha
+from zigpy.zcl.clusters.general import Basic, Ota
+from zigpy.zcl.clusters.measurement import (IlluminanceMeasurement,
+                                            OccupancySensing)
+
 from .. import MotionCluster, OccupancyCluster
 
 XIAOMI_CLUSTER_ID = 0xFFFF

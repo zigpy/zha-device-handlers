@@ -2,13 +2,12 @@
 import asyncio
 import logging
 
-from zigpy.zcl.clusters.general import Basic, PowerConfiguration
-from zigpy.zcl.clusters.measurement import (
-    TemperatureMeasurement, OccupancySensing
-)
-from zigpy.zcl.clusters.security import IasZone
+from zhaquirks import Bus, LocalDataCluster
 from zigpy.quirks import CustomCluster, CustomDevice
-from zhaquirks import LocalDataCluster, Bus
+from zigpy.zcl.clusters.general import Basic, PowerConfiguration
+from zigpy.zcl.clusters.measurement import (OccupancySensing,
+                                            TemperatureMeasurement)
+from zigpy.zcl.clusters.security import IasZone
 
 XIAOMI_AQARA_ATTRIBUTE = 0xFF01
 XIAOMI_MIJA_ATTRIBUTE = 0xFF02

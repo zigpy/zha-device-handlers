@@ -2,13 +2,12 @@
 import logging
 
 from zigpy.profiles import zha
-from zigpy.zcl.clusters.general import (
-    Groups, Identify, Ota, Scenes, Basic, PowerConfiguration, PollControl,
-    LevelControl, OnOff
-)
+from zigpy.quirks import CustomDevice
+from zigpy.zcl.clusters.general import (Basic, Groups, Identify, LevelControl,
+                                        OnOff, Ota, PollControl,
+                                        PowerConfiguration, Scenes)
 from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.lightlink import LightLink
-from zigpy.quirks import CustomDevice
 
 OSRAM_DEVICE = 0x0810  # 2064 base 10
 OSRAM_CLUSTER = 0xFD00  # 64768 base 10

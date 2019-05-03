@@ -1,14 +1,14 @@
 """Device handler for hivehome.com MOT003 sensors."""
 import logging
+
 from zigpy.profiles import zha
-from zigpy.zcl.clusters.general import (
-    Basic, Identify, PollControl, Ota, PowerConfiguration
-)
-from zigpy.zcl.clusters.security import IasZone
-from zigpy.zcl.clusters.measurement import (
-    TemperatureMeasurement, IlluminanceMeasurement
-)
 from zigpy.quirks import CustomDevice
+from zigpy.zcl.clusters.general import (Basic, Identify, Ota, PollControl,
+                                        PowerConfiguration)
+from zigpy.zcl.clusters.measurement import (IlluminanceMeasurement,
+                                            TemperatureMeasurement)
+from zigpy.zcl.clusters.security import IasZone
+
 from . import MotionCluster
 
 _LOGGER = logging.getLogger(__name__)

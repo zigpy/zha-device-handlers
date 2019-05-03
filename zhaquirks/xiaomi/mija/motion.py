@@ -1,16 +1,14 @@
 """Xiaomi mija body sensor."""
 import logging
 
-from zigpy.zcl.clusters.general import (
-    Basic, Identify, Ota, Groups, Scenes, LevelControl, OnOff
-)
-from zigpy.profiles import zha
-from zhaquirks.xiaomi import (
-    BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
-)
 from zhaquirks import Bus
-from .. import MotionCluster, OccupancyCluster
+from zhaquirks.xiaomi import (BasicCluster, PowerConfigurationCluster,
+                              XiaomiCustomDevice)
+from zigpy.profiles import zha
+from zigpy.zcl.clusters.general import (Basic, Groups, Identify, LevelControl,
+                                        OnOff, Ota, Scenes)
 
+from .. import MotionCluster, OccupancyCluster
 
 XIAOMI_CLUSTER_ID = 0xFFFF
 _LOGGER = logging.getLogger(__name__)

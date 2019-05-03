@@ -1,9 +1,9 @@
 """Centralite module for custom device handlers."""
 import logging
 
-from zigpy.zcl.clusters.general import PowerConfiguration
-from zigpy.quirks import CustomCluster
 import zigpy.types as t
+from zigpy.quirks import CustomCluster
+from zigpy.zcl.clusters.general import PowerConfiguration
 
 _LOGGER = logging.getLogger(__name__)
 

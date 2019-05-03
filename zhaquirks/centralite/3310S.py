@@ -1,14 +1,12 @@
 """Centralite 3310S implementation."""
-from zigpy.profiles import zha
-from zigpy.zcl.clusters.general import Basic, Identify,\
-    PollControl, Ota
 from zhaquirks.centralite import PowerConfigurationCluster
-from zigpy.zcl.clusters.measurement import TemperatureMeasurement
-from zigpy.quirks import CustomDevice
-from zigpy.quirks.smartthings import SmartthingsRelativeHumidityCluster,\
-    SmartthingsTemperatureHumiditySensor
 from zigpy import quirks
-
+from zigpy.profiles import zha
+from zigpy.quirks import CustomDevice
+from zigpy.quirks.smartthings import (SmartthingsRelativeHumidityCluster,
+                                      SmartthingsTemperatureHumiditySensor)
+from zigpy.zcl.clusters.general import Basic, Identify, Ota, PollControl
+from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 
 DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
 

@@ -1,13 +1,11 @@
 """Device handler for centralite 3305."""
-from zigpy.profiles import zha
-from zigpy.zcl.clusters.general import Basic, Identify,\
-    PollControl, Ota
-from zigpy.zcl.clusters.security import IasZone
 from zhaquirks.centralite import PowerConfigurationCluster
-from zigpy.zcl.clusters.measurement import TemperatureMeasurement,\
-    OccupancySensing
+from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
-
+from zigpy.zcl.clusters.general import Basic, Identify, Ota, PollControl
+from zigpy.zcl.clusters.measurement import (OccupancySensing,
+                                            TemperatureMeasurement)
+from zigpy.zcl.clusters.security import IasZone
 
 DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
 

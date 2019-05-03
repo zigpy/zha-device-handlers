@@ -1,9 +1,10 @@
 """Quirks implementations for the ZHA component of Homeassistant."""
 import importlib
 import pkgutil
+
+import zigpy.types as types
 from zigpy.quirks import CustomCluster
 from zigpy.util import ListenableMixin
-import zigpy.types as types
 
 UNKNOWN = 'Unknown'
 

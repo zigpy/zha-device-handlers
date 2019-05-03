@@ -1,11 +1,10 @@
 """Netvox device."""
-from zigpy.profiles import zha
-from zigpy.zcl.clusters.general import Basic, Identify,\
-    PollControl, Commissioning
-from zigpy.zcl.clusters.security import IasZone
 from zhaquirks.centralite import PowerConfigurationCluster
+from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
-
+from zigpy.zcl.clusters.general import (Basic, Commissioning, Identify,
+                                        PollControl)
+from zigpy.zcl.clusters.security import IasZone
 
 DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
 

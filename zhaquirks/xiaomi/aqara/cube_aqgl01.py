@@ -1,15 +1,16 @@
 """Xiaomi aqara magic cube device."""
 import logging
 
-from zigpy.profiles import zha
 import homeassistant.components.zha.const as zha_const
-from zigpy import quirks
-from zigpy.quirks.xiaomi import AqaraMagicCubeSensor
-from zigpy.zcl.clusters.general import Groups, Identify, Ota,\
-    MultistateInput, Scenes, AnalogInput
-from zhaquirks.xiaomi import BasicCluster, PowerConfigurationCluster,\
-    TemperatureMeasurementCluster, XiaomiCustomDevice
 from zhaquirks import CustomCluster
+from zhaquirks.xiaomi import (BasicCluster, PowerConfigurationCluster,
+                              TemperatureMeasurementCluster,
+                              XiaomiCustomDevice)
+from zigpy import quirks
+from zigpy.profiles import zha
+from zigpy.quirks.xiaomi import AqaraMagicCubeSensor
+from zigpy.zcl.clusters.general import (AnalogInput, Groups, Identify,
+                                        MultistateInput, Ota, Scenes)
 
 XIAOMI_SENSORS = 0x5F01  # decimal = 24321 ? sensors
 XIAOMI_MEASUREMENTS = 0x5F02  # decimal = 24322 ? multistate measurements

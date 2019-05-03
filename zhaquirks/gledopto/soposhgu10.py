@@ -1,12 +1,11 @@
 """GLEDOPTO Soposh Dual White and color 5W GU10 300lm device."""
 from zigpy.profiles import zll
 from zigpy.profiles.zll import DeviceType
-from zigpy.zcl.clusters.general import (
-    Basic, OnOff, Identify, LevelControl, Scenes, Groups
-)
+from zigpy.quirks import CustomDevice
+from zigpy.zcl.clusters.general import (Basic, Groups, Identify, LevelControl,
+                                        OnOff, Scenes)
 from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.lightlink import LightLink
-from zigpy.quirks import CustomDevice
 
 
 class SoposhGU10(CustomDevice):

@@ -1,9 +1,11 @@
 """Xiaomi aqara button sensor."""
 import logging
+
+from zhaquirks.xiaomi import (BasicCluster, PowerConfigurationCluster,
+                              TemperatureMeasurementCluster,
+                              XiaomiCustomDevice)
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import Basic, Groups, OnOff
-from zhaquirks.xiaomi import BasicCluster, PowerConfigurationCluster,\
-    TemperatureMeasurementCluster, XiaomiCustomDevice
 
 BUTTON_DEVICE_TYPE = 0x5F01
 XIAOMI_CLUSTER_ID = 0xFFFF

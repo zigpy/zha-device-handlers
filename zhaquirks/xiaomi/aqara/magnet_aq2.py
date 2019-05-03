@@ -1,12 +1,13 @@
 """Xiaomi aqara contact sensor device."""
 import logging
 
-from zigpy.profiles import zha
-from zigpy.zcl.clusters.general import Groups, OnOff, Identify
+from zhaquirks.xiaomi import (BasicCluster, PowerConfigurationCluster,
+                              TemperatureMeasurementCluster,
+                              XiaomiCustomDevice)
 from zigpy import quirks
+from zigpy.profiles import zha
 from zigpy.quirks.xiaomi import AqaraOpenCloseSensor
-from zhaquirks.xiaomi import BasicCluster, PowerConfigurationCluster,\
-    TemperatureMeasurementCluster, XiaomiCustomDevice
+from zigpy.zcl.clusters.general import Groups, Identify, OnOff
 
 OPEN_CLOSE_DEVICE_TYPE = 0x5F01
 XIAOMI_CLUSTER_ID = 0xFFFF
