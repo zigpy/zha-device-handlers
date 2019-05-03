@@ -5,10 +5,10 @@ manufacturer specific cluster implements attributes to control displaying
 of outdoor temperature, setting occupancy on/off and setting device time.
 """
 
-import zigpy.types as t
 from zigpy.quirks import CustomCluster, CustomDevice
-from zigpy.zcl.clusters.general import (Basic, Groups, Identify, Ota,
-                                        PowerConfiguration, Scenes)
+import zigpy.types as t
+from zigpy.zcl.clusters.general import (
+    Basic, Groups, Identify, Ota, PowerConfiguration, Scenes)
 from zigpy.zcl.clusters.homeautomation import Diagnostic, ElectricalMeasurement
 from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement

@@ -2,17 +2,18 @@
 import asyncio
 import logging
 
-import zigpy.types as types
-from zhaquirks import Bus, LocalDataCluster
-from zhaquirks.xiaomi import (BasicCluster, PowerConfigurationCluster,
-                              TemperatureMeasurementCluster,
-                              XiaomiCustomDevice)
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster
+import zigpy.types as types
 from zigpy.zcl.clusters.closures import DoorLock
-from zigpy.zcl.clusters.general import (Basic, Groups, Identify,
-                                        MultistateInput, Ota, Scenes)
+from zigpy.zcl.clusters.general import (
+    Basic, Groups, Identify, MultistateInput, Ota, Scenes)
 from zigpy.zcl.clusters.security import IasZone
+
+from zhaquirks import Bus, LocalDataCluster
+from zhaquirks.xiaomi import (
+    BasicCluster, PowerConfigurationCluster, TemperatureMeasurementCluster,
+    XiaomiCustomDevice)
 
 VIBE_DEVICE_TYPE = 0x5F02  # decimal = 24322
 RECENT_ACTIVITY_LEVEL_ATTR = 0x0505  # decimal = 1285

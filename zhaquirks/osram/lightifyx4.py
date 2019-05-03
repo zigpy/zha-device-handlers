@@ -3,9 +3,9 @@ import logging
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
-from zigpy.zcl.clusters.general import (Basic, Groups, Identify, LevelControl,
-                                        OnOff, Ota, PollControl,
-                                        PowerConfiguration, Scenes)
+from zigpy.zcl.clusters.general import (
+    Basic, Groups, Identify, LevelControl, OnOff, Ota, PollControl,
+    PowerConfiguration, Scenes)
 from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.lightlink import LightLink
 

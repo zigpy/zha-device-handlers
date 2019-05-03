@@ -1,13 +1,14 @@
 """Xiaomi Mija smoke detector quirks implementations."""
 import logging
 
-from zhaquirks.xiaomi import (BasicCluster, PowerConfigurationCluster,
-                              TemperatureMeasurementCluster,
-                              XiaomiCustomDevice)
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import (
     AnalogInput, Identify, MultistateInput, Ota, PowerConfiguration)
 from zigpy.zcl.clusters.security import IasZone
+
+from zhaquirks.xiaomi import (
+    BasicCluster, PowerConfigurationCluster, TemperatureMeasurementCluster,
+    XiaomiCustomDevice)
 
 IAS_ZONE = 0x0402
 _LOGGER = logging.getLogger(__name__)

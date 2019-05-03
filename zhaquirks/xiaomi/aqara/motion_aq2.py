@@ -1,14 +1,15 @@
 """Xiaomi aqara body sensor."""
 
-from zhaquirks import Bus
-from zhaquirks.xiaomi import (BasicCluster, PowerConfigurationCluster,
-                              TemperatureMeasurementCluster,
-                              XiaomiCustomDevice)
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PowerConfiguration
-from zigpy.zcl.clusters.measurement import (IlluminanceMeasurement,
-                                            OccupancySensing)
+from zigpy.zcl.clusters.measurement import (
+    IlluminanceMeasurement, OccupancySensing)
 from zigpy.zcl.clusters.security import IasZone
+
+from zhaquirks import Bus
+from zhaquirks.xiaomi import (
+    BasicCluster, PowerConfigurationCluster, TemperatureMeasurementCluster,
+    XiaomiCustomDevice)
 
 from .. import MotionCluster, OccupancyCluster
 

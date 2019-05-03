@@ -1,12 +1,13 @@
 """Xiaomi aqara leak sensor device."""
-from zhaquirks.xiaomi import (BasicCluster, PowerConfigurationCluster,
-                              TemperatureMeasurementCluster,
-                              XiaomiCustomDevice)
 from zigpy import quirks
 from zigpy.profiles import zha
 from zigpy.quirks.xiaomi import AqaraWaterSensor
 from zigpy.zcl.clusters.general import Identify, Ota
 from zigpy.zcl.clusters.security import IasZone
+
+from zhaquirks.xiaomi import (
+    BasicCluster, PowerConfigurationCluster, TemperatureMeasurementCluster,
+    XiaomiCustomDevice)
 
 #  remove the zigpy version of this device handler
 if AqaraWaterSensor in quirks._DEVICE_REGISTRY:

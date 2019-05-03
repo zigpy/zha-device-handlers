@@ -1,8 +1,8 @@
 """Osram LIGHTIFY A19 RGBW device."""
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
-from zigpy.zcl.clusters.general import (Basic, Groups, Identify, LevelControl,
-                                        OnOff, Ota, Scenes)
+from zigpy.zcl.clusters.general import (
+    Basic, Groups, Identify, LevelControl, OnOff, Ota, Scenes)
 from zigpy.zcl.clusters.lighting import Color
 
 from . import OsramLightCluster

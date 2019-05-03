@@ -1,13 +1,14 @@
 """Xiaomi aqara double key switch device."""
 import logging
 
-from zhaquirks import CustomCluster
-from zhaquirks.xiaomi import (BasicCluster, PowerConfigurationCluster,
-                              TemperatureMeasurementCluster,
-                              XiaomiCustomDevice)
 from zigpy.profiles import zha
-from zigpy.zcl.clusters.general import (AnalogInput, Basic, Groups, Identify,
-                                        MultistateInput, Ota, Scenes)
+from zigpy.zcl.clusters.general import (
+    AnalogInput, Basic, Groups, Identify, MultistateInput, Ota, Scenes)
+
+from zhaquirks import CustomCluster
+from zhaquirks.xiaomi import (
+    BasicCluster, PowerConfigurationCluster, TemperatureMeasurementCluster,
+    XiaomiCustomDevice)
 
 XIAOMI_DEVICE_TYPE = 0x5F01
 XIAOMI_DEVICE_TYPE2 = 0x5F02

@@ -2,8 +2,8 @@
 import importlib
 import pkgutil
 
-import zigpy.types as types
 from zigpy.quirks import CustomCluster
+import zigpy.types as types
 from zigpy.util import ListenableMixin
 
 UNKNOWN = 'Unknown'

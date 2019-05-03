@@ -2,12 +2,13 @@
 import logging
 
 import homeassistant.components.zha.const as zha_const
-from zhaquirks import Bus, LocalDataCluster
-from zhaquirks.centralite import PowerConfigurationCluster
 from zigpy.profiles import PROFILES, zha
 from zigpy.quirks import CustomDevice
-from zigpy.zcl.clusters.general import (Basic, BinaryInput, Identify, Ota,
-                                        PollControl)
+from zigpy.zcl.clusters.general import (
+    Basic, BinaryInput, Identify, Ota, PollControl)
+
+from zhaquirks import Bus, LocalDataCluster
+from zhaquirks.centralite import PowerConfigurationCluster
 
 _LOGGER = logging.getLogger(__name__)
 

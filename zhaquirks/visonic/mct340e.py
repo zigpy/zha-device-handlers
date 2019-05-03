@@ -3,8 +3,8 @@ import logging
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
-from zigpy.zcl.clusters.general import (Basic, Identify, Ota, PollControl,
-                                        PowerConfiguration)
+from zigpy.zcl.clusters.general import (
+    Basic, Identify, Ota, PollControl, PowerConfiguration)
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone
 
