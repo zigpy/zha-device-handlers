@@ -20,3 +20,4 @@ requests_mock==1.5.2
 
 # homeassistant.components.zha
 zigpy-homeassistant==0.3.2
+homeassistant

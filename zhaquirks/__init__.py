@@ -20,26 +20,15 @@ class Bus(ListenableMixin):
 class LocalDataCluster(CustomCluster):
     """Cluster meant to prevent remote calls."""
 
-    def __init__(self, *args, **kwargs):
-        """Init method."""
-        super().__init__(*args, **kwargs)
-
     async def read_attributes_raw(self, attributes, manufacturer=None):
         """Prevent remote reads."""
         attributes = [types.uint16_t(a) for a in attributes]
-        v = [self._attr_cache.get(attr) for attr in attributes]
-        return v
-
-    def _update_attribute(self, attrid, value):
-        super()._update_attribute(attrid, value)
+        values = [self._attr_cache.get(attr) for attr in attributes]
+        return values
 
 
 class EventableCluster(CustomCluster):
     """Cluster that generates events."""
-
-    def __init__(self, *args, **kwargs):
-        """Init method."""
-        super().__init__(*args, **kwargs)
 
     def handle_cluster_request(self, tsn, command_id, args):
         """Send cluster requests as events."""
@@ -67,10 +56,10 @@ class EventableCluster(CustomCluster):
         )
 
 
-name = __name__
-path = __path__
+NAME = __name__
+PATH = __path__
 for importer, modname, ispkg in pkgutil.walk_packages(
-        path=path,
-        prefix=name + '.'
+        path=PATH,
+        prefix=NAME + '.'
         ):
     importlib.import_module(modname)
