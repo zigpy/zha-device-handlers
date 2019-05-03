@@ -14,10 +14,10 @@ XIAOMI_CLUSTER_ID = 0xFFFF
 _LOGGER = logging.getLogger(__name__)
 
 CLICK_TYPE_MAP = {
- 2: 'double',
- 3: 'triple',
- 4: 'quadruple',
- 128: 'furious',
+    2: 'double',
+    3: 'triple',
+    4: 'quadruple',
+    128: 'furious',
 }
 
 
@@ -36,19 +36,19 @@ class MijaButton(XiaomiCustomDevice):
 
         def __init__(self, *args, **kwargs):
             """Init."""
-            self._currentState = {}
+            self._current_state = {}
             super().__init__(*args, **kwargs)
 
         def _update_attribute(self, attrid, value):
             click_type = False
 
             # Handle Mija OnOff
-            if(attrid == 0):
+            if attrid == 0:
                 value = False if value else True
                 click_type = 'single' if value is True else False
 
             # Handle Multi Clicks
-            elif(attrid == 32768):
+            elif attrid == 32768:
                 click_type = CLICK_TYPE_MAP.get(value, 'unknown')
 
             if click_type:

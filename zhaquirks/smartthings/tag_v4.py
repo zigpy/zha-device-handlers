@@ -23,7 +23,8 @@ class FastPollingPowerConfigurationCluster(PowerConfigurationCluster):
     MINIMUM_CHANGE = 1
 
     async def configure_reporting(self, attribute, min_interval,
-                                  max_interval, reportable_change):
+                                  max_interval, reportable_change,
+                                  manufacturer=None):
         """Configure reporting."""
         result = await super().configure_reporting(
             PowerConfigurationCluster.BATTERY_VOLTAGE_ATTR,
@@ -34,7 +35,7 @@ class FastPollingPowerConfigurationCluster(PowerConfigurationCluster):
         return result
 
     def _update_attribute(self, attrid, value):
-        self.endpoint.device.trackingBus.listener_event(
+        self.endpoint.device.tracking_bus.listener_event(
             'update_tracking',
             attrid,
             value
@@ -51,7 +52,7 @@ class TrackingCluster(LocalDataCluster, BinaryInput):
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
-        self.endpoint.device.trackingBus.add_listener(self)
+        self.endpoint.device.tracking_bus.add_listener(self)
 
     def update_tracking(self, attrid, value):
         """Update tracking info."""
@@ -64,7 +65,7 @@ class SmartThingsTagV4(CustomDevice):
 
     def __init__(self, *args, **kwargs):
         """Init."""
-        self.trackingBus = Bus()
+        self.tracking_bus = Bus()
         super().__init__(*args, **kwargs)
 
     signature = {

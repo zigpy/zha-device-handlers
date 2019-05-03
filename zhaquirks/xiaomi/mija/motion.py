@@ -21,7 +21,7 @@ class Motion(XiaomiCustomDevice):
     def __init__(self, *args, **kwargs):
         """Init."""
         self.battery_size = 9
-        self.motionBus = Bus()
+        self.motion_bus = Bus()
         super().__init__(*args, **kwargs)
 
     signature = {

@@ -37,10 +37,10 @@ class MCT340E(CustomDevice):
                     self._calculate_battery_percentage(value)
                 )
 
-        def _calculate_battery_percentage(self, rawValue):
-            if rawValue == 0 or rawValue == 255:
+        def _calculate_battery_percentage(self, raw_value):
+            if raw_value in (0, 255):
                 return 'unknown'
-            volts = rawValue / 10
+            volts = raw_value / 10
             if volts < self.MIN_VOLTS:
                 volts = self.MIN_VOLTS
             elif volts > self.MAX_VOLTS:

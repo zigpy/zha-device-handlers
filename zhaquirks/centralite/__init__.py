@@ -41,11 +41,11 @@ class PowerConfigurationCluster(CustomCluster, PowerConfiguration):
                 self._calculate_battery_percentage(value)
             )
 
-    def _calculate_battery_percentage(self, rawValue):
-        volts = rawValue
-        if rawValue < self.MIN_VOLTS:
+    def _calculate_battery_percentage(self, raw_value):
+        volts = raw_value
+        if raw_value < self.MIN_VOLTS:
             volts = self.MIN_VOLTS
-        elif rawValue > self.MAX_VOLTS:
+        elif raw_value > self.MAX_VOLTS:
             volts = self.MAX_VOLTS
 
         percent = self.VOLTS_TO_PERCENT.get(volts, 'unknown')
