@@ -48,3 +48,9 @@ expected-line-ending-format=LF
 
 [EXCEPTIONS]
 overgeneral-exceptions=Exception
+
+[BASIC]
+good-names=3321S, 3130, 3300S, 3310S, 3305S, mot003V0, mot003V6
+
+[CLASSES]
+exclude-protected=_DEVICE_REGISTRY

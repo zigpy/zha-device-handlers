@@ -104,10 +104,10 @@ zha_const.SINGLE_INPUT_CLUSTER_DEVICE_CLASS.update({
 })
 
 
-def extend_dict(dict, value, ranges):
+def extend_dict(dictionary, value, ranges):
     """Extend a dict."""
     for item in ranges:
-        dict[item] = value
+        dictionary[item] = value
 
 
 extend_dict(MOVEMENT_TYPE, 'flip', range(FLIP_BEGIN, FLIP_END))
@@ -191,7 +191,10 @@ class CubeAQGL01(XiaomiCustomDevice):
                 # show something in the sensor in HA
                 super()._update_attribute(
                     0,
-                    '{}:{}'.format(self._current_state[STATUS_TYPE_ATTR], value)
+                    '{}:{}'.format(
+                        self._current_state[STATUS_TYPE_ATTR],
+                        value
+                    )
                 )
                 if self._current_state[STATUS_TYPE_ATTR] is not None:
                     self.listener_event(
