@@ -125,8 +125,8 @@ class XBeeOnOff(CustomCluster, OnOff):
             pin_cmd = DIO_PIN_LOW
         else:
             pin_cmd = DIO_PIN_HIGH
-            await self._endpoint.device.remote_at(pin_name, pin_cmd)
-            return 0, foundation.Status.SUCCESS
+        await self._endpoint.device.remote_at(pin_name, pin_cmd)
+        return 0, foundation.Status.SUCCESS
 
 
 class XBee3Sensor(CustomDevice):
