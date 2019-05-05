@@ -92,8 +92,6 @@ ENDPOINT_MAP = {
     3: 0xd3,
     4: 0xd4,
     5: 0xd5,
-    8: 0xd8,
-    9: 0xd9,
     10: 0xda,
     11: 0xdb,
     12: 0xdc,
@@ -109,8 +107,6 @@ class XBeeOnOff(CustomCluster, OnOff):
         0xd3: 'D3',
         0xd4: 'D4',
         0xd5: 'D5',
-        0xd8: 'D8',
-        0xd9: 'D9',
         0xda: 'P0',
         0xdb: 'P1',
         0xdc: 'P2',
@@ -291,28 +287,6 @@ class XbeeSensor(CustomDevice):
             0xd5: {
                 'manufacturer': 'XBEE',
                 'model': 'DIO5/Assoc',
-                'device_type': zha.DeviceType.LEVEL_CONTROL_SWITCH,
-                'profile_id': XBEE_PROFILE_ID,
-                'input_clusters': [
-                    XBeeOnOff,
-                ],
-                'output_clusters': [
-                ],
-            },
-            0xd8: {
-                'manufacturer': 'XBEE',
-                'model': 'DIO8',
-                'device_type': zha.DeviceType.LEVEL_CONTROL_SWITCH,
-                'profile_id': XBEE_PROFILE_ID,
-                'input_clusters': [
-                    XBeeOnOff,
-                ],
-                'output_clusters': [
-                ],
-            },
-            0xd9: {
-                'manufacturer': 'XBEE',
-                'model': 'DIO9',
                 'device_type': zha.DeviceType.LEVEL_CONTROL_SWITCH,
                 'profile_id': XBEE_PROFILE_ID,
                 'input_clusters': [
