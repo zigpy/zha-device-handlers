@@ -1,6 +1,6 @@
 """Allows for direct control of an xbee3's digital pins,
-reading pins should work with any coordinator (Untested) 
-writing pins will only work with an xbee as the coordinator as 
+reading pins should work with any coordinator (Untested)
+writing pins will only work with an xbee as the coordinator as
 it requires zigpy_xbee.
 
 The xbee must be configured via XCTU to send samples to the coordinator,
@@ -12,19 +12,14 @@ mask on IC or set IR to a value greater than zero to send perodic reports
 every x milliseconds, I recommend the later, since this will ensure
 the xbee stays alive in Home Assistant.
 """
-
-import zigpy.types as t
-from zigpy import util
 import logging
 import struct
+import zigpy.types as t
 from zigpy.quirks import CustomDevice, CustomCluster
-from zigpy.profiles import PROFILES, zha
-from zigpy.zcl.clusters.general import Basic, Groups, OnOff,\
-    PowerConfiguration, Identify, AnalogValue, AnalogOutput,\
-    AnalogInput, BinaryInput, BinaryOutput
+from zigpy.profiles import zha
+from zigpy.zcl.clusters.general import OnOff, BinaryInput
 
 from zigpy.zcl import foundation
-import asyncio
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -36,45 +31,61 @@ XBEE_DST_ENDPOINT = 0xe8
 DIO_APPLY_CHANGES = 0x02
 DIO_PIN_HIGH = 0x05
 DIO_PIN_LOW = 0x04
+ON_OFF_CMD = 0x0000
 
 class IOSample(bytes):
+    """Parse an XBee IO sample report"""
     def serialize(self):
+        """Serialize an IO Sample Report, Not implemented"""
         _LOGGER.debug("Serialize not implemented.")
 
     @classmethod
     def deserialize(cls, data):
-        #xbee digital sample format
-        #Digital mask byte 0,1
-        #Analog mask byte 3
-        #Digital samples byte 4, 5
-        #Analog Sample, 2 bytes per
+        """Deserialize an xbee IO sample report
+        xbee digital sample format
+        Digital mask byte 0,1
+        Analog mask byte 3
+        Digital samples byte 4, 5
+        Analog Sample, 2 bytes per"""
 
         digital_mask = data[0:2]
         analog_mask = data[2:3]
         digital_sample = data[3:5]
         num_bits = 13
-        digital_pins = [(int.from_bytes(digital_mask, byteorder='big') >> bit) & 1 for bit in range(num_bits - 1, -1, -1)]
-        digital_pins =  list(reversed(digital_pins))
-        analog_pins = [(int.from_bytes(analog_mask, byteorder='big') >> bit) & 1 for bit in range(8 - 1, -1, -1)]
-        analog_pins =  list(reversed(analog_pins))
-        digital_samples = [(int.from_bytes(digital_sample, byteorder='big') >> bit) & 1 for bit in range(num_bits - 1, -1, -1)]
-        digital_samples =  list(reversed(digital_samples))
-        a = 0
+        digital_pins = [
+            (int.from_bytes(digital_mask, byteorder='big') >> bit) & 1
+            for bit in range(num_bits - 1, -1, -1)]
+        digital_pins = list(reversed(digital_pins))
+        analog_pins = [
+            (int.from_bytes(analog_mask, byteorder='big') >> bit) & 1
+            for bit in range(8 - 1, -1, -1)]
+        analog_pins = list(reversed(analog_pins))
+        digital_samples = [
+            (int.from_bytes(digital_sample, byteorder='big') >> bit) & 1
+            for bit in range(num_bits - 1, -1, -1)]
+        digital_samples = list(reversed(digital_samples))
+        sample_index = 0
         analog_samples = []
         for apin in analog_pins:
             if apin == 1:
-                analog_samples.append(int.from_bytes(data[5+a:7+a], byteorder='big'))
-                a += 1
+                analog_samples.append(
+                    int.from_bytes(data[5+sample_index:7+sample_index], byteorder='big'))
+                sample_index += 1
             else:
                 analog_samples.append(0)
 
-        return {'digital_pins':digital_pins, 'analog_pins':analog_pins, 'digital_samples':digital_samples, 'analog_samples':analog_samples}, b''
+        return {
+            'digital_pins':digital_pins,
+            'analog_pins':analog_pins,
+            'digital_samples':digital_samples,
+            'analog_samples':analog_samples}, b''
 
 #4 AO lines
 #10 digital
-# Discovered endpoint information: <SimpleDescriptor endpoint=232 profile=49413 device_type=1 device_version=0 input_clusters=[] output_clusters=[]>
+# Discovered endpoint information: <SimpleDescriptor endpoint=232 profile=49413
+# device_type=1 device_version=0 input_clusters=[] output_clusters=[]>
 
-endpoint_map = {
+ENDPOINT_MAP = {
     0: 0xd0,
     1: 0xd1,
     2: 0xd2,
@@ -90,6 +101,7 @@ endpoint_map = {
 
 
 class XBeeOnOff(CustomCluster, OnOff):
+    """XBee on/off cluster"""
     ep_id_2_pin = {
         0xd0: 'D0',
         0xd1: 'D1',
@@ -105,10 +117,10 @@ class XBeeOnOff(CustomCluster, OnOff):
     }
 
     async def command(self, command, *args, **kwargs):
+        """XBee change pin state command, requires zigpy_xbee"""
         pin_name = self.ep_id_2_pin.get(self._endpoint.endpoint_id)
         if command not in [0, 1] or pin_name is None:
             return super().command(command, *args, **kwargs)
-        
         if command == 0:
             pin_cmd = DIO_PIN_LOW
         else:
@@ -118,29 +130,35 @@ class XBeeOnOff(CustomCluster, OnOff):
 
 
 class XBee3Sensor(CustomDevice):
+    """XBee3 Sensor"""
     def remote_at(self, command, *args, **kwargs):
+        """Remote at command"""
         return self._application.remote_at_command(
             self.nwk, command, *args, apply_changes=True, encryption=True, **kwargs
         )
-    
     class DigitalIOCluster(CustomCluster, BinaryInput):
+        """Digital IO Cluster for the XBee"""
         cluster_id = XBEE_IO_CLUSTER
         def __init__(self, *args, **kwargs):
+            """init"""
             super().__init__(*args, **kwargs)
-        def handle_cluster_request(self, tsn, command_id, args):
-            super().handle_cluster_request(tsn, command_id, args)
         def handle_cluster_general_request(self, tsn, command_id, args):
-            if command_id == 0x0000:
+            """Handle the cluster general request to update the digital pin states"""
+            if command_id == ON_OFF_CMD:
                 values = args[0]
                 if 'digital_pins' in values and 'digital_samples' in values:
                     #Update digital inputs
                     active_pins = [i for i, x in enumerate(values['digital_pins']) if x == 1]
                     for pin in active_pins:
-                        self._endpoint._device.__getitem__(endpoint_map[pin]).__getattr__(OnOff.ep_attribute)._update_attribute(0x0000, values['digital_samples'][pin])
+                        self._endpoint._device.__getitem__(
+                            ENDPOINT_MAP[pin]).__getattr__(
+                                OnOff.ep_attribute)._update_attribute(
+                                    ON_OFF_CMD, values['digital_samples'][pin])
             else:
                 super().handle_cluster_general_request(tsn, command_id, args)
 
         def deserialize(self, tsn, frame_type, is_reply, command_id, data):
+            """Deserialize"""
             if frame_type == 1:
                 # Cluster command
                 if is_reply:
@@ -152,8 +170,8 @@ class XBee3Sensor(CustomDevice):
                     schema = commands[command_id][1]
                     is_reply = commands[command_id][2]
                 except KeyError:
-                    data = struct.pack('>i',tsn)[-1:] + struct.pack('>i',command_id)[-1:] + data
-                    new_command_id = 0x0000
+                    data = struct.pack('>i', tsn)[-1:] + struct.pack('>i', command_id)[-1:] + data
+                    new_command_id = ON_OFF_CMD
                     try:
                         schema = commands[new_command_id][1]
                         is_reply = commands[new_command_id][2]
@@ -178,11 +196,7 @@ class XBee3Sensor(CustomDevice):
                 _LOGGER.warning("Data remains after deserializing ZCL frame")
             return tsn, command_id, is_reply, value
 
-        def handle_message(self, is_reply, tsn, command_id, args):
-            super().handle_message(is_reply, tsn, command_id, args)
-
-        attributes = {0x0055: ('present_value', t.Bool),
-               }
+        attributes = {0x0055: ('present_value', t.Bool)}
         client_commands = {
             0x0000: ('io_sample', (IOSample,), False),
         }
@@ -193,7 +207,7 @@ class XBee3Sensor(CustomDevice):
     signature = {
         232: {
             'profile_id': XBEE_PROFILE_ID,
-            'device_type': 0x01,
+            'device_type': zha.DeviceType.LEVEL_CONTROL_SWITCH,
             'input_clusters': [
             ],
             'output_clusters': [
@@ -201,21 +215,20 @@ class XBee3Sensor(CustomDevice):
         },
         230: {
             'profile_id': XBEE_PROFILE_ID,
-            'device_type': 0x01,
+            'device_type': zha.DeviceType.LEVEL_CONTROL_SWITCH,
             'input_clusters': [
             ],
             'output_clusters': [
             ],
         },
     }
-    
     replacement = {
         'endpoints': {
             232: {
                 'manufacturer': 'XBEE',
                 'model': 'xbee.io',
                 'input_clusters': [
-                   DigitalIOCluster,
+                    DigitalIOCluster,
                 ],
                 'output_clusters': [
                 ],
@@ -223,10 +236,10 @@ class XBee3Sensor(CustomDevice):
             0xd0: {
                 'manufacturer': 'XBEE',
                 'model': 'AD0/DIO0/Commissioning',
-                'device_type': 0x01,
+                'device_type': zha.DeviceType.LEVEL_CONTROL_SWITCH,
                 'profile_id': XBEE_PROFILE_ID,
                 'input_clusters': [
-                   XBeeOnOff,
+                    XBeeOnOff,
                 ],
                 'output_clusters': [
                 ],
@@ -234,10 +247,10 @@ class XBee3Sensor(CustomDevice):
             0xd1: {
                 'manufacturer': 'XBEE',
                 'model': 'AD1/DIO1/SPI_nATTN',
-                'device_type': 0x01,
+                'device_type': zha.DeviceType.LEVEL_CONTROL_SWITCH,
                 'profile_id': XBEE_PROFILE_ID,
                 'input_clusters': [
-                   XBeeOnOff,
+                    XBeeOnOff,
                 ],
                 'output_clusters': [
                 ],
@@ -245,10 +258,10 @@ class XBee3Sensor(CustomDevice):
             0xd2: {
                 'manufacturer': 'XBEE',
                 'model': 'AD2/DIO2/SPI_CLK',
-                'device_type': 0x01,
+                'device_type': zha.DeviceType.LEVEL_CONTROL_SWITCH,
                 'profile_id': XBEE_PROFILE_ID,
                 'input_clusters': [
-                   XBeeOnOff,
+                    XBeeOnOff,
                 ],
                 'output_clusters': [
                 ],
@@ -256,10 +269,10 @@ class XBee3Sensor(CustomDevice):
             0xd3: {
                 'manufacturer': 'XBEE',
                 'model': 'AD3/DIO3',
-                'device_type': 0x01,
+                'device_type': zha.DeviceType.LEVEL_CONTROL_SWITCH,
                 'profile_id': XBEE_PROFILE_ID,
                 'input_clusters': [
-                   XBeeOnOff,
+                    XBeeOnOff,
                 ],
                 'output_clusters': [
                 ],
@@ -267,10 +280,10 @@ class XBee3Sensor(CustomDevice):
             0xd4: {
                 'manufacturer': 'XBEE',
                 'model': 'DIO4/SPI_MOSI',
-                'device_type': 0x01,
+                'device_type': zha.DeviceType.LEVEL_CONTROL_SWITCH,
                 'profile_id': XBEE_PROFILE_ID,
                 'input_clusters': [
-                   XBeeOnOff,
+                    XBeeOnOff,
                 ],
                 'output_clusters': [
                 ],
@@ -278,10 +291,10 @@ class XBee3Sensor(CustomDevice):
             0xd5: {
                 'manufacturer': 'XBEE',
                 'model': 'DIO5/Assoc',
-                'device_type': 0x01,
+                'device_type': zha.DeviceType.LEVEL_CONTROL_SWITCH,
                 'profile_id': XBEE_PROFILE_ID,
                 'input_clusters': [
-                   XBeeOnOff,
+                    XBeeOnOff,
                 ],
                 'output_clusters': [
                 ],
@@ -289,10 +302,10 @@ class XBee3Sensor(CustomDevice):
             0xd8: {
                 'manufacturer': 'XBEE',
                 'model': 'DIO8',
-                'device_type': 0x01,
+                'device_type': zha.DeviceType.LEVEL_CONTROL_SWITCH,
                 'profile_id': XBEE_PROFILE_ID,
                 'input_clusters': [
-                   XBeeOnOff,
+                    XBeeOnOff,
                 ],
                 'output_clusters': [
                 ],
@@ -300,10 +313,10 @@ class XBee3Sensor(CustomDevice):
             0xd9: {
                 'manufacturer': 'XBEE',
                 'model': 'DIO9',
-                'device_type': 0x01,
+                'device_type': zha.DeviceType.LEVEL_CONTROL_SWITCH,
                 'profile_id': XBEE_PROFILE_ID,
                 'input_clusters': [
-                   XBeeOnOff,
+                    XBeeOnOff,
                 ],
                 'output_clusters': [
                 ],
@@ -311,10 +324,10 @@ class XBee3Sensor(CustomDevice):
             0xda: {
                 'manufacturer': 'XBEE',
                 'model': 'DIO10/PWM0',
-                'device_type': 0x01,
+                'device_type': zha.DeviceType.LEVEL_CONTROL_SWITCH,
                 'profile_id': XBEE_PROFILE_ID,
                 'input_clusters': [
-                   XBeeOnOff,
+                    XBeeOnOff,
                 ],
                 'output_clusters': [
                 ],
@@ -322,10 +335,10 @@ class XBee3Sensor(CustomDevice):
             0xdb: {
                 'manufacturer': 'XBEE',
                 'model': 'DIO11/PWM1',
-                'device_type': 0x01,
+                'device_type': zha.DeviceType.LEVEL_CONTROL_SWITCH,
                 'profile_id': XBEE_PROFILE_ID,
                 'input_clusters': [
-                   XBeeOnOff,
+                    XBeeOnOff,
                 ],
                 'output_clusters': [
                 ],
@@ -333,10 +346,10 @@ class XBee3Sensor(CustomDevice):
             0xdc: {
                 'manufacturer': 'XBEE',
                 'model': 'DIO12/SPI_MISO',
-                'device_type': 0x01,
+                'device_type': zha.DeviceType.LEVEL_CONTROL_SWITCH,
                 'profile_id': XBEE_PROFILE_ID,
                 'input_clusters': [
-                   XBeeOnOff,
+                    XBeeOnOff,
                 ],
                 'output_clusters': [
                 ],
