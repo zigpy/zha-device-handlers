@@ -129,9 +129,11 @@ class XbeeSensor(CustomDevice):
     """XBee Sensor"""
     def remote_at(self, command, *args, **kwargs):
         """Remote at command"""
-        return self._application.remote_at_command(
-            self.nwk, command, *args, apply_changes=True, encryption=True, **kwargs
-        )
+        if hasattr(self.device._application, 'remote_at_command'):
+            return self._application.remote_at_command(
+                self.nwk, command, *args, apply_changes=True, encryption=True, **kwargs
+            )
+        _LOGGER.warning("Remote At Command not supported by this coordinator")
     class DigitalIOCluster(CustomCluster, BinaryInput):
         """Digital IO Cluster for the XBee"""
         cluster_id = XBEE_IO_CLUSTER
