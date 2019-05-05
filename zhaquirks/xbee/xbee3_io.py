@@ -133,7 +133,7 @@ class XBee3Sensor(CustomDevice):
     """XBee3 Sensor"""
     def remote_at(self, command, *args, **kwargs):
         """Remote at command"""
-        if hasattr(self._application._application, 'remote_at_command'):
+        if hasattr(self._application, 'remote_at_command'):
             return self._application.remote_at_command(
                 self.nwk, command, *args, apply_changes=True, encryption=True, **kwargs
             )
