@@ -138,7 +138,7 @@ class RemoteB286ACN01(XiaomiCustomDevice):
             1: {
                 'manufacturer': 'LUMI',
                 'model': 'lumi.remote.b286acn01',
-                'device_type': zha.DeviceType.REMOTE_CONTROL,
+                'device_type': XIAOMI_DEVICE_TYPE,
                 'input_clusters': [
                     BasicCluster,
                     PowerConfigurationCluster,
@@ -161,7 +161,7 @@ class RemoteB286ACN01(XiaomiCustomDevice):
             2: {
                 'manufacturer': 'LUMI',
                 'model': 'lumi.remote.b286acn01',
-                'device_type': zha.DeviceType.REMOTE_CONTROL,
+                'device_type': XIAOMI_DEVICE_TYPE2,
                 'input_clusters': [
                     Identify.cluster_id,
                     MultistateInputCluster
@@ -176,7 +176,7 @@ class RemoteB286ACN01(XiaomiCustomDevice):
             3: {
                 'manufacturer': 'LUMI',
                 'model': 'lumi.remote.b286acn01',
-                'device_type': zha.DeviceType.REMOTE_CONTROL,
+                'device_type': XIAOMI_DEVICE_TYPE3,
                 'input_clusters': [
                     Identify.cluster_id,
                     AnalogInput.cluster_id,
