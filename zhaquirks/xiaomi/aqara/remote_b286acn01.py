@@ -179,7 +179,6 @@ class RemoteB286ACN01(XiaomiCustomDevice):
                 'device_type': XIAOMI_DEVICE_TYPE3,
                 'input_clusters': [
                     Identify.cluster_id,
-                    AnalogInput.cluster_id,
                     MultistateInputCluster
                 ],
                 'output_clusters': [

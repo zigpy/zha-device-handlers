@@ -96,6 +96,12 @@ class VibrationAQ1(XiaomiCustomDevice):
                     'motion_event'
                 )
 
+            # show something in the sensor in HA
+            super()._update_attribute(
+                0,
+                self._current_state[STATUS_TYPE_ATTR]
+            )
+
     class MotionCluster(LocalDataCluster, IasZone):
         """Motion cluster."""
 
@@ -218,8 +224,7 @@ class VibrationAQ1(XiaomiCustomDevice):
                 'model': 'lumi.vibration.aq1',
                 'device_type': VIBE_DEVICE_TYPE,
                 'input_clusters': [
-                    Identify.cluster_id,
-                    MultistateInputCluster
+                    Identify.cluster_id
                 ],
                 'output_clusters': [
                     Identify.cluster_id,

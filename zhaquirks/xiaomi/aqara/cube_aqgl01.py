@@ -280,8 +280,7 @@ class CubeAQGL01(XiaomiCustomDevice):
                     PowerConfigurationCluster,
                     TemperatureMeasurementCluster,
                     Identify.cluster_id,
-                    Ota.cluster_id,
-                    MultistateInput.cluster_id
+                    Ota.cluster_id
                 ],
                 'output_clusters': [
                     BasicCluster.cluster_id,
