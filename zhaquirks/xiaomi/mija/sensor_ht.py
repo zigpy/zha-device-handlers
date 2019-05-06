@@ -103,8 +103,7 @@ class Weather(XiaomiCustomDevice):
                     TemperatureMeasurement.cluster_id,
                     RelativeHumidity.cluster_id,
                     XIAOMI_CLUSTER_ID,
-                    Ota.cluster_id,
-                    MultistateInput.cluster_id
+                    Ota.cluster_id
                 ],
                 'output_clusters': [
                     BasicCluster.cluster_id,
@@ -119,8 +118,7 @@ class Weather(XiaomiCustomDevice):
             2: {
                 'device_type': TEMPERATURE_HUMIDITY_DEVICE_TYPE2,
                 'input_clusters': [
-                    Identify.cluster_id,
-                    MultistateInput.cluster_id,
+                    Identify.cluster_id
                 ],
                 'output_clusters': [
                     Groups.cluster_id,
@@ -136,8 +134,7 @@ class Weather(XiaomiCustomDevice):
             3: {
                 'device_type': TEMPERATURE_HUMIDITY_DEVICE_TYPE3,
                 'input_clusters': [
-                    Identify.cluster_id,
-                    AnalogInput.cluster_id
+                    Identify.cluster_id
                 ],
                 'output_clusters': [
                     Groups.cluster_id,
