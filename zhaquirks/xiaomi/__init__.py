@@ -53,14 +53,14 @@ class BasicCluster(CustomCluster, Basic):
     cluster_id = Basic.cluster_id
 
     def _update_attribute(self, attrid, value):
-        if attrid != XIAOMI_MIJA_ATTRIBUTE:
-            super()._update_attribute(attrid, value)
-
-        attributes = {}
         if attrid == XIAOMI_AQARA_ATTRIBUTE:
-            attributes = self._parse_aqara_attributes(value)
+            attributes = self._parse_aqara_attributes(value.raw)
+            super()._update_attribute(attrid, value.raw)
         elif attrid == XIAOMI_MIJA_ATTRIBUTE:
-            attributes = self._parse_mija_attributes(value)
+            attributes = self._parse_mija_attributes(value.raw)
+        else:
+            super()._update_attribute(attrid, value)
+            return
 
         _LOGGER.debug(
             "%s - Attribute report. attribute_id: [%s] value: [%s]",
