@@ -48,8 +48,8 @@ class PowerConfigurationCluster(CustomCluster, PowerConfiguration):
         elif raw_value > self.MAX_VOLTS:
             volts = self.MAX_VOLTS
 
-        percent = self.VOLTS_TO_PERCENT.get(volts, 'unknown')
-        if percent != 'unknown':
+        percent = self.VOLTS_TO_PERCENT.get(volts, -1)
+        if percent != -1:
             percent = percent * 2
         return percent
 
