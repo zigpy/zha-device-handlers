@@ -2,13 +2,13 @@
 
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import Basic, Ota
-from zigpy.zcl.clusters.measurement import (
-    IlluminanceMeasurement, OccupancySensing)
+from zigpy.zcl.clusters.measurement import OccupancySensing
 
 from zhaquirks import Bus
 from zhaquirks.xiaomi import BasicCluster, XiaomiCustomDevice
 
 from .. import MotionCluster, OccupancyCluster
+from . import IlluminanceMeasurementCluster
 
 XIAOMI_CLUSTER_ID = 0xFFFF
 
@@ -36,7 +36,7 @@ class MotionAQ2(XiaomiCustomDevice):
                 Basic.cluster_id,
                 XIAOMI_CLUSTER_ID,
                 OccupancySensing.cluster_id,
-                IlluminanceMeasurement.cluster_id,
+                IlluminanceMeasurementCluster.cluster_id,
             ],
             'output_clusters': [
                 Basic.cluster_id,
@@ -52,7 +52,7 @@ class MotionAQ2(XiaomiCustomDevice):
                 'model': 'lumi.sensor_motion.aq2',
                 'input_clusters': [
                     BasicCluster,
-                    IlluminanceMeasurement.cluster_id,
+                    IlluminanceMeasurementCluster,
                     OccupancyCluster,
                     MotionCluster,
                     XIAOMI_CLUSTER_ID
