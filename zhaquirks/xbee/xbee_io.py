@@ -38,10 +38,10 @@ ON_OFF_CMD = 0x0000
 
 class IOSample(bytes):
     """Parse an XBee IO sample report."""
+
     # pylint: disable=R0201
     def serialize(self):
         """Serialize an IO Sample Report, Not implemented."""
-
         _LOGGER.debug("Serialize not implemented.")
 
     @classmethod
@@ -108,6 +108,7 @@ ENDPOINT_MAP = {
 
 class XBeeOnOff(CustomCluster, OnOff):
     """XBee on/off cluster."""
+
     ep_id_2_pin = {
         0xd0: 'D0',
         0xd1: 'D1',
@@ -136,6 +137,7 @@ class XBeeOnOff(CustomCluster, OnOff):
 
 class XbeeSensor(CustomDevice):
     """XBee Sensor."""
+
     def remote_at(self, command, *args, **kwargs):
         """Remote at command."""
         if hasattr(self._application, 'remote_at_command'):
@@ -151,6 +153,7 @@ class XbeeSensor(CustomDevice):
 
     class DigitalIOCluster(CustomCluster, BinaryInput):
         """Digital IO Cluster for the XBee."""
+        
         cluster_id = XBEE_IO_CLUSTER
 
         def handle_cluster_general_request(self, tsn, command_id, args):

@@ -141,6 +141,7 @@ class XBeeOnOff(CustomCluster, OnOff):
 
 class XBee3Sensor(CustomDevice):
     """XBee3 Sensor."""
+
     def remote_at(self, command, *args, **kwargs):
         """Remote at command."""
         if hasattr(self._application, 'remote_at_command'):
@@ -156,6 +157,7 @@ class XBee3Sensor(CustomDevice):
 
     class DigitalIOCluster(CustomCluster, BinaryInput):
         """Digital IO Cluster for the XBee."""
+        
         cluster_id = XBEE_IO_CLUSTER
 
         def handle_cluster_general_request(self, tsn, command_id, args):
