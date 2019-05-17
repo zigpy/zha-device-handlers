@@ -1,5 +1,6 @@
-"""Allows for direct control of an xbee's digital pins,
-reading pins should work with any coordinator (Untested)
+"""Allows for direct control of an xbee's digital pins.
+
+Reading pins should work with any coordinator (Untested)
 writing pins will only work with an xbee as the coordinator as
 it requires zigpy_xbee.
 
@@ -12,6 +13,7 @@ mask on IC or set IR to a value greater than zero to send perodic reports
 every x milliseconds, I recommend the later, since this will ensure
 the xbee stays alive in Home Assistant.
 """
+
 import logging
 import struct
 import zigpy.types as t
@@ -33,21 +35,25 @@ DIO_PIN_HIGH = 0x05
 DIO_PIN_LOW = 0x04
 ON_OFF_CMD = 0x0000
 
+
 class IOSample(bytes):
-    """Parse an XBee IO sample report"""
+    """Parse an XBee IO sample report."""
+
+    # pylint: disable=R0201
     def serialize(self):
-        """Serialize an IO Sample Report, Not implemented"""
+        """Serialize an IO Sample Report, Not implemented."""
         _LOGGER.debug("Serialize not implemented.")
 
     @classmethod
     def deserialize(cls, data):
-        """Deserialize an xbee IO sample report
+        """Deserialize an xbee IO sample report.
+
         xbee digital sample format
         Digital mask byte 0,1
         Analog mask byte 3
         Digital samples byte 4, 5
-        Analog Sample, 2 bytes per"""
-
+        Analog Sample, 2 bytes per
+        """
         digital_mask = data[0:2]
         analog_mask = data[2:3]
         digital_sample = data[3:5]
@@ -69,21 +75,23 @@ class IOSample(bytes):
         for apin in analog_pins:
             if apin == 1:
                 analog_samples.append(
-                    int.from_bytes(data[5+sample_index:7+sample_index], byteorder='big'))
+                    int.from_bytes(data[5+sample_index:7+sample_index],
+                                   byteorder='big'))
                 sample_index += 1
             else:
                 analog_samples.append(0)
 
         return {
-            'digital_pins':digital_pins,
-            'analog_pins':analog_pins,
-            'digital_samples':digital_samples,
-            'analog_samples':analog_samples}, b''
+            'digital_pins': digital_pins,
+            'analog_pins': analog_pins,
+            'digital_samples': digital_samples,
+            'analog_samples': analog_samples}, b''
 
-#4 AO lines
-#10 digital
+# 4 AO lines
+# 10 digital
 # Discovered endpoint information: <SimpleDescriptor endpoint=232 profile=49413
 # device_type=1 device_version=0 input_clusters=[] output_clusters=[]>
+
 
 ENDPOINT_MAP = {
     0: 0xd0,
@@ -99,7 +107,8 @@ ENDPOINT_MAP = {
 
 
 class XBeeOnOff(CustomCluster, OnOff):
-    """XBee on/off cluster"""
+    """XBee on/off cluster."""
+
     ep_id_2_pin = {
         0xd0: 'D0',
         0xd1: 'D1',
@@ -112,43 +121,55 @@ class XBeeOnOff(CustomCluster, OnOff):
         0xdc: 'P2',
     }
 
-    async def command(self, command, *args, **kwargs):
-        """XBee change pin state command, requires zigpy_xbee"""
+    async def command(self, command, *args,
+                      manufacturer=None, expect_reply=True):
+        """Xbee change pin state command, requires zigpy_xbee."""
         pin_name = self.ep_id_2_pin.get(self._endpoint.endpoint_id)
         if command not in [0, 1] or pin_name is None:
-            return super().command(command, *args, **kwargs)
+            return super().command(command, *args)
         if command == 0:
             pin_cmd = DIO_PIN_LOW
         else:
             pin_cmd = DIO_PIN_HIGH
         await self._endpoint.device.remote_at(pin_name, pin_cmd)
         return 0, foundation.Status.SUCCESS
-        
+
 
 class XbeeSensor(CustomDevice):
-    """XBee Sensor"""
+    """XBee Sensor."""
+
     def remote_at(self, command, *args, **kwargs):
-        """Remote at command"""
+        """Remote at command."""
         if hasattr(self._application, 'remote_at_command'):
             return self._application.remote_at_command(
-                self.nwk, command, *args, apply_changes=True, encryption=True, **kwargs
+                self.nwk,
+                command,
+                *args,
+                apply_changes=True,
+                encryption=True,
+                **kwargs
             )
         _LOGGER.warning("Remote At Command not supported by this coordinator")
+
     class DigitalIOCluster(CustomCluster, BinaryInput):
-        """Digital IO Cluster for the XBee"""
+        """Digital IO Cluster for the XBee."""
+
         cluster_id = XBEE_IO_CLUSTER
-        def __init__(self, *args, **kwargs):
-            """init"""
-            super().__init__(*args, **kwargs)
+
         def handle_cluster_general_request(self, tsn, command_id, args):
-            """Handle the cluster general request to update the digital pin states"""
+            """Handle the cluster general request.
+
+            Update the digital pin states
+            """
             if command_id == ON_OFF_CMD:
                 values = args[0]
                 if 'digital_pins' in values and 'digital_samples' in values:
-                    #Update digital inputs
-                    active_pins = [i for i, x in enumerate(values['digital_pins']) if x == 1]
+                    # Update digital inputs
+                    active_pins = [i for i, x in enumerate(
+                        values['digital_pins']) if x == 1]
                     for pin in active_pins:
-                        self._endpoint._device.__getitem__(
+                        # pylint: disable=W0212
+                        self._endpoint.device.__getitem__(
                             ENDPOINT_MAP[pin]).__getattr__(
                                 OnOff.ep_attribute)._update_attribute(
                                     ON_OFF_CMD, values['digital_samples'][pin])
@@ -156,7 +177,7 @@ class XbeeSensor(CustomDevice):
                 super().handle_cluster_general_request(tsn, command_id, args)
 
         def deserialize(self, tsn, frame_type, is_reply, command_id, data):
-            """Deserialize"""
+            """Deserialize."""
             if frame_type == 1:
                 # Cluster command
                 if is_reply:
@@ -168,13 +189,16 @@ class XbeeSensor(CustomDevice):
                     schema = commands[command_id][1]
                     is_reply = commands[command_id][2]
                 except KeyError:
-                    data = struct.pack('>i', tsn)[-1:] + struct.pack('>i', command_id)[-1:] + data
+                    data = struct.pack(
+                        '>i',
+                        tsn)[-1:] + struct.pack('>i', command_id)[-1:] + data
                     new_command_id = ON_OFF_CMD
                     try:
                         schema = commands[new_command_id][1]
                         is_reply = commands[new_command_id][2]
                     except KeyError:
-                        _LOGGER.warning("Unknown cluster-specific command %s", command_id)
+                        _LOGGER.warning(
+                            "Unknown cluster-specific command %s", command_id)
                         return tsn, command_id + 256, is_reply, data
                     value, data = t.deserialize(data, schema)
                     return tsn, new_command_id, is_reply, value
@@ -186,7 +210,8 @@ class XbeeSensor(CustomDevice):
                     schema = foundation.COMMANDS[command_id][1]
                     is_reply = foundation.COMMANDS[command_id][2]
                 except KeyError:
-                    _LOGGER.warning("Unknown foundation command %s", command_id)
+                    _LOGGER.warning(
+                        "Unknown foundation command %s", command_id)
                     return tsn, command_id, is_reply, data
 
             value, data = t.deserialize(data, schema)
