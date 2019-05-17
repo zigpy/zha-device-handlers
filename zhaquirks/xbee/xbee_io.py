@@ -71,7 +71,8 @@ class IOSample(bytes):
         for apin in analog_pins:
             if apin == 1:
                 analog_samples.append(
-                    int.from_bytes(data[5+sample_index:7+sample_index], byteorder='big'))
+                    int.from_bytes(data[5+sample_index:7+sample_index],
+                                   byteorder='big'))
                 sample_index += 1
             else:
                 analog_samples.append(0)
@@ -135,7 +136,12 @@ class XbeeSensor(CustomDevice):
         """Remote at command"""
         if hasattr(self._application, 'remote_at_command'):
             return self._application.remote_at_command(
-                self.nwk, command, *args, apply_changes=True, encryption=True, **kwargs
+                self.nwk,
+                command,
+                *args,
+                apply_changes=True,
+                encryption=True,
+                **kwargs
             )
         _LOGGER.warning("Remote At Command not supported by this coordinator")
 
@@ -144,7 +150,8 @@ class XbeeSensor(CustomDevice):
         cluster_id = XBEE_IO_CLUSTER
 
         def handle_cluster_general_request(self, tsn, command_id, args):
-            """Handle the cluster general request to update the digital pin states"""
+            """Handle the cluster general request to
+               update the digital pin states"""
             if command_id == ON_OFF_CMD:
                 values = args[0]
                 if 'digital_pins' in values and 'digital_samples' in values:
@@ -173,7 +180,8 @@ class XbeeSensor(CustomDevice):
                     is_reply = commands[command_id][2]
                 except KeyError:
                     data = struct.pack(
-                        '>i', tsn)[-1:] + struct.pack('>i', command_id)[-1:] + data
+                        '>i',
+                        tsn)[-1:] + struct.pack('>i', command_id)[-1:] + data
                     new_command_id = ON_OFF_CMD
                     try:
                         schema = commands[new_command_id][1]
