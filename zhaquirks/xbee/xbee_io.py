@@ -38,7 +38,6 @@ ON_OFF_CMD = 0x0000
 
 class IOSample(bytes):
     """Parse an XBee IO sample report."""
-
     # pylint: disable=R0201
     def serialize(self):
         """Serialize an IO Sample Report, Not implemented."""
@@ -55,7 +54,6 @@ class IOSample(bytes):
         Digital samples byte 4, 5
         Analog Sample, 2 bytes per
         """
-
         digital_mask = data[0:2]
         analog_mask = data[2:3]
         digital_sample = data[3:5]
@@ -110,7 +108,6 @@ ENDPOINT_MAP = {
 
 class XBeeOnOff(CustomCluster, OnOff):
     """XBee on/off cluster."""
-
     ep_id_2_pin = {
         0xd0: 'D0',
         0xd1: 'D1',
@@ -123,12 +120,12 @@ class XBeeOnOff(CustomCluster, OnOff):
         0xdc: 'P2',
     }
 
-    async def command(self, command, *args, manufacturer=None, expect_reply=True):
-        """XBee change pin state command, requires zigpy_xbee."""
-
+    async def command(self, command, *args,
+                      manufacturer=None, expect_reply=True):
+        """Xbee change pin state command, requires zigpy_xbee."""
         pin_name = self.ep_id_2_pin.get(self._endpoint.endpoint_id)
         if command not in [0, 1] or pin_name is None:
-            return super().command(command, *args, **kwargs)
+            return super().command(command, *args)
         if command == 0:
             pin_cmd = DIO_PIN_LOW
         else:
@@ -139,10 +136,8 @@ class XBeeOnOff(CustomCluster, OnOff):
 
 class XbeeSensor(CustomDevice):
     """XBee Sensor."""
-
     def remote_at(self, command, *args, **kwargs):
         """Remote at command."""
-
         if hasattr(self._application, 'remote_at_command'):
             return self._application.remote_at_command(
                 self.nwk,
@@ -156,7 +151,6 @@ class XbeeSensor(CustomDevice):
 
     class DigitalIOCluster(CustomCluster, BinaryInput):
         """Digital IO Cluster for the XBee."""
-        
         cluster_id = XBEE_IO_CLUSTER
 
         def handle_cluster_general_request(self, tsn, command_id, args):
@@ -164,7 +158,6 @@ class XbeeSensor(CustomDevice):
 
             Update the digital pin states
             """
-
             if command_id == ON_OFF_CMD:
                 values = args[0]
                 if 'digital_pins' in values and 'digital_samples' in values:
@@ -172,16 +165,16 @@ class XbeeSensor(CustomDevice):
                     active_pins = [i for i, x in enumerate(
                         values['digital_pins']) if x == 1]
                     for pin in active_pins:
+                        # pylint: disable=W0212
                         self._endpoint.device.__getitem__(
                             ENDPOINT_MAP[pin]).__getattr__(
-                                OnOff.ep_attribute)._update_attribute( # pylint: disable=W0212
+                                OnOff.ep_attribute)._update_attribute(
                                     ON_OFF_CMD, values['digital_samples'][pin])
             else:
                 super().handle_cluster_general_request(tsn, command_id, args)
 
         def deserialize(self, tsn, frame_type, is_reply, command_id, data):
             """Deserialize."""
-
             if frame_type == 1:
                 # Cluster command
                 if is_reply:
