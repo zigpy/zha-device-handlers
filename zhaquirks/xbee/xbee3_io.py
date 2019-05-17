@@ -1,4 +1,5 @@
-"""Allows for direct control of an xbee3's digital pins,
+"""Allows for direct control of an xbee3's digital pins.
+
 reading pins should work with any coordinator (Untested)
 writing pins will only work with an xbee as the coordinator as
 it requires zigpy_xbee.
@@ -12,6 +13,7 @@ mask on IC or set IR to a value greater than zero to send perodic reports
 every x milliseconds, I recommend the later, since this will ensure
 the xbee stays alive in Home Assistant.
 """
+
 import logging
 import struct
 import zigpy.types as t
@@ -35,20 +37,24 @@ ON_OFF_CMD = 0x0000
 
 
 class IOSample(bytes):
-    """Parse an XBee IO sample report"""
+    """Parse an XBee IO sample report."""
 
+    # pylint: disable=R0201
     def serialize(self):
-        """Serialize an IO Sample Report, Not implemented"""
+        """Serialize an IO Sample Report, Not implemented."""
+
         _LOGGER.debug("Serialize not implemented.")
 
     @classmethod
     def deserialize(cls, data):
-        """Deserialize an xbee IO sample report
+        """Deserialize an xbee IO sample report.
+
         xbee digital sample format
         Digital mask byte 0,1
         Analog mask byte 3
         Digital samples byte 4, 5
-        Analog Sample, 2 bytes per"""
+        Analog Sample, 2 bytes per
+        """
 
         digital_mask = data[0:2]
         analog_mask = data[2:3]
@@ -105,7 +111,8 @@ ENDPOINT_MAP = {
 
 
 class XBeeOnOff(CustomCluster, OnOff):
-    """XBee on/off cluster"""
+    """XBee on/off cluster."""
+
     ep_id_2_pin = {
         0xd0: 'D0',
         0xd1: 'D1',
@@ -120,8 +127,9 @@ class XBeeOnOff(CustomCluster, OnOff):
         0xdc: 'P2',
     }
 
-    async def command(self, command, *args, **kwargs):
-        """XBee change pin state command, requires zigpy_xbee"""
+    async def command(self, command, *args, manufacturer=None, expect_reply=True):
+        """XBee change pin state command, requires zigpy_xbee."""
+        
         pin_name = self.ep_id_2_pin.get(self._endpoint.endpoint_id)
         if command not in [0, 1] or pin_name is None:
             return super().command(command, *args, **kwargs)
@@ -134,10 +142,11 @@ class XBeeOnOff(CustomCluster, OnOff):
 
 
 class XBee3Sensor(CustomDevice):
-    """XBee3 Sensor"""
+    """XBee3 Sensor."""
 
     def remote_at(self, command, *args, **kwargs):
-        """Remote at command"""
+        """Remote at command."""
+
         if hasattr(self._application, 'remote_at_command'):
             return self._application.remote_at_command(
                 self.nwk,
@@ -150,12 +159,16 @@ class XBee3Sensor(CustomDevice):
         _LOGGER.warning("Remote At Command not supported by this coordinator")
 
     class DigitalIOCluster(CustomCluster, BinaryInput):
-        """Digital IO Cluster for the XBee"""
+        """Digital IO Cluster for the XBee."""
+
         cluster_id = XBEE_IO_CLUSTER
 
         def handle_cluster_general_request(self, tsn, command_id, args):
-            """Handle the cluster general request
-               to update the digital pin states"""
+            """Handle the cluster general request.
+
+            Update the digital pin states
+            """
+
             if command_id == ON_OFF_CMD:
                 values = args[0]
                 if 'digital_pins' in values and 'digital_samples' in values:
@@ -165,13 +178,14 @@ class XBee3Sensor(CustomDevice):
                     for pin in active_pins:
                         self._endpoint.device.__getitem__(
                             ENDPOINT_MAP[pin]).__getattr__(
-                                OnOff.ep_attribute)._update_attribute(
+                                OnOff.ep_attribute)._update_attribute( # pylint: disable=W0212
                                     ON_OFF_CMD, values['digital_samples'][pin])
             else:
                 super().handle_cluster_general_request(tsn, command_id, args)
 
         def deserialize(self, tsn, frame_type, is_reply, command_id, data):
-            """Deserialize"""
+            """Deserialize."""
+
             if frame_type == 1:
                 # Cluster command
                 if is_reply:
