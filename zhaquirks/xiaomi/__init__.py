@@ -3,6 +3,7 @@ import asyncio
 import logging
 
 from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy import types as t
 from zigpy.zcl.clusters.general import Basic, PowerConfiguration
 from zigpy.zcl.clusters.measurement import (
     OccupancySensing, TemperatureMeasurement)
@@ -51,6 +52,26 @@ class BasicCluster(CustomCluster, Basic):
     """Xiaomi basic cluster implementation."""
 
     cluster_id = Basic.cluster_id
+
+    def deserialize(self, tsn, frame_type, is_reply, command_id, data):
+        try:
+            return super().deserialize(tsn, frame_type, is_reply, command_id, data)
+        except ValueError:
+            attr_id, data = t.uint16_t.deserialize(data)
+            attr_type, data = t.uint8_t.deserialize(data)
+            val_len, data = t.uint8_t.deserialize(data)
+            if frame_type != 1 and command_id == 0x0a and \
+                    attr_id in (XIAOMI_AQARA_ATTRIBUTE,
+                                XIAOMI_MIJA_ATTRIBUTE) and \
+                    attr_type == 0x42:
+                header = attr_id.serialize() + attr_type.serialize() + t.uint8_t(len(data)).serialize()
+                return super().deserialize(
+                    tsn, frame_type, is_reply, command_id, header + data
+                )
+            else:
+                raise
+
+
 
     def _update_attribute(self, attrid, value):
         if attrid == XIAOMI_AQARA_ATTRIBUTE:
