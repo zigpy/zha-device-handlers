@@ -1,5 +1,6 @@
 """Xiaomi common components for custom device handlers."""
 import asyncio
+import binascii
 import logging
 
 from zigpy.quirks import CustomCluster, CustomDevice
@@ -55,8 +56,13 @@ class BasicCluster(CustomCluster, Basic):
 
     def deserialize(self, tsn, frame_type, is_reply, command_id, data):
         try:
-            return super().deserialize(tsn, frame_type, is_reply, command_id, data)
+            return super().deserialize(tsn, frame_type, is_reply, command_id,
+                                       data)
         except ValueError:
+            m = "ValueError exception for: tsn=%s, frame_type=%s, is_repy=%s"
+            m += " cmd_id=%s, data=%s"
+            self.debug(m, tsn, frame_type, is_reply, command_id,
+                       binascii.hexlify(data))
             attr_id, data = t.uint16_t.deserialize(data)
             attr_type, data = t.uint8_t.deserialize(data)
             val_len, data = t.uint8_t.deserialize(data)
@@ -64,7 +70,9 @@ class BasicCluster(CustomCluster, Basic):
                     attr_id in (XIAOMI_AQARA_ATTRIBUTE,
                                 XIAOMI_MIJA_ATTRIBUTE) and \
                     attr_type == 0x42:
-                header = attr_id.serialize() + attr_type.serialize() + t.uint8_t(len(data)).serialize()
+                header = attr_id.serialize() + attr_type.serialize()
+                header += t.uint8_t(len(data)).serialize()
+                self.debug("new data: %s", binascii.hexlify(header + data))
                 return super().deserialize(
                     tsn, frame_type, is_reply, command_id, header + data
                 )
