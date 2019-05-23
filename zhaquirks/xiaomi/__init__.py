@@ -9,6 +9,7 @@ from zigpy.zcl.clusters.general import Basic, PowerConfiguration
 from zigpy.zcl.clusters.measurement import (
     OccupancySensing, TemperatureMeasurement)
 from zigpy.zcl.clusters.security import IasZone
+import zigpy.zcl.foundation as foundation
 
 from zhaquirks import Bus, LocalDataCluster
 
@@ -55,29 +56,39 @@ class BasicCluster(CustomCluster, Basic):
     cluster_id = Basic.cluster_id
 
     def deserialize(self, tsn, frame_type, is_reply, command_id, data):
+        """Deserialize cluster data."""
         try:
             return super().deserialize(tsn, frame_type, is_reply, command_id,
                                        data)
         except ValueError:
-            m = "ValueError exception for: tsn=%s, frame_type=%s, is_repy=%s"
-            m += " cmd_id=%s, data=%s"
-            self.debug(m, tsn, frame_type, is_reply, command_id,
+            msg = "ValueError exception for: tsn=%s, frame_type=%s, is_repy=%s"
+            msg += " cmd_id=%s, data=%s"
+            self.debug(msg, tsn, frame_type, is_reply, command_id,
                        binascii.hexlify(data))
-            attr_id, data = t.uint16_t.deserialize(data)
-            attr_type, data = t.uint8_t.deserialize(data)
-            val_len, data = t.uint8_t.deserialize(data)
-            if frame_type != 1 and command_id == 0x0a and \
-                    attr_id in (XIAOMI_AQARA_ATTRIBUTE,
-                                XIAOMI_MIJA_ATTRIBUTE) and \
-                    attr_type == 0x42:
-                header = attr_id.serialize() + attr_type.serialize()
-                header += t.uint8_t(len(data)).serialize()
-                self.debug("new data: %s", binascii.hexlify(header + data))
+            newdata = b''
+            while data:
+                try:
+                    attr, data = foundation.Attribute.deserialize(data)
+                except ValueError:
+                    attr_id, data = t.uint16_t.deserialize(data)
+                    if attr_id not in (XIAOMI_AQARA_ATTRIBUTE,
+                                       XIAOMI_MIJA_ATTRIBUTE):
+                        raise
+                    attr_type, data = t.uint8_t.deserialize(data)
+                    val_len, data = t.uint8_t.deserialize(data)
+                    val_len = t.uint8_t(val_len - 1)
+                    val, data = data[:val_len], data[val_len:]
+                    newdata += attr_id.serialize()
+                    newdata += attr_type.serialize()
+                    newdata += val_len.serialize() + val
+                    continue
+                newdata += attr.serialize()
+            if frame_type != 1 and command_id == 0x0a:
+                self.debug("new data: %s", binascii.hexlify(newdata))
                 return super().deserialize(
-                    tsn, frame_type, is_reply, command_id, header + data
+                    tsn, frame_type, is_reply, command_id, newdata
                 )
-            else:
-                raise
+            raise
 
 
 

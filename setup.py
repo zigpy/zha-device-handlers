@@ -23,5 +23,8 @@ setup(
     license="Apache License Version 2.0",
     keywords='zha quirks homeassistant hass',
     packages=find_packages(exclude=['*.tests']),
-    python_requires='>=3'
+    python_requires='>=3',
+    tests_require=[
+        'pytest',
+    ]
 )
