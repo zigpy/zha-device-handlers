@@ -90,8 +90,6 @@ class BasicCluster(CustomCluster, Basic):
                 )
             raise
 
-
-
     def _update_attribute(self, attrid, value):
         if attrid == XIAOMI_AQARA_ATTRIBUTE:
             attributes = self._parse_aqara_attributes(value.raw)
@@ -122,7 +120,6 @@ class BasicCluster(CustomCluster, Basic):
 
     def _parse_aqara_attributes(self, value):
         """Parse non standard atrributes."""
-        from zigpy.zcl import foundation as f
         attributes = {}
         attribute_names = {
             1: BATTERY_VOLTAGE_MV,
@@ -135,7 +132,7 @@ class BasicCluster(CustomCluster, Basic):
         result = {}
         while value:
             skey = int(value[0])
-            svalue, value = f.TypeValue.deserialize(value[1:])
+            svalue, value = foundation.TypeValue.deserialize(value[1:])
             result[skey] = svalue.value
         for item, val in result.items():
             key = attribute_names[item] \
