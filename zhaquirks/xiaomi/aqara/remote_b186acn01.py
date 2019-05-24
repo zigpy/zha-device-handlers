@@ -1,4 +1,4 @@
-"""Xiaomi aqara double key switch device."""
+"""Xiaomi aqara single key switch device."""
 import logging
 
 from zigpy.profiles import zha
