@@ -41,6 +41,9 @@ Custom quirks implementations for zigpy implemented as ZHA Device Handlers are a
 - [Motion Sensor](http://a.co/65rSQjZ): MotionV4
 - [Multi Sensor](http://a.co/gez6SzW): MultiV4
 
+### Keen Home
+- [Temperature / Humidity / Pressure Sensor](https://keenhome.io/products/temp-sensor): LUMI RS-THP-MP-1.0
+
 # Configuration:
 
 1. Update Home Assistant to 0.85.1 or a later version.
