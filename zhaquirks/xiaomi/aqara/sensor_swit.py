@@ -6,8 +6,8 @@ from zigpy.zcl.clusters.general import Basic, MultistateInput, OnOff
 
 from zhaquirks import CustomCluster
 from zhaquirks.xiaomi import (
-    BasicCluster, PowerConfigurationCluster, TemperatureMeasurementCluster,
-    XiaomiCustomDevice)
+    BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
+)
 
 BUTTON_DEVICE_TYPE = 0x5F01
 STATUS_TYPE_ATTR = 0x0055  # decimal = 85
@@ -94,7 +94,6 @@ class SwitchAQ3V2(XiaomiCustomDevice):
                 'input_clusters': [
                     BasicCluster,
                     PowerConfigurationCluster,
-                    TemperatureMeasurementCluster,
                     MultistateInputCluster
                 ],
                 'output_clusters': [

@@ -6,8 +6,7 @@ import logging
 from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy import types as t
 from zigpy.zcl.clusters.general import Basic, PowerConfiguration
-from zigpy.zcl.clusters.measurement import (
-    OccupancySensing, TemperatureMeasurement)
+from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
 import zigpy.zcl.foundation as foundation
 
@@ -16,8 +15,6 @@ from zhaquirks import Bus, LocalDataCluster
 XIAOMI_AQARA_ATTRIBUTE = 0xFF01
 XIAOMI_MIJA_ATTRIBUTE = 0xFF02
 BATTERY_REPORTED = 'battery_reported'
-TEMPERATURE_REPORTED = 'temperature_reported'
-TEMPERATURE_MEASURED_VALUE = 0x0000
 BATTERY_LEVEL = 'battery_level'
 TEMPERATURE = 'temperature'
 BATTERY_VOLTAGE_MV = 'battery_voltage_mV'
@@ -43,7 +40,6 @@ class XiaomiCustomDevice(CustomDevice):
 
     def __init__(self, *args, **kwargs):
         """Init."""
-        self.temperature_bus = Bus()
         self.battery_bus = Bus()
         if not hasattr(self, 'battery_size'):
             self.battery_size = 10
@@ -111,11 +107,6 @@ class BasicCluster(CustomCluster, Basic):
                 BATTERY_REPORTED,
                 attributes[BATTERY_LEVEL],
                 attributes[BATTERY_VOLTAGE_MV]
-            )
-        if TEMPERATURE in attributes:
-            self.endpoint.device.temperature_bus.listener_event(
-                TEMPERATURE_REPORTED,
-                attributes[TEMPERATURE]
             )
 
     def _parse_aqara_attributes(self, value):
@@ -207,24 +198,6 @@ class PowerConfigurationCluster(LocalDataCluster, PowerConfiguration):
         self._update_attribute(BATTERY_PERCENTAGE_REMAINING, voltage)
         self._update_attribute(self.BATTERY_VOLTAGE_ATTR,
                                int(raw_voltage / 100))
-
-
-class TemperatureMeasurementCluster(LocalDataCluster, TemperatureMeasurement):
-    """Xiaomi temperature measurement cluster implementation."""
-
-    cluster_id = TemperatureMeasurement.cluster_id
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.temperature_bus.add_listener(self)
-
-    def temperature_reported(self, raw_temperature):
-        """Temperature reported."""
-        self._update_attribute(
-            TEMPERATURE_MEASURED_VALUE,
-            raw_temperature * 100
-        )
 
 
 class OccupancyCluster(CustomCluster, OccupancySensing):

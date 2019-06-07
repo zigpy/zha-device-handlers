@@ -7,8 +7,8 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.security import IasZone
 
 from zhaquirks.xiaomi import (
-    BasicCluster, PowerConfigurationCluster, TemperatureMeasurementCluster,
-    XiaomiCustomDevice)
+    BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
+)
 
 IAS_ZONE = 0x0402
 _LOGGER = logging.getLogger(__name__)
@@ -56,8 +56,7 @@ class MijiaHoneywellSmokeDetectorSensor(XiaomiCustomDevice):
                     Identify.cluster_id,
                     AnalogInput.cluster_id,
                     MultistateInput.cluster_id,
-                    IasZone.cluster_id,
-                    TemperatureMeasurementCluster
+                    IasZone.cluster_id
                 ],
                 'output_clusters': [
                     Ota.cluster_id,

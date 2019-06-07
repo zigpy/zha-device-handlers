@@ -10,8 +10,8 @@ from zigpy.zcl.clusters.general import (
 
 from zhaquirks import CustomCluster
 from zhaquirks.xiaomi import (
-    BasicCluster, PowerConfigurationCluster, TemperatureMeasurementCluster,
-    XiaomiCustomDevice)
+    BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
+)
 
 XIAOMI_SENSORS = 0x5F01  # decimal = 24321 ? sensors
 XIAOMI_MEASUREMENTS = 0x5F02  # decimal = 24322 ? multistate measurements
@@ -278,7 +278,6 @@ class CubeAQGL01(XiaomiCustomDevice):
                 'input_clusters': [
                     BasicCluster,
                     PowerConfigurationCluster,
-                    TemperatureMeasurementCluster,
                     Identify.cluster_id,
                     Ota.cluster_id
                 ],

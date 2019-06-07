@@ -7,8 +7,8 @@ from zigpy.zcl.clusters.security import IasZone
 
 from zhaquirks import Bus
 from zhaquirks.xiaomi import (
-    BasicCluster, PowerConfigurationCluster, TemperatureMeasurementCluster,
-    XiaomiCustomDevice)
+    BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
+)
 
 from .. import MotionCluster, OccupancyCluster
 from . import IlluminanceMeasurementCluster
@@ -60,7 +60,6 @@ class MotionAQ2(XiaomiCustomDevice):
                     BasicCluster,
                     PowerConfigurationCluster,
                     Identify.cluster_id,
-                    TemperatureMeasurementCluster,
                     IlluminanceMeasurementCluster,
                     OccupancyCluster,
                     MotionCluster,

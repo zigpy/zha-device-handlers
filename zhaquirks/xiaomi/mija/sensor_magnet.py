@@ -8,8 +8,8 @@ from zigpy.zcl.clusters.general import (
     Groups, Identify, LevelControl, OnOff, Ota, Scenes)
 
 from zhaquirks.xiaomi import (
-    BasicCluster, PowerConfigurationCluster, TemperatureMeasurementCluster,
-    XiaomiCustomDevice)
+    BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
+)
 
 OPEN_CLOSE_DEVICE_TYPE = 0x5F01
 XIAOMI_CLUSTER_ID = 0xFFFF
@@ -68,7 +68,6 @@ class Magnet(XiaomiCustomDevice):
                     BasicCluster,
                     Identify.cluster_id,
                     PowerConfigurationCluster,
-                    TemperatureMeasurementCluster,
                     XIAOMI_CLUSTER_ID,
                     Ota.cluster_id,
                 ],

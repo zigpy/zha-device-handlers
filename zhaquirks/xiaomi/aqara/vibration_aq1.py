@@ -12,8 +12,8 @@ from zigpy.zcl.clusters.security import IasZone
 
 from zhaquirks import Bus, LocalDataCluster
 from zhaquirks.xiaomi import (
-    BasicCluster, PowerConfigurationCluster, TemperatureMeasurementCluster,
-    XiaomiCustomDevice)
+    BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
+)
 
 VIBE_DEVICE_TYPE = 0x5F02  # decimal = 24322
 RECENT_ACTIVITY_LEVEL_ATTR = 0x0505  # decimal = 1285
@@ -204,7 +204,6 @@ class VibrationAQ1(XiaomiCustomDevice):
                 'input_clusters': [
                     VibrationBasicCluster,
                     PowerConfigurationCluster,
-                    TemperatureMeasurementCluster,
                     Identify.cluster_id,
                     MotionCluster,
                     Ota.cluster_id,
