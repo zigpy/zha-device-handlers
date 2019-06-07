@@ -10,6 +10,7 @@ from zigpy.zcl.clusters.measurement import (
 
 class PressureMeasurementCluster(CustomCluster, PressureMeasurement):
     """Custom cluster representing Keen Home's pressure measurement."""
+
     cluster_id = PressureMeasurement.cluster_id
 
     KEEN_MEASURED_VALUE_ATTR = 0x0020
@@ -24,8 +25,10 @@ class PressureMeasurementCluster(CustomCluster, PressureMeasurement):
 
 class TemperatureHumidtyPressureSensor(CustomDevice):
     """Keen Home temperature/humidity/pressure sensor."""
+
     signature = {
-        # <SimpleDescriptor endpoint=1 profile=260 device_type=770 device_version=1
+        # <SimpleDescriptor endpoint=1 profile=260 device_type=770
+        # device_version=1
         # input_clusters=[0, 3, 1, 32]
         # output_clusters=[0, 4, 3, 5, 25, 1026, 1029, 1027, 32]>
         1: {
