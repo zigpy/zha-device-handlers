@@ -41,6 +41,11 @@ Custom quirks implementations for zigpy implemented as ZHA Device Handlers are a
 - [Motion Sensor](http://a.co/65rSQjZ): MotionV4
 - [Multi Sensor](http://a.co/gez6SzW): MultiV4
 
+### innr
+
+- [GU10 Spot](https://shop.innrlighting.com/en/shop/158/smart-spot-comfort-gu10-z3.0): innr RS 228 T
+- [E27 Color Bulb](https://shop.innrlighting.com/en/shop/143/smart-bulb-colour-e27-z3.0): innr RB 285 C
+
 # Configuration:
 
 1. Update Home Assistant to 0.85.1 or a later version.
