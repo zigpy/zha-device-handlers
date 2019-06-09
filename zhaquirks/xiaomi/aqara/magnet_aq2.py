@@ -7,8 +7,8 @@ from zigpy.quirks.xiaomi import AqaraOpenCloseSensor
 from zigpy.zcl.clusters.general import Groups, Identify, OnOff
 
 from zhaquirks.xiaomi import (
-    BasicCluster, PowerConfigurationCluster, TemperatureMeasurementCluster,
-    XiaomiCustomDevice)
+    BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
+)
 
 OPEN_CLOSE_DEVICE_TYPE = 0x5F01
 XIAOMI_CLUSTER_ID = 0xFFFF
@@ -61,7 +61,6 @@ class MagnetAQ2(XiaomiCustomDevice):
                     BasicCluster,
                     Identify.cluster_id,
                     PowerConfigurationCluster,
-                    TemperatureMeasurementCluster,
                     XIAOMI_CLUSTER_ID
                 ],
                 'output_clusters': [

@@ -6,8 +6,8 @@ from zigpy.zcl.clusters.general import Identify, Ota
 from zigpy.zcl.clusters.security import IasZone
 
 from zhaquirks.xiaomi import (
-    BasicCluster, PowerConfigurationCluster, TemperatureMeasurementCluster,
-    XiaomiCustomDevice)
+    BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
+)
 
 #  remove the zigpy version of this device handler
 if AqaraWaterSensor in quirks._DEVICE_REGISTRY:
@@ -47,7 +47,6 @@ class LeakAQ1(XiaomiCustomDevice):
                     BasicCluster,
                     Identify.cluster_id,
                     PowerConfigurationCluster,
-                    TemperatureMeasurementCluster,
                     IasZone.cluster_id
                 ],
                 'output_clusters': [
