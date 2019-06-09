@@ -41,6 +41,9 @@ Custom quirks implementations for zigpy implemented as ZHA Device Handlers are a
 - [Motion Sensor](http://a.co/65rSQjZ): MotionV4
 - [Multi Sensor](http://a.co/gez6SzW): MultiV4
 
+### Lutron
+- [Connected Bulb Remote](https://www.lutron.com/TechnicalDocumentLibrary/040421_Zigbee_Programming_Guide.pdf): Lutron LZL4BWHL01 Remote
+
 # Configuration:
 
 1. Update Home Assistant to 0.85.1 or a later version.
@@ -77,6 +80,9 @@ Custom quirks implementations for zigpy implemented as ZHA Device Handlers are a
 - All supported devices report battery level
 - tagV4 exposed as a device tracker in Home Assistant. The current implementation will use batteries rapidly
 - MultiV4 reports acceleration
+
+### Lutron
+- Connected bulb remote publishes events to Home Assistant
 
 ### Thanks
 
