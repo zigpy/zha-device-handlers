@@ -67,7 +67,7 @@ class IkeaTradfriRemote(CustomDevice):
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
                     Ota.cluster_id,
-                    LightLinkCluster
+                    LightLink.cluster_id
                 ],
             }
         },

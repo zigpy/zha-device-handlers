@@ -61,7 +61,7 @@ class IkeaTradfriMotion(CustomDevice):
                     Groups.cluster_id,
                     OnOff.cluster_id,
                     Ota.cluster_id,
-                    LightLinkCluster
+                    LightLink.cluster_id
                 ],
             }
         },
