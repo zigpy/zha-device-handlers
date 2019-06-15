@@ -34,7 +34,6 @@ class EventableCluster(CustomCluster):
 
     def handle_cluster_request(self, tsn, command_id, args):
         """Send cluster requests as events."""
-        super().handle_cluster_request(tsn, command_id, args)
         if self.server_commands is not None and\
                 self.server_commands.get(command_id) is not None:
             self.listener_event(
