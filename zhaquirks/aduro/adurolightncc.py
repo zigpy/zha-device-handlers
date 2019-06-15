@@ -1,6 +1,6 @@
 """ADUROLIGHT Adurolight_NCC device."""
 from zigpy.profiles import zha
-from zigpy.profiles.zha import DeviceType
+# from zigpy.profiles.zha import DeviceType
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic, Groups, Identify, LevelControl, OnOff
