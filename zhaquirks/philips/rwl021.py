@@ -29,8 +29,6 @@ class PhilipsRWL021(CustomDevice):
         #  input_clusters=[0]
         #  output_clusters=[0, 3, 4, 6, 8, 5]>
         1: {
-            'manufacturer': 'Philips',
-            'model': 'RWL021',
             'profile_id': zll.PROFILE_ID,
             'device_type': zll.DeviceType.SCENE_CONTROLLER,
             'input_clusters': [
