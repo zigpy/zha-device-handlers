@@ -1,6 +1,6 @@
 """ADUROLIGHT Adurolight_NCC device."""
 from zigpy.profiles import zha
-# from zigpy.profiles.zha import DeviceType
+from zigpy.profiles.zha import DeviceType
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic, Groups, Identify, LevelControl, OnOff
@@ -23,7 +23,7 @@ class AdurolightNCC(CustomDevice):
             'manufacturer': 'ADUROLIGHT',
             'model': 'Adurolight_NCC',
             'profile_id': zha.PROFILE_ID,
-            'device_type': 0x0820,  # DeviceType.NON_COLOR_CONTROLLER,
+            'device_type': DeviceType.NON_COLOR_CONTROLLER,
             'input_clusters': [
                 Basic.cluster_id,
                 Identify.cluster_id,
@@ -48,7 +48,7 @@ class AdurolightNCC(CustomDevice):
                 'manufacturer': 'ADUROLIGHT',
                 'model': 'Adurolight_NCC',
                 'profile_id': zha.PROFILE_ID,
-                'device_type': 0x0820,  # DeviceType.NON_COLOR_CONTROLLER,
+                'device_type': DeviceType.NON_COLOR_CONTROLLER,
                 'input_clusters': [
                     Basic.cluster_id,
                     Identify.cluster_id,
