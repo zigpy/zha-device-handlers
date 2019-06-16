@@ -68,7 +68,7 @@ class VibrationAQ1(XiaomiCustomDevice):
             super()._update_attribute(attrid, value)
             if attrid == STATUS_TYPE_ATTR:
                 self._current_state[STATUS_TYPE_ATTR] = MEASUREMENT_TYPE.get(
-                    value
+                    value, 'Unknown'
                 )
                 if value == VIBE_VALUE:
                     self.endpoint.device.motion_bus.listener_event(
@@ -97,10 +97,11 @@ class VibrationAQ1(XiaomiCustomDevice):
                 )
 
             # show something in the sensor in HA
-            super()._update_attribute(
-                0,
-                self._current_state[STATUS_TYPE_ATTR]
-            )
+            if STATUS_TYPE_ATTR in self._current_state:
+                super()._update_attribute(
+                    0,
+                    self._current_state[STATUS_TYPE_ATTR]
+                )
 
     class MotionCluster(LocalDataCluster, IasZone):
         """Motion cluster."""
@@ -214,8 +215,7 @@ class VibrationAQ1(XiaomiCustomDevice):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    Ota.cluster_id,
-                    DoorLock.cluster_id
+                    Ota.cluster_id
                 ],
             },
             2: {
