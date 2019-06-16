@@ -42,8 +42,6 @@ class SmartThingsMultiV4(CustomDevice):
     replacement = {
         'endpoints': {
             1: {
-                'manufacturer': 'SmartThings',
-                'model': 'multiv4',
                 'input_clusters': [
                     Basic.cluster_id,
                     PowerConfigurationCluster,

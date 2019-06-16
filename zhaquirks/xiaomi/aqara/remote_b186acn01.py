@@ -127,8 +127,6 @@ class RemoteB186ACN01(XiaomiCustomDevice):
     replacement = {
         'endpoints': {
             1: {
-                'manufacturer': 'LUMI',
-                'model': 'lumi.remote.b186acn01',
                 'device_type': XIAOMI_DEVICE_TYPE,
                 'input_clusters': [
                     BasicCluster,
@@ -149,8 +147,6 @@ class RemoteB186ACN01(XiaomiCustomDevice):
                 ],
             },
             2: {
-                'manufacturer': 'LUMI',
-                'model': 'lumi.remote.b186acn01',
                 'device_type': XIAOMI_DEVICE_TYPE2,
                 'input_clusters': [
                     Identify.cluster_id,
@@ -164,8 +160,6 @@ class RemoteB186ACN01(XiaomiCustomDevice):
                 ],
             },
             3: {
-                'manufacturer': 'LUMI',
-                'model': 'lumi.remote.b186acn01',
                 'device_type': XIAOMI_DEVICE_TYPE3,
                 'input_clusters': [
                     Identify.cluster_id,

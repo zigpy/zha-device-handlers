@@ -202,8 +202,6 @@ class VibrationAQ1(XiaomiCustomDevice):
     replacement = {
         'endpoints': {
             1: {
-                'manufacturer': 'LUMI',
-                'model': 'lumi.vibration.aq1',
                 'device_type': zha.DeviceType.DOOR_LOCK,
                 'input_clusters': [
                     VibrationBasicCluster,
@@ -222,8 +220,6 @@ class VibrationAQ1(XiaomiCustomDevice):
                 ],
             },
             2: {
-                'manufacturer': 'LUMI',
-                'model': 'lumi.vibration.aq1',
                 'device_type': VIBE_DEVICE_TYPE,
                 'input_clusters': [
                     Identify.cluster_id

@@ -63,8 +63,6 @@ class IkeaTradfriRemote(CustomDevice):
     replacement = {
         'endpoints': {
             1: {
-                'model': 'TRADFRI remote control',
-                'manufacturer': 'IKEA of Sweden',
                 'profile_id': zll.PROFILE_ID,
                 'device_type': zll.DeviceType.SCENE_CONTROLLER,
                 'input_clusters': [

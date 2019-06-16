@@ -46,8 +46,6 @@ class CentraLite3321S(CustomDevice):
         #  input_clusters=[0, 1, 3, 2821, 64527]
         #  output_clusters=[3]>
         2: {
-            'manufacturer': 'CentraLite',
-            'model': '3321-S',
             'profile_id': MANUFACTURER_SPECIFIC_PROFILE_ID,
             'device_type': zha.DeviceType.SIMPLE_SENSOR,
             'input_clusters': [
@@ -66,8 +64,6 @@ class CentraLite3321S(CustomDevice):
     replacement = {
         'endpoints': {
             1: {
-                'manufacturer': 'CentraLite',
-                'model': '3321-S',
                 'input_clusters': [
                     Basic.cluster_id,
                     PowerConfigurationCluster,
@@ -83,8 +79,6 @@ class CentraLite3321S(CustomDevice):
                 ],
             },
             2: {
-                'manufacturer': 'CentraLite',
-                'model': '3321-S',
                 'input_clusters': [
                     Basic.cluster_id,
                     Identify.cluster_id,

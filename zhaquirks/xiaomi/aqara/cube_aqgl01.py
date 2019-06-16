@@ -272,8 +272,6 @@ class CubeAQGL01(XiaomiCustomDevice):
     replacement = {
         'endpoints': {
             1: {
-                'manufacturer': 'LUMI',
-                'model': 'lumi.sensor_cube.aqgl01',
                 'device_type': XIAOMI_SENSORS_REPLACEMENT,
                 'input_clusters': [
                     BasicCluster,
@@ -291,8 +289,6 @@ class CubeAQGL01(XiaomiCustomDevice):
                 ],
             },
             2: {
-                'manufacturer': 'LUMI',
-                'model': 'lumi.sensor_cube.aqgl01',
                 'device_type': XIAOMI_MEASUREMENTS_REPLACEMENT,
                 'input_clusters': [
                     Identify.cluster_id,
@@ -306,8 +302,6 @@ class CubeAQGL01(XiaomiCustomDevice):
                 ],
             },
             3: {
-                'manufacturer': 'LUMI',
-                'model': 'lumi.sensor_cube.aqgl01',
                 'device_type': XIAOMI_ANALOG_REPLACEMENT,
                 'input_clusters': [
                     Identify.cluster_id,

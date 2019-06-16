@@ -44,8 +44,6 @@ class IkeaTradfriMotion(CustomDevice):
     replacement = {
         'endpoints': {
             1: {
-                'manufacturer': 'IKEA of Sweden',
-                'model': 'TRADFRI motion sensor',
                 'profile_id': zll.PROFILE_ID,
                 'device_type': zll.DeviceType.ON_OFF_SENSOR,
                 'input_clusters': [

@@ -53,8 +53,6 @@ class Weather(XiaomiCustomDevice):
     replacement = {
         'endpoints': {
             1: {
-                'manufacturer': 'LUMI',
-                'model': 'lumi.weather',
                 'input_clusters': [
                     BasicCluster,
                     PowerConfigurationCluster,

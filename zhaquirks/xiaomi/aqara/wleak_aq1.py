@@ -41,8 +41,6 @@ class LeakAQ1(XiaomiCustomDevice):
     replacement = {
         'endpoints': {
             1: {
-                'manufacturer': 'LUMI',
-                'model': 'lumi.sensor_wleak.aq1',
                 'input_clusters': [
                     BasicCluster,
                     Identify.cluster_id,

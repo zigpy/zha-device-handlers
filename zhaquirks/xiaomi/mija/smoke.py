@@ -48,8 +48,6 @@ class MijiaHoneywellSmokeDetectorSensor(XiaomiCustomDevice):
     replacement = {
         'endpoints': {
             1: {
-                'manufacturer': 'LUMI',
-                'model': 'lumi.sensor_smoke',
                 'input_clusters': [
                     BasicCluster,
                     PowerConfigurationCluster,

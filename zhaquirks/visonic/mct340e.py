@@ -81,8 +81,6 @@ class MCT340E(CustomDevice):
         'endpoints': {
             1: {
                 'profile_id': zha.PROFILE_ID,
-                'model': 'MCT-340 E',
-                'manufacturer': 'Visonic',
                 'input_clusters': [
                     Basic.cluster_id,
                     PowerConfigurationCluster,

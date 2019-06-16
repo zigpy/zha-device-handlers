@@ -41,8 +41,6 @@ class CentraLite3130(CustomDevice):
     replacement = {
         'endpoints': {
             1: {
-                'manufacturer': 'CentraLite',
-                'model': '3130',
                 'input_clusters': [
                     Basic.cluster_id,
                     PowerConfigurationCluster,

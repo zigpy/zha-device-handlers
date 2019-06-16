@@ -45,8 +45,6 @@ class AdurolightNCC(CustomDevice):
     replacement = {
         'endpoints': {
             1: {
-                'manufacturer': 'ADUROLIGHT',
-                'model': 'Adurolight_NCC',
                 'profile_id': zha.PROFILE_ID,
                 'device_type': DeviceType.NON_COLOR_CONTROLLER,
                 'input_clusters': [
