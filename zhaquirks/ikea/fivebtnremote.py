@@ -21,9 +21,9 @@ class ScenesCluster(EventableCluster, Scenes):
         """Init."""
         super().__init__(*args, **kwargs)
         self.server_commands.update({
-            0x0007: ('press', (t.uint8_t, t.uint8_t, t.uint8_t), False),
-            0x0008: ('hold', (t.uint8_t, t.uint8_t), False),
-            0x0009: ('release', (t.uint8_t, t.uint8_t), False)
+            0x0007: ('press', (t.int8s, t.int8s, t.int8s, t.int8s), False),
+            0x0008: ('hold', (t.int8s, t.int8s, t.int8s), False),
+            0x0009: ('release', (t.int16s,), False)
         })
 
 
