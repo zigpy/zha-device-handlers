@@ -77,27 +77,29 @@ class MijaButton(XiaomiCustomDevice):
         #       On/Off (6)
         #       Level control (8)
         #       Ota (25)
-        1: {
-            'manufacturer': 'LUMI',
-            'model': 'lumi.sensor_switch',
-            'profile_id': zha.PROFILE_ID,
-            'device_type': zha.DeviceType.DIMMER_SWITCH,
-            'input_clusters': [
-                Basic.cluster_id,
-                Identify.cluster_id,
-                Ota.cluster_id,
-                XIAOMI_CLUSTER_ID
-            ],
-            'output_clusters': [
-                Basic.cluster_id,
-                Identify.cluster_id,
-                Groups.cluster_id,
-                Scenes.cluster_id,
-                OnOff.cluster_id,
-                LevelControl.cluster_id,
-                Ota.cluster_id,
-            ],
-        },
+        'manufacturer': 'LUMI',
+        'model': 'lumi.sensor_switch',
+        'endpoints': {
+            1: {
+                'profile_id': zha.PROFILE_ID,
+                'device_type': zha.DeviceType.DIMMER_SWITCH,
+                'input_clusters': [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Ota.cluster_id,
+                    XIAOMI_CLUSTER_ID
+                ],
+                'output_clusters': [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                    Ota.cluster_id,
+                ],
+            },
+        }
     }
 
     replacement = {

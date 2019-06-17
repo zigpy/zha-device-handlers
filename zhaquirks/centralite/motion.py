@@ -22,40 +22,42 @@ class CentraLiteMotionSensor(CustomDevice):
         #  output_clusters=[25]>
         #
         #  Supported models: 3325-S, 3326-L
-        1: {
-            'profile_id': zha.PROFILE_ID,
-            'device_type': zha.DeviceType.IAS_ZONE,
-            'input_clusters': [
-                Basic.cluster_id,
-                PowerConfigurationCluster.cluster_id,
-                Identify.cluster_id,
-                PollControl.cluster_id,
-                TemperatureMeasurement.cluster_id,
-                IasZone.cluster_id,
-                DIAGNOSTICS_CLUSTER_ID
-            ],
-            'output_clusters': [
-                Ota.cluster_id
-            ],
-        },
-        #  <SimpleDescriptor endpoint=2 profile=49887 device_type=263
-        #  device_version=0
-        #  input_clusters=[0, 1, 3, 2821, 64582]
-        #  output_clusters=[3]>
-        2: {
-            'profile_id': MANUFACTURER_SPECIFIC_PROFILE_ID,
-            'device_type': zha.DeviceType.OCCUPANCY_SENSOR,
-            'input_clusters': [
-                Basic.cluster_id,
-                PowerConfigurationCluster.cluster_id,
-                Identify.cluster_id,
-                DIAGNOSTICS_CLUSTER_ID,
-                MANUFACTURER_SPECIFIC_CLUSTER_ID
-            ],
-            'output_clusters': [
-                Identify.cluster_id
-            ],
-        },
+        'endpoints': {
+            1: {
+                'profile_id': zha.PROFILE_ID,
+                'device_type': zha.DeviceType.IAS_ZONE,
+                'input_clusters': [
+                    Basic.cluster_id,
+                    PowerConfigurationCluster.cluster_id,
+                    Identify.cluster_id,
+                    PollControl.cluster_id,
+                    TemperatureMeasurement.cluster_id,
+                    IasZone.cluster_id,
+                    DIAGNOSTICS_CLUSTER_ID
+                ],
+                'output_clusters': [
+                    Ota.cluster_id
+                ],
+            },
+            #  <SimpleDescriptor endpoint=2 profile=49887 device_type=263
+            #  device_version=0
+            #  input_clusters=[0, 1, 3, 2821, 64582]
+            #  output_clusters=[3]>
+            2: {
+                'profile_id': MANUFACTURER_SPECIFIC_PROFILE_ID,
+                'device_type': zha.DeviceType.OCCUPANCY_SENSOR,
+                'input_clusters': [
+                    Basic.cluster_id,
+                    PowerConfigurationCluster.cluster_id,
+                    Identify.cluster_id,
+                    DIAGNOSTICS_CLUSTER_ID,
+                    MANUFACTURER_SPECIFIC_CLUSTER_ID
+                ],
+                'output_clusters': [
+                    Identify.cluster_id
+                ],
+            },
+        }
     }
 
     replacement = {

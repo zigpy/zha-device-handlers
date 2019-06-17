@@ -290,22 +290,24 @@ class XbeeSensor(CustomDevice):
         return tsn, command_id, is_reply, data
 
     signature = {
-        232: {
-            'profile_id': XBEE_PROFILE_ID,
-            'device_type': zha.DeviceType.ON_OFF_SWITCH,
-            'input_clusters': [
-            ],
-            'output_clusters': [
-            ],
-        },
-        230: {
-            'profile_id': XBEE_PROFILE_ID,
-            'device_type': zha.DeviceType.ON_OFF_SWITCH,
-            'input_clusters': [
-            ],
-            'output_clusters': [
-            ],
-        },
+        'endpoints': {
+            232: {
+                'profile_id': XBEE_PROFILE_ID,
+                'device_type': zha.DeviceType.ON_OFF_SWITCH,
+                'input_clusters': [
+                ],
+                'output_clusters': [
+                ],
+            },
+            230: {
+                'profile_id': XBEE_PROFILE_ID,
+                'device_type': zha.DeviceType.ON_OFF_SWITCH,
+                'input_clusters': [
+                ],
+                'output_clusters': [
+                ],
+            },
+        }
     }
     replacement = {
         'endpoints': {

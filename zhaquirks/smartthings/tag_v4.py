@@ -72,20 +72,22 @@ class SmartThingsTagV4(CustomDevice):
         #  device_version=0
         #  input_clusters=[0, 1, 3, 15, 32]
         #  output_clusters=[3, 25]>
-        1: {
-            'profile_id': zha.PROFILE_ID,
-            'device_type': zha.DeviceType.SIMPLE_SENSOR,
-            'input_clusters': [
-                Basic.cluster_id,
-                FastPollingPowerConfigurationCluster.cluster_id,
-                Identify.cluster_id,
-                PollControl.cluster_id,
-                TrackingCluster.cluster_id
-            ],
-            'output_clusters': [
-                Identify.cluster_id,
-                Ota.cluster_id
-            ],
+        'endpoints': {
+            1: {
+                'profile_id': zha.PROFILE_ID,
+                'device_type': zha.DeviceType.SIMPLE_SENSOR,
+                'input_clusters': [
+                    Basic.cluster_id,
+                    FastPollingPowerConfigurationCluster.cluster_id,
+                    Identify.cluster_id,
+                    PollControl.cluster_id,
+                    TrackingCluster.cluster_id
+                ],
+                'output_clusters': [
+                    Identify.cluster_id,
+                    Ota.cluster_id
+                ],
+            }
         }
     }
 

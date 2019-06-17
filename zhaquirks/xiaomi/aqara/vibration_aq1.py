@@ -163,40 +163,42 @@ class VibrationAQ1(XiaomiCustomDevice):
             )
 
     signature = {
-        1: {
-            'manufacturer': 'LUMI',
-            'model': 'lumi.vibration.aq1',
-            'profile_id': zha.PROFILE_ID,
-            'device_type': zha.DeviceType.DOOR_LOCK,
-            'input_clusters': [
-                Basic.cluster_id,
-                Identify.cluster_id,
-                Ota.cluster_id,
-                DoorLock.cluster_id
-            ],
-            'output_clusters': [
-                Basic.cluster_id,
-                Identify.cluster_id,
-                Groups.cluster_id,
-                Scenes.cluster_id,
-                Ota.cluster_id,
-                DoorLock.cluster_id
-            ],
-        },
-        2: {
-            'profile_id': zha.PROFILE_ID,
-            'device_type': VIBE_DEVICE_TYPE,
-            'input_clusters': [
-                Identify.cluster_id,
-                MultistateInput.cluster_id
-            ],
-            'output_clusters': [
-                Identify.cluster_id,
-                Groups.cluster_id,
-                Scenes.cluster_id,
-                MultistateInput.cluster_id
-            ],
-        },
+        'manufacturer': 'LUMI',
+        'model': 'lumi.vibration.aq1',
+        'endpoints': {
+            1: {
+                'profile_id': zha.PROFILE_ID,
+                'device_type': zha.DeviceType.DOOR_LOCK,
+                'input_clusters': [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Ota.cluster_id,
+                    DoorLock.cluster_id
+                ],
+                'output_clusters': [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    Ota.cluster_id,
+                    DoorLock.cluster_id
+                ],
+            },
+            2: {
+                'profile_id': zha.PROFILE_ID,
+                'device_type': VIBE_DEVICE_TYPE,
+                'input_clusters': [
+                    Identify.cluster_id,
+                    MultistateInput.cluster_id
+                ],
+                'output_clusters': [
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    MultistateInput.cluster_id
+                ],
+            },
+        }
     }
 
     replacement = {
