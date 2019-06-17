@@ -61,8 +61,6 @@ class Magnet(XiaomiCustomDevice):
     replacement = {
         'endpoints': {
             1: {
-                'manufacturer': 'LUMI',
-                'model': 'lumi.sensor_magnet',
                 'device_type': zha.DeviceType.REMOTE_CONTROL,
                 'input_clusters': [
                     BasicCluster,

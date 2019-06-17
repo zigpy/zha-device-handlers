@@ -43,8 +43,6 @@ class SwitchAQ2(XiaomiCustomDevice):
     replacement = {
         'endpoints': {
             1: {
-                'manufacturer': 'LUMI',
-                'model': 'lumi.sensor_switch.aq2',
                 'device_type': zha.DeviceType.REMOTE_CONTROL,
                 'input_clusters': [
                     BasicCluster,

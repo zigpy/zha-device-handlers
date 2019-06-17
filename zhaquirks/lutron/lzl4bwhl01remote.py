@@ -58,8 +58,6 @@ class LutronLZL4BWHL01Remote(CustomDevice):
     replacement = {
         'endpoints': {
             1: {
-                'manufacturer': 'Lutron',
-                'model': 'LZL4BWHL01 Remote',
                 'profile_id': zll.PROFILE_ID,
                 'device_type': zll.DeviceType.CONTROLLER,
                 'input_clusters': [

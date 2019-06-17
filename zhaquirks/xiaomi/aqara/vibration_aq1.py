@@ -63,12 +63,15 @@ class VibrationAQ1(XiaomiCustomDevice):
             """Init."""
             self._current_state = {}
             super().__init__(*args, **kwargs)
+            self.attributes.update({
+                0x0000: ('lock_state', types.uint8_t),
+            })
 
         def _update_attribute(self, attrid, value):
             super()._update_attribute(attrid, value)
             if attrid == STATUS_TYPE_ATTR:
                 self._current_state[STATUS_TYPE_ATTR] = MEASUREMENT_TYPE.get(
-                    value
+                    value, 'Unknown'
                 )
                 if value == VIBE_VALUE:
                     self.endpoint.device.motion_bus.listener_event(
@@ -97,10 +100,11 @@ class VibrationAQ1(XiaomiCustomDevice):
                 )
 
             # show something in the sensor in HA
-            super()._update_attribute(
-                0,
-                self._current_state[STATUS_TYPE_ATTR]
-            )
+            if STATUS_TYPE_ATTR in self._current_state:
+                super()._update_attribute(
+                    0,
+                    self._current_state[STATUS_TYPE_ATTR]
+                )
 
     class MotionCluster(LocalDataCluster, IasZone):
         """Motion cluster."""
@@ -198,8 +202,6 @@ class VibrationAQ1(XiaomiCustomDevice):
     replacement = {
         'endpoints': {
             1: {
-                'manufacturer': 'LUMI',
-                'model': 'lumi.vibration.aq1',
                 'device_type': zha.DeviceType.DOOR_LOCK,
                 'input_clusters': [
                     VibrationBasicCluster,
@@ -214,13 +216,10 @@ class VibrationAQ1(XiaomiCustomDevice):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    Ota.cluster_id,
-                    DoorLock.cluster_id
+                    Ota.cluster_id
                 ],
             },
             2: {
-                'manufacturer': 'LUMI',
-                'model': 'lumi.vibration.aq1',
                 'device_type': VIBE_DEVICE_TYPE,
                 'input_clusters': [
                     Identify.cluster_id

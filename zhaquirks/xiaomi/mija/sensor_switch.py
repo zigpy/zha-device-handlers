@@ -103,8 +103,6 @@ class MijaButton(XiaomiCustomDevice):
     replacement = {
         'endpoints': {
             1: {
-                'manufacturer': 'LUMI',
-                'model': 'lumi.sensor_switch',
                 'device_type': zha.DeviceType.REMOTE_CONTROL,
                 'input_clusters': [
                     Identify.cluster_id,

@@ -164,8 +164,6 @@ class LightifyX4(CustomDevice):
             1: {
                 'profile_id': zha.PROFILE_ID,
                 'device_type': OSRAM_DEVICE,
-                'model': 'Switch 4x-LIGHTIFY',
-                'manufacturer': 'OSRAM',
                 'input_clusters': [
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
@@ -185,8 +183,6 @@ class LightifyX4(CustomDevice):
                 ],
             },
             2: {
-                'model': 'Switch 4x-LIGHTIFY',
-                'manufacturer': 'OSRAM',
                 'profile_id': zha.PROFILE_ID,
                 'device_type': OSRAM_DEVICE,
                 'input_clusters': [
@@ -205,8 +201,6 @@ class LightifyX4(CustomDevice):
                 ],
             },
             3: {
-                'model': 'Switch 4x-LIGHTIFY',
-                'manufacturer': 'OSRAM',
                 'profile_id': zha.PROFILE_ID,
                 'device_type': OSRAM_DEVICE,
                 'input_clusters': [
@@ -225,8 +219,6 @@ class LightifyX4(CustomDevice):
                 ],
             },
             4: {
-                'model': 'Switch 4x-LIGHTIFY',
-                'manufacturer': 'OSRAM',
                 'profile_id': zha.PROFILE_ID,
                 'device_type': OSRAM_DEVICE,
                 'input_clusters': [
@@ -245,8 +237,6 @@ class LightifyX4(CustomDevice):
                 ],
             },
             5: {
-                'model': 'Switch 4x-LIGHTIFY',
-                'manufacturer': 'OSRAM',
                 'profile_id': zha.PROFILE_ID,
                 'device_type': OSRAM_DEVICE,
                 'input_clusters': [
@@ -265,8 +255,6 @@ class LightifyX4(CustomDevice):
                 ],
             },
             6: {
-                'model': 'Switch 4x-LIGHTIFY',
-                'manufacturer': 'OSRAM',
                 'profile_id': zha.PROFILE_ID,
                 'device_type': OSRAM_DEVICE,
                 'input_clusters': [

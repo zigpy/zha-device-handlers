@@ -54,8 +54,6 @@ class MotionAQ2(XiaomiCustomDevice):
     replacement = {
         'endpoints': {
             1: {
-                'manufacturer': 'LUMI',
-                'model': 'lumi.sensor_motion.aq2',
                 'input_clusters': [
                     BasicCluster,
                     PowerConfigurationCluster,

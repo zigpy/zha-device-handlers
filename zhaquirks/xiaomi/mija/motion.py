@@ -56,8 +56,6 @@ class Motion(XiaomiCustomDevice):
     replacement = {
         'endpoints': {
             1: {
-                'manufacturer': 'LUMI',
-                'model': 'lumi.sensor_motion',
                 'device_type': zha.DeviceType.OCCUPANCY_SENSOR,
                 'input_clusters': [
                     BasicCluster,

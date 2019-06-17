@@ -1,11 +1,23 @@
 """Phillips RWL021 device."""
 from zigpy.profiles import zha, zll
-from zigpy.quirks import CustomDevice
+import zigpy.types as t
+from zigpy.quirks import CustomDevice, CustomCluster
 from zigpy.zcl.clusters.general import (
     Basic, BinaryInput, Groups, Identify, LevelControl, OnOff, Ota,
     PowerConfiguration, Scenes)
 
 DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
+
+
+class BasicCluster(CustomCluster, Basic):
+    """Centralite acceleration cluster."""
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self.attributes.update({
+            0x0031: ('phillips', t.bitmap16),
+        })
 
 
 class PhilipsRWL021(CustomDevice):
@@ -54,8 +66,6 @@ class PhilipsRWL021(CustomDevice):
     replacement = {
         'endpoints': {
             1: {
-                'manufacturer': 'Philips',
-                'model': 'RWL021',
                 'input_clusters': [
                     Basic.cluster_id
                 ],
@@ -69,10 +79,8 @@ class PhilipsRWL021(CustomDevice):
                 ],
             },
             2: {
-                'manufacturer': 'Philips',
-                'model': 'RWL021',
                 'input_clusters': [
-                    Basic.cluster_id,
+                    BasicCluster,
                     PowerConfiguration.cluster_id,
                     Identify.cluster_id,
                     BinaryInput.cluster_id,
