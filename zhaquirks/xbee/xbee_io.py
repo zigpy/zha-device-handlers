@@ -19,14 +19,16 @@ import struct
 import zigpy.types as t
 from zigpy.quirks import CustomDevice, CustomCluster
 from zigpy.profiles import zha
-from zigpy.zcl.clusters.general import OnOff, BinaryInput
+from zigpy.zcl.clusters.general import OnOff, BinaryInput, LevelControl
 
 from zigpy.zcl import foundation
+from zhaquirks import EventableCluster, LocalDataCluster
 
 _LOGGER = logging.getLogger(__name__)
 
 XBEE_PROFILE_ID = 0xC105
 XBEE_IO_CLUSTER = 0x92
+XBEE_DATA_CLUSTER = 0x11
 XBEE_REMOTE_AT = 0x17
 XBEE_SRC_ENDPOINT = 0xe8
 XBEE_DST_ENDPOINT = 0xe8
@@ -34,6 +36,7 @@ DIO_APPLY_CHANGES = 0x02
 DIO_PIN_HIGH = 0x05
 DIO_PIN_LOW = 0x04
 ON_OFF_CMD = 0x0000
+DATA_IN_CMD = 0x0000
 
 
 class IOSample(bytes):
@@ -227,6 +230,65 @@ class XbeeSensor(CustomDevice):
             0x0000: ('io_sample', (IOSample,), False),
         }
 
+    class EventRelayCluster(EventableCluster, LevelControl):
+        """A cluster with cluster_id which is allowed to send events."""
+
+        attributes = {}
+        client_commands = {}
+        server_commands = {
+            0x0000: ('receive_data', (str,), None),
+        }
+
+    class SerialDataCluster(LocalDataCluster):
+        """Serial Data Cluster for the XBee."""
+
+        cluster_id = XBEE_DATA_CLUSTER
+
+        def command(self, command, *args,
+                    manufacturer=None, expect_reply=False):
+            """Handle outgoing data."""
+            data = bytes(''.join(args), encoding='latin1')
+            return self._endpoint.device.application.request(
+                self._endpoint.device.nwk,
+                XBEE_PROFILE_ID,
+                XBEE_DATA_CLUSTER,
+                XBEE_SRC_ENDPOINT,
+                XBEE_DST_ENDPOINT,
+                self._endpoint.device.application.get_sequence(),
+                data,
+                expect_reply=False
+            )
+
+        def handle_cluster_request(self, tsn, command_id, args):
+            """Handle Incoming data."""
+            if command_id == DATA_IN_CMD:
+                self._endpoint.out_clusters[
+                    LevelControl.cluster_id].handle_cluster_request(
+                        tsn,
+                        command_id,
+                        str(args, encoding='latin1')
+                    )
+            else:
+                super().handle_cluster_request(tsn, command_id, args)
+
+        attributes = {}
+        client_commands = {
+            0x0000: ('send_data', (bytes,), None),
+        }
+        server_commands = {
+            0x0000: ('receive_data', (bytes,), None),
+        }
+
+    def deserialize(self, endpoint_id, cluster_id, data):
+        """Pretends to be parsing incoming data."""
+        if cluster_id != XBEE_DATA_CLUSTER:
+            return super().deserialize(endpoint_id, cluster_id, data)
+
+        tsn = self._application.get_sequence()
+        command_id = DATA_IN_CMD + 256
+        is_reply = False
+        return tsn, command_id, is_reply, data
+
     signature = {
         232: {
             'profile_id': XBEE_PROFILE_ID,
@@ -252,8 +314,11 @@ class XbeeSensor(CustomDevice):
                 'model': 'xbee.io',
                 'input_clusters': [
                     DigitalIOCluster,
+                    SerialDataCluster,
                 ],
                 'output_clusters': [
+                    SerialDataCluster,
+                    EventRelayCluster,
                 ],
             },
             0xd0: {
