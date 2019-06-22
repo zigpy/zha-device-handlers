@@ -68,8 +68,9 @@ class SwitchAQ3V2(XiaomiCustomDevice):
         # device_version=1
         # input_clusters=[0, 18, 6, 1]
         # output_clusters=[0]>
-        'manufacturer': 'LUMI',
-        'model': 'lumi.sensor_swit',
+        'models_info': [
+            ('LUMI', 'lumi.sensor_swit')
+        ],
         'endpoints': {
             1: {
                 'profile_id': zha.PROFILE_ID,

@@ -18,6 +18,10 @@ class CentraLite3130(CustomDevice):
         #  device_version=0
         #  input_clusters=[0, 1, 3, 32, 1026, 2821]
         #  output_clusters=[3, 6, 8, 25]>
+        'models_info': [
+            ('OSRAM', 'LIGHTIFY Dimming Switch'),
+            ('CentraLite', '3130')
+        ],
         'endpoints': {
             1: {
                 'profile_id': zha.PROFILE_ID,

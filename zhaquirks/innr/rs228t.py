@@ -16,8 +16,9 @@ class RS228T(CustomDevice):
         # device_version=1
         # input_clusters=[0, 3, 4, 5, 6, 8, 768, 4096]
         # output_clusters=[25]>
-        'manufacturer': 'innr',
-        'model': 'RS 228 T',
+        'models_info': [
+            ('innr', 'RS 228 T')
+        ],
         'endpoints': {
             1: {
                 'profile_id': zha.PROFILE_ID,

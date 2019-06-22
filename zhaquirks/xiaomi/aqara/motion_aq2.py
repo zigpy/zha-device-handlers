@@ -30,8 +30,9 @@ class MotionAQ2(XiaomiCustomDevice):
         #  device_version=1
         #  input_clusters=[0, 65535, 1030, 1024, 1280, 1, 3]
         #  output_clusters=[0, 25]>
-        'manufacturer': 'LUMI',
-        'model': 'lumi.sensor_motion.aq2',
+        'models_info': [
+            ('LUMI', 'lumi.sensor_motion.aq2')
+        ],
         'endpoints': {
             1: {
                 'profile_id': zha.PROFILE_ID,

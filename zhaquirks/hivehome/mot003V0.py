@@ -22,8 +22,9 @@ class MOT003(CustomDevice):
         # device_version=0
         # input_clusters=[0, 1, 3, 32, 1026, 1030, 1280]
         # output_clusters=[25]>
-        'manufacturer': 'HiveHome.com',
-        'model': 'MOT003',
+        'models_info': [
+            ('HiveHome.com', 'MOT003')
+        ],
         'endpoints': {
             6: {
                 'profile_id': zha.PROFILE_ID,

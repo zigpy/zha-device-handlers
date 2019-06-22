@@ -77,8 +77,9 @@ class MijaButton(XiaomiCustomDevice):
         #       On/Off (6)
         #       Level control (8)
         #       Ota (25)
-        'manufacturer': 'LUMI',
-        'model': 'lumi.sensor_switch',
+        'models_info': [
+            ('LUMI', 'lumi.sensor_switch')
+        ],
         'endpoints': {
             1: {
                 'profile_id': zha.PROFILE_ID,

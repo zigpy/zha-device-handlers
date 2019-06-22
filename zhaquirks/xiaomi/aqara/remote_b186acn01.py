@@ -64,8 +64,9 @@ class RemoteB186ACN01(XiaomiCustomDevice):
         # device_version=1
         # input_clusters=[0, 3, 25, 65535, 18]
         # output_clusters=[0, 4, 3, 5, 25, 65535, 18]>
-        'manufacturer': 'LUMI',
-        'model': 'lumi.remote.b186acn01',
+        'models_info': [
+            ('LUMI', 'lumi.remote.b186acn01')
+        ],
         'endpoints': {
             1: {
                 'profile_id': zha.PROFILE_ID,

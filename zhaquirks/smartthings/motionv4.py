@@ -17,8 +17,9 @@ class SmartThingsMotionV4(CustomDevice):
         #  device_version=0
         #  input_clusters=[0, 1, 3, 15, 1026, 1280, 32]
         #  output_clusters=[25]>
-        'manufacturer': 'SmartThings',
-        'model': 'motionv4',
+        'models_info': [
+            ('SmartThings', 'motionv4')
+        ],
         'endpoints': {
             1: {
                 'profile_id': zha.PROFILE_ID,

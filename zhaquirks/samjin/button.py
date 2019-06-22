@@ -53,8 +53,9 @@ class SamjinButton(CustomDevice):
         # device_version=0
         # input_clusters=[0, 1, 3, 32, 1026, 1280, 2821]
         # output_clusters=[3, 25]>
-        'model': 'button',
-        'manufacturer': 'Samjin',
+        'models_info': [
+            ('Samjin', 'button')
+        ],
         'endpoints': {
             1: {
                 'profile_id': zha.PROFILE_ID,

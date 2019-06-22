@@ -34,8 +34,9 @@ class Magnet(XiaomiCustomDevice):
         #  device_version=1
         #  input_clusters=[0, 3, 65535, 25]
         #  output_clusters=[0, 4, 3, 6, 8, 5, 25]>
-        'manufacturer': 'LUMI',
-        'model': 'lumi.sensor_magnet',
+        'models_info': [
+            ('LUMI', 'lumi.sensor_magnet')
+        ],
         'endpoints': {
             1: {
                 'profile_id': zha.PROFILE_ID,

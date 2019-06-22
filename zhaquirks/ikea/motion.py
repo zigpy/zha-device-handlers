@@ -18,8 +18,9 @@ class IkeaTradfriMotion(CustomDevice):
         # device_version=2
         # input_clusters=[0, 1, 3, 9, 2821, 4096]
         # output_clusters=[3, 4, 6, 25, 4096]>
-        'manufacturer': 'IKEA of Sweden',
-        'model': 'TRADFRI motion sensor',
+        'models_info': [
+            ('IKEA of Sweden', 'TRADFRI motion sensor')
+        ],
         'endpoints': {
             1: {
                 'profile_id': zll.PROFILE_ID,

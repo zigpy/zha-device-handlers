@@ -18,8 +18,9 @@ class SmartThingsMultiV4(CustomDevice):
         # device_version=0
         # input_clusters=[0, 1, 3, 15, 32, 1026, 1280, 64514]
         # output_clusters=[25]>
-        'manufacturer': 'SmartThings',
-        'model': 'multiv4',
+        'models_info': [
+            ('SmartThings', 'multiv4')
+        ],
         'endpoints': {
             1: {
                 'profile_id': zha.PROFILE_ID,

@@ -29,8 +29,9 @@ class Weather(XiaomiCustomDevice):
         #  device_version=1
         #  input_clusters=[0, 3, 65535, 1026, 1027, 1029]
         #  output_clusters=[0, 4, 65535]>
-        'manufacturer': 'LUMI',
-        'model': 'lumi.weather',
+        'models_info': [
+            ('LUMI', 'lumi.weather')
+        ],
         'endpoints': {
             1: {
                 'profile_id': zha.PROFILE_ID,

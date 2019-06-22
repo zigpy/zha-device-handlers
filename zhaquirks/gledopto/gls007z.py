@@ -14,8 +14,9 @@ class GLS007Z(CustomDevice):
         # <SimpleDescriptor endpoint=12 profile=260 device_type=258
         # device_version=2 input_clusters=[0, 3, 4, 5, 6, 8, 768]
         # output_clusters=[]>
-        'manufacturer': 'GLEDOPTO',
-        'model': 'GL-S-007Z',
+        'models_info': [
+            ('GLEDOPTO', 'GL-S-007Z')
+        ],
         'endpoints': {
             12: {
                 'profile_id': zha.PROFILE_ID,

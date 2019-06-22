@@ -35,8 +35,9 @@ class IkeaTradfriRemote(CustomDevice):
         # device_version=2
         # input_clusters=[0, 1, 3, 9, 2821, 4096]
         # output_clusters=[3, 4, 5, 6, 8, 25, 4096]>
-        'model': 'TRADFRI remote control',
-        'manufacturer': 'IKEA of Sweden',
+        'models_info': [
+            ('IKEA of Sweden', 'TRADFRI remote control')
+        ],
         'endpoints': {
             1: {
                 'profile_id': zll.PROFILE_ID,

@@ -19,6 +19,16 @@ class CentraLite3305S(CustomDevice):
         #  device_version=0
         #  input_clusters=[0, 1, 3, 1026, 1280, 32, 2821]
         #  output_clusters=[25]>
+        'models_info': [
+            ('CentraLite', '3305-S'),
+            ('CentraLite', '3325-S'),
+            ('CentraLite', '3305'),
+            ('CentraLite', '3325'),
+            ('CentraLite', '3326'),
+            ('CentraLite', '3326-L'),
+            ('CentraLite', '3328-G'),
+            ('CentraLite', 'Motion Sensor-A')
+        ],
         'endpoints': {
             1: {
                 'profile_id': zha.PROFILE_ID,

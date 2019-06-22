@@ -15,8 +15,9 @@ class LIGHTIFYA19RGBW(CustomDevice):
         # <SimpleDescriptor endpoint=3 profile=260 device_type=258
         # device_version=2 input_clusters=[0, 3, 4, 5, 6, 8, 768, 64527]
         # output_clusters=[25]>
-        'manufacturer': 'OSRAM',
-        'model': 'LIGHTIFY A19 RGBW',
+        'models_info': [
+            ('OSRAM', 'LIGHTIFY A19 RGBW')
+        ],
         'endpoints': {
             3: {
                 'profile_id': zha.PROFILE_ID,

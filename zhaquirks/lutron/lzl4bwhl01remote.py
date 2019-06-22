@@ -31,8 +31,9 @@ class LutronLZL4BWHL01Remote(CustomDevice):
         #  device_version=2
         #  input_clusters=[0, 4096, 65280, 64580]
         #  output_clusters=[4096, 3, 6, 8, 4, 5, 0, 65280]>
-        'model': 'LZL4BWHL01 Remote',
-        'manufacturer': 'Lutron',
+        'models_info': [
+            ('Lutron', 'LZL4BWHL01 Remote')
+        ],
         'endpoints': {
             1: {
                 'profile_id': zll.PROFILE_ID,

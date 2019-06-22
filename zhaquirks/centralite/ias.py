@@ -18,8 +18,13 @@ class CentraLiteIASSensor(CustomDevice):
         #  device_version=0
         #  input_clusters=[0, 1, 3, 32, 1026, 1280, 2821]
         #  output_clusters=[25]>
-        #
-        #  Supported models: 3315-S, 3320-L
+        'models_info': [
+            ('CentraLite', '3315-S'),
+            ('CentraLite', '3315'),
+            ('CentraLite', '3315-Seu'),
+            ('CentraLite', '3315-L'),
+            ('CentraLite', '3315-G')
+        ],
         'endpoints': {
             1: {
                 'profile_id': zha.PROFILE_ID,

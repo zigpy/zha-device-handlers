@@ -211,8 +211,9 @@ class CubeAQGL01(XiaomiCustomDevice):
         #  device_version=1
         #  input_clusters=[0, 3, 25, 18]
         #  output_clusters=[0, 4, 3, 5, 25, 18]>
-        'manufacturer': 'LUMI',
-        'model': 'lumi.sensor_cube.aqgl01',
+        'models_info': [
+            ('LUMI', 'lumi.sensor_cube.aqgl01')
+        ],
         'endpoints': {
             1: {
                 'profile_id': zha.PROFILE_ID,

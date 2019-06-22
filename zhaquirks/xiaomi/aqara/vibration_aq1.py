@@ -163,8 +163,9 @@ class VibrationAQ1(XiaomiCustomDevice):
             )
 
     signature = {
-        'manufacturer': 'LUMI',
-        'model': 'lumi.vibration.aq1',
+        'models_info': [
+            ('LUMI', 'lumi.vibration.aq1')
+        ],
         'endpoints': {
             1: {
                 'profile_id': zha.PROFILE_ID,

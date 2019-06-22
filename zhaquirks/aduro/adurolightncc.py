@@ -19,8 +19,9 @@ class AdurolightNCC(CustomDevice):
         # device_version=2
         # input_clusters=[0, 3, 8, 4096, 64716]
         # output_clusters=[3, 4, 6, 8, 4096, 64716]>
-        'manufacturer': 'ADUROLIGHT',
-        'model': 'Adurolight_NCC',
+        'models_info': [
+            ('ADUROLIGHT', 'Adurolight_NCC')
+        ],
         'endpoints': {
             1: {
                 'profile_id': zha.PROFILE_ID,

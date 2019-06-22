@@ -27,6 +27,11 @@ class CentraLite3310S(CustomDevice):
         #  output_clusters=[3, 25]>
         'manufacturer': 'CentraLite',
         'model': '3310-S',
+        'models_info': [
+            ('CentraLite', '3310-S'),
+            ('CentraLite', '3310-G'),
+            ('CentraLite', '3310')
+        ],
         'endpoints': {
             1: {
                 'profile_id': zha.PROFILE_ID,

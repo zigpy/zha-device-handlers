@@ -57,8 +57,9 @@ class MCT340E(CustomDevice):
         # device_version=0
         # input_clusters=[0, 1, 3, 1026, 1280, 32, 2821]
         # output_clusters=[25]>
-        'model': 'MCT-340 E',
-        'manufacturer': 'Visonic',
+        'models_info': [
+            ('Visonic', 'MCT-340 E')
+        ],
         'endpoints': {
             1: {
                 'profile_id': zha.PROFILE_ID,
