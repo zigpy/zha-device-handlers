@@ -81,7 +81,10 @@ class SinopeTechnologiesThermostat(CustomDevice):
                     Diagnostic.cluster_id,
                     SINOPE_MANUFACTURER_CLUSTER_ID
                 ],
-                'output_clusters': [Ota.cluster_id, SINOPE_MANUFACTURER_CLUSTER_ID]
+                'output_clusters': [
+                    Ota.cluster_id,
+                    SINOPE_MANUFACTURER_CLUSTER_ID
+                ]
             },
 
             # <SimpleDescriptor endpoint=196 profile=49757 device_type=769
