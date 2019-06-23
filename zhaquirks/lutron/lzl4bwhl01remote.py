@@ -88,8 +88,10 @@ class LutronLZL4BWHL01Remote2(LutronLZL4BWHL01Remote):
     """Custom device representing Lutron LZL4BWHL01 Remote."""
 
     signature = {
-        1: {
-            **LutronLZL4BWHL01Remote.signature[1],
-            'manufacturer': ' Lutron',  # Some remotes report a leading space
+        'endpoints': {
+            1: {
+                **LutronLZL4BWHL01Remote.signature['endpoints'][1],
+                'manufacturer': ' Lutron',  # Some remotes report this
+            }
         }
     }
