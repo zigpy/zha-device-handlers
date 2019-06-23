@@ -1,7 +1,6 @@
 """Xiaomi aqara magic cube device."""
 import logging
 
-import homeassistant.components.zha.const as zha_const
 from zigpy import quirks
 from zigpy.profiles import zha
 from zigpy.quirks.xiaomi import AqaraMagicCubeSensor
@@ -97,11 +96,6 @@ ROTATE_RIGHT = 'rotate_right'
 ROTATE_LEFT = 'rotate_left'
 
 _LOGGER = logging.getLogger(__name__)
-
-zha_const.SINGLE_INPUT_CLUSTER_DEVICE_CLASS.update({
-    MultistateInput: 'sensor',
-    AnalogInput: 'sensor'
-})
 
 
 def extend_dict(dictionary, value, ranges):
