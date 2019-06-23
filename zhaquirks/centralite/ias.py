@@ -8,6 +8,8 @@ from zigpy.zcl.clusters.security import IasZone
 from zhaquirks.centralite import PowerConfigurationCluster
 
 DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
+MANUFACTURER_SPECIFIC_PROFILE_ID = 0xC2DF  # decimal = 49887
+MANUFACTURER_SPECIFIC_CLUSTER_ID = 0xFC0F  # decimal = 64527
 
 
 class CentraLiteIASSensor(CustomDevice):
@@ -23,6 +25,7 @@ class CentraLiteIASSensor(CustomDevice):
             ('CentraLite', '3315'),
             ('CentraLite', '3315-Seu'),
             ('CentraLite', '3315-L'),
+            ('CentraLite', '3320-L'),
             ('CentraLite', '3315-G')
         ],
         'endpoints': {
@@ -47,14 +50,14 @@ class CentraLiteIASSensor(CustomDevice):
             #  input_clusters=[0, 1, 3, 2821, 64527]
             #  output_clusters=[3]>
             2: {
-                'profile_id': 49887,
-                'device_type': 12,
+                'profile_id': MANUFACTURER_SPECIFIC_PROFILE_ID,
+                'device_type': zha.DeviceType.SIMPLE_SENSOR,
                 'input_clusters': [
                     Basic.cluster_id,
                     PowerConfigurationCluster.cluster_id,
                     Identify.cluster_id,
                     DIAGNOSTICS_CLUSTER_ID,
-                    64527
+                    MANUFACTURER_SPECIFIC_CLUSTER_ID
                 ],
                 'output_clusters': [
                     Identify.cluster_id
@@ -84,7 +87,7 @@ class CentraLiteIASSensor(CustomDevice):
                     Basic.cluster_id,
                     Identify.cluster_id,
                     DIAGNOSTICS_CLUSTER_ID,
-                    64527
+                    MANUFACTURER_SPECIFIC_CLUSTER_ID
                 ],
                 'output_clusters': [
                     Identify.cluster_id

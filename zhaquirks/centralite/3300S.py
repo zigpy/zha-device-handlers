@@ -23,7 +23,6 @@ class CentraLite3300S(CustomDevice):
         'models_info': [
             ('CentraLite', '3300'),
             ('CentraLite', '3300-S'),
-            ('CentraLite', '3320-L'),
             ('CentraLite', '3323-G')
         ],
         'endpoints': {
