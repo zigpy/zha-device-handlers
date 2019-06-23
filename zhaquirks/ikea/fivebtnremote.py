@@ -35,29 +35,32 @@ class IkeaTradfriRemote(CustomDevice):
         # device_version=2
         # input_clusters=[0, 1, 3, 9, 2821, 4096]
         # output_clusters=[3, 4, 5, 6, 8, 25, 4096]>
-        1: {
-            'model': 'TRADFRI remote control',
-            'manufacturer': 'IKEA of Sweden',
-            'profile_id': zll.PROFILE_ID,
-            'device_type': zll.DeviceType.SCENE_CONTROLLER,
-            'input_clusters': [
-                Basic.cluster_id,
-                PowerConfiguration.cluster_id,
-                Identify.cluster_id,
-                Alarms.cluster_id,
-                DIAGNOSTICS_CLUSTER_ID,
-                LightLink.cluster_id
-            ],
-            'output_clusters': [
-                Identify.cluster_id,
-                Groups.cluster_id,
-                Scenes.cluster_id,
-                OnOff.cluster_id,
-                LevelControl.cluster_id,
-                Ota.cluster_id,
-                LightLink.cluster_id
-            ],
-        },
+        'models_info': [
+            ('IKEA of Sweden', 'TRADFRI remote control')
+        ],
+        'endpoints': {
+            1: {
+                'profile_id': zll.PROFILE_ID,
+                'device_type': zll.DeviceType.SCENE_CONTROLLER,
+                'input_clusters': [
+                    Basic.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    Identify.cluster_id,
+                    Alarms.cluster_id,
+                    DIAGNOSTICS_CLUSTER_ID,
+                    LightLink.cluster_id
+                ],
+                'output_clusters': [
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                    Ota.cluster_id,
+                    LightLink.cluster_id
+                ],
+            },
+        }
     }
 
     replacement = {

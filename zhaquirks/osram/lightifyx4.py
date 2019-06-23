@@ -24,139 +24,142 @@ class LightifyX4(CustomDevice):
         #  device_version=2
         #  input_clusters=[0, 1, 32, 4096, 64768]
         #  output_clusters=[3, 4, 5, 6, 8, 25, 768, 4096]>
-        1: {
-            'profile_id': zha.PROFILE_ID,
-            'device_type': OSRAM_DEVICE,
-            'model': 'Switch 4x-LIGHTIFY',
-            'manufacturer': 'OSRAM',
-            'input_clusters': [
-                Basic.cluster_id,
-                PowerConfiguration.cluster_id,
-                PollControl.cluster_id,
-                LightLink.cluster_id,
-                OSRAM_CLUSTER,
-            ],
-            'output_clusters': [
-                Groups.cluster_id,
-                Identify.cluster_id,
-                Scenes.cluster_id,
-                OnOff.cluster_id,
-                Ota.cluster_id,
-                Color.cluster_id,
-                LevelControl.cluster_id,
-                LightLink.cluster_id
-            ],
-        },
-        # <SimpleDescriptor endpoint=2 profile=260 device_type=2064
-        # device_version=2
-        # input_clusters=[0, 4096, 64768]
-        # output_clusters=[3, 4, 5, 6, 8, 768, 4096]>
-        2: {
-            'profile_id': zha.PROFILE_ID,
-            'device_type': OSRAM_DEVICE,
-            'input_clusters': [
-                Basic.cluster_id,
-                LightLink.cluster_id,
-                OSRAM_CLUSTER
-            ],
-            'output_clusters': [
-                Groups.cluster_id,
-                Identify.cluster_id,
-                Scenes.cluster_id,
-                OnOff.cluster_id,
-                Color.cluster_id,
-                LevelControl.cluster_id,
-                LightLink.cluster_id
-            ],
-        },
-        # <SimpleDescriptor endpoint=3 profile=260 device_type=2064
-        # device_version=2
-        # input_clusters=[0, 4096, 64768]
-        # output_clusters=[3, 4, 5, 6, 8, 768, 4096]>
-        3: {
-            'profile_id': zha.PROFILE_ID,
-            'device_type': OSRAM_DEVICE,
-            'input_clusters': [
-                Basic.cluster_id,
-                LightLink.cluster_id,
-                OSRAM_CLUSTER
-            ],
-            'output_clusters': [
-                Groups.cluster_id,
-                Identify.cluster_id,
-                Scenes.cluster_id,
-                OnOff.cluster_id,
-                Color.cluster_id,
-                LevelControl.cluster_id,
-                LightLink.cluster_id
-            ],
-        },
-        # <SimpleDescriptor endpoint=4 profile=260 device_type=2064
-        # device_version=2
-        # input_clusters=[0, 4096, 64768]
-        # output_clusters=[3, 4, 5, 6, 8, 768, 4096]>
-        4: {
-            'profile_id': zha.PROFILE_ID,
-            'device_type': OSRAM_DEVICE,
-            'input_clusters': [
-                Basic.cluster_id,
-                LightLink.cluster_id,
-                OSRAM_CLUSTER
-            ],
-            'output_clusters': [
-                Groups.cluster_id,
-                Identify.cluster_id,
-                Scenes.cluster_id,
-                OnOff.cluster_id,
-                Color.cluster_id,
-                LevelControl.cluster_id,
-                LightLink.cluster_id
-            ],
-        },
-        # <SimpleDescriptor endpoint=5 profile=260 device_type=2064
-        # device_version=2
-        # input_clusters=[0, 4096, 64768]
-        # output_clusters=[3, 4, 5, 6, 8, 768, 4096]>
-        5: {
-            'profile_id': zha.PROFILE_ID,
-            'device_type': OSRAM_DEVICE,
-            'input_clusters': [
-                Basic.cluster_id,
-                LightLink.cluster_id,
-                OSRAM_CLUSTER
-            ],
-            'output_clusters': [
-                Groups.cluster_id,
-                Identify.cluster_id,
-                Scenes.cluster_id,
-                OnOff.cluster_id,
-                Color.cluster_id,
-                LevelControl.cluster_id,
-                LightLink.cluster_id
-            ],
-        },
-        # <SimpleDescriptor endpoint=6 profile=260 device_type=2064
-        # device_version=2
-        # input_clusters=[0, 4096, 64768]
-        # output_clusters=[3, 4, 5, 6, 8, 768, 4096]>
-        6: {
-            'profile_id': zha.PROFILE_ID,
-            'device_type': OSRAM_DEVICE,
-            'input_clusters': [
-                Basic.cluster_id,
-                LightLink.cluster_id,
-                OSRAM_CLUSTER
-            ],
-            'output_clusters': [
-                Groups.cluster_id,
-                Identify.cluster_id,
-                Scenes.cluster_id,
-                OnOff.cluster_id,
-                Color.cluster_id,
-                LevelControl.cluster_id,
-                LightLink.cluster_id
-            ],
-        },
+        'models_info': [
+            ('OSRAM', 'Switch 4x-LIGHTIFY')
+        ],
+        'endpoints': {
+            1: {
+                'profile_id': zha.PROFILE_ID,
+                'device_type': OSRAM_DEVICE,
+                'input_clusters': [
+                    Basic.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    PollControl.cluster_id,
+                    LightLink.cluster_id,
+                    OSRAM_CLUSTER,
+                ],
+                'output_clusters': [
+                    Groups.cluster_id,
+                    Identify.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    Ota.cluster_id,
+                    Color.cluster_id,
+                    LevelControl.cluster_id,
+                    LightLink.cluster_id
+                ],
+            },
+            # <SimpleDescriptor endpoint=2 profile=260 device_type=2064
+            # device_version=2
+            # input_clusters=[0, 4096, 64768]
+            # output_clusters=[3, 4, 5, 6, 8, 768, 4096]>
+            2: {
+                'profile_id': zha.PROFILE_ID,
+                'device_type': OSRAM_DEVICE,
+                'input_clusters': [
+                    Basic.cluster_id,
+                    LightLink.cluster_id,
+                    OSRAM_CLUSTER
+                ],
+                'output_clusters': [
+                    Groups.cluster_id,
+                    Identify.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    Color.cluster_id,
+                    LevelControl.cluster_id,
+                    LightLink.cluster_id
+                ],
+            },
+            # <SimpleDescriptor endpoint=3 profile=260 device_type=2064
+            # device_version=2
+            # input_clusters=[0, 4096, 64768]
+            # output_clusters=[3, 4, 5, 6, 8, 768, 4096]>
+            3: {
+                'profile_id': zha.PROFILE_ID,
+                'device_type': OSRAM_DEVICE,
+                'input_clusters': [
+                    Basic.cluster_id,
+                    LightLink.cluster_id,
+                    OSRAM_CLUSTER
+                ],
+                'output_clusters': [
+                    Groups.cluster_id,
+                    Identify.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    Color.cluster_id,
+                    LevelControl.cluster_id,
+                    LightLink.cluster_id
+                ],
+            },
+            # <SimpleDescriptor endpoint=4 profile=260 device_type=2064
+            # device_version=2
+            # input_clusters=[0, 4096, 64768]
+            # output_clusters=[3, 4, 5, 6, 8, 768, 4096]>
+            4: {
+                'profile_id': zha.PROFILE_ID,
+                'device_type': OSRAM_DEVICE,
+                'input_clusters': [
+                    Basic.cluster_id,
+                    LightLink.cluster_id,
+                    OSRAM_CLUSTER
+                ],
+                'output_clusters': [
+                    Groups.cluster_id,
+                    Identify.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    Color.cluster_id,
+                    LevelControl.cluster_id,
+                    LightLink.cluster_id
+                ],
+            },
+            # <SimpleDescriptor endpoint=5 profile=260 device_type=2064
+            # device_version=2
+            # input_clusters=[0, 4096, 64768]
+            # output_clusters=[3, 4, 5, 6, 8, 768, 4096]>
+            5: {
+                'profile_id': zha.PROFILE_ID,
+                'device_type': OSRAM_DEVICE,
+                'input_clusters': [
+                    Basic.cluster_id,
+                    LightLink.cluster_id,
+                    OSRAM_CLUSTER
+                ],
+                'output_clusters': [
+                    Groups.cluster_id,
+                    Identify.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    Color.cluster_id,
+                    LevelControl.cluster_id,
+                    LightLink.cluster_id
+                ],
+            },
+            # <SimpleDescriptor endpoint=6 profile=260 device_type=2064
+            # device_version=2
+            # input_clusters=[0, 4096, 64768]
+            # output_clusters=[3, 4, 5, 6, 8, 768, 4096]>
+            6: {
+                'profile_id': zha.PROFILE_ID,
+                'device_type': OSRAM_DEVICE,
+                'input_clusters': [
+                    Basic.cluster_id,
+                    LightLink.cluster_id,
+                    OSRAM_CLUSTER
+                ],
+                'output_clusters': [
+                    Groups.cluster_id,
+                    Identify.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    Color.cluster_id,
+                    LevelControl.cluster_id,
+                    LightLink.cluster_id
+                ],
+            },
+        }
     }
 
     replacement = {

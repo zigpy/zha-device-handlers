@@ -27,22 +27,24 @@ class MijiaHoneywellSmokeDetectorSensor(XiaomiCustomDevice):
         #  device_version=
         #  input_clusters=[0, 1, 3, 12, 18, 1280]
         #  output_clusters=[25]>
-        1: {
-            'profile_id': zha.PROFILE_ID,
-            'device_type': IAS_ZONE,
+        'endpoints': {
+            1: {
+                'profile_id': zha.PROFILE_ID,
+                'device_type': IAS_ZONE,
 
-            'input_clusters': [
-                BasicCluster.cluster_id,
-                PowerConfiguration.cluster_id,
-                Identify.cluster_id,
-                AnalogInput.cluster_id,
-                MultistateInput.cluster_id,
-                IasZone.cluster_id,
-            ],
-            'output_clusters': [
-                Ota.cluster_id,
-            ],
-        },
+                'input_clusters': [
+                    BasicCluster.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    Identify.cluster_id,
+                    AnalogInput.cluster_id,
+                    MultistateInput.cluster_id,
+                    IasZone.cluster_id,
+                ],
+                'output_clusters': [
+                    Ota.cluster_id,
+                ],
+            },
+        }
     }
 
     replacement = {

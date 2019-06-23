@@ -22,43 +22,51 @@ class CentraLite3321S(CustomDevice):
         #  device_version=0
         #  input_clusters=[0, 1, 3, 1026, 1280, 32, 2821, 64514]
         #  output_clusters=[25]>
-        1: {
-            'manufacturer': 'CentraLite',
-            'model': '3321-S',
-            'profile_id': zha.PROFILE_ID,
-            'device_type': zha.DeviceType.IAS_ZONE,
-            'input_clusters': [
-                Basic.cluster_id,
-                PowerConfigurationCluster.cluster_id,
-                Identify.cluster_id,
-                PollControl.cluster_id,
-                TemperatureMeasurement.cluster_id,
-                IasZone.cluster_id,
-                DIAGNOSTICS_CLUSTER_ID,
-                CentraLiteAccelCluster.cluster_id
-            ],
-            'output_clusters': [
-                Ota.cluster_id
-            ],
-        },
-        #  <SimpleDescriptor endpoint=2 profile=49887 device_type=12
-        #  device_version=0
-        #  input_clusters=[0, 1, 3, 2821, 64527]
-        #  output_clusters=[3]>
-        2: {
-            'profile_id': MANUFACTURER_SPECIFIC_PROFILE_ID,
-            'device_type': zha.DeviceType.SIMPLE_SENSOR,
-            'input_clusters': [
-                Basic.cluster_id,
-                PowerConfigurationCluster.cluster_id,
-                Identify.cluster_id,
-                DIAGNOSTICS_CLUSTER_ID,
-                MANUFACTURER_SPECIFIC_CLUSTER_ID
-            ],
-            'output_clusters': [
-                Identify.cluster_id
-            ],
-        },
+        'manufacturer': 'CentraLite',
+        'model': '3321-S',
+        'models_info': [
+            ('CentraLite', '3320'),
+            ('CentraLite', '3321'),
+            ('CentraLite', '3321-S'),
+            ('Samjin', 'multi')
+        ],
+        'endpoints': {
+            1: {
+                'profile_id': zha.PROFILE_ID,
+                'device_type': zha.DeviceType.IAS_ZONE,
+                'input_clusters': [
+                    Basic.cluster_id,
+                    PowerConfigurationCluster.cluster_id,
+                    Identify.cluster_id,
+                    PollControl.cluster_id,
+                    TemperatureMeasurement.cluster_id,
+                    IasZone.cluster_id,
+                    DIAGNOSTICS_CLUSTER_ID,
+                    CentraLiteAccelCluster.cluster_id
+                ],
+                'output_clusters': [
+                    Ota.cluster_id
+                ],
+            },
+            #  <SimpleDescriptor endpoint=2 profile=49887 device_type=12
+            #  device_version=0
+            #  input_clusters=[0, 1, 3, 2821, 64527]
+            #  output_clusters=[3]>
+            2: {
+                'profile_id': MANUFACTURER_SPECIFIC_PROFILE_ID,
+                'device_type': zha.DeviceType.SIMPLE_SENSOR,
+                'input_clusters': [
+                    Basic.cluster_id,
+                    PowerConfigurationCluster.cluster_id,
+                    Identify.cluster_id,
+                    DIAGNOSTICS_CLUSTER_ID,
+                    MANUFACTURER_SPECIFIC_CLUSTER_ID
+                ],
+                'output_clusters': [
+                    Identify.cluster_id
+                ],
+            },
+        }
     }
 
     replacement = {

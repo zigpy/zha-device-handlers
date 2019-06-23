@@ -18,27 +18,30 @@ class IkeaTradfriMotion(CustomDevice):
         # device_version=2
         # input_clusters=[0, 1, 3, 9, 2821, 4096]
         # output_clusters=[3, 4, 6, 25, 4096]>
-        1: {
-            'manufacturer': 'IKEA of Sweden',
-            'model': 'TRADFRI motion sensor',
-            'profile_id': zll.PROFILE_ID,
-            'device_type': zll.DeviceType.ON_OFF_SENSOR,
-            'input_clusters': [
-                Basic.cluster_id,
-                PowerConfiguration.cluster_id,
-                Identify.cluster_id,
-                Alarms.cluster_id,
-                DIAGNOSTICS_CLUSTER_ID,
-                LightLink.cluster_id
-            ],
-            'output_clusters': [
-                Identify.cluster_id,
-                Groups.cluster_id,
-                OnOff.cluster_id,
-                Ota.cluster_id,
-                LightLink.cluster_id
-            ],
-        },
+        'models_info': [
+            ('IKEA of Sweden', 'TRADFRI motion sensor')
+        ],
+        'endpoints': {
+            1: {
+                'profile_id': zll.PROFILE_ID,
+                'device_type': zll.DeviceType.ON_OFF_SENSOR,
+                'input_clusters': [
+                    Basic.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    Identify.cluster_id,
+                    Alarms.cluster_id,
+                    DIAGNOSTICS_CLUSTER_ID,
+                    LightLink.cluster_id
+                ],
+                'output_clusters': [
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    OnOff.cluster_id,
+                    Ota.cluster_id,
+                    LightLink.cluster_id
+                ],
+            },
+        }
     }
 
     replacement = {

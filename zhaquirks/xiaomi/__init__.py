@@ -91,7 +91,7 @@ class BasicCluster(CustomCluster, Basic):
             attributes = self._parse_aqara_attributes(value.raw)
             super()._update_attribute(attrid, value.raw)
         elif attrid == XIAOMI_MIJA_ATTRIBUTE:
-            attributes = self._parse_mija_attributes(value.raw)
+            attributes = self._parse_mija_attributes(value)
         else:
             super()._update_attribute(attrid, value)
             return

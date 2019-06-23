@@ -73,64 +73,67 @@ class RemoteB286ACN01(XiaomiCustomDevice):
         # device_version=1
         # input_clusters=[0, 3, 25, 65535, 18]
         # output_clusters=[0, 4, 3, 5, 25, 65535, 18]>
-        1: {
-            'manufacturer': 'LUMI',
-            'model': 'lumi.remote.b286acn01',
-            'profile_id': zha.PROFILE_ID,
-            'device_type': XIAOMI_DEVICE_TYPE,
-            'input_clusters': [
-                Basic.cluster_id,
-                Identify.cluster_id,
-                Ota.cluster_id,
-                XIAOMI_CLUSTER_ID,
-                MultistateInputCluster.cluster_id
-            ],
-            'output_clusters': [
-                Basic.cluster_id,
-                Identify.cluster_id,
-                Groups.cluster_id,
-                Scenes.cluster_id,
-                Ota.cluster_id,
-                XIAOMI_CLUSTER_ID,
-                MultistateInputCluster.cluster_id
-            ],
-        },
-        # <SimpleDescriptor endpoint=2 profile=260 device_type=24322
-        # device_version=1
-        # input_clusters=[3, 18]
-        # output_clusters=[4, 3, 5, 18]>
-        2: {
-            'profile_id': zha.PROFILE_ID,
-            'device_type': XIAOMI_DEVICE_TYPE2,
-            'input_clusters': [
-                Identify.cluster_id,
-                MultistateInputCluster.cluster_id
-            ],
-            'output_clusters': [
-                Identify.cluster_id,
-                Groups.cluster_id,
-                Scenes.cluster_id,
-                MultistateInputCluster.cluster_id
-            ],
-        },
-        # <SimpleDescriptor endpoint=3 profile=260 device_type=24323
-        # device_version=1
-        # input_clusters=[3, 12]
-        # output_clusters=[4, 3, 5, 12]>
-        3: {
-            'profile_id': zha.PROFILE_ID,
-            'device_type': XIAOMI_DEVICE_TYPE3,
-            'input_clusters': [
-                Identify.cluster_id,
-                AnalogInput.cluster_id
-            ],
-            'output_clusters': [
-                Identify.cluster_id,
-                Groups.cluster_id,
-                Scenes.cluster_id,
-                AnalogInput.cluster_id
-            ],
-        },
+        'models_info': [
+            ('LUMI', 'lumi.remote.b286acn01')
+        ],
+        'endpoints': {
+            1: {
+                'profile_id': zha.PROFILE_ID,
+                'device_type': XIAOMI_DEVICE_TYPE,
+                'input_clusters': [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Ota.cluster_id,
+                    XIAOMI_CLUSTER_ID,
+                    MultistateInputCluster.cluster_id
+                ],
+                'output_clusters': [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    Ota.cluster_id,
+                    XIAOMI_CLUSTER_ID,
+                    MultistateInputCluster.cluster_id
+                ],
+            },
+            # <SimpleDescriptor endpoint=2 profile=260 device_type=24322
+            # device_version=1
+            # input_clusters=[3, 18]
+            # output_clusters=[4, 3, 5, 18]>
+            2: {
+                'profile_id': zha.PROFILE_ID,
+                'device_type': XIAOMI_DEVICE_TYPE2,
+                'input_clusters': [
+                    Identify.cluster_id,
+                    MultistateInputCluster.cluster_id
+                ],
+                'output_clusters': [
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    MultistateInputCluster.cluster_id
+                ],
+            },
+            # <SimpleDescriptor endpoint=3 profile=260 device_type=24323
+            # device_version=1
+            # input_clusters=[3, 12]
+            # output_clusters=[4, 3, 5, 12]>
+            3: {
+                'profile_id': zha.PROFILE_ID,
+                'device_type': XIAOMI_DEVICE_TYPE3,
+                'input_clusters': [
+                    Identify.cluster_id,
+                    AnalogInput.cluster_id
+                ],
+                'output_clusters': [
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    AnalogInput.cluster_id
+                ],
+            },
+        }
     }
 
     replacement = {

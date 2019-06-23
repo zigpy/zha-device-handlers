@@ -68,21 +68,24 @@ class SwitchAQ3V2(XiaomiCustomDevice):
         # device_version=1
         # input_clusters=[0, 18, 6, 1]
         # output_clusters=[0]>
-        1: {
-            'manufacturer': 'LUMI',
-            'model': 'lumi.sensor_swit',
-            'profile_id': zha.PROFILE_ID,
-            'device_type': BUTTON_DEVICE_TYPE,
-            'input_clusters': [
-                Basic.cluster_id,
-                PowerConfigurationCluster.cluster_id,
-                OnOff.cluster_id,
-                MultistateInput.cluster_id
-            ],
-            'output_clusters': [
-                Basic.cluster_id,
-            ],
-        },
+        'models_info': [
+            ('LUMI', 'lumi.sensor_swit')
+        ],
+        'endpoints': {
+            1: {
+                'profile_id': zha.PROFILE_ID,
+                'device_type': BUTTON_DEVICE_TYPE,
+                'input_clusters': [
+                    Basic.cluster_id,
+                    PowerConfigurationCluster.cluster_id,
+                    OnOff.cluster_id,
+                    MultistateInput.cluster_id
+                ],
+                'output_clusters': [
+                    Basic.cluster_id,
+                ],
+            },
+        }
     }
 
     replacement = {

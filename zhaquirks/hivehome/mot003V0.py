@@ -22,23 +22,26 @@ class MOT003(CustomDevice):
         # device_version=0
         # input_clusters=[0, 1, 3, 32, 1026, 1030, 1280]
         # output_clusters=[25]>
-        6: {
-            'manufacturer': 'HiveHome.com',
-            'model': 'MOT003',
-            'profile_id': zha.PROFILE_ID,
-            'device_type': zha.DeviceType.IAS_ZONE,
-            'input_clusters': [
-                Basic.cluster_id,
-                PowerConfiguration.cluster_id,
-                Identify.cluster_id,
-                PollControl.cluster_id,
-                TemperatureMeasurement.cluster_id,
-                OccupancySensing.cluster_id,
-                IasZone.cluster_id,
-            ],
-            'output_clusters': [
-                Ota.cluster_id
-            ],
+        'models_info': [
+            ('HiveHome.com', 'MOT003')
+        ],
+        'endpoints': {
+            6: {
+                'profile_id': zha.PROFILE_ID,
+                'device_type': zha.DeviceType.IAS_ZONE,
+                'input_clusters': [
+                    Basic.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    Identify.cluster_id,
+                    PollControl.cluster_id,
+                    TemperatureMeasurement.cluster_id,
+                    OccupancySensing.cluster_id,
+                    IasZone.cluster_id,
+                ],
+                'output_clusters': [
+                    Ota.cluster_id
+                ],
+            }
         }
     }
 

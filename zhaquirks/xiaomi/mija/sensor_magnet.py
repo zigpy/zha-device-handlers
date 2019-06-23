@@ -34,28 +34,30 @@ class Magnet(XiaomiCustomDevice):
         #  device_version=1
         #  input_clusters=[0, 3, 65535, 25]
         #  output_clusters=[0, 4, 3, 6, 8, 5, 25]>
-
-        1: {
-            'manufacturer': 'LUMI',
-            'model': 'lumi.sensor_magnet',
-            'profile_id': zha.PROFILE_ID,
-            'device_type': zha.DeviceType.DIMMER_SWITCH,
-            'input_clusters': [
-                BasicCluster.cluster_id,
-                Identify.cluster_id,
-                XIAOMI_CLUSTER_ID,
-                Ota.cluster_id
-            ],
-            'output_clusters': [
-                BasicCluster.cluster_id,
-                Identify.cluster_id,
-                Groups.cluster_id,
-                OnOff.cluster_id,
-                LevelControl.cluster_id,
-                Scenes.cluster_id,
-                Ota.cluster_id
-            ],
-        },
+        'models_info': [
+            ('LUMI', 'lumi.sensor_magnet')
+        ],
+        'endpoints': {
+            1: {
+                'profile_id': zha.PROFILE_ID,
+                'device_type': zha.DeviceType.DIMMER_SWITCH,
+                'input_clusters': [
+                    BasicCluster.cluster_id,
+                    Identify.cluster_id,
+                    XIAOMI_CLUSTER_ID,
+                    Ota.cluster_id
+                ],
+                'output_clusters': [
+                    BasicCluster.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                    Scenes.cluster_id,
+                    Ota.cluster_id
+                ],
+            },
+        }
     }
 
     replacement = {

@@ -27,22 +27,25 @@ class MotionAQ2(XiaomiCustomDevice):
         #  device_version=1
         #  input_clusters=[0, 65535, 1030, 1024]
         #  output_clusters=[0, 25]>
-        1: {
-            'manufacturer': 'LUMI',
-            'model': 'lumi.sensor_motion.aq2',
-            'profile_id': zha.PROFILE_ID,
-            'device_type': zha.DeviceType.DIMMER_SWITCH,
-            'input_clusters': [
-                Basic.cluster_id,
-                XIAOMI_CLUSTER_ID,
-                OccupancySensing.cluster_id,
-                IlluminanceMeasurementCluster.cluster_id,
-            ],
-            'output_clusters': [
-                Basic.cluster_id,
-                Ota.cluster_id
-            ],
-        },
+        'models_info': [
+            ('LUMI', 'lumi.sensor_motion.aq2')
+        ],
+        'endpoints': {
+            1: {
+                'profile_id': zha.PROFILE_ID,
+                'device_type': zha.DeviceType.DIMMER_SWITCH,
+                'input_clusters': [
+                    Basic.cluster_id,
+                    XIAOMI_CLUSTER_ID,
+                    OccupancySensing.cluster_id,
+                    IlluminanceMeasurementCluster.cluster_id,
+                ],
+                'output_clusters': [
+                    Basic.cluster_id,
+                    Ota.cluster_id
+                ],
+            },
+        }
     }
 
     replacement = {

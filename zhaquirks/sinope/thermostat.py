@@ -65,31 +65,36 @@ class SinopeTechnologiesThermostat(CustomDevice):
         # <SimpleDescriptor endpoint=1 profile=260 device_type=769
         # device_version=0 input_clusters=[0, 3, 4, 5, 513, 516, 1026, 2820,
         # 2821, 65281] output_clusters=[65281, 25]>
-        1: {
-            'profile_id': 0x0104,
-            'device_type': 0x0301,
-            'input_clusters': [
-                Basic.cluster_id,
-                Identify.cluster_id,
-                Groups.cluster_id,
-                Scenes.cluster_id,
-                Thermostat.cluster_id,
-                UserInterface.cluster_id,
-                TemperatureMeasurement.cluster_id,
-                ElectricalMeasurement.cluster_id,
-                Diagnostic.cluster_id,
-                SINOPE_MANUFACTURER_CLUSTER_ID
-            ],
-            'output_clusters': [Ota.cluster_id, SINOPE_MANUFACTURER_CLUSTER_ID]
-        },
+        'endpoints': {
+            1: {
+                'profile_id': 0x0104,
+                'device_type': 0x0301,
+                'input_clusters': [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    Thermostat.cluster_id,
+                    UserInterface.cluster_id,
+                    TemperatureMeasurement.cluster_id,
+                    ElectricalMeasurement.cluster_id,
+                    Diagnostic.cluster_id,
+                    SINOPE_MANUFACTURER_CLUSTER_ID
+                ],
+                'output_clusters': [
+                    Ota.cluster_id,
+                    SINOPE_MANUFACTURER_CLUSTER_ID
+                ]
+            },
 
-        # <SimpleDescriptor endpoint=196 profile=49757 device_type=769
-        # device_version=0 input_clusters=[1] output_clusters=[]>
-        196: {
-            'profile_id': 0xc25d,
-            'device_type': 0x0301,
-            'input_clusters': [PowerConfiguration.cluster_id],
-            'output_clusters': []
+            # <SimpleDescriptor endpoint=196 profile=49757 device_type=769
+            # device_version=0 input_clusters=[1] output_clusters=[]>
+            196: {
+                'profile_id': 0xc25d,
+                'device_type': 0x0301,
+                'input_clusters': [PowerConfiguration.cluster_id],
+                'output_clusters': []
+            }
         }
     }
 

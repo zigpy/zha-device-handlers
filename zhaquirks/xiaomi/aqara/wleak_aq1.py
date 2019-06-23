@@ -22,20 +22,23 @@ class LeakAQ1(XiaomiCustomDevice):
         #  device_version=1
         #  input_clusters=[0, 3, 1]
         #  output_clusters=[25]>
-        1: {
-            'manufacturer': 'LUMI',
-            'model': 'lumi.sensor_wleak.aq1',
-            'profile_id': zha.PROFILE_ID,
-            'device_type': zha.DeviceType.IAS_ZONE,
-            'input_clusters': [
-                BasicCluster.cluster_id,
-                Identify.cluster_id,
-                PowerConfigurationCluster.cluster_id,
-            ],
-            'output_clusters': [
-                Ota.cluster_id
-            ],
-        },
+        'models_info': [
+            ('LUMI', 'lumi.sensor_wleak.aq1')
+        ],
+        'endpoints': {
+            1: {
+                'profile_id': zha.PROFILE_ID,
+                'device_type': zha.DeviceType.IAS_ZONE,
+                'input_clusters': [
+                    BasicCluster.cluster_id,
+                    Identify.cluster_id,
+                    PowerConfigurationCluster.cluster_id,
+                ],
+                'output_clusters': [
+                    Ota.cluster_id
+                ],
+            },
+        }
     }
 
     replacement = {
