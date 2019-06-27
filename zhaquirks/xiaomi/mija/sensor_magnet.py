@@ -63,7 +63,7 @@ class Magnet(XiaomiCustomDevice):
     replacement = {
         'endpoints': {
             1: {
-                'device_type': zha.DeviceType.REMOTE_CONTROL,
+                'device_type': zha.DeviceType.ON_OFF_SENSOR,
                 'input_clusters': [
                     BasicCluster,
                     Identify.cluster_id,
