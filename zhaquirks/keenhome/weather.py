@@ -31,6 +31,9 @@ class TemperatureHumidtyPressureSensor(CustomDevice):
         # device_version=1
         # input_clusters=[0, 3, 1, 32]
         # output_clusters=[0, 4, 3, 5, 25, 1026, 1029, 1027, 32]>
+        'models_info': [
+            ('LUMI', 'RS-THP-MP-1.0')
+        ],
         1: {
             'profile_id': zha.PROFILE_ID,
             'device_type': DeviceType.TEMPERATURE_SENSOR,
