@@ -6,8 +6,8 @@ from zigpy.zcl.clusters.general import Basic, MultistateInput, OnOff
 
 from zhaquirks import CustomCluster
 from zhaquirks.xiaomi import (
-    BasicCluster, PowerConfigurationCluster, TemperatureMeasurementCluster,
-    XiaomiCustomDevice)
+    BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
+)
 
 BUTTON_DEVICE_TYPE = 0x5F01
 STATUS_TYPE_ATTR = 0x0055  # decimal = 85
@@ -68,33 +68,33 @@ class SwitchAQ3V2(XiaomiCustomDevice):
         # device_version=1
         # input_clusters=[0, 18, 6, 1]
         # output_clusters=[0]>
-        1: {
-            'manufacturer': 'LUMI',
-            'model': 'lumi.sensor_swit',
-            'profile_id': zha.PROFILE_ID,
-            'device_type': BUTTON_DEVICE_TYPE,
-            'input_clusters': [
-                Basic.cluster_id,
-                PowerConfigurationCluster.cluster_id,
-                OnOff.cluster_id,
-                MultistateInput.cluster_id
-            ],
-            'output_clusters': [
-                Basic.cluster_id,
-            ],
-        },
+        'models_info': [
+            ('LUMI', 'lumi.sensor_swit')
+        ],
+        'endpoints': {
+            1: {
+                'profile_id': zha.PROFILE_ID,
+                'device_type': BUTTON_DEVICE_TYPE,
+                'input_clusters': [
+                    Basic.cluster_id,
+                    PowerConfigurationCluster.cluster_id,
+                    OnOff.cluster_id,
+                    MultistateInput.cluster_id
+                ],
+                'output_clusters': [
+                    Basic.cluster_id,
+                ],
+            },
+        }
     }
 
     replacement = {
         'endpoints': {
             1: {
-                'manufacturer': 'LUMI',
-                'model': 'lumi.sensor_swit',
                 'device_type': zha.DeviceType.REMOTE_CONTROL,
                 'input_clusters': [
                     BasicCluster,
                     PowerConfigurationCluster,
-                    TemperatureMeasurementCluster,
                     MultistateInputCluster
                 ],
                 'output_clusters': [

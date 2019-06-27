@@ -1,8 +1,7 @@
 """Device handler for smartthings tagV4 sensors."""
 import logging
 
-import homeassistant.components.zha.const as zha_const
-from zigpy.profiles import PROFILES, zha
+from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic, BinaryInput, Identify, Ota, PollControl)
@@ -73,28 +72,28 @@ class SmartThingsTagV4(CustomDevice):
         #  device_version=0
         #  input_clusters=[0, 1, 3, 15, 32]
         #  output_clusters=[3, 25]>
-        1: {
-            'profile_id': zha.PROFILE_ID,
-            'device_type': zha.DeviceType.SIMPLE_SENSOR,
-            'input_clusters': [
-                Basic.cluster_id,
-                FastPollingPowerConfigurationCluster.cluster_id,
-                Identify.cluster_id,
-                PollControl.cluster_id,
-                TrackingCluster.cluster_id
-            ],
-            'output_clusters': [
-                Identify.cluster_id,
-                Ota.cluster_id
-            ],
+        'endpoints': {
+            1: {
+                'profile_id': zha.PROFILE_ID,
+                'device_type': zha.DeviceType.SIMPLE_SENSOR,
+                'input_clusters': [
+                    Basic.cluster_id,
+                    FastPollingPowerConfigurationCluster.cluster_id,
+                    Identify.cluster_id,
+                    PollControl.cluster_id,
+                    TrackingCluster.cluster_id
+                ],
+                'output_clusters': [
+                    Identify.cluster_id,
+                    Ota.cluster_id
+                ],
+            }
         }
     }
 
     replacement = {
         'endpoints': {
             1: {
-                'manufacturer': 'SmartThings',
-                'model': 'tagv4',
                 'device_type': ARRIVAL_SENSOR_DEVICE_TYPE,
                 'input_clusters': [
                     Basic.cluster_id,
@@ -110,26 +109,3 @@ class SmartThingsTagV4(CustomDevice):
             }
         },
     }
-
-
-PROFILES[zha.PROFILE_ID].CLUSTERS[ARRIVAL_SENSOR_DEVICE_TYPE] = (
-    [
-        Basic.cluster_id,
-        Identify.cluster_id,
-        PollControl.cluster_id,
-        TrackingCluster.cluster_id
-    ],
-    [
-        Identify.cluster_id,
-        Ota.cluster_id
-    ]
-)
-
-if zha.PROFILE_ID not in zha_const.DEVICE_CLASS:
-    zha_const.DEVICE_CLASS[zha.PROFILE_ID] = {}
-
-zha_const.DEVICE_CLASS[zha.PROFILE_ID].update(
-    {
-        ARRIVAL_SENSOR_DEVICE_TYPE: 'device_tracker'
-    }
-)

@@ -18,28 +18,28 @@ class Z308E3ED(CustomDevice):
         #  device_version=0
         #  input_clusters=[0, 1, 3, 21, 1280, 32, 2821]
         #  output_clusters=[]>
-        1: {
-            'profile_id': zha.PROFILE_ID,
-            'device_type': zha.DeviceType.IAS_ZONE,
-            'input_clusters': [
-                Basic.cluster_id,
-                PowerConfigurationCluster.cluster_id,
-                Identify.cluster_id,
-                PollControl.cluster_id,
-                IasZone.cluster_id,
-                Commissioning.cluster_id,
-                DIAGNOSTICS_CLUSTER_ID
-            ],
-            'output_clusters': [
-            ],
+        'endpoints': {
+            1: {
+                'profile_id': zha.PROFILE_ID,
+                'device_type': zha.DeviceType.IAS_ZONE,
+                'input_clusters': [
+                    Basic.cluster_id,
+                    PowerConfigurationCluster.cluster_id,
+                    Identify.cluster_id,
+                    PollControl.cluster_id,
+                    IasZone.cluster_id,
+                    Commissioning.cluster_id,
+                    DIAGNOSTICS_CLUSTER_ID
+                ],
+                'output_clusters': [
+                ],
+            }
         }
     }
 
     replacement = {
         'endpoints': {
             1: {
-                'manufacturer': 'netvox',
-                'model': 'Z308E3ED',
                 'input_clusters': [
                     Basic.cluster_id,
                     PowerConfigurationCluster,

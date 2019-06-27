@@ -53,33 +53,34 @@ class SamjinButton(CustomDevice):
         # device_version=0
         # input_clusters=[0, 1, 3, 32, 1026, 1280, 2821]
         # output_clusters=[3, 25]>
-        1: {
-            'profile_id': zha.PROFILE_ID,
-            'device_type': zha.DeviceType.IAS_ZONE,
-            'model': 'button',
-            'manufacturer': 'Samjin',
-            'input_clusters': [
-                Basic.cluster_id,
-                PowerConfiguration.cluster_id,
-                Identify.cluster_id,
-                PollControl.cluster_id,
-                TemperatureMeasurement.cluster_id,
-                IASCluster.cluster_id,
-                DIAGNOSTICS_CLUSTER_ID
-            ],
-            'output_clusters': [
-                Identify.cluster_id,
-                Ota.cluster_id
-            ],
-        },
+        'models_info': [
+            ('Samjin', 'button')
+        ],
+        'endpoints': {
+            1: {
+                'profile_id': zha.PROFILE_ID,
+                'device_type': zha.DeviceType.IAS_ZONE,
+                'input_clusters': [
+                    Basic.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    Identify.cluster_id,
+                    PollControl.cluster_id,
+                    TemperatureMeasurement.cluster_id,
+                    IASCluster.cluster_id,
+                    DIAGNOSTICS_CLUSTER_ID
+                ],
+                'output_clusters': [
+                    Identify.cluster_id,
+                    Ota.cluster_id
+                ],
+            },
+        }
     }
 
     replacement = {
         'endpoints': {
             1: {
                 'profile_id': zha.PROFILE_ID,
-                'model': 'button',
-                'manufacturer': 'Samjin',
                 'input_clusters': [
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,

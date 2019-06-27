@@ -25,33 +25,37 @@ class CentraLite3310S(CustomDevice):
         #  device_version=0
         #  input_clusters=[0, 1, 3, 32, 1026, 2821, 64581]
         #  output_clusters=[3, 25]>
-
-        1: {
-            'manufacturer': 'CentraLite',
-            'model': '3310-S',
-            'profile_id': zha.PROFILE_ID,
-            'device_type': zha.DeviceType.TEMPERATURE_SENSOR,
-            'input_clusters': [
-                Basic.cluster_id,
-                PowerConfigurationCluster.cluster_id,
-                Identify.cluster_id,
-                PollControl.cluster_id,
-                TemperatureMeasurement.cluster_id,
-                DIAGNOSTICS_CLUSTER_ID,
-                SmartthingsRelativeHumidityCluster.cluster_id
-            ],
-            'output_clusters': [
-                Identify.cluster_id,
-                Ota.cluster_id
-            ],
-        },
+        'manufacturer': 'CentraLite',
+        'model': '3310-S',
+        'models_info': [
+            ('CentraLite', '3310-S'),
+            ('CentraLite', '3310-G'),
+            ('CentraLite', '3310')
+        ],
+        'endpoints': {
+            1: {
+                'profile_id': zha.PROFILE_ID,
+                'device_type': zha.DeviceType.TEMPERATURE_SENSOR,
+                'input_clusters': [
+                    Basic.cluster_id,
+                    PowerConfigurationCluster.cluster_id,
+                    Identify.cluster_id,
+                    PollControl.cluster_id,
+                    TemperatureMeasurement.cluster_id,
+                    DIAGNOSTICS_CLUSTER_ID,
+                    SmartthingsRelativeHumidityCluster.cluster_id
+                ],
+                'output_clusters': [
+                    Identify.cluster_id,
+                    Ota.cluster_id
+                ],
+            },
+        }
     }
 
     replacement = {
         'endpoints': {
             1: {
-                'manufacturer': 'CentraLite',
-                'model': '3310-S',
                 'input_clusters': [
                     Basic.cluster_id,
                     PowerConfigurationCluster,

@@ -7,8 +7,8 @@ from zigpy.quirks.xiaomi import AqaraOpenCloseSensor
 from zigpy.zcl.clusters.general import Groups, Identify, OnOff
 
 from zhaquirks.xiaomi import (
-    BasicCluster, PowerConfigurationCluster, TemperatureMeasurementCluster,
-    XiaomiCustomDevice)
+    BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
+)
 
 OPEN_CLOSE_DEVICE_TYPE = 0x5F01
 XIAOMI_CLUSTER_ID = 0xFFFF
@@ -33,35 +33,35 @@ class MagnetAQ2(XiaomiCustomDevice):
         #  device_version=1
         #  input_clusters=[0, 3, 65535, 6]
         #  output_clusters=[0, 4, 65535]>
-        1: {
-            'manufacturer': 'LUMI',
-            'model': 'lumi.sensor_magnet.aq2',
-            'profile_id': zha.PROFILE_ID,
-            'device_type': OPEN_CLOSE_DEVICE_TYPE,
-            'input_clusters': [
-                BasicCluster.cluster_id,
-                Identify.cluster_id,
-                XIAOMI_CLUSTER_ID,
-                OnOff.cluster_id
-            ],
-            'output_clusters': [
-                BasicCluster.cluster_id,
-                Groups.cluster_id,
-                XIAOMI_CLUSTER_ID
-            ],
-        },
+        'models_info': [
+            ('LUMI', 'lumi.sensor_magnet.aq2')
+        ],
+        'endpoints': {
+            1: {
+                'profile_id': zha.PROFILE_ID,
+                'device_type': OPEN_CLOSE_DEVICE_TYPE,
+                'input_clusters': [
+                    BasicCluster.cluster_id,
+                    Identify.cluster_id,
+                    XIAOMI_CLUSTER_ID,
+                    OnOff.cluster_id
+                ],
+                'output_clusters': [
+                    BasicCluster.cluster_id,
+                    Groups.cluster_id,
+                    XIAOMI_CLUSTER_ID
+                ],
+            },
+        }
     }
 
     replacement = {
         'endpoints': {
             1: {
-                'manufacturer': 'LUMI',
-                'model': 'lumi.sensor_magnet.aq2',
                 'input_clusters': [
                     BasicCluster,
                     Identify.cluster_id,
                     PowerConfigurationCluster,
-                    TemperatureMeasurementCluster,
                     XIAOMI_CLUSTER_ID
                 ],
                 'output_clusters': [

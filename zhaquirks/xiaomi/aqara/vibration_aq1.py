@@ -12,8 +12,8 @@ from zigpy.zcl.clusters.security import IasZone
 
 from zhaquirks import Bus, LocalDataCluster
 from zhaquirks.xiaomi import (
-    BasicCluster, PowerConfigurationCluster, TemperatureMeasurementCluster,
-    XiaomiCustomDevice)
+    BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
+)
 
 VIBE_DEVICE_TYPE = 0x5F02  # decimal = 24322
 RECENT_ACTIVITY_LEVEL_ATTR = 0x0505  # decimal = 1285
@@ -63,12 +63,15 @@ class VibrationAQ1(XiaomiCustomDevice):
             """Init."""
             self._current_state = {}
             super().__init__(*args, **kwargs)
+            self.attributes.update({
+                0x0000: ('lock_state', types.uint8_t),
+            })
 
         def _update_attribute(self, attrid, value):
             super()._update_attribute(attrid, value)
             if attrid == STATUS_TYPE_ATTR:
                 self._current_state[STATUS_TYPE_ATTR] = MEASUREMENT_TYPE.get(
-                    value
+                    value, 'Unknown'
                 )
                 if value == VIBE_VALUE:
                     self.endpoint.device.motion_bus.listener_event(
@@ -97,10 +100,11 @@ class VibrationAQ1(XiaomiCustomDevice):
                 )
 
             # show something in the sensor in HA
-            super()._update_attribute(
-                0,
-                self._current_state[STATUS_TYPE_ATTR]
-            )
+            if STATUS_TYPE_ATTR in self._current_state:
+                super()._update_attribute(
+                    0,
+                    self._current_state[STATUS_TYPE_ATTR]
+                )
 
     class MotionCluster(LocalDataCluster, IasZone):
         """Motion cluster."""
@@ -159,52 +163,52 @@ class VibrationAQ1(XiaomiCustomDevice):
             )
 
     signature = {
-        1: {
-            'manufacturer': 'LUMI',
-            'model': 'lumi.vibration.aq1',
-            'profile_id': zha.PROFILE_ID,
-            'device_type': zha.DeviceType.DOOR_LOCK,
-            'input_clusters': [
-                Basic.cluster_id,
-                Identify.cluster_id,
-                Ota.cluster_id,
-                DoorLock.cluster_id
-            ],
-            'output_clusters': [
-                Basic.cluster_id,
-                Identify.cluster_id,
-                Groups.cluster_id,
-                Scenes.cluster_id,
-                Ota.cluster_id,
-                DoorLock.cluster_id
-            ],
-        },
-        2: {
-            'profile_id': zha.PROFILE_ID,
-            'device_type': VIBE_DEVICE_TYPE,
-            'input_clusters': [
-                Identify.cluster_id,
-                MultistateInput.cluster_id
-            ],
-            'output_clusters': [
-                Identify.cluster_id,
-                Groups.cluster_id,
-                Scenes.cluster_id,
-                MultistateInput.cluster_id
-            ],
-        },
+        'models_info': [
+            ('LUMI', 'lumi.vibration.aq1')
+        ],
+        'endpoints': {
+            1: {
+                'profile_id': zha.PROFILE_ID,
+                'device_type': zha.DeviceType.DOOR_LOCK,
+                'input_clusters': [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Ota.cluster_id,
+                    DoorLock.cluster_id
+                ],
+                'output_clusters': [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    Ota.cluster_id,
+                    DoorLock.cluster_id
+                ],
+            },
+            2: {
+                'profile_id': zha.PROFILE_ID,
+                'device_type': VIBE_DEVICE_TYPE,
+                'input_clusters': [
+                    Identify.cluster_id,
+                    MultistateInput.cluster_id
+                ],
+                'output_clusters': [
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    MultistateInput.cluster_id
+                ],
+            },
+        }
     }
 
     replacement = {
         'endpoints': {
             1: {
-                'manufacturer': 'LUMI',
-                'model': 'lumi.vibration.aq1',
                 'device_type': zha.DeviceType.DOOR_LOCK,
                 'input_clusters': [
                     VibrationBasicCluster,
                     PowerConfigurationCluster,
-                    TemperatureMeasurementCluster,
                     Identify.cluster_id,
                     MotionCluster,
                     Ota.cluster_id,
@@ -215,13 +219,10 @@ class VibrationAQ1(XiaomiCustomDevice):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    Ota.cluster_id,
-                    DoorLock.cluster_id
+                    Ota.cluster_id
                 ],
             },
             2: {
-                'manufacturer': 'LUMI',
-                'model': 'lumi.vibration.aq1',
                 'device_type': VIBE_DEVICE_TYPE,
                 'input_clusters': [
                     Identify.cluster_id

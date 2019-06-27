@@ -1,7 +1,6 @@
 """Xiaomi aqara magic cube device."""
 import logging
 
-import homeassistant.components.zha.const as zha_const
 from zigpy import quirks
 from zigpy.profiles import zha
 from zigpy.quirks.xiaomi import AqaraMagicCubeSensor
@@ -10,8 +9,8 @@ from zigpy.zcl.clusters.general import (
 
 from zhaquirks import CustomCluster
 from zhaquirks.xiaomi import (
-    BasicCluster, PowerConfigurationCluster, TemperatureMeasurementCluster,
-    XiaomiCustomDevice)
+    BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
+)
 
 XIAOMI_SENSORS = 0x5F01  # decimal = 24321 ? sensors
 XIAOMI_MEASUREMENTS = 0x5F02  # decimal = 24322 ? multistate measurements
@@ -97,11 +96,6 @@ ROTATE_RIGHT = 'rotate_right'
 ROTATE_LEFT = 'rotate_left'
 
 _LOGGER = logging.getLogger(__name__)
-
-zha_const.SINGLE_INPUT_CLUSTER_DEVICE_CLASS.update({
-    MultistateInput: 'sensor',
-    AnalogInput: 'sensor'
-})
 
 
 def extend_dict(dictionary, value, ranges):
@@ -211,74 +205,74 @@ class CubeAQGL01(XiaomiCustomDevice):
         #  device_version=1
         #  input_clusters=[0, 3, 25, 18]
         #  output_clusters=[0, 4, 3, 5, 25, 18]>
-        1: {
-            'manufacturer': 'LUMI',
-            'model': 'lumi.sensor_cube.aqgl01',
-            'profile_id': zha.PROFILE_ID,
-            'device_type': XIAOMI_SENSORS,
-            'input_clusters': [
-                BasicCluster.cluster_id,
-                Identify.cluster_id,
-                Ota.cluster_id,
-                MultistateInput.cluster_id
-            ],
-            'output_clusters': [
-                BasicCluster.cluster_id,
-                Groups.cluster_id,
-                Identify.cluster_id,
-                Scenes.cluster_id,
-                Ota.cluster_id,
-                MultistateInput.cluster_id
-            ],
-        },
-        #  <SimpleDescriptor endpoint=2 profile=260 device_type=24322
-        #  device_version=1
-        #  input_clusters=[3, 18]
-        #  output_clusters=[4, 3, 5, 18]>
-        2: {
-            'profile_id': zha.PROFILE_ID,
-            'device_type': XIAOMI_MEASUREMENTS,
-            'input_clusters': [
-                Identify.cluster_id,
-                MultistateInput.cluster_id
-            ],
-            'output_clusters': [
-                Groups.cluster_id,
-                Identify.cluster_id,
-                Scenes.cluster_id,
-                MultistateInput.cluster_id
-            ],
-        },
-        #  <SimpleDescriptor endpoint=3 profile=260 device_type=24323
-        #  device_version=1
-        #  input_clusters=[3, 12]
-        #  output_clusters=[4, 3, 5, 12]>
-        3: {
-            'profile_id': zha.PROFILE_ID,
-            'device_type': XIAOMI_ANALOG,
-            'input_clusters': [
-                Identify.cluster_id,
-                AnalogInput.cluster_id
-            ],
-            'output_clusters': [
-                Groups.cluster_id,
-                Identify.cluster_id,
-                Scenes.cluster_id,
-                AnalogInput.cluster_id
-            ],
-        },
+        'models_info': [
+            ('LUMI', 'lumi.sensor_cube.aqgl01')
+        ],
+        'endpoints': {
+            1: {
+                'profile_id': zha.PROFILE_ID,
+                'device_type': XIAOMI_SENSORS,
+                'input_clusters': [
+                    BasicCluster.cluster_id,
+                    Identify.cluster_id,
+                    Ota.cluster_id,
+                    MultistateInput.cluster_id
+                ],
+                'output_clusters': [
+                    BasicCluster.cluster_id,
+                    Groups.cluster_id,
+                    Identify.cluster_id,
+                    Scenes.cluster_id,
+                    Ota.cluster_id,
+                    MultistateInput.cluster_id
+                ],
+            },
+            #  <SimpleDescriptor endpoint=2 profile=260 device_type=24322
+            #  device_version=1
+            #  input_clusters=[3, 18]
+            #  output_clusters=[4, 3, 5, 18]>
+            2: {
+                'profile_id': zha.PROFILE_ID,
+                'device_type': XIAOMI_MEASUREMENTS,
+                'input_clusters': [
+                    Identify.cluster_id,
+                    MultistateInput.cluster_id
+                ],
+                'output_clusters': [
+                    Groups.cluster_id,
+                    Identify.cluster_id,
+                    Scenes.cluster_id,
+                    MultistateInput.cluster_id
+                ],
+            },
+            #  <SimpleDescriptor endpoint=3 profile=260 device_type=24323
+            #  device_version=1
+            #  input_clusters=[3, 12]
+            #  output_clusters=[4, 3, 5, 12]>
+            3: {
+                'profile_id': zha.PROFILE_ID,
+                'device_type': XIAOMI_ANALOG,
+                'input_clusters': [
+                    Identify.cluster_id,
+                    AnalogInput.cluster_id
+                ],
+                'output_clusters': [
+                    Groups.cluster_id,
+                    Identify.cluster_id,
+                    Scenes.cluster_id,
+                    AnalogInput.cluster_id
+                ],
+            },
+        }
     }
 
     replacement = {
         'endpoints': {
             1: {
-                'manufacturer': 'LUMI',
-                'model': 'lumi.sensor_cube.aqgl01',
                 'device_type': XIAOMI_SENSORS_REPLACEMENT,
                 'input_clusters': [
                     BasicCluster,
                     PowerConfigurationCluster,
-                    TemperatureMeasurementCluster,
                     Identify.cluster_id,
                     Ota.cluster_id
                 ],
@@ -292,8 +286,6 @@ class CubeAQGL01(XiaomiCustomDevice):
                 ],
             },
             2: {
-                'manufacturer': 'LUMI',
-                'model': 'lumi.sensor_cube.aqgl01',
                 'device_type': XIAOMI_MEASUREMENTS_REPLACEMENT,
                 'input_clusters': [
                     Identify.cluster_id,
@@ -307,8 +299,6 @@ class CubeAQGL01(XiaomiCustomDevice):
                 ],
             },
             3: {
-                'manufacturer': 'LUMI',
-                'model': 'lumi.sensor_cube.aqgl01',
                 'device_type': XIAOMI_ANALOG_REPLACEMENT,
                 'input_clusters': [
                     Identify.cluster_id,

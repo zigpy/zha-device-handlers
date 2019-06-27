@@ -44,6 +44,13 @@ Custom quirks implementations for zigpy implemented as ZHA Device Handlers are a
 ### Keen Home
 - [Temperature / Humidity / Pressure Sensor](https://keenhome.io/products/temp-sensor): LUMI RS-THP-MP-1.0
 
+### Lutron
+- [Connected Bulb Remote](https://www.lutron.com/TechnicalDocumentLibrary/040421_Zigbee_Programming_Guide.pdf): Lutron LZL4BWHL01 Remote
+
+### Digi
+- [XBee Series 2](https://www.digi.com/products/embedded-systems/rf-modules/2-4-ghz-modules/xbee-zigbee): xbee
+- [XBee Series 3](https://www.digi.com/products/embedded-systems/rf-modules/2-4-ghz-modules/xbee3-zigbee-3): xbee3
+
 # Configuration:
 
 1. Update Home Assistant to 0.85.1 or a later version.
@@ -80,6 +87,40 @@ Custom quirks implementations for zigpy implemented as ZHA Device Handlers are a
 - All supported devices report battery level
 - tagV4 exposed as a device tracker in Home Assistant. The current implementation will use batteries rapidly
 - MultiV4 reports acceleration
+
+### Lutron
+
+- Connected bulb remote publishes events to Home Assistant
+
+### Digi XBee
+
+- Some functionality requires a coordinator device to be XBee as well
+- GPIO pins are exposed to Home Assistant as switches
+- Outgoing UART data can be sent with `zha.issue_zigbee_cluster_command` service
+- Incoming UART data will generate `zha_event` event.
+
+For example, the following script replies with an `Assistant` string to the device once it receives a `Home` string from it (replace ieee with your actual endpoint device ieee):
+```
+automation:
+  - alias: XBee UART Test
+    trigger:
+      platform: event
+      event_type: zha_event
+      event_data:
+        device_ieee: 00:13:a2:00:12:34:56:78
+        command: receive_data
+        args: Home
+    action:
+      service: zha.issue_zigbee_cluster_command
+      data:
+        ieee: 00:13:a2:00:12:34:56:78
+        endpoint_id: 232
+        cluster_id: 17
+        cluster_type: in
+        command: 0
+        command_type: server
+        args: Assistant
+```
 
 ### Thanks
 
