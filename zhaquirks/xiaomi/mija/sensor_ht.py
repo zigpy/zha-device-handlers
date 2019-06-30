@@ -33,7 +33,8 @@ class Weather(XiaomiCustomDevice):
         #  input_clusters=[0, 3, 25, 65535, 18]
         #  output_clusters=[0, 4, 3, 5, 25, 65535, 18]>
         'models_info': [
-            ('LUMI', 'lumi.sensor_ht')
+            ('LUMI', 'lumi.sensor_ht'),
+            ('LUMI', 'lumi.sens')
         ],
         'endpoints': {
             1: {
