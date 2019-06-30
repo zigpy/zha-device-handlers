@@ -34,37 +34,47 @@ class TemperatureHumidtyPressureSensor(CustomDevice):
         'models_info': [
             ('LUMI', 'RS-THP-MP-1.0')
         ],
-        1: {
-            'profile_id': zha.PROFILE_ID,
-            'device_type': DeviceType.TEMPERATURE_SENSOR,
-            'input_clusters': [Basic.cluster_id,
-                               Identify.cluster_id,
-                               PowerConfiguration.cluster_id,
-                               PollControl.cluster_id],
-            'output_clusters': [Basic.cluster_id,
-                                Groups.cluster_id,
-                                Identify.cluster_id,
-                                Scenes.cluster_id,
-                                Ota.cluster_id,
-                                TemperatureMeasurement.cluster_id,
-                                RelativeHumidity.cluster_id,
-                                PressureMeasurement.cluster_id,
-                                PollControl.cluster_id],
+        'endpoints': {
+            1: {
+                'profile_id': zha.PROFILE_ID,
+                'device_type': DeviceType.TEMPERATURE_SENSOR,
+                'input_clusters': [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    PollControl.cluster_id
+                ],
+                'output_clusters': [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Identify.cluster_id,
+                    Scenes.cluster_id,
+                    Ota.cluster_id,
+                    TemperatureMeasurement.cluster_id,
+                    RelativeHumidity.cluster_id,
+                    PressureMeasurement.cluster_id,
+                    PollControl.cluster_id
+                ],
+            }
         }
     }
 
     replacement = {
         'endpoints': {
             1: {
-                'input_clusters': [Basic.cluster_id,
-                                   Identify.cluster_id,
-                                   PowerConfiguration.cluster_id,
-                                   RelativeHumidity.cluster_id,
-                                   TemperatureMeasurement.cluster_id,
-                                   PollControl.cluster_id,
-                                   PressureMeasurementCluster],
-                'output_clusters': [Basic.cluster_id,
-                                    Groups.cluster_id]
+                'input_clusters': [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    RelativeHumidity.cluster_id,
+                    TemperatureMeasurement.cluster_id,
+                    PollControl.cluster_id,
+                    PressureMeasurementCluster
+                ],
+                'output_clusters': [
+                    Basic.cluster_id,
+                    Groups.cluster_id
+                ]
             }
         }
     }
