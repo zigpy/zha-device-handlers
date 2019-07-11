@@ -22,4 +22,5 @@ class LightLinkCluster(CustomCluster, LightLink):
         group_list = await self.get_group_identifiers(0)
         group_record = group_list[2]
         group_id = group_record[0].group_id
-        await coordinator.add_to_group(group_id)
+        status = await coordinator.add_to_group(group_id)
+        return [status]
