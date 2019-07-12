@@ -6,6 +6,7 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.lightlink import LightLink
 from zigpy.quirks import CustomDevice
 from . import LightLinkCluster
+from .. import DoublingPowerConfigurationCluster
 
 DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
 
@@ -51,7 +52,7 @@ class IkeaTradfriMotion(CustomDevice):
                 'device_type': zll.DeviceType.ON_OFF_SENSOR,
                 'input_clusters': [
                     Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
+                    DoublingPowerConfigurationCluster,
                     Identify.cluster_id,
                     Alarms.cluster_id,
                     DIAGNOSTICS_CLUSTER_ID,
