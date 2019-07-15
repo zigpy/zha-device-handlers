@@ -5,11 +5,12 @@ from zigpy import quirks
 from zigpy.profiles import zha
 from zigpy.quirks.xiaomi import AqaraTemperatureHumiditySensor
 from zigpy.zcl.clusters.general import Groups, Identify
-from zigpy.zcl.clusters.measurement import (
-    PressureMeasurement, RelativeHumidity, TemperatureMeasurement)
+from zigpy.zcl.clusters.measurement import PressureMeasurement, RelativeHumidity
 
 from zhaquirks.xiaomi import (
     BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice)
+
+from . import TemperatureMeasurementCluster
 
 TEMPERATURE_HUMIDITY_DEVICE_TYPE = 0x5F01
 XIAOMI_CLUSTER_ID = 0xFFFF
@@ -40,7 +41,7 @@ class Weather(XiaomiCustomDevice):
                     BasicCluster.cluster_id,
                     Identify.cluster_id,
                     XIAOMI_CLUSTER_ID,
-                    TemperatureMeasurement.cluster_id,
+                    TemperatureMeasurementCluster.cluster_id,
                     PressureMeasurement.cluster_id,
                     RelativeHumidity.cluster_id
                 ],
@@ -60,7 +61,7 @@ class Weather(XiaomiCustomDevice):
                     BasicCluster,
                     PowerConfigurationCluster,
                     Identify.cluster_id,
-                    TemperatureMeasurement.cluster_id,
+                    TemperatureMeasurementCluster,
                     PressureMeasurement.cluster_id,
                     RelativeHumidity.cluster_id,
                     XIAOMI_CLUSTER_ID
