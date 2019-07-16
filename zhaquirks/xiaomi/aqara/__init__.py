@@ -1,6 +1,7 @@
 """Module for Xiaomi Aqara quirks implementations."""
 import math
-from zigpy.zcl.clusters.measurement import (IlluminanceMeasurement, TemperatureMeasurement)
+from zigpy.zcl.clusters.measurement import (IlluminanceMeasurement,
+    TemperatureMeasurement)
 from zhaquirks import CustomCluster
 
 
@@ -17,7 +18,8 @@ class IlluminanceMeasurementCluster(CustomCluster, IlluminanceMeasurement):
 
 class TemperatureMeasurementCluster(CustomCluster, TemperatureMeasurement):
     """Temperature input cluster that restricts values to filter out bogus
-    values."""
+    values.
+    """
 
     cluster_id = TemperatureMeasurement.cluster_id
 
