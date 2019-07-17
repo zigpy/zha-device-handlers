@@ -11,7 +11,7 @@ from zigpy.zcl.clusters.measurement import (
 from zhaquirks.xiaomi import (
     BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice)
 
-from . import TemperatureMeasurementCluster
+from .. import TemperatureMeasurementCluster
 
 TEMPERATURE_HUMIDITY_DEVICE_TYPE = 0x5F01
 XIAOMI_CLUSTER_ID = 0xFFFF
