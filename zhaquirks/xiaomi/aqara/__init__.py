@@ -17,9 +17,7 @@ class IlluminanceMeasurementCluster(CustomCluster, IlluminanceMeasurement):
 
 
 class TemperatureMeasurementCluster(CustomCluster, TemperatureMeasurement):
-    """Temperature input cluster that restricts values to filter out bogus
-    values.
-    """
+    """Temperature cluster that filters out invalid temperature readings."""
 
     cluster_id = TemperatureMeasurement.cluster_id
 
