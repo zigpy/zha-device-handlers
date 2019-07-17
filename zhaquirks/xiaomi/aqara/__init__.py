@@ -1,7 +1,7 @@
 """Module for Xiaomi Aqara quirks implementations."""
 import math
-from zigpy.zcl.clusters.measurement import (IlluminanceMeasurement,
-    TemperatureMeasurement)
+from zigpy.zcl.clusters.measurement import (
+    IlluminanceMeasurement, TemperatureMeasurement)
 from zhaquirks import CustomCluster
 
 

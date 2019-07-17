@@ -5,8 +5,8 @@ from zigpy import quirks
 from zigpy.profiles import zha
 from zigpy.quirks.xiaomi import AqaraTemperatureHumiditySensor
 from zigpy.zcl.clusters.general import Groups, Identify
-from zigpy.zcl.clusters.measurement import (PressureMeasurement,
-    RelativeHumidity)
+from zigpy.zcl.clusters.measurement import (
+    PressureMeasurement, RelativeHumidity)
 
 from zhaquirks.xiaomi import (
     BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice)
