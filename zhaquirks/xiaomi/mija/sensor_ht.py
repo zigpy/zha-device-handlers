@@ -6,11 +6,12 @@ from zigpy.profiles import zha
 from zigpy.quirks.xiaomi import TemperatureHumiditySensor
 from zigpy.zcl.clusters.general import (
     AnalogInput, Groups, Identify, MultistateInput, Ota, Scenes)
-from zigpy.zcl.clusters.measurement import (
-    RelativeHumidity, TemperatureMeasurement)
+from zigpy.zcl.clusters.measurement import RelativeHumidity
 
 from zhaquirks.xiaomi import (
     BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice)
+
+from .. import TemperatureMeasurementCluster
 
 TEMPERATURE_HUMIDITY_DEVICE_TYPE = 0x5F01
 TEMPERATURE_HUMIDITY_DEVICE_TYPE2 = 0x5F02
@@ -104,7 +105,7 @@ class Weather(XiaomiCustomDevice):
                     BasicCluster,
                     PowerConfigurationCluster,
                     Identify.cluster_id,
-                    TemperatureMeasurement.cluster_id,
+                    TemperatureMeasurementCluster,
                     RelativeHumidity.cluster_id,
                     XIAOMI_CLUSTER_ID,
                     Ota.cluster_id

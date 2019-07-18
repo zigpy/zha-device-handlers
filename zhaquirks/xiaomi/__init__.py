@@ -6,7 +6,9 @@ import logging
 from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy import types as t
 from zigpy.zcl.clusters.general import Basic, PowerConfiguration
-from zigpy.zcl.clusters.measurement import OccupancySensing
+from zigpy.zcl.clusters.measurement import (
+    OccupancySensing, TemperatureMeasurement
+)
 from zigpy.zcl.clusters.security import IasZone
 import zigpy.zcl.foundation as foundation
 
@@ -269,3 +271,15 @@ class MotionCluster(LocalDataCluster, IasZone):
             ZONE_STATE,
             [OFF]
         )
+
+
+class TemperatureMeasurementCluster(CustomCluster, TemperatureMeasurement):
+    """Temperature cluster that filters out invalid temperature readings."""
+
+    cluster_id = TemperatureMeasurement.cluster_id
+
+    def _update_attribute(self, attrid, value):
+        # drop values above and below documented range for this sensor
+        # value is in centi degrees
+        if attrid == 0 and (value >= -2000 or value <= 6000):
+            super()._update_attribute(attrid, value)
