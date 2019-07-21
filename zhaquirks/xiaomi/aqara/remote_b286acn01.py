@@ -74,7 +74,8 @@ class RemoteB286ACN01(XiaomiCustomDevice):
         # input_clusters=[0, 3, 25, 65535, 18]
         # output_clusters=[0, 4, 3, 5, 25, 65535, 18]>
         'models_info': [
-            ('LUMI', 'lumi.remote.b286acn01')
+            ('LUMI', 'lumi.remote.b286acn01'),
+            ('LUMI', 'lumi.sensor_86sw2')
         ],
         'endpoints': {
             1: {
