@@ -9,7 +9,7 @@ from zigpy.zcl.clusters.security import IasZone
 from zhaquirks.centralite import PowerConfigurationCluster
 
 
-class SmartThingsMotionV4(CustomDevice):
+class SmartThingsIASV4(CustomDevice):
     """SmartThingsMotionV4."""
 
     signature = {
@@ -18,7 +18,8 @@ class SmartThingsMotionV4(CustomDevice):
         #  input_clusters=[0, 1, 3, 15, 1026, 1280, 32]
         #  output_clusters=[25]>
         'models_info': [
-            ('SmartThings', 'motionv4')
+            ('SmartThings', 'motionv4'),
+            ('SmartThings', 'moisturev4')
         ],
         'endpoints': {
             1: {
