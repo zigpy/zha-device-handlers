@@ -1,4 +1,4 @@
-"""Device handler for smartthings motionV4 sensors."""
+"""Device handler for smartthings IAS V4 sensors."""
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
@@ -10,7 +10,7 @@ from zhaquirks.centralite import PowerConfigurationCluster
 
 
 class SmartThingsIASV4(CustomDevice):
-    """SmartThingsMotionV4."""
+    """SmartThingsIASV4."""
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=1026
