@@ -2,13 +2,13 @@
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PollControl
-from zigpy.zcl.clusters.measurement import (
-    OccupancySensing, TemperatureMeasurement)
+from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone
 
 from zhaquirks.centralite import PowerConfigurationCluster
 
 DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
+MANUFACTURER_SPECIFIC_PROFILE_ID = 0xC2DF  # decimal = 49887
 MANUFACTURER_SPECIFIC_CLUSTER_ID = 0xFC46  # decimal = 64582
 
 
@@ -49,16 +49,15 @@ class CentraLite3305SV2(CustomDevice):
             },
             #  <SimpleDescriptor endpoint=2 profile=260 device_type=263
             #  device_version=0
-            #  input_clusters=[0, 1, 3, 1030, 2821, 64582]
+            #  input_clusters=[0, 1, 3, 2821, 64582]
             #  output_clusters=[3]>
             2: {
-                'profile_id': zha.PROFILE_ID,
+                'profile_id': MANUFACTURER_SPECIFIC_PROFILE_ID,
                 'device_type': zha.DeviceType.OCCUPANCY_SENSOR,
                 'input_clusters': [
                     Basic.cluster_id,
                     PowerConfigurationCluster.cluster_id,
                     Identify.cluster_id,
-                    OccupancySensing.cluster_id,
                     DIAGNOSTICS_CLUSTER_ID,
                     MANUFACTURER_SPECIFIC_CLUSTER_ID
                 ],
@@ -89,7 +88,6 @@ class CentraLite3305SV2(CustomDevice):
                 'input_clusters': [
                     Basic.cluster_id,
                     Identify.cluster_id,
-                    OccupancySensing.cluster_id,
                     DIAGNOSTICS_CLUSTER_ID,
                     MANUFACTURER_SPECIFIC_CLUSTER_ID
                 ],
