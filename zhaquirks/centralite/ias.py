@@ -27,7 +27,7 @@ class CentraLiteIASSensor(CustomDevice):
             ('CentraLite', '3315-L'),
             ('CentraLite', '3320-L'),
             ('CentraLite', '3315-G'),
-            ('CentraLite', '3300')
+            ('CentraLite', '3300-S')
         ],
         'endpoints': {
             1: {
