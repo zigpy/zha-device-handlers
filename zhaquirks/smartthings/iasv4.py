@@ -1,4 +1,4 @@
-"""Device handler for smartthings motionV4 sensors."""
+"""Device handler for smartthings IAS V4 sensors."""
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
@@ -9,8 +9,8 @@ from zigpy.zcl.clusters.security import IasZone
 from zhaquirks.centralite import PowerConfigurationCluster
 
 
-class SmartThingsMotionV4(CustomDevice):
-    """SmartThingsMotionV4."""
+class SmartThingsIASV4(CustomDevice):
+    """SmartThingsIASV4."""
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=1026
@@ -18,7 +18,8 @@ class SmartThingsMotionV4(CustomDevice):
         #  input_clusters=[0, 1, 3, 15, 1026, 1280, 32]
         #  output_clusters=[25]>
         'models_info': [
-            ('SmartThings', 'motionv4')
+            ('SmartThings', 'motionv4'),
+            ('SmartThings', 'moisturev4')
         ],
         'endpoints': {
             1: {
