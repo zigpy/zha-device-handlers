@@ -9,7 +9,7 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.lightlink import LightLink
 from zigpy.quirks import CustomDevice
 from . import LightLinkCluster
-from .. import EventableCluster
+from .. import EventableCluster, DoublingPowerConfigurationCluster
 
 DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
 
@@ -70,7 +70,7 @@ class IkeaTradfriRemote(CustomDevice):
                 'device_type': zll.DeviceType.SCENE_CONTROLLER,
                 'input_clusters': [
                     Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
+                    DoublingPowerConfigurationCluster,
                     Identify.cluster_id,
                     Alarms.cluster_id,
                     DIAGNOSTICS_CLUSTER_ID,

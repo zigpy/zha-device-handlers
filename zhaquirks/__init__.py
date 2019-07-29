@@ -6,6 +6,7 @@ from zigpy.quirks import CustomCluster
 import zigpy.types as types
 from zigpy.util import ListenableMixin
 from zigpy.zdo import types as zdotypes
+from zigpy.zcl.clusters.general import PowerConfiguration
 
 UNKNOWN = 'Unknown'
 
@@ -84,6 +85,22 @@ class GroupBoundCluster(CustomCluster):
             self._endpoint.endpoint_id,
             self.cluster_id,
             dstaddr)
+
+
+class DoublingPowerConfigurationCluster(CustomCluster, PowerConfiguration):
+    """PowerConfiguration cluster implementation.
+
+    This implementation doubles battery pct remaining for non standard devices
+    that don't follow the reporting spec.
+    """
+
+    cluster_id = PowerConfiguration.cluster_id
+    BATTERY_PERCENTAGE_REMAINING = 0x0021
+
+    def _update_attribute(self, attrid, value):
+        if attrid == self.BATTERY_PERCENTAGE_REMAINING:
+            value = value * 2
+        super()._update_attribute(attrid, value)
 
 
 NAME = __name__
