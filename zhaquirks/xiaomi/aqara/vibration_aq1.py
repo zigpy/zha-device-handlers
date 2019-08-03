@@ -78,16 +78,13 @@ class VibrationAQ1(XiaomiCustomDevice):
                         'motion_event'
                     )
                 elif value == DROP_VALUE:
-                    self.listener_event(
-                        'zha_send_event',
-                        self,
-                        self._current_state[STATUS_TYPE_ATTR],
-                        {}
+                    self.endpoint.device.motion_bus.listener_event(
+                        'send_event',
+                        self._current_state[STATUS_TYPE_ATTR]
                     )
             elif attrid == ROTATION_DEGREES_ATTR:
-                self.listener_event(
-                    'zha_send_event',
-                    self,
+                self.endpoint.device.motion_bus.listener_event(
+                    'send_event',
                     self._current_state[STATUS_TYPE_ATTR],
                     {
                         'degrees': value
@@ -146,6 +143,15 @@ class VibrationAQ1(XiaomiCustomDevice):
 
             loop = asyncio.get_event_loop()
             self._timer_handle = loop.call_later(75, self._turn_off)
+
+        def send_event(self, event, *args):
+            """Send event."""
+            self.listener_event(
+                'zha_send_event',
+                self,
+                event,
+                args
+            )
 
         def _turn_off(self):
             self._timer_handle = None
