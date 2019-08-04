@@ -15,6 +15,7 @@ class BasicCluster(CustomCluster, Basic):
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
+        self.attributes = super().attributes.copy()
         self.attributes.update({
             0x0031: ('phillips', t.bitmap16),
         })

@@ -50,6 +50,7 @@ class VibrationAQ1(XiaomiCustomDevice):
         def __init__(self, *args, **kwargs):
             """Init."""
             super().__init__(*args, **kwargs)
+            self.attributes = super().attributes.copy()
             self.attributes.update({
                 0xFF0D: ('sensitivity', types.uint8_t),
             })
@@ -63,6 +64,7 @@ class VibrationAQ1(XiaomiCustomDevice):
             """Init."""
             self._current_state = {}
             super().__init__(*args, **kwargs)
+            self.attributes = super().attributes.copy()
             self.attributes.update({
                 0x0000: ('lock_state', types.uint8_t),
             })
