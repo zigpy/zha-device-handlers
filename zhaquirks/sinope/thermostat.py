@@ -46,7 +46,7 @@ class SinopeTechnologiesThermostat(CustomDevice):
         def __init__(self, *args, **kwargs):
             """Init method."""
             super().__init__(*args, **kwargs)
-            self.attributes = Thermostat.attributes
+            self.attributes = Thermostat.attributes.copy()
             self.attributes[0x0400] = ('set_occupancy', t.enum8)
             self._attridx = {
                 attrname: attrid for attrid, (attrname, datatype)
