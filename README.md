@@ -51,6 +51,10 @@ Custom quirks implementations for zigpy implemented as ZHA Device Handlers are a
 - [XBee Series 2](https://www.digi.com/products/embedded-systems/rf-modules/2-4-ghz-modules/xbee-zigbee): xbee
 - [XBee Series 3](https://www.digi.com/products/embedded-systems/rf-modules/2-4-ghz-modules/xbee3-zigbee-3): xbee3
 
+### Yale
+- [YRD210](https://www.yalehome.com/Yale/Yale%20US/Real%20Living/installation%20instructions/Yale%20DB%20PUSH%20Quickstart%2018JUL11_Rev%20B.pdf): Yale YRD210 Deadbolt
+- [YRL220](https://www.yalehome.com/Yale/Yale%20US/Real%20Living/installation%20instructions/Yale%20%20DB%20Touch%20Instructions%2023AUG11_Rev%20B.pdf): Yale YRL220 Lock
+
 # Configuration:
 
 1. Update Home Assistant to 0.85.1 or a later version.
@@ -121,6 +125,10 @@ automation:
         command_type: server
         args: Assistant
 ```
+
+### Yale
+
+- All supported devices report battery level
 
 ### Thanks
 
