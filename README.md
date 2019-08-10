@@ -23,6 +23,7 @@ Custom quirks implementations for zigpy implemented as ZHA Device Handlers are a
 - [Motion Sensor](https://www.irisbylowes.com/support/?guideTitle=Iris-Motion-Sensor&guideId=4be71b61-5938-30b6-8154-bd90cb9b4796): CentraLite 3326-L
 - [Contact Sensor](http://a.co/9PCEorM): CentraLite 3321-S
 - [Temperature / Humidity Sensor](https://bit.ly/2GYguGR): CentraLite 3310-S
+- [Smart Button](http://pdf.lowes.com/useandcareguides/812489023018_use.pdf): CentraLite 3460-L
 - [Thermostat](https://centralite.com/products/pearl-thermostat): CentraLite 3157100
 
 ### Xiaomi Aqara
