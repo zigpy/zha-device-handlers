@@ -47,6 +47,9 @@ Custom quirks implementations for zigpy implemented as ZHA Device Handlers are a
 ### Lutron
 - [Connected Bulb Remote](https://www.lutron.com/TechnicalDocumentLibrary/040421_Zigbee_Programming_Guide.pdf): Lutron LZL4BWHL01 Remote
 
+### WAXMANN
+- [Water Sensor](https://leaksmart.com/sensor/): leakSMART Water Sensor V2
+
 ### Digi
 - [XBee Series 2](https://www.digi.com/products/embedded-systems/rf-modules/2-4-ghz-modules/xbee-zigbee): xbee
 - [XBee Series 3](https://www.digi.com/products/embedded-systems/rf-modules/2-4-ghz-modules/xbee3-zigbee-3): xbee3
@@ -91,6 +94,10 @@ Custom quirks implementations for zigpy implemented as ZHA Device Handlers are a
 ### Lutron
 
 - Connected bulb remote publishes events to Home Assistant
+
+### WAXMANN
+
+- leakSMART water sensor is exposed as a binary_sensor with DEVICE_CLASS_MOISTURE
 
 ### Digi XBee
 
