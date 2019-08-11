@@ -48,6 +48,7 @@ class EmulatedIasZone(LocalDataCluster, IasZone):
             [value]
         )
 
+
 class WAXMANApplianceEventAlerts(CustomCluster, ApplianceEventAlerts):
     """WAXMAN specific ApplianceEventAlert cluster."""
 
@@ -56,7 +57,8 @@ class WAXMANApplianceEventAlerts(CustomCluster, ApplianceEventAlerts):
         super().__init__(*args, **kwargs)
         self.client_commands = super().client_commands.copy()
         self.client_commands.update({
-            WAXMAN_CMDID: ('alerts_notification', (t.uint8_t, t.bitmap24), False),
+            WAXMAN_CMDID: ('alerts_notification', (t.uint8_t, t.bitmap24),
+                           False),
         })
         self.endpoint.device.app_cluster = self
 
@@ -69,6 +71,7 @@ class WAXMANApplianceEventAlerts(CustomCluster, ApplianceEventAlerts):
                 'update_state',
                 state
             )
+
 
 class WAXMANleakSMARTv2(CustomDevice):
     """Custom device representing WAXMAN leakSMART v2."""
