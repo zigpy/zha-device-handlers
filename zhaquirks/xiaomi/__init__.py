@@ -281,7 +281,7 @@ class TemperatureMeasurementCluster(CustomCluster, TemperatureMeasurement):
     def _update_attribute(self, attrid, value):
         # drop values above and below documented range for this sensor
         # value is in centi degrees
-        if attrid == 0 and (value >= -2000 and value <= 6000):
+        if attrid == 0 and (-2000 <= value <= 6000):
             super()._update_attribute(attrid, value)
 
 
@@ -293,5 +293,5 @@ class RelativeHumidityCluster(CustomCluster, RelativeHumidity):
     def _update_attribute(self, attrid, value):
         # drop values above and below documented range for this sensor
         # value is in centi degrees
-        if attrid == 0 and (value >= 0 and value <= 9999):
+        if attrid == 0 and (0 >= value <= 9999):
             super()._update_attribute(attrid, value)
