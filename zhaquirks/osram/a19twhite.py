@@ -16,6 +16,9 @@ class A19TunableWhite(CustomDevice):
         # <SimpleDescriptor endpoint=3 profile=260 device_type=258
         # device_version=2 input_clusters=[0, 3, 4, 5, 6, 8, 768, 64527]
         # output_clusters=[25]>
+        'models_info': [
+            ('OSRAM', 'LIGHTIFY A19 Tunable White')
+        ],
         3: {
             'profile_id': zha.PROFILE_ID,
             'device_type': zha.DeviceType.COLOR_DIMMABLE_LIGHT,
