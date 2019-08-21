@@ -23,6 +23,8 @@ Custom quirks implementations for zigpy implemented as ZHA Device Handlers are a
 - [Motion Sensor](https://www.irisbylowes.com/support/?guideTitle=Iris-Motion-Sensor&guideId=4be71b61-5938-30b6-8154-bd90cb9b4796): CentraLite 3326-L
 - [Contact Sensor](http://a.co/9PCEorM): CentraLite 3321-S
 - [Temperature / Humidity Sensor](https://bit.ly/2GYguGR): CentraLite 3310-S
+- [Smart Button](http://pdf.lowes.com/useandcareguides/812489023018_use.pdf): CentraLite 3460-L
+- [Thermostat](https://centralite.com/products/pearl-thermostat): CentraLite 3157100
 
 ### Xiaomi Aqara
 - [Cube](https://www.aqara.com/en/cube_controller-product.html): lumi.sensor_cube.aqgl01
@@ -47,9 +49,16 @@ Custom quirks implementations for zigpy implemented as ZHA Device Handlers are a
 ### Lutron
 - [Connected Bulb Remote](https://www.lutron.com/TechnicalDocumentLibrary/040421_Zigbee_Programming_Guide.pdf): Lutron LZL4BWHL01 Remote
 
+### WAXMANN
+- [Water Sensor](https://leaksmart.com/sensor/): leakSMART Water Sensor V2
+
 ### Digi
 - [XBee Series 2](https://www.digi.com/products/embedded-systems/rf-modules/2-4-ghz-modules/xbee-zigbee): xbee
 - [XBee Series 3](https://www.digi.com/products/embedded-systems/rf-modules/2-4-ghz-modules/xbee3-zigbee-3): xbee3
+
+### Yale
+- [YRD210](https://www.yalehome.com/Yale/Yale%20US/Real%20Living/installation%20instructions/Yale%20DB%20PUSH%20Quickstart%2018JUL11_Rev%20B.pdf): Yale YRD210 Deadbolt
+- [YRL220](https://www.yalehome.com/Yale/Yale%20US/Real%20Living/installation%20instructions/Yale%20%20DB%20Touch%20Instructions%2023AUG11_Rev%20B.pdf): Yale YRL220 Lock
 
 # Configuration:
 
@@ -92,6 +101,10 @@ Custom quirks implementations for zigpy implemented as ZHA Device Handlers are a
 
 - Connected bulb remote publishes events to Home Assistant
 
+### WAXMANN
+
+- leakSMART water sensor is exposed as a binary_sensor with DEVICE_CLASS_MOISTURE
+
 ### Digi XBee
 
 - Some functionality requires a coordinator device to be XBee as well
@@ -121,6 +134,10 @@ automation:
         command_type: server
         args: Assistant
 ```
+
+### Yale
+
+- All supported devices report battery level
 
 ### Thanks
 

@@ -96,3 +96,26 @@ class CentraLite3305S(CustomDevice):
             }
         },
     }
+
+
+class CentraLite3305S2(CentraLite3305S):
+    """Custom device representing centralite 3305 with one endpoint."""
+
+    signature = {
+        'models_info': [
+            ('CentraLite', '3305'),
+        ],
+        'endpoints': {
+            1: {
+                **CentraLite3305S.signature['endpoints'][1]
+            }
+        }
+    }
+
+    replacement = {
+        'endpoints': {
+            1: {
+                **CentraLite3305S.replacement['endpoints'][1]
+            }
+        }
+    }

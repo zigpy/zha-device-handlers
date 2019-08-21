@@ -7,7 +7,7 @@ from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy import types as t
 from zigpy.zcl.clusters.general import Basic, PowerConfiguration
 from zigpy.zcl.clusters.measurement import (
-    OccupancySensing, TemperatureMeasurement
+    OccupancySensing, TemperatureMeasurement, RelativeHumidity
 )
 from zigpy.zcl.clusters.security import IasZone
 import zigpy.zcl.foundation as foundation
@@ -281,5 +281,17 @@ class TemperatureMeasurementCluster(CustomCluster, TemperatureMeasurement):
     def _update_attribute(self, attrid, value):
         # drop values above and below documented range for this sensor
         # value is in centi degrees
-        if attrid == 0 and (value >= -2000 or value <= 6000):
+        if attrid == 0 and (-2000 <= value <= 6000):
+            super()._update_attribute(attrid, value)
+
+
+class RelativeHumidityCluster(CustomCluster, RelativeHumidity):
+    """Humidity cluster that filters out invalid humidity readings."""
+
+    cluster_id = RelativeHumidity.cluster_id
+
+    def _update_attribute(self, attrid, value):
+        # drop values above and below documented range for this sensor
+        # value is in centi degrees
+        if attrid == 0 and (0 >= value <= 9999):
             super()._update_attribute(attrid, value)
