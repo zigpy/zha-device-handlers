@@ -134,9 +134,7 @@ class WAXMANleakSMARTv2(CustomDevice):
 
 
 class WAXMANleakSMARTv2NOPOLL(CustomDevice):
-    """Custom device representing WAXMAN leakSMART v2
-    without PollControl cluster.
-    """
+    """Custom WAXMAN leakSMART v2 without PollControl cluster."""
 
     def __init__(self, *args, **kwargs):
         """Init."""
