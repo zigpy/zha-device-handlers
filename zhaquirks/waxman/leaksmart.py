@@ -131,3 +131,61 @@ class WAXMANleakSMARTv2(CustomDevice):
             },
         }
     }
+
+
+class WAXMANleakSMARTv2NOPOLL(CustomDevice):
+    """Custom WAXMAN leakSMART v2 without PollControl cluster."""
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        self.ias_bus = Bus()
+        super().__init__(*args, **kwargs)
+
+    signature = {
+        #  <SimpleDescriptor endpoint=1 profile=260 device_type=770
+        #  device_version=0
+        #  input_clusters=[0, 1, 3, 1026, 2818, 64514]
+        #  output_clusters=[3, 25]>
+        'models_info': [
+            ('WAXMAN', 'leakSMART Water Sensor V2'),
+        ],
+        'endpoints': {
+            1: {
+                'profile_id': zha.PROFILE_ID,
+                'device_type': zha.DeviceType.TEMPERATURE_SENSOR,
+                'input_clusters': [
+                    Basic.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    Identify.cluster_id,
+                    TemperatureMeasurement.cluster_id,
+                    ApplianceEventAlerts.cluster_id,
+                    MANUFACTURER_SPECIFIC_CLUSTER_ID
+                ],
+                'output_clusters': [
+                    Identify.cluster_id,
+                    Ota.cluster_id
+                ],
+            },
+        }
+    }
+
+    replacement = {
+        'endpoints': {
+            1: {
+                'profile_id': zha.PROFILE_ID,
+                'device_type': zha.DeviceType.TEMPERATURE_SENSOR,
+                'input_clusters': [
+                    Basic.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    Identify.cluster_id,
+                    TemperatureMeasurement.cluster_id,
+                    WAXMANApplianceEventAlerts,
+                    EmulatedIasZone
+                ],
+                'output_clusters': [
+                    Identify.cluster_id,
+                    Ota.cluster_id
+                ],
+            },
+        }
+    }
