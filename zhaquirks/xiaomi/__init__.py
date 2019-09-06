@@ -60,7 +60,7 @@ class BasicCluster(CustomCluster, Basic):
         except ValueError:
             hdr, data = foundation.ZCLHeader.deserialize(data)
             if not (hdr.frame_control.frame_type
-                    == foundation.FrameType.CLUSTER_COMMAND
+                    == foundation.FrameType.GLOBAL_COMMAND
                     and hdr.command_id == 0x0a):
                 raise
             msg = "ValueError exception for: %s payload: %s"
