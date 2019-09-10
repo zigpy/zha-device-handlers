@@ -34,8 +34,7 @@ class EmulatedIasZone(LocalDataCluster, IasZone):
         result = await self.endpoint.device.app_cluster.bind()
         return result
 
-    async def write_attributes(self, attributes, is_report=False,
-                               manufacturer=None, unsupported_attrs=[]):
+    async def write_attributes(self, attributes, manufacturer=None):
         """Ignore write_attributes."""
         return (0,)
 
