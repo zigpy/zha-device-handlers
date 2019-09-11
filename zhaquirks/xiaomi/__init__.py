@@ -53,16 +53,18 @@ class BasicCluster(CustomCluster, Basic):
 
     cluster_id = Basic.cluster_id
 
-    def deserialize(self, tsn, frame_type, is_reply, command_id, data):
+    def deserialize(self, data):
         """Deserialize cluster data."""
         try:
-            return super().deserialize(tsn, frame_type, is_reply, command_id,
-                                       data)
+            return super().deserialize(data)
         except ValueError:
-            msg = "ValueError exception for: tsn=%s, frame_type=%s, is_repy=%s"
-            msg += " cmd_id=%s, data=%s"
-            self.debug(msg, tsn, frame_type, is_reply, command_id,
-                       binascii.hexlify(data))
+            hdr, data = foundation.ZCLHeader.deserialize(data)
+            if not (hdr.frame_control.frame_type
+                    == foundation.FrameType.GLOBAL_COMMAND
+                    and hdr.command_id == 0x0a):
+                raise
+            msg = "ValueError exception for: %s payload: %s"
+            self.debug(msg, hdr, binascii.hexlify(data))
             newdata = b''
             while data:
                 try:
@@ -81,12 +83,9 @@ class BasicCluster(CustomCluster, Basic):
                     newdata += val_len.serialize() + val
                     continue
                 newdata += attr.serialize()
-            if frame_type != 1 and command_id == 0x0a:
-                self.debug("new data: %s", binascii.hexlify(newdata))
-                return super().deserialize(
-                    tsn, frame_type, is_reply, command_id, newdata
-                )
-            raise
+            self.debug("new data: %s",
+                       binascii.hexlify(hdr.serialize() + newdata))
+            return super().deserialize(hdr.serialize() + newdata)
 
     def _update_attribute(self, attrid, value):
         if attrid == XIAOMI_AQARA_ATTRIBUTE:
