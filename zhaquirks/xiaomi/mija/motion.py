@@ -12,10 +12,23 @@ from zigpy.zcl.clusters.general import (
     Scenes,
 )
 
-from zhaquirks import Bus
-from zhaquirks.xiaomi import BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
-
-from .. import MotionCluster, OccupancyCluster
+from .. import (
+    LUMI,
+    BasicCluster,
+    MotionCluster,
+    OccupancyCluster,
+    PowerConfigurationCluster,
+    XiaomiCustomDevice,
+)
+from ... import Bus
+from ...const import (
+    DEVICE_TYPE,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    MODELS_INFO,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
+)
 
 XIAOMI_CLUSTER_ID = 0xFFFF
 _LOGGER = logging.getLogger(__name__)
@@ -35,18 +48,18 @@ class Motion(XiaomiCustomDevice):
         #  device_version=1
         #  input_clusters=[0, 65535, 3, 25]
         #  output_clusters=[0, 3, 4, 5, 6, 8, 25]>
-        "models_info": [("LUMI", "lumi.sensor_motion")],
-        "endpoints": {
+        MODELS_INFO: [(LUMI, "lumi.sensor_motion")],
+        ENDPOINTS: {
             1: {
-                "profile_id": zha.PROFILE_ID,
-                "device_type": zha.DeviceType.DIMMER_SWITCH,
-                "input_clusters": [
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.DIMMER_SWITCH,
+                INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     XIAOMI_CLUSTER_ID,
                     Ota.cluster_id,
                     Identify.cluster_id,
                 ],
-                "output_clusters": [
+                OUTPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Ota.cluster_id,
                     Identify.cluster_id,
@@ -61,10 +74,10 @@ class Motion(XiaomiCustomDevice):
     }
 
     replacement = {
-        "endpoints": {
+        ENDPOINTS: {
             1: {
-                "device_type": zha.DeviceType.OCCUPANCY_SENSOR,
-                "input_clusters": [
+                DEVICE_TYPE: zha.DeviceType.OCCUPANCY_SENSOR,
+                INPUT_CLUSTERS: [
                     BasicCluster,
                     PowerConfigurationCluster,
                     Identify.cluster_id,
@@ -72,7 +85,7 @@ class Motion(XiaomiCustomDevice):
                     MotionCluster,
                     XIAOMI_CLUSTER_ID,
                 ],
-                "output_clusters": [
+                OUTPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
                     Groups.cluster_id,

@@ -4,7 +4,15 @@ import logging
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import Basic, Groups, OnOff
 
-from zhaquirks.xiaomi import BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
+from .. import LUMI, BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
+from ...const import (
+    DEVICE_TYPE,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    MODELS_INFO,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
+)
 
 BUTTON_DEVICE_TYPE = 0x5F01
 XIAOMI_CLUSTER_ID = 0xFFFF
@@ -20,17 +28,13 @@ class SwitchAQ2(XiaomiCustomDevice):
         # device_version=1
         # input_clusters=[0, 6, 65535]
         # output_clusters=[0, 4, 65535]>
-        "models_info": [("LUMI", "lumi.sensor_switch.aq2")],
-        "endpoints": {
+        MODELS_INFO: [(LUMI, "lumi.sensor_switch.aq2")],
+        ENDPOINTS: {
             1: {
-                "profile_id": zha.PROFILE_ID,
-                "device_type": BUTTON_DEVICE_TYPE,
-                "input_clusters": [
-                    Basic.cluster_id,
-                    OnOff.cluster_id,
-                    XIAOMI_CLUSTER_ID,
-                ],
-                "output_clusters": [
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: BUTTON_DEVICE_TYPE,
+                INPUT_CLUSTERS: [Basic.cluster_id, OnOff.cluster_id, XIAOMI_CLUSTER_ID],
+                OUTPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Groups.cluster_id,
                     XIAOMI_CLUSTER_ID,
@@ -40,15 +44,15 @@ class SwitchAQ2(XiaomiCustomDevice):
     }
 
     replacement = {
-        "endpoints": {
+        ENDPOINTS: {
             1: {
-                "device_type": zha.DeviceType.REMOTE_CONTROL,
-                "input_clusters": [
+                DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
+                INPUT_CLUSTERS: [
                     BasicCluster,
                     PowerConfigurationCluster,
                     XIAOMI_CLUSTER_ID,
                 ],
-                "output_clusters": [
+                OUTPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Groups.cluster_id,
                     XIAOMI_CLUSTER_ID,

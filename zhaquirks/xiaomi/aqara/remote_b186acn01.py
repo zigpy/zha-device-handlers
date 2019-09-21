@@ -12,16 +12,26 @@ from zigpy.zcl.clusters.general import (
     Scenes,
 )
 
-from zhaquirks import CustomCluster
-from zhaquirks.xiaomi import BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
+from .. import LUMI, BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
+from ... import CustomCluster
+from ...const import (
+    ATTR_ID,
+    DEVICE_TYPE,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    MODELS_INFO,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
+    VALUE,
+    ZHA_SEND_EVENT,
+)
 
+PRESS_TYPE = {0: "long press", 1: "single", 2: "double"}
+STATUS_TYPE_ATTR = 0x0055  # decimal = 85
+XIAOMI_CLUSTER_ID = 0xFFFF
 XIAOMI_DEVICE_TYPE = 0x5F01
 XIAOMI_DEVICE_TYPE2 = 0x5F02
 XIAOMI_DEVICE_TYPE3 = 0x5F03
-XIAOMI_CLUSTER_ID = 0xFFFF
-STATUS_TYPE_ATTR = 0x0055  # decimal = 85
-
-PRESS_TYPE = {0: "long press", 1: "single", 2: "double"}
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -44,12 +54,12 @@ class RemoteB186ACN01(XiaomiCustomDevice):
             if attrid == STATUS_TYPE_ATTR:
                 self._current_state = PRESS_TYPE.get(value)
                 event_args = {
-                    "press_type": self._current_state,
-                    "attr_id": attrid,
-                    "value": value,
+                    PRESS_TYPE: self._current_state,
+                    ATTR_ID: attrid,
+                    VALUE: value,
                 }
                 self.listener_event(
-                    "zha_send_event", self, self._current_state, event_args
+                    ZHA_SEND_EVENT, self, self._current_state, event_args
                 )
                 # show something in the sensor in HA
                 super()._update_attribute(0, self._current_state)
@@ -59,22 +69,19 @@ class RemoteB186ACN01(XiaomiCustomDevice):
         # device_version=1
         # input_clusters=[0, 3, 25, 65535, 18]
         # output_clusters=[0, 4, 3, 5, 25, 65535, 18]>
-        "models_info": [
-            ("LUMI", "lumi.remote.b186acn01"),
-            ("LUMI", "lumi.sensor_86sw1"),
-        ],
-        "endpoints": {
+        MODELS_INFO: [(LUMI, "lumi.remote.b186acn01"), (LUMI, "lumi.sensor_86sw1")],
+        ENDPOINTS: {
             1: {
-                "profile_id": zha.PROFILE_ID,
-                "device_type": XIAOMI_DEVICE_TYPE,
-                "input_clusters": [
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: XIAOMI_DEVICE_TYPE,
+                INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
                     Ota.cluster_id,
                     XIAOMI_CLUSTER_ID,
                     MultistateInputCluster.cluster_id,
                 ],
-                "output_clusters": [
+                OUTPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
                     Groups.cluster_id,
@@ -89,13 +96,13 @@ class RemoteB186ACN01(XiaomiCustomDevice):
             # input_clusters=[3, 18]
             # output_clusters=[4, 3, 5, 18]>
             2: {
-                "profile_id": zha.PROFILE_ID,
-                "device_type": XIAOMI_DEVICE_TYPE2,
-                "input_clusters": [
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: XIAOMI_DEVICE_TYPE2,
+                INPUT_CLUSTERS: [
                     Identify.cluster_id,
                     MultistateInputCluster.cluster_id,
                 ],
-                "output_clusters": [
+                OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
@@ -107,10 +114,10 @@ class RemoteB186ACN01(XiaomiCustomDevice):
             # input_clusters=[3, 12]
             # output_clusters=[4, 3, 5, 12]>
             3: {
-                "profile_id": zha.PROFILE_ID,
-                "device_type": XIAOMI_DEVICE_TYPE3,
-                "input_clusters": [Identify.cluster_id, AnalogInput.cluster_id],
-                "output_clusters": [
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: XIAOMI_DEVICE_TYPE3,
+                INPUT_CLUSTERS: [Identify.cluster_id, AnalogInput.cluster_id],
+                OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
@@ -121,10 +128,10 @@ class RemoteB186ACN01(XiaomiCustomDevice):
     }
 
     replacement = {
-        "endpoints": {
+        ENDPOINTS: {
             1: {
-                "device_type": XIAOMI_DEVICE_TYPE,
-                "input_clusters": [
+                DEVICE_TYPE: XIAOMI_DEVICE_TYPE,
+                INPUT_CLUSTERS: [
                     BasicCluster,
                     PowerConfigurationCluster,
                     Identify.cluster_id,
@@ -132,7 +139,7 @@ class RemoteB186ACN01(XiaomiCustomDevice):
                     XIAOMI_CLUSTER_ID,
                     MultistateInputCluster,
                 ],
-                "output_clusters": [
+                OUTPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
                     Groups.cluster_id,
@@ -143,9 +150,9 @@ class RemoteB186ACN01(XiaomiCustomDevice):
                 ],
             },
             2: {
-                "device_type": XIAOMI_DEVICE_TYPE2,
-                "input_clusters": [Identify.cluster_id, MultistateInputCluster],
-                "output_clusters": [
+                DEVICE_TYPE: XIAOMI_DEVICE_TYPE2,
+                INPUT_CLUSTERS: [Identify.cluster_id, MultistateInputCluster],
+                OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
@@ -153,9 +160,9 @@ class RemoteB186ACN01(XiaomiCustomDevice):
                 ],
             },
             3: {
-                "device_type": XIAOMI_DEVICE_TYPE3,
-                "input_clusters": [Identify.cluster_id, MultistateInputCluster],
-                "output_clusters": [
+                DEVICE_TYPE: XIAOMI_DEVICE_TYPE3,
+                INPUT_CLUSTERS: [Identify.cluster_id, MultistateInputCluster],
+                OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,

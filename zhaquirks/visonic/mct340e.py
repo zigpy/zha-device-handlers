@@ -13,6 +13,15 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone
 
+from ..const import (
+    DEVICE_TYPE,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    MODELS_INFO,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
+)
+
 OSRAM_DEVICE = 0x0810  # 2064 base 10
 OSRAM_CLUSTER = 0xFD00  # 64768 base 10
 
@@ -62,12 +71,12 @@ class MCT340E(CustomDevice):
         # device_version=0
         # input_clusters=[0, 1, 3, 1026, 1280, 32, 2821]
         # output_clusters=[25]>
-        "models_info": [("Visonic", "MCT-340 E")],
-        "endpoints": {
+        MODELS_INFO: [("Visonic", "MCT-340 E")],
+        ENDPOINTS: {
             1: {
-                "profile_id": zha.PROFILE_ID,
-                "device_type": zha.DeviceType.IAS_ZONE,
-                "input_clusters": [
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
+                INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     PowerConfigurationCluster.cluster_id,
                     Identify.cluster_id,
@@ -76,16 +85,16 @@ class MCT340E(CustomDevice):
                     PollControl.cluster_id,
                     DIAGNOSTICS_CLUSTER_ID,
                 ],
-                "output_clusters": [Ota.cluster_id],
+                OUTPUT_CLUSTERS: [Ota.cluster_id],
             }
         },
     }
 
     replacement = {
-        "endpoints": {
+        ENDPOINTS: {
             1: {
-                "profile_id": zha.PROFILE_ID,
-                "input_clusters": [
+                PROFILE_ID: zha.PROFILE_ID,
+                INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     PowerConfigurationCluster,
                     Identify.cluster_id,
@@ -94,7 +103,7 @@ class MCT340E(CustomDevice):
                     PollControl.cluster_id,
                     DIAGNOSTICS_CLUSTER_ID,
                 ],
-                "output_clusters": [Ota.cluster_id],
+                OUTPUT_CLUSTERS: [Ota.cluster_id],
             }
         }
     }

@@ -16,7 +16,16 @@ from zigpy.zcl.clusters.measurement import (
 )
 from zigpy.zcl.clusters.security import IasZone
 
-from . import MotionCluster
+from zhaquirks.const import (
+    DEVICE_TYPE,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    MODELS_INFO,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
+)
+
+from . import HIVEHOME, MotionCluster
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -29,12 +38,12 @@ class MOT003(CustomDevice):
         # device_version=6
         # input_clusters=[0, 1, 3, 32, 1024, 1026, 1280]
         # output_clusters=[25]>
-        "models_info": [("HiveHome.com", "MOT003")],
-        "endpoints": {
+        MODELS_INFO: [(HIVEHOME, "MOT003")],
+        ENDPOINTS: {
             6: {
-                "profile_id": zha.PROFILE_ID,
-                "device_type": zha.DeviceType.IAS_ZONE,
-                "input_clusters": [
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
+                INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
                     Identify.cluster_id,
@@ -43,15 +52,15 @@ class MOT003(CustomDevice):
                     IlluminanceMeasurement.cluster_id,
                     IasZone.cluster_id,
                 ],
-                "output_clusters": [Ota.cluster_id],
+                OUTPUT_CLUSTERS: [Ota.cluster_id],
             }
         },
     }
 
     replacement = {
-        "endpoints": {
+        ENDPOINTS: {
             6: {
-                "input_clusters": [
+                INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
                     Identify.cluster_id,
@@ -60,7 +69,7 @@ class MOT003(CustomDevice):
                     IlluminanceMeasurement.cluster_id,
                     MotionCluster,
                 ],
-                "output_clusters": [Ota.cluster_id],
+                OUTPUT_CLUSTERS: [Ota.cluster_id],
             }
         }
     }

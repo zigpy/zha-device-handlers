@@ -13,22 +13,28 @@ from zigpy.zcl.clusters.general import (
     Scenes,
 )
 
-from zhaquirks import CustomCluster
-from zhaquirks.xiaomi import BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
+from .. import LUMI, BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
+from ... import CustomCluster
+from ...const import (
+    DEVICE_TYPE,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    MODELS_INFO,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
+    VALUE,
+    ZHA_SEND_EVENT,
+)
 
-XIAOMI_SENSORS = 0x5F01  # decimal = 24321 ? sensors
-XIAOMI_MEASUREMENTS = 0x5F02  # decimal = 24322 ? multistate measurements
-XIAOMI_ANALOG = 0x5F03  # decimal = 24323 ? analog input
-
-XIAOMI_SENSORS_REPLACEMENT = 0x6F01
-XIAOMI_MEASUREMENTS_REPLACEMENT = 0x6F02
-XIAOMI_ANALOG_REPLACEMENT = 0x6F03
-
-STATUS_TYPE_ATTR = 0x0055  # decimal = 85
-
-SHAKE_VALUE = 0
+ACTIVATED_FACE = "activated_face"
+DESCRIPTION = "description"
+DROP = "drop"
 DROP_VALUE = 3
-SLIDE_VALUE = 261
+FLIP = "flip"
+FLIP_BEGIN = 50
+FLIP_DEGREES = "flip_degrees"
+FLIP_END = 180
+KNOCK = "knock"
 
 KNOCK_1_VALUE = 512  # aqara skyside
 KNOCK_2_VALUE = 513  # aqara facing me 90 right
@@ -37,6 +43,13 @@ KNOCK_4_VALUE = 515  # aqara tableside
 KNOCK_5_VALUE = 516  # aqara facing me 90 left
 KNOCK_6_VALUE = 517  # aqara facing me upright
 
+RELATIVE_DEGREES = "relative_degrees"
+ROTATE_RIGHT = "rotate_right"
+ROTATE_LEFT = "rotate_left"
+SHAKE = "shake"
+SHAKE_VALUE = 0
+SLIDE = "slide"
+
 SLIDE_1_VALUE = 256  # aqara skyside
 SLIDE_2_VALUE = 257  # aqara facing me 90 right
 SLIDE_3_VALUE = 258  # aqara facing me upside down
@@ -44,29 +57,35 @@ SLIDE_4_VALUE = 259  # aqara tableside
 SLIDE_5_VALUE = 260  # aqara facing me 90 left
 SLIDE_6_VALUE = 261  # aqara facing me upright
 
-FLIP_BEGIN = 50
-FLIP_END = 180
+SLIDE_VALUE = 261
+STATUS_TYPE_ATTR = 0x0055  # decimal = 85
+XIAOMI_ANALOG = 0x5F03  # decimal = 24323 ? analog input
+XIAOMI_ANALOG_REPLACEMENT = 0x6F03
+XIAOMI_MEASUREMENTS = 0x5F02  # decimal = 24322 ? multistate measurements
+XIAOMI_MEASUREMENTS_REPLACEMENT = 0x6F02
+XIAOMI_SENSORS = 0x5F01  # decimal = 24321 ? sensors
+XIAOMI_SENSORS_REPLACEMENT = 0x6F01
 
 MOVEMENT_TYPE = {
-    SHAKE_VALUE: "shake",
-    DROP_VALUE: "drop",
-    SLIDE_1_VALUE: "slide",
-    SLIDE_2_VALUE: "slide",
-    SLIDE_3_VALUE: "slide",
-    SLIDE_4_VALUE: "slide",
-    SLIDE_5_VALUE: "slide",
-    SLIDE_6_VALUE: "slide",
-    KNOCK_1_VALUE: "knock",
-    KNOCK_2_VALUE: "knock",
-    KNOCK_3_VALUE: "knock",
-    KNOCK_4_VALUE: "knock",
-    KNOCK_5_VALUE: "knock",
-    KNOCK_6_VALUE: "knock",
+    SHAKE_VALUE: SHAKE,
+    DROP_VALUE: DROP,
+    SLIDE_1_VALUE: SLIDE,
+    SLIDE_2_VALUE: SLIDE,
+    SLIDE_3_VALUE: SLIDE,
+    SLIDE_4_VALUE: SLIDE,
+    SLIDE_5_VALUE: SLIDE,
+    SLIDE_6_VALUE: SLIDE,
+    KNOCK_1_VALUE: KNOCK,
+    KNOCK_2_VALUE: KNOCK,
+    KNOCK_3_VALUE: KNOCK,
+    KNOCK_4_VALUE: KNOCK,
+    KNOCK_5_VALUE: KNOCK,
+    KNOCK_6_VALUE: KNOCK,
 }
 
 MOVEMENT_TYPE_DESCRIPTION = {
-    SHAKE_VALUE: "shake",
-    DROP_VALUE: "drop",
+    SHAKE_VALUE: SHAKE,
+    DROP_VALUE: DROP,
     SLIDE_1_VALUE: "aqara logo on top",
     SLIDE_2_VALUE: "aqara logo facing user rotated 90 degrees right",
     SLIDE_3_VALUE: "aqara logo facing user upside down",
@@ -96,9 +115,6 @@ SIDES = {
     KNOCK_6_VALUE: 6,
 }
 
-ROTATE_RIGHT = "rotate_right"
-ROTATE_LEFT = "rotate_left"
-
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -108,7 +124,7 @@ def extend_dict(dictionary, value, ranges):
         dictionary[item] = value
 
 
-extend_dict(MOVEMENT_TYPE, "flip", range(FLIP_BEGIN, FLIP_END))
+extend_dict(MOVEMENT_TYPE, FLIP, range(FLIP_BEGIN, FLIP_END))
 
 #  remove the zigpy version of this device handler
 if AqaraMagicCubeSensor in quirks._DEVICE_REGISTRY:
@@ -139,21 +155,21 @@ class CubeAQGL01(XiaomiCustomDevice):
                 self._current_state[STATUS_TYPE_ATTR] = action = MOVEMENT_TYPE.get(
                     value
                 )
-                event_args = {"value": value}
+                event_args = {VALUE: value}
                 if action is not None:
 
-                    if action in ("slide", "knock"):
-                        event_args["description"] = MOVEMENT_TYPE_DESCRIPTION[value]
-                        event_args["activated_face"] = SIDES[value]
+                    if action in (SLIDE, KNOCK):
+                        event_args[DESCRIPTION] = MOVEMENT_TYPE_DESCRIPTION[value]
+                        event_args[ACTIVATED_FACE] = SIDES[value]
 
-                    if action == "flip":
+                    if action == FLIP:
                         if value > 108:
-                            event_args["flip_degrees"] = 180
+                            event_args[FLIP_DEGREES] = 180
                         else:
-                            event_args["flip_degrees"] = 90
-                        event_args["activated_face"] = (value % 8) + 1
+                            event_args[FLIP_DEGREES] = 90
+                        event_args[ACTIVATED_FACE] = (value % 8) + 1
 
-                    self.listener_event("zha_send_event", self, action, event_args)
+                    self.listener_event(ZHA_SEND_EVENT, self, action, event_args)
 
                 # show something in the sensor in HA
                 super()._update_attribute(0, action)
@@ -181,10 +197,10 @@ class CubeAQGL01(XiaomiCustomDevice):
                 )
                 if self._current_state[STATUS_TYPE_ATTR] is not None:
                     self.listener_event(
-                        "zha_send_event",
+                        ZHA_SEND_EVENT,
                         self,
                         self._current_state[STATUS_TYPE_ATTR],
-                        {"relative_degrees": value},
+                        {RELATIVE_DEGREES: value},
                     )
 
     signature = {
@@ -192,18 +208,18 @@ class CubeAQGL01(XiaomiCustomDevice):
         #  device_version=1
         #  input_clusters=[0, 3, 25, 18]
         #  output_clusters=[0, 4, 3, 5, 25, 18]>
-        "models_info": [("LUMI", "lumi.sensor_cube.aqgl01")],
-        "endpoints": {
+        MODELS_INFO: [(LUMI, "lumi.sensor_cube.aqgl01")],
+        ENDPOINTS: {
             1: {
-                "profile_id": zha.PROFILE_ID,
-                "device_type": XIAOMI_SENSORS,
-                "input_clusters": [
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: XIAOMI_SENSORS,
+                INPUT_CLUSTERS: [
                     BasicCluster.cluster_id,
                     Identify.cluster_id,
                     Ota.cluster_id,
                     MultistateInput.cluster_id,
                 ],
-                "output_clusters": [
+                OUTPUT_CLUSTERS: [
                     BasicCluster.cluster_id,
                     Groups.cluster_id,
                     Identify.cluster_id,
@@ -217,10 +233,10 @@ class CubeAQGL01(XiaomiCustomDevice):
             #  input_clusters=[3, 18]
             #  output_clusters=[4, 3, 5, 18]>
             2: {
-                "profile_id": zha.PROFILE_ID,
-                "device_type": XIAOMI_MEASUREMENTS,
-                "input_clusters": [Identify.cluster_id, MultistateInput.cluster_id],
-                "output_clusters": [
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: XIAOMI_MEASUREMENTS,
+                INPUT_CLUSTERS: [Identify.cluster_id, MultistateInput.cluster_id],
+                OUTPUT_CLUSTERS: [
                     Groups.cluster_id,
                     Identify.cluster_id,
                     Scenes.cluster_id,
@@ -232,10 +248,10 @@ class CubeAQGL01(XiaomiCustomDevice):
             #  input_clusters=[3, 12]
             #  output_clusters=[4, 3, 5, 12]>
             3: {
-                "profile_id": zha.PROFILE_ID,
-                "device_type": XIAOMI_ANALOG,
-                "input_clusters": [Identify.cluster_id, AnalogInput.cluster_id],
-                "output_clusters": [
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: XIAOMI_ANALOG,
+                INPUT_CLUSTERS: [Identify.cluster_id, AnalogInput.cluster_id],
+                OUTPUT_CLUSTERS: [
                     Groups.cluster_id,
                     Identify.cluster_id,
                     Scenes.cluster_id,
@@ -246,16 +262,16 @@ class CubeAQGL01(XiaomiCustomDevice):
     }
 
     replacement = {
-        "endpoints": {
+        ENDPOINTS: {
             1: {
-                "device_type": XIAOMI_SENSORS_REPLACEMENT,
-                "input_clusters": [
+                DEVICE_TYPE: XIAOMI_SENSORS_REPLACEMENT,
+                INPUT_CLUSTERS: [
                     BasicCluster,
                     PowerConfigurationCluster,
                     Identify.cluster_id,
                     Ota.cluster_id,
                 ],
-                "output_clusters": [
+                OUTPUT_CLUSTERS: [
                     BasicCluster.cluster_id,
                     Groups.cluster_id,
                     Identify.cluster_id,
@@ -265,9 +281,9 @@ class CubeAQGL01(XiaomiCustomDevice):
                 ],
             },
             2: {
-                "device_type": XIAOMI_MEASUREMENTS_REPLACEMENT,
-                "input_clusters": [Identify.cluster_id, MultistateInputCluster],
-                "output_clusters": [
+                DEVICE_TYPE: XIAOMI_MEASUREMENTS_REPLACEMENT,
+                INPUT_CLUSTERS: [Identify.cluster_id, MultistateInputCluster],
+                OUTPUT_CLUSTERS: [
                     Groups.cluster_id,
                     Identify.cluster_id,
                     Scenes.cluster_id,
@@ -275,9 +291,9 @@ class CubeAQGL01(XiaomiCustomDevice):
                 ],
             },
             3: {
-                "device_type": XIAOMI_ANALOG_REPLACEMENT,
-                "input_clusters": [Identify.cluster_id, AnalogInputCluster],
-                "output_clusters": [
+                DEVICE_TYPE: XIAOMI_ANALOG_REPLACEMENT,
+                INPUT_CLUSTERS: [Identify.cluster_id, AnalogInputCluster],
+                OUTPUT_CLUSTERS: [
                     Groups.cluster_id,
                     Identify.cluster_id,
                     Scenes.cluster_id,

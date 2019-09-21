@@ -11,7 +11,8 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.security import IasZone
 
-from zhaquirks.xiaomi import BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
+from .. import BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
+from ...const import DEVICE_TYPE, ENDPOINTS, INPUT_CLUSTERS, OUTPUT_CLUSTERS, PROFILE_ID
 
 IAS_ZONE = 0x0402
 _LOGGER = logging.getLogger(__name__)
@@ -30,11 +31,11 @@ class MijiaHoneywellSmokeDetectorSensor(XiaomiCustomDevice):
         #  device_version=
         #  input_clusters=[0, 1, 3, 12, 18, 1280]
         #  output_clusters=[25]>
-        "endpoints": {
+        ENDPOINTS: {
             1: {
-                "profile_id": zha.PROFILE_ID,
-                "device_type": IAS_ZONE,
-                "input_clusters": [
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: IAS_ZONE,
+                INPUT_CLUSTERS: [
                     BasicCluster.cluster_id,
                     PowerConfiguration.cluster_id,
                     Identify.cluster_id,
@@ -42,15 +43,15 @@ class MijiaHoneywellSmokeDetectorSensor(XiaomiCustomDevice):
                     MultistateInput.cluster_id,
                     IasZone.cluster_id,
                 ],
-                "output_clusters": [Ota.cluster_id],
+                OUTPUT_CLUSTERS: [Ota.cluster_id],
             }
         }
     }
 
     replacement = {
-        "endpoints": {
+        ENDPOINTS: {
             1: {
-                "input_clusters": [
+                INPUT_CLUSTERS: [
                     BasicCluster,
                     PowerConfigurationCluster,
                     Identify.cluster_id,
@@ -58,7 +59,7 @@ class MijiaHoneywellSmokeDetectorSensor(XiaomiCustomDevice):
                     MultistateInput.cluster_id,
                     IasZone.cluster_id,
                 ],
-                "output_clusters": [Ota.cluster_id],
+                OUTPUT_CLUSTERS: [Ota.cluster_id],
             }
         }
     }

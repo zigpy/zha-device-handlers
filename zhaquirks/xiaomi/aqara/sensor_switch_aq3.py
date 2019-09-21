@@ -4,16 +4,26 @@ import logging
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import Basic, MultistateInput, OnOff
 
-from zhaquirks import CustomCluster
-from zhaquirks.xiaomi import BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
+from .. import LUMI, BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
+from ... import CustomCluster
+from ...const import (
+    DEVICE_TYPE,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    MODELS_INFO,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
+    VALUE,
+    ZHA_SEND_EVENT,
+)
 
 BUTTON_DEVICE_TYPE = 0x5F01
-STATUS_TYPE_ATTR = 0x0055  # decimal = 85
-SINGLE = 1
 DOUBLE = 2
 HOLD = 16
 RELEASE = 17
 SHAKE = 18
+SINGLE = 1
+STATUS_TYPE_ATTR = 0x0055  # decimal = 85
 
 MOVEMENT_TYPE = {
     SINGLE: "single",
@@ -45,9 +55,9 @@ class SwitchAQ3(XiaomiCustomDevice):
                 self._current_state[STATUS_TYPE_ATTR] = action = MOVEMENT_TYPE.get(
                     value
                 )
-                event_args = {"value": value}
+                event_args = {VALUE: value}
                 if action is not None:
-                    self.listener_event("zha_send_event", self, action, event_args)
+                    self.listener_event(ZHA_SEND_EVENT, self, action, event_args)
 
                 # show something in the sensor in HA
                 super()._update_attribute(0, action)
@@ -57,31 +67,31 @@ class SwitchAQ3(XiaomiCustomDevice):
         # device_version=1
         # input_clusters=[0, 18, 6, 1]
         # output_clusters=[0]>
-        "models_info": [("LUMI", "lumi.sensor_switch.aq3")],
-        "endpoints": {
+        MODELS_INFO: [(LUMI, "lumi.sensor_switch.aq3")],
+        ENDPOINTS: {
             1: {
-                "profile_id": zha.PROFILE_ID,
-                "device_type": BUTTON_DEVICE_TYPE,
-                "input_clusters": [
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: BUTTON_DEVICE_TYPE,
+                INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     PowerConfigurationCluster.cluster_id,
                     OnOff.cluster_id,
                     MultistateInput.cluster_id,
                 ],
-                "output_clusters": [Basic.cluster_id],
+                OUTPUT_CLUSTERS: [Basic.cluster_id],
             }
         },
     }
     replacement = {
-        "endpoints": {
+        ENDPOINTS: {
             1: {
-                "device_type": zha.DeviceType.REMOTE_CONTROL,
-                "input_clusters": [
+                DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
+                INPUT_CLUSTERS: [
                     BasicCluster,
                     PowerConfigurationCluster,
                     MultistateInputCluster,
                 ],
-                "output_clusters": [Basic.cluster_id, OnOff.cluster_id],
+                OUTPUT_CLUSTERS: [Basic.cluster_id, OnOff.cluster_id],
             }
         }
     }

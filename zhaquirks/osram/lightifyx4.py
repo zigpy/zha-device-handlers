@@ -2,7 +2,8 @@
 import logging
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice, CustomCluster
+from zigpy.quirks import CustomCluster, CustomDevice
+import zigpy.types as t
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -16,7 +17,16 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.lightlink import LightLink
-import zigpy.types as t
+
+from . import OSRAM
+from ..const import (
+    DEVICE_TYPE,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    MODELS_INFO,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
+)
 
 OSRAM_DEVICE = 0x0810  # 2064 base 10
 OSRAM_CLUSTER = 0xFD00  # 64768 base 10
@@ -81,19 +91,19 @@ class LightifyX4(CustomDevice):
         #  device_version=2
         #  input_clusters=[0, 1, 32, 4096, 64768]
         #  output_clusters=[3, 4, 5, 6, 8, 25, 768, 4096]>
-        "models_info": [("OSRAM", "Switch 4x-LIGHTIFY")],
-        "endpoints": {
+        MODELS_INFO: [(OSRAM, "Switch 4x-LIGHTIFY")],
+        ENDPOINTS: {
             1: {
-                "profile_id": zha.PROFILE_ID,
-                "device_type": OSRAM_DEVICE,
-                "input_clusters": [
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: OSRAM_DEVICE,
+                INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
                     PollControl.cluster_id,
                     LightLink.cluster_id,
                     OSRAM_CLUSTER,
                 ],
-                "output_clusters": [
+                OUTPUT_CLUSTERS: [
                     Groups.cluster_id,
                     Identify.cluster_id,
                     Scenes.cluster_id,
@@ -109,14 +119,10 @@ class LightifyX4(CustomDevice):
             # input_clusters=[0, 4096, 64768]
             # output_clusters=[3, 4, 5, 6, 8, 768, 4096]>
             2: {
-                "profile_id": zha.PROFILE_ID,
-                "device_type": OSRAM_DEVICE,
-                "input_clusters": [
-                    Basic.cluster_id,
-                    LightLink.cluster_id,
-                    OSRAM_CLUSTER,
-                ],
-                "output_clusters": [
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: OSRAM_DEVICE,
+                INPUT_CLUSTERS: [Basic.cluster_id, LightLink.cluster_id, OSRAM_CLUSTER],
+                OUTPUT_CLUSTERS: [
                     Groups.cluster_id,
                     Identify.cluster_id,
                     Scenes.cluster_id,
@@ -131,14 +137,10 @@ class LightifyX4(CustomDevice):
             # input_clusters=[0, 4096, 64768]
             # output_clusters=[3, 4, 5, 6, 8, 768, 4096]>
             3: {
-                "profile_id": zha.PROFILE_ID,
-                "device_type": OSRAM_DEVICE,
-                "input_clusters": [
-                    Basic.cluster_id,
-                    LightLink.cluster_id,
-                    OSRAM_CLUSTER,
-                ],
-                "output_clusters": [
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: OSRAM_DEVICE,
+                INPUT_CLUSTERS: [Basic.cluster_id, LightLink.cluster_id, OSRAM_CLUSTER],
+                OUTPUT_CLUSTERS: [
                     Groups.cluster_id,
                     Identify.cluster_id,
                     Scenes.cluster_id,
@@ -153,14 +155,10 @@ class LightifyX4(CustomDevice):
             # input_clusters=[0, 4096, 64768]
             # output_clusters=[3, 4, 5, 6, 8, 768, 4096]>
             4: {
-                "profile_id": zha.PROFILE_ID,
-                "device_type": OSRAM_DEVICE,
-                "input_clusters": [
-                    Basic.cluster_id,
-                    LightLink.cluster_id,
-                    OSRAM_CLUSTER,
-                ],
-                "output_clusters": [
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: OSRAM_DEVICE,
+                INPUT_CLUSTERS: [Basic.cluster_id, LightLink.cluster_id, OSRAM_CLUSTER],
+                OUTPUT_CLUSTERS: [
                     Groups.cluster_id,
                     Identify.cluster_id,
                     Scenes.cluster_id,
@@ -175,14 +173,10 @@ class LightifyX4(CustomDevice):
             # input_clusters=[0, 4096, 64768]
             # output_clusters=[3, 4, 5, 6, 8, 768, 4096]>
             5: {
-                "profile_id": zha.PROFILE_ID,
-                "device_type": OSRAM_DEVICE,
-                "input_clusters": [
-                    Basic.cluster_id,
-                    LightLink.cluster_id,
-                    OSRAM_CLUSTER,
-                ],
-                "output_clusters": [
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: OSRAM_DEVICE,
+                INPUT_CLUSTERS: [Basic.cluster_id, LightLink.cluster_id, OSRAM_CLUSTER],
+                OUTPUT_CLUSTERS: [
                     Groups.cluster_id,
                     Identify.cluster_id,
                     Scenes.cluster_id,
@@ -197,14 +191,10 @@ class LightifyX4(CustomDevice):
             # input_clusters=[0, 4096, 64768]
             # output_clusters=[3, 4, 5, 6, 8, 768, 4096]>
             6: {
-                "profile_id": zha.PROFILE_ID,
-                "device_type": OSRAM_DEVICE,
-                "input_clusters": [
-                    Basic.cluster_id,
-                    LightLink.cluster_id,
-                    OSRAM_CLUSTER,
-                ],
-                "output_clusters": [
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: OSRAM_DEVICE,
+                INPUT_CLUSTERS: [Basic.cluster_id, LightLink.cluster_id, OSRAM_CLUSTER],
+                OUTPUT_CLUSTERS: [
                     Groups.cluster_id,
                     Identify.cluster_id,
                     Scenes.cluster_id,
@@ -218,18 +208,18 @@ class LightifyX4(CustomDevice):
     }
 
     replacement = {
-        "endpoints": {
+        ENDPOINTS: {
             1: {
-                "profile_id": zha.PROFILE_ID,
-                "device_type": OSRAM_DEVICE,
-                "input_clusters": [
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: OSRAM_DEVICE,
+                INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
                     PollControl.cluster_id,
                     LightLink.cluster_id,
                     OsramButtonCluster,
                 ],
-                "output_clusters": [
+                OUTPUT_CLUSTERS: [
                     Groups.cluster_id,
                     Identify.cluster_id,
                     Scenes.cluster_id,
@@ -241,14 +231,14 @@ class LightifyX4(CustomDevice):
                 ],
             },
             2: {
-                "profile_id": zha.PROFILE_ID,
-                "device_type": OSRAM_DEVICE,
-                "input_clusters": [
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: OSRAM_DEVICE,
+                INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     LightLink.cluster_id,
                     OsramButtonCluster,
                 ],
-                "output_clusters": [
+                OUTPUT_CLUSTERS: [
                     Groups.cluster_id,
                     Identify.cluster_id,
                     Scenes.cluster_id,
@@ -259,14 +249,14 @@ class LightifyX4(CustomDevice):
                 ],
             },
             3: {
-                "profile_id": zha.PROFILE_ID,
-                "device_type": OSRAM_DEVICE,
-                "input_clusters": [
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: OSRAM_DEVICE,
+                INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     LightLink.cluster_id,
                     OsramButtonCluster,
                 ],
-                "output_clusters": [
+                OUTPUT_CLUSTERS: [
                     Groups.cluster_id,
                     Identify.cluster_id,
                     Scenes.cluster_id,
@@ -277,14 +267,14 @@ class LightifyX4(CustomDevice):
                 ],
             },
             4: {
-                "profile_id": zha.PROFILE_ID,
-                "device_type": OSRAM_DEVICE,
-                "input_clusters": [
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: OSRAM_DEVICE,
+                INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     LightLink.cluster_id,
                     OsramButtonCluster,
                 ],
-                "output_clusters": [
+                OUTPUT_CLUSTERS: [
                     Groups.cluster_id,
                     Identify.cluster_id,
                     Scenes.cluster_id,
@@ -295,14 +285,10 @@ class LightifyX4(CustomDevice):
                 ],
             },
             5: {
-                "profile_id": zha.PROFILE_ID,
-                "device_type": OSRAM_DEVICE,
-                "input_clusters": [
-                    Basic.cluster_id,
-                    LightLink.cluster_id,
-                    OSRAM_CLUSTER,
-                ],
-                "output_clusters": [
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: OSRAM_DEVICE,
+                INPUT_CLUSTERS: [Basic.cluster_id, LightLink.cluster_id, OSRAM_CLUSTER],
+                OUTPUT_CLUSTERS: [
                     Groups.cluster_id,
                     Identify.cluster_id,
                     Scenes.cluster_id,
@@ -313,14 +299,10 @@ class LightifyX4(CustomDevice):
                 ],
             },
             6: {
-                "profile_id": zha.PROFILE_ID,
-                "device_type": OSRAM_DEVICE,
-                "input_clusters": [
-                    Basic.cluster_id,
-                    LightLink.cluster_id,
-                    OSRAM_CLUSTER,
-                ],
-                "output_clusters": [
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: OSRAM_DEVICE,
+                INPUT_CLUSTERS: [Basic.cluster_id, LightLink.cluster_id, OSRAM_CLUSTER],
+                OUTPUT_CLUSTERS: [
                     Groups.cluster_id,
                     Identify.cluster_id,
                     Scenes.cluster_id,

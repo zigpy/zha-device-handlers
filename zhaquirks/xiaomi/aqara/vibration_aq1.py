@@ -16,18 +16,32 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.security import IasZone
 
-from zhaquirks import Bus, LocalDataCluster
-from zhaquirks.xiaomi import BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
+from .. import LUMI, BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
+from ... import Bus, LocalDataCluster
+from ...const import (
+    CLUSTER_COMMAND,
+    DEVICE_TYPE,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    MODELS_INFO,
+    MOTION_EVENT,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
+    UNKNOWN,
+    ZHA_SEND_EVENT,
+)
 
-VIBE_DEVICE_TYPE = 0x5F02  # decimal = 24322
-RECENT_ACTIVITY_LEVEL_ATTR = 0x0505  # decimal = 1285
 ACCELEROMETER_ATTR = 0x0508  # decimal = 1288
-STATUS_TYPE_ATTR = 0x0055  # decimal = 85
-ROTATION_DEGREES_ATTR = 0x0503  # decimal = 1283
-STATIONARY_VALUE = 0
-VIBE_VALUE = 1
-TILT_VALUE = 2
 DROP_VALUE = 3
+RECENT_ACTIVITY_LEVEL_ATTR = 0x0505  # decimal = 1285
+ROTATION_DEGREES_ATTR = 0x0503  # decimal = 1283
+SEND_EVENT = "send_event"
+STATIONARY_VALUE = 0
+STATUS_TYPE_ATTR = 0x0055  # decimal = 85
+TILT_VALUE = 2
+VIBE_DEVICE_TYPE = 0x5F02  # decimal = 24322
+VIBE_VALUE = 1
+
 MEASUREMENT_TYPE = {
     STATIONARY_VALUE: "Stationary",
     VIBE_VALUE: "Vibration",
@@ -73,23 +87,23 @@ class VibrationAQ1(XiaomiCustomDevice):
             super()._update_attribute(attrid, value)
             if attrid == STATUS_TYPE_ATTR:
                 self._current_state[STATUS_TYPE_ATTR] = MEASUREMENT_TYPE.get(
-                    value, "Unknown"
+                    value, UNKNOWN
                 )
                 if value == VIBE_VALUE:
-                    self.endpoint.device.motion_bus.listener_event("motion_event")
+                    self.endpoint.device.motion_bus.listener_event(MOTION_EVENT)
                 elif value == DROP_VALUE:
                     self.endpoint.device.motion_bus.listener_event(
-                        "send_event", self._current_state[STATUS_TYPE_ATTR]
+                        SEND_EVENT, self._current_state[STATUS_TYPE_ATTR]
                     )
             elif attrid == ROTATION_DEGREES_ATTR:
                 self.endpoint.device.motion_bus.listener_event(
-                    "send_event",
+                    SEND_EVENT,
                     self._current_state[STATUS_TYPE_ATTR],
                     {"degrees": value},
                 )
             elif attrid == RECENT_ACTIVITY_LEVEL_ATTR:
                 # these seem to be sent every minute when vibration is active
-                self.endpoint.device.motion_bus.listener_event("motion_event")
+                self.endpoint.device.motion_bus.listener_event(MOTION_EVENT)
 
             # show something in the sensor in HA
             if STATUS_TYPE_ATTR in self._current_state:
@@ -99,12 +113,12 @@ class VibrationAQ1(XiaomiCustomDevice):
         """Motion cluster."""
 
         cluster_id = IasZone.cluster_id
-        ZONE_STATE = 0x0000
-        ZONE_TYPE = 0x0001
-        ZONE_STATUS = 0x0002
-        VIBRATION_TYPE = 0x002D
-        ON = 1
         OFF = 0
+        ON = 1
+        VIBRATION_TYPE = 0x002D
+        ZONE_STATE = 0x0000
+        ZONE_STATUS = 0x0002
+        ZONE_TYPE = 0x0001
 
         def __init__(self, *args, **kwargs):
             """Init."""
@@ -117,8 +131,8 @@ class VibrationAQ1(XiaomiCustomDevice):
 
         def motion_event(self):
             """Motion event."""
-            super().listener_event("cluster_command", None, self.ZONE_STATE, [self.ON])
-            super().listener_event("cluster_command", None, self.ZONE_STATUS, [self.ON])
+            super().listener_event(CLUSTER_COMMAND, None, self.ZONE_STATE, [self.ON])
+            super().listener_event(CLUSTER_COMMAND, None, self.ZONE_STATUS, [self.ON])
 
             if self._timer_handle:
                 self._timer_handle.cancel()
@@ -128,28 +142,26 @@ class VibrationAQ1(XiaomiCustomDevice):
 
         def send_event(self, event, *args):
             """Send event."""
-            self.listener_event("zha_send_event", self, event, args)
+            self.listener_event(ZHA_SEND_EVENT, self, event, args)
 
         def _turn_off(self):
             self._timer_handle = None
-            super().listener_event("cluster_command", None, self.ZONE_STATE, [self.OFF])
-            super().listener_event(
-                "cluster_command", None, self.ZONE_STATUS, [self.OFF]
-            )
+            super().listener_event(CLUSTER_COMMAND, None, self.ZONE_STATE, [self.OFF])
+            super().listener_event(CLUSTER_COMMAND, None, self.ZONE_STATUS, [self.OFF])
 
     signature = {
-        "models_info": [("LUMI", "lumi.vibration.aq1")],
-        "endpoints": {
+        MODELS_INFO: [(LUMI, "lumi.vibration.aq1")],
+        ENDPOINTS: {
             1: {
-                "profile_id": zha.PROFILE_ID,
-                "device_type": zha.DeviceType.DOOR_LOCK,
-                "input_clusters": [
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.DOOR_LOCK,
+                INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
                     Ota.cluster_id,
                     DoorLock.cluster_id,
                 ],
-                "output_clusters": [
+                OUTPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
                     Groups.cluster_id,
@@ -159,10 +171,10 @@ class VibrationAQ1(XiaomiCustomDevice):
                 ],
             },
             2: {
-                "profile_id": zha.PROFILE_ID,
-                "device_type": VIBE_DEVICE_TYPE,
-                "input_clusters": [Identify.cluster_id, MultistateInput.cluster_id],
-                "output_clusters": [
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: VIBE_DEVICE_TYPE,
+                INPUT_CLUSTERS: [Identify.cluster_id, MultistateInput.cluster_id],
+                OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
@@ -173,10 +185,10 @@ class VibrationAQ1(XiaomiCustomDevice):
     }
 
     replacement = {
-        "endpoints": {
+        ENDPOINTS: {
             1: {
-                "device_type": zha.DeviceType.DOOR_LOCK,
-                "input_clusters": [
+                DEVICE_TYPE: zha.DeviceType.DOOR_LOCK,
+                INPUT_CLUSTERS: [
                     VibrationBasicCluster,
                     PowerConfigurationCluster,
                     Identify.cluster_id,
@@ -184,7 +196,7 @@ class VibrationAQ1(XiaomiCustomDevice):
                     Ota.cluster_id,
                     MultistateInputCluster,
                 ],
-                "output_clusters": [
+                OUTPUT_CLUSTERS: [
                     VibrationBasicCluster,
                     Identify.cluster_id,
                     Groups.cluster_id,
@@ -193,9 +205,9 @@ class VibrationAQ1(XiaomiCustomDevice):
                 ],
             },
             2: {
-                "device_type": VIBE_DEVICE_TYPE,
-                "input_clusters": [Identify.cluster_id],
-                "output_clusters": [
+                DEVICE_TYPE: VIBE_DEVICE_TYPE,
+                INPUT_CLUSTERS: [Identify.cluster_id],
+                OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
