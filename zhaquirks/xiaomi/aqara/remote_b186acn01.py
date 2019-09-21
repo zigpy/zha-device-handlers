@@ -16,17 +16,25 @@ from .. import LUMI, BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
 from ... import CustomCluster
 from ...const import (
     ATTR_ID,
+    COMMAND,
     DEVICE_TYPE,
+    DOUBLE_PRESS,
     ENDPOINTS,
     INPUT_CLUSTERS,
+    LONG_PRESS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
+    PRESS_TYPE,
     PROFILE_ID,
+    SHORT_PRESS,
     VALUE,
     ZHA_SEND_EVENT,
 )
 
-PRESS_TYPE = {0: "long press", 1: "single", 2: "double"}
+DOUBLE = "double"
+HOLD = "long press"
+PRESS_TYPES = {0: "long press", 1: "single", 2: "double"}
+SINGLE = "single"
 STATUS_TYPE_ATTR = 0x0055  # decimal = 85
 XIAOMI_CLUSTER_ID = 0xFFFF
 XIAOMI_DEVICE_TYPE = 0x5F01
@@ -52,7 +60,7 @@ class RemoteB186ACN01(XiaomiCustomDevice):
         def _update_attribute(self, attrid, value):
             super()._update_attribute(attrid, value)
             if attrid == STATUS_TYPE_ATTR:
-                self._current_state = PRESS_TYPE.get(value)
+                self._current_state = PRESS_TYPES.get(value)
                 event_args = {
                     PRESS_TYPE: self._current_state,
                     ATTR_ID: attrid,
@@ -171,4 +179,10 @@ class RemoteB186ACN01(XiaomiCustomDevice):
                 ],
             },
         }
+    }
+
+    device_automation_triggers = {
+        (DOUBLE_PRESS, DOUBLE_PRESS): {COMMAND: DOUBLE},
+        (SHORT_PRESS, SHORT_PRESS): {COMMAND: SINGLE},
+        (LONG_PRESS, LONG_PRESS): {COMMAND: HOLD},
     }
