@@ -16,6 +16,8 @@ from zigpy.zcl.clusters.general import (
 from .. import LUMI, BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
 from ... import CustomCluster
 from ...const import (
+    ARGS,
+    COMMAND,
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -30,10 +32,21 @@ ACTIVATED_FACE = "activated_face"
 DESCRIPTION = "description"
 DROP = "drop"
 DROP_VALUE = 3
+DROPPED = "device_dropped"
+
+FACE_ANY = "fave_any"
+FACE_1 = "face_1"
+FACE_2 = "face_2"
+FACE_3 = "face_3"
+FACE_4 = "face_4"
+FACE_5 = "face_5"
+FACE_6 = "face_6"
+
 FLIP = "flip"
 FLIP_BEGIN = 50
 FLIP_DEGREES = "flip_degrees"
 FLIP_END = 180
+FLIPPED = "device_flipped"
 KNOCK = "knock"
 
 KNOCK_1_VALUE = 512  # aqara skyside
@@ -43,11 +56,17 @@ KNOCK_4_VALUE = 515  # aqara tableside
 KNOCK_5_VALUE = 516  # aqara facing me 90 left
 KNOCK_6_VALUE = 517  # aqara facing me upright
 
+KNOCKED = "device_knocked"
+LEFT = "left"
 RELATIVE_DEGREES = "relative_degrees"
-ROTATE_RIGHT = "rotate_right"
+RIGHT = "right"
 ROTATE_LEFT = "rotate_left"
+ROTATE_RIGHT = "rotate_right"
+ROTATED = "device_rotated"
 SHAKE = "shake"
 SHAKE_VALUE = 0
+SHAKEN = "device_shaken"
+SLID = "device_slid"
 SLIDE = "slide"
 
 SLIDE_1_VALUE = 256  # aqara skyside
@@ -59,6 +78,7 @@ SLIDE_6_VALUE = 261  # aqara facing me upright
 
 SLIDE_VALUE = 261
 STATUS_TYPE_ATTR = 0x0055  # decimal = 85
+TURN_ON = "turn_on"
 XIAOMI_ANALOG = 0x5F03  # decimal = 24323 ? analog input
 XIAOMI_ANALOG_REPLACEMENT = 0x6F03
 XIAOMI_MEASUREMENTS = 0x5F02  # decimal = 24322 ? multistate measurements
@@ -301,4 +321,32 @@ class CubeAQGL01(XiaomiCustomDevice):
                 ],
             },
         }
+    }
+
+    device_automation_triggers = {
+        (ROTATED, RIGHT): {COMMAND: ROTATE_RIGHT},
+        (ROTATED, LEFT): {COMMAND: ROTATE_LEFT},
+        (SHAKEN, TURN_ON): {COMMAND: SHAKE},
+        (DROPPED, TURN_ON): {COMMAND: DROP},
+        (SLID, FACE_ANY): {COMMAND: SLIDE},
+        (SLID, FACE_1): {COMMAND: SLIDE, ARGS: {ACTIVATED_FACE: 1}},
+        (SLID, FACE_2): {COMMAND: SLIDE, ARGS: {ACTIVATED_FACE: 2}},
+        (SLID, FACE_3): {COMMAND: SLIDE, ARGS: {ACTIVATED_FACE: 3}},
+        (SLID, FACE_4): {COMMAND: SLIDE, ARGS: {ACTIVATED_FACE: 4}},
+        (SLID, FACE_5): {COMMAND: SLIDE, ARGS: {ACTIVATED_FACE: 5}},
+        (SLID, FACE_6): {COMMAND: SLIDE, ARGS: {ACTIVATED_FACE: 6}},
+        (KNOCKED, FACE_ANY): {COMMAND: KNOCK},
+        (KNOCKED, FACE_1): {COMMAND: KNOCK, ARGS: {ACTIVATED_FACE: 1}},
+        (KNOCKED, FACE_2): {COMMAND: KNOCK, ARGS: {ACTIVATED_FACE: 2}},
+        (KNOCKED, FACE_3): {COMMAND: KNOCK, ARGS: {ACTIVATED_FACE: 3}},
+        (KNOCKED, FACE_4): {COMMAND: KNOCK, ARGS: {ACTIVATED_FACE: 4}},
+        (KNOCKED, FACE_5): {COMMAND: KNOCK, ARGS: {ACTIVATED_FACE: 5}},
+        (KNOCKED, FACE_6): {COMMAND: KNOCK, ARGS: {ACTIVATED_FACE: 6}},
+        (FLIPPED, FACE_ANY): {COMMAND: FLIP},
+        (FLIPPED, FACE_1): {COMMAND: FLIP, ARGS: {ACTIVATED_FACE: 1}},
+        (FLIPPED, FACE_2): {COMMAND: FLIP, ARGS: {ACTIVATED_FACE: 2}},
+        (FLIPPED, FACE_3): {COMMAND: FLIP, ARGS: {ACTIVATED_FACE: 3}},
+        (FLIPPED, FACE_4): {COMMAND: FLIP, ARGS: {ACTIVATED_FACE: 4}},
+        (FLIPPED, FACE_5): {COMMAND: FLIP, ARGS: {ACTIVATED_FACE: 5}},
+        (FLIPPED, FACE_6): {COMMAND: FLIP, ARGS: {ACTIVATED_FACE: 6}},
     }
