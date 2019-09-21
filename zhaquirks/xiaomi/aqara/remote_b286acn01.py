@@ -17,18 +17,36 @@ from ... import CustomCluster
 from ...const import (
     ATTR_ID,
     BUTTON,
+    BUTTON_1,
+    BUTTON_2,
+    COMMAND,
     DEVICE_TYPE,
+    DOUBLE_PRESS,
+    ENDPOINT_ID,
     ENDPOINTS,
     INPUT_CLUSTERS,
+    LONG_PRESS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
+    PRESS_TYPE,
     PROFILE_ID,
+    SHORT_PRESS,
     VALUE,
     ZHA_SEND_EVENT,
 )
 
+BOTH_BUTTONS = "both_buttons"
+BOTH_DOUBLE = "both_double"
+BOTH_HOLD = "both_long press"
+BOTH_SINGLE = "both_single"
 ENDPOINT_MAP = {1: "left", 2: "right", 3: "both"}
-PRESS_TYPE = {0: "long press", 1: "single", 2: "double"}
+LEFT_DOUBLE = "left_double"
+LEFT_HOLD = "left_long press"
+LEFT_SINGLE = "left_single"
+PRESS_TYPES = {0: "long press", 1: "single", 2: "double"}
+RIGHT_DOUBLE = "right_double"
+RIGHT_HOLD = "right_long press"
+RIGHT_SINGLE = "right_single"
 STATUS_TYPE_ATTR = 0x0055  # decimal = 85
 XIAOMI_CLUSTER_ID = 0xFFFF
 XIAOMI_DEVICE_TYPE = 0x5F01
@@ -54,7 +72,7 @@ class RemoteB286ACN01(XiaomiCustomDevice):
         def _update_attribute(self, attrid, value):
             super()._update_attribute(attrid, value)
             if attrid == STATUS_TYPE_ATTR:
-                self._current_state = PRESS_TYPE.get(value)
+                self._current_state = PRESS_TYPES.get(value)
                 button = ENDPOINT_MAP.get(self.endpoint.endpoint_id)
                 event_args = {
                     BUTTON: button,
@@ -174,4 +192,16 @@ class RemoteB286ACN01(XiaomiCustomDevice):
                 ],
             },
         }
+    }
+
+    device_automation_triggers = {
+        (DOUBLE_PRESS, BUTTON_1): {COMMAND: LEFT_DOUBLE, ENDPOINT_ID: 1},
+        (SHORT_PRESS, BUTTON_1): {COMMAND: LEFT_SINGLE, ENDPOINT_ID: 1},
+        (LONG_PRESS, BUTTON_1): {COMMAND: LEFT_HOLD, ENDPOINT_ID: 1},
+        (DOUBLE_PRESS, BUTTON_2): {COMMAND: RIGHT_DOUBLE, ENDPOINT_ID: 2},
+        (SHORT_PRESS, BUTTON_2): {COMMAND: RIGHT_SINGLE, ENDPOINT_ID: 2},
+        (LONG_PRESS, BUTTON_2): {COMMAND: RIGHT_HOLD, ENDPOINT_ID: 2},
+        (DOUBLE_PRESS, BOTH_BUTTONS): {COMMAND: BOTH_DOUBLE, ENDPOINT_ID: 3},
+        (SHORT_PRESS, BOTH_BUTTONS): {COMMAND: BOTH_SINGLE, ENDPOINT_ID: 3},
+        (LONG_PRESS, BOTH_BUTTONS): {COMMAND: BOTH_HOLD, ENDPOINT_ID: 3},
     }
