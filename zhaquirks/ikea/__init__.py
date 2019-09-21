@@ -15,9 +15,7 @@ class LightLinkCluster(CustomCluster, LightLink):
         try:
             coordinator = application.get_device(application.ieee)
         except KeyError:
-            _LOGGER.warning(
-                "Aborting - unable to locate required coordinator device."
-            )
+            _LOGGER.warning("Aborting - unable to locate required coordinator device.")
             return
         group_list = await self.get_group_identifiers(0)
         group_record = group_list[2]

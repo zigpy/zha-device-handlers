@@ -3,12 +3,17 @@ import logging
 
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import (
-    AnalogInput, Basic, Groups, Identify, MultistateInput, Ota, Scenes)
+    AnalogInput,
+    Basic,
+    Groups,
+    Identify,
+    MultistateInput,
+    Ota,
+    Scenes,
+)
 
 from zhaquirks import CustomCluster
-from zhaquirks.xiaomi import (
-    BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
-)
+from zhaquirks.xiaomi import BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
 
 XIAOMI_DEVICE_TYPE = 0x5F01
 XIAOMI_DEVICE_TYPE2 = 0x5F02
@@ -16,17 +21,9 @@ XIAOMI_DEVICE_TYPE3 = 0x5F03
 XIAOMI_CLUSTER_ID = 0xFFFF
 STATUS_TYPE_ATTR = 0x0055  # decimal = 85
 
-PRESS_TYPE = {
-    0: 'long press',
-    1: 'single',
-    2: 'double'
-}
+PRESS_TYPE = {0: "long press", 1: "single", 2: "double"}
 
-ENDPOINTS = {
-    1: 'left',
-    2: 'right',
-    3: 'both'
-}
+ENDPOINTS = {1: "left", 2: "right", 3: "both"}
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -50,52 +47,44 @@ class RemoteB286ACN01(XiaomiCustomDevice):
                 self._current_state = PRESS_TYPE.get(value)
                 button = ENDPOINTS.get(self.endpoint.endpoint_id)
                 event_args = {
-                    'button': button,
-                    'press_type': self._current_state,
-                    'attr_id': attrid,
-                    'value': value
+                    "button": button,
+                    "press_type": self._current_state,
+                    "attr_id": attrid,
+                    "value": value,
                 }
                 action = "{}_{}".format(button, self._current_state)
-                self.listener_event(
-                    'zha_send_event',
-                    self,
-                    action,
-                    event_args
-                )
+                self.listener_event("zha_send_event", self, action, event_args)
                 # show something in the sensor in HA
-                super()._update_attribute(
-                    0,
-                    action
-                )
+                super()._update_attribute(0, action)
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=24321
         # device_version=1
         # input_clusters=[0, 3, 25, 65535, 18]
         # output_clusters=[0, 4, 3, 5, 25, 65535, 18]>
-        'models_info': [
-            ('LUMI', 'lumi.remote.b286acn01'),
-            ('LUMI', 'lumi.sensor_86sw2')
+        "models_info": [
+            ("LUMI", "lumi.remote.b286acn01"),
+            ("LUMI", "lumi.sensor_86sw2"),
         ],
-        'endpoints': {
+        "endpoints": {
             1: {
-                'profile_id': zha.PROFILE_ID,
-                'device_type': XIAOMI_DEVICE_TYPE,
-                'input_clusters': [
+                "profile_id": zha.PROFILE_ID,
+                "device_type": XIAOMI_DEVICE_TYPE,
+                "input_clusters": [
                     Basic.cluster_id,
                     Identify.cluster_id,
                     Ota.cluster_id,
                     XIAOMI_CLUSTER_ID,
-                    MultistateInputCluster.cluster_id
+                    MultistateInputCluster.cluster_id,
                 ],
-                'output_clusters': [
+                "output_clusters": [
                     Basic.cluster_id,
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     Ota.cluster_id,
                     XIAOMI_CLUSTER_ID,
-                    MultistateInputCluster.cluster_id
+                    MultistateInputCluster.cluster_id,
                 ],
             },
             # <SimpleDescriptor endpoint=2 profile=260 device_type=24322
@@ -103,17 +92,17 @@ class RemoteB286ACN01(XiaomiCustomDevice):
             # input_clusters=[3, 18]
             # output_clusters=[4, 3, 5, 18]>
             2: {
-                'profile_id': zha.PROFILE_ID,
-                'device_type': XIAOMI_DEVICE_TYPE2,
-                'input_clusters': [
+                "profile_id": zha.PROFILE_ID,
+                "device_type": XIAOMI_DEVICE_TYPE2,
+                "input_clusters": [
                     Identify.cluster_id,
-                    MultistateInputCluster.cluster_id
+                    MultistateInputCluster.cluster_id,
                 ],
-                'output_clusters': [
+                "output_clusters": [
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    MultistateInputCluster.cluster_id
+                    MultistateInputCluster.cluster_id,
                 ],
             },
             # <SimpleDescriptor endpoint=3 profile=260 device_type=24323
@@ -121,70 +110,61 @@ class RemoteB286ACN01(XiaomiCustomDevice):
             # input_clusters=[3, 12]
             # output_clusters=[4, 3, 5, 12]>
             3: {
-                'profile_id': zha.PROFILE_ID,
-                'device_type': XIAOMI_DEVICE_TYPE3,
-                'input_clusters': [
-                    Identify.cluster_id,
-                    AnalogInput.cluster_id
-                ],
-                'output_clusters': [
+                "profile_id": zha.PROFILE_ID,
+                "device_type": XIAOMI_DEVICE_TYPE3,
+                "input_clusters": [Identify.cluster_id, AnalogInput.cluster_id],
+                "output_clusters": [
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    AnalogInput.cluster_id
+                    AnalogInput.cluster_id,
                 ],
             },
-        }
+        },
     }
 
     replacement = {
-        'endpoints': {
+        "endpoints": {
             1: {
-                'device_type': XIAOMI_DEVICE_TYPE,
-                'input_clusters': [
+                "device_type": XIAOMI_DEVICE_TYPE,
+                "input_clusters": [
                     BasicCluster,
                     PowerConfigurationCluster,
                     Identify.cluster_id,
                     Ota.cluster_id,
                     XIAOMI_CLUSTER_ID,
-                    MultistateInputCluster
+                    MultistateInputCluster,
                 ],
-                'output_clusters': [
+                "output_clusters": [
                     Basic.cluster_id,
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     Ota.cluster_id,
                     XIAOMI_CLUSTER_ID,
-                    MultistateInputCluster
+                    MultistateInputCluster,
                 ],
             },
             2: {
-                'device_type': XIAOMI_DEVICE_TYPE2,
-                'input_clusters': [
-                    Identify.cluster_id,
-                    MultistateInputCluster
-                ],
-                'output_clusters': [
+                "device_type": XIAOMI_DEVICE_TYPE2,
+                "input_clusters": [Identify.cluster_id, MultistateInputCluster],
+                "output_clusters": [
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    MultistateInputCluster
+                    MultistateInputCluster,
                 ],
             },
             3: {
-                'device_type': XIAOMI_DEVICE_TYPE3,
-                'input_clusters': [
-                    Identify.cluster_id,
-                    MultistateInputCluster
-                ],
-                'output_clusters': [
+                "device_type": XIAOMI_DEVICE_TYPE3,
+                "input_clusters": [Identify.cluster_id, MultistateInputCluster],
+                "output_clusters": [
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     AnalogInput.cluster_id,
-                    MultistateInputCluster
+                    MultistateInputCluster,
                 ],
-            }
-        },
+            },
+        }
     }

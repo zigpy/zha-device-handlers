@@ -3,9 +3,19 @@ from zigpy.quirks import CustomDevice, CustomCluster
 from zigpy.profiles import zha
 from zigpy.profiles.zha import DeviceType
 from zigpy.zcl.clusters.general import (
-    Basic, Identify, PowerConfiguration, PollControl, Groups, Scenes, Ota)
+    Basic,
+    Identify,
+    PowerConfiguration,
+    PollControl,
+    Groups,
+    Scenes,
+    Ota,
+)
 from zigpy.zcl.clusters.measurement import (
-    TemperatureMeasurement, RelativeHumidity, PressureMeasurement)
+    TemperatureMeasurement,
+    RelativeHumidity,
+    PressureMeasurement,
+)
 
 
 class PressureMeasurementCluster(CustomCluster, PressureMeasurement):
@@ -31,20 +41,18 @@ class TemperatureHumidtyPressureSensor(CustomDevice):
         # device_version=1
         # input_clusters=[0, 3, 1, 32]
         # output_clusters=[0, 4, 3, 5, 25, 1026, 1029, 1027, 32]>
-        'models_info': [
-            ('LUMI', 'RS-THP-MP-1.0')
-        ],
-        'endpoints': {
+        "models_info": [("LUMI", "RS-THP-MP-1.0")],
+        "endpoints": {
             1: {
-                'profile_id': zha.PROFILE_ID,
-                'device_type': DeviceType.TEMPERATURE_SENSOR,
-                'input_clusters': [
+                "profile_id": zha.PROFILE_ID,
+                "device_type": DeviceType.TEMPERATURE_SENSOR,
+                "input_clusters": [
                     Basic.cluster_id,
                     Identify.cluster_id,
                     PowerConfiguration.cluster_id,
-                    PollControl.cluster_id
+                    PollControl.cluster_id,
                 ],
-                'output_clusters': [
+                "output_clusters": [
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Identify.cluster_id,
@@ -53,28 +61,25 @@ class TemperatureHumidtyPressureSensor(CustomDevice):
                     TemperatureMeasurement.cluster_id,
                     RelativeHumidity.cluster_id,
                     PressureMeasurement.cluster_id,
-                    PollControl.cluster_id
+                    PollControl.cluster_id,
                 ],
             }
-        }
+        },
     }
 
     replacement = {
-        'endpoints': {
+        "endpoints": {
             1: {
-                'input_clusters': [
+                "input_clusters": [
                     Basic.cluster_id,
                     Identify.cluster_id,
                     PowerConfiguration.cluster_id,
                     RelativeHumidity.cluster_id,
                     TemperatureMeasurement.cluster_id,
                     PollControl.cluster_id,
-                    PressureMeasurementCluster
+                    PressureMeasurementCluster,
                 ],
-                'output_clusters': [
-                    Basic.cluster_id,
-                    Groups.cluster_id
-                ]
+                "output_clusters": [Basic.cluster_id, Groups.cluster_id],
             }
         }
     }

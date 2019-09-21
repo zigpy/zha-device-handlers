@@ -30,7 +30,7 @@ class PowerConfigurationCluster(CustomCluster, PowerConfiguration):
         18: 30,
         17: 15,
         16: 1,
-        15: 0
+        15: 0,
     }
 
     def _update_attribute(self, attrid, value):
@@ -38,7 +38,7 @@ class PowerConfigurationCluster(CustomCluster, PowerConfiguration):
         if attrid == self.BATTERY_VOLTAGE_ATTR:
             super()._update_attribute(
                 self.BATTERY_PERCENTAGE_REMAINING,
-                self._calculate_battery_percentage(value)
+                self._calculate_battery_percentage(value),
             )
 
     def _calculate_battery_percentage(self, raw_value):
@@ -57,16 +57,16 @@ class PowerConfigurationCluster(CustomCluster, PowerConfiguration):
 class CentraLiteAccelCluster(CustomCluster):
     """Centralite acceleration cluster."""
 
-    cluster_id = 0xfc02
+    cluster_id = 0xFC02
     name = "CentraLite Accelerometer"
-    ep_attribute = 'accelerometer'
+    ep_attribute = "accelerometer"
     attributes = {
-        0x0000: ('motion_threshold_multiplier', t.uint8_t),
-        0x0002: ('motion_threshold', t.uint16_t),
-        0x0010: ('acceleration', t.bitmap8),  # acceleration detected
-        0x0012: ('x_axis', t.int16s),
-        0x0013: ('y_axis', t.int16s),
-        0x0014: ('z_axis', t.int16s),
+        0x0000: ("motion_threshold_multiplier", t.uint8_t),
+        0x0002: ("motion_threshold", t.uint16_t),
+        0x0010: ("acceleration", t.bitmap8),  # acceleration detected
+        0x0012: ("x_axis", t.int16s),
+        0x0013: ("y_axis", t.int16s),
+        0x0014: ("z_axis", t.int16s),
     }
 
     client_commands = {}

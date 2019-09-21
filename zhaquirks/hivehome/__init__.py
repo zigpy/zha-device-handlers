@@ -29,7 +29,5 @@ class MotionCluster(CustomCluster, IasZone):
 
     def _turn_off(self):
         self._timer_handle = None
-        self.listener_event('cluster_command', 999, 0, [
-            0, 0, 0, 0
-        ])
+        self.listener_event("cluster_command", 999, 0, [0, 0, 0, 0])
         self._update_attribute(ZONE_STATE, OFF)

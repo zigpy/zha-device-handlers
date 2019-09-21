@@ -3,7 +3,13 @@
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
-    Basic, Identify, OnOff, OnOffConfiguration, Ota, PollControl)
+    Basic,
+    Identify,
+    OnOff,
+    OnOffConfiguration,
+    Ota,
+    PollControl,
+)
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 
 from zhaquirks.centralite import PowerConfigurationCluster
@@ -19,48 +25,46 @@ class CentraLite3460L(CustomDevice):
         #  device_version=0
         #  input_clusters=[0, 1, 3, 7, 32, 1026, 2821]
         #  output_clusters=[3, 6, 25]>
-        'models_info': [
-            ('CentraLite', '3460-L')
-        ],
-        'endpoints': {
+        "models_info": [("CentraLite", "3460-L")],
+        "endpoints": {
             1: {
-                'profile_id': zha.PROFILE_ID,
-                'device_type': zha.DeviceType.REMOTE_CONTROL,
-                'input_clusters': [
+                "profile_id": zha.PROFILE_ID,
+                "device_type": zha.DeviceType.REMOTE_CONTROL,
+                "input_clusters": [
                     Basic.cluster_id,
                     PowerConfigurationCluster.cluster_id,
                     Identify.cluster_id,
                     OnOffConfiguration.cluster_id,
                     PollControl.cluster_id,
                     TemperatureMeasurement.cluster_id,
-                    DIAGNOSTICS_CLUSTER_ID
+                    DIAGNOSTICS_CLUSTER_ID,
                 ],
-                'output_clusters': [
+                "output_clusters": [
                     Identify.cluster_id,
                     OnOff.cluster_id,
-                    Ota.cluster_id
+                    Ota.cluster_id,
                 ],
-            },
-        }
+            }
+        },
     }
 
     replacement = {
-        'endpoints': {
+        "endpoints": {
             1: {
-                'input_clusters': [
+                "input_clusters": [
                     Basic.cluster_id,
                     PowerConfigurationCluster,
                     Identify.cluster_id,
                     OnOffConfiguration.cluster_id,
                     PollControl.cluster_id,
                     TemperatureMeasurement.cluster_id,
-                    DIAGNOSTICS_CLUSTER_ID
+                    DIAGNOSTICS_CLUSTER_ID,
                 ],
-                'output_clusters': [
+                "output_clusters": [
                     Identify.cluster_id,
                     OnOff.cluster_id,
-                    Ota.cluster_id
+                    Ota.cluster_id,
                 ],
             }
-        },
+        }
     }

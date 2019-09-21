@@ -6,9 +6,7 @@ from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
 
 from zhaquirks import Bus
-from zhaquirks.xiaomi import (
-    BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
-)
+from zhaquirks.xiaomi import BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
 
 from .. import MotionCluster, OccupancyCluster
 from . import IlluminanceMeasurementCluster
@@ -30,46 +28,38 @@ class MotionAQ2(XiaomiCustomDevice):
         #  device_version=1
         #  input_clusters=[0, 65535, 1030, 1024, 1280, 1, 3]
         #  output_clusters=[0, 25]>
-        'models_info': [
-            ('LUMI', 'lumi.sensor_motion.aq2')
-        ],
-        'endpoints': {
+        "models_info": [("LUMI", "lumi.sensor_motion.aq2")],
+        "endpoints": {
             1: {
-                'profile_id': zha.PROFILE_ID,
-                'device_type': zha.DeviceType.OCCUPANCY_SENSOR,
-                'input_clusters': [
+                "profile_id": zha.PROFILE_ID,
+                "device_type": zha.DeviceType.OCCUPANCY_SENSOR,
+                "input_clusters": [
                     Basic.cluster_id,
                     XIAOMI_CLUSTER_ID,
                     OccupancySensing.cluster_id,
                     IlluminanceMeasurementCluster.cluster_id,
                     IasZone.cluster_id,
                     PowerConfiguration.cluster_id,
-                    Identify.cluster_id
+                    Identify.cluster_id,
                 ],
-                'output_clusters': [
-                    Basic.cluster_id,
-                    Ota.cluster_id
-                ],
-            },
-        }
+                "output_clusters": [Basic.cluster_id, Ota.cluster_id],
+            }
+        },
     }
 
     replacement = {
-        'endpoints': {
+        "endpoints": {
             1: {
-                'input_clusters': [
+                "input_clusters": [
                     BasicCluster,
                     PowerConfigurationCluster,
                     Identify.cluster_id,
                     IlluminanceMeasurementCluster,
                     OccupancyCluster,
                     MotionCluster,
-                    XIAOMI_CLUSTER_ID
+                    XIAOMI_CLUSTER_ID,
                 ],
-                'output_clusters': [
-                    Basic.cluster_id,
-                    Ota.cluster_id
-                ],
+                "output_clusters": [Basic.cluster_id, Ota.cluster_id],
             }
-        },
+        }
     }
