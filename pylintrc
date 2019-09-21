@@ -14,6 +14,7 @@
 # not-an-iterable - https://github.com/PyCQA/pylint/issues/2311
 # unnecessary-pass - readability for functions which only contain pass
 disable=
+  format,
   abstract-class-little-used,
   abstract-method,
   cyclic-import,

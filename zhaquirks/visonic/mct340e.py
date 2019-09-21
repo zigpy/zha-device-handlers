@@ -4,7 +4,12 @@ import logging
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.zcl.clusters.general import (
-    Basic, Identify, Ota, PollControl, PowerConfiguration)
+    Basic,
+    Identify,
+    Ota,
+    PollControl,
+    PowerConfiguration,
+)
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone
 
@@ -34,7 +39,7 @@ class MCT340E(CustomDevice):
             if attrid == self.BATTERY_VOLTAGE_ATTR:
                 super()._update_attribute(
                     self.BATTERY_PERCENTAGE_REMAINING,
-                    self._calculate_battery_percentage(value)
+                    self._calculate_battery_percentage(value),
                 )
 
         def _calculate_battery_percentage(self, raw_value):
@@ -57,45 +62,39 @@ class MCT340E(CustomDevice):
         # device_version=0
         # input_clusters=[0, 1, 3, 1026, 1280, 32, 2821]
         # output_clusters=[25]>
-        'models_info': [
-            ('Visonic', 'MCT-340 E')
-        ],
-        'endpoints': {
+        "models_info": [("Visonic", "MCT-340 E")],
+        "endpoints": {
             1: {
-                'profile_id': zha.PROFILE_ID,
-                'device_type': zha.DeviceType.IAS_ZONE,
-                'input_clusters': [
+                "profile_id": zha.PROFILE_ID,
+                "device_type": zha.DeviceType.IAS_ZONE,
+                "input_clusters": [
                     Basic.cluster_id,
                     PowerConfigurationCluster.cluster_id,
                     Identify.cluster_id,
                     TemperatureMeasurement.cluster_id,
                     IasZone.cluster_id,
                     PollControl.cluster_id,
-                    DIAGNOSTICS_CLUSTER_ID
+                    DIAGNOSTICS_CLUSTER_ID,
                 ],
-                'output_clusters': [
-                    Ota.cluster_id
-                ],
-            },
-        }
+                "output_clusters": [Ota.cluster_id],
+            }
+        },
     }
 
     replacement = {
-        'endpoints': {
+        "endpoints": {
             1: {
-                'profile_id': zha.PROFILE_ID,
-                'input_clusters': [
+                "profile_id": zha.PROFILE_ID,
+                "input_clusters": [
                     Basic.cluster_id,
                     PowerConfigurationCluster,
                     Identify.cluster_id,
                     TemperatureMeasurement.cluster_id,
                     IasZone.cluster_id,
                     PollControl.cluster_id,
-                    DIAGNOSTICS_CLUSTER_ID
+                    DIAGNOSTICS_CLUSTER_ID,
                 ],
-                'output_clusters': [
-                    Ota.cluster_id
-                ],
-            },
+                "output_clusters": [Ota.cluster_id],
+            }
         }
     }

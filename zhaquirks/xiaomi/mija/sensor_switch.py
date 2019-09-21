@@ -3,22 +3,23 @@ import logging
 
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import (
-    Basic, Groups, Identify, LevelControl, OnOff, Ota, Scenes)
+    Basic,
+    Groups,
+    Identify,
+    LevelControl,
+    OnOff,
+    Ota,
+    Scenes,
+)
 
 from zhaquirks import CustomCluster
-from zhaquirks.xiaomi import (
-    BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice)
+from zhaquirks.xiaomi import BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
 
 XIAOMI_CLUSTER_ID = 0xFFFF
 
 _LOGGER = logging.getLogger(__name__)
 
-CLICK_TYPE_MAP = {
-    2: 'double',
-    3: 'triple',
-    4: 'quadruple',
-    128: 'furious',
-}
+CLICK_TYPE_MAP = {2: "double", 3: "triple", 4: "quadruple", 128: "furious"}
 
 
 class MijaButton(XiaomiCustomDevice):
@@ -45,18 +46,15 @@ class MijaButton(XiaomiCustomDevice):
             # Handle Mija OnOff
             if attrid == 0:
                 value = not value
-                click_type = 'single' if value is True else False
+                click_type = "single" if value is True else False
 
             # Handle Multi Clicks
             elif attrid == 32768:
-                click_type = CLICK_TYPE_MAP.get(value, 'unknown')
+                click_type = CLICK_TYPE_MAP.get(value, "unknown")
 
             if click_type:
                 self.listener_event(
-                    'zha_send_event',
-                    self,
-                    'click',
-                    {'click_type': click_type}
+                    "zha_send_event", self, "click", {"click_type": click_type}
                 )
 
             super()._update_attribute(attrid, value)
@@ -77,20 +75,18 @@ class MijaButton(XiaomiCustomDevice):
         #       On/Off (6)
         #       Level control (8)
         #       Ota (25)
-        'models_info': [
-            ('LUMI', 'lumi.sensor_switch')
-        ],
-        'endpoints': {
+        "models_info": [("LUMI", "lumi.sensor_switch")],
+        "endpoints": {
             1: {
-                'profile_id': zha.PROFILE_ID,
-                'device_type': zha.DeviceType.DIMMER_SWITCH,
-                'input_clusters': [
+                "profile_id": zha.PROFILE_ID,
+                "device_type": zha.DeviceType.DIMMER_SWITCH,
+                "input_clusters": [
                     Basic.cluster_id,
                     Identify.cluster_id,
                     Ota.cluster_id,
-                    XIAOMI_CLUSTER_ID
+                    XIAOMI_CLUSTER_ID,
                 ],
-                'output_clusters': [
+                "output_clusters": [
                     Basic.cluster_id,
                     Identify.cluster_id,
                     Groups.cluster_id,
@@ -99,20 +95,20 @@ class MijaButton(XiaomiCustomDevice):
                     LevelControl.cluster_id,
                     Ota.cluster_id,
                 ],
-            },
-        }
+            }
+        },
     }
 
     replacement = {
-        'endpoints': {
+        "endpoints": {
             1: {
-                'device_type': zha.DeviceType.REMOTE_CONTROL,
-                'input_clusters': [
+                "device_type": zha.DeviceType.REMOTE_CONTROL,
+                "input_clusters": [
                     Identify.cluster_id,
                     BasicCluster,
                     PowerConfigurationCluster,
                 ],
-                'output_clusters': [
+                "output_clusters": [
                     BasicCluster,
                     Scenes.cluster_id,
                     Groups.cluster_id,
@@ -121,5 +117,5 @@ class MijaButton(XiaomiCustomDevice):
                     Ota.cluster_id,
                 ],
             }
-        },
+        }
     }
