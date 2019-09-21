@@ -4,6 +4,7 @@ from zigpy.zcl.clusters.lightlink import LightLink
 from zigpy.quirks import CustomCluster
 
 _LOGGER = logging.getLogger(__name__)
+IKEA = "IKEA of Sweden"
 
 
 class LightLinkCluster(CustomCluster, LightLink):

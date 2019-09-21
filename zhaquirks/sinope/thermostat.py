@@ -19,6 +19,16 @@ from zigpy.zcl.clusters.homeautomation import Diagnostic, ElectricalMeasurement
 from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 
+from . import SINOPE
+from ..const import (
+    DEVICE_TYPE,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    MODELS_INFO,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
+)
+
 SINOPE_MANUFACTURER_CLUSTER_ID = 0xFF01
 
 
@@ -71,15 +81,12 @@ class SinopeTechnologiesThermostat(CustomDevice):
         # <SimpleDescriptor endpoint=1 profile=260 device_type=769
         # device_version=0 input_clusters=[0, 3, 4, 5, 513, 516, 1026, 2820,
         # 2821, 65281] output_clusters=[65281, 25]>
-        "models_info": [
-            ("Sinope Technologies", "TH1123ZB"),
-            ("Sinope Technologies", "TH1124ZB"),
-        ],
-        "endpoints": {
+        MODELS_INFO: [(SINOPE, "TH1123ZB"), (SINOPE, "TH1124ZB")],
+        ENDPOINTS: {
             1: {
-                "profile_id": 0x0104,
-                "device_type": 0x0301,
-                "input_clusters": [
+                PROFILE_ID: 0x0104,
+                DEVICE_TYPE: 0x0301,
+                INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
                     Groups.cluster_id,
@@ -91,23 +98,23 @@ class SinopeTechnologiesThermostat(CustomDevice):
                     Diagnostic.cluster_id,
                     SINOPE_MANUFACTURER_CLUSTER_ID,
                 ],
-                "output_clusters": [Ota.cluster_id, SINOPE_MANUFACTURER_CLUSTER_ID],
+                OUTPUT_CLUSTERS: [Ota.cluster_id, SINOPE_MANUFACTURER_CLUSTER_ID],
             },
             # <SimpleDescriptor endpoint=196 profile=49757 device_type=769
             # device_version=0 input_clusters=[1] output_clusters=[]>
             196: {
-                "profile_id": 0xC25D,
-                "device_type": 0x0301,
-                "input_clusters": [PowerConfiguration.cluster_id],
-                "output_clusters": [],
+                PROFILE_ID: 0xC25D,
+                DEVICE_TYPE: 0x0301,
+                INPUT_CLUSTERS: [PowerConfiguration.cluster_id],
+                OUTPUT_CLUSTERS: [],
             },
         },
     }
 
     replacement = {
-        "endpoints": {
+        ENDPOINTS: {
             1: {
-                "input_clusters": [
+                INPUT_CLUSTERS: [
                     Basic,
                     Identify,
                     Groups,
@@ -119,8 +126,8 @@ class SinopeTechnologiesThermostat(CustomDevice):
                     SinopeTechnologiesThermostatCluster,
                     SinopeTechnologiesManufacturerCluster,
                 ],
-                "output_clusters": [Ota, SINOPE_MANUFACTURER_CLUSTER_ID],
+                OUTPUT_CLUSTERS: [Ota, SINOPE_MANUFACTURER_CLUSTER_ID],
             },
-            196: {"input_clusters": [PowerConfiguration]},
+            196: {INPUT_CLUSTERS: [PowerConfiguration]},
         }
     }

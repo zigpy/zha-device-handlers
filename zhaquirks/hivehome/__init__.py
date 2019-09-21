@@ -4,9 +4,9 @@ import asyncio
 from zigpy.quirks import CustomCluster
 from zigpy.zcl.clusters.security import IasZone
 
-ON = 1
-OFF = 0
-ZONE_STATE = 0
+from ..const import CLUSTER_COMMAND, OFF, ZONE_STATE
+
+HIVEHOME = "HiveHome.com"
 
 
 class MotionCluster(CustomCluster, IasZone):
@@ -29,5 +29,5 @@ class MotionCluster(CustomCluster, IasZone):
 
     def _turn_off(self):
         self._timer_handle = None
-        self.listener_event("cluster_command", 999, 0, [0, 0, 0, 0])
+        self.listener_event(CLUSTER_COMMAND, 999, 0, [0, 0, 0, 0])
         self._update_attribute(ZONE_STATE, OFF)

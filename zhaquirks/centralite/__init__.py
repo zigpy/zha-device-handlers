@@ -6,6 +6,7 @@ import zigpy.types as t
 from zigpy.zcl.clusters.general import PowerConfiguration
 
 _LOGGER = logging.getLogger(__name__)
+CENTRALITE = "CentraLite"
 
 
 class PowerConfigurationCluster(CustomCluster, PowerConfiguration):

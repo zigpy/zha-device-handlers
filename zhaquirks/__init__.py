@@ -5,10 +5,10 @@ import pkgutil
 from zigpy.quirks import CustomCluster
 import zigpy.types as types
 from zigpy.util import ListenableMixin
-from zigpy.zdo import types as zdotypes
 from zigpy.zcl.clusters.general import PowerConfiguration
+from zigpy.zdo import types as zdotypes
 
-UNKNOWN = "Unknown"
+from .const import UNKNOWN, VALUE, ZHA_SEND_EVENT
 
 
 class Bus(ListenableMixin):
@@ -40,19 +40,19 @@ class EventableCluster(CustomCluster):
             and self.server_commands.get(command_id) is not None
         ):
             self.listener_event(
-                "zha_send_event", self, self.server_commands.get(command_id)[0], args
+                ZHA_SEND_EVENT, self, self.server_commands.get(command_id)[0], args
             )
 
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
         self.listener_event(
-            "zha_send_event",
+            ZHA_SEND_EVENT,
             self,
             "attribute_updated",
             {
                 "attribute_id": attrid,
                 "attribute_name": self.attributes.get(attrid, [UNKNOWN])[0],
-                "value": value,
+                VALUE: value,
             },
         )
 

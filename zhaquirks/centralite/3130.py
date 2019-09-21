@@ -11,7 +11,16 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 
-from zhaquirks.centralite import PowerConfigurationCluster
+from zhaquirks.centralite import CENTRALITE, PowerConfigurationCluster
+from zhaquirks.const import (
+    DEVICE_TYPE,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    MODELS_INFO,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
+)
+from zhaquirks.osram import OSRAM
 
 DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
 
@@ -24,12 +33,12 @@ class CentraLite3130(CustomDevice):
         #  device_version=0
         #  input_clusters=[0, 1, 3, 32, 1026, 2821]
         #  output_clusters=[3, 6, 8, 25]>
-        "models_info": [("OSRAM", "LIGHTIFY Dimming Switch"), ("CentraLite", "3130")],
-        "endpoints": {
+        MODELS_INFO: [(OSRAM, "LIGHTIFY Dimming Switch"), (CENTRALITE, "3130")],
+        ENDPOINTS: {
             1: {
-                "profile_id": zha.PROFILE_ID,
-                "device_type": zha.DeviceType.LEVEL_CONTROL_SWITCH,
-                "input_clusters": [
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.LEVEL_CONTROL_SWITCH,
+                INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     PowerConfigurationCluster.cluster_id,
                     Identify.cluster_id,
@@ -37,7 +46,7 @@ class CentraLite3130(CustomDevice):
                     TemperatureMeasurement.cluster_id,
                     DIAGNOSTICS_CLUSTER_ID,
                 ],
-                "output_clusters": [
+                OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
@@ -47,16 +56,16 @@ class CentraLite3130(CustomDevice):
         },
     }
     replacement = {
-        "endpoints": {
+        ENDPOINTS: {
             1: {
-                "input_clusters": [
+                INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     PowerConfigurationCluster,
                     Identify.cluster_id,
                     PollControl.cluster_id,
                     DIAGNOSTICS_CLUSTER_ID,
                 ],
-                "output_clusters": [
+                OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
                     LevelControl.cluster_id,

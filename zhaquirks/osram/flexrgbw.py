@@ -1,17 +1,26 @@
 """Osram A19 tunable white device."""
 from zigpy.profiles import zha
+from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
-    OnOff,
+    Groups,
     Identify,
     LevelControl,
-    Scenes,
-    Groups,
+    OnOff,
     Ota,
+    Scenes,
 )
 from zigpy.zcl.clusters.lighting import Color
-from zigpy.quirks import CustomDevice
-from . import OsramLightCluster
+
+from . import OSRAM, OsramLightCluster
+from ..const import (
+    DEVICE_TYPE,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    MODELS_INFO,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
+)
 
 
 class FlexRGBW(CustomDevice):
@@ -21,12 +30,12 @@ class FlexRGBW(CustomDevice):
         # <SimpleDescriptor endpoint=3 profile=260 device_type=258
         # device_version=2 input_clusters=[0, 3, 4, 5, 6, 8, 768, 64527]
         # output_clusters=[25]>
-        "models_info": [("OSRAM", "LIGHTIFY Flex RGBW")],
-        "endpoints": {
+        MODELS_INFO: [(OSRAM, "LIGHTIFY Flex RGBW")],
+        ENDPOINTS: {
             3: {
-                "profile_id": zha.PROFILE_ID,
-                "device_type": zha.DeviceType.COLOR_DIMMABLE_LIGHT,
-                "input_clusters": [
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.COLOR_DIMMABLE_LIGHT,
+                INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
                     Groups.cluster_id,
@@ -36,17 +45,17 @@ class FlexRGBW(CustomDevice):
                     Color.cluster_id,
                     OsramLightCluster.cluster_id,
                 ],
-                "output_clusters": [Ota.cluster_id],
+                OUTPUT_CLUSTERS: [Ota.cluster_id],
             }
         },
     }
 
     replacement = {
-        "endpoints": {
+        ENDPOINTS: {
             3: {
-                "profile_id": zha.PROFILE_ID,
-                "device_type": zha.DeviceType.COLOR_DIMMABLE_LIGHT,
-                "input_clusters": [
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.COLOR_DIMMABLE_LIGHT,
+                INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
                     Groups.cluster_id,
@@ -56,7 +65,7 @@ class FlexRGBW(CustomDevice):
                     Color.cluster_id,
                     OsramLightCluster,
                 ],
-                "output_clusters": [Ota.cluster_id],
+                OUTPUT_CLUSTERS: [Ota.cluster_id],
             }
         }
     }

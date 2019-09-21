@@ -7,6 +7,16 @@ from zigpy.zcl.clusters.security import IasZone
 
 from zhaquirks.centralite import PowerConfigurationCluster
 
+from . import SMART_THINGS
+from ..const import (
+    DEVICE_TYPE,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    MODELS_INFO,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
+)
+
 
 class SmartThingsIASV4(CustomDevice):
     """SmartThingsIASV4."""
@@ -16,12 +26,12 @@ class SmartThingsIASV4(CustomDevice):
         #  device_version=0
         #  input_clusters=[0, 1, 3, 15, 1026, 1280, 32]
         #  output_clusters=[25]>
-        "models_info": [("SmartThings", "motionv4"), ("SmartThings", "moisturev4")],
-        "endpoints": {
+        MODELS_INFO: [(SMART_THINGS, "motionv4"), (SMART_THINGS, "moisturev4")],
+        ENDPOINTS: {
             1: {
-                "profile_id": zha.PROFILE_ID,
-                "device_type": zha.DeviceType.IAS_ZONE,
-                "input_clusters": [
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
+                INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     PowerConfigurationCluster.cluster_id,
                     Identify.cluster_id,
@@ -30,15 +40,15 @@ class SmartThingsIASV4(CustomDevice):
                     TemperatureMeasurement.cluster_id,
                     IasZone.cluster_id,
                 ],
-                "output_clusters": [Ota.cluster_id],
+                OUTPUT_CLUSTERS: [Ota.cluster_id],
             }
         },
     }
 
     replacement = {
-        "endpoints": {
+        ENDPOINTS: {
             1: {
-                "input_clusters": [
+                INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     PowerConfigurationCluster,
                     Identify.cluster_id,
@@ -47,7 +57,7 @@ class SmartThingsIASV4(CustomDevice):
                     TemperatureMeasurement.cluster_id,
                     IasZone.cluster_id,
                 ],
-                "output_clusters": [Ota.cluster_id],
+                OUTPUT_CLUSTERS: [Ota.cluster_id],
             }
         }
     }

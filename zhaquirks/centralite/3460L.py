@@ -12,7 +12,15 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 
-from zhaquirks.centralite import PowerConfigurationCluster
+from zhaquirks.centralite import CENTRALITE, PowerConfigurationCluster
+from zhaquirks.const import (
+    DEVICE_TYPE,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    MODELS_INFO,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
+)
 
 DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
 
@@ -25,12 +33,12 @@ class CentraLite3460L(CustomDevice):
         #  device_version=0
         #  input_clusters=[0, 1, 3, 7, 32, 1026, 2821]
         #  output_clusters=[3, 6, 25]>
-        "models_info": [("CentraLite", "3460-L")],
-        "endpoints": {
+        MODELS_INFO: [(CENTRALITE, "3460-L")],
+        ENDPOINTS: {
             1: {
-                "profile_id": zha.PROFILE_ID,
-                "device_type": zha.DeviceType.REMOTE_CONTROL,
-                "input_clusters": [
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
+                INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     PowerConfigurationCluster.cluster_id,
                     Identify.cluster_id,
@@ -39,7 +47,7 @@ class CentraLite3460L(CustomDevice):
                     TemperatureMeasurement.cluster_id,
                     DIAGNOSTICS_CLUSTER_ID,
                 ],
-                "output_clusters": [
+                OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
                     Ota.cluster_id,
@@ -49,9 +57,9 @@ class CentraLite3460L(CustomDevice):
     }
 
     replacement = {
-        "endpoints": {
+        ENDPOINTS: {
             1: {
-                "input_clusters": [
+                INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     PowerConfigurationCluster,
                     Identify.cluster_id,
@@ -60,7 +68,7 @@ class CentraLite3460L(CustomDevice):
                     TemperatureMeasurement.cluster_id,
                     DIAGNOSTICS_CLUSTER_ID,
                 ],
-                "output_clusters": [
+                OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
                     Ota.cluster_id,
