@@ -17,14 +17,21 @@ from . import CLICK_TYPES, SAMJIN
 from ..const import (
     ARGS,
     BUTTON,
+    COMMAND,
+    COMMAND_BUTTON_DOUBLE,
+    COMMAND_BUTTON_HOLD,
+    COMMAND_BUTTON_SINGLE,
     COMMAND_ID,
     DEVICE_TYPE,
+    DOUBLE_PRESS,
     ENDPOINTS,
     INPUT_CLUSTERS,
+    LONG_PRESS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PRESS_TYPE,
     PROFILE_ID,
+    SHORT_PRESS,
     ZHA_SEND_EVENT,
 )
 
@@ -93,4 +100,10 @@ class SamjinButton(CustomDevice):
                 OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],
             }
         }
+    }
+
+    device_automation_triggers = {
+        (DOUBLE_PRESS, DOUBLE_PRESS): {COMMAND: COMMAND_BUTTON_DOUBLE},
+        (SHORT_PRESS, SHORT_PRESS): {COMMAND: COMMAND_BUTTON_SINGLE},
+        (LONG_PRESS, LONG_PRESS): {COMMAND: COMMAND_BUTTON_HOLD},
     }
