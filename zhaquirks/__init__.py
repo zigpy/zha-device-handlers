@@ -8,7 +8,14 @@ from zigpy.util import ListenableMixin
 from zigpy.zcl.clusters.general import PowerConfiguration
 from zigpy.zdo import types as zdotypes
 
-from .const import UNKNOWN, VALUE, ZHA_SEND_EVENT
+from .const import (
+    ATTRIBUTE_ID,
+    ATTRIBUTE_NAME,
+    COMMAND_ATTRIBUTE_UPDATED,
+    UNKNOWN,
+    VALUE,
+    ZHA_SEND_EVENT,
+)
 
 
 class Bus(ListenableMixin):
@@ -48,10 +55,10 @@ class EventableCluster(CustomCluster):
         self.listener_event(
             ZHA_SEND_EVENT,
             self,
-            "attribute_updated",
+            COMMAND_ATTRIBUTE_UPDATED,
             {
-                "attribute_id": attrid,
-                "attribute_name": self.attributes.get(attrid, [UNKNOWN])[0],
+                ATTRIBUTE_ID: attrid,
+                ATTRIBUTE_NAME: self.attributes.get(attrid, [UNKNOWN])[0],
                 VALUE: value,
             },
         )
