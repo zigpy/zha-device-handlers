@@ -24,6 +24,8 @@ from ...const import (
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
+    SHAKEN,
+    TURN_ON,
     VALUE,
     ZHA_SEND_EVENT,
 )
@@ -65,7 +67,6 @@ ROTATE_RIGHT = "rotate_right"
 ROTATED = "device_rotated"
 SHAKE = "shake"
 SHAKE_VALUE = 0
-SHAKEN = "device_shaken"
 SLID = "device_slid"
 SLIDE = "slide"
 
@@ -78,7 +79,6 @@ SLIDE_6_VALUE = 261  # aqara facing me upright
 
 SLIDE_VALUE = 261
 STATUS_TYPE_ATTR = 0x0055  # decimal = 85
-TURN_ON = "turn_on"
 XIAOMI_ANALOG = 0x5F03  # decimal = 24323 ? analog input
 XIAOMI_ANALOG_REPLACEMENT = 0x6F03
 XIAOMI_MEASUREMENTS = 0x5F02  # decimal = 24322 ? multistate measurements
