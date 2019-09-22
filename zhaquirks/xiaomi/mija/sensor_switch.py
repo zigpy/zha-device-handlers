@@ -15,12 +15,26 @@ from zigpy.zcl.clusters.general import (
 from .. import LUMI, BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
 from ... import CustomCluster
 from ...const import (
+    ARGS,
+    CLICK_TYPE,
+    COMMAND,
+    COMMAND_CLICK,
+    COMMAND_DOUBLE,
+    COMMAND_FURIOUS,
+    COMMAND_QUAD,
+    COMMAND_SINGLE,
+    COMMAND_TRIPLE,
     DEVICE_TYPE,
+    DOUBLE_PRESS,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
+    QUADRUPLE_PRESS,
+    QUINTUPLE_PRESS,
+    SHORT_PRESS,
+    TRIPLE_PRESS,
     UNKNOWN,
     ZHA_SEND_EVENT,
 )
@@ -29,7 +43,12 @@ XIAOMI_CLUSTER_ID = 0xFFFF
 
 _LOGGER = logging.getLogger(__name__)
 
-CLICK_TYPE_MAP = {2: "double", 3: "triple", 4: "quadruple", 128: "furious"}
+CLICK_TYPE_MAP = {
+    2: COMMAND_DOUBLE,
+    3: COMMAND_TRIPLE,
+    4: COMMAND_QUAD,
+    128: COMMAND_FURIOUS,
+}
 
 
 class MijaButton(XiaomiCustomDevice):
@@ -56,7 +75,7 @@ class MijaButton(XiaomiCustomDevice):
             # Handle Mija OnOff
             if attrid == 0:
                 value = not value
-                click_type = "single" if value is True else False
+                click_type = COMMAND_SINGLE if value is True else False
 
             # Handle Multi Clicks
             elif attrid == 32768:
@@ -64,7 +83,7 @@ class MijaButton(XiaomiCustomDevice):
 
             if click_type:
                 self.listener_event(
-                    ZHA_SEND_EVENT, self, "click", {"click_type": click_type}
+                    ZHA_SEND_EVENT, self, COMMAND_CLICK, {CLICK_TYPE: click_type}
                 )
 
             super()._update_attribute(attrid, value)
@@ -128,4 +147,27 @@ class MijaButton(XiaomiCustomDevice):
                 ],
             }
         }
+    }
+
+    device_automation_triggers = {
+        (SHORT_PRESS, SHORT_PRESS): {
+            COMMAND: COMMAND_CLICK,
+            ARGS: {CLICK_TYPE: COMMAND_SINGLE},
+        },
+        (DOUBLE_PRESS, DOUBLE_PRESS): {
+            COMMAND: COMMAND_CLICK,
+            ARGS: {CLICK_TYPE: COMMAND_DOUBLE},
+        },
+        (TRIPLE_PRESS, TRIPLE_PRESS): {
+            COMMAND: COMMAND_CLICK,
+            ARGS: {CLICK_TYPE: COMMAND_TRIPLE},
+        },
+        (QUADRUPLE_PRESS, QUADRUPLE_PRESS): {
+            COMMAND: COMMAND_CLICK,
+            ARGS: {CLICK_TYPE: COMMAND_QUAD},
+        },
+        (QUINTUPLE_PRESS, QUINTUPLE_PRESS): {
+            COMMAND: COMMAND_CLICK,
+            ARGS: {CLICK_TYPE: COMMAND_FURIOUS},
+        },
     }
