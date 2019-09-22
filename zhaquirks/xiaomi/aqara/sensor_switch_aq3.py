@@ -28,6 +28,8 @@ from ...const import (
     ZHA_SEND_EVENT,
 )
 
+B1ACN01_HOLD = 0
+B1ACN01_RELEASE = 255
 BUTTON_DEVICE_TYPE = 0x5F01
 DOUBLE = 2
 HOLD = 16
@@ -37,10 +39,12 @@ SINGLE = 1
 STATUS_TYPE_ATTR = 0x0055  # decimal = 85
 
 MOVEMENT_TYPE = {
+    B1ACN01_HOLD: COMMAND_HOLD,
     SINGLE: COMMAND_SINGLE,
     DOUBLE: COMMAND_DOUBLE,
     HOLD: COMMAND_HOLD,
     RELEASE: COMMAND_RELEASE,
+    B1ACN01_RELEASE: COMMAND_RELEASE,
     SHAKE: COMMAND_SHAKE,
 }
 
@@ -78,7 +82,7 @@ class SwitchAQ3(XiaomiCustomDevice):
         # device_version=1
         # input_clusters=[0, 18, 6, 1]
         # output_clusters=[0]>
-        MODELS_INFO: [(LUMI, "lumi.sensor_switch.aq3")],
+        MODELS_INFO: [(LUMI, "lumi.sensor_switch.aq3"), (LUMI, "lumi.remote.b1acn01")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
