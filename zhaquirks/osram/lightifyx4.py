@@ -103,7 +103,7 @@ class LightifyX4(CustomDevice):
         #  device_version=2
         #  input_clusters=[0, 1, 32, 4096, 64768]
         #  output_clusters=[3, 4, 5, 6, 8, 25, 768, 4096]>
-        MODELS_INFO: [(OSRAM, "Switch 4x-LIGHTIFY")],
+        MODELS_INFO: [(OSRAM, "Switch 4x-LIGHTIFY"), (OSRAM, "Switch 4x EU-LIGHTIFY")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
