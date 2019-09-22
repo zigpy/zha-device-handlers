@@ -7,12 +7,23 @@ from zigpy.zcl.clusters.general import Basic, MultistateInput, OnOff
 from .. import LUMI, BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
 from ... import CustomCluster
 from ...const import (
+    COMMAND,
+    COMMAND_DOUBLE,
+    COMMAND_HOLD,
+    COMMAND_RELEASE,
+    COMMAND_SHAKE,
+    COMMAND_SINGLE,
     DEVICE_TYPE,
+    DOUBLE_PRESS,
     ENDPOINTS,
     INPUT_CLUSTERS,
+    LONG_PRESS,
+    LONG_RELEASE,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
+    SHAKEN,
+    SHORT_PRESS,
     VALUE,
     ZHA_SEND_EVENT,
 )
@@ -26,11 +37,11 @@ SINGLE = 1
 STATUS_TYPE_ATTR = 0x0055  # decimal = 85
 
 MOVEMENT_TYPE = {
-    SINGLE: "single",
-    DOUBLE: "double",
-    HOLD: "hold",
-    RELEASE: "release",
-    SHAKE: "shake",
+    SINGLE: COMMAND_SINGLE,
+    DOUBLE: COMMAND_DOUBLE,
+    HOLD: COMMAND_HOLD,
+    RELEASE: COMMAND_RELEASE,
+    SHAKE: COMMAND_SHAKE,
 }
 
 _LOGGER = logging.getLogger(__name__)
@@ -94,4 +105,12 @@ class SwitchAQ3(XiaomiCustomDevice):
                 OUTPUT_CLUSTERS: [Basic.cluster_id, OnOff.cluster_id],
             }
         }
+    }
+
+    device_automation_triggers = {
+        (SHAKEN, SHAKEN): {COMMAND: COMMAND_SHAKE},
+        (DOUBLE_PRESS, DOUBLE_PRESS): {COMMAND: COMMAND_DOUBLE},
+        (SHORT_PRESS, SHORT_PRESS): {COMMAND: COMMAND_SINGLE},
+        (LONG_PRESS, LONG_PRESS): {COMMAND: COMMAND_HOLD},
+        (LONG_RELEASE, LONG_RELEASE): {COMMAND: COMMAND_HOLD},
     }
