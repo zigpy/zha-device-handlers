@@ -6,15 +6,27 @@ from zigpy.zcl.clusters.general import Basic, Groups, OnOff
 
 from .. import LUMI, BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
 from ...const import (
+    ARGS,
+    ATTRIBUTE_ID,
+    ATTRIBUTE_NAME,
+    CLUSTER_ID,
+    COMMAND,
+    COMMAND_ATTRIBUTE_UPDATED,
     DEVICE_TYPE,
+    DOUBLE_PRESS,
+    ENDPOINT_ID,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
+    SHORT_PRESS,
+    UNKNOWN,
+    VALUE,
 )
 
 BUTTON_DEVICE_TYPE = 0x5F01
+ON_OFF = "on_off"
 XIAOMI_CLUSTER_ID = 0xFFFF
 
 _LOGGER = logging.getLogger(__name__)
@@ -60,4 +72,19 @@ class SwitchAQ2(XiaomiCustomDevice):
                 ],
             }
         }
+    }
+
+    device_automation_triggers = {
+        (SHORT_PRESS, SHORT_PRESS): {
+            COMMAND: COMMAND_ATTRIBUTE_UPDATED,
+            CLUSTER_ID: 6,
+            ENDPOINT_ID: 1,
+            ARGS: {ATTRIBUTE_ID: 0, ATTRIBUTE_NAME: ON_OFF, VALUE: 1},
+        },
+        (DOUBLE_PRESS, DOUBLE_PRESS): {
+            COMMAND: COMMAND_ATTRIBUTE_UPDATED,
+            CLUSTER_ID: 6,
+            ENDPOINT_ID: 1,
+            ARGS: {ATTRIBUTE_ID: 32768, ATTRIBUTE_NAME: UNKNOWN, VALUE: 2},
+        },
     }

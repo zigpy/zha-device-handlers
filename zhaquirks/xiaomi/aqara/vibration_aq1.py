@@ -20,7 +20,11 @@ from .. import LUMI, BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
 from ... import Bus, LocalDataCluster
 from ...const import (
     CLUSTER_COMMAND,
+    CLUSTER_ID,
+    COMMAND,
+    COMMAND_TILT,
     DEVICE_TYPE,
+    ENDPOINT_ID,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
@@ -39,6 +43,7 @@ SEND_EVENT = "send_event"
 STATIONARY_VALUE = 0
 STATUS_TYPE_ATTR = 0x0055  # decimal = 85
 TILT_VALUE = 2
+TILTED = "device_tilted"
 VIBE_DEVICE_TYPE = 0x5F02  # decimal = 24322
 VIBE_VALUE = 1
 
@@ -215,4 +220,8 @@ class VibrationAQ1(XiaomiCustomDevice):
                 ],
             },
         }
+    }
+
+    device_automation_triggers = {
+        (TILTED, TILTED): {COMMAND: COMMAND_TILT, CLUSTER_ID: 1280, ENDPOINT_ID: 1}
     }

@@ -6,12 +6,24 @@ from zigpy.zcl.clusters.general import Basic, Groups, Identify, LevelControl, On
 from zigpy.zcl.clusters.lightlink import LightLink
 
 from zhaquirks.const import (
+    ARGS,
+    CLUSTER_ID,
+    COMMAND,
+    COMMAND_OFF,
+    COMMAND_ON,
+    COMMAND_STEP,
     DEVICE_TYPE,
+    DIM_DOWN,
+    DIM_UP,
+    ENDPOINT_ID,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
+    SHORT_PRESS,
+    TURN_OFF,
+    TURN_ON,
 )
 
 ADUROLIGHT_CLUSTER_ID = 64716
@@ -70,4 +82,21 @@ class AdurolightNCC(CustomDevice):
                 ],
             }
         }
+    }
+
+    device_automation_triggers = {
+        (SHORT_PRESS, TURN_ON): {COMMAND: COMMAND_ON, CLUSTER_ID: 6, ENDPOINT_ID: 1},
+        (SHORT_PRESS, TURN_OFF): {COMMAND: COMMAND_OFF, CLUSTER_ID: 6, ENDPOINT_ID: 1},
+        (SHORT_PRESS, DIM_UP): {
+            COMMAND: COMMAND_STEP,
+            CLUSTER_ID: 8,
+            ENDPOINT_ID: 1,
+            ARGS: [0, 16, 9],
+        },
+        (SHORT_PRESS, DIM_DOWN): {
+            COMMAND: COMMAND_STEP,
+            CLUSTER_ID: 8,
+            ENDPOINT_ID: 1,
+            ARGS: [1, 16, 9],
+        },
     }

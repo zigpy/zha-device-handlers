@@ -7,16 +7,29 @@ from zigpy.zcl.clusters.general import Basic, MultistateInput, OnOff
 from .. import LUMI, BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
 from ... import CustomCluster
 from ...const import (
+    COMMAND,
+    COMMAND_DOUBLE,
+    COMMAND_HOLD,
+    COMMAND_RELEASE,
+    COMMAND_SHAKE,
+    COMMAND_SINGLE,
     DEVICE_TYPE,
+    DOUBLE_PRESS,
     ENDPOINTS,
     INPUT_CLUSTERS,
+    LONG_PRESS,
+    LONG_RELEASE,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
+    SHAKEN,
+    SHORT_PRESS,
     VALUE,
     ZHA_SEND_EVENT,
 )
 
+B1ACN01_HOLD = 0
+B1ACN01_RELEASE = 255
 BUTTON_DEVICE_TYPE = 0x5F01
 DOUBLE = 2
 HOLD = 16
@@ -26,11 +39,13 @@ SINGLE = 1
 STATUS_TYPE_ATTR = 0x0055  # decimal = 85
 
 MOVEMENT_TYPE = {
-    SINGLE: "single",
-    DOUBLE: "double",
-    HOLD: "hold",
-    RELEASE: "release",
-    SHAKE: "shake",
+    B1ACN01_HOLD: COMMAND_HOLD,
+    SINGLE: COMMAND_SINGLE,
+    DOUBLE: COMMAND_DOUBLE,
+    HOLD: COMMAND_HOLD,
+    RELEASE: COMMAND_RELEASE,
+    B1ACN01_RELEASE: COMMAND_RELEASE,
+    SHAKE: COMMAND_SHAKE,
 }
 
 _LOGGER = logging.getLogger(__name__)
@@ -67,7 +82,7 @@ class SwitchAQ3(XiaomiCustomDevice):
         # device_version=1
         # input_clusters=[0, 18, 6, 1]
         # output_clusters=[0]>
-        MODELS_INFO: [(LUMI, "lumi.sensor_switch.aq3")],
+        MODELS_INFO: [(LUMI, "lumi.sensor_switch.aq3"), (LUMI, "lumi.remote.b1acn01")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -94,4 +109,12 @@ class SwitchAQ3(XiaomiCustomDevice):
                 OUTPUT_CLUSTERS: [Basic.cluster_id, OnOff.cluster_id],
             }
         }
+    }
+
+    device_automation_triggers = {
+        (SHAKEN, SHAKEN): {COMMAND: COMMAND_SHAKE},
+        (DOUBLE_PRESS, DOUBLE_PRESS): {COMMAND: COMMAND_DOUBLE},
+        (SHORT_PRESS, SHORT_PRESS): {COMMAND: COMMAND_SINGLE},
+        (LONG_PRESS, LONG_PRESS): {COMMAND: COMMAND_HOLD},
+        (LONG_RELEASE, LONG_RELEASE): {COMMAND: COMMAND_HOLD},
     }
