@@ -7,11 +7,23 @@ from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone
 
 from zhaquirks.centralite import (
-    CentraLiteAccelCluster, PowerConfigurationCluster)
+    CENTRALITE,
+    CentraLiteAccelCluster,
+    PowerConfigurationCluster,
+)
+from zhaquirks.const import (
+    DEVICE_TYPE,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    MODELS_INFO,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
+)
+from zhaquirks.samjin import SAMJIN
 
 DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
-MANUFACTURER_SPECIFIC_PROFILE_ID = 0xC2DF  # decimal = 49887
 MANUFACTURER_SPECIFIC_CLUSTER_ID = 0xFC0F  # decimal = 64527
+MANUFACTURER_SPECIFIC_PROFILE_ID = 0xC2DF  # decimal = 49887
 
 
 class CentraLite3321S(CustomDevice):
@@ -22,19 +34,17 @@ class CentraLite3321S(CustomDevice):
         #  device_version=0
         #  input_clusters=[0, 1, 3, 1026, 1280, 32, 2821, 64514]
         #  output_clusters=[25]>
-        'manufacturer': 'CentraLite',
-        'model': '3321-S',
-        'models_info': [
-            ('CentraLite', '3320'),
-            ('CentraLite', '3321'),
-            ('CentraLite', '3321-S'),
-            ('Samjin', 'multi')
+        MODELS_INFO: [
+            (CENTRALITE, "3320"),
+            (CENTRALITE, "3321-S"),
+            (CENTRALITE, "3321"),
+            (SAMJIN, "multi"),
         ],
-        'endpoints': {
+        ENDPOINTS: {
             1: {
-                'profile_id': zha.PROFILE_ID,
-                'device_type': zha.DeviceType.IAS_ZONE,
-                'input_clusters': [
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
+                INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     PowerConfigurationCluster.cluster_id,
                     Identify.cluster_id,
@@ -42,37 +52,33 @@ class CentraLite3321S(CustomDevice):
                     TemperatureMeasurement.cluster_id,
                     IasZone.cluster_id,
                     DIAGNOSTICS_CLUSTER_ID,
-                    CentraLiteAccelCluster.cluster_id
+                    CentraLiteAccelCluster.cluster_id,
                 ],
-                'output_clusters': [
-                    Ota.cluster_id
-                ],
+                OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
             #  <SimpleDescriptor endpoint=2 profile=49887 device_type=12
             #  device_version=0
             #  input_clusters=[0, 1, 3, 2821, 64527]
             #  output_clusters=[3]>
             2: {
-                'profile_id': MANUFACTURER_SPECIFIC_PROFILE_ID,
-                'device_type': zha.DeviceType.SIMPLE_SENSOR,
-                'input_clusters': [
+                PROFILE_ID: MANUFACTURER_SPECIFIC_PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SIMPLE_SENSOR,
+                INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     PowerConfigurationCluster.cluster_id,
                     Identify.cluster_id,
                     DIAGNOSTICS_CLUSTER_ID,
-                    MANUFACTURER_SPECIFIC_CLUSTER_ID
+                    MANUFACTURER_SPECIFIC_CLUSTER_ID,
                 ],
-                'output_clusters': [
-                    Identify.cluster_id
-                ],
+                OUTPUT_CLUSTERS: [Identify.cluster_id],
             },
-        }
+        },
     }
 
     replacement = {
-        'endpoints': {
+        ENDPOINTS: {
             1: {
-                'input_clusters': [
+                INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     PowerConfigurationCluster,
                     Identify.cluster_id,
@@ -80,22 +86,18 @@ class CentraLite3321S(CustomDevice):
                     TemperatureMeasurement.cluster_id,
                     IasZone.cluster_id,
                     DIAGNOSTICS_CLUSTER_ID,
-                    CentraLiteAccelCluster
+                    CentraLiteAccelCluster,
                 ],
-                'output_clusters': [
-                    Ota.cluster_id
-                ],
+                OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
             2: {
-                'input_clusters': [
+                INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
                     DIAGNOSTICS_CLUSTER_ID,
-                    MANUFACTURER_SPECIFIC_CLUSTER_ID
+                    MANUFACTURER_SPECIFIC_CLUSTER_ID,
                 ],
-                'output_clusters': [
-                    Identify.cluster_id
-                ],
-            }
-        },
+                OUTPUT_CLUSTERS: [Identify.cluster_id],
+            },
+        }
     }

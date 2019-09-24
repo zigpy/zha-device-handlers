@@ -5,13 +5,30 @@ from zigpy import quirks
 from zigpy.profiles import zha
 from zigpy.quirks.xiaomi import TemperatureHumiditySensor
 from zigpy.zcl.clusters.general import (
-    AnalogInput, Groups, Identify, MultistateInput, Ota, Scenes)
+    AnalogInput,
+    Groups,
+    Identify,
+    MultistateInput,
+    Ota,
+    Scenes,
+)
 from zigpy.zcl.clusters.measurement import RelativeHumidity
 
-from zhaquirks.xiaomi import (
-    BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice)
-
-from .. import TemperatureMeasurementCluster
+from .. import (
+    LUMI,
+    BasicCluster,
+    PowerConfigurationCluster,
+    TemperatureMeasurementCluster,
+    XiaomiCustomDevice,
+)
+from ...const import (
+    DEVICE_TYPE,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    MODELS_INFO,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
+)
 
 TEMPERATURE_HUMIDITY_DEVICE_TYPE = 0x5F01
 TEMPERATURE_HUMIDITY_DEVICE_TYPE2 = 0x5F02
@@ -33,29 +50,26 @@ class Weather(XiaomiCustomDevice):
         #  device_version=1
         #  input_clusters=[0, 3, 25, 65535, 18]
         #  output_clusters=[0, 4, 3, 5, 25, 65535, 18]>
-        'models_info': [
-            ('LUMI', 'lumi.sensor_ht'),
-            ('LUMI', 'lumi.sens')
-        ],
-        'endpoints': {
+        MODELS_INFO: [(LUMI, "lumi.sensor_ht"), (LUMI, "lumi.sens")],
+        ENDPOINTS: {
             1: {
-                'profile_id': zha.PROFILE_ID,
-                'device_type': TEMPERATURE_HUMIDITY_DEVICE_TYPE,
-                'input_clusters': [
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: TEMPERATURE_HUMIDITY_DEVICE_TYPE,
+                INPUT_CLUSTERS: [
                     BasicCluster.cluster_id,
                     Identify.cluster_id,
                     XIAOMI_CLUSTER_ID,
                     Ota.cluster_id,
-                    MultistateInput.cluster_id
+                    MultistateInput.cluster_id,
                 ],
-                'output_clusters': [
+                OUTPUT_CLUSTERS: [
                     BasicCluster.cluster_id,
                     Groups.cluster_id,
                     Identify.cluster_id,
                     Scenes.cluster_id,
                     Ota.cluster_id,
                     XIAOMI_CLUSTER_ID,
-                    MultistateInput.cluster_id
+                    MultistateInput.cluster_id,
                 ],
             },
             # <SimpleDescriptor endpoint=2 profile=260 device_type=24322
@@ -63,17 +77,14 @@ class Weather(XiaomiCustomDevice):
             #  input_clusters=[3, 18]
             #  output_clusters=[4, 3, 5, 18]>
             2: {
-                'profile_id': zha.PROFILE_ID,
-                'device_type': TEMPERATURE_HUMIDITY_DEVICE_TYPE2,
-                'input_clusters': [
-                    Identify.cluster_id,
-                    MultistateInput.cluster_id,
-                ],
-                'output_clusters': [
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: TEMPERATURE_HUMIDITY_DEVICE_TYPE2,
+                INPUT_CLUSTERS: [Identify.cluster_id, MultistateInput.cluster_id],
+                OUTPUT_CLUSTERS: [
                     Groups.cluster_id,
                     Identify.cluster_id,
                     Scenes.cluster_id,
-                    MultistateInput.cluster_id
+                    MultistateInput.cluster_id,
                 ],
             },
             # <SimpleDescriptor endpoint=3 profile=260 device_type=24323
@@ -81,55 +92,50 @@ class Weather(XiaomiCustomDevice):
             # input_clusters=[3, 12]
             # output_clusters=[4, 3, 5, 12]>
             3: {
-                'profile_id': zha.PROFILE_ID,
-                'device_type': TEMPERATURE_HUMIDITY_DEVICE_TYPE3,
-                'input_clusters': [
-                    Identify.cluster_id,
-                    AnalogInput.cluster_id
-                ],
-                'output_clusters': [
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: TEMPERATURE_HUMIDITY_DEVICE_TYPE3,
+                INPUT_CLUSTERS: [Identify.cluster_id, AnalogInput.cluster_id],
+                OUTPUT_CLUSTERS: [
                     Groups.cluster_id,
                     Identify.cluster_id,
                     Scenes.cluster_id,
-                    AnalogInput.cluster_id
+                    AnalogInput.cluster_id,
                 ],
             },
-        }
+        },
     }
 
     replacement = {
-        'endpoints': {
+        ENDPOINTS: {
             1: {
-                'device_type': TEMPERATURE_HUMIDITY_DEVICE_TYPE2,
-                'input_clusters': [
+                DEVICE_TYPE: TEMPERATURE_HUMIDITY_DEVICE_TYPE2,
+                INPUT_CLUSTERS: [
                     BasicCluster,
                     PowerConfigurationCluster,
                     Identify.cluster_id,
                     TemperatureMeasurementCluster,
                     RelativeHumidity.cluster_id,
                     XIAOMI_CLUSTER_ID,
-                    Ota.cluster_id
+                    Ota.cluster_id,
                 ],
-                'output_clusters': [
+                OUTPUT_CLUSTERS: [
                     BasicCluster.cluster_id,
                     Groups.cluster_id,
                     Identify.cluster_id,
                     Scenes.cluster_id,
                     Ota.cluster_id,
                     XIAOMI_CLUSTER_ID,
-                    MultistateInput.cluster_id
+                    MultistateInput.cluster_id,
                 ],
             },
             2: {
-                'device_type': TEMPERATURE_HUMIDITY_DEVICE_TYPE2,
-                'input_clusters': [
-                    Identify.cluster_id
-                ],
-                'output_clusters': [
+                DEVICE_TYPE: TEMPERATURE_HUMIDITY_DEVICE_TYPE2,
+                INPUT_CLUSTERS: [Identify.cluster_id],
+                OUTPUT_CLUSTERS: [
                     Groups.cluster_id,
                     Identify.cluster_id,
                     Scenes.cluster_id,
-                    MultistateInput.cluster_id
+                    MultistateInput.cluster_id,
                 ],
             },
             # <SimpleDescriptor endpoint=3 profile=260 device_type=24323
@@ -137,16 +143,14 @@ class Weather(XiaomiCustomDevice):
             # input_clusters=[3, 12]
             # output_clusters=[4, 3, 5, 12]>
             3: {
-                'device_type': TEMPERATURE_HUMIDITY_DEVICE_TYPE3,
-                'input_clusters': [
-                    Identify.cluster_id
-                ],
-                'output_clusters': [
+                DEVICE_TYPE: TEMPERATURE_HUMIDITY_DEVICE_TYPE3,
+                INPUT_CLUSTERS: [Identify.cluster_id],
+                OUTPUT_CLUSTERS: [
                     Groups.cluster_id,
                     Identify.cluster_id,
                     Scenes.cluster_id,
-                    AnalogInput.cluster_id
+                    AnalogInput.cluster_id,
                 ],
             },
-        },
+        }
     }

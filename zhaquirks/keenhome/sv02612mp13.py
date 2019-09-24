@@ -1,13 +1,27 @@
 """Smart vent quirk."""
 from zigpy.profiles import zha
-from zigpy.zcl.clusters.general import (
-    Basic, Identify, Groups, Scenes, OnOff, LevelControl, Ota, PollControl
-)
-from zigpy.zcl.clusters.measurement import (
-    TemperatureMeasurement, PressureMeasurement
-)
 from zigpy.quirks import CustomDevice
+from zigpy.zcl.clusters.general import (
+    Basic,
+    Groups,
+    Identify,
+    LevelControl,
+    OnOff,
+    Ota,
+    PollControl,
+    Scenes,
+)
+from zigpy.zcl.clusters.measurement import PressureMeasurement, TemperatureMeasurement
+
 from .. import DoublingPowerConfigurationCluster
+from ..const import (
+    DEVICE_TYPE,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    MODELS_INFO,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
+)
 
 DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
 KEEN1_CLUSTER_ID = 0xFC01  # decimal = 64513
@@ -23,14 +37,12 @@ class KeenHomeSmartVent(CustomDevice):
         # input_clusters=[
         #   0, 1, 3, 4, 5, 6, 8, 32, 1026, 1027, 2821, 64513, 64514]
         # output_clusters=[25]>
-        'models_info': [
-            ('Keen Home Inc', 'SV02-612-MP-1.3')
-        ],
-        'endpoints': {
+        MODELS_INFO: [("Keen Home Inc", "SV02-612-MP-1.3")],
+        ENDPOINTS: {
             1: {
-                'profile_id': zha.PROFILE_ID,
-                'device_type': zha.DeviceType.LEVEL_CONTROLLABLE_OUTPUT,
-                'input_clusters': [
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.LEVEL_CONTROLLABLE_OUTPUT,
+                INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     DoublingPowerConfigurationCluster.cluster_id,
                     Identify.cluster_id,
@@ -43,20 +55,18 @@ class KeenHomeSmartVent(CustomDevice):
                     PressureMeasurement.cluster_id,
                     DIAGNOSTICS_CLUSTER_ID,
                     KEEN1_CLUSTER_ID,
-                    KEEN2_CLUSTER_ID
+                    KEEN2_CLUSTER_ID,
                 ],
-                'output_clusters': [
-                    Ota.cluster_id
-                ],
-            },
-        }
+                OUTPUT_CLUSTERS: [Ota.cluster_id],
+            }
+        },
     }
 
     replacement = {
-        'endpoints': {
+        ENDPOINTS: {
             1: {
-                'profile_id': zha.PROFILE_ID,
-                'input_clusters': [
+                PROFILE_ID: zha.PROFILE_ID,
+                INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     DoublingPowerConfigurationCluster,
                     Identify.cluster_id,
@@ -69,11 +79,9 @@ class KeenHomeSmartVent(CustomDevice):
                     PressureMeasurement.cluster_id,
                     DIAGNOSTICS_CLUSTER_ID,
                     KEEN1_CLUSTER_ID,
-                    KEEN2_CLUSTER_ID
+                    KEEN2_CLUSTER_ID,
                 ],
-                'output_clusters': [
-                    Ota.cluster_id
-                ],
+                OUTPUT_CLUSTERS: [Ota.cluster_id],
             }
-        },
+        }
     }

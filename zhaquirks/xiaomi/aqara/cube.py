@@ -1,4 +1,4 @@
-"""Xiaomi aqara magic cube device."""
+"""Xiaomi mija lumi cube device."""
 import logging
 
 from zigpy import quirks
@@ -52,11 +52,11 @@ FLIPPED = "device_flipped"
 KNOCK = "knock"
 
 KNOCK_1_VALUE = 512  # aqara skyside
-KNOCK_2_VALUE = 513  # aqara facing me 90 right
-KNOCK_3_VALUE = 514  # aqara facing me upside down
+KNOCK_2_VALUE = 516  # aqara facing me 90 right
+KNOCK_3_VALUE = 517  # aqara facing me upside down
 KNOCK_4_VALUE = 515  # aqara tableside
-KNOCK_5_VALUE = 516  # aqara facing me 90 left
-KNOCK_6_VALUE = 517  # aqara facing me upright
+KNOCK_5_VALUE = 513  # aqara facing me 90 left
+KNOCK_6_VALUE = 514  # aqara facing me upright
 
 KNOCKED = "device_knocked"
 LEFT = "left"
@@ -71,11 +71,11 @@ SLID = "device_slid"
 SLIDE = "slide"
 
 SLIDE_1_VALUE = 256  # aqara skyside
-SLIDE_2_VALUE = 257  # aqara facing me 90 right
-SLIDE_3_VALUE = 258  # aqara facing me upside down
+SLIDE_2_VALUE = 260  # aqara facing me 90 right
+SLIDE_3_VALUE = 261  # aqara facing me upside down
 SLIDE_4_VALUE = 259  # aqara tableside
-SLIDE_5_VALUE = 260  # aqara facing me 90 left
-SLIDE_6_VALUE = 261  # aqara facing me upright
+SLIDE_5_VALUE = 257  # aqara facing me 90 left
+SLIDE_6_VALUE = 258  # aqara facing me upright
 
 SLIDE_VALUE = 261
 STATUS_TYPE_ATTR = 0x0055  # decimal = 85
@@ -151,7 +151,7 @@ if AqaraMagicCubeSensor in quirks._DEVICE_REGISTRY:
     quirks._DEVICE_REGISTRY.remove(AqaraMagicCubeSensor)
 
 
-class CubeAQGL01(XiaomiCustomDevice):
+class Cube(XiaomiCustomDevice):
     """Aqara magic cube device."""
 
     def __init__(self, *args, **kwargs):

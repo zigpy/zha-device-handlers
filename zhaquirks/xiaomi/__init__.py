@@ -3,36 +3,38 @@ import asyncio
 import binascii
 import logging
 
-from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy import types as t
+from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.zcl.clusters.general import Basic, PowerConfiguration
 from zigpy.zcl.clusters.measurement import (
-    OccupancySensing, TemperatureMeasurement, RelativeHumidity
+    OccupancySensing,
+    RelativeHumidity,
+    TemperatureMeasurement,
 )
 from zigpy.zcl.clusters.security import IasZone
 import zigpy.zcl.foundation as foundation
 
-from zhaquirks import Bus, LocalDataCluster
+from .. import Bus, LocalDataCluster
+from ..const import CLUSTER_COMMAND, MOTION_EVENT, OFF, ON, ZONE_STATE
 
-XIAOMI_AQARA_ATTRIBUTE = 0xFF01
-XIAOMI_MIJA_ATTRIBUTE = 0xFF02
-BATTERY_REPORTED = 'battery_reported'
-BATTERY_LEVEL = 'battery_level'
-TEMPERATURE = 'temperature'
-BATTERY_VOLTAGE_MV = 'battery_voltage_mV'
-XIAOMI_ATTR_3 = 'X-attrib-3'
-XIAOMI_ATTR_4 = 'X-attrib-4'
-XIAOMI_ATTR_5 = 'X-attrib-5'
-XIAOMI_ATTR_6 = 'X-attrib-6'
-STATE = 'state'
-PATH = 'path'
+BATTERY_LEVEL = "battery_level"
 BATTERY_PERCENTAGE_REMAINING = 0x0021
+BATTERY_REPORTED = "battery_reported"
+BATTERY_SIZE = "battery_size"
+BATTERY_VOLTAGE_MV = "battery_voltage_mV"
+LUMI = "LUMI"
+MOTION_TYPE = 0x000D
 OCCUPANCY_STATE = 0
-ZONE_STATE = 0
-ON = 1
-OFF = 0
+PATH = "path"
+STATE = "state"
+TEMPERATURE = "temperature"
+XIAOMI_AQARA_ATTRIBUTE = 0xFF01
+XIAOMI_ATTR_3 = "X-attrib-3"
+XIAOMI_ATTR_4 = "X-attrib-4"
+XIAOMI_ATTR_5 = "X-attrib-5"
+XIAOMI_ATTR_6 = "X-attrib-6"
+XIAOMI_MIJA_ATTRIBUTE = 0xFF02
 ZONE_TYPE = 0x0001
-MOTION_TYPE = 0x000d
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -43,7 +45,7 @@ class XiaomiCustomDevice(CustomDevice):
     def __init__(self, *args, **kwargs):
         """Init."""
         self.battery_bus = Bus()
-        if not hasattr(self, 'battery_size'):
+        if not hasattr(self, BATTERY_SIZE):
             self.battery_size = 10
         super().__init__(*args, **kwargs)
 
@@ -59,20 +61,20 @@ class BasicCluster(CustomCluster, Basic):
             return super().deserialize(data)
         except ValueError:
             hdr, data = foundation.ZCLHeader.deserialize(data)
-            if not (hdr.frame_control.frame_type
-                    == foundation.FrameType.GLOBAL_COMMAND
-                    and hdr.command_id == 0x0a):
+            if not (
+                hdr.frame_control.frame_type == foundation.FrameType.GLOBAL_COMMAND
+                and hdr.command_id == 0x0A
+            ):
                 raise
             msg = "ValueError exception for: %s payload: %s"
             self.debug(msg, hdr, binascii.hexlify(data))
-            newdata = b''
+            newdata = b""
             while data:
                 try:
                     attr, data = foundation.Attribute.deserialize(data)
                 except ValueError:
                     attr_id, data = t.uint16_t.deserialize(data)
-                    if attr_id not in (XIAOMI_AQARA_ATTRIBUTE,
-                                       XIAOMI_MIJA_ATTRIBUTE):
+                    if attr_id not in (XIAOMI_AQARA_ATTRIBUTE, XIAOMI_MIJA_ATTRIBUTE):
                         raise
                     attr_type, data = t.uint8_t.deserialize(data)
                     val_len, data = t.uint8_t.deserialize(data)
@@ -83,8 +85,7 @@ class BasicCluster(CustomCluster, Basic):
                     newdata += val_len.serialize() + val
                     continue
                 newdata += attr.serialize()
-            self.debug("new data: %s",
-                       binascii.hexlify(hdr.serialize() + newdata))
+            self.debug("new data: %s", binascii.hexlify(hdr.serialize() + newdata))
             return super().deserialize(hdr.serialize() + newdata)
 
     def _update_attribute(self, attrid, value):
@@ -101,13 +102,13 @@ class BasicCluster(CustomCluster, Basic):
             "%s - Attribute report. attribute_id: [%s] value: [%s]",
             self.endpoint.device.ieee,
             attrid,
-            attributes
+            attributes,
         )
         if BATTERY_LEVEL in attributes:
             self.endpoint.device.battery_bus.listener_event(
                 BATTERY_REPORTED,
                 attributes[BATTERY_LEVEL],
-                attributes[BATTERY_VOLTAGE_MV]
+                attributes[BATTERY_VOLTAGE_MV],
             )
 
     def _parse_aqara_attributes(self, value):
@@ -119,7 +120,7 @@ class BasicCluster(CustomCluster, Basic):
             4: XIAOMI_ATTR_4,
             5: XIAOMI_ATTR_5,
             6: XIAOMI_ATTR_6,
-            10: PATH
+            10: PATH,
         }
         result = {}
         while value:
@@ -127,8 +128,11 @@ class BasicCluster(CustomCluster, Basic):
             svalue, value = foundation.TypeValue.deserialize(value[1:])
             result[skey] = svalue.value
         for item, val in result.items():
-            key = attribute_names[item] \
-                if item in attribute_names else "0xff01-" + str(item)
+            key = (
+                attribute_names[item]
+                if item in attribute_names
+                else "0xff01-" + str(item)
+            )
             attributes[key] = val
         if BATTERY_VOLTAGE_MV in attributes:
             attributes[BATTERY_LEVEL] = int(
@@ -185,20 +189,18 @@ class PowerConfigurationCluster(LocalDataCluster, PowerConfiguration):
         """Init."""
         super().__init__(*args, **kwargs)
         self.endpoint.device.battery_bus.add_listener(self)
-        if hasattr(self.endpoint.device, 'battery_size'):
+        if hasattr(self.endpoint.device, BATTERY_SIZE):
             self._update_attribute(
-                self.BATTERY_SIZE_ATTR,
-                self.endpoint.device.battery_size
+                self.BATTERY_SIZE_ATTR, self.endpoint.device.battery_size
             )
         else:
-            self._update_attribute(self.BATTERY_SIZE_ATTR, 0xff)
+            self._update_attribute(self.BATTERY_SIZE_ATTR, 0xFF)
         self._update_attribute(self.BATTERY_QUANTITY_ATTR, 1)
 
     def battery_reported(self, voltage, raw_voltage):
         """Battery reported."""
         self._update_attribute(BATTERY_PERCENTAGE_REMAINING, voltage)
-        self._update_attribute(self.BATTERY_VOLTAGE_ATTR,
-                               int(raw_voltage / 100))
+        self._update_attribute(self.BATTERY_VOLTAGE_ATTR, int(raw_voltage / 100))
 
 
 class OccupancyCluster(CustomCluster, OccupancySensing):
@@ -217,7 +219,7 @@ class OccupancyCluster(CustomCluster, OccupancySensing):
         if attrid == OCCUPANCY_STATE and value == ON:
             if self._timer_handle:
                 self._timer_handle.cancel()
-            self.endpoint.device.motion_bus.listener_event('motion_event')
+            self.endpoint.device.motion_bus.listener_event(MOTION_EVENT)
             loop = asyncio.get_event_loop()
             self._timer_handle = loop.call_later(600, self._turn_off)
 
@@ -240,17 +242,9 @@ class MotionCluster(LocalDataCluster, IasZone):
 
     def motion_event(self):
         """Motion event."""
-        super().listener_event(
-            'cluster_command',
-            None,
-            ZONE_STATE,
-            [ON]
-        )
+        super().listener_event(CLUSTER_COMMAND, None, ZONE_STATE, [ON])
 
-        _LOGGER.debug(
-            "%s - Received motion event message",
-            self.endpoint.device.ieee
-        )
+        _LOGGER.debug("%s - Received motion event message", self.endpoint.device.ieee)
 
         if self._timer_handle:
             self._timer_handle.cancel()
@@ -259,17 +253,9 @@ class MotionCluster(LocalDataCluster, IasZone):
         self._timer_handle = loop.call_later(120, self._turn_off)
 
     def _turn_off(self):
-        _LOGGER.debug(
-            "%s - Resetting motion sensor",
-            self.endpoint.device.ieee
-        )
+        _LOGGER.debug("%s - Resetting motion sensor", self.endpoint.device.ieee)
         self._timer_handle = None
-        super().listener_event(
-            'cluster_command',
-            None,
-            ZONE_STATE,
-            [OFF]
-        )
+        super().listener_event(CLUSTER_COMMAND, None, ZONE_STATE, [OFF])
 
 
 class TemperatureMeasurementCluster(CustomCluster, TemperatureMeasurement):

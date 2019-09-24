@@ -7,10 +7,22 @@ from zigpy.quirks.xiaomi import AqaraTemperatureHumiditySensor
 from zigpy.zcl.clusters.general import Groups, Identify
 from zigpy.zcl.clusters.measurement import PressureMeasurement
 
-from zhaquirks.xiaomi import (
-    BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice)
-
-from .. import TemperatureMeasurementCluster, RelativeHumidityCluster
+from .. import (
+    LUMI,
+    BasicCluster,
+    PowerConfigurationCluster,
+    RelativeHumidityCluster,
+    TemperatureMeasurementCluster,
+    XiaomiCustomDevice,
+)
+from ...const import (
+    DEVICE_TYPE,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    MODELS_INFO,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
+)
 
 TEMPERATURE_HUMIDITY_DEVICE_TYPE = 0x5F01
 XIAOMI_CLUSTER_ID = 0xFFFF
@@ -30,47 +42,45 @@ class Weather(XiaomiCustomDevice):
         #  device_version=1
         #  input_clusters=[0, 3, 65535, 1026, 1027, 1029]
         #  output_clusters=[0, 4, 65535]>
-        'models_info': [
-            ('LUMI', 'lumi.weather')
-        ],
-        'endpoints': {
+        MODELS_INFO: [(LUMI, "lumi.weather")],
+        ENDPOINTS: {
             1: {
-                'profile_id': zha.PROFILE_ID,
-                'device_type': TEMPERATURE_HUMIDITY_DEVICE_TYPE,
-                'input_clusters': [
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: TEMPERATURE_HUMIDITY_DEVICE_TYPE,
+                INPUT_CLUSTERS: [
                     BasicCluster.cluster_id,
                     Identify.cluster_id,
                     XIAOMI_CLUSTER_ID,
                     TemperatureMeasurementCluster.cluster_id,
                     PressureMeasurement.cluster_id,
-                    RelativeHumidityCluster.cluster_id
+                    RelativeHumidityCluster.cluster_id,
                 ],
-                'output_clusters': [
+                OUTPUT_CLUSTERS: [
                     BasicCluster.cluster_id,
                     Groups.cluster_id,
-                    XIAOMI_CLUSTER_ID
+                    XIAOMI_CLUSTER_ID,
                 ],
-            },
-        }
+            }
+        },
     }
 
     replacement = {
-        'endpoints': {
+        ENDPOINTS: {
             1: {
-                'input_clusters': [
+                INPUT_CLUSTERS: [
                     BasicCluster,
                     PowerConfigurationCluster,
                     Identify.cluster_id,
                     TemperatureMeasurementCluster,
                     PressureMeasurement.cluster_id,
                     RelativeHumidityCluster,
-                    XIAOMI_CLUSTER_ID
+                    XIAOMI_CLUSTER_ID,
                 ],
-                'output_clusters': [
+                OUTPUT_CLUSTERS: [
                     BasicCluster.cluster_id,
                     Groups.cluster_id,
-                    XIAOMI_CLUSTER_ID
+                    XIAOMI_CLUSTER_ID,
                 ],
             }
-        },
+        }
     }

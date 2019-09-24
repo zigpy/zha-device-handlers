@@ -5,10 +5,22 @@ from zigpy import quirks
 from zigpy.profiles import zha
 from zigpy.quirks.xiaomi import AqaraOpenCloseSensor
 from zigpy.zcl.clusters.general import (
-    Groups, Identify, LevelControl, OnOff, Ota, Scenes)
+    Groups,
+    Identify,
+    LevelControl,
+    OnOff,
+    Ota,
+    Scenes,
+)
 
-from zhaquirks.xiaomi import (
-    BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
+from .. import LUMI, BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
+from ...const import (
+    DEVICE_TYPE,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    MODELS_INFO,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
 )
 
 OPEN_CLOSE_DEVICE_TYPE = 0x5F01
@@ -34,52 +46,50 @@ class Magnet(XiaomiCustomDevice):
         #  device_version=1
         #  input_clusters=[0, 3, 65535, 25]
         #  output_clusters=[0, 4, 3, 6, 8, 5, 25]>
-        'models_info': [
-            ('LUMI', 'lumi.sensor_magnet')
-        ],
-        'endpoints': {
+        MODELS_INFO: [(LUMI, "lumi.sensor_magnet")],
+        ENDPOINTS: {
             1: {
-                'profile_id': zha.PROFILE_ID,
-                'device_type': zha.DeviceType.DIMMER_SWITCH,
-                'input_clusters': [
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.DIMMER_SWITCH,
+                INPUT_CLUSTERS: [
                     BasicCluster.cluster_id,
                     Identify.cluster_id,
                     XIAOMI_CLUSTER_ID,
-                    Ota.cluster_id
+                    Ota.cluster_id,
                 ],
-                'output_clusters': [
+                OUTPUT_CLUSTERS: [
                     BasicCluster.cluster_id,
                     Identify.cluster_id,
                     Groups.cluster_id,
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
                     Scenes.cluster_id,
-                    Ota.cluster_id
+                    Ota.cluster_id,
                 ],
-            },
-        }
+            }
+        },
     }
 
     replacement = {
-        'endpoints': {
+        ENDPOINTS: {
             1: {
-                'device_type': zha.DeviceType.ON_OFF_SENSOR,
-                'input_clusters': [
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SENSOR,
+                INPUT_CLUSTERS: [
                     BasicCluster,
                     Identify.cluster_id,
                     PowerConfigurationCluster,
                     XIAOMI_CLUSTER_ID,
                     Ota.cluster_id,
                 ],
-                'output_clusters': [
+                OUTPUT_CLUSTERS: [
                     BasicCluster,
                     OnOff.cluster_id,
                     Groups.cluster_id,
                     Identify.cluster_id,
                     LevelControl.cluster_id,
                     Scenes.cluster_id,
-                    Ota.cluster_id
+                    Ota.cluster_id,
                 ],
             }
-        },
+        }
     }

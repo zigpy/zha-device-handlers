@@ -5,10 +5,17 @@ import pkgutil
 from zigpy.quirks import CustomCluster
 import zigpy.types as types
 from zigpy.util import ListenableMixin
-from zigpy.zdo import types as zdotypes
 from zigpy.zcl.clusters.general import PowerConfiguration
+from zigpy.zdo import types as zdotypes
 
-UNKNOWN = 'Unknown'
+from .const import (
+    ATTRIBUTE_ID,
+    ATTRIBUTE_NAME,
+    COMMAND_ATTRIBUTE_UPDATED,
+    UNKNOWN,
+    VALUE,
+    ZHA_SEND_EVENT,
+)
 
 
 class Bus(ListenableMixin):
@@ -35,26 +42,25 @@ class EventableCluster(CustomCluster):
 
     def handle_cluster_request(self, tsn, command_id, args):
         """Send cluster requests as events."""
-        if self.server_commands is not None and\
-                self.server_commands.get(command_id) is not None:
+        if (
+            self.server_commands is not None
+            and self.server_commands.get(command_id) is not None
+        ):
             self.listener_event(
-                'zha_send_event',
-                self,
-                self.server_commands.get(command_id)[0],
-                args
+                ZHA_SEND_EVENT, self, self.server_commands.get(command_id)[0], args
             )
 
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
         self.listener_event(
-            'zha_send_event',
+            ZHA_SEND_EVENT,
             self,
-            'attribute_updated',
+            COMMAND_ATTRIBUTE_UPDATED,
             {
-                'attribute_id': attrid,
-                'attribute_name': self.attributes.get(attrid, [UNKNOWN])[0],
-                'value': value
-            }
+                ATTRIBUTE_ID: attrid,
+                ATTRIBUTE_NAME: self.attributes.get(attrid, [UNKNOWN])[0],
+                VALUE: value,
+            },
         )
 
 
@@ -84,7 +90,8 @@ class GroupBoundCluster(CustomCluster):
             self._endpoint.device.ieee,
             self._endpoint.endpoint_id,
             self.cluster_id,
-            dstaddr)
+            dstaddr,
+        )
 
 
 class DoublingPowerConfigurationCluster(CustomCluster, PowerConfiguration):
@@ -105,8 +112,5 @@ class DoublingPowerConfigurationCluster(CustomCluster, PowerConfiguration):
 
 NAME = __name__
 PATH = __path__
-for importer, modname, ispkg in pkgutil.walk_packages(
-        path=PATH,
-        prefix=NAME + '.'
-        ):
+for importer, modname, ispkg in pkgutil.walk_packages(path=PATH, prefix=NAME + "."):
     importlib.import_module(modname)

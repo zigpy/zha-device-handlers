@@ -1,12 +1,27 @@
 """Device handler for IKEA of Sweden TRADFRI remote control."""
 from zigpy.profiles import zha
+from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
-    Basic, Identify, Groups, OnOff, PowerConfiguration, Alarms, Ota
+    Alarms,
+    Basic,
+    Groups,
+    Identify,
+    OnOff,
+    Ota,
+    PowerConfiguration,
 )
 from zigpy.zcl.clusters.lightlink import LightLink
-from zigpy.quirks import CustomDevice
-from . import LightLinkCluster
+
 from .. import DoublingPowerConfigurationCluster
+from ..const import (
+    DEVICE_TYPE,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    MODELS_INFO,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
+)
+from . import IKEA, LightLinkCluster
 
 DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
 
@@ -19,52 +34,50 @@ class IkeaTradfriMotion(CustomDevice):
         # device_version=2
         # input_clusters=[0, 1, 3, 9, 2821, 4096]
         # output_clusters=[3, 4, 6, 25, 4096]>
-        'models_info': [
-            ('IKEA of Sweden', 'TRADFRI motion sensor')
-        ],
-        'endpoints': {
+        MODELS_INFO: [(IKEA, "TRADFRI motion sensor")],
+        ENDPOINTS: {
             1: {
-                'profile_id': zha.PROFILE_ID,
-                'device_type': zha.DeviceType.ON_OFF_SENSOR,
-                'input_clusters': [
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SENSOR,
+                INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
                     Identify.cluster_id,
                     Alarms.cluster_id,
                     DIAGNOSTICS_CLUSTER_ID,
-                    LightLink.cluster_id
+                    LightLink.cluster_id,
                 ],
-                'output_clusters': [
+                OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     Groups.cluster_id,
                     OnOff.cluster_id,
                     Ota.cluster_id,
-                    LightLink.cluster_id
+                    LightLink.cluster_id,
                 ],
-            },
-        }
+            }
+        },
     }
 
     replacement = {
-        'endpoints': {
+        ENDPOINTS: {
             1: {
-                'profile_id': zha.PROFILE_ID,
-                'device_type': zha.DeviceType.ON_OFF_SENSOR,
-                'input_clusters': [
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SENSOR,
+                INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     DoublingPowerConfigurationCluster,
                     Identify.cluster_id,
                     Alarms.cluster_id,
                     DIAGNOSTICS_CLUSTER_ID,
-                    LightLinkCluster
+                    LightLinkCluster,
                 ],
-                'output_clusters': [
+                OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     Groups.cluster_id,
                     OnOff.cluster_id,
                     Ota.cluster_id,
-                    LightLink.cluster_id
+                    LightLink.cluster_id,
                 ],
             }
-        },
+        }
     }
