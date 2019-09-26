@@ -13,12 +13,22 @@ from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 
 from zhaquirks.centralite import CENTRALITE, PowerConfigurationCluster
 from zhaquirks.const import (
+    COMMAND,
+    COMMAND_MOVE,
+    COMMAND_MOVE_ON_OFF,
+    COMMAND_OFF,
+    COMMAND_ON,
     DEVICE_TYPE,
+    DIM_DOWN,
+    DIM_UP,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
+    SHORT_PRESS,
+    TURN_OFF,
+    TURN_ON,
 )
 from zhaquirks.osram import OSRAM
 
@@ -73,4 +83,11 @@ class CentraLite3130(CustomDevice):
                 ],
             }
         }
+    }
+
+    device_automation_triggers = {
+        (SHORT_PRESS, TURN_ON): {COMMAND: COMMAND_ON},
+        (SHORT_PRESS, TURN_OFF): {COMMAND: COMMAND_OFF},
+        (SHORT_PRESS, DIM_UP): {COMMAND: COMMAND_MOVE_ON_OFF},
+        (SHORT_PRESS, DIM_DOWN): {COMMAND: COMMAND_MOVE},
     }
