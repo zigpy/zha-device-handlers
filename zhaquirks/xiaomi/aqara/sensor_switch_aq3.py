@@ -31,6 +31,7 @@ from ...const import (
 B1ACN01_HOLD = 0
 B1ACN01_RELEASE = 255
 BUTTON_DEVICE_TYPE = 0x5F01
+BUTTON_DEVICE_TYPEB = 259
 DOUBLE = 2
 HOLD = 16
 RELEASE = 17
@@ -123,7 +124,7 @@ class SwitchAQ3B(XiaomiCustomDevice):
     """Aqara button device - alternate version."""
 
     signature = {
-        # <SimpleDescriptor endpoint=1 profile=260 device_type=24321
+        # <SimpleDescriptor endpoint=1 profile=260 device_type=259
         # device_version=1
         # input_clusters=[0, 18, 3]
         # output_clusters=[0]>
@@ -131,7 +132,7 @@ class SwitchAQ3B(XiaomiCustomDevice):
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: BUTTON_DEVICE_TYPE,
+                DEVICE_TYPE: BUTTON_DEVICE_TYPEB,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     MultistateInput.cluster_id,
