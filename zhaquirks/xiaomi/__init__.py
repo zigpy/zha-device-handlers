@@ -15,7 +15,15 @@ from zigpy.zcl.clusters.security import IasZone
 import zigpy.zcl.foundation as foundation
 
 from .. import Bus, LocalDataCluster
-from ..const import CLUSTER_COMMAND, MOTION_EVENT, OFF, ON, ZONE_STATE
+from ..const import (
+    CLUSTER_COMMAND,
+    COMMAND_TRIPLE,
+    MOTION_EVENT,
+    OFF,
+    ON,
+    ZHA_SEND_EVENT,
+    ZONE_STATE,
+)
 
 BATTERY_LEVEL = "battery_level"
 BATTERY_PERCENTAGE_REMAINING = 0x0021
@@ -23,6 +31,7 @@ BATTERY_REPORTED = "battery_reported"
 BATTERY_SIZE = "battery_size"
 BATTERY_VOLTAGE_MV = "battery_voltage_mV"
 LUMI = "LUMI"
+MODEL = 5
 MOTION_TYPE = 0x000D
 OCCUPANCY_STATE = 0
 PATH = "path"
@@ -92,6 +101,12 @@ class BasicCluster(CustomCluster, Basic):
         if attrid == XIAOMI_AQARA_ATTRIBUTE:
             attributes = self._parse_aqara_attributes(value.raw)
             super()._update_attribute(attrid, value.raw)
+            if (
+                MODEL in self._attr_cache
+                and self._attr_cache[MODEL] == "lumi.sensor_switch.aq2"
+            ):
+                if value.raw == b"\x04!\xa8C\n!\x00\x00":
+                    self.listener_event(ZHA_SEND_EVENT, self, COMMAND_TRIPLE, [])
         elif attrid == XIAOMI_MIJA_ATTRIBUTE:
             attributes = self._parse_mija_attributes(value)
         else:
