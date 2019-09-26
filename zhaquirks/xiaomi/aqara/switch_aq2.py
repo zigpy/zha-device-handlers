@@ -12,6 +12,7 @@ from ...const import (
     CLUSTER_ID,
     COMMAND,
     COMMAND_ATTRIBUTE_UPDATED,
+    COMMAND_TRIPLE,
     DEVICE_TYPE,
     DOUBLE_PRESS,
     ENDPOINT_ID,
@@ -21,6 +22,7 @@ from ...const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SHORT_PRESS,
+    TRIPLE_PRESS,
     UNKNOWN,
     VALUE,
 )
@@ -86,5 +88,10 @@ class SwitchAQ2(XiaomiCustomDevice):
             CLUSTER_ID: 6,
             ENDPOINT_ID: 1,
             ARGS: {ATTRIBUTE_ID: 32768, ATTRIBUTE_NAME: UNKNOWN, VALUE: 2},
+        },
+        (TRIPLE_PRESS, TRIPLE_PRESS): {
+            COMMAND: COMMAND_TRIPLE,
+            CLUSTER_ID: 0,
+            ENDPOINT_ID: 1,
         },
     }
