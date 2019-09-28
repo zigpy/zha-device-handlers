@@ -110,6 +110,37 @@ class DoublingPowerConfigurationCluster(CustomCluster, PowerConfiguration):
         super()._update_attribute(attrid, value)
 
 
+class PowerConfigurationCluster(CustomCluster, PowerConfiguration):
+    """Common use power configuration cluster."""
+
+    cluster_id = PowerConfiguration.cluster_id
+    BATTERY_VOLTAGE_ATTR = 0x0020
+    BATTERY_PERCENTAGE_REMAINING = 0x0021
+    MIN_VOLTS = 2.1
+    MAX_VOLTS = 3.2
+
+    def _update_attribute(self, attrid, value):
+        super()._update_attribute(attrid, value)
+        if attrid == self.BATTERY_VOLTAGE_ATTR:
+            super()._update_attribute(
+                self.BATTERY_PERCENTAGE_REMAINING,
+                self._calculate_battery_percentage(value),
+            )
+
+    def _calculate_battery_percentage(self, raw_value):
+        if raw_value in (0, 255):
+            return -1
+        volts = raw_value / 10
+        if volts < self.MIN_VOLTS:
+            volts = self.MIN_VOLTS
+        elif volts > self.MAX_VOLTS:
+            volts = self.MAX_VOLTS
+
+        percent = ((volts - self.MIN_VOLTS) / (self.MAX_VOLTS - self.MIN_VOLTS)) * 200
+
+        return round(min(200, percent), 2)
+
+
 NAME = __name__
 PATH = __path__
 for importer, modname, ispkg in pkgutil.walk_packages(path=PATH, prefix=NAME + "."):
