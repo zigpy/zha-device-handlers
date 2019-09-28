@@ -46,7 +46,7 @@ class Switch(CustomDevice):
                     Ota.cluster_id,
                     PowerConfiguration.cluster_id,
                 ],
-                OUTPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [PowerConfiguration.cluster_id],
             }
         },
     }
@@ -65,7 +65,7 @@ class Switch(CustomDevice):
                     Ota.cluster_id,
                     PowerConfigurationCluster,
                 ],
-                OUTPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [PowerConfiguration.cluster_id],
             }
         }
     }
