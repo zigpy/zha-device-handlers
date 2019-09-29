@@ -1,4 +1,4 @@
-"""Device handler for smartthings IAS V4 sensors."""
+"""Device handler for smartthings moistureV4 sensor."""
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, BinaryInput, Identify, Ota, PollControl
@@ -18,15 +18,28 @@ from ..const import (
 )
 
 
-class SmartThingsIASV4(CustomDevice):
-    """SmartThingsIASV4."""
+class CustomIasZone(IasZone):
+    """Custom IasZone cluster."""
+
+    MOISTURE_TYPE = 0x002A
+    ZONE_TYPE = 0x0001
+
+    def _update_attribute(self, attrid, value):
+        if attrid == self.ZONE_TYPE:
+            super()._update_attribute(attrid, self.MOISTURE_TYPE)
+        else:
+            super()._update_attribute(attrid, value)
+
+
+class SmartThingsMoistureV4(CustomDevice):
+    """SmartThingsMoistureV4."""
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=1026
         #  device_version=0
         #  input_clusters=[0, 1, 3, 15, 1026, 1280, 32]
         #  output_clusters=[25]>
-        MODELS_INFO: [(SMART_THINGS, "motionv4"), (SMART_THINGS, "moisturev4")],
+        MODELS_INFO: [(SMART_THINGS, "moisturev4")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -55,7 +68,7 @@ class SmartThingsIASV4(CustomDevice):
                     BinaryInput.cluster_id,
                     PollControl.cluster_id,
                     TemperatureMeasurement.cluster_id,
-                    IasZone.cluster_id,
+                    CustomIasZone,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             }
