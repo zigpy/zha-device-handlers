@@ -186,7 +186,6 @@ class BasicCluster(CustomCluster, Basic):
     @staticmethod
     def _calculate_remaining_battery_percentage(voltage):
         """Calculate percentage."""
-
         # Min/Max values from https://github.com/louisZL/lumi-gateway-local-api
         min_voltage = 2800
         max_voltage = 3300
