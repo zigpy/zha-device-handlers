@@ -15,23 +15,20 @@ class PowerConfigurationCluster(CustomCluster, PowerConfiguration):
     cluster_id = PowerConfiguration.cluster_id
     BATTERY_VOLTAGE_ATTR = 0x0020
     BATTERY_PERCENTAGE_REMAINING = 0x0021
-    MIN_VOLTS = 15
-    MAX_VOLTS = 28
+    MIN_VOLTS = 21
+    MAX_VOLTS = 31
     VOLTS_TO_PERCENT = {
-        28: 100,
-        27: 100,
-        26: 100,
-        25: 90,
-        24: 90,
-        23: 70,
-        22: 70,
-        21: 50,
-        20: 50,
-        19: 30,
-        18: 30,
-        17: 15,
-        16: 1,
-        15: 0,
+        31: 100,
+        30: 90,
+        29: 80,
+        28: 70,
+        27: 60,
+        26: 50,
+        25: 40,
+        24: 30,
+        23: 20,
+        22: 10,
+        21: 0,
     }
 
     def _update_attribute(self, attrid, value):
