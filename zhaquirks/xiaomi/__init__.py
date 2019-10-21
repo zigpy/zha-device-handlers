@@ -16,13 +16,18 @@ import zigpy.zcl.foundation as foundation
 
 from .. import Bus, LocalDataCluster
 from ..const import (
+    ATTRIBUTE_ID,
+    ATTRIBUTE_NAME,
     CLUSTER_COMMAND,
+    COMMAND_ATTRIBUTE_UPDATED,
     COMMAND_TRIPLE,
     MOTION_EVENT,
     OFF,
     ON,
+    VALUE,
+    UNKNOWN,
     ZHA_SEND_EVENT,
-    ZONE_STATE,
+    ZONE_STATE
 )
 
 BATTERY_LEVEL = "battery_level"
@@ -111,6 +116,20 @@ class BasicCluster(CustomCluster, Basic):
             attributes = self._parse_mija_attributes(value)
         else:
             super()._update_attribute(attrid, value)
+            if attrid == 0x0005:
+                """0x0005 = model attribute.
+                Xiaomi sensors send the model attribute when their reset button is
+                pressed quickly."""
+                self.listener_event(
+                    ZHA_SEND_EVENT,
+                    self,
+                    COMMAND_ATTRIBUTE_UPDATED,
+                    {
+                        ATTRIBUTE_ID: attrid,
+                        ATTRIBUTE_NAME: self.attributes.get(attrid, [UNKNOWN])[0],
+                        VALUE: value,
+                    },
+                )
             return
 
         _LOGGER.debug(
