@@ -19,6 +19,7 @@ from ...const import (
 if AqaraWaterSensor in quirks._DEVICE_REGISTRY:
     quirks._DEVICE_REGISTRY.remove(AqaraWaterSensor)
 
+
 class CustomIasZone(IasZone):
     """Custom IasZone cluster."""
 
@@ -30,6 +31,7 @@ class CustomIasZone(IasZone):
             super()._update_attribute(attrid, self.MOISTURE_TYPE)
         else:
             super()._update_attribute(attrid, value)
+
 
 class LeakAQ1(XiaomiCustomDevice):
     """Xiaomi aqara leak sensor device."""
