@@ -117,9 +117,9 @@ class BasicCluster(CustomCluster, Basic):
         else:
             super()._update_attribute(attrid, value)
             if attrid == 0x0005:
-                """0x0005 = model attribute.
-                Xiaomi sensors send the model attribute when their reset button is
-                pressed quickly."""
+                # 0x0005 = model attribute.
+                # Xiaomi sensors send the model attribute when their reset button is
+                # pressed quickly."""
                 self.listener_event(
                     ZHA_SEND_EVENT,
                     self,
