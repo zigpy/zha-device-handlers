@@ -93,5 +93,6 @@ class SwitchAQ2(XiaomiCustomDevice):
             COMMAND: COMMAND_TRIPLE,
             CLUSTER_ID: 0,
             ENDPOINT_ID: 1,
+            ARGS: {ATTRIBUTE_ID: 32768, ATTRIBUTE_NAME: UNKNOWN, VALUE: 3},
         },
     }
