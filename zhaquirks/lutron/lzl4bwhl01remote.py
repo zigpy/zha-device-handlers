@@ -31,7 +31,7 @@ from ..const import (
     PROFILE_ID,
     SHORT_PRESS,
     TURN_OFF,
-    TURN_ON
+    TURN_ON,
 )
 
 MANUFACTURER_SPECIFIC_CLUSTER_ID_1 = 0xFF00  # decimal = 65280
@@ -113,27 +113,28 @@ class LutronLZL4BWHL01Remote(CustomDevice):
             COMMAND: COMMAND_MOVE_TO_LEVEL_ON_OFF,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
-            ARGS: [254, 4]
+            ARGS: [254, 4],
         },
         (SHORT_PRESS, TURN_OFF): {
             COMMAND: COMMAND_MOVE_TO_LEVEL_ON_OFF,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
-            ARGS: [0, 4]
+            ARGS: [0, 4],
         },
         (SHORT_PRESS, DIM_UP): {
             COMMAND: COMMAND_STEP_ON_OFF,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
-            ARGS: [0, 30, 6]
+            ARGS: [0, 30, 6],
         },
         (SHORT_PRESS, DIM_DOWN): {
             COMMAND: COMMAND_STEP,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
-            ARGS: [1, 30, 6]
+            ARGS: [1, 30, 6],
         },
     }
+
 
 class LutronLZL4BWHL01Remote2(LutronLZL4BWHL01Remote):
     """Custom device representing Lutron LZL4BWHL01 Remote."""
