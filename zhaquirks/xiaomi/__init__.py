@@ -27,7 +27,7 @@ from ..const import (
     VALUE,
     UNKNOWN,
     ZHA_SEND_EVENT,
-    ZONE_STATE
+    ZONE_STATE,
 )
 
 BATTERY_LEVEL = "battery_level"
