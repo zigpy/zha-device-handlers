@@ -11,10 +11,12 @@ from .. import (
     LUMI,
     BasicCluster,
     PowerConfigurationCluster,
+    PressureMeasurementCluster,
     RelativeHumidityCluster,
     TemperatureMeasurementCluster,
     XiaomiCustomDevice,
 )
+from ... import Bus
 from ...const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -36,6 +38,13 @@ if AqaraTemperatureHumiditySensor in quirks._DEVICE_REGISTRY:
 
 class Weather(XiaomiCustomDevice):
     """Xiaomi weather sensor device."""
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        self.temperature_bus = Bus()
+        self.humidity_bus = Bus()
+        self.pressure_bus = Bus()
+        super().__init__(*args, **kwargs)
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=24321
@@ -72,7 +81,7 @@ class Weather(XiaomiCustomDevice):
                     PowerConfigurationCluster,
                     Identify.cluster_id,
                     TemperatureMeasurementCluster,
-                    PressureMeasurement.cluster_id,
+                    PressureMeasurementCluster,
                     RelativeHumidityCluster,
                     XIAOMI_CLUSTER_ID,
                 ],
