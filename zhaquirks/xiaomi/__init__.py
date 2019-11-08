@@ -346,6 +346,7 @@ class TemperatureMeasurementCluster(CustomCluster, TemperatureMeasurement):
             super()._update_attribute(attrid, value)
 
     def temperature_reported(self, value):
+        """Temperature reported."""
         self._update_attribute(self.ATTR_ID, value)
 
 
@@ -366,12 +367,12 @@ class RelativeHumidityCluster(CustomCluster, RelativeHumidity):
             super()._update_attribute(attrid, value)
 
     def humidity_reported(self, value):
+        """Humidity reported."""
         self._update_attribute(self.ATTR_ID, value)
 
 
 class PressureMeasurementCluster(CustomCluster, PressureMeasurement):
-    """Pressure cluster to receive reports that are sent to the basic
-     cluster."""
+    """Pressure cluster to receive reports that are sent to the basic cluster."""
 
     cluster_id = PressureMeasurement.cluster_id
     ATTR_ID = 0
@@ -382,4 +383,5 @@ class PressureMeasurementCluster(CustomCluster, PressureMeasurement):
         self.endpoint.device.pressure_bus.add_listener(self)
 
     def pressure_reported(self, value):
+        """Pressure reported."""
         self._update_attribute(self.ATTR_ID, value)
