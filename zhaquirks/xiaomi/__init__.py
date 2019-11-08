@@ -161,7 +161,7 @@ class BasicCluster(CustomCluster, Basic):
             )
         if PRESSURE_MEASUREMENT in attributes:
             self.endpoint.device.pressure_bus.listener_event(
-                PRESSURE_REPORTED, attributes[PRESSURE_MEASUREMENT]
+                PRESSURE_REPORTED, attributes[PRESSURE_MEASUREMENT] / 100
             )
 
     def _parse_aqara_attributes(self, value):
