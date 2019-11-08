@@ -21,6 +21,7 @@ from .. import (
     TemperatureMeasurementCluster,
     XiaomiCustomDevice,
 )
+from ... import Bus
 from ...const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -44,6 +45,12 @@ if TemperatureHumiditySensor in quirks._DEVICE_REGISTRY:
 
 class Weather(XiaomiCustomDevice):
     """Xiaomi mija weather sensor device."""
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        self.temperature_bus = Bus()
+        self.humidity_bus = Bus()
+        super().__init__(*args, **kwargs)
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=24321
