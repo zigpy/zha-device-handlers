@@ -153,18 +153,15 @@ class BasicCluster(CustomCluster, Basic):
             )
         if TEMPERATURE_MEASUREMENT in attributes:
             self.endpoint.device.temperature_bus.listener_event(
-                TEMPERATURE_REPORTED,
-                attributes[TEMPERATURE_MEASUREMENT]
+                TEMPERATURE_REPORTED, attributes[TEMPERATURE_MEASUREMENT]
             )
         if HUMIDITY_MEASUREMENT in attributes:
             self.endpoint.device.humidity_bus.listener_event(
-                HUMIDITY_REPORTED,
-                attributes[HUMIDITY_MEASUREMENT]
+                HUMIDITY_REPORTED, attributes[HUMIDITY_MEASUREMENT]
             )
         if PRESSURE_MEASUREMENT in attributes:
             self.endpoint.device.pressure_bus.listener_event(
-                PRESSURE_REPORTED,
-                attributes[PRESSURE_MEASUREMENT]
+                PRESSURE_REPORTED, attributes[PRESSURE_MEASUREMENT]
             )
 
     def _parse_aqara_attributes(self, value):
@@ -179,19 +176,21 @@ class BasicCluster(CustomCluster, Basic):
             10: PATH,
         }
 
-        if (
-            MODEL in self._attr_cache
-            and self._attr_cache[MODEL] in ["lumi.sensor_ht", "lumi.sens",
-                                            "lumi.weather"]
-        ):
+        if MODEL in self._attr_cache and self._attr_cache[MODEL] in [
+            "lumi.sensor_ht",
+            "lumi.sens",
+            "lumi.weather",
+        ]:
             # Temperature sensors send temperature/humidity/pressure updates trough this
             # cluster instead of the respective clusters
-            attribute_names.update({
-                100: TEMPERATURE_MEASUREMENT,
-                101: HUMIDITY_MEASUREMENT,
-                102: PRESSURE_MEASUREMENT,
-            })
-        
+            attribute_names.update(
+                {
+                    100: TEMPERATURE_MEASUREMENT,
+                    101: HUMIDITY_MEASUREMENT,
+                    102: PRESSURE_MEASUREMENT,
+                }
+            )
+
         result = {}
         while value:
             skey = int(value[0])
@@ -334,18 +333,18 @@ class TemperatureMeasurementCluster(CustomCluster, TemperatureMeasurement):
 
     cluster_id = TemperatureMeasurement.cluster_id
     ATTR_ID = 0
-    
+
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
         self.endpoint.device.temperature_bus.add_listener(self)
-    
+
     def _update_attribute(self, attrid, value):
         # drop values above and below documented range for this sensor
         # value is in centi degrees
         if attrid == self.ATTR_ID and (-2000 <= value <= 6000):
             super()._update_attribute(attrid, value)
-            
+
     def temperature_reported(self, value):
         self._update_attribute(self.ATTR_ID, value)
 
@@ -355,12 +354,12 @@ class RelativeHumidityCluster(CustomCluster, RelativeHumidity):
 
     cluster_id = RelativeHumidity.cluster_id
     ATTR_ID = 0
-    
+
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
         self.endpoint.device.humidity_bus.add_listener(self)
-    
+
     def _update_attribute(self, attrid, value):
         # drop values above and below documented range for this sensor
         if attrid == self.ATTR_ID and (0 <= value <= 9999):
@@ -376,7 +375,7 @@ class PressureMeasurementCluster(CustomCluster, PressureMeasurement):
 
     cluster_id = PressureMeasurement.cluster_id
     ATTR_ID = 0
-    
+
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
