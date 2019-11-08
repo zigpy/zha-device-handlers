@@ -134,7 +134,7 @@ class PhilipsRWL021(CustomDevice):
             COMMAND: COMMAND_STEP,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
-            ARGS: [1, 56, 9],
+            ARGS: [1, 30, 9],
         },
         (LONG_PRESS, DIM_DOWN): {
             COMMAND: COMMAND_STEP,

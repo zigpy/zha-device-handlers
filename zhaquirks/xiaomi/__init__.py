@@ -8,6 +8,7 @@ from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.zcl.clusters.general import Basic, PowerConfiguration
 from zigpy.zcl.clusters.measurement import (
     OccupancySensing,
+    PressureMeasurement,
     RelativeHumidity,
     TemperatureMeasurement,
 )
@@ -16,11 +17,16 @@ import zigpy.zcl.foundation as foundation
 
 from .. import Bus, LocalDataCluster
 from ..const import (
+    ATTRIBUTE_ID,
+    ATTRIBUTE_NAME,
     CLUSTER_COMMAND,
+    COMMAND_ATTRIBUTE_UPDATED,
     COMMAND_TRIPLE,
     MOTION_EVENT,
     OFF,
     ON,
+    VALUE,
+    UNKNOWN,
     ZHA_SEND_EVENT,
     ZONE_STATE,
 )
@@ -30,13 +36,19 @@ BATTERY_PERCENTAGE_REMAINING = 0x0021
 BATTERY_REPORTED = "battery_reported"
 BATTERY_SIZE = "battery_size"
 BATTERY_VOLTAGE_MV = "battery_voltage_mV"
+HUMIDITY_MEASUREMENT = "humidity_measurement"
+HUMIDITY_REPORTED = "humidity_reported"
 LUMI = "LUMI"
 MODEL = 5
 MOTION_TYPE = 0x000D
 OCCUPANCY_STATE = 0
 PATH = "path"
+PRESSURE_MEASUREMENT = "pressure_measurement"
+PRESSURE_REPORTED = "pressure_reported"
 STATE = "state"
 TEMPERATURE = "temperature"
+TEMPERATURE_MEASUREMENT = "temperature_measurement"
+TEMPERATURE_REPORTED = "temperature_reported"
 XIAOMI_AQARA_ATTRIBUTE = 0xFF01
 XIAOMI_ATTR_3 = "X-attrib-3"
 XIAOMI_ATTR_4 = "X-attrib-4"
@@ -111,6 +123,20 @@ class BasicCluster(CustomCluster, Basic):
             attributes = self._parse_mija_attributes(value)
         else:
             super()._update_attribute(attrid, value)
+            if attrid == 0x0005:
+                # 0x0005 = model attribute.
+                # Xiaomi sensors send the model attribute when their reset button is
+                # pressed quickly."""
+                self.listener_event(
+                    ZHA_SEND_EVENT,
+                    self,
+                    COMMAND_ATTRIBUTE_UPDATED,
+                    {
+                        ATTRIBUTE_ID: attrid,
+                        ATTRIBUTE_NAME: self.attributes.get(attrid, [UNKNOWN])[0],
+                        VALUE: value,
+                    },
+                )
             return
 
         _LOGGER.debug(
@@ -125,6 +151,18 @@ class BasicCluster(CustomCluster, Basic):
                 attributes[BATTERY_LEVEL],
                 attributes[BATTERY_VOLTAGE_MV],
             )
+        if TEMPERATURE_MEASUREMENT in attributes:
+            self.endpoint.device.temperature_bus.listener_event(
+                TEMPERATURE_REPORTED, attributes[TEMPERATURE_MEASUREMENT]
+            )
+        if HUMIDITY_MEASUREMENT in attributes:
+            self.endpoint.device.humidity_bus.listener_event(
+                HUMIDITY_REPORTED, attributes[HUMIDITY_MEASUREMENT]
+            )
+        if PRESSURE_MEASUREMENT in attributes:
+            self.endpoint.device.pressure_bus.listener_event(
+                PRESSURE_REPORTED, attributes[PRESSURE_MEASUREMENT] / 100
+            )
 
     def _parse_aqara_attributes(self, value):
         """Parse non standard atrributes."""
@@ -137,6 +175,22 @@ class BasicCluster(CustomCluster, Basic):
             6: XIAOMI_ATTR_6,
             10: PATH,
         }
+
+        if MODEL in self._attr_cache and self._attr_cache[MODEL] in [
+            "lumi.sensor_ht",
+            "lumi.sens",
+            "lumi.weather",
+        ]:
+            # Temperature sensors send temperature/humidity/pressure updates trough this
+            # cluster instead of the respective clusters
+            attribute_names.update(
+                {
+                    100: TEMPERATURE_MEASUREMENT,
+                    101: HUMIDITY_MEASUREMENT,
+                    102: PRESSURE_MEASUREMENT,
+                }
+            )
+
         result = {}
         while value:
             skey = int(value[0])
@@ -186,8 +240,9 @@ class BasicCluster(CustomCluster, Basic):
     @staticmethod
     def _calculate_remaining_battery_percentage(voltage):
         """Calculate percentage."""
-        min_voltage = 2500
-        max_voltage = 3000
+        # Min/Max values from https://github.com/louisZL/lumi-gateway-local-api
+        min_voltage = 2800
+        max_voltage = 3300
         percent = (voltage - min_voltage) / (max_voltage - min_voltage) * 200
         return min(200, percent)
 
@@ -277,21 +332,56 @@ class TemperatureMeasurementCluster(CustomCluster, TemperatureMeasurement):
     """Temperature cluster that filters out invalid temperature readings."""
 
     cluster_id = TemperatureMeasurement.cluster_id
+    ATTR_ID = 0
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self.endpoint.device.temperature_bus.add_listener(self)
 
     def _update_attribute(self, attrid, value):
         # drop values above and below documented range for this sensor
         # value is in centi degrees
-        if attrid == 0 and (-2000 <= value <= 6000):
+        if attrid == self.ATTR_ID and (-2000 <= value <= 6000):
             super()._update_attribute(attrid, value)
+
+    def temperature_reported(self, value):
+        """Temperature reported."""
+        self._update_attribute(self.ATTR_ID, value)
 
 
 class RelativeHumidityCluster(CustomCluster, RelativeHumidity):
     """Humidity cluster that filters out invalid humidity readings."""
 
     cluster_id = RelativeHumidity.cluster_id
+    ATTR_ID = 0
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self.endpoint.device.humidity_bus.add_listener(self)
 
     def _update_attribute(self, attrid, value):
         # drop values above and below documented range for this sensor
-        # value is in centi degrees
-        if attrid == 0 and (0 <= value <= 9999):
+        if attrid == self.ATTR_ID and (0 <= value <= 9999):
             super()._update_attribute(attrid, value)
+
+    def humidity_reported(self, value):
+        """Humidity reported."""
+        self._update_attribute(self.ATTR_ID, value)
+
+
+class PressureMeasurementCluster(CustomCluster, PressureMeasurement):
+    """Pressure cluster to receive reports that are sent to the basic cluster."""
+
+    cluster_id = PressureMeasurement.cluster_id
+    ATTR_ID = 0
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self.endpoint.device.pressure_bus.add_listener(self)
+
+    def pressure_reported(self, value):
+        """Pressure reported."""
+        self._update_attribute(self.ATTR_ID, value)

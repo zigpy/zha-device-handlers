@@ -20,6 +20,19 @@ if AqaraWaterSensor in quirks._DEVICE_REGISTRY:
     quirks._DEVICE_REGISTRY.remove(AqaraWaterSensor)
 
 
+class CustomIasZone(IasZone):
+    """Custom IasZone cluster."""
+
+    MOISTURE_TYPE = 0x002A
+    ZONE_TYPE = 0x0001
+
+    def _update_attribute(self, attrid, value):
+        if attrid == self.ZONE_TYPE:
+            super()._update_attribute(attrid, self.MOISTURE_TYPE)
+        else:
+            super()._update_attribute(attrid, value)
+
+
 class LeakAQ1(XiaomiCustomDevice):
     """Xiaomi aqara leak sensor device."""
 
@@ -49,7 +62,7 @@ class LeakAQ1(XiaomiCustomDevice):
                     BasicCluster,
                     Identify.cluster_id,
                     PowerConfigurationCluster,
-                    IasZone.cluster_id,
+                    CustomIasZone,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             }
