@@ -12,7 +12,6 @@ from zigpy.zcl.clusters.general import (
     Ota,
     Scenes,
 )
-from zigpy.zcl.clusters.measurement import RelativeHumidity
 
 from .. import (
     LUMI,
