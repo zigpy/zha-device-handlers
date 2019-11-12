@@ -12,12 +12,12 @@ from zigpy.zcl.clusters.general import (
     Ota,
     Scenes,
 )
-from zigpy.zcl.clusters.measurement import RelativeHumidity
 
 from .. import (
     LUMI,
     BasicCluster,
     PowerConfigurationCluster,
+    RelativeHumidityCluster,
     TemperatureMeasurementCluster,
     XiaomiCustomDevice,
 )
@@ -121,7 +121,7 @@ class Weather(XiaomiCustomDevice):
                     PowerConfigurationCluster,
                     Identify.cluster_id,
                     TemperatureMeasurementCluster,
-                    RelativeHumidity.cluster_id,
+                    RelativeHumidityCluster,
                     XIAOMI_CLUSTER_ID,
                     Ota.cluster_id,
                 ],
