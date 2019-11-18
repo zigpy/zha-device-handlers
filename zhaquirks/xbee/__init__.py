@@ -257,7 +257,7 @@ class XBeeCommon(CustomDevice):
             """Handle outgoing data."""
             data = bytes("".join(args), encoding="latin1")
             return self._endpoint.device.application.request(
-                self._endpoint.device.nwk,
+                self._endpoint.device,
                 XBEE_PROFILE_ID,
                 XBEE_DATA_CLUSTER,
                 XBEE_SRC_ENDPOINT,
