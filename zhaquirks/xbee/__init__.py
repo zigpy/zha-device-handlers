@@ -205,7 +205,7 @@ class XBeeCommon(CustomDevice):
 
                 try:
                     schema = commands[hdr.command_id][1]
-                    hdr.is_reply = commands[hdr.command_id][2]
+                    hdr.frame_control.is_reply = commands[hdr.command_id][2]
                 except KeyError:
                     data = (
                         struct.pack(">i", hdr.tsn)[-1:]
@@ -225,7 +225,7 @@ class XBeeCommon(CustomDevice):
                 # General command
                 try:
                     schema = foundation.COMMANDS[hdr.command_id][0]
-                    is_reply = foundation.COMMANDS[hdr.command_id][1]
+                    hdr.frame_control.is_reply = foundation.COMMANDS[hdr.command_id][1]
                 except KeyError:
                     self.warn("Unknown foundation command %s", hdr.command_id)
                     return hdr, data
@@ -287,8 +287,8 @@ class XBeeCommon(CustomDevice):
         command_id = DATA_IN_CMD
         is_reply = False
 
-        class hdr(foundation.ZCLHeader):
-            """Trivial serialization class"""
+        class Hdr(foundation.ZCLHeader):
+            """Trivial serialization class."""
 
             def __init__(self, tsn, command_id, is_reply):
                 frc = foundation.FrameControl()
@@ -296,7 +296,7 @@ class XBeeCommon(CustomDevice):
                 frc.frame_type = foundation.FrameType.CLUSTER_COMMAND
                 super().__init__(frame_control=frc, tsn=tsn, command_id=command_id)
 
-        return hdr(tsn, command_id, is_reply), data
+        return Hdr(tsn, command_id, is_reply), data
 
     replacement = {
         ENDPOINTS: {
@@ -305,6 +305,6 @@ class XBeeCommon(CustomDevice):
                 "model": "xbee.io",
                 INPUT_CLUSTERS: [DigitalIOCluster, SerialDataCluster],
                 OUTPUT_CLUSTERS: [SerialDataCluster, EventRelayCluster],
-            },
+            }
         }
     }
