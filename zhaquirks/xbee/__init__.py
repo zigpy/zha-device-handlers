@@ -170,8 +170,8 @@ class XBeeCommon(CustomDevice):
 
         cluster_id = XBEE_IO_CLUSTER
 
-        def handle_cluster_general_request(self, tsn, command_id, args):
-            """Handle the cluster general request.
+        def handle_cluster_request(self, tsn, command_id, args):
+            """Handle the cluster request.
 
             Update the digital pin states
             """
@@ -190,7 +190,7 @@ class XBeeCommon(CustomDevice):
                             ON_OFF_CMD, values["digital_samples"][pin]
                         )
             else:
-                super().handle_cluster_general_request(tsn, command_id, args)
+                super().handle_cluster_request(tsn, command_id, args)
 
         def deserialize(self, data):
             """Deserialize."""
@@ -205,24 +205,22 @@ class XBeeCommon(CustomDevice):
 
                 try:
                     schema = commands[hdr.command_id][1]
-                    is_reply = commands[hdr.command_id][2]
+                    hdr.is_reply = commands[hdr.command_id][2]
                 except KeyError:
                     data = (
                         struct.pack(">i", hdr.tsn)[-1:]
                         + struct.pack(">i", hdr.command_id)[-1:]
                         + data
                     )
-                    new_command_id = ON_OFF_CMD
+                    hdr.command_id = ON_OFF_CMD
                     try:
-                        schema = commands[new_command_id][1]
-                        is_reply = commands[new_command_id][2]
+                        schema = commands[hdr.command_id][1]
+                        hdr.frame_control.is_reply = commands[hdr.command_id][2]
                     except KeyError:
                         self.warn("Unknown cluster-specific command %s", hdr.command_id)
-                        return hdr.tsn, hdr.command_id + 256, hdr.is_reply, data
+                        return hdr, data
                     value, data = t.deserialize(data, schema)
-                    return hdr.tsn, new_command_id, hdr.is_reply, value
-                # Bad hack to differentiate foundation vs cluster
-                hdr.command_id = hdr.command_id + 256
+                    return hdr, value
             else:
                 # General command
                 try:
@@ -230,12 +228,12 @@ class XBeeCommon(CustomDevice):
                     is_reply = foundation.COMMANDS[hdr.command_id][1]
                 except KeyError:
                     self.warn("Unknown foundation command %s", hdr.command_id)
-                    return hdr.tsn, hdr.command_id, hdr.is_reply, data
+                    return hdr, data
 
             value, data = t.deserialize(data, schema)
             if data != b"":
                 _LOGGER.warning("Data remains after deserializing ZCL frame")
-            return hdr.tsn, hdr.command_id, is_reply, value
+            return hdr, value
 
         attributes = {0x0055: ("present_value", t.Bool)}
         client_commands = {0x0000: ("io_sample", (IOSample,), False)}
@@ -286,9 +284,19 @@ class XBeeCommon(CustomDevice):
             return super().deserialize(endpoint_id, cluster_id, data)
 
         tsn = self._application.get_sequence()
-        command_id = DATA_IN_CMD + 256
+        command_id = DATA_IN_CMD
         is_reply = False
-        return tsn, command_id, is_reply, data
+
+        class hdr(foundation.ZCLHeader):
+            """Trivial serialization class"""
+
+            def __init__(self, tsn, command_id, is_reply):
+                frc = foundation.FrameControl()
+                frc.is_reply = is_reply
+                frc.frame_type = foundation.FrameType.CLUSTER_COMMAND
+                super().__init__(frame_control=frc, tsn=tsn, command_id=command_id)
+
+        return hdr(tsn, command_id, is_reply), data
 
     replacement = {
         ENDPOINTS: {
