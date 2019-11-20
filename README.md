@@ -8,8 +8,16 @@ ZHA device handlers bridge the functionality gap created when manufacturers devi
 
 Custom quirks implementations for zigpy implemented as ZHA Device Handlers are a similar concept to that of [Hub-connected Device Handlers for the SmartThings Classics platform](https://docs.smartthings.com/en/latest/device-type-developers-guide/) as well that of [Zigbee-Shepherd Converters as used by Zigbee2mqtt](https://www.zigbee2mqtt.io/how_tos/how_to_support_new_devices.html), meaning they are virtual representation of a physical device that expose additional functionality that is not provided out-of-the-box by the existing integration between these platforms. See [Device Specifics](#Device-Specifics) for details.
 
-# Contributing
-[guidelines](./CONTRIBUTING.md)
+# How to contribute
+
+For specific Zigbee debugging instructions on capturing logs and more, see the contributing guidelines in the CONTRIBUTING.md file:
+- [Guidelines in CONTRIBUTING.md](./CONTRIBUTING.md)
+
+If you are looking to make your first code contribution to this project then we also suggest that you follow the steps in these guides:
+- https://github.com/firstcontributions/first-contributions/blob/master/README.md
+- https://github.com/firstcontributions/first-contributions/blob/master/github-desktop-tutorial.md
+
+Some developers might also be interested in receiving donations in the form of hardware such as Zigbee modules or devices, and even if such donations are most often donated with no strings attached it could in many cases help the developers motivation and indirect improve the development of this project.
 
 # Currently Supported Devices:
 
