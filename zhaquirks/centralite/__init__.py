@@ -10,7 +10,53 @@ CENTRALITE = "CentraLite"
 
 
 class PowerConfigurationCluster(CustomCluster, PowerConfiguration):
-    """Centralite power configuration cluster."""
+    """Centralite 2.8-1.5V power configuration cluster."""
+
+    cluster_id = PowerConfiguration.cluster_id
+    BATTERY_VOLTAGE_ATTR = 0x0020
+    BATTERY_PERCENTAGE_REMAINING = 0x0021
+    MIN_VOLTS = 15
+    MAX_VOLTS = 28
+    VOLTS_TO_PERCENT = {
+        28: 100,
+        27: 100,
+        26: 100,
+        25: 90,
+        24: 90,
+        23: 70,
+        22: 70,
+        21: 50,
+        20: 50,
+        19: 30,
+        18: 30,
+        17: 15,
+        16: 1,
+        15: 0,
+    }
+
+    def _update_attribute(self, attrid, value):
+        super()._update_attribute(attrid, value)
+        if attrid == self.BATTERY_VOLTAGE_ATTR:
+            super()._update_attribute(
+                self.BATTERY_PERCENTAGE_REMAINING,
+                self._calculate_battery_percentage(value),
+            )
+
+    def _calculate_battery_percentage(self, raw_value):
+        volts = raw_value
+        if raw_value < self.MIN_VOLTS:
+            volts = self.MIN_VOLTS
+        elif raw_value > self.MAX_VOLTS:
+            volts = self.MAX_VOLTS
+
+        percent = self.VOLTS_TO_PERCENT.get(volts, -1)
+        if percent != -1:
+            percent = percent * 2
+        return percent
+
+
+class PowerConfigurationCluster31(CustomCluster, PowerConfiguration):
+    """Centralite 3.1-2.1V power configuration cluster."""
 
     cluster_id = PowerConfiguration.cluster_id
     BATTERY_VOLTAGE_ATTR = 0x0020
