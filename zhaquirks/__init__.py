@@ -1,4 +1,5 @@
 """Quirks implementations for the ZHA component of Homeassistant."""
+import logging
 import importlib
 import pkgutil
 
@@ -16,6 +17,8 @@ from .const import (
     VALUE,
     ZHA_SEND_EVENT,
 )
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class Bus(ListenableMixin):
