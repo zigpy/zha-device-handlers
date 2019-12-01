@@ -12,7 +12,8 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 
-from zhaquirks.centralite import CENTRALITE, PowerConfigurationCluster
+from zhaquirks import PowerConfigurationCluster
+from zhaquirks.centralite import CENTRALITE
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -23,6 +24,17 @@ from zhaquirks.const import (
 )
 
 DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
+
+
+class CustomPowerConfigurationCluster(PowerConfigurationCluster):
+    """Custom PowerConfigurationCluster."""
+
+    cluster_id = PowerConfigurationCluster.cluster_id
+    MIN_VOLTS = 21
+    MAX_VOLTS = 31
+
+    def _update_attribute(self, attrid, value):
+        super()._update_attribute(attrid, value)
 
 
 class CentraLite3460L(CustomDevice):
@@ -40,7 +52,7 @@ class CentraLite3460L(CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    PowerConfigurationCluster.cluster_id,
+                    CustomPowerConfigurationCluster.cluster_id,
                     Identify.cluster_id,
                     OnOffConfiguration.cluster_id,
                     PollControl.cluster_id,
@@ -61,7 +73,7 @@ class CentraLite3460L(CustomDevice):
             1: {
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    PowerConfigurationCluster,
+                    CustomPowerConfigurationCluster,
                     Identify.cluster_id,
                     OnOffConfiguration.cluster_id,
                     PollControl.cluster_id,

@@ -24,6 +24,17 @@ from . import THIRD_REALITY
 from .. import PowerConfigurationCluster
 
 
+class CustomPowerConfigurationCluster(PowerConfigurationCluster):
+    """Custom PowerConfigurationCluster."""
+
+    cluster_id = PowerConfigurationCluster.cluster_id
+    MIN_VOLTS = 21
+    MAX_VOLTS = 31
+
+    def _update_attribute(self, attrid, value):
+        super()._update_attribute(attrid, value)
+
+
 class Switch(CustomDevice):
     """3RSS008Z device."""
 
@@ -44,9 +55,9 @@ class Switch(CustomDevice):
                     Scenes.cluster_id,
                     OnOff.cluster_id,
                     Ota.cluster_id,
-                    PowerConfiguration.cluster_id,
+                    CustomPowerConfigurationCluster.cluster_id,
                 ],
-                OUTPUT_CLUSTERS: [PowerConfiguration.cluster_id],
+                OUTPUT_CLUSTERS: [CustomPowerConfigurationCluster.cluster_id],
             }
         },
     }
@@ -63,9 +74,9 @@ class Switch(CustomDevice):
                     Scenes.cluster_id,
                     OnOff.cluster_id,
                     Ota.cluster_id,
-                    PowerConfigurationCluster,
+                    CustomPowerConfigurationCluster,
                 ],
-                OUTPUT_CLUSTERS: [PowerConfiguration.cluster_id],
+                OUTPUT_CLUSTERS: [CustomPowerConfigurationCluster.cluster_id],
             }
         }
     }

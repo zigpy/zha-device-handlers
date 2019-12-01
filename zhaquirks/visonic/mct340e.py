@@ -8,8 +8,8 @@ from zigpy.zcl.clusters.general import (
     Identify,
     Ota,
     PollControl,
-    PowerConfiguration,
 )
+from zhaquirks import PowerConfigurationCluster
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone
 
@@ -31,40 +31,19 @@ _LOGGER = logging.getLogger(__name__)
 DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
 
 
+class CustomPowerConfigurationCluster(PowerConfigurationCluster):
+    """Custom PowerConfigurationCluster."""
+
+    cluster_id = PowerConfiguration.cluster_id
+    MIN_VOLTS = 2.1
+    MAX_VOLTS = 3.0
+
+    def _update_attribute(self, attrid, value):
+        super()._update_attribute(attrid, value)
+
+
 class MCT340E(CustomDevice):
     """Visonic MCT340E device."""
-
-    class PowerConfigurationCluster(CustomCluster, PowerConfiguration):
-        """Visonic power configuration cluster."""
-
-        cluster_id = PowerConfiguration.cluster_id
-        BATTERY_VOLTAGE_ATTR = 0x0020
-        BATTERY_PERCENTAGE_REMAINING = 0x0021
-        MIN_VOLTS = 2.1
-        MAX_VOLTS = 3.0
-
-        def _update_attribute(self, attrid, value):
-            super()._update_attribute(attrid, value)
-            if attrid == self.BATTERY_VOLTAGE_ATTR:
-                super()._update_attribute(
-                    self.BATTERY_PERCENTAGE_REMAINING,
-                    self._calculate_battery_percentage(value),
-                )
-
-        def _calculate_battery_percentage(self, raw_value):
-            if raw_value in (0, 255):
-                return -1
-            volts = raw_value / 10
-            if volts < self.MIN_VOLTS:
-                volts = self.MIN_VOLTS
-            elif volts > self.MAX_VOLTS:
-                volts = self.MAX_VOLTS
-
-            percent = (
-                (volts - self.MIN_VOLTS) / (self.MAX_VOLTS - self.MIN_VOLTS)
-            ) * 200
-
-            return round(min(200, percent), 2)
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=1026
@@ -78,7 +57,7 @@ class MCT340E(CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    PowerConfigurationCluster.cluster_id,
+                    CustomPowerConfigurationCluster.cluster_id,
                     Identify.cluster_id,
                     TemperatureMeasurement.cluster_id,
                     IasZone.cluster_id,
@@ -96,7 +75,7 @@ class MCT340E(CustomDevice):
                 PROFILE_ID: zha.PROFILE_ID,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    PowerConfigurationCluster,
+                    CustomPowerConfigurationCluster,
                     Identify.cluster_id,
                     TemperatureMeasurement.cluster_id,
                     IasZone.cluster_id,
