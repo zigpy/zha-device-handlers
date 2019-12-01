@@ -20,8 +20,6 @@ class FastPollingPowerConfigurationCluster(PowerConfigurationCluster):
     cluster_id = PowerConfigurationCluster.cluster_id
     FREQUENCY = 45
     MINIMUM_CHANGE = 1
-    # MIN_VOLTS = 15
-    # MAX_VOLTS = 28
 
     async def configure_reporting(
         self,

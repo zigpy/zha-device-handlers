@@ -7,7 +7,6 @@ from zigpy.zcl.clusters.general import (
     Identify,
     OnOff,
     Ota,
-    PowerConfiguration,
     Scenes,
 )
 
@@ -28,11 +27,8 @@ class CustomPowerConfigurationCluster(PowerConfigurationCluster):
     """Custom PowerConfigurationCluster."""
 
     cluster_id = PowerConfigurationCluster.cluster_id
-    MIN_VOLTS = 21
-    MAX_VOLTS = 31
-
-    def _update_attribute(self, attrid, value):
-        super()._update_attribute(attrid, value)
+    MIN_VOLTS = 2.1
+    MAX_VOLTS = 3.1
 
 
 class Switch(CustomDevice):

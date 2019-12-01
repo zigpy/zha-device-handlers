@@ -119,8 +119,8 @@ class PowerConfigurationCluster(CustomCluster, PowerConfiguration):
     cluster_id = PowerConfiguration.cluster_id
     BATTERY_VOLTAGE_ATTR = 0x0020
     BATTERY_PERCENTAGE_REMAINING = 0x0021
-    MIN_VOLTS = 15  # old 2.1
-    MAX_VOLTS = 28  # old 3.2
+    MIN_VOLTS = 1.5  # old 2.1
+    MAX_VOLTS = 2.8  # old 3.2
 
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
@@ -131,46 +131,27 @@ class PowerConfigurationCluster(CustomCluster, PowerConfiguration):
             )
 
     def _calculate_battery_percentage(self, raw_value):
+        """Calculate battery percentage from voltage."""
+        # Required:    raw_value: int
+        # Optional:    MAX_VOLTS: float
+        #              MIN_VOLTS: float
 
-        # V     New     Old
-        # 28:   100     100
-        # 27:   92.3    100
-        # 26:   84.6    100
-        # 25:   76.9    90
-        # 24:   69.2    90
-        # 23:   61.5    70
-        # 22:   53.8    70
-        # 21:   46.1    50
-        # 20:   38.4    50
-        # 19:   30.7    30
-        # 18:   23.0    30
-        # 17:   15.3    15
-        # 16:   7.6     1
-        # 15:   0       0
+        if raw_value in (0, 255):
+            return -1
+        volts = raw_value / 10
+        if volts < self.MIN_VOLTS:
+            volts = self.MIN_VOLTS
+        elif volts > self.MAX_VOLTS:
+            volts = self.MAX_VOLTS
 
-        volts = raw_value
-        max_volts = self.MAX_VOLTS
-        min_volts = self.MIN_VOLTS
-
-        # Calculate the percentage
-        percent = (volts - min_volts) / (max_volts - min_volts)
-        percent = round(percent * 100, 1)
-
-        # Ensure > 0, battery reporting so not dead
-        if (percent <= 0):
-            percent = 1
-
-        # Ensure < 100, set return value
-        percent = min(100, percent)
+        percent = round(((volts - self.MIN_VOLTS) / (self.MAX_VOLTS - self.MIN_VOLTS)) * 200)
 
         log_msg = (
-            f"Voltage [RAW]:{raw_value} [Max]:{max_volts} "
-            f"[Min]:{min_volts}, Battery Percent: {percent}"
+            f"{self.endpoint.device.manufacturer} {self.endpoint.device.model}, "
+            f"Voltage [RAW]:{raw_value} [Max]:{self.MAX_VOLTS} "
+            f"[Min]:{self.MIN_VOLTS}, Battery Percent: {percent/2}"
         )
         _LOGGER.debug(log_msg)
-
-        # ZHA reports in range of 200%?!
-        percent = percent * 2
 
         return percent
 
