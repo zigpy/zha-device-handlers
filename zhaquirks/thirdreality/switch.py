@@ -28,7 +28,7 @@ class CustomPowerConfigurationCluster(PowerConfigurationCluster):
 
     cluster_id = PowerConfigurationCluster.cluster_id
     MIN_VOLTS = 2.1
-    MAX_VOLTS = 3.1
+    MAX_VOLTS = 3.0
 
 
 class Switch(CustomDevice):

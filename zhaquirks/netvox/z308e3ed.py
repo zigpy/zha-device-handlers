@@ -16,7 +16,7 @@ class CustomPowerConfigurationCluster(PowerConfigurationCluster):
 
     cluster_id = PowerConfigurationCluster.cluster_id
     MIN_VOLTS = 2.1
-    MAX_VOLTS = 3.2
+    MAX_VOLTS = 3.0
 
 
 class Z308E3ED(CustomDevice):

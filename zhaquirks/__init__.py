@@ -132,9 +132,6 @@ class PowerConfigurationCluster(CustomCluster, PowerConfiguration):
 
     def _calculate_battery_percentage(self, raw_value):
         """Calculate battery percentage from voltage."""
-        # Required:    raw_value: int
-        # Optional:    MAX_VOLTS: float
-        #              MIN_VOLTS: float
 
         if raw_value in (0, 255):
             return -1
