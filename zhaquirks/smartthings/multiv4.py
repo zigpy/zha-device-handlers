@@ -5,8 +5,8 @@ from zigpy.zcl.clusters.general import Basic, BinaryInput, Identify, Ota, PollCo
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone
 
-from . import SMART_THINGS
 from zhaquirks import PowerConfigurationCluster
+from . import SMART_THINGS
 from ..centralite import CentraLiteAccelCluster
 from ..const import (
     DEVICE_TYPE,

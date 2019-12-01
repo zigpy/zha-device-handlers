@@ -50,10 +50,7 @@ class EventableCluster(CustomCluster):
             and self.server_commands.get(command_id) is not None
         ):
             self.listener_event(
-                ZHA_SEND_EVENT,
-                self,
-                self.server_commands.get(command_id)[0],
-                args,
+                ZHA_SEND_EVENT, self, self.server_commands.get(command_id)[0], args
             )
 
     def _update_attribute(self, attrid, value):
@@ -156,7 +153,5 @@ class PowerConfigurationCluster(CustomCluster, PowerConfiguration):
 
 NAME = __name__
 PATH = __path__
-for importer, modname, ispkg in pkgutil.walk_packages(
-    path=PATH, prefix=NAME + "."
-):
+for importer, modname, ispkg in pkgutil.walk_packages(path=PATH, prefix=NAME + "."):
     importlib.import_module(modname)
