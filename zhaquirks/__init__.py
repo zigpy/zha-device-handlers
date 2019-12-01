@@ -50,7 +50,10 @@ class EventableCluster(CustomCluster):
             and self.server_commands.get(command_id) is not None
         ):
             self.listener_event(
-                ZHA_SEND_EVENT, self, self.server_commands.get(command_id)[0], args
+                ZHA_SEND_EVENT,
+                self,
+                self.server_commands.get(command_id)[0],
+                args,
             )
 
     def _update_attribute(self, attrid, value):
@@ -134,12 +137,12 @@ class PowerConfigurationCluster(CustomCluster, PowerConfiguration):
         if raw_value in (0, 255):
             return -1
         volts = raw_value / 10
-        if volts < self.MIN_VOLTS:
-            volts = self.MIN_VOLTS
-        elif volts > self.MAX_VOLTS:
-            volts = self.MAX_VOLTS
+        volts = max(volts, self.MIN_VOLTS)
+        volts = min(volts, self.MAX_VOLTS)
 
-        percent = round(((volts - self.MIN_VOLTS) / (self.MAX_VOLTS - self.MIN_VOLTS)) * 200)
+        percent = round(
+            ((volts - self.MIN_VOLTS) / (self.MAX_VOLTS - self.MIN_VOLTS)) * 200
+        )
 
         log_msg = (
             f"{self.endpoint.device.manufacturer} {self.endpoint.device.model}, "
@@ -153,5 +156,7 @@ class PowerConfigurationCluster(CustomCluster, PowerConfiguration):
 
 NAME = __name__
 PATH = __path__
-for importer, modname, ispkg in pkgutil.walk_packages(path=PATH, prefix=NAME + "."):
+for importer, modname, ispkg in pkgutil.walk_packages(
+    path=PATH, prefix=NAME + "."
+):
     importlib.import_module(modname)

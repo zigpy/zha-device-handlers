@@ -7,10 +7,7 @@ from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone
 
 from zhaquirks import PowerConfigurationCluster
-from zhaquirks.centralite import (
-    CENTRALITE,
-    CentraLiteAccelCluster,
-)
+from zhaquirks.centralite import CENTRALITE, CentraLiteAccelCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
