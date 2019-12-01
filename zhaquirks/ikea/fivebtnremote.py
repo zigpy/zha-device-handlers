@@ -56,8 +56,8 @@ class ScenesCluster(EventableCluster, Scenes):
         super().__init__(*args, **kwargs)
         self.server_commands.update(
             {
-                0x0007: ("press", (t.int8s, t.int8s, t.int8s, t.int8s), False),
-                0x0008: ("hold", (t.int8s, t.int8s, t.int8s), False),
+                0x0007: ("press", (t.int16s, t.int8s, t.int8s), False),
+                0x0008: ("hold", (t.int16s, t.int8s), False),
                 0x0009: ("release", (t.int16s,), False),
             }
         )
@@ -163,24 +163,24 @@ class IkeaTradfriRemote(CustomDevice):
             COMMAND: COMMAND_PRESS,
             CLUSTER_ID: 5,
             ENDPOINT_ID: 1,
-            ARGS: [1, 1, 13, 0],
+            ARGS: [257, 13, 0],
         },
         (LONG_PRESS, LEFT): {
             COMMAND: COMMAND_HOLD,
             CLUSTER_ID: 5,
             ENDPOINT_ID: 1,
-            ARGS: [1, 13, 0],
+            ARGS: [3329, 0],
         },
         (SHORT_PRESS, RIGHT): {
             COMMAND: COMMAND_PRESS,
             CLUSTER_ID: 5,
             ENDPOINT_ID: 1,
-            ARGS: [0, 1, 13, 0],
+            ARGS: [256, 13, 0],
         },
         (LONG_PRESS, RIGHT): {
             COMMAND: COMMAND_HOLD,
             CLUSTER_ID: 5,
             ENDPOINT_ID: 1,
-            ARGS: [0, 13, 0],
+            ARGS: [3328, 0],
         },
     }
