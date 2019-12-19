@@ -115,6 +115,7 @@ If you are looking to make your first code contribution to this project then we 
 
 - Some functionality requires a coordinator device to be XBee as well
 - GPIO pins are exposed to Home Assistant as switches
+- Analog inputs are exposed as sensors
 - Outgoing UART data can be sent with `zha.issue_zigbee_cluster_command` service
 - Incoming UART data will generate `zha_event` event.
 
