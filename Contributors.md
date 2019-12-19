@@ -15,3 +15,4 @@
 - [James Riley] (https://github.com/Thalagyrt)
 - [Shulyaka] (https://github.com/Shulyaka)
 - [Nemesis24] (https://github.com/Nemesis24)
+- [Andy Zickler](https://github.com/andyzickler)
