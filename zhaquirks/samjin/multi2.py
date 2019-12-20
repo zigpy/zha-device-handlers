@@ -19,7 +19,7 @@ from ..const import (
     PROFILE_ID,
 )
 from . import SAMJIN
-from . import SmartThingsAccelCluster
+from ..smartthings import SmartThingsAccelCluster
 
 DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
 
