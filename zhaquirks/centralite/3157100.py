@@ -4,7 +4,8 @@ from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PollControl, Time
 from zigpy.zcl.clusters.hvac import Fan, Thermostat, UserInterface
 
-from zhaquirks.centralite import CENTRALITE, PowerConfigurationCluster
+from zhaquirks import PowerConfigurationCluster
+from zhaquirks.centralite import CENTRALITE
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
