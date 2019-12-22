@@ -40,15 +40,13 @@ class XiaomiSmokeIASCluster(CustomCluster, IasZone):
 
     cluster_id = IasZone.cluster_id
 
-    additional_attributes = {
-        0xFFF1: ("set_options", t.uint32_t),
-        0xFFF0: ("get_status", t.uint32_t),
-    }
-
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
-        self.attributes.update(self.additional_attributes)
+        self.attributes = super().attributes.copy()
+        self.attributes.update(
+            {0xFFF1: ("set_options", t.uint32_t), 0xFFF0: ("get_status", t.uint32_t), }
+        )
 
 
 class MijiaHoneywellSmokeDetectorSensor(XiaomiCustomDevice):
