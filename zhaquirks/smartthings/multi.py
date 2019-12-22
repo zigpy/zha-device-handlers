@@ -1,71 +1,58 @@
-"""Samjin Multi 2019 Refresh Quirk."""
+"""Smart Things multi purpose sensor quirk."""
+
+from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
-    Identify,
-    Ota,
-    PollControl,
     PowerConfiguration,
+    Identify,
+    PollControl,
+    Ota,
 )
-from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone
-
-from ..const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-)
-from . import SAMJIN
-from ..smartthings import SmartThingsAccelCluster
-
-DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
+from zigpy.zcl.clusters.measurement import TemperatureMeasurement
+from . import SmartThingsAccelCluster
 
 
-class SmartthingsMultiPurposeSensor2019(CustomDevice):
-    """Samjin multi device."""
+class SmartthingsMultiPurposeSensor(CustomDevice):
+    """Custom device representing a Smartthings Multi Purpose Sensor."""
 
     signature = {
-        MODELS_INFO: [(SAMJIN, "multi")],
-        ENDPOINTS: {
+        "endpoints": {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=1026
-            # device_version=0 input_clusters=[0, 1, 3, 32, 1026, 1280,
-            # 2821, 64514]
+            # device_version=0 input_clusters=[0, 1, 3, 32, 1026, 1280, 64514]
             # output_clusters=[3, 25]>
             1: {
-                PROFILE_ID: 0x0104,
-                DEVICE_TYPE: 0x0402,
-                INPUT_CLUSTERS: [
+                "profile_id": zha.PROFILE_ID,
+                "device_type": zha.DeviceType.IAS_ZONE,
+                "input_clusters": [
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
                     Identify.cluster_id,
                     PollControl.cluster_id,
                     TemperatureMeasurement.cluster_id,
                     IasZone.cluster_id,
-                    DIAGNOSTICS_CLUSTER_ID,
                     SmartThingsAccelCluster.cluster_id,
                 ],
-                OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],
+                "output_clusters": [Identify.cluster_id, Ota.cluster_id],
             }
-        },
+        }
     }
 
     replacement = {
-        ENDPOINTS: {
+        "endpoints": {
             1: {
-                INPUT_CLUSTERS: [
+                "input_clusters": [
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
                     Identify.cluster_id,
                     PollControl.cluster_id,
                     TemperatureMeasurement.cluster_id,
                     IasZone.cluster_id,
-                    DIAGNOSTICS_CLUSTER_ID,
+                    SmartThingsAccelCluster.cluster_id,
                     SmartThingsAccelCluster,
                 ],
-                OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],
+                "output_clusters": [Identify.cluster_id, Ota.cluster_id],
             }
         }
     }

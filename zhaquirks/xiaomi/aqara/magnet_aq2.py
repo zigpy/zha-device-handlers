@@ -1,9 +1,7 @@
 """Xiaomi aqara contact sensor device."""
 import logging
 
-from zigpy import quirks
 from zigpy.profiles import zha
-from zigpy.quirks.xiaomi import AqaraOpenCloseSensor
 from zigpy.zcl.clusters.general import Groups, Identify, OnOff
 
 from .. import LUMI, BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
@@ -20,10 +18,6 @@ OPEN_CLOSE_DEVICE_TYPE = 0x5F01
 XIAOMI_CLUSTER_ID = 0xFFFF
 
 _LOGGER = logging.getLogger(__name__)
-
-#  remove the zigpy version of this device handler
-if AqaraOpenCloseSensor in quirks._DEVICE_REGISTRY:
-    quirks._DEVICE_REGISTRY.remove(AqaraOpenCloseSensor)
 
 
 class MagnetAQ2(XiaomiCustomDevice):

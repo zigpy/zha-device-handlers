@@ -1,9 +1,7 @@
 """Xiaomi mija weather sensor device."""
 import logging
 
-from zigpy import quirks
 from zigpy.profiles import zha
-from zigpy.quirks.xiaomi import TemperatureHumiditySensor
 from zigpy.zcl.clusters.general import (
     AnalogInput,
     Groups,
@@ -37,10 +35,6 @@ TEMPERATURE_HUMIDITY_DEVICE_TYPE3 = 0x5F03
 XIAOMI_CLUSTER_ID = 0xFFFF
 
 _LOGGER = logging.getLogger(__name__)
-
-#  remove the zigpy version of this device handler
-if TemperatureHumiditySensor in quirks._DEVICE_REGISTRY:
-    quirks._DEVICE_REGISTRY.remove(TemperatureHumiditySensor)
 
 
 class Weather(XiaomiCustomDevice):
