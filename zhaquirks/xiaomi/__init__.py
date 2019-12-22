@@ -193,9 +193,6 @@ class BasicCluster(CustomCluster, Basic):
             5: XIAOMI_ATTR_5,
             6: XIAOMI_ATTR_6,
             10: PATH,
-            149: CONSUMPTION,
-            150: VOLTAGE,
-            152: POWER,
         }
 
         if MODEL in self._attr_cache and self._attr_cache[MODEL] in [
@@ -212,6 +209,10 @@ class BasicCluster(CustomCluster, Basic):
                     102: PRESSURE_MEASUREMENT,
                 }
             )
+        elif (
+            MODEL in self._attr_cache and self._attr_cache[MODEL] == "lumi.plug.maus01"
+        ):
+            attribute_names.update({149: CONSUMPTION, 150: VOLTAGE, 152: POWER})
 
         result = {}
         while value:
@@ -409,7 +410,7 @@ class PressureMeasurementCluster(CustomCluster, PressureMeasurement):
         self._update_attribute(self.ATTR_ID, value)
 
 
-class ElectricalMeasurementCluster(LocalDataCluster, ElectricalMeasurement):
+class ElectricalMeasurementCluster(CustomCluster, ElectricalMeasurement):
     """Electrical measurement cluster to receive reports that are sent to the basic cluster."""
 
     cluster_id = ElectricalMeasurement.cluster_id
@@ -435,3 +436,9 @@ class ElectricalMeasurementCluster(LocalDataCluster, ElectricalMeasurement):
     def consumption_reported(self, value):
         """Consumption reported."""
         self._update_attribute(self.CONSUMPTION_ID, value)
+
+    async def read_attributes_raw(self, attributes, manufacturer=None):
+        """Prevent remote reads."""
+        attributes = [t.uint16_t(a) for a in attributes]
+        values = [self._attr_cache.get(attr) for attr in attributes]
+        return values

@@ -50,7 +50,8 @@ class AnalogInputCluster(CustomCluster, AnalogInput):
 
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
-        self.endpoint.device.power_bus.listener_event(POWER_REPORTED, value)
+        if value is not None and value >= 0:
+            self.endpoint.device.power_bus.listener_event(POWER_REPORTED, value)
 
 
 class Plug(XiaomiCustomDevice):
