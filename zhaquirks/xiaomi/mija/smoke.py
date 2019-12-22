@@ -1,15 +1,16 @@
 """Xiaomi Mija smoke detector quirks implementations.
-    Manufacturer ID: 0x115F
-    Known Options for set_options:
-    High Sensitivity: 0x04010000,
-    Medium Sensitivity: 0x04020000,
-    Low Sensitivity: 0x04030000,
-    Self Test: 0x03010000
 
-    Responses from get_status:
-    High Sensitivity: 0x0101000011010003,
-    Medium Sensitivity: 0x0102000011010003,
-    Low Sensitivity: 0x0103000011010003.
+Manufacturer ID: 0x115F
+Known Options for set_options:
+High Sensitivity: 0x04010000,
+Medium Sensitivity: 0x04020000,
+Low Sensitivity: 0x04030000,
+Self Test: 0x03010000
+
+Responses from get_status:
+High Sensitivity: 0x0101000011010003,
+Medium Sensitivity: 0x0102000011010003,
+Low Sensitivity: 0x0103000011010003.
 """
 import logging
 
