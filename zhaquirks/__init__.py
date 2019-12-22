@@ -45,8 +45,13 @@ class EventableCluster(CustomCluster):
 
     def handle_cluster_request(self, tsn, command_id, args):
         """Send cluster requests as events."""
-        if self.server_commands is not None and self.server_commands.get(command_id) is not None:
-            self.listener_event(ZHA_SEND_EVENT, self, self.server_commands.get(command_id)[0], args)
+        if (
+            self.server_commands is not None
+            and self.server_commands.get(command_id) is not None
+        ):
+            self.listener_event(
+                ZHA_SEND_EVENT, self, self.server_commands.get(command_id)[0], args
+            )
 
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
@@ -85,7 +90,10 @@ class GroupBoundCluster(CustomCluster):
         dstaddr.nwk = self.COORDINATOR_GROUP_ID
         dstaddr.endpoint = self._endpoint.endpoint_id
         return await self._endpoint.device.zdo.Bind_req(
-            self._endpoint.device.ieee, self._endpoint.endpoint_id, self.cluster_id, dstaddr
+            self._endpoint.device.ieee,
+            self._endpoint.endpoint_id,
+            self.cluster_id,
+            dstaddr,
         )
 
 
@@ -118,7 +126,8 @@ class PowerConfigurationCluster(CustomCluster, PowerConfiguration):
         super()._update_attribute(attrid, value)
         if attrid == self.BATTERY_VOLTAGE_ATTR:
             super()._update_attribute(
-                self.BATTERY_PERCENTAGE_REMAINING, self._calculate_battery_percentage(value)
+                self.BATTERY_PERCENTAGE_REMAINING,
+                self._calculate_battery_percentage(value),
             )
 
     def _calculate_battery_percentage(self, raw_value):
@@ -128,7 +137,9 @@ class PowerConfigurationCluster(CustomCluster, PowerConfiguration):
         volts = max(volts, self.MIN_VOLTS)
         volts = min(volts, self.MAX_VOLTS)
 
-        percent = round(((volts - self.MIN_VOLTS) / (self.MAX_VOLTS - self.MIN_VOLTS)) * 200)
+        percent = round(
+            ((volts - self.MIN_VOLTS) / (self.MAX_VOLTS - self.MIN_VOLTS)) * 200
+        )
 
         _LOGGER.debug(
             "%s %s, Voltage [RAW]:%s [Max]:%s [Min]:%s, Battery Percent: %s",
