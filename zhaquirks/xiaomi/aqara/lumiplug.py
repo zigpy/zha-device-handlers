@@ -1,6 +1,5 @@
 """Device handler for LUMI lumi.plug."""
 from zigpy.profiles import zha
-import homeassistant.components.zha.const as zha_const
 from zigpy.zcl.clusters.general import (
     Basic,
     PowerConfiguration,
@@ -20,8 +19,6 @@ from zhaquirks import CustomCluster
 STATUS_TYPE_ATTR = 0x0055  # decimal = 85
 CONST_POWER = "power"
 
-zha_const.SINGLE_INPUT_CLUSTER_DEVICE_CLASS.update({AnalogInput: "sensor"})
-
 
 class LUMIlumiplug(CustomDevice):
     """Custom device representing LUMI lumi.plug."""
@@ -37,24 +34,24 @@ class LUMIlumiplug(CustomDevice):
 
         def __init__(self, *args, **kwargs):
             """Init."""
-            self._currentState = {}
+            self._current_state = {}
             super().__init__(*args, **kwargs)
 
         def _update_attribute(self, attrid, value):
             super()._update_attribute(attrid, value)
             if attrid == STATUS_TYPE_ATTR:
                 if value:
-                    self._currentState[STATUS_TYPE_ATTR] = CONST_POWER
+                    self._current_state[STATUS_TYPE_ATTR] = CONST_POWER
                 # show something in the sensor in HA
                 super()._update_attribute(0, "{}".format(round(float(value), 2)))
                 if (
-                    STATUS_TYPE_ATTR in self._currentState
-                    and self._currentState[STATUS_TYPE_ATTR] is not None
+                    STATUS_TYPE_ATTR in self._current_state
+                    and self._current_state[STATUS_TYPE_ATTR] is not None
                 ):
                     self.listener_event(
                         "zha_send_event",
                         self,
-                        self._currentState[STATUS_TYPE_ATTR],
+                        self._current_state[STATUS_TYPE_ATTR],
                         {"power": value},
                     )
 
