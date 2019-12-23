@@ -5,3 +5,6 @@ zha_quirks.egg-info/*.*
 zha_quirks.egg-info/PKG-INFO
 build/**/*.*
 .vscode/settings.json
+.tox
+.idea/*
+.coverage

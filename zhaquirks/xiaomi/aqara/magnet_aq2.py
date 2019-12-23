@@ -2,20 +2,22 @@
 import logging
 
 from zigpy.profiles import zha
-from zigpy.zcl.clusters.general import Groups, OnOff, Identify
-from zigpy import quirks
-from zigpy.quirks.xiaomi import AqaraOpenCloseSensor
-from zhaquirks.xiaomi import BasicCluster, PowerConfigurationCluster,\
-    TemperatureMeasurementCluster, XiaomiCustomDevice
+from zigpy.zcl.clusters.general import Groups, Identify, OnOff
+
+from .. import LUMI, BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
+from ...const import (
+    DEVICE_TYPE,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    MODELS_INFO,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
+)
 
 OPEN_CLOSE_DEVICE_TYPE = 0x5F01
 XIAOMI_CLUSTER_ID = 0xFFFF
 
 _LOGGER = logging.getLogger(__name__)
-
-#  remove the zigpy version of this device handler
-if AqaraOpenCloseSensor in quirks._DEVICE_REGISTRY:
-    quirks._DEVICE_REGISTRY.remove(AqaraOpenCloseSensor)
 
 
 class MagnetAQ2(XiaomiCustomDevice):
@@ -31,43 +33,40 @@ class MagnetAQ2(XiaomiCustomDevice):
         #  device_version=1
         #  input_clusters=[0, 3, 65535, 6]
         #  output_clusters=[0, 4, 65535]>
-        1: {
-            'manufacturer': 'LUMI',
-            'model': 'lumi.sensor_magnet.aq2',
-            'profile_id': zha.PROFILE_ID,
-            'device_type': OPEN_CLOSE_DEVICE_TYPE,
-            'input_clusters': [
-                BasicCluster.cluster_id,
-                Identify.cluster_id,
-                XIAOMI_CLUSTER_ID,
-                OnOff.cluster_id
-            ],
-            'output_clusters': [
-                BasicCluster.cluster_id,
-                Groups.cluster_id,
-                XIAOMI_CLUSTER_ID
-            ],
-        },
-    }
-
-    replacement = {
-        'endpoints': {
+        MODELS_INFO: [(LUMI, "lumi.sensor_magnet.aq2")],
+        ENDPOINTS: {
             1: {
-                'manufacturer': 'LUMI',
-                'model': 'lumi.sensor_magnet.aq2',
-                'input_clusters': [
-                    BasicCluster,
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: OPEN_CLOSE_DEVICE_TYPE,
+                INPUT_CLUSTERS: [
+                    BasicCluster.cluster_id,
                     Identify.cluster_id,
-                    PowerConfigurationCluster,
-                    TemperatureMeasurementCluster,
-                    XIAOMI_CLUSTER_ID
-                ],
-                'output_clusters': [
-                    BasicCluster,
-                    Groups.cluster_id,
+                    XIAOMI_CLUSTER_ID,
                     OnOff.cluster_id,
-                    XIAOMI_CLUSTER_ID
+                ],
+                OUTPUT_CLUSTERS: [
+                    BasicCluster.cluster_id,
+                    Groups.cluster_id,
+                    XIAOMI_CLUSTER_ID,
                 ],
             }
         },
+    }
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                INPUT_CLUSTERS: [
+                    BasicCluster,
+                    Identify.cluster_id,
+                    PowerConfigurationCluster,
+                    XIAOMI_CLUSTER_ID,
+                ],
+                OUTPUT_CLUSTERS: [
+                    BasicCluster,
+                    Groups.cluster_id,
+                    OnOff.cluster_id,
+                    XIAOMI_CLUSTER_ID,
+                ],
+            }
+        }
     }

@@ -1,10 +1,22 @@
+[![Build Status](https://travis-ci.org/dmulcahey/zha-device-handlers.svg?branch=master)](https://travis-ci.org/dmulcahey/zha-device-handlers)
+
 # ZHA Device Handlers For Home Assistant
 
-ZHA Device Handlers are custom quirks implementations for [Zigpy](https://github.com/zigpy/zigpy), the library that provides the [Zigbee](http://www.zigbee.org) support for the [ZHA](https://www.home-assistant.io/components/zha/) component in [Home Assistant](https://www.home-assistant.io). These ZHA Device Handlers can be used to parse custom messages to and from Zigbee devices.
+ZHA Device Handlers are custom quirks implementations for [Zigpy](https://github.com/zigpy/zigpy), the library that provides the [Zigbee](http://www.zigbee.org) support for the [ZHA](https://www.home-assistant.io/components/zha/) component in [Home Assistant](https://www.home-assistant.io). 
+
+ZHA device handlers bridge the functionality gap created when manufacturers deviate from the ZCL specification, handling deviations and exceptions by parsing custom messages to and from Zigbee devices. Zigbee devices that deviate from or do not fully conform to the standard specifications set by the Zigbee Alliance may require the development of custom ZHA Device Handlers (ZHA custom quirks handler implementation) to for all their functions to work properly with the ZHA component in Home Assistant. 
 
 Custom quirks implementations for zigpy implemented as ZHA Device Handlers are a similar concept to that of [Hub-connected Device Handlers for the SmartThings Classics platform](https://docs.smartthings.com/en/latest/device-type-developers-guide/) as well that of [Zigbee-Shepherd Converters as used by Zigbee2mqtt](https://www.zigbee2mqtt.io/how_tos/how_to_support_new_devices.html), meaning they are virtual representation of a physical device that expose additional functionality that is not provided out-of-the-box by the existing integration between these platforms. See [Device Specifics](#Device-Specifics) for details.
 
-#
+# How to contribute
+
+For specific Zigbee debugging instructions on capturing logs and more, see the contributing guidelines in the CONTRIBUTING.md file:
+- [Guidelines in CONTRIBUTING.md](./CONTRIBUTING.md)
+
+If you are looking to make your first code contribution to this project then we also suggest that you follow the steps in these guides:
+- https://github.com/firstcontributions/first-contributions/blob/master/README.md
+- https://github.com/firstcontributions/first-contributions/blob/master/github-desktop-tutorial.md
+
 # Currently Supported Devices:
 
 ### CentraLite
@@ -17,6 +29,8 @@ Custom quirks implementations for zigpy implemented as ZHA Device Handlers are a
 - [Motion Sensor](https://www.irisbylowes.com/support/?guideTitle=Iris-Motion-Sensor&guideId=4be71b61-5938-30b6-8154-bd90cb9b4796): CentraLite 3326-L
 - [Contact Sensor](http://a.co/9PCEorM): CentraLite 3321-S
 - [Temperature / Humidity Sensor](https://bit.ly/2GYguGR): CentraLite 3310-S
+- [Smart Button](http://pdf.lowes.com/useandcareguides/812489023018_use.pdf): CentraLite 3460-L
+- [Thermostat](https://centralite.com/products/pearl-thermostat): CentraLite 3157100
 
 ### Xiaomi Aqara
 - [Cube](https://www.aqara.com/en/cube_controller-product.html): lumi.sensor_cube.aqgl01
@@ -35,14 +49,29 @@ Custom quirks implementations for zigpy implemented as ZHA Device Handlers are a
 - [Motion Sensor](http://a.co/65rSQjZ): MotionV4
 - [Multi Sensor](http://a.co/gez6SzW): MultiV4
 
-#
+### Keen Home
+- [Temperature / Humidity / Pressure Sensor](https://keenhome.io/products/temp-sensor): LUMI RS-THP-MP-1.0
+
+### Lutron
+- [Connected Bulb Remote](https://www.lutron.com/TechnicalDocumentLibrary/040421_Zigbee_Programming_Guide.pdf): Lutron LZL4BWHL01 Remote
+
+### WAXMANN
+- [Water Sensor](https://leaksmart.com/sensor/): leakSMART Water Sensor V2
+
+### Digi
+- [XBee Series 2](https://www.digi.com/products/embedded-systems/rf-modules/2-4-ghz-modules/xbee-zigbee): xbee
+- [XBee Series 3](https://www.digi.com/products/embedded-systems/rf-modules/2-4-ghz-modules/xbee3-zigbee-3): xbee3
+
+### Yale
+- [YRD210](https://www.yalehome.com/Yale/Yale%20US/Real%20Living/installation%20instructions/Yale%20DB%20PUSH%20Quickstart%2018JUL11_Rev%20B.pdf): Yale YRD210 Deadbolt
+- [YRL220](https://www.yalehome.com/Yale/Yale%20US/Real%20Living/installation%20instructions/Yale%20%20DB%20Touch%20Instructions%2023AUG11_Rev%20B.pdf): Yale YRL220 Lock
+
 # Configuration:
 
 1. Update Home Assistant to 0.85.1 or a later version.
 
 **NOTE:** Some devices will need to be unpaired and repaired in order to see sensor values populate in Home Assistant.
 
-#
 # Device Specifics:
 
 ### Centralite
@@ -74,7 +103,49 @@ Custom quirks implementations for zigpy implemented as ZHA Device Handlers are a
 - tagV4 exposed as a device tracker in Home Assistant. The current implementation will use batteries rapidly
 - MultiV4 reports acceleration
 
-#
+### Lutron
+
+- Connected bulb remote publishes events to Home Assistant
+
+### WAXMANN
+
+- leakSMART water sensor is exposed as a binary_sensor with DEVICE_CLASS_MOISTURE
+
+### Digi XBee
+
+- Some functionality requires a coordinator device to be XBee as well
+- GPIO pins are exposed to Home Assistant as switches
+- Analog inputs are exposed as sensors
+- Outgoing UART data can be sent with `zha.issue_zigbee_cluster_command` service
+- Incoming UART data will generate `zha_event` event.
+
+For example, the following script replies with an `Assistant` string to the device once it receives a `Home` string from it (replace ieee with your actual endpoint device ieee):
+```
+automation:
+  - alias: XBee UART Test
+    trigger:
+      platform: event
+      event_type: zha_event
+      event_data:
+        device_ieee: 00:13:a2:00:12:34:56:78
+        command: receive_data
+        args: Home
+    action:
+      service: zha.issue_zigbee_cluster_command
+      data:
+        ieee: 00:13:a2:00:12:34:56:78
+        endpoint_id: 232
+        cluster_id: 17
+        cluster_type: in
+        command: 0
+        command_type: server
+        args: Assistant
+```
+
+### Yale
+
+- All supported devices report battery level
+
 ### Thanks
 
 - Special thanks to damarco for the majority of the device tracker code

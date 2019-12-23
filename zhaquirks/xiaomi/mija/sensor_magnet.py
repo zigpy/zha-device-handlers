@@ -3,21 +3,28 @@ import logging
 
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import (
-    Groups, Ota, Identify, OnOff, LevelControl, Scenes
+    Groups,
+    Identify,
+    LevelControl,
+    OnOff,
+    Ota,
+    Scenes,
 )
-from zigpy import quirks
-from zigpy.quirks.xiaomi import AqaraOpenCloseSensor
-from zhaquirks.xiaomi import BasicCluster, PowerConfigurationCluster,\
-    TemperatureMeasurementCluster, XiaomiCustomDevice
+
+from .. import LUMI, BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
+from ...const import (
+    DEVICE_TYPE,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    MODELS_INFO,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
+)
 
 OPEN_CLOSE_DEVICE_TYPE = 0x5F01
 XIAOMI_CLUSTER_ID = 0xFFFF
 
 _LOGGER = logging.getLogger(__name__)
-
-#  remove the zigpy version of this device handler
-if AqaraOpenCloseSensor in quirks._DEVICE_REGISTRY:
-    quirks._DEVICE_REGISTRY.remove(AqaraOpenCloseSensor)
 
 
 class Magnet(XiaomiCustomDevice):
@@ -33,53 +40,50 @@ class Magnet(XiaomiCustomDevice):
         #  device_version=1
         #  input_clusters=[0, 3, 65535, 25]
         #  output_clusters=[0, 4, 3, 6, 8, 5, 25]>
-
-        1: {
-            'manufacturer': 'LUMI',
-            'model': 'lumi.sensor_magnet',
-            'profile_id': zha.PROFILE_ID,
-            'device_type': zha.DeviceType.DIMMER_SWITCH,
-            'input_clusters': [
-                BasicCluster.cluster_id,
-                Identify.cluster_id,
-                XIAOMI_CLUSTER_ID,
-                Ota.cluster_id
-            ],
-            'output_clusters': [
-                BasicCluster.cluster_id,
-                Identify.cluster_id,
-                Groups.cluster_id,
-                OnOff.cluster_id,
-                LevelControl.cluster_id,
-                Scenes.cluster_id,
-                Ota.cluster_id
-            ],
+        MODELS_INFO: [(LUMI, "lumi.sensor_magnet")],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.DIMMER_SWITCH,
+                INPUT_CLUSTERS: [
+                    BasicCluster.cluster_id,
+                    Identify.cluster_id,
+                    XIAOMI_CLUSTER_ID,
+                    Ota.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [
+                    BasicCluster.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                    Scenes.cluster_id,
+                    Ota.cluster_id,
+                ],
+            }
         },
     }
 
     replacement = {
-        'endpoints': {
+        ENDPOINTS: {
             1: {
-                'manufacturer': 'LUMI',
-                'model': 'lumi.sensor_magnet',
-                'device_type': zha.DeviceType.REMOTE_CONTROL,
-                'input_clusters': [
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SENSOR,
+                INPUT_CLUSTERS: [
                     BasicCluster,
                     Identify.cluster_id,
                     PowerConfigurationCluster,
-                    TemperatureMeasurementCluster,
                     XIAOMI_CLUSTER_ID,
                     Ota.cluster_id,
                 ],
-                'output_clusters': [
+                OUTPUT_CLUSTERS: [
                     BasicCluster,
                     OnOff.cluster_id,
                     Groups.cluster_id,
                     Identify.cluster_id,
                     LevelControl.cluster_id,
                     Scenes.cluster_id,
-                    Ota.cluster_id
+                    Ota.cluster_id,
                 ],
             }
-        },
+        }
     }

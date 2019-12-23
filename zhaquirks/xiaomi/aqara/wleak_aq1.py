@@ -2,14 +2,29 @@
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import Identify, Ota
 from zigpy.zcl.clusters.security import IasZone
-from zigpy import quirks
-from zigpy.quirks.xiaomi import AqaraWaterSensor
-from zhaquirks.xiaomi import BasicCluster, PowerConfigurationCluster,\
-    TemperatureMeasurementCluster, XiaomiCustomDevice
 
-#  remove the zigpy version of this device handler
-if AqaraWaterSensor in quirks._DEVICE_REGISTRY:
-    quirks._DEVICE_REGISTRY.remove(AqaraWaterSensor)
+from .. import LUMI, BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
+from ...const import (
+    DEVICE_TYPE,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    MODELS_INFO,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
+)
+
+
+class CustomIasZone(IasZone):
+    """Custom IasZone cluster."""
+
+    MOISTURE_TYPE = 0x002A
+    ZONE_TYPE = 0x0001
+
+    def _update_attribute(self, attrid, value):
+        if attrid == self.ZONE_TYPE:
+            super()._update_attribute(attrid, self.MOISTURE_TYPE)
+        else:
+            super()._update_attribute(attrid, value)
 
 
 class LeakAQ1(XiaomiCustomDevice):
@@ -20,37 +35,30 @@ class LeakAQ1(XiaomiCustomDevice):
         #  device_version=1
         #  input_clusters=[0, 3, 1]
         #  output_clusters=[25]>
-        1: {
-            'manufacturer': 'LUMI',
-            'model': 'lumi.sensor_wleak.aq1',
-            'profile_id': zha.PROFILE_ID,
-            'device_type': zha.DeviceType.IAS_ZONE,
-            'input_clusters': [
-                BasicCluster.cluster_id,
-                Identify.cluster_id,
-                PowerConfigurationCluster.cluster_id,
-            ],
-            'output_clusters': [
-                Ota.cluster_id
-            ],
+        MODELS_INFO: [(LUMI, "lumi.sensor_wleak.aq1")],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
+                INPUT_CLUSTERS: [
+                    BasicCluster.cluster_id,
+                    Identify.cluster_id,
+                    PowerConfigurationCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Ota.cluster_id],
+            }
         },
     }
-
     replacement = {
-        'endpoints': {
+        ENDPOINTS: {
             1: {
-                'manufacturer': 'LUMI',
-                'model': 'lumi.sensor_wleak.aq1',
-                'input_clusters': [
+                INPUT_CLUSTERS: [
                     BasicCluster,
                     Identify.cluster_id,
                     PowerConfigurationCluster,
-                    TemperatureMeasurementCluster,
-                    IasZone.cluster_id
+                    CustomIasZone,
                 ],
-                'output_clusters': [
-                    Ota.cluster_id
-                ],
+                OUTPUT_CLUSTERS: [Ota.cluster_id],
             }
-        },
+        }
     }
