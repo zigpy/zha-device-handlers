@@ -43,7 +43,7 @@ class XiaomiSmokeIASCluster(CustomCluster, IasZone):
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
-        self.attributes = super().attributes.copy()
+        self.attributes = IasZone.attributes.copy()
         self.attributes.update(
             {0xFFF1: ("set_options", t.uint32_t), 0xFFF0: ("get_status", t.uint32_t)}
         )
