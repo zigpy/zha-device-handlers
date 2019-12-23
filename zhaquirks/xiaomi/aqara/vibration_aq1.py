@@ -17,7 +17,7 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.security import IasZone
 
 from .. import LUMI, BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
-from ... import Bus, LocalDataCluster, initialize_cluster
+from ... import Bus, LocalDataCluster
 from ...const import (
     CLUSTER_COMMAND,
     CLUSTER_ID,
@@ -69,26 +69,20 @@ class VibrationAQ1(XiaomiCustomDevice):
         """Vibration cluster."""
 
         cluster_id = BasicCluster.cluster_id
-
-        def __init__(self, *args, **kwargs):
-            """Init."""
-            super().__init__(*args, **kwargs)
-            self.attributes = Basic.attributes.copy()
-            self.attributes.update({0xFF0D: ("sensitivity", types.uint8_t)})
-            initialize_cluster(self)
+        attributes = Basic.attributes.copy()
+        attributes.update({0xFF0D: ("sensitivity", types.uint8_t)})
 
     class MultistateInputCluster(CustomCluster, MultistateInput):
         """Multistate input cluster."""
 
         cluster_id = DoorLock.cluster_id
+        attributes = MultistateInput.attributes.copy()
+        attributes.update({0x0000: ("lock_state", types.uint8_t)})
 
         def __init__(self, *args, **kwargs):
             """Init."""
             self._current_state = {}
             super().__init__(*args, **kwargs)
-            self.attributes = MultistateInput.attributes.copy()
-            self.attributes.update({0x0000: ("lock_state", types.uint8_t)})
-            initialize_cluster(self)
 
         def _update_attribute(self, attrid, value):
             super()._update_attribute(attrid, value)
