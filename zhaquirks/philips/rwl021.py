@@ -1,7 +1,7 @@
 """Phillips RWL021 device."""
+import zigpy.types as t
 from zigpy.profiles import zha, zll
 from zigpy.quirks import CustomCluster, CustomDevice
-import zigpy.types as t
 from zigpy.zcl.clusters.general import (
     Basic,
     BinaryInput,
@@ -13,6 +13,8 @@ from zigpy.zcl.clusters.general import (
     PowerConfiguration,
     Scenes,
 )
+
+from .. import initialize_cluster
 
 from ..const import (
     ARGS,
@@ -44,8 +46,9 @@ class BasicCluster(CustomCluster, Basic):
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
-        self.attributes = super().attributes.copy()
+        self.attributes = Basic.attributes.copy()
         self.attributes.update({0x0031: ("phillips", t.bitmap16)})
+        initialize_cluster(self)
 
 
 class PhilipsRWL021(CustomDevice):

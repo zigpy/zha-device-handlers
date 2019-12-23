@@ -20,6 +20,7 @@ from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 
 from . import SINOPE
+from .. import initialize_cluster
 from ..const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -64,18 +65,7 @@ class SinopeTechnologiesThermostat(CustomDevice):
             super().__init__(*args, **kwargs)
             self.attributes = Thermostat.attributes.copy()
             self.attributes[0x0400] = ("set_occupancy", t.enum8)
-            self._attridx = {
-                attrname: attrid
-                for attrid, (attrname, datatype) in self.attributes.items()
-            }
-            self._client_command_idx = {
-                cmd_name: cmd_id
-                for cmd_id, (cmd_name, schema, is_reply) in self.client_commands.items()
-            }
-            self._server_command_idx = {
-                cmd_name: cmd_id
-                for cmd_id, (cmd_name, schema, is_reply) in self.server_commands.items()
-            }
+            initialize_cluster(self)
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=769

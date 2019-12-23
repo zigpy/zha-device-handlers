@@ -154,6 +154,21 @@ class PowerConfigurationCluster(CustomCluster, PowerConfiguration):
         return percent
 
 
+def initialize_cluster(cluster):
+    """Initialize dicts on a custom cluster."""
+    cluster._attridx = {
+        attrname: attrid for attrid, (attrname, datatype) in cluster.attributes.items()
+    }
+    cluster._client_command_idx = {
+        cmd_name: cmd_id
+        for cmd_id, (cmd_name, schema, is_reply) in cluster.client_commands.items()
+    }
+    cluster._server_command_idx = {
+        cmd_name: cmd_id
+        for cmd_id, (cmd_name, schema, is_reply) in cluster.server_commands.items()
+    }
+
+
 NAME = __name__
 PATH = __path__
 for importer, modname, ispkg in pkgutil.walk_packages(path=PATH, prefix=NAME + "."):
