@@ -77,7 +77,7 @@ class LUMIlumiplug(CustomDevice):
                 Time.cluster_id,
                 BinaryOutput.cluster_id,
             ],
-            "output_clusters": [Time.cluster_id, Ota.cluster_id,],
+            "output_clusters": [Time.cluster_id, Ota.cluster_id],
         },
         #  <SimpleDescriptor endpoint=2 profile=260 device_type=9
         #  device_version=1
@@ -86,8 +86,8 @@ class LUMIlumiplug(CustomDevice):
         2: {
             "profile_id": zha.PROFILE_ID,
             "device_type": zha.DeviceType.MAIN_POWER_OUTLET,
-            "input_clusters": [AnalogInput.cluster_id,],
-            "output_clusters": [Groups.cluster_id, AnalogInput.cluster_id,],
+            "input_clusters": [AnalogInput.cluster_id],
+            "output_clusters": [Groups.cluster_id, AnalogInput.cluster_id],
         },
         #  <SimpleDescriptor endpoint=3 profile=260 device_type=83
         #  device_version=1
@@ -96,8 +96,8 @@ class LUMIlumiplug(CustomDevice):
         3: {
             "profile_id": zha.PROFILE_ID,
             "device_type": zha.DeviceType.METER_INTERFACE,
-            "input_clusters": [AnalogInput.cluster_id,],
-            "output_clusters": [AnalogInput.cluster_id,],
+            "input_clusters": [AnalogInput.cluster_id],
+            "output_clusters": [AnalogInput.cluster_id],
         },
     }
 
@@ -119,23 +119,23 @@ class LUMIlumiplug(CustomDevice):
                     Time.cluster_id,
                     BinaryOutput.cluster_id,
                 ],
-                "output_clusters": [Time.cluster_id, Ota.cluster_id,],
+                "output_clusters": [Time.cluster_id, Ota.cluster_id],
             },
             2: {
                 "manufacturer": "LUMI",
                 "model": "lumi.plug",
                 "profile_id": zha.PROFILE_ID,
                 "device_type": zha.DeviceType.MAIN_POWER_OUTLET,
-                "input_clusters": [AnalogInputCluster,],
-                "output_clusters": [Groups.cluster_id, AnalogInput.cluster_id,],
+                "input_clusters": [AnalogInputCluster],
+                "output_clusters": [Groups.cluster_id, AnalogInput.cluster_id],
             },
             3: {
                 "manufacturer": "LUMI",
                 "model": "lumi.plug",
                 "profile_id": zha.PROFILE_ID,
                 "device_type": zha.DeviceType.METER_INTERFACE,
-                "input_clusters": [AnalogInputCluster,],
-                "output_clusters": [AnalogInput.cluster_id,],
+                "input_clusters": [AnalogInputCluster],
+                "output_clusters": [AnalogInput.cluster_id],
             },
         }
     }
