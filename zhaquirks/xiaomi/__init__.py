@@ -209,9 +209,10 @@ class BasicCluster(CustomCluster, Basic):
                     102: PRESSURE_MEASUREMENT,
                 }
             )
-        elif (
-            MODEL in self._attr_cache and self._attr_cache[MODEL] == "lumi.plug.maus01"
-        ):
+        elif MODEL in self._attr_cache and self._attr_cache[MODEL] in [
+            "lumi.plug.maus01",
+            "lumi.relay.c2acn01",
+        ]:
             attribute_names.update({149: CONSUMPTION, 150: VOLTAGE, 152: POWER})
 
         result = {}
