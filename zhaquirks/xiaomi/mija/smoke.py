@@ -15,6 +15,7 @@ Low Sensitivity: 0x0103000011010003.
 import logging
 
 from zigpy.profiles import zha
+import zigpy.types as t
 from zigpy.zcl.clusters.general import (
     AnalogInput,
     Identify,
@@ -24,11 +25,9 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.security import IasZone
 
-import zigpy.types as t
-
 from .. import BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
-from ...const import DEVICE_TYPE, ENDPOINTS, INPUT_CLUSTERS, OUTPUT_CLUSTERS, PROFILE_ID
 from ... import CustomCluster
+from ...const import DEVICE_TYPE, ENDPOINTS, INPUT_CLUSTERS, OUTPUT_CLUSTERS, PROFILE_ID
 
 IAS_ZONE = 0x0402
 
@@ -39,14 +38,10 @@ class XiaomiSmokeIASCluster(CustomCluster, IasZone):
     """Xiaomi smoke IAS cluster implementation."""
 
     cluster_id = IasZone.cluster_id
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.attributes = super().attributes.copy()
-        self.attributes.update(
-            {0xFFF1: ("set_options", t.uint32_t), 0xFFF0: ("get_status", t.uint32_t)}
-        )
+    attributes = IasZone.attributes.copy()
+    attributes.update(
+        {0xFFF1: ("set_options", t.uint32_t), 0xFFF0: ("get_status", t.uint32_t)}
+    )
 
 
 class MijiaHoneywellSmokeDetectorSensor(XiaomiCustomDevice):
