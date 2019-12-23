@@ -23,10 +23,6 @@ CONST_POWER = "power"
 class LUMIlumiplug(CustomDevice):
     """Custom device representing LUMI lumi.plug."""
 
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-
     class AnalogInputCluster(CustomCluster, AnalogInput):
         """Analog input cluster."""
 
