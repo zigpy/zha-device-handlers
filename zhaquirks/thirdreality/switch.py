@@ -1,15 +1,7 @@
 """Third Reality switch devices."""
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
-from zigpy.zcl.clusters.general import (
-    Basic,
-    Groups,
-    Identify,
-    OnOff,
-    Ota,
-    PowerConfiguration,
-    Scenes,
-)
+from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -22,6 +14,14 @@ from zhaquirks.const import (
 
 from . import THIRD_REALITY
 from .. import PowerConfigurationCluster
+
+
+class CustomPowerConfigurationCluster(PowerConfigurationCluster):
+    """Custom PowerConfigurationCluster."""
+
+    cluster_id = PowerConfigurationCluster.cluster_id
+    MIN_VOLTS = 2.1
+    MAX_VOLTS = 3.0
 
 
 class Switch(CustomDevice):
@@ -44,9 +44,9 @@ class Switch(CustomDevice):
                     Scenes.cluster_id,
                     OnOff.cluster_id,
                     Ota.cluster_id,
-                    PowerConfiguration.cluster_id,
+                    CustomPowerConfigurationCluster.cluster_id,
                 ],
-                OUTPUT_CLUSTERS: [PowerConfiguration.cluster_id],
+                OUTPUT_CLUSTERS: [CustomPowerConfigurationCluster.cluster_id],
             }
         },
     }
@@ -63,9 +63,9 @@ class Switch(CustomDevice):
                     Scenes.cluster_id,
                     OnOff.cluster_id,
                     Ota.cluster_id,
-                    PowerConfigurationCluster,
+                    CustomPowerConfigurationCluster,
                 ],
-                OUTPUT_CLUSTERS: [PowerConfiguration.cluster_id],
+                OUTPUT_CLUSTERS: [CustomPowerConfigurationCluster.cluster_id],
             }
         }
     }

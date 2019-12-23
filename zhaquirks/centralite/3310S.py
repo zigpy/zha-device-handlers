@@ -5,7 +5,8 @@ from zigpy.zcl.clusters.general import Basic, Identify, Ota, PollControl
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 import zigpy.types as t
 
-from zhaquirks.centralite import CENTRALITE, PowerConfigurationCluster
+from zhaquirks import PowerConfigurationCluster
+from zhaquirks.centralite import CENTRALITE
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
