@@ -1,9 +1,9 @@
 """Xiaomi aqara leak sensor device."""
 from zigpy.profiles import zha
+from zigpy.quirks import CustomCluster
 from zigpy.zcl.clusters.general import Identify, Ota
 from zigpy.zcl.clusters.security import IasZone
 
-from .. import LUMI, BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
 from ...const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -12,9 +12,10 @@ from ...const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from .. import LUMI, BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
 
 
-class CustomIasZone(IasZone):
+class CustomIasZone(CustomCluster, IasZone):
     """Custom IasZone cluster."""
 
     MOISTURE_TYPE = 0x002A

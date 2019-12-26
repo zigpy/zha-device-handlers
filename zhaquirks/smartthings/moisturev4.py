@@ -1,6 +1,6 @@
 """Device handler for smartthings moistureV4 sensor."""
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
+from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.zcl.clusters.general import Basic, BinaryInput, Identify, Ota, PollControl
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone
@@ -18,7 +18,7 @@ from ..const import (
 )
 
 
-class CustomIasZone(IasZone):
+class CustomIasZone(CustomCluster, IasZone):
     """Custom IasZone cluster."""
 
     MOISTURE_TYPE = 0x002A
