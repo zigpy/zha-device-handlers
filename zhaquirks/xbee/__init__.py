@@ -22,10 +22,10 @@ import struct
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import BinaryInput, LevelControl, OnOff
+from zigpy.zcl.clusters.general import AnalogInput, BinaryInput, LevelControl, OnOff
 
-from ..const import ENDPOINTS, INPUT_CLUSTERS, OUTPUT_CLUSTERS
 from .. import EventableCluster, LocalDataCluster
+from ..const import ENDPOINTS, INPUT_CLUSTERS, OUTPUT_CLUSTERS
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -88,7 +88,7 @@ class IOSample(bytes):
                         data[5 + sample_index : 7 + sample_index], byteorder="big"
                     )
                 )
-                sample_index += 1
+                sample_index += 2
             else:
                 analog_samples.append(0)
 
@@ -116,6 +116,7 @@ ENDPOINT_MAP = {
     3: 0xD3,
     4: 0xD4,
     5: 0xD5,
+    7: 0xD7,
     8: 0xD8,
     9: 0xD9,
     10: 0xDA,
@@ -188,6 +189,20 @@ class XBeeCommon(CustomDevice):
                             ENDPOINT_MAP[pin]
                         ).__getattr__(OnOff.ep_attribute)._update_attribute(
                             ON_OFF_CMD, values["digital_samples"][pin]
+                        )
+                if "analog_pins" in values and "analog_samples" in values:
+                    # Update analog inputs
+                    active_pins = [
+                        i for i, x in enumerate(values["analog_pins"]) if x == 1
+                    ]
+                    for pin in active_pins:
+                        # pylint: disable=W0212
+                        self._endpoint.device.__getitem__(
+                            ENDPOINT_MAP[pin]
+                        ).__getattr__(AnalogInput.ep_attribute)._update_attribute(
+                            0x0055,  # "present_value"
+                            values["analog_samples"][pin]
+                            / (10.23 if pin != 7 else 1000),  # supply voltage is in mV
                         )
             else:
                 super().handle_cluster_request(tsn, command_id, args)

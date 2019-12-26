@@ -1,15 +1,12 @@
 """Centralite 3310S implementation."""
-from zigpy import quirks
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
-from zigpy.quirks.smartthings import (
-    SmartthingsRelativeHumidityCluster,
-    SmartthingsTemperatureHumiditySensor,
-)
+from zigpy.quirks import CustomDevice, CustomCluster
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PollControl
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
+import zigpy.types as t
 
-from zhaquirks.centralite import CENTRALITE, PowerConfigurationCluster
+from zhaquirks import PowerConfigurationCluster
+from zhaquirks.centralite import CENTRALITE
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -20,11 +17,21 @@ from zhaquirks.const import (
 )
 
 DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
+SMRT_THINGS_REL_HUM_CLSTR = 0xFC45
 
 
-#  remove the zigpy version of this device handler
-if SmartthingsTemperatureHumiditySensor in quirks._DEVICE_REGISTRY:
-    quirks._DEVICE_REGISTRY.remove(SmartthingsTemperatureHumiditySensor)
+class SmartthingsRelativeHumidityCluster(CustomCluster):
+    """Smart Things Relative Humidity Cluster."""
+
+    cluster_id = SMRT_THINGS_REL_HUM_CLSTR
+    name = "Smartthings Relative Humidity Measurement"
+    ep_attribute = "humidity"
+    attributes = {
+        # Relative Humidity Measurement Information
+        0x0000: ("measured_value", t.int16s)
+    }
+    server_commands = {}
+    client_commands = {}
 
 
 class CentraLite3310S(CustomDevice):

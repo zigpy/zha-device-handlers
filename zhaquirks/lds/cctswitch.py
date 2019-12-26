@@ -1,9 +1,7 @@
-"""Device handler for IKEA of Sweden TRADFRI remote control."""
-from zigpy.profiles import zll
+"""Device handler for CCS-Switch-D0001 remote control."""
+from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
-import zigpy.types as t
 from zigpy.zcl.clusters.general import (
-    Alarms,
     Basic,
     Groups,
     Identify,
@@ -11,20 +9,17 @@ from zigpy.zcl.clusters.general import (
     OnOff,
     Ota,
     PowerConfiguration,
-    Scenes,
 )
+from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.lightlink import LightLink
 
-from . import IKEA, LightLinkCluster
-from .. import DoublingPowerConfigurationCluster, EventableCluster
+from . import MANUFACTURER, LightLinkCluster
 from ..const import (
     ARGS,
     CLUSTER_ID,
     COMMAND,
-    COMMAND_HOLD,
     COMMAND_MOVE,
     COMMAND_MOVE_ON_OFF,
-    COMMAND_PRESS,
     COMMAND_RELEASE,
     COMMAND_STEP,
     COMMAND_STEP_ON_OFF,
@@ -35,62 +30,41 @@ from ..const import (
     ENDPOINT_ID,
     ENDPOINTS,
     INPUT_CLUSTERS,
-    LEFT,
     LONG_PRESS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
-    RIGHT,
     SHORT_PRESS,
     TURN_ON,
 )
 
-DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
 
-
-class ScenesCluster(EventableCluster, Scenes):
-    """Ikea Scenes cluster."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.server_commands.update(
-            {
-                0x0007: ("press", (t.int16s, t.int8s, t.int8s), False),
-                0x0008: ("hold", (t.int16s, t.int8s), False),
-                0x0009: ("release", (t.int16s,), False),
-            }
-        )
-
-
-class IkeaTradfriRemote(CustomDevice):
-    """Custom device representing IKEA of Sweden TRADFRI remote control."""
+class CCTSwitch(CustomDevice):
+    """Custom device representing CCTSwitch-D0001 remote control."""
 
     signature = {
-        # <SimpleDescriptor endpoint=1 profile=49246 device_type=2096
-        # device_version=2
-        # input_clusters=[0, 1, 3, 9, 2821, 4096]
-        # output_clusters=[3, 4, 5, 6, 8, 25, 4096]>
-        MODELS_INFO: [(IKEA, "TRADFRI remote control")],
+        # <SimpleDescriptor endpoint = 1 profile = 260 device_type = 2048
+        # device_version = 1 input_clusters = [0, 1, 3, 4096, 64769]
+        # output_clusters = [3, 4, 6, 8, 25, 768, 4096] >
+        MODELS_INFO: [(MANUFACTURER, "ZBT-CCTSwitch-D0001")],
         ENDPOINTS: {
             1: {
-                PROFILE_ID: zll.PROFILE_ID,
-                DEVICE_TYPE: zll.DeviceType.SCENE_CONTROLLER,
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.COLOR_CONTROLLER,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
                     Identify.cluster_id,
-                    Alarms.cluster_id,
-                    DIAGNOSTICS_CLUSTER_ID,
                     LightLink.cluster_id,
+                    0xFD01,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     Groups.cluster_id,
-                    Scenes.cluster_id,
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
                     Ota.cluster_id,
+                    Color.cluster_id,
                     LightLink.cluster_id,
                 ],
             }
@@ -100,23 +74,22 @@ class IkeaTradfriRemote(CustomDevice):
     replacement = {
         ENDPOINTS: {
             1: {
-                PROFILE_ID: zll.PROFILE_ID,
-                DEVICE_TYPE: zll.DeviceType.SCENE_CONTROLLER,
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.COLOR_CONTROLLER,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    DoublingPowerConfigurationCluster,
+                    PowerConfiguration.cluster_id,
                     Identify.cluster_id,
-                    Alarms.cluster_id,
-                    DIAGNOSTICS_CLUSTER_ID,
                     LightLinkCluster,
+                    0xFD01,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     Groups.cluster_id,
-                    ScenesCluster,
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
                     Ota.cluster_id,
+                    Color.cluster_id,
                     LightLink.cluster_id,
                 ],
             }
@@ -158,29 +131,5 @@ class IkeaTradfriRemote(CustomDevice):
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
             ARGS: [1, 83],
-        },
-        (SHORT_PRESS, LEFT): {
-            COMMAND: COMMAND_PRESS,
-            CLUSTER_ID: 5,
-            ENDPOINT_ID: 1,
-            ARGS: [257, 13, 0],
-        },
-        (LONG_PRESS, LEFT): {
-            COMMAND: COMMAND_HOLD,
-            CLUSTER_ID: 5,
-            ENDPOINT_ID: 1,
-            ARGS: [3329, 0],
-        },
-        (SHORT_PRESS, RIGHT): {
-            COMMAND: COMMAND_PRESS,
-            CLUSTER_ID: 5,
-            ENDPOINT_ID: 1,
-            ARGS: [256, 13, 0],
-        },
-        (LONG_PRESS, RIGHT): {
-            COMMAND: COMMAND_HOLD,
-            CLUSTER_ID: 5,
-            ENDPOINT_ID: 1,
-            ARGS: [3328, 0],
         },
     }

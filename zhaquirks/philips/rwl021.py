@@ -41,11 +41,8 @@ DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
 class BasicCluster(CustomCluster, Basic):
     """Centralite acceleration cluster."""
 
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.attributes = super().attributes.copy()
-        self.attributes.update({0x0031: ("phillips", t.bitmap16)})
+    attributes = Basic.attributes.copy()
+    attributes.update({0x0031: ("phillips", t.bitmap16)})
 
 
 class PhilipsRWL021(CustomDevice):

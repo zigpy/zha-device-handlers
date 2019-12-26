@@ -4,11 +4,19 @@ from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, Commissioning, Identify, PollControl
 from zigpy.zcl.clusters.security import IasZone
 
-from zhaquirks.centralite import PowerConfigurationCluster
+from zhaquirks import PowerConfigurationCluster
 
 from ..const import DEVICE_TYPE, ENDPOINTS, INPUT_CLUSTERS, OUTPUT_CLUSTERS, PROFILE_ID
 
 DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
+
+
+class CustomPowerConfigurationCluster(PowerConfigurationCluster):
+    """Custom PowerConfigurationCluster."""
+
+    cluster_id = PowerConfigurationCluster.cluster_id
+    MIN_VOLTS = 2.1
+    MAX_VOLTS = 3.0
 
 
 class Z308E3ED(CustomDevice):
@@ -25,7 +33,7 @@ class Z308E3ED(CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    PowerConfigurationCluster.cluster_id,
+                    CustomPowerConfigurationCluster.cluster_id,
                     Identify.cluster_id,
                     PollControl.cluster_id,
                     IasZone.cluster_id,
@@ -42,7 +50,7 @@ class Z308E3ED(CustomDevice):
             1: {
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    PowerConfigurationCluster,
+                    CustomPowerConfigurationCluster,
                     Identify.cluster_id,
                     PollControl.cluster_id,
                     IasZone.cluster_id,

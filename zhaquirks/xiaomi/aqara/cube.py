@@ -1,9 +1,7 @@
 """Xiaomi mija lumi cube device."""
 import logging
 
-from zigpy import quirks
 from zigpy.profiles import zha
-from zigpy.quirks.xiaomi import AqaraMagicCubeSensor
 from zigpy.zcl.clusters.general import (
     AnalogInput,
     Groups,
@@ -145,10 +143,6 @@ def extend_dict(dictionary, value, ranges):
 
 
 extend_dict(MOVEMENT_TYPE, FLIP, range(FLIP_BEGIN, FLIP_END))
-
-#  remove the zigpy version of this device handler
-if AqaraMagicCubeSensor in quirks._DEVICE_REGISTRY:
-    quirks._DEVICE_REGISTRY.remove(AqaraMagicCubeSensor)
 
 
 class Cube(XiaomiCustomDevice):

@@ -6,6 +6,7 @@ import logging
 from zigpy import types as t
 from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.zcl.clusters.general import Basic, PowerConfiguration
+from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.measurement import (
     OccupancySensing,
     PressureMeasurement,
@@ -25,8 +26,8 @@ from ..const import (
     MOTION_EVENT,
     OFF,
     ON,
-    VALUE,
     UNKNOWN,
+    VALUE,
     ZHA_SEND_EVENT,
     ZONE_STATE,
 )
@@ -43,12 +44,18 @@ MODEL = 5
 MOTION_TYPE = 0x000D
 OCCUPANCY_STATE = 0
 PATH = "path"
+POWER = "power"
+CONSUMPTION = "consumption"
+VOLTAGE = "voltage"
 PRESSURE_MEASUREMENT = "pressure_measurement"
 PRESSURE_REPORTED = "pressure_reported"
 STATE = "state"
 TEMPERATURE = "temperature"
 TEMPERATURE_MEASUREMENT = "temperature_measurement"
 TEMPERATURE_REPORTED = "temperature_reported"
+POWER_REPORTED = "power_reported"
+CONSUMPTION_REPORTED = "consumption_reported"
+VOLTAGE_REPORTED = "voltage_reported"
 XIAOMI_AQARA_ATTRIBUTE = 0xFF01
 XIAOMI_ATTR_3 = "X-attrib-3"
 XIAOMI_ATTR_4 = "X-attrib-4"
@@ -163,6 +170,18 @@ class BasicCluster(CustomCluster, Basic):
             self.endpoint.device.pressure_bus.listener_event(
                 PRESSURE_REPORTED, attributes[PRESSURE_MEASUREMENT] / 100
             )
+        if POWER in attributes:
+            self.endpoint.device.power_bus.listener_event(
+                POWER_REPORTED, attributes[POWER]
+            )
+        if CONSUMPTION in attributes:
+            self.endpoint.device.consumption_bus.listener_event(
+                CONSUMPTION_REPORTED, attributes[CONSUMPTION]
+            )
+        if VOLTAGE in attributes:
+            self.endpoint.device.voltage_bus.listener_event(
+                VOLTAGE_REPORTED, attributes[VOLTAGE] * 0.1
+            )
 
     def _parse_aqara_attributes(self, value):
         """Parse non standard atrributes."""
@@ -190,6 +209,11 @@ class BasicCluster(CustomCluster, Basic):
                     102: PRESSURE_MEASUREMENT,
                 }
             )
+        elif MODEL in self._attr_cache and self._attr_cache[MODEL] in [
+            "lumi.plug.maus01",
+            "lumi.relay.c2acn01",
+        ]:
+            attribute_names.update({149: CONSUMPTION, 150: VOLTAGE, 152: POWER})
 
         result = {}
         while value:
@@ -385,3 +409,37 @@ class PressureMeasurementCluster(CustomCluster, PressureMeasurement):
     def pressure_reported(self, value):
         """Pressure reported."""
         self._update_attribute(self.ATTR_ID, value)
+
+
+class ElectricalMeasurementCluster(CustomCluster, ElectricalMeasurement):
+    """Electrical measurement cluster to receive reports that are sent to the basic cluster."""
+
+    cluster_id = ElectricalMeasurement.cluster_id
+    POWER_ID = 0x050B
+    VOLTAGE_ID = 0x0500
+    CONSUMPTION_ID = 0x0304
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self.endpoint.device.voltage_bus.add_listener(self)
+        self.endpoint.device.consumption_bus.add_listener(self)
+        self.endpoint.device.power_bus.add_listener(self)
+
+    def power_reported(self, value):
+        """Power reported."""
+        self._update_attribute(self.POWER_ID, value)
+
+    def voltage_reported(self, value):
+        """Voltage reported."""
+        self._update_attribute(self.VOLTAGE_ID, value)
+
+    def consumption_reported(self, value):
+        """Consumption reported."""
+        self._update_attribute(self.CONSUMPTION_ID, value)
+
+    async def read_attributes_raw(self, attributes, manufacturer=None):
+        """Prevent remote reads."""
+        attributes = [t.uint16_t(a) for a in attributes]
+        values = [self._attr_cache.get(attr) for attr in attributes]
+        return values

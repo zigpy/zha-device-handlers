@@ -1,4 +1,5 @@
 """Quirks implementations for the ZHA component of Homeassistant."""
+import logging
 import importlib
 import pkgutil
 
@@ -16,6 +17,8 @@ from .const import (
     VALUE,
     ZHA_SEND_EVENT,
 )
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class Bus(ListenableMixin):
@@ -116,8 +119,8 @@ class PowerConfigurationCluster(CustomCluster, PowerConfiguration):
     cluster_id = PowerConfiguration.cluster_id
     BATTERY_VOLTAGE_ATTR = 0x0020
     BATTERY_PERCENTAGE_REMAINING = 0x0021
-    MIN_VOLTS = 2.1
-    MAX_VOLTS = 3.2
+    MIN_VOLTS = 1.5  # old 2.1
+    MAX_VOLTS = 2.8  # old 3.2
 
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
@@ -131,14 +134,24 @@ class PowerConfigurationCluster(CustomCluster, PowerConfiguration):
         if raw_value in (0, 255):
             return -1
         volts = raw_value / 10
-        if volts < self.MIN_VOLTS:
-            volts = self.MIN_VOLTS
-        elif volts > self.MAX_VOLTS:
-            volts = self.MAX_VOLTS
+        volts = max(volts, self.MIN_VOLTS)
+        volts = min(volts, self.MAX_VOLTS)
 
-        percent = ((volts - self.MIN_VOLTS) / (self.MAX_VOLTS - self.MIN_VOLTS)) * 200
+        percent = round(
+            ((volts - self.MIN_VOLTS) / (self.MAX_VOLTS - self.MIN_VOLTS)) * 200
+        )
 
-        return round(min(200, percent), 2)
+        _LOGGER.debug(
+            "%s %s, Voltage [RAW]:%s [Max]:%s [Min]:%s, Battery Percent: %s",
+            self.endpoint.device.manufacturer,
+            self.endpoint.device.model,
+            raw_value,
+            self.MAX_VOLTS,
+            self.MIN_VOLTS,
+            percent / 2,
+        )
+
+        return percent
 
 
 NAME = __name__
