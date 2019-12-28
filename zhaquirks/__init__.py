@@ -4,7 +4,6 @@ import importlib
 import pkgutil
 
 from zigpy.quirks import CustomCluster
-import zigpy.types as types
 from zigpy.util import ListenableMixin
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import PowerConfiguration
