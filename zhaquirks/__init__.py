@@ -49,7 +49,6 @@ class LocalDataCluster(CustomCluster):
 
     async def write_attributes(self, attributes, manufacturer=None):
         """Prevent remote writes."""
-        args = []
         for attrid, value in attributes.items():
             if isinstance(attrid, str):
                 attrid = self._attridx[attrid]
