@@ -45,7 +45,18 @@ class LocalDataCluster(CustomCluster):
             record.value.value = self._attr_cache.get(record.attrid)
             if record.value.value is not None:
                 record.status = foundation.Status.SUCCESS
-        return [records]
+        return (records,)
+
+    async def write_attributes(self, attributes, manufacturer=None):
+        """Prevent remote writes."""
+        for attrid, value in attributes.items():
+            if isinstance(attrid, str):
+                attrid = self._attridx[attrid]
+            if attrid not in self.attributes:
+                self.error("%d is not a valid attribute id", attrid)
+                continue
+            self._update_attribute(attrid, value)
+        return (foundation.Status.SUCCESS,)
 
 
 class EventableCluster(CustomCluster):
