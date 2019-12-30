@@ -1,5 +1,5 @@
 """Device handler for IKEA of Sweden TRADFRI remote control."""
-from zigpy.profiles import zha
+from zigpy.profiles import zha, zll
 from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import (
@@ -135,3 +135,45 @@ class IkeaTradfriRemote2Btn(CustomDevice):
             ARGS: [1, 83],
         },
     }
+
+
+class IkeaTradfriRemote2BtnZLL(CustomDevice):
+    """Custom device representing IKEA of Sweden TRADFRI remote control."""
+
+    signature = {
+        # <SimpleDescriptor endpoint=1 profile=49246 device_type=2080
+        # device_version=248
+        # input_clusters=[0, 1, 3, 9, 258, 4096, 64636]
+        # output_clusters=[3, 4, 6, 8, 25, 258, 4096]>
+        MODELS_INFO: IkeaTradfriRemote2Btn.signature[MODELS_INFO],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zll.PROFILE_ID,
+                DEVICE_TYPE: zll.DeviceType.CONTROLLER,
+                INPUT_CLUSTERS: IkeaTradfriRemote2Btn.signature[ENDPOINTS][1][
+                    INPUT_CLUSTERS
+                ].copy(),
+                OUTPUT_CLUSTERS: IkeaTradfriRemote2Btn.signature[ENDPOINTS][1][
+                    OUTPUT_CLUSTERS
+                ].copy(),
+            }
+        },
+    }
+    signature[ENDPOINTS][1][INPUT_CLUSTERS].append(WindowCovering.cluster_id)
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zll.PROFILE_ID,
+                DEVICE_TYPE: zll.DeviceType.CONTROLLER,
+                INPUT_CLUSTERS: IkeaTradfriRemote2Btn.replacement[ENDPOINTS][1][
+                    INPUT_CLUSTERS
+                ].copy(),
+                OUTPUT_CLUSTERS: IkeaTradfriRemote2Btn.replacement[ENDPOINTS][1][
+                    OUTPUT_CLUSTERS
+                ].copy(),
+            }
+        }
+    }
+
+    device_automation_triggers = IkeaTradfriRemote2Btn.device_automation_triggers.copy()
