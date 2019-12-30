@@ -145,7 +145,7 @@ class IkeaTradfriRemote2BtnZLL(CustomDevice):
         # device_version=248
         # input_clusters=[0, 1, 3, 9, 258, 4096, 64636]
         # output_clusters=[3, 4, 6, 8, 25, 258, 4096]>
-        MODELS_INFO: IkeaTradfriRemote2Btn.signature[MODELS_INFO],
+        MODELS_INFO: IkeaTradfriRemote2Btn.signature[MODELS_INFO].copy(),
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zll.PROFILE_ID,
