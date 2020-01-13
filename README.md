@@ -116,6 +116,7 @@ If you are looking to make your first code contribution to this project then we 
 - Some functionality requires a coordinator device to be XBee as well
 - GPIO pins are exposed to Home Assistant as switches
 - Analog inputs are exposed as sensors
+- PWM output on XBee3 can be controlled by writing 0x0055 (present_value) cluster attribute with `zha.set_zigbee_cluster_attribute` service
 - Outgoing UART data can be sent with `zha.issue_zigbee_cluster_command` service
 - Incoming UART data will generate `zha_event` event.
 
