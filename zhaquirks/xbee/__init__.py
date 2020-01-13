@@ -22,7 +22,13 @@ import struct
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import AnalogInput, BinaryInput, LevelControl, OnOff
+from zigpy.zcl.clusters.general import (
+    AnalogInput,
+    AnalogOutput,
+    BinaryInput,
+    LevelControl,
+    OnOff,
+)
 
 from .. import EventableCluster, LocalDataCluster
 from ..const import ENDPOINTS, INPUT_CLUSTERS, OUTPUT_CLUSTERS
@@ -40,6 +46,8 @@ XBEE_IO_CLUSTER = 0x92
 XBEE_PROFILE_ID = 0xC105
 XBEE_REMOTE_AT = 0x17
 XBEE_SRC_ENDPOINT = 0xE8
+ATTR_PRESENT_VALUE = 0x0055
+PIN_ANALOG_OUTPUT = 2
 
 
 class IOSample(bytes):
@@ -125,26 +133,27 @@ ENDPOINT_MAP = {
 }
 
 
+ENDPOINT_TO_AT = {
+    0xD0: "D0",
+    0xD1: "D1",
+    0xD2: "D2",
+    0xD3: "D3",
+    0xD4: "D4",
+    0xD5: "D5",
+    0xD8: "D8",
+    0xD9: "D9",
+    0xDA: "P0",
+    0xDB: "P1",
+    0xDC: "P2",
+}
+
+
 class XBeeOnOff(CustomCluster, OnOff):
     """XBee on/off cluster."""
 
-    ep_id_2_pin = {
-        0xD0: "D0",
-        0xD1: "D1",
-        0xD2: "D2",
-        0xD3: "D3",
-        0xD4: "D4",
-        0xD5: "D5",
-        0xD8: "D8",
-        0xD9: "D9",
-        0xDA: "P0",
-        0xDB: "P1",
-        0xDC: "P2",
-    }
-
     async def command(self, command, *args, manufacturer=None, expect_reply=True):
         """Xbee change pin state command, requires zigpy_xbee."""
-        pin_name = self.ep_id_2_pin.get(self._endpoint.endpoint_id)
+        pin_name = ENDPOINT_TO_AT.get(self._endpoint.endpoint_id)
         if command not in [0, 1] or pin_name is None:
             return super().command(command, *args)
         if command == 0:
@@ -153,6 +162,47 @@ class XBeeOnOff(CustomCluster, OnOff):
             pin_cmd = DIO_PIN_HIGH
         await self._endpoint.device.remote_at(pin_name, pin_cmd)
         return 0, foundation.Status.SUCCESS
+
+
+class XBeePWM(LocalDataCluster, AnalogOutput):
+    """XBee PWM Cluster."""
+
+    ep_id_2_pwm = {0xDA: "M0", 0xDB: "M1"}
+
+    def __init__(self, endpoint, is_server=True):
+        """Set known attributes and store them in cache."""
+        super().__init__(endpoint, is_server)
+        self._update_attribute(0x0041, float(0x03FF))  # max_present_value
+        self._update_attribute(0x0045, 0.0)  # min_present_value
+        self._update_attribute(0x0051, 0)  # out_of_service
+        self._update_attribute(0x006A, 1.0)  # resolution
+        self._update_attribute(0x006F, 0x00)  # status_flags
+
+    async def write_attributes(self, attributes, manufacturer=None):
+        """Intercept present_value attribute write."""
+        if ATTR_PRESENT_VALUE in attributes:
+            duty_cycle = int(round(float(attributes.pop(ATTR_PRESENT_VALUE))))
+            at_command = self.ep_id_2_pwm.get(self._endpoint.endpoint_id)
+            result = await self._endpoint.device.remote_at(at_command, duty_cycle)
+            if result != foundation.Status.SUCCESS:
+                return result
+
+            at_command = ENDPOINT_TO_AT.get(self._endpoint.endpoint_id)
+            result = await self._endpoint.device.remote_at(
+                at_command, PIN_ANALOG_OUTPUT
+            )
+            if result != foundation.Status.SUCCESS or not attributes:
+                return result
+
+        return await super().write_attributes(attributes, manufacturer)
+
+    async def read_attributes_raw(self, attributes, manufacturer=None):
+        """Intercept present_value attribute read."""
+        if ATTR_PRESENT_VALUE in attributes:
+            at_command = self.ep_id_2_pwm.get(self._endpoint.endpoint_id)
+            result = await self._endpoint.device.remote_at(at_command)
+            self._update_attribute(ATTR_PRESENT_VALUE, float(result))
+        return await super().read_attributes_raw(attributes, manufacturer)
 
 
 class XBeeCommon(CustomDevice):
@@ -200,7 +250,7 @@ class XBeeCommon(CustomDevice):
                         self._endpoint.device.__getitem__(
                             ENDPOINT_MAP[pin]
                         ).__getattr__(AnalogInput.ep_attribute)._update_attribute(
-                            0x0055,  # "present_value"
+                            ATTR_PRESENT_VALUE,
                             values["analog_samples"][pin]
                             / (10.23 if pin != 7 else 1000),  # supply voltage is in mV
                         )

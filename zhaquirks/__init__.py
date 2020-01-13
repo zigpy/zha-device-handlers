@@ -4,8 +4,8 @@ import importlib
 import pkgutil
 
 from zigpy.quirks import CustomCluster
-import zigpy.types as types
 from zigpy.util import ListenableMixin
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import PowerConfiguration
 from zigpy.zdo import types as zdotypes
 
@@ -35,9 +35,28 @@ class LocalDataCluster(CustomCluster):
 
     async def read_attributes_raw(self, attributes, manufacturer=None):
         """Prevent remote reads."""
-        attributes = [types.uint16_t(a) for a in attributes]
-        values = [self._attr_cache.get(attr) for attr in attributes]
-        return values
+        records = [
+            foundation.ReadAttributeRecord(
+                attr, foundation.Status.UNSUPPORTED_ATTRIBUTE, foundation.TypeValue()
+            )
+            for attr in attributes
+        ]
+        for record in records:
+            record.value.value = self._attr_cache.get(record.attrid)
+            if record.value.value is not None:
+                record.status = foundation.Status.SUCCESS
+        return (records,)
+
+    async def write_attributes(self, attributes, manufacturer=None):
+        """Prevent remote writes."""
+        for attrid, value in attributes.items():
+            if isinstance(attrid, str):
+                attrid = self._attridx[attrid]
+            if attrid not in self.attributes:
+                self.error("%d is not a valid attribute id", attrid)
+                continue
+            self._update_attribute(attrid, value)
+        return (foundation.Status.SUCCESS,)
 
 
 class EventableCluster(CustomCluster):

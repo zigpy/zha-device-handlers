@@ -3,7 +3,7 @@
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import AnalogInput
 
-from . import XBEE_PROFILE_ID, XBeeCommon, XBeeOnOff
+from . import XBEE_PROFILE_ID, XBeeCommon, XBeeOnOff, XBeePWM
 from ..const import DEVICE_TYPE, ENDPOINTS, INPUT_CLUSTERS, OUTPUT_CLUSTERS, PROFILE_ID
 
 
@@ -91,7 +91,7 @@ class XBee3Sensor(XBeeCommon):
                     "model": "DIO10/PWM0",
                     DEVICE_TYPE: zha.DeviceType.LEVEL_CONTROL_SWITCH,
                     PROFILE_ID: XBEE_PROFILE_ID,
-                    INPUT_CLUSTERS: [XBeeOnOff],
+                    INPUT_CLUSTERS: [XBeeOnOff, XBeePWM],
                     OUTPUT_CLUSTERS: [],
                 },
                 0xDB: {
@@ -99,7 +99,7 @@ class XBee3Sensor(XBeeCommon):
                     "model": "DIO11/PWM1",
                     DEVICE_TYPE: zha.DeviceType.LEVEL_CONTROL_SWITCH,
                     PROFILE_ID: XBEE_PROFILE_ID,
-                    INPUT_CLUSTERS: [XBeeOnOff],
+                    INPUT_CLUSTERS: [XBeeOnOff, XBeePWM],
                     OUTPUT_CLUSTERS: [],
                 },
                 0xDC: {
