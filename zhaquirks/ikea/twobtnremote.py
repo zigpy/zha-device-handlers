@@ -150,9 +150,15 @@ class IkeaTradfriRemote2BtnZLL(CustomDevice):
             1: {
                 PROFILE_ID: zll.PROFILE_ID,
                 DEVICE_TYPE: zll.DeviceType.CONTROLLER,
-                INPUT_CLUSTERS: IkeaTradfriRemote2Btn.signature[ENDPOINTS][1][
-                    INPUT_CLUSTERS
-                ].copy(),
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    Identify.cluster_id,
+                    Alarms.cluster_id,
+                    WindowCovering.cluster_id,
+                    LightLink.cluster_id,
+                    IKEA_CLUSTER_ID,
+                ],
                 OUTPUT_CLUSTERS: IkeaTradfriRemote2Btn.signature[ENDPOINTS][1][
                     OUTPUT_CLUSTERS
                 ].copy(),
