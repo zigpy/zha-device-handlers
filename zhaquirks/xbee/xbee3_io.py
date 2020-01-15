@@ -1,9 +1,8 @@
 """Class to control Xbee3 device."""
 
 from zigpy.profiles import zha
-from zigpy.zcl.clusters.general import AnalogInput
 
-from . import XBEE_PROFILE_ID, XBeeCommon, XBeeOnOff, XBeePWM
+from . import XBEE_PROFILE_ID, XBeeAnalogInput, XBeeCommon, XBeeOnOff, XBeePWM
 from ..const import DEVICE_TYPE, ENDPOINTS, INPUT_CLUSTERS, OUTPUT_CLUSTERS, PROFILE_ID
 
 
@@ -19,7 +18,7 @@ class XBee3Sensor(XBeeCommon):
                     "model": "AD0/DIO0/Commissioning",
                     DEVICE_TYPE: zha.DeviceType.LEVEL_CONTROL_SWITCH,
                     PROFILE_ID: XBEE_PROFILE_ID,
-                    INPUT_CLUSTERS: [XBeeOnOff, AnalogInput],
+                    INPUT_CLUSTERS: [XBeeOnOff, XBeeAnalogInput],
                     OUTPUT_CLUSTERS: [],
                 },
                 0xD1: {
@@ -27,7 +26,7 @@ class XBee3Sensor(XBeeCommon):
                     "model": "AD1/DIO1/SPI_nATTN",
                     DEVICE_TYPE: zha.DeviceType.LEVEL_CONTROL_SWITCH,
                     PROFILE_ID: XBEE_PROFILE_ID,
-                    INPUT_CLUSTERS: [XBeeOnOff, AnalogInput],
+                    INPUT_CLUSTERS: [XBeeOnOff, XBeeAnalogInput],
                     OUTPUT_CLUSTERS: [],
                 },
                 0xD2: {
@@ -35,7 +34,7 @@ class XBee3Sensor(XBeeCommon):
                     "model": "AD2/DIO2/SPI_CLK",
                     DEVICE_TYPE: zha.DeviceType.LEVEL_CONTROL_SWITCH,
                     PROFILE_ID: XBEE_PROFILE_ID,
-                    INPUT_CLUSTERS: [XBeeOnOff, AnalogInput],
+                    INPUT_CLUSTERS: [XBeeOnOff, XBeeAnalogInput],
                     OUTPUT_CLUSTERS: [],
                 },
                 0xD3: {
@@ -43,7 +42,7 @@ class XBee3Sensor(XBeeCommon):
                     "model": "AD3/DIO3",
                     DEVICE_TYPE: zha.DeviceType.LEVEL_CONTROL_SWITCH,
                     PROFILE_ID: XBEE_PROFILE_ID,
-                    INPUT_CLUSTERS: [XBeeOnOff, AnalogInput],
+                    INPUT_CLUSTERS: [XBeeOnOff, XBeeAnalogInput],
                     OUTPUT_CLUSTERS: [],
                 },
                 0xD4: {
@@ -67,7 +66,7 @@ class XBee3Sensor(XBeeCommon):
                     "model": "SupplyVoltage",
                     DEVICE_TYPE: zha.DeviceType.LEVEL_CONTROL_SWITCH,
                     PROFILE_ID: XBEE_PROFILE_ID,
-                    INPUT_CLUSTERS: [AnalogInput],
+                    INPUT_CLUSTERS: [XBeeAnalogInput],
                     OUTPUT_CLUSTERS: [],
                 },
                 0xD8: {
