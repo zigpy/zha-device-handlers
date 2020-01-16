@@ -19,7 +19,7 @@ the xbee stays alive in Home Assistant.
 import logging
 import struct
 
-from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.quirks import CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
@@ -148,7 +148,7 @@ ENDPOINT_TO_AT = {
 }
 
 
-class XBeeOnOff(CustomCluster, OnOff):
+class XBeeOnOff(LocalDataCluster, OnOff):
     """XBee on/off cluster."""
 
     async def command(self, command, *args, manufacturer=None, expect_reply=True):
@@ -162,6 +162,10 @@ class XBeeOnOff(CustomCluster, OnOff):
             pin_cmd = DIO_PIN_HIGH
         await self._endpoint.device.remote_at(pin_name, pin_cmd)
         return 0, foundation.Status.SUCCESS
+
+
+class XBeeAnalogInput(LocalDataCluster, AnalogInput):
+    """XBee Analog Input Cluster."""
 
 
 class XBeePWM(LocalDataCluster, AnalogOutput):
@@ -216,7 +220,7 @@ class XBeeCommon(CustomDevice):
             )
         _LOGGER.warning("Remote At Command not supported by this coordinator")
 
-    class DigitalIOCluster(CustomCluster, BinaryInput):
+    class DigitalIOCluster(LocalDataCluster, BinaryInput):
         """Digital IO Cluster for the XBee."""
 
         cluster_id = XBEE_IO_CLUSTER
@@ -249,7 +253,7 @@ class XBeeCommon(CustomDevice):
                         # pylint: disable=W0212
                         self._endpoint.device.__getitem__(
                             ENDPOINT_MAP[pin]
-                        ).__getattr__(AnalogInput.ep_attribute)._update_attribute(
+                        ).__getattr__(XBeeAnalogInput.ep_attribute)._update_attribute(
                             ATTR_PRESENT_VALUE,
                             values["analog_samples"][pin]
                             / (10.23 if pin != 7 else 1000),  # supply voltage is in mV
@@ -304,7 +308,8 @@ class XBeeCommon(CustomDevice):
         client_commands = {0x0000: ("io_sample", (IOSample,), False)}
         server_commands = {0x0000: ("io_sample", (IOSample,), False)}
 
-    class EventRelayCluster(EventableCluster, LevelControl):
+    # pylint: disable=too-many-ancestors
+    class EventRelayCluster(EventableCluster, LocalDataCluster, LevelControl):
         """A cluster with cluster_id which is allowed to send events."""
 
         attributes = {}
