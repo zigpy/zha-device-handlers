@@ -119,29 +119,9 @@ If you are looking to make your first code contribution to this project then we 
 - PWM output on XBee3 can be controlled by writing 0x0055 (present_value) cluster attribute with `zha.set_zigbee_cluster_attribute` service
 - Outgoing UART data can be sent with `zha.issue_zigbee_cluster_command` service
 - Incoming UART data will generate `zha_event` event.
+- PWM can be controlled with `zha.set_zigbee_cluster_attribute` service
 
-For example, the following script replies with an `Assistant` string to the device once it receives a `Home` string from it (replace ieee with your actual endpoint device ieee):
-```
-automation:
-  - alias: XBee UART Test
-    trigger:
-      platform: event
-      event_type: zha_event
-      event_data:
-        device_ieee: 00:13:a2:00:12:34:56:78
-        command: receive_data
-        args: Home
-    action:
-      service: zha.issue_zigbee_cluster_command
-      data:
-        ieee: 00:13:a2:00:12:34:56:78
-        endpoint_id: 232
-        cluster_id: 17
-        cluster_type: in
-        command: 0
-        command_type: server
-        args: Assistant
-```
+Please refer to [xbee.md](xbee.md) for details on configuration and usage examples.
 
 ### Yale
 
