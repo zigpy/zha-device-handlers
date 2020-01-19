@@ -38,6 +38,8 @@ from ..const import (
     SHORT_PRESS,
     TURN_OFF,
     TURN_ON,
+    LONG_RELEASE,
+	COMMAND_STOP,
 )
 
 IKEA_CLUSTER_ID = 0xFC7C  # decimal = 64636
@@ -113,6 +115,12 @@ class IkeaTradfriRemote2Btn(CustomDevice):
             ENDPOINT_ID: 1,
             ARGS: [0, 83],
         },
+        (LONG_RELEASE, DIM_UP): {
+			COMMAND: COMMAND_STOP,
+            CLUSTER_ID: 8,
+            ENDPOINT_ID: 1,
+            ARGS: [0, 83],
+		},
         (SHORT_PRESS, TURN_OFF): {COMMAND: COMMAND_OFF, CLUSTER_ID: 6, ENDPOINT_ID: 1},
         (LONG_PRESS, DIM_DOWN): {
             COMMAND: COMMAND_MOVE,
@@ -120,6 +128,12 @@ class IkeaTradfriRemote2Btn(CustomDevice):
             ENDPOINT_ID: 1,
             ARGS: [1, 83],
         },
+        (LONG_RELEASE, DIM_DOWN): {
+			COMMAND: COMMAND_STOP,
+            CLUSTER_ID: 8,
+            ENDPOINT_ID: 1,
+            ARGS: [1, 83],
+		},
     }
 
 
