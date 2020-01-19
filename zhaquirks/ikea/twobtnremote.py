@@ -120,7 +120,7 @@ class IkeaTradfriRemote2Btn(CustomDevice):
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
             ARGS: [0, 83],
-		},
+        },
         (SHORT_PRESS, TURN_OFF): {COMMAND: COMMAND_OFF, CLUSTER_ID: 6, ENDPOINT_ID: 1},
         (LONG_PRESS, DIM_DOWN): {
             COMMAND: COMMAND_MOVE,
@@ -133,7 +133,7 @@ class IkeaTradfriRemote2Btn(CustomDevice):
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
             ARGS: [1, 83],
-		},
+        },
     }
 
 
