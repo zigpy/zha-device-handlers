@@ -28,12 +28,12 @@ class FlexRGBW(CustomDevice):
     """Ledvance Flex RGBW LED strip."""
 
     signature = {
-        # <SimpleDescriptor endpoint=3 profile=260 device_type=258
+        # <SimpleDescriptor endpoint=1 profile=260 device_type=258
         # device_version=2 input_clusters=[0, 3, 4, 5, 6, 8, 768, 2821, 64527]
         # output_clusters=[25]>
         MODELS_INFO: [(LEDVANCE, "FLEX RGBW")],
         ENDPOINTS: {
-            3: {
+            1: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.COLOR_DIMMABLE_LIGHT,
                 INPUT_CLUSTERS: [
@@ -54,7 +54,7 @@ class FlexRGBW(CustomDevice):
 
     replacement = {
         ENDPOINTS: {
-            3: {
+            1: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.COLOR_DIMMABLE_LIGHT,
                 INPUT_CLUSTERS: [
