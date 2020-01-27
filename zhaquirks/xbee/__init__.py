@@ -45,6 +45,7 @@ XBEE_IO_CLUSTER = 0x92
 XBEE_PROFILE_ID = 0xC105
 XBEE_REMOTE_AT = 0x17
 XBEE_SRC_ENDPOINT = 0xE8
+ATTR_ON_OFF = 0x0000
 ATTR_PRESENT_VALUE = 0x0055
 PIN_ANALOG_OUTPUT = 2
 
@@ -182,7 +183,10 @@ class XBeeOnOff(LocalDataCluster, OnOff):
             pin_cmd = DIO_PIN_LOW
         else:
             pin_cmd = DIO_PIN_HIGH
-        return 0, await self._endpoint.device.remote_at(pin_name, pin_cmd)
+        result = await self._endpoint.device.remote_at(pin_name, pin_cmd)
+        if result == foundation.Status.SUCCESS:
+            self._update_attribute(ATTR_ON_OFF, command)
+        return 0, result
 
 
 class XBeeAnalogInput(LocalDataCluster, AnalogInput):
@@ -243,6 +247,14 @@ class XBeeCommon(CustomDevice):
             )
         _LOGGER.warning("Remote At Command not supported by this coordinator")
 
+    def deserialize(self, endpoint_id, cluster_id, data):
+        """Deserialize."""
+        tsn = self._application.get_sequence()
+        command_id = 0x0000
+        hdr = foundation.ZCLHeader.cluster(tsn, command_id)
+        data = hdr.serialize() + data
+        return super().deserialize(endpoint_id, cluster_id, data)
+
     class DigitalIOCluster(LocalDataCluster, BinaryInput):
         """Digital IO Cluster for the XBee."""
 
@@ -265,7 +277,7 @@ class XBeeCommon(CustomDevice):
                         self._endpoint.device.__getitem__(
                             ENDPOINT_MAP[pin]
                         ).__getattr__(OnOff.ep_attribute)._update_attribute(
-                            ON_OFF_CMD, values["digital_samples"][pin]
+                            ATTR_ON_OFF, values["digital_samples"][pin]
                         )
                 if "analog_pins" in values and "analog_samples" in values:
                     # Update analog inputs
@@ -283,14 +295,6 @@ class XBeeCommon(CustomDevice):
                         )
             else:
                 super().handle_cluster_request(tsn, command_id, args)
-
-        def deserialize(self, data):
-            """Deserialize."""
-            tsn = self._endpoint.device.application.get_sequence()
-            command_id = ON_OFF_CMD
-            hdr = foundation.ZCLHeader.cluster(tsn, command_id)
-            data = hdr.serialize() + data
-            return super().deserialize(data)
 
         attributes = {0x0055: ("present_value", t.Bool)}
         client_commands = {0x0000: ("io_sample", (IOSample,), False)}
@@ -335,14 +339,6 @@ class XBeeCommon(CustomDevice):
         attributes = {}
         client_commands = {0x0000: ("send_data", (BinaryString,), None)}
         server_commands = {0x0000: ("receive_data", (BinaryString,), None)}
-
-        def deserialize(self, data):
-            """Deserialize."""
-            tsn = self._endpoint.device.application.get_sequence()
-            command_id = DATA_IN_CMD
-            hdr = foundation.ZCLHeader.cluster(tsn, command_id)
-            data = hdr.serialize() + data
-            return super().deserialize(data)
 
     replacement = {
         ENDPOINTS: {
