@@ -61,12 +61,20 @@ class XBee3Sensor(XBeeCommon):
                     INPUT_CLUSTERS: [XBeeOnOff],
                     OUTPUT_CLUSTERS: [],
                 },
-                0xD7: {
+                0xD6: {
                     "manufacturer": "XBEE",
-                    "model": "SupplyVoltage",
+                    "model": "DIO6/RTS",
                     DEVICE_TYPE: zha.DeviceType.LEVEL_CONTROL_SWITCH,
                     PROFILE_ID: XBEE_PROFILE_ID,
-                    INPUT_CLUSTERS: [XBeeAnalogInput],
+                    INPUT_CLUSTERS: [XBeeOnOff],
+                    OUTPUT_CLUSTERS: [],
+                },
+                0xD7: {
+                    "manufacturer": "XBEE",
+                    "model": "DIO7/CTS",
+                    DEVICE_TYPE: zha.DeviceType.LEVEL_CONTROL_SWITCH,
+                    PROFILE_ID: XBEE_PROFILE_ID,
+                    INPUT_CLUSTERS: [XBeeOnOff, XBeeAnalogInput],
                     OUTPUT_CLUSTERS: [],
                 },
                 0xD8: {
@@ -104,6 +112,22 @@ class XBee3Sensor(XBeeCommon):
                 0xDC: {
                     "manufacturer": "XBEE",
                     "model": "DIO12/SPI_MISO",
+                    DEVICE_TYPE: zha.DeviceType.LEVEL_CONTROL_SWITCH,
+                    PROFILE_ID: XBEE_PROFILE_ID,
+                    INPUT_CLUSTERS: [XBeeOnOff],
+                    OUTPUT_CLUSTERS: [],
+                },
+                0xDD: {
+                    "manufacturer": "XBEE",
+                    "model": "DIO13/DOUT",
+                    DEVICE_TYPE: zha.DeviceType.LEVEL_CONTROL_SWITCH,
+                    PROFILE_ID: XBEE_PROFILE_ID,
+                    INPUT_CLUSTERS: [XBeeOnOff],
+                    OUTPUT_CLUSTERS: [],
+                },
+                0xDE: {
+                    "manufacturer": "XBEE",
+                    "model": "DIO14/DIN",
                     DEVICE_TYPE: zha.DeviceType.LEVEL_CONTROL_SWITCH,
                     PROFILE_ID: XBEE_PROFILE_ID,
                     INPUT_CLUSTERS: [XBeeOnOff],

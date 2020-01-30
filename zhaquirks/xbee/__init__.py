@@ -56,22 +56,6 @@ PIN_ANALOG_OUTPUT = 2
 # device_type=1 device_version=0 input_clusters=[] output_clusters=[]>
 
 
-ENDPOINT_MAP = {
-    0: 0xD0,
-    1: 0xD1,
-    2: 0xD2,
-    3: 0xD3,
-    4: 0xD4,
-    5: 0xD5,
-    7: 0xD7,
-    8: 0xD8,
-    9: 0xD9,
-    10: 0xDA,
-    11: 0xDB,
-    12: 0xDC,
-}
-
-
 ENDPOINT_TO_AT = {
     0xD0: "D0",
     0xD1: "D1",
@@ -79,11 +63,15 @@ ENDPOINT_TO_AT = {
     0xD3: "D3",
     0xD4: "D4",
     0xD5: "D5",
+    0xD6: "D6",
+    0xD7: "D7",
     0xD8: "D8",
     0xD9: "D9",
     0xDA: "P0",
     0xDB: "P1",
     0xDC: "P2",
+    0xDD: "P3",
+    0xDE: "P4",
 }
 
 
@@ -259,9 +247,7 @@ class XBeeCommon(CustomDevice):
                     ]
                     for pin in active_pins:
                         # pylint: disable=W0212
-                        self._endpoint.device.__getitem__(
-                            ENDPOINT_MAP[pin]
-                        ).__getattr__(OnOff.ep_attribute)._update_attribute(
+                        self._endpoint.device[0xD0 + pin].on_off._update_attribute(
                             ATTR_ON_OFF, values["digital_samples"][pin]
                         )
                 if "analog_pins" in values and "analog_samples" in values:
@@ -271,9 +257,9 @@ class XBeeCommon(CustomDevice):
                     ]
                     for pin in active_pins:
                         # pylint: disable=W0212
-                        self._endpoint.device.__getitem__(
-                            ENDPOINT_MAP[pin]
-                        ).__getattr__(XBeeAnalogInput.ep_attribute)._update_attribute(
+                        self._endpoint.device[
+                            0xD0 + pin
+                        ].analog_input._update_attribute(
                             ATTR_PRESENT_VALUE,
                             values["analog_samples"][pin]
                             / (10.23 if pin != 7 else 1000),  # supply voltage is in mV
