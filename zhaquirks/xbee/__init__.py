@@ -50,90 +50,6 @@ ATTR_PRESENT_VALUE = 0x0055
 PIN_ANALOG_OUTPUT = 2
 
 
-class IOSample(bytes):
-    """Parse an XBee IO sample report."""
-
-    # pylint: disable=R0201
-    def serialize(self):
-        """Serialize an IO Sample Report, Not implemented."""
-        _LOGGER.debug("Serialize not implemented.")
-
-    @classmethod
-    def deserialize(cls, data):
-        """Deserialize an xbee IO sample report.
-
-        xbee digital sample format
-        Sample set count byte 0
-        Digital mask byte 1, 2
-        Analog mask byte 3
-        Digital samples byte 4, 5 (if any sample exists)
-        Analog Sample, 2 bytes per
-        """
-        sample_sets = int.from_bytes(data[0:1], byteorder="big")
-        if sample_sets != 1:
-            _LOGGER.warning("Number of sets is not 1")
-        digital_mask = data[1:3]
-        analog_mask = data[3:4]
-        digital_sample = data[4:6]
-        num_bits = 13
-        digital_pins = [
-            (int.from_bytes(digital_mask, byteorder="big") >> bit) & 1
-            for bit in range(num_bits - 1, -1, -1)
-        ]
-        digital_pins = list(reversed(digital_pins))
-        analog_pins = [
-            (int.from_bytes(analog_mask, byteorder="big") >> bit) & 1
-            for bit in range(8 - 1, -1, -1)
-        ]
-        analog_pins = list(reversed(analog_pins))
-        if 1 in digital_pins:
-            digital_samples = [
-                (int.from_bytes(digital_sample, byteorder="big") >> bit) & 1
-                for bit in range(num_bits - 1, -1, -1)
-            ]
-            digital_samples = list(reversed(digital_samples))
-            sample_index = 6
-        else:
-            # skip digital samples block
-            digital_samples = digital_pins
-            sample_index = 4
-        analog_samples = []
-        for apin in analog_pins:
-            if apin == 1:
-                analog_samples.append(
-                    int.from_bytes(
-                        data[sample_index : sample_index + 2], byteorder="big"
-                    )
-                )
-                sample_index += 2
-            else:
-                analog_samples.append(0)
-
-        return (
-            {
-                "digital_pins": digital_pins,
-                "analog_pins": analog_pins,
-                "digital_samples": digital_samples,
-                "analog_samples": analog_samples,
-            },
-            data[sample_index:],
-        )
-
-
-class BinaryString(str):
-    """Class to parse and serialize binary data as string."""
-
-    def serialize(self):
-        """Serialize string into bytes."""
-        return bytes(self, encoding="latin1")
-
-    @classmethod
-    def deserialize(cls, data):
-        """Interpret data as string."""
-        data = str(data, encoding="latin1")
-        return (cls(data), b"")
-
-
 # 4 AO lines
 # 10 digital
 # Discovered endpoint information: <SimpleDescriptor endpoint=232 profile=49413
@@ -260,6 +176,75 @@ class XBeeCommon(CustomDevice):
 
         cluster_id = XBEE_IO_CLUSTER
 
+        class IOSample(bytes):
+            """Parse an XBee IO sample report."""
+
+            # pylint: disable=R0201
+            def serialize(self):
+                """Serialize an IO Sample Report, Not implemented."""
+                _LOGGER.debug("Serialize not implemented.")
+
+            @classmethod
+            def deserialize(cls, data):
+                """Deserialize an xbee IO sample report.
+
+                xbee digital sample format
+                Sample set count byte 0
+                Digital mask byte 1, 2
+                Analog mask byte 3
+                Digital samples byte 4, 5 (if any sample exists)
+                Analog Sample, 2 bytes per
+                """
+                sample_sets = int.from_bytes(data[0:1], byteorder="big")
+                if sample_sets != 1:
+                    _LOGGER.warning("Number of sets is not 1")
+                digital_mask = data[1:3]
+                analog_mask = data[3:4]
+                digital_sample = data[4:6]
+                num_bits = 13
+                digital_pins = [
+                    (int.from_bytes(digital_mask, byteorder="big") >> bit) & 1
+                    for bit in range(num_bits - 1, -1, -1)
+                ]
+                digital_pins = list(reversed(digital_pins))
+                analog_pins = [
+                    (int.from_bytes(analog_mask, byteorder="big") >> bit) & 1
+                    for bit in range(8 - 1, -1, -1)
+                ]
+                analog_pins = list(reversed(analog_pins))
+                if 1 in digital_pins:
+                    digital_samples = [
+                        (int.from_bytes(digital_sample, byteorder="big") >> bit) & 1
+                        for bit in range(num_bits - 1, -1, -1)
+                    ]
+                    digital_samples = list(reversed(digital_samples))
+                    sample_index = 6
+                else:
+                    # skip digital samples block
+                    digital_samples = digital_pins
+                    sample_index = 4
+                analog_samples = []
+                for apin in analog_pins:
+                    if apin == 1:
+                        analog_samples.append(
+                            int.from_bytes(
+                                data[sample_index : sample_index + 2], byteorder="big"
+                            )
+                        )
+                        sample_index += 2
+                    else:
+                        analog_samples.append(0)
+
+                return (
+                    {
+                        "digital_pins": digital_pins,
+                        "analog_pins": analog_pins,
+                        "digital_samples": digital_samples,
+                        "analog_samples": analog_samples,
+                    },
+                    data[sample_index:],
+                )
+
         def handle_cluster_request(self, tsn, command_id, args):
             """Handle the cluster request.
 
@@ -313,9 +298,22 @@ class XBeeCommon(CustomDevice):
 
         cluster_id = XBEE_DATA_CLUSTER
 
+        class BinaryString(str):
+            """Class to parse and serialize binary data as string."""
+
+            def serialize(self):
+                """Serialize string into bytes."""
+                return bytes(self, encoding="latin1")
+
+            @classmethod
+            def deserialize(cls, data):
+                """Interpret data as string."""
+                data = str(data, encoding="latin1")
+                return (cls(data), b"")
+
         def command(self, command, *args, manufacturer=None, expect_reply=False):
             """Handle outgoing data."""
-            data = BinaryString(args[0]).serialize()
+            data = self.BinaryString(args[0]).serialize()
             return self._endpoint.device.application.request(
                 self._endpoint.device,
                 XBEE_PROFILE_ID,
