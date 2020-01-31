@@ -6,7 +6,7 @@ ZHA Device Handlers are custom quirks implementations for [Zigpy](https://github
 
 ZHA device handlers bridge the functionality gap created when manufacturers deviate from the ZCL specification, handling deviations and exceptions by parsing custom messages to and from Zigbee devices. Zigbee devices that deviate from or do not fully conform to the standard specifications set by the Zigbee Alliance may require the development of custom ZHA Device Handlers (ZHA custom quirks handler implementation) to for all their functions to work properly with the ZHA component in Home Assistant. 
 
-Custom quirks implementations for zigpy implemented as ZHA Device Handlers are a similar concept to that of [Hub-connected Device Handlers for the SmartThings Classics platform](https://docs.smartthings.com/en/latest/device-type-developers-guide/) as well that of [Zigbee-Shepherd Converters as used by Zigbee2mqtt](https://www.zigbee2mqtt.io/how_tos/how_to_support_new_devices.html), meaning they are virtual representation of a physical device that expose additional functionality that is not provided out-of-the-box by the existing integration between these platforms. See [Device Specifics](#Device-Specifics) for details.
+Custom quirks implementations for zigpy implemented as ZHA Device Handlers are a similar concept to that of [Hub-connected Device Handlers for the SmartThings Classics platform](https://docs.smartthings.com/en/latest/device-type-developers-guide/) as well that of [Zigbee-Herdsman Converters / Zigbee-Shepherd Converters as used by Zigbee2mqtt](https://www.zigbee2mqtt.io/how_tos/how_to_support_new_devices.html), meaning they are virtual representation of a physical device that expose additional functionality that is not provided out-of-the-box by the existing integration between these platforms. See [Device Specifics](#Device-Specifics) for details.
 
 # How to contribute
 
@@ -119,29 +119,9 @@ If you are looking to make your first code contribution to this project then we 
 - PWM output on XBee3 can be controlled by writing 0x0055 (present_value) cluster attribute with `zha.set_zigbee_cluster_attribute` service
 - Outgoing UART data can be sent with `zha.issue_zigbee_cluster_command` service
 - Incoming UART data will generate `zha_event` event.
+- PWM can be controlled with `zha.set_zigbee_cluster_attribute` service
 
-For example, the following script replies with an `Assistant` string to the device once it receives a `Home` string from it (replace ieee with your actual endpoint device ieee):
-```
-automation:
-  - alias: XBee UART Test
-    trigger:
-      platform: event
-      event_type: zha_event
-      event_data:
-        device_ieee: 00:13:a2:00:12:34:56:78
-        command: receive_data
-        args: Home
-    action:
-      service: zha.issue_zigbee_cluster_command
-      data:
-        ieee: 00:13:a2:00:12:34:56:78
-        endpoint_id: 232
-        cluster_id: 17
-        cluster_type: in
-        command: 0
-        command_type: server
-        args: Assistant
-```
+Please refer to [xbee.md](xbee.md) for details on configuration and usage examples.
 
 ### Yale
 

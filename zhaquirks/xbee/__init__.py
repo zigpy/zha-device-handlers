@@ -17,9 +17,8 @@ the xbee stays alive in Home Assistant.
 """
 
 import logging
-import struct
 
-from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.quirks import CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
@@ -46,91 +45,15 @@ XBEE_IO_CLUSTER = 0x92
 XBEE_PROFILE_ID = 0xC105
 XBEE_REMOTE_AT = 0x17
 XBEE_SRC_ENDPOINT = 0xE8
+ATTR_ON_OFF = 0x0000
 ATTR_PRESENT_VALUE = 0x0055
 PIN_ANALOG_OUTPUT = 2
-
-
-class IOSample(bytes):
-    """Parse an XBee IO sample report."""
-
-    # pylint: disable=R0201
-    def serialize(self):
-        """Serialize an IO Sample Report, Not implemented."""
-        _LOGGER.debug("Serialize not implemented.")
-
-    @classmethod
-    def deserialize(cls, data):
-        """Deserialize an xbee IO sample report.
-
-        xbee digital sample format
-        Digital mask byte 0,1
-        Analog mask byte 3
-        Digital samples byte 4, 5
-        Analog Sample, 2 bytes per
-        """
-        digital_mask = data[0:2]
-        analog_mask = data[2:3]
-        digital_sample = data[3:5]
-        num_bits = 13
-        digital_pins = [
-            (int.from_bytes(digital_mask, byteorder="big") >> bit) & 1
-            for bit in range(num_bits - 1, -1, -1)
-        ]
-        digital_pins = list(reversed(digital_pins))
-        analog_pins = [
-            (int.from_bytes(analog_mask, byteorder="big") >> bit) & 1
-            for bit in range(8 - 1, -1, -1)
-        ]
-        analog_pins = list(reversed(analog_pins))
-        digital_samples = [
-            (int.from_bytes(digital_sample, byteorder="big") >> bit) & 1
-            for bit in range(num_bits - 1, -1, -1)
-        ]
-        digital_samples = list(reversed(digital_samples))
-        sample_index = 0
-        analog_samples = []
-        for apin in analog_pins:
-            if apin == 1:
-                analog_samples.append(
-                    int.from_bytes(
-                        data[5 + sample_index : 7 + sample_index], byteorder="big"
-                    )
-                )
-                sample_index += 2
-            else:
-                analog_samples.append(0)
-
-        return (
-            {
-                "digital_pins": digital_pins,
-                "analog_pins": analog_pins,
-                "digital_samples": digital_samples,
-                "analog_samples": analog_samples,
-            },
-            b"",
-        )
 
 
 # 4 AO lines
 # 10 digital
 # Discovered endpoint information: <SimpleDescriptor endpoint=232 profile=49413
 # device_type=1 device_version=0 input_clusters=[] output_clusters=[]>
-
-
-ENDPOINT_MAP = {
-    0: 0xD0,
-    1: 0xD1,
-    2: 0xD2,
-    3: 0xD3,
-    4: 0xD4,
-    5: 0xD5,
-    7: 0xD7,
-    8: 0xD8,
-    9: 0xD9,
-    10: 0xDA,
-    11: 0xDB,
-    12: 0xDC,
-}
 
 
 ENDPOINT_TO_AT = {
@@ -140,15 +63,19 @@ ENDPOINT_TO_AT = {
     0xD3: "D3",
     0xD4: "D4",
     0xD5: "D5",
+    0xD6: "D6",
+    0xD7: "D7",
     0xD8: "D8",
     0xD9: "D9",
     0xDA: "P0",
     0xDB: "P1",
     0xDC: "P2",
+    0xDD: "P3",
+    0xDE: "P4",
 }
 
 
-class XBeeOnOff(CustomCluster, OnOff):
+class XBeeOnOff(LocalDataCluster, OnOff):
     """XBee on/off cluster."""
 
     async def command(self, command, *args, manufacturer=None, expect_reply=True):
@@ -160,8 +87,16 @@ class XBeeOnOff(CustomCluster, OnOff):
             pin_cmd = DIO_PIN_LOW
         else:
             pin_cmd = DIO_PIN_HIGH
-        await self._endpoint.device.remote_at(pin_name, pin_cmd)
-        return 0, foundation.Status.SUCCESS
+        result = await self._endpoint.device.remote_at(pin_name, pin_cmd)
+        if result == foundation.Status.SUCCESS:
+            self._update_attribute(ATTR_ON_OFF, command)
+        return 0, result
+
+
+class XBeeAnalogInput(LocalDataCluster, AnalogInput):
+    """XBee Analog Input Cluster."""
+
+    pass
 
 
 class XBeePWM(LocalDataCluster, AnalogOutput):
@@ -216,10 +151,87 @@ class XBeeCommon(CustomDevice):
             )
         _LOGGER.warning("Remote At Command not supported by this coordinator")
 
-    class DigitalIOCluster(CustomCluster, BinaryInput):
+    def deserialize(self, endpoint_id, cluster_id, data):
+        """Deserialize."""
+        tsn = self._application.get_sequence()
+        command_id = 0x0000
+        hdr = foundation.ZCLHeader.cluster(tsn, command_id)
+        data = hdr.serialize() + data
+        return super().deserialize(endpoint_id, cluster_id, data)
+
+    class DigitalIOCluster(LocalDataCluster, BinaryInput):
         """Digital IO Cluster for the XBee."""
 
         cluster_id = XBEE_IO_CLUSTER
+
+        class IOSample(bytes):
+            """Parse an XBee IO sample report."""
+
+            # pylint: disable=R0201
+            def serialize(self):
+                """Serialize an IO Sample Report, Not implemented."""
+                _LOGGER.debug("Serialize not implemented.")
+
+            @classmethod
+            def deserialize(cls, data):
+                """Deserialize an xbee IO sample report.
+
+                xbee digital sample format
+                Sample set count byte 0
+                Digital mask byte 1, 2
+                Analog mask byte 3
+                Digital samples byte 4, 5 (if any sample exists)
+                Analog Sample, 2 bytes per
+                """
+                sample_sets = int.from_bytes(data[0:1], byteorder="big")
+                if sample_sets != 1:
+                    _LOGGER.warning("Number of sets is not 1")
+                digital_mask = data[1:3]
+                analog_mask = data[3:4]
+                digital_sample = data[4:6]
+                num_bits = 13
+                digital_pins = [
+                    (int.from_bytes(digital_mask, byteorder="big") >> bit) & 1
+                    for bit in range(num_bits - 1, -1, -1)
+                ]
+                digital_pins = list(reversed(digital_pins))
+                analog_pins = [
+                    (int.from_bytes(analog_mask, byteorder="big") >> bit) & 1
+                    for bit in range(8 - 1, -1, -1)
+                ]
+                analog_pins = list(reversed(analog_pins))
+                if 1 in digital_pins:
+                    digital_samples = [
+                        (int.from_bytes(digital_sample, byteorder="big") >> bit) & 1
+                        for bit in range(num_bits - 1, -1, -1)
+                    ]
+                    digital_samples = list(reversed(digital_samples))
+                    sample_index = 6
+                else:
+                    # skip digital samples block
+                    digital_samples = digital_pins
+                    sample_index = 4
+                analog_samples = []
+                for apin in analog_pins:
+                    if apin == 1:
+                        analog_samples.append(
+                            int.from_bytes(
+                                data[sample_index : sample_index + 2], byteorder="big"
+                            )
+                        )
+                        sample_index += 2
+                    else:
+                        analog_samples.append(0)
+
+                return (
+                    {
+                        "digital_pins": digital_pins,
+                        "analog_pins": analog_pins,
+                        "digital_samples": digital_samples,
+                        "analog_samples": analog_samples,
+                    },
+                    data[sample_index:],
+                )
 
         def handle_cluster_request(self, tsn, command_id, args):
             """Handle the cluster request.
@@ -235,10 +247,8 @@ class XBeeCommon(CustomDevice):
                     ]
                     for pin in active_pins:
                         # pylint: disable=W0212
-                        self._endpoint.device.__getitem__(
-                            ENDPOINT_MAP[pin]
-                        ).__getattr__(OnOff.ep_attribute)._update_attribute(
-                            ON_OFF_CMD, values["digital_samples"][pin]
+                        self._endpoint.device[0xD0 + pin].on_off._update_attribute(
+                            ATTR_ON_OFF, values["digital_samples"][pin]
                         )
                 if "analog_pins" in values and "analog_samples" in values:
                     # Update analog inputs
@@ -247,9 +257,9 @@ class XBeeCommon(CustomDevice):
                     ]
                     for pin in active_pins:
                         # pylint: disable=W0212
-                        self._endpoint.device.__getitem__(
-                            ENDPOINT_MAP[pin]
-                        ).__getattr__(AnalogInput.ep_attribute)._update_attribute(
+                        self._endpoint.device[
+                            0xD0 + pin
+                        ].analog_input._update_attribute(
                             ATTR_PRESENT_VALUE,
                             values["analog_samples"][pin]
                             / (10.23 if pin != 7 else 1000),  # supply voltage is in mV
@@ -257,54 +267,12 @@ class XBeeCommon(CustomDevice):
             else:
                 super().handle_cluster_request(tsn, command_id, args)
 
-        def deserialize(self, data):
-            """Deserialize."""
-            hdr, data = foundation.ZCLHeader.deserialize(data)
-            self.debug("ZCL deserialize: %s", hdr)
-            if hdr.frame_control.frame_type == foundation.FrameType.CLUSTER_COMMAND:
-                # Cluster command
-                if hdr.is_reply:
-                    commands = self.client_commands
-                else:
-                    commands = self.server_commands
-
-                try:
-                    schema = commands[hdr.command_id][1]
-                    hdr.frame_control.is_reply = commands[hdr.command_id][2]
-                except KeyError:
-                    data = (
-                        struct.pack(">i", hdr.tsn)[-1:]
-                        + struct.pack(">i", hdr.command_id)[-1:]
-                        + data
-                    )
-                    hdr.command_id = ON_OFF_CMD
-                    try:
-                        schema = commands[hdr.command_id][1]
-                        hdr.frame_control.is_reply = commands[hdr.command_id][2]
-                    except KeyError:
-                        self.warn("Unknown cluster-specific command %s", hdr.command_id)
-                        return hdr, data
-                    value, data = t.deserialize(data, schema)
-                    return hdr, value
-            else:
-                # General command
-                try:
-                    schema = foundation.COMMANDS[hdr.command_id][0]
-                    hdr.frame_control.is_reply = foundation.COMMANDS[hdr.command_id][1]
-                except KeyError:
-                    self.warn("Unknown foundation command %s", hdr.command_id)
-                    return hdr, data
-
-            value, data = t.deserialize(data, schema)
-            if data != b"":
-                _LOGGER.warning("Data remains after deserializing ZCL frame")
-            return hdr, value
-
         attributes = {0x0055: ("present_value", t.Bool)}
         client_commands = {0x0000: ("io_sample", (IOSample,), False)}
         server_commands = {0x0000: ("io_sample", (IOSample,), False)}
 
-    class EventRelayCluster(EventableCluster, LevelControl):
+    # pylint: disable=too-many-ancestors
+    class EventRelayCluster(EventableCluster, LocalDataCluster, LevelControl):
         """A cluster with cluster_id which is allowed to send events."""
 
         attributes = {}
@@ -316,9 +284,22 @@ class XBeeCommon(CustomDevice):
 
         cluster_id = XBEE_DATA_CLUSTER
 
+        class BinaryString(str):
+            """Class to parse and serialize binary data as string."""
+
+            def serialize(self):
+                """Serialize string into bytes."""
+                return bytes(self, encoding="latin1")
+
+            @classmethod
+            def deserialize(cls, data):
+                """Interpret data as string."""
+                data = str(data, encoding="latin1")
+                return (cls(data), b"")
+
         def command(self, command, *args, manufacturer=None, expect_reply=False):
             """Handle outgoing data."""
-            data = bytes("".join(args), encoding="latin1")
+            data = self.BinaryString(args[0]).serialize()
             return self._endpoint.device.application.request(
                 self._endpoint.device,
                 XBEE_PROFILE_ID,
@@ -335,33 +316,13 @@ class XBeeCommon(CustomDevice):
             if command_id == DATA_IN_CMD:
                 self._endpoint.out_clusters[
                     LevelControl.cluster_id
-                ].handle_cluster_request(tsn, command_id, str(args, encoding="latin1"))
+                ].handle_cluster_request(tsn, command_id, args[0])
             else:
                 super().handle_cluster_request(tsn, command_id, args)
 
         attributes = {}
-        client_commands = {0x0000: ("send_data", (bytes,), None)}
-        server_commands = {0x0000: ("receive_data", (bytes,), None)}
-
-    def deserialize(self, endpoint_id, cluster_id, data):
-        """Pretends to be parsing incoming data."""
-        if cluster_id != XBEE_DATA_CLUSTER:
-            return super().deserialize(endpoint_id, cluster_id, data)
-
-        tsn = self._application.get_sequence()
-        command_id = DATA_IN_CMD
-        is_reply = False
-
-        class Hdr(foundation.ZCLHeader):
-            """Trivial serialization class."""
-
-            def __init__(self, tsn, command_id, is_reply):
-                frc = foundation.FrameControl()
-                frc.is_reply = is_reply
-                frc.frame_type = foundation.FrameType.CLUSTER_COMMAND
-                super().__init__(frame_control=frc, tsn=tsn, command_id=command_id)
-
-        return Hdr(tsn, command_id, is_reply), data
+        client_commands = {0x0000: ("send_data", (BinaryString,), None)}
+        server_commands = {0x0000: ("receive_data", (BinaryString,), None)}
 
     replacement = {
         ENDPOINTS: {
