@@ -1,31 +1,16 @@
 """Konke sensors."""
 
 import asyncio
-import logging
 
-from zigpy.quirks import CustomCluster, CustomDevice
-from zigpy.zcl.clusters.general import Basic, PowerConfiguration
-from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
-from zigpy.zcl.clusters.measurement import (
-    OccupancySensing,
-    PressureMeasurement,
-    RelativeHumidity,
-    TemperatureMeasurement,
-)
+from zigpy.quirks import CustomCluster
+from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
 
-from .. import Bus, LocalDataCluster
+from .. import LocalDataCluster
 from ..const import (
-    ATTRIBUTE_ID,
-    ATTRIBUTE_NAME,
     CLUSTER_COMMAND,
-    COMMAND_ATTRIBUTE_UPDATED,
-    COMMAND_TRIPLE,
     OFF,
     ON,
-    UNKNOWN,
-    VALUE,
-    ZHA_SEND_EVENT,
     ZONE_STATE,
 )
 
@@ -37,6 +22,7 @@ ZONE_TYPE = 0x0001
 
 MOTION_TIME = 60
 OCCUPANCY_TIME = 600
+
 
 class OccupancyCluster(LocalDataCluster, OccupancySensing):
     """Occupancy cluster."""
@@ -57,7 +43,7 @@ class OccupancyCluster(LocalDataCluster, OccupancySensing):
             self._timer_handle.cancel()
 
         loop = asyncio.get_event_loop()
-        self._timer_handle = loop.call_later(OCCUPANCY_TIME, self._turn_off) #120
+        self._timer_handle = loop.call_later(OCCUPANCY_TIME, self._turn_off)
 
     def _turn_off(self):
         self._timer_handle = None

@@ -18,6 +18,7 @@ from ..const import (
 
 KONKE_CLUSTER_ID = 0xFCC0
 
+
 class KonkeMotion(CustomDevice):
     """Custom device representing konke motion sensors."""
 
@@ -31,7 +32,11 @@ class KonkeMotion(CustomDevice):
         #  device_version=0
         #  input_clusters=[0, 1, 3, 1280, 64704]
         #  output_clusters=[3, 64704]>
-        MODELS_INFO: [(KONKE, "3AFE28010402000D"), (KONKE, "3AFE14010402000D"), (KONKE, "3AFE27010402000D")],
+        MODELS_INFO: [
+            (KONKE, "3AFE28010402000D"),
+            (KONKE, "3AFE14010402000D"),
+            (KONKE, "3AFE27010402000D"),
+        ],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -41,7 +46,7 @@ class KonkeMotion(CustomDevice):
                     PowerConfiguration.cluster_id,
                     Identify.cluster_id,
                     IasZone.cluster_id,
-                    KONKE_CLUSTER_ID
+                    KONKE_CLUSTER_ID,
                 ],
                 OUTPUT_CLUSTERS: [Identify.cluster_id, KONKE_CLUSTER_ID],
             }
@@ -57,7 +62,7 @@ class KonkeMotion(CustomDevice):
                     Identify.cluster_id,
                     OccupancyCluster,
                     MotionCluster,
-                    KONKE_CLUSTER_ID
+                    KONKE_CLUSTER_ID,
                 ],
                 OUTPUT_CLUSTERS: [Identify.cluster_id, KONKE_CLUSTER_ID],
             }
