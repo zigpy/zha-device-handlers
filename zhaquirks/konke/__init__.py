@@ -7,12 +7,7 @@ from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
 
 from .. import LocalDataCluster
-from ..const import (
-    CLUSTER_COMMAND,
-    OFF,
-    ON,
-    ZONE_STATE,
-)
+from ..const import CLUSTER_COMMAND, OFF, ON, ZONE_STATE
 
 KONKE = "Konke"
 OCCUPANCY_STATE = 0
