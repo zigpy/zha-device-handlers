@@ -1,0 +1,3 @@
+"""Eurotronic devices."""
+
+EUROTRONIC = "Eurotronic"
