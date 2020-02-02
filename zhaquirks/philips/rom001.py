@@ -13,13 +13,7 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.lightlink import LightLink
 
-from ..const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-)
+from ..const import DEVICE_TYPE, ENDPOINTS, INPUT_CLUSTERS, OUTPUT_CLUSTERS, PROFILE_ID
 
 DEVICE_SPECIFIC_UNKNOWN = 64512
 
@@ -52,7 +46,7 @@ class PhilipsROM001(CustomDevice):
                     LevelControl.cluster_id,
                     Scenes.cluster_id,
                     LightLink.cluster_id,
-                ]
+                ],
             }
         }
     }
@@ -67,9 +61,7 @@ class PhilipsROM001(CustomDevice):
                     PowerConfiguration.cluster_id,
                     Identify.cluster_id,
                 ],
-                OUTPUT_CLUSTERS: [
-                    OnOff.cluster_id,
-                ]
+                OUTPUT_CLUSTERS: [OnOff.cluster_id],
             }
         }
     }
