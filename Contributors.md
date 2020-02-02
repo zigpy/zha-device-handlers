@@ -16,3 +16,4 @@
 - [Shulyaka] (https://github.com/Shulyaka)
 - [Nemesis24] (https://github.com/Nemesis24)
 - [Andy Zickler](https://github.com/andyzickler)
+- [Piotr Majkrzak](https://github.com/majkrzak)
