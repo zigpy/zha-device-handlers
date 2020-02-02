@@ -127,8 +127,25 @@ Please refer to [xbee.md](xbee.md) for details on configuration and usage exampl
 
 - All supported devices report battery level
 
-### Thanks
+# Thanks
 
 - Special thanks to damarco for the majority of the device tracker code
 - Special thanks to Yoda-x for the Xioami attribute parsing code
 - Special thanks to damarco and Adminiuga for allowing me to bounce ideas off of them and for listening to me ramble
+
+# Related projects
+
+### Zigpy
+**[zigpy](https://github.com/zigpy/zigpy)** is **[Zigbee protocol stack](https://en.wikipedia.org/wiki/Zigbee)** integration project to implement the **[Zigbee Home Automation](https://www.zigbee.org/)** standard as a Python 3 library. Zigbee Home Automation integration with zigpy allows you to connect one of many off-the-shelf Zigbee adapters using one of the available Zigbee radio library modules compatible with zigpy to control Zigbee based devices. There is currently support for controlling Zigbee device types such as binary sensors (e.g., motion and door sensors), sensors (e.g., temperature sensors), lightbulbs, switches, locks, fans, covers (blinds, marquees, and more). A working implementation of zigpy exist in **[Home Assistant](https://www.home-assistant.io)** (Python based open source home automation software) as part of its **[ZHA component](https://www.home-assistant.io/components/zha/)**
+
+### ZHA Map
+[zha-map](https://github.com/zha-ng/zha-map) project allow building a Zigbee network topology map for ZHA component in Home Assistant.
+
+### zha-network-visualization-card
+[zha-network-visualization-card](https://github.com/dmulcahey/zha-network-visualization-card) is a custom Lovelace element for visualizing the Zigbee network map for ZHA component in Home Assistant.
+
+### ZHA Network Card
+[zha-network-card](https://github.com/dmulcahey/zha-network-card) is a custom Lovelace card that displays ZHA network and device information in Home Assistant
+
+### zigpy-deconz-parser
+[zigpy-deconz-parser](https://github.com/zha-ng/zigpy-deconz-parser) project can parse Home Assistant ZHA component debug log using `zigpy-deconz` library if you have ConBee or RaspBee hardware.
