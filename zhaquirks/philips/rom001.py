@@ -13,7 +13,19 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.lightlink import LightLink
 
-from ..const import DEVICE_TYPE, ENDPOINTS, INPUT_CLUSTERS, OUTPUT_CLUSTERS, PROFILE_ID
+from ..const import (
+    DEVICE_TYPE,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
+    SHORT_PRESS,
+    TURN_ON,
+    TURN_OFF,
+    COMMAND,
+    COMMAND_ON,
+    COMMAND_OFF_WITH_EFFECT,
+)
 
 DEVICE_SPECIFIC_UNKNOWN = 64512
 
@@ -55,13 +67,29 @@ class PhilipsROM001(CustomDevice):
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
+                DEVICE_TYPE: zha.DeviceType.NON_COLOR_SCENE_CONTROLLER,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
                     Identify.cluster_id,
+                    DEVICE_SPECIFIC_UNKNOWN,
+                    LightLink.cluster_id,
                 ],
-                OUTPUT_CLUSTERS: [OnOff.cluster_id],
+                OUTPUT_CLUSTERS: [
+                    Ota.cluster_id,
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                    Scenes.cluster_id,
+                    LightLink.cluster_id,
+                ],
             }
         }
+    }
+
+    device_automation_triggers = {
+        (SHORT_PRESS, TURN_ON): {COMMAND: COMMAND_ON},
+        (SHORT_PRESS, TURN_OFF): {COMMAND: COMMAND_OFF_WITH_EFFECT},
     }
