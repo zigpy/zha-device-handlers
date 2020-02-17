@@ -24,6 +24,7 @@ from ...const import (
     PROFILE_ID,
     SHAKEN,
     SHORT_PRESS,
+    SKIP_CONFIGURATION,
     VALUE,
     ZHA_SEND_EVENT,
 )
@@ -94,6 +95,7 @@ class SwitchAQ3V2(XiaomiCustomDevice):
         },
     }
     replacement = {
+        SKIP_CONFIGURATION: True,
         ENDPOINTS: {
             1: {
                 DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
@@ -104,7 +106,7 @@ class SwitchAQ3V2(XiaomiCustomDevice):
                 ],
                 OUTPUT_CLUSTERS: [Basic.cluster_id, OnOff.cluster_id],
             }
-        }
+        },
     }
 
     device_automation_triggers = {

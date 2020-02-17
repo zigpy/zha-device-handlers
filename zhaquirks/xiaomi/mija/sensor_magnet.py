@@ -11,7 +11,6 @@ from zigpy.zcl.clusters.general import (
     Scenes,
 )
 
-from .. import LUMI, BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
 from ...const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -19,7 +18,9 @@ from ...const import (
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
+    SKIP_CONFIGURATION,
 )
+from .. import LUMI, BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
 
 OPEN_CLOSE_DEVICE_TYPE = 0x5F01
 XIAOMI_CLUSTER_ID = 0xFFFF
@@ -65,6 +66,7 @@ class Magnet(XiaomiCustomDevice):
     }
 
     replacement = {
+        SKIP_CONFIGURATION: True,
         ENDPOINTS: {
             1: {
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SENSOR,
@@ -85,5 +87,5 @@ class Magnet(XiaomiCustomDevice):
                     Ota.cluster_id,
                 ],
             }
-        }
+        },
     }

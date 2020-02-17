@@ -12,6 +12,7 @@ from ...const import (
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
+    SKIP_CONFIGURATION,
 )
 
 OPEN_CLOSE_DEVICE_TYPE = 0x5F01
@@ -53,6 +54,7 @@ class MagnetAQ2(XiaomiCustomDevice):
         },
     }
     replacement = {
+        SKIP_CONFIGURATION: True,
         ENDPOINTS: {
             1: {
                 INPUT_CLUSTERS: [
@@ -68,5 +70,5 @@ class MagnetAQ2(XiaomiCustomDevice):
                     XIAOMI_CLUSTER_ID,
                 ],
             }
-        }
+        },
     }

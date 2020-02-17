@@ -11,7 +11,6 @@ from zigpy.zcl.clusters.general import (
     Scenes,
 )
 
-from .. import LUMI, BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
 from ... import CustomCluster
 from ...const import (
     ARGS,
@@ -23,10 +22,12 @@ from ...const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SHAKEN,
+    SKIP_CONFIGURATION,
     TURN_ON,
     VALUE,
     ZHA_SEND_EVENT,
 )
+from .. import LUMI, BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
 
 ACTIVATED_FACE = "activated_face"
 DESCRIPTION = "description"
@@ -276,6 +277,7 @@ class Cube(XiaomiCustomDevice):
     }
 
     replacement = {
+        SKIP_CONFIGURATION: True,
         ENDPOINTS: {
             1: {
                 DEVICE_TYPE: XIAOMI_SENSORS_REPLACEMENT,
@@ -314,7 +316,7 @@ class Cube(XiaomiCustomDevice):
                     AnalogInput.cluster_id,
                 ],
             },
-        }
+        },
     }
 
     device_automation_triggers = {

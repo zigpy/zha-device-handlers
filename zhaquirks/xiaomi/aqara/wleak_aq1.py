@@ -11,6 +11,7 @@ from ...const import (
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
+    SKIP_CONFIGURATION,
 )
 from .. import LUMI, BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
 
@@ -51,6 +52,7 @@ class LeakAQ1(XiaomiCustomDevice):
         },
     }
     replacement = {
+        SKIP_CONFIGURATION: True,
         ENDPOINTS: {
             1: {
                 INPUT_CLUSTERS: [
@@ -61,5 +63,5 @@ class LeakAQ1(XiaomiCustomDevice):
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             }
-        }
+        },
     }

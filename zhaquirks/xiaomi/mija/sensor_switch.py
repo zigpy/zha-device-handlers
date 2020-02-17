@@ -34,6 +34,7 @@ from ...const import (
     QUADRUPLE_PRESS,
     QUINTUPLE_PRESS,
     SHORT_PRESS,
+    SKIP_CONFIGURATION,
     TRIPLE_PRESS,
     UNKNOWN,
     ZHA_SEND_EVENT,
@@ -129,6 +130,7 @@ class MijaButton(XiaomiCustomDevice):
     }
 
     replacement = {
+        SKIP_CONFIGURATION: True,
         ENDPOINTS: {
             1: {
                 DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
@@ -146,7 +148,7 @@ class MijaButton(XiaomiCustomDevice):
                     Ota.cluster_id,
                 ],
             }
-        }
+        },
     }
 
     device_automation_triggers = {

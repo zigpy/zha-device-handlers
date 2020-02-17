@@ -2,7 +2,7 @@
 import logging
 
 from zigpy.profiles import zha
-from zigpy.zcl.clusters.general import Basic, MultistateInput, OnOff, Identify
+from zigpy.zcl.clusters.general import Basic, Identify, MultistateInput, OnOff
 
 from .. import LUMI, BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
 from ... import CustomCluster
@@ -24,6 +24,7 @@ from ...const import (
     PROFILE_ID,
     SHAKEN,
     SHORT_PRESS,
+    SKIP_CONFIGURATION,
     VALUE,
     ZHA_SEND_EVENT,
 )
@@ -98,6 +99,7 @@ class SwitchAQ3(XiaomiCustomDevice):
         },
     }
     replacement = {
+        SKIP_CONFIGURATION: True,
         ENDPOINTS: {
             1: {
                 DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
@@ -108,7 +110,7 @@ class SwitchAQ3(XiaomiCustomDevice):
                 ],
                 OUTPUT_CLUSTERS: [Basic.cluster_id, OnOff.cluster_id],
             }
-        }
+        },
     }
 
     device_automation_triggers = {
@@ -143,6 +145,7 @@ class SwitchAQ3B(XiaomiCustomDevice):
         },
     }
     replacement = {
+        SKIP_CONFIGURATION: True,
         ENDPOINTS: {
             1: {
                 DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
@@ -153,7 +156,7 @@ class SwitchAQ3B(XiaomiCustomDevice):
                 ],
                 OUTPUT_CLUSTERS: [Basic.cluster_id],
             }
-        }
+        },
     }
 
     device_automation_triggers = SwitchAQ3.device_automation_triggers
