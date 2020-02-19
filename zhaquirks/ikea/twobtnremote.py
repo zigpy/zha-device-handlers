@@ -1,6 +1,6 @@
 """Device handler for IKEA of Sweden TRADFRI remote control."""
 from zigpy.profiles import zha, zll
-from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import (
     Alarms,
@@ -15,7 +15,7 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.lightlink import LightLink
 
-from . import IKEA
+from . import IKEA, LightLinkCluster
 from .. import DoublingPowerConfigurationCluster
 from ..const import (
     ARGS,
@@ -41,20 +41,6 @@ from ..const import (
 )
 
 IKEA_CLUSTER_ID = 0xFC7C  # decimal = 64636
-
-
-class LightLinkCluster(CustomCluster, LightLink):
-    """Ikea LightLink cluster."""
-
-    async def bind(self):
-        """Bind LightLink cluster to coordinator."""
-        application = self._endpoint.device.application
-        try:
-            coordinator = application.get_device(application.ieee)
-        except KeyError:
-            return
-        status = await coordinator.add_to_group(0x0000)
-        return [status]
 
 
 class IkeaTradfriRemote2Btn(CustomDevice):
