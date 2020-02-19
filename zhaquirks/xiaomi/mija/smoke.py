@@ -27,7 +27,14 @@ from zigpy.zcl.clusters.security import IasZone
 
 from .. import BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
 from ... import CustomCluster
-from ...const import DEVICE_TYPE, ENDPOINTS, INPUT_CLUSTERS, OUTPUT_CLUSTERS, PROFILE_ID
+from ...const import (
+    DEVICE_TYPE,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
+    SKIP_CONFIGURATION,
+)
 
 IAS_ZONE = 0x0402
 
@@ -75,6 +82,7 @@ class MijiaHoneywellSmokeDetectorSensor(XiaomiCustomDevice):
     }
 
     replacement = {
+        SKIP_CONFIGURATION: True,
         ENDPOINTS: {
             1: {
                 INPUT_CLUSTERS: [
@@ -87,5 +95,5 @@ class MijiaHoneywellSmokeDetectorSensor(XiaomiCustomDevice):
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             }
-        }
+        },
     }

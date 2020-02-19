@@ -22,6 +22,7 @@ from ...const import (
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
+    SKIP_CONFIGURATION,
 )
 
 XIAOMI_CLUSTER_ID = 0xFFFF
@@ -61,6 +62,7 @@ class MotionAQ2(XiaomiCustomDevice):
     }
 
     replacement = {
+        SKIP_CONFIGURATION: True,
         ENDPOINTS: {
             1: {
                 INPUT_CLUSTERS: [
@@ -74,5 +76,5 @@ class MotionAQ2(XiaomiCustomDevice):
                 ],
                 OUTPUT_CLUSTERS: [Basic.cluster_id, Ota.cluster_id],
             }
-        }
+        },
     }

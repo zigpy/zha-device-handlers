@@ -18,6 +18,13 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 
+from .. import (
+    LUMI,
+    POWER_REPORTED,
+    BasicCluster,
+    ElectricalMeasurementCluster,
+    XiaomiCustomDevice,
+)
 from ... import Bus, CustomCluster
 from ...const import (
     DEVICE_TYPE,
@@ -26,13 +33,7 @@ from ...const import (
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
-)
-from .. import (
-    LUMI,
-    POWER_REPORTED,
-    BasicCluster,
-    ElectricalMeasurementCluster,
-    XiaomiCustomDevice,
+    SKIP_CONFIGURATION,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -121,6 +122,7 @@ class Plug(XiaomiCustomDevice):
         },
     }
     replacement = {
+        SKIP_CONFIGURATION: True,
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -157,5 +159,5 @@ class Plug(XiaomiCustomDevice):
                 INPUT_CLUSTERS: [BinaryInput.cluster_id],
                 OUTPUT_CLUSTERS: [BinaryInput.cluster_id, Groups.cluster_id],
             },
-        }
+        },
     }

@@ -23,6 +23,7 @@ from ...const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SHAKEN,
+    SKIP_CONFIGURATION,
     TURN_ON,
     VALUE,
     ZHA_SEND_EVENT,
@@ -276,6 +277,7 @@ class CubeAQGL01(XiaomiCustomDevice):
     }
 
     replacement = {
+        SKIP_CONFIGURATION: True,
         ENDPOINTS: {
             1: {
                 DEVICE_TYPE: XIAOMI_SENSORS_REPLACEMENT,
@@ -314,7 +316,7 @@ class CubeAQGL01(XiaomiCustomDevice):
                     AnalogInput.cluster_id,
                 ],
             },
-        }
+        },
     }
 
     device_automation_triggers = {
