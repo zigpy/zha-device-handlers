@@ -22,6 +22,7 @@ from ...const import (
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
+    SKIP_CONFIGURATION,
 )
 
 TEMPERATURE_HUMIDITY_DEVICE_TYPE = 0x5F01
@@ -68,6 +69,7 @@ class Weather(XiaomiCustomDevice):
     }
 
     replacement = {
+        SKIP_CONFIGURATION: True,
         ENDPOINTS: {
             1: {
                 INPUT_CLUSTERS: [
@@ -85,5 +87,5 @@ class Weather(XiaomiCustomDevice):
                     XIAOMI_CLUSTER_ID,
                 ],
             }
-        }
+        },
     }

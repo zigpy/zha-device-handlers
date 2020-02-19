@@ -31,6 +31,7 @@ from ...const import (
     MOTION_EVENT,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
+    SKIP_CONFIGURATION,
     UNKNOWN,
     ZHA_SEND_EVENT,
 )
@@ -186,6 +187,7 @@ class VibrationAQ1(XiaomiCustomDevice):
     }
 
     replacement = {
+        SKIP_CONFIGURATION: True,
         ENDPOINTS: {
             1: {
                 DEVICE_TYPE: zha.DeviceType.DOOR_LOCK,
@@ -215,7 +217,7 @@ class VibrationAQ1(XiaomiCustomDevice):
                     MultistateInput.cluster_id,
                 ],
             },
-        }
+        },
     }
 
     device_automation_triggers = {

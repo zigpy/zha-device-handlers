@@ -31,6 +31,7 @@ from ...const import (
     PRESS_TYPE,
     PROFILE_ID,
     SHORT_PRESS,
+    SKIP_CONFIGURATION,
     VALUE,
     ZHA_SEND_EVENT,
 )
@@ -149,6 +150,7 @@ class RemoteB286ACN01(XiaomiCustomDevice):
     }
 
     replacement = {
+        SKIP_CONFIGURATION: True,
         ENDPOINTS: {
             1: {
                 DEVICE_TYPE: XIAOMI_DEVICE_TYPE,
@@ -191,7 +193,7 @@ class RemoteB286ACN01(XiaomiCustomDevice):
                     MultistateInputCluster,
                 ],
             },
-        }
+        },
     }
 
     device_automation_triggers = {

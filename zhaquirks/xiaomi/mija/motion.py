@@ -28,6 +28,7 @@ from ...const import (
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
+    SKIP_CONFIGURATION,
 )
 
 XIAOMI_CLUSTER_ID = 0xFFFF
@@ -74,6 +75,7 @@ class Motion(XiaomiCustomDevice):
     }
 
     replacement = {
+        SKIP_CONFIGURATION: True,
         ENDPOINTS: {
             1: {
                 DEVICE_TYPE: zha.DeviceType.OCCUPANCY_SENSOR,
@@ -93,5 +95,5 @@ class Motion(XiaomiCustomDevice):
                     Ota.cluster_id,
                 ],
             }
-        }
+        },
     }
