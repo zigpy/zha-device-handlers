@@ -15,12 +15,18 @@ from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zhaquirks import PowerConfigurationCluster
 from zhaquirks.centralite import CENTRALITE
 from zhaquirks.const import (
+    BUTTON_1,
+    COMMAND,
+    COMMAND_OFF,
+    COMMAND_ON,
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
+    SHORT_PRESS,
+    SHORT_RELEASE,
 )
 
 DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
@@ -84,4 +90,9 @@ class CentraLite3460L(CustomDevice):
                 ],
             }
         }
+    }
+
+    device_automation_triggers = {
+        (SHORT_PRESS, BUTTON_1): {COMMAND: COMMAND_ON},
+        (SHORT_RELEASE, BUTTON_1): {COMMAND: COMMAND_OFF},
     }
