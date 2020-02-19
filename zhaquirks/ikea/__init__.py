@@ -19,7 +19,13 @@ class LightLinkCluster(CustomCluster, LightLink):
             _LOGGER.warning("Aborting - unable to locate required coordinator device.")
             return
         group_list = await self.get_group_identifiers(0)
-        group_record = group_list[2]
-        group_id = group_record[0].group_id
+        try:
+            group_record = group_list[2]
+            group_id = group_record[0].group_id
+        except IndexError:
+            _LOGGER.warning(
+                "unable to locate required group info - falling back to group 0x0000."
+            )
+            group_id = 0x0000
         status = await coordinator.add_to_group(group_id)
         return [status]
