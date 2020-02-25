@@ -69,7 +69,7 @@ class SwitchAQ3V2(XiaomiCustomDevice):
                 )
                 event_args = {VALUE: value}
                 if action is not None:
-                    self.listener_event(ZHA_SEND_EVENT, self, action, event_args)
+                    self.listener_event(ZHA_SEND_EVENT, action, event_args)
 
                 # show something in the sensor in HA
                 super()._update_attribute(0, action)

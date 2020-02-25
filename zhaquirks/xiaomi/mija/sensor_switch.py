@@ -84,7 +84,7 @@ class MijaButton(XiaomiCustomDevice):
 
             if click_type:
                 self.listener_event(
-                    ZHA_SEND_EVENT, self, COMMAND_CLICK, {CLICK_TYPE: click_type}
+                    ZHA_SEND_EVENT, COMMAND_CLICK, {CLICK_TYPE: click_type}
                 )
 
             super()._update_attribute(attrid, value)

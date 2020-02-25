@@ -82,7 +82,7 @@ class RemoteB286ACN01(XiaomiCustomDevice):
                     VALUE: value,
                 }
                 action = "{}_{}".format(button, self._current_state)
-                self.listener_event(ZHA_SEND_EVENT, self, action, event_args)
+                self.listener_event(ZHA_SEND_EVENT, action, event_args)
                 # show something in the sensor in HA
                 super()._update_attribute(0, action)
 

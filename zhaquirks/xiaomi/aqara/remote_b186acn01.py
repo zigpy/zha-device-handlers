@@ -67,9 +67,7 @@ class RemoteB186ACN01(XiaomiCustomDevice):
                     ATTR_ID: attrid,
                     VALUE: value,
                 }
-                self.listener_event(
-                    ZHA_SEND_EVENT, self, self._current_state, event_args
-                )
+                self.listener_event(ZHA_SEND_EVENT, self._current_state, event_args)
                 # show something in the sensor in HA
                 super()._update_attribute(0, self._current_state)
 
