@@ -58,7 +58,7 @@ class SamjinButton(CustomDevice):
                     ARGS: args,
                 }
                 action = "button_{}".format(CLICK_TYPES[state])
-                self.listener_event(ZHA_SEND_EVENT, self, action, event_args)
+                self.listener_event(ZHA_SEND_EVENT, action, event_args)
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=1026

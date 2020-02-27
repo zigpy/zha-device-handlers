@@ -184,7 +184,7 @@ class Cube(XiaomiCustomDevice):
                             event_args[FLIP_DEGREES] = 90
                         event_args[ACTIVATED_FACE] = (value % 8) + 1
 
-                    self.listener_event(ZHA_SEND_EVENT, self, action, event_args)
+                    self.listener_event(ZHA_SEND_EVENT, action, event_args)
 
                 # show something in the sensor in HA
                 super()._update_attribute(0, action)
@@ -213,7 +213,6 @@ class Cube(XiaomiCustomDevice):
                 if self._current_state[STATUS_TYPE_ATTR] is not None:
                     self.listener_event(
                         ZHA_SEND_EVENT,
-                        self,
                         self._current_state[STATUS_TYPE_ATTR],
                         {RELATIVE_DEGREES: value},
                     )

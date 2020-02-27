@@ -144,7 +144,7 @@ class VibrationAQ1(XiaomiCustomDevice):
 
         def send_event(self, event, *args):
             """Send event."""
-            self.listener_event(ZHA_SEND_EVENT, self, event, args)
+            self.listener_event(ZHA_SEND_EVENT, event, args)
 
         def _turn_off(self):
             self._timer_handle = None
