@@ -156,7 +156,7 @@ class RemoteB186ACN01(XiaomiCustomDevice):
                     Ota.cluster_id,
                     XIAOMI_CLUSTER_ID,
                     MultistateInputCluster,
-                    OnOff.cluster_id
+                    OnOff.cluster_id,
                 ],
             },
             2: {
