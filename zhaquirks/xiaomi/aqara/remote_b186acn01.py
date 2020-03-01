@@ -8,6 +8,7 @@ from zigpy.zcl.clusters.general import (
     Groups,
     Identify,
     MultistateInput,
+    OnOff,
     Ota,
     Scenes,
 )
@@ -138,7 +139,7 @@ class RemoteB186ACN01(XiaomiCustomDevice):
         SKIP_CONFIGURATION: True,
         ENDPOINTS: {
             1: {
-                DEVICE_TYPE: XIAOMI_DEVICE_TYPE,
+                DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
                 INPUT_CLUSTERS: [
                     BasicCluster,
                     PowerConfigurationCluster,
@@ -155,10 +156,11 @@ class RemoteB186ACN01(XiaomiCustomDevice):
                     Ota.cluster_id,
                     XIAOMI_CLUSTER_ID,
                     MultistateInputCluster,
+                    OnOff.cluster_id
                 ],
             },
             2: {
-                DEVICE_TYPE: XIAOMI_DEVICE_TYPE2,
+                DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
                 INPUT_CLUSTERS: [Identify.cluster_id, MultistateInputCluster],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
@@ -168,7 +170,7 @@ class RemoteB186ACN01(XiaomiCustomDevice):
                 ],
             },
             3: {
-                DEVICE_TYPE: XIAOMI_DEVICE_TYPE3,
+                DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
                 INPUT_CLUSTERS: [Identify.cluster_id, MultistateInputCluster],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
