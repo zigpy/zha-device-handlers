@@ -15,7 +15,8 @@ from zigpy.zdo.types import NodeDescriptor
 
 from zhaquirks import CustomCluster
 
-from .. import LUMI, BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
+from .. import LUMI, BasicCluster, XiaomiCustomDevice
+from ... import PowerConfigurationCluster
 from ...const import (
     ARGS,
     ATTR_ID,
