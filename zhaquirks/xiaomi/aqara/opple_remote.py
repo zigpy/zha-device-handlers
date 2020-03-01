@@ -18,6 +18,9 @@ from zhaquirks import CustomCluster
 from .. import LUMI, BasicCluster, XiaomiCustomDevice
 from ... import PowerConfigurationCluster
 from ...const import (
+    ALT_DOUBLE_PRESS,
+    ALT_LONG_PRESS,
+    ALT_SHORT_PRESS,
     ARGS,
     ATTR_ID,
     BUTTON,
@@ -40,12 +43,14 @@ from ...const import (
     ENDPOINTS,
     INPUT_CLUSTERS,
     LONG_PRESS,
+    LONG_RELEASE,
     MODELS_INFO,
     NODE_DESCRIPTOR,
     OUTPUT_CLUSTERS,
     PRESS_TYPE,
     PROFILE_ID,
     SHORT_PRESS,
+    TRIPLE_PRESS,
     VALUE,
     ZHA_SEND_EVENT,
 )
@@ -53,17 +58,46 @@ from ...const import (
 PRESS_TYPES = {0: "long press", 1: "single", 2: "double", 3: "triple", 255: "release"}
 STATUS_TYPE_ATTR = 0x0055  # decimal = 85
 
+COMMAND_1_SINGLE = "1_single"
+COMMAND_1_DOUBLE = "1_double"
+COMMAND_1_TRIPLE = "1_triple"
+COMMAND_1_HOLD = "1_hold"
+COMMAND_1_RELEASE = "1_release"
+
+COMMAND_2_SINGLE = "2_single"
+COMMAND_2_DOUBLE = "2_double"
+COMMAND_2_TRIPLE = "2_triple"
+COMMAND_2_HOLD = "2_hold"
+COMMAND_2_RELEASE = "2_release"
+
+COMMAND_3_SINGLE = "3_single"
+COMMAND_3_DOUBLE = "3_double"
+COMMAND_3_TRIPLE = "3_triple"
+COMMAND_3_HOLD = "3_hold"
+COMMAND_3_RELEASE = "3_release"
+
+COMMAND_4_SINGLE = "4_single"
+COMMAND_4_DOUBLE = "4_double"
+COMMAND_4_TRIPLE = "4_triple"
+COMMAND_4_HOLD = "4_hold"
+COMMAND_4_RELEASE = "4_release"
+
+COMMAND_5_SINGLE = "5_single"
+COMMAND_5_DOUBLE = "5_double"
+COMMAND_5_TRIPLE = "5_triple"
+COMMAND_5_HOLD = "5_hold"
+COMMAND_5_RELEASE = "5_release"
+
+COMMAND_6_SINGLE = "6_single"
+COMMAND_6_DOUBLE = "6_double"
+COMMAND_6_TRIPLE = "6_triple"
+COMMAND_6_HOLD = "6_hold"
+COMMAND_6_RELEASE = "6_release"
+
 OPPLE_CLUSTER_ID = 0xFCC0
+OPPLE_MFG_CODE = 0x115F
 
 _LOGGER = logging.getLogger(__name__)
-
-
-class OppleCluster(CustomCluster):
-    """Opple cluster."""
-
-    ep_attribute = "oppleCluster"
-    cluster_id = OPPLE_CLUSTER_ID
-    attributes = {0x0009: ("mode", types.uint8_t)}
 
 
 class MultistateInputCluster(CustomCluster, MultistateInput):
@@ -75,6 +109,17 @@ class MultistateInputCluster(CustomCluster, MultistateInput):
         """Init."""
         self._current_state = None
         super().__init__(*args, **kwargs)
+
+    async def configure_reporting(
+        self,
+        attribute,
+        min_interval,
+        max_interval,
+        reportable_change,
+        manufacturer=None,
+    ):
+        """Configure reporting."""
+        pass
 
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
@@ -90,6 +135,26 @@ class MultistateInputCluster(CustomCluster, MultistateInput):
             self.listener_event(ZHA_SEND_EVENT, action, event_args)
             # show something in the sensor in HA
             super()._update_attribute(0, action)
+
+
+class OppleCluster(CustomCluster):
+    """Opple cluster."""
+
+    ep_attribute = "opple_cluster"
+    cluster_id = OPPLE_CLUSTER_ID
+    attributes = {0x0009: ("mode", types.uint8_t)}
+    attr_config = {0x0009: 0x01}
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        self._current_state = None
+        super().__init__(*args, **kwargs)
+
+    async def bind(self):
+        """Bind cluster."""
+        result = await super().bind()
+        await self.write_attributes(self.attr_config, manufacturer=OPPLE_MFG_CODE)
+        return result
 
 
 class RemoteB286OPCN01(XiaomiCustomDevice):
@@ -192,16 +257,16 @@ class RemoteB286OPCN01(XiaomiCustomDevice):
             ENDPOINT_ID: 1,
             ARGS: [3, 69, 7, 0, 0],
         },
-        ("single", BUTTON_1): {COMMAND: "1_single"},
-        ("double", BUTTON_1): {COMMAND: "1_double"},
-        ("triple", BUTTON_1): {COMMAND: "1_triple"},
-        ("hold", BUTTON_1): {COMMAND: "1_hold"},
-        ("release", BUTTON_1): {COMMAND: "1_release"},
-        ("single", BUTTON_2): {COMMAND: "2_single"},
-        ("double", BUTTON_2): {COMMAND: "2_double"},
-        ("triple", BUTTON_2): {COMMAND: "2_triple"},
-        ("hold", BUTTON_2): {COMMAND: "2_hold"},
-        ("release", BUTTON_2): {COMMAND: "2_release"},
+        (ALT_SHORT_PRESS, BUTTON_1): {COMMAND: COMMAND_1_SINGLE},
+        (ALT_DOUBLE_PRESS, BUTTON_1): {COMMAND: COMMAND_1_DOUBLE},
+        (TRIPLE_PRESS, BUTTON_1): {COMMAND: COMMAND_1_TRIPLE},
+        (ALT_LONG_PRESS, BUTTON_1): {COMMAND: COMMAND_1_HOLD},
+        (LONG_RELEASE, BUTTON_1): {COMMAND: COMMAND_1_RELEASE},
+        (ALT_SHORT_PRESS, BUTTON_2): {COMMAND: COMMAND_2_SINGLE},
+        (ALT_DOUBLE_PRESS, BUTTON_2): {COMMAND: COMMAND_2_DOUBLE},
+        (TRIPLE_PRESS, BUTTON_2): {COMMAND: COMMAND_2_TRIPLE},
+        (ALT_LONG_PRESS, BUTTON_2): {COMMAND: COMMAND_2_HOLD},
+        (LONG_RELEASE, BUTTON_2): {COMMAND: COMMAND_2_RELEASE},
     }
 
 
@@ -315,26 +380,26 @@ class RemoteB486OPCN01(XiaomiCustomDevice):
             ENDPOINT_ID: 1,
             ARGS: [3, 69, 7, 0, 0],
         },
-        ("single", BUTTON_1): {COMMAND: "1_single"},
-        ("double", BUTTON_1): {COMMAND: "1_double"},
-        ("triple", BUTTON_1): {COMMAND: "1_triple"},
-        ("hold", BUTTON_1): {COMMAND: "1_hold"},
-        ("release", BUTTON_1): {COMMAND: "1_release"},
-        ("single", BUTTON_2): {COMMAND: "2_single"},
-        ("double", BUTTON_2): {COMMAND: "2_double"},
-        ("triple", BUTTON_2): {COMMAND: "2_triple"},
-        ("hold", BUTTON_2): {COMMAND: "2_hold"},
-        ("release", BUTTON_2): {COMMAND: "2_release"},
-        ("single", BUTTON_3): {COMMAND: "3_single"},
-        ("double", BUTTON_3): {COMMAND: "3_double"},
-        ("triple", BUTTON_3): {COMMAND: "3_triple"},
-        ("hold", BUTTON_3): {COMMAND: "3_hold"},
-        ("release", BUTTON_3): {COMMAND: "3_release"},
-        ("single", BUTTON_4): {COMMAND: "4_single"},
-        ("double", BUTTON_4): {COMMAND: "4_double"},
-        ("triple", BUTTON_4): {COMMAND: "4_triple"},
-        ("hold", BUTTON_4): {COMMAND: "4_hold"},
-        ("release", BUTTON_4): {COMMAND: "4_release"},
+        (ALT_SHORT_PRESS, BUTTON_1): {COMMAND: COMMAND_1_SINGLE},
+        (ALT_DOUBLE_PRESS, BUTTON_1): {COMMAND: COMMAND_1_DOUBLE},
+        (TRIPLE_PRESS, BUTTON_1): {COMMAND: COMMAND_1_TRIPLE},
+        (ALT_LONG_PRESS, BUTTON_1): {COMMAND: COMMAND_1_HOLD},
+        (LONG_RELEASE, BUTTON_1): {COMMAND: COMMAND_1_RELEASE},
+        (ALT_SHORT_PRESS, BUTTON_2): {COMMAND: COMMAND_2_SINGLE},
+        (ALT_DOUBLE_PRESS, BUTTON_2): {COMMAND: COMMAND_2_DOUBLE},
+        (TRIPLE_PRESS, BUTTON_2): {COMMAND: COMMAND_2_TRIPLE},
+        (ALT_LONG_PRESS, BUTTON_2): {COMMAND: COMMAND_2_HOLD},
+        (LONG_RELEASE, BUTTON_2): {COMMAND: COMMAND_2_RELEASE},
+        (ALT_SHORT_PRESS, BUTTON_3): {COMMAND: COMMAND_3_SINGLE},
+        (ALT_DOUBLE_PRESS, BUTTON_3): {COMMAND: COMMAND_3_DOUBLE},
+        (TRIPLE_PRESS, BUTTON_3): {COMMAND: COMMAND_3_TRIPLE},
+        (ALT_LONG_PRESS, BUTTON_3): {COMMAND: COMMAND_3_HOLD},
+        (LONG_RELEASE, BUTTON_3): {COMMAND: COMMAND_3_RELEASE},
+        (ALT_SHORT_PRESS, BUTTON_4): {COMMAND: COMMAND_4_SINGLE},
+        (ALT_DOUBLE_PRESS, BUTTON_4): {COMMAND: COMMAND_4_DOUBLE},
+        (TRIPLE_PRESS, BUTTON_4): {COMMAND: COMMAND_4_TRIPLE},
+        (ALT_LONG_PRESS, BUTTON_4): {COMMAND: COMMAND_4_HOLD},
+        (LONG_RELEASE, BUTTON_4): {COMMAND: COMMAND_4_RELEASE},
     }
 
 
@@ -470,36 +535,36 @@ class RemoteB686OPCN01(XiaomiCustomDevice):
             ENDPOINT_ID: 1,
             ARGS: [3, 15, 0, 0],
         },
-        ("single", BUTTON_1): {COMMAND: "1_single"},
-        ("double", BUTTON_1): {COMMAND: "1_double"},
-        ("triple", BUTTON_1): {COMMAND: "1_triple"},
-        ("hold", BUTTON_1): {COMMAND: "1_hold"},
-        ("release", BUTTON_1): {COMMAND: "1_release"},
-        ("single", BUTTON_2): {COMMAND: "2_single"},
-        ("double", BUTTON_2): {COMMAND: "2_double"},
-        ("triple", BUTTON_2): {COMMAND: "2_triple"},
-        ("hold", BUTTON_2): {COMMAND: "2_hold"},
-        ("release", BUTTON_2): {COMMAND: "2_release"},
-        ("single", BUTTON_3): {COMMAND: "3_single"},
-        ("double", BUTTON_3): {COMMAND: "3_double"},
-        ("triple", BUTTON_3): {COMMAND: "3_triple"},
-        ("hold", BUTTON_3): {COMMAND: "3_hold"},
-        ("release", BUTTON_3): {COMMAND: "3_release"},
-        ("single", BUTTON_4): {COMMAND: "4_single"},
-        ("double", BUTTON_4): {COMMAND: "4_double"},
-        ("triple", BUTTON_4): {COMMAND: "4_triple"},
-        ("hold", BUTTON_4): {COMMAND: "4_hold"},
-        ("release", BUTTON_4): {COMMAND: "4_release"},
-        ("single", BUTTON_5): {COMMAND: "5_single"},
-        ("double", BUTTON_5): {COMMAND: "5_double"},
-        ("triple", BUTTON_5): {COMMAND: "5_triple"},
-        ("hold", BUTTON_5): {COMMAND: "5_hold"},
-        ("release", BUTTON_5): {COMMAND: "5_release"},
-        ("single", BUTTON_6): {COMMAND: "6_single"},
-        ("double", BUTTON_6): {COMMAND: "6_double"},
-        ("triple", BUTTON_6): {COMMAND: "6_triple"},
-        ("hold", BUTTON_6): {COMMAND: "6_hold"},
-        ("release", BUTTON_6): {COMMAND: "6_release"},
+        (ALT_SHORT_PRESS, BUTTON_1): {COMMAND: COMMAND_1_SINGLE},
+        (ALT_DOUBLE_PRESS, BUTTON_1): {COMMAND: COMMAND_1_DOUBLE},
+        (TRIPLE_PRESS, BUTTON_1): {COMMAND: COMMAND_1_TRIPLE},
+        (ALT_LONG_PRESS, BUTTON_1): {COMMAND: COMMAND_1_HOLD},
+        (LONG_RELEASE, BUTTON_1): {COMMAND: COMMAND_1_RELEASE},
+        (ALT_SHORT_PRESS, BUTTON_2): {COMMAND: COMMAND_2_SINGLE},
+        (ALT_DOUBLE_PRESS, BUTTON_2): {COMMAND: COMMAND_2_DOUBLE},
+        (TRIPLE_PRESS, BUTTON_2): {COMMAND: COMMAND_2_TRIPLE},
+        (ALT_LONG_PRESS, BUTTON_2): {COMMAND: COMMAND_2_HOLD},
+        (LONG_RELEASE, BUTTON_2): {COMMAND: COMMAND_2_RELEASE},
+        (ALT_SHORT_PRESS, BUTTON_3): {COMMAND: COMMAND_3_SINGLE},
+        (ALT_DOUBLE_PRESS, BUTTON_3): {COMMAND: COMMAND_3_DOUBLE},
+        (TRIPLE_PRESS, BUTTON_3): {COMMAND: COMMAND_3_TRIPLE},
+        (ALT_LONG_PRESS, BUTTON_3): {COMMAND: COMMAND_3_HOLD},
+        (LONG_RELEASE, BUTTON_3): {COMMAND: COMMAND_3_RELEASE},
+        (ALT_SHORT_PRESS, BUTTON_4): {COMMAND: COMMAND_4_SINGLE},
+        (ALT_DOUBLE_PRESS, BUTTON_4): {COMMAND: COMMAND_4_DOUBLE},
+        (TRIPLE_PRESS, BUTTON_4): {COMMAND: COMMAND_4_TRIPLE},
+        (ALT_LONG_PRESS, BUTTON_4): {COMMAND: COMMAND_4_HOLD},
+        (LONG_RELEASE, BUTTON_4): {COMMAND: COMMAND_4_RELEASE},
+        (ALT_SHORT_PRESS, BUTTON_5): {COMMAND: COMMAND_5_SINGLE},
+        (ALT_DOUBLE_PRESS, BUTTON_5): {COMMAND: COMMAND_5_DOUBLE},
+        (TRIPLE_PRESS, BUTTON_5): {COMMAND: COMMAND_5_TRIPLE},
+        (ALT_LONG_PRESS, BUTTON_5): {COMMAND: COMMAND_5_HOLD},
+        (LONG_RELEASE, BUTTON_5): {COMMAND: COMMAND_5_RELEASE},
+        (ALT_SHORT_PRESS, BUTTON_6): {COMMAND: COMMAND_6_SINGLE},
+        (ALT_DOUBLE_PRESS, BUTTON_6): {COMMAND: COMMAND_6_DOUBLE},
+        (TRIPLE_PRESS, BUTTON_6): {COMMAND: COMMAND_6_TRIPLE},
+        (ALT_LONG_PRESS, BUTTON_6): {COMMAND: COMMAND_6_HOLD},
+        (LONG_RELEASE, BUTTON_6): {COMMAND: COMMAND_6_RELEASE},
     }
 
 
@@ -566,40 +631,7 @@ class RemoteB286OPCN01V2(XiaomiCustomDevice):
         },
     }
 
-    device_automation_triggers = {
-        (DOUBLE_PRESS, BUTTON_1): {
-            COMMAND: COMMAND_STEP,
-            ENDPOINT_ID: 1,
-            ARGS: [1, 85, 7],
-        },
-        (SHORT_PRESS, BUTTON_1): {COMMAND: COMMAND_OFF, ENDPOINT_ID: 1},
-        (LONG_PRESS, BUTTON_1): {
-            COMMAND: COMMAND_STEP_COLOR_TEMP,
-            ENDPOINT_ID: 1,
-            ARGS: [1, 69, 7, 0, 0],
-        },
-        (DOUBLE_PRESS, BUTTON_2): {
-            COMMAND: COMMAND_STEP,
-            ENDPOINT_ID: 1,
-            ARGS: [0, 85, 7],
-        },
-        (SHORT_PRESS, BUTTON_2): {COMMAND: COMMAND_ON, ENDPOINT_ID: 1},
-        (LONG_PRESS, BUTTON_2): {
-            COMMAND: COMMAND_STEP_COLOR_TEMP,
-            ENDPOINT_ID: 1,
-            ARGS: [3, 69, 7, 0, 0],
-        },
-        ("single", BUTTON_1): {COMMAND: "1_single"},
-        ("double", BUTTON_1): {COMMAND: "1_double"},
-        ("triple", BUTTON_1): {COMMAND: "1_triple"},
-        ("hold", BUTTON_1): {COMMAND: "1_hold"},
-        ("release", BUTTON_1): {COMMAND: "1_release"},
-        ("single", BUTTON_2): {COMMAND: "2_single"},
-        ("double", BUTTON_2): {COMMAND: "2_double"},
-        ("triple", BUTTON_2): {COMMAND: "2_triple"},
-        ("hold", BUTTON_2): {COMMAND: "2_hold"},
-        ("release", BUTTON_2): {COMMAND: "2_release"},
-    }
+    device_automation_triggers = RemoteB286OPCN01.device_automation_triggers
 
 
 class RemoteB486OPCN01V2(XiaomiCustomDevice):
@@ -673,50 +705,7 @@ class RemoteB486OPCN01V2(XiaomiCustomDevice):
         },
     }
 
-    device_automation_triggers = {
-        (SHORT_PRESS, BUTTON_1): {COMMAND: COMMAND_OFF, ENDPOINT_ID: 1},
-        (SHORT_PRESS, BUTTON_2): {COMMAND: COMMAND_ON, ENDPOINT_ID: 1},
-        (SHORT_PRESS, BUTTON_3): {
-            COMMAND: COMMAND_STEP,
-            ENDPOINT_ID: 1,
-            ARGS: [1, 85, 7],
-        },
-        (DOUBLE_PRESS, BUTTON_3): {
-            COMMAND: COMMAND_STEP_COLOR_TEMP,
-            ENDPOINT_ID: 1,
-            ARGS: [1, 69, 7, 0, 0],
-        },
-        (SHORT_PRESS, BUTTON_4): {
-            COMMAND: COMMAND_STEP,
-            ENDPOINT_ID: 1,
-            ARGS: [0, 85, 7],
-        },
-        (DOUBLE_PRESS, BUTTON_4): {
-            COMMAND: COMMAND_STEP_COLOR_TEMP,
-            ENDPOINT_ID: 1,
-            ARGS: [3, 69, 7, 0, 0],
-        },
-        ("single", BUTTON_1): {COMMAND: "1_single"},
-        ("double", BUTTON_1): {COMMAND: "1_double"},
-        ("triple", BUTTON_1): {COMMAND: "1_triple"},
-        ("hold", BUTTON_1): {COMMAND: "1_hold"},
-        ("release", BUTTON_1): {COMMAND: "1_release"},
-        ("single", BUTTON_2): {COMMAND: "2_single"},
-        ("double", BUTTON_2): {COMMAND: "2_double"},
-        ("triple", BUTTON_2): {COMMAND: "2_triple"},
-        ("hold", BUTTON_2): {COMMAND: "2_hold"},
-        ("release", BUTTON_2): {COMMAND: "2_release"},
-        ("single", BUTTON_3): {COMMAND: "3_single"},
-        ("double", BUTTON_3): {COMMAND: "3_double"},
-        ("triple", BUTTON_3): {COMMAND: "3_triple"},
-        ("hold", BUTTON_3): {COMMAND: "3_hold"},
-        ("release", BUTTON_3): {COMMAND: "3_release"},
-        ("single", BUTTON_4): {COMMAND: "4_single"},
-        ("double", BUTTON_4): {COMMAND: "4_double"},
-        ("triple", BUTTON_4): {COMMAND: "4_triple"},
-        ("hold", BUTTON_4): {COMMAND: "4_hold"},
-        ("release", BUTTON_4): {COMMAND: "4_release"},
-    }
+    device_automation_triggers = RemoteB486OPCN01.device_automation_triggers
 
 
 class RemoteB686OPCN01V2(XiaomiCustomDevice):
@@ -802,69 +791,4 @@ class RemoteB686OPCN01V2(XiaomiCustomDevice):
         },
     }
 
-    device_automation_triggers = {
-        (SHORT_PRESS, BUTTON_1): {COMMAND: COMMAND_OFF, ENDPOINT_ID: 1},
-        (SHORT_PRESS, BUTTON_2): {COMMAND: COMMAND_ON, ENDPOINT_ID: 1},
-        (SHORT_PRESS, BUTTON_3): {
-            COMMAND: COMMAND_STEP,
-            ENDPOINT_ID: 1,
-            ARGS: [1, 85, 7],
-        },
-        (LONG_PRESS, BUTTON_3): {COMMAND: COMMAND_MOVE, ENDPOINT_ID: 1, ARGS: [1, 15]},
-        (SHORT_PRESS, BUTTON_4): {
-            COMMAND: COMMAND_STEP,
-            ENDPOINT_ID: 1,
-            ARGS: [0, 85, 7],
-        },
-        (LONG_PRESS, BUTTON_4): {COMMAND: COMMAND_MOVE, ENDPOINT_ID: 1, ARGS: [0, 15]},
-        (SHORT_PRESS, BUTTON_5): {
-            COMMAND: COMMAND_STEP_COLOR_TEMP,
-            ENDPOINT_ID: 1,
-            ARGS: [1, 69, 7, 0, 0],
-        },
-        (LONG_PRESS, BUTTON_5): {
-            COMMAND: COMMAND_MOVE_COLOR_TEMP,
-            ENDPOINT_ID: 1,
-            ARGS: [1, 15, 0, 0],
-        },
-        (SHORT_PRESS, BUTTON_6): {
-            COMMAND: COMMAND_STEP_COLOR_TEMP,
-            ENDPOINT_ID: 1,
-            ARGS: [3, 69, 7, 0, 0],
-        },
-        (LONG_PRESS, BUTTON_6): {
-            COMMAND: COMMAND_MOVE_COLOR_TEMP,
-            ENDPOINT_ID: 1,
-            ARGS: [3, 15, 0, 0],
-        },
-        ("single", BUTTON_1): {COMMAND: "1_single"},
-        ("double", BUTTON_1): {COMMAND: "1_double"},
-        ("triple", BUTTON_1): {COMMAND: "1_triple"},
-        ("hold", BUTTON_1): {COMMAND: "1_hold"},
-        ("release", BUTTON_1): {COMMAND: "1_release"},
-        ("single", BUTTON_2): {COMMAND: "2_single"},
-        ("double", BUTTON_2): {COMMAND: "2_double"},
-        ("triple", BUTTON_2): {COMMAND: "2_triple"},
-        ("hold", BUTTON_2): {COMMAND: "2_hold"},
-        ("release", BUTTON_2): {COMMAND: "2_release"},
-        ("single", BUTTON_3): {COMMAND: "3_single"},
-        ("double", BUTTON_3): {COMMAND: "3_double"},
-        ("triple", BUTTON_3): {COMMAND: "3_triple"},
-        ("hold", BUTTON_3): {COMMAND: "3_hold"},
-        ("release", BUTTON_3): {COMMAND: "3_release"},
-        ("single", BUTTON_4): {COMMAND: "4_single"},
-        ("double", BUTTON_4): {COMMAND: "4_double"},
-        ("triple", BUTTON_4): {COMMAND: "4_triple"},
-        ("hold", BUTTON_4): {COMMAND: "4_hold"},
-        ("release", BUTTON_4): {COMMAND: "4_release"},
-        ("single", BUTTON_5): {COMMAND: "5_single"},
-        ("double", BUTTON_5): {COMMAND: "5_double"},
-        ("triple", BUTTON_5): {COMMAND: "5_triple"},
-        ("hold", BUTTON_5): {COMMAND: "5_hold"},
-        ("release", BUTTON_5): {COMMAND: "5_release"},
-        ("single", BUTTON_6): {COMMAND: "6_single"},
-        ("double", BUTTON_6): {COMMAND: "6_double"},
-        ("triple", BUTTON_6): {COMMAND: "6_triple"},
-        ("hold", BUTTON_6): {COMMAND: "6_hold"},
-        ("release", BUTTON_6): {COMMAND: "6_release"},
-    }
+    device_automation_triggers = RemoteB686OPCN01.device_automation_triggers
