@@ -37,7 +37,18 @@ class KeenHomeSmartVent(CustomDevice):
         # input_clusters=[
         #   0, 1, 3, 4, 5, 6, 8, 32, 1026, 1027, 2821, 64513, 64514]
         # output_clusters=[25]>
-        MODELS_INFO: [("Keen Home Inc", "SV02-612-MP-1.3")],
+        MODELS_INFO: [
+            ("Keen Home Inc", "SV01-410-MP-1.0"),
+            ("Keen Home Inc", "SV01-410-MP-1.1"),
+            ("Keen Home Inc", "SV01-410-MP-1.4"),
+            ("Keen Home Inc", "SV01-410-MP-1.5"),
+            ("Keen Home Inc", "SV02-410-MP-1.3"),
+            ("Keen Home Inc", "SV01-412-MP-1.0"),
+            ("Keen Home Inc", "SV01-610-MP-1.0"),
+            ("Keen Home Inc", "SV02-610-MP-1.3"),
+            ("Keen Home Inc", "SV01-612-MP-1.0"),
+            ("Keen Home Inc", "SV02-612-MP-1.3"),
+        ],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,

@@ -8,6 +8,7 @@ from zigpy.zcl.clusters.general import (
     Groups,
     Identify,
     MultistateInput,
+    OnOff,
     Ota,
     Scenes,
 )
@@ -82,7 +83,7 @@ class RemoteB286ACN01(XiaomiCustomDevice):
                     VALUE: value,
                 }
                 action = "{}_{}".format(button, self._current_state)
-                self.listener_event(ZHA_SEND_EVENT, self, action, event_args)
+                self.listener_event(ZHA_SEND_EVENT, action, event_args)
                 # show something in the sensor in HA
                 super()._update_attribute(0, action)
 
@@ -153,7 +154,7 @@ class RemoteB286ACN01(XiaomiCustomDevice):
         SKIP_CONFIGURATION: True,
         ENDPOINTS: {
             1: {
-                DEVICE_TYPE: XIAOMI_DEVICE_TYPE,
+                DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
                 INPUT_CLUSTERS: [
                     BasicCluster,
                     PowerConfigurationCluster,
@@ -170,20 +171,22 @@ class RemoteB286ACN01(XiaomiCustomDevice):
                     Ota.cluster_id,
                     XIAOMI_CLUSTER_ID,
                     MultistateInputCluster,
+                    OnOff.cluster_id,
                 ],
             },
             2: {
-                DEVICE_TYPE: XIAOMI_DEVICE_TYPE2,
+                DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
                 INPUT_CLUSTERS: [Identify.cluster_id, MultistateInputCluster],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     MultistateInputCluster,
+                    OnOff.cluster_id,
                 ],
             },
             3: {
-                DEVICE_TYPE: XIAOMI_DEVICE_TYPE3,
+                DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
                 INPUT_CLUSTERS: [Identify.cluster_id, MultistateInputCluster],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
@@ -191,6 +194,7 @@ class RemoteB286ACN01(XiaomiCustomDevice):
                     Scenes.cluster_id,
                     AnalogInput.cluster_id,
                     MultistateInputCluster,
+                    OnOff.cluster_id,
                 ],
             },
         },

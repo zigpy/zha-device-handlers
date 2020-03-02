@@ -125,7 +125,7 @@ class BasicCluster(CustomCluster, Basic):
                 and self._attr_cache[MODEL] == "lumi.sensor_switch.aq2"
             ):
                 if value.raw == b"\x04!\xa8C\n!\x00\x00":
-                    self.listener_event(ZHA_SEND_EVENT, self, COMMAND_TRIPLE, [])
+                    self.listener_event(ZHA_SEND_EVENT, COMMAND_TRIPLE, [])
         elif attrid == XIAOMI_MIJA_ATTRIBUTE:
             attributes = self._parse_mija_attributes(value)
         else:
@@ -136,7 +136,6 @@ class BasicCluster(CustomCluster, Basic):
                 # pressed quickly."""
                 self.listener_event(
                     ZHA_SEND_EVENT,
-                    self,
                     COMMAND_ATTRIBUTE_UPDATED,
                     {
                         ATTRIBUTE_ID: attrid,
