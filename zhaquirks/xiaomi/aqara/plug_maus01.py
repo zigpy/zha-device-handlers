@@ -1,4 +1,4 @@
-"""Xiaomi aqara button sensor."""
+"""Xiaomi lumi.plug.maus01 plug."""
 import logging
 
 from zigpy.profiles import zha
@@ -56,7 +56,7 @@ class AnalogInputCluster(CustomCluster, AnalogInput):
 
 
 class Plug(XiaomiCustomDevice):
-    """lumi.plug.maus01 device."""
+    """lumi.plug.maus01 plug."""
 
     def __init__(self, *args, **kwargs):
         """Init."""

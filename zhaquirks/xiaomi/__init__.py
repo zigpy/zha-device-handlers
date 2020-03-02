@@ -438,6 +438,18 @@ class ElectricalMeasurementCluster(CustomCluster, ElectricalMeasurement):
 
     async def read_attributes_raw(self, attributes, manufacturer=None):
         """Prevent remote reads."""
-        attributes = [t.uint16_t(a) for a in attributes]
-        values = [self._attr_cache.get(attr) for attr in attributes]
+        values = []
+
+        for attrid in attributes:
+            attrid = t.uint16_t(attrid)
+            tv = foundation.TypeValue(0x3A, t.Double(self._attr_cache.get(attrid)))
+
+            # For some reason foundation.ReadAttributeRecord loses it's value when it is instantiated with
+            # foundation.ReadAttributeRecord(attribute, foundation.Status.SUCCESS, tv)
+            record = foundation.ReadAttributeRecord()
+            record.attrid = attrid
+            record.status = foundation.Status.SUCCESS
+            record.value = tv
+            values.append([record])
+
         return values
