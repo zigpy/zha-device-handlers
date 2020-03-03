@@ -442,14 +442,16 @@ class ElectricalMeasurementCluster(CustomCluster, ElectricalMeasurement):
 
         for attrid in attributes:
             attrid = t.uint16_t(attrid)
-            tv = foundation.TypeValue(0x3A, t.Double(self._attr_cache.get(attrid)))
+            type_value = foundation.TypeValue(
+                0x3A, t.Double(self._attr_cache.get(attrid))
+            )
 
             # For some reason foundation.ReadAttributeRecord loses it's value when it is instantiated with
-            # foundation.ReadAttributeRecord(attribute, foundation.Status.SUCCESS, tv)
+            # foundation.ReadAttributeRecord(attribute, foundation.Status.SUCCESS, type_value)
             record = foundation.ReadAttributeRecord()
             record.attrid = attrid
             record.status = foundation.Status.SUCCESS
-            record.value = tv
+            record.value = type_value
             values.append([record])
 
         return values
