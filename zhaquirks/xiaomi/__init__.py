@@ -410,7 +410,7 @@ class PressureMeasurementCluster(CustomCluster, PressureMeasurement):
 
 
 class AnalogInputCluster(CustomCluster, AnalogInput):
-    """Analog input cluster."""
+    """Analog input cluster, only used to relay power consumtion information to ElectricalMeasurementCluster."""
 
     cluster_id = AnalogInput.cluster_id
 

@@ -43,7 +43,7 @@ VENDOR_PLUG_DEVICE_TYPE = 0x61
 
 
 class Plug(XiaomiCustomDevice):
-    """lumi.plug.mmeu01 device."""
+    """lumi.plug.mmeu01 plug."""
 
     def __init__(self, *args, **kwargs):
         """Init."""
