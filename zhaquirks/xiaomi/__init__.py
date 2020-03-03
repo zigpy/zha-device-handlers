@@ -425,7 +425,7 @@ class AnalogInputCluster(CustomCluster, AnalogInput):
             self.endpoint.device.power_bus.listener_event(POWER_REPORTED, value)
 
 
-class ElectricalMeasurementCluster(CustomCluster, ElectricalMeasurement):
+class ElectricalMeasurementCluster(LocalDataCluster, ElectricalMeasurement):
     """Electrical measurement cluster to receive reports that are sent to the basic cluster."""
 
     cluster_id = ElectricalMeasurement.cluster_id
@@ -451,23 +451,3 @@ class ElectricalMeasurementCluster(CustomCluster, ElectricalMeasurement):
     def consumption_reported(self, value):
         """Consumption reported."""
         self._update_attribute(self.CONSUMPTION_ID, value)
-
-    async def read_attributes_raw(self, attributes, manufacturer=None):
-        """Prevent remote reads."""
-        values = []
-
-        for attrid in attributes:
-            attrid = t.uint16_t(attrid)
-            type_value = foundation.TypeValue(
-                0x3A, t.Double(self._attr_cache.get(attrid))
-            )
-
-            # For some reason foundation.ReadAttributeRecord loses it's value when it is instantiated with
-            # foundation.ReadAttributeRecord(attribute, foundation.Status.SUCCESS, type_value)
-            record = foundation.ReadAttributeRecord()
-            record.attrid = attrid
-            record.status = foundation.Status.SUCCESS
-            record.value = type_value
-            values.append([record])
-
-        return values
