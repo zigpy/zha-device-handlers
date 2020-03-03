@@ -5,7 +5,7 @@ import logging
 
 from zigpy import types as t
 from zigpy.quirks import CustomCluster, CustomDevice
-from zigpy.zcl.clusters.general import Basic, PowerConfiguration
+from zigpy.zcl.clusters.general import AnalogInput, Basic, PowerConfiguration
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.measurement import (
     OccupancySensing,
@@ -407,6 +407,22 @@ class PressureMeasurementCluster(CustomCluster, PressureMeasurement):
     def pressure_reported(self, value):
         """Pressure reported."""
         self._update_attribute(self.ATTR_ID, value)
+
+
+class AnalogInputCluster(CustomCluster, AnalogInput):
+    """Analog input cluster."""
+
+    cluster_id = AnalogInput.cluster_id
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        self._current_state = {}
+        super().__init__(*args, **kwargs)
+
+    def _update_attribute(self, attrid, value):
+        super()._update_attribute(attrid, value)
+        if value is not None and value >= 0:
+            self.endpoint.device.power_bus.listener_event(POWER_REPORTED, value)
 
 
 class ElectricalMeasurementCluster(CustomCluster, ElectricalMeasurement):
