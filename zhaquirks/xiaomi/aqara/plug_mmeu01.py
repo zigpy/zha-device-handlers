@@ -16,6 +16,7 @@ from zigpy.zcl.clusters.general import (
     Time,
 )
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
+from zigpy.zcl.clusters.smartenergy import Metering
 
 from .. import (
     LUMI,
@@ -66,7 +67,7 @@ class Plug(XiaomiCustomDevice):
                     Scenes.cluster_id,
                     OnOff.cluster_id,
                     Alarms.cluster_id,
-                    1794,  # Metering 0x0702
+                    Metering.cluster_id,
                     ElectricalMeasurement.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
@@ -96,7 +97,7 @@ class Plug(XiaomiCustomDevice):
                     Scenes.cluster_id,
                     OnOff.cluster_id,
                     Alarms.cluster_id,
-                    1794,  # Metering 0x0702
+                    Metering.cluster_id,
                     ElectricalMeasurementCluster,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
