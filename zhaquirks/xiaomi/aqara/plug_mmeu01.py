@@ -38,8 +38,8 @@ from ...const import (
 
 _LOGGER = logging.getLogger(__name__)
 
-VENDOR_PLUG_PROFILE_ID = 0xA1E0
-VENDOR_PLUG_DEVICE_TYPE = 0x61
+XIAOMI_PROFILE_ID = 0xA1E0
+XIAOMI_DEVICE_TYPE = 0x61
 
 
 class Plug(XiaomiCustomDevice):
@@ -80,8 +80,8 @@ class Plug(XiaomiCustomDevice):
             # input_clusters=[]
             # output_clusters=[33]>
             242: {
-                PROFILE_ID: VENDOR_PLUG_PROFILE_ID,
-                DEVICE_TYPE: VENDOR_PLUG_DEVICE_TYPE,
+                PROFILE_ID: XIAOMI_PROFILE_ID,
+                DEVICE_TYPE: XIAOMI_DEVICE_TYPE,
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
         },
@@ -112,8 +112,8 @@ class Plug(XiaomiCustomDevice):
                 OUTPUT_CLUSTERS: [AnalogInput.cluster_id, Groups.cluster_id],
             },
             242: {
-                PROFILE_ID: VENDOR_PLUG_PROFILE_ID,
-                DEVICE_TYPE: VENDOR_PLUG_DEVICE_TYPE,
+                PROFILE_ID: XIAOMI_PROFILE_ID,
+                DEVICE_TYPE: XIAOMI_DEVICE_TYPE,
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
         },
