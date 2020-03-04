@@ -5,7 +5,7 @@ import logging
 
 from zigpy import types as t
 from zigpy.quirks import CustomCluster, CustomDevice
-from zigpy.zcl.clusters.general import Basic, PowerConfiguration
+from zigpy.zcl.clusters.general import AnalogInput, Basic, PowerConfiguration
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.measurement import (
     OccupancySensing,
@@ -409,7 +409,23 @@ class PressureMeasurementCluster(CustomCluster, PressureMeasurement):
         self._update_attribute(self.ATTR_ID, value)
 
 
-class ElectricalMeasurementCluster(CustomCluster, ElectricalMeasurement):
+class AnalogInputCluster(CustomCluster, AnalogInput):
+    """Analog input cluster, only used to relay power consumtion information to ElectricalMeasurementCluster."""
+
+    cluster_id = AnalogInput.cluster_id
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        self._current_state = {}
+        super().__init__(*args, **kwargs)
+
+    def _update_attribute(self, attrid, value):
+        super()._update_attribute(attrid, value)
+        if value is not None and value >= 0:
+            self.endpoint.device.power_bus.listener_event(POWER_REPORTED, value)
+
+
+class ElectricalMeasurementCluster(LocalDataCluster, ElectricalMeasurement):
     """Electrical measurement cluster to receive reports that are sent to the basic cluster."""
 
     cluster_id = ElectricalMeasurement.cluster_id
@@ -435,9 +451,3 @@ class ElectricalMeasurementCluster(CustomCluster, ElectricalMeasurement):
     def consumption_reported(self, value):
         """Consumption reported."""
         self._update_attribute(self.CONSUMPTION_ID, value)
-
-    async def read_attributes_raw(self, attributes, manufacturer=None):
-        """Prevent remote reads."""
-        attributes = [t.uint16_t(a) for a in attributes]
-        values = [self._attr_cache.get(attr) for attr in attributes]
-        return values
