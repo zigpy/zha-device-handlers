@@ -1,0 +1,3 @@
+"""Bosch quirks."""
+
+BOSCH = "Bosch"
