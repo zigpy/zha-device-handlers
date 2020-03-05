@@ -1,4 +1,4 @@
-"""Xiaomi aqara button sensor."""
+"""Xiaomi lumi.relay.c2acn01 relay."""
 import logging
 
 from zigpy.profiles import zha
@@ -19,12 +19,12 @@ from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 
 from .. import (
     LUMI,
-    POWER_REPORTED,
+    AnalogInputCluster,
     BasicCluster,
     ElectricalMeasurementCluster,
     XiaomiCustomDevice,
 )
-from ... import Bus, CustomCluster
+from ... import Bus
 from ...const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -38,24 +38,8 @@ from ...const import (
 _LOGGER = logging.getLogger(__name__)
 
 
-class AnalogInputCluster(CustomCluster, AnalogInput):
-    """Analog input cluster."""
-
-    cluster_id = AnalogInput.cluster_id
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        self._current_state = {}
-        super().__init__(*args, **kwargs)
-
-    def _update_attribute(self, attrid, value):
-        super()._update_attribute(attrid, value)
-        if value is not None and value >= 0:
-            self.endpoint.device.power_bus.listener_event(POWER_REPORTED, value)
-
-
 class Relay(XiaomiCustomDevice):
-    """lumi.plug.maus01 device."""
+    """lumi.relay.c2acn01 relay."""
 
     def __init__(self, *args, **kwargs):
         """Init."""

@@ -35,7 +35,7 @@ DROP = "drop"
 DROP_VALUE = 3
 DROPPED = "device_dropped"
 
-FACE_ANY = "fave_any"
+FACE_ANY = "face_any"
 FACE_1 = "face_1"
 FACE_2 = "face_2"
 FACE_3 = "face_3"

@@ -40,6 +40,8 @@ If you are looking to make your first code contribution to this project then we 
 - [Motion Sensor](https://www.aqara.com/en/motion_sensor.html): lumi.sensor_motion.aq2
 - [Temperature / Humidity Sensor](https://www.aqara.com/en/temperature_and_humidity_sensor-product.html): lumi.weather
 - [Water Leak](https://www.aqara.com/en/water_leak_sensor.html): lumi.sensor_wleak.aq1
+- [US Plug](https://www.aqara.com/en/smart_plug.html): lumi.plug.maus01
+- [EU Plug](https://zigbee.blakadder.com/Xiaomi_ZNCZ04LM.html): lumi.plug.mmeu01
 
 ### Osram
 - [OSRAM LIGHTIFY Dimming Switch](https://assets.osram-americas.com/assets/Documents/LTFY012.06c0d6e6-17c7-4dcb-bd2c-1fca7feecfb4.pdf):
@@ -96,6 +98,7 @@ If you are looking to make your first code contribution to this project then we 
 - Cube sends the following events: `flip (90 and 180 degrees)`, `rotate_left`, `rotate_right`, `knock`, `drop`, `slide` and `shake`
 - Motion sensor exposes binary sensors for motion and occupancy.
 - Button sends events to Home Assistant
+- All supported plugs report power consumption and can be toggled
 
 ### SmartThings
 
