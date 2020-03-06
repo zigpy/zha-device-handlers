@@ -207,9 +207,7 @@ class CubeAQGL01(XiaomiCustomDevice):
                 else:
                     self._current_state[STATUS_TYPE_ATTR] = ROTATE_LEFT
                 # show something in the sensor in HA
-                super()._update_attribute(
-                    0, "{}:{}".format(self._current_state[STATUS_TYPE_ATTR], value)
-                )
+                super()._update_attribute(0, value)
                 if self._current_state[STATUS_TYPE_ATTR] is not None:
                     self.listener_event(
                         ZHA_SEND_EVENT,
