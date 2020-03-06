@@ -1,7 +1,6 @@
 """Device handler for IKEA of Sweden TRADFRI remote control."""
 from zigpy.profiles import zll
 from zigpy.quirks import CustomDevice
-import zigpy.types as t
 from zigpy.zcl.clusters.general import (
     Alarms,
     Basic,
@@ -15,8 +14,8 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.lightlink import LightLink
 
-from . import IKEA, LightLinkCluster
-from .. import DoublingPowerConfigurationCluster, EventableCluster
+from . import IKEA, LightLinkCluster, ScenesCluster
+from .. import DoublingPowerConfigurationCluster
 from ..const import (
     ARGS,
     CLUSTER_ID,
@@ -46,21 +45,6 @@ from ..const import (
 )
 
 DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
-
-
-class ScenesCluster(EventableCluster, Scenes):
-    """Ikea Scenes cluster."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.server_commands.update(
-            {
-                0x0007: ("press", (t.int16s, t.int8s, t.int8s), False),
-                0x0008: ("hold", (t.int16s, t.int8s), False),
-                0x0009: ("release", (t.int16s,), False),
-            }
-        )
 
 
 class IkeaTradfriRemote(CustomDevice):
