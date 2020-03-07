@@ -6,7 +6,7 @@ from zigpy.zcl.clusters.general import Basic, Identify, PowerConfiguration
 from zigpy.zcl.clusters.security import IasZone
 
 from . import KONKE, MotionCluster, OccupancyCluster
-from .. import Bus
+from .. import Bus, PowerConfigurationCluster
 from ..const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -58,7 +58,7 @@ class KonkeMotion(CustomDevice):
             1: {
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
+                    PowerConfigurationCluster,
                     Identify.cluster_id,
                     OccupancyCluster,
                     MotionCluster,
