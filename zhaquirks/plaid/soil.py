@@ -29,7 +29,7 @@ class SoilMoisture(CustomDevice):
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
+                DEVICE_TYPE: 1029,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
@@ -46,7 +46,7 @@ class SoilMoisture(CustomDevice):
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
+                DEVICE_TYPE: 1029,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     PowerConfigurationCluster,
