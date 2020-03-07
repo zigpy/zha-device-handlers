@@ -1,4 +1,4 @@
-"""Konke motion sensor."""
+"""Konke temp and humidity sensor."""
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
