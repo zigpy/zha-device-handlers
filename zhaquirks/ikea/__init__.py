@@ -1,7 +1,10 @@
 """Ikea module."""
 import logging
-from zigpy.zcl.clusters.lightlink import LightLink
+
+import zigpy.types as t
 from zigpy.quirks import CustomCluster
+from zigpy.zcl.clusters.general import Scenes
+from zigpy.zcl.clusters.lightlink import LightLink
 
 _LOGGER = logging.getLogger(__name__)
 IKEA = "IKEA of Sweden"
@@ -29,3 +32,19 @@ class LightLinkCluster(CustomCluster, LightLink):
             group_id = 0x0000
         status = await coordinator.add_to_group(group_id)
         return [status]
+
+
+class ScenesCluster(CustomCluster, Scenes):
+    """Ikea Scenes cluster."""
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self.server_commands = Scenes.attributes.copy()
+        self.server_commands.update(
+            {
+                0x0007: ("press", (t.int16s, t.int8s, t.int8s), False),
+                0x0008: ("hold", (t.int16s, t.int8s), False),
+                0x0009: ("release", (t.int16s,), False),
+            }
+        )
