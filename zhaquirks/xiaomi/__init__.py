@@ -404,6 +404,12 @@ class PressureMeasurementCluster(CustomCluster, PressureMeasurement):
         super().__init__(*args, **kwargs)
         self.endpoint.device.pressure_bus.add_listener(self)
 
+    def _update_attribute(self, attrid, value):
+        # drop values above and below documented range for this sensor
+        # value is in hectopascals
+        if attrid == self.ATTR_ID and (300 <= value <= 1100):
+            super()._update_attribute(attrid, value)
+
     def pressure_reported(self, value):
         """Pressure reported."""
         self._update_attribute(self.ATTR_ID, value)
