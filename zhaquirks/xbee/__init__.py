@@ -283,6 +283,7 @@ class XBeeCommon(CustomDevice):
         """Serial Data Cluster for the XBee."""
 
         cluster_id = XBEE_DATA_CLUSTER
+        ep_attribute = "xbee_serial_data"
 
         class BinaryString(str):
             """Class to parse and serialize binary data as string."""
