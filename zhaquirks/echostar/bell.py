@@ -30,7 +30,7 @@ from ..const import (
 )
 
 MANUFACTURER = " Echostar"
-MODEL = "  Bell"
+MODEL = "   Bell"
 
 
 class Bell(CustomDevice):
@@ -41,7 +41,7 @@ class Bell(CustomDevice):
         # device_version=0
         # input_clusters=[0, 3, 9, 1]
         # output_clusters=[3, 6, 8, 25]>
-        # MODELS_INFO: [(MANUFACTURER, MODEL)],
+        MODELS_INFO: [(MANUFACTURER, MODEL)],
         ENDPOINTS: {
             18: {
                 PROFILE_ID: zha.PROFILE_ID,
