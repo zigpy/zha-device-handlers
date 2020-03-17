@@ -77,8 +77,8 @@ class Bell(CustomDevice):
                     Ota.cluster_id,
                 ],
             }
-        },
+        }
     }
     device_automation_triggers = {
-        (SHORT_PRESS, TURN_ON): {COMMAND: COMMAND_ON, CLUSTER_ID: 6, ENDPOINT_ID: 18, },
+        (SHORT_PRESS, TURN_ON): {COMMAND: COMMAND_ON, CLUSTER_ID: 6, ENDPOINT_ID: 18}
     }
