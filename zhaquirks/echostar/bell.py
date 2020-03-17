@@ -83,5 +83,5 @@ class Bell(CustomDevice):
     }
     device_automation_triggers = {
         (SHORT_PRESS, BUTTON_1): {COMMAND: COMMAND_ON, CLUSTER_ID: 6, ENDPOINT_ID: 18},
-        (SHORT_PRESS, BUTTON_2): {COMMAND: COMMAND_OFF, CLUSTER_ID: 6, ENDPOINT_ID: 18}
+        (SHORT_PRESS, BUTTON_2): {COMMAND: COMMAND_OFF, CLUSTER_ID: 6, ENDPOINT_ID: 18},
     }
