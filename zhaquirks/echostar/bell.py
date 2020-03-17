@@ -3,17 +3,21 @@
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
+    Alarms,
     Basic,
     Identify,
-    Alarms,
-    OnOff,
     LevelControl,
+    OnOff,
     Ota,
     PowerConfiguration,
 )
 
 from ..const import (
+    CLUSTER_ID,
+    COMMAND,
+    COMMAND_ON,
     DEVICE_TYPE,
+    ENDPOINT_ID,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
@@ -21,10 +25,6 @@ from ..const import (
     PROFILE_ID,
     SHORT_PRESS,
     TURN_ON,
-    CLUSTER_ID,
-    ENDPOINT_ID,
-    COMMAND,
-    COMMAND_ON,
 )
 
 MANUFACTURER = " Echostar"
