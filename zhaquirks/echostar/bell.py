@@ -12,9 +12,12 @@ from zigpy.zcl.clusters.general import (
 )
 
 from ..const import (
+    BUTTON_1,
+    BUTTON_2,
     CLUSTER_ID,
     COMMAND,
     COMMAND_ON,
+    COMMAND_OFF,
     DEVICE_TYPE,
     ENDPOINT_ID,
     ENDPOINTS,
@@ -23,7 +26,6 @@ from ..const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SHORT_PRESS,
-    TURN_ON,
 )
 
 MANUFACTURER = " Echostar"
@@ -80,5 +82,6 @@ class Bell(CustomDevice):
         }
     }
     device_automation_triggers = {
-        (SHORT_PRESS, TURN_ON): {COMMAND: COMMAND_ON, CLUSTER_ID: 6, ENDPOINT_ID: 18}
+        (SHORT_PRESS, BUTTON_1): {COMMAND: COMMAND_ON, CLUSTER_ID: 6, ENDPOINT_ID: 18},
+        (SHORT_PRESS, BUTTON_2): {COMMAND: COMMAND_OFF, CLUSTER_ID: 6, ENDPOINT_ID: 18}
     }
