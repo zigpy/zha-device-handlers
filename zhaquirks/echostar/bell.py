@@ -1,6 +1,5 @@
-"""Echostar Bell Device"""
-"""Sage Doorbell Sensor Device"""
-
+"""Echostar Bell Device."""
+"""Sage Doorbell Sensor Device."""
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
@@ -26,7 +25,6 @@ from ..const import (
     ENDPOINT_ID,
     COMMAND,
     COMMAND_ON,
-    COMMAND_OFF,
 )
 
 MANUFACTURER = " Echostar"
@@ -34,7 +32,7 @@ MODEL = "   Bell"
 
 
 class Bell(CustomDevice):
-    """Echostar Bell device"""
+    """Echostar Bell device."""
 
     signature = {
         # <SimpleDescriptor endpoint=18 profile=260 device_type=260
@@ -83,5 +81,5 @@ class Bell(CustomDevice):
         },
     }
     device_automation_triggers = {
-        (SHORT_PRESS, TURN_ON): {COMMAND: COMMAND_ON, CLUSTER_ID: 6, ENDPOINT_ID: 18,},
+        (SHORT_PRESS, TURN_ON): {COMMAND: COMMAND_ON, CLUSTER_ID: 6, ENDPOINT_ID: 18, },
     }
