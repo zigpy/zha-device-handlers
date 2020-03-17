@@ -1,5 +1,4 @@
-"""Echostar Bell Device."""
-"""Sage Doorbell Sensor Device."""
+"""Echostar Sage Doorbell Sensor Device."""
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
