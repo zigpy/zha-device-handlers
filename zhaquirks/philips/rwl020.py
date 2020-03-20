@@ -20,6 +20,7 @@ from ..const import (
     COMMAND_OFF_WITH_EFFECT,
     COMMAND_ON,
     COMMAND_STEP,
+    COMMAND_STOP,
     DEVICE_TYPE,
     DIM_DOWN,
     DIM_UP,
@@ -27,6 +28,7 @@ from ..const import (
     ENDPOINTS,
     INPUT_CLUSTERS,
     LONG_PRESS,
+    LONG_RELEASE,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SHORT_PRESS,
@@ -123,6 +125,11 @@ class PhilipsRWL020(CustomDevice):
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
             ARGS: [0, 56, 9],
+        },
+        (LONG_RELEASE, "Dim Up/Down"): {
+            COMMAND: COMMAND_STOP,
+            ENDPOINT_ID: 1,
+            CLUSTER_ID: 8,
         },
         (SHORT_PRESS, DIM_DOWN): {
             COMMAND: COMMAND_STEP,
