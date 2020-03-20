@@ -111,7 +111,7 @@ class PhilipsRWL020(CustomDevice):
 
     device_automation_triggers = {
         (SHORT_PRESS, TURN_ON): {COMMAND: COMMAND_ON},
-        (LONG_PRESS, TURN_OFF): {COMMAND: COMMAND_OFF_WITH_EFFECT},
+        (SHORT_PRESS, TURN_OFF): {COMMAND: COMMAND_OFF_WITH_EFFECT},
         (SHORT_PRESS, DIM_UP): {
             COMMAND: COMMAND_STEP,
             CLUSTER_ID: 8,
