@@ -86,7 +86,7 @@ class ThermostatCluster(CustomCluster, Thermostat):
             CURRENT_TEMP_SETPOINT_ATTR: ('current_temperature_setpoint', types.int16s),
             HOST_FLAGS_ATTR:            ('host_flags', types.uint24_t),
         })
-        self._attridx = {
+        self.attridx = {
             attrname: attrid for attrid, (attrname, datatype)
             in self.attributes.items()
         }
@@ -96,7 +96,6 @@ class ThermostatCluster(CustomCluster, Thermostat):
         _LOGGER.debug("update attribute %04x to %s... ", attrid, value)
 
         if attrid == CURRENT_TEMP_SETPOINT_ATTR:
-            print("setting occupied heating setpoint now...")
             super()._update_attribute(OCCUPIED_HEATING_SETPOINT_ATTR, value)
         elif attrid == HOST_FLAGS_ATTR:
             if value & CLR_OFF_MODE_FLAG == CLR_OFF_MODE_FLAG:
