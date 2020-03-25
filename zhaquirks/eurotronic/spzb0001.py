@@ -1,8 +1,4 @@
-
 from zigpy.profiles import PROFILES, zha
-from zigpy.quirks import CustomCluster, CustomDevice
-import zigpy.types as types
-from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -12,6 +8,8 @@ from zigpy.zcl.clusters.general import (
     Time,
 )
 from zigpy.zcl.clusters.hvac import Thermostat
+from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.zcl import foundation
 
 from zhaquirks.const import (
     ARGS,
@@ -34,9 +32,7 @@ from zhaquirks.const import (
     TURN_ON,
 )
 
-from . import EUROTRONIC
-
-THERMOSTAT_CHANNEL = "thermostat"
+from . import EUROTRONIC, ThermostatCluster
 
 
 class SPZB0001(CustomDevice):
@@ -81,7 +77,7 @@ class SPZB0001(CustomDevice):
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
                     Identify.cluster_id,
-                    Thermostat.cluster_id,
+                    ThermostatCluster,
                     Ota.cluster_id,
                     Time.cluster_id,
                 ],
@@ -90,10 +86,11 @@ class SPZB0001(CustomDevice):
                     PowerConfiguration.cluster_id,
                     Identify.cluster_id,
                     Groups.cluster_id,
-                    Thermostat.cluster_id,
+                    ThermostatCluster,
                     Ota.cluster_id,
                     Time.cluster_id,
                 ],
             }
         }
     }
+
