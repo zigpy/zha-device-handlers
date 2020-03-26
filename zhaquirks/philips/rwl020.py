@@ -20,7 +20,6 @@ from ..const import (
     COMMAND_OFF_WITH_EFFECT,
     COMMAND_ON,
     COMMAND_STEP,
-    COMMAND_STOP,
     DEVICE_TYPE,
     DIM_DOWN,
     DIM_UP,
