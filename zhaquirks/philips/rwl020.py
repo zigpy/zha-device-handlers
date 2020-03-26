@@ -28,7 +28,6 @@ from ..const import (
     ENDPOINTS,
     INPUT_CLUSTERS,
     LONG_PRESS,
-    LONG_RELEASE,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SHORT_PRESS,
