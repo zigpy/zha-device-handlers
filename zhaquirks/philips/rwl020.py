@@ -126,11 +126,6 @@ class PhilipsRWL020(CustomDevice):
             ENDPOINT_ID: 1,
             ARGS: [0, 56, 9],
         },
-        (LONG_RELEASE, "Dim Up/Down"): {
-            COMMAND: COMMAND_STOP,
-            ENDPOINT_ID: 1,
-            CLUSTER_ID: 8,
-        },
         (SHORT_PRESS, DIM_DOWN): {
             COMMAND: COMMAND_STEP,
             CLUSTER_ID: 8,
