@@ -46,6 +46,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class XiaomiOnOffCluster(OnOff):
+    """Aqara wall switch cluster."""
 
     server_commands = {
         0x0000: ("off", (), False),
@@ -53,6 +54,8 @@ class XiaomiOnOffCluster(OnOff):
     }
 
     def command(self, command, *args, manufacturer=None, expect_reply=True):
+        """command handler""""
+
         src_ep = zigpy.application.DEFAULT_ENDPOINT_ID
         seq = self._endpoint.device.application.get_sequence()
         return self._endpoint.device.application.request(
@@ -88,7 +91,7 @@ class CtrlNeutral1(XiaomiCustomDevice):
                     Ota.cluster_id,
                     Time.cluster_id,
                 ],
-                OUTPUT_CLUSTERS: [Basic.cluster_id, Time.cluster_id, Ota.cluster_id,],
+                OUTPUT_CLUSTERS: [Basic.cluster_id, Time.cluster_id, Ota.cluster_id],
             },
             # <SimpleDescriptor endpoint=2 profile=260 device_type=256
             # device_version=2
