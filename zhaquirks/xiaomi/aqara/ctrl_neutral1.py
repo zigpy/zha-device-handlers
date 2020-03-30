@@ -1,7 +1,7 @@
 """Xiaomi aqara single key wall switch devices."""
 import logging
 
-import zigpy.types as t
+import zigpy.application
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import (
     AnalogInput,
@@ -47,86 +47,24 @@ _LOGGER = logging.getLogger(__name__)
 
 class XiaomiOnOffCluster(OnOff):
 
-    attributes = {
-        0x0000: ("on_off", t.Bool),
-        0x4000: ("global_scene_control", t.Bool),
-        0x4001: ("on_time", t.uint16_t),
-        0x4002: ("off_wait_time", t.uint16_t),
-
-        # 0xFF22: ("single", t.Bool),
-        0xFF22: ("left", t.uint8_t),
-        0xFF23: ("right", t.uint8_t),
-    }
-
     server_commands = {
         0x0000: ("off", (), False),
         0x0001: ("on", (), False),
-        # 0x0002: ("toggle", (), False),
-        # 0x0040: ("off_with_effect", (t.uint8_t, t.uint8_t), False),
-        # 0x0041: ("on_with_recall_global_scene", (), False),
-        # 0x0042: ("on_with_timed_off", (t.uint8_t, t.uint16_t, t.uint16_t), False),
     }
 
     def command(self, command, *args, manufacturer=None, expect_reply=True):
-        _LOGGER.debug('command: %s %s m:%s, r:%s', command, args, manufacturer, expect_reply)
-        # traceback.print_stack()
-
-
-        # return self.write_attributes({
-        #     "left": 0x12,
-        # }, manufacturer=manufacturer)
-
-        return super().command(command, *args, manufacturer=manufacturer, expect_reply=expect_reply)
-
-    def _update_attribute(self, attrid, value):
-        _LOGGER.debug('_update_attribute: %s %s', attrid, value)
-        super()._update_attribute(attrid, value)
-
-    # def request(self, general, command_id, schema, *args, manufacturer=None, expect_reply=True):
-    #     _LOGGER.debug('request: %s %s', general, command_id)
-    #     return super().request(general, command_id, schema, *args, manufacturer=manufacturer,
-    #                            expect_reply=expect_reply)
-
-# 2020-03-15 20:22:39 DEBUG (MainThread) [homeassistant.core] Bus:Handling <Event call_service[L]:
-#   domain=light, service=turn_off, service_data=
-#       entity_id=light.ikea_of_sweden_tradfri_bulb_e27_w_opal_1000lm_b5adc2fe_level_on_off>
-# 2020-03-15 20:22:39 DEBUG (MainThread) [zhaquirks.xiaomi.aqara.ctrl_neutral1] command: 0 () m:None, r:True
-#   File "/home/sandor/.virtualenvs/homeassistant/bin/hass", line 11, in <module>
-#     load_entry_point('homeassistant', 'console_scripts', 'hass')()
-#   File "/home/sandor/repos/home-assistant/homeassistant/__main__.py", line 342, in main
-#     exit_code = asyncio.run(setup_and_run_hass(config_dir, args))
-#   File "/usr/lib/python3.7/asyncio/runners.py", line 43, in run
-#     return loop.run_until_complete(main)
-#   File "/usr/lib/python3.7/asyncio/base_events.py", line 566, in run_until_complete
-#     self.run_forever()
-#   File "/usr/lib/python3.7/asyncio/base_events.py", line 534, in run_forever
-#     self._run_once()
-#   File "/usr/lib/python3.7/asyncio/base_events.py", line 1771, in _run_once
-#     handle._run()
-#   File "/usr/lib/python3.7/asyncio/events.py", line 88, in _run
-#     self._context.run(self._callback, *self._args)
-#   File "/home/sandor/repos/home-assistant/homeassistant/components/zha/light.py", line 321, in async_turn_off
-#     result = await self._on_off_channel.off()
-#   File "/home/sandor/repos/home-assistant/homeassistant/components/zha/core/channels/base.py", line 53, in wrapper
-#     result = await command(*args, **kwds)
-#   File "/home/sandor/repos/zigpy/zha-device-handlers/zhaquirks/xiaomi/aqara/ctrl_neutral1.py", line 73, in command
-#     traceback.print_stack()
-
-
-# zigbee-herdsman:controller:endpoint Command 0x00158d00024be541/2 genOnOff.on({},
-#   {"timeout":6000,"manufacturerCode":null,"disableDefaultResponse":false})
-# zigbee-herdsman:adapter:zStack:znp:SREQ --> AF - dataRequest -
-#   {"dstaddr":65311,"destendpoint":2,"srcendpoint":1,"clusterid":6,"transid":17,"options":0,"radius":30,"len":3,
-#       "data":{"type":"Buffer","data":[1,8,1]}}
-# zigbee-herdsman:adapter:zStack:unpi:writer -->frame [254,13,36,1,31,255,2,1,6,0,17,0,30,3,1,8,1,201]
-
-
-# zigbee-herdsman:controller:endpoint Command 0x00158d00024be541/2 genOnOff.off({},
-#   {"timeout":6000,"manufacturerCode":null,"disableDefaultResponse":false})
-# zigbee-herdsman:adapter:zStack:znp:SREQ --> AF - dataRequest -
-#   {"dstaddr":65311,"destendpoint":2,"srcendpoint":1,"clusterid":6,"transid":16,"options":0,"radius":30,"len":3,
-#       "data":{"type":"Buffer","data":[1,7,0]}}
-# zigbee-herdsman:adapter:zStack:unpi:writer --> frame [254,13,36,1,31,255,2,1,6,0,16,0,30,3,1,7,0,198]
+        src_ep = zigpy.application.DEFAULT_ENDPOINT_ID
+        seq = self._endpoint.device.application.get_sequence()
+        return self._endpoint.device.application.request(
+            self._endpoint.device,
+            zha.PROFILE_ID,
+            OnOff.cluster_id,
+            src_ep,
+            self._endpoint._endpoint_id,
+            seq,
+            bytes([src_ep, seq, command]),
+            expect_reply=expect_reply,
+        )
 
 
 class CtrlNeutral1(XiaomiCustomDevice):
@@ -240,9 +178,3 @@ class CtrlNeutral1(XiaomiCustomDevice):
             },
         },
     }
-
-    # device_automation_triggers = {
-    #     (DOUBLE_PRESS, DOUBLE_PRESS): {COMMAND: DOUBLE},
-    #     (SHORT_PRESS, SHORT_PRESS): {COMMAND: SINGLE},
-    #     (LONG_PRESS, LONG_PRESS): {COMMAND: HOLD},
-    # }
