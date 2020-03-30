@@ -2,6 +2,7 @@
 import logging
 
 from zigpy.profiles import zha
+from zigpy.quirks import CustomCluster
 from zigpy.zcl.clusters.general import (
     AnalogInput,
     Basic,
@@ -44,7 +45,7 @@ _LOGGER = logging.getLogger(__name__)
 # double click 0xCFF1F00
 
 
-class XiaomiOnOffCluster(OnOff):
+class XiaomiOnOffCluster(OnOff, CustomCluster):
     """Aqara wall switch cluster."""
 
     server_commands = {0x0000: ("off", (), False), 0x0001: ("on", (), False)}
