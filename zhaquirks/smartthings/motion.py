@@ -18,15 +18,15 @@ from ..const import (
 )
 
 
-class SmartThingsMotionV4(CustomDevice):
-    """SmartThingsMotionV4."""
+class SmartThingsMotion(CustomDevice):
+    """SmartThingsMotionV4 or V5."""
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=1026
         #  device_version=0
         #  input_clusters=[0, 1, 3, 15, 1026, 1280, 32]
         #  output_clusters=[25]>
-        MODELS_INFO: [(SMART_THINGS, "motionv4")],
+        MODELS_INFO: [(SMART_THINGS, "motionv4"), (SMART_THINGS, "motionv5")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,

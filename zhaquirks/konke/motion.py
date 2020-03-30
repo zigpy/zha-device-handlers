@@ -68,3 +68,52 @@ class KonkeMotion(CustomDevice):
             }
         }
     }
+
+
+class KonkeMotionB(CustomDevice):
+    """Custom device representing konke motion sensors."""
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        self.occupancy_bus = Bus()
+        super().__init__(*args, **kwargs)
+
+    signature = {
+        #  <SimpleDescriptor endpoint=1 profile=260 device_type=1026
+        #  device_version=0
+        #  input_clusters=[0, 1, 3, 1280]
+        #  output_clusters=[3]>
+        MODELS_INFO: [
+            (KONKE, "3AFE28010402000D"),
+            (KONKE, "3AFE14010402000D"),
+            (KONKE, "3AFE27010402000D"),
+        ],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    Identify.cluster_id,
+                    IasZone.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Identify.cluster_id],
+            }
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    PowerConfigurationCluster,
+                    Identify.cluster_id,
+                    OccupancyCluster,
+                    MotionCluster,
+                ],
+                OUTPUT_CLUSTERS: [Identify.cluster_id],
+            }
+        }
+    }
