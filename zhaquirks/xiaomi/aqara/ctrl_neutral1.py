@@ -1,7 +1,6 @@
 """Xiaomi aqara single key wall switch devices."""
 import logging
 
-import zigpy.application
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import (
     AnalogInput,
@@ -48,22 +47,19 @@ _LOGGER = logging.getLogger(__name__)
 class XiaomiOnOffCluster(OnOff):
     """Aqara wall switch cluster."""
 
-    server_commands = {
-        0x0000: ("off", (), False),
-        0x0001: ("on", (), False),
-    }
+    server_commands = {0x0000: ("off", (), False), 0x0001: ("on", (), False)}
 
     def command(self, command, *args, manufacturer=None, expect_reply=True):
-        """command handler""""
-
-        src_ep = zigpy.application.DEFAULT_ENDPOINT_ID
+        """Command handler."""
+        src_ep = 1
+        dst_ep = 2
         seq = self._endpoint.device.application.get_sequence()
         return self._endpoint.device.application.request(
             self._endpoint.device,
             zha.PROFILE_ID,
             OnOff.cluster_id,
             src_ep,
-            self._endpoint._endpoint_id,
+            dst_ep,
             seq,
             bytes([src_ep, seq, command]),
             expect_reply=expect_reply,

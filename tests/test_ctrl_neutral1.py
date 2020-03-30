@@ -25,6 +25,7 @@ from zhaquirks.xiaomi.aqara.ctrl_neutral1 import CtrlNeutral1
 
 
 def test_ctrl_neutral1():
+    """Test ctrl neutral 1 sends correct request."""
     sec = 8
     ieee = 0
     nwk = 1234
