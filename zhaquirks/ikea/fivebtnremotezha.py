@@ -129,7 +129,7 @@ class IkeaTradfriRemote(CustomDevice):
             COMMAND: COMMAND_MOVE_ON_OFF,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
-            ARGS: [0, 83],
+            ARGS: [0, 84],
         },
         (SHORT_PRESS, DIM_DOWN): {
             COMMAND: COMMAND_STEP,
@@ -141,7 +141,7 @@ class IkeaTradfriRemote(CustomDevice):
             COMMAND: COMMAND_MOVE,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
-            ARGS: [1, 83],
+            ARGS: [1, 84],
         },
         (SHORT_PRESS, LEFT): {
             COMMAND: COMMAND_PRESS,
