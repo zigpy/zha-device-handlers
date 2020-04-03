@@ -1,6 +1,4 @@
-"""
-This module handles quirks of the  Zen Within thermostat.
-"""
+"""This module handles quirks of the  Zen Within thermostat."""
 
 import zigpy.profiles.zha as zha_p
 from zigpy.quirks import CustomDevice
@@ -28,7 +26,7 @@ class ZenThermostat(CustomDevice):
         # <SimpleDescriptor endpoint=1 profile=260 device_type=769 device_version=0
         # input_clusters=[0, 1, 3, 4, 5, 32, 513, 514, 516, 2821]
         # output_clusters=[10, 25]>
-        MODELS_INFO: [(ZEN, "Zen-01"),],
+        MODELS_INFO: [(ZEN, "Zen-01"), ],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha_p.PROFILE_ID,
