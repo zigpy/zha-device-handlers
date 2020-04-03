@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/dmulcahey/zha-device-handlers.svg?branch=master)](https://travis-ci.org/dmulcahey/zha-device-handlers)
+[![Build Status](https://travis-ci.org/zigpy/zha-device-handlers.svg?branch=master)](https://travis-ci.org/zigpy/zha-device-handlers)
 
 # ZHA Device Handlers For Home Assistant
 
