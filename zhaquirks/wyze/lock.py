@@ -85,18 +85,25 @@ class WyzeCluster(CustomCluster, Basic):
             self.info("index: %s value: %s", i, arg)
             i += 1
         self.warning("argument: %s", ",".join(map(str, args)))
-        if len(args) < 73:
+        if len(args) < 75:
             return
-        if args[41] == 165:
-            self.warning("the lock is unlocked")
+
+        if args[52] == 180 and args[41] == 165:
+            self.warning("the lock is unlocked via the app")
             self.endpoint.device.lock_bus.listener_event("lock_event", 2)
-        elif args[41] == 162:
-            self.warning("the lock is locked")
+        elif args[52] == 180 and args[41] == 162:
+            self.warning("the lock is locked via the app")
             self.endpoint.device.lock_bus.listener_event("lock_event", 1)
-        if args[41] == 177:
+        elif args[52] == 176 and args[41] == 165:
+            self.warning("the lock is unlocked manually")
+            self.endpoint.device.lock_bus.listener_event("lock_event", 2)
+        elif args[52] == 176 and args[41] == 162:
+            self.warning("the lock is locked manually")
+            self.endpoint.device.lock_bus.listener_event("lock_event", 1)
+        if args[52] == 74 and args[41] == 177:
             self.warning("the door is open")
             self.endpoint.device.motion_bus.listener_event("motion_event", ON)
-        elif args[41] == 178:
+        elif args[52] == 74 and args[41] == 178:
             self.warning("the door is closed")
             self.endpoint.device.motion_bus.listener_event("motion_event", OFF)
 
