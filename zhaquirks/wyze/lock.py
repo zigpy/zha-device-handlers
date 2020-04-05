@@ -13,19 +13,25 @@ from zigpy.zcl.clusters.general import (
     Time,
 )
 from zigpy.zcl.clusters.homeautomation import Diagnostic
+from zigpy.zcl.clusters.security import IasZone
 
 from . import YUNDING
-from .. import Bus
+from .. import Bus, LocalDataCluster
 from ..const import (
+    CLUSTER_COMMAND,
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
+    OFF,
+    ON,
+    ZONE_STATE,
 )
 
 WYZE_CLUSTER_ID = 0xFC00
+ZONE_TYPE = 0x0001
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -45,6 +51,23 @@ class DoorLockCluster(CustomCluster, DoorLock):
         self._update_attribute(0x0000, locked)
 
 
+class MotionCluster(LocalDataCluster, IasZone):
+    """Motion cluster."""
+
+    cluster_id = IasZone.cluster_id
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self.endpoint.device.motion_bus.add_listener(self)
+        super()._update_attribute(ZONE_TYPE, IasZone.ZoneType.Contact_Switch)
+
+    def motion_event(self, zone_state):
+        """Motion event."""
+        super().listener_event(CLUSTER_COMMAND, None, ZONE_STATE, [zone_state])
+        _LOGGER.debug("%s - Received motion event message", self.endpoint.device.ieee)
+
+
 class WyzeCluster(CustomCluster, Basic):
     """Wyze manufacturer specific cluster implementation."""
 
@@ -57,13 +80,25 @@ class WyzeCluster(CustomCluster, Basic):
     def handle_message(self, hdr, args):
         """Handle a message on this cluster."""
         self.debug("ZCL request 0x%04x: %s", hdr.command_id, args)
+        i = 0
+        for arg in args:
+            self.info("index: %s value: %s", i, arg)
+            i += 1
         self.warning("argument: %s", ",".join(map(str, args)))
+        if len(args) < 73:
+            return
         if args[41] == 165:
             self.warning("the lock is unlocked")
             self.endpoint.device.lock_bus.listener_event("lock_event", 2)
         elif args[41] == 162:
             self.warning("the lock is locked")
             self.endpoint.device.lock_bus.listener_event("lock_event", 1)
+        if args[41] == 177:
+            self.warning("the door is open")
+            self.endpoint.device.motion_bus.listener_event("motion_event", ON)
+        elif args[41] == 178:
+            self.warning("the door is closed")
+            self.endpoint.device.motion_bus.listener_event("motion_event", OFF)
 
 
 class WyzeLock(CustomDevice):
@@ -72,6 +107,7 @@ class WyzeLock(CustomDevice):
     def __init__(self, *args, **kwargs):
         """Init."""
         self.lock_bus = Bus()
+        self.motion_bus = Bus()
         super().__init__(*args, **kwargs)
 
     signature = {
@@ -110,6 +146,7 @@ class WyzeLock(CustomDevice):
                     DoorLockCluster,
                     Diagnostic.cluster_id,
                     WyzeCluster,
+                    MotionCluster,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id, Time.cluster_id, WyzeCluster],
             }
