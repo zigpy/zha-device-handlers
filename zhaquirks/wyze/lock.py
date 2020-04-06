@@ -88,7 +88,11 @@ class WyzeCluster(CustomCluster, Basic):
         if len(args) < 70:
             return
         self.info(
-            "52: %s, 41: %s, 56: %s, 57: %s", args[52], args[41], args[56], args[57]
+            "Interesting attributes - 52: %s, 41: %s, 56: %s, 57: %s",
+            args[52],
+            args[41],
+            args[56],
+            args[57],
         )
         if args[52] == 180 and args[41] == 165:
             self.warning("the lock is unlocked via the app")
