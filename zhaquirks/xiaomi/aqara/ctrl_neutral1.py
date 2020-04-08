@@ -50,7 +50,9 @@ class XiaomiOnOffCluster(OnOff, CustomCluster):
 
     server_commands = {0x0000: ("off", (), False), 0x0001: ("on", (), False)}
 
-    def command(self, command, *args, manufacturer=None, expect_reply=True):
+    def command(
+        self, command_id, *args, manufacturer=None, expect_reply=True, tsn=None
+    ):
         """Command handler."""
         src_ep = 1
         dst_ep = 2
@@ -62,7 +64,7 @@ class XiaomiOnOffCluster(OnOff, CustomCluster):
             src_ep,
             dst_ep,
             seq,
-            bytes([src_ep, seq, command]),
+            bytes([src_ep, seq, command_id]),
             expect_reply=expect_reply,
         )
 
