@@ -20,7 +20,12 @@ from ..const import (
 class PowerConfigurationClusterMains(PowerConfigurationCluster):
     """Common use power configuration cluster."""
 
-    BATTERY_VOLTAGE_ATTR = 0x0000
+    MAINS_VOLTAGE_ATTR = 0x0000
+
+    def _update_attribute(self, attrid, value):
+        super()._update_attribute(attrid, value)
+        if attrid == self.MAINS_VOLTAGE_ATTR:
+            super()._update_attribute(self.self.BATTERY_VOLTAGE_ATTR, value)
 
 
 class SoilMoisture(CustomDevice):
