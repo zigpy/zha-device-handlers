@@ -1,4 +1,4 @@
-"""Device handler for Lutron LZL4BWHL01 Remote."""
+"""Device handler for Legrand Dimmer switch w/o neutral."""
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
