@@ -17,6 +17,12 @@ from ..const import (
 )
 
 
+class PowerConfigurationClusterMains(PowerConfigurationCluster):
+    """Common use power configuration cluster."""
+
+    BATTERY_VOLTAGE_ATTR = 0x0000
+
+
 class SoilMoisture(CustomDevice):
     """Custom device representing plaid systems soil sensors."""
 
@@ -49,7 +55,7 @@ class SoilMoisture(CustomDevice):
                 DEVICE_TYPE: 1029,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    PowerConfigurationCluster,
+                    PowerConfigurationClusterMains,
                     Identify.cluster_id,
                     TemperatureMeasurement.cluster_id,
                     RelativeHumidity.cluster_id,
