@@ -1,2 +1,2 @@
 """Module for Legrand devices."""
-LEGRAND = "Legrand"
+LEGRAND = " Legrand"
