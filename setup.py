@@ -24,6 +24,6 @@ setup(
     keywords="zha quirks homeassistant hass",
     packages=find_packages(exclude=["*.tests"]),
     python_requires=">=3",
-    install_requires=["zigpy-homeassistant>=0.18.1"],
+    install_requires=["zigpy>=0.20.0"],
     tests_require=["pytest"],
 )
