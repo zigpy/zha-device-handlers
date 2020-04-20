@@ -28,7 +28,7 @@ MANUFACTURER_SPECIFIC_CLUSTER_ID = 0xFC01  # decimal = 64513
 
 
 class LegrandCluster(CustomCluster, ManufacturerSpecificCluster):
-    """OsramButtonCluster."""
+    """LegrandCluster."""
 
     cluster_id = MANUFACTURER_SPECIFIC_CLUSTER_ID
     name = "LegrandCluster"
