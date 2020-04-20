@@ -2,19 +2,21 @@
 import asyncio
 import binascii
 import logging
+import math
 
+import zigpy.zcl.foundation as foundation
 from zigpy import types as t
 from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.zcl.clusters.general import AnalogInput, Basic, PowerConfiguration
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.measurement import (
+    IlluminanceMeasurement,
     OccupancySensing,
     PressureMeasurement,
     RelativeHumidity,
     TemperatureMeasurement,
 )
 from zigpy.zcl.clusters.security import IasZone
-import zigpy.zcl.foundation as foundation
 
 from .. import Bus, LocalDataCluster
 from ..const import (
@@ -56,6 +58,8 @@ TEMPERATURE_REPORTED = "temperature_reported"
 POWER_REPORTED = "power_reported"
 CONSUMPTION_REPORTED = "consumption_reported"
 VOLTAGE_REPORTED = "voltage_reported"
+ILLUMINANCE_MEASUREMENT = "illuminance_measurement"
+ILLUMINANCE_REPORTED = "illuminance_reported"
 XIAOMI_AQARA_ATTRIBUTE = 0xFF01
 XIAOMI_ATTR_3 = "X-attrib-3"
 XIAOMI_ATTR_4 = "X-attrib-4"
@@ -181,6 +185,10 @@ class BasicCluster(CustomCluster, Basic):
             self.endpoint.device.voltage_bus.listener_event(
                 VOLTAGE_REPORTED, attributes[VOLTAGE] * 0.1
             )
+        if ILLUMINANCE_MEASUREMENT in attributes:
+            self.endpoint.device.illuminance_bus.listener_event(
+                ILLUMINANCE_REPORTED, attributes[ILLUMINANCE_MEASUREMENT]
+            )
 
     def _parse_aqara_attributes(self, value):
         """Parse non standard atrributes."""
@@ -213,6 +221,11 @@ class BasicCluster(CustomCluster, Basic):
             "lumi.relay.c2acn01",
         ]:
             attribute_names.update({149: CONSUMPTION, 150: VOLTAGE, 152: POWER})
+        elif (
+            MODEL in self._attr_cache
+            and self._attr_cache[MODEL] == "lumi.sensor_motion.aq2"
+        ):
+            attribute_names.update({11: ILLUMINANCE_MEASUREMENT})
 
         result = {}
         while value:
@@ -235,8 +248,7 @@ class BasicCluster(CustomCluster, Basic):
         return attributes
 
     def _parse_mija_attributes(self, value):
-        """Parse non standard atrributes."""
-        attributes = {}
+        """Parse non standard attributes."""
         attribute_names = (
             STATE,
             BATTERY_VOLTAGE_MV,
@@ -457,3 +469,24 @@ class ElectricalMeasurementCluster(LocalDataCluster, ElectricalMeasurement):
     def consumption_reported(self, value):
         """Consumption reported."""
         self._update_attribute(self.CONSUMPTION_ID, value)
+
+
+class IlluminanceMeasurementCluster(CustomCluster, IlluminanceMeasurement):
+    """Multistate input cluster."""
+
+    cluster_id = IlluminanceMeasurement.cluster_id
+    ATTR_ID = 0
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self.endpoint.device.illuminance_bus.add_listener(self)
+
+    def _update_attribute(self, attrid, value):
+        if attrid == self.ATTR_ID and value > 0:
+            value = 10000 * math.log10(value) + 1
+        super()._update_attribute(attrid, value)
+
+    def illuminance_reported(self, value):
+        """Illuminance reported."""
+        self._update_attribute(self.ATTR_ID, value)
