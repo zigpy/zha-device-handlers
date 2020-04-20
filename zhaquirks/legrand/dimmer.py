@@ -50,7 +50,7 @@ class DimmerWithoutNeutral(CustomDevice):
         # device_version=1
         # input_clusters=[0, 3, 4, 8, 6, 5, 15, 64513]
         # output_clusters=[0, 64513, 25]>
-        MODELS_INFO: [(LEGRAND, "Dimmer switch w/o neutral")],
+        MODELS_INFO: [(f" {LEGRAND}", " Dimmer switch w/o neutral")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
