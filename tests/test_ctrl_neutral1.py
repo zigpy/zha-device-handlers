@@ -5,7 +5,7 @@ from unittest.mock import call
 import zigpy.application
 from zigpy.device import Device
 
-from zhaquirks.xiaomi.aqara.ctrl_neutral1 import CtrlNeutral1
+from zhaquirks.xiaomi.aqara.ctrl_neutral import CtrlNeutral
 
 
 # zigbee-herdsman:controller:endpoint Command 0x00158d00024be541/2 genOnOff.on({},
@@ -24,7 +24,7 @@ from zhaquirks.xiaomi.aqara.ctrl_neutral1 import CtrlNeutral1
 # zigbee-herdsman:adapter:zStack:unpi:writer --> frame [254,13,36,1,31,255,2,1,6,0,16,0,30,3,1,7,0,198]
 
 
-def test_ctrl_neutral1():
+def test_ctrl_neutral():
     """Test ctrl neutral 1 sends correct request."""
     sec = 8
     ieee = 0
@@ -41,10 +41,13 @@ def test_ctrl_neutral1():
     rep = Device(app, ieee, nwk)
     rep.add_endpoint(1)
     rep.add_endpoint(2)
+    rep.add_endpoint(3)
 
-    dev = CtrlNeutral1(app, ieee, nwk, rep)
+    dev = CtrlNeutral(app, ieee, nwk, rep)
+    dev.request = mock.MagicMock()
+
     dev[2].in_clusters[cluster].command(1)
 
-    assert app.request.call_args == call(
-        dev, 260, cluster, src_ep, dst_ep, sec, data, expect_reply=True
+    assert dev.request.call_args == call(
+        260, cluster, src_ep, dst_ep, sec, data, expect_reply=True
     )
