@@ -2,7 +2,6 @@
 import logging
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster
 from zigpy.zcl.clusters.general import (
     AnalogInput,
     Basic,
@@ -17,7 +16,13 @@ from zigpy.zcl.clusters.general import (
     BinaryOutput,
 )
 
-from .. import LUMI, BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
+from .. import (
+    LUMI,
+    BasicCluster,
+    OnOffCluster,
+    PowerConfigurationCluster,
+    XiaomiCustomDevice,
+)
 from ...const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -45,33 +50,11 @@ _LOGGER = logging.getLogger(__name__)
 # double click 0xCFF1F00
 
 
-class XiaomiOnOffCluster(OnOff, CustomCluster):
-    """Aqara wall switch cluster."""
-
-    server_commands = {0x0000: ("off", (), False), 0x0001: ("on", (), False)}
-
-    def command(self, command, *args, manufacturer=None, expect_reply=True):
-        """Command handler."""
-        src_ep = 1
-        dst_ep = 2
-        seq = self._endpoint.device.application.get_sequence()
-        return self._endpoint.device.application.request(
-            self._endpoint.device,
-            zha.PROFILE_ID,
-            OnOff.cluster_id,
-            src_ep,
-            dst_ep,
-            seq,
-            bytes([src_ep, seq, command]),
-            expect_reply=expect_reply,
-        )
-
-
-class CtrlNeutral1(XiaomiCustomDevice):
-    """Aqara single key switch device."""
+class CtrlNeutral(XiaomiCustomDevice):
+    """Aqara single and double key switch device."""
 
     signature = {
-        MODELS_INFO: [(LUMI, "lumi.ctrl_neutral1")],
+        MODELS_INFO: [(LUMI, "lumi.ctrl_neutral1"), (LUMI, "lumi.ctrl_neutral2")],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=6
             # device_version=2
@@ -168,12 +151,34 @@ class CtrlNeutral1(XiaomiCustomDevice):
         ENDPOINTS: {
             1: {
                 DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
-                INPUT_CLUSTERS: [BasicCluster],
-                OUTPUT_CLUSTERS: [],
+                INPUT_CLUSTERS: [
+                    BasicCluster,
+                    Identify.cluster_id,
+                    PowerConfigurationCluster.cluster_id,
+                    DeviceTemperature.cluster_id,
+                    Ota.cluster_id,
+                    Time.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Basic.cluster_id, Time.cluster_id, Ota.cluster_id],
             },
             2: {
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
-                INPUT_CLUSTERS: [BasicCluster, XiaomiOnOffCluster],
+                INPUT_CLUSTERS: [
+                    BinaryOutput.cluster_id,
+                    OnOffCluster,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            3: {
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
+                INPUT_CLUSTERS: [
+                    BinaryOutput.cluster_id,
+                    OnOffCluster,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                ],
                 OUTPUT_CLUSTERS: [],
             },
         },

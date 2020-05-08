@@ -4,8 +4,14 @@ from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import Basic, Ota
 from zigpy.zcl.clusters.measurement import OccupancySensing
 
-from . import IlluminanceMeasurementCluster
-from .. import LUMI, BasicCluster, MotionCluster, OccupancyCluster, XiaomiCustomDevice
+from .. import (
+    LUMI,
+    BasicCluster,
+    IlluminanceMeasurementCluster,
+    MotionCluster,
+    OccupancyCluster,
+    XiaomiCustomDevice,
+)
 from ... import Bus
 from ...const import (
     DEVICE_TYPE,
@@ -27,6 +33,7 @@ class MotionAQ2(XiaomiCustomDevice):
         """Init."""
         self.battery_size = 9
         self.motion_bus = Bus()
+        self.illuminance_bus = Bus()
         super().__init__(*args, **kwargs)
 
     signature = {
