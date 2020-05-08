@@ -3,11 +3,13 @@ import asyncio
 import binascii
 import logging
 import math
+from typing import Optional, Union
 
 import zigpy.zcl.foundation as foundation
 from zigpy import types as t
+from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
-from zigpy.zcl.clusters.general import AnalogInput, Basic, PowerConfiguration
+from zigpy.zcl.clusters.general import AnalogInput, Basic, OnOff, PowerConfiguration
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.measurement import (
     IlluminanceMeasurement,
@@ -490,3 +492,32 @@ class IlluminanceMeasurementCluster(CustomCluster, IlluminanceMeasurement):
     def illuminance_reported(self, value):
         """Illuminance reported."""
         self._update_attribute(self.ATTR_ID, value)
+
+
+class OnOffCluster(OnOff, CustomCluster):
+    """Aqara wall switch cluster."""
+
+    def command(
+        self,
+        command_id: Union[foundation.Command, int, t.uint8_t],
+        *args,
+        manufacturer: Optional[Union[int, t.uint16_t]] = None,
+        expect_reply: bool = True,
+        tsn: Optional[Union[int, t.uint8_t]] = None
+    ):
+        """Command handler."""
+        src_ep = 1
+        dst_ep = self.endpoint.endpoint_id
+        device = self.endpoint.device
+        if tsn is None:
+            tsn = self._endpoint.device.application.get_sequence()
+        return device.request(
+            # device,
+            zha.PROFILE_ID,
+            OnOff.cluster_id,
+            src_ep,
+            dst_ep,
+            tsn,
+            bytes([src_ep, tsn, command_id]),
+            expect_reply=expect_reply,
+        )
