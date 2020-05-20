@@ -33,6 +33,25 @@ class Bus(ListenableMixin):
 class LocalDataCluster(CustomCluster):
     """Cluster meant to prevent remote calls."""
 
+    async def bind(self):
+        """Bind cluster."""
+        return (foundation.Status.SUCCESS,)
+
+    async def unbind(self):
+        """Unbind cluster."""
+        return (foundation.Status.SUCCESS,)
+
+    async def configure_reporting(
+        self,
+        attribute,
+        min_interval,
+        max_interval,
+        reportable_change,
+        manufacturer=None,
+    ):
+        """Configure reporting."""
+        return foundation.Status.SUCCESS
+
     async def read_attributes_raw(self, attributes, manufacturer=None):
         """Prevent remote reads."""
         records = [
