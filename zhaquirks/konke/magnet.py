@@ -18,6 +18,7 @@ from ..const import (
 
 KONKE_CLUSTER_ID = 0xFCC0
 
+
 class KonkeMagnet(CustomDevice):
     """Custom device representing konke magnet sensors."""
 
