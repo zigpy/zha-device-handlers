@@ -83,7 +83,6 @@ class ThermostatCluster(CustomCluster, Thermostat):
 
     async def read_attributes_raw(self, attributes, manufacturer=None):
         """Override wrong attribute reports from the thermostat."""
-
         success = []
         error = []
 
@@ -144,7 +143,6 @@ class ThermostatCluster(CustomCluster, Thermostat):
 
     def write_attributes(self, attributes, manufacturer=None):
         """Override wrong writes to thermostat attributes."""
-
         if "system_mode" in attributes:
 
             host_flags = self._attr_cache.get(HOST_FLAGS_ATTR, 1)
