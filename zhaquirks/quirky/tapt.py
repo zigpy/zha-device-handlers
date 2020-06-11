@@ -45,6 +45,7 @@ TAPT_CLUSTER = 0xFC20  # 64544 base 10
 
 _LOGGER = logging.getLogger(__name__)
 
+
 class TaptConfig(CustomCluster):
     """TAPT Configuration Cluster."""
 
@@ -77,7 +78,7 @@ class TaptConfig(CustomCluster):
 
 
 class TAPTSwitch(CustomDevice):
-    """ GE Quirky TAPT Switch """
+    """GE Quirky TAPT Switch."""
 
     signature = {
         MODELS_INFO: [(QUIRKY, "Smart Switch")],
