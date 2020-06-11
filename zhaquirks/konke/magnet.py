@@ -39,10 +39,7 @@ class KonkeMagnet(CustomDevice):
                     IasZone.cluster_id,
                     KONKE_CLUSTER_ID,
                 ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    KONKE_CLUSTER_ID,
-                ],
+                OUTPUT_CLUSTERS: [Identify.cluster_id, KONKE_CLUSTER_ID,],
             }
         },
     }
@@ -59,10 +56,7 @@ class KonkeMagnet(CustomDevice):
                     IasZone.cluster_id,
                     KONKE_CLUSTER_ID,
                 ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    KONKE_CLUSTER_ID,
-                ],
+                OUTPUT_CLUSTERS: [Identify.cluster_id, KONKE_CLUSTER_ID,],
             }
         }
     }
