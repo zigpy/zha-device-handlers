@@ -1,4 +1,7 @@
-from zigpy.profiles import PROFILES, zha
+"""Eurotronic Spirit Zigbee quirk."""
+
+from zigpy.profiles import zha
+from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -8,34 +11,21 @@ from zigpy.zcl.clusters.general import (
     Time,
 )
 from zigpy.zcl.clusters.hvac import Thermostat
-from zigpy.quirks import CustomCluster, CustomDevice
-from zigpy.zcl import foundation
 
 from zhaquirks.const import (
-    ARGS,
-    CLUSTER_ID,
-    COMMAND,
-    COMMAND_OFF,
-    COMMAND_ON,
-    COMMAND_STEP,
     DEVICE_TYPE,
-    DIM_DOWN,
-    DIM_UP,
-    ENDPOINT_ID,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
-    SHORT_PRESS,
-    TURN_OFF,
-    TURN_ON,
 )
 
 from . import EUROTRONIC, ThermostatCluster
 
 
 class SPZB0001(CustomDevice):
+    """Eurotronic Spirit Zigbee device."""
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=769
@@ -93,4 +83,3 @@ class SPZB0001(CustomDevice):
             }
         }
     }
-
