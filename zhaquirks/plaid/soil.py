@@ -25,7 +25,7 @@ class PowerConfigurationClusterMains(PowerConfigurationCluster):
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
         if attrid == self.MAINS_VOLTAGE_ATTR:
-            super()._update_attribute(self.self.BATTERY_VOLTAGE_ATTR, value)
+            super()._update_attribute(self.BATTERY_VOLTAGE_ATTR, round(value / 100))
 
 
 class SoilMoisture(CustomDevice):
