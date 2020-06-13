@@ -33,13 +33,13 @@ class PowerConfigurationClusterMains(PowerConfigurationCluster):
             return self.MAINS_VOLTAGE_ATTR
         return attr
 
-    def read_attributes(self, attributes, *args, **kwargs):
+    def read_attributes(self, attributes, *args, **kwargs):  # pylint: disable=W0221
         """Replace battery voltage with mains voltage."""
         return super().read_attributes(
             [self._remap(attr) for attr in attributes], *args, **kwargs
         )
 
-    def configure_reporting(self, attribute, *args, **kwargs):
+    def configure_reporting(self, attribute, *args, **kwargs):  # pylint: disable=W0221
         """Replace battery voltage with mains voltage."""
         return super().configure_reporting(self._remap(attribute), *args, **kwargs)
 
