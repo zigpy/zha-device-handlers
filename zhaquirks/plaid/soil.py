@@ -27,6 +27,22 @@ class PowerConfigurationClusterMains(PowerConfigurationCluster):
         if attrid == self.MAINS_VOLTAGE_ATTR:
             super()._update_attribute(self.BATTERY_VOLTAGE_ATTR, round(value / 100))
 
+    def _remap(self, attr):
+        """Replace battery voltage attribute name/id with mains_voltage."""
+        if attr in (self.BATTERY_VOLTAGE_ATTR, "battery_voltage"):
+            return self.MAINS_VOLTAGE_ATTR
+        return attr
+
+    def read_attributes(self, attributes, *args, **kwargs):
+        """Replace battery voltage with mains voltage."""
+        return super().read_attributes(
+            [self._remap(attr) for attr in attributes], *args, **kwargs
+        )
+
+    def configure_reporting(self, attribute, *args, **kwargs):
+        """Replace battery voltage with mains voltage."""
+        return super().configure_reporting(self._remap(attribute), *args, **kwargs)
+
 
 class SoilMoisture(CustomDevice):
     """Custom device representing plaid systems soil sensors."""
