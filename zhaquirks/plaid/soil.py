@@ -21,6 +21,9 @@ class PowerConfigurationClusterMains(PowerConfigurationCluster):
     """Common use power configuration cluster."""
 
     MAINS_VOLTAGE_ATTR = 0x0000
+    ATTR_ID_BATT_SIZE = 0x0031
+    ATTR_ID_BATT_QTY = 0x0033
+    _CONSTANT_ATTRIBUTES = {ATTR_ID_BATT_SIZE: 0x08, ATTR_ID_BATT_QTY: 1}
 
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
