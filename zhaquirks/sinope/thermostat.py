@@ -52,8 +52,7 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
 class SinopeTechnologiesThermostatCluster(CustomCluster, Thermostat):
     """SinopeTechnologiesThermostatCluster custom cluster."""
 
-    attributes = Thermostat.attributes.copy()
-    attributes[0x0400] = ("set_occupancy", t.enum8)
+    manufacturer_attributes = {0x0400: ("set_occupancy", t.enum8)}
 
 
 class SinopeTechnologiesThermostat(CustomDevice):

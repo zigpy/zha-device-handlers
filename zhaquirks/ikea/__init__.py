@@ -37,14 +37,8 @@ class LightLinkCluster(CustomCluster, LightLink):
 class ScenesCluster(CustomCluster, Scenes):
     """Ikea Scenes cluster."""
 
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.server_commands = Scenes.attributes.copy()
-        self.server_commands.update(
-            {
-                0x0007: ("press", (t.int16s, t.int8s, t.int8s), False),
-                0x0008: ("hold", (t.int16s, t.int8s), False),
-                0x0009: ("release", (t.int16s,), False),
-            }
-        )
+    manufacturer_server_commands = {
+        0x0007: ("press", (t.int16s, t.int8s, t.int8s), False),
+        0x0008: ("hold", (t.int16s, t.int8s), False),
+        0x0009: ("release", (t.int16s,), False),
+    }
