@@ -1,4 +1,5 @@
 """Phillips RWL020 device."""
+import logging
 from zigpy.profiles import zha, zll
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
@@ -35,13 +36,47 @@ from ..const import (
 )
 
 DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
+_LOGGER = logging.getLogger(__name__)
 
 
 class BasicCluster(CustomCluster, Basic):
-    """Centralite acceleration cluster."""
+    """Phillips Basic cluster."""
 
     attributes = Basic.attributes.copy()
     attributes.update({0x0031: ("phillips", t.bitmap16)})
+
+    attr_config = {0x0031: 0x000B}
+
+    async def bind(self):
+        """Bind cluster."""
+        result = await super().bind()
+        await self.write_attributes(self.attr_config, manufacturer=0x100B)
+        return result
+
+
+class PhillipsCluster(CustomCluster):
+    """Phillips Basic cluster."""
+
+    cluster_id = 64512
+    name = "PhillipsCluster"
+    ep_attribute = "phillips_cluster"
+    attributes = {}
+    server_commands = {}
+    client_commands = {
+        0x0000: (
+            "notification",
+            (t.uint8_t, t.uint24_t, t.uint8_t, t.uint8_t, t.uint8_t, t.uint8_t),
+            False,
+        )
+    }
+
+    def _update_attribute(self, attrid, value):
+        super()._update_attribute(attrid, value)
+        _LOGGER.info("Received attribute %s - value: [%s]", attrid, value)
+
+    def handle_cluster_request(self, tsn, command_id, args):
+        """Handle the cluster command."""
+        _LOGGER.info("Received attribute %s - value: [%s]", command_id, args)
 
 
 class PhilipsRWL020(CustomDevice):
@@ -102,7 +137,7 @@ class PhilipsRWL020(CustomDevice):
                     PowerConfiguration.cluster_id,
                     Identify.cluster_id,
                     BinaryInput.cluster_id,
-                    64512,
+                    PhillipsCluster,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
