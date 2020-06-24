@@ -41,12 +41,10 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
     cluster_id = SINOPE_MANUFACTURER_CLUSTER_ID
     name = "Sinopé Technologies Manufacturer specific"
     ep_attribute = "sinope_manufacturer_specific"
-    attributes = {
+    manufacturer_attributes = {
         0x0010: ("outdoor_temp", t.int16s),
         0x0020: ("secs_since_2k", t.uint32_t),
     }
-    client_commands = {}
-    server_commands = {}
 
 
 class SinopeTechnologiesThermostatCluster(CustomCluster, Thermostat):

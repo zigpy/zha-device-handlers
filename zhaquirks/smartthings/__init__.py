@@ -14,7 +14,7 @@ class SmartThingsAccelCluster(CustomCluster):
     cluster_id = MANUFACTURER_SPECIFIC_CLUSTER_ID
     name = "Smartthings Accelerometer"
     ep_attribute = "accelerometer"
-    attributes = {
+    manufacturer_attributes = {
         0x0000: ("motion_threshold_multiplier", t.uint8_t),
         0x0002: ("motion_threshold", t.uint16_t),
         0x0010: ("acceleration", t.bitmap8),  # acceleration detected
@@ -23,22 +23,20 @@ class SmartThingsAccelCluster(CustomCluster):
         0x0014: ("z_axis", t.int16s),
     }
 
-    client_commands = {}
-    server_commands = {}
-
 
 class SmartThingsIasZone(CustomCluster, IasZone):
     """IasZone cluster patched to support SmartThings spec violations."""
 
-    client_commands = IasZone.client_commands.copy()
-    client_commands[0x0000] = (
-        "status_change_notification",
-        (
-            IasZone.ZoneStatus,
-            t.bitmap8,
-            # SmartThings never sends these two
-            t.Optional(t.uint8_t),
-            t.Optional(t.uint16_t),
-        ),
-        False,
-    )
+    manufacturer_client_commands = {
+        0x0000: (
+            "status_change_notification",
+            (
+                IasZone.ZoneStatus,
+                t.bitmap8,
+                # SmartThings never sends these two
+                t.Optional(t.uint8_t),
+                t.Optional(t.uint16_t),
+            ),
+            False,
+        )
+    }
