@@ -89,3 +89,34 @@ class Weather(XiaomiCustomDevice):
             }
         },
     }
+
+
+class Weather2(Weather):
+    """New Xiaomi weather sensor device."""
+
+    signature = {
+        #  <SimpleDescriptor endpoint=1 profile=260 device_type=24321
+        #  device_version=1
+        #  input_clusters=[0, 3, 65535, 1026, 1027, 1029]
+        #  output_clusters=[0, 4, 65535]>
+        MODELS_INFO: [(LUMI, "lumi.weather")],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.TEMPERATURE_SENSOR,
+                INPUT_CLUSTERS: [
+                    BasicCluster.cluster_id,
+                    Identify.cluster_id,
+                    TemperatureMeasurementCluster.cluster_id,
+                    PressureMeasurement.cluster_id,
+                    RelativeHumidityCluster.cluster_id,
+                    XIAOMI_CLUSTER_ID,
+                ],
+                OUTPUT_CLUSTERS: [
+                    BasicCluster.cluster_id,
+                    Groups.cluster_id,
+                    XIAOMI_CLUSTER_ID,
+                ],
+            }
+        },
+    }
