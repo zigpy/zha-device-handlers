@@ -5,11 +5,45 @@ from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, OnOff
 
-from ..const import ARGS, BUTTON, COMMAND_ID, PRESS_TYPE, ZHA_SEND_EVENT
+from ..const import (
+    ARGS,
+    BUTTON,
+    COMMAND,
+    COMMAND_ID,
+    DIM_DOWN,
+    DIM_UP,
+    LONG_PRESS,
+    LONG_RELEASE,
+    PRESS_TYPE,
+    SHORT_PRESS,
+    SHORT_RELEASE,
+    TURN_OFF,
+    TURN_ON,
+    ZHA_SEND_EVENT,
+)
 
 DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
 PHILIPS = "Philips"
 _LOGGER = logging.getLogger(__name__)
+
+HUE_REMOTE_DEVICE_TRIGGERS = {
+    (SHORT_PRESS, TURN_ON): {COMMAND: "on_press"},
+    (SHORT_PRESS, TURN_OFF): {COMMAND: "off_press"},
+    (SHORT_PRESS, DIM_UP): {COMMAND: "up_press"},
+    (SHORT_PRESS, DIM_DOWN): {COMMAND: "down_press"},
+    (LONG_PRESS, TURN_ON): {COMMAND: "on_hold"},
+    (LONG_PRESS, TURN_OFF): {COMMAND: "off_hold"},
+    (LONG_PRESS, DIM_UP): {COMMAND: "up_hold"},
+    (LONG_PRESS, DIM_DOWN): {COMMAND: "down_hold"},
+    (SHORT_RELEASE, TURN_ON): {COMMAND: "on_short_release"},
+    (SHORT_RELEASE, TURN_OFF): {COMMAND: "off_short_release"},
+    (SHORT_RELEASE, DIM_UP): {COMMAND: "up_short_release"},
+    (SHORT_RELEASE, DIM_DOWN): {COMMAND: "down_short_release"},
+    (LONG_RELEASE, TURN_ON): {COMMAND: "on_long_release"},
+    (LONG_RELEASE, TURN_OFF): {COMMAND: "off_long_release"},
+    (LONG_RELEASE, DIM_UP): {COMMAND: "up_long_release"},
+    (LONG_RELEASE, DIM_DOWN): {COMMAND: "down_long_release"},
+}
 
 
 class PowerOnState(t.enum8):

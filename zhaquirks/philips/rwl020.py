@@ -13,27 +13,8 @@ from zigpy.zcl.clusters.general import (
     PowerConfiguration,
 )
 
-from . import PhillipsBasicCluster, PhillipsRemoteCluster
-from ..const import (
-    ARGS,
-    CLUSTER_ID,
-    COMMAND,
-    COMMAND_OFF_WITH_EFFECT,
-    COMMAND_ON,
-    COMMAND_STEP,
-    DEVICE_TYPE,
-    DIM_DOWN,
-    DIM_UP,
-    ENDPOINT_ID,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    LONG_PRESS,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-    SHORT_PRESS,
-    TURN_OFF,
-    TURN_ON,
-)
+from . import HUE_REMOTE_DEVICE_TRIGGERS, PhillipsBasicCluster, PhillipsRemoteCluster
+from ..const import DEVICE_TYPE, ENDPOINTS, INPUT_CLUSTERS, OUTPUT_CLUSTERS, PROFILE_ID
 
 DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
 
@@ -103,31 +84,4 @@ class PhilipsRWL020(CustomDevice):
         }
     }
 
-    device_automation_triggers = {
-        (SHORT_PRESS, TURN_ON): {COMMAND: COMMAND_ON},
-        (SHORT_PRESS, TURN_OFF): {COMMAND: COMMAND_OFF_WITH_EFFECT},
-        (SHORT_PRESS, DIM_UP): {
-            COMMAND: COMMAND_STEP,
-            CLUSTER_ID: 8,
-            ENDPOINT_ID: 1,
-            ARGS: [0, 30, 9],
-        },
-        (LONG_PRESS, DIM_UP): {
-            COMMAND: COMMAND_STEP,
-            CLUSTER_ID: 8,
-            ENDPOINT_ID: 1,
-            ARGS: [0, 56, 9],
-        },
-        (SHORT_PRESS, DIM_DOWN): {
-            COMMAND: COMMAND_STEP,
-            CLUSTER_ID: 8,
-            ENDPOINT_ID: 1,
-            ARGS: [1, 30, 9],
-        },
-        (LONG_PRESS, DIM_DOWN): {
-            COMMAND: COMMAND_STEP,
-            CLUSTER_ID: 8,
-            ENDPOINT_ID: 1,
-            ARGS: [1, 56, 9],
-        },
-    }
+    device_automation_triggers = HUE_REMOTE_DEVICE_TRIGGERS
