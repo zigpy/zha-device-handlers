@@ -16,6 +16,8 @@ from zigpy.zcl.clusters.general import (
 
 from ..const import (
     ARGS,
+    COMMAND_ID,
+    BUTTON,
     CLUSTER_ID,
     COMMAND,
     COMMAND_OFF_WITH_EFFECT,
@@ -29,10 +31,12 @@ from ..const import (
     INPUT_CLUSTERS,
     LONG_PRESS,
     OUTPUT_CLUSTERS,
+    PRESS_TYPE,
     PROFILE_ID,
     SHORT_PRESS,
     TURN_OFF,
     TURN_ON,
+    ZHA_SEND_EVENT,
 )
 
 DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
@@ -69,14 +73,28 @@ class PhillipsCluster(CustomCluster):
             False,
         )
     }
-
-    def _update_attribute(self, attrid, value):
-        super()._update_attribute(attrid, value)
-        _LOGGER.info("Received attribute %s - value: [%s]", attrid, value)
+    BUTTONS = {1: "on", 2: "up", 3: "down", 4: "off"}
+    PRESS_TYPES = {0: "press", 1: "hold", 2: "short_release", 3: "long_release"}
 
     def handle_cluster_request(self, tsn, command_id, args):
         """Handle the cluster command."""
-        _LOGGER.info("Received attribute %s - value: [%s]", command_id, args)
+        _LOGGER.info(
+            "handle_cluster_request tsn: [%s] command id: %s - args: [%s]",
+            tsn,
+            command_id,
+            args,
+        )
+        button = self.BUTTONS.get(args[0], args[0])
+        press_type = self.PRESS_TYPES.get(args[2], args[2])
+
+        event_args = {
+            BUTTON: button,
+            PRESS_TYPE: press_type,
+            COMMAND_ID: command_id,
+            ARGS: args,
+        }
+        action = "{}_{}".format(button, press_type)
+        self.listener_event(ZHA_SEND_EVENT, action, event_args)
 
 
 class PhilipsRWL020(CustomDevice):
