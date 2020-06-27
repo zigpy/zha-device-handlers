@@ -1,5 +1,4 @@
 """Phillips RWL020 device."""
-import logging
 
 from zigpy.profiles import zha, zll
 from zigpy.quirks import CustomDevice
@@ -37,7 +36,6 @@ from ..const import (
 )
 
 DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
-_LOGGER = logging.getLogger(__name__)
 
 
 class PhilipsRWL020(CustomDevice):
