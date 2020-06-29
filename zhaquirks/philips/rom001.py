@@ -1,4 +1,4 @@
-"""Phillips ROM001 device."""
+"""Philips ROM001 device."""
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
@@ -31,7 +31,7 @@ DEVICE_SPECIFIC_UNKNOWN = 64512
 
 
 class PhilipsROM001(CustomDevice):
-    """Phillips ROM001 device."""
+    """Philips ROM001 device."""
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=2096
