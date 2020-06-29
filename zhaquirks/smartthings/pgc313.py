@@ -1,8 +1,7 @@
 """SmartThings SmartSense Multi Sensor quirk."""
 from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, Ota
-from zigpy.zcl.clusters.security import IasZone
 
 from ..const import (
     DEVICE_TYPE,
@@ -12,16 +11,18 @@ from ..const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from . import SMART_THINGS
+from . import SMART_THINGS, SmartThingsIasZone
 
 SMARTSENSE_MULTI_DEVICE_TYPE = 0x0139  # decimal = 313
 
-class IasZoneContactSwitchCluster(CustomCluster, IasZone):
+
+class IasZoneContactSwitchCluster(SmartThingsIasZone):
     """Custom IasZone cluster."""
 
     ZONE_TYPE = 0x0001
     CONTACT_SWITCH_TYPE = 0x0015
     _CONSTANT_ATTRIBUTES = {ZONE_TYPE: CONTACT_SWITCH_TYPE}
+
 
 class SmartthingsSmartSenseMultiSensor(CustomDevice):
     """Multipurpose sensor."""
