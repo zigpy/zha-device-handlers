@@ -61,11 +61,11 @@ class PhilipsOnOffCluster(CustomCluster, OnOff):
     attributes.update({0x4003: ("power_on_state", PowerOnState)})
 
 
-class PhillipsBasicCluster(CustomCluster, Basic):
-    """Phillips Basic cluster."""
+class PhilipsBasicCluster(CustomCluster, Basic):
+    """Philips Basic cluster."""
 
     attributes = Basic.attributes.copy()
-    attributes.update({0x0031: ("phillips", t.bitmap16)})
+    attributes.update({0x0031: ("philips", t.bitmap16)})
 
     attr_config = {0x0031: 0x000B}
 
@@ -76,12 +76,12 @@ class PhillipsBasicCluster(CustomCluster, Basic):
         return result
 
 
-class PhillipsRemoteCluster(CustomCluster):
-    """Phillips remote cluster."""
+class PhilipsRemoteCluster(CustomCluster):
+    """Philips remote cluster."""
 
     cluster_id = 64512
-    name = "PhillipsRemoteCluster"
-    ep_attribute = "phillips_remote_cluster"
+    name = "PhilipsRemoteCluster"
+    ep_attribute = "philips_remote_cluster"
     attributes = {}
     server_commands = {}
     client_commands = {
@@ -97,7 +97,7 @@ class PhillipsRemoteCluster(CustomCluster):
     def handle_cluster_request(self, tsn, command_id, args):
         """Handle the cluster command."""
         _LOGGER.debug(
-            "PhillipsRemoteCluster - handle_cluster_request tsn: [%s] command id: %s - args: [%s]",
+            "PhilipsRemoteCluster - handle_cluster_request tsn: [%s] command id: %s - args: [%s]",
             tsn,
             command_id,
             args,

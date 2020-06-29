@@ -1,4 +1,4 @@
-"""Phillips RWL021 device."""
+"""Philips RWL021 device."""
 
 from zigpy.profiles import zha, zll
 from zigpy.quirks import CustomDevice
@@ -14,14 +14,14 @@ from zigpy.zcl.clusters.general import (
     Scenes,
 )
 
-from . import HUE_REMOTE_DEVICE_TRIGGERS, PhillipsBasicCluster, PhillipsRemoteCluster
+from . import HUE_REMOTE_DEVICE_TRIGGERS, PhilipsBasicCluster, PhilipsRemoteCluster
 from ..const import DEVICE_TYPE, ENDPOINTS, INPUT_CLUSTERS, OUTPUT_CLUSTERS, PROFILE_ID
 
 DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
 
 
 class PhilipsRWL021(CustomDevice):
-    """Phillips RWL021 device."""
+    """Philips RWL021 device."""
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=49246 device_type=2096
@@ -76,11 +76,11 @@ class PhilipsRWL021(CustomDevice):
             },
             2: {
                 INPUT_CLUSTERS: [
-                    PhillipsBasicCluster,
+                    PhilipsBasicCluster,
                     PowerConfiguration.cluster_id,
                     Identify.cluster_id,
                     BinaryInput.cluster_id,
-                    PhillipsRemoteCluster,
+                    PhilipsRemoteCluster,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
