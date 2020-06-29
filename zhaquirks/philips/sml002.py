@@ -10,7 +10,7 @@ from zigpy.zcl.clusters.general import (
     OnOff,
     Ota,
     PowerConfiguration,
-    Scene,
+    Scenes,
 )
 from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.measurement import (
@@ -56,7 +56,7 @@ class PhilipsSML002(CustomDevice):
                     Basic.cluster_id,
                     Identify.cluster_id,
                     Groups.cluster_id,
-                    Scene.cluster_id,
+                    Scenes.cluster_id,
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
                     Color.cluster_id,
@@ -92,7 +92,7 @@ class PhilipsSML002(CustomDevice):
                     Basic.cluster_id,
                     Identify.cluster_id,
                     Groups.cluster_id,
-                    Scene.cluster_id,
+                    Scenes.cluster_id,
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
                     Color.cluster_id,
