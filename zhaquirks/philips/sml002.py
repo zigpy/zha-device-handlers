@@ -19,7 +19,7 @@ from zigpy.zcl.clusters.measurement import (
     TemperatureMeasurement,
 )
 
-from . import PHILLIPS
+from . import PHILIPS
 from ..const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -31,7 +31,7 @@ from ..const import (
 
 
 class OccupancyCluster(CustomCluster, OccupancySensing):
-    """Phillips occupancy cluster."""
+    """philips occupancy cluster."""
 
     attributes = OccupancySensing.attributes.copy()
     attributes.update({0x0030: ("sensitivity", t.uint8_t)})
@@ -39,10 +39,10 @@ class OccupancyCluster(CustomCluster, OccupancySensing):
 
 
 class PhilipsSML002(CustomDevice):
-    """Phillips SML002 device."""
+    """philips SML002 device."""
 
     signature = {
-        MODELS_INFO: [(PHILLIPS, "SML002")],
+        MODELS_INFO: [(PHILIPS, "SML002")],
         ENDPOINTS: {
             #  <SimpleDescriptor endpoint=1 profile=49246 device_type=0x0850
             #  device_version=?
