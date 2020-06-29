@@ -1,4 +1,4 @@
-"""Quirk for Phillips SML002."""
+"""Quirk for Philips SML002."""
 from zigpy.profiles import zha, zll
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
