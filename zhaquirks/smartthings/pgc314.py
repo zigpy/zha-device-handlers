@@ -35,7 +35,7 @@ class SmartthingsSmartSenseMotionSensor(CustomDevice):
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: SMARTSENSE_MOTION_DEVICE_TYPE,
-                INPUT_CLUSTERS: [Basic.cluster_id,],
+                INPUT_CLUSTERS: [Basic.cluster_id],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
             #  <SimpleDescriptor endpoint=2 profile=64513 device_type=314
@@ -52,7 +52,7 @@ class SmartthingsSmartSenseMotionSensor(CustomDevice):
     replacement = {
         ENDPOINTS: {
             1: {
-                INPUT_CLUSTERS: [Basic.cluster_id, IasZoneMotionCluster,],
+                INPUT_CLUSTERS: [Basic.cluster_id, IasZoneMotionCluster],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             }
         }

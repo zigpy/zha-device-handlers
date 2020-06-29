@@ -28,7 +28,7 @@ class SmartThingsAccelCluster(CustomCluster):
 
 
 class SmartThingsIasZone(CustomCluster, IasZone):
-    """IasZone cluster patched to support SmartThings spec violations"""
+    """IasZone cluster patched to support SmartThings spec violations."""
 
     client_commands = IasZone.client_commands.copy()
     client_commands[0x0000] = (

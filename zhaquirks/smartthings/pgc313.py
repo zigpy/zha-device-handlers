@@ -35,7 +35,7 @@ class SmartthingsSmartSenseMultiSensor(CustomDevice):
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: SMARTSENSE_MULTI_DEVICE_TYPE,
-                INPUT_CLUSTERS: [Basic.cluster_id,],
+                INPUT_CLUSTERS: [Basic.cluster_id],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
             #  <SimpleDescriptor endpoint=2 profile=64513 device_type=313
@@ -52,7 +52,7 @@ class SmartthingsSmartSenseMultiSensor(CustomDevice):
     replacement = {
         ENDPOINTS: {
             1: {
-                INPUT_CLUSTERS: [Basic.cluster_id, IasZoneContactSwitchCluster,],
+                INPUT_CLUSTERS: [Basic.cluster_id, IasZoneContactSwitchCluster],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             }
         }
