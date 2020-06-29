@@ -2,6 +2,7 @@
 
 import zigpy.types as t
 from zigpy.quirks import CustomCluster
+from zigpy.zcl.clusters.security import IasZone
 
 SMART_THINGS = "SmartThings"
 MANUFACTURER_SPECIFIC_CLUSTER_ID = 0xFC02  # decimal = 64514
@@ -24,3 +25,20 @@ class SmartThingsAccelCluster(CustomCluster):
 
     client_commands = {}
     server_commands = {}
+
+
+class SmartThingsIasZone(CustomCluster, IasZone):
+    """IasZone cluster patched to support SmartThings spec violations."""
+
+    client_commands = IasZone.client_commands.copy()
+    client_commands[0x0000] = (
+        "status_change_notification",
+        (
+            IasZone.ZoneStatus,
+            t.bitmap8,
+            # SmartThings never sends these two
+            t.Optional(t.uint8_t),
+            t.Optional(t.uint16_t),
+        ),
+        False,
+    )
