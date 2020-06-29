@@ -130,6 +130,28 @@ Please refer to [xbee.md](xbee.md) for details on configuration and usage exampl
 
 - All supported devices report battery level
 
+# Testing new releases
+
+Testing a new release of the zha-quirks package before it is released in Home Assistant.
+
+If you are using Supervised Home Assistant (formerly known as the Hassio/Hass.io distro):
+- Add https://github.com/home-assistant/hassio-addons-development as "add-on" repository
+- Install "Custom deps deployment" addon
+- Update config like: 
+  ```
+  pypi:
+    - zha-quirks==0.0.38
+  apk: []
+  ```
+  where 0.0.38 is the new version
+- Start the addon
+
+If you are instead using some custom python installation of Home Assistant then do this:
+- Activate your python virtual env
+- Update package with ``pip``
+  ```
+  pip install zha-quirks==0.0.38
+
 # Thanks
 
 - Special thanks to damarco for the majority of the device tracker code
