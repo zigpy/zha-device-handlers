@@ -1,2 +1,2 @@
-"""Module for Phillips quirks implementations."""
+"""Module for Philips quirks implementations."""
 PHILIPS = "Philips"
