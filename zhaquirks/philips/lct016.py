@@ -1,3 +1,4 @@
+"""Quirk for Phillips LCA003."""
 from zigpy.profiles import zll, zha
 from zigpy.quirks import CustomDevice, CustomCluster
 from zigpy.zcl.clusters.general import OnOff, Basic, Identify, LevelControl, Scenes, Groups, Ota, GreenPowerProxy
