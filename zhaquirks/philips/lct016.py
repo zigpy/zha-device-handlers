@@ -12,6 +12,7 @@ from zhaquirks.philips import PHILIPS
 
 class PowerOnState(t.enum8):
     """Philips power on state enum."""
+
     Off = 0x00
     On = 0x01
     LastState = 0xff
@@ -19,6 +20,7 @@ class PowerOnState(t.enum8):
 
 class PhilipsOnOffCluster(CustomCluster, OnOff):
     """Philips OnOff cluster."""
+
     attributes = OnOff.attributes.copy()
     attributes.update({
         0x4003: ("power_on_state", PowerOnState)
@@ -27,6 +29,7 @@ class PhilipsOnOffCluster(CustomCluster, OnOff):
 
 class PhilipsLCA003(CustomDevice):
     """Philips LCA003 device."""
+
     signature = {
         MODELS_INFO: [(PHILIPS, "LCA003")],
         ENDPOINTS: {
