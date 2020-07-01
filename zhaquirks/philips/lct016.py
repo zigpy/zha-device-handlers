@@ -1,4 +1,4 @@
-"""Quirk for Phillips LCA003."""
+"""Quirk for Phillips LCT016."""
 from zigpy.profiles import zll, zha
 from zigpy.quirks import CustomDevice, CustomCluster
 from zigpy.zcl.clusters.general import (
@@ -42,19 +42,19 @@ class PhilipsOnOffCluster(CustomCluster, OnOff):
     attributes.update({0x4003: ("power_on_state", PowerOnState)})
 
 
-class PhilipsLCA003(CustomDevice):
-    """Philips LCA003 device."""
+class PhilipsLCT016(CustomDevice):
+    """Philips LCT016 device."""
 
     signature = {
-        MODELS_INFO: [(PHILIPS, "LCA003")],
+        MODELS_INFO: [(PHILIPS, "LCT016")],
         ENDPOINTS: {
             11: {
-                # <SimpleDescriptor endpoint=11 profile=260 device_type=269
-                # device_version=1
-                # input_clusters=[0, 3, 4, 5, 6, 8, 4096, 64514, 768, 64513]
-                # output_clusters=[25]>
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.EXTENDED_COLOR_LIGHT,
+                # <SimpleDescriptor endpoint=11 profile=49246 device_type=528
+                # device_version=2
+                # input_clusters=[0, 3, 4, 5, 6, 8, 4096, 768, 64513]
+                # output_clusters=[25]
+                PROFILE_ID: zll.PROFILE_ID,
+                DEVICE_TYPE: zll.DeviceType.EXTENDED_COLOR_LIGHT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
@@ -63,7 +63,6 @@ class PhilipsLCA003(CustomDevice):
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
                     LightLink.cluster_id,
-                    64514,
                     Color.cluster_id,
                     64513,
                 ],
@@ -72,11 +71,11 @@ class PhilipsLCA003(CustomDevice):
             242: {
                 # <SimpleDescriptor endpoint=242 profile=41440 device_type=97
                 # device_version=0
-                # input_clusters=[]
-                # output_clusters=[33]>
+                # input_clusters=[33]
+                # output_clusters=[33]
                 PROFILE_ID: 41440,
                 DEVICE_TYPE: 97,
-                INPUT_CLUSTERS: [],
+                INPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
         },
@@ -85,8 +84,8 @@ class PhilipsLCA003(CustomDevice):
     replacement = {
         ENDPOINTS: {
             11: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.EXTENDED_COLOR_LIGHT,
+                PROFILE_ID: zll.PROFILE_ID,
+                DEVICE_TYPE: zll.DeviceType.EXTENDED_COLOR_LIGHT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
@@ -104,7 +103,7 @@ class PhilipsLCA003(CustomDevice):
             242: {
                 PROFILE_ID: 41440,
                 DEVICE_TYPE: 97,
-                INPUT_CLUSTERS: [],
+                INPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
         }
