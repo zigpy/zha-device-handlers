@@ -1,5 +1,5 @@
 """Quirk for Phillips LCT016."""
-from zigpy.profiles import zll, zha
+from zigpy.profiles import zll
 from zigpy.quirks import CustomDevice, CustomCluster
 from zigpy.zcl.clusters.general import (
     OnOff,
