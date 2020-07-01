@@ -1,6 +1,6 @@
 """Quirk for Phillips LCA003."""
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice, CustomCluster
+from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     OnOff,
     Basic,
@@ -12,7 +12,6 @@ from zigpy.zcl.clusters.general import (
     GreenPowerProxy,
 )
 
-import zigpy.types as t
 from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.lightlink import LightLink
 
@@ -24,22 +23,7 @@ from zhaquirks.const import (
     PROFILE_ID,
     MODELS_INFO,
 )
-from zhaquirks.philips import PHILIPS
-
-
-class PowerOnState(t.enum8):
-    """Philips power on state enum."""
-
-    Off = 0x00
-    On = 0x01
-    LastState = 0xFF
-
-
-class PhilipsOnOffCluster(CustomCluster, OnOff):
-    """Philips OnOff cluster."""
-
-    attributes = OnOff.attributes.copy()
-    attributes.update({0x4003: ("power_on_state", PowerOnState)})
+from zhaquirks.philips import PHILIPS, PhilipsOnOffCluster
 
 
 class PhilipsLCA003(CustomDevice):
