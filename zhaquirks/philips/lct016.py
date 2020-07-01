@@ -10,7 +10,7 @@ from zhaquirks.const import ENDPOINTS, OUTPUT_CLUSTERS, INPUT_CLUSTERS, DEVICE_T
 from zhaquirks.philips import PHILIPS
 
 
-class PhilipsPowerOnStateEnum(t.enum8):
+class PowerOnState(t.enum8):
     """Philips power on state enum."""
     Off = 0x00
     On = 0x01
@@ -21,7 +21,7 @@ class PhilipsOnOffCluster(CustomCluster, OnOff):
     """Philips OnOff cluster."""
     attributes = OnOff.attributes.copy()
     attributes.update({
-        0x4003: ("power_on_state", PhilipsPowerOnStateEnum)
+        0x4003: ("power_on_state", PowerOnState)
     })
 
 
