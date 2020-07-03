@@ -6,10 +6,10 @@ from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
     Identify,
-    Scenes,
     Ota,
     PollControl,
     PowerConfiguration,
+    Scenes,
 )
 from zigpy.zcl.clusters.lightlink import LightLink
 
@@ -35,7 +35,10 @@ class IkeaTradfriRollerBlinds(CustomDevice):
         # device_version=1
         # input_clusters=[0, 1, 3, 4, 5, 32, 258, 4096]
         # output_clusters=[25, 4096]>
-        MODELS_INFO: [(IKEA, "FYRTUR block-out roller blind"), (IKEA, "KADRILJ roller blind")],
+        MODELS_INFO: [
+            (IKEA, "FYRTUR block-out roller blind"),
+            (IKEA, "KADRILJ roller blind"),
+        ],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -50,10 +53,7 @@ class IkeaTradfriRollerBlinds(CustomDevice):
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
                 ],
-                OUTPUT_CLUSTERS: [
-                    Ota.cluster_id,
-                    LightLink.cluster_id,
-                ],
+                OUTPUT_CLUSTERS: [Ota.cluster_id, LightLink.cluster_id],
             }
         },
     }
@@ -73,10 +73,7 @@ class IkeaTradfriRollerBlinds(CustomDevice):
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
                 ],
-                "output_clusters": [
-                    Ota.cluster_id,
-                    LightLink.cluster_id,
-                ],
+                "output_clusters": [Ota.cluster_id, LightLink.cluster_id],
             }
         }
     }

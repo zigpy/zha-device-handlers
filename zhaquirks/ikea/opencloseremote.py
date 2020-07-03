@@ -85,5 +85,5 @@ class IkeaTradfriOpenCloseRemote(CustomDevice):
                     LightLink.cluster_id,
                 ],
             }
-        }
+        },
     }
