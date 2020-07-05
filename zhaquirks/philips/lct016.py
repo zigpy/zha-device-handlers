@@ -78,7 +78,6 @@ class PhilipsLCT016(CustomDevice):
                     PhilipsOnOffCluster,
                     LevelControl.cluster_id,
                     LightLink.cluster_id,
-                    64514,
                     Color.cluster_id,
                     64513,
                 ],
