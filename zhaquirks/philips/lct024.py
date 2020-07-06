@@ -1,4 +1,4 @@
-"""Quirk for Phillips LCT016."""
+"""Quirk for Phillips LCT024."""
 from zigpy.profiles import zll
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
@@ -26,11 +26,11 @@ from zhaquirks.const import (
 from zhaquirks.philips import PHILIPS, PhilipsOnOffCluster
 
 
-class PhilipsLCT016(CustomDevice):
-    """Philips LCT016 device."""
+class PhilipsLCT024(CustomDevice):
+    """Philips LCT024 device."""
 
     signature = {
-        MODELS_INFO: [(PHILIPS, "LCT016")],
+        MODELS_INFO: [(PHILIPS, "LCT024")],
         ENDPOINTS: {
             11: {
                 # <SimpleDescriptor endpoint=11 profile=49246 device_type=528
