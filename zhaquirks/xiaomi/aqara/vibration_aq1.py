@@ -70,15 +70,13 @@ class VibrationAQ1(XiaomiCustomDevice):
         """Vibration cluster."""
 
         cluster_id = BasicCluster.cluster_id
-        attributes = Basic.attributes.copy()
-        attributes.update({0xFF0D: ("sensitivity", types.uint8_t)})
+        manufacturer_attributes = {0xFF0D: ("sensitivity", types.uint8_t)}
 
     class MultistateInputCluster(CustomCluster, MultistateInput):
         """Multistate input cluster."""
 
         cluster_id = DoorLock.cluster_id
-        attributes = MultistateInput.attributes.copy()
-        attributes.update({0x0000: ("lock_state", types.uint8_t)})
+        manufacturer_attributes = {0x0000: ("lock_state", types.uint8_t)}
 
         def __init__(self, *args, **kwargs):
             """Init."""
