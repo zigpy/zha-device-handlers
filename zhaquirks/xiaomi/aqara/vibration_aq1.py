@@ -61,6 +61,8 @@ _LOGGER = logging.getLogger(__name__)
 class VibrationAQ1(XiaomiCustomDevice):
     """Xiaomi aqara smart motion sensor device."""
 
+    manufacturer_id_override = 0x115F
+
     def __init__(self, *args, **kwargs):
         """Init."""
         self.motion_bus = Bus()
