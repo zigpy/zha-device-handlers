@@ -41,7 +41,7 @@ class LocalDataCluster(CustomCluster):
         """Prevent unbind."""
         return (foundation.Status.SUCCESS,)
 
-    async def _configure_reporting(self, *args, **kwargs):
+    async def _configure_reporting(self, *args, **kwargs):  # pylint: disable=W0221
         """Prevent remote configure reporting."""
         return foundation.ConfigureReportingResponse.deserialize(b"\x00")[0]
 

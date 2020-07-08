@@ -59,13 +59,13 @@ class EmulatedIasZone(LocalDataCluster, IasZone):
 class WAXMANApplianceEventAlerts(CustomCluster, ApplianceEventAlerts):
     """WAXMAN specific ApplianceEventAlert cluster."""
 
+    manufacturer_client_commands = {
+        WAXMAN_CMDID: ("alerts_notification", (t.uint8_t, t.bitmap24), False)
+    }
+
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
-        self.client_commands = super().client_commands.copy()
-        self.client_commands.update(
-            {WAXMAN_CMDID: ("alerts_notification", (t.uint8_t, t.bitmap24), False)}
-        )
         self.endpoint.device.app_cluster = self
 
     def handle_cluster_request(self, tsn, command_id, args):

@@ -41,19 +41,16 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
     cluster_id = SINOPE_MANUFACTURER_CLUSTER_ID
     name = "Sinopé Technologies Manufacturer specific"
     ep_attribute = "sinope_manufacturer_specific"
-    attributes = {
+    manufacturer_attributes = {
         0x0010: ("outdoor_temp", t.int16s),
         0x0020: ("secs_since_2k", t.uint32_t),
     }
-    client_commands = {}
-    server_commands = {}
 
 
 class SinopeTechnologiesThermostatCluster(CustomCluster, Thermostat):
     """SinopeTechnologiesThermostatCluster custom cluster."""
 
-    attributes = Thermostat.attributes.copy()
-    attributes[0x0400] = ("set_occupancy", t.enum8)
+    manufacturer_attributes = {0x0400: ("set_occupancy", t.enum8)}
 
 
 class SinopeTechnologiesThermostat(CustomDevice):

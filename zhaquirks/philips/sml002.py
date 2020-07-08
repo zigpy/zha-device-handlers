@@ -33,9 +33,10 @@ from ..const import (
 class OccupancyCluster(CustomCluster, OccupancySensing):
     """philips occupancy cluster."""
 
-    attributes = OccupancySensing.attributes.copy()
-    attributes.update({0x0030: ("sensitivity", t.uint8_t)})
-    attributes.update({0x0031: ("sensitivity_max", t.uint8_t)})
+    manufacturer_attributes = {
+        0x0030: ("sensitivity", t.uint8_t),
+        0x0031: ("sensitivity_max", t.uint8_t),
+    }
 
 
 class PhilipsSML002(CustomDevice):

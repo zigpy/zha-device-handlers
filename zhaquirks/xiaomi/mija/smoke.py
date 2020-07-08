@@ -44,11 +44,10 @@ _LOGGER = logging.getLogger(__name__)
 class XiaomiSmokeIASCluster(CustomCluster, IasZone):
     """Xiaomi smoke IAS cluster implementation."""
 
-    cluster_id = IasZone.cluster_id
-    attributes = IasZone.attributes.copy()
-    attributes.update(
-        {0xFFF1: ("set_options", t.uint32_t), 0xFFF0: ("get_status", t.uint32_t)}
-    )
+    manufacturer_attributes = {
+        0xFFF1: ("set_options", t.uint32_t),
+        0xFFF0: ("get_status", t.uint32_t),
+    }
 
 
 class MijiaHoneywellSmokeDetectorSensor(XiaomiCustomDevice):

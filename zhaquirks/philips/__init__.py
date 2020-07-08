@@ -57,15 +57,13 @@ class PowerOnState(t.enum8):
 class PhilipsOnOffCluster(CustomCluster, OnOff):
     """Philips OnOff cluster."""
 
-    attributes = OnOff.attributes.copy()
-    attributes.update({0x4003: ("power_on_state", PowerOnState)})
+    manufacturer_attributes = {0x4003: ("power_on_state", PowerOnState)}
 
 
 class PhilipsBasicCluster(CustomCluster, Basic):
     """Philips Basic cluster."""
 
-    attributes = Basic.attributes.copy()
-    attributes.update({0x0031: ("philips", t.bitmap16)})
+    manufacturer_attributes = {0x0031: ("philips", t.bitmap16)}
 
     attr_config = {0x0031: 0x000B}
 
@@ -82,9 +80,7 @@ class PhilipsRemoteCluster(CustomCluster):
     cluster_id = 64512
     name = "PhilipsRemoteCluster"
     ep_attribute = "philips_remote_cluster"
-    attributes = {}
-    server_commands = {}
-    client_commands = {
+    manufacturer_client_commands = {
         0x0000: (
             "notification",
             (t.uint8_t, t.uint24_t, t.uint8_t, t.uint8_t, t.uint8_t, t.uint8_t),

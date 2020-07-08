@@ -42,16 +42,13 @@ _LOGGER = logging.getLogger(__name__)
 class ThermostatCluster(CustomCluster, Thermostat):
     """Thermostat cluster."""
 
-    cluster_id = Thermostat.cluster_id
-
-    attributes = {
+    manufacturer_attributes = {
         TRV_MODE_ATTR: ("trv_mode", types.enum8),
         SET_VALVE_POS_ATTR: ("set_valve_position", types.uint8_t),
         ERRORS_ATTR: ("errors", types.uint8_t),
         CURRENT_TEMP_SETPOINT_ATTR: ("current_temperature_setpoint", types.int16s),
         HOST_FLAGS_ATTR: ("host_flags", types.uint24_t),
     }
-    attributes.update(Thermostat.attributes)
 
     def _update_attribute(self, attrid, value):
         _LOGGER.debug("update attribute %04x to %s... ", attrid, value)
