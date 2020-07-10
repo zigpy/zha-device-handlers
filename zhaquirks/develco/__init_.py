@@ -1,4 +1,4 @@
-""""Quirks for Develco Products A/S."""
+"""Quirks for Develco Products A/S."""
 from .. import PowerConfigurationCluster
 
 DEVELCO = "Develco Products A/S"
