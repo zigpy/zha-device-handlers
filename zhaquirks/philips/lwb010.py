@@ -1,4 +1,4 @@
-"""Quirk for Phillips LCT024."""
+"""Quirk for Phillips LWB010."""
 from zigpy.profiles import zll
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
@@ -12,7 +12,6 @@ from zigpy.zcl.clusters.general import (
     GreenPowerProxy,
 )
 
-from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.lightlink import LightLink
 
 from zhaquirks.const import (
@@ -26,19 +25,19 @@ from zhaquirks.const import (
 from zhaquirks.philips import PHILIPS, PhilipsOnOffCluster
 
 
-class PhilipsLCT024(CustomDevice):
-    """Philips LCT024 device."""
+class PhilipsLBW010(CustomDevice):
+    """Philips LBW010 device."""
 
     signature = {
-        MODELS_INFO: [(PHILIPS, "LCT024")],
+        MODELS_INFO: [(PHILIPS, "LWB010")],
         ENDPOINTS: {
             11: {
                 # <SimpleDescriptor endpoint=11 profile=49246 device_type=528
                 # device_version=2
-                # input_clusters=[0, 3, 4, 5, 6, 8, 4096, 768, 64513]
+                # input_clusters=[0, 3, 4, 5, 6, 8, 4096]
                 # output_clusters=[25]
                 PROFILE_ID: zll.PROFILE_ID,
-                DEVICE_TYPE: zll.DeviceType.EXTENDED_COLOR_LIGHT,
+                DEVICE_TYPE: zll.DeviceType.DIMMABLE_LIGHT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
@@ -47,8 +46,6 @@ class PhilipsLCT024(CustomDevice):
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
                     LightLink.cluster_id,
-                    Color.cluster_id,
-                    64513,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
@@ -69,7 +66,7 @@ class PhilipsLCT024(CustomDevice):
         ENDPOINTS: {
             11: {
                 PROFILE_ID: zll.PROFILE_ID,
-                DEVICE_TYPE: zll.DeviceType.EXTENDED_COLOR_LIGHT,
+                DEVICE_TYPE: zll.DeviceType.DIMMABLE_LIGHT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
@@ -78,8 +75,6 @@ class PhilipsLCT024(CustomDevice):
                     PhilipsOnOffCluster,
                     LevelControl.cluster_id,
                     LightLink.cluster_id,
-                    Color.cluster_id,
-                    64513,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
