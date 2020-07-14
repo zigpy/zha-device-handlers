@@ -39,7 +39,6 @@ from ..const import (
     COMMAND_MOVE,
 )
 
-OSRAM_DEVICE = 0x0810
 OSRAM_CLUSTER = 0xFD00
 
 
@@ -55,7 +54,7 @@ class OsramSwitchMini(CustomDevice):
             # output_clusters=[3, 4, 5, 6, 8, 25, 768, 4096]>
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: OSRAM_DEVICE,
+                DEVICE_TYPE: zha.DeviceType.COLOR_SCENE_CONTROLLER,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
@@ -80,7 +79,7 @@ class OsramSwitchMini(CustomDevice):
             # output_clusters=[3, 4, 5, 6, 8, 768, 4096]>
             2: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: OSRAM_DEVICE,
+                DEVICE_TYPE: zha.DeviceType.COLOR_SCENE_CONTROLLER,
                 INPUT_CLUSTERS: [Basic.cluster_id, LightLink.cluster_id, OSRAM_CLUSTER],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
@@ -98,7 +97,7 @@ class OsramSwitchMini(CustomDevice):
             # output_clusters=[3, 4, 5, 6, 8, 768, 4096]>
             3: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: OSRAM_DEVICE,
+                DEVICE_TYPE: zha.DeviceType.COLOR_SCENE_CONTROLLER,
                 INPUT_CLUSTERS: [Basic.cluster_id, LightLink.cluster_id, OSRAM_CLUSTER],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
