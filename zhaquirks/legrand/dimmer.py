@@ -33,13 +33,11 @@ class LegrandCluster(CustomCluster, ManufacturerSpecificCluster):
     cluster_id = MANUFACTURER_SPECIFIC_CLUSTER_ID
     name = "LegrandCluster"
     ep_attribute = "legrand_cluster"
-    attributes = {
+    manufacturer_attributes = {
         0x0000: ("dimmer", t.data16),
         0x0001: ("led_dark", t.Bool),
         0x0002: ("led_on", t.Bool),
     }
-    server_commands = {}
-    client_commands = {}
 
 
 class DimmerWithoutNeutral(CustomDevice):

@@ -55,7 +55,7 @@ class OsramButtonCluster(CustomCluster):
     cluster_id = OSRAM_CLUSTER
     name = "OsramCluster"
     ep_attribute = "osram_cluster"
-    attributes = {
+    manufacturer_attributes = {
         0x000A: ("osram_1", t.uint8_t),
         0x000B: ("osram_2", t.uint8_t),
         0x000C: ("osram_3", t.uint16_t),
@@ -71,8 +71,6 @@ class OsramButtonCluster(CustomCluster):
         0x002E: ("osram_13", t.uint16_t),
         0x002F: ("osram_14", t.uint16_t),
     }
-    server_commands = {}
-    client_commands = {}
     attr_config = {
         0x000A: 0x01,
         0x000B: 0x00,

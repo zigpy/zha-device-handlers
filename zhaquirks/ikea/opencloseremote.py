@@ -1,95 +1,89 @@
-"""Philips ROM001 device."""
+"""Device handler for IKEA of Sweden TRADFRI remote control."""
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
+from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import (
+    Alarms,
     Basic,
     Groups,
     Identify,
     LevelControl,
     OnOff,
     Ota,
+    PollControl,
     PowerConfiguration,
-    Scenes,
 )
 from zigpy.zcl.clusters.lightlink import LightLink
 
+from . import IKEA
+from .. import DoublingPowerConfigurationCluster
 from ..const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
+    MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
-    SHORT_PRESS,
-    TURN_ON,
-    TURN_OFF,
-    COMMAND,
-    COMMAND_ON,
-    COMMAND_OFF_WITH_EFFECT,
 )
 
-DEVICE_SPECIFIC_UNKNOWN = 64512
+IKEA_CLUSTER_ID = 0xFC7C  # decimal = 64636
 
 
-class PhilipsROM001(CustomDevice):
-    """Philips ROM001 device."""
+class IkeaTradfriOpenCloseRemote(CustomDevice):
+    """Custom device representing IKEA of Sweden TRADFRI remote control."""
 
     signature = {
-        #  <SimpleDescriptor endpoint=1 profile=260 device_type=2096
-        #  device_version=1
-        #  input_clusters=[0, 1, 3, 64512, 4096]
-        #  output_clusters=[25, 0, 3, 4, 6, 8, 5, 4096]>
+        MODELS_INFO: [("\x02KE", "TRADFRI open/close remote")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.NON_COLOR_SCENE_CONTROLLER,
+                DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_CONTROLLER,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
                     Identify.cluster_id,
-                    DEVICE_SPECIFIC_UNKNOWN,
+                    Alarms.cluster_id,
+                    PollControl.cluster_id,
                     LightLink.cluster_id,
+                    IKEA_CLUSTER_ID,
                 ],
                 OUTPUT_CLUSTERS: [
-                    Ota.cluster_id,
-                    Basic.cluster_id,
                     Identify.cluster_id,
                     Groups.cluster_id,
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
-                    Scenes.cluster_id,
+                    Ota.cluster_id,
+                    WindowCovering.cluster_id,
                     LightLink.cluster_id,
                 ],
             }
-        }
+        },
     }
 
     replacement = {
+        MODELS_INFO: [(IKEA, "TRADFRI open/close remote")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.NON_COLOR_SCENE_CONTROLLER,
+                DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_CONTROLLER,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
+                    DoublingPowerConfigurationCluster,
                     Identify.cluster_id,
-                    DEVICE_SPECIFIC_UNKNOWN,
+                    Alarms.cluster_id,
+                    PollControl.cluster_id,
                     LightLink.cluster_id,
+                    IKEA_CLUSTER_ID,
                 ],
                 OUTPUT_CLUSTERS: [
-                    Ota.cluster_id,
-                    Basic.cluster_id,
                     Identify.cluster_id,
                     Groups.cluster_id,
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
-                    Scenes.cluster_id,
+                    Ota.cluster_id,
+                    WindowCovering.cluster_id,
                     LightLink.cluster_id,
                 ],
             }
-        }
-    }
-
-    device_automation_triggers = {
-        (SHORT_PRESS, TURN_ON): {COMMAND: COMMAND_ON},
-        (SHORT_PRESS, TURN_OFF): {COMMAND: COMMAND_OFF_WITH_EFFECT},
+        },
     }

@@ -1,7 +1,7 @@
-"""Phillips RWL020 device."""
+"""Philips RWL020 device."""
+
 from zigpy.profiles import zha, zll
-from zigpy.quirks import CustomCluster, CustomDevice
-import zigpy.types as t
+from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     BinaryInput,
@@ -13,39 +13,14 @@ from zigpy.zcl.clusters.general import (
     PowerConfiguration,
 )
 
-from ..const import (
-    ARGS,
-    CLUSTER_ID,
-    COMMAND,
-    COMMAND_OFF_WITH_EFFECT,
-    COMMAND_ON,
-    COMMAND_STEP,
-    DEVICE_TYPE,
-    DIM_DOWN,
-    DIM_UP,
-    ENDPOINT_ID,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    LONG_PRESS,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-    SHORT_PRESS,
-    TURN_OFF,
-    TURN_ON,
-)
+from . import HUE_REMOTE_DEVICE_TRIGGERS, PhilipsBasicCluster, PhilipsRemoteCluster
+from ..const import DEVICE_TYPE, ENDPOINTS, INPUT_CLUSTERS, OUTPUT_CLUSTERS, PROFILE_ID
 
 DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
 
 
-class BasicCluster(CustomCluster, Basic):
-    """Centralite acceleration cluster."""
-
-    attributes = Basic.attributes.copy()
-    attributes.update({0x0031: ("phillips", t.bitmap16)})
-
-
 class PhilipsRWL020(CustomDevice):
-    """Phillips RWL020 device."""
+    """Philips RWL020 device."""
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=49246 device_type=2080
@@ -98,42 +73,15 @@ class PhilipsRWL020(CustomDevice):
             },
             2: {
                 INPUT_CLUSTERS: [
-                    BasicCluster,
+                    PhilipsBasicCluster,
                     PowerConfiguration.cluster_id,
                     Identify.cluster_id,
                     BinaryInput.cluster_id,
-                    64512,
+                    PhilipsRemoteCluster,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
         }
     }
 
-    device_automation_triggers = {
-        (SHORT_PRESS, TURN_ON): {COMMAND: COMMAND_ON},
-        (SHORT_PRESS, TURN_OFF): {COMMAND: COMMAND_OFF_WITH_EFFECT},
-        (SHORT_PRESS, DIM_UP): {
-            COMMAND: COMMAND_STEP,
-            CLUSTER_ID: 8,
-            ENDPOINT_ID: 1,
-            ARGS: [0, 30, 9],
-        },
-        (LONG_PRESS, DIM_UP): {
-            COMMAND: COMMAND_STEP,
-            CLUSTER_ID: 8,
-            ENDPOINT_ID: 1,
-            ARGS: [0, 56, 9],
-        },
-        (SHORT_PRESS, DIM_DOWN): {
-            COMMAND: COMMAND_STEP,
-            CLUSTER_ID: 8,
-            ENDPOINT_ID: 1,
-            ARGS: [1, 30, 9],
-        },
-        (LONG_PRESS, DIM_DOWN): {
-            COMMAND: COMMAND_STEP,
-            CLUSTER_ID: 8,
-            ENDPOINT_ID: 1,
-            ARGS: [1, 56, 9],
-        },
-    }
+    device_automation_triggers = HUE_REMOTE_DEVICE_TRIGGERS
