@@ -1,7 +1,6 @@
 """EDP WithUs module."""
 import logging
 
-import zigpy.types as t
 from zigpy.quirks import CustomCluster
 from zigpy.zcl.clusters.smartenergy import Metering
 
