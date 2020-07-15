@@ -23,7 +23,6 @@ class TradfriColorTempLightBulb(CustomDevice):
     Tradfri light bulbs, dimmable, white spectrum.
 
     This quirk has been testeed the LED1545G12 but should work with a range of those bulbs.
-    It changes the profile_id from ZHA to ZLL.
     """
 
     signature = {
@@ -60,8 +59,8 @@ class TradfriColorTempLightBulb(CustomDevice):
     replacement = {
         "endpoints": {
             1: {
-                "profile_id": zll.PROFILE_ID,
-                "device_type": zll.DeviceType.COLOR_TEMPERATURE_LIGHT,
+                "profile_id": zha.PROFILE_ID,
+                "device_type": zha.DeviceType.COLOR_TEMPERATURE_LIGHT,
                 "input_clusters": [
                     Basic.cluster_id,
                     Identify.cluster_id,
