@@ -9,15 +9,16 @@ from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl.clusters.general import (
     Basic,
+    DeviceTemperature,
     Groups,
     Identify,
+    OnOff,
+    LevelControl,
     Ota,
-    PowerConfiguration,
     Scenes,
-    Time,
 )
-from zigpy.zcl.clusters.general import Identify, LevelControl, OnOff
-from zigpy.zcl.clusters.homeautomation import Diagnostic, ElectricalMeasurement
+
+from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.foundation import Status
 from zigpy.zcl.clusters.smartenergy import Metering
 
