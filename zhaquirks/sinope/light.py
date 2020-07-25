@@ -47,13 +47,13 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
 
 
 class SinopeTechnologiesLightingCluster(CustomCluster, lighting):
-    """SinopeTechnologiesThermostatCluster custom cluster."""
+    """SinopeTechnologiesLightingCluster custom cluster."""
 
     manufacturer_attributes = {0x0400: ("set_occupancy", t.enum8)}
 
 
-class SinopeTechnologieslighting(CustomDevice):
-    """SinopeTechnologiesThermostat custom device."""
+class SinopeTechnologieslight(CustomDevice):
+    """SinopeTechnologiesLight custom device."""
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=259
@@ -111,8 +111,8 @@ class SinopeTechnologieslighting(CustomDevice):
     }
 
 
-class SinopeDM2500ZB(SinopeTechnologieslighting):
-    """TH1400ZB thermostat."""
+class SinopeDM2500ZB(SinopeTechnologieslight):
+    """DM2500ZB Dimmer."""
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=260 device_version=1
@@ -158,7 +158,7 @@ class SinopeDM2500ZB(SinopeTechnologieslighting):
                     LevelControl,
                     Metering,
                     Diagnostic,
-                    SinopeTechnologiesThermostatCluster,
+                    SinopeTechnologiesLightingCluster,
                     SinopeTechnologiesManufacturerCluster,
                 ],
                 OUTPUT_CLUSTERS: [
