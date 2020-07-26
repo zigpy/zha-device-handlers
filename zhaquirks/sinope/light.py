@@ -88,21 +88,22 @@ class SinopeTechnologieslight(CustomDevice):
         ENDPOINTS: {
             1: {
                 INPUT_CLUSTERS: [
-                    Basic,
-                    DeviceTemperature,
-                    Identify,
-                    Groups,
-                    Scenes,
-                    OnOff,
-                    Metering,
-                    Diagnostic,
+                    Basic.cluster_id,
+                    DeviceTemperature.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    Metering.cluster_id,
+                    Diagnostic.cluster_id,
                     SinopeTechnologiesLightingCluster,
                     SinopeTechnologiesManufacturerCluster,
+                    SINOPE_MANUFACTURER_CLUSTER_ID,
                 ],
                 OUTPUT_CLUSTERS: [
-                    Identify,
-                    Groups,
-                    Ota,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Ota.cluster_id,
                 ],
             }
         }
@@ -146,22 +147,23 @@ class SinopeDM2500ZB(SinopeTechnologieslight):
         ENDPOINTS: {
             1: {
                 INPUT_CLUSTERS: [
-                    Basic,
-                    DeviceTemperature,
-                    Identify,
-                    Groups,
-                    Scenes,
-                    OnOff,
-                    LevelControl,
-                    Metering,
-                    Diagnostic,
+                    Basic.cluster_id,
+                    DeviceTemperature.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                    Metering.cluster_id,
+                    Diagnostic.cluster_id,
                     SinopeTechnologiesLightingCluster,
                     SinopeTechnologiesManufacturerCluster,
+                    SINOPE_MANUFACTURER_CLUSTER_ID,
                 ],
                 OUTPUT_CLUSTERS: [
-                    Identify,
-                    Groups,
-                    Ota,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Ota.cluster_id,
                 ],
             }
         }
