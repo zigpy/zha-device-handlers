@@ -66,7 +66,7 @@ class SinopeTechnologieslight(CustomDevice):
                 DEVICE_TYPE: zha_p.DeviceType.ON_OFF_LIGHT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    DeviceTemperature.cluster_id
+                    DeviceTemperature.cluster_id,
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
@@ -79,7 +79,7 @@ class SinopeTechnologieslight(CustomDevice):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Ota.cluster_id,
-                    SINOPE_MANUFACTURER_CLUSTER_ID
+                    SINOPE_MANUFACTURER_CLUSTER_ID,
                 ],
             }
         },
@@ -104,7 +104,7 @@ class SinopeTechnologieslight(CustomDevice):
                     Identify,
                     Groups,
                     Ota,
-                    SINOPE_MANUFACTURER_CLUSTER_ID
+                    SINOPE_MANUFACTURER_CLUSTER_ID,
                 ],
             }
         }
@@ -125,7 +125,7 @@ class SinopeDM2500ZB(SinopeTechnologieslight):
                 DEVICE_TYPE: zha_p.DeviceType.DIMMABLE_LIGHT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    DeviceTemperature.cluster_id
+                    DeviceTemperature.cluster_id,
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
@@ -165,7 +165,7 @@ class SinopeDM2500ZB(SinopeTechnologieslight):
                     Identify,
                     Groups,
                     Ota,
-                    SINOPE_MANUFACTURER_CLUSTER_ID
+                    SINOPE_MANUFACTURER_CLUSTER_ID,
                 ],
             }
         }
