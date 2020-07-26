@@ -57,8 +57,8 @@ class SinopeTechnologieslight(CustomDevice):
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=259
-        # device_version=0 input_clusters=[0, 2, 3, 4, 5, 6, 1794, 2821,
-        # 65281] output_clusters=[65281, 3, 4, 25]>
+        # device_version=0 input_clusters=[0, 2, 3, 4, 5, 6, 1794, 2821, 65281]
+        # output_clusters=[3, 4, 25]>
         MODELS_INFO: [(SINOPE, "SW2500ZB")],
         ENDPOINTS: {
             1: {
@@ -79,7 +79,6 @@ class SinopeTechnologieslight(CustomDevice):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Ota.cluster_id,
-                    SINOPE_MANUFACTURER_CLUSTER_ID,
                 ],
             }
         },
@@ -104,7 +103,6 @@ class SinopeTechnologieslight(CustomDevice):
                     Identify,
                     Groups,
                     Ota,
-                    SINOPE_MANUFACTURER_CLUSTER_ID,
                 ],
             }
         }
@@ -117,7 +115,7 @@ class SinopeDM2500ZB(SinopeTechnologieslight):
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=260 device_version=1
         # input_clusters=[0, 2, 3, 4, 5, 6, 8, 1794, 2821, 65281]
-        # output_clusters=[3, 4, 25, 65281]>
+        # output_clusters=[3, 4, 25]>
         MODELS_INFO: [(SINOPE, "DM2500ZB")],
         ENDPOINTS: {
             1: {
@@ -139,7 +137,6 @@ class SinopeDM2500ZB(SinopeTechnologieslight):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Ota.cluster_id,
-                    SINOPE_MANUFACTURER_CLUSTER_ID,
                 ],
             }
         },
@@ -165,7 +162,6 @@ class SinopeDM2500ZB(SinopeTechnologieslight):
                     Identify,
                     Groups,
                     Ota,
-                    SINOPE_MANUFACTURER_CLUSTER_ID,
                 ],
             }
         }
