@@ -63,7 +63,7 @@ class SinopeTechnologieslight(CustomDevice):
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha_p.PROFILE_ID,
-                DEVICE_TYPE: zha_p.DeviceType.ON_OFF_LIGHT_SWITCH,
+                DEVICE_TYPE: zha_p.DeviceType.ON_OFF_LIGHT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     DeviceTemperature.cluster_id
@@ -122,7 +122,7 @@ class SinopeDM2500ZB(SinopeTechnologieslight):
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha_p.PROFILE_ID,
-                DEVICE_TYPE: zha_p.DeviceType.DIMMER_SWITCH,
+                DEVICE_TYPE: zha_p.DeviceType.DIMMABLE_LIGHT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     DeviceTemperature.cluster_id
