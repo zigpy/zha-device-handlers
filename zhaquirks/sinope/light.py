@@ -1,6 +1,7 @@
 """
 This module handles quirks of the  Sinopé Technologies light SW2500ZB and dimmer DM2500ZB.
-manufacturer specific cluster implements attributes to control displaying 
+
+manufacturer specific cluster implements attributes to control displaying
 setting occupancy on/off.
 """
 
@@ -19,7 +20,6 @@ from zigpy.zcl.clusters.general import (
 )
 
 from zigpy.zcl.clusters.homeautomation import Diagnostic
-from zigpy.zcl.foundation import Status
 from zigpy.zcl.clusters.smartenergy import Metering
 
 from . import SINOPE
@@ -46,7 +46,7 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
     }
 
 
-class SinopeTechnologiesLightingCluster(CustomCluster, lighting):
+class SinopeTechnologiesLightingCluster(CustomCluster, OnOff):
     """SinopeTechnologiesLightingCluster custom cluster."""
 
     manufacturer_attributes = {0x0400: ("set_occupancy", t.enum8)}
