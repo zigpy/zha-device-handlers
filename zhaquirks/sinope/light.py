@@ -33,23 +33,6 @@ from ..const import (
 SINOPE_MANUFACTURER_CLUSTER_ID = 0xFF01
 
 
-class SinopeTechnologiesManufacturerCluster(CustomCluster):
-    """SinopeTechnologiesManufacturerCluster manufacturer cluster."""
-
-    cluster_id = SINOPE_MANUFACTURER_CLUSTER_ID
-    name = "Sinopé Technologies Manufacturer specific"
-    ep_attribute = "sinope_manufacturer_specific"
-    manufacturer_attributes = {
-        0x0020: ("secs_since_2k", t.uint32_t),
-    }
-
-
-class SinopeTechnologiesLightingCluster(CustomCluster, OnOff):
-    """SinopeTechnologiesLightingCluster custom cluster."""
-
-    manufacturer_attributes = {0x0400: ("set_occupancy", t.enum8)}
-
-
 class SinopeTechnologieslight(CustomDevice):
     """SinopeTechnologiesLight custom device."""
 
@@ -86,22 +69,20 @@ class SinopeTechnologieslight(CustomDevice):
         ENDPOINTS: {
             1: {
                 INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    DeviceTemperature.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    Metering.cluster_id,
-                    Diagnostic.cluster_id,
-                    SinopeTechnologiesLightingCluster,
-                    SinopeTechnologiesManufacturerCluster,
+                    Basic,
+                    DeviceTemperature,
+                    Identify,
+                    Groups,
+                    Scenes,
+                    OnOff,
+                    Metering,
+                    Diagnostic,
                     SINOPE_MANUFACTURER_CLUSTER_ID,
                 ],
                 OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Ota.cluster_id,
+                    Identify,
+                    Groups,
+                    Ota,
                 ],
             },
         }
@@ -145,23 +126,21 @@ class SinopeDM2500ZB(SinopeTechnologieslight):
         ENDPOINTS: {
             1: {
                 INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    DeviceTemperature.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    LevelControl.cluster_id,
-                    Metering.cluster_id,
-                    Diagnostic.cluster_id,
-                    SinopeTechnologiesLightingCluster,
-                    SinopeTechnologiesManufacturerCluster,
+                    Basic,
+                    DeviceTemperature,
+                    Identify,
+                    Groups,
+                    Scenes,
+                    OnOff,
+                    LevelControl,
+                    Metering,
+                    Diagnostic,
                     SINOPE_MANUFACTURER_CLUSTER_ID,
                 ],
                 OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Ota.cluster_id,
+                    Identify,
+                    Groups,
+                    Ota,
                 ],
             },
         }
