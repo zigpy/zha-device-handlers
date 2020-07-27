@@ -20,7 +20,6 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.smartenergy import Metering
-
 from . import SINOPE
 from ..const import (
     DEVICE_TYPE,
@@ -138,8 +137,8 @@ class SinopeDM2500ZB(SinopeTechnologieslight):
                     Groups.cluster_id,
                     Ota.cluster_id,
                 ],
-            }
-        },
+            },
+        }
     }
 
     replacement = {
@@ -164,6 +163,6 @@ class SinopeDM2500ZB(SinopeTechnologieslight):
                     Groups.cluster_id,
                     Ota.cluster_id,
                 ],
-            }
+            },
         }
     }
