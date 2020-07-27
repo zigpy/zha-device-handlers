@@ -18,7 +18,6 @@ from zigpy.zcl.clusters.general import (
     Ota,
     Scenes,
 )
-
 from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.smartenergy import Metering
 
@@ -80,7 +79,7 @@ class SinopeTechnologieslight(CustomDevice):
                     Groups.cluster_id,
                     Ota.cluster_id,
                 ],
-            }
+            },
         },
     }
 
@@ -105,7 +104,7 @@ class SinopeTechnologieslight(CustomDevice):
                     Groups.cluster_id,
                     Ota.cluster_id,
                 ],
-            }
+            },
         }
     }
 
