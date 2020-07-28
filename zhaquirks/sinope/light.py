@@ -6,8 +6,7 @@ setting occupancy on/off.
 """
 
 import zigpy.profiles.zha as zha_p
-from zigpy.quirks import CustomCluster, CustomDevice
-import zigpy.types as t
+from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     DeviceTemperature,
@@ -79,7 +78,7 @@ class SinopeTechnologieslight(CustomDevice):
                     Diagnostic,
                     SINOPE_MANUFACTURER_CLUSTER_ID,
                 ],
-                OUTPUT_CLUSTERS: [Identify, Groups, Ota,],
+                OUTPUT_CLUSTERS: [Identify, Groups, Ota],
             },
         }
     }
@@ -133,7 +132,7 @@ class SinopeDM2500ZB(SinopeTechnologieslight):
                     Diagnostic,
                     SINOPE_MANUFACTURER_CLUSTER_ID,
                 ],
-                OUTPUT_CLUSTERS: [Identify, Groups, Ota,],
+                OUTPUT_CLUSTERS: [Identify, Groups, Ota],
             },
         }
     }
