@@ -79,11 +79,7 @@ class SinopeTechnologieslight(CustomDevice):
                     Diagnostic,
                     SINOPE_MANUFACTURER_CLUSTER_ID,
                 ],
-                OUTPUT_CLUSTERS: [
-                    Identify,
-                    Groups,
-                    Ota,
-                ],
+                OUTPUT_CLUSTERS: [Identify, Groups, Ota,],
             },
         }
     }
@@ -119,7 +115,7 @@ class SinopeDM2500ZB(SinopeTechnologieslight):
                     Ota.cluster_id,
                 ],
             },
-        }
+        },
     }
 
     replacement = {
@@ -137,11 +133,7 @@ class SinopeDM2500ZB(SinopeTechnologieslight):
                     Diagnostic,
                     SINOPE_MANUFACTURER_CLUSTER_ID,
                 ],
-                OUTPUT_CLUSTERS: [
-                    Identify,
-                    Groups,
-                    Ota,
-                ],
+                OUTPUT_CLUSTERS: [Identify, Groups, Ota,],
             },
         }
     }
