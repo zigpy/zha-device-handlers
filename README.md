@@ -152,6 +152,23 @@ If you are instead using some custom python installation of Home Assistant then 
   ```
   pip install zha-quirks==0.0.38
 
+# Testing quirks in development in docker based install
+If you are using Supervised Home Assistant (formerly known as the Hassio/Hass.io distro) you will need to get access to the home-assistant docker container. Directions below are given for using the portainer add-on to do this, there are other methods as well not covered here.
+- Install the portainer add-on (https://github.com/hassio-addons/addon-portainer) from Home Assistant Community Add-ons.
+- Follow the add-on documentation to un-hide the home-assistant container (https://github.com/hassio-addons/addon-portainer/blob/master/portainer/DOCS.md)
+- Stage the update quirk in a directory within your config directory
+- Use portainer to access a console in the home-assistant container:
+
+  <img src="https://user-images.githubusercontent.com/11084412/88719260-fdfa7700-d0f0-11ea-8791-88ed3e26915d.png" width=400 >
+
+- Access the quirks directory
+  - on HA > 0.113: /usr/local/lib/python3.8/site-packages/zhaquirks/
+  - on HA < 0.113: /usr/local/lib/python3.7/site-packages/zhaquirks/
+- Copy updated/new quirk to zhaquirks directory: ```cp -a /config/temp/NEW_QUIRK ./```
+- Remove the __py_cache__ folder so it is regenerated ```rm -rf ./__py_cache__/```
+- Close out the console and restart HA. 
+- Note: The added/update quirk will not survive a HA version update.
+
 # Thanks
 
 - Special thanks to damarco for the majority of the device tracker code
