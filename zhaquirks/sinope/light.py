@@ -43,7 +43,7 @@ class SinopeTechnologieslight(CustomDevice):
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha_p.PROFILE_ID,
-                DEVICE_TYPE: zha_p.DeviceType.ON_OFF_LIGHT,
+                DEVICE_TYPE: zha_p.DeviceType.ON_OFF_LIGHT_SWITCH,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     DeviceTemperature.cluster_id,
@@ -67,18 +67,24 @@ class SinopeTechnologieslight(CustomDevice):
     replacement = {
         ENDPOINTS: {
             1: {
+                PROFILE_ID: zha_p.PROFILE_ID,
+                DEVICE_TYPE: zha_p.DeviceType.ON_OFF_LIGHT,
                 INPUT_CLUSTERS: [
-                    Basic,
-                    DeviceTemperature,
-                    Identify,
-                    Groups,
-                    Scenes,
-                    OnOff,
-                    Metering,
-                    Diagnostic,
+                    Basic.cluster_id,
+                    DeviceTemperature.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    Metering.cluster_id,
+                    Diagnostic.cluster_id,
                     SINOPE_MANUFACTURER_CLUSTER_ID,
                 ],
-                OUTPUT_CLUSTERS: [Identify, Groups, Ota],
+                OUTPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Ota.cluster_id,
+                ],
             },
         }
     }
@@ -95,7 +101,7 @@ class SinopeDM2500ZB(SinopeTechnologieslight):
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha_p.PROFILE_ID,
-                DEVICE_TYPE: zha_p.DeviceType.DIMMABLE_LIGHT,
+                DEVICE_TYPE: zha_p.DeviceType.DIMMER_SWITCH,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     DeviceTemperature.cluster_id,
@@ -120,19 +126,25 @@ class SinopeDM2500ZB(SinopeTechnologieslight):
     replacement = {
         ENDPOINTS: {
             1: {
+                PROFILE_ID: zha_p.PROFILE_ID,
+                DEVICE_TYPE: zha_p.DeviceType.DIMMABLE_LIGHT,
                 INPUT_CLUSTERS: [
-                    Basic,
-                    DeviceTemperature,
-                    Identify,
-                    Groups,
-                    Scenes,
-                    OnOff,
-                    LevelControl,
-                    Metering,
-                    Diagnostic,
+                    Basic.cluster_id,
+                    DeviceTemperature.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                    Metering.cluster_id,
+                    Diagnostic.cluster_id,
                     SINOPE_MANUFACTURER_CLUSTER_ID,
                 ],
-                OUTPUT_CLUSTERS: [Identify, Groups, Ota],
+                OUTPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Ota.cluster_id,
+                ],
             },
         }
     }
