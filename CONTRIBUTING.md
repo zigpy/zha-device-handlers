@@ -1,6 +1,6 @@
 # Primer
 
-If you are reading this you must have a device that isn't working 100% as expected. This can be the case for a number of reasons but what we will cover in this guide is the case where functionality is provided by a device in a non spececification compliant maner by a device manufacturer.
+ZHA device handlers and it's provided Quirks allow Zigpy, ZHA and Home Assistant to work with non standard Zigbee devices. If you are reading this you may have a device that isn't working as expected. This can be the case for a number of reasons but in this guide we will cover the cases where functionality is provided by a device in a non specification compliant manner by the device manufacturer. 
 
 ## What are these specifications?
 
@@ -14,24 +14,32 @@ If you are reading this you must have a device that isn't working 100% as expect
 
 ## What is a device in human terms?
 
-A device is a physiclal object that you want to join to a Zigbee network: a light bulb, a switch, a sensor etc. The host application, in this case Zigpy, needs to understand how to interact with the device so there are standards that define how the application and devices can communicate. To accomplish that the device and its associated functionality is described by several descriptors that the Zigbee application can use to understand the device and the functionality that it provides. For the purposes of Zigpy and Quirks we will focus on two of them:
+A device is a physical object that you want to join to a Zigbee network: a light bulb, a switch, a sensor etc. The host application, in this case Zigpy, needs to understand how to interact with the device so there are standards that define how the application and devices can communicate. The device's functionality is described by several descriptors while he device itself contain endpoints and endpoints contain clusters. Zigpy needs to understand all these elements in order to correctly work with the device. 
+
+### Endpoints
+
+Endpoints are essentially groupings of functionality. For example, a typical Zigbee light bulb will have a single endpoint for the light. A multi-gang wall switch may have an endpoint for each invidual switch so they can all be controlled separately. Each endpoint has several functions represented by clusters.
+
+### Clusters
+
+Clusters are objects that contain the information (attributes and commands) for individual functions. There is the ability to turn the switch on and off, maybe there is energy monitoring, maybe there is the ability to add each switch to an individual group or a scene, etc.
+
+### Descriptors 
+
+For the purposes of Zigpy and Quirks we will focus on two descriptors:
 
 - Node Descriptor: desc goes here
 - Simple Descriptor: desc goes here
 
-## What is a Node Descriptor and why do we care?
+#### Node Descriptors
 
-A node descriptor explains to some basic device attributes to the application. The manufacturer code and the power type are the ones that we generally care about. In most cases you won't have to worry about this but it is good to know why it is there in case you come across it while looking at an existing quirk. Here is an example:
+A node descriptor explains some basic device attributes to Zigpy. The manufacturer code and the power type are the ones that we generally care about. In most cases you won't have to worry about this but it is good to know why it is there in case you come across it while looking at an existing quirk. Here is an example:
 `<Optional byte1=2 byte2=64 mac_capability_flags=128 manufacturer_code=4174 maximum_buffer_size=82 maximum_incoming_transfer_size=82 server_mask=0 maximum_outgoing_transfer_size=82 descriptor_capability_field=0>`
 
-## What is a Simple Descriptor and why do we care?
+#### What is a Simple Descriptor and why do we care?
 
-A simple descriptor is a description of a Zigbee device endpoint. It is responsible for explaining to the application what the endpoint can do. It contains a profile id, the device type, and collections of clusters. The profile id tells the application what set of Zigbee rules to use. The device type tells the application what logical type of device this is ex: on off light, color light, etc. The clusters explain to the application what types of functionality exist on the endpoint. Here is an example:
+A simple descriptor is a description of a Zigbee device endpoint and is responsible for explaining the endpoint's functionality. It contains a profile id, the device type, and collections of clusters. The profile id tells the application what set of Zigbee rules to use. The device type tells the application what logical type of device this is ex: on off light, color light, etc. The clusters explain to the application what types of functionality exist on the endpoint. Here is an example:
 `<SimpleDescriptor endpoint=1 profile=260 device_type=1026 device_version=0 input_clusters=[0, 1, 3, 32, 1026, 1280, 2821] output_clusters=[25]>`
-
-## Parts of a device
-
-Devices contain endpoints and endpoints contain clusters. So what are endpoints and clusters? Endpoints are essentially groupings of functionality. Clusters are objects that contain the information (attributes and commands) for individual functions. A good example that deomnstrates this is a multi-gang wall switch. The left and right paddles would each be an endpoint so the device would have at least 2 endpoints. Then each endpoint has several functions represented by clusters. There is the ability to turn the switch on and off, maybe there is energy monitoring, maybe there is the ability to add each switch to an individual group or a scene, etc.
 
 ## What the heck is a quirk?
 
