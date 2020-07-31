@@ -119,7 +119,7 @@ class SinopeDM2500ZB(SinopeTechnologieslight):
                     Groups.cluster_id,
                     Ota.cluster_id,
                 ],
-            },
+            }
         },
     }
 
@@ -145,6 +145,6 @@ class SinopeDM2500ZB(SinopeTechnologieslight):
                     Groups.cluster_id,
                     Ota.cluster_id,
                 ],
-            },
+            }
         }
     }
