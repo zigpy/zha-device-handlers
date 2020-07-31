@@ -60,7 +60,7 @@ class SinopeTechnologieslight(CustomDevice):
                     Groups.cluster_id,
                     Ota.cluster_id,
                 ],
-            },
+            }
         },
     }
 
@@ -85,7 +85,7 @@ class SinopeTechnologieslight(CustomDevice):
                     Groups.cluster_id,
                     Ota.cluster_id,
                 ],
-            },
+            }
         }
     }
 
