@@ -14,7 +14,7 @@ ZHA device handlers and it's provided Quirks allow Zigpy, ZHA and Home Assistant
 
 ## What is a device in human terms?
 
-A device is a physical object that you want to join to a Zigbee network: a light bulb, a switch, a sensor etc. The host application, in this case Zigpy, needs to understand how to interact with the device so there are standards that define how the application and devices can communicate. The device's functionality is described by several descriptors while he device itself contain endpoints and endpoints contain clusters. Zigpy needs to understand all these elements in order to correctly work with the device.
+A device is a physical object that you want to join to a Zigbee network: a light bulb, a switch, a sensor etc. The host application, in this case Zigpy, needs to understand how to interact with the device so there are standards that define how the application and devices can communicate. The device's functionality is described by several descriptors while the device itself contains endpoints and endpoints contain clusters. Zigpy needs to understand all these elements in order to correctly work with the device.
 
 ### Endpoints
 
