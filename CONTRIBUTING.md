@@ -36,7 +36,7 @@ For the purposes of Zigpy and Quirks we will focus on two descriptors:
 A node descriptor explains some basic device attributes to Zigpy. The manufacturer code and the power type are the ones that we generally care about. In most cases you won't have to worry about this but it is good to know why it is there in case you come across it while looking at an existing quirk. Here is an example:
 `<Optional byte1=2 byte2=64 mac_capability_flags=128 manufacturer_code=4174 maximum_buffer_size=82 maximum_incoming_transfer_size=82 server_mask=0 maximum_outgoing_transfer_size=82 descriptor_capability_field=0>`
 
-#### What is a Simple Descriptor and why do we care?
+#### Simple Descriptor
 
 A simple descriptor is a description of a Zigbee device endpoint and is responsible for explaining the endpoint's functionality. It contains a profile id, the device type, and collections of clusters. The profile id tells the application what set of Zigbee rules to use. The most common profile will be 260 (0x0104) for the Home Automation profile. The device type tells the application what logical type of device this is ex: on off light, color light, etc. The clusters explain to the application what types of functionality exist on the endpoint. Here is an example:
 `<SimpleDescriptor endpoint=1 profile=260 device_type=1026 device_version=0 input_clusters=[0, 1, 3, 32, 1026, 1280, 2821] output_clusters=[25]>`
