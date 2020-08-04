@@ -29,7 +29,7 @@ Clusters are objects that contain the information (attributes and commands) for 
 For the purposes of Zigpy and Quirks we will focus on two descriptors: **Node Descriptor** and **Simple Descriptor**.
 
 
-#### Node Descriptors
+#### Node Descriptor
 
 A node descriptor explains some basic device attributes to Zigpy. The manufacturer code and the power type are the ones that we generally care about. In most cases you won't have to worry about this but it is good to know why it is there in case you come across it while looking at an existing quirk. Here is an example:
 `<Optional byte1=2 byte2=64 mac_capability_flags=128 manufacturer_code=4174 maximum_buffer_size=82 maximum_incoming_transfer_size=82 server_mask=0 maximum_outgoing_transfer_size=82 descriptor_capability_field=0>`
