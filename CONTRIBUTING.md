@@ -28,7 +28,6 @@ Clusters are objects that contain the information (attributes and commands) for 
 
 For the purposes of Zigpy and Quirks we will focus on two descriptors: **Node Descriptor** and **Simple Descriptor**.
 
-- Simple Descriptor: desc goes here
 
 #### Node Descriptors
 
