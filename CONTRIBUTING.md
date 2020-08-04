@@ -22,7 +22,7 @@ Endpoints are essentially groupings of functionality. For example, a typical Zig
 
 ### Clusters
 
-Clusters are objects that contain the information (attributes and commands) for individual functions. There is the ability to turn the switch on and off, maybe there is energy monitoring, maybe there is the ability to add each switch to an individual group or a scene, etc.
+Clusters are objects that contain the information (attributes and commands) for individual functions. There is the ability to turn the switch on and off, maybe there is energy monitoring, maybe there is the ability to add each switch to an individual group or a scene, etc. Each of these functions belong to a cluster.
 
 ### Descriptors
 
