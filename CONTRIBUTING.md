@@ -44,7 +44,7 @@ A simple descriptor is a description of a Zigbee device endpoint and is responsi
 In human terms you can think of a quirk like google translate. I know it's a weird comparison but lets dig in a bit. You may only speak one language but there is an interesting article written in another language that you really want to read. Google translate takes the original article and displays it in a format (language) that you understand. A quirk is a file that translates device functionality from the format that the manufacturer chose to implement it in to a format that Zigpy and in turn ZHA understand. The main purpose of a quirk is to serve as a translator. A quirk is comprised of several parts:
 
 - Signature - To identify and apply the correct quirk
-- Replacement -- To allow Zigpy and ZHA to correctly work with the device
+- Replacement - To allow Zigpy and ZHA to correctly work with the device
 - device_automation_triggers - To let the Home Assistant Device Automation engine and users interact with the device
 
 ### Signature
