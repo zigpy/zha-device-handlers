@@ -60,7 +60,7 @@ class SinopeTechnologiesThermostat(CustomDevice):
         # <SimpleDescriptor endpoint=1 profile=260 device_type=769
         # device_version=0 input_clusters=[0, 3, 4, 5, 513, 516, 1026, 2820,
         # 2821, 65281] output_clusters=[65281, 25]>
-        MODELS_INFO: [(SINOPE, "TH1123ZB"), (SINOPE, "TH1124ZB")],
+        MODELS_INFO: [(SINOPE, "TH1123ZB"), (SINOPE, "TH1124ZB"), (SINOPE, "TH1500ZB")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha_p.PROFILE_ID,
