@@ -70,7 +70,6 @@ class Plug(XiaomiCustomDevice):
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id, Time.cluster_id],
             },
-
             # <SimpleDescriptor endpoint=2 profile=260 device_type=9
             # device_version=1
             # input_clusters=[12]
@@ -81,7 +80,6 @@ class Plug(XiaomiCustomDevice):
                 INPUT_CLUSTERS: [AnalogInput.cluster_id],
                 OUTPUT_CLUSTERS: [AnalogInput.cluster_id, Groups.cluster_id],
             },
-
             # <SimpleDescriptor endpoint=3 profile=260 device_type=83
             # device_version=1
             # input_clusters=[12]
