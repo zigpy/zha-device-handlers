@@ -14,7 +14,10 @@ ZHA device handlers and it's provided Quirks allow Zigpy, ZHA and Home Assistant
 
 ## What is a device in human terms?
 
-A device is a physical object that you want to join to a Zigbee network: a light bulb, a switch, a sensor etc. The host application, in this case Zigpy, needs to understand how to interact with the device so there are standards that define how the application and devices can communicate. The device's functionality is described by several **descriptors** while the device itself contains **endpoints** and **endpoints** contain **clusters**. Zigpy needs to understand all these elements in order to correctly work with the device.
+A device is a physical object that you want to join to a Zigbee network: a light bulb, a switch, a sensor etc. The host application, in this case Zigpy, needs to understand how to interact with the device so there are standards that define how the application and devices can communicate. The device's functionality is described by several **descriptors** while the device itself contains **endpoints** and **endpoints** contain **clusters**. There are two types of clusters an endpoint contains:
+- **in_clusters** - are "Server" clusters in ZCL terms. These clusters control the device, e.g. a smart plug or light bulb would have an `on_off` server cluster. **in_clusters** are also the ones which also send attribute reports and/or you can read an attribute from a **in_cluster**.
+- **out_clusters** - are "Client" clusters. These clusters control some other device, as "Client" cluster sends commands to "Server" cluster. For example an On/Off remote would have an `on_off` client cluster and will generate cluster commands and send those to some other device.
+Zigpy needs to understand all these elements in order to correctly work with the device.
 
 ### Endpoints
 
