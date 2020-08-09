@@ -19,3 +19,4 @@
 - [Andy Zickler](https://github.com/andyzickler)
 - [Piotr Majkrzak](https://github.com/majkrzak)
 - [Gleb Sinyavskiy](https://github.com/zhulik)
+- [Michael Thingnes](https://github.com/thimic)
