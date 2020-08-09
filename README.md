@@ -42,6 +42,7 @@ If you are looking to make your first code contribution to this project then we 
 - [Water Leak](https://www.aqara.com/en/water_leak_sensor.html): lumi.sensor_wleak.aq1
 - [US Plug](https://www.aqara.com/en/smart_plug.html): lumi.plug.maus01
 - [EU Plug](https://zigbee.blakadder.com/Xiaomi_ZNCZ04LM.html): lumi.plug.mmeu01
+- [CN Plug](https://zigbee.blakadder.com/Xiaomi_ZNCZ02LM.html): lumi.plug
 
 ### Osram
 - [OSRAM LIGHTIFY Dimming Switch](https://assets.osram-americas.com/assets/Documents/LTFY012.06c0d6e6-17c7-4dcb-bd2c-1fca7feecfb4.pdf):
