@@ -17,7 +17,7 @@ If you are looking to make your first code contribution to this project then we 
 - https://github.com/firstcontributions/first-contributions/blob/master/README.md
 - https://github.com/firstcontributions/first-contributions/blob/master/github-desktop-tutorial.md
 
-# Currently Supported Devices:
+# Devices currently supported via quirks in ZHA Device Handlers:
 
 ### CentraLite
 - [Contact Sensor](http://a.co/g9eWPAQ): CentraLite 3300-S
@@ -32,7 +32,28 @@ If you are looking to make your first code contribution to this project then we 
 - [Smart Button](http://pdf.lowes.com/useandcareguides/812489023018_use.pdf): CentraLite 3460-L
 - [Thermostat](https://centralite.com/products/pearl-thermostat): CentraLite 3157100
 
-### Xiaomi Aqara
+### Digi
+- [XBee Series 2](https://www.digi.com/products/embedded-systems/rf-modules/2-4-ghz-modules/xbee-zigbee): xbee
+- [XBee Series 3](https://www.digi.com/products/embedded-systems/rf-modules/2-4-ghz-modules/xbee3-zigbee-3): xbee3
+
+### Keen Home
+- [Temperature / Humidity / Pressure Sensor](https://keenhome.io/products/temp-sensor): LUMI RS-THP-MP-1.0
+
+### Lutron
+- [Connected Bulb Remote](https://www.lutron.com/TechnicalDocumentLibrary/040421_Zigbee_Programming_Guide.pdf): Lutron LZL4BWHL01 Remote
+
+### Osram
+- [OSRAM LIGHTIFY Dimming Switch](https://assets.osram-americas.com/assets/Documents/LTFY012.06c0d6e6-17c7-4dcb-bd2c-1fca7feecfb4.pdf):
+
+### SmartThings
+- [Arrival Sensor](https://support.smartthings.com/hc/en-us/articles/212417083): tagv4
+- [Motion Sensor](http://a.co/65rSQjZ): MotionV4
+- [Multi Sensor](http://a.co/gez6SzW): MultiV4
+
+### WAXMANN
+- [Water Sensor](https://leaksmart.com/sensor/): leakSMART Water Sensor V2
+
+### Xiaomi / Aqara
 - [Cube](https://www.aqara.com/en/cube_controller-product.html): lumi.sensor_cube.aqgl01
 - [Button](https://www.aqara.com/en/wireless_mini_switch.html): lumi.sensor_switch.aq2
 - [Vibration Sensor](http://www.xiaomimagazine.com/new-sensor-for-the-smart-home-xiaomi-check-aqara-smart-motion-sensor/): lumi.vibration.aq1
@@ -43,27 +64,6 @@ If you are looking to make your first code contribution to this project then we 
 - [US Plug](https://www.aqara.com/en/smart_plug.html): lumi.plug.maus01
 - [EU Plug](https://zigbee.blakadder.com/Xiaomi_ZNCZ04LM.html): lumi.plug.mmeu01
 - [CN Plug](https://zigbee.blakadder.com/Xiaomi_ZNCZ02LM.html): lumi.plug
-
-### Osram
-- [OSRAM LIGHTIFY Dimming Switch](https://assets.osram-americas.com/assets/Documents/LTFY012.06c0d6e6-17c7-4dcb-bd2c-1fca7feecfb4.pdf):
-
-### SmartThings
-- [Arrival Sensor](https://support.smartthings.com/hc/en-us/articles/212417083): tagv4
-- [Motion Sensor](http://a.co/65rSQjZ): MotionV4
-- [Multi Sensor](http://a.co/gez6SzW): MultiV4
-
-### Keen Home
-- [Temperature / Humidity / Pressure Sensor](https://keenhome.io/products/temp-sensor): LUMI RS-THP-MP-1.0
-
-### Lutron
-- [Connected Bulb Remote](https://www.lutron.com/TechnicalDocumentLibrary/040421_Zigbee_Programming_Guide.pdf): Lutron LZL4BWHL01 Remote
-
-### WAXMANN
-- [Water Sensor](https://leaksmart.com/sensor/): leakSMART Water Sensor V2
-
-### Digi
-- [XBee Series 2](https://www.digi.com/products/embedded-systems/rf-modules/2-4-ghz-modules/xbee-zigbee): xbee
-- [XBee Series 3](https://www.digi.com/products/embedded-systems/rf-modules/2-4-ghz-modules/xbee3-zigbee-3): xbee3
 
 ### Yale
 - [YRD210](https://www.yalehome.com/Yale/Yale%20US/Real%20Living/installation%20instructions/Yale%20DB%20PUSH%20Quickstart%2018JUL11_Rev%20B.pdf): Yale YRD210 Deadbolt
@@ -85,37 +85,9 @@ If you are looking to make your first code contribution to this project then we 
 - 3321-S reports acceleration
 - 3310-S reports humidity
 
-### Osram
-
-- Dimmer Switch publishes events to Home Assistant and reports battery level
-- Dimmer Switch temperature sensor is removed because it is non functional
-
-### Xiaomi Aqara
-
-- All supported devices report battery level
-- All supported devices report temperature but I am unsure if it is correct or accurate
-- Vibration sensor exposes a binary sensor in Home Assistant that reports current vibration state
-- Vibration sensor sends `tilt` and `drop` events to Home Assistant
-- Cube sends the following events: `flip (90 and 180 degrees)`, `rotate_left`, `rotate_right`, `knock`, `drop`, `slide` and `shake`
-- Motion sensor exposes binary sensors for motion and occupancy.
-- Button sends events to Home Assistant
-- All supported plugs report power consumption and can be toggled
-
-### SmartThings
-
-- All supported devices report battery level
-- tagV4 exposed as a device tracker in Home Assistant. The current implementation will use batteries rapidly
-- MultiV4 reports acceleration
-
-### Lutron
-
-- Connected bulb remote publishes events to Home Assistant
-
-### WAXMANN
-
-- leakSMART water sensor is exposed as a binary_sensor with DEVICE_CLASS_MOISTURE
-
 ### Digi XBee
+
+Please refer to [xbee.md](xbee.md) for details on configuration and usage examples.
 
 - Some functionality requires a coordinator device to be XBee as well
 - GPIO pins are exposed to Home Assistant as switches
@@ -125,7 +97,35 @@ If you are looking to make your first code contribution to this project then we 
 - Incoming UART data will generate `zha_event` event.
 - PWM can be controlled with `zha.set_zigbee_cluster_attribute` service
 
-Please refer to [xbee.md](xbee.md) for details on configuration and usage examples.
+### Lutron
+
+- Connected bulb remote publishes events to Home Assistant
+
+### Osram
+
+- Dimmer Switch publishes events to Home Assistant and reports battery level
+- Dimmer Switch temperature sensor is removed because it is non functional
+
+### SmartThings
+
+- All supported devices report battery level
+- tagV4 exposed as a device tracker in Home Assistant. The current implementation will use batteries rapidly
+- MultiV4 reports acceleration
+
+### WAXMANN
+
+- leakSMART water sensor is exposed as a binary_sensor with DEVICE_CLASS_MOISTURE
+
+### Xiaomi / Aqara
+
+- All supported devices report battery level
+- All supported devices report temperature but I am unsure if it is correct or accurate
+- Vibration sensor exposes a binary sensor in Home Assistant that reports current vibration state
+- Vibration sensor sends `tilt` and `drop` events to Home Assistant
+- Cube sends the following events: `flip (90 and 180 degrees)`, `rotate_left`, `rotate_right`, `knock`, `drop`, `slide` and `shake`
+- Motion sensor exposes binary sensors for motion and occupancy.
+- Button sends events to Home Assistant
+- All supported plugs report power consumption and can be toggled
 
 ### Yale
 
