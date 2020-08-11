@@ -42,6 +42,7 @@ If you are looking to make your first code contribution to this project then we 
 - [Water Leak](https://www.aqara.com/en/water_leak_sensor.html): lumi.sensor_wleak.aq1
 - [US Plug](https://www.aqara.com/en/smart_plug.html): lumi.plug.maus01
 - [EU Plug](https://zigbee.blakadder.com/Xiaomi_ZNCZ04LM.html): lumi.plug.mmeu01
+- [CN Plug](https://zigbee.blakadder.com/Xiaomi_ZNCZ02LM.html): lumi.plug
 
 ### Osram
 - [OSRAM LIGHTIFY Dimming Switch](https://assets.osram-americas.com/assets/Documents/LTFY012.06c0d6e6-17c7-4dcb-bd2c-1fca7feecfb4.pdf):
@@ -151,6 +152,23 @@ If you are instead using some custom python installation of Home Assistant then 
 - Update package with ``pip``
   ```
   pip install zha-quirks==0.0.38
+
+# Testing quirks in development in docker based install
+If you are using Supervised Home Assistant (formerly known as the Hassio/Hass.io distro) you will need to get access to the home-assistant docker container. Directions below are given for using the portainer add-on to do this, there are other methods as well not covered here.
+- Install the portainer add-on (https://github.com/hassio-addons/addon-portainer) from Home Assistant Community Add-ons.
+- Follow the add-on documentation to un-hide the home-assistant container (https://github.com/hassio-addons/addon-portainer/blob/master/portainer/DOCS.md)
+- Stage the update quirk in a directory within your config directory
+- Use portainer to access a console in the home-assistant container:
+
+  <img src="https://user-images.githubusercontent.com/11084412/88719260-fdfa7700-d0f0-11ea-8791-88ed3e26915d.png" width=400 >
+
+- Access the quirks directory
+  - on HA > 0.113: /usr/local/lib/python3.8/site-packages/zhaquirks/
+  - on HA < 0.113: /usr/local/lib/python3.7/site-packages/zhaquirks/
+- Copy updated/new quirk to zhaquirks directory: ```cp -a /config/temp/NEW_QUIRK ./```
+- Remove the __py_cache__ folder so it is regenerated ```rm -rf ./__py_cache__/```
+- Close out the console and restart HA. 
+- Note: The added/update quirk will not survive a HA version update.
 
 # Thanks
 

@@ -1,11 +1,10 @@
-"""Xiaomi lumi.plug.maus01 plug."""
+"""Xiaomi lumi.plug plug."""
 import logging
 
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import (
     AnalogInput,
     Basic,
-    BinaryInput,
     BinaryOutput,
     DeviceTemperature,
     Groups,
@@ -16,17 +15,16 @@ from zigpy.zcl.clusters.general import (
     Scenes,
     Time,
 )
-from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 
-from .. import (
+from zhaquirks.xiaomi import (
     LUMI,
     AnalogInputCluster,
     BasicCluster,
     ElectricalMeasurementCluster,
     XiaomiCustomDevice,
 )
-from ... import Bus
-from ...const import (
+from zhaquirks import Bus
+from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -40,7 +38,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class Plug(XiaomiCustomDevice):
-    """lumi.plug.maus01 plug."""
+    """lumi.plug plug."""
 
     def __init__(self, *args, **kwargs):
         """Init."""
@@ -50,11 +48,11 @@ class Plug(XiaomiCustomDevice):
         super().__init__(*args, **kwargs)
 
     signature = {
-        MODELS_INFO: [(LUMI, "lumi.plug.maus01"), (LUMI, "lumi.plug.mitw01")],
+        MODELS_INFO: [(LUMI, "lumi.plug")],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=81
             # device_version=1
-            # input_clusters=[0, 4, 3, 6, 16, 5, 10, 1, 2, 2820]
+            # input_clusters=[0, 4, 3, 6, 16, 5, 10, 1, 2]
             # output_clusters=[25, 10]>
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -69,7 +67,6 @@ class Plug(XiaomiCustomDevice):
                     Scenes.cluster_id,
                     BinaryOutput.cluster_id,
                     Time.cluster_id,
-                    ElectricalMeasurement.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id, Time.cluster_id],
             },
@@ -92,16 +89,6 @@ class Plug(XiaomiCustomDevice):
                 DEVICE_TYPE: zha.DeviceType.METER_INTERFACE,
                 INPUT_CLUSTERS: [AnalogInput.cluster_id],
                 OUTPUT_CLUSTERS: [AnalogInput.cluster_id],
-            },
-            # <SimpleDescriptor endpoint=100 profile=260 device_type=263
-            # device_version=2
-            # input_clusters=[15]
-            # output_clusters=[15, 4]>
-            100: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.OCCUPANCY_SENSOR,
-                INPUT_CLUSTERS: [BinaryInput.cluster_id],
-                OUTPUT_CLUSTERS: [BinaryInput.cluster_id, Groups.cluster_id],
             },
         },
     }
@@ -136,12 +123,6 @@ class Plug(XiaomiCustomDevice):
                 DEVICE_TYPE: zha.DeviceType.METER_INTERFACE,
                 INPUT_CLUSTERS: [AnalogInput.cluster_id],
                 OUTPUT_CLUSTERS: [AnalogInput.cluster_id],
-            },
-            100: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.OCCUPANCY_SENSOR,
-                INPUT_CLUSTERS: [BinaryInput.cluster_id],
-                OUTPUT_CLUSTERS: [BinaryInput.cluster_id, Groups.cluster_id],
             },
         },
     }
