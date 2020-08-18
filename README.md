@@ -8,6 +8,8 @@ ZHA device handlers bridge the functionality gap created when manufacturers devi
 
 Custom quirks implementations for zigpy implemented as ZHA Device Handlers are a similar concept to that of [Hub-connected Device Handlers for the SmartThings Classics platform](https://docs.smartthings.com/en/latest/device-type-developers-guide/) as well that of [Zigbee-Herdsman Converters / Zigbee-Shepherd Converters as used by Zigbee2mqtt](https://www.zigbee2mqtt.io/how_tos/how_to_support_new_devices.html), meaning they are virtual representation of a physical device that expose additional functionality that is not provided out-of-the-box by the existing integration between these platforms. See [Device Specifics](#Device-Specifics) for details.
 
+Note! The ZHA Device Handlers library is a standalone library and not dependent [Home Assistant](https://www.home-assistant.io), however a reference integration implementation of the ZHA Device Handlers library is available in [Home Assistant](https://www.home-assistant.io/) (a Python based open source home automation software) as part of its [ZHA integration component](https://www.home-assistant.io/integrations/zha/). The source code for that reference integration implementation is avalable in Home Assistant's "core" code under the "home-assistant/core/tree/dev/homeassistant/components/zha" directory.
+
 # How to contribute
 
 For specific Zigbee debugging instructions on capturing logs and more, see the contributing guidelines in the CONTRIBUTING.md file:
