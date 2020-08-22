@@ -24,7 +24,7 @@ from ..const import (
 )
 
 
-class FlexRGBW(CustomDevice):
+class GardenpoleRGBW(CustomDevice):
     """Osram Gardenpole RGBW-Lightify."""
 
     signature = {
@@ -55,8 +55,8 @@ class FlexRGBW(CustomDevice):
     replacement = {
         ENDPOINTS: {
             3: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.COLOR_DIMMABLE_LIGHT,
+                PROFILE_ID: zll.PROFILE_ID,
+                DEVICE_TYPE: zll.DeviceType.COLOR_DIMMABLE_LIGHT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
