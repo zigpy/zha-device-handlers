@@ -1,4 +1,4 @@
-"""Quirk for Phillips LCT bulbs."""
+"""Quirk for Phillips extended color bulbs."""
 from zigpy.profiles import zll
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
@@ -26,8 +26,8 @@ from zhaquirks.const import (
 from zhaquirks.philips import PHILIPS, PhilipsOnOffCluster
 
 
-class PhilipsLCT(CustomDevice):
-    """Philips LCT bulb device."""
+class ZLLExtendedColorLight(CustomDevice):
+    """Philips ZigBee LightLink extended color bulb device."""
 
     signature = {
         MODELS_INFO: [
@@ -43,6 +43,7 @@ class PhilipsLCT(CustomDevice):
             (PHILIPS, "LCT016"),
             (PHILIPS, "LCT021"),
             (PHILIPS, "LCT024"),
+            (PHILIPS, "LLC020"),
         ],
         ENDPOINTS: {
             11: {
