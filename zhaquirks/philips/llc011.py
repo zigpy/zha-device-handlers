@@ -33,7 +33,7 @@ class PhilipsLLC011(CustomDevice):
         MODELS_INFO: [(PHILIPS, "LLC011")],
         ENDPOINTS: {
             11: {
-                # <SimpleDescriptor endpoint=11 profile=49246 device_type=528
+                # <SimpleDescriptor endpoint=11 profile=49246 device_type=512
                 # device_version=2
                 # input_clusters=[0, 3, 4, 5, 6, 8, 4096, 768, 64513]
                 # output_clusters=[25]
