@@ -1,6 +1,4 @@
-"""
-ORVIBO dimmers.
-"""
+"""ORVIBO dimmers."""
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
