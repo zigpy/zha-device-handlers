@@ -23,7 +23,7 @@ from ..const import (
 
 
 class T10D1ZW(CustomDevice):
-    """T10D1ZW in-wall dimmer"""
+    """T10D1ZW in-wall dimmer."""
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=1
