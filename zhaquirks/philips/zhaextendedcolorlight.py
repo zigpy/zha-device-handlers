@@ -99,7 +99,11 @@ class ZHAExtendedColorLight2(CustomDevice):
     """Philips ZigBee HomeAutomation extended color bulb device without input cluster 64514."""
 
     signature = {
-        MODELS_INFO: [(PHILIPS, "929002376001"), (PHILIPS, "929002375901")],
+        MODELS_INFO: [
+            (PHILIPS, "LCT026"),
+            (PHILIPS, "929002376001"),
+            (PHILIPS, "929002375901"),
+        ],
         ENDPOINTS: {
             11: {
                 # <SimpleDescriptor endpoint=11 profile=260 device_type=269
