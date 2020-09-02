@@ -2,13 +2,7 @@
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
-from zigpy.zcl.clusters.general import (
-    Basic,
-    Groups,
-    Scenes,
-    OnOff,
-    LevelControl,
-)
+from zigpy.zcl.clusters.general import Basic, Groups, LevelControl, OnOff, Scenes
 from zigpy.zcl.clusters.lighting import Color
 
 from . import ORVIBO
