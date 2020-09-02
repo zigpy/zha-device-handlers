@@ -17,7 +17,7 @@ If you are looking to make your first code contribution to this project then we 
 - https://github.com/firstcontributions/first-contributions/blob/master/README.md
 - https://github.com/firstcontributions/first-contributions/blob/master/github-desktop-tutorial.md
 
-# Devices currently supported via quirks in ZHA Device Handlers:
+# Zigbee devices not following specifications which there already are quirks for:
 
 ### CentraLite
 - [Contact Sensor](http://a.co/g9eWPAQ): CentraLite 3300-S
