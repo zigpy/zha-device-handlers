@@ -98,8 +98,7 @@ class EventableCluster(CustomCluster):
 
 
 class GroupBoundCluster(CustomCluster):
-    """
-    Cluster that can only bind to a group instead of direct to hub.
+    """Cluster that can only bind to a group instead of direct to hub.
 
     Binding this cluster results in binding to a group that the coordinator
     is a member of.
