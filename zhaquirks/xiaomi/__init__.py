@@ -1,5 +1,4 @@
 """Xiaomi common components for custom device handlers."""
-import asyncio
 import binascii
 import logging
 import math
@@ -13,27 +12,20 @@ from zigpy.zcl.clusters.general import AnalogInput, Basic, OnOff, PowerConfigura
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.measurement import (
     IlluminanceMeasurement,
-    OccupancySensing,
     PressureMeasurement,
     RelativeHumidity,
     TemperatureMeasurement,
 )
-from zigpy.zcl.clusters.security import IasZone
 
-from .. import Bus, LocalDataCluster
+from .. import Bus, LocalDataCluster, MotionOnEvent, OccupancyWithReset
 from ..const import (
     ATTRIBUTE_ID,
     ATTRIBUTE_NAME,
-    CLUSTER_COMMAND,
     COMMAND_ATTRIBUTE_UPDATED,
     COMMAND_TRIPLE,
-    MOTION_EVENT,
-    OFF,
-    ON,
     UNKNOWN,
     VALUE,
     ZHA_SEND_EVENT,
-    ZONE_STATE,
 )
 
 BATTERY_LEVEL = "battery_level"
@@ -309,59 +301,14 @@ class PowerConfigurationCluster(LocalDataCluster, PowerConfiguration):
         self._update_attribute(self.BATTERY_VOLTAGE_ATTR, int(raw_voltage / 100))
 
 
-class OccupancyCluster(CustomCluster, OccupancySensing):
+class OccupancyCluster(OccupancyWithReset):
     """Occupancy cluster."""
 
-    cluster_id = OccupancySensing.cluster_id
 
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self._timer_handle = None
-
-    def _update_attribute(self, attrid, value):
-        super()._update_attribute(attrid, value)
-
-        if attrid == OCCUPANCY_STATE and value == ON:
-            if self._timer_handle:
-                self._timer_handle.cancel()
-            self.endpoint.device.motion_bus.listener_event(MOTION_EVENT)
-            loop = asyncio.get_event_loop()
-            self._timer_handle = loop.call_later(600, self._turn_off)
-
-    def _turn_off(self):
-        self._timer_handle = None
-        self._update_attribute(OCCUPANCY_STATE, OFF)
-
-
-class MotionCluster(LocalDataCluster, IasZone):
+class MotionCluster(LocalDataCluster, MotionOnEvent):
     """Motion cluster."""
 
-    cluster_id = IasZone.cluster_id
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self._timer_handle = None
-        self.endpoint.device.motion_bus.add_listener(self)
-        super()._update_attribute(ZONE_TYPE, MOTION_TYPE)
-
-    def motion_event(self):
-        """Motion event."""
-        super().listener_event(CLUSTER_COMMAND, None, ZONE_STATE, [ON])
-
-        _LOGGER.debug("%s - Received motion event message", self.endpoint.device.ieee)
-
-        if self._timer_handle:
-            self._timer_handle.cancel()
-
-        loop = asyncio.get_event_loop()
-        self._timer_handle = loop.call_later(120, self._turn_off)
-
-    def _turn_off(self):
-        _LOGGER.debug("%s - Resetting motion sensor", self.endpoint.device.ieee)
-        self._timer_handle = None
-        super().listener_event(CLUSTER_COMMAND, None, ZONE_STATE, [OFF])
+    _CONSTANT_ATTRIBUTES = {ZONE_TYPE: MOTION_TYPE}
 
 
 class TemperatureMeasurementCluster(CustomCluster, TemperatureMeasurement):
