@@ -1,5 +1,4 @@
-"""
-ORVIBO motion sensors.
+"""ORVIBO motion sensors.
 
 Based on Konke motion sensor code.
 """
