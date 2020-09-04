@@ -14,7 +14,7 @@ def test_basic_cluster_deserialize_wrong_len():
     data += b"\x02\n!\x00\x00d\x10\x01"
 
     deserialized = cluster.deserialize(data)
-    assert deserialized[3]
+    assert deserialized[1]
 
 
 def test_basic_cluster_deserialize_wrong_len_2():
@@ -26,4 +26,4 @@ def test_basic_cluster_deserialize_wrong_len_2():
     data += b"\x00\x14\x00\x00\x08!\x04\x02\n!\x00\x00d\x10\x01"
 
     deserialized = cluster.deserialize(data)
-    assert deserialized[3]
+    assert deserialized[1]
