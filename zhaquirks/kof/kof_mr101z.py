@@ -1,5 +1,5 @@
 """
-This module handles quirks of the King of Fans MR101Z ceiling fan receiver.
+Module to handle quirks of the King of Fans MR101Z ceiling fan receiver.
 
 The King of Fans ceiling fan receiver does not generate default replies. This
 module overrides all server commands that do not have a mandatory reply to not

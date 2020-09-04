@@ -1,5 +1,5 @@
 """
-This module handles quirks of the  Sinopé Technologies light SW2500ZB and dimmer DM2500ZB.
+Module to handle quirks of the  Sinopé Technologies light SW2500ZB and dimmer DM2500ZB.
 
 Manufacturer specific cluster implements attributes to control displaying
 setting occupancy on/off.
