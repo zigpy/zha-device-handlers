@@ -20,20 +20,14 @@ from zhaquirks.xiaomi.aqara.ctrl_neutral import CtrlNeutral
 # zigbee-herdsman:adapter:zStack:unpi:writer --> frame [254,13,36,1,31,255,2,1,6,0,16,0,30,3,1,7,0,198]
 
 
-def test_ctrl_neutral(zigpy_device_mock, MockAppController, ieee_mock):
+def test_ctrl_neutral(zigpy_device_from_quirk):
     """Test ctrl neutral 1 sends correct request."""
-    nwk = 1234
     data = b"\x01\x01\x01"
     cluster = 6
     src_ep = 1
     dst_ep = 2
 
-    rep = zigpy_device_mock(ieee_mock, nwk)
-    rep.add_endpoint(1)
-    rep.add_endpoint(2)
-    rep.add_endpoint(3)
-
-    dev = CtrlNeutral(MockAppController, ieee_mock, nwk, rep)
+    dev = zigpy_device_from_quirk(CtrlNeutral)
     dev.request = mock.MagicMock()
 
     dev[2].in_clusters[cluster].command(1)
