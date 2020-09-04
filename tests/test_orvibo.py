@@ -1,4 +1,4 @@
-"""Tests for xiaomi quirks."""
+"""Tests for Orvibo quirks."""
 
 import asyncio
 from unittest import mock
@@ -6,22 +6,13 @@ from unittest import mock
 import pytest
 
 from zhaquirks.const import OFF, ON, ZONE_STATE
-import zhaquirks.xiaomi.aqara.motion_aq2
-import zhaquirks.xiaomi.aqara.motion_aq2b
-import zhaquirks.xiaomi.mija.motion
+import zhaquirks.orvibo.motion
 
-from tests.common import ZCL_OCC_ATTR_RPT_OCC, ClusterListener
+from tests.common import ZCL_IAS_MOTION_COMMAND, ClusterListener
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize(
-    "quirk",
-    (
-        zhaquirks.xiaomi.aqara.motion_aq2.MotionAQ2,
-        zhaquirks.xiaomi.aqara.motion_aq2b.MotionAQ2,
-        zhaquirks.xiaomi.mija.motion.Motion,
-    ),
-)
+@pytest.mark.parametrize("quirk", (zhaquirks.orvibo.motion.SN10ZW,))
 async def test_konke_motion(zigpy_device_from_quirk, quirk):
     """Test Orvibo motion sensor."""
 
@@ -36,9 +27,9 @@ async def test_konke_motion(zigpy_device_from_quirk, quirk):
     p1 = mock.patch.object(motion_cluster, "reset_s", 0)
     p2 = mock.patch.object(occupancy_cluster, "reset_s", 0)
     # send motion on IAS zone command
-    hdr, args = occupancy_cluster.deserialize(ZCL_OCC_ATTR_RPT_OCC)
+    hdr, args = motion_cluster.deserialize(ZCL_IAS_MOTION_COMMAND)
     with p1, p2:
-        occupancy_cluster.handle_message(hdr, args)
+        motion_cluster.handle_message(hdr, args)
 
     assert len(motion_listener.cluster_commands) == 1
     assert len(motion_listener.attribute_updates) == 0
