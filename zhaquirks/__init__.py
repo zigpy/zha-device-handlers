@@ -64,7 +64,10 @@ class LocalDataCluster(CustomCluster):
             for attr in attributes
         ]
         for record in records:
-            record.value.value = self._attr_cache.get(record.attrid)
+            if record.attrid in self._CONSTANT_ATTRIBUTES:
+                record.value.value = self._CONSTANT_ATTRIBUTES[record.attrid]
+            else:
+                record.value.value = self._attr_cache.get(record.attrid)
             if record.value.value is not None:
                 record.status = foundation.Status.SUCCESS
         return (records,)

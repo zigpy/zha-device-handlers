@@ -1,12 +1,12 @@
 """Module for ORVIBO quirks implementations."""
 
-from .. import MotionWithReset, OccupancyOnEvent
+from .. import LocalDataCluster, MotionWithReset, OccupancyOnEvent
 
 ORVIBO = "欧瑞博"
 ORVIBO_LATIN = "ORVIBO"
 
 
-class OccupancyCluster(OccupancyOnEvent):
+class OccupancyCluster(LocalDataCluster, OccupancyOnEvent):
     """Occupancy cluster."""
 
 
