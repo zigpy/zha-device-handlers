@@ -309,6 +309,7 @@ class MotionCluster(LocalDataCluster, MotionOnEvent):
     """Motion cluster."""
 
     _CONSTANT_ATTRIBUTES = {ZONE_TYPE: MOTION_TYPE}
+    reset_s: int = 120
 
 
 class TemperatureMeasurementCluster(CustomCluster, TemperatureMeasurement):
