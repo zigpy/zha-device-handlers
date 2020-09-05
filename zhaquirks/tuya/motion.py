@@ -1,10 +1,11 @@
 """BlitzWolf IS-3 rechargeable occupancy  sensor."""
 
+from typing import Tuple
+
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, Identify, Ota
-from zigpy.zcl.clusters.measurement import OccupancySensing
-from zhaquirks import PowerConfigurationCluster
+from zigpy.zcl.clusters.security import IasZone
 
 from ..const import (
     DEVICE_TYPE,
@@ -13,18 +14,41 @@ from ..const import (
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
+    MOTION_EVENT,
 )
+from .. import MotionOnEvent, LocalDataCluster, Bus
+from . import TuyaManufCluster
 
 
-class CustomPowerConfigurationCluster(PowerConfigurationCluster):
-    """Custom PowerConfigurationCluster."""
-
-    MIN_VOLTS = 2.1
-    MAX_VOLTS = 3.0
+ZONE_TYPE = 0x0001
 
 
-class BWIS3(CustomDevice):
+class MotionCluster(LocalDataCluster, MotionOnEvent):
+    """Tuya Motion Sensor."""
+
+    _CONSTANT_ATTRIBUTES = {ZONE_TYPE: IasZone.ZoneType.Motion_Sensor}
+    reset_s = 15
+
+
+class TuyaManufacturerClusterMotion(TuyaManufCluster):
+    """Manufacturer Specific Cluster of the Motion device."""
+
+    def handle_cluster_request(
+        self, tsn: int, command_id: int, args: Tuple[TuyaManufCluster.Command]
+    ) -> None:
+        """Handle cluster request."""
+        tuya_cmd = args[0]
+        if command_id == 0x0001 and tuya_cmd.command_id == 1027:
+            self.endpoint.device.motion_bus.listener_event(MOTION_EVENT)
+
+
+class TuyaMotion(CustomDevice):
     """BW-IS3 occupancy sensor."""
+
+    def __init__(self, *args, **kwargs):
+        """Init device."""
+        self.motion_bus = Bus()
+        super().__init__(*args, **kwargs)
 
     signature = {
         #  endpoint=1 profile=260 device_type=0 device_version=0 input_clusters=[0, 3]
@@ -34,10 +58,7 @@ class BWIS3(CustomDevice):
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                ],
+                INPUT_CLUSTERS: [Basic.cluster_id, Identify.cluster_id],
                 OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],
             }
         },
@@ -50,9 +71,9 @@ class BWIS3(CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.OCCUPANCY_SENSOR,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    CustomPowerConfigurationCluster,
                     Identify.cluster_id,
-                    OccupancySensing,
+                    MotionCluster,
+                    TuyaManufacturerClusterMotion,
                 ],
                 OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],
             }
