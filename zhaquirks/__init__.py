@@ -43,6 +43,8 @@ class Bus(ListenableMixin):
 class LocalDataCluster(CustomCluster):
     """Cluster meant to prevent remote calls."""
 
+    _CONSTANT_ATTRIBUTES = {}
+
     async def bind(self):
         """Prevent bind."""
         return (foundation.Status.SUCCESS,)
