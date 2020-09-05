@@ -1,4 +1,4 @@
-"""BlitzWolf IS-3 rechargeable occupancy  sensor."""
+"""BlitzWolf IS-3/Tuya motion rechargeable occupancy sensor."""
 
 from typing import Tuple
 
