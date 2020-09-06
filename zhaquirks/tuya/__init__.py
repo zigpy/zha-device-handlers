@@ -8,6 +8,7 @@ from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import OnOff
 
 TUYA = "Tuya"
+ATTR_ON_OFF = 0x0000
 MANUFACTURER_SPECIFIC_CLUSTER_ID = 0xEF00  # Decimal: 61184
 _LOGGER = logging.getLogger(__name__)
 
@@ -17,6 +18,7 @@ class TuyaSwitchCluster(CustomCluster,OnOff):
     cluster_id = MANUFACTURER_SPECIFIC_CLUSTER_ID
     ep_attribute = "on_off"
     name = "Tuya Switch"
+    attributes = OnOff.attributes.copy()
 
     manufacturer_server_commands = {
         0x0000: (
@@ -40,7 +42,6 @@ class TuyaSwitchCluster(CustomCluster,OnOff):
                 t.uint8_t,   # always 0
                 t.uint8_t,   # length of data
                 t.Bool,      # data
-
             ),
             False,
         )
@@ -82,5 +83,7 @@ class TuyaSwitchCluster(CustomCluster,OnOff):
             args,
         )
 
-
+        if( command_id == 0x0002):
+            _LOGGER.debug("Endpoint ID: %d", self._endpoint.endpoint_id)
+            super()._update_attribute(ATTR_ON_OFF, args[5])
 
