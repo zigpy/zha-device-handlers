@@ -3,7 +3,7 @@ import logging
 
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import Basic, Groups, Scenes, Time, Ota
-from ..tuya import TuyaSwitchCluster
+from ..tuya import TuyaManufCluster
 
 from zigpy.quirks import CustomDevice
 from ..const import (
@@ -32,7 +32,7 @@ from ..const import (
 _LOGGER = logging.getLogger(__name__)
 
 
-class SingleSwitch(CustomDevice):
+class TuyaSingleSwitch(CustomDevice):
     """Tuya single channel switch device."""
 
     signature = {
@@ -52,7 +52,7 @@ class SingleSwitch(CustomDevice):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     Time.cluster_id,
-                    TuyaSwitchCluster.cluster_id],
+                    TuyaManufCluster.cluster_id],
                 OUTPUT_CLUSTERS: [
                     Ota.cluster_id,
                 ],
@@ -67,7 +67,7 @@ class SingleSwitch(CustomDevice):
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Time.cluster_id,
-                    TuyaSwitchCluster,
+                    TuyaManufCluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     Ota.cluster_id,
