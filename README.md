@@ -166,7 +166,7 @@ If you are using Supervised Home Assistant (formerly known as the Hassio/Hass.io
   - on HA > 0.113: /usr/local/lib/python3.8/site-packages/zhaquirks/
   - on HA < 0.113: /usr/local/lib/python3.7/site-packages/zhaquirks/
 - Copy updated/new quirk to zhaquirks directory: ```cp -a /config/temp/NEW_QUIRK ./```
-- Remove the __py_cache__ folder so it is regenerated ```rm -rf ./__py_cache__/```
+- Remove the __pycache__ folder so it is regenerated ```rm -rf ./__pycache__/```
 - Close out the console and restart HA. 
 - Note: The added/update quirk will not survive a HA version update.
 

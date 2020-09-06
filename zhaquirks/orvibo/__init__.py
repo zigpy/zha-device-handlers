@@ -1,18 +1,17 @@
-"""Konke sensors."""
+"""Module for ORVIBO quirks implementations."""
 
-from .. import MotionWithReset, OccupancyOnEvent, LocalDataCluster
+from .. import LocalDataCluster, MotionWithReset, OccupancyOnEvent
 
-KONKE = "Konke"
+ORVIBO = "欧瑞博"
+ORVIBO_LATIN = "ORVIBO"
 
 
 class OccupancyCluster(LocalDataCluster, OccupancyOnEvent):
     """Occupancy cluster."""
 
-    reset_s: int = 600
-
 
 class MotionCluster(MotionWithReset):
     """Motion cluster."""
 
-    reset_s: int = 60
+    reset_s: int = 30
     send_occupancy_event: bool = True

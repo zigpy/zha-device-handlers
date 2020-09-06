@@ -6,4 +6,5 @@ cd "$(dirname "$0")/.."
 black \
   --check \
   --fast \
+  --diff \
   zhaquirks tests script *.py

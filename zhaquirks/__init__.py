@@ -1,4 +1,5 @@
 """Quirks implementations for the ZHA component of Homeassistant."""
+import asyncio
 import logging
 import importlib
 import pkgutil
@@ -7,18 +8,27 @@ from zigpy.quirks import CustomCluster
 from zigpy.util import ListenableMixin
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import PowerConfiguration
+from zigpy.zcl.clusters.security import IasZone
+from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zdo import types as zdotypes
 
 from .const import (
     ATTRIBUTE_ID,
     ATTRIBUTE_NAME,
+    CLUSTER_COMMAND,
     COMMAND_ATTRIBUTE_UPDATED,
     UNKNOWN,
     VALUE,
     ZHA_SEND_EVENT,
+    ZONE_STATE,
+    OFF,
+    ON,
+    MOTION_EVENT,
 )
 
 _LOGGER = logging.getLogger(__name__)
+OCCUPANCY_STATE = 0
+OCCUPANCY_EVENT = "occupancy_event"
 
 
 class Bus(ListenableMixin):
@@ -32,6 +42,8 @@ class Bus(ListenableMixin):
 
 class LocalDataCluster(CustomCluster):
     """Cluster meant to prevent remote calls."""
+
+    _CONSTANT_ATTRIBUTES = {}
 
     async def bind(self):
         """Prevent bind."""
@@ -54,7 +66,10 @@ class LocalDataCluster(CustomCluster):
             for attr in attributes
         ]
         for record in records:
-            record.value.value = self._attr_cache.get(record.attrid)
+            if record.attrid in self._CONSTANT_ATTRIBUTES:
+                record.value.value = self._CONSTANT_ATTRIBUTES[record.attrid]
+            else:
+                record.value.value = self._attr_cache.get(record.attrid)
             if record.value.value is not None:
                 record.status = foundation.Status.SUCCESS
         return (records,)
@@ -98,8 +113,7 @@ class EventableCluster(CustomCluster):
 
 
 class GroupBoundCluster(CustomCluster):
-    """
-    Cluster that can only bind to a group instead of direct to hub.
+    """Cluster that can only bind to a group instead of direct to hub.
 
     Binding this cluster results in binding to a group that the coordinator
     is a member of.
@@ -180,6 +194,111 @@ class PowerConfigurationCluster(CustomCluster, PowerConfiguration):
         )
 
         return percent
+
+
+class _Motion(CustomCluster, IasZone):
+    """Self reset Motion cluster."""
+
+    reset_s: int = 30
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self._loop = asyncio.get_running_loop()
+        self._timer_handle = None
+
+    def _turn_off(self):
+        self._timer_handle = None
+        _LOGGER.debug("%s - Resetting motion sensor", self.endpoint.device.ieee)
+        self.listener_event(CLUSTER_COMMAND, 253, ZONE_STATE, [OFF, 0, 0, 0])
+        self._update_attribute(ZONE_STATE, OFF)
+
+
+class MotionWithReset(_Motion):
+    """Self reset Motion cluster.
+
+    Optionally send event over device bus.
+    """
+
+    send_occupancy_event: bool = False
+
+    def handle_cluster_request(self, tsn, command_id, args):
+        """Handle the cluster command."""
+        if command_id == ZONE_STATE:
+            if self._timer_handle:
+                self._timer_handle.cancel()
+            self._timer_handle = self._loop.call_later(self.reset_s, self._turn_off)
+            if self.send_occupancy_event:
+                self.endpoint.device.occupancy_bus.listener_event(OCCUPANCY_EVENT)
+
+
+class MotionOnEvent(_Motion):
+    """Motion based on received events from occupancy."""
+
+    reset_s: int = 120
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self.endpoint.device.motion_bus.add_listener(self)
+
+    def motion_event(self):
+        """Motion event."""
+        super().listener_event(CLUSTER_COMMAND, 254, ZONE_STATE, [ON, 0, 0, 0])
+
+        _LOGGER.debug("%s - Received motion event message", self.endpoint.device.ieee)
+
+        if self._timer_handle:
+            self._timer_handle.cancel()
+
+        self._timer_handle = self._loop.call_later(self.reset_s, self._turn_off)
+
+
+class _Occupancy(CustomCluster, OccupancySensing):
+    """Self reset Occupancy cluster."""
+
+    reset_s: int = 600
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self._timer_handle = None
+        self._loop = asyncio.get_running_loop()
+
+    def _turn_off(self):
+        self._timer_handle = None
+        self._update_attribute(OCCUPANCY_STATE, OFF)
+
+
+class OccupancyOnEvent(_Occupancy):
+    """Self reset occupancy from bus."""
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self.endpoint.device.occupancy_bus.add_listener(self)
+
+    def occupancy_event(self):
+        """Occupancy event."""
+        self._update_attribute(OCCUPANCY_STATE, ON)
+
+        if self._timer_handle:
+            self._timer_handle.cancel()
+
+        self._timer_handle = self._loop.call_later(self.reset_s, self._turn_off)
+
+
+class OccupancyWithReset(_Occupancy):
+    """Self reset Occupancy cluster and send event on motion bus."""
+
+    def _update_attribute(self, attrid, value):
+        super()._update_attribute(attrid, value)
+
+        if attrid == OCCUPANCY_STATE and value == ON:
+            if self._timer_handle:
+                self._timer_handle.cancel()
+            self.endpoint.device.motion_bus.listener_event(MOTION_EVENT)
+            self._timer_handle = self._loop.call_later(self.reset_s, self._turn_off)
 
 
 NAME = __name__

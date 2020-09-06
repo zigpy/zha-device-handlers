@@ -4,12 +4,15 @@ from unittest import mock
 import zigpy.device
 import zigpy.endpoint
 import zigpy.quirks
+import zhaquirks.kof.kof_mr101z
 
 
 def test_kof_no_reply():
     """Test KOF No reply."""
 
-    class TestCluster(zigpy.quirks.kof.NoReplyMixin, zigpy.quirks.CustomCluster):
+    class TestCluster(
+        zhaquirks.kof.kof_mr101z.NoReplyMixin, zigpy.quirks.CustomCluster
+    ):
         """Test Cluster Class."""
 
         cluster_id = 0x1234

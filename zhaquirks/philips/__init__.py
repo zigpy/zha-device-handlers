@@ -57,7 +57,8 @@ class PowerOnState(t.enum8):
 class PhilipsOnOffCluster(CustomCluster, OnOff):
     """Philips OnOff cluster."""
 
-    manufacturer_attributes = {0x4003: ("power_on_state", PowerOnState)}
+    attributes = OnOff.attributes.copy()
+    attributes.update({0x4003: ("power_on_state", PowerOnState)})
 
 
 class PhilipsBasicCluster(CustomCluster, Basic):
