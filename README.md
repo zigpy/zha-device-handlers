@@ -69,6 +69,9 @@ If you are looking to make your first code contribution to this project then we 
 - [YRD210](https://www.yalehome.com/Yale/Yale%20US/Real%20Living/installation%20instructions/Yale%20DB%20PUSH%20Quickstart%2018JUL11_Rev%20B.pdf): Yale YRD210 Deadbolt
 - [YRL220](https://www.yalehome.com/Yale/Yale%20US/Real%20Living/installation%20instructions/Yale%20%20DB%20Touch%20Instructions%2023AUG11_Rev%20B.pdf): Yale YRL220 Lock
 
+### Tuya-based
+- [TS0601 switch](https://zigbee.blakadder.com/Lerlink_X701A.html): Tuya-based 1-gang switches with neutral (e.g. Lerlink, Lonsonho)
+
 # Configuration:
 
 1. Update Home Assistant to 0.85.1 or a later version.
