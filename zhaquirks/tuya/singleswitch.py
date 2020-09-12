@@ -1,6 +1,6 @@
 """Tuya based button sensor."""
 from zigpy.profiles import zha
-from zigpy.zcl.clusters.general import Basic, Groups, Scenes, Time, Ota, OnOff
+from zigpy.zcl.clusters.general import Basic, Groups, Scenes, Time, Ota
 from ..const import (
     DEVICE_TYPE,
     ENDPOINTS,

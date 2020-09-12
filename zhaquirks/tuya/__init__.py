@@ -1,23 +1,20 @@
 """Tuya devices."""
 import logging
 
+from typing import (
+    Coroutine,
+    Optional,
+    Tuple,
+    Union,
+)
+
 from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl import foundation
 import zigpy.types as t
 
 from .. import Bus
-from typing import (
-    Any,
-    Callable,
-    Coroutine,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-    Tuple,
-    Union,
-)
+
 
 TUYA_CLUSTER_ID = 0xEF00
 TUYA_SET_DATA = 0x0000
@@ -60,6 +57,8 @@ class TuyaManufCluster(CustomCluster):
 
 
 class TuyaOnOff(CustomCluster, OnOff):
+    """Tuya On/Off cluster for On/Off device."""
+
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
@@ -75,25 +74,33 @@ class TuyaOnOff(CustomCluster, OnOff):
         )
         self._update_attribute(ATTR_ON_OFF, state)
 
-    async def command(self, command, *args, manufacturer=None, expect_reply=None):
+    def command(
+        self,
+        command_id: Union[foundation.Command, int, t.uint8_t],
+        *args,
+        manufacturer: Optional[Union[int, t.uint16_t]] = None,
+        expect_reply: bool = True,
+        tsn: Optional[Union[int, t.uint8_t]] = None,
+    ):
         """Override the default Cluster command."""
 
-        if command == 0x0000 or command == 0x0001:
+        if command_id in (0x0000, 0x0001):
             cmd_payload = TuyaManufCluster.Command()
             cmd_payload.status = 0
             cmd_payload.tsn = 0
             cmd_payload.command_id = TUYA_CMD_BASE + self.endpoint.endpoint_id
             cmd_payload.function = 0
-            cmd_payload.data = [1, command]
-            return await self.endpoint.tuya_manufacturer.command(
+            cmd_payload.data = [1, command_id]
+
+            return self.endpoint.tuya_manufacturer.command(
                 TUYA_SET_DATA, cmd_payload, expect_reply=True
             )
-        else:
-            return foundation.Status.UNSUP_CLUSTER_COMMAND
+
+        return foundation.Status.UNSUP_CLUSTER_COMMAND
 
 
 class TuyaManufacturerClusterOnOff(TuyaManufCluster):
-    """Manufacturer Specific Cluster of the Motion device."""
+    """Manufacturer Specific Cluster of On/Off device."""
 
     def handle_cluster_request(
         self, tsn: int, command_id: int, args: Tuple[TuyaManufCluster.Command]
@@ -101,7 +108,7 @@ class TuyaManufacturerClusterOnOff(TuyaManufCluster):
         """Handle cluster request."""
 
         tuya_payload = args[0]
-        if command_id == 0x0002 or command_id == 0x0001:
+        if command_id in (0x0002, 0x0001):
             self.endpoint.device.switch_bus.listener_event(
                 SWITCH_EVENT,
                 tuya_payload.command_id - TUYA_CMD_BASE,

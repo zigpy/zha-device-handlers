@@ -2,9 +2,7 @@
 
 import asyncio
 from unittest import mock
-from asynctest import CoroutineMock
 
-from .conftest import MockApp
 import pytest
 
 from zhaquirks.const import OFF, ON, ZONE_STATE
@@ -20,7 +18,6 @@ ZCL_TUYA_SWITCH_OFF = b"\tQ\x02\x006\x01\x01\x00\x01\x00"
 
 
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.motion.TuyaMotion,))
-@pytest.mark.asyncio
 async def test_motion(zigpy_device_from_quirk, quirk):
     """Test tuya motion sensor."""
 
@@ -49,7 +46,6 @@ async def test_motion(zigpy_device_from_quirk, quirk):
 
 
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.singleswitch.TuyaSingleSwitch,))
-@pytest.mark.asyncio
 async def test_singleswitch_state_report(zigpy_device_from_quirk, quirk):
     """Test tuya single switch."""
 
@@ -74,7 +70,6 @@ async def test_singleswitch_state_report(zigpy_device_from_quirk, quirk):
 
 
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.singleswitch.TuyaSingleSwitch,))
-@pytest.mark.asyncio
 async def test_singleswitch_requests(zigpy_device_from_quirk, quirk):
     """Test tuya single switch."""
 
@@ -84,32 +79,28 @@ async def test_singleswitch_requests(zigpy_device_from_quirk, quirk):
     tuya_cluster = switch_dev.endpoints[1].tuya_manufacturer
 
     with mock.patch.object(
-        tuya_cluster.endpoint.device, "request", return_value=foundation.Status.SUCCESS
+        tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
     ) as m1:
 
-        status = await switch_cluster.command(0x0000)
+        status = switch_cluster.command(0x0000)
         m1.assert_called_with(
-            260,
             61184,
-            1,
-            1,
             1,
             b"\x01\x01\x00\x00\x00\x01\x01\x00\x01\x00",
             expect_reply=True,
+            command_id=0,
         )
         assert status == 0
 
-        status = await switch_cluster.command(0x0001)
+        status = switch_cluster.command(0x0001)
         m1.assert_called_with(
-            260,
             61184,
-            1,
-            1,
             2,
             b"\x01\x02\x00\x00\x00\x01\x01\x00\x01\x01",
             expect_reply=True,
+            command_id=0,
         )
         assert status == 0
 
-    status = await switch_cluster.command(0x0002)
+    status = switch_cluster.command(0x0002)
     assert status == foundation.Status.UNSUP_CLUSTER_COMMAND
