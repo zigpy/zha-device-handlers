@@ -35,9 +35,7 @@ class TuyaSingleSwitch(TuyaSwitch):
                     Time.cluster_id,
                     TuyaManufCluster.cluster_id,
                 ],
-                OUTPUT_CLUSTERS: [
-                    Ota.cluster_id,
-                ],
+                OUTPUT_CLUSTERS: [Ota.cluster_id],
             }
         },
     }
@@ -54,9 +52,7 @@ class TuyaSingleSwitch(TuyaSwitch):
                     TuyaManufacturerClusterOnOff,
                     TuyaOnOff,
                 ],
-                OUTPUT_CLUSTERS: [
-                    Ota.cluster_id,
-                ],
+                OUTPUT_CLUSTERS: [Ota.cluster_id],
             }
-        },
+        }
     }

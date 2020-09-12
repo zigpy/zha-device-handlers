@@ -1,11 +1,7 @@
 """Tuya devices."""
 import logging
 
-from typing import (
-    Optional,
-    Tuple,
-    Union,
-)
+from typing import Optional, Tuple, Union
 
 from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.zcl.clusters.general import OnOff
