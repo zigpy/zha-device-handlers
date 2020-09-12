@@ -1,38 +1,18 @@
 """Tuya based button sensor."""
-import logging
-
 from zigpy.profiles import zha
-from zigpy.zcl.clusters.general import Basic, Groups, Scenes, Time, Ota
-from ..tuya import TuyaManufCluster
-
-from zigpy.quirks import CustomDevice
+from zigpy.zcl.clusters.general import Basic, Groups, Scenes, Time, Ota, OnOff
 from ..const import (
-    ARGS,
-    ATTRIBUTE_ID,
-    ATTRIBUTE_NAME,
-    CLUSTER_ID,
-    COMMAND,
-    COMMAND_ATTRIBUTE_UPDATED,
-    COMMAND_TRIPLE,
     DEVICE_TYPE,
-    DOUBLE_PRESS,
-    ENDPOINT_ID,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
-    SHORT_PRESS,
-    SKIP_CONFIGURATION,
-    TRIPLE_PRESS,
-    UNKNOWN,
-    VALUE,
 )
+from ..tuya import TuyaManufCluster, TuyaManufacturerClusterOnOff, TuyaOnOff, TuyaSwitch
 
-_LOGGER = logging.getLogger(__name__)
 
-
-class TuyaSingleSwitch(CustomDevice):
+class TuyaSingleSwitch(TuyaSwitch):
     """Tuya single channel switch device."""
 
     signature = {
@@ -42,6 +22,7 @@ class TuyaSingleSwitch(CustomDevice):
         # device_version=1
         # input_clusters=[0x0000,0x0004, 0x0005,0x000a, 0xef00]
         # output_clusters=[0x0019]
+        # <SimpleDescriptor endpoint=1 profile=260 device_type=81 device_version=1 input_clusters=[0, 4, 5, 10, 61184] output_clusters=[25]>
         MODELS_INFO: [("_TZE200_7tdtqgwv", "TS0601")],
         ENDPOINTS: {
             1: {
@@ -52,7 +33,8 @@ class TuyaSingleSwitch(CustomDevice):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     Time.cluster_id,
-                    TuyaManufCluster.cluster_id],
+                    TuyaManufCluster.cluster_id,
+                ],
                 OUTPUT_CLUSTERS: [
                     Ota.cluster_id,
                 ],
@@ -67,7 +49,10 @@ class TuyaSingleSwitch(CustomDevice):
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Time.cluster_id,
-                    TuyaManufCluster,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaManufacturerClusterOnOff,
+                    TuyaOnOff,
                 ],
                 OUTPUT_CLUSTERS: [
                     Ota.cluster_id,
@@ -75,4 +60,3 @@ class TuyaSingleSwitch(CustomDevice):
             }
         },
     }
-
