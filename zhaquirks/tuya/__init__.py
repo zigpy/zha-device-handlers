@@ -2,7 +2,6 @@
 import logging
 
 from typing import (
-    Coroutine,
     Optional,
     Tuple,
     Union,
