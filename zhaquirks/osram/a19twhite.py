@@ -1,6 +1,6 @@
 """Osram A19 tunable white device."""
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
+from zigpy.quirks import CustomDevice, CustomCluster
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -15,6 +15,12 @@ from zigpy.zcl.clusters.lighting import Color
 
 from . import OsramLightCluster
 from ..const import DEVICE_TYPE, ENDPOINTS, INPUT_CLUSTERS, OUTPUT_CLUSTERS, PROFILE_ID
+
+
+class OsramColorCluster(CustomCluster, Color):
+    """Osram A19 tunable white device."""
+
+    _CONSTANT_ATTRIBUTES = {0x400A: 16, 0x400C: 370}
 
 
 class A19TunableWhite(CustomDevice):
@@ -56,7 +62,7 @@ class A19TunableWhite(CustomDevice):
                     Scenes.cluster_id,
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
-                    Color.cluster_id,
+                    OsramColorCluster,
                     ElectricalMeasurement.cluster_id,
                     OsramLightCluster,
                 ],
