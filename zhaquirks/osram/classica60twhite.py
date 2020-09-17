@@ -49,7 +49,7 @@ class SmartClassicA60TunableWhite(CustomDevice):
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             }
-        }
+        },
     }
 
     replacement = {
