@@ -19,7 +19,7 @@ from ..const import DEVICE_TYPE, ENDPOINTS, INPUT_CLUSTERS, OUTPUT_CLUSTERS, PRO
 
 class OsramColorCluster(CustomCluster, Color):
     """Osram A19 tunable white device."""
-    
+
     _CONSTANT_ATTRIBUTES = {
         0x400a: 16,
         0x400C: 370,
