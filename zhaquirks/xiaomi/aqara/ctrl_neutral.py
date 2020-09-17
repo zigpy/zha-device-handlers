@@ -54,7 +54,12 @@ class CtrlNeutral(XiaomiCustomDevice):
     """Aqara single and double key switch device."""
 
     signature = {
-        MODELS_INFO: [(LUMI, "lumi.ctrl_neutral1"), (LUMI, "lumi.ctrl_neutral2")],
+        MODELS_INFO: [
+            (LUMI, "lumi.ctrl_neutral1"),
+            (LUMI, "lumi.ctrl_neutral2"),
+            (LUMI, "lumi.switch.b1lacn02"),
+            (LUMI, "lumi.switch.b2lacn02"),
+        ],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=6
             # device_version=2
