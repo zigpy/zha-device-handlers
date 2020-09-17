@@ -35,7 +35,7 @@ If you are looking to make your first code contribution to this project then we 
 ### Xiaomi Aqara
 - [Cube](https://www.aqara.com/en/cube_controller-product.html): lumi.sensor_cube.aqgl01
 - [Button](https://www.aqara.com/en/wireless_mini_switch.html): lumi.sensor_switch.aq2
-- [Vibration Sensor](http://www.xiaomimagazine.com/new-sensor-for-the-smart-home-xiaomi-check-aqara-smart-motion-sensor/): lumi.vibration.aq1
+- [Vibration Sensor](https://www.aqara.com/en/vibration_sensor.html): lumi.vibration.aq1
 - [Contact Sensor](https://www.aqara.com/en/door_and_window_sensor-product.html): lumi.sensor_magnet.aq2
 - [Motion Sensor](https://www.aqara.com/en/motion_sensor.html): lumi.sensor_motion.aq2
 - [Temperature / Humidity Sensor](https://www.aqara.com/en/temperature_and_humidity_sensor-product.html): lumi.weather
