@@ -35,7 +35,7 @@ class SmartplusAC05347(CustomDevice):
         ENDPOINTS: {
             3: {
                 PROFILE_ID: zll.PROFILE_ID,
-                DEVICE_TYPE: zll.DeviceType.COLOR_DIMMABLE_LIGHT,
+                DEVICE_TYPE: zll.DeviceType.COLOR_TEMPERATURE_LIGHT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
@@ -56,7 +56,7 @@ class SmartplusAC05347(CustomDevice):
         ENDPOINTS: {
             3: {
                 PROFILE_ID: zll.PROFILE_ID,
-                DEVICE_TYPE: zll.DeviceType.COLOR_DIMMABLE_LIGHT,
+                DEVICE_TYPE: zll.DeviceType.COLOR_TEMPERATURE_LIGHT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
