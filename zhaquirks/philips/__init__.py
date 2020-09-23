@@ -1,5 +1,8 @@
 """Module for Philips quirks implementations."""
 import logging
+import time
+
+from threading import Timer
 
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
@@ -12,6 +15,10 @@ from ..const import (
     COMMAND_ID,
     DIM_DOWN,
     DIM_UP,
+    DOUBLE_PRESS,
+    TRIPLE_PRESS,
+    QUADRUPLE_PRESS,
+    QUINTUPLE_PRESS,
     LONG_PRESS,
     LONG_RELEASE,
     PRESS_TYPE,
@@ -35,6 +42,22 @@ HUE_REMOTE_DEVICE_TRIGGERS = {
     (LONG_PRESS, TURN_OFF): {COMMAND: "off_hold"},
     (LONG_PRESS, DIM_UP): {COMMAND: "up_hold"},
     (LONG_PRESS, DIM_DOWN): {COMMAND: "down_hold"},
+    (DOUBLE_PRESS, TURN_ON): {COMMAND: "on_double_press"},
+    (DOUBLE_PRESS, TURN_OFF): {COMMAND: "off_double_press"},
+    (DOUBLE_PRESS, DIM_UP): {COMMAND: "up_double_press"},
+    (DOUBLE_PRESS, DIM_DOWN): {COMMAND: "down_double_press"},
+    (TRIPLE_PRESS, TURN_ON): {COMMAND: "on_triple_press"},
+    (TRIPLE_PRESS, TURN_OFF): {COMMAND: "off_triple_press"},
+    (TRIPLE_PRESS, DIM_UP): {COMMAND: "up_triple_press"},
+    (TRIPLE_PRESS, DIM_DOWN): {COMMAND: "down_triple_press"},
+    (QUADRUPLE_PRESS, TURN_ON): {COMMAND: "on_quadruple_press"},
+    (QUADRUPLE_PRESS, TURN_OFF): {COMMAND: "off_quadruple_press"},
+    (QUADRUPLE_PRESS, DIM_UP): {COMMAND: "up_quadruple_press"},
+    (QUADRUPLE_PRESS, DIM_DOWN): {COMMAND: "down_quadruple_press"},
+    (QUINTUPLE_PRESS, TURN_ON): {COMMAND: "on_quintuple_press"},
+    (QUINTUPLE_PRESS, TURN_OFF): {COMMAND: "off_quintuple_press"},
+    (QUINTUPLE_PRESS, DIM_UP): {COMMAND: "up_quintuple_press"},
+    (QUINTUPLE_PRESS, DIM_DOWN): {COMMAND: "down_quintuple_press"},
     (SHORT_RELEASE, TURN_ON): {COMMAND: "on_short_release"},
     (SHORT_RELEASE, TURN_OFF): {COMMAND: "off_short_release"},
     (SHORT_RELEASE, DIM_UP): {COMMAND: "up_short_release"},
@@ -91,6 +114,12 @@ class PhilipsRemoteCluster(CustomCluster):
     BUTTONS = {1: "on", 2: "up", 3: "down", 4: "off"}
     PRESS_TYPES = {0: "press", 1: "hold", 2: "short_release", 3: "long_release"}
 
+    MULTICLICK_THRESHOLD_MS = 500
+
+    deferred_func = Timer(1, lambda: None)
+    last_click_ms = 0
+    click_counter = 1
+
     def handle_cluster_request(self, tsn, command_id, args):
         """Handle the cluster command."""
         _LOGGER.debug(
@@ -99,14 +128,46 @@ class PhilipsRemoteCluster(CustomCluster):
             command_id,
             args,
         )
+
         button = self.BUTTONS.get(args[0], args[0])
         press_type = self.PRESS_TYPES.get(args[2], args[2])
 
-        event_args = {
-            BUTTON: button,
-            PRESS_TYPE: press_type,
-            COMMAND_ID: command_id,
-            ARGS: args,
-        }
-        action = "{}_{}".format(button, press_type)
-        self.listener_event(ZHA_SEND_EVENT, action, event_args)
+        def send_event(button, press_type):
+            event_args = {
+                BUTTON: button,
+                PRESS_TYPE: press_type,
+                COMMAND_ID: command_id,
+                ARGS: args,
+            }
+
+            action = "{}_{}".format(button, press_type)
+            self.listener_event(ZHA_SEND_EVENT, action, event_args)
+
+        # Multiple Presses
+        if press_type == "press":
+            now_ms = time.time() * 1000
+
+            if now_ms - self.last_click_ms > self.MULTICLICK_THRESHOLD_MS:
+                self.click_counter = 1
+            else:
+                self.click_counter = self.click_counter + 1
+                self.deferred_func.cancel()
+
+            self.last_click_ms = now_ms
+
+            if self.click_counter == 2:
+                press_type = "double_press"
+            elif self.click_counter == 3:
+                press_type = "triple_press"
+            elif self.click_counter == 4:
+                press_type = "quadruple_press"
+            elif self.click_counter == 5:
+                press_type = "quintuple_press"
+
+            self.deferred_func = Timer(
+                self.MULTICLICK_THRESHOLD_MS / 1000,
+                lambda: send_event(button, press_type),
+            )
+            self.deferred_func.start()
+        else:
+            send_event(button, press_type)
