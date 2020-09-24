@@ -28,14 +28,14 @@ class SmartplusAC05347(CustomDevice):
     """Osram Smart+ AC05347 GU10 White."""
 
     signature = {
-        # <SimpleDescriptor endpoint=3 profile=49246 device_type=220
+        # <SimpleDescriptor endpoint=3 profile=49246 device_type=544
         # device_version=1 input_clusters=[0, 3, 4, 5, 6, 8, 300, 4096, 64527]
         # output_clusters=[25]>
         MODELS_INFO: [(OSRAM, "Smart+ AC05347")],
         ENDPOINTS: {
             3: {
                 PROFILE_ID: zll.PROFILE_ID,
-                DEVICE_TYPE: zll.DeviceType.COLOR_DIMMABLE_LIGHT,
+                DEVICE_TYPE: zll.DeviceType.COLOR_TEMPERATURE_LIGHT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
@@ -56,7 +56,7 @@ class SmartplusAC05347(CustomDevice):
         ENDPOINTS: {
             3: {
                 PROFILE_ID: zll.PROFILE_ID,
-                DEVICE_TYPE: zll.DeviceType.COLOR_DIMMABLE_LIGHT,
+                DEVICE_TYPE: zll.DeviceType.COLOR_TEMPERATURE_LIGHT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
