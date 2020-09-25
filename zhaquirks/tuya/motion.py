@@ -53,7 +53,7 @@ class TuyaMotion(CustomDevice):
     signature = {
         #  endpoint=1 profile=260 device_type=0 device_version=0 input_clusters=[0, 3]
         #  output_clusters=[3, 25]>
-        MODELS_INFO: [("_TYST11_i5j6ifxj", "5j6ifxj")],
+        MODELS_INFO: [("_TYST11_i5j6ifxj", "5j6ifxj"), ("_TYST11_7hfcudw5", "hfcudw5")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
