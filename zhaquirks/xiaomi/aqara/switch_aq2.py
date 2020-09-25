@@ -95,7 +95,7 @@ class SwitchAQ2(XiaomiCustomDevice):
         },
         (TRIPLE_PRESS, TRIPLE_PRESS): {
             COMMAND: COMMAND_TRIPLE,
-            CLUSTER_ID: 0,
+            CLUSTER_ID: 6,
             ENDPOINT_ID: 1,
             ARGS: {ATTRIBUTE_ID: 32768, ATTRIBUTE_NAME: UNKNOWN, VALUE: 3},
         },
