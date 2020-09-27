@@ -22,7 +22,6 @@ from ...const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     QUADRUPLE_PRESS,
-    QUINTUPLE_PRESS,
     SHORT_PRESS,
     SKIP_CONFIGURATION,
     TRIPLE_PRESS,
@@ -104,11 +103,5 @@ class SwitchAQ2(XiaomiCustomDevice):
             CLUSTER_ID: 6,
             ENDPOINT_ID: 1,
             ARGS: {ATTRIBUTE_ID: 32768, ATTRIBUTE_NAME: UNKNOWN, VALUE: 4},
-        },
-        (QUINTUPLE_PRESS, QUINTUPLE_PRESS): {
-            COMMAND: COMMAND_ATTRIBUTE_UPDATED,
-            CLUSTER_ID: 0,
-            ENDPOINT_ID: 1,
-            ARGS: {ATTRIBUTE_ID: 5},
         },
     }
