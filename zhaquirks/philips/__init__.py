@@ -2,7 +2,7 @@
 import logging
 import time
 
-from threading import Timer
+import asyncio
 
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
@@ -98,6 +98,30 @@ class PhilipsBasicCluster(CustomCluster, Basic):
         return result
 
 
+class ButtonPressQueue:
+    def __init__(self):
+        self._ms_threshold = 500
+        self._ms_last_click = 0
+        self._click_counter = 1
+        self._callback = lambda x: None
+        self._task = asyncio.ensure_future(self._job())
+
+    async def _job(self):
+        await asyncio.sleep(self._ms_threshold / 1000)
+        self._callback(self._click_counter)
+
+    def press(self, callback):
+        self._callback = callback
+        now_ms = time.time() * 1000
+        if now_ms - self._ms_last_click > self._ms_threshold:
+            self._click_counter = 1
+        else:
+            self._task.cancel()
+            self._click_counter += 1
+        self._ms_last_click = now_ms
+        self._task = asyncio.ensure_future(self._job())
+
+
 class PhilipsRemoteCluster(CustomCluster):
     """Philips remote cluster."""
 
@@ -114,11 +138,7 @@ class PhilipsRemoteCluster(CustomCluster):
     BUTTONS = {1: "on", 2: "up", 3: "down", 4: "off"}
     PRESS_TYPES = {0: "press", 1: "hold", 2: "short_release", 3: "long_release"}
 
-    MULTICLICK_THRESHOLD_MS = 500
-
-    deferred_func = Timer(1, lambda: None)
-    last_click_ms = 0
-    click_counter = 1
+    button_press_queue = ButtonPressQueue()
 
     def handle_cluster_request(self, tsn, command_id, args):
         """Handle the cluster command."""
@@ -132,42 +152,38 @@ class PhilipsRemoteCluster(CustomCluster):
         button = self.BUTTONS.get(args[0], args[0])
         press_type = self.PRESS_TYPES.get(args[2], args[2])
 
-        def send_event(button, press_type):
-            event_args = {
-                BUTTON: button,
-                PRESS_TYPE: press_type,
-                COMMAND_ID: command_id,
-                ARGS: args,
-            }
+        event_args = {
+            BUTTON: button,
+            PRESS_TYPE: press_type,
+            COMMAND_ID: command_id,
+            ARGS: args,
+        }
+
+        def send_press_event(click_count):
+            _LOGGER.debug(
+                "PhilipsRemoteCluster - send_press_event click_count: [%s]",
+                click_count,
+            )
+            if click_count == 1:
+                press_type = "press"
+            elif click_count == 2:
+                press_type = "double_press"
+            elif click_count == 3:
+                press_type = "triple_press"
+            elif click_count == 4:
+                press_type = "quadruple_press"
+            elif click_count == 5:
+                press_type = "quintuple_press"
+
+            # Override PRESS_TYPE
+            event_args[PRESS_TYPE] = press_type
 
             action = "{}_{}".format(button, press_type)
             self.listener_event(ZHA_SEND_EVENT, action, event_args)
 
-        # Multiple Presses
+        # Derive Multiple Presses
         if press_type == "press":
-            now_ms = time.time() * 1000
-
-            if now_ms - self.last_click_ms > self.MULTICLICK_THRESHOLD_MS:
-                self.click_counter = 1
-            else:
-                self.click_counter = self.click_counter + 1
-                self.deferred_func.cancel()
-
-            self.last_click_ms = now_ms
-
-            if self.click_counter == 2:
-                press_type = "double_press"
-            elif self.click_counter == 3:
-                press_type = "triple_press"
-            elif self.click_counter == 4:
-                press_type = "quadruple_press"
-            elif self.click_counter == 5:
-                press_type = "quintuple_press"
-
-            self.deferred_func = Timer(
-                self.MULTICLICK_THRESHOLD_MS / 1000,
-                lambda: send_event(button, press_type),
-            )
-            self.deferred_func.start()
+            self.button_press_queue.press(send_press_event)
         else:
-            send_event(button, press_type)
+            action = "{}_{}".format(button, press_type)
+            self.listener_event(ZHA_SEND_EVENT, action, event_args)
