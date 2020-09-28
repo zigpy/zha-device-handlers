@@ -114,7 +114,7 @@ class ButtonPressQueue:
         self._callback(self._click_counter)
 
     def press(self, callback):
-        """Processes a button press in the queue."""
+        """Process a button press."""
         self._callback = callback
         now_ms = time.time() * 1000
         if now_ms - self._ms_last_click > self._ms_threshold:
