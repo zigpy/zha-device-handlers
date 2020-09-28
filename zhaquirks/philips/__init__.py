@@ -99,7 +99,10 @@ class PhilipsBasicCluster(CustomCluster, Basic):
 
 
 class ButtonPressQueue:
+    """Philips button queue to derive multiple press events."""
+
     def __init__(self):
+        """Init."""
         self._ms_threshold = 500
         self._ms_last_click = 0
         self._click_counter = 1
@@ -111,6 +114,7 @@ class ButtonPressQueue:
         self._callback(self._click_counter)
 
     def press(self, callback):
+        """Processes a button press in the queue."""
         self._callback = callback
         now_ms = time.time() * 1000
         if now_ms - self._ms_last_click > self._ms_threshold:
