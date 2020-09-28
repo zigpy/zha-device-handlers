@@ -165,8 +165,7 @@ class PhilipsRemoteCluster(CustomCluster):
 
         def send_press_event(click_count):
             _LOGGER.debug(
-                "PhilipsRemoteCluster - send_press_event click_count: [%s]",
-                click_count,
+                "PhilipsRemoteCluster - send_press_event click_count: [%s]", click_count
             )
             if click_count == 1:
                 press_type = "press"
