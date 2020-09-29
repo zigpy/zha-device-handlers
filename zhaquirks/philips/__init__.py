@@ -188,5 +188,5 @@ class PhilipsRemoteCluster(CustomCluster):
         if press_type == "press":
             self.button_press_queue.press(send_press_event)
         else:
-            action = "{}_{}".format(button, press_type)
+            action = f"{button}_{press_type}"
             self.listener_event(ZHA_SEND_EVENT, action, event_args)
