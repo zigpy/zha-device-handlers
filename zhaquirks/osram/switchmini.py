@@ -112,6 +112,9 @@ class OsramSwitchMini(CustomDevice):
         },
     }
 
+    replacement = {**signature}
+    replacement.pop(MODELS_INFO)
+
     device_automation_triggers = {
         (SHORT_PRESS, BUTTON_1): {COMMAND: COMMAND_ON, ENDPOINT_ID: 1},
         (LONG_PRESS, BUTTON_1): {COMMAND: COMMAND_STEP_ON_OFF, ENDPOINT_ID: 1},
