@@ -1,5 +1,8 @@
 """Module for Philips quirks implementations."""
 import logging
+import time
+
+import asyncio
 
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
@@ -12,6 +15,10 @@ from ..const import (
     COMMAND_ID,
     DIM_DOWN,
     DIM_UP,
+    DOUBLE_PRESS,
+    TRIPLE_PRESS,
+    QUADRUPLE_PRESS,
+    QUINTUPLE_PRESS,
     LONG_PRESS,
     LONG_RELEASE,
     PRESS_TYPE,
@@ -35,6 +42,22 @@ HUE_REMOTE_DEVICE_TRIGGERS = {
     (LONG_PRESS, TURN_OFF): {COMMAND: "off_hold"},
     (LONG_PRESS, DIM_UP): {COMMAND: "up_hold"},
     (LONG_PRESS, DIM_DOWN): {COMMAND: "down_hold"},
+    (DOUBLE_PRESS, TURN_ON): {COMMAND: "on_double_press"},
+    (DOUBLE_PRESS, TURN_OFF): {COMMAND: "off_double_press"},
+    (DOUBLE_PRESS, DIM_UP): {COMMAND: "up_double_press"},
+    (DOUBLE_PRESS, DIM_DOWN): {COMMAND: "down_double_press"},
+    (TRIPLE_PRESS, TURN_ON): {COMMAND: "on_triple_press"},
+    (TRIPLE_PRESS, TURN_OFF): {COMMAND: "off_triple_press"},
+    (TRIPLE_PRESS, DIM_UP): {COMMAND: "up_triple_press"},
+    (TRIPLE_PRESS, DIM_DOWN): {COMMAND: "down_triple_press"},
+    (QUADRUPLE_PRESS, TURN_ON): {COMMAND: "on_quadruple_press"},
+    (QUADRUPLE_PRESS, TURN_OFF): {COMMAND: "off_quadruple_press"},
+    (QUADRUPLE_PRESS, DIM_UP): {COMMAND: "up_quadruple_press"},
+    (QUADRUPLE_PRESS, DIM_DOWN): {COMMAND: "down_quadruple_press"},
+    (QUINTUPLE_PRESS, TURN_ON): {COMMAND: "on_quintuple_press"},
+    (QUINTUPLE_PRESS, TURN_OFF): {COMMAND: "off_quintuple_press"},
+    (QUINTUPLE_PRESS, DIM_UP): {COMMAND: "up_quintuple_press"},
+    (QUINTUPLE_PRESS, DIM_DOWN): {COMMAND: "down_quintuple_press"},
     (SHORT_RELEASE, TURN_ON): {COMMAND: "on_short_release"},
     (SHORT_RELEASE, TURN_OFF): {COMMAND: "off_short_release"},
     (SHORT_RELEASE, DIM_UP): {COMMAND: "up_short_release"},
@@ -75,6 +98,34 @@ class PhilipsBasicCluster(CustomCluster, Basic):
         return result
 
 
+class ButtonPressQueue:
+    """Philips button queue to derive multiple press events."""
+
+    def __init__(self):
+        """Init."""
+        self._ms_threshold = 500
+        self._ms_last_click = 0
+        self._click_counter = 1
+        self._callback = lambda x: None
+        self._task = asyncio.ensure_future(self._job())
+
+    async def _job(self):
+        await asyncio.sleep(self._ms_threshold / 1000)
+        self._callback(self._click_counter)
+
+    def press(self, callback):
+        """Process a button press."""
+        self._callback = callback
+        now_ms = time.time() * 1000
+        if now_ms - self._ms_last_click > self._ms_threshold:
+            self._click_counter = 1
+        else:
+            self._task.cancel()
+            self._click_counter += 1
+        self._ms_last_click = now_ms
+        self._task = asyncio.ensure_future(self._job())
+
+
 class PhilipsRemoteCluster(CustomCluster):
     """Philips remote cluster."""
 
@@ -91,6 +142,8 @@ class PhilipsRemoteCluster(CustomCluster):
     BUTTONS = {1: "on", 2: "up", 3: "down", 4: "off"}
     PRESS_TYPES = {0: "press", 1: "hold", 2: "short_release", 3: "long_release"}
 
+    button_press_queue = ButtonPressQueue()
+
     def handle_cluster_request(self, tsn, command_id, args):
         """Handle the cluster command."""
         _LOGGER.debug(
@@ -99,6 +152,7 @@ class PhilipsRemoteCluster(CustomCluster):
             command_id,
             args,
         )
+
         button = self.BUTTONS.get(args[0], args[0])
         press_type = self.PRESS_TYPES.get(args[2], args[2])
 
@@ -108,5 +162,31 @@ class PhilipsRemoteCluster(CustomCluster):
             COMMAND_ID: command_id,
             ARGS: args,
         }
-        action = "{}_{}".format(button, press_type)
-        self.listener_event(ZHA_SEND_EVENT, action, event_args)
+
+        def send_press_event(click_count):
+            _LOGGER.debug(
+                "PhilipsRemoteCluster - send_press_event click_count: [%s]", click_count
+            )
+            if click_count == 1:
+                press_type = "press"
+            elif click_count == 2:
+                press_type = "double_press"
+            elif click_count == 3:
+                press_type = "triple_press"
+            elif click_count == 4:
+                press_type = "quadruple_press"
+            elif click_count == 5:
+                press_type = "quintuple_press"
+
+            # Override PRESS_TYPE
+            event_args[PRESS_TYPE] = press_type
+
+            action = f"{button}_{press_type}"
+            self.listener_event(ZHA_SEND_EVENT, action, event_args)
+
+        # Derive Multiple Presses
+        if press_type == "press":
+            self.button_press_queue.press(send_press_event)
+        else:
+            action = f"{button}_{press_type}"
+            self.listener_event(ZHA_SEND_EVENT, action, event_args)
