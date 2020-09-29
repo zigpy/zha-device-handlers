@@ -181,7 +181,7 @@ class PhilipsRemoteCluster(CustomCluster):
             # Override PRESS_TYPE
             event_args[PRESS_TYPE] = press_type
 
-            action = "{}_{}".format(button, press_type)
+            action = f"{button}_{press_type}"
             self.listener_event(ZHA_SEND_EVENT, action, event_args)
 
         # Derive Multiple Presses
