@@ -21,6 +21,7 @@ from ...const import (
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
+    QUADRUPLE_PRESS,
     SHORT_PRESS,
     SKIP_CONFIGURATION,
     TRIPLE_PRESS,
@@ -93,8 +94,14 @@ class SwitchAQ2(XiaomiCustomDevice):
         },
         (TRIPLE_PRESS, TRIPLE_PRESS): {
             COMMAND: COMMAND_TRIPLE,
-            CLUSTER_ID: 0,
+            CLUSTER_ID: 6,
             ENDPOINT_ID: 1,
             ARGS: {ATTRIBUTE_ID: 32768, ATTRIBUTE_NAME: UNKNOWN, VALUE: 3},
+        },
+        (QUADRUPLE_PRESS, QUADRUPLE_PRESS): {
+            COMMAND: COMMAND_ATTRIBUTE_UPDATED,
+            CLUSTER_ID: 6,
+            ENDPOINT_ID: 1,
+            ARGS: {ATTRIBUTE_ID: 32768, ATTRIBUTE_NAME: UNKNOWN, VALUE: 4},
         },
     }
