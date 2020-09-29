@@ -35,7 +35,7 @@ If you are looking to make your first code contribution to this project then we 
 ### Xiaomi Aqara
 - [Cube](https://www.aqara.com/en/cube_controller-product.html): lumi.sensor_cube.aqgl01
 - [Button](https://www.aqara.com/en/wireless_mini_switch.html): lumi.sensor_switch.aq2
-- [Vibration Sensor](http://www.xiaomimagazine.com/new-sensor-for-the-smart-home-xiaomi-check-aqara-smart-motion-sensor/): lumi.vibration.aq1
+- [Vibration Sensor](https://www.aqara.com/en/vibration_sensor.html): lumi.vibration.aq1
 - [Contact Sensor](https://www.aqara.com/en/door_and_window_sensor-product.html): lumi.sensor_magnet.aq2
 - [Motion Sensor](https://www.aqara.com/en/motion_sensor.html): lumi.sensor_motion.aq2
 - [Temperature / Humidity Sensor](https://www.aqara.com/en/temperature_and_humidity_sensor-product.html): lumi.weather
@@ -68,6 +68,9 @@ If you are looking to make your first code contribution to this project then we 
 ### Yale
 - [YRD210](https://www.yalehome.com/Yale/Yale%20US/Real%20Living/installation%20instructions/Yale%20DB%20PUSH%20Quickstart%2018JUL11_Rev%20B.pdf): Yale YRD210 Deadbolt
 - [YRL220](https://www.yalehome.com/Yale/Yale%20US/Real%20Living/installation%20instructions/Yale%20%20DB%20Touch%20Instructions%2023AUG11_Rev%20B.pdf): Yale YRL220 Lock
+
+### Tuya-based
+- [TS0601 switch](https://zigbee.blakadder.com/Lerlink_X701A.html): Tuya-based 1-gang switches with neutral (e.g. Lerlink, Lonsonho)
 
 # Configuration:
 

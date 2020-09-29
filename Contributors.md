@@ -20,3 +20,4 @@
 - [Piotr Majkrzak](https://github.com/majkrzak)
 - [Gleb Sinyavskiy](https://github.com/zhulik)
 - [Michael Thingnes](https://github.com/thimic)
+- [Piotr Mis](https://github.com/piomis)
