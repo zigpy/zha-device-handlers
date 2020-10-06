@@ -336,5 +336,5 @@ class XBeeCommon(CustomDevice):
                 OUTPUT_CLUSTERS: [SerialDataCluster, EventRelayCluster],
             }
         },
-        "manufacturer": "XBee",
+        "manufacturer": "Digi",
     }
