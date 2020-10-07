@@ -1,4 +1,5 @@
 """Module to handle quirks of the  Fanfoss thermostat.
+
 manufacturer specific attributes to control displaying and specific configuration.
 """
 
@@ -65,7 +66,7 @@ class DanfossThermostat(CustomDevice):
                     UserInterface.cluster_id,
                     Diagnostic.cluster_id,
                 ],
-                OUTPUT_CLUSTERS: [Basic.cluster_id,Ota.cluster_id],
+                OUTPUT_CLUSTERS: [Basic.cluster_id, Ota.cluster_id],
             }
         },
     }
@@ -83,7 +84,7 @@ class DanfossThermostat(CustomDevice):
                     DanfossUserInterfaceCluster,
                     Diagnostic,
                 ],
-                OUTPUT_CLUSTERS: [Basic,Ota],
+                OUTPUT_CLUSTERS: [Basic, Ota],
             }
         }
     }
