@@ -16,7 +16,7 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
 
-
+from . import DANFOSS
 from ..const import (
 	DEVICE_TYPE,
 	ENDPOINTS,
@@ -47,7 +47,7 @@ class DanfossThermostat(CustomDevice):
 		# <SimpleDescriptor endpoint=1 profile=260 device_type=769
 		# device_version=0 input_clusters=[0, 1, 3, 10,32, 513, 516, 1026, 2821]
 		# output_clusters=[0, 25]>
-		MODELS_INFO: [("Danfoss", "eTRV0100")],
+		MODELS_INFO: [(DANFOSS, "eTRV0100")],
 		ENDPOINTS: {
 			1: {
 				PROFILE_ID: zha_p.PROFILE_ID,
