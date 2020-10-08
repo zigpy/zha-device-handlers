@@ -23,7 +23,12 @@ from zhaquirks.const import (
     PROFILE_ID,
     MODELS_INFO,
 )
-from zhaquirks.philips import PHILIPS, PhilipsOnOffCluster
+from zhaquirks.philips import (
+    PHILIPS,
+    PhilipsColorCluster,
+    PhilipsLevelControlCluster,
+    PhilipsOnOffCluster,
+)
 
 
 class ZLLExtendedColorLight(CustomDevice):
@@ -90,9 +95,9 @@ class ZLLExtendedColorLight(CustomDevice):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     PhilipsOnOffCluster,
-                    LevelControl.cluster_id,
+                    PhilipsLevelControlCluster,
                     LightLink.cluster_id,
-                    Color.cluster_id,
+                    PhilipsColorCluster,
                     64513,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],

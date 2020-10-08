@@ -6,7 +6,8 @@ import asyncio
 
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
-from zigpy.zcl.clusters.general import Basic, OnOff
+from zigpy.zcl.clusters.general import Basic, LevelControl, OnOff
+from zigpy.zcl.clusters.lighting import Color
 
 from ..const import (
     ARGS,
@@ -82,6 +83,20 @@ class PhilipsOnOffCluster(CustomCluster, OnOff):
 
     attributes = OnOff.attributes.copy()
     attributes.update({0x4003: ("power_on_state", PowerOnState)})
+
+
+class PhilipsLevelControlCluster(CustomCluster, LevelControl):
+    """Philips LevelControl cluster."""
+
+    attributes = LevelControl.attributes.copy()
+    attributes.update({0x4000: ("power_on_level", t.uint8_t)})
+
+
+class PhilipsColorCluster(CustomCluster, Color):
+    """Philips Color cluster."""
+
+    attributes = Color.attributes.copy()
+    attributes.update({0x4010: ("power_on_color_temperature", t.uint16_t)})
 
 
 class PhilipsBasicCluster(CustomCluster, Basic):
