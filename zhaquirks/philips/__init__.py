@@ -118,21 +118,30 @@ class ButtonPressQueue:
 
     def __init__(self):
         """Init."""
-        self._ms_threshold = 500
+        self._ms_threshold = 300
         self._ms_last_click = 0
         self._click_counter = 1
+        self._button = None
         self._callback = lambda x: None
-        self._task = asyncio.ensure_future(self._job())
+        self._task = None
 
     async def _job(self):
         await asyncio.sleep(self._ms_threshold / 1000)
         self._callback(self._click_counter)
 
-    def press(self, callback):
+    def _reset(self, button):
+        if self._task:
+            self._task.cancel()
+        self._click_counter = 1
+        self._button = button
+
+    def press(self, callback, button):
         """Process a button press."""
         self._callback = callback
         now_ms = time.time() * 1000
-        if now_ms - self._ms_last_click > self._ms_threshold:
+        if self._button != button:
+            self._reset(button)
+        elif now_ms - self._ms_last_click > self._ms_threshold:
             self._click_counter = 1
         else:
             self._task.cancel()
@@ -182,6 +191,7 @@ class PhilipsRemoteCluster(CustomCluster):
             _LOGGER.debug(
                 "PhilipsRemoteCluster - send_press_event click_count: [%s]", click_count
             )
+            press_type = None
             if click_count == 1:
                 press_type = "press"
             elif click_count == 2:
@@ -190,18 +200,18 @@ class PhilipsRemoteCluster(CustomCluster):
                 press_type = "triple_press"
             elif click_count == 4:
                 press_type = "quadruple_press"
-            elif click_count == 5:
+            elif click_count > 4:
                 press_type = "quintuple_press"
 
-            # Override PRESS_TYPE
-            event_args[PRESS_TYPE] = press_type
-
-            action = f"{button}_{press_type}"
-            self.listener_event(ZHA_SEND_EVENT, action, event_args)
+            if press_type:
+                # Override PRESS_TYPE
+                event_args[PRESS_TYPE] = press_type
+                action = f"{button}_{press_type}"
+                self.listener_event(ZHA_SEND_EVENT, action, event_args)
 
         # Derive Multiple Presses
         if press_type == "press":
-            self.button_press_queue.press(send_press_event)
+            self.button_press_queue.press(send_press_event, button)
         else:
             action = f"{button}_{press_type}"
             self.listener_event(ZHA_SEND_EVENT, action, event_args)
