@@ -4,6 +4,7 @@ import logging
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import Groups, Identify
 from zigpy.zcl.clusters.measurement import PressureMeasurement
+from zigpy.zdo.types import NodeDescriptor
 
 from .. import (
     LUMI,
@@ -17,9 +18,11 @@ from .. import (
 from ... import Bus
 from ...const import (
     DEVICE_TYPE,
+    DIRECT_INITIALIZATION,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
+    NODE_DESCRIPTOR,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SKIP_CONFIGURATION,
@@ -46,6 +49,18 @@ class Weather(XiaomiCustomDevice):
         #  device_version=1
         #  input_clusters=[0, 3, 65535, 1026, 1027, 1029]
         #  output_clusters=[0, 4, 65535]>
+        DIRECT_INITIALIZATION: True,
+        NODE_DESCRIPTOR: NodeDescriptor(
+            byte1=2,
+            byte2=64,
+            mac_capability_flags=128,
+            manufacturer_code=4151,
+            maximum_buffer_size=127,
+            maximum_incoming_transfer_size=100,
+            server_mask=0,
+            maximum_outgoing_transfer_size=100,
+            descriptor_capability_field=0,
+        ),
         MODELS_INFO: [(LUMI, "lumi.weather")],
         ENDPOINTS: {
             1: {
