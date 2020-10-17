@@ -10,13 +10,16 @@ from zigpy.zcl.clusters.general import (
     Ota,
     Scenes,
 )
+from zigpy.zdo.types import NodeDescriptor
 
 from .. import LUMI, BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
 from ...const import (
     DEVICE_TYPE,
+    DIRECT_INITIALIZATION,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
+    NODE_DESCRIPTOR,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SKIP_CONFIGURATION,
@@ -41,6 +44,18 @@ class Magnet(XiaomiCustomDevice):
         #  device_version=1
         #  input_clusters=[0, 3, 65535, 25]
         #  output_clusters=[0, 4, 3, 6, 8, 5, 25]>
+        DIRECT_INITIALIZATION: True,
+        NODE_DESCRIPTOR: NodeDescriptor(
+            byte1=2,
+            byte2=64,
+            mac_capability_flags=128,
+            manufacturer_code=4151,
+            maximum_buffer_size=127,
+            maximum_incoming_transfer_size=100,
+            server_mask=0,
+            maximum_outgoing_transfer_size=100,
+            descriptor_capability_field=0,
+        ),
         MODELS_INFO: [(LUMI, "lumi.sensor_magnet")],
         ENDPOINTS: {
             1: {
