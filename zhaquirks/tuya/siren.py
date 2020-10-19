@@ -1,11 +1,13 @@
-"""Manufacturer Specific Cluster of the NEO Siren device."""
+"""Map from manufacturer to standard clusters for the NEO Siren device."""
 import logging
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, Identify, Ota
+from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
 import zigpy.types as t
 
+from .. import Bus, LocalDataCluster
 from ..const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -51,9 +53,58 @@ class TuyaManufClusterSiren(TuyaManufClusterAttributes):
         TUYA_VOLUME_ATTR: ("volume", t.uint8_t),
     }
 
+    def _update_attribute(self, attrid, value):
+        super()._update_attribute(attrid, value)
+        if attrid == TUYA_TEMPERATURE_ATTR:
+            self.endpoint.device.temperature_bus.listener_event(
+                "temperature_reported", value * 10  # decidegree to centidegree
+            )
+        elif attrid == TUYA_HUMIDITY_ATTR:
+            self.endpoint.device.humidity_bus.listener_event(
+                "humidity_reported", value * 100  # whole percentage to 1/1000th
+            )
+
+
+class TuyaTemperatureMeasurement(LocalDataCluster, TemperatureMeasurement):
+    """Temperature cluster acting from events from temperature bus."""
+
+    cluster_id = TemperatureMeasurement.cluster_id
+    ATTR_ID = 0
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self.endpoint.device.temperature_bus.add_listener(self)
+
+    def temperature_reported(self, value):
+        """Temperature reported."""
+        self._update_attribute(self.ATTR_ID, value)
+
+
+class TuyaRelativeHumidity(LocalDataCluster, RelativeHumidity):
+    """Humidity cluster acting from events from humidity bus."""
+
+    cluster_id = RelativeHumidity.cluster_id
+    ATTR_ID = 0
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self.endpoint.device.humidity_bus.add_listener(self)
+
+    def humidity_reported(self, value):
+        """Humidity reported."""
+        self._update_attribute(self.ATTR_ID, value)
+
 
 class TuyaSiren(CustomDevice):
     """NEO Tuya Siren and humidity/temperature sensor."""
+
+    def __init__(self, *args, **kwargs):
+        """Init device."""
+        self.temperature_bus = Bus()
+        self.humidity_bus = Bus()
+        super().__init__(*args, **kwargs)
 
     signature = {
         #  endpoint=1 profile=260 device_type=0 device_version=0 input_clusters=[0, 3]
@@ -78,6 +129,8 @@ class TuyaSiren(CustomDevice):
                     Basic.cluster_id,
                     Identify.cluster_id,
                     TuyaManufClusterSiren,
+                    TuyaTemperatureMeasurement,
+                    TuyaRelativeHumidity,
                 ],
                 OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],
             }
