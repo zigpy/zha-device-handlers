@@ -1,8 +1,7 @@
 """Module for Philips quirks implementations."""
+import asyncio
 import logging
 import time
-
-import asyncio
 
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
@@ -17,14 +16,14 @@ from ..const import (
     DIM_DOWN,
     DIM_UP,
     DOUBLE_PRESS,
-    TRIPLE_PRESS,
-    QUADRUPLE_PRESS,
-    QUINTUPLE_PRESS,
     LONG_PRESS,
     LONG_RELEASE,
     PRESS_TYPE,
+    QUADRUPLE_PRESS,
+    QUINTUPLE_PRESS,
     SHORT_PRESS,
     SHORT_RELEASE,
+    TRIPLE_PRESS,
     TURN_OFF,
     TURN_ON,
     ZHA_SEND_EVENT,

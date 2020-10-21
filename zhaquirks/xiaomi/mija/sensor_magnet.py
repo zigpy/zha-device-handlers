@@ -11,6 +11,7 @@ from zigpy.zcl.clusters.general import (
     Scenes,
 )
 
+from .. import LUMI, BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
 from ...const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -20,7 +21,6 @@ from ...const import (
     PROFILE_ID,
     SKIP_CONFIGURATION,
 )
-from .. import LUMI, BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
 
 OPEN_CLOSE_DEVICE_TYPE = 0x5F01
 XIAOMI_CLUSTER_ID = 0xFFFF

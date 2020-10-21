@@ -6,15 +6,15 @@ expect replies at all.
 """
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice, CustomCluster
+from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
-    Identify,
     Groups,
-    Scenes,
-    OnOff,
+    Identify,
     LevelControl,
+    OnOff,
     Ota,
+    Scenes,
 )
 from zigpy.zcl.clusters.hvac import Fan
 

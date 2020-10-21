@@ -2,8 +2,8 @@
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
-from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.clusters.general import Basic, Identify, PowerConfiguration
+from zigpy.zcl.clusters.security import IasZone
 
 from . import KONKE
 from .. import PowerConfigurationCluster

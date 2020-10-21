@@ -4,11 +4,10 @@ import asyncio
 from unittest import mock
 
 import pytest
+from zigpy.zcl import foundation
 
 from zhaquirks.const import OFF, ON, ZONE_STATE
-
 import zhaquirks.tuya.motion
-from zigpy.zcl import foundation
 
 from tests.common import ClusterListener
 

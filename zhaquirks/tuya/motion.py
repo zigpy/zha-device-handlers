@@ -7,18 +7,17 @@ from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, Identify, Ota
 from zigpy.zcl.clusters.security import IasZone
 
+from . import TuyaManufCluster
+from .. import Bus, LocalDataCluster, MotionOnEvent
 from ..const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
+    MOTION_EVENT,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
-    MOTION_EVENT,
 )
-from .. import MotionOnEvent, LocalDataCluster, Bus
-from . import TuyaManufCluster
-
 
 ZONE_TYPE = 0x0001
 

@@ -7,14 +7,14 @@ from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
+    Groups,
     Identify,
     PowerConfiguration,
-    Groups,
     Scenes,
 )
 from zigpy.zcl.clusters.security import IasZone
 
-from . import ORVIBO_LATIN, OccupancyCluster, MotionCluster
+from . import ORVIBO_LATIN, MotionCluster, OccupancyCluster
 from .. import Bus, PowerConfigurationCluster
 from ..const import (
     DEVICE_TYPE,

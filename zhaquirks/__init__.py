@@ -1,15 +1,15 @@
 """Quirks implementations for the ZHA component of Homeassistant."""
 import asyncio
-import logging
 import importlib
+import logging
 import pkgutil
 
 from zigpy.quirks import CustomCluster
 from zigpy.util import ListenableMixin
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import PowerConfiguration
-from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.clusters.measurement import OccupancySensing
+from zigpy.zcl.clusters.security import IasZone
 from zigpy.zdo import types as zdotypes
 
 from .const import (
@@ -17,13 +17,13 @@ from .const import (
     ATTRIBUTE_NAME,
     CLUSTER_COMMAND,
     COMMAND_ATTRIBUTE_UPDATED,
+    MOTION_EVENT,
+    OFF,
+    ON,
     UNKNOWN,
     VALUE,
     ZHA_SEND_EVENT,
     ZONE_STATE,
-    OFF,
-    ON,
-    MOTION_EVENT,
 )
 
 _LOGGER = logging.getLogger(__name__)
