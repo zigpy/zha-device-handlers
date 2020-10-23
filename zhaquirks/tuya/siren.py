@@ -1,10 +1,13 @@
 """Map from manufacturer to standard clusters for the NEO Siren device."""
 import logging
 
+from typing import Optional, Union
+
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
-from zigpy.zcl.clusters.general import Basic, Identify, Ota
+from zigpy.zcl.clusters.general import Basic, Identify, Ota, OnOff
 from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
+from zigpy.zcl import foundation
 import zigpy.types as t
 
 from .. import Bus, LocalDataCluster
@@ -63,6 +66,42 @@ class TuyaManufClusterSiren(TuyaManufClusterAttributes):
             self.endpoint.device.humidity_bus.listener_event(
                 "humidity_reported", value * 100  # whole percentage to 1/1000th
             )
+        elif attrid == TUYA_ALARM_ATTR:
+            self.endpoint.device.switch_bus.listener_event(
+                "switch_event", value  # boolean 1=on / 0=off
+            )
+
+
+class TuyaSirenOnOff(LocalDataCluster, OnOff):
+    """Tuya On/Off cluster for siren device."""
+
+    ATTR_ID = 0
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self.endpoint.device.switch_bus.add_listener(self)
+
+    def switch_event(self, state):
+        """Switch event."""
+        self._update_attribute(self.ATTR_ID, state)
+
+    def command(
+        self,
+        command_id: Union[foundation.Command, int, t.uint8_t],
+        *args,
+        manufacturer: Optional[Union[int, t.uint16_t]] = None,
+        expect_reply: bool = True,
+        tsn: Optional[Union[int, t.uint8_t]] = None,
+    ):
+        """Override the default command and defer to the alarm attribute."""
+
+        if command_id in (0x0000, 0x0001):
+            return self.endpoint.tuya_manufacturer.write_attributes(
+                {TUYA_ALARM_ATTR: command_id}, manufacturer=manufacturer
+            )
+
+        return foundation.Status.UNSUP_CLUSTER_COMMAND
 
 
 class TuyaTemperatureMeasurement(LocalDataCluster, TemperatureMeasurement):
@@ -104,6 +143,7 @@ class TuyaSiren(CustomDevice):
         """Init device."""
         self.temperature_bus = Bus()
         self.humidity_bus = Bus()
+        self.switch_bus = Bus()
         super().__init__(*args, **kwargs)
 
     signature = {
@@ -131,6 +171,7 @@ class TuyaSiren(CustomDevice):
                     TuyaManufClusterSiren,
                     TuyaTemperatureMeasurement,
                     TuyaRelativeHumidity,
+                    TuyaSirenOnOff,
                 ],
                 OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],
             }
