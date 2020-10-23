@@ -1,3 +1,3 @@
-"""Module for iluminize devices"""
+"""Module for iluminize devices."""
 
 ILUMINIZE = "iluminize"
