@@ -7,14 +7,11 @@ from zigpy.zcl.clusters.measurement import (
     TemperatureMeasurement,
 )
 
-from .. import Bus, LocalDataCluster, _Motion, OccupancyOnEvent, OCCUPANCY_EVENT
+from .. import LocalDataCluster, _Motion, OccupancyOnEvent, OCCUPANCY_EVENT
 from ..const import (
-    ARGS,
     BUTTON,
     CLUSTER_COMMAND,
-    CLUSTER_ID,
     COMMAND,
-    COMMAND_ID,
     DOUBLE_PRESS,
     LEFT,
     MOTION_EVENT,
