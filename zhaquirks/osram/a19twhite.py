@@ -13,8 +13,15 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.lighting import Color
 
-from . import OsramLightCluster
-from ..const import DEVICE_TYPE, ENDPOINTS, INPUT_CLUSTERS, OUTPUT_CLUSTERS, PROFILE_ID
+from . import OsramLightCluster, OSRAM
+from ..const import (
+    DEVICE_TYPE,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
+    MODELS_INFO,
+)
 
 
 class OsramColorCluster(CustomCluster, Color):
@@ -30,6 +37,7 @@ class A19TunableWhite(CustomDevice):
         # <SimpleDescriptor endpoint=3 profile=260 device_type=258
         # device_version=2 input_clusters=[0, 3, 4, 5, 6, 8, 768, 64527]
         # output_clusters=[25]>
+        MODELS_INFO: [(OSRAM, "LIGHTIFY A19 Tunable White")],
         ENDPOINTS: {
             3: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -47,7 +55,7 @@ class A19TunableWhite(CustomDevice):
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             }
-        }
+        },
     }
 
     replacement = {
