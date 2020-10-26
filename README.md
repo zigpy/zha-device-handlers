@@ -71,6 +71,7 @@ If you are looking to make your first code contribution to this project then we 
 
 ### Tuya-based
 - [TS0601 switch](https://zigbee.blakadder.com/Lerlink_X701A.html): Tuya-based 1-gang switches with neutral (e.g. Lerlink, Lonsonho)
+- [Neo Siren](https://zigbee.blakadder.com/Neo_NAS-AB02B0.html): Tuya-based alarm siren with temperature and humidity sensors
 
 # Configuration:
 

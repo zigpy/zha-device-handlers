@@ -21,3 +21,4 @@
 - [Gleb Sinyavskiy](https://github.com/zhulik)
 - [Michael Thingnes](https://github.com/thimic)
 - [Piotr Mis](https://github.com/piomis)
+- [Julien Rivaud](https://github.com/FrnchFrgg)
