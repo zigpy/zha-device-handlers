@@ -9,7 +9,7 @@ from zigpy.zcl.clusters.general import (
     OnOffConfiguration,
     Ota,
     PollControl,
-    
+
 )
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 
