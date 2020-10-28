@@ -11,7 +11,6 @@ from zigpy.zcl.clusters.general import (
     PollControl,
     
 )
-from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 
 from zhaquirks import PowerConfigurationCluster
 from zhaquirks.centralite import CENTRALITE
@@ -29,7 +28,6 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SHORT_PRESS,
-    SHORT_RELEASE,
 )
 
 DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
@@ -54,7 +52,7 @@ class CentraLite3450L(CustomDevice):
         MODELS_INFO: [
             (CENTRALITE, "3450-L"),
             (CENTRALITE, "3450-L2")
-            ],
+        ],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
