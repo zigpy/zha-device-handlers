@@ -9,9 +9,7 @@ from zigpy.zcl.clusters.general import (
     OnOffConfiguration,
     Ota,
     PollControl,
-
 )
-from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 
 from zhaquirks import PowerConfigurationCluster
 from zhaquirks.centralite import CENTRALITE
@@ -29,7 +27,6 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SHORT_PRESS,
-    SHORT_RELEASE,
 )
 
 DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
