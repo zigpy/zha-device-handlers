@@ -1,4 +1,4 @@
-"""Device handler for centralite 3460L."""
+"""Device handler for centralite 3450L."""
 # pylint disable=C0103
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
@@ -43,8 +43,8 @@ class CustomPowerConfigurationCluster(PowerConfigurationCluster):
     MAX_VOLTS = 3.0
 
 
-class CentraLite3460L(CustomDevice):
-    """Custom device representing centralite 3460L."""
+class CentraLite3450L(CustomDevice):
+    """Custom device representing centralite 3450L."""
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=6
