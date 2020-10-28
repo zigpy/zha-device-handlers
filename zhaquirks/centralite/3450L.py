@@ -48,7 +48,10 @@ class CentraLite3450L(CustomDevice):
         #  device_version=0
         #  input_clusters=[0, 1, 3, 7, 20, b05]
         #  output_clusters=[3, 6, 19]>
-        MODELS_INFO: [(CENTRALITE, "3450-L2")],
+        MODELS_INFO: [
+            (CENTRALITE, "3450-L"),
+            (CENTRALITE, "3450-L2")
+        ],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -163,7 +166,6 @@ class CentraLite3450L(CustomDevice):
                 OUTPUT_CLUSTERS: [
                     OnOff.cluster_id,
                 ],
-
             }
         }
     }
