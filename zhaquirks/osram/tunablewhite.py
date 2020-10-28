@@ -1,4 +1,4 @@
-"""Osram A19 tunable white device."""
+"""Osram tunable white device."""
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice, CustomCluster
 from zigpy.zcl.clusters.general import (
@@ -30,14 +30,17 @@ class OsramColorCluster(CustomCluster, Color):
     _CONSTANT_ATTRIBUTES = {0x400A: 16, 0x400C: 370}
 
 
-class A19TunableWhite(CustomDevice):
-    """Osram A19 tunable white device."""
+class OsramTunableWhite(CustomDevice):
+    """Osram tunable white device."""
 
     signature = {
         # <SimpleDescriptor endpoint=3 profile=260 device_type=258
         # device_version=2 input_clusters=[0, 3, 4, 5, 6, 8, 768, 64527]
         # output_clusters=[25]>
-        MODELS_INFO: [(OSRAM, "LIGHTIFY A19 Tunable White")],
+        MODELS_INFO: [
+            (OSRAM, "LIGHTIFY A19 Tunable White"),
+            (OSRAM, "LIGHTIFY RT Tunable White"),
+        ],
         ENDPOINTS: {
             3: {
                 PROFILE_ID: zha.PROFILE_ID,
