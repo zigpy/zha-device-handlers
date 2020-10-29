@@ -1,4 +1,4 @@
-"""Quirk for Phillips LWB010."""
+"""Quirk for Phillips dimmable bulbs."""
 from zigpy.profiles import zll
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
@@ -25,11 +25,11 @@ from zhaquirks.const import (
 from zhaquirks.philips import PHILIPS, PhilipsOnOffCluster
 
 
-class PhilipsLBW010(CustomDevice):
-    """Philips LBW010 device."""
+class ZLLDimmableLight(CustomDevice):
+    """Philips ZigBee LightLink dimmable bulb device."""
 
     signature = {
-        MODELS_INFO: [(PHILIPS, "LWB010")],
+        MODELS_INFO: [(PHILIPS, "LWB010"), (PHILIPS, "LWB014")],
         ENDPOINTS: {
             11: {
                 # <SimpleDescriptor endpoint=11 profile=49246 device_type=528
