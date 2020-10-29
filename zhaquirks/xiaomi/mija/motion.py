@@ -23,13 +23,16 @@ from .. import (
 from ... import Bus
 from ...const import (
     DEVICE_TYPE,
+    DIRECT_INITIALIZATION,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
+    NODE_DESCRIPTOR,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SKIP_CONFIGURATION,
 )
+from zigpy.zdo.types import NodeDescriptor
 
 XIAOMI_CLUSTER_ID = 0xFFFF
 _LOGGER = logging.getLogger(__name__)
@@ -49,6 +52,18 @@ class Motion(XiaomiCustomDevice):
         #  device_version=1
         #  input_clusters=[0, 65535, 3, 25]
         #  output_clusters=[0, 3, 4, 5, 6, 8, 25]>
+        DIRECT_INITIALIZATION: True,
+        NODE_DESCRIPTOR: NodeDescriptor(
+            byte1=2,
+            byte2=64,
+            mac_capability_flags=128,
+            manufacturer_code=4151,
+            maximum_buffer_size=127,
+            maximum_incoming_transfer_size=100,
+            server_mask=0,
+            maximum_outgoing_transfer_size=100,
+            descriptor_capability_field=0,
+        ),
         MODELS_INFO: [(LUMI, "lumi.sensor_motion")],
         ENDPOINTS: {
             1: {
