@@ -9,6 +9,7 @@ from zigpy.zcl.clusters.general import (
     OnOffConfiguration,
     Ota,
     PollControl,
+    PowerConfiguration,
 )
 
 from zhaquirks import PowerConfigurationCluster
@@ -36,7 +37,7 @@ DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
 class CustomPowerConfigurationCluster(PowerConfigurationCluster):
     """Custom PowerConfigurationCluster."""
 
-    cluster_id = PowerConfigurationCluster.cluster_id
+    cluster_id = PowerConfiguration.cluster_id
     MIN_VOLTS = 2.1
     MAX_VOLTS = 3.0
 
@@ -56,7 +57,7 @@ class CentraLite3450L(CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    CustomPowerConfigurationCluster.cluster_id,
+                    PowerConfiguration.cluster_id,
                     Identify.cluster_id,
                     OnOffConfiguration.cluster_id,
                     PollControl.cluster_id,
