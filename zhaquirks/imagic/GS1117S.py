@@ -1,7 +1,7 @@
 """Device handler for iMagic by Greatstar."""
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
-from zigpy.zcl.clusters.general import Basic, Identify, Ota, PollControl
+from zigpy.zcl.clusters.general import Basic, Identify, Ota, PollControl, PowerConfiguration
 from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement, RelativeHumidity
 from zigpy.zcl.clusters.security import IasZone
@@ -16,7 +16,6 @@ from ..const import (
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
-    SKIP_CONFIGURATION,
 )
 
 MANUFACTURER_SPECIFIC_PROFILE_ID = 0xFC01
@@ -38,7 +37,7 @@ class Greatstar(CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    PowerConfigurationCluster.cluster_id,
+                    PowerConfiguration.cluster_id,
                     Identify.cluster_id,
                     PollControl.cluster_id,
                     TemperatureMeasurement.cluster_id,
@@ -54,20 +53,21 @@ class Greatstar(CustomDevice):
     }
 
     replacement = {
-        SKIP_CONFIGURATION: True,
         ENDPOINTS: {
             1: {
                 INPUT_CLUSTERS: [
-                    Basic.cluster_id,
+                    Basic,
                     PowerConfigurationCluster,
-                    Identify.cluster_id,
-                    PollControl.cluster_id,
-                    TemperatureMeasurement.cluster_id,
-                    RelativeHumidity.cluster_id,
-                    IasZone.cluster_id,
-                    Diagnostic.cluster_id,
+                    Identify,
+                    PollControl,
+                    TemperatureMeasurement,
+                    RelativeHumidity,
+                    IasZone,
+                    Diagnostic,
+                    MANUFACTURER_SPECIFIC_PROFILE_ID,
+                    MANUFACTURER_SPECIFIC_PROFILE_ID2,
                 ],
-                OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],
+                OUTPUT_CLUSTERS: [Identify, Ota],
             }
         }
     }
