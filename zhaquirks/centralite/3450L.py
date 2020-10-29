@@ -21,7 +21,8 @@ from zhaquirks.const import (
     COMMAND,
     COMMAND_PRESS,
     DEVICE_TYPE,
-    ENDPOINTS, ENDPOINT_ID,
+    ENDPOINTS,
+    ENDPOINT_ID,
     INPUT_CLUSTERS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
@@ -48,10 +49,7 @@ class CentraLite3450L(CustomDevice):
         #  device_version=0
         #  input_clusters=[0, 1, 3, 7, 20, b05]
         #  output_clusters=[3, 6, 19]>
-        MODELS_INFO: [
-            (CENTRALITE, "3450-L"),
-            (CENTRALITE, "3450-L2")
-        ],
+        MODELS_INFO: [(CENTRALITE, "3450-L"), (CENTRALITE, "3450-L2")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -75,39 +73,24 @@ class CentraLite3450L(CustomDevice):
                 #  output_clusters=[6]>
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
-                INPUT_CLUSTERS: [
-                    OnOffConfiguration.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [
-                    OnOff.cluster_id,
-                ],
-
+                INPUT_CLUSTERS: [OnOffConfiguration.cluster_id,],
+                OUTPUT_CLUSTERS: [OnOff.cluster_id,],
             },
             3: {
                 #  input_clusters=[7]
                 #  output_clusters=[6]>
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
-                INPUT_CLUSTERS: [
-                    OnOffConfiguration.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [
-                    OnOff.cluster_id,
-                ],
-
+                INPUT_CLUSTERS: [OnOffConfiguration.cluster_id,],
+                OUTPUT_CLUSTERS: [OnOff.cluster_id,],
             },
             4: {
                 #  input_clusters=[7]
                 #  output_clusters=[6]>
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
-                INPUT_CLUSTERS: [
-                    OnOffConfiguration.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [
-                    OnOff.cluster_id,
-                ],
-
+                INPUT_CLUSTERS: [OnOffConfiguration.cluster_id,],
+                OUTPUT_CLUSTERS: [OnOff.cluster_id,],
             }
         },
     }
@@ -125,47 +108,31 @@ class CentraLite3450L(CustomDevice):
                     PollControl.cluster_id,
                     DIAGNOSTICS_CLUSTER_ID,
                 ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    OnOff.cluster_id,
-                    Ota.cluster_id,
-                ],
+                OUTPUT_CLUSTERS: [Identify.cluster_id, OnOff.cluster_id, Ota.cluster_id],
             },
             2: {
                 #  input_clusters=[7]
                 #  output_clusters=[6]>
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
-                INPUT_CLUSTERS: [
-                    OnOffConfiguration.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [
-                    OnOff.cluster_id,
-                ],
+                INPUT_CLUSTERS: [OnOffConfiguration.cluster_id,],
+                OUTPUT_CLUSTERS: [OnOff.cluster_id,],
             },
             3: {
                 #  input_clusters=[7]
                 #  output_clusters=[6]>
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
-                INPUT_CLUSTERS: [
-                    OnOffConfiguration.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [
-                    OnOff.cluster_id,
-                ],
+                INPUT_CLUSTERS: [OnOffConfiguration.cluster_id,],
+                OUTPUT_CLUSTERS: [OnOff.cluster_id,],
             },
             4: {
                 #  input_clusters=[7]
                 #  output_clusters=[6]>
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
-                INPUT_CLUSTERS: [
-                    OnOffConfiguration.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [
-                    OnOff.cluster_id,
-                ],
+                INPUT_CLUSTERS: [OnOffConfiguration.cluster_id,],
+                OUTPUT_CLUSTERS: [OnOff.cluster_id,],
             }
         }
     }
