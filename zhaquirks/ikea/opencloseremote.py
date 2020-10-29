@@ -33,7 +33,14 @@ class IkeaTradfriOpenCloseRemote(CustomDevice):
     """Custom device representing IKEA of Sweden TRADFRI remote control."""
 
     signature = {
-        MODELS_INFO: [("\x02KE", "TRADFRI open/close remote")],
+        # <SimpleDescriptor endpoint=1 profile=260 device_type=515
+        # device_version=1
+        # input_clusters=[0, 1, 3, 9, 32, 4096, 64636]
+        # output_clusters=[3, 4, 6, 8, 25, 258, 4096]>
+        MODELS_INFO: [
+            ("\x02KE", "TRADFRI open/close remote"),
+            (IKEA, "TRADFRI open/close remote"),
+        ],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
