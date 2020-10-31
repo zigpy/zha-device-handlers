@@ -1,6 +1,4 @@
 """Ecolink 4655BC0-R device."""
-import logging
-
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
