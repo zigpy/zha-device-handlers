@@ -1,7 +1,5 @@
 """GLEDOPTO GL-C-007 2ID device.."""
-import binascii
 import logging
-import math
 from typing import Optional, Union
 
 import zigpy.zcl.foundation as foundation
@@ -60,6 +58,7 @@ class BasicCluster(Basic, CustomCluster):
             expect_reply=expect_reply,
         )
 
+
 class OnOffCluster(OnOff, CustomCluster):
     """GLEDOPTO GL-C-007 2ID on/off cluster."""
 
@@ -87,6 +86,7 @@ class OnOffCluster(OnOff, CustomCluster):
             bytes([src_ep, tsn, command_id]),
             expect_reply=expect_reply,
         )
+
 
 class IdentifyCluster(Identify, CustomCluster):
     """GLEDOPTO GL-C-007 2ID identify cluster."""
@@ -116,6 +116,7 @@ class IdentifyCluster(Identify, CustomCluster):
             expect_reply=expect_reply,
         )
 
+
 class GroupsCluster(Groups, CustomCluster):
     """GLEDOPTO GL-C-007 2ID groups cluster."""
 
@@ -144,6 +145,7 @@ class GroupsCluster(Groups, CustomCluster):
             expect_reply=expect_reply,
         )
 
+
 class ScenesCluster(Scenes, CustomCluster):
     """GLEDOPTO GL-C-007 2ID scenes cluster."""
 
@@ -171,6 +173,7 @@ class ScenesCluster(Scenes, CustomCluster):
             bytes([src_ep, tsn, command_id]),
             expect_reply=expect_reply,
         )
+
 
 class LevelControlCluster(LevelControl, CustomCluster):
     """GLEDOPTO GL-C-007 2ID level control cluster."""
@@ -230,8 +233,7 @@ class ColorCluster(Color, CustomCluster):
         )
 
 
-
-class GLC007_2ID(CustomDevice):
+class Glc007id2(CustomDevice):
     """GLEDOPTO GL-C-007 2ID device."""
 
     signature = {
@@ -328,6 +330,6 @@ class GLC007_2ID(CustomDevice):
                 DEVICE_TYPE: 57694,
                 INPUT_CLUSTERS: [LightLink.cluster_id],
                 OUTPUT_CLUSTERS: [LightLink.cluster_id],
-            }
+            },
         }
     }
