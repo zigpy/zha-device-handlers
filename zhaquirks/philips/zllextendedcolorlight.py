@@ -49,6 +49,8 @@ class ZLLExtendedColorLight(CustomDevice):
             (PHILIPS, "LCT021"),
             (PHILIPS, "LCT024"),
             (PHILIPS, "LLC020"),
+            (PHILIPS, "LCF002"),
+            (PHILIPS, "LCS001"),
         ],
         ENDPOINTS: {
             11: {
