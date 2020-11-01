@@ -22,8 +22,12 @@ from zhaquirks.const import (
     PROFILE_ID,
     MODELS_INFO,
 )
-from zhaquirks.philips import PHILIPS, PhilipsOnOffCluster
 
+from zhaquirks.philips import (
+    PHILIPS,
+    PhilipsLevelControlCluster,
+    PhilipsOnOffCluster
+)
 
 class ZLLDimmableLight(CustomDevice):
     """Philips ZigBee LightLink dimmable bulb device."""
@@ -73,7 +77,7 @@ class ZLLDimmableLight(CustomDevice):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     PhilipsOnOffCluster,
-                    LevelControl.cluster_id,
+                    PhilipsLevelControlCluster,
                     LightLink.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
