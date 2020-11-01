@@ -92,7 +92,7 @@ class CentraLite3450L(CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
                 INPUT_CLUSTERS: [OnOffConfiguration.cluster_id],
                 OUTPUT_CLUSTERS: [OnOff.cluster_id],
-            }
+            },
         },
     }
 
@@ -109,7 +109,11 @@ class CentraLite3450L(CustomDevice):
                     PollControl.cluster_id,
                     DIAGNOSTICS_CLUSTER_ID,
                 ],
-                OUTPUT_CLUSTERS: [Identify.cluster_id, OnOff.cluster_id, Ota.cluster_id],
+                OUTPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    OnOff.cluster_id,
+                    Ota.cluster_id
+                ],
             },
             2: {
                 #  input_clusters=[7]
@@ -134,7 +138,7 @@ class CentraLite3450L(CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
                 INPUT_CLUSTERS: [OnOffConfiguration.cluster_id],
                 OUTPUT_CLUSTERS: [OnOff.cluster_id],
-            }
+            },
         }
     }
 
