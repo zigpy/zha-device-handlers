@@ -13,14 +13,14 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.lighting import Color
 
-from . import OsramLightCluster, OSRAM
+from . import OSRAM, OsramLightCluster
 from ..const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
+    MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
-    MODELS_INFO,
 )
 
 

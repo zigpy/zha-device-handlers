@@ -9,21 +9,21 @@ from zigpy.zcl.clusters.general import (
     PowerConfiguration,
 )
 from zigpy.zcl.clusters.measurement import (
-    TemperatureMeasurement,
     IlluminanceMeasurement,
     OccupancySensing,
+    TemperatureMeasurement,
 )
 
 from zhaquirks import DoublingPowerConfigurationCluster
 
 from . import (
+    BUTTON_TRIGGERS,
     IlluminanceMeasurementCluster,
-    TemperatureMeasurementCluster,
-    TerncyRawCluster,
-    OccupancyCluster,
     MotionClusterLeft,
     MotionClusterRight,
-    BUTTON_TRIGGERS,
+    OccupancyCluster,
+    TemperatureMeasurementCluster,
+    TerncyRawCluster,
 )
 from .. import Bus
 from ..const import (
