@@ -112,7 +112,7 @@ class CentraLite3450L(CustomDevice):
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
-                    Ota.cluster_id
+                    Ota.cluster_id,
                 ],
             },
             2: {
