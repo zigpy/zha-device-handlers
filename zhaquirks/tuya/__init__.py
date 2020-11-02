@@ -51,6 +51,75 @@ class TuyaManufCluster(CustomCluster):
     }
 
 
+class TuyaManufClusterAttributes(TuyaManufCluster):
+    """Manufacturer specific cluster for Tuya converting attributes <-> commands."""
+
+    def handle_cluster_request(self, tsn: int, command_id: int, args: Tuple) -> None:
+        """Handle cluster request."""
+        if command_id not in (0x0001, 0x0002):
+            return super().handle_cluster_request(tsn, command_id, args)
+
+        tuya_cmd = args[0].command_id
+        tuya_value = args[0].data[1:]  # first uint8_t is length
+
+        _LOGGER.debug(
+            "[0x%04x:%s:0x%04x] Received value %s "
+            "for attribute 0x%04x (command 0x%04x)",
+            self.endpoint.device.nwk,
+            self.endpoint.endpoint_id,
+            self.cluster_id,
+            repr(tuya_value),
+            tuya_cmd,
+            command_id,
+        )
+
+        if tuya_cmd not in self.attributes:
+            return
+
+        # tuya data is in big endian whereas ztypes use little endian
+        ztype = self.attributes[tuya_cmd][1]
+        zvalue, _ = ztype.deserialize(bytes(reversed(tuya_value)))
+        self._update_attribute(tuya_cmd, zvalue)
+
+    def read_attributes(
+        self, attributes, allow_cache=False, only_cache=False, manufacturer=None
+    ):
+        """Ignore remote reads as the "get_data" command doesn't seem to do anything."""
+
+        return super().read_attributes(
+            attributes, allow_cache=True, only_cache=True, manufacturer=manufacturer
+        )
+
+    async def write_attributes(self, attributes, manufacturer=None):
+        """Defer attributes writing to the set_data tuya command."""
+
+        records = self._write_attr_records(attributes)
+
+        for record in records:
+            # serialized in little-endian
+            data = list(record.value.value.serialize())
+            # we want big-endian, with length prepended
+            data.append(len(data))
+            data.reverse()
+
+            cmd_payload = TuyaManufCluster.Command()
+            cmd_payload.status = 0
+            cmd_payload.tsn = self.endpoint.device.application.get_sequence()
+            cmd_payload.command_id = record.attrid
+            cmd_payload.function = 0
+            cmd_payload.data = data
+
+            await super().command(
+                TUYA_SET_DATA,
+                cmd_payload,
+                manufacturer=manufacturer,
+                expect_reply=False,
+                tsn=cmd_payload.tsn,
+            )
+
+        return (foundation.Status.SUCCESS,)
+
+
 class TuyaOnOff(CustomCluster, OnOff):
     """Tuya On/Off cluster for On/Off device."""
 
