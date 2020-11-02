@@ -29,6 +29,7 @@ from zhaquirks.philips import (
     PhilipsOnOffCluster
 )
 
+
 class ZLLDimmableLight(CustomDevice):
     """Philips ZigBee LightLink dimmable bulb device."""
 
