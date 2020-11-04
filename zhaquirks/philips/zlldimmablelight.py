@@ -23,11 +23,7 @@ from zhaquirks.const import (
     MODELS_INFO,
 )
 
-from zhaquirks.philips import (
-    PHILIPS,
-    PhilipsLevelControlCluster,
-    PhilipsOnOffCluster
-)
+from zhaquirks.philips import PHILIPS, PhilipsLevelControlCluster, PhilipsOnOffCluster
 
 
 class ZLLDimmableLight(CustomDevice):
