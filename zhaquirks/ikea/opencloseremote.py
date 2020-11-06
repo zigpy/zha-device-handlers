@@ -1,6 +1,8 @@
 """Device handler for IKEA of Sweden TRADFRI remote control."""
+from typing import List
+
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
+from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import (
     Alarms,
@@ -18,15 +20,53 @@ from zigpy.zcl.clusters.lightlink import LightLink
 from . import IKEA
 from .. import DoublingPowerConfigurationCluster
 from ..const import (
+    ARGS,
+    CLOSE,
+    COMMAND,
+    COMMAND_STOP,
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
+    LONG_RELEASE,
     MODELS_INFO,
+    OPEN,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
+    SHORT_PRESS,
+    ZHA_SEND_EVENT,
 )
 
+COMMAND_CLOSE = "down_close"
+COMMAND_STOP_OPENING = "stop_opening"
+COMMAND_STOP_CLOSING = "stop_closing"
+COMMAND_OPEN = "up_open"
 IKEA_CLUSTER_ID = 0xFC7C  # decimal = 64636
+
+
+class IkeaWindowCovering(CustomCluster, WindowCovering):
+    """Ikea Window covering cluster."""
+
+    def __init__(self, *args, **kwargs):
+        """Initialize instance."""
+        super().__init__(*args, **kwargs)
+        self._is_closing = None
+
+    def handle_cluster_request(
+        self, tsn: int, command_id: int, args: List[int]
+    ) -> None:
+        """Handle cluster specific commands.
+
+        We just want to keep track of direction, to associate it with the stop command.
+        """
+
+        cmd_name = self.server_commands.get(command_id, [command_id])[0]
+        if cmd_name == COMMAND_OPEN:
+            self._is_closing = False
+        elif cmd_name == COMMAND_CLOSE:
+            self._is_closing = True
+        elif cmd_name == COMMAND_STOP:
+            action = COMMAND_STOP_CLOSING if self._is_closing else COMMAND_STOP_OPENING
+            self.listener_event(ZHA_SEND_EVENT, action, [])
 
 
 class IkeaTradfriOpenCloseRemote(CustomDevice):
@@ -88,9 +128,16 @@ class IkeaTradfriOpenCloseRemote(CustomDevice):
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
                     Ota.cluster_id,
-                    WindowCovering.cluster_id,
+                    IkeaWindowCovering,
                     LightLink.cluster_id,
                 ],
             }
         },
+    }
+
+    device_automation_triggers = {
+        (SHORT_PRESS, OPEN): {COMMAND: COMMAND_OPEN, ARGS: []},
+        (LONG_RELEASE, OPEN): {COMMAND: COMMAND_STOP_OPENING, ARGS: []},
+        (SHORT_PRESS, CLOSE): {COMMAND: COMMAND_CLOSE, ARGS: []},
+        (LONG_RELEASE, CLOSE): {COMMAND: COMMAND_STOP_CLOSING, ARGS: []},
     }
