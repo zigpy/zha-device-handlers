@@ -2,26 +2,25 @@
 from zigpy.profiles import zll
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
-    OnOff,
     Basic,
+    GreenPowerProxy,
+    Groups,
     Identify,
     LevelControl,
-    Scenes,
-    Groups,
+    OnOff,
     Ota,
-    GreenPowerProxy,
+    Scenes,
 )
-
 from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.lightlink import LightLink
 
 from zhaquirks.const import (
-    ENDPOINTS,
-    OUTPUT_CLUSTERS,
-    INPUT_CLUSTERS,
     DEVICE_TYPE,
-    PROFILE_ID,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
     MODELS_INFO,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
 )
 from zhaquirks.philips import PHILIPS, PhilipsOnOffCluster
 

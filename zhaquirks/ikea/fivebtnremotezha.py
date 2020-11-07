@@ -15,6 +15,7 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.lightlink import LightLink
 
+from . import IKEA, LightLinkCluster, ScenesCluster
 from .. import DoublingPowerConfigurationCluster
 from ..const import (
     ARGS,
@@ -43,7 +44,6 @@ from ..const import (
     SHORT_PRESS,
     TURN_ON,
 )
-from . import IKEA, LightLinkCluster, ScenesCluster
 
 IKEA_CLUSTER_ID = 0xFC7C  # decimal = 64636
 

@@ -16,13 +16,6 @@ from zigpy.zcl.clusters.general import (
     Time,
 )
 
-from zhaquirks.xiaomi import (
-    LUMI,
-    AnalogInputCluster,
-    BasicCluster,
-    ElectricalMeasurementCluster,
-    XiaomiCustomDevice,
-)
 from zhaquirks import Bus
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -32,6 +25,13 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SKIP_CONFIGURATION,
+)
+from zhaquirks.xiaomi import (
+    LUMI,
+    AnalogInputCluster,
+    BasicCluster,
+    ElectricalMeasurementCluster,
+    XiaomiCustomDevice,
 )
 
 _LOGGER = logging.getLogger(__name__)

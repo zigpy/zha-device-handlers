@@ -1,6 +1,7 @@
 """Tuya based button sensor."""
 from zigpy.profiles import zha
-from zigpy.zcl.clusters.general import Basic, Groups, Scenes, Time, Ota
+from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time
+
 from ..const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -9,7 +10,7 @@ from ..const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from ..tuya import TuyaManufCluster, TuyaManufacturerClusterOnOff, TuyaOnOff, TuyaSwitch
+from ..tuya import TuyaManufacturerClusterOnOff, TuyaManufCluster, TuyaOnOff, TuyaSwitch
 
 
 class TuyaSingleSwitch(TuyaSwitch):

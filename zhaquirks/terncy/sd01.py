@@ -4,15 +4,15 @@ from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
-    PowerConfiguration,
     Identify,
-    PollControl,
     Ota,
+    PollControl,
+    PowerConfiguration,
 )
 
 from zhaquirks import DoublingPowerConfigurationCluster
 
-from . import TerncyRawCluster, BUTTON_TRIGGERS, KNOB_TRIGGERS
+from . import BUTTON_TRIGGERS, KNOB_TRIGGERS, TerncyRawCluster
 from ..const import (
     DEVICE_TYPE,
     ENDPOINTS,

@@ -11,13 +11,14 @@ from zigpy.zcl.clusters.general import (
     DeviceTemperature,
     Groups,
     Identify,
-    OnOff,
     LevelControl,
+    OnOff,
     Ota,
     Scenes,
 )
 from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.smartenergy import Metering
+
 from . import SINOPE
 from ..const import (
     DEVICE_TYPE,

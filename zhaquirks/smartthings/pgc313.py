@@ -3,6 +3,7 @@ from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, Ota
 
+from . import SMART_THINGS, SmartThingsIasZone
 from ..const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -11,7 +12,6 @@ from ..const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from . import SMART_THINGS, SmartThingsIasZone
 
 SMARTSENSE_MULTI_DEVICE_TYPE = 0x0139  # decimal = 313
 

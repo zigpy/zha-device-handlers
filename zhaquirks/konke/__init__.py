@@ -1,6 +1,6 @@
 """Konke sensors."""
 
-from .. import MotionWithReset, OccupancyOnEvent, LocalDataCluster
+from .. import LocalDataCluster, MotionWithReset, OccupancyOnEvent
 
 KONKE = "Konke"
 

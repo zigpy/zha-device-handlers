@@ -10,9 +10,9 @@ from zigpy.zcl.clusters.general import (
     Basic,
     Identify,
     Ota,
+    PollControl,
     PowerConfiguration,
     Time,
-    PollControl,
 )
 from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
