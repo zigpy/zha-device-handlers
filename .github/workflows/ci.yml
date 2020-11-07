@@ -320,7 +320,7 @@ jobs:
         run: |
           . venv/bin/activate
           coverage combine coverage*/.coverage*
-          coverage report --fail-under=99
+          coverage report --fail-under=79
           coverage xml
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1.0.14
