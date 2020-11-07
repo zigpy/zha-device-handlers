@@ -4,6 +4,7 @@ from unittest import mock
 import zigpy.device
 import zigpy.endpoint
 import zigpy.quirks
+
 import zhaquirks.kof.kof_mr101z
 
 
