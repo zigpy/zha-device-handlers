@@ -3,7 +3,6 @@ from unittest import mock
 
 from zhaquirks.xiaomi.aqara.ctrl_neutral import CtrlNeutral
 
-
 # zigbee-herdsman:controller:endpoint Command 0x00158d00024be541/2 genOnOff.on({},
 #   {"timeout":6000,"manufacturerCode":null,"disableDefaultResponse":false})
 # zigbee-herdsman:adapter:zStack:znp:SREQ --> AF - dataRequest -

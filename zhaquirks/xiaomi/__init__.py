@@ -4,7 +4,6 @@ import logging
 import math
 from typing import Optional, Union
 
-import zigpy.zcl.foundation as foundation
 from zigpy import types as t
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
@@ -16,6 +15,7 @@ from zigpy.zcl.clusters.measurement import (
     RelativeHumidity,
     TemperatureMeasurement,
 )
+import zigpy.zcl.foundation as foundation
 
 from .. import Bus, LocalDataCluster, MotionOnEvent, OccupancyWithReset
 from ..const import (

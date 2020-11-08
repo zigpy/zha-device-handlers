@@ -1,15 +1,15 @@
 """Map from manufacturer to standard clusters for the NEO Siren device."""
 import logging
-
 from typing import Optional, Union
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
-from zigpy.zcl.clusters.general import Basic, Identify, Ota, OnOff
-from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
-from zigpy.zcl import foundation
 import zigpy.types as t
+from zigpy.zcl import foundation
+from zigpy.zcl.clusters.general import Basic, Identify, OnOff, Ota
+from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
 
+from . import TuyaManufClusterAttributes
 from .. import Bus, LocalDataCluster
 from ..const import (
     DEVICE_TYPE,
@@ -19,8 +19,6 @@ from ..const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-
-from . import TuyaManufClusterAttributes
 
 TUYA_ALARM_ATTR = 0x0168  # [0]/[1] Alarm!
 TUYA_TEMP_ALARM_ATTR = 0x0171  # [0]/[1] Disable/Enable alarm by temperature

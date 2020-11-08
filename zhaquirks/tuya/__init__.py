@@ -1,15 +1,13 @@
 """Tuya devices."""
 import logging
-
 from typing import Optional, Tuple, Union
 
 from zigpy.quirks import CustomCluster, CustomDevice
-from zigpy.zcl.clusters.general import OnOff
-from zigpy.zcl import foundation
 import zigpy.types as t
+from zigpy.zcl import foundation
+from zigpy.zcl.clusters.general import OnOff
 
 from .. import Bus
-
 
 TUYA_CLUSTER_ID = 0xEF00
 TUYA_SET_DATA = 0x0000

@@ -2,6 +2,7 @@
 
 import pytest
 import zigpy.quirks as zq
+
 import zhaquirks  # noqa: F401, E402
 from zhaquirks.const import ENDPOINTS
 

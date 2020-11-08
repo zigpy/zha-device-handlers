@@ -5,15 +5,15 @@ from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import (
     AnalogInput,
     Basic,
+    BinaryOutput,
+    DeviceTemperature,
     Groups,
     Identify,
     MultistateInput,
     OnOff,
     Ota,
     Scenes,
-    DeviceTemperature,
     Time,
-    BinaryOutput,
 )
 
 from .. import (

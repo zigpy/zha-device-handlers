@@ -14,17 +14,17 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.lightlink import LightLink
 
 from ..const import (
+    COMMAND,
+    COMMAND_OFF_WITH_EFFECT,
+    COMMAND_ON,
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SHORT_PRESS,
-    TURN_ON,
     TURN_OFF,
-    COMMAND,
-    COMMAND_ON,
-    COMMAND_OFF_WITH_EFFECT,
+    TURN_ON,
 )
 
 DEVICE_SPECIFIC_UNKNOWN = 64512
