@@ -97,7 +97,9 @@ class ManufacturerThermostatCluster(TuyaManufCluster):
             pass
         else:
             _LOGGER.debug(
-                f"Unknown command received: {tuya_cmd.command_id} {tuya_cmd.data} {decimal}"
+                "Unknown command received: %d, %d",
+                tuya_cmd.command_id,
+                decimal,
             )
 
 
@@ -113,7 +115,7 @@ class PowerConfigurationCluster(LocalDataCluster, PowerConfiguration):
 
     def battery_reported(self, value):
         """Handle reported battery state."""
-        _LOGGER.debug(f"reported battery alert: {value}")
+        _LOGGER.debug("reported battery alert: %d", value)
         if value == 1:  # alert
             self._update_attribute(
                 BATTERY_PERCENTAGE_REMAINING_ATTR, 0
@@ -143,12 +145,12 @@ class ThermostatCluster(LocalDataCluster, Thermostat):
     def occupied_heating_setpoint_reported(self, value):
         """Handle reported occupied heating setpoint state."""
         self._update_attribute(OCCUPIED_HEATING_SETPOINT_ATTR, value * 10)
-        _LOGGER.debug(f"reported occupied heating setpoint: {value}")
+        _LOGGER.debug("reported occupied heating setpoint: %d", value)
 
     def local_temp_reported(self, value):
         """Handle reported local temperature."""
         self._update_attribute(LOCAL_TEMP_ATTR, value * 10)
-        _LOGGER.debug(f"reported local temperature: {value}")
+        _LOGGER.debug("reported local temperature: %d", value)
 
     def system_mode_reported(self, value):
         """Handle reported system mode."""
@@ -177,9 +179,7 @@ class ThermostatCluster(LocalDataCluster, Thermostat):
             await self.send_tuya_command(
                 OCCUPIED_HEATING_SETPOINT_COMMAND_ID, decimal_to_payload(temperature)
             )
-            _LOGGER.debug(f"set occupied_heating_setpoint: {temperature}")
-        else:
-            _LOGGER.debug(f"write_attributes: {attributes}")
+            _LOGGER.debug("set occupied_heating_setpoint: %d", temperature)
         return (foundation.Status.SUCCESS,)
 
     async def send_tuya_command(self, cmd, data):
