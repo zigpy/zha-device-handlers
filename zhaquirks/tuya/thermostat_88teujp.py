@@ -1,19 +1,16 @@
 """Saswell (Tuya whitelabel) 88teujp thermostat valve quirk."""
 
-import logging
 from functools import reduce
+import logging
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
-from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PowerConfiguration
 from zigpy.zcl.clusters.hvac import Thermostat
 
-from . import TuyaManufCluster, TUYA_SET_DATA, TUYA_GET_DATA, TUYA_SET_DATA_RESPONSE
-
+from . import TUYA_GET_DATA, TUYA_SET_DATA, TUYA_SET_DATA_RESPONSE, TuyaManufCluster
 from .. import Bus, LocalDataCluster
 from ..const import (
-    ZHA_SEND_EVENT,
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -160,10 +157,10 @@ class ThermostatCluster(LocalDataCluster, Thermostat):
             mode = attributes.get("system_mode")
 
             if mode == Thermostat.SystemMode.Off:
-                await self.send_tuya_command(MODE_COMMAND_ID, [1, 0])
+                await self.send_tuya_command(SYSTEM_MODE_COMMAND_ID, [1, 0])
                 _LOGGER.debug("set system_mode: off")
             if mode == Thermostat.SystemMode.Heat:
-                await self.send_tuya_command(MODE_COMMAND_ID, [1, 1])
+                await self.send_tuya_command(SYSTEM_MODE_COMMAND_ID, [1, 1])
                 _LOGGER.debug("set system_mode: heat")
         elif "occupied_heating_setpoint" in attributes:
             temperature = int(attributes.get("occupied_heating_setpoint") / 10)
