@@ -95,7 +95,8 @@ class PhilipsLST001(CustomDevice):
             },
         }
     }
-    
+
+
 class PhilipsLST002(CustomDevice):
     """Philips LST002 device."""
 
