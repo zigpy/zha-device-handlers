@@ -5,6 +5,7 @@ import logging
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PowerConfiguration
 from zigpy.zcl.clusters.hvac import Thermostat
 
@@ -43,14 +44,16 @@ MAX_HEAT_SETPOINT_ATTR = 0x0016
 
 
 def payload_to_decimal(data):
-    """Coverts command payload to a single decimal
-    e.g. [4, 0, 0, 1, 39] => 295 and [4, 0, 0, 0, 220] => 220"""
+    """Coverts command payload to a single decimal.
+    e.g. [4, 0, 0, 1, 39] => 295 and [4, 0, 0, 0, 220] => 220
+    """
     return reduce(lambda acc, i: ((acc << 8) + i) % 2 ** 32, data[1:], 0)
 
 
 def decimal_to_payload(number):
-    """Coverts decimal to command payload
-    e.g. 295 => [4, 0, 0, 1, 39] and 220 => [4, 0, 0, 0, 220]"""
+    """Coverts decimal to command payload.
+    e.g. 295 => [4, 0, 0, 1, 39] and 220 => [4, 0, 0, 0, 220]
+    """
     hex = "{:X}".format(number).rjust(4, "0")
     chunk1 = int(hex[0:2], 16)
     chunk2 = int(hex[2:], 16)
