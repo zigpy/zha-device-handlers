@@ -45,13 +45,15 @@ MAX_HEAT_SETPOINT_ATTR = 0x0016
 
 def payload_to_decimal(data):
     """Coverts command payload to a single decimal.
-    e.g. [4, 0, 0, 1, 39] => 295 and [4, 0, 0, 0, 220] => 220
+
+    [4, 0, 0, 1, 39] => 295 and [4, 0, 0, 0, 220] => 220
     """
     return reduce(lambda acc, i: ((acc << 8) + i) % 2 ** 32, data[1:], 0)
 
 
 def decimal_to_payload(number):
     """Coverts decimal to command payload.
+
     e.g. 295 => [4, 0, 0, 1, 39] and 220 => [4, 0, 0, 0, 220]
     """
     hex = "{:X}".format(number).rjust(4, "0")
@@ -141,7 +143,7 @@ class ThermostatCluster(LocalDataCluster, Thermostat):
     def occupied_heating_setpoint_reported(self, value):
         """Handle reported occupied heating setpoint state."""
         self._update_attribute(OCCUPIED_HEATING_SETPOINT_ATTR, value * 10)
-        _LOGGER.debug(f"reported set temperature: {value}")
+        _LOGGER.debug(f"reported occupied heating setpoint: {value}")
 
     def local_temp_reported(self, value):
         """Handle reported local temperature."""
