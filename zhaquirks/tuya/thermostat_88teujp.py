@@ -43,14 +43,14 @@ MAX_HEAT_SETPOINT_ATTR = 0x0016
 
 
 def payload_to_decimal(data):
-    # Coverts command payload to a single decimal
-    # e.g. [4, 0, 0, 1, 39] => 295 and [4, 0, 0, 0, 220] => 220
+    """Coverts command payload to a single decimal
+    e.g. [4, 0, 0, 1, 39] => 295 and [4, 0, 0, 0, 220] => 220"""
     return reduce(lambda acc, i: ((acc << 8) + i) % 2 ** 32, data[1:], 0)
 
 
 def decimal_to_payload(number):
-    # Coverts decimal to command payload
-    # e.g. 295 => [4, 0, 0, 1, 39] and 220 => [4, 0, 0, 0, 220]
+    """Coverts decimal to command payload
+    e.g. 295 => [4, 0, 0, 1, 39] and 220 => [4, 0, 0, 0, 220]"""
     hex = "{:X}".format(number).rjust(4, "0")
     chunk1 = int(hex[0:2], 16)
     chunk2 = int(hex[2:], 16)
@@ -107,6 +107,7 @@ class PowerConfigurationCluster(LocalDataCluster, PowerConfiguration):
         self.endpoint.device.battery_bus.add_listener(self)
 
     def battery_reported(self, value):
+        """Handle reported battery state."""
         _LOGGER.debug(f"reported battery alert: {value}")
         if value == 1:  # alert
             self._update_attribute(
@@ -135,14 +136,17 @@ class ThermostatCluster(LocalDataCluster, Thermostat):
         self.endpoint.device.thermostat_bus.add_listener(self)
 
     def occupied_heating_setpoint_reported(self, value):
+        """Handle reported occupied heating setpoint state."""
         self._update_attribute(OCCUPIED_HEATING_SETPOINT_ATTR, value * 10)
         _LOGGER.debug(f"reported set temperature: {value}")
 
     def local_temp_reported(self, value):
+        """Handle reported local temperature."""
         self._update_attribute(LOCAL_TEMP_ATTR, value * 10)
         _LOGGER.debug(f"reported local temperature: {value}")
 
     def system_mode_reported(self, value):
+        """Handle reported system mode."""
         if value == 1:
             self._update_attribute(SYSTEM_MODE_ATTR, Thermostat.SystemMode.Heat)
             self._update_attribute(RUNNING_MODE_ATTR, Thermostat.RunningMode.Heat)
@@ -153,6 +157,7 @@ class ThermostatCluster(LocalDataCluster, Thermostat):
             _LOGGER.debug("reported system_mode: off")
 
     async def write_attributes(self, attributes, manufacturer=None):
+        """Override remote writes."""
         if "system_mode" in attributes:
             mode = attributes.get("system_mode")
 
@@ -170,8 +175,10 @@ class ThermostatCluster(LocalDataCluster, Thermostat):
             _LOGGER.debug(f"set occupied_heating_setpoint: {temperature}")
         else:
             _LOGGER.debug(f"write_attributes: {attributes}")
+        return (foundation.Status.SUCCESS,)
 
     async def send_tuya_command(self, cmd, data):
+        """Send tuya command."""
         cmd_payload = TuyaManufCluster.Command()
         cmd_payload.status = 0
         cmd_payload.tsn = 0
