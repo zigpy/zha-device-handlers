@@ -27,6 +27,8 @@ from ..const import (
     PROFILE_ID,
 )
 
+MANUFACTURER = 0x1246
+
 
 class DanfossThermostatCluster(CustomCluster, Thermostat):
     """Danfoss custom cluster."""
