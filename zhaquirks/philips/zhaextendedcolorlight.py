@@ -39,6 +39,7 @@ class ZHAExtendedColorLight(CustomDevice):
             (PHILIPS, "LCA003"),
             (PHILIPS, "LCB001"),
             (PHILIPS, "LCE002"),
+            (PHILIPS, "LCG002"),
         ],
         ENDPOINTS: {
             11: {
@@ -109,6 +110,7 @@ class ZHAExtendedColorLight2(CustomDevice):
 
     signature = {
         MODELS_INFO: [
+            (PHILIPS, "LCL001"),
             (PHILIPS, "LCT026"),
             (PHILIPS, "929002376001"),
             (PHILIPS, "929002375901"),
