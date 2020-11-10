@@ -9,11 +9,19 @@ ZHA device handlers bridge the functionality gap created when manufacturers devi
 
 Custom quirks implementations for zigpy implemented as ZHA Device Handlers are a similar concept to that of [Hub-connected Device Handlers for the SmartThings Classics platform](https://docs.smartthings.com/en/latest/device-type-developers-guide/) as well that of [Zigbee-Herdsman Converters / Zigbee-Shepherd Converters as used by Zigbee2mqtt](https://www.zigbee2mqtt.io/how_tos/how_to_support_new_devices.html), meaning they are virtual representation of a physical device that expose additional functionality that is not provided out-of-the-box by the existing integration between these platforms. See [Device Specifics](#Device-Specifics) for details.
 
+Note! The ZHA Device Handlers library is a standalone library and not dependent [Home Assistant](https://www.home-assistant.io), however an implementation of the ZHA Device Handlers library is available in [Home Assistant](https://www.home-assistant.io/) (a Python based open source home automation software) as part of its [ZHA integration component](https://www.home-assistant.io/integrations/zha/) which could be used as a reference. The source code for that integration implementation is avalable in Home Assistant's "core" source code under its "home-assistant/core/tree/dev/homeassistant/components/zha" directory.
+
 # How to contribute
 
 ## Primer
 
-ZHA device handlers and it's provided Quirks allow Zigpy, ZHA and Home Assistant to work with non standard Zigbee devices. If you are reading this you may have a device that isn't working as expected. This can be the case for a number of reasons but in this guide we will cover the cases where functionality is provided by a device in a non specification compliant manner by the device manufacturer.
+ZHA device handlers and its provided "quirks" allow the zigpy library and applications implementing it, like the ZHA integration implementation in Home Assistant, to work with non-standard Zigbee devices. And just to clearify, this ZHA device handlers library and its "quirks" has no dependencies on the ZHA integration implementation in Home Assistant.
+
+If you are reading this you may have a Zigbee device that does not work as expected. The reason for this can be a number of things but in this guide we will cover the cases where functionality is provided by a device in a non specification compliant manner by the device manufacturer.
+
+The zigpy library itself will handle low-level spec deviations however the interface for handling high-level superficial translation is done through ZHA device handlers. The intended idea is that when using the zigpy library together with ZHA device handlers the application implementing it as a Zigbee stack can in effect just assume that every device follow standards and is fully compliant once it has been initialized and the appropriate quirk in place. 
+
+As an example, ZHA device handlers has "quirks" which translate and standardizie Xiaomi non-standard Zigbee devices proprietary attribute reports into "virtual" clusters.
 
 ## What are these specifications
 
