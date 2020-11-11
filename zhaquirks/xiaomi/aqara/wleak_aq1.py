@@ -4,6 +4,7 @@ from zigpy.quirks import CustomCluster
 from zigpy.zcl.clusters.general import Identify, Ota
 from zigpy.zcl.clusters.security import IasZone
 
+from .. import LUMI, BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
 from ...const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -13,7 +14,6 @@ from ...const import (
     PROFILE_ID,
     SKIP_CONFIGURATION,
 )
-from .. import LUMI, BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
 
 
 class CustomIasZone(CustomCluster, IasZone):

@@ -1,8 +1,8 @@
 """Door/Windows sensors."""
 
 from zigpy.profiles import zha
+from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
-from zigpy.quirks import CustomDevice, CustomCluster
 from zigpy.zcl.clusters import general, measurement, security
 
 from . import DEVELCO, DevelcoPowerConfiguration

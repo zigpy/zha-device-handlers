@@ -10,6 +10,7 @@ from .. import (
     IlluminanceMeasurementCluster,
     MotionCluster,
     OccupancyCluster,
+    PowerConfigurationCluster,
     XiaomiCustomDevice,
 )
 from ... import Bus
@@ -63,6 +64,7 @@ class MotionAQ2(XiaomiCustomDevice):
             1: {
                 INPUT_CLUSTERS: [
                     BasicCluster,
+                    PowerConfigurationCluster,
                     IlluminanceMeasurementCluster,
                     OccupancyCluster,
                     MotionCluster,

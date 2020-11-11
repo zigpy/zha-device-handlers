@@ -4,11 +4,11 @@ from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Alarms,
     Basic,
-    Identify,
     Groups,
-    Scenes,
+    Identify,
     OnOff,
     Ota,
+    Scenes,
     Time,
 )
 from zigpy.zcl.clusters.smartenergy import Metering

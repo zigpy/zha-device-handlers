@@ -11,6 +11,7 @@ from zigpy.zcl.clusters.general import (
     Scenes,
 )
 
+from .. import LUMI, BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
 from ... import CustomCluster
 from ...const import (
     ARGS,
@@ -27,7 +28,6 @@ from ...const import (
     VALUE,
     ZHA_SEND_EVENT,
 )
-from .. import LUMI, BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
 
 ACTIVATED_FACE = "activated_face"
 DESCRIPTION = "description"

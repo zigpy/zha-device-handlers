@@ -2,35 +2,44 @@
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
-    OnOff,
     Basic,
+    GreenPowerProxy,
+    Groups,
     Identify,
     LevelControl,
-    Scenes,
-    Groups,
+    OnOff,
     Ota,
-    GreenPowerProxy,
+    Scenes,
 )
-
 from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.lightlink import LightLink
 
 from zhaquirks.const import (
-    ENDPOINTS,
-    OUTPUT_CLUSTERS,
-    INPUT_CLUSTERS,
     DEVICE_TYPE,
-    PROFILE_ID,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
     MODELS_INFO,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
 )
-from zhaquirks.philips import PHILIPS, PhilipsOnOffCluster
+from zhaquirks.philips import (
+    PHILIPS,
+    PhilipsColorCluster,
+    PhilipsLevelControlCluster,
+    PhilipsOnOffCluster,
+)
 
 
 class ZHAExtendedColorLight(CustomDevice):
     """Philips ZigBee HomeAutomation extended color bulb device."""
 
     signature = {
-        MODELS_INFO: [(PHILIPS, "LCA001"), (PHILIPS, "LCA003"), (PHILIPS, "LCB001")],
+        MODELS_INFO: [
+            (PHILIPS, "LCA001"),
+            (PHILIPS, "LCA003"),
+            (PHILIPS, "LCB001"),
+            (PHILIPS, "LCE002"),
+        ],
         ENDPOINTS: {
             11: {
                 # <SimpleDescriptor endpoint=11 profile=260 device_type=269
@@ -77,10 +86,10 @@ class ZHAExtendedColorLight(CustomDevice):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     PhilipsOnOffCluster,
-                    LevelControl.cluster_id,
+                    PhilipsLevelControlCluster,
                     LightLink.cluster_id,
                     64514,
-                    Color.cluster_id,
+                    PhilipsColorCluster,
                     64513,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
@@ -149,9 +158,9 @@ class ZHAExtendedColorLight2(CustomDevice):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     PhilipsOnOffCluster,
-                    LevelControl.cluster_id,
+                    PhilipsLevelControlCluster,
                     LightLink.cluster_id,
-                    Color.cluster_id,
+                    PhilipsColorCluster,
                     64513,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
