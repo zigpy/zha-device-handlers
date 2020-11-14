@@ -400,6 +400,12 @@ class ElectricalMeasurementCluster(LocalDataCluster, ElectricalMeasurement):
     POWER_ID = 0x050B
     VOLTAGE_ID = 0x0500
     CONSUMPTION_ID = 0x0304
+    _CONSTANT_ATTRIBUTES = {
+        0x0402: 1,  # power_multiplier
+        0x0403: 1,  # power_divisor
+        0x0604: 1,  # ac_power_multiplier
+        0x0605: 1,  # ac_power_divisor
+    }
 
     def __init__(self, *args, **kwargs):
         """Init."""
