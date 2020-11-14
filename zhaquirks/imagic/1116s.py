@@ -7,7 +7,7 @@ from zigpy.zcl.clusters.security import IasZone
 
 from zhaquirks import PowerConfigurationCluster
 
-from . import GREATSTAR
+from . import IMAGIC
 from ..const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -30,7 +30,7 @@ class iMagic1116(CustomDevice):
         #  device_version=0
         #  input_clusters=[0, 1, 3, 32, 1026, 1280, 2821, 64513, 64514]
         #  output_clusters=[3, 25]>
-        MODELS_INFO: [(GREATSTAR, "1116-S")],
+        MODELS_INFO: [(IMAGIC, "1116-S")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
