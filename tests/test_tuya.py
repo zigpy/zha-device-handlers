@@ -21,6 +21,7 @@ from zhaquirks.const import (
     ZONE_STATE,
 )
 from zhaquirks.tuya import Data, TuyaManufClusterAttributes
+import zhaquirks.tuya.electric_heating
 import zhaquirks.tuya.motion
 import zhaquirks.tuya.siren
 import zhaquirks.tuya.valve
@@ -40,6 +41,8 @@ ZCL_TUYA_VALVE_TARGET_TEMP = b"\t3\x01\x03\x05\x02\x02\x00\x04\x00\x00\x002"
 ZCL_TUYA_VALVE_OFF = b"\t2\x01\x03\x04\x04\x04\x00\x01\x00"
 ZCL_TUYA_VALVE_SCHEDULE = b"\t2\x01\x03\x04\x04\x04\x00\x01\x01"
 ZCL_TUYA_VALVE_MANUAL = b"\t2\x01\x03\x04\x04\x04\x00\x01\x02"
+ZCL_TUYA_EHEAT_TEMPERATURE = b"\tp\x02\x00\x02\x18\x02\x00\x04\x00\x00\x00\xb3"
+ZCL_TUYA_EHEAT_TARGET_TEMP = b"\t3\x01\x03\x05\x10\x02\x00\x04\x00\x00\x00\x15"
 
 
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.motion.TuyaMotion,))
@@ -422,6 +425,102 @@ async def test_valve_send_attribute(zigpy_device_from_quirk, quirk):
             61184,
             5,
             b"\x01\x05\x00\x00\x05\x02\x02\x00\x04\x00\x00\x00F",
+            expect_reply=False,
+            command_id=0,
+        )
+        assert status == (foundation.Status.SUCCESS,)
+
+        status = await thermostat_cluster.command(0x0002)
+        assert status == foundation.Status.UNSUP_CLUSTER_COMMAND
+
+
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.electric_heating.MoesBHT,))
+async def test_eheating_state_report(zigpy_device_from_quirk, quirk):
+    """Test thermostatic valves standard reporting from incoming commands."""
+
+    electric_dev = zigpy_device_from_quirk(quirk)
+    tuya_cluster = electric_dev.endpoints[1].tuya_manufacturer
+
+    thermostat_listener = ClusterListener(electric_dev.endpoints[1].thermostat)
+
+    frames = (ZCL_TUYA_EHEAT_TEMPERATURE, ZCL_TUYA_EHEAT_TARGET_TEMP)
+    for frame in frames:
+        hdr, args = tuya_cluster.deserialize(frame)
+        tuya_cluster.handle_message(hdr, args)
+
+    assert len(thermostat_listener.cluster_commands) == 0
+    assert len(thermostat_listener.attribute_updates) == 2
+    assert thermostat_listener.attribute_updates[0][0] == 0x0000  # TEMP
+    assert thermostat_listener.attribute_updates[0][1] == 1790
+    assert thermostat_listener.attribute_updates[1][0] == 0x0012  # TARGET
+    assert thermostat_listener.attribute_updates[1][1] == 2100
+
+
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.electric_heating.MoesBHT,))
+async def test_eheat_send_attribute(zigpy_device_from_quirk, quirk):
+    """Test electric thermostat outgoing commands."""
+
+    eheat_dev = zigpy_device_from_quirk(quirk)
+    tuya_cluster = eheat_dev.endpoints[1].tuya_manufacturer
+    thermostat_cluster = eheat_dev.endpoints[1].thermostat
+
+    async def async_success(*args, **kwargs):
+        return foundation.Status.SUCCESS
+
+    with mock.patch.object(
+        tuya_cluster.endpoint, "request", side_effect=async_success
+    ) as m1:
+
+        status = await thermostat_cluster.write_attributes(
+            {
+                "occupied_heating_setpoint": 2500,
+            }
+        )
+        m1.assert_called_with(
+            61184,
+            1,
+            b"\x01\x01\x00\x00\x01\x10\x02\x00\x04\x00\x00\x00\x19",
+            expect_reply=False,
+            command_id=0,
+        )
+        assert status == (foundation.Status.SUCCESS,)
+
+        status = await thermostat_cluster.write_attributes(
+            {
+                "system_mode": 0x00,
+            }
+        )
+        m1.assert_called_with(
+            61184,
+            2,
+            b"\x01\x02\x00\x00\x02\x01\x01\x00\x01\x00",
+            expect_reply=False,
+            command_id=0,
+        )
+        assert status == (foundation.Status.SUCCESS,)
+
+        status = await thermostat_cluster.write_attributes(
+            {
+                "system_mode": 0x04,
+            }
+        )
+        m1.assert_called_with(
+            61184,
+            3,
+            b"\x01\x03\x00\x00\x03\x01\x01\x00\x01\x01",
+            expect_reply=False,
+            command_id=0,
+        )
+        assert status == (foundation.Status.SUCCESS,)
+
+        # simulate a target temp update so that relative changes can work
+        hdr, args = tuya_cluster.deserialize(ZCL_TUYA_EHEAT_TARGET_TEMP)
+        tuya_cluster.handle_message(hdr, args)
+        status = await thermostat_cluster.command(0x0000, 0x00, 20)
+        m1.assert_called_with(
+            61184,
+            4,
+            b"\x01\x04\x00\x00\x04\x10\x02\x00\x04\x00\x00\x00\x17",
             expect_reply=False,
             command_id=0,
         )
