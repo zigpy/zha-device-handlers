@@ -5,7 +5,7 @@ from typing import Optional, Tuple, Union
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import OnOff
+from zigpy.zcl.clusters.general import OnOff, PowerConfiguration
 from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
 
 from .. import Bus, LocalDataCluster
@@ -329,6 +329,19 @@ class TuyaUserInterfaceCluster(LocalDataCluster, UserInterface):
         return (foundation.Status.FAILURE,)
 
 
+class TuyaPowerConfigurationCluster(LocalDataCluster, PowerConfiguration):
+    """PowerConfiguration cluster for battery-operated thermostats."""
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self.endpoint.device.battery_bus.add_listener(self)
+
+    def battery_change(self, value):
+        """Change of reported battery percentage remaining."""
+        self._update_attribute(self.attridx["battery_percentage_remaining"], value * 2)
+
+
 class TuyaThermostat(CustomDevice):
     """Generic Tuya thermostat device."""
 
@@ -336,4 +349,5 @@ class TuyaThermostat(CustomDevice):
         """Init device."""
         self.thermostat_bus = Bus()
         self.ui_bus = Bus()
+        self.battery_bus = Bus()
         super().__init__(*args, **kwargs)
