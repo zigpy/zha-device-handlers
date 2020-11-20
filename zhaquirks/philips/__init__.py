@@ -7,6 +7,7 @@ from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, LevelControl, OnOff
 from zigpy.zcl.clusters.lighting import Color
+from zigpy.zcl.clusters.measurement import OccupancySensing
 
 from ..const import (
     ARGS,
@@ -75,6 +76,15 @@ class PowerOnState(t.enum8):
     Off = 0x00
     On = 0x01
     LastState = 0xFF
+
+
+class OccupancyCluster(CustomCluster, OccupancySensing):
+    """Philips occupancy cluster."""
+
+    manufacturer_attributes = {
+        0x0030: ("sensitivity", t.uint8_t),
+        0x0031: ("sensitivity_max", t.uint8_t),
+    }
 
 
 class PhilipsOnOffCluster(CustomCluster, OnOff):

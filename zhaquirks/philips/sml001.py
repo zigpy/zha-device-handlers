@@ -1,4 +1,4 @@
-"""Quirk for Philips SML002."""
+"""Quirk for Philips SML001."""
 from zigpy.profiles import zha, zll
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
@@ -29,16 +29,16 @@ from ..const import (
 )
 
 
-class PhilipsSML002(CustomDevice):
-    """philips SML002 device."""
+class PhilipsSML001(CustomDevice):
+    """philips SML001 device."""
 
     signature = {
-        MODELS_INFO: [(PHILIPS, "SML002")],
+        MODELS_INFO: [(PHILIPS, "SML001")],
         ENDPOINTS: {
             #  <SimpleDescriptor endpoint=1 profile=49246 device_type=0x0850
             #  device_version=?
             #  input_clusters=[0]
-            #  output_clusters=[0, 3, 4, 5, 6, 8, 768]>
+            #  output_clusters=[0, 3, 4, 5, 6, 8, 300]>
             1: {
                 PROFILE_ID: zll.PROFILE_ID,
                 DEVICE_TYPE: zll.DeviceType.ON_OFF_SENSOR,
@@ -55,8 +55,8 @@ class PhilipsSML002(CustomDevice):
             },
             #  <SimpleDescriptor endpoint=2 profile=260 device_type=0x0107
             #  device_version=?
-            #  input_clusters=[0, 1, 3, 1024, 1026, 1030]
-            #  output_clusters=[25]>
+            #  input_clusters=[0, 1, 3, 400, 402, 406]
+            #  output_clusters=[19]>
             2: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.OCCUPANCY_SENSOR,
