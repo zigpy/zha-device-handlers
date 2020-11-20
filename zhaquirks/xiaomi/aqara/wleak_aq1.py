@@ -4,12 +4,19 @@ from zigpy.quirks import CustomCluster
 from zigpy.zcl.clusters.general import Identify, Ota
 from zigpy.zcl.clusters.security import IasZone
 
-from .. import LUMI, BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
+from .. import (
+    LUMI,
+    XIAOMI_NODE_DESC,
+    BasicCluster,
+    PowerConfigurationCluster,
+    XiaomiQuickInitDevice,
+)
 from ...const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
+    NODE_DESCRIPTOR,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SKIP_CONFIGURATION,
@@ -29,7 +36,7 @@ class CustomIasZone(CustomCluster, IasZone):
             super()._update_attribute(attrid, value)
 
 
-class LeakAQ1(XiaomiCustomDevice):
+class LeakAQ1(XiaomiQuickInitDevice):
     """Xiaomi aqara leak sensor device."""
 
     signature = {
@@ -53,6 +60,7 @@ class LeakAQ1(XiaomiCustomDevice):
     }
     replacement = {
         SKIP_CONFIGURATION: True,
+        NODE_DESCRIPTOR: XIAOMI_NODE_DESC,
         ENDPOINTS: {
             1: {
                 INPUT_CLUSTERS: [
