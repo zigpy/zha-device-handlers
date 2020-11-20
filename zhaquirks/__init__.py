@@ -315,7 +315,7 @@ class OccupancyWithReset(_Occupancy):
 class QuickInitDevice(CustomDevice):
     """Devices with quick initialization from quirk signature."""
 
-    signature: Optional[Dict[str, Any]] = {}
+    signature: Optional[Dict[str, Any]] = None
 
     @classmethod
     def from_signature(
