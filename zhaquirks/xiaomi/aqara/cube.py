@@ -11,7 +11,13 @@ from zigpy.zcl.clusters.general import (
     Scenes,
 )
 
-from .. import LUMI, BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
+from .. import (
+    LUMI,
+    XIAOMI_NODE_DESC,
+    BasicCluster,
+    PowerConfigurationCluster,
+    XiaomiQuickInitDevice,
+)
 from ... import CustomCluster
 from ...const import (
     ARGS,
@@ -20,6 +26,7 @@ from ...const import (
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
+    NODE_DESCRIPTOR,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SHAKEN,
@@ -146,7 +153,7 @@ def extend_dict(dictionary, value, ranges):
 extend_dict(MOVEMENT_TYPE, FLIP, range(FLIP_BEGIN, FLIP_END))
 
 
-class Cube(XiaomiCustomDevice):
+class Cube(XiaomiQuickInitDevice):
     """Aqara magic cube device."""
 
     def __init__(self, *args, **kwargs):
@@ -275,6 +282,7 @@ class Cube(XiaomiCustomDevice):
 
     replacement = {
         SKIP_CONFIGURATION: True,
+        NODE_DESCRIPTOR: XIAOMI_NODE_DESC,
         ENDPOINTS: {
             1: {
                 DEVICE_TYPE: XIAOMI_SENSORS_REPLACEMENT,

@@ -13,7 +13,13 @@ from zigpy.zcl.clusters.general import (
     Scenes,
 )
 
-from .. import LUMI, BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
+from .. import (
+    LUMI,
+    XIAOMI_NODE_DESC,
+    BasicCluster,
+    PowerConfigurationCluster,
+    XiaomiQuickInitDevice,
+)
 from ... import CustomCluster
 from ...const import (
     ATTR_ID,
@@ -24,6 +30,7 @@ from ...const import (
     INPUT_CLUSTERS,
     LONG_PRESS,
     MODELS_INFO,
+    NODE_DESCRIPTOR,
     OUTPUT_CLUSTERS,
     PRESS_TYPE,
     PROFILE_ID,
@@ -46,7 +53,7 @@ XIAOMI_DEVICE_TYPE3 = 0x5F03
 _LOGGER = logging.getLogger(__name__)
 
 
-class RemoteB186ACN01(XiaomiCustomDevice):
+class RemoteB186ACN01(XiaomiQuickInitDevice):
     """Aqara single key switch device."""
 
     class MultistateInputCluster(CustomCluster, MultistateInput):
@@ -141,6 +148,7 @@ class RemoteB186ACN01(XiaomiCustomDevice):
 
     replacement = {
         SKIP_CONFIGURATION: True,
+        NODE_DESCRIPTOR: XIAOMI_NODE_DESC,
         ENDPOINTS: {
             1: {
                 DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,

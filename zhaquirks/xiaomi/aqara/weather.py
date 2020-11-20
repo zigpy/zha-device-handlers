@@ -7,12 +7,13 @@ from zigpy.zcl.clusters.measurement import PressureMeasurement
 
 from .. import (
     LUMI,
+    XIAOMI_NODE_DESC,
     BasicCluster,
     PowerConfigurationCluster,
     PressureMeasurementCluster,
     RelativeHumidityCluster,
     TemperatureMeasurementCluster,
-    XiaomiCustomDevice,
+    XiaomiQuickInitDevice,
 )
 from ... import Bus
 from ...const import (
@@ -20,6 +21,7 @@ from ...const import (
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
+    NODE_DESCRIPTOR,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SKIP_CONFIGURATION,
@@ -31,7 +33,7 @@ XIAOMI_CLUSTER_ID = 0xFFFF
 _LOGGER = logging.getLogger(__name__)
 
 
-class Weather(XiaomiCustomDevice):
+class Weather(XiaomiQuickInitDevice):
     """Xiaomi weather sensor device."""
 
     def __init__(self, *args, **kwargs):
@@ -70,6 +72,7 @@ class Weather(XiaomiCustomDevice):
 
     replacement = {
         SKIP_CONFIGURATION: True,
+        NODE_DESCRIPTOR: XIAOMI_NODE_DESC,
         ENDPOINTS: {
             1: {
                 INPUT_CLUSTERS: [

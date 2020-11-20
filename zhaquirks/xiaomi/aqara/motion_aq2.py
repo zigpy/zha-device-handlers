@@ -7,12 +7,13 @@ from zigpy.zcl.clusters.security import IasZone
 
 from .. import (
     LUMI,
+    XIAOMI_NODE_DESC,
     BasicCluster,
     IlluminanceMeasurementCluster,
     MotionCluster,
     OccupancyCluster,
     PowerConfigurationCluster,
-    XiaomiCustomDevice,
+    XiaomiQuickInitDevice,
 )
 from ... import Bus
 from ...const import (
@@ -20,6 +21,7 @@ from ...const import (
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
+    NODE_DESCRIPTOR,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SKIP_CONFIGURATION,
@@ -28,7 +30,7 @@ from ...const import (
 XIAOMI_CLUSTER_ID = 0xFFFF
 
 
-class MotionAQ2(XiaomiCustomDevice):
+class MotionAQ2(XiaomiQuickInitDevice):
     """Custom device representing aqara body sensors."""
 
     def __init__(self, *args, **kwargs):
@@ -64,6 +66,7 @@ class MotionAQ2(XiaomiCustomDevice):
 
     replacement = {
         SKIP_CONFIGURATION: True,
+        NODE_DESCRIPTOR: XIAOMI_NODE_DESC,
         ENDPOINTS: {
             1: {
                 INPUT_CLUSTERS: [
