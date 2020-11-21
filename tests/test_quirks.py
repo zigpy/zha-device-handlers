@@ -17,16 +17,17 @@ from zhaquirks.const import (
     MANUFACTURER,
     MODEL,
     MODELS_INFO,
+    NODE_DESCRIPTOR,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
 
-ALL_QUIRK_CLASSES = (
+ALL_QUIRK_CLASSES = [
     quirk
     for manufacturer in zq._DEVICE_REGISTRY._registry.values()
     for model in manufacturer.values()
     for quirk in model
-)
+]
 
 
 @pytest.mark.parametrize("quirk", ALL_QUIRK_CLASSES)
@@ -191,3 +192,21 @@ def test_dev_from_signature(raw_device, quirk_signature):
         assert [cluster_id for cluster_id in ep.out_clusters] == ep_data[
             OUTPUT_CLUSTERS
         ]
+
+
+@pytest.mark.parametrize("quirk", ALL_QUIRK_CLASSES)
+def test_quirk_quickinit(quirk):
+    """Make sure signature in QuickInit Devices have all required attributes."""
+
+    if not issubclass(quirk, zhaquirks.QuickInitDevice):
+        return
+
+    assert quirk.signature.get(MODELS_INFO) or quirk.signature[MANUFACTURER]
+    assert quirk.signature[NODE_DESCRIPTOR]
+    assert quirk.signature[ENDPOINTS]
+    for ep_id, ep_data in quirk.signature[ENDPOINTS].items():
+        assert ep_id
+        assert PROFILE_ID in ep_data
+        assert DEVICE_TYPE in ep_data
+        assert isinstance(ep_data[INPUT_CLUSTERS], list)
+        assert isinstance(ep_data[OUTPUT_CLUSTERS], list)
