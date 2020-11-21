@@ -44,18 +44,12 @@ MAX_HEAT_SETPOINT_ATTR = 0x0016
 
 
 def payload_to_decimal(data):
-    """Coverts command payload to a single decimal.
-
-    [4, 0, 0, 1, 39] => 295 and [4, 0, 0, 0, 220] => 220
-    """
+    """Coverts command payload to a single decimal."""
     return reduce(lambda acc, i: ((acc << 8) + i) % 2 ** 32, data[1:], 0)
 
 
 def decimal_to_payload(number):
-    """Coverts decimal to command payload.
-
-    e.g. 295 => [4, 0, 0, 1, 39] and 220 => [4, 0, 0, 0, 220]
-    """
+    """Coverts decimal to command payload."""
     hex = "{:X}".format(number).rjust(4, "0")
     chunk1 = int(hex[0:2], 16)
     chunk2 = int(hex[2:], 16)
