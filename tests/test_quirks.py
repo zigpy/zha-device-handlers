@@ -21,6 +21,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.xiaomi import XIAOMI_NODE_DESC
 
 ALL_QUIRK_CLASSES = [
     quirk
@@ -61,6 +62,7 @@ def test_dev_from_signature_incomplete_sig(raw_device):
     class BadSigNoModel(zhaquirks.QuickInitDevice):
         signature = {
             MODELS_INFO: [("manufacturer_1", "model_1")],
+            NODE_DESCRIPTOR: XIAOMI_NODE_DESC,
             ENDPOINTS: {
                 3: {
                     PROFILE_ID: zigpy.profiles.zha.PROFILE_ID,
@@ -95,6 +97,7 @@ def test_dev_from_signature_incomplete_sig(raw_device):
         signature = {
             MANUFACTURER: "manufacturer",
             MODEL: "model",
+            NODE_DESCRIPTOR: XIAOMI_NODE_DESC,
             ENDPOINTS: {3: {**ep_sig_complete}},
         }
 
@@ -122,6 +125,7 @@ def test_dev_from_signature_incomplete_sig(raw_device):
             },
             MANUFACTURER: "manufacturer_3",
             MODEL: "model_3",
+            NODE_DESCRIPTOR: XIAOMI_NODE_DESC,
         },
         {
             ENDPOINTS: {
@@ -140,6 +144,26 @@ def test_dev_from_signature_incomplete_sig(raw_device):
             },
             MANUFACTURER: "manufacturer_4",
             MODEL: "model_4",
+            NODE_DESCRIPTOR: XIAOMI_NODE_DESC,
+        },
+        {
+            ENDPOINTS: {
+                2: {
+                    PROFILE_ID: 33,
+                    DEVICE_TYPE: 44,
+                    INPUT_CLUSTERS: [0, 0x0201, 0x0402],
+                    OUTPUT_CLUSTERS: [0x0019, 0x0401],
+                },
+                5: {
+                    PROFILE_ID: 55,
+                    DEVICE_TYPE: 66,
+                    INPUT_CLUSTERS: [0, 6, 8],
+                    OUTPUT_CLUSTERS: [0x0019, 0x0500],
+                },
+            },
+            MODELS_INFO: (("LUMI", "model_4"),),
+            MODEL: "model_4",
+            NODE_DESCRIPTOR: XIAOMI_NODE_DESC,
         },
         {
             ENDPOINTS: {
@@ -166,6 +190,7 @@ def test_dev_from_signature_incomplete_sig(raw_device):
             },
             MANUFACTURER: "manufacturer 5",
             MODEL: "model 5",
+            NODE_DESCRIPTOR: XIAOMI_NODE_DESC,
         },
     ),
 )
@@ -177,7 +202,10 @@ def test_dev_from_signature(raw_device, quirk_signature):
 
     device = QuirkDevice.from_signature(raw_device)
     assert device.status == zigpy.device.Status.ENDPOINTS_INIT
-    assert device.manufacturer == quirk_signature[MANUFACTURER]
+    if MANUFACTURER in quirk_signature:
+        assert device.manufacturer == quirk_signature[MANUFACTURER]
+    else:
+        assert device.manufacturer == "LUMI"
     assert device.model == quirk_signature[MODEL]
 
     ep_signature = quirk_signature[ENDPOINTS]
