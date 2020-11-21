@@ -504,7 +504,7 @@ def handle_quick_init(
 
     hdr, data = foundation.ZCLHeader.deserialize(message)
     sender.debug(
-        """Received ZCL message while uninitialized on %s endpoint, cluster 0x%04x """
+        """Received ZCL while uninitialized on endpoint id %s, cluster 0x%04x """
         """id, hdr: %s, payload: %s""",
         src_ep,
         cluster,
