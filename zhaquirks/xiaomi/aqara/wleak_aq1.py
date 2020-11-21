@@ -45,6 +45,7 @@ class LeakAQ1(XiaomiQuickInitDevice):
         #  input_clusters=[0, 3, 1]
         #  output_clusters=[25]>
         MODELS_INFO: [(LUMI, "lumi.sensor_wleak.aq1")],
+        NODE_DESCRIPTOR: XIAOMI_NODE_DESC,
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -60,7 +61,6 @@ class LeakAQ1(XiaomiQuickInitDevice):
     }
     replacement = {
         SKIP_CONFIGURATION: True,
-        NODE_DESCRIPTOR: XIAOMI_NODE_DESC,
         ENDPOINTS: {
             1: {
                 INPUT_CLUSTERS: [

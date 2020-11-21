@@ -49,6 +49,7 @@ class Weather(XiaomiQuickInitDevice):
         #  input_clusters=[0, 3, 65535, 1026, 1027, 1029]
         #  output_clusters=[0, 4, 65535]>
         MODELS_INFO: [(LUMI, "lumi.weather")],
+        NODE_DESCRIPTOR: XIAOMI_NODE_DESC,
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -72,7 +73,6 @@ class Weather(XiaomiQuickInitDevice):
 
     replacement = {
         SKIP_CONFIGURATION: True,
-        NODE_DESCRIPTOR: XIAOMI_NODE_DESC,
         ENDPOINTS: {
             1: {
                 INPUT_CLUSTERS: [
@@ -103,6 +103,7 @@ class Weather2(Weather):
         #  input_clusters=[0, 3, 65535, 1026, 1027, 1029]
         #  output_clusters=[0, 4, 65535]>
         MODELS_INFO: [(LUMI, "lumi.weather")],
+        NODE_DESCRIPTOR: XIAOMI_NODE_DESC,
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,

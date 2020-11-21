@@ -42,6 +42,7 @@ class MagnetAQ2(XiaomiQuickInitDevice):
         #  input_clusters=[0, 3, 65535, 6]
         #  output_clusters=[0, 4, 65535]>
         MODELS_INFO: [(LUMI, "lumi.sensor_magnet.aq2")],
+        NODE_DESCRIPTOR: XIAOMI_NODE_DESC,
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -62,7 +63,6 @@ class MagnetAQ2(XiaomiQuickInitDevice):
     }
     replacement = {
         SKIP_CONFIGURATION: True,
-        NODE_DESCRIPTOR: XIAOMI_NODE_DESC,
         ENDPOINTS: {
             1: {
                 INPUT_CLUSTERS: [

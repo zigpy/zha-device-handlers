@@ -46,6 +46,7 @@ class MotionAQ2(XiaomiQuickInitDevice):
         #  input_clusters=[0, 65535, 1030, 1024, 1280, 1, 3]
         #  output_clusters=[0, 25]>
         MODELS_INFO: [(LUMI, "lumi.sensor_motion.aq2")],
+        NODE_DESCRIPTOR: XIAOMI_NODE_DESC,
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -66,7 +67,6 @@ class MotionAQ2(XiaomiQuickInitDevice):
 
     replacement = {
         SKIP_CONFIGURATION: True,
-        NODE_DESCRIPTOR: XIAOMI_NODE_DESC,
         ENDPOINTS: {
             1: {
                 INPUT_CLUSTERS: [

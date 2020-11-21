@@ -27,6 +27,7 @@ from .const import (
     MODEL,
     MODELS_INFO,
     MOTION_EVENT,
+    NODE_DESCRIPTOR,
     OFF,
     ON,
     OUTPUT_CLUSTERS,
@@ -329,6 +330,8 @@ class QuickInitDevice(CustomDevice):
         manufacturer = cls.signature.get(MANUFACTURER)
         if manufacturer is None:
             manufacturer = cls.signature[MODELS_INFO][0][0]
+
+        device.node_desc = cls.signature[NODE_DESCRIPTOR]
 
         endpoints = cls.signature[ENDPOINTS]
         for ep_id, ep_data in endpoints.items():

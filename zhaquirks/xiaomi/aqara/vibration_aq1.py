@@ -160,6 +160,7 @@ class VibrationAQ1(XiaomiQuickInitDevice):
 
     signature = {
         MODELS_INFO: [(LUMI, "lumi.vibration.aq1")],
+        NODE_DESCRIPTOR: XIAOMI_NODE_DESC,
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -195,7 +196,6 @@ class VibrationAQ1(XiaomiQuickInitDevice):
 
     replacement = {
         SKIP_CONFIGURATION: True,
-        NODE_DESCRIPTOR: XIAOMI_NODE_DESC,
         ENDPOINTS: {
             1: {
                 DEVICE_TYPE: zha.DeviceType.DOOR_LOCK,

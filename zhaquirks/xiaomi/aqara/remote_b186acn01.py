@@ -89,6 +89,7 @@ class RemoteB186ACN01(XiaomiQuickInitDevice):
             (LUMI, "lumi.remote.b186acn02"),
             (LUMI, "lumi.sensor_86sw1"),
         ],
+        NODE_DESCRIPTOR: XIAOMI_NODE_DESC,
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -148,7 +149,6 @@ class RemoteB186ACN01(XiaomiQuickInitDevice):
 
     replacement = {
         SKIP_CONFIGURATION: True,
-        NODE_DESCRIPTOR: XIAOMI_NODE_DESC,
         ENDPOINTS: {
             1: {
                 DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
