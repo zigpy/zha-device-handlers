@@ -1,15 +1,15 @@
 """Saswell (Tuya whitelabel) 88teujp thermostat valve quirk."""
 
-from functools import reduce
 import logging
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
+import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PowerConfiguration
 from zigpy.zcl.clusters.hvac import Thermostat
 
-from . import TUYA_GET_DATA, TUYA_SET_DATA, TUYA_SET_DATA_RESPONSE, TuyaManufCluster
+from . import TuyaManufClusterAttributes
 from .. import Bus, LocalDataCluster
 from ..const import (
     DEVICE_TYPE,
@@ -32,68 +32,37 @@ SYSTEM_MODE_COMMAND_ID = 357
 LOCAL_TEMP_COMMAND_ID = 614
 BATTERY_STATE_COMMAND_ID = 1385
 
-OCCUPIED_HEATING_SETPOINT_ATTR = 0x0012
-SYSTEM_MODE_ATTR = 0x001C
-RUNNING_MODE_ATTR = 0x001E
-LOCAL_TEMP_ATTR = 0x0000
 CTRL_SEQ_OF_OPER_ATTR = 0x001B
-BATTERY_PERCENTAGE_REMAINING_ATTR = 0x0021
 
 MIN_HEAT_SETPOINT_ATTR = 0x0015
 MAX_HEAT_SETPOINT_ATTR = 0x0016
 
 
-def payload_to_decimal(data):
-    """Coverts command payload to a single decimal."""
-    return reduce(lambda acc, i: ((acc << 8) + i) % 2 ** 32, data[1:], 0)
-
-
-def decimal_to_payload(number):
-    """Coverts decimal to command payload."""
-    hex = "{:X}".format(number).rjust(4, "0")
-    chunk1 = int(hex[0:2], 16)
-    chunk2 = int(hex[2:], 16)
-    return [4, 0, 0, chunk1, chunk2]
-
-
-class ManufacturerThermostatCluster(TuyaManufCluster):
+class ManufacturerThermostatCluster(TuyaManufClusterAttributes):
     """Manufacturer thermostat cluster."""
 
-    def handle_cluster_request(self, tsn, command_id, args):
-        """Handle cluster request."""
-        if command_id != TUYA_GET_DATA and command_id != TUYA_SET_DATA_RESPONSE:
-            return
+    manufacturer_attributes = {
+        SYSTEM_MODE_COMMAND_ID: ("system_mode", t.uint8_t),
+        OCCUPIED_HEATING_SETPOINT_COMMAND_ID: ("occupied_heating_setpoint", t.uint32_t),
+        LOCAL_TEMP_COMMAND_ID: ("local_temp", t.uint32_t),
+        BATTERY_STATE_COMMAND_ID: ("battery_state", t.uint8_t),
+    }
 
-        tuya_cmd = args[0]
-        decimal = payload_to_decimal(tuya_cmd.data)
-
-        if tuya_cmd.command_id == OCCUPIED_HEATING_SETPOINT_COMMAND_ID:
+    def _update_attribute(self, attrid, value):
+        super()._update_attribute(attrid, value)
+        if attrid == OCCUPIED_HEATING_SETPOINT_COMMAND_ID:
             self.endpoint.device.thermostat_bus.listener_event(
-                OCCUPIED_HEATING_SETPOINT_REPORTED, decimal
+                OCCUPIED_HEATING_SETPOINT_REPORTED, value
             )
-        elif tuya_cmd.command_id == LOCAL_TEMP_COMMAND_ID:
+        elif attrid == SYSTEM_MODE_COMMAND_ID:
             self.endpoint.device.thermostat_bus.listener_event(
-                LOCAL_TEMP_REPORTED, decimal
+                SYSTEM_MODE_REPORTED, value
             )
-        elif tuya_cmd.command_id == SYSTEM_MODE_COMMAND_ID:
+        elif attrid == BATTERY_STATE_COMMAND_ID:
+            self.endpoint.device.battery_bus.listener_event(BATTERY_REPORTED, value)
+        elif attrid == LOCAL_TEMP_COMMAND_ID:
             self.endpoint.device.thermostat_bus.listener_event(
-                SYSTEM_MODE_REPORTED, decimal
-            )
-        elif tuya_cmd.command_id == BATTERY_STATE_COMMAND_ID:
-            self.endpoint.device.battery_bus.listener_event(BATTERY_REPORTED, decimal)
-        elif (
-            tuya_cmd.command_id >= 110 and tuya_cmd.command_id <= 129
-        ):  # Ignore historical data and schedules
-            pass
-        elif tuya_cmd.command_id == 362:  # Ignore away mode
-            pass
-        elif tuya_cmd.command_id == 364:  # Ignore auto/manual mode
-            pass
-        else:
-            _LOGGER.debug(
-                "Unknown command received: %d, %d",
-                tuya_cmd.command_id,
-                decimal,
+                LOCAL_TEMP_REPORTED, value
             )
 
 
@@ -112,11 +81,11 @@ class PowerConfigurationCluster(LocalDataCluster, PowerConfiguration):
         _LOGGER.debug("reported battery alert: %d", value)
         if value == 1:  # alert
             self._update_attribute(
-                BATTERY_PERCENTAGE_REMAINING_ATTR, 0
+                self.attridx["battery_percentage_remaining"], 0
             )  # report 0% battery
         else:
             self._update_attribute(
-                BATTERY_PERCENTAGE_REMAINING_ATTR, 200
+                self.attridx["battery_percentage_remaining"], 200
             )  # report 100% battery
 
 
@@ -138,57 +107,80 @@ class ThermostatCluster(LocalDataCluster, Thermostat):
 
     def occupied_heating_setpoint_reported(self, value):
         """Handle reported occupied heating setpoint state."""
-        self._update_attribute(OCCUPIED_HEATING_SETPOINT_ATTR, value * 10)
+        self._update_attribute(self.attridx["occupied_heating_setpoint"], value * 10)
         _LOGGER.debug("reported occupied heating setpoint: %d", value)
 
     def local_temp_reported(self, value):
         """Handle reported local temperature."""
-        self._update_attribute(LOCAL_TEMP_ATTR, value * 10)
+        self._update_attribute(self.attridx["local_temp"], value * 10)
         _LOGGER.debug("reported local temperature: %d", value)
 
     def system_mode_reported(self, value):
         """Handle reported system mode."""
         if value == 1:
-            self._update_attribute(SYSTEM_MODE_ATTR, Thermostat.SystemMode.Heat)
-            self._update_attribute(RUNNING_MODE_ATTR, Thermostat.RunningMode.Heat)
+            self._update_attribute(
+                self.attridx["system_mode"], Thermostat.SystemMode.Heat
+            )
+            self._update_attribute(
+                self.attridx["running_mode"], Thermostat.RunningMode.Heat
+            )
             _LOGGER.debug("reported system_mode: heat")
         else:
-            self._update_attribute(SYSTEM_MODE_ATTR, Thermostat.SystemMode.Off)
-            self._update_attribute(RUNNING_MODE_ATTR, Thermostat.RunningMode.Off)
+            self._update_attribute(
+                self.attridx["system_mode"], Thermostat.SystemMode.Off
+            )
+            self._update_attribute(
+                self.attridx["running_mode"], Thermostat.RunningMode.Off
+            )
             _LOGGER.debug("reported system_mode: off")
 
     async def write_attributes(self, attributes, manufacturer=None):
         """Override remote writes."""
-        if "system_mode" in attributes:
-            mode = attributes.get("system_mode")
+        records = self._write_attr_records(attributes)
 
-            if mode == Thermostat.SystemMode.Off:
-                await self.send_tuya_command(SYSTEM_MODE_COMMAND_ID, [1, 0])
-                _LOGGER.debug("set system_mode: off")
-            if mode == Thermostat.SystemMode.Heat:
-                await self.send_tuya_command(SYSTEM_MODE_COMMAND_ID, [1, 1])
-                _LOGGER.debug("set system_mode: heat")
-        elif "occupied_heating_setpoint" in attributes:
-            temperature = int(attributes.get("occupied_heating_setpoint") / 10)
-            await self.send_tuya_command(
-                OCCUPIED_HEATING_SETPOINT_COMMAND_ID, decimal_to_payload(temperature)
+        if not records:
+            return (foundation.Status.SUCCESS,)
+
+        manufacturer_attrs = {}
+        for record in records:
+            attr_name = self.attributes[record.attrid][0]
+            new_attrs = self.map_attribute(attr_name, record.value.value)
+
+            _LOGGER.debug(
+                "[0x%04x:%s:0x%04x] Mapping standard %s (0x%04x) "
+                "with value %s to custom %s",
+                self.endpoint.device.nwk,
+                self.endpoint.endpoint_id,
+                self.cluster_id,
+                attr_name,
+                record.attrid,
+                repr(record.value.value),
+                repr(new_attrs),
             )
-            _LOGGER.debug("set occupied_heating_setpoint: %d", temperature)
+
+            manufacturer_attrs.update(new_attrs)
+
+        if not manufacturer_attrs:
+            return (foundation.Status.FAILURE,)
+
+        await self.endpoint.tuya_manufacturer.write_attributes(
+            manufacturer_attrs, manufacturer=manufacturer
+        )
+
         return (foundation.Status.SUCCESS,)
 
-    async def send_tuya_command(self, cmd, data):
-        """Send tuya command."""
-        cmd_payload = TuyaManufCluster.Command()
-        cmd_payload.status = 0
-        cmd_payload.tsn = 0
-        cmd_payload.function = 0
-        cmd_payload.command_id = cmd
-        cmd_payload.data = data
-        await self.endpoint.tuya_manufacturer.command(
-            TUYA_SET_DATA,
-            cmd_payload,
-            expect_reply=False,
-        )
+    def map_attribute(self, attribute, value):
+        """Map standardized attribute value to dict of manufacturer values."""
+
+        if attribute == "occupied_heating_setpoint":
+            # centidegree to decidegree
+            return {OCCUPIED_HEATING_SETPOINT_COMMAND_ID: round(value / 10)}
+
+        if attribute == "system_mode":
+            if value == self.SystemMode.Off:
+                return {SYSTEM_MODE_COMMAND_ID: 0}
+            if value == self.SystemMode.Heat:
+                return {SYSTEM_MODE_COMMAND_ID: 1}
 
 
 class Thermostat88teujp(CustomDevice):
