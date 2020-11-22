@@ -8,7 +8,6 @@ from zigpy.zcl import foundation
 
 from zhaquirks.const import OFF, ON, ZONE_STATE
 import zhaquirks.tuya.motion
-from zhaquirks.tuya.thermostat_88teujp import decimal_to_payload, payload_to_decimal
 
 from tests.common import ClusterListener
 
