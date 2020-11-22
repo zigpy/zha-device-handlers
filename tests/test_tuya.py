@@ -104,15 +104,3 @@ async def test_singleswitch_requests(zigpy_device_from_quirk, quirk):
 
     status = switch_cluster.command(0x0002)
     assert status == foundation.Status.UNSUP_CLUSTER_COMMAND
-
-
-async def test_thermostat_payload_to_decimal():
-    """Test tuya thermostat payload_to_decimal."""
-    assert decimal_to_payload(295) == [4, 0, 0, 1, 39]
-    assert decimal_to_payload(220) == [4, 0, 0, 0, 220]
-
-
-async def test_thermostat_decimal_to_payload():
-    """Test tuya thermostat decimal_to_payload."""
-    assert payload_to_decimal([4, 0, 0, 1, 39]) == 295
-    assert payload_to_decimal([4, 0, 0, 0, 220]) == 220
