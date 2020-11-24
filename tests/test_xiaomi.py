@@ -3,9 +3,30 @@ import asyncio
 from unittest import mock
 
 import pytest
+import zigpy.device
+import zigpy.types as t
 
-from zhaquirks.const import OFF, ON, ZONE_STATE
-from zhaquirks.xiaomi import BasicCluster
+from zhaquirks.const import (
+    DEVICE_TYPE,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    MANUFACTURER,
+    MODEL,
+    NODE_DESCRIPTOR,
+    OFF,
+    ON,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
+    ZONE_STATE,
+)
+from zhaquirks.xiaomi import (
+    LUMI,
+    XIAOMI_NODE_DESC,
+    BasicCluster,
+    XiaomiCustomDevice,
+    XiaomiQuickInitDevice,
+    handle_quick_init,
+)
 import zhaquirks.xiaomi.aqara.motion_aq2
 import zhaquirks.xiaomi.aqara.motion_aq2b
 import zhaquirks.xiaomi.mija.motion
@@ -85,3 +106,143 @@ async def test_konke_motion(zigpy_device_from_quirk, quirk):
     assert len(occupancy_listener.attribute_updates) == 2
     assert occupancy_listener.attribute_updates[1][0] == 0x0000
     assert occupancy_listener.attribute_updates[1][1] == 0
+
+
+@pytest.fixture
+def raw_device():
+    """Raw device fixture."""
+
+    ieee = t.EUI64.convert("11:22:33:44:55:66:77:88")
+    device = zigpy.device.Device(mock.MagicMock(), ieee, 0x1234)
+    with mock.patch.object(device, "cancel_initialization"):
+        yield device
+
+
+@pytest.mark.parametrize(
+    "ep_id, cluster, message",
+    (
+        (0, 0, b"\x18\x00\n\x05\x00B\x11lumi.sensor_smoke\x01\x00 \x01"),
+        (0, 1, b"\x18\x00\n\x05\x00B\x11lumi.sensor_smoke\x01\x00 \x01"),
+    ),
+)
+def test_xiaomi_quick_init_wrong_ep(raw_device, ep_id, cluster, message):
+    """Test quick init when message is received on wrong endpoint."""
+
+    with mock.patch("zigpy.zcl.foundation.ZCLHeader.deserialize") as hdr_deserialize:
+        assert (
+            handle_quick_init(raw_device, 0x0260, cluster, ep_id, ep_id, message)
+            is None
+        )
+        assert hdr_deserialize.call_count == 0
+        assert raw_device.cancel_initialization.call_count == 0
+        assert raw_device.application.device_initialized.call_count == 0
+
+
+@pytest.mark.parametrize(
+    "cluster, message",
+    (
+        (
+            0,
+            b"\x19\x00\n\x05\x00B\x11lumi.sensor_smoke\x01\x00 \x01",
+        ),  # cluster command
+        (1, b"\x18\x00\n\x05\x00B\x11lumi.sensor_smoke\x01\x00 \x01"),  # wrong cluster
+        (
+            0,
+            b"\x18\x00\x01\x05\x00B\x11lumi.sensor_smoke\x01\x00 \x01",
+        ),  # wrong command
+        (
+            0,
+            b"\x18\x00\xFF\x05\x00B\x11lumi.sensor_smoke\x01\x00 \x01",
+        ),  # unknown command
+        (0, b"\x18\x00\n\x04\x00B\x11lumi.sensor_smoke\x01\x00 \x01"),  # wrong attr id
+        (0, b"\x18\x00\n\x05\x00B\x11lumi.sensor_smoke\x01\x00 "),  # data under run
+        (0, b"\x18\x00\n\x05\x00B\x00\x01\x00 \x01"),  # no model
+        (0, b"\x18\x00\n\x05\x00B\x11lumi.sensor_smoke\x01\x00 \x01"),  # no quirk
+    ),
+)
+def test_xiaomi_quick_init_wrong_cluster_or_message(raw_device, cluster, message):
+    """Test quick init when message is received on wrong cluster or wrong endpoint."""
+
+    assert handle_quick_init(raw_device, 0x0260, cluster, 1, 1, message) is None
+    assert raw_device.cancel_initialization.call_count == 0
+    assert raw_device.application.device_initialized.call_count == 0
+
+
+def test_xiaomi_quick_init_wrong_quirk_type(raw_device):
+    """Test quick init for existing quirk which is not enabled for quick joining."""
+
+    class WrongDevice(XiaomiCustomDevice):
+        signature = {
+            MANUFACTURER: LUMI,
+            MODEL: "lumi.sensor_smoke_2",
+        }
+
+    assert (
+        handle_quick_init(
+            raw_device,
+            0x0260,
+            0,
+            1,
+            1,
+            b"\x18\x00\n\x05\x00B\x13lumi.sensor_smoke_2\x01\x00 \x01",
+        )
+        is None
+    )
+    assert raw_device.cancel_initialization.call_count == 0
+    assert raw_device.application.device_initialized.call_count == 0
+
+
+def test_xiaomi_quick_init_wrong_signature(raw_device):
+    """Test quick init for existing quirk with wrong signature for quick joining."""
+
+    class WrongSignature(XiaomiQuickInitDevice):
+        signature = {
+            MODEL: "lumi.sensor_smoke",
+        }
+
+    assert (
+        handle_quick_init(
+            raw_device,
+            0x0260,
+            0,
+            1,
+            1,
+            b"\x18\x00\n\x05\x00B\x11lumi.sensor_smoke\x01\x00 \x01",
+        )
+        is None
+    )
+    assert raw_device.cancel_initialization.call_count == 0
+    assert raw_device.application.device_initialized.call_count == 0
+
+
+def test_xiaomi_quick_init(raw_device):
+    """Test quick init."""
+
+    class XiaomiQuirk(XiaomiQuickInitDevice):
+        signature = {
+            NODE_DESCRIPTOR: XIAOMI_NODE_DESC,
+            ENDPOINTS: {
+                1: {
+                    PROFILE_ID: 0x0260,
+                    DEVICE_TYPE: 0x0000,
+                    INPUT_CLUSTERS: [],
+                    OUTPUT_CLUSTERS: [],
+                }
+            },
+            MANUFACTURER: LUMI,
+            MODEL: "lumi.sensor_smoke",
+        }
+
+    assert (
+        handle_quick_init(
+            raw_device,
+            0x0260,
+            0,
+            1,
+            1,
+            b"\x18\x00\n\x05\x00B\x11lumi.sensor_smoke\x01\x00 \x01",
+        )
+        is True
+    )
+    assert raw_device.cancel_initialization.call_count == 1
+    assert raw_device.application.device_initialized.call_count == 1
