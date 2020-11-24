@@ -121,8 +121,8 @@ def raw_device():
 @pytest.mark.parametrize(
     "ep_id, cluster, message",
     (
-        (0, 0, b"\x18\x00\n\x05\x00B\x11lumi.sensor_smoke\x01\x00 \x01"),
-        (0, 1, b"\x18\x00\n\x05\x00B\x11lumi.sensor_smoke\x01\x00 \x01"),
+        (0, 0, b"\x18\x00\n\x05\x00B\x11lumi.sensor_sm0ke\x01\x00 \x01"),
+        (0, 1, b"\x18\x00\n\x05\x00B\x11lumi.sensor_sm0ke\x01\x00 \x01"),
     ),
 )
 def test_xiaomi_quick_init_wrong_ep(raw_device, ep_id, cluster, message):
@@ -143,21 +143,21 @@ def test_xiaomi_quick_init_wrong_ep(raw_device, ep_id, cluster, message):
     (
         (
             0,
-            b"\x19\x00\n\x05\x00B\x11lumi.sensor_smoke\x01\x00 \x01",
+            b"\x19\x00\n\x05\x00B\x11lumi.sensor_sm0ke\x01\x00 \x01",
         ),  # cluster command
-        (1, b"\x18\x00\n\x05\x00B\x11lumi.sensor_smoke\x01\x00 \x01"),  # wrong cluster
+        (1, b"\x18\x00\n\x05\x00B\x11lumi.sensor_sm0ke\x01\x00 \x01"),  # wrong cluster
         (
             0,
-            b"\x18\x00\x01\x05\x00B\x11lumi.sensor_smoke\x01\x00 \x01",
+            b"\x18\x00\x01\x05\x00B\x11lumi.sensor_sm0ke\x01\x00 \x01",
         ),  # wrong command
         (
             0,
-            b"\x18\x00\xFF\x05\x00B\x11lumi.sensor_smoke\x01\x00 \x01",
+            b"\x18\x00\xFF\x05\x00B\x11lumi.sensor_sm0ke\x01\x00 \x01",
         ),  # unknown command
-        (0, b"\x18\x00\n\x04\x00B\x11lumi.sensor_smoke\x01\x00 \x01"),  # wrong attr id
-        (0, b"\x18\x00\n\x05\x00B\x11lumi.sensor_smoke\x01\x00 "),  # data under run
+        (0, b"\x18\x00\n\x04\x00B\x11lumi.sensor_sm0ke\x01\x00 \x01"),  # wrong attr id
+        (0, b"\x18\x00\n\x05\x00B\x11lumi.sensor_sm0ke\x01\x00 "),  # data under run
         (0, b"\x18\x00\n\x05\x00B\x00\x01\x00 \x01"),  # no model
-        (0, b"\x18\x00\n\x05\x00B\x11lumi.sensor_smoke\x01\x00 \x01"),  # no quirk
+        (0, b"\x18\x00\n\x05\x00B\x11lumi.sensor_sm0ke\x01\x00 \x01"),  # no quirk
     ),
 )
 def test_xiaomi_quick_init_wrong_cluster_or_message(raw_device, cluster, message):
@@ -197,7 +197,7 @@ def test_xiaomi_quick_init_wrong_signature(raw_device):
 
     class WrongSignature(XiaomiQuickInitDevice):
         signature = {
-            MODEL: "lumi.sensor_smoke",
+            MODEL: "lumi.sensor_sm0ke",
         }
 
     assert (
@@ -207,7 +207,7 @@ def test_xiaomi_quick_init_wrong_signature(raw_device):
             0,
             1,
             1,
-            b"\x18\x00\n\x05\x00B\x11lumi.sensor_smoke\x01\x00 \x01",
+            b"\x18\x00\n\x05\x00B\x11lumi.sensor_sm0ke\x01\x00 \x01",
         )
         is None
     )
@@ -230,7 +230,7 @@ def test_xiaomi_quick_init(raw_device):
                 }
             },
             MANUFACTURER: LUMI,
-            MODEL: "lumi.sensor_smoke",
+            MODEL: "lumi.sensor_sm0ke",
         }
 
     assert (
@@ -240,7 +240,7 @@ def test_xiaomi_quick_init(raw_device):
             0,
             1,
             1,
-            b"\x18\x00\n\x05\x00B\x11lumi.sensor_smoke\x01\x00 \x01",
+            b"\x18\x00\n\x05\x00B\x11lumi.sensor_sm0ke\x01\x00 \x01",
         )
         is True
     )
