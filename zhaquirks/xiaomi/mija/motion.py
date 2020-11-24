@@ -14,11 +14,12 @@ from zigpy.zcl.clusters.general import (
 
 from .. import (
     LUMI,
+    XIAOMI_NODE_DESC,
     BasicCluster,
     MotionCluster,
     OccupancyCluster,
     PowerConfigurationCluster,
-    XiaomiCustomDevice,
+    XiaomiQuickInitDevice,
 )
 from ... import Bus
 from ...const import (
@@ -26,6 +27,7 @@ from ...const import (
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
+    NODE_DESCRIPTOR,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SKIP_CONFIGURATION,
@@ -35,7 +37,7 @@ XIAOMI_CLUSTER_ID = 0xFFFF
 _LOGGER = logging.getLogger(__name__)
 
 
-class Motion(XiaomiCustomDevice):
+class Motion(XiaomiQuickInitDevice):
     """Custom device representing mija body sensors."""
 
     def __init__(self, *args, **kwargs):
@@ -50,6 +52,7 @@ class Motion(XiaomiCustomDevice):
         #  input_clusters=[0, 65535, 3, 25]
         #  output_clusters=[0, 3, 4, 5, 6, 8, 25]>
         MODELS_INFO: [(LUMI, "lumi.sensor_motion")],
+        NODE_DESCRIPTOR: XIAOMI_NODE_DESC,
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
