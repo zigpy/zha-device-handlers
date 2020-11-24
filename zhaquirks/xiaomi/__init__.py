@@ -535,17 +535,18 @@ def handle_quick_init(
     if not model:
         return
 
-    for quirk in zigpy.quirks.get_model_quirks(model) or []:
+    for quirk in zigpy.quirks.get_model_quirks(model):
         if issubclass(quirk, XiaomiQuickInitDevice):
+            sender.debug("Found '%s' quirk for '%s' model", quirk.__name__, model)
+            try:
+                sender = quirk.from_signature(sender, model)
+            except (AssertionError, KeyError) as ex:
+                _LOGGER.debug(
+                    "Found quirk for quick init, but failed to init: %s", str(ex)
+                )
+                continue
             break
     else:
-        return
-
-    sender.debug("Found '%s' quirk for '%s' model", quirk.__name__, model)
-    try:
-        sender = quirk.from_signature(sender, model)
-    except (AssertionError, KeyError) as ex:
-        _LOGGER.debug("Found quirk for quick init, but failed to init: %s", str(ex))
         return
 
     sender.cancel_initialization()
