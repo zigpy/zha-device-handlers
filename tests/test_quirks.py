@@ -23,12 +23,13 @@ from zhaquirks.const import (
 )
 from zhaquirks.xiaomi import XIAOMI_NODE_DESC
 
-ALL_QUIRK_CLASSES = [
-    quirk
-    for manufacturer in zq._DEVICE_REGISTRY._registry.values()
-    for model in manufacturer.values()
-    for quirk in model
-]
+ALL_QUIRK_CLASSES = []
+for manufacturer in zq._DEVICE_REGISTRY._registry.values():
+    for model_quirk_list in manufacturer.values():
+        for quirk in model_quirk_list:
+            if quirk in ALL_QUIRK_CLASSES:
+                continue
+            ALL_QUIRK_CLASSES.append(quirk)
 
 
 @pytest.mark.parametrize("quirk", ALL_QUIRK_CLASSES)
