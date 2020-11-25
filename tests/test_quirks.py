@@ -8,6 +8,8 @@ import zigpy.endpoint
 import zigpy.profiles
 import zigpy.quirks as zq
 import zigpy.types
+import zigpy.zcl as zcl
+import zigpy.zdo.types
 
 import zhaquirks  # noqa: F401, E402
 from zhaquirks.const import (
@@ -20,6 +22,7 @@ from zhaquirks.const import (
     NODE_DESCRIPTOR,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
+    SKIP_CONFIGURATION,
 )
 from zhaquirks.xiaomi import XIAOMI_NODE_DESC
 
@@ -30,6 +33,30 @@ for manufacturer in zq._DEVICE_REGISTRY._registry.values():
             if quirk in ALL_QUIRK_CLASSES:
                 continue
             ALL_QUIRK_CLASSES.append(quirk)
+
+del quirk, model_quirk_list, manufacturer
+
+
+SIGNATURE_ALLOWED = {
+    ENDPOINTS,
+    MANUFACTURER,
+    MODEL,
+    MODELS_INFO,
+    NODE_DESCRIPTOR,
+}
+SIGNATURE_EP_ALLOWED = {
+    DEVICE_TYPE,
+    INPUT_CLUSTERS,
+    PROFILE_ID,
+    OUTPUT_CLUSTERS,
+}
+SIGNATURE_REPLACEMENT_ALLOWED = {
+    ENDPOINTS,
+    MANUFACTURER,
+    MODEL,
+    NODE_DESCRIPTOR,
+    SKIP_CONFIGURATION,
+}
 
 
 @pytest.mark.parametrize("quirk", ALL_QUIRK_CLASSES)
@@ -239,3 +266,82 @@ def test_quirk_quickinit(quirk):
         assert DEVICE_TYPE in ep_data
         assert isinstance(ep_data[INPUT_CLUSTERS], list)
         assert isinstance(ep_data[OUTPUT_CLUSTERS], list)
+
+
+@pytest.mark.parametrize("quirk", ALL_QUIRK_CLASSES)
+def test_signature(quirk):
+    """Make sure signature look sane for all custom devices."""
+
+    def _check_range(cluster):
+        for range in zcl.Cluster._registry_range.keys():
+            if range[0] <= cluster <= range[1]:
+                return True
+        return False
+
+    # enforce new style of signature
+    assert ENDPOINTS in quirk.signature
+    numeric = [eid for eid in quirk.signature if isinstance(eid, int)]
+    assert not numeric
+    assert set(quirk.signature).issubset(SIGNATURE_ALLOWED)
+    models_info = quirk.signature.get(MODELS_INFO)
+    if models_info is not None:
+        for manufacturer, model in models_info:
+            assert isinstance(manufacturer, str)
+            assert manufacturer
+            assert isinstance(model, str)
+            assert model
+
+    # Check that the signature data is OK
+    ep_signature = quirk.signature[ENDPOINTS]
+    for ep_id, ep_data in ep_signature.items():
+        assert isinstance(ep_id, int)
+        assert 0x01 <= ep_id <= 0xFE
+        assert set(ep_data).issubset(SIGNATURE_EP_ALLOWED)
+        for sig_attr in (DEVICE_TYPE, PROFILE_ID):
+            value = ep_data.get(sig_attr)
+            if value is not None:
+                assert isinstance(value, int)
+                assert 0x0000 <= value <= 0xFFFF
+        for clusters_type in (INPUT_CLUSTERS, OUTPUT_CLUSTERS):
+            clusters = ep_data.get(clusters_type)
+            if clusters is not None:
+                assert all((isinstance(cluster_id, int) for cluster_id in clusters))
+                assert all((0 <= cluster_id <= 0xFFFF for cluster_id in clusters))
+
+        for m_m in (MANUFACTURER, MODEL):
+            value = ep_data.get(m_m)
+            if value is not None:
+                assert isinstance(value, str)
+                assert value
+
+    # Check that the replacement data is OK
+    assert set(quirk.replacement).issubset(SIGNATURE_REPLACEMENT_ALLOWED)
+    for ep_id, ep_data in quirk.replacement[ENDPOINTS].items():
+        assert isinstance(ep_id, int)
+        assert 0x01 <= ep_id <= 0xFE
+        assert set(ep_data).issubset(SIGNATURE_EP_ALLOWED)
+
+        for sig_attr in (DEVICE_TYPE, PROFILE_ID):
+            value = ep_data.get(sig_attr)
+            if value is not None:
+                assert isinstance(value, int)
+                assert 0x0000 <= value <= 0xFFFF
+
+        for clusters_type in (INPUT_CLUSTERS, OUTPUT_CLUSTERS):
+            clusters = ep_data.get(clusters_type, [])
+            for cluster in clusters:
+                if clusters is not None:
+                    if isinstance(cluster, int):
+                        assert cluster in zcl.Cluster._registry or _check_range(cluster)
+                    else:
+                        assert issubclass(cluster, zcl.Cluster)
+
+        for m_m in (MANUFACTURER, MODEL):
+            value = ep_data.get(m_m)
+            if value is not None:
+                assert isinstance(value, str)
+                assert value
+
+        node_desc = ep_data.get(NODE_DESCRIPTOR)
+        if node_desc is not None:
+            assert isinstance(node_desc, zigpy.zdo.types.NodeDescriptor)
