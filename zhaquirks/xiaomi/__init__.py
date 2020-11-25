@@ -5,6 +5,7 @@ import math
 from typing import Optional, Union
 
 from zigpy import types as t
+import zigpy.device
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.zcl.clusters.general import AnalogInput, Basic, OnOff, PowerConfiguration
@@ -16,8 +17,10 @@ from zigpy.zcl.clusters.measurement import (
     TemperatureMeasurement,
 )
 import zigpy.zcl.foundation as foundation
+import zigpy.zdo
+from zigpy.zdo.types import NodeDescriptor
 
-from .. import Bus, LocalDataCluster, MotionOnEvent, OccupancyWithReset
+from .. import Bus, LocalDataCluster, MotionOnEvent, OccupancyWithReset, QuickInitDevice
 from ..const import (
     ATTRIBUTE_ID,
     ATTRIBUTE_NAME,
@@ -60,7 +63,19 @@ XIAOMI_ATTR_4 = "X-attrib-4"
 XIAOMI_ATTR_5 = "X-attrib-5"
 XIAOMI_ATTR_6 = "X-attrib-6"
 XIAOMI_MIJA_ATTRIBUTE = 0xFF02
+XIAOMI_NODE_DESC = NodeDescriptor(
+    byte1=2,
+    byte2=64,
+    mac_capability_flags=128,
+    manufacturer_code=4151,
+    maximum_buffer_size=127,
+    maximum_incoming_transfer_size=100,
+    server_mask=0,
+    maximum_outgoing_transfer_size=100,
+    descriptor_capability_field=0,
+)
 ZONE_TYPE = 0x0001
+
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -74,6 +89,10 @@ class XiaomiCustomDevice(CustomDevice):
         if not hasattr(self, BATTERY_SIZE):
             self.battery_size = 10
         super().__init__(*args, **kwargs)
+
+
+class XiaomiQuickInitDevice(XiaomiCustomDevice, QuickInitDevice):
+    """Xiaomi devices eligible for QuickInit."""
 
 
 class BasicCluster(CustomCluster, Basic):
@@ -469,3 +488,73 @@ class OnOffCluster(OnOff, CustomCluster):
             bytes([src_ep, tsn, command_id]),
             expect_reply=expect_reply,
         )
+
+
+def handle_quick_init(
+    sender: zigpy.device.Device,
+    profile: int,
+    cluster: int,
+    src_ep: int,
+    dst_ep: int,
+    message: bytes,
+) -> Optional[bool]:
+    """Handle message from an uninitialized device which could be a xiaomi."""
+    if src_ep == 0:
+        return
+
+    hdr, data = foundation.ZCLHeader.deserialize(message)
+    sender.debug(
+        """Received ZCL while uninitialized on endpoint id %s, cluster 0x%04x """
+        """id, hdr: %s, payload: %s""",
+        src_ep,
+        cluster,
+        hdr,
+        data,
+    )
+    if hdr.frame_control.is_cluster:
+        return
+
+    try:
+        schema = foundation.COMMANDS[hdr.command_id][0]
+        args, data = t.deserialize(data, schema)
+    except (KeyError, ValueError):
+        sender.debug("Failed to deserialize ZCL global command")
+        return
+
+    sender.debug("Uninitialized device command '%s' args: %s", hdr.command_id, args)
+    if hdr.command_id != foundation.Command.Report_Attributes or cluster != 0:
+        return
+
+    for attr_rec in args[0]:
+        if attr_rec.attrid == 5:
+            break
+    else:
+        return
+
+    model = attr_rec.value.value
+    if not model:
+        return
+
+    for quirk in zigpy.quirks.get_model_quirks(model):
+        if issubclass(quirk, XiaomiQuickInitDevice):
+            sender.debug("Found '%s' quirk for '%s' model", quirk.__name__, model)
+            try:
+                sender = quirk.from_signature(sender, model)
+            except (AssertionError, KeyError) as ex:
+                _LOGGER.debug(
+                    "Found quirk for quick init, but failed to init: %s", str(ex)
+                )
+                continue
+            break
+    else:
+        return
+
+    sender.cancel_initialization()
+    sender.application.device_initialized(sender)
+    sender.info(
+        "Was quickly initialized from '%s.%s' quirk", quirk.__module__, quirk.__name__
+    )
+    return True
+
+
+zigpy.quirks.register_uninitialized_device_message_handler(handle_quick_init)

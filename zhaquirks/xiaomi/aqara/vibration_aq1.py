@@ -16,7 +16,13 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.security import IasZone
 
-from .. import LUMI, BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
+from .. import (
+    LUMI,
+    XIAOMI_NODE_DESC,
+    BasicCluster,
+    PowerConfigurationCluster,
+    XiaomiQuickInitDevice,
+)
 from ... import Bus, LocalDataCluster
 from ...const import (
     CLUSTER_COMMAND,
@@ -29,6 +35,7 @@ from ...const import (
     INPUT_CLUSTERS,
     MODELS_INFO,
     MOTION_EVENT,
+    NODE_DESCRIPTOR,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SKIP_CONFIGURATION,
@@ -58,7 +65,7 @@ MEASUREMENT_TYPE = {
 _LOGGER = logging.getLogger(__name__)
 
 
-class VibrationAQ1(XiaomiCustomDevice):
+class VibrationAQ1(XiaomiQuickInitDevice):
     """Xiaomi aqara smart motion sensor device."""
 
     manufacturer_id_override = 0x115F
@@ -153,6 +160,7 @@ class VibrationAQ1(XiaomiCustomDevice):
 
     signature = {
         MODELS_INFO: [(LUMI, "lumi.vibration.aq1")],
+        NODE_DESCRIPTOR: XIAOMI_NODE_DESC,
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,

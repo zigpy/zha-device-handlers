@@ -3,8 +3,11 @@ import asyncio
 import importlib
 import logging
 import pkgutil
+from typing import Any, Dict, Optional
 
-from zigpy.quirks import CustomCluster
+import zigpy.device
+import zigpy.endpoint
+from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.util import ListenableMixin
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import PowerConfiguration
@@ -17,9 +20,18 @@ from .const import (
     ATTRIBUTE_NAME,
     CLUSTER_COMMAND,
     COMMAND_ATTRIBUTE_UPDATED,
+    DEVICE_TYPE,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    MANUFACTURER,
+    MODEL,
+    MODELS_INFO,
     MOTION_EVENT,
+    NODE_DESCRIPTOR,
     OFF,
     ON,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
     UNKNOWN,
     VALUE,
     ZHA_SEND_EVENT,
@@ -299,6 +311,52 @@ class OccupancyWithReset(_Occupancy):
                 self._timer_handle.cancel()
             self.endpoint.device.motion_bus.listener_event(MOTION_EVENT)
             self._timer_handle = self._loop.call_later(self.reset_s, self._turn_off)
+
+
+class QuickInitDevice(CustomDevice):
+    """Devices with quick initialization from quirk signature."""
+
+    signature: Optional[Dict[str, Any]] = None
+
+    @classmethod
+    def from_signature(
+        cls, device: zigpy.device.Device, model: Optional[str] = None
+    ) -> zigpy.device.Device:
+        """Update device accordingly to quirk signature."""
+
+        assert isinstance(cls.signature, dict)
+        if model is None:
+            model = cls.signature[MODEL]
+        manufacturer = cls.signature.get(MANUFACTURER)
+        if manufacturer is None:
+            manufacturer = cls.signature[MODELS_INFO][0][0]
+
+        device.node_desc = cls.signature[NODE_DESCRIPTOR]
+
+        endpoints = cls.signature[ENDPOINTS]
+        for ep_id, ep_data in endpoints.items():
+            endpoint = device.add_endpoint(ep_id)
+            endpoint.profile_id = ep_data[PROFILE_ID]
+            endpoint.device_type = ep_data[DEVICE_TYPE]
+            for cluster_id in ep_data[INPUT_CLUSTERS]:
+                cluster = endpoint.add_input_cluster(cluster_id)
+                if cluster.ep_attribute == "basic":
+                    manuf_attr_id = cluster.attridx[MANUFACTURER]
+                    cluster._update_attribute(  # pylint: disable=W0212
+                        manuf_attr_id, manufacturer
+                    )
+                    cluster._update_attribute(  # pylint: disable=W0212
+                        cluster.attridx[MODEL], model
+                    )
+            for cluster_id in ep_data[OUTPUT_CLUSTERS]:
+                endpoint.add_output_cluster(cluster_id)
+            endpoint.status = zigpy.endpoint.Status.ZDO_INIT
+
+        device.status = zigpy.device.Status.ENDPOINTS_INIT
+        device.manufacturer = manufacturer
+        device.model = model
+
+        return device
 
 
 NAME = __name__
