@@ -250,7 +250,9 @@ def test_dev_from_signature(raw_device, quirk_signature):
         ]
 
 
-@pytest.mark.parametrize("quirk", ALL_QUIRK_CLASSES)
+@pytest.mark.parametrize(
+    "quirk", (q for q in ALL_QUIRK_CLASSES if issubclass(q, zhaquirks.QuickInitDevice))
+)
 def test_quirk_quickinit(quirk):
     """Make sure signature in QuickInit Devices have all required attributes."""
 
