@@ -286,10 +286,18 @@ def test_signature(quirk):
     models_info = quirk.signature.get(MODELS_INFO)
     if models_info is not None:
         for manufacturer, model in models_info:
-            assert isinstance(manufacturer, str)
-            assert manufacturer
-            assert isinstance(model, str)
-            assert model
+            if manufacturer is not None:
+                assert isinstance(manufacturer, str)
+                assert manufacturer
+            if model is not None:
+                assert isinstance(model, str)
+                assert model
+
+    for m_m in (MANUFACTURER, MODEL):
+        value = quirk.signature.get(m_m)
+        if value is not None:
+            assert isinstance(value, str)
+            assert value
 
     # Check that the signature data is OK
     ep_signature = quirk.signature[ENDPOINTS]
