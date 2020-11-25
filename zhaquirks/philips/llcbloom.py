@@ -1,4 +1,4 @@
-"""Quirk for Phillips Hue LivingColors Bloom."""
+"""Quirk for Phillips Hue LivingColors Bloom LLC011 and LLC012."""
 from zigpy.profiles import zll
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
@@ -22,14 +22,19 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.philips import PHILIPS, PhilipsOnOffCluster
+from zhaquirks.philips import (
+    PHILIPS,
+    PhilipsColorCluster,
+    PhilipsLevelControlCluster,
+    PhilipsOnOffCluster,
+)
 
 
-class PhilipsLLC011(CustomDevice):
-    """Philips LLC device."""
+class PhilipsLLCBloom(CustomDevice):
+    """Philips LLC Bloom device."""
 
     signature = {
-        MODELS_INFO: [(PHILIPS, "LLC011")],
+        MODELS_INFO: [(PHILIPS, "LLC011"), (PHILIPS, "LLC012")],
         ENDPOINTS: {
             11: {
                 # <SimpleDescriptor endpoint=11 profile=49246 device_type=512
@@ -75,9 +80,9 @@ class PhilipsLLC011(CustomDevice):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     PhilipsOnOffCluster,
-                    LevelControl.cluster_id,
+                    PhilipsLevelControlCluster,
                     LightLink.cluster_id,
-                    Color.cluster_id,
+                    PhilipsColorCluster,
                     64513,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
