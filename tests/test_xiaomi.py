@@ -59,7 +59,6 @@ def test_basic_cluster_deserialize_wrong_len_2():
     assert deserialized[1]
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "quirk",
     (

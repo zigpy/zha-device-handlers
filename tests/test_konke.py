@@ -11,7 +11,6 @@ import zhaquirks.konke.motion
 from tests.common import ZCL_IAS_MOTION_COMMAND, ClusterListener
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "quirk", (zhaquirks.konke.motion.KonkeMotion, zhaquirks.konke.motion.KonkeMotionB)
 )
