@@ -92,5 +92,4 @@ class SP600(CustomDevice):
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             }
         },
-        MODELS_INFO: [(COMPUTIME, MODEL)],
     }
