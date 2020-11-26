@@ -1,7 +1,9 @@
 """Module for Terncy quirks."""
+from collections import deque
 import math
 
 from zigpy.quirks import CustomCluster
+import zigpy.types as t
 from zigpy.zcl.clusters.measurement import (
     IlluminanceMeasurement,
     TemperatureMeasurement,
@@ -120,14 +122,26 @@ class TerncyRawCluster(CustomCluster):
 
     cluster_id = MANUFACTURER_SPECIFIC_CLUSTER_ID
     name = "Terncy Raw cluster"
-    # ep_attribute = "accelerometer"
+
+    manufacturer_client_commands = {
+        0: ("click_event", (t.uint8_t, t.uint8_t), False),
+        4: ("motion_event", (t.uint8_t, t.uint8_t, t.uint8_t), False),
+    }
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self._last_clicks = deque(maxlen=10)
 
     def handle_cluster_request(self, tsn, command_id, args):
         """Handle a cluster command received on this cluster."""
-        args = list(args)
         if command_id == 0:  # click event
             count = args[0]
             state = args[1]
+            if (state, count) in self._last_clicks:
+                return  # ignore repeated event for single action.
+            else:
+                self._last_clicks.append((state, count))
             if state > 5:
                 state = 5
             event_args = {PRESS_TYPE: CLICK_TYPES[state], "count": count, VALUE: state}
