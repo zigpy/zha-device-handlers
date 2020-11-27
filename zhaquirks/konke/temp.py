@@ -25,7 +25,7 @@ class KonkeTempHumidity(CustomDevice):
         # device_version=0
         # input_clusters=[0, 1, 3, 1026, 1029]
         # output_clusters=[3]>
-        MODELS_INFO: [(KONKE, "3AFE140103020000")],
+        MODELS_INFO: [(KONKE, "3AFE140103020000"), (KONKE, "3AFE220103020000")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,

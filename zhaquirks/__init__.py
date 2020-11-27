@@ -1,24 +1,46 @@
 """Quirks implementations for the ZHA component of Homeassistant."""
-import logging
+import asyncio
 import importlib
+import logging
 import pkgutil
+from typing import Any, Dict, Optional
 
-from zigpy.quirks import CustomCluster
+import zigpy.device
+import zigpy.endpoint
+from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.util import ListenableMixin
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import PowerConfiguration
+from zigpy.zcl.clusters.measurement import OccupancySensing
+from zigpy.zcl.clusters.security import IasZone
 from zigpy.zdo import types as zdotypes
 
 from .const import (
     ATTRIBUTE_ID,
     ATTRIBUTE_NAME,
+    CLUSTER_COMMAND,
     COMMAND_ATTRIBUTE_UPDATED,
+    DEVICE_TYPE,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    MANUFACTURER,
+    MODEL,
+    MODELS_INFO,
+    MOTION_EVENT,
+    NODE_DESCRIPTOR,
+    OFF,
+    ON,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
     UNKNOWN,
     VALUE,
     ZHA_SEND_EVENT,
+    ZONE_STATE,
 )
 
 _LOGGER = logging.getLogger(__name__)
+OCCUPANCY_STATE = 0
+OCCUPANCY_EVENT = "occupancy_event"
 
 
 class Bus(ListenableMixin):
@@ -33,6 +55,20 @@ class Bus(ListenableMixin):
 class LocalDataCluster(CustomCluster):
     """Cluster meant to prevent remote calls."""
 
+    _CONSTANT_ATTRIBUTES = {}
+
+    async def bind(self):
+        """Prevent bind."""
+        return (foundation.Status.SUCCESS,)
+
+    async def unbind(self):
+        """Prevent unbind."""
+        return (foundation.Status.SUCCESS,)
+
+    async def _configure_reporting(self, *args, **kwargs):  # pylint: disable=W0221
+        """Prevent remote configure reporting."""
+        return foundation.ConfigureReportingResponse.deserialize(b"\x00")[0]
+
     async def read_attributes_raw(self, attributes, manufacturer=None):
         """Prevent remote reads."""
         records = [
@@ -42,7 +78,10 @@ class LocalDataCluster(CustomCluster):
             for attr in attributes
         ]
         for record in records:
-            record.value.value = self._attr_cache.get(record.attrid)
+            if record.attrid in self._CONSTANT_ATTRIBUTES:
+                record.value.value = self._CONSTANT_ATTRIBUTES[record.attrid]
+            else:
+                record.value.value = self._attr_cache.get(record.attrid)
             if record.value.value is not None:
                 record.status = foundation.Status.SUCCESS
         return (records,)
@@ -86,8 +125,7 @@ class EventableCluster(CustomCluster):
 
 
 class GroupBoundCluster(CustomCluster):
-    """
-    Cluster that can only bind to a group instead of direct to hub.
+    """Cluster that can only bind to a group instead of direct to hub.
 
     Binding this cluster results in binding to a group that the coordinator
     is a member of.
@@ -142,15 +180,13 @@ class PowerConfigurationCluster(CustomCluster, PowerConfiguration):
 
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
-        if attrid == self.BATTERY_VOLTAGE_ATTR:
+        if attrid == self.BATTERY_VOLTAGE_ATTR and value not in (0, 255):
             super()._update_attribute(
                 self.BATTERY_PERCENTAGE_REMAINING,
                 self._calculate_battery_percentage(value),
             )
 
     def _calculate_battery_percentage(self, raw_value):
-        if raw_value in (0, 255):
-            return -1
         volts = raw_value / 10
         volts = max(volts, self.MIN_VOLTS)
         volts = min(volts, self.MAX_VOLTS)
@@ -170,6 +206,157 @@ class PowerConfigurationCluster(CustomCluster, PowerConfiguration):
         )
 
         return percent
+
+
+class _Motion(CustomCluster, IasZone):
+    """Self reset Motion cluster."""
+
+    reset_s: int = 30
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self._loop = asyncio.get_running_loop()
+        self._timer_handle = None
+
+    def _turn_off(self):
+        self._timer_handle = None
+        _LOGGER.debug("%s - Resetting motion sensor", self.endpoint.device.ieee)
+        self.listener_event(CLUSTER_COMMAND, 253, ZONE_STATE, [OFF, 0, 0, 0])
+        self._update_attribute(ZONE_STATE, OFF)
+
+
+class MotionWithReset(_Motion):
+    """Self reset Motion cluster.
+
+    Optionally send event over device bus.
+    """
+
+    send_occupancy_event: bool = False
+
+    def handle_cluster_request(self, tsn, command_id, args):
+        """Handle the cluster command."""
+        if command_id == ZONE_STATE:
+            if self._timer_handle:
+                self._timer_handle.cancel()
+            self._timer_handle = self._loop.call_later(self.reset_s, self._turn_off)
+            if self.send_occupancy_event:
+                self.endpoint.device.occupancy_bus.listener_event(OCCUPANCY_EVENT)
+
+
+class MotionOnEvent(_Motion):
+    """Motion based on received events from occupancy."""
+
+    reset_s: int = 120
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self.endpoint.device.motion_bus.add_listener(self)
+
+    def motion_event(self):
+        """Motion event."""
+        super().listener_event(CLUSTER_COMMAND, 254, ZONE_STATE, [ON, 0, 0, 0])
+
+        _LOGGER.debug("%s - Received motion event message", self.endpoint.device.ieee)
+
+        if self._timer_handle:
+            self._timer_handle.cancel()
+
+        self._timer_handle = self._loop.call_later(self.reset_s, self._turn_off)
+
+
+class _Occupancy(CustomCluster, OccupancySensing):
+    """Self reset Occupancy cluster."""
+
+    reset_s: int = 600
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self._timer_handle = None
+        self._loop = asyncio.get_running_loop()
+
+    def _turn_off(self):
+        self._timer_handle = None
+        self._update_attribute(OCCUPANCY_STATE, OFF)
+
+
+class OccupancyOnEvent(_Occupancy):
+    """Self reset occupancy from bus."""
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self.endpoint.device.occupancy_bus.add_listener(self)
+
+    def occupancy_event(self):
+        """Occupancy event."""
+        self._update_attribute(OCCUPANCY_STATE, ON)
+
+        if self._timer_handle:
+            self._timer_handle.cancel()
+
+        self._timer_handle = self._loop.call_later(self.reset_s, self._turn_off)
+
+
+class OccupancyWithReset(_Occupancy):
+    """Self reset Occupancy cluster and send event on motion bus."""
+
+    def _update_attribute(self, attrid, value):
+        super()._update_attribute(attrid, value)
+
+        if attrid == OCCUPANCY_STATE and value == ON:
+            if self._timer_handle:
+                self._timer_handle.cancel()
+            self.endpoint.device.motion_bus.listener_event(MOTION_EVENT)
+            self._timer_handle = self._loop.call_later(self.reset_s, self._turn_off)
+
+
+class QuickInitDevice(CustomDevice):
+    """Devices with quick initialization from quirk signature."""
+
+    signature: Optional[Dict[str, Any]] = None
+
+    @classmethod
+    def from_signature(
+        cls, device: zigpy.device.Device, model: Optional[str] = None
+    ) -> zigpy.device.Device:
+        """Update device accordingly to quirk signature."""
+
+        assert isinstance(cls.signature, dict)
+        if model is None:
+            model = cls.signature[MODEL]
+        manufacturer = cls.signature.get(MANUFACTURER)
+        if manufacturer is None:
+            manufacturer = cls.signature[MODELS_INFO][0][0]
+
+        device.node_desc = cls.signature[NODE_DESCRIPTOR]
+
+        endpoints = cls.signature[ENDPOINTS]
+        for ep_id, ep_data in endpoints.items():
+            endpoint = device.add_endpoint(ep_id)
+            endpoint.profile_id = ep_data[PROFILE_ID]
+            endpoint.device_type = ep_data[DEVICE_TYPE]
+            for cluster_id in ep_data[INPUT_CLUSTERS]:
+                cluster = endpoint.add_input_cluster(cluster_id)
+                if cluster.ep_attribute == "basic":
+                    manuf_attr_id = cluster.attridx[MANUFACTURER]
+                    cluster._update_attribute(  # pylint: disable=W0212
+                        manuf_attr_id, manufacturer
+                    )
+                    cluster._update_attribute(  # pylint: disable=W0212
+                        cluster.attridx[MODEL], model
+                    )
+            for cluster_id in ep_data[OUTPUT_CLUSTERS]:
+                endpoint.add_output_cluster(cluster_id)
+            endpoint.status = zigpy.endpoint.Status.ZDO_INIT
+
+        device.status = zigpy.device.Status.ENDPOINTS_INIT
+        device.manufacturer = manufacturer
+        device.model = model
+
+        return device
 
 
 NAME = __name__

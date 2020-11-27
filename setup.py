@@ -2,7 +2,7 @@
 
 from setuptools import find_packages, setup
 
-VERSION = "0.0.38"
+VERSION = "0.0.47"
 
 
 def readme():
@@ -22,8 +22,8 @@ setup(
     author_email="david.mulcahey@icloud.com",
     license="Apache License Version 2.0",
     keywords="zha quirks homeassistant hass",
-    packages=find_packages(exclude=["*.tests"]),
+    packages=find_packages(exclude=["tests"]),
     python_requires=">=3",
-    install_requires=["zigpy-homeassistant>=0.8.0"],
+    install_requires=["zigpy>=0.28.1"],
     tests_require=["pytest"],
 )

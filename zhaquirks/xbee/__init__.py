@@ -78,18 +78,20 @@ ENDPOINT_TO_AT = {
 class XBeeOnOff(LocalDataCluster, OnOff):
     """XBee on/off cluster."""
 
-    async def command(self, command, *args, manufacturer=None, expect_reply=True):
+    async def command(
+        self, command_id, *args, manufacturer=None, expect_reply=True, tsn=None
+    ):
         """Xbee change pin state command, requires zigpy_xbee."""
         pin_name = ENDPOINT_TO_AT.get(self._endpoint.endpoint_id)
-        if command not in [0, 1] or pin_name is None:
-            return super().command(command, *args)
-        if command == 0:
+        if command_id not in [0, 1] or pin_name is None:
+            return super().command(command_id, *args)
+        if command_id == 0:
             pin_cmd = DIO_PIN_LOW
         else:
             pin_cmd = DIO_PIN_HIGH
         result = await self._endpoint.device.remote_at(pin_name, pin_cmd)
         if result == foundation.Status.SUCCESS:
-            self._update_attribute(ATTR_ON_OFF, command)
+            self._update_attribute(ATTR_ON_OFF, command_id)
         return 0, result
 
 
@@ -298,7 +300,9 @@ class XBeeCommon(CustomDevice):
                 data = str(data, encoding="latin1")
                 return (cls(data), b"")
 
-        def command(self, command, *args, manufacturer=None, expect_reply=False):
+        def command(
+            self, command_id, *args, manufacturer=None, expect_reply=False, tsn=None
+        ):
             """Handle outgoing data."""
             data = self.BinaryString(args[0]).serialize()
             return self._endpoint.device.application.request(
@@ -328,10 +332,9 @@ class XBeeCommon(CustomDevice):
     replacement = {
         ENDPOINTS: {
             232: {
-                "manufacturer": "XBEE",
-                "model": "xbee.io",
                 INPUT_CLUSTERS: [DigitalIOCluster, SerialDataCluster],
                 OUTPUT_CLUSTERS: [SerialDataCluster, EventRelayCluster],
             }
-        }
+        },
+        "manufacturer": "Digi",
     }

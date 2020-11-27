@@ -1,5 +1,4 @@
-"""
-This module handles quirks of the King of Fans MR101Z ceiling fan receiver.
+"""Module to handle quirks of the King of Fans MR101Z ceiling fan receiver.
 
 The King of Fans ceiling fan receiver does not generate default replies. This
 module overrides all server commands that do not have a mandatory reply to not
@@ -7,22 +6,21 @@ expect replies at all.
 """
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice, CustomCluster
+from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
-    Identify,
     Groups,
-    Scenes,
-    OnOff,
+    Identify,
     LevelControl,
+    OnOff,
     Ota,
+    Scenes,
 )
 from zigpy.zcl.clusters.hvac import Fan
 
 
 class NoReplyMixin:
-    """
-    A simple mixin.
+    """A simple mixin.
 
     Allows a cluster to have configureable list of command
     ids that do not generate an explicit reply.
@@ -31,8 +29,7 @@ class NoReplyMixin:
     void_input_commands = []
 
     def command(self, command, *args, manufacturer=None, expect_reply=None):
-        """
-        Override the default Cluster command.
+        """Override the default Cluster command.
 
         expect_reply behavior is based on void_input_commands.
         Note that this method changes the default value of

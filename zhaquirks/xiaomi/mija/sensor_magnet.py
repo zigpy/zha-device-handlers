@@ -11,16 +11,23 @@ from zigpy.zcl.clusters.general import (
     Scenes,
 )
 
+from .. import (
+    LUMI,
+    XIAOMI_NODE_DESC,
+    BasicCluster,
+    PowerConfigurationCluster,
+    XiaomiQuickInitDevice,
+)
 from ...const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
+    NODE_DESCRIPTOR,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SKIP_CONFIGURATION,
 )
-from .. import LUMI, BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
 
 OPEN_CLOSE_DEVICE_TYPE = 0x5F01
 XIAOMI_CLUSTER_ID = 0xFFFF
@@ -28,7 +35,7 @@ XIAOMI_CLUSTER_ID = 0xFFFF
 _LOGGER = logging.getLogger(__name__)
 
 
-class Magnet(XiaomiCustomDevice):
+class Magnet(XiaomiQuickInitDevice):
     """Xiaomi mija contact sensor device."""
 
     def __init__(self, *args, **kwargs):
@@ -42,6 +49,7 @@ class Magnet(XiaomiCustomDevice):
         #  input_clusters=[0, 3, 65535, 25]
         #  output_clusters=[0, 4, 3, 6, 8, 5, 25]>
         MODELS_INFO: [(LUMI, "lumi.sensor_magnet")],
+        NODE_DESCRIPTOR: XIAOMI_NODE_DESC,
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,

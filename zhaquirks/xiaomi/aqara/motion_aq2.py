@@ -5,14 +5,15 @@ from zigpy.zcl.clusters.general import Basic, Identify, Ota, PowerConfiguration
 from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
 
-from . import IlluminanceMeasurementCluster
 from .. import (
     LUMI,
+    XIAOMI_NODE_DESC,
     BasicCluster,
+    IlluminanceMeasurementCluster,
     MotionCluster,
     OccupancyCluster,
     PowerConfigurationCluster,
-    XiaomiCustomDevice,
+    XiaomiQuickInitDevice,
 )
 from ... import Bus
 from ...const import (
@@ -20,6 +21,7 @@ from ...const import (
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
+    NODE_DESCRIPTOR,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SKIP_CONFIGURATION,
@@ -28,13 +30,14 @@ from ...const import (
 XIAOMI_CLUSTER_ID = 0xFFFF
 
 
-class MotionAQ2(XiaomiCustomDevice):
+class MotionAQ2(XiaomiQuickInitDevice):
     """Custom device representing aqara body sensors."""
 
     def __init__(self, *args, **kwargs):
         """Init."""
         self.battery_size = 9
         self.motion_bus = Bus()
+        self.illuminance_bus = Bus()
         super().__init__(*args, **kwargs)
 
     signature = {
@@ -43,6 +46,7 @@ class MotionAQ2(XiaomiCustomDevice):
         #  input_clusters=[0, 65535, 1030, 1024, 1280, 1, 3]
         #  output_clusters=[0, 25]>
         MODELS_INFO: [(LUMI, "lumi.sensor_motion.aq2")],
+        NODE_DESCRIPTOR: XIAOMI_NODE_DESC,
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,

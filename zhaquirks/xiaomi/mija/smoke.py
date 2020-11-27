@@ -25,12 +25,20 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.security import IasZone
 
-from .. import BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
+from .. import (
+    LUMI,
+    XIAOMI_NODE_DESC,
+    BasicCluster,
+    PowerConfigurationCluster,
+    XiaomiQuickInitDevice,
+)
 from ... import CustomCluster
 from ...const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
+    MODELS_INFO,
+    NODE_DESCRIPTOR,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SKIP_CONFIGURATION,
@@ -44,14 +52,13 @@ _LOGGER = logging.getLogger(__name__)
 class XiaomiSmokeIASCluster(CustomCluster, IasZone):
     """Xiaomi smoke IAS cluster implementation."""
 
-    cluster_id = IasZone.cluster_id
-    attributes = IasZone.attributes.copy()
-    attributes.update(
-        {0xFFF1: ("set_options", t.uint32_t), 0xFFF0: ("get_status", t.uint32_t)}
-    )
+    manufacturer_attributes = {
+        0xFFF1: ("set_options", t.uint32_t),
+        0xFFF0: ("get_status", t.uint32_t),
+    }
 
 
-class MijiaHoneywellSmokeDetectorSensor(XiaomiCustomDevice):
+class MijiaHoneywellSmokeDetectorSensor(XiaomiQuickInitDevice):
     """MijiaHoneywellSmokeDetectorSensor custom device."""
 
     def __init__(self, *args, **kwargs):
@@ -64,6 +71,8 @@ class MijiaHoneywellSmokeDetectorSensor(XiaomiCustomDevice):
         #  device_version=
         #  input_clusters=[0, 1, 3, 12, 18, 1280]
         #  output_clusters=[25]>
+        NODE_DESCRIPTOR: XIAOMI_NODE_DESC,
+        MODELS_INFO: ((LUMI, "lumi.sensor_smoke"),),
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -78,7 +87,7 @@ class MijiaHoneywellSmokeDetectorSensor(XiaomiCustomDevice):
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             }
-        }
+        },
     }
 
     replacement = {

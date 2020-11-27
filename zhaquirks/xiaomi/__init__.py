@@ -1,35 +1,34 @@
 """Xiaomi common components for custom device handlers."""
-import asyncio
 import binascii
 import logging
+import math
+from typing import Optional, Union
 
 from zigpy import types as t
+import zigpy.device
+from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
-from zigpy.zcl.clusters.general import AnalogInput, Basic, PowerConfiguration
+from zigpy.zcl.clusters.general import AnalogInput, Basic, OnOff, PowerConfiguration
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.measurement import (
-    OccupancySensing,
+    IlluminanceMeasurement,
     PressureMeasurement,
     RelativeHumidity,
     TemperatureMeasurement,
 )
-from zigpy.zcl.clusters.security import IasZone
 import zigpy.zcl.foundation as foundation
+import zigpy.zdo
+from zigpy.zdo.types import NodeDescriptor
 
-from .. import Bus, LocalDataCluster
+from .. import Bus, LocalDataCluster, MotionOnEvent, OccupancyWithReset, QuickInitDevice
 from ..const import (
     ATTRIBUTE_ID,
     ATTRIBUTE_NAME,
-    CLUSTER_COMMAND,
     COMMAND_ATTRIBUTE_UPDATED,
     COMMAND_TRIPLE,
-    MOTION_EVENT,
-    OFF,
-    ON,
     UNKNOWN,
     VALUE,
     ZHA_SEND_EVENT,
-    ZONE_STATE,
 )
 
 BATTERY_LEVEL = "battery_level"
@@ -56,13 +55,27 @@ TEMPERATURE_REPORTED = "temperature_reported"
 POWER_REPORTED = "power_reported"
 CONSUMPTION_REPORTED = "consumption_reported"
 VOLTAGE_REPORTED = "voltage_reported"
+ILLUMINANCE_MEASUREMENT = "illuminance_measurement"
+ILLUMINANCE_REPORTED = "illuminance_reported"
 XIAOMI_AQARA_ATTRIBUTE = 0xFF01
 XIAOMI_ATTR_3 = "X-attrib-3"
 XIAOMI_ATTR_4 = "X-attrib-4"
 XIAOMI_ATTR_5 = "X-attrib-5"
 XIAOMI_ATTR_6 = "X-attrib-6"
 XIAOMI_MIJA_ATTRIBUTE = 0xFF02
+XIAOMI_NODE_DESC = NodeDescriptor(
+    byte1=2,
+    byte2=64,
+    mac_capability_flags=128,
+    manufacturer_code=4151,
+    maximum_buffer_size=127,
+    maximum_incoming_transfer_size=100,
+    server_mask=0,
+    maximum_outgoing_transfer_size=100,
+    descriptor_capability_field=0,
+)
 ZONE_TYPE = 0x0001
+
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -76,6 +89,10 @@ class XiaomiCustomDevice(CustomDevice):
         if not hasattr(self, BATTERY_SIZE):
             self.battery_size = 10
         super().__init__(*args, **kwargs)
+
+
+class XiaomiQuickInitDevice(XiaomiCustomDevice, QuickInitDevice):
+    """Xiaomi devices eligible for QuickInit."""
 
 
 class BasicCluster(CustomCluster, Basic):
@@ -181,6 +198,10 @@ class BasicCluster(CustomCluster, Basic):
             self.endpoint.device.voltage_bus.listener_event(
                 VOLTAGE_REPORTED, attributes[VOLTAGE] * 0.1
             )
+        if ILLUMINANCE_MEASUREMENT in attributes:
+            self.endpoint.device.illuminance_bus.listener_event(
+                ILLUMINANCE_REPORTED, attributes[ILLUMINANCE_MEASUREMENT]
+            )
 
     def _parse_aqara_attributes(self, value):
         """Parse non standard atrributes."""
@@ -213,6 +234,11 @@ class BasicCluster(CustomCluster, Basic):
             "lumi.relay.c2acn01",
         ]:
             attribute_names.update({149: CONSUMPTION, 150: VOLTAGE, 152: POWER})
+        elif (
+            MODEL in self._attr_cache
+            and self._attr_cache[MODEL] == "lumi.sensor_motion.aq2"
+        ):
+            attribute_names.update({11: ILLUMINANCE_MEASUREMENT})
 
         result = {}
         while value:
@@ -235,8 +261,7 @@ class BasicCluster(CustomCluster, Basic):
         return attributes
 
     def _parse_mija_attributes(self, value):
-        """Parse non standard atrributes."""
-        attributes = {}
+        """Parse non standard attributes."""
         attribute_names = (
             STATE,
             BATTERY_VOLTAGE_MV,
@@ -295,59 +320,15 @@ class PowerConfigurationCluster(LocalDataCluster, PowerConfiguration):
         self._update_attribute(self.BATTERY_VOLTAGE_ATTR, int(raw_voltage / 100))
 
 
-class OccupancyCluster(CustomCluster, OccupancySensing):
+class OccupancyCluster(OccupancyWithReset):
     """Occupancy cluster."""
 
-    cluster_id = OccupancySensing.cluster_id
 
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self._timer_handle = None
-
-    def _update_attribute(self, attrid, value):
-        super()._update_attribute(attrid, value)
-
-        if attrid == OCCUPANCY_STATE and value == ON:
-            if self._timer_handle:
-                self._timer_handle.cancel()
-            self.endpoint.device.motion_bus.listener_event(MOTION_EVENT)
-            loop = asyncio.get_event_loop()
-            self._timer_handle = loop.call_later(600, self._turn_off)
-
-    def _turn_off(self):
-        self._timer_handle = None
-        self._update_attribute(OCCUPANCY_STATE, OFF)
-
-
-class MotionCluster(LocalDataCluster, IasZone):
+class MotionCluster(LocalDataCluster, MotionOnEvent):
     """Motion cluster."""
 
-    cluster_id = IasZone.cluster_id
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self._timer_handle = None
-        self.endpoint.device.motion_bus.add_listener(self)
-        super()._update_attribute(ZONE_TYPE, MOTION_TYPE)
-
-    def motion_event(self):
-        """Motion event."""
-        super().listener_event(CLUSTER_COMMAND, None, ZONE_STATE, [ON])
-
-        _LOGGER.debug("%s - Received motion event message", self.endpoint.device.ieee)
-
-        if self._timer_handle:
-            self._timer_handle.cancel()
-
-        loop = asyncio.get_event_loop()
-        self._timer_handle = loop.call_later(120, self._turn_off)
-
-    def _turn_off(self):
-        _LOGGER.debug("%s - Resetting motion sensor", self.endpoint.device.ieee)
-        self._timer_handle = None
-        super().listener_event(CLUSTER_COMMAND, None, ZONE_STATE, [OFF])
+    _CONSTANT_ATTRIBUTES = {ZONE_TYPE: MOTION_TYPE}
+    reset_s: int = 120
 
 
 class TemperatureMeasurementCluster(CustomCluster, TemperatureMeasurement):
@@ -416,7 +397,7 @@ class PressureMeasurementCluster(CustomCluster, PressureMeasurement):
 
 
 class AnalogInputCluster(CustomCluster, AnalogInput):
-    """Analog input cluster, only used to relay power consumtion information to ElectricalMeasurementCluster."""
+    """Analog input cluster, only used to relay power consumption information to ElectricalMeasurementCluster."""
 
     cluster_id = AnalogInput.cluster_id
 
@@ -438,6 +419,12 @@ class ElectricalMeasurementCluster(LocalDataCluster, ElectricalMeasurement):
     POWER_ID = 0x050B
     VOLTAGE_ID = 0x0500
     CONSUMPTION_ID = 0x0304
+    _CONSTANT_ATTRIBUTES = {
+        0x0402: 1,  # power_multiplier
+        0x0403: 1,  # power_divisor
+        0x0604: 1,  # ac_power_multiplier
+        0x0605: 1,  # ac_power_divisor
+    }
 
     def __init__(self, *args, **kwargs):
         """Init."""
@@ -457,3 +444,123 @@ class ElectricalMeasurementCluster(LocalDataCluster, ElectricalMeasurement):
     def consumption_reported(self, value):
         """Consumption reported."""
         self._update_attribute(self.CONSUMPTION_ID, value)
+
+
+class IlluminanceMeasurementCluster(CustomCluster, IlluminanceMeasurement):
+    """Multistate input cluster."""
+
+    cluster_id = IlluminanceMeasurement.cluster_id
+    ATTR_ID = 0
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self.endpoint.device.illuminance_bus.add_listener(self)
+
+    def _update_attribute(self, attrid, value):
+        if attrid == self.ATTR_ID and value > 0:
+            value = 10000 * math.log10(value) + 1
+        super()._update_attribute(attrid, value)
+
+    def illuminance_reported(self, value):
+        """Illuminance reported."""
+        self._update_attribute(self.ATTR_ID, value)
+
+
+class OnOffCluster(OnOff, CustomCluster):
+    """Aqara wall switch cluster."""
+
+    def command(
+        self,
+        command_id: Union[foundation.Command, int, t.uint8_t],
+        *args,
+        manufacturer: Optional[Union[int, t.uint16_t]] = None,
+        expect_reply: bool = True,
+        tsn: Optional[Union[int, t.uint8_t]] = None
+    ):
+        """Command handler."""
+        src_ep = 1
+        dst_ep = self.endpoint.endpoint_id
+        device = self.endpoint.device
+        if tsn is None:
+            tsn = self._endpoint.device.application.get_sequence()
+        return device.request(
+            # device,
+            zha.PROFILE_ID,
+            OnOff.cluster_id,
+            src_ep,
+            dst_ep,
+            tsn,
+            bytes([src_ep, tsn, command_id]),
+            expect_reply=expect_reply,
+        )
+
+
+def handle_quick_init(
+    sender: zigpy.device.Device,
+    profile: int,
+    cluster: int,
+    src_ep: int,
+    dst_ep: int,
+    message: bytes,
+) -> Optional[bool]:
+    """Handle message from an uninitialized device which could be a xiaomi."""
+    if src_ep == 0:
+        return
+
+    hdr, data = foundation.ZCLHeader.deserialize(message)
+    sender.debug(
+        """Received ZCL while uninitialized on endpoint id %s, cluster 0x%04x """
+        """id, hdr: %s, payload: %s""",
+        src_ep,
+        cluster,
+        hdr,
+        data,
+    )
+    if hdr.frame_control.is_cluster:
+        return
+
+    try:
+        schema = foundation.COMMANDS[hdr.command_id][0]
+        args, data = t.deserialize(data, schema)
+    except (KeyError, ValueError):
+        sender.debug("Failed to deserialize ZCL global command")
+        return
+
+    sender.debug("Uninitialized device command '%s' args: %s", hdr.command_id, args)
+    if hdr.command_id != foundation.Command.Report_Attributes or cluster != 0:
+        return
+
+    for attr_rec in args[0]:
+        if attr_rec.attrid == 5:
+            break
+    else:
+        return
+
+    model = attr_rec.value.value
+    if not model:
+        return
+
+    for quirk in zigpy.quirks.get_model_quirks(model):
+        if issubclass(quirk, XiaomiQuickInitDevice):
+            sender.debug("Found '%s' quirk for '%s' model", quirk.__name__, model)
+            try:
+                sender = quirk.from_signature(sender, model)
+            except (AssertionError, KeyError) as ex:
+                _LOGGER.debug(
+                    "Found quirk for quick init, but failed to init: %s", str(ex)
+                )
+                continue
+            break
+    else:
+        return
+
+    sender.cancel_initialization()
+    sender.application.device_initialized(sender)
+    sender.info(
+        "Was quickly initialized from '%s.%s' quirk", quirk.__module__, quirk.__name__
+    )
+    return True
+
+
+zigpy.quirks.register_uninitialized_device_message_handler(handle_quick_init)
