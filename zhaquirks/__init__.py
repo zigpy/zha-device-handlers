@@ -140,7 +140,7 @@ class GroupBoundCluster(CustomCluster):
         coordinator = application.get_device(application.ieee)
         await coordinator.add_to_group(
             self.COORDINATOR_GROUP_ID,
-            name=f"{str(self.endpoint.device.ieee)} - {self.endpoint.manufacturer} {self.endpoint.model}",
+            name="Coordinator Group - Created by ZHAQuirks",
         )
 
         # Bind cluster to group
