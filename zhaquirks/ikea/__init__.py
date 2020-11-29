@@ -30,7 +30,10 @@ class LightLinkCluster(CustomCluster, LightLink):
                 "unable to locate required group info - falling back to group 0x0000."
             )
             group_id = 0x0000
-        status = await coordinator.add_to_group(group_id)
+        status = await coordinator.add_to_group(
+            group_id,
+            name=f"{str(self.endpoint.device.ieee)} - {self.endpoint.manufacturer} {self.endpoint.model}",
+        )
         return [status]
 
 

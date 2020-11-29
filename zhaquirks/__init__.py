@@ -138,7 +138,10 @@ class GroupBoundCluster(CustomCluster):
         # Ensure coordinator is a member of the group
         application = self._endpoint.device.application
         coordinator = application.get_device(application.ieee)
-        await coordinator.add_to_group(self.COORDINATOR_GROUP_ID)
+        await coordinator.add_to_group(
+            self.COORDINATOR_GROUP_ID,
+            name=f"{str(self.endpoint.device.ieee)} - {self.endpoint.manufacturer} {self.endpoint.model}",
+        )
 
         # Bind cluster to group
         dstaddr = zdotypes.MultiAddress()
