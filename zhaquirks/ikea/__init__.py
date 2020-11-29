@@ -32,7 +32,7 @@ class LightLinkCluster(CustomCluster, LightLink):
             group_id = 0x0000
         status = await coordinator.add_to_group(
             group_id,
-            name=f"{str(self.endpoint.device.ieee)} - {self.endpoint.manufacturer} {self.endpoint.model}",
+            name="Default Lightlink Group",
         )
         return [status]
 
