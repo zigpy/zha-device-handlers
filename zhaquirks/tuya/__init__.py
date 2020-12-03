@@ -355,11 +355,11 @@ class TuyaThermostat(CustomDevice):
 
 
 class TuyaSmartRemoteOnOffCluster(EventableCluster):
-    """TuyaOnOffCluster: this cluster manipulates messages from the remote control and converts them to command_ids."""
+    """TuyaSmartRemoteOnOffCluster: this cluster manipulates messages from the remote control and converts them to command_ids."""
 
     cluster_id = 0x0006
-    name = "TS0044_cluster"
-    ep_attribute = "TS0044_cluster"
+    name = "TS004X_cluster"
+    ep_attribute = "TS004X_cluster"
 
     server_commands = {
         0x00: (SHORT_PRESS, (), False),
@@ -369,7 +369,7 @@ class TuyaSmartRemoteOnOffCluster(EventableCluster):
 
 
 class TuyaSmartRemote(CustomDevice):
-    """Tuya scene 4-channel remote device."""
+    """Tuya scene x-channel remote device."""
 
     def __init__(self, *args, **kwargs):
         """Init."""
@@ -397,4 +397,4 @@ class TuyaSmartRemote(CustomDevice):
             self.last_code = message[1]
             super().handle_message(profile, cluster, src_ep, dst_ep, message)
         else:
-            _LOGGER.debug("TS0044: not handling duplicate frame")
+            _LOGGER.debug("TS004X: not handling duplicate frame")
