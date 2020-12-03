@@ -16,8 +16,8 @@ from ..const import (
     ENDPOINTS,
     INPUT_CLUSTERS,
     LONG_PRESS,
-    OUTPUT_CLUSTERS,
     MODELS_INFO,
+    OUTPUT_CLUSTERS,
     PROFILE_ID,
     SHORT_PRESS,
 )
