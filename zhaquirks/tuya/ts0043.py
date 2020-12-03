@@ -3,6 +3,7 @@
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import Basic, OnOff, Ota, PowerConfiguration, Time
 
+from . import TuyaSmartRemote, TuyaSmartRemoteOnOffCluster
 from ..const import (
     BUTTON_1,
     BUTTON_2,
@@ -18,8 +19,6 @@ from ..const import (
     PROFILE_ID,
     SHORT_PRESS,
 )
-
-from . import TuyaSmartRemote, TuyaSmartRemoteOnOffCluster
 
 
 class TuyaSmartRemote0043(TuyaSmartRemote):
