@@ -16,6 +16,7 @@ from ..const import (
     INPUT_CLUSTERS,
     LONG_PRESS,
     OUTPUT_CLUSTERS,
+    MODELS_INFO,
     PROFILE_ID,
     SHORT_PRESS,
 )
@@ -28,7 +29,7 @@ class TuyaSmartRemote0043(TuyaSmartRemote):
         # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=0, device_version=1, input_clusters=[0, 10, 1, 6], output_clusters=[25]))
         # SizePrefixedSimpleDescriptor(endpoint=2, profile=260, device_type=0, device_version=1, input_clusters=[1, 6], output_clusters=[])
         # SizePrefixedSimpleDescriptor(endpoint=3, profile=260, device_type=0, device_version=1, input_clusters=[1, 6], output_clusters=[])
-        # MODELS_INFO: [("_TZ3000_bi6lpsew", "TS0043")],
+        MODELS_INFO: [("_TZ3000_bi6lpsew", "TS0043")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
