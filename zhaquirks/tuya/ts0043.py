@@ -1,11 +1,8 @@
-"""Tuya 3 Button Remote"""
-import logging
+"""Tuya 3 Button Remote."""
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, OnOff, Ota, PowerConfiguration, Time
 
-from .. import EventableCluster
 from ..const import (
     BUTTON_1,
     BUTTON_2,
@@ -26,6 +23,8 @@ from . import TuyaSmartRemote, TuyaSmartRemoteOnOffCluster
 
 
 class TuyaSmartRemote0043(TuyaSmartRemote):
+    """Tuya 3-button remote device."""
+
     signature = {
         # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=0, device_version=1, input_clusters=[0, 10, 1, 6], output_clusters=[25]))
         # SizePrefixedSimpleDescriptor(endpoint=2, profile=260, device_type=0, device_version=1, input_clusters=[1, 6], output_clusters=[])
