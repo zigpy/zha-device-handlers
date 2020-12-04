@@ -19,9 +19,6 @@ from ..const import (
 
 KONKE_CLUSTER_ID = 0xFCC0
 
-_LOGGER = logging.getLogger(__name__)
-
-
 class KonkeTestCluster(CustomCluster, OnOff):
     """Konke Test cluster implementation."""
 
