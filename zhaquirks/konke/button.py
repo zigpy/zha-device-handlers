@@ -62,7 +62,7 @@ class KonkeButtonRemote(CustomDevice):
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
                     Identify.cluster_id,
-                    OnOff.cluster_id,
+                    KonkeTestCluster,
                     KONKE_CLUSTER_ID,
                 ],
                 OUTPUT_CLUSTERS: [Identify.cluster_id, KONKE_CLUSTER_ID],
