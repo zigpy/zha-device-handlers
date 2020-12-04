@@ -30,7 +30,7 @@ class ISWZDL1WP11G(CustomDevice):
     """Custom device representing Bosch ISWZDL1WP11G motion sensor."""
 
     signature = {
-        #  <SimpleDescriptor endpoint=1 profile=260 device_type=1026
+        #  <SimpleDescriptor endpoint=5 profile=260 device_type=1026
         #  device_version=0
         #  input_clusters=[0, 1, 3, 32, 1026, 1280, 2821]
         #  output_clusters=[25]>
