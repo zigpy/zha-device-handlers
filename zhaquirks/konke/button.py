@@ -33,7 +33,7 @@ class KonkeTestCluster(CustomCluster, OnOff):
 
     def handle_cluster_request(self, tsn, command_id, args):
         """Handle the cluster command."""
-        _LOGGER.debug(
+        self.info(
             "Konke - handle_cluster_request tsn: [%s] command id: %s - args: [%s]",
             tsn,
             command_id,
@@ -42,11 +42,15 @@ class KonkeTestCluster(CustomCluster, OnOff):
         
     def handle_cluster_general_request(self, header, args):
         """Handle the cluster command."""
-        _LOGGER.debug(
+        self.info(
             "Konke general request - handle_cluster_request: header: %s - args: [%s]",
             header,
             args,
         )  
+
+
+class KonkeButtonRemote(CustomDevice):
+    """Konke 1-button remote device."""
 
     def handle_message(self, profile, cluster, src_ep, dst_ep, message):
         """Handle a device message."""
@@ -65,15 +69,6 @@ class KonkeTestCluster(CustomCluster, OnOff):
             new_message[3] = 0
             message = type(message)(new_message)
 
-        if self.last_code != message[1]:
-            self.last_code = message[1]
-            super().handle_message(profile, cluster, src_ep, dst_ep, message)
-        else:
-            _LOGGER.debug("konkebutton: not handling duplicate frame")
-
-
-class KonkeButtonRemote(CustomDevice):
-    """Konke 1-button remote device."""
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=2
@@ -105,6 +100,7 @@ class KonkeButtonRemote(CustomDevice):
                     Basic.cluster_id,
                     PowerConfigurationCluster,
                     Identify.cluster_id,
+                    KonkeTestCluster,
                     KONKE_CLUSTER_ID,
                 ],
                 OUTPUT_CLUSTERS: [Identify.cluster_id, KonkeTestCluster, KONKE_CLUSTER_ID],
