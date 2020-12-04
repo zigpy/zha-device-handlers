@@ -39,18 +39,18 @@ class KonkeOnOFFCluster(CustomCluster, OnOff):
     server_commands = {}
     client_commands = {}
 
-    def handle_cluster_request(self, tsn, command_id, args):
+    def handle_cluster_general_request(self, header, args):
         """Handle the cluster command."""
         self.info(
-            "Konke - handle_cluster_request tsn: [%s] command id: %s - args: [%s]",
-            tsn,
-            command_id,
+            "Konke general request - handle_cluster_request: header: %s - args: [%s]",
+            header,
             args,
-        )
+        )  
 
+        cmd = header.command_id
         event_args = {
-            PRESS_TYPE: PRESS_TYPES.get(command_id, command_id),
-            COMMAND_ID: command_id,
+            PRESS_TYPE: PRESS_TYPES.get(cmd, cmd),
+            COMMAND_ID: cmd,
             ARGS: args,
         }
         self.listener_event(ZHA_SEND_EVENT, event_args[PRESS_TYPE], event_args)
