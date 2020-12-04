@@ -1,5 +1,5 @@
 """Konke Button Remote."""
-
+import logging
 from typing import Optional, Union
 from zigpy.zcl import foundation
 import zigpy.types as t
@@ -18,6 +18,9 @@ from ..const import (
 )
 
 KONKE_CLUSTER_ID = 0xFCC0
+
+_LOGGER = logging.getLogger(__name__)
+
 
 class KonkeTestCluster(CustomCluster, OnOff):
     """Konke Test cluster implementation."""
