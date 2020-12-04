@@ -45,6 +45,28 @@ class KonkeTestCluster(CustomCluster, OnOff):
             args,
         )  
 
+    def handle_message(self, profile, cluster, src_ep, dst_ep, message):
+        """Handle a device message."""
+        if (
+            profile == 260
+            and cluster == 6
+            and len(message) == 7
+            and message[0] == 0x08
+            and message[2] == 0x0A
+        ):
+            # use the 7th byte as command_id
+            new_message = bytearray(4)
+            new_message[0] = message[0]
+            new_message[1] = message[1]
+            new_message[2] = message[6]
+            new_message[3] = 0
+            message = type(message)(new_message)
+
+        if self.last_code != message[1]:
+            self.last_code = message[1]
+            super().handle_message(profile, cluster, src_ep, dst_ep, message)
+        else:
+            _LOGGER.debug("konkebutton: not handling duplicate frame")
 
 
 class KonkeButtonRemote(CustomDevice):
