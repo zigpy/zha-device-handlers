@@ -28,21 +28,23 @@ class KonkeTestCluster(CustomCluster, OnOff):
     server_commands = {}
     client_commands = {}
 
-    def handle_message(self, hdr, args):
-        """Handle a message on this cluster."""
-        self.debug("ZCL request header: %s", hdr)
-        self.debug("ZCL request 0x%04x: %s", hdr.command_id, args)
-    
-    def command(
-        self,
-        command_id: Union[foundation.Command, int, t.uint8_t],
-        *args,
-        manufacturer: Optional[Union[int, t.uint16_t]] = None,
-        expect_reply: bool = True,
-        tsn: Optional[Union[int, t.uint8_t]] = None,
-    ):
-        """Override the default command and log the stuff."""
-        self.debug("command_id: %s args: %s", command_id, args)
+    def handle_cluster_request(self, tsn, command_id, args):
+        """Handle the cluster command."""
+        _LOGGER.debug(
+            "Konke - handle_cluster_request tsn: [%s] command id: %s - args: [%s]",
+            tsn,
+            command_id,
+            args,
+        )
+        
+    def handle_cluster_general_request(self, header, args):
+        """Handle the cluster command."""
+        _LOGGER.debug(
+            "Konke general request - handle_cluster_request: header: %s - args: [%s]",
+            header,
+            args,
+        )  
+
 
 
 class KonkeButtonRemote(CustomDevice):
