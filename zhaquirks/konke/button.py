@@ -61,6 +61,15 @@ class KonkeButtonRemote(CustomDevice):
             and message[0] == 0x08
             and message[2] == 0x0A
         ):
+
+            _LOGGER.info("byte 1: %s", message[0])
+            _LOGGER.info("byte 2: %s", message[1])
+            _LOGGER.info("byte 3: %s", message[2])
+            _LOGGER.info("byte 4: %s", message[3])
+            _LOGGER.info("byte 5: %s", message[4])
+            _LOGGER.info("byte 6: %s", message[5])
+            _LOGGER.info("byte 7: %s", message[6])
+
             # use the 7th byte as command_id
             new_message = bytearray(4)
             new_message[0] = message[0]
@@ -68,6 +77,7 @@ class KonkeButtonRemote(CustomDevice):
             new_message[2] = message[6]
             new_message[3] = 0
             message = type(message)(new_message)
+            super().handle_message(profile, cluster, src_ep, dst_ep, message)
 
 
     signature = {
