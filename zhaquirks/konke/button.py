@@ -6,7 +6,6 @@ from zigpy.zcl.clusters.general import Basic, Identify, OnOff, PowerConfiguratio
 
 from .. import CustomCluster, CustomDevice, PowerConfigurationCluster
 from ..const import (
-    ARGS,
     COMMAND_DOUBLE,
     COMMAND_HOLD,
     COMMAND_ID,
@@ -48,7 +47,6 @@ class KonkeOnOffCluster(CustomCluster, OnOff):
         event_args = {
             PRESS_TYPE: self.PRESS_TYPES.get(cmd, cmd),
             COMMAND_ID: cmd,
-            ARGS: args,
         }
         self.listener_event(ZHA_SEND_EVENT, event_args[PRESS_TYPE], event_args)
 
