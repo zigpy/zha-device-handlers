@@ -9,12 +9,19 @@ from zigpy.zcl.clusters.general import Basic, Identify, OnOff, PowerConfiguratio
 
 from .. import PowerConfigurationCluster, CustomCluster, CustomDevice
 from ..const import (
+    ARGS,
+    COMMAND_ID,
+    COMMAND_SINGLE,
+    COMMAND_DOUBLE,
+    COMMAND_HOLD,
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
+    PRESS_TYPE,
     PROFILE_ID,
+    ZHA_SEND_EVENT,
 )
 
 KONKE_CLUSTER_ID = 0xFCC0
@@ -22,9 +29,10 @@ KONKE_CLUSTER_ID = 0xFCC0
 _LOGGER = logging.getLogger(__name__)
 
 
-class KonkeTestCluster(CustomCluster, OnOff):
+class KonkeOnOFFCluster(CustomCluster, OnOff):
     """Konke Test cluster implementation."""
 
+    PRESS_TYPES = {0x0080: COMMAND_SINGLE, 0x0081: COMMAND_DOUBLE, 0x0082: COMMAND_HOLD}
     cluster_id = 6
     ep_attribute = "custom_on_off"
     attributes = {}
@@ -39,14 +47,13 @@ class KonkeTestCluster(CustomCluster, OnOff):
             command_id,
             args,
         )
-        
-    def handle_cluster_general_request(self, header, args):
-        """Handle the cluster command."""
-        self.info(
-            "Konke general request - handle_cluster_request: header: %s - args: [%s]",
-            header,
-            args,
-        )  
+
+        event_args = {
+            PRESS_TYPE: PRESS_TYPES.get(command_id, command_id),
+            COMMAND_ID: command_id,
+            ARGS: args,
+        }
+        self.listener_event(ZHA_SEND_EVENT, event_args[PRESS_TYPE], event_args)
 
 
 class KonkeButtonRemote(CustomDevice):
@@ -110,12 +117,11 @@ class KonkeButtonRemote(CustomDevice):
                     Basic.cluster_id,
                     PowerConfigurationCluster,
                     Identify.cluster_id,
-                    KonkeTestCluster,
+                    KonkeOnOFFCluster,
                     KONKE_CLUSTER_ID,
                 ],
-                OUTPUT_CLUSTERS: [Identify.cluster_id, KonkeTestCluster, KONKE_CLUSTER_ID],
+                OUTPUT_CLUSTERS: [Identify.cluster_id, KONKE_CLUSTER_ID],
             },
         },
     }
-
 
