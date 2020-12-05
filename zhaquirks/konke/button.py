@@ -143,7 +143,7 @@ class KonkeButtonRemote2(CustomDevice):
             super().handle_message(profile, cluster, src_ep, dst_ep, message)
 
     signature = {
-        # <SimpleDescriptor endpoint=1 profile=260 device_type=6
+        # <SimpleDescriptor endpoint=1 profile=260 device_type=2
         # device_version=0
         # input_clusters=[0, 1, 3, 4, 5, 6]
         # output_clusters=[3]>
@@ -151,7 +151,7 @@ class KonkeButtonRemote2(CustomDevice):
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_OUTPUT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
