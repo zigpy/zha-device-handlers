@@ -130,6 +130,7 @@ class KonkeButtonRemote(CustomDevice):
         (LONG_PRESS, LONG_PRESS): {COMMAND: COMMAND_HOLD},
     }
 
+
 class KonkeButtonRemote2(CustomDevice):
     """Konke 1-button remote device 2nd variant."""
 
