@@ -14,7 +14,6 @@ from ..const import (
     COMMAND_HOLD,
     COMMAND_ID,
     COMMAND_SINGLE,
-    ENDPOINTS,
     PRESS_TYPE,
     ZHA_SEND_EVENT,
 )
