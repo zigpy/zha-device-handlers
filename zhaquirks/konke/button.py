@@ -13,17 +13,21 @@ from zigpy.zcl.clusters.general import (
 
 from .. import CustomCluster, CustomDevice, PowerConfigurationCluster
 from ..const import (
+    COMMAND,
     COMMAND_DOUBLE,
     COMMAND_HOLD,
     COMMAND_ID,
     COMMAND_SINGLE,
     DEVICE_TYPE,
+    DOUBLE_PRESS,
     ENDPOINTS,
     INPUT_CLUSTERS,
+    LONG_PRESS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PRESS_TYPE,
     PROFILE_ID,
+    SHORT_PRESS,
     ZHA_SEND_EVENT,
 )
 
@@ -120,6 +124,11 @@ class KonkeButtonRemote(CustomDevice):
         },
     }
 
+    device_automation_triggers = {
+        (DOUBLE_PRESS, DOUBLE_PRESS): {COMMAND: COMMAND_DOUBLE},
+        (SHORT_PRESS, SHORT_PRESS): {COMMAND: COMMAND_SINGLE},
+        (LONG_PRESS, LONG_PRESS): {COMMAND: COMMAND_HOLD},
+    }
 
 class KonkeButtonRemote2(CustomDevice):
     """Konke 1-button remote device 2nd variant."""
@@ -182,4 +191,10 @@ class KonkeButtonRemote2(CustomDevice):
                 ],
             },
         },
+    }
+
+    device_automation_triggers = {
+        (DOUBLE_PRESS, DOUBLE_PRESS): {COMMAND: COMMAND_DOUBLE},
+        (SHORT_PRESS, SHORT_PRESS): {COMMAND: COMMAND_SINGLE},
+        (LONG_PRESS, LONG_PRESS): {COMMAND: COMMAND_HOLD},
     }
