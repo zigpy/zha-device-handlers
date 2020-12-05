@@ -143,7 +143,7 @@ class KonkeButtonRemote2(CustomDevice):
             super().handle_message(profile, cluster, src_ep, dst_ep, message)
 
     signature = {
-        # <SimpleDescriptor endpoint=1 profile=260 device_type=2
+        # <SimpleDescriptor endpoint=1 profile=260 device_type=6
         # device_version=0
         # input_clusters=[0, 1, 3, 4, 5, 6]
         # output_clusters=[3]>
