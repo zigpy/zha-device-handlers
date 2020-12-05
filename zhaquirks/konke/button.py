@@ -12,7 +12,7 @@ from zigpy.zcl.clusters.general import (
 )
 
 from . import KonkeButtonRemote, KonkeOnOffCluster
-from .. import CustomDevice, PowerConfigurationCluster
+from .. import PowerConfigurationCluster
 from ..const import (
     COMMAND,
     COMMAND_DOUBLE,
@@ -85,7 +85,7 @@ class KonkeButtonRemote1(KonkeButtonRemote):
     }
 
 
-class KonkeButtonRemote2(CustomDevice):
+class KonkeButtonRemote2(KonkeButtonRemote):
     """Konke 1-button remote device 2nd variant."""
 
     signature = {
