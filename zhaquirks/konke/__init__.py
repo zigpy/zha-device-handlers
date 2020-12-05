@@ -10,21 +10,12 @@ from .. import (
     OccupancyOnEvent,
 )
 from ..const import (
-    COMMAND,
     COMMAND_DOUBLE,
     COMMAND_HOLD,
     COMMAND_ID,
     COMMAND_SINGLE,
-    DEVICE_TYPE,
-    DOUBLE_PRESS,
     ENDPOINTS,
-    INPUT_CLUSTERS,
-    LONG_PRESS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
     PRESS_TYPE,
-    PROFILE_ID,
-    SHORT_PRESS,
     ZHA_SEND_EVENT,
 )
 
