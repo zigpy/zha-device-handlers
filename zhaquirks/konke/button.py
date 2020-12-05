@@ -84,7 +84,7 @@ class KonkeButtonRemote(CustomDevice):
         # device_version=0
         # input_clusters=[0, 1, 3, 6, 64704]
         # output_clusters=[3, 64704]>
-        MODELS_INFO: [("KONKE", "3AFE170100510001"), ("KONKE", "3AFE280100510001")],
+        MODELS_INFO: [("KONKE", "3AFE280100510001")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
