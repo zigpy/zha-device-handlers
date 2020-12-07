@@ -541,7 +541,7 @@ def handle_quick_init(
     if not model:
         return
 
-    for quirk in zigpy.quirks.get_model_quirks(model):
+    for quirk in zigpy.quirks.get_quirk_list(LUMI, model):
         if issubclass(quirk, XiaomiQuickInitDevice):
             sender.debug("Found '%s' quirk for '%s' model", quirk.__name__, model)
             try:
