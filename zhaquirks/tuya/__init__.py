@@ -8,7 +8,8 @@ from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import OnOff, PowerConfiguration
 from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
 
-from .. import Bus, LocalDataCluster
+from .. import Bus, EventableCluster, LocalDataCluster
+from ..const import DOUBLE_PRESS, LONG_PRESS, SHORT_PRESS
 
 TUYA_CLUSTER_ID = 0xEF00
 TUYA_SET_DATA = 0x0000
@@ -351,3 +352,49 @@ class TuyaThermostat(CustomDevice):
         self.ui_bus = Bus()
         self.battery_bus = Bus()
         super().__init__(*args, **kwargs)
+
+
+class TuyaSmartRemoteOnOffCluster(EventableCluster):
+    """TuyaSmartRemoteOnOffCluster: this cluster manipulates messages from the remote control and converts them to command_ids."""
+
+    cluster_id = 0x0006
+    name = "TS004X_cluster"
+    ep_attribute = "TS004X_cluster"
+
+    server_commands = {
+        0x00: (SHORT_PRESS, (), False),
+        0x01: (DOUBLE_PRESS, (), False),
+        0x02: (LONG_PRESS, (), False),
+    }
+
+
+class TuyaSmartRemote(CustomDevice):
+    """Tuya scene x-channel remote device."""
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        self.last_code = -1
+        super().__init__(*args, **kwargs)
+
+    def handle_message(self, profile, cluster, src_ep, dst_ep, message):
+        """Handle a device message."""
+        if (
+            profile == 260
+            and cluster == 6
+            and len(message) == 4
+            and message[0] == 0x01
+            and message[2] == 0xFD
+        ):
+            # use the 4th byte as command_id
+            new_message = bytearray(4)
+            new_message[0] = message[0]
+            new_message[1] = message[1]
+            new_message[2] = message[3]
+            new_message[3] = 0
+            message = type(message)(new_message)
+
+        if self.last_code != message[1]:
+            self.last_code = message[1]
+            super().handle_message(profile, cluster, src_ep, dst_ep, message)
+        else:
+            _LOGGER.debug("TS004X: not handling duplicate frame")
