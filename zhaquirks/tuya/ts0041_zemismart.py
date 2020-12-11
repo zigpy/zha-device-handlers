@@ -1,4 +1,4 @@
-"""Tuya 1 Button Remote."""
+"""Tuya Zemismart 1 Button Remote."""
 
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import Basic, OnOff, Ota, PowerConfiguration, Time
