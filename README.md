@@ -494,6 +494,9 @@ If you are using Supervised Home Assistant (formerly known as the Hassio/Hass.io
 
 [zha-network-card](https://github.com/dmulcahey/zha-network-card) is a custom Lovelace card that displays ZHA network and device information in Home Assistant
 
+## Zigzag
+[Zigzag](https://github.com/Samantha-uk/zigzag-v1) is an custom card/panel for [Home Assistant](https://www.home-assistant.io/) that displays a graphical layout of Zigbee devices and the connections between them. Zigzag can be installed as a panel or a custom card and relies on the data provided by the [zha-map](https://github.com/zha-ng/zha-map) integration commponent.
+
 ## zigpy-deconz-parser
 
 [zigpy-deconz-parser](https://github.com/zha-ng/zigpy-deconz-parser) project can parse Home Assistant ZHA component debug log using `zigpy-deconz` library if you have ConBee or RaspBee hardware.
