@@ -25,7 +25,7 @@ class TuyaZemismartSmartRemote0041(TuyaSmartRemote):
 
     signature = {
         # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=0, device_version=1, input_clusters=[0, 1, 6], output_clusters=[25, 10])
-        MODELS_INFO: [("_TZ3000_tk3s5tyg", "TS0041")],
+        MODELS_INFO: [("_TZ3000_tk3s5tyg", "TS0041"), ("_TZ3400_keyjqthh", "TS0041")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
