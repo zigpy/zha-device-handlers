@@ -45,6 +45,7 @@ from ...const import (
 )
 
 IAS_ZONE = 0x0402
+ZONE_TYPE = 0x0001
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -52,6 +53,7 @@ _LOGGER = logging.getLogger(__name__)
 class XiaomiSmokeIASCluster(CustomCluster, IasZone):
     """Xiaomi smoke IAS cluster implementation."""
 
+    _CONSTANT_ATTRIBUTES = {ZONE_TYPE: IasZone.ZoneType.Fire_Sensor}
     manufacturer_attributes = {
         0xFFF1: ("set_options", t.uint32_t),
         0xFFF0: ("get_status", t.uint32_t),

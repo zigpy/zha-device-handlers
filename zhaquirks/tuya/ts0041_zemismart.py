@@ -1,4 +1,4 @@
-"""Tuya 1 Button Remote."""
+"""Tuya Zemismart 1 Button Remote."""
 
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import Basic, OnOff, Ota, PowerConfiguration, Time
@@ -20,12 +20,12 @@ from ..const import (
 )
 
 
-class TuyaSmartRemote0041(TuyaSmartRemote):
-    """Tuya 1-button remote device."""
+class TuyaZemismartSmartRemote0041(TuyaSmartRemote):
+    """Tuya Zemismart 1-button remote device."""
 
     signature = {
-        # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=0, device_version=1, input_clusters=[0, 10, 1, 6], output_clusters=[25]))
-        MODELS_INFO: [("_TZ3000_xkwalgne", "TS0041")],
+        # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=0, device_version=1, input_clusters=[0, 1, 6], output_clusters=[25, 10])
+        MODELS_INFO: [("_TZ3000_tk3s5tyg", "TS0041"), ("_TZ3400_keyjqthh", "TS0041")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -34,9 +34,8 @@ class TuyaSmartRemote0041(TuyaSmartRemote):
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
                     OnOff.cluster_id,
-                    Time.cluster_id,
                 ],
-                OUTPUT_CLUSTERS: [Ota.cluster_id],
+                OUTPUT_CLUSTERS: [Ota.cluster_id, Time.cluster_id],
             },
         },
     }
@@ -49,9 +48,8 @@ class TuyaSmartRemote0041(TuyaSmartRemote):
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
                     TuyaSmartRemoteOnOffCluster,
-                    Time.cluster_id,
                 ],
-                OUTPUT_CLUSTERS: [Ota.cluster_id],
+                OUTPUT_CLUSTERS: [Ota.cluster_id, Time.cluster_id],
             },
         },
     }
