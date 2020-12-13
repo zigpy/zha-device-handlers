@@ -135,7 +135,10 @@ class SiterwellGS361(TuyaThermostat):
     signature = {
         #  endpoint=1 profile=260 device_type=0 device_version=0 input_clusters=[0, 3]
         #  output_clusters=[3, 25]>
-        MODELS_INFO: [("_TYST11_jeaxp72v", "eaxp72v"), ("_TYST11_kfvq6avy", "fvq6avy")],
+        MODELS_INFO: [
+            ("_TYST11_jeaxp72v", "eaxp72v"),
+            ("_TYST11_kfvq6avy", "fvq6avy"),
+        ],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -171,7 +174,10 @@ class MoesHY368(TuyaThermostat):
     signature = {
         #  endpoint=1 profile=260 device_type=81 device_version=0 input_clusters=[0, 4, 5, 61184]
         #  output_clusters=[10, 25]>
-        MODELS_INFO: [("_TZE200_ckud7u2l", "TS0601")],
+        MODELS_INFO: [
+            ("_TZE200_ckud7u2l", "TS0601"),
+            ("_TZE200_kfvq6avy", "fvq6avy"),
+        ],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
