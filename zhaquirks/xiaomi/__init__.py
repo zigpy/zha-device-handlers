@@ -8,7 +8,13 @@ from zigpy import types as t
 import zigpy.device
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
-from zigpy.zcl.clusters.general import AnalogInput, Basic, OnOff, PowerConfiguration
+from zigpy.zcl.clusters.general import (
+    AnalogInput,
+    Basic,
+    BinaryOutput,
+    OnOff,
+    PowerConfiguration,
+)
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.measurement import (
     IlluminanceMeasurement,
@@ -292,6 +298,12 @@ class BasicCluster(CustomCluster, Basic):
         max_voltage = 3000
         percent = (voltage - min_voltage) / (max_voltage - min_voltage) * 200
         return min(200, percent)
+
+
+class BinaryOutputInterlock(CustomCluster, BinaryOutput):
+    """Xiaomi binaryoutput cluster with added interlock attribute."""
+
+    manufacturer_attributes = {0xFF06: ("interlock", t.Bool)}
 
 
 class PowerConfigurationCluster(LocalDataCluster, PowerConfiguration):
