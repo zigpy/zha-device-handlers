@@ -176,7 +176,7 @@ class MoesHY368(TuyaThermostat):
         #  output_clusters=[10, 25]>
         MODELS_INFO: [
             ("_TZE200_ckud7u2l", "TS0601"),
-            ("_TZE200_kfvq6avy", "fvq6avy"),
+            ("_TZE200_kfvq6avy", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
