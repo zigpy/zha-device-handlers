@@ -110,9 +110,9 @@ class VibrationAQ1(XiaomiQuickInitDevice):
                     self._current_state[STATUS_TYPE_ATTR],
                     {"degrees": value},
                 )
-            elif attrid == RECENT_ACTIVITY_LEVEL_ATTR:
-                # these seem to be sent every minute when vibration is active
-                self.endpoint.device.motion_bus.listener_event(MOTION_EVENT)
+#            elif attrid == RECENT_ACTIVITY_LEVEL_ATTR:
+#                # these seem to be sent every minute when vibration is active
+#                self.endpoint.device.motion_bus.listener_event(MOTION_EVENT)
 
             # show something in the sensor in HA
             if STATUS_TYPE_ATTR in self._current_state:
