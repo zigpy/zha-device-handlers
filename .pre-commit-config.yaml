@@ -6,14 +6,25 @@ repos:
         args:
           - --safe
           - --quiet
+
   - repo: https://gitlab.com/pycqa/flake8
     rev: 3.8.4
     hooks:
       - id: flake8
         additional_dependencies:
-          - flake8-docstrings==1.3.1
-          - pydocstyle==4.0.0
+          - flake8-docstrings==1.5.0
+          - pydocstyle==5.1.1
+
   - repo: https://github.com/PyCQA/isort
     rev: 5.5.2
     hooks:
       - id: isort
+
+  - repo: https://github.com/codespell-project/codespell
+    rev: v1.17.1
+    hooks:
+      - id: codespell
+        args:
+          - --ignore-words-list=dout,hass
+          - --skip="./.*"
+          - --quiet-level=2

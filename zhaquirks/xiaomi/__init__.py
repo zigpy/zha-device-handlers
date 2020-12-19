@@ -210,7 +210,7 @@ class BasicCluster(CustomCluster, Basic):
             )
 
     def _parse_aqara_attributes(self, value):
-        """Parse non standard atrributes."""
+        """Parse non standard attributes."""
         attributes = {}
         attribute_names = {
             1: BATTERY_VOLTAGE_MV,
