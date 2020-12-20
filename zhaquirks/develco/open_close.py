@@ -66,7 +66,7 @@ class WISZB120(CustomDevice):
                     general.PollControl.cluster_id,
                     security.IasZone.cluster_id,
                 ],
-                OUTPUT_CLUSTERS: [general.Time, general.Ota.cluster_id],
+                OUTPUT_CLUSTERS: [general.Time.cluster_id, general.Ota.cluster_id],
             },
             38: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -100,7 +100,7 @@ class WISZB120(CustomDevice):
                     general.PollControl.cluster_id,
                     DevelcoIASZone,
                 ],
-                OUTPUT_CLUSTERS: [general.Time, general.Ota.cluster_id],
+                OUTPUT_CLUSTERS: [general.Time.cluster_id, general.Ota.cluster_id],
             },
             38: {
                 PROFILE_ID: zha.PROFILE_ID,
