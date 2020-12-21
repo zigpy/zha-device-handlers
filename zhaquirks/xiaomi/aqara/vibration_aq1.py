@@ -84,7 +84,6 @@ class VibrationAQ1(XiaomiQuickInitDevice):
         """Multistate input cluster."""
 
         cluster_id = DoorLock.cluster_id
-        manufacturer_attributes = {0x0000: ("lock_state", types.uint8_t)}
 
         def __init__(self, *args, **kwargs):
             """Init."""
@@ -118,10 +117,6 @@ class VibrationAQ1(XiaomiQuickInitDevice):
                     "vibration_strength",
                     {"strength": strength},
                 )
-
-            # show something in the sensor in HA
-            if STATUS_TYPE_ATTR in self._current_state:
-                super()._update_attribute(0, self._current_state[STATUS_TYPE_ATTR])
 
     class MotionCluster(LocalDataCluster, MotionOnEvent):
         """Aqara Vibration Sensor."""
