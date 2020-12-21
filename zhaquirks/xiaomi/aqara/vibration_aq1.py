@@ -1,5 +1,4 @@
 """Xiaomi aqara smart motion sensor device."""
-import asyncio
 import logging
 
 from zigpy.profiles import zha
@@ -23,9 +22,8 @@ from .. import (
     PowerConfigurationCluster,
     XiaomiQuickInitDevice,
 )
-from ... import Bus, LocalDataCluster
+from ... import Bus, LocalDataCluster, MotionOnEvent
 from ...const import (
-    CLUSTER_COMMAND,
     CLUSTER_ID,
     COMMAND,
     COMMAND_TILT,
@@ -41,6 +39,7 @@ from ...const import (
     SKIP_CONFIGURATION,
     UNKNOWN,
     ZHA_SEND_EVENT,
+    ZONE_TYPE,
 )
 
 ACCELEROMETER_ATTR = 0x0508  # decimal = 1288
@@ -85,7 +84,6 @@ class VibrationAQ1(XiaomiQuickInitDevice):
         """Multistate input cluster."""
 
         cluster_id = DoorLock.cluster_id
-        manufacturer_attributes = {0x0000: ("lock_state", types.uint8_t)}
 
         def __init__(self, *args, **kwargs):
             """Init."""
@@ -110,50 +108,25 @@ class VibrationAQ1(XiaomiQuickInitDevice):
                     self._current_state[STATUS_TYPE_ATTR],
                     {"degrees": value},
                 )
+            elif attrid == RECENT_ACTIVITY_LEVEL_ATTR:
+                # these seem to be sent every minute when vibration is active
+                strength = value >> 8
+                strength = ((strength & 0xFF) << 8) | ((strength >> 8) & 0xFF)
+                self.endpoint.device.motion_bus.listener_event(
+                    SEND_EVENT,
+                    "vibration_strength",
+                    {"strength": strength},
+                )
 
-            # show something in the sensor in HA
-            if STATUS_TYPE_ATTR in self._current_state:
-                super()._update_attribute(0, self._current_state[STATUS_TYPE_ATTR])
+    class MotionCluster(LocalDataCluster, MotionOnEvent):
+        """Aqara Vibration Sensor."""
 
-    class MotionCluster(LocalDataCluster, IasZone):
-        """Motion cluster."""
-
-        cluster_id = IasZone.cluster_id
-        OFF = 0
-        ON = 1
-        VIBRATION_TYPE = 0x002D
-        ZONE_STATE = 0x0000
-        ZONE_STATUS = 0x0002
-        ZONE_TYPE = 0x0001
-
-        def __init__(self, *args, **kwargs):
-            """Init."""
-            super().__init__(*args, **kwargs)
-            self._timer_handle = None
-            self.endpoint.device.motion_bus.add_listener(self)
-            self._update_attribute(self.ZONE_STATE, self.OFF)
-            self._update_attribute(self.ZONE_TYPE, self.VIBRATION_TYPE)
-            self._update_attribute(self.ZONE_STATUS, self.OFF)
-
-        def motion_event(self):
-            """Motion event."""
-            super().listener_event(CLUSTER_COMMAND, None, self.ZONE_STATE, [self.ON])
-            super().listener_event(CLUSTER_COMMAND, None, self.ZONE_STATUS, [self.ON])
-
-            if self._timer_handle:
-                self._timer_handle.cancel()
-
-            loop = asyncio.get_event_loop()
-            self._timer_handle = loop.call_later(75, self._turn_off)
+        _CONSTANT_ATTRIBUTES = {ZONE_TYPE: IasZone.ZoneType.Vibration_Movement_Sensor}
+        reset_s = 70
 
         def send_event(self, event, *args):
             """Send event."""
             self.listener_event(ZHA_SEND_EVENT, event, args)
-
-        def _turn_off(self):
-            self._timer_handle = None
-            super().listener_event(CLUSTER_COMMAND, None, self.ZONE_STATE, [self.OFF])
-            super().listener_event(CLUSTER_COMMAND, None, self.ZONE_STATUS, [self.OFF])
 
     signature = {
         MODELS_INFO: [(LUMI, "lumi.vibration.aq1")],
