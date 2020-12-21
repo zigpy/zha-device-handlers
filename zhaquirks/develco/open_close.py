@@ -4,13 +4,13 @@ from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl.clusters.general import (
     Basic,
+    BinaryInput,
     Identify,
     OnOff,
     Ota,
-    Scenes,
-    PowerConfiguration,
-    BinaryInput,
     PollControl,
+    PowerConfiguration,
+    Scenes,
     Time,
 )
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
