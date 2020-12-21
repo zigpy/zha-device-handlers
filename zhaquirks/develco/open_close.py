@@ -1,9 +1,20 @@
 """Door/Windows sensors."""
-
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
-from zigpy.zcl.clusters import general, measurement, security
+from zigpy.zcl.clusters.general import (
+    Basic,
+    Identify,
+    OnOff,
+    Ota,
+    Scenes,
+    PowerConfiguration,
+    BinaryInput,
+    PollControl,
+    Time,
+)
+from zigpy.zcl.clusters.measurement import TemperatureMeasurement
+from zigpy.zcl.clusters.security import IasZone
 
 from . import DEVELCO, DevelcoPowerConfiguration
 from ..const import (
@@ -16,14 +27,14 @@ from ..const import (
 )
 
 
-class DevelcoIASZone(CustomCluster, security.IasZone):
+class DevelcoIASZone(CustomCluster, IasZone):
     """IAS Zone."""
 
     manufacturer_client_commands = {
         0x0000: (
             "status_change_notification",
             (
-                security.IasZone.ZoneStatus,
+                IasZone.ZoneStatus,
                 t.bitmap8,
                 t.Optional(t.uint8_t),
                 t.Optional(t.uint16_t),
@@ -49,9 +60,9 @@ class WISZB120(CustomDevice):
                 PROFILE_ID: 0xC0C9,
                 DEVICE_TYPE: 1,
                 INPUT_CLUSTERS: [
-                    general.Identify.cluster_id,
-                    general.Scenes.cluster_id,
-                    general.OnOff.cluster_id,
+                    Identify.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [],
             },
@@ -59,24 +70,24 @@ class WISZB120(CustomDevice):
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
                 INPUT_CLUSTERS: [
-                    general.Basic.cluster_id,
-                    general.PowerConfiguration.cluster_id,
-                    general.Identify.cluster_id,
-                    general.BinaryInput.cluster_id,
-                    general.PollControl.cluster_id,
-                    security.IasZone.cluster_id,
+                    Basic.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    Identify.cluster_id,
+                    BinaryInput.cluster_id,
+                    PollControl.cluster_id,
+                    IasZone.cluster_id,
                 ],
-                OUTPUT_CLUSTERS: [general.Time.cluster_id, general.Ota.cluster_id],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
             38: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.TEMPERATURE_SENSOR,
                 INPUT_CLUSTERS: [
-                    general.Basic.cluster_id,
-                    general.Identify.cluster_id,
-                    measurement.TemperatureMeasurement.cluster_id,
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    TemperatureMeasurement.cluster_id,
                 ],
-                OUTPUT_CLUSTERS: [general.Identify.cluster_id],
+                OUTPUT_CLUSTERS: [Identify.cluster_id],
             },
         },
     }
@@ -85,32 +96,32 @@ class WISZB120(CustomDevice):
         ENDPOINTS: {
             1: {
                 INPUT_CLUSTERS: [
-                    general.Identify.cluster_id,
-                    general.Scenes.cluster_id,
-                    general.OnOff.cluster_id,
+                    Identify.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [],
             },
             35: {
                 INPUT_CLUSTERS: [
-                    general.Basic.cluster_id,
+                    Basic.cluster_id,
                     DevelcoPowerConfiguration,
-                    general.Identify.cluster_id,
-                    general.BinaryInput.cluster_id,
-                    general.PollControl.cluster_id,
+                    Identify.cluster_id,
+                    BinaryInput.cluster_id,
+                    PollControl.cluster_id,
                     DevelcoIASZone,
                 ],
-                OUTPUT_CLUSTERS: [general.Time.cluster_id, general.Ota.cluster_id],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
             38: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.TEMPERATURE_SENSOR,
                 INPUT_CLUSTERS: [
-                    general.Basic.cluster_id,
-                    general.Identify.cluster_id,
-                    measurement.TemperatureMeasurement.cluster_id,
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    TemperatureMeasurement.cluster_id,
                 ],
-                OUTPUT_CLUSTERS: [general.Identify.cluster_id],
+                OUTPUT_CLUSTERS: [Identify.cluster_id],
             },
         }
     }
