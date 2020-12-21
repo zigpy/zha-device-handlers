@@ -97,3 +97,4 @@ UNKNOWN = "Unknown"
 VALUE = "value"
 ZHA_SEND_EVENT = "zha_send_event"
 ZONE_STATE = 0
+ZONE_TYPE = 0x0001
