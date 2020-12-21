@@ -159,4 +159,9 @@ class SwitchAQ3B(XiaomiCustomDevice):
         },
     }
 
-    device_automation_triggers = SwitchAQ3.device_automation_triggers
+    device_automation_triggers = {
+        (DOUBLE_PRESS, DOUBLE_PRESS): {COMMAND: COMMAND_DOUBLE},
+        (SHORT_PRESS, SHORT_PRESS): {COMMAND: COMMAND_SINGLE},
+        (LONG_PRESS, LONG_PRESS): {COMMAND: COMMAND_HOLD},
+        (LONG_RELEASE, LONG_RELEASE): {COMMAND: COMMAND_HOLD},
+    }
