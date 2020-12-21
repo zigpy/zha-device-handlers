@@ -25,6 +25,7 @@ from ..const import (
     COMMAND_MOVE_ON_OFF,
     COMMAND_OFF,
     COMMAND_ON,
+    COMMAND_STOP,
     DEVICE_TYPE,
     DIM_DOWN,
     DIM_UP,
@@ -32,14 +33,13 @@ from ..const import (
     ENDPOINTS,
     INPUT_CLUSTERS,
     LONG_PRESS,
+    LONG_RELEASE,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SHORT_PRESS,
     TURN_OFF,
     TURN_ON,
-    LONG_RELEASE,
-    COMMAND_STOP,
 )
 
 IKEA_CLUSTER_ID = 0xFC7C  # decimal = 64636
