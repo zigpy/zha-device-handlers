@@ -40,7 +40,6 @@ from ..const import (
 )
 
 TAPT_MFG_CODE = 0x5488  # 21640 base 10
-TAPT_NODE_MFG_CODE = 0xBBAA  # 48042 base 10
 TAPT_CLUSTER = 0xFC20  # 64544 base 10
 
 _LOGGER = logging.getLogger(__name__)
@@ -54,7 +53,7 @@ class TaptConfig(CustomCluster):
     ep_attribute = "tapt_cluster"
     server_commands = {}
     client_commands = {}
-    attributes = {
+    manufacturer_attributes = {
         0x0000: ("Switch Mode", t.uint8_t),
         # Value, Description
         # 0 - Standard On/Off Switch, No Smart Status, Relay Status Endpoint 2
@@ -64,21 +63,11 @@ class TaptConfig(CustomCluster):
         # 4 - Lower Toggles Load, Smart Status on Endpoint 1, Relay Status on Endpoint 2
     }
 
-    async def read_attributes_raw(self, attributes, manufacturer=None):
-        """Set the default manufacturer for Switch Mode Setting."""
-        if manufacturer == TAPT_NODE_MFG_CODE:
-            manufacturer = TAPT_MFG_CODE
-        return await super().read_attributes_raw(attributes, manufacturer)
-
-    async def write_attributes(self, attributes, manufacturer=None):
-        """Set the default manufacturer for Switch Mode Setting."""
-        if manufacturer == TAPT_NODE_MFG_CODE:
-            manufacturer = TAPT_MFG_CODE
-        return await super().write_attributes(attributes, manufacturer)
-
 
 class TAPTSwitch(CustomDevice):
     """GE Quirky TAPT Switch."""
+
+    manufacturer_id_override = TAPT_MFG_CODE
 
     signature = {
         MODELS_INFO: [(QUIRKY, "Smart Switch")],
