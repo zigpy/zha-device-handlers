@@ -260,6 +260,7 @@ class MotionOnEvent(_Motion):
     def motion_event(self):
         """Motion event."""
         super().listener_event(CLUSTER_COMMAND, 254, ZONE_STATE, [ON, 0, 0, 0])
+        self._update_attribute(ZONE_STATE, ON)
 
         _LOGGER.debug("%s - Received motion event message", self.endpoint.device.ieee)
 
