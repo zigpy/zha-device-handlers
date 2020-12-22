@@ -13,7 +13,7 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.lightlink import LightLink
 
-from . import HUE_REMOTE_DEVICE_TRIGGERS, PhilipsBasicCluster, PhilipsRemoteCluster
+from . import PhilipsBasicCluster, PhilipsRemoteCluster
 from ..const import (
     COMMAND,
     COMMAND_OFF_WITH_EFFECT,
