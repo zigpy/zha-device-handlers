@@ -1,7 +1,15 @@
 """Tuya 2 Button switch."""
 
 from zigpy.profiles import zha
-from zigpy.zcl.clusters.general import Basic, Groups, OnOff, Ota, Scenes, PowerConfiguration, Time
+from zigpy.zcl.clusters.general import (
+    Basic,
+    Groups,
+    OnOff,
+    Ota,
+    PowerConfiguration,
+    Scenes,
+    Time,
+)
 
 from . import (
     TuyaManufacturerClusterOnOff,
@@ -10,6 +18,7 @@ from . import (
     TuyaSmartRemoteOnOffCluster,
     TuyaSwitch,
 )
+
 from ..const import (
     BUTTON_1,
     BUTTON_2,
