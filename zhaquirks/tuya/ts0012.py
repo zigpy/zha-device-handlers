@@ -10,7 +10,6 @@ from zigpy.zcl.clusters.general import (
     Scenes,
     Time,
 )
-
 from . import (
     TuyaManufacturerClusterOnOff,
     TuyaManufCluster,
@@ -18,7 +17,6 @@ from . import (
     TuyaSmartRemoteOnOffCluster,
     TuyaSwitch,
 )
-
 from ..const import (
     BUTTON_1,
     BUTTON_2,
