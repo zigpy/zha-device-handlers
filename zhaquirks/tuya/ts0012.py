@@ -8,7 +8,7 @@ from . import (
     TuyaManufCluster,
     TuyaOnOff,
     TuyaSmartRemoteOnOffCluster,
-    TuyaSwitch
+    TuyaSwitch,
 )
 from ..const import (
     BUTTON_1,
