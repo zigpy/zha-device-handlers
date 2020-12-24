@@ -3,7 +3,13 @@
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import Basic, Groups, OnOff, Ota, Scenes, PowerConfiguration, Time
 
-from . import TuyaSmartRemote, TuyaSmartRemoteOnOffCluster, TuyaManufacturerClusterOnOff, TuyaManufCluster, TuyaOnOff, TuyaSwitch
+from . import (
+    TuyaManufacturerClusterOnOff,
+    TuyaManufCluster,
+    TuyaOnOff,
+    TuyaSmartRemoteOnOffCluster,
+    TuyaSwitch
+)
 from ..const import (
     BUTTON_1,
     BUTTON_2,
@@ -38,7 +44,6 @@ class TuyaDoubleSwitch(TuyaSwitch):
                     Scenes.cluster_id,
                     Time.cluster_id,
                     TuyaManufCluster.cluster_id,
-
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
