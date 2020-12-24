@@ -10,6 +10,7 @@ from zigpy.zcl.clusters.general import (
     Scenes,
     Time,
 )
+
 from . import (
     TuyaManufacturerClusterOnOff,
     TuyaManufCluster,
