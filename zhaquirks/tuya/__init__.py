@@ -362,6 +362,8 @@ class TuyaSmartRemoteOnOffCluster(OnOff, EventableCluster):
         0x01: DOUBLE_PRESS,
         0x03: LONG_PRESS,
     }
+    name = "TS004X_cluster"
+    ep_attribute = "TS004X_cluster"
 
     def __init__(self, *args, **kwargs):
         """Init."""
