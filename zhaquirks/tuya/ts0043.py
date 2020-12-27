@@ -1,9 +1,10 @@
 """Tuya 3 Button Remote."""
 
 from zigpy.profiles import zha
+from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, OnOff, Ota, PowerConfiguration, Time
 
-from . import TuyaSmartRemote, TuyaSmartRemoteOnOffCluster
+from . import TuyaSmartRemoteOnOffCluster
 from ..const import (
     BUTTON_1,
     BUTTON_2,
@@ -22,7 +23,7 @@ from ..const import (
 )
 
 
-class TuyaSmartRemote0043(TuyaSmartRemote):
+class TuyaSmartRemote0043(CustomDevice):
     """Tuya 3-button remote device."""
 
     signature = {
@@ -109,7 +110,7 @@ class TuyaSmartRemote0043(TuyaSmartRemote):
     }
 
 
-class BenexmartRemote0043(TuyaSmartRemote):
+class BenexmartRemote0043(CustomDevice):
     """Benexmart/Tuya 3-button remote device."""
 
     signature = {
@@ -183,12 +184,9 @@ class BenexmartRemote0043(TuyaSmartRemote):
 
     device_automation_triggers = {
         (SHORT_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: SHORT_PRESS},
-        (LONG_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: LONG_PRESS},
         (DOUBLE_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: DOUBLE_PRESS},
         (SHORT_PRESS, BUTTON_2): {ENDPOINT_ID: 2, COMMAND: SHORT_PRESS},
-        (LONG_PRESS, BUTTON_2): {ENDPOINT_ID: 2, COMMAND: LONG_PRESS},
         (DOUBLE_PRESS, BUTTON_2): {ENDPOINT_ID: 2, COMMAND: DOUBLE_PRESS},
         (SHORT_PRESS, BUTTON_3): {ENDPOINT_ID: 3, COMMAND: SHORT_PRESS},
-        (LONG_PRESS, BUTTON_3): {ENDPOINT_ID: 3, COMMAND: LONG_PRESS},
         (DOUBLE_PRESS, BUTTON_3): {ENDPOINT_ID: 3, COMMAND: DOUBLE_PRESS},
     }

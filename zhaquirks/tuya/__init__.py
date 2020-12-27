@@ -9,7 +9,7 @@ from zigpy.zcl.clusters.general import OnOff, PowerConfiguration
 from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
 
 from .. import Bus, EventableCluster, LocalDataCluster
-from ..const import DOUBLE_PRESS, LONG_PRESS, SHORT_PRESS
+from ..const import DOUBLE_PRESS, LONG_PRESS, SHORT_PRESS, ZHA_SEND_EVENT
 
 TUYA_CLUSTER_ID = 0xEF00
 TUYA_SET_DATA = 0x0000
@@ -354,47 +354,34 @@ class TuyaThermostat(CustomDevice):
         super().__init__(*args, **kwargs)
 
 
-class TuyaSmartRemoteOnOffCluster(EventableCluster):
-    """TuyaSmartRemoteOnOffCluster: this cluster manipulates messages from the remote control and converts them to command_ids."""
+class TuyaSmartRemoteOnOffCluster(OnOff, EventableCluster):
+    """TuyaSmartRemoteOnOffCluster: fire events corresponding to press type."""
 
-    cluster_id = 0x0006
-    name = "TS004X_cluster"
-    ep_attribute = "TS004X_cluster"
-
-    server_commands = {
-        0x00: (SHORT_PRESS, (), False),
-        0x01: (DOUBLE_PRESS, (), False),
-        0x02: (LONG_PRESS, (), False),
+    press_type = {
+        0x00: SHORT_PRESS,
+        0x01: DOUBLE_PRESS,
+        0x03: LONG_PRESS,
     }
-
-
-class TuyaSmartRemote(CustomDevice):
-    """Tuya scene x-channel remote device."""
 
     def __init__(self, *args, **kwargs):
         """Init."""
-        self.last_code = -1
+        self.last_tsn = -1
         super().__init__(*args, **kwargs)
 
-    def handle_message(self, profile, cluster, src_ep, dst_ep, message):
-        """Handle a device message."""
-        if (
-            profile == 260
-            and cluster == 6
-            and len(message) == 4
-            and message[0] == 0x01
-            and message[2] == 0xFD
-        ):
-            # use the 4th byte as command_id
-            new_message = bytearray(4)
-            new_message[0] = message[0]
-            new_message[1] = message[1]
-            new_message[2] = message[3]
-            new_message[3] = 0
-            message = type(message)(new_message)
+    manufacturer_server_commands = {
+        0xFD: ("press_type", (t.uint8_t,), False),
+    }
 
-        if self.last_code != message[1]:
-            self.last_code = message[1]
-            super().handle_message(profile, cluster, src_ep, dst_ep, message)
-        else:
-            _LOGGER.debug("TS004X: not handling duplicate frame")
+    def handle_cluster_request(self, tsn, command_id, args):
+        """Handle press_types command."""
+        if tsn == self.last_tsn:
+            _LOGGER.debug("TS004X: ignoring duplicate frame")
+            return
+
+        self.last_tsn = tsn
+        super().handle_cluster_request(tsn, command_id, args)
+        if command_id == 0xFD:
+            press_type = args[0]
+            self.listener_event(
+                ZHA_SEND_EVENT, self.press_type.get(press_type, "unknown"), []
+            )

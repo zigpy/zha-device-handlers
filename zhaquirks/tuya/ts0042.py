@@ -1,9 +1,10 @@
 """Tuya 2 Button Remote."""
 
 from zigpy.profiles import zha
+from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, OnOff, Ota, PowerConfiguration, Time
 
-from . import TuyaSmartRemote, TuyaSmartRemoteOnOffCluster
+from . import TuyaSmartRemoteOnOffCluster
 from ..const import (
     BUTTON_1,
     BUTTON_2,
@@ -21,7 +22,7 @@ from ..const import (
 )
 
 
-class TuyaSmartRemote0042(TuyaSmartRemote):
+class TuyaSmartRemote0042(CustomDevice):
     """Tuya 2-button remote device."""
 
     signature = {
@@ -86,7 +87,7 @@ class TuyaSmartRemote0042(TuyaSmartRemote):
     }
 
 
-class BenexmartRemote0042(TuyaSmartRemote):
+class BenexmartRemote0042(CustomDevice):
     """Tuya 2-button remote device."""
 
     signature = {
