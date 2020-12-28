@@ -37,7 +37,7 @@ class CCTLight(CustomDevice):
     """Lidl CCT Lighting device."""
 
     signature = {
-        MODELS_INFO: [("_TZ3000_49qchf10", "TS0502A")],
+        MODELS_INFO: [("_TZ3000_49qchf10", "TS0502A"), ("_TZ3000_oborybow", "TS0502A")],
         ENDPOINTS: {
             1: {
                 # <SimpleDescriptor endpoint=1 profile=260 device_type=268
