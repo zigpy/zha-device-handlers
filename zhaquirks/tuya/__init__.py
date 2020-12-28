@@ -360,7 +360,7 @@ class TuyaSmartRemoteOnOffCluster(OnOff, EventableCluster):
     press_type = {
         0x00: SHORT_PRESS,
         0x01: DOUBLE_PRESS,
-        0x03: LONG_PRESS,
+        0x02: LONG_PRESS,
     }
     name = "TS004X_cluster"
     ep_attribute = "TS004X_cluster"
