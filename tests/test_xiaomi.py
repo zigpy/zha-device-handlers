@@ -267,11 +267,8 @@ async def test_xiaomi_battery(zigpy_device_from_quirk, voltage, bpr):
 @pytest.mark.parametrize("voltage, bpr", ((3000, 200), (2800, 0), (2600, 0)))
 async def test_mija_battery(zigpy_device_from_quirk, voltage, bpr):
     """Test xiaomi batter voltage to % battery left."""
-    data_1 = b'\x1c_\x11I\n\x02\xffB"\x01!'
-    data_2 = (
-        b"\x03(\r\x04!\xa8\x13\x05!\xcb\x00\x06$\x01\x00\x00\x00\x00\x08!\x04\x02\n!"
-        b"\x00\x00d\x10\x00"
-    )
+    data_1 = b"\x1c4\x12\x02\n\x02\xffL\x06\x00\x10\x01!"
+    data_2 = b"!\xa8\x01$\x00\x00\x00\x00\x00!n\x00 P"
 
     device = zigpy_device_from_quirk(zhaquirks.xiaomi.mija.motion.Motion)
     device.handle_message(
