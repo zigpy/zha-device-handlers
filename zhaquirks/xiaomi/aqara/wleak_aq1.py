@@ -8,7 +8,7 @@ from .. import (
     LUMI,
     XIAOMI_NODE_DESC,
     BasicCluster,
-    PowerConfigurationCluster,
+    XiaomiPowerConfiguration,
     XiaomiQuickInitDevice,
 )
 from ...const import (
@@ -47,7 +47,7 @@ class LeakAQ1(XiaomiQuickInitDevice):
                 INPUT_CLUSTERS: [
                     BasicCluster.cluster_id,
                     Identify.cluster_id,
-                    PowerConfigurationCluster.cluster_id,
+                    XiaomiPowerConfiguration.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             }
@@ -60,7 +60,7 @@ class LeakAQ1(XiaomiQuickInitDevice):
                 INPUT_CLUSTERS: [
                     BasicCluster,
                     Identify.cluster_id,
-                    PowerConfigurationCluster,
+                    XiaomiPowerConfiguration,
                     CustomIasZone,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],

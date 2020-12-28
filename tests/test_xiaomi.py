@@ -262,3 +262,20 @@ async def test_xiaomi_battery(zigpy_device_from_quirk, voltage, bpr):
     )
     power_cluster = device.endpoints[1].power
     assert power_cluster["battery_percentage_remaining"] == bpr
+
+
+@pytest.mark.parametrize("voltage, bpr", ((3000, 200), (2800, 0), (2600, 0)))
+async def test_mija_battery(zigpy_device_from_quirk, voltage, bpr):
+    """Test xiaomi batter voltage to % battery left."""
+    data_1 = b'\x1c_\x11I\n\x02\xffB"\x01!'
+    data_2 = (
+        b"\x03(\r\x04!\xa8\x13\x05!\xcb\x00\x06$\x01\x00\x00\x00\x00\x08!\x04\x02\n!"
+        b"\x00\x00d\x10\x00"
+    )
+
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.mija.motion.Motion)
+    device.handle_message(
+        0x260, 0x0000, 1, 1, data_1 + t.uint16_t(voltage).serialize() + data_2
+    )
+    power_cluster = device.endpoints[1].power
+    assert power_cluster["battery_percentage_remaining"] == bpr

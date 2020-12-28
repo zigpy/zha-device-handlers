@@ -15,7 +15,7 @@ from .. import (
     LUMI,
     XIAOMI_NODE_DESC,
     BasicCluster,
-    PowerConfigurationCluster,
+    XiaomiPowerConfiguration,
     XiaomiQuickInitDevice,
 )
 from ...const import (
@@ -81,7 +81,7 @@ class Magnet(XiaomiQuickInitDevice):
                 INPUT_CLUSTERS: [
                     BasicCluster,
                     Identify.cluster_id,
-                    PowerConfigurationCluster,
+                    XiaomiPowerConfiguration,
                     XIAOMI_CLUSTER_ID,
                     Ota.cluster_id,
                 ],

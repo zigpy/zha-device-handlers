@@ -9,10 +9,10 @@ from .. import (
     LUMI,
     XIAOMI_NODE_DESC,
     BasicCluster,
-    PowerConfigurationCluster,
     PressureMeasurementCluster,
     RelativeHumidityCluster,
     TemperatureMeasurementCluster,
+    XiaomiPowerConfiguration,
     XiaomiQuickInitDevice,
 )
 from ... import Bus
@@ -77,7 +77,7 @@ class Weather(XiaomiQuickInitDevice):
             1: {
                 INPUT_CLUSTERS: [
                     BasicCluster,
-                    PowerConfigurationCluster,
+                    XiaomiPowerConfiguration,
                     Identify.cluster_id,
                     TemperatureMeasurementCluster,
                     PressureMeasurementCluster,
