@@ -42,6 +42,8 @@ BATTERY_LEVEL = "battery_level"
 BATTERY_PERCENTAGE_REMAINING = 0x0021
 BATTERY_REPORTED = "battery_reported"
 BATTERY_SIZE = "battery_size"
+BATTERY_SIZE_ATTR = 0x0031
+BATTERY_QUANTITY_ATTR = 0x0033
 BATTERY_VOLTAGE_MV = "battery_voltage_mV"
 HUMIDITY_MEASUREMENT = "humidity_measurement"
 HUMIDITY_REPORTED = "humidity_reported"
@@ -177,8 +179,7 @@ class BasicCluster(CustomCluster, Basic):
         )
         if BATTERY_VOLTAGE_MV in attributes:
             self.endpoint.device.battery_bus.listener_event(
-                BATTERY_REPORTED,
-                attributes[BATTERY_VOLTAGE_MV],
+                BATTERY_REPORTED, attributes[BATTERY_VOLTAGE_MV]
             )
 
         if TEMPERATURE_MEASUREMENT in attributes:
@@ -290,8 +291,6 @@ class BinaryOutputInterlock(CustomCluster, BinaryOutput):
 class XiaomiPowerConfiguration(PowerConfigurationCluster, LocalDataCluster):
     """Xiaomi power configuration cluster implementation."""
 
-    BATTERY_SIZE_ATTR = 0x0031
-    BATTERY_QUANTITY_ATTR = 0x0033
     MAX_VOLTS = 3.0
     MIN_VOLTS = 2.8
 
@@ -299,13 +298,10 @@ class XiaomiPowerConfiguration(PowerConfigurationCluster, LocalDataCluster):
         """Init."""
         super().__init__(*args, **kwargs)
         self.endpoint.device.battery_bus.add_listener(self)
-        if hasattr(self.endpoint.device, BATTERY_SIZE):
-            self._update_attribute(
-                self.BATTERY_SIZE_ATTR, self.endpoint.device.battery_size
-            )
-        else:
-            self._update_attribute(self.BATTERY_SIZE_ATTR, 0xFF)
-        self._update_attribute(self.BATTERY_QUANTITY_ATTR, 1)
+        self._CONSTANT_ATTRIBUTES = {
+            BATTERY_QUANTITY_ATTR: 1,
+            BATTERY_SIZE_ATTR: getattr(self.endpoint.device, BATTERY_SIZE, 0xFF),
+        }
 
     def battery_reported(self, voltage_mv: int) -> None:
         """Battery reported."""

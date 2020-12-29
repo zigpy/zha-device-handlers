@@ -276,3 +276,22 @@ async def test_mija_battery(zigpy_device_from_quirk, voltage, bpr):
     )
     power_cluster = device.endpoints[1].power
     assert power_cluster["battery_percentage_remaining"] == bpr
+
+
+@pytest.mark.parametrize(
+    "quirk, batt_size",
+    (
+        (zhaquirks.xiaomi.aqara.vibration_aq1.VibrationAQ1, 0x0A),
+        (zhaquirks.xiaomi.mija.motion.Motion, 0x09),
+        (zhaquirks.xiaomi.mija.sensor_switch.MijaButton, 0x0A),
+        (zhaquirks.xiaomi.mija.sensor_magnet.Magnet, 0x0B),
+    ),
+)
+async def test_xiaomi_batt_size(zigpy_device_from_quirk, quirk, batt_size):
+    """Test xiaomi battery size overrides."""
+
+    device = zigpy_device_from_quirk(quirk)
+    cluster = device.endpoints[1].power
+    succ, fail = await cluster.read_attributes(("battery_size", "battery_quantity"))
+    assert succ["battery_quantity"] == 1
+    assert succ["battery_size"] == batt_size
