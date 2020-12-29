@@ -305,7 +305,7 @@ class XiaomiPowerConfiguration(PowerConfigurationCluster, LocalDataCluster):
 
     def battery_reported(self, voltage_mv: int) -> None:
         """Battery reported."""
-        self._update_attribute(self.BATTERY_VOLTAGE_ATTR, int(voltage_mv / 100))
+        self._update_attribute(self.BATTERY_VOLTAGE_ATTR, round(voltage_mv / 100))
 
 
 class OccupancyCluster(OccupancyWithReset):
