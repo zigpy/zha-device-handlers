@@ -1,4 +1,4 @@
-"""Device handler for IKEA of Sweden TRADFRI SYMFONISK remote control."""
+"""Device handler for IKEA of Sweden TRADFRI wireless dimmer ICTC-G-1."""
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
@@ -20,10 +20,7 @@ from ..const import (
     CLUSTER_ID,
     COMMAND,
     COMMAND_MOVE,
-    COMMAND_STEP,
-    COMMAND_TOGGLE,
     DEVICE_TYPE,
-    DOUBLE_PRESS,
     ENDPOINT_ID,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -32,25 +29,22 @@ from ..const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     RIGHT,
-    SHORT_PRESS,
-    TRIPLE_PRESS,
-    TURN_ON,
 )
 
 
-class IkeaSYMFONISK(CustomDevice):
-    """Custom device representing IKEA of Sweden TRADFRI remote control."""
+class IkeaDimmer(CustomDevice):
+    """Custom device representing IKEA of Sweden TRADFRI wireless dimmer."""
 
     signature = {
-        # <SimpleDescriptor endpoint=1 profile=260 device_type=6
+        # <SimpleDescriptor endpoint=1 profile=260 device_type=2080
         # device_version=1
         # input_clusters=[0, 1, 3, 32, 4096]
-        # output_clusters=[3, 4, 6, 8, 25, 4096]>
-        MODELS_INFO: [(IKEA, "SYMFONISK Sound Controller")],
+        # output_clusters=[3, 4, 6, 8, 25, 4096]
+        MODELS_INFO: [(IKEA, "TRADFRI wireless dimmer")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
+                DEVICE_TYPE: zha.DeviceType.NON_COLOR_CONTROLLER,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
@@ -74,7 +68,7 @@ class IkeaSYMFONISK(CustomDevice):
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
+                DEVICE_TYPE: zha.DeviceType.NON_COLOR_CONTROLLER,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     DoublingPowerConfigurationCluster,
@@ -94,34 +88,18 @@ class IkeaSYMFONISK(CustomDevice):
         }
     }
 
-    device_automation_triggers = {
-        (SHORT_PRESS, TURN_ON): {
-            COMMAND: COMMAND_TOGGLE,
-            CLUSTER_ID: 6,
-            ENDPOINT_ID: 1,
-        },
-        (ROTATED, RIGHT): {
-            COMMAND: COMMAND_MOVE,
-            CLUSTER_ID: 8,
-            ENDPOINT_ID: 1,
-            ARGS: [0, 195],
-        },
-        (ROTATED, LEFT): {
-            COMMAND: COMMAND_MOVE,
-            CLUSTER_ID: 8,
-            ENDPOINT_ID: 1,
-            ARGS: [1, 195],
-        },
-        (DOUBLE_PRESS, TURN_ON): {
-            COMMAND: COMMAND_STEP,
-            CLUSTER_ID: 8,
-            ENDPOINT_ID: 1,
-            ARGS: [0, 1, 0],
-        },
-        (TRIPLE_PRESS, TURN_ON): {
-            COMMAND: COMMAND_STEP,
-            CLUSTER_ID: 8,
-            ENDPOINT_ID: 1,
-            ARGS: [1, 1, 0],
-        },
-    }
+
+device_automation_triggers = {
+    (ROTATED, RIGHT): {
+        COMMAND: COMMAND_MOVE,
+        CLUSTER_ID: 8,
+        ENDPOINT_ID: 1,
+        ARGS: [0, 195],
+    },
+    (ROTATED, LEFT): {
+        COMMAND: COMMAND_MOVE,
+        CLUSTER_ID: 8,
+        ENDPOINT_ID: 1,
+        ARGS: [1, 195],
+    },
+}
