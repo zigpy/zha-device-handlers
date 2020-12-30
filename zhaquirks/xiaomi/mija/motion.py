@@ -18,7 +18,7 @@ from .. import (
     BasicCluster,
     MotionCluster,
     OccupancyCluster,
-    PowerConfigurationCluster,
+    XiaomiPowerConfiguration,
     XiaomiQuickInitDevice,
 )
 from ... import Bus
@@ -84,7 +84,7 @@ class Motion(XiaomiQuickInitDevice):
                 DEVICE_TYPE: zha.DeviceType.OCCUPANCY_SENSOR,
                 INPUT_CLUSTERS: [
                     BasicCluster,
-                    PowerConfigurationCluster,
+                    XiaomiPowerConfiguration,
                     Identify.cluster_id,
                     OccupancyCluster,
                     MotionCluster,

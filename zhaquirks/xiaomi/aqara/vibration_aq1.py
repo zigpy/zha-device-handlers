@@ -19,7 +19,7 @@ from .. import (
     LUMI,
     XIAOMI_NODE_DESC,
     BasicCluster,
-    PowerConfigurationCluster,
+    XiaomiPowerConfiguration,
     XiaomiQuickInitDevice,
 )
 from ... import Bus, LocalDataCluster, MotionOnEvent
@@ -171,7 +171,7 @@ class VibrationAQ1(XiaomiQuickInitDevice):
                 DEVICE_TYPE: zha.DeviceType.DOOR_LOCK,
                 INPUT_CLUSTERS: [
                     VibrationBasicCluster,
-                    PowerConfigurationCluster,
+                    XiaomiPowerConfiguration,
                     Identify.cluster_id,
                     MotionCluster,
                     Ota.cluster_id,
