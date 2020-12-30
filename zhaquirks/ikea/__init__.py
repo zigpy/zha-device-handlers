@@ -32,7 +32,8 @@ class LightLinkCluster(CustomCluster, LightLink):
             )
             group_id = 0x0000
         status = await coordinator.add_to_group(
-            group_id, name="Default Lightlink Group",
+            group_id,
+            name="Default Lightlink Group",
         )
         return [status]
 
