@@ -16,13 +16,22 @@ from zigpy.zcl.clusters.lightlink import LightLink
 from . import IKEA
 from .. import DoublingPowerConfigurationCluster
 from ..const import (
+    ARGS,
+    CLUSTER_ID,
+    COMMAND,
+    COMMAND_MOVE,
     DEVICE_TYPE,
+    ENDPOINT_ID,
     ENDPOINTS,
     INPUT_CLUSTERS,
+    LEFT,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
+    RIGHT,
 )
+
+ROTATED = "device_rotated"
 
 
 class IkeaDimmer(CustomDevice):
@@ -80,3 +89,19 @@ class IkeaDimmer(CustomDevice):
             }
         }
     }
+
+
+device_automation_triggers = {
+    (ROTATED, RIGHT): {
+        COMMAND: COMMAND_MOVE,
+        CLUSTER_ID: 8,
+        ENDPOINT_ID: 1,
+        ARGS: [0, 195],
+    },
+    (ROTATED, LEFT): {
+        COMMAND: COMMAND_MOVE,
+        CLUSTER_ID: 8,
+        ENDPOINT_ID: 1,
+        ARGS: [1, 195],
+    },
+}
