@@ -8,6 +8,7 @@ from zigpy.zcl.clusters.lightlink import LightLink
 
 _LOGGER = logging.getLogger(__name__)
 IKEA = "IKEA of Sweden"
+ROTATED = "device_rotated"
 
 
 class LightLinkCluster(CustomCluster, LightLink):
@@ -31,8 +32,7 @@ class LightLinkCluster(CustomCluster, LightLink):
             )
             group_id = 0x0000
         status = await coordinator.add_to_group(
-            group_id,
-            name="Default Lightlink Group",
+            group_id, name="Default Lightlink Group",
         )
         return [status]
 
