@@ -8,8 +8,8 @@ from zigpy.zcl.clusters.general import (
     LevelControl,
     OnOff,
     Ota,
-    PowerConfiguration,
     PollControl,
+    PowerConfiguration,
 )
 from zigpy.zcl.clusters.lightlink import LightLink
 
