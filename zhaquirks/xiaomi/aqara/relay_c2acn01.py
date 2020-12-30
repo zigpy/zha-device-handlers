@@ -21,6 +21,7 @@ from .. import (
     LUMI,
     AnalogInputCluster,
     BasicCluster,
+    BinaryOutputInterlock,
     ElectricalMeasurementCluster,
     XiaomiCustomDevice,
 )
@@ -104,7 +105,7 @@ class Relay(XiaomiCustomDevice):
                     Identify.cluster_id,
                     OnOff.cluster_id,
                     Scenes.cluster_id,
-                    BinaryOutput.cluster_id,
+                    BinaryOutputInterlock,
                     Time.cluster_id,
                     ElectricalMeasurementCluster,
                     AnalogInputCluster,
@@ -116,7 +117,7 @@ class Relay(XiaomiCustomDevice):
                 DEVICE_TYPE: zha.DeviceType.DIMMABLE_LIGHT,
                 INPUT_CLUSTERS: [
                     OnOff.cluster_id,
-                    BinaryOutput.cluster_id,
+                    BinaryOutputInterlock,
                     Groups.cluster_id,
                     Scenes.cluster_id,
                 ],

@@ -8,7 +8,7 @@ from .. import (
     LUMI,
     XIAOMI_NODE_DESC,
     BasicCluster,
-    PowerConfigurationCluster,
+    XiaomiPowerConfiguration,
     XiaomiQuickInitDevice,
 )
 from ...const import (
@@ -74,7 +74,7 @@ class SwitchAQ2(XiaomiQuickInitDevice):
                 DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
                 INPUT_CLUSTERS: [
                     BasicCluster,
-                    PowerConfigurationCluster,
+                    XiaomiPowerConfiguration,
                     XIAOMI_CLUSTER_ID,
                 ],
                 OUTPUT_CLUSTERS: [

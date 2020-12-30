@@ -29,7 +29,7 @@ from .. import (
     LUMI,
     XIAOMI_NODE_DESC,
     BasicCluster,
-    PowerConfigurationCluster,
+    XiaomiPowerConfiguration,
     XiaomiQuickInitDevice,
 )
 from ... import CustomCluster
@@ -98,7 +98,7 @@ class MijiaHoneywellSmokeDetectorSensor(XiaomiQuickInitDevice):
             1: {
                 INPUT_CLUSTERS: [
                     BasicCluster,
-                    PowerConfigurationCluster,
+                    XiaomiPowerConfiguration,
                     Identify.cluster_id,
                     AnalogInput.cluster_id,
                     MultistateInput.cluster_id,

@@ -62,7 +62,7 @@ async def test_motion(zigpy_device_from_quirk, quirk):
         tuya_cluster.handle_message(hdr, args)
 
     assert len(motion_listener.cluster_commands) == 1
-    assert len(motion_listener.attribute_updates) == 0
+    assert len(motion_listener.attribute_updates) == 1
     assert motion_listener.cluster_commands[0][1] == ZONE_STATE
     assert motion_listener.cluster_commands[0][2][0] == ON
 

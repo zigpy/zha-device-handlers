@@ -8,7 +8,7 @@ from .. import (
     LUMI,
     XIAOMI_NODE_DESC,
     BasicCluster,
-    PowerConfigurationCluster,
+    XiaomiPowerConfiguration,
     XiaomiQuickInitDevice,
 )
 from ...const import (
@@ -20,20 +20,14 @@ from ...const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SKIP_CONFIGURATION,
+    ZONE_TYPE,
 )
 
 
 class CustomIasZone(CustomCluster, IasZone):
     """Custom IasZone cluster."""
 
-    MOISTURE_TYPE = 0x002A
-    ZONE_TYPE = 0x0001
-
-    def _update_attribute(self, attrid, value):
-        if attrid == self.ZONE_TYPE:
-            super()._update_attribute(attrid, self.MOISTURE_TYPE)
-        else:
-            super()._update_attribute(attrid, value)
+    _CONSTANT_ATTRIBUTES = {ZONE_TYPE: IasZone.ZoneType.Water_Sensor}
 
 
 class LeakAQ1(XiaomiQuickInitDevice):
@@ -53,7 +47,7 @@ class LeakAQ1(XiaomiQuickInitDevice):
                 INPUT_CLUSTERS: [
                     BasicCluster.cluster_id,
                     Identify.cluster_id,
-                    PowerConfigurationCluster.cluster_id,
+                    XiaomiPowerConfiguration.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             }
@@ -66,7 +60,7 @@ class LeakAQ1(XiaomiQuickInitDevice):
                 INPUT_CLUSTERS: [
                     BasicCluster,
                     Identify.cluster_id,
-                    PowerConfigurationCluster,
+                    XiaomiPowerConfiguration,
                     CustomIasZone,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],

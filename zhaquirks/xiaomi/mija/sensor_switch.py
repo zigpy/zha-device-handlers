@@ -12,7 +12,7 @@ from zigpy.zcl.clusters.general import (
     Scenes,
 )
 
-from .. import LUMI, BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
+from .. import LUMI, BasicCluster, XiaomiCustomDevice, XiaomiPowerConfiguration
 from ... import CustomCluster
 from ...const import (
     ARGS,
@@ -137,7 +137,7 @@ class MijaButton(XiaomiCustomDevice):
                 INPUT_CLUSTERS: [
                     Identify.cluster_id,
                     BasicCluster,
-                    PowerConfigurationCluster,
+                    XiaomiPowerConfiguration,
                 ],
                 OUTPUT_CLUSTERS: [
                     BasicCluster,

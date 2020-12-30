@@ -21,8 +21,8 @@ from .. import (
     AnalogInputCluster,
     BasicCluster,
     OnOffCluster,
-    PowerConfigurationCluster,
     XiaomiCustomDevice,
+    XiaomiPowerConfiguration,
 )
 from ...const import (
     DEVICE_TYPE,
@@ -51,7 +51,7 @@ class CtrlLn(XiaomiCustomDevice):
                 DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    PowerConfigurationCluster.cluster_id,
+                    XiaomiPowerConfiguration.cluster_id,
                     DeviceTemperature.cluster_id,
                     Identify.cluster_id,
                     Groups.cluster_id,
@@ -109,7 +109,7 @@ class CtrlLn(XiaomiCustomDevice):
                 DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
                 INPUT_CLUSTERS: [
                     BasicCluster,
-                    PowerConfigurationCluster,
+                    XiaomiPowerConfiguration,
                     DeviceTemperature.cluster_id,
                     Identify.cluster_id,
                     Groups.cluster_id,

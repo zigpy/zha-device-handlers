@@ -8,7 +8,7 @@ from zigpy import types as t
 import zigpy.device
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
-from zigpy.zcl.clusters.general import AnalogInput, Basic, OnOff, PowerConfiguration
+from zigpy.zcl.clusters.general import AnalogInput, Basic, BinaryOutput, OnOff
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.measurement import (
     IlluminanceMeasurement,
@@ -20,7 +20,14 @@ import zigpy.zcl.foundation as foundation
 import zigpy.zdo
 from zigpy.zdo.types import NodeDescriptor
 
-from .. import Bus, LocalDataCluster, MotionOnEvent, OccupancyWithReset, QuickInitDevice
+from .. import (
+    Bus,
+    LocalDataCluster,
+    MotionOnEvent,
+    OccupancyWithReset,
+    PowerConfigurationCluster,
+    QuickInitDevice,
+)
 from ..const import (
     ATTRIBUTE_ID,
     ATTRIBUTE_NAME,
@@ -35,6 +42,8 @@ BATTERY_LEVEL = "battery_level"
 BATTERY_PERCENTAGE_REMAINING = 0x0021
 BATTERY_REPORTED = "battery_reported"
 BATTERY_SIZE = "battery_size"
+BATTERY_SIZE_ATTR = 0x0031
+BATTERY_QUANTITY_ATTR = 0x0033
 BATTERY_VOLTAGE_MV = "battery_voltage_mV"
 HUMIDITY_MEASUREMENT = "humidity_measurement"
 HUMIDITY_REPORTED = "humidity_reported"
@@ -168,12 +177,11 @@ class BasicCluster(CustomCluster, Basic):
             attrid,
             attributes,
         )
-        if BATTERY_LEVEL in attributes:
+        if BATTERY_VOLTAGE_MV in attributes:
             self.endpoint.device.battery_bus.listener_event(
-                BATTERY_REPORTED,
-                attributes[BATTERY_LEVEL],
-                attributes[BATTERY_VOLTAGE_MV],
+                BATTERY_REPORTED, attributes[BATTERY_VOLTAGE_MV]
             )
+
         if TEMPERATURE_MEASUREMENT in attributes:
             self.endpoint.device.temperature_bus.listener_event(
                 TEMPERATURE_REPORTED, attributes[TEMPERATURE_MEASUREMENT]
@@ -204,7 +212,7 @@ class BasicCluster(CustomCluster, Basic):
             )
 
     def _parse_aqara_attributes(self, value):
-        """Parse non standard atrributes."""
+        """Parse non standard attributes."""
         attributes = {}
         attribute_names = {
             1: BATTERY_VOLTAGE_MV,
@@ -252,12 +260,7 @@ class BasicCluster(CustomCluster, Basic):
                 else "0xff01-" + str(item)
             )
             attributes[key] = val
-        if BATTERY_VOLTAGE_MV in attributes:
-            attributes[BATTERY_LEVEL] = int(
-                self._calculate_remaining_battery_percentage(
-                    attributes[BATTERY_VOLTAGE_MV]
-                )
-            )
+
         return attributes
 
     def _parse_mija_attributes(self, value):
@@ -276,48 +279,33 @@ class BasicCluster(CustomCluster, Basic):
             result.append(attr_value.value)
         attributes = dict(zip(attribute_names, result))
 
-        if BATTERY_VOLTAGE_MV in attributes:
-            attributes[BATTERY_LEVEL] = int(
-                self._calculate_remaining_battery_percentage(
-                    attributes[BATTERY_VOLTAGE_MV]
-                )
-            )
-
         return attributes
 
-    @staticmethod
-    def _calculate_remaining_battery_percentage(voltage):
-        """Calculate percentage."""
-        min_voltage = 2800
-        max_voltage = 3000
-        percent = (voltage - min_voltage) / (max_voltage - min_voltage) * 200
-        return min(200, percent)
+
+class BinaryOutputInterlock(CustomCluster, BinaryOutput):
+    """Xiaomi binaryoutput cluster with added interlock attribute."""
+
+    manufacturer_attributes = {0xFF06: ("interlock", t.Bool)}
 
 
-class PowerConfigurationCluster(LocalDataCluster, PowerConfiguration):
+class XiaomiPowerConfiguration(PowerConfigurationCluster, LocalDataCluster):
     """Xiaomi power configuration cluster implementation."""
 
-    cluster_id = PowerConfiguration.cluster_id
-    BATTERY_VOLTAGE_ATTR = 0x0020
-    BATTERY_SIZE_ATTR = 0x0031
-    BATTERY_QUANTITY_ATTR = 0x0033
+    MAX_VOLTS = 3.0
+    MIN_VOLTS = 2.8
 
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
         self.endpoint.device.battery_bus.add_listener(self)
-        if hasattr(self.endpoint.device, BATTERY_SIZE):
-            self._update_attribute(
-                self.BATTERY_SIZE_ATTR, self.endpoint.device.battery_size
-            )
-        else:
-            self._update_attribute(self.BATTERY_SIZE_ATTR, 0xFF)
-        self._update_attribute(self.BATTERY_QUANTITY_ATTR, 1)
+        self._CONSTANT_ATTRIBUTES = {
+            BATTERY_QUANTITY_ATTR: 1,
+            BATTERY_SIZE_ATTR: getattr(self.endpoint.device, BATTERY_SIZE, 0xFF),
+        }
 
-    def battery_reported(self, voltage, raw_voltage):
+    def battery_reported(self, voltage_mv: int) -> None:
         """Battery reported."""
-        self._update_attribute(BATTERY_PERCENTAGE_REMAINING, voltage)
-        self._update_attribute(self.BATTERY_VOLTAGE_ATTR, int(raw_voltage / 100))
+        self._update_attribute(self.BATTERY_VOLTAGE_ATTR, round(voltage_mv / 100))
 
 
 class OccupancyCluster(OccupancyWithReset):
@@ -328,7 +316,7 @@ class MotionCluster(LocalDataCluster, MotionOnEvent):
     """Motion cluster."""
 
     _CONSTANT_ATTRIBUTES = {ZONE_TYPE: MOTION_TYPE}
-    reset_s: int = 120
+    reset_s: int = 70
 
 
 class TemperatureMeasurementCluster(CustomCluster, TemperatureMeasurement):
