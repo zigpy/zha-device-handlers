@@ -2,6 +2,7 @@
 import logging
 
 from zigpy.profiles import zha
+from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -11,7 +12,7 @@ from zigpy.zcl.clusters.general import (
     Scenes,
 )
 
-from . import KONKE, KonkeButtonRemote, KonkeOnOffCluster
+from . import KONKE, KonkeOnOffCluster
 from .. import PowerConfigurationCluster
 from ..const import (
     COMMAND,
@@ -34,7 +35,7 @@ KONKE_CLUSTER_ID = 0xFCC0
 _LOGGER = logging.getLogger(__name__)
 
 
-class KonkeButtonRemote1(KonkeButtonRemote):
+class KonkeButtonRemote1(CustomDevice):
     """Konke 1-button remote device."""
 
     signature = {
@@ -85,7 +86,7 @@ class KonkeButtonRemote1(KonkeButtonRemote):
     }
 
 
-class KonkeButtonRemote2(KonkeButtonRemote):
+class KonkeButtonRemote2(CustomDevice):
     """Konke 1-button remote device 2nd variant."""
 
     signature = {
