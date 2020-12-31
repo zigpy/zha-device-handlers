@@ -8,6 +8,7 @@ from zigpy.zcl.clusters.lightlink import LightLink
 
 _LOGGER = logging.getLogger(__name__)
 IKEA = "IKEA of Sweden"
+ROTATED = "device_rotated"
 
 
 class LightLinkCluster(CustomCluster, LightLink):
