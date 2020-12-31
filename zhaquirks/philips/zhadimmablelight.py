@@ -34,10 +34,16 @@ class ZHADimmableLight(CustomDevice):
 
     signature = {
         MODELS_INFO: [
+            (PHILIPS, "LWA004"),
+            (PHILIPS, "LWA005"),
             (PHILIPS, "LWO001"),
+            (PHILIPS, "LWO003"),
             (PHILIPS, "LWV001"),
+            (SIGNIFY, "LWA004"),
+            (SIGNIFY, "LWA005"),
             (SIGNIFY, "LWO001"),
-            (PHILIPS, "LWV001"),
+            (SIGNIFY, "LWO003"),
+            (SIGNIFY, "LWV001"),
         ],
         ENDPOINTS: {
             11: {
