@@ -16,15 +16,19 @@ from zigpy.zcl.clusters.lightlink import LightLink
 from . import PhilipsBasicCluster, PhilipsRemoteCluster
 from ..const import (
     COMMAND,
-    COMMAND_OFF_WITH_EFFECT,
-    COMMAND_ON,
     DEVICE_TYPE,
+    DOUBLE_PRESS,
     ENDPOINTS,
     INPUT_CLUSTERS,
+    LONG_PRESS,
+    LONG_RELEASE,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
+    QUADRUPLE_PRESS,
+    QUINTUPLE_PRESS,
     SHORT_PRESS,
-    TURN_OFF,
+    SHORT_RELEASE,
+    TRIPLE_PRESS,
     TURN_ON,
 )
 
@@ -91,6 +95,12 @@ class PhilipsROM001(CustomDevice):
     }
 
     device_automation_triggers = {
-        (SHORT_PRESS, TURN_ON): {COMMAND: COMMAND_ON},
-        (SHORT_PRESS, TURN_OFF): {COMMAND: COMMAND_OFF_WITH_EFFECT},
+        (SHORT_PRESS, TURN_ON): {COMMAND: "on_press"},
+        (LONG_PRESS, TURN_ON): {COMMAND: "on_hold"},
+        (DOUBLE_PRESS, TURN_ON): {COMMAND: "on_double_press"},
+        (TRIPLE_PRESS, TURN_ON): {COMMAND: "on_triple_press"},
+        (QUADRUPLE_PRESS, TURN_ON): {COMMAND: "on_quadruple_press"},
+        (QUINTUPLE_PRESS, TURN_ON): {COMMAND: "on_quintuple_press"},
+        (SHORT_RELEASE, TURN_ON): {COMMAND: "on_short_release"},
+        (LONG_RELEASE, TURN_ON): {COMMAND: "on_long_release"},
     }
