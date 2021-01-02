@@ -15,7 +15,7 @@ Note! The ZHA Device Handlers library is a standalone library and not dependent 
 
 ## Primer
 
-ZHA device handlers and its provided "quirks" allow the zigpy library and applications implementing it, like the ZHA integration implementation in Home Assistant, to work with non-standard Zigbee devices. And just to clearify, this ZHA device handlers library and its "quirks" has no dependencies on the ZHA integration implementation in Home Assistant.
+ZHA device handlers and its provided "quirks" allow the zigpy library and applications implementing it, like the ZHA integration implementation in Home Assistant, to work with non-standard Zigbee devices. And just to clarify, this ZHA device handlers library and its "quirks" has no dependencies on the ZHA integration implementation in Home Assistant.
 
 If you are reading this you may have a Zigbee device that does not work as expected. The reason for this can be a number of things but in this guide we will cover the cases where functionality is provided by a device in a non specification compliant manner by the device manufacturer.
 
