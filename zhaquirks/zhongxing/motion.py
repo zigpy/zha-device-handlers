@@ -1,7 +1,6 @@
 """Knockoff ORVIBO motion sensors.
-Aka. ZHONGXING
 
-Based on Orvibo motion sensor code.
+Aka. ZHONGXING. Based on Orvibo motion sensor code.
 """
 
 from zigpy.profiles import zha
