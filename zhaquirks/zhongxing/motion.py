@@ -36,7 +36,7 @@ class SN10ZW(CustomDevice):
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=1026
-        #  device_version=1
+        #  device_version=0
         #  input_clusters=[0, 1, 3, 1280]
         #  output_clusters=[3]>
         MODELS_INFO: [(ZHONGXING, "700ae5aab3414ec09c1872efe7b8755a")],
