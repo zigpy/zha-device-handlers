@@ -76,5 +76,5 @@ class SN10ZW(CustomDevice):
                     Scenes.cluster_id,
                 ],
             }
-        }
+        },
     }
