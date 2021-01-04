@@ -15,7 +15,7 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.security import IasZone
 
-from . import ZHONGXING, ZHONGXING_LATIN, MotionCluster, OccupancyCluster
+from . import ZHONGXING, MotionCluster
 from .. import Bus, PowerConfigurationCluster
 from ..const import (
     DEVICE_TYPE,
@@ -25,6 +25,7 @@ from ..const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+
 
 class SN10ZW(CustomDevice):
     """SN10ZW motion sensor."""
