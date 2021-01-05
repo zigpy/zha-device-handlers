@@ -178,7 +178,6 @@ class TuyaSiren(CustomDevice):
     }
 
 
-
 class TuyaSiren2(TuyaSiren):
     """NEO Tuya Siren and humidity/temperature sensor."""
 
