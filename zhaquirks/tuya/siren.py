@@ -6,9 +6,10 @@ from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import Basic, Identify, OnOff, Ota
+from zigpy.zcl.clusters.general import Basic, Identify, OnOff, Ota, Groups, Scenes, Time
 from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
 
+from . import TuyaManufCluster
 from . import TuyaManufClusterAttributes
 from .. import Bus, LocalDataCluster
 from ..const import (
@@ -135,7 +136,7 @@ class TuyaRelativeHumidity(LocalDataCluster, RelativeHumidity):
 
 
 class TuyaSiren(CustomDevice):
-    """NEO Tuya Siren and humidity/temperature sensor."""
+    """NEO Tuya Siren and humidity/temperature sensor."""
 
     def __init__(self, *args, **kwargs):
         """Init device."""
@@ -174,4 +175,28 @@ class TuyaSiren(CustomDevice):
                 OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],
             }
         }
+    }
+
+
+
+class TuyaSiren2(TuyaSiren):
+    """NEO Tuya Siren and humidity/temperature sensor."""
+
+    signature = {
+        #  endpoint=1 profile=260 device_type=81 device_version=1 input_clusters=[0, 4, 5, 61184]
+        #  output_clusters=[25, 10]>
+        MODELS_INFO: [("_TZE200_d0yu2xgi", "TS0601")],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaManufCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Ota.cluster_id, Time.cluster_id],
+            }
+        },
     }
