@@ -6,11 +6,10 @@ from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import Basic, Identify, OnOff, Ota, Groups, Scenes, Time
+from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
 from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
 
-from . import TuyaManufCluster
-from . import TuyaManufClusterAttributes
+from . import TuyaManufCluster, TuyaManufClusterAttributes
 from .. import Bus, LocalDataCluster
 from ..const import (
     DEVICE_TYPE,
