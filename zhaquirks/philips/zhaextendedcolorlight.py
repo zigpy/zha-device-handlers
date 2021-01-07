@@ -112,6 +112,8 @@ class ZHAExtendedColorLight2(CustomDevice):
         MODELS_INFO: [
             (PHILIPS, "LCL001"),
             (PHILIPS, "LCT026"),
+            (PHILIPS, "4090330P9_01"),
+            (PHILIPS, "4090330P9_02"),
             (PHILIPS, "929002376001"),
             (PHILIPS, "929002375901"),
         ],
