@@ -359,7 +359,9 @@ def test_signature(quirk):
 
 @pytest.mark.parametrize("quirk", ALL_QUIRK_CLASSES)
 def test_quirk_importable(quirk):
+    """Ensure all quirks can be imported with a normal Python `import` statement."""
+
     path = f"{quirk.__module__}.{quirk.__name__}"
-    assert all([
-        m and m.isidentifier() for m in path.split(".")
-    ]), f"{path} is not importable"
+    assert all(
+        [m and m.isidentifier() for m in path.split(".")]
+    ), f"{path} is not importable"
