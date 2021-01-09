@@ -355,3 +355,11 @@ def test_signature(quirk):
         node_desc = ep_data.get(NODE_DESCRIPTOR)
         if node_desc is not None:
             assert isinstance(node_desc, zigpy.zdo.types.NodeDescriptor)
+
+
+@pytest.mark.parametrize("quirk", ALL_QUIRK_CLASSES)
+def test_quirk_importable(quirk):
+    path = f"{quirk.__module__}.{quirk.__name__}"
+    assert all([
+        m and m.isidentifier() for m in path.split(".")
+    ]), f"{path} is not importable"
