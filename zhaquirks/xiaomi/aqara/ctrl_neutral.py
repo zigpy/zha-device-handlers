@@ -1,6 +1,7 @@
 """Xiaomi aqara single key wall switch devices."""
 import logging
 
+from zigpy import types as t
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import (
     AnalogInput,
@@ -23,15 +24,19 @@ from .. import (
     XiaomiCustomDevice,
     XiaomiPowerConfiguration,
 )
-from ...const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-    SKIP_CONFIGURATION,
-)
+from ...const import (                                                         
+    DEVICE_TYPE,                                                               
+    COMMAND_CLICK,                                                             
+    ENDPOINTS,                                                                 
+    INPUT_CLUSTERS,                                                                
+    MODELS_INFO,                                                               
+    OUTPUT_CLUSTERS,                                                           
+    PRESS_TYPE,                                                                      
+    PROFILE_ID,                                                                
+    SKIP_CONFIGURATION,                                                        
+    VALUE,                                                                           
+    ZHA_SEND_EVENT,                                                            
+) 
 
 DOUBLE = "double"
 HOLD = "long press"
@@ -52,6 +57,39 @@ _LOGGER = logging.getLogger(__name__)
 
 class CtrlNeutral(XiaomiCustomDevice):
     """Aqara single and double key switch device."""
+
+
+    class BasicClusterDecoupled(BasicCluster):
+        """Adds attributes for decoupled mode"""
+        def __init__(self, *args, **kwargs):
+            """Init."""
+            self.attributes = BasicCluster.attributes.copy()
+            self.attributes.update({ 0xFF22: ("left_decoupled_mode", t.uint8_t)})
+            self.attributes.update({ 0xFF23: ("right_decoupled_mode", t.uint8_t)})
+            super().__init__(*args, **kwargs)
+
+
+    class CustomOnOffCluster(OnOffCluster):
+        """Fire ZHA events for on off cluster."""
+
+        cluster_id = OnOff.cluster_id
+
+        def __init__(self, *args, **kwargs):
+            """Init."""
+            self._current_state = {}
+            super().__init__(*args, **kwargs)
+
+        def _update_attribute(self, attrid, value):
+            _LOGGER.info("%s: %s", attrid, value)
+            if attrid == 0:
+                self._current_state = PRESS_TYPES.get(value)
+                event_args = {
+                    PRESS_TYPE: self._current_state,
+                    VALUE: value,
+                }
+                self.listener_event(ZHA_SEND_EVENT, COMMAND_CLICK, event_args)
+            super()._update_attribute(attrid, self._current_state)
+
 
     signature = {
         MODELS_INFO: [
@@ -157,7 +195,7 @@ class CtrlNeutral(XiaomiCustomDevice):
             1: {
                 DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
                 INPUT_CLUSTERS: [
-                    BasicCluster,
+                    BasicClusterDecoupled,
                     Identify.cluster_id,
                     XiaomiPowerConfiguration.cluster_id,
                     DeviceTemperature.cluster_id,
@@ -186,5 +224,21 @@ class CtrlNeutral(XiaomiCustomDevice):
                 ],
                 OUTPUT_CLUSTERS: [],
             },
+            4: {                                                                   
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,                         
+                INPUT_CLUSTERS: [                                                  
+                    MultistateInput.cluster_id,                                        
+                    CustomOnOffCluster,                                        
+                ],                                                                 
+                OUTPUT_CLUSTERS: [],                                               
+            },  
+            5: {                                                                   
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,                         
+                INPUT_CLUSTERS: [                                                  
+                    MultistateInput.cluster_id,                                        
+                    CustomOnOffCluster,                                        
+                ],                                                                 
+                OUTPUT_CLUSTERS: [],                                               
+            },  
         },
     }
