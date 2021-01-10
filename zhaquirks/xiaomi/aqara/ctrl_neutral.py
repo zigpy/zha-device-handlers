@@ -24,15 +24,19 @@ from .. import (
     XiaomiCustomDevice,
     XiaomiPowerConfiguration,
 )
+from ... import EventableCluster
 from ...const import (
     COMMAND_CLICK,
     DEVICE_TYPE,
+    DOUBLE_PRESS,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PRESS_TYPE,
     PROFILE_ID,
+    SHORT_PRESS,
+    SHORT_RELEASE,
     SKIP_CONFIGURATION,
     VALUE,
     ZHA_SEND_EVENT,
@@ -59,13 +63,50 @@ class CtrlNeutral(XiaomiCustomDevice):
     """Aqara single and double key switch device."""
 
     class BasicClusterDecoupled(BasicCluster):
-        """Adds attributes for decoupled mode"""
+        """Adds attributes for decoupled mode."""
+
+        # Known Options for 'decoupled_mode_<button>':
+        # * 254 (decoupled)
+        # * 18 (relay controlled)
+        manufacturer_attributes = {
+            0xFF22: ("decoupled_mode_left", t.uint8_t),
+            0xFF23: ("decoupled_mode_right", t.uint8_t),
+        }
+
+    class WallSwitchOnOffCluster(OnOff, EventableCluster):
+        """WallSwitchOnOffCluster: fire events corresponding to press type."""
+
+        press_type = {
+            0x00: SHORT_PRESS,
+            0x01: SHORT_RELEASE,
+            0x02: DOUBLE_PRESS,
+        }
+        name = "WallSwitch_cluster"
+        ep_attribute = "WallSwitch_cluster"
+
         def __init__(self, *args, **kwargs):
             """Init."""
-            self.attributes = BasicCluster.attributes.copy()
-            self.attributes.update({0xFF22: ("decoupled_mode_left", t.uint8_t)})
-            self.attributes.update({0xFF23: ("decoupled_mode_right", t.uint8_t)})
+            self.last_tsn = -1
             super().__init__(*args, **kwargs)
+
+        manufacturer_server_commands = {
+            0xFD: ("press_type", (t.uint8_t,), False),
+        }
+
+        def handle_cluster_request(self, tsn, command_id, args):
+            """Handle press_types command."""
+            if tsn == self.last_tsn:
+                _LOGGER.debug("WallSwitch: ignoring duplicate frame")
+                return
+
+            self.last_tsn = tsn
+            _LOGGER.error("handle_cluster_request: %s, %s", command_id, args)
+            super().handle_cluster_request(tsn, command_id, args)
+            if command_id == 0xFD:
+                press_type = args[0]
+                self.listener_event(
+                    ZHA_SEND_EVENT, self.press_type.get(press_type, "unknown"), []
+                )
 
     class CustomOnOffCluster(OnOffCluster):
         """Fire ZHA events for on off cluster."""
@@ -225,7 +266,7 @@ class CtrlNeutral(XiaomiCustomDevice):
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
                     MultistateInput.cluster_id,
-                    CustomOnOffCluster,
+                    WallSwitchOnOffCluster,
                 ],
                 OUTPUT_CLUSTERS: [],
             },
@@ -233,7 +274,7 @@ class CtrlNeutral(XiaomiCustomDevice):
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
                     MultistateInput.cluster_id,
-                    CustomOnOffCluster,
+                    WallSwitchOnOffCluster,
                 ],
                 OUTPUT_CLUSTERS: [],
             },
