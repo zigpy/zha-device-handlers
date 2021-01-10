@@ -64,8 +64,8 @@ class CtrlNeutral(XiaomiCustomDevice):
         def __init__(self, *args, **kwargs):
             """Init."""
             self.attributes = BasicCluster.attributes.copy()
-            self.attributes.update({ 0xFF22: ("left_decoupled_mode", t.uint8_t)})
-            self.attributes.update({ 0xFF23: ("right_decoupled_mode", t.uint8_t)})
+            self.attributes.update({ 0xFF22: ("decoupled_mode_left", t.uint8_t)})
+            self.attributes.update({ 0xFF23: ("decoupled_mode_right", t.uint8_t)})
             super().__init__(*args, **kwargs)
 
 
