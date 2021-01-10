@@ -1,5 +1,6 @@
 """Tuya devices."""
 import logging
+import datetime
 from typing import Optional, Tuple, Union
 
 from zigpy.quirks import CustomCluster, CustomDevice
@@ -15,6 +16,7 @@ TUYA_CLUSTER_ID = 0xEF00
 TUYA_SET_DATA = 0x0000
 TUYA_GET_DATA = 0x0001
 TUYA_SET_DATA_RESPONSE = 0x0002
+TUYA_SET_TIME = 0x0024
 
 SWITCH_EVENT = "switch_event"
 ATTR_ON_OFF = 0x0000
@@ -22,6 +24,26 @@ TUYA_CMD_BASE = 0x0100
 
 _LOGGER = logging.getLogger(__name__)
 
+class BigEndianInt16(int):
+    def serialize(self) -> bytes:
+        try:
+            return self.to_bytes(2, "big", signed=False)
+        except OverflowError as e:
+            # OverflowError is not a subclass of ValueError, making it annoying to catch
+            raise ValueError(str(e)) from e
+
+    @classmethod
+    def deserialize(cls, data: bytes) -> Tuple["BigEndianInt16", bytes]:
+        if len(data) < 2:
+            raise ValueError(f"Data is too short to contain {cls._size} bytes")
+
+        r = cls.from_bytes(data[: 2], "big", signed=False)
+        data = data[2:]
+        return r, data
+
+class TuyaTimePayload(t.LVList, item_type=t.uint8_t, length_type=BigEndianInt16):
+
+    pass
 
 class Data(t.List, item_type=t.uint8_t):
     """list of uint8_t."""
@@ -50,6 +72,7 @@ class TuyaManufCluster(CustomCluster):
     name = "Tuya Manufacturer Specicific"
     cluster_id = TUYA_CLUSTER_ID
     ep_attribute = "tuya_manufacturer"
+    set_time_offset = 0
 
     class Command(t.Struct):
         """Tuya manufacturer cluster command."""
@@ -60,13 +83,54 @@ class TuyaManufCluster(CustomCluster):
         function: t.uint8_t
         data: Data
 
-    manufacturer_server_commands = {0x0000: ("set_data", (Command,), False)}
+    """ Time sync command (It's transparent beetween MCU and server)
+            Time request device -> server
+               payloadSize = 0
+            Set time, server -> device
+               payloadSize, should be always 8
+               payload[0-3] - UTC timestamp (big endian)
+               payload[4-7] - Local timestamp (big endian)
+            
+            Zigbee payload is very similar to the UART payload which is described here: https://developer.tuya.com/en/docs/iot/device-development/access-mode-mcu/zigbee-general-solution/tuya-zigbee-module-uart-communication-protocol/tuya-zigbee-module-uart-communication-protocol?id=K9ear5khsqoty#title-10-Time%20synchronization
+            
+            Some devices need the timestamp in seconds from 1/1/1970 and others in seconds from 1/1/2000.
+
+            NOTE: You need to wait for time request before setting it. You can't set time without request."""
+
+    manufacturer_server_commands = {
+        0x0000: ("set_data", (Command,), False),
+        0x0024: ("set_time", (TuyaTimePayload,), False),
+    }
 
     manufacturer_client_commands = {
         0x0001: ("get_data", (Command,), True),
         0x0002: ("set_data_response", (Command,), True),
+        0x0024: ("set_time_request", (TuyaTimePayload,), True),
     }
 
+    def handle_cluster_request(self, tsn: int, command_id: int, args: Tuple) -> None:
+        if command_id != 0x0024 or self.set_time_offset == 0:
+            return super().handle_cluster_request(tsn, command_id, args)
+        _LOGGER.debug(
+            "[0x%04x:%s:0x%04x] Got set time request (command 0x%04x)",
+            self.endpoint.device.nwk,
+            self.endpoint.endpoint_id,
+            self.cluster_id,
+            command_id
+        )
+        payload = TuyaTimePayload()
+        utc_timestamp = int((datetime.datetime.utcnow() - datetime.datetime(self.set_time_offset, 1, 1)).total_seconds())
+        local_timestamp = int((datetime.datetime.now() - datetime.datetime(self.set_time_offset, 1, 1)).total_seconds())
+        payload.extend(utc_timestamp.to_bytes(4, "big", signed=False))
+        payload.extend(local_timestamp.to_bytes(4, "big", signed=False))
+
+        self.create_catching_task(
+            super().command(
+                    TUYA_SET_TIME,
+                    payload,
+                    expect_reply=False
+                )
+        )
 
 class TuyaManufClusterAttributes(TuyaManufCluster):
     """Manufacturer specific cluster for Tuya converting attributes <-> commands."""
