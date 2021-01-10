@@ -24,19 +24,19 @@ from .. import (
     XiaomiCustomDevice,
     XiaomiPowerConfiguration,
 )
-from ...const import (                                                         
-    DEVICE_TYPE,                                                               
-    COMMAND_CLICK,                                                             
-    ENDPOINTS,                                                                 
-    INPUT_CLUSTERS,                                                                
-    MODELS_INFO,                                                               
-    OUTPUT_CLUSTERS,                                                           
-    PRESS_TYPE,                                                                      
-    PROFILE_ID,                                                                
-    SKIP_CONFIGURATION,                                                        
-    VALUE,                                                                           
-    ZHA_SEND_EVENT,                                                            
-) 
+from ...const import (
+    DEVICE_TYPE,
+    COMMAND_CLICK,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    MODELS_INFO,
+    OUTPUT_CLUSTERS,
+    PRESS_TYPE,
+    PROFILE_ID,
+    SKIP_CONFIGURATION,
+    VALUE,
+    ZHA_SEND_EVENT,
+)
 
 DOUBLE = "double"
 HOLD = "long press"
@@ -224,21 +224,21 @@ class CtrlNeutral(XiaomiCustomDevice):
                 ],
                 OUTPUT_CLUSTERS: [],
             },
-            4: {                                                                   
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,                         
-                INPUT_CLUSTERS: [                                                  
-                    MultistateInput.cluster_id,                                        
-                    CustomOnOffCluster,                                        
-                ],                                                                 
-                OUTPUT_CLUSTERS: [],                                               
-            },  
-            5: {                                                                   
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,                         
-                INPUT_CLUSTERS: [                                                  
-                    MultistateInput.cluster_id,                                        
-                    CustomOnOffCluster,                                        
-                ],                                                                 
-                OUTPUT_CLUSTERS: [],                                               
-            },  
+            4: {
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
+                INPUT_CLUSTERS: [
+                    MultistateInput.cluster_id,
+                    CustomOnOffCluster,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            5: {
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
+                INPUT_CLUSTERS: [
+                    MultistateInput.cluster_id,
+                    CustomOnOffCluster,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
         },
     }
