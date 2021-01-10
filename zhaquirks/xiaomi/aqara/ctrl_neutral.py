@@ -25,8 +25,8 @@ from .. import (
     XiaomiPowerConfiguration,
 )
 from ...const import (
-    DEVICE_TYPE,
     COMMAND_CLICK,
+    DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
@@ -58,16 +58,14 @@ _LOGGER = logging.getLogger(__name__)
 class CtrlNeutral(XiaomiCustomDevice):
     """Aqara single and double key switch device."""
 
-
     class BasicClusterDecoupled(BasicCluster):
         """Adds attributes for decoupled mode"""
         def __init__(self, *args, **kwargs):
             """Init."""
             self.attributes = BasicCluster.attributes.copy()
-            self.attributes.update({ 0xFF22: ("decoupled_mode_left", t.uint8_t)})
-            self.attributes.update({ 0xFF23: ("decoupled_mode_right", t.uint8_t)})
+            self.attributes.update({0xFF22: ("decoupled_mode_left", t.uint8_t)})
+            self.attributes.update({0xFF23: ("decoupled_mode_right", t.uint8_t)})
             super().__init__(*args, **kwargs)
-
 
     class CustomOnOffCluster(OnOffCluster):
         """Fire ZHA events for on off cluster."""
@@ -89,7 +87,6 @@ class CtrlNeutral(XiaomiCustomDevice):
                 }
                 self.listener_event(ZHA_SEND_EVENT, COMMAND_CLICK, event_args)
             super()._update_attribute(attrid, self._current_state)
-
 
     signature = {
         MODELS_INFO: [
