@@ -1,5 +1,4 @@
-"""
-This module handles quirks of the  Sinopé Technologies light SW2500ZB and dimmer DM2500ZB.
+"""Module to handle quirks of the  Sinopé Technologies light SW2500ZB and dimmer DM2500ZB.
 
 Manufacturer specific cluster implements attributes to control displaying
 setting occupancy on/off.
@@ -12,13 +11,14 @@ from zigpy.zcl.clusters.general import (
     DeviceTemperature,
     Groups,
     Identify,
-    OnOff,
     LevelControl,
+    OnOff,
     Ota,
     Scenes,
 )
 from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.smartenergy import Metering
+
 from . import SINOPE
 from ..const import (
     DEVICE_TYPE,

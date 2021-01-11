@@ -1,4 +1,4 @@
-"""This module handles quirks of the  Zen Within thermostat."""
+"""Module to handle quirks of the  Zen Within thermostat."""
 
 import zigpy.profiles.zha as zha_p
 from zigpy.quirks import CustomDevice

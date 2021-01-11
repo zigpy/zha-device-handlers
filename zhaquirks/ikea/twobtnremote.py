@@ -25,6 +25,7 @@ from ..const import (
     COMMAND_MOVE_ON_OFF,
     COMMAND_OFF,
     COMMAND_ON,
+    COMMAND_STOP,
     DEVICE_TYPE,
     DIM_DOWN,
     DIM_UP,
@@ -32,6 +33,7 @@ from ..const import (
     ENDPOINTS,
     INPUT_CLUSTERS,
     LONG_PRESS,
+    LONG_RELEASE,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
@@ -113,12 +115,22 @@ class IkeaTradfriRemote2Btn(CustomDevice):
             ENDPOINT_ID: 1,
             ARGS: [0, 83],
         },
+        (LONG_RELEASE, DIM_UP): {
+            COMMAND: COMMAND_STOP,
+            CLUSTER_ID: 8,
+            ENDPOINT_ID: 1,
+        },
         (SHORT_PRESS, TURN_OFF): {COMMAND: COMMAND_OFF, CLUSTER_ID: 6, ENDPOINT_ID: 1},
         (LONG_PRESS, DIM_DOWN): {
             COMMAND: COMMAND_MOVE,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
             ARGS: [1, 83],
+        },
+        (LONG_RELEASE, DIM_DOWN): {
+            COMMAND: COMMAND_STOP,
+            CLUSTER_ID: 8,
+            ENDPOINT_ID: 1,
         },
     }
 

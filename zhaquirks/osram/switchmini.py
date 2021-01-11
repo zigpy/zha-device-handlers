@@ -8,35 +8,35 @@ from zigpy.zcl.clusters.general import (
     LevelControl,
     OnOff,
     Ota,
+    PollControl,
     PowerConfiguration,
     Scenes,
-    PollControl,
 )
 from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.lightlink import LightLink
 
 from . import OSRAM
 from ..const import (
+    BUTTON_1,
+    BUTTON_2,
+    BUTTON_3,
+    COMMAND,
+    COMMAND_MOVE,
+    COMMAND_MOVE_TO_LEVEL_ON_OFF,
+    COMMAND_OFF,
+    COMMAND_ON,
+    COMMAND_STEP_ON_OFF,
+    COMMAND_STOP,
     DEVICE_TYPE,
+    ENDPOINT_ID,
     ENDPOINTS,
     INPUT_CLUSTERS,
+    LONG_PRESS,
+    LONG_RELEASE,
+    MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SHORT_PRESS,
-    COMMAND,
-    COMMAND_ON,
-    MODELS_INFO,
-    BUTTON_1,
-    ENDPOINT_ID,
-    COMMAND_STEP_ON_OFF,
-    COMMAND_STOP,
-    BUTTON_2,
-    BUTTON_3,
-    LONG_RELEASE,
-    LONG_PRESS,
-    COMMAND_MOVE_TO_LEVEL_ON_OFF,
-    COMMAND_OFF,
-    COMMAND_MOVE,
 )
 
 OSRAM_CLUSTER = 0xFD00
@@ -111,6 +111,9 @@ class OsramSwitchMini(CustomDevice):
             },
         },
     }
+
+    replacement = {**signature}
+    replacement.pop(MODELS_INFO)
 
     device_automation_triggers = {
         (SHORT_PRESS, BUTTON_1): {COMMAND: COMMAND_ON, ENDPOINT_ID: 1},

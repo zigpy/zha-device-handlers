@@ -38,6 +38,7 @@ class CentraLiteIASSensor(CustomDevice):
             (CENTRALITE, "3315-Seu"),
             (CENTRALITE, "3315"),
             (CENTRALITE, "3320-L"),
+            (CENTRALITE, "Contact Sensor-A"),
         ],
         ENDPOINTS: {
             1: {

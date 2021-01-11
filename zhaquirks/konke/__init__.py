@@ -1,70 +1,78 @@
 """Konke sensors."""
 
-import asyncio
+import zigpy.types as t
+from zigpy.zcl.clusters.general import OnOff
+import zigpy.zcl.foundation
 
-from zigpy.quirks import CustomCluster
-from zigpy.zcl.clusters.measurement import OccupancySensing
-from zigpy.zcl.clusters.security import IasZone
-
-from .. import LocalDataCluster
-from ..const import CLUSTER_COMMAND, OFF, ON, ZONE_STATE
+from .. import CustomCluster, LocalDataCluster, MotionWithReset, OccupancyOnEvent
+from ..const import (
+    COMMAND_DOUBLE,
+    COMMAND_HOLD,
+    COMMAND_ID,
+    COMMAND_SINGLE,
+    PRESS_TYPE,
+    ZHA_SEND_EVENT,
+)
 
 KONKE = "Konke"
-OCCUPANCY_STATE = 0
-OCCUPANCY_EVENT = "occupancy_event"
-MOTION_TYPE = 0x000D
-ZONE_TYPE = 0x0001
-
-MOTION_TIME = 60
-OCCUPANCY_TIME = 600
 
 
-class OccupancyCluster(LocalDataCluster, OccupancySensing):
+class OccupancyCluster(LocalDataCluster, OccupancyOnEvent):
     """Occupancy cluster."""
 
-    cluster_id = OccupancySensing.cluster_id
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self._timer_handle = None
-        self.endpoint.device.occupancy_bus.add_listener(self)
-
-    def occupancy_event(self):
-        """Occupancy event."""
-        self._update_attribute(OCCUPANCY_STATE, ON)
-
-        if self._timer_handle:
-            self._timer_handle.cancel()
-
-        loop = asyncio.get_event_loop()
-        self._timer_handle = loop.call_later(OCCUPANCY_TIME, self._turn_off)
-
-    def _turn_off(self):
-        self._timer_handle = None
-        self._update_attribute(OCCUPANCY_STATE, OFF)
+    reset_s: int = 600
 
 
-class MotionCluster(CustomCluster, IasZone):
+class MotionCluster(MotionWithReset):
     """Motion cluster."""
 
-    cluster_id = IasZone.cluster_id
+    reset_s: int = 60
+    send_occupancy_event: bool = True
 
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self._timer_handle = None
 
-    def handle_cluster_request(self, tsn, command_id, args):
+class KonkeOnOffCluster(CustomCluster, OnOff):
+    """Konke OnOff cluster implementation."""
+
+    PRESS_TYPES = {0x0080: COMMAND_SINGLE, 0x0081: COMMAND_DOUBLE, 0x0082: COMMAND_HOLD}
+    cluster_id = 6
+    ep_attribute = "custom_on_off"
+    manufacturer_attributes = {0x0000: (PRESS_TYPE, t.uint8_t)}
+
+    def handle_cluster_general_request(self, header, args):
         """Handle the cluster command."""
-        if command_id == 0:
-            if self._timer_handle:
-                self._timer_handle.cancel()
-            loop = asyncio.get_event_loop()
-            self._timer_handle = loop.call_later(MOTION_TIME, self._turn_off)
-            self.endpoint.device.occupancy_bus.listener_event(OCCUPANCY_EVENT)
+        self.info(
+            "Konke general request - handle_cluster_general_request: header: %s - args: [%s]",
+            header,
+            args,
+        )
 
-    def _turn_off(self):
-        self._timer_handle = None
-        self.listener_event(CLUSTER_COMMAND, 999, 0, [0, 0, 0, 0])
-        self._update_attribute(ZONE_STATE, OFF)
+        if header.command_id != zigpy.zcl.foundation.Command.Report_Attributes:
+            return
+
+        attr = args[0][0]
+        if attr.attrid != 0x0000:
+            return
+
+        value = attr.value.value
+        event_args = {
+            PRESS_TYPE: self.PRESS_TYPES.get(value, value),
+            COMMAND_ID: value,
+        }
+        self.listener_event(ZHA_SEND_EVENT, event_args[PRESS_TYPE], event_args)
+
+    def deserialize(self, data):
+        """Deserialize fix for Konke butchered Bool ZCL type."""
+        try:
+            return super().deserialize(data)
+        except ValueError:
+            hdr, data = zigpy.zcl.foundation.ZCLHeader.deserialize(data)
+            if (
+                hdr.frame_control.is_cluster
+                or hdr.command_id != zigpy.zcl.foundation.Command.Report_Attributes
+            ):
+                raise
+            attr_id, data = t.uint16_t.deserialize(data)
+            attr = zigpy.zcl.foundation.Attribute(
+                attr_id, zigpy.zcl.foundation.TypeValue(t.uint8_t, data[1])
+            )
+            return hdr, [[attr]]

@@ -7,12 +7,13 @@ from zigpy.zcl.clusters.measurement import PressureMeasurement
 
 from .. import (
     LUMI,
+    XIAOMI_NODE_DESC,
     BasicCluster,
-    PowerConfigurationCluster,
     PressureMeasurementCluster,
     RelativeHumidityCluster,
     TemperatureMeasurementCluster,
-    XiaomiCustomDevice,
+    XiaomiPowerConfiguration,
+    XiaomiQuickInitDevice,
 )
 from ... import Bus
 from ...const import (
@@ -20,6 +21,7 @@ from ...const import (
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
+    NODE_DESCRIPTOR,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SKIP_CONFIGURATION,
@@ -31,7 +33,7 @@ XIAOMI_CLUSTER_ID = 0xFFFF
 _LOGGER = logging.getLogger(__name__)
 
 
-class Weather(XiaomiCustomDevice):
+class Weather(XiaomiQuickInitDevice):
     """Xiaomi weather sensor device."""
 
     def __init__(self, *args, **kwargs):
@@ -47,6 +49,7 @@ class Weather(XiaomiCustomDevice):
         #  input_clusters=[0, 3, 65535, 1026, 1027, 1029]
         #  output_clusters=[0, 4, 65535]>
         MODELS_INFO: [(LUMI, "lumi.weather")],
+        NODE_DESCRIPTOR: XIAOMI_NODE_DESC,
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -74,7 +77,7 @@ class Weather(XiaomiCustomDevice):
             1: {
                 INPUT_CLUSTERS: [
                     BasicCluster,
-                    PowerConfigurationCluster,
+                    XiaomiPowerConfiguration,
                     Identify.cluster_id,
                     TemperatureMeasurementCluster,
                     PressureMeasurementCluster,
@@ -100,6 +103,7 @@ class Weather2(Weather):
         #  input_clusters=[0, 3, 65535, 1026, 1027, 1029]
         #  output_clusters=[0, 4, 65535]>
         MODELS_INFO: [(LUMI, "lumi.weather")],
+        NODE_DESCRIPTOR: XIAOMI_NODE_DESC,
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,

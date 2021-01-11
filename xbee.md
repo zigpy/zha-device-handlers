@@ -3,7 +3,7 @@
 Digital input/output pins are exposed as switches.
 
 To use this functionality must configure the xbee to send samples to the coordinator, `DH` and `DL` to the coordiator's address (0).
-The swich state will change depending on the state.
+The switch state will change depending on the state.
 
 There are two options of reporting the pin state: periodic sampling (`IR`) and on state change (`IC`).
 To configure reporting on state change please set the appropriate bit mask on `IC`, and to send perodic reports every x milliseconds please set `IR` to a value greater than zero.

@@ -1,44 +1,42 @@
-"""Quirk for Phillips LCB001."""
-from zigpy.profiles import zha
+"""Quirk for Phillips dimmable bulbs."""
+from zigpy.profiles import zll
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
-    OnOff,
     Basic,
+    GreenPowerProxy,
+    Groups,
     Identify,
     LevelControl,
-    Scenes,
-    Groups,
+    OnOff,
     Ota,
-    GreenPowerProxy,
+    Scenes,
 )
-
-from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.lightlink import LightLink
 
 from zhaquirks.const import (
-    ENDPOINTS,
-    OUTPUT_CLUSTERS,
-    INPUT_CLUSTERS,
     DEVICE_TYPE,
-    PROFILE_ID,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
     MODELS_INFO,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
 )
-from zhaquirks.philips import PHILIPS, PhilipsOnOffCluster
+from zhaquirks.philips import PHILIPS, PhilipsLevelControlCluster, PhilipsOnOffCluster
 
 
-class PhilipsLCB001(CustomDevice):
-    """Philips LCB001 device."""
+class ZLLDimmableLight(CustomDevice):
+    """Philips ZigBee LightLink dimmable bulb device."""
 
     signature = {
-        MODELS_INFO: [(PHILIPS, "LCB001")],
+        MODELS_INFO: [(PHILIPS, "LWB010"), (PHILIPS, "LWB014")],
         ENDPOINTS: {
             11: {
-                # <SimpleDescriptor endpoint=11 profile=260 device_type=269
-                # device_version=1
-                # input_clusters=[0, 3, 4, 5, 6, 8, 4096, 64514, 768, 64513]
-                # output_clusters=[25]>
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.EXTENDED_COLOR_LIGHT,
+                # <SimpleDescriptor endpoint=11 profile=49246 device_type=528
+                # device_version=2
+                # input_clusters=[0, 3, 4, 5, 6, 8, 4096]
+                # output_clusters=[25]
+                PROFILE_ID: zll.PROFILE_ID,
+                DEVICE_TYPE: zll.DeviceType.DIMMABLE_LIGHT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
@@ -47,20 +45,17 @@ class PhilipsLCB001(CustomDevice):
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
                     LightLink.cluster_id,
-                    64514,
-                    Color.cluster_id,
-                    64513,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
             242: {
                 # <SimpleDescriptor endpoint=242 profile=41440 device_type=97
                 # device_version=0
-                # input_clusters=[]
-                # output_clusters=[33]>
+                # input_clusters=[33]
+                # output_clusters=[33]
                 PROFILE_ID: 41440,
                 DEVICE_TYPE: 97,
-                INPUT_CLUSTERS: [],
+                INPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
         },
@@ -69,26 +64,23 @@ class PhilipsLCB001(CustomDevice):
     replacement = {
         ENDPOINTS: {
             11: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.EXTENDED_COLOR_LIGHT,
+                PROFILE_ID: zll.PROFILE_ID,
+                DEVICE_TYPE: zll.DeviceType.DIMMABLE_LIGHT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     PhilipsOnOffCluster,
-                    LevelControl.cluster_id,
+                    PhilipsLevelControlCluster,
                     LightLink.cluster_id,
-                    64514,
-                    Color.cluster_id,
-                    64513,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
             242: {
                 PROFILE_ID: 41440,
                 DEVICE_TYPE: 97,
-                INPUT_CLUSTERS: [],
+                INPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
         }

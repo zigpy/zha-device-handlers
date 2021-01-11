@@ -3,8 +3,8 @@
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PollControl
-from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.clusters.homeautomation import Diagnostic
+from zigpy.zcl.clusters.security import IasZone
 
 from zhaquirks import PowerConfigurationCluster
 from zhaquirks.const import (

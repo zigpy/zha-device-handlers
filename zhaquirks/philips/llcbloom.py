@@ -1,43 +1,48 @@
-"""Quirk for Phillips LWB010."""
+"""Quirk for Phillips Hue LivingColors Bloom LLC011 and LLC012."""
 from zigpy.profiles import zll
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
-    OnOff,
     Basic,
+    GreenPowerProxy,
+    Groups,
     Identify,
     LevelControl,
-    Scenes,
-    Groups,
+    OnOff,
     Ota,
-    GreenPowerProxy,
+    Scenes,
 )
-
+from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.lightlink import LightLink
 
 from zhaquirks.const import (
-    ENDPOINTS,
-    OUTPUT_CLUSTERS,
-    INPUT_CLUSTERS,
     DEVICE_TYPE,
-    PROFILE_ID,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
     MODELS_INFO,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
 )
-from zhaquirks.philips import PHILIPS, PhilipsOnOffCluster
+from zhaquirks.philips import (
+    PHILIPS,
+    PhilipsColorCluster,
+    PhilipsLevelControlCluster,
+    PhilipsOnOffCluster,
+)
 
 
-class PhilipsLBW010(CustomDevice):
-    """Philips LBW010 device."""
+class PhilipsLLCBloom(CustomDevice):
+    """Philips LLC Bloom device."""
 
     signature = {
-        MODELS_INFO: [(PHILIPS, "LWB010")],
+        MODELS_INFO: [(PHILIPS, "LLC011"), (PHILIPS, "LLC012")],
         ENDPOINTS: {
             11: {
-                # <SimpleDescriptor endpoint=11 profile=49246 device_type=528
+                # <SimpleDescriptor endpoint=11 profile=49246 device_type=512
                 # device_version=2
-                # input_clusters=[0, 3, 4, 5, 6, 8, 4096]
+                # input_clusters=[0, 3, 4, 5, 6, 8, 4096, 768, 64513]
                 # output_clusters=[25]
                 PROFILE_ID: zll.PROFILE_ID,
-                DEVICE_TYPE: zll.DeviceType.DIMMABLE_LIGHT,
+                DEVICE_TYPE: zll.DeviceType.COLOR_LIGHT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
@@ -46,6 +51,8 @@ class PhilipsLBW010(CustomDevice):
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
                     LightLink.cluster_id,
+                    Color.cluster_id,
+                    64513,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
@@ -66,15 +73,17 @@ class PhilipsLBW010(CustomDevice):
         ENDPOINTS: {
             11: {
                 PROFILE_ID: zll.PROFILE_ID,
-                DEVICE_TYPE: zll.DeviceType.DIMMABLE_LIGHT,
+                DEVICE_TYPE: zll.DeviceType.COLOR_LIGHT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     PhilipsOnOffCluster,
-                    LevelControl.cluster_id,
+                    PhilipsLevelControlCluster,
                     LightLink.cluster_id,
+                    PhilipsColorCluster,
+                    64513,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             },

@@ -332,10 +332,9 @@ class XBeeCommon(CustomDevice):
     replacement = {
         ENDPOINTS: {
             232: {
-                "manufacturer": "XBEE",
-                "model": "xbee.io",
                 INPUT_CLUSTERS: [DigitalIOCluster, SerialDataCluster],
                 OUTPUT_CLUSTERS: [SerialDataCluster, EventRelayCluster],
             }
-        }
+        },
+        "manufacturer": "Digi",
     }

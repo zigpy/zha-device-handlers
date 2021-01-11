@@ -29,7 +29,7 @@ class Illumination(XiaomiCustomDevice):
         # device_version=1
         # input_clusters=[0, 1024, 3, 1]
         # output_clusters=[3]>
-        MODELS_INFO: [(LUMI, "lumi.sen_ill.mgl01")],
+        MODELS_INFO: [(LUMI, "lumi.sen_ill.mgl01"), ("XIAOMI", "lumi.sen_ill.mgl01")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,

@@ -1,7 +1,7 @@
 """Module for smartthings quirks."""
 
-import zigpy.types as t
 from zigpy.quirks import CustomCluster
+import zigpy.types as t
 from zigpy.zcl.clusters.security import IasZone
 
 SMART_THINGS = "SmartThings"

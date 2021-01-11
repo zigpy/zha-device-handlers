@@ -1,9 +1,9 @@
 """Centralite 3310S implementation."""
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice, CustomCluster
+from zigpy.quirks import CustomCluster, CustomDevice
+import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PollControl
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
-import zigpy.types as t
 
 from zhaquirks import PowerConfigurationCluster
 from zhaquirks.centralite import CENTRALITE

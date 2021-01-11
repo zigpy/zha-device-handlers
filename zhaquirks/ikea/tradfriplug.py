@@ -3,17 +3,15 @@ from zigpy.profiles import zha, zll
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
-    Identify,
     Groups,
-    Scenes,
-    OnOff,
+    Identify,
     LevelControl,
+    OnOff,
     Ota,
     PollControl,
+    Scenes,
 )
-
 from zigpy.zcl.clusters.lightlink import LightLink
-
 
 from . import IKEA
 

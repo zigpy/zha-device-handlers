@@ -58,7 +58,10 @@ class LutronLZL4BWHL01Remote(CustomDevice):
         #  device_version=2
         #  input_clusters=[0, 4096, 65280, 64580]
         #  output_clusters=[4096, 3, 6, 8, 4, 5, 0, 65280]>
-        MODELS_INFO: [("Lutron", "LZL4BWHL01 Remote")],
+        MODELS_INFO: [
+            ("Lutron", "LZL4BWHL01 Remote"),
+            (" Lutron", "LZL4BWHL01 Remote"),
+        ],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zll.PROFILE_ID,
@@ -133,17 +136,4 @@ class LutronLZL4BWHL01Remote(CustomDevice):
             ENDPOINT_ID: 1,
             ARGS: [1, 30, 6],
         },
-    }
-
-
-class LutronLZL4BWHL01Remote2(LutronLZL4BWHL01Remote):
-    """Custom device representing Lutron LZL4BWHL01 Remote."""
-
-    signature = {
-        ENDPOINTS: {
-            1: {
-                **LutronLZL4BWHL01Remote.signature["endpoints"][1],
-                "manufacturer": " Lutron",  # Some remotes report this
-            }
-        }
     }
