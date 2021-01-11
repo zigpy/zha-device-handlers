@@ -247,7 +247,18 @@ def test_xiaomi_quick_init(raw_device):
     assert raw_device.application.device_initialized.call_count == 1
 
 
-@pytest.mark.parametrize("voltage, bpr", ((3000, 200), (2800, 0), (2600, 0)))
+@pytest.mark.parametrize(
+    "voltage, bpr",
+    (
+        (3240, 200),
+        (3200, 200),
+        (3000, 160),
+        (2985, 148),
+        (2810, 8),
+        (2800, 0),
+        (2600, 0),
+    ),
+)
 async def test_xiaomi_battery(zigpy_device_from_quirk, voltage, bpr):
     """Test xiaomi batter voltage to % battery left."""
     data_1 = b'\x1c_\x11I\n\x01\xffB"\x01!'
@@ -264,7 +275,18 @@ async def test_xiaomi_battery(zigpy_device_from_quirk, voltage, bpr):
     assert power_cluster["battery_percentage_remaining"] == bpr
 
 
-@pytest.mark.parametrize("voltage, bpr", ((3000, 200), (2800, 0), (2600, 0)))
+@pytest.mark.parametrize(
+    "voltage, bpr",
+    (
+        (3240, 200),
+        (3200, 200),
+        (3000, 160),
+        (2985, 145),
+        (2810, 8),
+        (2800, 0),
+        (2600, 0),
+    ),
+)
 async def test_mija_battery(zigpy_device_from_quirk, voltage, bpr):
     """Test xiaomi batter voltage to % battery left."""
     data_1 = b"\x1c4\x12\x02\n\x02\xffL\x06\x00\x10\x01!"
