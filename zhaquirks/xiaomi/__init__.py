@@ -292,8 +292,8 @@ class XiaomiPowerConfiguration(PowerConfiguration, LocalDataCluster):
 
     BATTERY_VOLTAGE_ATTR = 0x0020
     BATTERY_PERCENTAGE_REMAINING = 0x0021
-    MAX_VOLTS_MV = 3050
-    MIN_VOLTS_MV = 2800
+    MAX_VOLTS_MV = 3100
+    MIN_VOLTS_MV = 2820
 
     def __init__(self, *args, **kwargs):
         """Init."""
