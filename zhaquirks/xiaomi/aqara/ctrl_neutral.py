@@ -26,20 +26,13 @@ from .. import (
 )
 from ... import EventableCluster
 from ...const import (
-    COMMAND_CLICK,
     DEVICE_TYPE,
-    DOUBLE_PRESS,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
-    PRESS_TYPE,
     PROFILE_ID,
-    SHORT_PRESS,
-    SHORT_RELEASE,
     SKIP_CONFIGURATION,
-    VALUE,
-    ZHA_SEND_EVENT,
 )
 
 DOUBLE = "double"
@@ -75,59 +68,6 @@ class CtrlNeutral(XiaomiCustomDevice):
 
     class WallSwitchOnOffCluster(OnOff, EventableCluster):
         """WallSwitchOnOffCluster: fire events corresponding to press type."""
-
-        press_type = {
-            0x00: SHORT_PRESS,
-            0x01: SHORT_RELEASE,
-            0x02: DOUBLE_PRESS,
-        }
-        name = "WallSwitch_cluster"
-        ep_attribute = "WallSwitch_cluster"
-
-        def __init__(self, *args, **kwargs):
-            """Init."""
-            self.last_tsn = -1
-            super().__init__(*args, **kwargs)
-
-        manufacturer_server_commands = {
-            0xFD: ("press_type", (t.uint8_t,), False),
-        }
-
-        def handle_cluster_request(self, tsn, command_id, args):
-            """Handle press_types command."""
-            if tsn == self.last_tsn:
-                _LOGGER.debug("WallSwitch: ignoring duplicate frame")
-                return
-
-            self.last_tsn = tsn
-            _LOGGER.error("handle_cluster_request: %s, %s", command_id, args)
-            super().handle_cluster_request(tsn, command_id, args)
-            if command_id == 0xFD:
-                press_type = args[0]
-                self.listener_event(
-                    ZHA_SEND_EVENT, self.press_type.get(press_type, "unknown"), []
-                )
-
-    class CustomOnOffCluster(OnOffCluster):
-        """Fire ZHA events for on off cluster."""
-
-        cluster_id = OnOff.cluster_id
-
-        def __init__(self, *args, **kwargs):
-            """Init."""
-            self._current_state = {}
-            super().__init__(*args, **kwargs)
-
-        def _update_attribute(self, attrid, value):
-            _LOGGER.info("%s: %s", attrid, value)
-            if attrid == 0:
-                self._current_state = PRESS_TYPES.get(value)
-                event_args = {
-                    PRESS_TYPE: self._current_state,
-                    VALUE: value,
-                }
-                self.listener_event(ZHA_SEND_EVENT, COMMAND_CLICK, event_args)
-            super()._update_attribute(attrid, self._current_state)
 
     signature = {
         MODELS_INFO: [
