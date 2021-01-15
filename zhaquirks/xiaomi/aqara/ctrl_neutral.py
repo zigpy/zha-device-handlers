@@ -79,10 +79,8 @@ class CtrlNeutral(XiaomiCustomDevice):
             0xFF23: ("decoupled_mode_right", t.uint8_t),
         }
 
-
     class WallSwitchOnOffCluster(EventableCluster, OnOff):
         """WallSwitchOnOffCluster: fire events corresponding to press type."""
-
 
     signature = {
         MODELS_INFO: [
@@ -232,19 +230,19 @@ class CtrlNeutral(XiaomiCustomDevice):
         (COMMAND_HOLD, BUTTON): {
             ENDPOINT_ID: 4,
             CLUSTER_ID: 6,
-            COMMAND: COMMAND_ATTRIBUTE_UPDATED, 
+            COMMAND: COMMAND_ATTRIBUTE_UPDATED,
             ARGS: {ATTRIBUTE_ID: 0, ATTRIBUTE_NAME: ATTRIBUTE_ON_OFF, VALUE: 0},
         },
         (COMMAND_RELEASE, BUTTON): {
             ENDPOINT_ID: 4,
             CLUSTER_ID: 6,
-            COMMAND: COMMAND_ATTRIBUTE_UPDATED, 
+            COMMAND: COMMAND_ATTRIBUTE_UPDATED,
             ARGS: {ATTRIBUTE_ID: 0, ATTRIBUTE_NAME: ATTRIBUTE_ON_OFF, VALUE: 1},
         },
         (COMMAND_DOUBLE, BUTTON): {
             ENDPOINT_ID: 4,
             CLUSTER_ID: 6,
-            COMMAND: COMMAND_ATTRIBUTE_UPDATED, 
+            COMMAND: COMMAND_ATTRIBUTE_UPDATED,
             ARGS: {ATTRIBUTE_ID: 0, ATTRIBUTE_NAME: ATTRIBUTE_ON_OFF, VALUE: 2},
         },
     }
