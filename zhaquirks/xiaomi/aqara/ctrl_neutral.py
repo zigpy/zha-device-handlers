@@ -26,15 +26,28 @@ from .. import (
 )
 from ... import EventableCluster
 from ...const import (
+    ARGS,
+    ATTRIBUTE_ID,
+    ATTRIBUTE_NAME,
+    BUTTON,
+    CLUSTER_ID,
+    COMMAND,
+    COMMAND_ATTRIBUTE_UPDATED,
+    COMMAND_DOUBLE,
+    COMMAND_HOLD,
+    COMMAND_RELEASE,
     DEVICE_TYPE,
+    ENDPOINT_ID,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SKIP_CONFIGURATION,
+    VALUE,
 )
 
+ATTRIBUTE_ON_OFF = "on_off"
 DOUBLE = "double"
 HOLD = "long press"
 PRESS_TYPES = {0: "long press", 1: "single", 2: "double"}
@@ -66,8 +79,10 @@ class CtrlNeutral(XiaomiCustomDevice):
             0xFF23: ("decoupled_mode_right", t.uint8_t),
         }
 
-    class WallSwitchOnOffCluster(OnOff, EventableCluster):
+
+    class WallSwitchOnOffCluster(EventableCluster, OnOff):
         """WallSwitchOnOffCluster: fire events corresponding to press type."""
+
 
     signature = {
         MODELS_INFO: [
@@ -210,13 +225,26 @@ class CtrlNeutral(XiaomiCustomDevice):
                 ],
                 OUTPUT_CLUSTERS: [],
             },
-            5: {
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
-                INPUT_CLUSTERS: [
-                    MultistateInput.cluster_id,
-                    WallSwitchOnOffCluster,
-                ],
-                OUTPUT_CLUSTERS: [],
-            },
+        },
+    }
+
+    device_automation_triggers = {
+        (COMMAND_HOLD, BUTTON): {
+            ENDPOINT_ID: 4,
+            CLUSTER_ID: 6,
+            COMMAND: COMMAND_ATTRIBUTE_UPDATED, 
+            ARGS: {ATTRIBUTE_ID: 0, ATTRIBUTE_NAME: ATTRIBUTE_ON_OFF, VALUE: 0},
+        },
+        (COMMAND_RELEASE, BUTTON): {
+            ENDPOINT_ID: 4,
+            CLUSTER_ID: 6,
+            COMMAND: COMMAND_ATTRIBUTE_UPDATED, 
+            ARGS: {ATTRIBUTE_ID: 0, ATTRIBUTE_NAME: ATTRIBUTE_ON_OFF, VALUE: 1},
+        },
+        (COMMAND_DOUBLE, BUTTON): {
+            ENDPOINT_ID: 4,
+            CLUSTER_ID: 6,
+            COMMAND: COMMAND_ATTRIBUTE_UPDATED, 
+            ARGS: {ATTRIBUTE_ID: 0, ATTRIBUTE_NAME: ATTRIBUTE_ON_OFF, VALUE: 2},
         },
     }
