@@ -138,6 +138,7 @@ class SiterwellGS361(TuyaThermostat):
         MODELS_INFO: [
             ("_TYST11_jeaxp72v", "eaxp72v"),
             ("_TYST11_kfvq6avy", "fvq6avy"),
+            ("_TYST11_zivfvd7h", "ivfvd7h"),
         ],
         ENDPOINTS: {
             1: {
