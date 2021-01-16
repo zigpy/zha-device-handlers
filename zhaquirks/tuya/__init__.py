@@ -112,6 +112,15 @@ class TuyaManufCluster(CustomCluster):
         """Handling of time request."""
         if command_id != 0x0024 or self.set_time_offset == 0:
             return super().handle_cluster_request(tsn, command_id, args)
+        
+        # Send default response because the MCU expects it
+        schema = foundation.COMMANDS[foundation.Command.Default_Response][0]
+        self.create_catching_task(
+            self.reply(
+                True, foundation.Command.Default_Response, schema, command_id, tsn=tsn
+            )
+        )
+
         _LOGGER.debug(
             "[0x%04x:%s:0x%04x] Got set time request (command 0x%04x)",
             self.endpoint.device.nwk,
@@ -140,6 +149,14 @@ class TuyaManufClusterAttributes(TuyaManufCluster):
         """Handle cluster request."""
         if command_id not in (0x0001, 0x0002):
             return super().handle_cluster_request(tsn, command_id, args)
+
+        # Send default response because the MCU expects it
+        schema = foundation.COMMANDS[foundation.Command.Default_Response][0]
+        self.create_catching_task(
+            self.reply(
+                True, foundation.Command.Default_Response, schema, command_id, tsn=tsn
+            )
+        )
 
         tuya_cmd = args[0].command_id
         tuya_data = args[0].data
