@@ -32,6 +32,7 @@ from ..const import (
 
 DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
 PHILIPS = "Philips"
+SIGNIFY = "Signify Netherlands B.V."
 _LOGGER = logging.getLogger(__name__)
 
 HUE_REMOTE_DEVICE_TRIGGERS = {

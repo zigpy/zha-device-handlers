@@ -27,6 +27,7 @@ from zhaquirks.philips import (
     PhilipsColorCluster,
     PhilipsLevelControlCluster,
     PhilipsOnOffCluster,
+    SIGNIFY,
 )
 
 
@@ -40,6 +41,11 @@ class ZHAExtendedColorLight(CustomDevice):
             (PHILIPS, "LCB001"),
             (PHILIPS, "LCE002"),
             (PHILIPS, "LCG002"),
+            (SIGNIFY, "LCA001"),
+            (SIGNIFY, "LCA003"),
+            (SIGNIFY, "LCB001"),
+            (SIGNIFY, "LCE002"),
+            (SIGNIFY, "LCG002"),
         ],
         ENDPOINTS: {
             11: {
@@ -116,6 +122,12 @@ class ZHAExtendedColorLight2(CustomDevice):
             (PHILIPS, "4090330P9_02"),
             (PHILIPS, "929002376001"),
             (PHILIPS, "929002375901"),
+            (SIGNIFY, "LCL001"),
+            (SIGNIFY, "LCT026"),
+            (SIGNIFY, "4090330P9_01"),
+            (SIGNIFY, "4090330P9_02"),
+            (SIGNIFY, "929002376001"),
+            (SIGNIFY, "929002375901"),
         ],
         ENDPOINTS: {
             11: {
