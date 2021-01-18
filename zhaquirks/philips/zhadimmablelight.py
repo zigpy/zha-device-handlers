@@ -23,9 +23,9 @@ from zhaquirks.const import (
 )
 from zhaquirks.philips import (
     PHILIPS,
+    SIGNIFY,
     PhilipsLevelControlCluster,
     PhilipsOnOffCluster,
-    SIGNIFY,
 )
 
 

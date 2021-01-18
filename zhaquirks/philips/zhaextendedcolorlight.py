@@ -24,10 +24,10 @@ from zhaquirks.const import (
 )
 from zhaquirks.philips import (
     PHILIPS,
+    SIGNIFY,
     PhilipsColorCluster,
     PhilipsLevelControlCluster,
     PhilipsOnOffCluster,
-    SIGNIFY,
 )
 
 
