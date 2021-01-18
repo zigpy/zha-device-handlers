@@ -28,7 +28,6 @@ from zhaquirks.philips import (
     PhilipsColorCluster,
     PhilipsLevelControlCluster,
     PhilipsOnOffCluster,
-    SIGNIFY,
 )
 
 
