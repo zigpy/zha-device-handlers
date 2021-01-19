@@ -4,12 +4,10 @@
 # new version
 asynctest==0.13.0
 codecov==2.1.10
-coveralls==2.1.2
-flake8-docstrings==1.5.0
+coveralls==2.2.0
 mock-open==1.4.0
 mypy==0.790
 pre-commit==2.8.2
-pydocstyle==5.1.1
 pylint==2.6.0
 pytest-aiohttp==0.3.0
 pytest-cov==2.10.1

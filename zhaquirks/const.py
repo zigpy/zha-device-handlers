@@ -1,4 +1,17 @@
 """Common constants for zhaquirks."""
+from zigpy.quirks import (
+    SIG_ENDPOINTS,
+    SIG_EP_INPUT,
+    SIG_EP_OUTPUT,
+    SIG_EP_PROFILE,
+    SIG_EP_TYPE,
+    SIG_MANUFACTURER,
+    SIG_MODEL,
+    SIG_MODELS_INFO,
+    SIG_NODE_DESC,
+    SIG_SKIP_CONFIG,
+)
+
 ARGS = "args"
 ATTR_ID = "attr_id"
 ATTRIBUTE_ID = "attribute_id"
@@ -44,28 +57,30 @@ COMMAND_TILT = "Tilt"
 COMMAND_TOGGLE = "toggle"
 COMMAND_TRIPLE = "triple"
 DESCRIPTION = "description"
-DEVICE_TYPE = "device_type"
+DEVICE_TYPE = SIG_EP_TYPE
 DIM_DOWN = "dim_down"
 DIM_UP = "dim_up"
 DOUBLE_PRESS = "remote_button_double_press"
 ALT_DOUBLE_PRESS = "remote_button_alt_double_press"
 ENDPOINT_ID = "endpoint_id"
-ENDPOINTS = "endpoints"
-INPUT_CLUSTERS = "input_clusters"
+ENDPOINTS = SIG_ENDPOINTS
+INPUT_CLUSTERS = SIG_EP_INPUT
 LEFT = "left"
 LONG_PRESS = "remote_button_long_press"
 LONG_RELEASE = "remote_button_long_release"
 ALT_LONG_PRESS = "remote_button_alt_long_press"
 ALT_LONG_RELEASE = "remote_button_alt_long_release"
-MODELS_INFO = "models_info"
+MANUFACTURER = SIG_MANUFACTURER
+MODEL = SIG_MODEL
+MODELS_INFO = SIG_MODELS_INFO
 MOTION_EVENT = "motion_event"
-NODE_DESCRIPTOR = "node_desc"
+NODE_DESCRIPTOR = SIG_NODE_DESC
 OFF = 0
 ON = 1
 OPEN = "open"
-OUTPUT_CLUSTERS = "output_clusters"
+OUTPUT_CLUSTERS = SIG_EP_OUTPUT
 PRESS_TYPE = "press_type"
-PROFILE_ID = "profile_id"
+PROFILE_ID = SIG_EP_PROFILE
 QUADRUPLE_PRESS = "remote_button_quadruple_press"
 QUINTUPLE_PRESS = "remote_button_quintuple_press"
 RELATIVE_DEGREES = "relative_degrees"
@@ -73,7 +88,7 @@ RIGHT = "right"
 SHAKEN = "device_shaken"
 SHORT_PRESS = "remote_button_short_press"
 ALT_SHORT_PRESS = "remote_button_alt_short_press"
-SKIP_CONFIGURATION = "skip_configuration"
+SKIP_CONFIGURATION = SIG_SKIP_CONFIG
 SHORT_RELEASE = "remote_button_short_release"
 TRIPLE_PRESS = "remote_button_triple_press"
 TURN_OFF = "turn_off"
@@ -82,3 +97,4 @@ UNKNOWN = "Unknown"
 VALUE = "value"
 ZHA_SEND_EVENT = "zha_send_event"
 ZONE_STATE = 0
+ZONE_TYPE = 0x0001

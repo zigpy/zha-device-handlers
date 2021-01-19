@@ -108,7 +108,6 @@ class IkeaTradfriOpenCloseRemote(CustomDevice):
     }
 
     replacement = {
-        MODELS_INFO: [(IKEA, "TRADFRI open/close remote")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,

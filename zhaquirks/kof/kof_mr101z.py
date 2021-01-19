@@ -22,7 +22,7 @@ from zigpy.zcl.clusters.hvac import Fan
 class NoReplyMixin:
     """A simple mixin.
 
-    Allows a cluster to have configureable list of command
+    Allows a cluster to have configurable list of command
     ids that do not generate an explicit reply.
     """
 

@@ -4,32 +4,33 @@ from zigpy.quirks import CustomCluster
 from zigpy.zcl.clusters.general import Identify, Ota
 from zigpy.zcl.clusters.security import IasZone
 
-from .. import LUMI, BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
+from .. import (
+    LUMI,
+    XIAOMI_NODE_DESC,
+    BasicCluster,
+    XiaomiPowerConfiguration,
+    XiaomiQuickInitDevice,
+)
 from ...const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
+    NODE_DESCRIPTOR,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SKIP_CONFIGURATION,
+    ZONE_TYPE,
 )
 
 
 class CustomIasZone(CustomCluster, IasZone):
     """Custom IasZone cluster."""
 
-    MOISTURE_TYPE = 0x002A
-    ZONE_TYPE = 0x0001
-
-    def _update_attribute(self, attrid, value):
-        if attrid == self.ZONE_TYPE:
-            super()._update_attribute(attrid, self.MOISTURE_TYPE)
-        else:
-            super()._update_attribute(attrid, value)
+    _CONSTANT_ATTRIBUTES = {ZONE_TYPE: IasZone.ZoneType.Water_Sensor}
 
 
-class LeakAQ1(XiaomiCustomDevice):
+class LeakAQ1(XiaomiQuickInitDevice):
     """Xiaomi aqara leak sensor device."""
 
     signature = {
@@ -38,6 +39,7 @@ class LeakAQ1(XiaomiCustomDevice):
         #  input_clusters=[0, 3, 1]
         #  output_clusters=[25]>
         MODELS_INFO: [(LUMI, "lumi.sensor_wleak.aq1")],
+        NODE_DESCRIPTOR: XIAOMI_NODE_DESC,
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -45,7 +47,7 @@ class LeakAQ1(XiaomiCustomDevice):
                 INPUT_CLUSTERS: [
                     BasicCluster.cluster_id,
                     Identify.cluster_id,
-                    PowerConfigurationCluster.cluster_id,
+                    XiaomiPowerConfiguration.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             }
@@ -58,7 +60,7 @@ class LeakAQ1(XiaomiCustomDevice):
                 INPUT_CLUSTERS: [
                     BasicCluster,
                     Identify.cluster_id,
-                    PowerConfigurationCluster,
+                    XiaomiPowerConfiguration,
                     CustomIasZone,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],

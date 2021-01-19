@@ -251,7 +251,7 @@ class Plug(XiaomiCustomDevice):
 
 This quirk is for the US version of the Xiaomi plug. Xiaomi is notorious for not following the Zigbee specifications and most of their non Zigbee 3.0 devices need a quirk to function correctly. In this case we are correcting the `ElectricalMeasurement` cluster readings. Xiaomi decided to report the values for this cluster on the `AnalogInput` cluster instead. To fix this we will create a custom cluster to replace the `AnalogInput` and `ElectricalMeasurement` clusters. We will take the values that are reported on the `AnalogInput` cluster and publish them to the `ElectricalMeasurement` cluster. Doing this allows the device to work as if Xiaomi had implemented this in the first place. This is the act of translating that was mentioned in the Google Translate analogy above.
 
-First things first. All device definitions in quirks must extend `CustomDevice` or a derivative of it and all clusters that you define must extend `CustomCluster` or a derivative of it. If you want to send messages between `CustomCluster` definitions as we do here you need to create channels for the communication to flow through. We do this by adding instances of `Bus` on our `CustomDevice` implementation. `Bus` is a utility class used specifically for this purpose and adding it to the device implementation ensures that all clusters that you define will have access to the `Bus` so that they can communicate with eachother.
+First things first. All device definitions in quirks must extend `CustomDevice` or a derivative of it and all clusters that you define must extend `CustomCluster` or a derivative of it. If you want to send messages between `CustomCluster` definitions as we do here you need to create channels for the communication to flow through. We do this by adding instances of `Bus` on our `CustomDevice` implementation. `Bus` is a utility class used specifically for this purpose and adding it to the device implementation ensures that all clusters that you define will have access to the `Bus` so that they can communicate with each other.
 
 ```python
 class Plug(XiaomiCustomDevice):
@@ -271,7 +271,7 @@ Here are the custom cluster definitions:
 
 ```python
 class AnalogInputCluster(CustomCluster, AnalogInput):
-    """Analog input cluster, only used to relay power consumtion information to ElectricalMeasurementCluster."""
+    """Analog input cluster, only used to relay power consumption information to ElectricalMeasurementCluster."""
 
     cluster_id = AnalogInput.cluster_id
 
