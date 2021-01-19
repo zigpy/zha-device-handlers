@@ -2,11 +2,10 @@
 
 import logging
 
-import zigpy.types as types
 from zigpy.quirks import CustomCluster
+import zigpy.types as types
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.hvac import Thermostat
-
 
 EUROTRONIC = "Eurotronic"
 

@@ -11,7 +11,7 @@ from zigpy.zcl.clusters.general import (
     Scenes,
 )
 
-from .. import LUMI, BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
+from .. import LUMI, BasicCluster, XiaomiCustomDevice, XiaomiPowerConfiguration
 from ... import CustomCluster
 from ...const import (
     ARGS,
@@ -280,7 +280,7 @@ class CubeAQGL01(XiaomiCustomDevice):
                 DEVICE_TYPE: XIAOMI_SENSORS_REPLACEMENT,
                 INPUT_CLUSTERS: [
                     BasicCluster,
-                    PowerConfigurationCluster,
+                    XiaomiPowerConfiguration,
                     Identify.cluster_id,
                     Ota.cluster_id,
                 ],

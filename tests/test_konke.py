@@ -5,13 +5,21 @@ from unittest import mock
 
 import pytest
 
-from zhaquirks.const import OFF, ON, ZONE_STATE
+from zhaquirks.const import (
+    COMMAND_DOUBLE,
+    COMMAND_HOLD,
+    COMMAND_ID,
+    COMMAND_SINGLE,
+    OFF,
+    ON,
+    PRESS_TYPE,
+    ZONE_STATE,
+)
 import zhaquirks.konke.motion
 
 from tests.common import ZCL_IAS_MOTION_COMMAND, ClusterListener
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "quirk", (zhaquirks.konke.motion.KonkeMotion, zhaquirks.konke.motion.KonkeMotionB)
 )
@@ -53,3 +61,46 @@ async def test_konke_motion(zigpy_device_from_quirk, quirk):
     assert len(occupancy_listener.attribute_updates) == 2
     assert occupancy_listener.attribute_updates[1][0] == 0x0000
     assert occupancy_listener.attribute_updates[1][1] == 0
+
+
+@pytest.mark.parametrize(
+    "quirk",
+    (
+        zhaquirks.konke.button.KonkeButtonRemote1,
+        zhaquirks.konke.button.KonkeButtonRemote2,
+    ),
+)
+async def test_konke_button(zigpy_device_from_quirk, quirk):
+    """Test Konke button remotes."""
+
+    device = zigpy_device_from_quirk(quirk)
+    cluster = device.endpoints[1].custom_on_off
+
+    listener = mock.MagicMock()
+    cluster.add_listener(listener)
+
+    # single press
+    message = b"\x08W\n\x00\x00\x10\x80"
+    device.handle_message(260, cluster.cluster_id, 1, 1, message)
+    assert listener.zha_send_event.call_count == 1
+    assert listener.zha_send_event.call_args_list[0][0][0] == COMMAND_SINGLE
+    assert listener.zha_send_event.call_args_list[0][0][1][PRESS_TYPE] == COMMAND_SINGLE
+    assert listener.zha_send_event.call_args_list[0][0][1][COMMAND_ID] == 0x80
+
+    # double press
+    listener.reset_mock()
+    message = b"\x08X\n\x00\x00\x10\x81"
+    device.handle_message(260, cluster.cluster_id, 1, 1, message)
+    assert listener.zha_send_event.call_count == 1
+    assert listener.zha_send_event.call_args_list[0][0][0] == COMMAND_DOUBLE
+    assert listener.zha_send_event.call_args_list[0][0][1][PRESS_TYPE] == COMMAND_DOUBLE
+    assert listener.zha_send_event.call_args_list[0][0][1][COMMAND_ID] == 0x81
+
+    # long press
+    listener.reset_mock()
+    message = b"\x08Y\n\x00\x00\x10\x82"
+    device.handle_message(260, cluster.cluster_id, 1, 1, message)
+    assert listener.zha_send_event.call_count == 1
+    assert listener.zha_send_event.call_args_list[0][0][0] == COMMAND_HOLD
+    assert listener.zha_send_event.call_args_list[0][0][1][PRESS_TYPE] == COMMAND_HOLD
+    assert listener.zha_send_event.call_args_list[0][0][1][COMMAND_ID] == 0x82

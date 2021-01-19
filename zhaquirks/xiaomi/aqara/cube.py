@@ -11,6 +11,13 @@ from zigpy.zcl.clusters.general import (
     Scenes,
 )
 
+from .. import (
+    LUMI,
+    XIAOMI_NODE_DESC,
+    BasicCluster,
+    XiaomiPowerConfiguration,
+    XiaomiQuickInitDevice,
+)
 from ... import CustomCluster
 from ...const import (
     ARGS,
@@ -19,6 +26,7 @@ from ...const import (
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
+    NODE_DESCRIPTOR,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SHAKEN,
@@ -27,7 +35,6 @@ from ...const import (
     VALUE,
     ZHA_SEND_EVENT,
 )
-from .. import LUMI, BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
 
 ACTIVATED_FACE = "activated_face"
 DESCRIPTION = "description"
@@ -146,7 +153,7 @@ def extend_dict(dictionary, value, ranges):
 extend_dict(MOVEMENT_TYPE, FLIP, range(FLIP_BEGIN, FLIP_END))
 
 
-class Cube(XiaomiCustomDevice):
+class Cube(XiaomiQuickInitDevice):
     """Aqara magic cube device."""
 
     def __init__(self, *args, **kwargs):
@@ -221,6 +228,7 @@ class Cube(XiaomiCustomDevice):
         #  input_clusters=[0, 3, 25, 18]
         #  output_clusters=[0, 4, 3, 5, 25, 18]>
         MODELS_INFO: [(LUMI, "lumi.sensor_cube")],
+        NODE_DESCRIPTOR: XIAOMI_NODE_DESC,
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -280,7 +288,7 @@ class Cube(XiaomiCustomDevice):
                 DEVICE_TYPE: XIAOMI_SENSORS_REPLACEMENT,
                 INPUT_CLUSTERS: [
                     BasicCluster,
-                    PowerConfigurationCluster,
+                    XiaomiPowerConfiguration,
                     Identify.cluster_id,
                     Ota.cluster_id,
                 ],

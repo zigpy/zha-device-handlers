@@ -5,23 +5,23 @@ from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import (
     AnalogInput,
     Basic,
+    BinaryOutput,
+    DeviceTemperature,
     Groups,
     Identify,
     MultistateInput,
     OnOff,
     Ota,
     Scenes,
-    DeviceTemperature,
     Time,
-    BinaryOutput,
 )
 
 from .. import (
     LUMI,
     BasicCluster,
     OnOffCluster,
-    PowerConfigurationCluster,
     XiaomiCustomDevice,
+    XiaomiPowerConfiguration,
 )
 from ...const import (
     DEVICE_TYPE,
@@ -71,7 +71,7 @@ class CtrlNeutral(XiaomiCustomDevice):
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
-                    PowerConfigurationCluster.cluster_id,
+                    XiaomiPowerConfiguration.cluster_id,
                     DeviceTemperature.cluster_id,
                     Ota.cluster_id,
                     Time.cluster_id,
@@ -159,7 +159,7 @@ class CtrlNeutral(XiaomiCustomDevice):
                 INPUT_CLUSTERS: [
                     BasicCluster,
                     Identify.cluster_id,
-                    PowerConfigurationCluster.cluster_id,
+                    XiaomiPowerConfiguration.cluster_id,
                     DeviceTemperature.cluster_id,
                     Ota.cluster_id,
                     Time.cluster_id,

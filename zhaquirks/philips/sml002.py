@@ -1,7 +1,6 @@
 """Quirk for Philips SML002."""
 from zigpy.profiles import zha, zll
-from zigpy.quirks import CustomCluster, CustomDevice
-import zigpy.types as t
+from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -19,7 +18,7 @@ from zigpy.zcl.clusters.measurement import (
     TemperatureMeasurement,
 )
 
-from . import PHILIPS
+from . import PHILIPS, OccupancyCluster
 from ..const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -28,15 +27,6 @@ from ..const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-
-
-class OccupancyCluster(CustomCluster, OccupancySensing):
-    """philips occupancy cluster."""
-
-    manufacturer_attributes = {
-        0x0030: ("sensitivity", t.uint8_t),
-        0x0031: ("sensitivity_max", t.uint8_t),
-    }
 
 
 class PhilipsSML002(CustomDevice):

@@ -11,6 +11,7 @@ from .. import (
     MotionCluster,
     OccupancyCluster,
     XiaomiCustomDevice,
+    XiaomiPowerConfiguration,
 )
 from ... import Bus
 from ...const import (
@@ -63,6 +64,7 @@ class MotionAQ2(XiaomiCustomDevice):
             1: {
                 INPUT_CLUSTERS: [
                     BasicCluster,
+                    XiaomiPowerConfiguration,
                     IlluminanceMeasurementCluster,
                     OccupancyCluster,
                     MotionCluster,

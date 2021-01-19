@@ -6,15 +6,15 @@ expect replies at all.
 """
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice, CustomCluster
+from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
-    Identify,
     Groups,
-    Scenes,
-    OnOff,
+    Identify,
     LevelControl,
+    OnOff,
     Ota,
+    Scenes,
 )
 from zigpy.zcl.clusters.hvac import Fan
 
@@ -22,7 +22,7 @@ from zigpy.zcl.clusters.hvac import Fan
 class NoReplyMixin:
     """A simple mixin.
 
-    Allows a cluster to have configureable list of command
+    Allows a cluster to have configurable list of command
     ids that do not generate an explicit reply.
     """
 

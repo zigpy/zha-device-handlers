@@ -2,8 +2,8 @@
 
 from asynctest import CoroutineMock
 import pytest
-import zigpy.device
 import zigpy.application
+import zigpy.device
 import zigpy.types
 
 from zhaquirks.const import (

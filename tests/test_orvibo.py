@@ -11,7 +11,6 @@ import zhaquirks.orvibo.motion
 from tests.common import ZCL_IAS_MOTION_COMMAND, ClusterListener
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize("quirk", (zhaquirks.orvibo.motion.SN10ZW,))
 async def test_konke_motion(zigpy_device_from_quirk, quirk):
     """Test Orvibo motion sensor."""

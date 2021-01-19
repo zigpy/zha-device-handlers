@@ -25,18 +25,27 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.security import IasZone
 
-from .. import BasicCluster, PowerConfigurationCluster, XiaomiCustomDevice
+from .. import (
+    LUMI,
+    XIAOMI_NODE_DESC,
+    BasicCluster,
+    XiaomiPowerConfiguration,
+    XiaomiQuickInitDevice,
+)
 from ... import CustomCluster
 from ...const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
+    MODELS_INFO,
+    NODE_DESCRIPTOR,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SKIP_CONFIGURATION,
 )
 
 IAS_ZONE = 0x0402
+ZONE_TYPE = 0x0001
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -44,13 +53,14 @@ _LOGGER = logging.getLogger(__name__)
 class XiaomiSmokeIASCluster(CustomCluster, IasZone):
     """Xiaomi smoke IAS cluster implementation."""
 
+    _CONSTANT_ATTRIBUTES = {ZONE_TYPE: IasZone.ZoneType.Fire_Sensor}
     manufacturer_attributes = {
         0xFFF1: ("set_options", t.uint32_t),
         0xFFF0: ("get_status", t.uint32_t),
     }
 
 
-class MijiaHoneywellSmokeDetectorSensor(XiaomiCustomDevice):
+class MijiaHoneywellSmokeDetectorSensor(XiaomiQuickInitDevice):
     """MijiaHoneywellSmokeDetectorSensor custom device."""
 
     def __init__(self, *args, **kwargs):
@@ -63,6 +73,8 @@ class MijiaHoneywellSmokeDetectorSensor(XiaomiCustomDevice):
         #  device_version=
         #  input_clusters=[0, 1, 3, 12, 18, 1280]
         #  output_clusters=[25]>
+        NODE_DESCRIPTOR: XIAOMI_NODE_DESC,
+        MODELS_INFO: ((LUMI, "lumi.sensor_smoke"),),
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -77,7 +89,7 @@ class MijiaHoneywellSmokeDetectorSensor(XiaomiCustomDevice):
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             }
-        }
+        },
     }
 
     replacement = {
@@ -86,7 +98,7 @@ class MijiaHoneywellSmokeDetectorSensor(XiaomiCustomDevice):
             1: {
                 INPUT_CLUSTERS: [
                     BasicCluster,
-                    PowerConfigurationCluster,
+                    XiaomiPowerConfiguration,
                     Identify.cluster_id,
                     AnalogInput.cluster_id,
                     MultistateInput.cluster_id,

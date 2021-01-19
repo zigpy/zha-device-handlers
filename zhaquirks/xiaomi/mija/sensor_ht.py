@@ -14,10 +14,10 @@ from zigpy.zcl.clusters.general import (
 from .. import (
     LUMI,
     BasicCluster,
-    PowerConfigurationCluster,
     RelativeHumidityCluster,
     TemperatureMeasurementCluster,
     XiaomiCustomDevice,
+    XiaomiPowerConfiguration,
 )
 from ... import Bus
 from ...const import (
@@ -114,7 +114,7 @@ class Weather(XiaomiCustomDevice):
                 DEVICE_TYPE: TEMPERATURE_HUMIDITY_DEVICE_TYPE2,
                 INPUT_CLUSTERS: [
                     BasicCluster,
-                    PowerConfigurationCluster,
+                    XiaomiPowerConfiguration,
                     Identify.cluster_id,
                     TemperatureMeasurementCluster,
                     RelativeHumidityCluster,
