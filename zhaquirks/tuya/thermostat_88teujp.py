@@ -6,10 +6,18 @@ from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import Basic, Identify, Ota, PowerConfiguration
+from zigpy.zcl.clusters.general import (
+    Basic,
+    Groups,
+    Scenes,
+    Identify,
+    Ota,
+    PowerConfiguration,
+    Time,
+)
 from zigpy.zcl.clusters.hvac import Thermostat
 
-from . import TuyaManufClusterAttributes
+from . import TuyaManufClusterAttributes, TuyaThermostatCluster, TuyaThermostat
 from .. import Bus, LocalDataCluster
 from ..const import (
     DEVICE_TYPE,
@@ -89,7 +97,7 @@ class PowerConfigurationCluster(LocalDataCluster, PowerConfiguration):
             )  # report 100% battery
 
 
-class ThermostatCluster(LocalDataCluster, Thermostat):
+class ThermostatCluster(TuyaThermostatCluster):
     """Thermostat cluster."""
 
     cluster_id = Thermostat.cluster_id
@@ -134,41 +142,6 @@ class ThermostatCluster(LocalDataCluster, Thermostat):
             )
             _LOGGER.debug("reported system_mode: off")
 
-    async def write_attributes(self, attributes, manufacturer=None):
-        """Override remote writes."""
-        records = self._write_attr_records(attributes)
-
-        if not records:
-            return (foundation.Status.SUCCESS,)
-
-        manufacturer_attrs = {}
-        for record in records:
-            attr_name = self.attributes[record.attrid][0]
-            new_attrs = self.map_attribute(attr_name, record.value.value)
-
-            _LOGGER.debug(
-                "[0x%04x:%s:0x%04x] Mapping standard %s (0x%04x) "
-                "with value %s to custom %s",
-                self.endpoint.device.nwk,
-                self.endpoint.endpoint_id,
-                self.cluster_id,
-                attr_name,
-                record.attrid,
-                repr(record.value.value),
-                repr(new_attrs),
-            )
-
-            manufacturer_attrs.update(new_attrs)
-
-        if not manufacturer_attrs:
-            return (foundation.Status.FAILURE,)
-
-        await self.endpoint.tuya_manufacturer.write_attributes(
-            manufacturer_attrs, manufacturer=manufacturer
-        )
-
-        return (foundation.Status.SUCCESS,)
-
     def map_attribute(self, attribute, value):
         """Map standardized attribute value to dict of manufacturer values."""
 
@@ -183,14 +156,8 @@ class ThermostatCluster(LocalDataCluster, Thermostat):
                 return {SYSTEM_MODE_COMMAND_ID: 1}
 
 
-class Thermostat88teujp(CustomDevice):
+class Thermostat_TYST11_c88teujp(TuyaThermostat):
     """Saswell 88teujp thermostat valve."""
-
-    def __init__(self, *args, **kwargs):
-        """Init device."""
-        self.thermostat_bus = Bus()
-        self.battery_bus = Bus()
-        super().__init__(*args, **kwargs)
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=0
@@ -234,4 +201,50 @@ class Thermostat88teujp(CustomDevice):
                 ],
             }
         },
+    }
+
+
+class Thermostat_TZE200_c88teujp(TuyaThermostat):
+    """Saswell 88teujp thermostat valve."""
+
+    signature = {
+        #  endpoint=1 profile=260 device_type=81 device_version=0 input_clusters=[0, 4, 5, 61184]
+        #  output_clusters=[10, 25]>
+        MODELS_INFO: [("_TZE200_c88teujp", "TS0601")],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaManufClusterAttributes.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            }
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.THERMOSTAT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    ManufacturerThermostatCluster,
+                    PowerConfigurationCluster,
+                    ThermostatCluster,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Time.cluster_id,
+                    Ota.cluster_id,
+                    PowerConfigurationCluster,
+                    ThermostatCluster,
+                ],
+            }
+        }
     }
