@@ -12,7 +12,13 @@ from zigpy.zcl.clusters.general import (
     Scenes,
 )
 
-from .. import LUMI, BasicCluster, XiaomiCustomDevice, XiaomiPowerConfiguration
+from .. import (
+    LUMI,
+    XIAOMI_NODE_DESC,
+    BasicCluster,
+    XiaomiPowerConfiguration,
+    XiaomiQuickInitDevice,
+)
 from ... import CustomCluster
 from ...const import (
     ARGS,
@@ -29,6 +35,7 @@ from ...const import (
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
+    NODE_DESCRIPTOR,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     QUADRUPLE_PRESS,
@@ -52,7 +59,7 @@ CLICK_TYPE_MAP = {
 }
 
 
-class MijaButton(XiaomiCustomDevice):
+class MijaButton(XiaomiQuickInitDevice):
     """Mija button device."""
 
     def __init__(self, *args, **kwargs):
@@ -106,6 +113,7 @@ class MijaButton(XiaomiCustomDevice):
         #       Level control (8)
         #       Ota (25)
         MODELS_INFO: [(LUMI, "lumi.sensor_switch")],
+        NODE_DESCRIPTOR: XIAOMI_NODE_DESC,
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
