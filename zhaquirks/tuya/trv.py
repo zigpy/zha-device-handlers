@@ -1,32 +1,24 @@
 """Module to handle quirks of the  Zen Within thermostat."""
-import asyncio
 import logging
 import datetime
 import concurrent.futures as futures
-from time import sleep
-from typing import Union, Optional, List, Dict, Any
+from typing import Union, Optional, Coroutine
 
 import zigpy.profiles.zha as zha_p
 from zhaquirks import LocalDataCluster, Bus
-from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
-from zigpy.zcl.clusters.manufacturer_specific import ManufacturerSpecificCluster
-
 from zigpy.quirks import CustomDevice, CustomCluster
-from zigpy.zcl.clusters import general, homeautomation, hvac
+from zigpy.zcl.clusters import general, measurement, hvac
 import zigpy.types as t
 from zigpy.zcl import foundation
-from . import TuyaManufCluster, TUYA_CMD_BASE, TUYA_SET_DATA, TuyaManufClusterAttributes
-from ..const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID, SKIP_CONFIGURATION, CLUSTER_ID, COMMAND, SHORT_PRESS, TURN_ON, COMMAND_TOGGLE, ENDPOINT_ID, LONG_PRESS,
-    COMMAND_RELEASE, ARGS, COMMAND_ON, ON,
-)
+from . import TUYA_CLUSTER_ID
+from ..const import *
 
 _LOGGER = logging.getLogger(__name__)
+
+CURRENT_TEMPERATURE = 102
+HEATING_SETPOINT = 103
+ON_OFF = 101
+SCHEDULE_MODE = 108
 
 PROGRAM_MODES = {
     1: "single",
@@ -72,8 +64,6 @@ ATTR_TO_EVENTS = {
     'schedule_day_6': 128,
     'schedule_day_7': 129,
 }
-# 105: ("battery", t.uint8_t),
-# 104: ("valve_pos", t.uint8_t),
 
 
 class Data(t.List, item_type=t.uint8_t):
@@ -103,8 +93,90 @@ class Time(t.uint16_t):
         return '{}:{}'.format(hours, minutes)
 
 
-class TuyaTRVCluster(LocalDataCluster, TuyaManufClusterAttributes):
+class LocalDataBusListenerCluster(LocalDataCluster, CustomCluster):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.endpoint.device.data_bus.add_listener(self)
+
+    def handle_cluster_request(self, tsn, command_id, args):
+        if args:
+            resp = args[0]
+        else:
+            resp = None
+        if isinstance(resp, TuyaTRVCluster.Command) and resp.dp in ATTR_TO_EVENTS.keys():
+            self.endpoint.device.data_bus.listener_event(
+                ATTR_TO_EVENTS.get(resp.dp), resp.dp, resp.data)
+        elif command_id == 36:
+            self.endpoint.device.data_bus.listener_event(ATTR_TO_EVENTS.get(36), 36, resp)
+        else:
+            print('*'*100)
+            print('Unsupported command {} : {}'.format(command_id, args))
+            print('*'*100)
+
+    @staticmethod
+    def prepare_command(attrid, initial_value_bytes, transid):
+        if attrid in [CURRENT_TEMPERATURE, HEATING_SETPOINT]:
+            datatype = 2
+            value = round(t.Half.deserialize(initial_value_bytes)[0] * 10)
+            value_bytes = t.uint16_t(value).to_bytes(length=2, byteorder='big')
+            data_list = [0, 0, value_bytes[0], value_bytes[1]]
+        elif attrid in (ON_OFF, SCHEDULE_MODE):
+            datatype = 1
+            data_list = list(initial_value_bytes)
+
+        cmd_payload = TuyaTRVCluster.Command()
+        cmd_payload.status = 0
+        cmd_payload.transid = transid
+        cmd_payload.dp = attrid
+        cmd_payload.datatype = datatype
+        cmd_payload.length_hi = (len(data_list) >> 8) & 0xFF
+        cmd_payload.length_lo = len(data_list) & 0xFF
+        cmd_payload.data = data_list
+        return cmd_payload
+
+    async def send_command(self, command, manufacturer, tsn):
+        try:
+            return await super().command(
+                0x0000,
+                command,
+                manufacturer=manufacturer,
+                expect_reply=False,
+                tsn=tsn
+            )
+        except futures.TimeoutError:
+            pass
+
+    async def write_attributes(self, attributes, manufacturer=None):
+        """Defer attributes writing to the set_data tuya command."""
+
+        records = self._write_attr_records(attributes)
+
+        for record in records:
+            initial_value_bytes = record.value.value.serialize()
+            sequence = self.endpoint.device.application.get_sequence()
+            cmd_payload = self.prepare_command(record.attrid, initial_value_bytes, sequence)
+            await self.send_command(cmd_payload, manufacturer, cmd_payload.transid)
+        return (foundation.Status.SUCCESS,)
+
+    def mode_reported(self, attr_id, value):
+        self._update_attribute(attr_id, value[0])
+
+    def heating_setpoint_reported(self, attr_id, value):
+        tempr = Temperature.convert_to_temperature(value)
+        self._update_attribute(attr_id, tempr * 100)
+
+    def power_reported(self, attr_id, value):
+        self._update_attribute(attr_id, value[0])
+
+    def current_temp_reported(self, attr_id, value):
+        tempr = Temperature.convert_to_temperature(value)
+        self._update_attribute(attr_id, tempr * 100)
+
+class TuyaTRVCluster(LocalDataBusListenerCluster):
     """https://github.com/Koenkk/zigbee-herdsman/blob/master/src/zcl/definition/cluster.ts"""
+    name = "Tuya Manufacturer Specicific TRV"
+    cluster_id = TUYA_CLUSTER_ID
+    ep_attribute = "tuya_manufacturer"
 
     class SystemMode(t.enum8):
         Off = 0x00
@@ -145,71 +217,8 @@ class TuyaTRVCluster(LocalDataCluster, TuyaManufClusterAttributes):
         schedule, _ = TuyaTRVCluster.Schedule().deserialize(v_bytes)
         self._update_attribute(day, schedule)
 
-    def power_reported(self, attr_id, value):
-        self._update_attribute(attr_id, value[0])
-
     def ping(self, attr_id, value=None):
         self._update_attribute(attr_id, str(datetime.datetime.utcnow()))
-
-    def mode_reported(self, attr_id, value):
-        self._update_attribute(attr_id, value[0])
-
-    def current_temp_reported(self, attr_id, value):
-        tempr = Temperature.convert_to_temperature(value)
-        self._update_attribute(attr_id, tempr)
-
-    def heating_setpoint_reported(self, attr_id, value):
-        tempr = Temperature.convert_to_temperature(value)
-        self._update_attribute(attr_id, tempr)
-
-    def handle_cluster_request(self, tsn, command_id, args):
-        resp = args[0]
-        if isinstance(resp, TuyaTRVCluster.Command) and resp.dp in ATTR_TO_EVENTS.keys():
-            self.endpoint.device.data_bus.listener_event(
-                ATTR_TO_EVENTS.get(resp.dp), resp.dp, resp.data)
-        elif command_id == 36:
-            self.endpoint.device.data_bus.listener_event(ATTR_TO_EVENTS.get(36), 36, resp)
-        else:
-            print('*'*100)
-            print('Unsupported command {} : {}'.format(command_id, args))
-            print('*'*100)
-
-    async def write_attributes(self, attributes, manufacturer=None):
-        """Defer attributes writing to the set_data tuya command."""
-
-        records = self._write_attr_records(attributes)
-
-        for record in records:
-            data_list = None
-            if record.attrid in [103, 102]:
-                datatype = 2
-                value = round(record.value.value * 10)
-                value_bytes = t.uint16_t(value).to_bytes(length=2, byteorder='big')
-                data_list = [0, 0, value_bytes[0], value_bytes[1]]
-            else:
-                datatype = 1
-                data_list = list(record.value.value.serialize())
-
-            cmd_payload = TuyaTRVCluster.Command()
-            cmd_payload.status = 0
-            cmd_payload.transid = self.endpoint.device.application.get_sequence()
-            cmd_payload.dp = record.attrid
-            cmd_payload.datatype = datatype
-            cmd_payload.length_hi = (len(data_list) >> 8) & 0xFF
-            cmd_payload.length_lo = len(data_list) & 0xFF
-            cmd_payload.data = data_list
-
-            try:
-                await super().command(
-                    0x0000,
-                    cmd_payload,
-                    manufacturer=manufacturer,
-                    expect_reply=False,
-                )
-            except futures.TimeoutError:
-                pass
-
-        return (foundation.Status.SUCCESS,)
 
     manufacturer_client_commands = {
         0x0001: ("get_data", (Command,), True),
@@ -221,12 +230,11 @@ class TuyaTRVCluster(LocalDataCluster, TuyaManufClusterAttributes):
         0x0000: ("set_data", (Command,), False),
         0x0001: ("get_data", (Command,), True),
     }
-
     manufacturer_attributes = {
-        102: ("current_temperature", t.Single),
-        103: ("heating_setpoint", t.Single),
-        108: ("schedule_mode", ScheduleMode),
-        101: ("system_mode", SystemMode),
+        CURRENT_TEMPERATURE: ("current_temperature", t.Half),
+        HEATING_SETPOINT: ("heating_setpoint", t.Half),
+        SCHEDULE_MODE: ("schedule_mode", ScheduleMode),
+        ON_OFF: ("system_mode", SystemMode),
         36: ("ping", t.CharacterString),
         123: (DAY_OF_WEEK.get(123), Schedule),
         124: (DAY_OF_WEEK.get(124), Schedule),
@@ -238,16 +246,73 @@ class TuyaTRVCluster(LocalDataCluster, TuyaManufClusterAttributes):
     }
 
 
-class TuyaTRVUserInterfaceCluster(CustomCluster, UserInterface):
-    """Danfoss custom cluster."""
-
-    manufacturer_attributes = {
-        102: ("current_temperature", t.Single),
-        103: ("heating_setpoint", t.Single),
-        108: ("schedule_mode", TuyaTRVCluster.ScheduleMode),
-        101: ("system_mode", TuyaTRVCluster.SystemMode),
-        36: ("ping", t.CharacterString),
+class TuyaThermostatCluster(hvac.Thermostat, TuyaTRVCluster):
+    _CONSTANT_ATTRIBUTES = {
+        0x001B: hvac.Thermostat.ControlSequenceOfOperation.Heating_With_Reheat,
+        0x0015: 500,
+        0x0016: 3000,
     }
+
+    def power_reported(self, attr_id, value):
+        super(TuyaThermostatCluster, self).power_reported(attr_id, value)
+        if value[0]:
+            self._update_attribute(self.attridx["system_mode"], self.SystemMode.Heat)
+            self._update_attribute(self.attridx["running_mode"], self.RunningMode.Heat)
+            self._update_attribute(self.attridx["running_state"], self.RunningState.Heat_State_On)
+        else:
+            self._update_attribute(self.attridx["system_mode"], self.SystemMode.Off)
+            self._update_attribute(self.attridx["running_mode"], self.RunningMode.Off)
+            self._update_attribute(self.attridx["running_state"], self.RunningState.Idle)
+
+    def mode_reported(self, attr_id, value):
+        super(TuyaThermostatCluster, self).mode_reported(attr_id, value)
+        if value[0]:
+            self._update_attribute(self.attridx["programing_oper_mode"], self.ProgrammingOperationMode.Schedule_programming_mode)
+        else:
+            self._update_attribute(self.attridx["programing_oper_mode"], self.ProgrammingOperationMode.Simple)
+
+    def heating_setpoint_reported(self, attr_id, value):
+        super(TuyaThermostatCluster, self).heating_setpoint_reported(attr_id, value)
+        temp = self.get(self.manufacturer_attributes[attr_id][0])
+        self._update_attribute('occupied_heating_setpoint', temp)
+
+    def current_temp_reported(self, attr_id, value):
+        super(TuyaThermostatCluster, self).current_temp_reported(attr_id, value)
+        temp = self.get(self.manufacturer_attributes[attr_id][0])
+        self._update_attribute('local_temp', temp)
+
+    async def write_attributes(self, attributes, manufacturer=None):
+        """Implement writeable attributes."""
+
+        records = self._write_attr_records(attributes)
+
+        if not records:
+            return (foundation.Status.SUCCESS,)
+
+        for record in records:
+            if record.attrid == ON_OFF:
+                mode_map = {
+                    hvac.Thermostat.SystemMode.Heat: TuyaTRVCluster.SystemMode.On,
+                    hvac.Thermostat.SystemMode.Off: TuyaTRVCluster.SystemMode.Off,
+                }
+                await self.endpoint.tuya_manufacturer.write_attributes({ON_OFF: mode_map[record.value.value]})
+            elif record.attrid == 18:
+                value = record.value.value / 100
+                await self.endpoint.tuya_manufacturer.write_attributes({HEATING_SETPOINT: value})
+            else:
+                self.error('Can not set attrid {} to {}.'.format(record.attrid, record.value))
+
+        return (foundation.Status.SUCCESS,)
+
+
+class SiterwellUserInterface(hvac.UserInterface):
+    """HVAC User interface cluster for tuya electric heating thermostats."""
+    _CONSTANT_ATTRIBUTES = {
+        0x0000: hvac.UserInterface.TemperatureDisplayMode.Metric,
+        0x0001: hvac.UserInterface.KeypadLockout.No_lockout,
+        0x0002: hvac.UserInterface.ScheduleProgrammingVisibility.Enabled,
+    }
+
 
 class TuyaTRV(CustomDevice):
     """Tuya Within Sasswell Thermostat custom device.
@@ -303,19 +368,15 @@ class TuyaTRV(CustomDevice):
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha_p.PROFILE_ID,
-                DEVICE_TYPE: zha_p.DeviceType.ON_OFF_SWITCH,
+                DEVICE_TYPE: zha_p.DeviceType.THERMOSTAT,
                 INPUT_CLUSTERS: [
                     general.Basic.cluster_id,
                     general.Identify.cluster_id,
-                    homeautomation.ApplianceIdentification.cluster_id,
-                    # general.Groups.cluster_id,
-                    # general.Scenes.cluster_id,
-                    # general.PollControl.cluster_id,
-                    # general.DeviceTemperature,
-                    # general.PowerConfiguration.cluster_id,
+                    general.PowerConfiguration.cluster_id,
                     general.PowerProfile.cluster_id,
                     TuyaTRVCluster,
-                    TuyaTRVUserInterfaceCluster,
+                    TuyaThermostatCluster,
+                    SiterwellUserInterface
                 ],
                 OUTPUT_CLUSTERS: [
                     general.Identify.cluster_id,
@@ -328,11 +389,11 @@ class TuyaTRV(CustomDevice):
         #     COMMAND: COMMAND_TOGGLE,
         #     CLUSTER_ID: 6,
         #     ENDPOINT_ID: 1,
+        # # },
+        # (SHORT_PRESS, TURN_ON): {
+        #     COMMAND: COMMAND_ON,
+        #     CLUSTER_ID: OnOff.cluster_id,
+        #     ENDPOINT_ID: 1,
+        #     ARGS: [ON],
         # },
-        (SHORT_PRESS, TURN_ON): {
-            COMMAND: COMMAND_ON,
-            CLUSTER_ID: TuyaTRVCluster.cluster_id,
-            ENDPOINT_ID: 1,
-            ARGS: [ON],
-        },
     }
