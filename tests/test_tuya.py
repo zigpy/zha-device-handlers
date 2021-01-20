@@ -25,6 +25,7 @@ import zhaquirks.tuya.electric_heating
 import zhaquirks.tuya.motion
 import zhaquirks.tuya.siren
 import zhaquirks.tuya.ts0042
+import zhaquirks.tuya.ts0043
 import zhaquirks.tuya.valve
 
 from tests.common import ClusterListener
@@ -540,6 +541,11 @@ async def test_eheat_send_attribute(zigpy_device_from_quirk, quirk):
         (zhaquirks.tuya.ts0042.BenexmartRemote0042, "_TZ3000_adkvzooy"),
         (zhaquirks.tuya.ts0042.BenexmartRemote0042, "_TZ3400_keyjhapk"),
         (zhaquirks.tuya.ts0042.BenexmartRemote0042, "another random manufacturer"),
+        (zhaquirks.tuya.ts0043.TuyaSmartRemote0043, "_TZ3000_bi6lpsew"),
+        (zhaquirks.tuya.ts0043.TuyaSmartRemote0043, "_TZ3000_a7ouggvs"),
+        (zhaquirks.tuya.ts0043.TuyaSmartRemote0043, "another random manufacturer"),
+        (zhaquirks.tuya.ts0043.BenexmartRemote0043, "_TZ3000_qzjcsmar"),
+        (zhaquirks.tuya.ts0043.BenexmartRemote0043, "another random manufacturer"),
     ),
 )
 async def test_tuya_wildcard_manufacturer(zigpy_device_from_quirk, quirk, manufacturer):
