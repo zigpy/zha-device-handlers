@@ -1,9 +1,11 @@
 """Module for Terncy quirks."""
 from collections import deque
 import math
+from typing import Any, List
 
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.measurement import (
     IlluminanceMeasurement,
     TemperatureMeasurement,
@@ -133,9 +135,9 @@ class TerncyRawCluster(CustomCluster):
         super().__init__(*args, **kwargs)
         self._last_clicks = deque(maxlen=10)
 
-    def handle_cluster_request(self, tsn, command_id, args):
+    def handle_cluster_request(self, hdr: foundation.ZCLHeader, args: List[Any]):
         """Handle a cluster command received on this cluster."""
-        if command_id == 0:  # click event
+        if hdr.command_id == 0:  # click event
             count = args[0]
             state = args[1]
             if (state, count) in self._last_clicks:
@@ -147,7 +149,7 @@ class TerncyRawCluster(CustomCluster):
             event_args = {PRESS_TYPE: CLICK_TYPES[state], "count": count, VALUE: state}
             action = "button_{}".format(CLICK_TYPES[state])
             self.listener_event(ZHA_SEND_EVENT, action, event_args)
-        elif command_id == 4:  # motion event
+        elif hdr.command_id == 4:  # motion event
             state = args[2]
             side = SIDE_LOOKUP[state]
             if side == LEFT:
