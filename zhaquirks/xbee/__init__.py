@@ -17,6 +17,7 @@ the xbee stays alive in Home Assistant.
 """
 
 import logging
+from typing import Any, List
 
 from zigpy.quirks import CustomDevice
 import zigpy.types as t
@@ -235,12 +236,12 @@ class XBeeCommon(CustomDevice):
                     data[sample_index:],
                 )
 
-        def handle_cluster_request(self, tsn, command_id, args):
+        def handle_cluster_request(self, hdr: foundation.ZCLHeader, args: List[Any]):
             """Handle the cluster request.
 
             Update the digital pin states
             """
-            if command_id == ON_OFF_CMD:
+            if hdr.command_id == ON_OFF_CMD:
                 values = args[0]
                 if "digital_pins" in values and "digital_samples" in values:
                     # Update digital inputs
@@ -267,7 +268,7 @@ class XBeeCommon(CustomDevice):
                             / (10.23 if pin != 7 else 1000),  # supply voltage is in mV
                         )
             else:
-                super().handle_cluster_request(tsn, command_id, args)
+                super().handle_cluster_request(hdr, args)
 
         attributes = {0x0055: ("present_value", t.Bool)}
         client_commands = {0x0000: ("io_sample", (IOSample,), False)}
@@ -316,14 +317,14 @@ class XBeeCommon(CustomDevice):
                 expect_reply=False,
             )
 
-        def handle_cluster_request(self, tsn, command_id, args):
+        def handle_cluster_request(self, hdr: foundation.ZCLHeader, args: List[Any]):
             """Handle incoming data."""
-            if command_id == DATA_IN_CMD:
+            if hdr.command_id == DATA_IN_CMD:
                 self._endpoint.out_clusters[
                     LevelControl.cluster_id
-                ].handle_cluster_request(tsn, command_id, args[0])
+                ].handle_cluster_request(hdr, args[0])
             else:
-                super().handle_cluster_request(tsn, command_id, args)
+                super().handle_cluster_request(hdr, args)
 
         attributes = {}
         client_commands = {0x0000: ("send_data", (BinaryString,), None)}
