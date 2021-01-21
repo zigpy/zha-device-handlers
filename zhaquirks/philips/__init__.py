@@ -2,9 +2,11 @@
 import asyncio
 import logging
 import time
+from typing import Any, List
 
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, LevelControl, OnOff
 from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.measurement import OccupancySensing
@@ -178,12 +180,12 @@ class PhilipsRemoteCluster(CustomCluster):
 
     button_press_queue = ButtonPressQueue()
 
-    def handle_cluster_request(self, tsn, command_id, args):
+    def handle_cluster_request(self, hdr: foundation.ZCLHeader, args: List[Any]):
         """Handle the cluster command."""
         _LOGGER.debug(
             "PhilipsRemoteCluster - handle_cluster_request tsn: [%s] command id: %s - args: [%s]",
-            tsn,
-            command_id,
+            hdr.tsn,
+            hdr.command_id,
             args,
         )
 
@@ -193,7 +195,7 @@ class PhilipsRemoteCluster(CustomCluster):
         event_args = {
             BUTTON: button,
             PRESS_TYPE: press_type,
-            COMMAND_ID: command_id,
+            COMMAND_ID: hdr.command_id,
             ARGS: args,
         }
 
