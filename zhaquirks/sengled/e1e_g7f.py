@@ -74,7 +74,7 @@ class SengledE1EG7FManufacturerSpecificCluster(CustomCluster):
         )
     }
 
-    def handle_cluster_request(self, tsn, command_id, args):
+    def handle_cluster_request(self, hdr, args):
         """Handle cluster request."""
 
         if args[0] == 1:
