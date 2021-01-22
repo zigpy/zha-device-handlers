@@ -376,11 +376,26 @@ class TuyaSmartRemoteOnOffCluster(OnOff, EventableCluster):
 
     def handle_cluster_request(self, tsn, command_id, args):
         """Handle press_types command."""
+        # normally if default response sent, TS004x wouldn't send such repeated zclframe (with same sequence number),
+        # but for stability reasons (e. g. the case the response doesn't arrive the device), we can simply ignore it
         if tsn == self.last_tsn:
             _LOGGER.debug("TS004X: ignoring duplicate frame")
             return
-
+        # save last sequence number
         self.last_tsn = tsn
+
+        # send default response (as soon as possible), so avoid repeated zclframe from device
+        _LOGGER.debug("TS004X: send default response")
+        self.create_catching_task(
+            self.general_command(
+                foundation.Command.Default_Response,
+                command_id,
+                foundation.Status.SUCCESS,
+                tsn=tsn,
+            )
+        )
+
+        # handle command
         super().handle_cluster_request(tsn, command_id, args)
         if command_id == 0xFD:
             press_type = args[0]
