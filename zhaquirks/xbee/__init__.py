@@ -236,7 +236,15 @@ class XBeeCommon(CustomDevice):
                     data[sample_index:],
                 )
 
-        def handle_cluster_request(self, hdr: foundation.ZCLHeader, args: List[Any]):
+        def handle_cluster_request(
+            self,
+            hdr: foundation.ZCLHeader,
+            args: List[Any],
+            *,
+            dst_addressing: Optional[
+                Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+            ] = None,
+        ):
             """Handle the cluster request.
 
             Update the digital pin states

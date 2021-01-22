@@ -187,7 +187,13 @@ class TuyaManufacturerClusterOnOff(TuyaManufCluster):
     """Manufacturer Specific Cluster of On/Off device."""
 
     def handle_cluster_request(
-        self, hdr: foundation.ZCLHeader, args: Tuple[TuyaManufCluster.Command]
+        self,
+        hdr: foundation.ZCLHeader,
+        args: Tuple[TuyaManufCluster.Command],
+        *,
+        dst_addressing: Optional[
+            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        ] = None,
     ) -> None:
         """Handle cluster request."""
 
