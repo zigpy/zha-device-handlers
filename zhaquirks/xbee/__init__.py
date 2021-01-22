@@ -17,7 +17,7 @@ the xbee stays alive in Home Assistant.
 """
 
 import logging
-from typing import Any, List
+from typing import Any, List, Optional, Union
 
 from zigpy.quirks import CustomDevice
 import zigpy.types as t
@@ -317,7 +317,15 @@ class XBeeCommon(CustomDevice):
                 expect_reply=False,
             )
 
-        def handle_cluster_request(self, hdr: foundation.ZCLHeader, args: List[Any]):
+        def handle_cluster_request(
+            self,
+            hdr: foundation.ZCLHeader,
+            args: List[Any],
+            *,
+            dst_addressing: Optional[
+                Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+            ] = None,
+        ):
             """Handle incoming data."""
             if hdr.command_id == DATA_IN_CMD:
                 self._endpoint.out_clusters[

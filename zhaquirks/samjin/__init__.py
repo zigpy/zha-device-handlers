@@ -1,8 +1,9 @@
 """Module for Samjin quirks implementations."""
 import logging
-from typing import Any, List
+from typing import Any, List, Optional, Union
 
 from zigpy.quirks import CustomCluster
+from zigpy.types import Addressing
 from zigpy.zcl import foundation
 import zigpy.zcl.clusters.security
 
@@ -21,7 +22,15 @@ CLICK_TYPES = {SINGLE: "single", DOUBLE: "double", HOLD: "hold"}
 class SamjinIASCluster(CustomCluster, zigpy.zcl.clusters.security.IasZone):
     """Occupancy cluster."""
 
-    def handle_cluster_request(self, hdr: foundation.ZCLHeader, args: List[Any]):
+    def handle_cluster_request(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: List[Any],
+        *,
+        dst_addressing: Optional[
+            Union[Addressing.Group, Addressing.IEEE, Addressing.NWK]
+        ] = None,
+    ):
         """Handle a cluster command received on this cluster."""
         if hdr.command_id == 0:
             state = args[0] & 3

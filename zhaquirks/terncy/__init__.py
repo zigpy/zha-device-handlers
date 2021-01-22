@@ -1,7 +1,7 @@
 """Module for Terncy quirks."""
 from collections import deque
 import math
-from typing import Any, List
+from typing import Any, List, Optional, Union
 
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
@@ -135,7 +135,15 @@ class TerncyRawCluster(CustomCluster):
         super().__init__(*args, **kwargs)
         self._last_clicks = deque(maxlen=10)
 
-    def handle_cluster_request(self, hdr: foundation.ZCLHeader, args: List[Any]):
+    def handle_cluster_request(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: List[Any],
+        *,
+        dst_addressing: Optional[
+            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        ] = None,
+    ):
         """Handle a cluster command received on this cluster."""
         if hdr.command_id == 0:  # click event
             count = args[0]

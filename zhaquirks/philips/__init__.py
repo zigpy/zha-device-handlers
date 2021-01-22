@@ -2,7 +2,7 @@
 import asyncio
 import logging
 import time
-from typing import Any, List
+from typing import Any, List, Optional, Union
 
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
@@ -180,7 +180,15 @@ class PhilipsRemoteCluster(CustomCluster):
 
     button_press_queue = ButtonPressQueue()
 
-    def handle_cluster_request(self, hdr: foundation.ZCLHeader, args: List[Any]):
+    def handle_cluster_request(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: List[Any],
+        *,
+        dst_addressing: Optional[
+            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        ] = None,
+    ):
         """Handle the cluster command."""
         _LOGGER.debug(
             "PhilipsRemoteCluster - handle_cluster_request tsn: [%s] command id: %s - args: [%s]",

@@ -1,8 +1,9 @@
 """Device handler for IKEA of Sweden TRADFRI remote control."""
-from typing import Any, List
+from typing import Any, List, Optional, Union
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
+import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import (
@@ -53,7 +54,13 @@ class IkeaWindowCovering(CustomCluster, WindowCovering):
         self._is_closing = None
 
     def handle_cluster_request(
-        self, hdr: foundation.ZCLHeader, args: List[Any]
+        self,
+        hdr: foundation.ZCLHeader,
+        args: List[Any],
+        *,
+        dst_addressing: Optional[
+            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        ] = None,
     ) -> None:
         """Handle cluster specific commands.
 

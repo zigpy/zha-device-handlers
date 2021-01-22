@@ -71,10 +71,20 @@ class TuyaManufCluster(CustomCluster):
 class TuyaManufClusterAttributes(TuyaManufCluster):
     """Manufacturer specific cluster for Tuya converting attributes <-> commands."""
 
-    def handle_cluster_request(self, hdr: foundation.ZCLHeader, args: Tuple) -> None:
+    def handle_cluster_request(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: Tuple,
+        *,
+        dst_addressing: Optional[
+            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        ] = None,
+    ) -> None:
         """Handle cluster request."""
         if hdr.command_id not in (0x0001, 0x0002):
-            return super().handle_cluster_request(hdr, args)
+            return super().handle_cluster_request(
+                hdr, args, dst_addressing=dst_addressing
+            )
 
         tuya_cmd = args[0].command_id
         tuya_data = args[0].data
@@ -374,7 +384,15 @@ class TuyaSmartRemoteOnOffCluster(OnOff, EventableCluster):
         0xFD: ("press_type", (t.uint8_t,), False),
     }
 
-    def handle_cluster_request(self, hdr: foundation.ZCLHeader, args: List[Any]):
+    def handle_cluster_request(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: List[Any],
+        *,
+        dst_addressing: Optional[
+            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        ] = None,
+    ):
         """Handle press_types command."""
         # normally if default response sent, TS004x wouldn't send such repeated zclframe (with same sequence number),
         # but for stability reasons (e. g. the case the response doesn't arrive the device), we can simply ignore it
