@@ -1,6 +1,6 @@
-"""Device handler for Yale Real Living.
+"""Device handler for Yale Real Living YRD220/240 TSDB.
 
-Based on Yale Real Living YRD210 code.
+Based on Yale Real Living YRD210 PB DB code.
 """
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
