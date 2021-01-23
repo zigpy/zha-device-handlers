@@ -36,6 +36,7 @@ class ZHADimmableLight(CustomDevice):
         MODELS_INFO: [
             (PHILIPS, "LWA004"),
             (PHILIPS, "LWA005"),
+            (PHILIPS, "LWA007"),
             (PHILIPS, "LWO001"),
             (PHILIPS, "LWO003"),
             (PHILIPS, "LWV001"),
