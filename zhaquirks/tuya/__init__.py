@@ -26,7 +26,11 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class BigEndianInt16(int):
+    """Helper class to represent big endian 16 bit value."""
+
     def serialize(self) -> bytes:
+        """Value serialisation."""
+
         try:
             return self.to_bytes(2, "big", signed=False)
         except OverflowError as e:
@@ -35,6 +39,8 @@ class BigEndianInt16(int):
 
     @classmethod
     def deserialize(cls, data: bytes) -> Tuple["BigEndianInt16", bytes]:
+        """Value deserialisation."""
+
         if len(data) < 2:
             raise ValueError(f"Data is too short to contain {cls._size} bytes")
 
@@ -44,6 +50,7 @@ class BigEndianInt16(int):
 
 
 class TuyaTimePayload(t.LVList, item_type=t.uint8_t, length_type=BigEndianInt16):
+    """Tuya set time payload definition."""
 
     pass
 
@@ -112,7 +119,8 @@ class TuyaManufCluster(CustomCluster):
     }
 
     def handle_cluster_request(self, tsn: int, command_id: int, args: Tuple) -> None:
-        """Handling of time request."""
+        """Handle time request."""
+
         if command_id != 0x0024 or self.set_time_offset == 0:
             return super().handle_cluster_request(tsn, command_id, args)
 

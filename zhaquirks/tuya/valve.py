@@ -266,6 +266,8 @@ class MoesThermostat(TuyaThermostatCluster):
     """Thermostat cluster for some thermostatic valves."""
 
     class Preset(t.enum8):
+        """Working modes of the thermostat."""
+
         Away = 0x00
         Schedule = 0x01
         Manual = 0x02
@@ -275,11 +277,15 @@ class MoesThermostat(TuyaThermostatCluster):
         Complex = 0x06
 
     class WorkDays(t.enum8):
+        """Workday configuration for scheduler operation mode."""
+
         MonToFri = 0x00
         MonToSat = 0x01
         MonToSun = 0x02
 
     class ForceValveState(t.enum8):
+        """Force valve state option."""
+
         Normal = 0x00
         Open = 0x01
         Close = 0x02
@@ -517,6 +523,8 @@ class MoesThermostat(TuyaThermostatCluster):
         self._update_attribute(self.attridx["occupancy"], occupancy)
 
     def schedule_change(self, attr, value):
+        """Scheduler attribute change."""
+
         if attr == MOES_SCHEDULE_WORKDAY_ATTR:
             self._update_attribute(
                 self.attridx["workday_schedule_1_hour"], value[17] & 0x3F
@@ -615,9 +623,13 @@ class MoesUserInterface(TuyaUserInterfaceCluster):
     }
 
     def autolock_change(self, value):
+        """Automatic lock change."""
+
         self._update_attribute(self.attridx["auto_lock"], value)
 
     def map_attribute(self, attribute, value):
+        """Map standardized attribute value to dict of manufacturer values."""
+
         if attribute == "auto_lock":
             return {MOES_AUTO_LOCK_ATTR: value}
 
@@ -636,6 +648,8 @@ class MoesWindowDetection(LocalDataCluster, OnOff):
     }
 
     def window_detect_change(self, value):
+        """Window detection change."""
+
         self._update_attribute(
             self.attridx["window_detection_timeout_minutes"], value[0]
         )
@@ -645,6 +659,7 @@ class MoesWindowDetection(LocalDataCluster, OnOff):
         self._update_attribute(self.attridx["on_off"], value[2])
 
     async def write_attributes(self, attributes, manufacturer=None):
+        """Defer attributes writing to the set_data tuya command."""
 
         records = self._write_attr_records(attributes)
 

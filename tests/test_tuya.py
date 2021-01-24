@@ -61,12 +61,18 @@ ZCL_TUYA_EHEAT_TARGET_TEMP = b"\t3\x01\x03\x05\x10\x02\x00\x04\x00\x00\x00\x15"
 
 
 class NewDatetime(datetime.datetime):
+    """Override for datetime functions."""
+
     @classmethod
     def now(cls):
+        """Return testvalue."""
+
         return cls(1970, 1, 1, 1, 0, 0)
 
     @classmethod
     def utcnow(cls):
+        """Return testvalue."""
+
         return cls(1970, 1, 1, 2, 0, 0)
 
 
