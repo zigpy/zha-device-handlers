@@ -1,6 +1,6 @@
 """Tuya devices."""
-import logging
 import datetime
+import logging
 from typing import Optional, Tuple, Union
 
 from zigpy.quirks import CustomCluster, CustomDevice
@@ -24,6 +24,7 @@ TUYA_CMD_BASE = 0x0100
 
 _LOGGER = logging.getLogger(__name__)
 
+
 class BigEndianInt16(int):
     def serialize(self) -> bytes:
         try:
@@ -37,13 +38,15 @@ class BigEndianInt16(int):
         if len(data) < 2:
             raise ValueError(f"Data is too short to contain {cls._size} bytes")
 
-        r = cls.from_bytes(data[: 2], "big", signed=False)
+        r = cls.from_bytes(data[:2], "big", signed=False)
         data = data[2:]
         return r, data
+
 
 class TuyaTimePayload(t.LVList, item_type=t.uint8_t, length_type=BigEndianInt16):
 
     pass
+
 
 class Data(t.List, item_type=t.uint8_t):
     """list of uint8_t."""
@@ -83,16 +86,16 @@ class TuyaManufCluster(CustomCluster):
         function: t.uint8_t
         data: Data
 
-    """ Time sync command (It's transparent beetween MCU and server)
+    """ Time sync command (It's transparent between MCU and server)
             Time request device -> server
                payloadSize = 0
             Set time, server -> device
                payloadSize, should be always 8
                payload[0-3] - UTC timestamp (big endian)
                payload[4-7] - Local timestamp (big endian)
-            
+
             Zigbee payload is very similar to the UART payload which is described here: https://developer.tuya.com/en/docs/iot/device-development/access-mode-mcu/zigbee-general-solution/tuya-zigbee-module-uart-communication-protocol/tuya-zigbee-module-uart-communication-protocol?id=K9ear5khsqoty#title-10-Time%20synchronization
-            
+
             Some devices need the timestamp in seconds from 1/1/1970 and others in seconds from 1/1/2000.
 
             NOTE: You need to wait for time request before setting it. You can't set time without request."""
@@ -112,7 +115,7 @@ class TuyaManufCluster(CustomCluster):
         """Handling of time request."""
         if command_id != 0x0024 or self.set_time_offset == 0:
             return super().handle_cluster_request(tsn, command_id, args)
-        
+
         # Send default response because the MCU expects it
         schema = foundation.COMMANDS[foundation.Command.Default_Response][0]
         self.create_catching_task(
@@ -126,21 +129,27 @@ class TuyaManufCluster(CustomCluster):
             self.endpoint.device.nwk,
             self.endpoint.endpoint_id,
             self.cluster_id,
-            command_id
+            command_id,
         )
         payload = TuyaTimePayload()
-        utc_timestamp = int((datetime.datetime.utcnow() - datetime.datetime(self.set_time_offset, 1, 1)).total_seconds())
-        local_timestamp = int((datetime.datetime.now() - datetime.datetime(self.set_time_offset, 1, 1)).total_seconds())
+        utc_timestamp = int(
+            (
+                datetime.datetime.utcnow()
+                - datetime.datetime(self.set_time_offset, 1, 1)
+            ).total_seconds()
+        )
+        local_timestamp = int(
+            (
+                datetime.datetime.now() - datetime.datetime(self.set_time_offset, 1, 1)
+            ).total_seconds()
+        )
         payload.extend(utc_timestamp.to_bytes(4, "big", signed=False))
         payload.extend(local_timestamp.to_bytes(4, "big", signed=False))
 
         self.create_catching_task(
-            super().command(
-                    TUYA_SET_TIME,
-                    payload,
-                    expect_reply=False
-                )
+            super().command(TUYA_SET_TIME, payload, expect_reply=False)
         )
+
 
 class TuyaManufClusterAttributes(TuyaManufCluster):
     """Manufacturer specific cluster for Tuya converting attributes <-> commands."""

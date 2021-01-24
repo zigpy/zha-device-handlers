@@ -21,7 +21,7 @@ from zhaquirks.const import (
     PROFILE_ID,
     ZONE_STATE,
 )
-from zhaquirks.tuya import Data, TuyaManufClusterAttributes, TuyaTimePayload
+from zhaquirks.tuya import Data, TuyaManufClusterAttributes
 import zhaquirks.tuya.electric_heating
 import zhaquirks.tuya.motion
 import zhaquirks.tuya.siren
@@ -29,7 +29,7 @@ import zhaquirks.tuya.valve
 
 from tests.common import ClusterListener
 
-ZCL_TUYA_SET_TIME_REQUEST = b"\tp\x24\x00\00" 
+ZCL_TUYA_SET_TIME_REQUEST = b"\tp\x24\x00\00"
 
 ZCL_TUYA_MOTION = b"\tL\x01\x00\x05\x03\x04\x00\x01\x02"
 ZCL_TUYA_SWITCH_ON = b"\tQ\x02\x006\x01\x01\x00\x01\x01"
@@ -59,10 +59,12 @@ ZCL_TUYA_VALVE_BATTERY_LOW = b"\t2\x01\x03\x04\x6E\x01\x00\x01\x01"
 ZCL_TUYA_EHEAT_TEMPERATURE = b"\tp\x02\x00\x02\x18\x02\x00\x04\x00\x00\x00\xb3"
 ZCL_TUYA_EHEAT_TARGET_TEMP = b"\t3\x01\x03\x05\x10\x02\x00\x04\x00\x00\x00\x15"
 
+
 class NewDatetime(datetime.datetime):
     @classmethod
     def now(cls):
         return cls(1970, 1, 1, 1, 0, 0)
+
     @classmethod
     def utcnow(cls):
         return cls(1970, 1, 1, 2, 0, 0)
@@ -456,8 +458,9 @@ async def test_valve_send_attribute(zigpy_device_from_quirk, quirk):
         status = await thermostat_cluster.command(0x0002)
         assert status == foundation.Status.UNSUP_CLUSTER_COMMAND
 
+
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.valve.MoesHY368,))
-async def test_valve_send_attribute(zigpy_device_from_quirk, quirk):
+async def test_moes(zigpy_device_from_quirk, quirk):
     """Test thermostatic valve outgoing commands."""
 
     valve_dev = zigpy_device_from_quirk(quirk)
@@ -468,7 +471,6 @@ async def test_valve_send_attribute(zigpy_device_from_quirk, quirk):
 
     thermostat_listener = ClusterListener(valve_dev.endpoints[1].thermostat)
     onoff_listener = ClusterListener(valve_dev.endpoints[1].on_off)
-
 
     frames = (
         ZCL_TUYA_VALVE_TEMPERATURE,
@@ -612,7 +614,6 @@ async def test_valve_send_attribute(zigpy_device_from_quirk, quirk):
     assert thermostat_listener.attribute_updates[59][1] == 4
     assert thermostat_listener.attribute_updates[60][0] == 0x0029
     assert thermostat_listener.attribute_updates[60][1] == 1
-    
 
     assert len(onoff_listener.cluster_commands) == 0
     assert len(onoff_listener.attribute_updates) == 3
@@ -641,7 +642,7 @@ async def test_valve_send_attribute(zigpy_device_from_quirk, quirk):
     assert thermostat_ui_listener.attribute_updates[0][1] == 1
     assert thermostat_ui_listener.attribute_updates[1][0] == 0x5000
     assert thermostat_ui_listener.attribute_updates[1][1] == 1
-   
+
     assert len(power_listener.cluster_commands) == 0
     assert len(power_listener.attribute_updates) == 1
     assert power_listener.attribute_updates[0][0] == 0x0021
@@ -695,7 +696,6 @@ async def test_valve_send_attribute(zigpy_device_from_quirk, quirk):
             command_id=0,
         )
         assert status == (foundation.Status.SUCCESS,)
-
 
         # simulate a target temp update so that relative changes can work
         hdr, args = tuya_cluster.deserialize(ZCL_TUYA_VALVE_TARGET_TEMP)
@@ -936,7 +936,7 @@ async def test_valve_send_attribute(zigpy_device_from_quirk, quirk):
 
         origdatetime = datetime.datetime
         datetime.datetime = NewDatetime
-    
+
         hdr, args = tuya_cluster.deserialize(ZCL_TUYA_SET_TIME_REQUEST)
         tuya_cluster.handle_message(hdr, args)
         m1.assert_called_with(
@@ -947,10 +947,6 @@ async def test_valve_send_attribute(zigpy_device_from_quirk, quirk):
             command_id=0x0024,
         )
         datetime.datetime = origdatetime
-
-   
-   
-
 
 
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.electric_heating.MoesBHT,))
