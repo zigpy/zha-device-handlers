@@ -744,7 +744,7 @@ class MoesWindowDetection(LocalDataCluster, OnOff):
         return foundation.Status.UNSUP_CLUSTER_COMMAND
 
 
-class SiterwellGS361(TuyaThermostat):
+class SiterwellGS361_Type1(TuyaThermostat):
     """SiterwellGS361 Thermostatic radiator valve and clones."""
 
     signature = {
@@ -784,6 +784,52 @@ class SiterwellGS361(TuyaThermostat):
     }
 
 
+class SiterwellGS361_Type2(TuyaThermostat):
+    """SiterwellGS361 Thermostatic radiator valve and clones (2nd cluster signature)."""
+
+    signature = {
+        #  endpoint=1 profile=260 device_type=81 device_version=0 input_clusters=[0, 4, 5, 61184]
+        #  output_clusters=[10, 25]>
+        MODELS_INFO: [
+            ("_TZE200_kfvq6avy", "TS0601"),
+            ("_TZE200_c88teujp", "TS0601"),
+            ("_TZE200_zivfvd7h", "TS0601"),
+        ],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaManufClusterAttributes.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            }
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.THERMOSTAT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    SiterwellManufCluster,
+                    SiterwellThermostat,
+                    SiterwellUserInterface,
+                    TuyaPowerConfigurationCluster,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            }
+        }
+    }
+
+
 class MoesHY368(TuyaThermostat):
     """MoesHY368 Thermostatic radiator valve."""
 
@@ -795,12 +841,7 @@ class MoesHY368(TuyaThermostat):
     signature = {
         #  endpoint=1 profile=260 device_type=81 device_version=0 input_clusters=[0, 4, 5, 61184]
         #  output_clusters=[10, 25]>
-        MODELS_INFO: [
-            ("_TZE200_ckud7u2l", "TS0601"),
-            ("_TZE200_kfvq6avy", "TS0601"),
-            ("_TZE200_c88teujp", "TS0601"),
-            ("_TZE200_zivfvd7h", "TS0601"),
-        ],
+        MODELS_INFO: [("_TZE200_ckud7u2l", "TS0601")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
