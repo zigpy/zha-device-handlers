@@ -8,7 +8,13 @@ from zigpy import types as t
 import zigpy.device
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
-from zigpy.zcl.clusters.general import AnalogInput, Basic, BinaryOutput, OnOff
+from zigpy.zcl.clusters.general import (
+    AnalogInput,
+    Basic,
+    BinaryOutput,
+    OnOff,
+    PowerConfiguration,
+)
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.measurement import (
     IlluminanceMeasurement,
@@ -20,14 +26,7 @@ import zigpy.zcl.foundation as foundation
 import zigpy.zdo
 from zigpy.zdo.types import NodeDescriptor
 
-from .. import (
-    Bus,
-    LocalDataCluster,
-    MotionOnEvent,
-    OccupancyWithReset,
-    PowerConfigurationCluster,
-    QuickInitDevice,
-)
+from .. import Bus, LocalDataCluster, MotionOnEvent, OccupancyWithReset, QuickInitDevice
 from ..const import (
     ATTRIBUTE_ID,
     ATTRIBUTE_NAME,
@@ -288,11 +287,13 @@ class BinaryOutputInterlock(CustomCluster, BinaryOutput):
     manufacturer_attributes = {0xFF06: ("interlock", t.Bool)}
 
 
-class XiaomiPowerConfiguration(PowerConfigurationCluster, LocalDataCluster):
+class XiaomiPowerConfiguration(PowerConfiguration, LocalDataCluster):
     """Xiaomi power configuration cluster implementation."""
 
-    MAX_VOLTS = 3.0
-    MIN_VOLTS = 2.8
+    BATTERY_VOLTAGE_ATTR = 0x0020
+    BATTERY_PERCENTAGE_REMAINING = 0x0021
+    MAX_VOLTS_MV = 3100
+    MIN_VOLTS_MV = 2820
 
     def __init__(self, *args, **kwargs):
         """Init."""
@@ -302,10 +303,28 @@ class XiaomiPowerConfiguration(PowerConfigurationCluster, LocalDataCluster):
             BATTERY_QUANTITY_ATTR: 1,
             BATTERY_SIZE_ATTR: getattr(self.endpoint.device, BATTERY_SIZE, 0xFF),
         }
+        self._slope = 200 / (self.MAX_VOLTS_MV - self.MIN_VOLTS_MV)
 
     def battery_reported(self, voltage_mv: int) -> None:
         """Battery reported."""
         self._update_attribute(self.BATTERY_VOLTAGE_ATTR, round(voltage_mv / 100))
+        self._update_battery_percentage(voltage_mv)
+
+    def _update_battery_percentage(self, voltage_mv: int) -> None:
+        voltage_mv = max(voltage_mv, self.MIN_VOLTS_MV)
+        voltage_mv = min(voltage_mv, self.MAX_VOLTS_MV)
+
+        percent = round((voltage_mv - self.MIN_VOLTS_MV) * self._slope)
+
+        self.debug(
+            "Voltage mV: [Min]:%s < [RAW]:%s < [Max]:%s, Battery Percent: %s",
+            self.MIN_VOLTS_MV,
+            voltage_mv,
+            self.MAX_VOLTS_MV,
+            percent / 2,
+        )
+
+        self._update_attribute(self.BATTERY_PERCENTAGE_REMAINING, percent)
 
 
 class OccupancyCluster(OccupancyWithReset):
