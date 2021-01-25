@@ -16,7 +16,7 @@ from ..const import (
 
 
 class YRD210PBDB220TSLL(CustomDevice):
-    """Custom device representing Yale Real Living devices."""
+    """Yale YRD210 PB BP and Yale YRL220 TS LL Lock"""
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=10
@@ -63,7 +63,7 @@ class YRD210PBDB220TSLL(CustomDevice):
 
 
 class YRD220240TSDB(CustomDevice):
-    """Custom device representing Yale Real Living devices."""
+    """Yale YRD220/240 TSDB Lock"""
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=10
