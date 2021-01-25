@@ -93,7 +93,10 @@ class BenexmartRemote0042(CustomDevice):
     signature = {
         # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=0, device_version=1, input_clusters=[0, 1, 6], output_clusters=[10, 25]))
         # SizePrefixedSimpleDescriptor(endpoint=2, profile=260, device_type=0, device_version=1, input_clusters=[1, 6], output_clusters=[])
-        MODELS_INFO: [("_TZ3000_adkvzooy", "TS0042")],
+        MODELS_INFO: [
+            ("_TZ3000_adkvzooy", "TS0042"),
+            ("_TZ3400_keyjhapk", "TS0042"),
+        ],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
