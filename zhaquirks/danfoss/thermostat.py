@@ -35,7 +35,7 @@ class DanfossThermostatCluster(CustomCluster, Thermostat):
         0x4000: ("etrv_open_windows_detection", t.enum8),
         0x4003: ("external_open_windows_detected", t.Bool),
         0x4014: ("orientation", t.Bool),
-        0x4015: ("external_measured_room_sensor", t.int16s)
+        0x4015: ("external_measured_room_sensor", t.int16s),
     }
 
 
