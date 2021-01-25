@@ -3,22 +3,20 @@
 import logging
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
 import zigpy.types as t
-from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
-    Scenes,
     Identify,
     Ota,
     PowerConfiguration,
+    Scenes,
     Time,
 )
 from zigpy.zcl.clusters.hvac import Thermostat
 
-from . import TuyaManufClusterAttributes, TuyaThermostatCluster, TuyaThermostat
-from .. import Bus, LocalDataCluster
+from . import TuyaManufClusterAttributes, TuyaThermostat, TuyaThermostatCluster
+from .. import LocalDataCluster
 from ..const import (
     DEVICE_TYPE,
     ENDPOINTS,
