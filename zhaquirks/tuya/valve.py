@@ -138,6 +138,7 @@ class SiterwellGS361(TuyaThermostat):
         MODELS_INFO: [
             ("_TYST11_jeaxp72v", "eaxp72v"),
             ("_TYST11_kfvq6avy", "fvq6avy"),
+            ("_TYST11_zivfvd7h", "ivfvd7h"),
         ],
         ENDPOINTS: {
             1: {
@@ -177,6 +178,7 @@ class MoesHY368(TuyaThermostat):
         MODELS_INFO: [
             ("_TZE200_ckud7u2l", "TS0601"),
             ("_TZE200_kfvq6avy", "TS0601"),
+            ("_TZE200_c88teujp", "TS0601"),
         ],
         ENDPOINTS: {
             1: {

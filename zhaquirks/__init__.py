@@ -198,10 +198,8 @@ class PowerConfigurationCluster(CustomCluster, PowerConfiguration):
             ((volts - self.MIN_VOLTS) / (self.MAX_VOLTS - self.MIN_VOLTS)) * 200
         )
 
-        _LOGGER.debug(
-            "%s %s, Voltage [RAW]:%s [Max]:%s [Min]:%s, Battery Percent: %s",
-            self.endpoint.device.manufacturer,
-            self.endpoint.device.model,
+        self.debug(
+            "Voltage [RAW]:%s [Max]:%s [Min]:%s, Battery Percent: %s",
             raw_value,
             self.MAX_VOLTS,
             self.MIN_VOLTS,
