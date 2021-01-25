@@ -61,6 +61,7 @@ class YRD210PBDB220TSLL(CustomDevice):
         }
     }
 
+
 class YRD220240TSDB(CustomDevice):
     """Custom device representing Yale Real Living devices."""
 
