@@ -37,7 +37,7 @@ SITERWELL_MODE_ATTR = 0x0404  # [0] off [1] scheduled [2] manual
 #see https://github.com/Koenkk/zigbee-herdsman-converters/blob/master/lib/tuya.js
 
 SASWELL_WINDOW_DETECT_ATTR = 0x0108  # [0] inactive [1] active
-#SASWELL_FROST_DETECT_ATTR = 10 # [0] inactive [1] active #doesnt appear work
+#SASWELL_FROST_DETECT_ATTR = 10 # [0] inactive [1] active #does not appear work
 SASWELL_TEMPERATURE_CALIBRATION_ATTR = 0x000 #0x0102 possiby
 SASWELL_CHILD_LOCK_ATTR = 0x0128 # possibly 0x0128  # [0] inactive [1] active
 SASWELL_STATE_ATTR = 0x0165 #[0] off [1] should be 0x016c but hack to make on off work instead ofenabling auto
@@ -46,7 +46,7 @@ SASWELL_HEATING_SETPOINT_ATTR = 0x0267 # [0,0,0,210] target room temp (decidegre
 SASWELL_VALVE_POSITION_ATTR = 0x0268 #0x0268 possibly
 SASWELL_BATTERY_LOW_ATTR = 0x0569 # [0] OK [1] LOW
 SASWELL_MODE_ATTR = 0x0165 #[0] manual [1] auto
-SASWELL_AWAY_MODE_ATTR = 0x016a # [0] off [1] on 
+SASWELL_AWAY_MODE_ATTR = 0x016a # [0] off [1] on
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -364,7 +364,4 @@ class MoesHY368(TuyaThermostat):
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             }
         }
-    }
-
-
- 
+    } 
