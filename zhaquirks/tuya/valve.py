@@ -46,7 +46,7 @@ SASWELL_HEATING_SETPOINT_ATTR = 0x0267  # [0,0,0,210] target room temp (decidegr
 SASWELL_VALVE_POSITION_ATTR = 0x0268  # 0x0268 possibly
 SASWELL_BATTERY_LOW_ATTR = 0x0569  # [0] OK [1] LOW
 SASWELL_MODE_ATTR = 0x0165  # [0] manual [1] auto
-SASWELL_AWAY_MODE_ATTR = 0x016a  # [0] off [1] on
+SASWELL_AWAY_MODE_ATTR = 0x016A  # [0] off [1] on
 
 _LOGGER = logging.getLogger(__name__)
 
