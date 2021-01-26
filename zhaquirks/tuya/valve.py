@@ -282,10 +282,10 @@ class SaswellSEA801(TuyaThermostat):
     """SaswellSEA801 Thermostatic radiator valve."""
 
     signature = {
-
+        #  endpoint=1 profile=260 device_type=81 device_version=0 input_clusters=[0, 4, 5, 513, 516, 61184]
+        #  output_clusters=[10, 25]>
         MODELS_INFO: [
             ("_TZE200_c88teujp", "TS0601"),
-
         ],
         ENDPOINTS: {
             1: {
