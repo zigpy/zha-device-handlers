@@ -409,16 +409,9 @@ class TuyaSmartRemoteOnOffCluster(OnOff, EventableCluster):
         self.last_tsn = hdr.tsn
 
         # send default response (as soon as possible), so avoid repeated zclframe from device
-        self.debug("TS004X: send default response")
         if not hdr.frame_control.disable_default_response:
-            self.create_catching_task(
-                self.general_command(
-                    foundation.Command.Default_Response,
-                    hdr.command_id,
-                    foundation.Status.SUCCESS,
-                    tsn=hdr.tsn,
-                )
-            )
+            self.debug("TS004X: send default response")
+            self.send_default_rsp(hdr, status=foundation.Status.SUCCESS)
 
         # handle command
         if hdr.command_id == 0xFD:
