@@ -118,26 +118,32 @@ class TuyaManufCluster(CustomCluster):
         0x0024: ("set_time_request", (TuyaTimePayload,), True),
     }
 
-    def handle_cluster_request(self, tsn: int, command_id: int, args: Tuple) -> None:
+    def handle_cluster_request(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: Tuple,
+        *,
+        dst_addressing: Optional[
+            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        ] = None,
+    ) -> None:
         """Handle time request."""
 
-        if command_id != 0x0024 or self.set_time_offset == 0:
-            return super().handle_cluster_request(tsn, command_id, args)
+        if hdr.command_id != 0x0024 or self.set_time_offset == 0:
+            return super().handle_cluster_request(
+                hdr, args, dst_addressing=dst_addressing
+            )
 
         # Send default response because the MCU expects it
-        schema = foundation.COMMANDS[foundation.Command.Default_Response][0]
-        self.create_catching_task(
-            self.reply(
-                True, foundation.Command.Default_Response, schema, command_id, tsn=tsn
-            )
-        )
+        if not hdr.frame_control.disable_default_response:
+            self.send_default_rsp(hdr, status=foundation.Status.SUCCESS)
 
         _LOGGER.debug(
             "[0x%04x:%s:0x%04x] Got set time request (command 0x%04x)",
             self.endpoint.device.nwk,
             self.endpoint.endpoint_id,
             self.cluster_id,
-            command_id,
+            hdr.command_id,
         )
         payload = TuyaTimePayload()
         utc_timestamp = int(
@@ -178,12 +184,8 @@ class TuyaManufClusterAttributes(TuyaManufCluster):
             )
 
         # Send default response because the MCU expects it
-        schema = foundation.COMMANDS[foundation.Command.Default_Response][0]
-        self.create_catching_task(
-            self.reply(
-                True, foundation.Command.Default_Response, schema, command_id, tsn=tsn
-            )
-        )
+        if not hdr.frame_control.disable_default_response:
+            self.send_default_rsp(hdr, status=foundation.Status.SUCCESS)
 
         tuya_cmd = args[0].command_id
         tuya_data = args[0].data
