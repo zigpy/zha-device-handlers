@@ -364,5 +364,4 @@ class MoesHY368(TuyaThermostat):
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             }
         }
-    } 
-    
+    }
