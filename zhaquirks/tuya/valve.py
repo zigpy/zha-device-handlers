@@ -365,3 +365,4 @@ class MoesHY368(TuyaThermostat):
             }
         }
     } 
+    
