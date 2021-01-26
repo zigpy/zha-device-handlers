@@ -32,21 +32,21 @@ SITERWELL_TEMPERATURE_ATTR = 0x0203  # [0,0,0,200] current room temp (decidegree
 SITERWELL_BATTERY_ATTR = 0x0215  # [0,0,0,98] battery charge
 SITERWELL_MODE_ATTR = 0x0404  # [0] off [1] scheduled [2] manual
 
-#saswell variant
-#see protocol_TRV-Z01-80__20200901.pdf
-#see https://github.com/Koenkk/zigbee-herdsman-converters/blob/master/lib/tuya.js
+# saswell variant
+# see protocol_TRV-Z01-80__20200901.pdf
+# see https://github.com/Koenkk/zigbee-herdsman-converters/blob/master/lib/tuya.js
 
 SASWELL_WINDOW_DETECT_ATTR = 0x0108  # [0] inactive [1] active
-#SASWELL_FROST_DETECT_ATTR = 10 # [0] inactive [1] active #does not appear work
-SASWELL_TEMPERATURE_CALIBRATION_ATTR = 0x000 #0x0102 possiby
-SASWELL_CHILD_LOCK_ATTR = 0x0128 # possibly 0x0128  # [0] inactive [1] active
-SASWELL_STATE_ATTR = 0x0165 #[0] off [1] should be 0x016c but hack to make on off work instead ofenabling auto
-SASWELL_LOCAL_TEMP_ATTR = 0x0266 # [0,0,0,200] current room temp (decidegree)
-SASWELL_HEATING_SETPOINT_ATTR = 0x0267 # [0,0,0,210] target room temp (decidegree)
-SASWELL_VALVE_POSITION_ATTR = 0x0268 #0x0268 possibly
-SASWELL_BATTERY_LOW_ATTR = 0x0569 # [0] OK [1] LOW
-SASWELL_MODE_ATTR = 0x0165 #[0] manual [1] auto
-SASWELL_AWAY_MODE_ATTR = 0x016a # [0] off [1] on
+# SASWELL_FROST_DETECT_ATTR = 10 # [0] inactive [1] active #does not appear work
+SASWELL_TEMPERATURE_CALIBRATION_ATTR = 0x000  # 0x0102 possiby
+SASWELL_CHILD_LOCK_ATTR = 0x0128  # possibly 0x0128  # [0] inactive [1] active
+SASWELL_STATE_ATTR = 0x0165  # [0] off [1] should be 0x016c but hack to make on off work instead ofenabling auto
+SASWELL_LOCAL_TEMP_ATTR = 0x0266  # [0,0,0,200] current room temp (decidegree)
+SASWELL_HEATING_SETPOINT_ATTR = 0x0267  # [0,0,0,210] target room temp (decidegree)
+SASWELL_VALVE_POSITION_ATTR = 0x0268  # 0x0268 possibly
+SASWELL_BATTERY_LOW_ATTR = 0x0569  # [0] OK [1] LOW
+SASWELL_MODE_ATTR = 0x0165  # [0] manual [1] auto
+SASWELL_AWAY_MODE_ATTR = 0x016a  # [0] off [1] on
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -143,6 +143,7 @@ class SiterwellUserInterface(TuyaUserInterfaceCluster):
     """HVAC User interface cluster for tuya electric heating thermostats."""
 
     _CHILD_LOCK_ATTR = SITERWELL_CHILD_LOCK_ATTR
+
 
 class SaswellManufCluster(TuyaManufClusterAttributes):
     """Manufacturer Specific Cluster of some thermostatic valves."""
@@ -276,6 +277,7 @@ class SiterwellGS361(TuyaThermostat):
         }
     }
 
+
 class SaswellSEA801(TuyaThermostat):
     """SaswellSEA801 Thermostatic radiator valve."""
 
@@ -318,7 +320,6 @@ class SaswellSEA801(TuyaThermostat):
             }
         }
     }
-
 
 
 class MoesHY368(TuyaThermostat):
