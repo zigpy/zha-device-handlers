@@ -32,6 +32,22 @@ SITERWELL_TEMPERATURE_ATTR = 0x0203  # [0,0,0,200] current room temp (decidegree
 SITERWELL_BATTERY_ATTR = 0x0215  # [0,0,0,98] battery charge
 SITERWELL_MODE_ATTR = 0x0404  # [0] off [1] scheduled [2] manual
 
+#saswell variant
+#see protocol_TRV-Z01-80__20200901.pdf
+#see https://github.com/Koenkk/zigbee-herdsman-converters/blob/master/lib/tuya.js
+
+SASWELL_WINDOW_DETECT_ATTR = 0x0108  # [0] inactive [1] active
+#SASWELL_FROST_DETECT_ATTR = 10 # [0] inactive [1] active #doesnt appear work
+SASWELL_TEMPERATURE_CALIBRATION_ATTR = 0x000 #0x0102 possiby
+SASWELL_CHILD_LOCK_ATTR = 0x0128 # possibly 0x0128  # [0] inactive [1] active
+SASWELL_STATE_ATTR = 0x0165 #[0] off [1] should be 0x016c but hack to make on off work instead ofenabling auto
+SASWELL_LOCAL_TEMP_ATTR = 0x0266 # [0,0,0,200] current room temp (decidegree)
+SASWELL_HEATING_SETPOINT_ATTR = 0x0267 # [0,0,0,210] target room temp (decidegree)
+SASWELL_VALVE_POSITION_ATTR = 0x0268 #0x0268 possibly
+SASWELL_BATTERY_LOW_ATTR = 0x0569 # [0] OK [1] LOW
+SASWELL_MODE_ATTR = 0x0165 #[0] manual [1] auto
+SASWELL_AWAY_MODE_ATTR = 0x016a # [0] off [1] on 
+
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -128,6 +144,98 @@ class SiterwellUserInterface(TuyaUserInterfaceCluster):
 
     _CHILD_LOCK_ATTR = SITERWELL_CHILD_LOCK_ATTR
 
+class SaswellManufCluster(TuyaManufClusterAttributes):
+    """Manufacturer Specific Cluster of some thermostatic valves."""
+
+    manufacturer_attributes = {
+        SASWELL_CHILD_LOCK_ATTR: ("child_lock", t.uint8_t),
+        SASWELL_WINDOW_DETECT_ATTR: ("window_detection", t.uint8_t),
+        SASWELL_HEATING_SETPOINT_ATTR: ("target_temperature", t.uint32_t),
+        SASWELL_LOCAL_TEMP_ATTR: ("temperature", t.uint32_t),
+        SASWELL_BATTERY_LOW_ATTR: ("battery", t.uint32_t),
+        SASWELL_VALVE_POSITION_ATTR: ("valve_state", t.uint32_t),
+        SASWELL_MODE_ATTR: ("mode", t.uint8_t),
+    }
+
+    TEMPERATURE_ATTRS = {
+        SASWELL_LOCAL_TEMP_ATTR: "local_temp",
+        SASWELL_HEATING_SETPOINT_ATTR: "occupied_heating_setpoint",
+    }
+
+    def _update_attribute(self, attrid, value):
+        super()._update_attribute(attrid, value)
+        if attrid in self.TEMPERATURE_ATTRS:
+            self.endpoint.device.thermostat_bus.listener_event(
+                "temperature_change",
+                self.TEMPERATURE_ATTRS[attrid],
+                value * 10,  # decidegree to centidegree
+            )
+        elif attrid == SASWELL_MODE_ATTR:
+            self.endpoint.device.thermostat_bus.listener_event("mode_change", value)
+            self.endpoint.device.thermostat_bus.listener_event(
+                "state_change", value > 0
+            )
+        elif attrid == SASWELL_STATE_ATTR:
+            self.endpoint.device.thermostat_bus.listener_event("state_change", value)
+        elif attrid == SASWELL_CHILD_LOCK_ATTR:
+            mode = 1 if value else 0
+            self.endpoint.device.ui_bus.listener_event("child_lock_change", mode)
+        elif attrid == SASWELL_BATTERY_LOW_ATTR:
+            self.endpoint.device.battery_bus.listener_event("battery_change", value)
+
+
+class SaswellThermostat(TuyaThermostatCluster):
+    """Thermostat cluster for some thermostatic valves."""
+
+    def map_attribute(self, attribute, value):
+        """Map standardized attribute value to dict of manufacturer values."""
+
+        if attribute == "occupied_heating_setpoint":
+            # centidegree to decidegree
+            return {SASWELL_HEATING_SETPOINT_ATTR: round(value / 10)}
+        if attribute in ("system_mode", "programing_oper_mode"):
+            if attribute == "system_mode":
+                system_mode = value
+                oper_mode = self._attr_cache.get(
+                    self.attridx["programing_oper_mode"],
+                    self.ProgrammingOperationMode.Simple,
+                )
+            else:
+                system_mode = self._attr_cache.get(
+                    self.attridx["system_mode"], self.SystemMode.Heat
+                )
+                oper_mode = value
+            if system_mode == self.SystemMode.Off:
+                return {SASWELL_MODE_ATTR: 0}
+            if system_mode == self.SystemMode.Heat:
+                if oper_mode == self.ProgrammingOperationMode.Schedule_programming_mode:
+                    return {SASWELL_MODE_ATTR: 1}
+                if oper_mode == self.ProgrammingOperationMode.Simple:
+                    return {SASWELL_MODE_ATTR: 2}
+                self.error("Unsupported value for ProgrammingOperationMode")
+            else:
+                self.error("Unsupported value for SystemMode")
+
+    def mode_change(self, value):
+        """System Mode change."""
+        if value == 0:
+            self._update_attribute(self.attridx["system_mode"], self.SystemMode.Off)
+            return
+
+        if value == 1:
+            mode = self.ProgrammingOperationMode.Schedule_programming_mode
+        else:
+            mode = self.ProgrammingOperationMode.Simple
+
+        self._update_attribute(self.attridx["system_mode"], self.SystemMode.Heat)
+        self._update_attribute(self.attridx["programing_oper_mode"], mode)
+
+
+class SaswellUserInterface(TuyaUserInterfaceCluster):
+    """HVAC User interface cluster for tuya electric heating thermostats."""
+
+    _CHILD_LOCK_ATTR = SASWELL_CHILD_LOCK_ATTR
+
 
 class SiterwellGS361(TuyaThermostat):
     """SiterwellGS361 Thermostatic radiator valve and clones."""
@@ -168,6 +276,50 @@ class SiterwellGS361(TuyaThermostat):
         }
     }
 
+class SaswellSEA801(TuyaThermostat):
+    """SaswellSEA801 Thermostatic radiator valve."""
+
+    signature = {
+
+        MODELS_INFO: [
+            ("_TZE200_c88teujp", "TS0601"),
+
+        ],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaManufClusterAttributes.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            }
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.THERMOSTAT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    SaswellManufCluster,
+                    SaswellThermostat,
+                    SaswellUserInterface,
+                    TuyaPowerConfigurationCluster,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            }
+        }
+    }
+
+
 
 class MoesHY368(TuyaThermostat):
     """MoesHY368 Thermostatic radiator valve."""
@@ -178,7 +330,6 @@ class MoesHY368(TuyaThermostat):
         MODELS_INFO: [
             ("_TZE200_ckud7u2l", "TS0601"),
             ("_TZE200_kfvq6avy", "TS0601"),
-            ("_TZE200_c88teujp", "TS0601"),
             ("_TZE200_zivfvd7h", "TS0601"),
         ],
         ENDPOINTS: {
@@ -214,3 +365,6 @@ class MoesHY368(TuyaThermostat):
             }
         }
     }
+
+
+ 
