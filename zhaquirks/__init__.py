@@ -3,11 +3,12 @@ import asyncio
 import importlib
 import logging
 import pkgutil
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import zigpy.device
 import zigpy.endpoint
 from zigpy.quirks import CustomCluster, CustomDevice
+import zigpy.types as t
 from zigpy.util import ListenableMixin
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import PowerConfiguration
@@ -101,14 +102,24 @@ class LocalDataCluster(CustomCluster):
 class EventableCluster(CustomCluster):
     """Cluster that generates events."""
 
-    def handle_cluster_request(self, tsn, command_id, args):
+    def handle_cluster_request(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: List[Any],
+        *,
+        dst_addressing: Optional[
+            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        ] = None,
+    ):
         """Send cluster requests as events."""
         if (
             self.server_commands is not None
-            and self.server_commands.get(command_id) is not None
+            and self.server_commands.get(hdr.command_id) is not None
         ):
             self.listener_event(
-                ZHA_SEND_EVENT, self.server_commands.get(command_id)[0], args
+                ZHA_SEND_EVENT,
+                self.server_commands.get(hdr.command_id, (hdr.command_id))[0],
+                args,
             )
 
     def _update_attribute(self, attrid, value):
@@ -235,9 +246,17 @@ class MotionWithReset(_Motion):
 
     send_occupancy_event: bool = False
 
-    def handle_cluster_request(self, tsn, command_id, args):
+    def handle_cluster_request(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: List[Any],
+        *,
+        dst_addressing: Optional[
+            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        ] = None,
+    ):
         """Handle the cluster command."""
-        if command_id == ZONE_STATE:
+        if hdr.command_id == ZONE_STATE:
             if self._timer_handle:
                 self._timer_handle.cancel()
             self._timer_handle = self._loop.call_later(self.reset_s, self._turn_off)

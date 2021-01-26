@@ -1,8 +1,10 @@
 """Device handler for IKEA of Sweden TRADFRI remote control."""
-from typing import List
+from typing import Any, List, Optional, Union
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
+import zigpy.types as t
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import (
     Alarms,
@@ -52,14 +54,20 @@ class IkeaWindowCovering(CustomCluster, WindowCovering):
         self._is_closing = None
 
     def handle_cluster_request(
-        self, tsn: int, command_id: int, args: List[int]
+        self,
+        hdr: foundation.ZCLHeader,
+        args: List[Any],
+        *,
+        dst_addressing: Optional[
+            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        ] = None,
     ) -> None:
         """Handle cluster specific commands.
 
         We just want to keep track of direction, to associate it with the stop command.
         """
 
-        cmd_name = self.server_commands.get(command_id, [command_id])[0]
+        cmd_name = self.server_commands.get(hdr.command_id, [hdr.command_id])[0]
         if cmd_name == COMMAND_OPEN:
             self._is_closing = False
         elif cmd_name == COMMAND_CLOSE:
