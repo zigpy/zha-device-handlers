@@ -10,6 +10,8 @@ from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
+    MANUFACTURER,
+    MODEL,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
@@ -74,11 +76,17 @@ def zigpy_device_mock(MockAppController, ieee_mock):
 def zigpy_device_from_quirk(MockAppController, ieee_mock):
     """Create zigpy device from Quirk's signature."""
 
-    def _dev(quirk, ieee=None, nwk=zigpy.types.NWK(0x1234)):
+    def _dev(quirk, ieee=None, nwk=zigpy.types.NWK(0x1234), apply_quirk=True):
         if ieee is None:
             ieee = ieee_mock
         models_info = quirk.signature.get(
-            MODELS_INFO, (("Mock Manufacturer", "Mock Model"),)
+            MODELS_INFO,
+            (
+                (
+                    quirk.signature.get(MANUFACTURER, "Mock Manufacturer"),
+                    quirk.signature.get(MODEL, "Mock Model"),
+                ),
+            ),
         )
         manufacturer, model = models_info[0]
 
@@ -97,6 +105,10 @@ def zigpy_device_from_quirk(MockAppController, ieee_mock):
             out_clusters = ep_data.get(OUTPUT_CLUSTERS, [])
             for cluster_id in out_clusters:
                 ep.add_output_cluster(cluster_id)
+
+        if not apply_quirk:
+            return raw_device
+
         device = quirk(MockAppController, ieee, nwk, raw_device)
         MockAppController.devices[ieee] = device
 

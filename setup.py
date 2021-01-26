@@ -2,7 +2,7 @@
 
 from setuptools import find_packages, setup
 
-VERSION = "0.0.52"
+VERSION = "0.0.53"
 
 
 def readme():
@@ -24,6 +24,6 @@ setup(
     keywords="zha quirks homeassistant hass",
     packages=find_packages(exclude=["tests"]),
     python_requires=">=3",
-    install_requires=["zigpy>=0.28.2"],
+    install_requires=["zigpy>=0.32.0"],
     tests_require=["pytest"],
 )

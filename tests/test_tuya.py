@@ -6,7 +6,7 @@ from unittest import mock
 
 import pytest
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
+from zigpy.quirks import CustomDevice, get_device
 import zigpy.types as t
 from zigpy.zcl import foundation
 
@@ -25,6 +25,8 @@ from zhaquirks.tuya import Data, TuyaManufClusterAttributes
 import zhaquirks.tuya.electric_heating
 import zhaquirks.tuya.motion
 import zhaquirks.tuya.siren
+import zhaquirks.tuya.ts0042
+import zhaquirks.tuya.ts0043
 import zhaquirks.tuya.valve
 
 from tests.common import ClusterListener
@@ -1049,3 +1051,29 @@ async def test_eheat_send_attribute(zigpy_device_from_quirk, quirk):
 
         status = await thermostat_cluster.command(0x0002)
         assert status == foundation.Status.UNSUP_CLUSTER_COMMAND
+
+
+@pytest.mark.parametrize(
+    "quirk, manufacturer",
+    (
+        (zhaquirks.tuya.ts0042.TuyaSmartRemote0042, "_TZ3000_owgcnkrh"),
+        (zhaquirks.tuya.ts0042.TuyaSmartRemote0042, "_TZ3400_keyjhapk"),
+        (zhaquirks.tuya.ts0042.TuyaSmartRemote0042, "_some_random_manuf"),
+        (zhaquirks.tuya.ts0042.BenexmartRemote0042, "_TZ3000_adkvzooy"),
+        (zhaquirks.tuya.ts0042.BenexmartRemote0042, "_TZ3400_keyjhapk"),
+        (zhaquirks.tuya.ts0042.BenexmartRemote0042, "another random manufacturer"),
+        (zhaquirks.tuya.ts0043.TuyaSmartRemote0043, "_TZ3000_bi6lpsew"),
+        (zhaquirks.tuya.ts0043.TuyaSmartRemote0043, "_TZ3000_a7ouggvs"),
+        (zhaquirks.tuya.ts0043.TuyaSmartRemote0043, "another random manufacturer"),
+        (zhaquirks.tuya.ts0043.BenexmartRemote0043, "_TZ3000_qzjcsmar"),
+        (zhaquirks.tuya.ts0043.BenexmartRemote0043, "another random manufacturer"),
+    ),
+)
+async def test_tuya_wildcard_manufacturer(zigpy_device_from_quirk, quirk, manufacturer):
+    """Test thermostatic valve outgoing commands."""
+
+    zigpy_dev = zigpy_device_from_quirk(quirk, apply_quirk=False)
+    zigpy_dev.manufacturer = manufacturer
+
+    quirked_dev = get_device(zigpy_dev)
+    assert isinstance(quirked_dev, quirk)

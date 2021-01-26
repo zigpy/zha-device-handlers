@@ -1,7 +1,7 @@
 """Tuya devices."""
 import datetime
 import logging
-from typing import Optional, Tuple, Union
+from typing import Any, List, Optional, Tuple, Union
 
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
@@ -162,10 +162,20 @@ class TuyaManufCluster(CustomCluster):
 class TuyaManufClusterAttributes(TuyaManufCluster):
     """Manufacturer specific cluster for Tuya converting attributes <-> commands."""
 
-    def handle_cluster_request(self, tsn: int, command_id: int, args: Tuple) -> None:
+    def handle_cluster_request(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: Tuple,
+        *,
+        dst_addressing: Optional[
+            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        ] = None,
+    ) -> None:
         """Handle cluster request."""
-        if command_id not in (0x0001, 0x0002):
-            return super().handle_cluster_request(tsn, command_id, args)
+        if hdr.command_id not in (0x0001, 0x0002):
+            return super().handle_cluster_request(
+                hdr, args, dst_addressing=dst_addressing
+            )
 
         # Send default response because the MCU expects it
         schema = foundation.COMMANDS[foundation.Command.Default_Response][0]
@@ -186,7 +196,7 @@ class TuyaManufClusterAttributes(TuyaManufCluster):
             self.cluster_id,
             repr(tuya_data[1:]),
             tuya_cmd,
-            command_id,
+            hdr.command_id,
         )
 
         if tuya_cmd not in self.attributes:
@@ -276,12 +286,18 @@ class TuyaManufacturerClusterOnOff(TuyaManufCluster):
     """Manufacturer Specific Cluster of On/Off device."""
 
     def handle_cluster_request(
-        self, tsn: int, command_id: int, args: Tuple[TuyaManufCluster.Command]
+        self,
+        hdr: foundation.ZCLHeader,
+        args: Tuple[TuyaManufCluster.Command],
+        *,
+        dst_addressing: Optional[
+            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        ] = None,
     ) -> None:
         """Handle cluster request."""
 
         tuya_payload = args[0]
-        if command_id in (0x0002, 0x0001):
+        if hdr.command_id in (0x0002, 0x0001):
             self.endpoint.device.switch_bus.listener_event(
                 SWITCH_EVENT,
                 tuya_payload.command_id - TUYA_CMD_BASE,
@@ -500,30 +516,31 @@ class TuyaSmartRemoteOnOffCluster(OnOff, EventableCluster):
         0xFD: ("press_type", (t.uint8_t,), False),
     }
 
-    def handle_cluster_request(self, tsn, command_id, args):
+    def handle_cluster_request(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: List[Any],
+        *,
+        dst_addressing: Optional[
+            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        ] = None,
+    ):
         """Handle press_types command."""
         # normally if default response sent, TS004x wouldn't send such repeated zclframe (with same sequence number),
         # but for stability reasons (e. g. the case the response doesn't arrive the device), we can simply ignore it
-        if tsn == self.last_tsn:
+        if hdr.tsn == self.last_tsn:
             _LOGGER.debug("TS004X: ignoring duplicate frame")
             return
         # save last sequence number
-        self.last_tsn = tsn
+        self.last_tsn = hdr.tsn
 
         # send default response (as soon as possible), so avoid repeated zclframe from device
-        _LOGGER.debug("TS004X: send default response")
-        self.create_catching_task(
-            self.general_command(
-                foundation.Command.Default_Response,
-                command_id,
-                foundation.Status.SUCCESS,
-                tsn=tsn,
-            )
-        )
+        if not hdr.frame_control.disable_default_response:
+            self.debug("TS004X: send default response")
+            self.send_default_rsp(hdr, status=foundation.Status.SUCCESS)
 
         # handle command
-        super().handle_cluster_request(tsn, command_id, args)
-        if command_id == 0xFD:
+        if hdr.command_id == 0xFD:
             press_type = args[0]
             self.listener_event(
                 ZHA_SEND_EVENT, self.press_type.get(press_type, "unknown"), []

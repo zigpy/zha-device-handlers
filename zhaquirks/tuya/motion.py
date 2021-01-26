@@ -1,9 +1,11 @@
 """BlitzWolf IS-3/Tuya motion rechargeable occupancy sensor."""
 
-from typing import Tuple
+from typing import Optional, Tuple, Union
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
+import zigpy.types as t
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, Identify, Ota
 from zigpy.zcl.clusters.security import IasZone
 
@@ -33,11 +35,17 @@ class TuyaManufacturerClusterMotion(TuyaManufCluster):
     """Manufacturer Specific Cluster of the Motion device."""
 
     def handle_cluster_request(
-        self, tsn: int, command_id: int, args: Tuple[TuyaManufCluster.Command]
+        self,
+        hdr: foundation.ZCLHeader,
+        args: Tuple[TuyaManufCluster.Command],
+        *,
+        dst_addressing: Optional[
+            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        ] = None,
     ) -> None:
         """Handle cluster request."""
         tuya_cmd = args[0]
-        if command_id == 0x0001 and tuya_cmd.command_id == 1027:
+        if hdr.command_id == 0x0001 and tuya_cmd.command_id == 1027:
             self.endpoint.device.motion_bus.listener_event(MOTION_EVENT)
 
 
