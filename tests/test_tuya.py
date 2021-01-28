@@ -467,7 +467,7 @@ async def test_valve_send_attribute(zigpy_device_from_quirk, quirk):
         assert status == foundation.Status.UNSUP_CLUSTER_COMMAND
 
 
-@pytest.mark.parametrize("quirk", (zhaquirks.tuya.valve.MoesHY368,))
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.valve.MoesHY368_Type1,))
 async def test_moes(zigpy_device_from_quirk, quirk):
     """Test thermostatic valve outgoing commands."""
 

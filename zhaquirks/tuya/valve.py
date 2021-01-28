@@ -830,7 +830,7 @@ class SiterwellGS361_Type2(TuyaThermostat):
     }
 
 
-class MoesHY368(TuyaThermostat):
+class MoesHY368_Type1(TuyaThermostat):
     """MoesHY368 Thermostatic radiator valve."""
 
     def __init__(self, *args, **kwargs):
@@ -873,6 +873,43 @@ class MoesHY368(TuyaThermostat):
                     TuyaPowerConfigurationCluster,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            }
+        }
+    }
+
+
+class MoesHY368_Type2(TuyaThermostat):
+    """MoesHY368 Thermostatic radiator valve (2nd cluster signature)."""
+
+    signature = {
+        #  endpoint=1 profile=260 device_type=0 device_version=0 input_clusters=[0, 3]
+        #  output_clusters=[3, 25]>
+        MODELS_INFO: [("_TYST11_ckud7u2l", "kud7u2l")],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
+                INPUT_CLUSTERS: [Basic.cluster_id, Identify.cluster_id],
+                OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],
+            }
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.THERMOSTAT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    MoesManufCluster,
+                    MoesThermostat,
+                    MoesUserInterface,
+                    MoesWindowDetection,
+                    TuyaPowerConfigurationCluster,
+                ],
+                OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],
             }
         }
     }
