@@ -1,4 +1,6 @@
 """Xiaomi aqara single key wall switch devices."""
+import logging
+
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import (
     AnalogInput,
@@ -16,23 +18,43 @@ from zigpy.zcl.clusters.general import (
 
 from zhaquirks import Bus
 
+from . import (
+    BasicClusterDecoupled,
+    WallSwitchMultistateInputCluster
+)
+
 from .. import (
     LUMI,
     AnalogInputCluster,
-    BasicCluster,
     OnOffCluster,
     XiaomiCustomDevice,
     XiaomiPowerConfiguration,
 )
 from ...const import (
+    ARGS,
+    ATTRIBUTE_ID,
+    ATTRIBUTE_NAME,
+    BUTTON,
+    BUTTON_2,
+    CLUSTER_ID,
+    COMMAND,
+    COMMAND_ATTRIBUTE_UPDATED,
+    COMMAND_DOUBLE,
+    COMMAND_CLICK,
     DEVICE_TYPE,
+    ENDPOINT_ID,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SKIP_CONFIGURATION,
+    VALUE,
 )
+
+ATTRIBUTE_PRESENT_VALUE = "present_value"
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class CtrlLn(XiaomiCustomDevice):
@@ -108,7 +130,7 @@ class CtrlLn(XiaomiCustomDevice):
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
                 INPUT_CLUSTERS: [
-                    BasicCluster,
+                    BasicClusterDecoupled,
                     XiaomiPowerConfiguration,
                     DeviceTemperature.cluster_id,
                     Identify.cluster_id,
@@ -123,7 +145,10 @@ class CtrlLn(XiaomiCustomDevice):
             2: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
-                INPUT_CLUSTERS: [OnOffCluster, BinaryOutput.cluster_id],
+                INPUT_CLUSTERS: [
+                    OnOffCluster,
+                    BinaryOutput.cluster_id
+                ],
                 OUTPUT_CLUSTERS: [],
             },
             3: {
@@ -131,6 +156,63 @@ class CtrlLn(XiaomiCustomDevice):
                 DEVICE_TYPE: zha.DeviceType.MAIN_POWER_OUTLET,
                 INPUT_CLUSTERS: [AnalogInputCluster],
                 OUTPUT_CLUSTERS: [Groups.cluster_id, AnalogInput.cluster_id],
+            },
+            5: {
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
+                INPUT_CLUSTERS: [
+                    WallSwitchMultistateInputCluster,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            6: {
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
+                INPUT_CLUSTERS: [
+                    WallSwitchMultistateInputCluster,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+        },
+    }
+
+    device_automation_triggers = {
+        (COMMAND_CLICK, BUTTON): {
+            ENDPOINT_ID: 5,
+            CLUSTER_ID: 18,
+            COMMAND: COMMAND_ATTRIBUTE_UPDATED,
+            ARGS: {
+                ATTRIBUTE_ID: 85,
+                ATTRIBUTE_NAME: ATTRIBUTE_PRESENT_VALUE,
+                VALUE: 1
+            },
+        },
+        (COMMAND_DOUBLE + COMMAND_CLICK, BUTTON): {
+            ENDPOINT_ID: 5,
+            CLUSTER_ID: 18,
+            COMMAND: COMMAND_ATTRIBUTE_UPDATED,
+            ARGS: {
+                ATTRIBUTE_ID: 85,
+                ATTRIBUTE_NAME: ATTRIBUTE_PRESENT_VALUE,
+                VALUE: 2
+            },
+        },
+        (COMMAND_CLICK, BUTTON_2): {
+            ENDPOINT_ID: 6,
+            CLUSTER_ID: 18,
+            COMMAND: COMMAND_ATTRIBUTE_UPDATED,
+            ARGS: {
+                ATTRIBUTE_ID: 85,
+                ATTRIBUTE_NAME: ATTRIBUTE_PRESENT_VALUE,
+                VALUE: 1
+            },
+        },
+        (COMMAND_DOUBLE + COMMAND_CLICK, BUTTON_2): {
+            ENDPOINT_ID: 6,
+            CLUSTER_ID: 18,
+            COMMAND: COMMAND_ATTRIBUTE_UPDATED,
+            ARGS: {
+                ATTRIBUTE_ID: 85,
+                ATTRIBUTE_NAME: ATTRIBUTE_PRESENT_VALUE,
+                VALUE: 2
             },
         },
     }

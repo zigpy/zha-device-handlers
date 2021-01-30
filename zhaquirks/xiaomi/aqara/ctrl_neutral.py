@@ -1,7 +1,6 @@
 """Xiaomi aqara single key wall switch devices."""
 import logging
 
-from zigpy import types as t
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import (
     AnalogInput,
@@ -17,25 +16,29 @@ from zigpy.zcl.clusters.general import (
     Time,
 )
 
+from . import (
+    BasicClusterDecoupled,
+    WallSwitchOnOffCluster
+)
+
 from .. import (
     LUMI,
-    BasicCluster,
     OnOffCluster,
     XiaomiCustomDevice,
     XiaomiPowerConfiguration,
 )
-from ... import EventableCluster
+
 from ...const import (
     ARGS,
     ATTRIBUTE_ID,
     ATTRIBUTE_NAME,
     BUTTON,
+    BUTTON_2,
     CLUSTER_ID,
     COMMAND,
     COMMAND_ATTRIBUTE_UPDATED,
     COMMAND_DOUBLE,
-    COMMAND_HOLD,
-    COMMAND_RELEASE,
+    COMMAND_CLICK,
     DEVICE_TYPE,
     ENDPOINT_ID,
     ENDPOINTS,
@@ -67,20 +70,6 @@ _LOGGER = logging.getLogger(__name__)
 
 class CtrlNeutral(XiaomiCustomDevice):
     """Aqara single and double key switch device."""
-
-    class BasicClusterDecoupled(BasicCluster):
-        """Adds attributes for decoupled mode."""
-
-        # Known Options for 'decoupled_mode_<button>':
-        # * 254 (decoupled)
-        # * 18 (relay controlled)
-        manufacturer_attributes = {
-            0xFF22: ("decoupled_mode_left", t.uint8_t),
-            0xFF23: ("decoupled_mode_right", t.uint8_t),
-        }
-
-    class WallSwitchOnOffCluster(EventableCluster, OnOff):
-        """WallSwitchOnOffCluster: fire events corresponding to press type."""
 
     signature = {
         MODELS_INFO: [
@@ -223,24 +212,38 @@ class CtrlNeutral(XiaomiCustomDevice):
                 ],
                 OUTPUT_CLUSTERS: [],
             },
+            5: {
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
+                INPUT_CLUSTERS: [
+                    MultistateInput.cluster_id,
+                    WallSwitchOnOffCluster,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
         },
     }
 
     device_automation_triggers = {
-        (COMMAND_HOLD, BUTTON): {
+        (COMMAND_CLICK, BUTTON): {
             ENDPOINT_ID: 4,
             CLUSTER_ID: 6,
             COMMAND: COMMAND_ATTRIBUTE_UPDATED,
             ARGS: {ATTRIBUTE_ID: 0, ATTRIBUTE_NAME: ATTRIBUTE_ON_OFF, VALUE: 0},
         },
-        (COMMAND_RELEASE, BUTTON): {
+        (COMMAND_DOUBLE + COMMAND_CLICK, BUTTON): {
             ENDPOINT_ID: 4,
             CLUSTER_ID: 6,
             COMMAND: COMMAND_ATTRIBUTE_UPDATED,
-            ARGS: {ATTRIBUTE_ID: 0, ATTRIBUTE_NAME: ATTRIBUTE_ON_OFF, VALUE: 1},
+            ARGS: {ATTRIBUTE_ID: 0, ATTRIBUTE_NAME: ATTRIBUTE_ON_OFF, VALUE: 2},
         },
-        (COMMAND_DOUBLE, BUTTON): {
-            ENDPOINT_ID: 4,
+        (COMMAND_CLICK, BUTTON_2): {
+            ENDPOINT_ID: 5,
+            CLUSTER_ID: 6,
+            COMMAND: COMMAND_ATTRIBUTE_UPDATED,
+            ARGS: {ATTRIBUTE_ID: 0, ATTRIBUTE_NAME: ATTRIBUTE_ON_OFF, VALUE: 0},
+        },
+        (COMMAND_DOUBLE + COMMAND_CLICK, BUTTON_2): {
+            ENDPOINT_ID: 5,
             CLUSTER_ID: 6,
             COMMAND: COMMAND_ATTRIBUTE_UPDATED,
             ARGS: {ATTRIBUTE_ID: 0, ATTRIBUTE_NAME: ATTRIBUTE_ON_OFF, VALUE: 2},
