@@ -16,10 +16,7 @@ from zigpy.zcl.clusters.general import (
     Time,
 )
 
-from . import (
-    BasicClusterDecoupled,
-    WallSwitchOnOffCluster
-)
+from . import BasicClusterDecoupled, WallSwitchOnOffCluster
 
 from .. import (
     LUMI,
@@ -206,18 +203,12 @@ class CtrlNeutral(XiaomiCustomDevice):
             },
             4: {
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
-                INPUT_CLUSTERS: [
-                    MultistateInput.cluster_id,
-                    WallSwitchOnOffCluster,
-                ],
+                INPUT_CLUSTERS: [MultistateInput.cluster_id, WallSwitchOnOffCluster,],
                 OUTPUT_CLUSTERS: [],
             },
             5: {
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
-                INPUT_CLUSTERS: [
-                    MultistateInput.cluster_id,
-                    WallSwitchOnOffCluster,
-                ],
+                INPUT_CLUSTERS: [MultistateInput.cluster_id, WallSwitchOnOffCluster,],
                 OUTPUT_CLUSTERS: [],
             },
         },

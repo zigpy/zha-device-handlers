@@ -18,10 +18,7 @@ from zigpy.zcl.clusters.general import (
 
 from zhaquirks import Bus
 
-from . import (
-    BasicClusterDecoupled,
-    WallSwitchMultistateInputCluster
-)
+from . import BasicClusterDecoupled, WallSwitchMultistateInputCluster
 
 from .. import (
     LUMI,
@@ -145,10 +142,7 @@ class CtrlLn(XiaomiCustomDevice):
             2: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
-                INPUT_CLUSTERS: [
-                    OnOffCluster,
-                    BinaryOutput.cluster_id
-                ],
+                INPUT_CLUSTERS: [OnOffCluster, BinaryOutput.cluster_id],
                 OUTPUT_CLUSTERS: [],
             },
             3: {
@@ -159,16 +153,12 @@ class CtrlLn(XiaomiCustomDevice):
             },
             5: {
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
-                INPUT_CLUSTERS: [
-                    WallSwitchMultistateInputCluster,
-                ],
+                INPUT_CLUSTERS: [WallSwitchMultistateInputCluster,],
                 OUTPUT_CLUSTERS: [],
             },
             6: {
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
-                INPUT_CLUSTERS: [
-                    WallSwitchMultistateInputCluster,
-                ],
+                INPUT_CLUSTERS: [WallSwitchMultistateInputCluster,],
                 OUTPUT_CLUSTERS: [],
             },
         },
@@ -179,40 +169,24 @@ class CtrlLn(XiaomiCustomDevice):
             ENDPOINT_ID: 5,
             CLUSTER_ID: 18,
             COMMAND: COMMAND_ATTRIBUTE_UPDATED,
-            ARGS: {
-                ATTRIBUTE_ID: 85,
-                ATTRIBUTE_NAME: ATTRIBUTE_PRESENT_VALUE,
-                VALUE: 1
-            },
+            ARGS: {ATTRIBUTE_ID: 85, ATTRIBUTE_NAME: ATTRIBUTE_PRESENT_VALUE, VALUE: 1},
         },
         (COMMAND_DOUBLE + COMMAND_CLICK, BUTTON): {
             ENDPOINT_ID: 5,
             CLUSTER_ID: 18,
             COMMAND: COMMAND_ATTRIBUTE_UPDATED,
-            ARGS: {
-                ATTRIBUTE_ID: 85,
-                ATTRIBUTE_NAME: ATTRIBUTE_PRESENT_VALUE,
-                VALUE: 2
-            },
+            ARGS: {ATTRIBUTE_ID: 85, ATTRIBUTE_NAME: ATTRIBUTE_PRESENT_VALUE, VALUE: 2},
         },
         (COMMAND_CLICK, BUTTON_2): {
             ENDPOINT_ID: 6,
             CLUSTER_ID: 18,
             COMMAND: COMMAND_ATTRIBUTE_UPDATED,
-            ARGS: {
-                ATTRIBUTE_ID: 85,
-                ATTRIBUTE_NAME: ATTRIBUTE_PRESENT_VALUE,
-                VALUE: 1
-            },
+            ARGS: {ATTRIBUTE_ID: 85, ATTRIBUTE_NAME: ATTRIBUTE_PRESENT_VALUE, VALUE: 1},
         },
         (COMMAND_DOUBLE + COMMAND_CLICK, BUTTON_2): {
             ENDPOINT_ID: 6,
             CLUSTER_ID: 18,
             COMMAND: COMMAND_ATTRIBUTE_UPDATED,
-            ARGS: {
-                ATTRIBUTE_ID: 85,
-                ATTRIBUTE_NAME: ATTRIBUTE_PRESENT_VALUE,
-                VALUE: 2
-            },
+            ARGS: {ATTRIBUTE_ID: 85, ATTRIBUTE_NAME: ATTRIBUTE_PRESENT_VALUE, VALUE: 2},
         },
     }
