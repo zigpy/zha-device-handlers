@@ -1,28 +1,22 @@
-"""Nue / 3A Smart Home - Double GPO Quirk"""
+"""Nue / 3A Smart Home - Double GPO Quirk."""
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
-from zigpy.zcl.clusters.general import (
-    Basic,
-    Groups,
-    Identify,
-    OnOff,
-    Scenes,
-    Ota
-)
+from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes
 from zigpy.zcl.clusters.lightlink import LightLink
 
-from zhaquirks.const import (
+from ..const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
-    PROFILE_ID
+    PROFILE_ID,
 )
 
+
 class auwz02000(CustomDevice):
-    """Model NUE-AUWZ02-000 Double GPO - Australia plug"""
+    """Model NUE-AUWZ02-000 Double GPO - Australia plug."""
 
     signature = {
         MODELS_INFO: [
@@ -34,7 +28,7 @@ class auwz02000(CustomDevice):
             #  input_clusters=[0, 3, 4, 5, 6, 4096]
             #  output_clusters=[25]>
             1: {
-              PROFILE_ID: zha.PROFILE_ID,   
+              PROFILE_ID: zha.PROFILE_ID,
               DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
               INPUT_CLUSTERS: [
                   Basic.cluster_id,
@@ -72,7 +66,7 @@ class auwz02000(CustomDevice):
     replacement = {
         ENDPOINTS: {
             1: {
-              PROFILE_ID: zha.PROFILE_ID,   
+              PROFILE_ID: zha.PROFILE_ID,
               DEVICE_TYPE: zha.DeviceType.MAIN_POWER_OUTLET, #0x0009
               INPUT_CLUSTERS: [
                   Basic.cluster_id,
@@ -102,5 +96,3 @@ class auwz02000(CustomDevice):
             }
         }
     }
-
-    
