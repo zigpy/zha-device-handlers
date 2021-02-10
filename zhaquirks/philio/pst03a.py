@@ -8,7 +8,6 @@ from zigpy.zcl.clusters.general import (
     OnOff,
     BinaryInput,
     Ota,
-    PollControl,
 )
 from zigpy.zcl.clusters.measurement import (
     TemperatureMeasurement, 
@@ -23,11 +22,11 @@ from . import PHILIO, MotionCluster
 from ..const import (
     DEVICE_TYPE,
     ENDPOINTS,
-    INPUT_CLUSTERS, 
-    MANUFACTURER,
+    INPUT_CLUSTERS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
+    SKIP_CONFIGURATION,
 )
 
 
@@ -35,6 +34,7 @@ class PST03A(CustomDevice):
     """Custom device representing PST03A 4in1 motion/opening/temperature/illuminance sensors."""
 
     signature = {
+        SKIP_CONFIGURATION: True,
         MODELS_INFO: [("", "PST03A-v2.2.5")],
         ENDPOINTS: {
             1: {
@@ -65,6 +65,7 @@ class PST03A(CustomDevice):
     }
 
     replacement = {
+        MODELS_INFO: [(PHILIO, "PST03A-v2.2.5")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -89,5 +90,4 @@ class PST03A(CustomDevice):
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             }
         },
-        MANUFACTURER: PHILIO,
     }
