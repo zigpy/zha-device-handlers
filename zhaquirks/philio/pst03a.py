@@ -10,14 +10,11 @@ from zigpy.zcl.clusters.general import (
     Ota,
 )
 from zigpy.zcl.clusters.measurement import (
-    TemperatureMeasurement, 
-    IlluminanceMeasurement, 
+    TemperatureMeasurement,
+    IlluminanceMeasurement,
     OccupancySensing,
 )
 from zigpy.zcl.clusters.security import IasZone
-
-from zhaquirks import PowerConfigurationCluster
-
 from . import PHILIO, MotionCluster
 from ..const import (
     DEVICE_TYPE,

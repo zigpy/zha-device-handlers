@@ -4,7 +4,8 @@ from .. import MotionWithReset
 
 PHILIO = "Philio"
 
+
 class MotionCluster(MotionWithReset):
     """Motion cluster."""
 
-    reset_s: int = 20
+    reset_s: int = 30
