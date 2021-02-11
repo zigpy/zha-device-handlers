@@ -20,6 +20,7 @@ from ..const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
+    MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SKIP_CONFIGURATION,
@@ -31,6 +32,7 @@ class PST03A(CustomDevice):
 
     signature = {
         SKIP_CONFIGURATION: True,
+        MODELS_INFO: [("", "PST03A-v2.2.5")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -60,6 +62,7 @@ class PST03A(CustomDevice):
     }
 
     replacement = {
+        MODELS_INFO: [(PHILIO, "PST03A-v2.2.5")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
