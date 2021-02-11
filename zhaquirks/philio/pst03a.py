@@ -5,9 +5,9 @@ from zigpy.zcl.clusters.general import (
     Alarms,
     Basic,
     BinaryInput,
-    PowerConfiguration,
     OnOff,
     Ota,
+    PowerConfiguration,
 )
 from zigpy.zcl.clusters.measurement import (
     IlluminanceMeasurement,
