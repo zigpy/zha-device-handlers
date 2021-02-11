@@ -27,7 +27,7 @@ from ..const import (
 )
 
 
-class PST03A(CustomDevice):
+class Pst03a(CustomDevice):
     """Custom device representing PST03A 4in1 motion/opening/temperature/illuminance sensors."""
 
     signature = {
