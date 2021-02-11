@@ -21,7 +21,7 @@ from ..const import (
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODEL,
-    MODELS_INFO,
+    MANUFACTURER,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SKIP_CONFIGURATION,
@@ -63,7 +63,7 @@ class Pst03a(CustomDevice):
 
     replacement = {
         SKIP_CONFIGURATION: True,
-        MODELS_INFO: [(PHILIO, "PST03A-v2.2.5")],
+        MANUFACTURER: PHILIO,
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
