@@ -57,7 +57,7 @@ class Pst03a(CustomDevice):
                     IasZone.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
-            }
+            },
         },
     }
 
@@ -86,6 +86,6 @@ class Pst03a(CustomDevice):
                     IasZone.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
-            }
+            },
         },
     }
