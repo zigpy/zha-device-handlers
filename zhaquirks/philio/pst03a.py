@@ -2,17 +2,17 @@
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
-    Basic,
-    PowerConfiguration,
     Alarms,
-    OnOff,
+    Basic,
     BinaryInput,
+    PowerConfiguration,
+    OnOff,
     Ota,
 )
 from zigpy.zcl.clusters.measurement import (
-    TemperatureMeasurement,
     IlluminanceMeasurement,
     OccupancySensing,
+    TemperatureMeasurement,
 )
 from zigpy.zcl.clusters.security import IasZone
 from . import PHILIO, MotionCluster
