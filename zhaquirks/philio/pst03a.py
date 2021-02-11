@@ -20,6 +20,7 @@ from ..const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
+    MODEL,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
@@ -31,7 +32,7 @@ class Pst03a(CustomDevice):
     """Custom device representing PST03A 4in1 motion/opening/temperature/illuminance sensors."""
 
     signature = {
-        MODELS_INFO: [("", "PST03A-v2.2.5")],
+        MODEL: "PST03A-v2.2.5",
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
