@@ -31,7 +31,6 @@ class Pst03a(CustomDevice):
     """Custom device representing PST03A 4in1 motion/opening/temperature/illuminance sensors."""
 
     signature = {
-        SKIP_CONFIGURATION: True,
         MODELS_INFO: [("", "PST03A-v2.2.5")],
         ENDPOINTS: {
             1: {
@@ -62,6 +61,7 @@ class Pst03a(CustomDevice):
     }
 
     replacement = {
+        SKIP_CONFIGURATION: True,
         MODELS_INFO: [(PHILIO, "PST03A-v2.2.5")],
         ENDPOINTS: {
             1: {
