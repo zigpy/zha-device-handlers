@@ -2,12 +2,10 @@
 import logging
 import datetime
 import concurrent.futures as futures
-from typing import Union, Optional, Coroutine
-
 import zigpy.profiles.zha as zha_p
 from zhaquirks import LocalDataCluster, Bus
 from zigpy.quirks import CustomDevice, CustomCluster
-from zigpy.zcl.clusters import general, measurement, hvac
+from zigpy.zcl.clusters import general, hvac
 import zigpy.types as t
 from zigpy.zcl import foundation
 from . import TUYA_CLUSTER_ID
@@ -15,55 +13,88 @@ from ..const import *
 
 _LOGGER = logging.getLogger(__name__)
 
+
+#https://github.com/Koenkk/zigbee-herdsman-converters/blob/57ff9696bb7958354a92bf4fc99dc18d8606f13d/lib/tuya.js#L244
+WINDOW_DETECTION = 8
+FROST_DETECTION = 10
+TEMP_CALIBRATION = 27
+PING = 36
+CHILD_LOCK = 40
+ON_OFF = 101
 CURRENT_TEMPERATURE = 102
 HEATING_SETPOINT = 103
-ON_OFF = 101
+LOW_BATTERY = 105
+AWAY_MODE = 106
 SCHEDULE_MODE = 108
+SETPOINT_HISTORY_DAY = 110
+SETPOINT_HISTORY_WEEK = 112
+SETPOINT_HISTORY_MONTH = 113
+SETPOINT_HISTORY_YEAR = 114
+LOCAL_HISTORY_DAY = 115
+LOCAL_HISTORY_WEEK = 116
+LOCAL_HISTORY_MONTH = 117
+LOCAL_HISTORY_YEAR = 118
+MOTOR_HISTORY_DAY = 119
+MOTOR_HISTORY_WEEK = 120
+MOTOR_HISTORY_MONTH = 121
+MOTOR_HISTORY_YEAR = 122
+ANTI_SCALING = 130
 
-PROGRAM_MODES = {
-    1: "single",
-    2: "week_weekend",
-    3: "week_sat_sun",
-    4: "full",
+SHIFTING_MAP = {
+    WINDOW_DETECTION: 58,
+    FROST_DETECTION: 60,
+    TEMP_CALIBRATION: 77,
+    PING: 86,
+    CHILD_LOCK: 90,
 }
 
-DAY_OF_WEEK = {
-    # https://github.com/Koenkk/zigbee-herdsman-converters/blob/master/converters/toZigbee.js#L3113
-    123: 'Sun',
-    124: 'Mon',
-    125: 'Tue',
-    126: 'Wed',
-    127: 'Thu',
-    128: 'Fri',
-    129: 'Sat',
-}
 
 ATTR_TO_EVENTS = {
-    36: 'ping',
-    101: 'power_reported',
-    102: 'current_temp_reported',
-    103: 'heating_setpoint_reported',
+    WINDOW_DETECTION: 'update_attribute',
+    FROST_DETECTION: 'update_attribute',
+    PING: 'ping',
+    CHILD_LOCK: 'child_lock_reported',
+    ON_OFF: 'power_reported',
+    CURRENT_TEMPERATURE: 'current_temp_reported',
+    HEATING_SETPOINT: 'heating_setpoint_reported',
     615: 'heating_setpoint_reported',
-    108: 'mode_reported',
-    123: 'reported_schedule',
-    124: 'reported_schedule',
-    125: 'reported_schedule',
-    126: 'reported_schedule',
-    127: 'reported_schedule',
-    128: 'reported_schedule',
-    129: 'reported_schedule',
-    'power_reported': 101,
-    'current_temp_reported': 102,
-    'heating_setpoint_reported': 103,
-    'mode_reported': 108,
-    'schedule_day_1': 123,
-    'schedule_day_2': 124,
-    'schedule_day_3': 125,
-    'schedule_day_4': 126,
-    'schedule_day_5': 127,
-    'schedule_day_6': 128,
-    'schedule_day_7': 129,
+    SCHEDULE_MODE: 'mode_reported',
+    LOW_BATTERY: 'low_battery_reported',
+    AWAY_MODE: 'away_mode_reported',
+    TEMP_CALIBRATION: 'update_attribute',
+    SETPOINT_HISTORY_DAY: 'update_attribute',
+    SETPOINT_HISTORY_WEEK: 'update_attribute',
+    SETPOINT_HISTORY_MONTH: 'update_attribute',
+    SETPOINT_HISTORY_YEAR: 'update_attribute',
+    LOCAL_HISTORY_DAY: 'update_attribute',
+    LOCAL_HISTORY_WEEK: 'update_attribute',
+    LOCAL_HISTORY_MONTH: 'update_attribute',
+    LOCAL_HISTORY_YEAR: 'update_attribute',
+    MOTOR_HISTORY_DAY: 'update_attribute',
+    MOTOR_HISTORY_WEEK: 'update_attribute',
+    MOTOR_HISTORY_MONTH: 'update_attribute',
+    MOTOR_HISTORY_YEAR: 'update_attribute',
+    ANTI_SCALING: 'update_attribute',
+    # 123: 'reported_schedule',
+    # 124: 'reported_schedule',
+    # 125: 'reported_schedule',
+    # 126: 'reported_schedule',
+    # 127: 'reported_schedule',
+    # 128: 'reported_schedule',
+    # 129: 'reported_schedule',
 }
+
+
+# DAY_OF_WEEK = {
+#     # https://github.com/Koenkk/zigbee-herdsman-converters/blob/master/converters/toZigbee.js#L3113
+#     123: 'Sun',
+#     124: 'Mon',
+#     125: 'Tue',
+#     126: 'Wed',
+#     127: 'Thu',
+#     128: 'Fri',
+#     129: 'Sat',
+# }
 
 
 class Data(t.List, item_type=t.uint8_t):
@@ -103,15 +134,14 @@ class LocalDataBusListenerCluster(LocalDataCluster, CustomCluster):
             resp = args[0]
         else:
             resp = None
-        if isinstance(resp, TuyaTRVCluster.Command) and resp.dp in ATTR_TO_EVENTS.keys():
+        if isinstance(resp, SiterwellTRVCluster.Command) and resp.dp in ATTR_TO_EVENTS.keys():
+            attr_id = SHIFTING_MAP.get(resp.dp, resp.dp)
             self.endpoint.device.data_bus.listener_event(
-                ATTR_TO_EVENTS.get(resp.dp), resp.dp, resp.data)
-        elif command_id == 36:
-            self.endpoint.device.data_bus.listener_event(ATTR_TO_EVENTS.get(36), 36, resp)
+                ATTR_TO_EVENTS.get(resp.dp), attr_id, resp.data)
+        elif command_id == PING:
+            self.endpoint.device.data_bus.listener_event(ATTR_TO_EVENTS.get(PING), SHIFTING_MAP.get(PING), resp)
         else:
-            print('*'*100)
-            print('Unsupported command {} : {}'.format(command_id, args))
-            print('*'*100)
+            _LOGGER.debug('Unsupported command {} : {}'.format(command_id, args))
 
     @staticmethod
     def prepare_command(attrid, initial_value_bytes, transid):
@@ -124,7 +154,7 @@ class LocalDataBusListenerCluster(LocalDataCluster, CustomCluster):
             datatype = 1
             data_list = list(initial_value_bytes)
 
-        cmd_payload = TuyaTRVCluster.Command()
+        cmd_payload = SiterwellTRVCluster.Command()
         cmd_payload.status = 0
         cmd_payload.transid = transid
         cmd_payload.dp = attrid
@@ -163,16 +193,27 @@ class LocalDataBusListenerCluster(LocalDataCluster, CustomCluster):
 
     def heating_setpoint_reported(self, attr_id, value):
         tempr = Temperature.convert_to_temperature(value)
-        self._update_attribute(attr_id, tempr * 100)
+        self._update_attribute(attr_id, tempr)
 
     def power_reported(self, attr_id, value):
         self._update_attribute(attr_id, value[0])
 
     def current_temp_reported(self, attr_id, value):
         tempr = Temperature.convert_to_temperature(value)
-        self._update_attribute(attr_id, tempr * 100)
+        self._update_attribute(attr_id, tempr)
 
-class TuyaTRVCluster(LocalDataBusListenerCluster):
+    def ping(self, attr_id, value=None):
+        self._update_attribute(attr_id, str(datetime.datetime.utcnow()))
+
+
+    # def reported_schedule(self, attr_id, value):
+    #     day = DAY_OF_WEEK.get(attr_id)
+    #     v_bytes = value.serialize()
+    #     schedule, _ = SiterwellTRVCluster.Schedule().deserialize(v_bytes)
+    #     self._update_attribute(day, schedule)
+
+
+class SiterwellTRVCluster(LocalDataBusListenerCluster):
     """https://github.com/Koenkk/zigbee-herdsman/blob/master/src/zcl/definition/cluster.ts"""
     name = "Tuya Manufacturer Specicific TRV"
     cluster_id = TUYA_CLUSTER_ID
@@ -195,30 +236,16 @@ class TuyaTRVCluster(LocalDataBusListenerCluster):
         length_lo: t.uint8_t
         data: Data
 
-    class Schedule(t.Struct):
-        schedule_type: t.uint8_t
-        period_1_time: Time
-        period_1_temperature: Temperature
-        period_2_time: Time
-        period_2_temperature: Temperature
-        period_3_time: Time
-        period_3_temperature: Temperature
-        period_4_time: Time
-        period_4_temperature: Temperature
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.data_bus.add_listener(self)
-
-    def reported_schedule(self, attr_id, value):
-        day = DAY_OF_WEEK.get(attr_id)
-        v_bytes = value.serialize()
-        schedule, _ = TuyaTRVCluster.Schedule().deserialize(v_bytes)
-        self._update_attribute(day, schedule)
-
-    def ping(self, attr_id, value=None):
-        self._update_attribute(attr_id, str(datetime.datetime.utcnow()))
+    # class Schedule(t.Struct):
+    #     schedule_type: t.uint8_t
+    #     period_1_time: Time
+    #     period_1_temperature: Temperature
+    #     period_2_time: Time
+    #     period_2_temperature: Temperature
+    #     period_3_time: Time
+    #     period_3_temperature: Temperature
+    #     period_4_time: Time
+    #     period_4_temperature: Temperature
 
     manufacturer_client_commands = {
         0x0001: ("get_data", (Command,), True),
@@ -235,26 +262,46 @@ class TuyaTRVCluster(LocalDataBusListenerCluster):
         HEATING_SETPOINT: ("heating_setpoint", t.Half),
         SCHEDULE_MODE: ("schedule_mode", ScheduleMode),
         ON_OFF: ("system_mode", SystemMode),
-        36: ("ping", t.CharacterString),
-        123: (DAY_OF_WEEK.get(123), Schedule),
-        124: (DAY_OF_WEEK.get(124), Schedule),
-        125: (DAY_OF_WEEK.get(125), Schedule),
-        126: (DAY_OF_WEEK.get(126), Schedule),
-        127: (DAY_OF_WEEK.get(127), Schedule),
-        128: (DAY_OF_WEEK.get(128), Schedule),
-        129: (DAY_OF_WEEK.get(129), Schedule),
+        SHIFTING_MAP.get(PING): ("ping", t.CharacterString),
+        SHIFTING_MAP.get(WINDOW_DETECTION): ('open_window_detected', t.Bool),
+        SHIFTING_MAP.get(FROST_DETECTION):  ('frost_detected', t.Bool),
+        SHIFTING_MAP.get(CHILD_LOCK): ('child_lock', t.Bool),
+        SHIFTING_MAP.get(TEMP_CALIBRATION): ('temp_calibration', Data),
+        LOW_BATTERY: ('low_battery_detected', t.Bool),
+        AWAY_MODE: ('away_mode', t.Bool),
+        SETPOINT_HISTORY_DAY: ('setpoint_history_day', Data),
+        SETPOINT_HISTORY_WEEK: ('setpoint_history_week', Data),
+        SETPOINT_HISTORY_MONTH: ('setpoint_history_month', Data),
+        SETPOINT_HISTORY_YEAR: ('setpoint_history_year', Data),
+        LOCAL_HISTORY_DAY: ('local_history_day', Data),
+        LOCAL_HISTORY_WEEK: ('local_history_week', Data),
+        LOCAL_HISTORY_MONTH: ('local_history_month', Data),
+        LOCAL_HISTORY_YEAR: ('local_history_year', Data),
+        MOTOR_HISTORY_DAY: ('motor_history_day', Data),
+        MOTOR_HISTORY_WEEK: ('motor_history_week', Data),
+        MOTOR_HISTORY_MONTH: ('motor_history_month', Data),
+        MOTOR_HISTORY_YEAR: ('motor_history_year', Data),
+        ANTI_SCALING: ('anti_scaling_detected', t.Bool),
+        # 123: (DAY_OF_WEEK.get(123), Schedule),
+        # 124: (DAY_OF_WEEK.get(124), Schedule),
+        # 125: (DAY_OF_WEEK.get(125), Schedule),
+        # 126: (DAY_OF_WEEK.get(126), Schedule),
+        # 127: (DAY_OF_WEEK.get(127), Schedule),
+        # 128: (DAY_OF_WEEK.get(128), Schedule),
+        # 129: (DAY_OF_WEEK.get(129), Schedule),
     }
 
 
-class TuyaThermostatCluster(hvac.Thermostat, TuyaTRVCluster):
+class SiterwellThermostatCluster(hvac.Thermostat, SiterwellTRVCluster):
+    attributes = hvac.Thermostat.attributes.copy()
     _CONSTANT_ATTRIBUTES = {
-        0x001B: hvac.Thermostat.ControlSequenceOfOperation.Heating_With_Reheat,
+        0x001B: hvac.Thermostat.ControlSequenceOfOperation.Heating_Only,
         0x0015: 500,
         0x0016: 3000,
     }
 
     def power_reported(self, attr_id, value):
-        super(TuyaThermostatCluster, self).power_reported(attr_id, value)
+        super(SiterwellThermostatCluster, self).power_reported(attr_id, value)
         if value[0]:
             self._update_attribute(self.attridx["system_mode"], self.SystemMode.Heat)
             self._update_attribute(self.attridx["running_mode"], self.RunningMode.Heat)
@@ -265,21 +312,21 @@ class TuyaThermostatCluster(hvac.Thermostat, TuyaTRVCluster):
             self._update_attribute(self.attridx["running_state"], self.RunningState.Idle)
 
     def mode_reported(self, attr_id, value):
-        super(TuyaThermostatCluster, self).mode_reported(attr_id, value)
+        super(SiterwellThermostatCluster, self).mode_reported(attr_id, value)
         if value[0]:
             self._update_attribute(self.attridx["programing_oper_mode"], self.ProgrammingOperationMode.Schedule_programming_mode)
         else:
             self._update_attribute(self.attridx["programing_oper_mode"], self.ProgrammingOperationMode.Simple)
 
     def heating_setpoint_reported(self, attr_id, value):
-        super(TuyaThermostatCluster, self).heating_setpoint_reported(attr_id, value)
+        super(SiterwellThermostatCluster, self).heating_setpoint_reported(attr_id, value)
         temp = self.get(self.manufacturer_attributes[attr_id][0])
-        self._update_attribute('occupied_heating_setpoint', temp)
+        self._update_attribute('occupied_heating_setpoint', temp * 100)
 
     def current_temp_reported(self, attr_id, value):
-        super(TuyaThermostatCluster, self).current_temp_reported(attr_id, value)
+        super(SiterwellThermostatCluster, self).current_temp_reported(attr_id, value)
         temp = self.get(self.manufacturer_attributes[attr_id][0])
-        self._update_attribute('local_temp', temp)
+        self._update_attribute('local_temp', temp * 100)
 
     async def write_attributes(self, attributes, manufacturer=None):
         """Implement writeable attributes."""
@@ -292,8 +339,8 @@ class TuyaThermostatCluster(hvac.Thermostat, TuyaTRVCluster):
         for record in records:
             if record.attrid == ON_OFF:
                 mode_map = {
-                    hvac.Thermostat.SystemMode.Heat: TuyaTRVCluster.SystemMode.On,
-                    hvac.Thermostat.SystemMode.Off: TuyaTRVCluster.SystemMode.Off,
+                    hvac.Thermostat.SystemMode.Heat: SiterwellTRVCluster.SystemMode.On,
+                    hvac.Thermostat.SystemMode.Off: SiterwellTRVCluster.SystemMode.Off,
                 }
                 await self.endpoint.tuya_manufacturer.write_attributes({ON_OFF: mode_map[record.value.value]})
             elif record.attrid == 18:
@@ -305,13 +352,26 @@ class TuyaThermostatCluster(hvac.Thermostat, TuyaTRVCluster):
         return (foundation.Status.SUCCESS,)
 
 
-class SiterwellUserInterface(hvac.UserInterface):
+class SiterwellTrvUserInterface(hvac.UserInterface):
     """HVAC User interface cluster for tuya electric heating thermostats."""
     _CONSTANT_ATTRIBUTES = {
         0x0000: hvac.UserInterface.TemperatureDisplayMode.Metric,
-        0x0001: hvac.UserInterface.KeypadLockout.No_lockout,
+        0x0001: hvac.UserInterface.KeypadLockout.Level_1_lockout,
         0x0002: hvac.UserInterface.ScheduleProgrammingVisibility.Enabled,
     }
+
+
+class Battery(general.BinaryOutput, SiterwellTRVCluster):
+    cluster_id = general.BinaryOutput.cluster_id
+    manufacturer_attributes = {}
+    _CONSTANT_ATTRIBUTES = {
+        0x0004: 'Battery is LOW',
+        0x002E: 'Battery is OK',
+        0x001C: 'Battery state',
+    }
+
+    def low_battery_reported(self, attr_id, value):
+        self._update_attribute(self.attridx['present_value'], bool(value[0]))
 
 
 class TuyaTRV(CustomDevice):
@@ -346,7 +406,10 @@ class TuyaTRV(CustomDevice):
         super().__init__(*args, **kwargs)
 
     signature = {
-        MODELS_INFO: [('_TYST11_KGbxAXL2', "GbxAXL2")],
+        MODELS_INFO: [
+            ('_TYST11_KGbxAXL2', "GbxAXL2"),
+            ('_TYST11_c88teujp', "88teujp"),
+        ],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha_p.PROFILE_ID,
@@ -374,26 +437,14 @@ class TuyaTRV(CustomDevice):
                     general.Identify.cluster_id,
                     general.PowerConfiguration.cluster_id,
                     general.PowerProfile.cluster_id,
-                    TuyaTRVCluster,
-                    TuyaThermostatCluster,
-                    SiterwellUserInterface
+                    SiterwellTRVCluster,
+                    SiterwellThermostatCluster,
+                    SiterwellTrvUserInterface,
+                    Battery,
                 ],
                 OUTPUT_CLUSTERS: [
                     general.Identify.cluster_id,
                     general.Ota.cluster_id],
             }
         }
-    }
-    device_automation_triggers = {
-        # (SHORT_PRESS, TURN_ON): {
-        #     COMMAND: COMMAND_TOGGLE,
-        #     CLUSTER_ID: 6,
-        #     ENDPOINT_ID: 1,
-        # # },
-        # (SHORT_PRESS, TURN_ON): {
-        #     COMMAND: COMMAND_ON,
-        #     CLUSTER_ID: OnOff.cluster_id,
-        #     ENDPOINT_ID: 1,
-        #     ARGS: [ON],
-        # },
     }

@@ -1,6 +1,8 @@
 """Map from manufacturer to standard clusters for thermostatic valves."""
 import logging
 
+from zhaquirks.tuya import trv
+
 from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Groups, Identify, Ota, Scenes, Time
@@ -168,7 +170,7 @@ class SiterwellGS361(TuyaThermostat):
     }
 
 
-class MoesHY368(TuyaThermostat):
+class MoesHY368(trv.TuyaTRV):
     """MoesHY368 Thermostatic radiator valve."""
 
     signature = {
@@ -177,6 +179,7 @@ class MoesHY368(TuyaThermostat):
         MODELS_INFO: [
             ("_TZE200_ckud7u2l", "TS0601"),
             ("_TZE200_kfvq6avy", "TS0601"),
+            ('_TZE200_c88teujp', "TS0601"),
         ],
         ENDPOINTS: {
             1: {
@@ -202,10 +205,10 @@ class MoesHY368(TuyaThermostat):
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    SiterwellManufCluster,
-                    SiterwellThermostat,
-                    SiterwellUserInterface,
-                    TuyaPowerConfigurationCluster,
+                    trv.SiterwellTRVCluster,
+                    trv.SiterwellThermostatCluster,
+                    trv.SiterwellTrvUserInterface,
+                    trv.Battery,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             }
