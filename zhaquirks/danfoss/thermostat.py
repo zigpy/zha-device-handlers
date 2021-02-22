@@ -62,7 +62,7 @@ class DanfossUserInterfaceCluster(CustomCluster, UserInterface):
         0xFFFD: ("cluster_revision", t.uint16_t)
     }
 
-    
+
 class DanfossDiagnosticCluster(CustomCluster, Diagnostic):
     """Danfoss custom cluster."""
 
@@ -77,6 +77,7 @@ class DanfossDiagnosticCluster(CustomCluster, Diagnostic):
         0x4010: ("motor_step_counter", t.uint32_t),
         0xFFFD: ("cluster_revision", t.uint16_t)
     }
+
 
 class DanfossThermostat(CustomDevice):
     """DanfossThermostat custom device."""
