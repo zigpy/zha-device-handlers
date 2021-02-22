@@ -50,7 +50,7 @@ class DanfossThermostatCluster(CustomCluster, Thermostat):
         0x404C: ("adaptation_run_control", t.enum8),
         0x404D: ("adaptation_run_status", t.bitmap8),
         0x404E: ("adaptation_run_settings", t.bitmap8),
-        0xFFFD: ("cluster_revision", t.uint16_t)
+        0xFFFD: ("cluster_revision", t.uint16_t),
     }
 
 
@@ -59,7 +59,7 @@ class DanfossUserInterfaceCluster(CustomCluster, UserInterface):
 
     manufacturer_attributes = {
         0x4000: ("viewing_direction", t.enum8),
-        0xFFFD: ("cluster_revision", t.uint16_t)
+        0xFFFD: ("cluster_revision", t.uint16_t),
     }
 
 
@@ -75,7 +75,7 @@ class DanfossDiagnosticCluster(CustomCluster, Diagnostic):
         0x4005: ("sleep_Postponed_count_max", t.uint32_t),
         0x4006: ("sleep_Postponed_count_min", t.uint32_t),
         0x4010: ("motor_step_counter", t.uint32_t),
-        0xFFFD: ("cluster_revision", t.uint16_t)
+        0xFFFD: ("cluster_revision", t.uint16_t),
     }
 
 
