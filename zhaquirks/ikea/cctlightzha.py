@@ -37,6 +37,7 @@ class CCTLightZHA(CustomDevice):
         MODELS_INFO: [
             (IKEA, "TRADFRI bulb GU10 WS 400lm"),
             (IKEA, "FLOALT panel WS 30x90"),
+            (IKEA, "FLOALT panel WS 60x60"),
         ],
         ENDPOINTS: {
             1: {
