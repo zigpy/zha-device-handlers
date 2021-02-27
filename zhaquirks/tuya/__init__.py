@@ -1,4 +1,5 @@
 """Tuya devices."""
+import datetime
 import logging
 from typing import Any, List, Optional, Tuple, Union
 
@@ -15,12 +16,43 @@ TUYA_CLUSTER_ID = 0xEF00
 TUYA_SET_DATA = 0x0000
 TUYA_GET_DATA = 0x0001
 TUYA_SET_DATA_RESPONSE = 0x0002
+TUYA_SET_TIME = 0x0024
 
 SWITCH_EVENT = "switch_event"
 ATTR_ON_OFF = 0x0000
 TUYA_CMD_BASE = 0x0100
 
 _LOGGER = logging.getLogger(__name__)
+
+
+class BigEndianInt16(int):
+    """Helper class to represent big endian 16 bit value."""
+
+    def serialize(self) -> bytes:
+        """Value serialisation."""
+
+        try:
+            return self.to_bytes(2, "big", signed=False)
+        except OverflowError as e:
+            # OverflowError is not a subclass of ValueError, making it annoying to catch
+            raise ValueError(str(e)) from e
+
+    @classmethod
+    def deserialize(cls, data: bytes) -> Tuple["BigEndianInt16", bytes]:
+        """Value deserialisation."""
+
+        if len(data) < 2:
+            raise ValueError(f"Data is too short to contain {cls._size} bytes")
+
+        r = cls.from_bytes(data[:2], "big", signed=False)
+        data = data[2:]
+        return r, data
+
+
+class TuyaTimePayload(t.LVList, item_type=t.uint8_t, length_type=BigEndianInt16):
+    """Tuya set time payload definition."""
+
+    pass
 
 
 class Data(t.List, item_type=t.uint8_t):
@@ -50,6 +82,7 @@ class TuyaManufCluster(CustomCluster):
     name = "Tuya Manufacturer Specicific"
     cluster_id = TUYA_CLUSTER_ID
     ep_attribute = "tuya_manufacturer"
+    set_time_offset = 0
 
     class Command(t.Struct):
         """Tuya manufacturer cluster command."""
@@ -60,12 +93,76 @@ class TuyaManufCluster(CustomCluster):
         function: t.uint8_t
         data: Data
 
-    manufacturer_server_commands = {0x0000: ("set_data", (Command,), False)}
+    """ Time sync command (It's transparent between MCU and server)
+            Time request device -> server
+               payloadSize = 0
+            Set time, server -> device
+               payloadSize, should be always 8
+               payload[0-3] - UTC timestamp (big endian)
+               payload[4-7] - Local timestamp (big endian)
+
+            Zigbee payload is very similar to the UART payload which is described here: https://developer.tuya.com/en/docs/iot/device-development/access-mode-mcu/zigbee-general-solution/tuya-zigbee-module-uart-communication-protocol/tuya-zigbee-module-uart-communication-protocol?id=K9ear5khsqoty#title-10-Time%20synchronization
+
+            Some devices need the timestamp in seconds from 1/1/1970 and others in seconds from 1/1/2000.
+
+            NOTE: You need to wait for time request before setting it. You can't set time without request."""
+
+    manufacturer_server_commands = {
+        0x0000: ("set_data", (Command,), False),
+        0x0024: ("set_time", (TuyaTimePayload,), False),
+    }
 
     manufacturer_client_commands = {
         0x0001: ("get_data", (Command,), True),
         0x0002: ("set_data_response", (Command,), True),
+        0x0024: ("set_time_request", (TuyaTimePayload,), True),
     }
+
+    def handle_cluster_request(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: Tuple,
+        *,
+        dst_addressing: Optional[
+            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        ] = None,
+    ) -> None:
+        """Handle time request."""
+
+        if hdr.command_id != 0x0024 or self.set_time_offset == 0:
+            return super().handle_cluster_request(
+                hdr, args, dst_addressing=dst_addressing
+            )
+
+        # Send default response because the MCU expects it
+        if not hdr.frame_control.disable_default_response:
+            self.send_default_rsp(hdr, status=foundation.Status.SUCCESS)
+
+        _LOGGER.debug(
+            "[0x%04x:%s:0x%04x] Got set time request (command 0x%04x)",
+            self.endpoint.device.nwk,
+            self.endpoint.endpoint_id,
+            self.cluster_id,
+            hdr.command_id,
+        )
+        payload = TuyaTimePayload()
+        utc_timestamp = int(
+            (
+                datetime.datetime.utcnow()
+                - datetime.datetime(self.set_time_offset, 1, 1)
+            ).total_seconds()
+        )
+        local_timestamp = int(
+            (
+                datetime.datetime.now() - datetime.datetime(self.set_time_offset, 1, 1)
+            ).total_seconds()
+        )
+        payload.extend(utc_timestamp.to_bytes(4, "big", signed=False))
+        payload.extend(local_timestamp.to_bytes(4, "big", signed=False))
+
+        self.create_catching_task(
+            super().command(TUYA_SET_TIME, payload, expect_reply=False)
+        )
 
 
 class TuyaManufClusterAttributes(TuyaManufCluster):
@@ -85,6 +182,10 @@ class TuyaManufClusterAttributes(TuyaManufCluster):
             return super().handle_cluster_request(
                 hdr, args, dst_addressing=dst_addressing
             )
+
+        # Send default response because the MCU expects it
+        if not hdr.frame_control.disable_default_response:
+            self.send_default_rsp(hdr, status=foundation.Status.SUCCESS)
 
         tuya_cmd = args[0].command_id
         tuya_data = args[0].data
@@ -331,19 +432,46 @@ class TuyaUserInterfaceCluster(LocalDataCluster, UserInterface):
 
         self._update_attribute(self.attridx["keypad_lockout"], lockout)
 
+    def map_attribute(self, attribute, value):
+        """Map standardized attribute value to dict of manufacturer values."""
+        return {}
+
     async def write_attributes(self, attributes, manufacturer=None):
         """Defer the keypad_lockout attribute to child_lock."""
 
         records = self._write_attr_records(attributes)
 
+        manufacturer_attrs = {}
         for record in records:
             if record.attrid == self.attridx["keypad_lockout"]:
                 lock = 0 if record.value.value == self.KeypadLockout.No_lockout else 1
-                return await self.endpoint.tuya_manufacturer.write_attributes(
-                    {self._CHILD_LOCK_ATTR: lock}, manufacturer=manufacturer
+                new_attrs = {self._CHILD_LOCK_ATTR: lock}
+            else:
+                attr_name = self.attributes[record.attrid][0]
+                new_attrs = self.map_attribute(attr_name, record.value.value)
+
+                _LOGGER.debug(
+                    "[0x%04x:%s:0x%04x] Mapping standard %s (0x%04x) "
+                    "with value %s to custom %s",
+                    self.endpoint.device.nwk,
+                    self.endpoint.endpoint_id,
+                    self.cluster_id,
+                    attr_name,
+                    record.attrid,
+                    repr(record.value.value),
+                    repr(new_attrs),
                 )
 
-        return (foundation.Status.FAILURE,)
+            manufacturer_attrs.update(new_attrs)
+
+        if not manufacturer_attrs:
+            return (foundation.Status.FAILURE,)
+
+        await self.endpoint.tuya_manufacturer.write_attributes(
+            manufacturer_attrs, manufacturer=manufacturer
+        )
+
+        return (foundation.Status.SUCCESS,)
 
 
 class TuyaPowerConfigurationCluster(LocalDataCluster, PowerConfiguration):
