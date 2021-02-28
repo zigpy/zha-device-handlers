@@ -792,7 +792,6 @@ class SiterwellGS361_Type2(TuyaThermostat):
         #  output_clusters=[10, 25]>
         MODELS_INFO: [
             ("_TZE200_kfvq6avy", "TS0601"),
-            ("_TZE200_c88teujp", "TS0601"),
             ("_TZE200_zivfvd7h", "TS0601"),
         ],
         ENDPOINTS: {
