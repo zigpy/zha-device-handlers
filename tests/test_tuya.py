@@ -1,6 +1,7 @@
 """Tests for Tuya quirks."""
 
 import asyncio
+import datetime
 from unittest import mock
 
 import pytest
@@ -30,6 +31,8 @@ import zhaquirks.tuya.valve
 
 from tests.common import ClusterListener
 
+ZCL_TUYA_SET_TIME_REQUEST = b"\tp\x24\x00\00"
+
 ZCL_TUYA_MOTION = b"\tL\x01\x00\x05\x03\x04\x00\x01\x02"
 ZCL_TUYA_SWITCH_ON = b"\tQ\x02\x006\x01\x01\x00\x01\x01"
 ZCL_TUYA_SWITCH_OFF = b"\tQ\x02\x006\x01\x01\x00\x01\x00"
@@ -43,8 +46,36 @@ ZCL_TUYA_VALVE_TARGET_TEMP = b"\t3\x01\x03\x05\x02\x02\x00\x04\x00\x00\x002"
 ZCL_TUYA_VALVE_OFF = b"\t2\x01\x03\x04\x04\x04\x00\x01\x00"
 ZCL_TUYA_VALVE_SCHEDULE = b"\t2\x01\x03\x04\x04\x04\x00\x01\x01"
 ZCL_TUYA_VALVE_MANUAL = b"\t2\x01\x03\x04\x04\x04\x00\x01\x02"
+ZCL_TUYA_VALVE_COMFORT = b"\t2\x01\x03\x04\x04\x04\x00\x01\x03"
+ZCL_TUYA_VALVE_ECO = b"\t2\x01\x03\x04\x04\x04\x00\x01\x04"
+ZCL_TUYA_VALVE_BOOST = b"\t2\x01\x03\x04\x04\x04\x00\x01\x05"
+ZCL_TUYA_VALVE_COMPLEX = b"\t2\x01\x03\x04\x04\x04\x00\x01\x06"
+ZCL_TUYA_VALVE_WINDOW_DETECTION = b"\tp\x02\x00\x02\x68\x00\x00\x03\x01\x10\x05"
+ZCL_TUYA_VALVE_WORKDAY_SCHEDULE = b"\tp\x02\x00\x02\x70\x00\x00\x12\x06\x00\x14\x08\x00\x0F\x0B\x1E\x0F\x0C\x1E\x0F\x11\x1E\x14\x16\x00\x0F"
+ZCL_TUYA_VALVE_WEEKEND_SCHEDULE = b"\tp\x02\x00\x02\x71\x00\x00\x12\x06\x00\x14\x08\x00\x0F\x0B\x1E\x0F\x0C\x1E\x0F\x11\x1E\x14\x16\x00\x0F"
+ZCL_TUYA_VALVE_STATE_50 = b"\t2\x01\x03\x04\x6D\x02\x00\x04\x00\x00\x00\x32"
+ZCL_TUYA_VALVE_CHILD_LOCK_ON = b"\t2\x01\x03\x04\x07\x01\x00\x01\x01"
+ZCL_TUYA_VALVE_AUTO_LOCK_ON = b"\t2\x01\x03\x04\x74\x01\x00\x01\x01"
+ZCL_TUYA_VALVE_BATTERY_LOW = b"\t2\x01\x03\x04\x6E\x01\x00\x01\x01"
+
 ZCL_TUYA_EHEAT_TEMPERATURE = b"\tp\x02\x00\x02\x18\x02\x00\x04\x00\x00\x00\xb3"
 ZCL_TUYA_EHEAT_TARGET_TEMP = b"\t3\x01\x03\x05\x10\x02\x00\x04\x00\x00\x00\x15"
+
+
+class NewDatetime(datetime.datetime):
+    """Override for datetime functions."""
+
+    @classmethod
+    def now(cls):
+        """Return testvalue."""
+
+        return cls(1970, 1, 1, 1, 0, 0)
+
+    @classmethod
+    def utcnow(cls):
+        """Return testvalue."""
+
+        return cls(1970, 1, 1, 2, 0, 0)
 
 
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.motion.TuyaMotion,))
@@ -298,7 +329,7 @@ async def test_siren_send_attribute(zigpy_device_from_quirk, quirk):
         assert status == foundation.Status.UNSUP_CLUSTER_COMMAND
 
 
-@pytest.mark.parametrize("quirk", (zhaquirks.tuya.valve.SiterwellGS361,))
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.valve.SiterwellGS361_Type1,))
 async def test_valve_state_report(zigpy_device_from_quirk, quirk):
     """Test thermostatic valves standard reporting from incoming commands."""
 
@@ -348,7 +379,7 @@ async def test_valve_state_report(zigpy_device_from_quirk, quirk):
     assert thermostat_listener.attribute_updates[12][1] == 0x01
 
 
-@pytest.mark.parametrize("quirk", (zhaquirks.tuya.valve.SiterwellGS361,))
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.valve.SiterwellGS361_Type1,))
 async def test_valve_send_attribute(zigpy_device_from_quirk, quirk):
     """Test thermostatic valve outgoing commands."""
 
@@ -434,6 +465,496 @@ async def test_valve_send_attribute(zigpy_device_from_quirk, quirk):
 
         status = await thermostat_cluster.command(0x0002)
         assert status == foundation.Status.UNSUP_CLUSTER_COMMAND
+
+
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.valve.MoesHY368_Type1,))
+async def test_moes(zigpy_device_from_quirk, quirk):
+    """Test thermostatic valve outgoing commands."""
+
+    valve_dev = zigpy_device_from_quirk(quirk)
+    tuya_cluster = valve_dev.endpoints[1].tuya_manufacturer
+    thermostat_cluster = valve_dev.endpoints[1].thermostat
+    onoff_cluster = valve_dev.endpoints[1].on_off
+    thermostat_ui_cluster = valve_dev.endpoints[1].thermostat_ui
+
+    thermostat_listener = ClusterListener(valve_dev.endpoints[1].thermostat)
+    onoff_listener = ClusterListener(valve_dev.endpoints[1].on_off)
+
+    frames = (
+        ZCL_TUYA_VALVE_TEMPERATURE,
+        ZCL_TUYA_VALVE_WINDOW_DETECTION,
+        ZCL_TUYA_VALVE_WORKDAY_SCHEDULE,
+        ZCL_TUYA_VALVE_WEEKEND_SCHEDULE,
+        ZCL_TUYA_VALVE_OFF,
+        ZCL_TUYA_VALVE_SCHEDULE,
+        ZCL_TUYA_VALVE_MANUAL,
+        ZCL_TUYA_VALVE_COMFORT,
+        ZCL_TUYA_VALVE_ECO,
+        ZCL_TUYA_VALVE_BOOST,
+        ZCL_TUYA_VALVE_COMPLEX,
+        ZCL_TUYA_VALVE_STATE_50,
+    )
+    for frame in frames:
+        hdr, args = tuya_cluster.deserialize(frame)
+        tuya_cluster.handle_message(hdr, args)
+
+    assert len(thermostat_listener.cluster_commands) == 0
+    assert len(thermostat_listener.attribute_updates) == 61
+    assert thermostat_listener.attribute_updates[0][0] == 0x0000
+    assert thermostat_listener.attribute_updates[0][1] == 1790
+    assert thermostat_listener.attribute_updates[1][0] == 0x4110
+    assert thermostat_listener.attribute_updates[1][1] == 6
+    assert thermostat_listener.attribute_updates[2][0] == 0x4111
+    assert thermostat_listener.attribute_updates[2][1] == 0
+    assert thermostat_listener.attribute_updates[3][0] == 0x4112
+    assert thermostat_listener.attribute_updates[3][1] == 2000
+    assert thermostat_listener.attribute_updates[4][0] == 0x4120
+    assert thermostat_listener.attribute_updates[4][1] == 8
+    assert thermostat_listener.attribute_updates[5][0] == 0x4121
+    assert thermostat_listener.attribute_updates[5][1] == 0
+    assert thermostat_listener.attribute_updates[6][0] == 0x4122
+    assert thermostat_listener.attribute_updates[6][1] == 1500
+    assert thermostat_listener.attribute_updates[7][0] == 0x4130
+    assert thermostat_listener.attribute_updates[7][1] == 11
+    assert thermostat_listener.attribute_updates[8][0] == 0x4131
+    assert thermostat_listener.attribute_updates[8][1] == 30
+    assert thermostat_listener.attribute_updates[9][0] == 0x4132
+    assert thermostat_listener.attribute_updates[9][1] == 1500
+    assert thermostat_listener.attribute_updates[10][0] == 0x4140
+    assert thermostat_listener.attribute_updates[10][1] == 12
+    assert thermostat_listener.attribute_updates[11][0] == 0x4141
+    assert thermostat_listener.attribute_updates[11][1] == 30
+    assert thermostat_listener.attribute_updates[12][0] == 0x4142
+    assert thermostat_listener.attribute_updates[12][1] == 1500
+    assert thermostat_listener.attribute_updates[13][0] == 0x4150
+    assert thermostat_listener.attribute_updates[13][1] == 17
+    assert thermostat_listener.attribute_updates[14][0] == 0x4151
+    assert thermostat_listener.attribute_updates[14][1] == 30
+    assert thermostat_listener.attribute_updates[15][0] == 0x4152
+    assert thermostat_listener.attribute_updates[15][1] == 2000
+    assert thermostat_listener.attribute_updates[16][0] == 0x4160
+    assert thermostat_listener.attribute_updates[16][1] == 22
+    assert thermostat_listener.attribute_updates[17][0] == 0x4161
+    assert thermostat_listener.attribute_updates[17][1] == 0
+    assert thermostat_listener.attribute_updates[18][0] == 0x4162
+    assert thermostat_listener.attribute_updates[18][1] == 1500
+    assert thermostat_listener.attribute_updates[19][0] == 0x4210
+    assert thermostat_listener.attribute_updates[19][1] == 6
+    assert thermostat_listener.attribute_updates[20][0] == 0x4211
+    assert thermostat_listener.attribute_updates[20][1] == 0
+    assert thermostat_listener.attribute_updates[21][0] == 0x4212
+    assert thermostat_listener.attribute_updates[21][1] == 2000
+    assert thermostat_listener.attribute_updates[22][0] == 0x4220
+    assert thermostat_listener.attribute_updates[22][1] == 8
+    assert thermostat_listener.attribute_updates[23][0] == 0x4221
+    assert thermostat_listener.attribute_updates[23][1] == 0
+    assert thermostat_listener.attribute_updates[24][0] == 0x4222
+    assert thermostat_listener.attribute_updates[24][1] == 1500
+    assert thermostat_listener.attribute_updates[25][0] == 0x4230
+    assert thermostat_listener.attribute_updates[25][1] == 11
+    assert thermostat_listener.attribute_updates[26][0] == 0x4231
+    assert thermostat_listener.attribute_updates[26][1] == 30
+    assert thermostat_listener.attribute_updates[27][0] == 0x4232
+    assert thermostat_listener.attribute_updates[27][1] == 1500
+    assert thermostat_listener.attribute_updates[28][0] == 0x4240
+    assert thermostat_listener.attribute_updates[28][1] == 12
+    assert thermostat_listener.attribute_updates[29][0] == 0x4241
+    assert thermostat_listener.attribute_updates[29][1] == 30
+    assert thermostat_listener.attribute_updates[30][0] == 0x4242
+    assert thermostat_listener.attribute_updates[30][1] == 1500
+    assert thermostat_listener.attribute_updates[31][0] == 0x4250
+    assert thermostat_listener.attribute_updates[31][1] == 17
+    assert thermostat_listener.attribute_updates[32][0] == 0x4251
+    assert thermostat_listener.attribute_updates[32][1] == 30
+    assert thermostat_listener.attribute_updates[33][0] == 0x4252
+    assert thermostat_listener.attribute_updates[33][1] == 2000
+    assert thermostat_listener.attribute_updates[34][0] == 0x4260
+    assert thermostat_listener.attribute_updates[34][1] == 22
+    assert thermostat_listener.attribute_updates[35][0] == 0x4261
+    assert thermostat_listener.attribute_updates[35][1] == 0
+    assert thermostat_listener.attribute_updates[36][0] == 0x4262
+    assert thermostat_listener.attribute_updates[36][1] == 1500
+    assert thermostat_listener.attribute_updates[37][0] == 0x4002
+    assert thermostat_listener.attribute_updates[37][1] == 0
+    assert thermostat_listener.attribute_updates[38][0] == 0x0025
+    assert thermostat_listener.attribute_updates[38][1] == 0
+    assert thermostat_listener.attribute_updates[39][0] == 0x0002
+    assert thermostat_listener.attribute_updates[39][1] == 0
+    assert thermostat_listener.attribute_updates[40][0] == 0x4002
+    assert thermostat_listener.attribute_updates[40][1] == 1
+    assert thermostat_listener.attribute_updates[41][0] == 0x0025
+    assert thermostat_listener.attribute_updates[41][1] == 1
+    assert thermostat_listener.attribute_updates[42][0] == 0x0002
+    assert thermostat_listener.attribute_updates[42][1] == 1
+    assert thermostat_listener.attribute_updates[43][0] == 0x4002
+    assert thermostat_listener.attribute_updates[43][1] == 2
+    assert thermostat_listener.attribute_updates[44][0] == 0x0025
+    assert thermostat_listener.attribute_updates[44][1] == 0
+    assert thermostat_listener.attribute_updates[45][0] == 0x0002
+    assert thermostat_listener.attribute_updates[45][1] == 1
+    assert thermostat_listener.attribute_updates[46][0] == 0x4002
+    assert thermostat_listener.attribute_updates[46][1] == 3
+    assert thermostat_listener.attribute_updates[47][0] == 0x0025
+    assert thermostat_listener.attribute_updates[47][1] == 0
+    assert thermostat_listener.attribute_updates[48][0] == 0x0002
+    assert thermostat_listener.attribute_updates[48][1] == 1
+    assert thermostat_listener.attribute_updates[49][0] == 0x4002
+    assert thermostat_listener.attribute_updates[49][1] == 4
+    assert thermostat_listener.attribute_updates[50][0] == 0x0025
+    assert thermostat_listener.attribute_updates[50][1] == 4
+    assert thermostat_listener.attribute_updates[51][0] == 0x0002
+    assert thermostat_listener.attribute_updates[51][1] == 1
+    assert thermostat_listener.attribute_updates[52][0] == 0x4002
+    assert thermostat_listener.attribute_updates[52][1] == 5
+    assert thermostat_listener.attribute_updates[53][0] == 0x0025
+    assert thermostat_listener.attribute_updates[53][1] == 0
+    assert thermostat_listener.attribute_updates[54][0] == 0x0002
+    assert thermostat_listener.attribute_updates[54][1] == 1
+    assert thermostat_listener.attribute_updates[55][0] == 0x4002
+    assert thermostat_listener.attribute_updates[55][1] == 6
+    assert thermostat_listener.attribute_updates[56][0] == 0x0025
+    assert thermostat_listener.attribute_updates[56][1] == 0
+    assert thermostat_listener.attribute_updates[57][0] == 0x0002
+    assert thermostat_listener.attribute_updates[57][1] == 1
+    assert thermostat_listener.attribute_updates[58][0] == 0x4004
+    assert thermostat_listener.attribute_updates[58][1] == 50
+    assert thermostat_listener.attribute_updates[59][0] == 0x001E
+    assert thermostat_listener.attribute_updates[59][1] == 4
+    assert thermostat_listener.attribute_updates[60][0] == 0x0029
+    assert thermostat_listener.attribute_updates[60][1] == 1
+
+    assert len(onoff_listener.cluster_commands) == 0
+    assert len(onoff_listener.attribute_updates) == 3
+    assert onoff_listener.attribute_updates[0][0] == 0x6001
+    assert onoff_listener.attribute_updates[0][1] == 5
+    assert onoff_listener.attribute_updates[1][0] == 0x6000
+    assert onoff_listener.attribute_updates[1][1] == 1600
+    assert onoff_listener.attribute_updates[2][0] == 0x0000  # TARGET
+    assert onoff_listener.attribute_updates[2][1] == 1
+
+    thermostat_ui_listener = ClusterListener(valve_dev.endpoints[1].thermostat_ui)
+    power_listener = ClusterListener(valve_dev.endpoints[1].power)
+
+    frames = (
+        ZCL_TUYA_VALVE_CHILD_LOCK_ON,
+        ZCL_TUYA_VALVE_AUTO_LOCK_ON,
+        ZCL_TUYA_VALVE_BATTERY_LOW,
+    )
+    for frame in frames:
+        hdr, args = tuya_cluster.deserialize(frame)
+        tuya_cluster.handle_message(hdr, args)
+
+    assert len(thermostat_ui_listener.cluster_commands) == 0
+    assert len(thermostat_ui_listener.attribute_updates) == 2
+    assert thermostat_ui_listener.attribute_updates[0][0] == 0x0001
+    assert thermostat_ui_listener.attribute_updates[0][1] == 1
+    assert thermostat_ui_listener.attribute_updates[1][0] == 0x5000
+    assert thermostat_ui_listener.attribute_updates[1][1] == 1
+
+    assert len(power_listener.cluster_commands) == 0
+    assert len(power_listener.attribute_updates) == 1
+    assert power_listener.attribute_updates[0][0] == 0x0021
+    assert power_listener.attribute_updates[0][1] == 10
+
+    async def async_success(*args, **kwargs):
+        return foundation.Status.SUCCESS
+
+    with mock.patch.object(
+        tuya_cluster.endpoint, "request", side_effect=async_success
+    ) as m1:
+
+        status = await thermostat_cluster.write_attributes(
+            {
+                "occupied_heating_setpoint": 2500,
+            }
+        )
+        m1.assert_called_with(
+            61184,
+            1,
+            b"\x01\x01\x00\x00\x01\x02\x02\x00\x04\x00\x00\x00\xfa",
+            expect_reply=False,
+            command_id=0,
+        )
+        assert status == (foundation.Status.SUCCESS,)
+
+        status = await thermostat_cluster.write_attributes(
+            {
+                "operation_preset": 0x00,
+            }
+        )
+        m1.assert_called_with(
+            61184,
+            2,
+            b"\x01\x02\x00\x00\x02\x04\x04\x00\x01\x00",
+            expect_reply=False,
+            command_id=0,
+        )
+        assert status == (foundation.Status.SUCCESS,)
+
+        status = await thermostat_cluster.write_attributes(
+            {
+                "operation_preset": 0x02,
+            }
+        )
+        m1.assert_called_with(
+            61184,
+            3,
+            b"\x01\x03\x00\x00\x03\x04\x04\x00\x01\x02",
+            expect_reply=False,
+            command_id=0,
+        )
+        assert status == (foundation.Status.SUCCESS,)
+
+        # simulate a target temp update so that relative changes can work
+        hdr, args = tuya_cluster.deserialize(ZCL_TUYA_VALVE_TARGET_TEMP)
+        tuya_cluster.handle_message(hdr, args)
+        status = await thermostat_cluster.command(0x0000, 0x00, 20)
+        m1.assert_called_with(
+            61184,
+            4,
+            b"\x01\x04\x00\x00\x04\x02\x02\x00\x04\x00\x00\x00F",
+            expect_reply=False,
+            command_id=0,
+        )
+        assert status == (foundation.Status.SUCCESS,)
+
+        status = await onoff_cluster.write_attributes(
+            {
+                "on_off": 0x00,
+                "window_detection_timeout_minutes": 0x02,
+                "window_detection_temperature": 2000,
+            }
+        )
+        m1.assert_called_with(
+            61184,
+            5,
+            b"\x01\x05\x00\x00\x05\x68\x00\x00\x03\x00\x14\x02",
+            expect_reply=False,
+            command_id=0,
+        )
+        assert status == (foundation.Status.SUCCESS,)
+
+        status = await thermostat_cluster.write_attributes(
+            {
+                "occupancy": 0x00,
+            }
+        )
+        m1.assert_called_with(
+            61184,
+            6,
+            b"\x01\x06\x00\x00\x06\x04\x04\x00\x01\x00",
+            expect_reply=False,
+            command_id=0,
+        )
+        assert status == (foundation.Status.SUCCESS,)
+
+        status = await thermostat_cluster.write_attributes(
+            {
+                "occupancy": 0x01,
+                "programing_oper_mode": 0x00,
+            }
+        )
+        m1.assert_called_with(
+            61184,
+            7,
+            b"\x01\x07\x00\x00\x07\x04\x04\x00\x01\x02",
+            expect_reply=False,
+            command_id=0,
+        )
+        assert status == (foundation.Status.SUCCESS,)
+
+        status = await thermostat_cluster.write_attributes(
+            {
+                "programing_oper_mode": 0x01,
+            }
+        )
+        m1.assert_called_with(
+            61184,
+            8,
+            b"\x01\x08\x00\x00\x08\x04\x04\x00\x01\x01",
+            expect_reply=False,
+            command_id=0,
+        )
+        assert status == (foundation.Status.SUCCESS,)
+
+        status = await thermostat_cluster.write_attributes(
+            {
+                "programing_oper_mode": 0x04,
+            }
+        )
+        m1.assert_called_with(
+            61184,
+            9,
+            b"\x01\x09\x00\x00\x09\x04\x04\x00\x01\x04",
+            expect_reply=False,
+            command_id=0,
+        )
+        assert status == (foundation.Status.SUCCESS,)
+
+        status = await thermostat_cluster.write_attributes(
+            {
+                "workday_schedule_1_temperature": 1700,
+            }
+        )
+        m1.assert_called_with(
+            61184,
+            10,
+            b"\x01\x0A\x00\x00\x0A\x70\x00\x00\x12\x06\x00\x11\x08\x00\x0F\x0B\x1E\x0F\x0C\x1E\x0F\x11\x1E\x14\x16\x00\x0F",
+            expect_reply=False,
+            command_id=0,
+        )
+        assert status == (foundation.Status.SUCCESS,)
+
+        status = await thermostat_cluster.write_attributes(
+            {
+                "workday_schedule_1_minute": 45,
+            }
+        )
+        m1.assert_called_with(
+            61184,
+            11,
+            b"\x01\x0B\x00\x00\x0B\x70\x00\x00\x12\x06\x2D\x14\x08\x00\x0F\x0B\x1E\x0F\x0C\x1E\x0F\x11\x1E\x14\x16\x00\x0F",
+            expect_reply=False,
+            command_id=0,
+        )
+        assert status == (foundation.Status.SUCCESS,)
+
+        status = await thermostat_cluster.write_attributes(
+            {
+                "workday_schedule_1_hour": 5,
+            }
+        )
+        m1.assert_called_with(
+            61184,
+            12,
+            b"\x01\x0C\x00\x00\x0C\x70\x00\x00\x12\x05\x00\x14\x08\x00\x0F\x0B\x1E\x0F\x0C\x1E\x0F\x11\x1E\x14\x16\x00\x0F",
+            expect_reply=False,
+            command_id=0,
+        )
+        assert status == (foundation.Status.SUCCESS,)
+
+        status = await thermostat_cluster.write_attributes(
+            {
+                "weekend_schedule_1_temperature": 1700,
+            }
+        )
+        m1.assert_called_with(
+            61184,
+            13,
+            b"\x01\x0D\x00\x00\x0D\x71\x00\x00\x12\x06\x00\x11\x08\x00\x0F\x0B\x1E\x0F\x0C\x1E\x0F\x11\x1E\x14\x16\x00\x0F",
+            expect_reply=False,
+            command_id=0,
+        )
+        assert status == (foundation.Status.SUCCESS,)
+
+        status = await thermostat_cluster.write_attributes(
+            {
+                "weekend_schedule_1_minute": 45,
+            }
+        )
+        m1.assert_called_with(
+            61184,
+            14,
+            b"\x01\x0E\x00\x00\x0E\x71\x00\x00\x12\x06\x2D\x14\x08\x00\x0F\x0B\x1E\x0F\x0C\x1E\x0F\x11\x1E\x14\x16\x00\x0F",
+            expect_reply=False,
+            command_id=0,
+        )
+        assert status == (foundation.Status.SUCCESS,)
+
+        status = await thermostat_cluster.write_attributes(
+            {
+                "weekend_schedule_1_hour": 5,
+            }
+        )
+        m1.assert_called_with(
+            61184,
+            15,
+            b"\x01\x0F\x00\x00\x0F\x71\x00\x00\x12\x05\x00\x14\x08\x00\x0F\x0B\x1E\x0F\x0C\x1E\x0F\x11\x1E\x14\x16\x00\x0F",
+            expect_reply=False,
+            command_id=0,
+        )
+        assert status == (foundation.Status.SUCCESS,)
+
+        status = await thermostat_cluster.write_attributes(
+            {
+                "system_mode": 0x01,
+            }
+        )
+        m1.assert_called_with(
+            61184,
+            16,
+            b"\x01\x10\x00\x00\x10\x04\x04\x00\x01\x06",
+            expect_reply=False,
+            command_id=0,
+        )
+        assert status == (foundation.Status.SUCCESS,)
+
+        status = await thermostat_ui_cluster.write_attributes(
+            {
+                "auto_lock": 0x00,
+            }
+        )
+        m1.assert_called_with(
+            61184,
+            17,
+            b"\x01\x11\x00\x00\x11\x74\x01\x00\x01\x00",
+            expect_reply=False,
+            command_id=0,
+        )
+        assert status == (foundation.Status.SUCCESS,)
+
+        status = await onoff_cluster.command(0x0000)
+        m1.assert_called_with(
+            61184,
+            18,
+            b"\x01\x12\x00\x00\x12\x68\x00\x00\x03\x00\x10\x05",
+            expect_reply=False,
+            command_id=0,
+        )
+        assert status == (foundation.Status.SUCCESS,)
+
+        status = await onoff_cluster.command(0x0001)
+        m1.assert_called_with(
+            61184,
+            19,
+            b"\x01\x13\x00\x00\x13\x68\x00\x00\x03\x01\x10\x05",
+            expect_reply=False,
+            command_id=0,
+        )
+        assert status == (foundation.Status.SUCCESS,)
+
+        status = await onoff_cluster.command(0x0002)
+        m1.assert_called_with(
+            61184,
+            20,
+            b"\x01\x14\x00\x00\x14\x68\x00\x00\x03\x00\x10\x05",
+            expect_reply=False,
+            command_id=0,
+        )
+        assert status == (foundation.Status.SUCCESS,)
+
+        status = await onoff_cluster.write_attributes({})
+        assert status == (foundation.Status.SUCCESS,)
+
+        status = await thermostat_cluster.command(0x0002)
+        assert status == foundation.Status.UNSUP_CLUSTER_COMMAND
+
+        status = await onoff_cluster.command(0x0009)
+        assert status == foundation.Status.UNSUP_CLUSTER_COMMAND
+
+        origdatetime = datetime.datetime
+        datetime.datetime = NewDatetime
+
+        hdr, args = tuya_cluster.deserialize(ZCL_TUYA_SET_TIME_REQUEST)
+        tuya_cluster.handle_message(hdr, args)
+        m1.assert_called_with(
+            61184,
+            21,
+            b"\x01\x15\x24\x00\x08\x00\x00\x1C\x20\x00\x00\x0E\x10",
+            expect_reply=False,
+            command_id=0x0024,
+        )
+        datetime.datetime = origdatetime
 
 
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.electric_heating.MoesBHT,))
