@@ -162,7 +162,12 @@ class Thermostat_TYST11_c88teujp(TuyaThermostat):
         # device_version=0
         # input_clusters=[0, 3]
         # output_clusters=[3, 25]>
-        MODELS_INFO: [("_TYST11_c88teujp", "88teujp")],
+        MODELS_INFO: [
+            ("_TYST11_c88teujp", "88teujp"),
+            ("_TYST11_KGbxAXL2", "GbxAXL2"),
+            ("_TYST11_zuhszj9s", "uhszj9s"),
+            ("_TYST11_yw7cahqs", "w7cahqs"),
+        ],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
