@@ -840,7 +840,10 @@ class MoesHY368_Type1(TuyaThermostat):
     signature = {
         #  endpoint=1 profile=260 device_type=81 device_version=0 input_clusters=[0, 4, 5, 61184]
         #  output_clusters=[10, 25]>
-        MODELS_INFO: [("_TZE200_ckud7u2l", "TS0601")],
+        MODELS_INFO: [
+            ("_TZE200_ckud7u2l", "TS0601"),
+            ("_TZE200_ywdxldoj", "TS0601"),
+        ],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -883,7 +886,10 @@ class MoesHY368_Type2(TuyaThermostat):
     signature = {
         #  endpoint=1 profile=260 device_type=0 device_version=0 input_clusters=[0, 3]
         #  output_clusters=[3, 25]>
-        MODELS_INFO: [("_TYST11_ckud7u2l", "kud7u2l")],
+        MODELS_INFO: [
+            ("_TYST11_ckud7u2l", "kud7u2l"),
+            ("_TYST11_ywdxldoj", "wdxldoj"),
+        ],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
