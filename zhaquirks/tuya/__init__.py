@@ -8,9 +8,12 @@ import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import OnOff, PowerConfiguration
 from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
+from zigpy.zcl.clusters.closures import WindowCovering
+
 
 from .. import Bus, EventableCluster, LocalDataCluster
-from ..const import DOUBLE_PRESS, LONG_PRESS, SHORT_PRESS, ZHA_SEND_EVENT
+from ..const import DOUBLE_PRESS, LONG_PRESS, SHORT_PRESS, ZHA_SEND_EVENT, COMMAND_STOP
+
 
 TUYA_CLUSTER_ID = 0xEF00
 TUYA_SET_DATA = 0x0000
@@ -18,9 +21,23 @@ TUYA_GET_DATA = 0x0001
 TUYA_SET_DATA_RESPONSE = 0x0002
 TUYA_SET_TIME = 0x0024
 
+COVER_EVENT = "cover_event"
 SWITCH_EVENT = "switch_event"
 ATTR_ON_OFF = 0x0000
+ATTR_COVER_POSITION = 0x0008
 TUYA_CMD_BASE = 0x0100
+
+#  Tuya cover command
+#  https://github.com/Koenkk/zigbee-herdsman-converters/issues/1159#issuecomment-614659802
+#  0x2: open
+#  0x1: stop
+#  0x0: close
+# maps to
+# 0x0000: ("up_open", (), False),
+# 0x0001: ("down_close", (), False),
+# 0x0002: ("stop", (), False),
+
+TUYA_COVER_COMMAND = {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001}
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -547,3 +564,71 @@ class TuyaSmartRemoteOnOffCluster(OnOff, EventableCluster):
             self.listener_event(
                 ZHA_SEND_EVENT, self.press_type.get(press_type, "unknown"), []
             )
+
+
+class TuyaManufacturerWindowCover(TuyaManufCluster):
+    """Manufacturer Specific Cluster for cover device."""
+
+    def handle_cluster_request(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: Tuple[TuyaManufCluster.Command],
+        *,
+        dst_addressing: Optional[
+            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        ] = None,
+    ) -> None:
+        """Handle cluster request."""
+        tuya_payload = args[0]
+        if hdr.command_id == 0x0002:
+            self.endpoint.device.cover_bus.listener_event(
+                COVER_EVENT,
+                tuya_payload.command_id,
+                tuya_payload.data,
+            )
+
+
+class TuyaWindowCoverControl(LocalDataCluster, WindowCovering):
+    """Manufacturer Specific Cluster of Device cover."""
+
+    def __init__(self, *args, **kwargs):
+        """Initialize instance."""
+        super().__init__(*args, **kwargs)
+        self.endpoint.device.cover_bus.add_listener(self)
+
+    def cover_event(self, command, value):
+        """Cover event. update the position"""
+        self._update_attribute(ATTR_COVER_POSITION, 100 - value[4])
+
+    def command(
+        self,
+        command_id: Union[foundation.Command, int, t.uint8_t],
+        *args,
+        manufacturer: Optional[Union[int, t.uint16_t]] = None,
+        expect_reply: bool = True,
+        tsn: Optional[Union[int, t.uint8_t]] = None,
+    ):
+        """Override the default Cluster command."""
+
+        if command_id in (0x0000, 0x0001, 0x0002):
+            cmd_payload = TuyaManufCluster.Command()
+            cmd_payload.status = 0
+            cmd_payload.tsn = 0
+            cmd_payload.command_id = TUYA_CMD_BASE + self.endpoint.endpoint_id
+            cmd_payload.function = 0
+            cmd_payload.data = [1, TUYA_COVER_COMMAND[command_id]] # remap the command to the Tuya command
+
+            return self.endpoint.tuya_manufacturer.command(
+                TUYA_SET_DATA, cmd_payload, expect_reply=True
+            )
+
+        return foundation.Status.UNSUP_CLUSTER_COMMAND
+
+
+class TuyaWindowCover(CustomDevice):
+    """Tuya switch device."""
+
+    def __init__(self, *args, **kwargs):
+        """Init device."""
+        self.cover_bus = Bus()
+        super().__init__(*args, **kwargs)
