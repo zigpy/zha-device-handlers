@@ -395,7 +395,6 @@ def setup(config: Optional[Dict[str, Any]] = None) -> None:
 
     # Treat the custom quirk path (e.g. `/config/custom_quirks/`) itself as a module
     if config and config.get(CUSTOM_QUIRKS_PATH):
-        breakpoint()
         path = pathlib.Path(config[CUSTOM_QUIRKS_PATH])
 
         for importer, modname, ispkg in pkgutil.walk_packages(
