@@ -12,12 +12,12 @@ from ..const import (
 )
 from ..tuya import (
     TuyaManufacturerClusterOnOff,
+    TuyaManufacturerWindowCover,
     TuyaManufCluster,
     TuyaOnOff,
     TuyaSwitch,
-    TuyaManufacturerWindowCover,
-    TuyaWindowCoverControl,
     TuyaWindowCover,
+    TuyaWindowCoverControl,
 )
 
 
@@ -66,7 +66,7 @@ class TuyaSingleSwitch(TuyaSwitch):
 
 
 class TuyaZemismartSmartCover0601(TuyaWindowCover):
-    """Tuya Zemismart blind cover motor"""
+    """Tuya Zemismart blind cover motor."""
 
     signature = {
         # "node_descriptor": "<NodeDescriptor byte1=1 byte2=64 mac_capability_flags=142 manufacturer_code=4098

@@ -6,14 +6,12 @@ from typing import Any, List, Optional, Tuple, Union
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
+from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import OnOff, PowerConfiguration
 from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
-from zigpy.zcl.clusters.closures import WindowCovering
-
 
 from .. import Bus, EventableCluster, LocalDataCluster
 from ..const import DOUBLE_PRESS, LONG_PRESS, SHORT_PRESS, ZHA_SEND_EVENT
-
 
 TUYA_CLUSTER_ID = 0xEF00
 TUYA_SET_DATA = 0x0000
@@ -597,7 +595,7 @@ class TuyaWindowCoverControl(LocalDataCluster, WindowCovering):
         self.endpoint.device.cover_bus.add_listener(self)
 
     def cover_event(self, command, value):
-        """Cover event. update the position"""
+        """Cover event. update the position."""
         self._update_attribute(ATTR_COVER_POSITION, 100 - value[4])
 
     def command(
