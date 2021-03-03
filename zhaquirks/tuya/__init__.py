@@ -12,7 +12,7 @@ from zigpy.zcl.clusters.closures import WindowCovering
 
 
 from .. import Bus, EventableCluster, LocalDataCluster
-from ..const import DOUBLE_PRESS, LONG_PRESS, SHORT_PRESS, ZHA_SEND_EVENT, COMMAND_STOP
+from ..const import DOUBLE_PRESS, LONG_PRESS, SHORT_PRESS, ZHA_SEND_EVENT
 
 
 TUYA_CLUSTER_ID = 0xEF00
@@ -616,7 +616,10 @@ class TuyaWindowCoverControl(LocalDataCluster, WindowCovering):
             cmd_payload.tsn = 0
             cmd_payload.command_id = TUYA_CMD_BASE + self.endpoint.endpoint_id
             cmd_payload.function = 0
-            cmd_payload.data = [1, TUYA_COVER_COMMAND[command_id]] # remap the command to the Tuya command
+            cmd_payload.data = [
+                1,
+                TUYA_COVER_COMMAND[command_id],
+            ]  # remap the command to the Tuya command
 
             return self.endpoint.tuya_manufacturer.command(
                 TUYA_SET_DATA, cmd_payload, expect_reply=True
