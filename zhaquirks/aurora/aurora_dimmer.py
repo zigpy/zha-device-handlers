@@ -37,7 +37,7 @@ COLOR_DOWN = "color_down"
 
 
 class AuroraDimmerBatteryPowered(CustomDevice):
-    """Aurora dimmer switch, battery powered"""
+    """Aurora dimmer switch, battery powered."""
 
     class WallSwitchOnOffCluster(EventableCluster, OnOff):
         """WallSwitchOnOffCluster: fire events corresponding to press type."""
