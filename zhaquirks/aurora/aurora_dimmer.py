@@ -1,33 +1,34 @@
 """Device handler for Aurora dimmer switch, battery powered."""
 from zigpy.profiles import zha
+from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
+    GreenPowerProxy,
     Identify,
     LevelControl,
     OnOff,
     Ota,
-    GreenPowerProxy,
 )
 from zigpy.zcl.clusters.lighting import Color
-from zigpy.quirks import CustomDevice
-from .. import PowerConfigurationCluster, EventableCluster
+
+from .. import EventableCluster, PowerConfigurationCluster
 from ..const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
     ARGS,
-    LEFT,
-    RIGHT,
     CLUSTER_ID,
     COMMAND,
     COMMAND_STEP,
     COMMAND_STEP_COLOR_TEMP,
+    DEVICE_TYPE,
     DIM_DOWN,
     DIM_UP,
     ENDPOINT_ID,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    LEFT,
+    MODELS_INFO,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
+    RIGHT,
     SHORT_PRESS,
 )
 
