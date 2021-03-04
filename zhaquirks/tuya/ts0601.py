@@ -75,7 +75,10 @@ class TuyaZemismartSmartCover0601(TuyaWindowCover):
         # input_clusters=[0x0000, 0x0004, 0x0005, 0x000a, 0xef00]
         # output_clusters=[0x0019]
         # <SimpleDescriptor endpoint=1 profile=260 device_type=51 input_clusters=[0, 4, 5, 61184] output_clusters=[25]>
-        MODELS_INFO: [("_TZE200_fzo2pocs", "TS0601")],
+        MODELS_INFO: [
+            ("_TZE200_fzo2pocs", "TS0601"),
+            ("_TZE200_xuzcvlku", "TS0601"),  # Not tested
+        ],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
