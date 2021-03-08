@@ -34,6 +34,7 @@ from ..const import (
 
 COLOR_UP = "color_up"
 COLOR_DOWN = "color_down"
+CURRENT_LEVEL = "current_level"
 
 
 class AuroraDimmerBatteryPowered(CustomDevice):
@@ -42,8 +43,21 @@ class AuroraDimmerBatteryPowered(CustomDevice):
     class WallSwitchOnOffCluster(EventableCluster, OnOff):
         """WallSwitchOnOffCluster: fire events corresponding to press type."""
 
+        # as the device is battery powered, whether or not it thinks it is
+        # on or off is irrelevant
+        def _update_attribute(self, attrid, value):
+            return
+
     class WallSwitchLevelControlCluster(EventableCluster, LevelControl):
         """WallSwitchLevelControlCluster: fire events corresponding to level changes."""
+
+        # the value reported by the device is always 254, so we may as well
+        # throw away this report
+        def _update_attribute(self, attrid, value):
+            if attrid == CURRENT_LEVEL:
+                return
+            else:
+                super()._update_attribute(attrid, value)
 
     class WallSwitchColorCluster(EventableCluster, Color):
         """WallSwitchColorCluster: fire events corresponding to color changes."""
