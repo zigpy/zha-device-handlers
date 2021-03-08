@@ -609,7 +609,7 @@ class TuyaWindowCoverControl(LocalDataCluster, WindowCovering):
         """Override the default Cluster command."""
         _LOGGER.info("--------------- Sending Tuya Cluster Command...")
         _LOGGER.info("--------------- Cluster Command is %x", command_id)
-        _LOGGER.info("--------------- Arugments are %s", args)
+        _LOGGER.info("--------------- Arguments are %s", args)
         if command_id in (0x0000, 0x0001, 0x0002):
             cmd_payload = TuyaManufCluster.Command()
             cmd_payload.status = 0
