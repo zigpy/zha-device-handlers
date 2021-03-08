@@ -79,7 +79,7 @@ class IkeaSYMFONISK(CustomDevice):
                     Basic.cluster_id,
                     DoublingPowerConfigurationCluster,
                     Identify.cluster_id,
-                    PollControl.cluster_id,
+#                    PollControl.cluster_id,
                     LightLink.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
