@@ -125,7 +125,7 @@ class IkeaTradfriOpenCloseRemote(CustomDevice):
                     DoublingPowerConfigurationCluster,
                     Identify.cluster_id,
                     Alarms.cluster_id,
-                    PollControl.cluster_id,
+#                    PollControl.cluster_id,
                     LightLink.cluster_id,
                     IKEA_CLUSTER_ID,
                 ],
