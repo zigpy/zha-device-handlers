@@ -6,6 +6,7 @@ import pytest
 import zigpy.device
 import zigpy.types as t
 
+import zhaquirks
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -32,6 +33,8 @@ import zhaquirks.xiaomi.aqara.motion_aq2b
 import zhaquirks.xiaomi.mija.motion
 
 from tests.common import ZCL_OCC_ATTR_RPT_OCC, ClusterListener
+
+zhaquirks.setup()
 
 
 def test_basic_cluster_deserialize_wrong_len():

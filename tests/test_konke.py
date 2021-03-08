@@ -5,6 +5,7 @@ from unittest import mock
 
 import pytest
 
+import zhaquirks
 from zhaquirks.const import (
     COMMAND_DOUBLE,
     COMMAND_HOLD,
@@ -18,6 +19,8 @@ from zhaquirks.const import (
 import zhaquirks.konke.motion
 
 from tests.common import ZCL_IAS_MOTION_COMMAND, ClusterListener
+
+zhaquirks.setup()
 
 
 @pytest.mark.parametrize(

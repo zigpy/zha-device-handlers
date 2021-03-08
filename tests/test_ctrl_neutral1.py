@@ -1,7 +1,10 @@
 """Tests for xiaomi."""
 from unittest import mock
 
+import zhaquirks
 from zhaquirks.xiaomi.aqara.ctrl_neutral import CtrlNeutral
+
+zhaquirks.setup()
 
 # zigbee-herdsman:controller:endpoint Command 0x00158d00024be541/2 genOnOff.on({},
 #   {"timeout":6000,"manufacturerCode":null,"disableDefaultResponse":false})

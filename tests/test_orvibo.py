@@ -5,10 +5,13 @@ from unittest import mock
 
 import pytest
 
+import zhaquirks
 from zhaquirks.const import OFF, ON, ZONE_STATE
 import zhaquirks.orvibo.motion
 
 from tests.common import ZCL_IAS_MOTION_COMMAND, ClusterListener
+
+zhaquirks.setup()
 
 
 @pytest.mark.parametrize("quirk", (zhaquirks.orvibo.motion.SN10ZW,))

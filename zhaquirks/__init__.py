@@ -396,13 +396,8 @@ def setup(config: Optional[Dict[str, Any]] = None) -> None:
     # Treat the custom quirk path (e.g. `/config/custom_quirks/`) itself as a module
     if config and config.get(CUSTOM_QUIRKS_PATH):
         path = pathlib.Path(config[CUSTOM_QUIRKS_PATH])
+        _LOGGER.debug("Loading custom quirks from %s", path)
 
-        for importer, modname, ispkg in pkgutil.walk_packages(
-            path=[str(path.parent)],
-            prefix=path.name + ".",
-        ):
+        for importer, modname, ispkg in pkgutil.walk_packages(path=[str(path)]):
             _LOGGER.debug("Loading custom quirks module %s", modname)
             importer.find_module(modname).load_module(modname)
-
-
-setup()
