@@ -607,9 +607,9 @@ class TuyaWindowCoverControl(LocalDataCluster, WindowCovering):
         tsn: Optional[Union[int, t.uint8_t]] = None,
     ):
         """Override the default Cluster command."""
-        _LOGGER.info("--------------- Sending Tuya Cluster Command...")
-        _LOGGER.info("--------------- Cluster Command is %x", command_id)
-        _LOGGER.info("--------------- Arguments are %s", args)
+        _LOGGER.debug("--------------- Sending Tuya Cluster Command...")
+        _LOGGER.debug("--------------- Cluster Command is %x", command_id)
+        _LOGGER.debug("--------------- Arguments are %s", args)
         if command_id in (0x0000, 0x0001, 0x0002):
             cmd_payload = TuyaManufCluster.Command()
             cmd_payload.status = 0
@@ -620,7 +620,7 @@ class TuyaWindowCoverControl(LocalDataCluster, WindowCovering):
                 1,
                 TUYA_COVER_COMMAND[command_id],
             ]  # remap the command to the Tuya command
-            _LOGGER.info(
+            _LOGGER.debug(
                 "--------------- Payload Tuya Command is %x", cmd_payload.command_id
             )
             return self.endpoint.tuya_manufacturer.command(
@@ -638,13 +638,14 @@ class TuyaWindowCoverControl(LocalDataCluster, WindowCovering):
                 4,
                 0,
                 0,
+                0,
                 100 - position,
             ]
 
-            _LOGGER.info(
+            _LOGGER.debug(
                 "--------------- Payload Tuya Command is %x", cmd_payload.command_id
             )
-            _LOGGER.info("--------------- Payload data is %s", cmd_payload.data)
+            _LOGGER.debug("--------------- Payload data is %s", cmd_payload.data)
 
             return self.endpoint.tuya_manufacturer.command(
                 TUYA_SET_DATA, cmd_payload, expect_reply=True
@@ -657,7 +658,7 @@ class TuyaWindowCoverControl(LocalDataCluster, WindowCovering):
             cmd_payload.function = args[3]
             cmd_payload.data = args[4]
 
-            _LOGGER.info(
+            _LOGGER.debug(
                 "--------------- Sending Custom Command ----------------------------------"
             )
 
