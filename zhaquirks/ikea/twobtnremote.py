@@ -90,7 +90,7 @@ class IkeaTradfriRemote2Btn(CustomDevice):
                     DoublingPowerConfigurationCluster,
                     Identify.cluster_id,
                     Alarms.cluster_id,
-                    PollControl.cluster_id,
+#                    PollControl.cluster_id,
                     LightLinkCluster,
                     IKEA_CLUSTER_ID,
                 ],
