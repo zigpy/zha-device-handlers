@@ -42,6 +42,7 @@ class CCTLight(CustomDevice):
             ("_TZ3000_oborybow", "TS0502A"),
             ("_TZ3000_9evm3otq", "TS0502A"),
             ("_TZ3000_rylaozuc", "TS0502A"),
+            ("_TZ3000_el5kt5im", "TS0502A"),
         ],
         ENDPOINTS: {
             1: {
