@@ -451,6 +451,12 @@ If you are instead using some custom python installation of Home Assistant then 
   pip install zha-quirks==0.0.38
   ```
 
+After installing components with both methods above you need deleting the installed component by hand then  you is updating your HA installation or its override the new HA files and you can getting lib miss matching.
+```bash
+rm -r  /config/deps/
+```
+And then restarting AH.
+
 # Testing quirks in development in docker based install
 
 If you are using Supervised Home Assistant (formerly known as the Hassio/Hass.io distro) you will need to get access to the home-assistant docker container. Directions below are given for using the portainer add-on to do this, there are other methods as well not covered here.
