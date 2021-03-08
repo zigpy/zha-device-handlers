@@ -451,7 +451,8 @@ If you are instead using some custom python installation of Home Assistant then 
   pip install zha-quirks==0.0.38
   ```
 
-After installing components with both methods above you need deleting the installed component by hand then  you is updating your HA installation or its override the new HA files and you can getting lib miss matching.
+After installing components with both methods above you need deleting the installed component by hand then  you is updating your HA installation or its override the new HA files and you can getting lib miss matching.  
+Execute in your HA docker container CLI:
 ```bash
 rm -r  /config/deps/
 ```
