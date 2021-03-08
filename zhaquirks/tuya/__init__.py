@@ -607,7 +607,9 @@ class TuyaWindowCoverControl(LocalDataCluster, WindowCovering):
         tsn: Optional[Union[int, t.uint8_t]] = None,
     ):
         """Override the default Cluster command."""
-
+        _LOGGER.info("--------------- Sending Tuya Cluster Command...")
+        _LOGGER.info("--------------- Cluster Command is %x", command_id)
+        _LOGGER.info("--------------- Arugments are %s", args)
         if command_id in (0x0000, 0x0001, 0x0002):
             cmd_payload = TuyaManufCluster.Command()
             cmd_payload.status = 0
@@ -618,11 +620,50 @@ class TuyaWindowCoverControl(LocalDataCluster, WindowCovering):
                 1,
                 TUYA_COVER_COMMAND[command_id],
             ]  # remap the command to the Tuya command
-
+            _LOGGER.info(
+                "--------------- Payload Tuya Command is %x", cmd_payload.command_id
+            )
             return self.endpoint.tuya_manufacturer.command(
                 TUYA_SET_DATA, cmd_payload, expect_reply=True
             )
 
+        elif command_id == 0x0005:
+            cmd_payload = TuyaManufCluster.Command()
+            cmd_payload.status = 0
+            cmd_payload.tsn = 0
+            cmd_payload.command_id = 0x02
+            cmd_payload.function = 0
+            position = args[0]
+            cmd_payload.data = [
+                4,
+                0,
+                0,
+                100 - position,
+            ]
+
+            _LOGGER.info(
+                "--------------- Payload Tuya Command is %x", cmd_payload.command_id
+            )
+            _LOGGER.info("--------------- Payload data is %s", cmd_payload.data)
+
+            return self.endpoint.tuya_manufacturer.command(
+                TUYA_SET_DATA, cmd_payload, expect_reply=True
+            )
+        elif command_id == 0x0006:
+            cmd_payload = TuyaManufCluster.Command()
+            cmd_payload.status = args[0]
+            cmd_payload.tsn = args[1]
+            cmd_payload.command_id = args[2]
+            cmd_payload.function = args[3]
+            cmd_payload.data = args[4]
+
+            _LOGGER.info(
+                "--------------- Sending Custom Command ----------------------------------"
+            )
+
+            return self.endpoint.tuya_manufacturer.command(
+                TUYA_SET_DATA, cmd_payload, expect_reply=True
+            )
         return foundation.Status.UNSUP_CLUSTER_COMMAND
 
 
