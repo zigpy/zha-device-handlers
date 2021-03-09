@@ -90,7 +90,6 @@ class IkeaTradfriRemote(CustomDevice):
                     Basic.cluster_id,
                     DoublingPowerConfigurationCluster,
                     Identify.cluster_id,
-                    PollControl.cluster_id,
                     LightLinkCluster,
                     IKEA_CLUSTER_ID,
                 ],
