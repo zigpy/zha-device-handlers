@@ -37,6 +37,8 @@ TUYA_CMD_BASE = 0x0100
 
 TUYA_COVER_COMMAND = {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001}
 
+TUYA_SET_COVER_POSITION_COMMAND = 0x0002
+
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -578,6 +580,19 @@ class TuyaManufacturerWindowCover(TuyaManufCluster):
     ) -> None:
         """Handle cluster request."""
         tuya_payload = args[0]
+
+        _LOGGER.debug(
+            "%s Received Attribute Report. Command is %x, Tuya Paylod values"
+            "[Status : %s, TSN: %s, Command: %s, Function: %s, Data: %s]",
+            self.endpoint.device.ieee,
+            hdr.command_id,
+            tuya_payload.status,
+            tuya_payload.tsn,
+            tuya_payload.command_id,
+            tuya_payload.function,
+            tuya_payload.data,
+        )
+
         if hdr.command_id == 0x0002:
             self.endpoint.device.cover_bus.listener_event(
                 COVER_EVENT,
@@ -596,7 +611,9 @@ class TuyaWindowCoverControl(LocalDataCluster, WindowCovering):
 
     def cover_event(self, command, value):
         """Cover event. update the position."""
-        self._update_attribute(ATTR_COVER_POSITION, 100 - value[4])
+        if value[0] == 4:
+            position = 100 - value[4]
+            self._update_attribute(ATTR_COVER_POSITION, position)
 
     def command(
         self,
@@ -607,65 +624,69 @@ class TuyaWindowCoverControl(LocalDataCluster, WindowCovering):
         tsn: Optional[Union[int, t.uint8_t]] = None,
     ):
         """Override the default Cluster command."""
-        _LOGGER.debug("--------------- Sending Tuya Cluster Command...")
-        _LOGGER.debug("--------------- Cluster Command is %x", command_id)
-        _LOGGER.debug("--------------- Arguments are %s", args)
+
+        _LOGGER.debug(
+            "%s Sending Tuya Cluster Command.. Cluster Command is %x, Arguments are %s",
+            self.endpoint.device.ieee,
+            command_id,
+            args,
+        )
+        tuya_payload = TuyaManufCluster.Command()
+        # Open Close or Stop commands
         if command_id in (0x0000, 0x0001, 0x0002):
-            cmd_payload = TuyaManufCluster.Command()
-            cmd_payload.status = 0
-            cmd_payload.tsn = 0
-            cmd_payload.command_id = TUYA_CMD_BASE + self.endpoint.endpoint_id
-            cmd_payload.function = 0
-            cmd_payload.data = [
+            tuya_payload.status = 0
+            tuya_payload.tsn = 0
+            tuya_payload.command_id = TUYA_CMD_BASE + self.endpoint.endpoint_id
+            tuya_payload.function = 0
+            tuya_payload.data = [
                 1,
                 TUYA_COVER_COMMAND[command_id],
             ]  # remap the command to the Tuya command
-            _LOGGER.debug(
-                "--------------- Payload Tuya Command is %x", cmd_payload.command_id
-            )
-            return self.endpoint.tuya_manufacturer.command(
-                TUYA_SET_DATA, cmd_payload, expect_reply=True
-            )
-
+        # Set Position Command
         elif command_id == 0x0005:
-            cmd_payload = TuyaManufCluster.Command()
-            cmd_payload.status = 0
-            cmd_payload.tsn = 0
-            cmd_payload.command_id = 0x02
-            cmd_payload.function = 0
+            tuya_payload = TuyaManufCluster.Command()
+            tuya_payload.status = 0
+            tuya_payload.tsn = 0
+            tuya_payload.command_id = TUYA_SET_COVER_POSITION_COMMAND
+            tuya_payload.function = 0
             position = args[0]
-            cmd_payload.data = [
+            tuya_payload.data = [
                 4,
                 0,
                 0,
                 0,
                 100 - position,
-            ]
+            ]  # Custom Command
 
-            _LOGGER.debug(
-                "--------------- Payload Tuya Command is %x", cmd_payload.command_id
-            )
-            _LOGGER.debug("--------------- Payload data is %s", cmd_payload.data)
-
-            return self.endpoint.tuya_manufacturer.command(
-                TUYA_SET_DATA, cmd_payload, expect_reply=True
-            )
         elif command_id == 0x0006:
-            cmd_payload = TuyaManufCluster.Command()
-            cmd_payload.status = args[0]
-            cmd_payload.tsn = args[1]
-            cmd_payload.command_id = args[2]
-            cmd_payload.function = args[3]
-            cmd_payload.data = args[4]
+            tuya_payload = TuyaManufCluster.Command()
+            tuya_payload.status = args[0]
+            tuya_payload.tsn = args[1]
+            tuya_payload.command_id = args[2]
+            tuya_payload.function = args[3]
+            tuya_payload.data = args[4]
+        else:
+            tuya_payload = None
 
+        if tuya_payload.command_id:
             _LOGGER.debug(
-                "--------------- Sending Custom Command ----------------------------------"
+                "%s Sending Tuya Command. Paylod values [endpoint_id : %s, "
+                "Status : %s, TSN: %s, Command: %s, Function: %s, Data: %s]",
+                self.endpoint.device.ieee,
+                self.endpoint.endpoint_id,
+                tuya_payload.status,
+                tuya_payload.tsn,
+                tuya_payload.command_id,
+                tuya_payload.function,
+                tuya_payload.data,
             )
 
             return self.endpoint.tuya_manufacturer.command(
-                TUYA_SET_DATA, cmd_payload, expect_reply=True
+                TUYA_SET_DATA, tuya_payload, expect_reply=True
             )
-        return foundation.Status.UNSUP_CLUSTER_COMMAND
+        else:
+            _LOGGER.debug("Unrecognised command: %x", command_id)
+            return foundation.Status.UNSUP_CLUSTER_COMMAND
 
 
 class TuyaWindowCover(CustomDevice):
