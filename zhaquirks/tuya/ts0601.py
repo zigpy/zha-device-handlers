@@ -77,7 +77,6 @@ class TuyaZemismartSmartCover0601(TuyaWindowCover):
         # <SimpleDescriptor endpoint=1 profile=260 device_type=51 input_clusters=[0, 4, 5, 61184] output_clusters=[25]>
         MODELS_INFO: [
             ("_TZE200_fzo2pocs", "TS0601"),
-            ("_TZE200_xuzcvlku", "TS0601"),  # Not tested
         ],
         ENDPOINTS: {
             1: {
@@ -127,7 +126,10 @@ class TuyaMoesCover0601(TuyaWindowCover):
         # "model": "TS0601",
         # "class": "zigpy.device.Device"
         # }
-        MODELS_INFO: [("_TZE200_zah67ekd", "TS0601")],
+        MODELS_INFO: [
+            ("_TZE200_zah67ekd", "TS0601"),
+            ("_TZE200_xuzcvlku", "TS0601"),
+        ],  # Not tested
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
