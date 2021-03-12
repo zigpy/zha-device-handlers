@@ -2,6 +2,7 @@
 import asyncio
 import importlib
 import logging
+import pathlib
 import pkgutil
 from typing import Any, Dict, List, Optional, Union
 
@@ -21,6 +22,7 @@ from .const import (
     ATTRIBUTE_NAME,
     CLUSTER_COMMAND,
     COMMAND_ATTRIBUTE_UPDATED,
+    CUSTOM_QUIRKS_PATH,
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -380,7 +382,22 @@ class QuickInitDevice(CustomDevice):
         return device
 
 
-NAME = __name__
-PATH = __path__
-for importer, modname, ispkg in pkgutil.walk_packages(path=PATH, prefix=NAME + "."):
-    importlib.import_module(modname)
+def setup(config: Optional[Dict[str, Any]] = None) -> None:
+    """Register all quirks with zigpy, including optional custom quirks."""
+
+    # Import all quirks in the `zhaquirks` package first
+    for importer, modname, ispkg in pkgutil.walk_packages(
+        path=__path__,
+        prefix=__name__ + ".",
+    ):
+        _LOGGER.debug("Loading quirks module %s", modname)
+        importlib.import_module(modname)
+
+    # Treat the custom quirk path (e.g. `/config/custom_quirks/`) itself as a module
+    if config and config.get(CUSTOM_QUIRKS_PATH):
+        path = pathlib.Path(config[CUSTOM_QUIRKS_PATH])
+        _LOGGER.debug("Loading custom quirks from %s", path)
+
+        for importer, modname, ispkg in pkgutil.walk_packages(path=[str(path)]):
+            _LOGGER.debug("Loading custom quirks module %s", modname)
+            importer.find_module(modname).load_module(modname)

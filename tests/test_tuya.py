@@ -10,6 +10,7 @@ from zigpy.quirks import CustomDevice, get_device
 import zigpy.types as t
 from zigpy.zcl import foundation
 
+import zhaquirks
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -30,6 +31,8 @@ import zhaquirks.tuya.ts0043
 import zhaquirks.tuya.valve
 
 from tests.common import ClusterListener
+
+zhaquirks.setup()
 
 ZCL_TUYA_SET_TIME_REQUEST = b"\tp\x24\x00\00"
 
