@@ -41,7 +41,7 @@ class PhilipsRWL021(CustomDevice):
         #  device_version=2
         #  input_clusters=[0]
         #  output_clusters=[0, 3, 4, 6, 8, 5]>
-        MODELS_INFO: [(PHILIPS, "ROM001"), (SIGNIFY, "ROM001")],
+        MODELS_INFO: [(PHILIPS, "RWL021"), (SIGNIFY, "RWL021")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zll.PROFILE_ID,
