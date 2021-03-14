@@ -17,9 +17,9 @@ from zigpy.zcl.clusters.general import (
 from . import (
     HUE_REMOTE_DEVICE_TRIGGERS,
     PHILIPS,
+    SIGNIFY,
     PhilipsBasicCluster,
     PhilipsRemoteCluster,
-    SIGNIFY,
 )
 from ..const import (
     DEVICE_TYPE,

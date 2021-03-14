@@ -15,9 +15,9 @@ from zigpy.zcl.clusters.lightlink import LightLink
 
 from . import (
     HUE_REMOTE_DEVICE_TRIGGERS,
+    SIGNIFY,
     PhilipsBasicCluster,
     PhilipsRemoteCluster,
-    SIGNIFY,
 )
 from ..const import (
     DEVICE_TYPE,
