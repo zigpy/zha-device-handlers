@@ -1,4 +1,4 @@
-"""Quirk for Philips SML002."""
+"""Quirk for Philips motion sensors."""
 from zigpy.profiles import zha, zll
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
@@ -29,13 +29,13 @@ from ..const import (
 )
 
 
-class PhilipsSML002(CustomDevice):
-    """philips SML002 device."""
+class PhilipsMotion(CustomDevice):
+    """Philips motion sensor device."""
 
     signature = {
-        MODELS_INFO: [(PHILIPS, "SML002")],
+        MODELS_INFO: [(PHILIPS, "SML001"), (PHILIPS, "SML002")],
         ENDPOINTS: {
-            #  <SimpleDescriptor endpoint=1 profile=49246 device_type=0x0850
+            #  <SimpleDescriptor endpoint=1 profile=49246 device_type=2128
             #  device_version=?
             #  input_clusters=[0]
             #  output_clusters=[0, 3, 4, 5, 6, 8, 768]>
