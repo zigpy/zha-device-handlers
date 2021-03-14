@@ -1,5 +1,5 @@
 """Tuya based RGB+CCT Bulb."""
-from typing import Any, List, Optional, Tuple, Union
+from typing import Optional, Union
 
 import homeassistant.util.color as color_util
 
@@ -43,6 +43,7 @@ MOVE_TO_CT = 0x000A
 MOVE_TO_LEVEL = 0x0000
 MOVE_TO_LEVEL_ONOFF = 0x0004
 S_ATTR = 0x0001
+
 
 class TuyaColorCluster(CustomCluster, Color):
     """Tuya Color cluster."""
@@ -92,6 +93,7 @@ class TuyaColorCluster(CustomCluster, Color):
         expect_reply: bool = True,
         tsn: Optional[Union[int, t.uint8_t]] = None,
     ):
+        """Override the default Cluster commands."""
         if command_id == MOVE_TO_CT:
             payload = list(args)
             payload[0] = round(-0.734 * payload[0] + 367)
@@ -108,6 +110,7 @@ class TuyaColorCluster(CustomCluster, Color):
             return super().command(TUYA_MOVE_TO_HS, *tuple(payload))
 
         return super().command(command_id, *args)
+
 
 class TuyaLevelControlCluster(CustomCluster, LevelControl):
     """Tuya LevelControl cluster."""
@@ -145,6 +148,7 @@ class TuyaLevelControlCluster(CustomCluster, LevelControl):
         expect_reply: bool = True,
         tsn: Optional[Union[int, t.uint8_t]] = None,
     ):
+        """Override the default Cluster commands."""
         if command_id == MOVE_TO_LEVEL_ONOFF:
             if self._attr_cache.get(TUYA_RGB_MODE_ATTR_INT) == 1:
                 self._update_attribute(LEVEL_ATTR, list(args)[0])
@@ -155,7 +159,7 @@ class TuyaLevelControlCluster(CustomCluster, LevelControl):
 
 
 class TuyaRGBCCTBulb(CustomDevice):
-    """Tuya RGB+CCT Bulb"""
+    """Tuya RGB+CCT Bulb."""
 
     def __init__(self, *args, **kwargs):
         """Init device."""
