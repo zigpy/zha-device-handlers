@@ -1,4 +1,4 @@
-"""Philips ROM001 device."""
+"""Philips RWL022 device."""
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
@@ -13,38 +13,33 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.lightlink import LightLink
 
-from . import PHILIPS, PhilipsBasicCluster, PhilipsRemoteCluster, SIGNIFY
+from . import (
+    HUE_REMOTE_DEVICE_TRIGGERS,
+    PhilipsBasicCluster,
+    PhilipsRemoteCluster,
+    SIGNIFY,
+)
 from ..const import (
-    COMMAND,
     DEVICE_TYPE,
-    DOUBLE_PRESS,
     ENDPOINTS,
     INPUT_CLUSTERS,
-    LONG_PRESS,
-    LONG_RELEASE,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
-    QUADRUPLE_PRESS,
-    QUINTUPLE_PRESS,
-    SHORT_PRESS,
-    SHORT_RELEASE,
-    TRIPLE_PRESS,
-    TURN_ON,
 )
 
 DEVICE_SPECIFIC_UNKNOWN = 64512
 
 
-class PhilipsROM001(CustomDevice):
-    """Philips ROM001 device."""
+class PhilipsRWL022(CustomDevice):
+    """Philips RWL022 device."""
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=2096
         #  device_version=1
         #  input_clusters=[0, 1, 3, 64512, 4096]
         #  output_clusters=[25, 0, 3, 4, 6, 8, 5, 4096]>
-        MODELS_INFO: [(PHILIPS, "ROM001"), (SIGNIFY, "ROM001")],
+        MODELS_INFO: [(SIGNIFY, "RWL022")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -96,13 +91,4 @@ class PhilipsROM001(CustomDevice):
         }
     }
 
-    device_automation_triggers = {
-        (SHORT_PRESS, TURN_ON): {COMMAND: "on_press"},
-        (LONG_PRESS, TURN_ON): {COMMAND: "on_hold"},
-        (DOUBLE_PRESS, TURN_ON): {COMMAND: "on_double_press"},
-        (TRIPLE_PRESS, TURN_ON): {COMMAND: "on_triple_press"},
-        (QUADRUPLE_PRESS, TURN_ON): {COMMAND: "on_quadruple_press"},
-        (QUINTUPLE_PRESS, TURN_ON): {COMMAND: "on_quintuple_press"},
-        (SHORT_RELEASE, TURN_ON): {COMMAND: "on_short_release"},
-        (LONG_RELEASE, TURN_ON): {COMMAND: "on_long_release"},
-    }
+    device_automation_triggers = HUE_REMOTE_DEVICE_TRIGGERS
