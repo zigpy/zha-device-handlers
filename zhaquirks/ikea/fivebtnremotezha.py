@@ -227,3 +227,5 @@ class IkeaTradfriRemote2(IkeaTradfriRemote):
             }
         }
     }
+
+    device_automation_triggers = IkeaTradfriRemote.device_automation_triggers.copy()
