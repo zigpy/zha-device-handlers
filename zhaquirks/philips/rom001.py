@@ -13,7 +13,7 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.lightlink import LightLink
 
-from . import PHILIPS, PhilipsBasicCluster, PhilipsRemoteCluster, SIGNIFY
+from . import PHILIPS, SIGNIFY, PhilipsBasicCluster, PhilipsRemoteCluster
 from ..const import (
     COMMAND,
     DEVICE_TYPE,
