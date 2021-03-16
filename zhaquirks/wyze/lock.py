@@ -76,8 +76,8 @@ class WyzeCluster(CustomCluster, Basic):
     attributes = {}
     server_commands = {}
     client_commands = {}
-
-    def handle_message(self, hdr, args):
+    
+    def handle_message(self, hdr, args, dst_addressing):
         """Handle a message on this cluster."""
         self.debug("ZCL request 0x%04x: %s", hdr.command_id, args)
         i = 0
