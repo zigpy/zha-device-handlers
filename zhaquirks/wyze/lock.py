@@ -94,25 +94,25 @@ class WyzeCluster(CustomCluster, Basic):
             args[56],
             args[57],
         )
-        if args[52] == 180 and args[41] == 165:
+        if args[52] == 229 and args[41] == 66:
             self.warning("the lock is unlocked via the app")
             self.endpoint.device.lock_bus.listener_event("lock_event", 2)
-        elif args[52] == 180 and args[41] == 162:
+        elif args[52] == 229 and args[41] == 69:
             self.warning("the lock is locked via the app")
             self.endpoint.device.lock_bus.listener_event("lock_event", 1)
-        elif args[52] == 176 and args[41] == 165:
+        elif args[52] == 225 and args[41] == 66:
             self.warning("the lock is unlocked manually")
             self.endpoint.device.lock_bus.listener_event("lock_event", 2)
-        elif args[52] == 176 and args[41] == 162:
+        elif args[52] == 225 and args[41] == 69:
             self.warning("the lock is locked manually")
             self.endpoint.device.lock_bus.listener_event("lock_event", 1)
         elif args[52] == 189 and args[41] == 162:
             self.warning("the lock is locked via auto lock")
             self.endpoint.device.lock_bus.listener_event("lock_event", 1)
-        if args[52] == 74 and args[41] == 177:
+        if args[52] == 27 and args[41] == 86:
             self.warning("the door is open")
             self.endpoint.device.motion_bus.listener_event("motion_event", ON)
-        elif args[52] == 74 and args[41] == 178:
+        elif args[52] == 27 and args[41] == 85:
             self.warning("the door is closed")
             self.endpoint.device.motion_bus.listener_event("motion_event", OFF)
 
