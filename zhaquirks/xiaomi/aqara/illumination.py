@@ -6,9 +6,8 @@ from zigpy.zcl.clusters.general import Basic, Identify
 from zigpy.zcl.clusters.measurement import IlluminanceMeasurement
 from zigpy.zdo.types import NodeDescriptor
 
-from .. import LUMI, BasicCluster, XiaomiCustomDevice
-from ... import PowerConfigurationCluster
-from ...const import (
+from zhaquirks import PowerConfigurationCluster
+from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -17,6 +16,7 @@ from ...const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.xiaomi import LUMI, BasicCluster, XiaomiCustomDevice
 
 _LOGGER = logging.getLogger(__name__)
 

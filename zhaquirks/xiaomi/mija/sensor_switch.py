@@ -12,15 +12,8 @@ from zigpy.zcl.clusters.general import (
     Scenes,
 )
 
-from .. import (
-    LUMI,
-    XIAOMI_NODE_DESC,
-    BasicCluster,
-    XiaomiPowerConfiguration,
-    XiaomiQuickInitDevice,
-)
-from ... import CustomCluster
-from ...const import (
+from zhaquirks import CustomCluster
+from zhaquirks.const import (
     ARGS,
     CLICK_TYPE,
     COMMAND,
@@ -45,6 +38,13 @@ from ...const import (
     TRIPLE_PRESS,
     UNKNOWN,
     ZHA_SEND_EVENT,
+)
+from zhaquirks.xiaomi import (
+    LUMI,
+    XIAOMI_NODE_DESC,
+    BasicCluster,
+    XiaomiPowerConfiguration,
+    XiaomiQuickInitDevice,
 )
 
 XIAOMI_CLUSTER_ID = 0xFFFF

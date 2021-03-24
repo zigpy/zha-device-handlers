@@ -12,8 +12,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-
-from . import MotionCluster
+from zhaquirks.trust import MotionCluster
 
 MANUFACTURER_SPECIFIC_CLUSTER_ID = 0xFFFF
 

@@ -14,9 +14,8 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.security import IasZone
 
-from . import ORVIBO_LATIN, MotionCluster, OccupancyCluster
-from .. import Bus, PowerConfigurationCluster
-from ..const import (
+from zhaquirks import Bus, PowerConfigurationCluster
+from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -24,6 +23,7 @@ from ..const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.orvibo import ORVIBO_LATIN, MotionCluster, OccupancyCluster
 
 ORVIBO_CLUSTER_ID = 0xFFFF
 

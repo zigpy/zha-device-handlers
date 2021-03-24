@@ -1,6 +1,6 @@
 """Hive Home."""
 
-from .. import MotionWithReset
+from zhaquirks import MotionWithReset
 
 HIVEHOME = "HiveHome.com"
 

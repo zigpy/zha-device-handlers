@@ -17,9 +17,8 @@ from zigpy.zcl.clusters.homeautomation import ApplianceEventAlerts
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone
 
-from . import WAXMAN
-from .. import Bus, LocalDataCluster
-from ..const import (
+from zhaquirks import Bus, LocalDataCluster
+from zhaquirks.const import (
     CLUSTER_COMMAND,
     DEVICE_TYPE,
     ENDPOINTS,
@@ -28,6 +27,7 @@ from ..const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.waxman import WAXMAN
 
 MANUFACTURER_SPECIFIC_CLUSTER_ID = 0xFC02  # decimal = 64514
 MOISTURE_TYPE = 0x002A

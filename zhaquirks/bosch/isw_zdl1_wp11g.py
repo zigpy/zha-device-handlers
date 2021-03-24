@@ -7,9 +7,8 @@ from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone
 
 from zhaquirks import PowerConfigurationCluster
-
-from . import BOSCH
-from ..const import (
+from zhaquirks.bosch import BOSCH
+from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,

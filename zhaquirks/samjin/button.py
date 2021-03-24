@@ -13,8 +13,7 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone
 
-from . import SAMJIN, SamjinIASCluster
-from ..const import (
+from zhaquirks.const import (
     BUTTON,
     COMMAND,
     COMMAND_BUTTON_DOUBLE,
@@ -30,6 +29,7 @@ from ..const import (
     PROFILE_ID,
     SHORT_PRESS,
 )
+from zhaquirks.samjin import SAMJIN, SamjinIASCluster
 
 _LOGGER = logging.getLogger(__name__)
 

@@ -5,8 +5,7 @@ from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scen
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.lightlink import LightLink
 
-from . import OSRAM, OsramLightCluster
-from ..const import (
+from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -14,6 +13,7 @@ from ..const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.osram import OSRAM, OsramLightCluster
 
 
 class OsramPlug(CustomDevice):

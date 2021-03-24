@@ -7,7 +7,7 @@ from zigpy.types import Addressing
 from zigpy.zcl import foundation
 import zigpy.zcl.clusters.security
 
-from ..const import ARGS, COMMAND_ID, PRESS_TYPE, ZHA_SEND_EVENT
+from zhaquirks.const import ARGS, COMMAND_ID, PRESS_TYPE, ZHA_SEND_EVENT
 
 _LOGGER = logging.getLogger(__name__)
 

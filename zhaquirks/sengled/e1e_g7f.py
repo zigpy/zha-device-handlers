@@ -15,8 +15,8 @@ from zigpy.zcl.clusters.general import (
     PowerConfiguration,
 )
 
-from .. import Bus
-from ..const import (
+from zhaquirks import Bus
+from zhaquirks.const import (
     ARGS,
     COMMAND,
     COMMAND_OFF,

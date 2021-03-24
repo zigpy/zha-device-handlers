@@ -13,11 +13,8 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.lighting import Color
 from zigpy.zdo.types import NodeDescriptor
 
-from zhaquirks import CustomCluster
-
-from .. import LUMI, BasicCluster, XiaomiCustomDevice
-from ... import PowerConfigurationCluster
-from ...const import (
+from zhaquirks import CustomCluster, PowerConfigurationCluster
+from zhaquirks.const import (
     ALT_DOUBLE_PRESS,
     ALT_LONG_PRESS,
     ALT_SHORT_PRESS,
@@ -54,6 +51,7 @@ from ...const import (
     VALUE,
     ZHA_SEND_EVENT,
 )
+from zhaquirks.xiaomi import LUMI, BasicCluster, XiaomiCustomDevice
 
 PRESS_TYPES = {0: "long press", 1: "single", 2: "double", 3: "triple", 255: "release"}
 STATUS_TYPE_ATTR = 0x0055  # decimal = 85

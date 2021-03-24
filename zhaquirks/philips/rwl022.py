@@ -13,19 +13,19 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.lightlink import LightLink
 
-from . import (
-    HUE_REMOTE_DEVICE_TRIGGERS,
-    SIGNIFY,
-    PhilipsBasicCluster,
-    PhilipsRemoteCluster,
-)
-from ..const import (
+from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
+)
+from zhaquirks.philips import (
+    HUE_REMOTE_DEVICE_TRIGGERS,
+    SIGNIFY,
+    PhilipsBasicCluster,
+    PhilipsRemoteCluster,
 )
 
 DEVICE_SPECIFIC_UNKNOWN = 64512

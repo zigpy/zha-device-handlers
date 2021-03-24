@@ -26,8 +26,14 @@ import zigpy.zcl.foundation as foundation
 import zigpy.zdo
 from zigpy.zdo.types import NodeDescriptor
 
-from .. import Bus, LocalDataCluster, MotionOnEvent, OccupancyWithReset, QuickInitDevice
-from ..const import (
+from zhaquirks import (
+    Bus,
+    LocalDataCluster,
+    MotionOnEvent,
+    OccupancyWithReset,
+    QuickInitDevice,
+)
+from zhaquirks.const import (
     ATTRIBUTE_ID,
     ATTRIBUTE_NAME,
     COMMAND_ATTRIBUTE_UPDATED,

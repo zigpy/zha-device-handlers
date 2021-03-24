@@ -30,8 +30,8 @@ from zigpy.zcl.clusters.general import (
     OnOff,
 )
 
-from .. import EventableCluster, LocalDataCluster
-from ..const import ENDPOINTS, INPUT_CLUSTERS, OUTPUT_CLUSTERS
+from zhaquirks import EventableCluster, LocalDataCluster
+from zhaquirks.const import ENDPOINTS, INPUT_CLUSTERS, OUTPUT_CLUSTERS
 
 _LOGGER = logging.getLogger(__name__)
 

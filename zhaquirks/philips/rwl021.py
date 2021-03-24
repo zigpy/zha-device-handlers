@@ -14,20 +14,20 @@ from zigpy.zcl.clusters.general import (
     Scenes,
 )
 
-from . import (
-    HUE_REMOTE_DEVICE_TRIGGERS,
-    PHILIPS,
-    SIGNIFY,
-    PhilipsBasicCluster,
-    PhilipsRemoteCluster,
-)
-from ..const import (
+from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
+)
+from zhaquirks.philips import (
+    HUE_REMOTE_DEVICE_TRIGGERS,
+    PHILIPS,
+    SIGNIFY,
+    PhilipsBasicCluster,
+    PhilipsRemoteCluster,
 )
 
 DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821

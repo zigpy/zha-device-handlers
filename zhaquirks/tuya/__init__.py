@@ -10,8 +10,8 @@ from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import OnOff, PowerConfiguration
 from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
 
-from .. import Bus, EventableCluster, LocalDataCluster
-from ..const import DOUBLE_PRESS, LONG_PRESS, SHORT_PRESS, ZHA_SEND_EVENT
+from zhaquirks import Bus, EventableCluster, LocalDataCluster
+from zhaquirks.const import DOUBLE_PRESS, LONG_PRESS, SHORT_PRESS, ZHA_SEND_EVENT
 
 TUYA_CLUSTER_ID = 0xEF00
 TUYA_SET_DATA = 0x0000

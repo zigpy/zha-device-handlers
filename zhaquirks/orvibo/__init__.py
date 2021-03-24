@@ -1,6 +1,6 @@
 """Module for ORVIBO quirks implementations."""
 
-from .. import LocalDataCluster, MotionWithReset, OccupancyOnEvent
+from zhaquirks import LocalDataCluster, MotionWithReset, OccupancyOnEvent
 
 ORVIBO = "欧瑞博"
 ORVIBO_LATIN = "ORVIBO"
