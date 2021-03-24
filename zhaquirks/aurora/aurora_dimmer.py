@@ -43,6 +43,9 @@ class AuroraDimmerBatteryPowered(CustomDevice):
     class WallSwitchOnOffCluster(EventableCluster, OnOff):
         """WallSwitchOnOffCluster: fire events corresponding to press type."""
 
+        # prevent creation of junk entities
+        ep_attribute = "not_on_off"
+
         # as the device is battery powered, whether or not it thinks it is
         # on or off is irrelevant
         def _update_attribute(self, attrid, value):
