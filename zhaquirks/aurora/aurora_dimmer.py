@@ -11,8 +11,8 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.lighting import Color
 
-from .. import EventableCluster, PowerConfigurationCluster
-from ..const import (
+from zhaquirks import EventableCluster, PowerConfigurationCluster
+from zhaquirks.const import (
     ARGS,
     CLUSTER_ID,
     COMMAND,
