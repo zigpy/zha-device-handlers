@@ -20,8 +20,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-
-from . import EUROTRONIC, ThermostatCluster
+from zhaquirks.eurotronic import EUROTRONIC, ThermostatCluster
 
 
 class SPZB0001(CustomDevice):

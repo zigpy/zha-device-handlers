@@ -4,8 +4,7 @@ from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, OnOff, Ota, PowerConfiguration, Time
 
-from . import TuyaSmartRemoteOnOffCluster
-from ..const import (
+from zhaquirks.const import (
     BUTTON_1,
     COMMAND,
     DEVICE_TYPE,
@@ -19,6 +18,7 @@ from ..const import (
     PROFILE_ID,
     SHORT_PRESS,
 )
+from zhaquirks.tuya import TuyaSmartRemoteOnOffCluster
 
 
 class TuyaSmartRemote0041(CustomDevice):

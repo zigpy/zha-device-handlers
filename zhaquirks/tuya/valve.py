@@ -8,21 +8,21 @@ from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
 from zigpy.zcl.clusters.hvac import Thermostat
 
-from . import (
-    TuyaManufClusterAttributes,
-    TuyaPowerConfigurationCluster,
-    TuyaThermostat,
-    TuyaThermostatCluster,
-    TuyaUserInterfaceCluster,
-)
-from .. import Bus, LocalDataCluster
-from ..const import (
+from zhaquirks import Bus, LocalDataCluster
+from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
+)
+from zhaquirks.tuya import (
+    TuyaManufClusterAttributes,
+    TuyaPowerConfigurationCluster,
+    TuyaThermostat,
+    TuyaThermostatCluster,
+    TuyaUserInterfaceCluster,
 )
 
 # info from https://github.com/Koenkk/zigbee-herdsman-converters/blob/master/converters/common.js#L113
@@ -843,6 +843,7 @@ class MoesHY368_Type1(TuyaThermostat):
         MODELS_INFO: [
             ("_TZE200_ckud7u2l", "TS0601"),
             ("_TZE200_ywdxldoj", "TS0601"),
+            ("_TZE200_cwnjrr72", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
@@ -889,6 +890,7 @@ class MoesHY368_Type2(TuyaThermostat):
         MODELS_INFO: [
             ("_TYST11_ckud7u2l", "kud7u2l"),
             ("_TYST11_ywdxldoj", "wdxldoj"),
+            ("_TYST11_cwnjrr72", "wnjrr72"),
         ],
         ENDPOINTS: {
             1: {

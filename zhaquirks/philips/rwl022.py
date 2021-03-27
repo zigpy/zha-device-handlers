@@ -1,4 +1,4 @@
-"""Device handler for IKEA of Sweden TRADFRI wireless dimmer ICTC-G-1."""
+"""Philips RWL022 device."""
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
@@ -8,56 +8,57 @@ from zigpy.zcl.clusters.general import (
     LevelControl,
     OnOff,
     Ota,
-    PollControl,
     PowerConfiguration,
+    Scenes,
 )
 from zigpy.zcl.clusters.lightlink import LightLink
 
-from zhaquirks import DoublingPowerConfigurationCluster
 from zhaquirks.const import (
-    ARGS,
-    CLUSTER_ID,
-    COMMAND,
-    COMMAND_MOVE,
     DEVICE_TYPE,
-    ENDPOINT_ID,
     ENDPOINTS,
     INPUT_CLUSTERS,
-    LEFT,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
-    RIGHT,
 )
-from zhaquirks.ikea import IKEA, ROTATED
+from zhaquirks.philips import (
+    HUE_REMOTE_DEVICE_TRIGGERS,
+    SIGNIFY,
+    PhilipsBasicCluster,
+    PhilipsRemoteCluster,
+)
+
+DEVICE_SPECIFIC_UNKNOWN = 64512
 
 
-class IkeaDimmer(CustomDevice):
-    """Custom device representing IKEA of Sweden TRADFRI wireless dimmer."""
+class PhilipsRWL022(CustomDevice):
+    """Philips RWL022 device."""
 
     signature = {
-        # <SimpleDescriptor endpoint=1 profile=260 device_type=2080
-        # device_version=1
-        # input_clusters=[0, 1, 3, 32, 4096]
-        # output_clusters=[3, 4, 6, 8, 25, 4096]
-        MODELS_INFO: [(IKEA, "TRADFRI wireless dimmer")],
+        #  <SimpleDescriptor endpoint=1 profile=260 device_type=2096
+        #  device_version=1
+        #  input_clusters=[0, 1, 3, 64512, 4096]
+        #  output_clusters=[25, 0, 3, 4, 6, 8, 5, 4096]>
+        MODELS_INFO: [(SIGNIFY, "RWL022")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.NON_COLOR_CONTROLLER,
+                DEVICE_TYPE: zha.DeviceType.NON_COLOR_SCENE_CONTROLLER,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
                     Identify.cluster_id,
-                    PollControl.cluster_id,
+                    DEVICE_SPECIFIC_UNKNOWN,
                     LightLink.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
+                    Ota.cluster_id,
+                    Basic.cluster_id,
                     Identify.cluster_id,
                     Groups.cluster_id,
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
-                    Ota.cluster_id,
+                    Scenes.cluster_id,
                     LightLink.cluster_id,
                 ],
             }
@@ -68,38 +69,26 @@ class IkeaDimmer(CustomDevice):
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.NON_COLOR_CONTROLLER,
+                DEVICE_TYPE: zha.DeviceType.NON_COLOR_SCENE_CONTROLLER,
                 INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    DoublingPowerConfigurationCluster,
+                    PhilipsBasicCluster,
+                    PowerConfiguration.cluster_id,
                     Identify.cluster_id,
-                    PollControl.cluster_id,
+                    PhilipsRemoteCluster,
                     LightLink.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
+                    Ota.cluster_id,
+                    Basic.cluster_id,
                     Identify.cluster_id,
                     Groups.cluster_id,
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
-                    Ota.cluster_id,
+                    Scenes.cluster_id,
                     LightLink.cluster_id,
                 ],
             }
         }
     }
 
-
-device_automation_triggers = {
-    (ROTATED, RIGHT): {
-        COMMAND: COMMAND_MOVE,
-        CLUSTER_ID: 8,
-        ENDPOINT_ID: 1,
-        ARGS: [0, 195],
-    },
-    (ROTATED, LEFT): {
-        COMMAND: COMMAND_MOVE,
-        CLUSTER_ID: 8,
-        ENDPOINT_ID: 1,
-        ARGS: [1, 195],
-    },
-}
+    device_automation_triggers = HUE_REMOTE_DEVICE_TRIGGERS

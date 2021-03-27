@@ -19,8 +19,7 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.lightlink import LightLink
 
-from . import OSRAM
-from ..const import (
+from zhaquirks.const import (
     BUTTON_1,
     BUTTON_2,
     BUTTON_3,
@@ -40,6 +39,7 @@ from ..const import (
     PROFILE_ID,
     SHORT_PRESS,
 )
+from zhaquirks.osram import OSRAM
 
 OSRAM_DEVICE = 0x0810  # 2064 base 10
 OSRAM_CLUSTER = 0xFD00  # 64768 base 10

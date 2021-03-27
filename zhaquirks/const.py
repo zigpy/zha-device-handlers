@@ -56,6 +56,7 @@ COMMAND_STOP = "stop"
 COMMAND_TILT = "Tilt"
 COMMAND_TOGGLE = "toggle"
 COMMAND_TRIPLE = "triple"
+CUSTOM_QUIRKS_PATH = "custom_quirks_path"
 DESCRIPTION = "description"
 DEVICE_TYPE = SIG_EP_TYPE
 DIM_DOWN = "dim_down"

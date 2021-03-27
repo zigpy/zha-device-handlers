@@ -16,8 +16,7 @@ from zigpy.zcl.clusters.measurement import (
 )
 from zigpy.zcl.clusters.security import IasZone
 
-from . import PHILIO, MotionCluster
-from ..const import (
+from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -27,6 +26,7 @@ from ..const import (
     PROFILE_ID,
     SKIP_CONFIGURATION,
 )
+from zhaquirks.philio import PHILIO, MotionCluster
 
 
 class Pst03a(CustomDevice):

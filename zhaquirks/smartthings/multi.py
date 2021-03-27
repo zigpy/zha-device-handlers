@@ -12,7 +12,7 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone
 
-from . import SmartThingsAccelCluster
+from zhaquirks.smartthings import SmartThingsAccelCluster
 
 
 class SmartthingsMultiPurposeSensor(CustomDevice):

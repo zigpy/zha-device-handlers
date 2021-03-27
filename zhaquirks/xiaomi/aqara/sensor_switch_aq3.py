@@ -4,9 +4,8 @@ import logging
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import Basic, Identify, MultistateInput, OnOff
 
-from .. import LUMI, BasicCluster, XiaomiCustomDevice, XiaomiPowerConfiguration
-from ... import CustomCluster
-from ...const import (
+from zhaquirks import CustomCluster
+from zhaquirks.const import (
     COMMAND,
     COMMAND_DOUBLE,
     COMMAND_HOLD,
@@ -27,6 +26,12 @@ from ...const import (
     SKIP_CONFIGURATION,
     VALUE,
     ZHA_SEND_EVENT,
+)
+from zhaquirks.xiaomi import (
+    LUMI,
+    BasicCluster,
+    XiaomiCustomDevice,
+    XiaomiPowerConfiguration,
 )
 
 B1ACN01_HOLD = 0

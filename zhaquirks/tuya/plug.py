@@ -6,7 +6,7 @@ from zigpy.zcl.clusters.general import Basic, Groups, OnOff, Ota, Scenes, Time
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
 
-from ..const import (
+from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -35,7 +35,10 @@ class Plug(CustomDevice):
     """Tuya plug with restore power state support."""
 
     signature = {
-        MODELS_INFO: [("_TZ3000_g5xawfcq", "TS0121")],
+        MODELS_INFO: [
+            ("_TZ3000_g5xawfcq", "TS0121"),
+            ("_TZ3000_3ooaz3ng", "TS0121"),
+        ],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=81
             # device_version=1

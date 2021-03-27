@@ -11,8 +11,8 @@ from zigpy.zcl.clusters.measurement import (
     TemperatureMeasurement,
 )
 
-from .. import OCCUPANCY_EVENT, LocalDataCluster, OccupancyOnEvent, _Motion
-from ..const import (
+from zhaquirks import OCCUPANCY_EVENT, LocalDataCluster, OccupancyOnEvent, _Motion
+from zhaquirks.const import (
     BUTTON,
     CLUSTER_COMMAND,
     COMMAND,

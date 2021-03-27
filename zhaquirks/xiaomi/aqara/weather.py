@@ -5,18 +5,8 @@ from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import Groups, Identify
 from zigpy.zcl.clusters.measurement import PressureMeasurement
 
-from .. import (
-    LUMI,
-    XIAOMI_NODE_DESC,
-    BasicCluster,
-    PressureMeasurementCluster,
-    RelativeHumidityCluster,
-    TemperatureMeasurementCluster,
-    XiaomiPowerConfiguration,
-    XiaomiQuickInitDevice,
-)
-from ... import Bus
-from ...const import (
+from zhaquirks import Bus
+from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -25,6 +15,16 @@ from ...const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SKIP_CONFIGURATION,
+)
+from zhaquirks.xiaomi import (
+    LUMI,
+    XIAOMI_NODE_DESC,
+    BasicCluster,
+    PressureMeasurementCluster,
+    RelativeHumidityCluster,
+    TemperatureMeasurementCluster,
+    XiaomiPowerConfiguration,
+    XiaomiQuickInitDevice,
 )
 
 TEMPERATURE_HUMIDITY_DEVICE_TYPE = 0x5F01

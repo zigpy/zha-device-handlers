@@ -25,15 +25,8 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.security import IasZone
 
-from .. import (
-    LUMI,
-    XIAOMI_NODE_DESC,
-    BasicCluster,
-    XiaomiPowerConfiguration,
-    XiaomiQuickInitDevice,
-)
-from ... import CustomCluster
-from ...const import (
+from zhaquirks import CustomCluster
+from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -42,6 +35,13 @@ from ...const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SKIP_CONFIGURATION,
+)
+from zhaquirks.xiaomi import (
+    LUMI,
+    XIAOMI_NODE_DESC,
+    BasicCluster,
+    XiaomiPowerConfiguration,
+    XiaomiQuickInitDevice,
 )
 
 IAS_ZONE = 0x0402

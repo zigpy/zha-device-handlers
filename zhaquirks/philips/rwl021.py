@@ -14,8 +14,21 @@ from zigpy.zcl.clusters.general import (
     Scenes,
 )
 
-from . import HUE_REMOTE_DEVICE_TRIGGERS, PhilipsBasicCluster, PhilipsRemoteCluster
-from ..const import DEVICE_TYPE, ENDPOINTS, INPUT_CLUSTERS, OUTPUT_CLUSTERS, PROFILE_ID
+from zhaquirks.const import (
+    DEVICE_TYPE,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    MODELS_INFO,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
+)
+from zhaquirks.philips import (
+    HUE_REMOTE_DEVICE_TRIGGERS,
+    PHILIPS,
+    SIGNIFY,
+    PhilipsBasicCluster,
+    PhilipsRemoteCluster,
+)
 
 DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
 
@@ -28,6 +41,7 @@ class PhilipsRWL021(CustomDevice):
         #  device_version=2
         #  input_clusters=[0]
         #  output_clusters=[0, 3, 4, 6, 8, 5]>
+        MODELS_INFO: [(PHILIPS, "RWL021"), (SIGNIFY, "RWL021")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zll.PROFILE_ID,
@@ -58,7 +72,7 @@ class PhilipsRWL021(CustomDevice):
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
-        }
+        },
     }
 
     replacement = {

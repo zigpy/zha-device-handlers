@@ -23,9 +23,8 @@ from zigpy.zcl.clusters.measurement import (
     TemperatureMeasurement,
 )
 
-from .. import LUMI, BasicCluster, XiaomiCustomDevice
-from ... import CustomCluster
-from ...const import (
+from zhaquirks import CustomCluster
+from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -33,6 +32,7 @@ from ...const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.xiaomi import LUMI, BasicCluster, XiaomiCustomDevice
 
 _LOGGER = logging.getLogger(__name__)
 

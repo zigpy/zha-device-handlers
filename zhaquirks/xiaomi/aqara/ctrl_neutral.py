@@ -17,15 +17,8 @@ from zigpy.zcl.clusters.general import (
     Time,
 )
 
-from .. import (
-    LUMI,
-    BasicCluster,
-    OnOffCluster,
-    XiaomiCustomDevice,
-    XiaomiPowerConfiguration,
-)
-from ... import EventableCluster
-from ...const import (
+from zhaquirks import EventableCluster
+from zhaquirks.const import (
     ARGS,
     ATTRIBUTE_ID,
     ATTRIBUTE_NAME,
@@ -45,6 +38,13 @@ from ...const import (
     PROFILE_ID,
     SKIP_CONFIGURATION,
     VALUE,
+)
+from zhaquirks.xiaomi import (
+    LUMI,
+    BasicCluster,
+    OnOffCluster,
+    XiaomiCustomDevice,
+    XiaomiPowerConfiguration,
 )
 
 ATTRIBUTE_ON_OFF = "on_off"

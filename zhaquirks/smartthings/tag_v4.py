@@ -6,8 +6,13 @@ from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, BinaryInput, Identify, Ota, PollControl
 
 from zhaquirks import Bus, LocalDataCluster, PowerConfigurationCluster
-
-from ..const import DEVICE_TYPE, ENDPOINTS, INPUT_CLUSTERS, OUTPUT_CLUSTERS, PROFILE_ID
+from zhaquirks.const import (
+    DEVICE_TYPE,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
+)
 
 _LOGGER = logging.getLogger(__name__)
 

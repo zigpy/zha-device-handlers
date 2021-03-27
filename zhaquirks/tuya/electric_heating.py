@@ -5,19 +5,19 @@ from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time
 
-from . import (
-    TuyaManufClusterAttributes,
-    TuyaThermostat,
-    TuyaThermostatCluster,
-    TuyaUserInterfaceCluster,
-)
-from ..const import (
+from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
+)
+from zhaquirks.tuya import (
+    TuyaManufClusterAttributes,
+    TuyaThermostat,
+    TuyaThermostatCluster,
+    TuyaUserInterfaceCluster,
 )
 
 # info from https://github.com/zigpy/zha-device-handlers/pull/538#issuecomment-723334124

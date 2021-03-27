@@ -13,8 +13,7 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.lighting import Color
 
-from . import OSRAM, OsramLightCluster
-from ..const import (
+from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -22,6 +21,7 @@ from ..const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.osram import OSRAM, OsramLightCluster
 
 
 class OsramColorCluster(CustomCluster, Color):

@@ -1,4 +1,4 @@
-"""Quirk for LIDL CCT bulb."""
+"""Tuya dimmable led controller."""
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.zcl.clusters.general import (
@@ -25,33 +25,24 @@ from zhaquirks.const import (
 )
 
 
-class LidlCCTColorCluster(CustomCluster, Color):
-    """Lidl CCT Lighting custom cluster."""
+class TuyaDimmableColorCluster(CustomCluster, Color):
+    """Tuya dimmable led custom cluster."""
 
-    # Remove RGB color wheel for CCT Lighting: only expose color temperature
-    # LIDL bulbs do not correctly report this attribute (comes back as None in Home Assistant)
-    _CONSTANT_ATTRIBUTES = {0x400A: 16}
+    _CONSTANT_ATTRIBUTES = {0x400A: 0}
 
 
-class CCTLight(CustomDevice):
-    """Lidl CCT Lighting device."""
+class DimmableLedController(CustomDevice):
+    """Tuya dimmable led controller."""
 
     signature = {
-        MODELS_INFO: [
-            ("_TZ3000_49qchf10", "TS0502A"),
-            ("_TZ3000_oborybow", "TS0502A"),
-            ("_TZ3000_9evm3otq", "TS0502A"),
-            ("_TZ3000_rylaozuc", "TS0502A"),
-            ("_TZ3000_el5kt5im", "TS0502A"),
-        ],
+        MODELS_INFO: [("_TZ3000_4whigl8i", "TS0501B")],
         ENDPOINTS: {
+            # <SimpleDescriptor endpoint=1 profile=260 device_type=257
+            # input_clusters=[0, 3, 4, 5, 6, 8, 768, 4096]
+            # output_clusters=[10, 25]>
             1: {
-                # <SimpleDescriptor endpoint=1 profile=260 device_type=268
-                # device_version=1
-                # input_clusters=[0, 3, 4, 5, 6, 8, 768, 4096]
-                # output_clusters=[10, 25]
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.COLOR_TEMPERATURE_LIGHT,
+                DEVICE_TYPE: zha.DeviceType.DIMMABLE_LIGHT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
@@ -66,7 +57,6 @@ class CCTLight(CustomDevice):
             },
             242: {
                 # <SimpleDescriptor endpoint=242 profile=41440 device_type=97
-                # device_version=0
                 # input_clusters=[]
                 # output_clusters=[33]
                 PROFILE_ID: 41440,
@@ -76,12 +66,11 @@ class CCTLight(CustomDevice):
             },
         },
     }
-
     replacement = {
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.COLOR_TEMPERATURE_LIGHT,
+                DEVICE_TYPE: zha.DeviceType.DIMMABLE_LIGHT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
@@ -89,7 +78,7 @@ class CCTLight(CustomDevice):
                     Scenes.cluster_id,
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
-                    LidlCCTColorCluster,
+                    TuyaDimmableColorCluster,
                     LightLink.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
@@ -100,5 +89,5 @@ class CCTLight(CustomDevice):
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
-        }
+        },
     }

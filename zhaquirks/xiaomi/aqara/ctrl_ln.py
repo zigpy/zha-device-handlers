@@ -15,16 +15,7 @@ from zigpy.zcl.clusters.general import (
 )
 
 from zhaquirks import Bus
-
-from .. import (
-    LUMI,
-    AnalogInputCluster,
-    BasicCluster,
-    OnOffCluster,
-    XiaomiCustomDevice,
-    XiaomiPowerConfiguration,
-)
-from ...const import (
+from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -32,6 +23,14 @@ from ...const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SKIP_CONFIGURATION,
+)
+from zhaquirks.xiaomi import (
+    LUMI,
+    AnalogInputCluster,
+    BasicCluster,
+    OnOffCluster,
+    XiaomiCustomDevice,
+    XiaomiPowerConfiguration,
 )
 
 

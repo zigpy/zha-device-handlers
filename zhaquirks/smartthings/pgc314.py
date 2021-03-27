@@ -3,8 +3,7 @@ from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, Ota
 
-from . import SMART_THINGS, SmartThingsIasZone
-from ..const import (
+from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -12,6 +11,7 @@ from ..const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.smartthings import SMART_THINGS, SmartThingsIasZone
 
 SMARTSENSE_MOTION_DEVICE_TYPE = 0x013A  # decimal = 314
 
