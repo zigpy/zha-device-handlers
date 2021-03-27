@@ -1,6 +1,6 @@
 """Module for ZHONGXING (knockoff Orvibo) quirks implementations."""
 
-from .. import LocalDataCluster, MotionWithReset, OccupancyOnEvent
+from zhaquirks import LocalDataCluster, MotionWithReset, OccupancyOnEvent
 
 ZHONGXING = "中性"
 ZHONGXING_LATIN = "ZHONGXING"

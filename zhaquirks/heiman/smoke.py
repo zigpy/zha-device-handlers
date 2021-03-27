@@ -6,8 +6,7 @@ from zigpy.zcl.clusters.general import Alarms, Basic, Identify, Ota, PowerConfig
 from zigpy.zcl.clusters.security import IasWd, IasZone
 import zigpy.zdo.types
 
-from . import HEIMAN
-from ..const import (
+from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -16,6 +15,7 @@ from ..const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.heiman import HEIMAN
 
 
 class HeimanSmokYDLV10(CustomDevice):

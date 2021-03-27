@@ -11,7 +11,7 @@ from zigpy.zcl.clusters.general import Basic, LevelControl, OnOff
 from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.measurement import OccupancySensing
 
-from ..const import (
+from zhaquirks.const import (
     ARGS,
     BUTTON,
     COMMAND,

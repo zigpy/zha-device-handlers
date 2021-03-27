@@ -4,8 +4,8 @@ from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.closures import DoorLock
 from zigpy.zcl.clusters.general import Alarms, Basic, Identify, Ota, PollControl, Time
 
-from .. import DoublingPowerConfigurationCluster
-from ..const import (
+from zhaquirks import DoublingPowerConfigurationCluster
+from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,

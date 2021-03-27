@@ -11,9 +11,7 @@ from zigpy.zcl.clusters.general import (
 )
 
 from zhaquirks import DoublingPowerConfigurationCluster
-
-from . import BUTTON_TRIGGERS, KNOB_TRIGGERS, TerncyRawCluster
-from ..const import (
+from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -21,6 +19,7 @@ from ..const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.terncy import BUTTON_TRIGGERS, KNOB_TRIGGERS, TerncyRawCluster
 
 TERNCY_KNOB_DEVICE_TYPE = 0x01F2
 

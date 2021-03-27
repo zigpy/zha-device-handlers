@@ -9,9 +9,8 @@ from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, Identify, Ota
 from zigpy.zcl.clusters.security import IasZone
 
-from . import TuyaManufCluster
-from .. import Bus, LocalDataCluster, MotionOnEvent
-from ..const import (
+from zhaquirks import Bus, LocalDataCluster, MotionOnEvent
+from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -20,6 +19,7 @@ from ..const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.tuya import TuyaManufCluster
 
 ZONE_TYPE = 0x0001
 

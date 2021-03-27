@@ -1,6 +1,6 @@
 """Module for Philio quirks implementations."""
 
-from .. import MotionWithReset
+from zhaquirks import MotionWithReset
 
 PHILIO = "Philio"
 

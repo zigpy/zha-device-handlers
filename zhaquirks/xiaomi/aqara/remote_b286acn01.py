@@ -13,9 +13,8 @@ from zigpy.zcl.clusters.general import (
     Scenes,
 )
 
-from .. import LUMI, BasicCluster, XiaomiCustomDevice, XiaomiPowerConfiguration
-from ... import CustomCluster
-from ...const import (
+from zhaquirks import CustomCluster
+from zhaquirks.const import (
     ATTR_ID,
     BUTTON,
     BUTTON_1,
@@ -35,6 +34,12 @@ from ...const import (
     SKIP_CONFIGURATION,
     VALUE,
     ZHA_SEND_EVENT,
+)
+from zhaquirks.xiaomi import (
+    LUMI,
+    BasicCluster,
+    XiaomiCustomDevice,
+    XiaomiPowerConfiguration,
 )
 
 BOTH_BUTTONS = "both_buttons"

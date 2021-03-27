@@ -2,7 +2,7 @@
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time
 
-from ..const import (
+from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -10,7 +10,7 @@ from ..const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from ..tuya import (
+from zhaquirks.tuya import (
     TuyaManufacturerClusterOnOff,
     TuyaManufacturerWindowCover,
     TuyaManufCluster,

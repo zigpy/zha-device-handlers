@@ -18,8 +18,7 @@ from zigpy.zcl.clusters.measurement import (
     TemperatureMeasurement,
 )
 
-from . import PHILIPS, OccupancyCluster
-from ..const import (
+from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -27,6 +26,7 @@ from ..const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.philips import PHILIPS, OccupancyCluster
 
 
 class PhilipsMotion(CustomDevice):

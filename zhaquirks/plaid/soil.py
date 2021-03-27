@@ -5,9 +5,8 @@ from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PowerConfiguration
 from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
 
-from . import PLAID_SYSTEMS
-from .. import PowerConfigurationCluster
-from ..const import (
+from zhaquirks import PowerConfigurationCluster
+from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -15,6 +14,7 @@ from ..const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.plaid import PLAID_SYSTEMS
 
 
 class PowerConfigurationClusterMains(PowerConfigurationCluster):

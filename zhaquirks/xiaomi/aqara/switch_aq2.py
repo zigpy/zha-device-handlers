@@ -4,14 +4,7 @@ import logging
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import Basic, Groups, OnOff
 
-from .. import (
-    LUMI,
-    XIAOMI_NODE_DESC,
-    BasicCluster,
-    XiaomiPowerConfiguration,
-    XiaomiQuickInitDevice,
-)
-from ...const import (
+from zhaquirks.const import (
     ARGS,
     ATTRIBUTE_ID,
     ATTRIBUTE_NAME,
@@ -34,6 +27,13 @@ from ...const import (
     TRIPLE_PRESS,
     UNKNOWN,
     VALUE,
+)
+from zhaquirks.xiaomi import (
+    LUMI,
+    XIAOMI_NODE_DESC,
+    BasicCluster,
+    XiaomiPowerConfiguration,
+    XiaomiQuickInitDevice,
 )
 
 BUTTON_DEVICE_TYPE = 0x5F01

@@ -8,21 +8,21 @@ from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
 from zigpy.zcl.clusters.hvac import Thermostat
 
-from . import (
-    TuyaManufClusterAttributes,
-    TuyaPowerConfigurationCluster,
-    TuyaThermostat,
-    TuyaThermostatCluster,
-    TuyaUserInterfaceCluster,
-)
-from .. import Bus, LocalDataCluster
-from ..const import (
+from zhaquirks import Bus, LocalDataCluster
+from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
+)
+from zhaquirks.tuya import (
+    TuyaManufClusterAttributes,
+    TuyaPowerConfigurationCluster,
+    TuyaThermostat,
+    TuyaThermostatCluster,
+    TuyaUserInterfaceCluster,
 )
 
 # info from https://github.com/Koenkk/zigbee-herdsman-converters/blob/master/converters/common.js#L113

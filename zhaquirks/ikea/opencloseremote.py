@@ -19,9 +19,8 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.lightlink import LightLink
 
-from . import IKEA
-from .. import DoublingPowerConfigurationCluster
-from ..const import (
+from zhaquirks import DoublingPowerConfigurationCluster
+from zhaquirks.const import (
     ARGS,
     CLOSE,
     COMMAND,
@@ -37,6 +36,7 @@ from ..const import (
     SHORT_PRESS,
     ZHA_SEND_EVENT,
 )
+from zhaquirks.ikea import IKEA
 
 COMMAND_CLOSE = "down_close"
 COMMAND_STOP_OPENING = "stop_opening"

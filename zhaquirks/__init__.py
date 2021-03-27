@@ -17,7 +17,7 @@ from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zdo import types as zdotypes
 
-from .const import (
+from zhaquirks.const import (
     ATTRIBUTE_ID,
     ATTRIBUTE_NAME,
     CLUSTER_COMMAND,

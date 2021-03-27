@@ -21,8 +21,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-
-from . import HIVEHOME, MotionCluster
+from zhaquirks.hivehome import HIVEHOME, MotionCluster
 
 _LOGGER = logging.getLogger(__name__)
 

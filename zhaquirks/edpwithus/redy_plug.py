@@ -13,7 +13,7 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.smartenergy import Metering
 
-from . import MeteringCluster
+from zhaquirks.edpwithus import MeteringCluster
 
 
 class EdpWithUsSmartPlug(CustomDevice):

@@ -13,8 +13,7 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.lightlink import LightLink
 
-from . import PHILIPS, SIGNIFY, PhilipsBasicCluster, PhilipsRemoteCluster
-from ..const import (
+from zhaquirks.const import (
     COMMAND,
     DEVICE_TYPE,
     DOUBLE_PRESS,
@@ -31,6 +30,12 @@ from ..const import (
     SHORT_RELEASE,
     TRIPLE_PRESS,
     TURN_ON,
+)
+from zhaquirks.philips import (
+    PHILIPS,
+    SIGNIFY,
+    PhilipsBasicCluster,
+    PhilipsRemoteCluster,
 )
 
 DEVICE_SPECIFIC_UNKNOWN = 64512

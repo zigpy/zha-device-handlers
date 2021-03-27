@@ -15,15 +15,19 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.hvac import Thermostat
 
-from . import TuyaManufClusterAttributes, TuyaThermostat, TuyaThermostatCluster
-from .. import LocalDataCluster
-from ..const import (
+from zhaquirks import LocalDataCluster
+from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
+)
+from zhaquirks.tuya import (
+    TuyaManufClusterAttributes,
+    TuyaThermostat,
+    TuyaThermostatCluster,
 )
 
 _LOGGER = logging.getLogger(__name__)

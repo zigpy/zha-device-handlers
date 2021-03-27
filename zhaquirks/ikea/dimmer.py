@@ -13,9 +13,8 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.lightlink import LightLink
 
-from . import IKEA, ROTATED
-from .. import DoublingPowerConfigurationCluster
-from ..const import (
+from zhaquirks import DoublingPowerConfigurationCluster
+from zhaquirks.const import (
     ARGS,
     CLUSTER_ID,
     COMMAND,
@@ -30,6 +29,7 @@ from ..const import (
     PROFILE_ID,
     RIGHT,
 )
+from zhaquirks.ikea import IKEA, ROTATED
 
 
 class IkeaDimmer(CustomDevice):

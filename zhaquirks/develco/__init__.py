@@ -1,5 +1,5 @@
 """Quirks for Develco Products A/S."""
-from .. import PowerConfigurationCluster
+from zhaquirks import PowerConfigurationCluster
 
 DEVELCO = "Develco Products A/S"
 

@@ -2,8 +2,20 @@
 
 from zigpy.profiles import zha
 
-from . import XBEE_PROFILE_ID, XBeeAnalogInput, XBeeCommon, XBeeOnOff, XBeePWM
-from ..const import DEVICE_TYPE, ENDPOINTS, INPUT_CLUSTERS, OUTPUT_CLUSTERS, PROFILE_ID
+from zhaquirks.const import (
+    DEVICE_TYPE,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
+)
+from zhaquirks.xbee import (
+    XBEE_PROFILE_ID,
+    XBeeAnalogInput,
+    XBeeCommon,
+    XBeeOnOff,
+    XBeePWM,
+)
 
 
 class XBee3Sensor(XBeeCommon):

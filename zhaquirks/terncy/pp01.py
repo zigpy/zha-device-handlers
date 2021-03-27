@@ -14,9 +14,16 @@ from zigpy.zcl.clusters.measurement import (
     TemperatureMeasurement,
 )
 
-from zhaquirks import DoublingPowerConfigurationCluster
-
-from . import (
+from zhaquirks import Bus, DoublingPowerConfigurationCluster
+from zhaquirks.const import (
+    DEVICE_TYPE,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    MODELS_INFO,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
+)
+from zhaquirks.terncy import (
     BUTTON_TRIGGERS,
     IlluminanceMeasurementCluster,
     MotionClusterLeft,
@@ -24,15 +31,6 @@ from . import (
     OccupancyCluster,
     TemperatureMeasurementCluster,
     TerncyRawCluster,
-)
-from .. import Bus
-from ..const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
 )
 
 TERNCY_AWARENESS_DEVICE_TYPE = 0x01F0

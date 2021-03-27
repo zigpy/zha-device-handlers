@@ -5,9 +5,8 @@ from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, Identify, PowerConfiguration
 from zigpy.zcl.clusters.security import IasZone
 
-from . import KONKE
-from .. import PowerConfigurationCluster
-from ..const import (
+from zhaquirks import PowerConfigurationCluster
+from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -15,6 +14,7 @@ from ..const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.konke import KONKE
 
 KONKE_CLUSTER_ID = 0xFCC0
 
