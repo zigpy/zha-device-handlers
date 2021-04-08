@@ -1,4 +1,4 @@
-"""Device handler for loratap TS130F smart curtain switch. """
+"""Device handler for loratap TS130F smart curtain switch."""
 from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.quirks import CustomCluster, CustomDevice
@@ -17,7 +17,6 @@ from ..const import (
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
-    OPEN,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
