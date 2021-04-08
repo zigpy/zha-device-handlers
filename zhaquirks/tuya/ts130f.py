@@ -47,7 +47,7 @@ class TuyaCoveringCluster(CustomCluster, WindowCovering):
     async def command(
         self, command_id, *args, manufacturer=None, expect_reply=True, tsn=None
     ):
-        """Override default command to invert percent lift value"""
+        """Override default command to invert percent lift value."""
         if command_id == CMD_GO_TO_LIFT_PERCENTAGE:
             percent = args[0]
             # Invert the percentage value (cf https://github.com/dresden-elektronik/deconz-rest-plugin/issues/3757)
@@ -69,7 +69,6 @@ class TuyaTS130F(CustomDevice):
     signature = {
         # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=0x0202, device_version=1, input_clusters=[0, 4, 5, 6, 10, 0x0102], output_clusters=[25]))
         MODELS_INFO: [("_TZ3000_8kzqqzu4", "TS130F")],
-
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
