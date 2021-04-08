@@ -25,6 +25,7 @@ from ..const import (
 ATTR_CURRENT_POSITION_LIFT_PERCENTAGE = 0x0008
 CMD_GO_TO_LIFT_PERCENTAGE = 0x0005
 
+
 class TuyaWithBacklightOnOffCluster(CustomCluster):
     """TuyaSmartCurtainOnOffCluster: fire events corresponding to press type."""
 
@@ -51,7 +52,9 @@ class TuyaCoveringCluster(CustomCluster, WindowCovering):
             value = 100 - value
         super()._update_attribute(attrid, value)
 
-    async def command(self, command_id, *args, manufacturer=None, expect_reply=True, tsn=None):
+    async def command(
+        self, command_id, *args, manufacturer=None, expect_reply=True, tsn=None
+    ):
         """Override default command to invert percent lift value"""
         if command_id == CMD_GO_TO_LIFT_PERCENTAGE:
             percent = args[0]
@@ -59,7 +62,13 @@ class TuyaCoveringCluster(CustomCluster, WindowCovering):
             percent = 100 - percent
             v = (percent,)
             return await super().command(command_id, *v)
-        return await super().command(command_id, *args, manufacturer=manufacturer, expect_reply=expect_reply, tsn=tsn)
+        return await super().command(
+            command_id,
+            *args,
+            manufacturer=manufacturer,
+            expect_reply=expect_reply,
+            tsn=tsn
+        )
 
 
 class TuyaTS130F(CustomDevice):
