@@ -1,8 +1,4 @@
 """Device handler for loratap TS130F smart curtain switch. """
-import logging
-from typing import List, Optional, Union
-
-from zigpy.zcl import foundation
 from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.quirks import CustomCluster, CustomDevice
@@ -17,9 +13,6 @@ from zigpy.zcl.clusters.general import (
 )
 
 from ..const import (
-    CLOSE,
-    COMMAND,
-    COMMAND_STOP,
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -43,8 +36,9 @@ class TuyaWithBacklightOnOffCluster(CustomCluster):
 
     attributes = {0x8001: ("backlight_mode", t.enum8)}
 
+
 class TuyaCoveringCluster(CustomCluster, WindowCovering):
-    """TuyaSmartCurtainWindowCoveringCluster: Allow to setup Window covering tuya devices. """
+    """TuyaSmartCurtainWindowCoveringCluster: Allow to setup Window covering tuya devices."""
 
     attributes = WindowCovering.attributes.copy()
     attributes.update({0xF000: ("tuya_moving_state", t.enum8)})
@@ -66,6 +60,7 @@ class TuyaCoveringCluster(CustomCluster, WindowCovering):
             v = (percent,)
             return await super().command(command_id, *v)
         return await super().command(command_id, *args, manufacturer=manufacturer, expect_reply=expect_reply, tsn=tsn)
+
 
 class TuyaTS130F(CustomDevice):
     """Tuya smart curtain roller shutter."""
@@ -107,4 +102,3 @@ class TuyaTS130F(CustomDevice):
             },
         },
     }
-
