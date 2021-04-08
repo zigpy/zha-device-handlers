@@ -1,16 +1,9 @@
 """Device handler for loratap TS130F smart curtain switch."""
 from zigpy.profiles import zha
-import zigpy.types as t
 from zigpy.quirks import CustomCluster, CustomDevice
+import zigpy.types as t
 from zigpy.zcl.clusters.closures import WindowCovering
-from zigpy.zcl.clusters.general import (
-    Basic,
-    Groups,
-    Scenes,
-    Time,
-    OnOff,
-    Ota,
-)
+from zigpy.zcl.clusters.general import Basic, Groups, OnOff, Ota, Scenes, Time
 
 from ..const import (
     DEVICE_TYPE,
