@@ -5,7 +5,7 @@ import zigpy.types as t
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import Basic, Groups, OnOff, Ota, Scenes, Time
 
-from ..const import (
+from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
