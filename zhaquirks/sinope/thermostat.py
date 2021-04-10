@@ -224,6 +224,7 @@ class SinopeTH1300ZB(SinopeTechnologiesThermostat):
         }
     }
 
+
 class SinopeLineThermostats(SinopeTechnologiesThermostat):
     """TH1123ZB and TH1124Z thermostat."""
 
