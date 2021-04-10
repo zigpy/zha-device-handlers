@@ -1,8 +1,11 @@
 """Support for the Wyze lock."""
 import logging
+from typing import Any, List, Optional, Union
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
+import zigpy.types as t
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.closures import DoorLock
 from zigpy.zcl.clusters.general import (
     Basic,
@@ -23,10 +26,10 @@ from ..const import (
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
     OFF,
     ON,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
     ZONE_STATE,
 )
 
@@ -77,7 +80,15 @@ class WyzeCluster(CustomCluster, Basic):
     server_commands = {}
     client_commands = {}
 
-    def handle_message(self, hdr, args):
+    def handle_message(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: List[Any],
+        *,
+        dst_addressing: Optional[
+            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        ] = None,
+    ):
         """Handle a message on this cluster."""
         self.debug("ZCL request 0x%04x: %s", hdr.command_id, args)
         i = 0
