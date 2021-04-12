@@ -1,9 +1,9 @@
-# ZHA Device Handlers For Home Assistant
+# ZHA Device Handlers For zigpy
 
 ![CI](https://github.com/zigpy/zha-device-handlers/workflows/CI/badge.svg?branch=dev)
 [![Coverage Status](https://coveralls.io/repos/github/zigpy/zha-device-handlers/badge.svg)](https://coveralls.io/github/zigpy/zha-device-handlers)
 
-ZHA Device Handlers are custom quirks implementations for [Zigpy](https://github.com/zigpy/zigpy), the library that provides the [Zigbee](http://www.zigbee.org) support for the [ZHA](https://www.home-assistant.io/components/zha/) component in [Home Assistant](https://www.home-assistant.io).
+ZHA Device Handlers are custom quirks implementations for [Zigpy](https://github.com/zigpy/zigpy), the library that provides the [Zigbee](http://www.zigbee.org) support for the [ZHA](https://www.home-assistant.io/components/zha/) component in [Home Assistant](https://www.home-assistant.io) or any other applications that depends on zigpy.
 
 ZHA device handlers bridge the functionality gap created when manufacturers deviate from the ZCL specification, handling deviations and exceptions by parsing custom messages to and from Zigbee devices. Zigbee devices that deviate from or do not fully conform to the standard specifications set by the Zigbee Alliance may require the development of custom ZHA Device Handlers (ZHA custom quirks handler implementation) to for all their functions to work properly with the ZHA component in Home Assistant.
 
