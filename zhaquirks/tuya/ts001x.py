@@ -15,14 +15,14 @@ from zhaquirks.const import (
     SKIP_CONFIGURATION,
 )
 
+
 class TuyaSingleNoNeutralSwitch(TuyaSwitch):
     """Tuya 1 gang no neutral light switch."""
 
-
     signature = {
         # "node_descriptor": "NodeDescriptor(byte1=2, byte2=64, mac_capability_flags=128, manufacturer_code=4098, 
-        #                       maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264,
-        #                       maximum_outgoing_transfer_size=82, descriptor_capability_field=0)
+        # maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264,
+        # maximum_outgoing_transfer_size=82, descriptor_capability_field=0)
 
         MODELS_INFO: [("_TZ3000_9hpxg80k", "TS0011")],
         ENDPOINTS: {
@@ -66,15 +66,14 @@ class TuyaSingleNoNeutralSwitch(TuyaSwitch):
 class TuyaDoubleNoNeutralSwitch(TuyaSwitch):
     """Tuya 2 gang no neutral light switch."""
 
-
     signature = {
         # "node_descriptor": "NodeDescriptor(byte1=2, byte2=64, mac_capability_flags=128, manufacturer_code=4098, 
-        #                       maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264,
-        #                       maximum_outgoing_transfer_size=82, descriptor_capability_field=0)
+        # maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264,
+        # maximum_outgoing_transfer_size=82, descriptor_capability_field=0)
 
         # "node_descriptor": "NodeDescriptor(byte1=2, byte2=64, mac_capability_flags=128, manufacturer_code=4098, 
-                                # maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264, 
-                                # maximum_outgoing_transfer_size=82, descriptor_capability_field=0)"
+        # maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264, 
+        # maximum_outgoing_transfer_size=82, descriptor_capability_field=0)"
         MODELS_INFO: [("_TZ3000_fvh3pjaz", "TS0012")],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=100
@@ -137,17 +136,17 @@ class TuyaDoubleNoNeutralSwitch(TuyaSwitch):
         },
     }
 
+
 class TuyaTripleNoNeutralSwitch(TuyaSwitch):
     """Tuya 3 gang no neutral light switch."""
 
-
     signature = {
         # "node_descriptor": "NodeDescriptor(byte1=2, byte2=64, mac_capability_flags=128, manufacturer_code=4098, 
-        #                       maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264,
-        #                       maximum_outgoing_transfer_size=82, descriptor_capability_field=0)
+        # maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264,
+        # maximum_outgoing_transfer_size=82, descriptor_capability_field=0)
         # "node_descriptor": "NodeDescriptor(byte1=2, byte2=64, mac_capability_flags=128, manufacturer_code=4098, 
-        #                       maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264, 
-        #                       maximum_outgoing_transfer_size=82, descriptor_capability_field=0)"
+        # maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264, 
+        # maximum_outgoing_transfer_size=82, descriptor_capability_field=0)"
         MODEL: "TS0013",
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=100
