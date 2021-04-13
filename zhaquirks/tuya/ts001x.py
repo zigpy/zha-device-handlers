@@ -1,12 +1,10 @@
 """Tuya 1,2,3 gang no neutral light switch."""
 
 from zigpy.profiles import zha
-from zigpy.zcl.clusters.general import Basic, Groups, Scenes, OnOff, Ota, Time
+from zigpy.zcl.clusters.general import Basic, Groups, OnOff, Ota, Scenes, Time
 
 from zhaquirks.const import (
-    COMMAND,
     DEVICE_TYPE,
-    ENDPOINT_ID,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODEL,
@@ -16,13 +14,11 @@ from zhaquirks.const import (
     SKIP_CONFIGURATION,
 )
 
-from zhaquirks.tuya import (
-    TuyaSwitch,
-)
+from zhaquirks.tuya import TuyaSwitch
 
 class TuyaSingleNoNeutralSwitch(TuyaSwitch):
-    
     """Tuya 1 gang no neutral light switch."""
+
     signature = {
         #"node_descriptor": "NodeDescriptor(byte1=2, byte2=64, mac_capability_flags=128, manufacturer_code=4098, 
         #                       maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264,
@@ -30,10 +26,10 @@ class TuyaSingleNoNeutralSwitch(TuyaSwitch):
 
         MODELS_INFO: [("_TZ3000_9hpxg80k", "TS0011")],
         ENDPOINTS: {
-        # <SimpleDescriptor endpoint=1 profile=260 device_type=100
-        # device_version=1
-        # input_clusters=[0, 4, 5, 6]
-        # output_clusters=[a, 19]>
+            # <SimpleDescriptor endpoint=1 profile=260 device_type=100
+            # device_version=1
+            # input_clusters=[0, 4, 5, 6]
+            # output_clusters=[a, 19]>
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
@@ -47,7 +43,6 @@ class TuyaSingleNoNeutralSwitch(TuyaSwitch):
             },
          },
     }
-
 
     replacement = {
         SKIP_CONFIGURATION: True,
@@ -69,8 +64,8 @@ class TuyaSingleNoNeutralSwitch(TuyaSwitch):
 
 
 class TuyaDoubleNoNeutralSwitch(TuyaSwitch):
-    
     """Tuya 2 gang no neutral light switch."""
+
     signature = {
         #"node_descriptor": "NodeDescriptor(byte1=2, byte2=64, mac_capability_flags=128, manufacturer_code=4098, 
         #                       maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264,
@@ -79,8 +74,6 @@ class TuyaDoubleNoNeutralSwitch(TuyaSwitch):
         # "node_descriptor": "NodeDescriptor(byte1=2, byte2=64, mac_capability_flags=128, manufacturer_code=4098, 
                                 # maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264, 
                                 # maximum_outgoing_transfer_size=82, descriptor_capability_field=0)"
-
-
         MODELS_INFO: [("_TZ3000_fvh3pjaz", "TS0012")],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=100
@@ -115,7 +108,6 @@ class TuyaDoubleNoNeutralSwitch(TuyaSwitch):
          },
     }
 
-
     replacement = {
         SKIP_CONFIGURATION: True,
         ENDPOINTS: {
@@ -145,18 +137,15 @@ class TuyaDoubleNoNeutralSwitch(TuyaSwitch):
     }
 
 class TuyaTripleNoNeutralSwitch(TuyaSwitch):
-    
     """Tuya 3 gang no neutral light switch."""
+
     signature = {
         #"node_descriptor": "NodeDescriptor(byte1=2, byte2=64, mac_capability_flags=128, manufacturer_code=4098, 
         #                       maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264,
         #                       maximum_outgoing_transfer_size=82, descriptor_capability_field=0)
-
-        # "node_descriptor": "NodeDescriptor(byte1=2, byte2=64, mac_capability_flags=128, manufacturer_code=4098, 
-                                # maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264, 
-                                # maximum_outgoing_transfer_size=82, descriptor_capability_field=0)"
-
-
+        #"node_descriptor": "NodeDescriptor(byte1=2, byte2=64, mac_capability_flags=128, manufacturer_code=4098, 
+        #                       maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264, 
+        #                       maximum_outgoing_transfer_size=82, descriptor_capability_field=0)"
         MODEL: "TS0013",
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=100
@@ -204,7 +193,6 @@ class TuyaTripleNoNeutralSwitch(TuyaSwitch):
             },
          },
     }
-
 
     replacement = {
         SKIP_CONFIGURATION: True,
