@@ -2,6 +2,7 @@
 
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import Basic, Groups, OnOff, Ota, Scenes, Time
+from zhaquirks.tuya import TuyaSwitch
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -14,13 +15,12 @@ from zhaquirks.const import (
     SKIP_CONFIGURATION,
 )
 
-from zhaquirks.tuya import TuyaSwitch
-
 class TuyaSingleNoNeutralSwitch(TuyaSwitch):
     """Tuya 1 gang no neutral light switch."""
 
+
     signature = {
-        #"node_descriptor": "NodeDescriptor(byte1=2, byte2=64, mac_capability_flags=128, manufacturer_code=4098, 
+        # "node_descriptor": "NodeDescriptor(byte1=2, byte2=64, mac_capability_flags=128, manufacturer_code=4098, 
         #                       maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264,
         #                       maximum_outgoing_transfer_size=82, descriptor_capability_field=0)
 
@@ -41,7 +41,7 @@ class TuyaSingleNoNeutralSwitch(TuyaSwitch):
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id, Time.cluster_id],
             },
-         },
+        },
     }
 
     replacement = {
@@ -66,8 +66,9 @@ class TuyaSingleNoNeutralSwitch(TuyaSwitch):
 class TuyaDoubleNoNeutralSwitch(TuyaSwitch):
     """Tuya 2 gang no neutral light switch."""
 
+
     signature = {
-        #"node_descriptor": "NodeDescriptor(byte1=2, byte2=64, mac_capability_flags=128, manufacturer_code=4098, 
+        # "node_descriptor": "NodeDescriptor(byte1=2, byte2=64, mac_capability_flags=128, manufacturer_code=4098, 
         #                       maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264,
         #                       maximum_outgoing_transfer_size=82, descriptor_capability_field=0)
 
@@ -105,7 +106,7 @@ class TuyaDoubleNoNeutralSwitch(TuyaSwitch):
                 ],
                 OUTPUT_CLUSTERS: [],
             },
-         },
+        },
     }
 
     replacement = {
@@ -139,11 +140,12 @@ class TuyaDoubleNoNeutralSwitch(TuyaSwitch):
 class TuyaTripleNoNeutralSwitch(TuyaSwitch):
     """Tuya 3 gang no neutral light switch."""
 
+
     signature = {
-        #"node_descriptor": "NodeDescriptor(byte1=2, byte2=64, mac_capability_flags=128, manufacturer_code=4098, 
+        # "node_descriptor": "NodeDescriptor(byte1=2, byte2=64, mac_capability_flags=128, manufacturer_code=4098, 
         #                       maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264,
         #                       maximum_outgoing_transfer_size=82, descriptor_capability_field=0)
-        #"node_descriptor": "NodeDescriptor(byte1=2, byte2=64, mac_capability_flags=128, manufacturer_code=4098, 
+        # "node_descriptor": "NodeDescriptor(byte1=2, byte2=64, mac_capability_flags=128, manufacturer_code=4098, 
         #                       maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264, 
         #                       maximum_outgoing_transfer_size=82, descriptor_capability_field=0)"
         MODEL: "TS0013",
@@ -191,7 +193,7 @@ class TuyaTripleNoNeutralSwitch(TuyaSwitch):
                 ],
                 OUTPUT_CLUSTERS: [],
             },
-         },
+        },
     }
 
     replacement = {
