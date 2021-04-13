@@ -2,7 +2,6 @@
 
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import Basic, Groups, OnOff, Ota, Scenes, Time
-from zhaquirks.tuya import TuyaSwitch
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -14,6 +13,7 @@ from zhaquirks.const import (
     PROFILE_ID,
     SKIP_CONFIGURATION,
 )
+from zhaquirks.tuya import TuyaSwitch
 
 
 class TuyaSingleNoNeutralSwitch(TuyaSwitch):
