@@ -23,7 +23,6 @@ class TuyaSingleNoNeutralSwitch(TuyaSwitch):
         # "node_descriptor": "NodeDescriptor(byte1=2, byte2=64, mac_capability_flags=128, manufacturer_code=4098,
         # maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264,
         # maximum_outgoing_transfer_size=82, descriptor_capability_field=0)
-
         MODELS_INFO: [("_TZ3000_9hpxg80k", "TS0011")],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=100
@@ -58,7 +57,6 @@ class TuyaSingleNoNeutralSwitch(TuyaSwitch):
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
-
         },
     }
 
@@ -70,7 +68,6 @@ class TuyaDoubleNoNeutralSwitch(TuyaSwitch):
         # "node_descriptor": "NodeDescriptor(byte1=2, byte2=64, mac_capability_flags=128, manufacturer_code=4098,
         # maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264,
         # maximum_outgoing_transfer_size=82, descriptor_capability_field=0)
-
         # "node_descriptor": "NodeDescriptor(byte1=2, byte2=64, mac_capability_flags=128, manufacturer_code=4098,
         # maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264,
         # maximum_outgoing_transfer_size=82, descriptor_capability_field=0)"
@@ -132,7 +129,6 @@ class TuyaDoubleNoNeutralSwitch(TuyaSwitch):
                 ],
                 OUTPUT_CLUSTERS: [],
             },
-
         },
     }
 
