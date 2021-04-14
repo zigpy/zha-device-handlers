@@ -11,7 +11,6 @@ from zhaquirks.const import (
     CLUSTER_ID,
     COMMAND,
     COMMAND_ATTRIBUTE_UPDATED,
-    COMMAND_TRIPLE,
     DEVICE_TYPE,
     DOUBLE_PRESS,
     ENDPOINT_ID,
