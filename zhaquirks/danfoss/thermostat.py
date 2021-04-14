@@ -54,7 +54,6 @@ class DanfossThermostatCluster(CustomCluster, Thermostat):
         0x4050: ("preheat_time", t.uint32_t),
         0x4051: ("window_open_feature_on_off", t.Bool),
         0xFFFD: ("cluster_revision", t.uint16_t),
-
     }
 
 
