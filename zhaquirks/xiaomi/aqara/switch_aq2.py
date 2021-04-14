@@ -101,7 +101,7 @@ class SwitchAQ2(XiaomiQuickInitDevice):
             ARGS: {ATTRIBUTE_ID: 32768, ATTRIBUTE_NAME: UNKNOWN, VALUE: 2},
         },
         (TRIPLE_PRESS, TRIPLE_PRESS): {
-            COMMAND: COMMAND_TRIPLE,
+            COMMAND: COMMAND_ATTRIBUTE_UPDATED,
             CLUSTER_ID: 6,
             ENDPOINT_ID: 1,
             ARGS: {ATTRIBUTE_ID: 32768, ATTRIBUTE_NAME: UNKNOWN, VALUE: 3},
