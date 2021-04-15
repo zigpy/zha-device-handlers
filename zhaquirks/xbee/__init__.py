@@ -150,7 +150,7 @@ class XBeeCommon(CustomDevice):
         """Remote at command."""
         if hasattr(self._application, "remote_at_command"):
             return self._application.remote_at_command(
-                self.nwk, command, *args, apply_changes=True, encryption=True, **kwargs
+                self.nwk, command, *args, apply_changes=True, encryption=False, **kwargs
             )
         _LOGGER.warning("Remote At Command not supported by this coordinator")
 
