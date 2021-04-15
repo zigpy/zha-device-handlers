@@ -4,8 +4,7 @@ from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, Ota
 from zigpy.zcl.clusters.security import IasZone
 
-from . import SMART_THINGS, SmartThingsIasZone
-from ..const import (
+from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -14,6 +13,7 @@ from ..const import (
     PROFILE_ID,
     ZONE_TYPE,
 )
+from zhaquirks.smartthings import SMART_THINGS, SmartThingsIasZone
 
 SMARTSENSE_MULTI_DEVICE_TYPE = 0x0139  # decimal = 313
 

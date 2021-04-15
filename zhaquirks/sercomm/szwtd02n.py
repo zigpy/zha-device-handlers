@@ -15,8 +15,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-
-from . import SERCOMM
+from zhaquirks.sercomm import SERCOMM
 
 
 class SercommPowerConfiguration(PowerConfigurationCluster):

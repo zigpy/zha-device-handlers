@@ -3,6 +3,7 @@ from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes
 
+from zhaquirks import PowerConfigurationCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -11,9 +12,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-
-from . import THIRD_REALITY
-from .. import PowerConfigurationCluster
+from zhaquirks.thirdreality import THIRD_REALITY
 
 
 class CustomPowerConfigurationCluster(PowerConfigurationCluster):

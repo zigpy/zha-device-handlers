@@ -26,8 +26,14 @@ import zigpy.zcl.foundation as foundation
 import zigpy.zdo
 from zigpy.zdo.types import NodeDescriptor
 
-from .. import Bus, LocalDataCluster, MotionOnEvent, OccupancyWithReset, QuickInitDevice
-from ..const import (
+from zhaquirks import (
+    Bus,
+    LocalDataCluster,
+    MotionOnEvent,
+    OccupancyWithReset,
+    QuickInitDevice,
+)
+from zhaquirks.const import (
     ATTRIBUTE_ID,
     ATTRIBUTE_NAME,
     COMMAND_ATTRIBUTE_UPDATED,
@@ -307,7 +313,7 @@ class XiaomiPowerConfiguration(PowerConfiguration, LocalDataCluster):
 
     def battery_reported(self, voltage_mv: int) -> None:
         """Battery reported."""
-        self._update_attribute(self.BATTERY_VOLTAGE_ATTR, round(voltage_mv / 100))
+        self._update_attribute(self.BATTERY_VOLTAGE_ATTR, round(voltage_mv / 100, 1))
         self._update_battery_percentage(voltage_mv)
 
     def _update_battery_percentage(self, voltage_mv: int) -> None:
@@ -393,9 +399,9 @@ class PressureMeasurementCluster(CustomCluster, PressureMeasurement):
         self.endpoint.device.pressure_bus.add_listener(self)
 
     def _update_attribute(self, attrid, value):
-        # drop values above and below documented range for this sensor
+        # drop unreasonable values
         # value is in hectopascals
-        if attrid == self.ATTR_ID and (300 <= value <= 1100):
+        if attrid == self.ATTR_ID and (0 <= value <= 1100):
             super()._update_attribute(attrid, value)
 
     def pressure_reported(self, value):

@@ -4,17 +4,8 @@ from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import Basic, Ota
 from zigpy.zcl.clusters.measurement import OccupancySensing
 
-from .. import (
-    LUMI,
-    BasicCluster,
-    IlluminanceMeasurementCluster,
-    MotionCluster,
-    OccupancyCluster,
-    XiaomiCustomDevice,
-    XiaomiPowerConfiguration,
-)
-from ... import Bus
-from ...const import (
+from zhaquirks import Bus
+from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -22,6 +13,15 @@ from ...const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SKIP_CONFIGURATION,
+)
+from zhaquirks.xiaomi import (
+    LUMI,
+    BasicCluster,
+    IlluminanceMeasurementCluster,
+    MotionCluster,
+    OccupancyCluster,
+    XiaomiCustomDevice,
+    XiaomiPowerConfiguration,
 )
 
 XIAOMI_CLUSTER_ID = 0xFFFF

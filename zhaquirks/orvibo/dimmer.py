@@ -5,8 +5,7 @@ from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, Groups, LevelControl, OnOff, Scenes
 from zigpy.zcl.clusters.lighting import Color
 
-from . import ORVIBO
-from ..const import (
+from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -14,6 +13,7 @@ from ..const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.orvibo import ORVIBO
 
 
 class T10D1ZW(CustomDevice):

@@ -1,26 +1,75 @@
 """Tuya devices."""
+import datetime
 import logging
 from typing import Any, List, Optional, Tuple, Union
 
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
+from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import OnOff, PowerConfiguration
 from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
 
-from .. import Bus, EventableCluster, LocalDataCluster
-from ..const import DOUBLE_PRESS, LONG_PRESS, SHORT_PRESS, ZHA_SEND_EVENT
+from zhaquirks import Bus, EventableCluster, LocalDataCluster
+from zhaquirks.const import DOUBLE_PRESS, LONG_PRESS, SHORT_PRESS, ZHA_SEND_EVENT
 
 TUYA_CLUSTER_ID = 0xEF00
 TUYA_SET_DATA = 0x0000
 TUYA_GET_DATA = 0x0001
 TUYA_SET_DATA_RESPONSE = 0x0002
+TUYA_SET_TIME = 0x0024
 
+COVER_EVENT = "cover_event"
 SWITCH_EVENT = "switch_event"
 ATTR_ON_OFF = 0x0000
+ATTR_COVER_POSITION = 0x0008
 TUYA_CMD_BASE = 0x0100
 
+#  Tuya cover command
+#  https://github.com/Koenkk/zigbee-herdsman-converters/issues/1159#issuecomment-614659802
+#  0x2: open
+#  0x1: stop
+#  0x0: close
+# maps to
+# 0x0000: ("up_open", (), False),
+# 0x0001: ("down_close", (), False),
+# 0x0002: ("stop", (), False),
+
+TUYA_COVER_COMMAND = {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001}
+
+TUYA_SET_COVER_POSITION_COMMAND = 0x0002
+
 _LOGGER = logging.getLogger(__name__)
+
+
+class BigEndianInt16(int):
+    """Helper class to represent big endian 16 bit value."""
+
+    def serialize(self) -> bytes:
+        """Value serialisation."""
+
+        try:
+            return self.to_bytes(2, "big", signed=False)
+        except OverflowError as e:
+            # OverflowError is not a subclass of ValueError, making it annoying to catch
+            raise ValueError(str(e)) from e
+
+    @classmethod
+    def deserialize(cls, data: bytes) -> Tuple["BigEndianInt16", bytes]:
+        """Value deserialisation."""
+
+        if len(data) < 2:
+            raise ValueError(f"Data is too short to contain {cls._size} bytes")
+
+        r = cls.from_bytes(data[:2], "big", signed=False)
+        data = data[2:]
+        return r, data
+
+
+class TuyaTimePayload(t.LVList, item_type=t.uint8_t, length_type=BigEndianInt16):
+    """Tuya set time payload definition."""
+
+    pass
 
 
 class Data(t.List, item_type=t.uint8_t):
@@ -50,6 +99,7 @@ class TuyaManufCluster(CustomCluster):
     name = "Tuya Manufacturer Specicific"
     cluster_id = TUYA_CLUSTER_ID
     ep_attribute = "tuya_manufacturer"
+    set_time_offset = 0
 
     class Command(t.Struct):
         """Tuya manufacturer cluster command."""
@@ -60,12 +110,76 @@ class TuyaManufCluster(CustomCluster):
         function: t.uint8_t
         data: Data
 
-    manufacturer_server_commands = {0x0000: ("set_data", (Command,), False)}
+    """ Time sync command (It's transparent between MCU and server)
+            Time request device -> server
+               payloadSize = 0
+            Set time, server -> device
+               payloadSize, should be always 8
+               payload[0-3] - UTC timestamp (big endian)
+               payload[4-7] - Local timestamp (big endian)
+
+            Zigbee payload is very similar to the UART payload which is described here: https://developer.tuya.com/en/docs/iot/device-development/access-mode-mcu/zigbee-general-solution/tuya-zigbee-module-uart-communication-protocol/tuya-zigbee-module-uart-communication-protocol?id=K9ear5khsqoty#title-10-Time%20synchronization
+
+            Some devices need the timestamp in seconds from 1/1/1970 and others in seconds from 1/1/2000.
+
+            NOTE: You need to wait for time request before setting it. You can't set time without request."""
+
+    manufacturer_server_commands = {
+        0x0000: ("set_data", (Command,), False),
+        0x0024: ("set_time", (TuyaTimePayload,), False),
+    }
 
     manufacturer_client_commands = {
         0x0001: ("get_data", (Command,), True),
         0x0002: ("set_data_response", (Command,), True),
+        0x0024: ("set_time_request", (TuyaTimePayload,), True),
     }
+
+    def handle_cluster_request(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: Tuple,
+        *,
+        dst_addressing: Optional[
+            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        ] = None,
+    ) -> None:
+        """Handle time request."""
+
+        if hdr.command_id != 0x0024 or self.set_time_offset == 0:
+            return super().handle_cluster_request(
+                hdr, args, dst_addressing=dst_addressing
+            )
+
+        # Send default response because the MCU expects it
+        if not hdr.frame_control.disable_default_response:
+            self.send_default_rsp(hdr, status=foundation.Status.SUCCESS)
+
+        _LOGGER.debug(
+            "[0x%04x:%s:0x%04x] Got set time request (command 0x%04x)",
+            self.endpoint.device.nwk,
+            self.endpoint.endpoint_id,
+            self.cluster_id,
+            hdr.command_id,
+        )
+        payload = TuyaTimePayload()
+        utc_timestamp = int(
+            (
+                datetime.datetime.utcnow()
+                - datetime.datetime(self.set_time_offset, 1, 1)
+            ).total_seconds()
+        )
+        local_timestamp = int(
+            (
+                datetime.datetime.now() - datetime.datetime(self.set_time_offset, 1, 1)
+            ).total_seconds()
+        )
+        payload.extend(utc_timestamp.to_bytes(4, "big", signed=False))
+        payload.extend(local_timestamp.to_bytes(4, "big", signed=False))
+
+        self.create_catching_task(
+            super().command(TUYA_SET_TIME, payload, expect_reply=False)
+        )
 
 
 class TuyaManufClusterAttributes(TuyaManufCluster):
@@ -85,6 +199,10 @@ class TuyaManufClusterAttributes(TuyaManufCluster):
             return super().handle_cluster_request(
                 hdr, args, dst_addressing=dst_addressing
             )
+
+        # Send default response because the MCU expects it
+        if not hdr.frame_control.disable_default_response:
+            self.send_default_rsp(hdr, status=foundation.Status.SUCCESS)
 
         tuya_cmd = args[0].command_id
         tuya_data = args[0].data
@@ -331,19 +449,46 @@ class TuyaUserInterfaceCluster(LocalDataCluster, UserInterface):
 
         self._update_attribute(self.attridx["keypad_lockout"], lockout)
 
+    def map_attribute(self, attribute, value):
+        """Map standardized attribute value to dict of manufacturer values."""
+        return {}
+
     async def write_attributes(self, attributes, manufacturer=None):
         """Defer the keypad_lockout attribute to child_lock."""
 
         records = self._write_attr_records(attributes)
 
+        manufacturer_attrs = {}
         for record in records:
             if record.attrid == self.attridx["keypad_lockout"]:
                 lock = 0 if record.value.value == self.KeypadLockout.No_lockout else 1
-                return await self.endpoint.tuya_manufacturer.write_attributes(
-                    {self._CHILD_LOCK_ATTR: lock}, manufacturer=manufacturer
+                new_attrs = {self._CHILD_LOCK_ATTR: lock}
+            else:
+                attr_name = self.attributes[record.attrid][0]
+                new_attrs = self.map_attribute(attr_name, record.value.value)
+
+                _LOGGER.debug(
+                    "[0x%04x:%s:0x%04x] Mapping standard %s (0x%04x) "
+                    "with value %s to custom %s",
+                    self.endpoint.device.nwk,
+                    self.endpoint.endpoint_id,
+                    self.cluster_id,
+                    attr_name,
+                    record.attrid,
+                    repr(record.value.value),
+                    repr(new_attrs),
                 )
 
-        return (foundation.Status.FAILURE,)
+            manufacturer_attrs.update(new_attrs)
+
+        if not manufacturer_attrs:
+            return (foundation.Status.FAILURE,)
+
+        await self.endpoint.tuya_manufacturer.write_attributes(
+            manufacturer_attrs, manufacturer=manufacturer
+        )
+
+        return (foundation.Status.SUCCESS,)
 
 
 class TuyaPowerConfigurationCluster(LocalDataCluster, PowerConfiguration):
@@ -419,3 +564,135 @@ class TuyaSmartRemoteOnOffCluster(OnOff, EventableCluster):
             self.listener_event(
                 ZHA_SEND_EVENT, self.press_type.get(press_type, "unknown"), []
             )
+
+
+class TuyaManufacturerWindowCover(TuyaManufCluster):
+    """Manufacturer Specific Cluster for cover device."""
+
+    def handle_cluster_request(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: Tuple[TuyaManufCluster.Command],
+        *,
+        dst_addressing: Optional[
+            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        ] = None,
+    ) -> None:
+        """Handle cluster request."""
+        tuya_payload = args[0]
+
+        _LOGGER.debug(
+            "%s Received Attribute Report. Command is %x, Tuya Paylod values"
+            "[Status : %s, TSN: %s, Command: %s, Function: %s, Data: %s]",
+            self.endpoint.device.ieee,
+            hdr.command_id,
+            tuya_payload.status,
+            tuya_payload.tsn,
+            tuya_payload.command_id,
+            tuya_payload.function,
+            tuya_payload.data,
+        )
+
+        if hdr.command_id == 0x0002:
+            self.endpoint.device.cover_bus.listener_event(
+                COVER_EVENT,
+                tuya_payload.command_id,
+                tuya_payload.data,
+            )
+
+
+class TuyaWindowCoverControl(LocalDataCluster, WindowCovering):
+    """Manufacturer Specific Cluster of Device cover."""
+
+    def __init__(self, *args, **kwargs):
+        """Initialize instance."""
+        super().__init__(*args, **kwargs)
+        self.endpoint.device.cover_bus.add_listener(self)
+
+    def cover_event(self, command, value):
+        """Cover event. update the position."""
+        if value[0] == 4:
+            position = 100 - value[4]
+            self._update_attribute(ATTR_COVER_POSITION, position)
+
+    def command(
+        self,
+        command_id: Union[foundation.Command, int, t.uint8_t],
+        *args,
+        manufacturer: Optional[Union[int, t.uint16_t]] = None,
+        expect_reply: bool = True,
+        tsn: Optional[Union[int, t.uint8_t]] = None,
+    ):
+        """Override the default Cluster command."""
+
+        _LOGGER.debug(
+            "%s Sending Tuya Cluster Command.. Cluster Command is %x, Arguments are %s",
+            self.endpoint.device.ieee,
+            command_id,
+            args,
+        )
+        tuya_payload = TuyaManufCluster.Command()
+        # Open Close or Stop commands
+        if command_id in (0x0000, 0x0001, 0x0002):
+            tuya_payload.status = 0
+            tuya_payload.tsn = 0
+            tuya_payload.command_id = TUYA_CMD_BASE + self.endpoint.endpoint_id
+            tuya_payload.function = 0
+            tuya_payload.data = [
+                1,
+                TUYA_COVER_COMMAND[command_id],
+            ]  # remap the command to the Tuya command
+        # Set Position Command
+        elif command_id == 0x0005:
+            tuya_payload = TuyaManufCluster.Command()
+            tuya_payload.status = 0
+            tuya_payload.tsn = 0
+            tuya_payload.command_id = TUYA_SET_COVER_POSITION_COMMAND
+            tuya_payload.function = 0
+            position = args[0]
+            tuya_payload.data = [
+                4,
+                0,
+                0,
+                0,
+                100 - position,
+            ]  # Custom Command
+
+        elif command_id == 0x0006:
+            tuya_payload = TuyaManufCluster.Command()
+            tuya_payload.status = args[0]
+            tuya_payload.tsn = args[1]
+            tuya_payload.command_id = args[2]
+            tuya_payload.function = args[3]
+            tuya_payload.data = args[4]
+        else:
+            tuya_payload = None
+
+        if tuya_payload.command_id:
+            _LOGGER.debug(
+                "%s Sending Tuya Command. Paylod values [endpoint_id : %s, "
+                "Status : %s, TSN: %s, Command: %s, Function: %s, Data: %s]",
+                self.endpoint.device.ieee,
+                self.endpoint.endpoint_id,
+                tuya_payload.status,
+                tuya_payload.tsn,
+                tuya_payload.command_id,
+                tuya_payload.function,
+                tuya_payload.data,
+            )
+
+            return self.endpoint.tuya_manufacturer.command(
+                TUYA_SET_DATA, tuya_payload, expect_reply=True
+            )
+        else:
+            _LOGGER.debug("Unrecognised command: %x", command_id)
+            return foundation.Status.UNSUP_CLUSTER_COMMAND
+
+
+class TuyaWindowCover(CustomDevice):
+    """Tuya switch device."""
+
+    def __init__(self, *args, **kwargs):
+        """Init device."""
+        self.cover_bus = Bus()
+        super().__init__(*args, **kwargs)

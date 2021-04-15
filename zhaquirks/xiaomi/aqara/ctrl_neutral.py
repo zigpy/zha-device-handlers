@@ -46,6 +46,13 @@ from ...const import (
     SKIP_CONFIGURATION,
     VALUE,
 )
+from zhaquirks.xiaomi import (
+    LUMI,
+    BasicCluster,
+    OnOffCluster,
+    XiaomiCustomDevice,
+    XiaomiPowerConfiguration,
+)
 
 ATTRIBUTE_ON_OFF = "on_off"
 DOUBLE = "double"

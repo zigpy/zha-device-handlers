@@ -13,7 +13,7 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.lightlink import LightLink
 
-from . import IKEA
+from zhaquirks.ikea import IKEA
 
 IKEA_CLUSTER_ID = 0xFC7C  # decimal = 64636
 

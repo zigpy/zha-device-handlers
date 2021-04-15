@@ -18,15 +18,8 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
 
-from .. import (
-    LUMI,
-    AnalogInputCluster,
-    BasicCluster,
-    ElectricalMeasurementCluster,
-    XiaomiCustomDevice,
-)
-from ... import Bus
-from ...const import (
+from zhaquirks import Bus
+from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -34,6 +27,13 @@ from ...const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SKIP_CONFIGURATION,
+)
+from zhaquirks.xiaomi import (
+    LUMI,
+    AnalogInputCluster,
+    BasicCluster,
+    ElectricalMeasurementCluster,
+    XiaomiCustomDevice,
 )
 
 _LOGGER = logging.getLogger(__name__)

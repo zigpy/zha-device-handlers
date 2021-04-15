@@ -5,8 +5,8 @@ import zigpy.types as t
 from zigpy.zcl.clusters.general import OnOff
 import zigpy.zcl.foundation
 
-from .. import CustomCluster, LocalDataCluster, MotionWithReset, OccupancyOnEvent
-from ..const import (
+from zhaquirks import CustomCluster, LocalDataCluster, MotionWithReset, OccupancyOnEvent
+from zhaquirks.const import (
     COMMAND_DOUBLE,
     COMMAND_HOLD,
     COMMAND_ID,

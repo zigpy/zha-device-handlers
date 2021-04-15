@@ -48,6 +48,14 @@ from ...const import (
     SKIP_CONFIGURATION,
     VALUE,
 )
+from zhaquirks.xiaomi import (
+    LUMI,
+    AnalogInputCluster,
+    BasicCluster,
+    OnOffCluster,
+    XiaomiCustomDevice,
+    XiaomiPowerConfiguration,
+)
 
 ATTRIBUTE_PRESENT_VALUE = "present_value"
 

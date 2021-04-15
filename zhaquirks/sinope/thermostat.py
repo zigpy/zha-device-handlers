@@ -21,8 +21,7 @@ from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
 
-from . import SINOPE
-from ..const import (
+from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -30,6 +29,7 @@ from ..const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.sinope import SINOPE
 
 SINOPE_MANUFACTURER_CLUSTER_ID = 0xFF01
 
@@ -118,7 +118,7 @@ class SinopeTH1400ZB(SinopeTechnologiesThermostat):
         # <SimpleDescriptor endpoint=1 profile=260 device_type=769 device_version=1
         # input_clusters=[0, 3, 4, 5, 513, 516, 1026, 1794, 2821, 65281]
         # output_clusters=[10, 65281, 25]>
-        MODELS_INFO: [(SINOPE, "TH11400ZB")],
+        MODELS_INFO: [(SINOPE, "TH1400ZB")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha_p.PROFILE_ID,
@@ -172,7 +172,7 @@ class SinopeTH1300ZB(SinopeTechnologiesThermostat):
         # <SimpleDescriptor endpoint=1 profile=260 device_type=769 device_version=1
         # input_clusters=[0, 3, 4, 5, 513, 516, 1026, 1794, 2820, 2821, 65281]
         # output_clusters=[10, 25, 65281]>
-        MODELS_INFO: [(SINOPE, "TH11300ZB")],
+        MODELS_INFO: [(SINOPE, "TH1300ZB")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha_p.PROFILE_ID,
@@ -213,6 +213,66 @@ class SinopeTH1300ZB(SinopeTechnologiesThermostat):
                     ElectricalMeasurement.cluster_id,
                     Diagnostic.cluster_id,
                     SinopeTechnologiesThermostatCluster,
+                    SinopeTechnologiesManufacturerCluster,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Time.cluster_id,
+                    Ota.cluster_id,
+                    SINOPE_MANUFACTURER_CLUSTER_ID,
+                ],
+            }
+        }
+    }
+
+
+class SinopeLineThermostats(SinopeTechnologiesThermostat):
+    """TH1123ZB and TH1124Z thermostat."""
+
+    signature = {
+        # <SimpleDescriptor endpoint=1 profile=260 device_type=769 device_version=1
+        # input_clusters=[0, 3, 4, 5, 513, 516, 1026, 1794, 2820, 2821, 65281]
+        # output_clusters=[10, 25, 65281]>
+        MODELS_INFO: [(SINOPE, "TH1123ZB"), (SINOPE, "TH1124ZB"), (SINOPE, "TH1500ZB")],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha_p.PROFILE_ID,
+                DEVICE_TYPE: zha_p.DeviceType.THERMOSTAT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    Thermostat.cluster_id,
+                    UserInterface.cluster_id,
+                    TemperatureMeasurement.cluster_id,
+                    Metering.cluster_id,
+                    ElectricalMeasurement.cluster_id,
+                    Diagnostic.cluster_id,
+                    SINOPE_MANUFACTURER_CLUSTER_ID,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Time.cluster_id,
+                    Ota.cluster_id,
+                    SINOPE_MANUFACTURER_CLUSTER_ID,
+                ],
+            }
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    SinopeTechnologiesThermostatCluster,
+                    UserInterface.cluster_id,
+                    TemperatureMeasurement.cluster_id,
+                    Metering.cluster_id,
+                    ElectricalMeasurement.cluster_id,
+                    Diagnostic.cluster_id,
                     SinopeTechnologiesManufacturerCluster,
                 ],
                 OUTPUT_CLUSTERS: [

@@ -14,9 +14,8 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.security import IasZone
 
-from . import ZHONGXING, MotionCluster
-from .. import Bus, PowerConfigurationCluster
-from ..const import (
+from zhaquirks import Bus, PowerConfigurationCluster
+from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -24,6 +23,7 @@ from ..const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.zhongxing import ZHONGXING, MotionCluster
 
 
 class SN10ZW(CustomDevice):

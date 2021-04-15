@@ -14,8 +14,7 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.manufacturer_specific import ManufacturerSpecificCluster
 
-from . import LEGRAND
-from ..const import (
+from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -23,6 +22,7 @@ from ..const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.legrand import LEGRAND
 
 MANUFACTURER_SPECIFIC_CLUSTER_ID = 0xFC01  # decimal = 64513
 

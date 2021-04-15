@@ -12,9 +12,8 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.lightlink import LightLink
 
-from . import IKEA, LightLinkCluster
-from .. import DoublingPowerConfigurationCluster
-from ..const import (
+from zhaquirks import DoublingPowerConfigurationCluster
+from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -22,6 +21,7 @@ from ..const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.ikea import IKEA, LightLinkCluster
 
 DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
 

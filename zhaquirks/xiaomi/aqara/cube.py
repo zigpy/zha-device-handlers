@@ -11,15 +11,8 @@ from zigpy.zcl.clusters.general import (
     Scenes,
 )
 
-from .. import (
-    LUMI,
-    XIAOMI_NODE_DESC,
-    BasicCluster,
-    XiaomiPowerConfiguration,
-    XiaomiQuickInitDevice,
-)
-from ... import CustomCluster
-from ...const import (
+from zhaquirks import CustomCluster
+from zhaquirks.const import (
     ARGS,
     COMMAND,
     DEVICE_TYPE,
@@ -34,6 +27,13 @@ from ...const import (
     TURN_ON,
     VALUE,
     ZHA_SEND_EVENT,
+)
+from zhaquirks.xiaomi import (
+    LUMI,
+    XIAOMI_NODE_DESC,
+    BasicCluster,
+    XiaomiPowerConfiguration,
+    XiaomiQuickInitDevice,
 )
 
 ACTIVATED_FACE = "activated_face"

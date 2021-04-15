@@ -15,15 +15,8 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.security import IasZone
 
-from .. import (
-    LUMI,
-    XIAOMI_NODE_DESC,
-    BasicCluster,
-    XiaomiPowerConfiguration,
-    XiaomiQuickInitDevice,
-)
-from ... import Bus, LocalDataCluster, MotionOnEvent
-from ...const import (
+from zhaquirks import Bus, LocalDataCluster, MotionOnEvent
+from zhaquirks.const import (
     CLUSTER_ID,
     COMMAND,
     COMMAND_TILT,
@@ -40,6 +33,13 @@ from ...const import (
     UNKNOWN,
     ZHA_SEND_EVENT,
     ZONE_TYPE,
+)
+from zhaquirks.xiaomi import (
+    LUMI,
+    XIAOMI_NODE_DESC,
+    BasicCluster,
+    XiaomiPowerConfiguration,
+    XiaomiQuickInitDevice,
 )
 
 ACCELEROMETER_ATTR = 0x0508  # decimal = 1288

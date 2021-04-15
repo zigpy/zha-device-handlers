@@ -16,8 +16,7 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone
 
-from . import DEVELCO, DevelcoPowerConfiguration
-from ..const import (
+from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -25,6 +24,7 @@ from ..const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.develco import DEVELCO, DevelcoPowerConfiguration
 
 
 class DevelcoIASZone(CustomCluster, IasZone):

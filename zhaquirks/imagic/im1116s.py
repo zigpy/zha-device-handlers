@@ -6,9 +6,7 @@ from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone
 
 from zhaquirks import PowerConfigurationCluster
-
-from . import IMAGIC
-from ..const import (
+from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -16,6 +14,7 @@ from ..const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.imagic import IMAGIC
 
 DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
 MANUFACTURER_SPECIFIC_CLUSTER_ID = 0xFC01  # decimal = 64513
