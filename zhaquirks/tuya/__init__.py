@@ -20,10 +20,10 @@ TUYA_CLUSTER_ID = 0xEF00
 # ---------------------------------------------------------
 # Tuya Cluster Commands
 # ---------------------------------------------------------
-TUYA_SET_DATA          = 0x0000
-TUYA_GET_DATA          = 0x0001
+TUYA_SET_DATA = 0x0000
+TUYA_GET_DATA = 0x0001
 TUYA_SET_DATA_RESPONSE = 0x0002
-TUYA_SET_TIME          = 0x0024
+TUYA_SET_TIME = 0x0024
 # ---------------------------------------------------------
 # Value for dp_type
 # ---------------------------------------------------------
@@ -35,11 +35,11 @@ TUYA_SET_TIME          = 0x0024
 # 0x03 	DP_TYPE_STRING 	variable length string
 # 0x04 	DP_TYPE_ENUM 	1 byte enum
 # 0x05 	DP_TYPE_FAULT 	1 byte bitmap (didn't test yet)
-TUYA_DP_TYPE_RAW    = 0x0000
-TUYA_DP_TYPE_BOOL   = 0x0100
-TUYA_DP_TYPE_VALUE  = 0x0200
+TUYA_DP_TYPE_RAW = 0x0000
+TUYA_DP_TYPE_BOOL = 0x0100
+TUYA_DP_TYPE_VALUE = 0x0200
 TUYA_DP_TYPE_STRING = 0x0300
-TUYA_DP_TYPE_ENUM   = 0x0400
+TUYA_DP_TYPE_ENUM = 0x0400
 TUYA_DP_TYPE_FAULT  = 0x0500
 # ---------------------------------------------------------
 # Value for dp_identifier (These are device specific)
@@ -53,31 +53,31 @@ TUYA_DP_TYPE_FAULT  = 0x0500
 # 0x05  work_state         enum    Motor Direction Setting
 # 0x06  situation_set      enum    Configures if 100% equals to fully closed or fully open (untested)
 # 0x07  fault              bitmap  Anything but 0 means something went wrong (untested)
-TUYA_DP_ID_CONTROL          = 0x01
-TUYA_DP_ID_PERCENT_CONTROL  = 0x02
-TUYA_DP_ID_PERCENT_STATE    = 0x03
+TUYA_DP_ID_CONTROL = 0x01
+TUYA_DP_ID_PERCENT_CONTROL = 0x02
+TUYA_DP_ID_PERCENT_STATE = 0x03
 TUYA_DP_ID_DIRECTION_CHANGE = 0x05
-TUYA_DP_ID_COVER_INVERTED   = 0x06
+TUYA_DP_ID_COVER_INVERTED = 0x06
 # ---------------------------------------------------------
 # Window Cover Server Commands
 # ---------------------------------------------------------
-WINDOW_COVER_COMMAND_UPOPEN      = 0x0000
-WINDOW_COVER_COMMAND_DOWNCLOSE   = 0x0001
-WINDOW_COVER_COMMAND_STOP        = 0x0002
+WINDOW_COVER_COMMAND_UPOPEN = 0x0000
+WINDOW_COVER_COMMAND_DOWNCLOSE = 0x0001
+WINDOW_COVER_COMMAND_STOP = 0x0002
 WINDOW_COVER_COMMAND_LIFTPERCENT = 0x0005
-WINDOW_COVER_COMMAND_CUSTOM      = 0x0006
+WINDOW_COVER_COMMAND_CUSTOM = 0x0006
 # ---------------------------------------------------------
 # TUYA Cover Custom Values
 # ---------------------------------------------------------
-COVER_EVENT          = "cover_event"
-ATTR_COVER_POSITION  = 0x0008
+COVER_EVENT = "cover_event"
+ATTR_COVER_POSITION = 0x0008
 ATTR_COVER_DIRECTION = 0x8001
-ATTR_COVER_INVERTED  = 0x8002
+ATTR_COVER_INVERTED = 0x8002
 # For most tuya devices 0 = Up/Open, 1 = Stop, 2 = Down/Close
-TUYA_COVER_COMMAND   = {"_TZE200_zah67ekd" : {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
-                        "_TZE200_fzo2pocs" : {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
-                        "_TZE200_xuzcvlku" : {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
-                        "_TZE200_rddyvrci" : {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001}}
+TUYA_COVER_COMMAND = {"_TZE200_zah67ekd" : {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
+                      "_TZE200_fzo2pocs" : {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
+                      "_TZE200_xuzcvlku" : {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
+                      "_TZE200_rddyvrci" : {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001}}
 # ---------------------------------------------------------
 # TUYA Switch Custom Values
 # ---------------------------------------------------------
