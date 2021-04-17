@@ -40,7 +40,7 @@ TUYA_DP_TYPE_BOOL = 0x0100
 TUYA_DP_TYPE_VALUE = 0x0200
 TUYA_DP_TYPE_STRING = 0x0300
 TUYA_DP_TYPE_ENUM = 0x0400
-TUYA_DP_TYPE_FAULT  = 0x0500
+TUYA_DP_TYPE_FAULT = 0x0500
 # ---------------------------------------------------------
 # Value for dp_identifier (These are device specific)
 # ---------------------------------------------------------
@@ -97,7 +97,7 @@ TUYA_CMD_BASE = 0x0100
 # 0x01 0x05   261    Returned by configuration set; ignore
 # 0x02 0x69   617    Not sure what this is
 # 0x04 0x05  1029    Changed the Motor Direction
-# 0x04 0x65  1125    Change of tilt/lift mode 1 = lift 0=tilt 
+# 0x04 0x65  1125    Change of tilt/lift mode 1 = lift 0=tilt
 # ---------------------------------------------------------
 
 _LOGGER = logging.getLogger(__name__)
@@ -644,16 +644,16 @@ class TuyaManufacturerWindowCover(TuyaManufCluster):
         """Tuya Specific Cluster Commands"""
         if hdr.command_id == TUYA_SET_DATA_RESPONSE:
             tuya_payload = args[0]
-            _LOGGER.debug( "%s Received Attribute Report. Command is 0x%04x, Tuya Paylod values"
-                           "[Status : %s, TSN: %s, Command: 0x%04x, Function: 0x%02x, Data: %s]", 
-                           self.endpoint.device.ieee, 
-                           hdr.command_id, 
-                           tuya_payload.status, 
-                           tuya_payload.tsn,
-                           tuya_payload.command_id, 
-                           tuya_payload.function, 
-                           tuya_payload.data)
-                       
+            _LOGGER.debug("%s Received Attribute Report. Command is 0x%04x, Tuya Paylod values"
+                          "[Status : %s, TSN: %s, Command: 0x%04x, Function: 0x%02x, Data: %s]",
+                          self.endpoint.device.ieee,
+                          hdr.command_id,
+                          tuya_payload.status,
+                          tuya_payload.tsn,
+                          tuya_payload.command_id,
+                          tuya_payload.function,
+                          tuya_payload.data)
+
             if tuya_payload.command_id == TUYA_DP_TYPE_VALUE + TUYA_DP_ID_PERCENT_STATE:
                 self.endpoint.device.cover_bus.listener_event(
                     COVER_EVENT,
@@ -670,19 +670,19 @@ class TuyaManufacturerWindowCover(TuyaManufCluster):
                 self.endpoint.device.cover_bus.listener_event(
                     COVER_EVENT,
                     ATTR_COVER_INVERTED,
-                    tuya_payload.data[1], #Check this
+                    tuya_payload.data[1],  # Check this
                 )
         elif hdr.command_id == 0x0011:
             """Assuming this is the pairing event"""
-            _LOGGER.debug( "%s Pairing New Tuya Roller Blind. Self [%s], Header [%s], Tuya Paylod [%s]",
-                           self.endpoint.device.ieee,                           
-                           self,
-                           hdr, 
-                           args)
+            _LOGGER.debug("%s Pairing New Tuya Roller Blind. Self [%s], Header [%s], Tuya Paylod [%s]",
+                          self.endpoint.device.ieee,
+                          self,
+                          hdr,
+                          args)
             """set initial attributes"""
-            self.endpoint.device.cover_bus.listener_event(COVER_EVENT,ATTR_COVER_POSITION,0,)
-            self.endpoint.device.cover_bus.listener_event(COVER_EVENT,ATTR_COVER_DIRECTION,0,)
-            self.endpoint.device.cover_bus.listener_event(COVER_EVENT,ATTR_COVER_INVERTED,0,)
+            self.endpoint.device.cover_bus.listener_event(COVER_EVENT,ATTR_COVER_POSITION,0, )
+            self.endpoint.device.cover_bus.listener_event(COVER_EVENT,ATTR_COVER_DIRECTION,0, )
+            self.endpoint.device.cover_bus.listener_event(COVER_EVENT,ATTR_COVER_INVERTED,0, )
         elif hdr.command_id == TUYA_SET_TIME:
             """Time event call super"""
             super().handle_cluster_request(self, hdr, args, dst_addressing)
