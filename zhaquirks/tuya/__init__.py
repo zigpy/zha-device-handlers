@@ -92,7 +92,7 @@ TUYA_CMD_BASE = 0x0100
 # ---------------------------------------------------------
 # 0x04 0x01  1025    Confirm opening/closing/stopping (triggered from Zigbee)
 # 0x02 0x02   514    Started moving to position (triggered from Zigbee)
-# 0x04 0x07  1031    Started moving (triggered by transmitter oder pulling on curtain)
+# 0x04 0x07  1031    Started moving (triggered by transmitter order pulling on curtain)
 # 0x02 0x03   515    Arrived at position
 # 0x01 0x05   261    Returned by configuration set; ignore
 # 0x02 0x69   617    Not sure what this is
@@ -688,14 +688,14 @@ class TuyaManufacturerWindowCover(TuyaManufCluster):
             super().handle_cluster_request(self, hdr, args, dst_addressing)
         else:
             _LOGGER.debug( "%s Received Attribute Report - Unknown Command. Self [%s], Header [%s], Tuya Paylod [%s]",
-                           self.endpoint.device.ieee,                           
+                           self.endpoint.device.ieee,
                            self,
-                           hdr, 
+                           hdr,
                            args)
 
 class TuyaWindowCoverControl(LocalDataCluster, WindowCovering):
-    """Manufacturer Specific Cluster of Device cover."""  
-    """Add addtional attributes for direction"""
+    """Manufacturer Specific Cluster of Device cover."""
+    """Add additional attributes for direction"""
     attributes = WindowCovering.attributes.copy()
     attributes.update({ATTR_COVER_DIRECTION: ("motor_direction", t.Bool)})
     attributes.update({ATTR_COVER_INVERTED: ("cover_inverted", t.Bool)})
@@ -790,6 +790,3 @@ class TuyaWindowCover(CustomDevice):
         """Init device."""
         self.cover_bus = Bus()
         super().__init__(*args, **kwargs)
-        
-
-
