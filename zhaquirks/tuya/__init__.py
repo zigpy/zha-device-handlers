@@ -696,8 +696,8 @@ class TuyaManufacturerWindowCover(TuyaManufCluster):
 
 class TuyaWindowCoverControl(LocalDataCluster, WindowCovering):
     """Manufacturer Specific Cluster of Device cover."""
-    """Add additional attributes for direction"""
 
+    """Add additional attributes for direction"""
     attributes = WindowCovering.attributes.copy()
     attributes.update({ATTR_COVER_DIRECTION: ("motor_direction", t.Bool)})
     attributes.update({ATTR_COVER_INVERTED: ("cover_inverted", t.Bool)})
@@ -708,6 +708,7 @@ class TuyaWindowCoverControl(LocalDataCluster, WindowCovering):
         self.endpoint.device.cover_bus.add_listener(self)
 
     def cover_event(self, attribute, value):
+	"""event listener for cover events"""
         if attribute == ATTR_COVER_POSITION:
             value = 100 - value if self._attr_cache[ATTR_COVER_INVERTED] == 0 else value
         self._update_attribute(attribute, value)
@@ -766,7 +767,7 @@ class TuyaWindowCoverControl(LocalDataCluster, WindowCovering):
             tuya_payload.data = args[4]
         else:
             tuya_payload = None
-        #Send the command
+        # Send the command
         if tuya_payload.command_id:
             _LOGGER.debug("%s Sending Tuya Command. Paylod values [endpoint_id : %s, "
                           "Status : %s, TSN: %s, Command: 0x%04x, Function: %s, Data: %s]",
