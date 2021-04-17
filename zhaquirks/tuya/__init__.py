@@ -708,7 +708,7 @@ class TuyaWindowCoverControl(LocalDataCluster, WindowCovering):
         self.endpoint.device.cover_bus.add_listener(self)
 
     def cover_event(self, attribute, value):
-	"""event listener for cover events"""
+        """event listener for cover events"""
         if attribute == ATTR_COVER_POSITION:
             value = 100 - value if self._attr_cache[ATTR_COVER_INVERTED] == 0 else value
         self._update_attribute(attribute, value)
