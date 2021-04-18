@@ -736,7 +736,7 @@ class TuyaWindowCoverControl(LocalDataCluster, WindowCovering):
         """Event listener for cover events."""
         if attribute == ATTR_COVER_POSITION:
             value = (
-                100 - value if self._attr_cache.get(ATTR_COVER_INVERTED) == 0 else value
+                value if self._attr_cache.get(ATTR_COVER_INVERTED) == 1 else 100 - value
             )
         self._update_attribute(attribute, value)
         _LOGGER.debug(
@@ -787,9 +787,9 @@ class TuyaWindowCoverControl(LocalDataCluster, WindowCovering):
             tuya_payload.function = 0
             """Check direction and correct value"""
             position = (
-                100 - args[0]
-                if self._attr_cache.get(ATTR_COVER_INVERTED) == 0
-                else args[0]
+                args[0]
+                if self._attr_cache.get(ATTR_COVER_INVERTED) == 1
+                else 100 - args[0]
             )
             tuya_payload.data = [
                 4,
