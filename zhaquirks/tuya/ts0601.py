@@ -111,6 +111,7 @@ class TuyaZemismartSmartCover0601(TuyaWindowCover):
         },
     }
 
+
 class TuyaZemismartSmartCover0601_2(TuyaWindowCover):
     """Tuya Zemismart curtain cover motor."""
 
@@ -156,6 +157,7 @@ class TuyaZemismartSmartCover0601_2(TuyaWindowCover):
             },
         },
     }
+
 
 class TuyaMoesCover0601(TuyaWindowCover):
     """Tuya blind controller device."""
