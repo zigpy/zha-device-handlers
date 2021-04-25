@@ -132,7 +132,7 @@ class TuyaManufCluster(CustomCluster):
     manufacturer_client_commands = {
         0x0001: ("get_data", (Command,), True),
         0x0002: ("set_data_response", (Command,), True),
-        0x0024: ("set_time_request", (TuyaTimePayload,), True),
+        0x0024: ("set_time_request", (t.data16,), True),
     }
 
     def handle_cluster_request(
