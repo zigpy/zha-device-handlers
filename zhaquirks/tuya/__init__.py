@@ -7,7 +7,7 @@ from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.closures import WindowCovering
-from zigpy.zcl.clusters.general import OnOff, PowerConfiguration
+from zigpy.zcl.clusters.general import LevelControl, OnOff, PowerConfiguration
 from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
 
 from zhaquirks import Bus, EventableCluster, LocalDataCluster
@@ -24,6 +24,11 @@ TUYA_SET_DATA = 0x0000
 TUYA_GET_DATA = 0x0001
 TUYA_SET_DATA_RESPONSE = 0x0002
 TUYA_SET_TIME = 0x0024
+TUYA_LEVEL_COMMAND = 514
+
+COVER_EVENT = "cover_event"
+LEVEL_EVENT = "level_event"
+
 # ---------------------------------------------------------
 # Value for dp_type
 # ---------------------------------------------------------
@@ -393,6 +398,15 @@ class TuyaSwitch(CustomDevice):
     def __init__(self, *args, **kwargs):
         """Init device."""
         self.switch_bus = Bus()
+        super().__init__(*args, **kwargs)
+
+
+class TuyaDimmerSwitch(TuyaSwitch):
+    """Tuya dimmer switch device."""
+
+    def __init__(self, *args, **kwargs):
+        """Init device."""
+        self.dimmer_bus = Bus()
         super().__init__(*args, **kwargs)
 
 
@@ -836,3 +850,100 @@ class TuyaWindowCover(CustomDevice):
         """Init device."""
         self.cover_bus = Bus()
         super().__init__(*args, **kwargs)
+
+
+class TuyaManufacturerLevelControl(TuyaManufCluster):
+    """Manufacturer Specific Cluster for cover device."""
+
+    def handle_cluster_request(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: Tuple[TuyaManufCluster.Command],
+        *,
+        dst_addressing: Optional[
+            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        ] = None,
+    ) -> None:
+        """Handle cluster request."""
+        tuya_payload = args[0]
+
+        _LOGGER.debug(
+            "%s Received Attribute Report. Command is %x, Tuya Paylod values"
+            "[Status : %s, TSN: %s, Command: %s, Function: %s, Data: %s]",
+            self.endpoint.device.ieee,
+            hdr.command_id,
+            tuya_payload.status,
+            tuya_payload.tsn,
+            tuya_payload.command_id,
+            tuya_payload.function,
+            tuya_payload.data,
+        )
+
+        if hdr.command_id in (0x0002, 0x0001):
+            if tuya_payload.command_id == TUYA_LEVEL_COMMAND:
+                self.endpoint.device.dimmer_bus.listener_event(
+                    LEVEL_EVENT,
+                    tuya_payload.command_id,
+                    tuya_payload.data,
+                )
+            else:
+                self.endpoint.device.switch_bus.listener_event(
+                    SWITCH_EVENT,
+                    tuya_payload.command_id - TUYA_CMD_BASE,
+                    tuya_payload.data[1],
+                )
+
+
+class TuyaLevelControl(CustomCluster, LevelControl):
+    """Tuya Level cluster for dimmable device."""
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self.endpoint.device.dimmer_bus.add_listener(self)
+
+    def level_event(self, channel, state):
+        """Level event."""
+        level = (((state[3] << 8) + state[4]) * 255) // 1000
+        _LOGGER.debug(
+            "%s - Received level event message, channel: %d, level: %d, data: %d",
+            self.endpoint.device.ieee,
+            channel,
+            level,
+            state,
+        )
+        self._update_attribute(self.attridx["current_level"], level)
+
+    def command(
+        self,
+        command_id: Union[foundation.Command, int, t.uint8_t],
+        *args,
+        manufacturer: Optional[Union[int, t.uint16_t]] = None,
+        expect_reply: bool = True,
+        tsn: Optional[Union[int, t.uint8_t]] = None,
+    ):
+        """Override the default Cluster command."""
+        _LOGGER.debug(
+            "%s Sending Tuya Cluster Command.. Cluster Command is %x, Arguments are %s",
+            self.endpoint.device.ieee,
+            command_id,
+            args,
+        )
+        # Move to level
+        # move_to_level_with_on_off
+        if command_id in (0x0000, 0x0001, 0x0004):
+            cmd_payload = TuyaManufCluster.Command()
+            cmd_payload.status = 0
+            cmd_payload.tsn = 0
+            cmd_payload.command_id = TUYA_LEVEL_COMMAND
+            cmd_payload.function = 0
+            brightness = (args[0] * 1000) // 255
+            val1 = brightness >> 8
+            val2 = brightness & 0xFF
+            cmd_payload.data = [4, 0, 0, val1, val2]  # Custom Command
+
+            return self.endpoint.tuya_manufacturer.command(
+                TUYA_SET_DATA, cmd_payload, expect_reply=True
+            )
+
+        return foundation.Status.UNSUP_CLUSTER_COMMAND
