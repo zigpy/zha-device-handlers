@@ -129,6 +129,7 @@ class TuyaMoesCover0601(TuyaWindowCover):
         MODELS_INFO: [
             ("_TZE200_zah67ekd", "TS0601"),
             ("_TZE200_xuzcvlku", "TS0601"),
+            ("_TZE200_rddyvrci", "TS0601"),
         ],  # Not tested
         ENDPOINTS: {
             1: {
