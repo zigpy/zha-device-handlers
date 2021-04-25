@@ -50,6 +50,9 @@ class DanfossThermostatCluster(CustomCluster, Thermostat):
         0x404C: ("adaptation_run_control", t.enum8),
         0x404D: ("adaptation_run_status", t.bitmap8),
         0x404E: ("adaptation_run_settings", t.bitmap8),
+        0x404F: ("preheat_status", t.Bool),
+        0x4050: ("preheat_time", t.uint32_t),
+        0x4051: ("window_open_feature_on_off", t.Bool),
         0xFFFD: ("cluster_revision", t.uint16_t),
     }
 
