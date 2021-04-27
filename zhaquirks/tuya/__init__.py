@@ -7,37 +7,105 @@ from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.closures import WindowCovering
-from zigpy.zcl.clusters.general import OnOff, PowerConfiguration
+from zigpy.zcl.clusters.general import LevelControl, OnOff, PowerConfiguration
 from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
 
 from zhaquirks import Bus, EventableCluster, LocalDataCluster
 from zhaquirks.const import DOUBLE_PRESS, LONG_PRESS, SHORT_PRESS, ZHA_SEND_EVENT
 
+# ---------------------------------------------------------
+# Tuya Custom Cluster ID
+# ---------------------------------------------------------
 TUYA_CLUSTER_ID = 0xEF00
+# ---------------------------------------------------------
+# Tuya Cluster Commands
+# ---------------------------------------------------------
 TUYA_SET_DATA = 0x0000
 TUYA_GET_DATA = 0x0001
 TUYA_SET_DATA_RESPONSE = 0x0002
 TUYA_SET_TIME = 0x0024
+TUYA_LEVEL_COMMAND = 514
 
 COVER_EVENT = "cover_event"
+LEVEL_EVENT = "level_event"
+
+# ---------------------------------------------------------
+# Value for dp_type
+# ---------------------------------------------------------
+# ID    Name            Description
+# ---------------------------------------------------------
+# 0x00 	DP_TYPE_RAW 	?
+# 0x01 	DP_TYPE_BOOL 	?
+# 0x02 	DP_TYPE_VALUE 	4 byte unsigned integer
+# 0x03 	DP_TYPE_STRING 	variable length string
+# 0x04 	DP_TYPE_ENUM 	1 byte enum
+# 0x05 	DP_TYPE_FAULT 	1 byte bitmap (didn't test yet)
+TUYA_DP_TYPE_RAW = 0x0000
+TUYA_DP_TYPE_BOOL = 0x0100
+TUYA_DP_TYPE_VALUE = 0x0200
+TUYA_DP_TYPE_STRING = 0x0300
+TUYA_DP_TYPE_ENUM = 0x0400
+TUYA_DP_TYPE_FAULT = 0x0500
+# ---------------------------------------------------------
+# Value for dp_identifier (These are device specific)
+# ---------------------------------------------------------
+# ID    Name               Type    Description
+# ---------------------------------------------------------
+# 0x01  control            enum    open, stop, close, continue
+# 0x02  percent_control    value   0-100% control
+# 0x03  percent_state      value   Report from motor about current percentage
+# 0x04  control_back       enum    Configures motor direction (untested)
+# 0x05  work_state         enum    Motor Direction Setting
+# 0x06  situation_set      enum    Configures if 100% equals to fully closed or fully open (untested)
+# 0x07  fault              bitmap  Anything but 0 means something went wrong (untested)
+TUYA_DP_ID_CONTROL = 0x01
+TUYA_DP_ID_PERCENT_CONTROL = 0x02
+TUYA_DP_ID_PERCENT_STATE = 0x03
+TUYA_DP_ID_DIRECTION_CHANGE = 0x05
+TUYA_DP_ID_COVER_INVERTED = 0x06
+# ---------------------------------------------------------
+# Window Cover Server Commands
+# ---------------------------------------------------------
+WINDOW_COVER_COMMAND_UPOPEN = 0x0000
+WINDOW_COVER_COMMAND_DOWNCLOSE = 0x0001
+WINDOW_COVER_COMMAND_STOP = 0x0002
+WINDOW_COVER_COMMAND_LIFTPERCENT = 0x0005
+WINDOW_COVER_COMMAND_CUSTOM = 0x0006
+# ---------------------------------------------------------
+# TUYA Cover Custom Values
+# ---------------------------------------------------------
+COVER_EVENT = "cover_event"
+ATTR_COVER_POSITION = 0x0008
+ATTR_COVER_DIRECTION = 0x8001
+ATTR_COVER_INVERTED = 0x8002
+# For most tuya devices 0 = Up/Open, 1 = Stop, 2 = Down/Close
+TUYA_COVER_COMMAND = {
+    "_TZE200_zah67ekd": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
+    "_TZE200_fzo2pocs": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
+    "_TZE200_xuzcvlku": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
+    "_TZE200_rddyvrci": {0x0000: 0x0002, 0x0001: 0x0001, 0x0002: 0x0000},
+}
+# ---------------------------------------------------------
+# TUYA Switch Custom Values
+# ---------------------------------------------------------
 SWITCH_EVENT = "switch_event"
 ATTR_ON_OFF = 0x0000
 ATTR_COVER_POSITION = 0x0008
 TUYA_CMD_BASE = 0x0100
-
-#  Tuya cover command
-#  https://github.com/Koenkk/zigbee-herdsman-converters/issues/1159#issuecomment-614659802
-#  0x2: open
-#  0x1: stop
-#  0x0: close
-# maps to
-# 0x0000: ("up_open", (), False),
-# 0x0001: ("down_close", (), False),
-# 0x0002: ("stop", (), False),
-
-TUYA_COVER_COMMAND = {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001}
-
-TUYA_SET_COVER_POSITION_COMMAND = 0x0002
+# ---------------------------------------------------------
+# DP Value meanings in Status Report
+# ---------------------------------------------------------
+# Type ID    IntDP   Description
+# ---------------------------------------------------------
+# 0x04 0x01  1025    Confirm opening/closing/stopping (triggered from Zigbee)
+# 0x02 0x02   514    Started moving to position (triggered from Zigbee)
+# 0x04 0x07  1031    Started moving (triggered by transmitter order pulling on curtain)
+# 0x02 0x03   515    Arrived at position
+# 0x01 0x05   261    Returned by configuration set; ignore
+# 0x02 0x69   617    Not sure what this is
+# 0x04 0x05  1029    Changed the Motor Direction
+# 0x04 0x65  1125    Change of tilt/lift mode 1 = lift 0=tilt
+# ---------------------------------------------------------
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -132,7 +200,7 @@ class TuyaManufCluster(CustomCluster):
     manufacturer_client_commands = {
         0x0001: ("get_data", (Command,), True),
         0x0002: ("set_data_response", (Command,), True),
-        0x0024: ("set_time_request", (TuyaTimePayload,), True),
+        0x0024: ("set_time_request", (t.data16,), True),
     }
 
     def handle_cluster_request(
@@ -330,6 +398,15 @@ class TuyaSwitch(CustomDevice):
     def __init__(self, *args, **kwargs):
         """Init device."""
         self.switch_bus = Bus()
+        super().__init__(*args, **kwargs)
+
+
+class TuyaDimmerSwitch(TuyaSwitch):
+    """Tuya dimmer switch device."""
+
+    def __init__(self, *args, **kwargs):
+        """Init device."""
+        self.dimmer_bus = Bus()
         super().__init__(*args, **kwargs)
 
 
@@ -566,7 +643,216 @@ class TuyaSmartRemoteOnOffCluster(OnOff, EventableCluster):
             )
 
 
+# Tuya Window Cover Implementation
 class TuyaManufacturerWindowCover(TuyaManufCluster):
+    """Manufacturer Specific Cluster for cover device."""
+
+    def handle_cluster_request(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: Tuple[TuyaManufCluster.Command],
+        *,
+        dst_addressing: Optional[
+            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        ] = None,
+    ) -> None:
+        """Handle cluster request."""
+        """Tuya Specific Cluster Commands"""
+        if hdr.command_id == TUYA_SET_DATA_RESPONSE:
+            tuya_payload = args[0]
+            _LOGGER.debug(
+                "%s Received Attribute Report. Command is 0x%04x, Tuya Paylod values"
+                "[Status : %s, TSN: %s, Command: 0x%04x, Function: 0x%02x, Data: %s]",
+                self.endpoint.device.ieee,
+                hdr.command_id,
+                tuya_payload.status,
+                tuya_payload.tsn,
+                tuya_payload.command_id,
+                tuya_payload.function,
+                tuya_payload.data,
+            )
+
+            if tuya_payload.command_id == TUYA_DP_TYPE_VALUE + TUYA_DP_ID_PERCENT_STATE:
+                self.endpoint.device.cover_bus.listener_event(
+                    COVER_EVENT,
+                    ATTR_COVER_POSITION,
+                    tuya_payload.data[4],
+                )
+            elif (
+                tuya_payload.command_id
+                == TUYA_DP_TYPE_ENUM + TUYA_DP_ID_DIRECTION_CHANGE
+            ):
+                self.endpoint.device.cover_bus.listener_event(
+                    COVER_EVENT,
+                    ATTR_COVER_DIRECTION,
+                    tuya_payload.data[1],
+                )
+            elif (
+                tuya_payload.command_id == TUYA_DP_TYPE_ENUM + TUYA_DP_ID_COVER_INVERTED
+            ):
+                self.endpoint.device.cover_bus.listener_event(
+                    COVER_EVENT,
+                    ATTR_COVER_INVERTED,
+                    tuya_payload.data[1],  # Check this
+                )
+        elif hdr.command_id == 0x0011:
+            """Assuming this is the pairing event"""
+            _LOGGER.debug(
+                "%s Pairing New Tuya Roller Blind. Self [%s], Header [%s], Tuya Paylod [%s]",
+                self.endpoint.device.ieee,
+                self,
+                hdr,
+                args,
+            )
+            """set initial attributes"""
+            self.endpoint.device.cover_bus.listener_event(
+                COVER_EVENT,
+                ATTR_COVER_POSITION,
+                0,
+            )
+            self.endpoint.device.cover_bus.listener_event(
+                COVER_EVENT,
+                ATTR_COVER_DIRECTION,
+                0,
+            )
+            self.endpoint.device.cover_bus.listener_event(
+                COVER_EVENT,
+                ATTR_COVER_INVERTED,
+                0,
+            )
+        elif hdr.command_id == TUYA_SET_TIME:
+            """Time event call super"""
+            super().handle_cluster_request(self, hdr, args, dst_addressing)
+        else:
+            _LOGGER.debug(
+                "%s Received Attribute Report - Unknown Command. Self [%s], Header [%s], Tuya Paylod [%s]",
+                self.endpoint.device.ieee,
+                self,
+                hdr,
+                args,
+            )
+
+
+class TuyaWindowCoverControl(LocalDataCluster, WindowCovering):
+    """Manufacturer Specific Cluster of Device cover."""
+
+    """Add additional attributes for direction"""
+    attributes = WindowCovering.attributes.copy()
+    attributes.update({ATTR_COVER_DIRECTION: ("motor_direction", t.Bool)})
+    attributes.update({ATTR_COVER_INVERTED: ("cover_inverted", t.Bool)})
+
+    def __init__(self, *args, **kwargs):
+        """Initialize instance."""
+        super().__init__(*args, **kwargs)
+        self.endpoint.device.cover_bus.add_listener(self)
+
+    def cover_event(self, attribute, value):
+        """Event listener for cover events."""
+        if attribute == ATTR_COVER_POSITION:
+            value = (
+                value if self._attr_cache.get(ATTR_COVER_INVERTED) == 1 else 100 - value
+            )
+        self._update_attribute(attribute, value)
+        _LOGGER.debug(
+            "%s Tuya Attribute Cache : [%s]",
+            self.endpoint.device.ieee,
+            self._attr_cache,
+        )
+
+    def command(
+        self,
+        command_id: Union[foundation.Command, int, t.uint8_t],
+        *args,
+        manufacturer: Optional[Union[int, t.uint16_t]] = None,
+        expect_reply: bool = True,
+        tsn: Optional[Union[int, t.uint8_t]] = None,
+    ):
+        """Override the default Cluster command."""
+        if manufacturer is None:
+            manufacturer = self.endpoint.device.manufacturer
+        _LOGGER.debug(
+            "%s Sending Tuya Cluster Command.. Manufacturer is %s Cluster Command is 0x%04x, Arguments are %s",
+            self.endpoint.device.ieee,
+            manufacturer,
+            command_id,
+            args,
+        )
+        # Open Close or Stop commands
+        tuya_payload = TuyaManufCluster.Command()
+        if command_id in (
+            WINDOW_COVER_COMMAND_UPOPEN,
+            WINDOW_COVER_COMMAND_DOWNCLOSE,
+            WINDOW_COVER_COMMAND_STOP,
+        ):
+            tuya_payload.status = 0
+            tuya_payload.tsn = tsn if tsn else 0
+            tuya_payload.command_id = TUYA_DP_TYPE_ENUM + TUYA_DP_ID_CONTROL
+            tuya_payload.function = 0
+            tuya_payload.data = [
+                1,
+                # need to implement direction change
+                TUYA_COVER_COMMAND[manufacturer][command_id],
+            ]  # remap the command to the Tuya command
+        # Set Position Command
+        elif command_id == WINDOW_COVER_COMMAND_LIFTPERCENT:
+            tuya_payload.status = 0
+            tuya_payload.tsn = tsn if tsn else 0
+            tuya_payload.command_id = TUYA_DP_TYPE_VALUE + TUYA_DP_ID_PERCENT_CONTROL
+            tuya_payload.function = 0
+            """Check direction and correct value"""
+            position = (
+                args[0]
+                if self._attr_cache.get(ATTR_COVER_INVERTED) == 1
+                else 100 - args[0]
+            )
+            tuya_payload.data = [
+                4,
+                0,
+                0,
+                0,
+                position,
+            ]
+        # Custom Command
+        elif command_id == WINDOW_COVER_COMMAND_CUSTOM:
+            tuya_payload.status = args[0]
+            tuya_payload.tsn = args[1]
+            tuya_payload.command_id = args[2]
+            tuya_payload.function = args[3]
+            tuya_payload.data = args[4]
+        else:
+            tuya_payload = None
+        # Send the command
+        if tuya_payload.command_id:
+            _LOGGER.debug(
+                "%s Sending Tuya Command. Paylod values [endpoint_id : %s, "
+                "Status : %s, TSN: %s, Command: 0x%04x, Function: %s, Data: %s]",
+                self.endpoint.device.ieee,
+                self.endpoint.endpoint_id,
+                tuya_payload.status,
+                tuya_payload.tsn,
+                tuya_payload.command_id,
+                tuya_payload.function,
+                tuya_payload.data,
+            )
+
+            return self.endpoint.tuya_manufacturer.command(
+                TUYA_SET_DATA, tuya_payload, expect_reply=True
+            )
+        else:
+            _LOGGER.debug("Unrecognised command: %x", command_id)
+            return foundation.Status.UNSUP_CLUSTER_COMMAND
+
+
+class TuyaWindowCover(CustomDevice):
+    """Tuya switch device."""
+
+    def __init__(self, *args, **kwargs):
+        """Init device."""
+        self.cover_bus = Bus()
+        super().__init__(*args, **kwargs)
+
+
+class TuyaManufacturerLevelControl(TuyaManufCluster):
     """Manufacturer Specific Cluster for cover device."""
 
     def handle_cluster_request(
@@ -593,27 +879,40 @@ class TuyaManufacturerWindowCover(TuyaManufCluster):
             tuya_payload.data,
         )
 
-        if hdr.command_id == 0x0002:
-            self.endpoint.device.cover_bus.listener_event(
-                COVER_EVENT,
-                tuya_payload.command_id,
-                tuya_payload.data,
-            )
+        if hdr.command_id in (0x0002, 0x0001):
+            if tuya_payload.command_id == TUYA_LEVEL_COMMAND:
+                self.endpoint.device.dimmer_bus.listener_event(
+                    LEVEL_EVENT,
+                    tuya_payload.command_id,
+                    tuya_payload.data,
+                )
+            else:
+                self.endpoint.device.switch_bus.listener_event(
+                    SWITCH_EVENT,
+                    tuya_payload.command_id - TUYA_CMD_BASE,
+                    tuya_payload.data[1],
+                )
 
 
-class TuyaWindowCoverControl(LocalDataCluster, WindowCovering):
-    """Manufacturer Specific Cluster of Device cover."""
+class TuyaLevelControl(CustomCluster, LevelControl):
+    """Tuya Level cluster for dimmable device."""
 
     def __init__(self, *args, **kwargs):
-        """Initialize instance."""
+        """Init."""
         super().__init__(*args, **kwargs)
-        self.endpoint.device.cover_bus.add_listener(self)
+        self.endpoint.device.dimmer_bus.add_listener(self)
 
-    def cover_event(self, command, value):
-        """Cover event. update the position."""
-        if value[0] == 4:
-            position = 100 - value[4]
-            self._update_attribute(ATTR_COVER_POSITION, position)
+    def level_event(self, channel, state):
+        """Level event."""
+        level = (((state[3] << 8) + state[4]) * 255) // 1000
+        _LOGGER.debug(
+            "%s - Received level event message, channel: %d, level: %d, data: %d",
+            self.endpoint.device.ieee,
+            channel,
+            level,
+            state,
+        )
+        self._update_attribute(self.attridx["current_level"], level)
 
     def command(
         self,
@@ -624,75 +923,27 @@ class TuyaWindowCoverControl(LocalDataCluster, WindowCovering):
         tsn: Optional[Union[int, t.uint8_t]] = None,
     ):
         """Override the default Cluster command."""
-
         _LOGGER.debug(
             "%s Sending Tuya Cluster Command.. Cluster Command is %x, Arguments are %s",
             self.endpoint.device.ieee,
             command_id,
             args,
         )
-        tuya_payload = TuyaManufCluster.Command()
-        # Open Close or Stop commands
-        if command_id in (0x0000, 0x0001, 0x0002):
-            tuya_payload.status = 0
-            tuya_payload.tsn = 0
-            tuya_payload.command_id = TUYA_CMD_BASE + self.endpoint.endpoint_id
-            tuya_payload.function = 0
-            tuya_payload.data = [
-                1,
-                TUYA_COVER_COMMAND[command_id],
-            ]  # remap the command to the Tuya command
-        # Set Position Command
-        elif command_id == 0x0005:
-            tuya_payload = TuyaManufCluster.Command()
-            tuya_payload.status = 0
-            tuya_payload.tsn = 0
-            tuya_payload.command_id = TUYA_SET_COVER_POSITION_COMMAND
-            tuya_payload.function = 0
-            position = args[0]
-            tuya_payload.data = [
-                4,
-                0,
-                0,
-                0,
-                100 - position,
-            ]  # Custom Command
-
-        elif command_id == 0x0006:
-            tuya_payload = TuyaManufCluster.Command()
-            tuya_payload.status = args[0]
-            tuya_payload.tsn = args[1]
-            tuya_payload.command_id = args[2]
-            tuya_payload.function = args[3]
-            tuya_payload.data = args[4]
-        else:
-            tuya_payload = None
-
-        if tuya_payload.command_id:
-            _LOGGER.debug(
-                "%s Sending Tuya Command. Paylod values [endpoint_id : %s, "
-                "Status : %s, TSN: %s, Command: %s, Function: %s, Data: %s]",
-                self.endpoint.device.ieee,
-                self.endpoint.endpoint_id,
-                tuya_payload.status,
-                tuya_payload.tsn,
-                tuya_payload.command_id,
-                tuya_payload.function,
-                tuya_payload.data,
-            )
+        # Move to level
+        # move_to_level_with_on_off
+        if command_id in (0x0000, 0x0001, 0x0004):
+            cmd_payload = TuyaManufCluster.Command()
+            cmd_payload.status = 0
+            cmd_payload.tsn = 0
+            cmd_payload.command_id = TUYA_LEVEL_COMMAND
+            cmd_payload.function = 0
+            brightness = (args[0] * 1000) // 255
+            val1 = brightness >> 8
+            val2 = brightness & 0xFF
+            cmd_payload.data = [4, 0, 0, val1, val2]  # Custom Command
 
             return self.endpoint.tuya_manufacturer.command(
-                TUYA_SET_DATA, tuya_payload, expect_reply=True
+                TUYA_SET_DATA, cmd_payload, expect_reply=True
             )
-        else:
-            _LOGGER.debug("Unrecognised command: %x", command_id)
-            return foundation.Status.UNSUP_CLUSTER_COMMAND
 
-
-class TuyaWindowCover(CustomDevice):
-    """Tuya switch device."""
-
-    def __init__(self, *args, **kwargs):
-        """Init device."""
-        self.cover_bus = Bus()
-        super().__init__(*args, **kwargs)
+        return foundation.Status.UNSUP_CLUSTER_COMMAND
