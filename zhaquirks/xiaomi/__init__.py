@@ -533,38 +533,45 @@ def handle_quick_init(
     if hdr.frame_control.is_cluster:
         return
 
+    if hdr.command_id not in foundation.COMMANDS:
+        sender.debug("Unknown ZCL global command: %s", hdr.command_id)
+        return
+
     try:
-        schema = foundation.COMMANDS[hdr.command_id][0]
-        args, data = t.deserialize(data, schema)
-    except (KeyError, ValueError):
+        params, data = foundation.COMMANDS[hdr.command_id].schema.deserialize(data)
+    except ValueError:
         sender.debug("Failed to deserialize ZCL global command")
         return
 
-    sender.debug("Uninitialized device command '%s' args: %s", hdr.command_id, args)
-    if hdr.command_id != foundation.Command.Report_Attributes or cluster != 0:
+    sender.debug("Uninitialized device command '%s' params: %s", hdr.command_id, params)
+
+    if hdr.command_id != foundation.Command.Report_Attributes or cluster != 0x0000:
         return
 
-    for attr_rec in args[0]:
-        if attr_rec.attrid == 5:
+    for attr_rec in params.attribute_reports:
+        # model_name
+        if attr_rec.attrid == 0x0005:
             break
     else:
         return
 
     model = attr_rec.value.value
+
     if not model:
         return
 
     for quirk in zigpy.quirks.get_quirk_list(LUMI, model):
-        if issubclass(quirk, XiaomiQuickInitDevice):
-            sender.debug("Found '%s' quirk for '%s' model", quirk.__name__, model)
-            try:
-                sender = quirk.from_signature(sender, model)
-            except (AssertionError, KeyError) as ex:
-                _LOGGER.debug(
-                    "Found quirk for quick init, but failed to init: %s", str(ex)
-                )
-                continue
-            break
+        if not issubclass(quirk, XiaomiQuickInitDevice):
+            continue
+
+        sender.debug("Found '%s' quirk for '%s' model", quirk.__name__, model)
+
+        try:
+            sender = quirk.from_signature(sender, model)
+        except (AssertionError, KeyError) as ex:
+            _LOGGER.debug("Found quirk for quick init, but failed to init: %s", str(ex))
+            continue
+        break
     else:
         return
 
