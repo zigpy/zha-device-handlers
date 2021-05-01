@@ -53,7 +53,7 @@ from zhaquirks.const import (
 )
 from zhaquirks.xiaomi import LUMI, BasicCluster, XiaomiCustomDevice
 
-PRESS_TYPES = {0: "long press", 1: "single", 2: "double", 3: "triple", 255: "release"}
+PRESS_TYPES = {0: "hold", 1: "single", 2: "double", 3: "triple", 255: "release"}
 STATUS_TYPE_ATTR = 0x0055  # decimal = 85
 
 COMMAND_1_SINGLE = "1_single"
