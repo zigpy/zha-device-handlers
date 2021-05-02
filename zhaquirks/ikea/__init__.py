@@ -3,6 +3,7 @@ import logging
 
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Scenes
 from zigpy.zcl.clusters.lightlink import LightLink
 
@@ -41,8 +42,28 @@ class LightLinkCluster(CustomCluster, LightLink):
 class ScenesCluster(CustomCluster, Scenes):
     """Ikea Scenes cluster."""
 
-    manufacturer_server_commands = {
-        0x0007: ("press", (t.int16s, t.int8s, t.int8s), False),
-        0x0008: ("hold", (t.int16s, t.int8s), False),
-        0x0009: ("release", (t.int16s,), False),
-    }
+    server_commands = Scenes.server_commands.copy()
+    server_commands.update(
+        {
+            0x0007: foundation.ZCLCommandDef(
+                "press",
+                {"param1": t.int16s, "param2": t.int8s, "param3": t.int8s},
+                False,
+                is_manufacturer_specific=True,
+            ),
+            0x0008: foundation.ZCLCommandDef(
+                "hold",
+                {"param1": t.int16s, "param2": t.int8s},
+                False,
+                is_manufacturer_specific=True,
+            ),
+            0x0009: foundation.ZCLCommandDef(
+                "release",
+                {
+                    "param1": t.int16s,
+                },
+                False,
+                is_manufacturer_specific=True,
+            ),
+        }
+    )

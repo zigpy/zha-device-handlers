@@ -39,20 +39,23 @@ _LOGGER = logging.getLogger(__name__)
 class TuyaManufClusterSiren(TuyaManufClusterAttributes):
     """Manufacturer Specific Cluster of the NEO Siren device."""
 
-    manufacturer_attributes = {
-        TUYA_ALARM_ATTR: ("alarm", t.uint8_t),
-        TUYA_TEMP_ALARM_ATTR: ("enable_temperature_alarm", t.uint8_t),
-        TUYA_HUMID_ALARM_ATTR: ("enable_humidity_alarm", t.uint8_t),
-        TUYA_ALARM_DURATION_ATTR: ("alarm_duration", t.uint32_t),
-        TUYA_TEMPERATURE_ATTR: ("temperature", t.uint32_t),
-        TUYA_HUMIDITY_ATTR: ("humidity", t.uint32_t),
-        TUYA_ALARM_MIN_TEMP_ATTR: ("alarm_temperature_min", t.uint32_t),
-        TUYA_ALARM_MAX_TEMP_ATTR: ("alarm_temperature_max", t.uint32_t),
-        TUYA_ALARM_MIN_HUMID_ATTR: ("alarm_humidity_min", t.uint32_t),
-        TUYA_ALARM_MAX_HUMID_ATTR: ("alarm_humidity_max", t.uint32_t),
-        TUYA_MELODY_ATTR: ("melody", t.uint8_t),
-        TUYA_VOLUME_ATTR: ("volume", t.uint8_t),
-    }
+    attributes = TuyaManufClusterAttributes.attributes.copy()
+    attributes.update(
+        {
+            TUYA_ALARM_ATTR: ("alarm", t.uint8_t, True),
+            TUYA_TEMP_ALARM_ATTR: ("enable_temperature_alarm", t.uint8_t, True),
+            TUYA_HUMID_ALARM_ATTR: ("enable_humidity_alarm", t.uint8_t, True),
+            TUYA_ALARM_DURATION_ATTR: ("alarm_duration", t.uint32_t, True),
+            TUYA_TEMPERATURE_ATTR: ("temperature", t.uint32_t, True),
+            TUYA_HUMIDITY_ATTR: ("humidity", t.uint32_t, True),
+            TUYA_ALARM_MIN_TEMP_ATTR: ("alarm_temperature_min", t.uint32_t, True),
+            TUYA_ALARM_MAX_TEMP_ATTR: ("alarm_temperature_max", t.uint32_t, True),
+            TUYA_ALARM_MIN_HUMID_ATTR: ("alarm_humidity_min", t.uint32_t, True),
+            TUYA_ALARM_MAX_HUMID_ATTR: ("alarm_humidity_max", t.uint32_t, True),
+            TUYA_MELODY_ATTR: ("melody", t.uint8_t, True),
+            TUYA_VOLUME_ATTR: ("volume", t.uint8_t, True),
+        }
+    )
 
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)

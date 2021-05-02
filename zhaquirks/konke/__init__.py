@@ -34,10 +34,11 @@ class MotionCluster(MotionWithReset):
 class KonkeOnOffCluster(CustomCluster, OnOff):
     """Konke OnOff cluster implementation."""
 
-    PRESS_TYPES = {0x0080: COMMAND_SINGLE, 0x0081: COMMAND_DOUBLE, 0x0082: COMMAND_HOLD}
-    cluster_id = 6
+    PRESS_TYPES = {0x80: COMMAND_SINGLE, 0x81: COMMAND_DOUBLE, 0x82: COMMAND_HOLD}
     ep_attribute = "custom_on_off"
-    manufacturer_attributes = {0x0000: (PRESS_TYPE, t.uint8_t)}
+
+    attributes = OnOff.attributes.copy()
+    attributes[0x0000] = (PRESS_TYPE, t.uint8_t)
 
     def handle_cluster_general_request(
         self,

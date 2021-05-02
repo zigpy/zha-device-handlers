@@ -44,20 +44,23 @@ from zhaquirks.xiaomi import (
     XiaomiQuickInitDevice,
 )
 
-IAS_ZONE = 0x0402
-ZONE_TYPE = 0x0001
-
 _LOGGER = logging.getLogger(__name__)
 
 
 class XiaomiSmokeIASCluster(CustomCluster, IasZone):
     """Xiaomi smoke IAS cluster implementation."""
 
-    _CONSTANT_ATTRIBUTES = {ZONE_TYPE: IasZone.ZoneType.Fire_Sensor}
-    manufacturer_attributes = {
-        0xFFF1: ("set_options", t.uint32_t),
-        0xFFF0: ("get_status", t.uint32_t),
+    _CONSTANT_ATTRIBUTES = {
+        IasZone.attributes_by_name["zone_type"].id: IasZone.ZoneType.Fire_Sensor
     }
+
+    attributes = IasZone.attributes.copy()
+    attributes.update(
+        {
+            0xFFF0: ("get_status", t.uint32_t, True),
+            0xFFF1: ("set_options", t.uint32_t, True),
+        }
+    )
 
 
 class MijiaHoneywellSmokeDetectorSensor(XiaomiQuickInitDevice):
@@ -78,7 +81,7 @@ class MijiaHoneywellSmokeDetectorSensor(XiaomiQuickInitDevice):
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: IAS_ZONE,
+                DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
                 INPUT_CLUSTERS: [
                     BasicCluster.cluster_id,
                     PowerConfiguration.cluster_id,

@@ -183,7 +183,8 @@ async def test_tuya_data_conversion():
 class TestManufCluster(TuyaManufClusterAttributes):
     """Cluster for synthetic tests."""
 
-    manufacturer_attributes = {617: ("test_attribute", t.uint32_t)}
+    attributes = TuyaManufClusterAttributes.attributes.copy()
+    attributes[617] = ("test_attribute", t.uint32_t, True)
 
 
 class TestDevice(CustomDevice):

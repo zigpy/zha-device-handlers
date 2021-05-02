@@ -42,16 +42,19 @@ _LOGGER = logging.getLogger(__name__)
 class SiterwellManufCluster(TuyaManufClusterAttributes):
     """Manufacturer Specific Cluster of some thermostatic valves."""
 
-    manufacturer_attributes = {
-        SITERWELL_CHILD_LOCK_ATTR: ("child_lock", t.uint8_t),
-        SITERWELL_WINDOW_DETECT_ATTR: ("window_detection", t.uint8_t),
-        SITERWELL_VALVE_DETECT_ATTR: ("valve_detect", t.uint8_t),
-        SITERWELL_VALVE_STATE_ATTR: ("valve_state", t.uint32_t),
-        SITERWELL_TARGET_TEMP_ATTR: ("target_temperature", t.uint32_t),
-        SITERWELL_TEMPERATURE_ATTR: ("temperature", t.uint32_t),
-        SITERWELL_BATTERY_ATTR: ("battery", t.uint32_t),
-        SITERWELL_MODE_ATTR: ("mode", t.uint8_t),
-    }
+    attributes = TuyaManufClusterAttributes.attributes.copy()
+    attributes.update(
+        {
+            SITERWELL_CHILD_LOCK_ATTR: ("child_lock", t.uint8_t, True),
+            SITERWELL_WINDOW_DETECT_ATTR: ("window_detection", t.uint8_t, True),
+            SITERWELL_VALVE_DETECT_ATTR: ("valve_detect", t.uint8_t, True),
+            SITERWELL_VALVE_STATE_ATTR: ("valve_state", t.uint32_t, True),
+            SITERWELL_TARGET_TEMP_ATTR: ("target_temperature", t.uint32_t, True),
+            SITERWELL_TEMPERATURE_ATTR: ("temperature", t.uint32_t, True),
+            SITERWELL_BATTERY_ATTR: ("battery", t.uint32_t, True),
+            SITERWELL_MODE_ATTR: ("mode", t.uint8_t, True),
+        }
+    )
 
     TEMPERATURE_ATTRS = {
         SITERWELL_TEMPERATURE_ATTR: "local_temp",
@@ -93,12 +96,12 @@ class SiterwellThermostat(TuyaThermostatCluster):
             if attribute == "system_mode":
                 system_mode = value
                 oper_mode = self._attr_cache.get(
-                    self.attridx["programing_oper_mode"],
+                    self.attributes_by_name["programing_oper_mode"].id,
                     self.ProgrammingOperationMode.Simple,
                 )
             else:
                 system_mode = self._attr_cache.get(
-                    self.attridx["system_mode"], self.SystemMode.Heat
+                    self.attributes_by_name["system_mode"].id, self.SystemMode.Heat
                 )
                 oper_mode = value
             if system_mode == self.SystemMode.Off:
@@ -115,7 +118,9 @@ class SiterwellThermostat(TuyaThermostatCluster):
     def mode_change(self, value):
         """System Mode change."""
         if value == 0:
-            self._update_attribute(self.attridx["system_mode"], self.SystemMode.Off)
+            self._update_attribute(
+                self.attributes_by_name["system_mode"].id, self.SystemMode.Off
+            )
             return
 
         if value == 1:
@@ -123,8 +128,10 @@ class SiterwellThermostat(TuyaThermostatCluster):
         else:
             mode = self.ProgrammingOperationMode.Simple
 
-        self._update_attribute(self.attridx["system_mode"], self.SystemMode.Heat)
-        self._update_attribute(self.attridx["programing_oper_mode"], mode)
+        self._update_attribute(
+            self.attributes_by_name["system_mode"].id, self.SystemMode.Heat
+        )
+        self._update_attribute(self.attributes_by_name["programing_oper_mode"].id, mode)
 
 
 class SiterwellUserInterface(TuyaUserInterfaceCluster):
@@ -175,29 +182,32 @@ class MoesManufCluster(TuyaManufClusterAttributes):
 
     set_time_offset = 1970
 
-    manufacturer_attributes = {
-        MOES_CHILD_LOCK_ATTR: ("child_lock", t.uint8_t),
-        MOES_WINDOW_DETECT_ATTR: ("window_detection", t.data24),
-        MOES_VALVE_DETECT_ATTR: ("valve_detect", t.uint8_t),
-        MOES_VALVE_STATE_ATTR: ("valve_state", t.uint32_t),
-        MOES_TARGET_TEMP_ATTR: ("target_temperature", t.uint32_t),
-        MOES_TEMPERATURE_ATTR: ("temperature", t.uint32_t),
-        MOES_MODE_ATTR: ("mode", t.uint8_t),
-        MOES_TEMP_CALIBRATION_ATTR: ("temperature_calibration", t.int32s),
-        MOES_MIN_TEMPERATURE_ATTR: ("min_temperature", t.uint32_t),
-        MOES_MAX_TEMPERATURE_ATTR: ("max_temperature", t.uint32_t),
-        MOES_BOOST_TIME_ATTR: ("boost_duration_seconds", t.uint32_t),
-        MOES_FORCE_VALVE_ATTR: ("valve_force_state", t.uint8_t),
-        MOES_COMFORT_TEMP_ATTR: ("comfort_mode_temperature", t.uint32_t),
-        MOES_ECO_TEMP_ATTR: ("eco_mode_temperature", t.uint32_t),
-        MOES_BATTERY_LOW_ATTR: ("battery_low", t.uint8_t),
-        MOES_WEEK_FORMAT_ATTR: ("week_format", t.uint8_t),
-        MOES_AWAY_TEMP_ATTR: ("away_mode_temperature", t.uint32_t),
-        MOES_AUTO_LOCK_ATTR: ("auto_lock", t.uint8_t),
-        MOES_AWAY_DAYS_ATTR: ("away_duration_days", t.uint32_t),
-        MOES_SCHEDULE_WORKDAY_ATTR: ("workday_schedule", data144),
-        MOES_SCHEDULE_WEEKEND_ATTR: ("weekend_schedule", data144),
-    }
+    attributes = TuyaManufClusterAttributes.attributes.copy()
+    attributes.update(
+        {
+            MOES_CHILD_LOCK_ATTR: ("child_lock", t.uint8_t, True),
+            MOES_WINDOW_DETECT_ATTR: ("window_detection", t.data24, True),
+            MOES_VALVE_DETECT_ATTR: ("valve_detect", t.uint8_t, True),
+            MOES_VALVE_STATE_ATTR: ("valve_state", t.uint32_t, True),
+            MOES_TARGET_TEMP_ATTR: ("target_temperature", t.uint32_t, True),
+            MOES_TEMPERATURE_ATTR: ("temperature", t.uint32_t, True),
+            MOES_MODE_ATTR: ("mode", t.uint8_t, True),
+            MOES_TEMP_CALIBRATION_ATTR: ("temperature_calibration", t.int32s, True),
+            MOES_MIN_TEMPERATURE_ATTR: ("min_temperature", t.uint32_t, True),
+            MOES_MAX_TEMPERATURE_ATTR: ("max_temperature", t.uint32_t, True),
+            MOES_BOOST_TIME_ATTR: ("boost_duration_seconds", t.uint32_t, True),
+            MOES_FORCE_VALVE_ATTR: ("valve_force_state", t.uint8_t, True),
+            MOES_COMFORT_TEMP_ATTR: ("comfort_mode_temperature", t.uint32_t, True),
+            MOES_ECO_TEMP_ATTR: ("eco_mode_temperature", t.uint32_t, True),
+            MOES_BATTERY_LOW_ATTR: ("battery_low", t.uint8_t, True),
+            MOES_WEEK_FORMAT_ATTR: ("week_format", t.uint8_t, True),
+            MOES_AWAY_TEMP_ATTR: ("away_mode_temperature", t.uint32_t, True),
+            MOES_AUTO_LOCK_ATTR: ("auto_lock", t.uint8_t, True),
+            MOES_AWAY_DAYS_ATTR: ("away_duration_days", t.uint32_t, True),
+            MOES_SCHEDULE_WORKDAY_ATTR: ("workday_schedule", data144, True),
+            MOES_SCHEDULE_WEEKEND_ATTR: ("weekend_schedule", data144, True),
+        }
+    )
 
     DIRECT_MAPPED_ATTRS = {
         MOES_TEMPERATURE_ATTR: ("local_temp", lambda value: value * 10),
@@ -295,52 +305,55 @@ class MoesThermostat(TuyaThermostatCluster):
         0x001C: Thermostat.SystemMode.Heat,
     }
 
-    manufacturer_attributes = {
-        0x4000: ("comfort_heating_setpoint", t.int16s),
-        0x4001: ("eco_heating_setpoint", t.int16s),
-        0x4002: ("operation_preset", Preset),
-        0x4003: ("work_days", WorkDays),
-        0x4004: ("valve_open_percentage", t.uint8_t),
-        0x4005: ("boost_duration_seconds", t.uint32_t),
-        0x4006: ("valve_force_state", ForceValveState),
-        0x4007: ("unoccupied_duration_days", t.uint32_t),
-        0x4110: ("workday_schedule_1_hour", t.uint8_t),
-        0x4111: ("workday_schedule_1_minute", t.uint8_t),
-        0x4112: ("workday_schedule_1_temperature", t.int16s),
-        0x4120: ("workday_schedule_2_hour", t.uint8_t),
-        0x4121: ("workday_schedule_2_minute", t.uint8_t),
-        0x4122: ("workday_schedule_2_temperature", t.int16s),
-        0x4130: ("workday_schedule_3_hour", t.uint8_t),
-        0x4131: ("workday_schedule_3_minute", t.uint8_t),
-        0x4132: ("workday_schedule_3_temperature", t.int16s),
-        0x4140: ("workday_schedule_4_hour", t.uint8_t),
-        0x4141: ("workday_schedule_4_minute", t.uint8_t),
-        0x4142: ("workday_schedule_4_temperature", t.int16s),
-        0x4150: ("workday_schedule_5_hour", t.uint8_t),
-        0x4151: ("workday_schedule_5_minute", t.uint8_t),
-        0x4152: ("workday_schedule_5_temperature", t.int16s),
-        0x4160: ("workday_schedule_6_hour", t.uint8_t),
-        0x4161: ("workday_schedule_6_minute", t.uint8_t),
-        0x4162: ("workday_schedule_6_temperature", t.int16s),
-        0x4210: ("weekend_schedule_1_hour", t.uint8_t),
-        0x4211: ("weekend_schedule_1_minute", t.uint8_t),
-        0x4212: ("weekend_schedule_1_temperature", t.int16s),
-        0x4220: ("weekend_schedule_2_hour", t.uint8_t),
-        0x4221: ("weekend_schedule_2_minute", t.uint8_t),
-        0x4222: ("weekend_schedule_2_temperature", t.int16s),
-        0x4230: ("weekend_schedule_3_hour", t.uint8_t),
-        0x4231: ("weekend_schedule_3_minute", t.uint8_t),
-        0x4232: ("weekend_schedule_3_temperature", t.int16s),
-        0x4240: ("weekend_schedule_4_hour", t.uint8_t),
-        0x4241: ("weekend_schedule_4_minute", t.uint8_t),
-        0x4242: ("weekend_schedule_4_temperature", t.int16s),
-        0x4250: ("weekend_schedule_5_hour", t.uint8_t),
-        0x4251: ("weekend_schedule_5_minute", t.uint8_t),
-        0x4252: ("weekend_schedule_5_temperature", t.int16s),
-        0x4260: ("weekend_schedule_6_hour", t.uint8_t),
-        0x4261: ("weekend_schedule_6_minute", t.uint8_t),
-        0x4262: ("weekend_schedule_6_temperature", t.int16s),
-    }
+    attributes = TuyaThermostatCluster.attributes.copy()
+    attributes.update(
+        {
+            0x4000: ("comfort_heating_setpoint", t.int16s, True),
+            0x4001: ("eco_heating_setpoint", t.int16s, True),
+            0x4002: ("operation_preset", Preset, True),
+            0x4003: ("work_days", WorkDays, True),
+            0x4004: ("valve_open_percentage", t.uint8_t, True),
+            0x4005: ("boost_duration_seconds", t.uint32_t, True),
+            0x4006: ("valve_force_state", ForceValveState, True),
+            0x4007: ("unoccupied_duration_days", t.uint32_t, True),
+            0x4110: ("workday_schedule_1_hour", t.uint8_t, True),
+            0x4111: ("workday_schedule_1_minute", t.uint8_t, True),
+            0x4112: ("workday_schedule_1_temperature", t.int16s, True),
+            0x4120: ("workday_schedule_2_hour", t.uint8_t, True),
+            0x4121: ("workday_schedule_2_minute", t.uint8_t, True),
+            0x4122: ("workday_schedule_2_temperature", t.int16s, True),
+            0x4130: ("workday_schedule_3_hour", t.uint8_t, True),
+            0x4131: ("workday_schedule_3_minute", t.uint8_t, True),
+            0x4132: ("workday_schedule_3_temperature", t.int16s, True),
+            0x4140: ("workday_schedule_4_hour", t.uint8_t, True),
+            0x4141: ("workday_schedule_4_minute", t.uint8_t, True),
+            0x4142: ("workday_schedule_4_temperature", t.int16s, True),
+            0x4150: ("workday_schedule_5_hour", t.uint8_t, True),
+            0x4151: ("workday_schedule_5_minute", t.uint8_t, True),
+            0x4152: ("workday_schedule_5_temperature", t.int16s, True),
+            0x4160: ("workday_schedule_6_hour", t.uint8_t, True),
+            0x4161: ("workday_schedule_6_minute", t.uint8_t, True),
+            0x4162: ("workday_schedule_6_temperature", t.int16s, True),
+            0x4210: ("weekend_schedule_1_hour", t.uint8_t, True),
+            0x4211: ("weekend_schedule_1_minute", t.uint8_t, True),
+            0x4212: ("weekend_schedule_1_temperature", t.int16s, True),
+            0x4220: ("weekend_schedule_2_hour", t.uint8_t, True),
+            0x4221: ("weekend_schedule_2_minute", t.uint8_t, True),
+            0x4222: ("weekend_schedule_2_temperature", t.int16s, True),
+            0x4230: ("weekend_schedule_3_hour", t.uint8_t, True),
+            0x4231: ("weekend_schedule_3_minute", t.uint8_t, True),
+            0x4232: ("weekend_schedule_3_temperature", t.int16s, True),
+            0x4240: ("weekend_schedule_4_hour", t.uint8_t, True),
+            0x4241: ("weekend_schedule_4_minute", t.uint8_t, True),
+            0x4242: ("weekend_schedule_4_temperature", t.int16s, True),
+            0x4250: ("weekend_schedule_5_hour", t.uint8_t, True),
+            0x4251: ("weekend_schedule_5_minute", t.uint8_t, True),
+            0x4252: ("weekend_schedule_5_temperature", t.int16s, True),
+            0x4260: ("weekend_schedule_6_hour", t.uint8_t, True),
+            0x4261: ("weekend_schedule_6_minute", t.uint8_t, True),
+            0x4262: ("weekend_schedule_6_temperature", t.int16s, True),
+        }
+    )
 
     DIRECT_MAPPING_ATTRS = {
         "occupied_heating_setpoint": (
@@ -430,12 +443,12 @@ class MoesThermostat(TuyaThermostatCluster):
             if attribute == "occupancy":
                 occupancy = value
                 oper_mode = self._attr_cache.get(
-                    self.attridx["programing_oper_mode"],
+                    self.attributes_by_name["programing_oper_mode"].id,
                     self.ProgrammingOperationMode.Simple,
                 )
             else:
                 occupancy = self._attr_cache.get(
-                    self.attridx["occupancy"], self.Occupancy.Occupied
+                    self.attributes_by_name["occupancy"].id, self.Occupancy.Occupied
                 )
                 oper_mode = value
             if occupancy == self.Occupancy.Unoccupied:
@@ -453,7 +466,7 @@ class MoesThermostat(TuyaThermostatCluster):
         if attribute == "system_mode":
             return {
                 MOES_MODE_ATTR: self._attr_cache.get(
-                    self.attridx["operation_preset"], 2
+                    self.attributes_by_name["operation_preset"].id, 2
                 )
             }
         if attribute in self.WORKDAY_SCHEDULE_ATTRS:
@@ -465,13 +478,18 @@ class MoesThermostat(TuyaThermostatCluster):
                         val = round(value / 100)
                     else:
                         val = round(
-                            self._attr_cache.get(self.attridx[attr], default) / 100
+                            self._attr_cache.get(
+                                self.attributes_by_name[attr].id, default
+                            )
+                            / 100
                         )
                 else:
                     if attr == attribute:
                         val = value
                     else:
-                        val = self._attr_cache.get(self.attridx[attr], default)
+                        val = self._attr_cache.get(
+                            self.attributes_by_name[attr].id, default
+                        )
 
                 data.append(val)
             return {MOES_SCHEDULE_WORKDAY_ATTR: data}
@@ -484,13 +502,18 @@ class MoesThermostat(TuyaThermostatCluster):
                         val = round(value / 100)
                     else:
                         val = round(
-                            self._attr_cache.get(self.attridx[attr], default) / 100
+                            self._attr_cache.get(
+                                self.attributes_by_name[attr].id, default
+                            )
+                            / 100
                         )
                 else:
                     if attr == attribute:
                         val = value
                     else:
-                        val = self._attr_cache.get(self.attridx[attr], default)
+                        val = self._attr_cache.get(
+                            self.attributes_by_name[attr].id, default
+                        )
 
                 data.append(val)
             return {MOES_SCHEDULE_WEEKEND_ATTR: data}
@@ -519,97 +542,135 @@ class MoesThermostat(TuyaThermostatCluster):
             prog_mode = self.ProgrammingOperationMode.Simple
             occupancy = self.Occupancy.Occupied
 
-        self._update_attribute(self.attridx["programing_oper_mode"], prog_mode)
-        self._update_attribute(self.attridx["occupancy"], occupancy)
+        self._update_attribute(
+            self.attributes_by_name["programing_oper_mode"].id, prog_mode
+        )
+        self._update_attribute(self.attributes_by_name["occupancy"].id, occupancy)
 
     def schedule_change(self, attr, value):
         """Scheduler attribute change."""
 
         if attr == MOES_SCHEDULE_WORKDAY_ATTR:
             self._update_attribute(
-                self.attridx["workday_schedule_1_hour"], value[17] & 0x3F
-            )
-            self._update_attribute(self.attridx["workday_schedule_1_minute"], value[16])
-            self._update_attribute(
-                self.attridx["workday_schedule_1_temperature"], value[15] * 100
+                self.attributes_by_name["workday_schedule_1_hour"].id, value[17] & 0x3F
             )
             self._update_attribute(
-                self.attridx["workday_schedule_2_hour"], value[14] & 0x3F
-            )
-            self._update_attribute(self.attridx["workday_schedule_2_minute"], value[13])
-            self._update_attribute(
-                self.attridx["workday_schedule_2_temperature"], value[12] * 100
+                self.attributes_by_name["workday_schedule_1_minute"].id, value[16]
             )
             self._update_attribute(
-                self.attridx["workday_schedule_3_hour"], value[11] & 0x3F
-            )
-            self._update_attribute(self.attridx["workday_schedule_3_minute"], value[10])
-            self._update_attribute(
-                self.attridx["workday_schedule_3_temperature"], value[9] * 100
+                self.attributes_by_name["workday_schedule_1_temperature"].id,
+                value[15] * 100,
             )
             self._update_attribute(
-                self.attridx["workday_schedule_4_hour"], value[8] & 0x3F
-            )
-            self._update_attribute(self.attridx["workday_schedule_4_minute"], value[7])
-            self._update_attribute(
-                self.attridx["workday_schedule_4_temperature"], value[6] * 100
+                self.attributes_by_name["workday_schedule_2_hour"].id, value[14] & 0x3F
             )
             self._update_attribute(
-                self.attridx["workday_schedule_5_hour"], value[5] & 0x3F
-            )
-            self._update_attribute(self.attridx["workday_schedule_5_minute"], value[4])
-            self._update_attribute(
-                self.attridx["workday_schedule_5_temperature"], value[3] * 100
+                self.attributes_by_name["workday_schedule_2_minute"].id, value[13]
             )
             self._update_attribute(
-                self.attridx["workday_schedule_6_hour"], value[2] & 0x3F
+                self.attributes_by_name["workday_schedule_2_temperature"].id,
+                value[12] * 100,
             )
-            self._update_attribute(self.attridx["workday_schedule_6_minute"], value[1])
             self._update_attribute(
-                self.attridx["workday_schedule_6_temperature"], value[0] * 100
+                self.attributes_by_name["workday_schedule_3_hour"].id, value[11] & 0x3F
+            )
+            self._update_attribute(
+                self.attributes_by_name["workday_schedule_3_minute"].id, value[10]
+            )
+            self._update_attribute(
+                self.attributes_by_name["workday_schedule_3_temperature"].id,
+                value[9] * 100,
+            )
+            self._update_attribute(
+                self.attributes_by_name["workday_schedule_4_hour"].id, value[8] & 0x3F
+            )
+            self._update_attribute(
+                self.attributes_by_name["workday_schedule_4_minute"].id, value[7]
+            )
+            self._update_attribute(
+                self.attributes_by_name["workday_schedule_4_temperature"].id,
+                value[6] * 100,
+            )
+            self._update_attribute(
+                self.attributes_by_name["workday_schedule_5_hour"].id, value[5] & 0x3F
+            )
+            self._update_attribute(
+                self.attributes_by_name["workday_schedule_5_minute"].id, value[4]
+            )
+            self._update_attribute(
+                self.attributes_by_name["workday_schedule_5_temperature"].id,
+                value[3] * 100,
+            )
+            self._update_attribute(
+                self.attributes_by_name["workday_schedule_6_hour"].id, value[2] & 0x3F
+            )
+            self._update_attribute(
+                self.attributes_by_name["workday_schedule_6_minute"].id, value[1]
+            )
+            self._update_attribute(
+                self.attributes_by_name["workday_schedule_6_temperature"].id,
+                value[0] * 100,
             )
         elif attr == MOES_SCHEDULE_WEEKEND_ATTR:
             self._update_attribute(
-                self.attridx["weekend_schedule_1_hour"], value[17] & 0x3F
-            )
-            self._update_attribute(self.attridx["weekend_schedule_1_minute"], value[16])
-            self._update_attribute(
-                self.attridx["weekend_schedule_1_temperature"], value[15] * 100
+                self.attributes_by_name["weekend_schedule_1_hour"].id, value[17] & 0x3F
             )
             self._update_attribute(
-                self.attridx["weekend_schedule_2_hour"], value[14] & 0x3F
-            )
-            self._update_attribute(self.attridx["weekend_schedule_2_minute"], value[13])
-            self._update_attribute(
-                self.attridx["weekend_schedule_2_temperature"], value[12] * 100
+                self.attributes_by_name["weekend_schedule_1_minute"].id, value[16]
             )
             self._update_attribute(
-                self.attridx["weekend_schedule_3_hour"], value[11] & 0x3F
-            )
-            self._update_attribute(self.attridx["weekend_schedule_3_minute"], value[10])
-            self._update_attribute(
-                self.attridx["weekend_schedule_3_temperature"], value[9] * 100
+                self.attributes_by_name["weekend_schedule_1_temperature"].id,
+                value[15] * 100,
             )
             self._update_attribute(
-                self.attridx["weekend_schedule_4_hour"], value[8] & 0x3F
-            )
-            self._update_attribute(self.attridx["weekend_schedule_4_minute"], value[7])
-            self._update_attribute(
-                self.attridx["weekend_schedule_4_temperature"], value[6] * 100
+                self.attributes_by_name["weekend_schedule_2_hour"].id, value[14] & 0x3F
             )
             self._update_attribute(
-                self.attridx["weekend_schedule_5_hour"], value[5] & 0x3F
-            )
-            self._update_attribute(self.attridx["weekend_schedule_5_minute"], value[4])
-            self._update_attribute(
-                self.attridx["weekend_schedule_5_temperature"], value[3] * 100
+                self.attributes_by_name["weekend_schedule_2_minute"].id, value[13]
             )
             self._update_attribute(
-                self.attridx["weekend_schedule_6_hour"], value[2] & 0x3F
+                self.attributes_by_name["weekend_schedule_2_temperature"].id,
+                value[12] * 100,
             )
-            self._update_attribute(self.attridx["weekend_schedule_6_minute"], value[1])
             self._update_attribute(
-                self.attridx["weekend_schedule_6_temperature"], value[0] * 100
+                self.attributes_by_name["weekend_schedule_3_hour"].id, value[11] & 0x3F
+            )
+            self._update_attribute(
+                self.attributes_by_name["weekend_schedule_3_minute"].id, value[10]
+            )
+            self._update_attribute(
+                self.attributes_by_name["weekend_schedule_3_temperature"].id,
+                value[9] * 100,
+            )
+            self._update_attribute(
+                self.attributes_by_name["weekend_schedule_4_hour"].id, value[8] & 0x3F
+            )
+            self._update_attribute(
+                self.attributes_by_name["weekend_schedule_4_minute"].id, value[7]
+            )
+            self._update_attribute(
+                self.attributes_by_name["weekend_schedule_4_temperature"].id,
+                value[6] * 100,
+            )
+            self._update_attribute(
+                self.attributes_by_name["weekend_schedule_5_hour"].id, value[5] & 0x3F
+            )
+            self._update_attribute(
+                self.attributes_by_name["weekend_schedule_5_minute"].id, value[4]
+            )
+            self._update_attribute(
+                self.attributes_by_name["weekend_schedule_5_temperature"].id,
+                value[3] * 100,
+            )
+            self._update_attribute(
+                self.attributes_by_name["weekend_schedule_6_hour"].id, value[2] & 0x3F
+            )
+            self._update_attribute(
+                self.attributes_by_name["weekend_schedule_6_minute"].id, value[1]
+            )
+            self._update_attribute(
+                self.attributes_by_name["weekend_schedule_6_temperature"].id,
+                value[0] * 100,
             )
 
 
@@ -618,14 +679,17 @@ class MoesUserInterface(TuyaUserInterfaceCluster):
 
     _CHILD_LOCK_ATTR = MOES_CHILD_LOCK_ATTR
 
-    manufacturer_attributes = {
-        0x5000: ("auto_lock", t.Bool),
-    }
+    attributes = TuyaUserInterfaceCluster.attributes.copy()
+    attributes.update(
+        {
+            0x5000: ("auto_lock", t.Bool, True),
+        }
+    )
 
     def autolock_change(self, value):
         """Automatic lock change."""
 
-        self._update_attribute(self.attridx["auto_lock"], value)
+        self._update_attribute(self.attributes_by_name["auto_lock"].id, value)
 
     def map_attribute(self, attribute, value):
         """Map standardized attribute value to dict of manufacturer values."""
@@ -642,21 +706,24 @@ class MoesWindowDetection(LocalDataCluster, OnOff):
         super().__init__(*args, **kwargs)
         self.endpoint.device.window_detection_bus.add_listener(self)
 
-    manufacturer_attributes = {
-        0x6000: ("window_detection_temperature", t.int16s),
-        0x6001: ("window_detection_timeout_minutes", t.uint8_t),
-    }
+    attributes = OnOff.attributes.copy()
+    attributes.update(
+        {
+            0x6000: ("window_detection_temperature", t.int16s, True),
+            0x6001: ("window_detection_timeout_minutes", t.uint8_t, True),
+        }
+    )
 
     def window_detect_change(self, value):
         """Window detection change."""
 
         self._update_attribute(
-            self.attridx["window_detection_timeout_minutes"], value[0]
+            self.attributes_by_name["window_detection_timeout_minutes"].id, value[0]
         )
         self._update_attribute(
-            self.attridx["window_detection_temperature"], value[1] * 100
+            self.attributes_by_name["window_detection_temperature"].id, value[1] * 100
         )
-        self._update_attribute(self.attridx["on_off"], value[2])
+        self._update_attribute(self.attributes_by_name["on_off"].id, value[2])
 
     async def write_attributes(self, attributes, manufacturer=None):
         """Defer attributes writing to the set_data tuya command."""
@@ -670,14 +737,14 @@ class MoesWindowDetection(LocalDataCluster, OnOff):
         data = t.data24()
         data.append(
             self._attr_cache.get(
-                self.attridx["window_detection_timeout_minutes"],
+                self.attributes_by_name["window_detection_timeout_minutes"].id,
                 5,
             )
         )
         data.append(
             round(
                 self._attr_cache.get(
-                    self.attridx["window_detection_temperature"],
+                    self.attributes_by_name["window_detection_temperature"].id,
                     50,
                 )
                 / 100
@@ -685,13 +752,13 @@ class MoesWindowDetection(LocalDataCluster, OnOff):
         )
         data.append(
             self._attr_cache.get(
-                self.attridx["on_off"],
+                self.attributes_by_name["on_off"].id,
                 False,
             )
         )
 
         for record in records:
-            attr_name = self.attributes[record.attrid][0]
+            attr_name = self.attributes[record.attrid].name
             if attr_name == "on_off":
                 data[2] = record.value.value
                 has_change = True
@@ -726,7 +793,7 @@ class MoesWindowDetection(LocalDataCluster, OnOff):
             elif command_id == 0x0001:
                 value = True
             else:
-                attrid = self.attridx["on_off"]
+                attrid = self.attributes_by_name["on_off"].id
                 success, _ = await self.read_attributes(
                     (attrid,), manufacturer=manufacturer
                 )

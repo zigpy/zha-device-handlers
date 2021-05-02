@@ -192,15 +192,25 @@ class TuyaManufCluster(CustomCluster):
 
             NOTE: You need to wait for time request before setting it. You can't set time without request."""
 
-    manufacturer_server_commands = {
-        0x0000: ("set_data", (Command,), False),
-        0x0024: ("set_time", (TuyaTimePayload,), False),
+    server_commands = {
+        0x0000: foundation.ZCLCommandDef(
+            "set_data", {"param": Command}, False, is_manufacturer_specific=True
+        ),
+        0x0024: foundation.ZCLCommandDef(
+            "set_time", {"param": TuyaTimePayload}, False, is_manufacturer_specific=True
+        ),
     }
 
-    manufacturer_client_commands = {
-        0x0001: ("get_data", (Command,), True),
-        0x0002: ("set_data_response", (Command,), True),
-        0x0024: ("set_time_request", (t.data16,), True),
+    client_commands = {
+        0x0001: foundation.ZCLCommandDef(
+            "get_data", {"param": Command}, True, is_manufacturer_specific=True
+        ),
+        0x0002: foundation.ZCLCommandDef(
+            "set_data_response", {"param": Command}, True, is_manufacturer_specific=True
+        ),
+        0x0024: foundation.ZCLCommandDef(
+            "set_time_request", {"param": t.data16}, True, is_manufacturer_specific=True
+        ),
     }
 
     def handle_cluster_request(
@@ -289,7 +299,7 @@ class TuyaManufClusterAttributes(TuyaManufCluster):
         if tuya_cmd not in self.attributes:
             return
 
-        ztype = self.attributes[tuya_cmd][1]
+        ztype = self.attributes[tuya_cmd].type
         zvalue = tuya_data.to_value(ztype)
         self._update_attribute(tuya_cmd, zvalue)
 
@@ -422,7 +432,7 @@ class TuyaThermostatCluster(LocalDataCluster, Thermostat):
 
     def temperature_change(self, attr, value):
         """Local or target temperature change from device."""
-        self._update_attribute(self.attridx[attr], value)
+        self._update_attribute(self.attributes_by_name[attr].id, value)
 
     def state_change(self, value):
         """State update from device."""
@@ -432,8 +442,8 @@ class TuyaThermostatCluster(LocalDataCluster, Thermostat):
         else:
             mode = self.RunningMode.Heat
             state = self.RunningState.Heat_State_On
-        self._update_attribute(self.attridx["running_mode"], mode)
-        self._update_attribute(self.attridx["running_state"], state)
+        self._update_attribute(self.attributes_by_name["running_mode"].id, mode)
+        self._update_attribute(self.attributes_by_name["running_state"].id, state)
 
     # pylint: disable=R0201
     def map_attribute(self, attribute, value):
@@ -450,7 +460,7 @@ class TuyaThermostatCluster(LocalDataCluster, Thermostat):
 
         manufacturer_attrs = {}
         for record in records:
-            attr_name = self.attributes[record.attrid][0]
+            attr_name = self.attributes[record.attrid].name
             new_attrs = self.map_attribute(attr_name, record.value.value)
 
             _LOGGER.debug(
@@ -494,7 +504,7 @@ class TuyaThermostatCluster(LocalDataCluster, Thermostat):
         if mode not in (self.SetpointMode.Heat, self.SetpointMode.Both):
             return foundation.Status.INVALID_VALUE
 
-        attrid = self.attridx["occupied_heating_setpoint"]
+        attrid = self.attributes_by_name["occupied_heating_setpoint"].id
 
         success, _ = await self.read_attributes((attrid,), manufacturer=manufacturer)
         try:
@@ -524,7 +534,7 @@ class TuyaUserInterfaceCluster(LocalDataCluster, UserInterface):
         else:
             lockout = self.KeypadLockout.Level_1_lockout
 
-        self._update_attribute(self.attridx["keypad_lockout"], lockout)
+        self._update_attribute(self.attributes_by_name["keypad_lockout"].id, lockout)
 
     def map_attribute(self, attribute, value):
         """Map standardized attribute value to dict of manufacturer values."""
@@ -537,11 +547,11 @@ class TuyaUserInterfaceCluster(LocalDataCluster, UserInterface):
 
         manufacturer_attrs = {}
         for record in records:
-            if record.attrid == self.attridx["keypad_lockout"]:
+            if record.attrid == self.attributes_by_name["keypad_lockout"].id:
                 lock = 0 if record.value.value == self.KeypadLockout.No_lockout else 1
                 new_attrs = {self._CHILD_LOCK_ATTR: lock}
             else:
-                attr_name = self.attributes[record.attrid][0]
+                attr_name = self.attributes[record.attrid].name
                 new_attrs = self.map_attribute(attr_name, record.value.value)
 
                 _LOGGER.debug(
@@ -578,7 +588,9 @@ class TuyaPowerConfigurationCluster(LocalDataCluster, PowerConfiguration):
 
     def battery_change(self, value):
         """Change of reported battery percentage remaining."""
-        self._update_attribute(self.attridx["battery_percentage_remaining"], value * 2)
+        self._update_attribute(
+            self.attributes_by_name["battery_percentage_remaining"].id, value * 2
+        )
 
 
 class TuyaThermostat(CustomDevice):
@@ -608,9 +620,17 @@ class TuyaSmartRemoteOnOffCluster(OnOff, EventableCluster):
         self.last_tsn = -1
         super().__init__(*args, **kwargs)
 
-    manufacturer_server_commands = {
-        0xFD: ("press_type", (t.uint8_t,), False),
-    }
+    server_commands = OnOff.server_commands.copy()
+    server_commands.update(
+        {
+            0xFD: foundation.ZCLCommandDef(
+                "press_type",
+                {"press_type": t.uint8_t},
+                False,
+                is_manufacturer_specific=True,
+            ),
+        }
+    )
 
     def handle_cluster_request(
         self,
@@ -912,7 +932,7 @@ class TuyaLevelControl(CustomCluster, LevelControl):
             level,
             state,
         )
-        self._update_attribute(self.attridx["current_level"], level)
+        self._update_attribute(self.attributes_by_name["current_level"].id, level)
 
     def command(
         self,

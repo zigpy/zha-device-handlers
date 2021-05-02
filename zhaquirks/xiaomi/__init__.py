@@ -165,12 +165,18 @@ class BasicCluster(CustomCluster, Basic):
                 # 0x0005 = model attribute.
                 # Xiaomi sensors send the model attribute when their reset button is
                 # pressed quickly."""
+
+                if attrid in self.attributes:
+                    attribute_name = self.attributes[attrid].name
+                else:
+                    attribute_name = UNKNOWN
+
                 self.listener_event(
                     ZHA_SEND_EVENT,
                     COMMAND_ATTRIBUTE_UPDATED,
                     {
                         ATTRIBUTE_ID: attrid,
-                        ATTRIBUTE_NAME: self.attributes.get(attrid, [UNKNOWN])[0],
+                        ATTRIBUTE_NAME: attribute_name,
                         VALUE: value,
                     },
                 )
@@ -290,7 +296,8 @@ class BasicCluster(CustomCluster, Basic):
 class BinaryOutputInterlock(CustomCluster, BinaryOutput):
     """Xiaomi binaryoutput cluster with added interlock attribute."""
 
-    manufacturer_attributes = {0xFF06: ("interlock", t.Bool)}
+    attributes = BinaryOutput.attributes.copy()
+    attributes[0xFF06] = ("interlock", t.Bool, True)
 
 
 class XiaomiPowerConfiguration(PowerConfiguration, LocalDataCluster):
