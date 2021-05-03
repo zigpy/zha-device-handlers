@@ -492,7 +492,7 @@ class OnOffCluster(OnOff, CustomCluster):
 
     def command(
         self,
-        command_id: Union[foundation.Command, int, t.uint8_t],
+        command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
         *args,
         manufacturer: Optional[Union[int, t.uint16_t]] = None,
         expect_reply: bool = True,
@@ -552,7 +552,10 @@ def handle_quick_init(
 
     sender.debug("Uninitialized device command '%s' params: %s", hdr.command_id, params)
 
-    if hdr.command_id != foundation.Command.Report_Attributes or cluster != 0x0000:
+    if (
+        hdr.command_id != foundation.GeneralCommand.Report_Attributes
+        or cluster != 0x0000
+    ):
         return
 
     for attr_rec in params.attribute_reports:

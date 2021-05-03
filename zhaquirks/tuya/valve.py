@@ -778,7 +778,7 @@ class MoesWindowDetection(LocalDataCluster, OnOff):
 
     async def command(
         self,
-        command_id: Union[foundation.Command, int, t.uint8_t],
+        command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
         *args,
         manufacturer: Optional[Union[int, t.uint16_t]] = None,
         expect_reply: bool = True,

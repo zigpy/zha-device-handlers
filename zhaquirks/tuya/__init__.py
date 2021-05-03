@@ -356,7 +356,7 @@ class TuyaOnOff(CustomCluster, OnOff):
 
     def command(
         self,
-        command_id: Union[foundation.Command, int, t.uint8_t],
+        command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
         *args,
         manufacturer: Optional[Union[int, t.uint16_t]] = None,
         expect_reply: bool = True,
@@ -489,7 +489,7 @@ class TuyaThermostatCluster(LocalDataCluster, Thermostat):
     # pylint: disable=W0236
     async def command(
         self,
-        command_id: Union[foundation.Command, int, t.uint8_t],
+        command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
         *args,
         manufacturer: Optional[Union[int, t.uint16_t]] = None,
         expect_reply: bool = True,
@@ -781,7 +781,7 @@ class TuyaWindowCoverControl(LocalDataCluster, WindowCovering):
 
     def command(
         self,
-        command_id: Union[foundation.Command, int, t.uint8_t],
+        command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
         *args,
         manufacturer: Optional[Union[int, t.uint16_t]] = None,
         expect_reply: bool = True,
@@ -936,7 +936,7 @@ class TuyaLevelControl(CustomCluster, LevelControl):
 
     def command(
         self,
-        command_id: Union[foundation.Command, int, t.uint8_t],
+        command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
         *args,
         manufacturer: Optional[Union[int, t.uint16_t]] = None,
         expect_reply: bool = True,

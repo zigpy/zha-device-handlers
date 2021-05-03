@@ -56,7 +56,7 @@ class KonkeOnOffCluster(CustomCluster, OnOff):
             args,
         )
 
-        if header.command_id != zigpy.zcl.foundation.Command.Report_Attributes:
+        if header.command_id != zigpy.zcl.foundation.GeneralCommand.Report_Attributes:
             return
 
         attr = args[0][0]
@@ -78,7 +78,8 @@ class KonkeOnOffCluster(CustomCluster, OnOff):
             hdr, data = zigpy.zcl.foundation.ZCLHeader.deserialize(data)
             if (
                 hdr.frame_control.is_cluster
-                or hdr.command_id != zigpy.zcl.foundation.Command.Report_Attributes
+                or hdr.command_id
+                != zigpy.zcl.foundation.GeneralCommand.Report_Attributes
             ):
                 raise
             attr_id, data = t.uint16_t.deserialize(data)
