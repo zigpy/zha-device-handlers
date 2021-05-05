@@ -1,6 +1,10 @@
 """Fixtures for all tests."""
 
-from asynctest import CoroutineMock
+try:
+    from unittest.mock import AsyncMock as CoroutineMock
+except ImportError:
+    from asynctest import CoroutineMock
+
 import pytest
 import zigpy.application
 import zigpy.device
