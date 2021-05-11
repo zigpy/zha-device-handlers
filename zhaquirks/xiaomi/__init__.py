@@ -1,5 +1,4 @@
 """Xiaomi common components for custom device handlers."""
-import binascii
 import logging
 import math
 from typing import Optional, Union
@@ -116,46 +115,59 @@ class BasicCluster(CustomCluster, Basic):
 
     def deserialize(self, data):
         """Deserialize cluster data."""
-        try:
-            return super().deserialize(data)
-        except ValueError:
-            hdr, data = foundation.ZCLHeader.deserialize(data)
-            if not (
-                hdr.frame_control.frame_type == foundation.FrameType.GLOBAL_COMMAND
-                and hdr.command_id == 0x0A
+        hdr, data = foundation.ZCLHeader.deserialize(data)
+
+        # Only handle attribute reports differently
+        if (
+            hdr.frame_control.frame_type != foundation.FrameType.GLOBAL_COMMAND
+            or hdr.command_id != foundation.Command.Report_Attributes
+        ):
+            return super().deserialize(hdr.serialize() + data)
+
+        fixed_data = b""
+
+        while data:
+            # Peek at the attribute report
+            attr_id, data = t.uint16_t.deserialize(data)
+            attr_type, data = t.uint8_t.deserialize(data)
+
+            if (
+                attr_id not in (XIAOMI_AQARA_ATTRIBUTE, XIAOMI_MIJA_ATTRIBUTE)
+                or attr_type != 0x42  # "Character String"
             ):
-                raise
-            msg = "ValueError exception for: %s payload: %s"
-            self.debug(msg, hdr, binascii.hexlify(data))
-            newdata = b""
-            while data:
-                try:
-                    attr, data = foundation.Attribute.deserialize(data)
-                except ValueError:
-                    attr_id, data = t.uint16_t.deserialize(data)
-                    if attr_id not in (XIAOMI_AQARA_ATTRIBUTE, XIAOMI_MIJA_ATTRIBUTE):
-                        raise
-                    attr_type, data = t.uint8_t.deserialize(data)
-                    val_len, data = t.uint8_t.deserialize(data)
-                    val_len = t.uint8_t(val_len - 1)
-                    val, data = data[:val_len], data[val_len:]
-                    newdata += attr_id.serialize()
-                    newdata += attr_type.serialize()
-                    newdata += val_len.serialize() + val
-                    continue
-                newdata += attr.serialize()
-            self.debug("new data: %s", binascii.hexlify(hdr.serialize() + newdata))
-            return super().deserialize(hdr.serialize() + newdata)
+                # Assume other attributes are reported correctly
+                data = attr_id.serialize() + attr_type.serialize() + data
+                attribute, data = foundation.Attribute.deserialize(data)
+                fixed_data += attribute.serialize()
+                continue
+
+            # Length of the "string" can be wrong
+            val_len, data = t.uint8_t.deserialize(data)
+
+            # If it's an off-by-one, fix it
+            if len(data) - val_len in (-1, 0, 1):
+                val_len = len(data)
+
+            val, data = data[:val_len], data[val_len:]
+            attr_val = t.LVBytes(val)
+            attr_type = 0x41  # The data type should be "Octet String"
+
+            fixed_data += foundation.Attribute(
+                attrid=attr_id,
+                value=foundation.TypeValue(python_type=attr_type, value=attr_val),
+            ).serialize()
+
+        return super().deserialize(hdr.serialize() + fixed_data)
 
     def _update_attribute(self, attrid, value):
         if attrid == XIAOMI_AQARA_ATTRIBUTE:
-            attributes = self._parse_aqara_attributes(value.raw)
-            super()._update_attribute(attrid, value.raw)
+            attributes = self._parse_aqara_attributes(value)
+            super()._update_attribute(attrid, value)
             if (
                 MODEL in self._attr_cache
                 and self._attr_cache[MODEL] == "lumi.sensor_switch.aq2"
             ):
-                if value.raw == b"\x04!\xa8C\n!\x00\x00":
+                if value == b"\x04!\xa8C\n!\x00\x00":
                     self.listener_event(ZHA_SEND_EVENT, COMMAND_TRIPLE, [])
         elif attrid == XIAOMI_MIJA_ATTRIBUTE:
             attributes = self._parse_mija_attributes(value)

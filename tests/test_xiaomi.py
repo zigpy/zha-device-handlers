@@ -5,6 +5,7 @@ from unittest import mock
 import pytest
 import zigpy.device
 import zigpy.types as t
+from zigpy.zcl import foundation
 
 import zhaquirks
 from zhaquirks.const import (
@@ -322,3 +323,48 @@ async def test_xiaomi_batt_size(zigpy_device_from_quirk, quirk, batt_size):
     succ, fail = await cluster.read_attributes(("battery_size", "battery_quantity"))
     assert succ["battery_quantity"] == 1
     assert succ["battery_size"] == batt_size
+
+
+@pytest.mark.parametrize(
+    "raw_report",
+    (
+        bytes.fromhex(
+            "01ff421d0121c70b0328100421a8430521eb01062401000000000a212686641000"
+        ),
+        bytes.fromhex(
+            "01ff421f0121b30b0328150421a8130521660106240100000000082105140a21a2f9"
+        ),
+        bytes.fromhex(
+            "01ff422101219f0b0328150421a81305214b00062401000000000a2100006410000b210000"
+        ),
+        bytes.fromhex(
+            "01ff42250121950b0421a84305218c2f06240100000000642902016521c11f662b617f0100"
+            "0a216821"
+        ),
+        bytes.fromhex(
+            "01ff422801210d0c0328190421a81305210a00062401000000000a21000008210410642002"
+            "962300000000"
+        ),
+        bytes.fromhex(
+            "01ff424403282305212e0008212e12092100106410006510006e20006f200094200295390a"
+            "078c41963999eb0c4597390030683b983980bb873c9b2100009c20010a2100000c2800"
+        ),
+        b"\x05\x00B\x16lumi.sensor_motion.aq2"
+        + bytes.fromhex(
+            "01ff42210121c70b0328130421a83105217800062401000000000a21338b6410000b210000"
+        ),
+    ),
+)
+def test_attribute_parsing(raw_report):
+    """Test the parsing of various Xiaomi 0xFF01 attribute reports."""
+
+    hdr = foundation.ZCLHeader.general(
+        manufacturer=4447, tsn=127, command_id=foundation.Command.Report_Attributes
+    )
+    cluster = BasicCluster(mock.MagicMock())
+
+    hdr, reports = cluster.deserialize(hdr.serialize() + raw_report)
+
+    for report in reports[0]:
+        # This shouldn't throw an error
+        cluster._update_attribute(report.attrid, report.value.value)
