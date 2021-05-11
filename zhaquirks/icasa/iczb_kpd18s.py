@@ -11,19 +11,29 @@ from zigpy.zcl.clusters.general import (
     PowerConfiguration,
     Scenes,
 )
+from zigpy.zcl.clusters.homeautomation import Diagnostic
+from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.lightlink import LightLink
 
-from zigpy.zcl.clusters.homeautomation import Diagnostic
-
-from zigpy.zcl.clusters.lighting import Color
-
 from zhaquirks.const import (
-    COMMAND,
-    DEVICE_TYPE,
-    ENDPOINTS,
-    CLUSTER_ID,
-    ENDPOINT_ID,
     ARGS,
+    BUTTON_1,
+    BUTTON_2,
+    BUTTON_3,
+    BUTTON_4,
+    BUTTON_5,
+    BUTTON_6,
+    CLUSTER_ID,
+    COMMAND,
+    COMMAND_MOVE_ON_OFF,
+    COMMAND_OFF,
+    COMMAND_ON,
+    COMMAND_STOP,
+    DEVICE_TYPE,
+    DIM_DOWN,
+    DIM_UP,
+    ENDPOINT_ID,
+    ENDPOINTS,
     INPUT_CLUSTERS,
     LONG_PRESS,
     LONG_RELEASE,
@@ -31,24 +41,12 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SHORT_PRESS,
-    TURN_ON,
     TURN_OFF,
-    DIM_UP,
-    DIM_DOWN,
-    COMMAND_ON,
-    COMMAND_OFF,
-    COMMAND_MOVE_ON_OFF,
-    COMMAND_STOP,
-    BUTTON_1,
-    BUTTON_2,
-    BUTTON_3,
-    BUTTON_4,
-    BUTTON_5,
-    BUTTON_6,
+    TURN_ON,
 )
 
-COMMAND_STORE = 'store'
-COMMAND_RECALL = 'recall'
+COMMAND_STORE = "store"
+COMMAND_RECALL = "recall"
 
 
 class IcasaKPD18S(CustomDevice):
@@ -209,5 +207,5 @@ class IcasaKPD18S(CustomDevice):
             ENDPOINT_ID: 1,
             CLUSTER_ID: 5,
             ARGS: [0, 6],
-        }
+        },
     }
