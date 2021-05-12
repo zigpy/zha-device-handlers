@@ -1,7 +1,9 @@
 """Xiaomi common components for custom device handlers."""
+from __future__ import annotations
+
 import logging
 import math
-from typing import Optional, Union
+from typing import Iterable, Iterator, Optional
 
 from zigpy import types as t
 import zigpy.device
@@ -113,6 +115,63 @@ class BasicCluster(CustomCluster, Basic):
 
     cluster_id = Basic.cluster_id
 
+    def _iter_parse_attr_report(
+        self, data: bytes
+    ) -> Iterator[foundation.Attribute, bytes]:
+        """Yield all interpretations of the first attribute in an Xiaomi report."""
+
+        # Peek at the attribute report
+        attr_id, data = t.uint16_t.deserialize(data)
+        attr_type, data = t.uint8_t.deserialize(data)
+
+        if (
+            attr_id not in (XIAOMI_AQARA_ATTRIBUTE, XIAOMI_MIJA_ATTRIBUTE)
+            or attr_type != 0x42  # "Character String"
+        ):
+            # Assume other attributes are reported correctly
+            data = attr_id.serialize() + attr_type.serialize() + data
+            attribute, data = foundation.Attribute.deserialize(data)
+
+            yield attribute, data
+            return
+
+        # Length of the "string" can be wrong
+        val_len, data = t.uint8_t.deserialize(data)
+
+        # Try every offset. Start with 0 to pass unbroken reports through.
+        for offset in (0, -1, 1):
+            fixed_len = val_len + offset
+
+            if len(data) < fixed_len:
+                continue
+
+            val, final_data = data[:fixed_len], data[fixed_len:]
+            attr_val = t.LVBytes(val)
+            attr_type = 0x41  # The data type should be "Octet String"
+
+            yield foundation.Attribute(
+                attrid=attr_id,
+                value=foundation.TypeValue(python_type=attr_type, value=attr_val),
+            ), final_data
+
+    def _interpret_attr_reports(
+        self, data: bytes
+    ) -> Iterable[tuple[foundation.Attribute]]:
+        """Yield all valid interprations of a Xiaomi attribute report."""
+
+        if not data:
+            yield ()
+            return
+
+        try:
+            parsed = list(self._iter_parse_attr_report(data))
+        except (KeyError, ValueError):
+            return
+
+        for attr, remaining_data in parsed:
+            for remaining_attrs in self._interpret_attr_reports(remaining_data):
+                yield (attr,) + remaining_attrs
+
     def deserialize(self, data):
         """Deserialize cluster data."""
         hdr, data = foundation.ZCLHeader.deserialize(data)
@@ -124,38 +183,18 @@ class BasicCluster(CustomCluster, Basic):
         ):
             return super().deserialize(hdr.serialize() + data)
 
-        fixed_data = b""
+        reports = list(self._interpret_attr_reports(data))
 
-        while data:
-            # Peek at the attribute report
-            attr_id, data = t.uint16_t.deserialize(data)
-            attr_type, data = t.uint8_t.deserialize(data)
+        if not reports:
+            _LOGGER.warning("Failed to parse Xiaomi attribute report: %r", data)
+            return super().deserialize(hdr.serialize() + data)
+        elif len(reports) > 1:
+            _LOGGER.warning(
+                "Xiaomi attribute report has multiple valid interpretations: %r",
+                reports,
+            )
 
-            if (
-                attr_id not in (XIAOMI_AQARA_ATTRIBUTE, XIAOMI_MIJA_ATTRIBUTE)
-                or attr_type != 0x42  # "Character String"
-            ):
-                # Assume other attributes are reported correctly
-                data = attr_id.serialize() + attr_type.serialize() + data
-                attribute, data = foundation.Attribute.deserialize(data)
-                fixed_data += attribute.serialize()
-                continue
-
-            # Length of the "string" can be wrong
-            val_len, data = t.uint8_t.deserialize(data)
-
-            # If it's an off-by-one, fix it
-            if len(data) - val_len in (-1, 0, 1):
-                val_len = len(data)
-
-            val, data = data[:val_len], data[val_len:]
-            attr_val = t.LVBytes(val)
-            attr_type = 0x41  # The data type should be "Octet String"
-
-            fixed_data += foundation.Attribute(
-                attrid=attr_id,
-                value=foundation.TypeValue(python_type=attr_type, value=attr_val),
-            ).serialize()
+        fixed_data = b"".join(attr.serialize() for attr in reports[0])
 
         return super().deserialize(hdr.serialize() + fixed_data)
 
@@ -266,7 +305,9 @@ class BasicCluster(CustomCluster, Basic):
             attribute_names.update({11: ILLUMINANCE_MEASUREMENT})
 
         result = {}
-        while value:
+
+        # Some attribute reports end with a stray null byte
+        while value not in (b"", b"\x00"):
             skey = int(value[0])
             svalue, value = foundation.TypeValue.deserialize(value[1:])
             result[skey] = svalue.value
@@ -497,11 +538,11 @@ class OnOffCluster(OnOff, CustomCluster):
 
     def command(
         self,
-        command_id: Union[foundation.Command, int, t.uint8_t],
+        command_id: foundation.Command | int | t.uint8_t,
         *args,
-        manufacturer: Optional[Union[int, t.uint16_t]] = None,
+        manufacturer: Optional[int | t.uint16_t] = None,
         expect_reply: bool = True,
-        tsn: Optional[Union[int, t.uint8_t]] = None
+        tsn: Optional[int | t.uint8_t] = None
     ):
         """Command handler."""
         src_ep = 1
