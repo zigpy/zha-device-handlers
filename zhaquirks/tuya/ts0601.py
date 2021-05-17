@@ -65,8 +65,8 @@ class TuyaSingleSwitch(TuyaSwitch):
     }
 
 
-class TuyaZemismartSmartCover0601(TuyaWindowCover):
-    """Tuya Zemismart blind cover motor."""
+class TuyaSmartCover0601(TuyaWindowCover):
+    """Tuya Zemismart blind cover motor or curtain cover motor."""
 
     signature = {
         # "node_descriptor": "<NodeDescriptor byte1=1 byte2=64 mac_capability_flags=142 manufacturer_code=4098
@@ -74,8 +74,9 @@ class TuyaZemismartSmartCover0601(TuyaWindowCover):
         #                       maximum_outgoing_transfer_size=82 descriptor_capability_field=0>",
         # input_clusters=[0x0000, 0x0004, 0x0005, 0x000a, 0xef00]
         # output_clusters=[0x0019]
-        # <SimpleDescriptor endpoint=1 profile=260 device_type=51 input_clusters=[0, 4, 5, 61184] output_clusters=[25]>
+        # <SimpleDescriptor endpoint=1 profile=260 device_type=51 input_clusters=[0, 10, 4, 5, 61184] output_clusters=[25]>
         MODELS_INFO: [
+            ("_TZE200_nogaemzt", "TS0601"),
             ("_TZE200_fzo2pocs", "TS0601"),
         ],
         ENDPOINTS: {
