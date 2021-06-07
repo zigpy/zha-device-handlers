@@ -3,7 +3,7 @@
 ![CI](https://github.com/zigpy/zha-device-handlers/workflows/CI/badge.svg?branch=dev)
 [![Coverage Status](https://coveralls.io/repos/github/zigpy/zha-device-handlers/badge.svg)](https://coveralls.io/github/zigpy/zha-device-handlers)
 
-ZHA Device Handlers are custom quirks implementations for [Zigpy](https://github.com/zigpy/zigpy), the library that provides the [Zigbee](http://www.zigbee.org) support for the [ZHA](https://www.home-assistant.io/components/zha/) component in [Home Assistant](https://www.home-assistant.io) or any other applications that depends on zigpy.
+ZHA Device Handlers are custom quirks implementations for [Zigpy](https://github.com/zigpy/zigpy), the library that provides the [Zigbee](http://www.zigbee.org) support for the [Home Assistant's ZHA integration component](https://www.home-assistant.io/components/zha/), [Jeedom Zigbee Plugin](https://doc.jeedom.com/en_US/plugins/automation%20protocol/zigbee/), and any other applications that depends on zigpy for its Zigbee implementation.
 
 ZHA device handlers bridge the functionality gap created when manufacturers deviate from the ZCL specification, handling deviations and exceptions by parsing custom messages to and from Zigbee devices. Zigbee devices that deviate from or do not fully conform to the standard specifications set by the Zigbee Alliance may require the development of custom ZHA Device Handlers (ZHA custom quirks handler implementation) to for all their functions to work properly with the ZHA component in Home Assistant.
 
@@ -13,7 +13,7 @@ Custom quirks implementations for zigpy implemented as ZHA Device Handlers are a
 
 ## Primer
 
-ZHA device handlers and it's provided Quirks allow Zigpy, ZHA and Home Assistant to work with non standard Zigbee devices. If you are reading this you may have a device that isn't working as expected. This can be the case for a number of reasons but in this guide we will cover the cases where functionality is provided by a device in a non specification compliant manner by the device manufacturer.
+ZHA device handlers and it's provided Quirks allow Zigpy based implementations to work with non standard Zigbee devices. If you are reading this you may have a device that isn't working as expected. This can be the case for a number of reasons but in this guide we will cover the cases where functionality is provided by a device in a non specification compliant manner by the device manufacturer.
 
 ## What are these specifications
 
@@ -497,3 +497,7 @@ If you are using Supervised Home Assistant (formerly known as the Hassio/Hass.io
 ## zigpy-deconz-parser
 
 [zigpy-deconz-parser](https://github.com/zha-ng/zigpy-deconz-parser) project can parse Home Assistant ZHA component debug log using `zigpy-deconz` library if you have ConBee or RaspBee hardware.
+
+### Jeedom Zigbee Plugin
+
+The new official [Zigbee plugin for Jeedom](https://doc.jeedom.com/en_US/plugins/automation%20protocol/zigbee/) is a Zigbee addon integration implementation based on zigpy, all radio libraries, and ZHA Device Handlers. To get access to its source code you need to install Jeedom and then [purchase the "Zigbee" plugin from the Jeedom market (online marketplace)](https://market.jeedom.com/index.php?v=d&p=market_display&id=4050). Much more information about the features, functions and workings of this Jeedom Zigbee Plugin is available in [this blog post (link to blog written in French)](https://blog.jeedom.com/5183-tout-ce-quil-faut-savoir-sur-le-plugin-officiel-zigbee/).
