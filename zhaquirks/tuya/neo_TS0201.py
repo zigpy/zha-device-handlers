@@ -3,13 +3,8 @@
 import zigpy
 from zigpy.profiles import zha
 from zigpy.profiles.zha import DeviceType
-from zigpy.quirks import CustomDevice
-from zigpy.zcl.clusters.general import (
-    Basic,
-    Ota,
-    PowerConfiguration,
-    Time,
-)
+from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.zcl.clusters.general import Basic, Ota, PowerConfiguration, Time
 from zigpy.zcl.clusters.measurement import (
     IlluminanceMeasurement,
     RelativeHumidity,
@@ -26,6 +21,13 @@ from zhaquirks.const import (
 )
 
 
+class NeoUnknownCluster(CustomCluster):
+    """Neo Unknown Cluster (0xE002)"""
+
+    name = "Neo Unknown Cluster"
+    cluster_id = 0xE002
+
+
 class TemperatureHumidtyIlluminanceSensor(CustomDevice):
     """Neo Tuya Temperature, Humidity and Illumination Sensor."""
 
@@ -38,9 +40,13 @@ class TemperatureHumidtyIlluminanceSensor(CustomDevice):
         sensor_endpoint.profile_id = zha.PROFILE_ID
         sensor_endpoint.device_type = DeviceType.TEMPERATURE_SENSOR
         sensor_endpoint.add_input_cluster(
-            TemperatureMeasurement.cluster_id, TemperatureMeasurement(endpoint=sensor_endpoint, is_server=True)
+            TemperatureMeasurement.cluster_id,
+            TemperatureMeasurement(endpoint=sensor_endpoint, is_server=True),
         )
-        sensor_endpoint.add_input_cluster(RelativeHumidity.cluster_id, RelativeHumidity(endpoint=sensor_endpoint, is_server=True))
+        sensor_endpoint.add_input_cluster(
+            RelativeHumidity.cluster_id,
+            RelativeHumidity(endpoint=sensor_endpoint, is_server=True),
+        )
 
     signature = {
         #  <SimpleDescriptor endpoint=1, profile=260, device_type=262
@@ -56,7 +62,7 @@ class TemperatureHumidtyIlluminanceSensor(CustomDevice):
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
                     IlluminanceMeasurement.cluster_id,
-                    0xE002,
+                    NeoUnknownCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Time.cluster_id,
@@ -73,7 +79,6 @@ class TemperatureHumidtyIlluminanceSensor(CustomDevice):
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
                     IlluminanceMeasurement.cluster_id,
-                    0xE002,
                 ],
                 OUTPUT_CLUSTERS: [
                     Time.cluster_id,
