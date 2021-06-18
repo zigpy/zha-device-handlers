@@ -145,7 +145,7 @@ class ZemiSmartRemote0044(CustomDevice, Tuya4ButtonTriggers):
         # SizePrefixedSimpleDescriptor(endpoint=2, profile=260, device_type=0, device_version=1, input_clusters=[1, 6], output_clusters=[])
         # SizePrefixedSimpleDescriptor(endpoint=3, profile=260, device_type=0, device_version=1, input_clusters=[1, 6], output_clusters=[])
         # SizePrefixedSimpleDescriptor(endpoint=4, profile=260, device_type=0, device_version=1, input_clusters=[1, 6], output_clusters=[])
-        MODELS_INFO: [("_TZ3000_vp6clf9d", "TS0044")],
+        MODELS_INFO: [("_TZ3000_vp6clf9d", "TS0044"), ("_TZ3000_abci1hiu", "TS0044")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
