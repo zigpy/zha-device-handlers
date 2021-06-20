@@ -140,6 +140,39 @@ class TuyaTimePayload(t.LVList, item_type=t.uint8_t, length_type=BigEndianInt16)
     pass
 
 
+class TuyaDPType(t.enum8):
+    RAW = 0x00
+    BOOL = 0x01
+    VALUE = 0x02
+    STRING = 0x03
+    ENUM = 0x04
+    BITMAP = 0x05
+
+
+class TuyaData(t.Struct):
+    dp_type: TuyaDPType
+    function: t.uint8_t
+    raw: t.LVBytes
+
+    @classmethod
+    def deserialize(cls, data: bytes) -> Tuple["TuyaData", bytes]:
+        """Deserialize data."""
+        res = cls()
+        res.dp_type, data = TuyaDPType.deserialize(data)
+        res.function, data = t.uint8_t.deserialize(data)
+        res.raw, data = t.LVBytes.deserialize(data)
+        res.raw = res.raw[::-1]
+        return res, data
+
+    @property
+    def payload(self) -> Union[t.Bool, t.CharacterString, t.uint32_t, t.data32]:
+        """Payload accordingly to data point type."""
+        if self.dp_type == TuyaDPType.VALUE:
+            return t.uint32_t.deserialize(self.raw)[0]
+        else:
+            return self.raw
+
+
 class Data(t.List, item_type=t.uint8_t):
     """list of uint8_t."""
 
@@ -159,6 +192,15 @@ class Data(t.List, item_type=t.uint8_t):
         # tuya data is in big endian whereas ztypes use little endian
         value, _ = ztype.deserialize(bytes(reversed(self[1:])))
         return value
+
+
+class TuyaCommand(t.Struct):
+    """Tuya manufacturer cluster command."""
+
+    status: t.uint8_t
+    tsn: t.uint8_t
+    dp: t.uint8_t
+    data: TuyaData
 
 
 class TuyaManufCluster(CustomCluster):
