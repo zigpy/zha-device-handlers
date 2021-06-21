@@ -1,14 +1,18 @@
 """Tuya Air Quality sensor."""
-
-import datetime
-import logging
-from typing import Any, List, Optional, Tuple, Union
+import dataclasses
+from typing import Any, Callable, Dict, Optional, Tuple, Union
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time
+from zigpy.zcl.clusters.measurement import (
+    CarbonDioxideConcentration,
+    FormaldehydeConcentration,
+    RelativeHumidity,
+    TemperatureMeasurement,
+)
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -20,12 +24,6 @@ from zhaquirks.const import (
 )
 from zhaquirks.tuya import (
     TUYA_CLUSTER_ID,
-    TUYA_DP_TYPE_BOOL,
-    TUYA_DP_TYPE_ENUM,
-    TUYA_DP_TYPE_FAULT,
-    TUYA_DP_TYPE_RAW,
-    TUYA_DP_TYPE_STRING,
-    TUYA_DP_TYPE_VALUE,
     TUYA_GET_DATA,
     TUYA_SET_DATA,
     TUYA_SET_DATA_RESPONSE,
@@ -52,6 +50,8 @@ class TuyaNewManufCluster(CustomCluster):
         TUYA_SET_DATA_RESPONSE: ("set_data_response", (TuyaCommand,), True),
         TUYA_SET_TIME: ("set_time_request", (t.data16,), True),
     }
+
+    data_point_handlers: Dict[int, str] = {}
 
     def handle_cluster_request(
         self,
@@ -83,9 +83,8 @@ class TuyaNewManufCluster(CustomCluster):
             status = getattr(self, handler_name)(*args)
         except AttributeError:
             self.warning(
-                "No '%s' handler found for %s command with '%s' args",
+                "No '%s' tuya handler found for %s",
                 handler_name,
-                hdr.command_id,
                 args,
             )
             status = foundation.Status.UNSUP_CLUSTER_COMMAND
@@ -95,9 +94,86 @@ class TuyaNewManufCluster(CustomCluster):
 
     def _handle_get_data(self, command: TuyaCommand) -> foundation.Status:
         """Handle get_data response (report)."""
-        self.debug("Handling DP report: %s", command.data)
-        self._update_attribute(command.dp, command.data.payload)
+        try:
+            dp_handler = self.data_point_handlers[command.dp]
+            getattr(self, dp_handler)(command)
+        except (AttributeError, KeyError):
+            self.debug("No datapoint handler for %s", command)
+            return foundation.status.UNSUPPORTED_ATTRIBUTE
+
         return foundation.Status.SUCCESS
+
+
+@dataclasses.dataclass
+class DPToAttributeMapping:
+    """Container for datapoint to cluster attribute update mapping."""
+
+    ep_attribute: str
+    attribute_name: str
+    converter: Optional[Callable] = None
+    endpoint_id: Optional[int] = None
+
+    def attribute_report(self, cluster: CustomCluster, value: Any) -> None:
+        """Create a header and a list of a single attribute update."""
+        hdr = foundation.ZCLHeader.general(
+            0x22, foundation.Command.Report_Attributes, is_reply=True
+        )
+        if self.converter:
+            value = self.converter(value)
+
+        try:
+            attr_id = cluster.attridx[self.attribute_name]
+        except KeyError:
+            cluster.debug(
+                "Couldn't find '%s' attribute to send the report", self.attribute_name
+            )
+            return
+        else:
+            attr = foundation.Attribute(attr_id, foundation.TypeValue(value=value))
+        cluster.handle_cluster_general_request(hdr, ((attr,),))
+
+
+class TuyaCO2ManufCluster(TuyaNewManufCluster):
+    """Tuya with Air quality data points."""
+
+    dp_to_attribute: Dict[int, DPToAttributeMapping] = {
+        2: DPToAttributeMapping(
+            CarbonDioxideConcentration.ep_attribute,
+            "measured_value",
+            lambda x: x * 1e-6,
+        ),
+        18: DPToAttributeMapping(
+            TemperatureMeasurement.ep_attribute, "measured_value", lambda x: x * 10
+        ),
+        19: DPToAttributeMapping(
+            RelativeHumidity.ep_attribute, "measured_value", lambda x: x * 10
+        ),
+        # 21: DPToAttributeMapping("voc", "measured_value"),
+        22: DPToAttributeMapping(
+            FormaldehydeConcentration.ep_attribute, "measured_value"
+        ),
+    }
+
+    data_point_handlers = {
+        2: "_dp_handler",
+        18: "_dp_handler",
+        19: "_dp_handler",
+        22: "_dp_handler",
+    }
+
+    def _dp_handler(self, command: TuyaCommand) -> None:
+        """Handle data point to attribute report conversion."""
+        try:
+            dp_map = self.dp_to_attribute[command.dp]
+        except KeyError:
+            self.debug("No attribute mapping for %s data point", command.dp)
+            return
+
+        endpoint = self.endpoint
+        if dp_map.endpoint_id:
+            endpoint = self.endpoint.device.endpoints[dp_map.endpoint_id]
+        cluster = getattr(endpoint, dp_map.ep_attribute)
+        dp_map.attribute_report(cluster, command.data.payload)
 
 
 class TuyaCO2Sensor(CustomDevice):
@@ -133,7 +209,11 @@ class TuyaCO2Sensor(CustomDevice):
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaNewManufCluster,
+                    TuyaCO2ManufCluster,
+                    TemperatureMeasurement,
+                    RelativeHumidity,
+                    CarbonDioxideConcentration,
+                    FormaldehydeConcentration,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             }
