@@ -14,6 +14,7 @@ from zigpy.zcl.clusters.measurement import (
     TemperatureMeasurement,
 )
 
+from zhaquirks import LocalDataCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -31,6 +32,62 @@ from zhaquirks.tuya import (
     TuyaCommand,
     TuyaTimePayload,
 )
+
+
+class TuyaLocalCluster(LocalDataCluster):
+    """Tuya virtual clusters."""
+
+    def update_attribute(self, attr_name: str, value: Any) -> None:
+        """Update attribute by attribute name."""
+
+        try:
+            attrid = self.attridx[attr_name]
+        except KeyError:
+            self.debug("no such attribute: %s", attr_name)
+            return
+        return self._update_attribute(attrid, value)
+
+
+class TuyaAirQualityVOC(TuyaLocalCluster):
+    """Tuya VOC level cluster."""
+
+    cluster_id = 0x042E
+    name = "VOC Level"
+    ep_attribute = "voc_level"
+
+    attributes = {
+        0x0000: ("measured_value", t.Single),  # fraction of 1 (one)
+        0x0001: ("min_measured_value", t.Single),
+        0x0002: ("max_measured_value", t.Single),
+        0x0003: ("tolerance", t.Single),
+    }
+
+    server_commands = {}
+    client_commands = {}
+
+
+class TuyaAirQualityTemperature(TemperatureMeasurement, TuyaLocalCluster):
+    """Tuya temperature measurement."""
+
+    pass
+
+
+class TuyaAirQualityHumidity(RelativeHumidity, TuyaLocalCluster):
+    """Tuya relative humidity measurement."""
+
+    pass
+
+
+class TuyaAirQualityCO2(CarbonDioxideConcentration, TuyaLocalCluster):
+    """Tuya Carbon Dioxide concentration measurement."""
+
+    pass
+
+
+class TuyaAirQualityFormaldehyde(FormaldehydeConcentration, TuyaLocalCluster):
+    """Tuya Formaldehyde concentration measurement."""
+
+    pass
 
 
 class TuyaNewManufCluster(CustomCluster):
@@ -113,44 +170,29 @@ class DPToAttributeMapping:
     converter: Optional[Callable] = None
     endpoint_id: Optional[int] = None
 
-    def attribute_report(self, cluster: CustomCluster, value: Any) -> None:
-        """Create a header and a list of a single attribute update."""
-        hdr = foundation.ZCLHeader.general(
-            0x22, foundation.Command.Report_Attributes, is_reply=True
-        )
-        if self.converter:
-            value = self.converter(value)
-
-        try:
-            attr_id = cluster.attridx[self.attribute_name]
-        except KeyError:
-            cluster.debug(
-                "Couldn't find '%s' attribute to send the report", self.attribute_name
-            )
-            return
-        else:
-            attr = foundation.Attribute(attr_id, foundation.TypeValue(value=value))
-        cluster.handle_cluster_general_request(hdr, ((attr,),))
-
 
 class TuyaCO2ManufCluster(TuyaNewManufCluster):
     """Tuya with Air quality data points."""
 
     dp_to_attribute: Dict[int, DPToAttributeMapping] = {
         2: DPToAttributeMapping(
-            CarbonDioxideConcentration.ep_attribute,
+            TuyaAirQualityCO2.ep_attribute,
             "measured_value",
             lambda x: x * 1e-6,
         ),
         18: DPToAttributeMapping(
-            TemperatureMeasurement.ep_attribute, "measured_value", lambda x: x * 10
+            TuyaAirQualityTemperature.ep_attribute, "measured_value", lambda x: x * 10
         ),
         19: DPToAttributeMapping(
-            RelativeHumidity.ep_attribute, "measured_value", lambda x: x * 10
+            TuyaAirQualityHumidity.ep_attribute, "measured_value", lambda x: x * 10
         ),
-        # 21: DPToAttributeMapping("voc", "measured_value"),
+        21: DPToAttributeMapping(
+            TuyaAirQualityVOC.ep_attribute, "measured_value", lambda x: x * 1e-6
+        ),
         22: DPToAttributeMapping(
-            FormaldehydeConcentration.ep_attribute, "measured_value"
+            TuyaAirQualityFormaldehyde.ep_attribute,
+            "measured_value",
+            lambda x: x * 1e-6,
         ),
     }
 
@@ -158,6 +200,7 @@ class TuyaCO2ManufCluster(TuyaNewManufCluster):
         2: "_dp_handler",
         18: "_dp_handler",
         19: "_dp_handler",
+        21: "_dp_handler",
         22: "_dp_handler",
     }
 
@@ -173,7 +216,11 @@ class TuyaCO2ManufCluster(TuyaNewManufCluster):
         if dp_map.endpoint_id:
             endpoint = self.endpoint.device.endpoints[dp_map.endpoint_id]
         cluster = getattr(endpoint, dp_map.ep_attribute)
-        dp_map.attribute_report(cluster, command.data.payload)
+        value = command.data.payload
+        if dp_map.converter:
+            value = dp_map.converter(value)
+
+        cluster.update_attribute(dp_map.attribute_name, value)
 
 
 class TuyaCO2Sensor(CustomDevice):
@@ -210,10 +257,11 @@ class TuyaCO2Sensor(CustomDevice):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     TuyaCO2ManufCluster,
-                    TemperatureMeasurement,
-                    RelativeHumidity,
-                    CarbonDioxideConcentration,
-                    FormaldehydeConcentration,
+                    TuyaAirQualityCO2,
+                    TuyaAirQualityFormaldehyde,
+                    TuyaAirQualityHumidity,
+                    TuyaAirQualityTemperature,
+                    TuyaAirQualityVOC,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             }
