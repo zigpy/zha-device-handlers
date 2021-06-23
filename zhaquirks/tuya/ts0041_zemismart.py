@@ -29,7 +29,7 @@ class TuyaZemismartSmartRemote0041(CustomDevice):
         MODELS_INFO: [
             ("_TZ3000_tk3s5tyg", "TS0041"),
             ("_TZ3000_q68478x7", "TS0041"),
-            ("_TZ3400_keyjqthh", "TS0041")
+            ("_TZ3400_keyjqthh", "TS0041"),
         ],
         ENDPOINTS: {
             1: {
