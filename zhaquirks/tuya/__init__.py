@@ -166,7 +166,8 @@ class TuyaData(t.Struct):
         res.dp_type, data = TuyaDPType.deserialize(data)
         res.function, data = t.uint8_t.deserialize(data)
         res.raw, data = t.LVBytes.deserialize(data)
-        res.raw = res.raw[::-1]
+        if res.dp_type not in (TuyaDPType.BITMAP, TuyaDPType.STRING, TuyaDPType.ENUM):
+            res.raw = res.raw[::-1]
         return res, data
 
     @property
@@ -174,8 +175,20 @@ class TuyaData(t.Struct):
         """Payload accordingly to data point type."""
         if self.dp_type == TuyaDPType.VALUE:
             return t.uint32_t.deserialize(self.raw)[0]
-        else:
-            return self.raw
+        elif self.dp_type == TuyaDPType.BOOL:
+            return t.Bool.deserialize(self.raw)[0]
+        elif self.dp_type == TuyaDPType.STRING:
+            return self.raw.decode("utf8")
+        elif self.dp_type == TuyaDPType.ENUM:
+            return t.enum8.deserialize(self.raw)[0]
+        elif self.dp_type == TuyaDPType.BITMAP:
+            bitmaps = {1: t.bitmap8, 2: t.bitmap16, 4: t.bitmap32}
+            try:
+                return bitmaps[len(self.raw)].deserialize(self.raw)[0]
+            except KeyError as exc:
+                raise ValueError(f"Wrong bitmap length: {len(self.raw)}") from exc
+
+        raise ValueError(f"Unknown {self.dp_type} datapoint type")
 
 
 class Data(t.List, item_type=t.uint8_t):
@@ -1066,7 +1079,7 @@ class TuyaNewManufCluster(CustomCluster):
             Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
         ] = None,
     ) -> None:
-        """Handle time request."""
+        """Handle cluster specific request."""
 
         try:
             if (
