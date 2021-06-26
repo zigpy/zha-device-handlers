@@ -1,8 +1,28 @@
 """Test units for new Tuya cluster framework."""
 
-import pytest
+from unittest import mock
 
-from zhaquirks.tuya import TuyaData
+from asynctest import CoroutineMock
+import pytest
+import zigpy.endpoint
+import zigpy.zcl.foundation as zcl_f
+
+from zhaquirks.tuya import (
+    TUYA_GET_DATA,
+    TUYA_SET_DATA_RESPONSE,
+    TUYA_SET_TIME,
+    TuyaCommand,
+    TuyaData,
+    TuyaNewManufCluster,
+)
+
+
+@pytest.fixture(name="TuyaCluster")
+def tuya_cluster():
+    """Mock of the new Tuya manufacturer cluster."""
+    ep_mock = mock.MagicMock(spec=zigpy.endpoint)
+    cluster = TuyaNewManufCluster(ep_mock)
+    return cluster
 
 
 def test_tuya_data_value():
@@ -104,3 +124,29 @@ def test_tuya_data_bitmap_invalid():
 
     with pytest.raises(ValueError):
         r.payload
+
+
+@pytest.mark.parametrize(
+    "cmd_id, handler_name, args",
+    (
+        (
+            TUYA_GET_DATA,
+            "handle_get_data",
+            (TuyaCommand(0, 2, 2, TuyaData(1, 0, b"\x01\x01")),),
+        ),
+        (
+            TUYA_SET_DATA_RESPONSE,
+            "handle_set_data_response",
+            (TuyaCommand(0, 2, 2, TuyaData(1, 0, b"\x01\x01")),),
+        ),
+        (TUYA_SET_TIME, "handle_set_time", (0x1234,)),
+    ),
+)
+def test_tuya_cluster_request(cmd_id, handler_name, args, TuyaCluster):
+    """Test cluster specific request."""
+
+    hdr = zcl_f.ZCLHeader.general(1, cmd_id, is_reply=True)
+    hdr.frame_control.disable_default_response = True
+
+    with mock.patch.object(TuyaCluster, handler_name, CoroutineMock()) as handler:
+        assert handler.call_count == 1
