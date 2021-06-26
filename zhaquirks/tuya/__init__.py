@@ -1,7 +1,8 @@
 """Tuya devices."""
+import dataclasses
 import datetime
 import logging
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any, Callable, List, Optional, Tuple, Union
 
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
@@ -141,6 +142,8 @@ class TuyaTimePayload(t.LVList, item_type=t.uint8_t, length_type=BigEndianInt16)
 
 
 class TuyaDPType(t.enum8):
+    """DataPoint Type."""
+
     RAW = 0x00
     BOOL = 0x01
     VALUE = 0x02
@@ -150,6 +153,8 @@ class TuyaDPType(t.enum8):
 
 
 class TuyaData(t.Struct):
+    """Tuya Data type."""
+
     dp_type: TuyaDPType
     function: t.uint8_t
     raw: t.LVBytes
@@ -989,3 +994,135 @@ class TuyaLevelControl(CustomCluster, LevelControl):
             )
 
         return foundation.Status.UNSUP_CLUSTER_COMMAND
+
+
+class TuyaLocalCluster(LocalDataCluster):
+    """Tuya virtual clusters.
+
+    Prevents attribute reads and writes. Attribute writes could be converted
+    to DataPoint updates.
+    """
+
+    def update_attribute(self, attr_name: str, value: Any) -> None:
+        """Update attribute by attribute name."""
+
+        try:
+            attrid = self.attridx[attr_name]
+        except KeyError:
+            self.debug("no such attribute: %s", attr_name)
+            return
+        return self._update_attribute(attrid, value)
+
+
+@dataclasses.dataclass
+class DPToAttributeMapping:
+    """Container for datapoint to cluster attribute update mapping."""
+
+    ep_attribute: str
+    attribute_name: str
+    converter: Optional[
+        Callable[
+            [
+                Any,
+            ],
+            Any,
+        ]
+    ] = None
+    endpoint_id: Optional[int] = None
+
+
+class TuyaNewManufCluster(CustomCluster):
+    """Tuya manufacturer specific cluster.
+
+    This is an attempt to consolidate the multiple above clusters into a
+    single framework. Instead of overriding the handle_cluster_request()
+    method, implement handlers for commands, like get_data, set_data_response,
+    set_time_request, etc.
+    """
+
+    name: str = "Tuya Manufacturer Specific"
+    cluster_id: t.uint16_t = TUYA_CLUSTER_ID
+    ep_attribute: str = "tuya_manufacturer"
+
+    manufacturer_server_commands = {
+        TUYA_SET_DATA: ("set_data", (TuyaCommand,), False),
+        TUYA_SET_TIME: ("set_time", (TuyaTimePayload,), False),
+    }
+
+    manufacturer_client_commands = {
+        TUYA_GET_DATA: ("get_data", (TuyaCommand,), True),
+        TUYA_SET_DATA_RESPONSE: ("set_data_response", (TuyaCommand,), True),
+        TUYA_SET_TIME: ("set_time_request", (t.data16,), True),
+    }
+
+    data_point_handlers: dict[int, str] = {}
+
+    def handle_cluster_request(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: Tuple,
+        *,
+        dst_addressing: Optional[
+            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        ] = None,
+    ) -> None:
+        """Handle time request."""
+
+        try:
+            if (
+                hdr.is_reply
+            ):  # server_cluster -> client_cluster cluster specific command
+                handler_name = f"handle_{self.client_commands[hdr.command_id][0]}"
+            else:
+                handler_name = f"handle_{self.server_commands[hdr.command_id][0]}"
+        except KeyError:
+            self.debug(
+                "Received unknown manufacturer command %s: %s", hdr.command_id, args
+            )
+            if not hdr.frame_control.disable_default_response:
+                self.send_default_rsp(
+                    hdr, status=foundation.Status.UNSUP_CLUSTER_COMMAND
+                )
+                return
+
+        try:
+            status = getattr(self, handler_name)(*args)
+        except AttributeError:
+            self.warning(
+                "No '%s' tuya handler found for %s",
+                handler_name,
+                args,
+            )
+            status = foundation.Status.UNSUP_CLUSTER_COMMAND
+
+        if not hdr.frame_control.disable_default_response:
+            self.send_default_rsp(hdr, status=status)
+
+    def handle_get_data(self, command: TuyaCommand) -> foundation.Status:
+        """Handle get_data response (report)."""
+        try:
+            dp_handler = self.data_point_handlers[command.dp]
+            getattr(self, dp_handler)(command)
+        except (AttributeError, KeyError):
+            self.debug("No datapoint handler for %s", command)
+            return foundation.status.UNSUPPORTED_ATTRIBUTE
+
+        return foundation.Status.SUCCESS
+
+    def _dp_2_attr_update(self, command: TuyaCommand) -> None:
+        """Handle data point to attribute report conversion."""
+        try:
+            dp_map = self.dp_to_attribute[command.dp]
+        except KeyError:
+            self.debug("No attribute mapping for %s data point", command.dp)
+            return
+
+        endpoint = self.endpoint
+        if dp_map.endpoint_id:
+            endpoint = self.endpoint.device.endpoints[dp_map.endpoint_id]
+        cluster = getattr(endpoint, dp_map.ep_attribute)
+        value = command.data.payload
+        if dp_map.converter:
+            value = dp_map.converter(value)
+
+        cluster.update_attribute(dp_map.attribute_name, value)
