@@ -1,7 +1,5 @@
 """Neo Tuya Temperature, Humidity and Illumination Sensor."""
 
-import zigpy
-from zigpy.endpoint import Endpoint
 from zigpy.profiles import zha
 from zigpy.profiles.zha import DeviceType
 from zigpy.quirks import CustomCluster, CustomDevice
@@ -51,36 +49,8 @@ class NeoTemperatureHumidityAlarmCluster(CustomCluster):
     }
 
 
-class NeoCustomTemperatureHumidityEndpoint(Endpoint):
-    """Neo custom temperature and humidity endpoint"""
-
-    def __init__(self, device, endpoint_id):
-        super().__init__(device, endpoint_id)
-        self.info("Forcing discovery information for Neo custom endpoint")
-
-        self.profile_id = zha.PROFILE_ID
-        self.device_type = DeviceType.TEMPERATURE_SENSOR
-        self.device_type = zigpy.profiles.zha.DeviceType(self.device_type)
-
-        self.add_input_cluster(
-            TemperatureMeasurement.cluster_id,
-            TemperatureMeasurement(endpoint=self, is_server=True),
-        )
-        self.add_input_cluster(
-            RelativeHumidity.cluster_id,
-            RelativeHumidity(endpoint=self, is_server=True),
-        )
-        self.status = zigpy.endpoint.Status.ZDO_INIT
-
-
 class TemperatureHumidtyIlluminanceSensor(CustomDevice):
     """Neo Tuya Temperature, Humidity and Illumination Sensor."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        # Add missing endpoint 2
-        self.endpoints[2] = NeoCustomTemperatureHumidityEndpoint(self, 2)
 
     signature = {
         #  <SimpleDescriptor endpoint=1, profile=260, device_type=262
@@ -113,11 +83,20 @@ class TemperatureHumidtyIlluminanceSensor(CustomDevice):
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
                     IlluminanceMeasurement.cluster_id,
-                    NeoTemperatureHumidityAlarmCluster.cluster_id,
+                    NeoTemperatureHumidityAlarmCluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     Time.cluster_id,
                     Ota.cluster_id,
+                ],
+            },
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: DeviceType.TEMPERATURE_SENSOR,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    TemperatureMeasurement.cluster_id,
+                    RelativeHumidity.cluster_id,
                 ],
             },
         },
