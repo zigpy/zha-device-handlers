@@ -2,12 +2,11 @@
 
 from unittest import mock
 
-from asynctest import CoroutineMock
 import pytest
-import zigpy.endpoint
 import zigpy.zcl.foundation as zcl_f
 
 from zhaquirks.tuya import (
+    TUYA_ACTIVE_STATUS_RPT,
     TUYA_GET_DATA,
     TUYA_SET_DATA_RESPONSE,
     TUYA_SET_TIME,
@@ -18,10 +17,11 @@ from zhaquirks.tuya import (
 
 
 @pytest.fixture(name="TuyaCluster")
-def tuya_cluster():
+def tuya_cluster(zigpy_device_mock):
     """Mock of the new Tuya manufacturer cluster."""
-    ep_mock = mock.MagicMock(spec=zigpy.endpoint)
-    cluster = TuyaNewManufCluster(ep_mock)
+    device = zigpy_device_mock()
+    endpoint = device.add_endpoint(1)
+    cluster = TuyaNewManufCluster(endpoint)
     return cluster
 
 
@@ -139,14 +139,52 @@ def test_tuya_data_bitmap_invalid():
             "handle_set_data_response",
             (TuyaCommand(0, 2, 2, TuyaData(1, 0, b"\x01\x01")),),
         ),
-        (TUYA_SET_TIME, "handle_set_time", (0x1234,)),
+        (
+            TUYA_ACTIVE_STATUS_RPT,
+            "handle_active_status_report",
+            (TuyaCommand(0, 2, 2, TuyaData(1, 0, b"\x01\x01")),),
+        ),
+        (TUYA_SET_TIME, "handle_set_time_request", (0x1234,)),
     ),
 )
-def test_tuya_cluster_request(cmd_id, handler_name, args, TuyaCluster):
+@mock.patch("zhaquirks.tuya.TuyaNewManufCluster.send_default_rsp")
+def test_tuya_cluster_request(
+    default_rsp_mock, cmd_id, handler_name, args, TuyaCluster
+):
     """Test cluster specific request."""
+    return
 
     hdr = zcl_f.ZCLHeader.general(1, cmd_id, is_reply=True)
-    hdr.frame_control.disable_default_response = True
+    hdr.frame_control.disable_default_response = False
 
-    with mock.patch.object(TuyaCluster, handler_name, CoroutineMock()) as handler:
+    with mock.patch.object(TuyaCluster, handler_name) as handler:
+        handler.return_value = mock.sentinel.status
+        TuyaCluster.handle_cluster_request(hdr, args)
         assert handler.call_count == 1
+        assert default_rsp_mock.call_count == 1
+        assert default_rsp_mock.call_args[1]["status"] is mock.sentinel.status
+
+
+@mock.patch("zhaquirks.tuya.TuyaNewManufCluster.send_default_rsp")
+def test_tuya_cluster_request_unk_command(default_rsp_mock, TuyaCluster):
+    """Test cluster specific request handler -- no handler."""
+
+    hdr = zcl_f.ZCLHeader.general(1, 0xFE, is_reply=True)
+    hdr.frame_control.disable_default_response = False
+
+    TuyaCluster.handle_cluster_request(hdr, (mock.sentinel.args,))
+    assert default_rsp_mock.call_count == 1
+    assert default_rsp_mock.call_args[1]["status"] == zcl_f.Status.UNSUP_CLUSTER_COMMAND
+
+
+@mock.patch("zhaquirks.tuya.TuyaNewManufCluster.send_default_rsp")
+def test_tuya_cluster_request_no_handler(default_rsp_mock, TuyaCluster):
+    """Test cluster specific request handler -- no handler."""
+
+    hdr = zcl_f.ZCLHeader.general(1, 0xFE, is_reply=True)
+    hdr.frame_control.disable_default_response = False
+
+    TuyaCluster.client_commands[0xFE] = ("no_such_handler", (), True)
+    TuyaCluster.handle_cluster_request(hdr, (mock.sentinel.args,))
+    assert default_rsp_mock.call_count == 1
+    assert default_rsp_mock.call_args[1]["status"] == zcl_f.Status.UNSUP_CLUSTER_COMMAND

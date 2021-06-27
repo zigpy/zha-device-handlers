@@ -21,10 +21,12 @@ TUYA_CLUSTER_ID = 0xEF00
 # ---------------------------------------------------------
 # Tuya Cluster Commands
 # ---------------------------------------------------------
-TUYA_SET_DATA = 0x0000
-TUYA_GET_DATA = 0x0001
-TUYA_SET_DATA_RESPONSE = 0x0002
-TUYA_SET_TIME = 0x0024
+TUYA_SET_DATA = 0x00
+TUYA_GET_DATA = 0x01
+TUYA_SET_DATA_RESPONSE = 0x02
+TUYA_SEND_DATA = 0x04
+TUYA_ACTIVE_STATUS_RPT = 0x06
+TUYA_SET_TIME = 0x24
 TUYA_LEVEL_COMMAND = 514
 
 COVER_EVENT = "cover_event"
@@ -1059,12 +1061,14 @@ class TuyaNewManufCluster(CustomCluster):
 
     manufacturer_server_commands = {
         TUYA_SET_DATA: ("set_data", (TuyaCommand,), False),
+        TUYA_SEND_DATA: ("send_data", (TuyaCommand,), False),
         TUYA_SET_TIME: ("set_time", (TuyaTimePayload,), False),
     }
 
     manufacturer_client_commands = {
         TUYA_GET_DATA: ("get_data", (TuyaCommand,), True),
         TUYA_SET_DATA_RESPONSE: ("set_data_response", (TuyaCommand,), True),
+        TUYA_ACTIVE_STATUS_RPT: ("active_status_report", (TuyaCommand,), True),
         TUYA_SET_TIME: ("set_time_request", (t.data16,), True),
     }
 
@@ -1120,6 +1124,13 @@ class TuyaNewManufCluster(CustomCluster):
             self.debug("No datapoint handler for %s", command)
             return foundation.status.UNSUPPORTED_ATTRIBUTE
 
+        return foundation.Status.SUCCESS
+
+    handle_set_data_response = handle_get_data
+    handle_active_status_report = handle_get_data
+
+    def handle_set_time_request(self, payload: t.uint16_t) -> foundation.Status:
+        """Handle Time set request."""
         return foundation.Status.SUCCESS
 
     def _dp_2_attr_update(self, command: TuyaCommand) -> None:
