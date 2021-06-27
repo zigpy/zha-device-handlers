@@ -1,9 +1,11 @@
 """Neo Tuya Temperature, Humidity and Illumination Sensor."""
 
 import zigpy
+from zigpy.endpoint import Endpoint
 from zigpy.profiles import zha
 from zigpy.profiles.zha import DeviceType
 from zigpy.quirks import CustomCluster, CustomDevice
+import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Ota, PowerConfiguration, Time
 from zigpy.zcl.clusters.measurement import (
     IlluminanceMeasurement,
@@ -21,11 +23,54 @@ from zhaquirks.const import (
 )
 
 
-class NeoUnknownCluster(CustomCluster):
-    """Neo Unknown Cluster (0xE002)"""
+class ValueAlarm(t.enum8):
+    """Temperature and Humidity alarm values"""
 
-    name = "Neo Unknown Cluster"
+    ALARM_OFF = 0x02
+    MAX_ALARM_ON = 0x01
+    MIN_ALARM_ON = 0x00
+
+
+class NeoTemperatureHumidityAlarmCluster(CustomCluster):
+    """Neo Temperature and Humidity Alarm Cluster (0xE002)"""
+
+    name = "Neo Temperature and Humidity Alarm Cluster"
     cluster_id = 0xE002
+
+    manufacturer_attributes = {
+        # Alarm settings
+        0xD00A: ("alarm_temperature_man", t.uint16_t),
+        0xD00B: ("alarm_temperature_min", t.uint16_t),
+        0xD00C: ("alarm_humidity_max", t.uint16_t),
+        0xD00E: ("alarm_humidity_min", t.uint16_t),
+        # Alarm information
+        0xD00F: ("alarm_humidity", ValueAlarm),
+        0xD006: ("temperature_humidity", ValueAlarm),
+        # Unknown
+        0xD010: {"unknown", t.uint8_t},
+    }
+
+
+class NeoCustomTemperatureHumidityEndpoint(Endpoint):
+    """Neo custom temperature and humidity endpoint"""
+
+    def __init__(self, device, endpoint_id):
+        super().__init__(device, endpoint_id)
+        self.info("Forcing discovery information for Neo custom endpoint")
+
+        self.profile_id = zha.PROFILE_ID
+        self.device_type = DeviceType.TEMPERATURE_SENSOR
+        self.device_type = zigpy.profiles.zha.DeviceType(self.device_type)
+
+        self.add_input_cluster(
+            TemperatureMeasurement.cluster_id,
+            TemperatureMeasurement(endpoint=self, is_server=True),
+        )
+        self.add_input_cluster(
+            RelativeHumidity.cluster_id,
+            RelativeHumidity(endpoint=self, is_server=True),
+        )
+        self.status = zigpy.endpoint.Status.ZDO_INIT
 
 
 class TemperatureHumidtyIlluminanceSensor(CustomDevice):
@@ -35,18 +80,7 @@ class TemperatureHumidtyIlluminanceSensor(CustomDevice):
         """Init."""
         super().__init__(*args, **kwargs)
         # Add missing endpoint 2
-        sensor_endpoint = self.add_endpoint(2)
-        sensor_endpoint.status = zigpy.endpoint.Status.ZDO_INIT
-        sensor_endpoint.profile_id = zha.PROFILE_ID
-        sensor_endpoint.device_type = DeviceType.TEMPERATURE_SENSOR
-        sensor_endpoint.add_input_cluster(
-            TemperatureMeasurement.cluster_id,
-            TemperatureMeasurement(endpoint=sensor_endpoint, is_server=True),
-        )
-        sensor_endpoint.add_input_cluster(
-            RelativeHumidity.cluster_id,
-            RelativeHumidity(endpoint=sensor_endpoint, is_server=True),
-        )
+        self.endpoints[2] = NeoCustomTemperatureHumidityEndpoint(self, 2)
 
     signature = {
         #  <SimpleDescriptor endpoint=1, profile=260, device_type=262
@@ -62,7 +96,7 @@ class TemperatureHumidtyIlluminanceSensor(CustomDevice):
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
                     IlluminanceMeasurement.cluster_id,
-                    NeoUnknownCluster.cluster_id,
+                    NeoTemperatureHumidityAlarmCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Time.cluster_id,
@@ -79,6 +113,7 @@ class TemperatureHumidtyIlluminanceSensor(CustomDevice):
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
                     IlluminanceMeasurement.cluster_id,
+                    NeoTemperatureHumidityAlarmCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Time.cluster_id,
