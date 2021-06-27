@@ -1,5 +1,7 @@
 """Test Tuya Air quality sensor."""
 
+from unittest import mock
+
 import pytest
 import zigpy.profiles.zha
 
@@ -13,7 +15,10 @@ zhaquirks.setup()
 @pytest.fixture
 def air_quality_device(zigpy_device_from_quirk):
     """Tuya Air Quality Sensor."""
-    return zigpy_device_from_quirk(TuyaCO2Sensor)
+    dev = zigpy_device_from_quirk(TuyaCO2Sensor)
+    cluster = dev.endpoints[1].in_clusters[TuyaNewManufCluster.cluster_id]
+    with mock.patch.object(cluster, "send_default_rsp"):
+        yield dev
 
 
 @pytest.mark.parametrize(

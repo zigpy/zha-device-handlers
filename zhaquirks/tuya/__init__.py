@@ -2,7 +2,7 @@
 import dataclasses
 import datetime
 import logging
-from typing import Any, Callable, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
@@ -1072,7 +1072,7 @@ class TuyaNewManufCluster(CustomCluster):
         TUYA_SET_TIME: ("set_time_request", (t.data16,), True),
     }
 
-    data_point_handlers: dict[int, str] = {}
+    data_point_handlers: Dict[int, str] = {}
 
     def handle_cluster_request(
         self,
