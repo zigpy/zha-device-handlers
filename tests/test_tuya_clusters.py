@@ -152,7 +152,6 @@ def test_tuya_cluster_request(
     default_rsp_mock, cmd_id, handler_name, args, TuyaCluster
 ):
     """Test cluster specific request."""
-    return
 
     hdr = zcl_f.ZCLHeader.general(1, cmd_id, is_reply=True)
     hdr.frame_control.disable_default_response = False
