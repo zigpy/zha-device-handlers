@@ -68,7 +68,10 @@ class TuyaTS130F(CustomDevice):
 
     signature = {
         # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=0x0202, device_version=1, input_clusters=[0, 4, 5, 6, 10, 0x0102], output_clusters=[25]))
-        MODELS_INFO: [("_TZ3000_8kzqqzu4", "TS130F")],
+        MODELS_INFO: [
+            ("_TZ3000_8kzqqzu4", "TS130F"),
+            ("_TZ3000_egq7y6pr", "TS130F"),
+        ],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -102,3 +105,83 @@ class TuyaTS130F(CustomDevice):
             },
         },
     }
+class TuyaZemismartTS130F(CustomDevice):
+"""Tuya ZemiSmart smart curtain roller shutter."""
+
+signature = {
+    # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=0x0202, device_version=1, input_clusters=[0x0000, 0x0004, 0x0005, 0x0006, 0x0102], output_clusters=[0x000a, 0x0019]))
+    MODELS_INFO: [("_TZ3000_ltiqubue", "TS130F")],
+    ENDPOINTS: {
+        1: {
+            PROFILE_ID: zha.PROFILE_ID,
+            DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
+            INPUT_CLUSTERS: [
+                Basic.cluster_id,
+                Groups.cluster_id,
+                Scenes.cluster_id,
+                OnOff.cluster_id,
+                WindowCovering.cluster_id,
+            ],
+            OUTPUT_CLUSTERS: [
+                Time.cluster_id,
+                Ota.cluster_id,
+            ],
+        },
+    },
+}
+replacement = {
+    ENDPOINTS: {
+        1: {
+            PROFILE_ID: zha.PROFILE_ID,
+            DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
+            INPUT_CLUSTERS: [
+                Basic.cluster_id,
+                Groups.cluster_id,
+                Scenes.cluster_id,
+                TuyaWithBacklightOnOffCluster,
+                TuyaCoveringCluster,
+            ],
+            OUTPUT_CLUSTERS: [
+                Time.cluster_id,
+                Ota.cluster_id,
+            ],
+        },
+    },
+}
+    
+    
+class TuyaTS130F_Module(CustomDevice):
+"""Tuya smart curtain roller shutter."""
+
+signature = {
+    # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=0x0202, device_version=1, input_clusters=[0, 4, 5, 6, 10, 0x0102], output_clusters=[25]))
+    MODELS_INFO: [("_TZ3000_vd43bbfq", "TS130F")],
+    ENDPOINTS: {
+        1: {
+            PROFILE_ID: zha.PROFILE_ID,
+            DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
+            INPUT_CLUSTERS: [
+                Basic.cluster_id,
+                Groups.cluster_id,
+                Scenes.cluster_id,
+                WindowCovering.cluster_id,
+            ],
+            OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+        },
+    },
+}
+replacement = {
+    ENDPOINTS: {
+        1: {
+            PROFILE_ID: zha.PROFILE_ID,
+            DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
+            INPUT_CLUSTERS: [
+                Basic.cluster_id,
+                Groups.cluster_id,
+                Scenes.cluster_id,
+                TuyaCoveringCluster,
+            ],
+            OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+        },
+    },
+}
