@@ -105,6 +105,8 @@ class TuyaTS130F(CustomDevice):
             },
         },
     }
+    
+    
 class TuyaZemismartTS130F(CustomDevice):
 """Tuya ZemiSmart smart curtain roller shutter."""
 
