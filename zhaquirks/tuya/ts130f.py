@@ -70,6 +70,7 @@ class TuyaTS130F(CustomDevice):
         # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=0x0202, device_version=1, input_clusters=[0, 4, 5, 6, 10, 0x0102], output_clusters=[25]))
         MODELS_INFO: [
             ("_TZ3000_8kzqqzu4", "TS130F"),
+            ("_TZ3000_vd43bbfq", "TS130F"),
             ("_TZ3000_egq7y6pr", "TS130F"),
         ],
         ENDPOINTS: {
