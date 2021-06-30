@@ -107,6 +107,7 @@ class TuyaTS130F(CustomDevice):
         },
     }
 
+
 class TuyaZemismartTS130F(CustomDevice):
     """Tuya ZemiSmart smart curtain roller shutter."""
 
@@ -147,6 +148,43 @@ class TuyaZemismartTS130F(CustomDevice):
                     Time.cluster_id,
                     Ota.cluster_id,
                 ],
+            },
+        },
+    }
+
+
+class TuyaTS130F_Module(CustomDevice):
+    """Tuya smart curtain roller shutter."""
+
+    signature = {
+        # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=0x0202, device_version=1, input_clusters=[0, 4, 5, 6, 10, 0x0102], output_clusters=[25]))
+        MODELS_INFO: [("_TZ3000_vd43bbfq", "TS130F")],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    WindowCovering.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+        },
+    }
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaCoveringCluster,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
         },
     }

@@ -1,4 +1,4 @@
-"""Tuya Zemismart 1 Button Remote."""
+"""Tuya Moes 1 Button Remote."""
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
@@ -21,16 +21,12 @@ from zhaquirks.const import (
 from zhaquirks.tuya import TuyaSmartRemoteOnOffCluster
 
 
-class TuyaZemismartSmartRemote0041(CustomDevice):
-    """Tuya Zemismart 1-button remote device."""
+class TuyaMoesSmartRemote0041(CustomDevice):
+    """Tuya Moes  1-button remote device."""
 
     signature = {
         # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=0, device_version=1, input_clusters=[0, 1, 6], output_clusters=[25, 10])
-        MODELS_INFO: [
-            ("_TZ3000_tk3s5tyg", "TS0041"),
-            ("_TZ3000_q68478x7", "TS0041"),
-            ("_TZ3400_keyjqthh", "TS0041"),
-        ],
+        MODELS_INFO: [("_TZ3000_4upl1fcj", "TS0041")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
