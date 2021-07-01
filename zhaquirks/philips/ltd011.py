@@ -11,6 +11,7 @@ from zigpy.zcl.clusters.general import (
     Ota,
     Scenes,
 )
+from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.lightlink import LightLink
 
 from zhaquirks.const import (
@@ -50,9 +51,8 @@ class PhilipsLTD011(CustomDevice):
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
                     LightLink.cluster_id,
-                    768,
-                    4096,
                     64514,
+                    Color.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
@@ -79,9 +79,8 @@ class PhilipsLTD011(CustomDevice):
                     PhilipsOnOffCluster,
                     PhilipsLevelControlCluster,
                     LightLink.cluster_id,
-                    768,
-                    4096,
                     64514,
+                    Color.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
