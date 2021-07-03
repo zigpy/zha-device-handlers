@@ -750,10 +750,10 @@ ZONNSMART_TARGET_TEMP_ATTR = 0x0210  # [0,0,0,210] target room temp (decidegree)
 ZONNSMART_TEMPERATURE_ATTR = 0x0218  # [0,0,0,200] current room temp (decidegree)
 ZONNSMART_BATTERY_ATTR = 0x0223  # [0,0,0,98] battery charge
 ZONNSMART_MODE_ATTR = 0x0402  # [0] off [1] scheduled [2] manual
-ZONNSMART_HEATING_STOPPING = 0x046B  # [0] inactive [1] active
+ZONNSMART_HEATING_STOPPING = 0x016B  # [0] inactive [1] active
 ZONNSMART_BOOST_TIME_ATTR = 0x0265  # BOOST mode operating time in (sec)
 ZONNSMART_UPTIME_TIME_ATTR = (
-    0x0024  # Seems to be the uptime attribute (sent hourly, increases)
+    0x0024  # Seems to be the uptime attribute (sent hourly, increases) [0,200]
 )
 
 
@@ -769,6 +769,7 @@ class ZONNSMARTManufCluster(TuyaManufClusterAttributes):
         ZONNSMART_MODE_ATTR: ("mode", t.uint8_t),
         ZONNSMART_BOOST_TIME_ATTR: ("boost_duration_seconds", t.uint32_t),
         ZONNSMART_UPTIME_TIME_ATTR: ("uptime", t.uint32_t),
+        ZONNSMART_HEATING_STOPPING: ("heating_stop", t.uint8_t),
     }
 
     TEMPERATURE_ATTRS = {
@@ -793,6 +794,10 @@ class ZONNSMARTManufCluster(TuyaManufClusterAttributes):
             )
         elif attrid == ZONNSMART_MODE_ATTR:
             self.endpoint.device.thermostat_bus.listener_event("mode_change", value)
+        elif attrid == ZONNSMART_HEATING_STOPPING:
+            self.endpoint.device.thermostat_bus.listener_event(
+                "state_change", value < 1
+            )
         elif attrid == ZONNSMART_CHILD_LOCK_ATTR:
             mode = 1 if value else 0
             self.endpoint.device.ui_bus.listener_event("child_lock_change", mode)
