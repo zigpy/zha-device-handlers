@@ -22,7 +22,7 @@ from zhaquirks.const import (
 
 
 class ValueAlarm(t.enum8):
-    """Temperature and Humidity alarm values"""
+    """Temperature and Humidity alarm values."""
 
     ALARM_OFF = 0x02
     MAX_ALARM_ON = 0x01
