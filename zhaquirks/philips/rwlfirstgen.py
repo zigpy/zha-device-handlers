@@ -109,15 +109,20 @@ class PhilipsRWLFirstGen(CustomDevice):
     device_automation_triggers = HUE_REMOTE_DEVICE_TRIGGERS
 
 
-class PhilipsRWL020(CustomDevice):
-    """Philips RWL020 device."""
+class PhilipsRWLFirstGen2(CustomDevice):
+    """Philips older RWL020 and RWL021 devices."""
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=49246 device_type=2080
         #  device_version=2
         #  input_clusters=[0]
         #  output_clusters=[0, 3, 4, 6, 8]>
-        MODELS_INFO: [(PHILIPS, "RWL020"), (SIGNIFY, "RWL020")],
+        MODELS_INFO: [
+            (PHILIPS, "RWL020"),
+            (SIGNIFY, "RWL020"),
+            (PHILIPS, "RWL021"),
+            (SIGNIFY, "RWL021"),
+        ],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zll.PROFILE_ID,
