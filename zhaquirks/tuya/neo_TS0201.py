@@ -30,7 +30,7 @@ class ValueAlarm(t.enum8):
 
 
 class NeoTemperatureHumidityAlarmCluster(CustomCluster):
-    """Neo Temperature and Humidity Alarm Cluster (0xE002)"""
+    """Neo Temperature and Humidity Alarm Cluster (0xE002)."""
 
     name = "Neo Temperature and Humidity Alarm Cluster"
     cluster_id = 0xE002
