@@ -188,25 +188,25 @@ class MijaButton(XiaomiQuickInitDevice):
     }
 
     device_automation_triggers = {
-        (SHORT_PRESS, BUTTON): {
+        (SHORT_PRESS, SHORT_PRESS): {
             COMMAND: COMMAND_CLICK,
             ARGS: {CLICK_TYPE: COMMAND_SINGLE},
         },
         (LONG_PRESS, BUTTON): {COMMAND: COMMAND_HOLD},
         (LONG_RELEASE, BUTTON): {COMMAND: COMMAND_RELEASE},
-        (DOUBLE_PRESS, BUTTON): {
+        (DOUBLE_PRESS, DOUBLE_PRESS): {
             COMMAND: COMMAND_CLICK,
             ARGS: {CLICK_TYPE: COMMAND_DOUBLE},
         },
-        (TRIPLE_PRESS, BUTTON): {
+        (TRIPLE_PRESS, TRIPLE_PRESS): {
             COMMAND: COMMAND_CLICK,
             ARGS: {CLICK_TYPE: COMMAND_TRIPLE},
         },
-        (QUADRUPLE_PRESS, BUTTON): {
+        (QUADRUPLE_PRESS, QUADRUPLE_PRESS): {
             COMMAND: COMMAND_CLICK,
             ARGS: {CLICK_TYPE: COMMAND_QUAD},
         },
-        (QUINTUPLE_PRESS, BUTTON): {
+        (QUINTUPLE_PRESS, QUINTUPLE_PRESS): {
             COMMAND: COMMAND_CLICK,
             ARGS: {CLICK_TYPE: COMMAND_FURIOUS},
         },
