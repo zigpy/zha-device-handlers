@@ -1,9 +1,9 @@
 """Module for Xiaomi Aqara quirks implementations."""
 from zigpy import types
-from zigpy.zcl.clusters.general import OnOff, MultistateInput
+from zigpy.zcl.clusters.general import MultistateInput, OnOff
 
-from ... import EventableCluster
 from .. import BasicCluster
+from ... import EventableCluster
 
 
 class BasicClusterDecoupled(BasicCluster):

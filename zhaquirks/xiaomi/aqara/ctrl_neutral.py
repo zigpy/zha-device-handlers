@@ -16,15 +16,16 @@ from zigpy.zcl.clusters.general import (
     Time,
 )
 
-from . import BasicClusterDecoupled, WallSwitchOnOffCluster
-
-from .. import (
+from zhaquirks.xiaomi import (
     LUMI,
+    BasicCluster,
     OnOffCluster,
     XiaomiCustomDevice,
     XiaomiPowerConfiguration,
 )
 
+from . import BasicClusterDecoupled, WallSwitchOnOffCluster
+from .. import LUMI, OnOffCluster, XiaomiCustomDevice, XiaomiPowerConfiguration
 from ...const import (
     ARGS,
     ATTRIBUTE_ID,
@@ -34,8 +35,8 @@ from ...const import (
     CLUSTER_ID,
     COMMAND,
     COMMAND_ATTRIBUTE_UPDATED,
-    COMMAND_DOUBLE,
     COMMAND_CLICK,
+    COMMAND_DOUBLE,
     DEVICE_TYPE,
     ENDPOINT_ID,
     ENDPOINTS,
@@ -45,13 +46,6 @@ from ...const import (
     PROFILE_ID,
     SKIP_CONFIGURATION,
     VALUE,
-)
-from zhaquirks.xiaomi import (
-    LUMI,
-    BasicCluster,
-    OnOffCluster,
-    XiaomiCustomDevice,
-    XiaomiPowerConfiguration,
 )
 
 ATTRIBUTE_ON_OFF = "on_off"
@@ -210,12 +204,18 @@ class CtrlNeutral(XiaomiCustomDevice):
             },
             4: {
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
-                INPUT_CLUSTERS: [MultistateInput.cluster_id, WallSwitchOnOffCluster,],
+                INPUT_CLUSTERS: [
+                    MultistateInput.cluster_id,
+                    WallSwitchOnOffCluster,
+                ],
                 OUTPUT_CLUSTERS: [],
             },
             5: {
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
-                INPUT_CLUSTERS: [MultistateInput.cluster_id, WallSwitchOnOffCluster,],
+                INPUT_CLUSTERS: [
+                    MultistateInput.cluster_id,
+                    WallSwitchOnOffCluster,
+                ],
                 OUTPUT_CLUSTERS: [],
             },
         },

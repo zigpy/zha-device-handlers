@@ -17,9 +17,16 @@ from zigpy.zcl.clusters.general import (
 )
 
 from zhaquirks import Bus
+from zhaquirks.xiaomi import (
+    LUMI,
+    AnalogInputCluster,
+    BasicCluster,
+    OnOffCluster,
+    XiaomiCustomDevice,
+    XiaomiPowerConfiguration,
+)
 
 from . import BasicClusterDecoupled, WallSwitchMultistateInputCluster
-
 from .. import (
     LUMI,
     AnalogInputCluster,
@@ -36,8 +43,8 @@ from ...const import (
     CLUSTER_ID,
     COMMAND,
     COMMAND_ATTRIBUTE_UPDATED,
-    COMMAND_DOUBLE,
     COMMAND_CLICK,
+    COMMAND_DOUBLE,
     DEVICE_TYPE,
     ENDPOINT_ID,
     ENDPOINTS,
@@ -47,14 +54,6 @@ from ...const import (
     PROFILE_ID,
     SKIP_CONFIGURATION,
     VALUE,
-)
-from zhaquirks.xiaomi import (
-    LUMI,
-    AnalogInputCluster,
-    BasicCluster,
-    OnOffCluster,
-    XiaomiCustomDevice,
-    XiaomiPowerConfiguration,
 )
 
 ATTRIBUTE_PRESENT_VALUE = "present_value"
@@ -161,12 +160,16 @@ class CtrlLn(XiaomiCustomDevice):
             },
             5: {
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
-                INPUT_CLUSTERS: [WallSwitchMultistateInputCluster,],
+                INPUT_CLUSTERS: [
+                    WallSwitchMultistateInputCluster,
+                ],
                 OUTPUT_CLUSTERS: [],
             },
             6: {
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
-                INPUT_CLUSTERS: [WallSwitchMultistateInputCluster,],
+                INPUT_CLUSTERS: [
+                    WallSwitchMultistateInputCluster,
+                ],
                 OUTPUT_CLUSTERS: [],
             },
         },
