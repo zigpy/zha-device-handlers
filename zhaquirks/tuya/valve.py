@@ -749,10 +749,14 @@ ZONNSMART_WINDOW_DETECT_ATTR = 0x0108  # [0] inactive [1] active
 ZONNSMART_TARGET_TEMP_ATTR = 0x0210  # [0,0,0,210] target room temp (decidegree)
 ZONNSMART_TEMPERATURE_ATTR = 0x0218  # [0,0,0,200] current room temp (decidegree)
 ZONNSMART_BATTERY_ATTR = 0x0223  # [0,0,0,98] battery charge
-ZONNSMART_MODE_ATTR = 0x0402  # [0] Scheduled/auto [1] manual [2] Holiday [3] HolidayReady
+ZONNSMART_MODE_ATTR = (
+    0x0402  # [0] Scheduled/auto [1] manual [2] Holiday [3] HolidayReady
+)
 ZONNSMART_HEATING_STOPPING = 0x016B  # [0] inactive [1] active
 ZONNSMART_BOOST_TIME_ATTR = 0x0265  # BOOST mode operating time in (sec)
-ZONNSMART_UPTIME_TIME_ATTR = 0x0024  # Seems to be the uptime attribute (sent hourly, increases) [0,200]
+ZONNSMART_UPTIME_TIME_ATTR = (
+    0x0024  # Seems to be the uptime attribute (sent hourly, increases) [0,200]
+)
 
 
 class ZONNSMARTManufCluster(TuyaManufClusterAttributes):
