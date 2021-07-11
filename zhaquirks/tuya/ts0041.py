@@ -14,7 +14,6 @@ from zhaquirks.const import (
     INPUT_CLUSTERS,
     LONG_PRESS,
     MODEL,
-    MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SHORT_PRESS,
