@@ -1059,17 +1059,17 @@ async def test_eheat_send_attribute(zigpy_device_from_quirk, quirk):
 @pytest.mark.parametrize(
     "quirk, manufacturer",
     (
-        (zhaquirks.tuya.ts0042.TuyaSmartRemote0042, "_TZ3000_owgcnkrh"),
-        (zhaquirks.tuya.ts0042.TuyaSmartRemote0042, "_TZ3400_keyjhapk"),
-        (zhaquirks.tuya.ts0042.TuyaSmartRemote0042, "_some_random_manuf"),
-        (zhaquirks.tuya.ts0042.BenexmartRemote0042, "_TZ3000_adkvzooy"),
-        (zhaquirks.tuya.ts0042.BenexmartRemote0042, "_TZ3400_keyjhapk"),
-        (zhaquirks.tuya.ts0042.BenexmartRemote0042, "another random manufacturer"),
-        (zhaquirks.tuya.ts0043.TuyaSmartRemote0043, "_TZ3000_bi6lpsew"),
-        (zhaquirks.tuya.ts0043.TuyaSmartRemote0043, "_TZ3000_a7ouggvs"),
-        (zhaquirks.tuya.ts0043.TuyaSmartRemote0043, "another random manufacturer"),
-        (zhaquirks.tuya.ts0043.BenexmartRemote0043, "_TZ3000_qzjcsmar"),
-        (zhaquirks.tuya.ts0043.BenexmartRemote0043, "another random manufacturer"),
+        (zhaquirks.tuya.ts0042.TuyaSmartRemote0042TI, "_TZ3000_owgcnkrh"),
+        (zhaquirks.tuya.ts0042.TuyaSmartRemote0042TI, "_TZ3400_keyjhapk"),
+        (zhaquirks.tuya.ts0042.TuyaSmartRemote0042TI, "_some_random_manuf"),
+        (zhaquirks.tuya.ts0042.BenexmartRemote0042TI, "_TZ3000_adkvzooy"),
+        (zhaquirks.tuya.ts0042.BenexmartRemote0042TI, "_TZ3400_keyjhapk"),
+        (zhaquirks.tuya.ts0042.BenexmartRemote0042TI, "another random manufacturer"),
+        (zhaquirks.tuya.ts0043.TuyaSmartRemote0043TI, "_TZ3000_bi6lpsew"),
+        (zhaquirks.tuya.ts0043.TuyaSmartRemote0043TI, "_TZ3000_a7ouggvs"),
+        (zhaquirks.tuya.ts0043.TuyaSmartRemote0043TI, "another random manufacturer"),
+        (zhaquirks.tuya.ts0043.BenexmartRemote0043TI, "_TZ3000_qzjcsmar"),
+        (zhaquirks.tuya.ts0043.BenexmartRemote0043TO, "another random manufacturer"),
     ),
 )
 async def test_tuya_wildcard_manufacturer(zigpy_device_from_quirk, quirk, manufacturer):
