@@ -226,7 +226,11 @@ class Thermostat_TZE200_c88teujp(TuyaThermostat):
     signature = {
         #  endpoint=1 profile=260 device_type=81 device_version=0 input_clusters=[0, 4, 5, 61184]
         #  output_clusters=[10, 25]>
-        MODELS_INFO: [("_TZE200_c88teujp", "TS0601")],
+        MODELS_INFO: [
+            ("_TZE200_c88teujp", "TS0601"),
+            ("_TZE200_azqp6ssj", "TS0601"),
+            ("_TZE200_yw7cahqs", "TS0601"),
+        ],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,

@@ -279,7 +279,7 @@ class XBeeCommon(CustomDevice):
                 super().handle_cluster_request(hdr, args)
 
         attributes = {0x0055: ("present_value", t.Bool)}
-        client_commands = {0x0000: ("io_sample", (IOSample,), False)}
+        client_commands = {}
         server_commands = {0x0000: ("io_sample", (IOSample,), False)}
 
     # pylint: disable=too-many-ancestors

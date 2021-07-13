@@ -27,7 +27,7 @@ class KonkeMagnet(CustomDevice):
         # device_version=0
         # input_clusters=[0, 1, 3, 1280, 64704]
         # output_clusters=[3, 64704]>
-        MODELS_INFO: [(KONKE, "3AFE270104020015")],
+        MODELS_INFO: [(KONKE, "3AFE270104020015"), (KONKE, "3AFE280104020015")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -70,7 +70,7 @@ class KonkeMagnet2(CustomDevice):
         # device_version=0
         # input_clusters=[0, 1, 3, 1280]
         # output_clusters=[3]>
-        MODELS_INFO: [(KONKE, "3AFE130104020015")],
+        MODELS_INFO: [(KONKE, "3AFE130104020015"), (KONKE, "3AFE140104020015")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
