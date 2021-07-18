@@ -20,7 +20,6 @@ from zhaquirks.const import (
     ARGS,
     COMMAND,
     DEVICE_TYPE,
-    DOUBLE_PRESS,
     ENDPOINT_ID,
     ENDPOINTS,
     INPUT_CLUSTERS,
