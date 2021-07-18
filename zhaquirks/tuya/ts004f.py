@@ -1,4 +1,4 @@
-"""Tuya 4 Button Remote TS004F"""
+"""Tuya 4 Button Remote TS004F."""
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
