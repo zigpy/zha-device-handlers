@@ -116,8 +116,6 @@ class TuyaSmartRemote004F(CustomDevice, Tuya4NewButtonTriggers):
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
                     Identify.cluster_id,
-                    Groups.cluster_id,
-                    OnOff.cluster_id,
                     LightLink.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
