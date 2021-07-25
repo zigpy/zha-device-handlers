@@ -39,7 +39,7 @@ class TuyaSingleSwitch(TuyaSwitch):
             ("_TZ3000_uim07oem", "TS0601"),
             ("_TZE200_tz32mtza", "TS0601"),
         ],
-            ENDPOINTS: {
+        ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
