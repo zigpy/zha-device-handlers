@@ -9,7 +9,6 @@ from zigpy.zcl.clusters.general import (
     Ota,
     PollControl,
     PowerConfiguration,
-    Scenes,
 )
 from zigpy.zcl.clusters.lightlink import LightLink
 
@@ -42,7 +41,7 @@ from zhaquirks.const import (
     TURN_OFF,
     TURN_ON,
 )
-from zhaquirks.ikea import IKEA
+from zhaquirks.ikea import IKEA, ScenesCluster
 
 WWAH_CLUSTER_ID = 0xFC57  # decimal = 64599
 
@@ -89,12 +88,12 @@ class IkeaTradfriRemote(CustomDevice):
                     DoublingPowerConfigurationCluster,
                     Identify.cluster_id,
                     PollControl.cluster_id,
-                    Scenes.cluster_id,
                     LightLink.cluster_id,
                     WWAH_CLUSTER_ID,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
+                    ScenesCluster,
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
                     Ota.cluster_id,
