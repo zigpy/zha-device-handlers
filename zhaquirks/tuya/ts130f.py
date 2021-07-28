@@ -149,7 +149,7 @@ class TuyaZemismartTS130F(CustomDevice):
     }
 
 
-class TuyaTS130F_ModuleTO(CustomDevice):
+class TuyaTS130FTO(CustomDevice):
     """Tuya smart curtain roller shutter Time Out."""
 
     signature = {
