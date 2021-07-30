@@ -71,8 +71,12 @@ class Tuya4NewButtonTriggers:
             ENDPOINT_ID: 1,
             ARGS: [1, 51],
         },
-        (LONG_RELEASE, DIM_DOWN): {COMMAND: COMMAND_STOP, CLUSTER_ID: 8, ENDPOINT_ID: 1},
-    }
++        (LONG_RELEASE, DIM_DOWN): {
++            COMMAND: COMMAND_STOP,
++            CLUSTER_ID: 8,
++            ENDPOINT_ID: 1,
++        },
+     }
 
 
 class TuyaSmartRemote004F(CustomDevice, Tuya4NewButtonTriggers):
