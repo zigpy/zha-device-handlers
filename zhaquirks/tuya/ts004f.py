@@ -76,7 +76,7 @@ class Tuya4NewButtonTriggers:
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
         },
-     }
+    }
 
 
 class TuyaSmartRemote004F(CustomDevice, Tuya4NewButtonTriggers):
