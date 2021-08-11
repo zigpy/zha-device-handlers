@@ -36,7 +36,10 @@ class TuyaTouch3GangA(TuyaSwitch):
         # input_clusters=[0x0000,0x0004, 0x0005, 0xef00]
         # output_clusters=[0x000a, 0x0019]
         # <SimpleDescriptor endpoint=1 profile=260 device_type=0x0051 device_version=1 input_clusters=[0, 4, 5, 61184] output_clusters=[10, 25]>
-        MODELS_INFO: [("_TZE200_kyfqmmyl", "TS0601")],
+        MODELS_INFO: [
+            ("_TZE200_kyfqmmyl", "TS0601"),
+            ("_TZE200_vhy3iakz", "TS0601")
+        ],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
