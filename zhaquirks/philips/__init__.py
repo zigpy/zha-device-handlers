@@ -7,8 +7,7 @@ from typing import Any, List, Optional, Union
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import Basic, LevelControl, OnOff
-from zigpy.zcl.clusters.lighting import Color
+from zigpy.zcl.clusters.general import Basic
 from zigpy.zcl.clusters.measurement import OccupancySensing
 
 from zhaquirks.const import (
