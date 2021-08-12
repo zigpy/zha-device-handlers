@@ -90,27 +90,6 @@ class OccupancyCluster(CustomCluster, OccupancySensing):
     }
 
 
-class PhilipsOnOffCluster(CustomCluster, OnOff):
-    """Philips OnOff cluster."""
-
-    attributes = OnOff.attributes.copy()
-    attributes.update({0x4003: ("power_on_state", PowerOnState)})
-
-
-class PhilipsLevelControlCluster(CustomCluster, LevelControl):
-    """Philips LevelControl cluster."""
-
-    attributes = LevelControl.attributes.copy()
-    attributes.update({0x4000: ("power_on_level", t.uint8_t)})
-
-
-class PhilipsColorCluster(CustomCluster, Color):
-    """Philips Color cluster."""
-
-    attributes = Color.attributes.copy()
-    attributes.update({0x4010: ("power_on_color_temperature", t.uint16_t)})
-
-
 class PhilipsBasicCluster(CustomCluster, Basic):
     """Philips Basic cluster."""
 
