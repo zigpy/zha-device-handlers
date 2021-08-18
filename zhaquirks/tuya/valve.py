@@ -793,6 +793,7 @@ class SiterwellGS361_Type2(TuyaThermostat):
         MODELS_INFO: [
             ("_TZE200_kfvq6avy", "TS0601"),
             ("_TZE200_zivfvd7h", "TS0601"),
+            ("_TZE200_ps5v5jor", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
