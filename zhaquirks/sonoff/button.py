@@ -18,6 +18,12 @@ from zhaquirks.const import (
     SHORT_PRESS,
     DOUBLE_PRESS,
 )
+from zigpy.zcl.clusters.general import (
+    Basic,
+    PowerConfiguration,
+    Identify,
+    OnOff,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -35,13 +41,13 @@ class SonoffButton(CustomDevice):
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
-                    0x0000,
-                    0x0001,
-                    0x0003,
+                    Basic.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    Identify.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
-                    0x0003,
-                    0x0006
+                    Identify.cluster_id,
+                    OnOff.cluster_id,
                 ],
             },  
         }
@@ -53,13 +59,13 @@ class SonoffButton(CustomDevice):
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
-                    0x0000,
-                    0x0001,
-                    0x0003,
+                    Basic.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    Identify.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
-                    0x0003,
-                    0x0006
+                    Identify.cluster_id,
+                    OnOff.cluster_id,
                 ],
             },  
         }
