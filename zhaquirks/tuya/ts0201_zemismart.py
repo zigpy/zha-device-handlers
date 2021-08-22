@@ -11,6 +11,7 @@ from zhaquirks.const import (
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
+    NODE_DESCRIPTOR,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
@@ -18,21 +19,6 @@ from zhaquirks.const import (
 
 class ZemismartTempHumidity(CustomDevice):
     """Custom device representing Zemismart temp and humidity sensors."""
-
-    def __init__(self, application, ieee, nwk, replaces):
-        super().__init__(application, ieee, nwk, replaces)
-        self.fix_mains_flag()
-
-    async def get_node_descriptor(self) -> NodeDescriptor:
-        super().get_node_descriptor()
-        self.fix_mains_flag()
-        return self.node_desc
-
-    def fix_mains_flag(self):
-        """Clear Mains Powered bit"""
-        self.node_desc.mac_capability_flags &= (
-            ~NodeDescriptor.MACCapabilityFlags.MainsPowered
-        )
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=770
@@ -58,6 +44,9 @@ class ZemismartTempHumidity(CustomDevice):
     }
 
     replacement = {
+        NODE_DESCRIPTOR: NodeDescriptor(
+            0x02, 0x40, 0x80, 0x1037, 0x7F, 0x0064, 0x2C00, 0x0064, 0x00 # Forcing capability 0x80 instead of 0x84 so AC Power = false
+        ),
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -71,5 +60,5 @@ class ZemismartTempHumidity(CustomDevice):
                 ],
                 OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],
             }
-        }
+        },
     }
