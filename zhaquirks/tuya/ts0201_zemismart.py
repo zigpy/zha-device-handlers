@@ -45,7 +45,15 @@ class ZemismartTempHumidity(CustomDevice):
 
     replacement = {
         NODE_DESCRIPTOR: NodeDescriptor(
-            0x02, 0x40, 0x80, 0x1037, 0x7F, 0x0064, 0x2C00, 0x0064, 0x00 # Forcing capability 0x80 instead of 0x84 so AC Power = false
+            0x02,
+            0x40,
+            0x80,
+            0x1037,
+            0x7F,
+            0x0064,
+            0x2C00,
+            0x0064,
+            0x00,  # Forcing capability 0x80 instead of 0x84 so AC Power = false
         ),
         ENDPOINTS: {
             1: {
