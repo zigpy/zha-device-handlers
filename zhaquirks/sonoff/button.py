@@ -13,6 +13,7 @@ from zhaquirks.const import (
     COMMAND_ON,
     COMMAND_TOGGLE,
     COMMAND_OFF,
+    BUTTON,
     LONG_PRESS,
     SHORT_PRESS,
     DOUBLE_PRESS,
@@ -65,7 +66,7 @@ class SonoffButton(CustomDevice):
     }
 
     device_automation_triggers = {
-        (SHORT_PRESS): {COMMAND: COMMAND_TOGGLE},
-        (DOUBLE_PRESS): {COMMAND: COMMAND_ON},
-        (LONG_PRESS): {COMMAND: COMMAND_OFF},
+        (SHORT_PRESS, BUTTON): {COMMAND: COMMAND_TOGGLE},
+        (DOUBLE_PRESS, BUTTON): {COMMAND: COMMAND_ON},
+        (LONG_PRESS, BUTTON): {COMMAND: COMMAND_OFF},
     }
