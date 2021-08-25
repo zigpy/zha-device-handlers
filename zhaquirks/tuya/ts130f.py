@@ -37,6 +37,7 @@ class TuyaCoveringCluster(CustomCluster, WindowCovering):
     attributes.update({0xF000: ("tuya_moving_state", t.enum8)})
     attributes.update({0xF001: ("calibration", t.enum8)})
     attributes.update({0xF002: ("motor_reversal", t.enum8)})
+    attributes.update({0xF003: ("calibration_time", t.uint16_t)})
 
     def _update_attribute(self, attrid, value):
         if attrid == ATTR_CURRENT_POSITION_LIFT_PERCENTAGE:
