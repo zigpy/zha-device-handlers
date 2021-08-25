@@ -1,1 +1,1 @@
-"""Quirks for Sonoff devices"""
+"""Quirks for Sonoff devices."""
