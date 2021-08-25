@@ -9,7 +9,7 @@ from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
-    MODELS_INFO,
+    MODEL,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
@@ -63,16 +63,12 @@ class TuyaCoveringCluster(CustomCluster, WindowCovering):
         )
 
 
-class TuyaTS130F(CustomDevice):
-    """Tuya smart curtain roller shutter."""
+class TuyaTS130FTI(CustomDevice):
+    """Tuya smart curtain roller shutter Time In."""
 
     signature = {
         # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=0x0202, device_version=1, input_clusters=[0, 4, 5, 6, 10, 0x0102], output_clusters=[25]))
-        MODELS_INFO: [
-            ("_TZ3000_8kzqqzu4", "TS130F"),
-            ("_TZ3000_vd43bbfq", "TS130F"),
-            ("_TZ3000_egq7y6pr", "TS130F"),
-        ],
+        MODEL: "TS130F",
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -113,7 +109,7 @@ class TuyaZemismartTS130F(CustomDevice):
 
     signature = {
         # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=0x0202, device_version=1, input_clusters=[0x0000, 0x0004, 0x0005, 0x0006, 0x0102], output_clusters=[0x000a, 0x0019]))
-        MODELS_INFO: [("_TZ3000_ltiqubue", "TS130F")],
+        MODEL: "TS130F",
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -153,12 +149,13 @@ class TuyaZemismartTS130F(CustomDevice):
     }
 
 
-class TuyaTS130F_Module(CustomDevice):
-    """Tuya smart curtain roller shutter."""
+class TuyaTS130FTO(CustomDevice):
+    """Tuya smart curtain roller shutter Time Out."""
 
     signature = {
         # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=0x0202, device_version=1, input_clusters=[0, 4, 5, 6, 10, 0x0102], output_clusters=[25]))
-        MODELS_INFO: [("_TZ3000_vd43bbfq", "TS130F")],
+        # This singnature is not correct is one copy of the first one and the cluster is not inline with the device.
+        MODEL: "TS130F",
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
