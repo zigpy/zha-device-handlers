@@ -1,9 +1,19 @@
-"""Develco Air Quality Sensor"""
+"""Develco Air Quality Sensor."""
 import logging
-from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster, CustomDevice
+
 import zigpy.types as t
 from zhaquirks import Bus, LocalDataCluster
+from zhaquirks.const import (
+    DEVICE_TYPE,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    MODELS_INFO,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
+)
+from zhaquirks.develco import DEVELCO, DevelcoPowerConfiguration
+from zigpy.profiles import zha
+from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     Identify,
@@ -14,19 +24,7 @@ from zigpy.zcl.clusters.general import (
     Scenes,
     Time,
 )
-from zigpy.zcl.clusters.measurement import TemperatureMeasurement
-from zigpy.zcl.clusters.measurement import RelativeHumidity
-from zigpy.zcl import Cluster
-
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-)
-from zhaquirks.develco import DEVELCO, DevelcoPowerConfiguration
+from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
 
 MANUFACTURER = 0x1015
 VOC_MEASURED_VALUE = 0x0000
@@ -45,14 +43,14 @@ _LOGGER = logging.getLogger(__name__)
 class DevelcoVOCMeasurement(CustomCluster):
     """Input Cluster to route manufacturer specific VOC cluster to actual VOC cluster."""
 
-    cluster_id = 0xfc03
+    cluster_id = 0xFC03
     name = "VOC Level"
     ep_attribute = "voc_level"
     manufacturer_attributes = {
         VOC_MEASURED_VALUE: ("measured_value", t.uint16_t),
         VOC_MIN_MEASURED_VALUE: ("min_measured_value", t.uint16_t),
         VOC_MAX_MEASURED_VALUE: ("max_measured_value", t.uint16_t),
-        VOC_RESOLUTION: ("resolution", t.uint16_t)
+        VOC_RESOLUTION: ("resolution", t.uint16_t),
     }
     server_commands = {}
     client_commands = {}
@@ -81,9 +79,11 @@ class DevelcoVOCMeasurement(CustomCluster):
 
 
 class DevelcoRelativeHumidity(RelativeHumidity):
+    """Handles invalid values for Humidity."""
+
     def _update_attribute(self, attrid, value):
         # Drop values out of specified range (0-100% RH)
-        if (0 <= value <= 10000):
+        if 0 <= value <= 10000:
             super()._update_attribute(attrid, value)
         _LOGGER.debug(
             "%s Develco Humidity : [%s]",
@@ -93,16 +93,17 @@ class DevelcoRelativeHumidity(RelativeHumidity):
 
 
 class DevelcoTemperatureMeasurement(TemperatureMeasurement):
+    """Handles invalid values for Temperature."""
+
     def _update_attribute(self, attrid, value):
         # Drop values out of specified range (0-50°C)
-        if (0 <= value <= 5000):
+        if 0 <= value <= 5000:
             super()._update_attribute(attrid, value)
         _LOGGER.debug(
             "%s Develco Temperature : [%s]",
             self.endpoint.device.ieee,
             self._attr_cache,
         )
-
 
 class EmulatedVOCMeasurement(LocalDataCluster):
     """VOC measurement cluster to receive reports from the Develco VOC cluster."""
@@ -114,7 +115,7 @@ class EmulatedVOCMeasurement(LocalDataCluster):
         VOC_MEASURED_VALUE: ("measured_value", t.uint16_t),
         VOC_MIN_MEASURED_VALUE: ("min_measured_value", t.uint16_t),
         VOC_MAX_MEASURED_VALUE: ("max_measured_value", t.uint16_t),
-        VOC_RESOLUTION: ("resolution", t.uint16_t)
+        VOC_RESOLUTION: ("resolution", t.uint16_t),
     }
     MEASURED_VALUE_ID = 0x0000
     MIN_MEASURED_VALUE_ID = 0x0001
@@ -137,7 +138,7 @@ class EmulatedVOCMeasurement(LocalDataCluster):
 
     def _update_attribute(self, attrid, value):
         # Drop values out of specified range (0-60000 ppb)
-        if (0 <= value <= 60000):
+        if 0 <= value <= 60000:
             # Convert ppb into mg/m³ approximation according to develco spec
             value = value * 0.0000045
             super()._update_attribute(attrid, value)
@@ -158,11 +159,10 @@ class EmulatedVOCMeasurement(LocalDataCluster):
         """VOC Resolution reported."""
         self._update_attribute(self.RESOLUTION_ID, value)
 
-
 class AQSZB110(CustomDevice):
-    """Custom device air quality sensor"""
-    manufacturer_id_override = MANUFACTURER
+    """Custom device air quality sensor."""
 
+    manufacturer_id_override = MANUFACTURER
     def __init__(self, *args, **kwargs):
         """Init."""
         self.voc_bus = Bus()
