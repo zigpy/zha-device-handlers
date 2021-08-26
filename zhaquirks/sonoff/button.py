@@ -3,27 +3,23 @@ import logging
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
+from zigpy.zcl.clusters.general import Basic, Identify, OnOff, PowerConfiguration
+
 from zhaquirks.const import (
+    BUTTON,
+    COMMAND,
+    COMMAND_OFF,
+    COMMAND_ON,
+    COMMAND_TOGGLE,
     DEVICE_TYPE,
+    DOUBLE_PRESS,
     ENDPOINTS,
     INPUT_CLUSTERS,
+    LONG_PRESS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
-    COMMAND,
-    COMMAND_ON,
-    COMMAND_TOGGLE,
-    COMMAND_OFF,
-    BUTTON,
-    LONG_PRESS,
     SHORT_PRESS,
-    DOUBLE_PRESS,
-)
-from zigpy.zcl.clusters.general import (
-    Basic,
-    PowerConfiguration,
-    Identify,
-    OnOff,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -52,7 +48,7 @@ class SonoffButton(CustomDevice):
                     OnOff.cluster_id,
                 ],
             },
-        }
+        },
     }
 
     replacement = {
