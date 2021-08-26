@@ -1,7 +1,8 @@
 """Tuya devices."""
+import dataclasses
 import datetime
 import logging
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
@@ -20,10 +21,12 @@ TUYA_CLUSTER_ID = 0xEF00
 # ---------------------------------------------------------
 # Tuya Cluster Commands
 # ---------------------------------------------------------
-TUYA_SET_DATA = 0x0000
-TUYA_GET_DATA = 0x0001
-TUYA_SET_DATA_RESPONSE = 0x0002
-TUYA_SET_TIME = 0x0024
+TUYA_SET_DATA = 0x00
+TUYA_GET_DATA = 0x01
+TUYA_SET_DATA_RESPONSE = 0x02
+TUYA_SEND_DATA = 0x04
+TUYA_ACTIVE_STATUS_RPT = 0x06
+TUYA_SET_TIME = 0x24
 TUYA_LEVEL_COMMAND = 514
 
 COVER_EVENT = "cover_event"
@@ -84,6 +87,9 @@ TUYA_COVER_COMMAND = {
     "_TZE200_fzo2pocs": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
     "_TZE200_xuzcvlku": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
     "_TZE200_rddyvrci": {0x0000: 0x0002, 0x0001: 0x0001, 0x0002: 0x0000},
+    "_TZE200_3i3exuay": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
+    "_TZE200_nueqqe6k": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
+    "_TZE200_gubdgai2": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
 }
 # ---------------------------------------------------------
 # TUYA Switch Custom Values
@@ -140,6 +146,56 @@ class TuyaTimePayload(t.LVList, item_type=t.uint8_t, length_type=BigEndianInt16)
     pass
 
 
+class TuyaDPType(t.enum8):
+    """DataPoint Type."""
+
+    RAW = 0x00
+    BOOL = 0x01
+    VALUE = 0x02
+    STRING = 0x03
+    ENUM = 0x04
+    BITMAP = 0x05
+
+
+class TuyaData(t.Struct):
+    """Tuya Data type."""
+
+    dp_type: TuyaDPType
+    function: t.uint8_t
+    raw: t.LVBytes
+
+    @classmethod
+    def deserialize(cls, data: bytes) -> Tuple["TuyaData", bytes]:
+        """Deserialize data."""
+        res = cls()
+        res.dp_type, data = TuyaDPType.deserialize(data)
+        res.function, data = t.uint8_t.deserialize(data)
+        res.raw, data = t.LVBytes.deserialize(data)
+        if res.dp_type not in (TuyaDPType.BITMAP, TuyaDPType.STRING, TuyaDPType.ENUM):
+            res.raw = res.raw[::-1]
+        return res, data
+
+    @property
+    def payload(self) -> Union[t.Bool, t.CharacterString, t.uint32_t, t.data32]:
+        """Payload accordingly to data point type."""
+        if self.dp_type == TuyaDPType.VALUE:
+            return t.uint32_t.deserialize(self.raw)[0]
+        elif self.dp_type == TuyaDPType.BOOL:
+            return t.Bool.deserialize(self.raw)[0]
+        elif self.dp_type == TuyaDPType.STRING:
+            return self.raw.decode("utf8")
+        elif self.dp_type == TuyaDPType.ENUM:
+            return t.enum8.deserialize(self.raw)[0]
+        elif self.dp_type == TuyaDPType.BITMAP:
+            bitmaps = {1: t.bitmap8, 2: t.bitmap16, 4: t.bitmap32}
+            try:
+                return bitmaps[len(self.raw)].deserialize(self.raw)[0]
+            except KeyError as exc:
+                raise ValueError(f"Wrong bitmap length: {len(self.raw)}") from exc
+
+        raise ValueError(f"Unknown {self.dp_type} datapoint type")
+
+
 class Data(t.List, item_type=t.uint8_t):
     """list of uint8_t."""
 
@@ -159,6 +215,15 @@ class Data(t.List, item_type=t.uint8_t):
         # tuya data is in big endian whereas ztypes use little endian
         value, _ = ztype.deserialize(bytes(reversed(self[1:])))
         return value
+
+
+class TuyaCommand(t.Struct):
+    """Tuya manufacturer cluster command."""
+
+    status: t.uint8_t
+    tsn: t.uint8_t
+    dp: t.uint8_t
+    data: TuyaData
 
 
 class TuyaManufCluster(CustomCluster):
@@ -947,3 +1012,144 @@ class TuyaLevelControl(CustomCluster, LevelControl):
             )
 
         return foundation.Status.UNSUP_CLUSTER_COMMAND
+
+
+class TuyaLocalCluster(LocalDataCluster):
+    """Tuya virtual clusters.
+
+    Prevents attribute reads and writes. Attribute writes could be converted
+    to DataPoint updates.
+    """
+
+    def update_attribute(self, attr_name: str, value: Any) -> None:
+        """Update attribute by attribute name."""
+
+        try:
+            attrid = self.attridx[attr_name]
+        except KeyError:
+            self.debug("no such attribute: %s", attr_name)
+            return
+        return self._update_attribute(attrid, value)
+
+
+@dataclasses.dataclass
+class DPToAttributeMapping:
+    """Container for datapoint to cluster attribute update mapping."""
+
+    ep_attribute: str
+    attribute_name: str
+    converter: Optional[
+        Callable[
+            [
+                Any,
+            ],
+            Any,
+        ]
+    ] = None
+    endpoint_id: Optional[int] = None
+
+
+class TuyaNewManufCluster(CustomCluster):
+    """Tuya manufacturer specific cluster.
+
+    This is an attempt to consolidate the multiple above clusters into a
+    single framework. Instead of overriding the handle_cluster_request()
+    method, implement handlers for commands, like get_data, set_data_response,
+    set_time_request, etc.
+    """
+
+    name: str = "Tuya Manufacturer Specific"
+    cluster_id: t.uint16_t = TUYA_CLUSTER_ID
+    ep_attribute: str = "tuya_manufacturer"
+
+    manufacturer_server_commands = {
+        TUYA_SET_DATA: ("set_data", (TuyaCommand,), False),
+        TUYA_SEND_DATA: ("send_data", (TuyaCommand,), False),
+        TUYA_SET_TIME: ("set_time", (TuyaTimePayload,), False),
+    }
+
+    manufacturer_client_commands = {
+        TUYA_GET_DATA: ("get_data", (TuyaCommand,), True),
+        TUYA_SET_DATA_RESPONSE: ("set_data_response", (TuyaCommand,), True),
+        TUYA_ACTIVE_STATUS_RPT: ("active_status_report", (TuyaCommand,), True),
+        TUYA_SET_TIME: ("set_time_request", (t.data16,), True),
+    }
+
+    data_point_handlers: Dict[int, str] = {}
+
+    def handle_cluster_request(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: Tuple,
+        *,
+        dst_addressing: Optional[
+            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        ] = None,
+    ) -> None:
+        """Handle cluster specific request."""
+
+        try:
+            if (
+                hdr.is_reply
+            ):  # server_cluster -> client_cluster cluster specific command
+                handler_name = f"handle_{self.client_commands[hdr.command_id][0]}"
+            else:
+                handler_name = f"handle_{self.server_commands[hdr.command_id][0]}"
+        except KeyError:
+            self.debug(
+                "Received unknown manufacturer command %s: %s", hdr.command_id, args
+            )
+            if not hdr.frame_control.disable_default_response:
+                self.send_default_rsp(
+                    hdr, status=foundation.Status.UNSUP_CLUSTER_COMMAND
+                )
+                return
+
+        try:
+            status = getattr(self, handler_name)(*args)
+        except AttributeError:
+            self.warning(
+                "No '%s' tuya handler found for %s",
+                handler_name,
+                args,
+            )
+            status = foundation.Status.UNSUP_CLUSTER_COMMAND
+
+        if not hdr.frame_control.disable_default_response:
+            self.send_default_rsp(hdr, status=status)
+
+    def handle_get_data(self, command: TuyaCommand) -> foundation.Status:
+        """Handle get_data response (report)."""
+        try:
+            dp_handler = self.data_point_handlers[command.dp]
+            getattr(self, dp_handler)(command)
+        except (AttributeError, KeyError):
+            self.debug("No datapoint handler for %s", command)
+            return foundation.status.UNSUPPORTED_ATTRIBUTE
+
+        return foundation.Status.SUCCESS
+
+    handle_set_data_response = handle_get_data
+    handle_active_status_report = handle_get_data
+
+    def handle_set_time_request(self, payload: t.uint16_t) -> foundation.Status:
+        """Handle Time set request."""
+        return foundation.Status.SUCCESS
+
+    def _dp_2_attr_update(self, command: TuyaCommand) -> None:
+        """Handle data point to attribute report conversion."""
+        try:
+            dp_map = self.dp_to_attribute[command.dp]
+        except KeyError:
+            self.debug("No attribute mapping for %s data point", command.dp)
+            return
+
+        endpoint = self.endpoint
+        if dp_map.endpoint_id:
+            endpoint = self.endpoint.device.endpoints[dp_map.endpoint_id]
+        cluster = getattr(endpoint, dp_map.ep_attribute)
+        value = command.data.payload
+        if dp_map.converter:
+            value = dp_map.converter(value)
+
+        cluster.update_attribute(dp_map.attribute_name, value)

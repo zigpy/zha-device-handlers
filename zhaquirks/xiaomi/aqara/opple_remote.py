@@ -53,7 +53,7 @@ from zhaquirks.const import (
 )
 from zhaquirks.xiaomi import LUMI, BasicCluster, XiaomiCustomDevice
 
-PRESS_TYPES = {0: "long press", 1: "single", 2: "double", 3: "triple", 255: "release"}
+PRESS_TYPES = {0: "hold", 1: "single", 2: "double", 3: "triple", 255: "release"}
 STATUS_TYPE_ATTR = 0x0055  # decimal = 85
 
 COMMAND_1_SINGLE = "1_single"
@@ -789,6 +789,134 @@ class RemoteB286OPCN01V3(XiaomiCustomDevice):
     device_automation_triggers = RemoteB286OPCN01.device_automation_triggers
 
 
+class RemoteB286OPCN01V4(XiaomiCustomDevice):
+    """Aqara Opple 2 button remote device."""
+
+    signature = {
+        # <SimpleDescriptor endpoint=1 profile=260 device_type=261
+        # device_version=1
+        # input_clusters=[0, 3, 1]
+        # output_clusters=[3, 6, 8, 768]>
+        MODELS_INFO: [(LUMI, "lumi.remote.b286opcn01")],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.COLOR_DIMMER_SWITCH,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    PowerConfigurationCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                    Color.cluster_id,
+                ],
+            },
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
+                INPUT_CLUSTERS: [Identify.cluster_id],
+                OUTPUT_CLUSTERS: [OnOff.cluster_id, Identify.cluster_id],
+            },
+            3: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
+                INPUT_CLUSTERS: [
+                    MultistateInputCluster.cluster_id,
+                    Identify.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [OnOff.cluster_id],
+            },
+            4: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
+                INPUT_CLUSTERS: [
+                    MultistateInputCluster.cluster_id,
+                    Identify.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [OnOff.cluster_id],
+            },
+            5: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
+                INPUT_CLUSTERS: [
+                    MultistateInputCluster.cluster_id,
+                    Identify.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [OnOff.cluster_id],
+            },
+            6: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
+                INPUT_CLUSTERS: [
+                    MultistateInputCluster.cluster_id,
+                    Identify.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [OnOff.cluster_id],
+            },
+        },
+    }
+
+    replacement = {
+        NODE_DESCRIPTOR: NodeDescriptor(
+            0x02, 0x40, 0x80, 0x115F, 0x7F, 0x0064, 0x2C00, 0x0064, 0x00
+        ),
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.COLOR_DIMMER_SWITCH,
+                INPUT_CLUSTERS: [
+                    BasicCluster,
+                    Identify.cluster_id,
+                    PowerConfigurationCluster,
+                    OppleCluster,
+                    MultistateInputCluster,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                    Color.cluster_id,
+                ],
+            },
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
+                INPUT_CLUSTERS: [MultistateInputCluster, Identify.cluster_id],
+                OUTPUT_CLUSTERS: [OnOff.cluster_id, Identify.cluster_id],
+            },
+            3: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
+                INPUT_CLUSTERS: [MultistateInputCluster, Identify.cluster_id],
+                OUTPUT_CLUSTERS: [OnOff.cluster_id],
+            },
+            4: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
+                INPUT_CLUSTERS: [MultistateInputCluster, Identify.cluster_id],
+                OUTPUT_CLUSTERS: [OnOff.cluster_id],
+            },
+            5: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
+                INPUT_CLUSTERS: [MultistateInputCluster, Identify.cluster_id],
+                OUTPUT_CLUSTERS: [OnOff.cluster_id],
+            },
+            6: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
+                INPUT_CLUSTERS: [MultistateInputCluster, Identify.cluster_id],
+                OUTPUT_CLUSTERS: [OnOff.cluster_id],
+            },
+        },
+    }
+
+    device_automation_triggers = RemoteB286OPCN01.device_automation_triggers
+
+
 class RemoteB486OPCN01V2(XiaomiCustomDevice):
     """Aqara Opple 4 button remote device."""
 
@@ -1328,7 +1456,7 @@ class RemoteB686OPCN01V5(XiaomiCustomDevice):
             2: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
-                INPUT_CLUSTERS: [Identify.cluster_id],
+                INPUT_CLUSTERS: [MultistateInputCluster, Identify.cluster_id],
                 OUTPUT_CLUSTERS: [OnOff.cluster_id, Identify.cluster_id],
             },
             3: {

@@ -22,8 +22,8 @@ from zhaquirks.const import (
 from zhaquirks.tuya import TuyaSmartRemoteOnOffCluster
 
 
-class TuyaSmartRemote0042(CustomDevice):
-    """Tuya 2-button remote device."""
+class TuyaSmartRemote0042TI(CustomDevice):
+    """Tuya 2-button remote device with time on in cluster."""
 
     signature = {
         # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=0, device_version=1, input_clusters=[0, 10, 1, 6], output_clusters=[25]))
@@ -87,8 +87,8 @@ class TuyaSmartRemote0042(CustomDevice):
     }
 
 
-class BenexmartRemote0042(CustomDevice):
-    """Tuya 2-button remote device."""
+class TuyaSmartRemote0042TO(CustomDevice):
+    """Tuya 2-button remote device with time on out cluster."""
 
     signature = {
         # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=0, device_version=1, input_clusters=[0, 1, 6], output_clusters=[10, 25]))

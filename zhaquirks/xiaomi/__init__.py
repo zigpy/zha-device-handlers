@@ -1,8 +1,9 @@
 """Xiaomi common components for custom device handlers."""
-import binascii
+from __future__ import annotations
+
 import logging
 import math
-from typing import Optional, Union
+from typing import Iterable, Iterator, Optional
 
 from zigpy import types as t
 import zigpy.device
@@ -114,48 +115,98 @@ class BasicCluster(CustomCluster, Basic):
 
     cluster_id = Basic.cluster_id
 
+    def _iter_parse_attr_report(
+        self, data: bytes
+    ) -> Iterator[foundation.Attribute, bytes]:
+        """Yield all interpretations of the first attribute in an Xiaomi report."""
+
+        # Peek at the attribute report
+        attr_id, data = t.uint16_t.deserialize(data)
+        attr_type, data = t.uint8_t.deserialize(data)
+
+        if (
+            attr_id not in (XIAOMI_AQARA_ATTRIBUTE, XIAOMI_MIJA_ATTRIBUTE)
+            or attr_type != 0x42  # "Character String"
+        ):
+            # Assume other attributes are reported correctly
+            data = attr_id.serialize() + attr_type.serialize() + data
+            attribute, data = foundation.Attribute.deserialize(data)
+
+            yield attribute, data
+            return
+
+        # Length of the "string" can be wrong
+        val_len, data = t.uint8_t.deserialize(data)
+
+        # Try every offset. Start with 0 to pass unbroken reports through.
+        for offset in (0, -1, 1):
+            fixed_len = val_len + offset
+
+            if len(data) < fixed_len:
+                continue
+
+            val, final_data = data[:fixed_len], data[fixed_len:]
+            attr_val = t.LVBytes(val)
+            attr_type = 0x41  # The data type should be "Octet String"
+
+            yield foundation.Attribute(
+                attrid=attr_id,
+                value=foundation.TypeValue(python_type=attr_type, value=attr_val),
+            ), final_data
+
+    def _interpret_attr_reports(
+        self, data: bytes
+    ) -> Iterable[tuple[foundation.Attribute]]:
+        """Yield all valid interprations of a Xiaomi attribute report."""
+
+        if not data:
+            yield ()
+            return
+
+        try:
+            parsed = list(self._iter_parse_attr_report(data))
+        except (KeyError, ValueError):
+            return
+
+        for attr, remaining_data in parsed:
+            for remaining_attrs in self._interpret_attr_reports(remaining_data):
+                yield (attr,) + remaining_attrs
+
     def deserialize(self, data):
         """Deserialize cluster data."""
-        try:
-            return super().deserialize(data)
-        except ValueError:
-            hdr, data = foundation.ZCLHeader.deserialize(data)
-            if not (
-                hdr.frame_control.frame_type == foundation.FrameType.GLOBAL_COMMAND
-                and hdr.command_id == 0x0A
-            ):
-                raise
-            msg = "ValueError exception for: %s payload: %s"
-            self.debug(msg, hdr, binascii.hexlify(data))
-            newdata = b""
-            while data:
-                try:
-                    attr, data = foundation.Attribute.deserialize(data)
-                except ValueError:
-                    attr_id, data = t.uint16_t.deserialize(data)
-                    if attr_id not in (XIAOMI_AQARA_ATTRIBUTE, XIAOMI_MIJA_ATTRIBUTE):
-                        raise
-                    attr_type, data = t.uint8_t.deserialize(data)
-                    val_len, data = t.uint8_t.deserialize(data)
-                    val_len = t.uint8_t(val_len - 1)
-                    val, data = data[:val_len], data[val_len:]
-                    newdata += attr_id.serialize()
-                    newdata += attr_type.serialize()
-                    newdata += val_len.serialize() + val
-                    continue
-                newdata += attr.serialize()
-            self.debug("new data: %s", binascii.hexlify(hdr.serialize() + newdata))
-            return super().deserialize(hdr.serialize() + newdata)
+        hdr, data = foundation.ZCLHeader.deserialize(data)
+
+        # Only handle attribute reports differently
+        if (
+            hdr.frame_control.frame_type != foundation.FrameType.GLOBAL_COMMAND
+            or hdr.command_id != foundation.Command.Report_Attributes
+        ):
+            return super().deserialize(hdr.serialize() + data)
+
+        reports = list(self._interpret_attr_reports(data))
+
+        if not reports:
+            _LOGGER.warning("Failed to parse Xiaomi attribute report: %r", data)
+            return super().deserialize(hdr.serialize() + data)
+        elif len(reports) > 1:
+            _LOGGER.warning(
+                "Xiaomi attribute report has multiple valid interpretations: %r",
+                reports,
+            )
+
+        fixed_data = b"".join(attr.serialize() for attr in reports[0])
+
+        return super().deserialize(hdr.serialize() + fixed_data)
 
     def _update_attribute(self, attrid, value):
         if attrid == XIAOMI_AQARA_ATTRIBUTE:
-            attributes = self._parse_aqara_attributes(value.raw)
-            super()._update_attribute(attrid, value.raw)
+            attributes = self._parse_aqara_attributes(value)
+            super()._update_attribute(attrid, value)
             if (
                 MODEL in self._attr_cache
                 and self._attr_cache[MODEL] == "lumi.sensor_switch.aq2"
             ):
-                if value.raw == b"\x04!\xa8C\n!\x00\x00":
+                if value == b"\x04!\xa8C\n!\x00\x00":
                     self.listener_event(ZHA_SEND_EVENT, COMMAND_TRIPLE, [])
         elif attrid == XIAOMI_MIJA_ATTRIBUTE:
             attributes = self._parse_mija_attributes(value)
@@ -254,7 +305,9 @@ class BasicCluster(CustomCluster, Basic):
             attribute_names.update({11: ILLUMINANCE_MEASUREMENT})
 
         result = {}
-        while value:
+
+        # Some attribute reports end with a stray null byte
+        while value not in (b"", b"\x00"):
             skey = int(value[0])
             svalue, value = foundation.TypeValue.deserialize(value[1:])
             result[skey] = svalue.value
@@ -485,11 +538,11 @@ class OnOffCluster(OnOff, CustomCluster):
 
     def command(
         self,
-        command_id: Union[foundation.Command, int, t.uint8_t],
+        command_id: foundation.Command | int | t.uint8_t,
         *args,
-        manufacturer: Optional[Union[int, t.uint16_t]] = None,
+        manufacturer: Optional[int | t.uint16_t] = None,
         expect_reply: bool = True,
-        tsn: Optional[Union[int, t.uint8_t]] = None
+        tsn: Optional[int | t.uint8_t] = None
     ):
         """Command handler."""
         src_ep = 1

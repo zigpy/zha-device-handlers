@@ -1,0 +1,61 @@
+"""Test Tuya Air quality sensor."""
+
+from unittest import mock
+
+import pytest
+import zigpy.profiles.zha
+
+import zhaquirks
+from zhaquirks.tuya import TuyaNewManufCluster
+from zhaquirks.tuya.air.ts0601_air_quality import TuyaCO2Sensor
+
+zhaquirks.setup()
+
+
+@pytest.fixture
+def air_quality_device(zigpy_device_from_quirk):
+    """Tuya Air Quality Sensor."""
+    dev = zigpy_device_from_quirk(TuyaCO2Sensor)
+    cluster = dev.endpoints[1].in_clusters[TuyaNewManufCluster.cluster_id]
+    with mock.patch.object(cluster, "send_default_rsp"):
+        yield dev
+
+
+@pytest.mark.parametrize(
+    "data, ep_attr, expected_value",
+    (
+        (
+            b"\t2\x01\x00\x02\x02\x02\x00\x04\x00\x00\x01r",
+            "carbon_dioxide_concentration",
+            370 * 1e-6,
+        ),
+        (
+            b"\t$\x01\x00\x00\x13\x02\x00\x04\x00\x00\x02\xd6",
+            "humidity",
+            7260,
+        ),
+        (
+            b"\t\x03\x01\x00\x01\x15\x02\x00\x04\x00\x00\x00\x01",
+            "voc_level",
+            1 * 1e-6,
+        ),
+        (
+            b"\t\x02\x01\x00\x01\x16\x02\x00\x04\x00\x00\x00\x02",
+            "formaldehyde_concentration",
+            2 * 1e-6,
+        ),
+        (
+            b"\t\x02\x01\x00\x00\x12\x02\x00\x04\x00\x00\x01 ",
+            "temperature",
+            2880,
+        ),
+    ),
+)
+def test_co2_sensor(air_quality_device, data, ep_attr, expected_value):
+    """Test Tuya Air Quality Sensor."""
+
+    air_quality_device.handle_message(
+        zigpy.profiles.zha.PROFILE_ID, TuyaNewManufCluster.cluster_id, 1, 1, data
+    )
+    cluster = getattr(air_quality_device.endpoints[1], ep_attr)
+    assert cluster.get("measured_value") == expected_value
