@@ -1,79 +1,42 @@
 """Module for Bitron/SMaBiT thermostats."""
 
 import logging
-from zigpy.quirks import CustomDevice, CustomCluster
+
 from zigpy.profiles import zha
+from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
-    PowerConfiguration,
     Identify,
-    Time,
-    PollControl,
     Ota,
+    PollControl,
+    PowerConfiguration,
+    Time,
 )
 from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
+
+from zhaquirks import PowerConfigurationCluster
 from zhaquirks.bitron import BITRON, DIAGNOSTICS_CLUSTER_ID
 from zhaquirks.const import (
-    MODELS_INFO,
-    ENDPOINTS,
-    PROFILE_ID,
     DEVICE_TYPE,
+    ENDPOINTS,
     INPUT_CLUSTERS,
+    MODELS_INFO,
     OUTPUT_CLUSTERS,
+    PROFILE_ID,
 )
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class Av201032PowerConfigurationCluster(CustomCluster, PowerConfiguration):
+class Av201032PowerConfigurationCluster(PowerConfigurationCluster):
     """Power configuration cluster for Bitron/SMaBiT AV2010/32 thermostats.
 
     This cluster takes the reported battery voltage and converts it into a
     battery percentage, since the thermostat does not report this value.
     """
 
-    BATTERY_VOLTAGE_ATTRIBUTE_ID = 0x0020
-    BATTERY_VOLTAGE_MAX_VALUE = 32
-    BATTERY_VOLTAGE_MIN_VALUE = 25
-    BATTERY_PERCENTAGE_ATTRIBUTE_ID = 0x0021
-    BATTERY_PERCENTAGE_MAX_VALUE = 200  # hex = 0xC8
-    BATTERY_PERCENTAGE_MIN_VALUE = 0
-    BATTERY_PERCENTAGE_UNKNOWN_VALUE = 255  # hex = 0xFF
-
-    cluster_id = PowerConfiguration.cluster_id
-
-    def _calculate_percentage_from_voltage(self, value):
-        if value > self.BATTERY_VOLTAGE_MAX_VALUE:
-            percentage = self.BATTERY_PERCENTAGE_MAX_VALUE
-        elif value < self.BATTERY_VOLTAGE_MIN_VALUE:
-            percentage = self.BATTERY_PERCENTAGE_UNKNOWN_VALUE
-        else:
-            percentage = int(
-                round(
-                    self.BATTERY_PERCENTAGE_MIN_VALUE
-                    + (
-                        (
-                            self.BATTERY_PERCENTAGE_MAX_VALUE
-                            - self.BATTERY_PERCENTAGE_MIN_VALUE
-                        )
-                        / (
-                            self.BATTERY_VOLTAGE_MAX_VALUE
-                            - self.BATTERY_VOLTAGE_MIN_VALUE
-                        )
-                    )
-                    * (value - self.BATTERY_VOLTAGE_MIN_VALUE)
-                )
-            )
-
-        return percentage
-
-    def _update_attribute(self, attrid, value):
-        super()._update_attribute(attrid, value)
-        if attrid == self.BATTERY_VOLTAGE_ATTRIBUTE_ID:
-            _LOGGER.debug("Received battery voltage update (value %d)", value)
-            percentage = self._calculate_percentage_from_voltage(value)
-            _LOGGER.debug("Updating battery percentage (value %d)", percentage)
-            self._update_attribute(self.BATTERY_PERCENTAGE_ATTRIBUTE_ID, percentage)
+    MIN_VOLTS = 2.5
+    MAX_VOLTS = 3.0
 
 
 class Av201032(CustomDevice):
