@@ -31,7 +31,11 @@ class TuyaCO2Sensor(CustomDevice):
         # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=81, device_version=1,
         # input_clusters=[0, 4, 5, 61184],
         # output_clusters=[25, 10])
-        MODELS_INFO: [("_TZE200_8ygsuhe1", "TS0601"), ("_TZE200_yvx5lh6k", "TS0601"), ("_TZE200_ryfmq5rl", "TS0601")],
+        MODELS_INFO: [
+            ("_TZE200_8ygsuhe1", "TS0601"), 
+            ("_TZE200_yvx5lh6k", "TS0601"), 
+            ("_TZE200_ryfmq5rl", "TS0601")
+        ],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
