@@ -7,8 +7,7 @@ from typing import Any, List, Optional, Union
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import Basic, LevelControl, OnOff
-from zigpy.zcl.clusters.lighting import Color
+from zigpy.zcl.clusters.general import Basic
 from zigpy.zcl.clusters.measurement import OccupancySensing
 
 from zhaquirks.const import (
@@ -88,27 +87,6 @@ class OccupancyCluster(CustomCluster, OccupancySensing):
         0x0030: ("sensitivity", t.uint8_t),
         0x0031: ("sensitivity_max", t.uint8_t),
     }
-
-
-class PhilipsOnOffCluster(CustomCluster, OnOff):
-    """Philips OnOff cluster."""
-
-    attributes = OnOff.attributes.copy()
-    attributes.update({0x4003: ("power_on_state", PowerOnState)})
-
-
-class PhilipsLevelControlCluster(CustomCluster, LevelControl):
-    """Philips LevelControl cluster."""
-
-    attributes = LevelControl.attributes.copy()
-    attributes.update({0x4000: ("power_on_level", t.uint8_t)})
-
-
-class PhilipsColorCluster(CustomCluster, Color):
-    """Philips Color cluster."""
-
-    attributes = Color.attributes.copy()
-    attributes.update({0x4010: ("power_on_color_temperature", t.uint16_t)})
 
 
 class PhilipsBasicCluster(CustomCluster, Basic):
