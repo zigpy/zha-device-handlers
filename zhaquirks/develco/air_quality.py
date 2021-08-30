@@ -105,6 +105,7 @@ class DevelcoTemperatureMeasurement(TemperatureMeasurement):
             self._attr_cache,
         )
 
+        
 class EmulatedVOCMeasurement(LocalDataCluster):
     """VOC measurement cluster to receive reports from the Develco VOC cluster."""
 
@@ -146,7 +147,7 @@ class EmulatedVOCMeasurement(LocalDataCluster):
     def voc_reported(self, value):
         """VOC reported."""
         self._update_attribute(self.MEASURED_VALUE_ID, value)
-    
+
     def min_voc_reported(self, value):
         """Minimum Measured VOC reported."""
         self._update_attribute(self.MIN_MEASURED_VALUE_ID, value)
@@ -159,10 +160,12 @@ class EmulatedVOCMeasurement(LocalDataCluster):
         """VOC Resolution reported."""
         self._update_attribute(self.RESOLUTION_ID, value)
 
+        
 class AQSZB110(CustomDevice):
     """Custom device air quality sensor."""
 
     manufacturer_id_override = MANUFACTURER
+    
     def __init__(self, *args, **kwargs):
         """Init."""
         self.voc_bus = Bus()
