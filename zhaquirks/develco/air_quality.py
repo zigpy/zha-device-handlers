@@ -1,19 +1,9 @@
 """Develco Air Quality Sensor."""
 import logging
 
-import zigpy.types as t
-from zhaquirks import Bus, LocalDataCluster
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-)
-from zhaquirks.develco import DEVELCO, DevelcoPowerConfiguration
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
+import zigpy.types as t
 from zigpy.zcl.clusters.general import (
     Basic,
     Identify,
@@ -25,6 +15,17 @@ from zigpy.zcl.clusters.general import (
     Time,
 )
 from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
+
+from zhaquirks import Bus, LocalDataCluster
+from zhaquirks.const import (
+    DEVICE_TYPE,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    MODELS_INFO,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
+)
+from zhaquirks.develco import DEVELCO, DevelcoPowerConfiguration
 
 MANUFACTURER = 0x1015
 VOC_MEASURED_VALUE = 0x0000
