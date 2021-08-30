@@ -3,16 +3,28 @@ import logging
 
 import zigpy.types as t
 from zhaquirks import Bus, LocalDataCluster
-from zhaquirks.const import (DEVICE_TYPE, ENDPOINTS, INPUT_CLUSTERS,
-                             MODELS_INFO, OUTPUT_CLUSTERS, PROFILE_ID)
+from zhaquirks.const import (
+    DEVICE_TYPE,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    MODELS_INFO,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
+)
 from zhaquirks.develco import DEVELCO, DevelcoPowerConfiguration
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
-from zigpy.zcl.clusters.general import (Basic, Identify, OnOff, Ota,
-                                        PollControl, PowerConfiguration,
-                                        Scenes, Time)
-from zigpy.zcl.clusters.measurement import (RelativeHumidity,
-                                            TemperatureMeasurement)
+from zigpy.zcl.clusters.general import (
+    Basic,
+    Identify,
+    OnOff,
+    Ota,
+    PollControl,
+    PowerConfiguration,
+    Scenes,
+    Time,
+)
+from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
 
 MANUFACTURER = 0x1015
 VOC_MEASURED_VALUE = 0x0000
