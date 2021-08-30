@@ -3,28 +3,16 @@ import logging
 
 import zigpy.types as t
 from zhaquirks import Bus, LocalDataCluster
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-)
+from zhaquirks.const import (DEVICE_TYPE, ENDPOINTS, INPUT_CLUSTERS,
+                             MODELS_INFO, OUTPUT_CLUSTERS, PROFILE_ID)
 from zhaquirks.develco import DEVELCO, DevelcoPowerConfiguration
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
-from zigpy.zcl.clusters.general import (
-    Basic,
-    Identify,
-    OnOff,
-    Ota,
-    PollControl,
-    PowerConfiguration,
-    Scenes,
-    Time,
-)
-from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
+from zigpy.zcl.clusters.general import (Basic, Identify, OnOff, Ota,
+                                        PollControl, PowerConfiguration,
+                                        Scenes, Time)
+from zigpy.zcl.clusters.measurement import (RelativeHumidity,
+                                            TemperatureMeasurement)
 
 MANUFACTURER = 0x1015
 VOC_MEASURED_VALUE = 0x0000
@@ -105,7 +93,7 @@ class DevelcoTemperatureMeasurement(TemperatureMeasurement):
             self._attr_cache,
         )
 
-        
+
 class EmulatedVOCMeasurement(LocalDataCluster):
     """VOC measurement cluster to receive reports from the Develco VOC cluster."""
 
@@ -160,12 +148,12 @@ class EmulatedVOCMeasurement(LocalDataCluster):
         """VOC Resolution reported."""
         self._update_attribute(self.RESOLUTION_ID, value)
 
-        
+
 class AQSZB110(CustomDevice):
     """Custom device air quality sensor."""
 
     manufacturer_id_override = MANUFACTURER
-    
+
     def __init__(self, *args, **kwargs):
         """Init."""
         self.voc_bus = Bus()
