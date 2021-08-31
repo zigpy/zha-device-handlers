@@ -33,6 +33,8 @@ class SonoffButton(CustomDevice):
         super().__init__(*args, **kwargs)
 
     signature = {
+        # <SimpleDescriptor endpoint=1 profile=260 device_type=0 device_version=0
+        # input_clusters=[0, 3, 1] output_clusters=[6, 3]>
         MODELS_INFO: [("eWeLink", "WB01")],
         ENDPOINTS: {
             1: {
