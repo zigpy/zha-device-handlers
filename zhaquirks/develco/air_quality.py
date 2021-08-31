@@ -163,7 +163,7 @@ class EmulatedVOCMeasurement(LocalDataCluster):
 
 
 class AQSZB110(CustomDevice):
-    """Custom device air quality sensor."""
+    """Custom device Develco air quality sensor."""
 
     manufacturer_id_override = MANUFACTURER
 
