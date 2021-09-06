@@ -389,7 +389,7 @@ class TuyaManufClusterAttributes(TuyaManufCluster):
                 tsn=cmd_payload.tsn,
             )
 
-        return (foundation.Status.SUCCESS,)
+        return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
 
 class TuyaOnOff(CustomCluster, OnOff):
@@ -512,7 +512,7 @@ class TuyaThermostatCluster(LocalDataCluster, Thermostat):
         records = self._write_attr_records(attributes)
 
         if not records:
-            return (foundation.Status.SUCCESS,)
+            return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
         manufacturer_attrs = {}
         for record in records:
@@ -534,13 +534,20 @@ class TuyaThermostatCluster(LocalDataCluster, Thermostat):
             manufacturer_attrs.update(new_attrs)
 
         if not manufacturer_attrs:
-            return (foundation.Status.FAILURE,)
+            return [
+                [
+                    foundation.WriteAttributesStatusRecord(
+                        foundation.Status.FAILURE, r.attrid
+                    )
+                    for r in records
+                ]
+            ]
 
         await self.endpoint.tuya_manufacturer.write_attributes(
             manufacturer_attrs, manufacturer=manufacturer
         )
 
-        return (foundation.Status.SUCCESS,)
+        return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
     # pylint: disable=W0236
     async def command(
@@ -625,13 +632,20 @@ class TuyaUserInterfaceCluster(LocalDataCluster, UserInterface):
             manufacturer_attrs.update(new_attrs)
 
         if not manufacturer_attrs:
-            return (foundation.Status.FAILURE,)
+            return [
+                [
+                    foundation.WriteAttributesStatusRecord(
+                        foundation.Status.FAILURE, r.attrid
+                    )
+                    for r in records
+                ]
+            ]
 
         await self.endpoint.tuya_manufacturer.write_attributes(
             manufacturer_attrs, manufacturer=manufacturer
         )
 
-        return (foundation.Status.SUCCESS,)
+        return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
 
 class TuyaPowerConfigurationCluster(LocalDataCluster, PowerConfiguration):

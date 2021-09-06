@@ -664,7 +664,7 @@ class MoesWindowDetection(LocalDataCluster, OnOff):
         records = self._write_attr_records(attributes)
 
         if not records:
-            return (foundation.Status.SUCCESS,)
+            return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
         has_change = False
         data = t.data24()
@@ -707,7 +707,14 @@ class MoesWindowDetection(LocalDataCluster, OnOff):
                 {MOES_WINDOW_DETECT_ATTR: data}, manufacturer=manufacturer
             )
 
-        return (foundation.Status.FAILURE,)
+        return [
+            [
+                foundation.WriteAttributesStatusRecord(
+                    foundation.Status.FAILURE, r.attrid
+                )
+                for r in records
+            ]
+        ]
 
     async def command(
         self,
