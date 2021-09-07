@@ -310,7 +310,7 @@ async def test_siren_send_attribute(zigpy_device_from_quirk, quirk):
         tuya_cluster.endpoint, "request", side_effect=async_success
     ) as m1:
 
-        (status,) = await switch_cluster.command(0x0000)
+        _, status = await switch_cluster.command(0x0000)
         m1.assert_called_with(
             61184,
             1,
@@ -318,11 +318,9 @@ async def test_siren_send_attribute(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             command_id=0,
         )
-        assert status == [
-            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
-        ]
+        assert status == foundation.Status.SUCCESS
 
-        (status,) = await switch_cluster.command(0x0001)
+        _, status = await switch_cluster.command(0x0001)
         m1.assert_called_with(
             61184,
             2,
@@ -330,11 +328,9 @@ async def test_siren_send_attribute(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             command_id=0,
         )
-        assert status == [
-            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
-        ]
+        assert status == foundation.Status.SUCCESS
 
-        status = switch_cluster.command(0x0003)
+        _, status = await switch_cluster.command(0x0003)
         assert status == foundation.Status.UNSUP_CLUSTER_COMMAND
 
 
@@ -470,7 +466,7 @@ async def test_valve_send_attribute(zigpy_device_from_quirk, quirk):
         # simulate a target temp update so that relative changes can work
         hdr, args = tuya_cluster.deserialize(ZCL_TUYA_VALVE_TARGET_TEMP)
         tuya_cluster.handle_message(hdr, args)
-        (status,) = await thermostat_cluster.command(0x0000, 0x00, 20)
+        _, status = await thermostat_cluster.command(0x0000, 0x00, 20)
         m1.assert_called_with(
             61184,
             5,
@@ -478,11 +474,9 @@ async def test_valve_send_attribute(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             command_id=0,
         )
-        assert status == [
-            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
-        ]
+        assert status == foundation.Status.SUCCESS
 
-        status = await thermostat_cluster.command(0x0002)
+        _, status = await thermostat_cluster.command(0x0002)
         assert status == foundation.Status.UNSUP_CLUSTER_COMMAND
 
 
@@ -733,7 +727,7 @@ async def test_moes(zigpy_device_from_quirk, quirk):
         # simulate a target temp update so that relative changes can work
         hdr, args = tuya_cluster.deserialize(ZCL_TUYA_VALVE_TARGET_TEMP)
         tuya_cluster.handle_message(hdr, args)
-        (status,) = await thermostat_cluster.command(0x0000, 0x00, 20)
+        _, status = await thermostat_cluster.command(0x0000, 0x00, 20)
         m1.assert_called_with(
             61184,
             4,
@@ -741,9 +735,7 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             command_id=0,
         )
-        assert status == [
-            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
-        ]
+        assert status == foundation.Status.SUCCESS
 
         (status,) = await onoff_cluster.write_attributes(
             {
@@ -956,7 +948,7 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
         ]
 
-        (status,) = await onoff_cluster.command(0x0000)
+        _, status = await onoff_cluster.command(0x0000)
         m1.assert_called_with(
             61184,
             18,
@@ -964,11 +956,9 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             command_id=0,
         )
-        assert status == [
-            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
-        ]
+        assert status == foundation.Status.SUCCESS
 
-        (status,) = await onoff_cluster.command(0x0001)
+        _, status = await onoff_cluster.command(0x0001)
 
         m1.assert_called_with(
             61184,
@@ -977,11 +967,9 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             command_id=0,
         )
-        assert status == [
-            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
-        ]
+        assert status == foundation.Status.SUCCESS
 
-        (status,) = await onoff_cluster.command(0x0002)
+        _, status = await onoff_cluster.command(0x0002)
         m1.assert_called_with(
             61184,
             20,
@@ -989,19 +977,17 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             command_id=0,
         )
-        assert status == [
-            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
-        ]
+        assert status == foundation.Status.SUCCESS
 
         (status,) = await onoff_cluster.write_attributes({})
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
         ]
 
-        status = await thermostat_cluster.command(0x0002)
+        _, status = await thermostat_cluster.command(0x0002)
         assert status == foundation.Status.UNSUP_CLUSTER_COMMAND
 
-        status = await onoff_cluster.command(0x0009)
+        _, status = await onoff_cluster.command(0x0009)
         assert status == foundation.Status.UNSUP_CLUSTER_COMMAND
 
         origdatetime = datetime.datetime
@@ -1107,7 +1093,7 @@ async def test_eheat_send_attribute(zigpy_device_from_quirk, quirk):
         # simulate a target temp update so that relative changes can work
         hdr, args = tuya_cluster.deserialize(ZCL_TUYA_EHEAT_TARGET_TEMP)
         tuya_cluster.handle_message(hdr, args)
-        (status,) = await thermostat_cluster.command(0x0000, 0x00, 20)
+        _, status = await thermostat_cluster.command(0x0000, 0x00, 20)
         m1.assert_called_with(
             61184,
             4,
@@ -1115,11 +1101,9 @@ async def test_eheat_send_attribute(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             command_id=0,
         )
-        assert status == [
-            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
-        ]
+        assert status == foundation.Status.SUCCESS
 
-        status = await thermostat_cluster.command(0x0002)
+        _, status = await thermostat_cluster.command(0x0002)
         assert status == foundation.Status.UNSUP_CLUSTER_COMMAND
 
 

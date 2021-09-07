@@ -743,12 +743,13 @@ class MoesWindowDetection(LocalDataCluster, OnOff):
                     return foundation.Status.FAILURE
                 value = not value
 
-            return await self.write_attributes(
+            (res,) = await self.write_attributes(
                 {"on_off": value},
                 manufacturer=manufacturer,
             )
+            return [command_id, res[0].status]
 
-        return foundation.Status.UNSUP_CLUSTER_COMMAND
+        return [command_id, foundation.Status.UNSUP_CLUSTER_COMMAND]
 
 
 ZONNSMART_CHILD_LOCK_ATTR = 0x0128  # [0] unlocked [1] child-locked

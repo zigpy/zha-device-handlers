@@ -561,11 +561,11 @@ class TuyaThermostatCluster(LocalDataCluster, Thermostat):
         """Implement thermostat commands."""
 
         if command_id != 0x0000:
-            return foundation.Status.UNSUP_CLUSTER_COMMAND
+            return [command_id, foundation.Status.UNSUP_CLUSTER_COMMAND]
 
         mode, offset = args
         if mode not in (self.SetpointMode.Heat, self.SetpointMode.Both):
-            return foundation.Status.INVALID_VALUE
+            return [command_id, foundation.Status.INVALID_VALUE]
 
         attrid = self.attridx["occupied_heating_setpoint"]
 
@@ -576,10 +576,11 @@ class TuyaThermostatCluster(LocalDataCluster, Thermostat):
             return foundation.Status.FAILURE
 
         # offset is given in decidegrees, see Zigbee cluster specification
-        return await self.write_attributes(
+        (res,) = await self.write_attributes(
             {"occupied_heating_setpoint": current + offset * 10},
             manufacturer=manufacturer,
         )
+        return [command_id, res[0].status]
 
 
 class TuyaUserInterfaceCluster(LocalDataCluster, UserInterface):
