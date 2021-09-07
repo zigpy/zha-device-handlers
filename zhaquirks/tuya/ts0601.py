@@ -84,6 +84,7 @@ class TuyaZemismartSmartCover0601(TuyaWindowCover):
         MODELS_INFO: [
             ("_TZE200_fzo2pocs", "TS0601"),
             ("_TZE200_zpzndjez", "TS0601"),
+            ("_TZE200_cowvfni3", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
