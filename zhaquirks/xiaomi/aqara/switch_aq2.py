@@ -24,6 +24,7 @@ from zhaquirks.const import (
     SHORT_PRESS,
     SKIP_CONFIGURATION,
     TRIPLE_PRESS,
+    TURN_ON,
     UNKNOWN,
     VALUE,
 )
@@ -87,25 +88,25 @@ class SwitchAQ2(XiaomiQuickInitDevice):
     }
 
     device_automation_triggers = {
-        (SHORT_PRESS, SHORT_PRESS): {
+        (SHORT_PRESS, TURN_ON): {
             COMMAND: COMMAND_ATTRIBUTE_UPDATED,
             CLUSTER_ID: 6,
             ENDPOINT_ID: 1,
             ARGS: {ATTRIBUTE_ID: 0, ATTRIBUTE_NAME: ON_OFF, VALUE: 1},
         },
-        (DOUBLE_PRESS, DOUBLE_PRESS): {
+        (DOUBLE_PRESS, TURN_ON): {
             COMMAND: COMMAND_ATTRIBUTE_UPDATED,
             CLUSTER_ID: 6,
             ENDPOINT_ID: 1,
             ARGS: {ATTRIBUTE_ID: 32768, ATTRIBUTE_NAME: UNKNOWN, VALUE: 2},
         },
-        (TRIPLE_PRESS, TRIPLE_PRESS): {
+        (TRIPLE_PRESS, TURN_ON): {
             COMMAND: COMMAND_ATTRIBUTE_UPDATED,
             CLUSTER_ID: 6,
             ENDPOINT_ID: 1,
             ARGS: {ATTRIBUTE_ID: 32768, ATTRIBUTE_NAME: UNKNOWN, VALUE: 3},
         },
-        (QUADRUPLE_PRESS, QUADRUPLE_PRESS): {
+        (QUADRUPLE_PRESS, TURN_ON): {
             COMMAND: COMMAND_ATTRIBUTE_UPDATED,
             CLUSTER_ID: 6,
             ENDPOINT_ID: 1,
