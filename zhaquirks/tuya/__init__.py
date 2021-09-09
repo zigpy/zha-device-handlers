@@ -390,7 +390,7 @@ class TuyaManufClusterAttributes(TuyaManufCluster):
                 tsn=cmd_payload.tsn,
             )
 
-        return (foundation.Status.SUCCESS,)
+        return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
 
 class TuyaOnOff(CustomCluster, OnOff):
@@ -513,7 +513,7 @@ class TuyaThermostatCluster(LocalDataCluster, Thermostat):
         records = self._write_attr_records(attributes)
 
         if not records:
-            return (foundation.Status.SUCCESS,)
+            return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
         manufacturer_attrs = {}
         for record in records:
@@ -535,13 +535,20 @@ class TuyaThermostatCluster(LocalDataCluster, Thermostat):
             manufacturer_attrs.update(new_attrs)
 
         if not manufacturer_attrs:
-            return (foundation.Status.FAILURE,)
+            return [
+                [
+                    foundation.WriteAttributesStatusRecord(
+                        foundation.Status.FAILURE, r.attrid
+                    )
+                    for r in records
+                ]
+            ]
 
         await self.endpoint.tuya_manufacturer.write_attributes(
             manufacturer_attrs, manufacturer=manufacturer
         )
 
-        return (foundation.Status.SUCCESS,)
+        return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
     # pylint: disable=W0236
     async def command(
@@ -555,11 +562,11 @@ class TuyaThermostatCluster(LocalDataCluster, Thermostat):
         """Implement thermostat commands."""
 
         if command_id != 0x0000:
-            return foundation.Status.UNSUP_CLUSTER_COMMAND
+            return [command_id, foundation.Status.UNSUP_CLUSTER_COMMAND]
 
         mode, offset = args
         if mode not in (self.SetpointMode.Heat, self.SetpointMode.Both):
-            return foundation.Status.INVALID_VALUE
+            return [command_id, foundation.Status.INVALID_VALUE]
 
         attrid = self.attridx["occupied_heating_setpoint"]
 
@@ -570,10 +577,11 @@ class TuyaThermostatCluster(LocalDataCluster, Thermostat):
             return foundation.Status.FAILURE
 
         # offset is given in decidegrees, see Zigbee cluster specification
-        return await self.write_attributes(
+        (res,) = await self.write_attributes(
             {"occupied_heating_setpoint": current + offset * 10},
             manufacturer=manufacturer,
         )
+        return [command_id, res[0].status]
 
 
 class TuyaUserInterfaceCluster(LocalDataCluster, UserInterface):
@@ -626,13 +634,20 @@ class TuyaUserInterfaceCluster(LocalDataCluster, UserInterface):
             manufacturer_attrs.update(new_attrs)
 
         if not manufacturer_attrs:
-            return (foundation.Status.FAILURE,)
+            return [
+                [
+                    foundation.WriteAttributesStatusRecord(
+                        foundation.Status.FAILURE, r.attrid
+                    )
+                    for r in records
+                ]
+            ]
 
         await self.endpoint.tuya_manufacturer.write_attributes(
             manufacturer_attrs, manufacturer=manufacturer
         )
 
-        return (foundation.Status.SUCCESS,)
+        return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
 
 class TuyaPowerConfigurationCluster(LocalDataCluster, PowerConfiguration):

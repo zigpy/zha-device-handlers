@@ -243,7 +243,7 @@ async def test_tuya_send_attribute(zigpy_device_from_quirk, quirk):
         tuya_cluster.endpoint, "request", side_effect=async_success
     ) as m1:
 
-        status = await tuya_cluster.write_attributes({617: 179})
+        (status,) = await tuya_cluster.write_attributes({617: 179})
         m1.assert_called_with(
             61184,
             1,
@@ -251,7 +251,9 @@ async def test_tuya_send_attribute(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             command_id=0,
         )
-        assert status == (foundation.Status.SUCCESS,)
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
 
 
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.siren.TuyaSiren,))
@@ -308,7 +310,7 @@ async def test_siren_send_attribute(zigpy_device_from_quirk, quirk):
         tuya_cluster.endpoint, "request", side_effect=async_success
     ) as m1:
 
-        status = await switch_cluster.command(0x0000)
+        _, status = await switch_cluster.command(0x0000)
         m1.assert_called_with(
             61184,
             1,
@@ -316,9 +318,9 @@ async def test_siren_send_attribute(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             command_id=0,
         )
-        assert status == (foundation.Status.SUCCESS,)
+        assert status == foundation.Status.SUCCESS
 
-        status = await switch_cluster.command(0x0001)
+        _, status = await switch_cluster.command(0x0001)
         m1.assert_called_with(
             61184,
             2,
@@ -326,9 +328,9 @@ async def test_siren_send_attribute(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             command_id=0,
         )
-        assert status == (foundation.Status.SUCCESS,)
+        assert status == foundation.Status.SUCCESS
 
-        status = switch_cluster.command(0x0003)
+        _, status = await switch_cluster.command(0x0003)
         assert status == foundation.Status.UNSUP_CLUSTER_COMMAND
 
 
@@ -397,7 +399,7 @@ async def test_valve_send_attribute(zigpy_device_from_quirk, quirk):
         tuya_cluster.endpoint, "request", side_effect=async_success
     ) as m1:
 
-        status = await thermostat_cluster.write_attributes(
+        (status,) = await thermostat_cluster.write_attributes(
             {
                 "occupied_heating_setpoint": 2500,
             }
@@ -409,9 +411,11 @@ async def test_valve_send_attribute(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             command_id=0,
         )
-        assert status == (foundation.Status.SUCCESS,)
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
 
-        status = await thermostat_cluster.write_attributes(
+        (status,) = await thermostat_cluster.write_attributes(
             {
                 "system_mode": 0x00,
             }
@@ -423,9 +427,11 @@ async def test_valve_send_attribute(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             command_id=0,
         )
-        assert status == (foundation.Status.SUCCESS,)
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
 
-        status = await thermostat_cluster.write_attributes(
+        (status,) = await thermostat_cluster.write_attributes(
             {
                 "system_mode": 0x04,
             }
@@ -437,9 +443,11 @@ async def test_valve_send_attribute(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             command_id=0,
         )
-        assert status == (foundation.Status.SUCCESS,)
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
 
-        status = await thermostat_cluster.write_attributes(
+        (status,) = await thermostat_cluster.write_attributes(
             {
                 "programing_oper_mode": 0x01,
             }
@@ -451,12 +459,14 @@ async def test_valve_send_attribute(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             command_id=0,
         )
-        assert status == (foundation.Status.SUCCESS,)
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
 
         # simulate a target temp update so that relative changes can work
         hdr, args = tuya_cluster.deserialize(ZCL_TUYA_VALVE_TARGET_TEMP)
         tuya_cluster.handle_message(hdr, args)
-        status = await thermostat_cluster.command(0x0000, 0x00, 20)
+        _, status = await thermostat_cluster.command(0x0000, 0x00, 20)
         m1.assert_called_with(
             61184,
             5,
@@ -464,9 +474,9 @@ async def test_valve_send_attribute(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             command_id=0,
         )
-        assert status == (foundation.Status.SUCCESS,)
+        assert status == foundation.Status.SUCCESS
 
-        status = await thermostat_cluster.command(0x0002)
+        _, status = await thermostat_cluster.command(0x0002)
         assert status == foundation.Status.UNSUP_CLUSTER_COMMAND
 
 
@@ -666,7 +676,7 @@ async def test_moes(zigpy_device_from_quirk, quirk):
         tuya_cluster.endpoint, "request", side_effect=async_success
     ) as m1:
 
-        status = await thermostat_cluster.write_attributes(
+        (status,) = await thermostat_cluster.write_attributes(
             {
                 "occupied_heating_setpoint": 2500,
             }
@@ -678,9 +688,11 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             command_id=0,
         )
-        assert status == (foundation.Status.SUCCESS,)
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
 
-        status = await thermostat_cluster.write_attributes(
+        (status,) = await thermostat_cluster.write_attributes(
             {
                 "operation_preset": 0x00,
             }
@@ -692,9 +704,11 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             command_id=0,
         )
-        assert status == (foundation.Status.SUCCESS,)
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
 
-        status = await thermostat_cluster.write_attributes(
+        (status,) = await thermostat_cluster.write_attributes(
             {
                 "operation_preset": 0x02,
             }
@@ -706,12 +720,14 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             command_id=0,
         )
-        assert status == (foundation.Status.SUCCESS,)
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
 
         # simulate a target temp update so that relative changes can work
         hdr, args = tuya_cluster.deserialize(ZCL_TUYA_VALVE_TARGET_TEMP)
         tuya_cluster.handle_message(hdr, args)
-        status = await thermostat_cluster.command(0x0000, 0x00, 20)
+        _, status = await thermostat_cluster.command(0x0000, 0x00, 20)
         m1.assert_called_with(
             61184,
             4,
@@ -719,9 +735,9 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             command_id=0,
         )
-        assert status == (foundation.Status.SUCCESS,)
+        assert status == foundation.Status.SUCCESS
 
-        status = await onoff_cluster.write_attributes(
+        (status,) = await onoff_cluster.write_attributes(
             {
                 "on_off": 0x00,
                 "window_detection_timeout_minutes": 0x02,
@@ -735,9 +751,11 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             command_id=0,
         )
-        assert status == (foundation.Status.SUCCESS,)
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
 
-        status = await thermostat_cluster.write_attributes(
+        (status,) = await thermostat_cluster.write_attributes(
             {
                 "occupancy": 0x00,
             }
@@ -749,9 +767,11 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             command_id=0,
         )
-        assert status == (foundation.Status.SUCCESS,)
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
 
-        status = await thermostat_cluster.write_attributes(
+        (status,) = await thermostat_cluster.write_attributes(
             {
                 "occupancy": 0x01,
                 "programing_oper_mode": 0x00,
@@ -764,9 +784,11 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             command_id=0,
         )
-        assert status == (foundation.Status.SUCCESS,)
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
 
-        status = await thermostat_cluster.write_attributes(
+        (status,) = await thermostat_cluster.write_attributes(
             {
                 "programing_oper_mode": 0x01,
             }
@@ -778,9 +800,11 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             command_id=0,
         )
-        assert status == (foundation.Status.SUCCESS,)
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
 
-        status = await thermostat_cluster.write_attributes(
+        (status,) = await thermostat_cluster.write_attributes(
             {
                 "programing_oper_mode": 0x04,
             }
@@ -792,9 +816,11 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             command_id=0,
         )
-        assert status == (foundation.Status.SUCCESS,)
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
 
-        status = await thermostat_cluster.write_attributes(
+        (status,) = await thermostat_cluster.write_attributes(
             {
                 "workday_schedule_1_temperature": 1700,
             }
@@ -806,9 +832,11 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             command_id=0,
         )
-        assert status == (foundation.Status.SUCCESS,)
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
 
-        status = await thermostat_cluster.write_attributes(
+        (status,) = await thermostat_cluster.write_attributes(
             {
                 "workday_schedule_1_minute": 45,
             }
@@ -820,9 +848,11 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             command_id=0,
         )
-        assert status == (foundation.Status.SUCCESS,)
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
 
-        status = await thermostat_cluster.write_attributes(
+        (status,) = await thermostat_cluster.write_attributes(
             {
                 "workday_schedule_1_hour": 5,
             }
@@ -834,9 +864,11 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             command_id=0,
         )
-        assert status == (foundation.Status.SUCCESS,)
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
 
-        status = await thermostat_cluster.write_attributes(
+        (status,) = await thermostat_cluster.write_attributes(
             {
                 "weekend_schedule_1_temperature": 1700,
             }
@@ -848,9 +880,11 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             command_id=0,
         )
-        assert status == (foundation.Status.SUCCESS,)
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
 
-        status = await thermostat_cluster.write_attributes(
+        (status,) = await thermostat_cluster.write_attributes(
             {
                 "weekend_schedule_1_minute": 45,
             }
@@ -862,9 +896,11 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             command_id=0,
         )
-        assert status == (foundation.Status.SUCCESS,)
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
 
-        status = await thermostat_cluster.write_attributes(
+        (status,) = await thermostat_cluster.write_attributes(
             {
                 "weekend_schedule_1_hour": 5,
             }
@@ -876,9 +912,11 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             command_id=0,
         )
-        assert status == (foundation.Status.SUCCESS,)
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
 
-        status = await thermostat_cluster.write_attributes(
+        (status,) = await thermostat_cluster.write_attributes(
             {
                 "system_mode": 0x01,
             }
@@ -890,9 +928,11 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             command_id=0,
         )
-        assert status == (foundation.Status.SUCCESS,)
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
 
-        status = await thermostat_ui_cluster.write_attributes(
+        (status,) = await thermostat_ui_cluster.write_attributes(
             {
                 "auto_lock": 0x00,
             }
@@ -904,9 +944,11 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             command_id=0,
         )
-        assert status == (foundation.Status.SUCCESS,)
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
 
-        status = await onoff_cluster.command(0x0000)
+        _, status = await onoff_cluster.command(0x0000)
         m1.assert_called_with(
             61184,
             18,
@@ -914,9 +956,10 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             command_id=0,
         )
-        assert status == (foundation.Status.SUCCESS,)
+        assert status == foundation.Status.SUCCESS
 
-        status = await onoff_cluster.command(0x0001)
+        _, status = await onoff_cluster.command(0x0001)
+
         m1.assert_called_with(
             61184,
             19,
@@ -924,9 +967,9 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             command_id=0,
         )
-        assert status == (foundation.Status.SUCCESS,)
+        assert status == foundation.Status.SUCCESS
 
-        status = await onoff_cluster.command(0x0002)
+        _, status = await onoff_cluster.command(0x0002)
         m1.assert_called_with(
             61184,
             20,
@@ -934,15 +977,17 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             command_id=0,
         )
-        assert status == (foundation.Status.SUCCESS,)
+        assert status == foundation.Status.SUCCESS
 
-        status = await onoff_cluster.write_attributes({})
-        assert status == (foundation.Status.SUCCESS,)
+        (status,) = await onoff_cluster.write_attributes({})
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
 
-        status = await thermostat_cluster.command(0x0002)
+        _, status = await thermostat_cluster.command(0x0002)
         assert status == foundation.Status.UNSUP_CLUSTER_COMMAND
 
-        status = await onoff_cluster.command(0x0009)
+        _, status = await onoff_cluster.command(0x0009)
         assert status == foundation.Status.UNSUP_CLUSTER_COMMAND
 
         origdatetime = datetime.datetime
@@ -997,7 +1042,7 @@ async def test_eheat_send_attribute(zigpy_device_from_quirk, quirk):
         tuya_cluster.endpoint, "request", side_effect=async_success
     ) as m1:
 
-        status = await thermostat_cluster.write_attributes(
+        (status,) = await thermostat_cluster.write_attributes(
             {
                 "occupied_heating_setpoint": 2500,
             }
@@ -1009,9 +1054,11 @@ async def test_eheat_send_attribute(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             command_id=0,
         )
-        assert status == (foundation.Status.SUCCESS,)
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
 
-        status = await thermostat_cluster.write_attributes(
+        (status,) = await thermostat_cluster.write_attributes(
             {
                 "system_mode": 0x00,
             }
@@ -1023,9 +1070,11 @@ async def test_eheat_send_attribute(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             command_id=0,
         )
-        assert status == (foundation.Status.SUCCESS,)
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
 
-        status = await thermostat_cluster.write_attributes(
+        (status,) = await thermostat_cluster.write_attributes(
             {
                 "system_mode": 0x04,
             }
@@ -1037,12 +1086,14 @@ async def test_eheat_send_attribute(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             command_id=0,
         )
-        assert status == (foundation.Status.SUCCESS,)
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
 
         # simulate a target temp update so that relative changes can work
         hdr, args = tuya_cluster.deserialize(ZCL_TUYA_EHEAT_TARGET_TEMP)
         tuya_cluster.handle_message(hdr, args)
-        status = await thermostat_cluster.command(0x0000, 0x00, 20)
+        _, status = await thermostat_cluster.command(0x0000, 0x00, 20)
         m1.assert_called_with(
             61184,
             4,
@@ -1050,9 +1101,9 @@ async def test_eheat_send_attribute(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             command_id=0,
         )
-        assert status == (foundation.Status.SUCCESS,)
+        assert status == foundation.Status.SUCCESS
 
-        status = await thermostat_cluster.command(0x0002)
+        _, status = await thermostat_cluster.command(0x0002)
         assert status == foundation.Status.UNSUP_CLUSTER_COMMAND
 
 
