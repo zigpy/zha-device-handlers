@@ -8,7 +8,7 @@ from zigpy.zcl.clusters.general import AnalogInput, Basic, Identify, Ota
 from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
 from zigpy.zdo.types import NodeDescriptor
 
-from zhaquirks import Bus, LocalDataCluster, PowerConfigurationCluster
+from zhaquirks import LocalDataCluster, PowerConfigurationCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -18,7 +18,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.xiaomi import LUMI, TVOC_REPORTED, BasicCluster, XiaomiCustomDevice
+from zhaquirks.xiaomi import LUMI, BasicCluster, XiaomiCustomDevice
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -26,27 +26,9 @@ _LOGGER = logging.getLogger(__name__)
 class AnalogInputCluster(CustomCluster, AnalogInput):
     """Analog input cluster, relay tvoc to the correct cluster."""
 
-    cluster_id = AnalogInput.cluster_id
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-
-    async def bind(self):
-        """Bind cluster."""
-        result = await super().bind()
-        await super().configure_reporting(
-            0x0055,
-            10,
-            3600,
-            5,
-        )
-        return result
-
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
-        if value is not None and value >= 0:
-            self.endpoint.device.tvoc_bus.listener_event(TVOC_REPORTED, value)
+        self.endpoint.voc_level.update_attribute(value)
 
 
 class EmulatedTVOCMeasurement(LocalDataCluster):
@@ -60,23 +42,24 @@ class EmulatedTVOCMeasurement(LocalDataCluster):
         0x0000: ("measured_value", t.Single),
     }
 
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.tvoc_bus.add_listener(self)
+    async def bind(self):
+        """Bind cluster."""
+        result = await self.endpoint.analog_input.bind()
+        await self.endpoint.analog_input.configure_reporting(
+            0x0055,
+            10,
+            3600,
+            5,
+        )
+        return result
 
-    def tvoc_reported(self, value):
+    def update_attribute(self, value):
         """VOC reported."""
         self._update_attribute(0x0000, value)
 
 
 class TVOCMonitor(XiaomiCustomDevice):
     """Aqara LUMI lumi.airmonitor.acn01."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        self.tvoc_bus = Bus()
-        super().__init__(*args, **kwargs)
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=770
