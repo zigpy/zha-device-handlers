@@ -70,7 +70,7 @@ class LocalDataCluster(CustomCluster):
 
     async def _configure_reporting(self, *args, **kwargs):  # pylint: disable=W0221
         """Prevent remote configure reporting."""
-        return foundation.ConfigureReportingResponse.deserialize(b"\x00")[0]
+        return (foundation.ConfigureReportingResponse.deserialize(b"\x00")[0],)
 
     async def read_attributes_raw(self, attributes, manufacturer=None):
         """Prevent remote reads."""
@@ -98,7 +98,7 @@ class LocalDataCluster(CustomCluster):
                 self.error("%d is not a valid attribute id", attrid)
                 continue
             self._update_attribute(attrid, value)
-        return (foundation.Status.SUCCESS,)
+        return ([foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)],)
 
 
 class EventableCluster(CustomCluster):
