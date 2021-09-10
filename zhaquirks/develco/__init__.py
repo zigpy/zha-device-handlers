@@ -40,3 +40,15 @@ class DevelcoIasZone(CustomCluster, IasZone):
         0x0010: ("cie_addr", t.EUI64),
         0x0011: ("zone_id", t.uint8_t),
     }
+
+    server_commands = {
+        0x0000: ("status_change_notification", (t.uint16_t,), False),
+        0x0001: (
+            "zone_enroll_request",
+            (
+                t.enum16,
+                t.uint16_t,
+            ),
+            False,
+        ),
+    }
