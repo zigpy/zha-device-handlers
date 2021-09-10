@@ -1,5 +1,5 @@
 """Develco Heat Alarm."""
-
+import zigpy.profiles.zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
@@ -53,8 +53,8 @@ class HESZB120(CustomDevice):
                 OUTPUT_CLUSTERS: [],
             },
             35: {
-                PROFILE_ID: 260,
-                DEVICE_TYPE: 1026,
+                PROFILE_ID: zigpy.profiles.zha.PROFILE_ID,
+                DEVICE_TYPE: zigpy.profiles.zha.DeviceType.IAS_CONTROL,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
@@ -67,8 +67,8 @@ class HESZB120(CustomDevice):
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
             38: {
-                PROFILE_ID: 260,
-                DEVICE_TYPE: 770,
+                PROFILE_ID: zigpy.profiles.zha.PROFILE_ID,
+                DEVICE_TYPE: zigpy.profiles.zha.DeviceType.TEMPERATURE_SENSOR,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
@@ -92,8 +92,8 @@ class HESZB120(CustomDevice):
                 OUTPUT_CLUSTERS: [],
             },
             35: {
-                PROFILE_ID: 260,
-                DEVICE_TYPE: 1026,
+                PROFILE_ID: zigpy.profiles.zha.PROFILE_ID,
+                DEVICE_TYPE: zigpy.profiles.zha.DeviceType.IAS_CONTROL,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     DevelcoPowerConfiguration,
@@ -106,8 +106,8 @@ class HESZB120(CustomDevice):
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
             38: {
-                PROFILE_ID: 260,
-                DEVICE_TYPE: 770,
+                PROFILE_ID: zigpy.profiles.zha.PROFILE_ID,
+                DEVICE_TYPE: zigpy.profiles.zha.DeviceType.TEMPERATURE_SENSOR,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
