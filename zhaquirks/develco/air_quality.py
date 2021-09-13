@@ -79,7 +79,7 @@ class DevelcoVOCMeasurement(CustomCluster):
         )
 
 
-class DevelcoRelativeHumidity(RelativeHumidity):
+class DevelcoRelativeHumidity(CustomCluster, RelativeHumidity):
     """Handles invalid values for Humidity."""
 
     def _update_attribute(self, attrid, value):
@@ -93,7 +93,7 @@ class DevelcoRelativeHumidity(RelativeHumidity):
         )
 
 
-class DevelcoTemperatureMeasurement(TemperatureMeasurement):
+class DevelcoTemperatureMeasurement(CustomCluster, TemperatureMeasurement):
     """Handles invalid values for Temperature."""
 
     def _update_attribute(self, attrid, value):
