@@ -34,28 +34,34 @@ class AnalogInputCluster(CustomCluster, AnalogInput):
 class EmulatedTVOCMeasurement(LocalDataCluster):
     """TVOC measurement cluster to receive reports from the AnalogInput cluster."""
 
+    PRESENT_VALUE = 0x0055
+    ONE_HOUR = 3600
+    MIN_CHANGE = 5
+    TEN_SECONDS = 10
+    MEASURED_VALUE = 0x0000
+
     cluster_id = 0x042E
     name = "VOC Level"
     ep_attribute = "voc_level"
 
     attributes = {
-        0x0000: ("measured_value", t.Single),
+        MEASURED_VALUE: ("measured_value", t.Single),
     }
 
     async def bind(self):
         """Bind cluster."""
         result = await self.endpoint.analog_input.bind()
         await self.endpoint.analog_input.configure_reporting(
-            0x0055,
-            10,
-            3600,
-            5,
+            self.PRESENT_VALUE,
+            self.TEN_SECONDS,
+            self.ONE_HOUR,
+            self.MIN_CHANGE,
         )
         return result
 
     def update_attribute(self, value):
         """VOC reported."""
-        self._update_attribute(0x0000, value)
+        self._update_attribute(self.MEASURED_VALUE, value)
 
 
 class TVOCMonitor(XiaomiCustomDevice):
