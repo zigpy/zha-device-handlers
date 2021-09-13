@@ -82,7 +82,7 @@ class TuyaZemismartSmartCover0601(TuyaWindowCover):
         # output_clusters=[0x0019]
         # <SimpleDescriptor endpoint=1 profile=260 device_type=51 input_clusters=[0, 4, 5, 61184] output_clusters=[25]>
         MODELS_INFO: [
-            ("_TZE200_fzo2pocs", "TS0601"),			
+            ("_TZE200_fzo2pocs", "TS0601"),
             ("_TZE200_zpzndjez", "TS0601"),
             ("_TZE200_cowvfni3", "TS0601"),
         ],
@@ -230,7 +230,7 @@ class TuyaMoesCover0601(TuyaWindowCover):
             ("_TZE200_zah67ekd", "TS0601"),
             ("_TZE200_xuzcvlku", "TS0601"),
             ("_TZE200_rddyvrci", "TS0601"),
-	    ("_TZE200_nueqqe6k", "TS0601"),
+            ("_TZE200_nueqqe6k", "TS0601"),
             ("_TZE200_gubdgai2", "TS0601"),
         ],  # Not tested
         ENDPOINTS: {
@@ -264,21 +264,20 @@ class TuyaMoesCover0601(TuyaWindowCover):
         }
     }
 
+
 class TuyaCloneCover0601(TuyaWindowCover):
     """Tuya blind controller device."""
 
     signature = {
-        # <SimpleDescriptor endpoint=1 profile=260 device_type=256 device_version=0 
-                # input_clusters=[0, 3, 4, 5, 6] 
-                # output_clusters=[25]>
+        # <SimpleDescriptor endpoint=1 profile=260 device_type=256 device_version=0
+        # input_clusters=[0, 3, 4, 5, 6]
+        # output_clusters=[25]>
         # },
         # "manufacturer": "_TYST11_wmcdj3aq",
         # "model": "mcdj3aq",
         # "class": "zigpy.device.Device"
         # }
-        MODELS_INFO: [
-                ("_TYST11_wmcdj3aq", "mcdj3aq")
-                ],  # Not tested
+        MODELS_INFO: [("_TYST11_wmcdj3aq", "mcdj3aq")],  # Not tested
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
