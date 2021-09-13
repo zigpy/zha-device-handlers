@@ -235,6 +235,7 @@ class TuyaManufCluster(CustomCluster):
     cluster_id = TUYA_CLUSTER_ID
     ep_attribute = "tuya_manufacturer"
     set_time_offset = 0
+    set_time_local_offset = None
 
     class Command(t.Struct):
         """Tuya manufacturer cluster command."""
@@ -256,6 +257,7 @@ class TuyaManufCluster(CustomCluster):
             Zigbee payload is very similar to the UART payload which is described here: https://developer.tuya.com/en/docs/iot/device-development/access-mode-mcu/zigbee-general-solution/tuya-zigbee-module-uart-communication-protocol/tuya-zigbee-module-uart-communication-protocol?id=K9ear5khsqoty#title-10-Time%20synchronization
 
             Some devices need the timestamp in seconds from 1/1/1970 and others in seconds from 1/1/2000.
+            Also, there is devices which uses both timestamps variants (probably bug). Use set_time_local_offset var in this cases.
 
             NOTE: You need to wait for time request before setting it. You can't set time without request."""
 
@@ -306,7 +308,10 @@ class TuyaManufCluster(CustomCluster):
         )
         local_timestamp = int(
             (
-                datetime.datetime.now() - datetime.datetime(self.set_time_offset, 1, 1)
+                datetime.datetime.now()
+                - datetime.datetime(
+                    self.set_time_local_offset or self.set_time_offset, 1, 1
+                )
             ).total_seconds()
         )
         payload.extend(utc_timestamp.to_bytes(4, "big", signed=False))
