@@ -664,7 +664,7 @@ class MoesWindowDetection(LocalDataCluster, OnOff):
         records = self._write_attr_records(attributes)
 
         if not records:
-            return (foundation.Status.SUCCESS,)
+            return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
         has_change = False
         data = t.data24()
@@ -707,7 +707,14 @@ class MoesWindowDetection(LocalDataCluster, OnOff):
                 {MOES_WINDOW_DETECT_ATTR: data}, manufacturer=manufacturer
             )
 
-        return (foundation.Status.FAILURE,)
+        return [
+            [
+                foundation.WriteAttributesStatusRecord(
+                    foundation.Status.FAILURE, r.attrid
+                )
+                for r in records
+            ]
+        ]
 
     async def command(
         self,
@@ -736,12 +743,13 @@ class MoesWindowDetection(LocalDataCluster, OnOff):
                     return foundation.Status.FAILURE
                 value = not value
 
-            return await self.write_attributes(
+            (res,) = await self.write_attributes(
                 {"on_off": value},
                 manufacturer=manufacturer,
             )
+            return [command_id, res[0].status]
 
-        return foundation.Status.UNSUP_CLUSTER_COMMAND
+        return [command_id, foundation.Status.UNSUP_CLUSTER_COMMAND]
 
 
 ZONNSMART_CHILD_LOCK_ATTR = 0x0128  # [0] unlocked [1] child-locked

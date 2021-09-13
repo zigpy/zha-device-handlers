@@ -84,7 +84,7 @@ class TuyaSirenOnOff(LocalDataCluster, OnOff):
         """Switch event."""
         self._update_attribute(self.ATTR_ID, state)
 
-    def command(
+    async def command(
         self,
         command_id: Union[foundation.Command, int, t.uint8_t],
         *args,
@@ -95,11 +95,12 @@ class TuyaSirenOnOff(LocalDataCluster, OnOff):
         """Override the default command and defer to the alarm attribute."""
 
         if command_id in (0x0000, 0x0001):
-            return self.endpoint.tuya_manufacturer.write_attributes(
+            (res,) = await self.endpoint.tuya_manufacturer.write_attributes(
                 {TUYA_ALARM_ATTR: command_id}, manufacturer=manufacturer
             )
+            return [command_id, res[0].status]
 
-        return foundation.Status.UNSUP_CLUSTER_COMMAND
+        return [command_id, foundation.Status.UNSUP_CLUSTER_COMMAND]
 
 
 class TuyaTemperatureMeasurement(LocalDataCluster, TemperatureMeasurement):
