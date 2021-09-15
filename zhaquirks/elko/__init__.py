@@ -7,7 +7,6 @@ from zhaquirks import Bus, LocalDataCluster
 
 
 ELKO = "ELKO"
-MANUFACTURER = 0x1002  # 4098
 
 
 class ElkoThermostatCluster(CustomCluster, Thermostat):

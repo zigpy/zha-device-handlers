@@ -1,8 +1,6 @@
 """Module to handle quirks of the Elko Smart Super thermostat.
 
 """
-import logging
-
 import zigpy.types as t
 import zigpy.profiles.zha as zha_p
 
@@ -30,6 +28,7 @@ from zhaquirks.elko import (
     ElkoUserInterfaceCluster,
 )
 
+LOCAL_TEMP = 0x0000
 UNKNOWN_1 = 0x0401
 DISPLAY_TEXT = 0x0402
 ACTIVE_SENSOR = 0x0403
@@ -45,10 +44,10 @@ UNKNOWN_5 = 0x0412
 CHILD_LOCK = 0x0413
 PROTECTION_MAX_TEMP = 0x0414
 HEATING_ACTIVE = 0x0415
-UNKNOWN_7 = 0x0416
-UNKNOWN_8 = 0x0417
-UNKNOWN_9 = 0x0418
-UNKNOWN_A = 0x0419
+UNKNOWN_6 = 0x0416
+UNKNOWN_7 = 0x0417
+UNKNOWN_8 = 0x0418
+UNKNOWN_9 = 0x0419
 
 
 class ElkoSuperTRThermostatCluster(ElkoThermostatCluster):
@@ -57,9 +56,9 @@ class ElkoSuperTRThermostatCluster(ElkoThermostatCluster):
     class Sensor(t.enum8):
         """Working modes of the thermostat."""
 
-        Air = 0x00
-        Floor = 0x01
-        Protection = 0x03
+        AIR = 0x00
+        FLOOR = 0x01
+        PROTECTION = 0x03
 
     manufacturer_attributes = {
         UNKNOWN_1: ("unknown_1", t.uint16_t),
@@ -77,24 +76,75 @@ class ElkoSuperTRThermostatCluster(ElkoThermostatCluster):
         CHILD_LOCK: ("child_lock", t.Bool),
         PROTECTION_MAX_TEMP: ("protection_max_temp", t.uint8_t),
         HEATING_ACTIVE: ("heating_active", t.Bool),
-        UNKNOWN_7: ("unknown_7", t.LongOctetString),
-        UNKNOWN_8: ("unknown_8", t.int8s),
+        UNKNOWN_6: ("unknown_6", t.LongOctetString),
+        UNKNOWN_7: ("unknown_7", t.int8s),
+        UNKNOWN_8: ("unknown_8", t.uint8_t),
         UNKNOWN_9: ("unknown_9", t.uint8_t),
-        UNKNOWN_A: ("unknown_a", t.uint8_t),
     }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.active_sensor = None
+
+    def _read_attributes(self, args, manufacturer=None):
+        """Read attributes ZCL foundation command."""
+        if manufacturer is None and self._has_manuf_attr(args):
+            manufacturer = 0
+        return super()._read_attributes(args, manufacturer=manufacturer)
+
+    def _write_attributes(self, args, manufacturer=None):
+        """Write attribute ZCL foundation command."""
+        if manufacturer is None and self._has_manuf_attr([a.attrid for a in args]):
+            manufacturer = 0
+        return super()._write_attributes(args, manufacturer=manufacturer)
+
+    async def write_attributes(self, attributes, manufacturer=None):
+        """Override writes to thermostat attributes"""
+        if "system_mode" in attributes:
+            val = attributes.get("system_mode")
+            if val == Thermostat.SystemMode.Off:
+                device_on = 0
+            elif val == Thermostat.SystemMode.Auto:
+                device_on = 1
+                night_lowering = 1
+            elif val == Thermostat.SystemMode.Heat:
+                device_on = 1
+                night_lowering = 0
+            attributes["device_on"] = device_on
+            attributes["night_lowering"] = night_lowering
+
+        return await super().write_attributes(attributes, manufacturer=manufacturer)
+
     def _update_attribute(self, attrid, value):
-        super()._update_attribute(attrid, value)
         if attrid == HEATING_ACTIVE:
             self.endpoint.device.thermostat_bus.listener_event(
                 "heating_active_change", value
             )
         elif attrid == CHILD_LOCK:
             self.endpoint.device.ui_bus.listener_event("child_lock_change", value)
+        elif attrid == ACTIVE_SENSOR:
+            self.active_sensor = value
+        elif attrid == LOCAL_TEMP:
+            if (
+                self.active_sensor is not None
+                and self.active_sensor == self.Sensor.FLOOR
+            ):
+                # Ignore the air sensor reading if the floor sensor is selected
+                return
+        elif attrid == FLOOR_SENSOR_TEMPERATURE:
+            if (
+                self.active_sensor is not None
+                and self.active_sensor == self.Sensor.FLOOR
+            ):
+                attrid = LOCAL_TEMP
+
+        super()._update_attribute(attrid, value)
 
 
 class ElkoSuperTRThermostat(ElkoThermostat):
     """Elko thermostat custom device"""
+
+    manufacturer_id_override = 0
 
     signature = {
         MODELS_INFO: [(ELKO, "Super TR")],
