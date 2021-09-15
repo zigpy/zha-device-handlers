@@ -1,17 +1,8 @@
-"""Module to handle quirks of the Elko Smart Super thermostat.
-
-"""
-import zigpy.types as t
+"""Module to handle quirks of the Elko Smart Super thermostat."""
 import zigpy.profiles.zha as zha_p
-
+import zigpy.types as t
+from zigpy.zcl.clusters.general import Basic, Groups, Identify, Ota, Scenes
 from zigpy.zcl.clusters.hvac import Thermostat
-from zigpy.zcl.clusters.general import (
-    Basic,
-    Identify,
-    Groups,
-    Scenes,
-    Ota,
-)
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -83,6 +74,7 @@ class ElkoSuperTRThermostatCluster(ElkoThermostatCluster):
     }
 
     def __init__(self, *args, **kwargs):
+        """Init Elko thermostat."""
         super().__init__(*args, **kwargs)
         self.active_sensor = None
 
@@ -99,7 +91,7 @@ class ElkoSuperTRThermostatCluster(ElkoThermostatCluster):
         return super()._write_attributes(args, manufacturer=manufacturer)
 
     async def write_attributes(self, attributes, manufacturer=None):
-        """Override writes to thermostat attributes"""
+        """Override writes to thermostat attributes."""
         if "system_mode" in attributes:
             val = attributes.get("system_mode")
             if val == Thermostat.SystemMode.Off:
@@ -142,7 +134,7 @@ class ElkoSuperTRThermostatCluster(ElkoThermostatCluster):
 
 
 class ElkoSuperTRThermostat(ElkoThermostat):
-    """Elko thermostat custom device"""
+    """Elko thermostat custom device."""
 
     manufacturer_id_override = 0
 

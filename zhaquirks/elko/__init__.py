@@ -1,24 +1,23 @@
 """Module for Elko quirks implementations."""
-import logging
 
-from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
 from zigpy.quirks import CustomCluster, CustomDevice
-from zhaquirks import Bus, LocalDataCluster
+from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
 
+from zhaquirks import Bus, LocalDataCluster
 
 ELKO = "ELKO"
 
 
 class ElkoThermostatCluster(CustomCluster, Thermostat):
-    """Thermostat cluster for Elko Thermostats"""
+    """Thermostat cluster for Elko Thermostats."""
 
     def __init__(self, *args, **kwargs):
-        """Init thermostat cluster"""
+        """Init thermostat cluster."""
         super().__init__(*args, **kwargs)
         self.endpoint.device.thermostat_bus.add_listener(self)
 
     def heating_active_change(self, value):
-        """State update from device"""
+        """State update from device."""
         if value == 0:
             mode = self.RunningMode.Off
             state = self.RunningState.Idle
@@ -31,15 +30,15 @@ class ElkoThermostatCluster(CustomCluster, Thermostat):
 
 
 class ElkoUserInterfaceCluster(LocalDataCluster, UserInterface):
-    """User interface cluster for Elko Thermostats"""
+    """User interface cluster for Elko Thermostats."""
 
     def __init__(self, *args, **kwargs):
-        """Init UI cluster"""
+        """Init UI cluster."""
         super().__init__(*args, **kwargs)
         self.endpoint.device.ui_bus.add_listener(self)
 
     def child_lock_change(self, mode):
-        """Enable/disable child lock"""
+        """Enable/disable child lock."""
         if mode:
             lockout = self.KeypadLockout.Level_1_lockout
         else:
@@ -49,10 +48,10 @@ class ElkoUserInterfaceCluster(LocalDataCluster, UserInterface):
 
 
 class ElkoThermostat(CustomDevice):
-    """Generic Elko Thermostat device"""
+    """Generic Elko Thermostat device."""
 
     def __init__(self, *args, **kwargs):
-        """Init device"""
+        """Init device."""
         self.thermostat_bus = Bus()
         self.ui_bus = Bus()
         super().__init__(*args, **kwargs)
