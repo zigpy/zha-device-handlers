@@ -1,6 +1,6 @@
 """Tuya based touch switch."""
 from zigpy.profiles import zha
-from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time, Identify, OnOff
+from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
 
 from zhaquirks.const import (
     DEVICE_TYPE,
