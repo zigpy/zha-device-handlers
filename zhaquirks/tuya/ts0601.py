@@ -1,6 +1,6 @@
 """Tuya based touch switch."""
 from zigpy.profiles import zha
-from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time
+from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -260,6 +260,52 @@ class TuyaMoesCover0601(TuyaWindowCover):
                     TuyaWindowCoverControl,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            }
+        }
+    }
+
+
+class TuyaCloneCover0601(TuyaWindowCover):
+    """Tuya blind controller device."""
+
+    signature = {
+        # <SimpleDescriptor endpoint=1 profile=260 device_type=256 device_version=0
+        # input_clusters=[0, 3, 4, 5, 6]
+        # output_clusters=[25]>
+        # },
+        # "manufacturer": "_TYST11_wmcdj3aq",
+        # "model": "mcdj3aq",
+        # "class": "zigpy.device.Device"
+        # }
+        MODELS_INFO: [("_TYST11_wmcdj3aq", "mcdj3aq")],  # Not tested
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Ota.cluster_id],
+            }
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaManufacturerWindowCover,
+                    TuyaWindowCoverControl,
+                ],
+                OUTPUT_CLUSTERS: [Ota.cluster_id],
             }
         }
     }
