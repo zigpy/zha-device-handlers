@@ -1,4 +1,4 @@
-"""icasa KPD18S device."""
+"""icasa KPD14S device."""
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
@@ -19,10 +19,6 @@ from zhaquirks.const import (
     ARGS,
     BUTTON_1,
     BUTTON_2,
-    BUTTON_3,
-    BUTTON_4,
-    BUTTON_5,
-    BUTTON_6,
     CLUSTER_ID,
     COMMAND,
     COMMAND_MOVE_ON_OFF,
@@ -49,11 +45,11 @@ COMMAND_STORE = "store"
 COMMAND_RECALL = "recall"
 
 
-class IcasaKPD18S(CustomDevice):
-    """icasa KPD18S device (looks like a white label Sunricher)."""
+class IcasaKPD14S(CustomDevice):
+    """icasa KPD14S device (looks like a white label Sunricher)."""
 
     signature = {
-        MODELS_INFO: [("icasa", "ICZB-KPD18S")],
+        MODELS_INFO: [("icasa", "ICZB-KPD14S")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -148,30 +144,6 @@ class IcasaKPD18S(CustomDevice):
             CLUSTER_ID: 5,
             ARGS: [0, 2],
         },
-        (SHORT_PRESS, BUTTON_3): {
-            COMMAND: COMMAND_RECALL,
-            ENDPOINT_ID: 1,
-            CLUSTER_ID: 5,
-            ARGS: [0, 3],
-        },
-        (SHORT_PRESS, BUTTON_4): {
-            COMMAND: COMMAND_RECALL,
-            ENDPOINT_ID: 1,
-            CLUSTER_ID: 5,
-            ARGS: [0, 4],
-        },
-        (SHORT_PRESS, BUTTON_5): {
-            COMMAND: COMMAND_RECALL,
-            ENDPOINT_ID: 1,
-            CLUSTER_ID: 5,
-            ARGS: [0, 5],
-        },
-        (SHORT_PRESS, BUTTON_6): {
-            COMMAND: COMMAND_STORE,
-            ENDPOINT_ID: 1,
-            CLUSTER_ID: 5,
-            ARGS: [0, 6],
-        },
         (LONG_PRESS, BUTTON_1): {
             COMMAND: COMMAND_STORE,
             ENDPOINT_ID: 1,
@@ -183,29 +155,5 @@ class IcasaKPD18S(CustomDevice):
             ENDPOINT_ID: 1,
             CLUSTER_ID: 5,
             ARGS: [0, 2],
-        },
-        (LONG_PRESS, BUTTON_3): {
-            COMMAND: COMMAND_STORE,
-            ENDPOINT_ID: 1,
-            CLUSTER_ID: 5,
-            ARGS: [0, 3],
-        },
-        (LONG_PRESS, BUTTON_4): {
-            COMMAND: COMMAND_STORE,
-            ENDPOINT_ID: 1,
-            CLUSTER_ID: 5,
-            ARGS: [0, 4],
-        },
-        (LONG_PRESS, BUTTON_5): {
-            COMMAND: COMMAND_STORE,
-            ENDPOINT_ID: 1,
-            CLUSTER_ID: 5,
-            ARGS: [0, 5],
-        },
-        (LONG_PRESS, BUTTON_6): {
-            COMMAND: COMMAND_STORE,
-            ENDPOINT_ID: 1,
-            CLUSTER_ID: 5,
-            ARGS: [0, 6],
         },
     }
