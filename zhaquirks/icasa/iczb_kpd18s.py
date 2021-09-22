@@ -1,4 +1,6 @@
 """icasa KPD18S device."""
+from typing import Any, List, Optional, Union
+
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
@@ -15,6 +17,7 @@ from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.lightlink import LightLink
 
+from zhaquirks import LevelControlMoveArgumentsCache
 from zhaquirks.const import (
     ARGS,
     BUTTON_1,
@@ -94,7 +97,7 @@ class IcasaKPD18S(CustomDevice):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id,
+                    LevelControlMoveArgumentsCache,
                     Ota.cluster_id,
                     Color.cluster_id,
                     LightLink.cluster_id,
@@ -119,6 +122,7 @@ class IcasaKPD18S(CustomDevice):
             COMMAND: COMMAND_STOP,
             ENDPOINT_ID: 1,
             CLUSTER_ID: 8,
+            ARGS: [0, 50],
         },
         (SHORT_PRESS, TURN_OFF): {
             COMMAND: COMMAND_OFF,
@@ -135,6 +139,7 @@ class IcasaKPD18S(CustomDevice):
             COMMAND: COMMAND_STOP,
             ENDPOINT_ID: 1,
             CLUSTER_ID: 8,
+            ARGS: [1, 50],
         },
         (SHORT_PRESS, BUTTON_1): {
             COMMAND: COMMAND_RECALL,

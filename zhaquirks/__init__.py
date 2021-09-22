@@ -12,7 +12,7 @@ from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.util import ListenableMixin
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import PowerConfiguration
+from zigpy.zcl.clusters.general import LevelControl, PowerConfiguration
 from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zdo import types as zdotypes
@@ -22,6 +22,8 @@ from zhaquirks.const import (
     ATTRIBUTE_NAME,
     CLUSTER_COMMAND,
     COMMAND_ATTRIBUTE_UPDATED,
+    COMMAND_MOVE_ON_OFF,
+    COMMAND_STOP,
     CUSTOM_QUIRKS_PATH,
     DEVICE_TYPE,
     ENDPOINTS,
@@ -135,6 +137,37 @@ class EventableCluster(CustomCluster):
                 VALUE: value,
             },
         )
+
+
+class LevelControlMoveArgumentsCache(CustomCluster, LevelControl):
+    """Cluster to replace LevelControl that caches arguments received with the 'move_with_on_off' command.
+
+    Arguments cached with 'move_with_on_off' are emitted with the 'stop' command and then cleared. This behaviour is
+    out of spec but enables several remote controls to send long press release triggers.
+    """
+
+    def __init__(self, *args, **kwargs):
+        """Initialize instance."""
+        super().__init__(*args, **kwargs)
+        self._move_on_off_args = None
+
+    def handle_message(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: List[Any],
+        *,
+        dst_addressing: Optional[
+            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        ] = None,
+    ):
+        if hdr.frame_control.is_cluster:
+            cmd_name = self.server_commands.get(hdr.command_id, [hdr.command_id])[0]
+            if cmd_name == COMMAND_MOVE_ON_OFF:
+                self._move_on_off_args = args
+            elif cmd_name == COMMAND_STOP:
+                args = self._move_on_off_args
+                self._move_on_off_args = None
+        super().handle_message(hdr, args, dst_addressing=dst_addressing)
 
 
 class GroupBoundCluster(CustomCluster):
