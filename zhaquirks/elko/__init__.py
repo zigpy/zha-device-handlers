@@ -63,6 +63,7 @@ class ElkoElectricalMeasurementCluster(LocalDataCluster, ElectricalMeasurement):
         """Report consumption."""
         self._update_attribute(self.ACTIVE_POWER_ID, value)
 
+
 class ElkoThermostat(CustomDevice):
     """Generic Elko Thermostat device."""
 

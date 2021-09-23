@@ -14,10 +14,10 @@ from zhaquirks.const import (
 )
 from zhaquirks.elko import (
     ELKO,
+    ElkoElectricalMeasurementCluster,
     ElkoThermostat,
     ElkoThermostatCluster,
     ElkoUserInterfaceCluster,
-    ElkoElectricalMeasurementCluster,
 )
 
 LOCAL_TEMP = 0x0000
@@ -132,7 +132,7 @@ class ElkoSuperTRThermostatCluster(ElkoThermostatCluster):
                 attrid = LOCAL_TEMP
         elif attrid == POWER_CONSUMPTION:
             if value is not None and value >= 0:
-                self.endpoint.device.power_bus.listener_event("power_reported", value);
+                self.endpoint.device.power_bus.listener_event("power_reported", value)
 
         super()._update_attribute(attrid, value)
 
