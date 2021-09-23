@@ -52,7 +52,7 @@ class ElkoElectricalMeasurementCluster(LocalDataCluster, ElectricalMeasurement):
     """Electrical measurement cluster for Elko Thermostats."""
 
     cluster_id = ElectricalMeasurement.cluster_id
-    POWER_ID = 0x050B
+    ACTIVE_POWER_ID = 0x050B
 
     def __init__(self, *args, **kwargs):
         """Init electrical measurement cluster."""
@@ -61,7 +61,7 @@ class ElkoElectricalMeasurementCluster(LocalDataCluster, ElectricalMeasurement):
 
     def power_reported(self, value):
         """Report consumption."""
-        self._update_attribute(self.POWER_ID, value)
+        self._update_attribute(self.ACTIVE_POWER_ID, value)
 
 class ElkoThermostat(CustomDevice):
     """Generic Elko Thermostat device."""
