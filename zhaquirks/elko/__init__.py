@@ -1,8 +1,8 @@
 """Module for Elko quirks implementations."""
 
 from zigpy.quirks import CustomCluster, CustomDevice
-from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
+from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
 
 from zhaquirks import Bus, LocalDataCluster
 
