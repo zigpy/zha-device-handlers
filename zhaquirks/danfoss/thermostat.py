@@ -16,6 +16,7 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
+from zigpy.zcl import foundation
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -27,9 +28,16 @@ from zhaquirks.const import (
 )
 from zhaquirks.danfoss import DANFOSS
 
+COMMAND_SETPOINT_COMMAND = "setpoint_command"
+MANUFACTURER = 0x1246
+OCCUPIED_HEATING_SETPOINT_ATTR = 0x0012
 
 class DanfossThermostatCluster(CustomCluster, Thermostat):
     """Danfoss custom cluster."""
+
+    manufacturer_server_commands = {
+        0x40: ("setpoint_command", (t.enum8, t.int16s), False),
+    }
 
     manufacturer_attributes = {
         0x4000: ("etrv_open_windows_detection", t.enum8),
@@ -56,6 +64,31 @@ class DanfossThermostatCluster(CustomCluster, Thermostat):
         0xFFFD: ("cluster_revision", t.uint16_t),
     }
 
+    
+    async def write_attributes(self, attributes, manufacturer=None):
+    """Send SETPOINT_COMMAND after setpoint change"""
+
+        if "occupied_heating_setpoint" in attributes:
+            setpoint = foundation.ReadAttributeRecord(
+                OCCUPIED_HEATING_SETPOINT_ATTR, foundation.Status.SUCCESS, foundation.TypeValue()
+            )
+
+            cmd_payload = super().Command()
+            cmd_payload.status = 0
+            cmd_payload.tsn = self.endpoint.device.application.get_sequence()
+            cmd_payload.command_id = 0x40
+            cmd_payload.function = 0
+            cmd_payload.data = [1, setpoint]
+
+            await super().command(
+                COMMAND_SETPOINT_COMMAND,
+                cmd_payload,
+                manufacturer=MANUFACTURER,
+                expect_reply=True,
+                tsn=cmd_payload.tsn,
+            )
+
+        return super().write_attributes(attributes, manufacturer)
 
 class DanfossUserInterfaceCluster(CustomCluster, UserInterface):
     """Danfoss custom cluster."""
