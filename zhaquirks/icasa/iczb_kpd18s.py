@@ -1,5 +1,4 @@
 """icasa KPD18S device."""
-from typing import Any, List, Optional, Union
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
