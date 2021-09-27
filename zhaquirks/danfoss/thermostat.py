@@ -59,19 +59,19 @@ class DanfossThermostatCluster(CustomCluster, Thermostat):
         0x4051: ("window_open_feature_on_off", t.Bool),
         0xFFFD: ("cluster_revision", t.uint16_t),
     }
-    
+
     async def write_attributes(self, attributes, manufacturer=None):
-        """Send SETPOINT_COMMAND after setpoint change"""
+        """Send SETPOINT_COMMAND after setpoint change."""
 
         write_res = await super().write_attributes(attributes, manufacturer=manufacturer)
 
         if "occupied_heating_setpoint" in attributes:
-            self.debug("sending setpoint command: %s", attributes ["occupied_heating_setpoint"])
+            self.debug("sending setpoint command: %s", attributes["occupied_heating_setpoint"])
             await self.setpoint_command(0x01, attributes["occupied_heating_setpoint"], manufacturer=manufacturer)
 
         return write_res
 
-    
+
 class DanfossUserInterfaceCluster(CustomCluster, UserInterface):
     """Danfoss custom cluster."""
 
