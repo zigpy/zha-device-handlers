@@ -66,6 +66,7 @@ class DanfossThermostatCluster(CustomCluster, Thermostat):
         write_res = await super().write_attributes(attributes, manufacturer=manufacturer)
 
         if "occupied_heating_setpoint" in attributes:
+            self.debug("sending setpoint command: %s", attributes ["occupied_heating_setpoint"])
             await self.setpoint_command(0x01, attributes["occupied_heating_setpoint"], manufacturer=manufacturer)
 
         return write_res
