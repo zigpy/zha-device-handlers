@@ -16,7 +16,6 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
-from zigpy.zcl import foundation
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -28,9 +27,6 @@ from zhaquirks.const import (
 )
 from zhaquirks.danfoss import DANFOSS
 
-COMMAND_SETPOINT_COMMAND = "setpoint_command"
-MANUFACTURER = 0x1246
-OCCUPIED_HEATING_SETPOINT_ATTR = 0x0012
 
 class DanfossThermostatCluster(CustomCluster, Thermostat):
     """Danfoss custom cluster."""
@@ -63,7 +59,6 @@ class DanfossThermostatCluster(CustomCluster, Thermostat):
         0x4051: ("window_open_feature_on_off", t.Bool),
         0xFFFD: ("cluster_revision", t.uint16_t),
     }
-
     
     async def write_attributes(self, attributes, manufacturer=None):
     """Send SETPOINT_COMMAND after setpoint change"""
@@ -75,6 +70,7 @@ class DanfossThermostatCluster(CustomCluster, Thermostat):
 
         return write_res
 
+    
 class DanfossUserInterfaceCluster(CustomCluster, UserInterface):
     """Danfoss custom cluster."""
 
