@@ -61,7 +61,7 @@ class DanfossThermostatCluster(CustomCluster, Thermostat):
     }
     
     async def write_attributes(self, attributes, manufacturer=None):
-    """Send SETPOINT_COMMAND after setpoint change"""
+        """Send SETPOINT_COMMAND after setpoint change"""
 
         write_res = await super().write_attributes(attributes, manufacturer=manufacturer)
 
