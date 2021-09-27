@@ -68,27 +68,12 @@ class DanfossThermostatCluster(CustomCluster, Thermostat):
     async def write_attributes(self, attributes, manufacturer=None):
     """Send SETPOINT_COMMAND after setpoint change"""
 
+        write_res = await super().write_attributes(attributes, manufacturer=manufacturer)
+
         if "occupied_heating_setpoint" in attributes:
-            setpoint = foundation.ReadAttributeRecord(
-                OCCUPIED_HEATING_SETPOINT_ATTR, foundation.Status.SUCCESS, foundation.TypeValue()
-            )
+            await self.setpoint_command(0x01, attributes["occupied_heating_setpoint"], manufacturer=manufacturer)
 
-            cmd_payload = super().Command()
-            cmd_payload.status = 0
-            cmd_payload.tsn = self.endpoint.device.application.get_sequence()
-            cmd_payload.command_id = 0x40
-            cmd_payload.function = 0
-            cmd_payload.data = [1, setpoint]
-
-            await super().command(
-                COMMAND_SETPOINT_COMMAND,
-                cmd_payload,
-                manufacturer=MANUFACTURER,
-                expect_reply=True,
-                tsn=cmd_payload.tsn,
-            )
-
-        return super().write_attributes(attributes, manufacturer)
+        return write_res
 
 class DanfossUserInterfaceCluster(CustomCluster, UserInterface):
     """Danfoss custom cluster."""
