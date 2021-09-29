@@ -34,6 +34,14 @@ class MeteringCluster(CustomCluster, Metering):
     DIVISOR = 0x0302
     _CONSTANT_ATTRIBUTES = {MULTIPLIER: 1, DIVISOR: 1000}
 
+    def _update_attribute(self, attrid, value):
+        # divide values by 10 (issue #529)
+        if attrid == 0x0000:  # current_summ_delivered
+            value = value / 10
+        elif attrid == 0x0400:  # instantaneous_demand
+            value = value / 10
+        super()._update_attribute(attrid, value)
+
 
 class TemperatureMeasurementCluster(CustomCluster, TemperatureMeasurement):
     """Temperature cluster that divides value by 2."""
@@ -42,6 +50,7 @@ class TemperatureMeasurementCluster(CustomCluster, TemperatureMeasurement):
     ATTR_ID = 0
 
     def _update_attribute(self, attrid, value):
+        print("QUIORK 2")
         # divide values by 2
         if attrid == self.ATTR_ID:
             value = value / 2
