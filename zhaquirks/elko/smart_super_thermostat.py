@@ -14,6 +14,7 @@ from zhaquirks.const import (
 )
 from zhaquirks.elko import (
     ELKO,
+    ElkoElectricalMeasurementCluster,
     ElkoThermostat,
     ElkoThermostatCluster,
     ElkoUserInterfaceCluster,
@@ -129,6 +130,9 @@ class ElkoSuperTRThermostatCluster(ElkoThermostatCluster):
                 and self.active_sensor == self.Sensor.FLOOR
             ):
                 attrid = LOCAL_TEMP
+        elif attrid == POWER_CONSUMPTION:
+            if value is not None and value >= 0:
+                self.endpoint.device.power_bus.listener_event("power_reported", value)
 
         super()._update_attribute(attrid, value)
 
@@ -169,6 +173,7 @@ class ElkoSuperTRThermostat(ElkoThermostat):
                     Scenes.cluster_id,
                     ElkoSuperTRThermostatCluster,
                     ElkoUserInterfaceCluster,
+                    ElkoElectricalMeasurementCluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,

@@ -1,6 +1,7 @@
 """Module for Elko quirks implementations."""
 
 from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
 
 from zhaquirks import Bus, LocalDataCluster
@@ -47,6 +48,22 @@ class ElkoUserInterfaceCluster(LocalDataCluster, UserInterface):
         self._update_attribute(self.attridx["keypad_lockout"], lockout)
 
 
+class ElkoElectricalMeasurementCluster(LocalDataCluster, ElectricalMeasurement):
+    """Electrical measurement cluster for Elko Thermostats."""
+
+    cluster_id = ElectricalMeasurement.cluster_id
+    ACTIVE_POWER_ID = 0x050B
+
+    def __init__(self, *args, **kwargs):
+        """Init electrical measurement cluster."""
+        super().__init__(*args, **kwargs)
+        self.endpoint.device.power_bus.add_listener(self)
+
+    def power_reported(self, value):
+        """Report consumption."""
+        self._update_attribute(self.ACTIVE_POWER_ID, value)
+
+
 class ElkoThermostat(CustomDevice):
     """Generic Elko Thermostat device."""
 
@@ -54,4 +71,5 @@ class ElkoThermostat(CustomDevice):
         """Init device."""
         self.thermostat_bus = Bus()
         self.ui_bus = Bus()
+        self.power_bus = Bus()
         super().__init__(*args, **kwargs)
