@@ -50,7 +50,6 @@ class TemperatureMeasurementCluster(CustomCluster, TemperatureMeasurement):
     ATTR_ID = 0
 
     def _update_attribute(self, attrid, value):
-        print("QUIORK 2")
         # divide values by 2
         if attrid == self.ATTR_ID:
             value = value / 2
