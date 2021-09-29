@@ -3,7 +3,15 @@ from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl.clusters.closures import WindowCovering
-from zigpy.zcl.clusters.general import Basic, GreenPowerProxy, Groups, OnOff, Ota, Scenes, Time
+from zigpy.zcl.clusters.general import (
+    Basic,
+    GreenPowerProxy,
+    Groups,
+    OnOff,
+    Ota,
+    Scenes,
+    Time,
+)
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -186,6 +194,7 @@ class TuyaTS130FTO(CustomDevice):
             },
         },
     }
+
 
 class TuyaTS130GP(CustomDevice):
     """Tuya ZemiSmart smart curtain roller shutter with Green Power."""
