@@ -17,13 +17,6 @@ from zhaquirks.const import (
 from zhaquirks.tuya import TuyaZBOnOffRestorePowerCluster
 
 
-class OnOffRestorePowerCluster(CustomCluster, OnOff):
-    """Tuya on off cluster with restore state."""
-
-    attributes = OnOff.attributes.copy()
-    attributes.update({0x8002: ("power_on_state", PowerOnState)})
-
-
 class Plug(CustomDevice):
     """Tuya plug with restore power state support."""
 
