@@ -1,4 +1,4 @@
-"""Tuya plug."""
+"""Tuya TS0121 plug."""
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, Groups, OnOff, Ota, Scenes, Time
@@ -17,7 +17,7 @@ from zhaquirks.tuya import TuyaZBOnOffRestorePowerCluster
 
 
 class Plug(CustomDevice):
-    """Tuya plug with restore power state support."""
+    """Tuya TS0121 plug with restore power state support."""
 
     signature = {
         MODELS_INFO: [
