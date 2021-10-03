@@ -34,7 +34,7 @@ class TuyaZBElectricalMeasurement(CustomCluster, ElectricalMeasurement):
 
     def _update_attribute(self, attrid, value):
         if attrid == self.rms_current:
-            value = value / 100
+            value = value / 1000
         super()._update_attribute(attrid, value)        
 
 class PowerOnState(t.enum8):
