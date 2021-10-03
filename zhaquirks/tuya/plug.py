@@ -14,14 +14,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-
-
-class PowerOnState(t.enum8):
-    """Tuya power on state enum."""
-
-    Off = 0x00
-    On = 0x01
-    LastState = 0x02
+from zhaquirks.tuya import TuyaZBOnOffRestorePowerCluster
 
 
 class OnOffRestorePowerCluster(CustomCluster, OnOff):
@@ -68,7 +61,7 @@ class Plug(CustomDevice):
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    OnOffRestorePowerCluster,
+                    TuyaZBOnOffRestorePowerCluster,
                     Metering.cluster_id,
                     ElectricalMeasurement.cluster_id,
                 ],
