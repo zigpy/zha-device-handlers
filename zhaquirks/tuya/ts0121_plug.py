@@ -10,7 +10,7 @@ from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
-    MODELS,
+    MODEL,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
