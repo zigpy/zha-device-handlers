@@ -892,7 +892,7 @@ class SiterwellGS361_Type1(TuyaThermostat):
             ("_TYST11_zivfvd7h", "ivfvd7h"),
             ("_TYST11_hhrtiq0x", "hrtiq0x"),
             ("_TYST11_ps5v5jor", "s5v5jor"),
-            ("_TZE200_owwdxjbx", "wwdxjbx"),
+            ("_TYST11_owwdxjbx", "wwdxjbx"),
         ],
         ENDPOINTS: {
             1: {
