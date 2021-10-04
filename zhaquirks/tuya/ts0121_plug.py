@@ -1,7 +1,6 @@
 """Tuya TS0121 plug."""
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
-import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Groups, OnOff, Ota, Scenes, Time
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
