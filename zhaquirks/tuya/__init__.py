@@ -742,8 +742,7 @@ class TZBPowerOnState(t.enum8):
 class TuyaZBOnOffRestorePowerCluster(CustomCluster, OnOff):
     """Tuya on off Zigbee cluster with restore state."""
 
-    attributes = OnOff.attributes.copy()
-    attributes.update({0x8002: ("power_on_state", TZBPowerOnState)})
+    manufacturer_attributes = {0x8002: ("power_on_state", TZBPowerOnState)}
 
 
 # Tuya Window Cover Implementation
