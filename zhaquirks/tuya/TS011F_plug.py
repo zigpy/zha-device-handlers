@@ -22,6 +22,7 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
+from zhaquirks.tuya import TuyaZBOnOffRestorePowerCluster
 
 
 class TuyaZBMetering(CustomCluster, Metering):
@@ -38,21 +39,6 @@ class TuyaZBElectricalMeasurement(CustomCluster, ElectricalMeasurement):
     AC_VOLTAGE_MULTIPLIER = 0x0600
     AC_VOLTAGE_DIVISOR = 0x0601
     _CONSTANT_ATTRIBUTES = {AC_VOLTAGE_MULTIPLIER: 1, AC_VOLTAGE_DIVISOR: 1000}
-
-
-class PowerOnState(t.enum8):
-    """Tuya power on state enum."""
-
-    Off = 0x00
-    On = 0x01
-    LastState = 0x02
-
-
-class OnOffRestorePowerCluster(CustomCluster, OnOff):
-    """Tuya on off cluster with restore state."""
-
-    attributes = OnOff.attributes.copy()
-    attributes.update({0x8002: ("power_on_state", PowerOnState)})
 
 
 class Plug(CustomDevice):
@@ -103,7 +89,7 @@ class Plug(CustomDevice):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    OnOffRestorePowerCluster,
+                    TuyaZBOnOffRestorePowerCluster,
                     TuyaZBMetering,
                     TuyaZBElectricalMeasurement,
                     0xE000,  # Unknown
