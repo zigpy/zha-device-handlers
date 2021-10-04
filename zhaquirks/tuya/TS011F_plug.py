@@ -1,11 +1,5 @@
 """TS011F plug."""
-from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
-from zigpy.zcl.clusters.general import Basic, GreenPowerProxy, Groups, Identify, OnOff, Ota, Scenes, Time
-from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
-from zigpy.zcl.clusters.smartenergy import Metering
-
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -14,28 +8,37 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zigpy.profiles import zha
+from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.zcl.clusters.general import (
+    Basic,
+    GreenPowerProxy,
+    Groups,
+    Identify,
+    OnOff,
+    Ota,
+    Scenes,
+    Time,
+)
+from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
+from zigpy.zcl.clusters.smartenergy import Metering
+
 
 class TuyaZBMetering(CustomCluster, Metering):
     """TuyaZBMetering cluster implementation. This implementation divides the KwH for tuya devices"""
 
-    cluster_id = Metering.cluster_id
-    current_summ_delivered = 0x0000
+    MULTIPLIER = 0x0301
+    DIVISOR = 0x0302
+    _CONSTANT_ATTRIBUTES = {MULTIPLIER: 1, DIVISOR: 100}
 
-    def _update_attribute(self, attrid, value):
-        if attrid == self.current_summ_delivered:
-            value = value / 100
-        super()._update_attribute(attrid, value)
 
 class TuyaZBElectricalMeasurement(CustomCluster, ElectricalMeasurement):
     """TuyaZBElectricalMeasurement cluster implementation. This implementation divides the Current for tuya devices"""
 
-    cluster_id = ElectricalMeasurement.cluster_id
-    rms_current = 0x0508
+    AC_VOLTAGE_MULTIPLIER = 0x0600
+    AC_VOLTAGE_DIVISOR = 0x0601
+    _CONSTANT_ATTRIBUTES = {AC_VOLTAGE_MULTIPLIER: 1, AC_VOLTAGE_DIVISOR: 1000}
 
-    def _update_attribute(self, attrid, value):
-        if attrid == self.rms_current:
-            value = value / 1000
-        super()._update_attribute(attrid, value)        
 
 class PowerOnState(t.enum8):
     """Tuya power on state enum."""
