@@ -1,6 +1,7 @@
-"""Tuya TS0121 plug."""
+"""Tuya plug."""
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
+from zigpy.quirks import CustomCluster, CustomDevice
+import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Groups, OnOff, Ota, Scenes, Time
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
@@ -13,11 +14,25 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import TuyaZBOnOffRestorePowerCluster
+
+
+class PowerOnState(t.enum8):
+    """Tuya power on state enum."""
+
+    Off = 0x00
+    On = 0x01
+    LastState = 0x02
+
+
+class OnOffRestorePowerCluster(CustomCluster, OnOff):
+    """Tuya on off cluster with restore state."""
+
+    attributes = OnOff.attributes.copy()
+    attributes.update({0x8002: ("power_on_state", PowerOnState)})
 
 
 class Plug(CustomDevice):
-    """Tuya TS0121 plug with restore power state support."""
+    """Tuya plug with restore power state support."""
 
     signature = {
         MODELS_INFO: [
@@ -53,7 +68,7 @@ class Plug(CustomDevice):
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaZBOnOffRestorePowerCluster,
+                    OnOffRestorePowerCluster,
                     Metering.cluster_id,
                     ElectricalMeasurement.cluster_id,
                 ],
