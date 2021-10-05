@@ -10,7 +10,7 @@ from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
-    MODELS_INFO,
+    MODEL,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
@@ -35,10 +35,7 @@ class Plug(CustomDevice):
     """Tuya plug with restore power state support."""
 
     signature = {
-        MODELS_INFO: [
-            ("_TZ3000_g5xawfcq", "TS0121"),
-            ("_TZ3000_3ooaz3ng", "TS0121"),
-        ],
+        MODEL: "TS0121",
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=81
             # device_version=1
