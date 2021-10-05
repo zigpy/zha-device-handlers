@@ -26,7 +26,7 @@ from zhaquirks.tuya import TuyaZBOnOffRestorePowerCluster
 
 
 class TuyaZBMetering(CustomCluster, Metering):
-    """TuyaZBMetering cluster implementation. This implementation divides the KwH for tuya devices"""
+    """TuyaZBMetering implementation divides the KwH for tuya"""
 
     MULTIPLIER = 0x0301
     DIVISOR = 0x0302
@@ -34,7 +34,7 @@ class TuyaZBMetering(CustomCluster, Metering):
 
 
 class TuyaZBElectricalMeasurement(CustomCluster, ElectricalMeasurement):
-    """TuyaZBElectricalMeasurement cluster implementation. This implementation divides the Current for tuya devices"""
+    """TuyaZBElectricalMeasurement implementationdivides the Current for tuya"""
 
     AC_VOLTAGE_MULTIPLIER = 0x0600
     AC_VOLTAGE_DIVISOR = 0x0601
