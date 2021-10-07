@@ -18,7 +18,7 @@ from zhaquirks.tuya import TuyaZBOnOffRestorePowerCluster
 
 class TuyaMeteringCluster(CustomCluster, Metering):
     """TuyaMeteringCluster divides the kWh for tuya."""
-    
+
     MULTIPLIER = 0x0301
     DIVISOR = 0x0302
     _CONSTANT_ATTRIBUTES = {MULTIPLIER: 1, DIVISOR: 100}
