@@ -21,7 +21,7 @@ class TuyaMeteringCluster(CustomCluster, Metering):
     
     MULTIPLIER = 0x0301
     DIVISOR = 0x0302
-    _CONSTANT_ATTRIBUTES = {MULTIPLIER: 0.01, DIVISOR: 100}
+    _CONSTANT_ATTRIBUTES = {MULTIPLIER: 1, DIVISOR: 100}
 
 
 class Plug(CustomDevice):
