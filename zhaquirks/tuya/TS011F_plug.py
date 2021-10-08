@@ -25,7 +25,7 @@ from zigpy.zcl.clusters.smartenergy import Metering
 
 
 class TuyaZBMetering(CustomCluster, Metering):
-    """TuyaZBMetering implementation divides the KwH for tuya."""
+    """Divides the KwH for tuya."""
 
     MULTIPLIER = 0x0301
     DIVISOR = 0x0302
@@ -33,7 +33,7 @@ class TuyaZBMetering(CustomCluster, Metering):
 
 
 class TuyaZBElectricalMeasurement(CustomCluster, ElectricalMeasurement):
-    """TuyaZBElectricalMeasurement implementationdivides the Current for tuya."""
+    """Divides the Current for tuya."""
 
     AC_VOLTAGE_MULTIPLIER = 0x0600
     AC_VOLTAGE_DIVISOR = 0x0601
