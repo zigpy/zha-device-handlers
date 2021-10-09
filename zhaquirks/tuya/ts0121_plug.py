@@ -17,7 +17,7 @@ from zhaquirks.tuya import TuyaZBOnOffRestorePowerCluster
 
 
 class Plug(CustomDevice):
-    """Tuya TS0121 plug with restore power state support."""
+    """Tuya TS0121 plug with restore tuya power state support."""
 
     signature = {
         MODEL: "TS0121",
