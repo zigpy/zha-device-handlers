@@ -25,6 +25,9 @@ from zhaquirks.const import (
 )
 from zhaquirks.tuya import TuyaZBOnOffRestorePowerCluster
 
+TUYA_CLUSTER_ID0 = 0xE000  # decimal = 57344
+TUYA_CLUSTER_ID1 = 0xE001  # decimal = 57345
+
 
 class TuyaZBMetering(CustomCluster, Metering):
     """Divides the KwH for tuya."""
@@ -63,8 +66,8 @@ class Plug(CustomDevice):
                     OnOff.cluster_id,
                     Metering.cluster_id,
                     ElectricalMeasurement.cluster_id,
-                    0xE000,  # Unknown
-                    0xE001,  # Unknown
+                    TUYA_CLUSTER_ID0,
+                    TUYA_CLUSTER_ID1,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
@@ -93,8 +96,8 @@ class Plug(CustomDevice):
                     TuyaZBOnOffRestorePowerCluster,
                     TuyaZBMetering,
                     TuyaZBElectricalMeasurement,
-                    0xE000,  # Unknown
-                    0xE001,  # Unknown
+                    TUYA_CLUSTER_ID0,
+                    TUYA_CLUSTER_ID1,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
