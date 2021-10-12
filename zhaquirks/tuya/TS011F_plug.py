@@ -30,7 +30,7 @@ class TuyaClusterE000(CustomCluster):
     """Tuya manufacturer specific cluster 57344."""
 
     name = "Tuya Manufacturer Specific"
-    cluster_id = TUYA_CLUSTER_ID0
+    cluster_id = 0xE000
     ep_attribute = "tuya_is_pita_0"
 
 
@@ -38,7 +38,7 @@ class TuyaClusterE001(CustomCluster):
     """Tuya manufacturer specific cluster 57345."""
 
     name = "Tuya Manufacturer Specific"
-    cluster_id = TUYA_CLUSTER_ID1
+    cluster_id = 0xE001
     ep_attribute = "tuya_is_pita_1"
 
 
@@ -79,8 +79,8 @@ class Plug(CustomDevice):
                     OnOff.cluster_id,
                     Metering.cluster_id,
                     ElectricalMeasurement.cluster_id,
-                    0xE000,  # TuyaClusterE000
-                    0xE001,  # TuyaClusterE001
+                    TuyaClusterE000.cluster_id,
+                    TuyaClusterE000.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
