@@ -25,6 +25,9 @@ from zhaquirks.const import (
 )
 from zhaquirks.tuya import TuyaZBOnOffRestorePowerCluster
 
+TUYA_CLUSTER_ID0 = 0xE000  # decimal = 57344
+TUYA_CLUSTER_ID1 = 0xE001  # decimal = 57345
+
 
 class TuyaClusterE000(CustomCluster):
     """Tuya manufacturer specific cluster 57344."""
