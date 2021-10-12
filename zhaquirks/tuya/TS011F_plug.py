@@ -25,8 +25,21 @@ from zhaquirks.const import (
 )
 from zhaquirks.tuya import TuyaZBOnOffRestorePowerCluster
 
-TUYA_CLUSTER_ID0 = 0xE000  # decimal = 57344
-TUYA_CLUSTER_ID1 = 0xE001  # decimal = 57345
+
+class TuyaClusterE000(CustomCluster):
+    """Tuya manufacturer specific cluster 57344."""
+
+    name = "Tuya Manufacturer Specific"
+    cluster_id = TUYA_CLUSTER_ID0
+    ep_attribute = "tuya_is_pita_0"
+
+
+class TuyaClusterE001(CustomCluster):
+    """Tuya manufacturer specific cluster 57345."""
+
+    name = "Tuya Manufacturer Specific"
+    cluster_id = TUYA_CLUSTER_ID1
+    ep_attribute = "tuya_is_pita_1"
 
 
 class TuyaZBMetering(CustomCluster, Metering):
@@ -66,8 +79,8 @@ class Plug(CustomDevice):
                     OnOff.cluster_id,
                     Metering.cluster_id,
                     ElectricalMeasurement.cluster_id,
-                    TUYA_CLUSTER_ID0,
-                    TUYA_CLUSTER_ID1,
+                    0xE000, # TuyaClusterE000
+                    0xE001, # TuyaClusterE001
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
@@ -96,8 +109,8 @@ class Plug(CustomDevice):
                     TuyaZBOnOffRestorePowerCluster,
                     TuyaZBMetering,
                     TuyaZBElectricalMeasurement,
-                    TUYA_CLUSTER_ID0,
-                    TUYA_CLUSTER_ID1,
+                    TuyaClusterE000,
+                    TuyaClusterE001,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
