@@ -26,23 +26,6 @@ from zhaquirks.salus import COMPUTIME
 MODEL = "SP600"
 
 
-class MeteringCluster(CustomCluster, Metering):
-    """Fix multiplier and divisor."""
-
-    cluster_id = Metering.cluster_id
-    MULTIPLIER = 0x0301
-    DIVISOR = 0x0302
-    _CONSTANT_ATTRIBUTES = {MULTIPLIER: 1, DIVISOR: 1000}
-
-    def _update_attribute(self, attrid, value):
-        # divide values by 10 (issue #529)
-        if attrid == 0x0000:  # current_summ_delivered
-            value = value / 10
-        elif attrid == 0x0400:  # instantaneous_demand
-            value = value / 10
-        super()._update_attribute(attrid, value)
-
-
 class TemperatureMeasurementCluster(CustomCluster, TemperatureMeasurement):
     """Temperature cluster that divides value by 2."""
 
@@ -94,7 +77,7 @@ class SP600(CustomDevice):
                     Scenes.cluster_id,
                     OnOff.cluster_id,
                     TemperatureMeasurementCluster,
-                    MeteringCluster,
+                    Metering.cluster_id,
                     0xFC01,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
