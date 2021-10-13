@@ -23,9 +23,6 @@ from zhaquirks.const import (
 )
 from zhaquirks.salus import COMPUTIME
 
-MODEL = "SP600"
-
-
 class MeteringCluster(CustomCluster, Metering):
     """Fix multiplier and divisor."""
 
@@ -70,7 +67,53 @@ class SP600(CustomDevice):
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             }
         },
-        MODELS_INFO: [(COMPUTIME, MODEL)],
+        MODELS_INFO: [(COMPUTIME, "SP600")],
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            9: {
+                PROFILE_ID: 0x0104,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    TemperatureMeasurementCluster,
+                    MeteringCluster,
+                    0xFC01,
+                ],
+                OUTPUT_CLUSTERS: [Ota.cluster_id],
+            }
+        },
+    }
+    
+class SPE600(CustomDevice):
+    """Salus SPE600 smart plug."""
+
+    signature = {
+        ENDPOINTS: {
+            9: {
+                PROFILE_ID: 0x0104,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    TemperatureMeasurement.cluster_id,
+                    Metering.cluster_id,
+                    0xFC01,
+                ],
+                OUTPUT_CLUSTERS: [Ota.cluster_id],
+            }
+        },
+        MODELS_INFO: [(COMPUTIME, "SPE600")],
     }
 
     replacement = {
