@@ -50,6 +50,10 @@ class SP600(CustomDevice):
 
     signature = {
         ENDPOINTS: {
+            # <SimpleDescriptor endpoint=9, profile=260 device_type=81
+            # device_version=0
+            # input_clusters=[0, 1, 3, 4, 5, 6, 1026, 1794, 64513]
+            # output_clusters=[25]>
             9: {
                 PROFILE_ID: 0x0104,
                 DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
@@ -96,6 +100,10 @@ class SPE600(CustomDevice):
 
     signature = {
         ENDPOINTS: {
+            # <SimpleDescriptor endpoint=9, profile=260 device_type=81
+            # device_version=0
+            # input_clusters=[0, 1, 3, 4, 5, 6, 1026, 1794, 64513]
+            # output_clusters=[25]>
             9: {
                 PROFILE_ID: 0x0104,
                 DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
@@ -129,7 +137,7 @@ class SPE600(CustomDevice):
                     Scenes.cluster_id,
                     OnOff.cluster_id,
                     TemperatureMeasurementCluster,
-                    MeteringCluster,
+                    Metering.cluster_id,
                     0xFC01,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
