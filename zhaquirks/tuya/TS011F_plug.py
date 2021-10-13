@@ -79,8 +79,8 @@ class Plug(CustomDevice):
                     OnOff.cluster_id,
                     Metering.cluster_id,
                     ElectricalMeasurement.cluster_id,
-                    0xE000,  # 57344
-                    0xE001,  # 57345
+                    TuyaClusterE000.cluster_id,
+                    TuyaClusterE001.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
