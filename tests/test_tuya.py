@@ -28,7 +28,7 @@ import zhaquirks.tuya.motion
 import zhaquirks.tuya.siren
 import zhaquirks.tuya.ts0042
 import zhaquirks.tuya.ts0043
-import zhaquirks.tuya.valve
+import zhaquirks.tuya.ts0601_trv
 
 from tests.common import ClusterListener
 
@@ -334,7 +334,7 @@ async def test_siren_send_attribute(zigpy_device_from_quirk, quirk):
         assert status == foundation.Status.UNSUP_CLUSTER_COMMAND
 
 
-@pytest.mark.parametrize("quirk", (zhaquirks.tuya.valve.SiterwellGS361_Type1,))
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_trv.SiterwellGS361_Type1,))
 async def test_valve_state_report(zigpy_device_from_quirk, quirk):
     """Test thermostatic valves standard reporting from incoming commands."""
 
@@ -384,7 +384,7 @@ async def test_valve_state_report(zigpy_device_from_quirk, quirk):
     assert thermostat_listener.attribute_updates[12][1] == 0x01
 
 
-@pytest.mark.parametrize("quirk", (zhaquirks.tuya.valve.SiterwellGS361_Type1,))
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_trv.SiterwellGS361_Type1,))
 async def test_valve_send_attribute(zigpy_device_from_quirk, quirk):
     """Test thermostatic valve outgoing commands."""
 
@@ -480,7 +480,7 @@ async def test_valve_send_attribute(zigpy_device_from_quirk, quirk):
         assert status == foundation.Status.UNSUP_CLUSTER_COMMAND
 
 
-@pytest.mark.parametrize("quirk", (zhaquirks.tuya.valve.MoesHY368_Type1,))
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_trv.MoesHY368_Type1,))
 async def test_moes(zigpy_device_from_quirk, quirk):
     """Test thermostatic valve outgoing commands."""
 
