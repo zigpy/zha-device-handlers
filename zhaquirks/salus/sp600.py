@@ -23,6 +23,7 @@ from zhaquirks.const import (
 )
 from zhaquirks.salus import COMPUTIME
 
+
 class MeteringCluster(CustomCluster, Metering):
     """Fix multiplier and divisor."""
 
@@ -94,7 +95,8 @@ class SP600(CustomDevice):
             }
         },
     }
-    
+
+
 class SPE600(CustomDevice):
     """Salus SPE600 smart plug."""
 
