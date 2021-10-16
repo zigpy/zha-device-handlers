@@ -1077,6 +1077,7 @@ class ZonnsmartTV01_ZG(TuyaThermostat):
         #  output_clusters=[10, 25]>
         MODELS_INFO: [
             ("_TZE200_e9ba97vf", "TS0601"),
+            ("_TZE200_husqqvux", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
