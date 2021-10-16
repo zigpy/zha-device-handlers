@@ -24,15 +24,6 @@ from zhaquirks.const import (
 from zhaquirks.salus import COMPUTIME
 
 
-class MeteringCluster(CustomCluster, Metering):
-    """Fix multiplier and divisor."""
-
-    cluster_id = Metering.cluster_id
-    MULTIPLIER = 0x0301
-    DIVISOR = 0x0302
-    _CONSTANT_ATTRIBUTES = {MULTIPLIER: 1, DIVISOR: 1000}
-
-
 class TemperatureMeasurementCluster(CustomCluster, TemperatureMeasurement):
     """Temperature cluster that divides value by 2."""
 
@@ -88,7 +79,7 @@ class SP600(CustomDevice):
                     Scenes.cluster_id,
                     OnOff.cluster_id,
                     TemperatureMeasurementCluster,
-                    MeteringCluster,
+                    Metering.cluster_id,
                     0xFC01,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
