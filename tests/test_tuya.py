@@ -109,7 +109,7 @@ async def test_motion(zigpy_device_from_quirk, quirk):
     assert motion_listener.cluster_commands[1][2][0] == OFF
 
 
-@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_singleswitch.py.TuyaSingleSwitch,))
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_singleswitch.TuyaSingleSwitch,))
 async def test_singleswitch_state_report(zigpy_device_from_quirk, quirk):
     """Test tuya single switch."""
 
@@ -133,7 +133,7 @@ async def test_singleswitch_state_report(zigpy_device_from_quirk, quirk):
     assert switch_listener.attribute_updates[1][1] == OFF
 
 
-@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_singleswitch.py.TuyaSingleSwitch,))
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_singleswitch.TuyaSingleSwitch,))
 async def test_singleswitch_requests(zigpy_device_from_quirk, quirk):
     """Test tuya single switch."""
 
