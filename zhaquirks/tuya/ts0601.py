@@ -38,6 +38,7 @@ class TuyaSingleSwitch(TuyaSwitch):
             ("_TZE200_vhy3iakz", "TS0601"),
             ("_TZ3000_uim07oem", "TS0601"),
             ("_TZE200_tz32mtza", "TS0601"),
+            ("_TZE200_amp6tsvy", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
