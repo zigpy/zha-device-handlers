@@ -10,6 +10,8 @@ from zigpy.zcl import foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import LevelControl, OnOff, PowerConfiguration
 from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
+from zigpy.zcl.clusters.smartenergy import Metering
+
 
 from zhaquirks import Bus, EventableCluster, LocalDataCluster
 from zhaquirks.const import DOUBLE_PRESS, LONG_PRESS, SHORT_PRESS, ZHA_SEND_EVENT
@@ -744,6 +746,14 @@ class TuyaZBOnOffRestorePowerCluster(CustomCluster, OnOff):
 
     attributes = OnOff.attributes.copy()
     attributes.update({0x8002: ("power_on_state", TZBPowerOnState)})
+
+
+class TuyaZBMeteringCluster(CustomCluster, Metering):
+    """Divides the kWh for tuya."""
+
+    MULTIPLIER = 0x0301
+    DIVISOR = 0x0302
+    _CONSTANT_ATTRIBUTES = {MULTIPLIER: 1, DIVISOR: 100}
 
 
 # Tuya Window Cover Implementation

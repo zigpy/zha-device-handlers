@@ -1,6 +1,6 @@
 """Tuya TS0121 plug."""
 from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, Groups, OnOff, Ota, Scenes, Time
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
@@ -13,15 +13,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import TuyaZBOnOffRestorePowerCluster
-
-
-class TuyaMeteringCluster(CustomCluster, Metering):
-    """TuyaMeteringCluster divides the kWh for tuya."""
-
-    MULTIPLIER = 0x0301
-    DIVISOR = 0x0302
-    _CONSTANT_ATTRIBUTES = {MULTIPLIER: 1, DIVISOR: 100}
+from zhaquirks.tuya import TuyaZBMeteringCluster, TuyaZBOnOffRestorePowerCluster
 
 
 class Plug(CustomDevice):
@@ -59,7 +51,7 @@ class Plug(CustomDevice):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     TuyaZBOnOffRestorePowerCluster,
-                    TuyaMeteringCluster,
+                    TuyaZBMeteringCluster,
                     ElectricalMeasurement.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],

@@ -23,7 +23,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import TuyaZBOnOffRestorePowerCluster
+from zhaquirks.tuya import TuyaZBMeteringCluster, TuyaZBOnOffRestorePowerCluster
 
 
 class TuyaClusterE000(CustomCluster):
@@ -40,14 +40,6 @@ class TuyaClusterE001(CustomCluster):
     name = "Tuya Manufacturer Specific"
     cluster_id = 0xE001
     ep_attribute = "tuya_is_pita_1"
-
-
-class TuyaZBMetering(CustomCluster, Metering):
-    """Divides the KwH for tuya."""
-
-    MULTIPLIER = 0x0301
-    DIVISOR = 0x0302
-    _CONSTANT_ATTRIBUTES = {MULTIPLIER: 1, DIVISOR: 100}
 
 
 class TuyaZBElectricalMeasurement(CustomCluster, ElectricalMeasurement):
@@ -107,7 +99,7 @@ class Plug(CustomDevice):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     TuyaZBOnOffRestorePowerCluster,
-                    TuyaZBMetering,
+                    TuyaZBMeteringCluster,
                     TuyaZBElectricalMeasurement,
                     TuyaClusterE000,
                     TuyaClusterE001,
