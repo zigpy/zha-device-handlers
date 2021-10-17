@@ -3,19 +3,18 @@ import logging
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
-import zigpy.types as t
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
     Basic,
-    Identify,
     Groups,
-    OnOff,
+    Identify,
     LevelControl,
+    OnOff,
     Ota,
     Scenes,
 )
-from zigpy.zcl.clusters.lightlink import LightLink
 from zigpy.zcl.clusters.lighting import Color
-from zigpy.zcl import foundation
+from zigpy.zcl.clusters.lightlink import LightLink
 
 from zhaquirks import Bus, LocalDataCluster
 from zhaquirks.const import (
@@ -33,7 +32,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class TintRemoteScenesCluster(LocalDataCluster, Scenes):
-    """Tint remote cluster"""
+    """Tint remote cluster."""
 
     cluster_id = Scenes.cluster_id
 
@@ -44,11 +43,12 @@ class TintRemoteScenesCluster(LocalDataCluster, Scenes):
         self.endpoint.device.scene_bus.add_listener(self)
 
     def change_scene(self, value):
+        """Change scene attribute to new value."""
         self._update_attribute(self.attridx["current_scene"], value)
 
 
 class TintRemoteBasicCluster(CustomCluster, Basic):
-    """Tint remote cluster"""
+    """Tint remote cluster."""
 
     cluster_id = Basic.cluster_id
 
@@ -57,6 +57,7 @@ class TintRemoteBasicCluster(CustomCluster, Basic):
         super().__init__(*args, **kwargs)
 
     def handle_cluster_general_request(self, hdr, args, *, dst_addressing=None):
+        """Send write_attributes value to TintRemoteSceneCluster."""
         if hdr.command_id != foundation.Command.Write_Attributes:
             return
 
@@ -69,7 +70,7 @@ class TintRemoteBasicCluster(CustomCluster, Basic):
 
 
 class TintRemote(CustomDevice):
-    """Tint remote quirk"""
+    """Tint remote quirk."""
 
     def __init__(self, *args, **kwargs):
         """Init."""
