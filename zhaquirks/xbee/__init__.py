@@ -223,7 +223,6 @@ AT_COMMANDS = {
     "NR": t.Bool,
     "SI": None,
     "CB": uint8_t,
-    # "ND": uint16_t,  # "optional 2-Byte NI value"
     "DN": Bytes,  # "up to 20-Byte printable ASCII string"
     "IS": None,
     "1S": None,
