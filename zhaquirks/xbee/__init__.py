@@ -81,6 +81,12 @@ class uint8_t(uint_t):
     _size = 1
 
 
+class int16_t(int_t):
+    """Signed int 16 bit type."""
+
+    _size = 2
+
+
 class uint16_t(uint_t):
     """Unsigned int 16 bit type."""
 
@@ -194,7 +200,7 @@ AT_COMMANDS = {
     "RP": uint8_t,
     "%V": uint16_t,  # read only
     "V+": uint16_t,
-    "TP": uint16_t,
+    "TP": int16_t,
     "M0": uint16_t,  # 0 - 0x3FF
     "M1": uint16_t,  # 0 - 0x3FF
     # Diagnostics commands
