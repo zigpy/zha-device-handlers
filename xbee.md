@@ -109,7 +109,8 @@ automation:
 
 ## Raw AT Commands
 
-Like with UART, you can send remote AT commands with `zha.issue_zigbee_cluster_command` service. The response will be sent as `zha_event` event.
+Like with UART, you can send remote AT commands with `zha.issue_zigbee_cluster_command` service.
+If the command is unsuccessful, you will get an exception in the logs. If it is successful, the response will be available as `zha_event` event.
 
 You can check the AT-to-Command_ID mapping in Device info screen. Click on `Manage clusters`, then select XBeeRemoteATRequest cluster, and you would find the mapping in the `Cluster Commands` dropdown list.
 
