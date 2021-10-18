@@ -323,7 +323,7 @@ class XBeeRemoteATRequest(LocalDataCluster):
         """Execute a Remote AT Command and Return Response."""
         if hasattr(self._endpoint.device.application, "remote_at_command"):
             return self._endpoint.device.application.remote_at_command(
-                self._endpoint.device.application.nwk,
+                self._endpoint.device.nwk,
                 cmd_name,
                 *args,
                 apply_changes=apply_changes,
