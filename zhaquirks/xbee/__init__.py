@@ -331,6 +331,7 @@ class XBeeRemoteATRequest(LocalDataCluster):
     server_commands = {}
 
     def __init__(self, *args, **kwargs):
+        """Generate client_commands from AT_COMMANDS."""
         super().__init__(*args, **kwargs)
         self.client_commands = {
             k: (v[0], (v[1],), None)
@@ -522,6 +523,7 @@ class XBeeCommon(CustomDevice):
         client_commands = {}
 
         def __init__(self, *args, **kwargs):
+            """Generate server_commands from AT_COMMANDS."""
             super().__init__(*args, **kwargs)
             self.server_commands = {
                 k: (v[0].lower() + "_command_response", (str,), None)
