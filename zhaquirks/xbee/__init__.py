@@ -52,13 +52,17 @@ PIN_ANALOG_OUTPUT = 2
 
 
 class int_t(int):
+    """Signed int type."""
+
     _signed = True
 
     def serialize(self):
+        """Serialize int_t."""
         return self.to_bytes(self._size, "big", signed=self._signed)
 
     @classmethod
     def deserialize(cls, data):
+        """Deserialize int_t."""
         # Work around https://bugs.python.org/issue23640
         r = cls(int.from_bytes(data[: cls._size], "big", signed=cls._signed))
         data = data[cls._size :]
