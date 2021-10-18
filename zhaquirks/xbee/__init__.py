@@ -66,31 +66,45 @@ class int_t(int):
 
 
 class uint_t(int_t):
+    """Unsigned int type."""
+
     _signed = False
 
 
 class uint8_t(uint_t):
+    """Unsigned int 8 bit type."""
+
     _size = 1
 
 
 class uint16_t(uint_t):
+    """Unsigned int 16 bit type."""
+
     _size = 2
 
 
 class uint32_t(uint_t):
+    """Unsigned int 32 bit type."""
+
     _size = 4
 
 
 class uint64_t(uint_t):
+    """Unsigned int 64 bit type."""
+
     _size = 8
 
 
 class Bytes(bytes):
+    """Bytes serializable class."""
+
     def serialize(self):
+        """Serialize Bytes."""
         return self
 
     @classmethod
     def deserialize(cls, data):
+        """Deserialize Bytes."""
         return cls(data), b""
 
 
