@@ -105,7 +105,7 @@ class XBeeAnalogInput(LocalDataCluster, AnalogInput):
 class XBeePWM(LocalDataCluster, AnalogOutput):
     """XBee PWM Cluster."""
 
-    ep_id_2_pwm = {0xDA: "M0", 0xDB: "M1"}
+    _ep_id_2_pwm = {0xDA: "M0", 0xDB: "M1"}
 
     def __init__(self, endpoint, is_server=True):
         """Set known attributes and store them in cache."""
@@ -118,9 +118,14 @@ class XBeePWM(LocalDataCluster, AnalogOutput):
 
     async def write_attributes(self, attributes, manufacturer=None):
         """Intercept present_value attribute write."""
+        attr_id = None
         if ATTR_PRESENT_VALUE in attributes:
-            duty_cycle = int(round(float(attributes.pop(ATTR_PRESENT_VALUE))))
-            at_command = self.ep_id_2_pwm.get(self._endpoint.endpoint_id)
+            attr_id = ATTR_PRESENT_VALUE
+        elif "present_value" in attributes:
+            attr_id = "present_value"
+        if attr_id:
+            duty_cycle = int(round(float(attributes.pop(attr_id))))
+            at_command = self._ep_id_2_pwm.get(self._endpoint.endpoint_id)
             result = await self._endpoint.device.remote_at(at_command, duty_cycle)
             if result != foundation.Status.SUCCESS:
                 return result
@@ -136,8 +141,8 @@ class XBeePWM(LocalDataCluster, AnalogOutput):
 
     async def read_attributes_raw(self, attributes, manufacturer=None):
         """Intercept present_value attribute read."""
-        if ATTR_PRESENT_VALUE in attributes:
-            at_command = self.ep_id_2_pwm.get(self._endpoint.endpoint_id)
+        if ATTR_PRESENT_VALUE in attributes or "present_value" in attributes:
+            at_command = self._ep_id_2_pwm.get(self._endpoint.endpoint_id)
             result = await self._endpoint.device.remote_at(at_command)
             self._update_attribute(ATTR_PRESENT_VALUE, float(result))
         return await super().read_attributes_raw(attributes, manufacturer)
