@@ -261,11 +261,12 @@ class MoesManufCluster(TuyaManufClusterAttributes):
                 "battery_change", 5 if value else 100
             )
 
-# this is the class for the new moes TRV "_TZE200_b6wax7g0"
+
 class MoesManufClusterNew(MoesManufCluster):
+    """Manufacturer Specific Cluster for the new _TZE200_b6wax7g0 thermostatic valves."""
     DIRECT_MAPPED_ATTRS = {
         MOES_TEMPERATURE_ATTR: ("local_temp", lambda value: value * 10),
-        MOES_TARGET_TEMP_ATTR: ("occupied_heating_setpoint", lambda value: value * 100), #jms
+        MOES_TARGET_TEMP_ATTR: ("occupied_heating_setpoint", lambda value: value * 100),      # jms
         MOES_AWAY_TEMP_ATTR: ("unoccupied_heating_setpoint", lambda value: value * 100),
         MOES_COMFORT_TEMP_ATTR: ("comfort_heating_setpoint", lambda value: value * 100),
         MOES_ECO_TEMP_ATTR: ("eco_heating_setpoint", lambda value: value * 100),
@@ -288,7 +289,7 @@ class MoesManufClusterNew(MoesManufCluster):
         MOES_WEEK_FORMAT_ATTR: ("work_days", None),
         MOES_FORCE_VALVE_ATTR: ("valve_force_state", None),
     }
-            
+
 
 class MoesThermostat(TuyaThermostatCluster):
     """Thermostat cluster for some thermostatic valves."""
@@ -640,12 +641,13 @@ class MoesThermostat(TuyaThermostatCluster):
                 self.attridx["weekend_schedule_6_temperature"], value[0] * 100
             )
 
-# this is the class for the new moes TRV "_TZE200_b6wax7g0"
+
 class MoesThermostatNew(MoesThermostat):
+    """Thermostat cluster for the new _TZE200_b6wax7g0 thermostatic valve."""
     DIRECT_MAPPING_ATTRS = {
         "occupied_heating_setpoint": (
             MOES_TARGET_TEMP_ATTR,
-            lambda value: round(value / 100),  #jms
+            lambda value: round(value / 100),  # jms
         ),
         "unoccupied_heating_setpoint": (
             MOES_AWAY_TEMP_ATTR,
@@ -674,7 +676,7 @@ class MoesThermostatNew(MoesThermostat):
         "valve_force_state": (MOES_FORCE_VALVE_ATTR, None),
         "unoccupied_duration_days": (MOES_AWAY_DAYS_ATTR, None),
     }
-            
+
 
 class MoesUserInterface(TuyaUserInterfaceCluster):
     """HVAC User interface cluster for tuya electric heating thermostats."""
@@ -1087,6 +1089,7 @@ class MoesHY368_Type1(TuyaThermostat):
             }
         }
     }
+
 
 # for Moes TRV _TZE200_b6wax7g0
 class MoesHY368_Type1new(TuyaThermostat):
