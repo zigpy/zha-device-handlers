@@ -41,15 +41,201 @@ DIO_PIN_HIGH = 0x05
 DIO_PIN_LOW = 0x04
 ON_OFF_CMD = 0x0000
 XBEE_DATA_CLUSTER = 0x11
-XBEE_DST_ENDPOINT = 0xE8
+XBEE_AT_REQUEST_CLUSTER = 0x21
+XBEE_AT_ENDPOINT = 0xE6
+XBEE_DATA_ENDPOINT = 0xE8
 XBEE_IO_CLUSTER = 0x92
 XBEE_PROFILE_ID = 0xC105
-XBEE_REMOTE_AT = 0x17
-XBEE_SRC_ENDPOINT = 0xE8
 ATTR_ON_OFF = 0x0000
 ATTR_PRESENT_VALUE = 0x0055
 PIN_ANALOG_OUTPUT = 2
 
+
+class int_t(int):
+    """Signed int type."""
+
+    _signed = True
+
+    def serialize(self):
+        """Serialize int_t."""
+        return self.to_bytes(self._size, "big", signed=self._signed)
+
+    @classmethod
+    def deserialize(cls, data):
+        """Deserialize int_t."""
+        # Work around https://bugs.python.org/issue23640
+        r = cls(int.from_bytes(data[: cls._size], "big", signed=cls._signed))
+        data = data[cls._size :]
+        return r, data
+
+
+class uint_t(int_t):
+    """Unsigned int type."""
+
+    _signed = False
+
+
+class uint8_t(uint_t):
+    """Unsigned int 8 bit type."""
+
+    _size = 1
+
+
+class int16_t(int_t):
+    """Signed int 16 bit type."""
+
+    _size = 2
+
+
+class uint16_t(uint_t):
+    """Unsigned int 16 bit type."""
+
+    _size = 2
+
+
+class uint32_t(uint_t):
+    """Unsigned int 32 bit type."""
+
+    _size = 4
+
+
+class uint64_t(uint_t):
+    """Unsigned int 64 bit type."""
+
+    _size = 8
+
+
+class Bytes(bytes):
+    """Bytes serializable class."""
+
+    def serialize(self):
+        """Serialize Bytes."""
+        return self
+
+    @classmethod
+    def deserialize(cls, data):
+        """Deserialize Bytes."""
+        return cls(data), b""
+
+
+# https://github.com/zigpy/zigpy-xbee/blob/dev/zigpy_xbee/api.py
+AT_COMMANDS = {
+    # Addressing commands
+    "DH": uint32_t,
+    "DL": uint32_t,
+    "MY": uint16_t,
+    "MP": uint16_t,
+    "NC": uint32_t,  # 0 - MAX_CHILDREN.
+    "SH": uint32_t,
+    "SL": uint32_t,
+    "NI": Bytes,  # 20 byte printable ascii string
+    # "SE": uint8_t,
+    # "DE": uint8_t,
+    # "CI": uint16_t,
+    "TO": uint8_t,
+    "NP": uint16_t,
+    "DD": uint32_t,
+    "CR": uint8_t,  # 0 - 0x3F
+    # Networking commands
+    "CH": uint8_t,  # 0x0B - 0x1A
+    "DA": None,  # no param
+    # "ID": uint64_t,
+    "OP": uint64_t,
+    "NH": uint8_t,
+    "BH": uint8_t,  # 0 - 0x1E
+    "OI": uint16_t,
+    "NT": uint8_t,  # 0x20 - 0xFF
+    "NO": uint8_t,  # bitfield, 0 - 3
+    "SC": uint16_t,  # 1 - 0xFFFF
+    "SD": uint8_t,  # 0 - 7
+    # "ZS": uint8_t,  # 0 - 2
+    "NJ": uint8_t,
+    "JV": t.Bool,
+    "NW": uint16_t,  # 0 - 0x64FF
+    "JN": t.Bool,
+    "AR": uint8_t,
+    "DJ": t.Bool,  # WTF, docs
+    "II": uint16_t,
+    # Security commands
+    # "EE": t.Bool,
+    # "EO": uint8_t,
+    # "NK": Bytes,  # 128-bit value
+    # "KY": Bytes,  # 128-bit value
+    # RF interfacing commands
+    "PL": uint8_t,  # 0 - 4 (basically an Enum)
+    "PM": t.Bool,
+    "DB": uint8_t,
+    "PP": uint8_t,  # RO
+    "AP": uint8_t,  # 1-2 (an Enum)
+    "AO": uint8_t,  # 0 - 3 (an Enum)
+    "BD": uint8_t,  # 0 - 7 (an Enum)
+    "NB": uint8_t,  # 0 - 3 (an Enum)
+    "SB": uint8_t,  # 0 - 1 (an Enum)
+    "RO": uint8_t,
+    "D6": uint8_t,  # 0 - 5 (an Enum)
+    "D7": uint8_t,  # 0 - 7 (an Enum)
+    "P3": uint8_t,  # 0 - 5 (an Enum)
+    "P4": uint8_t,  # 0 - 5 (an Enum)
+    # I/O commands
+    "IR": uint16_t,
+    "IC": uint16_t,
+    "D0": uint8_t,  # 0 - 5 (an Enum)
+    "D1": uint8_t,  # 0 - 5 (an Enum)
+    "D2": uint8_t,  # 0 - 5 (an Enum)
+    "D3": uint8_t,  # 0 - 5 (an Enum)
+    "D4": uint8_t,  # 0 - 5 (an Enum)
+    "D5": uint8_t,  # 0 - 5 (an Enum)
+    "D8": uint8_t,  # 0 - 5 (an Enum)
+    "D9": uint8_t,  # 0 - 5 (an Enum)
+    "P0": uint8_t,  # 0 - 5 (an Enum)
+    "P1": uint8_t,  # 0 - 5 (an Enum)
+    "P2": uint8_t,  # 0 - 5 (an Enum)
+    "P5": uint8_t,  # 0 - 5 (an Enum)
+    "P6": uint8_t,  # 0 - 5 (an Enum)
+    "P7": uint8_t,  # 0 - 5 (an Enum)
+    "P8": uint8_t,  # 0 - 5 (an Enum)
+    "P9": uint8_t,  # 0 - 5 (an Enum)
+    "LT": uint8_t,
+    "PR": uint16_t,
+    "RP": uint8_t,
+    "%V": uint16_t,  # read only
+    "V+": uint16_t,
+    "TP": int16_t,
+    "M0": uint16_t,  # 0 - 0x3FF
+    "M1": uint16_t,  # 0 - 0x3FF
+    # Diagnostics commands
+    "VR": uint16_t,
+    "HV": uint16_t,
+    "AI": uint8_t,
+    # AT command options
+    "CT": uint16_t,  # 2 - 0x028F
+    "CN": None,
+    "GT": uint16_t,
+    "CC": uint8_t,
+    # Sleep commands
+    "SM": uint8_t,
+    "SN": uint16_t,
+    "SP": uint16_t,
+    "ST": uint16_t,
+    "SO": uint8_t,
+    "WH": uint16_t,
+    "SI": None,
+    "PO": uint16_t,  # 0 - 0x3E8
+    # Execution commands
+    "AC": None,
+    "WR": None,
+    "RE": None,
+    "FR": None,
+    "NR": t.Bool,
+    "SI": None,
+    "CB": uint8_t,
+    "DN": Bytes,  # "up to 20-Byte printable ASCII string"
+    "IS": None,
+    "1S": None,
+    "AS": None,
+    # Stuff I've guessed
+    # "CE": uint8_t,
+}
 
 # 4 AO lines
 # 10 digital
@@ -148,16 +334,68 @@ class XBeePWM(LocalDataCluster, AnalogOutput):
         return await super().read_attributes_raw(attributes, manufacturer)
 
 
+class XBeeRemoteATRequest(LocalDataCluster):
+    """Remote AT Command Request Cluster."""
+
+    cluster_id = XBEE_AT_REQUEST_CLUSTER
+    server_commands = {}
+
+    def __init__(self, *args, **kwargs):
+        """Generate client_commands from AT_COMMANDS."""
+        super().__init__(*args, **kwargs)
+        self.client_commands = {
+            k: (v[0], (v[1],), None)
+            for k, v in zip(range(1, len(AT_COMMANDS) + 1), AT_COMMANDS.items())
+        }
+
+    def remote_at_command(self, cmd_name, *args, apply_changes=True, **kwargs):
+        """Execute a Remote AT Command and Return Response."""
+        if hasattr(self._endpoint.device.application, "remote_at_command"):
+            return self._endpoint.device.application.remote_at_command(
+                self._endpoint.device.nwk,
+                cmd_name,
+                *args,
+                apply_changes=apply_changes,
+                encryption=False,
+                **kwargs,
+            )
+        _LOGGER.warning("Remote At Command not supported by this coordinator")
+
+    async def command(
+        self, command_id, *args, manufacturer=None, expect_reply=False, tsn=None
+    ):
+        """Handle AT request."""
+        command = self.client_commands[command_id][0]
+        try:
+            value = args[0]
+            if isinstance(value, dict):
+                value = None
+        except IndexError:
+            value = None
+
+        if value:
+            value = await self.remote_at_command(command, value)
+        else:
+            value = await self.remote_at_command(command)
+
+        tsn = self._endpoint.device.application.get_sequence()
+        hdr = foundation.ZCLHeader.cluster(tsn, command_id)
+        self._endpoint.device.endpoints[232].out_clusters[
+            LevelControl.cluster_id
+        ].handle_cluster_request(hdr, value)
+        return 0, foundation.Status.SUCCESS
+
+
 class XBeeCommon(CustomDevice):
     """XBee common class."""
 
     def remote_at(self, command, *args, **kwargs):
         """Remote at command."""
-        if hasattr(self._application, "remote_at_command"):
-            return self._application.remote_at_command(
-                self.nwk, command, *args, apply_changes=True, encryption=False, **kwargs
-            )
-        _LOGGER.warning("Remote At Command not supported by this coordinator")
+        return (
+            self.endpoints[230]
+            .out_clusters[XBEE_AT_REQUEST_CLUSTER]
+            .remote_at_command(command, *args, apply_changes=True, **kwargs)
+        )
 
     def deserialize(self, endpoint_id, cluster_id, data):
         """Deserialize."""
@@ -293,7 +531,15 @@ class XBeeCommon(CustomDevice):
 
         attributes = {}
         client_commands = {}
-        server_commands = {0x0000: ("receive_data", (str,), None)}
+
+        def __init__(self, *args, **kwargs):
+            """Generate server_commands from AT_COMMANDS."""
+            super().__init__(*args, **kwargs)
+            self.server_commands = {
+                k: (v[0].lower() + "_command_response", (str,), None)
+                for k, v in zip(range(1, len(AT_COMMANDS) + 1), AT_COMMANDS.items())
+            }
+            self.server_commands[0x0000] = ("receive_data", (str,), None)
 
     class SerialDataCluster(LocalDataCluster):
         """Serial Data Cluster for the XBee."""
@@ -323,8 +569,8 @@ class XBeeCommon(CustomDevice):
                 self._endpoint.device,
                 XBEE_PROFILE_ID,
                 XBEE_DATA_CLUSTER,
-                XBEE_SRC_ENDPOINT,
-                XBEE_DST_ENDPOINT,
+                XBEE_DATA_ENDPOINT,
+                XBEE_DATA_ENDPOINT,
                 self._endpoint.device.application.get_sequence(),
                 data,
                 expect_reply=False,
@@ -353,10 +599,14 @@ class XBeeCommon(CustomDevice):
 
     replacement = {
         ENDPOINTS: {
+            230: {
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [XBeeRemoteATRequest],
+            },
             232: {
                 INPUT_CLUSTERS: [DigitalIOCluster, SerialDataCluster],
                 OUTPUT_CLUSTERS: [SerialDataCluster, EventRelayCluster],
-            }
+            },
         },
         "manufacturer": "Digi",
     }

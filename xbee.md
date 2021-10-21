@@ -106,3 +106,42 @@ automation:
         command_type: server
         args: Assistant
 ```
+
+## Raw AT Commands
+
+Like with UART, you can send remote AT commands with `zha.issue_zigbee_cluster_command` service.
+If the command is unsuccessful, you will get an exception in the logs. If it is successful, the response will be available as `zha_event` event.
+
+You can check the AT-to-Command_ID mapping in Device info screen. Click on `Manage clusters`, then select XBeeRemoteATRequest cluster, and you would find the mapping in the `Cluster Commands` dropdown list.
+
+Here is an example for the temperature sensor of an XBee Pro, you can get its value with TP command:
+```
+template:
+  - trigger:
+    - platform: event
+      event_type: zha_event
+      event_data:
+        device_ieee: 00:13:a2:00:41:98:23:f9
+        command: tp_command_response
+    sensor:
+      - name: "XBee Temperature"
+        state: '{{ trigger.event.data.args }}'
+        unit_of_measurement: "°C"
+        device_class: temperature
+        state_class: measurement
+
+automation:
+  - alias: Update XBee Temperature
+    trigger:
+      platform: time_pattern
+      minutes: "/5"
+    action:
+      service: zha.issue_zigbee_cluster_command
+      data:
+        ieee: 00:13:a2:00:41:98:23:f9
+        endpoint_id: 230
+        command: 0x43
+        command_type: server
+        cluster_type: out
+        cluster_id: 33
+```
