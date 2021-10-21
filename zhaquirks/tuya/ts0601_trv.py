@@ -264,6 +264,7 @@ class MoesManufCluster(TuyaManufClusterAttributes):
 
 class MoesManufClusterNew(MoesManufCluster):
     """Manufacturer Specific Cluster for the new _TZE200_b6wax7g0 thermostatic valves."""
+
     DIRECT_MAPPED_ATTRS = {
         MOES_TEMPERATURE_ATTR: ("local_temp", lambda value: value * 10),
         MOES_TARGET_TEMP_ATTR: ("occupied_heating_setpoint", lambda value: value * 100),      # jms
@@ -644,6 +645,7 @@ class MoesThermostat(TuyaThermostatCluster):
 
 class MoesThermostatNew(MoesThermostat):
     """Thermostat cluster for the new _TZE200_b6wax7g0 thermostatic valve."""
+
     DIRECT_MAPPING_ATTRS = {
         "occupied_heating_setpoint": (
             MOES_TARGET_TEMP_ATTR,
