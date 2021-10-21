@@ -348,24 +348,32 @@ class XBeeRemoteATRequest(LocalDataCluster):
     _seq: int = 1
 
     class EUI64(t.EUI64):
+        """EUI64 serializable class."""
+
         @classmethod
         def deserialize(cls, data):
+            """Deserialize EUI64."""
             r, data = super().deserialize(data)
             return cls(r[::-1]), data
 
         def serialize(self):
+            """Serialize EUI64."""
             assert self._length == len(self)
             return super().serialize()[::-1]
 
     class NWK(int):
+        """Network address serializable class."""
+
         _signed = False
         _size = 2
 
         def serialize(self):
+            """Serialize NWK."""
             return self.to_bytes(self._size, "big", signed=self._signed)
 
         @classmethod
         def deserialize(cls, data):
+            """Deserialize NWK."""
             r = cls(int.from_bytes(data[: cls._size], "big", signed=cls._signed))
             data = data[cls._size :]
             return r, data
@@ -489,6 +497,8 @@ class XBeeRemoteATResponse(LocalDataCluster):
     _awaiting = {}
 
     class ATCommandResult(enum.IntEnum):
+        """AT command results."""
+
         OK = 0
         ERROR = 1
         INVALID_COMMAND = 2
@@ -496,8 +506,11 @@ class XBeeRemoteATResponse(LocalDataCluster):
         TX_FAILURE = 4
 
     class ATCommand(Bytes):
+        """AT command serializable class."""
+
         @classmethod
         def deserialize(cls, data):
+            """Deserialize ATCommand."""
             return cls(data[:2]), data[2:]
 
     def save_at_request(self, frame_id, future):
