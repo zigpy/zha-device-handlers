@@ -3,7 +3,7 @@ import logging
 
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
-from zigpy.zcl.clusters.general import Scenes
+from zigpy.zcl.clusters.general import Scenes, PowerConfiguration
 from zigpy.zcl.clusters.lightlink import LightLink
 
 _LOGGER = logging.getLogger(__name__)
@@ -46,3 +46,99 @@ class ScenesCluster(CustomCluster, Scenes):
         0x0008: ("hold", (t.int16s, t.int8s), False),
         0x0009: ("release", (t.int16s,), False),
     }
+
+
+class PowerConfiguration2AACluster(CustomCluster, PowerConfiguration):
+    """PowerConfiguration cluster implementation.
+    This implementation doubles battery pct remaining for non standard devices
+    that don't follow the reporting spec and fixing 2 AA."""
+
+    cluster_id = PowerConfiguration.cluster_id
+    BATTERY_PERCENTAGE_REMAINING = 0x0021
+    BATTERY_SIZES = 0x0031
+    BATTERY_QUANTITY = 0x0033
+    BATTERY_RATED_VOLTAGE = 0x0034
+
+    _CONSTANT_ATTRIBUTES = {
+        BATTERY_SIZES: 3,
+        BATTERY_RATED_VOLTAGE: 15,
+        BATTERY_QUANTITY: 2,
+    }
+
+    def _update_attribute(self, attrid, value):
+        if attrid == self.BATTERY_PERCENTAGE_REMAINING:
+            value = value * 2
+        super()._update_attribute(attrid, value)
+
+
+class PowerConfiguration2CRCluster(CustomCluster, PowerConfiguration):
+    """PowerConfiguration cluster implementation.
+    This implementation doubles battery pct remaining for non standard devices
+    that don't follow the reporting spec and fixing 2 CR."""
+
+    cluster_id = PowerConfiguration.cluster_id
+    BATTERY_PERCENTAGE_REMAINING = 0x0021
+    BATTERY_SIZES = 0x0031
+    BATTERY_QUANTITY = 0x0033
+    BATTERY_RATED_VOLTAGE = 0x0034
+
+    _CONSTANT_ATTRIBUTES = {
+        BATTERY_SIZES: 10,
+        BATTERY_RATED_VOLTAGE: 30,
+        BATTERY_QUANTITY: 2,
+    }
+
+    def _update_attribute(self, attrid, value):
+        if attrid == self.BATTERY_PERCENTAGE_REMAINING:
+            value = value * 2
+        super()._update_attribute(attrid, value)
+
+
+class PowerConfiguration1CRCluster(CustomCluster, PowerConfiguration):
+    """PowerConfiguration cluster implementation.
+    This implementation doubles battery pct remaining for non standard devices
+    that don't follow the reporting spec and fixing 1 CR."""
+
+    cluster_id = PowerConfiguration.cluster_id
+    BATTERY_PERCENTAGE_REMAINING = 0x0021
+    BATTERY_SIZES = 0x0031
+    BATTERY_QUANTITY = 0x0033
+    BATTERY_RATED_VOLTAGE = 0x0034
+
+    _CONSTANT_ATTRIBUTES = {
+        BATTERY_SIZES: 10,
+        BATTERY_RATED_VOLTAGE: 30,
+        BATTERY_QUANTITY: 1,
+    }
+
+    def _update_attribute(self, attrid, value):
+        if attrid == self.BATTERY_PERCENTAGE_REMAINING:
+            value = value * 2
+        super()._update_attribute(attrid, value)
+
+
+class PowerConfiguration1CRXCluster(CustomCluster, PowerConfiguration):
+    """PowerConfiguration cluster implementation.
+    This implementation doubles battery pct remaining for non standard devices
+    that don't follow the reporting spec and fixing 1 CR and BV."""
+
+    cluster_id = PowerConfiguration.cluster_id
+    BATTERY_VOLTAGE = 0x0020
+    BATTERY_PERCENTAGE_REMAINING = 0x0021
+    BATTERY_SIZES = 0x0031
+    BATTERY_QUANTITY = 0x0033
+    BATTERY_RATED_VOLTAGE = 0x0034
+
+    _CONSTANT_ATTRIBUTES = {
+        BATTERY_SIZES: 10,
+        BATTERY_VOLTAGE: 0,
+        BATTERY_RATED_VOLTAGE: 30,
+        BATTERY_SIZES: 10,
+        BATTERY_QUANTITY: 1,
+        BATTERY_RATED_VOLTAGE: 30,
+    }
+
+    def _update_attribute(self, attrid, value):
+        if attrid == self.BATTERY_PERCENTAGE_REMAINING:
+            value = value * 2
+        super()._update_attribute(attrid, value)
