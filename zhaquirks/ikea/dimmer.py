@@ -11,9 +11,8 @@ from zigpy.zcl.clusters.general import (
     PollControl,
     PowerConfiguration,
 )
-from zigpy.zcl.clusters.lightlink import LightLink
+from zigpy.zcl.clusters.lightlink import LightLink, PowerConfiguration1CRXCluster
 
-from zhaquirks import DoublingPowerConfigurationCluster
 from zhaquirks.const import (
     ARGS,
     CLUSTER_ID,
@@ -71,7 +70,7 @@ class IkeaDimmer(CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.NON_COLOR_CONTROLLER,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    DoublingPowerConfigurationCluster,
+                    PowerConfiguration1CRXCluster,
                     Identify.cluster_id,
                     PollControl.cluster_id,
                     LightLink.cluster_id,
