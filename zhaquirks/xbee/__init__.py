@@ -287,10 +287,9 @@ class XBeeOnOff(LocalDataCluster, OnOff):
             pin_cmd = DIO_PIN_LOW
         else:
             pin_cmd = DIO_PIN_HIGH
-        result = await self._endpoint.device.remote_at(pin_name, pin_cmd)
-        if result == foundation.Status.SUCCESS:
-            self._update_attribute(ATTR_ON_OFF, command_id)
-        return 0, result
+        await self._endpoint.device.remote_at(pin_name, pin_cmd)
+        self._update_attribute(ATTR_ON_OFF, command_id)
+        return 0, foundation.Status.SUCCESS
 
 
 class XBeeAnalogInput(LocalDataCluster, AnalogInput):
