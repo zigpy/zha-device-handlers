@@ -321,18 +321,12 @@ class XBeePWM(LocalDataCluster, AnalogOutput):
         elif "present_value" in attributes:
             attr_id = "present_value"
         if attr_id:
-            duty_cycle = int(round(float(attributes.pop(attr_id))))
+            duty_cycle = int(round(float(attributes[attr_id])))
             at_command = self._ep_id_2_pwm.get(self._endpoint.endpoint_id)
-            result = await self._endpoint.device.remote_at(at_command, duty_cycle)
-            if result != foundation.Status.SUCCESS:
-                return result
+            await self._endpoint.device.remote_at(at_command, duty_cycle)
 
             at_command = ENDPOINT_TO_AT.get(self._endpoint.endpoint_id)
-            result = await self._endpoint.device.remote_at(
-                at_command, PIN_ANALOG_OUTPUT
-            )
-            if result != foundation.Status.SUCCESS or not attributes:
-                return result
+            await self._endpoint.device.remote_at(at_command, PIN_ANALOG_OUTPUT)
 
         return await super().write_attributes(attributes, manufacturer)
 
