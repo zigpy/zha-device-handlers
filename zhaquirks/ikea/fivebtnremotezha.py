@@ -42,7 +42,12 @@ from zhaquirks.const import (
     SHORT_PRESS,
     TURN_ON,
 )
-from zhaquirks.ikea import IKEA, LightLinkCluster, ScenesCluster, PowerConfiguration1CRCluster
+from zhaquirks.ikea import (
+    IKEA,
+    LightLinkCluster,
+    ScenesCluster,
+    PowerConfiguration1CRCluster,
+)
 
 IKEA_CLUSTER_ID = 0xFC7C  # decimal = 64636
 
