@@ -40,7 +40,7 @@ from zhaquirks.const import (
     TURN_OFF,
     TURN_ON,
 )
-from zhaquirks.ikea import IKEA, ScenesCluster, PowerConfiguration2AAACluster
+from zhaquirks.ikea import IKEA, PowerConfiguration2AAACluster, ScenesCluster
 
 WWAH_CLUSTER_ID = 0xFC57  # decimal = 64599
 
