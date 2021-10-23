@@ -3,7 +3,7 @@ import logging
 
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
-from zigpy.zcl.clusters.general import Scenes, PowerConfiguration
+from zigpy.zcl.clusters.general import PowerConfiguration, Scenes
 from zigpy.zcl.clusters.lightlink import LightLink
 
 _LOGGER = logging.getLogger(__name__)
@@ -51,7 +51,8 @@ class ScenesCluster(CustomCluster, Scenes):
 class PowerConfiguration2AAACluster(CustomCluster, PowerConfiguration):
     """PowerConfiguration cluster implementation.
     This implementation doubles battery pct remaining for non standard devices
-    that don't follow the reporting spec and fixing 2 AAA."""
+    that don't follow the reporting spec and fixing 2 AAA.
+    """
 
     cluster_id = PowerConfiguration.cluster_id
     BATTERY_PERCENTAGE_REMAINING = 0x0021
@@ -74,7 +75,8 @@ class PowerConfiguration2AAACluster(CustomCluster, PowerConfiguration):
 class PowerConfiguration2CRCluster(CustomCluster, PowerConfiguration):
     """PowerConfiguration cluster implementation.
     This implementation doubles battery pct remaining for non standard devices
-    that don't follow the reporting spec and fixing 2 CR."""
+    that don't follow the reporting spec and fixing 2 CR.
+    """
 
     cluster_id = PowerConfiguration.cluster_id
     BATTERY_PERCENTAGE_REMAINING = 0x0021
@@ -97,7 +99,8 @@ class PowerConfiguration2CRCluster(CustomCluster, PowerConfiguration):
 class PowerConfiguration1CRCluster(CustomCluster, PowerConfiguration):
     """PowerConfiguration cluster implementation.
     This implementation doubles battery pct remaining for non standard devices
-    that don't follow the reporting spec and fixing 1 CR."""
+    that don't follow the reporting spec and fixing 1 CR.
+    """
 
     cluster_id = PowerConfiguration.cluster_id
     BATTERY_PERCENTAGE_REMAINING = 0x0021
@@ -120,7 +123,8 @@ class PowerConfiguration1CRCluster(CustomCluster, PowerConfiguration):
 class PowerConfiguration1CRXCluster(CustomCluster, PowerConfiguration):
     """PowerConfiguration cluster implementation.
     This implementation doubles battery pct remaining for non standard devices
-    that don't follow the reporting spec and fixing 1 CR and BV."""
+    that don't follow the reporting spec and fixing 1 CR and BV.
+    """
 
     cluster_id = PowerConfiguration.cluster_id
     BATTERY_VOLTAGE = 0x0020
