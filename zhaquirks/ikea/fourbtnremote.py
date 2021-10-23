@@ -40,7 +40,7 @@ from zhaquirks.const import (
     TURN_OFF,
     TURN_ON,
 )
-from zhaquirks.ikea import IKEA, ScenesCluster, PowerConfiguration2AACluster
+from zhaquirks.ikea import IKEA, ScenesCluster, PowerConfiguration2AAACluster
 
 WWAH_CLUSTER_ID = 0xFC57  # decimal = 64599
 
@@ -84,7 +84,7 @@ class IkeaTradfriRemote(CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.NON_COLOR_CONTROLLER,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    PowerConfiguration2AACluster,
+                    PowerConfiguration2AAACluster,
                     Identify.cluster_id,
                     PollControl.cluster_id,
                     LightLink.cluster_id,
