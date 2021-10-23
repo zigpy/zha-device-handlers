@@ -25,6 +25,7 @@ from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
     AnalogInput,
     AnalogOutput,
+    Basic,
     BinaryInput,
     LevelControl,
     OnOff,
@@ -260,6 +261,16 @@ ENDPOINT_TO_AT = {
     0xDD: "P3",
     0xDE: "P4",
 }
+
+
+class XBeeBasic(LocalDataCluster, Basic):
+    """XBee Basic Cluster."""
+
+    def __init__(self, endpoint, is_server=True):
+        """Set default values and store them in cache."""
+        super().__init__(endpoint, is_server)
+        self._update_attribute(0x0000, 0x02)  # ZCLVersion
+        self._update_attribute(0x0007, self.PowerSource.Unknown)  # PowerSource
 
 
 class XBeeOnOff(LocalDataCluster, OnOff):
@@ -604,7 +615,7 @@ class XBeeCommon(CustomDevice):
                 OUTPUT_CLUSTERS: [XBeeRemoteATRequest],
             },
             232: {
-                INPUT_CLUSTERS: [DigitalIOCluster, SerialDataCluster],
+                INPUT_CLUSTERS: [DigitalIOCluster, SerialDataCluster, XBeeBasic],
                 OUTPUT_CLUSTERS: [SerialDataCluster, EventRelayCluster],
             },
         },
