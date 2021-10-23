@@ -50,6 +50,7 @@ class ScenesCluster(CustomCluster, Scenes):
 
 class PowerConfiguration2AAACluster(CustomCluster, PowerConfiguration):
     """PowerConfiguration cluster implementation.
+
     This implementation doubles battery pct remaining for non standard devices
     that don't follow the reporting spec and fixing 2 AAA.
     """
@@ -74,6 +75,7 @@ class PowerConfiguration2AAACluster(CustomCluster, PowerConfiguration):
 
 class PowerConfiguration2CRCluster(CustomCluster, PowerConfiguration):
     """PowerConfiguration cluster implementation.
+
     This implementation doubles battery pct remaining for non standard devices
     that don't follow the reporting spec and fixing 2 CR.
     """
@@ -98,6 +100,7 @@ class PowerConfiguration2CRCluster(CustomCluster, PowerConfiguration):
 
 class PowerConfiguration1CRCluster(CustomCluster, PowerConfiguration):
     """PowerConfiguration cluster implementation.
+
     This implementation doubles battery pct remaining for non standard devices
     that don't follow the reporting spec and fixing 1 CR.
     """
@@ -122,6 +125,7 @@ class PowerConfiguration1CRCluster(CustomCluster, PowerConfiguration):
 
 class PowerConfiguration1CRXCluster(CustomCluster, PowerConfiguration):
     """PowerConfiguration cluster implementation.
+
     This implementation doubles battery pct remaining for non standard devices
     that don't follow the reporting spec and fixing 1 CR and BV.
     """
