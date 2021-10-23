@@ -5,6 +5,7 @@ from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Scenes
 from zigpy.zcl.clusters.lightlink import LightLink
+
 from zhaquirks import DoublingPowerConfigurationCluster
 
 _LOGGER = logging.getLogger(__name__)
