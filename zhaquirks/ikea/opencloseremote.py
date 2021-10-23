@@ -19,7 +19,6 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.lightlink import LightLink
 
-from zhaquirks import DoublingPowerConfigurationCluster
 from zhaquirks.const import (
     ARGS,
     CLOSE,
@@ -36,7 +35,7 @@ from zhaquirks.const import (
     SHORT_PRESS,
     ZHA_SEND_EVENT,
 )
-from zhaquirks.ikea import IKEA
+from zhaquirks.ikea import IKEA, PowerConfiguration1CRCluster
 
 COMMAND_CLOSE = "down_close"
 COMMAND_STOP_OPENING = "stop_opening"
@@ -122,7 +121,7 @@ class IkeaTradfriOpenCloseRemote(CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_CONTROLLER,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    DoublingPowerConfigurationCluster,
+                    PowerConfiguration1CRCluster,
                     Identify.cluster_id,
                     Alarms.cluster_id,
                     PollControl.cluster_id,
