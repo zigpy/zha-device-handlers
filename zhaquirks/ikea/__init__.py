@@ -141,9 +141,7 @@ class PowerConfiguration1CRXCluster(CustomCluster, PowerConfiguration):
         BATTERY_SIZES: 10,
         BATTERY_VOLTAGE: 0,
         BATTERY_RATED_VOLTAGE: 30,
-        BATTERY_SIZES: 10,
         BATTERY_QUANTITY: 1,
-        BATTERY_RATED_VOLTAGE: 30,
     }
 
     def _update_attribute(self, attrid, value):
