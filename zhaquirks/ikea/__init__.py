@@ -48,10 +48,10 @@ class ScenesCluster(CustomCluster, Scenes):
     }
 
 
-class PowerConfiguration2AACluster(CustomCluster, PowerConfiguration):
+class PowerConfiguration2AAACluster(CustomCluster, PowerConfiguration):
     """PowerConfiguration cluster implementation.
     This implementation doubles battery pct remaining for non standard devices
-    that don't follow the reporting spec and fixing 2 AA."""
+    that don't follow the reporting spec and fixing 2 AAA."""
 
     cluster_id = PowerConfiguration.cluster_id
     BATTERY_PERCENTAGE_REMAINING = 0x0021
@@ -60,7 +60,7 @@ class PowerConfiguration2AACluster(CustomCluster, PowerConfiguration):
     BATTERY_RATED_VOLTAGE = 0x0034
 
     _CONSTANT_ATTRIBUTES = {
-        BATTERY_SIZES: 3,
+        BATTERY_SIZES: 4,
         BATTERY_RATED_VOLTAGE: 15,
         BATTERY_QUANTITY: 2,
     }
