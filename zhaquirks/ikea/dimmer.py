@@ -11,7 +11,7 @@ from zigpy.zcl.clusters.general import (
     PollControl,
     PowerConfiguration,
 )
-from zigpy.zcl.clusters.lightlink import LightLink, PowerConfiguration1CRXCluster
+from zigpy.zcl.clusters.lightlink import LightLink
 
 from zhaquirks.const import (
     ARGS,
@@ -28,7 +28,7 @@ from zhaquirks.const import (
     PROFILE_ID,
     RIGHT,
 )
-from zhaquirks.ikea import IKEA, ROTATED
+from zhaquirks.ikea import IKEA, ROTATED, PowerConfiguration1CRXCluster
 
 
 class IkeaDimmer(CustomDevice):
