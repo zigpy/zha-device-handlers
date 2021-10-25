@@ -13,8 +13,6 @@ If you want the pin to work as input, it must be configured as input with XCTU.
 
 If you want the pin to work as output, it is still important to configure the sample reporting in order to know the state of the switch.
 
-Currently digital output requires the coordinator to be XBee as well. THe input should work with any coordinator but this is untested.
-
 ## Analog Input
 
 The analog input pins are exposed as sensors.
@@ -76,7 +74,6 @@ automation:
         attribute: 85
         value: '{{ trigger.to_state.state }}'
 ```
-Currently PWM output requires the coordinator to be XBee as well.
 
 ## UART
 

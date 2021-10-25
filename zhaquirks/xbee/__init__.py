@@ -16,6 +16,8 @@ every x milliseconds, I recommend the later, since this will ensure
 the xbee stays alive in Home Assistant.
 """
 
+import asyncio
+import enum
 import logging
 from typing import Any, List, Optional, Union
 
@@ -43,6 +45,7 @@ DIO_PIN_LOW = 0x04
 ON_OFF_CMD = 0x0000
 XBEE_DATA_CLUSTER = 0x11
 XBEE_AT_REQUEST_CLUSTER = 0x21
+XBEE_AT_RESPONSE_CLUSTER = 0xA1
 XBEE_AT_ENDPOINT = 0xE6
 XBEE_DATA_ENDPOINT = 0xE8
 XBEE_IO_CLUSTER = 0x92
@@ -50,6 +53,8 @@ XBEE_PROFILE_ID = 0xC105
 ATTR_ON_OFF = 0x0000
 ATTR_PRESENT_VALUE = 0x0055
 PIN_ANALOG_OUTPUT = 2
+
+REMOTE_AT_COMMAND_TIMEOUT = 30
 
 
 class int_t(int):
@@ -344,6 +349,39 @@ class XBeeRemoteATRequest(LocalDataCluster):
     cluster_id = XBEE_AT_REQUEST_CLUSTER
     server_commands = {}
 
+    _seq: int = 1
+
+    class EUI64(t.EUI64):
+        """EUI64 serializable class."""
+
+        @classmethod
+        def deserialize(cls, data):
+            """Deserialize EUI64."""
+            r, data = super().deserialize(data)
+            return cls(r[::-1]), data
+
+        def serialize(self):
+            """Serialize EUI64."""
+            assert self._length == len(self)
+            return super().serialize()[::-1]
+
+    class NWK(int):
+        """Network address serializable class."""
+
+        _signed = False
+        _size = 2
+
+        def serialize(self):
+            """Serialize NWK."""
+            return self.to_bytes(self._size, "big", signed=self._signed)
+
+        @classmethod
+        def deserialize(cls, data):
+            """Deserialize NWK."""
+            r = cls(int.from_bytes(data[: cls._size], "big", signed=cls._signed))
+            data = data[cls._size :]
+            return r, data
+
     def __init__(self, *args, **kwargs):
         """Generate client_commands from AT_COMMANDS."""
         super().__init__(*args, **kwargs)
@@ -351,6 +389,11 @@ class XBeeRemoteATRequest(LocalDataCluster):
             k: (v[0], (v[1],), None)
             for k, v in zip(range(1, len(AT_COMMANDS) + 1), AT_COMMANDS.items())
         }
+
+    def _save_at_request(self, frame_id, future):
+        self._endpoint.in_clusters[XBEE_AT_RESPONSE_CLUSTER].save_at_request(
+            frame_id, future
+        )
 
     def remote_at_command(self, cmd_name, *args, apply_changes=True, **kwargs):
         """Execute a Remote AT Command and Return Response."""
@@ -363,7 +406,67 @@ class XBeeRemoteATRequest(LocalDataCluster):
                 encryption=False,
                 **kwargs,
             )
-        _LOGGER.warning("Remote At Command not supported by this coordinator")
+        _LOGGER.debug("Remote AT%s command: %s", cmd_name, args)
+        options = uint8_t(0)
+        if apply_changes:
+            options |= 0x02
+        return self._remote_at_command(options, cmd_name, *args)
+
+    async def _remote_at_command(self, options, name, *args):
+        _LOGGER.debug("Remote AT command: %s %s", name, args)
+        data = t.serialize(args, (AT_COMMANDS[name],))
+        try:
+            return await asyncio.wait_for(
+                await self._command(options, name.encode("ascii"), data, *args),
+                timeout=REMOTE_AT_COMMAND_TIMEOUT,
+            )
+        except asyncio.TimeoutError:
+            _LOGGER.warning("No response to %s command", name)
+            raise
+
+    async def _command(self, options, command, data, *args):
+        _LOGGER.debug("Command %s %s", command, data)
+        frame_id = self._seq
+        self._seq = (self._seq % 255) + 1
+        schema = (
+            uint8_t,
+            uint8_t,
+            uint8_t,
+            uint8_t,
+            self.EUI64,
+            self.NWK,
+            Bytes,
+            Bytes,
+        )
+        data = t.serialize(
+            (
+                0x32,
+                0x00,
+                options,
+                frame_id,
+                self._endpoint.device.application.ieee,
+                self._endpoint.device.application.nwk,
+                command,
+                data,
+            ),
+            schema,
+        )
+        result = await self._endpoint.device.application.request(
+            self._endpoint.device,
+            XBEE_PROFILE_ID,
+            XBEE_AT_REQUEST_CLUSTER,
+            XBEE_AT_ENDPOINT,
+            XBEE_AT_ENDPOINT,
+            self._endpoint.device.application.get_sequence(),
+            data,
+            expect_reply=False,
+        )
+
+        future = asyncio.Future()
+        self._save_at_request(frame_id, future)
+        if result[0] != foundation.Status.SUCCESS:
+            future.set_exception(RuntimeError("AT Command request: {}".format(result)))
+        return future
 
     async def command(
         self, command_id, *args, manufacturer=None, expect_reply=False, tsn=None
@@ -388,6 +491,90 @@ class XBeeRemoteATRequest(LocalDataCluster):
             LevelControl.cluster_id
         ].handle_cluster_request(hdr, value)
         return 0, foundation.Status.SUCCESS
+
+
+class XBeeRemoteATResponse(LocalDataCluster):
+    """Remote AT Command Response Cluster."""
+
+    cluster_id = XBEE_AT_RESPONSE_CLUSTER
+
+    _awaiting = {}
+
+    class ATCommandResult(enum.IntEnum):
+        """AT command results."""
+
+        OK = 0
+        ERROR = 1
+        INVALID_COMMAND = 2
+        INVALID_PARAMETER = 3
+        TX_FAILURE = 4
+
+    class ATCommand(Bytes):
+        """AT command serializable class."""
+
+        @classmethod
+        def deserialize(cls, data):
+            """Deserialize ATCommand."""
+            return cls(data[:2]), data[2:]
+
+    def save_at_request(self, frame_id, future):
+        """Save pending request."""
+        self._awaiting[frame_id] = (future,)
+
+    def handle_cluster_request(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: List[Any],
+        *,
+        dst_addressing: Optional[
+            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        ] = None,
+    ):
+        """Handle AT response."""
+        if hdr.command_id == DATA_IN_CMD:
+            frame_id = args[0]
+            cmd = args[1]
+            status = args[2]
+            value = args[3]
+            _LOGGER.debug(
+                "Remote AT command response: %s", (frame_id, cmd, status, value)
+            )
+            (fut,) = self._awaiting.pop(frame_id)
+            try:
+                status = self.ATCommandResult(status)
+            except ValueError:
+                status = self.ATCommandResult.ERROR
+
+            if status:
+                fut.set_exception(
+                    RuntimeError("AT Command response: {}".format(status.name))
+                )
+                return
+
+            response_type = AT_COMMANDS[cmd.decode("ascii")]
+            if response_type is None or len(value) == 0:
+                fut.set_result(None)
+                return
+
+            response, remains = response_type.deserialize(value)
+            fut.set_result(response)
+
+        else:
+            super().handle_cluster_request(hdr, args)
+
+    client_commands = {}
+    server_commands = {
+        0x0000: (
+            "remote_at_response",
+            (
+                uint8_t,
+                ATCommand,
+                uint8_t,
+                Bytes,
+            ),
+            None,
+        )
+    }
 
 
 class XBeeCommon(CustomDevice):
@@ -604,7 +791,7 @@ class XBeeCommon(CustomDevice):
     replacement = {
         ENDPOINTS: {
             230: {
-                INPUT_CLUSTERS: [],
+                INPUT_CLUSTERS: [XBeeRemoteATResponse],
                 OUTPUT_CLUSTERS: [XBeeRemoteATRequest],
             },
             232: {
