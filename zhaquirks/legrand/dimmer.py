@@ -131,6 +131,7 @@ class DimmerWithoutNeutral2(DimmerWithoutNeutral):
         },
     }
 
+    
 class DimmerWithoutNeutral3(DimmerWithoutNeutral):
     """Dimmer switch w/o neutral (at least for firmware 0x2e3)."""
 
@@ -171,6 +172,7 @@ class DimmerWithoutNeutral3(DimmerWithoutNeutral):
         },
     }
 
+    
 class DimmerWithNeutral(DimmerWithoutNeutral):
     """Dimmer switch with neutral."""
 
