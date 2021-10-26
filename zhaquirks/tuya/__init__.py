@@ -10,6 +10,7 @@ from zigpy.zcl import foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import LevelControl, OnOff, PowerConfiguration
 from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
+from zigpy.zcl.clusters.smartenergy import Metering
 
 from zhaquirks import Bus, EventableCluster, LocalDataCluster
 from zhaquirks.const import DOUBLE_PRESS, LONG_PRESS, SHORT_PRESS, ZHA_SEND_EVENT
@@ -93,6 +94,8 @@ TUYA_COVER_COMMAND = {
     "_TZE200_zpzndjez": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
     "_TZE200_cowvfni3": {0x0000: 0x0002, 0x0001: 0x0000, 0x0002: 0x0001},
     "_TYST11_wmcdj3aq": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
+    "_TZE200_yenbr4om": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
+    "_TZE200_5sbebbzs": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
 }
 # ---------------------------------------------------------
 # TUYA Switch Custom Values
@@ -731,6 +734,29 @@ class TuyaSmartRemoteOnOffCluster(OnOff, EventableCluster):
             )
 
 
+class TZBPowerOnState(t.enum8):
+    """Tuya power on state enum."""
+
+    Off = 0x00
+    On = 0x01
+    LastState = 0x02
+
+
+class TuyaZBOnOffRestorePowerCluster(CustomCluster, OnOff):
+    """Tuya on off Zigbee cluster with restore state."""
+
+    attributes = OnOff.attributes.copy()
+    attributes.update({0x8002: ("power_on_state", TZBPowerOnState)})
+
+
+class TuyaZBMeteringCluster(CustomCluster, Metering):
+    """Divides the kWh for tuya."""
+
+    MULTIPLIER = 0x0301
+    DIVISOR = 0x0302
+    _CONSTANT_ATTRIBUTES = {MULTIPLIER: 1, DIVISOR: 100}
+
+
 # Tuya Window Cover Implementation
 class TuyaManufacturerWindowCover(TuyaManufCluster):
     """Manufacturer Specific Cluster for cover device."""
@@ -746,7 +772,7 @@ class TuyaManufacturerWindowCover(TuyaManufCluster):
     ) -> None:
         """Handle cluster request."""
         """Tuya Specific Cluster Commands"""
-        if hdr.command_id == TUYA_SET_DATA_RESPONSE:
+        if hdr.command_id in (TUYA_GET_DATA, TUYA_SET_DATA_RESPONSE):
             tuya_payload = args[0]
             _LOGGER.debug(
                 "%s Received Attribute Report. Command is 0x%04x, Tuya Paylod values"
@@ -761,6 +787,15 @@ class TuyaManufacturerWindowCover(TuyaManufCluster):
             )
 
             if tuya_payload.command_id == TUYA_DP_TYPE_VALUE + TUYA_DP_ID_PERCENT_STATE:
+                self.endpoint.device.cover_bus.listener_event(
+                    COVER_EVENT,
+                    ATTR_COVER_POSITION,
+                    tuya_payload.data[4],
+                )
+            elif (
+                tuya_payload.command_id
+                == TUYA_DP_TYPE_VALUE + TUYA_DP_ID_PERCENT_CONTROL
+            ):
                 self.endpoint.device.cover_bus.listener_event(
                     COVER_EVENT,
                     ATTR_COVER_POSITION,
@@ -810,7 +845,7 @@ class TuyaManufacturerWindowCover(TuyaManufCluster):
             )
         elif hdr.command_id == TUYA_SET_TIME:
             """Time event call super"""
-            super().handle_cluster_request(self, hdr, args, dst_addressing)
+            super().handle_cluster_request(hdr, args, dst_addressing=dst_addressing)
         else:
             _LOGGER.debug(
                 "%s Received Attribute Report - Unknown Command. Self [%s], Header [%s], Tuya Paylod [%s]",

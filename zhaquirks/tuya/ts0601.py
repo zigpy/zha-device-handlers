@@ -38,6 +38,7 @@ class TuyaSingleSwitch(TuyaSwitch):
             ("_TZE200_vhy3iakz", "TS0601"),
             ("_TZ3000_uim07oem", "TS0601"),
             ("_TZE200_tz32mtza", "TS0601"),
+            ("_TZE200_amp6tsvy", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
@@ -232,6 +233,8 @@ class TuyaMoesCover0601(TuyaWindowCover):
             ("_TZE200_rddyvrci", "TS0601"),
             ("_TZE200_nueqqe6k", "TS0601"),
             ("_TZE200_gubdgai2", "TS0601"),
+            ("_TZE200_yenbr4om", "TS0601"),
+            ("_TZE200_5sbebbzs", "TS0601"),
         ],  # Not tested
         ENDPOINTS: {
             1: {
