@@ -30,11 +30,12 @@ from zhaquirks.tuya import (
 SITERWELL_CHILD_LOCK_ATTR = 0x0107  # [0] unlocked [1] child-locked
 SITERWELL_WINDOW_DETECT_ATTR = 0x0112  # [0] inactive [1] active
 SITERWELL_VALVE_DETECT_ATTR = 0x0114  # [0] do not report [1] report
-SITERWELL_VALVE_STATE_ATTR = 0x026D  # [0,0,0,55] opening percentage
 SITERWELL_TARGET_TEMP_ATTR = 0x0202  # [0,0,0,210] target room temp (decidegree)
 SITERWELL_TEMPERATURE_ATTR = 0x0203  # [0,0,0,200] current room temp (decidegree)
 SITERWELL_BATTERY_ATTR = 0x0215  # [0,0,0,98] battery charge
 SITERWELL_MODE_ATTR = 0x0404  # [0] off [1] scheduled [2] manual
+SITERWELL_WINDOW_ALARM_ATTR = 0x0411  # [0] clear [1] alarm
+SITERWELL_VALVE_JAMMED_ATTR = 0x0413  # [0] clear [1] alarm
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -42,15 +43,22 @@ _LOGGER = logging.getLogger(__name__)
 class SiterwellManufCluster(TuyaManufClusterAttributes):
     """Manufacturer Specific Cluster of some thermostatic valves."""
 
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        global SiterwellManufClusterSelf
+        SiterwellManufClusterSelf = self
+
     manufacturer_attributes = {
         SITERWELL_CHILD_LOCK_ATTR: ("child_lock", t.uint8_t),
         SITERWELL_WINDOW_DETECT_ATTR: ("window_detection", t.uint8_t),
         SITERWELL_VALVE_DETECT_ATTR: ("valve_detect", t.uint8_t),
-        SITERWELL_VALVE_STATE_ATTR: ("valve_state", t.uint32_t),
         SITERWELL_TARGET_TEMP_ATTR: ("target_temperature", t.uint32_t),
         SITERWELL_TEMPERATURE_ATTR: ("temperature", t.uint32_t),
         SITERWELL_BATTERY_ATTR: ("battery", t.uint32_t),
         SITERWELL_MODE_ATTR: ("mode", t.uint8_t),
+        SITERWELL_WINDOW_ALARM_ATTR: ("window_alarm", t.uint8_t),
+        SITERWELL_VALVE_JAMMED_ATTR: ("valve_jammed", t.uint8_t),
     }
 
     TEMPERATURE_ATTRS = {
@@ -71,66 +79,183 @@ class SiterwellManufCluster(TuyaManufClusterAttributes):
             self.endpoint.device.thermostat_bus.listener_event(
                 "state_change", value > 0
             )
-        elif attrid == SITERWELL_VALVE_STATE_ATTR:
-            self.endpoint.device.thermostat_bus.listener_event("state_change", value)
         elif attrid == SITERWELL_CHILD_LOCK_ATTR:
             mode = 1 if value else 0
             self.endpoint.device.ui_bus.listener_event("child_lock_change", mode)
+        elif attrid == SITERWELL_WINDOW_DETECT_ATTR:
+            self.endpoint.device.window_detection_bus.listener_event(
+                "window_detect_change", value
+            )
         elif attrid == SITERWELL_BATTERY_ATTR:
             self.endpoint.device.battery_bus.listener_event("battery_change", value)
+        elif attrid == SITERWELL_WINDOW_ALARM_ATTR:
+            self.endpoint.device.thermostat_bus.listener_event(
+                "window_alarm_change", value
+            )
+        elif attrid == SITERWELL_VALVE_JAMMED_ATTR:
+            self.endpoint.device.thermostat_bus.listener_event(
+                "valve_jammed_change", value
+            )
 
 
 class SiterwellThermostat(TuyaThermostatCluster):
     """Thermostat cluster for some thermostatic valves."""
 
+    class Preset(t.enum8):
+        """Working modes of the thermostat."""
+
+        Away = 0x00
+        Schedule = 0x01
+        Manual = 0x02
+
+    _CONSTANT_ATTRIBUTES = {
+        0x0015: 500,  # Min heating SP
+        0x0016: 3000,  # Max heating SP
+        0x001B: Thermostat.ControlSequenceOfOperation.Heating_Only,
+        0x001C: Thermostat.SystemMode.Heat,
+    }
+
+    manufacturer_attributes = {
+        0x4000: ("operation_preset", Preset),
+    }
+
+    DIRECT_MAPPING_ATTRS = {
+        "operation_preset": (SITERWELL_MODE_ATTR, None),
+    }
+
     def map_attribute(self, attribute, value):
         """Map standardized attribute value to dict of manufacturer values."""
 
+        if attribute in self.DIRECT_MAPPING_ATTRS:
+            return {
+                self.DIRECT_MAPPING_ATTRS[attribute][0]: value
+                if self.DIRECT_MAPPING_ATTRS[attribute][1] is None
+                else self.DIRECT_MAPPING_ATTRS[attribute][1](value)
+            }
         if attribute == "occupied_heating_setpoint":
             # centidegree to decidegree
             return {SITERWELL_TARGET_TEMP_ATTR: round(value / 10)}
-        if attribute in ("system_mode", "programing_oper_mode"):
-            if attribute == "system_mode":
-                system_mode = value
+        if attribute in ("programing_oper_mode", "occupancy"):
+            if attribute == "occupancy":
+                occupancy = value
                 oper_mode = self._attr_cache.get(
                     self.attridx["programing_oper_mode"],
                     self.ProgrammingOperationMode.Simple,
                 )
             else:
-                system_mode = self._attr_cache.get(
-                    self.attridx["system_mode"], self.SystemMode.Heat
+                occupancy = self._attr_cache.get(
+                    self.attridx["occupancy"], self.Occupancy.Occupied
                 )
                 oper_mode = value
-            if system_mode == self.SystemMode.Off:
+            if occupancy == self.Occupancy.Unoccupied:
                 return {SITERWELL_MODE_ATTR: 0}
-            if system_mode == self.SystemMode.Heat:
+            if occupancy == self.Occupancy.Occupied:
                 if oper_mode == self.ProgrammingOperationMode.Schedule_programming_mode:
                     return {SITERWELL_MODE_ATTR: 1}
                 if oper_mode == self.ProgrammingOperationMode.Simple:
                     return {SITERWELL_MODE_ATTR: 2}
                 self.error("Unsupported value for ProgrammingOperationMode")
             else:
-                self.error("Unsupported value for SystemMode")
+                self.error("Unsupported value for Occupancy")
+        if attribute == "system_mode":
+            return {
+                SITERWELL_MODE_ATTR: self._attr_cache.get(
+                    self.attridx["operation_preset"], 2
+                )
+            }
 
     def mode_change(self, value):
         """System Mode change."""
         if value == 0:
-            self._update_attribute(self.attridx["system_mode"], self.SystemMode.Off)
-            return
-
-        if value == 1:
-            mode = self.ProgrammingOperationMode.Schedule_programming_mode
-        else:
-            mode = self.ProgrammingOperationMode.Simple
-
-        self._update_attribute(self.attridx["system_mode"], self.SystemMode.Heat)
-        self._update_attribute(self.attridx["programing_oper_mode"], mode)
+            operation_preset = self.Preset.Away
+            prog_mode = self.ProgrammingOperationMode.Simple
+            occupancy = self.Occupancy.Unoccupied
+        elif value == 1:
+            operation_preset = self.Preset.Schedule
+            prog_mode = self.ProgrammingOperationMode.Schedule_programming_mode
+            occupancy = self.Occupancy.Occupied
+        elif value == 2:
+            operation_preset = self.Preset.Manual
+            prog_mode = self.ProgrammingOperationMode.Simple
+            occupancy = self.Occupancy.Occupied
+        self._update_attribute(self.attridx["programing_oper_mode"], prog_mode)
+        self._update_attribute(self.attridx["occupancy"], occupancy)
+        self._update_attribute(self.attridx["operation_preset"], operation_preset)
 
 
 class SiterwellUserInterface(TuyaUserInterfaceCluster):
-    """HVAC User interface cluster for tuya electric heating thermostats."""
+    """HVAC User interface cluster for tuya heating thermostats."""
 
     _CHILD_LOCK_ATTR = SITERWELL_CHILD_LOCK_ATTR
+
+
+class SiterwellChildLock(LocalDataCluster, OnOff):
+    """On/Off cluster for the child lock function of the heating thermostats."""
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self.endpoint.device.child_lock_bus.add_listener(self)
+
+    def child_lock_change(self, value):
+        """Child lock change."""
+        self._update_attribute(self.attridx["on_off"], value)
+
+    async def write_attributes(self, attributes, manufacturer=None):
+        """Defer attributes writing to the set_data tuya command."""
+        records = self._write_attr_records(attributes)
+        if not records:
+            return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
+        has_change = False
+        for record in records:
+            attr_name = self.attributes[record.attrid][0]
+            if attr_name == "on_off":
+                value = record.value.value
+                has_change = True
+        if has_change:
+            return await SiterwellManufClusterSelf.endpoint.tuya_manufacturer.write_attributes(
+                {SITERWELL_CHILD_LOCK_ATTR: value}, manufacturer=manufacturer
+            )
+        return [
+            [
+                foundation.WriteAttributesStatusRecord(
+                    foundation.Status.FAILURE, r.attrid
+                )
+                for r in records
+            ]
+        ]
+
+    async def command(
+        self,
+        command_id: Union[foundation.Command, int, t.uint8_t],
+        *args,
+        manufacturer: Optional[Union[int, t.uint16_t]] = None,
+        expect_reply: bool = True,
+        tsn: Optional[Union[int, t.uint8_t]] = None,
+    ):
+        """Override the default Cluster command."""
+
+        if command_id in (0x0000, 0x0001, 0x0002):
+            if command_id == 0x0000:
+                value = False
+            elif command_id == 0x0001:
+                value = True
+            else:
+                attrid = self.attridx["on_off"]
+                success, _ = await self.read_attributes(
+                    (attrid,), manufacturer=manufacturer
+                )
+                try:
+                    value = success[attrid]
+                except KeyError:
+                    return foundation.Status.FAILURE
+                value = not value
+            (res,) = await self.write_attributes(
+                {"on_off": value}, manufacturer=manufacturer
+            )
+
+            return [command_id, res]
+        return [command_id, foundation.Status.UNSUP_CLUSTER_COMMAND]
 
 
 # info from https://github.com/Koenkk/zigbee-herdsman-converters/blob/master/lib/tuya.js
@@ -241,7 +366,6 @@ class MoesManufCluster(TuyaManufClusterAttributes):
             self.endpoint.device.thermostat_bus.listener_event(
                 "schedule_change", attrid, value
             )
-
         if attrid == MOES_WINDOW_DETECT_ATTR:
             self.endpoint.device.window_detection_bus.listener_event(
                 "window_detect_change", value
@@ -505,7 +629,6 @@ class MoesThermostat(TuyaThermostatCluster):
                         val = value
                     else:
                         val = self._attr_cache.get(self.attridx[attr], default)
-
                 data.append(val)
             return {MOES_SCHEDULE_WORKDAY_ATTR: data}
         if attribute in self.WEEKEND_SCHEDULE_ATTRS:
@@ -524,7 +647,6 @@ class MoesThermostat(TuyaThermostatCluster):
                         val = value
                     else:
                         val = self._attr_cache.get(self.attridx[attr], default)
-
                 data.append(val)
             return {MOES_SCHEDULE_WEEKEND_ATTR: data}
 
@@ -551,7 +673,6 @@ class MoesThermostat(TuyaThermostatCluster):
         else:
             prog_mode = self.ProgrammingOperationMode.Simple
             occupancy = self.Occupancy.Occupied
-
         self._update_attribute(self.attridx["programing_oper_mode"], prog_mode)
         self._update_attribute(self.attridx["occupancy"], occupancy)
 
@@ -684,7 +805,7 @@ class MoesThermostatNew(MoesThermostat):
 
 
 class MoesUserInterface(TuyaUserInterfaceCluster):
-    """HVAC User interface cluster for tuya electric heating thermostats."""
+    """HVAC User interface cluster for tuya heating thermostats."""
 
     _CHILD_LOCK_ATTR = MOES_CHILD_LOCK_ATTR
 
@@ -705,7 +826,7 @@ class MoesUserInterface(TuyaUserInterfaceCluster):
 
 
 class MoesWindowDetection(LocalDataCluster, OnOff):
-    """On/Off cluster for the window detection function of the electric heating thermostats."""
+    """On/Off cluster for the window detection function of the heating thermostats."""
 
     def __init__(self, *args, **kwargs):
         """Init."""
@@ -735,7 +856,6 @@ class MoesWindowDetection(LocalDataCluster, OnOff):
 
         if not records:
             return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
-
         has_change = False
         data = t.data24()
         data.append(
@@ -771,12 +891,10 @@ class MoesWindowDetection(LocalDataCluster, OnOff):
             elif attr_name == "window_detection_timeout_minutes":
                 data[0] = record.value.value
                 has_change = True
-
         if has_change:
             return await self.endpoint.tuya_manufacturer.write_attributes(
                 {MOES_WINDOW_DETECT_ATTR: data}, manufacturer=manufacturer
             )
-
         return [
             [
                 foundation.WriteAttributesStatusRecord(
@@ -812,13 +930,11 @@ class MoesWindowDetection(LocalDataCluster, OnOff):
                 except KeyError:
                     return foundation.Status.FAILURE
                 value = not value
-
             (res,) = await self.write_attributes(
                 {"on_off": value},
                 manufacturer=manufacturer,
             )
             return [command_id, res[0].status]
-
         return [command_id, foundation.Status.UNSUP_CLUSTER_COMMAND]
 
 
@@ -939,19 +1055,23 @@ class ZONNSMARTThermostat(TuyaThermostatCluster):
             prog_mode = self.ProgrammingOperationMode.Simple
         else:
             prog_mode = self.ProgrammingOperationMode.Simple
-
         self._update_attribute(self.attridx["system_mode"], self.SystemMode.Heat)
         self._update_attribute(self.attridx["programing_oper_mode"], prog_mode)
 
 
 class ZONNSMARTUserInterface(TuyaUserInterfaceCluster):
-    """HVAC User interface cluster for tuya electric heating thermostats."""
+    """HVAC User interface cluster for tuya heating thermostats."""
 
     _CHILD_LOCK_ATTR = ZONNSMART_CHILD_LOCK_ATTR
 
 
 class SiterwellGS361_Type1(TuyaThermostat):
     """SiterwellGS361 Thermostatic radiator valve and clones."""
+
+    def __init__(self, *args, **kwargs):
+        """Init device."""
+        self.child_lock_bus = Bus()
+        super().__init__(*args, **kwargs)
 
     signature = {
         #  endpoint=1 profile=260 device_type=0 device_version=0 input_clusters=[0, 3]
@@ -989,13 +1109,26 @@ class SiterwellGS361_Type1(TuyaThermostat):
                     TuyaPowerConfigurationCluster,
                 ],
                 OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],
-            }
+            },
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
+                INPUT_CLUSTERS: [
+                    SiterwellChildLock,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
         }
     }
 
 
 class SiterwellGS361_Type2(TuyaThermostat):
     """SiterwellGS361 Thermostatic radiator valve and clones (2nd cluster signature)."""
+
+    def __init__(self, *args, **kwargs):
+        """Init device."""
+        self.child_lock_bus = Bus()
+        super().__init__(*args, **kwargs)
 
     signature = {
         #  endpoint=1 profile=260 device_type=81 device_version=0 input_clusters=[0, 4, 5, 61184]
@@ -1039,7 +1172,15 @@ class SiterwellGS361_Type2(TuyaThermostat):
                     TuyaPowerConfigurationCluster,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
-            }
+            },
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
+                INPUT_CLUSTERS: [
+                    SiterwellChildLock,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
         }
     }
 
