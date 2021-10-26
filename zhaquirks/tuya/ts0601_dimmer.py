@@ -1,6 +1,14 @@
 """Tuya based touch switch."""
 from zigpy.profiles import zha
-from zigpy.zcl.clusters.general import Basic, Groups, LevelControl, Ota, Scenes, Time
+from zigpy.zcl.clusters.general import (
+    Basic,
+    GreenPowerProxy,
+    Groups,
+    LevelControl,
+    Ota,
+    Scenes,
+    Time,
+)
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -69,4 +77,65 @@ class TuyaSingleSwitchDimmer(TuyaDimmerSwitch):
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             }
         }
+    }
+
+
+class TuyaSingleSwitchDimmerGP(TuyaDimmerSwitch):
+    """Tuya touch switch device."""
+
+    signature = {
+        # "node_descriptor": "<NodeDescriptor byte1=1, byte2=64, mac_capability_flags=142, manufacturer_code=4098,
+        # maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264,
+        # maximum_outgoing_transfer_size=82, descriptor_capability_field=0>",
+        # <SimpleDescriptor endpoint=1 profile=260 device_type=51 device_version=1 input_clusters=[0, 4, 5, 61184] output_clusters=[10, 25]>
+        MODELS_INFO: [
+            ("_TZE200_3p5ydos3", "TS0601"),
+        ],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaManufCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            242: {
+                # <SimpleDescriptor endpoint=242 profile=41440 device_type=97
+                # input_clusters=[]
+                # output_clusters=[33]
+                PROFILE_ID: 41440,
+                DEVICE_TYPE: 97,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    LevelControl.cluster_id,
+                    TuyaManufacturerClusterOnOff,
+                    TuyaOnOff,
+                    TuyaManufacturerLevelControl,
+                    TuyaLevelControl,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            242: {
+                PROFILE_ID: 41440,
+                DEVICE_TYPE: 97,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        },
     }
