@@ -791,7 +791,10 @@ class TuyaManufacturerWindowCover(TuyaManufCluster):
                     ATTR_COVER_POSITION,
                     tuya_payload.data[4],
                 )
-            elif tuya_payload.command_id == TUYA_DP_TYPE_VALUE + TUYA_DP_ID_PERCENT_CONTROL:
+            elif (
+                tuya_payload.command_id
+                == TUYA_DP_TYPE_VALUE + TUYA_DP_ID_PERCENT_CONTROL
+            ):
                 self.endpoint.device.cover_bus.listener_event(
                     COVER_EVENT,
                     ATTR_COVER_POSITION,
