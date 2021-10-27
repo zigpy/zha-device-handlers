@@ -23,7 +23,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import TuyaZBMeteringCluster, TuyaZBOnOffRestorePowerCluster
+from zhaquirks.tuya import TuyaZBMeteringCluster, TuyaZBOnOffAttributeCluster
 
 
 class TuyaClusterE000(CustomCluster):
@@ -98,7 +98,7 @@ class Plug(CustomDevice):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaZBOnOffRestorePowerCluster,
+                    TuyaZBOnOffAttributeCluster,
                     TuyaZBMeteringCluster,
                     TuyaZBElectricalMeasurement,
                     TuyaClusterE000,
