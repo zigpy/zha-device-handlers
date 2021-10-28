@@ -41,7 +41,7 @@ class TuyaClusterE001(CustomCluster):
     cluster_id = 0xE001
     ep_attribute = "tuya_is_pita_1"
 
-    
+
 class TuyaZBElectricalMeasurement(CustomCluster, ElectricalMeasurement):
     """Divides the Current for tuya."""
 
