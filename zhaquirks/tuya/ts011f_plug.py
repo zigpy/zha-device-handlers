@@ -43,7 +43,7 @@ class TuyaClusterE001(CustomCluster):
 
     
 class TuyaZBElectricalMeasurement(CustomCluster, ElectricalMeasurement):
-    """TuyaZBElectricalMeasurement cluster divides the Current for tuya"""
+    """Divides the Current for tuya."""
 
     AC_CURRENT_MULTIPLIER = 0x0602
     AC_CURRENT_DIVISOR = 0x0603
