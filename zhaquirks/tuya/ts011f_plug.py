@@ -42,14 +42,6 @@ class TuyaClusterE001(CustomCluster):
     ep_attribute = "tuya_is_pita_1"
 
 
-class TuyaZBElectricalMeasurement(CustomCluster, ElectricalMeasurement):
-    """Divides the Current for tuya."""
-
-    AC_VOLTAGE_MULTIPLIER = 0x0602
-    AC_VOLTAGE_DIVISOR = 0x0603
-    _CONSTANT_ATTRIBUTES = {AC_VOLTAGE_MULTIPLIER: 1, AC_VOLTAGE_DIVISOR: 1000}
-
-
 class Plug(CustomDevice):
     """Tuya plug with restore power state support."""
 
@@ -100,7 +92,7 @@ class Plug(CustomDevice):
                     Scenes.cluster_id,
                     TuyaZBOnOffRestorePowerCluster,
                     TuyaZBMeteringCluster,
-                    TuyaZBElectricalMeasurement,
+                    ElectricalMeasurement.cluster_id,
                     TuyaClusterE000,
                     TuyaClusterE001,
                 ],
