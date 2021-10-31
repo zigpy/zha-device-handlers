@@ -174,7 +174,7 @@ class IkeaTradfriRemote1(CustomDevice):
     }
 
 
-class IkeaTradfriRemote2(IkeaTradfriRemote):
+class IkeaTradfriRemote2(IkeaTradfriRemote1):
     """Custom device representing IKEA of Sweden TRADFRI 5 button remote control."""
 
     signature = {
@@ -232,10 +232,10 @@ class IkeaTradfriRemote2(IkeaTradfriRemote):
         }
     }
 
-    device_automation_triggers = IkeaTradfriRemote.device_automation_triggers.copy()
+    device_automation_triggers = IkeaTradfriRemote1.device_automation_triggers.copy()
 
 
-class IkeaTradfriRemote3(CustomDevice):
+class IkeaTradfriRemote3(IkeaTradfriRemote1):
     """Custom device representing IKEA of Sweden TRADFRI remote control."""
 
     signature = {
@@ -259,7 +259,7 @@ class IkeaTradfriRemote3(CustomDevice):
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     Groups.cluster_id,
-                    ScenesCluster,
+                    ScenesCluster.cluster_id,
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
                     Ota.cluster_id,
@@ -295,4 +295,4 @@ class IkeaTradfriRemote3(CustomDevice):
         }
     }
 
-    device_automation_triggers = IkeaTradfriRemote.device_automation_triggers.copy()
+    device_automation_triggers = IkeaTradfriRemote1.device_automation_triggers.copy()
