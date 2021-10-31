@@ -295,4 +295,64 @@ class IkeaTradfriRemote3(IkeaTradfriRemote1):
         }
     }
 
-    device_automation_triggers = IkeaTradfriRemote1.device_automation_triggers.copy()
+    device_automation_triggers = {
+        (SHORT_PRESS, TURN_ON): {
+            COMMAND: COMMAND_TOGGLE,
+            CLUSTER_ID: 6,
+            ENDPOINT_ID: 1,
+        },
+        (LONG_PRESS, TURN_ON): {
+            COMMAND: COMMAND_RELEASE,
+            CLUSTER_ID: 5,
+            ENDPOINT_ID: 1,
+            ARGS: [],
+        },
+        (SHORT_PRESS, DIM_UP): {
+            COMMAND: COMMAND_STEP_ON_OFF,
+            CLUSTER_ID: 8,
+            ENDPOINT_ID: 1,
+            ARGS: [0, 43, 5],
+        },
+        (LONG_PRESS, DIM_UP): {
+            COMMAND: COMMAND_MOVE_ON_OFF,
+            CLUSTER_ID: 8,
+            ENDPOINT_ID: 1,
+            ARGS: [0, 84],
+        },
+        (SHORT_PRESS, DIM_DOWN): {
+            COMMAND: COMMAND_STEP,
+            CLUSTER_ID: 8,
+            ENDPOINT_ID: 1,
+            ARGS: [1, 43, 5],
+        },
+        (LONG_PRESS, DIM_DOWN): {
+            COMMAND: COMMAND_MOVE,
+            CLUSTER_ID: 8,
+            ENDPOINT_ID: 1,
+            ARGS: [1, 84],
+        },
+        (SHORT_PRESS, LEFT): {
+            COMMAND: COMMAND_PRESS,
+            CLUSTER_ID: 5,
+            ENDPOINT_ID: 1,
+            ARGS: [257, 13, 0],
+        },
+        (LONG_PRESS, LEFT): {
+            COMMAND: COMMAND_HOLD,
+            CLUSTER_ID: 5,
+            ENDPOINT_ID: 1,
+            ARGS: [3329, 0],
+        },
+        (SHORT_PRESS, RIGHT): {
+            COMMAND: COMMAND_PRESS,
+            CLUSTER_ID: 5,
+            ENDPOINT_ID: 1,
+            ARGS: [256, 13, 0],
+        },
+        (LONG_PRESS, RIGHT): {
+            COMMAND: COMMAND_HOLD,
+            CLUSTER_ID: 5,
+            ENDPOINT_ID: 1,
+            ARGS: [3328, 0],
+        },
+    }
