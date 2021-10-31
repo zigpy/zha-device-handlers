@@ -102,7 +102,7 @@ class IkeaTradfriShortcutBtn(CustomDevice):
     device_automation_triggers = {
         (SHORT_PRESS, TURN_ON): {COMMAND: COMMAND_ON, CLUSTER_ID: 6, ENDPOINT_ID: 1},
         (DOUBLE_PRESS, TURN_ON): {COMMAND: COMMAND_OFF, CLUSTER_ID: 6, ENDPOINT_ID: 1},
-(LONG_PRESS, TURN_ON): {
+        (LONG_PRESS, TURN_ON): {
             COMMAND: COMMAND_MOVE_ON_OFF,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
