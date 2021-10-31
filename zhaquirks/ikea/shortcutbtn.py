@@ -24,6 +24,7 @@ from zhaquirks.const import (
     COMMAND_ON,
     COMMAND_STOP,
     DEVICE_TYPE,
+    DIM_UP,
     DOUBLE_PRESS,
     ENDPOINT_ID,
     ENDPOINTS,
@@ -102,13 +103,13 @@ class IkeaTradfriShortcutBtn(CustomDevice):
     device_automation_triggers = {
         (SHORT_PRESS, TURN_ON): {COMMAND: COMMAND_ON, CLUSTER_ID: 6, ENDPOINT_ID: 1},
         (DOUBLE_PRESS, TURN_ON): {COMMAND: COMMAND_OFF, CLUSTER_ID: 6, ENDPOINT_ID: 1},
-        (LONG_PRESS, TURN_ON): {
+        (LONG_PRESS, DIM_UP): {
             COMMAND: COMMAND_MOVE_ON_OFF,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
             ARGS: [0, 83],
         },
-        (LONG_RELEASE, TURN_ON): {
+        (LONG_RELEASE, DIM_UP): {
             COMMAND: COMMAND_STOP,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
