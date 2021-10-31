@@ -106,7 +106,7 @@ TUYA_COVER_INVERTED_BY_DEFAULT = [
     "_TZE200_wmcdj3aq",
     "_TZE200_nogaemzt",
     "_TZE200_xuzcvlku",
-    "_TZE200_xaabybja"
+    "_TZE200_xaabybja",
 ]
 
 # ---------------------------------------------------------
