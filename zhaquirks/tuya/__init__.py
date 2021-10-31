@@ -101,8 +101,13 @@ TUYA_COVER_COMMAND = {
 # Contains all covers which need their position inverted by default
 # Default is 100 = open, 0 = closed; Devices listed here will use 0 = open, 100 = closed instead
 # Use manufacturerName to identify device!
-# Dont' invert _TZE200_cowvfni3: https://github.com/Koenkk/zigbee2mqtt/issues/6043
-TUYA_COVER_INVERTED_BY_DEFAULT = ["_TZE200_wmcdj3aq", "_TZE200_nogaemzt", "_TZE200_xuzcvlku", "_TZE200_xaabybja"]
+# Don't invert _TZE200_cowvfni3: https://github.com/Koenkk/zigbee2mqtt/issues/6043
+TUYA_COVER_INVERTED_BY_DEFAULT = [
+    "_TZE200_wmcdj3aq",
+    "_TZE200_nogaemzt",
+    "_TZE200_xuzcvlku",
+    "_TZE200_xaabybja"
+]
 
 # ---------------------------------------------------------
 # TUYA Switch Custom Values
@@ -880,7 +885,11 @@ class TuyaWindowCoverControl(LocalDataCluster, WindowCovering):
         """Event listener for cover events."""
         if attribute == ATTR_COVER_POSITION:
             invert_attr = self._attr_cache.get(ATTR_COVER_INVERTED) == 1
-            invert = not invert_attr if self.endpoint.device.manufacturer in TUYA_COVER_INVERTED_BY_DEFAULT else invert_attr
+            invert = (
+                not invert_attr
+                if self.endpoint.device.manufacturer in TUYA_COVER_INVERTED_BY_DEFAULT
+                else invert_attr
+            )
             value = value if invert else 100 - value
         self._update_attribute(attribute, value)
         _LOGGER.debug(
@@ -935,7 +944,7 @@ class TuyaWindowCoverControl(LocalDataCluster, WindowCovering):
                 not invert_attr
                 if self.endpoint.device.manufacturer in TUYA_COVER_INVERTED_BY_DEFAULT
                 else invert_attr
-            )    
+            )
             position = args[0] if invert else 100 - args[0]
             tuya_payload.data = [
                 4,
