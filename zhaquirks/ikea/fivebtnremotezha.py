@@ -52,7 +52,7 @@ from zhaquirks.ikea import (
 IKEA_CLUSTER_ID = 0xFC7C  # decimal = 64636
 
 
-class IkeaTradfriRemote(CustomDevice):
+class IkeaTradfriRemote1(CustomDevice):
     """Custom device representing IKEA of Sweden TRADFRI remote control."""
 
     signature = {
@@ -218,6 +218,69 @@ class IkeaTradfriRemote2(IkeaTradfriRemote):
                     Identify.cluster_id,
                     Alarms.cluster_id,
                     LightLinkCluster,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    ScenesCluster,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                    Ota.cluster_id,
+                    LightLink.cluster_id,
+                ],
+            }
+        }
+    }
+
+    device_automation_triggers = IkeaTradfriRemote.device_automation_triggers.copy()
+
+
+class IkeaTradfriRemote3(CustomDevice):
+    """Custom device representing IKEA of Sweden TRADFRI remote control."""
+
+    signature = {
+        # <SimpleDescriptor endpoint=1 profile=260 device_type=2080
+        # device_version=1
+        # input_clusters=[0, 1, 3, 32, 4096, 64636]
+        # output_clusters=[3, 4, 5, 6, 8, 25, 4096]>
+        MODELS_INFO: [(IKEA, "TRADFRI remote control")],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.NON_COLOR_CONTROLLER,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    Identify.cluster_id,
+                    PollControl.cluster_id,
+                    LightLink.cluster_id,
+                    IKEA_CLUSTER_ID,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    ScenesCluster,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                    Ota.cluster_id,
+                    LightLink.cluster_id,
+                ],
+            }
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.NON_COLOR_CONTROLLER,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    PowerConfiguration1CRCluster,
+                    Identify.cluster_id,
+                    PollControl.cluster_id,
+                    LightLinkCluster,
+                    IKEA_CLUSTER_ID,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
