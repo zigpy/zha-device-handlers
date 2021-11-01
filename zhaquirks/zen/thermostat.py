@@ -4,8 +4,7 @@ import zigpy.profiles.zha as zha_p
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters import general, homeautomation, hvac
 
-from . import ZEN, ZenPowerConfiguration
-from ..const import (
+from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -13,6 +12,7 @@ from ..const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.zen import ZEN, ZenPowerConfiguration
 
 
 class ZenThermostat(CustomDevice):

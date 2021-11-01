@@ -2,12 +2,14 @@
 import asyncio
 import importlib
 import logging
+import pathlib
 import pkgutil
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import zigpy.device
 import zigpy.endpoint
 from zigpy.quirks import CustomCluster, CustomDevice
+import zigpy.types as t
 from zigpy.util import ListenableMixin
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import PowerConfiguration
@@ -15,11 +17,12 @@ from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zdo import types as zdotypes
 
-from .const import (
+from zhaquirks.const import (
     ATTRIBUTE_ID,
     ATTRIBUTE_NAME,
     CLUSTER_COMMAND,
     COMMAND_ATTRIBUTE_UPDATED,
+    CUSTOM_QUIRKS_PATH,
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -67,7 +70,7 @@ class LocalDataCluster(CustomCluster):
 
     async def _configure_reporting(self, *args, **kwargs):  # pylint: disable=W0221
         """Prevent remote configure reporting."""
-        return foundation.ConfigureReportingResponse.deserialize(b"\x00")[0]
+        return (foundation.ConfigureReportingResponse.deserialize(b"\x00")[0],)
 
     async def read_attributes_raw(self, attributes, manufacturer=None):
         """Prevent remote reads."""
@@ -95,20 +98,30 @@ class LocalDataCluster(CustomCluster):
                 self.error("%d is not a valid attribute id", attrid)
                 continue
             self._update_attribute(attrid, value)
-        return (foundation.Status.SUCCESS,)
+        return ([foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)],)
 
 
 class EventableCluster(CustomCluster):
     """Cluster that generates events."""
 
-    def handle_cluster_request(self, tsn, command_id, args):
+    def handle_cluster_request(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: List[Any],
+        *,
+        dst_addressing: Optional[
+            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        ] = None,
+    ):
         """Send cluster requests as events."""
         if (
             self.server_commands is not None
-            and self.server_commands.get(command_id) is not None
+            and self.server_commands.get(hdr.command_id) is not None
         ):
             self.listener_event(
-                ZHA_SEND_EVENT, self.server_commands.get(command_id)[0], args
+                ZHA_SEND_EVENT,
+                self.server_commands.get(hdr.command_id, (hdr.command_id))[0],
+                args,
             )
 
     def _update_attribute(self, attrid, value):
@@ -198,10 +211,8 @@ class PowerConfigurationCluster(CustomCluster, PowerConfiguration):
             ((volts - self.MIN_VOLTS) / (self.MAX_VOLTS - self.MIN_VOLTS)) * 200
         )
 
-        _LOGGER.debug(
-            "%s %s, Voltage [RAW]:%s [Max]:%s [Min]:%s, Battery Percent: %s",
-            self.endpoint.device.manufacturer,
-            self.endpoint.device.model,
+        self.debug(
+            "Voltage [RAW]:%s [Max]:%s [Min]:%s, Battery Percent: %s",
             raw_value,
             self.MAX_VOLTS,
             self.MIN_VOLTS,
@@ -237,9 +248,17 @@ class MotionWithReset(_Motion):
 
     send_occupancy_event: bool = False
 
-    def handle_cluster_request(self, tsn, command_id, args):
+    def handle_cluster_request(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: List[Any],
+        *,
+        dst_addressing: Optional[
+            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        ] = None,
+    ):
         """Handle the cluster command."""
-        if command_id == ZONE_STATE:
+        if hdr.command_id == ZONE_STATE:
             if self._timer_handle:
                 self._timer_handle.cancel()
             self._timer_handle = self._loop.call_later(self.reset_s, self._turn_off)
@@ -363,7 +382,22 @@ class QuickInitDevice(CustomDevice):
         return device
 
 
-NAME = __name__
-PATH = __path__
-for importer, modname, ispkg in pkgutil.walk_packages(path=PATH, prefix=NAME + "."):
-    importlib.import_module(modname)
+def setup(config: Optional[Dict[str, Any]] = None) -> None:
+    """Register all quirks with zigpy, including optional custom quirks."""
+
+    # Import all quirks in the `zhaquirks` package first
+    for importer, modname, ispkg in pkgutil.walk_packages(
+        path=__path__,
+        prefix=__name__ + ".",
+    ):
+        _LOGGER.debug("Loading quirks module %s", modname)
+        importlib.import_module(modname)
+
+    # Treat the custom quirk path (e.g. `/config/custom_quirks/`) itself as a module
+    if config and config.get(CUSTOM_QUIRKS_PATH):
+        path = pathlib.Path(config[CUSTOM_QUIRKS_PATH])
+        _LOGGER.debug("Loading custom quirks from %s", path)
+
+        for importer, modname, ispkg in pkgutil.walk_packages(path=[str(path)]):
+            _LOGGER.debug("Loading custom quirks module %s", modname)
+            importer.find_module(modname).load_module(modname)

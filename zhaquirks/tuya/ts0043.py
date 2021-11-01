@@ -4,8 +4,7 @@ from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, OnOff, Ota, PowerConfiguration, Time
 
-from . import TuyaSmartRemoteOnOffCluster
-from ..const import (
+from zhaquirks.const import (
     BUTTON_1,
     BUTTON_2,
     BUTTON_3,
@@ -16,21 +15,22 @@ from ..const import (
     ENDPOINTS,
     INPUT_CLUSTERS,
     LONG_PRESS,
-    MODELS_INFO,
+    MODEL,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SHORT_PRESS,
 )
+from zhaquirks.tuya import TuyaSmartRemoteOnOffCluster
 
 
-class TuyaSmartRemote0043(CustomDevice):
-    """Tuya 3-button remote device."""
+class TuyaSmartRemote0043TI(CustomDevice):
+    """Tuya 3-button remote device with in time cluster ."""
 
     signature = {
         # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=0, device_version=1, input_clusters=[0, 10, 1, 6], output_clusters=[25]))
         # SizePrefixedSimpleDescriptor(endpoint=2, profile=260, device_type=0, device_version=1, input_clusters=[1, 6], output_clusters=[])
         # SizePrefixedSimpleDescriptor(endpoint=3, profile=260, device_type=0, device_version=1, input_clusters=[1, 6], output_clusters=[])
-        MODELS_INFO: [("_TZ3000_bi6lpsew", "TS0043"), ("_TZ3000_a7ouggvs", "TS0043")],
+        MODEL: "TS0043",
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -110,14 +110,14 @@ class TuyaSmartRemote0043(CustomDevice):
     }
 
 
-class BenexmartRemote0043(CustomDevice):
-    """Benexmart/Tuya 3-button remote device."""
+class TuyaSmartRemote0043TO(CustomDevice):
+    """Benexmart/Tuya 3-button remote device with oout time cluster."""
 
     signature = {
         # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=0, device_version=1, input_clusters=[0, 1, 6], output_clusters=[10, 25]))
         # SizePrefixedSimpleDescriptor(endpoint=2, profile=260, device_type=0, device_version=1, input_clusters=[1, 6], output_clusters=[])
         # SizePrefixedSimpleDescriptor(endpoint=3, profile=260, device_type=0, device_version=1, input_clusters=[1, 6], output_clusters=[])
-        MODELS_INFO: [("_TZ3000_qzjcsmar", "TS0043")],
+        MODEL: "TS0043",
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,

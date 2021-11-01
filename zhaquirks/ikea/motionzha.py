@@ -14,9 +14,7 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.lightlink import LightLink
 
-from . import IKEA, LightLinkCluster
-from .. import DoublingPowerConfigurationCluster
-from ..const import (
+from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -24,6 +22,7 @@ from ..const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.ikea import IKEA, LightLinkCluster, PowerConfiguration2CRCluster
 
 IKEA_CLUSTER_ID = 0xFC7C  # decimal = 64636
 DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
@@ -68,7 +67,7 @@ class IkeaTradfriMotion(CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SENSOR,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    DoublingPowerConfigurationCluster,
+                    PowerConfiguration2CRCluster,
                     Identify.cluster_id,
                     Alarms.cluster_id,
                     DIAGNOSTICS_CLUSTER_ID,
@@ -127,7 +126,7 @@ class IkeaTradfriMotionE1745(CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SENSOR,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    DoublingPowerConfigurationCluster,
+                    PowerConfiguration2CRCluster,
                     Identify.cluster_id,
                     Alarms.cluster_id,
                     PollControl.cluster_id,

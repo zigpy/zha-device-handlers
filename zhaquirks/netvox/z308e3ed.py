@@ -5,8 +5,13 @@ from zigpy.zcl.clusters.general import Basic, Commissioning, Identify, PollContr
 from zigpy.zcl.clusters.security import IasZone
 
 from zhaquirks import PowerConfigurationCluster
-
-from ..const import DEVICE_TYPE, ENDPOINTS, INPUT_CLUSTERS, OUTPUT_CLUSTERS, PROFILE_ID
+from zhaquirks.const import (
+    DEVICE_TYPE,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
+)
 
 DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
 

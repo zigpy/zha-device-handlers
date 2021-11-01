@@ -17,7 +17,7 @@ from zigpy.zcl.clusters.measurement import (
     TemperatureMeasurement,
 )
 
-from ..const import (
+from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -25,7 +25,7 @@ from ..const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from ..xiaomi import LUMI
+from zhaquirks.xiaomi import LUMI
 
 
 class PressureMeasurementCluster(CustomCluster, PressureMeasurement):

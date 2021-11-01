@@ -13,8 +13,8 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.measurement import PressureMeasurement, TemperatureMeasurement
 
-from .. import DoublingPowerConfigurationCluster
-from ..const import (
+from zhaquirks import DoublingPowerConfigurationCluster
+from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,

@@ -4,21 +4,13 @@ import logging
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import Basic, Groups, OnOff
 
-from .. import (
-    LUMI,
-    XIAOMI_NODE_DESC,
-    BasicCluster,
-    XiaomiPowerConfiguration,
-    XiaomiQuickInitDevice,
-)
-from ...const import (
+from zhaquirks.const import (
     ARGS,
     ATTRIBUTE_ID,
     ATTRIBUTE_NAME,
     CLUSTER_ID,
     COMMAND,
     COMMAND_ATTRIBUTE_UPDATED,
-    COMMAND_TRIPLE,
     DEVICE_TYPE,
     DOUBLE_PRESS,
     ENDPOINT_ID,
@@ -34,6 +26,13 @@ from ...const import (
     TRIPLE_PRESS,
     UNKNOWN,
     VALUE,
+)
+from zhaquirks.xiaomi import (
+    LUMI,
+    XIAOMI_NODE_DESC,
+    BasicCluster,
+    XiaomiPowerConfiguration,
+    XiaomiQuickInitDevice,
 )
 
 BUTTON_DEVICE_TYPE = 0x5F01
@@ -101,7 +100,7 @@ class SwitchAQ2(XiaomiQuickInitDevice):
             ARGS: {ATTRIBUTE_ID: 32768, ATTRIBUTE_NAME: UNKNOWN, VALUE: 2},
         },
         (TRIPLE_PRESS, TRIPLE_PRESS): {
-            COMMAND: COMMAND_TRIPLE,
+            COMMAND: COMMAND_ATTRIBUTE_UPDATED,
             CLUSTER_ID: 6,
             ENDPOINT_ID: 1,
             ARGS: {ATTRIBUTE_ID: 32768, ATTRIBUTE_NAME: UNKNOWN, VALUE: 3},

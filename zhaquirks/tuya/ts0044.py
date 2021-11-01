@@ -4,8 +4,7 @@ from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, OnOff, Ota, PowerConfiguration, Time
 
-from . import TuyaSmartRemoteOnOffCluster
-from ..const import (
+from zhaquirks.const import (
     BUTTON_1,
     BUTTON_2,
     BUTTON_3,
@@ -17,11 +16,12 @@ from ..const import (
     ENDPOINTS,
     INPUT_CLUSTERS,
     LONG_PRESS,
-    MODELS_INFO,
+    MODEL,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SHORT_PRESS,
 )
+from zhaquirks.tuya import TuyaSmartRemoteOnOffCluster
 
 
 class Tuya4ButtonTriggers:
@@ -43,15 +43,15 @@ class Tuya4ButtonTriggers:
     }
 
 
-class TuyaSmartRemote0044(CustomDevice, Tuya4ButtonTriggers):
-    """Tuya 4-button remote device."""
+class TuyaSmartRemote0044TI(CustomDevice, Tuya4ButtonTriggers):
+    """Tuya 4-button remote device with time on in cluster."""
 
     signature = {
         # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=0, device_version=1, input_clusters=[0, 10, 1, 6], output_clusters=[25]))
         # SizePrefixedSimpleDescriptor(endpoint=2, profile=260, device_type=0, device_version=1, input_clusters=[1, 6], output_clusters=[])
         # SizePrefixedSimpleDescriptor(endpoint=3, profile=260, device_type=0, device_version=1, input_clusters=[1, 6], output_clusters=[])
         # SizePrefixedSimpleDescriptor(endpoint=4, profile=260, device_type=0, device_version=1, input_clusters=[1, 6], output_clusters=[])
-        MODELS_INFO: [("_TZ3000_vp6clf9d", "TS0044")],
+        MODEL: "TS0044",
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -137,15 +137,15 @@ class TuyaSmartRemote0044(CustomDevice, Tuya4ButtonTriggers):
     }
 
 
-class ZemiSmartRemote0044(CustomDevice, Tuya4ButtonTriggers):
-    """Tuya 4-button remote device."""
+class TuyaSmartRemote0044TO(CustomDevice, Tuya4ButtonTriggers):
+    """Tuya 4-button remote device with time on out cluster."""
 
     signature = {
         # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=0, device_version=1, input_clusters=[0, 1, 6], output_clusters=[10, 25]))
         # SizePrefixedSimpleDescriptor(endpoint=2, profile=260, device_type=0, device_version=1, input_clusters=[1, 6], output_clusters=[])
         # SizePrefixedSimpleDescriptor(endpoint=3, profile=260, device_type=0, device_version=1, input_clusters=[1, 6], output_clusters=[])
         # SizePrefixedSimpleDescriptor(endpoint=4, profile=260, device_type=0, device_version=1, input_clusters=[1, 6], output_clusters=[])
-        MODELS_INFO: [("_TZ3000_vp6clf9d", "TS0044")],
+        MODEL: "TS0044",
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,

@@ -5,7 +5,10 @@ import zigpy.device
 import zigpy.endpoint
 import zigpy.quirks
 
+import zhaquirks
 import zhaquirks.kof.kof_mr101z
+
+zhaquirks.setup()
 
 
 def test_kof_no_reply():

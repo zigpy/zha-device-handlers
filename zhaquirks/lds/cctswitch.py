@@ -13,8 +13,7 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.lightlink import LightLink
 
-from . import MANUFACTURER, LightLinkCluster
-from ..const import (
+from zhaquirks.const import (
     ARGS,
     CLUSTER_ID,
     COMMAND,
@@ -37,6 +36,7 @@ from ..const import (
     SHORT_PRESS,
     TURN_ON,
 )
+from zhaquirks.lds import MANUFACTURER, LightLinkCluster
 
 
 class CCTSwitch(CustomDevice):

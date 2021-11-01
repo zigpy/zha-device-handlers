@@ -12,9 +12,8 @@ from zigpy.zcl.clusters.general import (
     Scenes,
 )
 
-from . import KONKE, KonkeOnOffCluster
-from .. import PowerConfigurationCluster
-from ..const import (
+from zhaquirks import PowerConfigurationCluster
+from zhaquirks.const import (
     COMMAND,
     COMMAND_DOUBLE,
     COMMAND_HOLD,
@@ -29,6 +28,7 @@ from ..const import (
     PROFILE_ID,
     SHORT_PRESS,
 )
+from zhaquirks.konke import KONKE, KonkeOnOffCluster
 
 KONKE_CLUSTER_ID = 0xFCC0
 

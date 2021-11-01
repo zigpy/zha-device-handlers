@@ -2,14 +2,15 @@
 import asyncio
 import logging
 import time
+from typing import Any, List, Optional, Union
 
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
-from zigpy.zcl.clusters.general import Basic, LevelControl, OnOff
-from zigpy.zcl.clusters.lighting import Color
+from zigpy.zcl import foundation
+from zigpy.zcl.clusters.general import Basic
 from zigpy.zcl.clusters.measurement import OccupancySensing
 
-from ..const import (
+from zhaquirks.const import (
     ARGS,
     BUTTON,
     COMMAND,
@@ -32,6 +33,7 @@ from ..const import (
 
 DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
 PHILIPS = "Philips"
+SIGNIFY = "Signify Netherlands B.V."
 _LOGGER = logging.getLogger(__name__)
 
 HUE_REMOTE_DEVICE_TRIGGERS = {
@@ -85,27 +87,6 @@ class OccupancyCluster(CustomCluster, OccupancySensing):
         0x0030: ("sensitivity", t.uint8_t),
         0x0031: ("sensitivity_max", t.uint8_t),
     }
-
-
-class PhilipsOnOffCluster(CustomCluster, OnOff):
-    """Philips OnOff cluster."""
-
-    attributes = OnOff.attributes.copy()
-    attributes.update({0x4003: ("power_on_state", PowerOnState)})
-
-
-class PhilipsLevelControlCluster(CustomCluster, LevelControl):
-    """Philips LevelControl cluster."""
-
-    attributes = LevelControl.attributes.copy()
-    attributes.update({0x4000: ("power_on_level", t.uint8_t)})
-
-
-class PhilipsColorCluster(CustomCluster, Color):
-    """Philips Color cluster."""
-
-    attributes = Color.attributes.copy()
-    attributes.update({0x4010: ("power_on_color_temperature", t.uint16_t)})
 
 
 class PhilipsBasicCluster(CustomCluster, Basic):
@@ -177,12 +158,20 @@ class PhilipsRemoteCluster(CustomCluster):
 
     button_press_queue = ButtonPressQueue()
 
-    def handle_cluster_request(self, tsn, command_id, args):
+    def handle_cluster_request(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: List[Any],
+        *,
+        dst_addressing: Optional[
+            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        ] = None,
+    ):
         """Handle the cluster command."""
         _LOGGER.debug(
             "PhilipsRemoteCluster - handle_cluster_request tsn: [%s] command id: %s - args: [%s]",
-            tsn,
-            command_id,
+            hdr.tsn,
+            hdr.command_id,
             args,
         )
 
@@ -192,7 +181,7 @@ class PhilipsRemoteCluster(CustomCluster):
         event_args = {
             BUTTON: button,
             PRESS_TYPE: press_type,
-            COMMAND_ID: command_id,
+            COMMAND_ID: hdr.command_id,
             ARGS: args,
         }
 

@@ -1,6 +1,6 @@
 """Module for Zen Within quirks implementations."""
 
-from .. import PowerConfigurationCluster
+from zhaquirks import PowerConfigurationCluster
 
 ZEN = "Zen Within"
 

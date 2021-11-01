@@ -15,17 +15,16 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.lightlink import LightLink
 
-from . import OSRAM
-from ..const import (
+from zhaquirks.const import (
     BUTTON_1,
     BUTTON_2,
     BUTTON_3,
     COMMAND,
     COMMAND_MOVE,
+    COMMAND_MOVE_ON_OFF,
     COMMAND_MOVE_TO_LEVEL_ON_OFF,
     COMMAND_OFF,
     COMMAND_ON,
-    COMMAND_STEP_ON_OFF,
     COMMAND_STOP,
     DEVICE_TYPE,
     ENDPOINT_ID,
@@ -38,6 +37,7 @@ from ..const import (
     PROFILE_ID,
     SHORT_PRESS,
 )
+from zhaquirks.osram import OSRAM
 
 OSRAM_CLUSTER = 0xFD00
 
@@ -117,7 +117,7 @@ class OsramSwitchMini(CustomDevice):
 
     device_automation_triggers = {
         (SHORT_PRESS, BUTTON_1): {COMMAND: COMMAND_ON, ENDPOINT_ID: 1},
-        (LONG_PRESS, BUTTON_1): {COMMAND: COMMAND_STEP_ON_OFF, ENDPOINT_ID: 1},
+        (LONG_PRESS, BUTTON_1): {COMMAND: COMMAND_MOVE_ON_OFF, ENDPOINT_ID: 1},
         (LONG_RELEASE, BUTTON_1): {COMMAND: COMMAND_STOP, ENDPOINT_ID: 1},
         (SHORT_PRESS, BUTTON_2): {
             COMMAND: COMMAND_MOVE_TO_LEVEL_ON_OFF,

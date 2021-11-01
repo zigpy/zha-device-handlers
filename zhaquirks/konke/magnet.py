@@ -5,9 +5,8 @@ from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, Identify, PowerConfiguration
 from zigpy.zcl.clusters.security import IasZone
 
-from . import KONKE
-from .. import PowerConfigurationCluster
-from ..const import (
+from zhaquirks import PowerConfigurationCluster
+from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -15,6 +14,7 @@ from ..const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.konke import KONKE
 
 KONKE_CLUSTER_ID = 0xFCC0
 
@@ -27,7 +27,7 @@ class KonkeMagnet(CustomDevice):
         # device_version=0
         # input_clusters=[0, 1, 3, 1280, 64704]
         # output_clusters=[3, 64704]>
-        MODELS_INFO: [(KONKE, "3AFE270104020015")],
+        MODELS_INFO: [(KONKE, "3AFE270104020015"), (KONKE, "3AFE280104020015")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -70,7 +70,7 @@ class KonkeMagnet2(CustomDevice):
         # device_version=0
         # input_clusters=[0, 1, 3, 1280]
         # output_clusters=[3]>
-        MODELS_INFO: [(KONKE, "3AFE130104020015")],
+        MODELS_INFO: [(KONKE, "3AFE130104020015"), (KONKE, "3AFE140104020015")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,

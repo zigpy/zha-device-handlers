@@ -1,11 +1,12 @@
 """Konke sensors."""
+from typing import Any, List, Optional, Union
 
 import zigpy.types as t
 from zigpy.zcl.clusters.general import OnOff
 import zigpy.zcl.foundation
 
-from .. import CustomCluster, LocalDataCluster, MotionWithReset, OccupancyOnEvent
-from ..const import (
+from zhaquirks import CustomCluster, LocalDataCluster, MotionWithReset, OccupancyOnEvent
+from zhaquirks.const import (
     COMMAND_DOUBLE,
     COMMAND_HOLD,
     COMMAND_ID,
@@ -38,7 +39,15 @@ class KonkeOnOffCluster(CustomCluster, OnOff):
     ep_attribute = "custom_on_off"
     manufacturer_attributes = {0x0000: (PRESS_TYPE, t.uint8_t)}
 
-    def handle_cluster_general_request(self, header, args):
+    def handle_cluster_general_request(
+        self,
+        header: zigpy.zcl.foundation.ZCLHeader,
+        args: List[Any],
+        *,
+        dst_addressing: Optional[
+            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        ] = None,
+    ):
         """Handle the cluster command."""
         self.info(
             "Konke general request - handle_cluster_general_request: header: %s - args: [%s]",

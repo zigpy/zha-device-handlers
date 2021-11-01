@@ -2,7 +2,7 @@
 import logging
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     Identify,
@@ -13,15 +13,12 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone
 
-from . import CLICK_TYPES, SAMJIN
-from ..const import (
-    ARGS,
+from zhaquirks.const import (
     BUTTON,
     COMMAND,
     COMMAND_BUTTON_DOUBLE,
     COMMAND_BUTTON_HOLD,
     COMMAND_BUTTON_SINGLE,
-    COMMAND_ID,
     DEVICE_TYPE,
     DOUBLE_PRESS,
     ENDPOINTS,
@@ -29,11 +26,10 @@ from ..const import (
     LONG_PRESS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
-    PRESS_TYPE,
     PROFILE_ID,
     SHORT_PRESS,
-    ZHA_SEND_EVENT,
 )
+from zhaquirks.samjin import SAMJIN, SamjinIASCluster
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -42,23 +38,6 @@ DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
 
 class SamjinButton(CustomDevice):
     """Samjin button device."""
-
-    class IASCluster(CustomCluster, IasZone):
-        """Occupancy cluster."""
-
-        cluster_id = IasZone.cluster_id
-
-        def handle_cluster_request(self, tsn, command_id, args):
-            """Handle a cluster command received on this cluster."""
-            if command_id == 0:
-                state = args[0] & 3
-                event_args = {
-                    PRESS_TYPE: CLICK_TYPES[state],
-                    COMMAND_ID: command_id,
-                    ARGS: args,
-                }
-                action = "button_{}".format(CLICK_TYPES[state])
-                self.listener_event(ZHA_SEND_EVENT, action, event_args)
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=1026
@@ -76,7 +55,7 @@ class SamjinButton(CustomDevice):
                     Identify.cluster_id,
                     PollControl.cluster_id,
                     TemperatureMeasurement.cluster_id,
-                    IASCluster.cluster_id,
+                    IasZone.cluster_id,
                     DIAGNOSTICS_CLUSTER_ID,
                 ],
                 OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],
@@ -94,7 +73,7 @@ class SamjinButton(CustomDevice):
                     Identify.cluster_id,
                     PollControl.cluster_id,
                     TemperatureMeasurement.cluster_id,
-                    IASCluster,
+                    SamjinIASCluster,
                     DIAGNOSTICS_CLUSTER_ID,
                 ],
                 OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],

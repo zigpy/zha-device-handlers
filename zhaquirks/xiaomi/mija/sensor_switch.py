@@ -1,4 +1,5 @@
 """Xiaomi mija button device."""
+import asyncio
 import logging
 
 from zigpy.profiles import zha
@@ -12,23 +13,28 @@ from zigpy.zcl.clusters.general import (
     Scenes,
 )
 
-from .. import LUMI, BasicCluster, XiaomiCustomDevice, XiaomiPowerConfiguration
-from ... import CustomCluster
-from ...const import (
+from zhaquirks import CustomCluster
+from zhaquirks.const import (
     ARGS,
+    BUTTON,
     CLICK_TYPE,
     COMMAND,
     COMMAND_CLICK,
     COMMAND_DOUBLE,
     COMMAND_FURIOUS,
+    COMMAND_HOLD,
     COMMAND_QUAD,
+    COMMAND_RELEASE,
     COMMAND_SINGLE,
     COMMAND_TRIPLE,
     DEVICE_TYPE,
     DOUBLE_PRESS,
     ENDPOINTS,
     INPUT_CLUSTERS,
+    LONG_PRESS,
+    LONG_RELEASE,
     MODELS_INFO,
+    NODE_DESCRIPTOR,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     QUADRUPLE_PRESS,
@@ -38,6 +44,13 @@ from ...const import (
     TRIPLE_PRESS,
     UNKNOWN,
     ZHA_SEND_EVENT,
+)
+from zhaquirks.xiaomi import (
+    LUMI,
+    XIAOMI_NODE_DESC,
+    BasicCluster,
+    XiaomiPowerConfiguration,
+    XiaomiQuickInitDevice,
 )
 
 XIAOMI_CLUSTER_ID = 0xFFFF
@@ -52,7 +65,7 @@ CLICK_TYPE_MAP = {
 }
 
 
-class MijaButton(XiaomiCustomDevice):
+class MijaButton(XiaomiQuickInitDevice):
     """Mija button device."""
 
     def __init__(self, *args, **kwargs):
@@ -64,10 +77,13 @@ class MijaButton(XiaomiCustomDevice):
         """Mija on off cluster."""
 
         cluster_id = OnOff.cluster_id
+        hold_duration: float = 1.0
 
         def __init__(self, *args, **kwargs):
             """Init."""
             self._current_state = {}
+            self._loop = asyncio.get_running_loop()
+            self._timer_handle = None
             super().__init__(*args, **kwargs)
 
         def _update_attribute(self, attrid, value):
@@ -76,7 +92,20 @@ class MijaButton(XiaomiCustomDevice):
             # Handle Mija OnOff
             if attrid == 0:
                 value = not value
-                click_type = COMMAND_SINGLE if value is True else False
+
+                if value:
+                    if self._timer_handle:
+                        self._timer_handle.cancel()
+                    self._timer_handle = self._loop.call_later(
+                        self.hold_duration, self._hold_timeout
+                    )
+                else:
+                    if self._timer_handle:
+                        self._timer_handle.cancel()
+                        self._timer_handle = None
+                        click_type = COMMAND_SINGLE
+                    else:
+                        self.listener_event(ZHA_SEND_EVENT, COMMAND_RELEASE, [])
 
             # Handle Multi Clicks
             elif attrid == 32768:
@@ -88,6 +117,12 @@ class MijaButton(XiaomiCustomDevice):
                 )
 
             super()._update_attribute(attrid, value)
+
+        def _hold_timeout(self):
+            """Handle hold timeout."""
+
+            self._timer_handle = None
+            self.listener_event(ZHA_SEND_EVENT, COMMAND_HOLD, [])
 
     signature = {
         # Endpoints:
@@ -106,6 +141,7 @@ class MijaButton(XiaomiCustomDevice):
         #       Level control (8)
         #       Ota (25)
         MODELS_INFO: [(LUMI, "lumi.sensor_switch")],
+        NODE_DESCRIPTOR: XIAOMI_NODE_DESC,
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -156,6 +192,8 @@ class MijaButton(XiaomiCustomDevice):
             COMMAND: COMMAND_CLICK,
             ARGS: {CLICK_TYPE: COMMAND_SINGLE},
         },
+        (LONG_PRESS, BUTTON): {COMMAND: COMMAND_HOLD},
+        (LONG_RELEASE, BUTTON): {COMMAND: COMMAND_RELEASE},
         (DOUBLE_PRESS, DOUBLE_PRESS): {
             COMMAND: COMMAND_CLICK,
             ARGS: {CLICK_TYPE: COMMAND_DOUBLE},

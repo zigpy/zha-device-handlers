@@ -13,9 +13,7 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.lightlink import LightLink
 
-from . import IKEA, ROTATED
-from .. import DoublingPowerConfigurationCluster
-from ..const import (
+from zhaquirks.const import (
     ARGS,
     CLUSTER_ID,
     COMMAND,
@@ -36,6 +34,7 @@ from ..const import (
     TRIPLE_PRESS,
     TURN_ON,
 )
+from zhaquirks.ikea import IKEA, ROTATED, PowerConfiguration1CRCluster
 
 
 class IkeaSYMFONISK(CustomDevice):
@@ -77,7 +76,7 @@ class IkeaSYMFONISK(CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    DoublingPowerConfigurationCluster,
+                    PowerConfiguration1CRCluster,
                     Identify.cluster_id,
                     PollControl.cluster_id,
                     LightLink.cluster_id,

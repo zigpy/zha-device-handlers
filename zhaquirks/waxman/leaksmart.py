@@ -1,8 +1,11 @@
 """Device handler for WAXMAN leakSMART."""
 # pylint: disable=W0102
+from typing import Any, List, Optional, Union
+
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
     Basic,
     Identify,
@@ -14,9 +17,8 @@ from zigpy.zcl.clusters.homeautomation import ApplianceEventAlerts
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone
 
-from . import WAXMAN
-from .. import Bus, LocalDataCluster
-from ..const import (
+from zhaquirks import Bus, LocalDataCluster
+from zhaquirks.const import (
     CLUSTER_COMMAND,
     DEVICE_TYPE,
     ENDPOINTS,
@@ -25,6 +27,7 @@ from ..const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.waxman import WAXMAN
 
 MANUFACTURER_SPECIFIC_CLUSTER_ID = 0xFC02  # decimal = 64514
 MOISTURE_TYPE = 0x002A
@@ -68,9 +71,17 @@ class WAXMANApplianceEventAlerts(CustomCluster, ApplianceEventAlerts):
         super().__init__(*args, **kwargs)
         self.endpoint.device.app_cluster = self
 
-    def handle_cluster_request(self, tsn, command_id, args):
+    def handle_cluster_request(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: List[Any],
+        *,
+        dst_addressing: Optional[
+            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        ] = None,
+    ):
         """Handle a cluster command received on this cluster."""
-        if command_id == WAXMAN_CMDID:
+        if hdr.command_id == WAXMAN_CMDID:
             state = bool(args[1] & 0x1000)
 
             self.endpoint.device.ias_bus.listener_event("update_state", state)

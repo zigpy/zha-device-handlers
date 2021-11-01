@@ -13,8 +13,7 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.lightlink import LightLink
 
-from . import PhilipsBasicCluster, PhilipsRemoteCluster
-from ..const import (
+from zhaquirks.const import (
     COMMAND,
     DEVICE_TYPE,
     DOUBLE_PRESS,
@@ -22,6 +21,7 @@ from ..const import (
     INPUT_CLUSTERS,
     LONG_PRESS,
     LONG_RELEASE,
+    MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     QUADRUPLE_PRESS,
@@ -30,6 +30,12 @@ from ..const import (
     SHORT_RELEASE,
     TRIPLE_PRESS,
     TURN_ON,
+)
+from zhaquirks.philips import (
+    PHILIPS,
+    SIGNIFY,
+    PhilipsBasicCluster,
+    PhilipsRemoteCluster,
 )
 
 DEVICE_SPECIFIC_UNKNOWN = 64512
@@ -43,6 +49,7 @@ class PhilipsROM001(CustomDevice):
         #  device_version=1
         #  input_clusters=[0, 1, 3, 64512, 4096]
         #  output_clusters=[25, 0, 3, 4, 6, 8, 5, 4096]>
+        MODELS_INFO: [(PHILIPS, "ROM001"), (SIGNIFY, "ROM001")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -65,7 +72,7 @@ class PhilipsROM001(CustomDevice):
                     LightLink.cluster_id,
                 ],
             }
-        }
+        },
     }
 
     replacement = {
