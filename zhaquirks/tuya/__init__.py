@@ -97,6 +97,18 @@ TUYA_COVER_COMMAND = {
     "_TZE200_yenbr4om": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
     "_TZE200_5sbebbzs": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
 }
+# Taken from zigbee-herdsman-converters
+# Contains all covers which need their position inverted by default
+# Default is 100 = open, 0 = closed; Devices listed here will use 0 = open, 100 = closed instead
+# Use manufacturerName to identify device!
+# Don't invert _TZE200_cowvfni3: https://github.com/Koenkk/zigbee2mqtt/issues/6043
+TUYA_COVER_INVERTED_BY_DEFAULT = [
+    "_TZE200_wmcdj3aq",
+    "_TZE200_nogaemzt",
+    "_TZE200_xuzcvlku",
+    "_TZE200_xaabybja",
+]
+
 # ---------------------------------------------------------
 # TUYA Switch Custom Values
 # ---------------------------------------------------------
@@ -891,9 +903,13 @@ class TuyaWindowCoverControl(LocalDataCluster, WindowCovering):
     def cover_event(self, attribute, value):
         """Event listener for cover events."""
         if attribute == ATTR_COVER_POSITION:
-            value = (
-                value if self._attr_cache.get(ATTR_COVER_INVERTED) == 1 else 100 - value
+            invert_attr = self._attr_cache.get(ATTR_COVER_INVERTED) == 1
+            invert = (
+                not invert_attr
+                if self.endpoint.device.manufacturer in TUYA_COVER_INVERTED_BY_DEFAULT
+                else invert_attr
             )
+            value = value if invert else 100 - value
         self._update_attribute(attribute, value)
         _LOGGER.debug(
             "%s Tuya Attribute Cache : [%s]",
@@ -942,11 +958,13 @@ class TuyaWindowCoverControl(LocalDataCluster, WindowCovering):
             tuya_payload.command_id = TUYA_DP_TYPE_VALUE + TUYA_DP_ID_PERCENT_CONTROL
             tuya_payload.function = 0
             """Check direction and correct value"""
-            position = (
-                args[0]
-                if self._attr_cache.get(ATTR_COVER_INVERTED) == 1
-                else 100 - args[0]
+            invert_attr = self._attr_cache.get(ATTR_COVER_INVERTED) == 1
+            invert = (
+                not invert_attr
+                if self.endpoint.device.manufacturer in TUYA_COVER_INVERTED_BY_DEFAULT
+                else invert_attr
             )
+            position = args[0] if invert else 100 - args[0]
             tuya_payload.data = [
                 4,
                 0,
