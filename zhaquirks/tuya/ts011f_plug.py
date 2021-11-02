@@ -45,9 +45,9 @@ class TuyaClusterE001(CustomCluster):
 class TuyaZBElectricalMeasurement(CustomCluster, ElectricalMeasurement):
     """Divides the Current for tuya."""
 
-    AC_VOLTAGE_MULTIPLIER = 0x0600
-    AC_VOLTAGE_DIVISOR = 0x0601
-    _CONSTANT_ATTRIBUTES = {AC_VOLTAGE_MULTIPLIER: 1, AC_VOLTAGE_DIVISOR: 1000}
+    AC_CURRENT_MULTIPLIER = 0x0602
+    AC_CURRENT_DIVISOR = 0x0603
+    _CONSTANT_ATTRIBUTES = {AC_CURRENT_MULTIPLIER: 1, AC_CURRENT_DIVISOR: 1000}
 
 
 class Plug(CustomDevice):
