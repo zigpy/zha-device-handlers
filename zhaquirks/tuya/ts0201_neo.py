@@ -37,7 +37,7 @@ class NeoTemperatureHumidityAlarmCluster(CustomCluster):
 
     manufacturer_attributes = {
         # Alarm settings
-        0xD00A: ("alarm_temperature_man", t.uint16_t),
+        0xD00A: ("alarm_temperature_max", t.uint16_t),
         0xD00B: ("alarm_temperature_min", t.uint16_t),
         0xD00C: ("alarm_humidity_max", t.uint16_t),
         0xD00E: ("alarm_humidity_min", t.uint16_t),
