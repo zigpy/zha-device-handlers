@@ -474,7 +474,7 @@ class TuyaManufacturerClusterOnOff(TuyaManufCluster):
         # Send default response because the MCU expects it
         if not hdr.frame_control.disable_default_response:
             self.send_default_rsp(hdr, status=foundation.Status.SUCCESS)
-            
+
         tuya_payload = args[0]
         if hdr.command_id in (0x0002, 0x0001):
             self.endpoint.device.switch_bus.listener_event(
