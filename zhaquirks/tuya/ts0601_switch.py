@@ -63,7 +63,7 @@ class TuyaSingleSwitchTI(TuyaSwitch):
         }
     }
 
-    
+
 class TuyaSingleSwitchTO(TuyaSwitch):
     """uya single channel switch time on out cluster device."""
 
@@ -113,5 +113,3 @@ class TuyaSingleSwitchTO(TuyaSwitch):
             }
         }
     }
-
-    
