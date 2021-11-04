@@ -1,4 +1,4 @@
-"""Tuya based button sensor."""
+"""Tuya DP based switches."""
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time
 
@@ -65,7 +65,7 @@ class TuyaSingleSwitchTI(TuyaSwitch):
 
 
 class TuyaSingleSwitchTO(TuyaSwitch):
-    """uya single channel switch time on out cluster device."""
+    """Tuya single channel switch time on out cluster device."""
 
     signature = {
         # "node_descriptor": "<NodeDescriptor byte1=1 byte2=64 mac_capability_flags=142 manufacturer_code=4098
