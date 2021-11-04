@@ -110,7 +110,7 @@ async def test_motion(zigpy_device_from_quirk, quirk):
 
 
 @pytest.mark.parametrize(
-    "quirk", (zhaquirks.tuya.ts0601_singleswitch.TuyaSingleSwitch,)
+    "quirk", (zhaquirks.ts0601_switch.TuyaSingleSwitchTI,)
 )
 async def test_singleswitch_state_report(zigpy_device_from_quirk, quirk):
     """Test tuya single switch."""
@@ -136,7 +136,7 @@ async def test_singleswitch_state_report(zigpy_device_from_quirk, quirk):
 
 
 @pytest.mark.parametrize(
-    "quirk", (zhaquirks.tuya.ts0601_singleswitch.TuyaSingleSwitch,)
+    "quirk", (zhaquirks.tuya.ts0601_switch.TuyaSingleSwitchTI,)
 )
 async def test_singleswitch_requests(zigpy_device_from_quirk, quirk):
     """Test tuya single switch."""
