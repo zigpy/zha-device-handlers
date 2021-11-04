@@ -13,7 +13,6 @@ from zhaquirks.const import (
 from zhaquirks.tuya import (
     TuyaManufacturerWindowCover,
     TuyaManufCluster,
-    TuyaSwitch,
     TuyaWindowCover,
     TuyaWindowCoverControl,
 )
