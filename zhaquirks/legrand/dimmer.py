@@ -134,7 +134,7 @@ class DimmerWithoutNeutral2(DimmerWithoutNeutral):
     }
 
 class DimmerWithoutNeutral3(CustomDevice):
-    """Dimmer switch w/o neutral (at least for firmware 0x2e)."""
+    """Dimmer switch w/o neutral (at least for firmware 0x2e and above)."""
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=256
@@ -185,6 +185,10 @@ class DimmerWithoutNeutral3(CustomDevice):
                     LevelControl.cluster_id,
                     Scenes.cluster_id,
                     BinaryInput.cluster_id,
+                    # Some devices with firmware 0x39 have Ballast cluster,
+                    # but some of them don't. But in any case Ballast works,
+                    # if we add it here.
+                    Ballast.cluster_id, 
                     LegrandCluster,
                 ],
                 OUTPUT_CLUSTERS: [
@@ -208,10 +212,7 @@ class DimmerWithoutNeutral3(CustomDevice):
 
 class DimmerWithoutNeutralAndBallast(CustomDevice):
     """Dimmer switch w/o neutral (at least for firmware 0x39)."""
-    #
-    # TODO: Some fw=0x39 devices have Ballast cluster, but some of them don't.
-    #       It seems that Ballast cluster is enabled through Manufacturer specific command
-    # 
+     
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=256
         # device_version=1
