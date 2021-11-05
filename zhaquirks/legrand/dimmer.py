@@ -133,6 +133,7 @@ class DimmerWithoutNeutral2(DimmerWithoutNeutral):
         },
     }
 
+
 class DimmerWithoutNeutral3(CustomDevice):
     """Dimmer switch w/o neutral (at least for firmware 0x2e and above)."""
 
@@ -188,7 +189,7 @@ class DimmerWithoutNeutral3(CustomDevice):
                     # Some devices with firmware 0x39 have Ballast cluster,
                     # but some of them don't. But in any case Ballast works,
                     # if we add it here.
-                    Ballast.cluster_id, 
+                    Ballast.cluster_id,
                     LegrandCluster,
                 ],
                 OUTPUT_CLUSTERS: [
@@ -196,13 +197,13 @@ class DimmerWithoutNeutral3(CustomDevice):
                     LegrandCluster,
                     Ota.cluster_id,
                     OnOff.cluster_id,
-                    Scenes.cluster_id
+                    Scenes.cluster_id,
                 ],
             },
             # Green Power End Point
             242: {
                 PROFILE_ID: 0xA1E0,
-                DEVICE_TYPE: 0x0066, #GP Combo Minimum
+                DEVICE_TYPE: 0x0066,  # GP Combo Minimum
                 INPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
@@ -212,7 +213,7 @@ class DimmerWithoutNeutral3(CustomDevice):
 
 class DimmerWithoutNeutralAndBallast(CustomDevice):
     """Dimmer switch w/o neutral (at least for firmware 0x39)."""
-     
+
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=256
         # device_version=1
@@ -272,13 +273,13 @@ class DimmerWithoutNeutralAndBallast(CustomDevice):
                     LegrandCluster,
                     Ota.cluster_id,
                     OnOff.cluster_id,
-                    Scenes.cluster_id
+                    Scenes.cluster_id,
                 ],
             },
             # Green Power End Point
             242: {
                 PROFILE_ID: 0xA1E0,
-                DEVICE_TYPE: 0x0066, #GP Combo Minimum
+                DEVICE_TYPE: 0x0066,  # GP Combo Minimum
                 INPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
