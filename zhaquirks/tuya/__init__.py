@@ -4,21 +4,17 @@ import datetime
 import logging
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
-import zigpy.types as t
-from zhaquirks import Bus, EventableCluster, LocalDataCluster
-from zhaquirks.const import (
-    DOUBLE_PRESS,
-    LONG_PRESS,
-    SHORT_PRESS,
-    ZHA_SEND_EVENT,
-)
 from zigpy.quirks import CustomCluster, CustomDevice
+import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import LevelControl, OnOff, PowerConfiguration
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
 from zigpy.zcl.clusters.smartenergy import Metering
+
+from zhaquirks import Bus, EventableCluster, LocalDataCluster
+from zhaquirks.const import DOUBLE_PRESS, LONG_PRESS, SHORT_PRESS, ZHA_SEND_EVENT
 
 # ---------------------------------------------------------
 # Tuya Custom Cluster ID
