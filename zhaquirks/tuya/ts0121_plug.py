@@ -1,10 +1,4 @@
 """Tuya TS0121 plug."""
-from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
-from zigpy.zcl.clusters.general import Basic, Groups, OnOff, Ota, Scenes, Time
-from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
-from zigpy.zcl.clusters.smartenergy import Metering
-
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -13,7 +7,16 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import TuyaZBMeteringCluster, TuyaZBOnOffRestorePowerCluster, TuyaZBElectricalMeasurement
+from zhaquirks.tuya import (
+    TuyaZBElectricalMeasurement,
+    TuyaZBMeteringCluster,
+    TuyaZBOnOffRestorePowerCluster,
+)
+from zigpy.profiles import zha
+from zigpy.quirks import CustomDevice
+from zigpy.zcl.clusters.general import Basic, Groups, OnOff, Ota, Scenes, Time
+from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
+from zigpy.zcl.clusters.smartenergy import Metering
 
 
 class Plug(CustomDevice):
