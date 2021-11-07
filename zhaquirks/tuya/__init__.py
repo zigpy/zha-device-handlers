@@ -268,9 +268,10 @@ class TuyaManufCluster(CustomCluster):
 
     class MCUVersionRsp(t.Struct):
         """Tuya MCU version response Zcl payload."""
+        
         tsn: t.uint16_t
         version: t.uint8_t
-        
+
     """ Time sync command (It's transparent between MCU and server)
             Time request device -> server
                payloadSize = 0
