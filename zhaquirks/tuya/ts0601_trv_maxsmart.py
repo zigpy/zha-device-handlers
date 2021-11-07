@@ -6,15 +6,15 @@ from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
+    AnalogOutput,
     Basic,
+    BinaryInput,
     Groups,
     Identify,
     OnOff,
     Ota,
     Scenes,
     Time,
-    AnalogOutput,
-    BinaryInput,
 )
 from zigpy.zcl.clusters.hvac import Thermostat
 
