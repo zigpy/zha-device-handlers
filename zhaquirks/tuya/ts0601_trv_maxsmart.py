@@ -614,7 +614,7 @@ class MaxsmartAwayMonth(LocalDataCluster, AnalogOutput):
         return self._attr_cache.get(self.attridx["present_value"])
 
     async def write_attributes(self, attributes, manufacturer=None):
-        """Def .writ away month attribute"""
+        """Def .writ away month attribute."""
         for attrid, value in attributes.items():
             if isinstance(attrid, str):
                 attrid = self.attridx[attrid]
@@ -906,7 +906,7 @@ class MaxsmartComfortTemperature(LocalDataCluster, AnalogOutput):
         return self._attr_cache.get(self.attridx["present_value"])
 
     async def write_attributes(self, attributes, manufacturer=None):
-        """Def Comfort serset atribute."""
+        """Def Comfort serset attribute."""
         for attrid, value in attributes.items():
             if isinstance(attrid, str):
                 attrid = self.attridx[attrid]
