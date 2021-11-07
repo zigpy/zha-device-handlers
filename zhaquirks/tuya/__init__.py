@@ -772,8 +772,8 @@ class TuyaZBMeteringCluster(CustomCluster, Metering):
     MULTIPLIER = 0x0301
     DIVISOR = 0x0302
     _CONSTANT_ATTRIBUTES = {MULTIPLIER: 1, DIVISOR: 100}
- 
- 
+
+
 class TuyaZBElectricalMeasurement(CustomCluster, ElectricalMeasurement):
     """Divides the Current for tuya."""
 
