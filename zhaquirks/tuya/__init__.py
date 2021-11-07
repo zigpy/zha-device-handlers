@@ -268,7 +268,7 @@ class TuyaManufCluster(CustomCluster):
 
     class MCUVersionRsp(t.Struct):
         """Tuya MCU version response Zcl payload."""
-        
+
         tsn: t.uint16_t
         version: t.uint8_t
 
