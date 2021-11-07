@@ -23,7 +23,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import TuyaZBMeteringCluster, TuyaZBOnOffRestorePowerCluster
+from zhaquirks.tuya import TuyaZBMeteringCluster, TuyaZBOnOffRestorePowerCluster, TuyaZBElectricalMeasurement
 
 
 class TuyaClusterE000(CustomCluster):
@@ -40,14 +40,6 @@ class TuyaClusterE001(CustomCluster):
     name = "Tuya Manufacturer Specific"
     cluster_id = 0xE001
     ep_attribute = "tuya_is_pita_1"
-
-
-class TuyaZBElectricalMeasurement(CustomCluster, ElectricalMeasurement):
-    """Divides the Current for tuya."""
-
-    AC_CURRENT_MULTIPLIER = 0x0602
-    AC_CURRENT_DIVISOR = 0x0603
-    _CONSTANT_ATTRIBUTES = {AC_CURRENT_MULTIPLIER: 1, AC_CURRENT_DIVISOR: 1000}
 
 
 class Plug(CustomDevice):

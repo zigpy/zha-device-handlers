@@ -13,7 +13,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import TuyaZBMeteringCluster, TuyaZBOnOffRestorePowerCluster
+from zhaquirks.tuya import TuyaZBMeteringCluster, TuyaZBOnOffRestorePowerCluster, TuyaZBElectricalMeasurement
 
 
 class Plug(CustomDevice):
@@ -52,7 +52,7 @@ class Plug(CustomDevice):
                     Scenes.cluster_id,
                     TuyaZBOnOffRestorePowerCluster,
                     TuyaZBMeteringCluster,
-                    ElectricalMeasurement.cluster_id,
+                    TuyaZBElectricalMeasurement,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },

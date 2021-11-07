@@ -771,6 +771,14 @@ class TuyaZBMeteringCluster(CustomCluster, Metering):
     MULTIPLIER = 0x0301
     DIVISOR = 0x0302
     _CONSTANT_ATTRIBUTES = {MULTIPLIER: 1, DIVISOR: 100}
+ 
+ 
+class TuyaZBElectricalMeasurement(CustomCluster, ElectricalMeasurement):
+    """Divides the Current for tuya."""
+
+    AC_CURRENT_MULTIPLIER = 0x0602
+    AC_CURRENT_DIVISOR = 0x0603
+    _CONSTANT_ATTRIBUTES = {AC_CURRENT_MULTIPLIER: 1, AC_CURRENT_DIVISOR: 1000}
 
 
 # Tuya Window Cover Implementation
