@@ -224,6 +224,7 @@ class MaxsmartManufCluster(TuyaManufClusterAttributes):
             )
 
     def away_cluster_get(self, field, attributes):
+        """Def away mode cluster."""
         year = self.endpoint.device.MaxsmartAwayYear_bus.listener_event("get_value")[0]
         month = self.endpoint.device.MaxsmartAwayMonth_bus.listener_event("get_value")[
             0
@@ -565,12 +566,15 @@ class MaxsmartAwayYear(LocalDataCluster, AnalogOutput):
         self._update_attribute(self.attridx["engineering_units"], 67)
 
     def set_value(self, value):
+        """Def set away mode year."""
         self._update_attribute(self.attridx["present_value"], value + 2000)
 
     def get_value(self):
+        """Def get away mode year."""
         return self._attr_cache.get(self.attridx["present_value"])
 
     async def write_attributes(self, attributes, manufacturer=None):
+        """Def write away mode year."""
         for attrid, value in attributes.items():
             if isinstance(attrid, str):
                 attrid = self.attridx[attrid]
@@ -602,12 +606,15 @@ class MaxsmartAwayMonth(LocalDataCluster, AnalogOutput):
         self._update_attribute(self.attridx["engineering_units"], 68)
 
     def set_value(self, value):
+        """Def set away month."""
         self._update_attribute(self.attridx["present_value"], value)
 
     def get_value(self):
+        """Def get away month."""
         return self._attr_cache.get(self.attridx["present_value"])
 
     async def write_attributes(self, attributes, manufacturer=None):
+        """Def .writ away month attribute"""
         for attrid, value in attributes.items():
             if isinstance(attrid, str):
                 attrid = self.attridx[attrid]
@@ -639,12 +646,15 @@ class MaxsmartAwayDay(LocalDataCluster, AnalogOutput):
         self._update_attribute(self.attridx["engineering_units"], 70)
 
     def set_value(self, value):
+        """Def set away day preset."""
         self._update_attribute(self.attridx["present_value"], value)
 
     def get_value(self):
+        """Def get away day preset."""
         return self._attr_cache.get(self.attridx["present_value"])
 
     async def write_attributes(self, attributes, manufacturer=None):
+        """Def write away day attribute."""
         for attrid, value in attributes.items():
             if isinstance(attrid, str):
                 attrid = self.attridx[attrid]
@@ -676,12 +686,15 @@ class MaxsmartAwayHour(LocalDataCluster, AnalogOutput):
         self._update_attribute(self.attridx["engineering_units"], 71)
 
     def set_value(self, value):
+        """Def set away hour preset."""
         self._update_attribute(self.attridx["present_value"], value)
 
     def get_value(self):
+        """Def get away hour preset."""
         return self._attr_cache.get(self.attridx["present_value"])
 
     async def write_attributes(self, attributes, manufacturer=None):
+        """Def away hour attribute."""
         for attrid, value in attributes.items():
             if isinstance(attrid, str):
                 attrid = self.attridx[attrid]
@@ -713,12 +726,15 @@ class MaxsmartAwayMinute(LocalDataCluster, AnalogOutput):
         self._update_attribute(self.attridx["engineering_units"], 72)
 
     def set_value(self, value):
+        """Def set away preset."""
         self._update_attribute(self.attridx["present_value"], value)
 
     def get_value(self):
+        """Def get away preset."""
         return self._attr_cache.get(self.attridx["present_value"])
 
     async def write_attributes(self, attributes, manufacturer=None):
+        """Def write away attribute."""
         for attrid, value in attributes.items():
             if isinstance(attrid, str):
                 attrid = self.attridx[attrid]
@@ -754,12 +770,15 @@ class MaxsmartAwayTemperature(LocalDataCluster, AnalogOutput):
         self._update_attribute(self.attridx["engineering_units"], 62)
 
     def set_value(self, value):
+        """Def set away preset."""
         self._update_attribute(self.attridx["present_value"], value / 2)
 
     def get_value(self):
+        """Def getv away preset."""
         return self._attr_cache.get(self.attridx["present_value"])
 
     async def write_attributes(self, attributes, manufacturer=None):
+        """Def write away attributes."""
         for attrid, value in attributes.items():
             if isinstance(attrid, str):
                 attrid = self.attridx[attrid]
@@ -793,12 +812,15 @@ class MaxsmartAwayOperTime(LocalDataCluster, AnalogOutput):
         self._update_attribute(self.attridx["engineering_units"], 71)
 
     def set_value(self, value1, value0):
+        """Def set presets."""
         self._update_attribute(self.attridx["present_value"], value1 << 8 | value0)
 
     def get_value(self):
+        """Def get presets."""
         return self._attr_cache.get(self.attridx["present_value"])
 
     async def write_attributes(self, attributes, manufacturer=None):
+        """Def away time."""
         for attrid, value in attributes.items():
             if isinstance(attrid, str):
                 attrid = self.attridx[attrid]
@@ -834,12 +856,15 @@ class MaxsmartEcoTemperature(LocalDataCluster, AnalogOutput):
         self._update_attribute(self.attridx["engineering_units"], 62)
 
     def set_value(self, value):
+        """Def update presets."""
         self._update_attribute(self.attridx["present_value"], value)
 
     def get_value(self):
+        """Def get presents."""
         return self._attr_cache.get(self.attridx["present_value"])
 
     async def write_attributes(self, attributes, manufacturer=None):
+        """Def Eco temp attribute."""
         for attrid, value in attributes.items():
             if isinstance(attrid, str):
                 attrid = self.attridx[attrid]
@@ -873,12 +898,15 @@ class MaxsmartComfortTemperature(LocalDataCluster, AnalogOutput):
         self._update_attribute(self.attridx["engineering_units"], 62)
 
     def set_value(self, value):
+        """Def set presets."""
         self._update_attribute(self.attridx["present_value"], value)
 
     def get_value(self):
+        """Def get presets."""
         return self._attr_cache.get(self.attridx["present_value"])
 
     async def write_attributes(self, attributes, manufacturer=None):
+        """Def Comfort serset atribute."""
         for attrid, value in attributes.items():
             if isinstance(attrid, str):
                 attrid = self.attridx[attrid]
@@ -914,12 +942,15 @@ class MaxsmartWindowDetectTemperature(LocalDataCluster, AnalogOutput):
         self._update_attribute(self.attridx["engineering_units"], 62)
 
     def set_value(self, value):
+        """Def set presets value."""
         self._update_attribute(self.attridx["present_value"], value)
 
     def get_value(self):
+        """Def get presets valiue."""
         return self._attr_cache.get(self.attridx["present_value"])
 
     async def write_attributes(self, attributes, manufacturer=None):
+        """Def write window detect attribute."""
         for attrid, value in attributes.items():
             if isinstance(attrid, str):
                 attrid = self.attridx[attrid]
@@ -948,12 +979,15 @@ class MaxsmartWindowDetectTime(LocalDataCluster, AnalogOutput):
         self._update_attribute(self.attridx["engineering_units"], 72)
 
     def set_value(self, value):
+        """Def set presents value."""
         self._update_attribute(self.attridx["present_value"], value)
 
     def get_value(self):
+        """Def get present value."""
         return self._attr_cache.get(self.attridx["present_value"])
 
     async def write_attributes(self, attributes, manufacturer=None):
+        """Def window detect attribute."""
         for attrid, value in attributes.items():
             if isinstance(attrid, str):
                 attrid = self.attridx[attrid]
@@ -976,6 +1010,7 @@ class MaxsmartWindowDetection(LocalDataCluster, BinaryInput):
         self.endpoint.device.MaxsmartWindowDetection_bus.add_listener(self)
 
     def set_value(self, value):
+        """Def presets attribute."""
         self._update_attribute(self.attridx["present_value"], value)
 
 
