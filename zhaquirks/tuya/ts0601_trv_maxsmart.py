@@ -1,6 +1,6 @@
 """Map from manufacturer to standard clusters for thermostatic valves."""
 import logging
-from typing import Match, Optional, Union
+from typing import Optional, Union
 
 from zigpy.profiles import zha
 import zigpy.types as t
@@ -270,12 +270,13 @@ class MaxsmartManufCluster(TuyaManufClusterAttributes):
 
 
 class SilvercrestManufCluster(MaxsmartManufCluster):
+"""Thermostat cluster for LIDL thermostatic valves."""
     MAXSMART_CHILD_LOCK_ATTR = SILVERCREST_CHILD_LOCK_ATTR
     MAXSMART_BATTERY_ATTR = SILVERCREST_BATTERY_ATTR
 
 
 class MaxsmartThermostat(TuyaThermostatCluster):
-    """Thermostat cluster for some thermostatic valves."""
+    """Thermostat cluster for MaxSmart thermostatic valves."""
 
     class Preset(t.enum8):
         """Working modes of the thermostat."""
@@ -424,7 +425,7 @@ class MaxsmartThermostat(TuyaThermostatCluster):
             }
 
     def hass_climate_state_change(self, attrid, value):
-        """Update of the HASS Climate gui state"""
+        """Update of the HASS Climate gui state."""
         if attrid == MAXSMART_TEMPERATURE_ATTR:
             temp_current = value * 10
             temp_set = self._attr_cache.get(self.attridx["occupied_heating_setpoint"])
@@ -550,6 +551,7 @@ class MaxsmartChildLock(LocalDataCluster, OnOff):
 
 
 class MaxsmartAwayYear(LocalDataCluster, AnalogOutput):
+"""MaxSmart Away year."""
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
@@ -584,6 +586,7 @@ class MaxsmartAwayYear(LocalDataCluster, AnalogOutput):
 
 
 class MaxsmartAwayMonth(LocalDataCluster, AnalogOutput):
+"""MaxSmart Away month."""
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
@@ -619,6 +622,7 @@ class MaxsmartAwayMonth(LocalDataCluster, AnalogOutput):
 
 
 class MaxsmartAwayDay(LocalDataCluster, AnalogOutput):
+"""MaxSmart Away day."""
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
@@ -654,6 +658,7 @@ class MaxsmartAwayDay(LocalDataCluster, AnalogOutput):
 
 
 class MaxsmartAwayHour(LocalDataCluster, AnalogOutput):
+"""MaxSmart Away hour."""
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
@@ -689,6 +694,7 @@ class MaxsmartAwayHour(LocalDataCluster, AnalogOutput):
 
 
 class MaxsmartAwayMinute(LocalDataCluster, AnalogOutput):
+"""MaxSmart Away minute."""
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
@@ -724,6 +730,7 @@ class MaxsmartAwayMinute(LocalDataCluster, AnalogOutput):
 
 
 class MaxsmartAwayTemperature(LocalDataCluster, AnalogOutput):
+"""MaxSmart Away temperature."""
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
@@ -763,6 +770,7 @@ class MaxsmartAwayTemperature(LocalDataCluster, AnalogOutput):
 
 
 class MaxsmartAwayOperTime(LocalDataCluster, AnalogOutput):
+"""MaxSmart Away oper time."""
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
@@ -800,6 +808,7 @@ class MaxsmartAwayOperTime(LocalDataCluster, AnalogOutput):
 
 
 class MaxsmartEcoTemperature(LocalDataCluster, AnalogOutput):
+"""MaxSmart Eco temperature."""
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
@@ -837,6 +846,7 @@ class MaxsmartEcoTemperature(LocalDataCluster, AnalogOutput):
 
 
 class MaxsmartComfortTemperature(LocalDataCluster, AnalogOutput):
+"""MaxSmart Comfort temperature."""
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
@@ -874,6 +884,7 @@ class MaxsmartComfortTemperature(LocalDataCluster, AnalogOutput):
 
 
 class MaxsmartWindowDetectTemperature(LocalDataCluster, AnalogOutput):
+"""MaxSmart Window detect temperature."""
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
@@ -912,6 +923,7 @@ class MaxsmartWindowDetectTemperature(LocalDataCluster, AnalogOutput):
 
 
 class MaxsmartWindowDetectTime(LocalDataCluster, AnalogOutput):
+"""MaxSmart Windoe detect time."""
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
