@@ -28,6 +28,10 @@ TUYA_SET_DATA_RESPONSE = 0x02
 TUYA_SEND_DATA = 0x04
 TUYA_ACTIVE_STATUS_RPT = 0x06
 TUYA_SET_TIME = 0x24
+# TODO: To be checked
+TUYA_MCU_VERSION_REQ = 0x10
+TUYA_MCU_VERSION_RSP = 0x11
+#
 TUYA_LEVEL_COMMAND = 514
 
 COVER_EVENT = "cover_event"
@@ -262,6 +266,12 @@ class TuyaManufCluster(CustomCluster):
         function: t.uint8_t
         data: Data
 
+    class MCUVersionRsp(t.Struct):
+        """Tuya MCU version response Zcl payload."""
+
+        tsn: t.uint16_t
+        version: t.uint8_t
+
     """ Time sync command (It's transparent between MCU and server)
             Time request device -> server
                payloadSize = 0
@@ -279,12 +289,15 @@ class TuyaManufCluster(CustomCluster):
 
     manufacturer_server_commands = {
         0x0000: ("set_data", (Command,), False),
+        0x0010: ("mcu_version_req", (t.uint16_t,), False),
         0x0024: ("set_time", (TuyaTimePayload,), False),
     }
 
     manufacturer_client_commands = {
         0x0001: ("get_data", (Command,), True),
         0x0002: ("set_data_response", (Command,), True),
+        0x0006: ("active_status_report", (Command,), True),
+        0x0011: ("mcu_version_rsp", (MCUVersionRsp,), True),
         0x0024: ("set_time_request", (t.data16,), True),
     }
 
@@ -834,31 +847,6 @@ class TuyaManufacturerWindowCover(TuyaManufCluster):
                     ATTR_COVER_INVERTED,
                     tuya_payload.data[1],  # Check this
                 )
-        elif hdr.command_id == 0x0011:
-            """Assuming this is the pairing event"""
-            _LOGGER.debug(
-                "%s Pairing New Tuya Roller Blind. Self [%s], Header [%s], Tuya Paylod [%s]",
-                self.endpoint.device.ieee,
-                self,
-                hdr,
-                args,
-            )
-            """set initial attributes"""
-            self.endpoint.device.cover_bus.listener_event(
-                COVER_EVENT,
-                ATTR_COVER_POSITION,
-                0,
-            )
-            self.endpoint.device.cover_bus.listener_event(
-                COVER_EVENT,
-                ATTR_COVER_DIRECTION,
-                0,
-            )
-            self.endpoint.device.cover_bus.listener_event(
-                COVER_EVENT,
-                ATTR_COVER_INVERTED,
-                0,
-            )
         elif hdr.command_id == TUYA_SET_TIME:
             """Time event call super"""
             super().handle_cluster_request(hdr, args, dst_addressing=dst_addressing)
