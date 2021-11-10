@@ -1128,8 +1128,7 @@ class RemoteB486OPCN01V4(XiaomiCustomDevice):
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
                 INPUT_CLUSTERS: [Identify.cluster_id, MultistateInput.cluster_id],
                 OUTPUT_CLUSTERS: [OnOff.cluster_id],
-            }
-            ,
+            },
             6: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
