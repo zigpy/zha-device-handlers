@@ -703,6 +703,34 @@ class TuyaPowerConfigurationCluster(LocalDataCluster, PowerConfiguration):
         self._update_attribute(self.attridx["battery_percentage_remaining"], value * 2)
 
 
+class TuyaPowerConfigurationCluster2AA(TuyaPowerConfigurationCluster):
+    """PowerConfiguration cluster for battery-operated TRVs with 2 AA."""
+
+    BATTERY_SIZES = 0x0031
+    BATTERY_RATED_VOLTAGE = 0x0034
+    BATTERY_QUANTITY = 0x0033
+
+    _CONSTANT_ATTRIBUTES = {
+        BATTERY_SIZES: 3,
+        BATTERY_RATED_VOLTAGE: 15,
+        BATTERY_QUANTITY: 2,
+    }
+
+
+class TuyaPowerConfigurationCluster3AA(TuyaPowerConfigurationCluster):
+    """PowerConfiguration cluster for battery-operated TRVs with 3 AA."""
+
+    BATTERY_SIZES = 0x0031
+    BATTERY_RATED_VOLTAGE = 0x0034
+    BATTERY_QUANTITY = 0x0033
+
+    _CONSTANT_ATTRIBUTES = {
+        BATTERY_SIZES: 3,
+        BATTERY_RATED_VOLTAGE: 15,
+        BATTERY_QUANTITY: 3,
+    }
+
+
 class TuyaThermostat(CustomDevice):
     """Generic Tuya thermostat device."""
 
