@@ -16,7 +16,7 @@ from zhaquirks.const import (
 from zhaquirks.tuya import (
     TuyaZBElectricalMeasurement,
     TuyaZBMeteringCluster,
-    TuyaZBOnOffRestorePowerCluster,
+    TuyaZBOnOffAttributeCluster,
 )
 
 
