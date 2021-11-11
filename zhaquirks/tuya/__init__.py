@@ -9,6 +9,7 @@ import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import LevelControl, OnOff, PowerConfiguration
+from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
 from zigpy.zcl.clusters.smartenergy import Metering
 
@@ -28,6 +29,10 @@ TUYA_SET_DATA_RESPONSE = 0x02
 TUYA_SEND_DATA = 0x04
 TUYA_ACTIVE_STATUS_RPT = 0x06
 TUYA_SET_TIME = 0x24
+# TODO: To be checked
+TUYA_MCU_VERSION_REQ = 0x10
+TUYA_MCU_VERSION_RSP = 0x11
+#
 TUYA_LEVEL_COMMAND = 514
 
 COVER_EVENT = "cover_event"
@@ -107,6 +112,7 @@ TUYA_COVER_INVERTED_BY_DEFAULT = [
     "_TZE200_nogaemzt",
     "_TZE200_xuzcvlku",
     "_TZE200_xaabybja",
+    "_TZE200_yenbr4om",
 ]
 
 # ---------------------------------------------------------
@@ -262,6 +268,12 @@ class TuyaManufCluster(CustomCluster):
         function: t.uint8_t
         data: Data
 
+    class MCUVersionRsp(t.Struct):
+        """Tuya MCU version response Zcl payload."""
+
+        tsn: t.uint16_t
+        version: t.uint8_t
+
     """ Time sync command (It's transparent between MCU and server)
             Time request device -> server
                payloadSize = 0
@@ -279,12 +291,15 @@ class TuyaManufCluster(CustomCluster):
 
     manufacturer_server_commands = {
         0x0000: ("set_data", (Command,), False),
+        0x0010: ("mcu_version_req", (t.uint16_t,), False),
         0x0024: ("set_time", (TuyaTimePayload,), False),
     }
 
     manufacturer_client_commands = {
         0x0001: ("get_data", (Command,), True),
         0x0002: ("set_data_response", (Command,), True),
+        0x0006: ("active_status_report", (Command,), True),
+        0x0011: ("mcu_version_rsp", (MCUVersionRsp,), True),
         0x0024: ("set_time_request", (t.data16,), True),
     }
 
@@ -470,6 +485,10 @@ class TuyaManufacturerClusterOnOff(TuyaManufCluster):
         ] = None,
     ) -> None:
         """Handle cluster request."""
+
+        # Send default response because the MCU expects it
+        if not hdr.frame_control.disable_default_response:
+            self.send_default_rsp(hdr, status=foundation.Status.SUCCESS)
 
         tuya_payload = args[0]
         if hdr.command_id in (0x0002, 0x0001):
@@ -788,6 +807,14 @@ class TuyaZBMeteringCluster(CustomCluster, Metering):
     _CONSTANT_ATTRIBUTES = {MULTIPLIER: 1, DIVISOR: 100}
 
 
+class TuyaZBElectricalMeasurement(CustomCluster, ElectricalMeasurement):
+    """Divides the Current for tuya."""
+
+    AC_CURRENT_MULTIPLIER = 0x0602
+    AC_CURRENT_DIVISOR = 0x0603
+    _CONSTANT_ATTRIBUTES = {AC_CURRENT_MULTIPLIER: 1, AC_CURRENT_DIVISOR: 1000}
+
+
 # Tuya Window Cover Implementation
 class TuyaManufacturerWindowCover(TuyaManufCluster):
     """Manufacturer Specific Cluster for cover device."""
@@ -849,31 +876,6 @@ class TuyaManufacturerWindowCover(TuyaManufCluster):
                     ATTR_COVER_INVERTED,
                     tuya_payload.data[1],  # Check this
                 )
-        elif hdr.command_id == 0x0011:
-            """Assuming this is the pairing event"""
-            _LOGGER.debug(
-                "%s Pairing New Tuya Roller Blind. Self [%s], Header [%s], Tuya Paylod [%s]",
-                self.endpoint.device.ieee,
-                self,
-                hdr,
-                args,
-            )
-            """set initial attributes"""
-            self.endpoint.device.cover_bus.listener_event(
-                COVER_EVENT,
-                ATTR_COVER_POSITION,
-                0,
-            )
-            self.endpoint.device.cover_bus.listener_event(
-                COVER_EVENT,
-                ATTR_COVER_DIRECTION,
-                0,
-            )
-            self.endpoint.device.cover_bus.listener_event(
-                COVER_EVENT,
-                ATTR_COVER_INVERTED,
-                0,
-            )
         elif hdr.command_id == TUYA_SET_TIME:
             """Time event call super"""
             super().handle_cluster_request(hdr, args, dst_addressing=dst_addressing)

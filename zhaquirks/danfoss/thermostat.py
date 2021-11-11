@@ -44,7 +44,7 @@ class DanfossThermostatCluster(CustomCluster, Thermostat):
         0x4013: ("mounting_mode_control", t.Bool),
         0x4014: ("orientation", t.Bool),
         0x4015: ("external_measured_room_sensor", t.int16s),
-        0x4016: ("radiator_overed", t.Bool),
+        0x4016: ("radiator_covered", t.Bool),
         0x4020: ("control_algorithm_scale_factor", t.uint8_t),
         0x4030: ("heat_available", t.Bool),
         0x4031: ("heat_supply_request", t.Bool),
