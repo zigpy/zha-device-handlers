@@ -19,7 +19,7 @@ from zhaquirks.const import (
 )
 from zhaquirks.tuya import (
     TuyaManufClusterAttributes,
-    TuyaPowerConfigurationCluster,
+    TuyaPowerConfigurationCluster2AA,
     TuyaThermostat,
     TuyaThermostatCluster,
     TuyaUserInterfaceCluster,
@@ -986,7 +986,7 @@ class SiterwellGS361_Type1(TuyaThermostat):
                     SiterwellManufCluster,
                     SiterwellThermostat,
                     SiterwellUserInterface,
-                    TuyaPowerConfigurationCluster,
+                    TuyaPowerConfigurationCluster2AA,
                 ],
                 OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],
             }
@@ -1036,7 +1036,7 @@ class SiterwellGS361_Type2(TuyaThermostat):
                     SiterwellManufCluster,
                     SiterwellThermostat,
                     SiterwellUserInterface,
-                    TuyaPowerConfigurationCluster,
+                    TuyaPowerConfigurationCluster2AA,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             }
@@ -1088,7 +1088,7 @@ class MoesHY368_Type1(TuyaThermostat):
                     MoesThermostat,
                     MoesUserInterface,
                     MoesWindowDetection,
-                    TuyaPowerConfigurationCluster,
+                    TuyaPowerConfigurationCluster2AA,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             }
@@ -1139,7 +1139,7 @@ class MoesHY368_Type1new(TuyaThermostat):
                     MoesThermostatNew,
                     MoesUserInterface,
                     MoesWindowDetection,
-                    TuyaPowerConfigurationCluster,
+                    TuyaPowerConfigurationCluster2AA,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             }
@@ -1181,7 +1181,7 @@ class MoesHY368_Type2(TuyaThermostat):
                     MoesThermostat,
                     MoesUserInterface,
                     MoesWindowDetection,
-                    TuyaPowerConfigurationCluster,
+                    TuyaPowerConfigurationCluster2AA,
                 ],
                 OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],
             }
@@ -1226,7 +1226,7 @@ class ZonnsmartTV01_ZG(TuyaThermostat):
                     ZONNSMARTManufCluster,
                     ZONNSMARTThermostat,
                     ZONNSMARTUserInterface,
-                    TuyaPowerConfigurationCluster,
+                    TuyaPowerConfigurationCluster2AA,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             }
