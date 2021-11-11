@@ -181,7 +181,8 @@ class TuyaMoesCover0601(TuyaWindowCover):
             ("_TZE200_gubdgai2", "TS0601"),
             ("_TZE200_yenbr4om", "TS0601"),
             ("_TZE200_5sbebbzs", "TS0601"),
-        ],  # Not tested
+            ("_TZE200_xaabybja", "TS0601"),
+        ],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
