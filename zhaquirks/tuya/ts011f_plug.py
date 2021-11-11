@@ -23,7 +23,11 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import TuyaZBMeteringCluster, TuyaZBOnOffAttributeCluster
+from zhaquirks.tuya import (
+    TuyaZBElectricalMeasurement,
+    TuyaZBMeteringCluster,
+    TuyaZBOnOffRestorePowerCluster,
+)
 
 
 class TuyaClusterE000(CustomCluster):
