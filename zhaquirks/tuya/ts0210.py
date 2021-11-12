@@ -1,18 +1,16 @@
 """TS0210 vibration sensor."""
 
 from typing import Optional, Tuple, Union
-from zhaquirks.xiaomi.mija.smoke import IAS_ZONE
-from zhaquirks.tuya import TuyaLocalCluster, TuyaManufCluster, TuyaManufClusterAttributes
-from zhaquirks.tuya.ts0601_smoke import TuyaIasZone
+from zhaquirks.tuya import TuyaManufCluster
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import Basic, Identify, Ota, PowerConfiguration, Time
+from zigpy.zcl.clusters.general import Basic, Ota, PowerConfiguration, Time
 from zigpy.zcl.clusters.security import IasZone
 
-from zhaquirks import Bus, LocalDataCluster, MotionOnEvent, _Motion
+from zhaquirks import Bus, LocalDataCluster, MotionOnEvent
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -24,16 +22,17 @@ from zhaquirks.const import (
 
 )
 import logging
-import json
+
 _LOGGER = logging.getLogger(__name__)
 
 ZONE_TYPE = 0x0001
 IAS_VIBRATION_SENSOR = 0x5F02
 
+
 class VibrationCluster(LocalDataCluster, MotionOnEvent, IasZone):
     """Tuya Motion Sensor."""
 
-    cluster_id= IasZone.cluster_id
+    cluster_id = IasZone.cluster_id
     _CONSTANT_ATTRIBUTES = {ZONE_TYPE: IasZone.ZoneType.Vibration_Movement_Sensor}
     reset_s = 15
 
@@ -47,8 +46,8 @@ class VibrationCluster(LocalDataCluster, MotionOnEvent, IasZone):
         ] = None,
     ) -> None:
         """Handle cluster request."""
-        _LOGGER.info("Manufacturer Event")
         self.endpoint.device.motion_bus.listener_event(MOTION_EVENT)
+
 
 class TuyaVibration(CustomDevice):
     """Tuya vibration sensor."""
@@ -64,7 +63,7 @@ class TuyaVibration(CustomDevice):
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.IAS_ZONE,  
+                DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
                 INPUT_CLUSTERS: [Basic.cluster_id, Time.cluster_id, PowerConfiguration.cluster_id, IasZone.cluster_id],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             }
