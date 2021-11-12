@@ -1,7 +1,7 @@
 """TS0210 vibration sensor."""
 
+import logging
 from typing import Optional, Tuple, Union
-from zhaquirks.tuya import TuyaManufCluster
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
@@ -16,11 +16,11 @@ from zhaquirks.const import (
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODEL,
+    MOTION_EVENT,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
-    MOTION_EVENT,
 )
-import logging
+from zhaquirks.tuya import TuyaManufCluster
 
 _LOGGER = logging.getLogger(__name__)
 
