@@ -18,8 +18,7 @@ from zhaquirks.const import (
     MODEL,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
-    MOTION_EVENT
-
+    MOTION_EVENT,
 )
 import logging
 
@@ -64,7 +63,12 @@ class TuyaVibration(CustomDevice):
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
-                INPUT_CLUSTERS: [Basic.cluster_id, Time.cluster_id, PowerConfiguration.cluster_id, IasZone.cluster_id],
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Time.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    IasZone.cluster_id,
+                ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             }
         },
@@ -79,7 +83,7 @@ class TuyaVibration(CustomDevice):
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
                     Time.cluster_id,
-                    VibrationCluster
+                    VibrationCluster,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             }
