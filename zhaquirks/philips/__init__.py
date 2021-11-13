@@ -72,14 +72,6 @@ HUE_REMOTE_DEVICE_TRIGGERS = {
 }
 
 
-class PowerOnState(t.enum8):
-    """Philips power on state enum."""
-
-    Off = 0x00
-    On = 0x01
-    LastState = 0xFF
-
-
 class OccupancyCluster(CustomCluster, OccupancySensing):
     """Philips occupancy cluster."""
 
