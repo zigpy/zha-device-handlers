@@ -17,6 +17,7 @@ from zigpy.zcl.clusters.general import (
     PowerConfiguration,
 )
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
+from zigpy.zcl.clusters.manufacturer_specific import ManufacturerSpecificCluster
 from zigpy.zcl.clusters.measurement import (
     IlluminanceMeasurement,
     PressureMeasurement,
@@ -73,6 +74,7 @@ VOLTAGE_REPORTED = "voltage_reported"
 ILLUMINANCE_MEASUREMENT = "illuminance_measurement"
 ILLUMINANCE_REPORTED = "illuminance_reported"
 XIAOMI_AQARA_ATTRIBUTE = 0xFF01
+XIAOMI_AQARA_ATTRIBUTE_E1 = 0x00F7
 XIAOMI_ATTR_3 = "X-attrib-3"
 XIAOMI_ATTR_4 = "X-attrib-4"
 XIAOMI_ATTR_5 = "X-attrib-5"
@@ -110,10 +112,8 @@ class XiaomiQuickInitDevice(XiaomiCustomDevice, QuickInitDevice):
     """Xiaomi devices eligible for QuickInit."""
 
 
-class BasicCluster(CustomCluster, Basic):
-    """Xiaomi basic cluster implementation."""
-
-    cluster_id = Basic.cluster_id
+class XiaomiCluster(CustomCluster):
+    """Xiaomi cluster implementation."""
 
     def _iter_parse_attr_report(
         self, data: bytes
@@ -125,7 +125,12 @@ class BasicCluster(CustomCluster, Basic):
         attr_type, data = t.uint8_t.deserialize(data)
 
         if (
-            attr_id not in (XIAOMI_AQARA_ATTRIBUTE, XIAOMI_MIJA_ATTRIBUTE)
+            attr_id
+            not in (
+                XIAOMI_AQARA_ATTRIBUTE,
+                XIAOMI_MIJA_ATTRIBUTE,
+                XIAOMI_AQARA_ATTRIBUTE_E1,
+            )
             or attr_type != 0x42  # "Character String"
         ):
             # Assume other attributes are reported correctly
@@ -199,7 +204,7 @@ class BasicCluster(CustomCluster, Basic):
         return super().deserialize(hdr.serialize() + fixed_data)
 
     def _update_attribute(self, attrid, value):
-        if attrid == XIAOMI_AQARA_ATTRIBUTE:
+        if attrid in (XIAOMI_AQARA_ATTRIBUTE, XIAOMI_AQARA_ATTRIBUTE_E1):
             attributes = self._parse_aqara_attributes(value)
             super()._update_attribute(attrid, value)
             if (
@@ -338,6 +343,18 @@ class BasicCluster(CustomCluster, Basic):
         attributes = dict(zip(attribute_names, result))
 
         return attributes
+
+
+class BasicCluster(XiaomiCluster, Basic):
+    """Xiaomi basic cluster implementation."""
+
+    cluster_id = Basic.cluster_id
+
+
+class XiaomiAqaraE1Cluster(XiaomiCluster, ManufacturerSpecificCluster):
+    """Xiaomi mfg cluster implementation."""
+
+    cluster_id = 0xFCC0
 
 
 class BinaryOutputInterlock(CustomCluster, BinaryOutput):
