@@ -309,18 +309,13 @@ class TuyaManufCluster(CustomCluster):
         """Init."""
         super().__init__(*args, **kwargs)
         self.endpoint.device.command_bus = Bus()
-        self.endpoint.device.command_bus.add_listener(self) # listen MCU commands
+        self.endpoint.device.command_bus.add_listener(self)  # listen MCU commands
 
-    def tuya_mcu_command(
-        self,
-        command: Command
-    ):
+    def tuya_mcu_command(self, command: Command):
         """Tuya MCU command listener. Only endpoint:1 must listen to MCU commands."""
 
         self.create_catching_task(
-            self.command(
-                TUYA_SET_DATA, command, expect_reply=True
-            )
+            self.command(TUYA_SET_DATA, command, expect_reply=True)
         )
 
     def handle_cluster_request(
