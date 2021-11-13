@@ -477,6 +477,7 @@ class TuyaOnOff(CustomCluster, OnOff):
         if command_id in (0x0000, 0x0001):
             cmd_payload = TuyaManufCluster.Command()
             cmd_payload.status = 0
+            # cmd_payload.tsn = tsn if tsn else self.endpoint.device.application.get_sequence()
             cmd_payload.tsn = 0
             cmd_payload.command_id = TUYA_CMD_BASE + self.endpoint.endpoint_id
             cmd_payload.function = 0

@@ -146,7 +146,7 @@ async def test_singleswitch_requests(zigpy_device_from_quirk, quirk):
         tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
     ) as m1:
 
-        status = switch_cluster.command(0x0000)
+        status = await switch_cluster.command(0x0000)
         m1.assert_called_with(
             61184,
             1,
@@ -156,7 +156,7 @@ async def test_singleswitch_requests(zigpy_device_from_quirk, quirk):
         )
         assert status == 0
 
-        status = switch_cluster.command(0x0001)
+        status = await switch_cluster.command(0x0001)
         m1.assert_called_with(
             61184,
             2,
@@ -166,7 +166,7 @@ async def test_singleswitch_requests(zigpy_device_from_quirk, quirk):
         )
         assert status == 0
 
-    status = switch_cluster.command(0x0002)
+    status = await switch_cluster.command(0x0002)
     assert status == foundation.Status.UNSUP_CLUSTER_COMMAND
 
 
