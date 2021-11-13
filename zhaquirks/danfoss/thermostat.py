@@ -25,7 +25,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.danfoss import DANFOSS
+from zhaquirks.danfoss import D5X84YU, DANFOSS
 
 
 class DanfossThermostatCluster(CustomCluster, Thermostat):
@@ -110,7 +110,7 @@ class DanfossThermostat(CustomDevice):
         # <SimpleDescriptor endpoint=1 profile=260 device_type=769
         # device_version=0 input_clusters=[0, 1, 3, 10,32, 513, 516, 1026, 2821]
         # output_clusters=[0, 25]>
-        MODELS_INFO: [(DANFOSS, "eTRV0100")],
+        MODELS_INFO: [(DANFOSS, "eTRV0100"), (D5X84YU, "eT093WRO")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha_p.PROFILE_ID,
