@@ -24,26 +24,12 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.tuya import (
+    TuyaZBE000Cluster,
     TuyaZBElectricalMeasurement,
+    TuyaZBExternalSwitchTypeCluster,
     TuyaZBMeteringCluster,
     TuyaZBOnOffAttributeCluster,
 )
-
-
-class TuyaClusterE000(CustomCluster):
-    """Tuya manufacturer specific cluster 57344."""
-
-    name = "Tuya Manufacturer Specific"
-    cluster_id = 0xE000
-    ep_attribute = "tuya_is_pita_0"
-
-
-class TuyaClusterE001(CustomCluster):
-    """Tuya manufacturer specific cluster 57345."""
-
-    name = "Tuya Manufacturer Specific"
-    cluster_id = 0xE001
-    ep_attribute = "tuya_is_pita_1"
 
 
 class Plug(CustomDevice):
@@ -67,8 +53,8 @@ class Plug(CustomDevice):
                     OnOff.cluster_id,
                     Metering.cluster_id,
                     ElectricalMeasurement.cluster_id,
-                    TuyaClusterE000.cluster_id,
-                    TuyaClusterE001.cluster_id,
+                    TuyaZBE000Cluster.cluster_id,
+                    TuyaZBExternalSwitchTypeCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
@@ -97,8 +83,8 @@ class Plug(CustomDevice):
                     TuyaZBOnOffAttributeCluster,
                     TuyaZBMeteringCluster,
                     TuyaZBElectricalMeasurement,
-                    TuyaClusterE000,
-                    TuyaClusterE001,
+                    TuyaZBE000Cluster,
+                    TuyaZBExternalSwitchTypeCluster,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
@@ -235,8 +221,8 @@ class Plug_4AC_2USB(CustomDevice):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     OnOff.cluster_id,
-                    TuyaClusterE000.cluster_id,
-                    TuyaClusterE001.cluster_id,
+                    TuyaZBE000Cluster.cluster_id,
+                    TuyaZBExternalSwitchTypeCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
@@ -252,8 +238,8 @@ class Plug_4AC_2USB(CustomDevice):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     OnOff.cluster_id,
-                    TuyaClusterE000.cluster_id,
-                    TuyaClusterE001.cluster_id,
+                    TuyaZBE000Cluster.cluster_id,
+                    TuyaZBExternalSwitchTypeCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [],
             },
@@ -269,8 +255,8 @@ class Plug_4AC_2USB(CustomDevice):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     OnOff.cluster_id,
-                    TuyaClusterE000.cluster_id,
-                    TuyaClusterE001.cluster_id,
+                    TuyaZBE000Cluster.cluster_id,
+                    TuyaZBExternalSwitchTypeCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [],
             },
@@ -286,8 +272,8 @@ class Plug_4AC_2USB(CustomDevice):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     OnOff.cluster_id,
-                    TuyaClusterE000.cluster_id,
-                    TuyaClusterE001.cluster_id,
+                    TuyaZBE000Cluster.cluster_id,
+                    TuyaZBExternalSwitchTypeCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [],
             },
@@ -303,8 +289,8 @@ class Plug_4AC_2USB(CustomDevice):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     OnOff.cluster_id,
-                    TuyaClusterE000.cluster_id,
-                    TuyaClusterE001.cluster_id,
+                    TuyaZBE000Cluster.cluster_id,
+                    TuyaZBExternalSwitchTypeCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [],
             },
@@ -331,8 +317,8 @@ class Plug_4AC_2USB(CustomDevice):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     TuyaZBOnOffAttributeCluster,
-                    TuyaClusterE000,
-                    TuyaClusterE001,
+                    TuyaZBE000Cluster,
+                    TuyaZBExternalSwitchTypeCluster,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
@@ -344,8 +330,8 @@ class Plug_4AC_2USB(CustomDevice):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     TuyaZBOnOffAttributeCluster,
-                    TuyaClusterE000,
-                    TuyaClusterE001,
+                    TuyaZBE000Cluster,
+                    TuyaZBExternalSwitchTypeCluster,
                 ],
                 OUTPUT_CLUSTERS: [],
             },
@@ -357,8 +343,8 @@ class Plug_4AC_2USB(CustomDevice):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     TuyaZBOnOffAttributeCluster,
-                    TuyaClusterE000,
-                    TuyaClusterE001,
+                    TuyaZBE000Cluster,
+                    TuyaZBExternalSwitchTypeCluster,
                 ],
                 OUTPUT_CLUSTERS: [],
             },
@@ -370,8 +356,8 @@ class Plug_4AC_2USB(CustomDevice):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     TuyaZBOnOffAttributeCluster,
-                    TuyaClusterE000,
-                    TuyaClusterE001,
+                    TuyaZBE000Cluster,
+                    TuyaZBExternalSwitchTypeCluster,
                 ],
                 OUTPUT_CLUSTERS: [],
             },
@@ -383,8 +369,8 @@ class Plug_4AC_2USB(CustomDevice):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     TuyaZBOnOffAttributeCluster,
-                    TuyaClusterE000,
-                    TuyaClusterE001,
+                    TuyaZBE000Cluster,
+                    TuyaZBExternalSwitchTypeCluster,
                 ],
                 OUTPUT_CLUSTERS: [],
             },
