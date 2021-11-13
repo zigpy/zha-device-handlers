@@ -865,7 +865,7 @@ class ExternalSwitchType(t.enum8):
 
 
 class TuyaZBExternalSwitchTypeCluster(CustomCluster):
-    """Tuya External Switch Type Cluster"""
+    """Tuya External Switch Type Cluster."""
 
     name = "Tuya External Switch Type Cluster"
     cluster_id = TUYA_CLUSTER_E001_ID
