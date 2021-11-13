@@ -1,8 +1,7 @@
 """tuya TS000X Switches."""
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster, CustomDevice
-import zigpy.types as t
+from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
