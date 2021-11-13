@@ -1,0 +1,1 @@
+"""Quirks for Sonoff devices."""

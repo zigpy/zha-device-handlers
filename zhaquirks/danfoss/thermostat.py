@@ -6,6 +6,7 @@ manufacturer specific attributes to control displaying and specific configuratio
 import zigpy.profiles.zha as zha_p
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
     Basic,
     Identify,
@@ -31,6 +32,13 @@ from zhaquirks.danfoss import DANFOSS
 class DanfossThermostatCluster(CustomCluster, Thermostat):
     """Danfoss custom cluster."""
 
+    server_commands = Thermostat.server_commands.copy()
+    server_commands[0x40] = foundation.ZCLCommandDef(
+        "setpoint_command",
+        {"param1": t.enum8, "param2": t.int16s},
+        is_manufacturer_specific=True,
+    )
+
     attributes = Thermostat.attributes.copy()
     attributes.update(
         {
@@ -42,7 +50,7 @@ class DanfossThermostatCluster(CustomCluster, Thermostat):
             0x4013: ("mounting_mode_control", t.Bool, True),
             0x4014: ("orientation", t.Bool, True),
             0x4015: ("external_measured_room_sensor", t.int16s, True),
-            0x4016: ("radiator_overed", t.Bool, True),
+            0x4016: ("radiator_covered", t.Bool, True),
             0x4020: ("control_algorithm_scale_factor", t.uint8_t, True),
             0x4030: ("heat_available", t.Bool, True),
             0x4031: ("heat_supply_request", t.Bool, True),
@@ -55,8 +63,26 @@ class DanfossThermostatCluster(CustomCluster, Thermostat):
             0x404F: ("preheat_status", t.Bool, True),
             0x4050: ("preheat_time", t.uint32_t, True),
             0x4051: ("window_open_feature_on_off", t.Bool, True),
+            0xFFFD: ("cluster_revision", t.uint16_t, True),
         }
     )
+
+    async def write_attributes(self, attributes, manufacturer=None):
+        """Send SETPOINT_COMMAND after setpoint change."""
+
+        write_res = await super().write_attributes(
+            attributes, manufacturer=manufacturer
+        )
+
+        if "occupied_heating_setpoint" in attributes:
+            self.debug(
+                "sending setpoint command: %s", attributes["occupied_heating_setpoint"]
+            )
+            await self.setpoint_command(
+                0x01, attributes["occupied_heating_setpoint"], manufacturer=manufacturer
+            )
+
+        return write_res
 
 
 class DanfossUserInterfaceCluster(CustomCluster, UserInterface):

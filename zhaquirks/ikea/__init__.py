@@ -7,6 +7,8 @@ from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Scenes
 from zigpy.zcl.clusters.lightlink import LightLink
 
+from zhaquirks import DoublingPowerConfigurationCluster
+
 _LOGGER = logging.getLogger(__name__)
 IKEA = "IKEA of Sweden"
 ROTATED = "device_rotated"
@@ -67,3 +69,61 @@ class ScenesCluster(CustomCluster, Scenes):
             ),
         }
     )
+
+
+class PowerConfiguration2AAACluster(DoublingPowerConfigurationCluster):
+    """Updating Power attributes 2 AAA."""
+
+    BATTERY_SIZES = 0x0031
+    BATTERY_QUANTITY = 0x0033
+    BATTERY_RATED_VOLTAGE = 0x0034
+
+    _CONSTANT_ATTRIBUTES = {
+        BATTERY_SIZES: 4,
+        BATTERY_QUANTITY: 2,
+        BATTERY_RATED_VOLTAGE: 15,
+    }
+
+
+class PowerConfiguration2CRCluster(DoublingPowerConfigurationCluster):
+    """Updating Power attributes 2 CR2032."""
+
+    BATTERY_SIZES = 0x0031
+    BATTERY_QUANTITY = 0x0033
+    BATTERY_RATED_VOLTAGE = 0x0034
+
+    _CONSTANT_ATTRIBUTES = {
+        BATTERY_SIZES: 10,
+        BATTERY_QUANTITY: 2,
+        BATTERY_RATED_VOLTAGE: 30,
+    }
+
+
+class PowerConfiguration1CRCluster(DoublingPowerConfigurationCluster):
+    """Updating Power attributes 1 CR2032."""
+
+    BATTERY_SIZES = 0x0031
+    BATTERY_QUANTITY = 0x0033
+    BATTERY_RATED_VOLTAGE = 0x0034
+
+    _CONSTANT_ATTRIBUTES = {
+        BATTERY_SIZES: 10,
+        BATTERY_QUANTITY: 1,
+        BATTERY_RATED_VOLTAGE: 30,
+    }
+
+
+class PowerConfiguration1CRXCluster(DoublingPowerConfigurationCluster):
+    """Updating Power attributes 1 CR2032 and Zero voltage."""
+
+    BATTERY_VOLTAGE = 0x0020
+    BATTERY_SIZES = 0x0031
+    BATTERY_QUANTITY = 0x0033
+    BATTERY_RATED_VOLTAGE = 0x0034
+
+    _CONSTANT_ATTRIBUTES = {
+        BATTERY_VOLTAGE: 0,
+        BATTERY_SIZES: 10,
+        BATTERY_QUANTITY: 1,
+        BATTERY_RATED_VOLTAGE: 30,
+    }

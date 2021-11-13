@@ -28,7 +28,15 @@ class TuyaSingleSwitchDimmer(TuyaDimmerSwitch):
         # maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264,
         # maximum_outgoing_transfer_size=82, descriptor_capability_field=0>",
         # <SimpleDescriptor endpoint=1 profile=260 device_type=51 device_version=1 input_clusters=[0, 4, 5, 61184] output_clusters=[10, 25]>
-        MODELS_INFO: [("_TZE200_dfxkcots", "TS0601")],
+        MODELS_INFO: [
+            ("_TZE200_dfxkcots", "TS0601"),
+            ("_TZE200_whpb9yts", "TS0601"),
+            ("_TZE200_ebwgzdqq", "TS0601"),
+            ("_TZE200_9i9dt8is", "TS0601"),
+            ("_TZE200_swaamsoy", "TS0601"),
+            ("_TZE200_0nauxa0p", "TS0601"),
+            ("_TZE200_la2c2uo9", "TS0601"),
+        ],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,

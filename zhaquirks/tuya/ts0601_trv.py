@@ -19,7 +19,7 @@ from zhaquirks.const import (
 )
 from zhaquirks.tuya import (
     TuyaManufClusterAttributes,
-    TuyaPowerConfigurationCluster,
+    TuyaPowerConfigurationCluster2AA,
     TuyaThermostat,
     TuyaThermostatCluster,
     TuyaUserInterfaceCluster,
@@ -270,6 +270,39 @@ class MoesManufCluster(TuyaManufClusterAttributes):
             self.endpoint.device.battery_bus.listener_event(
                 "battery_change", 5 if value else 100
             )
+
+
+class MoesManufClusterNew(MoesManufCluster):
+    """Manufacturer Specific Cluster for the new _TZE200_b6wax7g0 thermostatic valves."""
+
+    DIRECT_MAPPED_ATTRS = {
+        MOES_TEMPERATURE_ATTR: ("local_temp", lambda value: value * 10),
+        MOES_TARGET_TEMP_ATTR: (
+            "occupied_heating_setpoint",
+            lambda value: value * 100,
+        ),  # jms
+        MOES_AWAY_TEMP_ATTR: ("unoccupied_heating_setpoint", lambda value: value * 100),
+        MOES_COMFORT_TEMP_ATTR: ("comfort_heating_setpoint", lambda value: value * 100),
+        MOES_ECO_TEMP_ATTR: ("eco_heating_setpoint", lambda value: value * 100),
+        MOES_TEMP_CALIBRATION_ATTR: (
+            "local_temperature_calibration",
+            lambda value: value * 10,
+        ),
+        MOES_MIN_TEMPERATURE_ATTR: (
+            "min_heat_setpoint_limit",
+            lambda value: value * 100,
+        ),
+        MOES_MAX_TEMPERATURE_ATTR: (
+            "max_heat_setpoint_limit",
+            lambda value: value * 100,
+        ),
+        MOES_VALVE_STATE_ATTR: ("valve_open_percentage", None),
+        MOES_AWAY_DAYS_ATTR: ("unoccupied_duration_days", None),
+        MOES_BOOST_TIME_ATTR: ("boost_duration_seconds", None),
+        MOES_MODE_ATTR: ("operation_preset", None),
+        MOES_WEEK_FORMAT_ATTR: ("work_days", None),
+        MOES_FORCE_VALVE_ATTR: ("valve_force_state", None),
+    }
 
 
 class MoesThermostat(TuyaThermostatCluster):
@@ -674,6 +707,43 @@ class MoesThermostat(TuyaThermostatCluster):
             )
 
 
+class MoesThermostatNew(MoesThermostat):
+    """Thermostat cluster for the new _TZE200_b6wax7g0 thermostatic valve."""
+
+    DIRECT_MAPPING_ATTRS = {
+        "occupied_heating_setpoint": (
+            MOES_TARGET_TEMP_ATTR,
+            lambda value: round(value / 100),  # jms
+        ),
+        "unoccupied_heating_setpoint": (
+            MOES_AWAY_TEMP_ATTR,
+            lambda value: round(value / 100),
+        ),
+        "comfort_heating_setpoint": (
+            MOES_COMFORT_TEMP_ATTR,
+            lambda value: round(value / 100),
+        ),
+        "eco_heating_setpoint": (MOES_ECO_TEMP_ATTR, lambda value: round(value / 100)),
+        "min_heat_setpoint_limit": (
+            MOES_MIN_TEMPERATURE_ATTR,
+            lambda value: round(value / 100),
+        ),
+        "max_heat_setpoint_limit": (
+            MOES_MAX_TEMPERATURE_ATTR,
+            lambda value: round(value / 100),
+        ),
+        "local_temperature_calibration": (
+            MOES_TEMP_CALIBRATION_ATTR,
+            lambda value: round(value / 10),
+        ),
+        "work_days": (MOES_WEEK_FORMAT_ATTR, None),
+        "operation_preset": (MOES_MODE_ATTR, None),
+        "boost_duration_seconds": (MOES_BOOST_TIME_ATTR, None),
+        "valve_force_state": (MOES_FORCE_VALVE_ATTR, None),
+        "unoccupied_duration_days": (MOES_AWAY_DAYS_ATTR, None),
+    }
+
+
 class MoesUserInterface(TuyaUserInterfaceCluster):
     """HVAC User interface cluster for tuya electric heating thermostats."""
 
@@ -731,7 +801,7 @@ class MoesWindowDetection(LocalDataCluster, OnOff):
         records = self._write_attr_records(attributes)
 
         if not records:
-            return (foundation.Status.SUCCESS,)
+            return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
         has_change = False
         data = t.data24()
@@ -774,7 +844,14 @@ class MoesWindowDetection(LocalDataCluster, OnOff):
                 {MOES_WINDOW_DETECT_ATTR: data}, manufacturer=manufacturer
             )
 
-        return (foundation.Status.FAILURE,)
+        return [
+            [
+                foundation.WriteAttributesStatusRecord(
+                    foundation.Status.FAILURE, r.attrid
+                )
+                for r in records
+            ]
+        ]
 
     async def command(
         self,
@@ -803,12 +880,142 @@ class MoesWindowDetection(LocalDataCluster, OnOff):
                     return foundation.Status.FAILURE
                 value = not value
 
-            return await self.write_attributes(
+            (res,) = await self.write_attributes(
                 {"on_off": value},
                 manufacturer=manufacturer,
             )
+            return [command_id, res[0].status]
 
-        return foundation.Status.UNSUP_CLUSTER_COMMAND
+        return [command_id, foundation.Status.UNSUP_CLUSTER_COMMAND]
+
+
+ZONNSMART_CHILD_LOCK_ATTR = 0x0128  # [0] unlocked [1] child-locked
+ZONNSMART_WINDOW_DETECT_ATTR = 0x0108  # [0] inactive [1] active
+ZONNSMART_TARGET_TEMP_ATTR = 0x0210  # [0,0,0,210] target room temp (decidegree)
+ZONNSMART_TEMPERATURE_ATTR = 0x0218  # [0,0,0,200] current room temp (decidegree)
+ZONNSMART_BATTERY_ATTR = 0x0223  # [0,0,0,98] battery charge
+ZONNSMART_MODE_ATTR = (
+    0x0402  # [0] Scheduled/auto [1] manual [2] Holiday [3] HolidayReady
+)
+ZONNSMART_HEATING_STOPPING = 0x016B  # [0] inactive [1] active
+ZONNSMART_BOOST_TIME_ATTR = 0x0265  # BOOST mode operating time in (sec)
+ZONNSMART_UPTIME_TIME_ATTR = (
+    0x0024  # Seems to be the uptime attribute (sent hourly, increases) [0,200]
+)
+
+
+class ZONNSMARTManufCluster(TuyaManufClusterAttributes):
+    """Manufacturer Specific Cluster of some thermostatic valves."""
+
+    attributes = TuyaManufClusterAttributes.attributes.copy()
+    attributes = {
+        ZONNSMART_CHILD_LOCK_ATTR: ("child_lock", t.uint8_t, True),
+        ZONNSMART_WINDOW_DETECT_ATTR: ("window_detection", t.uint8_t, True),
+        ZONNSMART_TARGET_TEMP_ATTR: ("target_temperature", t.uint32_t, True),
+        ZONNSMART_TEMPERATURE_ATTR: ("temperature", t.uint32_t, True),
+        ZONNSMART_BATTERY_ATTR: ("battery", t.uint32_t, True),
+        ZONNSMART_MODE_ATTR: ("mode", t.uint8_t, True),
+        ZONNSMART_BOOST_TIME_ATTR: ("boost_duration_seconds", t.uint32_t, True),
+        ZONNSMART_UPTIME_TIME_ATTR: ("uptime", t.uint32_t, True),
+        ZONNSMART_HEATING_STOPPING: ("heating_stop", t.uint8_t, True),
+    }
+
+    DIRECT_MAPPED_ATTRS = {
+        ZONNSMART_TEMPERATURE_ATTR: ("local_temp", lambda value: value * 10),
+        ZONNSMART_TARGET_TEMP_ATTR: (
+            "occupied_heating_setpoint",
+            lambda value: value * 10,
+        ),
+        ZONNSMART_BOOST_TIME_ATTR: ("boost_duration_seconds", None),
+        ZONNSMART_UPTIME_TIME_ATTR: ("uptime_duration_hours", None),
+    }
+
+    def _update_attribute(self, attrid, value):
+        super()._update_attribute(attrid, value)
+        if attrid in self.DIRECT_MAPPED_ATTRS:
+            self.endpoint.device.thermostat_bus.listener_event(
+                "temperature_change",
+                self.DIRECT_MAPPED_ATTRS[attrid][0],
+                value
+                if self.DIRECT_MAPPED_ATTRS[attrid][1] is None
+                else self.DIRECT_MAPPED_ATTRS[attrid][1](
+                    value
+                ),  # decidegree to centidegree
+            )
+        elif attrid == ZONNSMART_MODE_ATTR:
+            self.endpoint.device.thermostat_bus.listener_event("mode_change", value)
+        elif attrid == ZONNSMART_HEATING_STOPPING:
+            self.endpoint.device.thermostat_bus.listener_event(
+                "state_change", value == 0
+            )
+        elif attrid == ZONNSMART_CHILD_LOCK_ATTR:
+            mode = 1 if value else 0
+            self.endpoint.device.ui_bus.listener_event("child_lock_change", mode)
+        elif attrid == ZONNSMART_BATTERY_ATTR:
+            self.endpoint.device.battery_bus.listener_event("battery_change", value)
+
+
+class ZONNSMARTThermostat(TuyaThermostatCluster):
+    """Thermostat cluster for some thermostatic valves."""
+
+    DIRECT_MAPPING_ATTRS = {
+        "occupied_heating_setpoint": (
+            ZONNSMART_TARGET_TEMP_ATTR,
+            lambda value: round(value / 10),
+        ),
+        "operation_preset": (ZONNSMART_MODE_ATTR, None),
+        "boost_duration_seconds": (ZONNSMART_BOOST_TIME_ATTR, None),
+    }
+
+    def map_attribute(self, attribute, value):
+        """Map standardized attribute value to dict of manufacturer values."""
+
+        if attribute in self.DIRECT_MAPPING_ATTRS:
+            return {
+                self.DIRECT_MAPPING_ATTRS[attribute][0]: value
+                if self.DIRECT_MAPPING_ATTRS[attribute][1] is None
+                else self.DIRECT_MAPPING_ATTRS[attribute][1](value)
+            }
+        if attribute in ("system_mode", "programing_oper_mode"):
+            if attribute == "system_mode":
+                system_mode = value
+                oper_mode = self._attr_cache.get(
+                    self.attridx["programing_oper_mode"],
+                    self.ProgrammingOperationMode.Simple,
+                )
+            else:
+                system_mode = self._attr_cache.get(
+                    self.attridx["system_mode"], self.SystemMode.Heat
+                )
+                oper_mode = value
+            if system_mode == self.SystemMode.Off:
+                return {ZONNSMART_HEATING_STOPPING: 1}
+            if system_mode == self.SystemMode.Heat:
+                if oper_mode == self.ProgrammingOperationMode.Schedule_programming_mode:
+                    return {ZONNSMART_MODE_ATTR: 0}
+                if oper_mode == self.ProgrammingOperationMode.Simple:
+                    return {ZONNSMART_MODE_ATTR: 1}
+                self.error("Unsupported value for ProgrammingOperationMode")
+            else:
+                self.error("Unsupported value for SystemMode")
+
+    def mode_change(self, value):
+        """System Mode change."""
+        if value == 0:
+            prog_mode = self.ProgrammingOperationMode.Schedule_programming_mode
+        elif value == 1:
+            prog_mode = self.ProgrammingOperationMode.Simple
+        else:
+            prog_mode = self.ProgrammingOperationMode.Simple
+
+        self._update_attribute(self.attridx["system_mode"], self.SystemMode.Heat)
+        self._update_attribute(self.attridx["programing_oper_mode"], prog_mode)
+
+
+class ZONNSMARTUserInterface(TuyaUserInterfaceCluster):
+    """HVAC User interface cluster for tuya electric heating thermostats."""
+
+    _CHILD_LOCK_ATTR = ZONNSMART_CHILD_LOCK_ATTR
 
 
 class SiterwellGS361_Type1(TuyaThermostat):
@@ -821,6 +1028,10 @@ class SiterwellGS361_Type1(TuyaThermostat):
             ("_TYST11_jeaxp72v", "eaxp72v"),
             ("_TYST11_kfvq6avy", "fvq6avy"),
             ("_TYST11_zivfvd7h", "ivfvd7h"),
+            ("_TYST11_hhrtiq0x", "hrtiq0x"),
+            ("_TYST11_ps5v5jor", "s5v5jor"),
+            ("_TYST11_owwdxjbx", "wwdxjbx"),
+            ("_TYST11_8daqwrsj", "daqwrsj"),
         ],
         ENDPOINTS: {
             1: {
@@ -843,7 +1054,7 @@ class SiterwellGS361_Type1(TuyaThermostat):
                     SiterwellManufCluster,
                     SiterwellThermostat,
                     SiterwellUserInterface,
-                    TuyaPowerConfigurationCluster,
+                    TuyaPowerConfigurationCluster2AA,
                 ],
                 OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],
             }
@@ -858,8 +1069,13 @@ class SiterwellGS361_Type2(TuyaThermostat):
         #  endpoint=1 profile=260 device_type=81 device_version=0 input_clusters=[0, 4, 5, 61184]
         #  output_clusters=[10, 25]>
         MODELS_INFO: [
+            ("_TZE200_jeaxp72v", "TS0601"),
             ("_TZE200_kfvq6avy", "TS0601"),
             ("_TZE200_zivfvd7h", "TS0601"),
+            ("_TZE200_hhrtiq0x", "TS0601"),
+            ("_TZE200_ps5v5jor", "TS0601"),
+            ("_TZE200_owwdxjbx", "TS0601"),
+            ("_TZE200_8daqwrsj", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
@@ -888,7 +1104,7 @@ class SiterwellGS361_Type2(TuyaThermostat):
                     SiterwellManufCluster,
                     SiterwellThermostat,
                     SiterwellUserInterface,
-                    TuyaPowerConfigurationCluster,
+                    TuyaPowerConfigurationCluster2AA,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             }
@@ -911,7 +1127,6 @@ class MoesHY368_Type1(TuyaThermostat):
             ("_TZE200_ckud7u2l", "TS0601"),
             ("_TZE200_ywdxldoj", "TS0601"),
             ("_TZE200_cwnjrr72", "TS0601"),
-            ("_TZE200_b6wax7g0", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
@@ -941,7 +1156,58 @@ class MoesHY368_Type1(TuyaThermostat):
                     MoesThermostat,
                     MoesUserInterface,
                     MoesWindowDetection,
-                    TuyaPowerConfigurationCluster,
+                    TuyaPowerConfigurationCluster2AA,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            }
+        }
+    }
+
+
+# for Moes TRV _TZE200_b6wax7g0
+class MoesHY368_Type1new(TuyaThermostat):
+    """MoesHY368 Thermostatic radiator valve."""
+
+    def __init__(self, *args, **kwargs):
+        """Init device."""
+        self.window_detection_bus = Bus()
+        super().__init__(*args, **kwargs)
+
+    signature = {
+        #  endpoint=1 profile=260 device_type=81 device_version=0 input_clusters=[0, 4, 5, 61184]
+        #  output_clusters=[10, 25]>
+        MODELS_INFO: [
+            ("_TZE200_b6wax7g0", "TS0601"),
+        ],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaManufClusterAttributes.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            }
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.THERMOSTAT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    MoesManufClusterNew,
+                    MoesThermostatNew,
+                    MoesUserInterface,
+                    MoesWindowDetection,
+                    TuyaPowerConfigurationCluster2AA,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             }
@@ -983,9 +1249,54 @@ class MoesHY368_Type2(TuyaThermostat):
                     MoesThermostat,
                     MoesUserInterface,
                     MoesWindowDetection,
-                    TuyaPowerConfigurationCluster,
+                    TuyaPowerConfigurationCluster2AA,
                 ],
                 OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],
+            }
+        }
+    }
+
+
+class ZonnsmartTV01_ZG(TuyaThermostat):
+    """ZONNSMART TV01-ZG Thermostatic radiator valve."""
+
+    signature = {
+        #  endpoint=1 profile=260 device_type=81 device_version=0 input_clusters=[0, 4, 5, 61184]
+        #  output_clusters=[10, 25]>
+        MODELS_INFO: [
+            ("_TZE200_e9ba97vf", "TS0601"),
+            ("_TZE200_husqqvux", "TS0601"),
+        ],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaManufClusterAttributes.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            }
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.THERMOSTAT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    ZONNSMARTManufCluster,
+                    ZONNSMARTThermostat,
+                    ZONNSMARTUserInterface,
+                    TuyaPowerConfigurationCluster2AA,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             }
         }
     }

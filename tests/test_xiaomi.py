@@ -5,6 +5,7 @@ from unittest import mock
 import pytest
 import zigpy.device
 import zigpy.types as t
+from zigpy.zcl import foundation
 
 import zhaquirks
 from zhaquirks.const import (
@@ -322,3 +323,106 @@ async def test_xiaomi_batt_size(zigpy_device_from_quirk, quirk, batt_size):
     succ, fail = await cluster.read_attributes(("battery_size", "battery_quantity"))
     assert succ["battery_quantity"] == 1
     assert succ["battery_size"] == batt_size
+
+
+@pytest.mark.parametrize(
+    "raw_report",
+    (
+        # https://community.hubitat.com/t/xiaomi-aqara-devices-pairing-keeping-them-connected/623?page=34
+        "02FF4C0600100121BA0B21A813240100000000215D062058",
+        "02FF4C0600100021EC0B21A8012400000000002182002063",
+        "01FF421F0121110D0328130421A8430521F60006240600030000082108140A21E51F",
+        "01FF421A0121C70B03281C0421A84305212B01062403000300000A2120CB",
+        "01FF421F0121C70B0328190421A8430521100106240400040000082109140A2120CB",
+        "01FF421F0121C70B0328180421A8430521100106240600050000082109140A213C50",
+        "01FF421A0121BD0B03281D0421A84305212F01062407000300000A2120CB",
+        # https://community.hubitat.com/t/xiaomi-aqara-zigbee-device-drivers-possibly-may-no-longer-be-maintained/631/print
+        "01FF42090421A8130A212759",
+        (
+            "01FF42296410006510016E20006F20010121E40C03281E05210500082116260A2100009923"
+            "000000009B210000"
+        ),
+        "01FF42220121D10B0328190421A81305212D0006240200000000082104020A21A4B4641000",
+        "01FF42220121D10B03281C0421A81305213A0006240000000000082104020A210367641001",
+        (
+            "01FF42280121B70C0328200421A81305211E00062402000000000A21E18C08210410642000"
+            "962300000000"
+        ),
+        (
+            "01FF42270328240521170007270000000000000000082117010921000A0A2130C064200065"
+            "20336621FA00"
+        ),
+        "02FF4C0600100121B30B21A8012400000000002195002056",
+        "02FF4C0600100121B30B21A8012400000000002195002057",
+        # puddly's logs
+        "01FF421A0121DB0B03280C0421A84305215401062401000000000A2178E0",
+        "01FF421D0121BD0B03280A0421A8330521E801062401000000000A214444641000",
+        "01FF421F0121E50B0328170421A8130521500006240100000000082105140A214761",
+        "01FF42210121950B0328130421A81305214400062401000000000A217CBE6410000B210400",
+        (
+            "01FF42250121630B0421A81305217D2F06240100000000642905006521631D662B4D7F0100"
+            "0A2157DE"
+        ),
+        "02FF4C06001001213C0C21A81324010000000021D1052061",
+        (
+            "050042166C756D692E73656E736F725F6D6F74696F6E2E61713201FF42210121950B032816"
+            "0421A83105214400062401000000000A217CBE6410000B210900"
+        ),
+        # GH Issue #811
+        (
+            "01FF424403282305212E0008212E12092100106410006510006E20006F200094200295390A"
+            "078C41963999EB0C4597390030683B983980BB873C9B2100009C20010A2100000C280000"
+        ),
+        # https://github.com/dresden-elektronik/deconz-rest-plugin/issues/1491#issuecomment-489032272
+        (
+            "01FF422E0121BD0B03281A0421A8430521470106240100010000082108030A216535982128"
+            "00992125009A252900FFFFDC04"
+        ),
+        # https://github.com/dresden-elektronik/deconz-rest-plugin/issues/1411#issuecomment-485724957
+        (
+            "01FF424403280005210F000727000000000000000008212312092100086410006510006E20"
+            "006F20009420089539000000009639B22E1645973988E5C83B9839C013063E9B210000"
+        ),
+        # https://github.com/dresden-elektronik/deconz-rest-plugin/issues/1588
+        (
+            "01FF422E0121770B0328230421A8010521250006240100000000082108030A2161F3982128"
+            "00992100009A25AFFE5B016904"
+        ),
+        # https://github.com/dresden-elektronik/deconz-rest-plugin/issues/1069
+        "02FF4C0600100121D10B21A801240000000000216E002050",
+        "01FF421D0121D10B0328150421A8130521A200062403000000000A210000641000",
+        "01FF421D0121DB0B0328140421A84305219A00062401000000000A21C841641000",
+        "01FF421D0121BD0B0328150421A83305213B00062401000000000A219FF8641000",
+        "01FF421D0121C70B0328130421A81305219200062401000000000A21C96B641000",
+    ),
+)
+def test_attribute_parsing(raw_report):
+    """Test the parsing of various Xiaomi 0xFF01 attribute reports."""
+    raw_report = bytes.fromhex(raw_report)
+
+    hdr = foundation.ZCLHeader.general(
+        manufacturer=4447,
+        tsn=127,
+        command_id=foundation.GeneralCommand.Report_Attributes,
+    )
+    cluster = BasicCluster(mock.MagicMock())
+
+    hdr, reports = cluster.deserialize(hdr.serialize() + raw_report)
+
+    # Keep track of all the data encoded in the attribute report
+    parsed_chunks = []
+
+    for report in reports[0]:
+        # This shouldn't throw an error
+        cluster._update_attribute(report.attrid, report.value.value)
+
+        parsed_chunks.append(report.attrid.serialize())
+        parsed_chunks.append(report.value.value.serialize()[1:])
+
+    # Remove every parsed chunk from the original report bytes
+    for chunk in parsed_chunks:
+        raw_report = raw_report.replace(chunk, b"", 1)
+
+    # The only remaining data should be the data type and the length.
+    # Everything else is passed through unmodified.
+    assert len(raw_report) == 2 * len(reports[0])
