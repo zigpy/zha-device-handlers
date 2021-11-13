@@ -20,6 +20,8 @@ from zhaquirks.const import DOUBLE_PRESS, LONG_PRESS, SHORT_PRESS, ZHA_SEND_EVEN
 # Tuya Custom Cluster ID
 # ---------------------------------------------------------
 TUYA_CLUSTER_ID = 0xEF00
+TUYA_CLUSTER_E000_ID = 0xE000
+TUYA_CLUSTER_E001_ID = 0xE001
 # ---------------------------------------------------------
 # Tuya Cluster Commands
 # ---------------------------------------------------------
@@ -842,6 +844,33 @@ class TuyaZBElectricalMeasurement(CustomCluster, ElectricalMeasurement):
     AC_CURRENT_MULTIPLIER = 0x0602
     AC_CURRENT_DIVISOR = 0x0603
     _CONSTANT_ATTRIBUTES = {AC_CURRENT_MULTIPLIER: 1, AC_CURRENT_DIVISOR: 1000}
+
+
+# Tuya Zigbee Cluster 0xE000 Implementation
+class TuyaZBE000Cluster(CustomCluster):
+    """Tuya manufacturer specific cluster 57344."""
+
+    name = "Tuya Manufacturer Specific"
+    cluster_id = TUYA_CLUSTER_E000_ID
+    ep_attribute = "tuya_is_pita_0"
+
+
+# Tuya Zigbee Cluster 0xE001 Implementation
+class ExternalSwitchType(t.enum8):
+    """Tuya external switch type enum."""
+
+    Toggle = 0x00
+    State = 0x01
+    Momentary = 0x02
+
+
+class TuyaZBExternalSwitchTypeCluster(CustomCluster):
+    """Tuya External Switch Type Cluster"""
+
+    name = "Tuya External Switch Type Cluster"
+    cluster_id = TUYA_CLUSTER_E001_ID
+    ep_attribute = "tuya_external_switch_type"
+    attributes = {0xD030: ("external_switch_type", ExternalSwitchType)}
 
 
 # Tuya Window Cover Implementation
