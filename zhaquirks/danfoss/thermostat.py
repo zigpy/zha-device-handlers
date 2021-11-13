@@ -25,10 +25,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.danfoss import (
-    D5X84YU,
-    DANFOSS,
-)
+from zhaquirks.danfoss import D5X84YU, DANFOSS
 
 
 class DanfossThermostatCluster(CustomCluster, Thermostat):
