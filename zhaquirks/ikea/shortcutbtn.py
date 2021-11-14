@@ -15,16 +15,17 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.lightlink import LightLink
 
-from zhaquirks import DoublingPowerConfigurationCluster
 from zhaquirks.const import (
     ARGS,
     CLUSTER_ID,
     COMMAND,
     COMMAND_MOVE_ON_OFF,
+    COMMAND_OFF,
     COMMAND_ON,
     COMMAND_STOP,
     DEVICE_TYPE,
     DIM_UP,
+    DOUBLE_PRESS,
     ENDPOINT_ID,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -36,7 +37,7 @@ from zhaquirks.const import (
     SHORT_PRESS,
     TURN_ON,
 )
-from zhaquirks.ikea import IKEA, LightLinkCluster
+from zhaquirks.ikea import IKEA, LightLinkCluster, PowerConfiguration1CRCluster
 
 
 class IkeaTradfriShortcutBtn(CustomDevice):
@@ -80,7 +81,7 @@ class IkeaTradfriShortcutBtn(CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.NON_COLOR_CONTROLLER,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    DoublingPowerConfigurationCluster,
+                    PowerConfiguration1CRCluster,
                     Identify.cluster_id,
                     Alarms.cluster_id,
                     PollControl.cluster_id,
@@ -101,6 +102,7 @@ class IkeaTradfriShortcutBtn(CustomDevice):
 
     device_automation_triggers = {
         (SHORT_PRESS, TURN_ON): {COMMAND: COMMAND_ON, CLUSTER_ID: 6, ENDPOINT_ID: 1},
+        (DOUBLE_PRESS, TURN_ON): {COMMAND: COMMAND_OFF, CLUSTER_ID: 6, ENDPOINT_ID: 1},
         (LONG_PRESS, DIM_UP): {
             COMMAND: COMMAND_MOVE_ON_OFF,
             CLUSTER_ID: 8,
