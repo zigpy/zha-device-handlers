@@ -202,6 +202,7 @@ class TuyaMoesDiyRf433TS130F(CustomDevice):
         },
     }
 
+
 class TuyaTS130FTO(CustomDevice):
     """Tuya smart curtain roller shutter Time Out."""
 
