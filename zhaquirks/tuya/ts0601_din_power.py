@@ -1,22 +1,11 @@
 """Tuya Din Power Meter."""
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 from zigpy.profiles import zha
-from zigpy.zcl.clusters.general import (
-    AnalogInput,
-    Basic,
-    Groups,
-    Ota,
-    PowerConfiguration,
-    Scenes,
-    Time,
-)
-from zigpy.zcl import foundation
 import zigpy.types as t
-from zigpy.quirks import CustomCluster, CustomDevice
-from zhaquirks import Bus, LocalDataCluster
+from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
 
+from zhaquirks import Bus, LocalDataCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -25,12 +14,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import (
-    TuyaManufClusterAttributes,
-    TuyaSwitch,
-    TuyaManufacturerClusterOnOff,
-    TuyaOnOff,
-)
+from zhaquirks.tuya import TuyaManufClusterAttributes, TuyaOnOff, TuyaSwitch
 
 TUYA_TOTAL_ENERGY_ATTR = 0x0211
 TUYA_CURRENT_ATTR = 0x0212
@@ -77,6 +61,7 @@ class TuyaManufClusterDinPower(TuyaManufClusterAttributes):
 
 
 class TuyaPowerMeasurement(LocalDataCluster, ElectricalMeasurement):
+    """Custom class for power, voltage and current measurement."""
 
     cluster_id = ElectricalMeasurement.cluster_id
     POWER_ID = 0x050B
@@ -103,11 +88,12 @@ class TuyaPowerMeasurement(LocalDataCluster, ElectricalMeasurement):
         self._update_attribute(self.POWER_ID, value)
 
     def current_reported(self, value):
-        """Current reported."""
+        """Ampers reported."""
         self._update_attribute(self.CURRENT_ID, value)
 
 
 class TuyaElectricalMeasurement(LocalDataCluster, Metering):
+    """Custom class for total energy measurement."""
 
     cluster_id = Metering.cluster_id
     CURRENT_ID = 0x0000
