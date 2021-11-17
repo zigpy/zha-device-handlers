@@ -39,31 +39,22 @@ class TuyaManufClusterDinPower(TuyaManufClusterAttributes):
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
         if attrid == TUYA_TOTAL_ENERGY_ATTR:
-            self.endpoint.device.energy_bus.listener_event(
-                "energy_reported", value / 100
-            )
+            self.endpoint.smartenergy_metering.energy_reported(value / 100)
         elif attrid == TUYA_CURRENT_ATTR:
-            self.endpoint.device.electrical_bus.listener_event(
-                "current_reported", value
-            )
+            self.endpoint.electrical_measurement.current_reported(value)
         elif attrid == TUYA_POWER_ATTR:
-            self.endpoint.device.electrical_bus.listener_event(
-                "power_reported", value / 10
-            )
+            self.endpoint.electrical_measurement.power_reported(value / 10)
         elif attrid == TUYA_VOLTAGE_ATTR:
-            self.endpoint.device.electrical_bus.listener_event(
-                "voltage_reported", value / 10
-            )
+            self.endpoint.electrical_measurement.voltage_reported(value / 10)
         elif attrid == TUYA_DIN_SWITCH_ATTR:
-            self.endpoint.device.switch_bus.listener_event(
-                "switch_event", attrid, value
-            )
+            self.endpoint.device.switch_bus.listener_event(SWITCH_EVENT, attrid, value)
 
 
 class TuyaPowerMeasurement(LocalDataCluster, ElectricalMeasurement):
     """Custom class for power, voltage and current measurement."""
 
     cluster_id = ElectricalMeasurement.cluster_id
+
     POWER_ID = 0x050B
     VOLTAGE_ID = 0x0505
     CURRENT_ID = 0x0508
@@ -72,12 +63,6 @@ class TuyaPowerMeasurement(LocalDataCluster, ElectricalMeasurement):
     AC_CURRENT_DIVISOR = 0x0603
 
     _CONSTANT_ATTRIBUTES = {AC_CURRENT_MULTIPLIER: 1, AC_CURRENT_DIVISOR: 1000}
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-
-        self.endpoint.device.electrical_bus.add_listener(self)
 
     def voltage_reported(self, value):
         """Voltage reported."""
@@ -102,11 +87,6 @@ class TuyaElectricalMeasurement(LocalDataCluster, Metering):
     """Setting unit of measurement."""
     _CONSTANT_ATTRIBUTES = {0x0300: POWER_WATT}
 
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.energy_bus.add_listener(self)
-
     def energy_reported(self, value):
         """Summation Energy reported."""
         self._update_attribute(self.CURRENT_ID, value)
@@ -118,8 +98,6 @@ class TuyaPowerMeter(TuyaSwitch):
     def __init__(self, *args, **kwargs):
         """Init device."""
         self.switch_bus = Bus()
-        self.energy_bus = Bus()
-        self.electrical_bus = Bus()
         super().__init__(*args, **kwargs)
 
     signature = {
