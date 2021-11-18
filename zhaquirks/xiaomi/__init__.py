@@ -55,6 +55,7 @@ BATTERY_VOLTAGE_MV = "battery_voltage_mV"
 HUMIDITY_MEASUREMENT = "humidity_measurement"
 HUMIDITY_REPORTED = "humidity_reported"
 LUMI = "LUMI"
+MODEL = 5
 MOTION_TYPE = 0x000D
 OCCUPANCY_STATE = 0
 PATH = "path"
@@ -212,7 +213,7 @@ class XiaomiCluster(CustomCluster):
             attributes = self._parse_mija_attributes(value)
         else:
             super()._update_attribute(attrid, value)
-            if attrid == 0x0005:
+            if attrid == MODEL:
                 # 0x0005 = model attribute.
                 # Xiaomi sensors send the model attribute when their reset button is
                 # pressed quickly."""
