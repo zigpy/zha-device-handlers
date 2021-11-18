@@ -65,6 +65,7 @@ VOLTAGE = "voltage"
 PRESSURE_MEASUREMENT = "pressure_measurement"
 PRESSURE_REPORTED = "pressure_reported"
 STATE = "state"
+TEMPERATURE = "temperature"
 TEMPERATURE_MEASUREMENT = "temperature_measurement"
 TEMPERATURE_REPORTED = "temperature_reported"
 POWER_REPORTED = "power_reported"
@@ -273,7 +274,7 @@ class XiaomiCluster(CustomCluster):
         attributes = {}
         attribute_names = {
             1: BATTERY_VOLTAGE_MV,
-            3: TEMPERATURE_MEASUREMENT,
+            3: TEMPERATURE,
             4: XIAOMI_ATTR_4,
             5: XIAOMI_ATTR_5,
             6: XIAOMI_ATTR_6,
