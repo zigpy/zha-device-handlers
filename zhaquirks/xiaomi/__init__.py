@@ -55,7 +55,6 @@ BATTERY_VOLTAGE_MV = "battery_voltage_mV"
 HUMIDITY_MEASUREMENT = "humidity_measurement"
 HUMIDITY_REPORTED = "humidity_reported"
 LUMI = "LUMI"
-MODEL = 5
 MOTION_TYPE = 0x000D
 OCCUPANCY_STATE = 0
 PATH = "path"
@@ -207,10 +206,7 @@ class XiaomiCluster(CustomCluster):
         if attrid in (XIAOMI_AQARA_ATTRIBUTE, XIAOMI_AQARA_ATTRIBUTE_E1):
             attributes = self._parse_aqara_attributes(value)
             super()._update_attribute(attrid, value)
-            if (
-                MODEL in self._attr_cache
-                and self._attr_cache[MODEL] == "lumi.sensor_switch.aq2"
-            ):
+            if self.endpoint.device.model == "lumi.sensor_switch.aq2":
                 if value == b"\x04!\xa8C\n!\x00\x00":
                     self.listener_event(ZHA_SEND_EVENT, COMMAND_TRIPLE, [])
         elif attrid == XIAOMI_MIJA_ATTRIBUTE:
@@ -284,7 +280,7 @@ class XiaomiCluster(CustomCluster):
             10: PATH,
         }
 
-        if MODEL in self._attr_cache and self._attr_cache[MODEL] in [
+        if self.endpoint.device.model in [
             "lumi.sensor_ht",
             "lumi.sens",
             "lumi.weather",
@@ -298,15 +294,12 @@ class XiaomiCluster(CustomCluster):
                     102: PRESSURE_MEASUREMENT,
                 }
             )
-        elif MODEL in self._attr_cache and self._attr_cache[MODEL] in [
+        elif self.endpoint.device.model in [
             "lumi.plug.maus01",
             "lumi.relay.c2acn01",
         ]:
             attribute_names.update({149: CONSUMPTION, 150: VOLTAGE, 152: POWER})
-        elif (
-            MODEL in self._attr_cache
-            and self._attr_cache[MODEL] == "lumi.sensor_motion.aq2"
-        ):
+        elif self.endpoint.device.model == "lumi.sensor_motion.aq2":
             attribute_names.update({11: ILLUMINANCE_MEASUREMENT})
 
         result = {}
