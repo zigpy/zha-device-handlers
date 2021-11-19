@@ -39,6 +39,7 @@ TUYA_LEVEL_COMMAND = 514
 
 COVER_EVENT = "cover_event"
 LEVEL_EVENT = "level_event"
+TUYA_MCU_COMMAND = "tuya_mcu_command"
 
 # ---------------------------------------------------------
 # Value for dp_type
@@ -306,6 +307,19 @@ class TuyaManufCluster(CustomCluster):
         0x0024: ("set_time_request", (t.data16,), True),
     }
 
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self.endpoint.device.command_bus = Bus()
+        self.endpoint.device.command_bus.add_listener(self)  # listen MCU commands
+
+    def tuya_mcu_command(self, command: Command):
+        """Tuya MCU command listener. Only endpoint:1 must listen to MCU commands."""
+
+        self.create_catching_task(
+            self.command(TUYA_SET_DATA, command, expect_reply=True)
+        )
+
     def handle_cluster_request(
         self,
         hdr: foundation.ZCLHeader,
@@ -448,9 +462,11 @@ class TuyaOnOff(CustomCluster, OnOff):
             channel,
             state,
         )
-        self._update_attribute(ATTR_ON_OFF, state)
+        # update status only if event == endpoint
+        if self.endpoint.endpoint_id == channel:
+            self._update_attribute(ATTR_ON_OFF, state)
 
-    def command(
+    async def command(
         self,
         command_id: Union[foundation.Command, int, t.uint8_t],
         *args,
@@ -463,14 +479,17 @@ class TuyaOnOff(CustomCluster, OnOff):
         if command_id in (0x0000, 0x0001):
             cmd_payload = TuyaManufCluster.Command()
             cmd_payload.status = 0
+            # cmd_payload.tsn = tsn if tsn else self.endpoint.device.application.get_sequence()
             cmd_payload.tsn = 0
             cmd_payload.command_id = TUYA_CMD_BASE + self.endpoint.endpoint_id
             cmd_payload.function = 0
             cmd_payload.data = [1, command_id]
 
-            return self.endpoint.tuya_manufacturer.command(
-                TUYA_SET_DATA, cmd_payload, expect_reply=True
+            self.endpoint.device.command_bus.listener_event(
+                TUYA_MCU_COMMAND,
+                cmd_payload,
             )
+            return foundation.Status.SUCCESS
 
         return foundation.Status.UNSUP_CLUSTER_COMMAND
 
@@ -489,17 +508,23 @@ class TuyaManufacturerClusterOnOff(TuyaManufCluster):
     ) -> None:
         """Handle cluster request."""
 
-        # Send default response because the MCU expects it
-        if not hdr.frame_control.disable_default_response:
-            self.send_default_rsp(hdr, status=foundation.Status.SUCCESS)
-
-        tuya_payload = args[0]
         if hdr.command_id in (0x0002, 0x0001):
+            # Send default response because the MCU expects it
+            if not hdr.frame_control.disable_default_response:
+                self.send_default_rsp(hdr, status=foundation.Status.SUCCESS)
+
+            tuya_payload = args[0]
             self.endpoint.device.switch_bus.listener_event(
                 SWITCH_EVENT,
                 tuya_payload.command_id - TUYA_CMD_BASE,
                 tuya_payload.data[1],
             )
+        elif hdr.command_id == TUYA_SET_TIME:
+            """Time event call super"""
+            _LOGGER.debug("TUYA_SET_TIME --> hdr: %s, args: %s", hdr, args)
+            super().handle_cluster_request(hdr, args, dst_addressing=dst_addressing)
+        else:
+            _LOGGER.warning("Unsupported command: %s", hdr)
 
 
 class TuyaSwitch(CustomDevice):
