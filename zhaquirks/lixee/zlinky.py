@@ -26,7 +26,18 @@ class ZLinkyTICManufacturerCluster(CustomCluster):
     name = "ZLinky_TIC Manufacturer specific"
     ep_attribute = "zlinky_cluster"
     manufacturer_attributes = {
-        0x0000: ("optarif_or_ngtf", t.LimitedCharString(16)),
+        0x0000: ("histo_optarif_or_standard_ngtf", t.LimitedCharString(16)),
+        0x0001: ("histo_demain", t.LimitedCharString(4)),
+        0x0002: ("histo_hhphc", t.uint8_t),
+        0x0003: ("histo_ppot", t.uint8_t),
+        0x0004: ("histo_pejp", t.uint8_t),
+        0x0005: ("histo_adps", t.uint16_t),
+        0x0006: ("histo_adir1", t.uint16_t),
+        0x0007: ("histo_adir2", t.uint16_t),
+        0x0008: ("histo_adir3", t.uint16_t),
+        0x0200: ("standard_ltarf", t.LimitedCharString(16)),
+        0x0201: ("standard_ntarf", t.uint8_t),
+        0x0202: ("standard_date", t.LimitedCharString(10)),
     }
 
 
