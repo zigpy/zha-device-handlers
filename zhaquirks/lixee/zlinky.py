@@ -1,6 +1,7 @@
 """Quirk for ZLinky_TIC."""
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
+import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, GreenPowerProxy, Identify, Ota
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement, MeterIdentification
 from zigpy.zcl.clusters.smartenergy import Metering
@@ -14,6 +15,19 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.lixee import LIXEE
+
+ZLINKY_MANUFACTURER_CLUSTER_ID = 0xFF66
+
+
+class ZLinkyTICManufacturerCluster(CustomCluster):
+    """ZLinkyTICManufacturerCluster manufacturer cluster."""
+
+    cluster_id = ZLINKY_MANUFACTURER_CLUSTER_ID
+    name = "ZLinky_TIC Manufacturer specific"
+    ep_attribute = "zlinky_cluster"
+    manufacturer_attributes = {
+        0x0000: ("optarif_or_ngtf", t.LimitedCharString(16)),
+    }
 
 
 class ZLinkyTICMetering(CustomCluster, Metering):
@@ -41,7 +55,7 @@ class ZLinkyTIC(CustomDevice):
                     Metering.cluster_id,
                     MeterIdentification.cluster_id,
                     ElectricalMeasurement.cluster_id,
-                    0xFF66,  # Manufacturer Specific
+                    ZLINKY_MANUFACTURER_CLUSTER_ID,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
@@ -64,7 +78,7 @@ class ZLinkyTIC(CustomDevice):
                     ZLinkyTICMetering,
                     MeterIdentification.cluster_id,
                     ElectricalMeasurement.cluster_id,
-                    0xFF66,  # Manufacturer Specific
+                    ZLinkyTICManufacturerCluster,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
