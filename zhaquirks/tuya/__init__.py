@@ -436,6 +436,14 @@ class TuyaManufClusterAttributes(TuyaManufCluster):
             cmd_payload.function = 0
             cmd_payload.data = Data.from_value(record.value.value)
 
+            _LOGGER.debug(
+                "[0x%04x:%s:0x%04x] Sending command: %s",
+                self.endpoint.device.nwk,
+                self.endpoint.endpoint_id,
+                self.cluster_id,
+                cmd_payload
+            )
+            
             await super().command(
                 TUYA_SET_DATA,
                 cmd_payload,
