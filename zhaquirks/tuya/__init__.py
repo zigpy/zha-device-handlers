@@ -441,7 +441,7 @@ class TuyaManufClusterAttributes(TuyaManufCluster):
                 self.endpoint.device.nwk,
                 self.endpoint.endpoint_id,
                 self.cluster_id,
-                cmd_payload
+                cmd_payload,
             )
 
             await super().command(
