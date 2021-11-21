@@ -135,7 +135,7 @@ async def test_singleswitch_state_report(zigpy_device_from_quirk, quirk):
 
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_switch.TuyaDoubleSwitchTO,))
 async def test_doubleswitch_state_report(zigpy_device_from_quirk, quirk):
-    """Test tuya single switch."""
+    """Test tuya double switch."""
 
     ZCL_TUYA_SWITCH_COMMAND_03 = b"\tQ\x03\x006\x01\x01\x00\x01\x01"
     ZCL_TUYA_SWITCH_EP2_ON = b"\tQ\x02\x006\x02\x01\x00\x01\x01"
