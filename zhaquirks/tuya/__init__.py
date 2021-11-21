@@ -443,7 +443,7 @@ class TuyaManufClusterAttributes(TuyaManufCluster):
                 self.cluster_id,
                 cmd_payload
             )
-            
+
             await super().command(
                 TUYA_SET_DATA,
                 cmd_payload,
