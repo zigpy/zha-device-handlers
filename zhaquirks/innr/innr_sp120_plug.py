@@ -1,21 +1,19 @@
 """Innr SP 120 plug."""
-from zigpy.profiles import zha
 from zigpy.profiles import zll
-
 from zigpy.quirks import CustomCluster, CustomDevice
-from zigpy.zcl.clusters.general import (
-     Basic,
-     Groups,
-     Identify,
-     LevelControl,
-     OnOff,
-     Scenes,
-     Time,
-     Ota,
-)
 from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.lightlink import LightLink
+from zigpy.zcl.clusters.general import (
+    Basic,
+    Groups,
+    Identify,
+    LevelControl,
+    OnOff,
+    Scenes,
+    Time,
+    Ota,
+)
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -28,6 +26,7 @@ from zhaquirks.const import (
 
 MANUFACTURER = "innr"
 MODEL = "SP 120"
+
 
 class MeteringCluster(CustomCluster, Metering):
     """Fix multiplier and divisor."""
@@ -71,7 +70,7 @@ class SP120(CustomDevice):
                     Ota.cluster_id,
                     Time.cluster_id,
                 ],
-               },
+            },
             2: {
                 PROFILE_ID: 49246,
                 DEVICE_TYPE: 0x1000,
@@ -79,7 +78,7 @@ class SP120(CustomDevice):
                     LightLink.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [],
-            }
+            },
         },
         MODELS_INFO: [(MANUFACTURER, MODEL)],
     }
@@ -105,7 +104,7 @@ class SP120(CustomDevice):
                     Ota.cluster_id,
                     Time.cluster_id,
                 ],
-               },
+            },
             2: {
                 PROFILE_ID: 49246,
                 DEVICE_TYPE: 0x1000,
@@ -113,6 +112,6 @@ class SP120(CustomDevice):
                     LightLink.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [],
-               }
+            },
         },
     }
