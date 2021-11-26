@@ -1,20 +1,4 @@
 """Innr SP 120 plug."""
-from zigpy.profiles import zll
-from zigpy.quirks import CustomCluster, CustomDevice
-from zigpy.zcl.clusters.smartenergy import Metering
-from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
-from zigpy.zcl.clusters.lightlink import LightLink
-from zigpy.zcl.clusters.general import (
-    Basic,
-    Groups,
-    Identify,
-    LevelControl,
-    OnOff,
-    Scenes,
-    Time,
-    Ota,
-)
-
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -23,6 +7,21 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zigpy.profiles import zll
+from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.zcl.clusters.general import (
+    Basic,
+    Groups,
+    Identify,
+    LevelControl,
+    OnOff,
+    Ota,
+    Scenes,
+    Time,
+)
+from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
+from zigpy.zcl.clusters.lightlink import LightLink
+from zigpy.zcl.clusters.smartenergy import Metering
 
 MANUFACTURER = "innr"
 MODEL = "SP 120"
