@@ -14,9 +14,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.lixee import LIXEE
-
-ZLINKY_MANUFACTURER_CLUSTER_ID = 0xFF66
+from zhaquirks.lixee import LIXEE, ZLINKY_MANUFACTURER_CLUSTER_ID
 
 
 class ZLinkyTICManufacturerCluster(CustomCluster):
@@ -66,7 +64,7 @@ class ZLinkyTIC(CustomDevice):
                     Metering.cluster_id,
                     MeterIdentification.cluster_id,
                     ElectricalMeasurement.cluster_id,
-                    ZLINKY_MANUFACTURER_CLUSTER_ID,
+                    ZLinkyTICManufacturerCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
