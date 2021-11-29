@@ -1,4 +1,4 @@
-"""Map from manufacturer to standard clusters for thermostatic valves."""
+"""Siterwell TRV devices support."""
 import logging
 from typing import Optional, Union
 
