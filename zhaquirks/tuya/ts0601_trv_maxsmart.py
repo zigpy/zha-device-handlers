@@ -1,3 +1,4 @@
+"""Maxsmart TRV devices support."""
 import logging
 import math
 from typing import Optional, Union
@@ -365,7 +366,7 @@ class MaxsmartManufCluster(TuyaManufClusterAttributes):
             )
 
     def away_cluster_get(self, field, attributes):
-        """Function to return structure needed to away attribute."""
+        """Return function for away needed structure."""
         year = self.endpoint.device.MaxsmartAwayYear_bus.listener_event("get_value")[0]
         month = self.endpoint.device.MaxsmartAwayMonth_bus.listener_event("get_value")[
             0
