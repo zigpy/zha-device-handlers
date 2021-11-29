@@ -1,6 +1,5 @@
-"""Map from manufacturer to standard clusters for thermostatic valves."""
 import logging
-from typing import Match, Optional, Union
+from typing import Optional, Union
 
 import zigpy.types as t
 from zhaquirks import Bus, LocalDataCluster
@@ -782,7 +781,7 @@ class MoesChildLock(LocalDataCluster, OnOff):
 
 
 class MoesValveState(LocalDataCluster, AnalogOutput):
-    """Analog output for Valve State"""
+    """Analog output for Valve State."""
 
     def __init__(self, *args, **kwargs):
         """Init."""
@@ -822,7 +821,7 @@ class MoesValveState(LocalDataCluster, AnalogOutput):
 
 
 class MoesTempCalibration(LocalDataCluster, AnalogOutput):
-    """Analog output for Temp Calibration"""
+    """Analog output for Temp Calibration."""
 
     def __init__(self, *args, **kwargs):
         """Init."""
@@ -863,7 +862,7 @@ class MoesTempCalibration(LocalDataCluster, AnalogOutput):
 
 
 class MoesBoostTime(LocalDataCluster, AnalogOutput):
-    """Analog output for Boost Time"""
+    """Analog output for Boost Time."""
 
     def __init__(self, *args, **kwargs):
         """Init."""
