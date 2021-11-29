@@ -20,9 +20,6 @@ from zhaquirks.tuya import (
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time
 
-_LOGGER = logging.getLogger(__name__)
-
-
 ZONNSMART_CHILD_LOCK_ATTR = 0x0128  # [0] unlocked [1] child-locked
 ZONNSMART_WINDOW_DETECT_ATTR = 0x0108  # [0] inactive [1] active
 ZONNSMART_TARGET_TEMP_ATTR = 0x0210  # [0,0,0,210] target room temp (decidegree)
