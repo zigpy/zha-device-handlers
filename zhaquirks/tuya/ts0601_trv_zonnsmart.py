@@ -2,7 +2,6 @@
 import logging
 
 import zigpy.types as t
-from zhaquirks import Bus
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -19,9 +18,7 @@ from zhaquirks.tuya import (
     TuyaUserInterfaceCluster,
 )
 from zigpy.profiles import zha
-from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
-from zigpy.zcl.clusters.hvac import Thermostat
+from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time
 
 _LOGGER = logging.getLogger(__name__)
 
