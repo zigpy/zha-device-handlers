@@ -228,7 +228,7 @@ class SiterwellThermostat(TuyaThermostatCluster):
                 self.error("Unsupported value for SystemMode")
 
     def hass_climate_state_change(self, attrid, value):
-        """Update of the HASS Climate gui state"""
+        """Update of the HASS Climate gui state."""
         if attrid == SITERWELL_TEMPERATURE_ATTR:
             temp_current = value * 10
             temp_set = self._attr_cache.get(self.attridx["occupied_heating_setpoint"])
@@ -434,6 +434,7 @@ class SiterwellWindowAlarm(LocalDataCluster, BinaryInput):
         self.endpoint.device.SiterwellWindowAlarm_bus.add_listener(self)
 
     def set_value(self, value):
+        """Set value."""
         self._update_attribute(self.attridx["present_value"], value)
 
 
@@ -446,6 +447,7 @@ class SiterwellValveAlarm(LocalDataCluster, BinaryInput):
         self.endpoint.device.SiterwellValveAlarm_bus.add_listener(self)
 
     def set_value(self, value):
+        """Set value."""
         self._update_attribute(self.attridx["present_value"], value)
 
 
@@ -534,6 +536,7 @@ class SiterwellInstallMode(LocalDataCluster, OnOff):
         self.endpoint.device.SiterwellInstallMode_bus.add_listener(self)
 
     def onoff_change(self, value):
+        """Switch change for Installation mode."""
         if 0 <= value <= 2:
             self._update_attribute(self.attridx["on_off"], False)
         else:
@@ -550,7 +553,7 @@ class SiterwellInstallMode(LocalDataCluster, OnOff):
             attr_name = self.attributes[record.attrid][0]
             if attr_name == "on_off":
                 value = record.value.value
-                mode = 1 if value == False else 3
+                mode = 1 if value is False else 3
                 has_change = True
 
         if has_change:
@@ -605,6 +608,8 @@ class SiterwellInstallMode(LocalDataCluster, OnOff):
 
 
 class SiterwellTempCalibration(LocalDataCluster, AnalogOutput):
+    """AnalogOutput cluster for the local temperature calibration."""
+
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
@@ -617,6 +622,7 @@ class SiterwellTempCalibration(LocalDataCluster, AnalogOutput):
         self._update_attribute(self.attridx["engineering_units"], 62)
 
     def get_value(self):
+        """Get value."""
         return self._attr_cache.get(self.attridx["present_value"])
 
 
