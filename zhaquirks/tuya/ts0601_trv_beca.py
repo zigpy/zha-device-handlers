@@ -1,6 +1,5 @@
-"""Map from manufacturer to standard clusters for thermostatic valves."""
 import logging
-from typing import Match, Optional, Union
+from typing import Optional, Union
 
 import zigpy.types as t
 from zhaquirks import Bus, LocalDataCluster
@@ -696,7 +695,7 @@ class BecaChildLock(LocalDataCluster, OnOff):
 
 
 class BecaValveState(LocalDataCluster, AnalogOutput):
-    """Analog output for Valve State"""
+    """Analog output for Valve State."""
 
     def __init__(self, *args, **kwargs):
         """Init."""
@@ -715,7 +714,7 @@ class BecaValveState(LocalDataCluster, AnalogOutput):
 
 
 class BecaTempCalibration(LocalDataCluster, AnalogOutput):
-    """Analog output for Temp Calibration"""
+    """Analog output for Temp Calibration."""
 
     def __init__(self, *args, **kwargs):
         """Init."""
@@ -756,7 +755,7 @@ class BecaTempCalibration(LocalDataCluster, AnalogOutput):
 
 
 class BecaBoostTime(LocalDataCluster, AnalogOutput):
-    """Analog output for Boost Time"""
+    """Analog output for Boost Time."""
 
     def __init__(self, *args, **kwargs):
         """Init."""
@@ -797,7 +796,7 @@ class BecaBoostTime(LocalDataCluster, AnalogOutput):
 
 
 class BecaBoostCountdown(LocalDataCluster, AnalogOutput):
-    """Analog output for Boost Countdown time"""
+    """Analog output for Boost Countdown time."""
 
     def __init__(self, *args, **kwargs):
         """Init."""
@@ -816,7 +815,7 @@ class BecaBoostCountdown(LocalDataCluster, AnalogOutput):
 
 
 class BecaEcoTemp(LocalDataCluster, AnalogOutput):
-    """Analog output for Eco Temperature"""
+    """Analog output for Eco Temperature."""
 
     def __init__(self, *args, **kwargs):
         """Init."""
@@ -857,7 +856,7 @@ class BecaEcoTemp(LocalDataCluster, AnalogOutput):
 
 
 class BecaMinTemp(LocalDataCluster, AnalogOutput):
-    """Analog output for Min Temperature"""
+    """Analog output for Min Temperature."""
 
     def __init__(self, *args, **kwargs):
         """Init."""
@@ -898,7 +897,7 @@ class BecaMinTemp(LocalDataCluster, AnalogOutput):
 
 
 class BecaMaxTemp(LocalDataCluster, AnalogOutput):
-    """Analog output for Max Temperature"""
+    """Analog output for Max Temperature."""
 
     def __init__(self, *args, **kwargs):
         """Init."""
