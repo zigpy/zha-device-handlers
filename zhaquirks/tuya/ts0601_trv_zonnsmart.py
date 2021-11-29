@@ -1,5 +1,4 @@
 """Map from manufacturer to standard clusters for thermostatic valves."""
-import logging
 
 import zigpy.types as t
 from zhaquirks.const import (
