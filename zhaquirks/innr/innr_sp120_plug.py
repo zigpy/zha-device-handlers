@@ -1,9 +1,6 @@
 """Innr SP 120 plug."""
 from zigpy.profiles import zll
-from zigpy.quirks import (
-    CustomCluster,
-    CustomDevice,
-)
+from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
