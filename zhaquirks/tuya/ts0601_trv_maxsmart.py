@@ -1,8 +1,6 @@
-"""Map from manufacturer to standard clusters for thermostatic valves."""
-import asyncio
 import logging
 import math
-from typing import Match, Optional, Union
+from typing import Optional, Union
 
 import zigpy.types as t
 from zhaquirks import Bus, LocalDataCluster
@@ -83,7 +81,7 @@ class data144(t.FixedList, item_type=t.uint8_t, length=18):
 
 
 class CustomTuyaOnOff(LocalDataCluster, OnOff):
-    """Custom Tuya OnOff cluster"""
+    """Custom Tuya OnOff cluster."""
 
     def __init__(self, *args, **kwargs):
         """Init."""
