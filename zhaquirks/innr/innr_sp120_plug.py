@@ -52,7 +52,7 @@ class SP120(CustomDevice):
     signature = {
         ENDPOINTS: {
             1: {
-                PROFILE_ID: 49246,
+                PROFILE_ID: zll.PROFILE_ID,
                 DEVICE_TYPE: zll.DeviceType.ON_OFF_PLUGIN_UNIT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
@@ -72,7 +72,7 @@ class SP120(CustomDevice):
                 ],
             },
             2: {
-                PROFILE_ID: 49246,
+                PROFILE_ID: zll.PROFILE_ID,
                 DEVICE_TYPE: 0x1000,
                 INPUT_CLUSTERS: [
                     LightLink.cluster_id,
@@ -86,7 +86,7 @@ class SP120(CustomDevice):
     replacement = {
         ENDPOINTS: {
             1: {
-                PROFILE_ID: 0x0104,
+                PROFILE_ID: zll.PROFILE_ID,
                 DEVICE_TYPE: zll.DeviceType.ON_OFF_PLUGIN_UNIT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
@@ -106,7 +106,7 @@ class SP120(CustomDevice):
                 ],
             },
             2: {
-                PROFILE_ID: 49246,
+                PROFILE_ID: zll.PROFILE_ID,
                 DEVICE_TYPE: 0x1000,
                 INPUT_CLUSTERS: [
                     LightLink.cluster_id,
