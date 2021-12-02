@@ -1,5 +1,4 @@
 """Quirk for lumi.airmonitor.acn01 tvoc air monitor."""
-import logging
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster
@@ -8,7 +7,7 @@ from zigpy.zcl.clusters.general import AnalogInput, Basic, Identify, Ota
 from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
 from zigpy.zdo.types import NodeDescriptor
 
-from zhaquirks import LocalDataCluster, PowerConfigurationCluster
+from zhaquirks import Bus, LocalDataCluster, PowerConfigurationCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -18,9 +17,16 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.xiaomi import LUMI, BasicCluster, XiaomiCustomDevice
+from zhaquirks.xiaomi import (
+    LUMI,
+    BasicCluster,
+    RelativeHumidityCluster,
+    TemperatureMeasurementCluster,
+    XiaomiAqaraE1Cluster,
+    XiaomiCustomDevice,
+)
 
-_LOGGER = logging.getLogger(__name__)
+MEASURED_VALUE = 0x0000
 
 
 class AnalogInputCluster(CustomCluster, AnalogInput):
@@ -28,7 +34,7 @@ class AnalogInputCluster(CustomCluster, AnalogInput):
 
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
-        self.endpoint.voc_level.update_attribute(value)
+        self.endpoint.voc_level.update_attribute(MEASURED_VALUE, value)
 
 
 class EmulatedTVOCMeasurement(LocalDataCluster):
@@ -38,7 +44,6 @@ class EmulatedTVOCMeasurement(LocalDataCluster):
     ONE_HOUR = 3600
     MIN_CHANGE = 5
     TEN_SECONDS = 10
-    MEASURED_VALUE = 0x0000
 
     cluster_id = 0x042E
     name = "VOC Level"
@@ -59,13 +64,15 @@ class EmulatedTVOCMeasurement(LocalDataCluster):
         )
         return result
 
-    def update_attribute(self, value):
-        """VOC reported."""
-        self._update_attribute(self.MEASURED_VALUE, value)
-
 
 class TVOCMonitor(XiaomiCustomDevice):
     """Aqara LUMI lumi.airmonitor.acn01."""
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        self.temperature_bus = Bus()
+        self.humidity_bus = Bus()
+        super().__init__(*args, **kwargs)
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=770
@@ -101,11 +108,12 @@ class TVOCMonitor(XiaomiCustomDevice):
                 INPUT_CLUSTERS: [
                     BasicCluster,
                     Identify.cluster_id,
-                    TemperatureMeasurement.cluster_id,
+                    TemperatureMeasurementCluster,
                     PowerConfigurationCluster,
-                    RelativeHumidity.cluster_id,
+                    RelativeHumidityCluster,
                     AnalogInputCluster,
                     EmulatedTVOCMeasurement,
+                    XiaomiAqaraE1Cluster,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             }

@@ -67,6 +67,7 @@ PRESSURE_REPORTED = "pressure_reported"
 STATE = "state"
 TEMPERATURE = "temperature"
 TEMPERATURE_MEASUREMENT = "temperature_measurement"
+TVOC_MEASUREMENT = "tvoc_measurement"
 TEMPERATURE_REPORTED = "temperature_reported"
 POWER_REPORTED = "power_reported"
 CONSUMPTION_REPORTED = "consumption_reported"
@@ -268,6 +269,10 @@ class XiaomiCluster(CustomCluster):
             self.endpoint.device.illuminance_bus.listener_event(
                 ILLUMINANCE_REPORTED, attributes[ILLUMINANCE_MEASUREMENT]
             )
+        if TVOC_MEASUREMENT in attributes:
+            self.endpoint.voc_level.update_attribute(
+                0x0000, attributes[TVOC_MEASUREMENT]
+            )
 
     def _parse_aqara_attributes(self, value):
         """Parse non standard attributes."""
@@ -285,6 +290,7 @@ class XiaomiCluster(CustomCluster):
             "lumi.sensor_ht",
             "lumi.sens",
             "lumi.weather",
+            "lumi.airmonitor.acn01",
         ]:
             # Temperature sensors send temperature/humidity/pressure updates trough this
             # cluster instead of the respective clusters
@@ -292,7 +298,9 @@ class XiaomiCluster(CustomCluster):
                 {
                     100: TEMPERATURE_MEASUREMENT,
                     101: HUMIDITY_MEASUREMENT,
-                    102: PRESSURE_MEASUREMENT,
+                    102: TVOC_MEASUREMENT
+                    if self.endpoint.device.model == "lumi.airmonitor.acn01"
+                    else PRESSURE_MEASUREMENT,
                 }
             )
         elif self.endpoint.device.model in [
