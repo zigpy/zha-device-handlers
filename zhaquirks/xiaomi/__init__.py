@@ -350,8 +350,6 @@ class XiaomiCluster(CustomCluster):
 class BasicCluster(XiaomiCluster, Basic):
     """Xiaomi basic cluster implementation."""
 
-    cluster_id = Basic.cluster_id
-
 
 class XiaomiAqaraE1Cluster(XiaomiCluster, ManufacturerSpecificCluster):
     """Xiaomi mfg cluster implementation."""
