@@ -9,6 +9,7 @@ import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import LevelControl, OnOff, PowerConfiguration
+from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
 from zigpy.zcl.clusters.smartenergy import Metering
 
@@ -19,6 +20,8 @@ from zhaquirks.const import DOUBLE_PRESS, LONG_PRESS, SHORT_PRESS, ZHA_SEND_EVEN
 # Tuya Custom Cluster ID
 # ---------------------------------------------------------
 TUYA_CLUSTER_ID = 0xEF00
+TUYA_CLUSTER_E000_ID = 0xE000
+TUYA_CLUSTER_E001_ID = 0xE001
 # ---------------------------------------------------------
 # Tuya Cluster Commands
 # ---------------------------------------------------------
@@ -28,10 +31,15 @@ TUYA_SET_DATA_RESPONSE = 0x02
 TUYA_SEND_DATA = 0x04
 TUYA_ACTIVE_STATUS_RPT = 0x06
 TUYA_SET_TIME = 0x24
+# TODO: To be checked
+TUYA_MCU_VERSION_REQ = 0x10
+TUYA_MCU_VERSION_RSP = 0x11
+#
 TUYA_LEVEL_COMMAND = 514
 
 COVER_EVENT = "cover_event"
 LEVEL_EVENT = "level_event"
+TUYA_MCU_COMMAND = "tuya_mcu_command"
 
 # ---------------------------------------------------------
 # Value for dp_type
@@ -96,7 +104,23 @@ TUYA_COVER_COMMAND = {
     "_TYST11_wmcdj3aq": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
     "_TZE200_yenbr4om": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
     "_TZE200_5sbebbzs": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
+    "_TZE200_xaabybja": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
+    "_TZE200_hsgrhjpf": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
 }
+# Taken from zigbee-herdsman-converters
+# Contains all covers which need their position inverted by default
+# Default is 100 = open, 0 = closed; Devices listed here will use 0 = open, 100 = closed instead
+# Use manufacturerName to identify device!
+# Don't invert _TZE200_cowvfni3: https://github.com/Koenkk/zigbee2mqtt/issues/6043
+TUYA_COVER_INVERTED_BY_DEFAULT = [
+    "_TZE200_wmcdj3aq",
+    "_TZE200_nogaemzt",
+    "_TZE200_xuzcvlku",
+    "_TZE200_xaabybja",
+    "_TZE200_yenbr4om",
+    "_TZE200_zpzndjez",
+]
+
 # ---------------------------------------------------------
 # TUYA Switch Custom Values
 # ---------------------------------------------------------
@@ -250,6 +274,12 @@ class TuyaManufCluster(CustomCluster):
         function: t.uint8_t
         data: Data
 
+    class MCUVersionRsp(t.Struct):
+        """Tuya MCU version response Zcl payload."""
+
+        tsn: t.uint16_t
+        version: t.uint8_t
+
     """ Time sync command (It's transparent between MCU and server)
             Time request device -> server
                payloadSize = 0
@@ -267,14 +297,30 @@ class TuyaManufCluster(CustomCluster):
 
     manufacturer_server_commands = {
         0x0000: ("set_data", (Command,), False),
+        0x0010: ("mcu_version_req", (t.uint16_t,), False),
         0x0024: ("set_time", (TuyaTimePayload,), False),
     }
 
     manufacturer_client_commands = {
         0x0001: ("get_data", (Command,), True),
         0x0002: ("set_data_response", (Command,), True),
+        0x0006: ("active_status_report", (Command,), True),
+        0x0011: ("mcu_version_rsp", (MCUVersionRsp,), True),
         0x0024: ("set_time_request", (t.data16,), True),
     }
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self.endpoint.device.command_bus = Bus()
+        self.endpoint.device.command_bus.add_listener(self)  # listen MCU commands
+
+    def tuya_mcu_command(self, command: Command):
+        """Tuya MCU command listener. Only endpoint:1 must listen to MCU commands."""
+
+        self.create_catching_task(
+            self.command(TUYA_SET_DATA, command, expect_reply=True)
+        )
 
     def handle_cluster_request(
         self,
@@ -418,9 +464,11 @@ class TuyaOnOff(CustomCluster, OnOff):
             channel,
             state,
         )
-        self._update_attribute(ATTR_ON_OFF, state)
+        # update status only if event == endpoint
+        if self.endpoint.endpoint_id == channel:
+            self._update_attribute(ATTR_ON_OFF, state)
 
-    def command(
+    async def command(
         self,
         command_id: Union[foundation.Command, int, t.uint8_t],
         *args,
@@ -433,14 +481,17 @@ class TuyaOnOff(CustomCluster, OnOff):
         if command_id in (0x0000, 0x0001):
             cmd_payload = TuyaManufCluster.Command()
             cmd_payload.status = 0
+            # cmd_payload.tsn = tsn if tsn else self.endpoint.device.application.get_sequence()
             cmd_payload.tsn = 0
             cmd_payload.command_id = TUYA_CMD_BASE + self.endpoint.endpoint_id
             cmd_payload.function = 0
             cmd_payload.data = [1, command_id]
 
-            return self.endpoint.tuya_manufacturer.command(
-                TUYA_SET_DATA, cmd_payload, expect_reply=True
+            self.endpoint.device.command_bus.listener_event(
+                TUYA_MCU_COMMAND,
+                cmd_payload,
             )
+            return foundation.Status.SUCCESS
 
         return foundation.Status.UNSUP_CLUSTER_COMMAND
 
@@ -459,13 +510,23 @@ class TuyaManufacturerClusterOnOff(TuyaManufCluster):
     ) -> None:
         """Handle cluster request."""
 
-        tuya_payload = args[0]
         if hdr.command_id in (0x0002, 0x0001):
+            # Send default response because the MCU expects it
+            if not hdr.frame_control.disable_default_response:
+                self.send_default_rsp(hdr, status=foundation.Status.SUCCESS)
+
+            tuya_payload = args[0]
             self.endpoint.device.switch_bus.listener_event(
                 SWITCH_EVENT,
                 tuya_payload.command_id - TUYA_CMD_BASE,
                 tuya_payload.data[1],
             )
+        elif hdr.command_id == TUYA_SET_TIME:
+            """Time event call super"""
+            _LOGGER.debug("TUYA_SET_TIME --> hdr: %s, args: %s", hdr, args)
+            super().handle_cluster_request(hdr, args, dst_addressing=dst_addressing)
+        else:
+            _LOGGER.warning("Unsupported command: %s", hdr)
 
 
 class TuyaSwitch(CustomDevice):
@@ -672,6 +733,34 @@ class TuyaPowerConfigurationCluster(LocalDataCluster, PowerConfiguration):
         self._update_attribute(self.attridx["battery_percentage_remaining"], value * 2)
 
 
+class TuyaPowerConfigurationCluster2AA(TuyaPowerConfigurationCluster):
+    """PowerConfiguration cluster for battery-operated TRVs with 2 AA."""
+
+    BATTERY_SIZES = 0x0031
+    BATTERY_RATED_VOLTAGE = 0x0034
+    BATTERY_QUANTITY = 0x0033
+
+    _CONSTANT_ATTRIBUTES = {
+        BATTERY_SIZES: 3,
+        BATTERY_RATED_VOLTAGE: 15,
+        BATTERY_QUANTITY: 2,
+    }
+
+
+class TuyaPowerConfigurationCluster3AA(TuyaPowerConfigurationCluster):
+    """PowerConfiguration cluster for battery-operated TRVs with 3 AA."""
+
+    BATTERY_SIZES = 0x0031
+    BATTERY_RATED_VOLTAGE = 0x0034
+    BATTERY_QUANTITY = 0x0033
+
+    _CONSTANT_ATTRIBUTES = {
+        BATTERY_SIZES: 3,
+        BATTERY_RATED_VOLTAGE: 15,
+        BATTERY_QUANTITY: 3,
+    }
+
+
 class TuyaThermostat(CustomDevice):
     """Generic Tuya thermostat device."""
 
@@ -734,7 +823,23 @@ class TuyaSmartRemoteOnOffCluster(OnOff, EventableCluster):
             )
 
 
-class TZBPowerOnState(t.enum8):
+# Tuya Zigbee OnOff Cluster Attribute Implementation
+class SwitchBackLight(t.enum8):
+    """Tuya switch back light mode enum."""
+
+    Mode_0 = 0x00
+    Mode_1 = 0x01
+    Mode_2 = 0x02
+
+
+class SwitchMode(t.enum8):
+    """Tuya switch mode enum."""
+
+    Command = 0x00
+    Event = 0x01
+
+
+class PowerOnState(t.enum8):
     """Tuya power on state enum."""
 
     Off = 0x00
@@ -742,19 +847,57 @@ class TZBPowerOnState(t.enum8):
     LastState = 0x02
 
 
-class TuyaZBOnOffRestorePowerCluster(CustomCluster, OnOff):
-    """Tuya on off Zigbee cluster with restore state."""
+class TuyaZBOnOffAttributeCluster(CustomCluster, OnOff):
+    """Tuya Zigbee On Off cluster with extra attributes."""
 
     attributes = OnOff.attributes.copy()
-    attributes.update({0x8002: ("power_on_state", TZBPowerOnState)})
+    attributes.update({0x8001: ("backlight_mode", SwitchBackLight)})
+    attributes.update({0x8002: ("power_on_state", PowerOnState)})
+    attributes.update({0x8004: ("switch_mode", SwitchMode)})
 
 
+# Tuya Zigbee Metering Cluster Correction Implementation
 class TuyaZBMeteringCluster(CustomCluster, Metering):
     """Divides the kWh for tuya."""
 
     MULTIPLIER = 0x0301
     DIVISOR = 0x0302
     _CONSTANT_ATTRIBUTES = {MULTIPLIER: 1, DIVISOR: 100}
+
+
+class TuyaZBElectricalMeasurement(CustomCluster, ElectricalMeasurement):
+    """Divides the Current for tuya."""
+
+    AC_CURRENT_MULTIPLIER = 0x0602
+    AC_CURRENT_DIVISOR = 0x0603
+    _CONSTANT_ATTRIBUTES = {AC_CURRENT_MULTIPLIER: 1, AC_CURRENT_DIVISOR: 1000}
+
+
+# Tuya Zigbee Cluster 0xE000 Implementation
+class TuyaZBE000Cluster(CustomCluster):
+    """Tuya manufacturer specific cluster 57344."""
+
+    name = "Tuya Manufacturer Specific"
+    cluster_id = TUYA_CLUSTER_E000_ID
+    ep_attribute = "tuya_is_pita_0"
+
+
+# Tuya Zigbee Cluster 0xE001 Implementation
+class ExternalSwitchType(t.enum8):
+    """Tuya external switch type enum."""
+
+    Toggle = 0x00
+    State = 0x01
+    Momentary = 0x02
+
+
+class TuyaZBExternalSwitchTypeCluster(CustomCluster):
+    """Tuya External Switch Type Cluster."""
+
+    name = "Tuya External Switch Type Cluster"
+    cluster_id = TUYA_CLUSTER_E001_ID
+    ep_attribute = "tuya_external_switch_type"
+    attributes = {0xD030: ("external_switch_type", ExternalSwitchType)}
 
 
 # Tuya Window Cover Implementation
@@ -818,31 +961,6 @@ class TuyaManufacturerWindowCover(TuyaManufCluster):
                     ATTR_COVER_INVERTED,
                     tuya_payload.data[1],  # Check this
                 )
-        elif hdr.command_id == 0x0011:
-            """Assuming this is the pairing event"""
-            _LOGGER.debug(
-                "%s Pairing New Tuya Roller Blind. Self [%s], Header [%s], Tuya Paylod [%s]",
-                self.endpoint.device.ieee,
-                self,
-                hdr,
-                args,
-            )
-            """set initial attributes"""
-            self.endpoint.device.cover_bus.listener_event(
-                COVER_EVENT,
-                ATTR_COVER_POSITION,
-                0,
-            )
-            self.endpoint.device.cover_bus.listener_event(
-                COVER_EVENT,
-                ATTR_COVER_DIRECTION,
-                0,
-            )
-            self.endpoint.device.cover_bus.listener_event(
-                COVER_EVENT,
-                ATTR_COVER_INVERTED,
-                0,
-            )
         elif hdr.command_id == TUYA_SET_TIME:
             """Time event call super"""
             super().handle_cluster_request(hdr, args, dst_addressing=dst_addressing)
@@ -872,9 +990,13 @@ class TuyaWindowCoverControl(LocalDataCluster, WindowCovering):
     def cover_event(self, attribute, value):
         """Event listener for cover events."""
         if attribute == ATTR_COVER_POSITION:
-            value = (
-                value if self._attr_cache.get(ATTR_COVER_INVERTED) == 1 else 100 - value
+            invert_attr = self._attr_cache.get(ATTR_COVER_INVERTED) == 1
+            invert = (
+                not invert_attr
+                if self.endpoint.device.manufacturer in TUYA_COVER_INVERTED_BY_DEFAULT
+                else invert_attr
             )
+            value = value if invert else 100 - value
         self._update_attribute(attribute, value)
         _LOGGER.debug(
             "%s Tuya Attribute Cache : [%s]",
@@ -923,11 +1045,13 @@ class TuyaWindowCoverControl(LocalDataCluster, WindowCovering):
             tuya_payload.command_id = TUYA_DP_TYPE_VALUE + TUYA_DP_ID_PERCENT_CONTROL
             tuya_payload.function = 0
             """Check direction and correct value"""
-            position = (
-                args[0]
-                if self._attr_cache.get(ATTR_COVER_INVERTED) == 1
-                else 100 - args[0]
+            invert_attr = self._attr_cache.get(ATTR_COVER_INVERTED) == 1
+            invert = (
+                not invert_attr
+                if self.endpoint.device.manufacturer in TUYA_COVER_INVERTED_BY_DEFAULT
+                else invert_attr
             )
+            position = args[0] if invert else 100 - args[0]
             tuya_payload.data = [
                 4,
                 0,

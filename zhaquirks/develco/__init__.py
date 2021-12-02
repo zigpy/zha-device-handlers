@@ -6,6 +6,7 @@ from zigpy.zcl.clusters.security import IasZone
 
 from zhaquirks import PowerConfigurationCluster
 
+FRIENT = "frient A/S"
 DEVELCO = "Develco Products A/S"
 
 
@@ -19,14 +20,16 @@ class DevelcoPowerConfiguration(PowerConfigurationCluster):
 class DevelcoIasZone(CustomCluster, IasZone):
     """Custom IasZone for Develco."""
 
-    server_commands = {
-        0x0000: ("status_change_notification", (t.uint16_t,), False),
-        0x0001: (
-            "zone_enroll_request",
+    client_commands = {
+        0x0000: (
+            "status_change_notification",
             (
-                t.enum16,
-                t.uint16_t,
+                IasZone.ZoneStatus,
+                t.Optional(t.bitmap8),
+                t.Optional(t.uint8_t),
+                t.Optional(t.uint16_t),
             ),
             False,
         ),
+        0x0001: ("enroll", (IasZone.ZoneType, t.uint16_t), False),
     }

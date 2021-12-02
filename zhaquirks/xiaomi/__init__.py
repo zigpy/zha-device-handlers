@@ -17,6 +17,7 @@ from zigpy.zcl.clusters.general import (
     PowerConfiguration,
 )
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
+from zigpy.zcl.clusters.manufacturer_specific import ManufacturerSpecificCluster
 from zigpy.zcl.clusters.measurement import (
     IlluminanceMeasurement,
     PressureMeasurement,
@@ -66,6 +67,7 @@ PRESSURE_REPORTED = "pressure_reported"
 STATE = "state"
 TEMPERATURE = "temperature"
 TEMPERATURE_MEASUREMENT = "temperature_measurement"
+TVOC_MEASUREMENT = "tvoc_measurement"
 TEMPERATURE_REPORTED = "temperature_reported"
 POWER_REPORTED = "power_reported"
 CONSUMPTION_REPORTED = "consumption_reported"
@@ -73,6 +75,7 @@ VOLTAGE_REPORTED = "voltage_reported"
 ILLUMINANCE_MEASUREMENT = "illuminance_measurement"
 ILLUMINANCE_REPORTED = "illuminance_reported"
 XIAOMI_AQARA_ATTRIBUTE = 0xFF01
+XIAOMI_AQARA_ATTRIBUTE_E1 = 0x00F7
 XIAOMI_ATTR_3 = "X-attrib-3"
 XIAOMI_ATTR_4 = "X-attrib-4"
 XIAOMI_ATTR_5 = "X-attrib-5"
@@ -110,10 +113,8 @@ class XiaomiQuickInitDevice(XiaomiCustomDevice, QuickInitDevice):
     """Xiaomi devices eligible for QuickInit."""
 
 
-class BasicCluster(CustomCluster, Basic):
-    """Xiaomi basic cluster implementation."""
-
-    cluster_id = Basic.cluster_id
+class XiaomiCluster(CustomCluster):
+    """Xiaomi cluster implementation."""
 
     def _iter_parse_attr_report(
         self, data: bytes
@@ -125,7 +126,12 @@ class BasicCluster(CustomCluster, Basic):
         attr_type, data = t.uint8_t.deserialize(data)
 
         if (
-            attr_id not in (XIAOMI_AQARA_ATTRIBUTE, XIAOMI_MIJA_ATTRIBUTE)
+            attr_id
+            not in (
+                XIAOMI_AQARA_ATTRIBUTE,
+                XIAOMI_MIJA_ATTRIBUTE,
+                XIAOMI_AQARA_ATTRIBUTE_E1,
+            )
             or attr_type != 0x42  # "Character String"
         ):
             # Assume other attributes are reported correctly
@@ -199,20 +205,17 @@ class BasicCluster(CustomCluster, Basic):
         return super().deserialize(hdr.serialize() + fixed_data)
 
     def _update_attribute(self, attrid, value):
-        if attrid == XIAOMI_AQARA_ATTRIBUTE:
+        if attrid in (XIAOMI_AQARA_ATTRIBUTE, XIAOMI_AQARA_ATTRIBUTE_E1):
             attributes = self._parse_aqara_attributes(value)
             super()._update_attribute(attrid, value)
-            if (
-                MODEL in self._attr_cache
-                and self._attr_cache[MODEL] == "lumi.sensor_switch.aq2"
-            ):
+            if self.endpoint.device.model == "lumi.sensor_switch.aq2":
                 if value == b"\x04!\xa8C\n!\x00\x00":
                     self.listener_event(ZHA_SEND_EVENT, COMMAND_TRIPLE, [])
         elif attrid == XIAOMI_MIJA_ATTRIBUTE:
             attributes = self._parse_mija_attributes(value)
         else:
             super()._update_attribute(attrid, value)
-            if attrid == 0x0005:
+            if attrid == MODEL:
                 # 0x0005 = model attribute.
                 # Xiaomi sensors send the model attribute when their reset button is
                 # pressed quickly."""
@@ -266,6 +269,10 @@ class BasicCluster(CustomCluster, Basic):
             self.endpoint.device.illuminance_bus.listener_event(
                 ILLUMINANCE_REPORTED, attributes[ILLUMINANCE_MEASUREMENT]
             )
+        if TVOC_MEASUREMENT in attributes:
+            self.endpoint.voc_level.update_attribute(
+                0x0000, attributes[TVOC_MEASUREMENT]
+            )
 
     def _parse_aqara_attributes(self, value):
         """Parse non standard attributes."""
@@ -279,10 +286,11 @@ class BasicCluster(CustomCluster, Basic):
             10: PATH,
         }
 
-        if MODEL in self._attr_cache and self._attr_cache[MODEL] in [
+        if self.endpoint.device.model in [
             "lumi.sensor_ht",
             "lumi.sens",
             "lumi.weather",
+            "lumi.airmonitor.acn01",
         ]:
             # Temperature sensors send temperature/humidity/pressure updates trough this
             # cluster instead of the respective clusters
@@ -290,18 +298,17 @@ class BasicCluster(CustomCluster, Basic):
                 {
                     100: TEMPERATURE_MEASUREMENT,
                     101: HUMIDITY_MEASUREMENT,
-                    102: PRESSURE_MEASUREMENT,
+                    102: TVOC_MEASUREMENT
+                    if self.endpoint.device.model == "lumi.airmonitor.acn01"
+                    else PRESSURE_MEASUREMENT,
                 }
             )
-        elif MODEL in self._attr_cache and self._attr_cache[MODEL] in [
+        elif self.endpoint.device.model in [
             "lumi.plug.maus01",
             "lumi.relay.c2acn01",
         ]:
             attribute_names.update({149: CONSUMPTION, 150: VOLTAGE, 152: POWER})
-        elif (
-            MODEL in self._attr_cache
-            and self._attr_cache[MODEL] == "lumi.sensor_motion.aq2"
-        ):
+        elif self.endpoint.device.model == "lumi.sensor_motion.aq2":
             attribute_names.update({11: ILLUMINANCE_MEASUREMENT})
 
         result = {}
@@ -338,6 +345,16 @@ class BasicCluster(CustomCluster, Basic):
         attributes = dict(zip(attribute_names, result))
 
         return attributes
+
+
+class BasicCluster(XiaomiCluster, Basic):
+    """Xiaomi basic cluster implementation."""
+
+
+class XiaomiAqaraE1Cluster(XiaomiCluster, ManufacturerSpecificCluster):
+    """Xiaomi mfg cluster implementation."""
+
+    cluster_id = 0xFCC0
 
 
 class BinaryOutputInterlock(CustomCluster, BinaryOutput):
