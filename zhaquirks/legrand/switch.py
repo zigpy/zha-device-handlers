@@ -5,7 +5,6 @@ import zigpy.types as t
 from zigpy.zcl.clusters.general import (
     Basic,
     BinaryInput,
-    GreenPowerProxy,
     Groups,
     Identify,
     OnOff,
