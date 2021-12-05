@@ -1,7 +1,7 @@
 """TS011F plug."""
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
@@ -23,31 +23,13 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import TuyaZBMeteringCluster, TuyaZBOnOffRestorePowerCluster
-
-
-class TuyaClusterE000(CustomCluster):
-    """Tuya manufacturer specific cluster 57344."""
-
-    name = "Tuya Manufacturer Specific"
-    cluster_id = 0xE000
-    ep_attribute = "tuya_is_pita_0"
-
-
-class TuyaClusterE001(CustomCluster):
-    """Tuya manufacturer specific cluster 57345."""
-
-    name = "Tuya Manufacturer Specific"
-    cluster_id = 0xE001
-    ep_attribute = "tuya_is_pita_1"
-
-
-class TuyaZBElectricalMeasurement(CustomCluster, ElectricalMeasurement):
-    """Divides the Current for tuya."""
-
-    AC_CURRENT_MULTIPLIER = 0x0602
-    AC_CURRENT_DIVISOR = 0x0603
-    _CONSTANT_ATTRIBUTES = {AC_CURRENT_MULTIPLIER: 1, AC_CURRENT_DIVISOR: 1000}
+from zhaquirks.tuya import (
+    TuyaZBE000Cluster,
+    TuyaZBElectricalMeasurement,
+    TuyaZBExternalSwitchTypeCluster,
+    TuyaZBMeteringCluster,
+    TuyaZBOnOffAttributeCluster,
+)
 
 
 class Plug(CustomDevice):
@@ -71,8 +53,8 @@ class Plug(CustomDevice):
                     OnOff.cluster_id,
                     Metering.cluster_id,
                     ElectricalMeasurement.cluster_id,
-                    TuyaClusterE000.cluster_id,
-                    TuyaClusterE001.cluster_id,
+                    TuyaZBE000Cluster.cluster_id,
+                    TuyaZBExternalSwitchTypeCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
@@ -98,13 +80,305 @@ class Plug(CustomDevice):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaZBOnOffRestorePowerCluster,
+                    TuyaZBOnOffAttributeCluster,
                     TuyaZBMeteringCluster,
                     TuyaZBElectricalMeasurement,
-                    TuyaClusterE000,
-                    TuyaClusterE001,
+                    TuyaZBE000Cluster,
+                    TuyaZBExternalSwitchTypeCluster,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+        },
+    }
+
+
+class Plug_3AC_4USB(CustomDevice):
+    """Tuya 3 outlet + 4 USB with restore power state support."""
+
+    signature = {
+        MODEL: "TS011F",
+        ENDPOINTS: {
+            # <SimpleDescriptor endpoint=1 profile=260 device_type=266
+            # device_version=1
+            # input_clusters=[0, 3, 4, 5, 6]
+            # output_clusters=[10, 25]>
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_PLUG_IN_UNIT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            # <SimpleDescriptor endpoint=2 profile=260 device_type=266
+            # device_version=1
+            # input_clusters=[3, 4, 5, 6]
+            # output_clusters=[]>
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_PLUG_IN_UNIT,
+                INPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            # <SimpleDescriptor endpoint=3 profile=260 device_type=266
+            # device_version=1
+            # input_clusters=[3, 4, 5, 6]
+            # output_clusters=[]>
+            3: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_PLUG_IN_UNIT,
+                INPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            # <SimpleDescriptor endpoint=242 profile=41440 device_type=97
+            # device_version=1
+            # input_clusters=[]
+            # output_clusters=[33]>
+            242: {
+                PROFILE_ID: 41440,
+                DEVICE_TYPE: 97,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        },
+    }
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_PLUG_IN_UNIT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaZBOnOffAttributeCluster,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_PLUG_IN_UNIT,
+                INPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaZBOnOffAttributeCluster,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            3: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_PLUG_IN_UNIT,
+                INPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaZBOnOffAttributeCluster,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            242: {
+                PROFILE_ID: 41440,
+                DEVICE_TYPE: 97,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        },
+    }
+
+
+class Plug_4AC_2USB(CustomDevice):
+    """Tuya 4 outlet + 2 USB surge protector with restore power state support."""
+
+    signature = {
+        MODEL: "TS011F",
+        ENDPOINTS: {
+            # <SimpleDescriptor endpoint=1 profile=260 device_type=266
+            # device_version=1
+            # input_clusters=[0, 3, 4, 5, 6, 57344, 57345]
+            # output_clusters=[10, 25]>
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_PLUG_IN_UNIT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    TuyaZBE000Cluster.cluster_id,
+                    TuyaZBExternalSwitchTypeCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            # <SimpleDescriptor endpoint=2 profile=260 device_type=266
+            # device_version=1
+            # input_clusters=[3, 4, 5, 6, 57344, 57345]
+            # output_clusters=[]>
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_PLUG_IN_UNIT,
+                INPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    TuyaZBE000Cluster.cluster_id,
+                    TuyaZBExternalSwitchTypeCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            # <SimpleDescriptor endpoint=3 profile=260 device_type=266
+            # device_version=1
+            # input_clusters=[3, 4, 5, 6, 57344, 57345]
+            # output_clusters=[]>
+            3: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_PLUG_IN_UNIT,
+                INPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    TuyaZBE000Cluster.cluster_id,
+                    TuyaZBExternalSwitchTypeCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            # <SimpleDescriptor endpoint=4 profile=260 device_type=266
+            # device_version=1
+            # input_clusters=[3, 4, 5, 6, 57344, 57345]
+            # output_clusters=[]>
+            4: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_PLUG_IN_UNIT,
+                INPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    TuyaZBE000Cluster.cluster_id,
+                    TuyaZBExternalSwitchTypeCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            # <SimpleDescriptor endpoint=5 profile=260 device_type=266
+            # device_version=1
+            # input_clusters=[3, 4, 5, 6, 57344, 57345]
+            # output_clusters=[]>
+            5: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_PLUG_IN_UNIT,
+                INPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    TuyaZBE000Cluster.cluster_id,
+                    TuyaZBExternalSwitchTypeCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            # <SimpleDescriptor endpoint=242 profile=41440 device_type=97
+            # device_version=1
+            # input_clusters=[]
+            # output_clusters=[33]>
+            242: {
+                PROFILE_ID: 41440,
+                DEVICE_TYPE: 97,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        },
+    }
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_PLUG_IN_UNIT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaZBOnOffAttributeCluster,
+                    TuyaZBE000Cluster,
+                    TuyaZBExternalSwitchTypeCluster,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_PLUG_IN_UNIT,
+                INPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaZBOnOffAttributeCluster,
+                    TuyaZBE000Cluster,
+                    TuyaZBExternalSwitchTypeCluster,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            3: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_PLUG_IN_UNIT,
+                INPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaZBOnOffAttributeCluster,
+                    TuyaZBE000Cluster,
+                    TuyaZBExternalSwitchTypeCluster,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            4: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_PLUG_IN_UNIT,
+                INPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaZBOnOffAttributeCluster,
+                    TuyaZBE000Cluster,
+                    TuyaZBExternalSwitchTypeCluster,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            5: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_PLUG_IN_UNIT,
+                INPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaZBOnOffAttributeCluster,
+                    TuyaZBE000Cluster,
+                    TuyaZBExternalSwitchTypeCluster,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            242: {
+                PROFILE_ID: 41440,
+                DEVICE_TYPE: 97,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
         },
     }

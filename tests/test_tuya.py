@@ -109,9 +109,7 @@ async def test_motion(zigpy_device_from_quirk, quirk):
     assert motion_listener.cluster_commands[1][2][0] == OFF
 
 
-@pytest.mark.parametrize(
-    "quirk", (zhaquirks.tuya.ts0601_singleswitch.TuyaSingleSwitch,)
-)
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_switch.TuyaSingleSwitchTI,))
 async def test_singleswitch_state_report(zigpy_device_from_quirk, quirk):
     """Test tuya single switch."""
 
@@ -135,9 +133,81 @@ async def test_singleswitch_state_report(zigpy_device_from_quirk, quirk):
     assert switch_listener.attribute_updates[1][1] == OFF
 
 
-@pytest.mark.parametrize(
-    "quirk", (zhaquirks.tuya.ts0601_singleswitch.TuyaSingleSwitch,)
-)
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_switch.TuyaDoubleSwitchTO,))
+async def test_doubleswitch_state_report(zigpy_device_from_quirk, quirk):
+    """Test tuya double switch."""
+
+    ZCL_TUYA_SWITCH_COMMAND_03 = b"\tQ\x03\x006\x01\x01\x00\x01\x01"
+    ZCL_TUYA_SWITCH_EP2_ON = b"\tQ\x02\x006\x02\x01\x00\x01\x01"
+    ZCL_TUYA_SWITCH_EP2_OFF = b"\tQ\x02\x006\x02\x01\x00\x01\x00"
+
+    switch_dev = zigpy_device_from_quirk(quirk)
+
+    switch1_cluster = switch_dev.endpoints[1].on_off
+    switch1_listener = ClusterListener(switch1_cluster)
+
+    switch2_cluster = switch_dev.endpoints[2].on_off
+    switch2_listener = ClusterListener(switch2_cluster)
+
+    tuya_cluster = switch_dev.endpoints[1].tuya_manufacturer
+
+    assert len(switch1_listener.cluster_commands) == 0
+    assert len(switch1_listener.attribute_updates) == 0
+    assert len(switch2_listener.cluster_commands) == 0
+    assert len(switch2_listener.attribute_updates) == 0
+
+    # events from channel 1 updates only EP 1
+    hdr, args = tuya_cluster.deserialize(ZCL_TUYA_SWITCH_ON)
+    tuya_cluster.handle_message(hdr, args)
+    assert len(switch1_listener.attribute_updates) == 1
+    assert len(switch2_listener.attribute_updates) == 0
+    assert switch1_listener.attribute_updates[0][0] == 0x0000
+    assert switch1_listener.attribute_updates[0][1] == ON
+
+    # events from channel 2 updates only EP 2
+    hdr, args = tuya_cluster.deserialize(ZCL_TUYA_SWITCH_EP2_ON)
+    tuya_cluster.handle_message(hdr, args)
+    assert len(switch1_listener.attribute_updates) == 1
+    assert len(switch2_listener.attribute_updates) == 1
+    assert switch2_listener.attribute_updates[0][0] == 0x0000
+    assert switch2_listener.attribute_updates[0][1] == ON
+
+    hdr, args = tuya_cluster.deserialize(ZCL_TUYA_SWITCH_OFF)
+    tuya_cluster.handle_message(hdr, args)
+    assert len(switch1_listener.attribute_updates) == 2
+    assert len(switch2_listener.attribute_updates) == 1
+    assert switch1_listener.attribute_updates[1][0] == 0x0000
+    assert switch1_listener.attribute_updates[1][1] == OFF
+
+    hdr, args = tuya_cluster.deserialize(ZCL_TUYA_SWITCH_EP2_OFF)
+    tuya_cluster.handle_message(hdr, args)
+    assert len(switch1_listener.attribute_updates) == 2
+    assert len(switch2_listener.attribute_updates) == 2
+    assert switch2_listener.attribute_updates[1][0] == 0x0000
+    assert switch2_listener.attribute_updates[1][1] == OFF
+
+    assert len(switch1_listener.cluster_commands) == 0
+    assert len(switch2_listener.cluster_commands) == 0
+
+    # command_id = 0x0003
+    hdr, args = tuya_cluster.deserialize(ZCL_TUYA_SWITCH_COMMAND_03)
+    tuya_cluster.handle_message(hdr, args)
+    assert len(switch1_listener.cluster_commands) == 0
+    assert len(switch2_listener.cluster_commands) == 0
+    # no switch attribute updated (Unsupported command)
+    assert len(switch1_listener.attribute_updates) == 2
+    assert len(switch2_listener.attribute_updates) == 2
+
+    hdr, args = tuya_cluster.deserialize(ZCL_TUYA_SET_TIME_REQUEST)
+    tuya_cluster.handle_message(hdr, args)
+    assert len(switch1_listener.cluster_commands) == 0
+    assert len(switch2_listener.cluster_commands) == 0
+    # no switch attribute updated (TUYA_SET_TIME command)
+    assert len(switch1_listener.attribute_updates) == 2
+    assert len(switch2_listener.attribute_updates) == 2
+
+
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_switch.TuyaSingleSwitchTI,))
 async def test_singleswitch_requests(zigpy_device_from_quirk, quirk):
     """Test tuya single switch."""
 
@@ -150,7 +220,7 @@ async def test_singleswitch_requests(zigpy_device_from_quirk, quirk):
         tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
     ) as m1:
 
-        status = switch_cluster.command(0x0000)
+        status = await switch_cluster.command(0x0000)
         m1.assert_called_with(
             61184,
             1,
@@ -160,7 +230,7 @@ async def test_singleswitch_requests(zigpy_device_from_quirk, quirk):
         )
         assert status == 0
 
-        status = switch_cluster.command(0x0001)
+        status = await switch_cluster.command(0x0001)
         m1.assert_called_with(
             61184,
             2,
@@ -170,7 +240,7 @@ async def test_singleswitch_requests(zigpy_device_from_quirk, quirk):
         )
         assert status == 0
 
-    status = switch_cluster.command(0x0002)
+    status = await switch_cluster.command(0x0002)
     assert status == foundation.Status.UNSUP_CLUSTER_COMMAND
 
 
