@@ -36,7 +36,7 @@ class LegrandCluster(CustomCluster, ManufacturerSpecificCluster):
     manufacturer_attributes = {
         0x0001: ("led_on_when_off", t.Bool),
         0x0002: ("led_on_when_on", t.Bool),
-        #Some legrand's devices requires this value to be set on the 3rd attribute instead of the 1rst (bticino)
+        # Some legrand's devices requires this value to be set on the 3rd attribute instead of the 1rst (bticino)
         0x0003: ("other_led_on_when_off", t.Bool),
     }
 
@@ -80,9 +80,8 @@ class LightSwitchWithNeutral(CustomDevice):
             },
         },
     }
-    
+
     replacement = {
-        
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
