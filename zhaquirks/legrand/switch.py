@@ -8,13 +8,11 @@ from zigpy.zcl.clusters.general import (
     GreenPowerProxy,
     Groups,
     Identify,
-    LevelControl,
     OnOff,
     Ota,
     Scenes,
 )
 from zigpy.zcl.clusters.closures import WindowCovering
-from zigpy.zcl.clusters.lighting import Ballast
 from zigpy.zcl.clusters.manufacturer_specific import ManufacturerSpecificCluster
 
 from zhaquirks.const import (
