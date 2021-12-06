@@ -20,6 +20,8 @@ from zhaquirks.const import DOUBLE_PRESS, LONG_PRESS, SHORT_PRESS, ZHA_SEND_EVEN
 # Tuya Custom Cluster ID
 # ---------------------------------------------------------
 TUYA_CLUSTER_ID = 0xEF00
+TUYA_CLUSTER_E000_ID = 0xE000
+TUYA_CLUSTER_E001_ID = 0xE001
 # ---------------------------------------------------------
 # Tuya Cluster Commands
 # ---------------------------------------------------------
@@ -37,6 +39,7 @@ TUYA_LEVEL_COMMAND = 514
 
 COVER_EVENT = "cover_event"
 LEVEL_EVENT = "level_event"
+TUYA_MCU_COMMAND = "tuya_mcu_command"
 
 # ---------------------------------------------------------
 # Value for dp_type
@@ -102,6 +105,7 @@ TUYA_COVER_COMMAND = {
     "_TZE200_yenbr4om": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
     "_TZE200_5sbebbzs": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
     "_TZE200_xaabybja": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
+    "_TZE200_hsgrhjpf": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
 }
 # Taken from zigbee-herdsman-converters
 # Contains all covers which need their position inverted by default
@@ -114,6 +118,7 @@ TUYA_COVER_INVERTED_BY_DEFAULT = [
     "_TZE200_xuzcvlku",
     "_TZE200_xaabybja",
     "_TZE200_yenbr4om",
+    "_TZE200_zpzndjez",
 ]
 
 # ---------------------------------------------------------
@@ -329,6 +334,19 @@ class TuyaManufCluster(CustomCluster):
         ),
     }
 
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self.endpoint.device.command_bus = Bus()
+        self.endpoint.device.command_bus.add_listener(self)  # listen MCU commands
+
+    def tuya_mcu_command(self, command: Command):
+        """Tuya MCU command listener. Only endpoint:1 must listen to MCU commands."""
+
+        self.create_catching_task(
+            self.command(TUYA_SET_DATA, command, expect_reply=True)
+        )
+
     def handle_cluster_request(
         self,
         hdr: foundation.ZCLHeader,
@@ -471,9 +489,11 @@ class TuyaOnOff(CustomCluster, OnOff):
             channel,
             state,
         )
-        self._update_attribute(ATTR_ON_OFF, state)
+        # update status only if event == endpoint
+        if self.endpoint.endpoint_id == channel:
+            self._update_attribute(ATTR_ON_OFF, state)
 
-    def command(
+    async def command(
         self,
         command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
         *args,
@@ -486,14 +506,17 @@ class TuyaOnOff(CustomCluster, OnOff):
         if command_id in (0x0000, 0x0001):
             cmd_payload = TuyaManufCluster.Command()
             cmd_payload.status = 0
+            # cmd_payload.tsn = tsn if tsn else self.endpoint.device.application.get_sequence()
             cmd_payload.tsn = 0
             cmd_payload.command_id = TUYA_CMD_BASE + self.endpoint.endpoint_id
             cmd_payload.function = 0
             cmd_payload.data = [1, command_id]
 
-            return self.endpoint.tuya_manufacturer.command(
-                TUYA_SET_DATA, cmd_payload, expect_reply=True
+            self.endpoint.device.command_bus.listener_event(
+                TUYA_MCU_COMMAND,
+                cmd_payload,
             )
+            return foundation.Status.SUCCESS
 
         return foundation.Status.UNSUP_CLUSTER_COMMAND
 
@@ -512,17 +535,23 @@ class TuyaManufacturerClusterOnOff(TuyaManufCluster):
     ) -> None:
         """Handle cluster request."""
 
-        # Send default response because the MCU expects it
-        if not hdr.frame_control.disable_default_response:
-            self.send_default_rsp(hdr, status=foundation.Status.SUCCESS)
-
-        tuya_payload = args[0]
         if hdr.command_id in (0x0002, 0x0001):
+            # Send default response because the MCU expects it
+            if not hdr.frame_control.disable_default_response:
+                self.send_default_rsp(hdr, status=foundation.Status.SUCCESS)
+
+            tuya_payload = args[0]
             self.endpoint.device.switch_bus.listener_event(
                 SWITCH_EVENT,
                 tuya_payload.command_id - TUYA_CMD_BASE,
                 tuya_payload.data[1],
             )
+        elif hdr.command_id == TUYA_SET_TIME:
+            """Time event call super"""
+            _LOGGER.debug("TUYA_SET_TIME --> hdr: %s, args: %s", hdr, args)
+            super().handle_cluster_request(hdr, args, dst_addressing=dst_addressing)
+        else:
+            _LOGGER.warning("Unsupported command: %s", hdr)
 
 
 class TuyaSwitch(CustomDevice):
@@ -877,6 +906,33 @@ class TuyaZBElectricalMeasurement(CustomCluster, ElectricalMeasurement):
     AC_CURRENT_MULTIPLIER = 0x0602
     AC_CURRENT_DIVISOR = 0x0603
     _CONSTANT_ATTRIBUTES = {AC_CURRENT_MULTIPLIER: 1, AC_CURRENT_DIVISOR: 1000}
+
+
+# Tuya Zigbee Cluster 0xE000 Implementation
+class TuyaZBE000Cluster(CustomCluster):
+    """Tuya manufacturer specific cluster 57344."""
+
+    name = "Tuya Manufacturer Specific"
+    cluster_id = TUYA_CLUSTER_E000_ID
+    ep_attribute = "tuya_is_pita_0"
+
+
+# Tuya Zigbee Cluster 0xE001 Implementation
+class ExternalSwitchType(t.enum8):
+    """Tuya external switch type enum."""
+
+    Toggle = 0x00
+    State = 0x01
+    Momentary = 0x02
+
+
+class TuyaZBExternalSwitchTypeCluster(CustomCluster):
+    """Tuya External Switch Type Cluster."""
+
+    name = "Tuya External Switch Type Cluster"
+    cluster_id = TUYA_CLUSTER_E001_ID
+    ep_attribute = "tuya_external_switch_type"
+    attributes = {0xD030: ("external_switch_type", ExternalSwitchType)}
 
 
 # Tuya Window Cover Implementation

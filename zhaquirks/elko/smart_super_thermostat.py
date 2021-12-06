@@ -96,6 +96,7 @@ class ElkoSuperTRThermostatCluster(ElkoThermostatCluster):
         """Override writes to thermostat attributes."""
         if "system_mode" in attributes:
             val = attributes.get("system_mode")
+            night_lowering = 0
             if val == Thermostat.SystemMode.Off:
                 device_on = 0
             elif val == Thermostat.SystemMode.Auto:
@@ -103,7 +104,6 @@ class ElkoSuperTRThermostatCluster(ElkoThermostatCluster):
                 night_lowering = 1
             elif val == Thermostat.SystemMode.Heat:
                 device_on = 1
-                night_lowering = 0
             attributes["device_on"] = device_on
             attributes["night_lowering"] = night_lowering
 

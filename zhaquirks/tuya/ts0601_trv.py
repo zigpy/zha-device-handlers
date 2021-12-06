@@ -1032,6 +1032,7 @@ class SiterwellGS361_Type1(TuyaThermostat):
             ("_TYST11_ps5v5jor", "s5v5jor"),
             ("_TYST11_owwdxjbx", "wwdxjbx"),
             ("_TYST11_8daqwrsj", "daqwrsj"),
+            ("_TYST11_czk78ptr", "zk78ptr"),
         ],
         ENDPOINTS: {
             1: {
@@ -1076,6 +1077,7 @@ class SiterwellGS361_Type2(TuyaThermostat):
             ("_TZE200_ps5v5jor", "TS0601"),
             ("_TZE200_owwdxjbx", "TS0601"),
             ("_TZE200_8daqwrsj", "TS0601"),
+            ("_TZE200_czk78ptr", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
@@ -1127,6 +1129,7 @@ class MoesHY368_Type1(TuyaThermostat):
             ("_TZE200_ckud7u2l", "TS0601"),
             ("_TZE200_ywdxldoj", "TS0601"),
             ("_TZE200_cwnjrr72", "TS0601"),
+            ("_TZE200_2atgpdho", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
@@ -1225,7 +1228,7 @@ class MoesHY368_Type2(TuyaThermostat):
             ("_TYST11_ckud7u2l", "kud7u2l"),
             ("_TYST11_ywdxldoj", "wdxldoj"),
             ("_TYST11_cwnjrr72", "wnjrr72"),
-            ("_TYST11_b6wax7g0", "6wax7g0"),
+            ("_TYST11_2atgpdho", "atgpdho"),
         ],
         ENDPOINTS: {
             1: {
@@ -1266,6 +1269,7 @@ class ZonnsmartTV01_ZG(TuyaThermostat):
         MODELS_INFO: [
             ("_TZE200_e9ba97vf", "TS0601"),
             ("_TZE200_husqqvux", "TS0601"),
+            ("_TZE200_kly8gjlz", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
