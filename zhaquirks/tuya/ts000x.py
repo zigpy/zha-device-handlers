@@ -88,7 +88,7 @@ class Switch_2G_GPP(CustomDevice):
     """Tuya 2 gang switch module with restore power state support."""
 
     signature = {
-        MODEL: "TS0003",
+        MODEL: "TS0002",
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=256
             # device_version=1
