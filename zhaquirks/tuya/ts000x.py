@@ -83,6 +83,7 @@ class Switch_1G_GPP(CustomDevice):
         },
     }
 
+
 class Switch_2G_GPP(CustomDevice):
     """Tuya 2 gang switch module with restore power state support."""
 
