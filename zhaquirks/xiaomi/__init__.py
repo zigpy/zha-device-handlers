@@ -17,7 +17,6 @@ from zigpy.zcl.clusters.general import (
     PowerConfiguration,
 )
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
-from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.clusters.manufacturer_specific import ManufacturerSpecificCluster
 from zigpy.zcl.clusters.measurement import (
     IlluminanceMeasurement,
@@ -25,6 +24,7 @@ from zigpy.zcl.clusters.measurement import (
     RelativeHumidity,
     TemperatureMeasurement,
 )
+from zigpy.zcl.clusters.smartenergy import Metering
 import zigpy.zcl.foundation as foundation
 import zigpy.zdo
 from zigpy.zdo.types import NodeDescriptor
