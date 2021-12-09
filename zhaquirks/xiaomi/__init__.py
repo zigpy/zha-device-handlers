@@ -17,6 +17,7 @@ from zigpy.zcl.clusters.general import (
     PowerConfiguration,
 )
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
+from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.clusters.manufacturer_specific import ManufacturerSpecificCluster
 from zigpy.zcl.clusters.measurement import (
     IlluminanceMeasurement,
@@ -72,7 +73,9 @@ TEMPERATURE_REPORTED = "temperature_reported"
 POWER_REPORTED = "power_reported"
 CONSUMPTION_REPORTED = "consumption_reported"
 VOLTAGE_REPORTED = "voltage_reported"
-ILLUMINANCE_MEASUREMENT = "illuminance_measurement"
+POWER_REPORTED = "power_reported"
+ENERGY_REPORTED = "energy_reported"
+INSTANTANEOUS_DEMAND = "instantaneous_demand"
 ILLUMINANCE_REPORTED = "illuminance_reported"
 XIAOMI_AQARA_ATTRIBUTE = 0xFF01
 XIAOMI_AQARA_ATTRIBUTE_E1 = 0x00F7
@@ -303,10 +306,7 @@ class XiaomiCluster(CustomCluster):
                     else PRESSURE_MEASUREMENT,
                 }
             )
-        elif self.endpoint.device.model in [
-            "lumi.plug.maus01",
-            "lumi.relay.c2acn01",
-        ]:
+        elif self.endpoint.device.model in ["lumi.plug.maus01", "lumi.relay.c2acn01"]:
             attribute_names.update({149: CONSUMPTION, 150: VOLTAGE, 152: POWER})
         elif self.endpoint.device.model == "lumi.sensor_motion.aq2":
             attribute_names.update({11: ILLUMINANCE_MEASUREMENT})
@@ -493,6 +493,24 @@ class AnalogInputCluster(CustomCluster, AnalogInput):
         super()._update_attribute(attrid, value)
         if value is not None and value >= 0:
             self.endpoint.device.power_bus.listener_event(POWER_REPORTED, value)
+            self.endpoint.device.energy_bus.listener_event(INSTANTANEOUS_DEMAND, value)
+
+
+class AnalogInputCluster2(CustomCluster, AnalogInput):
+    """Analog input cluster, only used to relay energy consumption information to MeteringCluster."""
+
+    cluster_id = AnalogInput.cluster_id
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        self._current_state = {}
+        super().__init__(*args, **kwargs)
+
+    def _update_attribute(self, attrid, value):
+        super()._update_attribute(attrid, value)
+        if value is not None and value >= 0:
+            value = value * 1000
+            self.endpoint.device.energy_bus.listener_event(ENERGY_REPORTED, value)
 
 
 class ElectricalMeasurementCluster(LocalDataCluster, ElectricalMeasurement):
@@ -527,6 +545,32 @@ class ElectricalMeasurementCluster(LocalDataCluster, ElectricalMeasurement):
     def consumption_reported(self, value):
         """Consumption reported."""
         self._update_attribute(self.CONSUMPTION_ID, value)
+
+
+class MeteringCluster(LocalDataCluster, Metering):
+    """Metering cluster to receive reports that are sent to the basic cluster."""
+
+    cluster_id = Metering.cluster_id
+    CURRENT_SUMM_DELIVERED_VALUE_ID = 0x0000
+    INSTANTANEOUS_DEMAND_VALUE_ID = 0x0400
+    POWER_WATT = 0x0000
+
+    _CONSTANT_ATTRIBUTES = {0x0300: POWER_WATT}  # unit of measurement
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self.endpoint.device.energy_bus.add_listener(self)
+
+    def energy_reported(self, value):
+        """Energy reported."""
+        value = value / 1000
+        self._update_attribute(self.CURRENT_SUMM_DELIVERED_VALUE_ID, value)
+
+    def instantaneous_demand(self, value):
+        """Instantaneous power demand reported."""
+        value = value / 1000
+        self._update_attribute(self.INSTANTANEOUS_DEMAND_VALUE_ID, value)
 
 
 class IlluminanceMeasurementCluster(CustomCluster, IlluminanceMeasurement):
