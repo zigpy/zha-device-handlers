@@ -29,8 +29,10 @@ from zhaquirks.const import (
 from zhaquirks.xiaomi import (
     LUMI,
     AnalogInputCluster,
+    AnalogInputCluster2,
     BasicCluster,
     ElectricalMeasurementCluster,
+    MeteringCluster,
     XiaomiCustomDevice,
 )
 
@@ -45,6 +47,7 @@ class Plug(XiaomiCustomDevice):
         self.voltage_bus = Bus()
         self.consumption_bus = Bus()
         self.power_bus = Bus()
+        self.energy_bus = Bus()
         super().__init__(*args, **kwargs)
 
     signature = {
@@ -109,6 +112,7 @@ class Plug(XiaomiCustomDevice):
                     BinaryOutput.cluster_id,
                     Time.cluster_id,
                     ElectricalMeasurementCluster,
+                    MeteringCluster,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id, Time.cluster_id],
             },
@@ -121,7 +125,7 @@ class Plug(XiaomiCustomDevice):
             3: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.METER_INTERFACE,
-                INPUT_CLUSTERS: [AnalogInput.cluster_id],
+                INPUT_CLUSTERS: [AnalogInputCluster2],
                 OUTPUT_CLUSTERS: [AnalogInput.cluster_id],
             },
         },
