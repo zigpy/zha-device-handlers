@@ -382,6 +382,39 @@ class QuickInitDevice(CustomDevice):
         return device
 
 
+class DeviceMonitor(Bus):
+    """Device Monitor to perform actions on device initialization or removal."""
+
+    def __init__(self, device):
+        """Init the device, monitoring application for initialization."""
+        super().__init__()
+        self._device = device
+        self._device.application.add_listener(self)
+
+        if self._device.status == zigpy.device.Status.ENDPOINTS_INIT:
+            loop = asyncio.get_running_loop()
+            self.initialized_event = loop.call_soon(
+                self.device_initialized, self._device
+            )
+
+    def device_initialized(self, device):
+        """Application callback handler for device initialization."""
+        if device != self._device:
+            return
+
+        self.listener_event("device_initialized")
+
+    def device_removed(self, device):
+        """Application callback handler for device removed."""
+        if device != self._device:
+            return
+
+        if self.initialized_event:
+            self.initialized_event.cancel()
+
+        self.listener_event("device_removed")
+
+
 def setup(config: Optional[Dict[str, Any]] = None) -> None:
     """Register all quirks with zigpy, including optional custom quirks."""
 
