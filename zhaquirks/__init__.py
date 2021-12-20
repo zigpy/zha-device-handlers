@@ -415,6 +415,142 @@ class DeviceMonitor(Bus):
         self.listener_event("device_removed")
 
 
+class PolledCluster(CustomCluster):
+    """PolledCluster Class to periodically poll cluster attributes."""
+
+    DEFAULT_FREQUENCY = 60
+    POLL_ATTRIBUTES = tuple()
+
+    def __init__(self, *args, **kwargs):
+        """Initialize the cluster."""
+        super().__init__(*args, **kwargs)
+        self._device_monitor = DeviceMonitor(self.endpoint.device)
+        self._device_monitor.add_listener(self)
+        self._timer_handles = {}
+        self._poll_tasks = {}
+        self._poll_attribs = tuple(self.attridx[a] for a in self.POLL_ATTRIBUTES)
+        self._poll_freq = {a: self.DEFAULT_FREQUENCY for a in self._poll_attribs}
+        self._loop = asyncio.get_running_loop()
+
+    def device_initialized(self):
+        """Device monitor callback handler for device initialization."""
+        self._stop_polling_timers()
+        self._start_polling_timers()
+
+    def device_removed(self):
+        """Device monitor callback handler for device removed."""
+        self._stop_polling_timers()
+
+    def _attr_frequency(self, attrid):
+        return self._poll_freq.get(attrid, self.DEFAULT_FREQUENCY)
+
+    def _get_update_frequencies(self):
+        return set(self._poll_freq.values())
+
+    def _attribs_by_frequency(self, frequency):
+        return [a for a, freq in self._poll_freq.items() if freq == frequency]
+
+    def _has_frequency_timer_running(self, frequency):
+        same_frequency_attrs = self._attribs_by_frequency(frequency)
+        return any(a in self._timer_handles for a in same_frequency_attrs)
+
+    def _start_polling_timers(self):
+        assert not self._timer_handles
+
+        for freq in self._get_update_frequencies():
+            self._start_polling_timers_by_frequency(freq)
+
+    def _start_polling_timers_by_frequency(self, freq):
+        if self._has_frequency_timer_running(freq):
+            return
+
+        attribs = self._attribs_by_frequency(freq)
+        timer = self._loop.call_later(freq, self._queue_poll_attribs, attribs, freq)
+        self._timer_handles.update({a: timer for a in attribs})
+
+    def _stop_polling_timers(self):
+        for timer in self._timer_handles.values():
+            timer.cancel()
+        self._timer_handles = {}
+
+        for task in self._poll_tasks.values():
+            task.cancel()
+        self._poll_tasks = {}
+
+    async def _poll_attribs_async(self, attribs, freq):
+        cancelled = False
+        try:
+            await self.read_attributes(attribs)
+        except asyncio.CancelledError:
+            cancelled = True
+        except asyncio.TimeoutError:
+            _LOGGER.warn(
+                "Timed out while polling device %s attributes %s",
+                self.endpoint.device.ieee,
+                attribs,
+            )
+        except Exception:
+            _LOGGER.exception(
+                "Failed to poll device %s attributes", self.endpoint.device.ieee
+            )
+        finally:
+            self._poll_tasks.update({a: None for a in attribs})
+            if not cancelled:
+                self._start_polling_timers_by_frequency(freq)
+
+    def _queue_poll_attribs(self, attribs, freq):
+        attribs_to_poll = []
+        for attrid in attribs:
+            if self._timer_handles.pop(attrid, None) and not self._poll_tasks.get(
+                attrid
+            ):
+                attribs_to_poll.append(attrid)
+
+        if attribs_to_poll:
+            task = self._loop.create_task(
+                self._poll_attribs_async(attribs_to_poll, freq)
+            )
+            self._poll_tasks.update({a: task for a in attribs_to_poll})
+
+    def _configure_reporting(self, args, manufacturer=None):
+        """Configure reporting."""
+        frequencies = set()
+        for arg in [a for a in args if a.attrid in self._poll_attribs]:
+            self._skip_update(arg.attrid, restart=False)
+            frequency = min(
+                max(arg.min_interval, self.DEFAULT_FREQUENCY), arg.max_interval
+            )
+            for freq in self._get_update_frequencies():
+                if freq >= arg.min_interval and freq <= arg.max_interval:
+                    frequency = freq
+                    break
+            self._poll_freq[arg.attrid] = frequency
+            frequencies.add(frequency)
+
+        for frequency in frequencies:
+            self._start_polling_timers_by_frequency(frequency)
+
+        return super()._configure_reporting(args, manufacturer=manufacturer)
+
+    def _skip_update(self, attrid, restart=True):
+        timer = self._timer_handles.pop(attrid, None)
+        if not timer:
+            return
+
+        attr_frequency = self._attr_frequency(attrid)
+        if not self._has_frequency_timer_running(attr_frequency):
+            timer.cancel()
+
+            if restart:
+                self._start_polling_timers_by_frequency(attr_frequency)
+
+    def _update_attribute(self, attrid, value):
+        if attrid in self._poll_attribs:
+            self._skip_update(attrid)
+
+        super()._update_attribute(attrid, value)
+
+
 def setup(config: Optional[Dict[str, Any]] = None) -> None:
     """Register all quirks with zigpy, including optional custom quirks."""
 

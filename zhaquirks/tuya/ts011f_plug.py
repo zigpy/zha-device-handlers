@@ -1,7 +1,5 @@
 """TS011F plug."""
 
-import asyncio
-
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
@@ -17,7 +15,7 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
 
-from zhaquirks import DeviceMonitor
+from zhaquirks import PolledCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -35,78 +33,10 @@ from zhaquirks.tuya import (
 )
 
 
-class TuyaZBPolledMeteringCluster(TuyaZBMeteringCluster):
+class TuyaZBPolledMeteringCluster(TuyaZBMeteringCluster, PolledCluster):
     """TuyaZBPolledMeteringCluster."""
 
-    DEFAULT_FREQUENCY = 60
     POLL_ATTRIBUTES = ("current_summ_delivered",)
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._device_monitor = DeviceMonitor(self.endpoint.device)
-        self._device_monitor.add_listener(self)
-        self._timer_handle = None
-        self._poll_task = None
-        self._poll_attribs = tuple(self.attridx[a] for a in self.POLL_ATTRIBUTES)
-        self._loop = asyncio.get_running_loop()
-        self._frequency = self.DEFAULT_FREQUENCY
-
-    def device_initialized(self):
-        self._stop_polling_timer()
-        self._start_polling_timer()
-
-    def device_removed(self):
-        self._stop_polling_timer()
-
-    def _start_polling_timer(self):
-        assert self._timer_handle is None
-        self._timer_handle = self._loop.call_later(
-            self._frequency, self._queue_poll_attribs
-        )
-
-    def _stop_polling_timer(self):
-        if self._timer_handle:
-            self._timer_handle.cancel()
-            self._timer_handle = None
-
-        if self._poll_task:
-            self._poll_task.cancel()
-            self._poll_task = None
-
-    async def _poll_attribs_async(self):
-        try:
-            await self.read_attributes(self._poll_attribs)
-            self._start_polling_timer()
-        except asyncio.CancelledError:
-            pass
-        except Exception as e:
-            raise e
-        finally:
-            self._poll_task = None
-
-    def _configure_reporting(self, args, manufacturer=None):
-        self._stop_polling_timer()
-        polled_args = [a for a in args if a.attrid in self._poll_attribs]
-        acceptable_min = max([a.min_interval for a in polled_args])
-        acceptable_max = min([a.max_interval for a in polled_args])
-        self._frequency = min(
-            max(acceptable_min, self.DEFAULT_FREQUENCY), acceptable_max
-        )
-        self._start_polling_timer()
-
-        return super()._configure_reporting(args, manufacturer=manufacturer)
-
-    def _queue_poll_attribs(self):
-        self._timer_handle = None
-        if not self._poll_task:
-            self._poll_task = self._loop.create_task(self._poll_attribs_async())
-
-    def _update_attribute(self, attrid, value):
-        if attrid in self._poll_attribs and self._timer_handle:
-            self._stop_polling_timer()
-            self._start_polling_timer()
-
-        super()._update_attribute(attrid, value)
 
 
 class Plug(CustomDevice):
