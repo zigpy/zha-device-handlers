@@ -38,7 +38,7 @@ from zhaquirks.tuya import (
 class TuyaZBPolledMeteringCluster(TuyaZBMeteringCluster):
     """TuyaZBPolledMeteringCluster."""
 
-    FREQUENCY = 60
+    DEFAULT_FREQUENCY = 60
     POLL_ATTRIBUTES = ("current_summ_delivered",)
 
     def __init__(self, *args, **kwargs):
@@ -49,6 +49,7 @@ class TuyaZBPolledMeteringCluster(TuyaZBMeteringCluster):
         self._poll_task = None
         self._poll_attribs = tuple(self.attridx[a] for a in self.POLL_ATTRIBUTES)
         self._loop = asyncio.get_running_loop()
+        self._frequency = self.DEFAULT_FREQUENCY
 
     def device_initialized(self):
         self._stop_polling_timer()
@@ -60,7 +61,7 @@ class TuyaZBPolledMeteringCluster(TuyaZBMeteringCluster):
     def _start_polling_timer(self):
         assert self._timer_handle is None
         self._timer_handle = self._loop.call_later(
-            self.FREQUENCY, self._queue_poll_attribs
+            self._frequency, self._queue_poll_attribs
         )
 
     def _stop_polling_timer(self):
@@ -82,6 +83,18 @@ class TuyaZBPolledMeteringCluster(TuyaZBMeteringCluster):
             raise e
         finally:
             self._poll_task = None
+
+    def _configure_reporting(self, args, manufacturer=None):
+        self._stop_polling_timer()
+        polled_args = [a for a in args if a.attrid in self._poll_attribs]
+        acceptable_min = max([a.min_interval for a in polled_args])
+        acceptable_max = min([a.max_interval for a in polled_args])
+        self._frequency = min(
+            max(acceptable_min, self.DEFAULT_FREQUENCY), acceptable_max
+        )
+        self._start_polling_timer()
+
+        return super()._configure_reporting(args, manufacturer=manufacturer)
 
     def _queue_poll_attribs(self):
         self._timer_handle = None
