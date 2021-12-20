@@ -1,6 +1,14 @@
-"""Module to handle quirks of the  Fanfoss thermostat.
+"""Module to handle quirks of the Danfoss thermostat.
 
 manufacturer specific attributes to control displaying and specific configuration.
+
+Manufacteurer Zigbee Reference (2021-12-08):
+https://assets.danfoss.com/documents/193613/AM375549618098en-000102.pdf
+
+Firmware:
+https://www.danfoss.com/en/products/dhs/smart-heating/smart-heating/danfoss-ally/danfoss-ally-support/#tab-software
+
+v1.18: https://files.danfoss.com/download/Heating/Ally/Danfoss%20Ally%20Radiator%20Thermostat%201.18%20OTA%20file%2001122021.zip
 """
 
 import zigpy.profiles.zha as zha_p
@@ -36,6 +44,17 @@ class DanfossThermostatCluster(CustomCluster, Thermostat):
     }
 
     manufacturer_attributes = {
+        0x0000: ("local_temperature", t.int16s),
+        0x0003: ("abs_min_heat_setpoint_limit", t.int16s),
+        0x0003: ("abs_max_heat_setpoint_limit", t.int16s),
+        0x0008: ("pi_heating_demand", t.int8s),
+        0x0012: ("occupied_heating_setpoint", t.int16s),
+        0x0015: ("min_heat_setpoint_limit", t.int16s),
+        0x0016: ("max_heat_setpoint_limit", t.int16s),
+        0x001B: ("control_sequence_of_operation", t.enum8),
+        0x001C: ("system_mode", t.enum8),
+        0x0025: ("thermostat_programming_operation_mode", t.bitmap8),
+        0x0030: ("setpoint_change_source", t.enum8),
         0x4000: ("etrv_open_windows_detection", t.enum8),
         0x4003: ("external_open_windows_detected", t.Bool),
         0x4010: ("exercise_day_of_week", t.enum8),
@@ -49,6 +68,7 @@ class DanfossThermostatCluster(CustomCluster, Thermostat):
         0x4030: ("heat_available", t.Bool),
         0x4031: ("heat_supply_request", t.Bool),
         0x4032: ("load_balancing_enable", t.Bool),
+        0x4040: ("load_load_radiator_room_mean",t.uint16_t),
         0x404A: ("load_estimate_radiator", t.uint16_t),
         0x404B: ("regulation_setPoint_offset", t.int8s),
         0x404C: ("adaptation_run_control", t.enum8),
@@ -82,6 +102,8 @@ class DanfossUserInterfaceCluster(CustomCluster, UserInterface):
     """Danfoss custom cluster."""
 
     manufacturer_attributes = {
+        0x0000: ("temperature_display_mode", t.enum8),
+        0x0001: ("keypad_lockout", t.enum8),
         0x4000: ("viewing_direction", t.enum8),
         0xFFFD: ("cluster_revision", t.uint16_t),
     }
@@ -91,6 +113,10 @@ class DanfossDiagnosticCluster(CustomCluster, Diagnostic):
     """Danfoss custom cluster."""
 
     manufacturer_attributes = {
+        0x0000: ("number_of_resets", t.uint16_t),
+        0x011B: ("average_mac_retry_per_aps_message_sent", t.uint16_t),
+        0x011C: ("last_message_lqi", t.uint8_t),
+        0x011D: ("last_message_rssi", t.int8s),
         0x4000: ("sw_error_code", t.bitmap16),
         0x4001: ("wake_time_avg", t.uint32_t),
         0x4002: ("wake_time max duration", t.uint32_t),
@@ -99,6 +125,9 @@ class DanfossDiagnosticCluster(CustomCluster, Diagnostic):
         0x4005: ("sleep_Postponed_count_max", t.uint32_t),
         0x4006: ("sleep_Postponed_count_min", t.uint32_t),
         0x4010: ("motor_step_counter", t.uint32_t),
+        0x4020: ("data_logger", t.LVBytes),
+        0x4021: ("control_diagnostic", t.LVBytes),
+        0x4022: ("control_diagnostic_frequency", t.uint16_t),
         0xFFFD: ("cluster_revision", t.uint16_t),
     }
 
