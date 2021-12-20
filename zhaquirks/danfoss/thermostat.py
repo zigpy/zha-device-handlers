@@ -46,7 +46,7 @@ class DanfossThermostatCluster(CustomCluster, Thermostat):
     manufacturer_attributes = {
         0x0000: ("local_temperature", t.int16s),
         0x0003: ("abs_min_heat_setpoint_limit", t.int16s),
-        0x0003: ("abs_max_heat_setpoint_limit", t.int16s),
+        0x0004: ("abs_max_heat_setpoint_limit", t.int16s),
         0x0008: ("pi_heating_demand", t.int8s),
         0x0012: ("occupied_heating_setpoint", t.int16s),
         0x0015: ("min_heat_setpoint_limit", t.int16s),
@@ -68,7 +68,7 @@ class DanfossThermostatCluster(CustomCluster, Thermostat):
         0x4030: ("heat_available", t.Bool),
         0x4031: ("heat_supply_request", t.Bool),
         0x4032: ("load_balancing_enable", t.Bool),
-        0x4040: ("load_load_radiator_room_mean",t.uint16_t),
+        0x4040: ("load_load_radiator_room_mean", t.uint16_t),
         0x404A: ("load_estimate_radiator", t.uint16_t),
         0x404B: ("regulation_setPoint_offset", t.int8s),
         0x404C: ("adaptation_run_control", t.enum8),
