@@ -1,5 +1,7 @@
 """TS011F plug."""
 
+import asyncio
+
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
@@ -30,6 +32,59 @@ from zhaquirks.tuya import (
     TuyaZBMeteringCluster,
     TuyaZBOnOffAttributeCluster,
 )
+
+
+class TuyaZBPolledMeteringCluster(TuyaZBMeteringCluster):
+    """TuyaZBPolledMeteringCluster."""
+
+    FREQUENCY = 60
+    POLL_ATTRIBUTES = ("current_summ_delivered",)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._timer_handle = None
+        self._poll_task = None
+        self._poll_attribs = tuple(self.attridx[a] for a in self.POLL_ATTRIBUTES)
+        self._loop = asyncio.get_running_loop()
+        self._start_polling_timer()
+
+    def _start_polling_timer(self):
+        assert self._timer_handle is None
+        self._timer_handle = self._loop.call_later(
+            self.FREQUENCY, self._queue_poll_attribs
+        )
+
+    def _stop_polling_timer(self):
+        if self._timer_handle:
+            self._timer_handle.cancel()
+            self._timer_handle = None
+
+        if self._poll_task:
+            self._poll_task.cancel()
+            self._poll_task = None
+
+    async def _poll_attribs_async(self):
+        try:
+            await self.read_attributes(self._poll_attribs)
+            self._start_polling_timer()
+        except asyncio.CancelledError:
+            pass
+        except Exception as e:
+            raise e
+        finally:
+            self._poll_task = None
+
+    def _queue_poll_attribs(self):
+        self._timer_handle = None
+        if not self._poll_task:
+            self._poll_task = self._loop.create_task(self._poll_attribs_async())
+
+    def _update_attribute(self, attrid, value):
+        if attrid in self._poll_attribs and self._timer_handle:
+            self._stop_polling_timer()
+            self._start_polling_timer()
+
+        super()._update_attribute(attrid, value)
 
 
 class Plug(CustomDevice):
@@ -81,7 +136,7 @@ class Plug(CustomDevice):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     TuyaZBOnOffAttributeCluster,
-                    TuyaZBMeteringCluster,
+                    TuyaZBPolledMeteringCluster,
                     TuyaZBElectricalMeasurement,
                     TuyaZBE000Cluster,
                     TuyaZBExternalSwitchTypeCluster,
