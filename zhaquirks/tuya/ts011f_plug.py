@@ -17,6 +17,7 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
 
+from zhaquirks import DeviceMonitor
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -42,11 +43,19 @@ class TuyaZBPolledMeteringCluster(TuyaZBMeteringCluster):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._device_monitor = DeviceMonitor(self.endpoint.device)
+        self._device_monitor.add_listener(self)
         self._timer_handle = None
         self._poll_task = None
         self._poll_attribs = tuple(self.attridx[a] for a in self.POLL_ATTRIBUTES)
         self._loop = asyncio.get_running_loop()
+
+    def device_initialized(self):
+        self._stop_polling_timer()
         self._start_polling_timer()
+
+    def device_removed(self):
+        self._stop_polling_timer()
 
     def _start_polling_timer(self):
         assert self._timer_handle is None
