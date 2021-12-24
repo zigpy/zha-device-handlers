@@ -13,14 +13,11 @@ from zigpy.zcl.clusters.general import (
     Identify,
     LevelControl,
     OnOff,
-    Time,
     Ota,
     Scenes,
+    Time,
 )
-from zigpy.zcl.clusters.homeautomation import (
-    Diagnostic,
-    ElectricalMeasurement,
-)
+from zigpy.zcl.clusters.homeautomation import Diagnostic, ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
 
 from zhaquirks.const import (
