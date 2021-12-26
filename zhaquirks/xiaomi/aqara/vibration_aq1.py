@@ -4,6 +4,7 @@ import logging
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster
 import zigpy.types as types
+import math
 from zigpy.zcl.clusters.closures import DoorLock
 from zigpy.zcl.clusters.general import (
     Basic,
@@ -42,8 +43,8 @@ from zhaquirks.xiaomi import (
     XiaomiQuickInitDevice,
 )
 
-ACCELEROMETER_ATTR = 0x0508  # decimal = 1288
 DROP_VALUE = 3
+ORIENTATION_ATTR = 0x0508 # decimal = 1288
 RECENT_ACTIVITY_LEVEL_ATTR = 0x0505  # decimal = 1285
 ROTATION_DEGREES_ATTR = 0x0503  # decimal = 1283
 SEND_EVENT = "send_event"
@@ -102,12 +103,44 @@ class VibrationAQ1(XiaomiQuickInitDevice):
                     self.endpoint.device.motion_bus.listener_event(
                         SEND_EVENT, self._current_state[STATUS_TYPE_ATTR]
                     )
+            elif attrid == ORIENTATION_ATTR:
+                x = value & 0xffff
+                y = (value >> 16) & 0xffff
+                z = (value >> 32) & 0xffff
+                X = 0.0 + x
+                Y = 0.0 + y
+                Z = 0.0 + z
+                angleX = round(math.atan(X / math.sqrt(Z * Z + Y * Y)) * 180 / math.pi)
+                angleY = round(math.atan(Y / math.sqrt(X * X + Z * Z)) * 180 / math.pi)
+                angleZ = round(math.atan(Z / math.sqrt(X * X + Y * Y)) * 180 / math.pi)
+
+                self.endpoint.device.motion_bus.listener_event(
+                    SEND_EVENT,
+                    "current_orientation",
+                    {"X": angleX, "Y": angleY, "Z": angleZ},
+                )  
+            elif attrid == ORIENTATION_ATTR:
+                x = value & 0xffff
+                y = value >> 16
+                z = value >> 32
+                X = 0.0 + x
+                Y = 0.0 + y
+                Z = 0.0 + z
+                angleX = round(math.atan(X / math.sqrt(Z * Z + Y * Y)) * 180 / math.pi)
+                angleY = round(math.atan(Y / math.sqrt(X * X + Z * Z)) * 180 / math.pi)
+                angleZ = round(math.atan(Z / math.sqrt(X * X + Y * Y)) * 180 / math.pi)
+
+                self.endpoint.device.motion_bus.listener_event(
+                    SEND_EVENT,
+                    "current_orientation",
+                    {"X": angleX, "Y": angleY, "Z": angleZ},
+                )         
             elif attrid == ROTATION_DEGREES_ATTR:
                 self.endpoint.device.motion_bus.listener_event(
                     SEND_EVENT,
                     self._current_state[STATUS_TYPE_ATTR],
                     {"degrees": value},
-                )
+                )  
             elif attrid == RECENT_ACTIVITY_LEVEL_ATTR:
                 # these seem to be sent every minute when vibration is active
                 strength = value >> 8
