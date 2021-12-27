@@ -22,9 +22,7 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 
-from zhaquirks.lidl import (
-    TuyaZBOnOffAttributeCluster,
-)
+from zhaquirks.lidl import TuyaZBOnOffAttributeCluster
 
 
 class Plug(CustomDevice):
