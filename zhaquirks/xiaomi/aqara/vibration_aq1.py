@@ -117,24 +117,8 @@ class VibrationAQ1(XiaomiQuickInitDevice):
                 self.endpoint.device.motion_bus.listener_event(
                     SEND_EVENT,
                     "current_orientation",
-                    {"X": angleX, "Y": angleY, "Z": angleZ},
-                )  
-            elif attrid == ORIENTATION_ATTR:
-                x = value & 0xffff
-                y = value >> 16
-                z = value >> 32
-                X = 0.0 + x
-                Y = 0.0 + y
-                Z = 0.0 + z
-                angleX = round(math.atan(X / math.sqrt(Z * Z + Y * Y)) * 180 / math.pi)
-                angleY = round(math.atan(Y / math.sqrt(X * X + Z * Z)) * 180 / math.pi)
-                angleZ = round(math.atan(Z / math.sqrt(X * X + Y * Y)) * 180 / math.pi)
-
-                self.endpoint.device.motion_bus.listener_event(
-                    SEND_EVENT,
-                    "current_orientation",
-                    {"X": angleX, "Y": angleY, "Z": angleZ},
-                )         
+                    {"rawValueX": x, "rawValueY": y, "rawValueZ": z, "X": angleX, "Y": angleY, "Z": angleZ},
+                )          
             elif attrid == ROTATION_DEGREES_ATTR:
                 self.endpoint.device.motion_bus.listener_event(
                     SEND_EVENT,
