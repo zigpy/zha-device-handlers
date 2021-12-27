@@ -71,6 +71,7 @@ class TuyaSingleSwitchDimmer(TuyaDimmerSwitch):
         }
     }
 
+
 class TuyaMoesDiyDoubleSwitchDimmer(TuyaDimmerSwitch):
     """Tuya Moes DIY double dimmer switch device."""
 
