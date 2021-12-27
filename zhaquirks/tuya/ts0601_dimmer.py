@@ -124,7 +124,7 @@ class TuyaMoesDiyDoubleSwitchDimmer(TuyaDimmerSwitch):
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
-            2: {
+            7: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
                 INPUT_CLUSTERS: [
