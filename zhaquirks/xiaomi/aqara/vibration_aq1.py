@@ -1,10 +1,10 @@
 """Xiaomi aqara smart motion sensor device."""
 import logging
+import math
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster
 import zigpy.types as types
-import math
 from zigpy.zcl.clusters.closures import DoorLock
 from zigpy.zcl.clusters.general import (
     Basic,
