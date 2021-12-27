@@ -428,7 +428,7 @@ class TemperatureMeasurementCluster(CustomCluster, TemperatureMeasurement):
     def _update_attribute(self, attrid, value):
         # drop values above and below documented range for this sensor
         # value is in centi degrees
-        if attrid == self.ATTR_ID and (-6000 <= value <= 6000):
+        if attrid == self.ATTR_ID and (-5000 <= value <= 6000):
             super()._update_attribute(attrid, value)
 
     def temperature_reported(self, value):
