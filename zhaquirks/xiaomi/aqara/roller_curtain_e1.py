@@ -5,20 +5,21 @@ from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import (
-    Basic,
-    Groups,
-    Identify,
-    Ota,
-    Scenes,
     Alarms,
     AnalogOutput,
+    Basic,
     DeviceTemperature,
+    GreenPowerProxy,
+    Groups,
+    Identify,
     MultistateOutput,
     OnOff,
+    Ota,
+    Scenes,
     Time,
-    GreenPowerProxy,
 )
 
+from zhaquirks import Bus
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -27,12 +28,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks import Bus
-from zhaquirks.xiaomi import (
-    LUMI,
-    XiaomiAqaraE1Cluster,
-    BasicCluster,
-)
+from zhaquirks.xiaomi import LUMI, BasicCluster, XiaomiAqaraE1Cluster
 
 
 class RollerE1AQ(CustomDevice):
