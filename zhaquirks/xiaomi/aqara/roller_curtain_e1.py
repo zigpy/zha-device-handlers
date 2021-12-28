@@ -1,5 +1,4 @@
 """Aqara Roller Shade Driver E1 device."""
-import logging
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
@@ -19,7 +18,6 @@ from zigpy.zcl.clusters.general import (
     Time,
 )
 
-from zhaquirks import Bus
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
