@@ -4,6 +4,7 @@ from __future__ import annotations
 import logging
 import math
 from typing import Iterable, Iterator, Optional
+from zhaquirks.xbee import uint8_t
 
 from zigpy import types as t
 import zigpy.device
@@ -355,6 +356,16 @@ class XiaomiAqaraE1Cluster(XiaomiCluster, ManufacturerSpecificCluster):
     """Xiaomi mfg cluster implementation."""
 
     cluster_id = 0xFCC0
+
+
+class XiaomiAqaraRollerE1Cluster(XiaomiCluster, ManufacturerSpecificCluster):
+    """Xiaomi mfg cluster implementation specific for E1 Roller ."""
+
+    cluster_id = 0xFCC0
+
+    manufacturer_attributes = {
+        0x0409: ("Charging", uint8_t),
+    }
 
 
 class BinaryOutputInterlock(CustomCluster, BinaryOutput):

@@ -28,7 +28,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.xiaomi import LUMI, BasicCluster, XiaomiAqaraE1Cluster
+from zhaquirks.xiaomi import LUMI, BasicCluster, XiaomiAqaraRollerE1Cluster
 
 
 class RollerE1AQ(CustomDevice):
@@ -51,7 +51,7 @@ class RollerE1AQ(CustomDevice):
                     DeviceTemperature.cluster_id,
                     Groups.cluster_id,
                     Identify.cluster_id,
-                    XiaomiAqaraE1Cluster.cluster_id,
+                    XiaomiAqaraRollerE1Cluster,
                     MultistateOutput.cluster_id,
                     OnOff.cluster_id,
                     Scenes.cluster_id,
@@ -85,7 +85,7 @@ class RollerE1AQ(CustomDevice):
                     DeviceTemperature,
                     Groups.cluster_id,
                     Identify.cluster_id,
-                    XiaomiAqaraE1Cluster,
+                    XiaomiAqaraRollerE1Cluster,
                     MultistateOutput.cluster_id,
                     OnOff.cluster_id,
                     Scenes.cluster_id,
