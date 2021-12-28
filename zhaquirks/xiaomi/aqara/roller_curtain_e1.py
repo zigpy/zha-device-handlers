@@ -4,7 +4,6 @@ import logging
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.closures import WindowCovering
-from zigpy.zcl.clusters.manufacturer_specific import ManufacturerSpecificCluster
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -29,9 +28,11 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks import Bus
-from zhaquirks.xiaomi import LUMI
-
-MANUFACTURER_SPECIFIC_CLUSTER_ID = 0xFCC0  # decimal = 64704
+from zhaquirks.xiaomi import (
+    LUMI,
+    XiaomiAqaraE1Cluster,
+    BasicCluster,
+)
 
 
 class RollerE1AQ(CustomDevice):
@@ -54,7 +55,7 @@ class RollerE1AQ(CustomDevice):
                     DeviceTemperature.cluster_id,
                     Groups.cluster_id,
                     Identify.cluster_id,
-                    MANUFACTURER_SPECIFIC_CLUSTER_ID,
+                    XiaomiAqaraE1Cluster.cluster_id,
                     MultistateOutput.cluster_id,
                     OnOff.cluster_id,
                     Scenes.cluster_id,
@@ -84,11 +85,11 @@ class RollerE1AQ(CustomDevice):
                 INPUT_CLUSTERS: [
                     Alarms.cluster_id,
                     AnalogOutput.cluster_id,
-                    Basic.cluster_id,
-                    DeviceTemperature.cluster_id,
+                    BasicCluster,
+                    DeviceTemperature,
                     Groups.cluster_id,
                     Identify.cluster_id,
-                    MANUFACTURER_SPECIFIC_CLUSTER_ID,
+                    XiaomiAqaraE1Cluster,
                     MultistateOutput.cluster_id,
                     OnOff.cluster_id,
                     Scenes.cluster_id,
