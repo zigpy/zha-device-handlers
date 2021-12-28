@@ -4,7 +4,6 @@ from __future__ import annotations
 import logging
 import math
 from typing import Iterable, Iterator, Optional
-from zhaquirks.xbee import uint8_t
 
 from zigpy import types as t
 import zigpy.device
@@ -45,6 +44,7 @@ from zhaquirks.const import (
     VALUE,
     ZHA_SEND_EVENT,
 )
+from zhaquirks.xbee import uint8_t
 
 BATTERY_LEVEL = "battery_level"
 BATTERY_PERCENTAGE_REMAINING = 0x0021
