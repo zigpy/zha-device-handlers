@@ -51,6 +51,7 @@ class SinopeTechnologiesThermostatCluster(CustomCluster, Thermostat):
 
     attributes = Thermostat.attributes.copy()
     attributes[0x0400] = ("set_occupancy", t.enum8, True)
+    attributes[0x0400] = ("backlightAutoDimParam", t.enum8, True)
 
 
 class SinopeTechnologiesThermostat(CustomDevice):
