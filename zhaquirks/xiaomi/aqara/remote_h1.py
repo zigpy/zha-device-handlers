@@ -2,6 +2,7 @@
 from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Identify, OnOff, PowerConfiguration
+
 from zhaquirks import PowerConfigurationCluster
 from zhaquirks.const import (
     ALT_DOUBLE_PRESS,
