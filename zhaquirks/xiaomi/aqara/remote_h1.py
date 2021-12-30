@@ -1,6 +1,6 @@
-"""Aqara H1-series wireless remote"""
-import zigpy.types as t
+"""Aqara H1-series wireless remote."""
 from zigpy.profiles import zha
+import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Identify, OnOff, PowerConfiguration
 from zhaquirks import PowerConfigurationCluster
 from zhaquirks.const import (
@@ -28,29 +28,31 @@ from zhaquirks.const import (
 from zhaquirks.xiaomi import (
     LUMI,
     BasicCluster,
-    XiaomiCustomDevice,
     XiaomiAqaraE1Cluster,
+    XiaomiCustomDevice,
 )
 from zhaquirks.xiaomi.aqara.opple_remote import (
-    MultistateInputCluster,
-    COMMAND_1_SINGLE,
     COMMAND_1_DOUBLE,
-    COMMAND_1_TRIPLE,
     COMMAND_1_HOLD,
-    COMMAND_2_SINGLE,
+    COMMAND_1_SINGLE,
+    COMMAND_1_TRIPLE,
     COMMAND_2_DOUBLE,
-    COMMAND_2_TRIPLE,
     COMMAND_2_HOLD,
-    COMMAND_3_SINGLE,
+    COMMAND_2_SINGLE,
+    COMMAND_2_TRIPLE,
     COMMAND_3_DOUBLE,
-    COMMAND_3_TRIPLE,
     COMMAND_3_HOLD,
+    COMMAND_3_SINGLE,
+    COMMAND_3_TRIPLE,
+    MultistateInputCluster,
 )
 
 BOTH_BUTTONS = "both_buttons"
 
 
 class AqaraRemoteManuSpecificCluster(XiaomiAqaraE1Cluster):
+    """Aqara manufacturer specific settings."""
+
     ep_attribute = "aqara_cluster"
 
     # manufacture override code: 4447 (0x115f)
@@ -72,6 +74,8 @@ class AqaraRemoteManuSpecificCluster(XiaomiAqaraE1Cluster):
 
 
 class PowerConfigurationClusterH1Remote(PowerConfigurationCluster):
+    """Reports battery level."""
+
     # Aqara H1 wireless remote uses one CR2450 battery.
     # Values are copied from zigbee-herdsman-converters.
     MIN_VOLTS = 2.5
@@ -79,7 +83,7 @@ class PowerConfigurationClusterH1Remote(PowerConfigurationCluster):
 
 
 class RemoteH1SingleRocker(XiaomiCustomDevice):
-    """Aqara H1 Wireless Remote Single Rocker Version WRS-R01"""
+    """Aqara H1 Wireless Remote Single Rocker Version WRS-R01."""
 
     signature = {
         MODELS_INFO: [(LUMI, "lumi.remote.b18ac1")],
@@ -135,7 +139,7 @@ class RemoteH1SingleRocker(XiaomiCustomDevice):
 
 
 class RemoteH1DoubleRocker(XiaomiCustomDevice):
-    """Aqara H1 Wireless Remote Double Rocker Version WRS-R02"""
+    """Aqara H1 Wireless Remote Double Rocker Version WRS-R02."""
 
     signature = {
         MODELS_INFO: [(LUMI, "lumi.remote.b28ac1")],
