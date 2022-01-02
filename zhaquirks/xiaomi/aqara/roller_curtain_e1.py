@@ -1,7 +1,6 @@
 """Aqara Roller Shade Driver E1 device."""
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import (
     Alarms,
@@ -26,10 +25,15 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.xiaomi import LUMI, BasicCluster, XiaomiAqaraRollerE1Cluster
+from zhaquirks.xiaomi import (
+    LUMI,
+    BasicCluster,
+    XiaomiAqaraRollerE1Cluster,
+    XiaomiCustomDevice,
+)
 
 
-class RollerE1AQ(CustomDevice):
+class RollerE1AQ(XiaomiCustomDevice):
     """Aqara Roller Shade Driver E1 device."""
 
     def __init__(self, *args, **kwargs):
@@ -49,7 +53,7 @@ class RollerE1AQ(CustomDevice):
                     DeviceTemperature.cluster_id,
                     Groups.cluster_id,
                     Identify.cluster_id,
-                    XiaomiAqaraRollerE1Cluster,
+                    XiaomiAqaraRollerE1Cluster.cluster_id,
                     MultistateOutput.cluster_id,
                     OnOff.cluster_id,
                     Scenes.cluster_id,
@@ -80,12 +84,11 @@ class RollerE1AQ(CustomDevice):
                     Alarms.cluster_id,
                     AnalogOutput.cluster_id,
                     BasicCluster,
-                    DeviceTemperature,
+                    DeviceTemperature.cluster_id,
                     Groups.cluster_id,
                     Identify.cluster_id,
                     XiaomiAqaraRollerE1Cluster,
                     MultistateOutput.cluster_id,
-                    OnOff.cluster_id,
                     Scenes.cluster_id,
                     WindowCovering.cluster_id,
                 ],
