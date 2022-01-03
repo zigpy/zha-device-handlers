@@ -1,5 +1,4 @@
 """Tuya MCU comunications."""
-import logging
 from typing import Dict, Optional, Union
 
 import zigpy.types as t
@@ -7,16 +6,17 @@ from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import LevelControl, OnOff
 
 from zhaquirks import Bus
-
 from zhaquirks.tuya import (
     ATTR_ON_OFF,
+    TUYA_MCU_COMMAND,
+    TUYA_SET_DATA,
+    Data,
     DPToAttributeMapping,
     TuyaCommand,
     TuyaData,
     TuyaDPType,
     TuyaLocalCluster,
     TuyaNewManufCluster,
-    TUYA_MCU_COMMAND,
 )
 
 
@@ -45,7 +45,9 @@ class TuyaMCUCluster(TuyaNewManufCluster):
                 self.command(TUYA_SET_DATA, command, expect_reply=True)
             )
 
-    def get_dp_from_cluster(self, endpoint_id: int, attribute_name: str) -> Optional[int]:
+    def get_dp_from_cluster(
+        self, endpoint_id: int, attribute_name: str
+    ) -> Optional[int]:
         """Search for the DP in dp_to_attribute"""
 
         for dp, dp_mapping in self.dp_to_attribute.items():
@@ -83,7 +85,8 @@ class TuyaAttributesCluster(TuyaMCUCluster, TuyaLocalCluster):
             cmd_payload.status = 0
             cmd_payload.tsn = self.endpoint.device.application.get_sequence()
             cmd_payload.data = TuyaData()
-            cmd_payload.data.dp_type = TuyaDPType.ENUM  ## TODO: get TuyaDPType from record.value.type
+            # TODO: get TuyaDPType from record.value.type
+            cmd_payload.data.dp_type = TuyaDPType.ENUM
             cmd_payload.data.function = 0
             cmd_payload.data.raw = t.LVBytes.deserialize([1, record.value.value])[0]
 
@@ -91,7 +94,7 @@ class TuyaAttributesCluster(TuyaMCUCluster, TuyaLocalCluster):
                 TUYA_MCU_COMMAND,
                 cmd_payload,
                 self.endpoint.endpoint_id,
-                self.attributes[record.attrid][0],  # get attribute_name from cluster attributes
+                self.attributes[record.attrid][0],
             )
 
         return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
