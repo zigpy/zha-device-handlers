@@ -48,7 +48,7 @@ class TuyaMCUCluster(TuyaNewManufCluster):
     def get_dp_from_cluster(
         self, endpoint_id: int, attribute_name: str
     ) -> Optional[int]:
-        """Search for the DP in dp_to_attribute"""
+        """Search for the DP in dp_to_attribute."""
 
         for dp, dp_mapping in self.dp_to_attribute.items():
             if (attribute_name == dp_mapping.attribute_name) and (
