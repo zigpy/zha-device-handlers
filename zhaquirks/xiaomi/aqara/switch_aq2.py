@@ -31,6 +31,7 @@ from zhaquirks.xiaomi import (
     LUMI,
     XIAOMI_NODE_DESC,
     BasicCluster,
+    DeviceTemperatureCluster,
     XiaomiPowerConfiguration,
     XiaomiQuickInitDevice,
 )
@@ -74,6 +75,7 @@ class SwitchAQ2(XiaomiQuickInitDevice):
                 INPUT_CLUSTERS: [
                     BasicCluster,
                     XiaomiPowerConfiguration,
+                    DeviceTemperatureCluster,
                     XIAOMI_CLUSTER_ID,
                 ],
                 OUTPUT_CLUSTERS: [

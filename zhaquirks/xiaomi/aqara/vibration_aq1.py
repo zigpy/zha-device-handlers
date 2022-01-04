@@ -197,11 +197,11 @@ class VibrationAQ1(XiaomiQuickInitDevice):
                 INPUT_CLUSTERS: [
                     VibrationBasicCluster,
                     XiaomiPowerConfiguration,
+                    DeviceTemperatureCluster,
                     Identify.cluster_id,
                     MotionCluster,
                     Ota.cluster_id,
                     MultistateInputCluster,
-                    DeviceTemperatureCluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     VibrationBasicCluster,

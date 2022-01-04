@@ -62,8 +62,8 @@ class LeakAQ1(XiaomiQuickInitDevice):
                     BasicCluster,
                     Identify.cluster_id,
                     XiaomiPowerConfiguration,
-                    CustomIasZone,
                     DeviceTemperatureCluster,
+                    CustomIasZone,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             }

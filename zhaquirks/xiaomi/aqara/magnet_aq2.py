@@ -70,8 +70,8 @@ class MagnetAQ2(XiaomiQuickInitDevice):
                     BasicCluster,
                     Identify.cluster_id,
                     XiaomiPowerConfiguration,
-                    XIAOMI_CLUSTER_ID,
                     DeviceTemperatureCluster,
+                    XIAOMI_CLUSTER_ID,
                 ],
                 OUTPUT_CLUSTERS: [
                     BasicCluster,
