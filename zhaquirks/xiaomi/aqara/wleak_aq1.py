@@ -19,9 +19,9 @@ from zhaquirks.xiaomi import (
     LUMI,
     XIAOMI_NODE_DESC,
     BasicCluster,
+    DeviceTemperatureCluster,
     XiaomiPowerConfiguration,
     XiaomiQuickInitDevice,
-    DeviceTemperatureCluster,
 )
 
 

@@ -18,9 +18,9 @@ from zhaquirks.xiaomi import (
     LUMI,
     XIAOMI_NODE_DESC,
     BasicCluster,
+    DeviceTemperatureCluster,
     XiaomiPowerConfiguration,
     XiaomiQuickInitDevice,
-    DeviceTemperatureCluster,
 )
 
 OPEN_CLOSE_DEVICE_TYPE = 0x5F01
