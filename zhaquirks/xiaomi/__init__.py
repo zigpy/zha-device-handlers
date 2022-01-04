@@ -419,7 +419,7 @@ class MotionCluster(LocalDataCluster, MotionOnEvent):
     reset_s: int = 70
 
 
-class DeviceTemperatureCluster(CustomCluster, DeviceTemperature):
+class DeviceTemperatureCluster(LocalDataCluster, DeviceTemperature):
     """Device Temperature Cluster."""
 
     cluster_id = DeviceTemperature.cluster_id
