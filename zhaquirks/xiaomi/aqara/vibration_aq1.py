@@ -39,6 +39,7 @@ from zhaquirks.xiaomi import (
     LUMI,
     XIAOMI_NODE_DESC,
     BasicCluster,
+    DeviceTemperatureCluster,
     XiaomiPowerConfiguration,
     XiaomiQuickInitDevice,
 )
@@ -200,6 +201,7 @@ class VibrationAQ1(XiaomiQuickInitDevice):
                     MotionCluster,
                     Ota.cluster_id,
                     MultistateInputCluster,
+                    DeviceTemperatureCluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     VibrationBasicCluster,
