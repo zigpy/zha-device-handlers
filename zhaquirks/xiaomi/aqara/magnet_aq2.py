@@ -20,6 +20,7 @@ from zhaquirks.xiaomi import (
     BasicCluster,
     XiaomiPowerConfiguration,
     XiaomiQuickInitDevice,
+    DeviceTemperatureCluster,
 )
 
 OPEN_CLOSE_DEVICE_TYPE = 0x5F01
@@ -70,6 +71,7 @@ class MagnetAQ2(XiaomiQuickInitDevice):
                     Identify.cluster_id,
                     XiaomiPowerConfiguration,
                     XIAOMI_CLUSTER_ID,
+                    DeviceTemperatureCluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     BasicCluster,
