@@ -425,7 +425,7 @@ class DeviceTemperatureCluster(LocalDataCluster, DeviceTemperature):
     cluster_id = DeviceTemperature.cluster_id
 
     def update_attribute(self, attrid, value):
-        """attribute value reported"""
+        """Attribute value reported."""
         self._update_attribute(attrid, value)
 
 
