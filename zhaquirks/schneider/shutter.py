@@ -1,21 +1,21 @@
 """Module to handle quirks of the Schneider Electric shutter.
+
 manufacturer specific attributes to control displaying and specific configuration.
 """
 
-import zigpy.profiles.zha as zha_p
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
+from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import (
     Basic,
-    Identify,
-    Ota,
     Groups,
-    Scenes,
+    Identify,
+    LevelControl,
     OnOff,
-    LevelControl
+    Ota,
+    Scenes,
 )
 from zigpy.zcl.clusters.homeautomation import Diagnostic
-from zigpy.zcl.clusters.closures import WindowCovering
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -26,19 +26,23 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 
+
 class SchneiderShutterCluster(CustomCluster, WindowCovering):
     """Schneider custom cluster."""
+
     manufacturer_attributes = {
-    0xE014: ("LiftDriveUpTime", t.uint16_t),
-		0xE015: ("LiftDriveDownTime", t.uint16_t),
-		0xE016: ("TiltOpenCloseAndStepTime", t.uint16_t),
-		0xE017: ("TiltPositionPercentageAfterMoveToLevel", t.uint8_t)
+        0xE014: ("LiftDriveUpTime", t.uint16_t),
+        0xE015: ("LiftDriveDownTime", t.uint16_t),
+        0xE016: ("TiltOpenCloseAndStepTime", t.uint16_t),
+        0xE017: ("TiltPositionPercentageAfterMoveToLevel", t.uint8_t),
     }
+
 
 class SchneiderShutter(CustomDevice):
     """SchneiderShutter custom device."""
+
     signature = {
-        MODELS_INFO: [('Schneider Electric', "NHPB/SHUTTER/1")],
+        MODELS_INFO: [("Schneider Electric", "NHPB/SHUTTER/1")],
         ENDPOINTS: {
             5: {
                 PROFILE_ID: 260,
@@ -76,7 +80,7 @@ class SchneiderShutter(CustomDevice):
                 DEVICE_TYPE: 97,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [33],
-            }
+            },
         },
     }
 
@@ -116,6 +120,6 @@ class SchneiderShutter(CustomDevice):
                 DEVICE_TYPE: 97,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [33],
-            }
+            },
         }
     }
