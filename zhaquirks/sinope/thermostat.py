@@ -42,7 +42,7 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
     ep_attribute = "sinope_manufacturer_specific"
     manufacturer_attributes = {
         0x0010: ("outdoor_temp", t.int16s),
-        0x0011: ("Outdoor_temp_timeout", t.uint16_t),
+        0x0011: ("outdoor_temp_timeout", t.uint16_t),
         0x0020: ("secs_since_2k", t.uint32_t),
     }
 
