@@ -12,10 +12,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya.air import (
-    TuyaAirQualityCO2,
-    TuyaCO2ManufCluster,
-)
+from zhaquirks.tuya.air import TuyaAirQualityCO2, TuyaCO2ManufCluster
 
 
 class TuyaCOSensor(CustomDevice):
@@ -27,9 +24,7 @@ class TuyaCOSensor(CustomDevice):
         # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=81, device_version=1,
         # input_clusters=[0, 4, 5, 61184],
         # output_clusters=[25, 10])
-        MODELS_INFO: [
-            ("_TZE200_7bztmfm1", "TS0601")
-        ],
+        MODELS_INFO: [("_TZE200_7bztmfm1", "TS0601")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -54,7 +49,7 @@ class TuyaCOSensor(CustomDevice):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     TuyaCO2ManufCluster,
-                    TuyaAirQualityCO2
+                    TuyaAirQualityCO2,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             }
