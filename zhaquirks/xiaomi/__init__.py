@@ -422,12 +422,6 @@ class MotionCluster(LocalDataCluster, MotionOnEvent):
 class DeviceTemperatureCluster(LocalDataCluster, DeviceTemperature):
     """Device Temperature Cluster."""
 
-    cluster_id = DeviceTemperature.cluster_id
-
-    def update_attribute(self, attrid, value):
-        """Attribute value reported."""
-        self._update_attribute(attrid, value)
-
 
 class TemperatureMeasurementCluster(CustomCluster, TemperatureMeasurement):
     """Temperature cluster that filters out invalid temperature readings."""
