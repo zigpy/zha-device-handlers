@@ -294,7 +294,8 @@ class TuyaTS130GP(CustomDevice):
         },
     }
 
-   class TuyaTS130FTI2(CustomDevice):
+
+class TuyaTS130FTI2(CustomDevice):
     """Tuya smart curtain roller shutter Time In."""
 
     signature = {
