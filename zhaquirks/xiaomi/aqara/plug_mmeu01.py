@@ -53,7 +53,10 @@ class Plug(XiaomiCustomDevice):
         super().__init__(*args, **kwargs)
 
     signature = {
-        MODELS_INFO: [(LUMI, "lumi.plug.mmeu01"),(LUMI, "lumi.plug.maeu01")],
+        MODELS_INFO: [
+            (LUMI, "lumi.plug.mmeu01"),
+            (LUMI, "lumi.plug.maeu01"),
+        ],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=81
             # device_version=1
