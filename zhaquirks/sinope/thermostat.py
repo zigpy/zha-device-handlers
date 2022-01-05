@@ -42,6 +42,7 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
     ep_attribute = "sinope_manufacturer_specific"
     manufacturer_attributes = {
         0x0010: ("outdoor_temp", t.int16s),
+        0x0011: ("Outdoor_temp_timeout", t.uint16_t),
         0x0020: ("secs_since_2k", t.uint32_t),
     }
 
@@ -235,7 +236,7 @@ class SinopeLineThermostats(SinopeTechnologiesThermostat):
         # <SimpleDescriptor endpoint=1 profile=260 device_type=769 device_version=1
         # input_clusters=[0, 3, 4, 5, 513, 516, 1026, 1794, 2820, 2821, 65281]
         # output_clusters=[10, 25, 65281]>
-        MODELS_INFO: [(SINOPE, "TH1123ZB"), (SINOPE, "TH1124ZB"), (SINOPE, "TH1500ZB")],
+        MODELS_INFO: [(SINOPE, "TH1123ZB"), (SINOPE, "TH1124ZB"), (SINOPE, "TH1500ZB"), (SINOPE, "OTH3600-GA-ZB")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha_p.PROFILE_ID,
