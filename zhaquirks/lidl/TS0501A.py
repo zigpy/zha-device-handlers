@@ -1,4 +1,4 @@
-"""Tuya dimmable led controller."""
+"""Lidl dimmable bulb."""
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.zcl.clusters.general import (
@@ -23,18 +23,9 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import (
-TuyaManufCluster,
-)
 
-class TuyaDimmableColorCluster(CustomCluster, Color):
-    """Tuya dimmable led custom cluster."""
-
-    _CONSTANT_ATTRIBUTES = {0x400A: 0}
-
-
-class DimmableLedController(CustomDevice):
-    """Tuya dimmable led controller."""
+class DimmableBulb(CustomDevice):
+    """Lidl dimmable bulb."""
 
     signature = {
         MODELS_INFO: [("_TZ3000_nosnx7im", "TS0501A")],
@@ -65,7 +56,7 @@ class DimmableLedController(CustomDevice):
                 DEVICE_TYPE: 97,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
-            },
+            }
         },
     }
     replacement = {
