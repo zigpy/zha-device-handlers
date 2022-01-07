@@ -1,6 +1,6 @@
 """Lidl dimmable bulb."""
 from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
