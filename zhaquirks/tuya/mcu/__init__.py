@@ -26,15 +26,14 @@ class TuyaMCUCluster(TuyaNewManufCluster):
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
+        # Cluster for endpoint: 1 (listen MCU commands)
         self.endpoint.device.command_bus = Bus()
-        self.endpoint.device.command_bus.add_listener(
-            self
-        )  # Cluster for endpoint: 1 (listen MCU commands)
+        self.endpoint.device.command_bus.add_listener(self)
 
     def tuya_mcu_command(
         self, command: TuyaCommand, endpoint_id: int, attribute_name: str
     ):
-        """Tuya MCU command listener. Only endpoint:1 must listen to MCU commands."""
+        """Tuya MCU command listener. Only manufacturer endpoint must listen to MCU commands."""
 
         self.debug("tuya_mcu_command: %s", command)
         cluster_dp = self.get_dp_from_cluster(endpoint_id, attribute_name)
@@ -43,6 +42,12 @@ class TuyaMCUCluster(TuyaNewManufCluster):
 
             self.create_catching_task(
                 self.command(TUYA_SET_DATA, command, expect_reply=True)
+            )
+        else:
+            self.info(
+                "No cluster_dp found for %s, %s",
+                endpoint_id,
+                attribute_name,
             )
 
     def get_dp_from_cluster(
@@ -59,7 +64,7 @@ class TuyaMCUCluster(TuyaNewManufCluster):
         return None
 
 
-class TuyaAttributesCluster(TuyaMCUCluster, TuyaLocalCluster):
+class TuyaAttributesCluster(TuyaLocalCluster):
     """Manufacturer specific cluster for Tuya converting attributes <-> commands."""
 
     def read_attributes(
@@ -142,7 +147,7 @@ class TuyaOnOff(OnOff, TuyaLocalCluster):
             )
             return foundation.Status.SUCCESS
 
-        self.warning("ERROR: unsupported command_id: %s", command_id)
+        self.warning("Unsupported command_id: %s", command_id)
         return foundation.Status.UNSUP_CLUSTER_COMMAND
 
 
@@ -194,7 +199,7 @@ class TuyaLevelControl(LevelControl, TuyaLocalCluster):
     ):
         """Override the default Cluster command."""
         self.debug(
-            "Sending Tuya Cluster Command.. Cluster Command is %x, Arguments are %s",
+            "Sending Tuya Cluster Command. Cluster Command is %x, Arguments are %s",
             command_id,
             args,
         )
@@ -220,8 +225,18 @@ class TuyaLevelControl(LevelControl, TuyaLocalCluster):
             )
             return foundation.Status.SUCCESS
 
-        self.warning("ERROR: unsupported command_id: %s", command_id)
+        self.warning("Unsupported command_id: %s", command_id)
         return foundation.Status.UNSUP_CLUSTER_COMMAND
+
+
+class TuyaInWallLevelControl(TuyaAttributesCluster, TuyaLevelControl):
+    """Tuya Level cluster for inwall dimmable device."""
+
+    attributes = {
+        0x0000: ("current_level", t.uint8_t),
+        0xFF01: ("minimun_level", t.uint8_t),
+        0xFF02: ("bulb_type", t.enum8),
+    }
 
 
 class TuyaLevelControlManufCluster(TuyaMCUCluster):
@@ -235,6 +250,16 @@ class TuyaLevelControlManufCluster(TuyaMCUCluster):
         2: DPToAttributeMapping(
             TuyaLevelControl.ep_attribute,
             "current_level",
+            lambda x: (x * 255) // 1000,
+        ),
+        3: DPToAttributeMapping(
+            TuyaLevelControl.ep_attribute,
+            "minimun_level",
+            lambda x: (x * 255) // 1000,
+        ),
+        4: DPToAttributeMapping(
+            TuyaLevelControl.ep_attribute,
+            "bulb_type",
         ),
         7: DPToAttributeMapping(
             TuyaOnOff.ep_attribute,
@@ -244,6 +269,18 @@ class TuyaLevelControlManufCluster(TuyaMCUCluster):
         8: DPToAttributeMapping(
             TuyaLevelControl.ep_attribute,
             "current_level",
+            lambda x: (x * 255) // 1000,
+            endpoint_id=2,
+        ),
+        9: DPToAttributeMapping(
+            TuyaLevelControl.ep_attribute,
+            "minimun_level",
+            lambda x: (x * 255) // 1000,
+            endpoint_id=2,
+        ),
+        10: DPToAttributeMapping(
+            TuyaLevelControl.ep_attribute,
+            "bulb_type",
             endpoint_id=2,
         ),
     }
@@ -251,6 +288,10 @@ class TuyaLevelControlManufCluster(TuyaMCUCluster):
     data_point_handlers = {
         1: "_dp_2_attr_update",
         2: "_dp_2_attr_update",
+        3: "_dp_2_attr_update",
+        4: "_dp_2_attr_update",
         7: "_dp_2_attr_update",
         8: "_dp_2_attr_update",
+        9: "_dp_2_attr_update",
+        10: "_dp_2_attr_update",
     }
