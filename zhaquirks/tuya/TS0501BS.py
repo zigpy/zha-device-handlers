@@ -24,8 +24,9 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.tuya import (
-TuyaManufCluster,
+    TuyaManufCluster,
 )
+
 
 class DimmableLedController(CustomDevice):
     """Tuya dimmable led controller single channel."""
