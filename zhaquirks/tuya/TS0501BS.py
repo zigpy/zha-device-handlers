@@ -28,7 +28,7 @@ from zhaquirks.tuya import (
 )
 
 
-class DimmableLedController(CustomDevice):
+class DimmableLedController1(CustomDevice):
     """Tuya dimmable led controller single channel."""
 
     signature = {
