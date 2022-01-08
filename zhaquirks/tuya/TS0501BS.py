@@ -23,12 +23,10 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import (
-    TuyaManufCluster,
-)
+from zhaquirks.tuya import TuyaManufCluster
 
 
-class DimmableLedController1(CustomDevice):
+class DimmableLedController(CustomDevice):
     """Tuya dimmable led controller single channel."""
 
     signature = {
