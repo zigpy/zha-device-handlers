@@ -18,6 +18,7 @@ from zhaquirks.sinope import SINOPE
 
 SINOPE_MANUFACTURER_CLUSTER_ID = 0xFF01
 
+
 class CustomMeteringCluster(CustomCluster, Metering):
     """Custom Metering Cluster."""
 
