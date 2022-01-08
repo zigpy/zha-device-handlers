@@ -24,10 +24,10 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 
-class DimmableBulb(CustomDevice):
-	"""Lidl dimmable bulb."""
 
-	
+class DimmableBulb(CustomDevice):
+    """Lidl dimmable bulb."""
+
     signature = {
         MODELS_INFO: [("_TZ3000_nosnx7im", "TS0501A")],
         ENDPOINTS: {
@@ -46,7 +46,7 @@ class DimmableBulb(CustomDevice):
                     LevelControl.cluster_id,
                     Color.cluster_id,
                     LightLink.cluster_id,
-		],
+                ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
             242: {
@@ -57,7 +57,7 @@ class DimmableBulb(CustomDevice):
                 DEVICE_TYPE: 97,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
-            }
+            },
         },
     }
     replacement = {
