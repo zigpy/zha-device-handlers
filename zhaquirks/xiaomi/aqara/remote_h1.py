@@ -139,8 +139,8 @@ class RemoteH1SingleRocker(XiaomiCustomDevice):
     }
 
 
-class RemoteH1DoubleRocker(XiaomiCustomDevice):
-    """Aqara H1 Wireless Remote Double Rocker Version WRS-R02."""
+class RemoteH1DoubleRocker1(XiaomiCustomDevice):
+    """Aqara H1 Wireless Remote Double Rocker Version WRS-R02, variant 1."""
 
     signature = {
         MODELS_INFO: [(LUMI, "lumi.remote.b28ac1")],
@@ -193,9 +193,13 @@ class RemoteH1DoubleRocker(XiaomiCustomDevice):
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
                 INPUT_CLUSTERS: [
+                    Identify.cluster_id,
                     MultistateInputCluster,
                 ],
-                OUTPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    OnOff.cluster_id,
+                ],
             },
             3: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -231,3 +235,57 @@ class RemoteH1DoubleRocker(XiaomiCustomDevice):
         # when operation_mode == command
         (ALT_SHORT_PRESS, BUTTON): {COMMAND: COMMAND_TOGGLE, ENDPOINT_ID: 1, ARGS: []},
     }
+
+
+class RemoteH1DoubleRocker2(XiaomiCustomDevice):
+    """Aqara H1 Wireless Remote Double Rocker Version WRS-R02, variant 2."""
+
+    signature = {
+        MODELS_INFO: [(LUMI, "lumi.remote.b28ac1")],
+        ENDPOINTS: {
+            1: {
+                # "1": {
+                #   "profile_id": 260, "device_type": "0x0103",
+                #   "in_clusters": [ "0x0000", "0x0001", "0x0003" ],
+                #   "out_clusters": [ "0x0003", "0x0006" ] }
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    Identify.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    OnOff.cluster_id,
+                ],
+            },
+            2: {
+                # "2": {
+                #   "profile_id": 260, "device_type": "0x0103",
+                #   "in_clusters": [ "0x0003" ],
+                #   "out_clusters": [ "0x0003", "0x0006" ] }
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
+                INPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    OnOff.cluster_id,
+                ],
+            },
+            3: {
+                # "3": {
+                #   "profile_id": 260, "device_type": "0x0103",
+                #   "in_clusters": [ "0x0003" ],
+                #   "out_clusters": [ "0x0006" ] }
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
+                INPUT_CLUSTERS: [Identify.cluster_id],
+                OUTPUT_CLUSTERS: [OnOff.cluster_id],
+            },
+        },
+    }
+    replacement = RemoteH1DoubleRocker1.replacement
+    device_automation_triggers = RemoteH1DoubleRocker1.device_automation_triggers
