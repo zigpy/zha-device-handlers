@@ -195,8 +195,8 @@ class Cube(XiaomiQuickInitDevice):
                             event_args[FLIP_DEGREES] = 180
                         else:
                             event_args[FLIP_DEGREES] = 90
+                            event_args[FROM_FACE] = (value // 8) % 8 + 1
                         event_args[ACTIVATED_FACE] = (value % 8) + 1
-                        event_args[FROM_FACE] = (value // 8) % 8 + 1
 
                     self.listener_event(ZHA_SEND_EVENT, action, event_args)
 
