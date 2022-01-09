@@ -9,19 +9,79 @@ from zhaquirks import Bus
 from zhaquirks.tuya import (
     ATTR_ON_OFF,
     TUYA_MCU_COMMAND,
+    TUYA_MCU_VERSION_RSP,
     TUYA_SET_DATA,
     Data,
     DPToAttributeMapping,
     TuyaCommand,
     TuyaData,
-    TuyaDPType,
     TuyaLocalCluster,
     TuyaNewManufCluster,
 )
 
 
+class TuyaDPType(t.enum8):
+    """DataPoint Type."""
+
+    RAW = 0x00, None
+    BOOL = 0x01, t.Bool
+    VALUE = 0x02, t.uint32_t
+    STRING = 0x03, None
+    ENUM = 0x04, t.enum8
+    BITMAP = 0x05, None
+
+    def __new__(cls, value, ztype):
+        member = t.enum8.__new__(cls, value)
+        member.ztype = ztype
+        return member
+
+    @classmethod
+    def get_from_ztype(cls, ztype):
+        for dpt in TuyaDPType:
+            if dpt.ztype and issubclass(ztype, dpt.ztype):
+                return dpt
+        return None
+
+
 class TuyaMCUCluster(TuyaNewManufCluster):
     """Manufacturer specific cluster for sending Tuya MCU commands."""
+
+    class MCUVersion(t.Struct):
+        """Tuya MCU version response Zcl payload."""
+
+        status: t.uint8_t
+        tsn: t.uint8_t
+        version_raw: t.uint8_t
+
+        @property
+        def version(self) -> str:
+            """Format the raw version to X.Y.Z."""
+
+            if self.version_raw:
+                # MCU version is 1 byte length
+                # is converted from HEX -> BIN -> XX.XX.XXXX -> DEC (x.y.z)
+                # example: 0x98 -> 10011000 -> 10.01.1000 -> 2.1.8
+                major = self.version_raw >> 6
+                minor = (self.version_raw & 63) >> 4
+                release = self.version_raw & 15
+
+                return "{}.{}.{}".format(major, minor, release)
+
+            return None
+
+    manufacturer_attributes = {
+        # MCU version
+        0xEF01: {"mcu_version", t.uint48_t},
+    }
+
+    manufacturer_client_commands = (
+        TuyaNewManufCluster.manufacturer_client_commands.copy()
+    )
+    manufacturer_client_commands.update(
+        {
+            TUYA_MCU_VERSION_RSP: ("mcu_version_response", (MCUVersion,), True),
+        }
+    )
 
     def __init__(self, *args, **kwargs):
         """Init."""
@@ -63,6 +123,13 @@ class TuyaMCUCluster(TuyaNewManufCluster):
                 return dp
         return None
 
+    def handle_mcu_version_response(self, payload: MCUVersion) -> foundation.Status:
+        """Handle MCU version response."""
+
+        self.debug("MCU version: %s", payload.version)
+        self.update_attribute("mcu_version", payload.version)
+        return foundation.Status.SUCCESS
+
 
 class TuyaAttributesCluster(TuyaLocalCluster):
     """Manufacturer specific cluster for Tuya converting attributes <-> commands."""
@@ -89,11 +156,17 @@ class TuyaAttributesCluster(TuyaLocalCluster):
             cmd_payload = TuyaCommand()
             cmd_payload.status = 0
             cmd_payload.tsn = self.endpoint.device.application.get_sequence()
+
+            ztype = self.attributes[record.attrid][1]
+            dp_type = TuyaDPType.get_from_ztype(ztype)
+            val = Data.from_value(ztype(record.value.value))
+
             cmd_payload.data = TuyaData()
-            # TODO: get TuyaDPType from record.value.type
-            cmd_payload.data.dp_type = TuyaDPType.ENUM
+            cmd_payload.data.dp_type = dp_type
             cmd_payload.data.function = 0
-            cmd_payload.data.raw = t.LVBytes.deserialize([1, record.value.value])[0]
+            cmd_payload.data.raw = t.LVBytes.deserialize(val)[0]
+
+            self.debug("write_attributes --> payload: %s", cmd_payload)
 
             self.endpoint.device.command_bus.listener_event(
                 TUYA_MCU_COMMAND,
@@ -137,7 +210,8 @@ class TuyaOnOff(OnOff, TuyaLocalCluster):
             cmd_payload.data = TuyaData()
             cmd_payload.data.dp_type = TuyaDPType.BOOL
             cmd_payload.data.function = 0
-            cmd_payload.data.raw = t.LVBytes.deserialize([1, command_id])[0]
+            val = Data.from_value(TuyaDPType.BOOL.ztype(command_id))
+            cmd_payload.data.raw = t.LVBytes.deserialize(val)[0]
 
             self.endpoint.device.command_bus.listener_event(
                 TUYA_MCU_COMMAND,
@@ -184,6 +258,41 @@ class TuyaOnOffManufCluster(TuyaMCUCluster):
     }
 
 
+class SurfaceSwitchManufCluster(TuyaOnOffManufCluster):
+    """On/Off Tuya cluster with extra device attributes."""
+
+    attributes = {
+        0x8001: ("backlight_mode", t.enum8),
+        0x8002: ("power_on_state", t.enum8),
+    }
+
+    dp_to_attribute: Dict[
+        int, DPToAttributeMapping
+    ] = TuyaOnOffManufCluster.dp_to_attribute.copy()
+    dp_to_attribute.update(
+        {
+            14: DPToAttributeMapping(
+                TuyaMCUCluster.ep_attribute,
+                "power_on_state",
+                # lambda x: PowerOnState(x),
+            )
+        }
+    )
+    dp_to_attribute.update(
+        {
+            15: DPToAttributeMapping(
+                TuyaMCUCluster.ep_attribute,
+                "backlight_mode",
+                # lambda x: BackLight(x),
+            ),
+        }
+    )
+
+    data_point_handlers = TuyaOnOffManufCluster.data_point_handlers.copy()
+    data_point_handlers.update({14: "_dp_2_attr_update"})
+    data_point_handlers.update({15: "_dp_2_attr_update"})
+
+
 class TuyaLevelControl(LevelControl, TuyaLocalCluster):
     """Tuya MCU Level cluster for dimmable device."""
 
@@ -210,11 +319,11 @@ class TuyaLevelControl(LevelControl, TuyaLocalCluster):
             # cmd_payload.tsn = tsn if tsn else self.endpoint.device.application.get_sequence()
             cmd_payload.tsn = 0
             cmd_payload.data = TuyaData()
-            cmd_payload.data.dp_type = TuyaDPType.ENUM
+            cmd_payload.data.dp_type = TuyaDPType.VALUE
             cmd_payload.data.function = 0
 
             brightness = (args[0] * 1000) // 255
-            val = Data.from_value(t.uint32_t(brightness))
+            val = Data.from_value(TuyaDPType.VALUE.ztype(brightness))
             cmd_payload.data.raw = t.LVBytes.deserialize(val)[0]
 
             self.endpoint.device.command_bus.listener_event(
@@ -232,10 +341,10 @@ class TuyaLevelControl(LevelControl, TuyaLocalCluster):
 class TuyaInWallLevelControl(TuyaAttributesCluster, TuyaLevelControl):
     """Tuya Level cluster for inwall dimmable device."""
 
-    attributes = {
-        0x0000: ("current_level", t.uint8_t),
-        0xFF01: ("minimun_level", t.uint8_t),
-        0xFF02: ("bulb_type", t.enum8),
+    # Not sure if these are 'inwall' specific attributes
+    manufacturer_attributes = {
+        0xEF01: ("minimum_level", t.uint8_t),
+        0xEF02: ("bulb_type", t.enum8),
     }
 
 
@@ -254,7 +363,7 @@ class TuyaLevelControlManufCluster(TuyaMCUCluster):
         ),
         3: DPToAttributeMapping(
             TuyaLevelControl.ep_attribute,
-            "minimun_level",
+            "minimum_level",
             lambda x: (x * 255) // 1000,
         ),
         4: DPToAttributeMapping(
@@ -274,7 +383,7 @@ class TuyaLevelControlManufCluster(TuyaMCUCluster):
         ),
         9: DPToAttributeMapping(
             TuyaLevelControl.ep_attribute,
-            "minimun_level",
+            "minimum_level",
             lambda x: (x * 255) // 1000,
             endpoint_id=2,
         ),

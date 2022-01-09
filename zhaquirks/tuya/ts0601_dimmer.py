@@ -19,7 +19,7 @@ from zhaquirks.tuya import (
     TuyaOnOff,
 )
 from zhaquirks.tuya.mcu import (
-    TuyaLevelControl as TuyaLevelControlMCU,
+    TuyaInWallLevelControl,
     TuyaLevelControlManufCluster,
     TuyaOnOff as TuyaOnOffMCU,
 )
@@ -123,7 +123,7 @@ class TuyaDoubleSwitchDimmer(TuyaDimmerSwitch):
                     Scenes.cluster_id,
                     TuyaLevelControlManufCluster,
                     TuyaOnOffMCU,
-                    TuyaLevelControlMCU,
+                    TuyaInWallLevelControl,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
@@ -132,7 +132,7 @@ class TuyaDoubleSwitchDimmer(TuyaDimmerSwitch):
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
                 INPUT_CLUSTERS: [
                     TuyaOnOffMCU,
-                    TuyaLevelControlMCU,
+                    TuyaInWallLevelControl,
                 ],
                 OUTPUT_CLUSTERS: [],
             },
