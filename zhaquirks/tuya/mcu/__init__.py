@@ -31,12 +31,16 @@ class TuyaDPType(t.enum8):
     BITMAP = 0x05, None
 
     def __new__(cls, value, ztype):
+        """Overload instance to store the ztype."""
+
         member = t.enum8.__new__(cls, value)
         member.ztype = ztype
         return member
 
     @classmethod
     def get_from_ztype(cls, ztype):
+        """Search for the TuyaDPType with a compatible ztype."""
+
         for dpt in TuyaDPType:
             if dpt.ztype and issubclass(ztype, dpt.ztype):
                 return dpt
