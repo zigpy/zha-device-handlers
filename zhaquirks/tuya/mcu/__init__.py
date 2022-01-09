@@ -19,9 +19,11 @@ from zhaquirks.tuya import (
     TuyaNewManufCluster,
 )
 
+# New manufacturer attributes
+ATTR_MCU_VERSION = 0xEF00
 
 class TuyaDPType(t.enum8):
-    """DataPoint Type."""
+    """Tuya DataPoint Type."""
 
     RAW = 0x00, None
     BOOL = 0x01, t.Bool
@@ -47,7 +49,54 @@ class TuyaDPType(t.enum8):
         return None
 
 
-class TuyaMCUCluster(TuyaNewManufCluster):
+class TuyaAttributesCluster(TuyaLocalCluster):
+    """Manufacturer specific cluster for Tuya converting attributes <-> commands."""
+
+    def read_attributes(
+        self, attributes, allow_cache=False, only_cache=False, manufacturer=None
+    ):
+        """Ignore remote reads as the "get_data" command doesn't seem to do anything."""
+
+        self.debug("read_attributes --> attrs: %s", attributes)
+        return super().read_attributes(
+            attributes, allow_cache=True, only_cache=True, manufacturer=manufacturer
+        )
+
+    async def write_attributes(self, attributes, manufacturer=None):
+        """Defer attributes writing to the set_data tuya command."""
+
+        records = self._write_attr_records(attributes)
+
+        for record in records:
+
+            self.debug("write_attributes --> record: %s", record)
+
+            cmd_payload = TuyaCommand()
+            cmd_payload.status = 0
+            cmd_payload.tsn = self.endpoint.device.application.get_sequence()
+
+            ztype = self.attributes[record.attrid][1]
+            dp_type = TuyaDPType.get_from_ztype(ztype)
+            val = Data.from_value(ztype(record.value.value))
+
+            cmd_payload.data = TuyaData()
+            cmd_payload.data.dp_type = dp_type
+            cmd_payload.data.function = 0
+            cmd_payload.data.raw = t.LVBytes.deserialize(val)[0]
+
+            self.debug("write_attributes --> payload: %s", cmd_payload)
+
+            self.endpoint.device.command_bus.listener_event(
+                TUYA_MCU_COMMAND,
+                cmd_payload,
+                self.endpoint.endpoint_id,
+                self.attributes[record.attrid][0],
+            )
+
+        return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
+
+
+class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
     """Manufacturer specific cluster for sending Tuya MCU commands."""
 
     class MCUVersion(t.Struct):
@@ -75,7 +124,7 @@ class TuyaMCUCluster(TuyaNewManufCluster):
 
     manufacturer_attributes = {
         # MCU version
-        0xEF00: ("mcu_version", t.uint48_t),
+        ATTR_MCU_VERSION: ("mcu_version", t.uint48_t),
     }
 
     manufacturer_client_commands = (
@@ -133,53 +182,6 @@ class TuyaMCUCluster(TuyaNewManufCluster):
         self.debug("MCU version: %s", payload.version)
         self.update_attribute("mcu_version", payload.version)
         return foundation.Status.SUCCESS
-
-
-class TuyaAttributesCluster(TuyaLocalCluster):
-    """Manufacturer specific cluster for Tuya converting attributes <-> commands."""
-
-    def read_attributes(
-        self, attributes, allow_cache=False, only_cache=False, manufacturer=None
-    ):
-        """Ignore remote reads as the "get_data" command doesn't seem to do anything."""
-
-        self.debug("read_attributes --> attrs: %s", attributes)
-        return super().read_attributes(
-            attributes, allow_cache=True, only_cache=True, manufacturer=manufacturer
-        )
-
-    async def write_attributes(self, attributes, manufacturer=None):
-        """Defer attributes writing to the set_data tuya command."""
-
-        records = self._write_attr_records(attributes)
-
-        for record in records:
-
-            self.debug("write_attributes --> record: %s", record)
-
-            cmd_payload = TuyaCommand()
-            cmd_payload.status = 0
-            cmd_payload.tsn = self.endpoint.device.application.get_sequence()
-
-            ztype = self.attributes[record.attrid][1]
-            dp_type = TuyaDPType.get_from_ztype(ztype)
-            val = Data.from_value(ztype(record.value.value))
-
-            cmd_payload.data = TuyaData()
-            cmd_payload.data.dp_type = dp_type
-            cmd_payload.data.function = 0
-            cmd_payload.data.raw = t.LVBytes.deserialize(val)[0]
-
-            self.debug("write_attributes --> payload: %s", cmd_payload)
-
-            self.endpoint.device.command_bus.listener_event(
-                TUYA_MCU_COMMAND,
-                cmd_payload,
-                self.endpoint.endpoint_id,
-                self.attributes[record.attrid][0],
-            )
-
-        return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
 
 class TuyaOnOff(OnOff, TuyaLocalCluster):
