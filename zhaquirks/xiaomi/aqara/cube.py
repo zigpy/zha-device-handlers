@@ -37,10 +37,14 @@ from zhaquirks.xiaomi import (
 )
 
 ACTIVATED_FACE = "activated_face"
+FROM_FACE = "from_face"
 DESCRIPTION = "description"
 DROP = "drop"
 DROP_VALUE = 3
 DROPPED = "device_dropped"
+WAKE = "wake"
+WAKE_VALUE = 2
+WAKED = "device_waked"
 
 FACE_ANY = "face_any"
 FACE_1 = "face_1"
@@ -95,6 +99,7 @@ XIAOMI_SENSORS_REPLACEMENT = 0x6F01
 MOVEMENT_TYPE = {
     SHAKE_VALUE: SHAKE,
     DROP_VALUE: DROP,
+    WAKE_VALUE: WAKE,
     SLIDE_1_VALUE: SLIDE,
     SLIDE_2_VALUE: SLIDE,
     SLIDE_3_VALUE: SLIDE,
@@ -112,6 +117,7 @@ MOVEMENT_TYPE = {
 MOVEMENT_TYPE_DESCRIPTION = {
     SHAKE_VALUE: SHAKE,
     DROP_VALUE: DROP,
+    WAKE_VALUE: WAKE,
     SLIDE_1_VALUE: "aqara logo on top",
     SLIDE_2_VALUE: "aqara logo facing user rotated 90 degrees right",
     SLIDE_3_VALUE: "aqara logo facing user upside down",
@@ -190,6 +196,7 @@ class Cube(XiaomiQuickInitDevice):
                         else:
                             event_args[FLIP_DEGREES] = 90
                         event_args[ACTIVATED_FACE] = (value % 8) + 1
+                        event_args[FROM_FACE] = (value // 8) % 8 + 1
 
                     self.listener_event(ZHA_SEND_EVENT, action, event_args)
 
@@ -329,6 +336,7 @@ class Cube(XiaomiQuickInitDevice):
         (ROTATED, LEFT): {COMMAND: ROTATE_LEFT},
         (SHAKEN, TURN_ON): {COMMAND: SHAKE},
         (DROPPED, TURN_ON): {COMMAND: DROP},
+        (WAKED, TURN_ON): {COMMAND: WAKE},
         (SLID, FACE_ANY): {COMMAND: SLIDE},
         (SLID, FACE_1): {COMMAND: SLIDE, ARGS: {ACTIVATED_FACE: 1}},
         (SLID, FACE_2): {COMMAND: SLIDE, ARGS: {ACTIVATED_FACE: 2}},
