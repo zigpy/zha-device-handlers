@@ -6,6 +6,7 @@ setting occupancy on/off.
 
 import zigpy.profiles.zha as zha_p
 from zigpy.quirks import CustomCluster, CustomDevice
+import zigpy.types as t
 from zigpy.zcl.clusters.general import (
     Basic,
     DeviceTemperature,
@@ -45,7 +46,7 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
         0x0051: ("offLedColor", t.uint24_t),
         0x0052: ("onLedIntensity", t.uint8_t),
         0x0053: ("offLedIntensity", t.uint8_t),
-        0x00a0: ("Timer", t.uint32_t),
+        0x00A0: ("Timer", t.uint32_t),
         0x0119: ("ConnectedLoad", t.uint16_t),
     }
 
