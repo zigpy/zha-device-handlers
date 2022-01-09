@@ -49,9 +49,9 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
         0x010A: ("floorMaxSetpoint", t.int16s),
         0x010B: ("tempSensorType", t.enum8),
         0x0114: ("timeFormat", t.enum8),
-        0x0118: ("auxConnectedLoad", t.uint16s),
+        0x0118: ("auxConnectedLoad", t.uint16_t),
         0x0119: ("ConnectedLoad", t.uint16_t),
-        0x0128: ("pumpProtection", t.enum8),
+        0x0128: ("pumpProtection", t.uint8_t),
     }
 
 
