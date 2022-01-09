@@ -75,7 +75,7 @@ class TuyaMCUCluster(TuyaNewManufCluster):
 
     manufacturer_attributes = {
         # MCU version
-        0xEF01: {"mcu_version", t.uint48_t},
+        0xEF00: ("mcu_version", t.uint48_t),
     }
 
     manufacturer_client_commands = (
