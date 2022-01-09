@@ -22,6 +22,7 @@ from zhaquirks.tuya import (
 # New manufacturer attributes
 ATTR_MCU_VERSION = 0xEF00
 
+
 class TuyaDPType(t.enum8):
     """Tuya DataPoint Type."""
 
