@@ -120,6 +120,7 @@ class TuyaSmartRemote004F(CustomDevice, Tuya4NewButtonTriggers):
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
                     Identify.cluster_id,
+                    Groups.cluster_id, # is needed for adding group then binding is not working.
                     LightLink.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
