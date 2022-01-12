@@ -5,7 +5,8 @@ setting occupancy on/off.
 """
 
 import zigpy.profiles.zha as zha_p
-from zigpy.quirks import CustomDevice
+from zigpy.quirks import CustomCluster, CustomDevice
+import zigpy.types as t
 from zigpy.zcl.clusters.general import (
     Basic,
     DeviceTemperature,
@@ -31,6 +32,23 @@ from zhaquirks.const import (
 from zhaquirks.sinope import SINOPE
 
 SINOPE_MANUFACTURER_CLUSTER_ID = 0xFF01
+
+
+class SinopeTechnologiesManufacturerCluster(CustomCluster):
+    """SinopeTechnologiesManufacturerCluster manufacturer cluster."""
+
+    cluster_id = SINOPE_MANUFACTURER_CLUSTER_ID
+    name = "Sinopé Technologies Manufacturer specific"
+    ep_attribute = "sinope_manufacturer_specific"
+    manufacturer_attributes = {
+        0x0002: ("KeypadLock", t.enum8),
+        0x0050: ("onLedColor", t.uint24_t),
+        0x0051: ("offLedColor", t.uint24_t),
+        0x0052: ("onLedIntensity", t.uint8_t),
+        0x0053: ("offLedIntensity", t.uint8_t),
+        0x00A0: ("Timer", t.uint32_t),
+        0x0119: ("ConnectedLoad", t.uint16_t),
+    }
 
 
 class SinopeTechnologieslight(CustomDevice):
