@@ -75,7 +75,6 @@ class RollerE1AQ(XiaomiCustomDevice):
         },
     }
     replacement = {
-        MODELS_INFO: [(LUMI, "lumi.curtain.acn002")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
