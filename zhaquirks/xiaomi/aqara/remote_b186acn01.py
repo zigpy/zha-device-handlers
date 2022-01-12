@@ -36,6 +36,7 @@ from zhaquirks.xiaomi import (
     LUMI,
     XIAOMI_NODE_DESC,
     BasicCluster,
+    DeviceTemperatureCluster,
     XiaomiPowerConfiguration,
     XiaomiQuickInitDevice,
 )
@@ -155,6 +156,7 @@ class RemoteB186ACN01(XiaomiQuickInitDevice):
                 INPUT_CLUSTERS: [
                     BasicCluster,
                     XiaomiPowerConfiguration,
+                    DeviceTemperatureCluster,
                     Identify.cluster_id,
                     Ota.cluster_id,
                     XIAOMI_CLUSTER_ID,

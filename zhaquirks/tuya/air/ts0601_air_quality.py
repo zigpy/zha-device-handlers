@@ -82,6 +82,7 @@ class TuyaCO2SensorGPP(CustomDevice):
         # output_clusters=[25, 10])
         MODELS_INFO: [
             ("_TZE200_ryfmq5rl", "TS0601"),
+            ("_TZE200_yvx5lh6k", "TS0601"),
         ],
         ENDPOINTS: {
             1: {

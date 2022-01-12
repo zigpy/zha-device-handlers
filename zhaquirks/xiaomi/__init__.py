@@ -13,6 +13,7 @@ from zigpy.zcl.clusters.general import (
     AnalogInput,
     Basic,
     BinaryOutput,
+    DeviceTemperature,
     OnOff,
     PowerConfiguration,
 )
@@ -273,6 +274,10 @@ class XiaomiCluster(CustomCluster):
             self.endpoint.voc_level.update_attribute(
                 0x0000, attributes[TVOC_MEASUREMENT]
             )
+        if TEMPERATURE in attributes:
+            self.endpoint.device_temperature.update_attribute(
+                0x0000, attributes[TEMPERATURE] * 100
+            )
 
     def _parse_aqara_attributes(self, value):
         """Parse non standard attributes."""
@@ -412,6 +417,10 @@ class MotionCluster(LocalDataCluster, MotionOnEvent):
 
     _CONSTANT_ATTRIBUTES = {ZONE_TYPE: MOTION_TYPE}
     reset_s: int = 70
+
+
+class DeviceTemperatureCluster(LocalDataCluster, DeviceTemperature):
+    """Device Temperature Cluster."""
 
 
 class TemperatureMeasurementCluster(CustomCluster, TemperatureMeasurement):
