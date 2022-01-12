@@ -44,7 +44,6 @@ from zhaquirks.const import (
     VALUE,
     ZHA_SEND_EVENT,
 )
-from zhaquirks.xbee import uint8_t
 
 BATTERY_LEVEL = "battery_level"
 BATTERY_PERCENTAGE_REMAINING = 0x0021
@@ -364,7 +363,7 @@ class XiaomiAqaraRollerE1Cluster(XiaomiCluster, ManufacturerSpecificCluster):
     cluster_id = 0xFCC0
 
     manufacturer_attributes = {
-        0x0409: ("Charging", uint8_t),
+        0x0409: ("Charging", t.uint8_t),
     }
 
 
