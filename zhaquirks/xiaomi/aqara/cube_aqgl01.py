@@ -32,6 +32,7 @@ from zhaquirks.const import (
 from zhaquirks.xiaomi import (
     LUMI,
     BasicCluster,
+    DeviceTemperatureCluster,
     XiaomiCustomDevice,
     XiaomiPowerConfiguration,
 )
@@ -288,6 +289,7 @@ class CubeAQGL01(XiaomiCustomDevice):
                 INPUT_CLUSTERS: [
                     BasicCluster,
                     XiaomiPowerConfiguration,
+                    DeviceTemperatureCluster,
                     Identify.cluster_id,
                     Ota.cluster_id,
                 ],
