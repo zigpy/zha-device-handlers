@@ -39,7 +39,6 @@ from zhaquirks.const import (
     TURN_OFF,
     TURN_ON,
 )
-
 from zhaquirks.tuya import TuyaZBOnOffAttributeCluster
 
 
