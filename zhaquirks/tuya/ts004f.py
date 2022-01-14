@@ -40,6 +40,8 @@ from zhaquirks.const import (
     TURN_ON,
 )
 
+from zhaquirks.tuya import TuyaZBOnOffAttributeCluster
+
 
 class Tuya4NewButtonTriggers:
     """Tuya 4-button New version remote device triggers."""
@@ -129,7 +131,7 @@ class TuyaSmartRemote004F(CustomDevice, Tuya4NewButtonTriggers):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    OnOff.cluster_id,
+                    TuyaZBOnOffAttributeCluster,
                     LevelControl.cluster_id,
                     LightLink.cluster_id,
                 ],
