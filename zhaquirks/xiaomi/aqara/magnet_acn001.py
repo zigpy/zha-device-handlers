@@ -1,6 +1,6 @@
-"""Xiaomi aqara leak sensor device."""
+"""Xiaomi aqara E1 contact sensor device."""
+
 from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster
 from zigpy.zcl.clusters.general import Identify, Ota
 from zigpy.zcl.clusters.security import IasZone
 
@@ -9,63 +9,60 @@ from zhaquirks.const import (
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
-    NODE_DESCRIPTOR,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
-    SKIP_CONFIGURATION,
-    ZONE_TYPE,
 )
 from zhaquirks.xiaomi import (
     LUMI,
-    XIAOMI_NODE_DESC,
     BasicCluster,
-    DeviceTemperatureCluster,
+    XiaomiAqaraE1Cluster,
+    XiaomiCustomDevice,
     XiaomiPowerConfiguration,
-    XiaomiQuickInitDevice,
 )
 
-
-class CustomIasZone(CustomCluster, IasZone):
-    """Custom IasZone cluster."""
-
-    _CONSTANT_ATTRIBUTES = {ZONE_TYPE: IasZone.ZoneType.Water_Sensor}
+XIAOMI_CLUSTER_ID = 0xFCC0
 
 
-class LeakAQ1(XiaomiQuickInitDevice):
-    """Xiaomi aqara leak sensor device."""
+class MagnetE1(XiaomiCustomDevice):
+    """Xiaomi contact sensor device."""
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        self.battery_size = 11
+        super().__init__(*args, **kwargs)
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=1026
         #  device_version=1
-        #  input_clusters=[0, 3, 1]
-        #  output_clusters=[25]>
-        MODELS_INFO: [(LUMI, "lumi.sensor_wleak.aq1")],
-        NODE_DESCRIPTOR: XIAOMI_NODE_DESC,
+        #  input_clusters=[0, 1, 3, 1280, 64704]
+        #  output_clusters=[3, 19]>
+        MODELS_INFO: [(LUMI, "lumi.magnet.acn001")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
                 INPUT_CLUSTERS: [
                     BasicCluster.cluster_id,
-                    Identify.cluster_id,
                     XiaomiPowerConfiguration.cluster_id,
+                    Identify.cluster_id,
+                    IasZone.cluster_id,
+                    XIAOMI_CLUSTER_ID,
                 ],
-                OUTPUT_CLUSTERS: [Ota.cluster_id],
+                OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],
             }
         },
     }
     replacement = {
-        SKIP_CONFIGURATION: True,
         ENDPOINTS: {
             1: {
                 INPUT_CLUSTERS: [
                     BasicCluster,
-                    Identify.cluster_id,
                     XiaomiPowerConfiguration,
-                    DeviceTemperatureCluster,
-                    CustomIasZone,
+                    Identify.cluster_id,
+                    IasZone.cluster_id,
+                    XiaomiAqaraE1Cluster,
                 ],
-                OUTPUT_CLUSTERS: [Ota.cluster_id],
+                OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],
             }
         },
     }
