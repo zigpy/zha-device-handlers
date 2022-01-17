@@ -826,7 +826,7 @@ ZONNSMART_CHILD_LOCK_ATTR = 0x0128  # [0] unlocked [1] child-locked
 ZONNSMART_WINDOW_DETECT_ATTR = 0x0108  # [0] inactive [1] active
 ZONNSMART_TARGET_TEMP_ATTR = 0x0210  # [0,0,0,210] target room temp (decidegree)
 ZONNSMART_TEMPERATURE_ATTR = 0x0218  # [0,0,0,200] current room temp (decidegree)
-ZONNSMART_TEMP_CALIBRATION_ATTR = 0x021b  # [0,0,0,0] calibration /10
+ZONNSMART_TEMP_CALIBRATION_ATTR = 0x021B  # [0,0,0,0] calibration /10
 ZONNSMART_BATTERY_ATTR = 0x0223  # [0,0,0,98] battery charge
 ZONNSMART_MODE_ATTR = (
     0x0402  # [0] Scheduled/auto [1] manual [2] Holiday [3] HolidayReady
@@ -856,7 +856,10 @@ class ZONNSMARTManufCluster(TuyaManufClusterAttributes):
 
     DIRECT_MAPPED_ATTRS = {
         ZONNSMART_TEMPERATURE_ATTR: ("local_temp", lambda value: value * 10),
-        ZONNSMART_TEMP_CALIBRATION_ATTR: ("local_temperature_calibration", lambda value: value * 10),
+        ZONNSMART_TEMP_CALIBRATION_ATTR: (
+            "local_temperature_calibration",
+            lambda value: value * 10,
+        ),
         ZONNSMART_TARGET_TEMP_ATTR: (
             "occupied_heating_setpoint",
             lambda value: value * 10,
