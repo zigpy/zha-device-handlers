@@ -124,7 +124,6 @@ class ZigfredUno(CustomDevice):
     }
 
     replacement = {
-        MODELS_INFO: [("Siglis", "zigfred uno")],
         ENDPOINTS: {
             5: {
                 PROFILE_ID: zha.PROFILE_ID,
