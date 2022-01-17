@@ -25,6 +25,7 @@ from zhaquirks.const import (
 # Siglis specific clusters
 ZIGFRED_CLUSTER_0345_ID = 0x0345
 
+
 # Siglis Cluster 0x0345 Implementation
 class Zigfred0345Cluster(CustomCluster):
     """Siglis manufacturer specific cluster 837."""
