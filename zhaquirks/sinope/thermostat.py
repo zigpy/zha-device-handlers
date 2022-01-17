@@ -44,6 +44,15 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
         0x0010: ("outdoor_temp", t.int16s),
         0x0011: ("outdoor_temp_timeout", t.uint16_t),
         0x0020: ("secs_since_2k", t.uint32_t),
+        0x0105: ("airFloorMode", t.enum8),
+        0x0108: ("airMaxLimit", t.int16s),
+        0x0109: ("floorMinSetpoint", t.int16s),
+        0x010A: ("floorMaxSetpoint", t.int16s),
+        0x010B: ("tempSensorType", t.enum8),
+        0x0114: ("timeFormat", t.enum8),
+        0x0118: ("auxConnectedLoad", t.uint16_t),
+        0x0119: ("ConnectedLoad", t.uint16_t),
+        0x0128: ("pumpProtection", t.uint8_t),
     }
 
 
@@ -52,7 +61,9 @@ class SinopeTechnologiesThermostatCluster(CustomCluster, Thermostat):
 
     manufacturer_attributes = {
         0x0400: ("set_occupancy", t.enum8),
+        0x0401: ("mainCycleOutput", t.uint16_t),
         0x0402: ("backlightAutoDimParam", t.enum8),
+        0x0404: ("auxCycleOutput", t.uint16_t),
     }
 
 
