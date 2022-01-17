@@ -49,6 +49,7 @@ class DanfossThermostatCluster(CustomCluster, Thermostat):
         0x4030: ("heat_available", t.Bool),
         0x4031: ("heat_supply_request", t.Bool),
         0x4032: ("load_balancing_enable", t.Bool),
+        0x4040: ("load_radiator_room_mean", t.uint16_t),
         0x404A: ("load_estimate_radiator", t.uint16_t),
         0x404B: ("regulation_setPoint_offset", t.int8s),
         0x404C: ("adaptation_run_control", t.enum8),
