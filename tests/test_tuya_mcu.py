@@ -48,7 +48,6 @@ async def test_tuya_mcu_classes():
     # Test TuyaDPType class
     assert len(TuyaDPType) == 6
     assert TuyaDPType.BOOL.ztype == t.Bool
-    assert TuyaDPType.get_from_ztype(t.uint32_t) == TuyaDPType.VALUE
     # no ztype for TuyaDPType.RAW
     assert not TuyaDPType.RAW.ztype
     assert TuyaDPType(3) == TuyaDPType.STRING
