@@ -23,7 +23,6 @@ async def test_command(zigpy_device_from_quirk, quirk):
     dimmer1_cluster = dimmer_dev.endpoints[1].level
     switch2_cluster = dimmer_dev.endpoints[2].on_off
     tuya_listener = ClusterListener(tuya_cluster)
-    # switch2_listener = ClusterListener(switch2_cluster)
 
     assert len(tuya_listener.cluster_commands) == 0
     assert len(tuya_listener.attribute_updates) == 0
@@ -87,7 +86,7 @@ async def test_write_attr(zigpy_device_from_quirk, quirk):
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
         ]
 
-    # # write_attributes doesn't update the attribute's values and
+    # # write_attributes doesn't update the cluster's attribute value and
     # # delegates it to the device response message
     # succ, fail = await dimmer1_cluster.read_attributes(("minimum_level",))
     # assert succ["minimum_level"] == 25
@@ -176,9 +175,6 @@ async def test_dim_values(zigpy_device_from_quirk, quirk):
 async def test_doubledimmer_state_report(zigpy_device_from_quirk, quirk):
     """Test tuya double switch."""
 
-    # TUYA_EP2_SWITCH_ON = b"\tG\x02\x01o\x07\x01\x00\x01\x01"
-    # TUYA_EP2_SWITCH_OFF = b"\tH\x02\x01p\x07\x01\x00\x01\x00"
-
     TUYA_EP2_DIMM_1 = b"\tV\x02\x01y\x08\x02\x00\x04\x00\x00\x02\xc5"
     TUYA_EP2_DIMM_2 = b"\tW\x02\x01z\x08\x02\x00\x04\x00\x00\x02\x9e"
 
@@ -212,45 +208,3 @@ async def test_doubledimmer_state_report(zigpy_device_from_quirk, quirk):
     assert len(dimmer2_listener.attribute_updates) == 2
     assert dimmer2_listener.attribute_updates[1][0] == 0x0000
     assert dimmer2_listener.attribute_updates[1][1] == 170
-
-    # # events from channel 2 updates only EP 2
-    # hdr, args = tuya_cluster.deserialize(ZCL_TUYA_SWITCH_EP2_ON)
-    # tuya_cluster.handle_message(hdr, args)
-    # assert len(dimmer1_listener.attribute_updates) == 1
-    # assert len(dimmer2_listener.attribute_updates) == 1
-    # assert dimmer2_listener.attribute_updates[0][0] == 0x0000
-    # assert dimmer2_listener.attribute_updates[0][1] == ON
-
-    # hdr, args = tuya_cluster.deserialize(ZCL_TUYA_SWITCH_OFF)
-    # tuya_cluster.handle_message(hdr, args)
-    # assert len(dimmer1_listener.attribute_updates) == 2
-    # assert len(dimmer2_listener.attribute_updates) == 1
-    # assert dimmer1_listener.attribute_updates[1][0] == 0x0000
-    # assert dimmer1_listener.attribute_updates[1][1] == OFF
-
-    # hdr, args = tuya_cluster.deserialize(ZCL_TUYA_SWITCH_EP2_OFF)
-    # tuya_cluster.handle_message(hdr, args)
-    # assert len(dimmer1_listener.attribute_updates) == 2
-    # assert len(dimmer2_listener.attribute_updates) == 2
-    # assert dimmer2_listener.attribute_updates[1][0] == 0x0000
-    # assert dimmer2_listener.attribute_updates[1][1] == OFF
-
-    # assert len(dimmer1_listener.cluster_commands) == 0
-    # assert len(dimmer2_listener.cluster_commands) == 0
-
-    # # command_id = 0x0003
-    # hdr, args = tuya_cluster.deserialize(ZCL_TUYA_SWITCH_COMMAND_03)
-    # tuya_cluster.handle_message(hdr, args)
-    # assert len(dimmer1_listener.cluster_commands) == 0
-    # assert len(dimmer2_listener.cluster_commands) == 0
-    # # no switch attribute updated (Unsupported command)
-    # assert len(dimmer1_listener.attribute_updates) == 2
-    # assert len(dimmer2_listener.attribute_updates) == 2
-
-    # hdr, args = tuya_cluster.deserialize(ZCL_TUYA_SET_TIME_REQUEST)
-    # tuya_cluster.handle_message(hdr, args)
-    # assert len(dimmer1_listener.cluster_commands) == 0
-    # assert len(dimmer2_listener.cluster_commands) == 0
-    # # no switch attribute updated (TUYA_SET_TIME command)
-    # assert len(dimmer1_listener.attribute_updates) == 2
-    # assert len(dimmer2_listener.attribute_updates) == 2
