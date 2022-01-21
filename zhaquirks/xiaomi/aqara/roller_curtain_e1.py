@@ -1,6 +1,7 @@
 """Aqara Roller Shade Driver E1 device."""
 
 from zigpy.profiles import zha
+from zigpy.quirks import CustomCluster
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import (
     Alarms,
@@ -17,6 +18,7 @@ from zigpy.zcl.clusters.general import (
     Time,
 )
 
+from zhaquirks import Bus, LocalDataCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -32,12 +34,67 @@ from zhaquirks.xiaomi import (
     XiaomiCustomDevice,
 )
 
+PRESENT_VALUE = 0x0055
+CURRENT_POSITION_LIFT_PERCENTAGE = 0x0008
+GO_TO_LIFT_PERCENTAGE = 0x0005
+
+
+class AnalogOutputRollerE1(LocalDataCluster, AnalogOutput):
+    """Analog output cluster, only used to relay current_value to WindowCovering."""
+
+    cluster_id = AnalogOutput.cluster_id
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+
+    def _update_attribute(self, attrid, value):
+        super()._update_attribute(attrid, value)
+        if attrid is not None and attrid == PRESENT_VALUE:
+            self.endpoint.device.roller_bus.listener_event(
+                "current_position_lift_percentage", value
+            )
+
+
+class WindowCoveringRollerE1(CustomCluster, WindowCovering):
+    """Window covering cluster to receive reports that are sent to the AnalogOutput cluster."""
+
+    cluster_id = WindowCovering.cluster_id
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self.endpoint.device.roller_bus.add_listener(self)
+
+    def current_position_lift_percentage(self, value):
+        """Update current_position_lift_percentage and invert value"""
+        value = 100 - value
+        self._update_attribute(CURRENT_POSITION_LIFT_PERCENTAGE, value)
+
+    async def command(
+        self, command_id, *args, manufacturer=None, expect_reply=True, tsn=None
+    ):
+        """Override default command to invert percent lift value."""
+        if command_id == GO_TO_LIFT_PERCENTAGE:
+            percent = args[0]
+            percent = 100 - percent
+            v = (percent,)
+            return await super().command(command_id, *v)
+        return await super().command(
+            command_id,
+            *args,
+            manufacturer=manufacturer,
+            expect_reply=expect_reply,
+            tsn=tsn
+        )
+
 
 class RollerE1AQ(XiaomiCustomDevice):
     """Aqara Roller Shade Driver E1 device."""
 
     def __init__(self, *args, **kwargs):
         """Init."""
+        self.roller_bus = Bus()
         super().__init__(*args, **kwargs)
 
     signature = {
@@ -89,7 +146,7 @@ class RollerE1AQ(XiaomiCustomDevice):
                 DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
                 INPUT_CLUSTERS: [
                     Alarms.cluster_id,
-                    AnalogOutput.cluster_id,
+                    AnalogOutputRollerE1,
                     BasicCluster,
                     DeviceTemperature.cluster_id,
                     Groups.cluster_id,
@@ -97,7 +154,7 @@ class RollerE1AQ(XiaomiCustomDevice):
                     XiaomiAqaraRollerE1Cluster,
                     MultistateOutput.cluster_id,
                     Scenes.cluster_id,
-                    WindowCovering.cluster_id,
+                    WindowCoveringRollerE1,
                 ],
                 OUTPUT_CLUSTERS: [
                     Ota.cluster_id,
