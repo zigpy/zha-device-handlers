@@ -67,7 +67,7 @@ class WindowCoveringRollerE1(CustomCluster, WindowCovering):
         self.endpoint.device.roller_bus.add_listener(self)
 
     def current_position_lift_percentage(self, value):
-        """Update current_position_lift_percentage and invert value"""
+        """Update current_position_lift_percentage and invert value."""
         value = 100 - value
         self._update_attribute(CURRENT_POSITION_LIFT_PERCENTAGE, value)
 
