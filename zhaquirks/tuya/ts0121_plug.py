@@ -72,10 +72,6 @@ class TS0121B(CustomDevice):
     signature = {
         MODEL: "TS0121",
         ENDPOINTS: {
-            # <SimpleDescriptor endpoint=1 profile=260 device_type=81
-            # device_version=1
-            # input_clusters=[0, 4, 5, 6, 9, 1794, 2820]
-            # output_clusters=[10, 25]>
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_PLUG_IN_UNIT,
