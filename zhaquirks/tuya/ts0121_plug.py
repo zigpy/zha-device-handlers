@@ -14,9 +14,9 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.tuya import (
-    TUYA_CLUSTER_E000_ID,
-    TUYA_CLUSTER_E001_ID,
+    TuyaZBE000Cluster,
     TuyaZBElectricalMeasurement,
+    TuyaZBExternalSwitchTypeCluster,
     TuyaZBMeteringCluster,
     TuyaZBOnOffAttributeCluster,
 )
@@ -87,8 +87,8 @@ class TS0121B(CustomDevice):
                     OnOff.cluster_id,
                     Metering.cluster_id,
                     ElectricalMeasurement.cluster_id,
-                    TUYA_CLUSTER_E000_ID,
-                    TUYA_CLUSTER_E001_ID,
+                    TuyaZBE000Cluster.cluster_id,
+                    TuyaZBExternalSwitchTypeCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
@@ -113,8 +113,8 @@ class TS0121B(CustomDevice):
                     TuyaZBOnOffAttributeCluster,
                     TuyaZBMeteringCluster,
                     TuyaZBElectricalMeasurement,
-                    TUYA_CLUSTER_E000_ID,
-                    TUYA_CLUSTER_E001_ID,
+                    TuyaZBE000Cluster,
+                    TuyaZBExternalSwitchTypeCluster,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
