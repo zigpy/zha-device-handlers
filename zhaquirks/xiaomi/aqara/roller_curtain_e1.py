@@ -15,6 +15,7 @@ from zigpy.zcl.clusters.general import (
     MultistateOutput,
     OnOff,
     Ota,
+    PowerConfiguration,
     Scenes,
     Time,
 )
@@ -101,12 +102,33 @@ class WindowCoveringRollerE1(CustomCluster, WindowCovering):
         )
 
 
+class PowerConfigurationRollerE1(PowerConfiguration, LocalDataCluster):
+    """Xiaomi power configuration cluster implementation."""
+
+    cluster_id = PowerConfiguration.cluster_id
+
+    BATTERY_PERCENTAGE_REMAINING = 0x0021
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self.endpoint.device.power_bus_percentage.add_listener(self)
+
+    def update_battery_percentage(self, value):
+        """We'll receive a raw percentage value here, no need to calculate"""
+        super()._update_attribute(
+            self.BATTERY_PERCENTAGE_REMAINING,
+            value,
+        )
+
+
 class RollerE1AQ(XiaomiCustomDevice):
     """Aqara Roller Shade Driver E1 device."""
 
     def __init__(self, *args, **kwargs):
         """Init."""
         self.roller_bus = Bus()
+        self.power_bus_percentage = Bus()
         super().__init__(*args, **kwargs)
 
     signature = {
@@ -167,6 +189,7 @@ class RollerE1AQ(XiaomiCustomDevice):
                     MultistateOutput.cluster_id,
                     Scenes.cluster_id,
                     WindowCoveringRollerE1,
+                    PowerConfigurationRollerE1,
                 ],
                 OUTPUT_CLUSTERS: [
                     Ota.cluster_id,

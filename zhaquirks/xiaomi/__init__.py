@@ -48,6 +48,7 @@ from zhaquirks.const import (
 
 BATTERY_LEVEL = "battery_level"
 BATTERY_PERCENTAGE_REMAINING = 0x0021
+BATTERY_PERCENTAGE_REMAINING_ATTRIBUTE = "battery_percentage"
 BATTERY_REPORTED = "battery_reported"
 BATTERY_SIZE = "battery_size"
 BATTERY_SIZE_ATTR = 0x0031
@@ -278,6 +279,11 @@ class XiaomiCluster(CustomCluster):
             self.endpoint.device_temperature.update_attribute(
                 0x0000, attributes[TEMPERATURE] * 100
             )
+        if BATTERY_PERCENTAGE_REMAINING_ATTRIBUTE in attributes:
+            self.endpoint.device.power_bus_percentage.listener_event(
+                "update_battery_percentage",
+                attributes[BATTERY_PERCENTAGE_REMAINING_ATTRIBUTE],
+            )
 
     def _parse_aqara_attributes(self, value):
         """Parse non standard attributes."""
@@ -315,7 +321,8 @@ class XiaomiCluster(CustomCluster):
             attribute_names.update({149: CONSUMPTION, 150: VOLTAGE, 152: POWER})
         elif self.endpoint.device.model == "lumi.sensor_motion.aq2":
             attribute_names.update({11: ILLUMINANCE_MEASUREMENT})
-
+        elif self.endpoint.device.model == "lumi.curtain.acn002":
+            attribute_names.update({101: BATTERY_PERCENTAGE_REMAINING_ATTRIBUTE})
         result = {}
 
         # Some attribute reports end with a stray null byte
