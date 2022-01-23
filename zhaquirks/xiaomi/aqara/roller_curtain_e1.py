@@ -29,12 +29,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.xiaomi import (
-    LUMI,
-    BasicCluster,
-    XiaomiCluster,
-    XiaomiCustomDevice,
-)
+from zhaquirks.xiaomi import LUMI, BasicCluster, XiaomiCluster, XiaomiCustomDevice
 
 PRESENT_VALUE = 0x0055
 CURRENT_POSITION_LIFT_PERCENTAGE = 0x0008
