@@ -115,7 +115,7 @@ class PowerConfigurationRollerE1(PowerConfiguration, LocalDataCluster):
         self.endpoint.device.power_bus_percentage.add_listener(self)
 
     def update_battery_percentage(self, value):
-        """We'll receive a raw percentage value here, no need to calculate"""
+        """We'll receive a raw percentage value here, no need to calculate any voltages or such."""
         super()._update_attribute(
             self.BATTERY_PERCENTAGE_REMAINING,
             value,
