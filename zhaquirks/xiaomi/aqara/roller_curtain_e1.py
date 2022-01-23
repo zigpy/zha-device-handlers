@@ -1,5 +1,6 @@
 """Aqara Roller Shade Driver E1 device."""
 
+from zigpy import types as t
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster
 from zigpy.zcl.clusters.closures import WindowCovering
@@ -17,6 +18,7 @@ from zigpy.zcl.clusters.general import (
     Scenes,
     Time,
 )
+from zigpy.zcl.clusters.manufacturer_specific import ManufacturerSpecificCluster
 
 from zhaquirks import Bus, LocalDataCluster
 from zhaquirks.const import (
@@ -30,13 +32,28 @@ from zhaquirks.const import (
 from zhaquirks.xiaomi import (
     LUMI,
     BasicCluster,
-    XiaomiAqaraRollerE1Cluster,
+    XiaomiCluster,
     XiaomiCustomDevice,
 )
 
 PRESENT_VALUE = 0x0055
 CURRENT_POSITION_LIFT_PERCENTAGE = 0x0008
 GO_TO_LIFT_PERCENTAGE = 0x0005
+
+
+class XiaomiAqaraRollerE1(XiaomiCluster, ManufacturerSpecificCluster):
+    """Xiaomi mfg cluster implementation specific for E1 Roller ."""
+
+    cluster_id = 0xFCC0
+
+    manufacturer_attributes = {
+        0x0400: ("Reverse Direction", t.Bool),
+        0x0402: ("Positions Stored", t.Bool),
+        0x0407: ("Store Position", t.uint8_t),
+        0x0408: ("Speed", t.uint8_t),
+        0x0409: ("Charging", t.uint8_t),
+        0x00F7: ("Aqara Attributes", t.LVBytes),
+    }
 
 
 class AnalogOutputRollerE1(LocalDataCluster, AnalogOutput):
@@ -114,7 +131,7 @@ class RollerE1AQ(XiaomiCustomDevice):
                     DeviceTemperature.cluster_id,
                     Groups.cluster_id,
                     Identify.cluster_id,
-                    XiaomiAqaraRollerE1Cluster.cluster_id,
+                    XiaomiAqaraRollerE1.cluster_id,
                     MultistateOutput.cluster_id,
                     OnOff.cluster_id,
                     Scenes.cluster_id,
@@ -151,7 +168,7 @@ class RollerE1AQ(XiaomiCustomDevice):
                     DeviceTemperature.cluster_id,
                     Groups.cluster_id,
                     Identify.cluster_id,
-                    XiaomiAqaraRollerE1Cluster,
+                    XiaomiAqaraRollerE1,
                     MultistateOutput.cluster_id,
                     Scenes.cluster_id,
                     WindowCoveringRollerE1,
