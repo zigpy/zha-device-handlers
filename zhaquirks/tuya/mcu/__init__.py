@@ -184,7 +184,7 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
             self.debug("raw: %s", cmd_payload.data.raw)
             return cmd_payload
         else:
-            self.info(
+            self.warning(
                 "No cluster_dp found for %s, %s",
                 data.endpoint_id,
                 data.cluster_attr,
@@ -326,7 +326,6 @@ class SurfaceSwitchManufCluster(TuyaOnOffManufCluster):
                 TuyaMCUCluster.ep_attribute,
                 "power_on_state",
                 dp_type=TuyaDPType.ENUM,
-                # lambda x: PowerOnState(x),
             )
         }
     )
@@ -336,7 +335,6 @@ class SurfaceSwitchManufCluster(TuyaOnOffManufCluster):
                 TuyaMCUCluster.ep_attribute,
                 "backlight_mode",
                 dp_type=TuyaDPType.ENUM,
-                # lambda x: BackLight(x),
             ),
         }
     )

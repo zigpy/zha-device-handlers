@@ -19,7 +19,6 @@ from tests.common import ClusterListener
 
 zhaquirks.setup()
 
-# ZCL_TUYA_VERSION_RSP = b"\tp\x17\x00\x03\x82"
 ZCL_TUYA_VERSION_RSP = b"\x09\x06\x11\x01\x6D\x82"
 
 
