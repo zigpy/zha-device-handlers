@@ -115,10 +115,10 @@ class PowerConfigurationRollerE1(PowerConfiguration, LocalDataCluster):
         self.endpoint.device.power_bus_percentage.add_listener(self)
 
     def update_battery_percentage(self, value):
-        """We'll receive a raw percentage value here, no need to calculate any voltages or such."""
+        """We'll receive a raw percentage value here, no need to calculate any voltages or such. Only thing we do is times 2 the value because Zigbee expects percentage 200%."""
         super()._update_attribute(
             self.BATTERY_PERCENTAGE_REMAINING,
-            value,
+            (value * 2),
         )
 
 
