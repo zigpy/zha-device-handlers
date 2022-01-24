@@ -42,14 +42,17 @@ class XiaomiAqaraRollerE1(XiaomiCluster, ManufacturerSpecificCluster):
 
     cluster_id = 0xFCC0
 
-    manufacturer_attributes = {
-        0x0400: ("Reverse Direction", t.Bool),
-        0x0402: ("Positions Stored", t.Bool),
-        0x0407: ("Store Position", t.uint8_t),
-        0x0408: ("Speed", t.uint8_t),
-        0x0409: ("Charging", t.uint8_t),
-        0x00F7: ("Aqara Attributes", t.LVBytes),
-    }
+    attributes = XiaomiCluster.attributes.copy()
+    attributes.update(
+        {
+            0x0400: ("reverse_direction", t.Bool, True),
+            0x0402: ("positions_stored", t.Bool, True),
+            0x0407: ("store_position", t.uint8_t, True),
+            0x0408: ("speed", t.uint8_t, True),
+            0x0409: ("charging", t.uint8_t, True),
+            0x00F7: ("aqara_attributes", t.LVBytes, True),
+        }
+    )
 
 
 class AnalogOutputRollerE1(LocalDataCluster, AnalogOutput):

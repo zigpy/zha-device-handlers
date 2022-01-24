@@ -59,19 +59,22 @@ class AqaraRemoteManuSpecificCluster(XiaomiAqaraE1Cluster):
     # manufacture override code: 4447 (0x115f)
     # to get/set these attributes, you might need to click the button 5 times
     # quickly.
-    manufacturer_attributes = {
-        # operation_mode:
-        # 0 means "command" mode.
-        # 1 means "event" mode.
-        0x0009: ("operation_mode", t.uint8_t),
-        # click_mode:
-        # 1 means single click mode, which is low latency (50ms) but only sends
-        #   single click events.
-        # 2 means multiple click mode, which has a slightly higher latency but
-        #   supports single/double/triple click and long press.
-        # default value after factory reset: 1.
-        0x0125: ("click_mode", t.uint8_t),
-    }
+    attributes = XiaomiAqaraE1Cluster.attributes.copy()
+    attributes.update(
+        {
+            # operation_mode:
+            # 0 means "command" mode.
+            # 1 means "event" mode.
+            0x0009: ("operation_mode", t.uint8_t, True),
+            # click_mode:
+            # 1 means single click mode, which is low latency (50ms) but only sends
+            #   single click events.
+            # 2 means multiple click mode, which has a slightly higher latency but
+            #   supports single/double/triple click and long press.
+            # default value after factory reset: 1.
+            0x0125: ("click_mode", t.uint8_t, True),
+        }
+    )
 
 
 class PowerConfigurationClusterH1Remote(PowerConfigurationCluster):

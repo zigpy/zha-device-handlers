@@ -105,11 +105,11 @@ class DanfossDiagnosticCluster(CustomCluster, Diagnostic):
         {
             0x4000: ("sw_error_code", t.bitmap16, True),
             0x4001: ("wake_time_avg", t.uint32_t, True),
-            0x4002: ("wake_time max duration", t.uint32_t, True),
-            0x4003: ("wake_time min duration", t.uint32_t, True),
-            0x4004: ("sleep_Postponed_count_avg", t.uint32_t, True),
-            0x4005: ("sleep_Postponed_count_max", t.uint32_t, True),
-            0x4006: ("sleep_Postponed_count_min", t.uint32_t, True),
+            0x4002: ("wake_time_max_duration", t.uint32_t, True),
+            0x4003: ("wake_time_min_duration", t.uint32_t, True),
+            0x4004: ("sleep_postponed_count_avg", t.uint32_t, True),
+            0x4005: ("sleep_postponed_count_max", t.uint32_t, True),
+            0x4006: ("sleep_postponed_count_min", t.uint32_t, True),
             0x4010: ("motor_step_counter", t.uint32_t, True),
         }
     )
