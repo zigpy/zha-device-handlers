@@ -22,10 +22,8 @@ SINOPE_MANUFACTURER_CLUSTER_ID = 0xFF01
 class CustomMeteringCluster(CustomCluster, Metering):
     """Custom Metering Cluster."""
 
-    def _update_attribute(self, attrid, value):
-        # Convert Wh to kWh
-        value = value / 1000
-        super()._update_attribute(attrid, value)
+    DIVISOR = 0x0302
+    _CONSTANT_ATTRIBUTES = {DIVISOR: 1000}
 
 
 class SinopeTechnologiesSwitch(CustomDevice):
