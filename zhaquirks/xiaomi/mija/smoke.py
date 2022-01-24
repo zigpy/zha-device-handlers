@@ -40,6 +40,7 @@ from zhaquirks.xiaomi import (
     LUMI,
     XIAOMI_NODE_DESC,
     BasicCluster,
+    DeviceTemperatureCluster,
     XiaomiPowerConfiguration,
     XiaomiQuickInitDevice,
 )
@@ -106,6 +107,7 @@ class MijiaHoneywellSmokeDetectorSensor(XiaomiQuickInitDevice):
                     AnalogInput.cluster_id,
                     MultistateInput.cluster_id,
                     XiaomiSmokeIASCluster,
+                    DeviceTemperatureCluster,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             }

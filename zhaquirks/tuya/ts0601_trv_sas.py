@@ -234,6 +234,7 @@ class Thermostat_TZE200_c88teujp(TuyaThermostat):
             ("_TZE200_yw7cahqs", "TS0601"),
             ("_TZE200_9gvruqf5", "TS0601"),
             ("_TZE200_zuhszj9s", "TS0601"),
+            ("_TZE200_2ekuz3dz", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
