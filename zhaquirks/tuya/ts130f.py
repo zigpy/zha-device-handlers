@@ -299,7 +299,7 @@ class TuyaTS130FTI2(CustomDevice):
     """Tuya smart curtain roller shutter Time In."""
 
     signature = {
-        # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=0x0203, device_version=1, input_clusters=[0, 4, 5, 6, 10, 0x0102], output_clusters=[25]))
+        # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=0x0203, device_version=1, input_clusters=[0, 4, 5, 6, 0x0102], output_clusters=[0x000A,25]))
         MODEL: "TS130F",
         ENDPOINTS: {
             1: {
