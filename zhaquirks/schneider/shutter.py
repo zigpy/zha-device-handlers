@@ -42,10 +42,7 @@ class SchneiderShutter(CustomDevice):
     """SchneiderShutter custom device."""
 
     signature = {
-        # SizePrefixedSimpleDescriptor(
-        #  endpoint=5, profile=260, device_type=0x0202, device_version=1, input_clusters=[0,3,4,5,0x0102,0x0B05], output_clusters=[25]
-        #  endpoint=21, profile=260, device_type=0x0202, device_version=1, input_clusters=[0,3,0x0102,0xFF17], output_clusters=[3,4,5,6,8,0x0B05]
-        #)
+        # SizePrefixedSimpleDescriptor(endpoint=5, profile=260, device_type=0x0202, device_version=1, input_clusters=[0,3,4,5,0x0102,0x0B05], output_clusters=[25],endpoint=21, profile=260, device_type=0x0202, device_version=1, input_clusters=[0,3,0x0102,0xFF17], output_clusters=[3,4,5,6,8,0x0B05])
         MODELS_INFO: [("Schneider Electric", "NHPB/SHUTTER/1")],
         ENDPOINTS: {
             5: {
