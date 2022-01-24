@@ -19,6 +19,7 @@ from zhaquirks.tuya import (
     TuyaZBOnOffAttributeCluster,
 )
 
+
 class TuyaSingleNoNeutralSwitch(TuyaSwitch):
     """Tuya 1 gang no neutral light switch."""
 
@@ -231,6 +232,7 @@ class TuyaTripleNoNeutralSwitch(TuyaSwitch):
         },
     }
 
+
 class Tuya_Single_No_N(TuyaSwitch):
     """Tuya 1 gang no neutral light switch."""
 
@@ -278,6 +280,7 @@ class Tuya_Single_No_N(TuyaSwitch):
             },
         },
     }
+
 
 class Tuya_Double_No_N(TuyaSwitch):
     """Tuya 2 gang no neutral light switch."""
@@ -358,6 +361,7 @@ class Tuya_Double_No_N(TuyaSwitch):
             },
         },
     }
+
 
 class Tuya_Triple_No_N(TuyaSwitch):
     """Tuya 3 gang no neutral light switch."""
