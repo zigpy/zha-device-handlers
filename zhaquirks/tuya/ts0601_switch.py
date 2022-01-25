@@ -80,6 +80,7 @@ class TuyaSingleSwitchTO(TuyaSwitch):
             ("_TZE200_oisqyl4o", "TS0601"),
             ("_TZE200_vhy3iakz", "TS0601"),  # ¿1 or 4 gangs?
             ("_TZ3000_uim07oem", "TS0601"),  # ¿1 or 4 gangs?
+            ("_TZE200_wfxuhoea", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
@@ -230,6 +231,7 @@ class TuyaQuadrupleSwitchTO(TuyaSwitch):
     signature = {
         MODELS_INFO: [
             ("_TZE200_aqnazj70", "TS0601"),
+            ("_TZE200_1ozguk6x", "TS0601"),
         ],
         ENDPOINTS: {
             1: {

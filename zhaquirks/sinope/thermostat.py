@@ -42,14 +42,29 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
     ep_attribute = "sinope_manufacturer_specific"
     manufacturer_attributes = {
         0x0010: ("outdoor_temp", t.int16s),
+        0x0011: ("outdoor_temp_timeout", t.uint16_t),
         0x0020: ("secs_since_2k", t.uint32_t),
+        0x0105: ("airFloorMode", t.enum8),
+        0x0108: ("airMaxLimit", t.int16s),
+        0x0109: ("floorMinSetpoint", t.int16s),
+        0x010A: ("floorMaxSetpoint", t.int16s),
+        0x010B: ("tempSensorType", t.enum8),
+        0x0114: ("timeFormat", t.enum8),
+        0x0118: ("auxConnectedLoad", t.uint16_t),
+        0x0119: ("ConnectedLoad", t.uint16_t),
+        0x0128: ("pumpProtection", t.uint8_t),
     }
 
 
 class SinopeTechnologiesThermostatCluster(CustomCluster, Thermostat):
     """SinopeTechnologiesThermostatCluster custom cluster."""
 
-    manufacturer_attributes = {0x0400: ("set_occupancy", t.enum8)}
+    manufacturer_attributes = {
+        0x0400: ("set_occupancy", t.enum8),
+        0x0401: ("mainCycleOutput", t.uint16_t),
+        0x0402: ("backlightAutoDimParam", t.enum8),
+        0x0404: ("auxCycleOutput", t.uint16_t),
+    }
 
 
 class SinopeTechnologiesThermostat(CustomDevice):
@@ -232,7 +247,12 @@ class SinopeLineThermostats(SinopeTechnologiesThermostat):
         # <SimpleDescriptor endpoint=1 profile=260 device_type=769 device_version=1
         # input_clusters=[0, 3, 4, 5, 513, 516, 1026, 1794, 2820, 2821, 65281]
         # output_clusters=[10, 25, 65281]>
-        MODELS_INFO: [(SINOPE, "TH1123ZB"), (SINOPE, "TH1124ZB"), (SINOPE, "TH1500ZB")],
+        MODELS_INFO: [
+            (SINOPE, "TH1123ZB"),
+            (SINOPE, "TH1124ZB"),
+            (SINOPE, "TH1500ZB"),
+            (SINOPE, "OTH3600-GA-ZB"),
+        ],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha_p.PROFILE_ID,

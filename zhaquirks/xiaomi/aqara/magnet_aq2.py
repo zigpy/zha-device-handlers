@@ -18,6 +18,7 @@ from zhaquirks.xiaomi import (
     LUMI,
     XIAOMI_NODE_DESC,
     BasicCluster,
+    DeviceTemperatureCluster,
     XiaomiPowerConfiguration,
     XiaomiQuickInitDevice,
 )
@@ -69,6 +70,7 @@ class MagnetAQ2(XiaomiQuickInitDevice):
                     BasicCluster,
                     Identify.cluster_id,
                     XiaomiPowerConfiguration,
+                    DeviceTemperatureCluster,
                     XIAOMI_CLUSTER_ID,
                 ],
                 OUTPUT_CLUSTERS: [

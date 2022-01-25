@@ -1,5 +1,6 @@
 """Xiaomi aqara smart motion sensor device."""
 import logging
+import math
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster
@@ -38,12 +39,13 @@ from zhaquirks.xiaomi import (
     LUMI,
     XIAOMI_NODE_DESC,
     BasicCluster,
+    DeviceTemperatureCluster,
     XiaomiPowerConfiguration,
     XiaomiQuickInitDevice,
 )
 
-ACCELEROMETER_ATTR = 0x0508  # decimal = 1288
 DROP_VALUE = 3
+ORIENTATION_ATTR = 0x0508  # decimal = 1288
 RECENT_ACTIVITY_LEVEL_ATTR = 0x0505  # decimal = 1285
 ROTATION_DEGREES_ATTR = 0x0503  # decimal = 1283
 SEND_EVENT = "send_event"
@@ -102,6 +104,29 @@ class VibrationAQ1(XiaomiQuickInitDevice):
                     self.endpoint.device.motion_bus.listener_event(
                         SEND_EVENT, self._current_state[STATUS_TYPE_ATTR]
                     )
+            elif attrid == ORIENTATION_ATTR:
+                x = value & 0xFFFF
+                y = (value >> 16) & 0xFFFF
+                z = (value >> 32) & 0xFFFF
+                X = 0.0 + x
+                Y = 0.0 + y
+                Z = 0.0 + z
+                angleX = round(math.atan(X / math.sqrt(Z * Z + Y * Y)) * 180 / math.pi)
+                angleY = round(math.atan(Y / math.sqrt(X * X + Z * Z)) * 180 / math.pi)
+                angleZ = round(math.atan(Z / math.sqrt(X * X + Y * Y)) * 180 / math.pi)
+
+                self.endpoint.device.motion_bus.listener_event(
+                    SEND_EVENT,
+                    "current_orientation",
+                    {
+                        "rawValueX": x,
+                        "rawValueY": y,
+                        "rawValueZ": z,
+                        "X": angleX,
+                        "Y": angleY,
+                        "Z": angleZ,
+                    },
+                )
             elif attrid == ROTATION_DEGREES_ATTR:
                 self.endpoint.device.motion_bus.listener_event(
                     SEND_EVENT,
@@ -172,6 +197,7 @@ class VibrationAQ1(XiaomiQuickInitDevice):
                 INPUT_CLUSTERS: [
                     VibrationBasicCluster,
                     XiaomiPowerConfiguration,
+                    DeviceTemperatureCluster,
                     Identify.cluster_id,
                     MotionCluster,
                     Ota.cluster_id,

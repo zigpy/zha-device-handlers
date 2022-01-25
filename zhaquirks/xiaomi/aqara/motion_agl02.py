@@ -38,7 +38,7 @@ class XiaomiManufacturerCluster(XiaomiAqaraE1Cluster):
 
 
 class MotionT1(XiaomiCustomDevice):
-    """Xiaomi contact sensor device."""
+    """Xiaomi motion sensor device."""
 
     def __init__(self, *args, **kwargs):
         """Init."""
