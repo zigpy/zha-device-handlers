@@ -16,15 +16,8 @@ from zhaquirks.tuya import (
     TuyaZBOnOffAttributeCluster,
 )
 from zigpy.profiles import zha
-from zigpy.zcl.clusters.general import (
-    Basic,
-    Groups,
-    Identify,
-    OnOff,
-    Ota,
-    Scenes,
-    Time,
-)
+from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
+
 
 class TuyaSingleNoNeutralSwitch(TuyaSwitch):
     """Tuya 1 gang no neutral light switch."""
@@ -238,6 +231,7 @@ class TuyaTripleNoNeutralSwitch(TuyaSwitch):
         },
     }
 
+
 class Tuya_Single_No_N(TuyaSwitch):
     """Tuya 1 gang no neutral light switch."""
 
@@ -285,6 +279,7 @@ class Tuya_Single_No_N(TuyaSwitch):
             },
         },
     }
+
 
 class Tuya_Double_No_N(TuyaSwitch):
     """Tuya 2 gang no neutral light switch."""
@@ -365,6 +360,7 @@ class Tuya_Double_No_N(TuyaSwitch):
             },
         },
     }
+
 
 class Tuya_Triple_No_N(TuyaSwitch):
     """Tuya 3 gang no neutral light switch."""
