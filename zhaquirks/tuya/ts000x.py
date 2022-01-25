@@ -1,18 +1,5 @@
 """tuya TS000X Switches."""
 
-from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
-from zigpy.zcl.clusters.general import (
-    Basic,
-    GreenPowerProxy,
-    Groups,
-    Identify,
-    OnOff,
-    Ota,
-    Scenes,
-    Time,
-)
-
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -25,6 +12,18 @@ from zhaquirks.tuya import (
     TuyaZBE000Cluster,
     TuyaZBExternalSwitchTypeCluster,
     TuyaZBOnOffAttributeCluster,
+)
+from zigpy.profiles import zha
+from zigpy.quirks import CustomDevice
+from zigpy.zcl.clusters.general import (
+    Basic,
+    GreenPowerProxy,
+    Groups,
+    Identify,
+    OnOff,
+    Ota,
+    Scenes,
+    Time,
 )
 
 
