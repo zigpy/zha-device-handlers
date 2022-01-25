@@ -282,9 +282,10 @@ class XiaomiCluster(CustomCluster):
                 0x0000, attributes[TVOC_MEASUREMENT]
             )
         if TEMPERATURE in attributes:
-            self.endpoint.device_temperature.update_attribute(
-                0x0000, attributes[TEMPERATURE] * 100
-            )
+            if hasattr(self.endpoint, "device_temperature"):
+                self.endpoint.device_temperature.update_attribute(
+                    0x0000, attributes[TEMPERATURE] * 100
+                )
         if BATTERY_PERCENTAGE_REMAINING_ATTRIBUTE in attributes:
             self.endpoint.device.power_bus_percentage.listener_event(
                 "update_battery_percentage",
