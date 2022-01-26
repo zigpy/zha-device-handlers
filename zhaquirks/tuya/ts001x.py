@@ -1,5 +1,8 @@
 """Tuya 1,2,3 gang no neutral light switch."""
 
+from zigpy.profiles import zha
+from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
+
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -15,8 +18,6 @@ from zhaquirks.tuya import (
     TuyaZBExternalSwitchTypeCluster,
     TuyaZBOnOffAttributeCluster,
 )
-from zigpy.profiles import zha
-from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
 
 
 class TuyaSingleNoNeutralSwitch(TuyaSwitch):
