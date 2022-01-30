@@ -73,15 +73,22 @@ class TuyaRelativeHumidity(RelativeHumidity, TuyaLocalCluster):
     pass
 
 
+class NeoBatteryLevel(t.enum8):
+    """NEO battery level enum."""
+
+    BATTERY_FULL = 0x00
+    BATTERY_HIGH = 0x01
+    BATTERY_MEDIUM = 0x02
+    BATTERY_LOW = 0x03
+    USB_POWER = 0x04
+
+
 class NeoMotionManufCluster(TuyaNewManufCluster):
     """Tuya with Air quality data points."""
 
     manufacturer_attributes = {
-        0xEF01: (
-            "battery_level",
-            t.uint32_t,
-        ),  # ¿possible values= 0: full, 1: high, 2: med, 3: low, 4: usb?
-        0x0004: ("tamper", t.enum8),  # same ID as IasZone.ZoneStatus.Tamper
+        0xEF01: ("battery_level", NeoBatteryLevel),  # ramdom attribute ID
+        0x0004: ("tamper", t.uint8_t),  # same ID as IasZone.ZoneStatus.Tamper
     }
 
     dp_to_attribute: Dict[int, DPToAttributeMapping] = {
