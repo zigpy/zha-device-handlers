@@ -44,28 +44,31 @@ ZONE_TYPE = 0x0001
 
 
 class TuyaOccupancySensing(OccupancySensing, TuyaLocalCluster):
-    """Tuya occupancy measurement."""
+    """Tuya local OccupancySensing cluster."""
 
     pass
 
 
 class TuyaAnalogInput(AnalogInput, TuyaLocalCluster):
-    """Tuya AnalogInput measurement."""
+    """Tuya local AnalogInput cluster."""
 
     pass
 
 
 class TuyaIlluminanceMeasurement(IlluminanceMeasurement, TuyaLocalCluster):
+    """Tuya local IlluminanceMeasurement cluster."""
 
     pass
 
 
 class TuyaTemperatureMeasurement(TemperatureMeasurement, TuyaLocalCluster):
+    """Tuya local TemperatureMeasurement cluster."""
 
     pass
 
 
 class TuyaRelativeHumidity(RelativeHumidity, TuyaLocalCluster):
+    """Tuya local RelativeHumidity cluster."""
 
     pass
 
