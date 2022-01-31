@@ -89,6 +89,7 @@ class NeoMotionManufCluster(TuyaNewManufCluster):
     manufacturer_attributes = {
         0xEF01: ("battery_level", NeoBatteryLevel),  # ramdom attribute ID
         0x0004: ("tamper", t.uint8_t),  # same ID as IasZone.ZoneStatus.Tamper
+        0xEF0D: ("dp_113", t.enum8),  # ramdom attribute ID
     }
 
     dp_to_attribute: Dict[int, DPToAttributeMapping] = {
@@ -108,11 +109,16 @@ class NeoMotionManufCluster(TuyaNewManufCluster):
         104: DPToAttributeMapping(
             TuyaTemperatureMeasurement.ep_attribute,
             "measured_value",
-            lambda x: x / 10,
+            lambda x: x * 10,
         ),
         105: DPToAttributeMapping(
             TuyaRelativeHumidity.ep_attribute,
             "measured_value",
+            lambda x: x * 100,
+        ),
+        113: DPToAttributeMapping(
+            TuyaNewManufCluster.ep_attribute,
+            "dp_113",
         ),
     }
 
@@ -122,6 +128,7 @@ class NeoMotionManufCluster(TuyaNewManufCluster):
         103: "_dp_2_attr_update",
         104: "_dp_2_attr_update",
         105: "_dp_2_attr_update",
+        113: "_dp_2_attr_update",
     }
 
 
