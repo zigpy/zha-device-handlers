@@ -1,5 +1,6 @@
 """BlitzWolf IS-3/Tuya motion rechargeable occupancy sensor."""
 
+import math
 from typing import Dict, Optional, Tuple, Union
 
 from zigpy.profiles import zha
@@ -9,6 +10,7 @@ from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
     AnalogInput,
     Basic,
+    GreenPowerProxy,
     Groups,
     Identify,
     Ota,
@@ -84,11 +86,9 @@ class NeoBatteryLevel(t.enum8):
 
 
 class NeoMotionManufCluster(TuyaNewManufCluster):
-    """Tuya with Air quality data points."""
+    """Neo manufacturer cluster."""
 
     manufacturer_attributes = {
-        0xEF01: ("battery_level", NeoBatteryLevel),  # ramdom attribute ID
-        0x0004: ("tamper", t.uint8_t),  # same ID as IasZone.ZoneStatus.Tamper
         0xEF0D: ("dp_113", t.enum8),  # ramdom attribute ID
     }
 
@@ -96,15 +96,6 @@ class NeoMotionManufCluster(TuyaNewManufCluster):
         101: DPToAttributeMapping(
             TuyaOccupancySensing.ep_attribute,
             "occupancy",
-        ),
-        102: DPToAttributeMapping(
-            TuyaNewManufCluster.ep_attribute,
-            "battery_level",
-        ),
-        103: DPToAttributeMapping(
-            TuyaNewManufCluster.ep_attribute,
-            "tamper",
-            lambda x: x > 0,
         ),
         104: DPToAttributeMapping(
             TuyaTemperatureMeasurement.ep_attribute,
@@ -124,11 +115,122 @@ class NeoMotionManufCluster(TuyaNewManufCluster):
 
     data_point_handlers = {
         101: "_dp_2_attr_update",
+        104: "_dp_2_attr_update",
+        105: "_dp_2_attr_update",
+        113: "_dp_2_attr_update",
+    }
+
+
+class MmwRadarManufCluster(TuyaNewManufCluster):
+    """Neo manufacturer cluster."""
+
+    # # Possible DPs and values
+    # DP=1 presence_state: presence
+    # target distance: 1.61m
+    # illuminance: 250lux
+    # sensitivity: 9
+    # minimum_detection_distance: 0.00m
+    # maximum_detection_distance: 4.05m
+    # dp_detection_delay: 0.1
+    # dp_fading_time: 5.0
+    # ¿illuminance?: 255lux
+    # presence_brightness: no control
+    # no_one_brightness: no control
+    # current_brightness: off
+
+    # It may be necessary to implement multiple endpoints to host all the clusters
+
+    manufacturer_attributes = {
+        # ramdom attribute IDs
+        0xEF02: ("dp_2", t.uint32_t),
+        0xEF03: ("dp_3", t.uint32_t),
+        0xEF04: ("dp_4", t.uint32_t),
+        0xEF06: ("dp_6", t.enum8),
+        0xEF65: ("dp_101", t.uint32_t),
+        0xEF66: ("dp_102", t.uint32_t),
+        0xEF67: ("dp_103", t.CharacterString),
+        0xEF69: ("dp_105", t.enum8),
+        0xEF6A: ("dp_106", t.enum8),
+        0xEF6B: ("dp_107", t.enum8),
+        0xEF6C: ("dp_108", t.uint32_t),
+    }
+
+    dp_to_attribute: Dict[int, DPToAttributeMapping] = {
+        1: DPToAttributeMapping(
+            TuyaOccupancySensing.ep_attribute,
+            "occupancy",
+        ),
+        2: DPToAttributeMapping(
+            TuyaNewManufCluster.ep_attribute,
+            "dp_2",
+        ),
+        3: DPToAttributeMapping(
+            TuyaNewManufCluster.ep_attribute,
+            "dp_3",
+        ),
+        4: DPToAttributeMapping(
+            TuyaNewManufCluster.ep_attribute,
+            "dp_4",
+        ),
+        6: DPToAttributeMapping(
+            TuyaNewManufCluster.ep_attribute,
+            "dp_6",
+        ),
+        9: DPToAttributeMapping(
+            TuyaAnalogInput.ep_attribute,
+            "present_value",
+            lambda x: x / 100,
+        ),
+        101: DPToAttributeMapping(
+            TuyaNewManufCluster.ep_attribute,
+            "dp_101",
+        ),
+        102: DPToAttributeMapping(
+            TuyaNewManufCluster.ep_attribute,
+            "dp_102",
+        ),
+        103: DPToAttributeMapping(
+            TuyaNewManufCluster.ep_attribute,
+            "dp_103",
+        ),
+        104: DPToAttributeMapping(
+            TuyaIlluminanceMeasurement.ep_attribute,
+            "measured_value",
+            lambda x: 10000 * math.log10(x) + 1,
+        ),
+        105: DPToAttributeMapping(
+            TuyaNewManufCluster.ep_attribute,
+            "dp_105",
+        ),
+        106: DPToAttributeMapping(
+            TuyaNewManufCluster.ep_attribute,
+            "dp_106",
+        ),
+        107: DPToAttributeMapping(
+            TuyaNewManufCluster.ep_attribute,
+            "dp_107",
+        ),
+        108: DPToAttributeMapping(
+            TuyaNewManufCluster.ep_attribute,
+            "dp_108",
+        ),
+    }
+
+    data_point_handlers = {
+        1: "_dp_2_attr_update",
+        2: "_dp_2_attr_update",
+        3: "_dp_2_attr_update",
+        4: "_dp_2_attr_update",
+        6: "_dp_2_attr_update",
+        9: "_dp_2_attr_update",
+        101: "_dp_2_attr_update",
         102: "_dp_2_attr_update",
         103: "_dp_2_attr_update",
         104: "_dp_2_attr_update",
         105: "_dp_2_attr_update",
-        113: "_dp_2_attr_update",
+        106: "_dp_2_attr_update",
+        107: "_dp_2_attr_update",
+        108: "_dp_2_attr_update",
     }
 
 
@@ -237,5 +339,112 @@ class NeoMotion(CustomDevice):
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             }
+        }
+    }
+
+
+class MmwRadarMotion(CustomDevice):
+    """NAS-PD07 occupancy sensor."""
+
+    signature = {
+        #  endpoint=1, profile=260, device_type=81, device_version=1,
+        #  input_clusters=[0, 4, 5, 61184], output_clusters=[25, 10]
+        MODELS_INFO: [
+            ("_TZE200_ar0slwnd", "TS0601"),
+            ("_TZE200_sfiy5tfs", "TS0601"),
+            ("_TZE200_mrf6vtua", "TS0601"),
+        ],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaNewManufCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.OCCUPANCY_SENSOR,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    MmwRadarManufCluster,
+                    TuyaOccupancySensing,
+                    TuyaAnalogInput,
+                    TuyaIlluminanceMeasurement,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+        }
+    }
+
+
+class MmwRadarMotionGPP(CustomDevice):
+    """BW-IS3 occupancy sensor."""
+
+    signature = {
+        #  endpoint=1, profile=260, device_type=81, device_version=1,
+        #  input_clusters=[4, 5, 61184, 0], output_clusters=[25, 10])
+        MODELS_INFO: [
+            ("_TZE200_ar0slwnd", "TS0601"),
+            ("_TZE200_sfiy5tfs", "TS0601"),
+            ("_TZE200_mrf6vtua", "TS0601"),
+        ],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaNewManufCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            242: {
+                # <SimpleDescriptor endpoint=242 profile=41440 device_type=97
+                # input_clusters=[]
+                # output_clusters=[33]
+                PROFILE_ID: 41440,
+                DEVICE_TYPE: 97,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.OCCUPANCY_SENSOR,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    MmwRadarManufCluster,
+                    TuyaOccupancySensing,
+                    TuyaAnalogInput,
+                    TuyaIlluminanceMeasurement,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            242: {
+                PROFILE_ID: 41440,
+                DEVICE_TYPE: 97,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
         }
     }
