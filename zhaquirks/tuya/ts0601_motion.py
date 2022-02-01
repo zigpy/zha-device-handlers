@@ -41,6 +41,7 @@ from zhaquirks.tuya import (
     TuyaManufCluster,
     TuyaNewManufCluster,
 )
+from zhaquirks.tuya.mcu import TuyaMCUCluster
 
 ZONE_TYPE = 0x0001
 
@@ -121,11 +122,11 @@ class NeoMotionManufCluster(TuyaNewManufCluster):
     }
 
 
-class MmwRadarManufCluster(TuyaNewManufCluster):
+class MmwRadarManufCluster(TuyaMCUCluster):
     """Neo manufacturer cluster."""
 
     # # Possible DPs and values
-    # DP=1 presence_state: presence
+    # presence_state: presence
     # target distance: 1.61m
     # illuminance: 250lux
     # sensitivity: 9
@@ -137,8 +138,6 @@ class MmwRadarManufCluster(TuyaNewManufCluster):
     # presence_brightness: no control
     # no_one_brightness: no control
     # current_brightness: off
-
-    # It may be necessary to implement multiple endpoints to host all the clusters
 
     manufacturer_attributes = {
         # ramdom attribute IDs
@@ -161,19 +160,19 @@ class MmwRadarManufCluster(TuyaNewManufCluster):
             "occupancy",
         ),
         2: DPToAttributeMapping(
-            TuyaNewManufCluster.ep_attribute,
+            TuyaMCUCluster.ep_attribute,
             "dp_2",
         ),
         3: DPToAttributeMapping(
-            TuyaNewManufCluster.ep_attribute,
+            TuyaMCUCluster.ep_attribute,
             "dp_3",
         ),
         4: DPToAttributeMapping(
-            TuyaNewManufCluster.ep_attribute,
+            TuyaMCUCluster.ep_attribute,
             "dp_4",
         ),
         6: DPToAttributeMapping(
-            TuyaNewManufCluster.ep_attribute,
+            TuyaMCUCluster.ep_attribute,
             "dp_6",
         ),
         9: DPToAttributeMapping(
@@ -182,15 +181,15 @@ class MmwRadarManufCluster(TuyaNewManufCluster):
             lambda x: x / 100,
         ),
         101: DPToAttributeMapping(
-            TuyaNewManufCluster.ep_attribute,
+            TuyaMCUCluster.ep_attribute,
             "dp_101",
         ),
         102: DPToAttributeMapping(
-            TuyaNewManufCluster.ep_attribute,
+            TuyaMCUCluster.ep_attribute,
             "dp_102",
         ),
         103: DPToAttributeMapping(
-            TuyaNewManufCluster.ep_attribute,
+            TuyaMCUCluster.ep_attribute,
             "dp_103",
         ),
         104: DPToAttributeMapping(
@@ -199,19 +198,19 @@ class MmwRadarManufCluster(TuyaNewManufCluster):
             lambda x: 10000 * math.log10(x) + 1,
         ),
         105: DPToAttributeMapping(
-            TuyaNewManufCluster.ep_attribute,
+            TuyaMCUCluster.ep_attribute,
             "dp_105",
         ),
         106: DPToAttributeMapping(
-            TuyaNewManufCluster.ep_attribute,
+            TuyaMCUCluster.ep_attribute,
             "dp_106",
         ),
         107: DPToAttributeMapping(
-            TuyaNewManufCluster.ep_attribute,
+            TuyaMCUCluster.ep_attribute,
             "dp_107",
         ),
         108: DPToAttributeMapping(
-            TuyaNewManufCluster.ep_attribute,
+            TuyaMCUCluster.ep_attribute,
             "dp_108",
         ),
     }
