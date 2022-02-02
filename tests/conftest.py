@@ -5,6 +5,7 @@ import pytest
 import zigpy.application
 import zigpy.device
 import zigpy.types
+import zigpy.zcl.foundation as foundation
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -41,7 +42,7 @@ class MockApp(zigpy.application.ControllerApplication):
         """Mock permit ncp."""
 
     mrequest = CoroutineMock()
-    request = CoroutineMock()
+    request = CoroutineMock(return_value=(foundation.Status.SUCCESS, None))
 
 
 @pytest.fixture(name="MockAppController")
