@@ -2,7 +2,7 @@
 
 import zigpy.profiles.zha as zha_p
 from zigpy.quirks import CustomDevice
-from zigpy.zcl.clusters.general import Basic, Identify, Groups, OnOff, Time
+from zigpy.zcl.clusters.general import Basic, Identify, Groups, Time
 from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
 from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
 
