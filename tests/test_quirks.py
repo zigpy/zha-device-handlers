@@ -1,5 +1,7 @@
 """General quirk tests."""
 
+import collections
+import json
 from unittest import mock
 
 import pytest
@@ -486,3 +488,24 @@ class TestReplacementISWZPR1WP13(CustomDevice):
 
     assert not isinstance(zq.get_device(device), zhaquirks.bosch.motion.ISWZPR1WP13)
     assert type(zq.get_device(device)).__name__ == "TestReplacementISWZPR1WP13"
+
+
+@pytest.mark.parametrize(
+    "quirk",
+    [q for q in ALL_QUIRK_CLASSES if getattr(q, "device_automation_triggers", None)],
+)
+def test_quirk_device_automation_triggers_unique(quirk):
+    """Ensure all quirks have unique device automation triggers."""
+
+    events = collections.defaultdict(list)
+
+    for trigger, event in quirk.device_automation_triggers.items():
+        # XXX: Dictionary objects are not hashable
+        frozen_event = json.dumps(event, sort_keys=True)
+        events[frozen_event].append((trigger, event))
+
+    for triggers_and_events in events.values():
+        if len(triggers_and_events) > 1:
+            raise ValueError(
+                f"Automation triggers are not unique: {triggers_and_events!r}"
+            )
