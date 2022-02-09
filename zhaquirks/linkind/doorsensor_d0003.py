@@ -3,6 +3,7 @@
 # Mauer, 09-02-2022
 import logging
 from typing import Any, List, Optional, Union
+
 import zigpy.profiles.zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
@@ -17,6 +18,7 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.security import IasZone
+
 from zhaquirks import Bus
 from zhaquirks.const import (
     DEVICE_TYPE,
