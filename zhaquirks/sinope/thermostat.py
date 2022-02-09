@@ -241,7 +241,7 @@ class SinopeTH1300ZB(SinopeTechnologiesThermostat):
 
 
 class SinopeLineThermostats(SinopeTechnologiesThermostat):
-    """TH1123ZB and TH1124Z thermostat."""
+    """TH1123ZB, TH1124ZB, TH1500ZB and OTH3600-GA-ZB thermostat."""
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=769 device_version=1
@@ -293,6 +293,7 @@ class SinopeLineThermostats(SinopeTechnologiesThermostat):
                     Metering.cluster_id,
                     ElectricalMeasurement.cluster_id,
                     Diagnostic.cluster_id,
+                    SinopeTechnologiesThermostatCluster,
                     SinopeTechnologiesManufacturerCluster,
                 ],
                 OUTPUT_CLUSTERS: [
