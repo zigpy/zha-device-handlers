@@ -36,7 +36,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class LinKindIasZone(CustomCluster, IasZone):
-    """ IasZone cluster,  used extract the tamper bit from IasZone.ZoneStatus."""
+    """IasZone cluster,  used extract the tamper bit from IasZone.ZoneStatus."""
 
     cluster_id = IasZone.cluster_id
     manufacturer_client_commands = {
@@ -85,7 +85,7 @@ class LinKindTamperOnOff(CustomCluster, OnOff):
         self.endpoint.device.ias_bus.add_listener(self)
 
     def update_state(self, value):
-        """New Alarm reported."""
+        """Report new Alarm."""
         self._update_attribute(0, value)
 
 
