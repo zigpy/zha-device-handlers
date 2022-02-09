@@ -3,15 +3,10 @@
 # Mauer, 09-02-2022
 import logging
 from typing import Any, List, Optional, Union
-
 import zigpy.profiles.zha
-from zigpy.zcl import foundation
-
-from zigpy.quirks import CustomDevice, CustomCluster
-from zhaquirks import Bus
-from zigpy.zcl.clusters.homeautomation import Diagnostic
+from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
-
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
     Basic,
     Identify,
@@ -20,8 +15,9 @@ from zigpy.zcl.clusters.general import (
     PollControl,
     PowerConfiguration,
 )
+from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.security import IasZone
-
+from zhaquirks import Bus
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
