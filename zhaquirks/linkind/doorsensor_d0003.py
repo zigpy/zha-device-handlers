@@ -1,4 +1,4 @@
-"""Linkind window/door sensor (ZB-DoorSensor-D0003)"""
+"""Linkind window/door sensor (ZB-DoorSensor-D0003)."""
 # Adds tampering sensor as separate on/off sensor
 # Mauer, 09-02-2022
 import logging
@@ -8,13 +8,12 @@ import zigpy.profiles.zha
 from zigpy.zcl import foundation
 
 from zigpy.quirks import CustomDevice, CustomCluster
-from zhaquirks import Bus, LocalDataCluster
+from zhaquirks import Bus
 from zigpy.zcl.clusters.homeautomation import Diagnostic
 import zigpy.types as t
 
 from zigpy.zcl.clusters.general import (
     Basic,
-    Groups,
     Identify,
     OnOff,
     Ota,
@@ -30,8 +29,6 @@ from zhaquirks.const import (
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
-    ZONE_STATUS,
-    ZONE_TYPE,
 )
 from zhaquirks.linkind import LinkindBasicCluster
 
@@ -39,6 +36,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class LinKindIasZone(CustomCluster, IasZone):
+    """ IasZone cluster,  used extract the tamper bit from IasZone.ZoneStatus."""
 
     cluster_id = IasZone.cluster_id
     manufacturer_client_commands = {
@@ -68,7 +66,6 @@ class LinKindIasZone(CustomCluster, IasZone):
             Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
         ] = None,
     ):
-
         """Handle a cluster command received on this cluster."""
         if hdr.command_id == 0:
             state = bool(
@@ -78,6 +75,7 @@ class LinKindIasZone(CustomCluster, IasZone):
 
 
 class LinKindTamperOnOff(CustomCluster, OnOff):
+    """OnOff cluster report tamper status."""
 
     cluster_id = OnOff.cluster_id
 
@@ -92,6 +90,8 @@ class LinKindTamperOnOff(CustomCluster, OnOff):
 
 
 class ZBDoorSensorD0003(CustomDevice):
+    """Linkind Door Sensor."""
+
     def __init__(self, *args, **kwargs):
         """Init."""
         self.ias_bus = Bus()
