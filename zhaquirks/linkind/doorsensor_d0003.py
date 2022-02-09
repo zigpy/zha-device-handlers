@@ -53,13 +53,11 @@ class LinKindIasZone(CustomCluster, IasZone):
             False,
         )
     }
-    
-    
+
     def __init__(self, *args, **kwargs):
         """Init."""
         self._current_state = {}
         super().__init__(*args, **kwargs)
-
 
     def handle_cluster_request(
         self,
@@ -73,9 +71,12 @@ class LinKindIasZone(CustomCluster, IasZone):
 
         """Handle a cluster command received on this cluster."""
         if hdr.command_id == 0:
-            state = bool(args[0] & 4 ) # check if fourth bit (tamper alarm) is set, if so  set bit of Alarm 1 high. (HA only checks Alarm_1 and Alarm_2 and ignores tamper/battery...
+            state = bool(
+                args[0] & 4
+            )  # check if fourth bit (tamper alarm) is set, if so  set bit of Alarm 1 high. (HA only checks Alarm_1 and Alarm_2 and ignores tamper/battery...
             self.endpoint.device.ias_bus.listener_event("update_state", state)
-         
+
+
 class LinKindTamperOnOff(CustomCluster, OnOff):
 
     cluster_id = OnOff.cluster_id
@@ -88,16 +89,14 @@ class LinKindTamperOnOff(CustomCluster, OnOff):
     def update_state(self, value):
         """New Alarm reported."""
         self._update_attribute(0, value)
-            
+
 
 class ZBDoorSensorD0003(CustomDevice):
-
     def __init__(self, *args, **kwargs):
         """Init."""
         self.ias_bus = Bus()
         super().__init__(*args, **kwargs)
-    
-        
+
     signature = {
         MODELS_INFO: [("lk", "ZB-DoorSensor-D0003")],
         ENDPOINTS: {
@@ -106,7 +105,7 @@ class ZBDoorSensorD0003(CustomDevice):
             # input_clusters=[0, 1, 3, 32, 1280, 2821] 0x0000, 0x0001, 0x0003, 0x0020, 0x0500, 0x0b05
             # 0x0000 = basic, 0x0001 = powerconfiguration, 0x0003 = identify, 0x0020 = pollcontrol, 0x0500 = IasZone, 0x0b05 = Diagnostic
             # output_clusters=[25]
-            # 
+            #
             1: {
                 PROFILE_ID: zigpy.profiles.zha.PROFILE_ID,
                 DEVICE_TYPE: zigpy.profiles.zha.DeviceType.IAS_ZONE,
@@ -138,9 +137,7 @@ class ZBDoorSensorD0003(CustomDevice):
                     PollControl.cluster_id,
                     Diagnostic.cluster_id,
                 ],
-                OUTPUT_CLUSTERS: [ LinKindTamperOnOff, Ota.cluster_id],
+                OUTPUT_CLUSTERS: [LinKindTamperOnOff, Ota.cluster_id],
             },
         },
     }
-
-
