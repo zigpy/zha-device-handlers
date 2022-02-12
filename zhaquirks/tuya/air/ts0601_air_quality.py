@@ -46,8 +46,14 @@ class TuyaCO2Sensor(CustomDevice):
                     TuyaCO2ManufCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            242: {
+                  PROFILE_ID: 41440,
+                  DEVICE_TYPE: 0x0061,
+                  INPUT_CLUSTERS: [ ],
+                  OUTPUT_CLUSTERS: [33],
             }
-        },
+        }
     }
 
     replacement = {
