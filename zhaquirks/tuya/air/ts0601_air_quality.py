@@ -32,8 +32,7 @@ class TuyaCO2Sensor(CustomDevice):
         # input_clusters=[0, 4, 5, 61184],
         # output_clusters=[25, 10])
         MODELS_INFO: [
-            ("_TZE200_8ygsuhe1", "TS0601"),
-            ("_TZE200_yvx5lh6k", "TS0601"),
+            ("_TZE200_8ygsuhe1", "TS0601")
         ],
         ENDPOINTS: {
             1: {
@@ -46,12 +45,6 @@ class TuyaCO2Sensor(CustomDevice):
                     TuyaCO2ManufCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
-            },
-            242: {
-                  PROFILE_ID: 41440,
-                  DEVICE_TYPE: 0x0061,
-                  INPUT_CLUSTERS: [ ],
-                  OUTPUT_CLUSTERS: [33],
             }
         }
     }
@@ -109,7 +102,7 @@ class TuyaCO2SensorGPP(CustomDevice):
                 PROFILE_ID: 41440,
                 DEVICE_TYPE: 97,
                 INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+                OUTPUT_CLUSTERS: [33],
             },
         },
     }
