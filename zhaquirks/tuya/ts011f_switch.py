@@ -143,7 +143,7 @@ class Tuya_1G_Switch(TuyaSwitch):
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_PLUG_IN_UNIT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Groups.cluster_id,
