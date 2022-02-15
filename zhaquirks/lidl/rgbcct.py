@@ -25,6 +25,15 @@ from zhaquirks.const import (
 )
 
 
+class LidlOnOffCluster(CustomCluster, OnOff):
+    """Lidl OnOff custom cluster."""
+
+    def _update_attribute(self, attrid, value):
+        if attrid != 0:
+            super()._update_attribute(attrid, value)
+        # else ignore update
+
+
 class LidlRGBCCTColorCluster(CustomCluster, Color):
     """Lidl RGB+CCT Lighting custom cluster."""
 
@@ -81,7 +90,7 @@ class RGBCCTLight(CustomDevice):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    OnOff.cluster_id,
+                    LidlOnOffCluster,
                     LevelControl.cluster_id,
                     LidlRGBCCTColorCluster,
                     LightLink.cluster_id,
