@@ -1,6 +1,9 @@
 """Quirk for LIDL RGB+CCT bulb."""
+import logging
+
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.types.named import Bool
 from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
@@ -24,12 +27,15 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 
+_LOGGER = logging.getLogger(__name__)
+
 
 class LidlOnOffCluster(CustomCluster, OnOff):
     """Lidl OnOff custom cluster."""
 
     def _update_attribute(self, attrid, value):
-        if attrid != 0:
+        _LOGGER.debug(f"LIDL ATTR {attrid} {value!r} {value!=Bool.false}")
+        if attrid != 0 or value != Bool.false:
             super()._update_attribute(attrid, value)
         # else ignore update
 
