@@ -349,7 +349,7 @@ class TuyaSmartRemote0044TOPlusB(CustomDevice, Tuya4ButtonTriggers):
                 INPUT_CLUSTERS: [
                     PowerConfiguration.cluster_id,
                     OnOff.cluster_id,
-                    0xe000,  # Unknown
+                    0xE000,  # Unknown
                 ],
                 OUTPUT_CLUSTERS: [],
             },
@@ -359,7 +359,7 @@ class TuyaSmartRemote0044TOPlusB(CustomDevice, Tuya4ButtonTriggers):
                 INPUT_CLUSTERS: [
                     PowerConfiguration.cluster_id,
                     OnOff.cluster_id,
-                    0xe000,  # Unknown
+                    0xE000,  # Unknown
                 ],
                 OUTPUT_CLUSTERS: [],
             },
@@ -369,7 +369,7 @@ class TuyaSmartRemote0044TOPlusB(CustomDevice, Tuya4ButtonTriggers):
                 INPUT_CLUSTERS: [
                     PowerConfiguration.cluster_id,
                     OnOff.cluster_id,
-                    0xe000,  # Unknown
+                    0xE000,  # Unknown
                 ],
                 OUTPUT_CLUSTERS: [],
             },
@@ -390,7 +390,11 @@ class TuyaSmartRemote0044TOPlusB(CustomDevice, Tuya4ButtonTriggers):
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
                 INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [TuyaSmartRemoteOnOffCluster],
+                OUTPUT_CLUSTERS: [
+                    Time.cluster_id,
+                    Ota.cluster_id,
+                    TuyaSmartRemoteOnOffCluster,
+                ],
             },
             3: {
                 PROFILE_ID: zha.PROFILE_ID,
