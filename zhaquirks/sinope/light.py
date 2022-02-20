@@ -97,7 +97,7 @@ class SinopeTechnologieslight(CustomDevice):
                     OnOff.cluster_id,
                     Metering.cluster_id,
                     Diagnostic.cluster_id,
-                    SINOPE_MANUFACTURER_CLUSTER_ID,
+                    SinopeTechnologiesManufacturerCluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
@@ -157,7 +157,7 @@ class SinopeDM2500ZB(SinopeTechnologieslight):
                     LevelControl.cluster_id,
                     Metering.cluster_id,
                     Diagnostic.cluster_id,
-                    SINOPE_MANUFACTURER_CLUSTER_ID,
+                    SinopeTechnologiesManufacturerCluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
@@ -220,7 +220,7 @@ class SinopeDM2550ZB(SinopeTechnologieslight):
                     Metering.cluster_id,
                     ElectricalMeasurement.cluster_id,
                     Diagnostic.cluster_id,
-                    SINOPE_MANUFACTURER_CLUSTER_ID,
+                    SinopeTechnologiesManufacturerCluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,

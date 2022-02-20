@@ -33,7 +33,12 @@ class PhilipsMotion(CustomDevice):
     """Philips motion sensor device."""
 
     signature = {
-        MODELS_INFO: [(PHILIPS, "SML001"), (PHILIPS, "SML002")],
+        MODELS_INFO: [
+            (PHILIPS, "SML001"),
+            (PHILIPS, "SML002"),
+            (PHILIPS, "SML003"),
+            (PHILIPS, "SML004"),
+        ],
         ENDPOINTS: {
             #  <SimpleDescriptor endpoint=1 profile=49246 device_type=2128
             #  device_version=?

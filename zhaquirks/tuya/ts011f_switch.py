@@ -82,7 +82,7 @@ class Tuya_2G_Switch(TuyaSwitch):
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_PLUG_IN_UNIT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
@@ -96,7 +96,7 @@ class Tuya_2G_Switch(TuyaSwitch):
             },
             2: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_PLUG_IN_UNIT,
                 INPUT_CLUSTERS: [
                     Identify.cluster_id,
                     Groups.cluster_id,
@@ -112,6 +112,45 @@ class Tuya_2G_Switch(TuyaSwitch):
                 DEVICE_TYPE: 97,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        },
+    }
+
+
+class Tuya_1G_Switch(TuyaSwitch):
+    """Tuya 1 gang light switch with RF433."""
+
+    signature = {
+        MODEL: "TS011F",
+        ENDPOINTS: {
+            # <SimpleDescriptor endpoint=1 profile=260 device_type=9
+            # input_clusters=[0, 4, 5, 6,]
+            # output_clusters=[10, 25]>
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.MAIN_POWER_OUTLET,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+        },
+    }
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.MAIN_POWER_OUTLET,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaZBOnOffAttributeCluster,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
         },
     }
