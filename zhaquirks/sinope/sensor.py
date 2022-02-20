@@ -1,5 +1,6 @@
-"""This module handles quirks of the  Sinopé Technologies water leak sensor WL4200 and WL4200S
-first and second generation."""
+"""This module handles quirks of the  Sinopé Technologies water leak sensor WL4200 and WL4200S.
+It support first and second generation sensors.
+"""
 
 import zigpy.profiles.zha as zha_p
 from zigpy.quirks import CustomCluster, CustomDevice
