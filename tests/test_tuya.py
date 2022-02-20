@@ -61,10 +61,18 @@ ZCL_TUYA_VALVE_CHILD_LOCK_ON = b"\t2\x01\x03\x04\x07\x01\x00\x01\x01"
 ZCL_TUYA_VALVE_AUTO_LOCK_ON = b"\t2\x01\x03\x04\x74\x01\x00\x01\x01"
 ZCL_TUYA_VALVE_BATTERY_LOW = b"\t2\x01\x03\x04\x6E\x01\x00\x01\x01"
 
-ZCL_TUYA_VALVE_ZONNSMART_TEMPERATURE = b"\tp\x01\x00\x02\x18\x02\x00\x04\x00\x00\x00\xd3"
-ZCL_TUYA_VALVE_ZONNSMART_TARGET_TEMP = b"\t3\x01\x03\x05\x10\x02\x00\x04\x00\x00\x00\xcd"
-ZCL_TUYA_VALVE_ZONNSMART_HOLIDAY_TEMP = b"\t3\x01\x03\x05\x20\x02\x00\x04\x00\x00\x00\xaa"
-ZCL_TUYA_VALVE_ZONNSMART_TEMP_OFFSET = b"\t3\x01\x03\x05\x1b\x02\x00\x04\x00\x00\x00\x0b"
+ZCL_TUYA_VALVE_ZONNSMART_TEMPERATURE = (
+    b"\tp\x01\x00\x02\x18\x02\x00\x04\x00\x00\x00\xd3"
+)
+ZCL_TUYA_VALVE_ZONNSMART_TARGET_TEMP = (
+    b"\t3\x01\x03\x05\x10\x02\x00\x04\x00\x00\x00\xcd"
+)
+ZCL_TUYA_VALVE_ZONNSMART_HOLIDAY_TEMP = (
+    b"\t3\x01\x03\x05\x20\x02\x00\x04\x00\x00\x00\xaa"
+)
+ZCL_TUYA_VALVE_ZONNSMART_TEMP_OFFSET = (
+    b"\t3\x01\x03\x05\x1b\x02\x00\x04\x00\x00\x00\x0b"
+)
 ZCL_TUYA_VALVE_ZONNSMART_MODE_MANUAL = b"\t2\x01\x03\x04\x02\x04\x00\x01\x01"
 ZCL_TUYA_VALVE_ZONNSMART_MODE_SCHEDULE = b"\t2\x01\x03\x04\x02\x04\x00\x01\x00"
 ZCL_TUYA_VALVE_ZONNSMART_HEAT_STOP = b"\t2\x01\x03\x04\x6b\x01\x00\x01\x00"
@@ -456,7 +464,7 @@ async def test_zonnsmart_state_report(zigpy_device_from_quirk, quirk):
     assert thermostat_listener.attribute_updates[8][1] == 1
     assert thermostat_listener.attribute_updates[9][0] == 0x4002
     assert thermostat_listener.attribute_updates[9][1] == 0
-    assert thermostat_listener.attribute_updates[10][0] == 0x001c  # HEAT ON
+    assert thermostat_listener.attribute_updates[10][0] == 0x001C  # HEAT ON
     assert thermostat_listener.attribute_updates[10][1] == 4
 
 
