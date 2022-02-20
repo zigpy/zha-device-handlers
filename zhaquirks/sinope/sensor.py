@@ -1,6 +1,5 @@
-"""
-This module handles quirks of the  Sinopé Technologies water leak sensor WL4200 and WL4200S first and second generation.
-"""
+"""This module handles quirks of the  Sinopé Technologies water leak sensor WL4200 and WL4200S
+first and second generation."""
 
 import zigpy.profiles.zha as zha_p
 from zigpy.quirks import CustomCluster, CustomDevice
@@ -8,13 +7,14 @@ import zigpy.types as t
 from zigpy.zcl.clusters.general import (
     Basic,
     Identify,
+    Ota,
     PollControl,
     PowerConfiguration,
-    Ota,
 )
 from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone
+
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -92,7 +92,7 @@ class SinopeTechnologiesSensor(CustomDevice):
 
 
 class SinopeTechnologiesSensor2(CustomDevice):
-    """SinopeTechnologiesSensor custom device."""
+    """SinopeTechnologiesSensor2 custom device."""
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=1026
