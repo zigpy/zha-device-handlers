@@ -1,18 +1,17 @@
 """Innr SP 234 plug."""
-from zigpy.profiles import zll, zha
+from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
     Groups,
     Identify,
-    LevelControl,
     OnOff,
     Ota,
     Scenes,
     Time,
 )
-from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement, Diagnostic
+from zigpy.zcl.clusters.homeautomation import Diagnostic, ElectricalMeasurement
 from zigpy.zcl.clusters.lightlink import LightLink
 from zigpy.zcl.clusters.smartenergy import Metering
 
@@ -34,7 +33,7 @@ class ElectricalMeasurementCluster(CustomCluster, ElectricalMeasurement):
 
     cluster_id = ElectricalMeasurement.cluster_id
     AC_POWER_DIVISOR = 0x0605
-    _CONSTANT_ATTRIBUTES = { AC_POWER_DIVISOR: 1 }
+    _CONSTANT_ATTRIBUTES = {AC_POWER_DIVISOR: 1}
 
 
 class SP234(CustomDevice):
@@ -68,8 +67,8 @@ class SP234(CustomDevice):
                 PROFILE_ID: 41440,
                 DEVICE_TYPE: 0x0061,
                 INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [ GreenPowerProxy.cluster_id ]
-            }
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
         },
         MODELS_INFO: [(MANUFACTURER, MODEL)],
     }
@@ -102,7 +101,7 @@ class SP234(CustomDevice):
                 PROFILE_ID: 41440,
                 DEVICE_TYPE: 0x0061,
                 INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [ GreenPowerProxy.cluster_id ]
-            }
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
         },
     }
