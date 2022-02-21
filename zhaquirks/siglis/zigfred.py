@@ -1,4 +1,5 @@
 """zigfred device handler."""
+import logging
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
@@ -14,8 +15,6 @@ from zigpy.zcl.clusters.general import (
 
 from zigpy.zcl.clusters.lighting import Color
 import zigpy.types as t
-
-from zhaquirks import Bus
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -37,12 +36,14 @@ from zhaquirks.const import (
     ZHA_SEND_EVENT,
 )
 
+_LOGGER = logging.getLogger(__name__)
+
 # Siglis zigfred specific clusters
 SIGLIS_MANUFACTURER_CODE = 0x129C
-ZIGFRED_CLUSTER_ID = 0x0345
+ZIGFRED_CLUSTER_ID = 0xFC42
 ZIGFRED_CLUSTER_BUTTONS_ATTRIBUTE_ID = 0x0008
 
-# Siglis zigfred cluster 0x0345 implementation
+# Siglis zigfred cluster implementation
 class ZigfredCluster(CustomCluster):
     """Siglis manufacturer specific cluster for zigfred."""
 
@@ -63,6 +64,7 @@ class ZigfredCluster(CustomCluster):
         reportable_change,
         manufacturer=None,
     ):
+        _LOGGER.info("Configuring reporting on zigfred cluster")
         result = await super().configure_reporting(
             self.buttons_attribute_id,
             0,
@@ -100,6 +102,8 @@ class ZigfredCluster(CustomCluster):
                 PRESS_TYPE: press_type,
             }
 
+            _LOGGER.info(f"Got button press on zigfred cluster: {button}_{press_type}")
+
             if button and press_type:
                 self.listener_event(ZHA_SEND_EVENT, f"{button}_{press_type}", event_args)
 
@@ -108,7 +112,7 @@ class ZigfredUno(CustomDevice):
 
     def __init__(self, *args, **kwargs):
         """Init."""
-        self.voc_bus = Bus()
+        _LOGGER.info("Initializing zigfred uno")
         super().__init__(*args, **kwargs)
 
     signature = {
