@@ -113,6 +113,8 @@ class TuyaAttributesCluster(TuyaLocalCluster):
                 endpoint_id=self.endpoint.endpoint_id,
                 cluster_attr=self.attributes[record.attrid][0],
                 attr_value=record.value.value,
+                expect_reply=False,
+                manufacturer=manufacturer
             )
             self.endpoint.device.command_bus.listener_event(
                 TUYA_MCU_COMMAND,
@@ -279,6 +281,8 @@ class TuyaOnOff(OnOff, TuyaLocalCluster):
                 endpoint_id=self.endpoint.endpoint_id,
                 cluster_attr="on_off",
                 attr_value=command_id,
+                expect_reply=expect_reply,
+                manufacturer=manufacturer
             )
             self.endpoint.device.command_bus.listener_event(
                 TUYA_MCU_COMMAND,
@@ -389,6 +393,8 @@ class TuyaLevelControl(LevelControl, TuyaLocalCluster):
                 endpoint_id=self.endpoint.endpoint_id,
                 cluster_attr="current_level",
                 attr_value=args[0],
+                expect_reply=expect_reply,
+                manufacturer=manufacturer
             )
             self.endpoint.device.command_bus.listener_event(
                 TUYA_MCU_COMMAND,

@@ -63,7 +63,7 @@ async def test_tuya_methods(zigpy_device_from_quirk, quirk):
 
     tcd_1 = TuyaClusterData(endpoint_id=2, cluster_attr="minimum_level", attr_value=25)
 
-    tcd_switch1_on = TuyaClusterData(endpoint_id=1, cluster_attr="on_off", attr_value=1)
+    tcd_switch1_on = TuyaClusterData(endpoint_id=1, cluster_attr="on_off", attr_value=1, expect_reply=True)
 
     result_1 = tuya_cluster.from_cluster_data(tcd_1)
     assert result_1
