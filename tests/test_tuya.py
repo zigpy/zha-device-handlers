@@ -223,8 +223,8 @@ async def test_singleswitch_requests(zigpy_device_from_quirk, quirk):
         status = await switch_cluster.command(0x0000)
         m1.assert_called_with(
             61184,
-            1,
-            b"\x01\x01\x00\x00\x00\x01\x01\x00\x01\x00",
+            2,
+            b"\x01\x02\x00\x00\x01\x01\x01\x00\x01\x00",
             expect_reply=True,
             command_id=0,
         )
@@ -233,8 +233,8 @@ async def test_singleswitch_requests(zigpy_device_from_quirk, quirk):
         status = await switch_cluster.command(0x0001)
         m1.assert_called_with(
             61184,
-            2,
-            b"\x01\x02\x00\x00\x00\x01\x01\x00\x01\x01",
+            4,
+            b"\x01\x04\x00\x00\x03\x01\x01\x00\x01\x01",
             expect_reply=True,
             command_id=0,
         )
