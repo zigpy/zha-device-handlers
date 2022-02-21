@@ -1,7 +1,8 @@
 """Module to handle quirks of the Sinopé Technologies switches.
 
 Supported devices, SP2600ZB, SP2610ZB, RM3250ZB, RM3500ZB,
-VA4200WZ, VA4201WZ, VA4200ZB, VA4201ZB, VA4220ZB, VA4221ZB and MC3100ZB."""
+VA4200WZ, VA4201WZ, VA4200ZB, VA4201ZB, VA4220ZB, VA4221ZB and MC3100ZB.
+"""
 
 import zigpy.profiles.zha as zha_p
 from zigpy.quirks import CustomCluster, CustomDevice
@@ -18,8 +19,8 @@ from zigpy.zcl.clusters.general import (
     Scenes,
 )
 from zigpy.zcl.clusters.homeautomation import Diagnostic, ElectricalMeasurement
-from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
+from zigpy.zcl.clusters.smartenergy import Metering
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -142,7 +143,7 @@ class SinopeTechnologiesLoadController(CustomDevice):
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     Groups.cluster_id,
-                    Ota.cluster_id
+                    Ota.cluster_id,
                 ],
             }
         },
@@ -165,7 +166,7 @@ class SinopeTechnologiesLoadController(CustomDevice):
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     Groups.cluster_id,
-                    Ota.cluster_id
+                    Ota.cluster_id,
                 ],
             }
         }
