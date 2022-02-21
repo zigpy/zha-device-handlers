@@ -11,11 +11,7 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.tuya import TuyaSwitch
-from zhaquirks.tuya.mcu import (
-    MoesSwitchManufCluster,
-    TuyaOnOffManufCluster,
-    TuyaOnOff,
-)
+from zhaquirks.tuya.mcu import MoesSwitchManufCluster, TuyaOnOff, TuyaOnOffManufCluster
 
 
 class TuyaSingleSwitchTI(TuyaSwitch):
