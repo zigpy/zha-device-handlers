@@ -13,6 +13,7 @@ from zhaquirks.tuya import (
     TUYA_MCU_VERSION_RSP,
     TUYA_SET_DATA,
     Data,
+    PowerOnState,
     TuyaCommand,
     TuyaData,
     TuyaLocalCluster,
@@ -73,6 +74,17 @@ class TuyaClusterData(t.Struct):
     endpoint_id: int
     cluster_attr: str
     attr_value: int  # Maybe also others types?
+    expect_reply: bool
+    manufacturer: str
+
+
+class MoesBacklight(t.enum8):
+    """MOES switch backlight mode enum."""
+
+    off = 0x00
+    light_when_on = 0x01
+    light_when_off = 0x02
+    freeze = 0x03
 
 
 class TuyaAttributesCluster(TuyaLocalCluster):
@@ -128,6 +140,7 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
                 # MCU version is 1 byte length
                 # is converted from HEX -> BIN -> XX.XX.XXXX -> DEC (x.y.z)
                 # example: 0x98 -> 10011000 -> 10.01.1000 -> 2.1.8
+                # https://developer.tuya.com/en/docs/iot-device-dev/firmware-version-description?id=K9zzuc5n2gff8#title-1-Zigbee%20firmware%20versions
                 major = self.version_raw >> 6
                 minor = (self.version_raw & 63) >> 4
                 release = self.version_raw & 15
@@ -203,11 +216,16 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
         self.debug("tuya_command: %s", tuya_command)
         if tuya_command:
             self.create_catching_task(
-                self.command(TUYA_SET_DATA, tuya_command, expect_reply=True)
+                self.command(
+                    TUYA_SET_DATA,
+                    tuya_command,
+                    expect_reply=cluster_data.expect_reply,
+                    manufacturer=cluster_data.manufacturer,
+                )
             )
         else:
             self.warning(
-                "MCU command not call for data %s",
+                "no MCU command for data %s",
                 cluster_data,
             )
 
@@ -309,12 +327,12 @@ class TuyaOnOffManufCluster(TuyaMCUCluster):
     }
 
 
-class SurfaceSwitchManufCluster(TuyaOnOffManufCluster):
+class MoesSwitchManufCluster(TuyaOnOffManufCluster):
     """On/Off Tuya cluster with extra device attributes."""
 
     attributes = {
-        0x8001: ("backlight_mode", t.enum8),
-        0x8002: ("power_on_state", t.enum8),
+        0x8001: ("backlight_mode", MoesBacklight),
+        0x8002: ("power_on_state", PowerOnState),
     }
 
     dp_to_attribute: Dict[
@@ -326,6 +344,7 @@ class SurfaceSwitchManufCluster(TuyaOnOffManufCluster):
                 TuyaMCUCluster.ep_attribute,
                 "power_on_state",
                 dp_type=TuyaDPType.ENUM,
+                converter=lambda x: PowerOnState(x),
             )
         }
     )
@@ -335,6 +354,7 @@ class SurfaceSwitchManufCluster(TuyaOnOffManufCluster):
                 TuyaMCUCluster.ep_attribute,
                 "backlight_mode",
                 dp_type=TuyaDPType.ENUM,
+                converter=lambda x: MoesBacklight(x),
             ),
         }
     )
