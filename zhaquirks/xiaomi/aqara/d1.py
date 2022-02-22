@@ -17,16 +17,14 @@ from zigpy.zcl.clusters.general import (
     Time,
 )
 
-from zhaquirks import EventableCluster
 from zhaquirks.const import (
     ARGS,
     ATTR_ID,
+    BUTTON,
     BUTTON_1,
     BUTTON_2,
     BUTTON_3,
     CLUSTER_ID,
-    COMMAND,
-    COMMAND_ATTRIBUTE_UPDATED,
     COMMAND_BUTTON_DOUBLE,
     COMMAND_BUTTON_HOLD,
     COMMAND_BUTTON_SINGLE,
@@ -36,13 +34,15 @@ from zhaquirks.const import (
     INPUT_CLUSTERS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
+    PRESS_TYPE,
     PROFILE_ID,
-    VALUE, PRESS_TYPE, BUTTON, ZHA_SEND_EVENT,
+    VALUE,
+    ZHA_SEND_EVENT,
 )
 from zhaquirks.xiaomi import (
     LUMI,
     OnOffCluster,
-    XiaomiCustomDevice,
+    XiaomiCustomDevice, DeviceTemperatureCluster, BasicCluster,
 )
 from .opple_remote import MultistateInputCluster, OppleCluster
 
@@ -70,10 +70,18 @@ class OppleOperationMode(t.enum8):
 class OppleD1Cluster(OppleCluster):
     """Xiaomi mfg cluster implementation."""
 
-    attributes = copy.deepcopy(OppleCluster.attributes)
-    attributes.update({
-        0x0200: ("operation_mode", OppleOperationMode),
-    })
+    if hasattr(OppleCluster, 'attributes'):
+        attributes = copy.deepcopy(OppleCluster.attributes)
+    elif hasattr(OppleCluster, 'manufacturer_attributes'):
+        attributes = copy.deepcopy(OppleCluster.manufacturer_attributes)
+    else:
+        attributes = {}
+    
+    attributes.update(
+        {
+            0x0200: ("operation_mode", OppleOperationMode),
+        }
+    )
 
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
@@ -242,8 +250,8 @@ class D1WallSwitch3Btn(XiaomiCustomDevice):
             1: {
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    DeviceTemperature.cluster_id,  # 2
+                    BasicCluster,
+                    DeviceTemperatureCluster,  # 2
                     Identify.cluster_id,  # 3
                     Groups.cluster_id,  # 4
                     Scenes.cluster_id,  # 5
@@ -256,7 +264,7 @@ class D1WallSwitch3Btn(XiaomiCustomDevice):
             2: {
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
-                    Basic.cluster_id,
+                    BasicCluster,
                     Identify.cluster_id,  # 3
                     Groups.cluster_id,  # 4
                     Scenes.cluster_id,  # 5
@@ -269,7 +277,7 @@ class D1WallSwitch3Btn(XiaomiCustomDevice):
             3: {
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
-                    Basic.cluster_id,
+                    BasicCluster,
                     Identify.cluster_id,  # 3
                     Groups.cluster_id,  # 4
                     Scenes.cluster_id,  # 5
@@ -373,58 +381,57 @@ class D1WallSwitch3Btn(XiaomiCustomDevice):
         (COMMAND_BUTTON_SINGLE, BUTTON_1): {
             ENDPOINT_ID: 41,
             CLUSTER_ID: 18,
-            #COMMAND: COMMAND_ATTRIBUTE_UPDATED,
+            # COMMAND: COMMAND_ATTRIBUTE_UPDATED,
             ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: SINGLE, VALUE: 1},
         },
         (COMMAND_BUTTON_DOUBLE, BUTTON_1): {
             ENDPOINT_ID: 41,
             CLUSTER_ID: 18,
-            #COMMAND: COMMAND_ATTRIBUTE_UPDATED,
+            # COMMAND: COMMAND_ATTRIBUTE_UPDATED,
             ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: DOUBLE, VALUE: 2},
         },
         (COMMAND_BUTTON_HOLD, BUTTON_1): {
             ENDPOINT_ID: 1,
             CLUSTER_ID: 0xFCC0,
-            #COMMAND: COMMAND_ATTRIBUTE_UPDATED,
+            # COMMAND: COMMAND_ATTRIBUTE_UPDATED,
             ARGS: {ATTR_ID: 0x00FC, VALUE: False},
         },
 
         (COMMAND_BUTTON_SINGLE, BUTTON_2): {
             ENDPOINT_ID: 42,
             CLUSTER_ID: 18,
-            #COMMAND: COMMAND_ATTRIBUTE_UPDATED,
+            # COMMAND: COMMAND_ATTRIBUTE_UPDATED,
             ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: SINGLE, VALUE: 1},
         },
         (COMMAND_BUTTON_DOUBLE, BUTTON_2): {
             ENDPOINT_ID: 42,
             CLUSTER_ID: 18,
-            #COMMAND: COMMAND_ATTRIBUTE_UPDATED,
+            # COMMAND: COMMAND_ATTRIBUTE_UPDATED,
             ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: DOUBLE, VALUE: 2},
         },
         (COMMAND_BUTTON_HOLD, BUTTON_2): {
             ENDPOINT_ID: 1,
             CLUSTER_ID: 0xFCC0,
-            #COMMAND: COMMAND_ATTRIBUTE_UPDATED,
+            # COMMAND: COMMAND_ATTRIBUTE_UPDATED,
             ARGS: {ATTR_ID: 0x00FC, VALUE: False},
         },
 
         (COMMAND_BUTTON_SINGLE, BUTTON_3): {
             ENDPOINT_ID: 43,
             CLUSTER_ID: 18,
-            #COMMAND: COMMAND_ATTRIBUTE_UPDATED,
+            # COMMAND: COMMAND_ATTRIBUTE_UPDATED,
             ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: SINGLE, VALUE: 1},
         },
         (COMMAND_BUTTON_DOUBLE, BUTTON_3): {
             ENDPOINT_ID: 43,
             CLUSTER_ID: 18,
-            #COMMAND: COMMAND_ATTRIBUTE_UPDATED,
+            # COMMAND: COMMAND_ATTRIBUTE_UPDATED,
             ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: DOUBLE, VALUE: 2},
         },
         (COMMAND_BUTTON_HOLD, BUTTON_3): {
             ENDPOINT_ID: 1,
             CLUSTER_ID: 0xFCC0,
-            #COMMAND: COMMAND_ATTRIBUTE_UPDATED,
+            # COMMAND: COMMAND_ATTRIBUTE_UPDATED,
             ARGS: {ATTR_ID: 0x00FC, VALUE: False},
         }, 
     }
-
