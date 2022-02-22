@@ -40,9 +40,9 @@ from zhaquirks.const import (
     ZHA_SEND_EVENT,
 )
 from zhaquirks.xiaomi import (
+    LUMI,
     BasicCluster,
     DeviceTemperatureCluster,
-    LUMI,
     OnOffCluster,
     XiaomiCustomDevice,
 )
@@ -66,7 +66,8 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class OppleOperationMode(t.enum8):
-    """Opple operation_mode enum"""
+    """Opple operation_mode enum."""
+
     Decoupled = 0x00
     Coupled = 0x01
 
@@ -104,7 +105,7 @@ class OppleD1Cluster(OppleCluster):
 
 
 class D1WallSwitch3Btn(XiaomiCustomDevice):
-    """Aqara D1 3-button wall remote"""
+    """Aqara D1 3-button wall remote."""
 
     manufacturer_id_override = 0x115F
 
