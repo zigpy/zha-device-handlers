@@ -1,6 +1,8 @@
 """zigfred device handler."""
 import logging
 
+from typing import Any, List, Optional, Union
+
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.zcl.clusters.general import (
@@ -13,6 +15,7 @@ from zigpy.zcl.clusters.general import (
     GreenPowerProxy,
 )
 
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.lighting import Color
 import zigpy.types as t
 
@@ -42,6 +45,7 @@ _LOGGER = logging.getLogger(__name__)
 SIGLIS_MANUFACTURER_CODE = 0x129C
 ZIGFRED_CLUSTER_ID = 0xFC42
 ZIGFRED_CLUSTER_BUTTONS_ATTRIBUTE_ID = 0x0008
+ZIGFRED_CLUSTER_COMMAND_BUTTON_EVENT = 0x02
 
 # Siglis zigfred cluster implementation
 class ZigfredCluster(CustomCluster):
@@ -51,61 +55,64 @@ class ZigfredCluster(CustomCluster):
     cluster_id = ZIGFRED_CLUSTER_ID
     buttons_attribute_id = ZIGFRED_CLUSTER_BUTTONS_ATTRIBUTE_ID
 
-    manufacturer_server_commands = {}
-    manufacturer_attributes = {
-        buttons_attribute_id: ("buttons", t.uint32_t),
+    manufacturer_server_commands = {
+        ZIGFRED_CLUSTER_COMMAND_BUTTON_EVENT: ("button_event", (t.uint32_t,), False),
     }
 
-    async def configure_reporting(
+    #manufacturer_attributes = {
+    #    buttons_attribute_id: ("buttons", t.uint32_t),
+    #}
+
+    def _process_button_event(self, value: t.uint32_t):
+        button_lookup = {
+            0: BUTTON_1,
+            1: BUTTON_2,
+            2: BUTTON_3,
+            3: BUTTON_4,
+        }
+
+        press_type_lookup = {
+            0: LONG_RELEASE,
+            1: SHORT_PRESS,
+            2: DOUBLE_PRESS,
+            3: LONG_PRESS,
+        }
+
+        button = value & 0xff
+        press_type = (value >> 8) & 0xff
+
+        button = button_lookup[button]
+        press_type = press_type_lookup[press_type]
+
+        action = f"{button}_{press_type}"
+
+        event_args = {
+            BUTTON: button,
+            PRESS_TYPE: press_type,
+        }
+
+        _LOGGER.info(f"Got button press on zigfred cluster: {action}")
+
+        if button and press_type:
+            self.listener_event(ZHA_SEND_EVENT, action, event_args)
+
+    def handle_cluster_request(
         self,
-        attribute,
-        min_interval,
-        max_interval,
-        reportable_change,
-        manufacturer=None,
-    ):
-        _LOGGER.info("Configuring reporting on zigfred cluster")
-        result = await super().configure_reporting(
-            self.buttons_attribute_id,
-            0,
-            0,
-            0,
-            manufacturer = SIGLIS_MANUFACTURER_CODE
-        )
-        return result
+        hdr: foundation.ZCLHeader,
+        args: List[Any],
+        *,
+        dst_addressing: Optional[
+            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        ] = None,
+    ) -> None:
+        """Handle cluster specific commands."""
+        if hdr.command_id == ZIGFRED_CLUSTER_COMMAND_BUTTON_EVENT:
+            self._process_button_event(args[0])
 
-    def _update_attribute(self, attrid, value):
-        super()._update_attribute(attrid, value)
-        if attrid == ZIGFRED_CLUSTER_BUTTONS_ATTRIBUTE_ID and value is not None:
-            button_lookup = {
-                0: BUTTON_1,
-                1: BUTTON_2,
-                2: BUTTON_3,
-                3: BUTTON_4,
-            }
-
-            press_type_lookup = {
-                0: LONG_RELEASE,
-                1: SHORT_PRESS,
-                2: DOUBLE_PRESS,
-                3: LONG_PRESS,
-            }
-
-            button = value & 0xff
-            press_type = (value >> 8) & 0xff
-
-            button = button_lookup[button]
-            press_type = press_type_lookup[press_type]
-
-            event_args = {
-                BUTTON: button,
-                PRESS_TYPE: press_type,
-            }
-
-            _LOGGER.info(f"Got button press on zigfred cluster: {button}_{press_type}")
-
-            if button and press_type:
-                self.listener_event(ZHA_SEND_EVENT, f"{button}_{press_type}", event_args)
+    #def _update_attribute(self, attrid, value):
+    #    super()._update_attribute(attrid, value)
+    #    if attrid == ZIGFRED_CLUSTER_BUTTONS_ATTRIBUTE_ID and value is not None:
+    #        self._process_button_event(value)
 
 class ZigfredUno(CustomDevice):
     """zigfred uno device handler."""
