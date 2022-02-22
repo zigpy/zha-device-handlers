@@ -167,7 +167,7 @@ class TuyaSmartRemote0042TOPlusA(CustomDevice):
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
                     OnOff.cluster_id,
-                    TuyaZBE000Cluster,
+                    TuyaZBE000Cluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
