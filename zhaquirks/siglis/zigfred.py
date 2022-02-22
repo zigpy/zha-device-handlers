@@ -1,42 +1,40 @@
 """zigfred device handler."""
 import logging
-
 from typing import Any, List, Optional, Union
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
+import zigpy.types as t
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
     Basic,
-    Identify,
-    OnOff,
-    LevelControl,
-    Groups,
-    Scenes,
     GreenPowerProxy,
+    Groups,
+    Identify,
+    LevelControl,
+    OnOff,
+    Scenes,
 )
-
-from zigpy.zcl import foundation
 from zigpy.zcl.clusters.lighting import Color
-import zigpy.types as t
 
 from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-    COMMAND,
     BUTTON,
     BUTTON_1,
     BUTTON_2,
     BUTTON_3,
     BUTTON_4,
-    PRESS_TYPE,
-    SHORT_PRESS,
+    COMMAND,
+    DEVICE_TYPE,
     DOUBLE_PRESS,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
     LONG_PRESS,
     LONG_RELEASE,
+    MODELS_INFO,
+    OUTPUT_CLUSTERS,
+    PRESS_TYPE,
+    PROFILE_ID,
+    SHORT_PRESS,
     ZHA_SEND_EVENT,
 )
 
@@ -47,6 +45,7 @@ SIGLIS_MANUFACTURER_CODE = 0x129C
 ZIGFRED_CLUSTER_ID = 0xFC42
 ZIGFRED_CLUSTER_BUTTONS_ATTRIBUTE_ID = 0x0008
 ZIGFRED_CLUSTER_COMMAND_BUTTON_EVENT = 0x02
+
 
 # Siglis zigfred cluster implementation
 class ZigfredCluster(CustomCluster):
@@ -60,9 +59,9 @@ class ZigfredCluster(CustomCluster):
         ZIGFRED_CLUSTER_COMMAND_BUTTON_EVENT: ("button_event", (t.uint32_t,), False),
     }
 
-    #manufacturer_attributes = {
+    # manufacturer_attributes = {
     #    buttons_attribute_id: ("buttons", t.uint32_t),
-    #}
+    # }
 
     def _process_button_event(self, value: t.uint32_t):
         button_lookup = {
@@ -79,8 +78,8 @@ class ZigfredCluster(CustomCluster):
             3: LONG_PRESS,
         }
 
-        button = value & 0xff
-        press_type = (value >> 8) & 0xff
+        button = value & 0xFF
+        press_type = (value >> 8) & 0xFF
 
         button = button_lookup[button]
         press_type = press_type_lookup[press_type]
@@ -110,10 +109,11 @@ class ZigfredCluster(CustomCluster):
         if hdr.command_id == ZIGFRED_CLUSTER_COMMAND_BUTTON_EVENT:
             self._process_button_event(args[0])
 
-    #def _update_attribute(self, attrid, value):
+    # def _update_attribute(self, attrid, value):
     #    super()._update_attribute(attrid, value)
     #    if attrid == ZIGFRED_CLUSTER_BUTTONS_ATTRIBUTE_ID and value is not None:
     #        self._process_button_event(value)
+
 
 class ZigfredUno(CustomDevice):
     """zigfred uno device handler."""
