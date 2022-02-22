@@ -19,7 +19,7 @@ from zhaquirks.const import (
     PROFILE_ID,
     SHORT_PRESS,
 )
-from zhaquirks.tuya import TuyaSmartRemoteOnOffCluster
+from zhaquirks.tuya import TuyaSmartRemoteOnOffCluster, TuyaZBE000Cluster,
 
 
 class TuyaSmartRemote0042TI(CustomDevice):
@@ -167,7 +167,7 @@ class TuyaSmartRemote0042TOPlusA(CustomDevice):
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
                     OnOff.cluster_id,
-                    0xE000,  # Unknown
+                    TuyaZBE000Cluster,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
@@ -208,6 +208,7 @@ class TuyaSmartRemote0042TOPlusA(CustomDevice):
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
+                    TuyaZBE000Cluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     Time.cluster_id,
