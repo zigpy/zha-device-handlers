@@ -40,10 +40,13 @@ from zhaquirks.const import (
     ZHA_SEND_EVENT,
 )
 from zhaquirks.xiaomi import (
+    BasicCluster,
+    DeviceTemperatureCluster,
     LUMI,
     OnOffCluster,
-    XiaomiCustomDevice, DeviceTemperatureCluster, BasicCluster,
+    XiaomiCustomDevice,
 )
+
 from .opple_remote import MultistateInputCluster, OppleCluster
 
 ATTRIBUTE_ON_OFF = "on_off"
@@ -63,6 +66,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class OppleOperationMode(t.enum8):
+    """Opple operation_mode enum"""
     Decoupled = 0x00
     Coupled = 0x01
 
@@ -70,13 +74,13 @@ class OppleOperationMode(t.enum8):
 class OppleD1Cluster(OppleCluster):
     """Xiaomi mfg cluster implementation."""
 
-    if hasattr(OppleCluster, 'attributes'):
+    if hasattr(OppleCluster, "attributes"):
         attributes = copy.deepcopy(OppleCluster.attributes)
-    elif hasattr(OppleCluster, 'manufacturer_attributes'):
+    elif hasattr(OppleCluster, "manufacturer_attributes"):
         attributes = copy.deepcopy(OppleCluster.manufacturer_attributes)
     else:
         attributes = {}
-    
+
     attributes.update(
         {
             0x0200: ("operation_mode", OppleOperationMode),
@@ -100,7 +104,7 @@ class OppleD1Cluster(OppleCluster):
 
 
 class D1WallSwitch3Btn(XiaomiCustomDevice):
-    """Aqara single and double key switch device."""
+    """Aqara D1 3-button wall remote"""
 
     manufacturer_id_override = 0x115F
 
@@ -396,7 +400,6 @@ class D1WallSwitch3Btn(XiaomiCustomDevice):
             # COMMAND: COMMAND_ATTRIBUTE_UPDATED,
             ARGS: {ATTR_ID: 0x00FC, VALUE: False},
         },
-
         (COMMAND_BUTTON_SINGLE, BUTTON_2): {
             ENDPOINT_ID: 42,
             CLUSTER_ID: 18,
@@ -415,7 +418,6 @@ class D1WallSwitch3Btn(XiaomiCustomDevice):
             # COMMAND: COMMAND_ATTRIBUTE_UPDATED,
             ARGS: {ATTR_ID: 0x00FC, VALUE: False},
         },
-
         (COMMAND_BUTTON_SINGLE, BUTTON_3): {
             ENDPOINT_ID: 43,
             CLUSTER_ID: 18,
@@ -433,5 +435,5 @@ class D1WallSwitch3Btn(XiaomiCustomDevice):
             CLUSTER_ID: 0xFCC0,
             # COMMAND: COMMAND_ATTRIBUTE_UPDATED,
             ARGS: {ATTR_ID: 0x00FC, VALUE: False},
-        }, 
+        },
     }
