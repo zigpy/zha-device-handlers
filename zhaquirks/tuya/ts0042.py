@@ -19,7 +19,7 @@ from zhaquirks.const import (
     PROFILE_ID,
     SHORT_PRESS,
 )
-from zhaquirks.tuya import TuyaSmartRemoteOnOffCluster, TuyaZBE000Cluster,
+from zhaquirks.tuya import TuyaSmartRemoteOnOffCluster, TuyaZBE000Cluster
 
 
 class TuyaSmartRemote0042TI(CustomDevice):
