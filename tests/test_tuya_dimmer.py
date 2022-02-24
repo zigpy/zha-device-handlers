@@ -79,7 +79,7 @@ async def test_write_attr(zigpy_device_from_quirk, quirk):
             61184,
             2,
             b"\x01\x02\x00\x00\x01\x03\x02\x00\x04\x00\x00\x00b",
-            expect_reply=True,
+            expect_reply=False,
             command_id=0,
         )
         assert status == [
