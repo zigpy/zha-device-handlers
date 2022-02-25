@@ -73,6 +73,27 @@ class OppleOperationMode(t.uint8_t):
     Coupled = 0x01
 
 
+class OppleSwitchMode(t.uint8_t):
+    """Opple operation_mode enum."""
+
+    Fast = 0x01
+    Multi = 0x02
+
+
+class OppleSwitchType(t.uint8_t):
+    """Opple operation_mode enum."""
+
+    Toggle = 0x01
+    Momentary = 0x02
+
+
+#class OpplePowerOutageMemory(t.Bool):
+#    """Opple operation_mode enum."""
+#
+#    Remember = 1
+#    Off = 0
+
+
 class OppleSwitchCluster(OppleCluster):
     """Xiaomi mfg cluster implementation."""
 
@@ -85,7 +106,14 @@ class OppleSwitchCluster(OppleCluster):
 
     attributes.update(
         {
+            0x0002: ("power_outage_count", t.uint8_t),
+            0x000A: ("switch_type", t.uint8_t),
+            0x00F0: ("reverse_indicator_light", t.uint8_t),
+            0x0125: ("switch_mode", OppleSwitchMode),
             0x0200: ("operation_mode", OppleOperationMode),
+            0x0201: ("power_outage_memory", t.Bool),
+            0x0202: ("auto_off", t.Bool),
+            0x0203: ("do_not_disturb", t.Bool),
         }
     )
 
@@ -105,7 +133,7 @@ class OppleSwitchCluster(OppleCluster):
             super()._update_attribute(0, action)
 
 
-class D1WallSwitch3Btn(XiaomiCustomDevice):
+class AqaraD1ThreeBtn(XiaomiCustomDevice):
     """Aqara D1 3-button wall remote."""
 
     manufacturer_id_override = 0x115F
@@ -441,7 +469,7 @@ class D1WallSwitch3Btn(XiaomiCustomDevice):
     }
 
 
-class H1WallSwitch2Btn(XiaomiCustomDevice):
+class AqaraH1TwoBtn(XiaomiCustomDevice):
     """Aqara H1 2-button wall remote (European Style)."""
 
     manufacturer_id_override = 0x115F
