@@ -126,15 +126,12 @@ class OppleSwitchCluster(OppleCluster):
             super()._update_attribute(0, action)
 
 
-class AqaraD1ThreeBtn(XiaomiCustomDevice):
-    """Aqara D1 3-button wall remote."""
+class XiaomiOpple3ButtonSwitch(XiaomiCustomDevice):
+    """Xiaomi Opple 3 Button Switch."""
 
     manufacturer_id_override = 0x115F
 
     signature = {
-        MODELS_INFO: [
-            (LUMI, "lumi.switch.n3acn3"),
-        ],
         ENDPOINTS: {
             # input_clusters=[0, 2, 3, 4, 5, 6, 18, 64704], output_clusters=[10, 25]
             1: {
@@ -462,15 +459,12 @@ class AqaraD1ThreeBtn(XiaomiCustomDevice):
     }
 
 
-class AqaraH1TwoBtn(XiaomiCustomDevice):
-    """Aqara H1 2-button wall remote (European Style)."""
+class XiaomiOpple2ButtonSwitch(XiaomiCustomDevice):
+    """Xiaomi Opple 2 Button Switch."""
 
     manufacturer_id_override = 0x115F
 
     signature = {
-        MODELS_INFO: [
-            (LUMI, "lumi.switch.n2aeu1"),
-        ],
         ENDPOINTS: {
             # input_clusters=[0, 2, 3, 4, 5, 6, 18, 64704], output_clusters=[10, 25]
             1: {
