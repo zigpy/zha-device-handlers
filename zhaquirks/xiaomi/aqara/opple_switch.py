@@ -50,6 +50,7 @@ from zhaquirks.xiaomi import (
 from .opple_remote import MultistateInputCluster, OppleCluster
 
 ATTRIBUTE_ON_OFF = "on_off"
+BOTH_BUTTONS = "both_buttons"
 DOUBLE = "double"
 HOLD = "long press"
 PRESS_TYPES = {0: "hold", 1: "single", 2: "double", 3: "triple", 255: "release"}
@@ -65,14 +66,14 @@ XIAOMI_WALL_SWITCH_TYPE = 0x61
 _LOGGER = logging.getLogger(__name__)
 
 
-class OppleOperationMode(t.enum8):
+class OppleOperationMode(t.uint8_t):
     """Opple operation_mode enum."""
 
     Decoupled = 0x00
     Coupled = 0x01
 
 
-class OppleD1Cluster(OppleCluster):
+class OppleSwitchCluster(OppleCluster):
     """Xiaomi mfg cluster implementation."""
 
     if hasattr(OppleCluster, "attributes"):
@@ -126,7 +127,7 @@ class D1WallSwitch3Btn(XiaomiCustomDevice):
                     Scenes.cluster_id,  # 5
                     OnOff.cluster_id,  # 6
                     MultistateInputCluster.cluster_id,  # 18
-                    OppleD1Cluster.cluster_id,  # 0xFCC0 / 64704
+                    OppleSwitchCluster.cluster_id,  # 0xFCC0 / 64704
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
@@ -141,7 +142,7 @@ class D1WallSwitch3Btn(XiaomiCustomDevice):
                     Scenes.cluster_id,  # 5
                     OnOff.cluster_id,  # 6
                     MultistateInputCluster.cluster_id,  # 18
-                    OppleD1Cluster.cluster_id,  # 0xFCC0 / 64704
+                    OppleSwitchCluster.cluster_id,  # 0xFCC0 / 64704
                 ],
                 OUTPUT_CLUSTERS: [],
             },
@@ -156,7 +157,7 @@ class D1WallSwitch3Btn(XiaomiCustomDevice):
                     Scenes.cluster_id,  # 5
                     OnOff.cluster_id,  # 6
                     18,  # 18
-                    OppleD1Cluster.cluster_id,  # 0xFCC0 / 64704
+                    OppleSwitchCluster.cluster_id,  # 0xFCC0 / 64704
                 ],
                 OUTPUT_CLUSTERS: [],
             },
@@ -262,7 +263,7 @@ class D1WallSwitch3Btn(XiaomiCustomDevice):
                     Scenes.cluster_id,  # 5
                     OnOffCluster,  # 6
                     MultistateInputCluster,  # 18
-                    OppleD1Cluster,  # 0xFCC0 / 64704
+                    OppleSwitchCluster,  # 0xFCC0 / 64704
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
@@ -275,7 +276,7 @@ class D1WallSwitch3Btn(XiaomiCustomDevice):
                     Scenes.cluster_id,  # 5
                     OnOffCluster,  # 6
                     MultistateInputCluster,  # 18
-                    OppleD1Cluster,  # 0xFCC0 / 64704
+                    OppleSwitchCluster,  # 0xFCC0 / 64704
                 ],
                 OUTPUT_CLUSTERS: [],
             },
@@ -288,7 +289,7 @@ class D1WallSwitch3Btn(XiaomiCustomDevice):
                     Scenes.cluster_id,  # 5
                     OnOffCluster,  # 6
                     MultistateInputCluster,  # 18
-                    OppleD1Cluster,  # 0xFCC0 / 64704
+                    OppleSwitchCluster,  # 0xFCC0 / 64704
                 ],
                 OUTPUT_CLUSTERS: [],
             },
@@ -436,5 +437,250 @@ class D1WallSwitch3Btn(XiaomiCustomDevice):
             CLUSTER_ID: 0xFCC0,
             # COMMAND: COMMAND_ATTRIBUTE_UPDATED,
             ARGS: {ATTR_ID: 0x00FC, VALUE: False},
+        },
+    }
+
+
+class H1WallSwitch2Btn(XiaomiCustomDevice):
+    """Aqara H1 2-button wall remote (European Style)."""
+
+    manufacturer_id_override = 0x115F
+
+    signature = {
+        MODELS_INFO: [
+            (LUMI, "lumi.switch.n2aeu1"),
+        ],
+        ENDPOINTS: {
+            # input_clusters=[0, 2, 3, 4, 5, 6, 18, 64704], output_clusters=[10, 25]
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,  # 0
+                    DeviceTemperature.cluster_id,  # 2
+                    Identify.cluster_id,  # 3
+                    Groups.cluster_id,  # 4
+                    Scenes.cluster_id,  # 5
+                    OnOff.cluster_id,  # 6
+                    MultistateInputCluster.cluster_id,  # 18
+                    OppleSwitchCluster.cluster_id,  # 0xFCC0 / 64704
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            # input_clusters=[0, 3, 4, 5, 6, 18, 64704], output_clusters=[]
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,  # 0
+                    Identify.cluster_id,  # 3
+                    Groups.cluster_id,  # 4
+                    Scenes.cluster_id,  # 5
+                    OnOff.cluster_id,  # 6
+                    MultistateInputCluster.cluster_id,  # 18
+                    OppleSwitchCluster.cluster_id,  # 0xFCC0 / 64704
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            # input_clusters=[12], output_clusters=[]
+            21: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    AnalogInput.cluster_id,  # 12
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            # input_clusters=[12], output_clusters=[]
+            31: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    AnalogInput.cluster_id,  # 12
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            # input_clusters=[18], output_clusters=[]
+            41: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    MultistateInputCluster.cluster_id,  # 18
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            # input_clusters=[18], output_clusters=[]
+            42: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    MultistateInputCluster.cluster_id,  # 18
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            # input_clusters=[18], output_clusters=[]
+            51: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    MultistateInputCluster.cluster_id,  # 18
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            242: {
+                PROFILE_ID: 41440,
+                DEVICE_TYPE: 97,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
+                INPUT_CLUSTERS: [
+                    BasicCluster,
+                    DeviceTemperatureCluster,  # 2
+                    Identify.cluster_id,  # 3
+                    Groups.cluster_id,  # 4
+                    Scenes.cluster_id,  # 5
+                    OnOffCluster,  # 6
+                    MultistateInputCluster,  # 18
+                    OppleSwitchCluster,  # 0xFCC0 / 64704
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            2: {
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
+                INPUT_CLUSTERS: [
+                    BasicCluster,
+                    Identify.cluster_id,  # 3
+                    Groups.cluster_id,  # 4
+                    Scenes.cluster_id,  # 5
+                    OnOffCluster,  # 6
+                    MultistateInputCluster,  # 18
+                    OppleSwitchCluster,  # 0xFCC0 / 64704
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            # input_clusters=[12], output_clusters=[]
+            21: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    AnalogInput.cluster_id,  # 12
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            # input_clusters=[12], output_clusters=[]
+            31: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    AnalogInput.cluster_id,  # 12
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            # input_clusters=[18], output_clusters=[]
+            41: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    MultistateInputCluster,  # 18
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            # input_clusters=[18], output_clusters=[]
+            42: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    MultistateInputCluster,  # 18
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            # input_clusters=[18], output_clusters=[]
+            51: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    MultistateInputCluster,  # 18
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            # input_clusters=[18], output_clusters=[]
+            61: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    MultistateInputCluster,  # 18
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            242: {
+                PROFILE_ID: 41440,
+                DEVICE_TYPE: 97,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        },
+    }
+
+    device_automation_triggers = {
+        (COMMAND_BUTTON_SINGLE, BUTTON_1): {
+            ENDPOINT_ID: 41,
+            CLUSTER_ID: 18,
+            # COMMAND: COMMAND_ATTRIBUTE_UPDATED,
+            ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: SINGLE, VALUE: 1},
+        },
+        (COMMAND_BUTTON_DOUBLE, BUTTON_1): {
+            ENDPOINT_ID: 41,
+            CLUSTER_ID: 18,
+            # COMMAND: COMMAND_ATTRIBUTE_UPDATED,
+            ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: DOUBLE, VALUE: 2},
+        },
+        (COMMAND_BUTTON_HOLD, BUTTON_1): {
+            ENDPOINT_ID: 1,
+            CLUSTER_ID: 0xFCC0,
+            # COMMAND: COMMAND_ATTRIBUTE_UPDATED,
+            ARGS: {ATTR_ID: 0x00FC, VALUE: False},
+        },
+        (COMMAND_BUTTON_SINGLE, BUTTON_2): {
+            ENDPOINT_ID: 42,
+            CLUSTER_ID: 18,
+            # COMMAND: COMMAND_ATTRIBUTE_UPDATED,
+            ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: SINGLE, VALUE: 1},
+        },
+        (COMMAND_BUTTON_DOUBLE, BUTTON_2): {
+            ENDPOINT_ID: 42,
+            CLUSTER_ID: 18,
+            # COMMAND: COMMAND_ATTRIBUTE_UPDATED,
+            ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: DOUBLE, VALUE: 2},
+        },
+        (COMMAND_BUTTON_HOLD, BUTTON_2): {
+            ENDPOINT_ID: 1,
+            CLUSTER_ID: 0xFCC0,
+            # COMMAND: COMMAND_ATTRIBUTE_UPDATED,
+            ARGS: {ATTR_ID: 0x00FC, VALUE: False},
+        },
+        (COMMAND_BUTTON_SINGLE, BOTH_BUTTONS): {
+            ENDPOINT_ID: 51,
+            CLUSTER_ID: 18,
+            # COMMAND: COMMAND_ATTRIBUTE_UPDATED,
+            ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: SINGLE, VALUE: 1},
+        },
+        (COMMAND_BUTTON_DOUBLE, BOTH_BUTTONS): {
+            ENDPOINT_ID: 51,
+            CLUSTER_ID: 18,
+            # COMMAND: COMMAND_ATTRIBUTE_UPDATED,
+            ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: DOUBLE, VALUE: 2},
+        },
+        (COMMAND_BUTTON_HOLD, BOTH_BUTTONS): {
+            ENDPOINT_ID: 1,
+            CLUSTER_ID: 0xFCC0,
+            # COMMAND: COMMAND_ATTRIBUTE_UPDATED,
+            ARGS: {ATTR_ID: 0x00FC, VALUE: 0},
         },
     }
