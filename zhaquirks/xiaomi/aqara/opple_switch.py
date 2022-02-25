@@ -87,13 +87,6 @@ class OppleSwitchType(t.uint8_t):
     Momentary = 0x02
 
 
-#class OpplePowerOutageMemory(t.Bool):
-#    """Opple operation_mode enum."""
-#
-#    Remember = 1
-#    Off = 0
-
-
 class OppleSwitchCluster(OppleCluster):
     """Xiaomi mfg cluster implementation."""
 
