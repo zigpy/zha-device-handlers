@@ -52,7 +52,7 @@ class XiaomiAqaraRollerE1(XiaomiCluster, ManufacturerSpecificCluster):
     }
 
 
-class AnalogOutputRollerE1(LocalDataCluster, AnalogOutput):
+class AnalogOutputRollerE1(CustomCluster, AnalogOutput):
     """Analog output cluster, only used to relay current_value to WindowCovering."""
 
     cluster_id = AnalogOutput.cluster_id
