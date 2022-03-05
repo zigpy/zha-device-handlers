@@ -16,11 +16,11 @@ from zigpy.zcl.clusters.smartenergy import Metering
 from zhaquirks import Bus, EventableCluster, LocalDataCluster
 from zhaquirks.const import (
     DOUBLE_PRESS,
+    LEFT,
     LONG_PRESS,
+    RIGHT,
     SHORT_PRESS,
     ZHA_SEND_EVENT,
-    RIGHT,
-    LEFT,
 )
 
 # ---------------------------------------------------------
