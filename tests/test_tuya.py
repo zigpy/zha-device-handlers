@@ -260,6 +260,34 @@ async def test_singleswitch_requests(zigpy_device_from_quirk, quirk):
     assert status == foundation.Status.UNSUP_CLUSTER_COMMAND
 
 
+def test_ts0121_signature(assert_signature_matches_quirk):
+    signature = {
+        "node_descriptor": "NodeDescriptor(logical_type=<LogicalType.Router: 1>, complex_descriptor_available=0, user_descriptor_available=0, reserved=0, aps_flags=0, frequency_band=<FrequencyBand.Freq2400MHz: 8>, mac_capability_flags=<MACCapabilityFlags.AllocateAddress|RxOnWhenIdle|MainsPowered|FullFunctionDevice: 142>, manufacturer_code=4098, maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264, maximum_outgoing_transfer_size=82, descriptor_capability_field=<DescriptorCapability.NONE: 0>, *allocate_address=True, *is_alternate_pan_coordinator=False, *is_coordinator=False, *is_end_device=False, *is_full_function_device=True, *is_mains_powered=True, *is_receiver_on_when_idle=True, *is_router=True, *is_security_capable=False)",
+        "endpoints": {
+            "1": {
+            "profile_id": 260,
+            "device_type": "0x0051",
+            "in_clusters": [
+                "0x0000",
+                "0x0004",
+                "0x0005",
+                "0x0006",
+                "0x0702",
+                "0x0b04"
+            ],
+            "out_clusters": [
+                "0x000a",
+                "0x0019"
+            ]
+            }
+        },
+        "manufacturer": "_TZ3000_g5xawfcq",
+        "model": "TS0121",
+        "class": "zhaquirks.tuya.ts0121_plug.Plug"
+    }
+    assert_signature_matches_quirk(zhaquirks.tuya.ts0121_plug.Plug, signature)
+
+
 async def test_tuya_data_conversion():
     """Test tuya conversion from Data to ztype and reverse."""
     assert Data([4, 0, 0, 1, 39]).to_value(t.uint32_t) == 295
