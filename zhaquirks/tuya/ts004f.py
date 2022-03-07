@@ -39,6 +39,7 @@ from zhaquirks.const import (
     TURN_OFF,
     TURN_ON,
 )
+from zhaquirks.tuya import TuyaZBOnOffAttributeCluster
 
 
 class Tuya4NewButtonTriggers:
@@ -120,6 +121,7 @@ class TuyaSmartRemote004F(CustomDevice, Tuya4NewButtonTriggers):
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
                     Identify.cluster_id,
+                    Groups.cluster_id,  # Is needed for adding group then binding is not working.
                     LightLink.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
@@ -128,7 +130,7 @@ class TuyaSmartRemote004F(CustomDevice, Tuya4NewButtonTriggers):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    OnOff.cluster_id,
+                    TuyaZBOnOffAttributeCluster,
                     LevelControl.cluster_id,
                     LightLink.cluster_id,
                 ],

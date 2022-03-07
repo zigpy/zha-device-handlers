@@ -19,6 +19,7 @@ from zhaquirks.xiaomi import (
     LUMI,
     XIAOMI_NODE_DESC,
     BasicCluster,
+    DeviceTemperatureCluster,
     XiaomiPowerConfiguration,
     XiaomiQuickInitDevice,
 )
@@ -61,6 +62,7 @@ class LeakAQ1(XiaomiQuickInitDevice):
                     BasicCluster,
                     Identify.cluster_id,
                     XiaomiPowerConfiguration,
+                    DeviceTemperatureCluster,
                     CustomIasZone,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],

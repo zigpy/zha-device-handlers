@@ -7,7 +7,9 @@ from zigpy.zcl.clusters.general import (
     Groups,
     Identify,
     MultistateInput,
+    OnOff,
     Ota,
+    PowerConfiguration,
     Scenes,
 )
 
@@ -30,6 +32,7 @@ from zhaquirks.const import (
 from zhaquirks.xiaomi import (
     LUMI,
     BasicCluster,
+    DeviceTemperatureCluster,
     XiaomiCustomDevice,
     XiaomiPowerConfiguration,
 )
@@ -151,6 +154,67 @@ def extend_dict(dictionary, value, ranges):
 extend_dict(MOVEMENT_TYPE, FLIP, range(FLIP_BEGIN, FLIP_END))
 
 
+class MultistateInputCluster(CustomCluster, MultistateInput):
+    """Multistate input cluster."""
+
+    cluster_id = MultistateInput.cluster_id
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        self._current_state = {}
+        super().__init__(*args, **kwargs)
+
+    def _update_attribute(self, attrid, value):
+        super()._update_attribute(attrid, value)
+        if attrid == STATUS_TYPE_ATTR:
+            self._current_state[STATUS_TYPE_ATTR] = action = MOVEMENT_TYPE.get(value)
+            event_args = {VALUE: value}
+            if action is not None:
+
+                if action in (SLIDE, KNOCK):
+                    event_args[DESCRIPTION] = MOVEMENT_TYPE_DESCRIPTION[value]
+                    event_args[ACTIVATED_FACE] = SIDES[value]
+
+                if action == FLIP:
+                    if value > 108:
+                        event_args[FLIP_DEGREES] = 180
+                    else:
+                        event_args[FLIP_DEGREES] = 90
+                    event_args[ACTIVATED_FACE] = int((value % 8) + 1)
+
+                self.listener_event(ZHA_SEND_EVENT, action, event_args)
+
+            # show something in the sensor in HA
+            super()._update_attribute(0, action)
+
+
+class AnalogInputCluster(CustomCluster, AnalogInput):
+    """Analog input cluster."""
+
+    cluster_id = AnalogInput.cluster_id
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        self._current_state = {}
+        super().__init__(*args, **kwargs)
+
+    def _update_attribute(self, attrid, value):
+        super()._update_attribute(attrid, value)
+        if attrid == STATUS_TYPE_ATTR:
+            if value > 0:
+                self._current_state[STATUS_TYPE_ATTR] = ROTATE_RIGHT
+            else:
+                self._current_state[STATUS_TYPE_ATTR] = ROTATE_LEFT
+            # show something in the sensor in HA
+            super()._update_attribute(0, value)
+            if self._current_state[STATUS_TYPE_ATTR] is not None:
+                self.listener_event(
+                    ZHA_SEND_EVENT,
+                    self._current_state[STATUS_TYPE_ATTR],
+                    {RELATIVE_DEGREES: value},
+                )
+
+
 class CubeAQGL01(XiaomiCustomDevice):
     """Aqara magic cube device."""
 
@@ -158,67 +222,6 @@ class CubeAQGL01(XiaomiCustomDevice):
         """Init."""
         self.battery_size = 9
         super().__init__(*args, **kwargs)
-
-    class MultistateInputCluster(CustomCluster, MultistateInput):
-        """Multistate input cluster."""
-
-        cluster_id = MultistateInput.cluster_id
-
-        def __init__(self, *args, **kwargs):
-            """Init."""
-            self._current_state = {}
-            super().__init__(*args, **kwargs)
-
-        def _update_attribute(self, attrid, value):
-            super()._update_attribute(attrid, value)
-            if attrid == STATUS_TYPE_ATTR:
-                self._current_state[STATUS_TYPE_ATTR] = action = MOVEMENT_TYPE.get(
-                    value
-                )
-                event_args = {VALUE: value}
-                if action is not None:
-
-                    if action in (SLIDE, KNOCK):
-                        event_args[DESCRIPTION] = MOVEMENT_TYPE_DESCRIPTION[value]
-                        event_args[ACTIVATED_FACE] = SIDES[value]
-
-                    if action == FLIP:
-                        if value > 108:
-                            event_args[FLIP_DEGREES] = 180
-                        else:
-                            event_args[FLIP_DEGREES] = 90
-                        event_args[ACTIVATED_FACE] = (value % 8) + 1
-
-                    self.listener_event(ZHA_SEND_EVENT, action, event_args)
-
-                # show something in the sensor in HA
-                super()._update_attribute(0, action)
-
-    class AnalogInputCluster(CustomCluster, AnalogInput):
-        """Analog input cluster."""
-
-        cluster_id = AnalogInput.cluster_id
-
-        def __init__(self, *args, **kwargs):
-            """Init."""
-            self._current_state = {}
-            super().__init__(*args, **kwargs)
-
-        def _update_attribute(self, attrid, value):
-            super()._update_attribute(attrid, value)
-            if attrid == STATUS_TYPE_ATTR:
-                if value > 0:
-                    self._current_state[STATUS_TYPE_ATTR] = ROTATE_RIGHT
-                else:
-                    self._current_state[STATUS_TYPE_ATTR] = ROTATE_LEFT
-                # show something in the sensor in HA
-                super()._update_attribute(0, value)
-                if self._current_state[STATUS_TYPE_ATTR] is not None:
-                    self.listener_event(
-                        ZHA_SEND_EVENT,
-                        self._current_state[STATUS_TYPE_ATTR],
-                        {RELATIVE_DEGREES: value},
-                    )
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=24321
@@ -286,6 +289,7 @@ class CubeAQGL01(XiaomiCustomDevice):
                 INPUT_CLUSTERS: [
                     BasicCluster,
                     XiaomiPowerConfiguration,
+                    DeviceTemperatureCluster,
                     Identify.cluster_id,
                     Ota.cluster_id,
                 ],
@@ -348,3 +352,98 @@ class CubeAQGL01(XiaomiCustomDevice):
         (FLIPPED, FACE_5): {COMMAND: FLIP, ARGS: {ACTIVATED_FACE: 5}},
         (FLIPPED, FACE_6): {COMMAND: FLIP, ARGS: {ACTIVATED_FACE: 6}},
     }
+
+
+class CubeCAGL02(XiaomiCustomDevice):
+    """Aqara T1 magic cube device."""
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        self.battery_size = 9
+        super().__init__(*args, **kwargs)
+
+    signature = {
+        #  <SimpleDescriptor endpoint=1 profile=260 device_type=259
+        #  device_version=1
+        #  input_clusters=[0, 1, 3, 6, 18]
+        #  output_clusters=[0, 3, 25]>
+        MODELS_INFO: [(LUMI, "lumi.remote.cagl02")],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
+                INPUT_CLUSTERS: [
+                    BasicCluster.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    Identify.cluster_id,
+                    OnOff.cluster_id,
+                    MultistateInput.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [
+                    BasicCluster.cluster_id,
+                    Identify.cluster_id,
+                    Ota.cluster_id,
+                ],
+            },
+            #  <SimpleDescriptor endpoint=2 profile=260 device_type=259
+            #  device_version=1
+            #  input_clusters=[18]
+            #  output_clusters=[18]>
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
+                INPUT_CLUSTERS: [MultistateInput.cluster_id],
+                OUTPUT_CLUSTERS: [
+                    MultistateInput.cluster_id,
+                ],
+            },
+            #  <SimpleDescriptor endpoint=3 profile=260 device_type=259
+            #  device_version=1
+            #  input_clusters=[12]
+            #  output_clusters=[12]>
+            3: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
+                INPUT_CLUSTERS: [AnalogInput.cluster_id],
+                OUTPUT_CLUSTERS: [
+                    AnalogInput.cluster_id,
+                ],
+            },
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                DEVICE_TYPE: XIAOMI_SENSORS_REPLACEMENT,
+                INPUT_CLUSTERS: [
+                    BasicCluster,
+                    XiaomiPowerConfiguration,
+                    Identify.cluster_id,
+                    Ota.cluster_id,
+                    MultistateInput.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [
+                    BasicCluster.cluster_id,
+                    Identify.cluster_id,
+                    Ota.cluster_id,
+                ],
+            },
+            2: {
+                DEVICE_TYPE: XIAOMI_SENSORS_REPLACEMENT,
+                INPUT_CLUSTERS: [MultistateInputCluster],
+                OUTPUT_CLUSTERS: [
+                    MultistateInput.cluster_id,
+                ],
+            },
+            3: {
+                DEVICE_TYPE: XIAOMI_SENSORS_REPLACEMENT,
+                INPUT_CLUSTERS: [AnalogInputCluster],
+                OUTPUT_CLUSTERS: [
+                    AnalogInput.cluster_id,
+                ],
+            },
+        },
+    }
+
+    device_automation_triggers = CubeAQGL01.device_automation_triggers

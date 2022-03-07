@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import logging
 import math
-from typing import Iterable, Iterator, Optional
+from typing import Iterable, Iterator
 
 from zigpy import types as t
 import zigpy.device
@@ -13,6 +13,7 @@ from zigpy.zcl.clusters.general import (
     AnalogInput,
     Basic,
     BinaryOutput,
+    DeviceTemperature,
     OnOff,
     PowerConfiguration,
 )
@@ -48,6 +49,7 @@ from zhaquirks.const import (
 
 BATTERY_LEVEL = "battery_level"
 BATTERY_PERCENTAGE_REMAINING = 0x0021
+BATTERY_PERCENTAGE_REMAINING_ATTRIBUTE = "battery_percentage"
 BATTERY_REPORTED = "battery_reported"
 BATTERY_SIZE = "battery_size"
 BATTERY_SIZE_ATTR = 0x0031
@@ -277,6 +279,16 @@ class XiaomiCluster(CustomCluster):
             self.endpoint.voc_level.update_attribute(
                 0x0000, attributes[TVOC_MEASUREMENT]
             )
+        if TEMPERATURE in attributes:
+            if hasattr(self.endpoint, "device_temperature"):
+                self.endpoint.device_temperature.update_attribute(
+                    0x0000, attributes[TEMPERATURE] * 100
+                )
+        if BATTERY_PERCENTAGE_REMAINING_ATTRIBUTE in attributes:
+            self.endpoint.device.power_bus_percentage.listener_event(
+                "update_battery_percentage",
+                attributes[BATTERY_PERCENTAGE_REMAINING_ATTRIBUTE],
+            )
 
     def _parse_aqara_attributes(self, value):
         """Parse non standard attributes."""
@@ -296,7 +308,7 @@ class XiaomiCluster(CustomCluster):
             "lumi.weather",
             "lumi.airmonitor.acn01",
         ]:
-            # Temperature sensors send temperature/humidity/pressure updates trough this
+            # Temperature sensors send temperature/humidity/pressure updates through this
             # cluster instead of the respective clusters
             attribute_names.update(
                 {
@@ -311,7 +323,8 @@ class XiaomiCluster(CustomCluster):
             attribute_names.update({149: CONSUMPTION, 150: VOLTAGE, 152: POWER})
         elif self.endpoint.device.model == "lumi.sensor_motion.aq2":
             attribute_names.update({11: ILLUMINANCE_MEASUREMENT})
-
+        elif self.endpoint.device.model == "lumi.curtain.acn002":
+            attribute_names.update({101: BATTERY_PERCENTAGE_REMAINING_ATTRIBUTE})
         result = {}
 
         # Some attribute reports end with a stray null byte
@@ -415,6 +428,10 @@ class MotionCluster(LocalDataCluster, MotionOnEvent):
     reset_s: int = 70
 
 
+class DeviceTemperatureCluster(LocalDataCluster, DeviceTemperature):
+    """Device Temperature Cluster."""
+
+
 class TemperatureMeasurementCluster(CustomCluster, TemperatureMeasurement):
     """Temperature cluster that filters out invalid temperature readings."""
 
@@ -429,7 +446,7 @@ class TemperatureMeasurementCluster(CustomCluster, TemperatureMeasurement):
     def _update_attribute(self, attrid, value):
         # drop values above and below documented range for this sensor
         # value is in centi degrees
-        if attrid == self.ATTR_ID and (-2000 <= value <= 6000):
+        if attrid == self.ATTR_ID and (-6000 <= value <= 6000):
             super()._update_attribute(attrid, value)
 
     def temperature_reported(self, value):
@@ -602,9 +619,9 @@ class OnOffCluster(OnOff, CustomCluster):
         self,
         command_id: foundation.Command | int | t.uint8_t,
         *args,
-        manufacturer: Optional[int | t.uint16_t] = None,
+        manufacturer: int | t.uint16_t | None = None,
         expect_reply: bool = True,
-        tsn: Optional[int | t.uint8_t] = None
+        tsn: int | t.uint8_t | None = None
     ):
         """Command handler."""
         src_ep = 1
@@ -631,7 +648,7 @@ def handle_quick_init(
     src_ep: int,
     dst_ep: int,
     message: bytes,
-) -> Optional[bool]:
+) -> bool | None:
     """Handle message from an uninitialized device which could be a xiaomi."""
     if src_ep == 0:
         return

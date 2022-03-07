@@ -10,12 +10,8 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import (
-    TuyaManufacturerClusterOnOff,
-    TuyaManufCluster,
-    TuyaOnOff,
-    TuyaSwitch,
-)
+from zhaquirks.tuya import TuyaSwitch
+from zhaquirks.tuya.mcu import MoesSwitchManufCluster, TuyaOnOff, TuyaOnOffManufCluster
 
 
 class TuyaSingleSwitchTI(TuyaSwitch):
@@ -39,7 +35,7 @@ class TuyaSingleSwitchTI(TuyaSwitch):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     Time.cluster_id,
-                    TuyaManufCluster.cluster_id,
+                    TuyaOnOffManufCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             }
@@ -55,7 +51,7 @@ class TuyaSingleSwitchTI(TuyaSwitch):
                     Time.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaManufacturerClusterOnOff,
+                    MoesSwitchManufCluster,
                     TuyaOnOff,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
@@ -80,6 +76,8 @@ class TuyaSingleSwitchTO(TuyaSwitch):
             ("_TZE200_oisqyl4o", "TS0601"),
             ("_TZE200_vhy3iakz", "TS0601"),  # ¿1 or 4 gangs?
             ("_TZ3000_uim07oem", "TS0601"),  # ¿1 or 4 gangs?
+            ("_TZE200_wfxuhoea", "TS0601"),
+            ("_TZE200_tviaymwx", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
@@ -89,7 +87,7 @@ class TuyaSingleSwitchTO(TuyaSwitch):
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaManufCluster.cluster_id,
+                    TuyaOnOffManufCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             }
@@ -104,7 +102,7 @@ class TuyaSingleSwitchTO(TuyaSwitch):
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaManufacturerClusterOnOff,
+                    MoesSwitchManufCluster,
                     TuyaOnOff,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
@@ -136,7 +134,7 @@ class TuyaDoubleSwitchTO(TuyaSwitch):
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaManufCluster.cluster_id,
+                    TuyaOnOffManufCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             }
@@ -151,7 +149,7 @@ class TuyaDoubleSwitchTO(TuyaSwitch):
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaManufacturerClusterOnOff,
+                    MoesSwitchManufCluster,
                     TuyaOnOff,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
@@ -184,7 +182,7 @@ class TuyaTripleSwitchTO(TuyaSwitch):
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaManufCluster.cluster_id,
+                    TuyaOnOffManufCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             }
@@ -199,7 +197,7 @@ class TuyaTripleSwitchTO(TuyaSwitch):
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaManufacturerClusterOnOff,
+                    MoesSwitchManufCluster,
                     TuyaOnOff,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
@@ -230,6 +228,7 @@ class TuyaQuadrupleSwitchTO(TuyaSwitch):
     signature = {
         MODELS_INFO: [
             ("_TZE200_aqnazj70", "TS0601"),
+            ("_TZE200_1ozguk6x", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
@@ -239,7 +238,7 @@ class TuyaQuadrupleSwitchTO(TuyaSwitch):
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaManufCluster.cluster_id,
+                    TuyaOnOffManufCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             }
@@ -254,7 +253,7 @@ class TuyaQuadrupleSwitchTO(TuyaSwitch):
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaManufacturerClusterOnOff,
+                    MoesSwitchManufCluster,
                     TuyaOnOff,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
