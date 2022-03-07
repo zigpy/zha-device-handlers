@@ -4,8 +4,8 @@ from asynctest import CoroutineMock
 import pytest
 import zigpy.application
 import zigpy.device
-import zigpy.types
 import zigpy.quirks
+import zigpy.types
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -120,7 +120,7 @@ def zigpy_device_from_quirk(MockAppController, ieee_mock):
 
 @pytest.fixture
 def assert_signature_matches_quirk():
-    """Return a function that can be used to check if a given quirk matches a signature"""
+    """Return a function that can be used to check if a given quirk matches a signature."""
 
     def _check(quirk, signature):
         # Check device signature as copied from Zigbee device signature window for the device
