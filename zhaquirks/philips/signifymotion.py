@@ -22,7 +22,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.philips import OccupancyCluster, SIGNIFY
+from zhaquirks.philips import SIGNIFY, OccupancyCluster
 
 
 class SignifyMotion(CustomDevice):
