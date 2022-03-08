@@ -1,17 +1,13 @@
 """Quirk for Philips motion sensors."""
-from zigpy.profiles import zha, zll
+from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
-    Groups,
     Identify,
-    LevelControl,
     OnOff,
     Ota,
     PowerConfiguration,
-    Scenes,
 )
-from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.measurement import (
     IlluminanceMeasurement,
     OccupancySensing,
@@ -26,7 +22,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.philips import PHILIPS, OccupancyCluster, SIGNIFY
+from zhaquirks.philips import OccupancyCluster, SIGNIFY
 
 
 class SignifyMotion(CustomDevice):
