@@ -91,12 +91,12 @@ class WindowCoveringRollerE1(WindowCovering):
         self, command_id, *args, manufacturer=None, expect_reply=True, tsn=None
     ):
         if command_id == UP_OPEN:
-            (res,) = await self.endpoint.analog_output.write_attributes(
-                {"present_value": 100}
+            (res,) = await self.endpoint.multistate_output.write_attributes(
+                {"present_value": 1}
             )
             return res[0].status
         elif command_id == DOWN_CLOSE:
-            (res,) = await self.endpoint.analog_output.write_attributes(
+            (res,) = await self.endpoint.multistate_output.write_attributes(
                 {"present_value": 0}
             )
             return res[0].status
@@ -106,15 +106,23 @@ class WindowCoveringRollerE1(WindowCovering):
             )
             return res[0].status
         elif command_id == STOP:
-            attrid = self.endpoint.analog_output.attridx["present_value"]
-            value, _ = await self.endpoint.analog_output.read_attributes(
-                (attrid,), manufacturer=manufacturer
-            )
-
-            (res,) = await self.endpoint.analog_output.write_attributes(
-                {"present_value": value[attrid]}
+            (res,) = await self.endpoint.multistate_output.write_attributes(
+                {"present_value": 2}
             )
             return res[0].status
+
+
+class MultistateOutputRollerE1(MultistateOutput):
+
+    cluster_id = MultistateOutput.cluster_id
+
+    manufacturer_attributes = {
+        0x0055: ("present_value", t.uint16_t),
+    }
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
 
 
 class PowerConfigurationRollerE1(PowerConfiguration, LocalDataCluster):
@@ -200,7 +208,7 @@ class RollerE1AQ(XiaomiCustomDevice):
                     Groups.cluster_id,
                     Identify.cluster_id,
                     XiaomiAqaraRollerE1,
-                    MultistateOutput.cluster_id,
+                    MultistateOutputRollerE1,
                     Scenes.cluster_id,
                     WindowCoveringRollerE1,
                     PowerConfigurationRollerE1,
