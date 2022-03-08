@@ -94,17 +94,17 @@ class WindowCoveringRollerE1(WindowCovering):
             (res,) = await self.endpoint.analog_output.write_attributes(
                 {"present_value": 100}
             )
-            return [command_id, res[0].status]
+            return res[0].status
         elif command_id == DOWN_CLOSE:
             (res,) = await self.endpoint.analog_output.write_attributes(
                 {"present_value": 0}
             )
-            return [command_id, res[0].status]
+            return res[0].status
         elif command_id == GO_TO_LIFT_PERCENTAGE:
             (res,) = await self.endpoint.analog_output.write_attributes(
                 {"present_value": (100 - args[0])}
             )
-            return [command_id, res[0].status]
+            return res[0].status
         elif command_id == STOP:
             attrid = self.endpoint.analog_output.attridx["present_value"]
             value, _ = await self.endpoint.analog_output.read_attributes(
@@ -114,7 +114,7 @@ class WindowCoveringRollerE1(WindowCovering):
             (res,) = await self.endpoint.analog_output.write_attributes(
                 {"present_value": value[attrid]}
             )
-            return [command_id, res[0].status]
+            return res[0].status
 
 
 class PowerConfigurationRollerE1(PowerConfiguration, LocalDataCluster):
