@@ -90,7 +90,7 @@ class WindowCoveringRollerE1(WindowCovering):
     async def command(
         self, command_id, *args, manufacturer=None, expect_reply=True, tsn=None
     ):
-        """Overwrite the commands to make it work for both firmware 1425 and 1427. We either overwrite analog_output's current_value or multistate_output's current value to make the roller work"""
+        """Overwrite the commands to make it work for both firmware 1425 and 1427. We either overwrite analog_output's current_value or multistate_output's current value to make the roller work."""
         if command_id == UP_OPEN:
             (res,) = await self.endpoint.multistate_output.write_attributes(
                 {"present_value": 1}
@@ -114,7 +114,7 @@ class WindowCoveringRollerE1(WindowCovering):
 
 
 class MultistateOutputRollerE1(MultistateOutput):
-    """Multistate Output cluster which overwrites present_value because else it gives errors of wrong datatype when using it in the commands"""
+    """Multistate Output cluster which overwrites present_value because else it gives errors of wrong datatype when using it in the commands."""
 
     cluster_id = MultistateOutput.cluster_id
 
