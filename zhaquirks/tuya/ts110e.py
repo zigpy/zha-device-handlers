@@ -29,19 +29,24 @@ from zhaquirks.tuya import (
     TuyaZBExternalSwitchTypeCluster,
 )
 
+
+TUYA_LEVEL_ATTRIBUTE = 0xF000
+TUYA_CUSTOM_LEVEL_COMMAND = 0x00F0
+
+
 class TuyaLevelPayload(t.Struct):
     """Tuya Level payload."""
 
     level: t.uint16_t
     transtime: t.uint16_t
 
-TUYA_LEVEL_ATTRIBUTE = 0xF000
-TUYA_CUSTOM_LEVEL_COMMAND = 0x00F0
 
 class F000LevelControlCluster(LevelControl):
     """LevelControlCluster that reports to attrid 0xF000."""
 
-    manufacturer_attributes = {TUYA_LEVEL_ATTRIBUTE: ("manufacturer_current_level", t.uint16_t),} 
+    manufacturer_attributes = {
+        TUYA_LEVEL_ATTRIBUTE: ("manufacturer_current_level", t.uint16_t),
+    }
 
     manufacturer_server_commands = {
         TUYA_CUSTOM_LEVEL_COMMAND: ("moveToLevelTuya", (TuyaLevelPayload,), False),
@@ -74,11 +79,11 @@ class F000LevelControlCluster(LevelControl):
             # convert dim values to 0-1000
             brightness = (args[0] * 1000) // 255
             return await super().command(
-                TUYA_CUSTOM_LEVEL_COMMAND, 
-                TuyaLevelPayload(level=brightness, transtime=0), 
-                manufacturer=manufacturer, 
+                TUYA_CUSTOM_LEVEL_COMMAND,
+                TuyaLevelPayload(level=brightness, transtime=0),
+                manufacturer=manufacturer,
                 expect_reply=expect_reply,
-                tsn=tsn
+                tsn=tsn,
             )
 
         return super().command(command_id, *args, manufacturer, expect_reply, tsn)
