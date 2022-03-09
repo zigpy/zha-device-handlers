@@ -39,7 +39,7 @@ STOP = 0x0002
 
 
 class XiaomiAqaraRollerE1(XiaomiCluster, ManufacturerSpecificCluster):
-    """Xiaomi mfg cluster implementation specific for E1 Roller ."""
+    """Xiaomi mfg cluster implementation specific for E1 Roller."""
 
     cluster_id = 0xFCC0
 
