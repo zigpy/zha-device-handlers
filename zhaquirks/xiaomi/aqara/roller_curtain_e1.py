@@ -1,15 +1,5 @@
 """Aqara Roller Shade Driver E1 device."""
 
-from zhaquirks import Bus, LocalDataCluster
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-)
-from zhaquirks.xiaomi import LUMI, BasicCluster, XiaomiCluster, XiaomiCustomDevice
 from zigpy import types as t
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.closures import WindowCovering
@@ -29,6 +19,17 @@ from zigpy.zcl.clusters.general import (
     Time,
 )
 from zigpy.zcl.clusters.manufacturer_specific import ManufacturerSpecificCluster
+
+from zhaquirks import Bus, LocalDataCluster
+from zhaquirks.const import (
+    DEVICE_TYPE,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    MODELS_INFO,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
+)
+from zhaquirks.xiaomi import LUMI, BasicCluster, XiaomiCluster, XiaomiCustomDevice
 
 PRESENT_VALUE = 0x0055
 CURRENT_POSITION_LIFT_PERCENTAGE = 0x0008
