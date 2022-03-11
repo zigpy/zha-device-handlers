@@ -1,5 +1,6 @@
 """LIDL TS011F plug."""
 
+import asyncio
 
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import (
@@ -31,7 +32,7 @@ class Lidl_Plug_3AC_4USB(Plug_3AC_4USB):
         """Initialize with task."""
         super().__init__(*args, **kwargs)
 
-        # self._init_plug_task = asyncio.create_task(self.spell())
+        self._init_plug_task = asyncio.create_task(self.spell())
 
     async def spell(self) -> None:
         """Initialize device so that all endpoints become available."""
