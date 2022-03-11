@@ -4,6 +4,7 @@ from asynctest import CoroutineMock
 import pytest
 import zigpy.application
 import zigpy.device
+import zigpy.quirks
 import zigpy.types
 import zigpy.zcl.foundation as foundation
 
@@ -116,3 +117,47 @@ def zigpy_device_from_quirk(MockAppController, ieee_mock):
         return device
 
     return _dev
+
+
+@pytest.fixture
+def assert_signature_matches_quirk():
+    """Return a function that can be used to check if a given quirk matches a signature."""
+
+    def _check(quirk, signature):
+        # Check device signature as copied from Zigbee device signature window for the device
+        class FakeDevEndpoint:
+            def __init__(self, endpoint):
+                self.endpoint = endpoint
+
+            def __getattr__(self, key):
+                if key == "device_type":
+                    return int(self.endpoint[key], 16)
+                elif key in ("in_clusters", "out_clusters"):
+                    return [int(cluster_id, 16) for cluster_id in self.endpoint[key]]
+                else:
+                    return self.endpoint[key]
+
+        class FakeDevice:
+            nwk = 0
+
+            def __init__(self, signature):
+                self.endpoints = {
+                    int(id): FakeDevEndpoint(ep)
+                    for id, ep in signature["endpoints"].items()
+                }
+                for attr in ("manufacturer", "model", "ieee"):
+                    setattr(self, attr, signature.get(attr))
+
+            def __getitem__(self, key):
+                # Return item from signature, or None if not given
+                return self.endpoints.get(key)
+
+            def __getattr__(self, key):
+                # Return item from signature, or None if not given
+                return self.endpoints.get(key)
+
+        test_dev = FakeDevice(signature)
+        device = zigpy.quirks.get_device(test_dev)
+        assert isinstance(device, quirk)
+
+    return _check
