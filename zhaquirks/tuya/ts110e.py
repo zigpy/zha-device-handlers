@@ -1,6 +1,9 @@
 """Tuya Dimmer TS110E."""
+from typing import Optional, Union
+
 from zigpy.profiles import zha
 import zigpy.types as t
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
@@ -12,9 +15,6 @@ from zigpy.zcl.clusters.general import (
     Time,
 )
 
-from zigpy.zcl import foundation
-from typing import Optional, Union
-
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -24,10 +24,7 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 
-from zhaquirks.tuya import (
-    TuyaDimmerSwitch,
-    TuyaZBExternalSwitchTypeCluster,
-)
+from zhaquirks.tuya import TuyaDimmerSwitch, TuyaZBExternalSwitchTypeCluster
 
 
 TUYA_LEVEL_ATTRIBUTE = 0xF000
