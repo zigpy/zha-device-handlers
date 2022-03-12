@@ -60,7 +60,7 @@ async def tuya_magic_spell_wand(dev, tries=100) -> None:
 
 
 def tuya_magic_spell(dev, tries=100) -> None:
-    """Set up the magic spell asynchrously."""
+    """Set up the magic spell asynchronously."""
 
     dev._magic_spell_task = asyncio.create_task(tuya_magic_spell_wand(dev, tries=tries))
 
