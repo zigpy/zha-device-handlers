@@ -51,6 +51,13 @@ async def tuya_magic_spell_wand(dev, tries=100) -> None:
     # the discovery of the endpoints that appear after the magic trick
     await dev.zdo.request(0x0034, dev.ieee, 0x01, tries)
 
+    app = dev.application
+    # Delete the device from the database
+    app.listener_event("device_removed", dev)
+
+    # Delete the device from zigpy
+    app.devices.pop(dev.ieee, None)
+
 
 def tuya_magic_spell(dev, tries=100) -> None:
     """Set up the magic spell asynchrously."""
