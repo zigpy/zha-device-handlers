@@ -1,9 +1,6 @@
 """Tuya Dimmer TS110E."""
-from typing import Optional, Union
-
 from zigpy.profiles import zha
 import zigpy.types as t
-from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
@@ -15,6 +12,9 @@ from zigpy.zcl.clusters.general import (
     Time,
 )
 
+from zigpy.zcl import foundation
+from typing import Optional, Union
+
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -23,9 +23,17 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import TuyaDimmerSwitch, TuyaZBExternalSwitchTypeCluster
+
+from zhaquirks.tuya import (
+    TuyaDimmerSwitch,
+    TuyaZBExternalSwitchTypeCluster,
+)
+
 
 TUYA_LEVEL_ATTRIBUTE = 0xF000
+TUYA_BULB_TYPE_ATTRIBUTE = 0xFC02
+TUYA_MIN_LEVEL_ATTRIBUTE = 0xFC03
+TUYA_MAX_LEVEL_ATTRIBUTE = 0xFC04
 TUYA_CUSTOM_LEVEL_COMMAND = 0x00F0
 
 
@@ -36,21 +44,36 @@ class TuyaLevelPayload(t.Struct):
     transtime: t.uint16_t
 
 
+class TuyaBulbType(t.enum8):
+    """Tuya bulb type."""
+
+    LED = 0x00
+    INCANDESCENT = 0x01
+    HALOGEN = 0x02
+
+
 class F000LevelControlCluster(LevelControl):
     """LevelControlCluster that reports to attrid 0xF000."""
 
     manufacturer_attributes = {
         TUYA_LEVEL_ATTRIBUTE: ("manufacturer_current_level", t.uint16_t),
+        TUYA_BULB_TYPE_ATTRIBUTE: ("bulb_type", TuyaBulbType), # 0xFC02
+        TUYA_MIN_LEVEL_ATTRIBUTE: ("manufacturer_min_level", t.uint16_t), # 0xFC03
+        TUYA_MAX_LEVEL_ATTRIBUTE: ("manufacturer_max_level", t.uint16_t), # 0xFC04
     }
 
     manufacturer_server_commands = {
         TUYA_CUSTOM_LEVEL_COMMAND: ("moveToLevelTuya", (TuyaLevelPayload,), False),
     }
 
-    # 0xF000 reported values are 0-1000, convert to 0-255
+    # 0xF000 reported values are 10-1000, convert to 0-254
     def _update_attribute(self, attrid, value):
         if attrid == TUYA_LEVEL_ATTRIBUTE:
-            value = (value * 255) // 1000
+            self.debug(
+                "Getting brightness %s",
+                value,
+            )
+            value = (value + 4 - 10) * 254 // (1000 - 10)
             attrid = 0x0000
 
         super()._update_attribute(attrid, value)
@@ -71,8 +94,12 @@ class F000LevelControlCluster(LevelControl):
         )
         # move_to_level, move, move_to_level_with_on_off
         if command_id in (0x0000, 0x0001, 0x0004):
-            # convert dim values to 0-1000
-            brightness = (args[0] * 1000) // 255
+            # convert dim values to 10-1000
+            brightness = args[0] * (1000 - 10) // 254 + 10
+            self.debug(
+                "Setting brightness to %s",
+                brightness,
+            )
             return await super().command(
                 TUYA_CUSTOM_LEVEL_COMMAND,
                 TuyaLevelPayload(level=brightness, transtime=0),
@@ -85,7 +112,7 @@ class F000LevelControlCluster(LevelControl):
 
 
 class DimmerSwitchWithNeutral1Gang(TuyaDimmerSwitch):
-    """Tuya Dimmer Switch Module With Neutral 1 Gang."""
+    """Tuya Dimmer Switch Module With Neutral 1 Gang"""
 
     signature = {
         MODELS_INFO: [("_TZ3210_ngqk6jia", "TS110E")],
@@ -102,7 +129,7 @@ class DimmerSwitchWithNeutral1Gang(TuyaDimmerSwitch):
                     Scenes.cluster_id,
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
-                    TuyaZBExternalSwitchTypeCluster.cluster_id,
+                    TuyaZBExternalSwitchTypeCluster,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
@@ -128,7 +155,7 @@ class DimmerSwitchWithNeutral1Gang(TuyaDimmerSwitch):
                     Scenes.cluster_id,
                     OnOff.cluster_id,
                     F000LevelControlCluster,
-                    TuyaZBExternalSwitchTypeCluster.cluster_id,
+                    TuyaZBExternalSwitchTypeCluster,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
