@@ -85,7 +85,7 @@ async def cast_tuya_magic_spell_task(
         app.devices.pop(dev.ieee, None)
 
 
-def tuya_magic_spell(dev: zigpy.device.Device, tries: int = 3) -> None:
+def cast_tuya_magic_spell(dev: zigpy.device.Device, tries: int = 3) -> None:
     """Set up the magic spell asynchronously."""
 
     # Note for sleepy devices the number of tries may need to be increased to 100.
@@ -127,7 +127,7 @@ class Lidl_Plug_3AC_4USB(Plug_3AC_4USB):
 
         # Use 'external' version that could be called from cluster
         # customiation
-        tuya_magic_spell(self, tries=3)
+        cast_tuya_magic_spell(self, tries=3)
 
     signature = {
         MODEL: "TS011F",
