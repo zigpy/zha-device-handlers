@@ -62,6 +62,29 @@ class NeoAlarmVolume(t.enum8):
     high = 0x02
 
 
+class NeoAlarmMelody(t.enum8):
+    """Neo alarm melody enum."""
+
+    melody_01 = 0x01
+    melody_02 = 0x02
+    melody_03 = 0x03
+    melody_04 = 0x04
+    melody_05 = 0x05
+    melody_06 = 0x06
+    melody_07 = 0x07
+    melody_08 = 0x08
+    melody_09 = 0x09
+    melody_10 = 0x0A
+    melody_11 = 0x0B
+    melody_12 = 0x0C
+    melody_13 = 0x0D
+    melody_14 = 0x0E
+    melody_15 = 0x0F
+    melody_16 = 0x10
+    melody_17 = 0x11
+    melody_18 = 0x12
+
+
 class TuyaManufClusterSiren(TuyaManufClusterAttributes):
     """Manufacturer Specific Cluster of the NEO Siren device."""
 
@@ -238,7 +261,7 @@ class TuyaMCUSiren(OnOff, TuyaAttributesCluster):
         TUYA_BATTERY_ATTR: ("battery", t.uint32_t),
         TUYA_ALARM_ATTR: ("alarm", t.uint8_t),
         TUYA_ALARM_DURATION_ATTR: ("alarm_duration", t.uint32_t),
-        TUYA_MELODY_ATTR: ("melody", t.uint8_t),
+        TUYA_MELODY_ATTR: ("melody", NeoAlarmMelody),
         TUYA_VOLUME_ATTR: ("volume", NeoAlarmVolume),
     }
 
@@ -305,6 +328,7 @@ class NeoSirenManufCluster(TuyaMCUCluster):
             TuyaMCUSiren.ep_attribute,
             "melody",
             dp_type=TuyaDPType.ENUM,
+            converter=lambda x: NeoAlarmMelody(x),
         ),
     }
 
