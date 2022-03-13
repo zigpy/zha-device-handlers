@@ -234,6 +234,11 @@ class TuyaMCUSiren(OnOff, TuyaAttributesCluster):
         TUYA_VOLUME_ATTR: ("volume", t.uint8_t),
     }
 
+    async def write_attributes(self, attributes, manufacturer=None):
+        """Overwrite to force manufacturer code."""
+
+        return await super().write_attributes(attributes, manufacturer="")
+
     async def command(
         self,
         command_id: Union[foundation.Command, int, t.uint8_t],
@@ -270,11 +275,6 @@ class TuyaMCUSiren(OnOff, TuyaAttributesCluster):
 
 class NeoSirenManufCluster(TuyaMCUCluster):
     """Tuya with NEO Siren data points."""
-
-    async def write_attributes(self, attributes, manufacturer=None):
-        """Overwrite to force manufacturer code."""
-
-        return await super().write_attributes(attributes, manufacturer="")
 
     dp_to_attribute: Dict[int, DPToAttributeMapping] = {
         5: DPToAttributeMapping(
