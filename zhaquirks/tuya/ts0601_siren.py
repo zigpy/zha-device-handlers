@@ -29,13 +29,13 @@ from zhaquirks.const import (
 )
 from zhaquirks.tuya import (
     ATTR_ON_OFF,
-    TuyaLocalCluster,
     TuyaManufCluster,
     TuyaManufClusterAttributes,
 )
 from zhaquirks.tuya.mcu import (
     TUYA_MCU_COMMAND,
     DPToAttributeMapping,
+    TuyaAttributesCluster,
     TuyaClusterData,
     TuyaDPType,
     TuyaMCUCluster,
@@ -201,7 +201,7 @@ class TuyaSiren(CustomDevice):
 
 
 class TuyaSiren2(TuyaSiren):
-    """NEO Tuya Siren and humidity/temperature sensor."""
+    """NEO Tuya Siren and humidity/temperature sensor."""
 
     signature = {
         #  endpoint=1 profile=260 device_type=81 device_version=1 input_clusters=[0, 4, 5, 61184]
@@ -223,7 +223,7 @@ class TuyaSiren2(TuyaSiren):
     }
 
 
-class TuyaMCUSiren(OnOff, TuyaLocalCluster):
+class TuyaMCUSiren(OnOff, TuyaAttributesCluster):
     """Tuya MCU cluster for siren device."""
 
     attributes = {
@@ -233,15 +233,7 @@ class TuyaMCUSiren(OnOff, TuyaLocalCluster):
     manufacturer_attributes = {
         TUYA_BATTERY_ATTR: ("battery", t.uint32_t),
         TUYA_ALARM_ATTR: ("alarm", t.uint8_t),
-        TUYA_TEMP_ALARM_ATTR: ("enable_temperature_alarm", t.uint8_t),
-        TUYA_HUMID_ALARM_ATTR: ("enable_humidity_alarm", t.uint8_t),
         TUYA_ALARM_DURATION_ATTR: ("alarm_duration", t.uint32_t),
-        TUYA_TEMPERATURE_ATTR: ("temperature", t.uint32_t),
-        TUYA_HUMIDITY_ATTR: ("humidity", t.uint32_t),
-        TUYA_ALARM_MIN_TEMP_ATTR: ("alarm_temperature_min", t.uint32_t),
-        TUYA_ALARM_MAX_TEMP_ATTR: ("alarm_temperature_max", t.uint32_t),
-        TUYA_ALARM_MIN_HUMID_ATTR: ("alarm_humidity_min", t.uint32_t),
-        TUYA_ALARM_MAX_HUMID_ATTR: ("alarm_humidity_max", t.uint32_t),
         TUYA_MELODY_ATTR: ("melody", t.uint8_t),
         TUYA_VOLUME_ATTR: ("volume", t.uint8_t),
     }
@@ -255,6 +247,11 @@ class TuyaMCUSiren(OnOff, TuyaLocalCluster):
         tsn: Optional[Union[int, t.uint8_t]] = None,
     ):
         """Override the default Cluster command."""
+        self.debug(
+            "Sending Tuya Cluster Command. Cluster Command is %x, Arguments are %s",
+            command_id,
+            args,
+        )
 
         # (off, on)
         if command_id in (0x0000, 0x0001):
@@ -262,8 +259,8 @@ class TuyaMCUSiren(OnOff, TuyaLocalCluster):
                 endpoint_id=self.endpoint.endpoint_id,
                 cluster_attr="on_off",
                 attr_value=command_id,
-                # expect_reply=expect_reply,
-                # manufacturer=manufacturer,
+                expect_reply=expect_reply,
+                manufacturer="",
             )
             self.endpoint.device.command_bus.listener_event(
                 TUYA_MCU_COMMAND,
@@ -278,12 +275,13 @@ class TuyaMCUSiren(OnOff, TuyaLocalCluster):
 class NeoSirenManufCluster(TuyaMCUCluster):
     """Tuya with NEO Siren data points."""
 
+    async def write_attributes(self, attributes, manufacturer=None):
+        """Overwrite to force manufacturer code."""
+
+        retrun await super().write_attributes(attributes, manufacturer="")
+
+
     dp_to_attribute: Dict[int, DPToAttributeMapping] = {
-        1: DPToAttributeMapping(
-            TuyaMCUSiren.ep_attribute,
-            "on_off",
-            dp_type=TuyaDPType.BOOL,
-        ),
         5: DPToAttributeMapping(
             TuyaMCUSiren.ep_attribute,
             "volume",
@@ -293,6 +291,11 @@ class NeoSirenManufCluster(TuyaMCUCluster):
             TuyaMCUSiren.ep_attribute,
             "alarm_duration",
             dp_type=TuyaDPType.VALUE,
+        ),
+        13: DPToAttributeMapping(
+            TuyaMCUSiren.ep_attribute,
+            "on_off",
+            dp_type=TuyaDPType.BOOL,
         ),
         15: DPToAttributeMapping(
             TuyaMCUSiren.ep_attribute,
@@ -307,7 +310,7 @@ class NeoSirenManufCluster(TuyaMCUCluster):
     }
 
     data_point_handlers = {
-        1: "_dp_2_attr_update",
+        13: "_dp_2_attr_update",
         5: "_dp_2_attr_update",
         7: "_dp_2_attr_update",
         15: "_dp_2_attr_update",
@@ -315,8 +318,8 @@ class NeoSirenManufCluster(TuyaMCUCluster):
     }
 
 
-class TuyaSirenGPP(TuyaSiren):
-    """NEO Tuya Siren without sensor."""
+class TuyaSirenGPP_NoSensors(CustomDevice):
+    """NEO Tuya Siren without sensor."""
 
     signature = {
         #  endpoint=1 profile=260 device_type=81 device_version=1 input_clusters=[0, 4, 5, 61184]
@@ -341,4 +344,27 @@ class TuyaSirenGPP(TuyaSiren):
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
         },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.IAS_WARNING_DEVICE,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    NeoSirenManufCluster,
+                    TuyaMCUSiren,
+                ],
+                OUTPUT_CLUSTERS: [Ota.cluster_id, Time.cluster_id],
+            },
+            242: {
+                PROFILE_ID: 41440,
+                DEVICE_TYPE: 97,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        }
     }
