@@ -27,11 +27,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import (
-    ATTR_ON_OFF,
-    TuyaManufCluster,
-    TuyaManufClusterAttributes,
-)
+from zhaquirks.tuya import ATTR_ON_OFF, TuyaManufCluster, TuyaManufClusterAttributes
 from zhaquirks.tuya.mcu import (
     TUYA_MCU_COMMAND,
     DPToAttributeMapping,
@@ -278,8 +274,7 @@ class NeoSirenManufCluster(TuyaMCUCluster):
     async def write_attributes(self, attributes, manufacturer=None):
         """Overwrite to force manufacturer code."""
 
-        retrun await super().write_attributes(attributes, manufacturer="")
-
+        return await super().write_attributes(attributes, manufacturer="")
 
     dp_to_attribute: Dict[int, DPToAttributeMapping] = {
         5: DPToAttributeMapping(
