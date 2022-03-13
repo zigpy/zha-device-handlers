@@ -27,8 +27,9 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     RIGHT,
+    ROTATED,
 )
-from zhaquirks.ikea import IKEA, ROTATED, PowerConfiguration1CRXCluster
+from zhaquirks.ikea import IKEA, PowerConfiguration1CRXCluster
 
 
 class IkeaDimmer(CustomDevice):
