@@ -25,7 +25,7 @@ from zhaquirks.const import (
 from zhaquirks.tuya.ts011f_plug import Plug_3AC_4USB
 
 
-async def tuya_magic_spell_wand(dev, tries=100) -> None:
+async def tuya_magic_spell_wand(dev, tries=100, rejoin=False) -> None:
     """Initialize device so that all endpoints become available."""
     import inspect
 
@@ -45,18 +45,21 @@ async def tuya_magic_spell_wand(dev, tries=100) -> None:
     # attr_to_write={0xffde:13}
     # basic_cluster.write_attributes(attr_to_write)
 
-    # Leave with rejoin - may need to be adjuste to work everywhere
-    # or require a minimum zigpy version
-    # This should have the device leave and rejoin immediately triggering
-    # the discovery of the endpoints that appear after the magic trick
-    await dev.zdo.request(0x0034, dev.ieee, 0x01, tries)
+    if rejoin:
+        # Leave with rejoin - may need to be adjuste to work everywhere
+        # or require a minimum zigpy version
+        # This should have the device leave and rejoin immediately triggering
+        # the discovery of the endpoints that appear after the magic trick
 
-    app = dev.application
-    # Delete the device from the database
-    app.listener_event("device_removed", dev)
+        # Note: this is not validated yet and disabled by default
+        await dev.zdo.request(0x0034, dev.ieee, 0x01, tries)
 
-    # Delete the device from zigpy
-    app.devices.pop(dev.ieee, None)
+        app = dev.application
+        # Delete the device from the database
+        app.listener_event("device_removed", dev)
+
+        # Delete the device from zigpy
+        app.devices.pop(dev.ieee, None)
 
 
 def tuya_magic_spell(dev, tries=100) -> None:
