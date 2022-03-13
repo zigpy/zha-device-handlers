@@ -1,8 +1,13 @@
 """LIDL TS011F plug."""
+from __future__ import annotations
 
 import asyncio
+import logging
 
+import zigpy
 from zigpy.profiles import zha
+from zigpy.quirks import CustomCluster
+import zigpy.types as t
 from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
@@ -24,8 +29,12 @@ from zhaquirks.const import (
 )
 from zhaquirks.tuya.ts011f_plug import Plug_3AC_4USB
 
+_LOGGER = logging.getLogger(__name__)
 
-async def tuya_magic_spell_wand(dev, tries=100, rejoin=False) -> None:
+
+async def cast_tuya_magic_spell_task(
+    dev: zigpy.device.Device, tries: int = 100, rejoin: bool = False
+) -> None:
     """Initialize device so that all endpoints become available."""
     import inspect
 
@@ -35,11 +44,23 @@ async def tuya_magic_spell_wand(dev, tries=100, rejoin=False) -> None:
     # TODO: Improve by doing this only once (successfully).
 
     # Magic spell - part 1
-    attr_to_read = [4, 0, 1, 5, 7, 0xFFFE]
+    # Note: attribute order is important
+    attr_to_read = [
+        "manufacturer",
+        "zcl_version",
+        "app_version",
+        "model",
+        "power_source",
+        0xFFFE,
+    ]
     if "tries" in inspect.getfullargspec(basic_cluster.read_attributes)[0]:
-        await basic_cluster.read_attributes(attr_to_read, tries=tries)
+        _LOGGER.debug(f"Cast Tuya Magic Spell on {dev.ieee!r} with {tries} tries")
+        res = await basic_cluster.read_attributes(attr_to_read, tries=tries)
     else:
-        await basic_cluster.read_attributes(attr_to_read)
+        _LOGGER.debug(f"Cast Tuya Magic Spell on {dev.ieee!r}")
+        res = await basic_cluster.read_attributes(attr_to_read)
+
+    _LOGGER.debug(f"Tuya Magic Spell result {res!r} for {dev.ieee!r}")
 
     # Magic spell - part 2 (skipped - does not seem to be needed)
     # attr_to_write={0xffde:13}
@@ -52,7 +73,9 @@ async def tuya_magic_spell_wand(dev, tries=100, rejoin=False) -> None:
         # the discovery of the endpoints that appear after the magic trick
 
         # Note: this is not validated yet and disabled by default
-        await dev.zdo.request(0x0034, dev.ieee, 0x01, tries)
+        _LOGGER.debug(f"Send leave with rejoin request to {dev.ieee!r}")
+        res = await dev.zdo.request(0x0034, dev.ieee, 0x01, tries)
+        _LOGGER.debug(f"Leave with rejoin result {res!r} for {dev.ieee!r}")
 
         app = dev.application
         # Delete the device from the database
@@ -62,40 +85,49 @@ async def tuya_magic_spell_wand(dev, tries=100, rejoin=False) -> None:
         app.devices.pop(dev.ieee, None)
 
 
-def tuya_magic_spell(dev, tries=100) -> None:
+def tuya_magic_spell(dev: zigpy.device.Device, tries: int = 3) -> None:
     """Set up the magic spell asynchronously."""
 
-    dev._magic_spell_task = asyncio.create_task(tuya_magic_spell_wand(dev, tries=tries))
+    # Note for sleepy devices the number of tries may need to be increased to 100.
+
+    dev._magic_spell_task = asyncio.create_task(
+        cast_tuya_magic_spell_task(dev, tries=tries)
+    )
+
+
+class TuyaBasicCluster(CustomCluster, Basic):
+    """Provide Tuya Basic Cluster with magic spell."""
+
+    manufacturer_attributes = {
+        0xFFDE: ("tuya_FFDE", t.uint8_t),
+        # 0xffe0: ("tuya_FFE0", TODO.Array),
+        # 0xffe1: ("tuya_FFE1", TODO.Array),
+        0xFFE2: ("tuya_FFE2", t.uint8_t),
+        # 0xffe3: ("tuya_FFE3", TODO.Array),
+    }
+
+    async def bind(self):
+        """Bind cluster."""
+
+        _LOGGER.debug(
+            f"Requesting Tuya Magic Spell for {self.ieee!r} in basic bind method"
+        )
+        tries = 3
+        await asyncio.create_task(cast_tuya_magic_spell_task(self, tries=tries))
+
+        return await super().bind()
 
 
 class Lidl_Plug_3AC_4USB(Plug_3AC_4USB):
-    """LIDL 3 outlet + 4 USB with restore power state support."""
+    """LIDL 3 outlets + 4 USB with restore power state support."""
 
     def __init__(self, *args, **kwargs):
         """Initialize with task."""
         super().__init__(*args, **kwargs)
 
-        # Use internal version, "validated", commented to try next method
-        # self._init_plug_task = asyncio.create_task(self.spell())
-
         # Use 'external' version that could be called from cluster
         # customiation
         tuya_magic_spell(self, tries=3)
-
-    async def spell(self) -> None:
-        """Initialize device so that all endpoints become available."""
-        basic_cluster = self.endpoints[1].in_clusters[0]
-
-        # The magic spell is needed only once.
-        # TODO: Improve by doing this only once (successfully).
-
-        # Magic spell - part 1
-        attr_to_read = [4, 0, 1, 5, 7, 0xFFFE]
-        await basic_cluster.read_attributes(attr_to_read)
-
-        # Magic spell - part 2 (skipped - does not seem to be needed)
-        # attr_to_write={0xffde:13}
-        # basic_cluster.write_attributes(attr_to_write)
 
     signature = {
         MODEL: "TS011F",
@@ -128,3 +160,7 @@ class Lidl_Plug_3AC_4USB(Plug_3AC_4USB):
             },
         },
     }
+
+    # Uncomment to try TuyaBasicCluster implementation
+    # Rename __init__ to disabled__init__ as well
+    # replacement[1][INPUT_CLUSTERS][0] = TuyaBasicCluster
