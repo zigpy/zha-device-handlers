@@ -1,6 +1,5 @@
 """Xiaomi aqara single key wall switch devices."""
 import copy
-import logging
 
 from zigpy import types as t
 from zigpy.profiles import zha
@@ -28,11 +27,12 @@ from zhaquirks.const import (
     COMMAND_BUTTON_DOUBLE,
     COMMAND_BUTTON_HOLD,
     COMMAND_BUTTON_SINGLE,
+    COMMAND_DOUBLE,
+    COMMAND_SINGLE,
     DEVICE_TYPE,
     ENDPOINT_ID,
     ENDPOINTS,
     INPUT_CLUSTERS,
-    MODELS_INFO,
     OUTPUT_CLUSTERS,
     PRESS_TYPE,
     PROFILE_ID,
@@ -40,7 +40,6 @@ from zhaquirks.const import (
     ZHA_SEND_EVENT,
 )
 from zhaquirks.xiaomi import (
-    LUMI,
     BasicCluster,
     DeviceTemperatureCluster,
     OnOffCluster,
@@ -49,21 +48,8 @@ from zhaquirks.xiaomi import (
 
 from .opple_remote import MultistateInputCluster, OppleCluster
 
-ATTRIBUTE_ON_OFF = "on_off"
 BOTH_BUTTONS = "both_buttons"
-DOUBLE = "double"
-HOLD = "long press"
 PRESS_TYPES = {0: "hold", 1: "single", 2: "double", 3: "triple", 255: "release"}
-SINGLE = "single"
-STATUS_TYPE_ATTR = 0x0055  # decimal = 85
-XIAOMI_CLUSTER_ID = 0xFFFF
-XIAOMI_DEVICE_TYPE = 0x5F01
-XIAOMI_DEVICE_TYPE2 = 0x5F02
-XIAOMI_DEVICE_TYPE3 = 0x5F03
-XIAOMI_WALL_SWITCH_PROFILE_ID = 0xA1E0
-XIAOMI_WALL_SWITCH_TYPE = 0x61
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class OppleOperationMode(t.uint8_t):
@@ -406,13 +392,13 @@ class XiaomiOpple3ButtonSwitch(XiaomiCustomDevice):
             ENDPOINT_ID: 41,
             CLUSTER_ID: 18,
             # COMMAND: COMMAND_ATTRIBUTE_UPDATED,
-            ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: SINGLE, VALUE: 1},
+            ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: COMMAND_SINGLE, VALUE: 1},
         },
         (COMMAND_BUTTON_DOUBLE, BUTTON_1): {
             ENDPOINT_ID: 41,
             CLUSTER_ID: 18,
             # COMMAND: COMMAND_ATTRIBUTE_UPDATED,
-            ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: DOUBLE, VALUE: 2},
+            ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: COMMAND_DOUBLE, VALUE: 2},
         },
         (COMMAND_BUTTON_HOLD, BUTTON_1): {
             ENDPOINT_ID: 1,
@@ -424,13 +410,13 @@ class XiaomiOpple3ButtonSwitch(XiaomiCustomDevice):
             ENDPOINT_ID: 42,
             CLUSTER_ID: 18,
             # COMMAND: COMMAND_ATTRIBUTE_UPDATED,
-            ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: SINGLE, VALUE: 1},
+            ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: COMMAND_SINGLE, VALUE: 1},
         },
         (COMMAND_BUTTON_DOUBLE, BUTTON_2): {
             ENDPOINT_ID: 42,
             CLUSTER_ID: 18,
             # COMMAND: COMMAND_ATTRIBUTE_UPDATED,
-            ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: DOUBLE, VALUE: 2},
+            ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: COMMAND_DOUBLE, VALUE: 2},
         },
         (COMMAND_BUTTON_HOLD, BUTTON_2): {
             ENDPOINT_ID: 1,
@@ -442,13 +428,13 @@ class XiaomiOpple3ButtonSwitch(XiaomiCustomDevice):
             ENDPOINT_ID: 43,
             CLUSTER_ID: 18,
             # COMMAND: COMMAND_ATTRIBUTE_UPDATED,
-            ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: SINGLE, VALUE: 1},
+            ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: COMMAND_SINGLE, VALUE: 1},
         },
         (COMMAND_BUTTON_DOUBLE, BUTTON_3): {
             ENDPOINT_ID: 43,
             CLUSTER_ID: 18,
             # COMMAND: COMMAND_ATTRIBUTE_UPDATED,
-            ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: DOUBLE, VALUE: 2},
+            ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: COMMAND_DOUBLE, VALUE: 2},
         },
         (COMMAND_BUTTON_HOLD, BUTTON_3): {
             ENDPOINT_ID: 1,
@@ -648,13 +634,13 @@ class XiaomiOpple2ButtonSwitch(XiaomiCustomDevice):
             ENDPOINT_ID: 41,
             CLUSTER_ID: 18,
             # COMMAND: COMMAND_ATTRIBUTE_UPDATED,
-            ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: SINGLE, VALUE: 1},
+            ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: COMMAND_SINGLE, VALUE: 1},
         },
         (COMMAND_BUTTON_DOUBLE, BUTTON_1): {
             ENDPOINT_ID: 41,
             CLUSTER_ID: 18,
             # COMMAND: COMMAND_ATTRIBUTE_UPDATED,
-            ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: DOUBLE, VALUE: 2},
+            ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: COMMAND_DOUBLE, VALUE: 2},
         },
         (COMMAND_BUTTON_HOLD, BUTTON_1): {
             ENDPOINT_ID: 1,
@@ -666,13 +652,13 @@ class XiaomiOpple2ButtonSwitch(XiaomiCustomDevice):
             ENDPOINT_ID: 42,
             CLUSTER_ID: 18,
             # COMMAND: COMMAND_ATTRIBUTE_UPDATED,
-            ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: SINGLE, VALUE: 1},
+            ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: COMMAND_SINGLE, VALUE: 1},
         },
         (COMMAND_BUTTON_DOUBLE, BUTTON_2): {
             ENDPOINT_ID: 42,
             CLUSTER_ID: 18,
             # COMMAND: COMMAND_ATTRIBUTE_UPDATED,
-            ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: DOUBLE, VALUE: 2},
+            ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: COMMAND_DOUBLE, VALUE: 2},
         },
         (COMMAND_BUTTON_HOLD, BUTTON_2): {
             ENDPOINT_ID: 1,
@@ -684,13 +670,13 @@ class XiaomiOpple2ButtonSwitch(XiaomiCustomDevice):
             ENDPOINT_ID: 51,
             CLUSTER_ID: 18,
             # COMMAND: COMMAND_ATTRIBUTE_UPDATED,
-            ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: SINGLE, VALUE: 1},
+            ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: COMMAND_SINGLE, VALUE: 1},
         },
         (COMMAND_BUTTON_DOUBLE, BOTH_BUTTONS): {
             ENDPOINT_ID: 51,
             CLUSTER_ID: 18,
             # COMMAND: COMMAND_ATTRIBUTE_UPDATED,
-            ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: DOUBLE, VALUE: 2},
+            ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: COMMAND_DOUBLE, VALUE: 2},
         },
         (COMMAND_BUTTON_HOLD, BOTH_BUTTONS): {
             ENDPOINT_ID: 1,
