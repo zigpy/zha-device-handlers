@@ -118,6 +118,7 @@ TUYA_COVER_COMMAND = {
     "_TZE200_hsgrhjpf": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
     "_TZE200_iossyxra": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
     "_TZE200_68nvbio9": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
+    "_TZE200_zuz7f94z": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
 }
 # Taken from zigbee-herdsman-converters
 # Contains all covers which need their position inverted by default
@@ -131,6 +132,7 @@ TUYA_COVER_INVERTED_BY_DEFAULT = [
     "_TZE200_xaabybja",
     "_TZE200_yenbr4om",
     "_TZE200_zpzndjez",
+    "_TZE200_zuz7f94z",
 ]
 
 # ---------------------------------------------------------
