@@ -60,17 +60,24 @@ class OppleOperationMode(t.uint8_t):
 
 
 class OppleSwitchMode(t.uint8_t):
-    """Opple operation_mode enum."""
+    """Opple switch_mode enum."""
 
     Fast = 0x01
     Multi = 0x02
 
 
 class OppleSwitchType(t.uint8_t):
-    """Opple operation_mode enum."""
+    """Opple switch_type enum."""
 
     Toggle = 0x01
     Momentary = 0x02
+
+
+class OppleIndicatorLight(t.uint8_t):
+    """Opple indicator light enum."""
+
+    Normal = 0x00
+    Reverse = 0x01
 
 
 class OppleSwitchCluster(OppleCluster):
@@ -86,8 +93,8 @@ class OppleSwitchCluster(OppleCluster):
     attributes.update(
         {
             0x0002: ("power_outage_count", t.uint8_t),
-            0x000A: ("switch_type", t.uint8_t),
-            0x00F0: ("reverse_indicator_light", t.uint8_t),
+            0x000A: ("switch_type", OppleSwitchType),
+            0x00F0: ("reverse_indicator_light", OppleIndicatorLight),
             0x0125: ("switch_mode", OppleSwitchMode),
             0x0200: ("operation_mode", OppleOperationMode),
             0x0201: ("power_outage_memory", t.Bool),
@@ -95,6 +102,8 @@ class OppleSwitchCluster(OppleCluster):
             0x0203: ("do_not_disturb", t.Bool),
         }
     )
+
+    expose: [] = [0x000A, 0x00F0, 0x0125, 0x0200, 0x0201, 0x0202, 0x0203]
 
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
