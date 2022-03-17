@@ -27,7 +27,7 @@ from zhaquirks.const import (
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
 
-INOVELLI_VZM31_SN_CLUSTER_ID = 64561
+INOVELLI_VZM31SN_CLUSTER_ID = 64561
 
 class InovelliVZM31SN(CustomDevice):
     """VZM31-SN 2 in 1 Switch\Dimmer Module"""
