@@ -1,4 +1,4 @@
-"""VZM31-SN Two in One Switch\Dimmer Module"""
+"""VZM31-SN Two in One Switch/Dimmer Module."""
 
 from zigpy.profiles import zha
 from zigpy.profiles.zha import DeviceType
@@ -29,8 +29,9 @@ from zigpy.zcl.clusters.smartenergy import Metering
 
 INOVELLI_VZM31SN_CLUSTER_ID = 64561
 
+
 class InovelliVZM31SN(CustomDevice):
-    """VZM31-SN 2 in 1 Switch\Dimmer Module"""
+    """VZM31-SN 2 in 1 Switch/Dimmer Module."""
 
     signature = {
         MODELS_INFO: [("Inovelli", "VZM31-SN")],
