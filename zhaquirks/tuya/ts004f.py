@@ -4,9 +4,8 @@ from __future__ import annotations
 import asyncio
 import logging
 
-import zigpy
 from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.quirks import CustomDevice
 import zigpy.types as t
 from zigpy.zcl.clusters.general import (
     Basic,
@@ -32,9 +31,9 @@ from zhaquirks.const import (
     CLUSTER_ID,
     COMMAND,
     COMMAND_MOVE,
+    COMMAND_MOVE_SATURATION,
     COMMAND_OFF,
     COMMAND_ON,
-    COMMAND_MOVE_SATURATION,
     COMMAND_STEP,
     COMMAND_STOP,
     COMMAND_STOP_MOVE_STEP,
@@ -58,7 +57,6 @@ from zhaquirks.const import (
     ROTATED_FAST,
     ROTATED_SLOW,
     SHORT_PRESS,
-    STOP,
     TURN_OFF,
     TURN_ON,
 )
@@ -145,7 +143,7 @@ class TuyaSmartRemote004FROK(CustomDevice):
             ENDPOINT_ID: 1,
             CLUSTER_ID: 8,
             ARGS: [0, 13, 1],
-        },  # Trigered for both let and right in HA (HA bug).
+        },  # Triggered for both let and right in HA (HA bug).
         (ROTATED_SLOW, LEFT): {
             COMMAND: COMMAND_STEP,
             ENDPOINT_ID: 1,
@@ -195,7 +193,7 @@ class TuyaSmartRemote004FDMS(CustomDevice):
 
         attr_to_read = [4, 0, 1, 5, 7, 0xFFFE]
         await basic_cluster.read_attributes(attr_to_read)
-        _LOGGER.debug(f"Device class is casting Tuya Magic Spell")
+        _LOGGER.debug("Device class is casting Tuya Magic Spell")
 
     signature = {
         # "node_descriptor": "NodeDescriptor(byte1=2, byte2=64, mac_capability_flags=128, manufacturer_code=4098, maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264, maximum_outgoing_transfer_size=82, descriptor_capability_field=0, *allocate_address=True, *complex_descriptor_available=False, *is_alternate_pan_coordinator=False, *is_coordinator=False, *is_end_device=True, *is_full_function_device=False, *is_mains_powered=False, *is_receiver_on_when_idle=False, *is_router=False, *is_security_capable=False, *is_valid=True, *logical_type=<LogicalType.EndDevice: 2>, *user_descriptor_available=False)",
