@@ -6,7 +6,6 @@ import logging
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
-import zigpy.types as t
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -60,7 +59,7 @@ from zhaquirks.const import (
     TURN_OFF,
     TURN_ON,
 )
-from zhaquirks.tuya import TuyaZBOnOffAttributeCluster, TuyaSmartRemoteOnOffCluster
+from zhaquirks.tuya import TuyaSmartRemoteOnOffCluster, TuyaZBOnOffAttributeCluster
 
 _LOGGER = logging.getLogger(__name__)
 
