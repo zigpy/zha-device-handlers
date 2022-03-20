@@ -234,7 +234,6 @@ class TuyaSmartRemote004FDMS(CustomDevice):
                     PowerConfiguration.cluster_id,
                     Identify.cluster_id,
                     Groups.cluster_id,  # Is needed for adding group then binding is not working.
-                    TuyaSmartRemoteOnOffCluster,
                     LightLink.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
@@ -243,6 +242,7 @@ class TuyaSmartRemote004FDMS(CustomDevice):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
+                    TuyaSmartRemoteOnOffCluster,
                     LevelControl.cluster_id,
                     Color.cluster_id,
                     LightLink.cluster_id,
