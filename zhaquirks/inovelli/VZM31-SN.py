@@ -1,29 +1,14 @@
 """VZM31-SN Two in One Switch/Dimmer Module."""
 
+from zhaquirks.const import (DEVICE_TYPE, ENDPOINTS, INPUT_CLUSTERS,
+                             MODELS_INFO, OUTPUT_CLUSTERS, PROFILE_ID)
+from zhaquirks.inovelli import (INOVELLI_AUTOMATION_TRIGGERS,
+                                Inovelli_VZM31SN_Cluster)
 from zigpy.profiles import zha
 from zigpy.profiles.zha import DeviceType
 from zigpy.quirks import CustomDevice
-from zigpy.zcl.clusters.general import (
-    Basic,
-    Groups,
-    Identify,
-    LevelControl,
-    OnOff,
-    Scenes,
-    Ota,
-)
-from zhaquirks.inovelli import (
-    Inovelli_VZM31SN_Cluster,
-    INOVELLI_AUTOMATION_TRIGGERS,
-)
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-)
+from zigpy.zcl.clusters.general import (Basic, Groups, Identify, LevelControl,
+                                        OnOff, Ota, Scenes)
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
 
