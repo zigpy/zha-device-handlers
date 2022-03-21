@@ -1,32 +1,17 @@
 """Module for Inovelli quirks implementations."""
 
-import zigpy.types as t
-from zigpy.quirks import CustomCluster
-from zhaquirks.const import (
-    ZHA_SEND_EVENT,
-    BUTTON,
-    PRESS_TYPE,
-    COMMAND_ID,
-    BUTTON_1,
-    BUTTON_2,
-    BUTTON_3,
-    DOUBLE_PRESS,
-    TRIPLE_PRESS,
-    QUADRUPLE_PRESS,
-    QUINTUPLE_PRESS,
-    COMMAND,
-    COMMAND_PRESS,
-    COMMAND_RELEASE,
-    COMMAND_ON,
-    COMMAND_OFF,
-    COMMAND_HOLD,
-    COMMAND_DOUBLE,
-    COMMAND_TRIPLE,
-    COMMAND_QUAD,
-)
-from typing import Optional, Union, Any, List
-from zigpy.zcl import foundation
 import logging
+from typing import Any, List, Optional, Union
+
+import zigpy.types as t
+from zhaquirks.const import (BUTTON, BUTTON_1, BUTTON_2, BUTTON_3, COMMAND,
+                             COMMAND_DOUBLE, COMMAND_HOLD, COMMAND_ID,
+                             COMMAND_OFF, COMMAND_ON, COMMAND_PRESS,
+                             COMMAND_QUAD, COMMAND_RELEASE, COMMAND_TRIPLE,
+                             DOUBLE_PRESS, PRESS_TYPE, QUADRUPLE_PRESS,
+                             QUINTUPLE_PRESS, TRIPLE_PRESS, ZHA_SEND_EVENT)
+from zigpy.quirks import CustomCluster
+from zigpy.zcl import foundation
 
 _LOGGER = logging.getLogger(__name__)
 INOVELLI_VZM31SN_CLUSTER_ID = 64561
