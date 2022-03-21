@@ -15,8 +15,6 @@ from zhaquirks.const import (
     COMMAND_DOUBLE,
     COMMAND_HOLD,
     COMMAND_ID,
-    COMMAND_OFF,
-    COMMAND_ON,
     COMMAND_PRESS,
     COMMAND_QUAD,
     COMMAND_RELEASE,
