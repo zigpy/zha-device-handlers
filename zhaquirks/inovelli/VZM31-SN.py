@@ -8,7 +8,10 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.inovelli import INOVELLI_AUTOMATION_TRIGGERS, Inovelli_VZM31SN_Cluster
+from zhaquirks.inovelli import (
+    INOVELLI_AUTOMATION_TRIGGERS,
+    Inovelli_VZM31SN_Cluster,
+)
 from zigpy.profiles import zha
 from zigpy.profiles.zha import DeviceType
 from zigpy.quirks import CustomDevice
