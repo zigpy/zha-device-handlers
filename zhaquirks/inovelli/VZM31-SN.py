@@ -1,14 +1,26 @@
 """VZM31-SN Two in One Switch/Dimmer Module."""
 
-from zhaquirks.const import (DEVICE_TYPE, ENDPOINTS, INPUT_CLUSTERS,
-                             MODELS_INFO, OUTPUT_CLUSTERS, PROFILE_ID)
-from zhaquirks.inovelli import (INOVELLI_AUTOMATION_TRIGGERS,
-                                Inovelli_VZM31SN_Cluster)
+from zhaquirks.const import (
+    DEVICE_TYPE,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    MODELS_INFO,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
+)
+from zhaquirks.inovelli import INOVELLI_AUTOMATION_TRIGGERS, Inovelli_VZM31SN_Cluster
 from zigpy.profiles import zha
 from zigpy.profiles.zha import DeviceType
 from zigpy.quirks import CustomDevice
-from zigpy.zcl.clusters.general import (Basic, Groups, Identify, LevelControl,
-                                        OnOff, Ota, Scenes)
+from zigpy.zcl.clusters.general import (
+    Basic,
+    Groups,
+    Identify,
+    LevelControl,
+    OnOff,
+    Ota,
+    Scenes,
+)
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
 
@@ -35,17 +47,12 @@ class InovelliVZM31SN(CustomDevice):
                     ElectricalMeasurement.cluster_id,  # 2820
                     INOVELLI_VZM31SN_CLUSTER_ID,  # 64561
                 ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,  # 3
-                    Ota.cluster_id,  # 19
-                ],
+                OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],  # 3  # 19
             },
             2: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: DeviceType.DIMMER_SWITCH,
-                INPUT_CLUSTERS: [
-                    Identify.cluster_id,  # 3
-                ],
+                INPUT_CLUSTERS: [Identify.cluster_id],  # 3
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,  # 3
                     OnOff.cluster_id,  # 6
@@ -84,9 +91,7 @@ class InovelliVZM31SN(CustomDevice):
             2: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: DeviceType.DIMMABLE_LIGHT,
-                INPUT_CLUSTERS: [
-                    Identify,  # 3
-                ],
+                INPUT_CLUSTERS: [Identify],  # 3
                 OUTPUT_CLUSTERS: [
                     Identify,  # 3
                     OnOff,  # 6
