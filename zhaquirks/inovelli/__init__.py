@@ -4,12 +4,28 @@ import logging
 from typing import Any, List, Optional, Union
 
 import zigpy.types as t
-from zhaquirks.const import (BUTTON, BUTTON_1, BUTTON_2, BUTTON_3, COMMAND,
-                             COMMAND_DOUBLE, COMMAND_HOLD, COMMAND_ID,
-                             COMMAND_OFF, COMMAND_ON, COMMAND_PRESS,
-                             COMMAND_QUAD, COMMAND_RELEASE, COMMAND_TRIPLE,
-                             DOUBLE_PRESS, PRESS_TYPE, QUADRUPLE_PRESS,
-                             QUINTUPLE_PRESS, TRIPLE_PRESS, ZHA_SEND_EVENT)
+from zhaquirks.const import (
+    BUTTON,
+    BUTTON_1,
+    BUTTON_2,
+    BUTTON_3,
+    COMMAND,
+    COMMAND_DOUBLE,
+    COMMAND_HOLD,
+    COMMAND_ID,
+    COMMAND_OFF,
+    COMMAND_ON,
+    COMMAND_PRESS,
+    COMMAND_QUAD,
+    COMMAND_RELEASE,
+    COMMAND_TRIPLE,
+    DOUBLE_PRESS,
+    PRESS_TYPE,
+    QUADRUPLE_PRESS,
+    QUINTUPLE_PRESS,
+    TRIPLE_PRESS,
+    ZHA_SEND_EVENT,
+)
 from zigpy.quirks import CustomCluster
 from zigpy.zcl import foundation
 
@@ -44,6 +60,7 @@ BUTTONS = {1: BUTTON_1, 2: BUTTON_2, 3: BUTTON_3}
 ON = "Up"
 OFF = "Down"
 CONFIG = "Config"
+
 
 class ButtonPressQueue:
     """Inovelli button queue to derive multiple press events."""
@@ -81,9 +98,11 @@ class ButtonPressQueue:
         self._ms_last_click = now_ms
         self._task = asyncio.ensure_future(self._job())
 
+
 class Inovelli_VZM31SN_Cluster(CustomCluster):
 
     """Inovelli VZM31-SN custom cluster."""
+
     cluster_id = 0xFC31
     name = "InovelliVZM31SNCluster"
     ep_attribute = "inovelli_vzm31sn_cluster"
@@ -195,6 +214,7 @@ class Inovelli_VZM31SN_Cluster(CustomCluster):
 
             self.listener_event(ZHA_SEND_EVENT, action, event_args)
             return
+
 
 INOVELLI_AUTOMATION_TRIGGERS = {
     (COMMAND_PRESS, ON): {COMMAND: f"{BUTTON_2}_{COMMAND_PRESS}"},
