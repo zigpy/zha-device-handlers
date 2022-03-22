@@ -100,7 +100,6 @@ class ButtonPressQueue:
 
 
 class Inovelli_VZM31SN_Cluster(CustomCluster):
-
     """Inovelli VZM31-SN custom cluster."""
 
     cluster_id = 0xFC31
