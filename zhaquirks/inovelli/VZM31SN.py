@@ -67,7 +67,6 @@ class InovelliVZM31SN(CustomDevice):
     }
 
     replacement = {
-        MODELS_INFO: [("Inovelli", "VZM31-SN")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
