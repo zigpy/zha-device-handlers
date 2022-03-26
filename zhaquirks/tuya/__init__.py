@@ -14,7 +14,14 @@ from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
 from zigpy.zcl.clusters.smartenergy import Metering
 
 from zhaquirks import Bus, EventableCluster, LocalDataCluster
-from zhaquirks.const import DOUBLE_PRESS, LONG_PRESS, SHORT_PRESS, ZHA_SEND_EVENT
+from zhaquirks.const import (
+    DOUBLE_PRESS,
+    LEFT,
+    LONG_PRESS,
+    RIGHT,
+    SHORT_PRESS,
+    ZHA_SEND_EVENT,
+)
 
 # ---------------------------------------------------------
 # Tuya Custom Cluster ID
@@ -40,6 +47,9 @@ TUYA_LEVEL_COMMAND = 514
 COVER_EVENT = "cover_event"
 LEVEL_EVENT = "level_event"
 TUYA_MCU_COMMAND = "tuya_mcu_command"
+
+# Rotating for remotes
+STOP = "stop"  # To constans
 
 # ---------------------------------------------------------
 # Value for dp_type
@@ -108,6 +118,8 @@ TUYA_COVER_COMMAND = {
     "_TZE200_hsgrhjpf": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
     "_TZE200_iossyxra": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
     "_TZE200_68nvbio9": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
+    "_TZE200_zuz7f94z": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
+    "_TZE200_ergbiejo": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
 }
 # Taken from zigbee-herdsman-converters
 # Contains all covers which need their position inverted by default
@@ -121,6 +133,7 @@ TUYA_COVER_INVERTED_BY_DEFAULT = [
     "_TZE200_xaabybja",
     "_TZE200_yenbr4om",
     "_TZE200_zpzndjez",
+    "_TZE200_zuz7f94z",
 ]
 
 # ---------------------------------------------------------
@@ -774,57 +787,6 @@ class TuyaThermostat(CustomDevice):
         super().__init__(*args, **kwargs)
 
 
-class TuyaSmartRemoteOnOffCluster(OnOff, EventableCluster):
-    """TuyaSmartRemoteOnOffCluster: fire events corresponding to press type."""
-
-    press_type = {
-        0x00: SHORT_PRESS,
-        0x01: DOUBLE_PRESS,
-        0x02: LONG_PRESS,
-    }
-    name = "TS004X_cluster"
-    ep_attribute = "TS004X_cluster"
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        self.last_tsn = -1
-        super().__init__(*args, **kwargs)
-
-    manufacturer_server_commands = {
-        0xFD: ("press_type", (t.uint8_t,), False),
-    }
-
-    def handle_cluster_request(
-        self,
-        hdr: foundation.ZCLHeader,
-        args: List[Any],
-        *,
-        dst_addressing: Optional[
-            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
-        ] = None,
-    ):
-        """Handle press_types command."""
-        # normally if default response sent, TS004x wouldn't send such repeated zclframe (with same sequence number),
-        # but for stability reasons (e. g. the case the response doesn't arrive the device), we can simply ignore it
-        if hdr.tsn == self.last_tsn:
-            _LOGGER.debug("TS004X: ignoring duplicate frame")
-            return
-        # save last sequence number
-        self.last_tsn = hdr.tsn
-
-        # send default response (as soon as possible), so avoid repeated zclframe from device
-        if not hdr.frame_control.disable_default_response:
-            self.debug("TS004X: send default response")
-            self.send_default_rsp(hdr, status=foundation.Status.SUCCESS)
-
-        # handle command
-        if hdr.command_id == 0xFD:
-            press_type = args[0]
-            self.listener_event(
-                ZHA_SEND_EVENT, self.press_type.get(press_type, "unknown"), []
-            )
-
-
 # Tuya Zigbee OnOff Cluster Attribute Implementation
 class SwitchBackLight(t.enum8):
     """Tuya switch back light mode enum."""
@@ -856,6 +818,71 @@ class TuyaZBOnOffAttributeCluster(CustomCluster, OnOff):
     attributes.update({0x8001: ("backlight_mode", SwitchBackLight)})
     attributes.update({0x8002: ("power_on_state", PowerOnState)})
     attributes.update({0x8004: ("switch_mode", SwitchMode)})
+
+
+class TuyaSmartRemoteOnOffCluster(OnOff, EventableCluster):
+    """TuyaSmartRemoteOnOffCluster: fire events corresponding to press type."""
+
+    rotate_type = {
+        0x00: RIGHT,
+        0x01: LEFT,
+        0x02: STOP,
+    }
+    press_type = {
+        0x00: SHORT_PRESS,
+        0x01: DOUBLE_PRESS,
+        0x02: LONG_PRESS,
+    }
+    name = "TS004X_cluster"
+    ep_attribute = "TS004X_cluster"
+    attributes = OnOff.attributes.copy()
+    attributes.update({0x8001: ("backlight_mode", SwitchBackLight)})
+    attributes.update({0x8002: ("power_on_state", PowerOnState)})
+    attributes.update({0x8004: ("switch_mode", SwitchMode)})
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        self.last_tsn = -1
+        super().__init__(*args, **kwargs)
+
+    manufacturer_server_commands = {
+        0xFC: ("rotate_type", (t.uint8_t,), False),
+        0xFD: ("press_type", (t.uint8_t,), False),
+    }
+
+    def handle_cluster_request(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: List[Any],
+        *,
+        dst_addressing: Optional[
+            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        ] = None,
+    ):
+        """Handle press_types command."""
+        # normally if default response sent, TS004x wouldn't send such repeated zclframe (with same sequence number),
+        # but for stability reasons (e. g. the case the response doesn't arrive the device), we can simply ignore it
+        if hdr.tsn == self.last_tsn:
+            _LOGGER.debug("TS004X: ignoring duplicate frame")
+            return
+        # save last sequence number
+        self.last_tsn = hdr.tsn
+
+        # send default response (as soon as possible), so avoid repeated zclframe from device
+        if not hdr.frame_control.disable_default_response:
+            self.debug("TS004X: send default response")
+            self.send_default_rsp(hdr, status=foundation.Status.SUCCESS)
+        # handle command
+        if hdr.command_id == 0xFC:
+            rotate_type = args[0]
+            self.listener_event(
+                ZHA_SEND_EVENT, self.rotate_type.get(rotate_type, "unknown"), []
+            )
+        elif hdr.command_id == 0xFD:
+            press_type = args[0]
+            self.listener_event(
+                ZHA_SEND_EVENT, self.press_type.get(press_type, "unknown"), []
+            )
 
 
 # Tuya Zigbee Metering Cluster Correction Implementation

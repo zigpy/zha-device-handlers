@@ -44,15 +44,20 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
         0x0010: ("outdoor_temp", t.int16s),
         0x0011: ("outdoor_temp_timeout", t.uint16_t),
         0x0020: ("secs_since_2k", t.uint32_t),
+        0x0070: ("currentLoad", t.bitmap8),
         0x0105: ("airFloorMode", t.enum8),
+        0x0106: ("auxOutputMode", t.enum8),
         0x0108: ("airMaxLimit", t.int16s),
         0x0109: ("floorMinSetpoint", t.int16s),
         0x010A: ("floorMaxSetpoint", t.int16s),
         0x010B: ("tempSensorType", t.enum8),
+        0x010C: ("floorLimitStatus", t.uint8_t),
         0x0114: ("timeFormat", t.enum8),
+        0x0115: ("gfciStatus", t.enum8),
         0x0118: ("auxConnectedLoad", t.uint16_t),
         0x0119: ("ConnectedLoad", t.uint16_t),
         0x0128: ("pumpProtection", t.uint8_t),
+        0x012D: ("reportLocalTemperature", t.int16s),
     }
 
 
@@ -74,7 +79,11 @@ class SinopeTechnologiesThermostat(CustomDevice):
         # <SimpleDescriptor endpoint=1 profile=260 device_type=769
         # device_version=0 input_clusters=[0, 3, 4, 5, 513, 516, 1026, 2820,
         # 2821, 65281] output_clusters=[65281, 25]>
-        MODELS_INFO: [(SINOPE, "TH1123ZB"), (SINOPE, "TH1124ZB"), (SINOPE, "TH1500ZB")],
+        MODELS_INFO: [
+            (SINOPE, "TH1123ZB"),
+            (SINOPE, "TH1124ZB"),
+            (SINOPE, "TH1500ZB"),
+        ],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha_p.PROFILE_ID,

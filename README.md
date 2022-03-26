@@ -422,6 +422,119 @@ If you look at another example for the same device:
 
 You can see a pattern that illustrates how to match a more complex event. In this case the step command is used for the dim up and dim down buttons so we need to match more of the event data to uniquely match the event.
 
+## Testing using unit tests
+
+The tests use the [pytest](https://docs.pytest.org/en/latest/) framework.
+
+### Getting started
+
+To get set up, you need install the test dependencies:
+
+```bash
+pip install -r requirements_test_all.txt
+```
+
+### Running the tests
+
+See the [pytest documentation](https://docs.pytest.org/en/latest/) for details about how to run
+the tests. For example, to run all the `test_tuya.py` tests:
+
+```bash
+$ pytest --disable-warnings tests/test_tuya.py
+Test session starts (platform: linux, Python 3.9.2, pytest 6.2.5, pytest-sugar 0.9.4)
+
+collecting ...
+ tests/test_tuya.py ✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓                                                                                                                                                                                                                                                         100% ██████████
+
+Results (3.58s):
+      41 passed
+```
+
+### Writing tests
+
+To add a new test, start by adding a new function to one of the existing test files. You
+can follow the instructions in the [Getting started](https://docs.pytest.org/en/latest/getting-started.html)
+section of the pytest documentation.
+
+### Using fixtures to set things up
+
+In order to write a test, you will need to access an instance of a quirk to run the tests against. Pytest
+provides a useful feature called Fixtures that allow you to write and use the setup code necessary in one
+place, similar to how we use libraries to provide common functions to other code.
+
+You can read more about fixtures [here](https://docs.pytest.org/en/latest/how-to/fixtures.html#how-to-fixtures).
+
+You can find the common fixtures in files named `conftest.py`. Pytest will list them for you as follows:
+
+```bash
+$ pytest --fxitures
+[...]
+--- fixtures defined from tests.conftest ---
+MockAppController
+    App controller mock.
+
+ieee_mock
+    Return a static ieee.
+
+zigpy_device_mock
+    Zigpy device mock.
+
+zigpy_device_from_quirk
+    Create zigpy device from Quirks signature.
+
+[...]
+--- fixtures defined from tests.test_tuya_clusters ---
+TuyaCluster
+    Mock of the new Tuya manufacturer cluster.
+```
+
+Some fixtures such as `app_controller_mock` will provide an object instance that you can
+use directly. Others, such as `zigpy_device_mock` will return a function, which you can
+call to create a customised object during your own setup.
+
+### Testing the quirk signature matching
+
+The fixture `assert_signature_matches_quirk` provides a function that can be
+used to check that a particular device signature matches the corresponding quirk.
+By capturing the signature and adding a few lines to the test file, this means that
+you can verify that your device will be matched against the quirk without needing to
+go through the paring process directly.
+
+You need to capture the device signature and save it. If you have previously started the
+pairing process in Home assistant, you can find the signature under 'Zigbee Device Signature'
+on the device page.
+
+Now you can create a test that checks the signature as follows:
+
+```python
+def test_ts0121_signature(assert_signature_matches_quirk):
+    signature = {
+        "node_descriptor": "NodeDescriptor(logical_type=<LogicalType.Router: 1>, complex_descriptor_available=0, user_descriptor_available=0, reserved=0, aps_flags=0, frequency_band=<FrequencyBand.Freq2400MHz: 8>, mac_capability_flags=<MACCapabilityFlags.AllocateAddress|RxOnWhenIdle|MainsPowered|FullFunctionDevice: 142>, manufacturer_code=4098, maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264, maximum_outgoing_transfer_size=82, descriptor_capability_field=<DescriptorCapability.NONE: 0>, *allocate_address=True, *is_alternate_pan_coordinator=False, *is_coordinator=False, *is_end_device=False, *is_full_function_device=True, *is_mains_powered=True, *is_receiver_on_when_idle=True, *is_router=True, *is_security_capable=False)",
+        "endpoints": {
+            "1": {
+            "profile_id": 260,
+            "device_type": "0x0051",
+            "in_clusters": [
+                "0x0000",
+                "0x0004",
+                "0x0005",
+                "0x0006",
+                "0x0702",
+                "0x0b04"
+            ],
+            "out_clusters": [
+                "0x000a",
+                "0x0019"
+            ]
+            }
+        },
+        "manufacturer": "_TZ3000_g5xawfcq",
+        "model": "TS0121",
+        "class": "zhaquirks.tuya.ts0121_plug.Plug"
+    }
+    assert_signature_matches_quirk(zhaquirks.tuya.ts0121_plug.Plug, signature)
+```
+
 # Testing new releases
 
 Testing a new release of the zha-quirks package before it is released in Home Assistant.

@@ -19,6 +19,7 @@ from zhaquirks.const import (
     COMMAND,
     COMMAND_MOVE,
     COMMAND_STEP,
+    COMMAND_STOP,
     COMMAND_TOGGLE,
     DEVICE_TYPE,
     DOUBLE_PRESS,
@@ -30,11 +31,13 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     RIGHT,
+    ROTATED,
     SHORT_PRESS,
+    STOP,
     TRIPLE_PRESS,
     TURN_ON,
 )
-from zhaquirks.ikea import IKEA, ROTATED, PowerConfiguration1CRCluster
+from zhaquirks.ikea import IKEA, PowerConfiguration1CRCluster
 
 
 class IkeaSYMFONISK(CustomDevice):
@@ -110,6 +113,11 @@ class IkeaSYMFONISK(CustomDevice):
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
             ARGS: [1, 195],
+        },
+        (ROTATED, STOP): {
+            COMMAND: COMMAND_STOP,
+            CLUSTER_ID: 8,
+            ENDPOINT_ID: 1,
         },
         (DOUBLE_PRESS, TURN_ON): {
             COMMAND: COMMAND_STEP,
