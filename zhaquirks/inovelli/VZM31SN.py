@@ -24,7 +24,7 @@ from zigpy.zcl.clusters.general import (
     Ota,
     Scenes,
 )
-from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
+from zigpy.zcl.clusters.homeautomation import Diagnostic, ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
 
 INOVELLI_VZM31SN_CLUSTER_ID = 64561
@@ -80,6 +80,7 @@ class InovelliVZM31SN(CustomDevice):
                     LevelControl,  # 8
                     Metering,  # 1794
                     ElectricalMeasurement,  # 2820
+                    Diagnostic,  # 2821
                     Inovelli_VZM31SN_Cluster,  # 64561
                 ],
                 OUTPUT_CLUSTERS: [
