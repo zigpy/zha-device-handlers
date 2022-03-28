@@ -44,7 +44,7 @@ class TintRemoteScenesCluster(LocalDataCluster, Scenes):
 
     def change_scene(self, value):
         """Change scene attribute to new value."""
-        self._update_attribute(self.attridx["current_scene"], value)
+        self._update_attribute(self.attributes_by_name["current_scene"].id, value)
 
 
 class TintRemoteBasicCluster(CustomCluster, Basic):

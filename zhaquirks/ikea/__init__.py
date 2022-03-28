@@ -11,7 +11,6 @@ from zhaquirks import DoublingPowerConfigurationCluster
 
 _LOGGER = logging.getLogger(__name__)
 IKEA = "IKEA of Sweden"
-ROTATED = "device_rotated"
 
 
 class LightLinkCluster(CustomCluster, LightLink):

@@ -2,7 +2,6 @@
 
 from zigpy import types as t
 from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import (
     Alarms,
@@ -35,10 +34,13 @@ from zhaquirks.xiaomi import LUMI, BasicCluster, XiaomiCluster, XiaomiCustomDevi
 PRESENT_VALUE = 0x0055
 CURRENT_POSITION_LIFT_PERCENTAGE = 0x0008
 GO_TO_LIFT_PERCENTAGE = 0x0005
+DOWN_CLOSE = 0x0001
+UP_OPEN = 0x0000
+STOP = 0x0002
 
 
 class XiaomiAqaraRollerE1(XiaomiCluster, ManufacturerSpecificCluster):
-    """Xiaomi mfg cluster implementation specific for E1 Roller ."""
+    """Xiaomi mfg cluster implementation specific for E1 Roller."""
 
     cluster_id = 0xFCC0
 
@@ -55,7 +57,7 @@ class XiaomiAqaraRollerE1(XiaomiCluster, ManufacturerSpecificCluster):
     )
 
 
-class AnalogOutputRollerE1(LocalDataCluster, AnalogOutput):
+class AnalogOutputRollerE1(AnalogOutput):
     """Analog output cluster, only used to relay current_value to WindowCovering."""
 
     cluster_id = AnalogOutput.cluster_id
@@ -64,51 +66,77 @@ class AnalogOutputRollerE1(LocalDataCluster, AnalogOutput):
         """Init."""
         super().__init__(*args, **kwargs)
 
+        self._update_attribute(0x0041, float(0x064))  # max_present_value
+        self._update_attribute(0x0045, 0.0)  # min_present_value
+        self._update_attribute(0x0051, 0)  # out_of_service
+        self._update_attribute(0x006A, 1.0)  # resolution
+        self._update_attribute(0x006F, 0x00)  # status_flags
+
     def _update_attribute(self, attrid, value):
+
         super()._update_attribute(attrid, value)
-        if attrid is not None and attrid == PRESENT_VALUE:
-            self.endpoint.device.roller_bus.listener_event(
-                "current_position_lift_percentage", value
+
+        if attrid == PRESENT_VALUE:
+            self.endpoint.window_covering._update_attribute(
+                CURRENT_POSITION_LIFT_PERCENTAGE, (100 - value)
             )
 
 
-class WindowCoveringRollerE1(CustomCluster, WindowCovering):
-    """Window covering cluster to receive reports that are sent to the AnalogOutput cluster."""
+class WindowCoveringRollerE1(WindowCovering):
+    """Window covering cluster to receive commands that are sent to the AnalogOutput's present_value to move the motor."""
 
     cluster_id = WindowCovering.cluster_id
 
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
-        self.endpoint.device.roller_bus.add_listener(self)
-
-    def current_position_lift_percentage(self, value):
-        """Update current_position_lift_percentage and invert value."""
-        value = 100 - value
-        self._update_attribute(CURRENT_POSITION_LIFT_PERCENTAGE, value)
 
     async def command(
         self, command_id, *args, manufacturer=None, expect_reply=True, tsn=None
     ):
-        """Override default command to invert percent lift value."""
-        if command_id == GO_TO_LIFT_PERCENTAGE:
-            percent = args[0]
-            percent = 100 - percent
-            v = (percent,)
-            return await super().command(command_id, *v)
-        return await super().command(
-            command_id,
-            *args,
-            manufacturer=manufacturer,
-            expect_reply=expect_reply,
-            tsn=tsn
-        )
+        """Overwrite the commands to make it work for both firmware 1425 and 1427.
+
+        We either overwrite analog_output's current_value or multistate_output's current
+        value to make the roller work.
+        """
+        if command_id == UP_OPEN:
+            (res,) = await self.endpoint.multistate_output.write_attributes(
+                {"present_value": 1}
+            )
+            return res[0].status
+        elif command_id == DOWN_CLOSE:
+            (res,) = await self.endpoint.multistate_output.write_attributes(
+                {"present_value": 0}
+            )
+            return res[0].status
+        elif command_id == GO_TO_LIFT_PERCENTAGE:
+            (res,) = await self.endpoint.analog_output.write_attributes(
+                {"present_value": (100 - args[0])}
+            )
+            return res[0].status
+        elif command_id == STOP:
+            (res,) = await self.endpoint.multistate_output.write_attributes(
+                {"present_value": 2}
+            )
+            return res[0].status
+
+
+class MultistateOutputRollerE1(MultistateOutput):
+    """Multistate Output cluster which overwrites present_value.
+
+    Otherwise, it gives errors of wrong datatype when using it in the commands.
+    """
+
+    attributes = MultistateOutput.attributes.copy()
+    attributes.update(
+        {
+            0x0055: ("present_value", t.uint16_t),
+        }
+    )
 
 
 class PowerConfigurationRollerE1(PowerConfiguration, LocalDataCluster):
     """Xiaomi power configuration cluster implementation."""
-
-    cluster_id = PowerConfiguration.cluster_id
 
     BATTERY_PERCENTAGE_REMAINING = 0x0021
 
@@ -118,7 +146,7 @@ class PowerConfigurationRollerE1(PowerConfiguration, LocalDataCluster):
         self.endpoint.device.power_bus_percentage.add_listener(self)
 
     def update_battery_percentage(self, value):
-        """We'll receive a raw percentage value here, no need to calculate any voltages or such. Only thing we do is times 2 the value because Zigbee expects percentage 200%."""
+        """Doubles the battery percentage to the Zigbee spec's expected 200% maximum."""
         super()._update_attribute(
             self.BATTERY_PERCENTAGE_REMAINING,
             (value * 2),
@@ -130,7 +158,6 @@ class RollerE1AQ(XiaomiCustomDevice):
 
     def __init__(self, *args, **kwargs):
         """Init."""
-        self.roller_bus = Bus()
         self.power_bus_percentage = Bus()
         super().__init__(*args, **kwargs)
 
@@ -189,7 +216,7 @@ class RollerE1AQ(XiaomiCustomDevice):
                     Groups.cluster_id,
                     Identify.cluster_id,
                     XiaomiAqaraRollerE1,
-                    MultistateOutput.cluster_id,
+                    MultistateOutputRollerE1,
                     Scenes.cluster_id,
                     WindowCoveringRollerE1,
                     PowerConfigurationRollerE1,

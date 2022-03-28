@@ -58,7 +58,7 @@ class MoesBHTManufCluster(TuyaManufClusterAttributes):
         elif attrid == MOESBHT_TEMPERATURE_ATTR:
             self.endpoint.device.thermostat_bus.listener_event(
                 "temperature_change",
-                "local_temp",
+                "local_temperature",
                 value * 10,  # decidegree to centidegree
             )
         elif attrid == MOESBHT_SCHEDULE_MODE_ATTR:

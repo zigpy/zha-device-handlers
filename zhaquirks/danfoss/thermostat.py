@@ -1,4 +1,4 @@
-"""Module to handle quirks of the  Fanfoss thermostat.
+"""Module to handle quirks of the Danfoss thermostat.
 
 manufacturer specific attributes to control displaying and specific configuration.
 """

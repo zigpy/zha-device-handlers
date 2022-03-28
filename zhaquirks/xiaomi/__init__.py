@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import logging
 import math
-from typing import Iterable, Iterator, Optional
+from typing import Iterable, Iterator
 
 from zigpy import types as t
 import zigpy.device
@@ -310,7 +310,7 @@ class XiaomiCluster(CustomCluster):
             "lumi.weather",
             "lumi.airmonitor.acn01",
         ]:
-            # Temperature sensors send temperature/humidity/pressure updates trough this
+            # Temperature sensors send temperature/humidity/pressure updates through this
             # cluster instead of the respective clusters
             attribute_names.update(
                 {
@@ -581,9 +581,9 @@ class OnOffCluster(OnOff, CustomCluster):
         self,
         command_id: foundation.GeneralCommand | int | t.uint8_t,
         *args,
-        manufacturer: Optional[int | t.uint16_t] = None,
+        manufacturer: int | t.uint16_t | None = None,
         expect_reply: bool = True,
-        tsn: Optional[int | t.uint8_t] = None
+        tsn: int | t.uint8_t | None = None
     ):
         """Command handler."""
         src_ep = 1
@@ -610,7 +610,7 @@ def handle_quick_init(
     src_ep: int,
     dst_ep: int,
     message: bytes,
-) -> Optional[bool]:
+) -> bool | None:
     """Handle message from an uninitialized device which could be a xiaomi."""
     if src_ep == 0:
         return

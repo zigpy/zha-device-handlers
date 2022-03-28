@@ -60,7 +60,7 @@ class ManufacturerThermostatCluster(TuyaManufClusterAttributes):
                 t.uint32_t,
                 True,
             ),
-            LOCAL_TEMP_COMMAND_ID: ("local_temp", t.uint32_t, True),
+            LOCAL_TEMP_COMMAND_ID: ("local_temperature", t.uint32_t, True),
             BATTERY_STATE_COMMAND_ID: ("battery_state", t.uint8_t, True),
         }
     )
@@ -131,7 +131,9 @@ class ThermostatCluster(TuyaThermostatCluster):
 
     def local_temp_reported(self, value):
         """Handle reported local temperature."""
-        self._update_attribute(self.attributes_by_name["local_temp"].id, value * 10)
+        self._update_attribute(
+            self.attributes_by_name["local_temperature"].id, value * 10
+        )
         _LOGGER.debug("reported local temperature: %d", value)
 
     def system_mode_reported(self, value):

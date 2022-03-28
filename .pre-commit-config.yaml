@@ -1,4 +1,14 @@
 repos:
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v2.31.0
+    hooks:
+      - id: pyupgrade
+
+  - repo: https://github.com/fsouza/autoflake8
+    rev: v0.3.1
+    hooks:
+      - id: autoflake8
+
   - repo: https://github.com/psf/black
     rev: 20.8b1
     hooks:
@@ -21,10 +31,11 @@ repos:
       - id: isort
 
   - repo: https://github.com/codespell-project/codespell
-    rev: v1.17.1
+    rev: v2.1.0
     hooks:
       - id: codespell
-        args:
-          - --ignore-words-list=dout,hass
-          - --skip="./.*"
-          - --quiet-level=2
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v0.902
+    hooks:
+      - id: mypy

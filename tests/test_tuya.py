@@ -61,6 +61,22 @@ ZCL_TUYA_VALVE_CHILD_LOCK_ON = b"\t2\x01\x03\x04\x07\x01\x00\x01\x01"
 ZCL_TUYA_VALVE_AUTO_LOCK_ON = b"\t2\x01\x03\x04\x74\x01\x00\x01\x01"
 ZCL_TUYA_VALVE_BATTERY_LOW = b"\t2\x01\x03\x04\x6E\x01\x00\x01\x01"
 
+ZCL_TUYA_VALVE_ZONNSMART_TEMPERATURE = (
+    b"\tp\x01\x00\x02\x18\x02\x00\x04\x00\x00\x00\xd3"
+)
+ZCL_TUYA_VALVE_ZONNSMART_TARGET_TEMP = (
+    b"\t3\x01\x03\x05\x10\x02\x00\x04\x00\x00\x00\xcd"
+)
+ZCL_TUYA_VALVE_ZONNSMART_HOLIDAY_TEMP = (
+    b"\t3\x01\x03\x05\x20\x02\x00\x04\x00\x00\x00\xaa"
+)
+ZCL_TUYA_VALVE_ZONNSMART_TEMP_OFFSET = (
+    b"\t3\x01\x03\x05\x1b\x02\x00\x04\x00\x00\x00\x0b"
+)
+ZCL_TUYA_VALVE_ZONNSMART_MODE_MANUAL = b"\t2\x01\x03\x04\x02\x04\x00\x01\x01"
+ZCL_TUYA_VALVE_ZONNSMART_MODE_SCHEDULE = b"\t2\x01\x03\x04\x02\x04\x00\x01\x00"
+ZCL_TUYA_VALVE_ZONNSMART_HEAT_STOP = b"\t2\x01\x03\x04\x6b\x01\x00\x01\x00"
+
 ZCL_TUYA_EHEAT_TEMPERATURE = b"\tp\x02\x00\x02\x18\x02\x00\x04\x00\x00\x00\xb3"
 ZCL_TUYA_EHEAT_TARGET_TEMP = b"\t3\x01\x03\x05\x10\x02\x00\x04\x00\x00\x00\x15"
 
@@ -223,8 +239,8 @@ async def test_singleswitch_requests(zigpy_device_from_quirk, quirk):
         status = await switch_cluster.command(0x0000)
         m1.assert_called_with(
             61184,
-            1,
-            b"\x01\x01\x00\x00\x00\x01\x01\x00\x01\x00",
+            2,
+            b"\x01\x02\x00\x00\x01\x01\x01\x00\x01\x00",
             expect_reply=True,
             command_id=0,
         )
@@ -233,8 +249,8 @@ async def test_singleswitch_requests(zigpy_device_from_quirk, quirk):
         status = await switch_cluster.command(0x0001)
         m1.assert_called_with(
             61184,
-            2,
-            b"\x01\x02\x00\x00\x00\x01\x01\x00\x01\x01",
+            4,
+            b"\x01\x04\x00\x00\x03\x01\x01\x00\x01\x01",
             expect_reply=True,
             command_id=0,
         )
@@ -242,6 +258,32 @@ async def test_singleswitch_requests(zigpy_device_from_quirk, quirk):
 
     status = await switch_cluster.command(0x0002)
     assert status == foundation.Status.UNSUP_CLUSTER_COMMAND
+
+
+def test_ts0121_signature(assert_signature_matches_quirk):
+    """Test TS0121 remote signature is matched to its quirk."""
+    signature = {
+        "node_descriptor": "NodeDescriptor(logical_type=<LogicalType.Router: 1>, complex_descriptor_available=0, user_descriptor_available=0, reserved=0, aps_flags=0, frequency_band=<FrequencyBand.Freq2400MHz: 8>, mac_capability_flags=<MACCapabilityFlags.AllocateAddress|RxOnWhenIdle|MainsPowered|FullFunctionDevice: 142>, manufacturer_code=4098, maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264, maximum_outgoing_transfer_size=82, descriptor_capability_field=<DescriptorCapability.NONE: 0>, *allocate_address=True, *is_alternate_pan_coordinator=False, *is_coordinator=False, *is_end_device=False, *is_full_function_device=True, *is_mains_powered=True, *is_receiver_on_when_idle=True, *is_router=True, *is_security_capable=False)",
+        "endpoints": {
+            "1": {
+                "profile_id": 260,
+                "device_type": "0x0051",
+                "in_clusters": [
+                    "0x0000",
+                    "0x0004",
+                    "0x0005",
+                    "0x0006",
+                    "0x0702",
+                    "0x0b04",
+                ],
+                "out_clusters": ["0x000a", "0x0019"],
+            }
+        },
+        "manufacturer": "_TZ3000_g5xawfcq",
+        "model": "TS0121",
+        "class": "zhaquirks.tuya.ts0121_plug.Plug",
+    }
+    assert_signature_matches_quirk(zhaquirks.tuya.ts0121_plug.Plug, signature)
 
 
 async def test_tuya_data_conversion():
@@ -407,6 +449,130 @@ async def test_siren_send_attribute(zigpy_device_from_quirk, quirk):
 
         _, status = await switch_cluster.command(0x0003)
         assert status == foundation.Status.UNSUP_CLUSTER_COMMAND
+
+
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_trv.ZonnsmartTV01_ZG,))
+async def test_zonnsmart_state_report(zigpy_device_from_quirk, quirk):
+    """Test thermostatic valves standard reporting from incoming commands."""
+
+    valve_dev = zigpy_device_from_quirk(quirk)
+    tuya_cluster = valve_dev.endpoints[1].tuya_manufacturer
+
+    thermostat_listener = ClusterListener(valve_dev.endpoints[1].thermostat)
+
+    frames = (
+        ZCL_TUYA_VALVE_ZONNSMART_TEMPERATURE,
+        ZCL_TUYA_VALVE_ZONNSMART_TARGET_TEMP,
+        ZCL_TUYA_VALVE_ZONNSMART_HOLIDAY_TEMP,
+        ZCL_TUYA_VALVE_ZONNSMART_TEMP_OFFSET,
+        ZCL_TUYA_VALVE_ZONNSMART_MODE_MANUAL,
+        ZCL_TUYA_VALVE_ZONNSMART_MODE_SCHEDULE,
+        ZCL_TUYA_VALVE_ZONNSMART_HEAT_STOP,
+    )
+    for frame in frames:
+        hdr, args = tuya_cluster.deserialize(frame)
+        tuya_cluster.handle_message(hdr, args)
+
+    assert len(thermostat_listener.cluster_commands) == 0
+    assert len(thermostat_listener.attribute_updates) == 11
+    assert thermostat_listener.attribute_updates[0][0] == 0x0000  # TEMP
+    assert thermostat_listener.attribute_updates[0][1] == 2110
+    assert thermostat_listener.attribute_updates[1][0] == 0x0012  # TARGET
+    assert thermostat_listener.attribute_updates[1][1] == 2050
+    assert thermostat_listener.attribute_updates[4][0] == 0x0014  # HOLIDAY
+    assert thermostat_listener.attribute_updates[4][1] == 1700
+    assert thermostat_listener.attribute_updates[5][0] == 0x0010  # OFFSET
+    assert thermostat_listener.attribute_updates[5][1] == 110
+    assert thermostat_listener.attribute_updates[6][0] == 0x0025  # MANUAL
+    assert thermostat_listener.attribute_updates[6][1] == 0
+    assert thermostat_listener.attribute_updates[7][0] == 0x4002
+    assert thermostat_listener.attribute_updates[7][1] == 1
+    assert thermostat_listener.attribute_updates[8][0] == 0x0025  # SCHEDULE
+    assert thermostat_listener.attribute_updates[8][1] == 1
+    assert thermostat_listener.attribute_updates[9][0] == 0x4002
+    assert thermostat_listener.attribute_updates[9][1] == 0
+    assert thermostat_listener.attribute_updates[10][0] == 0x001C  # HEAT ON
+    assert thermostat_listener.attribute_updates[10][1] == 4
+
+
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_trv.ZonnsmartTV01_ZG,))
+async def test_zonnsmart_send_attribute(zigpy_device_from_quirk, quirk):
+    """Test thermostatic valve outgoing commands."""
+
+    valve_dev = zigpy_device_from_quirk(quirk)
+    tuya_cluster = valve_dev.endpoints[1].tuya_manufacturer
+    thermostat_cluster = valve_dev.endpoints[1].thermostat
+
+    async def async_success(*args, **kwargs):
+        return foundation.Status.SUCCESS
+
+    with mock.patch.object(
+        tuya_cluster.endpoint, "request", side_effect=async_success
+    ) as m1:
+
+        (status,) = await thermostat_cluster.write_attributes(
+            {
+                "occupied_heating_setpoint": 2500,
+            }
+        )
+        m1.assert_called_with(
+            61184,
+            1,
+            b"\x01\x01\x00\x00\x01\x10\x02\x00\x04\x00\x00\x00\xfa",
+            expect_reply=False,
+            command_id=0,
+        )
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
+
+        (status,) = await thermostat_cluster.write_attributes(
+            {
+                "operation_preset": 1,
+            }
+        )
+        m1.assert_called_with(
+            61184,
+            2,
+            b"\x01\x02\x00\x00\x02\x02\x04\x00\x01\x01",
+            expect_reply=False,
+            command_id=0,
+        )
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
+
+        (status,) = await thermostat_cluster.write_attributes(
+            {
+                "operation_preset": 4,  # frost protection wrapped as operation_preset
+            }
+        )
+        m1.assert_called_with(
+            61184,
+            3,
+            b"\x01\x03\x00\x00\x03\x0a\x01\x00\x01\x01",
+            expect_reply=False,
+            command_id=0,
+        )
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
+
+        (status,) = await thermostat_cluster.write_attributes(
+            {
+                "system_mode": 0,  # SystemMode.Off
+            }
+        )
+        m1.assert_called_with(
+            61184,
+            4,
+            b"\x01\x04\x00\x00\x04\x6b\x01\x00\x01\x01",
+            expect_reply=False,
+            command_id=0,
+        )
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
 
 
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_trv.SiterwellGS361_Type1,))
