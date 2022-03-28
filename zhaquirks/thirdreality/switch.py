@@ -32,7 +32,7 @@ class Switch(CustomDevice):
         # device_type=2 device_version=1
         # input_clusters=[0, 4, 3, 6, 5, 25, 1]
         # output_clusters=[1]>
-        MODELS_INFO: [(THIRD_REALITY, "3RSS007Z"), (THIRD_REALITY, "3RSS008Z")],
+        MODELS_INFO: [(THIRD_REALITY, "3RSS007Z"), (THIRD_REALITY, "3RSS008Z"), (THIRD_REALITY, "3RSS009Z")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
