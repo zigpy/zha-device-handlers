@@ -158,6 +158,7 @@ class Inovelli_VZM31SN_Cluster(CustomCluster):
         0x005C: ("Default LED7 Strip Intensity (When On)", t.uint8_t),
         0x005D: ("Default LED7 Strip Intensity (When Off)", t.uint8_t),
         0x0034: ("Smart Bulb Mode", t.Bool),
+        0x0035: ("Double Tap Up for Full Brightness", t.Bool),
         0x005F: ("LED Color (When On)", t.uint8_t),
         0x0060: ("LED Color (When Off)", t.uint8_t),
         0x0061: ("LED Intensity (When On)", t.uint8_t),
