@@ -26,8 +26,8 @@ class ElkoThermostatCluster(CustomCluster, Thermostat):
             mode = self.RunningMode.Heat
             state = self.RunningState.Heat_State_On
 
-        self._update_attribute(self.attridx["running_mode"], mode)
-        self._update_attribute(self.attridx["running_state"], state)
+        self._update_attribute(self.attributes_by_name["running_mode"].id, mode)
+        self._update_attribute(self.attributes_by_name["running_state"].id, state)
 
 
 class ElkoUserInterfaceCluster(LocalDataCluster, UserInterface):
@@ -45,7 +45,7 @@ class ElkoUserInterfaceCluster(LocalDataCluster, UserInterface):
         else:
             lockout = self.KeypadLockout.No_lockout
 
-        self._update_attribute(self.attridx["keypad_lockout"], lockout)
+        self._update_attribute(self.attributes_by_name["keypad_lockout"].id, lockout)
 
 
 class ElkoElectricalMeasurementCluster(LocalDataCluster, ElectricalMeasurement):

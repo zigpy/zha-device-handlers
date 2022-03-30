@@ -300,8 +300,6 @@ class XBeeOnOff(LocalDataCluster, OnOff):
 class XBeeAnalogInput(LocalDataCluster, AnalogInput):
     """XBee Analog Input Cluster."""
 
-    pass
-
 
 class XBeePWM(LocalDataCluster, AnalogOutput):
     """XBee PWM Cluster."""

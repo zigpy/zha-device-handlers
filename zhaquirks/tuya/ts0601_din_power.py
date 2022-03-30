@@ -28,12 +28,12 @@ SWITCH_EVENT = "switch_event"
 class TuyaManufClusterDinPower(TuyaManufClusterAttributes):
     """Manufacturer Specific Cluster of the Tuya Power Meter device."""
 
-    manufacturer_attributes = {
-        TUYA_TOTAL_ENERGY_ATTR: ("energy", t.uint16_t),
-        TUYA_CURRENT_ATTR: ("current", t.int16s),
-        TUYA_POWER_ATTR: ("power", t.uint16_t),
-        TUYA_VOLTAGE_ATTR: ("voltage", t.uint16_t),
-        TUYA_DIN_SWITCH_ATTR: ("switch", t.uint8_t),
+    attributes = {
+        TUYA_TOTAL_ENERGY_ATTR: ("energy", t.uint16_t, True),
+        TUYA_CURRENT_ATTR: ("current", t.int16s, True),
+        TUYA_POWER_ATTR: ("power", t.uint16_t, True),
+        TUYA_VOLTAGE_ATTR: ("voltage", t.uint16_t, True),
+        TUYA_DIN_SWITCH_ATTR: ("switch", t.uint8_t, True),
     }
 
     def _update_attribute(self, attrid, value):

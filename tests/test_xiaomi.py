@@ -401,7 +401,9 @@ def test_attribute_parsing(raw_report):
     raw_report = bytes.fromhex(raw_report)
 
     hdr = foundation.ZCLHeader.general(
-        manufacturer=4447, tsn=127, command_id=foundation.Command.Report_Attributes
+        manufacturer=4447,
+        tsn=127,
+        command_id=foundation.GeneralCommand.Report_Attributes,
     )
     cluster = BasicCluster(mock.MagicMock())
 

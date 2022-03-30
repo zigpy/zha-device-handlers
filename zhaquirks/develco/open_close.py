@@ -2,6 +2,7 @@
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
     Basic,
     BinaryInput,
@@ -30,18 +31,19 @@ from zhaquirks.develco import DEVELCO, DevelcoPowerConfiguration
 class DevelcoIASZone(CustomCluster, IasZone):
     """IAS Zone."""
 
-    manufacturer_client_commands = {
-        0x0000: (
-            "status_change_notification",
-            (
-                IasZone.ZoneStatus,
-                t.bitmap8,
-                t.Optional(t.uint8_t),
-                t.Optional(t.uint16_t),
-            ),
-            False,
-        )
-    }
+    client_commands = IasZone.client_commands.copy()
+    client_commands[0x0000] = foundation.ZCLCommandDef(
+        "status_change_notification",
+        {
+            "zone_status": IasZone.ZoneStatus,
+            "extended_status": t.bitmap8,
+            # These two should not be optional
+            "zone_id?": t.uint8_t,
+            "delay?": t.uint16_t,
+        },
+        False,
+        is_manufacturer_specific=True,
+    )
 
 
 class WISZB120(CustomDevice):

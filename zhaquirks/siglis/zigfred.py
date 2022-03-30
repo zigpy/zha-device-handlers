@@ -55,13 +55,14 @@ class ZigfredCluster(CustomCluster):
     cluster_id = ZIGFRED_CLUSTER_ID
     buttons_attribute_id = ZIGFRED_CLUSTER_BUTTONS_ATTRIBUTE_ID
 
-    manufacturer_server_commands = {
-        ZIGFRED_CLUSTER_COMMAND_BUTTON_EVENT: ("button_event", (t.uint32_t,), False),
+    server_commands = {
+        ZIGFRED_CLUSTER_COMMAND_BUTTON_EVENT: foundation.ZCLCommandDef(
+            "button_event",
+            {"param1": t.uint32_t},
+            is_reply=False,
+            is_manufacturer_specific=True,
+        ),
     }
-
-    # manufacturer_attributes = {
-    #    buttons_attribute_id: ("buttons", t.uint32_t),
-    # }
 
     def _process_button_event(self, value: t.uint32_t):
         button_lookup = {
@@ -108,11 +109,6 @@ class ZigfredCluster(CustomCluster):
         """Handle cluster specific commands."""
         if hdr.command_id == ZIGFRED_CLUSTER_COMMAND_BUTTON_EVENT:
             self._process_button_event(args[0])
-
-    # def _update_attribute(self, attrid, value):
-    #    super()._update_attribute(attrid, value)
-    #    if attrid == ZIGFRED_CLUSTER_BUTTONS_ATTRIBUTE_ID and value is not None:
-    #        self._process_button_event(value)
 
 
 class ZigfredUno(CustomDevice):

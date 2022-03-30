@@ -125,9 +125,19 @@ class TerncyRawCluster(CustomCluster):
     cluster_id = MANUFACTURER_SPECIFIC_CLUSTER_ID
     name = "Terncy Raw cluster"
 
-    manufacturer_client_commands = {
-        0: ("click_event", (t.uint8_t, t.uint8_t), False),
-        4: ("motion_event", (t.uint8_t, t.uint8_t, t.uint8_t), False),
+    client_commands = {
+        0x00: foundation.ZCLCommandDef(
+            "click_event",
+            {"count": t.uint8_t, "state": t.uint8_t},
+            False,
+            is_manufacturer_specific=True,
+        ),
+        0x04: foundation.ZCLCommandDef(
+            "motion_event",
+            {"param1": t.uint8_t, "param2": t.uint8_t, "state": t.uint8_t},
+            False,
+            is_manufacturer_specific=True,
+        ),
     }
 
     def __init__(self, *args, **kwargs):

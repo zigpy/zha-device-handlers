@@ -1,5 +1,6 @@
 """Osram quirks elements."""
 from zigpy.quirks import CustomCluster
+from zigpy.zcl.foundation import ZCLCommandDef
 
 OSRAM = "OSRAM"
 
@@ -10,4 +11,8 @@ class OsramLightCluster(CustomCluster):
     cluster_id = 0xFC0F
     ep_attribute = "osram_light"
     name = "OsramLight"
-    manufacturer_server_commands = {0x0001: ("save_defaults", (), False)}
+    server_commands = {
+        0x0001: ZCLCommandDef(
+            "save_defaults", {}, False, is_manufacturer_specific=True
+        ),
+    }

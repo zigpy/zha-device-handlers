@@ -35,17 +35,17 @@ class NeoTemperatureHumidityAlarmCluster(CustomCluster):
     name = "Neo Temperature and Humidity Alarm Cluster"
     cluster_id = 0xE002
 
-    manufacturer_attributes = {
+    attributes = {
         # Alarm settings
-        0xD00A: ("alarm_temperature_max", t.uint16_t),
-        0xD00B: ("alarm_temperature_min", t.uint16_t),
-        0xD00C: ("alarm_humidity_max", t.uint16_t),
-        0xD00E: ("alarm_humidity_min", t.uint16_t),
+        0xD00A: ("alarm_temperature_max", t.uint16_t, True),
+        0xD00B: ("alarm_temperature_min", t.uint16_t, True),
+        0xD00C: ("alarm_humidity_max", t.uint16_t, True),
+        0xD00E: ("alarm_humidity_min", t.uint16_t, True),
         # Alarm information
-        0xD00F: ("alarm_humidity", ValueAlarm),
-        0xD006: ("temperature_humidity", ValueAlarm),
+        0xD00F: ("alarm_humidity", ValueAlarm, True),
+        0xD006: ("temperature_humidity", ValueAlarm, True),
         # Unknown
-        0xD010: {"unknown", t.uint8_t},
+        0xD010: ("unknown", t.uint8_t, True),
     }
 
 
