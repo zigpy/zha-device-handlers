@@ -130,11 +130,11 @@ class ZGV1OnOff(OnOff, TuyaLocalCluster):
 
 
 class ZGV1PowerConfiguration(PowerConfiguration, TuyaLocalCluster):
-    """Tuya PowerConfiguration"""
+    """Tuya PowerConfiguration."""
 
 
 class TuyaZGV1ManufCluster(TuyaNewManufCluster):
-    """Tuya with ZGV1"""
+    """Tuya with ZGV1."""
 
     dp_to_attribute: Dict[int, DPToAttributeMapping] = {
         1: DPToAttributeMapping(ZGV1OnOff.ep_attribute, "on_off", lambda x: x),
