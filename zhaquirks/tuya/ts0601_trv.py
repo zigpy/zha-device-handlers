@@ -177,8 +177,6 @@ MOES_SCHEDULE_WEEKEND_ATTR = 0x0071
 class data144(t.FixedList, item_type=t.uint8_t, length=18):
     """General data, Discrete, 144 bit."""
 
-    pass
-
 
 class MoesManufCluster(TuyaManufClusterAttributes):
     """Manufacturer Specific Cluster of some thermostatic valves."""
@@ -920,7 +918,6 @@ class ZONNSMARTManufCluster(TuyaManufClusterAttributes):
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
         if attrid in self.DIRECT_MAPPED_ATTRS:
-            pass
             self.endpoint.device.thermostat_bus.listener_event(
                 "temperature_change",
                 self.DIRECT_MAPPED_ATTRS[attrid][0],

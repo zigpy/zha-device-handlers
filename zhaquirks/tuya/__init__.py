@@ -188,8 +188,6 @@ class BigEndianInt16(int):
 class TuyaTimePayload(t.LVList, item_type=t.uint8_t, length_type=BigEndianInt16):
     """Tuya set time payload definition."""
 
-    pass
-
 
 class TuyaDPType(t.enum8):
     """DataPoint Type."""

@@ -576,7 +576,7 @@ class OnOffCluster(OnOff, CustomCluster):
         *args,
         manufacturer: int | t.uint16_t | None = None,
         expect_reply: bool = True,
-        tsn: int | t.uint8_t | None = None
+        tsn: int | t.uint8_t | None = None,
     ):
         """Command handler."""
         src_ep = 1

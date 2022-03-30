@@ -117,7 +117,6 @@ class MultistateInputCluster(CustomCluster, MultistateInput):
         manufacturer=None,
     ):
         """Configure reporting."""
-        pass
 
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)

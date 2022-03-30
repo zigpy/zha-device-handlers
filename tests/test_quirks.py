@@ -317,8 +317,8 @@ def test_signature(quirk):
         for clusters_type in (INPUT_CLUSTERS, OUTPUT_CLUSTERS):
             clusters = ep_data.get(clusters_type)
             if clusters is not None:
-                assert all((isinstance(cluster_id, int) for cluster_id in clusters))
-                assert all((0 <= cluster_id <= 0xFFFF for cluster_id in clusters))
+                assert all(isinstance(cluster_id, int) for cluster_id in clusters)
+                assert all(0 <= cluster_id <= 0xFFFF for cluster_id in clusters)
 
         for m_m in (MANUFACTURER, MODEL):
             value = ep_data.get(m_m)
