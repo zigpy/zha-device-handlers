@@ -37,6 +37,12 @@ class MockApp(zigpy.application.ControllerApplication):
         """Probe method."""
         return True
 
+    async def startup(self, *args):
+        """Mock startup."""
+
+    async def shutdown(self, *args):
+        """Mock shutdown."""
+
     async def permit_ncp(self, *args):
         """Mock permit ncp."""
 
