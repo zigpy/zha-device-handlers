@@ -40,13 +40,9 @@ MANUFACTURER_SPECIFIC_CLUSTER_ID_2 = 0xFC44  # decimal = 64580
 class OnOffGroupCluster(GroupBoundCluster, OnOff):
     """On/Off Cluster which only binds to a group."""
 
-    pass
-
 
 class LevelControlGroupCluster(GroupBoundCluster, LevelControl):
     """Level Control Cluster which only binds to a group."""
-
-    pass
 
 
 class LutronLZL4BWHL01Remote(CustomDevice):
