@@ -8,4 +8,5 @@ build/**/*.*
 .tox
 .idea/*
 .coverage
+htmlcov/
 .mypycache

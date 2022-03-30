@@ -74,10 +74,13 @@ class CtrlNeutral(XiaomiCustomDevice):
         # Known Options for 'decoupled_mode_<button>':
         # * 254 (decoupled)
         # * 18 (relay controlled)
-        manufacturer_attributes = {
-            0xFF22: ("decoupled_mode_left", t.uint8_t),
-            0xFF23: ("decoupled_mode_right", t.uint8_t),
-        }
+        attributes = BasicCluster.attributes.copy()
+        attributes.update(
+            {
+                0xFF22: ("decoupled_mode_left", t.uint8_t, True),
+                0xFF23: ("decoupled_mode_right", t.uint8_t, True),
+            }
+        )
 
     class WallSwitchOnOffCluster(EventableCluster, OnOff):
         """WallSwitchOnOffCluster: fire events corresponding to press type."""

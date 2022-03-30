@@ -48,10 +48,13 @@ _LOGGER = logging.getLogger(__name__)
 class PhilipsBasicCluster(CustomCluster, Basic):
     """Philips Basic cluster."""
 
-    manufacturer_attributes = {
-        0x0031: ("philips", t.bitmap16),
-        0x0034: ("mode", t.enum8),
-    }
+    attributes = Basic.attributes.copy()
+    attributes.update(
+        {
+            0x0031: ("philips", t.bitmap16, True),
+            0x0034: ("mode", t.enum8, True),
+        }
+    )
 
     attr_config = {0x0031: 0x000B, 0x0034: 0x02}
 
@@ -68,11 +71,19 @@ class PhilipsRemoteCluster(CustomCluster):
     cluster_id = 64512
     name = "PhilipsRemoteCluster"
     ep_attribute = "philips_remote_cluster"
-    manufacturer_client_commands = {
-        0x0000: (
+    client_commands = {
+        0x00: foundation.ZCLCommandDef(
             "notification",
-            (t.uint8_t, t.uint24_t, t.uint8_t, t.uint8_t, t.uint8_t, t.uint8_t),
-            False,
+            {
+                "param1": t.uint8_t,
+                "param2": t.uint24_t,
+                "param3": t.uint8_t,
+                "param4": t.uint8_t,
+                "param5": t.uint8_t,
+                "param6": t.uint8_t,
+            },
+            is_manufacturer_specific=True,
+            is_reply=False,
         )
     }
     BUTTONS = {

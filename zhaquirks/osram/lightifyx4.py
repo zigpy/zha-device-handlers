@@ -55,21 +55,21 @@ class OsramButtonCluster(CustomCluster):
     cluster_id = OSRAM_CLUSTER
     name = "OsramCluster"
     ep_attribute = "osram_cluster"
-    manufacturer_attributes = {
-        0x000A: ("osram_1", t.uint8_t),
-        0x000B: ("osram_2", t.uint8_t),
-        0x000C: ("osram_3", t.uint16_t),
-        0x000D: ("osram_4", t.uint16_t),
-        0x0019: ("osram_5", t.uint8_t),
-        0x001A: ("osram_6", t.uint16_t),
-        0x001B: ("osram_7", t.uint16_t),
-        0x001C: ("osram_8", t.uint8_t),
-        0x001D: ("osram_9", t.uint16_t),
-        0x001E: ("osram_10", t.uint16_t),
-        0x002C: ("osram_11", t.uint16_t),
-        0x002D: ("osram_12", t.uint16_t),
-        0x002E: ("osram_13", t.uint16_t),
-        0x002F: ("osram_14", t.uint16_t),
+    attributes = {
+        0x000A: ("osram_1", t.uint8_t, True),
+        0x000B: ("osram_2", t.uint8_t, True),
+        0x000C: ("osram_3", t.uint16_t, True),
+        0x000D: ("osram_4", t.uint16_t, True),
+        0x0019: ("osram_5", t.uint8_t, True),
+        0x001A: ("osram_6", t.uint16_t, True),
+        0x001B: ("osram_7", t.uint16_t, True),
+        0x001C: ("osram_8", t.uint8_t, True),
+        0x001D: ("osram_9", t.uint16_t, True),
+        0x001E: ("osram_10", t.uint16_t, True),
+        0x002C: ("osram_11", t.uint16_t, True),
+        0x002D: ("osram_12", t.uint16_t, True),
+        0x002E: ("osram_13", t.uint16_t, True),
+        0x002F: ("osram_14", t.uint16_t, True),
     }
     attr_config = {
         0x000A: 0x01,

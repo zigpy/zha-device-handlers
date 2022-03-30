@@ -29,9 +29,12 @@ TUYA_GAS_DETECTED_ATTR = 0x0401  # [0]/[1] [Detected]/[Clear]!
 class TuyaGasDetectorCluster(TuyaManufClusterAttributes):
     """Manufacturer Specific Cluster of the TS0601 gas detector."""
 
-    manufacturer_attributes = {
-        TUYA_GAS_DETECTED_ATTR: ("gas_detected", t.uint8_t),
-    }
+    attributes = TuyaManufClusterAttributes.attributes.copy()
+    attributes.update(
+        {
+            TUYA_GAS_DETECTED_ATTR: ("gas_detected", t.uint8_t, True),
+        }
+    )
 
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)

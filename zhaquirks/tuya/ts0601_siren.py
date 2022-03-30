@@ -27,7 +27,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import ATTR_ON_OFF, TuyaManufCluster, TuyaManufClusterAttributes
+from zhaquirks.tuya import TuyaManufCluster, TuyaManufClusterAttributes
 from zhaquirks.tuya.mcu import (
     TUYA_MCU_COMMAND,
     DPToAttributeMapping,
@@ -88,20 +88,23 @@ class NeoAlarmMelody(t.enum8):
 class TuyaManufClusterSiren(TuyaManufClusterAttributes):
     """Manufacturer Specific Cluster of the NEO Siren device."""
 
-    manufacturer_attributes = {
-        TUYA_ALARM_ATTR: ("alarm", t.uint8_t),
-        TUYA_TEMP_ALARM_ATTR: ("enable_temperature_alarm", t.uint8_t),
-        TUYA_HUMID_ALARM_ATTR: ("enable_humidity_alarm", t.uint8_t),
-        TUYA_ALARM_DURATION_ATTR: ("alarm_duration", t.uint32_t),
-        TUYA_TEMPERATURE_ATTR: ("temperature", t.uint32_t),
-        TUYA_HUMIDITY_ATTR: ("humidity", t.uint32_t),
-        TUYA_ALARM_MIN_TEMP_ATTR: ("alarm_temperature_min", t.uint32_t),
-        TUYA_ALARM_MAX_TEMP_ATTR: ("alarm_temperature_max", t.uint32_t),
-        TUYA_ALARM_MIN_HUMID_ATTR: ("alarm_humidity_min", t.uint32_t),
-        TUYA_ALARM_MAX_HUMID_ATTR: ("alarm_humidity_max", t.uint32_t),
-        TUYA_MELODY_ATTR: ("melody", t.uint8_t),
-        TUYA_VOLUME_ATTR: ("volume", t.uint8_t),
-    }
+    attributes = TuyaManufClusterAttributes.attributes.copy()
+    attributes.update(
+        {
+            TUYA_ALARM_ATTR: ("alarm", t.uint8_t, True),
+            TUYA_TEMP_ALARM_ATTR: ("enable_temperature_alarm", t.uint8_t, True),
+            TUYA_HUMID_ALARM_ATTR: ("enable_humidity_alarm", t.uint8_t, True),
+            TUYA_ALARM_DURATION_ATTR: ("alarm_duration", t.uint32_t, True),
+            TUYA_TEMPERATURE_ATTR: ("temperature", t.uint32_t, True),
+            TUYA_HUMIDITY_ATTR: ("humidity", t.uint32_t, True),
+            TUYA_ALARM_MIN_TEMP_ATTR: ("alarm_temperature_min", t.uint32_t, True),
+            TUYA_ALARM_MAX_TEMP_ATTR: ("alarm_temperature_max", t.uint32_t, True),
+            TUYA_ALARM_MIN_HUMID_ATTR: ("alarm_humidity_min", t.uint32_t, True),
+            TUYA_ALARM_MAX_HUMID_ATTR: ("alarm_humidity_max", t.uint32_t, True),
+            TUYA_MELODY_ATTR: ("melody", t.uint8_t, True),
+            TUYA_VOLUME_ATTR: ("volume", t.uint8_t, True),
+        }
+    )
 
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
@@ -135,7 +138,7 @@ class TuyaSirenOnOff(LocalDataCluster, OnOff):
 
     async def command(
         self,
-        command_id: Union[foundation.Command, int, t.uint8_t],
+        command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
         *args,
         manufacturer: Optional[Union[int, t.uint16_t]] = None,
         expect_reply: bool = True,
@@ -253,17 +256,16 @@ class TuyaSiren2(TuyaSiren):
 class TuyaMCUSiren(OnOff, TuyaAttributesCluster):
     """Tuya MCU cluster for siren device."""
 
-    attributes = {
-        ATTR_ON_OFF: ("on_off", t.Bool),
-    }
-
-    manufacturer_attributes = {
-        TUYA_BATTERY_ATTR: ("battery", t.uint32_t),
-        TUYA_ALARM_ATTR: ("alarm", t.uint8_t),
-        TUYA_ALARM_DURATION_ATTR: ("alarm_duration", t.uint32_t),
-        TUYA_MELODY_ATTR: ("melody", NeoAlarmMelody),
-        TUYA_VOLUME_ATTR: ("volume", NeoAlarmVolume),
-    }
+    attributes = OnOff.attributes.copy()
+    attributes.update(
+        {
+            TUYA_BATTERY_ATTR: ("battery", t.uint32_t, True),
+            TUYA_ALARM_ATTR: ("alarm", t.uint8_t, True),
+            TUYA_ALARM_DURATION_ATTR: ("alarm_duration", t.uint32_t, True),
+            TUYA_MELODY_ATTR: ("melody", NeoAlarmMelody, True),
+            TUYA_VOLUME_ATTR: ("volume", NeoAlarmVolume, True),
+        }
+    )
 
     async def write_attributes(self, attributes, manufacturer=None):
         """Overwrite to force manufacturer code."""
@@ -272,7 +274,7 @@ class TuyaMCUSiren(OnOff, TuyaAttributesCluster):
 
     async def command(
         self,
-        command_id: Union[foundation.Command, int, t.uint8_t],
+        command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
         *args,
         manufacturer: Optional[Union[int, t.uint16_t]] = None,
         expect_reply: bool = True,

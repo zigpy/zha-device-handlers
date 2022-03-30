@@ -1,6 +1,10 @@
 """Fixtures for all tests."""
 
-from asynctest import CoroutineMock
+try:
+    from unittest.mock import AsyncMock as CoroutineMock
+except ImportError:
+    from asynctest import CoroutineMock
+
 import pytest
 import zigpy.application
 import zigpy.device
@@ -33,14 +37,38 @@ class MockApp(zigpy.application.ControllerApplication):
         """Probe method."""
         return True
 
-    async def shutdown(self):
-        """Mock shutdown."""
-
     async def startup(self, *args):
         """Mock startup."""
 
+    async def shutdown(self, *args):
+        """Mock shutdown."""
+
     async def permit_ncp(self, *args):
         """Mock permit ncp."""
+
+    async def broadcast(self, *args, **kwargs):
+        """Mock broadcast."""
+
+    async def connect(self, *args, **kwargs):
+        """Mock connect."""
+
+    async def disconnect(self, *args, **kwargs):
+        """Mock disconnect."""
+
+    async def force_remove(self, *args, **kwargs):
+        """Mock force_remove."""
+
+    async def load_network_info(self, *args, **kwargs):
+        """Mock load_network_info."""
+
+    async def permit_with_key(self, *args, **kwargs):
+        """Mock permit_with_key."""
+
+    async def start_network(self, *args, **kwargs):
+        """Mock start_network."""
+
+    async def write_network_info(self, *args, **kwargs):
+        """Mock write_network_info."""
 
     mrequest = CoroutineMock()
     request = CoroutineMock(return_value=(foundation.Status.SUCCESS, None))

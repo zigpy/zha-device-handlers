@@ -308,18 +308,43 @@ class TuyaManufCluster(CustomCluster):
 
             NOTE: You need to wait for time request before setting it. You can't set time without request."""
 
-    manufacturer_server_commands = {
-        0x0000: ("set_data", (Command,), False),
-        0x0010: ("mcu_version_req", (t.uint16_t,), False),
-        0x0024: ("set_time", (TuyaTimePayload,), False),
+    server_commands = {
+        0x0000: foundation.ZCLCommandDef(
+            "set_data", {"param": Command}, False, is_manufacturer_specific=True
+        ),
+        0x0010: foundation.ZCLCommandDef(
+            "mcu_version_req",
+            {"param": t.uint16_t},
+            False,
+            is_manufacturer_specific=True,
+        ),
+        0x0024: foundation.ZCLCommandDef(
+            "set_time", {"param": TuyaTimePayload}, False, is_manufacturer_specific=True
+        ),
     }
 
-    manufacturer_client_commands = {
-        0x0001: ("get_data", (Command,), True),
-        0x0002: ("set_data_response", (Command,), True),
-        0x0006: ("active_status_report", (Command,), True),
-        0x0011: ("mcu_version_rsp", (MCUVersionRsp,), True),
-        0x0024: ("set_time_request", (t.data16,), True),
+    client_commands = {
+        0x0001: foundation.ZCLCommandDef(
+            "get_data", {"param": Command}, True, is_manufacturer_specific=True
+        ),
+        0x0002: foundation.ZCLCommandDef(
+            "set_data_response", {"param": Command}, True, is_manufacturer_specific=True
+        ),
+        0x0006: foundation.ZCLCommandDef(
+            "active_status_report",
+            {"param": Command},
+            True,
+            is_manufacturer_specific=True,
+        ),
+        0x0011: foundation.ZCLCommandDef(
+            "mcu_version_rsp",
+            {"param": MCUVersionRsp},
+            True,
+            is_manufacturer_specific=True,
+        ),
+        0x0024: foundation.ZCLCommandDef(
+            "set_time_request", {"param": t.data16}, True, is_manufacturer_specific=True
+        ),
     }
 
     def __init__(self, *args, **kwargs):
@@ -424,7 +449,7 @@ class TuyaManufClusterAttributes(TuyaManufCluster):
         if tuya_cmd not in self.attributes:
             return
 
-        ztype = self.attributes[tuya_cmd][1]
+        ztype = self.attributes[tuya_cmd].type
         zvalue = tuya_data.to_value(ztype)
         self._update_attribute(tuya_cmd, zvalue)
 
@@ -483,7 +508,7 @@ class TuyaOnOff(CustomCluster, OnOff):
 
     async def command(
         self,
-        command_id: Union[foundation.Command, int, t.uint8_t],
+        command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
         *args,
         manufacturer: Optional[Union[int, t.uint16_t]] = None,
         expect_reply: bool = True,
@@ -572,7 +597,7 @@ class TuyaThermostatCluster(LocalDataCluster, Thermostat):
 
     def temperature_change(self, attr, value):
         """Local or target temperature change from device."""
-        self._update_attribute(self.attridx[attr], value)
+        self._update_attribute(self.attributes_by_name[attr].id, value)
 
     def state_change(self, value):
         """State update from device."""
@@ -582,8 +607,8 @@ class TuyaThermostatCluster(LocalDataCluster, Thermostat):
         else:
             mode = self.RunningMode.Heat
             state = self.RunningState.Heat_State_On
-        self._update_attribute(self.attridx["running_mode"], mode)
-        self._update_attribute(self.attridx["running_state"], state)
+        self._update_attribute(self.attributes_by_name["running_mode"].id, mode)
+        self._update_attribute(self.attributes_by_name["running_state"].id, state)
 
     # pylint: disable=R0201
     def map_attribute(self, attribute, value):
@@ -600,7 +625,7 @@ class TuyaThermostatCluster(LocalDataCluster, Thermostat):
 
         manufacturer_attrs = {}
         for record in records:
-            attr_name = self.attributes[record.attrid][0]
+            attr_name = self.attributes[record.attrid].name
             new_attrs = self.map_attribute(attr_name, record.value.value)
 
             _LOGGER.debug(
@@ -636,7 +661,7 @@ class TuyaThermostatCluster(LocalDataCluster, Thermostat):
     # pylint: disable=W0236
     async def command(
         self,
-        command_id: Union[foundation.Command, int, t.uint8_t],
+        command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
         *args,
         manufacturer: Optional[Union[int, t.uint16_t]] = None,
         expect_reply: bool = True,
@@ -651,7 +676,7 @@ class TuyaThermostatCluster(LocalDataCluster, Thermostat):
         if mode not in (self.SetpointMode.Heat, self.SetpointMode.Both):
             return [command_id, foundation.Status.INVALID_VALUE]
 
-        attrid = self.attridx["occupied_heating_setpoint"]
+        attrid = self.attributes_by_name["occupied_heating_setpoint"].id
 
         success, _ = await self.read_attributes((attrid,), manufacturer=manufacturer)
         try:
@@ -682,7 +707,7 @@ class TuyaUserInterfaceCluster(LocalDataCluster, UserInterface):
         else:
             lockout = self.KeypadLockout.Level_1_lockout
 
-        self._update_attribute(self.attridx["keypad_lockout"], lockout)
+        self._update_attribute(self.attributes_by_name["keypad_lockout"].id, lockout)
 
     def map_attribute(self, attribute, value):
         """Map standardized attribute value to dict of manufacturer values."""
@@ -695,11 +720,11 @@ class TuyaUserInterfaceCluster(LocalDataCluster, UserInterface):
 
         manufacturer_attrs = {}
         for record in records:
-            if record.attrid == self.attridx["keypad_lockout"]:
+            if record.attrid == self.attributes_by_name["keypad_lockout"].id:
                 lock = 0 if record.value.value == self.KeypadLockout.No_lockout else 1
                 new_attrs = {self._CHILD_LOCK_ATTR: lock}
             else:
-                attr_name = self.attributes[record.attrid][0]
+                attr_name = self.attributes[record.attrid].name
                 new_attrs = self.map_attribute(attr_name, record.value.value)
 
                 _LOGGER.debug(
@@ -743,7 +768,9 @@ class TuyaPowerConfigurationCluster(LocalDataCluster, PowerConfiguration):
 
     def battery_change(self, value):
         """Change of reported battery percentage remaining."""
-        self._update_attribute(self.attridx["battery_percentage_remaining"], value * 2)
+        self._update_attribute(
+            self.attributes_by_name["battery_percentage_remaining"].id, value * 2
+        )
 
 
 class TuyaPowerConfigurationCluster2AA(TuyaPowerConfigurationCluster):
@@ -843,10 +870,23 @@ class TuyaSmartRemoteOnOffCluster(OnOff, EventableCluster):
         self.last_tsn = -1
         super().__init__(*args, **kwargs)
 
-    manufacturer_server_commands = {
-        0xFC: ("rotate_type", (t.uint8_t,), False),
-        0xFD: ("press_type", (t.uint8_t,), False),
-    }
+    server_commands = OnOff.server_commands.copy()
+    server_commands.update(
+        {
+            0xFC: foundation.ZCLCommandDef(
+                "rotate_type",
+                {"rotate_type": t.uint8_t},
+                False,
+                is_manufacturer_specific=True,
+            ),
+            0xFD: foundation.ZCLCommandDef(
+                "press_type",
+                {"press_type": t.uint8_t},
+                False,
+                is_manufacturer_specific=True,
+            ),
+        }
+    )
 
     def handle_cluster_request(
         self,
@@ -1033,7 +1073,7 @@ class TuyaWindowCoverControl(LocalDataCluster, WindowCovering):
 
     def command(
         self,
-        command_id: Union[foundation.Command, int, t.uint8_t],
+        command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
         *args,
         manufacturer: Optional[Union[int, t.uint16_t]] = None,
         expect_reply: bool = True,
@@ -1186,11 +1226,11 @@ class TuyaLevelControl(CustomCluster, LevelControl):
             level,
             state,
         )
-        self._update_attribute(self.attridx["current_level"], level)
+        self._update_attribute(self.attributes_by_name["current_level"].id, level)
 
     def command(
         self,
-        command_id: Union[foundation.Command, int, t.uint8_t],
+        command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
         *args,
         manufacturer: Optional[Union[int, t.uint16_t]] = None,
         expect_reply: bool = True,
@@ -1234,11 +1274,11 @@ class TuyaLocalCluster(LocalDataCluster):
         """Update attribute by attribute name."""
 
         try:
-            attrid = self.attridx[attr_name]
+            attr = self.attributes_by_name[attr_name]
         except KeyError:
             self.debug("no such attribute: %s", attr_name)
             return
-        return self._update_attribute(attrid, value)
+        return self._update_attribute(attr.id, value)
 
 
 @dataclasses.dataclass
@@ -1271,17 +1311,37 @@ class TuyaNewManufCluster(CustomCluster):
     cluster_id: t.uint16_t = TUYA_CLUSTER_ID
     ep_attribute: str = "tuya_manufacturer"
 
-    manufacturer_server_commands = {
-        TUYA_SET_DATA: ("set_data", (TuyaCommand,), False),
-        TUYA_SEND_DATA: ("send_data", (TuyaCommand,), False),
-        TUYA_SET_TIME: ("set_time", (TuyaTimePayload,), False),
+    server_commands = {
+        TUYA_SET_DATA: foundation.ZCLCommandDef(
+            "set_data", {"data": TuyaCommand}, False, is_manufacturer_specific=True
+        ),
+        TUYA_SEND_DATA: foundation.ZCLCommandDef(
+            "send_data", {"data": TuyaCommand}, False, is_manufacturer_specific=True
+        ),
+        TUYA_SET_TIME: foundation.ZCLCommandDef(
+            "set_time", {"time": TuyaTimePayload}, False, is_manufacturer_specific=True
+        ),
     }
 
-    manufacturer_client_commands = {
-        TUYA_GET_DATA: ("get_data", (TuyaCommand,), True),
-        TUYA_SET_DATA_RESPONSE: ("set_data_response", (TuyaCommand,), True),
-        TUYA_ACTIVE_STATUS_RPT: ("active_status_report", (TuyaCommand,), True),
-        TUYA_SET_TIME: ("set_time_request", (t.data16,), True),
+    client_commands = {
+        TUYA_GET_DATA: foundation.ZCLCommandDef(
+            "get_data", {"data": TuyaCommand}, True, is_manufacturer_specific=True
+        ),
+        TUYA_SET_DATA_RESPONSE: foundation.ZCLCommandDef(
+            "set_data_response",
+            {"data": TuyaCommand},
+            True,
+            is_manufacturer_specific=True,
+        ),
+        TUYA_ACTIVE_STATUS_RPT: foundation.ZCLCommandDef(
+            "active_status_report",
+            {"data": TuyaCommand},
+            True,
+            is_manufacturer_specific=True,
+        ),
+        TUYA_SET_TIME: foundation.ZCLCommandDef(
+            "set_time_request", {"data": t.data16}, True, is_manufacturer_specific=True
+        ),
     }
 
     data_point_handlers: Dict[int, str] = {}
@@ -1298,12 +1358,11 @@ class TuyaNewManufCluster(CustomCluster):
         """Handle cluster specific request."""
 
         try:
-            if (
-                hdr.is_reply
-            ):  # server_cluster -> client_cluster cluster specific command
-                handler_name = f"handle_{self.client_commands[hdr.command_id][0]}"
+            if hdr.is_reply:
+                # server_cluster -> client_cluster cluster specific command
+                handler_name = f"handle_{self.client_commands[hdr.command_id].name}"
             else:
-                handler_name = f"handle_{self.server_commands[hdr.command_id][0]}"
+                handler_name = f"handle_{self.server_commands[hdr.command_id].name}"
         except KeyError:
             self.debug(
                 "Received unknown manufacturer command %s: %s", hdr.command_id, args

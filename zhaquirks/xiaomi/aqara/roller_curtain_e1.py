@@ -44,14 +44,17 @@ class XiaomiAqaraRollerE1(XiaomiCluster, ManufacturerSpecificCluster):
 
     cluster_id = 0xFCC0
 
-    manufacturer_attributes = {
-        0x0400: ("Reverse Direction", t.Bool),
-        0x0402: ("Positions Stored", t.Bool),
-        0x0407: ("Store Position", t.uint8_t),
-        0x0408: ("Speed", t.uint8_t),
-        0x0409: ("Charging", t.uint8_t),
-        0x00F7: ("Aqara Attributes", t.LVBytes),
-    }
+    attributes = XiaomiCluster.attributes.copy()
+    attributes.update(
+        {
+            0x0400: ("reverse_direction", t.Bool, True),
+            0x0402: ("positions_stored", t.Bool, True),
+            0x0407: ("store_position", t.uint8_t, True),
+            0x0408: ("speed", t.uint8_t, True),
+            0x0409: ("charging", t.uint8_t, True),
+            0x00F7: ("aqara_attributes", t.LVBytes, True),
+        }
+    )
 
 
 class AnalogOutputRollerE1(AnalogOutput):
@@ -91,7 +94,11 @@ class WindowCoveringRollerE1(WindowCovering):
     async def command(
         self, command_id, *args, manufacturer=None, expect_reply=True, tsn=None
     ):
-        """Overwrite the commands to make it work for both firmware 1425 and 1427. We either overwrite analog_output's current_value or multistate_output's current value to make the roller work."""
+        """Overwrite the commands to make it work for both firmware 1425 and 1427.
+
+        We either overwrite analog_output's current_value or multistate_output's current
+        value to make the roller work.
+        """
         if command_id == UP_OPEN:
             (res,) = await self.endpoint.multistate_output.write_attributes(
                 {"present_value": 1}
@@ -115,23 +122,21 @@ class WindowCoveringRollerE1(WindowCovering):
 
 
 class MultistateOutputRollerE1(MultistateOutput):
-    """Multistate Output cluster which overwrites present_value because else it gives errors of wrong datatype when using it in the commands."""
+    """Multistate Output cluster which overwrites present_value.
 
-    cluster_id = MultistateOutput.cluster_id
+    Otherwise, it gives errors of wrong datatype when using it in the commands.
+    """
 
-    manufacturer_attributes = {
-        0x0055: ("present_value", t.uint16_t),
-    }
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
+    attributes = MultistateOutput.attributes.copy()
+    attributes.update(
+        {
+            0x0055: ("present_value", t.uint16_t),
+        }
+    )
 
 
 class PowerConfigurationRollerE1(PowerConfiguration, LocalDataCluster):
     """Xiaomi power configuration cluster implementation."""
-
-    cluster_id = PowerConfiguration.cluster_id
 
     BATTERY_PERCENTAGE_REMAINING = 0x0021
 
@@ -141,7 +146,7 @@ class PowerConfigurationRollerE1(PowerConfiguration, LocalDataCluster):
         self.endpoint.device.power_bus_percentage.add_listener(self)
 
     def update_battery_percentage(self, value):
-        """We'll receive a raw percentage value here, no need to calculate any voltages or such. Only thing we do is times 2 the value because Zigbee expects percentage 200%."""
+        """Doubles the battery percentage to the Zigbee spec's expected 200% maximum."""
         super()._update_attribute(
             self.BATTERY_PERCENTAGE_REMAINING,
             (value * 2),

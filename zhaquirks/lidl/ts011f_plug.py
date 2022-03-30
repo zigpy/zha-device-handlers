@@ -98,13 +98,16 @@ def cast_tuya_magic_spell(dev: zigpy.device.Device, tries: int = 3) -> None:
 class TuyaBasicCluster(CustomCluster, Basic):
     """Provide Tuya Basic Cluster with magic spell."""
 
-    manufacturer_attributes = {
-        0xFFDE: ("tuya_FFDE", t.uint8_t),
-        # 0xffe0: ("tuya_FFE0", TODO.Array),
-        # 0xffe1: ("tuya_FFE1", TODO.Array),
-        0xFFE2: ("tuya_FFE2", t.uint8_t),
-        # 0xffe3: ("tuya_FFE3", TODO.Array),
-    }
+    attributes = Basic.attributes.copy()
+    attributes.update(
+        {
+            0xFFDE: ("tuya_FFDE", t.uint8_t, True),
+            # 0xffe0: ("tuya_FFE0", TODO.Array, True),
+            # 0xffe1: ("tuya_FFE1", TODO.Array, True),
+            0xFFE2: ("tuya_FFE2", t.uint8_t, True),
+            # 0xffe3: ("tuya_FFE3", TODO.Array, True),
+        }
+    )
 
     async def bind(self):
         """Bind cluster."""

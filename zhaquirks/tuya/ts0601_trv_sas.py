@@ -51,12 +51,19 @@ MAX_HEAT_SETPOINT_ATTR = 0x0016
 class ManufacturerThermostatCluster(TuyaManufClusterAttributes):
     """Manufacturer thermostat cluster."""
 
-    manufacturer_attributes = {
-        SYSTEM_MODE_COMMAND_ID: ("system_mode", t.uint8_t),
-        OCCUPIED_HEATING_SETPOINT_COMMAND_ID: ("occupied_heating_setpoint", t.uint32_t),
-        LOCAL_TEMP_COMMAND_ID: ("local_temp", t.uint32_t),
-        BATTERY_STATE_COMMAND_ID: ("battery_state", t.uint8_t),
-    }
+    attributes = TuyaManufClusterAttributes.attributes.copy()
+    attributes.update(
+        {
+            SYSTEM_MODE_COMMAND_ID: ("system_mode", t.uint8_t, True),
+            OCCUPIED_HEATING_SETPOINT_COMMAND_ID: (
+                "occupied_heating_setpoint",
+                t.uint32_t,
+                True,
+            ),
+            LOCAL_TEMP_COMMAND_ID: ("local_temperature", t.uint32_t, True),
+            BATTERY_STATE_COMMAND_ID: ("battery_state", t.uint8_t, True),
+        }
+    )
 
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
@@ -91,11 +98,11 @@ class PowerConfigurationCluster(LocalDataCluster, PowerConfiguration):
         _LOGGER.debug("reported battery alert: %d", value)
         if value == 1:  # alert
             self._update_attribute(
-                self.attridx["battery_percentage_remaining"], 0
+                self.attributes_by_name["battery_percentage_remaining"].id, 0
             )  # report 0% battery
         else:
             self._update_attribute(
-                self.attridx["battery_percentage_remaining"], 200
+                self.attributes_by_name["battery_percentage_remaining"].id, 200
             )  # report 100% battery
 
 
@@ -117,30 +124,34 @@ class ThermostatCluster(TuyaThermostatCluster):
 
     def occupied_heating_setpoint_reported(self, value):
         """Handle reported occupied heating setpoint state."""
-        self._update_attribute(self.attridx["occupied_heating_setpoint"], value * 10)
+        self._update_attribute(
+            self.attributes_by_name["occupied_heating_setpoint"].id, value * 10
+        )
         _LOGGER.debug("reported occupied heating setpoint: %d", value)
 
     def local_temp_reported(self, value):
         """Handle reported local temperature."""
-        self._update_attribute(self.attridx["local_temp"], value * 10)
+        self._update_attribute(
+            self.attributes_by_name["local_temperature"].id, value * 10
+        )
         _LOGGER.debug("reported local temperature: %d", value)
 
     def system_mode_reported(self, value):
         """Handle reported system mode."""
         if value == 1:
             self._update_attribute(
-                self.attridx["system_mode"], Thermostat.SystemMode.Heat
+                self.attributes_by_name["system_mode"].id, Thermostat.SystemMode.Heat
             )
             self._update_attribute(
-                self.attridx["running_mode"], Thermostat.RunningMode.Heat
+                self.attributes_by_name["running_mode"].id, Thermostat.RunningMode.Heat
             )
             _LOGGER.debug("reported system_mode: heat")
         else:
             self._update_attribute(
-                self.attridx["system_mode"], Thermostat.SystemMode.Off
+                self.attributes_by_name["system_mode"].id, Thermostat.SystemMode.Off
             )
             self._update_attribute(
-                self.attridx["running_mode"], Thermostat.RunningMode.Off
+                self.attributes_by_name["running_mode"].id, Thermostat.RunningMode.Off
             )
             _LOGGER.debug("reported system_mode: off")
 

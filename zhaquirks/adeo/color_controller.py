@@ -66,7 +66,14 @@ class AdeoManufacturerCluster(EventableCluster):
     cluster_id = MANUFACTURER_SPECIFIC_CLUSTER_ID
     name = "AdeoManufacturerCluster"
     ep_attribute = "adeo_manufacturer_cluster"
-    manufacturer_client_commands = {0x0000: ("preset", (t.uint8_t, t.uint8_t), False)}
+    client_commands = {
+        0x00: foundation.ZCLCommandDef(
+            "preset",
+            {"param1": t.uint8_t, "param2": t.uint8_t},
+            is_manufacturer_specific=True,
+            is_reply=False,
+        )
+    }
 
     def handle_cluster_request(
         self,
