@@ -840,6 +840,7 @@ class TuyaZBOnOffAttributeCluster(CustomCluster, OnOff):
     """Tuya Zigbee On Off cluster with extra attributes."""
 
     attributes = OnOff.attributes.copy()
+    attributes.update({0.8000: ("child_lock", t.Bool)})
     attributes.update({0x8001: ("backlight_mode", SwitchBackLight)})
     attributes.update({0x8002: ("power_on_state", PowerOnState)})
     attributes.update({0x8004: ("switch_mode", SwitchMode)})
