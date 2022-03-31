@@ -10,6 +10,7 @@ from zigpy.zcl.clusters.general import Basic, Identify, Ota, PowerConfiguration
 from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.security import IasZone
 
+from zhaquirks import CustomCluster
 from zhaquirks.const import (
     COMMAND_SINGLE,
     DEVICE_TYPE,
@@ -22,7 +23,7 @@ from zhaquirks.const import (
 )
 
 
-class IasZoneDoorbellCluster(IasZone):
+class IasZoneDoorbellCluster(CustomCluster, IasZone):
     """Custom IasZone cluster for the doorbell."""
 
     cluster_id = IasZone.cluster_id
