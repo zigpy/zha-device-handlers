@@ -1,11 +1,13 @@
 """Module for Inovelli quirks implementations."""
 
-import logging
-from typing import Any, List, Optional, Union
 import asyncio
+import logging
 import time
-
+from typing import Any, List, Optional, Union
+from zigpy.quirks import CustomCluster
 import zigpy.types as t
+from zigpy.zcl import foundation
+
 from zhaquirks.const import (
     BUTTON,
     BUTTON_1,
@@ -26,8 +28,6 @@ from zhaquirks.const import (
     TRIPLE_PRESS,
     ZHA_SEND_EVENT,
 )
-from zigpy.quirks import CustomCluster
-from zigpy.zcl import foundation
 
 _LOGGER = logging.getLogger(__name__)
 INOVELLI_VZM31SN_CLUSTER_ID = 64561
