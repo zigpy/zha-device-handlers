@@ -639,7 +639,7 @@ class BecaChildLock(LocalDataCluster, OnOff):
 
         return [command_id, foundation.Status.UNSUP_CLUSTER_COMMAND]
 
-#
+
 class BecaValveState(LocalDataCluster, AnalogInput):
     """Analog input for valve opening state."""
 
@@ -706,8 +706,8 @@ class BecaBoostTime(LocalDataCluster, AnalogOutput):
         super().__init__(*args, **kwargs)
         self.endpoint.device.BecaBoostTime_bus.add_listener(self)
         self._update_attribute(self.attributes_by_name["description"].id, "Boost Time")
-        self._update_attribute(self.attributes_by_name["max_present_value"].id, 9999)
-        self._update_attribute(self.attributes_by_name["min_present_value"].id, 0)
+        self._update_attribute(self.attributes_by_name["max_present_value"].id, 900)
+        self._update_attribute(self.attributes_by_name["min_present_value"].id, 100)
         self._update_attribute(self.attributes_by_name["resolution"].id, 10)
         self._update_attribute(self.attributes_by_name["application_type"].id, 14 << 16)
         self._update_attribute(self.attributes_by_name["engineering_units"].id, 73)

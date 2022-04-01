@@ -596,7 +596,7 @@ async def test_beca_state_report(zigpy_device_from_quirk, quirk):
     tuya_cluster = valve_dev.endpoints[1].tuya_manufacturer
 
     thermostat_listener = ClusterListener(valve_dev.endpoints[1].thermostat)
-    window_detect_listener = ClusterListener(valve_dev.endpoints[1].on_off)
+    # window_detect_listener = ClusterListener(valve_dev.endpoints[1].on_off)
     child_lock_listener = ClusterListener(valve_dev.endpoints[2].on_off)
 
     frames = (
