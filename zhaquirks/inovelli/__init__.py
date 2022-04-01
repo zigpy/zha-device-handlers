@@ -106,7 +106,7 @@ class Inovelli_VZM31SN_Cluster(CustomCluster):
     name = "InovelliVZM31SNCluster"
     ep_attribute = "inovelli_vzm31sn_cluster"
 
-    manufacturer_attributes = {
+    attributes = {
         0x0001: ("Dimming Speed Up (Remote)", t.uint8_t),
         0x0002: ("Dimming Speed Up (Local)", t.uint8_t),
         0x0003: ("Ramp Rate - Off to On (Local)", t.uint8_t),
