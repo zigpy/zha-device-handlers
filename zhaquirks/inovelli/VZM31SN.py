@@ -51,7 +51,7 @@ class InovelliVZM31SNv9(CustomDevice):
                     ElectricalMeasurement.cluster_id,  # 2820
                     Diagnostic.cluster_id,  # 2821
                     INOVELLI_VZM31SN_CLUSTER_ID,  # 64561
-                    WWAH_CLUSTER_ID,  #64599
+                    WWAH_CLUSTER_ID,  # 64599
                 ],
                 OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],  # 3  # 19
             },
@@ -85,7 +85,7 @@ class InovelliVZM31SNv9(CustomDevice):
                     ElectricalMeasurement,  # 2820
                     Diagnostic,  # 2821
                     Inovelli_VZM31SN_Cluster,  # 64561
-                    WWAH_CLUSTER_ID,  #64599
+                    WWAH_CLUSTER_ID,  # 64599
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify,  # 3
