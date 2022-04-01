@@ -78,7 +78,8 @@ class BecaManufCluster(TuyaManufClusterAttributes):
 
     set_time_offset = 1970
 
-    manufacturer_attributes = {
+    attributes = TuyaManufClusterAttributes.attributes.copy()
+    attributes = {
         BECA_TEMPERATURE_ATTR: ("temperature", t.uint32_t),
         BECA_TARGET_TEMP_ATTR: ("target_temperature", t.uint32_t),
         BECA_MODE_ATTR: ("mode", t.uint8_t),
@@ -99,7 +100,7 @@ class BecaManufCluster(TuyaManufClusterAttributes):
     }
 
     DIRECT_MAPPED_ATTRS = {
-        BECA_TEMPERATURE_ATTR: ("local_temp", lambda value: value * 10),
+        BECA_TEMPERATURE_ATTR: ("local_temperature", lambda value: value * 10),
         BECA_TARGET_TEMP_ATTR: ("occupied_heating_setpoint", lambda value: value * 100),
         BECA_TEMP_CALIBRATION_ATTR: ("local_temperature_calibration", None),
         BECA_MIN_TEMPERATURE_ATTR: (
@@ -202,45 +203,48 @@ class BecaThermostat(TuyaThermostatCluster):
         0x001C: Thermostat.SystemMode.Heat,
     }
 
-    manufacturer_attributes = {
-        0x4002: ("operation_preset", Preset),
-        0x4110: ("schedule_workday_1_hour", t.uint8_t),
-        0x4111: ("schedule_workday_1_minute", t.uint8_t),
-        0x4112: ("schedule_workday_1_temperature", t.uint8_t),
-        0x4113: ("schedule_workday_2_hour", t.uint8_t),
-        0x4114: ("schedule_workday_2_minute", t.uint8_t),
-        0x4115: ("schedule_workday_2_temperature", t.uint8_t),
-        0x4116: ("schedule_workday_3_hour", t.uint8_t),
-        0x4117: ("schedule_workday_3_minute", t.uint8_t),
-        0x4118: ("schedule_workday_3_temperature", t.uint8_t),
-        0x4119: ("schedule_workday_4_hour", t.uint8_t),
-        0x4120: ("schedule_workday_4_minute", t.uint8_t),
-        0x4121: ("schedule_workday_4_temperature", t.uint8_t),
-        0x4122: ("schedule_saturday_1_hour", t.uint8_t),
-        0x4123: ("schedule_saturday_1_minute", t.uint8_t),
-        0x4124: ("schedule_saturday_1_temperature", t.uint8_t),
-        0x4125: ("schedule_saturday_2_hour", t.uint8_t),
-        0x4126: ("schedule_saturday_2_minute", t.uint8_t),
-        0x4127: ("schedule_saturday_2_temperature", t.uint8_t),
-        0x4128: ("schedule_saturday_3_hour", t.uint8_t),
-        0x4129: ("schedule_saturday_3_minute", t.uint8_t),
-        0x4130: ("schedule_saturday_3_temperature", t.uint8_t),
-        0x4131: ("schedule_saturday_4_hour", t.uint8_t),
-        0x4132: ("schedule_saturday_4_minute", t.uint8_t),
-        0x4133: ("schedule_saturday_4_temperature", t.uint8_t),
-        0x4134: ("schedule_sunday_1_hour", t.uint8_t),
-        0x4135: ("schedule_sunday_1_minute", t.uint8_t),
-        0x4136: ("schedule_sunday_1_temperature", t.uint8_t),
-        0x4137: ("schedule_sunday_2_hour", t.uint8_t),
-        0x4138: ("schedule_sunday_2_minute", t.uint8_t),
-        0x4139: ("schedule_sunday_2_temperature", t.uint8_t),
-        0x4140: ("schedule_sunday_3_hour", t.uint8_t),
-        0x4141: ("schedule_sunday_3_minute", t.uint8_t),
-        0x4142: ("schedule_sunday_3_temperature", t.uint8_t),
-        0x4143: ("schedule_sunday_4_hour", t.uint8_t),
-        0x4144: ("schedule_sunday_4_minute", t.uint8_t),
-        0x4145: ("schedule_sunday_4_temperature", t.uint8_t),
-    }
+    attributes = TuyaThermostatCluster.attributes.copy()
+    attributes.update(
+        {
+            0x4002: ("operation_preset", Preset),
+            0x4110: ("schedule_workday_1_hour", t.uint8_t),
+            0x4111: ("schedule_workday_1_minute", t.uint8_t),
+            0x4112: ("schedule_workday_1_temperature", t.uint8_t),
+            0x4113: ("schedule_workday_2_hour", t.uint8_t),
+            0x4114: ("schedule_workday_2_minute", t.uint8_t),
+            0x4115: ("schedule_workday_2_temperature", t.uint8_t),
+            0x4116: ("schedule_workday_3_hour", t.uint8_t),
+            0x4117: ("schedule_workday_3_minute", t.uint8_t),
+            0x4118: ("schedule_workday_3_temperature", t.uint8_t),
+            0x4119: ("schedule_workday_4_hour", t.uint8_t),
+            0x4120: ("schedule_workday_4_minute", t.uint8_t),
+            0x4121: ("schedule_workday_4_temperature", t.uint8_t),
+            0x4122: ("schedule_saturday_1_hour", t.uint8_t),
+            0x4123: ("schedule_saturday_1_minute", t.uint8_t),
+            0x4124: ("schedule_saturday_1_temperature", t.uint8_t),
+            0x4125: ("schedule_saturday_2_hour", t.uint8_t),
+            0x4126: ("schedule_saturday_2_minute", t.uint8_t),
+            0x4127: ("schedule_saturday_2_temperature", t.uint8_t),
+            0x4128: ("schedule_saturday_3_hour", t.uint8_t),
+            0x4129: ("schedule_saturday_3_minute", t.uint8_t),
+            0x4130: ("schedule_saturday_3_temperature", t.uint8_t),
+            0x4131: ("schedule_saturday_4_hour", t.uint8_t),
+            0x4132: ("schedule_saturday_4_minute", t.uint8_t),
+            0x4133: ("schedule_saturday_4_temperature", t.uint8_t),
+            0x4134: ("schedule_sunday_1_hour", t.uint8_t),
+            0x4135: ("schedule_sunday_1_minute", t.uint8_t),
+            0x4136: ("schedule_sunday_1_temperature", t.uint8_t),
+            0x4137: ("schedule_sunday_2_hour", t.uint8_t),
+            0x4138: ("schedule_sunday_2_minute", t.uint8_t),
+            0x4139: ("schedule_sunday_2_temperature", t.uint8_t),
+            0x4140: ("schedule_sunday_3_hour", t.uint8_t),
+            0x4141: ("schedule_sunday_3_minute", t.uint8_t),
+            0x4142: ("schedule_sunday_3_temperature", t.uint8_t),
+            0x4143: ("schedule_sunday_4_hour", t.uint8_t),
+            0x4144: ("schedule_sunday_4_minute", t.uint8_t),
+            0x4145: ("schedule_sunday_4_temperature", t.uint8_t),
+        }
+    )
 
     DIRECT_MAPPING_ATTRS = {
         "min_heat_setpoint_limit": (
@@ -307,7 +311,7 @@ class BecaThermostat(TuyaThermostatCluster):
             }
 
         if attribute == "occupied_heating_setpoint":
-            mode = self._attr_cache.get(self.attridx["operation_preset"])
+            mode = self._attr_cache.get(self.attributes_by_name["operation_preset"].id)
             if mode == self.Preset.Schedule:
                 return {BECA_MODE_ATTR: 2, BECA_TARGET_TEMP_ATTR: value / 100}
             else:
@@ -331,12 +335,12 @@ class BecaThermostat(TuyaThermostatCluster):
             if attribute == "occupancy":
                 occupancy = value
                 oper_mode = self._attr_cache.get(
-                    self.attridx["programing_oper_mode"],
+                    self.attributes_by_name["programing_oper_mode"].id,
                     self.ProgrammingOperationMode.Simple,
                 )
             else:
                 occupancy = self._attr_cache.get(
-                    self.attridx["occupancy"], self.Occupancy.Occupied
+                    self.attributes_by_name["occupancy"].id, self.Occupancy.Occupied
                 )
                 oper_mode = value
             if occupancy == self.Occupancy.Unoccupied:
@@ -358,13 +362,13 @@ class BecaThermostat(TuyaThermostatCluster):
                         val = round(value * 2)
                     else:
                         val = round(
-                            self._attr_cache.get(self.attridx[attr], default) * 2
+                            self._attr_cache.get(self.attributes_by_name[attr].id, default) * 2
                         )
                 else:
                     if attr == attribute:
                         val = value
                     else:
-                        val = self._attr_cache.get(self.attridx[attr], default)
+                        val = self._attr_cache.get(self.attributes_by_name[attr].id, default)
 
                 data.append(val)
             return {BECA_SCHEDULE: data}
@@ -396,71 +400,71 @@ class BecaThermostat(TuyaThermostatCluster):
             prog_mode = self.ProgrammingOperationMode.Schedule_programming_mode
             occupancy = self.Occupancy.Occupied
 
-        self._update_attribute(self.attridx["programing_oper_mode"], prog_mode)
-        self._update_attribute(self.attridx["occupancy"], occupancy)
-        self._update_attribute(self.attridx["operation_preset"], operation_preset)
+        self._update_attribute(self.attributes_by_name["programing_oper_mode"].id, prog_mode)
+        self._update_attribute(self.attributes_by_name["occupancy"].id, occupancy)
+        self._update_attribute(self.attributes_by_name["operation_preset"].id, operation_preset)
 
     def schedule_change(self, value):
         """Scheduler attribute change."""
-        self._update_attribute(self.attridx["schedule_workday_1_hour"], value[35])
-        self._update_attribute(self.attridx["schedule_workday_1_minute"], value[34])
+        self._update_attribute(self.attributes_by_name["schedule_workday_1_hour"].id, value[35])
+        self._update_attribute(self.attributes_by_name["schedule_workday_1_minute"].id, value[34])
         self._update_attribute(
-            self.attridx["schedule_workday_1_temperature"], value[33] / 2
+            self.attributes_by_name["schedule_workday_1_temperature"].id, value[33] / 2
         )
-        self._update_attribute(self.attridx["schedule_workday_2_hour"], value[32])
-        self._update_attribute(self.attridx["schedule_workday_2_minute"], value[31])
+        self._update_attribute(self.attributes_by_name["schedule_workday_2_hour"].id, value[32])
+        self._update_attribute(self.attributes_by_name["schedule_workday_2_minute"].id, value[31])
         self._update_attribute(
-            self.attridx["schedule_workday_2_temperature"], value[30] / 2
+            self.attributes_by_name["schedule_workday_2_temperature"].id, value[30] / 2
         )
-        self._update_attribute(self.attridx["schedule_workday_3_hour"], value[29])
-        self._update_attribute(self.attridx["schedule_workday_3_minute"], value[28])
+        self._update_attribute(self.attributes_by_name["schedule_workday_3_hour"].id, value[29])
+        self._update_attribute(self.attributes_by_name["schedule_workday_3_minute"].id, value[28])
         self._update_attribute(
-            self.attridx["schedule_workday_3_temperature"], value[27] / 2
+            self.attributes_by_name["schedule_workday_3_temperature"].id, value[27] / 2
         )
-        self._update_attribute(self.attridx["schedule_workday_4_hour"], value[26])
-        self._update_attribute(self.attridx["schedule_workday_4_minute"], value[25])
+        self._update_attribute(self.attributes_by_name["schedule_workday_4_hour"].id, value[26])
+        self._update_attribute(self.attributes_by_name["schedule_workday_4_minute"].id, value[25])
         self._update_attribute(
-            self.attridx["schedule_workday_4_temperature"], value[24] / 2
+            self.attributes_by_name["schedule_workday_4_temperature"].id, value[24] / 2
         )
-        self._update_attribute(self.attridx["schedule_saturday_1_hour"], value[23])
-        self._update_attribute(self.attridx["schedule_saturday_1_minute"], value[22])
+        self._update_attribute(self.attributes_by_name["schedule_saturday_1_hour"].id, value[23])
+        self._update_attribute(self.attributes_by_name["schedule_saturday_1_minute"].id, value[22])
         self._update_attribute(
-            self.attridx["schedule_saturday_1_temperature"], value[21] / 2
+            self.attributes_by_name["schedule_saturday_1_temperature"].id, value[21] / 2
         )
-        self._update_attribute(self.attridx["schedule_saturday_2_hour"], value[20])
-        self._update_attribute(self.attridx["schedule_saturday_2_minute"], value[19])
+        self._update_attribute(self.attributes_by_name["schedule_saturday_2_hour"].id, value[20])
+        self._update_attribute(self.attributes_by_name["schedule_saturday_2_minute"].id, value[19])
         self._update_attribute(
-            self.attridx["schedule_saturday_2_temperature"], value[18] / 2
+            self.attributes_by_name["schedule_saturday_2_temperature"].id, value[18] / 2
         )
-        self._update_attribute(self.attridx["schedule_saturday_3_hour"], value[17])
-        self._update_attribute(self.attridx["schedule_saturday_3_minute"], value[16])
+        self._update_attribute(self.attributes_by_name["schedule_saturday_3_hour"].id, value[17])
+        self._update_attribute(self.attributes_by_name["schedule_saturday_3_minute"].id, value[16])
         self._update_attribute(
-            self.attridx["schedule_saturday_3_temperature"], value[15] / 2
+            self.attributes_by_name["schedule_saturday_3_temperature"].id, value[15] / 2
         )
-        self._update_attribute(self.attridx["schedule_saturday_4_hour"], value[14])
-        self._update_attribute(self.attridx["schedule_saturday_4_minute"], value[13])
+        self._update_attribute(self.attributes_by_name["schedule_saturday_4_hour"].id, value[14])
+        self._update_attribute(self.attributes_by_name["schedule_saturday_4_minute"].id, value[13])
         self._update_attribute(
-            self.attridx["schedule_saturday_4_temperature"], value[12] / 2
+            self.attributes_by_name["schedule_saturday_4_temperature"].id, value[12] / 2
         )
-        self._update_attribute(self.attridx["schedule_sunday_1_hour"], value[11])
-        self._update_attribute(self.attridx["schedule_sunday_1_minute"], value[10])
+        self._update_attribute(self.attributes_by_name["schedule_sunday_1_hour"].id, value[11])
+        self._update_attribute(self.attributes_by_name["schedule_sunday_1_minute"].id, value[10])
         self._update_attribute(
-            self.attridx["schedule_sunday_1_temperature"], value[9] / 2
+            self.attributes_by_name["schedule_sunday_1_temperature"].id, value[9] / 2
         )
-        self._update_attribute(self.attridx["schedule_sunday_2_hour"], value[8])
-        self._update_attribute(self.attridx["schedule_sunday_2_minute"], value[7])
+        self._update_attribute(self.attributes_by_name["schedule_sunday_2_hour"].id, value[8])
+        self._update_attribute(self.attributes_by_name["schedule_sunday_2_minute"].id, value[7])
         self._update_attribute(
-            self.attridx["schedule_sunday_2_temperature"], value[6] / 2
+            self.attributes_by_name["schedule_sunday_2_temperature"].id, value[6] / 2
         )
-        self._update_attribute(self.attridx["schedule_sunday_3_hour"], value[5])
-        self._update_attribute(self.attridx["schedule_sunday_3_minute"], value[4])
+        self._update_attribute(self.attributes_by_name["schedule_sunday_3_hour"].id, value[5])
+        self._update_attribute(self.attributes_by_name["schedule_sunday_3_minute"].id, value[4])
         self._update_attribute(
-            self.attridx["schedule_sunday_3_temperature"], value[3] / 2
+            self.attributes_by_name["schedule_sunday_3_temperature"].id, value[3] / 2
         )
-        self._update_attribute(self.attridx["schedule_sunday_4_hour"], value[2])
-        self._update_attribute(self.attridx["schedule_sunday_4_minute"], value[1])
+        self._update_attribute(self.attributes_by_name["schedule_sunday_4_hour"].id, value[2])
+        self._update_attribute(self.attributes_by_name["schedule_sunday_4_minute"].id, value[1])
         self._update_attribute(
-            self.attridx["schedule_sunday_4_temperature"], value[0] / 2
+            self.attributes_by_name["schedule_sunday_4_temperature"].id, value[0] / 2
         )
 
 
@@ -477,11 +481,11 @@ class BecaWindowDetection(LocalDataCluster, BinaryInput):
         """Init."""
         super().__init__(*args, **kwargs)
         self.endpoint.device.BecaWindowDetection_bus.add_listener(self)
-        self._update_attribute(self.attridx["description"], "Open Window Detected")
+        self._update_attribute(self.attributes_by_name["description"].id, "Open Window Detected")
 
     def set_value(self, value):
         """Set opened window value."""
-        self._update_attribute(self.attridx["present_value"], not value)
+        self._update_attribute(self.attributes_by_name["present_value"].id, not value)
 
 
 class BecaWindowDetection_A2(LocalDataCluster, OnOff):
@@ -494,7 +498,7 @@ class BecaWindowDetection_A2(LocalDataCluster, OnOff):
 
     def switch_change(self, value):
         """Window detect (Settings - A2) change."""
-        self._update_attribute(self.attridx["on_off"], value)
+        self._update_attribute(self.attributes_by_name["on_off"].id, value)
 
     async def write_attributes(self, attributes, manufacturer=None):
         """Defer attributes writing to the set_data tuya command."""
@@ -504,7 +508,7 @@ class BecaWindowDetection_A2(LocalDataCluster, OnOff):
 
         has_change = False
         for record in records:
-            attr_name = self.attributes[record.attrid][0]
+            attr_name = self.attributes[record.attrid].name
             if attr_name == "on_off":
                 value = record.value.value
                 has_change = True
@@ -527,7 +531,7 @@ class BecaWindowDetection_A2(LocalDataCluster, OnOff):
 
     async def command(
         self,
-        command_id: Union[foundation.Command, int, t.uint8_t],
+        command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
         *args,
         manufacturer: Optional[Union[int, t.uint16_t]] = None,
         expect_reply: bool = True,
@@ -541,7 +545,7 @@ class BecaWindowDetection_A2(LocalDataCluster, OnOff):
             elif command_id == 0x0001:
                 value = True
             else:
-                attrid = self.attridx["on_off"]
+                attrid = self.attributes_by_name["on_off"].id
                 success, _ = await self.read_attributes(
                     (attrid,), manufacturer=manufacturer
                 )
@@ -570,7 +574,7 @@ class BecaChildLock(LocalDataCluster, OnOff):
 
     def switch_change(self, value):
         """Child lock change."""
-        self._update_attribute(self.attridx["on_off"], value)
+        self._update_attribute(self.attributes_by_name["on_off"].id, value)
 
     async def write_attributes(self, attributes, manufacturer=None):
         """Defer attributes writing to the set_data tuya command."""
@@ -580,7 +584,7 @@ class BecaChildLock(LocalDataCluster, OnOff):
 
         has_change = False
         for record in records:
-            attr_name = self.attributes[record.attrid][0]
+            attr_name = self.attributes[record.attrid].name
             if attr_name == "on_off":
                 value = record.value.value
                 has_change = True
@@ -603,7 +607,7 @@ class BecaChildLock(LocalDataCluster, OnOff):
 
     async def command(
         self,
-        command_id: Union[foundation.Command, int, t.uint8_t],
+        command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
         *args,
         manufacturer: Optional[Union[int, t.uint16_t]] = None,
         expect_reply: bool = True,
@@ -617,7 +621,7 @@ class BecaChildLock(LocalDataCluster, OnOff):
             elif command_id == 0x0001:
                 value = True
             else:
-                attrid = self.attridx["on_off"]
+                attrid = self.attributes_by_name["on_off"].id
                 success, _ = await self.read_attributes(
                     (attrid,), manufacturer=manufacturer
                 )
@@ -643,14 +647,14 @@ class BecaValveState(LocalDataCluster, AnalogInput):
         """Init."""
         super().__init__(*args, **kwargs)
         self.endpoint.device.BecaValveState_bus.add_listener(self)
-        self._update_attribute(self.attridx["description"], "Valve State")
-        self._update_attribute(self.attridx["resolution"], 1)
-        self._update_attribute(self.attridx["engineering_units"], 98)
-        self._update_attribute(self.attridx["application_type"], 4 << 16)
+        self._update_attribute(self.attributes_by_name["description"].id, "Valve State")
+        self._update_attribute(self.attributes_by_name["resolution"].id, 1)
+        self._update_attribute(self.attributes_by_name["engineering_units"].id, 98)
+        self._update_attribute(self.attributes_by_name["application_type"].id, 4 << 16)
 
     def set_value(self, value):
         """Set value."""
-        self._update_attribute(self.attridx["present_value"], value)
+        self._update_attribute(self.attributes_by_name["present_value"].id, value)
 
 
 class BecaTempCalibration(LocalDataCluster, AnalogOutput):
@@ -660,26 +664,26 @@ class BecaTempCalibration(LocalDataCluster, AnalogOutput):
         """Init."""
         super().__init__(*args, **kwargs)
         self.endpoint.device.BecaTempCalibration_bus.add_listener(self)
-        self._update_attribute(self.attridx["description"], "Temperature Calibration")
-        self._update_attribute(self.attridx["max_present_value"], 9)
-        self._update_attribute(self.attridx["min_present_value"], -9)
-        self._update_attribute(self.attridx["resolution"], 1)
-        self._update_attribute(self.attridx["application_type"], 0x0009)
-        self._update_attribute(self.attridx["engineering_units"], 62)
+        self._update_attribute(self.attributes_by_name["description"].id, "Temperature Calibration")
+        self._update_attribute(self.attributes_by_name["max_present_value"].id, 9)
+        self._update_attribute(self.attributes_by_name["min_present_value"].id, -9)
+        self._update_attribute(self.attributes_by_name["resolution"].id, 1)
+        self._update_attribute(self.attributes_by_name["application_type"].id, 0x0009)
+        self._update_attribute(self.attributes_by_name["engineering_units"].id, 62)
 
     def set_value(self, value):
         """Set value."""
-        self._update_attribute(self.attridx["present_value"], value)
+        self._update_attribute(self.attributes_by_name["present_value"].id, value)
 
     def get_value(self):
         """Get value."""
-        return self._attr_cache.get(self.attridx["present_value"])
+        return self._attr_cache.get(self.attributes_by_name["present_value"].id)
 
     async def write_attributes(self, attributes, manufacturer=None):
         """Override the default Cluster write_attributes."""
         for attrid, value in attributes.items():
             if isinstance(attrid, str):
-                attrid = self.attridx[attrid]
+                attrid = self.attributes_by_name[attrid].id
             if attrid not in self.attributes:
                 self.error("%d is not a valid attribute id", attrid)
                 continue
@@ -701,26 +705,26 @@ class BecaBoostTime(LocalDataCluster, AnalogOutput):
         """Init."""
         super().__init__(*args, **kwargs)
         self.endpoint.device.BecaBoostTime_bus.add_listener(self)
-        self._update_attribute(self.attridx["description"], "Boost Time")
-        self._update_attribute(self.attridx["max_present_value"], 9999)
-        self._update_attribute(self.attridx["min_present_value"], 0)
-        self._update_attribute(self.attridx["resolution"], 10)
-        self._update_attribute(self.attridx["application_type"], 14 << 16)
-        self._update_attribute(self.attridx["engineering_units"], 73)
+        self._update_attribute(self.attributes_by_name["description"].id, "Boost Time")
+        self._update_attribute(self.attributes_by_name["max_present_value"].id, 9999)
+        self._update_attribute(self.attributes_by_name["min_present_value"].id, 0)
+        self._update_attribute(self.attributes_by_name["resolution"].id, 10)
+        self._update_attribute(self.attributes_by_name["application_type"].id, 14 << 16)
+        self._update_attribute(self.attributes_by_name["engineering_units"].id, 73)
 
     def set_value(self, value):
         """Set value."""
-        self._update_attribute(self.attridx["present_value"], value)
+        self._update_attribute(self.attributes_by_name["present_value"].id, value)
 
     def get_value(self):
         """Get value."""
-        return self._attr_cache.get(self.attridx["present_value"])
+        return self._attr_cache.get(self.attributes_by_name["present_value"].id)
 
     async def write_attributes(self, attributes, manufacturer=None):
         """Override the default Cluster write_attributes."""
         for attrid, value in attributes.items():
             if isinstance(attrid, str):
-                attrid = self.attridx[attrid]
+                attrid = self.attributes_by_name[attrid].id
             if attrid not in self.attributes:
                 self.error("%d is not a valid attribute id", attrid)
                 continue
@@ -742,14 +746,14 @@ class BecaBoostCountdown(LocalDataCluster, AnalogInput):
         """Init."""
         super().__init__(*args, **kwargs)
         self.endpoint.device.BecaBoostCountdown_bus.add_listener(self)
-        self._update_attribute(self.attridx["description"], "Boost Countdown")
-        self._update_attribute(self.attridx["resolution"], 1)
-        self._update_attribute(self.attridx["application_type"], 14 << 16)
-        self._update_attribute(self.attridx["engineering_units"], 72)
+        self._update_attribute(self.attributes_by_name["description"].id, "Boost Countdown")
+        self._update_attribute(self.attributes_by_name["resolution"].id, 1)
+        self._update_attribute(self.attributes_by_name["application_type"].id, 14 << 16)
+        self._update_attribute(self.attributes_by_name["engineering_units"].id, 72)
 
     def set_value(self, value):
         """Set value."""
-        self._update_attribute(self.attridx["present_value"], value)
+        self._update_attribute(self.attributes_by_name["present_value"].id, value)
 
 
 class BecaEcoTemp(LocalDataCluster, AnalogOutput):
@@ -759,26 +763,26 @@ class BecaEcoTemp(LocalDataCluster, AnalogOutput):
         """Init."""
         super().__init__(*args, **kwargs)
         self.endpoint.device.BecaEcoTemp_bus.add_listener(self)
-        self._update_attribute(self.attridx["description"], "Eco Temperature")
-        self._update_attribute(self.attridx["max_present_value"], 35)
-        self._update_attribute(self.attridx["min_present_value"], 5)
-        self._update_attribute(self.attridx["resolution"], 1)
-        self._update_attribute(self.attridx["application_type"], 0 << 16)
-        self._update_attribute(self.attridx["engineering_units"], 62)
+        self._update_attribute(self.attributes_by_name["description"].id, "Eco Temperature")
+        self._update_attribute(self.attributes_by_name["max_present_value"].id, 35)
+        self._update_attribute(self.attributes_by_name["min_present_value"].id, 5)
+        self._update_attribute(self.attributes_by_name["resolution"].id, 1)
+        self._update_attribute(self.attributes_by_name["application_type"].id, 0 << 16)
+        self._update_attribute(self.attributes_by_name["engineering_units"].id, 62)
 
     def set_value(self, value):
         """Set value."""
-        self._update_attribute(self.attridx["present_value"], value)
+        self._update_attribute(self.attributes_by_name["present_value"].id, value)
 
     def get_value(self):
         """Get value."""
-        return self._attr_cache.get(self.attridx["present_value"])
+        return self._attr_cache.get(self.attributes_by_name["present_value"].id)
 
     async def write_attributes(self, attributes, manufacturer=None):
         """Override the default Cluster write_attributes."""
         for attrid, value in attributes.items():
             if isinstance(attrid, str):
-                attrid = self.attridx[attrid]
+                attrid = self.attributes_by_name[attrid].id
             if attrid not in self.attributes:
                 self.error("%d is not a valid attribute id", attrid)
                 continue
@@ -800,26 +804,26 @@ class BecaMinTemp(LocalDataCluster, AnalogOutput):
         """Init."""
         super().__init__(*args, **kwargs)
         self.endpoint.device.BecaMinTemp_bus.add_listener(self)
-        self._update_attribute(self.attridx["description"], "Min Temperature")
-        self._update_attribute(self.attridx["max_present_value"], 15)
-        self._update_attribute(self.attridx["min_present_value"], 5)
-        self._update_attribute(self.attridx["resolution"], 1)
-        self._update_attribute(self.attridx["application_type"], 0 << 16)
-        self._update_attribute(self.attridx["engineering_units"], 62)
+        self._update_attribute(self.attributes_by_name["description"].id, "Min Temperature")
+        self._update_attribute(self.attributes_by_name["max_present_value"].id, 15)
+        self._update_attribute(self.attributes_by_name["min_present_value"].id, 5)
+        self._update_attribute(self.attributes_by_name["resolution"].id, 1)
+        self._update_attribute(self.attributes_by_name["application_type"].id, 0 << 16)
+        self._update_attribute(self.attributes_by_name["engineering_units"].id, 62)
 
     def set_value(self, value):
         """Set value."""
-        self._update_attribute(self.attridx["present_value"], value)
+        self._update_attribute(self.attributes_by_name["present_value"].id, value)
 
     def get_value(self):
         """Get value."""
-        return self._attr_cache.get(self.attridx["present_value"])
+        return self._attr_cache.get(self.attributes_by_name["present_value"].id)
 
     async def write_attributes(self, attributes, manufacturer=None):
         """Override the default Cluster write_attributes."""
         for attrid, value in attributes.items():
             if isinstance(attrid, str):
-                attrid = self.attridx[attrid]
+                attrid = self.attributes_by_name[attrid].id
             if attrid not in self.attributes:
                 self.error("%d is not a valid attribute id", attrid)
                 continue
@@ -841,26 +845,26 @@ class BecaMaxTemp(LocalDataCluster, AnalogOutput):
         """Init."""
         super().__init__(*args, **kwargs)
         self.endpoint.device.BecaMaxTemp_bus.add_listener(self)
-        self._update_attribute(self.attridx["description"], "Max Temperature")
-        self._update_attribute(self.attridx["max_present_value"], 45)
-        self._update_attribute(self.attridx["min_present_value"], 15)
-        self._update_attribute(self.attridx["resolution"], 1)
-        self._update_attribute(self.attridx["application_type"], 0 << 16)
-        self._update_attribute(self.attridx["engineering_units"], 62)
+        self._update_attribute(self.attributes_by_name["description"].id, "Max Temperature")
+        self._update_attribute(self.attributes_by_name["max_present_value"].id, 45)
+        self._update_attribute(self.attributes_by_name["min_present_value"].id, 15)
+        self._update_attribute(self.attributes_by_name["resolution"].id, 1)
+        self._update_attribute(self.attributes_by_name["application_type"].id, 0 << 16)
+        self._update_attribute(self.attributes_by_name["engineering_units"].id, 62)
 
     def set_value(self, value):
         """Set value."""
-        self._update_attribute(self.attridx["present_value"], value)
+        self._update_attribute(self.attributes_by_name["present_value"].id, value)
 
     def get_value(self):
         """Get value."""
-        return self._attr_cache.get(self.attridx["present_value"])
+        return self._attr_cache.get(self.attributes_by_name["present_value"].id)
 
     async def write_attributes(self, attributes, manufacturer=None):
         """Override the default Cluster write_attributes."""
         for attrid, value in attributes.items():
             if isinstance(attrid, str):
-                attrid = self.attridx[attrid]
+                attrid = self.attributes_by_name[attrid].id
             if attrid not in self.attributes:
                 self.error("%d is not a valid attribute id", attrid)
                 continue
