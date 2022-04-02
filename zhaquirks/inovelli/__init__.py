@@ -1,11 +1,14 @@
 """Module for Inovelli quirks implementations."""
 
-import logging
-from typing import Any, List, Optional, Union
 import asyncio
+import logging
 import time
+from typing import Any, List, Optional, Union
 
+from zigpy.quirks import CustomCluster
 import zigpy.types as t
+from zigpy.zcl import foundation
+
 from zhaquirks.const import (
     BUTTON,
     BUTTON_1,
@@ -26,8 +29,6 @@ from zhaquirks.const import (
     TRIPLE_PRESS,
     ZHA_SEND_EVENT,
 )
-from zigpy.quirks import CustomCluster
-from zigpy.zcl import foundation
 
 _LOGGER = logging.getLogger(__name__)
 INOVELLI_VZM31SN_CLUSTER_ID = 64561
@@ -106,7 +107,7 @@ class Inovelli_VZM31SN_Cluster(CustomCluster):
     name = "InovelliVZM31SNCluster"
     ep_attribute = "inovelli_vzm31sn_cluster"
 
-    manufacturer_attributes = {
+    attributes = {
         0x0001: ("Dimming Speed Up (Remote)", t.uint8_t),
         0x0002: ("Dimming Speed Up (Local)", t.uint8_t),
         0x0003: ("Ramp Rate - Off to On (Local)", t.uint8_t),
