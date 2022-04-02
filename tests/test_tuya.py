@@ -82,13 +82,20 @@ ZCL_TUYA_VALVE_BECA_TARGET_TEMP = b"\tp\x01\x03\x05\x02\x02\x00\x04\x00\x00\x00\
 ZCL_TUYA_VALVE_BECA_TEMP_OFFSET = b"\t3\x01\x03\x05\x69\x02\x00\x04\x00\x00\x00\x05"
 ZCL_TUYA_VALVE_BECA_MIN_TEMP = b"\t3\x01\x03\x05\x6d\x02\x00\x04\x00\x00\x00\x07"
 ZCL_TUYA_VALVE_BECA_MAX_TEMP = b"\t3\x01\x03\x05\x6c\x02\x00\x04\x00\x00\x00\x23"
-ZCL_TUYA_VALVE_BECA_ECO_TEMP = b"\t3\x01\x03\x05\x6b\x02\x00\x04\x00\x00\x00\x11"  # TODO REMOVE
+ZCL_TUYA_VALVE_BECA_ECO_TEMP = b"\t3\x01\x03\x05\x6b\x02\x00\x04\x00\x00\x00\x11"
 ZCL_TUYA_VALVE_BECA_MANUAL = b"\t2\x01\x03\x04\x01\x04\x00\x01\x01"
 ZCL_TUYA_VALVE_BECA_SCHEDULE = b"\t2\x01\x03\x04\x01\x04\x00\x01\x00"
 ZCL_TUYA_VALVE_BECA_TEMP_MANUAL = b"\t2\x01\x03\x04\x01\x04\x00\x01\x02"
 ZCL_TUYA_VALVE_BECA_HOLIDAY = b"\t2\x01\x03\x04\x01\x04\x00\x01\x03"
+ZCL_TUYA_VALVE_BECA_WINDOW_OPENED = b"\t2\x01\x03\x04\x09\x04\x00\x01\x01"
+ZCL_TUYA_VALVE_BECA_WINDOW_CLOSED = b"\t2\x01\x03\x04\x09\x04\x00\x01\x00"
 ZCL_TUYA_VALVE_BECA_CHILD_LOCK_ON = b"\t2\x01\x03\x04\x0d\x01\x00\x01\x01"
 ZCL_TUYA_VALVE_BECA_CHILD_LOCK_OFF = b"\t2\x01\x03\x04\x0d\x01\x00\x01\x00"
+ZCL_TUYA_VALVE_BECA_VALVE_STATE = b"\tp\x01\x03\x05\x68\x02\x00\x04\x00\x00\x00\x4b"
+ZCL_TUYA_VALVE_BECA_WINDOW_FUNC_ON = b"\t2\x01\x03\x04\x08\x01\x00\x01\x01"
+ZCL_TUYA_VALVE_BECA_WINDOW_FUNC_OFF = b"\t2\x01\x03\x04\x08\x01\x00\x01\x00"
+ZCL_TUYA_VALVE_BECA_BOOST_DURATION = b"\tp\x01\x03\x05\x67\x02\x00\x04\x00\x00\x00\xfa"
+ZCL_TUYA_VALVE_BECA_BOOST_TIME_LEFT = b"\tp\x01\x03\x05\x05\x02\x00\x04\x00\x00\x00\x02"
 
 ZCL_TUYA_EHEAT_TEMPERATURE = b"\tp\x02\x00\x02\x18\x02\x00\x04\x00\x00\x00\xb3"
 ZCL_TUYA_EHEAT_TARGET_TEMP = b"\t3\x01\x03\x05\x10\x02\x00\x04\x00\x00\x00\x15"
@@ -596,8 +603,16 @@ async def test_beca_state_report(zigpy_device_from_quirk, quirk):
     tuya_cluster = valve_dev.endpoints[1].tuya_manufacturer
 
     thermostat_listener = ClusterListener(valve_dev.endpoints[1].thermostat)
-    # window_detect_listener = ClusterListener(valve_dev.endpoints[1].on_off)
+    window_detect_listener = ClusterListener(valve_dev.endpoints[1].binary_input)
     child_lock_listener = ClusterListener(valve_dev.endpoints[2].on_off)
+    valve_state_listener = ClusterListener(valve_dev.endpoints[3].analog_input)
+    window_detection_function_listener = ClusterListener(valve_dev.endpoints[4].on_off)
+    temp_calib_listener = ClusterListener(valve_dev.endpoints[5].analog_output)
+    boost_time_listener = ClusterListener(valve_dev.endpoints[6].analog_output)
+    boost_time_left_listener = ClusterListener(valve_dev.endpoints[7].analog_input)
+    eco_temp_listener = ClusterListener(valve_dev.endpoints[8].analog_output)
+    min_temp_listener = ClusterListener(valve_dev.endpoints[9].analog_output)
+    max_temp_listener = ClusterListener(valve_dev.endpoints[10].analog_output)
 
     frames = (
         ZCL_TUYA_VALVE_TEMPERATURE,
@@ -609,6 +624,8 @@ async def test_beca_state_report(zigpy_device_from_quirk, quirk):
         ZCL_TUYA_VALVE_BECA_SCHEDULE,
         ZCL_TUYA_VALVE_BECA_TEMP_MANUAL,
         ZCL_TUYA_VALVE_BECA_HOLIDAY,
+        ZCL_TUYA_VALVE_BECA_WINDOW_OPENED,
+        ZCL_TUYA_VALVE_BECA_WINDOW_CLOSED,
         ZCL_TUYA_VALVE_BECA_CHILD_LOCK_ON,
         ZCL_TUYA_VALVE_BECA_CHILD_LOCK_OFF,
     )
@@ -653,16 +670,73 @@ async def test_beca_state_report(zigpy_device_from_quirk, quirk):
     assert thermostat_listener.attribute_updates[16][0] == 0x4002
     assert thermostat_listener.attribute_updates[16][1] == 0x00
 
+    assert len(window_detect_listener.cluster_commands) == 0
+    assert len(child_lock_listener.attribute_updates) == 2
+    assert window_detect_listener.attribute_updates[0][0] == 0x0055  # OPENED
+    assert not window_detect_listener.attribute_updates[0][1]
+    assert window_detect_listener.attribute_updates[1][0] == 0x0055  # CLOSED
+    assert window_detect_listener.attribute_updates[1][1]
+
     assert len(child_lock_listener.cluster_commands) == 0
-    # assert len(child_lock_listener.attribute_updates) == 17
+    assert len(child_lock_listener.attribute_updates) == 2
     assert child_lock_listener.attribute_updates[0][0] == 0x0000  # ON
     assert child_lock_listener.attribute_updates[0][1] == 1
     assert child_lock_listener.attribute_updates[1][0] == 0x0000  # OFF
     assert child_lock_listener.attribute_updates[1][1] == 0
 
+    frames = (
+        ZCL_TUYA_VALVE_BECA_VALVE_STATE,
+        ZCL_TUYA_VALVE_BECA_WINDOW_FUNC_ON,
+        ZCL_TUYA_VALVE_BECA_WINDOW_FUNC_OFF,
+        ZCL_TUYA_VALVE_BECA_BOOST_DURATION,
+        ZCL_TUYA_VALVE_BECA_BOOST_TIME_LEFT,
+        ZCL_TUYA_VALVE_BECA_ECO_TEMP,
+    )
+    for frame in frames:
+        hdr, args = tuya_cluster.deserialize(frame)
+        tuya_cluster.handle_message(hdr, args)
 
-    # assert thermostat_listener.attribute_updates[5][0] == 0x0014  # ECO TEMP
-    # assert thermostat_listener.attribute_updates[5][1] == 17
+    assert len(valve_state_listener.cluster_commands) == 0
+    assert len(valve_state_listener.attribute_updates) == 1
+    assert valve_state_listener.attribute_updates[0][0] == 0x0055
+    assert valve_state_listener.attribute_updates[0][1] == 75
+
+    assert len(window_detection_function_listener.cluster_commands) == 0
+    assert len(window_detection_function_listener.attribute_updates) == 2
+    assert window_detection_function_listener.attribute_updates[0][0] == 0x0000  # ON
+    assert window_detection_function_listener.attribute_updates[0][1] == 1
+    assert window_detection_function_listener.attribute_updates[1][0] == 0x0000  # OFF
+    assert window_detection_function_listener.attribute_updates[1][1] == 0
+
+    assert len(temp_calib_listener.cluster_commands) == 0
+    assert len(temp_calib_listener.attribute_updates) == 1
+    assert temp_calib_listener.attribute_updates[0][0] == 0x0055  # SHARED W. THERMOSTAT CLUSTER
+    assert temp_calib_listener.attribute_updates[0][1] == 5
+
+    assert len(boost_time_listener.cluster_commands) == 0
+    assert len(boost_time_listener.attribute_updates) == 1
+    assert boost_time_listener.attribute_updates[0][0] == 0x0055
+    assert boost_time_listener.attribute_updates[0][1] == 250
+
+    assert len(boost_time_left_listener.cluster_commands) == 0
+    assert len(boost_time_left_listener.attribute_updates) == 1
+    assert boost_time_left_listener.attribute_updates[0][0] == 0x0055
+    assert boost_time_left_listener.attribute_updates[0][1] == 2
+
+    assert len(eco_temp_listener.cluster_commands) == 0
+    assert len(eco_temp_listener.attribute_updates) == 1
+    assert eco_temp_listener.attribute_updates[0][0] == 0x0055  # ECO TEMP
+    assert eco_temp_listener.attribute_updates[0][1] == 17
+
+    assert len(min_temp_listener.cluster_commands) == 0
+    assert len(min_temp_listener.attribute_updates) == 1
+    assert min_temp_listener.attribute_updates[0][0] == 0x0055  # SHARED W. THERMOSTAT CLUSTER
+    assert min_temp_listener.attribute_updates[0][1] == 7
+
+    assert len(max_temp_listener.cluster_commands) == 0
+    assert len(max_temp_listener.attribute_updates) == 1
+    assert max_temp_listener.attribute_updates[0][0] == 0x0055  # SHARED W. THERMOSTAT CLUSTER
+    assert max_temp_listener.attribute_updates[0][1] == 35
 
 
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_trv.SiterwellGS361_Type1,))
