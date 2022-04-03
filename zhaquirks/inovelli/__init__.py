@@ -171,7 +171,7 @@ class Inovelli_VZM31SN_Cluster(CustomCluster):
         0x0104: ("Firmware Progress LED", t.Bool),
     }
 
-    manufacturer_server_commands = {
+    server_commands = {
         0x00: ("button_event", (t.uint8_t, t.uint8_t), False),
         0x01: (
             "led_effect",
