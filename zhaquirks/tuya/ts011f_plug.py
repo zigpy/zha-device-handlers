@@ -441,7 +441,7 @@ class Plug_4AC_2USB(CustomDevice):
             },
         },
     }
- 
+
 
 class Plug_TZ3210_2AC(CustomDevice):
     """TS0011F 2 outlet plug."""
@@ -458,7 +458,7 @@ class Plug_TZ3210_2AC(CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    Identify.cluster_id,                    
+                    Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     OnOff.cluster_id,
@@ -504,7 +504,7 @@ class Plug_TZ3210_2AC(CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    Identify.cluster_id,                    
+                    Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     OnOff.cluster_id,
@@ -534,7 +534,7 @@ class Plug_TZ3210_2AC(CustomDevice):
             },
         },
     }
-    
+
 
 class Plug_TZ3210_1AC(CustomDevice):
     """TS0011F 1 outlet plug."""
@@ -551,7 +551,7 @@ class Plug_TZ3210_1AC(CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_PLUG_IN_UNIT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    Identify.cluster_id,                    
+                    Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     OnOff.cluster_id,
@@ -581,7 +581,7 @@ class Plug_TZ3210_1AC(CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_PLUG_IN_UNIT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    Identify.cluster_id,                    
+                    Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     OnOff.cluster_id,
