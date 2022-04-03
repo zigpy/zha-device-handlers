@@ -710,7 +710,9 @@ async def test_beca_state_report(zigpy_device_from_quirk, quirk):
 
     assert len(temp_calib_listener.cluster_commands) == 0
     assert len(temp_calib_listener.attribute_updates) == 1
-    assert temp_calib_listener.attribute_updates[0][0] == 0x0055  # SHARED W. THERMOSTAT CLUSTER
+    assert (
+        temp_calib_listener.attribute_updates[0][0] == 0x0055
+    )  # SHARED W. THERMOSTAT CLUSTER
     assert temp_calib_listener.attribute_updates[0][1] == 5
 
     assert len(boost_time_listener.cluster_commands) == 0
@@ -730,13 +732,200 @@ async def test_beca_state_report(zigpy_device_from_quirk, quirk):
 
     assert len(min_temp_listener.cluster_commands) == 0
     assert len(min_temp_listener.attribute_updates) == 1
-    assert min_temp_listener.attribute_updates[0][0] == 0x0055  # SHARED W. THERMOSTAT CLUSTER
+    assert (
+        min_temp_listener.attribute_updates[0][0] == 0x0055
+    )  # SHARED W. THERMOSTAT CLUSTER
     assert min_temp_listener.attribute_updates[0][1] == 7
 
     assert len(max_temp_listener.cluster_commands) == 0
     assert len(max_temp_listener.attribute_updates) == 1
-    assert max_temp_listener.attribute_updates[0][0] == 0x0055  # SHARED W. THERMOSTAT CLUSTER
+    assert (
+        max_temp_listener.attribute_updates[0][0] == 0x0055
+    )  # SHARED W. THERMOSTAT CLUSTER
     assert max_temp_listener.attribute_updates[0][1] == 35
+
+
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_trv_beca.Beca,))
+async def test_beca_send_attribute(zigpy_device_from_quirk, quirk):
+    """Test thermostatic valve outgoing commands."""
+
+    valve_dev = zigpy_device_from_quirk(quirk)
+    tuya_cluster = valve_dev.endpoints[1].tuya_manufacturer
+    thermostat_cluster = valve_dev.endpoints[1].thermostat
+    child_lock_cluster = valve_dev.endpoints[2].on_off
+    window_detection_cluster = valve_dev.endpoints[4].on_off
+    temp_calibration_cluster = valve_dev.endpoints[5].analog_output
+    boost_time_cluster = valve_dev.endpoints[6].analog_output
+    eco_temp_cluster = valve_dev.endpoints[8].analog_output
+    min_temp_cluster = valve_dev.endpoints[9].analog_output
+    max_temp_cluster = valve_dev.endpoints[10].analog_output
+
+    async def async_success(*args, **kwargs):
+        return foundation.Status.SUCCESS
+
+    with mock.patch.object(
+        tuya_cluster.endpoint, "request", side_effect=async_success
+    ) as m1:
+
+        (status,) = await thermostat_cluster.write_attributes(
+            {
+                "occupied_heating_setpoint": 2500,
+            }
+        )
+        m1.assert_called_with(
+            61184,
+            1,
+            b"\x01\x01\x00\x00\x01\x02\x02\x00\x04\x00\x00\x00\x19",
+            expect_reply=False,
+            command_id=0,
+        )
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
+
+        (status,) = await thermostat_cluster.write_attributes(
+            {
+                "operation_preset": 4,
+            }
+        )
+        m1.assert_called_with(
+            61184,
+            3,
+            b"\x01\x03\x00\x00\x03\x6a\x01\x00\x01\x01",
+            expect_reply=False,
+            command_id=0,
+        )
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
+
+        (status,) = await thermostat_cluster.write_attributes(
+            {
+                "operation_preset": 0,
+            }
+        )
+        m1.assert_called_with(
+            61184,
+            6,
+            b"\x01\x06\x00\x00\x06\x6a\x01\x00\x01\x00",
+            expect_reply=False,
+            command_id=0,
+        )
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
+
+        (status,) = await child_lock_cluster.write_attributes(
+            {
+                "on_off": 1,
+            }
+        )
+        m1.assert_called_with(
+            61184,
+            7,
+            b"\x01\x07\x00\x00\x07\x0d\x01\x00\x01\x01",
+            expect_reply=False,
+            command_id=0,
+        )
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
+
+        (status,) = await window_detection_cluster.write_attributes(
+            {
+                "on_off": 1,
+            }
+        )
+        m1.assert_called_with(
+            61184,
+            8,
+            b"\x01\x08\x00\x00\x08\x08\x01\x00\x01\x01",
+            expect_reply=False,
+            command_id=0,
+        )
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
+
+        (status,) = await temp_calibration_cluster.write_attributes(
+            {
+                "present_value": 3,
+            }
+        )
+        m1.assert_called_with(
+            61184,
+            9,
+            b"\x01\x09\x00\x00\x09\x69\x02\x00\x04\x00\x00\x00\x03",
+            expect_reply=False,
+            command_id=0,
+        )
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
+
+        (status,) = await boost_time_cluster.write_attributes(
+            {
+                "present_value": 200,
+            }
+        )
+        m1.assert_called_with(
+            61184,
+            10,
+            b"\x01\x0a\x00\x00\x0a\x67\x02\x00\x04\x00\x00\x00\xc8",
+            expect_reply=False,
+            command_id=0,
+        )
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
+
+        (status,) = await eco_temp_cluster.write_attributes(
+            {
+                "present_value": 12,
+            }
+        )
+        m1.assert_called_with(
+            61184,
+            11,
+            b"\x01\x0b\x00\x00\x0b\x6b\x02\x00\x04\x00\x00\x00\x0c",
+            expect_reply=False,
+            command_id=0,
+        )
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
+
+        (status,) = await min_temp_cluster.write_attributes(
+            {
+                "present_value": 7,
+            }
+        )
+        m1.assert_called_with(
+            61184,
+            12,
+            b"\x01\x0c\x00\x00\x0c\x6d\x02\x00\x04\x00\x00\x00\x07",
+            expect_reply=False,
+            command_id=0,
+        )
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
+
+        (status,) = await max_temp_cluster.write_attributes(
+            {
+                "present_value": 41,
+            }
+        )
+        m1.assert_called_with(
+            61184,
+            13,
+            b"\x01\x0d\x00\x00\x0d\x6c\x02\x00\x04\x00\x00\x00\x29",
+            expect_reply=False,
+            command_id=0,
+        )
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
 
 
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_trv.SiterwellGS361_Type1,))

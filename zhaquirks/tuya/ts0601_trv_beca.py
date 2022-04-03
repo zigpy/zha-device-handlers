@@ -362,13 +362,17 @@ class BecaThermostat(TuyaThermostatCluster):
                         val = round(value * 2)
                     else:
                         val = round(
-                            self._attr_cache.get(self.attributes_by_name[attr].id, default) * 2
+                            self._attr_cache.get(
+                                self.attributes_by_name[attr].id, default
+                            ) * 2
                         )
                 else:
                     if attr == attribute:
                         val = value
                     else:
-                        val = self._attr_cache.get(self.attributes_by_name[attr].id, default)
+                        val = self._attr_cache.get(
+                            self.attributes_by_name[attr].id, default
+                        )
 
                 data.append(val)
             return {BECA_SCHEDULE: data}
@@ -400,69 +404,121 @@ class BecaThermostat(TuyaThermostatCluster):
             prog_mode = self.ProgrammingOperationMode.Schedule_programming_mode
             occupancy = self.Occupancy.Occupied
 
-        self._update_attribute(self.attributes_by_name["programing_oper_mode"].id, prog_mode)
+        self._update_attribute(
+            self.attributes_by_name["programing_oper_mode"].id, prog_mode
+        )
         self._update_attribute(self.attributes_by_name["occupancy"].id, occupancy)
-        self._update_attribute(self.attributes_by_name["operation_preset"].id, operation_preset)
+        self._update_attribute(
+            self.attributes_by_name["operation_preset"].id, operation_preset
+        )
 
     def schedule_change(self, value):
         """Scheduler attribute change."""
-        self._update_attribute(self.attributes_by_name["schedule_workday_1_hour"].id, value[35])
-        self._update_attribute(self.attributes_by_name["schedule_workday_1_minute"].id, value[34])
+        self._update_attribute(
+            self.attributes_by_name["schedule_workday_1_hour"].id, value[35]
+        )
+        self._update_attribute(
+            self.attributes_by_name["schedule_workday_1_minute"].id, value[34]
+        )
         self._update_attribute(
             self.attributes_by_name["schedule_workday_1_temperature"].id, value[33] / 2
         )
-        self._update_attribute(self.attributes_by_name["schedule_workday_2_hour"].id, value[32])
-        self._update_attribute(self.attributes_by_name["schedule_workday_2_minute"].id, value[31])
+        self._update_attribute(
+            self.attributes_by_name["schedule_workday_2_hour"].id, value[32]
+        )
+        self._update_attribute(
+            self.attributes_by_name["schedule_workday_2_minute"].id, value[31]
+        )
         self._update_attribute(
             self.attributes_by_name["schedule_workday_2_temperature"].id, value[30] / 2
         )
-        self._update_attribute(self.attributes_by_name["schedule_workday_3_hour"].id, value[29])
-        self._update_attribute(self.attributes_by_name["schedule_workday_3_minute"].id, value[28])
+        self._update_attribute(
+            self.attributes_by_name["schedule_workday_3_hour"].id, value[29]
+        )
+        self._update_attribute(
+            self.attributes_by_name["schedule_workday_3_minute"].id, value[28]
+        )
         self._update_attribute(
             self.attributes_by_name["schedule_workday_3_temperature"].id, value[27] / 2
         )
-        self._update_attribute(self.attributes_by_name["schedule_workday_4_hour"].id, value[26])
-        self._update_attribute(self.attributes_by_name["schedule_workday_4_minute"].id, value[25])
+        self._update_attribute(
+            self.attributes_by_name["schedule_workday_4_hour"].id, value[26]
+        )
+        self._update_attribute(
+            self.attributes_by_name["schedule_workday_4_minute"].id, value[25]
+        )
         self._update_attribute(
             self.attributes_by_name["schedule_workday_4_temperature"].id, value[24] / 2
         )
-        self._update_attribute(self.attributes_by_name["schedule_saturday_1_hour"].id, value[23])
-        self._update_attribute(self.attributes_by_name["schedule_saturday_1_minute"].id, value[22])
+        self._update_attribute(
+            self.attributes_by_name["schedule_saturday_1_hour"].id, value[23]
+        )
+        self._update_attribute(
+            self.attributes_by_name["schedule_saturday_1_minute"].id, value[22]
+        )
         self._update_attribute(
             self.attributes_by_name["schedule_saturday_1_temperature"].id, value[21] / 2
         )
-        self._update_attribute(self.attributes_by_name["schedule_saturday_2_hour"].id, value[20])
-        self._update_attribute(self.attributes_by_name["schedule_saturday_2_minute"].id, value[19])
+        self._update_attribute(
+            self.attributes_by_name["schedule_saturday_2_hour"].id, value[20]
+        )
+        self._update_attribute(
+            self.attributes_by_name["schedule_saturday_2_minute"].id, value[19]
+        )
         self._update_attribute(
             self.attributes_by_name["schedule_saturday_2_temperature"].id, value[18] / 2
         )
-        self._update_attribute(self.attributes_by_name["schedule_saturday_3_hour"].id, value[17])
-        self._update_attribute(self.attributes_by_name["schedule_saturday_3_minute"].id, value[16])
+        self._update_attribute(
+            self.attributes_by_name["schedule_saturday_3_hour"].id, value[17]
+        )
+        self._update_attribute(
+            self.attributes_by_name["schedule_saturday_3_minute"].id, value[16]
+        )
         self._update_attribute(
             self.attributes_by_name["schedule_saturday_3_temperature"].id, value[15] / 2
         )
-        self._update_attribute(self.attributes_by_name["schedule_saturday_4_hour"].id, value[14])
-        self._update_attribute(self.attributes_by_name["schedule_saturday_4_minute"].id, value[13])
+        self._update_attribute(
+            self.attributes_by_name["schedule_saturday_4_hour"].id, value[14]
+        )
+        self._update_attribute(
+            self.attributes_by_name["schedule_saturday_4_minute"].id, value[13]
+        )
         self._update_attribute(
             self.attributes_by_name["schedule_saturday_4_temperature"].id, value[12] / 2
         )
-        self._update_attribute(self.attributes_by_name["schedule_sunday_1_hour"].id, value[11])
-        self._update_attribute(self.attributes_by_name["schedule_sunday_1_minute"].id, value[10])
+        self._update_attribute(
+            self.attributes_by_name["schedule_sunday_1_hour"].id, value[11]
+        )
+        self._update_attribute(
+            self.attributes_by_name["schedule_sunday_1_minute"].id, value[10]
+        )
         self._update_attribute(
             self.attributes_by_name["schedule_sunday_1_temperature"].id, value[9] / 2
         )
-        self._update_attribute(self.attributes_by_name["schedule_sunday_2_hour"].id, value[8])
-        self._update_attribute(self.attributes_by_name["schedule_sunday_2_minute"].id, value[7])
+        self._update_attribute(
+            self.attributes_by_name["schedule_sunday_2_hour"].id, value[8]
+        )
+        self._update_attribute(
+            self.attributes_by_name["schedule_sunday_2_minute"].id, value[7]
+        )
         self._update_attribute(
             self.attributes_by_name["schedule_sunday_2_temperature"].id, value[6] / 2
         )
-        self._update_attribute(self.attributes_by_name["schedule_sunday_3_hour"].id, value[5])
-        self._update_attribute(self.attributes_by_name["schedule_sunday_3_minute"].id, value[4])
+        self._update_attribute(
+            self.attributes_by_name["schedule_sunday_3_hour"].id, value[5]
+        )
+        self._update_attribute(
+            self.attributes_by_name["schedule_sunday_3_minute"].id, value[4]
+        )
         self._update_attribute(
             self.attributes_by_name["schedule_sunday_3_temperature"].id, value[3] / 2
         )
-        self._update_attribute(self.attributes_by_name["schedule_sunday_4_hour"].id, value[2])
-        self._update_attribute(self.attributes_by_name["schedule_sunday_4_minute"].id, value[1])
+        self._update_attribute(
+            self.attributes_by_name["schedule_sunday_4_hour"].id, value[2]
+        )
+        self._update_attribute(
+            self.attributes_by_name["schedule_sunday_4_minute"].id, value[1]
+        )
         self._update_attribute(
             self.attributes_by_name["schedule_sunday_4_temperature"].id, value[0] / 2
         )
@@ -481,7 +537,9 @@ class BecaWindowDetection(LocalDataCluster, BinaryInput):
         """Init."""
         super().__init__(*args, **kwargs)
         self.endpoint.device.BecaWindowDetection_bus.add_listener(self)
-        self._update_attribute(self.attributes_by_name["description"].id, "Open Window Detected")
+        self._update_attribute(
+            self.attributes_by_name["description"].id, "Open Window Detected"
+        )
 
     def set_value(self, value):
         """Set opened window value."""
@@ -664,7 +722,9 @@ class BecaTempCalibration(LocalDataCluster, AnalogOutput):
         """Init."""
         super().__init__(*args, **kwargs)
         self.endpoint.device.BecaTempCalibration_bus.add_listener(self)
-        self._update_attribute(self.attributes_by_name["description"].id, "Temperature Calibration")
+        self._update_attribute(
+            self.attributes_by_name["description"].id, "Temperature Calibration"
+        )
         self._update_attribute(self.attributes_by_name["max_present_value"].id, 9)
         self._update_attribute(self.attributes_by_name["min_present_value"].id, -9)
         self._update_attribute(self.attributes_by_name["resolution"].id, 1)
@@ -746,7 +806,9 @@ class BecaBoostCountdown(LocalDataCluster, AnalogInput):
         """Init."""
         super().__init__(*args, **kwargs)
         self.endpoint.device.BecaBoostCountdown_bus.add_listener(self)
-        self._update_attribute(self.attributes_by_name["description"].id, "Boost Countdown")
+        self._update_attribute(
+            self.attributes_by_name["description"].id, "Boost Countdown"
+        )
         self._update_attribute(self.attributes_by_name["resolution"].id, 1)
         self._update_attribute(self.attributes_by_name["application_type"].id, 14 << 16)
         self._update_attribute(self.attributes_by_name["engineering_units"].id, 72)
@@ -763,7 +825,9 @@ class BecaEcoTemp(LocalDataCluster, AnalogOutput):
         """Init."""
         super().__init__(*args, **kwargs)
         self.endpoint.device.BecaEcoTemp_bus.add_listener(self)
-        self._update_attribute(self.attributes_by_name["description"].id, "Eco Temperature")
+        self._update_attribute(
+            self.attributes_by_name["description"].id, "Eco Temperature"
+        )
         self._update_attribute(self.attributes_by_name["max_present_value"].id, 35)
         self._update_attribute(self.attributes_by_name["min_present_value"].id, 5)
         self._update_attribute(self.attributes_by_name["resolution"].id, 1)
@@ -804,7 +868,9 @@ class BecaMinTemp(LocalDataCluster, AnalogOutput):
         """Init."""
         super().__init__(*args, **kwargs)
         self.endpoint.device.BecaMinTemp_bus.add_listener(self)
-        self._update_attribute(self.attributes_by_name["description"].id, "Min Temperature")
+        self._update_attribute(
+            self.attributes_by_name["description"].id, "Min Temperature"
+        )
         self._update_attribute(self.attributes_by_name["max_present_value"].id, 15)
         self._update_attribute(self.attributes_by_name["min_present_value"].id, 5)
         self._update_attribute(self.attributes_by_name["resolution"].id, 1)
@@ -845,7 +911,9 @@ class BecaMaxTemp(LocalDataCluster, AnalogOutput):
         """Init."""
         super().__init__(*args, **kwargs)
         self.endpoint.device.BecaMaxTemp_bus.add_listener(self)
-        self._update_attribute(self.attributes_by_name["description"].id, "Max Temperature")
+        self._update_attribute(
+            self.attributes_by_name["description"].id, "Max Temperature"
+        )
         self._update_attribute(self.attributes_by_name["max_present_value"].id, 45)
         self._update_attribute(self.attributes_by_name["min_present_value"].id, 15)
         self._update_attribute(self.attributes_by_name["resolution"].id, 1)
