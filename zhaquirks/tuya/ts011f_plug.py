@@ -24,12 +24,13 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.tuya import (
+    TuyaNewManufCluster,
     TuyaZBE000Cluster,
     TuyaZBElectricalMeasurement,
     TuyaZBExternalSwitchTypeCluster,
     TuyaZBMeteringCluster,
     TuyaZBOnOffAttributeCluster,
-    TuyaNewManufCluster,    
+
 )
 
 
