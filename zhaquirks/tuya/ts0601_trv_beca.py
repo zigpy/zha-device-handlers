@@ -364,7 +364,8 @@ class BecaThermostat(TuyaThermostatCluster):
                         val = round(
                             self._attr_cache.get(
                                 self.attributes_by_name[attr].id, default
-                            ) * 2
+                            )
+                            * 2
                         )
                 else:
                     if attr == attribute:
