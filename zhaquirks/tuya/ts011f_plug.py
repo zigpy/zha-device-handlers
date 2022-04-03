@@ -30,7 +30,6 @@ from zhaquirks.tuya import (
     TuyaZBExternalSwitchTypeCluster,
     TuyaZBMeteringCluster,
     TuyaZBOnOffAttributeCluster,
-
 )
 
 
