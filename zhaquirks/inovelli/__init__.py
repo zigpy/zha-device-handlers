@@ -64,43 +64,6 @@ OFF = "Down"
 CONFIG = "Config"
 
 
-class ButtonPressQueue:
-    """Inovelli button queue to derive multiple press events."""
-
-    def __init__(self):
-        """Init."""
-        self._ms_threshold = 300
-        self._ms_last_click = 0
-        self._click_counter = 1
-        self._button = None
-        self._callback = lambda x: None
-        self._task = None
-
-    async def _job(self):
-        await asyncio.sleep(self._ms_threshold / 1000)
-        self._callback(self._click_counter)
-
-    def _reset(self, button):
-        if self._task:
-            self._task.cancel()
-        self._click_counter = 1
-        self._button = button
-
-    def press(self, callback, button):
-        """Process a button press."""
-        self._callback = callback
-        now_ms = time.time() * 1000
-        if self._button != button:
-            self._reset(button)
-        elif now_ms - self._ms_last_click > self._ms_threshold:
-            self._click_counter = 1
-        else:
-            self._task.cancel()
-            self._click_counter += 1
-        self._ms_last_click = now_ms
-        self._task = asyncio.ensure_future(self._job())
-
-
 class Inovelli_VZM31SN_Cluster(CustomCluster):
     """Inovelli VZM31-SN custom cluster."""
 
@@ -111,67 +74,67 @@ class Inovelli_VZM31SN_Cluster(CustomCluster):
     attributes = ManufacturerSpecificCluster.attributes.copy()
     attributes.update(
         {
-            0x0001: ("Dimming Speed Up (Remote)", t.uint8_t),
-            0x0002: ("Dimming Speed Up (Local)", t.uint8_t),
-            0x0003: ("Ramp Rate - Off to On (Local)", t.uint8_t),
-            0x0004: ("Ramp Rate - Off to On (Remote)", t.uint8_t),
-            0x0005: ("Dimming Speed Down (Remote)", t.uint8_t),
-            0x0006: ("Dimming Speed Down (Local)", t.uint8_t),
-            0x0007: ("Ramp Rate - On to Off (Local)", t.uint8_t),
-            0x0008: ("Ramp Rate - On to Off (Remote)", t.uint8_t),
-            0x0009: ("Minimum Level", t.uint8_t),
-            0x000A: ("Maximum Level", t.uint8_t),
-            0x000B: ("Invert Switch", t.Bool),
-            0x000C: ("Auto Off Timer", t.uint16_t),
-            0x000D: ("Default Level (Local)", t.uint8_t),
-            0x000E: ("Default Level (Remote)", t.uint8_t),
-            0x000F: ("State After Power Restored", t.uint8_t),
-            0x0011: ("Load Level Indicateor Timeout", t.uint8_t),
-            0x0012: ("Active Power Reports", t.uint16_t),
-            0x0013: ("Periodic Power and Energy Reports", t.uint8_t),
-            0x0014: ("Active Energy Reports", t.uint16_t),
-            0x0015: ("Power Type", t.uint8_t),
-            0x0016: ("Switch Type", t.uint8_t),
-            0x0032: ("Button Delay", t.uint8_t),
-            0x003C: ("Default LED1 Strip Color (When On)", t.uint8_t),
-            0x003D: ("Default LED1 Strip Color (When Off)", t.uint8_t),
-            0x003E: ("Default LED1 Strip Intensity (When On)", t.uint8_t),
-            0x003F: ("Default LED1 Strip Intensity (When Off)", t.uint8_t),
-            0x0041: ("Default LED2 Strip Color (When On)", t.uint8_t),
-            0x0042: ("Default LED2 Strip Color (When Off)", t.uint8_t),
-            0x0043: ("Default LED2 Strip Intensity (When On)", t.uint8_t),
-            0x0044: ("Default LED2 Strip Intensity (When Off)", t.uint8_t),
-            0x0046: ("Default LED3 Strip Color (When On)", t.uint8_t),
-            0x0047: ("Default LED3 Strip Color (When Off)", t.uint8_t),
-            0x0048: ("Default LED3 Strip Intensity (When On)", t.uint8_t),
-            0x0049: ("Default LED3 Strip Intensity (When Off)", t.uint8_t),
-            0x004B: ("Default LED4 Strip Color (When On)", t.uint8_t),
-            0x004C: ("Default LED4 Strip Color (When Off)", t.uint8_t),
-            0x004D: ("Default LED4 Strip Intensity (When On)", t.uint8_t),
-            0x004E: ("Default LED4 Strip Intensity (When Off)", t.uint8_t),
-            0x0050: ("Default LED5 Strip Color (When On)", t.uint8_t),
-            0x0051: ("Default LED5 Strip Color (When Off)", t.uint8_t),
-            0x0052: ("Default LED5 Strip Intensity (When On)", t.uint8_t),
-            0x0053: ("Default LED5 Strip Intensity (When Off)", t.uint8_t),
-            0x0055: ("Default LED6 Strip Color (When On)", t.uint8_t),
-            0x0056: ("Default LED6 Strip Color (When Off)", t.uint8_t),
-            0x0057: ("Default LED6 Strip Intensity (When On)", t.uint8_t),
-            0x0058: ("Default LED6 Strip Intensity (When Off)", t.uint8_t),
-            0x005A: ("Default LED7 Strip Color (When On)", t.uint8_t),
-            0x005B: ("Default LED7 Strip Color (When Off)", t.uint8_t),
-            0x005C: ("Default LED7 Strip Intensity (When On)", t.uint8_t),
-            0x005D: ("Default LED7 Strip Intensity (When Off)", t.uint8_t),
-            0x0034: ("Smart Bulb Mode", t.Bool),
-            0x0035: ("Double Tap Up for Full Brightness", t.Bool),
-            0x005F: ("LED Color (When On)", t.uint8_t),
-            0x0060: ("LED Color (When Off)", t.uint8_t),
-            0x0061: ("LED Intensity (When On)", t.uint8_t),
-            0x0062: ("LED Intensity (When Off)", t.uint8_t),
-            0x0100: ("Local Protection", t.Bool),
-            0x0101: ("Remote Protection", t.Bool),
-            0x0102: ("Output Mode", t.Bool),
-            0x0103: ("On/Off LED Mode", t.Bool),
-            0x0104: ("Firmware Progress LED", t.Bool),
+            0x0001: ("Dimming_Speed_Up_Remote", t.uint8_t),
+            0x0002: ("Dimming_Speed_Up_Local", t.uint8_t),
+            0x0003: ("Ramp_Rate_Off_to_On_Local", t.uint8_t),
+            0x0004: ("Ramp_Rate_Off_to_On_Remote", t.uint8_t),
+            0x0005: ("Dimming_Speed_Down_Remote", t.uint8_t),
+            0x0006: ("Dimming_Speed_Down_Local", t.uint8_t),
+            0x0007: ("Ramp_Rate_On_to_Off_Local", t.uint8_t),
+            0x0008: ("Ramp_Rate_On_to_Off_Remote", t.uint8_t),
+            0x0009: ("Minimum_Level", t.uint8_t),
+            0x000A: ("Maximum_Level", t.uint8_t),
+            0x000B: ("Invert_Switch", t.Bool),
+            0x000C: ("Auto_Off_Timer", t.uint16_t),
+            0x000D: ("Default_Level_Local", t.uint8_t),
+            0x000E: ("Default_Level_Remote", t.uint8_t),
+            0x000F: ("State_After_Power_Restored", t.uint8_t),
+            0x0011: ("Load_Level_Indicator_Timeout", t.uint8_t),
+            0x0012: ("Active_Power_Reports", t.uint16_t),
+            0x0013: ("Periodic_Power_and_Energy_Reports", t.uint8_t),
+            0x0014: ("Active_Energy_Reports", t.uint16_t),
+            0x0015: ("Power_Type", t.uint8_t),
+            0x0016: ("Switch_Type", t.uint8_t),
+            0x0032: ("Button_Delay", t.uint8_t),
+            0x003C: ("Default_LED1_Strip_Color_When_On", t.uint8_t),
+            0x003D: ("Default_LED1_Strip_Color_When_Off", t.uint8_t),
+            0x003E: ("Default_LED1_Strip_Intensity_When_On", t.uint8_t),
+            0x003F: ("Default_LED1_Strip_Intensity_When_Off", t.uint8_t),
+            0x0041: ("Default_LED2_Strip_Color_When_On", t.uint8_t),
+            0x0042: ("Default_LED2_Strip_Color_When_Off", t.uint8_t),
+            0x0043: ("Default_LED2_Strip_Intensity_When_On", t.uint8_t),
+            0x0044: ("Default_LED2_Strip_Intensity_When_Off", t.uint8_t),
+            0x0046: ("Default_LED3_Strip_Color_When_On", t.uint8_t),
+            0x0047: ("Default_LED3_Strip_Color_When_Off", t.uint8_t),
+            0x0048: ("Default_LED3_Strip_Intensity_When_On", t.uint8_t),
+            0x0049: ("Default_LED3_Strip_Intensity_When_Off", t.uint8_t),
+            0x004B: ("Default_LED4_Strip_Color_When_On", t.uint8_t),
+            0x004C: ("Default_LED4_Strip_Color_When_Off", t.uint8_t),
+            0x004D: ("Default_LED4_Strip_Intensity_When_On", t.uint8_t),
+            0x004E: ("Default_LED4_Strip_Intensity_When_Off", t.uint8_t),
+            0x0050: ("Default_LED5_Strip_Color_When_On", t.uint8_t),
+            0x0051: ("Default_LED5_Strip_Color_When_Off", t.uint8_t),
+            0x0052: ("Default_LED5_Strip_Intensity_When_On", t.uint8_t),
+            0x0053: ("Default_LED5_Strip_Intensity_When_Off", t.uint8_t),
+            0x0055: ("Default_LED6_Strip_Color_When_On", t.uint8_t),
+            0x0056: ("Default_LED6_Strip_Color_When_Off", t.uint8_t),
+            0x0057: ("Default_LED6_Strip_Intensity_When_On", t.uint8_t),
+            0x0058: ("Default_LED6_Strip_Intensity_When_Off", t.uint8_t),
+            0x005A: ("Default_LED7_Strip_Color_When_On", t.uint8_t),
+            0x005B: ("Default_LED7_Strip_Color_When_Off", t.uint8_t),
+            0x005C: ("Default_LED7_Strip_Intensity_When_On", t.uint8_t),
+            0x005D: ("Default_LED7_Strip_Intensity_When_Off", t.uint8_t),
+            0x0034: ("Smart_Bulb_Mode", t.Bool),
+            0x0035: ("Double_Tap_Up_for_Full_Brightness", t.Bool),
+            0x005F: ("LED_Color_When_On", t.uint8_t),
+            0x0060: ("LED_Color_When_Off", t.uint8_t),
+            0x0061: ("LED_Intensity_When_On", t.uint8_t),
+            0x0062: ("LED_Intensity_When_Off", t.uint8_t),
+            0x0100: ("Local_Protection", t.Bool),
+            0x0101: ("Remote_Protection", t.Bool),
+            0x0102: ("Output_Mode", t.Bool),
+            0x0103: ("On/Off_LED_Mode", t.Bool),
+            0x0104: ("Firmware_Progress_LED", t.Bool),
         }
     )
 
