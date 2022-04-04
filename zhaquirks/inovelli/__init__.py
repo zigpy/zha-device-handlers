@@ -1,8 +1,6 @@
 """Module for Inovelli quirks implementations."""
 
-import asyncio
 import logging
-import time
 from typing import Any, List, Optional, Union
 
 from zigpy.quirks import CustomCluster
@@ -133,7 +131,7 @@ class Inovelli_VZM31SN_Cluster(CustomCluster):
             0x0100: ("Local_Protection", t.Bool),
             0x0101: ("Remote_Protection", t.Bool),
             0x0102: ("Output_Mode", t.Bool),
-            0x0103: ("On/Off_LED_Mode", t.Bool),
+            0x0103: ("On_Off_LED_Mode", t.Bool),
             0x0104: ("Firmware_Progress_LED", t.Bool),
         }
     )
