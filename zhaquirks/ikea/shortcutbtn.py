@@ -116,6 +116,7 @@ class IkeaTradfriShortcutBtn(CustomDevice):
         },
     }
 
+
 class IkeaTradfriShortcutBtn2(CustomDevice):
     """Custom device representing IKEA of Sweden TRADFRI shortcut button with IKEA cluster."""
 
@@ -136,7 +137,7 @@ class IkeaTradfriShortcutBtn2(CustomDevice):
                     Alarms.cluster_id,
                     PollControl.cluster_id,
                     LightLink.cluster_id,
-                    0xfc7c, # IKEA Cluster
+                    0xFC7C,  # IKEA Cluster
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
