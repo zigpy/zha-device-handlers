@@ -7,7 +7,7 @@ from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import Basic, OnOff, Ota, PowerConfiguration, Time
+from zigpy.zcl.clusters.general import Basic, OnOff, Ota, PowerConfiguration, Time, Groups, Scenes
 from zigpy.zcl.clusters.measurement import FlowMeasurement
 
 from zhaquirks.const import (
@@ -137,7 +137,7 @@ class TuyaZGV1ManufCluster(TuyaNewManufCluster):
     """Tuya with ZGV1."""
 
     dp_to_attribute: Dict[int, DPToAttributeMapping] = {
-        1: DPToAttributeMapping(ZGV1OnOff.ep_attribute, "on_off", lambda x: x),
+        1: DPToAttributeMapping(ZGV1OnOff.ep_attribute, "on_off"),
         5: DPToAttributeMapping(
             ZGV1WaterConsumed.ep_attribute,
             "measured_value",
@@ -146,10 +146,9 @@ class TuyaZGV1ManufCluster(TuyaNewManufCluster):
         7: DPToAttributeMapping(
             ZGV1PowerConfiguration.ep_attribute,
             "battery_percentage_remaining",
-            lambda x: x,
         ),
         11: DPToAttributeMapping(ZGV1Timer.ep_attribute, "time_left", lambda x: x / 60),
-        12: DPToAttributeMapping(ZGV1Timer.ep_attribute, "state", lambda x: x),
+        12: DPToAttributeMapping(ZGV1Timer.ep_attribute, "state"),
         15: DPToAttributeMapping(
             ZGV1Timer.ep_attribute, "last_valve_open_duration", lambda x: x / 60
         ),
@@ -181,8 +180,8 @@ class TuyaZGV1(CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    4,
-                    5,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
                     TuyaZGV1ManufCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
@@ -196,8 +195,8 @@ class TuyaZGV1(CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    4,
-                    5,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
                     TuyaZGV1ManufCluster,
                     ZGV1WaterConsumed,
                     ZGV1OnOff,
