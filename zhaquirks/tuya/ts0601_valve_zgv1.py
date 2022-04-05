@@ -7,7 +7,15 @@ from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import Basic, OnOff, Ota, PowerConfiguration, Time, Groups, Scenes
+from zigpy.zcl.clusters.general import (
+    Basic,
+    Groups,
+    OnOff,
+    Ota,
+    PowerConfiguration,
+    Scenes,
+    Time,
+)
 from zigpy.zcl.clusters.measurement import FlowMeasurement
 
 from zhaquirks.const import (
