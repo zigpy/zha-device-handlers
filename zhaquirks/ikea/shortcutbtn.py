@@ -22,7 +22,7 @@ from zhaquirks.const import (
     COMMAND_MOVE_ON_OFF,
     COMMAND_OFF,
     COMMAND_ON,
-    COMMAND_STOP,
+    COMMAND_STOP_ON_OFF,
     DEVICE_TYPE,
     DIM_UP,
     DOUBLE_PRESS,
@@ -110,7 +110,7 @@ class IkeaTradfriShortcutBtn(CustomDevice):
             ARGS: [0, 83],
         },
         (LONG_RELEASE, DIM_UP): {
-            COMMAND: COMMAND_STOP,
+            COMMAND: COMMAND_STOP_ON_OFF,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
         },
