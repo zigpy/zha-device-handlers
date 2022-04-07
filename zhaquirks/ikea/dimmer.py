@@ -88,18 +88,17 @@ class IkeaDimmer(CustomDevice):
         }
     }
 
-
-device_automation_triggers = {
-    (ROTATED, RIGHT): {
-        COMMAND: COMMAND_MOVE,
-        CLUSTER_ID: 8,
-        ENDPOINT_ID: 1,
-        ARGS: [0, 195],
-    },
-    (ROTATED, LEFT): {
-        COMMAND: COMMAND_MOVE,
-        CLUSTER_ID: 8,
-        ENDPOINT_ID: 1,
-        ARGS: [1, 195],
-    },
-}
+    device_automation_triggers = {
+        (ROTATED, RIGHT): {
+            COMMAND: COMMAND_MOVE,
+            CLUSTER_ID: 8,
+            ENDPOINT_ID: 1,
+            ARGS: [0, 195],
+        },
+        (ROTATED, LEFT): {
+            COMMAND: COMMAND_MOVE,
+            CLUSTER_ID: 8,
+            ENDPOINT_ID: 1,
+            ARGS: [1, 195],
+        },
+    }
