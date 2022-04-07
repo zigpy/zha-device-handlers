@@ -670,11 +670,17 @@ class TuyaThermostatCluster(LocalDataCluster, Thermostat):
         """Implement thermostat commands."""
 
         if command_id != 0x0000:
-            return [command_id, foundation.Status.UNSUP_CLUSTER_COMMAND]
+            return foundation.GENERAL_COMMANDS[
+                foundation.GeneralCommand.Default_Response
+            ].schema(
+                command_id=command_id, status=foundation.Status.UNSUP_CLUSTER_COMMAND
+            )
 
         mode, offset = args
         if mode not in (self.SetpointMode.Heat, self.SetpointMode.Both):
-            return [command_id, foundation.Status.INVALID_VALUE]
+            return foundation.GENERAL_COMMANDS[
+                foundation.GeneralCommand.Default_Response
+            ].schema(command_id=command_id, status=foundation.Status.INVALID_VALUE)
 
         attrid = self.attributes_by_name["occupied_heating_setpoint"].id
 
@@ -689,7 +695,9 @@ class TuyaThermostatCluster(LocalDataCluster, Thermostat):
             {"occupied_heating_setpoint": current + offset * 10},
             manufacturer=manufacturer,
         )
-        return [command_id, res[0].status]
+        return foundation.GENERAL_COMMANDS[
+            foundation.GeneralCommand.Default_Response
+        ].schema(command_id=command_id, status=res[0].status)
 
 
 class TuyaUserInterfaceCluster(LocalDataCluster, UserInterface):

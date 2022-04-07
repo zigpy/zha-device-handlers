@@ -47,8 +47,7 @@ class EmulatedIasZone(LocalDataCluster, IasZone):
 
     async def bind(self):
         """Bind cluster."""
-        result = await self.endpoint.device.app_cluster.bind()
-        return result
+        return await self.endpoint.device.app_cluster.bind()
 
     async def write_attributes(self, attributes, manufacturer=None):
         """Ignore write_attributes."""

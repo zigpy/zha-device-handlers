@@ -114,22 +114,30 @@ class WindowCoveringRollerE1(CustomCluster, WindowCovering):
             (res,) = await self.endpoint.multistate_output.write_attributes(
                 {"present_value": 1}
             )
-            return res[0].status
+            return foundation.GENERAL_COMMANDS[
+                foundation.GeneralCommand.Default_Response
+            ].schema(command_id=command_id, status=res[0].status)
         if command_id == DOWN_CLOSE:
             (res,) = await self.endpoint.multistate_output.write_attributes(
                 {"present_value": 0}
             )
-            return res[0].status
+            return foundation.GENERAL_COMMANDS[
+                foundation.GeneralCommand.Default_Response
+            ].schema(command_id=command_id, status=res[0].status)
         if command_id == GO_TO_LIFT_PERCENTAGE:
             (res,) = await self.endpoint.analog_output.write_attributes(
                 {"present_value": (100 - args[0])}
             )
-            return res[0].status
+            return foundation.GENERAL_COMMANDS[
+                foundation.GeneralCommand.Default_Response
+            ].schema(command_id=command_id, status=res[0].status)
         if command_id == STOP:
             (res,) = await self.endpoint.multistate_output.write_attributes(
                 {"present_value": 2}
             )
-            return res[0].status
+            return foundation.GENERAL_COMMANDS[
+                foundation.GeneralCommand.Default_Response
+            ].schema(command_id=command_id, status=res[0].status)
 
 
 class MultistateOutputRollerE1(CustomCluster, MultistateOutput):

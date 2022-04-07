@@ -294,10 +294,14 @@ class TuyaOnOff(OnOff, TuyaLocalCluster):
                 TUYA_MCU_COMMAND,
                 cluster_data,
             )
-            return foundation.Status.SUCCESS
+            return foundation.GENERAL_COMMANDS[
+                foundation.GeneralCommand.Default_Response
+            ].schema(command_id=command_id, status=foundation.Status.SUCCESS)
 
         self.warning("Unsupported command_id: %s", command_id)
-        return foundation.Status.UNSUP_CLUSTER_COMMAND
+        return foundation.GENERAL_COMMANDS[
+            foundation.GeneralCommand.Default_Response
+        ].schema(command_id=command_id, status=foundation.Status.UNSUP_CLUSTER_COMMAND)
 
 
 class TuyaOnOffManufCluster(TuyaMCUCluster):
@@ -406,10 +410,14 @@ class TuyaLevelControl(LevelControl, TuyaLocalCluster):
                 TUYA_MCU_COMMAND,
                 cluster_data,
             )
-            return foundation.Status.SUCCESS
+            return foundation.GENERAL_COMMANDS[
+                foundation.GeneralCommand.Default_Response
+            ].schema(command_id=command_id, status=foundation.Status.SUCCESS)
 
         self.warning("Unsupported command_id: %s", command_id)
-        return foundation.Status.UNSUP_CLUSTER_COMMAND
+        return foundation.GENERAL_COMMANDS[
+            foundation.GeneralCommand.Default_Response
+        ].schema(command_id=command_id, status=foundation.Status.UNSUP_CLUSTER_COMMAND)
 
 
 class TuyaInWallLevelControl(TuyaAttributesCluster, TuyaLevelControl):
