@@ -885,16 +885,22 @@ class MoesWindowDetection(LocalDataCluster, OnOff):
                 try:
                     value = success[attrid]
                 except KeyError:
-                    return foundation.Status.FAILURE
+                    return foundation.GENERAL_COMMANDS[
+                        foundation.GeneralCommand.Default_Response
+                    ].schema(command_id=command_id, status=foundation.Status.FAILURE)
                 value = not value
 
             (res,) = await self.write_attributes(
                 {"on_off": value},
                 manufacturer=manufacturer,
             )
-            return [command_id, res[0].status]
+            return foundation.GENERAL_COMMANDS[
+                foundation.GeneralCommand.Default_Response
+            ].schema(command_id=command_id, status=res[0].status)
 
-        return [command_id, foundation.Status.UNSUP_CLUSTER_COMMAND]
+        return foundation.GENERAL_COMMANDS[
+            foundation.GeneralCommand.Default_Response
+        ].schema(command_id=command_id, status=foundation.Status.UNSUP_CLUSTER_COMMAND)
 
 
 ZONNSMART_MODE_ATTR = (
@@ -1262,16 +1268,22 @@ class ZONNSMARTHelperOnOff(LocalDataCluster, OnOff):
                 try:
                     value = success[attrid]
                 except KeyError:
-                    return foundation.Status.FAILURE
+                    return foundation.GENERAL_COMMANDS[
+                        foundation.GeneralCommand.Default_Response
+                    ].schema(command_id=command_id, status=foundation.Status.FAILURE)
                 value = not value
             _LOGGER.debug("CALLING WRITE FROM COMMAND")
             (res,) = await self.write_attributes(
                 {"on_off": value},
                 manufacturer=manufacturer,
             )
-            return [command_id, res[0].status]
+            return foundation.GENERAL_COMMANDS[
+                foundation.GeneralCommand.Default_Response
+            ].schema(command_id=command_id, status=res[0].status)
 
-        return [command_id, foundation.Status.UNSUP_CLUSTER_COMMAND]
+        return foundation.GENERAL_COMMANDS[
+            foundation.GeneralCommand.Default_Response
+        ].schema(command_id=command_id, status=foundation.Status.UNSUP_CLUSTER_COMMAND)
 
 
 class ZONNSMARTBoost(ZONNSMARTHelperOnOff):

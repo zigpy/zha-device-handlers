@@ -39,7 +39,7 @@ class NoReplyMixin:
         if expect_reply is None:
             expect_reply = command not in self.void_input_commands
 
-        return super(NoReplyMixin, self).command(
+        return super().command(
             command, *args, manufacturer=manufacturer, expect_reply=expect_reply
         )
 

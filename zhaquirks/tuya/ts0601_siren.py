@@ -150,9 +150,13 @@ class TuyaSirenOnOff(LocalDataCluster, OnOff):
             (res,) = await self.endpoint.tuya_manufacturer.write_attributes(
                 {TUYA_ALARM_ATTR: command_id}, manufacturer=manufacturer
             )
-            return [command_id, res[0].status]
+            return foundation.GENERAL_COMMANDS[
+                foundation.GeneralCommand.Default_Response
+            ].schema(command_id=command_id, status=res[0].status)
 
-        return [command_id, foundation.Status.UNSUP_CLUSTER_COMMAND]
+        return foundation.GENERAL_COMMANDS[
+            foundation.GeneralCommand.Default_Response
+        ].schema(command_id=command_id, status=foundation.Status.UNSUP_CLUSTER_COMMAND)
 
 
 class TuyaTemperatureMeasurement(LocalDataCluster, TemperatureMeasurement):
@@ -270,7 +274,9 @@ class TuyaMCUSiren(OnOff, TuyaAttributesCluster):
     async def write_attributes(self, attributes, manufacturer=None):
         """Overwrite to force manufacturer code."""
 
-        return await super().write_attributes(attributes, manufacturer="")
+        return await super().write_attributes(
+            attributes, manufacturer=foundation.ZCLHeader.NO_MANUFACTURER_ID
+        )
 
     async def command(
         self,
@@ -289,16 +295,20 @@ class TuyaMCUSiren(OnOff, TuyaAttributesCluster):
                 cluster_attr="on_off",
                 attr_value=command_id,
                 expect_reply=expect_reply,
-                manufacturer="",
+                manufacturer=foundation.ZCLHeader.NO_MANUFACTURER_ID,
             )
             self.endpoint.device.command_bus.listener_event(
                 TUYA_MCU_COMMAND,
                 cluster_data,
             )
-            return foundation.Status.SUCCESS
+            return foundation.GENERAL_COMMANDS[
+                foundation.GeneralCommand.Default_Response
+            ].schema(command_id=command_id, status=foundation.Status.SUCCESS)
 
         self.warning("Unsupported command_id: %s", command_id)
-        return foundation.Status.UNSUP_CLUSTER_COMMAND
+        return foundation.GENERAL_COMMANDS[
+            foundation.GeneralCommand.Default_Response
+        ].schema(command_id=command_id, status=foundation.Status.UNSUP_CLUSTER_COMMAND)
 
 
 class NeoSirenManufCluster(TuyaMCUCluster):
