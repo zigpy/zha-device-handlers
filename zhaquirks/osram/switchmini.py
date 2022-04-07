@@ -26,6 +26,7 @@ from zhaquirks.const import (
     COMMAND_OFF,
     COMMAND_ON,
     COMMAND_STOP,
+    COMMAND_STOP_ON_OFF,
     DEVICE_TYPE,
     ENDPOINT_ID,
     ENDPOINTS,
@@ -118,7 +119,7 @@ class OsramSwitchMini(CustomDevice):
     device_automation_triggers = {
         (SHORT_PRESS, BUTTON_1): {COMMAND: COMMAND_ON, ENDPOINT_ID: 1},
         (LONG_PRESS, BUTTON_1): {COMMAND: COMMAND_MOVE_ON_OFF, ENDPOINT_ID: 1},
-        (LONG_RELEASE, BUTTON_1): {COMMAND: COMMAND_STOP, ENDPOINT_ID: 1},
+        (LONG_RELEASE, BUTTON_1): {COMMAND: COMMAND_STOP_ON_OFF, ENDPOINT_ID: 1},
         (SHORT_PRESS, BUTTON_2): {
             COMMAND: COMMAND_MOVE_TO_LEVEL_ON_OFF,
             ENDPOINT_ID: 3,
