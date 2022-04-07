@@ -1,6 +1,7 @@
 """General quirk tests."""
 from __future__ import annotations
 
+import importlib
 from pathlib import Path
 from unittest import mock
 
@@ -508,3 +509,11 @@ def test_zigpy_custom_cluster_pollution() -> None:
         raise RuntimeError(
             f"Custom clusters must subclass `CustomCluster`: {non_zigpy_clusters}"
         )
+
+
+@pytest.mark.parametrize("module_name", {q.__module__ for q in ALL_QUIRK_CLASSES})
+def test_no_module_level_device_automation_triggers(module_name: str) -> None:
+    """Ensure no quirk module has a module-level `device_automation_triggers` dict."""
+
+    mod = importlib.import_module(module_name)
+    assert not hasattr(mod, "device_automation_triggers")
