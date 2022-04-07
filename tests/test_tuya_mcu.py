@@ -85,17 +85,17 @@ async def test_tuya_methods(zigpy_device_from_quirk, quirk):
         m1.assert_not_called()
 
     result_3 = await dimmer2_cluster.command(0x0006)
-    assert result_3 == foundation.Status.UNSUP_CLUSTER_COMMAND
+    assert result_3.status == foundation.Status.UNSUP_CLUSTER_COMMAND
 
     with mock.patch.object(tuya_cluster, "tuya_mcu_command") as m1:
-        status = await switch1_cluster.command(0x0001)
+        rsp = await switch1_cluster.command(0x0001)
 
         m1.assert_called_once_with(tcd_switch1_on)
-        assert status == foundation.Status.SUCCESS
+        assert rsp.status == foundation.Status.SUCCESS
 
-        status = await switch1_cluster.command(0x0004)
+        rsp = await switch1_cluster.command(0x0004)
         m1.assert_called_once_with(tcd_switch1_on)  # no extra calls
-        assert status == foundation.Status.UNSUP_CLUSTER_COMMAND
+        assert rsp.status == foundation.Status.UNSUP_CLUSTER_COMMAND
 
 
 async def test_tuya_mcu_classes():

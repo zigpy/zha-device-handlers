@@ -120,7 +120,7 @@ class XiaomiCluster(CustomCluster):
 
     def _iter_parse_attr_report(
         self, data: bytes
-    ) -> Iterator[foundation.Attribute, bytes]:
+    ) -> Iterator[tuple[foundation.Attribute, bytes]]:
         """Yield all interpretations of the first attribute in an Xiaomi report."""
 
         # Peek at the attribute report

@@ -488,7 +488,11 @@ class XBeeRemoteATRequest(LocalDataCluster):
         self._endpoint.device.endpoints[232].out_clusters[
             LevelControl.cluster_id
         ].handle_cluster_request(hdr, value)
-        return 0, foundation.Status.SUCCESS
+
+        # XXX: Is command_id=0x00 correct?
+        return foundation.GENERAL_COMMANDS[
+            foundation.GeneralCommand.Default_Response
+        ].schema(command_id=0x00, status=foundation.Status.SUCCESS)
 
 
 class XBeeRemoteATResponse(LocalDataCluster):
