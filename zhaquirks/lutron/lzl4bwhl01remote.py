@@ -13,7 +13,6 @@ from zigpy.zcl.clusters.lightlink import LightLink
 
 from zhaquirks import GroupBoundCluster
 from zhaquirks.const import (
-    ARGS,
     CLUSTER_ID,
     COMMAND,
     COMMAND_MOVE_TO_LEVEL_ON_OFF,

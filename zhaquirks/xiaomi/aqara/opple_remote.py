@@ -18,7 +18,6 @@ from zhaquirks.const import (
     ALT_DOUBLE_PRESS,
     ALT_LONG_PRESS,
     ALT_SHORT_PRESS,
-    ARGS,
     ATTR_ID,
     BUTTON,
     BUTTON_1,
@@ -665,13 +664,21 @@ class RemoteB686OPCN01(XiaomiCustomDevice):
             ENDPOINT_ID: 1,
             PARAMS: {v: k for v, k in enumerate([1, 85, 7])},
         },
-        (LONG_PRESS, BUTTON_3): {COMMAND: COMMAND_MOVE, ENDPOINT_ID: 1, PARAMS: {v: k for v, k in enumerate([1, 15])}},
+        (LONG_PRESS, BUTTON_3): {
+            COMMAND: COMMAND_MOVE,
+            ENDPOINT_ID: 1,
+            PARAMS: {v: k for v, k in enumerate([1, 15])},
+        },
         (SHORT_PRESS, BUTTON_4): {
             COMMAND: COMMAND_STEP,
             ENDPOINT_ID: 1,
             PARAMS: {v: k for v, k in enumerate([0, 85, 7])},
         },
-        (LONG_PRESS, BUTTON_4): {COMMAND: COMMAND_MOVE, ENDPOINT_ID: 1, PARAMS: {v: k for v, k in enumerate([0, 15])}},
+        (LONG_PRESS, BUTTON_4): {
+            COMMAND: COMMAND_MOVE,
+            ENDPOINT_ID: 1,
+            PARAMS: {v: k for v, k in enumerate([0, 15])},
+        },
         (SHORT_PRESS, BUTTON_5): {
             COMMAND: COMMAND_STEP_COLOR_TEMP,
             ENDPOINT_ID: 1,
