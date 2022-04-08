@@ -22,6 +22,7 @@ from zhaquirks.const import (
     COMMAND_OFF,
     COMMAND_ON,
     COMMAND_PRESS,
+    COMMAND_STOP,
     COMMAND_STOP_ON_OFF,
     DEVICE_TYPE,
     DIM_DOWN,
@@ -124,7 +125,7 @@ class IkeaTradfriRemote(CustomDevice):
             PARAMS: {"move_mode": 1, "rate": 83},
         },
         (LONG_RELEASE, DIM_DOWN): {
-            COMMAND: COMMAND_STOP_ON_OFF,
+            COMMAND: COMMAND_STOP,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
         },
