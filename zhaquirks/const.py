@@ -85,6 +85,7 @@ OFF = 0
 ON = 1
 OPEN = "open"
 OUTPUT_CLUSTERS = SIG_EP_OUTPUT
+PARAMS = "params"
 PRESS_TYPE = "press_type"
 PROFILE_ID = SIG_EP_PROFILE
 QUADRUPLE_PRESS = "remote_button_quadruple_press"

@@ -33,6 +33,7 @@ from zhaquirks.const import (
     LONG_RELEASE,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
+    PARAMS,
     PROFILE_ID,
     SHORT_PRESS,
     TURN_ON,
@@ -107,7 +108,7 @@ class IkeaTradfriShortcutBtn(CustomDevice):
             COMMAND: COMMAND_MOVE_ON_OFF,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
-            ARGS: [0, 83],
+            PARAMS: {"move_mode": 0, "rate": 83},
         },
         (LONG_RELEASE, DIM_UP): {
             COMMAND: COMMAND_STOP_ON_OFF,
