@@ -42,6 +42,7 @@ from zhaquirks.const import (
     INPUT_CLUSTERS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
+    PARAMS,
     PROFILE_ID,
     SHORT_PRESS,
     TURN_OFF,
@@ -188,72 +189,72 @@ class AdeoColorController(CustomDevice):
             COMMAND: COMMAND_STEP,
             CLUSTER_ID: 8,  # LevelControl.cluster_id
             ENDPOINT_ID: 1,
-            ARGS: [0, 26, 5],
+            PARAMS: {v: k for v, k in enumerate([0, 26, 5])},
         },
         (SHORT_PRESS, DIM_DOWN): {
             COMMAND: COMMAND_STEP,
             CLUSTER_ID: 8,  # LevelControl.cluster_id
             ENDPOINT_ID: 1,
-            ARGS: [1, 26, 5],
+            PARAMS: {v: k for v, k in enumerate([1, 26, 5])},
         },
         (SHORT_PRESS, COLOR_UP): {
             COMMAND: COMMAND_STEP_COLOR_TEMP,
             CLUSTER_ID: 768,  # Color.cluster_id
             ENDPOINT_ID: 1,
-            ARGS: [3, 22, 5, 153, 370],
+            PARAMS: {v: k for v, k in enumerate([3, 22, 5, 153, 370])},
         },
         (SHORT_PRESS, COLOR_DOWN): {
             COMMAND: COMMAND_STEP_COLOR_TEMP,
             CLUSTER_ID: 768,  # Color.cluster_id
             ENDPOINT_ID: 1,
-            ARGS: [1, 22, 5, 153, 370],
+            PARAMS: {v: k for v, k in enumerate([1, 22, 5, 153, 370])},
         },
         (SHORT_PRESS, SATURATION_UP): {
             COMMAND: COMMAND_STEP_SATURATION,
             CLUSTER_ID: 768,  # Color.cluster_id
             ENDPOINT_ID: 1,
-            ARGS: [1, 26, 5],
+            PARAMS: {v: k for v, k in enumerate([1, 26, 5])},
         },
         (SHORT_PRESS, SATURATION_DOWN): {
             COMMAND: COMMAND_STEP_SATURATION,
             CLUSTER_ID: 768,  # Color.cluster_id
             ENDPOINT_ID: 1,
-            ARGS: [3, 26, 5],
+            PARAMS: {v: k for v, k in enumerate([3, 26, 5])},
         },
         (SHORT_PRESS, HUE_LEFT): {
             COMMAND: COMMAND_STEP_HUE,
             CLUSTER_ID: 768,  # Color.cluster_id
             ENDPOINT_ID: 1,
-            ARGS: [3, 22, 5],
+            PARAMS: {v: k for v, k in enumerate([3, 22, 5])},
         },
         (SHORT_PRESS, HUE_RIGHT): {
             COMMAND: COMMAND_STEP_HUE,
             CLUSTER_ID: 768,  # Color.cluster_id
             ENDPOINT_ID: 1,
-            ARGS: [1, 22, 5],
+            PARAMS: {v: k for v, k in enumerate([1, 22, 5])},
         },
         (SHORT_PRESS, BUTTON_1): {
             COMMAND: "view",
             CLUSTER_ID: 5,  # Scenes.cluster_id
             ENDPOINT_ID: 1,
-            ARGS: [0, 0xA],
+            PARAMS: {v: k for v, k in enumerate([0, 0xA])},
         },
         (SHORT_PRESS, BUTTON_2): {
             COMMAND: "view",
             CLUSTER_ID: 5,  # Scenes.cluster_id
             ENDPOINT_ID: 1,
-            ARGS: [0, 0xB],
+            PARAMS: {v: k for v, k in enumerate([0, 0xB])},
         },
         (SHORT_PRESS, BUTTON_3): {
             COMMAND: "view",
             CLUSTER_ID: 5,  # Scenes.cluster_id
             ENDPOINT_ID: 1,
-            ARGS: [0, 0xC],
+            PARAMS: {v: k for v, k in enumerate([0, 0xC])},
         },
         (SHORT_PRESS, BUTTON_4): {
             COMMAND: "view",
             CLUSTER_ID: 5,  # Scenes.cluster_id
             ENDPOINT_ID: 1,
-            ARGS: [0, 0xD],
+            PARAMS: {v: k for v, k in enumerate([0, 0xD])},
         },
     }

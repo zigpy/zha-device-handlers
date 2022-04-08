@@ -14,7 +14,6 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.lightlink import LightLink
 
 from zhaquirks.const import (
-    ARGS,
     CLUSTER_ID,
     COMMAND,
     COMMAND_MOVE,
@@ -25,6 +24,7 @@ from zhaquirks.const import (
     LEFT,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
+    PARAMS,
     PROFILE_ID,
     RIGHT,
     ROTATED,
@@ -93,12 +93,12 @@ class IkeaDimmer(CustomDevice):
             COMMAND: COMMAND_MOVE,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
-            ARGS: [0, 195],
+            PARAMS: {v: k for v, k in enumerate([0, 195])},
         },
         (ROTATED, LEFT): {
             COMMAND: COMMAND_MOVE,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
-            ARGS: [1, 195],
+            PARAMS: {v: k for v, k in enumerate([1, 195])},
         },
     }

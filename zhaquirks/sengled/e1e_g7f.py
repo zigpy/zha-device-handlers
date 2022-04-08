@@ -17,7 +17,6 @@ from zigpy.zcl.clusters.general import (
 
 from zhaquirks import Bus
 from zhaquirks.const import (
-    ARGS,
     COMMAND,
     COMMAND_OFF,
     COMMAND_ON,
@@ -31,6 +30,7 @@ from zhaquirks.const import (
     LONG_PRESS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
+    PARAMS,
     PROFILE_ID,
     SHORT_PRESS,
     TURN_OFF,
@@ -201,8 +201,8 @@ class SengledE1EG7F(CustomDevice):
         (SHORT_PRESS, TURN_ON): {COMMAND: COMMAND_ON},
         (LONG_PRESS, TURN_ON): {COMMAND: "on_long"},
         (DOUBLE_PRESS, TURN_ON): {COMMAND: "on_double"},
-        (SHORT_PRESS, DIM_UP): {COMMAND: COMMAND_STEP, ARGS: [0, 1, 0]},
-        (SHORT_PRESS, DIM_DOWN): {COMMAND: COMMAND_STEP, ARGS: [1, 1, 0]},
+        (SHORT_PRESS, DIM_UP): {COMMAND: COMMAND_STEP, PARAMS: {v: k for v, k in enumerate([0, 1, 0])}},
+        (SHORT_PRESS, DIM_DOWN): {COMMAND: COMMAND_STEP, PARAMS: {v: k for v, k in enumerate([1, 1, 0])}},
         (SHORT_PRESS, TURN_OFF): {COMMAND: COMMAND_OFF},
         (LONG_PRESS, TURN_OFF): {COMMAND: "off_long"},
         (DOUBLE_PRESS, TURN_OFF): {COMMAND: "off_double"},

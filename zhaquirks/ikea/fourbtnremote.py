@@ -13,7 +13,6 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.lightlink import LightLink
 
 from zhaquirks.const import (
-    ARGS,
     CLUSTER_ID,
     COMMAND,
     COMMAND_HOLD,
@@ -34,6 +33,7 @@ from zhaquirks.const import (
     LONG_RELEASE,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
+    PARAMS,
     PROFILE_ID,
     RIGHT,
     SHORT_PRESS,
@@ -108,7 +108,7 @@ class IkeaTradfriRemote(CustomDevice):
             COMMAND: COMMAND_MOVE_ON_OFF,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
-            ARGS: [0, 83],
+            PARAMS: {v: k for v, k in enumerate([0, 83])},
         },
         (LONG_RELEASE, DIM_UP): {
             COMMAND: COMMAND_STOP_ON_OFF,
@@ -120,7 +120,7 @@ class IkeaTradfriRemote(CustomDevice):
             COMMAND: COMMAND_MOVE,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
-            ARGS: [1, 83],
+            PARAMS: {v: k for v, k in enumerate([1, 83])},
         },
         (LONG_RELEASE, DIM_DOWN): {
             COMMAND: COMMAND_STOP_ON_OFF,
@@ -131,24 +131,24 @@ class IkeaTradfriRemote(CustomDevice):
             COMMAND: COMMAND_PRESS,
             CLUSTER_ID: 5,
             ENDPOINT_ID: 1,
-            ARGS: [257, 13, 0],
+            PARAMS: {v: k for v, k in enumerate([257, 13, 0])},
         },
         (LONG_PRESS, LEFT): {
             COMMAND: COMMAND_HOLD,
             CLUSTER_ID: 5,
             ENDPOINT_ID: 1,
-            ARGS: [3329, 0],
+            PARAMS: {v: k for v, k in enumerate([3329, 0])},
         },
         (SHORT_PRESS, RIGHT): {
             COMMAND: COMMAND_PRESS,
             CLUSTER_ID: 5,
             ENDPOINT_ID: 1,
-            ARGS: [256, 13, 0],
+            PARAMS: {v: k for v, k in enumerate([256, 13, 0])},
         },
         (LONG_PRESS, RIGHT): {
             COMMAND: COMMAND_HOLD,
             CLUSTER_ID: 5,
             ENDPOINT_ID: 1,
-            ARGS: [3328, 0],
+            PARAMS: {v: k for v, k in enumerate([3328, 0])},
         },
     }
