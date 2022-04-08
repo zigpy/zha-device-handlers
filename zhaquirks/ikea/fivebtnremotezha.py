@@ -323,13 +323,13 @@ class IkeaTradfriRemote3(IkeaTradfriRemote1):
             COMMAND: COMMAND_STEP,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
-            ARGS: [1, 43, 5],
+            ARGS: [1, 43, 5, 0, 0],
         },
         (LONG_PRESS, DIM_DOWN): {
             COMMAND: COMMAND_MOVE,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
-            ARGS: [1, 84],
+            ARGS: [1, 84, 0, 0],
         },
         (SHORT_PRESS, LEFT): {
             COMMAND: COMMAND_PRESS,
