@@ -691,7 +691,7 @@ class RemoteB686OPCN01(XiaomiCustomDevice):
         (LONG_PRESS, BUTTON_3): {
             COMMAND: COMMAND_MOVE,
             ENDPOINT_ID: 1,
-            PARAMS: {"move_move": 1, "rate": 15},
+            PARAMS: {"move_mode": 1, "rate": 15},
         },
         (SHORT_PRESS, BUTTON_4): {
             COMMAND: COMMAND_STEP,
@@ -701,7 +701,7 @@ class RemoteB686OPCN01(XiaomiCustomDevice):
         (LONG_PRESS, BUTTON_4): {
             COMMAND: COMMAND_MOVE,
             ENDPOINT_ID: 1,
-            PARAMS: {"move_move": 0, "rate": 15},
+            PARAMS: {"move_mode": 0, "rate": 15},
         },
         (SHORT_PRESS, BUTTON_5): {
             COMMAND: COMMAND_STEP_COLOR_TEMP,

@@ -21,7 +21,6 @@ from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.lightlink import LightLink
 
 from zhaquirks.const import (
-    ARGS,
     BUTTON,
     BUTTON_1,
     BUTTON_2,
@@ -136,31 +135,31 @@ class TuyaSmartRemote004FROK(CustomDevice):
             COMMAND: COMMAND_MOVE_SATURATION,
             ENDPOINT_ID: 1,
             CLUSTER_ID: 768,
-            PARAMS: {"move_mode": 1, "rate": 200},
+            PARAMS: {"saturation": 1, "transition_time": 200},
         },
         (ROTATED_SLOW, RIGHT): {
             COMMAND: COMMAND_STEP,
             ENDPOINT_ID: 1,
             CLUSTER_ID: 8,
-            ARGS: {"step_mode": 0, "step_size": 13, "transition_time": 1},
+            PARAMS: {"step_mode": 0, "step_size": 13, "transition_time": 1},
         },  # Triggered for both let and right in HA (HA bug).
         (ROTATED_SLOW, LEFT): {
             COMMAND: COMMAND_STEP,
             ENDPOINT_ID: 1,
             CLUSTER_ID: 8,
-            ARGS: {"step_mode": 1, "step_size": 13, "transition_time": 1},
+            PARAMS: {"step_mode": 1, "step_size": 13, "transition_time": 1},
         },
         (ROTATED_FAST, RIGHT): {
             COMMAND: COMMAND_STEP,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
-            ARGS: {"step_mode": 0, "step_size": 37, "transition_time": 2},
+            PARAMS: {"step_mode": 0, "step_size": 37, "transition_time": 2},
         },
         (ROTATED_FAST, LEFT): {
             COMMAND: COMMAND_STEP,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
-            ARGS: {"step_mode": 1, "step_size": 37, "transition_time": 2},
+            PARAMS: {"step_mode": 1, "step_size": 37, "transition_time": 2},
         },
         (SHORT_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: SHORT_PRESS},
         (LONG_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: LONG_PRESS},
@@ -389,25 +388,25 @@ class TuyaSmartRemote004F(CustomDevice):
             COMMAND: COMMAND_STEP,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
-            ARGS: {"step_mode": 0, "step_size": 51, "transition_time": 10},
+            PARAMS: {"step_mode": 0, "step_size": 51, "transition_time": 10},
         },
         (LONG_PRESS, DIM_UP): {
             COMMAND: COMMAND_MOVE,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
-            ARGS: [0, 51],
+            PARAMS: {"move_mode": 0, "rate": 51},
         },
         (SHORT_PRESS, DIM_DOWN): {
             COMMAND: COMMAND_STEP,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
-            ARGS: {"step_mode": 1, "step_size": 51, "transition_time": 10},
+            PARAMS: {"step_mode": 1, "step_size": 51, "transition_time": 10},
         },
         (LONG_PRESS, DIM_DOWN): {
             COMMAND: COMMAND_MOVE,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
-            ARGS: [1, 51],
+            PARAMS: {"move_mode": 1, "rate": 51},
         },
         (LONG_RELEASE, DIM_DOWN): {
             COMMAND: COMMAND_STOP,

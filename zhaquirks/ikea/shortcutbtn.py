@@ -16,7 +16,6 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.lightlink import LightLink
 
 from zhaquirks.const import (
-    ARGS,
     CLUSTER_ID,
     COMMAND,
     COMMAND_MOVE_ON_OFF,
@@ -184,7 +183,7 @@ class IkeaTradfriShortcutBtn2(CustomDevice):
             COMMAND: COMMAND_MOVE_ON_OFF,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
-            ARGS: [0, 83],
+            PARAMS: {"move_mode": 0, "rate": 83},
         },
         (LONG_RELEASE, DIM_UP): {
             COMMAND: COMMAND_STOP_ON_OFF,
