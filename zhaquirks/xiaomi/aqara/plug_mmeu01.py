@@ -55,7 +55,6 @@ class Plug(XiaomiCustomDevice):
     signature = {
         MODELS_INFO: [
             (LUMI, "lumi.plug.mmeu01"),
-            (LUMI, "lumi.plug.maeu01"),
         ],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=81
@@ -120,4 +119,20 @@ class Plug(XiaomiCustomDevice):
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
         },
+    }
+
+
+class PlugMAEU01(Plug):
+    """lumi.plug.maeu01 plug."""
+
+    signature = {
+        MODELS_INFO: [
+            (LUMI, "lumi.plug.maeu01"),
+        ],
+        ENDPOINTS: Plug.signature[ENDPOINTS],
+    }
+
+    replacement = {
+        SKIP_CONFIGURATION: False,
+        ENDPOINTS: Plug.replacement[ENDPOINTS],
     }
