@@ -328,8 +328,6 @@ class IkeaTradfriRemote3(IkeaTradfriRemote1):
                 "step_mode": 1,
                 "step_size": 43,
                 "transition_time": 5,
-                "options_mask": None,
-                "options_override": None,
             },
         },
         (LONG_PRESS, DIM_DOWN): {
@@ -339,8 +337,6 @@ class IkeaTradfriRemote3(IkeaTradfriRemote1):
             PARAMS: {
                 "move_mode": 1,
                 "rate": 84,
-                "options_mask": None,
-                "options_override": None,
             },
         },
         (SHORT_PRESS, LEFT): {
