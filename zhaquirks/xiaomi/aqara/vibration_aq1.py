@@ -79,8 +79,8 @@ class VibrationAQ1(XiaomiQuickInitDevice):
     class VibrationBasicCluster(BasicCluster):
         """Vibration cluster."""
 
-        cluster_id = BasicCluster.cluster_id
-        manufacturer_attributes = {0xFF0D: ("sensitivity", types.uint8_t)}
+        attributes = BasicCluster.attributes.copy()
+        attributes[0xFF0D] = ("sensitivity", types.uint8_t, True)
 
     class MultistateInputCluster(CustomCluster, MultistateInput):
         """Multistate input cluster."""

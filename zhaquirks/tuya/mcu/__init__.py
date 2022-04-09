@@ -13,6 +13,7 @@ from zhaquirks.tuya import (
     TUYA_MCU_VERSION_RSP,
     TUYA_SET_DATA,
     Data,
+    PowerOnState,
     TuyaCommand,
     TuyaData,
     TuyaLocalCluster,
@@ -73,6 +74,17 @@ class TuyaClusterData(t.Struct):
     endpoint_id: int
     cluster_attr: str
     attr_value: int  # Maybe also others types?
+    expect_reply: bool
+    manufacturer: str
+
+
+class MoesBacklight(t.enum8):
+    """MOES switch backlight mode enum."""
+
+    off = 0x00
+    light_when_on = 0x01
+    light_when_off = 0x02
+    freeze = 0x03
 
 
 class TuyaAttributesCluster(TuyaLocalCluster):
@@ -101,6 +113,8 @@ class TuyaAttributesCluster(TuyaLocalCluster):
                 endpoint_id=self.endpoint.endpoint_id,
                 cluster_attr=self.attributes[record.attrid][0],
                 attr_value=record.value.value,
+                expect_reply=False,
+                manufacturer=manufacturer,
             )
             self.endpoint.device.command_bus.listener_event(
                 TUYA_MCU_COMMAND,
@@ -128,6 +142,7 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
                 # MCU version is 1 byte length
                 # is converted from HEX -> BIN -> XX.XX.XXXX -> DEC (x.y.z)
                 # example: 0x98 -> 10011000 -> 10.01.1000 -> 2.1.8
+                # https://developer.tuya.com/en/docs/iot-device-dev/firmware-version-description?id=K9zzuc5n2gff8#title-1-Zigbee%20firmware%20versions
                 major = self.version_raw >> 6
                 minor = (self.version_raw & 63) >> 4
                 release = self.version_raw & 15
@@ -136,17 +151,23 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
 
             return None
 
-    manufacturer_attributes = {
-        # MCU version
-        ATTR_MCU_VERSION: ("mcu_version", t.uint48_t),
-    }
-
-    manufacturer_client_commands = (
-        TuyaNewManufCluster.manufacturer_client_commands.copy()
-    )
-    manufacturer_client_commands.update(
+    attributes = TuyaNewManufCluster.attributes.copy()
+    attributes.update(
         {
-            TUYA_MCU_VERSION_RSP: ("mcu_version_response", (MCUVersion,), True),
+            # MCU version
+            ATTR_MCU_VERSION: ("mcu_version", t.uint48_t, True),
+        }
+    )
+
+    client_commands = TuyaNewManufCluster.client_commands.copy()
+    client_commands.update(
+        {
+            TUYA_MCU_VERSION_RSP: foundation.ZCLCommandDef(
+                "mcu_version_response",
+                {"version": MCUVersion},
+                True,
+                is_manufacturer_specific=True,
+            ),
         }
     )
 
@@ -203,11 +224,16 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
         self.debug("tuya_command: %s", tuya_command)
         if tuya_command:
             self.create_catching_task(
-                self.command(TUYA_SET_DATA, tuya_command, expect_reply=True)
+                self.command(
+                    TUYA_SET_DATA,
+                    tuya_command,
+                    expect_reply=cluster_data.expect_reply,
+                    manufacturer=cluster_data.manufacturer,
+                )
             )
         else:
             self.warning(
-                "MCU command not call for data %s",
+                "no MCU command for data %s",
                 cluster_data,
             )
 
@@ -241,7 +267,7 @@ class TuyaOnOff(OnOff, TuyaLocalCluster):
 
     async def command(
         self,
-        command_id: Union[foundation.Command, int, t.uint8_t],
+        command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
         *args,
         manufacturer: Optional[Union[int, t.uint16_t]] = None,
         expect_reply: bool = True,
@@ -261,15 +287,21 @@ class TuyaOnOff(OnOff, TuyaLocalCluster):
                 endpoint_id=self.endpoint.endpoint_id,
                 cluster_attr="on_off",
                 attr_value=command_id,
+                expect_reply=expect_reply,
+                manufacturer=manufacturer,
             )
             self.endpoint.device.command_bus.listener_event(
                 TUYA_MCU_COMMAND,
                 cluster_data,
             )
-            return foundation.Status.SUCCESS
+            return foundation.GENERAL_COMMANDS[
+                foundation.GeneralCommand.Default_Response
+            ].schema(command_id=command_id, status=foundation.Status.SUCCESS)
 
         self.warning("Unsupported command_id: %s", command_id)
-        return foundation.Status.UNSUP_CLUSTER_COMMAND
+        return foundation.GENERAL_COMMANDS[
+            foundation.GeneralCommand.Default_Response
+        ].schema(command_id=command_id, status=foundation.Status.UNSUP_CLUSTER_COMMAND)
 
 
 class TuyaOnOffManufCluster(TuyaMCUCluster):
@@ -309,12 +341,12 @@ class TuyaOnOffManufCluster(TuyaMCUCluster):
     }
 
 
-class SurfaceSwitchManufCluster(TuyaOnOffManufCluster):
+class MoesSwitchManufCluster(TuyaOnOffManufCluster):
     """On/Off Tuya cluster with extra device attributes."""
 
     attributes = {
-        0x8001: ("backlight_mode", t.enum8),
-        0x8002: ("power_on_state", t.enum8),
+        0x8001: ("backlight_mode", MoesBacklight),
+        0x8002: ("power_on_state", PowerOnState),
     }
 
     dp_to_attribute: Dict[
@@ -326,6 +358,7 @@ class SurfaceSwitchManufCluster(TuyaOnOffManufCluster):
                 TuyaMCUCluster.ep_attribute,
                 "power_on_state",
                 dp_type=TuyaDPType.ENUM,
+                converter=lambda x: PowerOnState(x),
             )
         }
     )
@@ -335,6 +368,7 @@ class SurfaceSwitchManufCluster(TuyaOnOffManufCluster):
                 TuyaMCUCluster.ep_attribute,
                 "backlight_mode",
                 dp_type=TuyaDPType.ENUM,
+                converter=lambda x: MoesBacklight(x),
             ),
         }
     )
@@ -351,7 +385,7 @@ class TuyaLevelControl(LevelControl, TuyaLocalCluster):
 
     async def command(
         self,
-        command_id: Union[foundation.Command, int, t.uint8_t],
+        command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
         *args,
         manufacturer: Optional[Union[int, t.uint16_t]] = None,
         expect_reply: bool = True,
@@ -369,25 +403,34 @@ class TuyaLevelControl(LevelControl, TuyaLocalCluster):
                 endpoint_id=self.endpoint.endpoint_id,
                 cluster_attr="current_level",
                 attr_value=args[0],
+                expect_reply=expect_reply,
+                manufacturer=manufacturer,
             )
             self.endpoint.device.command_bus.listener_event(
                 TUYA_MCU_COMMAND,
                 cluster_data,
             )
-            return foundation.Status.SUCCESS
+            return foundation.GENERAL_COMMANDS[
+                foundation.GeneralCommand.Default_Response
+            ].schema(command_id=command_id, status=foundation.Status.SUCCESS)
 
         self.warning("Unsupported command_id: %s", command_id)
-        return foundation.Status.UNSUP_CLUSTER_COMMAND
+        return foundation.GENERAL_COMMANDS[
+            foundation.GeneralCommand.Default_Response
+        ].schema(command_id=command_id, status=foundation.Status.UNSUP_CLUSTER_COMMAND)
 
 
 class TuyaInWallLevelControl(TuyaAttributesCluster, TuyaLevelControl):
     """Tuya Level cluster for inwall dimmable device."""
 
     # Not sure if these are 'inwall' specific attributes or common to dimmers
-    manufacturer_attributes = {
-        0xEF01: ("minimum_level", t.uint32_t),
-        0xEF02: ("bulb_type", t.enum8),
-    }
+    attributes = TuyaLevelControl.attributes.copy()
+    attributes.update(
+        {
+            0xEF01: ("minimum_level", t.uint32_t, True),
+            0xEF02: ("bulb_type", t.enum8, True),
+        }
+    )
 
 
 class TuyaLevelControlManufCluster(TuyaMCUCluster):

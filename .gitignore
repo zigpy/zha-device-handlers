@@ -8,4 +8,13 @@ build/**/*.*
 .tox
 .idea/*
 .coverage
+htmlcov/
 .mypycache
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/

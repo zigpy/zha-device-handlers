@@ -27,8 +27,9 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     RIGHT,
+    ROTATED,
 )
-from zhaquirks.ikea import IKEA, ROTATED, PowerConfiguration1CRXCluster
+from zhaquirks.ikea import IKEA, PowerConfiguration1CRXCluster
 
 
 class IkeaDimmer(CustomDevice):
@@ -87,18 +88,17 @@ class IkeaDimmer(CustomDevice):
         }
     }
 
-
-device_automation_triggers = {
-    (ROTATED, RIGHT): {
-        COMMAND: COMMAND_MOVE,
-        CLUSTER_ID: 8,
-        ENDPOINT_ID: 1,
-        ARGS: [0, 195],
-    },
-    (ROTATED, LEFT): {
-        COMMAND: COMMAND_MOVE,
-        CLUSTER_ID: 8,
-        ENDPOINT_ID: 1,
-        ARGS: [1, 195],
-    },
-}
+    device_automation_triggers = {
+        (ROTATED, RIGHT): {
+            COMMAND: COMMAND_MOVE,
+            CLUSTER_ID: 8,
+            ENDPOINT_ID: 1,
+            ARGS: [0, 195],
+        },
+        (ROTATED, LEFT): {
+            COMMAND: COMMAND_MOVE,
+            CLUSTER_ID: 8,
+            ENDPOINT_ID: 1,
+            ARGS: [1, 195],
+        },
+    }

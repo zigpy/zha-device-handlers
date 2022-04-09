@@ -26,9 +26,9 @@ class SmartthingsRelativeHumidityCluster(CustomCluster):
     cluster_id = SMRT_THINGS_REL_HUM_CLSTR
     name = "Smartthings Relative Humidity Measurement"
     ep_attribute = "humidity"
-    manufacturer_attributes = {
+    attributes = {
         # Relative Humidity Measurement Information
-        0x0000: ("measured_value", t.int16s)
+        0x0000: ("measured_value", t.int16s, True)
     }
 
 

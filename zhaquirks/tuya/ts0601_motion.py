@@ -49,31 +49,21 @@ ZONE_TYPE = 0x0001
 class TuyaOccupancySensing(OccupancySensing, TuyaLocalCluster):
     """Tuya local OccupancySensing cluster."""
 
-    pass
-
 
 class TuyaAnalogInput(AnalogInput, TuyaLocalCluster):
     """Tuya local AnalogInput cluster."""
-
-    pass
 
 
 class TuyaIlluminanceMeasurement(IlluminanceMeasurement, TuyaLocalCluster):
     """Tuya local IlluminanceMeasurement cluster."""
 
-    pass
-
 
 class TuyaTemperatureMeasurement(TemperatureMeasurement, TuyaLocalCluster):
     """Tuya local TemperatureMeasurement cluster."""
 
-    pass
-
 
 class TuyaRelativeHumidity(RelativeHumidity, TuyaLocalCluster):
     """Tuya local RelativeHumidity cluster."""
-
-    pass
 
 
 class NeoBatteryLevel(t.enum8):
@@ -89,9 +79,12 @@ class NeoBatteryLevel(t.enum8):
 class NeoMotionManufCluster(TuyaNewManufCluster):
     """Neo manufacturer cluster."""
 
-    manufacturer_attributes = {
-        0xEF0D: ("dp_113", t.enum8),  # ramdom attribute ID
-    }
+    attributes = TuyaNewManufCluster.attributes.copy()
+    attributes.update(
+        {
+            0xEF0D: ("dp_113", t.enum8, True),  # ramdom attribute ID
+        }
+    )
 
     dp_to_attribute: Dict[int, DPToAttributeMapping] = {
         101: DPToAttributeMapping(
@@ -139,20 +132,23 @@ class MmwRadarManufCluster(TuyaMCUCluster):
     # no_one_brightness: no control
     # current_brightness: off
 
-    manufacturer_attributes = {
-        # ramdom attribute IDs
-        0xEF02: ("dp_2", t.uint32_t),
-        0xEF03: ("dp_3", t.uint32_t),
-        0xEF04: ("dp_4", t.uint32_t),
-        0xEF06: ("dp_6", t.enum8),
-        0xEF65: ("dp_101", t.uint32_t),
-        0xEF66: ("dp_102", t.uint32_t),
-        0xEF67: ("dp_103", t.CharacterString),
-        0xEF69: ("dp_105", t.enum8),
-        0xEF6A: ("dp_106", t.enum8),
-        0xEF6B: ("dp_107", t.enum8),
-        0xEF6C: ("dp_108", t.uint32_t),
-    }
+    attributes = TuyaMCUCluster.attributes.copy()
+    attributes.update(
+        {
+            # ramdom attribute IDs
+            0xEF02: ("dp_2", t.uint32_t, True),
+            0xEF03: ("dp_3", t.uint32_t, True),
+            0xEF04: ("dp_4", t.uint32_t, True),
+            0xEF06: ("dp_6", t.enum8, True),
+            0xEF65: ("dp_101", t.uint32_t, True),
+            0xEF66: ("dp_102", t.uint32_t, True),
+            0xEF67: ("dp_103", t.CharacterString, True),
+            0xEF69: ("dp_105", t.enum8, True),
+            0xEF6A: ("dp_106", t.enum8, True),
+            0xEF6B: ("dp_107", t.enum8, True),
+            0xEF6C: ("dp_108", t.uint32_t, True),
+        }
+    )
 
     dp_to_attribute: Dict[int, DPToAttributeMapping] = {
         1: DPToAttributeMapping(

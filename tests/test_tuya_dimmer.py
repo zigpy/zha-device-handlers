@@ -30,7 +30,7 @@ async def test_command(zigpy_device_from_quirk, quirk):
     with mock.patch.object(
         tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
     ) as m1:
-        status = await switch2_cluster.command(0x0001)
+        rsp = await switch2_cluster.command(0x0001)
 
         m1.assert_called_with(
             61184,
@@ -39,9 +39,9 @@ async def test_command(zigpy_device_from_quirk, quirk):
             expect_reply=True,
             command_id=0,
         )
-        assert status == foundation.Status.SUCCESS
+        assert rsp.status == foundation.Status.SUCCESS
 
-        status = await dimmer1_cluster.command(0x0000, 225)
+        rsp = await dimmer1_cluster.command(0x0000, 225)
 
         m1.assert_called_with(
             61184,
@@ -50,7 +50,7 @@ async def test_command(zigpy_device_from_quirk, quirk):
             expect_reply=True,
             command_id=0,
         )
-        assert status == foundation.Status.SUCCESS
+        assert rsp.status == foundation.Status.SUCCESS
 
 
 @pytest.mark.parametrize(
@@ -79,7 +79,7 @@ async def test_write_attr(zigpy_device_from_quirk, quirk):
             61184,
             2,
             b"\x01\x02\x00\x00\x01\x03\x02\x00\x04\x00\x00\x00b",
-            expect_reply=True,
+            expect_reply=False,
             command_id=0,
         )
         assert status == [
