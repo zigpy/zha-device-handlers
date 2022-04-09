@@ -29,7 +29,7 @@ from zhaquirks.const import (
     CLUSTER_ID,
     COMMAND,
     COMMAND_MOVE,
-    COMMAND_MOVE_SATURATION,
+    COMMAND_MOVE_TO_SATURATION,
     COMMAND_OFF,
     COMMAND_ON,
     COMMAND_STEP,
@@ -132,7 +132,7 @@ class TuyaSmartRemote004FROK(CustomDevice):
             CLUSTER_ID: 768,
         },
         (LONG_PRESS, BUTTON): {
-            COMMAND: COMMAND_MOVE_SATURATION,
+            COMMAND: COMMAND_MOVE_TO_SATURATION,
             ENDPOINT_ID: 1,
             CLUSTER_ID: 768,
             PARAMS: {"saturation": 1, "transition_time": 200},

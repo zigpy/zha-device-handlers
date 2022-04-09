@@ -25,6 +25,7 @@ from zhaquirks.const import (
     COMMAND_MOVE_ON_OFF,
     COMMAND_MOVE_SATURATION,
     COMMAND_MOVE_TO_LEVEL_ON_OFF,
+    COMMAND_MOVE_TO_SATURATION,
     COMMAND_STEP,
     COMMAND_STEP_COLOR_TEMP,
     COMMAND_STEP_HUE,
@@ -550,6 +551,7 @@ def test_migrated_lighting_automation_triggers(quirk: CustomDevice) -> None:
         # We only consider lighting commands for now
         if command in (
             COMMAND_MOVE_SATURATION,
+            COMMAND_MOVE_TO_SATURATION,
             COMMAND_MOVE_COLOR_TEMP,
             COMMAND_STEP_HUE,
             COMMAND_STEP_SATURATION,
