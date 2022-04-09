@@ -611,16 +611,22 @@ class BecaWindowDetection_A2(LocalDataCluster, OnOff):
                 try:
                     value = success[attrid]
                 except KeyError:
-                    return foundation.Status.FAILURE
+                    return foundation.GENERAL_COMMANDS[
+                        foundation.GeneralCommand.Default_Response
+                    ].schema(command_id=command_id, status=foundation.Status.FAILURE)
                 value = not value
 
             (res,) = await self.write_attributes(
                 {"on_off": value}, manufacturer=manufacturer
             )
 
-            return [command_id, res]
+            return foundation.GENERAL_COMMANDS[
+                foundation.GeneralCommand.Default_Response
+            ].schema(command_id=command_id, status=res[0].status)
 
-        return [command_id, foundation.Status.UNSUP_CLUSTER_COMMAND]
+        return foundation.GENERAL_COMMANDS[
+            foundation.GeneralCommand.Default_Response
+        ].schema(command_id=command_id, status=foundation.Status.UNSUP_CLUSTER_COMMAND)
 
 
 class BecaChildLock(LocalDataCluster, OnOff):
@@ -687,16 +693,22 @@ class BecaChildLock(LocalDataCluster, OnOff):
                 try:
                     value = success[attrid]
                 except KeyError:
-                    return foundation.Status.FAILURE
+                    return foundation.GENERAL_COMMANDS[
+                        foundation.GeneralCommand.Default_Response
+                    ].schema(command_id=command_id, status=foundation.Status.FAILURE)
                 value = not value
 
             (res,) = await self.write_attributes(
                 {"on_off": value}, manufacturer=manufacturer
             )
 
-            return [command_id, res]
+            return foundation.GENERAL_COMMANDS[
+                foundation.GeneralCommand.Default_Response
+            ].schema(command_id=command_id, status=res[0].status)
 
-        return [command_id, foundation.Status.UNSUP_CLUSTER_COMMAND]
+        return foundation.GENERAL_COMMANDS[
+            foundation.GeneralCommand.Default_Response
+        ].schema(command_id=command_id, status=foundation.Status.UNSUP_CLUSTER_COMMAND)
 
 
 class BecaValveState(LocalDataCluster, AnalogInput):
