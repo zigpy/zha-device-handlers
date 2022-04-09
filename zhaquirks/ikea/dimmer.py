@@ -17,6 +17,7 @@ from zhaquirks.const import (
     CLUSTER_ID,
     COMMAND,
     COMMAND_MOVE,
+    COMMAND_MOVE_ON_OFF,
     DEVICE_TYPE,
     ENDPOINT_ID,
     ENDPOINTS,
@@ -90,7 +91,7 @@ class IkeaDimmer(CustomDevice):
 
     device_automation_triggers = {
         (ROTATED, RIGHT): {
-            COMMAND: COMMAND_MOVE,
+            COMMAND: COMMAND_MOVE_ON_OFF,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
             PARAMS: {"move_mode": 0, "rate": 195},
