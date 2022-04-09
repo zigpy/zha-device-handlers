@@ -29,8 +29,8 @@ TUYA_SMOKE_DETECTED_ATTR = 0x0401  # [0]/[1] [Detected]/[Clear]!
 class TuyaSmokeDetectorCluster(TuyaManufClusterAttributes):
     """Manufacturer Specific Cluster of the TS0601 smoke detector."""
 
-    manufacturer_attributes = {
-        TUYA_SMOKE_DETECTED_ATTR: ("smoke_detected", t.uint8_t),
+    attributes = {
+        TUYA_SMOKE_DETECTED_ATTR: ("smoke_detected", t.uint8_t, True),
     }
 
     def _update_attribute(self, attrid, value):

@@ -31,12 +31,13 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     RIGHT,
+    ROTATED,
     SHORT_PRESS,
     STOP,
     TRIPLE_PRESS,
     TURN_ON,
 )
-from zhaquirks.ikea import IKEA, ROTATED, PowerConfiguration1CRCluster
+from zhaquirks.ikea import IKEA, PowerConfiguration1CRCluster
 
 
 class IkeaSYMFONISK(CustomDevice):

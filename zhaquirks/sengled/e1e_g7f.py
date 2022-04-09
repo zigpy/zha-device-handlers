@@ -68,11 +68,17 @@ class SengledE1EG7FManufacturerSpecificCluster(CustomCluster):
     name = "Sengled Manufacturer Specific"
     ep_attribute = "sengled_manufacturer_specific"
 
-    manufacturer_server_commands = {
-        0x0000: (
-            "command",
-            (t.uint8_t, t.uint8_t, t.uint8_t, t.uint8_t),
-            False,
+    server_commands = {
+        0x0000: foundation.ZCLCommandDef(
+            name="command",
+            schema={
+                "param1": t.uint8_t,
+                "param2": t.uint8_t,
+                "param3": t.uint8_t,
+                "param4": t.uint8_t,
+            },
+            is_reply=False,
+            is_manufacturer_specific=True,
         )
     }
 

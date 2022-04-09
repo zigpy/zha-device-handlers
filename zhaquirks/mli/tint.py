@@ -44,7 +44,7 @@ class TintRemoteScenesCluster(LocalDataCluster, Scenes):
 
     def change_scene(self, value):
         """Change scene attribute to new value."""
-        self._update_attribute(self.attridx["current_scene"], value)
+        self._update_attribute(self.attributes_by_name["current_scene"].id, value)
 
 
 class TintRemoteBasicCluster(CustomCluster, Basic):
@@ -58,7 +58,7 @@ class TintRemoteBasicCluster(CustomCluster, Basic):
 
     def handle_cluster_general_request(self, hdr, args, *, dst_addressing=None):
         """Send write_attributes value to TintRemoteSceneCluster."""
-        if hdr.command_id != foundation.Command.Write_Attributes:
+        if hdr.command_id != foundation.GeneralCommand.Write_Attributes:
             return
 
         attr = args[0][0]

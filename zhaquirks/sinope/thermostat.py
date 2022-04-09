@@ -40,36 +40,39 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
     cluster_id = SINOPE_MANUFACTURER_CLUSTER_ID
     name = "Sinopé Technologies Manufacturer specific"
     ep_attribute = "sinope_manufacturer_specific"
-    manufacturer_attributes = {
-        0x0010: ("outdoor_temp", t.int16s),
-        0x0011: ("outdoor_temp_timeout", t.uint16_t),
-        0x0020: ("secs_since_2k", t.uint32_t),
-        0x0070: ("currentLoad", t.bitmap8),
-        0x0105: ("airFloorMode", t.enum8),
-        0x0106: ("auxOutputMode", t.enum8),
-        0x0108: ("airMaxLimit", t.int16s),
-        0x0109: ("floorMinSetpoint", t.int16s),
-        0x010A: ("floorMaxSetpoint", t.int16s),
-        0x010B: ("tempSensorType", t.enum8),
-        0x010C: ("floorLimitStatus", t.uint8_t),
-        0x0114: ("timeFormat", t.enum8),
-        0x0115: ("gfciStatus", t.enum8),
-        0x0118: ("auxConnectedLoad", t.uint16_t),
-        0x0119: ("ConnectedLoad", t.uint16_t),
-        0x0128: ("pumpProtection", t.uint8_t),
-        0x012D: ("reportLocalTemperature", t.int16s),
+    attributes = {
+        0x0010: ("outdoor_temp", t.int16s, True),
+        0x0011: ("outdoor_temp_timeout", t.uint16_t, True),
+        0x0020: ("secs_since_2k", t.uint32_t, True),
+        0x0070: ("currentLoad", t.bitmap8, True),
+        0x0105: ("airFloorMode", t.enum8, True),
+        0x0106: ("auxOutputMode", t.enum8, True),
+        0x0108: ("airMaxLimit", t.int16s, True),
+        0x0109: ("floorMinSetpoint", t.int16s, True),
+        0x010A: ("floorMaxSetpoint", t.int16s, True),
+        0x010B: ("tempSensorType", t.enum8, True),
+        0x010C: ("floorLimitStatus", t.uint8_t, True),
+        0x0114: ("timeFormat", t.enum8, True),
+        0x0115: ("gfciStatus", t.enum8, True),
+        0x0118: ("auxConnectedLoad", t.uint16_t, True),
+        0x0119: ("ConnectedLoad", t.uint16_t, True),
+        0x0128: ("pumpProtection", t.uint8_t, True),
+        0x012D: ("reportLocalTemperature", t.int16s, True),
     }
 
 
 class SinopeTechnologiesThermostatCluster(CustomCluster, Thermostat):
     """SinopeTechnologiesThermostatCluster custom cluster."""
 
-    manufacturer_attributes = {
-        0x0400: ("set_occupancy", t.enum8),
-        0x0401: ("mainCycleOutput", t.uint16_t),
-        0x0402: ("backlightAutoDimParam", t.enum8),
-        0x0404: ("auxCycleOutput", t.uint16_t),
-    }
+    attributes = Thermostat.attributes.copy()
+    attributes.update(
+        {
+            0x0400: ("set_occupancy", t.enum8, True),
+            0x0401: ("mainCycleOutput", t.uint16_t, True),
+            0x0402: ("backlightAutoDimParam", t.enum8, True),
+            0x0404: ("auxCycleOutput", t.uint16_t, True),
+        }
+    )
 
 
 class SinopeTechnologiesThermostat(CustomDevice):

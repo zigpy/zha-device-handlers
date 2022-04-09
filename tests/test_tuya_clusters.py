@@ -183,7 +183,13 @@ def test_tuya_cluster_request_no_handler(default_rsp_mock, TuyaCluster):
     hdr = zcl_f.ZCLHeader.general(1, 0xFE, is_reply=True)
     hdr.frame_control.disable_default_response = False
 
-    TuyaCluster.client_commands[0xFE] = ("no_such_handler", (), True)
-    TuyaCluster.handle_cluster_request(hdr, (mock.sentinel.args,))
+    new_client_commands = TuyaCluster.client_commands.copy()
+    new_client_commands[0xFE] = zcl_f.ZCLCommandDef(
+        "no_such_handler", {}, is_manufacturer_specific=True
+    )
+
+    with mock.patch.object(TuyaCluster, "client_commands", new_client_commands):
+        TuyaCluster.handle_cluster_request(hdr, (mock.sentinel.args,))
+
     assert default_rsp_mock.call_count == 1
     assert default_rsp_mock.call_args[1]["status"] == zcl_f.Status.UNSUP_CLUSTER_COMMAND

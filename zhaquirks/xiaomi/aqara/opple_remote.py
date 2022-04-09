@@ -117,7 +117,6 @@ class MultistateInputCluster(CustomCluster, MultistateInput):
         manufacturer=None,
     ):
         """Configure reporting."""
-        pass
 
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
@@ -140,7 +139,9 @@ class OppleCluster(CustomCluster):
 
     ep_attribute = "opple_cluster"
     cluster_id = OPPLE_CLUSTER_ID
-    manufacturer_attributes = {0x0009: ("mode", types.uint8_t)}
+    attributes = {
+        0x0009: ("mode", types.uint8_t, True),
+    }
     attr_config = {0x0009: 0x01}
 
     def __init__(self, *args, **kwargs):

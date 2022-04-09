@@ -236,7 +236,7 @@ async def test_singleswitch_requests(zigpy_device_from_quirk, quirk):
         tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
     ) as m1:
 
-        status = await switch_cluster.command(0x0000)
+        rsp = await switch_cluster.command(0x0000)
         m1.assert_called_with(
             61184,
             2,
@@ -244,9 +244,9 @@ async def test_singleswitch_requests(zigpy_device_from_quirk, quirk):
             expect_reply=True,
             command_id=0,
         )
-        assert status == 0
+        assert rsp.status == 0
 
-        status = await switch_cluster.command(0x0001)
+        rsp = await switch_cluster.command(0x0001)
         m1.assert_called_with(
             61184,
             4,
@@ -254,10 +254,10 @@ async def test_singleswitch_requests(zigpy_device_from_quirk, quirk):
             expect_reply=True,
             command_id=0,
         )
-        assert status == 0
+        assert rsp.status == 0
 
-    status = await switch_cluster.command(0x0002)
-    assert status == foundation.Status.UNSUP_CLUSTER_COMMAND
+    rsp = await switch_cluster.command(0x0002)
+    assert rsp.status == foundation.Status.UNSUP_CLUSTER_COMMAND
 
 
 def test_ts0121_signature(assert_signature_matches_quirk):
@@ -296,13 +296,14 @@ async def test_tuya_data_conversion():
     assert Data.from_value(t.int32s(-20)) == [4, 255, 255, 255, 236]
 
 
-class TestManufCluster(TuyaManufClusterAttributes):
+class TuyaTestManufCluster(TuyaManufClusterAttributes):
     """Cluster for synthetic tests."""
 
-    manufacturer_attributes = {617: ("test_attribute", t.uint32_t)}
+    attributes = TuyaManufClusterAttributes.attributes.copy()
+    attributes[617] = ("test_attribute", t.uint32_t, True)
 
 
-class TestDevice(CustomDevice):
+class TuyaTestDevice(CustomDevice):
     """Device for synthetic tests."""
 
     signature = {
@@ -311,7 +312,7 @@ class TestDevice(CustomDevice):
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
-                INPUT_CLUSTERS: [TestManufCluster.cluster_id],
+                INPUT_CLUSTERS: [TuyaTestManufCluster.cluster_id],
                 OUTPUT_CLUSTERS: [],
             }
         },
@@ -322,14 +323,14 @@ class TestDevice(CustomDevice):
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
-                INPUT_CLUSTERS: [TestManufCluster],
+                INPUT_CLUSTERS: [TuyaTestManufCluster],
                 OUTPUT_CLUSTERS: [],
             }
         },
     }
 
 
-@pytest.mark.parametrize("quirk", (TestDevice,))
+@pytest.mark.parametrize("quirk", (TuyaTestDevice,))
 async def test_tuya_receive_attribute(zigpy_device_from_quirk, quirk):
     """Test conversion of tuya commands to attributes."""
 
@@ -345,7 +346,7 @@ async def test_tuya_receive_attribute(zigpy_device_from_quirk, quirk):
     assert listener.attribute_updates[0][1] == 179
 
 
-@pytest.mark.parametrize("quirk", (TestDevice,))
+@pytest.mark.parametrize("quirk", (TuyaTestDevice,))
 async def test_tuya_send_attribute(zigpy_device_from_quirk, quirk):
     """Test conversion of attributes to tuya commands."""
 

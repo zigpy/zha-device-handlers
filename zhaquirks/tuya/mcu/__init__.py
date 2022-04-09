@@ -151,17 +151,23 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
 
             return None
 
-    manufacturer_attributes = {
-        # MCU version
-        ATTR_MCU_VERSION: ("mcu_version", t.uint48_t),
-    }
-
-    manufacturer_client_commands = (
-        TuyaNewManufCluster.manufacturer_client_commands.copy()
-    )
-    manufacturer_client_commands.update(
+    attributes = TuyaNewManufCluster.attributes.copy()
+    attributes.update(
         {
-            TUYA_MCU_VERSION_RSP: ("mcu_version_response", (MCUVersion,), True),
+            # MCU version
+            ATTR_MCU_VERSION: ("mcu_version", t.uint48_t, True),
+        }
+    )
+
+    client_commands = TuyaNewManufCluster.client_commands.copy()
+    client_commands.update(
+        {
+            TUYA_MCU_VERSION_RSP: foundation.ZCLCommandDef(
+                "mcu_version_response",
+                {"version": MCUVersion},
+                True,
+                is_manufacturer_specific=True,
+            ),
         }
     )
 
@@ -261,7 +267,7 @@ class TuyaOnOff(OnOff, TuyaLocalCluster):
 
     async def command(
         self,
-        command_id: Union[foundation.Command, int, t.uint8_t],
+        command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
         *args,
         manufacturer: Optional[Union[int, t.uint16_t]] = None,
         expect_reply: bool = True,
@@ -288,10 +294,14 @@ class TuyaOnOff(OnOff, TuyaLocalCluster):
                 TUYA_MCU_COMMAND,
                 cluster_data,
             )
-            return foundation.Status.SUCCESS
+            return foundation.GENERAL_COMMANDS[
+                foundation.GeneralCommand.Default_Response
+            ].schema(command_id=command_id, status=foundation.Status.SUCCESS)
 
         self.warning("Unsupported command_id: %s", command_id)
-        return foundation.Status.UNSUP_CLUSTER_COMMAND
+        return foundation.GENERAL_COMMANDS[
+            foundation.GeneralCommand.Default_Response
+        ].schema(command_id=command_id, status=foundation.Status.UNSUP_CLUSTER_COMMAND)
 
 
 class TuyaOnOffManufCluster(TuyaMCUCluster):
@@ -375,7 +385,7 @@ class TuyaLevelControl(LevelControl, TuyaLocalCluster):
 
     async def command(
         self,
-        command_id: Union[foundation.Command, int, t.uint8_t],
+        command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
         *args,
         manufacturer: Optional[Union[int, t.uint16_t]] = None,
         expect_reply: bool = True,
@@ -400,20 +410,27 @@ class TuyaLevelControl(LevelControl, TuyaLocalCluster):
                 TUYA_MCU_COMMAND,
                 cluster_data,
             )
-            return foundation.Status.SUCCESS
+            return foundation.GENERAL_COMMANDS[
+                foundation.GeneralCommand.Default_Response
+            ].schema(command_id=command_id, status=foundation.Status.SUCCESS)
 
         self.warning("Unsupported command_id: %s", command_id)
-        return foundation.Status.UNSUP_CLUSTER_COMMAND
+        return foundation.GENERAL_COMMANDS[
+            foundation.GeneralCommand.Default_Response
+        ].schema(command_id=command_id, status=foundation.Status.UNSUP_CLUSTER_COMMAND)
 
 
 class TuyaInWallLevelControl(TuyaAttributesCluster, TuyaLevelControl):
     """Tuya Level cluster for inwall dimmable device."""
 
     # Not sure if these are 'inwall' specific attributes or common to dimmers
-    manufacturer_attributes = {
-        0xEF01: ("minimum_level", t.uint32_t),
-        0xEF02: ("bulb_type", t.enum8),
-    }
+    attributes = TuyaLevelControl.attributes.copy()
+    attributes.update(
+        {
+            0xEF01: ("minimum_level", t.uint32_t, True),
+            0xEF02: ("bulb_type", t.enum8, True),
+        }
+    )
 
 
 class TuyaLevelControlManufCluster(TuyaMCUCluster):
