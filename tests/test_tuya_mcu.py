@@ -134,6 +134,6 @@ async def test_tuya_mcu_classes():
     t_c_d = TuyaClusterData(manufacturer="4098")
     assert t_c_d.manufacturer == 4098
     with pytest.raises(ValueError):
-        TuyaClusterData(manufacturer='xiaomi')
+        TuyaClusterData(manufacturer="xiaomi")
     with pytest.raises(ValueError):
         TuyaClusterData(manufacturer=b"")
