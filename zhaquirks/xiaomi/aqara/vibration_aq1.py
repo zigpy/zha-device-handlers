@@ -102,7 +102,7 @@ class VibrationAQ1(XiaomiQuickInitDevice):
                     self.endpoint.device.motion_bus.listener_event(MOTION_EVENT)
                 elif value == DROP_VALUE:
                     self.endpoint.device.motion_bus.listener_event(
-                        SEND_EVENT, self._current_state[STATUS_TYPE_ATTR]
+                        SEND_EVENT, self._current_state[STATUS_TYPE_ATTR], {}
                     )
             elif attrid == ORIENTATION_ATTR:
                 x = value & 0xFFFF
@@ -151,7 +151,7 @@ class VibrationAQ1(XiaomiQuickInitDevice):
 
         def send_event(self, event, *args):
             """Send event."""
-            self.listener_event(ZHA_SEND_EVENT, event, args)
+            self.listener_event(ZHA_SEND_EVENT, event, *args)
 
     signature = {
         MODELS_INFO: [(LUMI, "lumi.vibration.aq1")],
