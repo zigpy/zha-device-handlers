@@ -1,4 +1,5 @@
 """Device handler for loratap TS130F smart curtain switch."""
+from zhaquirks.tuya import TuyaZBExternalSwitchTypeCluster
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
@@ -21,9 +22,6 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-
-from zhaquirks.tuya import TuyaZBExternalSwitchTypeCluster
-
 
 ATTR_CURRENT_POSITION_LIFT_PERCENTAGE = 0x0008
 CMD_GO_TO_LIFT_PERCENTAGE = 0x0005
