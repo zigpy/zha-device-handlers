@@ -21,7 +21,6 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-
 from zhaquirks.tuya import TuyaZBExternalSwitchTypeCluster
 
 ATTR_CURRENT_POSITION_LIFT_PERCENTAGE = 0x0008
