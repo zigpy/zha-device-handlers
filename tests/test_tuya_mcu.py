@@ -125,3 +125,15 @@ async def test_tuya_mcu_classes():
     mcu_version = TuyaMCUCluster.MCUVersion()
     assert mcu_version
     assert not mcu_version.version
+
+    # test TuyaClusterData.manufacturer values
+    t_c_d = TuyaClusterData(manufacturer=foundation.ZCLHeader.NO_MANUFACTURER_ID)
+    assert t_c_d.manufacturer == -1
+    t_c_d = TuyaClusterData(manufacturer=4619)
+    assert t_c_d.manufacturer == 4619
+    t_c_d = TuyaClusterData(manufacturer="4098")
+    assert t_c_d.manufacturer == 4098
+    with pytest.raises(ValueError):
+        TuyaClusterData(manufacturer='xiaomi')
+    with pytest.raises(ValueError):
+        TuyaClusterData(manufacturer=b"")
