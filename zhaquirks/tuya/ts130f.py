@@ -336,6 +336,7 @@ class TuyaTS130FTI2(CustomDevice):
         },
     }
 
+
 class TuyaTS130ESTC(CustomDevice):
     """Tuya ZigBee Curtain Switch Module with External Switch Type Cluster."""
 
