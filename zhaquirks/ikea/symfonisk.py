@@ -14,7 +14,6 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.lightlink import LightLink
 
 from zhaquirks.const import (
-    ARGS,
     CLUSTER_ID,
     COMMAND,
     COMMAND_MOVE,
@@ -29,6 +28,7 @@ from zhaquirks.const import (
     LEFT,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
+    PARAMS,
     PROFILE_ID,
     RIGHT,
     ROTATED,
@@ -106,13 +106,13 @@ class IkeaSYMFONISK(CustomDevice):
             COMMAND: COMMAND_MOVE,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
-            ARGS: [0, 195],
+            PARAMS: {"move_mode": 0, "rate": 195},
         },
         (ROTATED, LEFT): {
             COMMAND: COMMAND_MOVE,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
-            ARGS: [1, 195],
+            PARAMS: {"move_mode": 1, "rate": 195},
         },
         (ROTATED, STOP): {
             COMMAND: COMMAND_STOP,
@@ -123,12 +123,12 @@ class IkeaSYMFONISK(CustomDevice):
             COMMAND: COMMAND_STEP,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
-            ARGS: [0, 1, 0],
+            PARAMS: {"step_mode": 0, "step_size": 1, "transition_time": 0},
         },
         (TRIPLE_PRESS, TURN_ON): {
             COMMAND: COMMAND_STEP,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
-            ARGS: [1, 1, 0],
+            PARAMS: {"step_mode": 1, "step_size": 1, "transition_time": 0},
         },
     }

@@ -418,7 +418,7 @@ The second part is the event data. You only need to supply enough of the event d
 
 If you look at another example for the same device:
 
-`(SHORT_PRESS, DIM_UP): {COMMAND: COMMAND_STEP, CLUSTER_ID: 8, ENDPOINT_ID: 1, ARGS: [0, 30, 9],}`
+`(SHORT_PRESS, DIM_UP): {COMMAND: COMMAND_STEP, CLUSTER_ID: 8, ENDPOINT_ID: 1, PARAMS: {'step_mode': 0},}`
 
 You can see a pattern that illustrates how to match a more complex event. In this case the step command is used for the dim up and dim down buttons so we need to match more of the event data to uniquely match the event.
 
@@ -534,54 +534,6 @@ def test_ts0121_signature(assert_signature_matches_quirk):
     }
     assert_signature_matches_quirk(zhaquirks.tuya.ts0121_plug.Plug, signature)
 ```
-
-# Testing new releases
-
-Testing a new release of the zha-quirks package before it is released in Home Assistant.
-
-If you are using Supervised Home Assistant (formerly known as the Hassio/Hass.io distro):
-
-- Add <https://github.com/home-assistant/hassio-addons-development> as "add-on" repository
-- Install "Custom deps deployment" addon
-- Update config like:
-
-  ```yml
-  pypi:
-    - zha-quirks==0.0.38
-  apk: []
-  ```
-
-  where 0.0.38 is the new version
-
-- Start the addon
-
-If you are instead using some custom python installation of Home Assistant then do this:
-
-- Activate your python virtual env
-- Update package with `pip`
-
-  ```bash
-  pip install zha-quirks==0.0.38
-  ```
-
-# Testing quirks in development in docker based install
-
-If you are using Supervised Home Assistant (formerly known as the Hassio/Hass.io distro) you will need to get access to the home-assistant docker container. Directions below are given for using the portainer add-on to do this, there are other methods as well not covered here.
-
-- Install the portainer add-on (<https://github.com/hassio-addons/addon-portainer>) from Home Assistant Community Add-ons.
-- Follow the add-on documentation to un-hide the home-assistant container (<https://github.com/hassio-addons/addon-portainer/blob/master/portainer/DOCS.md>)
-- Stage the update quirk in a directory within your config directory
-- Use portainer to access a console in the home-assistant container:
-
-  <img src="https://user-images.githubusercontent.com/11084412/88719260-fdfa7700-d0f0-11ea-8791-88ed3e26915d.png" width=400 >
-
-- Access the quirks directory
-  - on HA > 0.113: /usr/local/lib/python3.8/site-packages/zhaquirks/
-  - on HA < 0.113: /usr/local/lib/python3.7/site-packages/zhaquirks/
-- Copy updated/new quirk to zhaquirks directory: `cp -a /config/temp/NEW_QUIRK ./`
-- Remove the **pycache** folder so it is regenerated `rm -rf ./__pycache__/`
-- Close out the console and restart HA.
-- Note: The added/update quirk will not survive a HA version update.
 
 # Thanks
 
