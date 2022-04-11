@@ -18,6 +18,21 @@ import zigpy.zdo.types
 import zhaquirks
 import zhaquirks.bosch.motion
 from zhaquirks.const import (
+    ARGS,
+    COMMAND,
+    COMMAND_MOVE,
+    COMMAND_MOVE_COLOR_TEMP,
+    COMMAND_MOVE_ON_OFF,
+    COMMAND_MOVE_SATURATION,
+    COMMAND_MOVE_TO_LEVEL_ON_OFF,
+    COMMAND_MOVE_TO_SATURATION,
+    COMMAND_STEP,
+    COMMAND_STEP_COLOR_TEMP,
+    COMMAND_STEP_HUE,
+    COMMAND_STEP_ON_OFF,
+    COMMAND_STEP_SATURATION,
+    COMMAND_STOP,
+    COMMAND_STOP_ON_OFF,
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -26,6 +41,7 @@ from zhaquirks.const import (
     MODELS_INFO,
     NODE_DESCRIPTOR,
     OUTPUT_CLUSTERS,
+    PARAMS,
     PROFILE_ID,
     SKIP_CONFIGURATION,
 )
@@ -517,3 +533,48 @@ def test_no_module_level_device_automation_triggers(module_name: str) -> None:
 
     mod = importlib.import_module(module_name)
     assert not hasattr(mod, "device_automation_triggers")
+
+
+@pytest.mark.parametrize("quirk", ALL_QUIRK_CLASSES)
+def test_migrated_lighting_automation_triggers(quirk: CustomDevice) -> None:
+    """Ensure quirks with lighting or level control clusters are using PARAMS."""
+
+    if not hasattr(quirk, "device_automation_triggers"):
+        return
+
+    for trigger, event in quirk.device_automation_triggers.items():
+        if COMMAND not in event:
+            continue
+
+        command = event[COMMAND]
+
+        # We only consider lighting commands for now
+        if command in (
+            COMMAND_MOVE_SATURATION,
+            COMMAND_MOVE_TO_SATURATION,
+            COMMAND_MOVE_COLOR_TEMP,
+            COMMAND_STEP_HUE,
+            COMMAND_STEP_SATURATION,
+            COMMAND_STEP_COLOR_TEMP,
+        ):
+            cluster = zcl.clusters.lighting.Color
+        elif command in (
+            COMMAND_MOVE,
+            COMMAND_MOVE_ON_OFF,
+            COMMAND_STEP,
+            COMMAND_STEP_ON_OFF,
+            COMMAND_STOP,
+            COMMAND_STOP_ON_OFF,
+            COMMAND_MOVE_TO_LEVEL_ON_OFF,
+        ):
+            cluster = zcl.clusters.general.LevelControl
+        else:
+            continue
+
+        if ARGS in event:
+            raise ValueError(f"ARGS should be migrated to PARAMS: {command!r}")
+        elif PARAMS not in event:
+            continue
+
+        schema = cluster.commands_by_name[command].schema
+        schema(**event[PARAMS])
