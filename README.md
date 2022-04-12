@@ -422,7 +422,9 @@ If you look at another example for the same device:
 
 You can see a pattern that illustrates how to match a more complex event. In this case the step command is used for the dim up and dim down buttons so we need to match more of the event data to uniquely match the event.
 
-## Testing using unit tests
+## Setting up the development environment
+
+Open a terminal at the root of the project and run the setup script: `script/setup` This script will install all necessary dependencies and it will install the precommit hook.
 
 The tests use the [pytest](https://docs.pytest.org/en/latest/) framework.
 
