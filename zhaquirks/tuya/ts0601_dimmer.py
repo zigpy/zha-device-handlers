@@ -5,15 +5,7 @@ from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import (
-    Basic,
-    GreenPowerProxy,
-    Groups,
-    LevelControl,
-    Ota,
-    Scenes,
-    Time,
-)
+from zigpy.zcl.clusters.general import Basic, GreenPowerProxy, Groups, Ota, Scenes, Time
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -23,18 +15,11 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import (
-    TuyaDimmerSwitch,
-    TuyaLevelControl,
-    TuyaManufacturerClusterOnOff,
-    TuyaManufacturerLevelControl,
-    TuyaManufCluster,
-    TuyaOnOff,
-)
+from zhaquirks.tuya import TuyaDimmerSwitch
 from zhaquirks.tuya.mcu import (
     TuyaInWallLevelControl,
     TuyaLevelControlManufCluster,
-    TuyaOnOff as TuyaOnOffMCU,
+    TuyaOnOff,
 )
 
 
@@ -60,7 +45,7 @@ class NoManufacturerCluster(CustomCluster):
         )
 
 
-class TuyaOnOffNM(NoManufacturerCluster, TuyaOnOffMCU):
+class TuyaOnOffNM(NoManufacturerCluster, TuyaOnOff):
     """Tuya OnOff cluster with NoManufacturerID."""
 
     pass
@@ -107,7 +92,7 @@ class TuyaSingleSwitchDimmer(TuyaDimmerSwitch):
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaManufCluster.cluster_id,
+                    TuyaLevelControlManufCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             }
@@ -122,11 +107,9 @@ class TuyaSingleSwitchDimmer(TuyaDimmerSwitch):
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    LevelControl.cluster_id,
-                    TuyaManufacturerClusterOnOff,
+                    TuyaLevelControlManufCluster,
                     TuyaOnOff,
-                    TuyaManufacturerLevelControl,
-                    TuyaLevelControl,
+                    TuyaInWallLevelControl,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             }
@@ -153,7 +136,7 @@ class TuyaDoubleSwitchDimmer(TuyaDimmerSwitch):
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaManufCluster.cluster_id,
+                    TuyaLevelControlManufCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             }
@@ -169,7 +152,7 @@ class TuyaDoubleSwitchDimmer(TuyaDimmerSwitch):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     TuyaLevelControlManufCluster,
-                    TuyaOnOffMCU,
+                    TuyaOnOff,
                     TuyaInWallLevelControl,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
@@ -178,7 +161,7 @@ class TuyaDoubleSwitchDimmer(TuyaDimmerSwitch):
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
                 INPUT_CLUSTERS: [
-                    TuyaOnOffMCU,
+                    TuyaOnOff,
                     TuyaInWallLevelControl,
                 ],
                 OUTPUT_CLUSTERS: [],
@@ -207,7 +190,7 @@ class TuyaSingleSwitchDimmerGP(TuyaDimmerSwitch):
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaManufCluster.cluster_id,
+                    TuyaLevelControlManufCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
@@ -266,7 +249,7 @@ class TuyaDoubleSwitchDimmerGP(TuyaDimmerSwitch):
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaManufCluster.cluster_id,
+                    TuyaLevelControlManufCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
@@ -334,7 +317,7 @@ class TuyaTripleSwitchDimmerGP(TuyaDimmerSwitch):
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaManufCluster.cluster_id,
+                    TuyaLevelControlManufCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
