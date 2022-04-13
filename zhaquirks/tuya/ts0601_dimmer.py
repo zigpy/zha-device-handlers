@@ -93,7 +93,7 @@ class TuyaSingleSwitchDimmer(TuyaDimmerSwitch):
             ("_TZE200_swaamsoy", "TS0601"),
             ("_TZE200_0nauxa0p", "TS0601"),
             ("_TZE200_la2c2uo9", "TS0601"),
-            ("_TZE200_1agwnems", "TS0601"),  #TODO: validation pending?
+            ("_TZE200_1agwnems", "TS0601"),  # TODO: validation pending?
         ],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=0x0051
