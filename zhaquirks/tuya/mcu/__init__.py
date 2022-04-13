@@ -397,6 +397,20 @@ class TuyaLevelControl(LevelControl, TuyaLocalCluster):
             command_id,
             args,
         )
+        # (move_to_level_with_on_off --> send the on_off command first)
+        if command_id  ==  0x0004:
+            cluster_data = TuyaClusterData(
+                endpoint_id=self.endpoint.endpoint_id,
+                cluster_attr="on_off",
+                attr_value=args[1],
+                expect_reply=expect_reply,
+                manufacturer=manufacturer,
+            )
+            self.endpoint.device.command_bus.listener_event(
+                TUYA_MCU_COMMAND,
+                cluster_data,
+            )
+
         # (move_to_level, move, move_to_level_with_on_off)
         if command_id in (0x0000, 0x0001, 0x0004):
             cluster_data = TuyaClusterData(
@@ -489,6 +503,34 @@ class TuyaLevelControlManufCluster(TuyaMCUCluster):
             dp_type=TuyaDPType.ENUM,
             endpoint_id=2,
         ),
+        15: DPToAttributeMapping(
+            TuyaOnOff.ep_attribute,
+            "on_off",
+            dp_type=TuyaDPType.BOOL,
+            endpoint_id=3,
+        ),
+        16: DPToAttributeMapping(
+            TuyaLevelControl.ep_attribute,
+            "current_level",
+            dp_type=TuyaDPType.VALUE,
+            converter=lambda x: (x * 255) // 1000,
+            dp_converter=lambda x: (x * 1000) // 255,
+            endpoint_id=3,
+        ),
+        17: DPToAttributeMapping(
+            TuyaLevelControl.ep_attribute,
+            "minimum_level",
+            dp_type=TuyaDPType.VALUE,
+            converter=lambda x: (x * 255) // 1000,
+            dp_converter=lambda x: (x * 1000) // 255,
+            endpoint_id=3,
+        ),
+        18: DPToAttributeMapping(
+            TuyaLevelControl.ep_attribute,
+            "bulb_type",
+            dp_type=TuyaDPType.ENUM,
+            endpoint_id=3,
+        ),
     }
 
     data_point_handlers = {
@@ -500,4 +542,8 @@ class TuyaLevelControlManufCluster(TuyaMCUCluster):
         8: "_dp_2_attr_update",
         9: "_dp_2_attr_update",
         10: "_dp_2_attr_update",
+        15: "_dp_2_attr_update",
+        16: "_dp_2_attr_update",
+        17: "_dp_2_attr_update",
+        18: "_dp_2_attr_update",
     }
