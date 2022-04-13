@@ -398,7 +398,7 @@ class TuyaLevelControl(LevelControl, TuyaLocalCluster):
             args,
         )
         # (move_to_level_with_on_off --> send the on_off command first)
-        if command_id  ==  0x0004:
+        if command_id == 0x0004:
             cluster_data = TuyaClusterData(
                 endpoint_id=self.endpoint.endpoint_id,
                 cluster_attr="on_off",
