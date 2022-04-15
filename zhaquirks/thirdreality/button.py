@@ -1,12 +1,9 @@
 """Third Reality button devices."""
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
-from zigpy.zcl.clusters.general import Basic, OnOff, Ota, MultistateInput, LevelControl
+from zigpy.zcl.clusters.general import Basic, LevelControl, MultistateInput, OnOff, Ota
 
-from zhaquirks import CustomCluster
-from zhaquirks import PowerConfigurationCluster
-
-from zhaquirks.thirdreality import THIRD_REALITY
+from zhaquirks import CustomCluster, PowerConfigurationCluster
 from zhaquirks.const import (
     COMMAND,
     COMMAND_DOUBLE,
@@ -27,6 +24,7 @@ from zhaquirks.const import (
     VALUE,
     ZHA_SEND_EVENT,
 )
+from zhaquirks.thirdreality import THIRD_REALITY
 
 
 class CustomPowerConfigurationCluster(PowerConfigurationCluster):
