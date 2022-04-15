@@ -76,10 +76,11 @@ class Button(CustomDevice):
             1: {
                 PROFILE_ID: 0x0104,
                 DEVICE_TYPE: 0x0006,
-                INPUT_CLUSTERS: [Basic.cluster_id, MultistateInput.cluster_id, CustomPowerConfigurationCluster.cluster_id],
-                OUTPUT_CLUSTERS: [OnOff.cluster_id, LevelControl.cluster_id, Ota.cluster_id],
+                INPUT_CLUSTERS: [Basic.cluster_id, MultistateInput.cluster_id,
+                                 CustomPowerConfigurationCluster.cluster_id],
+                OUTPUT_CLUSTERS: [OnOff.cluster_id, LevelControl.cluster_id, Ota.cluster_id]
             }
-        },
+        }
     }
     replacement = {
         SKIP_CONFIGURATION: True,
@@ -91,14 +92,14 @@ class Button(CustomDevice):
                     CustomPowerConfigurationCluster,
                     MultistateInputCluster,
                 ],
-                OUTPUT_CLUSTERS: [Basic.cluster_id, OnOff.cluster_id],
+                OUTPUT_CLUSTERS: [Basic.cluster_id, OnOff.cluster_id]
             }
-        },
+        }
     }
 
     device_automation_triggers = {
         (DOUBLE_PRESS, DOUBLE_PRESS): {COMMAND: COMMAND_DOUBLE},
         (SHORT_PRESS, SHORT_PRESS): {COMMAND: COMMAND_SINGLE},
         (LONG_PRESS, LONG_PRESS): {COMMAND: COMMAND_HOLD},
-        (LONG_RELEASE, LONG_RELEASE): {COMMAND: COMMAND_HOLD},
+        (LONG_RELEASE, LONG_RELEASE): {COMMAND: COMMAND_HOLD}
     }
