@@ -67,7 +67,7 @@ class MultistateInputCluster(CustomCluster, MultistateInput):
             super()._update_attribute(0, action)
 
 
-class button(CustomDevice):
+class Button(CustomDevice):
     """thirdreality button device - alternate version."""
 
     signature = {
