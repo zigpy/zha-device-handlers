@@ -2,7 +2,6 @@
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, OnOff, Ota, MultistateInput, LevelControl
-from zigpy.zcl.clusters.homeautomation import Diagnostic
 
 from zhaquirks import PowerConfigurationCluster
 from zhaquirks import CustomCluster
@@ -13,7 +12,6 @@ from zhaquirks.const import (
     COMMAND_DOUBLE,
     COMMAND_HOLD,
     COMMAND_RELEASE,
-    COMMAND_SHAKE,
     COMMAND_SINGLE,
     DEVICE_TYPE,
     DOUBLE_PRESS,
@@ -24,7 +22,6 @@ from zhaquirks.const import (
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
-    SHAKEN,
     SHORT_PRESS,
     SKIP_CONFIGURATION,
     VALUE,
@@ -34,7 +31,7 @@ from zhaquirks.const import (
 
 class CustomPowerConfigurationCluster(PowerConfigurationCluster):
     """Custom PowerConfigurationCluster."""
-	
+
     cluster_id = PowerConfigurationCluster.cluster_id
     MIN_VOLTS = 2.1
     MAX_VOLTS = 3.0
@@ -72,7 +69,7 @@ class MultistateInputCluster(CustomCluster, MultistateInput):
 
 class button(CustomDevice):
     """thirdreality button device - alternate version."""
-	
+
     signature = {
         MODELS_INFO: [(THIRD_REALITY, "3RSB22BZ")],
         ENDPOINTS: {
