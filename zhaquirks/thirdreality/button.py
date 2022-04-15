@@ -3,8 +3,8 @@ from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, OnOff, Ota, MultistateInput, LevelControl
 
-from zhaquirks import PowerConfigurationCluster
 from zhaquirks import CustomCluster
+from zhaquirks import PowerConfigurationCluster
 
 from zhaquirks.thirdreality import THIRD_REALITY
 from zhaquirks.const import (
