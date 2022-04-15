@@ -1,9 +1,12 @@
 """Third Reality button devices."""
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
-from zigpy.zcl.clusters.general import Basic, LevelControl, MultistateInput, OnOff, Ota
+from zigpy.zcl.clusters.general import Basic, OnOff, Ota, MultistateInput, LevelControl
 
-from zhaquirks import CustomCluster, PowerConfigurationCluster
+from zhaquirks import PowerConfigurationCluster
+from zhaquirks import CustomCluster
+
+from zhaquirks.thirdreality import THIRD_REALITY
 from zhaquirks.const import (
     COMMAND,
     COMMAND_DOUBLE,
@@ -24,7 +27,6 @@ from zhaquirks.const import (
     VALUE,
     ZHA_SEND_EVENT,
 )
-from zhaquirks.thirdreality import THIRD_REALITY
 
 
 class CustomPowerConfigurationCluster(PowerConfigurationCluster):
@@ -65,7 +67,7 @@ class MultistateInputCluster(CustomCluster, MultistateInput):
             super()._update_attribute(0, action)
 
 
-class Button(CustomDevice):
+class button(CustomDevice):
     """thirdreality button device - alternate version."""
 
     signature = {
@@ -74,9 +76,12 @@ class Button(CustomDevice):
             1: {
                 PROFILE_ID: 0x0104,
                 DEVICE_TYPE: 0x0006,
-                INPUT_CLUSTERS: [Basic.cluster_id, MultistateInput.cluster_id,
+                INPUT_CLUSTERS: [Basic.cluster_id, 
+                                 MultistateInput.cluster_id, 
                                  CustomPowerConfigurationCluster.cluster_id],
-                OUTPUT_CLUSTERS: [OnOff.cluster_id, LevelControl.cluster_id, Ota.cluster_id],
+                OUTPUT_CLUSTERS: [OnOff.cluster_id, 
+                                  LevelControl.cluster_id, 
+                                  Ota.cluster_id],
             }
         },
     }
