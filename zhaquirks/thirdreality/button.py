@@ -76,12 +76,8 @@ class Button(CustomDevice):
             1: {
                 PROFILE_ID: 0x0104,
                 DEVICE_TYPE: 0x0006,
-                INPUT_CLUSTERS: [Basic.cluster_id, 
-                                 MultistateInput.cluster_id, 
-                                 CustomPowerConfigurationCluster.cluster_id],
-                OUTPUT_CLUSTERS: [OnOff.cluster_id, 
-                                  LevelControl.cluster_id, 
-                                  Ota.cluster_id],
+                INPUT_CLUSTERS: [Basic.cluster_id, MultistateInput.cluster_id, CustomPowerConfigurationCluster.cluster_id],
+                OUTPUT_CLUSTERS: [OnOff.cluster_id, LevelControl.cluster_id, Ota.cluster_id],
             }
         },
     }
