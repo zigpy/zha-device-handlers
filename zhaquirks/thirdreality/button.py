@@ -1,12 +1,9 @@
 """Third Reality button devices."""
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
-from zigpy.zcl.clusters.general import Basic, OnOff, Ota, MultistateInput, LevelControl
+from zigpy.zcl.clusters.general import Basic, LevelControl, MultistateInput, OnOff, Ota
 
-from zhaquirks import PowerConfigurationCluster
-from zhaquirks import CustomCluster
-
-from zhaquirks.thirdreality import THIRD_REALITY
+from zhaquirks import CustomCluster, PowerConfigurationCluster
 from zhaquirks.const import (
     COMMAND,
     COMMAND_DOUBLE,
@@ -27,6 +24,7 @@ from zhaquirks.const import (
     VALUE,
     ZHA_SEND_EVENT,
 )
+from zhaquirks.thirdreality import THIRD_REALITY
 
 
 class CustomPowerConfigurationCluster(PowerConfigurationCluster):
@@ -69,7 +67,7 @@ class MultistateInputCluster(CustomCluster, MultistateInput):
 
 class Button(CustomDevice):
     """thirdreality button device - alternate version."""
-    
+
     signature = {
         MODELS_INFO: [(THIRD_REALITY, "3RSB22BZ")],
         ENDPOINTS: {
@@ -78,9 +76,9 @@ class Button(CustomDevice):
                 DEVICE_TYPE: 0x0006,
                 INPUT_CLUSTERS: [Basic.cluster_id, MultistateInput.cluster_id,
                                  CustomPowerConfigurationCluster.cluster_id],
-                OUTPUT_CLUSTERS: [OnOff.cluster_id, LevelControl.cluster_id, Ota.cluster_id]
+                OUTPUT_CLUSTERS: [OnOff.cluster_id, LevelControl.cluster_id, Ota.cluster_id],
             }
-        }
+        },
     }
     replacement = {
         SKIP_CONFIGURATION: True,
@@ -92,14 +90,14 @@ class Button(CustomDevice):
                     CustomPowerConfigurationCluster,
                     MultistateInputCluster,
                 ],
-                OUTPUT_CLUSTERS: [Basic.cluster_id, OnOff.cluster_id]
+                OUTPUT_CLUSTERS: [Basic.cluster_id, OnOff.cluster_id],
             }
-        }
+        },
     }
 
     device_automation_triggers = {
         (DOUBLE_PRESS, DOUBLE_PRESS): {COMMAND: COMMAND_DOUBLE},
         (SHORT_PRESS, SHORT_PRESS): {COMMAND: COMMAND_SINGLE},
         (LONG_PRESS, LONG_PRESS): {COMMAND: COMMAND_HOLD},
-        (LONG_RELEASE, LONG_RELEASE): {COMMAND: COMMAND_HOLD}
+        (LONG_RELEASE, LONG_RELEASE): {COMMAND: COMMAND_HOLD},
     }
