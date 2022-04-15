@@ -69,7 +69,7 @@ class MultistateInputCluster(CustomCluster, MultistateInput):
 
 class Button(CustomDevice):
     """thirdreality button device - alternate version."""
-
+    
     signature = {
         MODELS_INFO: [(THIRD_REALITY, "3RSB22BZ")],
         ENDPOINTS: {
