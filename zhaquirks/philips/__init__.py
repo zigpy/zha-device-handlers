@@ -75,16 +75,16 @@ HUE_REMOTE_DEVICE_TRIGGERS = {
 class OccupancyCluster(CustomCluster, OccupancySensing):
     """Philips occupancy cluster."""
 
-    manufacturer_attributes = {
-        0x0030: ("sensitivity", t.uint8_t),
-        0x0031: ("sensitivity_max", t.uint8_t),
-    }
+    attributes = OccupancySensing.attributes.copy()
+    attributes[0x0030] = ("sensitivity", t.uint8_t, True)
+    attributes[0x0031] = ("sensitivity_max", t.uint8_t, True)
 
 
 class PhilipsBasicCluster(CustomCluster, Basic):
     """Philips Basic cluster."""
 
-    manufacturer_attributes = {0x0031: ("philips", t.bitmap16)}
+    attributes = Basic.attributes.copy()
+    attributes[0x0031] = ("philips", t.bitmap16, True)
 
     attr_config = {0x0031: 0x000B}
 
@@ -135,14 +135,22 @@ class ButtonPressQueue:
 class PhilipsRemoteCluster(CustomCluster):
     """Philips remote cluster."""
 
-    cluster_id = 64512
+    cluster_id = 0xFC00
     name = "PhilipsRemoteCluster"
     ep_attribute = "philips_remote_cluster"
-    manufacturer_client_commands = {
-        0x0000: (
+    client_commands = {
+        0x0000: foundation.ZCLCommandDef(
             "notification",
-            (t.uint8_t, t.uint24_t, t.uint8_t, t.uint8_t, t.uint8_t, t.uint8_t),
+            {
+                "button": t.uint8_t,
+                "param2": t.uint24_t,
+                "press_type": t.uint8_t,
+                "param4": t.uint8_t,
+                "param5": t.uint8_t,
+                "param6": t.uint8_t,
+            },
             False,
+            is_manufacturer_specific=True,
         )
     }
     BUTTONS = {1: "on", 2: "up", 3: "down", 4: "off"}

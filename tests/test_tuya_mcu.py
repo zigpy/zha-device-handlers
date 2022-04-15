@@ -63,7 +63,9 @@ async def test_tuya_methods(zigpy_device_from_quirk, quirk):
 
     tcd_1 = TuyaClusterData(endpoint_id=2, cluster_attr="minimum_level", attr_value=25)
 
-    tcd_switch1_on = TuyaClusterData(endpoint_id=1, cluster_attr="on_off", attr_value=1)
+    tcd_switch1_on = TuyaClusterData(
+        endpoint_id=1, cluster_attr="on_off", attr_value=1, expect_reply=True
+    )
 
     result_1 = tuya_cluster.from_cluster_data(tcd_1)
     assert result_1
@@ -83,17 +85,17 @@ async def test_tuya_methods(zigpy_device_from_quirk, quirk):
         m1.assert_not_called()
 
     result_3 = await dimmer2_cluster.command(0x0006)
-    assert result_3 == foundation.Status.UNSUP_CLUSTER_COMMAND
+    assert result_3.status == foundation.Status.UNSUP_CLUSTER_COMMAND
 
     with mock.patch.object(tuya_cluster, "tuya_mcu_command") as m1:
-        status = await switch1_cluster.command(0x0001)
+        rsp = await switch1_cluster.command(0x0001)
 
         m1.assert_called_once_with(tcd_switch1_on)
-        assert status == foundation.Status.SUCCESS
+        assert rsp.status == foundation.Status.SUCCESS
 
-        status = await switch1_cluster.command(0x0004)
+        rsp = await switch1_cluster.command(0x0004)
         m1.assert_called_once_with(tcd_switch1_on)  # no extra calls
-        assert status == foundation.Status.UNSUP_CLUSTER_COMMAND
+        assert rsp.status == foundation.Status.UNSUP_CLUSTER_COMMAND
 
 
 async def test_tuya_mcu_classes():
@@ -123,3 +125,15 @@ async def test_tuya_mcu_classes():
     mcu_version = TuyaMCUCluster.MCUVersion()
     assert mcu_version
     assert not mcu_version.version
+
+    # test TuyaClusterData.manufacturer values
+    t_c_d = TuyaClusterData(manufacturer=foundation.ZCLHeader.NO_MANUFACTURER_ID)
+    assert t_c_d.manufacturer == -1
+    t_c_d = TuyaClusterData(manufacturer=4619)
+    assert t_c_d.manufacturer == 4619
+    t_c_d = TuyaClusterData(manufacturer="4098")
+    assert t_c_d.manufacturer == 4098
+    with pytest.raises(ValueError):
+        TuyaClusterData(manufacturer="xiaomi")
+    with pytest.raises(ValueError):
+        TuyaClusterData(manufacturer=b"")

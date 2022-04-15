@@ -1,21 +1,17 @@
 """Setup module for ZHAQuirks."""
 
+import pathlib
+
 from setuptools import find_packages, setup
 
-VERSION = "0.0.66"
-
-
-def readme():
-    """Print long description."""
-    with open("README.md") as f:
-        return f.read()
+VERSION = "0.0.72"
 
 
 setup(
     name="zha-quirks",
     version=VERSION,
     description="Library implementing Zigpy quirks for ZHA in Home Assistant",
-    long_description=readme(),
+    long_description=(pathlib.Path(__file__).parent / "README.md").read_text(),
     long_description_content_type="text/markdown",
     url="https://github.com/dmulcahey/zha-device-handlers",
     author="David F. Mulcahey",
@@ -24,6 +20,6 @@ setup(
     keywords="zha quirks homeassistant hass",
     packages=find_packages(exclude=["tests"]),
     python_requires=">=3",
-    install_requires=["zigpy>=0.42.0"],
+    install_requires=["zigpy>=0.44.2"],
     tests_require=["pytest"],
 )

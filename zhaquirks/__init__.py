@@ -31,6 +31,8 @@ from zhaquirks.const import (
     MODELS_INFO,
     MOTION_EVENT,
     NODE_DESCRIPTOR,
+    OCCUPANCY_EVENT,
+    OCCUPANCY_STATE,
     OFF,
     ON,
     OUTPUT_CLUSTERS,
@@ -42,8 +44,6 @@ from zhaquirks.const import (
 )
 
 _LOGGER = logging.getLogger(__name__)
-OCCUPANCY_STATE = 0
-OCCUPANCY_EVENT = "occupancy_event"
 
 
 class Bus(ListenableMixin):
@@ -93,8 +93,8 @@ class LocalDataCluster(CustomCluster):
         """Prevent remote writes."""
         for attrid, value in attributes.items():
             if isinstance(attrid, str):
-                attrid = self.attridx[attrid]
-            if attrid not in self.attributes:
+                attrid = self.attributes[attrid].id
+            elif attrid not in self.attributes:
                 self.error("%d is not a valid attribute id", attrid)
                 continue
             self._update_attribute(attrid, value)
@@ -126,12 +126,18 @@ class EventableCluster(CustomCluster):
 
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
+
+        if attrid in self.attributes:
+            attribute_name = self.attributes[attrid].name
+        else:
+            attribute_name = UNKNOWN
+
         self.listener_event(
             ZHA_SEND_EVENT,
             COMMAND_ATTRIBUTE_UPDATED,
             {
                 ATTRIBUTE_ID: attrid,
-                ATTRIBUTE_NAME: self.attributes.get(attrid, [UNKNOWN])[0],
+                ATTRIBUTE_NAME: attribute_name,
                 VALUE: value,
             },
         )
@@ -364,12 +370,12 @@ class QuickInitDevice(CustomDevice):
             for cluster_id in ep_data[INPUT_CLUSTERS]:
                 cluster = endpoint.add_input_cluster(cluster_id)
                 if cluster.ep_attribute == "basic":
-                    manuf_attr_id = cluster.attridx[MANUFACTURER]
+                    manuf_attr_id = cluster.attributes_by_name[MANUFACTURER].id
                     cluster._update_attribute(  # pylint: disable=W0212
                         manuf_attr_id, manufacturer
                     )
                     cluster._update_attribute(  # pylint: disable=W0212
-                        cluster.attridx[MODEL], model
+                        cluster.attributes_by_name[MODEL].id, model
                     )
             for cluster_id in ep_data[OUTPUT_CLUSTERS]:
                 endpoint.add_output_cluster(cluster_id)

@@ -47,11 +47,11 @@ class DevelcoVOCMeasurement(CustomCluster):
     cluster_id = 0xFC03
     name = "VOC Level"
     ep_attribute = "voc_level"
-    manufacturer_attributes = {
-        VOC_MEASURED_VALUE: ("measured_value", t.uint16_t),
-        VOC_MIN_MEASURED_VALUE: ("min_measured_value", t.uint16_t),
-        VOC_MAX_MEASURED_VALUE: ("max_measured_value", t.uint16_t),
-        VOC_RESOLUTION: ("resolution", t.uint16_t),
+    attributes = {
+        VOC_MEASURED_VALUE: ("measured_value", t.uint16_t, True),
+        VOC_MIN_MEASURED_VALUE: ("min_measured_value", t.uint16_t, True),
+        VOC_MAX_MEASURED_VALUE: ("max_measured_value", t.uint16_t, True),
+        VOC_RESOLUTION: ("resolution", t.uint16_t, True),
     }
     server_commands = {}
     client_commands = {}
@@ -113,11 +113,11 @@ class EmulatedVOCMeasurement(LocalDataCluster):
     cluster_id = 0x042E
     name = "VOC Level"
     ep_attribute = "voc_level"
-    manufacturer_attributes = {
-        VOC_MEASURED_VALUE: ("measured_value", t.uint16_t),
-        VOC_MIN_MEASURED_VALUE: ("min_measured_value", t.uint16_t),
-        VOC_MAX_MEASURED_VALUE: ("max_measured_value", t.uint16_t),
-        VOC_RESOLUTION: ("resolution", t.uint16_t),
+    attributes = {
+        VOC_MEASURED_VALUE: ("measured_value", t.uint16_t, True),
+        VOC_MIN_MEASURED_VALUE: ("min_measured_value", t.uint16_t, True),
+        VOC_MAX_MEASURED_VALUE: ("max_measured_value", t.uint16_t, True),
+        VOC_RESOLUTION: ("resolution", t.uint16_t, True),
     }
     MEASURED_VALUE_ID = 0x0000
     MIN_MEASURED_VALUE_ID = 0x0001

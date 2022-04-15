@@ -34,25 +34,17 @@ class TuyaAirQualityVOC(TuyaLocalCluster):
 class TuyaAirQualityTemperature(TemperatureMeasurement, TuyaLocalCluster):
     """Tuya temperature measurement."""
 
-    pass
-
 
 class TuyaAirQualityHumidity(RelativeHumidity, TuyaLocalCluster):
     """Tuya relative humidity measurement."""
-
-    pass
 
 
 class TuyaAirQualityCO2(CarbonDioxideConcentration, TuyaLocalCluster):
     """Tuya Carbon Dioxide concentration measurement."""
 
-    pass
-
 
 class TuyaAirQualityFormaldehyde(FormaldehydeConcentration, TuyaLocalCluster):
     """Tuya Formaldehyde concentration measurement."""
-
-    pass
 
 
 class TuyaCO2ManufCluster(TuyaNewManufCluster):

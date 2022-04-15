@@ -47,8 +47,7 @@ class EmulatedIasZone(LocalDataCluster, IasZone):
 
     async def bind(self):
         """Bind cluster."""
-        result = await self.endpoint.device.app_cluster.bind()
-        return result
+        return await self.endpoint.device.app_cluster.bind()
 
     async def write_attributes(self, attributes, manufacturer=None):
         """Ignore write_attributes."""
@@ -62,8 +61,13 @@ class EmulatedIasZone(LocalDataCluster, IasZone):
 class WAXMANApplianceEventAlerts(CustomCluster, ApplianceEventAlerts):
     """WAXMAN specific ApplianceEventAlert cluster."""
 
-    manufacturer_client_commands = {
-        WAXMAN_CMDID: ("alerts_notification", (t.uint8_t, t.bitmap24), False)
+    client_commands = {
+        WAXMAN_CMDID: foundation.ZCLCommandDef(
+            "alerts_notification",
+            {"param1": t.uint8_t, "state": t.bitmap24},
+            False,
+            is_manufacturer_specific=True,
+        )
     }
 
     def __init__(self, *args, **kwargs):

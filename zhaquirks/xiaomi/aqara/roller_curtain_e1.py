@@ -1,8 +1,11 @@
 """Aqara Roller Shade Driver E1 device."""
+from __future__ import annotations
+
+from typing import Any
 
 from zigpy import types as t
 from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import (
     Alarms,
@@ -21,7 +24,7 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.manufacturer_specific import ManufacturerSpecificCluster
 
-from zhaquirks import Bus, LocalDataCluster
+from zhaquirks import Bus, CustomCluster, LocalDataCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -35,87 +38,134 @@ from zhaquirks.xiaomi import LUMI, BasicCluster, XiaomiCluster, XiaomiCustomDevi
 PRESENT_VALUE = 0x0055
 CURRENT_POSITION_LIFT_PERCENTAGE = 0x0008
 GO_TO_LIFT_PERCENTAGE = 0x0005
+DOWN_CLOSE = 0x0001
+UP_OPEN = 0x0000
+STOP = 0x0002
 
 
 class XiaomiAqaraRollerE1(XiaomiCluster, ManufacturerSpecificCluster):
-    """Xiaomi mfg cluster implementation specific for E1 Roller ."""
+    """Xiaomi mfg cluster implementation specific for E1 Roller."""
 
     cluster_id = 0xFCC0
 
-    manufacturer_attributes = {
-        0x0400: ("Reverse Direction", t.Bool),
-        0x0402: ("Positions Stored", t.Bool),
-        0x0407: ("Store Position", t.uint8_t),
-        0x0408: ("Speed", t.uint8_t),
-        0x0409: ("Charging", t.uint8_t),
-        0x00F7: ("Aqara Attributes", t.LVBytes),
-    }
+    attributes = XiaomiCluster.attributes.copy()
+    attributes.update(
+        {
+            0x0400: ("reverse_direction", t.Bool, True),
+            0x0402: ("positions_stored", t.Bool, True),
+            0x0407: ("store_position", t.uint8_t, True),
+            0x0408: ("speed", t.uint8_t, True),
+            0x0409: ("charging", t.uint8_t, True),
+            0x00F7: ("aqara_attributes", t.LVBytes, True),
+        }
+    )
 
 
-class AnalogOutputRollerE1(LocalDataCluster, AnalogOutput):
+class AnalogOutputRollerE1(CustomCluster, AnalogOutput):
     """Analog output cluster, only used to relay current_value to WindowCovering."""
 
     cluster_id = AnalogOutput.cluster_id
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Init."""
         super().__init__(*args, **kwargs)
 
-    def _update_attribute(self, attrid, value):
+        self._update_attribute(0x0041, float(0x064))  # max_present_value
+        self._update_attribute(0x0045, 0.0)  # min_present_value
+        self._update_attribute(0x0051, 0)  # out_of_service
+        self._update_attribute(0x006A, 1.0)  # resolution
+        self._update_attribute(0x006F, 0x00)  # status_flags
+
+    def _update_attribute(self, attrid: int, value: Any) -> None:
+
         super()._update_attribute(attrid, value)
-        if attrid is not None and attrid == PRESENT_VALUE:
-            self.endpoint.device.roller_bus.listener_event(
-                "current_position_lift_percentage", value
+
+        if attrid == PRESENT_VALUE:
+            self.endpoint.window_covering._update_attribute(
+                CURRENT_POSITION_LIFT_PERCENTAGE, (100 - value)
             )
 
 
 class WindowCoveringRollerE1(CustomCluster, WindowCovering):
-    """Window covering cluster to receive reports that are sent to the AnalogOutput cluster."""
+    """Window covering cluster to receive commands that are sent to the AnalogOutput's present_value to move the motor."""
 
     cluster_id = WindowCovering.cluster_id
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Init."""
         super().__init__(*args, **kwargs)
-        self.endpoint.device.roller_bus.add_listener(self)
-
-    def current_position_lift_percentage(self, value):
-        """Update current_position_lift_percentage and invert value."""
-        value = 100 - value
-        self._update_attribute(CURRENT_POSITION_LIFT_PERCENTAGE, value)
 
     async def command(
-        self, command_id, *args, manufacturer=None, expect_reply=True, tsn=None
-    ):
-        """Override default command to invert percent lift value."""
+        self,
+        command_id: foundation.GeneralCommand | int | t.uint8_t,
+        *args: Any,
+        manufacturer: int | t.uint16_t | None = None,
+        expect_reply: bool = True,
+        tries: int = 1,
+        tsn: int | t.uint8_t | None = None,
+        **kwargs: Any,
+    ) -> Any:
+        """Overwrite the commands to make it work for both firmware 1425 and 1427.
+
+        We either overwrite analog_output's current_value or multistate_output's current
+        value to make the roller work.
+        """
+        if command_id == UP_OPEN:
+            (res,) = await self.endpoint.multistate_output.write_attributes(
+                {"present_value": 1}
+            )
+            return foundation.GENERAL_COMMANDS[
+                foundation.GeneralCommand.Default_Response
+            ].schema(command_id=command_id, status=res[0].status)
+        if command_id == DOWN_CLOSE:
+            (res,) = await self.endpoint.multistate_output.write_attributes(
+                {"present_value": 0}
+            )
+            return foundation.GENERAL_COMMANDS[
+                foundation.GeneralCommand.Default_Response
+            ].schema(command_id=command_id, status=res[0].status)
         if command_id == GO_TO_LIFT_PERCENTAGE:
-            percent = args[0]
-            percent = 100 - percent
-            v = (percent,)
-            return await super().command(command_id, *v)
-        return await super().command(
-            command_id,
-            *args,
-            manufacturer=manufacturer,
-            expect_reply=expect_reply,
-            tsn=tsn
-        )
+            (res,) = await self.endpoint.analog_output.write_attributes(
+                {"present_value": (100 - args[0])}
+            )
+            return foundation.GENERAL_COMMANDS[
+                foundation.GeneralCommand.Default_Response
+            ].schema(command_id=command_id, status=res[0].status)
+        if command_id == STOP:
+            (res,) = await self.endpoint.multistate_output.write_attributes(
+                {"present_value": 2}
+            )
+            return foundation.GENERAL_COMMANDS[
+                foundation.GeneralCommand.Default_Response
+            ].schema(command_id=command_id, status=res[0].status)
+
+
+class MultistateOutputRollerE1(CustomCluster, MultistateOutput):
+    """Multistate Output cluster which overwrites present_value.
+
+    Otherwise, it gives errors of wrong datatype when using it in the commands.
+    """
+
+    attributes = MultistateOutput.attributes.copy()
+    attributes.update(
+        {
+            0x0055: ("present_value", t.uint16_t),
+        }
+    )
 
 
 class PowerConfigurationRollerE1(PowerConfiguration, LocalDataCluster):
     """Xiaomi power configuration cluster implementation."""
 
-    cluster_id = PowerConfiguration.cluster_id
-
     BATTERY_PERCENTAGE_REMAINING = 0x0021
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Init."""
         super().__init__(*args, **kwargs)
         self.endpoint.device.power_bus_percentage.add_listener(self)
 
-    def update_battery_percentage(self, value):
-        """We'll receive a raw percentage value here, no need to calculate any voltages or such. Only thing we do is times 2 the value because Zigbee expects percentage 200%."""
+    def update_battery_percentage(self, value: int) -> None:
+        """Doubles the battery percentage to the Zigbee spec's expected 200% maximum."""
         super()._update_attribute(
             self.BATTERY_PERCENTAGE_REMAINING,
             (value * 2),
@@ -125,11 +175,10 @@ class PowerConfigurationRollerE1(PowerConfiguration, LocalDataCluster):
 class RollerE1AQ(XiaomiCustomDevice):
     """Aqara Roller Shade Driver E1 device."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Init."""
-        self.roller_bus = Bus()
-        self.power_bus_percentage = Bus()
-        super().__init__(*args, **kwargs)
+        self.power_bus_percentage: Bus = Bus()  # type: ignore
+        super().__init__(*args, **kwargs)  # type: ignore
 
     signature = {
         MODELS_INFO: [(LUMI, "lumi.curtain.acn002")],
@@ -186,7 +235,7 @@ class RollerE1AQ(XiaomiCustomDevice):
                     Groups.cluster_id,
                     Identify.cluster_id,
                     XiaomiAqaraRollerE1,
-                    MultistateOutput.cluster_id,
+                    MultistateOutputRollerE1,
                     Scenes.cluster_id,
                     WindowCoveringRollerE1,
                     PowerConfigurationRollerE1,

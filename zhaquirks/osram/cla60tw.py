@@ -1,0 +1,74 @@
+"""Osram CLA60 TW device."""
+from zigpy.profiles import zll
+from zigpy.quirks import CustomDevice
+from zigpy.zcl.clusters.general import (
+    Basic,
+    Groups,
+    Identify,
+    LevelControl,
+    OnOff,
+    Ota,
+    Scenes,
+)
+from zigpy.zcl.clusters.lighting import Color
+from zigpy.zcl.clusters.lightlink import LightLink
+
+from zhaquirks.const import (
+    DEVICE_TYPE,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    MODELS_INFO,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
+)
+from zhaquirks.osram import OSRAM, OsramLightCluster
+
+
+class CLA60TW(CustomDevice):
+    """Osram CLA60 TW device."""
+
+    signature = {
+        # <SimpleDescriptor endpoint=3 profile=49246 device_type=544
+        # device_version=2 input_clusters=[0, 3, 4, 5, 6, 8, 768, 4096, 64527]
+        # output_clusters=[25]>
+        MODELS_INFO: [(OSRAM, "CLA60 TW OSRAM")],
+        ENDPOINTS: {
+            3: {
+                PROFILE_ID: zll.PROFILE_ID,
+                DEVICE_TYPE: zll.DeviceType.COLOR_TEMPERATURE_LIGHT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                    Color.cluster_id,
+                    LightLink.cluster_id,
+                    OsramLightCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Ota.cluster_id],
+            }
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            3: {
+                PROFILE_ID: zll.PROFILE_ID,
+                DEVICE_TYPE: zll.DeviceType.COLOR_TEMPERATURE_LIGHT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                    Color.cluster_id,
+                    LightLink.cluster_id,
+                    OsramLightCluster,
+                ],
+                OUTPUT_CLUSTERS: [Ota.cluster_id],
+            }
+        }
+    }

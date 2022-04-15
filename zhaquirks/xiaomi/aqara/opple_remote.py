@@ -18,7 +18,6 @@ from zhaquirks.const import (
     ALT_DOUBLE_PRESS,
     ALT_LONG_PRESS,
     ALT_SHORT_PRESS,
-    ARGS,
     ATTR_ID,
     BUTTON,
     BUTTON_1,
@@ -44,6 +43,7 @@ from zhaquirks.const import (
     MODELS_INFO,
     NODE_DESCRIPTOR,
     OUTPUT_CLUSTERS,
+    PARAMS,
     PRESS_TYPE,
     PROFILE_ID,
     SHORT_PRESS,
@@ -117,7 +117,6 @@ class MultistateInputCluster(CustomCluster, MultistateInput):
         manufacturer=None,
     ):
         """Configure reporting."""
-        pass
 
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
@@ -140,7 +139,9 @@ class OppleCluster(CustomCluster):
 
     ep_attribute = "opple_cluster"
     cluster_id = OPPLE_CLUSTER_ID
-    manufacturer_attributes = {0x0009: ("mode", types.uint8_t)}
+    attributes = {
+        0x0009: ("mode", types.uint8_t, True),
+    }
     attr_config = {0x0009: 0x01}
 
     def __init__(self, *args, **kwargs):
@@ -236,24 +237,36 @@ class RemoteB286OPCN01(XiaomiCustomDevice):
         (DOUBLE_PRESS, BUTTON_1): {
             COMMAND: COMMAND_STEP,
             ENDPOINT_ID: 1,
-            ARGS: [1, 85, 7],
+            PARAMS: {"step_mode": 1, "step_size": 85, "transition_time": 7},
         },
         (SHORT_PRESS, BUTTON_1): {COMMAND: COMMAND_OFF, ENDPOINT_ID: 1},
         (LONG_PRESS, BUTTON_1): {
             COMMAND: COMMAND_STEP_COLOR_TEMP,
             ENDPOINT_ID: 1,
-            ARGS: [1, 69, 7, 0, 0],
+            PARAMS: {
+                "step_mode": 1,
+                "step_size": 69,
+                "transition_time": 7,
+                "color_temp_min_mireds": 0,
+                "color_temp_max_mireds": 0,
+            },
         },
         (DOUBLE_PRESS, BUTTON_2): {
             COMMAND: COMMAND_STEP,
             ENDPOINT_ID: 1,
-            ARGS: [0, 85, 7],
+            PARAMS: {"step_mode": 0, "step_size": 85, "transition_time": 7},
         },
         (SHORT_PRESS, BUTTON_2): {COMMAND: COMMAND_ON, ENDPOINT_ID: 1},
         (LONG_PRESS, BUTTON_2): {
             COMMAND: COMMAND_STEP_COLOR_TEMP,
             ENDPOINT_ID: 1,
-            ARGS: [3, 69, 7, 0, 0],
+            PARAMS: {
+                "step_mode": 3,
+                "step_size": 69,
+                "transition_time": 7,
+                "color_temp_min_mireds": 0,
+                "color_temp_max_mireds": 0,
+            },
         },
         (ALT_SHORT_PRESS, BUTTON_1): {COMMAND: COMMAND_1_SINGLE},
         (ALT_DOUBLE_PRESS, BUTTON_1): {COMMAND: COMMAND_1_DOUBLE},
@@ -518,22 +531,34 @@ class RemoteB486OPCN01(XiaomiCustomDevice):
         (SHORT_PRESS, BUTTON_3): {
             COMMAND: COMMAND_STEP,
             ENDPOINT_ID: 1,
-            ARGS: [1, 85, 7],
+            PARAMS: {"step_mode": 1, "step_size": 85, "transition_time": 7},
         },
         (DOUBLE_PRESS, BUTTON_3): {
             COMMAND: COMMAND_STEP_COLOR_TEMP,
             ENDPOINT_ID: 1,
-            ARGS: [1, 69, 7, 0, 0],
+            PARAMS: {
+                "step_mode": 1,
+                "step_size": 69,
+                "transition_time": 7,
+                "color_temp_min_mireds": 0,
+                "color_temp_max_mireds": 0,
+            },
         },
         (SHORT_PRESS, BUTTON_4): {
             COMMAND: COMMAND_STEP,
             ENDPOINT_ID: 1,
-            ARGS: [0, 85, 7],
+            PARAMS: {"step_mode": 0, "step_size": 85, "transition_time": 7},
         },
         (DOUBLE_PRESS, BUTTON_4): {
             COMMAND: COMMAND_STEP_COLOR_TEMP,
             ENDPOINT_ID: 1,
-            ARGS: [3, 69, 7, 0, 0],
+            PARAMS: {
+                "step_mode": 3,
+                "step_size": 69,
+                "transition_time": 7,
+                "color_temp_min_mireds": 0,
+                "color_temp_max_mireds": 0,
+            },
         },
         (ALT_SHORT_PRESS, BUTTON_1): {COMMAND: COMMAND_1_SINGLE},
         (ALT_DOUBLE_PRESS, BUTTON_1): {COMMAND: COMMAND_1_DOUBLE},
@@ -661,34 +686,64 @@ class RemoteB686OPCN01(XiaomiCustomDevice):
         (SHORT_PRESS, BUTTON_3): {
             COMMAND: COMMAND_STEP,
             ENDPOINT_ID: 1,
-            ARGS: [1, 85, 7],
+            PARAMS: {"step_mode": 1, "step_size": 85, "transition_time": 7},
         },
-        (LONG_PRESS, BUTTON_3): {COMMAND: COMMAND_MOVE, ENDPOINT_ID: 1, ARGS: [1, 15]},
+        (LONG_PRESS, BUTTON_3): {
+            COMMAND: COMMAND_MOVE,
+            ENDPOINT_ID: 1,
+            PARAMS: {"move_mode": 1, "rate": 15},
+        },
         (SHORT_PRESS, BUTTON_4): {
             COMMAND: COMMAND_STEP,
             ENDPOINT_ID: 1,
-            ARGS: [0, 85, 7],
+            PARAMS: {"step_mode": 0, "step_size": 85, "transition_time": 7},
         },
-        (LONG_PRESS, BUTTON_4): {COMMAND: COMMAND_MOVE, ENDPOINT_ID: 1, ARGS: [0, 15]},
+        (LONG_PRESS, BUTTON_4): {
+            COMMAND: COMMAND_MOVE,
+            ENDPOINT_ID: 1,
+            PARAMS: {"move_mode": 0, "rate": 15},
+        },
         (SHORT_PRESS, BUTTON_5): {
             COMMAND: COMMAND_STEP_COLOR_TEMP,
             ENDPOINT_ID: 1,
-            ARGS: [1, 69, 7, 0, 0],
+            PARAMS: {
+                "step_mode": 1,
+                "step_size": 69,
+                "transition_time": 7,
+                "color_temp_min_mireds": 0,
+                "color_temp_max_mireds": 0,
+            },
         },
         (LONG_PRESS, BUTTON_5): {
             COMMAND: COMMAND_MOVE_COLOR_TEMP,
             ENDPOINT_ID: 1,
-            ARGS: [1, 15, 0, 0],
+            PARAMS: {
+                "move_mode": 1,
+                "rate": 15,
+                "color_temp_min_mireds": 0,
+                "color_temp_max_mireds": 0,
+            },
         },
         (SHORT_PRESS, BUTTON_6): {
             COMMAND: COMMAND_STEP_COLOR_TEMP,
             ENDPOINT_ID: 1,
-            ARGS: [3, 69, 7, 0, 0],
+            PARAMS: {
+                "step_mode": 3,
+                "step_size": 69,
+                "transition_time": 7,
+                "color_temp_min_mireds": 0,
+                "color_temp_max_mireds": 0,
+            },
         },
         (LONG_PRESS, BUTTON_6): {
             COMMAND: COMMAND_MOVE_COLOR_TEMP,
             ENDPOINT_ID: 1,
-            ARGS: [3, 15, 0, 0],
+            PARAMS: {
+                "move_mode": 3,
+                "rate": 15,
+                "color_temp_min_mireds": 0,
+                "color_temp_max_mireds": 0,
+            },
         },
         (ALT_SHORT_PRESS, BUTTON_1): {COMMAND: COMMAND_1_SINGLE},
         (ALT_DOUBLE_PRESS, BUTTON_1): {COMMAND: COMMAND_1_DOUBLE},

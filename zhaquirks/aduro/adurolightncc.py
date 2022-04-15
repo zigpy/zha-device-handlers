@@ -6,7 +6,6 @@ from zigpy.zcl.clusters.general import Basic, Groups, Identify, LevelControl, On
 from zigpy.zcl.clusters.lightlink import LightLink
 
 from zhaquirks.const import (
-    ARGS,
     CLUSTER_ID,
     COMMAND,
     COMMAND_OFF,
@@ -20,6 +19,7 @@ from zhaquirks.const import (
     INPUT_CLUSTERS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
+    PARAMS,
     PROFILE_ID,
     SHORT_PRESS,
     TURN_OFF,
@@ -91,12 +91,12 @@ class AdurolightNCC(CustomDevice):
             COMMAND: COMMAND_STEP,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
-            ARGS: [0, 16, 9],
+            PARAMS: {"step_mode": 0, "step_size": 16, "transition_time": 9},
         },
         (SHORT_PRESS, DIM_DOWN): {
             COMMAND: COMMAND_STEP,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
-            ARGS: [1, 16, 9],
+            PARAMS: {"step_mode": 1, "step_size": 16, "transition_time": 9},
         },
     }
