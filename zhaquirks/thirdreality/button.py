@@ -1,12 +1,12 @@
 """Third Reality button devices."""
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
-from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes,MultistateInput,LevelControl
+from zigpy.zcl.clusters.general import Basic, OnOff, Ota, MultistateInput, LevelControl
 from zigpy.zcl.clusters.homeautomation import Diagnostic
 
 from zhaquirks import PowerConfigurationCluster
 from zhaquirks import CustomCluster
-from zhaquirks.const import DEVICE_TYPE,ENDPOINTS,INPUT_CLUSTERS,MODELS_INFO,OUTPUT_CLUSTERS,PROFILE_ID
+
 from zhaquirks.thirdreality import THIRD_REALITY
 from zhaquirks.const import (
     COMMAND,
@@ -30,11 +30,15 @@ from zhaquirks.const import (
     VALUE,
     ZHA_SEND_EVENT,
 )
+
+
 class CustomPowerConfigurationCluster(PowerConfigurationCluster):
     """Custom PowerConfigurationCluster."""
+	
     cluster_id = PowerConfigurationCluster.cluster_id
     MIN_VOLTS = 2.1
     MAX_VOLTS = 3.0
+
 
 MOVEMENT_TYPE = {
     0: COMMAND_HOLD,
@@ -42,6 +46,7 @@ MOVEMENT_TYPE = {
     2: COMMAND_DOUBLE,
     255: COMMAND_RELEASE,
 }
+
 
 class MultistateInputCluster(CustomCluster, MultistateInput):
     """Multistate input cluster."""
@@ -64,18 +69,18 @@ class MultistateInputCluster(CustomCluster, MultistateInput):
             # show something in the sensor in HA
             super()._update_attribute(0, action)
 
-	
-	
+
 class button(CustomDevice):
     """thirdreality button device - alternate version."""
+	
     signature = {
         MODELS_INFO: [(THIRD_REALITY, "3RSB22BZ")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: 0x0104,
                 DEVICE_TYPE: 0x0006,
-                INPUT_CLUSTERS: [Basic.cluster_id,MultistateInput.cluster_id,CustomPowerConfigurationCluster.cluster_id],
-                OUTPUT_CLUSTERS: [OnOff.cluster_id,LevelControl.cluster_id,Ota.cluster_id],
+                INPUT_CLUSTERS: [Basic.cluster_id, MultistateInput.cluster_id, CustomPowerConfigurationCluster.cluster_id],
+                OUTPUT_CLUSTERS: [OnOff.cluster_id, LevelControl.cluster_id, Ota.cluster_id],
             }
         },
     }
