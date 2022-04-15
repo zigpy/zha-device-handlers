@@ -93,7 +93,6 @@ class Button(CustomDevice):
             }
         },
     }
-
     device_automation_triggers = {
         (DOUBLE_PRESS, DOUBLE_PRESS): {COMMAND: COMMAND_DOUBLE},
         (SHORT_PRESS, SHORT_PRESS): {COMMAND: COMMAND_SINGLE},
