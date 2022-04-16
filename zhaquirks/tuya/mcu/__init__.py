@@ -75,7 +75,7 @@ class TuyaClusterData(t.Struct):
     cluster_attr: str
     attr_value: int  # Maybe also others types?
     expect_reply: bool
-    manufacturer: str
+    manufacturer: int
 
 
 class MoesBacklight(t.enum8):
