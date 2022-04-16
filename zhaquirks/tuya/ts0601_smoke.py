@@ -19,7 +19,10 @@ from zhaquirks.const import (
     ZONE_TYPE,
 )
 
-from . import TuyaManufCluster, TuyaManufClusterAttributes
+from zhaquirks.tuya import (
+    TuyaManufCluster,
+    TuyaManufClusterAttributes,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -68,7 +71,7 @@ class TuyaIasZone(CustomCluster, IasZone):
 
 
 class TuyaSmokeDetector0601(CustomDevice):
-    """TS0601 _TZE200_aycxwiau quirk."""
+    """TS0601 Smoke detector quirk."""
 
     def __init__(self, *args, **kwargs):
         """Init."""
@@ -76,7 +79,10 @@ class TuyaSmokeDetector0601(CustomDevice):
         super().__init__(*args, **kwargs)
 
     signature = {
-        MODELS_INFO: [("_TZE200_aycxwiau", "TS0601")],
+        MODELS_INFO: [
+            ("_TZE200_aycxwiau", "TS0601"),
+            ("_TZE200_ntcy3xu1", "TS0601"),
+        ],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zigpy.profiles.zha.PROFILE_ID,
