@@ -18,7 +18,6 @@ from zhaquirks.const import (
     ZONE_STATUS,
     ZONE_TYPE,
 )
-
 from zhaquirks.tuya import TuyaManufCluster, TuyaManufClusterAttributes
 
 _LOGGER = logging.getLogger(__name__)
