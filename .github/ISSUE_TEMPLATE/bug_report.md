@@ -23,15 +23,32 @@ A clear and concise description of what you expected to happen.
 **Screenshots**
 If applicable, add screenshots to help explain your problem.
 
-**Device signature - this can be acquired by clicking on the "Zigbee Device Signature" button in the device settings**
+<details>
+<summary>Device signature - this can be acquired by clicking on the "Zigbee Device Signature" button in the device settings</summary>
+
 ```
-Paste the device signature here
+Paste the device signature here.
 ```
 
-**Additional logs**
+</details>
+
+<details>
+<summary>Diagnostic information - this can be acquired by clicking on the "Download Diagnostics" button in the device settings</summary>
+
 ```
-Paste any additional debug logs here
+Paste the diagnostic information here.
 ```
+
+</details>
+
+<details>
+<summary>Additional logs</summary>
+
+```
+Paste any additional debug logs here.
+```
+
+</details>
 
 **Additional context**
 Add any other context about the problem here.
