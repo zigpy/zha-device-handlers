@@ -16,7 +16,6 @@ from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.lightlink import LightLink
 
 from zhaquirks.const import (
-    ARGS,
     CLUSTER_ID,
     COMMAND,
     COMMAND_HOLD,
@@ -122,7 +121,7 @@ class IkeaTradfriRemote1(CustomDevice):
             COMMAND: COMMAND_RELEASE,
             CLUSTER_ID: 5,
             ENDPOINT_ID: 1,
-            ARGS: [],
+            PARAMS: {"param1": 537},
         },
         (SHORT_PRESS, DIM_UP): {
             COMMAND: COMMAND_STEP_ON_OFF,
@@ -152,25 +151,39 @@ class IkeaTradfriRemote1(CustomDevice):
             COMMAND: COMMAND_PRESS,
             CLUSTER_ID: 5,
             ENDPOINT_ID: 1,
-            ARGS: [257, 13, 0],
+            PARAMS: {
+                "param1": 257,
+                "param2": 13,
+                "param3": 0,
+            },
         },
         (LONG_PRESS, LEFT): {
             COMMAND: COMMAND_HOLD,
             CLUSTER_ID: 5,
             ENDPOINT_ID: 1,
-            ARGS: [3329, 0],
+            PARAMS: {
+                "param1": 3329,
+                "param2": 0,
+            },
         },
         (SHORT_PRESS, RIGHT): {
             COMMAND: COMMAND_PRESS,
             CLUSTER_ID: 5,
             ENDPOINT_ID: 1,
-            ARGS: [256, 13, 0],
+            PARAMS: {
+                "param1": 256,
+                "param2": 13,
+                "param3": 0,
+            },
         },
         (LONG_PRESS, RIGHT): {
             COMMAND: COMMAND_HOLD,
             CLUSTER_ID: 5,
             ENDPOINT_ID: 1,
-            ARGS: [3328, 0],
+            PARAMS: {
+                "param1": 3328,
+                "param2": 0,
+            },
         },
     }
 
@@ -306,7 +319,7 @@ class IkeaTradfriRemote3(IkeaTradfriRemote1):
             COMMAND: COMMAND_RELEASE,
             CLUSTER_ID: 5,
             ENDPOINT_ID: 1,
-            ARGS: [],
+            PARAMS: {"param1": 0},
         },
         (SHORT_PRESS, DIM_UP): {
             COMMAND: COMMAND_STEP_ON_OFF,
@@ -343,24 +356,38 @@ class IkeaTradfriRemote3(IkeaTradfriRemote1):
             COMMAND: COMMAND_PRESS,
             CLUSTER_ID: 5,
             ENDPOINT_ID: 1,
-            ARGS: [257, 13, 0],
+            PARAMS: {
+                "param1": 257,
+                "param2": 13,
+                "param3": 0,
+            },
         },
         (LONG_PRESS, LEFT): {
             COMMAND: COMMAND_HOLD,
             CLUSTER_ID: 5,
             ENDPOINT_ID: 1,
-            ARGS: [3329, 0],
+            PARAMS: {
+                "param1": 3329,
+                "param2": 0,
+            },
         },
         (SHORT_PRESS, RIGHT): {
             COMMAND: COMMAND_PRESS,
             CLUSTER_ID: 5,
             ENDPOINT_ID: 1,
-            ARGS: [256, 13, 0],
+            PARAMS: {
+                "param1": 256,
+                "param2": 13,
+                "param3": 0,
+            },
         },
         (LONG_PRESS, RIGHT): {
             COMMAND: COMMAND_HOLD,
             CLUSTER_ID: 5,
             ENDPOINT_ID: 1,
-            ARGS: [3328, 0],
+            PARAMS: {
+                "param1": 3328,
+                "param2": 0,
+            },
         },
     }
