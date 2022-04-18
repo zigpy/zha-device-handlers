@@ -142,7 +142,7 @@ class TuyaSmartRemote004FROK(CustomDevice):
             ENDPOINT_ID: 1,
             CLUSTER_ID: 8,
             PARAMS: {"step_mode": 0, "step_size": 13, "transition_time": 1},
-        },  # Triggered for both let and right in HA (HA bug).
+        },
         (ROTATED_SLOW, LEFT): {
             COMMAND: COMMAND_STEP,
             ENDPOINT_ID: 1,
