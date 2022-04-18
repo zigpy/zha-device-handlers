@@ -132,24 +132,38 @@ class IkeaTradfriRemote(CustomDevice):
             COMMAND: COMMAND_PRESS,
             CLUSTER_ID: 5,
             ENDPOINT_ID: 1,
-            ARGS: [257, 13, 0],
+            PARAMS: {
+                "param1": 257,
+                "param2": 13,
+                "param3": 0,
+            },
         },
         (LONG_PRESS, LEFT): {
             COMMAND: COMMAND_HOLD,
             CLUSTER_ID: 5,
             ENDPOINT_ID: 1,
-            ARGS: [3329, 0],
+            PARAMS: {
+                "param1": 3329,
+                "param2": 0,
+            },
         },
         (SHORT_PRESS, RIGHT): {
             COMMAND: COMMAND_PRESS,
             CLUSTER_ID: 5,
             ENDPOINT_ID: 1,
-            ARGS: [256, 13, 0],
+            PARAMS: {
+                "param1": 256,
+                "param2": 13,
+                "param3": 0,
+            },
         },
         (LONG_PRESS, RIGHT): {
             COMMAND: COMMAND_HOLD,
             CLUSTER_ID: 5,
             ENDPOINT_ID: 1,
-            ARGS: [3328, 0],
+            PARAMS: {
+                "param1": 3328,
+                "param2": 0,
+            },
         },
     }
