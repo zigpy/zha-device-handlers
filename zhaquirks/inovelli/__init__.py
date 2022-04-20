@@ -94,6 +94,7 @@ class Inovelli_VZM31SN_Cluster(CustomCluster):
             0x0015: ("Power_Type", t.uint8_t),
             0x0016: ("Switch_Type", t.uint8_t),
             0x0032: ("Button_Delay", t.uint8_t),
+            0x0033: ("Device_Bind_Number", t.uint8_t),
             0x003C: ("Default_LED1_Strip_Color_When_On", t.uint8_t),
             0x003D: ("Default_LED1_Strip_Color_When_Off", t.uint8_t),
             0x003E: ("Default_LED1_Strip_Intensity_When_On", t.uint8_t),
