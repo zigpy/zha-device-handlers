@@ -1,0 +1,20 @@
+"""Quirk for {{manufacturer}} {{model}}."""
+
+{% include "imports_template.txt" %}
+
+
+class {{manufacturer.title().replace(" ","")}}{{model.title().replace(" ","")}}(CustomDevice):
+    """{{manufacturer.title()}} {{model.title()}} custom device implementation."""
+
+    signature = {
+        MODELS_INFO: [("{{manufacturer}}", "{{model}}")],
+        ENDPOINTS: {
+            {% include "endpoints_template.txt" %}
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            {% include "endpoints_template.txt" %}
+        }
+    }

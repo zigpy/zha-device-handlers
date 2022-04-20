@@ -1,0 +1,12 @@
+{% for id, endpoint in signature["endpoints"].items() %}{{id}}: {
+                PROFILE_ID: {{endpoint["profile_id"]}},
+                DEVICE_TYPE: {{endpoint["device_type"]}},
+                INPUT_CLUSTERS: [
+                    {%- for cluster in endpoint["in_clusters"] %}
+                    {{cluster}},{% endfor %}
+                ],
+                OUTPUT_CLUSTERS: [
+                    {%- for cluster in endpoint["out_clusters"] %}
+                    {{cluster}},{% endfor %}
+                ] 
+            }{% endfor %}

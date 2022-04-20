@@ -1,0 +1,15 @@
+from zigpy.profiles import {% if zha_profile in present_profiles -%}zha{% if len(present_profiles) > 1 -%},{% endif %} {% endif %}{% if zll_profile in present_profiles -%}zll{% endif %}
+from zigpy.quirks import CustomDevice
+{% for module, classes in grouped_clusters.items() %}from {{module}} import (
+{% for class in classes %}    {{class}},
+{% endfor %} 
+)
+{% endfor -%}
+from zhaquirks.const import (
+    DEVICE_TYPE,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    MODELS_INFO,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
+)
