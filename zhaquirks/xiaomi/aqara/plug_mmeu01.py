@@ -2,6 +2,7 @@
 import logging
 
 from zigpy.profiles import zha
+import zigpy.types as types
 from zigpy.zcl.clusters.general import (
     Alarms,
     AnalogInput,
@@ -33,6 +34,7 @@ from zhaquirks.xiaomi import (
     AnalogInputCluster,
     BasicCluster,
     ElectricalMeasurementCluster,
+    XiaomiAqaraE1Cluster,
     XiaomiCustomDevice,
 )
 
@@ -112,6 +114,54 @@ class Plug(XiaomiCustomDevice):
                 DEVICE_TYPE: zha.DeviceType.MAIN_POWER_OUTLET,
                 INPUT_CLUSTERS: [AnalogInputCluster],
                 OUTPUT_CLUSTERS: [AnalogInput.cluster_id, Groups.cluster_id],
+            },
+            242: {
+                PROFILE_ID: XIAOMI_PROFILE_ID,
+                DEVICE_TYPE: XIAOMI_DEVICE_TYPE,
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        },
+    }
+
+
+class OppleCluster(XiaomiAqaraE1Cluster):
+    """Opple cluster."""
+
+    ep_attribute = "opple_cluster"
+    attributes = {
+        0x0009: ("mode", types.uint8_t, True),
+    }
+
+
+class PlugMAEU01(Plug):
+    """lumi.plug.maeu01 plug."""
+
+    signature = {
+        MODELS_INFO: [
+            (LUMI, "lumi.plug.maeu01"),
+        ],
+        ENDPOINTS: Plug.signature[ENDPOINTS],
+    }
+
+    replacement = {
+        SKIP_CONFIGURATION: False,
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    DeviceTemperature.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    Alarms.cluster_id,
+                    Metering.cluster_id,
+                    ElectricalMeasurement.cluster_id,
+                    OppleCluster,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
             242: {
                 PROFILE_ID: XIAOMI_PROFILE_ID,
