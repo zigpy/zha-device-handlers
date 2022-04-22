@@ -5,8 +5,11 @@ module overrides all server commands that do not have a mandatory reply to not
 expect replies at all.
 """
 
+from __future__ import annotations
+
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -18,6 +21,15 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.hvac import Fan
 
+from zhaquirks.const import (
+    DEVICE_TYPE,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    MANUFACTURER,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
+)
+
 
 class NoReplyMixin:
     """A simple mixin.
@@ -26,9 +38,9 @@ class NoReplyMixin:
     ids that do not generate an explicit reply.
     """
 
-    void_input_commands = []
+    void_input_commands: set[int] = {}
 
-    def command(self, command, *args, manufacturer=None, expect_reply=None):
+    async def command(self, command, *args, expect_reply=None, **kwargs):
         """Override the default Cluster command.
 
         expect_reply behavior is based on void_input_commands.
@@ -36,64 +48,81 @@ class NoReplyMixin:
         expect_reply to None. This allows the caller to explicitly force
         expect_reply to true.
         """
-        if expect_reply is None:
-            expect_reply = command not in self.void_input_commands
 
-        return super(NoReplyMixin, self).command(
-            command, *args, manufacturer=manufacturer, expect_reply=expect_reply
+        if expect_reply is None and command in self.void_input_commands:
+            cmd_expect_reply = False
+        elif expect_reply is None:
+            cmd_expect_reply = True  # the default
+        else:
+            cmd_expect_reply = expect_reply
+
+        rsp = await super(NoReplyMixin, self).command(
+            command, *args, expect_reply=cmd_expect_reply, **kwargs
         )
+
+        if expect_reply is None and command in self.void_input_commands:
+            # Pretend we received a default reply
+            return foundation.GENERAL_COMMANDS[
+                foundation.GeneralCommand.Default_Response
+            ].schema(command_id=command, status=foundation.Status.SUCCESS)
+
+        return rsp
 
 
 class KofBasic(NoReplyMixin, CustomCluster, Basic):
     """KOF Basic Cluster."""
 
-    void_input_commands = [0x00]
+    void_input_commands = {
+        Basic.commands_by_name["reset_fact_default"].id,
+    }
 
 
 class KofIdentify(NoReplyMixin, CustomCluster, Identify):
     """KOF Identify Cluster."""
 
-    # Identify, Trigger Effect
-    void_input_commands = [0x00, 0x40]
+    void_input_commands = {
+        Identify.commands_by_name["identify"].id,
+        Identify.commands_by_name["trigger_effect"].id,
+    }
 
 
 class KofGroups(NoReplyMixin, CustomCluster, Groups):
     """KOF Group Cluster."""
 
     # Remove All Groups, Add Group If Identifying
-    void_input_commands = [0x04, 0x05]
+    void_input_commands = {
+        Groups.commands_by_name["remove_all"].id,
+        Groups.commands_by_name["add_if_identifying"].id,
+    }
 
 
 class KofScenes(NoReplyMixin, CustomCluster, Scenes):
     """KOF Scene Cluster."""
 
-    # Recall Scene
-    void_input_commands = [0x05]
+    void_input_commands = {Scenes.commands_by_name["recall"].id}
 
 
 class KofOnOff(NoReplyMixin, CustomCluster, OnOff):
     """KOF On Off Cluster."""
 
-    # All
-    void_input_commands = [0x00, 0x01, 0x02, 0x40, 0x41, 0x42]
+    void_input_commands = {cmd.id for cmd in OnOff.commands_by_name.values()}
 
 
 class KofLevelControl(NoReplyMixin, CustomCluster, LevelControl):
     """KOF Level Control Cluster."""
 
-    # All
-    void_input_commands = [0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07]
+    void_input_commands = {cmd.id for cmd in LevelControl.commands_by_name.values()}
 
 
 class CeilingFan(CustomDevice):
     """Ceiling Fan Device."""
 
     signature = {
-        "endpoints": {
+        ENDPOINTS: {
             1: {
-                "profile_id": zha.PROFILE_ID,
-                "device_type": 14,
-                "input_clusters": [
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: 14,
+                INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
                     Groups.cluster_id,
@@ -102,17 +131,17 @@ class CeilingFan(CustomDevice):
                     LevelControl.cluster_id,
                     Fan.cluster_id,
                 ],
-                "output_clusters": [Identify.cluster_id, Ota.cluster_id],
+                OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],
             }
         },
-        "manufacturer": "King Of Fans,  Inc.",
+        MANUFACTURER: "King Of Fans,  Inc.",
     }
 
     replacement = {
-        "endpoints": {
+        ENDPOINTS: {
             1: {
-                "device_type": zha.DeviceType.DIMMABLE_LIGHT,
-                "input_clusters": [
+                DEVICE_TYPE: zha.DeviceType.DIMMABLE_LIGHT,
+                INPUT_CLUSTERS: [
                     KofBasic,
                     KofIdentify,
                     KofGroups,
@@ -121,7 +150,7 @@ class CeilingFan(CustomDevice):
                     KofLevelControl,
                     Fan,
                 ],
-                "output_clusters": [Identify, Ota],
+                OUTPUT_CLUSTERS: [Identify, Ota],
             }
         }
     }
