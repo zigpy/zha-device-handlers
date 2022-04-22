@@ -42,6 +42,7 @@ _LOGGER = logging.getLogger(__name__)
 
 XIAOMI_PROFILE_ID = 0xA1E0
 XIAOMI_DEVICE_TYPE = 0x61
+OPPLE_MFG_CODE = 0x115F
 
 
 class Plug(XiaomiCustomDevice):
@@ -131,6 +132,13 @@ class OppleCluster(XiaomiAqaraE1Cluster):
     attributes = {
         0x0009: ("mode", types.uint8_t, True),
     }
+    attr_config = {0x0009: 0x00}
+
+    async def bind(self):
+        """Bind cluster."""
+        result = await super().bind()
+        await self.write_attributes(self.attr_config, manufacturer=OPPLE_MFG_CODE)
+        return result
 
 
 class PlugMAEU01(Plug):
