@@ -11,3 +11,4 @@ pytest-cov
 pytest-sugar
 pytest-timeout
 pytest
+zigpy
