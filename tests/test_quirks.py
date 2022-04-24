@@ -62,6 +62,8 @@ for manufacturer in zq._DEVICE_REGISTRY._registry.values():
 
 del quirk, model_quirk_list, manufacturer
 
+ALL_ZIGPY_CLUSTERS = frozenset(zcl.clusters.CLUSTERS_BY_NAME.values())
+
 
 SIGNATURE_ALLOWED = {
     ENDPOINTS,
@@ -658,3 +660,36 @@ def test_quirk_device_automation_triggers_unique(quirk):
                 [f" * {event} <- {trigger}" for trigger, event in triggers_and_events]
             )
             fail_func(f"Triggers are not unique for {quirk}:\n{triggers_text}")
+
+
+@pytest.mark.parametrize("quirk", ALL_QUIRK_CLASSES)
+def test_attributes_updated_not_replaced(quirk: CustomDevice) -> None:
+    """Verify no quirks subclass a ZCL cluster but delete its attributes list."""
+
+    for ep_id, ep_data in quirk.replacement[ENDPOINTS].items():
+        for cluster in ep_data.get(INPUT_CLUSTERS, []) + ep_data.get(
+            OUTPUT_CLUSTERS, []
+        ):
+            if isinstance(cluster, int) or not issubclass(cluster, zcl.Cluster):
+                continue
+            elif cluster in ALL_ZIGPY_CLUSTERS:
+                continue
+
+            assert issubclass(cluster, zigpy.quirks.CustomCluster)
+
+            base_clusters = set(cluster.__mro__) & ALL_ZIGPY_CLUSTERS
+
+            # Completely custom cluster
+            if len(base_clusters) == 0:
+                continue
+            elif len(base_clusters) > 1:
+                pytest.fail(f"Cluster has more than one zigpy base class: {cluster}")
+
+            base_cluster = list(base_clusters)[0]
+
+            # Ensure the attribute IDs are extended
+            if not set(base_cluster.attributes) <= set(cluster.attributes):
+                pytest.fail(
+                    f"Cluster deletes parent class's attributes"
+                    f" instead of extending them: {cluster}"
+                )
