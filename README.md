@@ -471,7 +471,7 @@ You can read more about fixtures [here](https://docs.pytest.org/en/latest/how-to
 You can find the common fixtures in files named `conftest.py`. Pytest will list them for you as follows:
 
 ```bash
-$ pytest --fxitures
+$ pytest --fixtures
 [...]
 --- fixtures defined from tests.conftest ---
 MockAppController
