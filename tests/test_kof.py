@@ -4,14 +4,22 @@ from unittest import mock
 import zigpy.device
 import zigpy.endpoint
 import zigpy.quirks
+from zigpy.zcl import foundation
+import zigpy.zdo.types as zdo_t
 
 import zhaquirks
 import zhaquirks.kof.kof_mr101z
 
+from tests.conftest import CoroutineMock
+
 zhaquirks.setup()
 
+Default_Response = foundation.GENERAL_COMMANDS[
+    foundation.GeneralCommand.Default_Response
+].schema
 
-def test_kof_no_reply():
+
+async def test_kof_no_reply():
     """Test KOF No reply."""
 
     class TestCluster(
@@ -20,36 +28,40 @@ def test_kof_no_reply():
         """Test Cluster Class."""
 
         cluster_id = 0x1234
-        void_input_commands = [0x0002]
+        void_input_commands = {0x02}
         server_commands = {
-            0x0001: ("noop", (), False),
-            0x0002: ("noop_noreply", (), False),
+            0x01: foundation.ZCLCommandDef("noop", {}, False),
+            0x02: foundation.ZCLCommandDef("noop_noreply", {}, False),
         }
         client_commands = {}
 
-    end_point = mock.MagicMock()
-    cluster = TestCluster(end_point)
+    ep = CoroutineMock()
+    ep.device.application.get_sequence = mock.MagicMock(return_value=4)
 
-    cluster.command(0x0001)
-    end_point.request.assert_called_with(
-        mock.ANY, mock.ANY, mock.ANY, expect_reply=True, command_id=mock.ANY
-    )
-    end_point.reset_mock()
+    cluster = TestCluster(ep)
 
-    cluster.command(0x0001, expect_reply=False)
-    end_point.request.assert_called_with(
-        mock.ANY, mock.ANY, mock.ANY, expect_reply=False, command_id=mock.ANY
-    )
-    end_point.reset_mock()
+    async def mock_req(*args, expect_reply=True, **kwargs):
+        if not expect_reply:
+            return None
+        else:
+            return mock.sentinel.real_response
 
-    cluster.command(0x0002)
-    end_point.request.assert_called_with(
-        mock.ANY, mock.ANY, mock.ANY, expect_reply=False, command_id=mock.ANY
-    )
-    end_point.reset_mock()
+    ep.request.side_effect = mock_req
 
-    cluster.command(0x0002, expect_reply=True)
-    end_point.request.assert_called_with(
-        mock.ANY, mock.ANY, mock.ANY, expect_reply=True, command_id=mock.ANY
+    rsp = await cluster.noop()
+    assert rsp is mock.sentinel.real_response
+
+    rsp = await cluster.noop(expect_reply=True)
+    assert rsp is mock.sentinel.real_response
+
+    rsp = await cluster.noop_noreply()
+    assert rsp == Default_Response(
+        command_id=TestCluster.commands_by_name["noop_noreply"].id,
+        status=zdo_t.Status.SUCCESS,
     )
-    end_point.reset_mock()
+
+    rsp = await cluster.noop_noreply(expect_reply=False)
+    assert rsp is None
+
+    rsp = await cluster.noop_noreply(expect_reply=True)
+    assert rsp is mock.sentinel.real_response
