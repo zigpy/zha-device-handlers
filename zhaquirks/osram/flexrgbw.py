@@ -30,7 +30,10 @@ class FlexRGBW(CustomDevice):
         # <SimpleDescriptor endpoint=3 profile=260 device_type=258
         # device_version=2 input_clusters=[0, 3, 4, 5, 6, 8, 768, 64527]
         # output_clusters=[25]>
-        MODELS_INFO: [(OSRAM, "LIGHTIFY Flex RGBW"), (OSRAM, "LIGHTIFY FLEX OUTDOOR RGBW")],
+        MODELS_INFO: [
+            (OSRAM, "LIGHTIFY Flex RGBW"),
+            (OSRAM, "LIGHTIFY FLEX OUTDOOR RGBW"),
+        ],
         ENDPOINTS: {
             3: {
                 PROFILE_ID: zha.PROFILE_ID,
