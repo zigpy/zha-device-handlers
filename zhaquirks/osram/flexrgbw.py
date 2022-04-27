@@ -1,4 +1,4 @@
-"""Osram A19 tunable white device."""
+"""Osram Flex RGBW LED strip."""
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
@@ -30,7 +30,10 @@ class FlexRGBW(CustomDevice):
         # <SimpleDescriptor endpoint=3 profile=260 device_type=258
         # device_version=2 input_clusters=[0, 3, 4, 5, 6, 8, 768, 64527]
         # output_clusters=[25]>
-        MODELS_INFO: [(OSRAM, "LIGHTIFY Flex RGBW")],
+        MODELS_INFO: [
+            (OSRAM, "LIGHTIFY Flex RGBW"),
+            (OSRAM, "LIGHTIFY FLEX OUTDOOR RGBW"),
+        ],
         ENDPOINTS: {
             3: {
                 PROFILE_ID: zha.PROFILE_ID,
