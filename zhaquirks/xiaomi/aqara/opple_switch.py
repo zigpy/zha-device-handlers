@@ -103,8 +103,6 @@ class OppleSwitchCluster(OppleCluster):
         }
     )
 
-    expose: [] = [0x000A, 0x00F0, 0x0125, 0x0200, 0x0201, 0x0202, 0x0203]
-
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
         if attrid == 0x00FC:
