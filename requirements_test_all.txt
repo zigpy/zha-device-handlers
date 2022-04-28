@@ -1,17 +1,14 @@
-# Home Assistant test
-# linters such as flake8 and pylint should be pinned, as new releases
-# make new things fail. Manually update these pins when pulling in a
-# new version
-asynctest==0.13.0
-codecov==2.1.10
-coveralls==2.2.0
-mock-open==1.4.0
-mypy==0.790
-pre-commit==2.9.2
-pylint==2.6.0
-pytest-aiohttp==0.3.0
-pytest-cov==2.10.1
-pytest-sugar==0.9.4
-pytest-timeout==1.4.2
-pytest==6.1.2
-requests_mock==1.8.0
+asynctest
+isort
+codecov
+colorlog
+codespell
+coveralls
+mypy==0.942
+pre-commit
+pylint
+pytest-cov
+pytest-sugar
+pytest-timeout
+pytest
+zigpy
