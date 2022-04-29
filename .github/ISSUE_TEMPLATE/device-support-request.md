@@ -13,7 +13,32 @@ A clear and concise description of what the problem is. Ex. I'm always frustrate
 **Describe the solution you'd like**
 A clear and concise description of what you want to happen.
 
-**Device signature - this can be acquired by removing the device from ZHA and pairing it again from the add devices screen. Be sure to add the entire content of the log panel after pairing the device to a code block below this line.**
+<details>
+<summary>Device signature - this can be acquired by clicking on the "Zigbee Device Signature" button in the device settings</summary>
+
+```
+Paste the device signature here.
+```
+
+</details>
+
+<details>
+<summary>Diagnostic information - this can be acquired by clicking on the "Download Diagnostics" button in the device settings</summary>
+
+```
+Paste the diagnostic information here.
+```
+
+</details>
+
+<details>
+<summary>Additional logs</summary>
+
+```
+Paste any additional debug logs here.
+```
+
+</details>
 
 **Additional context**
 Add any other context or screenshots about the feature request here.
