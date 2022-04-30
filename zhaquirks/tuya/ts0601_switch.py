@@ -229,6 +229,7 @@ class TuyaQuadrupleSwitchTO(TuyaSwitch):
         MODELS_INFO: [
             ("_TZE200_aqnazj70", "TS0601"),
             ("_TZE200_1ozguk6x", "TS0601"),
+            ("_TZE200_k6jhsr0q", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
