@@ -97,7 +97,12 @@ for cluster in all_clusters:
 for module, classes in grouped_clusters.items():
     classes.sort()
 
-
 template_data["grouped_clusters"] = dict(sorted(grouped_clusters.items()))
+template_data["class_name"] = "".join(
+    filter(
+        str.isalnum,
+        f"{template_data['manufacturer'].title()}{template_data['model'].title()}",
+    )
+)
 
 print(quirk_template.render(template_data))

@@ -3,8 +3,8 @@
 {% include "imports_template.txt" %}
 
 
-class {{manufacturer.title().replace(" ","")}}{{model.title().replace(" ","")}}(CustomDevice):
-    """{{manufacturer.title()}} {{model.title()}} custom device implementation."""
+class {{class_name}}(CustomDevice):
+    """{{manufacturer.title()}} {{model}} custom device implementation."""
 
     signature = {
         MODELS_INFO: [("{{manufacturer}}", "{{model}}")],
