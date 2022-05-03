@@ -49,9 +49,15 @@ def process_profile_id(profile_id: int) -> str | int:
 def process_device_type(profile_id: int, device_type: int) -> str | int:
     """Process the device type."""
     if profile_id == zha.PROFILE_ID:
-        return f"zha.DeviceType.{zha.DeviceType(device_type).name}"
+        try:
+            return f"zha.DeviceType.{zha.DeviceType(device_type).name}"
+        except ValueError:
+            return device_type
     elif profile_id == zll.PROFILE_ID:
-        return f"zll.DeviceType.{zll.DeviceType(device_type).name}"
+        try:
+            return f"zll.DeviceType.{zll.DeviceType(device_type).name}"
+        except ValueError:
+            return device_type
     else:
         return device_type
 
