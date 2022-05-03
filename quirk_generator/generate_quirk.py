@@ -61,10 +61,13 @@ def process_clusters(data: dict) -> dict:
     processed_clusters = []
     for cluster_id in data:
         id = int(cluster_id, 16)
-        cluster = clusters.CLUSTERS_BY_ID[id]
-        all_clusters.add(cluster)
-        class_name = cluster.__name__
-        processed_clusters.append(f"{class_name}.cluster_id")
+        if id in clusters.CLUSTERS_BY_ID:
+            cluster = clusters.CLUSTERS_BY_ID[id]
+            all_clusters.add(cluster)
+            class_name = cluster.__name__
+            processed_clusters.append(f"{class_name}.cluster_id")
+        else:
+            processed_clusters.append(cluster_id)
     return processed_clusters
 
 
