@@ -17,11 +17,13 @@ ZHA device handlers and it's provided Quirks allow Zigpy, ZHA and Home Assistant
 
 ## What are these specifications
 
-[Zigbee Specification](https://zigbeealliance.org/wp-content/uploads/2019/11/docs-05-3474-21-0csg-zigbee-specification.pdf)
+[Zigbee PRO 2017 (R22) Protocol Specification](https://zigbeealliance.org/wp-content/uploads/2019/11/docs-05-3474-21-0csg-zigbee-specification.pdf)
 
-[Zigbee Cluster Library](https://zigbeealliance.org/wp-content/uploads/2019/12/07-5123-06-zigbee-cluster-library-specification.pdf)
+[Zigbee Cluster Library (R8)](https://zigbeealliance.org/wp-content/uploads/2021/10/07-5123-08-Zigbee-Cluster-Library.pdf)
 
-[Zigbee Base Device Specification](https://zigbeealliance.org/wp-content/uploads/zip/zigbee-base-device-behavior-bdb-v1-0.zip)
+[Zigbee Base Device Behavior Specification (V1.0)](https://zigbeealliance.org/wp-content/uploads/zip/zigbee-base-device-behavior-bdb-v1-0.zip)
+
+[Zigbee Lighting & Occupancy Device Specification (V1.0)](https://zigbeealliance.org/wp-content/uploads/2019/11/docs-15-0014-05-0plo-Lighting-OccupancyDevice-Specification-V1.0.pdf)
 
 [Zigbee Primer](https://docs.smartthings.com/en/latest/device-type-developers-guide/zigbee-primer.html)
 
@@ -418,11 +420,13 @@ The second part is the event data. You only need to supply enough of the event d
 
 If you look at another example for the same device:
 
-`(SHORT_PRESS, DIM_UP): {COMMAND: COMMAND_STEP, CLUSTER_ID: 8, ENDPOINT_ID: 1, ARGS: [0, 30, 9],}`
+`(SHORT_PRESS, DIM_UP): {COMMAND: COMMAND_STEP, CLUSTER_ID: 8, ENDPOINT_ID: 1, PARAMS: {'step_mode': 0},}`
 
 You can see a pattern that illustrates how to match a more complex event. In this case the step command is used for the dim up and dim down buttons so we need to match more of the event data to uniquely match the event.
 
-## Testing using unit tests
+## Setting up the development environment
+
+Open a terminal at the root of the project and run the setup script: `script/setup` This script will install all necessary dependencies and it will install the precommit hook.
 
 The tests use the [pytest](https://docs.pytest.org/en/latest/) framework.
 
@@ -467,7 +471,7 @@ You can read more about fixtures [here](https://docs.pytest.org/en/latest/how-to
 You can find the common fixtures in files named `conftest.py`. Pytest will list them for you as follows:
 
 ```bash
-$ pytest --fxitures
+$ pytest --fixtures
 [...]
 --- fixtures defined from tests.conftest ---
 MockAppController

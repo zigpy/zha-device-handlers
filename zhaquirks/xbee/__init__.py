@@ -449,21 +449,24 @@ class XBeeRemoteATRequest(LocalDataCluster):
             ),
             schema,
         )
-        result = await self._endpoint.device.application.request(
-            self._endpoint.device,
-            XBEE_PROFILE_ID,
-            XBEE_AT_REQUEST_CLUSTER,
-            XBEE_AT_ENDPOINT,
-            XBEE_AT_ENDPOINT,
-            self._endpoint.device.application.get_sequence(),
-            data,
-            expect_reply=False,
-        )
 
         future = asyncio.Future()
         self._save_at_request(frame_id, future)
-        if result[0] != foundation.Status.SUCCESS:
-            future.set_exception(RuntimeError("AT Command request: {}".format(result)))
+
+        try:
+            await self._endpoint.device.application.request(
+                self._endpoint.device,
+                XBEE_PROFILE_ID,
+                XBEE_AT_REQUEST_CLUSTER,
+                XBEE_AT_ENDPOINT,
+                XBEE_AT_ENDPOINT,
+                self._endpoint.device.application.get_sequence(),
+                data,
+                expect_reply=False,
+            )
+        except Exception as e:
+            future.set_exception(e)
+
         return future
 
     async def command(

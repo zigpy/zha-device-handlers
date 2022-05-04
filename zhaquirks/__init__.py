@@ -31,6 +31,8 @@ from zhaquirks.const import (
     MODELS_INFO,
     MOTION_EVENT,
     NODE_DESCRIPTOR,
+    OCCUPANCY_EVENT,
+    OCCUPANCY_STATE,
     OFF,
     ON,
     OUTPUT_CLUSTERS,
@@ -42,8 +44,6 @@ from zhaquirks.const import (
 )
 
 _LOGGER = logging.getLogger(__name__)
-OCCUPANCY_STATE = 0
-OCCUPANCY_EVENT = "occupancy_event"
 
 
 class Bus(ListenableMixin):

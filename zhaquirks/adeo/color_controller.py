@@ -42,6 +42,7 @@ from zhaquirks.const import (
     INPUT_CLUSTERS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
+    PARAMS,
     PROFILE_ID,
     SHORT_PRESS,
     TURN_OFF,
@@ -188,49 +189,61 @@ class AdeoColorController(CustomDevice):
             COMMAND: COMMAND_STEP,
             CLUSTER_ID: 8,  # LevelControl.cluster_id
             ENDPOINT_ID: 1,
-            ARGS: [0, 26, 5],
+            PARAMS: {"step_mode": 0, "step_size": 26, "transition_time": 5},
         },
         (SHORT_PRESS, DIM_DOWN): {
             COMMAND: COMMAND_STEP,
             CLUSTER_ID: 8,  # LevelControl.cluster_id
             ENDPOINT_ID: 1,
-            ARGS: [1, 26, 5],
+            PARAMS: {"step_mode": 1, "step_size": 26, "transition_time": 5},
         },
         (SHORT_PRESS, COLOR_UP): {
             COMMAND: COMMAND_STEP_COLOR_TEMP,
             CLUSTER_ID: 768,  # Color.cluster_id
             ENDPOINT_ID: 1,
-            ARGS: [3, 22, 5, 153, 370],
+            PARAMS: {
+                "step_mode": 3,
+                "step_size": 22,
+                "transition_time": 5,
+                "color_temp_min_mireds": 153,
+                "color_temp_max_mireds": 370,
+            },
         },
         (SHORT_PRESS, COLOR_DOWN): {
             COMMAND: COMMAND_STEP_COLOR_TEMP,
             CLUSTER_ID: 768,  # Color.cluster_id
             ENDPOINT_ID: 1,
-            ARGS: [1, 22, 5, 153, 370],
+            PARAMS: {
+                "step_mode": 1,
+                "step_size": 22,
+                "transition_time": 5,
+                "color_temp_min_mireds": 153,
+                "color_temp_max_mireds": 370,
+            },
         },
         (SHORT_PRESS, SATURATION_UP): {
             COMMAND: COMMAND_STEP_SATURATION,
             CLUSTER_ID: 768,  # Color.cluster_id
             ENDPOINT_ID: 1,
-            ARGS: [1, 26, 5],
+            PARAMS: {"step_mode": 1, "step_size": 26, "transition_time": 5},
         },
         (SHORT_PRESS, SATURATION_DOWN): {
             COMMAND: COMMAND_STEP_SATURATION,
             CLUSTER_ID: 768,  # Color.cluster_id
             ENDPOINT_ID: 1,
-            ARGS: [3, 26, 5],
+            PARAMS: {"step_mode": 3, "step_size": 26, "transition_time": 5},
         },
         (SHORT_PRESS, HUE_LEFT): {
             COMMAND: COMMAND_STEP_HUE,
             CLUSTER_ID: 768,  # Color.cluster_id
             ENDPOINT_ID: 1,
-            ARGS: [3, 22, 5],
+            PARAMS: {"step_mode": 3, "step_size": 22, "transition_time": 5},
         },
         (SHORT_PRESS, HUE_RIGHT): {
             COMMAND: COMMAND_STEP_HUE,
             CLUSTER_ID: 768,  # Color.cluster_id
             ENDPOINT_ID: 1,
-            ARGS: [1, 22, 5],
+            PARAMS: {"step_mode": 1, "step_size": 22, "transition_time": 5},
         },
         (SHORT_PRESS, BUTTON_1): {
             COMMAND: "view",
