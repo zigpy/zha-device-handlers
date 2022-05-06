@@ -197,39 +197,4 @@ class IkeaSYMFONISK2(CustomDevice):
         }
     }
 
-    device_automation_triggers = {
-        (SHORT_PRESS, TURN_ON): {
-            COMMAND: COMMAND_TOGGLE,
-            CLUSTER_ID: 6,
-            ENDPOINT_ID: 1,
-        },
-        (ROTATED, RIGHT): {
-            COMMAND: COMMAND_MOVE,
-            CLUSTER_ID: 8,
-            ENDPOINT_ID: 1,
-            PARAMS: {"move_mode": 0, "rate": 195},
-        },
-        (ROTATED, LEFT): {
-            COMMAND: COMMAND_MOVE,
-            CLUSTER_ID: 8,
-            ENDPOINT_ID: 1,
-            PARAMS: {"move_mode": 1, "rate": 195},
-        },
-        (ROTATED, STOP): {
-            COMMAND: COMMAND_STOP,
-            CLUSTER_ID: 8,
-            ENDPOINT_ID: 1,
-        },
-        (DOUBLE_PRESS, TURN_ON): {
-            COMMAND: COMMAND_STEP,
-            CLUSTER_ID: 8,
-            ENDPOINT_ID: 1,
-            PARAMS: {"step_mode": 0, "step_size": 1, "transition_time": 0},
-        },
-        (TRIPLE_PRESS, TURN_ON): {
-            COMMAND: COMMAND_STEP,
-            CLUSTER_ID: 8,
-            ENDPOINT_ID: 1,
-            PARAMS: {"step_mode": 1, "step_size": 1, "transition_time": 0},
-        },
-    }
+    device_automation_triggers = IkeaSYMFONISK1.device_automation_triggers.copy()
