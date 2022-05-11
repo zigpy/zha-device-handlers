@@ -62,6 +62,7 @@ class TuyaGardenWatering(CustomDevice):
 
     signature = {
         MODELS_INFO: [("_TZE200_81isopgh", "TS0601")],
+        # TODO : Add the SimpleDescriptor before the PR
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
