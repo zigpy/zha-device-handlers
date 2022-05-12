@@ -17,8 +17,8 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 
-from zhaquirks.tuya import DPToAttributeMapping, TuyaManufCluster, TuyaLocalCluster
-from zhaquirks.tuya.mcu import TuyaOnOff, TuyaOnOffManufCluster
+from zhaquirks.tuya import TuyaManufCluster, TuyaNewManufCluster, TuyaLocalCluster, TuyaPowerConfigurationCluster2AA
+from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaOnOff, TuyaOnOffManufCluster, TuyaDPType, TuyaMCUCluster
 
 class TuyaGardenWateringWaterConsumed(FlowMeasurement, TuyaLocalCluster):
     """Tuya Water consumed cluster."""
@@ -26,43 +26,42 @@ class TuyaGardenWateringWaterConsumed(FlowMeasurement, TuyaLocalCluster):
 class TuyaGardenWateringPowerConfiguration(PowerConfiguration, TuyaLocalCluster):
     """Tuya PowerConfiguration."""
 
-class TuyaGardenManufCluster(TuyaOnOffManufCluster):
+class TuyaGardenManufCluster(TuyaMCUCluster):
     """On/Off Tuya cluster with extra device attributes."""
 
-    dp_to_attribute: Dict[
-        int, DPToAttributeMapping
-    ] = TuyaOnOffManufCluster.dp_to_attribute.copy()
+    dp_to_attribute: Dict[int, DPToAttributeMapping] = {
+        1: DPToAttributeMapping(
+            TuyaOnOff.ep_attribute,
+            "on_off",
+            dp_type=TuyaDPType.BOOL,
+        ),
+        5: DPToAttributeMapping(
+            TuyaGardenWateringWaterConsumed.ep_attribute,
+            "measured_value",
+            TuyaDPType.VALUE,
+            # lambda x: x,
+        ),
+        7: DPToAttributeMapping(
+            TuyaGardenWateringPowerConfiguration.ep_attribute,
+            "battery_percentage_remaining",
+            TuyaDPType.VALUE,
+            # I don't know why but I had to multiply the value to get it right in HA
+            lambda x: x * 2,
+        )
+    }
 
-    dp_to_attribute.update(
-        {
-            5: DPToAttributeMapping(
-                TuyaGardenWateringWaterConsumed.ep_attribute,
-                "measured_value",
-                lambda x: x
-            )
-        }
-    )
-
-    dp_to_attribute.update(
-        {
-            7: DPToAttributeMapping(
-                TuyaGardenWateringPowerConfiguration.ep_attribute,
-                "battery_percentage_remaining",
-                lambda x: x,
-            )
-        }
-    )
-
-    data_point_handlers = TuyaOnOffManufCluster.data_point_handlers.copy()
-    data_point_handlers.update({5: "_dp_2_attr_update"})
-    data_point_handlers.update({7: "_dp_2_attr_update"})
+    data_point_handlers = {
+        1: "_dp_2_attr_update",
+        5: "_dp_2_attr_update",
+        7: "_dp_2_attr_update",
+    }
 
 class TuyaGardenWatering(CustomDevice):
     """Tuya Garden Watering"""
 
     signature = {
         MODELS_INFO: [("_TZE200_81isopgh", "TS0601")],
-        # TODO : Add the SimpleDescriptor before the PR
+        # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=81, device_version=1, input_clusters=[0, 4, 5, 61184], output_clusters=[25, 10])
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
