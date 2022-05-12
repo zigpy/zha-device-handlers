@@ -2,6 +2,7 @@
 import dataclasses
 from typing import Any, Callable, Dict, Optional, Tuple, Union
 
+from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import LevelControl, OnOff
@@ -257,6 +258,33 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
         self.update_attribute("mcu_version", payload.version)
         return foundation.Status.SUCCESS
 
+# based on https://github.com/zigpy/zha-device-handlers/blob/b802c1fb2cf2682f9a4722bfb57a1958cad9dad7/zhaquirks/tuya/ts0601_dimmer.py#L26
+class NoManufacturerCluster(CustomCluster):
+    """Forces the NO manufacturer id in command."""
+
+    async def command(
+        self,
+        command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
+        *args,
+        manufacturer: Optional[Union[int, t.uint16_t]] = None,
+        expect_reply: bool = True,
+        tsn: Optional[Union[int, t.uint8_t]] = None,
+    ):
+        """Override the default Cluster command."""
+        self.debug("Setting the NO manufacturer id in command: %s", command_id)
+        return await super().command(
+            command_id,
+            *args,
+            manufacturer=foundation.ZCLHeader.NO_MANUFACTURER_ID,
+            expect_reply=expect_reply,
+            tsn=tsn,
+        )
+
+# based on https://github.com/zigpy/zha-device-handlers/blob/b802c1fb2cf2682f9a4722bfb57a1958cad9dad7/zhaquirks/tuya/ts0601_dimmer.py#L48
+class TuyaOnOffNM(NoManufacturerCluster, TuyaOnOff):
+    """Tuya OnOff cluster with NoManufacturerID."""
+
+    pass
 
 class TuyaOnOff(OnOff, TuyaLocalCluster):
     """Tuya MCU OnOff cluster."""
@@ -331,6 +359,18 @@ class TuyaOnOffManufCluster(TuyaMCUCluster):
             dp_type=TuyaDPType.BOOL,
             endpoint_id=4,
         ),
+        5: DPToAttributeMapping(
+            TuyaOnOff.ep_attribute,
+            "on_off",
+            dp_type=TuyaDPType.BOOL,
+            endpoint_id=5,
+        ),
+        6: DPToAttributeMapping(
+            TuyaOnOff.ep_attribute,
+            "on_off",
+            dp_type=TuyaDPType.BOOL,
+            endpoint_id=6,
+        ),
     }
 
     data_point_handlers = {
@@ -338,6 +378,8 @@ class TuyaOnOffManufCluster(TuyaMCUCluster):
         2: "_dp_2_attr_update",
         3: "_dp_2_attr_update",
         4: "_dp_2_attr_update",
+        5: "_dp_2_attr_update",
+        6: "_dp_2_attr_update",
     }
 
 
