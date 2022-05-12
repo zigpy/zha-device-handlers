@@ -2,7 +2,6 @@
 import dataclasses
 from typing import Any, Callable, Dict, Optional, Tuple, Union
 
-from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import LevelControl, OnOff
@@ -14,6 +13,7 @@ from zhaquirks.tuya import (
     TUYA_MCU_VERSION_RSP,
     TUYA_SET_DATA,
     Data,
+    NoManufacturerCluster,
     PowerOnState,
     TuyaCommand,
     TuyaData,
@@ -257,29 +257,6 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
         self.debug("MCU version: %s", payload.version)
         self.update_attribute("mcu_version", payload.version)
         return foundation.Status.SUCCESS
-
-
-# based on https://github.com/zigpy/zha-device-handlers/blob/b802c1fb2cf2682f9a4722bfb57a1958cad9dad7/zhaquirks/tuya/ts0601_dimmer.py#L26
-class NoManufacturerCluster(CustomCluster):
-    """Forces the NO manufacturer id in command."""
-
-    async def command(
-        self,
-        command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
-        *args,
-        manufacturer: Optional[Union[int, t.uint16_t]] = None,
-        expect_reply: bool = True,
-        tsn: Optional[Union[int, t.uint8_t]] = None,
-    ):
-        """Override the default Cluster command."""
-        self.debug("Setting the NO manufacturer id in command: %s", command_id)
-        return await super().command(
-            command_id,
-            *args,
-            manufacturer=foundation.ZCLHeader.NO_MANUFACTURER_ID,
-            expect_reply=expect_reply,
-            tsn=tsn,
-        )
 
 
 class TuyaOnOff(OnOff, TuyaLocalCluster):
