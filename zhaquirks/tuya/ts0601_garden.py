@@ -131,7 +131,8 @@ class TuyaGardenManufCluster(TuyaMCUCluster):
             TuyaGardenWateringPowerConfiguration.ep_attribute,
             "battery_percentage_remaining",
             TuyaDPType.VALUE,
-            # I don't know why but I had to multiply the value to get it right in HA
+            # From Home Assistant : per zcl specs battery percent is reported at 200% ¯\_(ツ)_/¯
+            # So, translate % in %200 ¯\_(ツ)_/¯
             lambda x: x * 2,
         ),
         11: DPToAttributeMapping(
