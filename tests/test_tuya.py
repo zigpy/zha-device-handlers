@@ -1396,20 +1396,14 @@ def test_ts0601_garden_signature(assert_signature_matches_quirk):
             "1": {
                 "profile_id": 260,
                 "device_type": "0x0051",
-                "in_clusters": [
-                    "0x0000",
-                    "0x0004",
-                    "0x0005",
-                    "0xef00"
-                ],
-                "out_clusters": [
-                    "0x000a",
-                    "0x0019"
-                ]
+                "in_clusters": ["0x0000", "0x0004", "0x0005", "0xef00"],
+                "out_clusters": ["0x000a", "0x0019"],
             }
         },
         "manufacturer": "_TZE200_81isopgh",
         "model": "TS0601",
-        "class": "ts0601_garden.TuyaGardenWatering"
+        "class": "ts0601_garden.TuyaGardenWatering",
     }
-    assert_signature_matches_quirk(zhaquirks.tuya.ts0601_garden.TuyaGardenWatering, signature)
+    assert_signature_matches_quirk(
+        zhaquirks.tuya.ts0601_garden.TuyaGardenWatering, signature
+    )

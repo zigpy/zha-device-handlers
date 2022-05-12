@@ -7,7 +7,14 @@ import zigpy.types as t
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time, PowerConfiguration
+from zigpy.zcl.clusters.general import (
+    Basic,
+    Groups,
+    Ota,
+    Scenes,
+    Time,
+    PowerConfiguration,
+)
 from zigpy.zcl.clusters.measurement import FlowMeasurement
 
 from zhaquirks.const import (
@@ -19,7 +26,12 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.tuya import TuyaData, TuyaLocalCluster, TuyaCommand
-from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaOnOff, TuyaDPType, TuyaMCUCluster
+from zhaquirks.tuya.mcu import (
+    DPToAttributeMapping,
+    TuyaOnOff,
+    TuyaDPType,
+    TuyaMCUCluster,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -126,7 +138,7 @@ class TuyaGardenManufCluster(TuyaMCUCluster):
             TuyaGardenWateringTimer.ep_attribute,
             "time_left",
             TuyaDPType.VALUE,
-            lambda x: x / 60
+            lambda x: x / 60,
         ),
         12: DPToAttributeMapping(
             TuyaGardenWateringTimer.ep_attribute,
@@ -137,7 +149,7 @@ class TuyaGardenManufCluster(TuyaMCUCluster):
             TuyaGardenWateringTimer.ep_attribute,
             "last_valve_open_duration",
             TuyaDPType.VALUE,
-            lambda x: x / 60
+            lambda x: x / 60,
         ),
     }
 
