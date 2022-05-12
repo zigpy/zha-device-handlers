@@ -18,6 +18,7 @@ from zhaquirks.tuya.mcu import (
     TuyaOnOffNM,
 )
 
+
 class TuyaSingleSwitchTI(TuyaSwitch):
     """Tuya single channel switch time on in cluster device."""
 
