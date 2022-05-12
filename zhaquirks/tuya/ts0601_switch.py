@@ -11,8 +11,12 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.tuya import TuyaSwitch
-from zhaquirks.tuya.mcu import MoesSwitchManufCluster, TuyaOnOff, TuyaOnOffManufCluster, TuyaOnOffNM
-
+from zhaquirks.tuya.mcu import (
+    MoesSwitchManufCluster,
+    TuyaOnOff,
+    TuyaOnOffManufCluster,
+    TuyaOnOffNM,
+)
 
 class TuyaSingleSwitchTI(TuyaSwitch):
     """Tuya single channel switch time on in cluster device."""
@@ -286,6 +290,7 @@ class TuyaQuadrupleSwitchTO(TuyaSwitch):
         }
     }
 
+
 class TuyaSextupleSwitchTO(TuyaSwitch):
     """Tuya sextuple channel switch time on out cluster device."""
 
@@ -366,4 +371,3 @@ class TuyaSextupleSwitchTO(TuyaSwitch):
             },
         }
     }
-

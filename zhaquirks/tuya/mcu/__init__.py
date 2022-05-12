@@ -258,6 +258,7 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
         self.update_attribute("mcu_version", payload.version)
         return foundation.Status.SUCCESS
 
+
 # based on https://github.com/zigpy/zha-device-handlers/blob/b802c1fb2cf2682f9a4722bfb57a1958cad9dad7/zhaquirks/tuya/ts0601_dimmer.py#L26
 class NoManufacturerCluster(CustomCluster):
     """Forces the NO manufacturer id in command."""
@@ -326,11 +327,13 @@ class TuyaOnOff(OnOff, TuyaLocalCluster):
             foundation.GeneralCommand.Default_Response
         ].schema(command_id=command_id, status=foundation.Status.UNSUP_CLUSTER_COMMAND)
 
+
 # based on https://github.com/zigpy/zha-device-handlers/blob/b802c1fb2cf2682f9a4722bfb57a1958cad9dad7/zhaquirks/tuya/ts0601_dimmer.py#L48
 class TuyaOnOffNM(NoManufacturerCluster, TuyaOnOff):
     """Tuya OnOff cluster with NoManufacturerID."""
 
     pass
+
 
 class TuyaOnOffManufCluster(TuyaMCUCluster):
     """Tuya with On/Off data points."""
