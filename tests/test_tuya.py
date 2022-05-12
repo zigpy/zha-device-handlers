@@ -26,7 +26,7 @@ from zhaquirks.tuya import Data, TuyaManufClusterAttributes
 import zhaquirks.tuya.ts0042
 import zhaquirks.tuya.ts0043
 import zhaquirks.tuya.ts0601_electric_heating
-import zhaquirks.tuya.ts0601_garden
+import zhaquirks.tuya.ts0601_valve
 import zhaquirks.tuya.ts0601_motion
 import zhaquirks.tuya.ts0601_siren
 import zhaquirks.tuya.ts0601_trv

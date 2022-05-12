@@ -6,12 +6,10 @@ from typing import Dict
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 import zigpy.types as t
-from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
     Ota,
-    PowerConfiguration,
     Scenes,
     Time,
 )
@@ -25,9 +23,11 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import TuyaCommand, TuyaData, TuyaLocalCluster
+from zhaquirks import DoublingPowerConfigurationCluster
+from zhaquirks.tuya import TuyaLocalCluster
 from zhaquirks.tuya.mcu import (
     DPToAttributeMapping,
+    TuyaAttributesCluster,
     TuyaDPType,
     TuyaMCUCluster,
     TuyaOnOff,
@@ -36,7 +36,7 @@ from zhaquirks.tuya.mcu import (
 _LOGGER = logging.getLogger(__name__)
 
 
-class TuyaGardenWateringTimer(TuyaLocalCluster):
+class TuyaGardenWateringTimer(TuyaAttributesCluster):
     """Timer cluster."""
 
     cluster_id = 0x043E
@@ -49,67 +49,9 @@ class TuyaGardenWateringTimer(TuyaLocalCluster):
         0x000F: ("last_valve_open_duration", t.uint16_t),
     }
 
-    async def write_attributes(self, attributes, manufacturer=None):
-        """Defer attributes writing to the set_data tuya command."""
-
-        records = self._write_attr_records(attributes)
-
-        for record in records:
-            if record.attrid not in (0x000B, 0x000C):
-                _LOGGER.warning(
-                    "[0x%04x:%s:0x%04x] Unauthorized write attribute : 0x%04x",
-                    self.endpoint.device.nwk,
-                    self.endpoint.endpoint_id,
-                    self.cluster_id,
-                    record.attrid,
-                )
-                continue
-            attr_name = self.attributes[record.attrid][0]
-            _LOGGER.debug(
-                "[0x%04x:%s:0x%04x] Mapping standard %s (0x%04x) with value %s",
-                self.endpoint.device.nwk,
-                self.endpoint.endpoint_id,
-                self.cluster_id,
-                attr_name,
-                record.attrid,
-                repr(record.value.value),
-            )
-            cmd_payload = TuyaCommand()
-            cmd_payload.status = 0
-            cmd_payload.tsn = self.endpoint.device.application.get_sequence()
-            cmd_payload.dp = record.attrid
-            cmd_payload.data = TuyaData()
-            cmd_payload.data.function = 0
-            if record.attrid == 0x000B:
-                cmd_payload.data.dp_type = TuyaDPType.VALUE
-                cmd_payload.data.raw = record.value.value.to_bytes(
-                    4, byteorder="little"
-                )
-            else:
-                cmd_payload.data.dp_type = TuyaDPType.ENUM
-                cmd_payload.data.raw = record.value.value.to_bytes(
-                    1, byteorder="little"
-                )
-            _LOGGER.debug(
-                "[0x%04x:%s:0x%04x] Tuya data : %s",
-                self.endpoint.device.nwk,
-                self.endpoint.endpoint_id,
-                self.cluster_id,
-                repr(cmd_payload),
-            )
-            await self.endpoint.tuya_manufacturer.set_data(cmd_payload)
-        return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
-
-    server_commands = {}
-    client_commands = {}
-
 
 class TuyaGardenWateringWaterConsumed(FlowMeasurement, TuyaLocalCluster):
     """Tuya Water consumed cluster."""
-
-
-class TuyaGardenWateringPowerConfiguration(PowerConfiguration, TuyaLocalCluster):
-    """Tuya PowerConfiguration."""
 
 
 class TuyaGardenManufCluster(TuyaMCUCluster):
@@ -125,15 +67,11 @@ class TuyaGardenManufCluster(TuyaMCUCluster):
             TuyaGardenWateringWaterConsumed.ep_attribute,
             "measured_value",
             TuyaDPType.VALUE,
-            # Value is always at 0 ...
         ),
         7: DPToAttributeMapping(
-            TuyaGardenWateringPowerConfiguration.ep_attribute,
+            DoublingPowerConfigurationCluster.ep_attribute,
             "battery_percentage_remaining",
             TuyaDPType.VALUE,
-            # From Home Assistant : per zcl specs battery percent is reported at 200% ¯\_(ツ)_/¯
-            # So, translate % in %200 ¯\_(ツ)_/¯
-            lambda x: x * 2,
         ),
         11: DPToAttributeMapping(
             TuyaGardenWateringTimer.ep_attribute,
@@ -196,7 +134,7 @@ class TuyaGardenWatering(CustomDevice):
                     Scenes.cluster_id,
                     TuyaOnOff,
                     TuyaGardenWateringWaterConsumed,
-                    TuyaGardenWateringPowerConfiguration,
+                    DoublingPowerConfigurationCluster,
                     TuyaGardenWateringTimer,
                     TuyaGardenManufCluster,
                 ],
