@@ -1,4 +1,4 @@
-"""Tuya Garden Watering"""
+"""Tuya Garden Watering."""
 
 import logging
 from typing import Dict
@@ -152,7 +152,7 @@ class TuyaGardenManufCluster(TuyaMCUCluster):
 
 
 class TuyaGardenWatering(CustomDevice):
-    """Tuya Garden Watering"""
+    """Tuya Garden Watering."""
 
     signature = {
         MODELS_INFO: [("_TZE200_81isopgh", "TS0601")],
