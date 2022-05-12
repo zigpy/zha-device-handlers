@@ -6,15 +6,10 @@ from typing import Dict
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 import zigpy.types as t
-from zigpy.zcl.clusters.general import (
-    Basic,
-    Groups,
-    Ota,
-    Scenes,
-    Time,
-)
+from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time
 from zigpy.zcl.clusters.measurement import FlowMeasurement
 
+from zhaquirks import DoublingPowerConfigurationCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -23,7 +18,6 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks import DoublingPowerConfigurationCluster
 from zhaquirks.tuya import TuyaLocalCluster
 from zhaquirks.tuya.mcu import (
     DPToAttributeMapping,
