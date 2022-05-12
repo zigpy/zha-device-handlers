@@ -1,13 +1,15 @@
 """Tuya Garden Watering"""
 
+import logging
+import zigpy.types as t
 from typing import Dict, Optional, Union
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
-from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time, PowerConfiguration, AnalogOutput
+from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time, PowerConfiguration, AnalogInput
 
 from zigpy.zcl.clusters.measurement import FlowMeasurement
-
+from zigpy.zcl import foundation
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -17,12 +19,78 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 
-from zhaquirks.tuya import TuyaManufCluster, TuyaNewManufCluster, TuyaLocalCluster, TuyaPowerConfigurationCluster2AA
+from zhaquirks.tuya import TuyaManufCluster, TuyaData, TuyaLocalCluster, TuyaCommand
 from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaOnOff, TuyaOnOffManufCluster, TuyaDPType, TuyaMCUCluster
 
+_LOGGER = logging.getLogger(__name__)
 
-class TuyaGardenWateringCountdown(AnalogOutput, TuyaLocalCluster):
-    """Analog output for valve open countdown time."""
+
+class TuyaGardenWateringTimer(TuyaLocalCluster):
+    """Timer cluster."""
+
+    cluster_id = 0x043E
+    name = "Timer"
+    ep_attribute = "timer"
+
+    attributes = {
+        0x000C: ("state", t.uint16_t),
+        0x000B: ("time_left", t.uint16_t),
+        0x000F: ("last_valve_open_duration", t.uint16_t),
+    }
+
+    async def write_attributes(self, attributes, manufacturer=None):
+        """Defer attributes writing to the set_data tuya command."""
+
+        records = self._write_attr_records(attributes)
+
+        for record in records:
+            if record.attrid not in (0x000B, 0x000C):
+                _LOGGER.warning(
+                    "[0x%04x:%s:0x%04x] Unautorize write attribute : 0x%04x",
+                    self.endpoint.device.nwk,
+                    self.endpoint.endpoint_id,
+                    self.cluster_id,
+                    record.attrid,
+                )
+                continue
+            attr_name = self.attributes[record.attrid][0]
+            _LOGGER.debug(
+                "[0x%04x:%s:0x%04x] Mapping standard %s (0x%04x) with value %s",
+                self.endpoint.device.nwk,
+                self.endpoint.endpoint_id,
+                self.cluster_id,
+                attr_name,
+                record.attrid,
+                repr(record.value.value),
+            )
+            cmd_payload = TuyaCommand()
+            cmd_payload.status = 0
+            cmd_payload.tsn = self.endpoint.device.application.get_sequence()
+            cmd_payload.dp = record.attrid
+            cmd_payload.data = TuyaData()
+            cmd_payload.data.function = 0
+            if record.attrid == 0x000B:
+                cmd_payload.data.dp_type = TuyaDPType.VALUE
+                cmd_payload.data.raw = record.value.value.to_bytes(
+                    4, byteorder="little"
+                )
+            else:
+                cmd_payload.data.dp_type = TuyaDPType.ENUM
+                cmd_payload.data.raw = record.value.value.to_bytes(
+                    1, byteorder="little"
+                )
+            _LOGGER.debug(
+                "[0x%04x:%s:0x%04x] Tuya data : %s",
+                self.endpoint.device.nwk,
+                self.endpoint.endpoint_id,
+                self.cluster_id,
+                repr(cmd_payload),
+            )
+            await self.endpoint.tuya_manufacturer.set_data(cmd_payload)
+        return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
+
+    server_commands = {}
+    client_commands = {}
 
 
 class TuyaGardenWateringWaterConsumed(FlowMeasurement, TuyaLocalCluster):
@@ -46,7 +114,6 @@ class TuyaGardenManufCluster(TuyaMCUCluster):
             TuyaGardenWateringWaterConsumed.ep_attribute,
             "measured_value",
             TuyaDPType.VALUE,
-            # lambda x: x,
         ),
         7: DPToAttributeMapping(
             TuyaGardenWateringPowerConfiguration.ep_attribute,
@@ -56,10 +123,22 @@ class TuyaGardenManufCluster(TuyaMCUCluster):
             lambda x: x * 2,
         ),
         11: DPToAttributeMapping(
-            TuyaGardenWateringCountdown.ep_attribute,
-            "present_value",
+            TuyaGardenWateringTimer.ep_attribute,
+            "time_left",
+            TuyaDPType.VALUE,
+            lambda x: x / 60
+        ),
+        12: DPToAttributeMapping(
+            TuyaGardenWateringTimer.ep_attribute,
+            "state",
             TuyaDPType.VALUE,
             # lambda x: x,
+        ),
+        15: DPToAttributeMapping(
+            TuyaGardenWateringTimer.ep_attribute,
+            "last_valve_open_duration",
+            TuyaDPType.VALUE,
+            lambda x: x / 60
         ),
     }
 
@@ -68,6 +147,8 @@ class TuyaGardenManufCluster(TuyaMCUCluster):
         5: "_dp_2_attr_update",
         7: "_dp_2_attr_update",
         11: "_dp_2_attr_update",
+        12: "_dp_2_attr_update",
+        15: "_dp_2_attr_update",
     }
 
 
@@ -104,7 +185,7 @@ class TuyaGardenWatering(CustomDevice):
                     TuyaOnOff,
                     TuyaGardenWateringWaterConsumed,
                     TuyaGardenWateringPowerConfiguration,
-                    TuyaGardenWateringCountdown,
+                    TuyaGardenWateringTimer,
                     TuyaGardenManufCluster,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
