@@ -71,7 +71,6 @@ class TuyaGardenManufCluster(TuyaMCUCluster):
             TuyaGardenWateringTimer.ep_attribute,
             "time_left",
             TuyaDPType.VALUE,
-            lambda x: x / 60,
         ),
         12: DPToAttributeMapping(
             TuyaGardenWateringTimer.ep_attribute,
@@ -82,7 +81,6 @@ class TuyaGardenManufCluster(TuyaMCUCluster):
             TuyaGardenWateringTimer.ep_attribute,
             "last_valve_open_duration",
             TuyaDPType.VALUE,
-            lambda x: x / 60,
         ),
     }
 
