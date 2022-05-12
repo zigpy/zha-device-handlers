@@ -1,15 +1,15 @@
 """Tuya Garden Watering"""
 
 import logging
-import zigpy.types as t
-from typing import Dict, Optional, Union
+from typing import Dict
 
+import zigpy.types as t
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
-from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time, PowerConfiguration, AnalogInput
-
-from zigpy.zcl.clusters.measurement import FlowMeasurement
 from zigpy.zcl import foundation
+from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time, PowerConfiguration
+from zigpy.zcl.clusters.measurement import FlowMeasurement
+
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -18,9 +18,8 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-
-from zhaquirks.tuya import TuyaManufCluster, TuyaData, TuyaLocalCluster, TuyaCommand
-from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaOnOff, TuyaOnOffManufCluster, TuyaDPType, TuyaMCUCluster
+from zhaquirks.tuya import TuyaData, TuyaLocalCluster, TuyaCommand
+from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaOnOff, TuyaDPType, TuyaMCUCluster
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -46,7 +45,7 @@ class TuyaGardenWateringTimer(TuyaLocalCluster):
         for record in records:
             if record.attrid not in (0x000B, 0x000C):
                 _LOGGER.warning(
-                    "[0x%04x:%s:0x%04x] Unautorize write attribute : 0x%04x",
+                    "[0x%04x:%s:0x%04x] Unauthorized write attribute : 0x%04x",
                     self.endpoint.device.nwk,
                     self.endpoint.endpoint_id,
                     self.cluster_id,
@@ -114,6 +113,7 @@ class TuyaGardenManufCluster(TuyaMCUCluster):
             TuyaGardenWateringWaterConsumed.ep_attribute,
             "measured_value",
             TuyaDPType.VALUE,
+            # Value is always at 0 ...
         ),
         7: DPToAttributeMapping(
             TuyaGardenWateringPowerConfiguration.ep_attribute,
@@ -132,7 +132,6 @@ class TuyaGardenManufCluster(TuyaMCUCluster):
             TuyaGardenWateringTimer.ep_attribute,
             "state",
             TuyaDPType.VALUE,
-            # lambda x: x,
         ),
         15: DPToAttributeMapping(
             TuyaGardenWateringTimer.ep_attribute,
