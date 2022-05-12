@@ -3,17 +3,17 @@
 import logging
 from typing import Dict
 
-import zigpy.types as t
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
+import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
     Ota,
+    PowerConfiguration,
     Scenes,
     Time,
-    PowerConfiguration,
 )
 from zigpy.zcl.clusters.measurement import FlowMeasurement
 
@@ -25,12 +25,12 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import TuyaData, TuyaLocalCluster, TuyaCommand
+from zhaquirks.tuya import TuyaCommand, TuyaData, TuyaLocalCluster
 from zhaquirks.tuya.mcu import (
     DPToAttributeMapping,
-    TuyaOnOff,
     TuyaDPType,
     TuyaMCUCluster,
+    TuyaOnOff,
 )
 
 _LOGGER = logging.getLogger(__name__)
