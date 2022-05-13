@@ -7,7 +7,7 @@ from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time
-from zigpy.zcl.clusters.measurement import FlowMeasurement
+from zigpy.zcl.clusters.smartenergy import Metering
 
 from zhaquirks import DoublingPowerConfigurationCluster
 from zhaquirks.const import (
@@ -44,12 +44,25 @@ class TuyaGardenWateringTimer(TuyaAttributesCluster):
     }
 
 
-class TuyaGardenWateringWaterConsumed(FlowMeasurement, TuyaLocalCluster):
+class TuyaGardenWateringWaterConsumed(Metering, TuyaLocalCluster):
     """Tuya Water consumed cluster."""
+
+    VOLUME_LITERS = 0x0007
+
+    """Setting unit of measurement."""
+    _CONSTANT_ATTRIBUTES = {0x0300: VOLUME_LITERS}
 
 
 class TuyaGardenManufCluster(TuyaMCUCluster):
     """On/Off Tuya cluster with extra device attributes."""
+
+    attributes = TuyaMCUCluster.attributes.copy()
+    attributes.update(
+        {
+            # ramdom attribute IDs
+            0xEF06: ("dp_6", t.uint32_t, True),
+        }
+    )
 
     dp_to_attribute: Dict[int, DPToAttributeMapping] = {
         1: DPToAttributeMapping(
@@ -59,7 +72,12 @@ class TuyaGardenManufCluster(TuyaMCUCluster):
         ),
         5: DPToAttributeMapping(
             TuyaGardenWateringWaterConsumed.ep_attribute,
-            "measured_value",
+            "current_summ_delivered",
+            TuyaDPType.VALUE,
+        ),
+        6: DPToAttributeMapping(
+            TuyaMCUCluster.ep_attribute,
+            "dp_6",
             TuyaDPType.VALUE,
         ),
         7: DPToAttributeMapping(
