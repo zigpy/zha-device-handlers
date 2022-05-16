@@ -19,7 +19,6 @@ from zigpy.zcl.clusters.general import (
     Time
 )
 from zigpy.quirks import CustomDevice
-from zhaquirks import LocalDataCluster, DoublingPowerConfigurationCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -28,19 +27,20 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya.mcu import TuyaMCUCluster#, TuyaNewPowerConfigurationCluster2AA
 
 from zhaquirks.tuya.mcu import (
     DPToAttributeMapping,
     TuyaOnOff,
     TuyaDPType,
+    TuyaMCUCluster,
+    TuyaNewPowerConfigurationCluster2AA
 )
 
 _LOGGER = logging.getLogger(__name__)
 
 
 async def cast_tuya_magic_spell_task(
-    dev: zigpy.device.Device, tries: int = 100, rejoin: bool = False
+        dev: zigpy.device.Device, tries: int = 100, rejoin: bool = False
 ) -> None:
     """Initialize device so that all endpoints become available."""
     import inspect
@@ -101,12 +101,8 @@ def cast_tuya_magic_spell(dev: zigpy.device.Device, tries: int = 3) -> None:
         cast_tuya_magic_spell_task(dev, tries=tries)
     )
 
-class TuyaNewPowerConfigurationCluster2AA(LocalDataCluster, DoublingPowerConfigurationCluster):
-    "Power cluster will be moved to mcu/__init__.py"
-
 
 class TuyaWaterValveManufCluster(TuyaMCUCluster):
-
     attributes = TuyaMCUCluster.attributes.copy()
     attributes.update(
         {

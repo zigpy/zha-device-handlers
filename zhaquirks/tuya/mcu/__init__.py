@@ -6,7 +6,7 @@ import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import LevelControl, OnOff
 
-from zhaquirks import Bus
+from zhaquirks import Bus, LocalDataCluster, DoublingPowerConfigurationCluster
 from zhaquirks.tuya import (
     ATTR_ON_OFF,
     TUYA_MCU_COMMAND,
@@ -86,6 +86,34 @@ class MoesBacklight(t.enum8):
     light_when_on = 0x01
     light_when_off = 0x02
     freeze = 0x03
+
+
+class TuyaNewPowerConfigurationCluster(LocalDataCluster, DoublingPowerConfigurationCluster):
+    """PowerConfiguration cluster for battery-operated tuya devices."""
+
+
+class TuyaPowerConfigurationCluster2AA(TuyaNewPowerConfigurationCluster):
+    """PowerConfiguration cluster for battery-operated devices with 2 AA."""
+
+    BATTERY_SIZES = 0x0031
+    BATTERY_RATED_VOLTAGE = 0x0034
+    BATTERY_QUANTITY = 0x0033
+
+    _CONSTANT_ATTRIBUTES = {
+        BATTERY_SIZES: 3,
+        BATTERY_RATED_VOLTAGE: 15,
+        BATTERY_QUANTITY: 2,
+    }
+
+
+class TuyaPowerConfigurationCluster3AA(TuyaPowerConfigurationCluster2AA):
+    """PowerConfiguration cluster for battery-operated devices with 3 AA."""
+
+    _CONSTANT_ATTRIBUTES = {
+        TuyaPowerConfigurationCluster2AA.BATTERY_SIZES: 3,
+        TuyaPowerConfigurationCluster2AA.BATTERY_RATED_VOLTAGE: 15,
+        TuyaPowerConfigurationCluster2AA.BATTERY_QUANTITY: 3,
+    }
 
 
 class TuyaAttributesCluster(TuyaLocalCluster):
