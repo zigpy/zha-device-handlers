@@ -1404,6 +1404,4 @@ def test_ts0601_valve_signature(assert_signature_matches_quirk):
         "model": "TS0601",
         "class": "ts0601_valve.TuyaValve",
     }
-    assert_signature_matches_quirk(
-        zhaquirks.tuya.ts0601_valve.TuyaValve, signature
-    )
+    assert_signature_matches_quirk(zhaquirks.tuya.ts0601_valve.TuyaValve, signature)
