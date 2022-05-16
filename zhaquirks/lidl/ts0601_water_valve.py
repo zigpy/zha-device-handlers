@@ -33,7 +33,7 @@ from zhaquirks.tuya.mcu import (
     TuyaOnOff,
     TuyaDPType,
     TuyaMCUCluster,
-    TuyaNewPowerConfigurationCluster2AA
+    TuyaPowerConfigurationCluster2AA
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -130,7 +130,7 @@ class TuyaWaterValveManufCluster(TuyaMCUCluster):
             TuyaDPType.VALUE,
         ),
         11: DPToAttributeMapping(
-            TuyaNewPowerConfigurationCluster2AA.ep_attribute,
+            TuyaPowerConfigurationCluster2AA.ep_attribute,
             "battery_percentage_remaining",
             TuyaDPType.VALUE,
         ),
@@ -209,7 +209,7 @@ class ParksidePSBZS(CustomDevice):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     TuyaOnOff,
-                    TuyaNewPowerConfigurationCluster2AA,
+                    TuyaPowerConfigurationCluster2AA,
                     TuyaWaterValveManufCluster,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
