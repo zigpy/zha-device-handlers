@@ -1,4 +1,4 @@
-"""Tuya Garden Watering."""
+"""Tuya Valve."""
 
 import logging
 from typing import Dict
@@ -30,7 +30,7 @@ from zhaquirks.tuya.mcu import (
 _LOGGER = logging.getLogger(__name__)
 
 
-class TuyaGardenWateringTimer(TuyaAttributesCluster):
+class TuyaValveTimer(TuyaAttributesCluster):
     """Timer cluster."""
 
     cluster_id = 0x043E
@@ -44,8 +44,8 @@ class TuyaGardenWateringTimer(TuyaAttributesCluster):
     }
 
 
-class TuyaGardenWateringWaterConsumed(Metering, TuyaLocalCluster):
-    """Tuya Water consumed cluster."""
+class TuyaValveWaterConsumed(Metering, TuyaLocalCluster):
+    """Tuya Valve Water consumed cluster."""
 
     VOLUME_LITERS = 0x0007
 
@@ -53,13 +53,13 @@ class TuyaGardenWateringWaterConsumed(Metering, TuyaLocalCluster):
     _CONSTANT_ATTRIBUTES = {0x0300: VOLUME_LITERS}
 
 
-class TuyaGardenManufCluster(TuyaMCUCluster):
+class TuyaValveManufCluster(TuyaMCUCluster):
     """On/Off Tuya cluster with extra device attributes."""
 
     attributes = TuyaMCUCluster.attributes.copy()
     attributes.update(
         {
-            # ramdom attribute IDs
+            # Random attribute IDs
             0xEF06: ("dp_6", t.uint32_t, True),
         }
     )
@@ -71,7 +71,7 @@ class TuyaGardenManufCluster(TuyaMCUCluster):
             dp_type=TuyaDPType.BOOL,
         ),
         5: DPToAttributeMapping(
-            TuyaGardenWateringWaterConsumed.ep_attribute,
+            TuyaValveWaterConsumed.ep_attribute,
             "current_summ_delivered",
             TuyaDPType.VALUE,
         ),
@@ -86,17 +86,17 @@ class TuyaGardenManufCluster(TuyaMCUCluster):
             TuyaDPType.VALUE,
         ),
         11: DPToAttributeMapping(
-            TuyaGardenWateringTimer.ep_attribute,
+            TuyaValveTimer.ep_attribute,
             "time_left",
             TuyaDPType.VALUE,
         ),
         12: DPToAttributeMapping(
-            TuyaGardenWateringTimer.ep_attribute,
+            TuyaValveTimer.ep_attribute,
             "state",
             TuyaDPType.VALUE,
         ),
         15: DPToAttributeMapping(
-            TuyaGardenWateringTimer.ep_attribute,
+            TuyaValveTimer.ep_attribute,
             "last_valve_open_duration",
             TuyaDPType.VALUE,
         ),
@@ -105,6 +105,7 @@ class TuyaGardenManufCluster(TuyaMCUCluster):
     data_point_handlers = {
         1: "_dp_2_attr_update",
         5: "_dp_2_attr_update",
+        6: "_dp_2_attr_update",
         7: "_dp_2_attr_update",
         11: "_dp_2_attr_update",
         12: "_dp_2_attr_update",
@@ -112,7 +113,7 @@ class TuyaGardenManufCluster(TuyaMCUCluster):
     }
 
 
-class TuyaGardenWatering(CustomDevice):
+class TuyaValve(CustomDevice):
     """Tuya Garden Watering."""
 
     signature = {
@@ -127,7 +128,7 @@ class TuyaGardenWatering(CustomDevice):
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaGardenManufCluster.cluster_id,
+                    TuyaValveManufCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             }
@@ -143,10 +144,10 @@ class TuyaGardenWatering(CustomDevice):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     TuyaOnOff,
-                    TuyaGardenWateringWaterConsumed,
+                    TuyaValveWaterConsumed,
                     DoublingPowerConfigurationCluster,
-                    TuyaGardenWateringTimer,
-                    TuyaGardenManufCluster,
+                    TuyaValveTimer,
+                    TuyaValveManufCluster,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             }
