@@ -1,6 +1,5 @@
 """Tuya Valve."""
 
-import logging
 from typing import Dict
 
 from zigpy.profiles import zha
@@ -21,27 +20,10 @@ from zhaquirks.const import (
 from zhaquirks.tuya import TuyaLocalCluster
 from zhaquirks.tuya.mcu import (
     DPToAttributeMapping,
-    TuyaAttributesCluster,
     TuyaDPType,
     TuyaMCUCluster,
     TuyaOnOff,
 )
-
-_LOGGER = logging.getLogger(__name__)
-
-
-class TuyaValveTimer(TuyaAttributesCluster):
-    """Timer cluster."""
-
-    cluster_id = 0x043E
-    name = "Timer"
-    ep_attribute = "timer"
-
-    attributes = {
-        0x000C: ("state", t.uint16_t),
-        0x000B: ("time_left", t.uint16_t),
-        0x000F: ("last_valve_open_duration", t.uint16_t),
-    }
 
 
 class TuyaValveWaterConsumed(Metering, TuyaLocalCluster):
@@ -59,8 +41,10 @@ class TuyaValveManufCluster(TuyaMCUCluster):
     attributes = TuyaMCUCluster.attributes.copy()
     attributes.update(
         {
-            # Random attribute IDs
-            0xEF06: ("dp_6", t.uint32_t, True),
+            0xEF01: ("time_left", t.uint32_t, True),
+            0xEF02: ("state", t.enum8, True),
+            0xEF03: ("last_valve_open_duration", t.uint32_t, True),
+            0xEF04: ("dp_6", t.uint32_t, True),
         }
     )
 
@@ -86,17 +70,17 @@ class TuyaValveManufCluster(TuyaMCUCluster):
             TuyaDPType.VALUE,
         ),
         11: DPToAttributeMapping(
-            TuyaValveTimer.ep_attribute,
+            TuyaMCUCluster.ep_attribute,
             "time_left",
             TuyaDPType.VALUE,
         ),
         12: DPToAttributeMapping(
-            TuyaValveTimer.ep_attribute,
+            TuyaMCUCluster.ep_attribute,
             "state",
             TuyaDPType.VALUE,
         ),
         15: DPToAttributeMapping(
-            TuyaValveTimer.ep_attribute,
+            TuyaMCUCluster.ep_attribute,
             "last_valve_open_duration",
             TuyaDPType.VALUE,
         ),
@@ -146,7 +130,6 @@ class TuyaValve(CustomDevice):
                     TuyaOnOff,
                     TuyaValveWaterConsumed,
                     DoublingPowerConfigurationCluster,
-                    TuyaValveTimer,
                     TuyaValveManufCluster,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
