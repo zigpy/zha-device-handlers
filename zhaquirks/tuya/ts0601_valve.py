@@ -114,7 +114,7 @@ class TuyaValveManufCluster(TuyaMCUCluster):
 
 
 class TuyaValve(CustomDevice):
-    """Tuya Valve."""
+    """Tuya valve device."""
 
     signature = {
         MODELS_INFO: [("_TZE200_81isopgh", "TS0601")],
