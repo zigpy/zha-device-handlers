@@ -33,7 +33,7 @@ from zhaquirks.tuya.mcu import (
     TuyaOnOff,
     TuyaDPType,
     TuyaMCUCluster,
-    TuyaPowerConfigurationCluster2AA
+    TuyaNewPowerConfigurationCluster
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -130,7 +130,7 @@ class TuyaWaterValveManufCluster(TuyaMCUCluster):
             TuyaDPType.VALUE,
         ),
         11: DPToAttributeMapping(
-            TuyaPowerConfigurationCluster2AA.ep_attribute,
+            TuyaNewPowerConfigurationCluster.ep_attribute,
             "battery_percentage_remaining",
             TuyaDPType.VALUE,
         ),
@@ -156,6 +156,15 @@ class TuyaWaterValveManufCluster(TuyaMCUCluster):
         109: "_dp_2_attr_update",
     }
 
+    async def bind(self):
+        """
+        Bind cluster.
+        When adding this device tuya gateway issues a factory reset,
+        we just reset the frost lock, because its state is unknown to us.
+        """
+        result = await super().bind()
+        await self.write_attributes({self.attributes_by_name["frost_lock_reset"].id: 0})
+        return result
 
 class ParksidePSBZS(CustomDevice):
     """LIDL Parkside water without implemented scheduler."""
@@ -171,9 +180,9 @@ class ParksidePSBZS(CustomDevice):
         """Initialize device so that all endpoints become available."""
         basic_cluster = self.endpoints[1].in_clusters[0]
 
+        _LOGGER.warn("Device class will cast Tuya Magic Spell")
         attr_to_read = [4, 0, 1, 5, 7, 0xFFFE]
         await basic_cluster.read_attributes(attr_to_read)
-        _LOGGER.debug("Device class is casting Tuya Magic Spell")
 
     signature = {
         MODELS_INFO: [("_TZE200_htnnfasr", "TS0601")],  # HG06875
@@ -209,7 +218,7 @@ class ParksidePSBZS(CustomDevice):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     TuyaOnOff,
-                    TuyaPowerConfigurationCluster2AA,
+                    TuyaNewPowerConfigurationCluster,
                     TuyaWaterValveManufCluster,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],

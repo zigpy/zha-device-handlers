@@ -88,32 +88,8 @@ class MoesBacklight(t.enum8):
     freeze = 0x03
 
 
-class TuyaPowerConfigurationCluster(LocalDataCluster, DoublingPowerConfigurationCluster):
-    """PowerConfiguration cluster for battery-operated tuya devices."""
-
-
-class TuyaPowerConfigurationCluster2AA(TuyaPowerConfigurationCluster):
-    """PowerConfiguration cluster for battery-operated devices with 2 AA."""
-
-    BATTERY_SIZES = 0x0031
-    BATTERY_RATED_VOLTAGE = 0x0034
-    BATTERY_QUANTITY = 0x0033
-
-    _CONSTANT_ATTRIBUTES = {
-        BATTERY_SIZES: 3,
-        BATTERY_RATED_VOLTAGE: 15,
-        BATTERY_QUANTITY: 2,
-    }
-
-
-class TuyaPowerConfigurationCluster3AA(TuyaPowerConfigurationCluster2AA):
-    """PowerConfiguration cluster for battery-operated devices with 3 AA."""
-
-    _CONSTANT_ATTRIBUTES = {
-        TuyaPowerConfigurationCluster2AA.BATTERY_SIZES: 3,
-        TuyaPowerConfigurationCluster2AA.BATTERY_RATED_VOLTAGE: 15,
-        TuyaPowerConfigurationCluster2AA.BATTERY_QUANTITY: 3,
-    }
+class TuyaNewPowerConfigurationCluster(TuyaLocalCluster, DoublingPowerConfigurationCluster):
+    """PowerConfiguration cluster for battery-operated tuya devices reporting percentage."""
 
 
 class TuyaAttributesCluster(TuyaLocalCluster):
