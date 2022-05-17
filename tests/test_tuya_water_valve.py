@@ -14,8 +14,8 @@ zhaquirks.setup()
 @pytest.mark.parametrize(
     "quirk", (zhaquirks.lidl.ts0601_water_valve.ParksidePSBZS,)
 )
-async def test_command(zigpy_device_from_quirk, quirk):
-    """Test excuting cluster commands."""
+async def test_command_psbzs(zigpy_device_from_quirk, quirk):
+    """Test executing cluster commands."""
 
     water_valve_dev = zigpy_device_from_quirk(quirk)
     tuya_cluster = water_valve_dev.endpoints[1].tuya_manufacturer
@@ -43,7 +43,7 @@ async def test_command(zigpy_device_from_quirk, quirk):
 @pytest.mark.parametrize(
     "quirk", (zhaquirks.lidl.ts0601_water_valve.ParksidePSBZS,)
 )
-async def test_write_attr(zigpy_device_from_quirk, quirk):
+async def test_write_attr_psbzs(zigpy_device_from_quirk, quirk):
     """Test write cluster attributes."""
 
     water_valve_dev = zigpy_device_from_quirk(quirk)
@@ -80,7 +80,7 @@ async def test_write_attr(zigpy_device_from_quirk, quirk):
         m1.assert_called_with(
             61184,
             4,
-            b"\x01\x04\x00\x00\x03m\x01\x00\x01\x00",
+            b"\x01\x04\x00\x00\x03\x6d\x01\x00\x01\x00",
             expect_reply=False,
             command_id=0,
         )
@@ -92,8 +92,8 @@ async def test_write_attr(zigpy_device_from_quirk, quirk):
 @pytest.mark.parametrize(
     "quirk", (zhaquirks.lidl.ts0601_water_valve.ParksidePSBZS,)
 )
-async def test_dim_values(zigpy_device_from_quirk, quirk):
-    """Test dimming ."""
+async def test_dim_values_psbzs(zigpy_device_from_quirk, quirk):
+    """Test receiveing attributes from water valve."""
 
     water_valve_dev = zigpy_device_from_quirk(quirk)
     tuya_cluster = water_valve_dev.endpoints[1].tuya_manufacturer
@@ -103,15 +103,21 @@ async def test_dim_values(zigpy_device_from_quirk, quirk):
     assert len(tuya_listener.attribute_updates) == 0
 
     frames = (
-        b"\x09\x5D\x02\x00\x4C\x06\x02\x00\x04\x00\x00\x00\x04",
-        b"\x09\x5D\x02\x00\x4C\x06\x02\x00\x04\x00\x00\x01\x2c",
+        b"\x09\x5D\x02\x00\x4C\x06\x02\x00\x04\x00\x00\x00\x04",  # time left 4min
+        b"\x09\x5D\x02\x00\x4C\x06\x02\x00\x04\x00\x00\x02\x57",  # time left max 599min
+        b"\x09\x56\x02\x00\x21\x6C\x01\x00\x01\x01",  # frost lock active
+        b"\x09\x56\x02\x00\x21\x6C\x01\x00\x01\x00",  # frost lock inactive
     )
     for frame in frames:
         hdr, args = tuya_cluster.deserialize(frame)
         tuya_cluster.handle_message(hdr, args)
 
-    assert len(tuya_listener.attribute_updates) == 2
+    assert len(tuya_listener.attribute_updates) == 4
     assert tuya_listener.attribute_updates[0][0] == 0xef02
     assert tuya_listener.attribute_updates[0][1] == 4
     assert tuya_listener.attribute_updates[1][0] == 0xef02
-    assert tuya_listener.attribute_updates[1][1] == 300
+    assert tuya_listener.attribute_updates[1][1] == 599
+    assert tuya_listener.attribute_updates[2][0] == 0xef03
+    assert tuya_listener.attribute_updates[2][1] == 0  # frost lock state is inverted
+    assert tuya_listener.attribute_updates[3][0] == 0xef03
+    assert tuya_listener.attribute_updates[3][1] == 1  # frost lock state is inverted
