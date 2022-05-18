@@ -6,7 +6,6 @@ from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time
-from zigpy.zcl.clusters.smartenergy import Metering
 
 from zhaquirks import DoublingPowerConfigurationCluster
 from zhaquirks.const import (
