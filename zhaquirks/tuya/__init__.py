@@ -103,7 +103,7 @@ ATTR_COVER_INVERTED = 0x8002
 # For most tuya devices 0 = Up/Open, 1 = Stop, 2 = Down/Close
 TUYA_COVER_COMMAND = {
     "_TZE200_zah67ekd": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
-    "_TZE200_fzo2pocs": {0x0000: 0x0002, 0x0001: 0x0000, 0x0002: 0x0001},
+    "_TZE200_fzo2pocs": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
     "_TZE200_xuzcvlku": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
     "_TZE200_rddyvrci": {0x0000: 0x0002, 0x0001: 0x0001, 0x0002: 0x0000},
     "_TZE200_3i3exuay": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
@@ -128,7 +128,6 @@ TUYA_COVER_COMMAND = {
 # Use manufacturerName to identify device!
 # Don't invert _TZE200_cowvfni3: https://github.com/Koenkk/zigbee2mqtt/issues/6043
 TUYA_COVER_INVERTED_BY_DEFAULT = [
-    "_TZE200_fzo2pocs",
     "_TZE200_wmcdj3aq",
     "_TZE200_nogaemzt",
     "_TZE200_xuzcvlku",
