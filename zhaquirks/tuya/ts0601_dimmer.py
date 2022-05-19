@@ -1,10 +1,5 @@
 """Tuya based touch switch."""
-from typing import Optional, Union
-
 from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster
-import zigpy.types as t
-from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, GreenPowerProxy, Groups, Ota, Scenes, Time
 
 from zhaquirks.const import (
