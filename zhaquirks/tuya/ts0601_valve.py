@@ -17,12 +17,22 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.tuya import TuyaLocalCluster
 from zhaquirks.tuya.mcu import (
     DPToAttributeMapping,
     TuyaDPType,
     TuyaMCUCluster,
     TuyaOnOff,
 )
+
+
+class TuyaValveWaterConsumed(Metering, TuyaLocalCluster):
+    """Tuya Valve Water consumed cluster."""
+
+    VOLUME_LITERS = 0x0007
+
+    """Setting unit of measurement."""
+    _CONSTANT_ATTRIBUTES = {0x0300: VOLUME_LITERS}
 
 
 class TuyaValveManufCluster(TuyaMCUCluster):
@@ -35,7 +45,6 @@ class TuyaValveManufCluster(TuyaMCUCluster):
             0xEF02: ("state", t.enum8, True),
             0xEF03: ("last_valve_open_duration", t.uint32_t, True),
             0xEF04: ("dp_6", t.uint32_t, True),
-            0xEF05: ("volume_delivered", t.uint32_t, True),
         }
     )
 
@@ -46,8 +55,8 @@ class TuyaValveManufCluster(TuyaMCUCluster):
             dp_type=TuyaDPType.BOOL,
         ),
         5: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "volume_delivered",
+            TuyaValveWaterConsumed.ep_attribute,
+            "current_summ_delivered",
             TuyaDPType.VALUE,
         ),
         6: DPToAttributeMapping(
@@ -119,6 +128,7 @@ class TuyaValve(CustomDevice):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     TuyaOnOff,
+                    TuyaValveWaterConsumed,
                     DoublingPowerConfigurationCluster,
                     TuyaValveManufCluster,
                 ],
