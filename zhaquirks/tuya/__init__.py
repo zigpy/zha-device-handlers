@@ -270,7 +270,6 @@ class TuyaCommand(t.Struct):
     data: TuyaData
 
 
-# based on https://github.com/zigpy/zha-device-handlers/blob/b802c1fb2cf2682f9a4722bfb57a1958cad9dad7/zhaquirks/tuya/ts0601_dimmer.py#L26
 class NoManufacturerCluster(CustomCluster):
     """Forces the NO manufacturer id in command."""
 
