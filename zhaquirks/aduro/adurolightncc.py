@@ -91,12 +91,12 @@ class AdurolightNCC(CustomDevice):
             COMMAND: COMMAND_STEP,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
-            PARAMS: {"step_mode": 0, "step_size": 16, "transition_time": 9},
+            PARAMS: {"step_mode": 0},
         },
         (SHORT_PRESS, DIM_DOWN): {
             COMMAND: COMMAND_STEP,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
-            PARAMS: {"step_mode": 1, "step_size": 16, "transition_time": 9},
+            PARAMS: {"step_mode": 1},
         },
     }

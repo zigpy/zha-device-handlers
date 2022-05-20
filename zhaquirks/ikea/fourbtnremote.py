@@ -109,7 +109,7 @@ class IkeaTradfriRemote(CustomDevice):
             COMMAND: COMMAND_MOVE_ON_OFF,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
-            PARAMS: {"move_mode": 0, "rate": 83},
+            PARAMS: {"move_mode": 0},
         },
         (LONG_RELEASE, DIM_UP): {
             COMMAND: COMMAND_STOP_ON_OFF,
@@ -121,7 +121,7 @@ class IkeaTradfriRemote(CustomDevice):
             COMMAND: COMMAND_MOVE,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
-            PARAMS: {"move_mode": 1, "rate": 83},
+            PARAMS: {"move_mode": 1},
         },
         (LONG_RELEASE, DIM_DOWN): {
             COMMAND: COMMAND_STOP_ON_OFF,
