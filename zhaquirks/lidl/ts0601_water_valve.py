@@ -3,13 +3,13 @@ from __future__ import annotations
 
 import asyncio
 import logging
-
 from typing import Dict
 
 from zigpy.profiles import zha
+from zigpy.quirks import CustomDevice
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
-from zigpy.quirks import CustomDevice
+
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -18,19 +18,20 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-
 from zhaquirks.tuya.mcu import (
     DPToAttributeMapping,
-    TuyaOnOff,
     TuyaDPType,
     TuyaMCUCluster,
     TuyaNewPowerConfigurationCluster,
+    TuyaOnOff,
 )
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class TuyaWaterValveManufCluster(TuyaMCUCluster):
+    """Manufacturer Specific Cluster for the _TZE200_htnnfasr water valve sold as PARKSIDE."""
+
     attributes = TuyaMCUCluster.attributes.copy()
     attributes.update(
         {
@@ -87,6 +88,7 @@ class TuyaWaterValveManufCluster(TuyaMCUCluster):
     async def bind(self):
         """
         Bind cluster.
+
         When adding this device tuya gateway issues a factory reset,
         we just reset the frost lock, because its state is unknown to us.
         """
