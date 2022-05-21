@@ -55,7 +55,7 @@ async def test_write_attr_psbzs(zigpy_device_from_quirk, quirk):
 
         (status,) = await tuya_cluster.write_attributes(
             {
-                "timer": 15,
+                "timer_duration": 15,
             }
         )
         m1.assert_called_with(

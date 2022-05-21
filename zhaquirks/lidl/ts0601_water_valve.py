@@ -35,7 +35,7 @@ class TuyaWaterValveManufCluster(TuyaMCUCluster):
     attributes = TuyaMCUCluster.attributes.copy()
     attributes.update(
         {
-            0xEF01: ("timer", t.uint32_t, True),
+            0xEF01: ("timer_duration", t.uint32_t, True),
             0xEF02: ("timer_time_left", t.uint32_t, True),
             0xEF03: ("frost_lock", t.Bool, True),
             0xEF04: ("frost_lock_reset", t.Bool, True),  # 0 resets frost lock
