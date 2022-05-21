@@ -6,18 +6,9 @@ import logging
 
 from typing import Dict
 
-import zigpy
 from zigpy.profiles import zha
 import zigpy.types as t
-from zigpy.zcl.clusters.general import (
-    Basic,
-    Groups,
-    Identify,
-    OnOff,
-    Ota,
-    Scenes,
-    Time
-)
+from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
 from zigpy.quirks import CustomDevice
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -33,7 +24,7 @@ from zhaquirks.tuya.mcu import (
     TuyaOnOff,
     TuyaDPType,
     TuyaMCUCluster,
-    TuyaNewPowerConfigurationCluster
+    TuyaNewPowerConfigurationCluster,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -43,10 +34,10 @@ class TuyaWaterValveManufCluster(TuyaMCUCluster):
     attributes = TuyaMCUCluster.attributes.copy()
     attributes.update(
         {
-            0xef01: ("timer", t.uint32_t, True),
-            0xef02: ("timer_time_left", t.uint32_t, True),
-            0xef03: ("frost_lock", t.Bool, True),
-            0xef04: ("frost_lock_reset", t.Bool, True),  # 0 resets frost lock
+            0xEF01: ("timer", t.uint32_t, True),
+            0xEF02: ("timer_time_left", t.uint32_t, True),
+            0xEF03: ("frost_lock", t.Bool, True),
+            0xEF04: ("frost_lock_reset", t.Bool, True),  # 0 resets frost lock
         }
     )
 
@@ -58,7 +49,7 @@ class TuyaWaterValveManufCluster(TuyaMCUCluster):
         ),
         5: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
-            "timer",
+            "timer_duration",
             TuyaDPType.VALUE,
         ),
         6: DPToAttributeMapping(

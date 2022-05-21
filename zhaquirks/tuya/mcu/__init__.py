@@ -6,7 +6,7 @@ import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import LevelControl, OnOff
 
-from zhaquirks import Bus, LocalDataCluster, DoublingPowerConfigurationCluster
+from zhaquirks import Bus, DoublingPowerConfigurationCluster
 from zhaquirks.tuya import (
     ATTR_ON_OFF,
     TUYA_MCU_COMMAND,
@@ -88,7 +88,9 @@ class MoesBacklight(t.enum8):
     freeze = 0x03
 
 
-class TuyaNewPowerConfigurationCluster(TuyaLocalCluster, DoublingPowerConfigurationCluster):
+class TuyaNewPowerConfigurationCluster(
+    TuyaLocalCluster, DoublingPowerConfigurationCluster
+):
     """PowerConfiguration cluster for battery-operated tuya devices reporting percentage."""
 
 
