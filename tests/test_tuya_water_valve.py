@@ -88,7 +88,7 @@ async def test_write_attr_psbzs(zigpy_device_from_quirk, quirk):
 
 @pytest.mark.parametrize("quirk", (zhaquirks.lidl.ts0601_water_valve.ParksidePSBZS,))
 async def test_dim_values_psbzs(zigpy_device_from_quirk, quirk):
-    """Test receiveing attributes from water valve."""
+    """Test receiving attributes from water valve."""
 
     water_valve_dev = zigpy_device_from_quirk(quirk)
     tuya_cluster = water_valve_dev.endpoints[1].tuya_manufacturer
