@@ -339,7 +339,7 @@ jobs:
           COVERALLS_PARALLEL: true
         run: |
           . venv/bin/activate
-          coveralls
+          coveralls --service=github
 
   coverage:
     name: Process test coverage

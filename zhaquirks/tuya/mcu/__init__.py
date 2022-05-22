@@ -13,6 +13,7 @@ from zhaquirks.tuya import (
     TUYA_MCU_VERSION_RSP,
     TUYA_SET_DATA,
     Data,
+    NoManufacturerCluster,
     PowerOnState,
     TuyaCommand,
     TuyaData,
@@ -304,6 +305,13 @@ class TuyaOnOff(OnOff, TuyaLocalCluster):
         ].schema(command_id=command_id, status=foundation.Status.UNSUP_CLUSTER_COMMAND)
 
 
+# based on https://github.com/zigpy/zha-device-handlers/blob/b802c1fb2cf2682f9a4722bfb57a1958cad9dad7/zhaquirks/tuya/ts0601_dimmer.py#L48
+class TuyaOnOffNM(NoManufacturerCluster, TuyaOnOff):
+    """Tuya OnOff cluster with NoManufacturerID."""
+
+    pass
+
+
 class TuyaOnOffManufCluster(TuyaMCUCluster):
     """Tuya with On/Off data points."""
 
@@ -331,6 +339,18 @@ class TuyaOnOffManufCluster(TuyaMCUCluster):
             dp_type=TuyaDPType.BOOL,
             endpoint_id=4,
         ),
+        5: DPToAttributeMapping(
+            TuyaOnOff.ep_attribute,
+            "on_off",
+            dp_type=TuyaDPType.BOOL,
+            endpoint_id=5,
+        ),
+        6: DPToAttributeMapping(
+            TuyaOnOff.ep_attribute,
+            "on_off",
+            dp_type=TuyaDPType.BOOL,
+            endpoint_id=6,
+        ),
     }
 
     data_point_handlers = {
@@ -338,6 +358,8 @@ class TuyaOnOffManufCluster(TuyaMCUCluster):
         2: "_dp_2_attr_update",
         3: "_dp_2_attr_update",
         4: "_dp_2_attr_update",
+        5: "_dp_2_attr_update",
+        6: "_dp_2_attr_update",
     }
 
 

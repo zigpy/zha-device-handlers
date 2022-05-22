@@ -103,7 +103,7 @@ ATTR_COVER_INVERTED = 0x8002
 # For most tuya devices 0 = Up/Open, 1 = Stop, 2 = Down/Close
 TUYA_COVER_COMMAND = {
     "_TZE200_zah67ekd": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
-    "_TZE200_fzo2pocs": {0x0000: 0x0002, 0x0001: 0x0000, 0x0002: 0x0001},
+    "_TZE200_fzo2pocs": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
     "_TZE200_xuzcvlku": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
     "_TZE200_rddyvrci": {0x0000: 0x0002, 0x0001: 0x0001, 0x0002: 0x0000},
     "_TZE200_3i3exuay": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
@@ -128,7 +128,6 @@ TUYA_COVER_COMMAND = {
 # Use manufacturerName to identify device!
 # Don't invert _TZE200_cowvfni3: https://github.com/Koenkk/zigbee2mqtt/issues/6043
 TUYA_COVER_INVERTED_BY_DEFAULT = [
-    "_TZE200_fzo2pocs",
     "_TZE200_wmcdj3aq",
     "_TZE200_nogaemzt",
     "_TZE200_xuzcvlku",
@@ -269,6 +268,29 @@ class TuyaCommand(t.Struct):
     tsn: t.uint8_t
     dp: t.uint8_t
     data: TuyaData
+
+
+# based on https://github.com/zigpy/zha-device-handlers/blob/b802c1fb2cf2682f9a4722bfb57a1958cad9dad7/zhaquirks/tuya/ts0601_dimmer.py#L26
+class NoManufacturerCluster(CustomCluster):
+    """Forces the NO manufacturer id in command."""
+
+    async def command(
+        self,
+        command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
+        *args,
+        manufacturer: Optional[Union[int, t.uint16_t]] = None,
+        expect_reply: bool = True,
+        tsn: Optional[Union[int, t.uint8_t]] = None,
+    ):
+        """Override the default Cluster command."""
+        self.debug("Setting the NO manufacturer id in command: %s", command_id)
+        return await super().command(
+            command_id,
+            *args,
+            manufacturer=foundation.ZCLHeader.NO_MANUFACTURER_ID,
+            expect_reply=expect_reply,
+            tsn=tsn,
+        )
 
 
 class TuyaManufCluster(CustomCluster):
