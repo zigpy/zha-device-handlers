@@ -189,13 +189,13 @@ class AdeoColorController(CustomDevice):
             COMMAND: COMMAND_STEP,
             CLUSTER_ID: 8,  # LevelControl.cluster_id
             ENDPOINT_ID: 1,
-            PARAMS: {"step_mode": 0, "step_size": 26, "transition_time": 5},
+            PARAMS: {"step_mode": 0},
         },
         (SHORT_PRESS, DIM_DOWN): {
             COMMAND: COMMAND_STEP,
             CLUSTER_ID: 8,  # LevelControl.cluster_id
             ENDPOINT_ID: 1,
-            PARAMS: {"step_mode": 1, "step_size": 26, "transition_time": 5},
+            PARAMS: {"step_mode": 1},
         },
         (SHORT_PRESS, COLOR_UP): {
             COMMAND: COMMAND_STEP_COLOR_TEMP,
@@ -225,25 +225,25 @@ class AdeoColorController(CustomDevice):
             COMMAND: COMMAND_STEP_SATURATION,
             CLUSTER_ID: 768,  # Color.cluster_id
             ENDPOINT_ID: 1,
-            PARAMS: {"step_mode": 1, "step_size": 26, "transition_time": 5},
+            PARAMS: {"step_mode": 1},
         },
         (SHORT_PRESS, SATURATION_DOWN): {
             COMMAND: COMMAND_STEP_SATURATION,
             CLUSTER_ID: 768,  # Color.cluster_id
             ENDPOINT_ID: 1,
-            PARAMS: {"step_mode": 3, "step_size": 26, "transition_time": 5},
+            PARAMS: {"step_mode": 3},
         },
         (SHORT_PRESS, HUE_LEFT): {
             COMMAND: COMMAND_STEP_HUE,
             CLUSTER_ID: 768,  # Color.cluster_id
             ENDPOINT_ID: 1,
-            PARAMS: {"step_mode": 3, "step_size": 22, "transition_time": 5},
+            PARAMS: {"step_mode": 3},
         },
         (SHORT_PRESS, HUE_RIGHT): {
             COMMAND: COMMAND_STEP_HUE,
             CLUSTER_ID: 768,  # Color.cluster_id
             ENDPOINT_ID: 1,
-            PARAMS: {"step_mode": 1, "step_size": 22, "transition_time": 5},
+            PARAMS: {"step_mode": 1},
         },
         (SHORT_PRESS, BUTTON_1): {
             COMMAND: "view",
