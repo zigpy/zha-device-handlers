@@ -9,7 +9,7 @@ from zigpy.quirks import CustomDevice
 import zigpy.types as types
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PowerConfiguration
 
-from zhaquirks import Bus
+from zhaquirks import Bus, LocalDataCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -66,6 +66,16 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         return result
 
 
+class LocalIlluminanceMeasurementCluster(
+    LocalDataCluster, IlluminanceMeasurementCluster
+):
+    """Local lluminance measurement cluster."""
+
+
+class LocalOccupancyCluster(LocalDataCluster, OccupancyCluster):
+    """Local occupancy cluster."""
+
+
 class LumiMotionAC02(CustomDevice):
     """Lumi lumi.motion.ac02 (RTCGQ14LM) custom device implementation."""
 
@@ -108,9 +118,9 @@ class LumiMotionAC02(CustomDevice):
                     Basic.cluster_id,
                     XiaomiPowerConfiguration,
                     Identify.cluster_id,
-                    OccupancyCluster,
+                    LocalOccupancyCluster,
                     MotionCluster,
-                    IlluminanceMeasurementCluster,
+                    LocalIlluminanceMeasurementCluster,
                     OppleCluster,
                 ],
                 OUTPUT_CLUSTERS: [
