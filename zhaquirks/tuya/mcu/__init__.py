@@ -305,7 +305,6 @@ class TuyaOnOff(OnOff, TuyaLocalCluster):
         ].schema(command_id=command_id, status=foundation.Status.UNSUP_CLUSTER_COMMAND)
 
 
-# based on https://github.com/zigpy/zha-device-handlers/blob/b802c1fb2cf2682f9a4722bfb57a1958cad9dad7/zhaquirks/tuya/ts0601_dimmer.py#L48
 class TuyaOnOffNM(NoManufacturerCluster, TuyaOnOff):
     """Tuya OnOff cluster with NoManufacturerID."""
 
