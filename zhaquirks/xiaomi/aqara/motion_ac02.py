@@ -31,6 +31,7 @@ ON = 1
 MOTION_ATTRIBUTE = 274
 DETECTION_INTERVAL = 0x0102
 MOTION_SENSITIVITY = 0x010C
+TRIGGER_INDICATOR = 0x0152
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -41,6 +42,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
     attributes = {
         DETECTION_INTERVAL: ("detection_interval", types.uint8_t, True),
         MOTION_SENSITIVITY: ("motion_sensitivity", types.uint8_t, True),
+        TRIGGER_INDICATOR: ("trigger_indicator", types.uint8_t, True),
     }
 
     def _update_attribute(self, attrid: int, value: Any) -> None:
