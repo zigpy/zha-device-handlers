@@ -24,19 +24,23 @@ A clear and concise description of what you expected to happen.
 If applicable, add screenshots to help explain your problem.
 
 <details>
-<summary>Device signature - this can be acquired by clicking on the "Zigbee Device Signature" button in the device settings</summary>
+<!-- Device signature can be acquired by clicking on the "Zigbee Device Signature" button in the device settings view -->
+<summary>Device signature</summary>
 
-```
+```yaml
 Paste the device signature here.
+Don't remove the extra breaklines outside the ``` marks.
 ```
 
 </details>
 
 <details>
-<summary>Diagnostic information - this can be acquired by clicking on the "Download Diagnostics" button in the device settings</summary>
+<!-- Diagnostic information can be acquired by clicking on the "Download Diagnostics" button in the device settings view -->
+<summary>Diagnostic information</summary>
 
-```
+```yaml
 Paste the diagnostic information here.
+Don't remove the extra breaklines outside the ``` marks.
 ```
 
 </details>
@@ -46,6 +50,7 @@ Paste the diagnostic information here.
 
 ```
 Paste any additional debug logs here.
+Don't remove the extra breaklines outside the ``` marks.
 ```
 
 </details>
