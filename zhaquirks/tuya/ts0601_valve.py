@@ -4,7 +4,7 @@ from typing import Dict
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 import zigpy.types as t
-from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time, Identify, OnOff
+from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
 from zigpy.zcl.clusters.smartenergy import Metering
 
 from zhaquirks import DoublingPowerConfigurationCluster
@@ -19,10 +19,10 @@ from zhaquirks.const import (
 from zhaquirks.tuya import TuyaLocalCluster
 from zhaquirks.tuya.mcu import (
     DPToAttributeMapping,
+    EnchantedDevice,
     TuyaDPType,
     TuyaMCUCluster,
     TuyaOnOff,
-    EnchantedDevice,
     TuyaPowerConfigurationCluster,
 )
 

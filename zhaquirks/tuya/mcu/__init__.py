@@ -3,8 +3,8 @@ import asyncio
 import dataclasses
 from typing import Any, Callable, Dict, Optional, Tuple, Union
 
-import zigpy.types as t
 from zigpy.quirks import CustomDevice
+import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import LevelControl, OnOff
 
