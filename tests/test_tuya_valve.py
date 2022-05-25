@@ -52,7 +52,6 @@ async def test_write_attr_psbzs(zigpy_device_from_quirk, quirk):
     with mock.patch.object(
         tuya_cluster.endpoint, "request", side_effect=async_success
     ) as m1:
-
         (status,) = await tuya_cluster.write_attributes(
             {
                 "timer_duration": 15,
