@@ -1,7 +1,9 @@
 """General quirk tests."""
 from __future__ import annotations
 
+import collections
 import importlib
+import json
 from pathlib import Path
 from unittest import mock
 
@@ -17,6 +19,7 @@ import zigpy.zdo.types
 
 import zhaquirks
 import zhaquirks.bosch.motion
+import zhaquirks.const as const
 from zhaquirks.const import (
     ARGS,
     COMMAND,
@@ -578,3 +581,80 @@ def test_migrated_lighting_automation_triggers(quirk: CustomDevice) -> None:
 
         schema = cluster.commands_by_name[command].schema
         schema(**event[PARAMS])
+
+
+KNOWN_DUPLICATE_TRIGGERS = {
+    zhaquirks.xiaomi.aqara.sensor_swit.SwitchAQ3V2: [
+        [
+            (const.LONG_PRESS, const.LONG_PRESS),
+            (const.LONG_RELEASE, const.LONG_RELEASE),
+        ]
+    ],
+    zhaquirks.xiaomi.aqara.sensor_switch_aq3.SwitchAQ3: [
+        [
+            (const.LONG_PRESS, const.LONG_PRESS),
+            (const.LONG_RELEASE, const.LONG_RELEASE),
+        ]
+    ],
+    zhaquirks.xiaomi.aqara.sensor_switch_aq3.SwitchAQ3B: [
+        [
+            (const.LONG_PRESS, const.LONG_PRESS),
+            (const.LONG_RELEASE, const.LONG_RELEASE),
+        ]
+    ],
+    zhaquirks.aurora.aurora_dimmer.AuroraDimmerBatteryPowered: [
+        [
+            # XXX: why is this constant defined in the module?
+            (zhaquirks.aurora.aurora_dimmer.COLOR_UP, const.RIGHT),
+            (zhaquirks.aurora.aurora_dimmer.COLOR_UP, const.LEFT),
+        ],
+        [
+            (zhaquirks.aurora.aurora_dimmer.COLOR_DOWN, const.RIGHT),
+            (zhaquirks.aurora.aurora_dimmer.COLOR_DOWN, const.LEFT),
+        ],
+    ],
+    zhaquirks.ikea.fourbtnremote.IkeaTradfriRemote: [
+        [
+            (const.LONG_RELEASE, const.DIM_UP),
+            (const.LONG_RELEASE, const.DIM_DOWN),
+        ]
+    ],
+    zhaquirks.thirdreality.button.Button: [
+        [
+            (const.LONG_PRESS, const.LONG_PRESS),
+            (const.LONG_RELEASE, const.LONG_RELEASE),
+        ]
+    ],
+}
+
+
+@pytest.mark.parametrize(
+    "quirk",
+    [q for q in ALL_QUIRK_CLASSES if getattr(q, "device_automation_triggers", None)],
+)
+def test_quirk_device_automation_triggers_unique(quirk):
+    """Ensure all quirks have unique device automation triggers."""
+
+    events = collections.defaultdict(list)
+
+    for trigger, event in quirk.device_automation_triggers.items():
+        # XXX: Dictionary objects are not hashable
+        frozen_event = json.dumps(event, sort_keys=True)
+        events[frozen_event].append((trigger, event))
+
+    for triggers_and_events in events.values():
+        triggers = [trigger for trigger, _ in triggers_and_events]
+
+        if len(triggers_and_events) > 1:
+            if (
+                quirk in KNOWN_DUPLICATE_TRIGGERS
+                and triggers in KNOWN_DUPLICATE_TRIGGERS[quirk]
+            ):
+                fail_func = pytest.xfail
+            else:
+                fail_func = pytest.fail
+
+            triggers_text = "\n".join(
+                [f" * {event} <- {trigger}" for trigger, event in triggers_and_events]
+            )
+            fail_func(f"Triggers are not unique for {quirk}:\n{triggers_text}")
