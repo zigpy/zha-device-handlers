@@ -12,9 +12,9 @@ from tests.common import ClusterListener
 zhaquirks.setup()
 
 
-@pytest.mark.parametrize("quirk", (zhaquirks.lidl.ts0601_water_valve.ParksidePSBZS,))
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_valve.ParksidePSBZS,))
 async def test_command_psbzs(zigpy_device_from_quirk, quirk):
-    """Test executing cluster commands."""
+    """Test executing cluster commands for PARKSIDE water valve."""
 
     water_valve_dev = zigpy_device_from_quirk(quirk)
     tuya_cluster = water_valve_dev.endpoints[1].tuya_manufacturer
@@ -39,9 +39,9 @@ async def test_command_psbzs(zigpy_device_from_quirk, quirk):
         assert rsp.status == foundation.Status.SUCCESS
 
 
-@pytest.mark.parametrize("quirk", (zhaquirks.lidl.ts0601_water_valve.ParksidePSBZS,))
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_valve.ParksidePSBZS,))
 async def test_write_attr_psbzs(zigpy_device_from_quirk, quirk):
-    """Test write cluster attributes."""
+    """Test write cluster attributes for PARKSIDE water valve."""
 
     water_valve_dev = zigpy_device_from_quirk(quirk)
     tuya_cluster = water_valve_dev.endpoints[1].tuya_manufacturer
@@ -86,9 +86,9 @@ async def test_write_attr_psbzs(zigpy_device_from_quirk, quirk):
         ]
 
 
-@pytest.mark.parametrize("quirk", (zhaquirks.lidl.ts0601_water_valve.ParksidePSBZS,))
-async def test_dim_values_psbzs(zigpy_device_from_quirk, quirk):
-    """Test receiving attributes from water valve."""
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_valve.ParksidePSBZS,))
+async def test_report_values_psbzs(zigpy_device_from_quirk, quirk):
+    """Test receiving attributes from PARKSIDE water valve."""
 
     water_valve_dev = zigpy_device_from_quirk(quirk)
     tuya_cluster = water_valve_dev.endpoints[1].tuya_manufacturer
@@ -108,11 +108,11 @@ async def test_dim_values_psbzs(zigpy_device_from_quirk, quirk):
         tuya_cluster.handle_message(hdr, args)
 
     assert len(tuya_listener.attribute_updates) == 4
-    assert tuya_listener.attribute_updates[0][0] == 0xEF02
+    assert tuya_listener.attribute_updates[0][0] == 0xEF12
     assert tuya_listener.attribute_updates[0][1] == 4
-    assert tuya_listener.attribute_updates[1][0] == 0xEF02
+    assert tuya_listener.attribute_updates[1][0] == 0xEF12
     assert tuya_listener.attribute_updates[1][1] == 599
-    assert tuya_listener.attribute_updates[2][0] == 0xEF03
+    assert tuya_listener.attribute_updates[2][0] == 0xEF13
     assert tuya_listener.attribute_updates[2][1] == 0  # frost lock state is inverted
-    assert tuya_listener.attribute_updates[3][0] == 0xEF03
+    assert tuya_listener.attribute_updates[3][0] == 0xEF13
     assert tuya_listener.attribute_updates[3][1] == 1  # frost lock state is inverted

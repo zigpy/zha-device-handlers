@@ -1,8 +1,10 @@
 """Tuya MCU comunications."""
+import asyncio
 import dataclasses
 from typing import Any, Callable, Dict, Optional, Tuple, Union
 
 import zigpy.types as t
+from zigpy.quirks import CustomDevice
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import LevelControl, OnOff
 
@@ -88,7 +90,7 @@ class MoesBacklight(t.enum8):
     freeze = 0x03
 
 
-class TuyaNewPowerConfigurationCluster(
+class TuyaPowerConfigurationCluster(
     TuyaLocalCluster, DoublingPowerConfigurationCluster
 ):
     """PowerConfiguration cluster for battery-operated tuya devices reporting percentage."""
@@ -574,3 +576,18 @@ class TuyaLevelControlManufCluster(TuyaMCUCluster):
         17: "_dp_2_attr_update",
         18: "_dp_2_attr_update",
     }
+
+
+class EnchantedDevice(CustomDevice):
+    """Class for enchanted Tuya devices which needs to be unlocked by casting a 'spell'."""
+
+    def __init__(self, *args, **kwargs):
+        """Initialize with task."""
+        super().__init__(*args, **kwargs)
+        self._init_device_task = asyncio.create_task(self.spell())
+
+    async def spell(self) -> None:
+        """Initialize device so that all endpoints become available."""
+        attr_to_read = [4, 0, 1, 5, 7, 0xFFFE]
+        basic_cluster = self.endpoints[1].in_clusters[0]
+        await basic_cluster.read_attributes(attr_to_read)
