@@ -10,7 +10,6 @@ from zigpy.zcl.clusters.general import LevelControl, OnOff
 
 from zhaquirks import Bus, DoublingPowerConfigurationCluster
 from zhaquirks.tuya import (
-    ATTR_ON_OFF,
     TUYA_MCU_COMMAND,
     TUYA_MCU_VERSION_RSP,
     TUYA_SET_DATA,
@@ -270,10 +269,6 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
 class TuyaOnOff(OnOff, TuyaLocalCluster):
     """Tuya MCU OnOff cluster."""
 
-    attributes = {
-        ATTR_ON_OFF: ("on_off", t.Bool),
-    }
-
     async def command(
         self,
         command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
@@ -315,8 +310,6 @@ class TuyaOnOff(OnOff, TuyaLocalCluster):
 
 class TuyaOnOffNM(NoManufacturerCluster, TuyaOnOff):
     """Tuya OnOff cluster with NoManufacturerID."""
-
-    pass
 
 
 class TuyaOnOffManufCluster(TuyaMCUCluster):
@@ -373,10 +366,13 @@ class TuyaOnOffManufCluster(TuyaMCUCluster):
 class MoesSwitchManufCluster(TuyaOnOffManufCluster):
     """On/Off Tuya cluster with extra device attributes."""
 
-    attributes = {
-        0x8001: ("backlight_mode", MoesBacklight),
-        0x8002: ("power_on_state", PowerOnState),
-    }
+    attributes = TuyaOnOffManufCluster.attributes.copy()
+    attributes.update(
+        {
+            0x8001: ("backlight_mode", MoesBacklight),
+            0x8002: ("power_on_state", PowerOnState),
+        }
+    )
 
     dp_to_attribute: Dict[
         int, DPToAttributeMapping
@@ -410,7 +406,8 @@ class MoesSwitchManufCluster(TuyaOnOffManufCluster):
 class TuyaLevelControl(LevelControl, TuyaLocalCluster):
     """Tuya MCU Level cluster for dimmable device."""
 
-    attributes = {0x0000: ("current_level", t.uint8_t)}
+    attributes = LevelControl.attributes.copy()
+    attributes.update({0x0000: ("current_level", t.uint8_t)})
 
     async def command(
         self,
