@@ -19,7 +19,7 @@ A clear and concise description of what you want to happen.
 
 ```yaml
 Paste the device signature here.
-Don't remove the extra breaklines outside the ``` marks.
+Don't remove the extra line breaks outside the ``` marks.
 ```
 
 </details>
@@ -30,7 +30,7 @@ Don't remove the extra breaklines outside the ``` marks.
 
 ```yaml
 Paste the diagnostic information here.
-Don't remove the extra breaklines outside the ``` marks.
+Don't remove the extra line breaks outside the ``` marks.
 ```
 
 </details>
@@ -40,7 +40,7 @@ Don't remove the extra breaklines outside the ``` marks.
 
 ```
 Paste any additional debug logs here.
-Don't remove the extra breaklines outside the ``` marks.
+Don't remove the extra line breaks outside the ``` marks.
 ```
 
 </details>
