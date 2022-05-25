@@ -662,7 +662,18 @@ def test_quirk_device_automation_triggers_unique(quirk):
             fail_func(f"Triggers are not unique for {quirk}:\n{triggers_text}")
 
 
-@pytest.mark.parametrize("quirk", ALL_QUIRK_CLASSES)
+@pytest.mark.parametrize(
+    "quirk",
+    [
+        quirk_cls
+        for quirk_cls in ALL_QUIRK_CLASSES
+        if quirk_cls
+        not in (
+            zhaquirks.xbee.xbee_io.XBeeSensor,
+            zhaquirks.xbee.xbee3_io.XBee3Sensor,
+        )
+    ],
+)
 def test_attributes_updated_not_replaced(quirk: CustomDevice) -> None:
     """Verify no quirks subclass a ZCL cluster but delete its attributes list."""
 
@@ -690,6 +701,6 @@ def test_attributes_updated_not_replaced(quirk: CustomDevice) -> None:
             # Ensure the attribute IDs are extended
             if not set(base_cluster.attributes) <= set(cluster.attributes):
                 pytest.fail(
-                    f"Cluster deletes parent class's attributes"
-                    f" instead of extending them: {cluster}"
+                    f"Cluster {cluster} deletes parent class's attributes instead of"
+                    f" extending them: {base_cluster}"
                 )
