@@ -406,9 +406,6 @@ class MoesSwitchManufCluster(TuyaOnOffManufCluster):
 class TuyaLevelControl(LevelControl, TuyaLocalCluster):
     """Tuya MCU Level cluster for dimmable device."""
 
-    attributes = LevelControl.attributes.copy()
-    attributes.update({0x0000: ("current_level", t.uint8_t)})
-
     async def command(
         self,
         command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
