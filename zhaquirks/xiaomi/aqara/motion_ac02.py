@@ -71,9 +71,21 @@ class LocalIlluminanceMeasurementCluster(
 ):
     """Local lluminance measurement cluster."""
 
+    def illuminance_reported(self, value):
+        """Illuminance reported."""
+        if 0 > value or value > 0xFFFF:
+            return
+        super().illuminance_reported(value)
+
 
 class LocalOccupancyCluster(LocalDataCluster, OccupancyCluster):
     """Local occupancy cluster."""
+
+
+class LocalMotionCluster(MotionCluster):
+    """Local motion cluster."""
+
+    reset_s: int = 30
 
 
 class LumiMotionAC02(CustomDevice):
@@ -119,7 +131,7 @@ class LumiMotionAC02(CustomDevice):
                     XiaomiPowerConfiguration,
                     Identify.cluster_id,
                     LocalOccupancyCluster,
-                    MotionCluster,
+                    LocalMotionCluster,
                     LocalIlluminanceMeasurementCluster,
                     OppleCluster,
                 ],
