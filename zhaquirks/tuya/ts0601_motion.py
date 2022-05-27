@@ -339,7 +339,7 @@ class NeoMotion(CustomDevice):
 
 
 class MmwRadarMotion(CustomDevice):
-    """NAS-PD07 occupancy sensor."""
+    """Millimeter wave occupancy sensor."""
 
     signature = {
         #  endpoint=1, profile=260, device_type=81, device_version=1,
@@ -348,6 +348,7 @@ class MmwRadarMotion(CustomDevice):
             ("_TZE200_ar0slwnd", "TS0601"),
             ("_TZE200_sfiy5tfs", "TS0601"),
             ("_TZE200_mrf6vtua", "TS0601"),
+            ("_TZE200_ztc6ggyl", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
@@ -385,7 +386,7 @@ class MmwRadarMotion(CustomDevice):
 
 
 class MmwRadarMotionGPP(CustomDevice):
-    """BW-IS3 occupancy sensor."""
+    """Millimeter wave occupancy sensor."""
 
     signature = {
         #  endpoint=1, profile=260, device_type=81, device_version=1,
