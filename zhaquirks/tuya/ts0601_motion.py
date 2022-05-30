@@ -444,3 +444,47 @@ class MmwRadarMotionGPP(CustomDevice):
             },
         }
     }
+
+    
+class MmwRadarMotionAIR(CustomDevice):
+    """Millimeter wave occupancy sensor."""
+
+    signature = {
+        #  endpoint=1, profile=260, device_type=81, device_version=1,
+        #  input_clusters=[4, 5, 12, 1024, 1030, 61184, 0], output_clusters=[25, 10])
+        MODELS_INFO: [
+            ("_TZE200_auin8mzr", "TS0601"),
+        ],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaNewManufCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.OCCUPANCY_SENSOR,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    MmwRadarManufCluster,
+                    TuyaOccupancySensing,
+                    TuyaAnalogInput,
+                    TuyaIlluminanceMeasurement,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+        }
+    }
