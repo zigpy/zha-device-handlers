@@ -300,8 +300,6 @@ class XBeeOnOff(LocalDataCluster, OnOff):
 class XBeeAnalogInput(LocalDataCluster, AnalogInput):
     """XBee Analog Input Cluster."""
 
-    pass
-
 
 class XBeePWM(LocalDataCluster, AnalogOutput):
     """XBee PWM Cluster."""
@@ -451,21 +449,24 @@ class XBeeRemoteATRequest(LocalDataCluster):
             ),
             schema,
         )
-        result = await self._endpoint.device.application.request(
-            self._endpoint.device,
-            XBEE_PROFILE_ID,
-            XBEE_AT_REQUEST_CLUSTER,
-            XBEE_AT_ENDPOINT,
-            XBEE_AT_ENDPOINT,
-            self._endpoint.device.application.get_sequence(),
-            data,
-            expect_reply=False,
-        )
 
         future = asyncio.Future()
         self._save_at_request(frame_id, future)
-        if result[0] != foundation.Status.SUCCESS:
-            future.set_exception(RuntimeError("AT Command request: {}".format(result)))
+
+        try:
+            await self._endpoint.device.application.request(
+                self._endpoint.device,
+                XBEE_PROFILE_ID,
+                XBEE_AT_REQUEST_CLUSTER,
+                XBEE_AT_ENDPOINT,
+                XBEE_AT_ENDPOINT,
+                self._endpoint.device.application.get_sequence(),
+                data,
+                expect_reply=False,
+            )
+        except Exception as e:
+            future.set_exception(e)
+
         return future
 
     async def command(
@@ -490,7 +491,11 @@ class XBeeRemoteATRequest(LocalDataCluster):
         self._endpoint.device.endpoints[232].out_clusters[
             LevelControl.cluster_id
         ].handle_cluster_request(hdr, value)
-        return 0, foundation.Status.SUCCESS
+
+        # XXX: Is command_id=0x00 correct?
+        return foundation.GENERAL_COMMANDS[
+            foundation.GeneralCommand.Default_Response
+        ].schema(command_id=0x00, status=foundation.Status.SUCCESS)
 
 
 class XBeeRemoteATResponse(LocalDataCluster):

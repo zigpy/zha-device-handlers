@@ -2,6 +2,7 @@
 import logging
 
 from zigpy.profiles import zha
+import zigpy.types as types
 from zigpy.zcl.clusters.general import (
     Alarms,
     AnalogInput,
@@ -33,6 +34,7 @@ from zhaquirks.xiaomi import (
     AnalogInputCluster,
     BasicCluster,
     ElectricalMeasurementCluster,
+    XiaomiAqaraE1Cluster,
     XiaomiCustomDevice,
 )
 
@@ -40,6 +42,7 @@ _LOGGER = logging.getLogger(__name__)
 
 XIAOMI_PROFILE_ID = 0xA1E0
 XIAOMI_DEVICE_TYPE = 0x61
+OPPLE_MFG_CODE = 0x115F
 
 
 class Plug(XiaomiCustomDevice):
@@ -55,7 +58,6 @@ class Plug(XiaomiCustomDevice):
     signature = {
         MODELS_INFO: [
             (LUMI, "lumi.plug.mmeu01"),
-            (LUMI, "lumi.plug.maeu01"),
         ],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=81
@@ -113,6 +115,61 @@ class Plug(XiaomiCustomDevice):
                 DEVICE_TYPE: zha.DeviceType.MAIN_POWER_OUTLET,
                 INPUT_CLUSTERS: [AnalogInputCluster],
                 OUTPUT_CLUSTERS: [AnalogInput.cluster_id, Groups.cluster_id],
+            },
+            242: {
+                PROFILE_ID: XIAOMI_PROFILE_ID,
+                DEVICE_TYPE: XIAOMI_DEVICE_TYPE,
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        },
+    }
+
+
+class OppleCluster(XiaomiAqaraE1Cluster):
+    """Opple cluster."""
+
+    ep_attribute = "opple_cluster"
+    attributes = {
+        0x0009: ("mode", types.uint8_t, True),
+    }
+    attr_config = {0x0009: 0x00}
+
+    async def bind(self):
+        """Bind cluster."""
+        result = await super().bind()
+        await self.write_attributes(self.attr_config, manufacturer=OPPLE_MFG_CODE)
+        return result
+
+
+class PlugMAEU01(Plug):
+    """lumi.plug.maeu01 plug."""
+
+    signature = {
+        MODELS_INFO: [
+            (LUMI, "lumi.plug.maeu01"),
+        ],
+        ENDPOINTS: Plug.signature[ENDPOINTS],
+    }
+
+    replacement = {
+        SKIP_CONFIGURATION: False,
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    DeviceTemperature.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    Alarms.cluster_id,
+                    Metering.cluster_id,
+                    ElectricalMeasurement.cluster_id,
+                    OppleCluster,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
             242: {
                 PROFILE_ID: XIAOMI_PROFILE_ID,

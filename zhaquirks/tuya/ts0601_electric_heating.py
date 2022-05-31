@@ -37,14 +37,14 @@ _LOGGER = logging.getLogger(__name__)
 class MoesBHTManufCluster(TuyaManufClusterAttributes):
     """Manufacturer Specific Cluster of some electric heating thermostats."""
 
-    manufacturer_attributes = {
-        MOESBHT_TARGET_TEMP_ATTR: ("target_temperature", t.uint32_t),
-        MOESBHT_TEMPERATURE_ATTR: ("temperature", t.uint32_t),
-        MOESBHT_SCHEDULE_MODE_ATTR: ("schedule_mode", t.uint8_t),
-        MOESBHT_MANUAL_MODE_ATTR: ("manual_mode", t.uint8_t),
-        MOESBHT_ENABLED_ATTR: ("enabled", t.uint8_t),
-        MOESBHT_RUNNING_MODE_ATTR: ("running_mode", t.uint8_t),
-        MOESBHT_CHILD_LOCK_ATTR: ("child_lock", t.uint8_t),
+    attributes = {
+        MOESBHT_TARGET_TEMP_ATTR: ("target_temperature", t.uint32_t, True),
+        MOESBHT_TEMPERATURE_ATTR: ("temperature", t.uint32_t, True),
+        MOESBHT_SCHEDULE_MODE_ATTR: ("schedule_mode", t.uint8_t, True),
+        MOESBHT_MANUAL_MODE_ATTR: ("manual_mode", t.uint8_t, True),
+        MOESBHT_ENABLED_ATTR: ("enabled", t.uint8_t, True),
+        MOESBHT_RUNNING_MODE_ATTR: ("running_mode", t.uint8_t, True),
+        MOESBHT_CHILD_LOCK_ATTR: ("child_lock", t.uint8_t, True),
     }
 
     def _update_attribute(self, attrid, value):
@@ -58,7 +58,7 @@ class MoesBHTManufCluster(TuyaManufClusterAttributes):
         elif attrid == MOESBHT_TEMPERATURE_ATTR:
             self.endpoint.device.thermostat_bus.listener_event(
                 "temperature_change",
-                "local_temp",
+                "local_temperature",
                 value * 10,  # decidegree to centidegree
             )
         elif attrid == MOESBHT_SCHEDULE_MODE_ATTR:
@@ -114,7 +114,9 @@ class MoesBHTThermostat(TuyaThermostatCluster):
         else:
             value = self.ProgrammingOperationMode.Schedule_programming_mode
 
-        self._update_attribute(self.attridx["programing_oper_mode"], value)
+        self._update_attribute(
+            self.attributes_by_name["programing_oper_mode"].id, value
+        )
 
     def enabled_change(self, value):
         """System mode change."""
@@ -122,7 +124,7 @@ class MoesBHTThermostat(TuyaThermostatCluster):
             mode = self.SystemMode.Off
         else:
             mode = self.SystemMode.Heat
-        self._update_attribute(self.attridx["system_mode"], mode)
+        self._update_attribute(self.attributes_by_name["system_mode"].id, mode)
 
 
 class MoesBHTUserInterface(TuyaUserInterfaceCluster):
@@ -137,7 +139,11 @@ class MoesBHT(TuyaThermostat):
     signature = {
         #  endpoint=1 profile=260 device_type=81 device_version=1 input_clusters=[0, 4, 5, 61184],
         #  output_clusters=[10, 25]
-        MODELS_INFO: [("_TZE200_aoclfnxz", "TS0601")],
+        MODELS_INFO: [
+            ("_TZE200_aoclfnxz", "TS0601"),
+            ("_TZE200_2ekuz3dz", "TS0601"),
+            ("_TZE200_ye5jkfsb", "TS0601"),
+        ],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,

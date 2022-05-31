@@ -18,8 +18,7 @@ from zhaquirks.const import (
     ZONE_STATUS,
     ZONE_TYPE,
 )
-
-from . import TuyaManufCluster, TuyaManufClusterAttributes
+from zhaquirks.tuya import TuyaManufCluster, TuyaManufClusterAttributes
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -29,8 +28,8 @@ TUYA_SMOKE_DETECTED_ATTR = 0x0401  # [0]/[1] [Detected]/[Clear]!
 class TuyaSmokeDetectorCluster(TuyaManufClusterAttributes):
     """Manufacturer Specific Cluster of the TS0601 smoke detector."""
 
-    manufacturer_attributes = {
-        TUYA_SMOKE_DETECTED_ATTR: ("smoke_detected", t.uint8_t),
+    attributes = {
+        TUYA_SMOKE_DETECTED_ATTR: ("smoke_detected", t.uint8_t, True),
     }
 
     def _update_attribute(self, attrid, value):
@@ -68,7 +67,7 @@ class TuyaIasZone(CustomCluster, IasZone):
 
 
 class TuyaSmokeDetector0601(CustomDevice):
-    """TS0601 _TZE200_aycxwiau quirk."""
+    """TS0601 Smoke detector quirk."""
 
     def __init__(self, *args, **kwargs):
         """Init."""
@@ -76,7 +75,11 @@ class TuyaSmokeDetector0601(CustomDevice):
         super().__init__(*args, **kwargs)
 
     signature = {
-        MODELS_INFO: [("_TZE200_aycxwiau", "TS0601")],
+        MODELS_INFO: [
+            ("_TZE200_aycxwiau", "TS0601"),
+            ("_TZE200_ntcy3xu1", "TS0601"),
+            ("_TZE200_vzekyi4c", "TS0601"),
+        ],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zigpy.profiles.zha.PROFILE_ID,

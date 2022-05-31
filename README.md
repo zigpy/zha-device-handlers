@@ -17,11 +17,13 @@ ZHA device handlers and it's provided Quirks allow Zigpy, ZHA and Home Assistant
 
 ## What are these specifications
 
-[Zigbee Specification](https://zigbeealliance.org/wp-content/uploads/2019/11/docs-05-3474-21-0csg-zigbee-specification.pdf)
+[Zigbee PRO 2017 (R22) Protocol Specification](https://zigbeealliance.org/wp-content/uploads/2019/11/docs-05-3474-21-0csg-zigbee-specification.pdf)
 
-[Zigbee Cluster Library](https://zigbeealliance.org/wp-content/uploads/2019/12/07-5123-06-zigbee-cluster-library-specification.pdf)
+[Zigbee Cluster Library (R8)](https://zigbeealliance.org/wp-content/uploads/2021/10/07-5123-08-Zigbee-Cluster-Library.pdf)
 
-[Zigbee Base Device Specification](https://zigbeealliance.org/wp-content/uploads/zip/zigbee-base-device-behavior-bdb-v1-0.zip)
+[Zigbee Base Device Behavior Specification (V1.0)](https://zigbeealliance.org/wp-content/uploads/zip/zigbee-base-device-behavior-bdb-v1-0.zip)
+
+[Zigbee Lighting & Occupancy Device Specification (V1.0)](https://zigbeealliance.org/wp-content/uploads/2019/11/docs-15-0014-05-0plo-Lighting-OccupancyDevice-Specification-V1.0.pdf)
 
 [Zigbee Primer](https://docs.smartthings.com/en/latest/device-type-developers-guide/zigbee-primer.html)
 
@@ -418,57 +420,124 @@ The second part is the event data. You only need to supply enough of the event d
 
 If you look at another example for the same device:
 
-`(SHORT_PRESS, DIM_UP): {COMMAND: COMMAND_STEP, CLUSTER_ID: 8, ENDPOINT_ID: 1, ARGS: [0, 30, 9],}`
+`(SHORT_PRESS, DIM_UP): {COMMAND: COMMAND_STEP, CLUSTER_ID: 8, ENDPOINT_ID: 1, PARAMS: {'step_mode': 0},}`
 
 You can see a pattern that illustrates how to match a more complex event. In this case the step command is used for the dim up and dim down buttons so we need to match more of the event data to uniquely match the event.
 
-# Testing new releases
+## Setting up the development environment
 
-Testing a new release of the zha-quirks package before it is released in Home Assistant.
+Open a terminal at the root of the project and run the setup script: `script/setup` This script will install all necessary dependencies and it will install the precommit hook.
 
-If you are using Supervised Home Assistant (formerly known as the Hassio/Hass.io distro):
+The tests use the [pytest](https://docs.pytest.org/en/latest/) framework.
 
-- Add <https://github.com/home-assistant/hassio-addons-development> as "add-on" repository
-- Install "Custom deps deployment" addon
-- Update config like:
+### Getting started
 
-  ```yml
-  pypi:
-    - zha-quirks==0.0.38
-  apk: []
-  ```
+To get set up, you need install the test dependencies:
 
-  where 0.0.38 is the new version
+```bash
+pip install -r requirements_test_all.txt
+```
 
-- Start the addon
+### Running the tests
 
-If you are instead using some custom python installation of Home Assistant then do this:
+See the [pytest documentation](https://docs.pytest.org/en/latest/) for details about how to run
+the tests. For example, to run all the `test_tuya.py` tests:
 
-- Activate your python virtual env
-- Update package with `pip`
+```bash
+$ pytest --disable-warnings tests/test_tuya.py
+Test session starts (platform: linux, Python 3.9.2, pytest 6.2.5, pytest-sugar 0.9.4)
 
-  ```bash
-  pip install zha-quirks==0.0.38
-  ```
+collecting ...
+ tests/test_tuya.py ✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓✓                                                                                                                                                                                                                                                         100% ██████████
 
-# Testing quirks in development in docker based install
+Results (3.58s):
+      41 passed
+```
 
-If you are using Supervised Home Assistant (formerly known as the Hassio/Hass.io distro) you will need to get access to the home-assistant docker container. Directions below are given for using the portainer add-on to do this, there are other methods as well not covered here.
+### Writing tests
 
-- Install the portainer add-on (<https://github.com/hassio-addons/addon-portainer>) from Home Assistant Community Add-ons.
-- Follow the add-on documentation to un-hide the home-assistant container (<https://github.com/hassio-addons/addon-portainer/blob/master/portainer/DOCS.md>)
-- Stage the update quirk in a directory within your config directory
-- Use portainer to access a console in the home-assistant container:
+To add a new test, start by adding a new function to one of the existing test files. You
+can follow the instructions in the [Getting started](https://docs.pytest.org/en/latest/getting-started.html)
+section of the pytest documentation.
 
-  <img src="https://user-images.githubusercontent.com/11084412/88719260-fdfa7700-d0f0-11ea-8791-88ed3e26915d.png" width=400 >
+### Using fixtures to set things up
 
-- Access the quirks directory
-  - on HA > 0.113: /usr/local/lib/python3.8/site-packages/zhaquirks/
-  - on HA < 0.113: /usr/local/lib/python3.7/site-packages/zhaquirks/
-- Copy updated/new quirk to zhaquirks directory: `cp -a /config/temp/NEW_QUIRK ./`
-- Remove the **pycache** folder so it is regenerated `rm -rf ./__pycache__/`
-- Close out the console and restart HA.
-- Note: The added/update quirk will not survive a HA version update.
+In order to write a test, you will need to access an instance of a quirk to run the tests against. Pytest
+provides a useful feature called Fixtures that allow you to write and use the setup code necessary in one
+place, similar to how we use libraries to provide common functions to other code.
+
+You can read more about fixtures [here](https://docs.pytest.org/en/latest/how-to/fixtures.html#how-to-fixtures).
+
+You can find the common fixtures in files named `conftest.py`. Pytest will list them for you as follows:
+
+```bash
+$ pytest --fixtures
+[...]
+--- fixtures defined from tests.conftest ---
+MockAppController
+    App controller mock.
+
+ieee_mock
+    Return a static ieee.
+
+zigpy_device_mock
+    Zigpy device mock.
+
+zigpy_device_from_quirk
+    Create zigpy device from Quirks signature.
+
+[...]
+--- fixtures defined from tests.test_tuya_clusters ---
+TuyaCluster
+    Mock of the new Tuya manufacturer cluster.
+```
+
+Some fixtures such as `app_controller_mock` will provide an object instance that you can
+use directly. Others, such as `zigpy_device_mock` will return a function, which you can
+call to create a customised object during your own setup.
+
+### Testing the quirk signature matching
+
+The fixture `assert_signature_matches_quirk` provides a function that can be
+used to check that a particular device signature matches the corresponding quirk.
+By capturing the signature and adding a few lines to the test file, this means that
+you can verify that your device will be matched against the quirk without needing to
+go through the paring process directly.
+
+You need to capture the device signature and save it. If you have previously started the
+pairing process in Home assistant, you can find the signature under 'Zigbee Device Signature'
+on the device page.
+
+Now you can create a test that checks the signature as follows:
+
+```python
+def test_ts0121_signature(assert_signature_matches_quirk):
+    signature = {
+        "node_descriptor": "NodeDescriptor(logical_type=<LogicalType.Router: 1>, complex_descriptor_available=0, user_descriptor_available=0, reserved=0, aps_flags=0, frequency_band=<FrequencyBand.Freq2400MHz: 8>, mac_capability_flags=<MACCapabilityFlags.AllocateAddress|RxOnWhenIdle|MainsPowered|FullFunctionDevice: 142>, manufacturer_code=4098, maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264, maximum_outgoing_transfer_size=82, descriptor_capability_field=<DescriptorCapability.NONE: 0>, *allocate_address=True, *is_alternate_pan_coordinator=False, *is_coordinator=False, *is_end_device=False, *is_full_function_device=True, *is_mains_powered=True, *is_receiver_on_when_idle=True, *is_router=True, *is_security_capable=False)",
+        "endpoints": {
+            "1": {
+            "profile_id": 260,
+            "device_type": "0x0051",
+            "in_clusters": [
+                "0x0000",
+                "0x0004",
+                "0x0005",
+                "0x0006",
+                "0x0702",
+                "0x0b04"
+            ],
+            "out_clusters": [
+                "0x000a",
+                "0x0019"
+            ]
+            }
+        },
+        "manufacturer": "_TZ3000_g5xawfcq",
+        "model": "TS0121",
+        "class": "zhaquirks.tuya.ts0121_plug.Plug"
+    }
+    assert_signature_matches_quirk(zhaquirks.tuya.ts0121_plug.Plug, signature)
+```
 
 # Thanks
 

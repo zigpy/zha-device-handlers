@@ -13,7 +13,6 @@ from zigpy.zcl.clusters.lightlink import LightLink
 
 from zhaquirks import GroupBoundCluster
 from zhaquirks.const import (
-    ARGS,
     CLUSTER_ID,
     COMMAND,
     COMMAND_MOVE_TO_LEVEL_ON_OFF,
@@ -27,6 +26,7 @@ from zhaquirks.const import (
     INPUT_CLUSTERS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
+    PARAMS,
     PROFILE_ID,
     SHORT_PRESS,
     TURN_OFF,
@@ -40,13 +40,9 @@ MANUFACTURER_SPECIFIC_CLUSTER_ID_2 = 0xFC44  # decimal = 64580
 class OnOffGroupCluster(GroupBoundCluster, OnOff):
     """On/Off Cluster which only binds to a group."""
 
-    pass
-
 
 class LevelControlGroupCluster(GroupBoundCluster, LevelControl):
     """Level Control Cluster which only binds to a group."""
-
-    pass
 
 
 class LutronLZL4BWHL01Remote(CustomDevice):
@@ -115,24 +111,24 @@ class LutronLZL4BWHL01Remote(CustomDevice):
             COMMAND: COMMAND_MOVE_TO_LEVEL_ON_OFF,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
-            ARGS: [254, 4],
+            PARAMS: {"level": 254, "transition_time": 4},
         },
         (SHORT_PRESS, TURN_OFF): {
             COMMAND: COMMAND_MOVE_TO_LEVEL_ON_OFF,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
-            ARGS: [0, 4],
+            PARAMS: {"level": 0, "transition_time": 4},
         },
         (SHORT_PRESS, DIM_UP): {
             COMMAND: COMMAND_STEP_ON_OFF,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
-            ARGS: [0, 30, 6],
+            PARAMS: {"step_mode": 0},
         },
         (SHORT_PRESS, DIM_DOWN): {
             COMMAND: COMMAND_STEP,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
-            ARGS: [1, 30, 6],
+            PARAMS: {"step_mode": 1},
         },
     }

@@ -17,7 +17,6 @@ from zigpy.zcl.clusters.general import (
 
 from zhaquirks import Bus
 from zhaquirks.const import (
-    ARGS,
     COMMAND,
     COMMAND_OFF,
     COMMAND_ON,
@@ -31,6 +30,7 @@ from zhaquirks.const import (
     LONG_PRESS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
+    PARAMS,
     PROFILE_ID,
     SHORT_PRESS,
     TURN_OFF,
@@ -68,11 +68,17 @@ class SengledE1EG7FManufacturerSpecificCluster(CustomCluster):
     name = "Sengled Manufacturer Specific"
     ep_attribute = "sengled_manufacturer_specific"
 
-    manufacturer_server_commands = {
-        0x0000: (
-            "command",
-            (t.uint8_t, t.uint8_t, t.uint8_t, t.uint8_t),
-            False,
+    server_commands = {
+        0x0000: foundation.ZCLCommandDef(
+            name="command",
+            schema={
+                "param1": t.uint8_t,
+                "param2": t.uint8_t,
+                "param3": t.uint8_t,
+                "param4": t.uint8_t,
+            },
+            is_reply=False,
+            is_manufacturer_specific=True,
         )
     }
 
@@ -195,8 +201,14 @@ class SengledE1EG7F(CustomDevice):
         (SHORT_PRESS, TURN_ON): {COMMAND: COMMAND_ON},
         (LONG_PRESS, TURN_ON): {COMMAND: "on_long"},
         (DOUBLE_PRESS, TURN_ON): {COMMAND: "on_double"},
-        (SHORT_PRESS, DIM_UP): {COMMAND: COMMAND_STEP, ARGS: [0, 1, 0]},
-        (SHORT_PRESS, DIM_DOWN): {COMMAND: COMMAND_STEP, ARGS: [1, 1, 0]},
+        (SHORT_PRESS, DIM_UP): {
+            COMMAND: COMMAND_STEP,
+            PARAMS: {"step_mode": 0},
+        },
+        (SHORT_PRESS, DIM_DOWN): {
+            COMMAND: COMMAND_STEP,
+            PARAMS: {"step_mode": 1},
+        },
         (SHORT_PRESS, TURN_OFF): {COMMAND: COMMAND_OFF},
         (LONG_PRESS, TURN_OFF): {COMMAND: "off_long"},
         (DOUBLE_PRESS, TURN_OFF): {COMMAND: "off_double"},

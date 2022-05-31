@@ -26,19 +26,14 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.philips import PHILIPS, OccupancyCluster
+from zhaquirks.philips import PHILIPS, SIGNIFY, OccupancyCluster
 
 
 class PhilipsMotion(CustomDevice):
-    """Philips motion sensor device."""
+    """Old Philips motion sensor devices."""
 
     signature = {
-        MODELS_INFO: [
-            (PHILIPS, "SML001"),
-            (PHILIPS, "SML002"),
-            (PHILIPS, "SML003"),
-            (PHILIPS, "SML004"),
-        ],
+        MODELS_INFO: [(PHILIPS, "SML001"), (PHILIPS, "SML002")],
         ENDPOINTS: {
             #  <SimpleDescriptor endpoint=1 profile=49246 device_type=2128
             #  device_version=?
@@ -106,6 +101,57 @@ class PhilipsMotion(CustomDevice):
                     OccupancyCluster,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
+            },
+        }
+    }
+
+
+class SignifyMotion(CustomDevice):
+    """New Philips motion sensor devices."""
+
+    signature = {
+        MODELS_INFO: [(SIGNIFY, "SML003"), (SIGNIFY, "SML004")],
+        ENDPOINTS: {
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.OCCUPANCY_SENSOR,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    Identify.cluster_id,
+                    IlluminanceMeasurement.cluster_id,
+                    TemperatureMeasurement.cluster_id,
+                    OccupancySensing.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    OnOff.cluster_id,
+                    Ota.cluster_id,
+                ],
+            },
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.OCCUPANCY_SENSOR,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    Identify.cluster_id,
+                    IlluminanceMeasurement.cluster_id,
+                    TemperatureMeasurement.cluster_id,
+                    OccupancyCluster,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    OnOff.cluster_id,
+                    Ota.cluster_id,
+                ],
             },
         }
     }

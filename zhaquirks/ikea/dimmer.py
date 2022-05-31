@@ -14,10 +14,10 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.lightlink import LightLink
 
 from zhaquirks.const import (
-    ARGS,
     CLUSTER_ID,
     COMMAND,
     COMMAND_MOVE,
+    COMMAND_MOVE_ON_OFF,
     DEVICE_TYPE,
     ENDPOINT_ID,
     ENDPOINTS,
@@ -25,10 +25,12 @@ from zhaquirks.const import (
     LEFT,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
+    PARAMS,
     PROFILE_ID,
     RIGHT,
+    ROTATED,
 )
-from zhaquirks.ikea import IKEA, ROTATED, PowerConfiguration1CRXCluster
+from zhaquirks.ikea import IKEA, PowerConfiguration1CRXCluster
 
 
 class IkeaDimmer(CustomDevice):
@@ -87,18 +89,17 @@ class IkeaDimmer(CustomDevice):
         }
     }
 
-
-device_automation_triggers = {
-    (ROTATED, RIGHT): {
-        COMMAND: COMMAND_MOVE,
-        CLUSTER_ID: 8,
-        ENDPOINT_ID: 1,
-        ARGS: [0, 195],
-    },
-    (ROTATED, LEFT): {
-        COMMAND: COMMAND_MOVE,
-        CLUSTER_ID: 8,
-        ENDPOINT_ID: 1,
-        ARGS: [1, 195],
-    },
-}
+    device_automation_triggers = {
+        (ROTATED, RIGHT): {
+            COMMAND: COMMAND_MOVE_ON_OFF,
+            CLUSTER_ID: 8,
+            ENDPOINT_ID: 1,
+            PARAMS: {"move_mode": 0},
+        },
+        (ROTATED, LEFT): {
+            COMMAND: COMMAND_MOVE,
+            CLUSTER_ID: 8,
+            ENDPOINT_ID: 1,
+            PARAMS: {"move_mode": 1},
+        },
+    }

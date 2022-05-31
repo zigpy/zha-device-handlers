@@ -58,6 +58,8 @@ HUMIDITY_MEASUREMENT = "humidity_measurement"
 HUMIDITY_REPORTED = "humidity_reported"
 LUMI = "LUMI"
 MODEL = 5
+MOTION_SENSITIVITY = "motion_sensitivity"
+DETECTION_INTERVAL = "detection_interval"
 MOTION_TYPE = 0x000D
 OCCUPANCY_STATE = 0
 PATH = "path"
@@ -120,7 +122,7 @@ class XiaomiCluster(CustomCluster):
 
     def _iter_parse_attr_report(
         self, data: bytes
-    ) -> Iterator[foundation.Attribute, bytes]:
+    ) -> Iterator[tuple[foundation.Attribute, bytes]]:
         """Yield all interpretations of the first attribute in an Xiaomi report."""
 
         # Peek at the attribute report
@@ -187,7 +189,7 @@ class XiaomiCluster(CustomCluster):
         # Only handle attribute reports differently
         if (
             hdr.frame_control.frame_type != foundation.FrameType.GLOBAL_COMMAND
-            or hdr.command_id != foundation.Command.Report_Attributes
+            or hdr.command_id != foundation.GeneralCommand.Report_Attributes
         ):
             return super().deserialize(hdr.serialize() + data)
 
@@ -221,12 +223,18 @@ class XiaomiCluster(CustomCluster):
                 # 0x0005 = model attribute.
                 # Xiaomi sensors send the model attribute when their reset button is
                 # pressed quickly."""
+
+                if attrid in self.attributes:
+                    attribute_name = self.attributes[attrid].name
+                else:
+                    attribute_name = UNKNOWN
+
                 self.listener_event(
                     ZHA_SEND_EVENT,
                     COMMAND_ATTRIBUTE_UPDATED,
                     {
                         ATTRIBUTE_ID: attrid,
-                        ATTRIBUTE_NAME: self.attributes.get(attrid, [UNKNOWN])[0],
+                        ATTRIBUTE_NAME: attribute_name,
                         VALUE: value,
                     },
                 )
@@ -324,6 +332,11 @@ class XiaomiCluster(CustomCluster):
             attribute_names.update({11: ILLUMINANCE_MEASUREMENT})
         elif self.endpoint.device.model == "lumi.curtain.acn002":
             attribute_names.update({101: BATTERY_PERCENTAGE_REMAINING_ATTRIBUTE})
+        elif self.endpoint.device.model in ["lumi.motion.agl02", "lumi.motion.ac02"]:
+            attribute_names.update({101: ILLUMINANCE_MEASUREMENT})
+            if self.endpoint.device.model == "lumi.motion.ac02":
+                attribute_names.update({105: DETECTION_INTERVAL})
+                attribute_names.update({106: MOTION_SENSITIVITY})
         result = {}
 
         # Some attribute reports end with a stray null byte
@@ -373,7 +386,8 @@ class XiaomiAqaraE1Cluster(XiaomiCluster, ManufacturerSpecificCluster):
 class BinaryOutputInterlock(CustomCluster, BinaryOutput):
     """Xiaomi binaryoutput cluster with added interlock attribute."""
 
-    manufacturer_attributes = {0xFF06: ("interlock", t.Bool)}
+    attributes = BinaryOutput.attributes.copy()
+    attributes[0xFF06] = ("interlock", t.Bool, True)
 
 
 class XiaomiPowerConfiguration(PowerConfiguration, LocalDataCluster):
@@ -572,11 +586,11 @@ class OnOffCluster(OnOff, CustomCluster):
 
     def command(
         self,
-        command_id: foundation.Command | int | t.uint8_t,
+        command_id: foundation.GeneralCommand | int | t.uint8_t,
         *args,
         manufacturer: int | t.uint16_t | None = None,
         expect_reply: bool = True,
-        tsn: int | t.uint8_t | None = None
+        tsn: int | t.uint8_t | None = None,
     ):
         """Command handler."""
         src_ep = 1
@@ -620,38 +634,48 @@ def handle_quick_init(
     if hdr.frame_control.is_cluster:
         return
 
+    if hdr.command_id not in foundation.COMMANDS:
+        sender.debug("Unknown ZCL global command: %s", hdr.command_id)
+        return
+
     try:
-        schema = foundation.COMMANDS[hdr.command_id][0]
-        args, data = t.deserialize(data, schema)
-    except (KeyError, ValueError):
+        params, data = foundation.COMMANDS[hdr.command_id].schema.deserialize(data)
+    except ValueError:
         sender.debug("Failed to deserialize ZCL global command")
         return
 
-    sender.debug("Uninitialized device command '%s' args: %s", hdr.command_id, args)
-    if hdr.command_id != foundation.Command.Report_Attributes or cluster != 0:
+    sender.debug("Uninitialized device command '%s' params: %s", hdr.command_id, params)
+
+    if (
+        hdr.command_id != foundation.GeneralCommand.Report_Attributes
+        or cluster != 0x0000
+    ):
         return
 
-    for attr_rec in args[0]:
-        if attr_rec.attrid == 5:
+    for attr_rec in params.attribute_reports:
+        # model_name
+        if attr_rec.attrid == 0x0005:
             break
     else:
         return
 
     model = attr_rec.value.value
+
     if not model:
         return
 
     for quirk in zigpy.quirks.get_quirk_list(LUMI, model):
-        if issubclass(quirk, XiaomiQuickInitDevice):
-            sender.debug("Found '%s' quirk for '%s' model", quirk.__name__, model)
-            try:
-                sender = quirk.from_signature(sender, model)
-            except (AssertionError, KeyError) as ex:
-                _LOGGER.debug(
-                    "Found quirk for quick init, but failed to init: %s", str(ex)
-                )
-                continue
-            break
+        if not issubclass(quirk, XiaomiQuickInitDevice):
+            continue
+
+        sender.debug("Found '%s' quirk for '%s' model", quirk.__name__, model)
+
+        try:
+            sender = quirk.from_signature(sender, model)
+        except (AssertionError, KeyError) as ex:
+            _LOGGER.debug("Found quirk for quick init, but failed to init: %s", str(ex))
+            continue
+        break
     else:
         return
 

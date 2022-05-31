@@ -52,27 +52,30 @@ class ElkoSuperTRThermostatCluster(ElkoThermostatCluster):
         FLOOR = 0x01
         PROTECTION = 0x03
 
-    manufacturer_attributes = {
-        UNKNOWN_1: ("unknown_1", t.uint16_t),
-        DISPLAY_TEXT: ("display_text", t.CharacterString),
-        ACTIVE_SENSOR: ("active_sensor", Sensor),
-        UNKNOWN_2: ("unknown_2", t.uint8_t),
-        REGULATOR_MODE: ("regulator_mode", t.Bool),
-        DEVICE_ON: ("device_on", t.Bool),
-        UNKNOWN_3: ("unknown_3", t.LongOctetString),
-        POWER_CONSUMPTION: ("power_consumtion", t.uint16_t),
-        FLOOR_SENSOR_TEMPERATURE: ("floor_sensor_temperature", t.int16s),
-        UNKNOWN_4: ("unknown_4", t.uint16_t),
-        NIGHT_LOWERING: ("night_lowering", t.Bool),
-        UNKNOWN_5: ("unknown_5", t.Bool),
-        CHILD_LOCK: ("child_lock", t.Bool),
-        PROTECTION_MAX_TEMP: ("protection_max_temp", t.uint8_t),
-        HEATING_ACTIVE: ("heating_active", t.Bool),
-        UNKNOWN_6: ("unknown_6", t.LongOctetString),
-        UNKNOWN_7: ("unknown_7", t.int8s),
-        UNKNOWN_8: ("unknown_8", t.uint8_t),
-        UNKNOWN_9: ("unknown_9", t.uint8_t),
-    }
+    attributes = ElkoThermostatCluster.attributes.copy()
+    attributes.update(
+        {
+            UNKNOWN_1: ("unknown_1", t.uint16_t, True),
+            DISPLAY_TEXT: ("display_text", t.CharacterString, True),
+            ACTIVE_SENSOR: ("active_sensor", Sensor, True),
+            UNKNOWN_2: ("unknown_2", t.uint8_t, True),
+            REGULATOR_MODE: ("regulator_mode", t.Bool, True),
+            DEVICE_ON: ("device_on", t.Bool, True),
+            UNKNOWN_3: ("unknown_3", t.LongOctetString, True),
+            POWER_CONSUMPTION: ("power_consumtion", t.uint16_t, True),
+            FLOOR_SENSOR_TEMPERATURE: ("floor_sensor_temperature", t.int16s, True),
+            UNKNOWN_4: ("unknown_4", t.uint16_t, True),
+            NIGHT_LOWERING: ("night_lowering", t.Bool, True),
+            UNKNOWN_5: ("unknown_5", t.Bool, True),
+            CHILD_LOCK: ("child_lock", t.Bool, True),
+            PROTECTION_MAX_TEMP: ("protection_max_temp", t.uint8_t, True),
+            HEATING_ACTIVE: ("heating_active", t.Bool, True),
+            UNKNOWN_6: ("unknown_6", t.LongOctetString, True),
+            UNKNOWN_7: ("unknown_7", t.int8s, True),
+            UNKNOWN_8: ("unknown_8", t.uint8_t, True),
+            UNKNOWN_9: ("unknown_9", t.uint8_t, True),
+        }
+    )
 
     def __init__(self, *args, **kwargs):
         """Init Elko thermostat."""
