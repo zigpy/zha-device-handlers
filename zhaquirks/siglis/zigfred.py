@@ -14,6 +14,7 @@ from zigpy.zcl.clusters.general import (
     LevelControl,
     OnOff,
     Scenes,
+    WindowCovering,
 )
 from zigpy.zcl.clusters.lighting import Color
 
@@ -232,6 +233,279 @@ class ZigfredUno(CustomDevice):
                     Scenes.cluster_id,
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
+                ],
+            },
+            242: {
+                PROFILE_ID: 41440,
+                DEVICE_TYPE: 97,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        },
+    }
+
+    device_automation_triggers = {
+        (SHORT_PRESS, BUTTON_1): {COMMAND: f"{BUTTON_1}_{SHORT_PRESS}"},
+        (SHORT_PRESS, BUTTON_2): {COMMAND: f"{BUTTON_2}_{SHORT_PRESS}"},
+        (SHORT_PRESS, BUTTON_3): {COMMAND: f"{BUTTON_3}_{SHORT_PRESS}"},
+        (SHORT_PRESS, BUTTON_4): {COMMAND: f"{BUTTON_4}_{SHORT_PRESS}"},
+        (DOUBLE_PRESS, BUTTON_1): {COMMAND: f"{BUTTON_1}_{DOUBLE_PRESS}"},
+        (DOUBLE_PRESS, BUTTON_2): {COMMAND: f"{BUTTON_2}_{DOUBLE_PRESS}"},
+        (DOUBLE_PRESS, BUTTON_3): {COMMAND: f"{BUTTON_3}_{DOUBLE_PRESS}"},
+        (DOUBLE_PRESS, BUTTON_4): {COMMAND: f"{BUTTON_4}_{DOUBLE_PRESS}"},
+        (LONG_PRESS, BUTTON_1): {COMMAND: f"{BUTTON_1}_{LONG_PRESS}"},
+        (LONG_PRESS, BUTTON_2): {COMMAND: f"{BUTTON_2}_{LONG_PRESS}"},
+        (LONG_PRESS, BUTTON_3): {COMMAND: f"{BUTTON_3}_{LONG_PRESS}"},
+        (LONG_PRESS, BUTTON_4): {COMMAND: f"{BUTTON_4}_{LONG_PRESS}"},
+        (LONG_RELEASE, BUTTON_1): {COMMAND: f"{BUTTON_1}_{LONG_RELEASE}"},
+        (LONG_RELEASE, BUTTON_2): {COMMAND: f"{BUTTON_2}_{LONG_RELEASE}"},
+        (LONG_RELEASE, BUTTON_3): {COMMAND: f"{BUTTON_3}_{LONG_RELEASE}"},
+        (LONG_RELEASE, BUTTON_4): {COMMAND: f"{BUTTON_4}_{LONG_RELEASE}"},
+    }
+
+class ZigfredPlus(CustomDevice):
+    """zigfred plus device handler."""
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        _LOGGER.info("Initializing zigfred plus")
+        super().__init__(*args, **kwargs)
+
+    signature = {
+        MODELS_INFO: [("Siglis", "zigfred plus")],
+        ENDPOINTS: {
+            5: {
+                # Front Module LED
+                # SizePrefixedSimpleDescriptor(endpoint=5,
+                # profile=260, device_type=258,
+                # device_version=1,
+                # input_clusters=[0, 3, 4, 5, 6, 8, 768, 837],
+                # output_clusters=[])
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.COLOR_DIMMABLE_LIGHT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                    Color.cluster_id,
+                    ZigfredCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            7: {
+                # Dimmable Light 1
+                # SizePrefixedSimpleDescriptor(endpoint=7,
+                # profile=260, device_type=257,
+                # device_version=1,
+                # input_clusters=[0, 3, 5, 4, 6, 8],
+                # output_clusters=[])
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.DIMMABLE_LIGHT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            8: {
+                # Dimmable Light 2
+                # SizePrefixedSimpleDescriptor(endpoint=8,
+                # profile=260, device_type=257,
+                # device_version=1,
+                # input_clusters=[0, 3, 5, 4, 6, 8],
+                # output_clusters=[])
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.DIMMABLE_LIGHT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            9: {
+                # Dimmable Light 3
+                # SizePrefixedSimpleDescriptor(endpoint=9,
+                # profile=260, device_type=257,
+                # device_version=1,
+                # input_clusters=[0, 3, 5, 4, 6, 8],
+                # output_clusters=[])
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.DIMMABLE_LIGHT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            10: {
+                # Dimmable Light 4
+                # SizePrefixedSimpleDescriptor(endpoint=10,
+                # profile=260, device_type=257,
+                # device_version=1,
+                # input_clusters=[0, 3, 5, 4, 6, 8],
+                # output_clusters=[])
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.DIMMABLE_LIGHT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            11: {
+                # Window Cover 1
+                # SizePrefixedSimpleDescriptor(endpoint=11,
+                # profile=260, device_type=514,
+                # device_version=1,
+                # input_clusters=[0, 3, 5, 4, 258],
+                # output_clusters=[])
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    WindowCovering.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            12: {
+                # Window Cover 1
+                # SizePrefixedSimpleDescriptor(endpoint=12,
+                # profile=260, device_type=514,
+                # device_version=1,
+                # input_clusters=[0, 3, 5, 4, 258],
+                # output_clusters=[])
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    WindowCovering.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            242: {
+                # SizePrefixedSimpleDescriptor(endpoint=242,
+                # profile=41440, device_type=97,
+                # device_version=0,
+                # input_clusters=[],
+                # output_clusters=[33])
+                PROFILE_ID: 41440,
+                DEVICE_TYPE: 97,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            5: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.COLOR_DIMMABLE_LIGHT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                    Color.cluster_id,
+                    ZigfredCluster,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            7: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.DIMMABLE_LIGHT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                ],
+            },
+            8: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.DIMMABLE_LIGHT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                ],
+            },
+            9: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.DIMMABLE_LIGHT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                ],
+            },
+            10: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.DIMMABLE_LIGHT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                ],
+            },
+            11: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    WindowCovering.cluster_id,
+                ],
+            },
+            12: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    WindowCovering.cluster_id,
                 ],
             },
             242: {
