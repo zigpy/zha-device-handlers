@@ -263,6 +263,7 @@ class ZigfredUno(CustomDevice):
         (LONG_RELEASE, BUTTON_4): {COMMAND: f"{BUTTON_4}_{LONG_RELEASE}"},
     }
 
+
 class ZigfredPlus(CustomDevice):
     """zigfred plus device handler."""
 
