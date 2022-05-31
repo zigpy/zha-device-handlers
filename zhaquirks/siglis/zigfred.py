@@ -6,6 +6,7 @@ from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
+from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
@@ -16,7 +17,6 @@ from zigpy.zcl.clusters.general import (
     Scenes,
 )
 from zigpy.zcl.clusters.lighting import Color
-from zigpy.zcl.clusters.closures import WindowCovering
 
 from zhaquirks.const import (
     BUTTON,
