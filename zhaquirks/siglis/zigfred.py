@@ -14,9 +14,9 @@ from zigpy.zcl.clusters.general import (
     LevelControl,
     OnOff,
     Scenes,
-    WindowCovering,
 )
 from zigpy.zcl.clusters.lighting import Color
+from zigpy.zcl.clusters.closures import WindowCovering
 
 from zhaquirks.const import (
     BUTTON,
