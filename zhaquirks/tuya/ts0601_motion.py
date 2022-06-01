@@ -327,6 +327,7 @@ class TuyaHumanPresenceSensorAIRManufCluster(TuyaMCUCluster):
         110: "_dp_2_attr_update",
     }
 
+
 class MotionCluster(LocalDataCluster, MotionOnEvent):
     """Tuya Motion Sensor."""
 
@@ -543,9 +544,9 @@ class MmwRadarMotionGPP(CustomDevice):
         }
     }
 
+
 class HumanPresenceSensorAIR(CustomDevice):
-    """Tuya Ceiling Mounted Motion & Illuminance Sensor (Radar)"""
-    """Millimeter wave occupancy sensor."""
+    """Tuya Ceiling Mounted Motion & Illuminance Sensor (Radar)."""
 
     signature = {
         #  endpoint=1, profile=260, device_type=0x0107, device_version=1,
@@ -562,6 +563,7 @@ class HumanPresenceSensorAIR(CustomDevice):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     TuyaNewManufCluster.cluster_id,
+                    TuyaSwitch.cluster.id,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
