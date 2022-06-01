@@ -40,7 +40,6 @@ from zhaquirks.tuya import (
     TuyaLocalCluster,
     TuyaManufCluster,
     TuyaNewManufCluster,
-    TuyaSwitch,
 )
 from zhaquirks.tuya.mcu import (
     TuyaMCUCluster,
