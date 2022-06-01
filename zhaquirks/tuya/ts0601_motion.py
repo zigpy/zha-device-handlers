@@ -40,8 +40,12 @@ from zhaquirks.tuya import (
     TuyaLocalCluster,
     TuyaManufCluster,
     TuyaNewManufCluster,
+    TuyaSwitch,
 )
-from zhaquirks.tuya.mcu import TuyaMCUCluster
+from zhaquirks.tuya.mcu import (
+    TuyaMCUCluster
+    TuyaOnOff,
+)
 
 ZONE_TYPE = 0x0001
 
@@ -228,6 +232,100 @@ class MmwRadarManufCluster(TuyaMCUCluster):
         108: "_dp_2_attr_update",
     }
 
+
+class TuyaHumanPresenceSensorAIRManufCluster(TuyaMCUCluster):
+    """Tuya manufacturer cluster."""
+
+    # # Possible DPs and values
+    # occupancy: false
+    # o_sensitivity: normal
+    # v_sensitivity: normal
+    # vacancy_delay: 10sec
+    # mode: general_model
+    # vacant_confirm_time: no control
+    # reference_luminance: no control
+    # light_on_luminance_prefer: 1000
+    # light_off_luminance_prefer: 10000
+    # luminence_level: no control
+    # led_status: on
+
+    attributes = TuyaMCUCluster.attributes.copy()
+    attributes.update(
+        {
+            # ramdom attribute IDs
+            0xEF11: ("dp_101", t.enum8, True),
+            0xEF12: ("dp_102", t.uint32_t, True),
+            0xEF13: ("dp_103", t.enum8, True),
+            0xEF14: ("dp_104", t.uint32_t, True),
+            0xEF15: ("dp_105", t.uint32_t, True),
+            0xEF16: ("dp_106", t.uint32_t, True),
+            0xEF17: ("dp_107", t.enum8, True),
+            0xEF18: ("dp_108", t.enum8, True),
+            0xEF19: ("dp_110", t.enum8, True),
+        }
+    )
+
+    dp_to_attribute: Dict[int, DPToAttributeMapping] = {
+        1: DPToAttributeMapping(
+            TuyaOccupancySensing.ep_attribute,
+            "occupancy",
+        ),
+        101: DPToAttributeMapping(
+            TuyaMCUCluster.ep_attribute,
+            "dp_101",
+        ),
+        102: DPToAttributeMapping(
+            TuyaMCUCluster.ep_attribute,
+            "dp_102",
+        ),
+        103: DPToAttributeMapping(
+            TuyaMCUCluster.ep_attribute,
+            "dp_103",
+        ),
+        104: DPToAttributeMapping(
+            TuyaMCUCluster.ep_attribute,
+            "dp_104",
+        ),
+        105: DPToAttributeMapping(
+            TuyaAnalogInput.ep_attribute,
+            "dp_105",
+        ),
+        106: DPToAttributeMapping(
+            TuyaMCUCluster.ep_attribute,
+            "dp_106",
+        ),
+        107: DPToAttributeMapping(
+            TuyaMCUCluster.ep_attribute,
+            "dp_107",
+        ),
+        108: DPToAttributeMapping(
+            TuyaMCUCluster.ep_attribute,
+            "dp_108",
+        ),
+        109: DPToAttributeMapping(
+            TuyaIlluminanceMeasurement.ep_attribute,
+            "measured_value",
+            lambda x: 10000 * math.log10(x) + 1,
+        ),
+        110: DPToAttributeMapping(
+            TuyaOnOff.ep_attribute,
+            "on_off",
+        ),
+    }
+
+    data_point_handlers = {
+        1: "_dp_2_attr_update",
+        101: "_dp_2_attr_update",
+        102: "_dp_2_attr_update",
+        103: "_dp_2_attr_update",
+        104: "_dp_2_attr_update",
+        105: "_dp_2_attr_update",
+        106: "_dp_2_attr_update",
+        107: "_dp_2_attr_update",
+        108: "_dp_2_attr_update",
+        109: "_dp_2_attr_update",
+        110: "_dp_2_attr_update",
+    }
 
 class MotionCluster(LocalDataCluster, MotionOnEvent):
     """Tuya Motion Sensor."""
@@ -441,6 +539,50 @@ class MmwRadarMotionGPP(CustomDevice):
                 DEVICE_TYPE: 97,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        }
+    }
+
+class HumanPresenceSensorAIR(CustomDevice):
+    """Tuya Ceiling Mounted Motion & Illuminance Sensor (Radar)"""
+    """Millimeter wave occupancy sensor."""
+
+    signature = {
+        #  endpoint=1, profile=260, device_type=0x0107, device_version=1,
+        #  input_clusters=[4, 5, 12, 1024, 1030, 61184, 0], output_clusters=[25, 10])
+        MODELS_INFO: [
+            ("_TZE200_auin8mzr", "TS0601"),
+        ],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaNewManufCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+        },
+    }
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.OCCUPANCY_SENSOR,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaHumanPresenceSensorAIRManufCluster,
+                    TuyaOccupancySensing,
+                    TuyaAnalogInput,
+                    TuyaIlluminanceMeasurement,
+                    TuyaOnOff,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
         }
     }
