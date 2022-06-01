@@ -44,8 +44,9 @@ from zhaquirks.tuya import (
 )
 from zhaquirks.tuya.mcu import (
     TuyaMCUCluster,
+    TuyaOnOff,
 )
-    
+
 ZONE_TYPE = 0x0001
 
 
