@@ -43,7 +43,7 @@ from zhaquirks.tuya import (
     TuyaSwitch,
 )
 from zhaquirks.tuya.mcu import (
-    TuyaMCUCluster
+    TuyaMCUCluster,
     TuyaOnOff,
 )
 
