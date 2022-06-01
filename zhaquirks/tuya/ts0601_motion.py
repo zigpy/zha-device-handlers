@@ -41,9 +41,7 @@ from zhaquirks.tuya import (
     TuyaManufCluster,
     TuyaNewManufCluster,
 )
-from zhaquirks.tuya.mcu import (
-    TuyaMCUCluster,
-)
+from zhaquirks.tuya.mcu import TuyaMCUCluster
 
 ZONE_TYPE = 0x0001
 
