@@ -44,7 +44,6 @@ from zhaquirks.tuya import (
 )
 from zhaquirks.tuya.mcu import (
     TuyaMCUCluster,
-    TuyaOnOff,
 )
 
 ZONE_TYPE = 0x0001
@@ -308,8 +307,8 @@ class TuyaHumanPresenceSensorAIRManufCluster(TuyaMCUCluster):
             lambda x: 10000 * math.log10(x) + 1,
         ),
         110: DPToAttributeMapping(
-            TuyaOnOff.ep_attribute,
-            "on_off",
+            TuyaMCUCluster.ep_attribute,
+            "dp_110",
         ),
     }
 
@@ -563,7 +562,6 @@ class HumanPresenceSensorAIR(CustomDevice):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     TuyaNewManufCluster.cluster_id,
-                    TuyaSwitch.cluster.id,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
@@ -582,7 +580,6 @@ class HumanPresenceSensorAIR(CustomDevice):
                     TuyaOccupancySensing,
                     TuyaAnalogInput,
                     TuyaIlluminanceMeasurement,
-                    TuyaOnOff,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
