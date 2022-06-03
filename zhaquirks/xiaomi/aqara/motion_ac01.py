@@ -7,7 +7,13 @@ from typing import Any
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 import zigpy.types as types
-from zigpy.zcl.clusters.general import Basic, Identify, MultistateInput, Ota
+from zigpy.zcl.clusters.general import (
+    Basic,
+    DeviceTemperature,
+    Identify,
+    MultistateInput,
+    Ota,
+)
 from zigpy.zcl.clusters.measurement import OccupancySensing
 
 from zhaquirks.const import (
@@ -100,8 +106,9 @@ class AqaraLumiMotionAc01(CustomDevice):
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
-                    OccupancySensing,
-                    MultistateInput,
+                    DeviceTemperature.cluster_id,
+                    OccupancySensing.cluster_id,
+                    MultistateInput.cluster_id,
                     OppleCluster,
                 ],
                 OUTPUT_CLUSTERS: [
