@@ -18,7 +18,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.xiaomi import APPROACH_DISTANCE, XiaomiAqaraE1Cluster
+from zhaquirks.xiaomi import XiaomiAqaraE1Cluster
 
 OCCUPANCY = 0x0000
 PRESENT_VALUE = 0x0055
@@ -28,6 +28,7 @@ PRESENCE_EVENT = 0x0143
 PRESENCE_EVENT2 = 102
 MONITORING_MODE = 0x0144
 MOTION_SENSITIVITY = 0x010C
+APPROACH_DISTANCE = 0x0146
 RESET_NO_PRESENCE_STATUS = 0x0157
 
 _LOGGER = logging.getLogger(__name__)
