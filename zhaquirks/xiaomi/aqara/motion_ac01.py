@@ -59,7 +59,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
 
     ep_attribute = "opple_cluster"
     attributes = {
-        PRESENCE: ("presence", types.Bool, True),
+        PRESENCE: ("presence", types.uint8_t, True),
         MONITORING_MODE: ("monitoring_mode", types.uint8_t, True),
         MOTION_SENSITIVITY: ("motion_sensitivity", types.uint8_t, True),
         APPROACH_DISTANCE: ("approach_distance", types.uint8_t, True),
@@ -69,7 +69,8 @@ class OppleCluster(XiaomiAqaraE1Cluster):
     def _update_attribute(self, attrid: int, value: Any) -> None:
         super()._update_attribute(attrid, value)
         if attrid == PRESENCE or attrid == PRESENCE2:
-            self.endpoint.occupancy.update_attribute(OCCUPANCY, value)
+            if value != 0xFF:
+                self.endpoint.occupancy.update_attribute(OCCUPANCY, value)
         elif attrid == PRESENCE_EVENT or attrid == PRESENCE_EVENT2:
             self.endpoint.multistate_input.update_attribute(
                 PRESENT_VALUE, AqaraPresenceEvents(value).name.replace("_", " ")
