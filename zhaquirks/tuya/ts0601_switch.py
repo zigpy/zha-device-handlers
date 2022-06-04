@@ -1,6 +1,6 @@
 """Tuya DP based switches."""
 from zigpy.profiles import zha
-from zigpy.zcl.clusters.general import Basic, GreenPowerProxy,Groups, Ota, Scenes, Time
+from zigpy.zcl.clusters.general import Basic, GreenPowerProxy, Groups, Ota, Scenes, Time
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -11,8 +11,8 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.tuya import TuyaSwitch
-from zhaquirks.tuya.mcu import MoesSwitchManufCluster, TuyaOnOff, TuyaOnOffManufCluster
 from zhaquirks.tuya.mcu import (
+    EnchantedDevice,
     MoesSwitchManufCluster,
     TuyaOnOff,
     TuyaOnOffManufCluster,
@@ -293,89 +293,7 @@ class TuyaQuadrupleSwitchTO(TuyaSwitch):
     }
 
 
-class TuyaSextupleSwitchTO(TuyaSwitch):
-    """Tuya sextuple channel switch time on out cluster device."""
-
-    signature = {
-        # <SimpleDescriptor endpoint=1 profile=260 device_type=81
-        # input_clusters=[0x0000,0x0004,0x0005,0xEF00]
-        # output_clusters=[0x000A,0x0019]>
-        MODELS_INFO: [
-            ("_TZE200_9mahtqtg", "TS0601"),
-        ],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    TuyaOnOffManufCluster.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
-            }
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    TuyaOnOffManufCluster,
-                    TuyaOnOffNM,
-                ],
-                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
-            },
-            2: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
-                INPUT_CLUSTERS: [
-                    TuyaOnOffNM,
-                ],
-                OUTPUT_CLUSTERS: [],
-            },
-            3: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
-                INPUT_CLUSTERS: [
-                    TuyaOnOffNM,
-                ],
-                OUTPUT_CLUSTERS: [],
-            },
-            4: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
-                INPUT_CLUSTERS: [
-                    TuyaOnOffNM,
-                ],
-                OUTPUT_CLUSTERS: [],
-            },
-            5: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
-                INPUT_CLUSTERS: [
-                    TuyaOnOffNM,
-                ],
-                OUTPUT_CLUSTERS: [],
-            },
-            6: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
-                INPUT_CLUSTERS: [
-                    TuyaOnOffNM,
-                ],
-                OUTPUT_CLUSTERS: [],
-            },
-        }
-    }
-
-
-# Reported in #1597
+# Add #1597
 class TuyaTripleSwitch_GP(TuyaSwitch):
     """Tuya single channel switch with GreenPowerProxy cluster device."""
 
