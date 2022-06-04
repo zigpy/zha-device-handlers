@@ -1,6 +1,6 @@
 """Tuya DP based switches."""
 from zigpy.profiles import zha
-from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time
+from zigpy.zcl.clusters.general import Basic, GreenPowerProxy,Groups, Ota, Scenes, Time
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -11,6 +11,7 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.tuya import TuyaSwitch
+from zhaquirks.tuya.mcu import MoesSwitchManufCluster, TuyaOnOff, TuyaOnOffManufCluster
 from zhaquirks.tuya.mcu import (
     MoesSwitchManufCluster,
     TuyaOnOff,
