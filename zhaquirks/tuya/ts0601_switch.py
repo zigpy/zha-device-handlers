@@ -374,7 +374,7 @@ class TuyaSextupleSwitchTO(TuyaSwitch):
     }
 
 
-## Reported in #1597
+# Reported in #1597
 class TuyaTripleSwitch_GP(TuyaSwitch):
     """Tuya single channel switch with GreenPowerProxy cluster device."""
 
