@@ -12,7 +12,6 @@ from zhaquirks.const import (
 )
 from zhaquirks.tuya import TuyaSwitch
 from zhaquirks.tuya.mcu import (
-    EnchantedDevice,
     MoesSwitchManufCluster,
     TuyaOnOff,
     TuyaOnOffManufCluster,
