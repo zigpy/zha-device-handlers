@@ -348,6 +348,7 @@ class XiaomiCluster(CustomCluster):
             attribute_names.update({102: PRESENCE_EVENT})
             attribute_names.update({103: MONITORING_MODE})
             attribute_names.update({105: APPROACH_DISTANCE})
+            attribute_names.update({268: MOTION_SENSITIVITY})
             attribute_names.update({322: PRESENCE_DETECTED})
             attribute_names.update({323: PRESENCE_EVENT})
             attribute_names.update({324: MONITORING_MODE})
