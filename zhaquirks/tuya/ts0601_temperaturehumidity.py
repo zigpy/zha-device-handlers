@@ -5,14 +5,10 @@ import logging
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 import zigpy.types as t
-from zigpy.zcl.clusters.general import (
-    Basic,
-    Groups,
-    Ota,
-    Scenes,
-    Time,
-)
+from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time
 from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
+
+from zhaquirks import Bus, LocalDataCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -21,9 +17,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks import Bus, LocalDataCluster
-from zhaquirks.ikea import PowerConfiguration2AAACluster
-from zhaquirks.tuya import TuyaManufClusterAttributes
+from zhaquirks.tuya import TuyaManufClusterAttributes, TuyaPowerConfigurationCluster2AAA
 
 # NOTES:
 # The data comes in as a string on cluster, if there is nothing set up you may see these lines in the logs:
@@ -70,7 +64,7 @@ class TuyaTempHumidityDetectorCluster(TuyaManufClusterAttributes):
         elif attrid == TUYA_BATTERY_ATTR:
             _LOGGER.debug("Raw battery reported: %s", value)
             self.endpoint.device.battery_bus.listener_event(
-                "battery_reported", value  # whole percentage
+                "battery_change", value  # whole percentage
             )
         else:
             _LOGGER.warning(
@@ -117,22 +111,6 @@ class TuyaRelativeHumidity(LocalDataCluster, RelativeHumidity):
         self._update_attribute(self.ATTR_ID, value)
 
 
-class TuyaPower(PowerConfiguration2AAACluster):
-    """Battery Power cluster acting from events from power bus."""
-
-    ATTR_ID = 0x0021  # battery_percentage_remaining
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.battery_bus.add_listener(self)
-
-    def battery_reported(self, value):
-        """Handle battery reported event."""
-        _LOGGER.debug("Battery update: %s", value)
-        self._update_attribute(self.ATTR_ID, value)
-
-
 class TuyaTempHumidity(CustomDevice):
     """Custom device representing tuya temp and humidity sensor with e-ink screen."""
 
@@ -174,7 +152,7 @@ class TuyaTempHumidity(CustomDevice):
                     Basic.cluster_id,
                     TuyaTemperatureMeasurement,
                     TuyaRelativeHumidity,
-                    TuyaPower,
+                    TuyaPowerConfigurationCluster2AAA,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id, Time.cluster_id],
             }
