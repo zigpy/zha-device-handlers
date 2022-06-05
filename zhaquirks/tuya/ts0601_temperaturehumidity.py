@@ -95,6 +95,7 @@ class TuyaTemperatureMeasurement(LocalDataCluster, TemperatureMeasurement):
         self.endpoint.device.temperature_bus.add_listener(self)
 
     def temperature_reported(self, value):
+        """Handle temperature reported event."""
         _LOGGER.debug("Temperature update: %s", value)
         self._update_attribute(self.ATTR_ID, value)
 
@@ -111,6 +112,7 @@ class TuyaRelativeHumidity(LocalDataCluster, RelativeHumidity):
         self.endpoint.device.humidity_bus.add_listener(self)
 
     def humidity_reported(self, value):
+        """Handle humidity reported event."""
         _LOGGER.debug("Humidity update: %s", value)
         self._update_attribute(self.ATTR_ID, value)
 
@@ -126,6 +128,7 @@ class TuyaPower(PowerConfiguration2AAACluster):
         self.endpoint.device.battery_bus.add_listener(self)
 
     def battery_reported(self, value):
+        """Handle battery reported event."""
         _LOGGER.debug("Battery update: %s", value)
         self._update_attribute(self.ATTR_ID, value)
 
