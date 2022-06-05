@@ -25,7 +25,7 @@ from zhaquirks import Bus, LocalDataCluster
 from zhaquirks.ikea import PowerConfiguration2AAACluster
 from zhaquirks.tuya import TuyaManufClusterAttributes
 
-#### NOTES ####
+# NOTES:
 # The data comes in as a string on cluster, if there is nothing set up you may see these lines in the logs:
 # Unknown message (b'19830100a40102000400000118') on cluster 61184: unknown endpoint or cluster id: 'No cluster ID 0xef00 on (a4:c1:38:d0:18:8b:64:aa, 1)'
 #                                          28.0 degrees
