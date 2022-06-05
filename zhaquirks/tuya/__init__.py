@@ -817,6 +817,7 @@ class TuyaPowerConfigurationCluster2AA(TuyaPowerConfigurationCluster):
         BATTERY_QUANTITY: 2,
     }
 
+
 class TuyaPowerConfigurationCluster2AAA(TuyaPowerConfigurationCluster):
     """PowerConfiguration cluster for battery-operated TRVs with 2 AAA."""
 
@@ -829,6 +830,7 @@ class TuyaPowerConfigurationCluster2AAA(TuyaPowerConfigurationCluster):
         BATTERY_QUANTITY: 2,
         BATTERY_RATED_VOLTAGE: 15,
     }
+
 
 class TuyaPowerConfigurationCluster3AA(TuyaPowerConfigurationCluster):
     """PowerConfiguration cluster for battery-operated TRVs with 3 AA."""
