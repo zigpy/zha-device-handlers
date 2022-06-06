@@ -116,7 +116,7 @@ class TuyaSingleSwitchTO(TuyaSwitch):
     }
 
 
-class TuyaSingleSwitch_GP(TuyaSingleSwitchTO):
+class TuyaSingleSwitch_GP(TuyaSwitch):
     """Tuya single channel switch with GreenPowerProxy cluster device."""
 
     signature = {
