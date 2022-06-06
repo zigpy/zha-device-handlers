@@ -332,7 +332,6 @@ class MoesBHT_GPP(TuyaThermostat):
                     TuyaManufClusterAttributes.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
-            }
             # <SimpleDescriptor endpoint=242 profile=41440 device_type=97
             # input_clusters=[]
             # output_clusters=[33]
