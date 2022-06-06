@@ -360,7 +360,7 @@ class MoesBHT_GPP(TuyaThermostat):
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
-                        242: {
+                242: {
                 PROFILE_ID: 41440,
                 DEVICE_TYPE: 97,
                 INPUT_CLUSTERS: [],
