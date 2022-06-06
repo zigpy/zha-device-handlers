@@ -130,6 +130,54 @@ class AVATTOME81AHManufCluster(TuyaManufClusterAttributes):
             self.endpoint.device.ui_bus.listener_event("child_lock_change", value)
 
 
+class BeokTGR85_ZBManufCluster(TuyaManufClusterAttributes):
+    """Manufacturer Specific Cluster of some electric heating thermostats."""
+
+    attributes = {
+        MOESBHT_TARGET_TEMP_ATTR: ("target_temperature", t.uint32_t, True),
+        MOESBHT_TEMPERATURE_ATTR: ("temperature", t.uint32_t, True),
+        MOESBHT_SCHEDULE_MODE_ATTR: ("schedule_mode", t.uint8_t, True),
+        MOESBHT_MANUAL_MODE_ATTR: ("manual_mode", t.uint8_t, True),
+        MOESBHT_ENABLED_ATTR: ("enabled", t.uint8_t, True),
+        MOESBHT_RUNNING_MODE_ATTR: ("running_mode", t.uint8_t, True),
+        MOESBHT_CHILD_LOCK_ATTR: ("child_lock", t.uint8_t, True),
+    }
+
+    def _update_attribute(self, attrid, value):
+        super()._update_attribute(attrid, value)
+        if attrid == MOESBHT_TARGET_TEMP_ATTR:
+            self.endpoint.device.thermostat_bus.listener_event(
+                "temperature_change",
+                "occupied_heating_setpoint",
+                value * 100,  # degree to centidegree
+            )
+        elif attrid == MOESBHT_TEMPERATURE_ATTR:
+            self.endpoint.device.thermostat_bus.listener_event(
+                "temperature_change",
+                "local_temperature",
+                value * 10,  # decidegree to centidegree
+            )
+        elif attrid == MOESBHT_SCHEDULE_MODE_ATTR:
+            if value == 0:  # value is inverted
+                self.endpoint.device.thermostat_bus.listener_event(
+                    "program_change", "scheduled"
+                )
+        elif attrid == MOESBHT_MANUAL_MODE_ATTR:
+            if value == 0:  # value is inverted
+                self.endpoint.device.thermostat_bus.listener_event(
+                    "program_change", "manual"
+                )
+        elif attrid == MOESBHT_ENABLED_ATTR:
+            self.endpoint.device.thermostat_bus.listener_event("enabled_change", value)
+        elif attrid == MOESBHT_RUNNING_MODE_ATTR:
+            # value is inverted
+            self.endpoint.device.thermostat_bus.listener_event(
+                "state_change", 1 - value
+            )
+        elif attrid == MOESBHT_CHILD_LOCK_ATTR:
+            self.endpoint.device.ui_bus.listener_event("child_lock_change", value)
+
+
 class MoesBHTThermostat(TuyaThermostatCluster):
     """Thermostat cluster for some electric heating controllers."""
 
@@ -354,7 +402,7 @@ class BeokTGR85_ZB(TuyaThermostat):
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    MoesBHTManufCluster,
+                    BeokTGR85_ZBManufCluster,
                     MoesBHTThermostat,
                     MoesBHTUserInterface,
                 ],
