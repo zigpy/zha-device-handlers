@@ -82,7 +82,7 @@ class MoesBHTManufCluster(TuyaManufClusterAttributes):
             self.endpoint.device.ui_bus.listener_event("child_lock_change", value)
 
 
-class MoesBHTx10ManufCluster(TuyaManufClusterAttributes):
+class AVATTOME81AHManufCluster(TuyaManufClusterAttributes):
     """Manufacturer Specific Cluster of some electric heating thermostats."""
 
     attributes = {
@@ -175,7 +175,7 @@ class MoesBHTThermostat(TuyaThermostatCluster):
         self._update_attribute(self.attributes_by_name["system_mode"].id, mode)
 
 
-class MoesBHTThermostatx10(TuyaThermostatCluster):
+class AVATTOME81AHThermostat(TuyaThermostatCluster):
     """Thermostat cluster for some electric heating controllers."""
 
     def map_attribute(self, attribute, value):
@@ -269,8 +269,8 @@ class MoesBHT(TuyaThermostat):
     }
 
 
-class MoesBHTx10(TuyaThermostat):
-    """Moes BHT-002GCLZB Thermostatic radiator valve."""
+class AVATTOME81AH(TuyaThermostat):
+    """AVATTO ME81AH Thermostatic radiator valve."""
 
     signature = {
         #  endpoint=1 profile=260 device_type=81 device_version=1 input_clusters=[0, 4, 5, 61184],
@@ -302,8 +302,8 @@ class MoesBHTx10(TuyaThermostat):
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    MoesBHTx10ManufCluster,
-                    MoesBHTThermostatx10,
+                    AVATTOME81AHManufCluster,
+                    AVATTOME81AHThermostat,
                     MoesBHTUserInterface,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
@@ -312,8 +312,8 @@ class MoesBHTx10(TuyaThermostat):
     }
 
 
-class MoesBHT_GPP(TuyaThermostat):
-    """Moes BHT-002GCLZB Thermostatic radiator valve."""
+class BeokTGR85_ZB(TuyaThermostat):
+    """Beok TGR85_ZB Thermostatic radiator valve."""
 
     signature = {
         #  endpoint=1 profile=260 device_type=81 device_version=1 input_clusters=[0, 4, 5, 61184],
