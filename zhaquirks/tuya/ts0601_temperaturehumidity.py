@@ -5,14 +5,7 @@ from typing import Dict
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 import zigpy.types as t
-from zigpy.zcl.clusters.general import (
-    Basic,
-    Groups,
-    Ota,
-    PowerConfiguration,
-    Scenes,
-    Time,
-)
+from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time
 from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
 
 from zhaquirks import Bus
@@ -29,6 +22,7 @@ from zhaquirks.tuya import (
     TuyaLocalCluster,
     TuyaManufClusterAttributes,
     TuyaNewManufCluster,
+    TuyaPowerConfigurationCluster2AAA,
 )
 from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaDPType
 
@@ -45,20 +39,6 @@ from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaDPType
 TUYA_TEMPERATURE_ATTR = 0x0201  # [0, 0, 0, 237] temperature in decidegree
 TUYA_HUMIDITY_ATTR = 0x0202  # [0, 0, 2, 64] humidity
 TUYA_BATTERY_ATTR = 0x0204  # [0, 0, 0, 100] battery
-
-
-class TuyaPowerConfigurationCluster2AAA(PowerConfiguration, TuyaLocalCluster):
-    """PowerConfiguration cluster for battery-operated TRVs with 2 AAA."""
-
-    BATTERY_SIZES = 0x0031
-    BATTERY_QUANTITY = 0x0033
-    BATTERY_RATED_VOLTAGE = 0x0034
-
-    _CONSTANT_ATTRIBUTES = {
-        BATTERY_SIZES: 4,
-        BATTERY_QUANTITY: 2,
-        BATTERY_RATED_VOLTAGE: 15,
-    }
 
 
 class TuyaTemperatureMeasurement(TemperatureMeasurement, TuyaLocalCluster):
