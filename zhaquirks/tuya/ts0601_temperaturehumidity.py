@@ -4,11 +4,10 @@ from typing import Dict
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
-import zigpy.types as t
+
 from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time
 from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
 
-from zhaquirks import Bus
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -20,7 +19,6 @@ from zhaquirks.const import (
 )
 from zhaquirks.tuya import (
     TuyaLocalCluster,
-    TuyaManufClusterAttributes,
     TuyaNewManufCluster,
     TuyaPowerConfigurationCluster2AAA,
 )
@@ -35,11 +33,6 @@ from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaDPType
 # Unknown message (b'19850100a60402000400000064') on cluster 61184: unknown endpoint or cluster id: 'No cluster ID 0xef00 on (a4:c1:38:d0:18:8b:64:aa, 1)'
 #                                          100% battery
 
-# Constants that map to the string values in the previously `Unknown message` lines.
-TUYA_TEMPERATURE_ATTR = 0x0201  # [0, 0, 0, 237] temperature in decidegree
-TUYA_HUMIDITY_ATTR = 0x0202  # [0, 0, 2, 64] humidity
-TUYA_BATTERY_ATTR = 0x0204  # [0, 0, 0, 100] battery
-
 
 class TuyaTemperatureMeasurement(TemperatureMeasurement, TuyaLocalCluster):
     """Tuya local TemperatureMeasurement cluster."""
@@ -51,15 +44,6 @@ class TuyaRelativeHumidity(RelativeHumidity, TuyaLocalCluster):
 
 class TemperatureHumidityManufCluster(TuyaNewManufCluster):
     """Tuya Manufacturer Cluster with Temperature and Humidity data points."""
-
-    attributes = TuyaManufClusterAttributes.attributes.copy()
-    attributes.update(
-        {
-            TUYA_TEMPERATURE_ATTR: ("temperature", t.uint32_t, True),
-            TUYA_HUMIDITY_ATTR: ("humidity", t.uint32_t, True),
-            TUYA_BATTERY_ATTR: ("battery", t.uint8_t, True),
-        }
-    )
 
     dp_to_attribute: Dict[int, DPToAttributeMapping] = {
         1: DPToAttributeMapping(
@@ -91,15 +75,6 @@ class TemperatureHumidityManufCluster(TuyaNewManufCluster):
 
 class TuyaTempHumiditySensor(CustomDevice):
     """Custom device representing tuya temp and humidity sensor with e-ink screen."""
-
-    def __init__(self, *args, **kwargs):
-        """Init device."""
-
-        self.temperature_bus = Bus()
-        self.humidity_bus = Bus()
-        self.battery_bus = Bus()
-
-        super().__init__(*args, **kwargs)
 
     signature = {
         # <SimpleDescriptor endpoint=1, profile=260, device_type=81

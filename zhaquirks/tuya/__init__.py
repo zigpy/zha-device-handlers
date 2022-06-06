@@ -1314,7 +1314,7 @@ class TuyaLocalCluster(LocalDataCluster):
 
 
 class TuyaPowerConfigurationCluster2AAA(PowerConfiguration, TuyaLocalCluster):
-    """PowerConfiguration cluster for battery-operated TRVs with 2 AAA."""
+    """PowerConfiguration cluster for devices with 2 AAA."""
 
     BATTERY_SIZES = 0x0031
     BATTERY_QUANTITY = 0x0033
