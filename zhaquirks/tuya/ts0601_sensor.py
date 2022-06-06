@@ -16,10 +16,7 @@ from zhaquirks.const import (
     PROFILE_ID,
     SKIP_CONFIGURATION,
 )
-from zhaquirks.tuya import (
-    TuyaLocalCluster,
-    TuyaPowerConfigurationCluster2AAA,
-)
+from zhaquirks.tuya import TuyaLocalCluster, TuyaPowerConfigurationCluster2AAA
 from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaDPType, TuyaMCUCluster
 
 # NOTES:

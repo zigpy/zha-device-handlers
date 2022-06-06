@@ -817,7 +817,7 @@ class TuyaPowerConfigurationCluster(PowerConfiguration, TuyaLocalCluster):
 
     def battery_change(self, value):
         """Change of reported battery percentage remaining."""
-        self._update_attribute("battery_percentage_remaining", value * 2)
+        self.update_attribute("battery_percentage_remaining", value * 2)
 
 
 class TuyaPowerConfigurationCluster2AAA(PowerConfiguration, TuyaLocalCluster):
