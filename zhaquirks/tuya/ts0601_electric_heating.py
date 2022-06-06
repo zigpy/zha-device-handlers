@@ -340,7 +340,7 @@ class MoesBHT_GPP(TuyaThermostat):
                 DEVICE_TYPE: 97,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
-            },
+            }
         },
     }
 
@@ -364,6 +364,6 @@ class MoesBHT_GPP(TuyaThermostat):
                 DEVICE_TYPE: 97,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
-            },
+            }
         }
     }
