@@ -18,10 +18,9 @@ from zhaquirks.const import (
 )
 from zhaquirks.tuya import (
     TuyaLocalCluster,
-    TuyaNewManufCluster,
     TuyaPowerConfigurationCluster2AAA,
 )
-from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaDPType
+from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaDPType, TuyaMCUCluster
 
 # NOTES:
 # The data comes in as a string on cluster, if there is nothing set up you may see these lines in the logs:
@@ -41,7 +40,7 @@ class TuyaRelativeHumidity(RelativeHumidity, TuyaLocalCluster):
     """Tuya local RelativeHumidity cluster."""
 
 
-class TemperatureHumidityManufCluster(TuyaNewManufCluster):
+class TemperatureHumidityManufCluster(TuyaMCUCluster):
     """Tuya Manufacturer Cluster with Temperature and Humidity data points."""
 
     dp_to_attribute: Dict[int, DPToAttributeMapping] = {

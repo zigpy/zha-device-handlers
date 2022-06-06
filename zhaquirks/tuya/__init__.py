@@ -789,7 +789,25 @@ class TuyaUserInterfaceCluster(LocalDataCluster, UserInterface):
         return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
 
-class TuyaPowerConfigurationCluster(LocalDataCluster, PowerConfiguration):
+class TuyaLocalCluster(LocalDataCluster):
+    """Tuya virtual clusters.
+
+    Prevents attribute reads and writes. Attribute writes could be converted
+    to DataPoint updates.
+    """
+
+    def update_attribute(self, attr_name: str, value: Any) -> None:
+        """Update attribute by attribute name."""
+
+        try:
+            attr = self.attributes_by_name[attr_name]
+        except KeyError:
+            self.debug("no such attribute: %s", attr_name)
+            return
+        return self._update_attribute(attr.id, value)
+
+
+class TuyaPowerConfigurationCluster(PowerConfiguration, TuyaLocalCluster):
     """PowerConfiguration cluster for battery-operated thermostats."""
 
     def __init__(self, *args, **kwargs):
@@ -799,13 +817,25 @@ class TuyaPowerConfigurationCluster(LocalDataCluster, PowerConfiguration):
 
     def battery_change(self, value):
         """Change of reported battery percentage remaining."""
-        self._update_attribute(
-            self.attributes_by_name["battery_percentage_remaining"].id, value * 2
-        )
+        self._update_attribute("battery_percentage_remaining", value * 2)
+
+
+class TuyaPowerConfigurationCluster2AAA(PowerConfiguration, TuyaLocalCluster):
+    """PowerConfiguration cluster for devices with 2 AAA."""
+
+    BATTERY_SIZES = 0x0031
+    BATTERY_QUANTITY = 0x0033
+    BATTERY_RATED_VOLTAGE = 0x0034
+
+    _CONSTANT_ATTRIBUTES = {
+        BATTERY_SIZES: 4,
+        BATTERY_QUANTITY: 2,
+        BATTERY_RATED_VOLTAGE: 15,
+    }
 
 
 class TuyaPowerConfigurationCluster2AA(TuyaPowerConfigurationCluster):
-    """PowerConfiguration cluster for battery-operated TRVs with 2 AA."""
+    """PowerConfiguration cluster for devices with 2 AA."""
 
     BATTERY_SIZES = 0x0031
     BATTERY_RATED_VOLTAGE = 0x0034
@@ -819,7 +849,7 @@ class TuyaPowerConfigurationCluster2AA(TuyaPowerConfigurationCluster):
 
 
 class TuyaPowerConfigurationCluster3AA(TuyaPowerConfigurationCluster):
-    """PowerConfiguration cluster for battery-operated TRVs with 3 AA."""
+    """PowerConfiguration cluster for devices with 3 AA."""
 
     BATTERY_SIZES = 0x0031
     BATTERY_RATED_VOLTAGE = 0x0034
@@ -1293,38 +1323,6 @@ class TuyaLevelControl(CustomCluster, LevelControl):
             )
 
         return foundation.Status.UNSUP_CLUSTER_COMMAND
-
-
-class TuyaLocalCluster(LocalDataCluster):
-    """Tuya virtual clusters.
-
-    Prevents attribute reads and writes. Attribute writes could be converted
-    to DataPoint updates.
-    """
-
-    def update_attribute(self, attr_name: str, value: Any) -> None:
-        """Update attribute by attribute name."""
-
-        try:
-            attr = self.attributes_by_name[attr_name]
-        except KeyError:
-            self.debug("no such attribute: %s", attr_name)
-            return
-        return self._update_attribute(attr.id, value)
-
-
-class TuyaPowerConfigurationCluster2AAA(PowerConfiguration, TuyaLocalCluster):
-    """PowerConfiguration cluster for devices with 2 AAA."""
-
-    BATTERY_SIZES = 0x0031
-    BATTERY_QUANTITY = 0x0033
-    BATTERY_RATED_VOLTAGE = 0x0034
-
-    _CONSTANT_ATTRIBUTES = {
-        BATTERY_SIZES: 4,
-        BATTERY_QUANTITY: 2,
-        BATTERY_RATED_VOLTAGE: 15,
-    }
 
 
 @dataclasses.dataclass
