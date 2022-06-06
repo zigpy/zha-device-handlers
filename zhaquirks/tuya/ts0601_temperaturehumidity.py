@@ -1,14 +1,21 @@
 """Tuya temp and humidity sensor with e-ink screen."""
 
-import logging
+from typing import Dict
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 import zigpy.types as t
-from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time
+from zigpy.zcl.clusters.general import (
+    Basic,
+    Groups,
+    Ota,
+    PowerConfiguration,
+    Scenes,
+    Time,
+)
 from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
 
-from zhaquirks import Bus, LocalDataCluster
+from zhaquirks import Bus
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -16,8 +23,14 @@ from zhaquirks.const import (
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
+    SKIP_CONFIGURATION,
 )
-from zhaquirks.tuya import TuyaManufClusterAttributes, TuyaPowerConfigurationCluster2AAA
+from zhaquirks.tuya import (
+    TuyaLocalCluster,
+    TuyaManufClusterAttributes,
+    TuyaNewManufCluster,
+)
+from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaDPType
 
 # NOTES:
 # The data comes in as a string on cluster, if there is nothing set up you may see these lines in the logs:
@@ -33,11 +46,31 @@ TUYA_TEMPERATURE_ATTR = 0x0201  # [0, 0, 0, 237] temperature in decidegree
 TUYA_HUMIDITY_ATTR = 0x0202  # [0, 0, 2, 64] humidity
 TUYA_BATTERY_ATTR = 0x0204  # [0, 0, 0, 100] battery
 
-_LOGGER = logging.getLogger(__name__)
+
+class TuyaPowerConfigurationCluster2AAA(PowerConfiguration, TuyaLocalCluster):
+    """PowerConfiguration cluster for battery-operated TRVs with 2 AAA."""
+
+    BATTERY_SIZES = 0x0031
+    BATTERY_QUANTITY = 0x0033
+    BATTERY_RATED_VOLTAGE = 0x0034
+
+    _CONSTANT_ATTRIBUTES = {
+        BATTERY_SIZES: 4,
+        BATTERY_QUANTITY: 2,
+        BATTERY_RATED_VOLTAGE: 15,
+    }
 
 
-class TuyaTempHumidityDetectorCluster(TuyaManufClusterAttributes):
-    """Manufacturer Specific Cluster of the TS0601 temp and humidity sensor with e-ink screen."""
+class TuyaTemperatureMeasurement(TemperatureMeasurement, TuyaLocalCluster):
+    """Tuya local TemperatureMeasurement cluster."""
+
+
+class TuyaRelativeHumidity(RelativeHumidity, TuyaLocalCluster):
+    """Tuya local RelativeHumidity cluster."""
+
+
+class TemperatureHumidityManufCluster(TuyaNewManufCluster):
+    """Tuya Manufacturer Cluster with Temperature and Humidity data points."""
 
     attributes = TuyaManufClusterAttributes.attributes.copy()
     attributes.update(
@@ -48,77 +81,44 @@ class TuyaTempHumidityDetectorCluster(TuyaManufClusterAttributes):
         }
     )
 
-    # For any attribute that comes in on the bus, inspect and redirect to the appropriate cluster
-    def _update_attribute(self, attrid, value):
-        super()._update_attribute(attrid, value)
-        if attrid == TUYA_TEMPERATURE_ATTR:
-            _LOGGER.debug("Raw temperature reported: %s", value)
-            self.endpoint.device.temperature_bus.listener_event(
-                "temperature_reported", value * 10  # decidegree to centidegree
-            )
-        elif attrid == TUYA_HUMIDITY_ATTR:
-            _LOGGER.debug("Raw humidity reported: %s", value)
-            self.endpoint.device.humidity_bus.listener_event(
-                "humidity_reported", value * 10  # decipercent to centipercent
-            )
-        elif attrid == TUYA_BATTERY_ATTR:
-            _LOGGER.debug("Raw battery reported: %s", value)
-            self.endpoint.device.battery_bus.listener_event(
-                "battery_change", value  # whole percentage
-            )
-        else:
-            _LOGGER.warning(
-                "[0x%04x:%s:0x%04x] unhandled attribute: 0x%04x",
-                self.endpoint.device.nwk,
-                self.endpoint.endpoint_id,
-                self.cluster_id,
-                attrid,
-                value,
-            )
+    dp_to_attribute: Dict[int, DPToAttributeMapping] = {
+        1: DPToAttributeMapping(
+            TuyaTemperatureMeasurement.ep_attribute,
+            "measured_value",
+            dp_type=TuyaDPType.VALUE,
+            converter=lambda x: x * 10,  # decidegree to centidegree
+        ),
+        2: DPToAttributeMapping(
+            TuyaRelativeHumidity.ep_attribute,
+            "measured_value",
+            dp_type=TuyaDPType.VALUE,
+            converter=lambda x: x * 10,  # decipercent to centipercent
+        ),
+        4: DPToAttributeMapping(
+            TuyaPowerConfigurationCluster2AAA.ep_attribute,
+            "battery_percentage_remaining",
+            dp_type=TuyaDPType.VALUE,
+            converter=lambda x: x * 2,  # double reported percentage
+        ),
+    }
+
+    data_point_handlers = {
+        1: "_dp_2_attr_update",
+        2: "_dp_2_attr_update",
+        4: "_dp_2_attr_update",
+    }
 
 
-class TuyaTemperatureMeasurement(LocalDataCluster, TemperatureMeasurement):
-    """Temperature cluster acting from events from temperature bus."""
-
-    cluster_id = TemperatureMeasurement.cluster_id
-    ATTR_ID = 0x0000  # measured_value
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.temperature_bus.add_listener(self)
-
-    def temperature_reported(self, value):
-        """Handle temperature reported event."""
-        _LOGGER.debug("Temperature update: %s", value)
-        self._update_attribute(self.ATTR_ID, value)
-
-
-class TuyaRelativeHumidity(LocalDataCluster, RelativeHumidity):
-    """Humidity cluster acting from events from humidity bus."""
-
-    cluster_id = RelativeHumidity.cluster_id
-    ATTR_ID = 0x0000  # measured_value
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.humidity_bus.add_listener(self)
-
-    def humidity_reported(self, value):
-        """Handle humidity reported event."""
-        _LOGGER.debug("Humidity update: %s", value)
-        self._update_attribute(self.ATTR_ID, value)
-
-
-class TuyaTempHumidity(CustomDevice):
+class TuyaTempHumiditySensor(CustomDevice):
     """Custom device representing tuya temp and humidity sensor with e-ink screen."""
 
     def __init__(self, *args, **kwargs):
         """Init device."""
+
         self.temperature_bus = Bus()
         self.humidity_bus = Bus()
         self.battery_bus = Bus()
+
         super().__init__(*args, **kwargs)
 
     signature = {
@@ -132,10 +132,10 @@ class TuyaTempHumidity(CustomDevice):
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
                 INPUT_CLUSTERS: [
+                    Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaTempHumidityDetectorCluster.cluster_id,
-                    Basic.cluster_id,
+                    TemperatureHumidityManufCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id, Time.cluster_id],
             }
@@ -143,13 +143,13 @@ class TuyaTempHumidity(CustomDevice):
     }
 
     replacement = {
+        SKIP_CONFIGURATION: True,
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.TEMPERATURE_SENSOR,
                 INPUT_CLUSTERS: [
-                    TuyaTempHumidityDetectorCluster,  # Single bus for temp, humidity, and battery
-                    Basic.cluster_id,
+                    TemperatureHumidityManufCluster,  # Single bus for temp, humidity, and battery
                     TuyaTemperatureMeasurement,
                     TuyaRelativeHumidity,
                     TuyaPowerConfigurationCluster2AAA,
