@@ -82,6 +82,54 @@ class MoesBHTManufCluster(TuyaManufClusterAttributes):
             self.endpoint.device.ui_bus.listener_event("child_lock_change", value)
 
 
+class MoesBHTx10ManufCluster(TuyaManufClusterAttributes):
+    """Manufacturer Specific Cluster of some electric heating thermostats."""
+
+    attributes = {
+        MOESBHT_TARGET_TEMP_ATTR: ("target_temperature", t.uint32_t, True),
+        MOESBHT_TEMPERATURE_ATTR: ("temperature", t.uint32_t, True),
+        MOESBHT_SCHEDULE_MODE_ATTR: ("schedule_mode", t.uint8_t, True),
+        MOESBHT_MANUAL_MODE_ATTR: ("manual_mode", t.uint8_t, True),
+        MOESBHT_ENABLED_ATTR: ("enabled", t.uint8_t, True),
+        MOESBHT_RUNNING_MODE_ATTR: ("running_mode", t.uint8_t, True),
+        MOESBHT_CHILD_LOCK_ATTR: ("child_lock", t.uint8_t, True),
+    }
+
+    def _update_attribute(self, attrid, value):
+        super()._update_attribute(attrid, value)
+        if attrid == MOESBHT_TARGET_TEMP_ATTR:
+            self.endpoint.device.thermostat_bus.listener_event(
+                "temperature_change",
+                "occupied_heating_setpoint",
+                value * 100,  # degree to centidegree
+            )
+        elif attrid == MOESBHT_TEMPERATURE_ATTR:
+            self.endpoint.device.thermostat_bus.listener_event(
+                "temperature_change",
+                "local_temperature",
+                value * 100,  # degree to centidegree
+            )
+        elif attrid == MOESBHT_SCHEDULE_MODE_ATTR:
+            if value == 0:  # value is inverted
+                self.endpoint.device.thermostat_bus.listener_event(
+                    "program_change", "scheduled"
+                )
+        elif attrid == MOESBHT_MANUAL_MODE_ATTR:
+            if value == 0:  # value is inverted
+                self.endpoint.device.thermostat_bus.listener_event(
+                    "program_change", "manual"
+                )
+        elif attrid == MOESBHT_ENABLED_ATTR:
+            self.endpoint.device.thermostat_bus.listener_event("enabled_change", value)
+        elif attrid == MOESBHT_RUNNING_MODE_ATTR:
+            # value is inverted
+            self.endpoint.device.thermostat_bus.listener_event(
+                "state_change", 1 - value
+            )
+        elif attrid == MOESBHT_CHILD_LOCK_ATTR:
+            self.endpoint.device.ui_bus.listener_event("child_lock_change", value)
+
+
 class MoesBHTThermostat(TuyaThermostatCluster):
     """Thermostat cluster for some electric heating controllers."""
 
@@ -91,6 +139,51 @@ class MoesBHTThermostat(TuyaThermostatCluster):
         if attribute == "occupied_heating_setpoint":
             # centidegree to degree
             return {MOESBHT_TARGET_TEMP_ATTR: round(value / 100)}
+        if attribute == "system_mode":
+            if value == self.SystemMode.Off:
+                return {MOESBHT_ENABLED_ATTR: 0}
+            if value == self.SystemMode.Heat:
+                return {MOESBHT_ENABLED_ATTR: 1}
+            self.error("Unsupported value for SystemMode")
+        elif attribute == "programing_oper_mode":
+            # values are inverted
+            if value == self.ProgrammingOperationMode.Simple:
+                return {MOESBHT_MANUAL_MODE_ATTR: 0, MOESBHT_SCHEDULE_MODE_ATTR: 1}
+            if value == self.ProgrammingOperationMode.Schedule_programming_mode:
+                return {MOESBHT_MANUAL_MODE_ATTR: 1, MOESBHT_SCHEDULE_MODE_ATTR: 0}
+            self.error("Unsupported value for ProgrammingOperationMode")
+
+        return super().map_attribute(attribute, value)
+
+    def program_change(self, mode):
+        """Programming mode change."""
+        if mode == "manual":
+            value = self.ProgrammingOperationMode.Simple
+        else:
+            value = self.ProgrammingOperationMode.Schedule_programming_mode
+
+        self._update_attribute(
+            self.attributes_by_name["programing_oper_mode"].id, value
+        )
+
+    def enabled_change(self, value):
+        """System mode change."""
+        if value == 0:
+            mode = self.SystemMode.Off
+        else:
+            mode = self.SystemMode.Heat
+        self._update_attribute(self.attributes_by_name["system_mode"].id, mode)
+
+
+class MoesBHTThermostatx10(TuyaThermostatCluster):
+    """Thermostat cluster for some electric heating controllers."""
+
+    def map_attribute(self, attribute, value):
+        """Map standardized attribute value to dict of manufacturer values."""
+
+        if attribute == "occupied_heating_setpoint":
+            # centidegree to degree
+            return {MOESBHT_TARGET_TEMP_ATTR: round(value / 10)}
         if attribute == "system_mode":
             if value == self.SystemMode.Off:
                 return {MOESBHT_ENABLED_ATTR: 0}
@@ -141,8 +234,6 @@ class MoesBHT(TuyaThermostat):
         #  output_clusters=[10, 25]
         MODELS_INFO: [
             ("_TZE200_aoclfnxz", "TS0601"),
-            ("_TZE200_2ekuz3dz", "TS0601"),
-            ("_TZE200_ye5jkfsb", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
@@ -174,5 +265,106 @@ class MoesBHT(TuyaThermostat):
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             }
+        }
+    }
+
+
+class MoesBHTx10(TuyaThermostat):
+    """Moes BHT-002GCLZB Thermostatic radiator valve."""
+
+    signature = {
+        #  endpoint=1 profile=260 device_type=81 device_version=1 input_clusters=[0, 4, 5, 61184],
+        #  output_clusters=[10, 25]
+        MODELS_INFO: [
+            ("_TZE200_ye5jkfsb", "TS0601"),
+        ],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaManufClusterAttributes.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            }
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.THERMOSTAT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    MoesBHTManufCluster10,
+                    MoesBHTThermostat10,
+                    MoesBHTUserInterface,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            }
+        }
+    }
+
+
+class MoesBHT_GPP(TuyaThermostat):
+    """Moes BHT-002GCLZB Thermostatic radiator valve."""
+
+    signature = {
+        #  endpoint=1 profile=260 device_type=81 device_version=1 input_clusters=[0, 4, 5, 61184],
+        #  output_clusters=[10, 25]
+        MODELS_INFO: [
+            ("_TZE200_2ekuz3dz", "TS0601"),
+        ],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaManufClusterAttributes.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            }
+            # <SimpleDescriptor endpoint=242 profile=41440 device_type=97
+            # input_clusters=[]
+            # output_clusters=[33]
+            242: {
+                PROFILE_ID: 41440,
+                DEVICE_TYPE: 97,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.THERMOSTAT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    MoesBHTManufCluster,
+                    MoesBHTThermostat,
+                    MoesBHTUserInterface,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            }
+            242: {
+                PROFILE_ID: 41440,
+                DEVICE_TYPE: 97,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
         }
     }
