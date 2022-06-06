@@ -332,14 +332,6 @@ class MoesBHT_GPP(TuyaThermostat):
                     TuyaManufClusterAttributes.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
-            # <SimpleDescriptor endpoint=242 profile=41440 device_type=97
-            # input_clusters=[]
-            # output_clusters=[33]
-            242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
-                INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             }
         },
     }
@@ -353,17 +345,11 @@ class MoesBHT_GPP(TuyaThermostat):
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    MoesBHTManufCluster,
-                    MoesBHTThermostat,
+                    MoesBHTx10ManufCluster,
+                    MoesBHTThermostatx10,
                     MoesBHTUserInterface,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
-            }
-            242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
-                INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             }
         }
     }
