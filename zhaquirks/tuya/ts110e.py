@@ -23,13 +23,11 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-
 from zhaquirks.tuya import (
+    NoManufacturerCluster,
     TuyaDimmerSwitch,
     TuyaZBExternalSwitchTypeCluster,
-    NoManufacturerCluster,
 )
-
 
 TUYA_LEVEL_ATTRIBUTE = 0xF000
 TUYA_BULB_TYPE_ATTRIBUTE = 0xFC02
@@ -123,7 +121,7 @@ class F000LevelControlCluster(NoManufacturerCluster, LevelControl):
 
 
 class DimmerSwitchWithNeutral1Gang(TuyaDimmerSwitch):
-    """Tuya Dimmer Switch Module With Neutral 1 Gang"""
+    """Tuya Dimmer Switch Module With Neutral 1 Gang."""
 
     signature = {
         MODELS_INFO: [("_TZ3210_ngqk6jia", "TS110E")],
