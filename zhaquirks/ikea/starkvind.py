@@ -1,5 +1,6 @@
 """Device handler for IKEA of Sweden STARKVIND Air purifier."""
 import asyncio
+
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
@@ -13,10 +14,8 @@ from zigpy.zcl.clusters.general import (
     Scenes,
 )
 from zigpy.zcl.clusters.hvac import Fan
-from zigpy.zcl.clusters.measurement import (
-    PM25,
-    IlluminanceMeasurement,
-)
+from zigpy.zcl.clusters.measurement import PM25, IlluminanceMeasurement
+
 from zhaquirks import Bus
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -29,6 +28,7 @@ from zhaquirks.const import (
 from zhaquirks.ikea import IKEA
 
 WWAH_CLUSTER_ID = 0xFC57  # decimal = 64599
+
 
 class manuSpecificIkeaAirPurifier(CustomCluster):
     """Ikea Manufacturer Specific AirPurifier."""
