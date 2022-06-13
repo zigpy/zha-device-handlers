@@ -24,7 +24,11 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 
-from zhaquirks.tuya import TuyaDimmerSwitch, TuyaZBExternalSwitchTypeCluster
+from zhaquirks.tuya import (
+    TuyaDimmerSwitch,
+    TuyaZBExternalSwitchTypeCluster,
+    NoManufacturerCluster,
+)
 
 
 TUYA_LEVEL_ATTRIBUTE = 0xF000
@@ -49,19 +53,29 @@ class TuyaBulbType(t.enum8):
     HALOGEN = 0x02
 
 
-class F000LevelControlCluster(LevelControl):
+class F000LevelControlCluster(NoManufacturerCluster, LevelControl):
     """LevelControlCluster that reports to attrid 0xF000."""
 
-    manufacturer_attributes = {
-        TUYA_LEVEL_ATTRIBUTE: ("manufacturer_current_level", t.uint16_t),
-        TUYA_BULB_TYPE_ATTRIBUTE: ("bulb_type", TuyaBulbType), # 0xFC02
-        TUYA_MIN_LEVEL_ATTRIBUTE: ("manufacturer_min_level", t.uint16_t), # 0xFC03
-        TUYA_MAX_LEVEL_ATTRIBUTE: ("manufacturer_max_level", t.uint16_t), # 0xFC04
-    }
+    server_commands = LevelControl.server_commands.copy()
+    server_commands[TUYA_CUSTOM_LEVEL_COMMAND] = foundation.ZCLCommandDef(
+        "moveToLevelTuya",
+        (TuyaLevelPayload,),
+        is_manufacturer_specific=False,
+    )
 
-    manufacturer_server_commands = {
-        TUYA_CUSTOM_LEVEL_COMMAND: ("moveToLevelTuya", (TuyaLevelPayload,), False),
-    }
+    attributes = LevelControl.attributes.copy()
+    attributes.update(
+        {
+            # 0xF000
+            TUYA_LEVEL_ATTRIBUTE: ("manufacturer_current_level", t.uint16_t),
+            # 0xFC02
+            TUYA_BULB_TYPE_ATTRIBUTE: ("bulb_type", TuyaBulbType),
+            # 0xFC03
+            TUYA_MIN_LEVEL_ATTRIBUTE: ("manufacturer_min_level", t.uint16_t),
+            # 0xFC04
+            TUYA_MAX_LEVEL_ATTRIBUTE: ("manufacturer_max_level", t.uint16_t),
+        }
+    )
 
     # 0xF000 reported values are 10-1000, convert to 0-254
     def _update_attribute(self, attrid, value):
@@ -126,7 +140,7 @@ class DimmerSwitchWithNeutral1Gang(TuyaDimmerSwitch):
                     Scenes.cluster_id,
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
-                    TuyaZBExternalSwitchTypeCluster,
+                    TuyaZBExternalSwitchTypeCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
