@@ -68,10 +68,10 @@ class manuSpecificIkeaAirPurifier(CustomCluster):
         super().__init__(*args, **kwargs)
         self._update_attribute(
             0x0003, False
-        )  # workaround for empty _attr_cache in https://github.com/zigpy/zigpy/blob/07a3345dd51e54765831cd675fe7eefb57a3aec0/zigpy/zcl/__init__.py#L741 because switch.py - create_entity won't create an entity without
+        )  # workaround for empty _attr_cache in https://github.com/zigpy/zigpy/blob/07a3345dd51e54765831cd675fe7eefb57a3aec0/zigpy/zcl/__init__.py#L741 because switch.py - create_entity wont create an entity without
         self._update_attribute(
             0x0005, False
-        )  # workaround for empty _attr_cache in https://github.com/zigpy/zigpy/blob/07a3345dd51e54765831cd675fe7eefb57a3aec0/zigpy/zcl/__init__.py#L741 because switch.py - create_entity won't create an entity without
+        )  # workaround for empty _attr_cache in https://github.com/zigpy/zigpy/blob/07a3345dd51e54765831cd675fe7eefb57a3aec0/zigpy/zcl/__init__.py#L741 because switch.py - create_entity wont create an entity without
         self.endpoint.device.change_fan_mode_bus.add_listener(self)
 
     def _update_attribute(self, attrid, value):
@@ -90,7 +90,7 @@ class manuSpecificIkeaAirPurifier(CustomCluster):
                 )
 
     def update_fan_mode(self, value):
-        """Update fanmode by calling send_fan_mode."""
+        """update fanmode by calling send_fan_mode."""
         if value > 1 and value < 11:
             value = value * 5
         asyncio.create_task(self.send_fan_mode(value))
@@ -114,7 +114,6 @@ class FanCluster(CustomCluster, Fan):
         self.endpoint.device.change_fan_mode_ha_bus.add_listener(self)
 
     def update_fan_mode_ha(self, value):
-        """Update attribute in Fancluster."""
         super()._update_attribute(0x0000, value)  # FanMode = 0x0000
 
     def _update_attribute(self, attrid, value):
@@ -152,7 +151,7 @@ class PM25Cluster(CustomCluster, PM25):
         self._update_attribute(0x0000, value)
 
     def _update_attribute(self, attrid, value):
-        """Check for a valid PM2.5 value."""
+        """Check for a valid PM2.5 value"""
         if attrid == 0x0000:
             if value < 5500:
                 super()._update_attribute(attrid, value)
