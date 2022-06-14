@@ -7,27 +7,22 @@ from typing import Any
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 import zigpy.types as types
-from zigpy.zcl.clusters.general import (
-    Basic,
-    DeviceTemperature,
-    Identify,
-    MultistateInput,
-    Ota,
-)
+from zigpy.zcl.clusters.general import Basic, DeviceTemperature, Identify, Ota
 from zigpy.zcl.clusters.measurement import OccupancySensing
 
 from zhaquirks.const import (
+    COMMAND,
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
+    ZHA_SEND_EVENT,
 )
 from zhaquirks.xiaomi import XiaomiAqaraE1Cluster
 
 OCCUPANCY = 0x0000
-PRESENT_VALUE = 0x0055
 PRESENCE = 0x0142
 PRESENCE2 = 101
 PRESENCE_EVENT = 0x0143
@@ -36,6 +31,7 @@ MONITORING_MODE = 0x0144
 MOTION_SENSITIVITY = 0x010C
 APPROACH_DISTANCE = 0x0146
 RESET_NO_PRESENCE_STATUS = 0x0157
+SENSOR = "sensor"
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -72,9 +68,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
             if value != 0xFF:
                 self.endpoint.occupancy.update_attribute(OCCUPANCY, value)
         elif attrid == PRESENCE_EVENT or attrid == PRESENCE_EVENT2:
-            self.endpoint.multistate_input.update_attribute(
-                PRESENT_VALUE, AqaraPresenceEvents(value).name.replace("_", " ")
-            )
+            self.listener_event(ZHA_SEND_EVENT, AqaraPresenceEvents(value).name, {})
 
 
 class AqaraLumiMotionAc01(CustomDevice):
@@ -109,7 +103,6 @@ class AqaraLumiMotionAc01(CustomDevice):
                     Identify.cluster_id,
                     DeviceTemperature.cluster_id,
                     OccupancySensing.cluster_id,
-                    MultistateInput.cluster_id,
                     OppleCluster,
                 ],
                 OUTPUT_CLUSTERS: [
@@ -118,4 +111,34 @@ class AqaraLumiMotionAc01(CustomDevice):
                 ],
             }
         }
+    }
+
+    device_automation_triggers = {
+        (AqaraPresenceEvents.Enter.name, SENSOR): {
+            COMMAND: AqaraPresenceEvents.Enter.name
+        },
+        (AqaraPresenceEvents.Leave.name, SENSOR): {
+            COMMAND: AqaraPresenceEvents.Leave.name
+        },
+        (AqaraPresenceEvents.Enter_Left.name, SENSOR): {
+            COMMAND: AqaraPresenceEvents.Enter_Left.name
+        },
+        (AqaraPresenceEvents.Leave_Right.name, SENSOR): {
+            COMMAND: AqaraPresenceEvents.Leave_Right.name
+        },
+        (AqaraPresenceEvents.Enter_Right.name, SENSOR): {
+            COMMAND: AqaraPresenceEvents.Enter_Right.name
+        },
+        (AqaraPresenceEvents.Leave_Left.name, SENSOR): {
+            COMMAND: AqaraPresenceEvents.Leave_Left.name
+        },
+        (AqaraPresenceEvents.Approach.name, SENSOR): {
+            COMMAND: AqaraPresenceEvents.Approach.name
+        },
+        (AqaraPresenceEvents.Away.name, SENSOR): {
+            COMMAND: AqaraPresenceEvents.Away.name
+        },
+        (AqaraPresenceEvents.Unknown.name, SENSOR): {
+            COMMAND: AqaraPresenceEvents.Unknown.name
+        },
     }
