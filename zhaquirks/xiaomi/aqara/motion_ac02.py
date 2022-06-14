@@ -71,6 +71,13 @@ class LocalIlluminanceMeasurementCluster(
 ):
     """Local lluminance measurement cluster."""
 
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        if self.ATTR_ID not in self._attr_cache:
+            # put a default value so the sensor is created
+            self._update_attribute(self.ATTR_ID, 0)
+
     def illuminance_reported(self, value):
         """Illuminance reported."""
         if 0 > value or value > 0xFFDC:
