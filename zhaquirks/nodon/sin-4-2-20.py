@@ -61,11 +61,11 @@ class NodOnSIN4220(CustomDevice):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     OnOff.cluster_id,
-                    OnOffConfiguration.cluster_id,                  
+                    OnOffConfiguration.cluster_id,
                     LevelControl.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Identify.cluster_id, OnOff.cluster_id],
-            },            
+            },
             # <SimpleDescriptor endpoint=242 profile=41440 device_type=102
             # input_clusters=[33]
             # output_clusters=[33]
