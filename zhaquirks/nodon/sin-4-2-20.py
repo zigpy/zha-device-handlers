@@ -23,6 +23,7 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 
+
 class NodOnSIN4220(CustomDevice):
     """NodOn on/off switch two channels."""
 
@@ -49,7 +50,7 @@ class NodOnSIN4220(CustomDevice):
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
-                    Ota.cluster_id
+                    Ota.cluster_id,
                 ],
             },
             # <SimpleDescriptor endpoint=1 profile=260 device_type=256
@@ -67,10 +68,7 @@ class NodOnSIN4220(CustomDevice):
                     OnOffConfiguration.cluster_id,
                     LevelControl.cluster_id,
                 ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    OnOff.cluster_id
-                ],
+                OUTPUT_CLUSTERS: [Identify.cluster_id, OnOff.cluster_id],
             },
             # <SimpleDescriptor endpoint=242 profile=41440 device_type=102
             # input_clusters=[33]
@@ -101,7 +99,7 @@ class NodOnSIN4220(CustomDevice):
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
-                    Ota.cluster_id
+                    Ota.cluster_id,
                 ],
             },
             2: {
@@ -115,10 +113,7 @@ class NodOnSIN4220(CustomDevice):
                     OnOff.cluster_id,
                     OnOffConfiguration.cluster_id,
                 ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    OnOff.cluster_id
-                ],
+                OUTPUT_CLUSTERS: [Identify.cluster_id, OnOff.cluster_id],
             },
             242: {
                 PROFILE_ID: 41440,
