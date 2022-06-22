@@ -1,10 +1,12 @@
 """Device handler for IKEA of Sweden STARKVIND Air purifier."""
-import asyncio
+from __future__ import annotations
+
+import logging
+from typing import Any
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
-from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
@@ -28,14 +30,15 @@ from zhaquirks.const import (
 from zhaquirks.ikea import IKEA
 
 WWAH_CLUSTER_ID = 0xFC57  # decimal = 64599
+_LOGGER = logging.getLogger(__name__)
 
 
-class manuSpecificIkeaAirPurifier(CustomCluster):
+class IkeaAirpurifier(CustomCluster):
     """Ikea Manufacturer Specific AirPurifier."""
 
-    name: str = "Ikea Manufacturer Specific AirPurifier"
+    name: str = "Ikea Airpurifier"
     cluster_id: t.uint16_t = 0xFC7D  # 64637  0xFC7D control air purifier with manufacturer-specific attributes
-    ep_attribute: str = "ikea_manufacturer"
+    ep_attribute: str = "ikea_airpurifier"
 
     attributes = {
         0x0000: ("filter_run_time", t.uint32_t, True),
@@ -61,75 +64,31 @@ class manuSpecificIkeaAirPurifier(CustomCluster):
         """Init."""
         self._current_state = {}
         super().__init__(*args, **kwargs)
-        self._update_attribute(
-            0x0003, False
-        )  # workaround for empty _attr_cache in https://github.com/zigpy/zigpy/blob/07a3345dd51e54765831cd675fe7eefb57a3aec0/zigpy/zcl/__init__.py#L741 because switch.py - create_entity won't create an entity without
-        self._update_attribute(
-            0x0005, False
-        )  # workaround for empty _attr_cache in https://github.com/zigpy/zigpy/blob/07a3345dd51e54765831cd675fe7eefb57a3aec0/zigpy/zcl/__init__.py#L741 because switch.py - create_entity won't create an entity without
         self.endpoint.device.change_fan_mode_bus.add_listener(self)
 
     def _update_attribute(self, attrid, value):
-        super()._update_attribute(attrid, value)
         if attrid == 0x0004:
             if (
                 value is not None and value < 5500
             ):  # > 5500 = out of scale; if value is 65535 (0xFFFF), device is off
                 self.endpoint.device.pm25_bus.listener_event("update_state", value)
         elif attrid == 0x0006:
-            if value is not None:
-                if value > 9 and value < 51:
-                    value = value / 5
-                self.endpoint.device.change_fan_mode_ha_bus.listener_event(
-                    "update_fan_mode_ha", value
-                )
+            if value > 9 and value < 51:
+                value = value / 5
+        super()._update_attribute(attrid, value)
 
-    def update_fan_mode(self, value):
-        """Update fanmode by calling send_fan_mode."""
-        if value > 1 and value < 11:
-            value = value * 5
-        asyncio.create_task(self.send_fan_mode(value))
-
-    async def send_fan_mode(self, value) -> None:
-        """Write new fanmode to attribute fan_mode in IKEA cluster."""
-        ikea_cluster = self.endpoint.device.endpoints[1].in_clusters[64637]
-        new_fan_mode = {"fan_mode": value}
-        await ikea_cluster.write_attributes(new_fan_mode)
-
-
-class FanCluster(CustomCluster, Fan):
-    """Fan input cluster, only used to relay fanmode to IKEA cluster."""
-
-    cluster_id = Fan.cluster_id
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        self._current_state = {}
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.change_fan_mode_ha_bus.add_listener(self)
-
-    def update_fan_mode_ha(self, value):
-        """Update attribute in Fancluster."""
-        super()._update_attribute(0x0000, value)  # FanMode = 0x0000
-
-    def _update_attribute(self, attrid, value):
-        """Ignore update_attribute because the fan cluster has only Off, Low, Medium, High, On, Auto and Smart."""
-        asyncio.create_task(self.read_fan_mode())
-
-    async def read_fan_mode(self) -> None:
-        """Read current fanmode from IKEA Cluster."""
-        ikea_cluster = self.endpoint.device.endpoints[1].in_clusters[64637]
-        await ikea_cluster.read_attributes({"fan_mode"})
-
-    async def write_attributes(self, attributes, manufacturer=None):
-        """Ignore writing values to FAN cluster attributes and forward fanmode to update_fan_mode in IKEA cluster."""
+    async def write_attributes(
+        self, attributes: dict[str | int, Any], manufacturer: int | None = None
+    ) -> list:
+        """Override wrong writes to thermostat attributes."""
         if "fan_mode" in attributes:
             fan_mode = attributes.get("fan_mode")
-            if fan_mode is not None:
-                self.endpoint.device.change_fan_mode_bus.listener_event(
-                    "update_fan_mode", fan_mode
+            if fan_mode > 1 and fan_mode < 11:
+                fan_mode = fan_mode * 5
+                return await super().write_attributes(
+                    {"fan_mode": fan_mode}, manufacturer
                 )
-        return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
+        return await super().write_attributes(attributes, manufacturer)
 
 
 class PM25Cluster(CustomCluster, PM25):
@@ -154,13 +113,13 @@ class PM25Cluster(CustomCluster, PM25):
         else:
             super()._update_attribute(attrid, value)
 
-    def read_attributes(
+    async def read_attributes(
         self, attributes, allow_cache=False, only_cache=False, manufacturer=None
     ):
         """Read attributes ZCL foundation command."""
         if "measured_value" in attributes:
             return (
-                self.endpoint.device.endpoints[1]
+                await self.endpoint.device.endpoints[1]
                 .in_clusters[64637]
                 .read_attributes(
                     {"air_quality_25pm"},
@@ -170,8 +129,11 @@ class PM25Cluster(CustomCluster, PM25):
                 )
             )
         else:
-            return super().read_attributes(
-                attributes, allow_cache=True, only_cache=True, manufacturer=manufacturer
+            return await super().read_attributes(
+                attributes,
+                allow_cache=allow_cache,
+                only_cache=only_cache,
+                manufacturer=manufacturer,
             )
 
 
@@ -201,7 +163,7 @@ class IkeaSTARKVIND(CustomDevice):
                     Scenes.cluster_id,  # 5
                     Fan.cluster_id,  # 514    0x0202
                     WWAH_CLUSTER_ID,  # 64599  0xFC57
-                    manuSpecificIkeaAirPurifier.cluster_id,  # 64637  0xFC7D
+                    IkeaAirpurifier.cluster_id,  # 64637  0xFC7D
                 ],
                 OUTPUT_CLUSTERS: [
                     Ota.cluster_id,  # 25      0x0019
@@ -233,9 +195,8 @@ class IkeaSTARKVIND(CustomDevice):
                     Identify.cluster_id,  # 3
                     Groups.cluster_id,  # 4
                     Scenes.cluster_id,  # 5
-                    FanCluster,  # 514
                     WWAH_CLUSTER_ID,  # 64599  0xFC57
-                    manuSpecificIkeaAirPurifier,  # 64637  0xFC7D control air purifier with manufacturer-specific attributes
+                    IkeaAirpurifier,  # 64637  0xFC7D control air purifier with manufacturer-specific attributes
                     PM25Cluster,  # 1066    0x042A PM2.5 Measurement Cluster
                 ],
                 OUTPUT_CLUSTERS: [
