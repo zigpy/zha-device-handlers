@@ -82,18 +82,6 @@ class ElkoSuperTRThermostatCluster(ElkoThermostatCluster):
         super().__init__(*args, **kwargs)
         self.active_sensor = None
 
-    def _read_attributes(self, args, manufacturer=None):
-        """Read attributes ZCL foundation command."""
-        if manufacturer is None and self._has_manuf_attr(args):
-            manufacturer = 0
-        return super()._read_attributes(args, manufacturer=manufacturer)
-
-    def _write_attributes(self, args, manufacturer=None):
-        """Write attribute ZCL foundation command."""
-        if manufacturer is None and self._has_manuf_attr([a.attrid for a in args]):
-            manufacturer = 0
-        return super()._write_attributes(args, manufacturer=manufacturer)
-
     async def write_attributes(self, attributes, manufacturer=None):
         """Override writes to thermostat attributes."""
         if "system_mode" in attributes:
