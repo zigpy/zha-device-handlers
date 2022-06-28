@@ -103,7 +103,7 @@ ATTR_COVER_INVERTED = 0x8002
 # For most tuya devices 0 = Up/Open, 1 = Stop, 2 = Down/Close
 TUYA_COVER_COMMAND = {
     "_TZE200_zah67ekd": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
-    "_TZE200_fzo2pocs": {0x0000: 0x0002, 0x0001: 0x0000, 0x0002: 0x0001},
+    "_TZE200_fzo2pocs": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
     "_TZE200_xuzcvlku": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
     "_TZE200_rddyvrci": {0x0000: 0x0002, 0x0001: 0x0001, 0x0002: 0x0000},
     "_TZE200_3i3exuay": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
@@ -121,6 +121,7 @@ TUYA_COVER_COMMAND = {
     "_TZE200_zuz7f94z": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
     "_TZE200_ergbiejo": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
     "_TZE200_nhyj64w2": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
+    "_TZE200_pw7mji0l": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
 }
 # Taken from zigbee-herdsman-converters
 # Contains all covers which need their position inverted by default
@@ -128,7 +129,6 @@ TUYA_COVER_COMMAND = {
 # Use manufacturerName to identify device!
 # Don't invert _TZE200_cowvfni3: https://github.com/Koenkk/zigbee2mqtt/issues/6043
 TUYA_COVER_INVERTED_BY_DEFAULT = [
-    "_TZE200_fzo2pocs",
     "_TZE200_wmcdj3aq",
     "_TZE200_nogaemzt",
     "_TZE200_xuzcvlku",
@@ -269,6 +269,28 @@ class TuyaCommand(t.Struct):
     tsn: t.uint8_t
     dp: t.uint8_t
     data: TuyaData
+
+
+class NoManufacturerCluster(CustomCluster):
+    """Forces the NO manufacturer id in command."""
+
+    async def command(
+        self,
+        command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
+        *args,
+        manufacturer: Optional[Union[int, t.uint16_t]] = None,
+        expect_reply: bool = True,
+        tsn: Optional[Union[int, t.uint8_t]] = None,
+    ):
+        """Override the default Cluster command."""
+        self.debug("Setting the NO manufacturer id in command: %s", command_id)
+        return await super().command(
+            command_id,
+            *args,
+            manufacturer=foundation.ZCLHeader.NO_MANUFACTURER_ID,
+            expect_reply=expect_reply,
+            tsn=tsn,
+        )
 
 
 class TuyaManufCluster(CustomCluster):
@@ -768,7 +790,25 @@ class TuyaUserInterfaceCluster(LocalDataCluster, UserInterface):
         return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
 
-class TuyaPowerConfigurationCluster(LocalDataCluster, PowerConfiguration):
+class TuyaLocalCluster(LocalDataCluster):
+    """Tuya virtual clusters.
+
+    Prevents attribute reads and writes. Attribute writes could be converted
+    to DataPoint updates.
+    """
+
+    def update_attribute(self, attr_name: str, value: Any) -> None:
+        """Update attribute by attribute name."""
+
+        try:
+            attr = self.attributes_by_name[attr_name]
+        except KeyError:
+            self.debug("no such attribute: %s", attr_name)
+            return
+        return self._update_attribute(attr.id, value)
+
+
+class TuyaPowerConfigurationCluster(PowerConfiguration, TuyaLocalCluster):
     """PowerConfiguration cluster for battery-operated thermostats."""
 
     def __init__(self, *args, **kwargs):
@@ -778,13 +818,25 @@ class TuyaPowerConfigurationCluster(LocalDataCluster, PowerConfiguration):
 
     def battery_change(self, value):
         """Change of reported battery percentage remaining."""
-        self._update_attribute(
-            self.attributes_by_name["battery_percentage_remaining"].id, value * 2
-        )
+        self.update_attribute("battery_percentage_remaining", value * 2)
+
+
+class TuyaPowerConfigurationCluster2AAA(PowerConfiguration, TuyaLocalCluster):
+    """PowerConfiguration cluster for devices with 2 AAA."""
+
+    BATTERY_SIZES = 0x0031
+    BATTERY_QUANTITY = 0x0033
+    BATTERY_RATED_VOLTAGE = 0x0034
+
+    _CONSTANT_ATTRIBUTES = {
+        BATTERY_SIZES: 4,
+        BATTERY_QUANTITY: 2,
+        BATTERY_RATED_VOLTAGE: 15,
+    }
 
 
 class TuyaPowerConfigurationCluster2AA(TuyaPowerConfigurationCluster):
-    """PowerConfiguration cluster for battery-operated TRVs with 2 AA."""
+    """PowerConfiguration cluster for devices with 2 AA."""
 
     BATTERY_SIZES = 0x0031
     BATTERY_RATED_VOLTAGE = 0x0034
@@ -798,7 +850,7 @@ class TuyaPowerConfigurationCluster2AA(TuyaPowerConfigurationCluster):
 
 
 class TuyaPowerConfigurationCluster3AA(TuyaPowerConfigurationCluster):
-    """PowerConfiguration cluster for battery-operated TRVs with 3 AA."""
+    """PowerConfiguration cluster for devices with 3 AA."""
 
     BATTERY_SIZES = 0x0031
     BATTERY_RATED_VOLTAGE = 0x0034
@@ -1272,24 +1324,6 @@ class TuyaLevelControl(CustomCluster, LevelControl):
             )
 
         return foundation.Status.UNSUP_CLUSTER_COMMAND
-
-
-class TuyaLocalCluster(LocalDataCluster):
-    """Tuya virtual clusters.
-
-    Prevents attribute reads and writes. Attribute writes could be converted
-    to DataPoint updates.
-    """
-
-    def update_attribute(self, attr_name: str, value: Any) -> None:
-        """Update attribute by attribute name."""
-
-        try:
-            attr = self.attributes_by_name[attr_name]
-        except KeyError:
-            self.debug("no such attribute: %s", attr_name)
-            return
-        return self._update_attribute(attr.id, value)
 
 
 @dataclasses.dataclass

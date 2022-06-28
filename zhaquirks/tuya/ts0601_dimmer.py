@@ -1,10 +1,5 @@
 """Tuya based touch switch."""
-from typing import Optional, Union
-
 from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster
-import zigpy.types as t
-from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, GreenPowerProxy, Groups, Ota, Scenes, Time
 
 from zhaquirks.const import (
@@ -15,40 +10,13 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import TuyaDimmerSwitch
+from zhaquirks.tuya import NoManufacturerCluster, TuyaDimmerSwitch
 from zhaquirks.tuya.mcu import (
     TuyaInWallLevelControl,
     TuyaLevelControlManufCluster,
     TuyaOnOff,
+    TuyaOnOffNM,
 )
-
-
-class NoManufacturerCluster(CustomCluster):
-    """Forces the NO manufacturer id in command."""
-
-    async def command(
-        self,
-        command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
-        *args,
-        manufacturer: Optional[Union[int, t.uint16_t]] = None,
-        expect_reply: bool = True,
-        tsn: Optional[Union[int, t.uint8_t]] = None,
-    ):
-        """Override the default Cluster command."""
-        self.debug("Setting the NO manufacturer id in command: %s", command_id)
-        return await super().command(
-            command_id,
-            *args,
-            manufacturer=foundation.ZCLHeader.NO_MANUFACTURER_ID,
-            expect_reply=expect_reply,
-            tsn=tsn,
-        )
-
-
-class TuyaOnOffNM(NoManufacturerCluster, TuyaOnOff):
-    """Tuya OnOff cluster with NoManufacturerID."""
-
-    pass
 
 
 class TuyaInWallLevelControlNM(NoManufacturerCluster, TuyaInWallLevelControl):

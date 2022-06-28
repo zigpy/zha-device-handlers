@@ -26,9 +26,10 @@ from zhaquirks.tuya import (
     TuyaZBExternalSwitchTypeCluster,
     TuyaZBOnOffAttributeCluster,
 )
+from zhaquirks.tuya.mcu import EnchantedDevice
 
 
-class Switch_1G_GPP(CustomDevice):
+class Switch_1G_GPP(EnchantedDevice, CustomDevice):
     """Tuya 1 gang switch module with restore power state support."""
 
     signature = {
@@ -84,7 +85,7 @@ class Switch_1G_GPP(CustomDevice):
     }
 
 
-class Switch_2G_GPP(CustomDevice):
+class Switch_2G_GPP(EnchantedDevice, CustomDevice):
     """Tuya 2 gang switch module with restore power state support."""
 
     signature = {
@@ -172,7 +173,7 @@ class Switch_2G_GPP(CustomDevice):
     }
 
 
-class Switch_3G_GPP(CustomDevice):
+class Switch_3G_GPP(EnchantedDevice, CustomDevice):
     """Tuya 3 gang switch module with restore power state support."""
 
     signature = {
@@ -286,7 +287,7 @@ class Switch_3G_GPP(CustomDevice):
     }
 
 
-class Switch_4G_GPP(CustomDevice):
+class Switch_4G_GPP(EnchantedDevice, CustomDevice):
     """Tuya 4 gang switch module with restore power state support."""
 
     signature = {

@@ -94,12 +94,12 @@ class IkeaDimmer(CustomDevice):
             COMMAND: COMMAND_MOVE_ON_OFF,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
-            PARAMS: {"move_mode": 0, "rate": 195},
+            PARAMS: {"move_mode": 0},
         },
         (ROTATED, LEFT): {
             COMMAND: COMMAND_MOVE,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
-            PARAMS: {"move_mode": 1, "rate": 195},
+            PARAMS: {"move_mode": 1},
         },
     }
