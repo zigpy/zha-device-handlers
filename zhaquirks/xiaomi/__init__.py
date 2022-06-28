@@ -74,6 +74,11 @@ TEMPERATURE_MEASUREMENT = "temperature_measurement"
 TVOC_MEASUREMENT = "tvoc_measurement"
 TEMPERATURE_REPORTED = "temperature_reported"
 POWER_REPORTED = "power_reported"
+POWER_OUTAGE_COUNT = "power_outage_count"
+PRESENCE_DETECTED = "presence_detected"
+PRESENCE_EVENT = "presence_event"
+MONITORING_MODE = "monitoring_mode"
+APPROACH_DISTANCE = "approach_distance"
 CONSUMPTION_REPORTED = "consumption_reported"
 VOLTAGE_REPORTED = "voltage_reported"
 ILLUMINANCE_MEASUREMENT = "illuminance_measurement"
@@ -337,6 +342,17 @@ class XiaomiCluster(CustomCluster):
             if self.endpoint.device.model == "lumi.motion.ac02":
                 attribute_names.update({105: DETECTION_INTERVAL})
                 attribute_names.update({106: MOTION_SENSITIVITY})
+        elif self.endpoint.device.model == "lumi.motion.ac01":
+            attribute_names.update({5: POWER_OUTAGE_COUNT})
+            attribute_names.update({101: PRESENCE_DETECTED})
+            attribute_names.update({102: PRESENCE_EVENT})
+            attribute_names.update({103: MONITORING_MODE})
+            attribute_names.update({105: APPROACH_DISTANCE})
+            attribute_names.update({268: MOTION_SENSITIVITY})
+            attribute_names.update({322: PRESENCE_DETECTED})
+            attribute_names.update({323: PRESENCE_EVENT})
+            attribute_names.update({324: MONITORING_MODE})
+            attribute_names.update({326: APPROACH_DISTANCE})
         result = {}
 
         # Some attribute reports end with a stray null byte
