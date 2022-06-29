@@ -508,6 +508,7 @@ class TuyaMoesCover0601_inv_position(TuyaWindowCover):
     }
     tuya_cover_inverted_by_default = True
 
+
 class TuyaCloneCover0601(TuyaWindowCover):
     """Tuya blind controller device."""
 
