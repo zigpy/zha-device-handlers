@@ -67,6 +67,8 @@ class TuyaZemismartSmartCover0601(TuyaWindowCover):
 
 class TuyaZemismartSmartCover0601_inv_controls(TuyaWindowCover):
     """Tuya Zemismart blind cover motor."""
+    
+    tuya_cover_command = {0x0000: 0x0002, 0x0001: 0x0000, 0x0002: 0x0001}
 
     signature = {
         # "node_descriptor": "<NodeDescriptor byte1=1 byte2=64 mac_capability_flags=142 manufacturer_code=4098
@@ -110,12 +112,13 @@ class TuyaZemismartSmartCover0601_inv_controls(TuyaWindowCover):
             },
         },
     }
-    tuya_cover_command = {0x0000: 0x0002, 0x0001: 0x0000, 0x0002: 0x0001}
 
 
 class TuyaZemismartSmartCover0601_inv_position(TuyaWindowCover):
     """Tuya Zemismart blind cover motor."""
-
+    
+    tuya_cover_inverted_by_default = True
+    
     signature = {
         # "node_descriptor": "<NodeDescriptor byte1=1 byte2=64 mac_capability_flags=142 manufacturer_code=4098
         #                       maximum_buffer_size=82 maximum_incoming_transfer_size=82 server_mask=11264
@@ -158,7 +161,6 @@ class TuyaZemismartSmartCover0601_inv_position(TuyaWindowCover):
             },
         },
     }
-    tuya_cover_inverted_by_default = True
 
 
 class TuyaZemismartSmartCover0601_3(TuyaWindowCover):
@@ -210,6 +212,8 @@ class TuyaZemismartSmartCover0601_3(TuyaWindowCover):
 
 class TuyaZemismartSmartCover0601_3_inv_position(TuyaWindowCover):
     """Tuya Zemismart blind cover motor."""
+    
+    tuya_cover_inverted_by_default = True
 
     signature = {
         # "node_descriptor": "<NodeDescriptor byte1=1 byte2=64 mac_capability_flags=142 manufacturer_code=4098
@@ -251,7 +255,6 @@ class TuyaZemismartSmartCover0601_3_inv_position(TuyaWindowCover):
             },
         },
     }
-    tuya_cover_inverted_by_default = True
 
 
 class TuyaZemismartSmartCover0601_2(TuyaWindowCover):
@@ -303,6 +306,8 @@ class TuyaZemismartSmartCover0601_2(TuyaWindowCover):
 
 class TuyaZemismartSmartCover0601_2_inv_position(TuyaWindowCover):
     """Tuya Zemismart curtain cover motor."""
+    
+    tuya_cover_inverted_by_default = True
 
     signature = {
         # "node_descriptor": "<NodeDescriptor byte1=1 byte2=64 mac_capability_flags=142 manufacturer_code=4098
@@ -346,7 +351,6 @@ class TuyaZemismartSmartCover0601_2_inv_position(TuyaWindowCover):
             },
         },
     }
-    tuya_cover_inverted_by_default = True
 
 
 class TuyaMoesCover0601(TuyaWindowCover):
@@ -407,6 +411,8 @@ class TuyaMoesCover0601(TuyaWindowCover):
 
 class TuyaMoesCover0601_alt_controls(TuyaWindowCover):
     """Tuya blind controller device."""
+    
+    tuya_cover_command = {0x0000: 0x0002, 0x0001: 0x0001, 0x0002: 0x0000}
 
     signature = {
         # "node_descriptor": "NodeDescriptor(byte1=2, byte2=64, mac_capability_flags=128, manufacturer_code=4098,
@@ -452,11 +458,12 @@ class TuyaMoesCover0601_alt_controls(TuyaWindowCover):
             }
         }
     }
-    tuya_cover_command = {0x0000: 0x0002, 0x0001: 0x0001, 0x0002: 0x0000}
 
 
 class TuyaMoesCover0601_inv_position(TuyaWindowCover):
     """Tuya blind controller device."""
+    
+    tuya_cover_inverted_by_default = True
 
     signature = {
         # "node_descriptor": "NodeDescriptor(byte1=2, byte2=64, mac_capability_flags=128, manufacturer_code=4098,
@@ -506,7 +513,6 @@ class TuyaMoesCover0601_inv_position(TuyaWindowCover):
             }
         }
     }
-    tuya_cover_inverted_by_default = True
 
 
 class TuyaCloneCover0601(TuyaWindowCover):
