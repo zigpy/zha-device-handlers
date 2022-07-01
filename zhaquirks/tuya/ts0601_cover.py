@@ -49,7 +49,6 @@ class TuyaZemismartSmartCover0601(TuyaWindowCover):
     replacement = {
         ENDPOINTS: {
             1: {
-                PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
@@ -98,7 +97,6 @@ class TuyaZemismartSmartCover0601_inv_controls(TuyaWindowCover):
     replacement = {
         ENDPOINTS: {
             1: {
-                PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
@@ -147,7 +145,6 @@ class TuyaZemismartSmartCover0601_inv_position(TuyaWindowCover):
     replacement = {
         ENDPOINTS: {
             1: {
-                PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
@@ -195,7 +192,6 @@ class TuyaZemismartSmartCover0601_3(TuyaWindowCover):
     replacement = {
         ENDPOINTS: {
             1: {
-                PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
@@ -242,7 +238,6 @@ class TuyaZemismartSmartCover0601_3_inv_position(TuyaWindowCover):
     replacement = {
         ENDPOINTS: {
             1: {
-                PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
@@ -288,7 +283,6 @@ class TuyaZemismartSmartCover0601_2(TuyaWindowCover):
     replacement = {
         ENDPOINTS: {
             1: {
-                PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
@@ -337,7 +331,6 @@ class TuyaZemismartSmartCover0601_2_inv_position(TuyaWindowCover):
     replacement = {
         ENDPOINTS: {
             1: {
-                PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
