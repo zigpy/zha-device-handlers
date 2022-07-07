@@ -151,7 +151,10 @@ class IkeaSTARKVIND(CustomDevice):
         # <SimpleDescriptor endpoint=1 profile=260 device_type=7 (0x0007)
         # device_version=0
         # input_clusters=[0, 3, 4, 5, 514, 64599, 64637] output_clusters=[25, 1024, 1066]>
-        MODELS_INFO: [(IKEA, "STARKVIND Air purifier")],
+        MODELS_INFO: [
+            (IKEA, "STARKVIND Air purifier"),
+            (IKEA, "STARKVIND Air purifier table"),
+        ],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
