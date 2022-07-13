@@ -34,12 +34,8 @@ class XiaomiAqaraCurtainE1(XiaomiCluster, ManufacturerSpecificCluster):
     attributes = XiaomiCluster.attributes.copy()
     attributes.update(
         {
-            0x0400: ("reverse_direction", t.Bool, True),
             0x0402: ("positions_stored", t.Bool, True),
             0x0407: ("store_position", t.uint8_t, True),
-            0x0408: ("speed", t.uint8_t, True),
-            0x0409: ("charging", t.uint8_t, True),
-            0x00F7: ("aqara_attributes", t.LVBytes, True),
         }
     )
 
