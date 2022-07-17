@@ -157,8 +157,11 @@ class PlugMAEU01(PlugMMEU01):
 
     def __init__(self, *args, **kwargs):
         """Init."""
-        super().__init__(*args, **kwargs)
+        self.voltage_bus = Bus()
+        self.consumption_bus = Bus()
+        self.power_bus = Bus()
         asyncio.create_task(remove_from_ep(self))
+        super().__init__(*args, **kwargs)
 
     signature = {
         MODELS_INFO: [
@@ -174,7 +177,7 @@ class PlugMAEU01(PlugMMEU01):
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
                 INPUT_CLUSTERS: [
-                    Basic.cluster_id,
+                    BasicCluster,
                     DeviceTemperature.cluster_id,
                     Identify.cluster_id,
                     Groups.cluster_id,
@@ -182,10 +185,15 @@ class PlugMAEU01(PlugMMEU01):
                     OnOff.cluster_id,
                     Alarms.cluster_id,
                     Metering.cluster_id,
-                    ElectricalMeasurement.cluster_id,
+                    ElectricalMeasurementCluster,
                     OppleCluster,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            21: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [AnalogInputCluster],
             },
             242: {
                 PROFILE_ID: XIAOMI_PROFILE_ID,
