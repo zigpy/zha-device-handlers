@@ -331,6 +331,7 @@ class XiaomiCluster(CustomCluster):
             )
         elif self.endpoint.device.model in [
             "lumi.plug.maus01",
+            "lumi.plug.maeu01",
             "lumi.relay.c2acn01",
         ]:
             attribute_names.update({149: CONSUMPTION, 150: VOLTAGE, 152: POWER})
@@ -552,13 +553,13 @@ class ElectricalMeasurementCluster(LocalDataCluster, ElectricalMeasurement):
 
     cluster_id = ElectricalMeasurement.cluster_id
     POWER_ID = 0x050B
-    VOLTAGE_ID = 0x0500
+    VOLTAGE_ID = 0x0505
     CONSUMPTION_ID = 0x0304
     _CONSTANT_ATTRIBUTES = {
         0x0402: 1,  # power_multiplier
         0x0403: 1,  # power_divisor
         0x0604: 1,  # ac_power_multiplier
-        0x0605: 1,  # ac_power_divisor
+        0x0605: 10,  # ac_power_divisor
     }
 
     def __init__(self, *args, **kwargs):
@@ -568,9 +569,17 @@ class ElectricalMeasurementCluster(LocalDataCluster, ElectricalMeasurement):
         self.endpoint.device.consumption_bus.add_listener(self)
         self.endpoint.device.power_bus.add_listener(self)
 
+        # put a default value so the sensors are created
+        if self.POWER_ID not in self._attr_cache:
+            self._update_attribute(self.POWER_ID, 0)
+        if self.VOLTAGE_ID not in self._attr_cache:
+            self._update_attribute(self.VOLTAGE_ID, 0)
+        if self.CONSUMPTION_ID not in self._attr_cache:
+            self._update_attribute(self.CONSUMPTION_ID, 0)
+
     def power_reported(self, value):
         """Power reported."""
-        self._update_attribute(self.POWER_ID, value)
+        self._update_attribute(self.POWER_ID, value * 10)
 
     def voltage_reported(self, value):
         """Voltage reported."""
