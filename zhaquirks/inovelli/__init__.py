@@ -134,6 +134,7 @@ class Inovelli_VZM31SN_Cluster(CustomCluster):
             0x0102: ("output_mode", t.Bool, True),
             0x0103: ("on_off_led_mode", t.Bool, True),
             0x0104: ("firmware_progress_led", t.Bool, True),
+            0x0105: ("relay_click_in_on_off_mode", t.Bool, True),
         }
     )
 
