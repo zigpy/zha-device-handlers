@@ -240,7 +240,7 @@ class RemoteH1DoubleRocker1(XiaomiCustomDevice):
     }
 
 
-class RemoteH1DoubleRocker2(XiaomiCustomDevice):
+class RemoteH1DoubleRocker2(RemoteH1DoubleRocker1):
     """Aqara H1 Wireless Remote Double Rocker Version WRS-R02, variant 2."""
 
     signature = {
@@ -285,10 +285,59 @@ class RemoteH1DoubleRocker2(XiaomiCustomDevice):
                 #   "out_clusters": [ "0x0006" ] }
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
-                INPUT_CLUSTERS: [Identify.cluster_id],
-                OUTPUT_CLUSTERS: [OnOff.cluster_id],
+                INPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [
+                    OnOff.cluster_id,
+                ],
             },
         },
     }
-    replacement = RemoteH1DoubleRocker1.replacement
-    device_automation_triggers = RemoteH1DoubleRocker1.device_automation_triggers
+
+
+class RemoteH1DoubleRocker3(RemoteH1DoubleRocker1):
+    """Aqara H1 Wireless Remote Double Rocker Version WRS-R02, variant 3."""
+
+    signature = {
+        # Can receive None None
+        MODELS_INFO: [(LUMI, "lumi.remote.b28ac1"), (None, None)],
+        ENDPOINTS: {
+            1: {
+                # "1": {
+                #   "profile_id": 260, "device_type": 261,
+                #   "in_clusters": [],
+                #   "out_clusters": [] }
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.COLOR_DIMMER_SWITCH,
+                INPUT_CLUSTERS: [
+                ],
+                OUTPUT_CLUSTERS: [
+                ],
+            },
+            2: {
+                # "2": {
+                #   "profile_id": 260, "device_type": 259,
+                #   "in_clusters": [],
+                #   "out_clusters": [] }
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
+                INPUT_CLUSTERS: [
+                ],
+                OUTPUT_CLUSTERS: [
+                ],
+            },
+            3: {
+                # "3": {
+                #   "profile_id": 260, "device_type": 259,
+                #   "in_clusters": [],
+                #   "out_clusters": [] }
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
+                INPUT_CLUSTERS: [
+                ],
+                OUTPUT_CLUSTERS: [
+                ],
+            },
+        },
+    }
