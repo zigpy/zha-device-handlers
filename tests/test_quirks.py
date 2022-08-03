@@ -621,6 +621,16 @@ KNOWN_DUPLICATE_TRIGGERS = {
             (const.LONG_RELEASE, const.DIM_DOWN),
         ]
     ],
+    zhaquirks.paulmann.fourbtnremote.PaulmannRemote4Btn: [
+        [
+            (const.LONG_RELEASE, const.BUTTON_1),
+            (const.LONG_RELEASE, const.BUTTON_2),
+        ],
+        [
+            (const.LONG_RELEASE, const.BUTTON_3),
+            (const.LONG_RELEASE, const.BUTTON_4),
+        ],
+    ],
     zhaquirks.thirdreality.button.Button: [
         [
             (const.LONG_PRESS, const.LONG_PRESS),
