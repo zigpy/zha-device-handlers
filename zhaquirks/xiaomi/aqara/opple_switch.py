@@ -612,9 +612,7 @@ class XiaomiOpple2ButtonSwitchBase(XiaomiCustomDevice):
 class XiaomiOpple2ButtonSwitchFace1(XiaomiOpple2ButtonSwitchBase):
     """Xiaomi Opple 2 Button Switch. Face 1."""
 
-    device_automation_triggers = copy.deepcopy(
-        XiaomiOpple2ButtonSwitchBase.device_automation_triggers
-    )
+    device_automation_triggers = XiaomiOpple2ButtonSwitchBase.device_automation_triggers
 
     signature = {
         ENDPOINTS: {
@@ -707,9 +705,7 @@ class XiaomiOpple2ButtonSwitchFace1(XiaomiOpple2ButtonSwitchBase):
 class XiaomiOpple2ButtonSwitchFace2(XiaomiOpple2ButtonSwitchBase):
     """Xiaomi Opple 2 Button Switch. Face 2."""
 
-    device_automation_triggers = copy.deepcopy(
-        XiaomiOpple2ButtonSwitchBase.device_automation_triggers
-    )
+    device_automation_triggers = XiaomiOpple2ButtonSwitchBase.device_automation_triggers
 
     signature = {
         ENDPOINTS: {
