@@ -717,9 +717,9 @@ class XiaomiOpple2ButtonSwitchFace2(XiaomiOpple2ButtonSwitchBase):
                     Groups.cluster_id,  # 4
                     Scenes.cluster_id,  # 5
                     OnOff.cluster_id,  # 6
-                    Alarms.cluster_id, # 9
-                    Metering.cluster_id, # 0x0702
-                    0x0b04,
+                    Alarms.cluster_id,  # 9
+                    Metering.cluster_id,  # 0x0702
+                    0x0B04,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
