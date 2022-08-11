@@ -16,7 +16,6 @@ from zigpy.zcl.clusters.general import (
     Scenes,
     Time,
 )
-
 from zigpy.zcl.clusters.smartenergy import Metering
 
 from zhaquirks.const import (
