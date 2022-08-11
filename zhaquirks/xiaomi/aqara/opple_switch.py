@@ -4,6 +4,7 @@ import copy
 from zigpy import types as t
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import (
+    Alarms,
     AnalogInput,
     Basic,
     DeviceTemperature,
@@ -14,6 +15,10 @@ from zigpy.zcl.clusters.general import (
     Ota,
     Scenes,
     Time,
+)
+
+from zigpy.zcl.clusters.smartenergy import (
+    Metering,
 )
 
 from zhaquirks.const import (
@@ -29,6 +34,7 @@ from zhaquirks.const import (
     COMMAND_BUTTON_SINGLE,
     COMMAND_DOUBLE,
     COMMAND_SINGLE,
+    COMMAND_TRIPLE,
     DEVICE_TYPE,
     ENDPOINT_ID,
     ENDPOINTS,
@@ -39,6 +45,7 @@ from zhaquirks.const import (
     VALUE,
     ZHA_SEND_EVENT,
 )
+
 from zhaquirks.xiaomi import (
     BasicCluster,
     DeviceTemperatureCluster,
