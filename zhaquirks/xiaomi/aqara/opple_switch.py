@@ -17,9 +17,7 @@ from zigpy.zcl.clusters.general import (
     Time,
 )
 
-from zigpy.zcl.clusters.smartenergy import (
-    Metering,
-)
+from zigpy.zcl.clusters.smartenergy import Metering
 
 from zhaquirks.const import (
     ARGS,
@@ -45,7 +43,6 @@ from zhaquirks.const import (
     VALUE,
     ZHA_SEND_EVENT,
 )
-
 from zhaquirks.xiaomi import (
     BasicCluster,
     DeviceTemperatureCluster,
