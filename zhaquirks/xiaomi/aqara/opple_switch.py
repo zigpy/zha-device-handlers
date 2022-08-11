@@ -452,97 +452,10 @@ class XiaomiOpple3ButtonSwitch(XiaomiCustomDevice):
     }
 
 
-class XiaomiOpple2ButtonSwitch(XiaomiCustomDevice):
+class XiaomiOpple2ButtonSwitchBase(XiaomiCustomDevice):
     """Xiaomi Opple 2 Button Switch."""
 
     manufacturer_id_override = 0x115F
-
-    signature = {
-        ENDPOINTS: {
-            # input_clusters=[0, 2, 3, 4, 5, 6, 18, 64704], output_clusters=[10, 25]
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,  # 0
-                    DeviceTemperature.cluster_id,  # 2
-                    Identify.cluster_id,  # 3
-                    Groups.cluster_id,  # 4
-                    Scenes.cluster_id,  # 5
-                    OnOff.cluster_id,  # 6
-                    MultistateInputCluster.cluster_id,  # 18
-                    OppleSwitchCluster.cluster_id,  # 0xFCC0 / 64704
-                ],
-                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
-            },
-            # input_clusters=[0, 3, 4, 5, 6, 18, 64704], output_clusters=[]
-            2: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,  # 0
-                    Identify.cluster_id,  # 3
-                    Groups.cluster_id,  # 4
-                    Scenes.cluster_id,  # 5
-                    OnOff.cluster_id,  # 6
-                    MultistateInputCluster.cluster_id,  # 18
-                    OppleSwitchCluster.cluster_id,  # 0xFCC0 / 64704
-                ],
-                OUTPUT_CLUSTERS: [],
-            },
-            # input_clusters=[12], output_clusters=[]
-            21: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
-                INPUT_CLUSTERS: [
-                    AnalogInput.cluster_id,  # 12
-                ],
-                OUTPUT_CLUSTERS: [],
-            },
-            # input_clusters=[12], output_clusters=[]
-            31: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
-                INPUT_CLUSTERS: [
-                    AnalogInput.cluster_id,  # 12
-                ],
-                OUTPUT_CLUSTERS: [],
-            },
-            # input_clusters=[18], output_clusters=[]
-            41: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
-                INPUT_CLUSTERS: [
-                    MultistateInputCluster.cluster_id,  # 18
-                ],
-                OUTPUT_CLUSTERS: [],
-            },
-            # input_clusters=[18], output_clusters=[]
-            42: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
-                INPUT_CLUSTERS: [
-                    MultistateInputCluster.cluster_id,  # 18
-                ],
-                OUTPUT_CLUSTERS: [],
-            },
-            # input_clusters=[18], output_clusters=[]
-            51: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
-                INPUT_CLUSTERS: [
-                    MultistateInputCluster.cluster_id,  # 18
-                ],
-                OUTPUT_CLUSTERS: [],
-            },
-            242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
-                INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
-            },
-        },
-    }
 
     replacement = {
         ENDPOINTS: {
@@ -690,5 +603,142 @@ class XiaomiOpple2ButtonSwitch(XiaomiCustomDevice):
             CLUSTER_ID: 0xFCC0,
             # COMMAND: COMMAND_ATTRIBUTE_UPDATED,
             ARGS: {ATTR_ID: 0x00FC, VALUE: 0},
+        },
+    }
+
+
+class XiaomiOpple2ButtonSwitchFace1(XiaomiOpple2ButtonSwitchBase):
+    """Xiaomi Opple 2 Button Switch. Face 1"""
+
+    signature = {
+        ENDPOINTS: {
+            # input_clusters=[0, 2, 3, 4, 5, 6, 18, 64704], output_clusters=[10, 25]
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,  # 0
+                    DeviceTemperature.cluster_id,  # 2
+                    Identify.cluster_id,  # 3
+                    Groups.cluster_id,  # 4
+                    Scenes.cluster_id,  # 5
+                    OnOff.cluster_id,  # 6
+                    MultistateInputCluster.cluster_id,  # 18
+                    OppleSwitchCluster.cluster_id,  # 0xFCC0 / 64704
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            # input_clusters=[0, 3, 4, 5, 6, 18, 64704], output_clusters=[]
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,  # 0
+                    Identify.cluster_id,  # 3
+                    Groups.cluster_id,  # 4
+                    Scenes.cluster_id,  # 5
+                    OnOff.cluster_id,  # 6
+                    MultistateInputCluster.cluster_id,  # 18
+                    OppleSwitchCluster.cluster_id,  # 0xFCC0 / 64704
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            # input_clusters=[12], output_clusters=[]
+            21: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    AnalogInput.cluster_id,  # 12
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            # input_clusters=[12], output_clusters=[]
+            31: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    AnalogInput.cluster_id,  # 12
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            # input_clusters=[18], output_clusters=[]
+            41: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    MultistateInputCluster.cluster_id,  # 18
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            # input_clusters=[18], output_clusters=[]
+            42: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    MultistateInputCluster.cluster_id,  # 18
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            # input_clusters=[18], output_clusters=[]
+            51: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    MultistateInputCluster.cluster_id,  # 18
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            242: {
+                PROFILE_ID: 41440,
+                DEVICE_TYPE: 97,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        },
+    }
+
+
+class XiaomiOpple2ButtonSwitchFace2(XiaomiOpple2ButtonSwitchBase):
+    """Xiaomi Opple 2 Button Switch. Face 2"""
+
+
+    signature = {
+        ENDPOINTS: {
+            # input_clusters=[0, 2, 3, 4, 5, 6, 18, 64704], output_clusters=[10, 25]
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,  # 0
+                    DeviceTemperature.cluster_id,  # 2
+                    Identify.cluster_id,  # 3
+                    Groups.cluster_id,  # 4
+                    Scenes.cluster_id,  # 5
+                    OnOff.cluster_id,  # 6
+                    Alarms.cluster_id, # 9
+                    Metering.cluster_id, # 0x0702
+                    0x0b04,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            # input_clusters=[0, 3, 4, 5, 6, 18, 64704], output_clusters=[]
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,  # 0
+                    Identify.cluster_id,  # 3
+                    Groups.cluster_id,  # 4
+                    Scenes.cluster_id,  # 5
+                    OnOff.cluster_id,  # 6
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            242: {
+                PROFILE_ID: 41440,
+                DEVICE_TYPE: 0x0061,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
         },
     }
