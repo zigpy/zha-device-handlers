@@ -137,6 +137,7 @@ class XiaomiOpple2ButtonSwitchBase(XiaomiCustomDevice):
                     Scenes.cluster_id,  # 5
                     OnOffCluster,  # 6
                     MultistateInputCluster,  # 18
+                    Metering.cluster_id,  # 0x0702
                     OppleSwitchCluster,  # 0xFCC0 / 64704
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
