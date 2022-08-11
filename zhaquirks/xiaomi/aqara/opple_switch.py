@@ -24,7 +24,6 @@ from zhaquirks.const import (
     BUTTON,
     BUTTON_1,
     BUTTON_2,
-    BUTTON_3,
     CLUSTER_ID,
     COMMAND_BUTTON_DOUBLE,
     COMMAND_BUTTON_HOLD,
