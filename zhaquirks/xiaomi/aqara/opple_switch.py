@@ -32,7 +32,6 @@ from zhaquirks.const import (
     COMMAND_BUTTON_SINGLE,
     COMMAND_DOUBLE,
     COMMAND_SINGLE,
-    COMMAND_TRIPLE,
     DEVICE_TYPE,
     ENDPOINT_ID,
     ENDPOINTS,
@@ -612,7 +611,7 @@ class XiaomiOpple2ButtonSwitchBase(XiaomiCustomDevice):
 
 
 class XiaomiOpple2ButtonSwitchFace1(XiaomiOpple2ButtonSwitchBase):
-    """Xiaomi Opple 2 Button Switch. Face 1"""
+    """Xiaomi Opple 2 Button Switch. Face 1."""
 
     signature = {
         ENDPOINTS: {
@@ -703,12 +702,11 @@ class XiaomiOpple2ButtonSwitchFace1(XiaomiOpple2ButtonSwitchBase):
 
 
 class XiaomiOpple2ButtonSwitchFace2(XiaomiOpple2ButtonSwitchBase):
-    """Xiaomi Opple 2 Button Switch. Face 2"""
-
+    """Xiaomi Opple 2 Button Switch. Face 2."""
 
     signature = {
         ENDPOINTS: {
-            # input_clusters=[0, 2, 3, 4, 5, 6, 18, 64704], output_clusters=[10, 25]
+            #  input_clusters=[0, 2, 3, 4, 5, 6, 18, 64704], output_clusters=[10, 25]
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
@@ -725,7 +723,7 @@ class XiaomiOpple2ButtonSwitchFace2(XiaomiOpple2ButtonSwitchBase):
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
-            # input_clusters=[0, 3, 4, 5, 6, 18, 64704], output_clusters=[]
+            #  input_clusters=[0, 3, 4, 5, 6, 18, 64704], output_clusters=[]
             2: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
