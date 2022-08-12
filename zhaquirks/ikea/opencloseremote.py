@@ -131,7 +131,6 @@ class IkeaTradfriOpenCloseRemote(CustomDevice):
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     Groups.cluster_id,
-                    OnOff.cluster_id,
                     LevelControl.cluster_id,
                     Ota.cluster_id,
                     IkeaWindowCovering,

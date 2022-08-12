@@ -339,7 +339,7 @@ jobs:
           COVERALLS_PARALLEL: true
         run: |
           . venv/bin/activate
-          coveralls
+          coveralls --service=github
 
   coverage:
     name: Process test coverage
@@ -374,7 +374,7 @@ jobs:
         run: |
           . venv/bin/activate
           coverage combine coverage*/.coverage*
-          coverage report --fail-under=79
+          coverage report --fail-under=72
           coverage xml
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1

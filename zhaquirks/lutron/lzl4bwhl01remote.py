@@ -123,12 +123,12 @@ class LutronLZL4BWHL01Remote(CustomDevice):
             COMMAND: COMMAND_STEP_ON_OFF,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
-            PARAMS: {"step_mode": 0, "step_size": 30, "transition_time": 6},
+            PARAMS: {"step_mode": 0},
         },
         (SHORT_PRESS, DIM_DOWN): {
             COMMAND: COMMAND_STEP,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
-            PARAMS: {"step_mode": 1, "step_size": 30, "transition_time": 6},
+            PARAMS: {"step_mode": 1},
         },
     }

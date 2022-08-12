@@ -203,11 +203,11 @@ class SengledE1EG7F(CustomDevice):
         (DOUBLE_PRESS, TURN_ON): {COMMAND: "on_double"},
         (SHORT_PRESS, DIM_UP): {
             COMMAND: COMMAND_STEP,
-            PARAMS: {"step_mode": 0, "step_size": 1, "transition_time": 0},
+            PARAMS: {"step_mode": 0},
         },
         (SHORT_PRESS, DIM_DOWN): {
             COMMAND: COMMAND_STEP,
-            PARAMS: {"step_mode": 1, "step_size": 1, "transition_time": 0},
+            PARAMS: {"step_mode": 1},
         },
         (SHORT_PRESS, TURN_OFF): {COMMAND: COMMAND_OFF},
         (LONG_PRESS, TURN_OFF): {COMMAND: "off_long"},

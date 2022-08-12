@@ -16,7 +16,6 @@ from zigpy.zcl.clusters.lightlink import LightLink
 
 from zhaquirks import DoublingPowerConfigurationCluster
 from zhaquirks.const import (
-    ARGS,
     CLUSTER_ID,
     COMMAND,
     COMMAND_HOLD,
@@ -118,54 +117,68 @@ class IkeaTradfriRemote(CustomDevice):
             COMMAND: COMMAND_RELEASE,
             CLUSTER_ID: 5,
             ENDPOINT_ID: 1,
-            ARGS: [],
+            PARAMS: {"param1": 0},
         },
         (SHORT_PRESS, DIM_UP): {
             COMMAND: COMMAND_STEP_ON_OFF,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
-            PARAMS: {"step_mode": 0, "step_size": 43, "transition_time": 5},
+            PARAMS: {"step_mode": 0},
         },
         (LONG_PRESS, DIM_UP): {
             COMMAND: COMMAND_MOVE_ON_OFF,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
-            PARAMS: {"move_mode": 0, "rate": 83},
+            PARAMS: {"move_mode": 0},
         },
         (SHORT_PRESS, DIM_DOWN): {
             COMMAND: COMMAND_STEP,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
-            PARAMS: {"step_mode": 1, "step_size": 43, "transition_time": 5},
+            PARAMS: {"step_mode": 1},
         },
         (LONG_PRESS, DIM_DOWN): {
             COMMAND: COMMAND_MOVE,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
-            PARAMS: {"move_mode": 1, "rate": 83},
+            PARAMS: {"move_mode": 1},
         },
         (SHORT_PRESS, LEFT): {
             COMMAND: COMMAND_PRESS,
             CLUSTER_ID: 5,
             ENDPOINT_ID: 1,
-            ARGS: [257, 13, 0],
+            PARAMS: {
+                "param1": 257,
+                "param2": 13,
+                "param3": 0,
+            },
         },
         (LONG_PRESS, LEFT): {
             COMMAND: COMMAND_HOLD,
             CLUSTER_ID: 5,
             ENDPOINT_ID: 1,
-            ARGS: [3329, 0],
+            PARAMS: {
+                "param1": 3329,
+                "param2": 0,
+            },
         },
         (SHORT_PRESS, RIGHT): {
             COMMAND: COMMAND_PRESS,
             CLUSTER_ID: 5,
             ENDPOINT_ID: 1,
-            ARGS: [256, 13, 0],
+            PARAMS: {
+                "param1": 256,
+                "param2": 13,
+                "param3": 0,
+            },
         },
         (LONG_PRESS, RIGHT): {
             COMMAND: COMMAND_HOLD,
             CLUSTER_ID: 5,
             ENDPOINT_ID: 1,
-            ARGS: [3328, 0],
+            PARAMS: {
+                "param1": 3328,
+                "param2": 0,
+            },
         },
     }
