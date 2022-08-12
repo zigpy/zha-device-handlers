@@ -14,6 +14,7 @@ from zigpy.zcl.clusters.general import (
     Basic,
     BinaryOutput,
     DeviceTemperature,
+    Metering,
     OnOff,
     PowerConfiguration,
 )
@@ -436,6 +437,10 @@ class MotionCluster(LocalDataCluster, MotionOnEvent):
 
 class DeviceTemperatureCluster(LocalDataCluster, DeviceTemperature):
     """Device Temperature Cluster."""
+
+
+class XiaomiMeteringCluster(LocalDataCluster, Metering):
+    """Xiaomi Metering Cluster."""
 
 
 class TemperatureMeasurementCluster(CustomCluster, TemperatureMeasurement):

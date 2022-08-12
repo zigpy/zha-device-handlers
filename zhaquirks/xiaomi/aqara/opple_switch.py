@@ -7,7 +7,6 @@ from zigpy.zcl.clusters.general import (
     Alarms,
     AnalogInput,
     Basic,
-    DeviceTemperature,
     GreenPowerProxy,
     Groups,
     Identify,
@@ -16,7 +15,6 @@ from zigpy.zcl.clusters.general import (
     Scenes,
     Time,
 )
-from zigpy.zcl.clusters.smartenergy import Metering
 
 from zhaquirks.const import (
     ARGS,
@@ -45,6 +43,7 @@ from zhaquirks.xiaomi import (
     DeviceTemperatureCluster,
     OnOffCluster,
     XiaomiCustomDevice,
+    XiaomiMeteringCluster,
 )
 
 from .opple_remote import MultistateInputCluster, OppleCluster
@@ -137,7 +136,7 @@ class XiaomiOpple2ButtonSwitchBase(XiaomiCustomDevice):
                     Scenes.cluster_id,  # 5
                     OnOffCluster,  # 6
                     MultistateInputCluster,  # 18
-                    Metering.cluster_id,  # 0x0702
+                    XiaomiMeteringCluster.cluster_id,  # 0x0702
                     OppleSwitchCluster,  # 0xFCC0 / 64704
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
@@ -289,7 +288,7 @@ class XiaomiOpple2ButtonSwitchFace1(XiaomiOpple2ButtonSwitchBase):
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,  # 0
-                    DeviceTemperature.cluster_id,  # 2
+                    DeviceTemperatureCluster.cluster_id,  # 2
                     Identify.cluster_id,  # 3
                     Groups.cluster_id,  # 4
                     Scenes.cluster_id,  # 5
@@ -382,13 +381,13 @@ class XiaomiOpple2ButtonSwitchFace2(XiaomiOpple2ButtonSwitchBase):
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,  # 0
-                    DeviceTemperature.cluster_id,  # 2
+                    DeviceTemperatureCluster.cluster_id,  # 2
                     Identify.cluster_id,  # 3
                     Groups.cluster_id,  # 4
                     Scenes.cluster_id,  # 5
                     OnOff.cluster_id,  # 6
                     Alarms.cluster_id,  # 9
-                    Metering.cluster_id,  # 0x0702
+                    XiaomiMeteringCluster.cluster_id,  # 0x0702
                     0x0B04,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
