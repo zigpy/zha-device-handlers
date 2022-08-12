@@ -38,6 +38,7 @@ class IkeaTradfriRollerBlinds(CustomDevice):
         MODELS_INFO: [
             (IKEA, "FYRTUR block-out roller blind"),
             (IKEA, "KADRILJ roller blind"),
+            (IKEA, "TREDANSEN block-out cellul blind"),
         ],
         ENDPOINTS: {
             1: {

@@ -70,6 +70,9 @@ class MockApp(zigpy.application.ControllerApplication):
     async def write_network_info(self, *args, **kwargs):
         """Mock write_network_info."""
 
+    async def add_endpoint(self, descriptor):
+        """Mock add_endpoint."""
+
     mrequest = CoroutineMock()
     request = CoroutineMock(return_value=(foundation.Status.SUCCESS, None))
 

@@ -1,18 +1,20 @@
 """Tuya MCU comunications."""
+import asyncio
 import dataclasses
 from typing import Any, Callable, Dict, Optional, Tuple, Union
 
+from zigpy.quirks import CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import LevelControl, OnOff
 
-from zhaquirks import Bus
+from zhaquirks import Bus, DoublingPowerConfigurationCluster
 from zhaquirks.tuya import (
-    ATTR_ON_OFF,
     TUYA_MCU_COMMAND,
     TUYA_MCU_VERSION_RSP,
     TUYA_SET_DATA,
     Data,
+    NoManufacturerCluster,
     PowerOnState,
     TuyaCommand,
     TuyaData,
@@ -85,6 +87,12 @@ class MoesBacklight(t.enum8):
     light_when_on = 0x01
     light_when_off = 0x02
     freeze = 0x03
+
+
+class TuyaPowerConfigurationCluster(
+    TuyaLocalCluster, DoublingPowerConfigurationCluster
+):
+    """PowerConfiguration cluster for battery-operated tuya devices reporting percentage."""
 
 
 class TuyaAttributesCluster(TuyaLocalCluster):
@@ -261,10 +269,6 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
 class TuyaOnOff(OnOff, TuyaLocalCluster):
     """Tuya MCU OnOff cluster."""
 
-    attributes = {
-        ATTR_ON_OFF: ("on_off", t.Bool),
-    }
-
     async def command(
         self,
         command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
@@ -304,6 +308,10 @@ class TuyaOnOff(OnOff, TuyaLocalCluster):
         ].schema(command_id=command_id, status=foundation.Status.UNSUP_CLUSTER_COMMAND)
 
 
+class TuyaOnOffNM(NoManufacturerCluster, TuyaOnOff):
+    """Tuya OnOff cluster with NoManufacturerID."""
+
+
 class TuyaOnOffManufCluster(TuyaMCUCluster):
     """Tuya with On/Off data points."""
 
@@ -331,6 +339,18 @@ class TuyaOnOffManufCluster(TuyaMCUCluster):
             dp_type=TuyaDPType.BOOL,
             endpoint_id=4,
         ),
+        5: DPToAttributeMapping(
+            TuyaOnOff.ep_attribute,
+            "on_off",
+            dp_type=TuyaDPType.BOOL,
+            endpoint_id=5,
+        ),
+        6: DPToAttributeMapping(
+            TuyaOnOff.ep_attribute,
+            "on_off",
+            dp_type=TuyaDPType.BOOL,
+            endpoint_id=6,
+        ),
     }
 
     data_point_handlers = {
@@ -338,16 +358,21 @@ class TuyaOnOffManufCluster(TuyaMCUCluster):
         2: "_dp_2_attr_update",
         3: "_dp_2_attr_update",
         4: "_dp_2_attr_update",
+        5: "_dp_2_attr_update",
+        6: "_dp_2_attr_update",
     }
 
 
 class MoesSwitchManufCluster(TuyaOnOffManufCluster):
     """On/Off Tuya cluster with extra device attributes."""
 
-    attributes = {
-        0x8001: ("backlight_mode", MoesBacklight),
-        0x8002: ("power_on_state", PowerOnState),
-    }
+    attributes = TuyaOnOffManufCluster.attributes.copy()
+    attributes.update(
+        {
+            0x8001: ("backlight_mode", MoesBacklight),
+            0x8002: ("power_on_state", PowerOnState),
+        }
+    )
 
     dp_to_attribute: Dict[
         int, DPToAttributeMapping
@@ -380,8 +405,6 @@ class MoesSwitchManufCluster(TuyaOnOffManufCluster):
 
 class TuyaLevelControl(LevelControl, TuyaLocalCluster):
     """Tuya MCU Level cluster for dimmable device."""
-
-    attributes = {0x0000: ("current_level", t.uint8_t)}
 
     async def command(
         self,
@@ -547,3 +570,18 @@ class TuyaLevelControlManufCluster(TuyaMCUCluster):
         17: "_dp_2_attr_update",
         18: "_dp_2_attr_update",
     }
+
+
+class EnchantedDevice(CustomDevice):
+    """Class for enchanted Tuya devices which needs to be unlocked by casting a 'spell'."""
+
+    def __init__(self, *args, **kwargs):
+        """Initialize with task."""
+        super().__init__(*args, **kwargs)
+        self._init_device_task = asyncio.create_task(self.spell())
+
+    async def spell(self) -> None:
+        """Initialize device so that all endpoints become available."""
+        attr_to_read = [4, 0, 1, 5, 7, 0xFFFE]
+        basic_cluster = self.endpoints[1].in_clusters[0]
+        await basic_cluster.read_attributes(attr_to_read)
