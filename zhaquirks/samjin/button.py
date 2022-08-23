@@ -10,6 +10,7 @@ from zigpy.zcl.clusters.general import (
     PollControl,
     PowerConfiguration,
 )
+from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone
 
@@ -33,8 +34,6 @@ from zhaquirks.samjin import SAMJIN, SamjinIASCluster
 
 _LOGGER = logging.getLogger(__name__)
 
-DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
-
 
 class SamjinButton(CustomDevice):
     """Samjin button device."""
@@ -56,7 +55,7 @@ class SamjinButton(CustomDevice):
                     PollControl.cluster_id,
                     TemperatureMeasurement.cluster_id,
                     IasZone.cluster_id,
-                    DIAGNOSTICS_CLUSTER_ID,
+                    Diagnostic.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],
             }
@@ -74,7 +73,7 @@ class SamjinButton(CustomDevice):
                     PollControl.cluster_id,
                     TemperatureMeasurement.cluster_id,
                     SamjinIASCluster,
-                    DIAGNOSTICS_CLUSTER_ID,
+                    Diagnostic.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],
             }

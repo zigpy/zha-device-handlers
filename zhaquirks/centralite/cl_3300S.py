@@ -2,9 +2,9 @@
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, BinaryInput, Identify, Ota, PollControl
+from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone
-
 from zhaquirks import PowerConfigurationCluster
 from zhaquirks.centralite import CENTRALITE
 from zhaquirks.const import (
@@ -16,7 +16,6 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 
-DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
 MANUFACTURER_SPECIFIC_PROFILE_ID = 0xC2DF  # decimal = 49887
 
 
@@ -44,7 +43,7 @@ class CentraLite3300S(CustomDevice):
                     PollControl.cluster_id,
                     TemperatureMeasurement.cluster_id,
                     IasZone.cluster_id,
-                    DIAGNOSTICS_CLUSTER_ID,
+                    Diagnostic.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
@@ -60,7 +59,7 @@ class CentraLite3300S(CustomDevice):
                     PowerConfigurationCluster.cluster_id,
                     Identify.cluster_id,
                     BinaryInput.cluster_id,
-                    DIAGNOSTICS_CLUSTER_ID,
+                    Diagnostic.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Identify.cluster_id],
             },
@@ -77,7 +76,7 @@ class CentraLite3300S(CustomDevice):
                     PollControl.cluster_id,
                     TemperatureMeasurement.cluster_id,
                     IasZone.cluster_id,
-                    DIAGNOSTICS_CLUSTER_ID,
+                    Diagnostic.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
@@ -85,7 +84,7 @@ class CentraLite3300S(CustomDevice):
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
-                    DIAGNOSTICS_CLUSTER_ID,
+                    Diagnostic.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Identify.cluster_id],
             },

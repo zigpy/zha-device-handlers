@@ -3,6 +3,7 @@
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PollControl
+from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone
 
@@ -15,8 +16,6 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-
-DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
 
 
 class CustomPowerConfigurationCluster(PowerConfigurationCluster):
@@ -47,7 +46,7 @@ class Ecolink4655BC0R(CustomDevice):
                     PollControl.cluster_id,
                     TemperatureMeasurement.cluster_id,
                     IasZone.cluster_id,
-                    DIAGNOSTICS_CLUSTER_ID,
+                    Diagnostic.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             }
@@ -65,7 +64,7 @@ class Ecolink4655BC0R(CustomDevice):
                     PollControl.cluster_id,
                     TemperatureMeasurement.cluster_id,
                     IasZone.cluster_id,
-                    DIAGNOSTICS_CLUSTER_ID,
+                    Diagnostic.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             }
