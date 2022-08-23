@@ -1,0 +1,146 @@
+"""Quirk for shutters."""
+from zigpy.profiles import zha
+from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.zcl.clusters.closures import WindowCovering
+from zigpy.zcl.clusters.general import (
+    Basic,
+    GreenPowerProxy,
+    Groups,
+    Identify,
+    LevelControl,
+    OnOff,
+    Ota,
+    Scenes,
+)
+from zigpy.zcl.clusters.homeautomation import (
+    Diagnostic,
+    ElectricalMeasurement,
+    MeterIdentification,
+)
+from zigpy.zcl.clusters.smartenergy import Metering
+
+from zhaquirks.const import (
+    DEVICE_TYPE,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    MODELS_INFO,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
+)
+from zhaquirks.schneiderelectric import SE, SEManufSwitchCluster
+
+
+class FLSAirlink4(CustomDevice):
+    """FLS/AIRLINK/4 from Schneider Electric."""
+
+    # NodeDescriptor(logical_type=<LogicalType.EndDevice: 2>, complex_descriptor_available=0,
+    # user_descriptor_available=0, reserved=0, aps_flags=0,
+    # frequency_band=<FrequencyBand.Freq2400MHz: 8>,
+    # mac_capability_flags=<MACCapabilityFlags.AllocateAddress: 128>,
+    # manufacturer_code=4190, maximum_buffer_size=82, maximum_incoming_transfer_size=82,
+    # server_mask=11264, maximum_outgoing_transfer_size=82,
+    # descriptor_capability_field=<DescriptorCapability.NONE: 0>, *allocate_address=True,
+    # *is_alternate_pan_coordinator=False, *is_coordinator=False, *is_end_device=True,
+    # *is_full_function_device=False, *is_mains_powered=False, *is_receiver_on_when_idle=False,
+    # *is_router=False, *is_security_capable=False)
+    signature = {
+        MODELS_INFO: [(SE, "FLS/AIRLINK/4")],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,  # 0x0100
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,  # 0x0000
+                    Identify.cluster_id,  # 0x0003
+                    Groups.cluster_id,  # 0x0004
+                    Scenes.cluster_id,  # 0x0005
+                    OnOff.cluster_id,  # 0x0006
+                    Diagnostic.cluster_id,  # 0x0b05
+                ],
+                OUTPUT_CLUSTERS: [Ota.cluster_id],  # 0x0019
+            },
+            21: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.DIMMER_SWITCH,  # 0x0104
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,  # 0x0000
+                    Identify.cluster_id,  # 0x0003
+                    Diagnostic.cluster_id,  # 0x0B05
+                    SEManufSwitchCluster.cluster_id,  # 0xff17
+                ],
+                OUTPUT_CLUSTERS: [
+                    Identify.cluster_id,  # 0x0003
+                    Groups.cluster_id,  # 0x0004
+                    Scenes.cluster_id,  # 0x0005
+                    OnOff.cluster_id,  # 0x0006
+                    LevelControl.cluster_id,  # 0x0008
+                    WindowCovering.cluster_id,  # 0x0102
+                ],
+            },
+            242: {
+                PROFILE_ID: 41440,
+                DEVICE_TYPE: 0x0061,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],  # 0x0021
+            },
+        },
+    }
+
+
+class CH10AXSwitch1(CustomDevice):
+    """CH10AX/SWITCH/1 from Schneider Electric."""
+
+    # NodeDescriptor(logical_type=<LogicalType.Router: 1>, complex_descriptor_available=0,
+    # user_descriptor_available=0, reserved=0, aps_flags=0,
+    # frequency_band=<FrequencyBand.Freq2400MHz: 8>,
+    # mac_capability_flags=<MACCapabilityFlags.AllocateAddress|RxOnWhenIdle|MainsPowered|FullFunctionDevice: 142>,
+    # manufacturer_code=4190, maximum_buffer_size=82, maximum_incoming_transfer_size=82,
+    # server_mask=11264, maximum_outgoing_transfer_size=82,
+    # descriptor_capability_field=<DescriptorCapability.NONE: 0>,
+    # *allocate_address=True, *is_alternate_pan_coordinator=False,
+    # *is_coordinator=False, *is_end_device=False, *is_full_function_device=True,
+    # *is_mains_powered=True, *is_receiver_on_when_idle=True, *is_router=True,
+    # *is_security_capable=False)
+    signature = {
+        MODELS_INFO: [(SE, "CH10AX/SWITCH/1")],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                "device_type": "0x0100",
+                "in_clusters": [
+                    Basic.cluster_id,  # 0x0000
+                    Identify.cluster_id,  # 0x0003
+                    Groups.cluster_id,  # 0x0004
+                    Scenes.cluster_id,  # 0x0005
+                    OnOff.cluster_id,  # 0x0006
+                    Diagnostic.cluster_id,  # 0x0b05
+                ],
+                "out_clusters": [Ota.cluster_id],  # 0x0019
+            },
+            21: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.DIMMER_SWITCH,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,  # 0x0000
+                    Identify.cluster_id,  # 0x0003
+                    Diagnostic.cluster_id,  # 0x0b05
+                    SEManufSwitchCluster.cluster_id,  # 0xff17
+                ],
+                OUTPUT_CLUSTERS: [
+                    Identify.cluster_id,  # 0x0003
+                    Groups.cluster_id,  # 0x0004
+                    Scenes.cluster_id,  # 0x0005
+                    OnOff.cluster_id,  # 0x0006
+                    LevelControl.cluster_id,  # 0x0008
+                    WindowCovering.cluster_id,  # 0x0102
+                ],
+            },
+            "242": {
+                PROFILE_ID: 41440,
+                DEVICE_TYPE: 0x0061,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],  # 0x0021
+            },
+        },
+    }
+    replacement = {}
