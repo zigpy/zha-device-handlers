@@ -5,6 +5,7 @@ from zigpy.zcl.clusters.general import Basic, BinaryInput, Identify, Ota, PollCo
 from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone
+
 from zhaquirks import PowerConfigurationCluster
 from zhaquirks.centralite import CENTRALITE
 from zhaquirks.const import (

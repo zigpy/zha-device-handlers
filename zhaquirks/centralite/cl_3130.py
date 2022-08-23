@@ -11,6 +11,7 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
+
 from zhaquirks import PowerConfigurationCluster
 from zhaquirks.centralite import CENTRALITE
 from zhaquirks.const import (

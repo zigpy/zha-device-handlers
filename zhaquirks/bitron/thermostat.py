@@ -12,8 +12,9 @@ from zigpy.zcl.clusters.general import (
     PowerConfiguration,
     Time,
 )
-from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
 from zigpy.zcl.clusters.homeautomation import Diagnostic
+from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
+
 from zhaquirks import PowerConfigurationCluster
 from zhaquirks.bitron import BITRON
 from zhaquirks.const import (
