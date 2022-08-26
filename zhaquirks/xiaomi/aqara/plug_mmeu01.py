@@ -1,4 +1,4 @@
-"""Xiaomi lumi.plug.mmeu01 plug."""
+"""Xiaomi Aqara EU plugs."""
 import logging
 
 from zigpy.profiles import zha
@@ -45,7 +45,7 @@ XIAOMI_DEVICE_TYPE = 0x61
 OPPLE_MFG_CODE = 0x115F
 
 
-class Plug(XiaomiCustomDevice):
+class PlugMMEU01(XiaomiCustomDevice):
     """lumi.plug.mmeu01 plug."""
 
     def __init__(self, *args, **kwargs):
@@ -141,14 +141,14 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         return result
 
 
-class PlugMAEU01(Plug):
+class PlugMAEU01(PlugMMEU01):
     """lumi.plug.maeu01 plug."""
 
     signature = {
         MODELS_INFO: [
             (LUMI, "lumi.plug.maeu01"),
         ],
-        ENDPOINTS: Plug.signature[ENDPOINTS],
+        ENDPOINTS: PlugMMEU01.signature[ENDPOINTS],
     }
 
     replacement = {
