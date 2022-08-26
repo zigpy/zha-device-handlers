@@ -1,6 +1,6 @@
 """Quirk for shutters."""
 from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import (
     Basic,
@@ -14,10 +14,7 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.homeautomation import (
     Diagnostic,
-    ElectricalMeasurement,
-    MeterIdentification,
 )
-from zigpy.zcl.clusters.smartenergy import Metering
 
 from zhaquirks.const import (
     DEVICE_TYPE,
