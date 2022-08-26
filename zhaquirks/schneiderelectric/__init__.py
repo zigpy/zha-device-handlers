@@ -13,6 +13,11 @@ _LOGGER = logging.getLogger(__name__)
 SE_MANUF_NAME = "Schneider Electric"
 SE_MANUF_ID = 4190
 
+# Attribute IDs
+ATTR_CURRENT_POSITION_LIFT_PERCENTAGE=0x0008
+
+# Command IDs
+CMD_GO_TO_LIFT_PERCENTAGE = 0x0005
 
 class SEManufCluster(CustomCluster):
     """Schneider Electric manufacturer specific cluster."""
@@ -170,10 +175,8 @@ class SESpecificCluster(SEManufCluster):
     }
 
 
-class SEWindowCover(CustomCluster, WindowCovering):
+class SEWindowCovering(SEManufCluster, WindowCovering):
     """Manufacturer Specific Cluster of Device cover."""
-
-    # TODO: Reverse lift percentage
 
     attributes: dict[int, ZCLAttributeDef] = WindowCovering.attributes.copy()
 
@@ -261,6 +264,28 @@ class SEWindowCover(CustomCluster, WindowCovering):
         },  # attribute_name:"57367"
     )
 
+    def _update_attribute(self, attrid, value):
+        if attrid == self.ATTR_CURRENT_POSITION_LIFT_PERCENTAGE:
+            # Invert the percentage value
+            value = 100 - value
+        super()._update_attribute(attrid, value)
+
+    async def command(
+        self, command_id, *args, manufacturer=None, expect_reply=True, tsn=None
+    ):
+        """Override default command to invert percent lift value."""
+        if command_id == self.CMD_GO_TO_LIFT_PERCENTAGE:
+            percent = args[0]
+            percent = 100 - percent
+            v = (percent,)
+            return await super().command(command_id, *v)
+        return await super().command(
+            command_id,
+            *args,
+            manufacturer=manufacturer,
+            expect_reply=expect_reply,
+            tsn=tsn
+        )
 
 class SEDiagnostic(CustomCluster, Diagnostic):
 
