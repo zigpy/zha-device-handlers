@@ -2,8 +2,8 @@
 
 from zigpy.zcl import foundation
 
-import zhaquirks
-import zhaquirks.kof.kof_mr101z
+import zhaquirks.schneiderelectric.shutters
+import zhaquirks.schneiderelectric.switches
 
 zhaquirks.setup()
 

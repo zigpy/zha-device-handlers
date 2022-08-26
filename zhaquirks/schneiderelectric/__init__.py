@@ -29,7 +29,7 @@ class SEBasicCluster(SEManufCluster, Basic):
         {
             0xE001: ZCLAttributeDef(
                 id=0xE001,
-                name="57345",
+                name="unknown_attribute_57345",
                 type=t.CharacterString,
                 access="r",
                 is_manufacturer_specific=True,
@@ -38,7 +38,7 @@ class SEBasicCluster(SEManufCluster, Basic):
         {
             0xE002: ZCLAttributeDef(
                 id=0xE002,
-                name="57346",
+                name="unknown_attribute_57346",
                 type=t.CharacterString,
                 is_manufacturer_specific=True,
             )
@@ -46,7 +46,7 @@ class SEBasicCluster(SEManufCluster, Basic):
         {
             0xE004: ZCLAttributeDef(
                 id=0xE004,
-                name="57348",
+                name="unknown_attribute_57348",
                 type=t.CharacterString,
                 access="r",
                 is_manufacturer_specific=True,
@@ -55,7 +55,7 @@ class SEBasicCluster(SEManufCluster, Basic):
         {
             0xE007: ZCLAttributeDef(
                 id=0xE007,
-                name="57351",
+                name="unknown_attribute_57351",
                 type=t.enum16,
                 access="r",
                 is_manufacturer_specific=True,
@@ -64,7 +64,7 @@ class SEBasicCluster(SEManufCluster, Basic):
         {
             0xE008: ZCLAttributeDef(
                 id=0xE008,
-                name="57352",
+                name="unknown_attribute_57352",
                 type=t.CharacterString,
                 access="r",
                 is_manufacturer_specific=True,
@@ -73,7 +73,7 @@ class SEBasicCluster(SEManufCluster, Basic):
         {
             0xE009: ZCLAttributeDef(
                 id=0xE009,
-                name="57353",
+                name="unknown_attribute_57353",
                 type=t.CharacterString,
                 access="r",
                 is_manufacturer_specific=True,
@@ -82,7 +82,7 @@ class SEBasicCluster(SEManufCluster, Basic):
         {
             0xE00A: ZCLAttributeDef(
                 id=0xE00A,
-                name="57354",
+                name="unknown_attribute_57354",
                 type=t.CharacterString,
                 access="r",
                 is_manufacturer_specific=True,
@@ -91,7 +91,7 @@ class SEBasicCluster(SEManufCluster, Basic):
         {
             0xE00B: ZCLAttributeDef(
                 id=0xE00B,
-                name="57355",
+                name="unknown_attribute_57355",
                 type=t.CharacterString,
                 access="r",
                 is_manufacturer_specific=True,
@@ -107,7 +107,7 @@ class SESpecificCluster(SEManufCluster):
         {
             0x0000: ZCLAttributeDef(
                 id=0x0000,
-                name="0",
+                name="unknown_attribute_0",
                 type=t.enum8,
                 access="rw",
                 is_manufacturer_specific=True,
@@ -116,7 +116,7 @@ class SESpecificCluster(SEManufCluster):
         {
             0x0001: ZCLAttributeDef(
                 id=0x0001,
-                name="1",
+                name="unknown_attribute_1",
                 type=t.enum8,
                 access="rw",
                 is_manufacturer_specific=True,
@@ -125,7 +125,7 @@ class SESpecificCluster(SEManufCluster):
         {
             0x0010: ZCLAttributeDef(
                 id=0x0010,
-                name="16",
+                name="unknown_attribute_16",
                 type=t.uint8_t,
                 access="rw",
                 is_manufacturer_specific=True,
@@ -134,7 +134,7 @@ class SESpecificCluster(SEManufCluster):
         {
             0x0011: ZCLAttributeDef(
                 id=0x0011,
-                name="17",
+                name="unknown_attribute_17",
                 type=t.uint16_t,
                 access="rw",
                 is_manufacturer_specific=True,
@@ -143,7 +143,7 @@ class SESpecificCluster(SEManufCluster):
         {
             0x0020: ZCLAttributeDef(
                 id=0x0020,
-                name="32",
+                name="unknown_attribute_32",
                 type=t.uint8_t,
                 access="rw",
                 is_manufacturer_specific=True,
@@ -152,7 +152,7 @@ class SESpecificCluster(SEManufCluster):
         {
             0x0021: ZCLAttributeDef(
                 id=0x0021,
-                name="33",
+                name="unknown_attribute_33",
                 type=t.uint16_t,
                 access="rw",
                 is_manufacturer_specific=True,
@@ -161,7 +161,7 @@ class SESpecificCluster(SEManufCluster):
         {
             0xFFFD: ZCLAttributeDef(
                 id=0xFFFD,
-                name="65533",
+                name="unknown_attribute_65533",
                 type=t.uint16_t,
                 access="r",
                 is_manufacturer_specific=True,
@@ -190,7 +190,7 @@ class SEWindowCover(CustomCluster, WindowCovering):
         {
             0xE000: ZCLAttributeDef(
                 id=0xE000,
-                name="57344",
+                name="unknown_attribute_57344",
                 type=t.uint16_t,
                 access="rw",
                 is_manufacturer_specific=True,
@@ -199,7 +199,7 @@ class SEWindowCover(CustomCluster, WindowCovering):
         {
             0xE010: ZCLAttributeDef(
                 id=0xE010,
-                name="57360",
+                name="unknown_attribute_57360",
                 type=t.bitmap8,
                 access="r",
                 is_manufacturer_specific=True,
@@ -208,7 +208,7 @@ class SEWindowCover(CustomCluster, WindowCovering):
         {
             0xE012: ZCLAttributeDef(
                 id=0xE012,
-                name="57362",
+                name="unknown_attribute_57362",
                 type=t.uint16_t,
                 access="rw",
                 is_manufacturer_specific=True,
@@ -217,7 +217,7 @@ class SEWindowCover(CustomCluster, WindowCovering):
         {
             0xE013: ZCLAttributeDef(
                 id=0xE013,
-                name="57363",
+                name="unknown_attribute_57363",
                 type=t.bitmap8,
                 access="r",
                 is_manufacturer_specific=True,
@@ -226,7 +226,7 @@ class SEWindowCover(CustomCluster, WindowCovering):
         {
             0xE014: ZCLAttributeDef(
                 id=0xE014,
-                name="57364",
+                name="unknown_attribute_57364",
                 type=t.uint16_t,
                 access="rw",
                 is_manufacturer_specific=True,
@@ -235,7 +235,7 @@ class SEWindowCover(CustomCluster, WindowCovering):
         {
             0xE015: ZCLAttributeDef(
                 id=0xE015,
-                name="57365",
+                name="unknown_attribute_57365",
                 type=t.uint16_t,
                 access="rw",
                 is_manufacturer_specific=True,
@@ -244,7 +244,7 @@ class SEWindowCover(CustomCluster, WindowCovering):
         {
             0xE016: ZCLAttributeDef(
                 id=0xE016,
-                name="57366",
+                name="unknown_attribute_57366",
                 type=t.uint16_t,
                 access="rw",
                 is_manufacturer_specific=True,
@@ -253,7 +253,7 @@ class SEWindowCover(CustomCluster, WindowCovering):
         {
             0xE017: ZCLAttributeDef(
                 id=0xE017,
-                name="57367",
+                name="unknown_attribute_57367",
                 type=t.uint8_t,
                 access="rw",
                 is_manufacturer_specific=True,
@@ -271,7 +271,7 @@ class SEDiagnostic(CustomCluster, Diagnostic):
         {
             0xFFFD: ZCLAttributeDef(
                 id=0xFFFD,
-                name="65533",
+                name="unknown_attribute_65533",
                 type=t.uint16_t,
                 access="r",
                 is_manufacturer_specific=True,
