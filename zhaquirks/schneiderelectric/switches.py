@@ -24,7 +24,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.schneiderelectric import SE, SEManufSwitchCluster
+from zhaquirks.schneiderelectric import SE_MANUF_NAME, SESpecificCluster
 
 
 class FLSAirlink4(CustomDevice):
@@ -41,7 +41,7 @@ class FLSAirlink4(CustomDevice):
     # *is_full_function_device=False, *is_mains_powered=False, *is_receiver_on_when_idle=False,
     # *is_router=False, *is_security_capable=False)
     signature = {
-        MODELS_INFO: [(SE, "FLS/AIRLINK/4")],
+        MODELS_INFO: [(SE_MANUF_NAME, "FLS/AIRLINK/4")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -63,7 +63,7 @@ class FLSAirlink4(CustomDevice):
                     Basic.cluster_id,  # 0x0000
                     Identify.cluster_id,  # 0x0003
                     Diagnostic.cluster_id,  # 0x0B05
-                    SEManufSwitchCluster.cluster_id,  # 0xff17
+                    SESpecificCluster.cluster_id,  # 0xff17
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,  # 0x0003
@@ -99,7 +99,7 @@ class CH10AXSwitch1(CustomDevice):
     # *is_mains_powered=True, *is_receiver_on_when_idle=True, *is_router=True,
     # *is_security_capable=False)
     signature = {
-        MODELS_INFO: [(SE, "CH10AX/SWITCH/1")],
+        MODELS_INFO: [(SE_MANUF_NAME, "CH10AX/SWITCH/1")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -121,7 +121,7 @@ class CH10AXSwitch1(CustomDevice):
                     Basic.cluster_id,  # 0x0000
                     Identify.cluster_id,  # 0x0003
                     Diagnostic.cluster_id,  # 0x0b05
-                    SEManufSwitchCluster.cluster_id,  # 0xff17
+                    SESpecificCluster.cluster_id,  # 0xff17
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,  # 0x0003
@@ -132,7 +132,7 @@ class CH10AXSwitch1(CustomDevice):
                     WindowCovering.cluster_id,  # 0x0102
                 ],
             },
-            "242": {
+            242: {
                 PROFILE_ID: 41440,
                 DEVICE_TYPE: 0x0061,
                 INPUT_CLUSTERS: [],

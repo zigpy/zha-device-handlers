@@ -24,7 +24,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.schneiderelectric import SE, SEManufSwitchCluster
+from zhaquirks.schneiderelectric import SE_MANUF_NAME, SESpecificCluster
 
 
 class NHPBShutter1(CustomDevice):
@@ -41,7 +41,7 @@ class NHPBShutter1(CustomDevice):
     # *is_full_function_device=True, *is_mains_powered=True, *is_receiver_on_when_idle=True,
     # *is_router=True, *is_security_capable=False)
     signature = {
-        MODELS_INFO: [(SE, "NHPB/SHUTTER/1")],
+        MODELS_INFO: [(SE_MANUF_NAME, "NHPB/SHUTTER/1")],
         ENDPOINTS: {
             5: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -63,7 +63,7 @@ class NHPBShutter1(CustomDevice):
                     Basic.cluster_id,  # 0x0000
                     Identify.cluster_id,  # 0x0003
                     Diagnostic.cluster_id,  # 0x0B05
-                    SEManufSwitchCluster.cluster_id,  # 0xff17
+                    SESpecificCluster.cluster_id,  # 0xff17
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,  # 0x0003

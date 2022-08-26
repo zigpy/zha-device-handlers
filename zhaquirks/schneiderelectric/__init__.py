@@ -6,10 +6,12 @@ import zigpy.types as t
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import Basic
 from zigpy.zcl.clusters.homeautomation import Diagnostic
+from zigpy.zcl.foundation import ZCLAttributeDef
 
 _LOGGER = logging.getLogger(__name__)
 
-SE = "Schneider Electric"
+SE_MANUF_NAME = "Schneider Electric"
+SE_MANUF_ID = 4190
 
 
 class SEManufCluster(CustomCluster):
@@ -20,101 +22,259 @@ class SEManufCluster(CustomCluster):
 
 
 class SEBasicCluster(SEManufCluster, Basic):
-    ATT_ID_E001 = 0xE001
-    ATT_ID_E002 = 0xE002
-    ATT_ID_E004 = 0xE004
-    ATT_ID_E007 = 0xE007
-    ATT_ID_E008 = 0xE008
-    ATT_ID_E009 = 0xE009
-    ATT_ID_E00A = 0xE00A
-    ATT_ID_E00B = 0xE00B
 
-    attributes = Basic.attributes.copy()
+    attributes: dict[int, ZCLAttributeDef] = Basic.attributes.copy()
 
     attributes.update(
         {
-            ATT_ID_E001: ("57345", t.CharacterString)
+            0xE001: ZCLAttributeDef(
+                id=0xE001,
+                name="57345",
+                type=t.CharacterString,
+                access="r",
+                is_manufacturer_specific=True,
+            )
         },  # attribute_name:"57345" # ex: "002.004.016 R
         {
-            ATT_ID_E002: ("57346", t.CharacterString)
+            0xE002: ZCLAttributeDef(
+                id=0xE002,
+                name="57346",
+                type=t.CharacterString,
+                is_manufacturer_specific=True,
+            )
         },  # attribute_name:"57346" # ex: "001.000.000"
         {
-            ATT_ID_E004: ("57348", t.CharacterString)
+            0xE004: ZCLAttributeDef(
+                id=0xE004,
+                name="57348",
+                type=t.CharacterString,
+                access="r",
+                is_manufacturer_specific=True,
+            )
         },  # attribute_name:"57348"  # ex: "213249FEFF5ECFD"
-        {ATT_ID_E007: ("57351", t.enum16)},  # attribute_name:"57351"
         {
-            ATT_ID_E008: ("57352", t.CharacterString)
+            0xE007: ZCLAttributeDef(
+                id=0xE007,
+                name="57351",
+                type=t.enum16,
+                access="r",
+                is_manufacturer_specific=True,
+            )
+        },  # attribute_name:"57351"
+        {
+            0xE008: ZCLAttributeDef(
+                id=0xE008,
+                name="57352",
+                type=t.CharacterString,
+                access="r",
+                is_manufacturer_specific=True,
+            )
         },  # attribute_name:"57352" # ex: "Wiser Light"
         {
-            ATT_ID_E009: ("57353", t.CharacterString)
+            0xE009: ZCLAttributeDef(
+                id=0xE009,
+                name="57353",
+                type=t.CharacterString,
+                access="r",
+                is_manufacturer_specific=True,
+            )
         },  # attribute_name:"57353" # ex: "NHPB/SHUTTER/1"
         {
-            ATT_ID_E00A: ("57354", t.CharacterString)
+            0xE00A: ZCLAttributeDef(
+                id=0xE00A,
+                name="57354",
+                type=t.CharacterString,
+                access="r",
+                is_manufacturer_specific=True,
+            )
         },  # attribute_name:"57354" # ex: "Wiser Home"
-        {ATT_ID_E00B: ("57355", t.CharacterString)},  # attribute_name:"57355"
+        {
+            0xE00B: ZCLAttributeDef(
+                id=0xE00B,
+                name="57355",
+                type=t.CharacterString,
+                access="r",
+                is_manufacturer_specific=True,
+            )
+        },  # attribute_name:"57355"
     )
 
 
-class SEManufSwitchCluster(SEManufCluster):
-    name = "Schneider Electric Manufacturer Specicific"
+class SESpecificCluster(SEManufCluster):
     cluster_id = 0xFF17
 
-    ATT_ID_0000 = 0x0000
-    ATT_ID_0001 = 0x0001
-    ATT_ID_0010 = 0x0010
-    ATT_ID_0011 = 0x0011
-    ATT_ID_0020 = 0x0020
-    ATT_ID_0021 = 0x0021
-    ATT_ID_FFFD = 0xFFFD
-
     attributes = {
-        {ATT_ID_0000: ("0", t.enum8)},  # attribute_name:"0"
-        {ATT_ID_0001: ("1", t.enum8)},  # attribute_name:"1"
-        {ATT_ID_0010: ("16", t.uint8_t)},  # attribute_name:"16"
-        {ATT_ID_0011: ("17", t.uint16_t)},  # attribute_name:"17"
-        {ATT_ID_0020: ("32", t.uint8_t)},  # attribute_name:"32"
-        {ATT_ID_0021: ("33", t.uint16_t)},  # attribute_name:"33"
-        {ATT_ID_FFFD: ("65533", t.uint16_t)},  # attribute_name:"65533"
+        {
+            0x0000: ZCLAttributeDef(
+                id=0x0000,
+                name="0",
+                type=t.enum8,
+                access="rw",
+                is_manufacturer_specific=True,
+            )
+        },  # attribute_name:"0"
+        {
+            0x0001: ZCLAttributeDef(
+                id=0x0001,
+                name="1",
+                type=t.enum8,
+                access="rw",
+                is_manufacturer_specific=True,
+            )
+        },  # attribute_name:"1"
+        {
+            0x0010: ZCLAttributeDef(
+                id=0x0010,
+                name="16",
+                type=t.uint8_t,
+                access="rw",
+                is_manufacturer_specific=True,
+            )
+        },  # attribute_name:"16"
+        {
+            0x0011: ZCLAttributeDef(
+                id=0x0011,
+                name="17",
+                type=t.uint16_t,
+                access="rw",
+                is_manufacturer_specific=True,
+            )
+        },  # attribute_name:"17"
+        {
+            0x0020: ZCLAttributeDef(
+                id=0x0020,
+                name="32",
+                type=t.uint8_t,
+                access="rw",
+                is_manufacturer_specific=True,
+            )
+        },  # attribute_name:"32"
+        {
+            0x0021: ZCLAttributeDef(
+                id=0x0021,
+                name="33",
+                type=t.uint16_t,
+                access="rw",
+                is_manufacturer_specific=True,
+            )
+        },  # attribute_name:"33"
+        {
+            0xFFFD: ZCLAttributeDef(
+                id=0xFFFD,
+                name="65533",
+                type=t.uint16_t,
+                access="r",
+                is_manufacturer_specific=True,
+            )
+        },  # attribute_name:"65533"
     }
 
 
 class SEWindowCover(CustomCluster, WindowCovering):
     """Manufacturer Specific Cluster of Device cover."""
 
-    ATT_ID_FFFD = 0xFFFD
-    ATT_ID_E000 = 0xE000
-    ATT_ID_E010 = 0xE010
-    ATT_ID_E012 = 0xE012
-    ATT_ID_E013 = 0xE013
-    ATT_ID_E014 = 0xE014
-    ATT_ID_E015 = 0xE015
-    ATT_ID_E016 = 0xE016
-    ATT_ID_E017 = 0xE017
+    # TODO: Reverse lift percentage
 
-    attributes = WindowCovering.attributes.copy()
+    attributes: dict[int, ZCLAttributeDef] = WindowCovering.attributes.copy()
 
     attributes.update(
         {
-            ATT_ID_FFFD: ("57344", t.uint16_t)
-        },  # attribute_name:"57344" # seems to be lift_duration
-        {ATT_ID_E000: ("65533", t.uint16_t)},  # attribute_name:"65533"
-        {ATT_ID_E010: ("57360", t.bitmap8)},  # attribute_name:"57360"
-        {ATT_ID_E012: ("57362", t.uint16_t)},  # attribute_name:"57362"
-        {ATT_ID_E013: ("57363", t.bitmap8)},  # attribute_name:"57363"
-        {ATT_ID_E014: ("57364", t.uint16_t)},  # attribute_name:"57364"
-        {ATT_ID_E015: ("57365", t.uint16_t)},  # attribute_name:"57365"
-        {ATT_ID_E016: ("57366", t.uint16_t)},  # attribute_name:"57366"
-        {ATT_ID_E017: ("57367", t.uint8_t)},  # attribute_name:"57367"
+            0xFFFD: ZCLAttributeDef(
+                id=0xFFFD,
+                name="lift_duration",
+                type=t.uint16_t,
+                access="rw",
+                is_manufacturer_specific=True,
+            )
+        },  # attribute_name:"65533"
+        {
+            0xE000: ZCLAttributeDef(
+                id=0xE000,
+                name="57344",
+                type=t.uint16_t,
+                access="rw",
+                is_manufacturer_specific=True,
+            )
+        },  # attribute_name:"57344"
+        {
+            0xE010: ZCLAttributeDef(
+                id=0xE010,
+                name="57360",
+                type=t.bitmap8,
+                access="r",
+                is_manufacturer_specific=True,
+            )
+        },  # attribute_name:"57360"
+        {
+            0xE012: ZCLAttributeDef(
+                id=0xE012,
+                name="57362",
+                type=t.uint16_t,
+                access="rw",
+                is_manufacturer_specific=True,
+            )
+        },  # attribute_name:"57362"
+        {
+            0xE013: ZCLAttributeDef(
+                id=0xE013,
+                name="57363",
+                type=t.bitmap8,
+                access="r",
+                is_manufacturer_specific=True,
+            )
+        },  # attribute_name:"57363"
+        {
+            0xE014: ZCLAttributeDef(
+                id=0xE014,
+                name="57364",
+                type=t.uint16_t,
+                access="rw",
+                is_manufacturer_specific=True,
+            )
+        },  # attribute_name:"57364"
+        {
+            0xE015: ZCLAttributeDef(
+                id=0xE015,
+                name="57365",
+                type=t.uint16_t,
+                access="rw",
+                is_manufacturer_specific=True,
+            )
+        },  # attribute_name:"57365"
+        {
+            0xE016: ZCLAttributeDef(
+                id=0xE016,
+                name="57366",
+                type=t.uint16_t,
+                access="rw",
+                is_manufacturer_specific=True,
+            )
+        },  # attribute_name:"57366"
+        {
+            0xE017: ZCLAttributeDef(
+                id=0xE017,
+                name="57367",
+                type=t.uint8_t,
+                access="rw",
+                is_manufacturer_specific=True,
+            )
+        },  # attribute_name:"57367"
     )
 
 
 class SEDiagnostic(CustomCluster, Diagnostic):
 
-    ATT_ID_FFFD = 0xFFFD
-
-    attributes = Diagnostic.attributes.copy()
+    attributes: dict[int, ZCLAttributeDef] = Diagnostic.attributes.copy()
 
     # TODO: Check -> this attr don't seems to be manufacturer related (no "manf_id")
     attributes.update(
-        {ATT_ID_FFFD: ("65533", t.uint16_t)},  # attribute_name:"65533"
+        {
+            0xFFFD: ZCLAttributeDef(
+                id=0xFFFD,
+                name="65533",
+                type=t.uint16_t,
+                access="r",
+                is_manufacturer_specific=True,
+            )
+        },  # attribute_name:"65533"
     )
