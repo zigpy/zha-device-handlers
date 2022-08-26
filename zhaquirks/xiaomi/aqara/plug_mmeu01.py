@@ -1,6 +1,8 @@
 """Xiaomi Aqara EU plugs."""
+import asyncio
 import logging
 
+import zigpy
 from zigpy.profiles import zha
 import zigpy.types as types
 from zigpy.zcl.clusters.general import (
@@ -43,6 +45,15 @@ _LOGGER = logging.getLogger(__name__)
 XIAOMI_PROFILE_ID = 0xA1E0
 XIAOMI_DEVICE_TYPE = 0x61
 OPPLE_MFG_CODE = 0x115F
+
+
+async def remove_from_ep(dev: zigpy.device.Device) -> None:
+    """Remove devices that are in group 0 by default, so IKEA devices don't control them."""
+    endpoint = dev.endpoints.get(1)
+    if endpoint is not None:
+        dev.debug("Removing endpoint 1 from group 0")
+        await endpoint.remove_from_group(0)
+        dev.debug("Removed endpoint 1 from group 0")
 
 
 class PlugMMEU01(XiaomiCustomDevice):
@@ -143,6 +154,11 @@ class OppleCluster(XiaomiAqaraE1Cluster):
 
 class PlugMAEU01(PlugMMEU01):
     """lumi.plug.maeu01 plug."""
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        asyncio.create_task(remove_from_ep(self))
 
     signature = {
         MODELS_INFO: [
