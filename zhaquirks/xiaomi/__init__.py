@@ -332,6 +332,7 @@ class XiaomiCluster(CustomCluster):
         elif self.endpoint.device.model in [
             "lumi.plug.maus01",
             "lumi.plug.maeu01",
+            "lumi.plug.mmeu01",  # added for testing
             "lumi.relay.c2acn01",
         ]:
             attribute_names.update({149: CONSUMPTION, 150: VOLTAGE, 152: POWER})

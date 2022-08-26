@@ -103,7 +103,7 @@ class PlugMMEU01(XiaomiCustomDevice):
         },
     }
     replacement = {
-        SKIP_CONFIGURATION: True,
+        # SKIP_CONFIGURATION: True,  # removed for testing. do we want this?
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
