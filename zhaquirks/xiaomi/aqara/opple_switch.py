@@ -1,6 +1,5 @@
 """Xiaomi aqara single key wall switch devices."""
 import copy
-
 from enum import Enum
 
 from zigpy import types as t
