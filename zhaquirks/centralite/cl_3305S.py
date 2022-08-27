@@ -2,6 +2,7 @@
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PollControl
+from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.measurement import OccupancySensing, TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone
 
@@ -15,8 +16,6 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-
-DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
 
 
 class CentraLite3305S(CustomDevice):
@@ -48,7 +47,7 @@ class CentraLite3305S(CustomDevice):
                     PollControl.cluster_id,
                     TemperatureMeasurement.cluster_id,
                     IasZone.cluster_id,
-                    DIAGNOSTICS_CLUSTER_ID,
+                    Diagnostic.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
@@ -64,7 +63,7 @@ class CentraLite3305S(CustomDevice):
                     PowerConfigurationCluster.cluster_id,
                     Identify.cluster_id,
                     OccupancySensing.cluster_id,
-                    DIAGNOSTICS_CLUSTER_ID,
+                    Diagnostic.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Identify.cluster_id],
             },
@@ -81,7 +80,7 @@ class CentraLite3305S(CustomDevice):
                     PollControl.cluster_id,
                     TemperatureMeasurement.cluster_id,
                     IasZone.cluster_id,
-                    DIAGNOSTICS_CLUSTER_ID,
+                    Diagnostic.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
@@ -90,7 +89,7 @@ class CentraLite3305S(CustomDevice):
                     Basic.cluster_id,
                     Identify.cluster_id,
                     OccupancySensing.cluster_id,
-                    DIAGNOSTICS_CLUSTER_ID,
+                    Diagnostic.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Identify.cluster_id],
             },

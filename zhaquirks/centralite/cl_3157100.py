@@ -2,6 +2,7 @@
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PollControl, Time
+from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.hvac import Fan, Thermostat, UserInterface
 
 from zhaquirks import PowerConfigurationCluster
@@ -14,8 +15,6 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-
-DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
 
 
 class CentraLite3157100(CustomDevice):
@@ -39,7 +38,7 @@ class CentraLite3157100(CustomDevice):
                     Fan.cluster_id,
                     UserInterface.cluster_id,
                     PollControl.cluster_id,
-                    DIAGNOSTICS_CLUSTER_ID,
+                    Diagnostic.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             }
@@ -59,7 +58,7 @@ class CentraLite3157100(CustomDevice):
                     Fan.cluster_id,
                     UserInterface.cluster_id,
                     PollControl.cluster_id,
-                    DIAGNOSTICS_CLUSTER_ID,
+                    Diagnostic.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             }
