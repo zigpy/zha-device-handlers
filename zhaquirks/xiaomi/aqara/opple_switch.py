@@ -52,28 +52,28 @@ BOTH_BUTTONS = "both_buttons"
 PRESS_TYPES = {0: "hold", 1: "single", 2: "double", 3: "triple", 255: "release"}
 
 
-class OppleOperationMode(t.uint8_t):
+class OppleOperationMode(t.enum8):
     """Opple operation_mode enum."""
 
     Decoupled = 0x00
     Coupled = 0x01
 
 
-class OppleSwitchMode(t.uint8_t):
+class OppleSwitchMode(t.enum8):
     """Opple switch_mode enum."""
 
     Fast = 0x01
     Multi = 0x02
 
 
-class OppleSwitchType(t.uint8_t):
+class OppleSwitchType(t.enum8):
     """Opple switch_type enum."""
 
     Toggle = 0x01
     Momentary = 0x02
 
 
-class OppleIndicatorLight(t.uint8_t):
+class OppleIndicatorLight(t.enum8):
     """Opple indicator light enum."""
 
     Normal = 0x00
