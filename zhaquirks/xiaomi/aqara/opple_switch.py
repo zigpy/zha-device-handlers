@@ -249,12 +249,12 @@ class XiaomiOpple2ButtonSwitchBase(XiaomiCustomDevice):
             # COMMAND: COMMAND_ATTRIBUTE_UPDATED,
             ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: COMMAND_DOUBLE, VALUE: 2},
         },
-#        (COMMAND_BUTTON_HOLD, BUTTON_2): {
-#            ENDPOINT_ID: 1,
-#            CLUSTER_ID: 0xFCC0,
-#            # COMMAND: COMMAND_ATTRIBUTE_UPDATED,
-#            ARGS: {ATTR_ID: 0x00FC, VALUE: False},
-#        },
+        #        (COMMAND_BUTTON_HOLD, BUTTON_2): {
+        #            ENDPOINT_ID: 1,
+        #            CLUSTER_ID: 0xFCC0,
+        #            # COMMAND: COMMAND_ATTRIBUTE_UPDATED,
+        #            ARGS: {ATTR_ID: 0x00FC, VALUE: False},
+        #        },
         (COMMAND_BUTTON_SINGLE, BOTH_BUTTONS): {
             ENDPOINT_ID: 51,
             CLUSTER_ID: 18,
