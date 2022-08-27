@@ -1,6 +1,8 @@
 """Xiaomi aqara single key wall switch devices."""
 import copy
 
+from enum import Enum
+
 from zigpy import types as t
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import (
@@ -52,28 +54,28 @@ BOTH_BUTTONS = "both_buttons"
 PRESS_TYPES = {0: "hold", 1: "single", 2: "double", 3: "triple", 255: "release"}
 
 
-class OppleOperationMode(t.uint8_t):
+class OppleOperationMode(t.uint8_t, Enum):
     """Opple operation_mode enum."""
 
     Decoupled = 0x00
     Coupled = 0x01
 
 
-class OppleSwitchMode(t.uint8_t):
+class OppleSwitchMode(t.uint8_t, Enum):
     """Opple switch_mode enum."""
 
     Fast = 0x01
     Multi = 0x02
 
 
-class OppleSwitchType(t.uint8_t):
+class OppleSwitchType(t.uint8_t, Enum):
     """Opple switch_type enum."""
 
     Toggle = 0x01
     Momentary = 0x02
 
 
-class OppleIndicatorLight(t.uint8_t):
+class OppleIndicatorLight(t.uint8_t, Enum):
     """Opple indicator light enum."""
 
     Normal = 0x00
