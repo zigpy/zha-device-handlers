@@ -14,7 +14,6 @@ from zigpy.zcl.clusters.general import (
     Basic,
     BinaryOutput,
     DeviceTemperature,
-    Metering,
     OnOff,
     PowerConfiguration,
 )
@@ -26,6 +25,7 @@ from zigpy.zcl.clusters.measurement import (
     RelativeHumidity,
     TemperatureMeasurement,
 )
+from zigpy.zcl.clusters.smartenergy import Metering
 import zigpy.zcl.foundation as foundation
 import zigpy.zdo
 from zigpy.zdo.types import NodeDescriptor
