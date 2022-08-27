@@ -135,8 +135,9 @@ class XiaomiOpple2ButtonSwitchBase(XiaomiCustomDevice):
                     Groups.cluster_id,  # 4
                     Scenes.cluster_id,  # 5
                     OnOffCluster,  # 6
+                    Alarms.cluster_id,  # 9
                     MultistateInputCluster,  # 18
-                    XiaomiMeteringCluster.cluster_id,  # 0x0702
+                    XiaomiMeteringCluster,  # 0x0702
                     OppleSwitchCluster,  # 0xFCC0 / 64704
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
@@ -230,7 +231,7 @@ class XiaomiOpple2ButtonSwitchBase(XiaomiCustomDevice):
             # COMMAND: COMMAND_ATTRIBUTE_UPDATED,
             ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: COMMAND_DOUBLE, VALUE: 2},
         },
-        (COMMAND_BUTTON_HOLD, BUTTON_1): {
+        (COMMAND_BUTTON_HOLD, BUTTON): {
             ENDPOINT_ID: 1,
             CLUSTER_ID: 0xFCC0,
             # COMMAND: COMMAND_ATTRIBUTE_UPDATED,
@@ -248,12 +249,12 @@ class XiaomiOpple2ButtonSwitchBase(XiaomiCustomDevice):
             # COMMAND: COMMAND_ATTRIBUTE_UPDATED,
             ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: COMMAND_DOUBLE, VALUE: 2},
         },
-        (COMMAND_BUTTON_HOLD, BUTTON_2): {
-            ENDPOINT_ID: 1,
-            CLUSTER_ID: 0xFCC0,
-            # COMMAND: COMMAND_ATTRIBUTE_UPDATED,
-            ARGS: {ATTR_ID: 0x00FC, VALUE: False},
-        },
+#        (COMMAND_BUTTON_HOLD, BUTTON_2): {
+#            ENDPOINT_ID: 1,
+#            CLUSTER_ID: 0xFCC0,
+#            # COMMAND: COMMAND_ATTRIBUTE_UPDATED,
+#            ARGS: {ATTR_ID: 0x00FC, VALUE: False},
+#        },
         (COMMAND_BUTTON_SINGLE, BOTH_BUTTONS): {
             ENDPOINT_ID: 51,
             CLUSTER_ID: 18,
