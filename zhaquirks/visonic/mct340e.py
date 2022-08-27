@@ -4,6 +4,7 @@ import logging
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PollControl
+from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone
 
@@ -22,8 +23,6 @@ OSRAM_CLUSTER = 0xFD00  # 64768 base 10
 
 
 _LOGGER = logging.getLogger(__name__)
-
-DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
 
 
 class CustomPowerConfigurationCluster(PowerConfigurationCluster):
@@ -54,7 +53,7 @@ class MCT340E(CustomDevice):
                     TemperatureMeasurement.cluster_id,
                     IasZone.cluster_id,
                     PollControl.cluster_id,
-                    DIAGNOSTICS_CLUSTER_ID,
+                    Diagnostic.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             }
@@ -72,7 +71,7 @@ class MCT340E(CustomDevice):
                     TemperatureMeasurement.cluster_id,
                     IasZone.cluster_id,
                     PollControl.cluster_id,
-                    DIAGNOSTICS_CLUSTER_ID,
+                    Diagnostic.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             }
