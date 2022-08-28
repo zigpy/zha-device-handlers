@@ -87,8 +87,8 @@ class SEWindowCovering(SEManufCluster, WindowCovering):
 
     attributes.update(
         {
-            0xFFFD: ("lift_duration", t.uint16_t),  # attribute_name:"65533"
-            0xE000: ("unknown_attribute_57344", t.uint16_t),  # attribute_name:"57344"
+            0xFFFD: ("unknown_attribute_65533", t.uint16_t),  # attribute_name:"65533"
+            0xE000: ("lift_duration", t.uint16_t),  # attribute_name:"57344"
             0xE010: ("unknown_attribute_57360", t.bitmap8),  # attribute_name:"57360"
             0xE012: ("unknown_attribute_57362", t.uint16_t),  # attribute_name:"57362"
             0xE013: ("unknown_attribute_57363", t.bitmap8),  # attribute_name:"57363"
