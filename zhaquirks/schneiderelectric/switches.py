@@ -12,9 +12,7 @@ from zigpy.zcl.clusters.general import (
     Ota,
     Scenes,
 )
-from zigpy.zcl.clusters.homeautomation import (
-    Diagnostic,
-)
+from zigpy.zcl.clusters.homeautomation import Diagnostic
 
 from zhaquirks.const import (
     DEVICE_TYPE,

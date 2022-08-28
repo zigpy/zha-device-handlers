@@ -12,9 +12,7 @@ from zigpy.zcl.clusters.general import (
     Ota,
     Scenes,
 )
-from zigpy.zcl.clusters.homeautomation import (
-    Diagnostic,
-)
+from zigpy.zcl.clusters.homeautomation import Diagnostic
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -98,7 +96,7 @@ class NHPBShutter1(CustomDevice):
                     Identify.cluster_id,  # 0x0003
                     Groups.cluster_id,  # 0x0004
                     Scenes.cluster_id,  # 0x0005
-                    WindowCovering.cluster_id,  # 0x0102
+                    SEWindowCovering,  # 0x0102
                     Diagnostic.cluster_id,  # 0x0B05
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],  # 0x0019
@@ -118,7 +116,7 @@ class NHPBShutter1(CustomDevice):
                     Scenes.cluster_id,  # 0x0005
                     OnOff.cluster_id,  # 0x0006
                     LevelControl.cluster_id,  # 0x0008
-                    SEWindowCovering,  # 0x0102
+                    WindowCovering.cluster_id,  # 0x0102
                 ],
             },
             242: {
