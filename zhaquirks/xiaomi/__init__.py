@@ -25,6 +25,7 @@ from zigpy.zcl.clusters.measurement import (
     RelativeHumidity,
     TemperatureMeasurement,
 )
+from zigpy.zcl.clusters.smartenergy import Metering
 import zigpy.zcl.foundation as foundation
 import zigpy.zdo
 from zigpy.zdo.types import NodeDescriptor
@@ -459,6 +460,10 @@ class MotionCluster(LocalDataCluster, MotionOnEvent):
 
 class DeviceTemperatureCluster(LocalDataCluster, DeviceTemperature):
     """Device Temperature Cluster."""
+
+
+class XiaomiMeteringCluster(LocalDataCluster, Metering):
+    """Xiaomi Metering Cluster."""
 
 
 class TemperatureMeasurementCluster(CustomCluster, TemperatureMeasurement):
