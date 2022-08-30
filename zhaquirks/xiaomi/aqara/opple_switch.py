@@ -93,14 +93,14 @@ class OppleSwitchCluster(OppleCluster):
 
     attributes.update(
         {
-            0x0002: ("power_outage_count", t.uint8_t),
-            0x000A: ("switch_type", OppleSwitchType),
-            0x00F0: ("reverse_indicator_light", OppleIndicatorLight),
-            0x0125: ("switch_mode", OppleSwitchMode),
-            0x0200: ("operation_mode", OppleOperationMode),
-            0x0201: ("power_outage_memory", t.Bool),
-            0x0202: ("auto_off", t.Bool),
-            0x0203: ("do_not_disturb", t.Bool),
+            0x0002: ("power_outage_count", t.uint8_t, False),
+            0x000A: ("switch_type", OppleSwitchType, False),
+            0x00F0: ("reverse_indicator_light", OppleIndicatorLight, False),
+            0x0125: ("switch_mode", OppleSwitchMode, False),
+            0x0200: ("operation_mode", OppleOperationMode, False),
+            0x0201: ("power_outage_memory", t.Bool, False),
+            0x0202: ("auto_off", t.Bool, False),
+            0x0203: ("do_not_disturb", t.Bool, False),
         }
     )
 
@@ -122,8 +122,6 @@ class OppleSwitchCluster(OppleCluster):
 
 class XiaomiOpple2ButtonSwitchBase(XiaomiCustomDevice):
     """Xiaomi Opple 2 Button Switch."""
-
-    manufacturer_id_override = 0x115F
 
     replacement = {
         ENDPOINTS: {
