@@ -12,6 +12,7 @@ from zigpy.zcl.clusters.general import (
     PowerConfiguration,
     Scenes,
 )
+from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.lightlink import LightLink
 
 from zhaquirks import DoublingPowerConfigurationCluster
@@ -44,8 +45,6 @@ from zhaquirks.const import (
 )
 from zhaquirks.ikea import IKEA, LightLinkCluster, ScenesCluster
 
-DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
-
 
 class IkeaTradfriRemote(CustomDevice):
     """Custom device representing IKEA of Sweden TRADFRI remote control."""
@@ -65,7 +64,7 @@ class IkeaTradfriRemote(CustomDevice):
                     PowerConfiguration.cluster_id,
                     Identify.cluster_id,
                     Alarms.cluster_id,
-                    DIAGNOSTICS_CLUSTER_ID,
+                    Diagnostic.cluster_id,
                     LightLink.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
@@ -91,7 +90,7 @@ class IkeaTradfriRemote(CustomDevice):
                     DoublingPowerConfigurationCluster,
                     Identify.cluster_id,
                     Alarms.cluster_id,
-                    DIAGNOSTICS_CLUSTER_ID,
+                    Diagnostic.cluster_id,
                     LightLinkCluster,
                 ],
                 OUTPUT_CLUSTERS: [
