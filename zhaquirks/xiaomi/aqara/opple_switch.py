@@ -88,14 +88,14 @@ class OppleSwitchCluster(OppleCluster):
 
     attributes.update(
         {
-            0x0002: ("power_outage_count", t.uint8_t, False),
-            0x000A: ("switch_type", OppleSwitchType, False),
-            0x00F0: ("reverse_indicator_light", OppleIndicatorLight, False),
-            0x0125: ("switch_mode", OppleSwitchMode, False),
-            0x0200: ("operation_mode", OppleOperationMode, False),
-            0x0201: ("power_outage_memory", t.Bool, False),
-            0x0202: ("auto_off", t.Bool, False),
-            0x0203: ("do_not_disturb", t.Bool, False),
+            0x0002: ("power_outage_count", t.uint8_t, True),
+            0x000A: ("switch_type", OppleSwitchType, True),
+            0x00F0: ("reverse_indicator_light", OppleIndicatorLight, True),
+            0x0125: ("switch_mode", OppleSwitchMode, True),
+            0x0200: ("operation_mode", OppleOperationMode, True),
+            0x0201: ("power_outage_memory", t.Bool, True),
+            0x0202: ("auto_off", t.Bool, True),
+            0x0203: ("do_not_disturb", t.Bool, True),
         }
     )
 
