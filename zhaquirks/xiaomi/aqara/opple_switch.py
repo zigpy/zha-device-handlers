@@ -84,12 +84,7 @@ class OppleIndicatorLight(t.uint8_t, Enum):
 class OppleSwitchCluster(OppleCluster):
     """Xiaomi mfg cluster implementation."""
 
-    if hasattr(OppleCluster, "attributes"):
-        attributes = copy.deepcopy(OppleCluster.attributes)
-    elif hasattr(OppleCluster, "manufacturer_attributes"):
-        attributes = copy.deepcopy(OppleCluster.manufacturer_attributes)
-    else:
-        attributes = {}
+    attributes = copy.deepcopy(OppleCluster.attributes)
 
     attributes.update(
         {
