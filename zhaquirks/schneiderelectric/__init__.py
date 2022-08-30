@@ -145,3 +145,33 @@ class SESpecificCluster(SEManufCluster):
         0x0021: ("unknown_attribute_33", t.uint16_t),
         0xFFFD: ("unknown_attribute_65533", t.uint16_t),
     }
+
+    
+class SEPiloteMode(int):
+    '''
+    Might be useful for :
+    - CCTFR6700 (manufacturerCode seems diff: 0x105e)
+    '''
+    Contactor=1
+    Pilot=3
+
+class WiserDimmerMode(int):
+    '''
+    Might be useful for :
+    - PUCK/DIMMER/
+    - NHROTARY/DIMMER/1
+    '''
+    Auto = 0
+    RC = 1
+    RL = 2
+    RL_LED = 3
+
+
+class SEDimmerMode():
+    '''
+    Might be useful for :
+    - LK Dimmer (manufacturerCode seems diff: 0x105e)
+    '''
+    RC = 1
+    RL = 2
+    
