@@ -160,6 +160,7 @@ class LevelControlMoveArgumentsCache(CustomCluster, LevelControl):
             Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
         ] = None,
     ):
+        """Cache or override command args to keep track of button."""
         if hdr.frame_control.is_cluster:
             cmd_name = self.server_commands.get(hdr.command_id, [hdr.command_id])[0]
             if cmd_name == COMMAND_MOVE_ON_OFF:
