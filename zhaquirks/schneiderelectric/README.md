@@ -5,11 +5,11 @@
   - [Helpers](#helpers)
   - [Devices](#devices)
     - [Shutter](#shutter)
-      - [NHPB/SHUTTER/1 ❔](#nhpbshutter1-)
+      - [NHPB/SHUTTER/1 ❌](#nhpbshutter1-)
       - [PUCK/SHUTTER/1 ❌](#puckshutter1-)
       - [1GANG/SHUTTER/1 ❔](#1gangshutter1-)
     - [Switch](#switch)
-      - [CH2AX/SWITCH/1 ❔](#ch2axswitch1-)
+      - [CH2AX/SWITCH/1 ❌](#ch2axswitch1-)
       - [CH10AX/SWITCH/1 ❌](#ch10axswitch1-)
       - [FLS/AIRLINK/4 ❌](#flsairlink4-)
       - [FLS/SYSTEM-M/4 ❔](#flssystem-m4-)
@@ -53,7 +53,7 @@ The purpose of this file is to list all Zigbee capable device from Schneider Ele
 
 All devices are listed alphabetically based on the Zigbee `model (0x0005)` attribute from `Basic (0x0000)` cluster.
 
-All quirk infos should remain in basecode. 
+All quirk infos should remain in basecode.
 
 Status :
 
@@ -79,7 +79,7 @@ Sources :
 
 Lift percentage is reversed
 
-#### NHPB/SHUTTER/1 ❔
+#### NHPB/SHUTTER/1 ❌
 
 <details>
     <summary>Device signature</summary>
@@ -2015,7 +2015,7 @@ From [Jeedom community](https://community.jeedom.com/t/plugin-zigbee-beta-blabla
 
 ### Switch
 
-#### CH2AX/SWITCH/1 ❔
+#### CH2AX/SWITCH/1 ❌
 
 <details>
   <summary>Signature</summary>
@@ -4244,6 +4244,14 @@ From [Jeedom community](https://community.jeedom.com/t/plugin-zigbee-beta-blabla
 </details>
 
 #### FLS/AIRLINK/4 ❌
+
+[zigbee2mqtt](https://www.zigbee2mqtt.io/devices/550D6001.html)
+
+> Depending on the firmware version the device may support both 1-channel and 2-channel mode. In 1-channel mode both the upper and lower buttons works as the upper buttons. On some firmware versions (incl. those sold as Elko EKO07117) the device starts out in 1-channel mode and must be switched into 2-channel mode either by using the Elko / Wiser gateway or by holding down button 1 and 4 (upper left and lower right) for approx. 10 seconds - the led will flash red and the become green once successfull.
+
+[zigbee-herdsman-converters](https://github.com/Koenkk/zigbee-herdsman-converters/blob/d1f00202a79a5cd4b6548dd1d15057895a3e6666/devices/schneider_electric.js#L292-L311)
+
+> When in 2-gang operation mode, unit operates out of endpoints 21 and 22, otherwise just 21
 
 <details>
   <summary>Signature</summary>
