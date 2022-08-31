@@ -17,7 +17,6 @@ from zigpy.zcl.clusters.lightlink import LightLink
 
 from zhaquirks import LevelControlMoveArgumentsCache
 from zhaquirks.const import (
-    ARGS,
     BUTTON_1,
     BUTTON_2,
     CLUSTER_ID,
@@ -36,6 +35,7 @@ from zhaquirks.const import (
     LONG_RELEASE,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
+    PARAMS,
     PROFILE_ID,
     SHORT_PRESS,
     TURN_OFF,
@@ -110,13 +110,13 @@ class IcasaKPD14S(CustomDevice):
             COMMAND: COMMAND_MOVE_ON_OFF,
             ENDPOINT_ID: 1,
             CLUSTER_ID: 8,
-            ARGS: [0, 50],
+            PARAMS: {"move_mode": 0, "rate": 50},
         },
         (LONG_RELEASE, DIM_UP): {
             COMMAND: COMMAND_STOP,
             ENDPOINT_ID: 1,
             CLUSTER_ID: 8,
-            ARGS: [0, 50],
+            PARAMS: {"move_mode": 0, "rate": 50},
         },
         (SHORT_PRESS, TURN_OFF): {
             COMMAND: COMMAND_OFF,
@@ -127,36 +127,36 @@ class IcasaKPD14S(CustomDevice):
             COMMAND: COMMAND_MOVE_ON_OFF,
             ENDPOINT_ID: 1,
             CLUSTER_ID: 8,
-            ARGS: [1, 50],
+            PARAMS: {"move_mode": 1, "rate": 50},
         },
         (LONG_RELEASE, DIM_DOWN): {
             COMMAND: COMMAND_STOP,
             ENDPOINT_ID: 1,
             CLUSTER_ID: 8,
-            ARGS: [1, 50],
+            PARAMS: {"move_mode": 1, "rate": 50},
         },
         (SHORT_PRESS, BUTTON_1): {
             COMMAND: COMMAND_RECALL,
             ENDPOINT_ID: 1,
             CLUSTER_ID: 5,
-            ARGS: [0, 1],
+            PARAMS: {"group_id": 0, "scene_id": 1},
         },
         (SHORT_PRESS, BUTTON_2): {
             COMMAND: COMMAND_RECALL,
             ENDPOINT_ID: 1,
             CLUSTER_ID: 5,
-            ARGS: [0, 2],
+            PARAMS: {"group_id": 0, "scene_id": 2},
         },
         (LONG_PRESS, BUTTON_1): {
             COMMAND: COMMAND_STORE,
             ENDPOINT_ID: 1,
             CLUSTER_ID: 5,
-            ARGS: [0, 1],
+            PARAMS: {"group_id": 0, "scene_id": 1},
         },
         (LONG_PRESS, BUTTON_2): {
             COMMAND: COMMAND_STORE,
             ENDPOINT_ID: 1,
             CLUSTER_ID: 5,
-            ARGS: [0, 2],
+            PARAMS: {"group_id": 0, "scene_id": 2},
         },
     }
