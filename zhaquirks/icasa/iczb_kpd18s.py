@@ -171,7 +171,7 @@ class IcasaKPD18S(CustomDevice):
             PARAMS: {"group_id": 0, "scene_id": 5},
         },
         (SHORT_PRESS, BUTTON_6): {
-            COMMAND: COMMAND_STORE,
+            COMMAND: COMMAND_RECALL,
             ENDPOINT_ID: 1,
             CLUSTER_ID: 5,
             PARAMS: {"group_id": 0, "scene_id": 6},
