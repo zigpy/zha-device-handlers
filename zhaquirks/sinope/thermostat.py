@@ -299,7 +299,6 @@ class SinopeLineThermostats(SinopeTechnologiesThermostat):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    SinopeTechnologiesThermostatCluster,
                     UserInterface.cluster_id,
                     TemperatureMeasurement.cluster_id,
                     Metering.cluster_id,
