@@ -29,7 +29,6 @@ from zhaquirks.const import (
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
-    SKIP_CONFIGURATION,
 )
 from zhaquirks.xiaomi import (
     LUMI,
