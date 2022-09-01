@@ -592,7 +592,7 @@ class ElectricalMeasurementCluster(LocalDataCluster, ElectricalMeasurement):
 
 
 class MeteringCluster(LocalDataCluster, Metering):
-    """Electrical measurement cluster to receive reports that are sent to the basic cluster."""
+    """Metering cluster to receive reports that are sent to the basic cluster."""
 
     cluster_id = Metering.cluster_id
     CURRENT_SUMM_DELIVERED_ID = 0x0000
