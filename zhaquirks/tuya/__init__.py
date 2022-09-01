@@ -100,42 +100,6 @@ COVER_EVENT = "cover_event"
 ATTR_COVER_POSITION = 0x0008
 ATTR_COVER_DIRECTION = 0x8001
 ATTR_COVER_INVERTED = 0x8002
-# For most tuya devices 0 = Up/Open, 1 = Stop, 2 = Down/Close
-TUYA_COVER_COMMAND = {
-    "_TZE200_zah67ekd": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
-    "_TZE200_fzo2pocs": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
-    "_TZE200_xuzcvlku": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
-    "_TZE200_rddyvrci": {0x0000: 0x0002, 0x0001: 0x0001, 0x0002: 0x0000},
-    "_TZE200_3i3exuay": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
-    "_TZE200_nueqqe6k": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
-    "_TZE200_gubdgai2": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
-    "_TZE200_zpzndjez": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
-    "_TZE200_cowvfni3": {0x0000: 0x0002, 0x0001: 0x0000, 0x0002: 0x0001},
-    "_TYST11_wmcdj3aq": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
-    "_TZE200_yenbr4om": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
-    "_TZE200_5sbebbzs": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
-    "_TZE200_xaabybja": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
-    "_TZE200_hsgrhjpf": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
-    "_TZE200_iossyxra": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
-    "_TZE200_68nvbio9": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
-    "_TZE200_zuz7f94z": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
-    "_TZE200_ergbiejo": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
-    "_TZE200_nhyj64w2": {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001},
-}
-# Taken from zigbee-herdsman-converters
-# Contains all covers which need their position inverted by default
-# Default is 100 = open, 0 = closed; Devices listed here will use 0 = open, 100 = closed instead
-# Use manufacturerName to identify device!
-# Don't invert _TZE200_cowvfni3: https://github.com/Koenkk/zigbee2mqtt/issues/6043
-TUYA_COVER_INVERTED_BY_DEFAULT = [
-    "_TZE200_wmcdj3aq",
-    "_TZE200_nogaemzt",
-    "_TZE200_xuzcvlku",
-    "_TZE200_xaabybja",
-    "_TZE200_yenbr4om",
-    "_TZE200_zpzndjez",
-    "_TZE200_zuz7f94z",
-]
 
 # ---------------------------------------------------------
 # TUYA Switch Custom Values
@@ -270,7 +234,6 @@ class TuyaCommand(t.Struct):
     data: TuyaData
 
 
-# based on https://github.com/zigpy/zha-device-handlers/blob/b802c1fb2cf2682f9a4722bfb57a1958cad9dad7/zhaquirks/tuya/ts0601_dimmer.py#L26
 class NoManufacturerCluster(CustomCluster):
     """Forces the NO manufacturer id in command."""
 
@@ -790,7 +753,25 @@ class TuyaUserInterfaceCluster(LocalDataCluster, UserInterface):
         return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
 
-class TuyaPowerConfigurationCluster(LocalDataCluster, PowerConfiguration):
+class TuyaLocalCluster(LocalDataCluster):
+    """Tuya virtual clusters.
+
+    Prevents attribute reads and writes. Attribute writes could be converted
+    to DataPoint updates.
+    """
+
+    def update_attribute(self, attr_name: str, value: Any) -> None:
+        """Update attribute by attribute name."""
+
+        try:
+            attr = self.attributes_by_name[attr_name]
+        except KeyError:
+            self.debug("no such attribute: %s", attr_name)
+            return
+        return self._update_attribute(attr.id, value)
+
+
+class TuyaPowerConfigurationCluster(PowerConfiguration, TuyaLocalCluster):
     """PowerConfiguration cluster for battery-operated thermostats."""
 
     def __init__(self, *args, **kwargs):
@@ -800,13 +781,25 @@ class TuyaPowerConfigurationCluster(LocalDataCluster, PowerConfiguration):
 
     def battery_change(self, value):
         """Change of reported battery percentage remaining."""
-        self._update_attribute(
-            self.attributes_by_name["battery_percentage_remaining"].id, value * 2
-        )
+        self.update_attribute("battery_percentage_remaining", value * 2)
+
+
+class TuyaPowerConfigurationCluster2AAA(PowerConfiguration, TuyaLocalCluster):
+    """PowerConfiguration cluster for devices with 2 AAA."""
+
+    BATTERY_SIZES = 0x0031
+    BATTERY_QUANTITY = 0x0033
+    BATTERY_RATED_VOLTAGE = 0x0034
+
+    _CONSTANT_ATTRIBUTES = {
+        BATTERY_SIZES: 4,
+        BATTERY_QUANTITY: 2,
+        BATTERY_RATED_VOLTAGE: 15,
+    }
 
 
 class TuyaPowerConfigurationCluster2AA(TuyaPowerConfigurationCluster):
-    """PowerConfiguration cluster for battery-operated TRVs with 2 AA."""
+    """PowerConfiguration cluster for devices with 2 AA."""
 
     BATTERY_SIZES = 0x0031
     BATTERY_RATED_VOLTAGE = 0x0034
@@ -820,7 +813,7 @@ class TuyaPowerConfigurationCluster2AA(TuyaPowerConfigurationCluster):
 
 
 class TuyaPowerConfigurationCluster3AA(TuyaPowerConfigurationCluster):
-    """PowerConfiguration cluster for battery-operated TRVs with 3 AA."""
+    """PowerConfiguration cluster for devices with 3 AA."""
 
     BATTERY_SIZES = 0x0031
     BATTERY_RATED_VOLTAGE = 0x0034
@@ -1093,7 +1086,7 @@ class TuyaWindowCoverControl(LocalDataCluster, WindowCovering):
             invert_attr = self._attr_cache.get(ATTR_COVER_INVERTED) == 1
             invert = (
                 not invert_attr
-                if self.endpoint.device.manufacturer in TUYA_COVER_INVERTED_BY_DEFAULT
+                if self.endpoint.device.tuya_cover_inverted_by_default
                 else invert_attr
             )
             value = value if invert else 100 - value
@@ -1136,7 +1129,7 @@ class TuyaWindowCoverControl(LocalDataCluster, WindowCovering):
             tuya_payload.data = [
                 1,
                 # need to implement direction change
-                TUYA_COVER_COMMAND[manufacturer][command_id],
+                self.endpoint.device.tuya_cover_command[command_id],
             ]  # remap the command to the Tuya command
         # Set Position Command
         elif command_id == WINDOW_COVER_COMMAND_LIFTPERCENT:
@@ -1148,7 +1141,7 @@ class TuyaWindowCoverControl(LocalDataCluster, WindowCovering):
             invert_attr = self._attr_cache.get(ATTR_COVER_INVERTED) == 1
             invert = (
                 not invert_attr
-                if self.endpoint.device.manufacturer in TUYA_COVER_INVERTED_BY_DEFAULT
+                if self.endpoint.device.tuya_cover_inverted_by_default
                 else invert_attr
             )
             position = args[0] if invert else 100 - args[0]
@@ -1191,7 +1184,15 @@ class TuyaWindowCoverControl(LocalDataCluster, WindowCovering):
 
 
 class TuyaWindowCover(CustomDevice):
-    """Tuya switch device."""
+    """Tuya Window cover device."""
+
+    # For most tuya devices 0 = Up/Open, 1 = Stop, 2 = Down/Close
+    tuya_cover_command = {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001}
+
+    # For all covers which need their position inverted by default
+    # Default (False) is 100 = open, 0 = closed; When True use 0 = open, 100 = closed instead
+    # Don't invert _TZE200_cowvfni3: https://github.com/Koenkk/zigbee2mqtt/issues/6043
+    tuya_cover_inverted_by_default = False
 
     def __init__(self, *args, **kwargs):
         """Init device."""
@@ -1294,24 +1295,6 @@ class TuyaLevelControl(CustomCluster, LevelControl):
             )
 
         return foundation.Status.UNSUP_CLUSTER_COMMAND
-
-
-class TuyaLocalCluster(LocalDataCluster):
-    """Tuya virtual clusters.
-
-    Prevents attribute reads and writes. Attribute writes could be converted
-    to DataPoint updates.
-    """
-
-    def update_attribute(self, attr_name: str, value: Any) -> None:
-        """Update attribute by attribute name."""
-
-        try:
-            attr = self.attributes_by_name[attr_name]
-        except KeyError:
-            self.debug("no such attribute: %s", attr_name)
-            return
-        return self._update_attribute(attr.id, value)
 
 
 @dataclasses.dataclass

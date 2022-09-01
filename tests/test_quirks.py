@@ -1,7 +1,9 @@
 """General quirk tests."""
 from __future__ import annotations
 
+import collections
 import importlib
+import json
 from pathlib import Path
 from unittest import mock
 
@@ -17,6 +19,7 @@ import zigpy.zdo.types
 
 import zhaquirks
 import zhaquirks.bosch.motion
+import zhaquirks.const as const
 from zhaquirks.const import (
     ARGS,
     COMMAND,
@@ -58,6 +61,8 @@ for manufacturer in zq._DEVICE_REGISTRY._registry.values():
             ALL_QUIRK_CLASSES.append(quirk)
 
 del quirk, model_quirk_list, manufacturer
+
+ALL_ZIGPY_CLUSTERS = frozenset(zcl.clusters.CLUSTERS_BY_NAME.values())
 
 
 SIGNATURE_ALLOWED = {
@@ -578,3 +583,134 @@ def test_migrated_lighting_automation_triggers(quirk: CustomDevice) -> None:
 
         schema = cluster.commands_by_name[command].schema
         schema(**event[PARAMS])
+
+
+KNOWN_DUPLICATE_TRIGGERS = {
+    zhaquirks.xiaomi.aqara.sensor_swit.SwitchAQ3V2: [
+        [
+            (const.LONG_PRESS, const.LONG_PRESS),
+            (const.LONG_RELEASE, const.LONG_RELEASE),
+        ]
+    ],
+    zhaquirks.xiaomi.aqara.sensor_switch_aq3.SwitchAQ3: [
+        [
+            (const.LONG_PRESS, const.LONG_PRESS),
+            (const.LONG_RELEASE, const.LONG_RELEASE),
+        ]
+    ],
+    zhaquirks.xiaomi.aqara.sensor_switch_aq3.SwitchAQ3B: [
+        [
+            (const.LONG_PRESS, const.LONG_PRESS),
+            (const.LONG_RELEASE, const.LONG_RELEASE),
+        ]
+    ],
+    zhaquirks.aurora.aurora_dimmer.AuroraDimmerBatteryPowered: [
+        [
+            # XXX: why is this constant defined in the module?
+            (zhaquirks.aurora.aurora_dimmer.COLOR_UP, const.RIGHT),
+            (zhaquirks.aurora.aurora_dimmer.COLOR_UP, const.LEFT),
+        ],
+        [
+            (zhaquirks.aurora.aurora_dimmer.COLOR_DOWN, const.RIGHT),
+            (zhaquirks.aurora.aurora_dimmer.COLOR_DOWN, const.LEFT),
+        ],
+    ],
+    zhaquirks.ikea.fourbtnremote.IkeaTradfriRemote: [
+        [
+            (const.LONG_RELEASE, const.DIM_UP),
+            (const.LONG_RELEASE, const.DIM_DOWN),
+        ]
+    ],
+    zhaquirks.paulmann.fourbtnremote.PaulmannRemote4Btn: [
+        [
+            (const.LONG_RELEASE, const.BUTTON_1),
+            (const.LONG_RELEASE, const.BUTTON_2),
+        ],
+        [
+            (const.LONG_RELEASE, const.BUTTON_3),
+            (const.LONG_RELEASE, const.BUTTON_4),
+        ],
+    ],
+    zhaquirks.thirdreality.button.Button: [
+        [
+            (const.LONG_PRESS, const.LONG_PRESS),
+            (const.LONG_RELEASE, const.LONG_RELEASE),
+        ]
+    ],
+}
+
+
+@pytest.mark.parametrize(
+    "quirk",
+    [q for q in ALL_QUIRK_CLASSES if getattr(q, "device_automation_triggers", None)],
+)
+def test_quirk_device_automation_triggers_unique(quirk):
+    """Ensure all quirks have unique device automation triggers."""
+
+    events = collections.defaultdict(list)
+
+    for trigger, event in quirk.device_automation_triggers.items():
+        # XXX: Dictionary objects are not hashable
+        frozen_event = json.dumps(event, sort_keys=True)
+        events[frozen_event].append((trigger, event))
+
+    for triggers_and_events in events.values():
+        triggers = [trigger for trigger, _ in triggers_and_events]
+
+        if len(triggers_and_events) > 1:
+            if (
+                quirk in KNOWN_DUPLICATE_TRIGGERS
+                and triggers in KNOWN_DUPLICATE_TRIGGERS[quirk]
+            ):
+                fail_func = pytest.xfail
+            else:
+                fail_func = pytest.fail
+
+            triggers_text = "\n".join(
+                [f" * {event} <- {trigger}" for trigger, event in triggers_and_events]
+            )
+            fail_func(f"Triggers are not unique for {quirk}:\n{triggers_text}")
+
+
+@pytest.mark.parametrize(
+    "quirk",
+    [
+        quirk_cls
+        for quirk_cls in ALL_QUIRK_CLASSES
+        if quirk_cls
+        not in (
+            zhaquirks.xbee.xbee_io.XBeeSensor,
+            zhaquirks.xbee.xbee3_io.XBee3Sensor,
+        )
+    ],
+)
+def test_attributes_updated_not_replaced(quirk: CustomDevice) -> None:
+    """Verify no quirks subclass a ZCL cluster but delete its attributes list."""
+
+    for ep_id, ep_data in quirk.replacement[ENDPOINTS].items():
+        for cluster in ep_data.get(INPUT_CLUSTERS, []) + ep_data.get(
+            OUTPUT_CLUSTERS, []
+        ):
+            if isinstance(cluster, int) or not issubclass(cluster, zcl.Cluster):
+                continue
+            elif cluster in ALL_ZIGPY_CLUSTERS:
+                continue
+
+            assert issubclass(cluster, zigpy.quirks.CustomCluster)
+
+            base_clusters = set(cluster.__mro__) & ALL_ZIGPY_CLUSTERS
+
+            # Completely custom cluster
+            if len(base_clusters) == 0:
+                continue
+            elif len(base_clusters) > 1:
+                pytest.fail(f"Cluster has more than one zigpy base class: {cluster}")
+
+            base_cluster = list(base_clusters)[0]
+
+            # Ensure the attribute IDs are extended
+            if not set(base_cluster.attributes) <= set(cluster.attributes):
+                pytest.fail(
+                    f"Cluster {cluster} deletes parent class's attributes instead of"
+                    f" extending them: {base_cluster}"
+                )

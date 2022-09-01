@@ -5,6 +5,7 @@ from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl.clusters.general import AnalogInput, Basic, Identify, Ota
 from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
+from zigpy.zcl.clusters.security import IasZone
 from zigpy.zdo.types import NodeDescriptor
 
 from zhaquirks import Bus, LocalDataCluster, PowerConfigurationCluster
@@ -119,3 +120,36 @@ class TVOCMonitor(XiaomiCustomDevice):
             }
         },
     }
+
+
+class TVOCMonitor2(XiaomiCustomDevice):
+    """Aqara LUMI lumi.airmonitor.acn01."""
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        self.temperature_bus = Bus()
+        self.humidity_bus = Bus()
+        super().__init__(*args, **kwargs)
+
+    signature = {
+        # <SimpleDescriptor endpoint=1 profile=260 device_type=1026
+        # device_version=1
+        # input_clusters=[0, 1, 3, 1280]
+        # output_clusters=[19]>
+        MODELS_INFO: [(LUMI, "lumi.airmonitor.acn01")],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    IasZone.cluster_id,
+                    PowerConfigurationCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Ota.cluster_id],
+            }
+        },
+    }
+
+    replacement = TVOCMonitor.replacement

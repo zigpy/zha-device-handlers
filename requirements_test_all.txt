@@ -1,5 +1,7 @@
 asynctest
 isort
+black
+flake8
 codecov
 colorlog
 codespell
