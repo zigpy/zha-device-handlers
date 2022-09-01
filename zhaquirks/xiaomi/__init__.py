@@ -588,7 +588,34 @@ class ElectricalMeasurementCluster(LocalDataCluster, ElectricalMeasurement):
 
     def consumption_reported(self, value):
         """Consumption reported."""
-        self._update_attribute(self.CONSUMPTION_ID, value)
+        self._update_attribute(self.CONSUMPTION_ID, value * 1000)
+
+
+class MeteringCluster(LocalDataCluster, Metering):
+    """Electrical measurement cluster to receive reports that are sent to the basic cluster."""
+
+    cluster_id = Metering.cluster_id
+    CURRENT_SUMM_DELIVERED_ID = 0x0000
+    _CONSTANT_ATTRIBUTES = {
+        0x0300: 0,  # unit_of_measure: kWh
+        0x0301: 1,  # multiplier
+        0x0302: 1000,  # divisor
+        0x0303: 0b0_0100_011,  # summation_formatting (read from plug)
+        0x0306: 0,  # metering_device_type: electric
+    }
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self.endpoint.device.consumption_bus.add_listener(self)
+
+        # put a default value so the sensor is created
+        if self.CURRENT_SUMM_DELIVERED_ID not in self._attr_cache:
+            self._update_attribute(self.CURRENT_SUMM_DELIVERED_ID, 0)
+
+    def consumption_reported(self, value):
+        """Consumption reported."""
+        self._update_attribute(self.CURRENT_SUMM_DELIVERED_ID, value * 1000)
 
 
 class IlluminanceMeasurementCluster(CustomCluster, IlluminanceMeasurement):
