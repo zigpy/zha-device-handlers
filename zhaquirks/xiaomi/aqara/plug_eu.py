@@ -142,7 +142,6 @@ class PlugMMEU01(XiaomiCustomDevice):
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
                 INPUT_CLUSTERS: [AnalogInputCluster],
-                OUTPUT_CLUSTERS: [],
             },
             242: {
                 PROFILE_ID: XIAOMI_PROFILE_ID,
@@ -264,37 +263,7 @@ class PlugMAEU01(PlugMMEU01):
         ENDPOINTS: PlugMMEU01.signature[ENDPOINTS],
     }
 
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
-                INPUT_CLUSTERS: [
-                    BasicCluster,
-                    DeviceTemperature.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    Alarms.cluster_id,
-                    MeteringCluster,
-                    ElectricalMeasurementCluster,
-                    OppleCluster,
-                ],
-                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
-            },
-            21: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
-                INPUT_CLUSTERS: [AnalogInputCluster],
-            },
-            242: {
-                PROFILE_ID: XIAOMI_PROFILE_ID,
-                DEVICE_TYPE: XIAOMI_DEVICE_TYPE,
-                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
-            },
-        },
-    }
+    replacement = PlugMMEU01.replacement
 
 
 class PlugMAEU01Alt1(PlugMAEU01):
