@@ -22,13 +22,8 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.schneiderelectric import (
-    SE_MANUF_NAME,
-)
-from zhaquirks.schneiderelectric.clusters import (
-    SESpecificCluster,
-    SEWindowCovering,
-)
+from zhaquirks.schneiderelectric import SE_MANUF_NAME
+from zhaquirks.schneiderelectric.clusters import SESpecificCluster, SEWindowCovering
 
 
 class NHPBShutter1(CustomDevice):

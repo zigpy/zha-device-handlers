@@ -1,4 +1,4 @@
-"""Module for Schneider Electric devices quirks."""
+"""Quirks implementations for Schneider Electric devices."""
 import logging
 
 _LOGGER = logging.getLogger(__name__)
