@@ -271,30 +271,30 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
         self.update_attribute("mcu_version", payload.version)
         return foundation.Status.SUCCESS
 
-    # def handle_set_time_request(self, payload: t.uint16_t) -> foundation.Status:
-    #     """Handle set_time requests (0x24)."""
+    def handle_set_time_request(self, payload: t.uint16_t) -> foundation.Status:
+        """Handle set_time requests (0x24)."""
 
-    #     payload_rsp = TuyaTimePayload()
+        payload_rsp = TuyaTimePayload()
 
-    #     utc_now = datetime.datetime.utcnow()
-    #     now = datetime.datetime.now()
+        utc_now = datetime.datetime.utcnow()
+        now = datetime.datetime.now()
 
-    #     offset_time = datetime.datetime(self.set_time_offset, 1, 1)
-    #     offset_time_local = datetime.datetime(
-    #         self.set_time_local_offset or self.set_time_offset, 1, 1
-    #     )
+        offset_time = datetime.datetime(self.set_time_offset, 1, 1)
+        offset_time_local = datetime.datetime(
+            self.set_time_local_offset or self.set_time_offset, 1, 1
+        )
 
-    #     utc_timestamp = int((utc_now - offset_time).total_seconds())
-    #     local_timestamp = int((now - offset_time_local).total_seconds())
+        utc_timestamp = int((utc_now - offset_time).total_seconds())
+        local_timestamp = int((now - offset_time_local).total_seconds())
 
-    #     payload_rsp.extend(utc_timestamp.to_bytes(4, "big", signed=False))
-    #     payload_rsp.extend(local_timestamp.to_bytes(4, "big", signed=False))
+        payload_rsp.extend(utc_timestamp.to_bytes(4, "big", signed=False))
+        payload_rsp.extend(local_timestamp.to_bytes(4, "big", signed=False))
 
-    #     self.create_catching_task(
-    #         super().command(TUYA_SET_TIME, payload_rsp, expect_reply=False)
-    #     )
+        self.create_catching_task(
+            super().command(TUYA_SET_TIME, payload_rsp, expect_reply=False)
+        )
 
-    #     return foundation.Status.SUCCESS
+        return foundation.Status.SUCCESS
 
 
 class TuyaOnOff(OnOff, TuyaLocalCluster):
