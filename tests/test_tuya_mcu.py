@@ -139,6 +139,7 @@ async def test_tuya_methods(zigpy_device_from_quirk, quirk):
         assert m1.call_count == 1
 
         rsp = await switch1_cluster.command(0x0004)
+        m1.assert_called_once_with(tcd_switch1_on)  # no extra calls
         assert rsp.status == foundation.Status.UNSUP_CLUSTER_COMMAND
         assert m1.call_count == 1
 
