@@ -1,4 +1,5 @@
 """Quirks common helpers."""
+import datetime
 
 
 ZCL_IAS_MOTION_COMMAND = b"\t!\x00\x01\x00\x00\x00\x00\x00"
@@ -21,3 +22,19 @@ class ClusterListener:
     def cluster_command(self, tsn, commdand_id, args):
         """Command received listener."""
         self.cluster_commands.append((tsn, commdand_id, args))
+
+
+class MockDatetime(datetime.datetime):
+    """Override for datetime functions."""
+
+    @classmethod
+    def now(cls):
+        """Return testvalue."""
+
+        return cls(1970, 1, 1, 1, 0, 0)
+
+    @classmethod
+    def utcnow(cls):
+        """Return testvalue."""
+
+        return cls(1970, 1, 1, 2, 0, 0)
