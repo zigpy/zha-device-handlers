@@ -1,7 +1,6 @@
 """Quirks common helpers."""
 import datetime
 
-
 ZCL_IAS_MOTION_COMMAND = b"\t!\x00\x01\x00\x00\x00\x00\x00"
 ZCL_OCC_ATTR_RPT_OCC = b"\x18d\n\x00\x00\x18\x01"
 
