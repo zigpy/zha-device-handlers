@@ -47,7 +47,6 @@ async def test_tuya_version(zigpy_device_from_quirk, quirk):
     assert cluster_listener.attribute_updates[0][0] == ATTR_MCU_VERSION
     assert cluster_listener.attribute_updates[0][1] == "2.0.2"
 
-
     with mock.patch.object(tuya_cluster, "handle_mcu_version_response") as m1:
         tuya_cluster.handle_message(hdr, args)
 
@@ -56,7 +55,9 @@ async def test_tuya_version(zigpy_device_from_quirk, quirk):
         assert cluster_listener.cluster_commands[1][2].version.version_raw == 130
         assert cluster_listener.cluster_commands[1][2].version.version == "2.0.2"
 
-        m1.assert_called_once_with(tuya_cluster.MCUVersion(status=1, tsn=109, version_raw=130))
+        m1.assert_called_once_with(
+            tuya_cluster.MCUVersion(status=1, tsn=109, version_raw=130)
+        )
 
     # read 'mcu_version' from cluster's attributes
     succ, fail = await tuya_cluster.read_attributes(("mcu_version",))
