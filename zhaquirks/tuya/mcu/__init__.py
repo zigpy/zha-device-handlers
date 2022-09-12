@@ -420,21 +420,8 @@ class TuyaLevelControl(LevelControl, TuyaLocalCluster):
             command_id,
             args,
         )
-        # (move_to_level_with_on_off --> send the on_off command first)
-        if command_id == 0x0004:
-            cluster_data = TuyaClusterData(
-                endpoint_id=self.endpoint.endpoint_id,
-                cluster_attr="on_off",
-                attr_value=args[1],
-                expect_reply=expect_reply,
-                manufacturer=manufacturer,
-            )
-            self.endpoint.device.command_bus.listener_event(
-                TUYA_MCU_COMMAND,
-                cluster_data,
-            )
-
         # (move_to_level, move, move_to_level_with_on_off)
+        # (move_to_level_with_on_off --> ZHA have the `ForceOnLight` implementation)
         if command_id in (0x0000, 0x0001, 0x0004):
             cluster_data = TuyaClusterData(
                 endpoint_id=self.endpoint.endpoint_id,
