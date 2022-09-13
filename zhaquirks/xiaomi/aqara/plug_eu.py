@@ -64,7 +64,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         0x0009: ("mode", types.uint8_t, True),
         0x0201: ("power_outage_memory", types.Bool, True),
     }
-    attr_config = {0x0009: 0x00}
+    attr_config = {0x0009: 0x01}
 
     async def bind(self):
         """Bind cluster."""
