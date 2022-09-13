@@ -98,7 +98,7 @@ class e220_kr4n0z0_ha(CustomDevice):
             # output_clusters=[0]>
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                DEVICE_TYPE: zha.DeviceType.MAIN_POWER_OUTLET,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
@@ -113,7 +113,7 @@ class e220_kr4n0z0_ha(CustomDevice):
             # output_clusters=[0]>
             2: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                DEVICE_TYPE: zha.DeviceType.MAIN_POWER_OUTLET,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
@@ -128,7 +128,7 @@ class e220_kr4n0z0_ha(CustomDevice):
             # output_clusters=[0]>
             3: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                DEVICE_TYPE: zha.DeviceType.MAIN_POWER_OUTLET,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
@@ -143,7 +143,7 @@ class e220_kr4n0z0_ha(CustomDevice):
             # output_clusters=[0]>
             4: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                DEVICE_TYPE: zha.DeviceType.MAIN_POWER_OUTLET,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
