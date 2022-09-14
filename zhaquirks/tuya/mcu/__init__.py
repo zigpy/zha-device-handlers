@@ -425,7 +425,9 @@ class TuyaLevelControl(LevelControl, TuyaLocalCluster):
             cluster_data = TuyaClusterData(
                 endpoint_id=self.endpoint.endpoint_id,
                 cluster_attr="on_off",
-                attr_value=bool(args[0]),  # maybe must be compared against `minimum_level` attribute
+                attr_value=bool(
+                    args[0]
+                ),  # maybe must be compared against `minimum_level` attribute
                 expect_reply=expect_reply,
                 manufacturer=manufacturer,
             )
