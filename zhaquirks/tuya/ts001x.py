@@ -8,6 +8,7 @@ from zhaquirks.const import (
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODEL,
+    MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SKIP_CONFIGURATION,
@@ -362,8 +363,9 @@ class Tuya_Double_No_N(TuyaSwitch):
         },
     }
 
+
 class Tuya_Double_No_N__TZ3000_18ejxno0(TuyaSwitch):
-    """Tuya 2 gang no neutral light switch, model TZ3000_18ejxno0"""
+    """Tuya 2 gang no neutral light switch, model TZ3000_18ejxno0."""
 
     signature = {
         # "node_descriptor": "NodeDescriptor(logical_type=<LogicalType.EndDevice: 2>, complex_descriptor_available=0,
@@ -439,6 +441,7 @@ class Tuya_Double_No_N__TZ3000_18ejxno0(TuyaSwitch):
             },
         },
     }
+
 
 class Tuya_Triple_No_N(TuyaSwitch):
     """Tuya 3 gang no neutral light switch."""
