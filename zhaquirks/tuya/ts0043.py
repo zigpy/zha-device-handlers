@@ -191,7 +191,7 @@ class TuyaSmartRemote0043TO(CustomDevice):
         (DOUBLE_PRESS, BUTTON_3): {ENDPOINT_ID: 3, COMMAND: DOUBLE_PRESS},
     }
 
-    
+
 class TuyaSmartRemote0043TOPlusB(CustomDevice):
     """Tuya 3-button remote device with time on out cluster."""
 
