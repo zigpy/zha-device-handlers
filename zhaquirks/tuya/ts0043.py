@@ -192,7 +192,7 @@ class TuyaSmartRemote0043TO(CustomDevice):
     }
 
     
-    class TuyaSmartRemote0043TOPlusB(CustomDevice):
+class TuyaSmartRemote0043TOPlusB(CustomDevice):
     """Tuya 3-button remote device with time on out cluster."""
 
     signature = {
