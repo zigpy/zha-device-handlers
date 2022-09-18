@@ -1676,7 +1676,7 @@ class ZonnsmartTV01_ZG(TuyaThermostat):
         #  output_clusters=[10, 25]>
         MODELS_INFO: [
             ("_TZE200_e9ba97vf", "TS0601"),
-            ("_TZE200_7yoranx2", "TS0601"),
+            ("_TZE200_7yoranx2", "TS0601"),  # MOES TRV TV01 ZTRV-ZX-TV01-MS
             ("_TZE200_husqqvux", "TS0601"),
             ("_TZE200_kly8gjlz", "TS0601"),
             ("_TZE200_hue3yfsn", "TS0601"),  # TV02-ZG
