@@ -18,6 +18,7 @@ from zhaquirks.tuya import (
     PowerOnState,
     TuyaCommand,
     TuyaData,
+    TuyaDatapointData,
     TuyaLocalCluster,
     TuyaNewManufCluster,
 )
@@ -195,11 +196,12 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
             cmd_payload = TuyaCommand()
             cmd_payload.status = 0
             cmd_payload.tsn = self.endpoint.device.application.get_sequence()
-            cmd_payload.dp = dp
-            cmd_payload.data = TuyaData()
+
+            # cmd_payload.dp = dp
+            # cmd_payload.data = TuyaData()
             datapoint_type = mapping.dp_type
-            cmd_payload.data.dp_type = datapoint_type
-            cmd_payload.data.function = 0
+            # cmd_payload.data.dp_type = datapoint_type
+            # cmd_payload.data.function = 0
             val = data.attr_value
             if mapping.dp_converter:
                 val = mapping.dp_converter(val)
@@ -209,8 +211,17 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
                 self.debug("ztype: %s", val)
             val = Data.from_value(val)
             self.debug("from_value: %s", val)
-            cmd_payload.data.raw = t.LVBytes.deserialize(val)[0]
-            self.debug("raw: %s", cmd_payload.data.raw)
+            # cmd_payload.data.raw = t.LVBytes.deserialize(val)[0]
+            # self.debug("raw: %s", cmd_payload.data.raw)
+
+            tuya_data = TuyaData()
+            tuya_data.dp_type = datapoint_type
+            tuya_data.function = 0
+            tuya_data.raw = t.LVBytes.deserialize(val)[0]
+            self.debug("raw: %s", tuya_data.raw)
+            dpd = TuyaDatapointData(dp, tuya_data)
+            cmd_payload.datapoints = [dpd]
+
             return cmd_payload
         else:
             self.warning(
@@ -572,3 +583,17 @@ class EnchantedDevice(CustomDevice):
         attr_to_read = [4, 0, 1, 5, 7, 0xFFFE]
         basic_cluster = self.endpoints[1].in_clusters[0]
         await basic_cluster.read_attributes(attr_to_read)
+
+
+# class EnchantedBasicCluster(Basic):
+#     """Class for enchanted Tuya devices which needs to be unlocked by casting a 'spell'."""
+
+#     def __init__(self, endpoint, is_server: bool = True):
+#         """Initialize with task."""
+#         super().__init__(endpoint, is_server)
+#         self._init_device_task = asyncio.create_task(self.spell())
+
+#     async def spell(self) -> None:
+#         """Initialize device so that all endpoints become available."""
+#         attr_to_read = [4, 0, 1, 5, 7, 0xFFFE]
+#         await self.read_attributes(attr_to_read)
