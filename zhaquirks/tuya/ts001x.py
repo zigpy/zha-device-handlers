@@ -8,7 +8,6 @@ from zhaquirks.const import (
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODEL,
-    MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SKIP_CONFIGURATION,
@@ -364,8 +363,8 @@ class Tuya_Double_No_N(TuyaSwitch):
     }
 
 
-class Tuya_Double_No_N__TZ3000_18ejxno0(TuyaSwitch):
-    """Tuya 2 gang no neutral light switch, model TZ3000_18ejxno0."""
+class Tuya_Double_No_N_Plus(TuyaSwitch):
+    """Tuya 2 gang no neutral light switch."""
 
     signature = {
         # "node_descriptor": "NodeDescriptor(logical_type=<LogicalType.EndDevice: 2>, complex_descriptor_available=0,
@@ -375,23 +374,23 @@ class Tuya_Double_No_N__TZ3000_18ejxno0(TuyaSwitch):
         # descriptor_capability_field=<DescriptorCapability.NONE: 0>, *allocate_address=True, *is_alternate_pan_coordinator=False,
         # *is_coordinator=False, *is_end_device=True, *is_full_function_device=False, *is_mains_powered=False,
         # *is_receiver_on_when_idle=False, *is_router=False, *is_security_capable=False)",
-        MODELS_INFO: [("_TZ3000_18ejxno0", "TS0012")],
+        MODEL: "TS0012",
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=100
             # device_version=1
-            # input_clusters=[3, 4, 5, 6, 57344, 57345, 0]
+            # input_clusters=[0, 3, 4, 5, 6, 57344, 57345]
             # output_clusters=[a, 19]>
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
                 INPUT_CLUSTERS: [
+                    Basic.cluster_id,
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     OnOff.cluster_id,
                     TuyaZBE000Cluster.cluster_id,
                     TuyaZBExternalSwitchTypeCluster.cluster_id,
-                    Basic.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id, Time.cluster_id],
             },
