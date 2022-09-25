@@ -1458,7 +1458,6 @@ async def test_handle_get_data(zigpy_device_from_quirk, quirk):
 
     ts0601_sensor = zigpy_device_from_quirk(quirk)
     tuya_cluster = ts0601_sensor.endpoints[1].tuya_manufacturer
-    # thermostat_cluster = ts0601_sensor.endpoints[1].thermostat
 
     message = b"\x09\xE0\x02\x0B\x33\x01\x02\x00\x04\x00\x00\x00\xFD\x02\x02\x00\x04\x00\x00\x00\x47\x04\x02\x00\x04\x00\x00\x00\x64"
     hdr, data = tuya_cluster.deserialize(message)
