@@ -170,6 +170,12 @@ class Inovelli_VZM31SN_Cluster(CustomCluster):
             is_reply=False,
             is_manufacturer_specific=True,
         ),  # LED Effect
+        0x02: foundation.ZCLCommandDef(
+            "reset_energy_meter",
+            {},
+            is_reply=False,
+            is_manufacturer_specific=True,
+        ),  # LED Effect
         0x03: foundation.ZCLCommandDef(
             "individual_led_effect",
             {
