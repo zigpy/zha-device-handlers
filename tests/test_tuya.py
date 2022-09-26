@@ -31,7 +31,7 @@ import zhaquirks.tuya.ts0601_siren
 import zhaquirks.tuya.ts0601_trv
 import zhaquirks.tuya.ts0601_valve
 
-from tests.common import ClusterListener
+from tests.common import ClusterListener, MockDatetime
 
 zhaquirks.setup()
 
@@ -80,22 +80,6 @@ ZCL_TUYA_VALVE_ZONNSMART_HEAT_STOP = b"\t2\x01\x03\x04\x6b\x01\x00\x01\x00"
 
 ZCL_TUYA_EHEAT_TEMPERATURE = b"\tp\x02\x00\x02\x18\x02\x00\x04\x00\x00\x00\xb3"
 ZCL_TUYA_EHEAT_TARGET_TEMP = b"\t3\x01\x03\x05\x10\x02\x00\x04\x00\x00\x00\x15"
-
-
-class NewDatetime(datetime.datetime):
-    """Override for datetime functions."""
-
-    @classmethod
-    def now(cls):
-        """Return testvalue."""
-
-        return cls(1970, 1, 1, 1, 0, 0)
-
-    @classmethod
-    def utcnow(cls):
-        """Return testvalue."""
-
-        return cls(1970, 1, 1, 2, 0, 0)
 
 
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_motion.TuyaMotion,))
@@ -1233,7 +1217,7 @@ async def test_moes(zigpy_device_from_quirk, quirk):
         assert status == foundation.Status.UNSUP_CLUSTER_COMMAND
 
         origdatetime = datetime.datetime
-        datetime.datetime = NewDatetime
+        datetime.datetime = MockDatetime
 
         hdr, args = tuya_cluster.deserialize(ZCL_TUYA_SET_TIME_REQUEST)
         tuya_cluster.handle_message(hdr, args)

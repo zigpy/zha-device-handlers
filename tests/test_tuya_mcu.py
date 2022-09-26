@@ -1,5 +1,6 @@
 """Tests for Tuya quirks."""
 
+import datetime
 from unittest import mock
 
 import pytest
@@ -7,19 +8,21 @@ import zigpy.types as t
 from zigpy.zcl import foundation
 
 import zhaquirks
-from zhaquirks.tuya import TUYA_MCU_VERSION_RSP
+from zhaquirks.tuya import TUYA_MCU_VERSION_RSP, TUYA_SET_TIME
 from zhaquirks.tuya.mcu import (
     ATTR_MCU_VERSION,
+    TuyaAttributesCluster,
     TuyaClusterData,
     TuyaDPType,
     TuyaMCUCluster,
 )
 
-from tests.common import ClusterListener
+from tests.common import ClusterListener, MockDatetime
 
 zhaquirks.setup()
 
 ZCL_TUYA_VERSION_RSP = b"\x09\x06\x11\x01\x6D\x82"
+ZCL_TUYA_SET_TIME = b"\x09\x12\x24\x0D\x00"
 
 
 @pytest.mark.parametrize(
@@ -44,9 +47,56 @@ async def test_tuya_version(zigpy_device_from_quirk, quirk):
     assert cluster_listener.attribute_updates[0][0] == ATTR_MCU_VERSION
     assert cluster_listener.attribute_updates[0][1] == "2.0.2"
 
+    with mock.patch.object(tuya_cluster, "handle_mcu_version_response") as m1:
+        tuya_cluster.handle_message(hdr, args)
+
+        assert len(cluster_listener.cluster_commands) == 2
+        assert cluster_listener.cluster_commands[1][1] == TUYA_MCU_VERSION_RSP
+        assert cluster_listener.cluster_commands[1][2].version.version_raw == 130
+        assert cluster_listener.cluster_commands[1][2].version.version == "2.0.2"
+
+        m1.assert_called_once_with(
+            tuya_cluster.MCUVersion(status=1, tsn=109, version_raw=130)
+        )
+
     # read 'mcu_version' from cluster's attributes
     succ, fail = await tuya_cluster.read_attributes(("mcu_version",))
     assert succ["mcu_version"] == "2.0.2"
+
+
+@pytest.mark.parametrize(
+    "quirk", (zhaquirks.tuya.ts0601_dimmer.TuyaDoubleSwitchDimmer,)
+)
+async def test_tuya_mcu_set_time(zigpy_device_from_quirk, quirk):
+    """Test set_time requests (0x24) messages for MCU devices."""
+
+    tuya_device = zigpy_device_from_quirk(quirk)
+
+    tuya_cluster = tuya_device.endpoints[1].tuya_manufacturer
+    cluster_listener = ClusterListener(tuya_cluster)
+
+    # Mock datetime
+    origdatetime = datetime.datetime
+    datetime.datetime = MockDatetime
+
+    # simulate a SET_TIME message
+    hdr, args = tuya_cluster.deserialize(ZCL_TUYA_SET_TIME)
+    assert hdr.command_id == TUYA_SET_TIME
+
+    with mock.patch.object(
+        TuyaAttributesCluster, "command"
+    ) as m1:  # tuya_cluster parent class (because of super() call)
+        tuya_cluster.handle_message(hdr, args)
+
+        assert len(cluster_listener.cluster_commands) == 1
+        assert cluster_listener.cluster_commands[0][1] == TUYA_SET_TIME
+
+        m1.assert_called_once_with(
+            TUYA_SET_TIME, [0, 0, 28, 32, 0, 0, 14, 16], expect_reply=False
+        )
+
+    # restore datetime
+    datetime.datetime = origdatetime  # restore datetime
 
 
 @pytest.mark.parametrize(
@@ -65,6 +115,12 @@ async def test_tuya_methods(zigpy_device_from_quirk, quirk):
 
     tcd_switch1_on = TuyaClusterData(
         endpoint_id=1, cluster_attr="on_off", attr_value=1, expect_reply=True
+    )
+    tcd_dimmer2_on = TuyaClusterData(
+        endpoint_id=2, cluster_attr="on_off", attr_value=1, expect_reply=True
+    )
+    tcd_dimmer2_level = TuyaClusterData(
+        endpoint_id=2, cluster_attr="current_level", attr_value=75, expect_reply=True
     )
 
     result_1 = tuya_cluster.from_cluster_data(tcd_1)
@@ -94,10 +150,19 @@ async def test_tuya_methods(zigpy_device_from_quirk, quirk):
 
         m1.assert_called_once_with(tcd_switch1_on)
         assert rsp.status == foundation.Status.SUCCESS
+        assert m1.call_count == 1
 
         rsp = await switch1_cluster.command(0x0004)
         m1.assert_called_once_with(tcd_switch1_on)  # no extra calls
         assert rsp.status == foundation.Status.UNSUP_CLUSTER_COMMAND
+        assert m1.call_count == 1
+
+        # test `move_to_level_with_on_off` quirk (call on_off + current_level)
+        rsp = await dimmer2_cluster.command(0x0004, 75, 1)
+        assert rsp.status == foundation.Status.SUCCESS
+        m1.assert_any_call(tcd_dimmer2_on)  # on_off
+        m1.assert_called_with(tcd_dimmer2_level)  # current_level
+        assert m1.call_count == 3
 
 
 async def test_tuya_mcu_classes():
