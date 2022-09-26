@@ -134,9 +134,7 @@ class MoesBHTUserInterface(TuyaUserInterfaceCluster):
 
 
 class MoesBHT(TuyaThermostat):
-    """Moes BHT-002GCLZB Thermostatic radiator valve."""
-
-    """BHT-003GBLZB Electric floor heating thermostat"""
+    """Tuya thermostat for devices like the Moes BHT-002GCLZB valve and BHT-003GBLZB Electric floor heating."""
 
     signature = {
         #  endpoint=1 profile=260 device_type=81 device_version=1 input_clusters=[0, 4, 5, 61184],
