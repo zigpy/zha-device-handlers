@@ -168,6 +168,7 @@ class TuyaDPType(t.enum8):
 class TuyaData(t.Struct):
     """Tuya Data type."""
 
+    # dp: t.uint8_t
     dp_type: TuyaDPType
     function: t.uint8_t
     raw: t.LVBytes
@@ -176,6 +177,7 @@ class TuyaData(t.Struct):
     def deserialize(cls, data: bytes) -> Tuple["TuyaData", bytes]:
         """Deserialize data."""
         res = cls()
+        # res.dp, data = t.uint8_t.deserialize(data)
         res.dp_type, data = TuyaDPType.deserialize(data)
         res.function, data = t.uint8_t.deserialize(data)
         res.raw, data = t.LVBytes.deserialize(data)
@@ -225,13 +227,22 @@ class Data(t.List, item_type=t.uint8_t):
         return value
 
 
+class TuyaDatapointData(t.Struct):
+    """Tuya Datapoint and Data."""
+
+    dp: t.uint8_t
+    data: TuyaData
+
+
 class TuyaCommand(t.Struct):
     """Tuya manufacturer cluster command."""
 
     status: t.uint8_t
     tsn: t.uint8_t
-    dp: t.uint8_t
-    data: TuyaData
+    # dp: t.uint8_t
+    # data: TuyaData
+    # datapoints: t.List[TuyaData]
+    datapoints: t.List[TuyaDatapointData]
 
 
 class NoManufacturerCluster(CustomCluster):
@@ -1374,7 +1385,7 @@ class TuyaNewManufCluster(CustomCluster):
         """Handle cluster specific request."""
 
         try:
-            if hdr.is_reply:
+            if hdr.direction == foundation.Direction.Client_to_Server:
                 # server_cluster -> client_cluster cluster specific command
                 handler_name = f"handle_{self.client_commands[hdr.command_id].name}"
             else:
@@ -1404,14 +1415,21 @@ class TuyaNewManufCluster(CustomCluster):
 
     def handle_get_data(self, command: TuyaCommand) -> foundation.Status:
         """Handle get_data response (report)."""
-        try:
-            dp_handler = self.data_point_handlers[command.dp]
-            getattr(self, dp_handler)(command)
-        except (AttributeError, KeyError):
-            self.debug("No datapoint handler for %s", command)
-            return foundation.status.UNSUPPORTED_ATTRIBUTE
+        dp_error = False
+        for record in command.datapoints:
+            try:
+                dp_handler = self.data_point_handlers[record.dp]
+                getattr(self, dp_handler)(record)
+            except (AttributeError, KeyError):
+                self.debug("No datapoint handler for %s", record)
+                dp_error = True
+                # return foundation.Status.UNSUPPORTED_ATTRIBUTE
 
-        return foundation.Status.SUCCESS
+        return (
+            foundation.Status.SUCCESS
+            if not dp_error
+            else foundation.Status.UNSUPPORTED_ATTRIBUTE
+        )
 
     handle_set_data_response = handle_get_data
     handle_active_status_report = handle_get_data
@@ -1420,19 +1438,19 @@ class TuyaNewManufCluster(CustomCluster):
         """Handle Time set request."""
         return foundation.Status.SUCCESS
 
-    def _dp_2_attr_update(self, command: TuyaCommand) -> None:
+    def _dp_2_attr_update(self, datapoint: TuyaDatapointData) -> None:
         """Handle data point to attribute report conversion."""
         try:
-            dp_map = self.dp_to_attribute[command.dp]
+            dp_map = self.dp_to_attribute[datapoint.dp]
         except KeyError:
-            self.debug("No attribute mapping for %s data point", command.dp)
+            self.debug("No attribute mapping for %s data point", datapoint.dp)
             return
 
         endpoint = self.endpoint
         if dp_map.endpoint_id:
             endpoint = self.endpoint.device.endpoints[dp_map.endpoint_id]
         cluster = getattr(endpoint, dp_map.ep_attribute)
-        value = command.data.payload
+        value = datapoint.data.payload
         if dp_map.converter:
             value = dp_map.converter(value)
 

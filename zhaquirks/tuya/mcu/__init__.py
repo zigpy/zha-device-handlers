@@ -1,6 +1,7 @@
 """Tuya MCU comunications."""
 import asyncio
 import dataclasses
+import datetime
 from typing import Any, Callable, Dict, Optional, Tuple, Union
 
 from zigpy.quirks import CustomDevice
@@ -13,13 +14,16 @@ from zhaquirks.tuya import (
     TUYA_MCU_COMMAND,
     TUYA_MCU_VERSION_RSP,
     TUYA_SET_DATA,
+    TUYA_SET_TIME,
     Data,
     NoManufacturerCluster,
     PowerOnState,
     TuyaCommand,
     TuyaData,
+    TuyaDatapointData,
     TuyaLocalCluster,
     TuyaNewManufCluster,
+    TuyaTimePayload,
 )
 
 # New manufacturer attributes
@@ -135,6 +139,9 @@ class TuyaAttributesCluster(TuyaLocalCluster):
 class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
     """Manufacturer specific cluster for sending Tuya MCU commands."""
 
+    set_time_offset = 1970  # MCU timestamp from 1/1/1970
+    set_time_local_offset = None
+
     class MCUVersion(t.Struct):
         """Tuya MCU version response Zcl payload."""
 
@@ -195,11 +202,12 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
             cmd_payload = TuyaCommand()
             cmd_payload.status = 0
             cmd_payload.tsn = self.endpoint.device.application.get_sequence()
-            cmd_payload.dp = dp
-            cmd_payload.data = TuyaData()
+
+            # cmd_payload.dp = dp
+            # cmd_payload.data = TuyaData()
             datapoint_type = mapping.dp_type
-            cmd_payload.data.dp_type = datapoint_type
-            cmd_payload.data.function = 0
+            # cmd_payload.data.dp_type = datapoint_type
+            # cmd_payload.data.function = 0
             val = data.attr_value
             if mapping.dp_converter:
                 val = mapping.dp_converter(val)
@@ -209,8 +217,17 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
                 self.debug("ztype: %s", val)
             val = Data.from_value(val)
             self.debug("from_value: %s", val)
-            cmd_payload.data.raw = t.LVBytes.deserialize(val)[0]
-            self.debug("raw: %s", cmd_payload.data.raw)
+            # cmd_payload.data.raw = t.LVBytes.deserialize(val)[0]
+            # self.debug("raw: %s", cmd_payload.data.raw)
+
+            tuya_data = TuyaData()
+            tuya_data.dp_type = datapoint_type
+            tuya_data.function = 0
+            tuya_data.raw = t.LVBytes.deserialize(val)[0]
+            self.debug("raw: %s", tuya_data.raw)
+            dpd = TuyaDatapointData(dp, tuya_data)
+            cmd_payload.datapoints = [dpd]
+
             return cmd_payload
         else:
             self.warning(
@@ -263,6 +280,31 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
 
         self.debug("MCU version: %s", payload.version)
         self.update_attribute("mcu_version", payload.version)
+        return foundation.Status.SUCCESS
+
+    def handle_set_time_request(self, payload: t.uint16_t) -> foundation.Status:
+        """Handle set_time requests (0x24)."""
+
+        payload_rsp = TuyaTimePayload()
+
+        utc_now = datetime.datetime.utcnow()
+        now = datetime.datetime.now()
+
+        offset_time = datetime.datetime(self.set_time_offset, 1, 1)
+        offset_time_local = datetime.datetime(
+            self.set_time_local_offset or self.set_time_offset, 1, 1
+        )
+
+        utc_timestamp = int((utc_now - offset_time).total_seconds())
+        local_timestamp = int((now - offset_time_local).total_seconds())
+
+        payload_rsp.extend(utc_timestamp.to_bytes(4, "big", signed=False))
+        payload_rsp.extend(local_timestamp.to_bytes(4, "big", signed=False))
+
+        self.create_catching_task(
+            super().command(TUYA_SET_TIME, payload_rsp, expect_reply=False)
+        )
+
         return foundation.Status.SUCCESS
 
 
@@ -425,7 +467,9 @@ class TuyaLevelControl(LevelControl, TuyaLocalCluster):
             cluster_data = TuyaClusterData(
                 endpoint_id=self.endpoint.endpoint_id,
                 cluster_attr="on_off",
-                attr_value=args[1],
+                attr_value=bool(
+                    args[0]
+                ),  # maybe must be compared against `minimum_level` attribute
                 expect_reply=expect_reply,
                 manufacturer=manufacturer,
             )
