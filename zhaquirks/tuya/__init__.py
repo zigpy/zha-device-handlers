@@ -1299,10 +1299,13 @@ class TuyaLevelControl(CustomCluster, LevelControl):
             cmd_payload.tsn = 0
             cmd_payload.command_id = TUYA_LEVEL_COMMAND
             cmd_payload.function = 0
+
             if kwargs and "level" in kwargs:
                 level = kwargs["level"]
-            else:
+            elif args:
                 level = args[0]
+            else:
+                level = 0
             brightness = (level * 1000) // 255
             val1 = brightness >> 8
             val2 = brightness & 0xFF

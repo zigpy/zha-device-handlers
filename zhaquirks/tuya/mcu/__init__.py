@@ -467,8 +467,10 @@ class TuyaLevelControl(LevelControl, TuyaLocalCluster):
         # getting the level value
         if kwargs and "level" in kwargs:
             level = kwargs["level"]
-        else:
+        elif args:
             level = args[0]
+        else:
+            level = 0
 
         # (move_to_level_with_on_off --> send the on_off command first)
         if command_id == 0x0004:

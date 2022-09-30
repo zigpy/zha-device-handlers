@@ -104,12 +104,14 @@ class F000LevelControlCluster(NoManufacturerCluster, LevelControl):
         )
         # move_to_level, move, move_to_level_with_on_off
         if command_id in (0x0000, 0x0001, 0x0004):
-            # convert dim values to 10-1000
-
+            # getting the level value
             if kwargs and "level" in kwargs:
                 level = kwargs["level"]
-            else:
+            elif args:
                 level = args[0]
+            else:
+                level = 0
+            # convert dim values to 10-1000
             brightness = level * (1000 - 10) // 254 + 10
             self.debug(
                 "Setting brightness to %s",
