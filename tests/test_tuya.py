@@ -22,7 +22,7 @@ from zhaquirks.const import (
     PROFILE_ID,
     ZONE_STATE,
 )
-from zhaquirks.tuya import Data, TuyaManufClusterAttributes
+from zhaquirks.tuya import Data, TuyaManufClusterAttributes, TuyaNewManufCluster
 import zhaquirks.tuya.ts0042
 import zhaquirks.tuya.ts0043
 import zhaquirks.tuya.ts0601_electric_heating
@@ -31,7 +31,7 @@ import zhaquirks.tuya.ts0601_siren
 import zhaquirks.tuya.ts0601_trv
 import zhaquirks.tuya.ts0601_valve
 
-from tests.common import ClusterListener
+from tests.common import ClusterListener, MockDatetime
 
 zhaquirks.setup()
 
@@ -80,22 +80,6 @@ ZCL_TUYA_VALVE_ZONNSMART_HEAT_STOP = b"\t2\x01\x03\x04\x6b\x01\x00\x01\x00"
 
 ZCL_TUYA_EHEAT_TEMPERATURE = b"\tp\x02\x00\x02\x18\x02\x00\x04\x00\x00\x00\xb3"
 ZCL_TUYA_EHEAT_TARGET_TEMP = b"\t3\x01\x03\x05\x10\x02\x00\x04\x00\x00\x00\x15"
-
-
-class NewDatetime(datetime.datetime):
-    """Override for datetime functions."""
-
-    @classmethod
-    def now(cls):
-        """Return testvalue."""
-
-        return cls(1970, 1, 1, 1, 0, 0)
-
-    @classmethod
-    def utcnow(cls):
-        """Return testvalue."""
-
-        return cls(1970, 1, 1, 2, 0, 0)
 
 
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_motion.TuyaMotion,))
@@ -1233,7 +1217,7 @@ async def test_moes(zigpy_device_from_quirk, quirk):
         assert status == foundation.Status.UNSUP_CLUSTER_COMMAND
 
         origdatetime = datetime.datetime
-        datetime.datetime = NewDatetime
+        datetime.datetime = MockDatetime
 
         hdr, args = tuya_cluster.deserialize(ZCL_TUYA_SET_TIME_REQUEST)
         tuya_cluster.handle_message(hdr, args)
@@ -1405,3 +1389,68 @@ def test_ts0601_valve_signature(assert_signature_matches_quirk):
         "class": "ts0601_valve.TuyaValve",
     }
     assert_signature_matches_quirk(zhaquirks.tuya.ts0601_valve.TuyaValve, signature)
+
+
+def test_multiple_attributes_report():
+    """Test a multi attribute report from Tuya device."""
+
+    ep = mock.Mock()  # fake endpoint object
+
+    message = (
+        b"\x09\x7B\x02\x01\x0F\x01\x01\x00\x01\x01\x05\x02\x00\x04\x00\x00\x00\x07"
+    )
+    hdr, data = TuyaNewManufCluster(ep).deserialize(message)
+
+    assert data
+    assert data.data
+    assert data.data.datapoints
+    assert len(data.data.datapoints) == 2
+    assert data.data.datapoints[0].dp == 1
+    assert data.data.datapoints[1].dp == 5
+
+    message = b"\x09\xE0\x02\x0B\x33\x01\x02\x00\x04\x00\x00\x00\xFD\x02\x02\x00\x04\x00\x00\x00\x47\x04\x02\x00\x04\x00\x00\x00\x64\x0A\x02\x00\x04\x00\x00\x01\x68\x0B\x02\x00\x04\x00\x00\x00\xC8"
+    hdr, data = TuyaNewManufCluster(ep).deserialize(message)
+
+    assert data
+    assert data.data
+    assert data.data.datapoints
+    assert len(data.data.datapoints) == 5
+    assert data.data.datapoints[0].dp == 1
+    assert data.data.datapoints[1].dp == 2
+    assert data.data.datapoints[2].dp == 4
+    assert data.data.datapoints[3].dp == 10
+    assert data.data.datapoints[4].dp == 11
+
+    message = b"\x09\xE1\x02\x0B\x34\x0C\x02\x00\x04\x00\x00\x00\x46\x0D\x02\x00\x04\x00\x00\x00\x14\x11\x02\x00\x04\x00\x00\x00\x1E\x09\x04\x00\x01\x01"
+    hdr, data = TuyaNewManufCluster(ep).deserialize(message)
+
+    assert data
+    assert data.data
+    assert data.data.datapoints
+    assert len(data.data.datapoints) == 4
+    assert data.data.datapoints[0].dp == 12
+    assert data.data.datapoints[1].dp == 13
+    assert data.data.datapoints[2].dp == 17
+    assert data.data.datapoints[3].dp == 9
+
+
+@pytest.mark.parametrize(
+    "quirk", (zhaquirks.tuya.ts0601_sensor.TuyaTempHumiditySensor,)
+)
+async def test_handle_get_data(zigpy_device_from_quirk, quirk):
+    """Test handle_get_data for multiple attributes."""
+
+    ts0601_sensor = zigpy_device_from_quirk(quirk)
+    tuya_cluster = ts0601_sensor.endpoints[1].tuya_manufacturer
+
+    message = b"\x09\xE0\x02\x0B\x33\x01\x02\x00\x04\x00\x00\x00\xFD\x02\x02\x00\x04\x00\x00\x00\x47\x04\x02\x00\x04\x00\x00\x00\x64"
+    hdr, data = tuya_cluster.deserialize(message)
+
+    status = tuya_cluster.handle_get_data(data.data)
+    assert status == foundation.Status.SUCCESS
+
+    message = b"\x09\xE0\x02\x0B\x33\x01\x02\x00\x04\x00\x00\x00\xFD\x02\x02\x00\x04\x00\x00\x00\x47\xFF\x02\x00\x04\x00\x00\x00\x64"
+    hdr, data = tuya_cluster.deserialize(message)
+
+    status = tuya_cluster.handle_get_data(data.data)
+    assert status == foundation.Status.UNSUPPORTED_ATTRIBUTE
