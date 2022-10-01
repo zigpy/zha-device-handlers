@@ -4,6 +4,7 @@ from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, GreenPowerProxy, Identify, Ota
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement, MeterIdentification
+from zigpy.zcl.clusters.manufacturer_specific import ManufacturerSpecificCluster
 from zigpy.zcl.clusters.smartenergy import Metering
 
 from zhaquirks.const import (
@@ -17,13 +18,13 @@ from zhaquirks.const import (
 from zhaquirks.lixee import LIXEE, ZLINKY_MANUFACTURER_CLUSTER_ID
 
 
-class ZLinkyTICManufacturerCluster(CustomCluster):
+class ZLinkyTICManufacturerCluster(CustomCluster, ManufacturerSpecificCluster):
     """ZLinkyTICManufacturerCluster manufacturer cluster."""
 
     cluster_id = ZLINKY_MANUFACTURER_CLUSTER_ID
     name = "ZLinky_TIC Manufacturer specific"
-    ep_attribute = "zlinky_cluster"
-    manufacturer_attributes = {
+    ep_attribute = "zlinky_manufacturer_specific"
+    attributes = {
         0x0000: ("histo_optarif_or_standard_ngtf", t.LimitedCharString(16)),
         0x0001: ("histo_demain", t.LimitedCharString(4)),
         0x0002: ("histo_hhphc", t.uint8_t),
