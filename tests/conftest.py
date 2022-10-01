@@ -64,6 +64,12 @@ class MockApp(zigpy.application.ControllerApplication):
     async def permit_with_key(self, *args, **kwargs):
         """Mock permit_with_key."""
 
+    async def reset_network_info(self, *args, **kwargs):
+        """Mock reset_network_info."""
+
+    async def send_packet(self, *args, **kwargs):
+        """Mock send_packet."""
+
     async def start_network(self, *args, **kwargs):
         """Mock start_network."""
 
