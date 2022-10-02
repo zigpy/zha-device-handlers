@@ -1529,6 +1529,7 @@ class MoesHY368_Type1(TuyaThermostat):
             ("_TZE200_4eeyebrt", "TS0601"),
             ("_TZE200_cpmgn2cf", "TS0601"),
             ("_TZE200_9sfg7gm0", "TS0601"),
+            ("_TZE200_8whxpsiw", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
