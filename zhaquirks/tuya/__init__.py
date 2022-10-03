@@ -255,6 +255,7 @@ class NoManufacturerCluster(CustomCluster):
         manufacturer: Optional[Union[int, t.uint16_t]] = None,
         expect_reply: bool = True,
         tsn: Optional[Union[int, t.uint8_t]] = None,
+        **kwargs: Any,
     ):
         """Override the default Cluster command."""
         self.debug("Setting the NO manufacturer id in command: %s", command_id)
@@ -264,6 +265,7 @@ class NoManufacturerCluster(CustomCluster):
             manufacturer=foundation.ZCLHeader.NO_MANUFACTURER_ID,
             expect_reply=expect_reply,
             tsn=tsn,
+            **kwargs,
         )
 
 
@@ -1280,6 +1282,7 @@ class TuyaLevelControl(CustomCluster, LevelControl):
         manufacturer: Optional[Union[int, t.uint16_t]] = None,
         expect_reply: bool = True,
         tsn: Optional[Union[int, t.uint8_t]] = None,
+        **kwargs: Any,
     ):
         """Override the default Cluster command."""
         _LOGGER.debug(
@@ -1296,7 +1299,14 @@ class TuyaLevelControl(CustomCluster, LevelControl):
             cmd_payload.tsn = 0
             cmd_payload.command_id = TUYA_LEVEL_COMMAND
             cmd_payload.function = 0
-            brightness = (args[0] * 1000) // 255
+
+            if kwargs and "level" in kwargs:
+                level = kwargs["level"]
+            elif args:
+                level = args[0]
+            else:
+                level = 0
+            brightness = (level * 1000) // 255
             val1 = brightness >> 8
             val2 = brightness & 0xFF
             cmd_payload.data = [4, 0, 0, val1, val2]  # Custom Command
