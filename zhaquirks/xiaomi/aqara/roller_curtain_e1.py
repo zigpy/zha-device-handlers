@@ -255,3 +255,49 @@ class RollerE1AQ(XiaomiCustomDevice):
             },
         },
     }
+
+
+class RollerE1AQ_2(RollerE1AQ):
+    """Aqara Roller Shade Driver E1 (version 2) device."""
+
+    signature = {
+        MODELS_INFO: [(LUMI, "lumi.curtain.acn002")],
+        ENDPOINTS: {
+            # <SizePrefixedSimpleDescriptor endpoint=1 profile=260 device_type=256
+            # device_version=1
+            # input_clusters=[0, 2, 3, 4, 5, 6, 9, 13, 19, 258]
+            # output_clusters=[10, 25]>
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    Alarms.cluster_id,
+                    AnalogOutput.cluster_id,
+                    Basic.cluster_id,
+                    DeviceTemperature.cluster_id,
+                    Groups.cluster_id,
+                    Identify.cluster_id,
+                    MultistateOutput.cluster_id,
+                    OnOff.cluster_id,
+                    Scenes.cluster_id,
+                    WindowCovering.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Ota.cluster_id,
+                    Time.cluster_id,
+                ],
+            },
+            # <SizePrefixedSimpleDescriptor endpoint=242 profile=41440 device_type=97
+            # device_version=0,
+            # input_clusters=[]
+            # output_clusters=[33]>
+            242: {
+                PROFILE_ID: 41440,
+                DEVICE_TYPE: 0x0061,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [
+                    GreenPowerProxy.cluster_id,
+                ],
+            },
+        },
+    }
