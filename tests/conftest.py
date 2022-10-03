@@ -1,9 +1,6 @@
 """Fixtures for all tests."""
 
-try:
-    from unittest.mock import AsyncMock as CoroutineMock
-except ImportError:
-    from asynctest import CoroutineMock
+from unittest.mock import AsyncMock
 
 import pytest
 import zigpy.application
@@ -79,8 +76,8 @@ class MockApp(zigpy.application.ControllerApplication):
     async def add_endpoint(self, descriptor):
         """Mock add_endpoint."""
 
-    mrequest = CoroutineMock()
-    request = CoroutineMock(return_value=(foundation.Status.SUCCESS, None))
+    mrequest = AsyncMock()
+    request = AsyncMock(return_value=(foundation.Status.SUCCESS, None))
 
 
 @pytest.fixture(name="MockAppController")

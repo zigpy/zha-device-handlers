@@ -1,4 +1,5 @@
 """Quirks common helpers."""
+import asyncio
 import datetime
 
 ZCL_IAS_MOTION_COMMAND = b"\t!\x00\x01\x00\x00\x00\x00\x00"
@@ -37,3 +38,17 @@ class MockDatetime(datetime.datetime):
         """Return testvalue."""
 
         return cls(1970, 1, 1, 2, 0, 0)
+
+
+async def wait_for_zigpy_tasks() -> None:
+    """Wait for all running zigpy tasks to finish."""
+    tasks = []
+
+    for task in asyncio.all_tasks():
+        coro = task.get_coro()
+
+        # TODO: track tasks within zigpy
+        if "CatchingTaskMixin" in coro.__qualname__:
+            tasks.append(task)
+
+    await asyncio.gather(*tasks)

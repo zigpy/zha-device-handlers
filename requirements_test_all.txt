@@ -1,4 +1,3 @@
-asynctest
 isort
 black
 flake8
@@ -12,5 +11,6 @@ pylint
 pytest-cov
 pytest-sugar
 pytest-timeout
-pytest
+pytest-asyncio
+pytest>=7.1.3
 zigpy
