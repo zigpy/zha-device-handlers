@@ -406,7 +406,4 @@ def setup(config: Optional[Dict[str, Any]] = None) -> None:
 
         for importer, modname, ispkg in pkgutil.walk_packages(path=[str(path)]):
             _LOGGER.debug("Loading custom quirks module %s", modname)
-            loader = importer.find_module(modname)
-            spec = importlib.util.spec_from_loader(loader.name, loader)
-            module = importlib.util.module_from_spec(spec)
-            loader.exec_module(module)
+            importer.find_module(modname).load_module(modname)
