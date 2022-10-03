@@ -31,7 +31,7 @@ import zhaquirks.tuya.ts0601_siren
 import zhaquirks.tuya.ts0601_trv
 import zhaquirks.tuya.ts0601_valve
 
-from tests.common import ClusterListener, MockDatetime
+from tests.common import ClusterListener, MockDatetime, wait_for_zigpy_tasks
 
 zhaquirks.setup()
 
@@ -222,6 +222,7 @@ async def test_singleswitch_requests(zigpy_device_from_quirk, quirk):
     ) as m1:
 
         rsp = await switch_cluster.command(0x0000)
+        await wait_for_zigpy_tasks()
         m1.assert_called_with(
             61184,
             2,
@@ -232,6 +233,7 @@ async def test_singleswitch_requests(zigpy_device_from_quirk, quirk):
         assert rsp.status == 0
 
         rsp = await switch_cluster.command(0x0001)
+        await wait_for_zigpy_tasks()
         m1.assert_called_with(
             61184,
             4,
@@ -242,6 +244,7 @@ async def test_singleswitch_requests(zigpy_device_from_quirk, quirk):
         assert rsp.status == 0
 
     rsp = await switch_cluster.command(0x0002)
+    await wait_for_zigpy_tasks()
     assert rsp.status == foundation.Status.UNSUP_CLUSTER_COMMAND
 
 
@@ -1221,6 +1224,7 @@ async def test_moes(zigpy_device_from_quirk, quirk):
 
         hdr, args = tuya_cluster.deserialize(ZCL_TUYA_SET_TIME_REQUEST)
         tuya_cluster.handle_message(hdr, args)
+        await wait_for_zigpy_tasks()
         m1.assert_called_with(
             61184,
             21,

@@ -10,7 +10,7 @@ on:
 
 env:
   CACHE_VERSION: 1
-  DEFAULT_PYTHON: 3.7
+  DEFAULT_PYTHON: '3.9.14'
   PRE_COMMIT_HOME: ~/.cache/pre-commit
 
 jobs:
@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.7, 3.8, 3.9]
+        python-version: ['3.8.14', '3.9.14', '3.10.7']
     steps:
       - name: Check out code from GitHub
         uses: actions/checkout@v2
@@ -280,7 +280,7 @@ jobs:
     needs: prepare-base
     strategy:
       matrix:
-        python-version: [3.7, 3.8, 3.9]
+        python-version: ['3.8.14', '3.9.14', '3.10.7']
     name: >-
       Run tests Python ${{ matrix.python-version }}
     steps:
