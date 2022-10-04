@@ -354,7 +354,13 @@ class DimmerWithNeutral2(CustomDevice):
                     Scenes.cluster_id,
                     Ota.cluster_id,
                 ],
-            }
+            },
+            242: {
+                PROFILE_ID: 41440,
+                DEVICE_TYPE: 0x0066,
+                INPUT_CLUSTERS: [0x0021],
+                OUTPUT_CLUSTERS: [0x0021],
+            },
         },
     }
 
