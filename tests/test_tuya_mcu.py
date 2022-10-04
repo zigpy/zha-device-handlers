@@ -193,6 +193,18 @@ async def test_tuya_methods(zigpy_device_from_quirk, quirk):
         m1.assert_called_with(tcd_dimmer2_level0)  # current_level
         assert m1.call_count == 9
 
+        # test `move_to_level` quirk (only call current_level)
+        rsp = await dimmer2_cluster.command(0x0000)
+        assert rsp.status == foundation.Status.SUCCESS
+        m1.assert_called_with(tcd_dimmer2_level0)  # current_level
+        assert m1.call_count == 10
+
+        # test `move_to_level` quirk (only call current_level)
+        rsp = await dimmer2_cluster.command(0x0000, level=75)
+        assert rsp.status == foundation.Status.SUCCESS
+        m1.assert_called_with(tcd_dimmer2_level)  # current_level
+        assert m1.call_count == 11
+
 
 async def test_tuya_mcu_classes():
     """Test tuya conversion from Data to ztype and reverse."""
