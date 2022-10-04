@@ -325,6 +325,7 @@ class DimmerWithNeutral(DimmerWithoutNeutral):
         },
     }
 
+
 class DimmerWithNeutral2(CustomDevice):
     """Dimmer switch with neutral."""
 
