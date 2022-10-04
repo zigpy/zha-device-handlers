@@ -354,6 +354,17 @@ class TuyaTS130Double_GP(CustomDevice):
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
+                INPUT_CLUSTERS: [
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaWithBacklightOnOffCluster,
+                    TuyaCoveringCluster,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
             242: {
                 PROFILE_ID: 41440,
                 DEVICE_TYPE: 97,
