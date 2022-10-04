@@ -1472,6 +1472,7 @@ class SiterwellGS361_Type2(TuyaThermostat):
             ("_TZE200_owwdxjbx", "TS0601"),
             ("_TZE200_8daqwrsj", "TS0601"),
             ("_TZE200_czk78ptr", "TS0601"),
+            ("_TZE200_2cs6g9i7", "TS0601"),  # Brennenstuhl Zigbee Connect 01
         ],
         ENDPOINTS: {
             1: {
@@ -1676,9 +1677,11 @@ class ZonnsmartTV01_ZG(TuyaThermostat):
         #  output_clusters=[10, 25]>
         MODELS_INFO: [
             ("_TZE200_e9ba97vf", "TS0601"),
+            ("_TZE200_7yoranx2", "TS0601"),  # MOES TRV TV01 ZTRV-ZX-TV01-MS
             ("_TZE200_husqqvux", "TS0601"),
             ("_TZE200_kly8gjlz", "TS0601"),
             ("_TZE200_hue3yfsn", "TS0601"),  # TV02-ZG
+            ("_TZE200_mudxchsu", "TS0601"),
         ],
         ENDPOINTS: {
             1: {

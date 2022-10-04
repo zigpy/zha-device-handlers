@@ -12,10 +12,11 @@ from zigpy.zcl.clusters.general import (
     PowerConfiguration,
     Time,
 )
+from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
 
 from zhaquirks import PowerConfigurationCluster
-from zhaquirks.bitron import BITRON, DIAGNOSTICS_CLUSTER_ID
+from zhaquirks.bitron import BITRON
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -64,7 +65,7 @@ class Av201032(CustomDevice):
                     PollControl.cluster_id,
                     Thermostat.cluster_id,
                     UserInterface.cluster_id,
-                    DIAGNOSTICS_CLUSTER_ID,
+                    Diagnostic.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],
             }
@@ -84,7 +85,7 @@ class Av201032(CustomDevice):
                     PollControl.cluster_id,
                     Thermostat.cluster_id,
                     UserInterface.cluster_id,
-                    DIAGNOSTICS_CLUSTER_ID,
+                    Diagnostic.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],
             }

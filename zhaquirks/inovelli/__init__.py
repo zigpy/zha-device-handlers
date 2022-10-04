@@ -51,6 +51,18 @@ PRESS_TYPES = {
     6: COMMAND_QUINTUPLE,
 }
 
+LED_NOTIFICATION_TYPES = {
+    0: "LED_1",
+    1: "LED_2",
+    2: "LED_3",
+    3: "LED_4",
+    4: "LED_5",
+    5: "LED_6",
+    6: "LED_7",
+    16: "ALL_LEDS",
+    255: "CONFIG_BUTTON_DOUBLE_PRESS",
+}
+
 # Buttons
 # 1 - down button
 # 2 - up button
@@ -60,6 +72,8 @@ BUTTONS = {1: BUTTON_1, 2: BUTTON_2, 3: BUTTON_3}
 ON = "Up"
 OFF = "Down"
 CONFIG = "Config"
+
+NOTIFICATION_TYPE = "notification_type"
 
 
 class Inovelli_VZM31SN_Cluster(CustomCluster):
@@ -156,6 +170,12 @@ class Inovelli_VZM31SN_Cluster(CustomCluster):
             is_reply=False,
             is_manufacturer_specific=True,
         ),  # LED Effect
+        0x02: foundation.ZCLCommandDef(
+            "reset_energy_meter",
+            {},
+            is_reply=False,
+            is_manufacturer_specific=True,
+        ),  # LED Effect
         0x03: foundation.ZCLCommandDef(
             "individual_led_effect",
             {
@@ -168,6 +188,14 @@ class Inovelli_VZM31SN_Cluster(CustomCluster):
             is_reply=False,
             is_manufacturer_specific=True,
         ),  # individual LED Effect
+        0x24: foundation.ZCLCommandDef(
+            "led_effect_complete",
+            {
+                "notification_type": t.uint8_t,
+            },
+            is_reply=False,
+            is_manufacturer_specific=True,
+        ),
     }
 
     def handle_cluster_request(
@@ -193,6 +221,17 @@ class Inovelli_VZM31SN_Cluster(CustomCluster):
             event_args = {
                 BUTTON: button,
                 PRESS_TYPE: press_type,
+                COMMAND_ID: hdr.command_id,
+            }
+            self.listener_event(ZHA_SEND_EVENT, action, event_args)
+            return
+        if hdr.command_id == self.commands_by_name["led_effect_complete"].id:
+            notification_type = LED_NOTIFICATION_TYPES.get(
+                args.notification_type, "unknown"
+            )
+            action = f"led_effect_complete_{notification_type}"
+            event_args = {
+                NOTIFICATION_TYPE: notification_type,
                 COMMAND_ID: hdr.command_id,
             }
             self.listener_event(ZHA_SEND_EVENT, action, event_args)
