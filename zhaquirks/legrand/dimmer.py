@@ -351,7 +351,7 @@ class DimmerWithNeutral2(CustomDevice):
                 ],
                 OUTPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    MANUFACTURER_SPECIFIC_CLUSTER_ID,                    
+                    MANUFACTURER_SPECIFIC_CLUSTER_ID,
                     Scenes.cluster_id,
                     Ota.cluster_id,
                 ],
