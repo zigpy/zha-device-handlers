@@ -200,10 +200,16 @@ async def test_tuya_methods(zigpy_device_from_quirk, quirk):
         assert m1.call_count == 10
 
         # test `move_to_level` quirk (only call current_level)
-        rsp = await dimmer2_cluster.command(0x0000, level=75)
+        rsp = await dimmer2_cluster.command(0x0000, 75)
         assert rsp.status == foundation.Status.SUCCESS
         m1.assert_called_with(tcd_dimmer2_level)  # current_level
         assert m1.call_count == 11
+
+        # test `move_to_level` quirk (only call current_level)
+        rsp = await dimmer2_cluster.command(0x0000, level=75)
+        assert rsp.status == foundation.Status.SUCCESS
+        m1.assert_called_with(tcd_dimmer2_level)  # current_level
+        assert m1.call_count == 12
 
 
 async def test_tuya_mcu_classes():
