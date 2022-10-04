@@ -380,7 +380,12 @@ class DimmerWithNeutral2(CustomDevice):
                     BinaryInput.cluster_id,
                     LegrandCluster,
                 ],
-                OUTPUT_CLUSTERS: [Basic.cluster_id, LegrandCluster, Scenes.cluster_id, Ota.cluster_id],
+                OUTPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    LegrandCluster,
+                    Scenes.cluster_id,
+                    Ota.cluster_id
+                ],
             }
         }
     }
