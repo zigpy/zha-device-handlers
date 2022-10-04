@@ -172,7 +172,7 @@ class XiaomiCluster(CustomCluster):
     def _interpret_attr_reports(
         self, data: bytes
     ) -> Iterable[tuple[foundation.Attribute]]:
-        """Yield all valid interprations of a Xiaomi attribute report."""
+        """Yield all valid interpretations of a Xiaomi attribute report."""
 
         if not data:
             yield ()
