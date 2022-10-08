@@ -88,7 +88,7 @@ class PhilipsMotion(CustomDevice):
                 DEVICE_TYPE: zll.DeviceType.ON_OFF_SENSOR,
                 INPUT_CLUSTERS: [Basic.cluster_id],
                 OUTPUT_CLUSTERS: [
-                    Basic.cluster_id,
+                    BasicCluster,
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
@@ -147,7 +147,7 @@ class SignifyMotion(CustomDevice):
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.OCCUPANCY_SENSOR,
                 INPUT_CLUSTERS: [
-                    Basic.cluster_id,
+                    BasicCluster,
                     PowerConfiguration.cluster_id,
                     Identify.cluster_id,
                     IlluminanceMeasurement.cluster_id,
