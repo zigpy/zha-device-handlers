@@ -1,6 +1,7 @@
 """Quirk for Philips motion sensors."""
 from zigpy.profiles import zha, zll
-from zigpy.quirks import CustomDevice
+from zigpy.quirks import CustomCluster, CustomDevice
+import zigpy.types as t
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -27,6 +28,13 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.philips import PHILIPS, SIGNIFY, OccupancyCluster
+
+
+class BasicCluster(CustomCluster, Basic):
+    """Hue Motion Basic cluster."""
+
+    attributes = Basic.attributes.copy()
+    attributes[0x0033] = ("trigger_indicator", t.Bool, True)
 
 
 class PhilipsMotion(CustomDevice):
