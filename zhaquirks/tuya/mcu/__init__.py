@@ -455,6 +455,7 @@ class TuyaLevelControl(LevelControl, TuyaLocalCluster):
         manufacturer: Optional[Union[int, t.uint16_t]] = None,
         expect_reply: bool = True,
         tsn: Optional[Union[int, t.uint8_t]] = None,
+        **kwargs: Any,
     ):
         """Override the default Cluster command."""
         self.debug(
@@ -462,13 +463,22 @@ class TuyaLevelControl(LevelControl, TuyaLocalCluster):
             command_id,
             args,
         )
+
+        # getting the level value
+        if kwargs and "level" in kwargs:
+            level = kwargs["level"]
+        elif args:
+            level = args[0]
+        else:
+            level = 0
+
         # (move_to_level_with_on_off --> send the on_off command first)
         if command_id == 0x0004:
             cluster_data = TuyaClusterData(
                 endpoint_id=self.endpoint.endpoint_id,
                 cluster_attr="on_off",
                 attr_value=bool(
-                    args[0]
+                    level
                 ),  # maybe must be compared against `minimum_level` attribute
                 expect_reply=expect_reply,
                 manufacturer=manufacturer,
@@ -483,7 +493,7 @@ class TuyaLevelControl(LevelControl, TuyaLocalCluster):
             cluster_data = TuyaClusterData(
                 endpoint_id=self.endpoint.endpoint_id,
                 cluster_attr="current_level",
-                attr_value=args[0],
+                attr_value=level,
                 expect_reply=expect_reply,
                 manufacturer=manufacturer,
             )

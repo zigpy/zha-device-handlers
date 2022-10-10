@@ -7,7 +7,7 @@ from zigpy.zcl import foundation
 
 import zhaquirks
 
-from tests.common import ClusterListener
+from tests.common import ClusterListener, wait_for_zigpy_tasks
 
 zhaquirks.setup()
 
@@ -31,6 +31,7 @@ async def test_command(zigpy_device_from_quirk, quirk):
         tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
     ) as m1:
         rsp = await switch2_cluster.command(0x0001)
+        await wait_for_zigpy_tasks()
 
         m1.assert_called_with(
             61184,
@@ -42,6 +43,7 @@ async def test_command(zigpy_device_from_quirk, quirk):
         assert rsp.status == foundation.Status.SUCCESS
 
         rsp = await dimmer1_cluster.command(0x0000, 225)
+        await wait_for_zigpy_tasks()
 
         m1.assert_called_with(
             61184,
@@ -63,11 +65,8 @@ async def test_write_attr(zigpy_device_from_quirk, quirk):
     tuya_cluster = dimmer_dev.endpoints[1].tuya_manufacturer
     dimmer1_cluster = dimmer_dev.endpoints[1].level
 
-    async def async_success(*args, **kwargs):
-        return foundation.Status.SUCCESS
-
     with mock.patch.object(
-        tuya_cluster.endpoint, "request", side_effect=async_success
+        tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
     ) as m1:
 
         (status,) = await dimmer1_cluster.write_attributes(
@@ -75,6 +74,7 @@ async def test_write_attr(zigpy_device_from_quirk, quirk):
                 "minimum_level": 25,
             }
         )
+        await wait_for_zigpy_tasks()
         m1.assert_called_with(
             61184,
             2,
