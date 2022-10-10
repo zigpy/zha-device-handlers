@@ -1,12 +1,11 @@
-"""Tuya HOME-LUX illuminance sensor"""
+"""Tuya HOME-LUX illuminance sensor."""
 
 import math
-from typing import Dict, Optional, Tuple, Union
+from typing import Dict
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 import zigpy.types as t
-from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
@@ -18,9 +17,7 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.measurement import (
     IlluminanceMeasurement,
 )
-from zigpy.zcl.clusters.security import IasZone
 
-from zhaquirks import Bus, LocalDataCluster, MotionOnEvent
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -36,13 +33,15 @@ from zhaquirks.tuya import (
 )
 
 
-TUYA_BRIGHTNESS_LEVEL_ATTR = 0x01 # 0-2 "Low, Medium, High"
-TUYA_ILLUMINANCE_ATTR = 0x02 # [0, 0, 3, 232] illuminance
+TUYA_BRIGHTNESS_LEVEL_ATTR = 0x01  # 0-2 "Low, Medium, High"
+TUYA_ILLUMINANCE_ATTR = 0x02  # [0, 0, 3, 232] illuminance
 
-TUYA_BRIGHTNESS_LEVEL_STR = [ "Low", "Medium", "High" ]
+TUYA_BRIGHTNESS_LEVEL_STR = ["Low", "Medium", "High"]
+
 
 class TuyaIlluminanceMeasurement(IlluminanceMeasurement, TuyaLocalCluster):
     """Tuya local IlluminanceMeasurement cluster."""
+
     attributes = IlluminanceMeasurement.attributes.copy()
     attributes.update(
         {
@@ -50,29 +49,26 @@ class TuyaIlluminanceMeasurement(IlluminanceMeasurement, TuyaLocalCluster):
         }
     )
 
+
 class TuyaIlluminanceCluster(TuyaNewManufCluster):
     """Tuya Illuminance cluster."""
-
 
     dp_to_attribute: Dict[int, DPToAttributeMapping] = {
         TUYA_BRIGHTNESS_LEVEL_ATTR: DPToAttributeMapping(
             TuyaIlluminanceMeasurement.ep_attribute,
             "brightness_level",
-            lambda x: TUYA_BRIGHTNESS_LEVEL_STR[x]
+            lambda x: TUYA_BRIGHTNESS_LEVEL_STR[x],
         ),
-
-
         TUYA_ILLUMINANCE_ATTR: DPToAttributeMapping(
             TuyaIlluminanceMeasurement.ep_attribute,
             "measured_value",
-            lambda x: (10000.0 * math.log10(x) + 1.0 if x != 0 else 0)
+            lambda x: (10000.0 * math.log10(x) + 1.0 if x != 0 else 0),
         ),
     }
 
     data_point_handlers = {
         TUYA_BRIGHTNESS_LEVEL_ATTR: "_dp_2_attr_update",
         TUYA_ILLUMINANCE_ATTR: "_dp_2_attr_update",
-
     }
 
 
@@ -131,5 +127,3 @@ class TuyaIlluminance(CustomDevice):
             },
         }
     }
-
-
