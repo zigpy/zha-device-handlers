@@ -6,17 +6,8 @@ from typing import Dict
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 import zigpy.types as t
-from zigpy.zcl.clusters.general import (
-    Basic,
-    GreenPowerProxy,
-    Groups,
-    Ota,
-    Scenes,
-    Time,
-)
-from zigpy.zcl.clusters.measurement import (
-    IlluminanceMeasurement,
-)
+from zigpy.zcl.clusters.general import Basic, GreenPowerProxy, Groups, Ota, Scenes, Time
+from zigpy.zcl.clusters.measurement import IlluminanceMeasurement
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -26,12 +17,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import (
-    DPToAttributeMapping,
-    TuyaLocalCluster,
-    TuyaNewManufCluster,
-)
-
+from zhaquirks.tuya import DPToAttributeMapping, TuyaLocalCluster, TuyaNewManufCluster
 
 TUYA_BRIGHTNESS_LEVEL_ATTR = 0x01  # 0-2 "Low, Medium, High"
 TUYA_ILLUMINANCE_ATTR = 0x02  # [0, 0, 3, 232] illuminance
