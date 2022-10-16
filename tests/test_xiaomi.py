@@ -22,7 +22,10 @@ from zhaquirks.const import (
     ZONE_STATE,
 )
 from zhaquirks.xiaomi import (
+    CONSUMPTION_REPORTED,
     LUMI,
+    POWER_REPORTED,
+    VOLTAGE_REPORTED,
     XIAOMI_NODE_DESC,
     BasicCluster,
     XiaomiCustomDevice,
@@ -432,7 +435,7 @@ def test_attribute_parsing(raw_report):
 @mock.patch("zigpy.zcl.Cluster.bind", mock.AsyncMock())
 @mock.patch("zhaquirks.xiaomi.aqara.plug_eu.remove_from_ep", mock.AsyncMock())
 @pytest.mark.parametrize("quirk", (zhaquirks.xiaomi.aqara.plug_eu.PlugMAEU01,))
-async def test_xiaomi_eu_plug(zigpy_device_from_quirk, quirk):
+async def test_xiaomi_eu_plug_opple_mode(zigpy_device_from_quirk, quirk):
     """Test binding Xiaomi EU plug sets OppleMode to True."""
 
     device = zigpy_device_from_quirk(quirk)
@@ -451,3 +454,45 @@ async def test_xiaomi_eu_plug(zigpy_device_from_quirk, quirk):
             1,
             b"\x04_\x11\x01\x02\t\x00 \x01",
         )
+
+
+@mock.patch("zhaquirks.xiaomi.aqara.plug_eu.remove_from_ep", mock.AsyncMock())
+@pytest.mark.parametrize("quirk", (zhaquirks.xiaomi.aqara.plug_eu.PlugMAEU01,))
+async def test_xiaomi_eu_plug_power(zigpy_device_from_quirk, quirk):
+    """Test current power consumption, total power consumption, and current voltage on Xiaomi EU plug."""
+
+    device = zigpy_device_from_quirk(quirk)
+
+    em_cluster = device.endpoints[1].electrical_measurement
+    em_listener = ClusterListener(em_cluster)
+
+    # Test voltage on ElectricalMeasurement cluster
+    em_cluster.endpoint.device.voltage_bus.listener_event(VOLTAGE_REPORTED, 230)
+    assert len(em_listener.attribute_updates) == 1
+    assert em_listener.attribute_updates[0][0] == 1285
+    assert em_listener.attribute_updates[0][1] == 230
+
+    # Test current power consumption on ElectricalMeasurement cluster
+    em_cluster.endpoint.device.power_bus.listener_event(POWER_REPORTED, 15)
+    assert len(em_listener.attribute_updates) == 2
+    assert em_listener.attribute_updates[1][0] == 1291
+    assert em_listener.attribute_updates[1][1] == 150  # multiplied by 10
+
+    # Test total power consumption on ElectricalMeasurement cluster
+    em_cluster.endpoint.device.consumption_bus.listener_event(
+        CONSUMPTION_REPORTED, 0.001
+    )
+    assert len(em_listener.attribute_updates) == 3
+    assert em_listener.attribute_updates[2][0] == 772
+    assert em_listener.attribute_updates[2][1] == 1  # multiplied by 1000
+
+    # Test total power consumption on SmartEnergy cluster
+    se_cluster = device.endpoints[1].smartenergy_metering
+    se_listener = ClusterListener(se_cluster)
+
+    se_cluster.endpoint.device.consumption_bus.listener_event(
+        CONSUMPTION_REPORTED, 0.001
+    )
+    assert len(se_listener.attribute_updates) == 1
+    assert se_listener.attribute_updates[0][0] == 0
+    assert se_listener.attribute_updates[0][1] == 1  # multiplied by 1000
