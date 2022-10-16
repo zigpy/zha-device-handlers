@@ -46,7 +46,8 @@ class LegrandRemoteSwitchLevelControl(CustomCluster, LevelControl):
     """LegrandRemoteSwitchLevelControl."""
 
     def bind(self):
-        """Disable binding to SwitchLevelControl cluster of the coordinator."
+        """Disable binding to SwitchLevelControl cluster of the coordinator."""
+        
         pass
 
 
