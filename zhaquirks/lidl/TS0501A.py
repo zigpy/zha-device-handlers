@@ -29,7 +29,11 @@ class DimmableBulb(CustomDevice):
     """Lidl dimmable bulb."""
 
     signature = {
-        MODELS_INFO: [("_TZ3000_nosnx7im", "TS0501A")],
+        MODELS_INFO: [
+            ("_TZ3000_nosnx7im", "TS0501A"),
+            ("_TZ3000_nbnmw9nc", "TS0501A"),
+            ("_TZ3000_7dcddnye", "TS0501A"),
+        ],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=257
             # input_clusters=[0, 3, 4, 5, 6, 8, 768, 4096]
