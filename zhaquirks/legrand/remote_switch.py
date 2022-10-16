@@ -1,4 +1,4 @@
-"""Device handler for Legrand Remote switch"""
+"""Device handler for Legrand Remote switch."""
 # import logging
 from typing import Any, List, Optional, Union
 
@@ -43,14 +43,15 @@ class LegrandRemoteSwitchCluster(CustomCluster, ManufacturerSpecificCluster):
 
 
 class LegrandRemoteSwitchLevelControl(CustomCluster, LevelControl):
-    """LegrandRemoteSwitchLevelControl"""
+    """LegrandRemoteSwitchLevelControl."""
 
     def bind(self):
+        """Disable binding to SwitchLevelControl cluster of the coordinator."
         pass
 
 
 class LegrandRemoteSwitchOnOff(CustomCluster, OnOff):
-    """Legrand Wireless Remote Switch On/Off custom cluster"""
+    """Legrand Wireless Remote Switch On/Off custom cluster."""
 
     cluster_id = 0x0006
     name = "OnOff"
@@ -69,6 +70,7 @@ class LegrandRemoteSwitchOnOff(CustomCluster, OnOff):
             Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
         ] = None,
     ):
+        """Custom handle_cluster_request."""
 
         if hdr.command_id in (0x0000, 0x0001, 0x0002):
             # Send default response
@@ -83,14 +85,14 @@ class LegrandRemoteSwitchOnOff(CustomCluster, OnOff):
 
 
 class LegrandRemoteSwitchPowerConfiguration(PowerConfigurationCluster):
-    """Legrand Wireless Remote Switch On/Off custom cluster"""
+    """Legrand Wireless Remote Switch On/Off custom cluster."""
 
     cluster_id = 0x0001
     name = "PowerConfiguration"
 
     _CONSTANT_ATTRIBUTES = {
         0x0031: 10,  # battery_size = CR2032
-        0x0033: 1,   # battery_quantity
+        0x0033: 1,  # battery_quantity
         0x0034: 30,  # battery_rated_voltage = 3000 mV
     }
 
@@ -120,13 +122,16 @@ class LegrandRemoteSwitchPowerConfiguration(PowerConfigurationCluster):
 
 class LegrandRemoteSwitchPollControl(CustomCluster, PollControl):
     """Legrand Wireless Remote Switch PollControl cluster.
-    Read PowerConfiguration attributes during check-in."""
+        
+    Read PowerConfiguration attributes during check-in.
+    """
 
     cluster_id = 0x0020
     name = "PollControl"
 
     def __init__(self, *args, **kwargs):
         """Init."""
+        
         self._current_state = {}
         super().__init__(*args, **kwargs)
 
@@ -139,6 +144,8 @@ class LegrandRemoteSwitchPollControl(CustomCluster, PollControl):
             Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
         ] = None,
     ):
+        """Custom handle_cluster_request."""
+        
         if hdr.command_id == 0x0000:
             self.endpoint.device.voltage_bus.listener_event(VOLTAGE_REPORTED)
             return super().handle_cluster_request(
@@ -147,7 +154,7 @@ class LegrandRemoteSwitchPollControl(CustomCluster, PollControl):
 
 
 class RemoteSwitch(CustomDevice):
-    """Wireless Remote switch 067773 (NLT type device)"""
+    """Wireless Remote switch 067773 (NLT type device)."""
 
     def __init__(self, *args, **kwargs):
         """Init."""
