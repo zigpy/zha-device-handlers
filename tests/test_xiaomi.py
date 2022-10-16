@@ -31,6 +31,7 @@ from zhaquirks.xiaomi import (
 )
 import zhaquirks.xiaomi.aqara.motion_aq2
 import zhaquirks.xiaomi.aqara.motion_aq2b
+import zhaquirks.xiaomi.aqara.plug_eu
 import zhaquirks.xiaomi.mija.motion
 
 from tests.common import ZCL_OCC_ATTR_RPT_OCC, ClusterListener
@@ -426,3 +427,27 @@ def test_attribute_parsing(raw_report):
     # The only remaining data should be the data type and the length.
     # Everything else is passed through unmodified.
     assert len(raw_report) == 2 * len(reports[0])
+
+
+@mock.patch("zigpy.zcl.Cluster.bind", mock.AsyncMock())
+@mock.patch("zhaquirks.xiaomi.aqara.plug_eu.remove_from_ep", mock.AsyncMock())
+@pytest.mark.parametrize("quirk", (zhaquirks.xiaomi.aqara.plug_eu.PlugMAEU01,))
+async def test_xiaomi_eu_plug(zigpy_device_from_quirk, quirk):
+    """Test binding Xiaomi EU plug sets OppleMode to True."""
+
+    device = zigpy_device_from_quirk(quirk)
+    opple_cluster = device.endpoints[1].opple_cluster
+
+    with mock.patch.object(
+        opple_cluster.endpoint, "request", mock.AsyncMock()
+    ) as request_mock:
+        request_mock.return_value = (foundation.Status.SUCCESS, "done")
+
+        await opple_cluster.bind()
+
+        assert len(request_mock.mock_calls) == 1
+        assert request_mock.mock_calls[0][1] == (
+            64704,
+            1,
+            b"\x04_\x11\x01\x02\t\x00 \x01",
+        )
