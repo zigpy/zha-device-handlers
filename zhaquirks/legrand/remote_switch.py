@@ -1,7 +1,6 @@
 """Device handler for Legrand Remote switch"""
-import asyncio
-import logging
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+# import logging
+from typing import Any, List, Optional, Union
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
@@ -9,18 +8,17 @@ import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
     Basic,
-    PowerConfiguration,
-    Identify,
     BinaryInput,
-    PollControl,
+    Identify,
     LevelControl,
     OnOff,
     Ota,
+    PollControl,
+    PowerConfiguration,
 )
 from zigpy.zcl.clusters.manufacturer_specific import ManufacturerSpecificCluster
 
-from zhaquirks import Bus, GroupBoundCluster, PowerConfigurationCluster
-
+from zhaquirks import Bus, PowerConfigurationCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -49,19 +47,19 @@ class LegrandRemoteSwitchLevelControl(CustomCluster, LevelControl):
 
     def bind(self):
         pass
-    
+
 
 class LegrandRemoteSwitchOnOff(CustomCluster, OnOff):
     """Legrand Wireless Remote Switch On/Off custom cluster"""
 
     cluster_id = 0x0006
-    name = "OnOff"    
-    
+    name = "OnOff"
+
     def __init__(self, *args, **kwargs):
         """Init."""
         self._current_state = {}
         super().__init__(*args, **kwargs)
-  
+
     def handle_cluster_request(
         self,
         hdr: foundation.ZCLHeader,
@@ -91,9 +89,9 @@ class LegrandRemoteSwitchPowerConfiguration(PowerConfigurationCluster):
     name = "PowerConfiguration"
 
     _CONSTANT_ATTRIBUTES = {
-        0x0031: 10, # battery_size = CR2032
-        0x0033: 1,  # battery_quantity
-        0x0034: 30, # battery_rated_voltage = 3000 mV
+        0x0031: 10,  # battery_size = CR2032
+        0x0033: 1,   # battery_quantity
+        0x0034: 30,  # battery_rated_voltage = 3000 mV
     }
 
     def __init__(self, *args, **kwargs):
@@ -120,7 +118,7 @@ class LegrandRemoteSwitchPowerConfiguration(PowerConfigurationCluster):
         )
 
 
-class LegrandRemoteSwitchPollControl(PollControl):
+class LegrandRemoteSwitchPollControl(CustomCluster, PollControl):
     """Legrand Wireless Remote Switch PollControl cluster.
     Read PowerConfiguration attributes during check-in."""
 
