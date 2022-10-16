@@ -47,7 +47,7 @@ class LegrandRemoteSwitchLevelControl(CustomCluster, LevelControl):
 
     def bind(self):
         """Disable binding to SwitchLevelControl cluster of the coordinator."""
-        
+
         pass
 
 
@@ -71,7 +71,7 @@ class LegrandRemoteSwitchOnOff(CustomCluster, OnOff):
             Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
         ] = None,
     ):
-        """Custom handle_cluster_request."""
+        """handle_cluster_request."""
 
         if hdr.command_id in (0x0000, 0x0001, 0x0002):
             # Send default response
@@ -123,7 +123,7 @@ class LegrandRemoteSwitchPowerConfiguration(PowerConfigurationCluster):
 
 class LegrandRemoteSwitchPollControl(CustomCluster, PollControl):
     """Legrand Wireless Remote Switch PollControl cluster.
-        
+
     Read PowerConfiguration attributes during check-in.
     """
 
@@ -132,7 +132,7 @@ class LegrandRemoteSwitchPollControl(CustomCluster, PollControl):
 
     def __init__(self, *args, **kwargs):
         """Init."""
-        
+
         self._current_state = {}
         super().__init__(*args, **kwargs)
 
@@ -145,8 +145,8 @@ class LegrandRemoteSwitchPollControl(CustomCluster, PollControl):
             Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
         ] = None,
     ):
-        """Custom handle_cluster_request."""
-        
+        """handle_cluster_request."""
+
         if hdr.command_id == 0x0000:
             self.endpoint.device.voltage_bus.listener_event(VOLTAGE_REPORTED)
             return super().handle_cluster_request(
