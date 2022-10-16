@@ -54,9 +54,6 @@ class LegrandRemoteSwitchLevelControl(CustomCluster, LevelControl):
 class LegrandRemoteSwitchOnOff(CustomCluster, OnOff):
     """Legrand Wireless Remote Switch On/Off custom cluster."""
 
-    cluster_id = 0x0006
-    name = "OnOff"
-
     def __init__(self, *args, **kwargs):
         """Init."""
         self._current_state = {}
@@ -87,9 +84,6 @@ class LegrandRemoteSwitchOnOff(CustomCluster, OnOff):
 
 class LegrandRemoteSwitchPowerConfiguration(PowerConfigurationCluster):
     """Legrand Wireless Remote Switch On/Off custom cluster."""
-
-    cluster_id = 0x0001
-    name = "PowerConfiguration"
 
     _CONSTANT_ATTRIBUTES = {
         0x0031: 10,  # battery_size = CR2032
