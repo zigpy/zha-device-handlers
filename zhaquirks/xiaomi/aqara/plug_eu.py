@@ -48,7 +48,13 @@ OPPLE_MFG_CODE = 0x115F
 
 
 async def remove_from_ep(dev: zigpy.device.Device) -> None:
-    """Remove devices that are in group 0 by default, so IKEA devices don't control them."""
+    """
+    Remove devices that are in group 0 by default, so IKEA devices don't control them.
+
+    This is only needed for newer firmware versions. Only a downgrade will fully fix this but this should improve it.
+    See https://github.com/zigpy/zha-device-handlers/pull/1656#issuecomment-1244750465 for details.
+    """
+
     endpoint = dev.endpoints.get(1)
     if endpoint is not None:
         dev.debug("Removing endpoint 1 from group 0")
@@ -64,6 +70,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         0x0009: ("mode", types.uint8_t, True),
         0x0201: ("power_outage_memory", types.Bool, True),
     }
+    # This only exists on older firmware versions. Newer versions always have the behavior as if this was set to true
     attr_config = {0x0009: 0x01}
 
     async def bind(self):
