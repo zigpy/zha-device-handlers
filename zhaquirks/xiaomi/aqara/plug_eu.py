@@ -85,6 +85,7 @@ class PlugMMEU01(XiaomiCustomDevice):
 
     def __init__(self, *args, **kwargs):
         """Init."""
+        asyncio.create_task(remove_from_ep(self))
         self.voltage_bus = Bus()
         self.consumption_bus = Bus()
         self.power_bus = Bus()
@@ -258,11 +259,6 @@ class PlugMMEU01Alt2(PlugMMEU01):
 
 class PlugMAEU01(PlugMMEU01):
     """lumi.plug.maeu01 plug."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        asyncio.create_task(remove_from_ep(self))
-        super().__init__(*args, **kwargs)
 
     signature = {
         MODELS_INFO: [
