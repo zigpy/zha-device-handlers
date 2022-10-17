@@ -433,10 +433,9 @@ def test_attribute_parsing(raw_report):
 
 
 @mock.patch("zigpy.zcl.Cluster.bind", mock.AsyncMock())
-@mock.patch("zhaquirks.xiaomi.aqara.plug_eu.remove_from_ep", mock.AsyncMock())
 @pytest.mark.parametrize("quirk", (zhaquirks.xiaomi.aqara.plug_eu.PlugMAEU01,))
-async def test_xiaomi_eu_plug_opple_mode(zigpy_device_from_quirk, quirk):
-    """Test binding Xiaomi EU plug sets OppleMode to True."""
+async def test_xiaomi_eu_plug_binding(zigpy_device_from_quirk, quirk):
+    """Test binding Xiaomi EU plug sets OppleMode to True and removes the plug from group 0."""
 
     device = zigpy_device_from_quirk(quirk)
     opple_cluster = device.endpoints[1].opple_cluster
@@ -448,15 +447,19 @@ async def test_xiaomi_eu_plug_opple_mode(zigpy_device_from_quirk, quirk):
 
         await opple_cluster.bind()
 
-        assert len(request_mock.mock_calls) == 1
+        assert len(request_mock.mock_calls) == 2
         assert request_mock.mock_calls[0][1] == (
             64704,
             1,
             b"\x04_\x11\x01\x02\t\x00 \x01",
         )
+        assert request_mock.mock_calls[1][1] == (
+            4,
+            2,
+            b"\x01\x02\x03\x00\x00",
+        )
 
 
-@mock.patch("zhaquirks.xiaomi.aqara.plug_eu.remove_from_ep", mock.AsyncMock())
 @pytest.mark.parametrize("quirk", (zhaquirks.xiaomi.aqara.plug_eu.PlugMAEU01,))
 async def test_xiaomi_eu_plug_power(zigpy_device_from_quirk, quirk):
     """Test current power consumption, total power consumption, and current voltage on Xiaomi EU plug."""

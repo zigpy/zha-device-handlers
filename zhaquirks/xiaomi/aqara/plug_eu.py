@@ -4,7 +4,6 @@ import logging
 import zigpy
 from zigpy.profiles import zha
 import zigpy.types as types
-from zigpy.util import CatchingTaskMixin
 from zigpy.zcl.clusters.general import (
     Alarms,
     AnalogInput,
@@ -77,15 +76,15 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         """Bind cluster."""
         result = await super().bind()
         await self.write_attributes(self.attr_config, manufacturer=OPPLE_MFG_CODE)
+        await remove_from_ep(self.endpoint.device)
         return result
 
 
-class PlugMMEU01(XiaomiCustomDevice, CatchingTaskMixin):
+class PlugMMEU01(XiaomiCustomDevice):
     """lumi.plug.mmeu01 plug."""
 
     def __init__(self, *args, **kwargs):
         """Init."""
-        self.create_catching_task(remove_from_ep(self))
         self.voltage_bus = Bus()
         self.consumption_bus = Bus()
         self.power_bus = Bus()
