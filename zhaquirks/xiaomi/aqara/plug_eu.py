@@ -1,10 +1,10 @@
 """Xiaomi Aqara EU plugs."""
-import asyncio
 import logging
 
 import zigpy
 from zigpy.profiles import zha
 import zigpy.types as types
+from zigpy.util import CatchingTaskMixin
 from zigpy.zcl.clusters.general import (
     Alarms,
     AnalogInput,
@@ -80,12 +80,12 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         return result
 
 
-class PlugMMEU01(XiaomiCustomDevice):
+class PlugMMEU01(XiaomiCustomDevice, CatchingTaskMixin):
     """lumi.plug.mmeu01 plug."""
 
     def __init__(self, *args, **kwargs):
         """Init."""
-        asyncio.create_task(remove_from_ep(self))
+        self.create_catching_task(remove_from_ep(self))
         self.voltage_bus = Bus()
         self.consumption_bus = Bus()
         self.power_bus = Bus()
