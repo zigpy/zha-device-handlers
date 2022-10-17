@@ -18,6 +18,7 @@ from zhaquirks.tuya import (
     TuyaZBExternalSwitchTypeCluster,
     TuyaZBOnOffAttributeCluster,
 )
+from zhaquirks.tuya.mcu import EnchantedDevice
 
 
 class TuyaSingleNoNeutralSwitch(TuyaSwitch):
@@ -117,6 +118,80 @@ class TuyaDoubleNoNeutralSwitch(TuyaSwitch):
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaZBOnOffAttributeCluster,
+                ],
+                OUTPUT_CLUSTERS: [Ota.cluster_id],
+            },
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaZBOnOffAttributeCluster,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+        },
+    }
+
+
+class TuyaDoubleNoNeutralSwitch_2(EnchantedDevice, TuyaSwitch):
+    """Tuya 2 gang no neutral light switch (v2)."""
+
+    signature = {
+        # "node_descriptor": "NodeDescriptor(byte1=2, byte2=64, mac_capability_flags=128, manufacturer_code=4098,
+        # maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264,
+        # maximum_outgoing_transfer_size=82, descriptor_capability_field=0)
+        # "node_descriptor": "NodeDescriptor(byte1=2, byte2=64, mac_capability_flags=128, manufacturer_code=4098,
+        # maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264,
+        # maximum_outgoing_transfer_size=82, descriptor_capability_field=0)"
+        MODEL: "TS0012",
+        ENDPOINTS: {
+            # <SimpleDescriptor endpoint=1 profile=260 device_type=100
+            # device_version=1
+            # input_clusters=["0x0000", "0x0003", "0x0004", "0x0005", "0x0006"]
+            # output_clusters=["0x000a", "0x0019"]>
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Ota.cluster_id, Time.cluster_id],
+            },
+            # <SimpleDescriptor endpoint=2 profile=260 device_type=100
+            # device_version=1
+            # input_clusters=[4, 5, 6]
+            # output_clusters=[]>
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+        },
+    }
+
+    replacement = {
+        SKIP_CONFIGURATION: True,
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     TuyaZBOnOffAttributeCluster,

@@ -79,30 +79,34 @@ class InovelliVZM31SNv11(CustomDevice):
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: DeviceType.DIMMABLE_LIGHT,
                 INPUT_CLUSTERS: [
-                    Basic,  # 0
-                    Identify,  # 3
-                    Groups,  # 4
-                    Scenes,  # 5
-                    OnOff,  # 6
-                    LevelControl,  # 8
-                    Metering,  # 1794
-                    ElectricalMeasurement,  # 2820
-                    Diagnostic,  # 2821
+                    Basic.cluster_id,  # 0
+                    Identify.cluster_id,  # 3
+                    Groups.cluster_id,  # 4
+                    Scenes.cluster_id,  # 5
+                    OnOff.cluster_id,  # 6
+                    LevelControl.cluster_id,  # 8
+                    Metering.cluster_id,  # 1794
+                    ElectricalMeasurement.cluster_id,  # 2820
+                    Diagnostic.cluster_id,  # 2821
                     Inovelli_VZM31SN_Cluster,  # 64561
                     WWAH_CLUSTER_ID,  # 64599
                 ],
                 OUTPUT_CLUSTERS: [
-                    Ota,  # 19
+                    Identify.cluster_id,  # 3
+                    OnOff.cluster_id,  # 6
+                    LevelControl.cluster_id,  # 8
+                    Ota.cluster_id,  # 19
+                    Inovelli_VZM31SN_Cluster,  # 64561
                 ],
             },
             2: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: DeviceType.DIMMER_SWITCH,
-                INPUT_CLUSTERS: [Basic, Identify],  # 0  # 3
+                INPUT_CLUSTERS: [Basic.cluster_id, Identify.cluster_id],  # 0  # 3
                 OUTPUT_CLUSTERS: [
-                    Identify,  # 3
-                    OnOff,  # 6
-                    LevelControl,  # 8
+                    Identify.cluster_id,  # 3
+                    OnOff.cluster_id,  # 6
+                    LevelControl.cluster_id,  # 8
                     Inovelli_VZM31SN_Cluster,  # 64561
                 ],
             },
@@ -162,34 +166,34 @@ class InovelliVZM31SNv10(CustomDevice):
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: DeviceType.DIMMABLE_LIGHT,
                 INPUT_CLUSTERS: [
-                    Basic,  # 0
-                    Identify,  # 3
-                    Groups,  # 4
-                    Scenes,  # 5
-                    OnOff,  # 6
-                    LevelControl,  # 8
-                    Metering,  # 1794
-                    ElectricalMeasurement,  # 2820
-                    Diagnostic,  # 2821
+                    Basic.cluster_id,  # 0
+                    Identify.cluster_id,  # 3
+                    Groups.cluster_id,  # 4
+                    Scenes.cluster_id,  # 5
+                    OnOff.cluster_id,  # 6
+                    LevelControl.cluster_id,  # 8
+                    Metering.cluster_id,  # 1794
+                    ElectricalMeasurement.cluster_id,  # 2820
+                    Diagnostic.cluster_id,  # 2821
                     Inovelli_VZM31SN_Cluster,  # 64561
                     WWAH_CLUSTER_ID,  # 64599
                 ],
                 OUTPUT_CLUSTERS: [
-                    Identify,  # 3
-                    OnOff,  # 6
-                    LevelControl,  # 8
-                    Ota,  # 19
+                    Identify.cluster_id,  # 3
+                    OnOff.cluster_id,  # 6
+                    LevelControl.cluster_id,  # 8
+                    Ota.cluster_id,  # 19
                     Inovelli_VZM31SN_Cluster,  # 64561
                 ],
             },
             2: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: DeviceType.DIMMER_SWITCH,
-                INPUT_CLUSTERS: [Basic, Identify],  # 0  # 3
+                INPUT_CLUSTERS: [Basic.cluster_id, Identify.cluster_id],  # 0  # 3
                 OUTPUT_CLUSTERS: [
-                    Identify,  # 3
-                    OnOff,  # 6
-                    LevelControl,  # 8
+                    Identify.cluster_id,  # 3
+                    OnOff.cluster_id,  # 6
+                    LevelControl.cluster_id,  # 8
                     Inovelli_VZM31SN_Cluster,  # 64561
                 ],
             },
@@ -243,34 +247,34 @@ class InovelliVZM31SNv9(CustomDevice):
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: DeviceType.DIMMABLE_LIGHT,
                 INPUT_CLUSTERS: [
-                    Basic,  # 0
-                    Identify,  # 3
-                    Groups,  # 4
-                    Scenes,  # 5
-                    OnOff,  # 6
-                    LevelControl,  # 8
-                    Metering,  # 1794
-                    ElectricalMeasurement,  # 2820
-                    Diagnostic,  # 2821
+                    Basic.cluster_id,  # 0
+                    Identify.cluster_id,  # 3
+                    Groups.cluster_id,  # 4
+                    Scenes.cluster_id,  # 5
+                    OnOff.cluster_id,  # 6
+                    LevelControl.cluster_id,  # 8
+                    Metering.cluster_id,  # 1794
+                    ElectricalMeasurement.cluster_id,  # 2820
+                    Diagnostic.cluster_id,  # 2821
                     Inovelli_VZM31SN_Cluster,  # 64561
                     WWAH_CLUSTER_ID,  # 64599
                 ],
                 OUTPUT_CLUSTERS: [
-                    Identify,  # 3
-                    OnOff,  # 6
-                    LevelControl,  # 8
-                    Ota,  # 19
+                    Identify.cluster_id,  # 3
+                    OnOff.cluster_id,  # 6
+                    LevelControl.cluster_id,  # 8
+                    Ota.cluster_id,  # 19
                     Inovelli_VZM31SN_Cluster,  # 64561
                 ],
             },
             2: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: DeviceType.DIMMER_SWITCH,
-                INPUT_CLUSTERS: [Identify],  # 3
+                INPUT_CLUSTERS: [Identify.cluster_id],  # 3
                 OUTPUT_CLUSTERS: [
-                    Identify,  # 3
-                    OnOff,  # 6
-                    LevelControl,  # 8
+                    Identify.cluster_id,  # 3
+                    OnOff.cluster_id,  # 6
+                    LevelControl.cluster_id,  # 8
                     Inovelli_VZM31SN_Cluster,  # 64561
                 ],
             },
@@ -322,33 +326,33 @@ class InovelliVZM31SN(CustomDevice):
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: DeviceType.DIMMABLE_LIGHT,
                 INPUT_CLUSTERS: [
-                    Basic,  # 0
-                    Identify,  # 3
-                    Groups,  # 4
-                    Scenes,  # 5
-                    OnOff,  # 6
-                    LevelControl,  # 8
-                    Metering,  # 1794
-                    ElectricalMeasurement,  # 2820
-                    Diagnostic,  # 2821
+                    Basic.cluster_id,  # 0
+                    Identify.cluster_id,  # 3
+                    Groups.cluster_id,  # 4
+                    Scenes.cluster_id,  # 5
+                    OnOff.cluster_id,  # 6
+                    LevelControl.cluster_id,  # 8
+                    Metering.cluster_id,  # 1794
+                    ElectricalMeasurement.cluster_id,  # 2820
+                    Diagnostic.cluster_id,  # 2821
                     Inovelli_VZM31SN_Cluster,  # 64561
                 ],
                 OUTPUT_CLUSTERS: [
-                    Identify,  # 3
-                    OnOff,  # 6
-                    LevelControl,  # 8
-                    Ota,  # 19
+                    Identify.cluster_id,  # 3
+                    OnOff.cluster_id,  # 6
+                    LevelControl.cluster_id,  # 8
+                    Ota.cluster_id,  # 19
                     Inovelli_VZM31SN_Cluster,  # 64561
                 ],
             },
             2: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: DeviceType.DIMMER_SWITCH,
-                INPUT_CLUSTERS: [Identify],  # 3
+                INPUT_CLUSTERS: [Identify.cluster_id],  # 3
                 OUTPUT_CLUSTERS: [
-                    Identify,  # 3
-                    OnOff,  # 6
-                    LevelControl,  # 8
+                    Identify.cluster_id,  # 3
+                    OnOff.cluster_id,  # 6
+                    LevelControl.cluster_id,  # 8
                     Inovelli_VZM31SN_Cluster,  # 64561
                 ],
             },
