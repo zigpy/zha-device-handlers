@@ -75,7 +75,10 @@ class OppleCluster(XiaomiAqaraE1Cluster):
     async def bind(self):
         """Bind cluster."""
         result = await super().bind()
-        await self.write_attributes(self.attr_config, manufacturer=OPPLE_MFG_CODE)
+        # Request seems to time out, but still writes the attribute successfully
+        self.create_catching_task(
+            self.write_attributes(self.attr_config, manufacturer=OPPLE_MFG_CODE)
+        )
         await remove_from_ep(self.endpoint.device)
         return result
 

@@ -440,23 +440,32 @@ async def test_xiaomi_eu_plug_binding(zigpy_device_from_quirk, quirk):
     device = zigpy_device_from_quirk(quirk)
     opple_cluster = device.endpoints[1].opple_cluster
 
-    with mock.patch.object(
-        opple_cluster.endpoint, "request", mock.AsyncMock()
-    ) as request_mock:
+    p1 = mock.patch.object(opple_cluster, "create_catching_task")
+    p2 = mock.patch.object(opple_cluster.endpoint, "request", mock.AsyncMock())
+
+    with p1 as mock_task, p2 as request_mock:
         request_mock.return_value = (foundation.Status.SUCCESS, "done")
 
         await opple_cluster.bind()
 
-        assert len(request_mock.mock_calls) == 2
+        # Only removed the plug from group 0 so far
+        assert len(request_mock.mock_calls) == 1
+        assert mock_task.call_count == 1
+
         assert request_mock.mock_calls[0][1] == (
-            64704,
-            1,
-            b"\x04_\x11\x01\x02\t\x00 \x01",
-        )
-        assert request_mock.mock_calls[1][1] == (
             4,
+            1,
+            b"\x01\x01\x03\x00\x00",
+        )
+
+        # Await call writing OppleMode attribute
+        await mock_task.call_args[0][0]
+
+        assert len(request_mock.mock_calls) == 2
+        assert request_mock.mock_calls[1][1] == (
+            64704,
             2,
-            b"\x01\x02\x03\x00\x00",
+            b"\x04_\x11\x02\x02\t\x00 \x01",
         )
 
 
