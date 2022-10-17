@@ -22,7 +22,10 @@ from zhaquirks.const import (
     ZONE_STATE,
 )
 from zhaquirks.xiaomi import (
+    CONSUMPTION_REPORTED,
     LUMI,
+    POWER_REPORTED,
+    VOLTAGE_REPORTED,
     XIAOMI_NODE_DESC,
     BasicCluster,
     XiaomiCustomDevice,
@@ -31,6 +34,7 @@ from zhaquirks.xiaomi import (
 )
 import zhaquirks.xiaomi.aqara.motion_aq2
 import zhaquirks.xiaomi.aqara.motion_aq2b
+import zhaquirks.xiaomi.aqara.plug_eu
 import zhaquirks.xiaomi.mija.motion
 
 from tests.common import ZCL_OCC_ATTR_RPT_OCC, ClusterListener
@@ -426,3 +430,81 @@ def test_attribute_parsing(raw_report):
     # The only remaining data should be the data type and the length.
     # Everything else is passed through unmodified.
     assert len(raw_report) == 2 * len(reports[0])
+
+
+@mock.patch("zigpy.zcl.Cluster.bind", mock.AsyncMock())
+@pytest.mark.parametrize("quirk", (zhaquirks.xiaomi.aqara.plug_eu.PlugMAEU01,))
+async def test_xiaomi_eu_plug_binding(zigpy_device_from_quirk, quirk):
+    """Test binding Xiaomi EU plug sets OppleMode to True and removes the plug from group 0."""
+
+    device = zigpy_device_from_quirk(quirk)
+    opple_cluster = device.endpoints[1].opple_cluster
+
+    p1 = mock.patch.object(opple_cluster, "create_catching_task")
+    p2 = mock.patch.object(opple_cluster.endpoint, "request", mock.AsyncMock())
+
+    with p1 as mock_task, p2 as request_mock:
+        request_mock.return_value = (foundation.Status.SUCCESS, "done")
+
+        await opple_cluster.bind()
+
+        # Only removed the plug from group 0 so far
+        assert len(request_mock.mock_calls) == 1
+        assert mock_task.call_count == 1
+
+        assert request_mock.mock_calls[0][1] == (
+            4,
+            1,
+            b"\x01\x01\x03\x00\x00",
+        )
+
+        # Await call writing OppleMode attribute
+        await mock_task.call_args[0][0]
+
+        assert len(request_mock.mock_calls) == 2
+        assert request_mock.mock_calls[1][1] == (
+            64704,
+            2,
+            b"\x04_\x11\x02\x02\t\x00 \x01",
+        )
+
+
+@pytest.mark.parametrize("quirk", (zhaquirks.xiaomi.aqara.plug_eu.PlugMAEU01,))
+async def test_xiaomi_eu_plug_power(zigpy_device_from_quirk, quirk):
+    """Test current power consumption, total power consumption, and current voltage on Xiaomi EU plug."""
+
+    device = zigpy_device_from_quirk(quirk)
+
+    em_cluster = device.endpoints[1].electrical_measurement
+    em_listener = ClusterListener(em_cluster)
+
+    # Test voltage on ElectricalMeasurement cluster
+    em_cluster.endpoint.device.voltage_bus.listener_event(VOLTAGE_REPORTED, 230)
+    assert len(em_listener.attribute_updates) == 1
+    assert em_listener.attribute_updates[0][0] == 1285
+    assert em_listener.attribute_updates[0][1] == 230
+
+    # Test current power consumption on ElectricalMeasurement cluster
+    em_cluster.endpoint.device.power_bus.listener_event(POWER_REPORTED, 15)
+    assert len(em_listener.attribute_updates) == 2
+    assert em_listener.attribute_updates[1][0] == 1291
+    assert em_listener.attribute_updates[1][1] == 150  # multiplied by 10
+
+    # Test total power consumption on ElectricalMeasurement cluster
+    em_cluster.endpoint.device.consumption_bus.listener_event(
+        CONSUMPTION_REPORTED, 0.001
+    )
+    assert len(em_listener.attribute_updates) == 3
+    assert em_listener.attribute_updates[2][0] == 772
+    assert em_listener.attribute_updates[2][1] == 1  # multiplied by 1000
+
+    # Test total power consumption on SmartEnergy cluster
+    se_cluster = device.endpoints[1].smartenergy_metering
+    se_listener = ClusterListener(se_cluster)
+
+    se_cluster.endpoint.device.consumption_bus.listener_event(
+        CONSUMPTION_REPORTED, 0.001
+    )
+    assert len(se_listener.attribute_updates) == 1
+    assert se_listener.attribute_updates[0][0] == 0
+    assert se_listener.attribute_updates[0][1] == 1  # multiplied by 1000
