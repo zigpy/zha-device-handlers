@@ -75,11 +75,11 @@ class HeimanSmokCO_V15(CustomDevice):
     """CO_V15 quirk."""
 
     # NodeDescriptor(
-    #     logical_type=<LogicalType.EndDevice: 2>, complex_descriptor_available=0, user_descriptor_available=0, reserved=0, aps_flags=0, 
-    #     frequency_band=<FrequencyBand.Freq2400MHz: 8>, mac_capability_flags=<MACCapabilityFlags.AllocateAddress|MainsPowered: 132>, 
-    #     manufacturer_code=48042, maximum_buffer_size=64, maximum_incoming_transfer_size=0, server_mask=0, maximum_outgoing_transfer_size=0, 
-    #     descriptor_capability_field=<DescriptorCapability.ExtendedSimpleDescriptorListAvailable|ExtendedActiveEndpointListAvailable: 3>, 
-    #     *allocate_address=True, *is_alternate_pan_coordinator=False, *is_coordinator=False, *is_end_device=True, *is_full_function_device=False, 
+    #     logical_type=<LogicalType.EndDevice: 2>, complex_descriptor_available=0, user_descriptor_available=0, reserved=0, aps_flags=0,
+    #     frequency_band=<FrequencyBand.Freq2400MHz: 8>, mac_capability_flags=<MACCapabilityFlags.AllocateAddress|MainsPowered: 132>,
+    #     manufacturer_code=48042, maximum_buffer_size=64, maximum_incoming_transfer_size=0, server_mask=0, maximum_outgoing_transfer_size=0,
+    #     descriptor_capability_field=<DescriptorCapability.ExtendedSimpleDescriptorListAvailable|ExtendedActiveEndpointListAvailable: 3>,
+    #     *allocate_address=True, *is_alternate_pan_coordinator=False, *is_coordinator=False, *is_end_device=True, *is_full_function_device=False,
     #     *is_mains_powered=True, *is_receiver_on_when_idle=False, *is_router=False, *is_security_capable=False
     # )"
     signature = {
