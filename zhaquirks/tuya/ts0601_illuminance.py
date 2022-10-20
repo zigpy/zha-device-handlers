@@ -38,7 +38,7 @@ class TuyaIlluminanceMeasurement(IlluminanceMeasurement, TuyaLocalCluster):
     attributes = IlluminanceMeasurement.attributes.copy()
     attributes.update(
         {
-            0xFF00: ("brightness_level", BrightnessLevel, True),
+            0xFF00: ("manufacturer_brightness_level", BrightnessLevel, True),
         }
     )
 
