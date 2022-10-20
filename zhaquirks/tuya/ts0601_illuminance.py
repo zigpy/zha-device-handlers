@@ -19,10 +19,14 @@ from zhaquirks.const import (
 )
 from zhaquirks.tuya import DPToAttributeMapping, TuyaLocalCluster, TuyaNewManufCluster
 
-TUYA_BRIGHTNESS_LEVEL_ATTR = 0x01  # 0-2 "Low, Medium, High"
-TUYA_ILLUMINANCE_ATTR = 0x02  # [0, 0, 3, 232] illuminance
+TUYA_BRIGHTNESS_LEVEL_DP = 0x01  # 0-2 "Low, Medium, High"
+TUYA_ILLUMINANCE_DP = 0x02  # [0, 0, 3, 232] illuminance
 
-TUYA_BRIGHTNESS_LEVEL_STR = ["Low", "Medium", "High"]
+class BrightnessLevel(t.enum8):
+    """Brightness level enum."""
+    LOW = 0x00
+    MEDIUM = 0x01
+    HIGH = 0x02
 
 
 class TuyaIlluminanceMeasurement(IlluminanceMeasurement, TuyaLocalCluster):
@@ -31,7 +35,7 @@ class TuyaIlluminanceMeasurement(IlluminanceMeasurement, TuyaLocalCluster):
     attributes = IlluminanceMeasurement.attributes.copy()
     attributes.update(
         {
-            0xFF00: ("brightness_level", t.CharacterString, True),
+            0xFF00: ("brightness_level", BrightnessLevel, True),
         }
     )
 
@@ -40,12 +44,12 @@ class TuyaIlluminanceCluster(TuyaNewManufCluster):
     """Tuya Illuminance cluster."""
 
     dp_to_attribute: Dict[int, DPToAttributeMapping] = {
-        TUYA_BRIGHTNESS_LEVEL_ATTR: DPToAttributeMapping(
+        TUYA_BRIGHTNESS_LEVEL_DP: DPToAttributeMapping(
             TuyaIlluminanceMeasurement.ep_attribute,
-            "brightness_level",
-            lambda x: TUYA_BRIGHTNESS_LEVEL_STR[x],
+            "manufacturer_brightness_level",
+            lambda x: BrightnessLevel(x),
         ),
-        TUYA_ILLUMINANCE_ATTR: DPToAttributeMapping(
+        TUYA_ILLUMINANCE_DP: DPToAttributeMapping(
             TuyaIlluminanceMeasurement.ep_attribute,
             "measured_value",
             lambda x: (10000.0 * math.log10(x) + 1.0 if x != 0 else 0),
@@ -53,8 +57,8 @@ class TuyaIlluminanceCluster(TuyaNewManufCluster):
     }
 
     data_point_handlers = {
-        TUYA_BRIGHTNESS_LEVEL_ATTR: "_dp_2_attr_update",
-        TUYA_ILLUMINANCE_ATTR: "_dp_2_attr_update",
+        TUYA_BRIGHTNESS_LEVEL_DP: "_dp_2_attr_update",
+        TUYA_ILLUMINANCE_DP: "_dp_2_attr_update",
     }
 
 
