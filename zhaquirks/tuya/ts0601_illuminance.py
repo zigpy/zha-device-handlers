@@ -17,7 +17,13 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import DPToAttributeMapping, TuyaLocalCluster, TuyaNewManufCluster
+
+from zhaquirks.tuya import TuyaLocalCluster
+from zhaquirks.tuya.mcu import (
+    DPToAttributeMapping,
+    TuyaDPType,
+    TuyaMCUCluster,
+)
 
 TUYA_BRIGHTNESS_LEVEL_DP = 0x01  # 0-2 "Low, Medium, High"
 TUYA_ILLUMINANCE_DP = 0x02  # [0, 0, 3, 232] illuminance
@@ -40,19 +46,21 @@ class TuyaIlluminanceMeasurement(IlluminanceMeasurement, TuyaLocalCluster):
     )
 
 
-class TuyaIlluminanceCluster(TuyaNewManufCluster):
+class TuyaIlluminanceCluster(TuyaMCUCluster):
     """Tuya Illuminance cluster."""
 
     dp_to_attribute: Dict[int, DPToAttributeMapping] = {
         TUYA_BRIGHTNESS_LEVEL_DP: DPToAttributeMapping(
             TuyaIlluminanceMeasurement.ep_attribute,
             "manufacturer_brightness_level",
-            lambda x: BrightnessLevel(x),
+            dp_type=TuyaDPType.ENUM,
+            converter=lambda x: BrightnessLevel(x),
         ),
         TUYA_ILLUMINANCE_DP: DPToAttributeMapping(
             TuyaIlluminanceMeasurement.ep_attribute,
             "measured_value",
-            lambda x: (10000.0 * math.log10(x) + 1.0 if x != 0 else 0),
+            dp_type=TuyaDPType.VALUE,
+            converter=lambda x: (10000.0 * math.log10(x) + 1.0 if x != 0 else 0),
         ),
     }
 
@@ -79,7 +87,7 @@ class TuyaIlluminance(CustomDevice):
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaNewManufCluster.cluster_id,
+                    TuyaMCUCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
