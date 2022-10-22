@@ -13,9 +13,7 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.lightlink import LightLink
 
-from zhaquirks.ikea import IKEA
-
-IKEA_CLUSTER_ID = 0xFC7C  # decimal = 64636
+from zhaquirks.ikea import IKEA, IKEA_CLUSTER_ID
 
 
 class TradfriPlug(CustomDevice):

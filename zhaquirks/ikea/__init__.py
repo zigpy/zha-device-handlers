@@ -11,6 +11,7 @@ from zhaquirks import DoublingPowerConfigurationCluster
 
 _LOGGER = logging.getLogger(__name__)
 IKEA = "IKEA of Sweden"
+IKEA_CLUSTER_ID = 0xFC7C  # decimal = 64636
 
 
 class LightLinkCluster(CustomCluster, LightLink):
