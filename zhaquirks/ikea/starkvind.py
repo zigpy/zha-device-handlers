@@ -27,9 +27,8 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.ikea import IKEA, IKEA_CLUSTER_ID
+from zhaquirks.ikea import IKEA, IKEA_CLUSTER_ID, WWAH_CLUSTER_ID
 
-WWAH_CLUSTER_ID = 0xFC57  # decimal = 64599
 _LOGGER = logging.getLogger(__name__)
 
 
