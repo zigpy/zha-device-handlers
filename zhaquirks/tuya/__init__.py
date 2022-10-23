@@ -529,9 +529,13 @@ class TuyaOnOff(CustomCluster, OnOff):
                 TUYA_MCU_COMMAND,
                 cmd_payload,
             )
-            return foundation.Status.SUCCESS
+            return foundation.GENERAL_COMMANDS[
+                foundation.GeneralCommand.Default_Response
+            ].schema(command_id=command_id, status=foundation.Status.SUCCESS)
 
-        return foundation.Status.UNSUP_CLUSTER_COMMAND
+        return foundation.GENERAL_COMMANDS[
+            foundation.GeneralCommand.Default_Response
+        ].schema(command_id=command_id, status=foundation.Status.UNSUP_CLUSTER_COMMAND)
 
 
 class TuyaManufacturerClusterOnOff(TuyaManufCluster):
@@ -688,7 +692,9 @@ class TuyaThermostatCluster(LocalDataCluster, Thermostat):
         try:
             current = success[attrid]
         except KeyError:
-            return foundation.Status.FAILURE
+            return foundation.GENERAL_COMMANDS[
+                foundation.GeneralCommand.Default_Response
+            ].schema(command_id=command_id, status=foundation.Status.FAILURE)
 
         # offset is given in decidegrees, see Zigbee cluster specification
         (res,) = await self.write_attributes(
