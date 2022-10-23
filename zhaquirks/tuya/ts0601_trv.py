@@ -1529,6 +1529,7 @@ class MoesHY368_Type1(TuyaThermostat):
             ("_TZE200_4eeyebrt", "TS0601"),
             ("_TZE200_cpmgn2cf", "TS0601"),
             ("_TZE200_9sfg7gm0", "TS0601"),
+            ("_TZE200_8whxpsiw", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
@@ -1683,6 +1684,7 @@ class ZonnsmartTV01_ZG(TuyaThermostat):
             ("_TZE200_kly8gjlz", "TS0601"),
             ("_TZE200_lnbfnyxd", "TS0601"),
             ("_TZE200_mudxchsu", "TS0601"),
+            ("_TZE200_kds0pmmv", "TS0601"),  # MOES TRV TV02
         ],
         ENDPOINTS: {
             1: {

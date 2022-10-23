@@ -7,11 +7,12 @@ from zigpy.zcl import foundation
 
 import zhaquirks
 
-from tests.common import ClusterListener
+from tests.common import ClusterListener, wait_for_zigpy_tasks
 
 zhaquirks.setup()
 
 
+@mock.patch("zhaquirks.tuya.mcu.EnchantedDevice.spell", mock.AsyncMock())
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_valve.ParksidePSBZS,))
 async def test_command_psbzs(zigpy_device_from_quirk, quirk):
     """Test executing cluster commands for PARKSIDE water valve."""
@@ -29,6 +30,7 @@ async def test_command_psbzs(zigpy_device_from_quirk, quirk):
     ) as m1:
         rsp = await switch_cluster.command(0x0001)
 
+        await wait_for_zigpy_tasks()
         m1.assert_called_with(
             61184,
             2,
@@ -39,6 +41,7 @@ async def test_command_psbzs(zigpy_device_from_quirk, quirk):
         assert rsp.status == foundation.Status.SUCCESS
 
 
+@mock.patch("zhaquirks.tuya.mcu.EnchantedDevice.spell", mock.AsyncMock())
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_valve.ParksidePSBZS,))
 async def test_write_attr_psbzs(zigpy_device_from_quirk, quirk):
     """Test write cluster attributes for PARKSIDE water valve."""
@@ -46,17 +49,15 @@ async def test_write_attr_psbzs(zigpy_device_from_quirk, quirk):
     water_valve_dev = zigpy_device_from_quirk(quirk)
     tuya_cluster = water_valve_dev.endpoints[1].tuya_manufacturer
 
-    async def async_success(*args, **kwargs):
-        return foundation.Status.SUCCESS
-
     with mock.patch.object(
-        tuya_cluster.endpoint, "request", side_effect=async_success
+        tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
     ) as m1:
         (status,) = await tuya_cluster.write_attributes(
             {
                 "timer_duration": 15,
             }
         )
+        await wait_for_zigpy_tasks()
         m1.assert_called_with(
             61184,
             2,
@@ -73,6 +74,7 @@ async def test_write_attr_psbzs(zigpy_device_from_quirk, quirk):
                 "frost_lock_reset": 0,
             }
         )
+        await wait_for_zigpy_tasks()
         m1.assert_called_with(
             61184,
             4,

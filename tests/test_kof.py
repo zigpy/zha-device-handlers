@@ -10,8 +10,6 @@ import zigpy.zdo.types as zdo_t
 import zhaquirks
 import zhaquirks.kof.kof_mr101z
 
-from tests.conftest import CoroutineMock
-
 zhaquirks.setup()
 
 Default_Response = foundation.GENERAL_COMMANDS[
@@ -35,7 +33,7 @@ async def test_kof_no_reply():
         }
         client_commands = {}
 
-    ep = CoroutineMock()
+    ep = mock.AsyncMock()
     ep.device.application.get_sequence = mock.MagicMock(return_value=4)
 
     cluster = TestCluster(ep)

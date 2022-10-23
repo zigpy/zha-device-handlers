@@ -35,7 +35,7 @@ from zhaquirks.tuya import (
 from zhaquirks.tuya.mcu import EnchantedDevice
 
 
-class Plug(CustomDevice):
+class Plug(EnchantedDevice):
     """Tuya plug with restore power state support."""
 
     signature = {
