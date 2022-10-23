@@ -13,7 +13,7 @@ _LOGGER = logging.getLogger(__name__)
 
 IKEA = "IKEA of Sweden"
 IKEA_CLUSTER_ID = 0xFC7C  # decimal = 64636
-WWAH_CLUSTER_ID = 0xFC57  # decimal = 64599
+WWAH_CLUSTER_ID = 0xFC57  # decimal = 64599 ('Works with all Hubs' cluster)
 
 
 class LightLinkCluster(CustomCluster, LightLink):
