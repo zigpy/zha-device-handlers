@@ -785,7 +785,7 @@ class XBeeCommon(CustomDevice):
             if hdr.command_id == DATA_IN_CMD:
                 self._endpoint.out_clusters[
                     LevelControl.cluster_id
-                ].handle_cluster_request(hdr, {"data": args[0]))
+                ].handle_cluster_request(hdr, {"data": args[0]})
             else:
                 super().handle_cluster_request(hdr, args)
 
