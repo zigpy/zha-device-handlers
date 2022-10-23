@@ -490,7 +490,7 @@ class XBeeRemoteATRequest(LocalDataCluster):
         hdr = foundation.ZCLHeader.cluster(tsn, command_id)
         self._endpoint.device.endpoints[232].out_clusters[
             LevelControl.cluster_id
-        ].handle_cluster_request(hdr, value)
+        ].handle_cluster_request(hdr, {"response": value})
 
         # XXX: Is command_id=0x00 correct?
         return foundation.GENERAL_COMMANDS[
@@ -785,7 +785,7 @@ class XBeeCommon(CustomDevice):
             if hdr.command_id == DATA_IN_CMD:
                 self._endpoint.out_clusters[
                     LevelControl.cluster_id
-                ].handle_cluster_request(hdr, args[0])
+                ].handle_cluster_request(hdr, {"data": args[0]))
             else:
                 super().handle_cluster_request(hdr, args)
 
