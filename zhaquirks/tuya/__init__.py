@@ -1292,10 +1292,11 @@ class TuyaLevelControl(CustomCluster, LevelControl):
     ):
         """Override the default Cluster command."""
         _LOGGER.debug(
-            "%s Sending Tuya Cluster Command.. Cluster Command is %x, Arguments are %s",
+            "%s Sending Tuya Cluster Command.. Cluster Command is %x, Arguments are %s, %s",
             self.endpoint.device.ieee,
             command_id,
             args,
+            kwargs,
         )
         # Move to level
         # move_to_level_with_on_off
