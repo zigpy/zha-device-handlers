@@ -23,9 +23,12 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.ikea import IKEA, LightLinkCluster, PowerConfiguration2CRCluster
-
-IKEA_CLUSTER_ID = 0xFC7C  # decimal = 64636
+from zhaquirks.ikea import (
+    IKEA,
+    IKEA_CLUSTER_ID,
+    LightLinkCluster,
+    PowerConfiguration2CRCluster,
+)
 
 
 class IkeaTradfriMotion(CustomDevice):

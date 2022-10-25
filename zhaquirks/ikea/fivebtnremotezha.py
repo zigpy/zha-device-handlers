@@ -44,12 +44,11 @@ from zhaquirks.const import (
 )
 from zhaquirks.ikea import (
     IKEA,
+    IKEA_CLUSTER_ID,
     LightLinkCluster,
     PowerConfiguration1CRCluster,
     ScenesCluster,
 )
-
-IKEA_CLUSTER_ID = 0xFC7C  # decimal = 64636
 
 
 class IkeaTradfriRemote1(CustomDevice):

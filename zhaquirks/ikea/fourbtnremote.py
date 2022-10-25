@@ -40,9 +40,12 @@ from zhaquirks.const import (
     TURN_OFF,
     TURN_ON,
 )
-from zhaquirks.ikea import IKEA, PowerConfiguration2AAACluster, ScenesCluster
-
-WWAH_CLUSTER_ID = 0xFC57  # decimal = 64599
+from zhaquirks.ikea import (
+    IKEA,
+    WWAH_CLUSTER_ID,
+    PowerConfiguration2AAACluster,
+    ScenesCluster,
+)
 
 
 class IkeaTradfriRemote(CustomDevice):
