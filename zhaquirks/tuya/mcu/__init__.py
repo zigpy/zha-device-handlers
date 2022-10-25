@@ -459,9 +459,10 @@ class TuyaLevelControl(LevelControl, TuyaLocalCluster):
     ):
         """Override the default Cluster command."""
         self.debug(
-            "Sending Tuya Cluster Command. Cluster Command is %x, Arguments are %s",
+            "Sending Tuya Cluster Command. Cluster Command is %x, Arguments are %s, %s",
             command_id,
             args,
+            kwargs,
         )
 
         # getting the level value
