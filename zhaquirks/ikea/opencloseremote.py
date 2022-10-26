@@ -35,13 +35,12 @@ from zhaquirks.const import (
     SHORT_PRESS,
     ZHA_SEND_EVENT,
 )
-from zhaquirks.ikea import IKEA, PowerConfiguration1CRCluster
+from zhaquirks.ikea import IKEA, IKEA_CLUSTER_ID, PowerConfiguration1CRCluster
 
 COMMAND_CLOSE = "down_close"
 COMMAND_STOP_OPENING = "stop_opening"
 COMMAND_STOP_CLOSING = "stop_closing"
 COMMAND_OPEN = "up_open"
-IKEA_CLUSTER_ID = 0xFC7C  # decimal = 64636
 
 
 class IkeaWindowCovering(CustomCluster, WindowCovering):

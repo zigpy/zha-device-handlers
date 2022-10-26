@@ -93,7 +93,7 @@ class LocalDataCluster(CustomCluster):
         """Prevent remote writes."""
         for attrid, value in attributes.items():
             if isinstance(attrid, str):
-                attrid = self.attributes[attrid].id
+                attrid = self.attributes_by_name[attrid].id
             elif attrid not in self.attributes:
                 self.error("%d is not a valid attribute id", attrid)
                 continue
