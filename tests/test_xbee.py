@@ -347,7 +347,7 @@ async def test_remote_at_non_native(
     ].add_listener(listener)
 
     def mock_at_response(*args, **kwargs):
-        """Simulate remote AT comand response from device."""
+        """Simulate remote AT command response from device."""
         xbee3_device.handle_message(
             XBEE_PROFILE_ID,
             XBEE_AT_RESPONSE_CLUSTER,
@@ -472,7 +472,7 @@ async def test_remote_at_tx_failure(zigpy_device_from_quirk):
     ].add_listener(listener)
 
     def mock_at_response(*args, **kwargs):
-        """Simulate remote AT comand response from device."""
+        """Simulate remote AT command response from device."""
         xbee3_device.handle_message(
             XBEE_PROFILE_ID,
             XBEE_AT_RESPONSE_CLUSTER,
