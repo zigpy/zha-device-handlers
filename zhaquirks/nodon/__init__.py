@@ -1,1 +1,1 @@
-"""Nodon quirks elements."""
+"""Nodon module for custom device handlers."""
