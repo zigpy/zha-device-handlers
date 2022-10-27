@@ -233,7 +233,6 @@ AT_COMMANDS = {
     "RE": None,
     "FR": None,
     "NR": t.Bool,
-    "SI": None,
     "CB": uint8_t,
     "DN": Bytes,  # "up to 20-Byte printable ASCII string"
     "IS": None,
@@ -294,7 +293,9 @@ class XBeeOnOff(LocalDataCluster, OnOff):
             pin_cmd = DIO_PIN_HIGH
         await self._endpoint.device.remote_at(pin_name, pin_cmd)
         self._update_attribute(ATTR_ON_OFF, command_id)
-        return 0, foundation.Status.SUCCESS
+        return foundation.GENERAL_COMMANDS[
+            foundation.GeneralCommand.Default_Response
+        ].schema(command_id=command_id, status=foundation.Status.SUCCESS)
 
 
 class XBeeAnalogInput(LocalDataCluster, AnalogInput):
@@ -481,7 +482,7 @@ class XBeeRemoteATRequest(LocalDataCluster):
         except IndexError:
             value = None
 
-        if value:
+        if value is not None:
             value = await self.remote_at_command(command, value)
         else:
             value = await self.remote_at_command(command)
@@ -492,10 +493,9 @@ class XBeeRemoteATRequest(LocalDataCluster):
             LevelControl.cluster_id
         ].handle_cluster_request(hdr, {"response": value})
 
-        # XXX: Is command_id=0x00 correct?
         return foundation.GENERAL_COMMANDS[
             foundation.GeneralCommand.Default_Response
-        ].schema(command_id=0x00, status=foundation.Status.SUCCESS)
+        ].schema(command_id=command_id, status=foundation.Status.SUCCESS)
 
 
 class XBeeRemoteATResponse(LocalDataCluster):
@@ -631,7 +631,7 @@ class XBeeCommon(CustomDevice):
                 digital_mask = data[1:3]
                 analog_mask = data[3:4]
                 digital_sample = data[4:6]
-                num_bits = 13
+                num_bits = 15
                 digital_pins = [
                     (int.from_bytes(digital_mask, byteorder="big") >> bit) & 1
                     for bit in range(num_bits - 1, -1, -1)
@@ -756,20 +756,27 @@ class XBeeCommon(CustomDevice):
                 data = str(data, encoding="latin1")
                 return (cls(data), b"")
 
-        def command(
+        async def command(
             self, command_id, *args, manufacturer=None, expect_reply=False, tsn=None
         ):
             """Handle outgoing data."""
             data = self.BinaryString(args[0]).serialize()
-            return self._endpoint.device.application.request(
-                self._endpoint.device,
-                XBEE_PROFILE_ID,
-                XBEE_DATA_CLUSTER,
-                XBEE_DATA_ENDPOINT,
-                XBEE_DATA_ENDPOINT,
-                self._endpoint.device.application.get_sequence(),
-                data,
-                expect_reply=False,
+            return foundation.GENERAL_COMMANDS[
+                foundation.GeneralCommand.Default_Response
+            ].schema(
+                command_id=0x00,
+                status=(
+                    await self._endpoint.device.application.request(
+                        self._endpoint.device,
+                        XBEE_PROFILE_ID,
+                        XBEE_DATA_CLUSTER,
+                        XBEE_DATA_ENDPOINT,
+                        XBEE_DATA_ENDPOINT,
+                        self._endpoint.device.application.get_sequence(),
+                        data,
+                        expect_reply=False,
+                    )
+                )[0],
             )
 
         def handle_cluster_request(

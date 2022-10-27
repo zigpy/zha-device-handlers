@@ -61,7 +61,7 @@ automation:
         args: Assistant
 ```
 
-## Raw AT Commands
+## Remote AT Commands
 
 Like with UART, you can send remote AT commands with `zha.issue_zigbee_cluster_command` service.
 If the command is unsuccessful, you will get an exception in the logs. If it is successful, the response will be available as `zha_event` event.
