@@ -65,14 +65,14 @@ class NodOnSIN4220(CustomDevice):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     OnOff.cluster_id,
-                    OnOffConfiguration.cluster_id,
+                    OnOffConfiguration.cluster_id,                  
                     LevelControl.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
                 ],
-            },
+            },            
             # <SimpleDescriptor endpoint=242 profile=41440 device_type=102
             # input_clusters=[33]
             # output_clusters=[33]
@@ -99,11 +99,7 @@ class NodOnSIN4220(CustomDevice):
                     LightLink.cluster_id,
                     64599,
                 ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    OnOff.cluster_id,
-                    Ota.cluster_id,
-                ],
+                OUTPUT_CLUSTERS: [Identify.cluster_id, OnOff.cluster_id, Ota.cluster_id],
             },
             2: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -116,10 +112,7 @@ class NodOnSIN4220(CustomDevice):
                     OnOff.cluster_id,
                     OnOffConfiguration.cluster_id,
                 ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    OnOff.cluster_id,
-                ],
+                OUTPUT_CLUSTERS: [Identify.cluster_id, OnOff.cluster_id],
             },
             242: {
                 PROFILE_ID: 41440,
