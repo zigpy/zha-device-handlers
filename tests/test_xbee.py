@@ -3,23 +3,22 @@
 from unittest import mock
 
 import pytest
-
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import AnalogOutput, Basic, OnOff, LevelControl
-
-from tests.common import ClusterListener
+from zigpy.zcl.clusters.general import AnalogOutput, Basic, LevelControl, OnOff
 
 import zhaquirks
-from zhaquirks.xbee.xbee3_io import XBee3Sensor
 from zhaquirks.xbee import (
+    XBEE_AT_ENDPOINT,
     XBEE_AT_REQUEST_CLUSTER,
     XBEE_AT_RESPONSE_CLUSTER,
-    XBEE_AT_ENDPOINT,
     XBEE_DATA_CLUSTER,
     XBEE_DATA_ENDPOINT,
-    XBEE_PROFILE_ID,
     XBEE_IO_CLUSTER,
+    XBEE_PROFILE_ID,
 )
+from zhaquirks.xbee.xbee3_io import XBee3Sensor
+
+from tests.common import ClusterListener
 
 zhaquirks.setup()
 
