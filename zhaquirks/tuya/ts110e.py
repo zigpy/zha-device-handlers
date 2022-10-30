@@ -125,7 +125,9 @@ class F000LevelControlCluster(NoManufacturerCluster, LevelControl):
                 tsn=tsn,
             )
 
-        return super().command(command_id, *args, manufacturer, expect_reply, tsn)
+        return super().command(
+            command_id, *args, manufacturer, expect_reply, tsn, **kwargs
+        )
 
 
 class DimmerSwitchWithNeutral1Gang(TuyaDimmerSwitch):
