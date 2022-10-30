@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import logging
 import math
-from typing import Iterable, Iterator
+from typing import Any, Iterable, Iterator
 
 from zigpy import types as t
 import zigpy.device
@@ -317,6 +317,7 @@ class XiaomiCluster(CustomCluster):
             "lumi.sens",
             "lumi.weather",
             "lumi.airmonitor.acn01",
+            "lumi.sensor_ht.agl02",
         ]:
             # Temperature sensors send temperature/humidity/pressure updates through this
             # cluster instead of the respective clusters
@@ -648,7 +649,9 @@ class OnOffCluster(OnOff, CustomCluster):
         *args,
         manufacturer: int | t.uint16_t | None = None,
         expect_reply: bool = True,
+        tries: int = 1,
         tsn: int | t.uint8_t | None = None,
+        **kwargs: Any,
     ):
         """Command handler."""
         src_ep = 1
