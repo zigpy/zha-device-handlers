@@ -27,7 +27,7 @@ SWITCH_EVENT = "switch_event"
 """Hiking Power Meter Attributes"""
 HIKING_DIN_SWITCH_ATTR = 0x0110
 HIKING_TOTAL_ENERGY_ATTR = 0x0201
-HIKING_VOLTAGE_ATTR = 0x0006
+HIKING_VOLTAGE_CURRENT_ATTR = 0x0006
 HIKING_POWER_ATTR = 0x0267
 HIKING_FREQUENCY_ATTR = 0x0269
 HIKING_POWER_FACTOR_ATTR = 0x026F
@@ -125,7 +125,7 @@ class HikingManufClusterDinPower(TuyaManufClusterAttributes):
     attributes = {
         HIKING_DIN_SWITCH_ATTR: ("switch", t.uint8_t, True),
         HIKING_TOTAL_ENERGY_ATTR: ("energy", t.uint16_t, True),
-        HIKING_VOLTAGE_ATTR: ("voltage", t.uint16_t, True),
+        HIKING_VOLTAGE_CURRENT_ATTR: ("voltage_current", t.uint32_t, True),
         HIKING_POWER_ATTR: ("power", t.uint16_t, True),
         HIKING_FREQUENCY_ATTR: ("frequency", t.uint16_t, True),
         HIKING_POWER_FACTOR_ATTR: ("power_factor", t.uint16_t, True),
@@ -137,8 +137,11 @@ class HikingManufClusterDinPower(TuyaManufClusterAttributes):
             self.endpoint.device.switch_bus.listener_event(SWITCH_EVENT, 16, value)
         elif attrid == HIKING_TOTAL_ENERGY_ATTR:
             self.endpoint.smartenergy_metering.energy_reported(value / 100)
-        elif attrid == HIKING_VOLTAGE_ATTR:
-            self.endpoint.electrical_measurement.voltage_reported(value / 10)
+        elif attrid == HIKING_VOLTAGE_CURRENT_ATTR:
+            self.endpoint.electrical_measurement.current_reported(value >> 16)
+            self.endpoint.electrical_measurement.voltage_reported(
+                (value & 0x0000FFFF) / 10
+            )
         elif attrid == HIKING_POWER_ATTR:
             self.endpoint.electrical_measurement.power_reported(value)
         elif attrid == HIKING_FREQUENCY_ATTR:
