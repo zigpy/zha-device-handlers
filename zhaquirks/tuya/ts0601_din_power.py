@@ -30,6 +30,7 @@ HIKING_TOTAL_ENERGY_ATTR = 0x0201
 HIKING_VOLTAGE_ATTR = 0x0006
 HIKING_POWER_ATTR = 0x0267
 HIKING_FREQUENCY_ATTR = 0x0269
+HIKING_POWER_FACTOR_ATTR = 0x026f
 
 
 class TuyaManufClusterDinPower(TuyaManufClusterAttributes):
@@ -68,6 +69,7 @@ class TuyaPowerMeasurement(LocalDataCluster, ElectricalMeasurement):
     VOLTAGE_ID = 0x0505
     CURRENT_ID = 0x0508
     AC_FREQUENCY_ID = 0x0300
+    POWER_FACTOR_ID = 0x0510
 
     AC_CURRENT_MULTIPLIER = 0x0602
     AC_CURRENT_DIVISOR = 0x0603
@@ -88,6 +90,10 @@ class TuyaPowerMeasurement(LocalDataCluster, ElectricalMeasurement):
     def power_reported(self, value):
         """Power reported."""
         self._update_attribute(self.POWER_ID, value)
+
+    def power_factor_reported(self,value):
+        """Power Factor reported."""
+        self._update_attribute(self.POWER_FACTOR_ID, value)
 
     def current_reported(self, value):
         """Ampers reported."""
@@ -122,6 +128,7 @@ class HikingManufClusterDinPower(TuyaManufClusterAttributes):
         HIKING_VOLTAGE_ATTR: ("voltage", t.uint16_t, True),
         HIKING_POWER_ATTR: ("power", t.uint16_t, True),
         HIKING_FREQUENCY_ATTR: ("frequency", t.uint16_t, True),
+        HIKING_POWER_FACTOR_ATTR: ("power_factor", t.uint16_t, True),
     }
 
     def _update_attribute(self, attrid, value):
@@ -136,6 +143,8 @@ class HikingManufClusterDinPower(TuyaManufClusterAttributes):
             self.endpoint.electrical_measurement.power_reported(value)
         elif attrid == HIKING_FREQUENCY_ATTR:
             self.endpoint.electrical_measurement.frequency_reported(value)
+        elif attrid == HIKING_POWER_FACTOR_ATTR:
+            self.endpoint.electrical_measurement.power_factor_reported(value/10)
 
 
 class TuyaPowerMeter(TuyaSwitch):
