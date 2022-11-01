@@ -113,9 +113,7 @@ class HikingManufClusterDinPower(TuyaManufClusterAttributes):
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
         if attrid == HIKING_DIN_SWITCH_ATTR:
-            self.endpoint.device.switch_bus.listener_event(
-                SWITCH_EVENT, 16, value
-            )
+            self.endpoint.device.switch_bus.listener_event(SWITCH_EVENT, 16, value)
         elif attrid == HIKING_TOTAL_ENERGY_ATTR:
             self.endpoint.smartenergy_metering.energy_reported(value / 100)
         elif attrid == HIKING_VOLTAGE_ATTR:
