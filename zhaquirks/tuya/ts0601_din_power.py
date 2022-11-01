@@ -27,6 +27,7 @@ SWITCH_EVENT = "switch_event"
 """Hiking Power Meter Attributes"""
 HIKING_DIN_SWITCH_ATTR = 0x0110
 
+
 class TuyaManufClusterDinPower(TuyaManufClusterAttributes):
     """Manufacturer Specific Cluster of the Tuya Power Meter device."""
 
@@ -95,6 +96,7 @@ class TuyaElectricalMeasurement(LocalDataCluster, Metering):
         """Summation Energy reported."""
         self._update_attribute(self.CURRENT_ID, value)
 
+
 class HikingManufClusterDinPower(TuyaManufClusterAttributes):
     """Manufacturer Specific Cluster of the Hiking Power Meter device."""
 
@@ -108,6 +110,7 @@ class HikingManufClusterDinPower(TuyaManufClusterAttributes):
             self.endpoint.device.switch_bus.listener_event(
                 SWITCH_EVENT, self.endpoint.endpoint_id, value
             )
+
 
 class TuyaPowerMeter(TuyaSwitch):
     """Tuya power meter device."""
@@ -166,8 +169,9 @@ class TuyaPowerMeter(TuyaSwitch):
         }
     }
 
+
 class HikingPowerMeter(TuyaSwitch): 
-    """Hiking Power Meter Device - DDS238-2"""
+    """Hiking Power Meter Device - DDS238-2."""
 
     signature = {
         # "node_descriptor": "<NodeDescriptor byte1=1 byte2=64 mac_capability_flags=142 manufacturer_code=4098
