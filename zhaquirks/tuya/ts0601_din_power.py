@@ -78,7 +78,7 @@ class TuyaPowerMeasurement(LocalDataCluster, ElectricalMeasurement):
         AC_CURRENT_MULTIPLIER: 1,
         AC_CURRENT_DIVISOR: 1000,
         AC_FREQUENCY_MULTIPLIER: 1,
-        AC_FREQUENCY_DIVISOR: 100
+        AC_FREQUENCY_DIVISOR: 100,
     }
 
     def voltage_reported(self, value):
