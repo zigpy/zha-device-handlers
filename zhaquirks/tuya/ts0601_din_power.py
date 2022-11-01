@@ -24,6 +24,8 @@ TUYA_DIN_SWITCH_ATTR = 0x0101
 
 SWITCH_EVENT = "switch_event"
 
+"""Hiking Power Meter Attributes"""
+HIKING_DIN_SWITCH_ATTR = 0x0110
 
 class TuyaManufClusterDinPower(TuyaManufClusterAttributes):
     """Manufacturer Specific Cluster of the Tuya Power Meter device."""
@@ -93,6 +95,19 @@ class TuyaElectricalMeasurement(LocalDataCluster, Metering):
         """Summation Energy reported."""
         self._update_attribute(self.CURRENT_ID, value)
 
+class HikingManufClusterDinPower(TuyaManufClusterAttributes):
+    """Manufacturer Specific Cluster of the Hiking Power Meter device."""
+
+    attributes = {
+        HIKING_DIN_SWITCH_ATTR: ("switch", t.uint8_t, True),
+    }
+
+    def _update_attribute(self, attrid, value):
+        super()._update_attribute(attrid, value)
+        if attrid == HIKING_DIN_SWITCH_ATTR:
+            self.endpoint.device.switch_bus.listener_event(
+                SWITCH_EVENT, self.endpoint.endpoint_id, value
+            )
 
 class TuyaPowerMeter(TuyaSwitch):
     """Tuya power meter device."""
@@ -147,6 +162,62 @@ class TuyaPowerMeter(TuyaSwitch):
                     TuyaOnOff,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            }
+        }
+    }
+
+class HikingPowerMeter(TuyaSwitch): 
+    """Hiking Power Meter Device - DDS238-2"""
+
+    signature = {
+        # "node_descriptor": "<NodeDescriptor byte1=1 byte2=64 mac_capability_flags=142 manufacturer_code=4098
+        #                       maximum_buffer_size=82 maximum_incoming_transfer_size=82 server_mask=11264
+        #                       maximum_outgoing_transfer_size=82 descriptor_capability_field=0>",
+        # device_version=1
+        # input_clusters=[0x0000, 0x0004, 0x0005, 0xef00]
+        # output_clusters=[0x000a, 0x0019]
+        MODELS_INFO: [
+            ("_TZE200_bkkmqmyo", "TS0601")
+        ],
+        ENDPOINTS: {
+            # <SimpleDescriptor endpoint=1 profile=260 device_type=51
+            # device_version=1
+            # input_clusters=[0, 4, 5, 61184]
+            # output_clusters=[10, 25]>
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaManufClusterAttributes.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            }
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    HikingManufClusterDinPower,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            16: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    TuyaOnOff,
+                ],
+                OUTPUT_CLUSTERS: [],
             }
         }
     }
