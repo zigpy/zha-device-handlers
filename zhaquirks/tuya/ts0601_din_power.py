@@ -170,7 +170,7 @@ class TuyaPowerMeter(TuyaSwitch):
     }
 
 
-class HikingPowerMeter(TuyaSwitch): 
+class HikingPowerMeter(TuyaSwitch):
     """Hiking Power Meter Device - DDS238-2."""
 
     signature = {
@@ -180,9 +180,7 @@ class HikingPowerMeter(TuyaSwitch):
         # device_version=1
         # input_clusters=[0x0000, 0x0004, 0x0005, 0xef00]
         # output_clusters=[0x000a, 0x0019]
-        MODELS_INFO: [
-            ("_TZE200_bkkmqmyo", "TS0601")
-        ],
+        MODELS_INFO: [("_TZE200_bkkmqmyo", "TS0601")],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=51
             # device_version=1
@@ -222,6 +220,6 @@ class HikingPowerMeter(TuyaSwitch):
                     TuyaOnOff,
                 ],
                 OUTPUT_CLUSTERS: [],
-            }
+            },
         }
     }
