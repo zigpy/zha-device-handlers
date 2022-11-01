@@ -74,7 +74,12 @@ class TuyaPowerMeasurement(LocalDataCluster, ElectricalMeasurement):
     AC_FREQUENCY_MULTIPLIER = 0x0400
     AC_FREQUENCY_DIVISOR = 0x0401
 
-    _CONSTANT_ATTRIBUTES = {AC_CURRENT_MULTIPLIER: 1, AC_CURRENT_DIVISOR: 1000, AC_FREQUENCY_MULTIPLIER: 1, AC_FREQUENCY_DIVISOR: 100}
+    _CONSTANT_ATTRIBUTES = {
+        AC_CURRENT_MULTIPLIER: 1,
+        AC_CURRENT_DIVISOR: 1000,
+        AC_FREQUENCY_MULTIPLIER: 1,
+        AC_FREQUENCY_DIVISOR: 100
+    }
 
     def voltage_reported(self, value):
         """Voltage reported."""
@@ -87,11 +92,11 @@ class TuyaPowerMeasurement(LocalDataCluster, ElectricalMeasurement):
     def current_reported(self, value):
         """Ampers reported."""
         self._update_attribute(self.CURRENT_ID, value)
-    
+
     def frequency_reported(self, value):
         """AC Frequency reported."""
         self._update_attribute(self.AC_FREQUENCY_ID, value)
-    
+
 
 class TuyaElectricalMeasurement(LocalDataCluster, Metering):
     """Custom class for total energy measurement."""
