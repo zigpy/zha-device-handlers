@@ -32,6 +32,8 @@ HIKING_VOLTAGE_CURRENT_ATTR = 0x0006
 HIKING_POWER_ATTR = 0x0267
 HIKING_FREQUENCY_ATTR = 0x0269
 HIKING_POWER_FACTOR_ATTR = 0x026F
+HIKING_TOTAL_REACTIVE_ATTR = 0x026D
+HIKING_REACTIVE_POWER_ATTR = 0x026E
 
 
 class TuyaManufClusterDinPower(TuyaManufClusterAttributes):
@@ -69,7 +71,9 @@ class TuyaPowerMeasurement(LocalDataCluster, ElectricalMeasurement):
     POWER_ID = 0x050B
     VOLTAGE_ID = 0x0505
     CURRENT_ID = 0x0508
+    REACTIVE_POWER_ID = 0x050E
     AC_FREQUENCY_ID = 0x0300
+    TOTAL_REACTIVE_POWER_ID = 0x0305
     POWER_FACTOR_ID = 0x0510
 
     AC_CURRENT_MULTIPLIER = 0x0602
@@ -96,6 +100,10 @@ class TuyaPowerMeasurement(LocalDataCluster, ElectricalMeasurement):
         """Power Factor reported."""
         self._update_attribute(self.POWER_FACTOR_ID, value)
 
+    def reactive_power_reported(self, value):
+        """Reactive Power reported."""
+        self._update_attribute(self.REACTIVE_POWER_ID, value)
+
     def current_reported(self, value):
         """Ampers reported."""
         self._update_attribute(self.CURRENT_ID, value)
@@ -103,6 +111,10 @@ class TuyaPowerMeasurement(LocalDataCluster, ElectricalMeasurement):
     def frequency_reported(self, value):
         """AC Frequency reported."""
         self._update_attribute(self.AC_FREQUENCY_ID, value)
+
+    def reactive_energy_reported(self, value):
+        """Summation Reactive Energy reported."""
+        self._update_attribute(self.TOTAL_REACTIVE_POWER_ID, value)
 
 
 class TuyaElectricalMeasurement(LocalDataCluster, Metering):
@@ -135,6 +147,8 @@ class HikingManufClusterDinPower(TuyaManufClusterAttributes):
         HIKING_VOLTAGE_CURRENT_ATTR: ("voltage_current", t.uint32_t, True),
         HIKING_POWER_ATTR: ("power", t.uint16_t, True),
         HIKING_FREQUENCY_ATTR: ("frequency", t.uint16_t, True),
+        HIKING_TOTAL_REACTIVE_ATTR: ("total_reactive_energy", t.int32s, True),
+        HIKING_REACTIVE_POWER_ATTR: ("reactive_power", t.int16s, True),
         HIKING_POWER_FACTOR_ATTR: ("power_factor", t.uint16_t, True),
     }
 
@@ -155,6 +169,10 @@ class HikingManufClusterDinPower(TuyaManufClusterAttributes):
             self.endpoint.electrical_measurement.power_reported(value)
         elif attrid == HIKING_FREQUENCY_ATTR:
             self.endpoint.electrical_measurement.frequency_reported(value)
+        elif attrid == HIKING_TOTAL_REACTIVE_ATTR:
+            self.endpoint.electrical_measurement.reactive_energy_reported(value / 100)
+        elif attrid == HIKING_REACTIVE_POWER_ATTR:
+            self.endpoint.electrical_measurement.reactive_power_reported(value)
         elif attrid == HIKING_POWER_FACTOR_ATTR:
             self.endpoint.electrical_measurement.power_factor_reported(value / 10)
 
