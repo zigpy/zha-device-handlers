@@ -28,6 +28,7 @@ SWITCH_EVENT = "switch_event"
 HIKING_DIN_SWITCH_ATTR = 0x0110
 HIKING_TOTAL_ENERGY_ATTR = 0x0201
 HIKING_VOLTAGE_ATTR = 0x0006
+HIKING_POWER_ATTR = 0x0267
 
 
 class TuyaManufClusterDinPower(TuyaManufClusterAttributes):
@@ -106,18 +107,21 @@ class HikingManufClusterDinPower(TuyaManufClusterAttributes):
         HIKING_DIN_SWITCH_ATTR: ("switch", t.uint8_t, True),
         HIKING_TOTAL_ENERGY_ATTR: ("energy", t.uint16_t, True),
         HIKING_VOLTAGE_ATTR: ("voltage", t.uint16_t, True),
+        HIKING_POWER_ATTR: ("power", t.uint16_t, True),
     }
 
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
         if attrid == HIKING_DIN_SWITCH_ATTR:
             self.endpoint.device.switch_bus.listener_event(
-                SWITCH_EVENT, self.endpoint.endpoint_id, value
+                SWITCH_EVENT, 16, value
             )
         elif attrid == HIKING_TOTAL_ENERGY_ATTR:
             self.endpoint.smartenergy_metering.energy_reported(value / 100)
         elif attrid == HIKING_VOLTAGE_ATTR:
             self.endpoint.electrical_measurement.voltage_reported(value / 10)
+        elif attrid == HIKING_POWER_ATTR:
+            self.endpoint.electrical_measurement.power_reported(value)
 
 
 class TuyaPowerMeter(TuyaSwitch):
