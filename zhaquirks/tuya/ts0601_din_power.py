@@ -91,7 +91,7 @@ class TuyaPowerMeasurement(LocalDataCluster, ElectricalMeasurement):
         """Power reported."""
         self._update_attribute(self.POWER_ID, value)
 
-    def power_factor_reported(self,value):
+    def power_factor_reported(self, value):
         """Power Factor reported."""
         self._update_attribute(self.POWER_FACTOR_ID, value)
 
@@ -144,7 +144,7 @@ class HikingManufClusterDinPower(TuyaManufClusterAttributes):
         elif attrid == HIKING_FREQUENCY_ATTR:
             self.endpoint.electrical_measurement.frequency_reported(value)
         elif attrid == HIKING_POWER_FACTOR_ATTR:
-            self.endpoint.electrical_measurement.power_factor_reported(value/10)
+            self.endpoint.electrical_measurement.power_factor_reported(value / 10)
 
 
 class TuyaPowerMeter(TuyaSwitch):
