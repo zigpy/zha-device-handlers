@@ -26,7 +26,8 @@ SWITCH_EVENT = "switch_event"
 
 """Hiking Power Meter Attributes"""
 HIKING_DIN_SWITCH_ATTR = 0x0110
-HIKING_TOTAL_ENERGY_ATTR = 0x0201
+HIKING_TOTAL_ENERGY_DELIVERED_ATTR = 0x0201
+HIKING_TOTAL_ENERGY_RECEIVED_ATTR = 0x0266
 HIKING_VOLTAGE_CURRENT_ATTR = 0x0006
 HIKING_POWER_ATTR = 0x0267
 HIKING_FREQUENCY_ATTR = 0x0269
@@ -47,7 +48,7 @@ class TuyaManufClusterDinPower(TuyaManufClusterAttributes):
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
         if attrid == TUYA_TOTAL_ENERGY_ATTR:
-            self.endpoint.smartenergy_metering.energy_reported(value / 100)
+            self.endpoint.smartenergy_metering.energy_deliver_reported(value / 100)
         elif attrid == TUYA_CURRENT_ATTR:
             self.endpoint.electrical_measurement.current_reported(value)
         elif attrid == TUYA_POWER_ATTR:
@@ -108,15 +109,20 @@ class TuyaElectricalMeasurement(LocalDataCluster, Metering):
     """Custom class for total energy measurement."""
 
     cluster_id = Metering.cluster_id
-    CURRENT_ID = 0x0000
+    CURRENT_DELIVERED_ID = 0x0000
+    CURRENT_RECEIVED_ID = 0x0001
     POWER_WATT = 0x0000
 
     """Setting unit of measurement."""
     _CONSTANT_ATTRIBUTES = {0x0300: POWER_WATT}
 
-    def energy_reported(self, value):
-        """Summation Energy reported."""
-        self._update_attribute(self.CURRENT_ID, value)
+    def energy_deliver_reported(self, value):
+        """Summation Energy Deliver reported."""
+        self._update_attribute(self.CURRENT_DELIVERED_ID, value)
+
+    def energy_receive_reported(self, value):
+        """Summation Energy Receive reported."""
+        self._update_attribute(self.CURRENT_RECEIVED_ID, value)
 
 
 class HikingManufClusterDinPower(TuyaManufClusterAttributes):
@@ -124,7 +130,8 @@ class HikingManufClusterDinPower(TuyaManufClusterAttributes):
 
     attributes = {
         HIKING_DIN_SWITCH_ATTR: ("switch", t.uint8_t, True),
-        HIKING_TOTAL_ENERGY_ATTR: ("energy", t.uint16_t, True),
+        HIKING_TOTAL_ENERGY_DELIVERED_ATTR: ("energy_delivered", t.uint16_t, True),
+        HIKING_TOTAL_ENERGY_RECEIVED_ATTR: ("energy_received", t.uint16_t, True),
         HIKING_VOLTAGE_CURRENT_ATTR: ("voltage_current", t.uint32_t, True),
         HIKING_POWER_ATTR: ("power", t.uint16_t, True),
         HIKING_FREQUENCY_ATTR: ("frequency", t.uint16_t, True),
@@ -135,8 +142,10 @@ class HikingManufClusterDinPower(TuyaManufClusterAttributes):
         super()._update_attribute(attrid, value)
         if attrid == HIKING_DIN_SWITCH_ATTR:
             self.endpoint.device.switch_bus.listener_event(SWITCH_EVENT, 16, value)
-        elif attrid == HIKING_TOTAL_ENERGY_ATTR:
-            self.endpoint.smartenergy_metering.energy_reported(value / 100)
+        elif attrid == HIKING_TOTAL_ENERGY_DELIVERED_ATTR:
+            self.endpoint.smartenergy_metering.energy_deliver_reported(value / 100)
+        elif attrid == HIKING_TOTAL_ENERGY_RECEIVED_ATTR:
+            self.endpoint.smartenergy_metering.energy_receive_reported(value / 100)
         elif attrid == HIKING_VOLTAGE_CURRENT_ATTR:
             self.endpoint.electrical_measurement.current_reported(value >> 16)
             self.endpoint.electrical_measurement.voltage_reported(
