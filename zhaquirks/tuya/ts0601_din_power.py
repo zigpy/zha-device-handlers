@@ -29,6 +29,7 @@ HIKING_DIN_SWITCH_ATTR = 0x0110
 HIKING_TOTAL_ENERGY_ATTR = 0x0201
 HIKING_VOLTAGE_ATTR = 0x0006
 HIKING_POWER_ATTR = 0x0267
+HIKING_FREQUENCY_ATTR = 0x0269
 
 
 class TuyaManufClusterDinPower(TuyaManufClusterAttributes):
@@ -66,11 +67,14 @@ class TuyaPowerMeasurement(LocalDataCluster, ElectricalMeasurement):
     POWER_ID = 0x050B
     VOLTAGE_ID = 0x0505
     CURRENT_ID = 0x0508
+    AC_FREQUENCY_ID = 0x0300
 
     AC_CURRENT_MULTIPLIER = 0x0602
     AC_CURRENT_DIVISOR = 0x0603
+    AC_FREQUENCY_MULTIPLIER = 0x0400
+    AC_FREQUENCY_DIVISOR = 0x0401
 
-    _CONSTANT_ATTRIBUTES = {AC_CURRENT_MULTIPLIER: 1, AC_CURRENT_DIVISOR: 1000}
+    _CONSTANT_ATTRIBUTES = {AC_CURRENT_MULTIPLIER: 1, AC_CURRENT_DIVISOR: 1000, AC_FREQUENCY_MULTIPLIER: 1, AC_FREQUENCY_DIVISOR: 100}
 
     def voltage_reported(self, value):
         """Voltage reported."""
@@ -83,7 +87,11 @@ class TuyaPowerMeasurement(LocalDataCluster, ElectricalMeasurement):
     def current_reported(self, value):
         """Ampers reported."""
         self._update_attribute(self.CURRENT_ID, value)
-
+    
+    def frequency_reported(self, value):
+        """AC Frequency reported."""
+        self._update_attribute(self.AC_FREQUENCY_ID, value)
+    
 
 class TuyaElectricalMeasurement(LocalDataCluster, Metering):
     """Custom class for total energy measurement."""
@@ -108,6 +116,7 @@ class HikingManufClusterDinPower(TuyaManufClusterAttributes):
         HIKING_TOTAL_ENERGY_ATTR: ("energy", t.uint16_t, True),
         HIKING_VOLTAGE_ATTR: ("voltage", t.uint16_t, True),
         HIKING_POWER_ATTR: ("power", t.uint16_t, True),
+        HIKING_FREQUENCY_ATTR: ("frequency", t.uint16_t, True),
     }
 
     def _update_attribute(self, attrid, value):
@@ -120,6 +129,8 @@ class HikingManufClusterDinPower(TuyaManufClusterAttributes):
             self.endpoint.electrical_measurement.voltage_reported(value / 10)
         elif attrid == HIKING_POWER_ATTR:
             self.endpoint.electrical_measurement.power_reported(value)
+        elif attrid == HIKING_FREQUENCY_ATTR:
+            self.endpoint.electrical_measurement.frequency_reported(value)
 
 
 class TuyaPowerMeter(TuyaSwitch):
