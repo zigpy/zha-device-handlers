@@ -170,7 +170,7 @@ class HikingManufClusterDinPower(TuyaManufClusterAttributes):
         elif attrid == HIKING_FREQUENCY_ATTR:
             self.endpoint.electrical_measurement.frequency_reported(value)
         elif attrid == HIKING_TOTAL_REACTIVE_ATTR:
-            self.endpoint.electrical_measurement.reactive_energy_reported(value / 100)
+            self.endpoint.electrical_measurement.reactive_energy_reported(value)
         elif attrid == HIKING_REACTIVE_POWER_ATTR:
             self.endpoint.electrical_measurement.reactive_power_reported(value)
         elif attrid == HIKING_POWER_FACTOR_ATTR:
