@@ -168,7 +168,6 @@ class TuyaDPType(t.enum8):
 class TuyaData(t.Struct):
     """Tuya Data type."""
 
-    # dp: t.uint8_t
     dp_type: TuyaDPType
     function: t.uint8_t
     raw: t.LVBytes
@@ -177,7 +176,6 @@ class TuyaData(t.Struct):
     def deserialize(cls, data: bytes) -> Tuple["TuyaData", bytes]:
         """Deserialize data."""
         res = cls()
-        # res.dp, data = t.uint8_t.deserialize(data)
         res.dp_type, data = TuyaDPType.deserialize(data)
         res.function, data = t.uint8_t.deserialize(data)
         res.raw, data = t.LVBytes.deserialize(data)
@@ -239,9 +237,6 @@ class TuyaCommand(t.Struct):
 
     status: t.uint8_t
     tsn: t.uint8_t
-    # dp: t.uint8_t
-    # data: TuyaData
-    # datapoints: t.List[TuyaData]
     datapoints: t.List[TuyaDatapointData]
 
 
@@ -529,9 +524,13 @@ class TuyaOnOff(CustomCluster, OnOff):
                 TUYA_MCU_COMMAND,
                 cmd_payload,
             )
-            return foundation.Status.SUCCESS
+            return foundation.GENERAL_COMMANDS[
+                foundation.GeneralCommand.Default_Response
+            ].schema(command_id=command_id, status=foundation.Status.SUCCESS)
 
-        return foundation.Status.UNSUP_CLUSTER_COMMAND
+        return foundation.GENERAL_COMMANDS[
+            foundation.GeneralCommand.Default_Response
+        ].schema(command_id=command_id, status=foundation.Status.UNSUP_CLUSTER_COMMAND)
 
 
 class TuyaManufacturerClusterOnOff(TuyaManufCluster):
@@ -688,7 +687,9 @@ class TuyaThermostatCluster(LocalDataCluster, Thermostat):
         try:
             current = success[attrid]
         except KeyError:
-            return foundation.Status.FAILURE
+            return foundation.GENERAL_COMMANDS[
+                foundation.GeneralCommand.Default_Response
+            ].schema(command_id=command_id, status=foundation.Status.FAILURE)
 
         # offset is given in decidegrees, see Zigbee cluster specification
         (res,) = await self.write_attributes(
@@ -1286,10 +1287,11 @@ class TuyaLevelControl(CustomCluster, LevelControl):
     ):
         """Override the default Cluster command."""
         _LOGGER.debug(
-            "%s Sending Tuya Cluster Command.. Cluster Command is %x, Arguments are %s",
+            "%s Sending Tuya Cluster Command.. Cluster Command is %x, Arguments are %s, %s",
             self.endpoint.device.ieee,
             command_id,
             args,
+            kwargs,
         )
         # Move to level
         # move_to_level_with_on_off

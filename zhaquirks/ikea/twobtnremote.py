@@ -40,9 +40,12 @@ from zhaquirks.const import (
     TURN_OFF,
     TURN_ON,
 )
-from zhaquirks.ikea import IKEA, LightLinkCluster, PowerConfiguration1CRCluster
-
-IKEA_CLUSTER_ID = 0xFC7C  # decimal = 64636
+from zhaquirks.ikea import (
+    IKEA,
+    IKEA_CLUSTER_ID,
+    LightLinkCluster,
+    PowerConfiguration1CRCluster,
+)
 
 
 class IkeaTradfriRemote2Btn(CustomDevice):
