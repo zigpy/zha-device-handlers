@@ -25,7 +25,7 @@ class TiRouter(CustomDevice):
     """Texas Instruments Z-Stack router device."""
 
     signature = {
-        MODELS_INFO: [("TexasInstruments", "ti.router"), ("TubesZB", "tubeszb.router")],
+        MODELS_INFO: [("TexasInstruments", "ti.router")],
         ENDPOINTS: {
             8: {
                 PROFILE_ID: zha.PROFILE_ID,
