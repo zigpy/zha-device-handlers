@@ -1458,3 +1458,47 @@ async def test_handle_get_data(zigpy_device_from_quirk, quirk):
 
     status = tuya_cluster.handle_get_data(data.data)
     assert status == foundation.Status.UNSUPPORTED_ATTRIBUTE
+
+
+@pytest.mark.parametrize(
+    "quirk",
+    (zhaquirks.tuya.ts0601_sensor.TuyaTempHumiditySensor,),
+)
+@pytest.mark.parametrize(
+    "quirk_sq", (zhaquirks.tuya.ts0601_sensor.TuyaTempHumiditySensor_Square,)
+)
+async def test_rh_multiplier(zigpy_device_from_quirk, quirk, quirk_sq):
+    """Test handle_get_data for multiple attributes."""
+
+    round_sensor = zigpy_device_from_quirk(quirk)
+    round_cluster = round_sensor.endpoints[1].tuya_manufacturer
+    round_humidity = round_sensor.endpoints[1].humidity
+
+    square_sensor = zigpy_device_from_quirk(quirk_sq)
+    square_cluster = square_sensor.endpoints[1].tuya_manufacturer
+    square_humidity = square_sensor.endpoints[1].humidity
+
+    message = b"\x19\x84\x01\x00\xa5\x02\x02\x00\x04\x00\x00\x02\x2c"
+
+    hdr, round_data = round_cluster.deserialize(message)
+    hdr, square_data = square_cluster.deserialize(message)
+
+    round_status = round_cluster.handle_get_data(round_data.data)
+    assert round_status == foundation.Status.SUCCESS
+
+    square_status = square_cluster.handle_get_data(square_data.data)
+    assert square_status == foundation.Status.SUCCESS
+
+    assert (
+        round_data.data.datapoints[0].data.payload
+        == square_data.data.datapoints[0].data.payload
+    )
+
+    assert (
+        round_humidity.get("measured_value")
+        == round_data.data.datapoints[0].data.payload * round_sensor.RH_MULTIPLIER
+    )
+    assert (
+        square_humidity.get("measured_value")
+        == square_data.data.datapoints[0].data.payload * 100
+    )  # no square_sensor.RH_MULTIPLIER attribute

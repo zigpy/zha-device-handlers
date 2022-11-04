@@ -1,6 +1,6 @@
 """Tuya temp and humidity sensor with e-ink screen."""
 
-from typing import Dict
+from typing import Any, Dict
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
@@ -19,15 +19,6 @@ from zhaquirks.const import (
 from zhaquirks.tuya import TuyaLocalCluster, TuyaPowerConfigurationCluster2AAA
 from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaDPType, TuyaMCUCluster
 
-# NOTES:
-# The data comes in as a string on cluster, if there is nothing set up you may see these lines in the logs:
-# Unknown message (b'19830100a40102000400000118') on cluster 61184: unknown endpoint or cluster id: 'No cluster ID 0xef00 on (a4:c1:38:d0:18:8b:64:aa, 1)'
-#                                          28.0 degrees
-# Unknown message (b'19840100a5020200040000022c') on cluster 61184: unknown endpoint or cluster id: 'No cluster ID 0xef00 on (a4:c1:38:d0:18:8b:64:aa, 1)'
-#                                          55.6% humid
-# Unknown message (b'19850100a60402000400000064') on cluster 61184: unknown endpoint or cluster id: 'No cluster ID 0xef00 on (a4:c1:38:d0:18:8b:64:aa, 1)'
-#                                          100% battery
-
 
 class TuyaTemperatureMeasurement(TemperatureMeasurement, TuyaLocalCluster):
     """Tuya local TemperatureMeasurement cluster."""
@@ -35,6 +26,18 @@ class TuyaTemperatureMeasurement(TemperatureMeasurement, TuyaLocalCluster):
 
 class TuyaRelativeHumidity(RelativeHumidity, TuyaLocalCluster):
     """Tuya local RelativeHumidity cluster."""
+
+    def update_attribute(self, attr_name: str, value: Any) -> None:
+        """Apply a correction factor to value."""
+
+        if attr_name == "measured_value":
+            value = value * (
+                self.endpoint.device.RH_MULTIPLIER
+                if hasattr(self.endpoint.device, "RH_MULTIPLIER")
+                else 100
+            )
+
+        return super().update_attribute(attr_name, value)
 
 
 class TemperatureHumidityManufCluster(TuyaMCUCluster):
@@ -51,7 +54,7 @@ class TemperatureHumidityManufCluster(TuyaMCUCluster):
             TuyaRelativeHumidity.ep_attribute,
             "measured_value",
             dp_type=TuyaDPType.VALUE,
-            converter=lambda x: x * 10,  # decipercent to centipercent
+            # converter=lambda x: x * 10,  --> move conversion to TuyaRelativeHumidity cluster
         ),
         4: DPToAttributeMapping(
             TuyaPowerConfigurationCluster2AAA.ep_attribute,
@@ -70,6 +73,9 @@ class TemperatureHumidityManufCluster(TuyaMCUCluster):
 
 class TuyaTempHumiditySensor(CustomDevice):
     """Custom device representing tuya temp and humidity sensor with e-ink screen."""
+
+    # RelativeHumidity multiplier
+    RH_MULTIPLIER = 10
 
     signature = {
         # <SimpleDescriptor endpoint=1, profile=260, device_type=81
@@ -103,6 +109,53 @@ class TuyaTempHumiditySensor(CustomDevice):
                     TuyaTemperatureMeasurement,
                     TuyaRelativeHumidity,
                     TuyaPowerConfigurationCluster2AAA,
+                ],
+                OUTPUT_CLUSTERS: [Ota.cluster_id, Time.cluster_id],
+            }
+        },
+    }
+
+
+class TuyaTempHumiditySensor_Square(CustomDevice):
+    """Custom device representing tuya temp and humidity sensor with e-ink screen."""
+
+    # RelativeHumidity multiplier
+    # RH_MULTIPLIER = 100
+
+    signature = {
+        MODELS_INFO: [
+            ("_TZE200_qoy0ekbd", "TS0601"),
+        ],
+        ENDPOINTS: {
+            1: {
+                # "profile_id": 260, "device_type": "0x0302",
+                # "in_clusters": ["0x0000","0x0001","0x0402","0x0405"],
+                # "out_clusters": ["0x000a","0x0019"]
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.TEMPERATURE_SENSOR,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    TuyaPowerConfigurationCluster2AAA.cluster_id,
+                    TemperatureMeasurement.cluster_id,
+                    RelativeHumidity.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Ota.cluster_id, Time.cluster_id],
+            }
+        },
+    }
+
+    replacement = {
+        SKIP_CONFIGURATION: True,
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.TEMPERATURE_SENSOR,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    TuyaPowerConfigurationCluster2AAA,
+                    TemperatureHumidityManufCluster,
+                    TuyaTemperatureMeasurement,
+                    TuyaRelativeHumidity,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id, Time.cluster_id],
             }

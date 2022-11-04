@@ -29,51 +29,7 @@ To use the functionality, enable it with `V+` command and configure periodic sam
 
 ## PWM Output
 
-XBee3 provides two PWM outputs. They are not currently exposed automatically, you must use `zha.set_zigbee_cluster_attribute` service.
-
-To use the functionality, you must configure an `input_number` and an automation for each PWM pin you want to use as per the following example (replace ieee with the one of your device):
-```
-input_number:
-  pwm0:
-    name: PWM0
-    min: 0
-    max: 1023
-  pwm1:
-    name: PWM1
-    min: 0
-    max: 1023
-automation:
-  - id: '1574205383149'
-    alias: XBee PWM0
-    description: 'Update cluster attribute on slider change for PWM0'
-    trigger:
-    - entity_id: input_number.pwm0
-      platform: state
-    action:
-    - service: zha.set_zigbee_cluster_attribute
-      data_template:
-        ieee: 00:13:a2:00:41:a0:7e:1a
-        endpoint_id: 218
-        cluster_id: 13
-        cluster_type: in
-        attribute: 85
-        value: '{{ trigger.to_state.state }}'
-  - id: '1574205383150'
-    alias: XBee PWM1
-    description: 'Update cluster attribute on slider change for PWM1'
-    trigger:
-    - entity_id: input_number.pwm1
-      platform: state
-    action:
-    - service: zha.set_zigbee_cluster_attribute
-      data_template:
-        ieee: 00:13:a2:00:41:a0:7e:1a
-        endpoint_id: 219
-        cluster_id: 13
-        cluster_type: in
-        attribute: 85
-        value: '{{ trigger.to_state.state }}'
-```
+XBee3 provides two PWM outputs. They are exposed as `number` entities.
 
 ## UART
 
@@ -91,7 +47,8 @@ automation:
       event_data:
         device_ieee: 00:13:a2:00:12:34:56:78
         command: receive_data
-        args: Home
+        args:
+          data: Home
     action:
       service: zha.issue_zigbee_cluster_command
       data:
@@ -104,7 +61,7 @@ automation:
         args: Assistant
 ```
 
-## Raw AT Commands
+## Remote AT Commands
 
 Like with UART, you can send remote AT commands with `zha.issue_zigbee_cluster_command` service.
 If the command is unsuccessful, you will get an exception in the logs. If it is successful, the response will be available as `zha_event` event.
@@ -122,7 +79,7 @@ template:
         command: tp_command_response
     sensor:
       - name: "XBee Temperature"
-        state: '{{ trigger.event.data.args }}'
+        state: '{{ trigger.event.data.args.response }}'
         unit_of_measurement: "°C"
         device_class: temperature
         state_class: measurement

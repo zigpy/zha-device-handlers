@@ -203,11 +203,7 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
             cmd_payload.status = 0
             cmd_payload.tsn = self.endpoint.device.application.get_sequence()
 
-            # cmd_payload.dp = dp
-            # cmd_payload.data = TuyaData()
             datapoint_type = mapping.dp_type
-            # cmd_payload.data.dp_type = datapoint_type
-            # cmd_payload.data.function = 0
             val = data.attr_value
             if mapping.dp_converter:
                 val = mapping.dp_converter(val)
@@ -217,8 +213,6 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
                 self.debug("ztype: %s", val)
             val = Data.from_value(val)
             self.debug("from_value: %s", val)
-            # cmd_payload.data.raw = t.LVBytes.deserialize(val)[0]
-            # self.debug("raw: %s", cmd_payload.data.raw)
 
             tuya_data = TuyaData()
             tuya_data.dp_type = datapoint_type

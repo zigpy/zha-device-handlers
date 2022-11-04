@@ -168,7 +168,6 @@ class TuyaDPType(t.enum8):
 class TuyaData(t.Struct):
     """Tuya Data type."""
 
-    # dp: t.uint8_t
     dp_type: TuyaDPType
     function: t.uint8_t
     raw: t.LVBytes
@@ -177,7 +176,6 @@ class TuyaData(t.Struct):
     def deserialize(cls, data: bytes) -> Tuple["TuyaData", bytes]:
         """Deserialize data."""
         res = cls()
-        # res.dp, data = t.uint8_t.deserialize(data)
         res.dp_type, data = TuyaDPType.deserialize(data)
         res.function, data = t.uint8_t.deserialize(data)
         res.raw, data = t.LVBytes.deserialize(data)
@@ -239,9 +237,6 @@ class TuyaCommand(t.Struct):
 
     status: t.uint8_t
     tsn: t.uint8_t
-    # dp: t.uint8_t
-    # data: TuyaData
-    # datapoints: t.List[TuyaData]
     datapoints: t.List[TuyaDatapointData]
 
 
