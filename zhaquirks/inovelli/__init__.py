@@ -154,6 +154,12 @@ class Inovelli_VZM31SN_Cluster(CustomCluster):
     )
 
     server_commands = {
+        0x00: foundation.ZCLCommandDef(
+            "button_event",
+            {"button_pressed": t.uint8_t, "press_type": t.uint8_t},
+            is_reply=False,
+            is_manufacturer_specific=True,
+        ),
         0x01: foundation.ZCLCommandDef(
             "led_effect",
             {
@@ -180,15 +186,6 @@ class Inovelli_VZM31SN_Cluster(CustomCluster):
                 "led_level": t.uint8_t,
                 "led_duration": t.uint8_t,
             },
-            is_reply=False,
-            is_manufacturer_specific=True,
-        ),
-    }
-
-    client_commands = {
-        0x00: foundation.ZCLCommandDef(
-            "button_event",
-            {"button_pressed": t.uint8_t, "press_type": t.uint8_t},
             is_reply=False,
             is_manufacturer_specific=True,
         ),
