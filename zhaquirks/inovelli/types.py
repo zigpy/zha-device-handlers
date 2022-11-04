@@ -24,8 +24,8 @@ class AllLEDEffectType(types.enum8):
     Medium_Blink = 0x0F
     Slow_Chase = 0x10
     Fast_Chase = 0x11
-    Slow_Siren = 0x12
-    Fast_Siren = 0x13
+    Fast_Siren = 0x12
+    Slow_Siren = 0x13
     Clear = 0xFF
 
 
