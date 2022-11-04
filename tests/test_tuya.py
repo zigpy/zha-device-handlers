@@ -119,7 +119,7 @@ async def test_singleswitch_state_report(zigpy_device_from_quirk, quirk):
     switch_cluster = switch_dev.endpoints[1].on_off
     switch_listener = ClusterListener(switch_cluster)
 
-    tuya_cluster = switch_dev.endpoints[1].moes_switch_manufacturer
+    tuya_cluster = switch_dev.endpoints[1].tuya_manufacturer
 
     hdr, args = tuya_cluster.deserialize(ZCL_TUYA_SWITCH_ON)
     tuya_cluster.handle_message(hdr, args)
@@ -150,7 +150,7 @@ async def test_doubleswitch_state_report(zigpy_device_from_quirk, quirk):
     switch2_cluster = switch_dev.endpoints[2].on_off
     switch2_listener = ClusterListener(switch2_cluster)
 
-    tuya_cluster = switch_dev.endpoints[1].moes_switch_manufacturer
+    tuya_cluster = switch_dev.endpoints[1].tuya_manufacturer
 
     assert len(switch1_listener.cluster_commands) == 0
     assert len(switch1_listener.attribute_updates) == 0
@@ -215,7 +215,7 @@ async def test_singleswitch_requests(zigpy_device_from_quirk, quirk):
     switch_dev = zigpy_device_from_quirk(quirk)
 
     switch_cluster = switch_dev.endpoints[1].on_off
-    tuya_cluster = switch_dev.endpoints[1].moes_switch_manufacturer
+    tuya_cluster = switch_dev.endpoints[1].tuya_manufacturer
 
     with mock.patch.object(
         tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
