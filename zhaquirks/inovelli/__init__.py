@@ -149,16 +149,11 @@ class Inovelli_VZM31SN_Cluster(CustomCluster):
             0x0103: ("on_off_led_mode", t.Bool, True),
             0x0104: ("firmware_progress_led", t.Bool, True),
             0x0105: ("relay_click_in_on_off_mode", t.Bool, True),
+            0x0106: ("disable_clear_notifications_double_tap", t.Bool, True),
         }
     )
 
     server_commands = {
-        0x00: foundation.ZCLCommandDef(
-            "button_event",
-            {"button_pressed": t.uint8_t, "press_type": t.uint8_t},
-            is_reply=False,
-            is_manufacturer_specific=True,
-        ),
         0x01: foundation.ZCLCommandDef(
             "led_effect",
             {
@@ -169,13 +164,13 @@ class Inovelli_VZM31SN_Cluster(CustomCluster):
             },
             is_reply=False,
             is_manufacturer_specific=True,
-        ),  # LED Effect
+        ),
         0x02: foundation.ZCLCommandDef(
             "reset_energy_meter",
             {},
             is_reply=False,
             is_manufacturer_specific=True,
-        ),  # LED Effect
+        ),
         0x03: foundation.ZCLCommandDef(
             "individual_led_effect",
             {
@@ -187,7 +182,16 @@ class Inovelli_VZM31SN_Cluster(CustomCluster):
             },
             is_reply=False,
             is_manufacturer_specific=True,
-        ),  # individual LED Effect
+        ),
+    }
+
+    client_commands = {
+        0x00: foundation.ZCLCommandDef(
+            "button_event",
+            {"button_pressed": t.uint8_t, "press_type": t.uint8_t},
+            is_reply=False,
+            is_manufacturer_specific=True,
+        ),
         0x24: foundation.ZCLCommandDef(
             "led_effect_complete",
             {
