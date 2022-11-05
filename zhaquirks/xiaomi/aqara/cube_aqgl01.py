@@ -38,6 +38,7 @@ from zhaquirks.xiaomi import (
 )
 
 ACTIVATED_FACE = "activated_face"
+DEACTIVATED_FACE = "deactivated_face"
 DESCRIPTION = "description"
 DROP = "drop"
 DROP_VALUE = 3
@@ -180,6 +181,7 @@ class MultistateInputCluster(CustomCluster, MultistateInput):
                         event_args[FLIP_DEGREES] = 180
                     else:
                         event_args[FLIP_DEGREES] = 90
+                        event_args[DEACTIVATED_FACE] = (value // 8) % 8 + 1
                     event_args[ACTIVATED_FACE] = int((value % 8) + 1)
 
                 self.listener_event(ZHA_SEND_EVENT, action, event_args)
