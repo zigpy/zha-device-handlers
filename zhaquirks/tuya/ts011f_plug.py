@@ -905,6 +905,7 @@ class Plug_4AC_2USB_cfnprab5(EnchantedDevice):
         },
     }
 
+
 class Plug_4AC_2USB_Metering(EnchantedDevice):
     """Tuya Tuya 4 outlet + 2 USB with power metering."""
 
