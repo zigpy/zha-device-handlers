@@ -20,6 +20,7 @@ from zhaquirks.tuya import (
 )
 from zhaquirks.tuya.mcu import EnchantedDevice
 
+
 class TuyaTripleNoNeutralSwitchVar01(TuyaSwitch):
     """Tuya 3 gang no neutral light switch variant 1."""
 
@@ -212,6 +213,7 @@ class TuyaTripleNoNeutralSwitchVar02(EnchantedDevice, TuyaSwitch):
             },
         },
     }
+
 
 class TuyaTripleNoNeutralSwitchVar(TuyaSwitch):
     """Tuya 3 gang no neutral light switch variant 3."""
