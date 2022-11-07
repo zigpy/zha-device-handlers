@@ -1,3 +1,27 @@
+This document describes how to use Digi XBee device as a router or end device.
+
+## Using with non-XBee coordinator
+
+You may need to configure zigpy to listen to the appropriate additional endpoints which it ignores by default. This is an example config for HA ZHA:
+
+```
+zha:
+  zigpy_config:
+    additional_endpoints:
+      - endpoint: 0xE6
+        profile: 0xC105
+        device_type: 0x0000
+        device_version: 0b0000
+        input_clusters: [0xA1]
+        output_clusters: [0x21]
+      - endpoint: 0xE8
+        profile: 0xC105
+        device_type: 0x0000
+        device_version: 0b0000
+        input_clusters: [0x11, 0x92]
+        output_clusters: [0x11]
+```
+
 ## Digital GPIO
 
 Digital input/output pins are exposed as switches.
@@ -58,7 +82,8 @@ automation:
         cluster_type: in
         command: 0
         command_type: server
-        args: Assistant
+        params:
+          data: Assistant
 ```
 
 ## Remote AT Commands
@@ -98,4 +123,5 @@ automation:
         command_type: server
         cluster_type: out
         cluster_id: 33
+        params: {}
 ```
