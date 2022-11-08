@@ -169,7 +169,7 @@ class WirelessZigbeeKeypad(CustomDevice):
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    WirelessZigbeeKeypadManufCluster.cluster_id,
+                    TuyaMCUCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Ota.cluster_id,
