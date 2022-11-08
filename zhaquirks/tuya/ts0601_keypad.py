@@ -23,8 +23,12 @@ from zhaquirks.const import (
     PROFILE_ID,
     SKIP_CONFIGURATION,
 )
-from zhaquirks.tuya import DPToAttributeMapping, TuyaDPType, TuyaLocalCluster
-from zhaquirks.tuya.mcu import TuyaMCUCluster
+from zhaquirks.tuya.mcu import (
+    TuyaMCUCluster,
+    DPToAttributeMapping,
+    TuyaDPType,
+    TuyaLocalCluster,
+)
 
 TUYA_DP_ID_BATTERY_LEVEL_PERCENTAGE = 3  # Percentage
 TUYA_DP_ID_SOS_ALARM = 23
