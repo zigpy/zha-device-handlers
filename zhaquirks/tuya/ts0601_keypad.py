@@ -24,10 +24,10 @@ from zhaquirks.const import (
     SKIP_CONFIGURATION,
 )
 from zhaquirks.tuya.mcu import (
-    TuyaMCUCluster,
     DPToAttributeMapping,
     TuyaDPType,
     TuyaLocalCluster,
+    TuyaMCUCluster,
 )
 
 TUYA_DP_ID_BATTERY_LEVEL_PERCENTAGE = 3  # Percentage
