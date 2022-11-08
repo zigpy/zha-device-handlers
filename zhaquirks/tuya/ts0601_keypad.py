@@ -186,6 +186,7 @@ class WirelessZigbeeKeypad(CustomDevice):
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.IAS_ANCILLARY_CONTROL,
                 INPUT_CLUSTERS: [
+                    Basic.cluster_id,
                     WirelessZigbeeKeypadManufCluster,
                     TuyaPowerConfigurationCluster3AAA,
                     TuyaAlarmControlPanelCluster,
