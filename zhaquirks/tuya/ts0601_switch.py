@@ -492,7 +492,7 @@ class TuyaQuadrupleSwitch_GP(TuyaSwitch):
 
     signature = {
         MODELS_INFO: [
-            ("XXX", "TS0601"),
+            ("_TZE200_1n2kyphz", "TS0601"),
         ],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=51 device_version=1
