@@ -21,6 +21,13 @@ zha:
         input_clusters: [0x11, 0x92]
         output_clusters: [0x11]
 ```
+If you are using `zigpy_znp`, you might also need need to add
+```
+    znp_config:
+      prefer_endpoint_1: false
+```
+to the `zigpy_config:` section.
+Please note that not all coordinators have been tested yet.
 
 ## Digital GPIO
 
