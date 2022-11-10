@@ -470,7 +470,7 @@ class XBeeRemoteATRequest(LocalDataCluster):
         return future
 
     async def command(
-        self, command_id, *args, manufacturer=None, expect_reply=False, tsn=None
+        self, command_id, param=None, *args, manufacturer=None, expect_reply=False, tsn=None
     ):
         """Handle AT request."""
         command = (
@@ -478,15 +478,9 @@ class XBeeRemoteATRequest(LocalDataCluster):
             .replace("PercentV", "%V")
             .replace("VPlus", "V+")
         )
-        try:
-            value = args[0]
-            if isinstance(value, dict):
-                value = None
-        except IndexError:
-            value = None
 
-        if value is not None:
-            value = await self.remote_at_command(command, value)
+        if param is not None:
+            value = await self.remote_at_command(command, param)
         else:
             value = await self.remote_at_command(command)
 
@@ -690,7 +684,7 @@ class XBeeCommon(CustomDevice):
             Update the digital pin states
             """
             if hdr.command_id == ON_OFF_CMD:
-                values = args[0]
+                values = args.io_sample
                 if "digital_samples" in values:
                     # Update digital inputs
                     active_pins = [
@@ -778,7 +772,7 @@ class XBeeCommon(CustomDevice):
             tsn=None,
         ):
             """Handle outgoing data."""
-            data = self.BinaryString(data if data else args[0]).serialize()
+            data = self.BinaryString(data).serialize()
             return foundation.GENERAL_COMMANDS[
                 foundation.GeneralCommand.Default_Response
             ].schema(
@@ -810,7 +804,7 @@ class XBeeCommon(CustomDevice):
             if hdr.command_id == DATA_IN_CMD:
                 self._endpoint.out_clusters[
                     LevelControl.cluster_id
-                ].handle_cluster_request(hdr, {"data": args[0]})
+                ].handle_cluster_request(hdr, {"data": args.data})
             else:
                 super().handle_cluster_request(hdr, args)
 
