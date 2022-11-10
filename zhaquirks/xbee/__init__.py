@@ -348,8 +348,8 @@ class XBeeRemoteATRequest(LocalDataCluster):
     client_commands = {}
     server_commands = {
         k: foundation.ZCLCommandDef(
-            v[0].replace("%V", "PercentV").replace("V+", "VPlus"),
-            {"param?": v[1]} if v[1] else {},
+            name=v[0].replace("%V", "PercentV").replace("V+", "VPlus"),
+            schema={"param?": v[1]} if v[1] else {},
             is_manufacturer_specific=True,
         )
         for k, v in zip(range(1, len(AT_COMMANDS) + 1), AT_COMMANDS.items())
@@ -480,8 +480,8 @@ class XBeeRemoteATRequest(LocalDataCluster):
     ):
         """Handle AT request."""
         command = (
-            self.server_commands[command_id][0]
-            .replace("PercentV", "%V")
+            self.server_commands[command_id]
+            .name.replace("PercentV", "%V")
             .replace("VPlus", "V+")
         )
 
@@ -570,8 +570,8 @@ class XBeeRemoteATResponse(LocalDataCluster):
     client_commands = {}
     server_commands = {
         0x0000: foundation.ZCLCommandDef(
-            "remote_at_response",
-            {
+            name="remote_at_response",
+            schema={
                 "frame_id": uint8_t,
                 "cmd": ATCommand,
                 "status": uint8_t,
@@ -726,7 +726,9 @@ class XBeeCommon(CustomDevice):
         client_commands = {}
         server_commands = {
             0x0000: foundation.ZCLCommandDef(
-                "io_sample", {"io_sample": IOSample}, is_manufacturer_specific=True
+                name="io_sample",
+                schema={"io_sample": IOSample},
+                is_manufacturer_specific=True,
             )
         }
 
@@ -738,15 +740,15 @@ class XBeeCommon(CustomDevice):
         client_commands = {}
         server_commands = {
             k: foundation.ZCLCommandDef(
-                v[0].replace("%V", "PercentV").replace("V+", "VPlus").lower()
+                name=v[0].replace("%V", "PercentV").replace("V+", "VPlus").lower()
                 + "_command_response",
-                {"response?": v[1]} if v[1] else {},
+                schema={"response?": v[1]} if v[1] else {},
                 is_manufacturer_specific=True,
             )
             for k, v in zip(range(1, len(AT_COMMANDS) + 1), AT_COMMANDS.items())
         }
         server_commands[0x0000] = foundation.ZCLCommandDef(
-            "receive_data", {"data": str}, is_manufacturer_specific=True
+            name="receive_data", schema={"data": str}, is_manufacturer_specific=True
         )
 
     class SerialDataCluster(LocalDataCluster):
@@ -817,12 +819,16 @@ class XBeeCommon(CustomDevice):
         attributes = {}
         client_commands = {
             0x0000: foundation.ZCLCommandDef(
-                "send_data", {"data": BinaryString}, is_manufacturer_specific=True
+                name="send_data",
+                schema={"data": BinaryString},
+                is_manufacturer_specific=True,
             )
         }
         server_commands = {
             0x0000: foundation.ZCLCommandDef(
-                "receive_data", {"data": BinaryString}, is_manufacturer_specific=True
+                name="receive_data",
+                schema={"data": BinaryString},
+                is_manufacturer_specific=True,
             )
         }
 
