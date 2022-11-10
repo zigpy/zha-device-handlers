@@ -470,7 +470,13 @@ class XBeeRemoteATRequest(LocalDataCluster):
         return future
 
     async def command(
-        self, command_id, param=None, *args, manufacturer=None, expect_reply=False, tsn=None
+        self,
+        command_id,
+        param=None,
+        *args,
+        manufacturer=None,
+        expect_reply=False,
+        tsn=None,
     ):
         """Handle AT request."""
         command = (
