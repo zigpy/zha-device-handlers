@@ -1,7 +1,19 @@
 """MS-K1AZ Wireless Zigbee Keypad."""
 from typing import Dict
 
+from zigpy.profiles import zha
+from zigpy.quirks import CustomDevice
 import zigpy.types as t
+from zigpy.zcl.clusters.general import (
+    Basic,
+    Groups,
+    Ota,
+    PowerConfiguration,
+    Scenes,
+    Time,
+)
+from zigpy.zcl.clusters.security import IasAce
+
 from zhaquirks import Bus, PowerConfigurationCluster
 from zhaquirks.const import (
     CLUSTER_COMMAND,
@@ -20,17 +32,6 @@ from zhaquirks.tuya.mcu import (
     TuyaLocalCluster,
     TuyaMCUCluster,
 )
-from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
-from zigpy.zcl.clusters.general import (
-    Basic,
-    Groups,
-    Ota,
-    PowerConfiguration,
-    Scenes,
-    Time,
-)
-from zigpy.zcl.clusters.security import IasAce
 
 
 class WirelessZigbeeKeypadManufCluster(TuyaMCUCluster):
