@@ -1,19 +1,6 @@
 """Module for xbee devices as remote sensors/switches.
 
-Allows for direct control of an xbee3's digital pins.
-
-Reading pins should work with any coordinator (Untested)
-writing pins will only work with an xbee as the coordinator as
-it requires zigpy_xbee.
-
-The xbee must be configured via XCTU to send samples to the coordinator,
-DH and DL to the coordiator's address (0). and each pin must be configured
-to act as a digital input.
-
-Either configure reporting on state change by setting the appropriate bit
-mask on IC or set IR to a value greater than zero to send perodic reports
-every x milliseconds, I recommend the later, since this will ensure
-the xbee stays alive in Home Assistant.
+See xbee.md for additional information.
 """
 
 import asyncio
@@ -22,7 +9,6 @@ import logging
 from typing import Any, List, Optional, Union
 
 from zigpy.quirks import CustomDevice
-import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
     AnalogInput,
@@ -35,6 +21,8 @@ from zigpy.zcl.clusters.general import (
 
 from zhaquirks import EventableCluster, LocalDataCluster
 from zhaquirks.const import ENDPOINTS, INPUT_CLUSTERS, OUTPUT_CLUSTERS
+
+from . import types as t
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -57,315 +45,121 @@ PIN_ANALOG_OUTPUT = 2
 REMOTE_AT_COMMAND_TIMEOUT = 30
 
 
-class int_t(int):
-    """Signed int type."""
-
-    _signed = True
-
-    def serialize(self):
-        """Serialize int_t."""
-        return self.to_bytes(self._size, "big", signed=self._signed)
-
-    @classmethod
-    def deserialize(cls, data):
-        """Deserialize int_t."""
-        # Work around https://bugs.python.org/issue23640
-        r = cls(int.from_bytes(data[: cls._size], "big", signed=cls._signed))
-        data = data[cls._size :]
-        return r, data
-
-
-class uint_t(int_t):
-    """Unsigned int type."""
-
-    _signed = False
-
-
-class uint8_t(uint_t):
-    """Unsigned int 8 bit type."""
-
-    _size = 1
-
-
-class int16_t(int_t):
-    """Signed int 16 bit type."""
-
-    _size = 2
-
-
-class uint16_t(uint_t):
-    """Unsigned int 16 bit type."""
-
-    _size = 2
-
-
-class uint32_t(uint_t):
-    """Unsigned int 32 bit type."""
-
-    _size = 4
-
-
-class uint64_t(uint_t):
-    """Unsigned int 64 bit type."""
-
-    _size = 8
-
-
-class Bytes(bytes):
-    """Bytes serializable class."""
-
-    def serialize(self):
-        """Serialize Bytes."""
-        return self
-
-    @classmethod
-    def deserialize(cls, data):
-        """Deserialize Bytes."""
-        return cls(data), b""
-
-
-class EUI64(t.EUI64):
-    """EUI64 serializable class."""
-
-    @classmethod
-    def deserialize(cls, data):
-        """Deserialize EUI64."""
-        r, data = super().deserialize(data)
-        return cls(r[::-1]), data
-
-    def serialize(self):
-        """Serialize EUI64."""
-        assert self._length == len(self)
-        return super().serialize()[::-1]
-
-
-class NWK(int):
-    """Network address serializable class."""
-
-    _signed = False
-    _size = 2
-
-    def serialize(self):
-        """Serialize NWK."""
-        return self.to_bytes(self._size, "big", signed=self._signed)
-
-    @classmethod
-    def deserialize(cls, data):
-        """Deserialize NWK."""
-        r = cls(int.from_bytes(data[: cls._size], "big", signed=cls._signed))
-        data = data[cls._size :]
-        return r, data
-
-
-class ATCommand(Bytes):
-    """AT command serializable class."""
-
-    @classmethod
-    def deserialize(cls, data):
-        """Deserialize ATCommand."""
-        return cls(data[:2]), data[2:]
-
-
-class BinaryString(str):
-    """Class to parse and serialize binary data as string."""
-
-    def serialize(self):
-        """Serialize string into bytes."""
-        return bytes(self, encoding="latin1")
-
-    @classmethod
-    def deserialize(cls, data):
-        """Interpret data as string."""
-        data = str(data, encoding="latin1")
-        return (cls(data), b"")
-
-
-class IOSample(bytes):
-    """Parse an XBee IO sample report."""
-
-    # pylint: disable=R0201
-    def serialize(self):
-        """Serialize an IO Sample Report, Not implemented."""
-        _LOGGER.debug("Serialize not implemented.")
-
-    @classmethod
-    def deserialize(cls, data):
-        """Deserialize an xbee IO sample report.
-
-        xbee digital sample format
-        Sample set count byte 0
-        Digital mask byte 1, 2
-        Analog mask byte 3
-        Digital samples byte 4, 5 (if any sample exists)
-        Analog Sample, 2 bytes per
-        """
-        sample_sets = int.from_bytes(data[0:1], byteorder="big")
-        if sample_sets != 1:
-            _LOGGER.warning("Number of sets is not 1")
-        digital_mask = data[1:3]
-        analog_mask = data[3:4]
-        digital_sample = data[4:6]
-        num_bits = 15
-        digital_pins = [
-            (int.from_bytes(digital_mask, byteorder="big") >> bit) & 1
-            for bit in range(num_bits - 1, -1, -1)
-        ]
-        digital_pins = list(reversed(digital_pins))
-        analog_pins = [
-            (int.from_bytes(analog_mask, byteorder="big") >> bit) & 1
-            for bit in range(8 - 1, -1, -1)
-        ]
-        analog_pins = list(reversed(analog_pins))
-        if 1 in digital_pins:
-            digital_samples = [
-                (int.from_bytes(digital_sample, byteorder="big") >> bit) & 1
-                for bit in range(num_bits - 1, -1, -1)
-            ]
-            digital_samples = list(reversed(digital_samples))
-            sample_index = 6
-        else:
-            # skip digital samples block
-            digital_samples = digital_pins
-            sample_index = 4
-        analog_samples = []
-        for apin in analog_pins:
-            if apin == 1:
-                analog_samples.append(
-                    int.from_bytes(
-                        data[sample_index : sample_index + 2], byteorder="big"
-                    )
-                )
-                sample_index += 2
-            else:
-                analog_samples.append(None)
-        for dpin in range(len(digital_pins)):
-            if digital_pins[dpin] == 0:
-                digital_samples[dpin] = None
-
-        return (
-            {
-                "digital_samples": digital_samples,
-                "analog_samples": analog_samples,
-            },
-            data[sample_index:],
-        )
-
-
 # https://github.com/zigpy/zigpy-xbee/blob/dev/zigpy_xbee/api.py
 AT_COMMANDS = {
     # Addressing commands
-    "DH": uint32_t,
-    "DL": uint32_t,
-    "MY": uint16_t,
-    "MP": uint16_t,
-    "NC": uint32_t,  # 0 - MAX_CHILDREN.
-    "SH": uint32_t,
-    "SL": uint32_t,
-    "NI": Bytes,  # 20 byte printable ascii string
-    # "SE": uint8_t,
-    # "DE": uint8_t,
-    # "CI": uint16_t,
-    "TO": uint8_t,
-    "NP": uint16_t,
-    "DD": uint32_t,
-    "CR": uint8_t,  # 0 - 0x3F
+    "DH": t.uint32_t,
+    "DL": t.uint32_t,
+    "MY": t.uint16_t,
+    "MP": t.uint16_t,
+    "NC": t.uint32_t,  # 0 - MAX_CHILDREN.
+    "SH": t.uint32_t,
+    "SL": t.uint32_t,
+    "NI": t.Bytes,  # 20 byte printable ascii string
+    # "SE": t.uint8_t,
+    # "DE": t.uint8_t,
+    # "CI": t.uint16_t,
+    "TO": t.uint8_t,
+    "NP": t.uint16_t,
+    "DD": t.uint32_t,
+    "CR": t.uint8_t,  # 0 - 0x3F
     # Networking commands
-    "CH": uint8_t,  # 0x0B - 0x1A
+    "CH": t.uint8_t,  # 0x0B - 0x1A
     "DA": None,  # no param
-    # "ID": uint64_t,
-    "OP": uint64_t,
-    "NH": uint8_t,
-    "BH": uint8_t,  # 0 - 0x1E
-    "OI": uint16_t,
-    "NT": uint8_t,  # 0x20 - 0xFF
-    "NO": uint8_t,  # bitfield, 0 - 3
-    "SC": uint16_t,  # 1 - 0xFFFF
-    "SD": uint8_t,  # 0 - 7
-    # "ZS": uint8_t,  # 0 - 2
-    "NJ": uint8_t,
+    # "ID": t.uint64_t,
+    "OP": t.uint64_t,
+    "NH": t.uint8_t,
+    "BH": t.uint8_t,  # 0 - 0x1E
+    "OI": t.uint16_t,
+    "NT": t.uint8_t,  # 0x20 - 0xFF
+    "NO": t.uint8_t,  # bitfield, 0 - 3
+    "SC": t.uint16_t,  # 1 - 0xFFFF
+    "SD": t.uint8_t,  # 0 - 7
+    # "ZS": t.uint8_t,  # 0 - 2
+    "NJ": t.uint8_t,
     "JV": t.Bool,
-    "NW": uint16_t,  # 0 - 0x64FF
+    "NW": t.uint16_t,  # 0 - 0x64FF
     "JN": t.Bool,
-    "AR": uint8_t,
+    "AR": t.uint8_t,
     "DJ": t.Bool,  # WTF, docs
-    "II": uint16_t,
+    "II": t.uint16_t,
     # Security commands
     # "EE": t.Bool,
-    # "EO": uint8_t,
-    # "NK": Bytes,  # 128-bit value
-    # "KY": Bytes,  # 128-bit value
+    # "EO": t.uint8_t,
+    # "NK": t.Bytes,  # 128-bit value
+    # "KY": t.Bytes,  # 128-bit value
     # RF interfacing commands
-    "PL": uint8_t,  # 0 - 4 (basically an Enum)
+    "PL": t.uint8_t,  # 0 - 4 (basically an Enum)
     "PM": t.Bool,
-    "DB": uint8_t,
-    "PP": uint8_t,  # RO
-    "AP": uint8_t,  # 1-2 (an Enum)
-    "AO": uint8_t,  # 0 - 3 (an Enum)
-    "BD": uint8_t,  # 0 - 7 (an Enum)
-    "NB": uint8_t,  # 0 - 3 (an Enum)
-    "SB": uint8_t,  # 0 - 1 (an Enum)
-    "RO": uint8_t,
-    "D6": uint8_t,  # 0 - 5 (an Enum)
-    "D7": uint8_t,  # 0 - 7 (an Enum)
-    "P3": uint8_t,  # 0 - 5 (an Enum)
-    "P4": uint8_t,  # 0 - 5 (an Enum)
+    "DB": t.uint8_t,
+    "PP": t.uint8_t,  # RO
+    "AP": t.uint8_t,  # 1-2 (an Enum)
+    "AO": t.uint8_t,  # 0 - 3 (an Enum)
+    "BD": t.uint8_t,  # 0 - 7 (an Enum)
+    "NB": t.uint8_t,  # 0 - 3 (an Enum)
+    "SB": t.uint8_t,  # 0 - 1 (an Enum)
+    "RO": t.uint8_t,
+    "D6": t.uint8_t,  # 0 - 5 (an Enum)
+    "D7": t.uint8_t,  # 0 - 7 (an Enum)
+    "P3": t.uint8_t,  # 0 - 5 (an Enum)
+    "P4": t.uint8_t,  # 0 - 5 (an Enum)
     # I/O commands
-    "IR": uint16_t,
-    "IC": uint16_t,
-    "D0": uint8_t,  # 0 - 5 (an Enum)
-    "D1": uint8_t,  # 0 - 5 (an Enum)
-    "D2": uint8_t,  # 0 - 5 (an Enum)
-    "D3": uint8_t,  # 0 - 5 (an Enum)
-    "D4": uint8_t,  # 0 - 5 (an Enum)
-    "D5": uint8_t,  # 0 - 5 (an Enum)
-    "D8": uint8_t,  # 0 - 5 (an Enum)
-    "D9": uint8_t,  # 0 - 5 (an Enum)
-    "P0": uint8_t,  # 0 - 5 (an Enum)
-    "P1": uint8_t,  # 0 - 5 (an Enum)
-    "P2": uint8_t,  # 0 - 5 (an Enum)
-    "P5": uint8_t,  # 0 - 5 (an Enum)
-    "P6": uint8_t,  # 0 - 5 (an Enum)
-    "P7": uint8_t,  # 0 - 5 (an Enum)
-    "P8": uint8_t,  # 0 - 5 (an Enum)
-    "P9": uint8_t,  # 0 - 5 (an Enum)
-    "LT": uint8_t,
-    "PR": uint16_t,
-    "RP": uint8_t,
-    "%V": uint16_t,  # read only
-    "V+": uint16_t,
-    "TP": int16_t,
-    "M0": uint16_t,  # 0 - 0x3FF
-    "M1": uint16_t,  # 0 - 0x3FF
+    "IR": t.uint16_t,
+    "IC": t.uint16_t,
+    "D0": t.uint8_t,  # 0 - 5 (an Enum)
+    "D1": t.uint8_t,  # 0 - 5 (an Enum)
+    "D2": t.uint8_t,  # 0 - 5 (an Enum)
+    "D3": t.uint8_t,  # 0 - 5 (an Enum)
+    "D4": t.uint8_t,  # 0 - 5 (an Enum)
+    "D5": t.uint8_t,  # 0 - 5 (an Enum)
+    "D8": t.uint8_t,  # 0 - 5 (an Enum)
+    "D9": t.uint8_t,  # 0 - 5 (an Enum)
+    "P0": t.uint8_t,  # 0 - 5 (an Enum)
+    "P1": t.uint8_t,  # 0 - 5 (an Enum)
+    "P2": t.uint8_t,  # 0 - 5 (an Enum)
+    "P5": t.uint8_t,  # 0 - 5 (an Enum)
+    "P6": t.uint8_t,  # 0 - 5 (an Enum)
+    "P7": t.uint8_t,  # 0 - 5 (an Enum)
+    "P8": t.uint8_t,  # 0 - 5 (an Enum)
+    "P9": t.uint8_t,  # 0 - 5 (an Enum)
+    "LT": t.uint8_t,
+    "PR": t.uint16_t,
+    "RP": t.uint8_t,
+    "%V": t.uint16_t,  # read only
+    "V+": t.uint16_t,
+    "TP": t.int16_t,
+    "M0": t.uint16_t,  # 0 - 0x3FF
+    "M1": t.uint16_t,  # 0 - 0x3FF
     # Diagnostics commands
-    "VR": uint16_t,
-    "HV": uint16_t,
-    "AI": uint8_t,
+    "VR": t.uint16_t,
+    "HV": t.uint16_t,
+    "AI": t.uint8_t,
     # AT command options
-    "CT": uint16_t,  # 2 - 0x028F
+    "CT": t.uint16_t,  # 2 - 0x028F
     "CN": None,
-    "GT": uint16_t,
-    "CC": uint8_t,
+    "GT": t.uint16_t,
+    "CC": t.uint8_t,
     # Sleep commands
-    "SM": uint8_t,
-    "SN": uint16_t,
-    "SP": uint16_t,
-    "ST": uint16_t,
-    "SO": uint8_t,
-    "WH": uint16_t,
+    "SM": t.uint8_t,
+    "SN": t.uint16_t,
+    "SP": t.uint16_t,
+    "ST": t.uint16_t,
+    "SO": t.uint8_t,
+    "WH": t.uint16_t,
     "SI": None,
-    "PO": uint16_t,  # 0 - 0x3E8
+    "PO": t.uint16_t,  # 0 - 0x3E8
     # Execution commands
     "AC": None,
     "WR": None,
     "RE": None,
     "FR": None,
     "NR": t.Bool,
-    "CB": uint8_t,
-    "DN": Bytes,  # "up to 20-Byte printable ASCII string"
+    "CB": t.uint8_t,
+    "DN": t.Bytes,  # "up to 20-Byte printable ASCII string"
     "IS": None,
     "AS": None,
     # Stuff I've guessed
-    # "CE": uint8_t,
+    # "CE": t.uint8_t,
 }
 
 # 4 AO lines
@@ -511,7 +305,7 @@ class XBeeRemoteATRequest(LocalDataCluster):
                 **kwargs,
             )
         _LOGGER.debug("Remote AT%s command: %s", cmd_name, args)
-        options = uint8_t(0)
+        options = t.uint8_t(0)
         if apply_changes:
             options |= 0x02
         return self._remote_at_command(options, cmd_name, *args)
@@ -533,14 +327,14 @@ class XBeeRemoteATRequest(LocalDataCluster):
         frame_id = self._seq
         self._seq = (self._seq % 255) + 1
         schema = (
-            uint8_t,
-            uint8_t,
-            uint8_t,
-            uint8_t,
-            EUI64,
-            NWK,
-            Bytes,
-            Bytes,
+            t.uint8_t,
+            t.uint8_t,
+            t.uint8_t,
+            t.uint8_t,
+            t.EUI64,
+            t.NWK,
+            t.Bytes,
+            t.Bytes,
         )
         data = t.serialize(
             (
@@ -661,10 +455,10 @@ class XBeeRemoteATResponse(LocalDataCluster):
         0x0000: foundation.ZCLCommandDef(
             name="remote_at_response",
             schema={
-                "frame_id": uint8_t,
-                "cmd": ATCommand,
-                "status": uint8_t,
-                "value": Bytes,
+                "frame_id": t.uint8_t,
+                "cmd": t.ATCommand,
+                "status": t.uint8_t,
+                "value": t.Bytes,
             },
             is_manufacturer_specific=True,
         )
@@ -721,7 +515,7 @@ class DigitalIOCluster(LocalDataCluster, BinaryInput):
     server_commands = {
         0x0000: foundation.ZCLCommandDef(
             name="io_sample",
-            schema={"io_sample": IOSample},
+            schema={"io_sample": t.IOSample},
             is_manufacturer_specific=True,
         )
     }
@@ -763,7 +557,7 @@ class SerialDataCluster(LocalDataCluster):
         tsn=None,
     ):
         """Handle outgoing data."""
-        data = BinaryString(data).serialize()
+        data = t.BinaryString(data).serialize()
         return foundation.GENERAL_COMMANDS[
             foundation.GeneralCommand.Default_Response
         ].schema(
@@ -803,14 +597,14 @@ class SerialDataCluster(LocalDataCluster):
     client_commands = {
         0x0000: foundation.ZCLCommandDef(
             name="send_data",
-            schema={"data": BinaryString},
+            schema={"data": t.BinaryString},
             is_manufacturer_specific=True,
         )
     }
     server_commands = {
         0x0000: foundation.ZCLCommandDef(
             name="receive_data",
-            schema={"data": BinaryString},
+            schema={"data": t.BinaryString},
             is_manufacturer_specific=True,
         )
     }
