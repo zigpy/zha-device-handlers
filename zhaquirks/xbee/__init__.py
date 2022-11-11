@@ -236,7 +236,6 @@ AT_COMMANDS = {
     "CB": uint8_t,
     "DN": Bytes,  # "up to 20-Byte printable ASCII string"
     "IS": None,
-    "1S": None,
     "AS": None,
     # Stuff I've guessed
     # "CE": uint8_t,
@@ -346,7 +345,15 @@ class XBeeRemoteATRequest(LocalDataCluster):
     """Remote AT Command Request Cluster."""
 
     cluster_id = XBEE_AT_REQUEST_CLUSTER
-    server_commands = {}
+    client_commands = {}
+    server_commands = {
+        k: foundation.ZCLCommandDef(
+            name=v[0].replace("%V", "PercentV").replace("V+", "VPlus"),
+            schema={"param?": v[1]} if v[1] else {},
+            is_manufacturer_specific=True,
+        )
+        for k, v in zip(range(1, len(AT_COMMANDS) + 1), AT_COMMANDS.items())
+    }
 
     _seq: int = 1
 
@@ -380,14 +387,6 @@ class XBeeRemoteATRequest(LocalDataCluster):
             r = cls(int.from_bytes(data[: cls._size], "big", signed=cls._signed))
             data = data[cls._size :]
             return r, data
-
-    def __init__(self, *args, **kwargs):
-        """Generate client_commands from AT_COMMANDS."""
-        super().__init__(*args, **kwargs)
-        self.client_commands = {
-            k: (v[0], (v[1],), None)
-            for k, v in zip(range(1, len(AT_COMMANDS) + 1), AT_COMMANDS.items())
-        }
 
     def _save_at_request(self, frame_id, future):
         self._endpoint.in_clusters[XBEE_AT_RESPONSE_CLUSTER].save_at_request(
@@ -443,8 +442,8 @@ class XBeeRemoteATRequest(LocalDataCluster):
                 0x00,
                 options,
                 frame_id,
-                self._endpoint.device.application.ieee,
-                self._endpoint.device.application.nwk,
+                self._endpoint.device.application.state.node_info.ieee,
+                self._endpoint.device.application.state.node_info.nwk,
                 command,
                 data,
             ),
@@ -471,25 +470,29 @@ class XBeeRemoteATRequest(LocalDataCluster):
         return future
 
     async def command(
-        self, command_id, *args, manufacturer=None, expect_reply=False, tsn=None
+        self,
+        command_id,
+        param=None,
+        *args,
+        manufacturer=None,
+        expect_reply=False,
+        tsn=None,
     ):
         """Handle AT request."""
-        command = self.client_commands[command_id][0]
-        try:
-            value = args[0]
-            if isinstance(value, dict):
-                value = None
-        except IndexError:
-            value = None
+        command = (
+            self.server_commands[command_id]
+            .name.replace("PercentV", "%V")
+            .replace("VPlus", "V+")
+        )
 
-        if value is not None:
-            value = await self.remote_at_command(command, value)
+        if param is not None:
+            value = await self.remote_at_command(command, param)
         else:
             value = await self.remote_at_command(command)
 
         tsn = self._endpoint.device.application.get_sequence()
         hdr = foundation.ZCLHeader.cluster(tsn, command_id)
-        self._endpoint.device.endpoints[232].out_clusters[
+        self._endpoint.device.endpoints[XBEE_DATA_ENDPOINT].out_clusters[
             LevelControl.cluster_id
         ].handle_cluster_request(hdr, {"response": value})
 
@@ -537,16 +540,13 @@ class XBeeRemoteATResponse(LocalDataCluster):
     ):
         """Handle AT response."""
         if hdr.command_id == DATA_IN_CMD:
-            frame_id = args[0]
-            cmd = args[1]
-            status = args[2]
-            value = args[3]
             _LOGGER.debug(
-                "Remote AT command response: %s", (frame_id, cmd, status, value)
+                "Remote AT command response: %s",
+                (args.frame_id, args.cmd, args.status, args.value),
             )
-            (fut,) = self._awaiting.pop(frame_id)
+            (fut,) = self._awaiting.pop(args.frame_id)
             try:
-                status = self.ATCommandResult(status)
+                status = self.ATCommandResult(args.status)
             except ValueError:
                 status = self.ATCommandResult.ERROR
 
@@ -556,12 +556,12 @@ class XBeeRemoteATResponse(LocalDataCluster):
                 )
                 return
 
-            response_type = AT_COMMANDS[cmd.decode("ascii")]
-            if response_type is None or len(value) == 0:
+            response_type = AT_COMMANDS[args.cmd.decode("ascii")]
+            if response_type is None or len(args.value) == 0:
                 fut.set_result(None)
                 return
 
-            response, remains = response_type.deserialize(value)
+            response, remains = response_type.deserialize(args.value)
             fut.set_result(response)
 
         else:
@@ -569,15 +569,15 @@ class XBeeRemoteATResponse(LocalDataCluster):
 
     client_commands = {}
     server_commands = {
-        0x0000: (
-            "remote_at_response",
-            (
-                uint8_t,
-                ATCommand,
-                uint8_t,
-                Bytes,
-            ),
-            None,
+        0x0000: foundation.ZCLCommandDef(
+            name="remote_at_response",
+            schema={
+                "frame_id": uint8_t,
+                "cmd": ATCommand,
+                "status": uint8_t,
+                "value": Bytes,
+            },
+            is_manufacturer_specific=True,
         )
     }
 
@@ -588,7 +588,7 @@ class XBeeCommon(CustomDevice):
     def remote_at(self, command, *args, **kwargs):
         """Remote at command."""
         return (
-            self.endpoints[230]
+            self.endpoints[XBEE_AT_ENDPOINT]
             .out_clusters[XBEE_AT_REQUEST_CLUSTER]
             .remote_at_command(command, *args, apply_changes=True, **kwargs)
         )
@@ -663,12 +663,13 @@ class XBeeCommon(CustomDevice):
                         )
                         sample_index += 2
                     else:
-                        analog_samples.append(0)
+                        analog_samples.append(None)
+                for dpin in range(len(digital_pins)):
+                    if digital_pins[dpin] == 0:
+                        digital_samples[dpin] = None
 
                 return (
                     {
-                        "digital_pins": digital_pins,
-                        "analog_pins": analog_pins,
                         "digital_samples": digital_samples,
                         "analog_samples": analog_samples,
                     },
@@ -689,21 +690,25 @@ class XBeeCommon(CustomDevice):
             Update the digital pin states
             """
             if hdr.command_id == ON_OFF_CMD:
-                values = args[0]
-                if "digital_pins" in values and "digital_samples" in values:
+                values = args.io_sample
+                if "digital_samples" in values:
                     # Update digital inputs
                     active_pins = [
-                        i for i, x in enumerate(values["digital_pins"]) if x == 1
+                        i
+                        for i, x in enumerate(values["digital_samples"])
+                        if x is not None
                     ]
                     for pin in active_pins:
                         # pylint: disable=W0212
                         self._endpoint.device[0xD0 + pin].on_off._update_attribute(
                             ATTR_ON_OFF, values["digital_samples"][pin]
                         )
-                if "analog_pins" in values and "analog_samples" in values:
+                if "analog_samples" in values:
                     # Update analog inputs
                     active_pins = [
-                        i for i, x in enumerate(values["analog_pins"]) if x == 1
+                        i
+                        for i, x in enumerate(values["analog_samples"])
+                        if x is not None
                     ]
                     for pin in active_pins:
                         # pylint: disable=W0212
@@ -719,7 +724,13 @@ class XBeeCommon(CustomDevice):
 
         attributes = {0x0055: ("present_value", t.Bool)}
         client_commands = {}
-        server_commands = {0x0000: ("io_sample", (IOSample,), False)}
+        server_commands = {
+            0x0000: foundation.ZCLCommandDef(
+                name="io_sample",
+                schema={"io_sample": IOSample},
+                is_manufacturer_specific=True,
+            )
+        }
 
     # pylint: disable=too-many-ancestors
     class EventRelayCluster(EventableCluster, LocalDataCluster, LevelControl):
@@ -727,15 +738,18 @@ class XBeeCommon(CustomDevice):
 
         attributes = {}
         client_commands = {}
-
-        def __init__(self, *args, **kwargs):
-            """Generate server_commands from AT_COMMANDS."""
-            super().__init__(*args, **kwargs)
-            self.server_commands = {
-                k: (v[0].lower() + "_command_response", (str,), None)
-                for k, v in zip(range(1, len(AT_COMMANDS) + 1), AT_COMMANDS.items())
-            }
-            self.server_commands[0x0000] = ("receive_data", (str,), None)
+        server_commands = {
+            k: foundation.ZCLCommandDef(
+                name=v[0].replace("%V", "PercentV").replace("V+", "VPlus").lower()
+                + "_command_response",
+                schema={"response?": v[1]} if v[1] else {},
+                is_manufacturer_specific=True,
+            )
+            for k, v in zip(range(1, len(AT_COMMANDS) + 1), AT_COMMANDS.items())
+        }
+        server_commands[0x0000] = foundation.ZCLCommandDef(
+            name="receive_data", schema={"data": str}, is_manufacturer_specific=True
+        )
 
     class SerialDataCluster(LocalDataCluster):
         """Serial Data Cluster for the XBee."""
@@ -757,10 +771,16 @@ class XBeeCommon(CustomDevice):
                 return (cls(data), b"")
 
         async def command(
-            self, command_id, *args, manufacturer=None, expect_reply=False, tsn=None
+            self,
+            command_id,
+            data,
+            *args,
+            manufacturer=None,
+            expect_reply=False,
+            tsn=None,
         ):
             """Handle outgoing data."""
-            data = self.BinaryString(args[0]).serialize()
+            data = self.BinaryString(data).serialize()
             return foundation.GENERAL_COMMANDS[
                 foundation.GeneralCommand.Default_Response
             ].schema(
@@ -792,21 +812,33 @@ class XBeeCommon(CustomDevice):
             if hdr.command_id == DATA_IN_CMD:
                 self._endpoint.out_clusters[
                     LevelControl.cluster_id
-                ].handle_cluster_request(hdr, {"data": args[0]})
+                ].handle_cluster_request(hdr, {"data": args.data})
             else:
                 super().handle_cluster_request(hdr, args)
 
         attributes = {}
-        client_commands = {0x0000: ("send_data", (BinaryString,), None)}
-        server_commands = {0x0000: ("receive_data", (BinaryString,), None)}
+        client_commands = {
+            0x0000: foundation.ZCLCommandDef(
+                name="send_data",
+                schema={"data": BinaryString},
+                is_manufacturer_specific=True,
+            )
+        }
+        server_commands = {
+            0x0000: foundation.ZCLCommandDef(
+                name="receive_data",
+                schema={"data": BinaryString},
+                is_manufacturer_specific=True,
+            )
+        }
 
     replacement = {
         ENDPOINTS: {
-            230: {
+            XBEE_AT_ENDPOINT: {
                 INPUT_CLUSTERS: [XBeeRemoteATResponse],
                 OUTPUT_CLUSTERS: [XBeeRemoteATRequest],
             },
-            232: {
+            XBEE_DATA_ENDPOINT: {
                 INPUT_CLUSTERS: [DigitalIOCluster, SerialDataCluster, XBeeBasic],
                 OUTPUT_CLUSTERS: [SerialDataCluster, EventRelayCluster],
             },

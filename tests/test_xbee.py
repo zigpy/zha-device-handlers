@@ -269,7 +269,7 @@ async def test_receive_serial_data(zigpy_device_from_quirk):
             None,
             b"2\x00\x02\x01\xff\xff\xff\xff\xff\xff\xff\xff\xff\xfe%V",
             b"\x01%V\x00\x0C\xE4",
-            "%v_command_response",
+            "percentv_command_response",
             3300,
         ),
         # Write uint16_t argument
@@ -278,7 +278,7 @@ async def test_receive_serial_data(zigpy_device_from_quirk):
             2700,
             b"2\x00\x02\x01\xff\xff\xff\xff\xff\xff\xff\xff\xff\xfeV+\x0A\x8C",
             b"\x01V+\x00",
-            "v+_command_response",
+            "vplus_command_response",
             None,
         ),
         # Read uint8_t argument
@@ -319,7 +319,7 @@ async def test_receive_serial_data(zigpy_device_from_quirk):
         ),
         # Command with no arguments
         (
-            94,
+            93,
             None,
             b"2\x00\x02\x01\xff\xff\xff\xff\xff\xff\xff\xff\xff\xfeAS",
             b"\x01AS\x00",
@@ -417,7 +417,7 @@ async def test_remote_at_non_native(
         # Write bool argument
         (31, "PM", True, None),
         # Command with no arguments
-        (94, "AS", None, None),
+        (93, "AS", None, None),
     ),
 )
 async def test_remote_at_native(
@@ -457,7 +457,9 @@ async def test_remote_at_native(
             )
         assert status == foundation.Status.SUCCESS
         listener.zha_send_event.assert_called_once_with(
-            command.lower() + "_command_response", {"response": response_value}
+            command.replace("%V", "PercentV").replace("V+", "VPlus").lower()
+            + "_command_response",
+            {"response": response_value},
         )
 
 
