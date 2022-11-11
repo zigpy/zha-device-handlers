@@ -582,6 +582,234 @@ class XBeeRemoteATResponse(LocalDataCluster):
     }
 
 
+class DigitalIOCluster(LocalDataCluster, BinaryInput):
+    """Digital IO Cluster for the XBee."""
+
+    cluster_id = XBEE_IO_CLUSTER
+
+    class IOSample(bytes):
+        """Parse an XBee IO sample report."""
+
+        # pylint: disable=R0201
+        def serialize(self):
+            """Serialize an IO Sample Report, Not implemented."""
+            _LOGGER.debug("Serialize not implemented.")
+
+        @classmethod
+        def deserialize(cls, data):
+            """Deserialize an xbee IO sample report.
+
+            xbee digital sample format
+            Sample set count byte 0
+            Digital mask byte 1, 2
+            Analog mask byte 3
+            Digital samples byte 4, 5 (if any sample exists)
+            Analog Sample, 2 bytes per
+            """
+            sample_sets = int.from_bytes(data[0:1], byteorder="big")
+            if sample_sets != 1:
+                _LOGGER.warning("Number of sets is not 1")
+            digital_mask = data[1:3]
+            analog_mask = data[3:4]
+            digital_sample = data[4:6]
+            num_bits = 15
+            digital_pins = [
+                (int.from_bytes(digital_mask, byteorder="big") >> bit) & 1
+                for bit in range(num_bits - 1, -1, -1)
+            ]
+            digital_pins = list(reversed(digital_pins))
+            analog_pins = [
+                (int.from_bytes(analog_mask, byteorder="big") >> bit) & 1
+                for bit in range(8 - 1, -1, -1)
+            ]
+            analog_pins = list(reversed(analog_pins))
+            if 1 in digital_pins:
+                digital_samples = [
+                    (int.from_bytes(digital_sample, byteorder="big") >> bit) & 1
+                    for bit in range(num_bits - 1, -1, -1)
+                ]
+                digital_samples = list(reversed(digital_samples))
+                sample_index = 6
+            else:
+                # skip digital samples block
+                digital_samples = digital_pins
+                sample_index = 4
+            analog_samples = []
+            for apin in analog_pins:
+                if apin == 1:
+                    analog_samples.append(
+                        int.from_bytes(
+                            data[sample_index : sample_index + 2], byteorder="big"
+                        )
+                    )
+                    sample_index += 2
+                else:
+                    analog_samples.append(None)
+            for dpin in range(len(digital_pins)):
+                if digital_pins[dpin] == 0:
+                    digital_samples[dpin] = None
+
+            return (
+                {
+                    "digital_samples": digital_samples,
+                    "analog_samples": analog_samples,
+                },
+                data[sample_index:],
+            )
+
+    def handle_cluster_request(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: List[Any],
+        *,
+        dst_addressing: Optional[
+            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        ] = None,
+    ):
+        """Handle the cluster request.
+
+        Update the digital pin states
+        """
+        if hdr.command_id == ON_OFF_CMD:
+            values = args.io_sample
+            if "digital_samples" in values:
+                # Update digital inputs
+                active_pins = [
+                    i for i, x in enumerate(values["digital_samples"]) if x is not None
+                ]
+                for pin in active_pins:
+                    # pylint: disable=W0212
+                    self._endpoint.device[0xD0 + pin].on_off._update_attribute(
+                        ATTR_ON_OFF, values["digital_samples"][pin]
+                    )
+            if "analog_samples" in values:
+                # Update analog inputs
+                active_pins = [
+                    i for i, x in enumerate(values["analog_samples"]) if x is not None
+                ]
+                for pin in active_pins:
+                    # pylint: disable=W0212
+                    self._endpoint.device[0xD0 + pin].analog_input._update_attribute(
+                        ATTR_PRESENT_VALUE,
+                        values["analog_samples"][pin]
+                        / (10.23 if pin != 7 else 1000),  # supply voltage is in mV
+                    )
+        else:
+            super().handle_cluster_request(hdr, args)
+
+    attributes = {0x0055: ("present_value", t.Bool)}
+    client_commands = {}
+    server_commands = {
+        0x0000: foundation.ZCLCommandDef(
+            name="io_sample",
+            schema={"io_sample": IOSample},
+            is_manufacturer_specific=True,
+        )
+    }
+
+
+# pylint: disable=too-many-ancestors
+class EventRelayCluster(EventableCluster, LocalDataCluster, LevelControl):
+    """A cluster with cluster_id which is allowed to send events."""
+
+    attributes = {}
+    client_commands = {}
+    server_commands = {
+        k: foundation.ZCLCommandDef(
+            name=v[0].replace("%V", "PercentV").replace("V+", "VPlus").lower()
+            + "_command_response",
+            schema={"response?": v[1]} if v[1] else {},
+            is_manufacturer_specific=True,
+        )
+        for k, v in zip(range(1, len(AT_COMMANDS) + 1), AT_COMMANDS.items())
+    }
+    server_commands[0x0000] = foundation.ZCLCommandDef(
+        name="receive_data", schema={"data": str}, is_manufacturer_specific=True
+    )
+
+
+class SerialDataCluster(LocalDataCluster):
+    """Serial Data Cluster for the XBee."""
+
+    cluster_id = XBEE_DATA_CLUSTER
+    ep_attribute = "xbee_serial_data"
+
+    class BinaryString(str):
+        """Class to parse and serialize binary data as string."""
+
+        def serialize(self):
+            """Serialize string into bytes."""
+            return bytes(self, encoding="latin1")
+
+        @classmethod
+        def deserialize(cls, data):
+            """Interpret data as string."""
+            data = str(data, encoding="latin1")
+            return (cls(data), b"")
+
+    async def command(
+        self,
+        command_id,
+        data,
+        *args,
+        manufacturer=None,
+        expect_reply=False,
+        tsn=None,
+    ):
+        """Handle outgoing data."""
+        data = self.BinaryString(data).serialize()
+        return foundation.GENERAL_COMMANDS[
+            foundation.GeneralCommand.Default_Response
+        ].schema(
+            command_id=0x00,
+            status=(
+                await self._endpoint.device.application.request(
+                    self._endpoint.device,
+                    XBEE_PROFILE_ID,
+                    XBEE_DATA_CLUSTER,
+                    XBEE_DATA_ENDPOINT,
+                    XBEE_DATA_ENDPOINT,
+                    self._endpoint.device.application.get_sequence(),
+                    data,
+                    expect_reply=False,
+                )
+            )[0],
+        )
+
+    def handle_cluster_request(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: List[Any],
+        *,
+        dst_addressing: Optional[
+            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        ] = None,
+    ):
+        """Handle incoming data."""
+        if hdr.command_id == DATA_IN_CMD:
+            self._endpoint.out_clusters[LevelControl.cluster_id].handle_cluster_request(
+                hdr, {"data": args.data}
+            )
+        else:
+            super().handle_cluster_request(hdr, args)
+
+    attributes = {}
+    client_commands = {
+        0x0000: foundation.ZCLCommandDef(
+            name="send_data",
+            schema={"data": BinaryString},
+            is_manufacturer_specific=True,
+        )
+    }
+    server_commands = {
+        0x0000: foundation.ZCLCommandDef(
+            name="receive_data",
+            schema={"data": BinaryString},
+            is_manufacturer_specific=True,
+        )
+    }
+
+
 class XBeeCommon(CustomDevice):
     """XBee common class."""
 
@@ -600,237 +828,6 @@ class XBeeCommon(CustomDevice):
         hdr = foundation.ZCLHeader.cluster(tsn, command_id)
         data = hdr.serialize() + data
         return super().deserialize(endpoint_id, cluster_id, data)
-
-    class DigitalIOCluster(LocalDataCluster, BinaryInput):
-        """Digital IO Cluster for the XBee."""
-
-        cluster_id = XBEE_IO_CLUSTER
-
-        class IOSample(bytes):
-            """Parse an XBee IO sample report."""
-
-            # pylint: disable=R0201
-            def serialize(self):
-                """Serialize an IO Sample Report, Not implemented."""
-                _LOGGER.debug("Serialize not implemented.")
-
-            @classmethod
-            def deserialize(cls, data):
-                """Deserialize an xbee IO sample report.
-
-                xbee digital sample format
-                Sample set count byte 0
-                Digital mask byte 1, 2
-                Analog mask byte 3
-                Digital samples byte 4, 5 (if any sample exists)
-                Analog Sample, 2 bytes per
-                """
-                sample_sets = int.from_bytes(data[0:1], byteorder="big")
-                if sample_sets != 1:
-                    _LOGGER.warning("Number of sets is not 1")
-                digital_mask = data[1:3]
-                analog_mask = data[3:4]
-                digital_sample = data[4:6]
-                num_bits = 15
-                digital_pins = [
-                    (int.from_bytes(digital_mask, byteorder="big") >> bit) & 1
-                    for bit in range(num_bits - 1, -1, -1)
-                ]
-                digital_pins = list(reversed(digital_pins))
-                analog_pins = [
-                    (int.from_bytes(analog_mask, byteorder="big") >> bit) & 1
-                    for bit in range(8 - 1, -1, -1)
-                ]
-                analog_pins = list(reversed(analog_pins))
-                if 1 in digital_pins:
-                    digital_samples = [
-                        (int.from_bytes(digital_sample, byteorder="big") >> bit) & 1
-                        for bit in range(num_bits - 1, -1, -1)
-                    ]
-                    digital_samples = list(reversed(digital_samples))
-                    sample_index = 6
-                else:
-                    # skip digital samples block
-                    digital_samples = digital_pins
-                    sample_index = 4
-                analog_samples = []
-                for apin in analog_pins:
-                    if apin == 1:
-                        analog_samples.append(
-                            int.from_bytes(
-                                data[sample_index : sample_index + 2], byteorder="big"
-                            )
-                        )
-                        sample_index += 2
-                    else:
-                        analog_samples.append(None)
-                for dpin in range(len(digital_pins)):
-                    if digital_pins[dpin] == 0:
-                        digital_samples[dpin] = None
-
-                return (
-                    {
-                        "digital_samples": digital_samples,
-                        "analog_samples": analog_samples,
-                    },
-                    data[sample_index:],
-                )
-
-        def handle_cluster_request(
-            self,
-            hdr: foundation.ZCLHeader,
-            args: List[Any],
-            *,
-            dst_addressing: Optional[
-                Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
-            ] = None,
-        ):
-            """Handle the cluster request.
-
-            Update the digital pin states
-            """
-            if hdr.command_id == ON_OFF_CMD:
-                values = args.io_sample
-                if "digital_samples" in values:
-                    # Update digital inputs
-                    active_pins = [
-                        i
-                        for i, x in enumerate(values["digital_samples"])
-                        if x is not None
-                    ]
-                    for pin in active_pins:
-                        # pylint: disable=W0212
-                        self._endpoint.device[0xD0 + pin].on_off._update_attribute(
-                            ATTR_ON_OFF, values["digital_samples"][pin]
-                        )
-                if "analog_samples" in values:
-                    # Update analog inputs
-                    active_pins = [
-                        i
-                        for i, x in enumerate(values["analog_samples"])
-                        if x is not None
-                    ]
-                    for pin in active_pins:
-                        # pylint: disable=W0212
-                        self._endpoint.device[
-                            0xD0 + pin
-                        ].analog_input._update_attribute(
-                            ATTR_PRESENT_VALUE,
-                            values["analog_samples"][pin]
-                            / (10.23 if pin != 7 else 1000),  # supply voltage is in mV
-                        )
-            else:
-                super().handle_cluster_request(hdr, args)
-
-        attributes = {0x0055: ("present_value", t.Bool)}
-        client_commands = {}
-        server_commands = {
-            0x0000: foundation.ZCLCommandDef(
-                name="io_sample",
-                schema={"io_sample": IOSample},
-                is_manufacturer_specific=True,
-            )
-        }
-
-    # pylint: disable=too-many-ancestors
-    class EventRelayCluster(EventableCluster, LocalDataCluster, LevelControl):
-        """A cluster with cluster_id which is allowed to send events."""
-
-        attributes = {}
-        client_commands = {}
-        server_commands = {
-            k: foundation.ZCLCommandDef(
-                name=v[0].replace("%V", "PercentV").replace("V+", "VPlus").lower()
-                + "_command_response",
-                schema={"response?": v[1]} if v[1] else {},
-                is_manufacturer_specific=True,
-            )
-            for k, v in zip(range(1, len(AT_COMMANDS) + 1), AT_COMMANDS.items())
-        }
-        server_commands[0x0000] = foundation.ZCLCommandDef(
-            name="receive_data", schema={"data": str}, is_manufacturer_specific=True
-        )
-
-    class SerialDataCluster(LocalDataCluster):
-        """Serial Data Cluster for the XBee."""
-
-        cluster_id = XBEE_DATA_CLUSTER
-        ep_attribute = "xbee_serial_data"
-
-        class BinaryString(str):
-            """Class to parse and serialize binary data as string."""
-
-            def serialize(self):
-                """Serialize string into bytes."""
-                return bytes(self, encoding="latin1")
-
-            @classmethod
-            def deserialize(cls, data):
-                """Interpret data as string."""
-                data = str(data, encoding="latin1")
-                return (cls(data), b"")
-
-        async def command(
-            self,
-            command_id,
-            data,
-            *args,
-            manufacturer=None,
-            expect_reply=False,
-            tsn=None,
-        ):
-            """Handle outgoing data."""
-            data = self.BinaryString(data).serialize()
-            return foundation.GENERAL_COMMANDS[
-                foundation.GeneralCommand.Default_Response
-            ].schema(
-                command_id=0x00,
-                status=(
-                    await self._endpoint.device.application.request(
-                        self._endpoint.device,
-                        XBEE_PROFILE_ID,
-                        XBEE_DATA_CLUSTER,
-                        XBEE_DATA_ENDPOINT,
-                        XBEE_DATA_ENDPOINT,
-                        self._endpoint.device.application.get_sequence(),
-                        data,
-                        expect_reply=False,
-                    )
-                )[0],
-            )
-
-        def handle_cluster_request(
-            self,
-            hdr: foundation.ZCLHeader,
-            args: List[Any],
-            *,
-            dst_addressing: Optional[
-                Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
-            ] = None,
-        ):
-            """Handle incoming data."""
-            if hdr.command_id == DATA_IN_CMD:
-                self._endpoint.out_clusters[
-                    LevelControl.cluster_id
-                ].handle_cluster_request(hdr, {"data": args.data})
-            else:
-                super().handle_cluster_request(hdr, args)
-
-        attributes = {}
-        client_commands = {
-            0x0000: foundation.ZCLCommandDef(
-                name="send_data",
-                schema={"data": BinaryString},
-                is_manufacturer_specific=True,
-            )
-        }
-        server_commands = {
-            0x0000: foundation.ZCLCommandDef(
-                name="receive_data",
-                schema={"data": BinaryString},
-                is_manufacturer_specific=True,
-            )
-        }
 
     replacement = {
         ENDPOINTS: {
