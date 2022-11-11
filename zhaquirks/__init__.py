@@ -120,7 +120,7 @@ class EventableCluster(CustomCluster):
         ):
             self.listener_event(
                 ZHA_SEND_EVENT,
-                self.server_commands.get(hdr.command_id, (hdr.command_id))[0],
+                self.server_commands.get(hdr.command_id, (hdr.command_id)).name,
                 args,
             )
 
