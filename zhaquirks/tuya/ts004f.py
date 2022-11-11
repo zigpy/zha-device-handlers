@@ -75,6 +75,7 @@ class TuyaSmartRemote004FROK(CustomDevice):
             ("_TZ3000_uri7ongn", "TS004F"),
             ("_TZ3000_ixla93vd", "TS004F"),
             ("_TZ3000_qja6nq5z", "TS004F"),
+            ("_TZ3000_csflgqj2", "TS004F"),
         ],
         ENDPOINTS: {
             1: {
