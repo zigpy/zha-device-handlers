@@ -27,6 +27,8 @@ async def test_basic_cluster(zigpy_device_from_quirk):
     """Test Basic cluster."""
 
     xbee3_device = zigpy_device_from_quirk(XBee3Sensor)
+    assert xbee3_device.model == "XBee3"
+
     basic_cluster = xbee3_device.endpoints[XBEE_DATA_ENDPOINT].in_clusters[
         Basic.cluster_id
     ]
@@ -505,14 +507,14 @@ async def test_io_sample_report(zigpy_device_from_quirk):
     xbee3_device = zigpy_device_from_quirk(XBee3Sensor)
 
     digital_listeners = [
-        ClusterListener(xbee3_device.endpoints[e].on_off) for e in range(0xD0, 0xDD)
+        ClusterListener(xbee3_device.endpoints[e].on_off) for e in range(0xD0, 0xDF)
     ]
     analog_listeners = [
         ClusterListener(xbee3_device.endpoints[e if e != 0xD4 else 0xD7].analog_input)
         for e in range(0xD0, 0xD5)
     ]
 
-    #   {'digital_pins': [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1], 'analog_pins': [1, 0, 1, 0, 0, 0, 0, 1], 'digital_samples': [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0], 'analog_samples': [341, 0, 682, 0, 0, 0, 0, 3305]}
+    #   {'digital_samples': [1, None, 0, None, 1, None, 0, None, 1, None, 0, None, 1, None, 0], 'analog_samples': [341, None, 682, None, None, None, None, 3305]}
     xbee3_device.handle_message(
         XBEE_PROFILE_ID,
         XBEE_IO_CLUSTER,
