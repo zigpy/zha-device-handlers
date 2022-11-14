@@ -9,6 +9,7 @@ import logging
 from typing import Any, List, Optional, Union
 
 from zigpy.quirks import CustomDevice
+import zigpy.types as zt
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
     AnalogInput,
@@ -31,6 +32,9 @@ DIO_APPLY_CHANGES = 0x02
 DIO_PIN_HIGH = 0x05
 DIO_PIN_LOW = 0x04
 ON_OFF_CMD = 0x0000
+SAMPLE_DATA_CMD = 0x0000
+SERIAL_DATA_CMD = 0x0000
+AT_RESPONSE_CMD = 0x0000
 XBEE_DATA_CLUSTER = 0x11
 XBEE_AT_REQUEST_CLUSTER = 0x21
 XBEE_AT_RESPONSE_CLUSTER = 0xA1
@@ -312,7 +316,7 @@ class XBeeRemoteATRequest(LocalDataCluster):
 
     async def _remote_at_command(self, options, name, *args):
         _LOGGER.debug("Remote AT command: %s %s", name, args)
-        data = t.serialize(args, (AT_COMMANDS[name],))
+        data = zt.serialize(args, (AT_COMMANDS[name],))
         try:
             return await asyncio.wait_for(
                 await self._command(options, name.encode("ascii"), data, *args),
@@ -336,7 +340,7 @@ class XBeeRemoteATRequest(LocalDataCluster):
             t.Bytes,
             t.Bytes,
         )
-        data = t.serialize(
+        data = zt.serialize(
             (
                 0x32,
                 0x00,
@@ -418,7 +422,7 @@ class XBeeRemoteATResponse(LocalDataCluster):
         args: List[Any],
         *,
         dst_addressing: Optional[
-            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+            Union[zt.Addressing.Group, zt.Addressing.IEEE, zt.Addressing.NWK]
         ] = None,
     ):
         """Handle AT response."""
@@ -452,7 +456,7 @@ class XBeeRemoteATResponse(LocalDataCluster):
 
     client_commands = {}
     server_commands = {
-        0x0000: foundation.ZCLCommandDef(
+        AT_RESPONSE_CMD: foundation.ZCLCommandDef(
             name="remote_at_response",
             schema={
                 "frame_id": t.uint8_t,
@@ -476,14 +480,14 @@ class XBeeDigitalIOCluster(LocalDataCluster, BinaryInput):
         args: List[Any],
         *,
         dst_addressing: Optional[
-            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+            Union[zt.Addressing.Group, zt.Addressing.IEEE, zt.Addressing.NWK]
         ] = None,
     ):
         """Handle the cluster request.
 
         Update the digital pin states
         """
-        if hdr.command_id == ON_OFF_CMD:
+        if hdr.command_id == SAMPLE_DATA_CMD:
             values = args.io_sample
             if "digital_samples" in values:
                 # Update digital inputs
@@ -510,10 +514,9 @@ class XBeeDigitalIOCluster(LocalDataCluster, BinaryInput):
         else:
             super().handle_cluster_request(hdr, args)
 
-    attributes = {0x0055: ("present_value", t.Bool)}
     client_commands = {}
     server_commands = {
-        0x0000: foundation.ZCLCommandDef(
+        SAMPLE_DATA_CMD: foundation.ZCLCommandDef(
             name="io_sample",
             schema={"io_sample": t.IOSample},
             is_manufacturer_specific=True,
@@ -536,7 +539,7 @@ class XBeeEventRelayCluster(EventableCluster, LocalDataCluster, LevelControl):
         )
         for k, v in zip(range(1, len(AT_COMMANDS) + 1), AT_COMMANDS.items())
     }
-    server_commands[0x0000] = foundation.ZCLCommandDef(
+    server_commands[SERIAL_DATA_CMD] = foundation.ZCLCommandDef(
         name="receive_data", schema={"data": str}, is_manufacturer_specific=True
     )
 
@@ -582,7 +585,7 @@ class XBeeSerialDataCluster(LocalDataCluster):
         args: List[Any],
         *,
         dst_addressing: Optional[
-            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+            Union[zt.Addressing.Group, zt.Addressing.IEEE, zt.Addressing.NWK]
         ] = None,
     ):
         """Handle incoming data."""
@@ -595,14 +598,14 @@ class XBeeSerialDataCluster(LocalDataCluster):
 
     attributes = {}
     client_commands = {
-        0x0000: foundation.ZCLCommandDef(
+        SERIAL_DATA_CMD: foundation.ZCLCommandDef(
             name="send_data",
             schema={"data": t.BinaryString},
             is_manufacturer_specific=True,
         )
     }
     server_commands = {
-        0x0000: foundation.ZCLCommandDef(
+        SERIAL_DATA_CMD: foundation.ZCLCommandDef(
             name="receive_data",
             schema={"data": t.BinaryString},
             is_manufacturer_specific=True,

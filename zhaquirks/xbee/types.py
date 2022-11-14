@@ -3,7 +3,31 @@
 Most of them are taken from https://github.com/zigpy/zigpy-xbee/blob/dev/zigpy_xbee/types.py
 """
 
-from zigpy.types import *  # noqa: F401,F403
+import enum
+
+import zigpy.types
+
+
+class Bytes(bytes):
+    """Bytes serializable class."""
+
+    def serialize(self):
+        """Serialize Bytes."""
+        return self
+
+    @classmethod
+    def deserialize(cls, data):
+        """Deserialize Bytes."""
+        return cls(data), b""
+
+
+class ATCommand(Bytes):
+    """AT command serializable class."""
+
+    @classmethod
+    def deserialize(cls, data):
+        """Deserialize ATCommand."""
+        return cls(data[:2]), data[2:]
 
 
 class int_t(int):
@@ -60,20 +84,14 @@ class uint64_t(uint_t):
     _size = 8
 
 
-class Bytes(bytes):
-    """Bytes serializable class."""
+class Bool(uint8_t, enum.Enum):
+    """Boolean type with values true and false."""
 
-    def serialize(self):
-        """Serialize Bytes."""
-        return self
-
-    @classmethod
-    def deserialize(cls, data):
-        """Deserialize Bytes."""
-        return cls(data), b""
+    false = 0x00  # An alias for zero, used for clarity.
+    true = 0x01  # An alias for one, used for clarity.
 
 
-class EUI64(EUI64):
+class EUI64(zigpy.types.EUI64):
     """EUI64 serializable class."""
 
     @classmethod
@@ -86,6 +104,12 @@ class EUI64(EUI64):
         """Serialize EUI64."""
         assert self._length == len(self)
         return super().serialize()[::-1]
+
+
+class FrameId(uint8_t):
+    """Frame ID type."""
+
+    pass
 
 
 class NWK(int):
@@ -106,15 +130,6 @@ class NWK(int):
         return r, data
 
 
-class ATCommand(Bytes):
-    """AT command serializable class."""
-
-    @classmethod
-    def deserialize(cls, data):
-        """Deserialize ATCommand."""
-        return cls(data[:2]), data[2:]
-
-
 class BinaryString(str):
     """Class to parse and serialize binary data as string."""
 
@@ -129,13 +144,10 @@ class BinaryString(str):
         return (cls(data), b"")
 
 
-class IOSample(bytes):
+class IOSample(dict):
     """Parse an XBee IO sample report."""
 
-    # pylint: disable=R0201
-    def serialize(self):
-        """Serialize an IO Sample Report, Not implemented."""
-        _LOGGER.debug("Serialize not implemented.")
+    serialize = None
 
     @classmethod
     def deserialize(cls, data):
@@ -150,7 +162,7 @@ class IOSample(bytes):
         """
         sample_sets = int.from_bytes(data[0:1], byteorder="big")
         if sample_sets != 1:
-            _LOGGER.warning("Number of sets is not 1")
+            raise ValueError("Number of sets is not 1")
         digital_mask = data[1:3]
         analog_mask = data[3:4]
         digital_sample = data[4:6]
