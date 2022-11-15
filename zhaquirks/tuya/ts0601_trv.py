@@ -1,21 +1,12 @@
 """Map from manufacturer to standard clusters for thermostatic valves."""
 import logging
+import re
 from typing import Optional, Union
 
 from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import (
-    AnalogOutput,
-    Basic,
-    BinaryInput,
-    Groups,
-    Identify,
-    OnOff,
-    Ota,
-    Scenes,
-    Time,
-)
+from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
 from zigpy.zcl.clusters.hvac import Thermostat
 
 from zhaquirks import Bus, LocalDataCluster
@@ -910,7 +901,6 @@ ZONNSMART_FROST_PROTECT_ATTR = 0x010A  # [0] inactive [1] active
 ZONNSMART_TARGET_TEMP_ATTR = 0x0210  # [0,0,0,210] target room temp (decidegree)
 ZONNSMART_TEMPERATURE_ATTR = 0x0218  # [0,0,0,200] current room temp (decidegree)
 ZONNSMART_TEMPERATURE_CALIBRATION_ATTR = 0x021B  # temperature calibration (decidegree)
-ZONNSMART_WEEK_FORMAT_ATTR = 0x041F  # # [0] 5+2 days [1] 6+1 days, [2] 7 days
 ZONNSMART_HOLIDAY_TEMP_ATTR = (
     0x0220  # [0, 0, 0, 170] temp in holiday mode (decidegreee)
 )
@@ -931,19 +921,210 @@ ZONNSMART_HEATING_STOPPING_ATTR = 0x016B  # [0] inactive [1] active
 ZONNSMART_ONLINE_MODE_ENUM_ATTR = 0x0473  # device publises value as enum datatype
 ZONNSMART_ONLINE_MODE_BOOL_ATTR = 0x0173  # but expects to receive bool datatype
 
+ZONNSMART_SCHEDULE_TYPE_ATTR = 0x041F  # See ZONNSMARTScheduleType
+ZONNSMART_SCHEDULE_SET_ATTR = 0x006A
+ZONNSMART_SCHEDULE_MONDAY_ATTR = 0x006C
+ZONNSMART_SCHEDULE_TUESDAY_ATTR = 0x0070
+ZONNSMART_SCHEDULE_WEDNESDAY_ATTR = 0x006D
+ZONNSMART_SCHEDULE_THURSDAY_ATTR = 0x071
+ZONNSMART_SCHEDULE_FRIDAY_ATTR = 0x006E
+ZONNSMART_SCHEDULE_SATURDAY_ATTR = 0x0072
+ZONNSMART_SCHEDULE_SUNDAY_ATTR = 0x006F
+
 ZONNSMART_MAX_TEMPERATURE_VAL = 3000
 ZONNSMART_MIN_TEMPERATURE_VAL = 500
-ZonnsmartManuClusterSelf = None
+
+
+class ZONNSMARTHolidayStartStop(t.CharacterString):
+    """Stop and start time of holidays."""
+
+    def __new__(cls, value):
+        """Create a string representation of the attribute."""
+        if isinstance(value, str):
+            return super().__new__(cls, value)
+        else:
+            s = "".join(chr(x) for x in value)[::-1]
+            humanstr = (
+                s[0:4]
+                + "/"
+                + s[4:6]
+                + "/"
+                + s[6:8]
+                + " "
+                + s[8:10]
+                + ":"
+                + s[10:12]
+                + " | "
+                + s[12:16]
+                + "/"
+                + s[16:18]
+                + "/"
+                + s[18:20]
+                + " "
+                + s[20:22]
+                + ":"
+                + s[22:24]
+            )
+
+            return super().__new__(cls, humanstr)
+
+    def serialize(self):
+        """Serialize holiday start stop values into binary values."""
+
+        data = self
+        if not re.match(
+            r"\d\d\d\d/\d\d/\d\d \d\d:\d\d \| \d\d\d\d/\d\d/\d\d \d\d:\d\d", str(data)
+        ):
+            raise ValueError(
+                "Holiday Start Stop must be in the following format:"
+                " 2021/01/01 01:01 | 2021/01/01 01:01"
+            )
+        b = (
+            data[0:4]
+            + data[5:7]
+            + data[8:10]
+            + data[11:13]
+            + data[14:16]
+            + data[19:23]
+            + data[24:26]
+            + data[27:29]
+            + data[30:32]
+            + data[33:35]
+        )
+
+        ret = b[::-1].encode()
+        return ret
+
+
+class ZONNSMARTScheduleSet(t.FixedList, item_type=t.uint8_t, length=31):
+    """Set the schedule for one or multiple days."""
+
+    def __init__(self, value, *args, **kwargs):
+        """Parse the schedule string and serialize it."""
+
+        super().__init__(*args, **kwargs)
+        if value is None:
+            return
+
+        if not isinstance(value, str):
+            raise ValueError("Only string value allowed")  # noqa: TRY004
+
+        periods = value.split()
+        if len(periods) < 2:
+            raise ValueError("At least a day and a period are needed")
+
+        b = []
+        day = periods[0]
+        periods.pop(0)
+        if day == "monday" or day == "mon":
+            b += [0x1]
+        elif day == "tuesday" or day == "tue":
+            b += [0x2]
+        elif day == "wednesday" or day == "wed":
+            b += [0x4]
+        elif day == "thursday" or day == "thu":
+            b += [0x8]
+        elif day == "friday" or day == "fri":
+            b += [0x10]
+        elif day == "saturday" or day == "sat":
+            b += [0x20]
+        elif day == "sunday" or day == "sun":
+            b += [0x40]
+        elif day == "work" or day == "mon-fri":
+            b += [0x1F]
+        elif day == "weekend" or day == "sat-sun":
+            b += [0x60]
+        elif day == "week" or day == "mon-sun":
+            b += [0x7F]
+        else:
+            raise ValueError(
+                "Invalid day provided, should be a day of the week or 'mon-fri', 'sat-sun' or 'mon-sun'"
+            )
+
+        if len(periods) > 10:
+            raise ValueError("Maximum 10 periods are allowed")
+        prevTime = 0
+        for period in periods:
+            tokens = re.split("[:/]", period)
+            if len(tokens) < 3:
+                raise ValueError("Invalid period " + period)
+            hours = int(tokens[0])
+            minutes = int(tokens[1])
+            time = int(((hours * 60) + minutes) / 10)
+            if time > 144:
+                raise ValueError("Invalid time : " + tokens[0] + ":" + tokens[1])
+            if time <= prevTime:
+                raise ValueError("Period time must always increase")
+            temperature = int(float(tokens[2]) * 10)
+            if (
+                temperature < ZONNSMART_MIN_TEMPERATURE_VAL / 10
+                or temperature > ZONNSMART_MAX_TEMPERATURE_VAL / 10
+            ):
+                raise ValueError("Invalid temperature : " + tokens[2])
+            if temperature % 5:
+                raise ValueError("Temperature must be whole or half degrees")
+            b += [time, int(temperature / 256), temperature % 256]
+
+        if b[-3] != 144:
+            raise ValueError("The last period must be 24:00")
+
+        while len(b) < 30:  # Append values to fill the payload
+            b += [144, 0, 180]
+
+        self.raw = b[::-1]
+
+    def serialize(self):
+        """Return the serialized value."""
+
+        return self.raw
+
+
+class ZONNSMARTDaySchedule(t.CharacterString):
+    """Schedule for a single day."""
+
+    def __new__(cls, value):
+        """Create a str from the t.FixedList provided."""
+
+        # If we're given a string, it means someons is trying to write the attribute from the UI
+        if isinstance(value, str):
+            raise ValueError(  # noqa: TRY004
+                "Attribute cannot be set, use schedule_set attribute"
+            )
+
+        value = value[1:]
+        PERIODS = 10
+        PERIOD_SIZE = 3
+        periods = []
+        for i in range(PERIODS):
+            time = value[i * PERIOD_SIZE] * 10
+            hours = int(time / 60)
+            minutes = time % 60
+            temperature = (
+                value[(i * PERIOD_SIZE) + 2] + (value[(i * PERIOD_SIZE) + 1] * 256)
+            ) / 10.0
+            periods.append(f"{hours:02d}:{minutes:02d}/{temperature:02.1f}")
+            if time == 1440:  # Don't show the payload filling periods
+                break
+        schedule = " ".join(periods)
+        return super().__new__(cls, schedule)
+
+
+class ZONNSMARTScheduleType(t.enum8):
+    """Week format."""
+
+    SINGLE = 0x0
+    WORKDAY_WEEKEND = 0x1
+    SEPARATE = 0x2
 
 
 class ZONNSMARTManufCluster(TuyaManufClusterAttributes):
     """Manufacturer Specific Cluster of some thermostatic valves."""
 
+    set_time_offset = 1970
+
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
-        global ZonnsmartManuClusterSelf
-        ZonnsmartManuClusterSelf = self
 
     attributes = TuyaManufClusterAttributes.attributes.copy()
     attributes.update(
@@ -958,7 +1139,16 @@ class ZONNSMARTManufCluster(TuyaManufClusterAttributes):
                 t.int32s,
                 True,
             ),
-            ZONNSMART_WEEK_FORMAT_ATTR: ("week_format", t.uint8_t, True),
+            ZONNSMART_SCHEDULE_TYPE_ATTR: (
+                "schedule_type",
+                ZONNSMARTScheduleType,
+                True,
+            ),
+            ZONNSMART_HOLIDAY_DATETIME_ATTR: (
+                "holiday_start_stop",
+                ZONNSMARTHolidayStartStop,
+                True,
+            ),
             ZONNSMART_HOLIDAY_TEMP_ATTR: ("holiday_temperature", t.uint32_t, True),
             ZONNSMART_BATTERY_ATTR: ("battery", t.uint32_t, True),
             ZONNSMART_UPTIME_TIME_ATTR: ("uptime", t.uint32_t, True),
@@ -975,6 +1165,42 @@ class ZONNSMARTManufCluster(TuyaManufClusterAttributes):
             ZONNSMART_HEATING_STOPPING_ATTR: ("heating_stop", t.uint8_t, True),
             ZONNSMART_ONLINE_MODE_BOOL_ATTR: ("online_set", t.uint8_t, True),
             ZONNSMART_ONLINE_MODE_ENUM_ATTR: ("online", t.uint8_t, True),
+            ZONNSMART_SCHEDULE_SET_ATTR: ("schedule_set", ZONNSMARTScheduleSet, True),
+            ZONNSMART_SCHEDULE_MONDAY_ATTR: (
+                "schedule_monday",
+                ZONNSMARTDaySchedule,
+                True,
+            ),
+            ZONNSMART_SCHEDULE_TUESDAY_ATTR: (
+                "schedule_tuesday",
+                ZONNSMARTDaySchedule,
+                True,
+            ),
+            ZONNSMART_SCHEDULE_WEDNESDAY_ATTR: (
+                "schedule_wednesday",
+                ZONNSMARTDaySchedule,
+                True,
+            ),
+            ZONNSMART_SCHEDULE_THURSDAY_ATTR: (
+                "schedule_thursday",
+                ZONNSMARTDaySchedule,
+                True,
+            ),
+            ZONNSMART_SCHEDULE_FRIDAY_ATTR: (
+                "schedule_friday",
+                ZONNSMARTDaySchedule,
+                True,
+            ),
+            ZONNSMART_SCHEDULE_SATURDAY_ATTR: (
+                "schedule_saturday",
+                ZONNSMARTDaySchedule,
+                True,
+            ),
+            ZONNSMART_SCHEDULE_SUNDAY_ATTR: (
+                "schedule_sunday",
+                ZONNSMARTDaySchedule,
+                True,
+            ),
         }
     )
 
@@ -1008,12 +1234,6 @@ class ZONNSMARTManufCluster(TuyaManufClusterAttributes):
                 if self.DIRECT_MAPPED_ATTRS[attrid][1] is None
                 else self.DIRECT_MAPPED_ATTRS[attrid][1](value),
             )
-        elif attrid == ZONNSMART_WINDOW_DETECT_ATTR:
-            self.endpoint.device.window_detection_bus.listener_event("set_value", value)
-        elif attrid == ZONNSMART_OPENED_WINDOW_TEMP:
-            self.endpoint.device.window_temperature_bus.listener_event(
-                "set_value", value
-            )
         elif attrid in (ZONNSMART_MODE_ATTR, ZONNSMART_FROST_PROTECT_ATTR):
             self.endpoint.device.thermostat_bus.listener_event(
                 "mode_change", attrid, value
@@ -1022,23 +1242,10 @@ class ZONNSMARTManufCluster(TuyaManufClusterAttributes):
             self.endpoint.device.thermostat_bus.listener_event(
                 "system_mode_change", value == 0
             )
-        elif attrid == ZONNSMART_CHILD_LOCK_ATTR:
-            self.endpoint.device.ui_bus.listener_event("child_lock_change", value)
-            self.endpoint.device.child_lock_bus.listener_event("set_change", value)
         elif attrid == ZONNSMART_BATTERY_ATTR:
             self.endpoint.device.battery_bus.listener_event("battery_change", value)
-        elif attrid == ZONNSMART_ONLINE_MODE_ENUM_ATTR:
-            self.endpoint.device.online_mode_bus.listener_event("set_change", value)
-        elif attrid == ZONNSMART_BOOST_TIME_ATTR:
-            self.endpoint.device.boost_bus.listener_event(
-                "set_change", 1 if value > 0 else 0
-            )
 
-        if attrid == ZONNSMART_TEMPERATURE_CALIBRATION_ATTR:
-            self.endpoint.device.temperature_calibration_bus.listener_event(
-                "set_value", value / 10
-            )
-        elif attrid in (ZONNSMART_TEMPERATURE_ATTR, ZONNSMART_TARGET_TEMP_ATTR):
+        if attrid in (ZONNSMART_TEMPERATURE_ATTR, ZONNSMART_TARGET_TEMP_ATTR):
             self.endpoint.device.thermostat_bus.listener_event(
                 "state_temp_change", attrid, value
             )
@@ -1184,236 +1391,6 @@ class ZONNSMARTThermostat(TuyaThermostatCluster):
 
         state = 0 if (int(temp_current) >= int(temp_set)) else 1
         self.endpoint.device.thermostat_bus.listener_event("state_change", state)
-
-
-class ZONNSMARTUserInterface(TuyaUserInterfaceCluster):
-    """HVAC User interface cluster for tuya electric heating thermostats."""
-
-    _CHILD_LOCK_ATTR = ZONNSMART_CHILD_LOCK_ATTR
-
-
-class ZONNSMARTWindowDetection(LocalDataCluster, BinaryInput):
-    """Binary cluster for the window detection function of the heating thermostats."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.window_detection_bus.add_listener(self)
-        self._update_attribute(
-            self.attributes_by_name["description"].id, "Open Window Detected"
-        )
-
-    def set_value(self, value):
-        """Set opened window value."""
-        self._update_attribute(self.attributes_by_name["present_value"].id, value)
-
-
-class ZONNSMARTHelperOnOff(LocalDataCluster, OnOff):
-    """Helper OnOff cluster for various functions controlled by switch."""
-
-    def set_change(self, value):
-        """Set new OnOff value."""
-        self._update_attribute(self.attributes_by_name["on_off"].id, value)
-
-    def get_attr_val_to_write(self, value):
-        """Return dict with attribute and value for thermostat."""
-        return None
-
-    async def write_attributes(self, attributes, manufacturer=None):
-        """Defer attributes writing to the set_data tuya command."""
-        records = self._write_attr_records(attributes)
-        if not records:
-            return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
-
-        has_change = False
-        for record in records:
-            attr_name = self.attributes[record.attrid].name
-            if attr_name == "on_off":
-                value = record.value.value
-                has_change = True
-
-        if has_change:
-            attr_val = self.get_attr_val_to_write(value)
-            if attr_val is not None:
-                # global self in case when different endpoint has to exist
-                return await ZonnsmartManuClusterSelf.endpoint.tuya_manufacturer.write_attributes(
-                    attr_val, manufacturer=manufacturer
-                )
-
-        return [
-            [
-                foundation.WriteAttributesStatusRecord(
-                    foundation.Status.FAILURE, r.attrid
-                )
-                for r in records
-            ]
-        ]
-
-    async def command(
-        self,
-        command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
-        *args,
-        manufacturer: Optional[Union[int, t.uint16_t]] = None,
-        expect_reply: bool = True,
-        tsn: Optional[Union[int, t.uint8_t]] = None,
-    ):
-        """Override the default Cluster command."""
-
-        if command_id in (0x0000, 0x0001, 0x0002):
-            if command_id == 0x0000:
-                value = False
-            elif command_id == 0x0001:
-                value = True
-            else:
-                attrid = self.attributes_by_name["on_off"].id
-                success, _ = await self.read_attributes(
-                    (attrid,), manufacturer=manufacturer
-                )
-                try:
-                    value = success[attrid]
-                except KeyError:
-                    return foundation.GENERAL_COMMANDS[
-                        foundation.GeneralCommand.Default_Response
-                    ].schema(command_id=command_id, status=foundation.Status.FAILURE)
-                value = not value
-            _LOGGER.debug("CALLING WRITE FROM COMMAND")
-            (res,) = await self.write_attributes(
-                {"on_off": value},
-                manufacturer=manufacturer,
-            )
-            return foundation.GENERAL_COMMANDS[
-                foundation.GeneralCommand.Default_Response
-            ].schema(command_id=command_id, status=res[0].status)
-
-        return foundation.GENERAL_COMMANDS[
-            foundation.GeneralCommand.Default_Response
-        ].schema(command_id=command_id, status=foundation.Status.UNSUP_CLUSTER_COMMAND)
-
-
-class ZONNSMARTBoost(ZONNSMARTHelperOnOff):
-    """On/Off cluster for the boost function of the heating thermostats."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.boost_bus.add_listener(self)
-
-    def get_attr_val_to_write(self, value):
-        """Return dict with attribute and value for boot mode."""
-        return {ZONNSMART_BOOST_TIME_ATTR: 299 if value else 0}
-
-
-class ZONNSMARTChildLock(ZONNSMARTHelperOnOff):
-    """On/Off cluster for the child lock of the heating thermostats."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.child_lock_bus.add_listener(self)
-
-    def get_attr_val_to_write(self, value):
-        """Return dict with attribute and value for child lock."""
-        return {ZONNSMART_CHILD_LOCK_ATTR: value}
-
-
-class ZONNSMARTOnlineMode(ZONNSMARTHelperOnOff):
-    """On/Off cluster for the online mode of the heating thermostats."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.online_mode_bus.add_listener(self)
-
-    def get_attr_val_to_write(self, value):
-        """Return dict with attribute and value for online mode."""
-        return {ZONNSMART_ONLINE_MODE_BOOL_ATTR: value}
-
-
-class ZONNSMARTTemperatureOffset(LocalDataCluster, AnalogOutput):
-    """AnalogOutput cluster for setting temperature offset."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.temperature_calibration_bus.add_listener(self)
-        self._update_attribute(
-            self.attributes_by_name["description"].id, "Temperature Offset"
-        )
-        self._update_attribute(self.attributes_by_name["max_present_value"].id, 5)
-        self._update_attribute(self.attributes_by_name["min_present_value"].id, -5)
-        self._update_attribute(self.attributes_by_name["resolution"].id, 0.1)
-        self._update_attribute(self.attributes_by_name["application_type"].id, 0x0009)
-        self._update_attribute(self.attributes_by_name["engineering_units"].id, 62)
-
-    def set_value(self, value):
-        """Set new temperature offset value."""
-        self._update_attribute(self.attributes_by_name["present_value"].id, value)
-
-    def get_value(self):
-        """Get current temperature offset value."""
-        return self._attr_cache.get(self.attributes_by_name["present_value"].id)
-
-    async def write_attributes(self, attributes, manufacturer=None):
-        """Modify value before passing it to the set_data tuya command."""
-        for attrid, value in attributes.items():
-            if isinstance(attrid, str):
-                attrid = self.attributes_by_name[attrid].id
-            if attrid not in self.attributes:
-                self.error("%d is not a valid attribute id", attrid)
-                continue
-            self._update_attribute(attrid, value)
-
-            await self.endpoint.tuya_manufacturer.write_attributes(
-                {ZONNSMART_TEMPERATURE_CALIBRATION_ATTR: value * 10}, manufacturer=None
-            )
-        return ([foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)],)
-
-
-class ZONNSMARTWindowOpenedTemp(LocalDataCluster, AnalogOutput):
-    """AnalogOutput cluster for temperature when opened window detected."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.window_temperature_bus.add_listener(self)
-        self._update_attribute(
-            self.attributes_by_name["description"].id, "Opened Window Temperature"
-        )
-        self._update_attribute(
-            self.attributes_by_name["max_present_value"].id,
-            ZONNSMART_MAX_TEMPERATURE_VAL / 100,
-        )
-        self._update_attribute(
-            self.attributes_by_name["min_present_value"].id,
-            ZONNSMART_MIN_TEMPERATURE_VAL / 100,
-        )
-        self._update_attribute(self.attributes_by_name["resolution"].id, 0.5)
-        self._update_attribute(self.attributes_by_name["application_type"].id, 0 << 16)
-        self._update_attribute(self.attributes_by_name["engineering_units"].id, 62)
-
-    def set_value(self, value):
-        """Set temperature value when opened window detected."""
-        self._update_attribute(self.attributes_by_name["present_value"].id, value / 10)
-
-    def get_value(self):
-        """Get temperature value when opened window detected."""
-        return self._attr_cache.get(self.attributes_by_name["present_value"].id)
-
-    async def write_attributes(self, attributes, manufacturer=None):
-        """Modify value before passing it to the set_data tuya command."""
-        for attrid, value in attributes.items():
-            if isinstance(attrid, str):
-                attrid = self.attributes_by_name[attrid].id
-            if attrid not in self.attributes:
-                self.error("%d is not a valid attribute id", attrid)
-                continue
-            self._update_attribute(attrid, value)
-
-            # different Endpoint for compatibility issue
-            await ZonnsmartManuClusterSelf.endpoint.tuya_manufacturer.write_attributes(
-                {ZONNSMART_OPENED_WINDOW_TEMP: value * 10}, manufacturer=None
-            )
-        return ([foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)],)
 
 
 class SiterwellGS361_Type1(TuyaThermostat):
@@ -1677,12 +1654,6 @@ class ZonnsmartTV01_ZG(TuyaThermostat):
 
     def __init__(self, *args, **kwargs):
         """Init device."""
-        self.boost_bus = Bus()
-        self.child_lock_bus = Bus()
-        self.online_mode_bus = Bus()
-        self.temperature_calibration_bus = Bus()
-        self.window_detection_bus = Bus()
-        self.window_temperature_bus = Bus()
         super().__init__(*args, **kwargs)
 
     signature = {
@@ -1725,32 +1696,11 @@ class ZonnsmartTV01_ZG(TuyaThermostat):
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    ZONNSMARTBoost,
                     ZONNSMARTManufCluster,
-                    ZONNSMARTTemperatureOffset,
                     ZONNSMARTThermostat,
-                    ZONNSMARTUserInterface,
-                    ZONNSMARTWindowDetection,
                     TuyaPowerConfigurationCluster2AA,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
-            },
-            2: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.COMBINED_INTERFACE,
-                INPUT_CLUSTERS: [
-                    ZONNSMARTChildLock,
-                    ZONNSMARTWindowOpenedTemp,
-                ],
-                OUTPUT_CLUSTERS: [],
-            },
-            3: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.COMBINED_INTERFACE,
-                INPUT_CLUSTERS: [
-                    ZONNSMARTOnlineMode,
-                ],
-                OUTPUT_CLUSTERS: [],
             },
         }
     }

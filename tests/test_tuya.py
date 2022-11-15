@@ -82,6 +82,10 @@ ZCL_TUYA_VALVE_ZONNSMART_TEMP_OFFSET = (
 ZCL_TUYA_VALVE_ZONNSMART_MODE_MANUAL = b"\t2\x01\x03\x04\x02\x04\x00\x01\x01"
 ZCL_TUYA_VALVE_ZONNSMART_MODE_SCHEDULE = b"\t2\x01\x03\x04\x02\x04\x00\x01\x00"
 ZCL_TUYA_VALVE_ZONNSMART_HEAT_STOP = b"\t2\x01\x03\x04\x6b\x01\x00\x01\x00"
+ZCL_TUYA_VALVE_ZONNSMART_SCHEDULE_MONDAY = b"\tY\x01\x00\x85l\x00\x00\x1e\x1e\x00\xc8*\x00\xd2Z\x00\xaa~\x00\xdc\x90\x00\xc8\x90\x00\xd2\x90\x00\xaa\x90\x00\xd2\x90\x00\xaa\x90\x00\xd2"
+ZCL_TUYA_VALVE_ZONNSMART_HOLIDAY_DATES = (
+    b"\tT\x01\x00&.\x03\x00\x18202101010101202303231305"
+)
 
 ZCL_TUYA_EHEAT_TEMPERATURE = b"\tp\x02\x00\x02\x18\x02\x00\x04\x00\x00\x00\xb3"
 ZCL_TUYA_EHEAT_TARGET_TEMP = b"\t3\x01\x03\x05\x10\x02\x00\x04\x00\x00\x00\x15"
@@ -447,6 +451,7 @@ async def test_zonnsmart_state_report(zigpy_device_from_quirk, quirk):
     valve_dev = zigpy_device_from_quirk(quirk)
     tuya_cluster = valve_dev.endpoints[1].tuya_manufacturer
 
+    tuya_listener = ClusterListener(tuya_cluster)
     thermostat_listener = ClusterListener(valve_dev.endpoints[1].thermostat)
 
     frames = (
@@ -457,6 +462,8 @@ async def test_zonnsmart_state_report(zigpy_device_from_quirk, quirk):
         ZCL_TUYA_VALVE_ZONNSMART_MODE_MANUAL,
         ZCL_TUYA_VALVE_ZONNSMART_MODE_SCHEDULE,
         ZCL_TUYA_VALVE_ZONNSMART_HEAT_STOP,
+        ZCL_TUYA_VALVE_ZONNSMART_SCHEDULE_MONDAY,
+        ZCL_TUYA_VALVE_ZONNSMART_HOLIDAY_DATES,
     )
     for frame in frames:
         hdr, args = tuya_cluster.deserialize(frame)
@@ -464,24 +471,33 @@ async def test_zonnsmart_state_report(zigpy_device_from_quirk, quirk):
 
     assert len(thermostat_listener.cluster_commands) == 0
     assert len(thermostat_listener.attribute_updates) == 11
-    assert thermostat_listener.attribute_updates[0][0] == 0x0000  # TEMP
-    assert thermostat_listener.attribute_updates[0][1] == 2110
-    assert thermostat_listener.attribute_updates[1][0] == 0x0012  # TARGET
-    assert thermostat_listener.attribute_updates[1][1] == 2050
-    assert thermostat_listener.attribute_updates[4][0] == 0x0014  # HOLIDAY
-    assert thermostat_listener.attribute_updates[4][1] == 1700
-    assert thermostat_listener.attribute_updates[5][0] == 0x0010  # OFFSET
-    assert thermostat_listener.attribute_updates[5][1] == 110
-    assert thermostat_listener.attribute_updates[6][0] == 0x0025  # MANUAL
-    assert thermostat_listener.attribute_updates[6][1] == 0
-    assert thermostat_listener.attribute_updates[7][0] == 0x4002
-    assert thermostat_listener.attribute_updates[7][1] == 1
-    assert thermostat_listener.attribute_updates[8][0] == 0x0025  # SCHEDULE
-    assert thermostat_listener.attribute_updates[8][1] == 1
-    assert thermostat_listener.attribute_updates[9][0] == 0x4002
-    assert thermostat_listener.attribute_updates[9][1] == 0
-    assert thermostat_listener.attribute_updates[10][0] == 0x001C  # HEAT ON
-    assert thermostat_listener.attribute_updates[10][1] == 4
+    assert thermostat_listener.attribute_updates[0] == (0x0000, 2110)  # TEMP
+    assert thermostat_listener.attribute_updates[1] == (0x0012, 2050)  # TARGET
+    assert thermostat_listener.attribute_updates[4] == (0x0014, 1700)  # HOLIDAY
+    assert thermostat_listener.attribute_updates[5] == (0x0010, 110)  # OFFSET
+    assert thermostat_listener.attribute_updates[6] == (0x0025, 0)  # MANUAL
+    assert thermostat_listener.attribute_updates[7] == (0x4002, 1)
+    assert thermostat_listener.attribute_updates[8] == (0x0025, 1)  # SCHEDULE
+    assert thermostat_listener.attribute_updates[9] == (0x4002, 0)
+    assert thermostat_listener.attribute_updates[10] == (0x001C, 4)  # HEAT ON
+
+    assert len(tuya_listener.cluster_commands) == 9
+    assert len(tuya_listener.attribute_updates) == 9
+    assert tuya_listener.attribute_updates[0] == (0x0218, 211)  # TEMP
+    assert tuya_listener.attribute_updates[1] == (0x0210, 205)  # TARGET
+    assert tuya_listener.attribute_updates[2] == (0x0220, 170)  # HOLIDAY TEMP
+    assert tuya_listener.attribute_updates[3] == (0x021B, 11)  # OFFSET
+    assert tuya_listener.attribute_updates[4] == (0x0402, 1)  # MODE MANUAL
+    assert tuya_listener.attribute_updates[5] == (0x0402, 0)  # MODE SCHEDULE
+    assert tuya_listener.attribute_updates[6] == (0x016B, 0)  # HEAT STOP
+    assert tuya_listener.attribute_updates[7] == (
+        0x006C,
+        "05:00/20.0 07:00/21.0 15:00/17.0 21:00/22.0 24:00/20.0",
+    )  # SCHEDULE MONDAY
+    assert tuya_listener.attribute_updates[8] == (
+        0x032E,
+        "2021/01/01 01:01 | 2023/03/23 13:05",
+    )  # HOLIDAY DATES
 
 
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_trv.ZonnsmartTV01_ZG,))
@@ -555,6 +571,180 @@ async def test_zonnsmart_send_attribute(zigpy_device_from_quirk, quirk):
             61184,
             4,
             b"\x01\x04\x00\x00\x04\x6b\x01\x00\x01\x01",
+            expect_reply=False,
+            command_id=0,
+        )
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
+
+        (status,) = await tuya_cluster.write_attributes(
+            {
+                "schedule_set": "mon 05:00/20.0 07:00/21.0 15:00/17.0 21:00/22.0 24:00/20.0"
+            }
+        )
+        m1.assert_called_with(
+            61184,
+            5,
+            b"\x01\x05\x00\x00\x05j\x00\x00\x1f\x01\x1e\x00\xc8*\x00\xd2Z\x00\xaa~\x00\xdc\x90\x00\xc8\x90\x00\xb4\x90\x00\xb4\x90\x00\xb4\x90\x00\xb4\x90\x00\xb4",
+            expect_reply=False,
+            command_id=0,
+        )
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
+
+        (status,) = await tuya_cluster.write_attributes(
+            {
+                "schedule_set": "tue 05:00/20.0 07:00/21.0 15:00/17.0 21:00/22.0 24:00/20.0"
+            }
+        )
+        m1.assert_called_with(
+            61184,
+            6,
+            b"\x01\x06\x00\x00\x06j\x00\x00\x1f\x02\x1e\x00\xc8*\x00\xd2Z\x00\xaa~\x00\xdc\x90\x00\xc8\x90\x00\xb4\x90\x00\xb4\x90\x00\xb4\x90\x00\xb4\x90\x00\xb4",
+            expect_reply=False,
+            command_id=0,
+        )
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
+
+        (status,) = await tuya_cluster.write_attributes(
+            {
+                "schedule_set": "wed 05:00/20.0 07:00/21.0 15:00/17.0 21:00/22.0 24:00/20.0"
+            }
+        )
+        m1.assert_called_with(
+            61184,
+            7,
+            b"\x01\x07\x00\x00\x07j\x00\x00\x1f\x04\x1e\x00\xc8*\x00\xd2Z\x00\xaa~\x00\xdc\x90\x00\xc8\x90\x00\xb4\x90\x00\xb4\x90\x00\xb4\x90\x00\xb4\x90\x00\xb4",
+            expect_reply=False,
+            command_id=0,
+        )
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
+
+        (status,) = await tuya_cluster.write_attributes(
+            {
+                "schedule_set": "thu 05:00/20.0 07:00/21.0 15:00/17.0 21:00/22.0 24:00/20.0"
+            }
+        )
+        m1.assert_called_with(
+            61184,
+            8,
+            b"\x01\x08\x00\x00\x08j\x00\x00\x1f\x08\x1e\x00\xc8*\x00\xd2Z\x00\xaa~\x00\xdc\x90\x00\xc8\x90\x00\xb4\x90\x00\xb4\x90\x00\xb4\x90\x00\xb4\x90\x00\xb4",
+            expect_reply=False,
+            command_id=0,
+        )
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
+
+        (status,) = await tuya_cluster.write_attributes(
+            {
+                "schedule_set": "fri 05:00/20.0 07:00/21.0 15:00/17.0 21:00/22.0 24:00/20.0"
+            }
+        )
+        m1.assert_called_with(
+            61184,
+            9,
+            b"\x01\x09\x00\x00\x09j\x00\x00\x1f\x10\x1e\x00\xc8*\x00\xd2Z\x00\xaa~\x00\xdc\x90\x00\xc8\x90\x00\xb4\x90\x00\xb4\x90\x00\xb4\x90\x00\xb4\x90\x00\xb4",
+            expect_reply=False,
+            command_id=0,
+        )
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
+
+        (status,) = await tuya_cluster.write_attributes(
+            {
+                "schedule_set": "sat 05:00/20.0 07:00/21.0 15:00/17.0 21:00/22.0 24:00/20.0"
+            }
+        )
+        m1.assert_called_with(
+            61184,
+            10,
+            b"\x01\x0a\x00\x00\x0aj\x00\x00\x1f\x20\x1e\x00\xc8*\x00\xd2Z\x00\xaa~\x00\xdc\x90\x00\xc8\x90\x00\xb4\x90\x00\xb4\x90\x00\xb4\x90\x00\xb4\x90\x00\xb4",
+            expect_reply=False,
+            command_id=0,
+        )
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
+
+        (status,) = await tuya_cluster.write_attributes(
+            {
+                "schedule_set": "sun 05:00/20.0 07:00/21.0 15:00/17.0 21:00/22.0 24:00/20.0"
+            }
+        )
+        m1.assert_called_with(
+            61184,
+            11,
+            b"\x01\x0b\x00\x00\x0bj\x00\x00\x1f\x40\x1e\x00\xc8*\x00\xd2Z\x00\xaa~\x00\xdc\x90\x00\xc8\x90\x00\xb4\x90\x00\xb4\x90\x00\xb4\x90\x00\xb4\x90\x00\xb4",
+            expect_reply=False,
+            command_id=0,
+        )
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
+
+        (status,) = await tuya_cluster.write_attributes(
+            {
+                "schedule_set": "mon-fri 05:00/20.0 07:00/21.0 15:00/17.0 21:00/22.0 24:00/20.0"
+            }
+        )
+        m1.assert_called_with(
+            61184,
+            12,
+            b"\x01\x0c\x00\x00\x0cj\x00\x00\x1f\x1f\x1e\x00\xc8*\x00\xd2Z\x00\xaa~\x00\xdc\x90\x00\xc8\x90\x00\xb4\x90\x00\xb4\x90\x00\xb4\x90\x00\xb4\x90\x00\xb4",
+            expect_reply=False,
+            command_id=0,
+        )
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
+
+        (status,) = await tuya_cluster.write_attributes(
+            {
+                "schedule_set": "sat-sun 05:00/20.0 07:00/21.0 15:00/17.0 21:00/22.0 24:00/20.0"
+            }
+        )
+        m1.assert_called_with(
+            61184,
+            13,
+            b"\x01\x0d\x00\x00\x0dj\x00\x00\x1f\x60\x1e\x00\xc8*\x00\xd2Z\x00\xaa~\x00\xdc\x90\x00\xc8\x90\x00\xb4\x90\x00\xb4\x90\x00\xb4\x90\x00\xb4\x90\x00\xb4",
+            expect_reply=False,
+            command_id=0,
+        )
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
+
+        (status,) = await tuya_cluster.write_attributes(
+            {
+                "schedule_set": "mon-sun 05:00/20.0 07:00/21.0 15:00/17.0 21:00/22.0 24:00/20.0"
+            }
+        )
+        m1.assert_called_with(
+            61184,
+            14,
+            b"\x01\x0e\x00\x00\x0ej\x00\x00\x1f\x7f\x1e\x00\xc8*\x00\xd2Z\x00\xaa~\x00\xdc\x90\x00\xc8\x90\x00\xb4\x90\x00\xb4\x90\x00\xb4\x90\x00\xb4\x90\x00\xb4",
+            expect_reply=False,
+            command_id=0,
+        )
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
+
+        (status,) = await tuya_cluster.write_attributes(
+            {"holiday_start_stop": "2021/01/01 01:01 | 2023/03/23 13:05"}
+        )
+        m1.assert_called_with(
+            61184,
+            15,
+            b"\x01\x0f\x00\x00\x0f.\x03\x00\x18202101010101202303231305",
             expect_reply=False,
             command_id=0,
         )
