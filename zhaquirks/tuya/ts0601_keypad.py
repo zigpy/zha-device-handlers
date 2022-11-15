@@ -122,9 +122,7 @@ class WirelessZigbeeKeypadManufCluster(TuyaMCUCluster):
 
     def _dp_2_event(self, datapoint: TuyaDatapointData) -> None:
         """Convert DP to Event."""
-        zone_id = (
-            0  # TODO: how do we get the zone id? should we use something else than 0?
-        )
+        zone_id = 0
         user_code = self._attr_cache.get(
             self.attributes_by_name["user_code"].id, "1234"
         )
