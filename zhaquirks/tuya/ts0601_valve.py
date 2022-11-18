@@ -4,6 +4,7 @@ from typing import Dict
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 import zigpy.types as t
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
 from zigpy.zcl.clusters.smartenergy import Metering
 
@@ -262,9 +263,13 @@ class ParksidePSBZS(EnchantedDevice):
 GIEX_TUYA_VALVE_MODE_ATTR = 0xEF01  # Mode [0] duration [1] capacity
 GIEX_TUYA_VALVE_START_TIME_ATTR = 0xEF65  # Last irrigation start time (GMT)
 GIEX_TUYA_VALVE_END_TIME_ATTR = 0xEF66  # Last irrigation end time (GMT)
-GIEX_TUYA_VALVE_NUM_TIMES_ATTR = 0xEF67  # Number of cycle irrigation times, 0 for single cycle, min=0 max=100
+GIEX_TUYA_VALVE_NUM_TIMES_ATTR = (
+    0xEF67  # Number of cycle irrigation times, 0 for single cycle, min=0 max=100
+)
 GIEX_TUYA_VALVE_TARGET_ATTR = 0xEF68  # Irrigation target, duration in seconds or capacity in litres (depending on mode), min=0, max=3600
-GIEX_TUYA_VALVE_INTERVAL_ATTR = 0xEF69  # Cycle irrigation interval in seconds, min=0, max=3600
+GIEX_TUYA_VALVE_INTERVAL_ATTR = (
+    0xEF69  # Cycle irrigation interval in seconds, min=0, max=3600
+)
 GIEX_TUYA_VALVE_DURATION_ATTR = 0xEF72  # Last irrigation duration
 
 
@@ -276,7 +281,11 @@ class GiexTuyaValveManufCluster(TuyaMCUCluster):
         {
             GIEX_TUYA_VALVE_MODE_ATTR: ("irrigation_mode", t.Bool, True),
             GIEX_TUYA_VALVE_START_TIME_ATTR: ("irrigation_start_time", t.uint32_t, True),
-            GIEX_TUYA_VALVE_END_TIME_ATTR: ("irrigation_end_time", t.uint32_t, True),
+            GIEX_TUYA_VALVE_END_TIME_ATTR: (
+                "irrigation_end_time",
+                t.uint32_t,
+                True
+            ),
             GIEX_TUYA_VALVE_NUM_TIMES_ATTR: ("irrigation_num_times", t.uint32_t, True),
             GIEX_TUYA_VALVE_TARGET_ATTR: ("irrigation_target", t.uint32_t, True),
             GIEX_TUYA_VALVE_INTERVAL_ATTR: ("irrigation_interval", t.uint32_t, True),
@@ -401,4 +410,3 @@ class GiexTuyaValve(CustomDevice):
             }
         }
     }
- 
