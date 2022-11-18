@@ -20,7 +20,6 @@ from zhaquirks.tuya import TuyaLocalCluster
 from zhaquirks.tuya.mcu import (
     DPToAttributeMapping,
     EnchantedDevice,
-    TuyaAttributesCluster,
     TuyaDPType,
     TuyaMCUCluster,
     TuyaOnOff,
@@ -258,20 +257,20 @@ class ParksidePSBZS(EnchantedDevice):
         },
     }
 
-    
+
 # info from https://github.com/Koenkk/zigbee-herdsman-converters/blob/master/devices/giex.js
-GIEX_TUYA_VALVE_MODE_ATTR = 0xEF01 # Mode [0] duration [1] capacity
-GIEX_TUYA_VALVE_START_TIME_ATTR = 0xEF65 # Last irrigation start time (GMT)
-GIEX_TUYA_VALVE_END_TIME_ATTR = 0xEF66 # Last irrigation end time (GMT)
-GIEX_TUYA_VALVE_NUM_TIMES_ATTR = 0xEF67 # Number of cycle irrigation times, set to 0 for single cycle, min=0 max=100
-GIEX_TUYA_VALVE_TARGET_ATTR = 0xEF68 # Irrigation target, duration in seconds or capacity in litres (depending on mode), min=0, max=3600
-GIEX_TUYA_VALVE_INTERVAL_ATTR = 0xEF69 # Cycle irrigation interval in seconds, min=0, max=3600
-GIEX_TUYA_VALVE_DURATION_ATTR = 0xEF72 # Last irrigation duration
+GIEX_TUYA_VALVE_MODE_ATTR = 0xEF01  # Mode [0] duration [1] capacity
+GIEX_TUYA_VALVE_START_TIME_ATTR = 0xEF65  # Last irrigation start time (GMT)
+GIEX_TUYA_VALVE_END_TIME_ATTR = 0xEF66  # Last irrigation end time (GMT)
+GIEX_TUYA_VALVE_NUM_TIMES_ATTR = 0xEF67  # Number of cycle irrigation times, 0 for single cycle, min=0 max=100
+GIEX_TUYA_VALVE_TARGET_ATTR = 0xEF68  # Irrigation target, duration in seconds or capacity in litres (depending on mode), min=0, max=3600
+GIEX_TUYA_VALVE_INTERVAL_ATTR = 0xEF69  # Cycle irrigation interval in seconds, min=0, max=3600
+GIEX_TUYA_VALVE_DURATION_ATTR = 0xEF72  # Last irrigation duration
 
 
 class GiexTuyaValveManufCluster(TuyaMCUCluster):
     """GiEX Tuya valve manufacturer cluster."""
-    
+
     attributes = TuyaMCUCluster.attributes.copy()
     attributes.update(
         {
@@ -360,7 +359,7 @@ class GiexTuyaValveManufCluster(TuyaMCUCluster):
 
 
 class GiexTuyaValve(CustomDevice):
-    """Tuya valve device."""
+    """GiEX Tuya valve device."""
 
     signature = {
         MODELS_INFO: [
