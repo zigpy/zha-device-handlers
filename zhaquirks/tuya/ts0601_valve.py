@@ -280,12 +280,12 @@ class GiexTuyaValveManufCluster(TuyaMCUCluster):
     attributes.update(
         {
             GIEX_TUYA_VALVE_MODE_ATTR: ("irrigation_mode", t.Bool, True),
-            GIEX_TUYA_VALVE_START_TIME_ATTR: ("irrigation_start_time", t.uint32_t, True),
-            GIEX_TUYA_VALVE_END_TIME_ATTR: (
-                "irrigation_end_time",
+            GIEX_TUYA_VALVE_START_TIME_ATTR: (
+                "irrigation_start_time",
                 t.uint32_t,
-                True
+                True,
             ),
+            GIEX_TUYA_VALVE_END_TIME_ATTR: ("irrigation_end_time", t.uint32_t, True),
             GIEX_TUYA_VALVE_NUM_TIMES_ATTR: ("irrigation_num_times", t.uint32_t, True),
             GIEX_TUYA_VALVE_TARGET_ATTR: ("irrigation_target", t.uint32_t, True),
             GIEX_TUYA_VALVE_INTERVAL_ATTR: ("irrigation_interval", t.uint32_t, True),
@@ -371,10 +371,7 @@ class GiexTuyaValve(CustomDevice):
     """GiEX Tuya valve device."""
 
     signature = {
-        MODELS_INFO: [
-            ("_TZE200_sh1btabb", "TS0601"),
-            ("_TZE200_a7sghmms", "TS0601")
-        ],
+        MODELS_INFO: [("_TZE200_sh1btabb", "TS0601"), ("_TZE200_a7sghmms", "TS0601")],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=0x0051
             # input_clusters=[0x0000, 0x0004, 0x0005, 0xef00]
