@@ -29,46 +29,47 @@ from zhaquirks.xiaomi import XiaomiAqaraE1Cluster, XiaomiCustomDevice
 # 32 bit signed integer values that are encoded in FEEDER_ATTR = 0xFFF1
 FEEDING = 0x04150055
 FEEDING_REPORT = 0x041502BC
-PORTIONS_PER_DAY = 0x0D680055
-WEIGHT_PER_DAY = 0x0D690055
-ERROR = 0x0D0B0055
+PORTIONS_DISPENSED = 0x0D680055
+WEIGHT_DISPENSED = 0x0D690055
+ERROR_DETECTED = 0x0D0B0055
 SCHEDULING_STRING = 0x080008C8
-LED_INDICATOR = 0x04170055
+DISABLE_LED_INDICATOR = 0x04170055
 CHILD_LOCK = 0x04160055
-MODE = 0x04180055
+FEEDING_MODE = 0x04180055
 SERVING_SIZE = 0x0E5C0055
 PORTION_WEIGHT = 0x0E5F0055
 
 FEEDER_ATTR = 0xFFF1
+FEEDER_ATTR_NAME = "feeder_attr"
 
 # Fake ZCL attribute ids we can use for entities for the opple cluster
 ZCL_FEEDING = 0x1388
-ZCL_FEEDING_SOURCE = 0x1389
-ZCL_FEEDING_SIZE = 0x138A
-ZCL_PORTIONS_PER_DAY = 0x138B
-ZCL_WEIGHT_PER_DAY = 0x138C
-ZCL_ERROR = 0x138D
-ZCL_LED_INDICATOR = 0x138E
+ZCL_LAST_FEEDING_SOURCE = 0x1389
+ZCL_LAST_FEEDING_SIZE = 0x138A
+ZCL_PORTIONS_DISPENSED = 0x138B
+ZCL_WEIGHT_DISPENSED = 0x138C
+ZCL_ERROR_DETECTED = 0x138D
+ZCL_DISABLE_LED_INDICATOR = 0x138E
 ZCL_CHILD_LOCK = 0x138F
-ZCL_MODE = 0x1390
+ZCL_FEEDING_MODE = 0x1390
 ZCL_SERVING_SIZE = 0x1391
 ZCL_PORTION_WEIGHT = 0x1392
 
-AQARA_TO_ZCL = {
+AQARA_TO_ZCL: dict[int, int] = {
     FEEDING: ZCL_FEEDING,
-    ERROR: ZCL_ERROR,
-    LED_INDICATOR: ZCL_LED_INDICATOR,
+    ERROR_DETECTED: ZCL_ERROR_DETECTED,
+    DISABLE_LED_INDICATOR: ZCL_DISABLE_LED_INDICATOR,
     CHILD_LOCK: ZCL_CHILD_LOCK,
-    MODE: ZCL_MODE,
+    FEEDING_MODE: ZCL_FEEDING_MODE,
     SERVING_SIZE: ZCL_SERVING_SIZE,
     PORTION_WEIGHT: ZCL_PORTION_WEIGHT,
 }
 
-ZCL_TO_AQARA = {
+ZCL_TO_AQARA: dict[int, int] = {
     ZCL_FEEDING: FEEDING,
-    ZCL_LED_INDICATOR: LED_INDICATOR,
+    ZCL_DISABLE_LED_INDICATOR: DISABLE_LED_INDICATOR,
     ZCL_CHILD_LOCK: CHILD_LOCK,
-    ZCL_MODE: MODE,
+    ZCL_FEEDING_MODE: FEEDING_MODE,
     ZCL_SERVING_SIZE: SERVING_SIZE,
     ZCL_PORTION_WEIGHT: PORTION_WEIGHT,
 }
@@ -91,26 +92,26 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         Manual = 0x00
         Schedule = 0x01
 
-    ep_attribute = "opple_cluster"
+    ep_attribute: str = "opple_cluster"
     attributes = {
         ZCL_FEEDING: ("feeding", types.Bool, True),
-        ZCL_FEEDING_SOURCE: ("feeding_source", FeedingSource, True),
-        ZCL_FEEDING_SIZE: ("feeding_size", types.uint8_t, True),
-        ZCL_PORTIONS_PER_DAY: ("portions_per_day", types.uint16_t, True),
-        ZCL_WEIGHT_PER_DAY: ("weight_per_day", types.uint32_t, True),
-        ZCL_ERROR: ("error", types.Bool, True),
-        ZCL_LED_INDICATOR: ("led_indicator", types.Bool, True),
+        ZCL_LAST_FEEDING_SOURCE: ("last_feeding_source", FeedingSource, True),
+        ZCL_LAST_FEEDING_SIZE: ("last_feeding_size", types.uint8_t, True),
+        ZCL_PORTIONS_DISPENSED: ("portions_dispensed", types.uint16_t, True),
+        ZCL_WEIGHT_DISPENSED: ("weight_dispensed", types.uint32_t, True),
+        ZCL_ERROR_DETECTED: ("error_detected", types.Bool, True),
+        ZCL_DISABLE_LED_INDICATOR: ("disable_led_indicator", types.Bool, True),
         ZCL_CHILD_LOCK: ("child_lock", types.Bool, True),
-        ZCL_MODE: ("feeding_mode", FeedingMode, True),
+        ZCL_FEEDING_MODE: ("feeding_mode", FeedingMode, True),
         ZCL_SERVING_SIZE: ("serving_size", types.uint8_t, True),
         ZCL_PORTION_WEIGHT: ("portion_weight", types.uint8_t, True),
-        FEEDER_ATTR: ("feeder_attr", types.LVBytes, True),
+        FEEDER_ATTR: (FEEDER_ATTR_NAME, types.LVBytes, True),
     }
 
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
-        self._send_sequence = None
+        self._send_sequence: int = None
 
     def _update_attribute(self, attrid: int, value: Any) -> None:
         super()._update_attribute(attrid, value)
@@ -128,7 +129,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         zcl_attr_def = self.attributes.get(AQARA_TO_ZCL[attrid])
         self._update_attribute(zcl_attr_def.id, zcl_attr_def.type.deserialize(value)[0])
 
-    def _parse_feeder_attribute(self, value):
+    def _parse_feeder_attribute(self, value: bytes) -> None:
         """Parse the feeder attribute."""
         # attribute is big endian, so we need to reverse the bytes
         attribute, _ = types.int32s.deserialize(bytes(reversed(value[3:7])))
@@ -145,19 +146,19 @@ class OppleCluster(XiaomiAqaraE1Cluster):
             feeding_source = attr_str[0:2]
             feeding_size = attr_str[3:4]
             self._update_attribute(
-                ZCL_FEEDING_SOURCE, OppleCluster.FeedingSource(feeding_source)
+                ZCL_LAST_FEEDING_SOURCE, OppleCluster.FeedingSource(feeding_source)
             )
-            self._update_attribute(ZCL_FEEDING_SIZE, feeding_size)
-        elif attribute == PORTIONS_PER_DAY:
+            self._update_attribute(ZCL_LAST_FEEDING_SIZE, feeding_size)
+        elif attribute == PORTIONS_DISPENSED:
             portions_per_day, _ = types.uint16_t.deserialize(
                 bytes(reversed(attribute_value))
             )
-            self._update_attribute(ZCL_PORTIONS_PER_DAY, portions_per_day)
-        elif attribute == WEIGHT_PER_DAY:
+            self._update_attribute(ZCL_PORTIONS_DISPENSED, portions_per_day)
+        elif attribute == WEIGHT_DISPENSED:
             weight_per_day, _ = types.uint32_t.deserialize(
                 bytes(reversed(attribute_value))
             )
-            self._update_attribute(ZCL_WEIGHT_PER_DAY, weight_per_day)
+            self._update_attribute(ZCL_WEIGHT_DISPENSED, weight_per_day)
         elif attribute == SCHEDULING_STRING:
             LOGGER.debug(
                 "OppleCluster._parse_feeder_attribute: schedule not currently handled: attribute: %s value: %s",
@@ -171,7 +172,9 @@ class OppleCluster(XiaomiAqaraE1Cluster):
                 attribute_value,
             )
 
-    def _build_feeder_attribute(self, attribute_id, value, length):
+    def _build_feeder_attribute(
+        self, attribute_id: int, value: Any = None, length: int | None = None
+    ):
         """Build the Xiaomi feeder attribute."""
         LOGGER.debug(
             "OppleCluster.build_feeder_attribute: id: %s, value: %s length: %s",
@@ -183,23 +186,24 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         val = bytes([0x00, 0x02, self._send_sequence])
         self._send_sequence += 1
         val += bytes(reversed(types.int32s(attribute_id).serialize()))
-        val += bytes(reversed(types.uint8_t(length).serialize()))
-
-        if length == 1:
-            val += types.uint8_t(value).serialize()
-        elif length == 2:
-            val += bytes(reversed(types.uint16_t(value).serialize()))
-        elif length == 4:
-            val += bytes(reversed(types.uint32_t(value).serialize()))
-        else:
-            val += value
+        if length is not None:
+            val += bytes(reversed(types.uint8_t(length).serialize()))
+        if value is not None:
+            if length == 1:
+                val += types.uint8_t(value).serialize()
+            elif length == 2:
+                val += bytes(reversed(types.uint16_t(value).serialize()))
+            elif length == 4:
+                val += bytes(reversed(types.uint32_t(value).serialize()))
+            else:
+                val += value
         LOGGER.debug(
             "OppleCluster.build_feeder_attribute: id: %s, cooked value: %s length: %s",
             attribute_id,
             val,
             length,
         )
-        return "feeder_attr", val
+        return FEEDER_ATTR_NAME, val
 
     async def write_attributes(
         self, attributes: dict[str | int, Any], manufacturer: int | None = None
