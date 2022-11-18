@@ -72,6 +72,7 @@ ZCL_TO_AQARA: dict[int, int] = {
     ZCL_FEEDING_MODE: FEEDING_MODE,
     ZCL_SERVING_SIZE: SERVING_SIZE,
     ZCL_PORTION_WEIGHT: PORTION_WEIGHT,
+    ZCL_ERROR_DETECTED: ERROR_DETECTED,
 }
 
 LOGGER = logging.getLogger(__name__)
@@ -83,7 +84,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
     class FeedingSource(types.enum8):
         """Feeding source."""
 
-        Manual = 0x01
+        Feeder = 0x01
         Remote = 0x02
 
     class FeedingMode(types.enum8):
@@ -112,6 +113,16 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         """Init."""
         super().__init__(*args, **kwargs)
         self._send_sequence: int = None
+        self._attr_cache: dict[int, Any] = {
+            ZCL_DISABLE_LED_INDICATOR: False,
+            ZCL_CHILD_LOCK: False,
+            ZCL_FEEDING_MODE: self.FeedingMode.Manual,
+            ZCL_SERVING_SIZE: 1,
+            ZCL_PORTION_WEIGHT: 8,
+            ZCL_ERROR_DETECTED: False,
+            ZCL_PORTIONS_DISPENSED: 0,
+            ZCL_WEIGHT_DISPENSED: 0,
+        }
 
     def _update_attribute(self, attrid: int, value: Any) -> None:
         super()._update_attribute(attrid, value)
@@ -186,7 +197,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         val = bytes([0x00, 0x02, self._send_sequence])
         self._send_sequence += 1
         val += bytes(reversed(types.int32s(attribute_id).serialize()))
-        if length is not None:
+        if length is not None and value is not None:
             val += bytes(reversed(types.uint8_t(length).serialize()))
         if value is not None:
             if length == 1:
