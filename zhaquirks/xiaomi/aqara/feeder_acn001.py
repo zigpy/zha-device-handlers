@@ -14,6 +14,7 @@ from zigpy.zcl.clusters.general import (
     Ota,
     Scenes,
 )
+import zigpy.zcl.foundation as foundation
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -235,6 +236,14 @@ class OppleCluster(XiaomiAqaraE1Cluster):
                 attrs[attr] = value
         LOGGER.debug("OppleCluster.write_attributes: %s", attrs)
         return await super().write_attributes(attrs, manufacturer)
+
+    async def write_attributes_raw(
+        self, attrs: list[foundation.Attribute], manufacturer: int | None = None
+    ) -> list:
+        """Write attributes to device without internal 'attributes' validation."""
+        # intentionally skip attr cache because of the encoding from Xiaomi and
+        # the attributes are reported back by the device
+        return await self._write_attributes(attrs, manufacturer=manufacturer)
 
 
 class AqaraFeederAcn001(XiaomiCustomDevice):
