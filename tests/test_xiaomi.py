@@ -32,6 +32,7 @@ from zhaquirks.xiaomi import (
     XiaomiQuickInitDevice,
     handle_quick_init,
 )
+from zhaquirks.xiaomi.aqara.feeder_acn001 import AqaraFeederAcn001
 import zhaquirks.xiaomi.aqara.motion_aq2
 import zhaquirks.xiaomi.aqara.motion_aq2b
 import zhaquirks.xiaomi.aqara.plug_eu
@@ -508,3 +509,88 @@ async def test_xiaomi_eu_plug_power(zigpy_device_from_quirk, quirk):
     assert len(se_listener.attribute_updates) == 1
     assert se_listener.attribute_updates[0][0] == 0
     assert se_listener.attribute_updates[0][1] == 1  # multiplied by 1000
+
+
+async def test_aqara_feeder(zigpy_device_from_quirk):
+    """Test Aqara C1 pet feeder."""
+
+    device = zigpy_device_from_quirk(AqaraFeederAcn001)
+    opple_cluster = device.endpoints[1].opple_cluster
+    opple_cluster._write_attributes = mock.AsyncMock()
+
+    expected_attr_def = opple_cluster.find_attribute(0xFFF1)
+    expected = foundation.Attribute(0xFFF1, foundation.TypeValue())
+    expected.value.type = foundation.DATA_TYPES.pytype_to_datatype_id(
+        expected_attr_def.type
+    )
+
+    expected.value.value = expected_attr_def.type(b"\x00\x02\x01\x04\x17\x00U\x01\x01")
+    await opple_cluster.write_attributes(
+        {"disable_led_indicator": 1}, manufacturer=0x115F
+    )
+    assert (
+        opple_cluster._write_attributes.await_args[0][0][0].value.type
+        == expected.value.type
+    )
+    assert (
+        opple_cluster._write_attributes.await_args[0][0][0].value.value
+        == expected.value.value
+    )
+    opple_cluster._write_attributes.reset_mock()
+
+    expected.value.value = expected_attr_def.type(b"\x00\x02\x03\x04\x16\x00U\x01\x01")
+    await opple_cluster.write_attributes({"child_lock": 1})
+
+    assert (
+        opple_cluster._write_attributes.await_args[0][0][0].value.type
+        == expected.value.type
+    )
+    assert (
+        opple_cluster._write_attributes.await_args[0][0][0].value.value
+        == expected.value.value
+    )
+    opple_cluster._write_attributes.reset_mock()
+
+    expected.value.value = expected_attr_def.type(b"\x00\x02\x05\x04\x18\x00U\x01\x00")
+    await opple_cluster.write_attributes(
+        {"feeding_mode": opple_cluster.FeedingMode.Manual}
+    )
+
+    assert (
+        opple_cluster._write_attributes.await_args[0][0][0].value.type
+        == expected.value.type
+    )
+    assert (
+        opple_cluster._write_attributes.await_args[0][0][0].value.value
+        == expected.value.value
+    )
+    opple_cluster._write_attributes.reset_mock()
+
+    expected.value.value = expected_attr_def.type(
+        b"\x00\x02\x07\x0e\\\x00U\x04\x00\x00\x00\x03"
+    )
+    await opple_cluster.write_attributes({"serving_size": 3})
+
+    assert (
+        opple_cluster._write_attributes.await_args[0][0][0].value.type
+        == expected.value.type
+    )
+    assert (
+        opple_cluster._write_attributes.await_args[0][0][0].value.value
+        == expected.value.value
+    )
+    opple_cluster._write_attributes.reset_mock()
+
+    expected.value.value = expected_attr_def.type(
+        b"\x00\x02\t\x0e_\x00U\x04\x00\x00\x00\x08"
+    )
+    await opple_cluster.write_attributes({"portion_weight": 8})
+
+    assert (
+        opple_cluster._write_attributes.await_args[0][0][0].value.type
+        == expected.value.type
+    )
+    assert (
+        opple_cluster._write_attributes.await_args[0][0][0].value.value
+        == expected.value.value
+    )
