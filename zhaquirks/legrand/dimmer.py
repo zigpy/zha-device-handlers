@@ -11,11 +11,13 @@ from zigpy.zcl.clusters.general import (
     LevelControl,
     OnOff,
     Ota,
+    PollControl,
     Scenes,
 )
 from zigpy.zcl.clusters.lighting import Ballast
 from zigpy.zcl.clusters.manufacturer_specific import ManufacturerSpecificCluster
 
+from zhaquirks import PowerConfigurationCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -40,6 +42,13 @@ class LegrandCluster(CustomCluster, ManufacturerSpecificCluster):
         0x0001: ("led_dark", t.Bool, True),
         0x0002: ("led_on", t.Bool, True),
     }
+
+
+class LegrandPowerConfigurationCluster(PowerConfigurationCluster):
+    """PowerConfiguration conversor 'V --> %' for Legrand devices."""
+
+    MIN_VOLTS = 2.5
+    MAX_VOLTS = 3.0
 
 
 class DimmerWithoutNeutral(CustomDevice):
@@ -385,6 +394,63 @@ class DimmerWithNeutral2(CustomDevice):
                     LegrandCluster,
                     Scenes.cluster_id,
                     Ota.cluster_id,
+                ],
+            }
+        }
+    }
+
+
+class RemoteDimmer(CustomDevice):
+    """Remote dimmer ."""
+
+    signature = {
+        MODELS_INFO: [(f" {LEGRAND}", " Remote dimmer switch")],
+        ENDPOINTS: {
+            1: {
+                # "profile_id": 260,
+                # "device_type": "0x0104",
+                # "in_clusters": ["0x0000","0x0001","0x0003","0x000f","0x0020","0xfc01"],
+                # "out_clusters": ["0x0000","0x0003","0x0006","0x0008","0x0019","0xfc01"]
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.DIMMER_SWITCH,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    PowerConfigurationCluster.cluster_id,
+                    Identify.cluster_id,
+                    BinaryInput.cluster_id,
+                    PollControl.cluster_id,
+                    LegrandCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                    Ota.cluster_id,
+                    LegrandCluster.cluster_id,
+                ],
+            }
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    LegrandPowerConfigurationCluster,
+                    Identify.cluster_id,
+                    BinaryInput.cluster_id,
+                    PollControl.cluster_id,
+                    LegrandCluster,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                    Ota.cluster_id,
+                    LegrandCluster,
                 ],
             }
         }
