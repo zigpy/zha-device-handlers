@@ -4,6 +4,7 @@ from typing import Dict
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 import zigpy.types as t
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
 from zigpy.zcl.clusters.smartenergy import Metering
 
@@ -23,6 +24,7 @@ from zhaquirks.tuya.mcu import (
     TuyaDPType,
     TuyaMCUCluster,
     TuyaOnOff,
+    TuyaOnOffNM,
     TuyaPowerConfigurationCluster,
 )
 
@@ -31,9 +33,13 @@ class TuyaValveWaterConsumed(Metering, TuyaLocalCluster):
     """Tuya Valve Water consumed cluster."""
 
     VOLUME_LITERS = 0x0007
+    WATER_METERING = 0x02
 
     """Setting unit of measurement."""
-    _CONSTANT_ATTRIBUTES = {0x0300: VOLUME_LITERS}
+    _CONSTANT_ATTRIBUTES = {
+        0x0300: VOLUME_LITERS,
+        0x0306: WATER_METERING,
+    }
 
 
 class TuyaValveManufCluster(TuyaMCUCluster):
@@ -250,4 +256,146 @@ class ParksidePSBZS(EnchantedDevice):
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
         },
+    }
+
+
+# info from https://github.com/Koenkk/zigbee-herdsman-converters/blob/master/devices/giex.js
+GIEX_MODE_ATTR = 0xEF01  # Mode [0] duration [1] capacity
+GIEX_START_TIME_ATTR = 0xEF65  # Last irrigation start time (GMT)
+GIEX_END_TIME_ATTR = 0xEF66  # Last irrigation end time (GMT)
+GIEX_NUM_TIMES_ATTR = 0xEF67  # Number of cycle irrigation times min=0 max=100
+GIEX_TARGET_ATTR = 0xEF68  # Irrigation target, duration in seconds or capacity in litres (depending on mode) min=0 max=3600
+GIEX_INTERVAL_ATTR = 0xEF69  # Cycle irrigation interval in seconds min=0 max=3600
+GIEX_DURATION_ATTR = 0xEF72  # Last irrigation duration
+
+
+class GiexValveManufCluster(TuyaMCUCluster):
+    """GiEX valve manufacturer cluster."""
+
+    attributes = TuyaMCUCluster.attributes.copy()
+    attributes.update(
+        {
+            GIEX_MODE_ATTR: ("irrigation_mode", t.Bool, True),
+            GIEX_START_TIME_ATTR: ("irrigation_start_time", t.uint32_t, True),
+            GIEX_END_TIME_ATTR: ("irrigation_end_time", t.uint32_t, True),
+            GIEX_NUM_TIMES_ATTR: ("irrigation_num_times", t.uint32_t, True),
+            GIEX_TARGET_ATTR: ("irrigation_target", t.uint32_t, True),
+            GIEX_INTERVAL_ATTR: ("irrigation_interval", t.uint32_t, True),
+            GIEX_DURATION_ATTR: ("irrigation_duration", t.uint32_t, True),
+        }
+    )
+
+    dp_to_attribute: Dict[int, DPToAttributeMapping] = {
+        1: DPToAttributeMapping(
+            TuyaMCUCluster.ep_attribute,
+            "irrigation_mode",
+            dp_type=TuyaDPType.BOOL,
+        ),
+        2: DPToAttributeMapping(
+            TuyaOnOffNM.ep_attribute,
+            "on_off",
+            dp_type=TuyaDPType.BOOL,
+        ),
+        101: DPToAttributeMapping(
+            TuyaMCUCluster.ep_attribute,
+            "irrigation_start_time",
+            dp_type=TuyaDPType.VALUE,
+        ),
+        102: DPToAttributeMapping(
+            TuyaMCUCluster.ep_attribute,
+            "irrigation_end_time",
+            dp_type=TuyaDPType.VALUE,
+        ),
+        103: DPToAttributeMapping(
+            TuyaMCUCluster.ep_attribute,
+            "irrigation_num_times",
+            dp_type=TuyaDPType.VALUE,
+        ),
+        104: DPToAttributeMapping(
+            TuyaMCUCluster.ep_attribute,
+            "irrigation_target",
+            dp_type=TuyaDPType.VALUE,
+        ),
+        105: DPToAttributeMapping(
+            TuyaMCUCluster.ep_attribute,
+            "irrigation_interval",
+            dp_type=TuyaDPType.VALUE,
+        ),
+        108: DPToAttributeMapping(
+            TuyaPowerConfigurationCluster.ep_attribute,
+            "battery_percentage_remaining",
+            dp_type=TuyaDPType.VALUE,
+        ),
+        111: DPToAttributeMapping(
+            TuyaValveWaterConsumed.ep_attribute,
+            "current_summ_delivered",
+            dp_type=TuyaDPType.VALUE,
+        ),
+        114: DPToAttributeMapping(
+            TuyaMCUCluster.ep_attribute,
+            "irrigation_duration",
+            dp_type=TuyaDPType.VALUE,
+        ),
+    }
+
+    data_point_handlers = {
+        1: "_dp_2_attr_update",
+        2: "_dp_2_attr_update",
+        101: "_dp_2_attr_update",
+        102: "_dp_2_attr_update",
+        103: "_dp_2_attr_update",
+        104: "_dp_2_attr_update",
+        105: "_dp_2_attr_update",
+        108: "_dp_2_attr_update",
+        111: "_dp_2_attr_update",
+        114: "_dp_2_attr_update",
+    }
+
+    async def write_attributes(self, attributes, manufacturer=None):
+        """Overwrite to force manufacturer code."""
+
+        return await super().write_attributes(
+            attributes, manufacturer=foundation.ZCLHeader.NO_MANUFACTURER_ID
+        )
+
+
+class GiexValve(CustomDevice):
+    """GiEX valve device."""
+
+    signature = {
+        MODELS_INFO: [("_TZE200_sh1btabb", "TS0601"), ("_TZE200_a7sghmms", "TS0601")],
+        ENDPOINTS: {
+            # <SimpleDescriptor endpoint=1 profile=260 device_type=0x0051
+            # input_clusters=[0x0000, 0x0004, 0x0005, 0xef00]
+            # output_clusters=[0x000a, 0x0019]>
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    GiexValveManufCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            }
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaOnOffNM,
+                    TuyaPowerConfigurationCluster,
+                    TuyaValveWaterConsumed,
+                    GiexValveManufCluster,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            }
+        }
     }
