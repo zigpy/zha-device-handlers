@@ -32,7 +32,22 @@ from zhaquirks.xiaomi import (
     XiaomiQuickInitDevice,
     handle_quick_init,
 )
-from zhaquirks.xiaomi.aqara.feeder_acn001 import AqaraFeederAcn001
+from zhaquirks.xiaomi.aqara.feeder_acn001 import (
+    FEEDER_ATTR,
+    ZCL_CHILD_LOCK,
+    ZCL_DISABLE_LED_INDICATOR,
+    ZCL_ERROR_DETECTED,
+    ZCL_FEEDING,
+    ZCL_FEEDING_MODE,
+    ZCL_LAST_FEEDING_SIZE,
+    ZCL_LAST_FEEDING_SOURCE,
+    ZCL_PORTION_WEIGHT,
+    ZCL_PORTIONS_DISPENSED,
+    ZCL_SERVING_SIZE,
+    ZCL_WEIGHT_DISPENSED,
+    AqaraFeederAcn001,
+    OppleCluster,
+)
 import zhaquirks.xiaomi.aqara.motion_aq2
 import zhaquirks.xiaomi.aqara.motion_aq2b
 import zhaquirks.xiaomi.aqara.plug_eu
@@ -511,8 +526,31 @@ async def test_xiaomi_eu_plug_power(zigpy_device_from_quirk, quirk):
     assert se_listener.attribute_updates[0][1] == 1  # multiplied by 1000
 
 
-async def test_aqara_feeder(zigpy_device_from_quirk):
-    """Test Aqara C1 pet feeder."""
+@pytest.mark.parametrize(
+    "attribute, value, expected_bytes",
+    [
+        ("disable_led_indicator", 1, b"\x00\x02\x01\x04\x17\x00U\x01\x01"),
+        ("disable_led_indicator", 0, b"\x00\x02\x01\x04\x17\x00U\x01\x00"),
+        ("child_lock", 1, b"\x00\x02\x01\x04\x16\x00U\x01\x01"),
+        ("child_lock", 0, b"\x00\x02\x01\x04\x16\x00U\x01\x00"),
+        (
+            "feeding_mode",
+            OppleCluster.FeedingMode.Manual,
+            b"\x00\x02\x01\x04\x18\x00U\x01\x00",
+        ),
+        (
+            "feeding_mode",
+            OppleCluster.FeedingMode.Schedule,
+            b"\x00\x02\x01\x04\x18\x00U\x01\x01",
+        ),
+        ("serving_size", 3, b"\x00\x02\x01\x0e\\\x00U\x04\x00\x00\x00\x03"),
+        ("portion_weight", 8, b"\x00\x02\x01\x0e_\x00U\x04\x00\x00\x00\x08"),
+    ],
+)
+async def test_aqara_feeder_write_attrs(
+    zigpy_device_from_quirk, attribute, value, expected_bytes
+):
+    """Test Aqara C1 pet feeder attr writing."""
 
     device = zigpy_device_from_quirk(AqaraFeederAcn001)
     opple_cluster = device.endpoints[1].opple_cluster
@@ -523,74 +561,124 @@ async def test_aqara_feeder(zigpy_device_from_quirk):
     expected.value.type = foundation.DATA_TYPES.pytype_to_datatype_id(
         expected_attr_def.type
     )
+    expected.value.value = expected_attr_def.type(expected_bytes)
 
-    expected.value.value = expected_attr_def.type(b"\x00\x02\x01\x04\x17\x00U\x01\x01")
-    await opple_cluster.write_attributes(
-        {"disable_led_indicator": 1}, manufacturer=0x115F
-    )
-    assert (
-        opple_cluster._write_attributes.await_args[0][0][0].value.type
-        == expected.value.type
-    )
-    assert (
-        opple_cluster._write_attributes.await_args[0][0][0].value.value
-        == expected.value.value
-    )
-    opple_cluster._write_attributes.reset_mock()
+    await opple_cluster.write_attributes({attribute: value}, manufacturer=0x115F)
 
-    expected.value.value = expected_attr_def.type(b"\x00\x02\x03\x04\x16\x00U\x01\x01")
-    await opple_cluster.write_attributes({"child_lock": 1})
-
-    assert (
-        opple_cluster._write_attributes.await_args[0][0][0].value.type
-        == expected.value.type
-    )
-    assert (
-        opple_cluster._write_attributes.await_args[0][0][0].value.value
-        == expected.value.value
-    )
-    opple_cluster._write_attributes.reset_mock()
-
-    expected.value.value = expected_attr_def.type(b"\x00\x02\x05\x04\x18\x00U\x01\x00")
-    await opple_cluster.write_attributes(
-        {"feeding_mode": opple_cluster.FeedingMode.Manual}
+    opple_cluster._write_attributes.assert_awaited_with(
+        [expected],
+        manufacturer=0x115F,
     )
 
-    assert (
-        opple_cluster._write_attributes.await_args[0][0][0].value.type
-        == expected.value.type
-    )
-    assert (
-        opple_cluster._write_attributes.await_args[0][0][0].value.value
-        == expected.value.value
-    )
-    opple_cluster._write_attributes.reset_mock()
 
-    expected.value.value = expected_attr_def.type(
-        b"\x00\x02\x07\x0e\\\x00U\x04\x00\x00\x00\x03"
-    )
-    await opple_cluster.write_attributes({"serving_size": 3})
+@pytest.mark.parametrize(
+    "bytes_received, call_count, calls",
+    [
+        (
+            b"\x1c_\x11f\n\xf1\xffA\t\x00\x05\x01\x04\x15\x00U\x01\x01",
+            2,
+            [
+                mock.call(ZCL_FEEDING, True),
+                mock.call(FEEDER_ATTR, b"\x00\x05\x01\x04\x15\x00U\x01\x01"),
+            ],
+        ),
+        (
+            b"\x1c_\x11l\n\xf1\xffA\x0c\x00\x05\xd0\x04\x15\x02\xbc\x040203",
+            3,
+            [
+                mock.call(ZCL_LAST_FEEDING_SIZE, 3),
+                mock.call(ZCL_LAST_FEEDING_SOURCE, OppleCluster.FeedingSource.Remote),
+                mock.call(FEEDER_ATTR, b"\x00\x05\xd0\x04\x15\x02\xbc\x040203"),
+            ],
+        ),
+        (
+            b"\x1c_\x11m\n\xf1\xffA\n\x00\x05\xd1\rh\x00U\x02\x00!",
+            2,
+            [
+                mock.call(ZCL_PORTIONS_DISPENSED, 33),
+                mock.call(FEEDER_ATTR, b"\x00\x05\xd1\rh\x00U\x02\x00!"),
+            ],
+        ),
+        (
+            b"\x1c_\x11n\n\xf1\xffA\x0c\x00\x05\xd2\ri\x00U\x04\x00\x00\x01\x08",
+            2,
+            [
+                mock.call(ZCL_WEIGHT_DISPENSED, 264),
+                mock.call(FEEDER_ATTR, b"\x00\x05\xd2\ri\x00U\x04\x00\x00\x01\x08"),
+            ],
+        ),
+        (
+            b"\x1c_\x11o\n\xf1\xffA\t\x00\x05\xd3\r\x0b\x00U\x01\x00",
+            2,
+            [
+                mock.call(ZCL_ERROR_DETECTED, False),
+                mock.call(FEEDER_ATTR, b"\x00\x05\xd3\r\x0b\x00U\x01\x00"),
+            ],
+        ),
+        (
+            b"\x1c_\x11p\n\xf1\xffA\t\x00\x05\x05\x04\x16\x00U\x01\x01",
+            2,
+            [
+                mock.call(ZCL_CHILD_LOCK, True),
+                mock.call(FEEDER_ATTR, b"\x00\x05\x05\x04\x16\x00U\x01\x01"),
+            ],
+        ),
+        (
+            b"\x1c_\x11r\n\xf1\xffA\t\x00\x05\t\x04\x17\x00U\x01\x01",
+            2,
+            [
+                mock.call(ZCL_DISABLE_LED_INDICATOR, True),
+                mock.call(FEEDER_ATTR, b"\x00\x05\t\x04\x17\x00U\x01\x01"),
+            ],
+        ),
+        (
+            b"\x1c_\x11s\n\xf1\xffA\t\x00\x05\x0b\x04\x18\x00U\x01\x01",
+            2,
+            [
+                mock.call(ZCL_FEEDING_MODE, OppleCluster.FeedingMode.Schedule),
+                mock.call(FEEDER_ATTR, b"\x00\x05\x0b\x04\x18\x00U\x01\x01"),
+            ],
+        ),
+        (
+            b"\x1c_\x11u\n\xf1\xffA\t\x00\x05\x0f\x0e_\x00U\x01\x06",
+            2,
+            [
+                mock.call(ZCL_PORTION_WEIGHT, 6),
+                mock.call(FEEDER_ATTR, b"\x00\x05\x0f\x0e_\x00U\x01\x06"),
+            ],
+        ),
+        (
+            b"\x1c_\x11v\n\xf1\xffA\t\x00\x05\x11\x0e\\\x00U\x01\x02",
+            2,
+            [
+                mock.call(ZCL_SERVING_SIZE, 2),
+                mock.call(FEEDER_ATTR, b"\x00\x05\x11\x0e\\\x00U\x01\x02"),
+            ],
+        ),
+    ],
+)
+async def test_aqara_feeder_attr_reports(
+    zigpy_device_from_quirk, bytes_received, call_count, calls
+):
+    """Test Aqara C1 pet feeder attr writing."""
 
-    assert (
-        opple_cluster._write_attributes.await_args[0][0][0].value.type
-        == expected.value.type
-    )
-    assert (
-        opple_cluster._write_attributes.await_args[0][0][0].value.value
-        == expected.value.value
-    )
-    opple_cluster._write_attributes.reset_mock()
+    class Listener:
 
-    expected.value.value = expected_attr_def.type(
-        b"\x00\x02\t\x0e_\x00U\x04\x00\x00\x00\x08"
-    )
-    await opple_cluster.write_attributes({"portion_weight": 8})
+        attribute_updated = mock.MagicMock()
 
-    assert (
-        opple_cluster._write_attributes.await_args[0][0][0].value.type
-        == expected.value.type
+    device = zigpy_device_from_quirk(AqaraFeederAcn001)
+    opple_cluster = device.endpoints[1].opple_cluster
+    cluster_listener = Listener()
+    opple_cluster.add_listener(cluster_listener)
+
+    device.handle_message(
+        260,
+        opple_cluster.cluster_id,
+        opple_cluster.endpoint.endpoint_id,
+        opple_cluster.endpoint.endpoint_id,
+        bytes_received,
     )
-    assert (
-        opple_cluster._write_attributes.await_args[0][0][0].value.value
-        == expected.value.value
-    )
+
+    assert cluster_listener.attribute_updated.call_count == call_count
+    for call in calls:
+        assert call in cluster_listener.attribute_updated.mock_calls
