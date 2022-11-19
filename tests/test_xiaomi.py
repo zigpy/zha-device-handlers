@@ -662,6 +662,16 @@ async def test_aqara_feeder_write_attrs(
                 mock.call(0x00F7, b"\x05!\x0e\x00\r#!%\x00\x00\t!\x02\x03"),
             ],
         ),
+        (
+            b"\x1c_\x11}\n\xf1\xffA(\x00\x05\x15\x08\x00\x08\xc8 7F09000100,7F0D000100,7F13000100",
+            1,
+            [
+                mock.call(
+                    FEEDER_ATTR,
+                    b"\x00\x05\x15\x08\x00\x08\xc8 7F09000100,7F0D000100,7F13000100",
+                ),
+            ],
+        ),
     ],
 )
 async def test_aqara_feeder_attr_reports(

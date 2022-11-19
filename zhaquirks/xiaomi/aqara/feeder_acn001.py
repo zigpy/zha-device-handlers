@@ -14,6 +14,7 @@ from zigpy.zcl.clusters.general import (
     OnOff,
     Ota,
     Scenes,
+    Time,
 )
 import zigpy.zcl.foundation as foundation
 
@@ -292,6 +293,7 @@ class AqaraFeederAcn001(XiaomiCustomDevice):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     OppleCluster,
+                    Time.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
