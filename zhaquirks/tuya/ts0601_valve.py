@@ -260,36 +260,28 @@ class ParksidePSBZS(EnchantedDevice):
 
 
 # info from https://github.com/Koenkk/zigbee-herdsman-converters/blob/master/devices/giex.js
-GIEX_TUYA_VALVE_MODE_ATTR = 0xEF01  # Mode [0] duration [1] capacity
-GIEX_TUYA_VALVE_START_TIME_ATTR = 0xEF65  # Last irrigation start time (GMT)
-GIEX_TUYA_VALVE_END_TIME_ATTR = 0xEF66  # Last irrigation end time (GMT)
-GIEX_TUYA_VALVE_NUM_TIMES_ATTR = (
-    0xEF67  # Number of cycle irrigation times, 0 for single cycle, min=0 max=100
-)
-GIEX_TUYA_VALVE_TARGET_ATTR = 0xEF68  # Irrigation target, duration in seconds or capacity in litres (depending on mode), min=0, max=3600
-GIEX_TUYA_VALVE_INTERVAL_ATTR = (
-    0xEF69  # Cycle irrigation interval in seconds, min=0, max=3600
-)
-GIEX_TUYA_VALVE_DURATION_ATTR = 0xEF72  # Last irrigation duration
+GIEX_MODE_ATTR = 0xEF01  # Mode [0] duration [1] capacity
+GIEX_START_TIME_ATTR = 0xEF65  # Last irrigation start time (GMT)
+GIEX_END_TIME_ATTR = 0xEF66  # Last irrigation end time (GMT)
+GIEX_NUM_TIMES_ATTR = 0xEF67  # Number of cycle irrigation times min=0 max=100
+GIEX_TARGET_ATTR = 0xEF68  # Irrigation target, duration in seconds or capacity in litres (depending on mode) min=0 max=3600
+GIEX_INTERVAL_ATTR = 0xEF69  # Cycle irrigation interval in seconds min=0 max=3600
+GIEX_DURATION_ATTR = 0xEF72  # Last irrigation duration
 
 
-class GiexTuyaValveManufCluster(TuyaMCUCluster):
-    """GiEX Tuya valve manufacturer cluster."""
+class GiexValveManufCluster(TuyaMCUCluster):
+    """GiEX valve manufacturer cluster."""
 
     attributes = TuyaMCUCluster.attributes.copy()
     attributes.update(
         {
-            GIEX_TUYA_VALVE_MODE_ATTR: ("irrigation_mode", t.Bool, True),
-            GIEX_TUYA_VALVE_START_TIME_ATTR: (
-                "irrigation_start_time",
-                t.uint32_t,
-                True,
-            ),
-            GIEX_TUYA_VALVE_END_TIME_ATTR: ("irrigation_end_time", t.uint32_t, True),
-            GIEX_TUYA_VALVE_NUM_TIMES_ATTR: ("irrigation_num_times", t.uint32_t, True),
-            GIEX_TUYA_VALVE_TARGET_ATTR: ("irrigation_target", t.uint32_t, True),
-            GIEX_TUYA_VALVE_INTERVAL_ATTR: ("irrigation_interval", t.uint32_t, True),
-            GIEX_TUYA_VALVE_DURATION_ATTR: ("irrigation_duration", t.uint32_t, True),
+            GIEX_MODE_ATTR: ("irrigation_mode", t.Bool, True),
+            GIEX_START_TIME_ATTR: ("irrigation_start_time", t.uint32_t, True),
+            GIEX_END_TIME_ATTR: ("irrigation_end_time", t.uint32_t, True),
+            GIEX_NUM_TIMES_ATTR: ("irrigation_num_times", t.uint32_t, True),
+            GIEX_TARGET_ATTR: ("irrigation_target", t.uint32_t, True),
+            GIEX_INTERVAL_ATTR: ("irrigation_interval", t.uint32_t, True),
+            GIEX_DURATION_ATTR: ("irrigation_duration", t.uint32_t, True),
         }
     )
 
@@ -367,8 +359,8 @@ class GiexTuyaValveManufCluster(TuyaMCUCluster):
         )
 
 
-class GiexTuyaValve(CustomDevice):
-    """GiEX Tuya valve device."""
+class GiexValve(CustomDevice):
+    """GiEX valve device."""
 
     signature = {
         MODELS_INFO: [("_TZE200_sh1btabb", "TS0601"), ("_TZE200_a7sghmms", "TS0601")],
@@ -383,7 +375,7 @@ class GiexTuyaValve(CustomDevice):
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    GiexTuyaValveManufCluster.cluster_id,
+                    GiexValveManufCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             }
@@ -401,7 +393,7 @@ class GiexTuyaValve(CustomDevice):
                     TuyaOnOffNM,
                     TuyaPowerConfigurationCluster,
                     TuyaValveWaterConsumed,
-                    GiexTuyaValveManufCluster,
+                    GiexValveManufCluster,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             }
