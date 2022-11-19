@@ -125,6 +125,7 @@ class TuyaTempHumiditySensor_Square(CustomDevice):
     signature = {
         MODELS_INFO: [
             ("_TZE200_qoy0ekbd", "TS0601"),
+            ("_TZE200_znbl8dj5", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
