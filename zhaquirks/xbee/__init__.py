@@ -204,11 +204,10 @@ class ATCommandResult(enum.IntEnum):
 class XBeeBasic(LocalDataCluster, Basic):
     """XBee Basic Cluster."""
 
-    def __init__(self, endpoint, is_server=True):
-        """Set default values and store them in cache."""
-        super().__init__(endpoint, is_server)
-        self._update_attribute(0x0000, 0x02)  # ZCLVersion
-        self._update_attribute(0x0007, self.PowerSource.Unknown)  # PowerSource
+    _CONSTANT_ATTRIBUTES = {
+        0x0000: 0x02,  # ZCLVersion
+        0x0007: Basic.PowerSource.Unknown,  # PowerSource
+    }
 
 
 class XBeeOnOff(LocalDataCluster, OnOff):
@@ -239,16 +238,15 @@ class XBeeAnalogInput(LocalDataCluster, AnalogInput):
 class XBeePWM(LocalDataCluster, AnalogOutput):
     """XBee PWM Cluster."""
 
-    _ep_id_2_pwm = {0xDA: "M0", 0xDB: "M1"}
+    _CONSTANT_ATTRIBUTES = {
+        0x0041: float(0x03FF),  # max_present_value
+        0x0045: 0.0,  # min_present_value
+        0x0051: 0,  # out_of_service
+        0x006A: 1.0,  # resolution
+        0x006F: 0x00,  # status_flags
+    }
 
-    def __init__(self, endpoint, is_server=True):
-        """Set known attributes and store them in cache."""
-        super().__init__(endpoint, is_server)
-        self._update_attribute(0x0041, float(0x03FF))  # max_present_value
-        self._update_attribute(0x0045, 0.0)  # min_present_value
-        self._update_attribute(0x0051, 0)  # out_of_service
-        self._update_attribute(0x006A, 1.0)  # resolution
-        self._update_attribute(0x006F, 0x00)  # status_flags
+    _ep_id_2_pwm = {0xDA: "M0", 0xDB: "M1"}
 
     async def write_attributes(self, attributes, manufacturer=None):
         """Intercept present_value attribute write."""
