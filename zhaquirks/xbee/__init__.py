@@ -160,7 +160,7 @@ AT_COMMANDS = {
     "NR": t.Bool,
     "CB": t.uint8_t,
     "DN": t.Bytes,  # "up to 20-Byte printable ASCII string"
-    "IS": None,
+    "IS": t.IOSample,
     "AS": None,
     # Stuff I've guessed
     # "CE": t.uint8_t,
@@ -399,6 +399,19 @@ class XBeeRemoteATRequest(LocalDataCluster):
         self._endpoint.device.endpoints[XBEE_DATA_ENDPOINT].out_clusters[
             LevelControl.cluster_id
         ].handle_cluster_request(hdr, {"response": value})
+
+        if command == "IS" and value:
+            tsn = self._endpoint.device.application.get_sequence()
+            hdr = foundation.ZCLHeader.cluster(tsn, SAMPLE_DATA_CMD)
+            self._endpoint.device.endpoints[XBEE_DATA_ENDPOINT].in_clusters[
+                XBEE_IO_CLUSTER
+            ].handle_cluster_request(
+                hdr,
+                self._endpoint.device.endpoints[XBEE_DATA_ENDPOINT]
+                .in_clusters[XBEE_IO_CLUSTER]
+                .server_commands[SAMPLE_DATA_CMD]
+                .schema(io_sample=value),
+            )
 
         return foundation.GENERAL_COMMANDS[
             foundation.GeneralCommand.Default_Response

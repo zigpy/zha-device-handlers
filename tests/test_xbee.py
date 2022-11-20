@@ -17,6 +17,7 @@ from zhaquirks.xbee import (
     XBEE_PROFILE_ID,
 )
 from zhaquirks.xbee.xbee3_io import XBee3Sensor
+from zhaquirks.xbee.xbee_io import XBeeSensor
 
 from tests.common import ClusterListener
 
@@ -521,6 +522,105 @@ async def test_io_sample_report(zigpy_device_from_quirk):
         XBEE_DATA_ENDPOINT,
         XBEE_DATA_ENDPOINT,
         b"\x01\x55\x55\x85\x11\x11\x01\x55\x02\xAA\x0c\xe9",
+    )
+
+    for i in range(len(digital_listeners)):
+        assert len(digital_listeners[i].cluster_commands) == 0
+        assert len(digital_listeners[i].attribute_updates) == (i + 1) % 2
+        if (i + 1) % 2:
+            assert digital_listeners[i].attribute_updates[0] == (
+                0x0000,
+                (i / 2 + 1) % 2,
+            )
+
+    for i in range(len(analog_listeners)):
+        assert len(analog_listeners[i].cluster_commands) == 0
+        assert len(analog_listeners[i].attribute_updates) == (i + 1) % 2
+        if (i + 1) % 2:
+            assert analog_listeners[i].attribute_updates[0][0] == 0x0055
+
+    assert 33.33333 < analog_listeners[0].attribute_updates[0][1] < 33.33334
+    assert 66.66666 < analog_listeners[2].attribute_updates[0][1] < 66.66667
+    assert analog_listeners[4].attribute_updates[0] == (0x0055, 3.305)
+
+
+async def test_io_sample_report_on_at_response(zigpy_device_from_quirk):
+    """Test update samples on non-native IS command response."""
+
+    xbee_device = zigpy_device_from_quirk(XBeeSensor)
+    assert xbee_device.model == "XBee2"
+
+    digital_listeners = [
+        ClusterListener(xbee_device.endpoints[e].on_off) for e in range(0xD0, 0xDF)
+    ]
+    analog_listeners = [
+        ClusterListener(xbee_device.endpoints[e if e != 0xD4 else 0xD7].analog_input)
+        for e in range(0xD0, 0xD5)
+    ]
+
+    listener = mock.MagicMock()
+    xbee_device.endpoints[XBEE_DATA_ENDPOINT].out_clusters[
+        LevelControl.cluster_id
+    ].add_listener(listener)
+
+    def mock_at_response(*args, **kwargs):
+        """Simulate remote AT command response from device."""
+        xbee_device.handle_message(
+            XBEE_PROFILE_ID,
+            XBEE_AT_RESPONSE_CLUSTER,
+            XBEE_AT_ENDPOINT,
+            XBEE_AT_ENDPOINT,
+            b"\x01IS\x00\x01\x55\x55\x85\x11\x11\x01\x55\x02\xAA\x0c\xe9",
+        )
+        return mock.DEFAULT
+
+    xbee_device.application.request.reset_mock()
+    xbee_device.application.request.configure_mock(side_effect=mock_at_response)
+
+    # Send remote AT command request
+    _, status = (
+        await xbee_device.endpoints[XBEE_AT_ENDPOINT]
+        .out_clusters[XBEE_AT_REQUEST_CLUSTER]
+        .command(92)
+    )
+
+    xbee_device.application.request.configure_mock(side_effect=None)
+
+    xbee_device.application.request.assert_awaited_once_with(
+        xbee_device,
+        XBEE_PROFILE_ID,
+        XBEE_AT_REQUEST_CLUSTER,
+        XBEE_AT_ENDPOINT,
+        XBEE_AT_ENDPOINT,
+        1,
+        b"2\x00\x02\x01\xff\xff\xff\xff\xff\xff\xff\xff\xff\xfeIS",
+        expect_reply=False,
+    )
+    assert status == foundation.Status.SUCCESS
+    listener.zha_send_event.assert_called_once_with(
+        "is_command_response",
+        {
+            "response": {
+                "digital_samples": [
+                    1,
+                    None,
+                    0,
+                    None,
+                    1,
+                    None,
+                    0,
+                    None,
+                    1,
+                    None,
+                    0,
+                    None,
+                    1,
+                    None,
+                    0,
+                ],
+                "analog_samples": [341, None, 682, None, None, None, None, 3305],
+            }
+        },
     )
 
     for i in range(len(digital_listeners)):
