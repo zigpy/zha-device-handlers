@@ -167,7 +167,7 @@ class XiaomiCluster(CustomCluster):
 
             yield foundation.Attribute(
                 attrid=attr_id,
-                value=foundation.TypeValue(python_type=attr_type, value=attr_val),
+                value=foundation.TypeValue(type=attr_type, value=attr_val),
             ), final_data
 
     def _interpret_attr_reports(
