@@ -4,18 +4,9 @@ import logging
 
 from zigpy.profiles import zha
 import zigpy.types as t
-from zigpy.zcl.clusters.general import (
-    Basic,
-    Groups,
-    Identify,
-    Ota,
-    PowerConfiguration,
-    Scenes,
-    Time,
-)
+from zigpy.zcl.clusters.general import Basic, Groups, Identify, Ota, Scenes, Time
 from zigpy.zcl.clusters.hvac import Thermostat
 
-from zhaquirks import LocalDataCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -26,21 +17,18 @@ from zhaquirks.const import (
 )
 from zhaquirks.tuya import (
     TuyaManufClusterAttributes,
+    TuyaPowerConfigurationCluster,
     TuyaThermostat,
     TuyaThermostatCluster,
 )
 
 _LOGGER = logging.getLogger(__name__)
 
-OCCUPIED_HEATING_SETPOINT_REPORTED = "occupied_heating_setpoint_reported"
-SYSTEM_MODE_REPORTED = "system_mode_reported"
-LOCAL_TEMP_REPORTED = "local_temp_reported"
-BATTERY_REPORTED = "battery_reported"
-
-OCCUPIED_HEATING_SETPOINT_COMMAND_ID = 615
-SYSTEM_MODE_COMMAND_ID = 357
-LOCAL_TEMP_COMMAND_ID = 614
-BATTERY_STATE_COMMAND_ID = 1385
+SASSWEL_HEATING_SETPOINT_ATTR = 0x0267
+SASSWEL_STATE_ATTR = 0x0165
+SASSWEL_LOCAL_TEMP_ATTR = 0x0266
+SASSWEL_BATTERY_LOW_ATTR = 0x0569
+SASSWEL_SCHEDULE_ENABLE_ATTR = 0x016C
 
 CTRL_SEQ_OF_OPER_ATTR = 0x001B
 
@@ -49,61 +37,60 @@ MAX_HEAT_SETPOINT_ATTR = 0x0016
 
 
 class ManufacturerThermostatCluster(TuyaManufClusterAttributes):
-    """Manufacturer thermostat cluster."""
+    """Tuya manufacturer specific cluster."""
+
+    class State(t.enum8):
+        """State option."""
+
+        Off = 0x00
+        On = 0x01
+
+    class BatteryState(t.enum8):
+        """Battery state option."""
+
+        Normal = 0x00
+        Low = 0x01
+
+    class ScheduleState(t.enum8):
+        """Schedule state option."""
+
+        Disabled = 0x00
+        Enabled = 0x01
 
     attributes = TuyaManufClusterAttributes.attributes.copy()
     attributes.update(
         {
-            SYSTEM_MODE_COMMAND_ID: ("system_mode", t.uint8_t, True),
-            OCCUPIED_HEATING_SETPOINT_COMMAND_ID: (
-                "occupied_heating_setpoint",
-                t.uint32_t,
-                True,
-            ),
-            LOCAL_TEMP_COMMAND_ID: ("local_temperature", t.uint32_t, True),
-            BATTERY_STATE_COMMAND_ID: ("battery_state", t.uint8_t, True),
+            SASSWEL_STATE_ATTR: ("state", State, True),
+            SASSWEL_HEATING_SETPOINT_ATTR: ("heating_setpoint", t.uint32_t, True),
+            SASSWEL_LOCAL_TEMP_ATTR: ("local_temperature", t.uint32_t, True),
+            SASSWEL_BATTERY_LOW_ATTR: ("battery_state", BatteryState, True),
+            SASSWEL_SCHEDULE_ENABLE_ATTR: ("schedule_enabled", ScheduleState, True),
         }
     )
 
+    TEMPERATURE_ATTRS = {
+        SASSWEL_HEATING_SETPOINT_ATTR: "occupied_heating_setpoint",
+        SASSWEL_LOCAL_TEMP_ATTR: "local_temperature",
+    }
+
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
-        if attrid == OCCUPIED_HEATING_SETPOINT_COMMAND_ID:
+        if attrid in self.TEMPERATURE_ATTRS:
             self.endpoint.device.thermostat_bus.listener_event(
-                OCCUPIED_HEATING_SETPOINT_REPORTED, value
+                "temperature_change",
+                self.TEMPERATURE_ATTRS[attrid],
+                value * 10,
             )
-        elif attrid == SYSTEM_MODE_COMMAND_ID:
+        elif attrid == SASSWEL_STATE_ATTR:
             self.endpoint.device.thermostat_bus.listener_event(
-                SYSTEM_MODE_REPORTED, value
+                "system_mode_reported", value
             )
-        elif attrid == BATTERY_STATE_COMMAND_ID:
-            self.endpoint.device.battery_bus.listener_event(BATTERY_REPORTED, value)
-        elif attrid == LOCAL_TEMP_COMMAND_ID:
-            self.endpoint.device.thermostat_bus.listener_event(
-                LOCAL_TEMP_REPORTED, value
+        elif attrid == SASSWEL_BATTERY_LOW_ATTR:
+            # this device doesn't have battery level reporting, only battery low alert
+            # when the alert is active (1) we report 0% and 100% otherwise (0)
+            self.endpoint.device.battery_bus.listener_event(
+                "battery_change", 0 if value == 1 else 100
             )
-
-
-class PowerConfigurationCluster(LocalDataCluster, PowerConfiguration):
-    """Power configuration cluster."""
-
-    cluster_id = PowerConfiguration.cluster_id
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.battery_bus.add_listener(self)
-
-    def battery_reported(self, value):
-        """Handle reported battery state."""
-        _LOGGER.debug("reported battery alert: %d", value)
-        if value == 1:  # alert
-            self._update_attribute(
-                self.attributes_by_name["battery_percentage_remaining"].id, 0
-            )  # report 0% battery
-        else:
-            self._update_attribute(
-                self.attributes_by_name["battery_percentage_remaining"].id, 200
-            )  # report 100% battery
 
 
 class ThermostatCluster(TuyaThermostatCluster):
@@ -116,25 +103,6 @@ class ThermostatCluster(TuyaThermostatCluster):
         MAX_HEAT_SETPOINT_ATTR: 3000,
         CTRL_SEQ_OF_OPER_ATTR: Thermostat.ControlSequenceOfOperation.Heating_Only,  # the device supports heating mode
     }
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.thermostat_bus.add_listener(self)
-
-    def occupied_heating_setpoint_reported(self, value):
-        """Handle reported occupied heating setpoint state."""
-        self._update_attribute(
-            self.attributes_by_name["occupied_heating_setpoint"].id, value * 10
-        )
-        _LOGGER.debug("reported occupied heating setpoint: %d", value)
-
-    def local_temp_reported(self, value):
-        """Handle reported local temperature."""
-        self._update_attribute(
-            self.attributes_by_name["local_temperature"].id, value * 10
-        )
-        _LOGGER.debug("reported local temperature: %d", value)
 
     def system_mode_reported(self, value):
         """Handle reported system mode."""
@@ -160,23 +128,21 @@ class ThermostatCluster(TuyaThermostatCluster):
 
         if attribute == "occupied_heating_setpoint":
             # centidegree to decidegree
-            return {OCCUPIED_HEATING_SETPOINT_COMMAND_ID: round(value / 10)}
+            return {SASSWEL_HEATING_SETPOINT_ATTR: round(value / 10)}
 
         if attribute == "system_mode":
+            # this quirk does not support programmig modes so we force the schedule mode to be always off
+            # more details: https://github.com/zigpy/zha-device-handlers/issues/1815
             if value == self.SystemMode.Off:
-                return {SYSTEM_MODE_COMMAND_ID: 0}
+                return {SASSWEL_STATE_ATTR: 0, SASSWEL_SCHEDULE_ENABLE_ATTR: 0}
             if value == self.SystemMode.Heat:
-                return {SYSTEM_MODE_COMMAND_ID: 1}
+                return {SASSWEL_STATE_ATTR: 1, SASSWEL_SCHEDULE_ENABLE_ATTR: 0}
 
 
 class Thermostat_TYST11_c88teujp(TuyaThermostat):
     """Saswell 88teujp thermostat valve."""
 
     signature = {
-        # <SimpleDescriptor endpoint=1 profile=260 device_type=0
-        # device_version=0
-        # input_clusters=[0, 3]
-        # output_clusters=[3, 25]>
         MODELS_INFO: [
             ("_TYST11_KGbxAXL2", "GbxAXL2"),
             ("_TYST11_c88teujp", "88teujp"),
@@ -186,6 +152,10 @@ class Thermostat_TYST11_c88teujp(TuyaThermostat):
             ("_TYST11_zuhszj9s", "uhszj9s"),
         ],
         ENDPOINTS: {
+            # <SimpleDescriptor endpoint=1 profile=260 device_type=0
+            # device_version=0
+            # input_clusters=[0, 3]
+            # output_clusters=[3, 25]>
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
@@ -208,16 +178,14 @@ class Thermostat_TYST11_c88teujp(TuyaThermostat):
                 DEVICE_TYPE: zha.DeviceType.THERMOSTAT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
+                    TuyaPowerConfigurationCluster,
                     Identify.cluster_id,
-                    ManufacturerThermostatCluster,
-                    PowerConfigurationCluster,
                     ThermostatCluster,
+                    ManufacturerThermostatCluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     Ota.cluster_id,
-                    PowerConfigurationCluster,
-                    ThermostatCluster,
                 ],
             }
         },
@@ -228,8 +196,6 @@ class Thermostat_TZE200_c88teujp(TuyaThermostat):
     """Saswell 88teujp thermostat valve."""
 
     signature = {
-        #  endpoint=1 profile=260 device_type=81 device_version=0 input_clusters=[0, 4, 5, 61184]
-        #  output_clusters=[10, 25]>
         MODELS_INFO: [
             ("_TZE200_c88teujp", "TS0601"),
             ("_TZE200_azqp6ssj", "TS0601"),
@@ -239,6 +205,10 @@ class Thermostat_TZE200_c88teujp(TuyaThermostat):
             ("_TZE200_2ekuz3dz", "TS0601"),
         ],
         ENDPOINTS: {
+            # <SimpleDescriptor endpoint=1 profile=260 device_type=81
+            # device_version=0
+            # input_clusters=[0, 4, 5, 61184]
+            # output_clusters=[10, 25]>
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
@@ -260,18 +230,13 @@ class Thermostat_TZE200_c88teujp(TuyaThermostat):
                 DEVICE_TYPE: zha.DeviceType.THERMOSTAT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
+                    TuyaPowerConfigurationCluster,
                     Groups.cluster_id,
                     Scenes.cluster_id,
+                    ThermostatCluster,
                     ManufacturerThermostatCluster,
-                    PowerConfigurationCluster,
-                    ThermostatCluster,
                 ],
-                OUTPUT_CLUSTERS: [
-                    Time.cluster_id,
-                    Ota.cluster_id,
-                    PowerConfigurationCluster,
-                    ThermostatCluster,
-                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             }
         }
     }
