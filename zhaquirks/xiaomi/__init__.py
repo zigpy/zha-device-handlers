@@ -346,6 +346,11 @@ class XiaomiCluster(CustomCluster):
             if self.endpoint.device.model == "lumi.motion.ac02":
                 attribute_names.update({105: DETECTION_INTERVAL})
                 attribute_names.update({106: MOTION_SENSITIVITY})
+        elif self.endpoint.device.model == "lumi.motion.agl04":
+            attribute_names.update({102: DETECTION_INTERVAL})
+            attribute_names.update({105: MOTION_SENSITIVITY})
+            attribute_names.update({258: DETECTION_INTERVAL})
+            attribute_names.update({268: MOTION_SENSITIVITY})
         elif self.endpoint.device.model == "lumi.motion.ac01":
             attribute_names.update({5: POWER_OUTAGE_COUNT})
             attribute_names.update({101: PRESENCE_DETECTED})
