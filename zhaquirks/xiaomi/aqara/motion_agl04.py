@@ -1,7 +1,6 @@
 """Quirk for LUMI lumi.motion.agl04."""
 from __future__ import annotations
 
-import logging
 from typing import Any
 
 from zigpy.profiles import zha
@@ -9,7 +8,7 @@ import zigpy.types as types
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PowerConfiguration
 from zigpy.zcl.clusters.measurement import OccupancySensing
 
-from zhaquirks import Bus, LocalDataCluster
+from zhaquirks import Bus
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -27,12 +26,8 @@ from zhaquirks.xiaomi import (
     XiaomiPowerConfiguration,
 )
 
-OCCUPANCY = 0
-ON = 1
-MOTION_ATTRIBUTE = 274
 DETECTION_INTERVAL = 0x0102
 MOTION_SENSITIVITY = 0x010C
-_LOGGER = logging.getLogger(__name__)
 
 
 class OppleCluster(XiaomiAqaraE1Cluster):
@@ -44,11 +39,6 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         MOTION_SENSITIVITY: ("motion_sensitivity", types.uint8_t, True),
     }
 
-    def _update_attribute(self, attrid: int, value: Any) -> None:
-        super()._update_attribute(attrid, value)
-        if attrid == MOTION_ATTRIBUTE:
-            self.endpoint.occupancy.update_attribute(OCCUPANCY, ON)
-
     async def write_attributes(
         self, attributes: dict[str | int, Any], manufacturer: int | None = None
     ) -> list:
@@ -57,14 +47,10 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         interval = attributes.get(
             "detection_interval", attributes.get(DETECTION_INTERVAL)
         )
-        _LOGGER.debug("interval: %s", interval)
+        self.endpoint.device.debug("occupancy reset interval: %s", interval)
         if interval is not None:
             self.endpoint.ias_zone.reset_s = int(interval)
         return result
-
-
-class LocalOccupancyCluster(LocalDataCluster, OccupancyCluster):
-    """Local occupancy cluster."""
 
 
 class LocalMotionCluster(MotionCluster):
@@ -80,7 +66,6 @@ class LumiLumiMotionAgl04(XiaomiCustomDevice):
         """Init."""
         self.battery_size = 11
         self.battery_quantity = 2
-        self.illuminance_bus = Bus()
         self.motion_bus = Bus()
         super().__init__(*args, **kwargs)
 
@@ -114,7 +99,7 @@ class LumiLumiMotionAgl04(XiaomiCustomDevice):
                     XiaomiPowerConfiguration,
                     Identify.cluster_id,
                     DeviceTemperatureCluster,
-                    LocalOccupancyCluster,
+                    OccupancyCluster,
                     LocalMotionCluster,
                     OppleCluster,
                 ],
