@@ -39,6 +39,7 @@ The switch state will change depending on the state.
 There are two options of reporting the pin state: periodic sampling (`IR`) and on state change (`IC`).
 To configure reporting on state change please set the appropriate bit mask on `IC`, and to send perodic reports every x milliseconds please set `IR` to a value greater than zero.
 The recommended approach is to combine both methods. Please note that Home Assistant will mark a zigbee device as unavailable if it doesn't send any communication for more than two hours.
+Instead of the `IR` command for periodic sampling you can also periodically send `IS` remote command from HA (see below on remote AT commands).
 
 If you want the pin to work as input, it must be configured as input with XCTU.
 

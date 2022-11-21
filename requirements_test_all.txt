@@ -13,4 +13,4 @@ pytest-sugar
 pytest-timeout
 pytest-asyncio
 pytest>=7.1.3
-zigpy
+zigpy>=0.51.6
