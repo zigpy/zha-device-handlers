@@ -194,6 +194,9 @@ class TuyaTempHumiditySensorVar03(CustomDevice):
             1: {
                 DEVICE_TYPE: zha.DeviceType.TEMPERATURE_SENSOR,
                 INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
                     TemperatureHumidityManufCluster,
                     TuyaTemperatureMeasurement,
                     TuyaRelativeHumidity,
