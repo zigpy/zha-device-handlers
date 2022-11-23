@@ -153,7 +153,6 @@ class ZLinkyTIC(CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.METER_INTERFACE,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
                     Identify.cluster_id,
                     Metering.cluster_id,
                     MeterIdentification.cluster_id,
