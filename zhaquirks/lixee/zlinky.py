@@ -206,8 +206,4 @@ class ZLinkyTICFWV12(ZLinkyTIC):
     signature[MODELS_INFO] = [(LIXEE, "ZLinky_TIC_FW_V12")]
 
     # Insert PowerConfiguration cluster in signature for devices with firmware v12.0+
-    signature[ENDPOINTS][1][INPUT_CLUSTERS] = (
-        signature[ENDPOINTS][1][INPUT_CLUSTERS][:1]
-        + [PowerConfiguration.cluster_id]
-        + signature[ENDPOINTS][1][INPUT_CLUSTERS][1:]
-    )
+    signature[ENDPOINTS][1][INPUT_CLUSTERS].insert(1, PowerConfiguration.cluster_id)
