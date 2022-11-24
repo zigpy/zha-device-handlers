@@ -1,4 +1,6 @@
 """Quirk for ZLinky_TIC."""
+from copy import deepcopy
+
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
@@ -193,3 +195,19 @@ class ZLinkyTIC(CustomDevice):
             },
         },
     }
+
+
+class ZLinkyTICFWV12(ZLinkyTIC):
+    """ZLinky_TIC from LiXee with firmware v12.0+."""
+
+    signature = deepcopy(ZLinkyTIC.signature)
+
+    # Update model info
+    signature[MODELS_INFO] = [(LIXEE, "ZLinky_TIC_FW_V12")]
+
+    # Insert PowerConfiguration cluster in signature for devices with firmware v12.0+
+    signature[ENDPOINTS][1][INPUT_CLUSTERS] = (
+        signature[ENDPOINTS][1][INPUT_CLUSTERS][:1]
+        + [PowerConfiguration.cluster_id]
+        + signature[ENDPOINTS][1][INPUT_CLUSTERS][1:]
+    )
