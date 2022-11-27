@@ -1,4 +1,4 @@
-# ZHA Device Handlers For Home Assistant
+# ZHA Device Handlers For Home Assistant 
 
 ![CI](https://github.com/zigpy/zha-device-handlers/workflows/CI/badge.svg?branch=dev)
 [![Coverage Status](https://coveralls.io/repos/github/zigpy/zha-device-handlers/badge.svg)](https://coveralls.io/github/zigpy/zha-device-handlers)
