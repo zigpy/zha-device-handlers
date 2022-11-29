@@ -57,6 +57,14 @@ FLIP_BEGIN = 50
 FLIP_DEGREES = "flip_degrees"
 FLIP_END = 180
 FLIPPED = "device_flipped"
+
+FLIP_1_VALUE = 1000  # aqara skyside
+FLIP_2_VALUE = 1001  # aqara facing me 90 right
+FLIP_3_VALUE = 1002  # aqara facing me upside down
+FLIP_4_VALUE = 1003  # aqara tableside
+FLIP_5_VALUE = 1004  # aqara facing me 90 left
+FLIP_6_VALUE = 1005  # aqara facing me upright
+
 KNOCK = "knock"
 
 KNOCK_1_VALUE = 512  # aqara skyside
@@ -114,6 +122,12 @@ MOVEMENT_TYPE = {
 MOVEMENT_TYPE_DESCRIPTION = {
     SHAKE_VALUE: SHAKE,
     DROP_VALUE: DROP,
+    FLIP_1_VALUE: "aqara logo on top",
+    FLIP_2_VALUE: "aqara logo facing user rotated 90 degrees right",
+    FLIP_3_VALUE: "aqara logo facing user upside down",
+    FLIP_4_VALUE: "aqara logo on bottom",
+    FLIP_5_VALUE: "aqara logo facing user rotated 90 degrees left",
+    FLIP_6_VALUE: "aqara logo facing user upright",
     SLIDE_1_VALUE: "aqara logo on top",
     SLIDE_2_VALUE: "aqara logo facing user rotated 90 degrees right",
     SLIDE_3_VALUE: "aqara logo facing user upside down",
@@ -142,6 +156,8 @@ SIDES = {
     KNOCK_5_VALUE: 5,
     KNOCK_6_VALUE: 6,
 }
+
+FACEMAP = [1, 5, 3, 4, 2, 6]
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -179,10 +195,14 @@ class MultistateInputCluster(CustomCluster, MultistateInput):
                 if action == FLIP:
                     if value > 108:
                         event_args[FLIP_DEGREES] = 180
+                        event_args[DEACTIVATED_FACE] = FACEMAP[((value % 8) + 3) % 6]
                     else:
                         event_args[FLIP_DEGREES] = 90
-                        event_args[DEACTIVATED_FACE] = (value // 8) % 8 + 1
-                    event_args[ACTIVATED_FACE] = int((value % 8) + 1)
+                        event_args[DEACTIVATED_FACE] = FACEMAP[(value // 8) % 8]
+                    event_args[ACTIVATED_FACE] = FACEMAP[value % 8]
+                    event_args[DESCRIPTION] = MOVEMENT_TYPE_DESCRIPTION[
+                        1000 + (value % 8)
+                    ]
 
                 self.listener_event(ZHA_SEND_EVENT, action, event_args)
 
