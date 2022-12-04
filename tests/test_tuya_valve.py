@@ -61,7 +61,7 @@ async def test_write_attr_psbzs(zigpy_device_from_quirk, quirk):
         m1.assert_called_with(
             61184,
             2,
-            b"\x01\x02\x00\x00\x01\x05\x02\x00\x04\x00\x00\x00\x0f",
+            b"\x01\x02\x00\x00\x01\x05\x02\x00\x04\x0f\x00\x00\x00",
             expect_reply=False,
             command_id=0,
         )
