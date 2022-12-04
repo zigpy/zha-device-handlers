@@ -25,7 +25,7 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.security import IasZone
 
-from zhaquirks import CustomCluster
+from zhaquirks import Bus, CustomCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -64,12 +64,34 @@ class XiaomiSmokeIASCluster(CustomCluster, IasZone):
     )
 
 
+class XiaomiSmokeAnalogInputCluster(CustomCluster, AnalogInput):
+    """Xiaomi AnalogInput cluster to receive reports that are sent to the basic cluster."""
+
+    _CONSTANT_ATTRIBUTES = {
+        AnalogInput.attributes_by_name["description"].id: "Smoke Density"
+    }
+
+    attributes = AnalogInput.attributes.copy()
+
+    ATTR_ID = AnalogInput.attributes_by_name["present_value"].id
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self.endpoint.device.smoke_density_bus.add_listener(self)
+
+    def smoke_density_reported(self, value):
+        """Smoke density reported."""
+        self._update_attribute(self.ATTR_ID, value)
+
+
 class MijiaHoneywellSmokeDetectorSensor(XiaomiQuickInitDevice):
     """MijiaHoneywellSmokeDetectorSensor custom device."""
 
     def __init__(self, *args, **kwargs):
         """Init method."""
         self.battery_size = 8  # CR123a
+        self.smoke_density_bus = Bus()
         super().__init__(*args, **kwargs)
 
     signature = {
@@ -104,7 +126,7 @@ class MijiaHoneywellSmokeDetectorSensor(XiaomiQuickInitDevice):
                     BasicCluster,
                     XiaomiPowerConfiguration,
                     Identify.cluster_id,
-                    AnalogInput.cluster_id,
+                    XiaomiSmokeAnalogInputCluster,
                     MultistateInput.cluster_id,
                     XiaomiSmokeIASCluster,
                     DeviceTemperatureCluster,

@@ -25,6 +25,7 @@ from zhaquirks.xiaomi import (
     CONSUMPTION_REPORTED,
     LUMI,
     POWER_REPORTED,
+    SMOKE_DENSITY_REPORTED,
     VOLTAGE_REPORTED,
     XIAOMI_NODE_DESC,
     BasicCluster,
@@ -52,6 +53,7 @@ import zhaquirks.xiaomi.aqara.motion_aq2
 import zhaquirks.xiaomi.aqara.motion_aq2b
 import zhaquirks.xiaomi.aqara.plug_eu
 import zhaquirks.xiaomi.mija.motion
+import zhaquirks.xiaomi.mija.smoke
 
 from tests.common import ZCL_OCC_ATTR_RPT_OCC, ClusterListener
 
@@ -414,6 +416,7 @@ async def test_xiaomi_batt_size(zigpy_device_from_quirk, quirk, batt_size):
         "01FF421D0121DB0B0328140421A84305219A00062401000000000A21C841641000",
         "01FF421D0121BD0B0328150421A83305213B00062401000000000A219FF8641000",
         "01FF421D0121C70B0328130421A81305219200062401000000000A21C96B641000",
+        "01FF42270121EF0B03281E0421A80105211000062401000000000A21000008210410642000962300000000",
     ),
 )
 def test_attribute_parsing(raw_report):
@@ -524,6 +527,26 @@ async def test_xiaomi_eu_plug_power(zigpy_device_from_quirk, quirk):
     assert len(se_listener.attribute_updates) == 1
     assert se_listener.attribute_updates[0][0] == 0
     assert se_listener.attribute_updates[0][1] == 1  # multiplied by 1000
+
+
+@pytest.mark.parametrize(
+    "quirk", (zhaquirks.xiaomi.mija.smoke.MijiaHoneywellSmokeDetectorSensor,)
+)
+async def test_xiaomi_mijia_smoke_density(zigpy_device_from_quirk, quirk):
+    """Test smoke density on Xiaomi Mijia Honeywell Smoke detector."""
+
+    device = zigpy_device_from_quirk(quirk)
+
+    ai_cluster = device.endpoints[1].analog_input
+    ai_listener = ClusterListener(ai_cluster)
+
+    # Test smoke density on AnalogInput cluster
+    ai_cluster.endpoint.device.smoke_density_bus.listener_event(
+        SMOKE_DENSITY_REPORTED, 42
+    )
+    assert len(ai_listener.attribute_updates) == 1
+    assert ai_listener.attribute_updates[0][0] == 85
+    assert ai_listener.attribute_updates[0][1] == 42
 
 
 @pytest.mark.parametrize(

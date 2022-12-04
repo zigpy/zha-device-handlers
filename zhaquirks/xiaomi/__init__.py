@@ -84,6 +84,8 @@ CONSUMPTION_REPORTED = "consumption_reported"
 VOLTAGE_REPORTED = "voltage_reported"
 ILLUMINANCE_MEASUREMENT = "illuminance_measurement"
 ILLUMINANCE_REPORTED = "illuminance_reported"
+SMOKE_DENSITY = "smoke_density"
+SMOKE_DENSITY_REPORTED = "smoke_density_reported"
 XIAOMI_AQARA_ATTRIBUTE = 0xFF01
 XIAOMI_AQARA_ATTRIBUTE_E1 = 0x00F7
 XIAOMI_ATTR_3 = "X-attrib-3"
@@ -299,6 +301,10 @@ class XiaomiCluster(CustomCluster):
                 "update_battery_percentage",
                 attributes[BATTERY_PERCENTAGE_REMAINING_ATTRIBUTE],
             )
+        if SMOKE_DENSITY in attributes:
+            self.endpoint.device.smoke_density_bus.listener_event(
+                SMOKE_DENSITY_REPORTED, attributes[SMOKE_DENSITY]
+            )
 
     def _parse_aqara_attributes(self, value):
         """Parse non standard attributes."""
@@ -362,6 +368,8 @@ class XiaomiCluster(CustomCluster):
             attribute_names.update({323: PRESENCE_EVENT})
             attribute_names.update({324: MONITORING_MODE})
             attribute_names.update({326: APPROACH_DISTANCE})
+        elif self.endpoint.device.model == "lumi.sensor_smoke":
+            attribute_names.update({100: SMOKE_DENSITY})
         result = {}
 
         # Some attribute reports end with a stray null byte
