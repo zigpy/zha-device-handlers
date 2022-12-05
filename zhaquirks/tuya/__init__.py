@@ -1327,7 +1327,7 @@ class DPToAttributeMapping:
     """Container for datapoint to cluster attribute update mapping."""
 
     ep_attribute: str
-    attribute_name: str | tuple
+    attribute_name: Union[str, tuple]
     converter: Optional[
         Callable[
             [
