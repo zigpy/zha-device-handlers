@@ -53,7 +53,7 @@ class DPToAttributeMapping:
     """Container for datapoint to cluster attribute update mapping."""
 
     ep_attribute: str
-    attribute_name: str
+    attribute_name: str | tuple
     dp_type: TuyaDPType
     converter: Optional[
         Callable[
@@ -93,6 +93,19 @@ class MoesBacklight(t.enum8):
     freeze = 0x03
 
 
+class TuyaReverseStruct(t.Struct):
+    """Type that serializes with reverse field order."""
+
+    deserialize = None
+
+    def serialize(self) -> bytes:
+        """Reverse the field order before serializtion."""
+        self.fields.reverse()
+        result = super().serialize()
+        self.fields.reverse()
+        return result
+
+
 class TuyaPowerConfigurationCluster(
     TuyaLocalCluster, DoublingPowerConfigurationCluster
 ):
@@ -114,6 +127,8 @@ class TuyaAttributesCluster(TuyaLocalCluster):
 
     async def write_attributes(self, attributes, manufacturer=None):
         """Defer attributes writing to the set_data tuya command."""
+
+        await super().write_attributes(attributes, manufacturer)
 
         records = self._write_attr_records(attributes)
 
@@ -206,7 +221,19 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
             datapoint_type = mapping.dp_type
             val = data.attr_value
             if mapping.dp_converter:
-                val = mapping.dp_converter(val)
+                args = []
+                if isinstance(mapping.attribute_name, tuple):
+                    endpoint = self.endpoint
+                    if mapping.endpoint_id:
+                        endpoint = endpoint.device.endpoints[mapping.endpoint_id]
+                    cluster = getattr(endpoint, mapping.ep_attribute)
+                    for attr in mapping.attribute_name:
+                        args.append(
+                            val if attr == data.cluster_attr else cluster.get(attr)
+                        )
+                else:
+                    args.append(val)
+                val = mapping.dp_converter(*args)
                 self.debug("converted: %s", val)
             if datapoint_type.ztype:
                 val = datapoint_type.ztype(val)
@@ -262,9 +289,13 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
         """Search for the DP in dp_to_attribute."""
 
         for dp, dp_mapping in self.dp_to_attribute.items():
-            if (attribute_name == dp_mapping.attribute_name) and (
-                endpoint_id in [dp_mapping.endpoint_id, self.endpoint.endpoint_id]
-            ):
+            if (
+                attribute_name == dp_mapping.attribute_name
+                or (
+                    isinstance(dp_mapping.attribute_name, tuple)
+                    and attribute_name in dp_mapping.attribute_name
+                )
+            ) and (endpoint_id in [dp_mapping.endpoint_id, self.endpoint.endpoint_id]):
                 self.debug("get_dp_mapping --> found DP: %s", dp)
                 return [dp, dp_mapping]
         return [None, None]
