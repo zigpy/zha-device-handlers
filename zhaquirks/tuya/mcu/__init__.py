@@ -303,7 +303,7 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
                 )
             ) and (
                 (
-                    dp_mapping.endpoint_id == None
+                    dp_mapping.endpoint_id is None
                     and endpoint_id == self.endpoint.endpoint_id
                 )
                 or (endpoint_id == dp_mapping.endpoint_id)
