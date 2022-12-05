@@ -1,8 +1,16 @@
 """Quirk for ZLinky_TIC."""
+from copy import deepcopy
+
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
-from zigpy.zcl.clusters.general import Basic, GreenPowerProxy, Identify, Ota
+from zigpy.zcl.clusters.general import (
+    Basic,
+    GreenPowerProxy,
+    Identify,
+    Ota,
+    PowerConfiguration,
+)
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement, MeterIdentification
 from zigpy.zcl.clusters.manufacturer_specific import ManufacturerSpecificCluster
 from zigpy.zcl.clusters.smartenergy import Metering
@@ -170,6 +178,7 @@ class ZLinkyTIC(CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.METER_INTERFACE,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
+                    PowerConfiguration.cluster_id,
                     Identify.cluster_id,
                     ZLinkyTICMetering,
                     MeterIdentification.cluster_id,
@@ -186,3 +195,12 @@ class ZLinkyTIC(CustomDevice):
             },
         },
     }
+
+
+class ZLinkyTICFWV12(ZLinkyTIC):
+    """ZLinky_TIC from LiXee with firmware v12.0+."""
+
+    signature = deepcopy(ZLinkyTIC.signature)
+
+    # Insert PowerConfiguration cluster in signature for devices with firmware v12.0+
+    signature[ENDPOINTS][1][INPUT_CLUSTERS].insert(1, PowerConfiguration.cluster_id)

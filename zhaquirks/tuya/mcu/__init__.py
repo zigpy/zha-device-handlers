@@ -253,7 +253,7 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
             tuya_data = TuyaData()
             tuya_data.dp_type = datapoint_type
             tuya_data.function = 0
-            tuya_data.raw = t.LVBytes.deserialize(val)[0]
+            tuya_data.raw = bytes(reversed(val[1:]))
             self.debug("raw: %s", tuya_data.raw)
             dpd = TuyaDatapointData(dp, tuya_data)
             cmd_payload.datapoints = [dpd]
@@ -322,6 +322,7 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
     def handle_set_time_request(self, payload: t.uint16_t) -> foundation.Status:
         """Handle set_time requests (0x24)."""
 
+        self.debug("handle_set_time_request payload: %s", payload)
         payload_rsp = TuyaTimePayload()
 
         utc_now = datetime.datetime.utcnow()
@@ -338,6 +339,7 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
         payload_rsp.extend(utc_timestamp.to_bytes(4, "big", signed=False))
         payload_rsp.extend(local_timestamp.to_bytes(4, "big", signed=False))
 
+        self.debug("handle_set_time_request response: %s", payload_rsp)
         self.create_catching_task(
             super().command(TUYA_SET_TIME, payload_rsp, expect_reply=False)
         )

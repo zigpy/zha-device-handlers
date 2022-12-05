@@ -48,7 +48,7 @@ async def test_command(zigpy_device_from_quirk, quirk):
         m1.assert_called_with(
             61184,
             4,
-            b"\x01\x04\x00\x00\x03\x02\x02\x00\x04\x00\x00\x03r",
+            b"\x01\x04\x00\x00\x03\x02\x02\x00\x04r\x03\x00\x00",
             expect_reply=True,
             command_id=0,
         )
@@ -78,7 +78,7 @@ async def test_write_attr(zigpy_device_from_quirk, quirk):
         m1.assert_called_with(
             61184,
             2,
-            b"\x01\x02\x00\x00\x01\x03\x02\x00\x04\x00\x00\x00b",
+            b"\x01\x02\x00\x00\x01\x03\x02\x00\x04b\x00\x00\x00",
             expect_reply=False,
             command_id=0,
         )
