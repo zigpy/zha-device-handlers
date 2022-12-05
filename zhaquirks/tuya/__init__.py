@@ -179,7 +179,12 @@ class TuyaData(t.Struct):
         res.dp_type, data = TuyaDPType.deserialize(data)
         res.function, data = t.uint8_t.deserialize(data)
         res.raw, data = t.LVBytes.deserialize(data)
-        if res.dp_type not in (TuyaDPType.BITMAP, TuyaDPType.STRING, TuyaDPType.ENUM):
+        if res.dp_type not in (
+            TuyaDPType.BITMAP,
+            TuyaDPType.STRING,
+            TuyaDPType.ENUM,
+            TuyaDPType.RAW,
+        ):
             res.raw = res.raw[::-1]
         return res, data
 
@@ -201,7 +206,7 @@ class TuyaData(t.Struct):
             except KeyError as exc:
                 raise ValueError(f"Wrong bitmap length: {len(self.raw)}") from exc
         elif self.dp_type == TuyaDPType.RAW:
-            return self.raw[::-1]
+            return self.raw
 
         raise ValueError(f"Unknown {self.dp_type} datapoint type")
 

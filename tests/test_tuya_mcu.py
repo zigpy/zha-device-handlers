@@ -15,7 +15,6 @@ from zhaquirks.tuya.mcu import (
     TuyaClusterData,
     TuyaDPType,
     TuyaMCUCluster,
-    TuyaReverseStruct,
 )
 
 from tests.common import ClusterListener, MockDatetime
@@ -253,10 +252,3 @@ async def test_tuya_mcu_classes():
         TuyaClusterData(manufacturer="xiaomi")
     with pytest.raises(ValueError):
         TuyaClusterData(manufacturer=b"")
-
-    # Test TuyaReverseStruct class
-    class Test(TuyaReverseStruct):
-        first: t.uint8_t
-        second: t.uint16_t
-
-    assert Test(1, 0x0203).serialize() == b"\x01\x02\x03"

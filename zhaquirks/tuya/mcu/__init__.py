@@ -93,19 +93,6 @@ class MoesBacklight(t.enum8):
     freeze = 0x03
 
 
-class TuyaReverseStruct(t.Struct):
-    """Type that serializes with reverse field order."""
-
-    deserialize = None
-
-    def serialize(self) -> bytes:
-        """Reverse the field order before serializtion."""
-        self.fields.reverse()
-        result = super().serialize()
-        self.fields.reverse()
-        return result[::-1]
-
-
 class TuyaPowerConfigurationCluster(
     TuyaLocalCluster, DoublingPowerConfigurationCluster
 ):
