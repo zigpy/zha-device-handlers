@@ -259,4 +259,4 @@ async def test_tuya_mcu_classes():
         first: t.uint8_t
         second: t.uint16_t
 
-    assert Test(1, 0x0203).serialize() == b"\x03\x02\x01"
+    assert Test(1, 0x0203).serialize() == b"\x01\x02\x03"

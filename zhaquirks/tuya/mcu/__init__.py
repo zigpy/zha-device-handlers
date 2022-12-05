@@ -103,7 +103,7 @@ class TuyaReverseStruct(t.Struct):
         self.fields.reverse()
         result = super().serialize()
         self.fields.reverse()
-        return result
+        return result[::-1]
 
 
 class TuyaPowerConfigurationCluster(
