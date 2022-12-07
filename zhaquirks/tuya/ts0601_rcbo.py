@@ -167,9 +167,9 @@ class TuyaRCBOOnOff(TuyaOnOff, TuyaAttributesCluster):
     attributes = TuyaOnOff.attributes.copy()
     attributes.update(
         {
-            0xF090: ("countdown_timer", t.uint32_t),
+            0x8000: ("child_lock", t.Bool),
             0x8002: ("power_on_state", PowerOnState),
-            0xF1D0: ("child_lock", t.Bool),
+            0xF090: ("countdown_timer", t.uint32_t),
             0xF740: ("trip", Locking),
         }
     )
@@ -340,12 +340,12 @@ class TuyaRCBOManufCluster(TuyaMCUCluster):
 
     dp_to_attribute: Dict[int, DPToAttributeMapping] = {
         TUYA_DP_STATE: DPToAttributeMapping(
-            TuyaOnOff.ep_attribute,
+            TuyaRCBOOnOff.ep_attribute,
             "on_off",
             TuyaDPType.BOOL,
         ),
         TUYA_DP_COUNTDOWN_TIMER: DPToAttributeMapping(
-            TuyaOnOff.ep_attribute,
+            TuyaRCBOOnOff.ep_attribute,
             "countdown_timer",
             TuyaDPType.VALUE,
         ),
