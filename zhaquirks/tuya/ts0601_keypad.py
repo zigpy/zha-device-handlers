@@ -139,6 +139,8 @@ class WirelessZigbeeKeypadManufCluster(TuyaMCUCluster):
             self.endpoint.device.ias_bus.listener_event(
                 "arm_event", IasAce.ArmMode.Arm_Day_Home_Only, user_code, zone_id
             )
+        elif datapoint.dp == self.ANTI_REMOVE_ALARM_DP_ID:
+            self.endpoint.device.ias_bus.listener_event("emergency_event")
         elif datapoint.dp == self.SOS_DP_ID:
             self.endpoint.device.ias_bus.listener_event("panic_event")
 
@@ -174,6 +176,15 @@ class AlarmControlPanelCluster(TuyaLocalCluster, IasAce):
             self.endpoint.endpoint_id,
             self.commands_by_name["arm"].id,
             [arm_mode, arm_disarm_code, zone_id],
+        )
+
+    def emergency_event(self):
+        """Handle emergency event."""
+        self.listener_event(
+            CLUSTER_COMMAND,
+            self.endpoint.endpoint_id,
+            self.commands_by_name["emergency"].id,
+            [],
         )
 
     def panic_event(self):
