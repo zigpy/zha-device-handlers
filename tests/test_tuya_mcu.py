@@ -131,11 +131,12 @@ async def test_tuya_methods(zigpy_device_from_quirk, quirk):
 
     result_1 = tuya_cluster.from_cluster_data(tcd_1)
     assert result_1
-    assert result_1.datapoints
-    assert len(result_1.datapoints) == 1
-    assert result_1.datapoints[0].dp == 9
-    assert result_1.datapoints[0].data.dp_type == TuyaDPType.VALUE
-    assert result_1.datapoints[0].data.raw == b"\x00\x00\x00b"
+    assert len(result_1) == 1
+    assert result_1[0].datapoints
+    assert len(result_1[0].datapoints) == 1
+    assert result_1[0].datapoints[0].dp == 9
+    assert result_1[0].datapoints[0].data.dp_type == TuyaDPType.VALUE
+    assert result_1[0].datapoints[0].data.raw == b"b\x00\x00\x00"
 
     tcd_2 = TuyaClusterData(
         endpoint_id=7, cluster_attr="not_exists_attribute", attr_value=25

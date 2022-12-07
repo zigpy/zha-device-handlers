@@ -1,3 +1,34 @@
+This document describes how to use Digi XBee device as a router or end device.
+
+## Using with non-XBee coordinator
+
+You may need to configure zigpy to listen to the appropriate additional endpoints which it ignores by default. This is an example config for HA ZHA:
+
+```
+zha:
+  zigpy_config:
+    additional_endpoints:
+      - endpoint: 0xE6
+        profile: 0xC105
+        device_type: 0x0000
+        device_version: 0b0000
+        input_clusters: [0xA1]
+        output_clusters: [0x21]
+      - endpoint: 0xE8
+        profile: 0xC105
+        device_type: 0x0000
+        device_version: 0b0000
+        input_clusters: [0x11, 0x92]
+        output_clusters: [0x11]
+```
+If you are using `zigpy_znp`, you might also need need to add
+```
+    znp_config:
+      prefer_endpoint_1: false
+```
+to the `zigpy_config:` section.
+Please note that not all coordinators have been tested yet.
+
 ## Digital GPIO
 
 Digital input/output pins are exposed as switches.
@@ -8,6 +39,7 @@ The switch state will change depending on the state.
 There are two options of reporting the pin state: periodic sampling (`IR`) and on state change (`IC`).
 To configure reporting on state change please set the appropriate bit mask on `IC`, and to send perodic reports every x milliseconds please set `IR` to a value greater than zero.
 The recommended approach is to combine both methods. Please note that Home Assistant will mark a zigbee device as unavailable if it doesn't send any communication for more than two hours.
+Instead of the `IR` command for periodic sampling you can also periodically send `IS` remote command from HA (see below on remote AT commands).
 
 If you want the pin to work as input, it must be configured as input with XCTU.
 
@@ -58,7 +90,8 @@ automation:
         cluster_type: in
         command: 0
         command_type: server
-        args: Assistant
+        params:
+          data: Assistant
 ```
 
 ## Remote AT Commands
@@ -98,4 +131,5 @@ automation:
         command_type: server
         cluster_type: out
         cluster_id: 33
+        params: {}
 ```

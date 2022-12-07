@@ -79,6 +79,7 @@ class TuyaSmokeDetector0601(CustomDevice):
             ("_TZE200_aycxwiau", "TS0601"),
             ("_TZE200_ntcy3xu1", "TS0601"),
             ("_TZE200_vzekyi4c", "TS0601"),
+            ("_TZE200_dq1mfjug", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
