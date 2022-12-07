@@ -97,7 +97,11 @@ class Button(CustomDevice):
                     CustomPowerConfigurationCluster,
                     MultistateInputCluster,
                 ],
-                OUTPUT_CLUSTERS: [Basic.cluster_id, OnOff.cluster_id],
+                OUTPUT_CLUSTERS: [
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                    Ota.cluster_id,
+                ],
             }
         },
     }
