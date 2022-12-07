@@ -24,7 +24,12 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import TUYA_MCU_COMMAND, AttributeWithMask, BigEndianInt16
+from zhaquirks.tuya import (
+    TUYA_MCU_COMMAND,
+    AttributeWithMask,
+    BigEndianInt16,
+    PowerOnState,
+)
 from zhaquirks.tuya.mcu import (
     DPToAttributeMapping,
     TuyaAttributesCluster,
@@ -61,14 +66,6 @@ TUYA_DP_LOCKING = 116  # test button pressed
 TUYA_DP_TOTAL_REVERSE_ACTIVE_POWER = 117
 TUYA_DP_HISTORICAL_VOLTAGE = 118
 TUYA_DP_HISTORICAL_CURRENT = 119
-
-
-class RelayStatus(t.enum8):
-    """Relay Status enum."""
-
-    OFF = 0x00
-    ON = 0x01
-    PREVIOUS = 0x02
 
 
 class FaultCode(t.enum8):
@@ -171,7 +168,7 @@ class TuyaRCBOOnOff(TuyaOnOff, TuyaAttributesCluster):
     attributes.update(
         {
             0xF090: ("countdown_timer", t.uint32_t),
-            0xF1B0: ("poweron_behavior", RelayStatus),
+            0x8002: ("power_on_state", PowerOnState),
             0xF1D0: ("child_lock", t.Bool),
             0xF740: ("trip", Locking),
         }
@@ -360,9 +357,9 @@ class TuyaRCBOManufCluster(TuyaMCUCluster):
         ),
         TUYA_DP_RELAY_STATUS: DPToAttributeMapping(
             TuyaRCBOOnOff.ep_attribute,
-            "poweron_behavior",
+            "power_on_state",
             TuyaDPType.ENUM,
-            lambda x: RelayStatus(x),
+            lambda x: PowerOnState(x),
         ),
         TUYA_DP_CHILD_LOCK: DPToAttributeMapping(
             TuyaRCBOOnOff.ep_attribute,

@@ -88,7 +88,7 @@ async def test_command_rcbo(zigpy_device_from_quirk):
         (  # TuyaDatapointData(dp=27, data=TuyaData(dp_type=<TuyaDPType.ENUM: 4>, function=0, raw=b'\x02', *payload=<enum8.undefined_0x02: 2>))
             b"\x09\x03\x01\x02\x03\x1b\x04\x00\x01\x02",
             "on_off",
-            {0xF1B0: 2},
+            {0x8002: 2},
         ),
         (  # TuyaDatapointData(dp=29, data=TuyaData(dp_type=<TuyaDPType.BOOL: 1>, function=0, raw=b'\x00', *payload=<Bool.false: 0>))
             b"\x09\x04\x01\x02\x03\x1d\x01\x00\x01\x00",
@@ -221,7 +221,7 @@ async def test_report_values_rcbo(zigpy_device_from_quirk, frame, cluster, attri
             [],
             b"\x01\x02\x00\x00\x01\x1b\x04\x00\x01\x01",
             "on_off",
-            {"poweron_behavior": 1},
+            {"power_on_state": 1},
         ),
         ([], b"\x01\x02\x00\x00\x01t\x01\x00\x01\x00", "on_off", {"trip": 0}),
         (
