@@ -150,7 +150,19 @@ class ElkoSuperTRThermostat(ElkoThermostat):
                     Identify.cluster_id,
                     Ota.cluster_id,
                 ],
-            }
+            },
+            # Extra signature for Elko Super TR on firmware 1.2.0R
+            2: {
+                PROFILE_ID: zha_p.PROFILE_ID,
+                DEVICE_TYPE: zha_p.DeviceType.THERMOSTAT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Thermostat.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [
+                ],
+                
         },
     }
 
