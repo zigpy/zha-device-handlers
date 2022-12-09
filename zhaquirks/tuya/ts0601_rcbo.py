@@ -174,7 +174,7 @@ class TuyaRCBOOnOff(TuyaOnOff, TuyaAttributesCluster):
         }
     )
 
-    server_commands = Metering.server_commands.copy()
+    server_commands = TuyaOnOff.server_commands.copy()
     server_commands.update(
         {
             0x74: foundation.ZCLCommandDef("clear_locking", {}, False),
