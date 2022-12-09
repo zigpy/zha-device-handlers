@@ -1,5 +1,5 @@
 """Tuya Din RCBO Circuit Breaker."""
-from typing import Dict, Optional, Union
+from typing import Any, Dict, Optional, Union
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
@@ -256,6 +256,25 @@ class TuyaRCBOElectricalMeasurement(ElectricalMeasurement, TuyaAttributesCluster
             0xF770: ("rms_historical_current", t.uint16_t),
         }
     )
+
+    def update_attribute(self, attr_name: str, value: Any) -> None:
+        """Calculate active current and power factor."""
+
+        super().update_attribute(attr_name, value)
+
+        if attr_name == "rms_current":
+            rms_voltage = self.get("rms_voltage")
+            if rms_voltage:
+                apparent_power = value * rms_voltage / 1000
+                super().update_attribute("apparent_power", int(apparent_power))
+
+        if attr_name == "active_power":
+            apparent_power = self.get("apparent_power")
+            if apparent_power:
+                power_factor = value / apparent_power * 1000
+                if power_factor > 1000:
+                    power_factor = 1000
+                super().update_attribute("power_factor", int(power_factor))
 
 
 class TuyaRCBODeviceTemperature(DeviceTemperature, TuyaAttributesCluster):

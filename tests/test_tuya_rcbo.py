@@ -315,3 +315,42 @@ async def test_write_attr_rcbo(
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
         ]
+
+
+async def test_power_factor(zigpy_device_from_quirk):
+    """Test calculating apparent_power and power_factor attributes."""
+
+    rcbo_dev = zigpy_device_from_quirk(zhaquirks.tuya.ts0601_rcbo.TuyaCircuitBreaker)
+    tuya_cluster = rcbo_dev.endpoints[1].tuya_manufacturer
+    electrical_measurement_cluster = rcbo_dev.endpoints[1].electrical_measurement
+    tuya_listener = ClusterListener(electrical_measurement_cluster)
+
+    assert len(tuya_listener.cluster_commands) == 0
+    assert len(tuya_listener.attribute_updates) == 0
+
+    hdr, args = tuya_cluster.deserialize(
+        b"\x09\x05\x01\x02\x03e\x00\x00\x06\x08\xad\x00\x00\x00\x00"
+    )
+    tuya_cluster.handle_message(hdr, args)  # rms_voltage
+    assert tuya_listener.attribute_updates == [(0x0505, 2221)]
+
+    tuya_listener.attribute_updates = []
+    hdr, args = tuya_cluster.deserialize(
+        b"\x09\x06\x01\x02\x03f\x00\x00\x09\x00\x02\xdf\x00\x00\x00\x00\x00\x00"
+    )
+    tuya_cluster.handle_message(hdr, args)  # rms_current
+    assert tuya_listener.attribute_updates == [(0x0508, 735), (0x050F, 1632)]
+
+    tuya_listener.attribute_updates = []
+    hdr, args = tuya_cluster.deserialize(
+        b"\x09\x07\x01\x02\x03g\x00\x00\x0c\x00\x09\xbf\x00\x09\xbf\x00\x00\x00\x00\x00\x00"
+    )
+    tuya_cluster.handle_message(hdr, args)  # active_power
+    assert tuya_listener.attribute_updates == [(0x050B, 2495), (0x0510, 1000)]
+
+    tuya_listener.attribute_updates = []
+    hdr, args = tuya_cluster.deserialize(
+        b"\x09\x08\x01\x02\x03g\x00\x00\x0c\x00\x06\x4b\x00\x06\x4b\x00\x00\x00\x00\x00\x00"
+    )
+    tuya_cluster.handle_message(hdr, args)  # active_power
+    assert tuya_listener.attribute_updates == [(0x050B, 1611), (0x0510, 987)]
