@@ -96,7 +96,7 @@ class Plug(EnchantedDevice):
 
 
 class CircuitBreaker(EnchantedDevice):
-    """Tuya smart circuit breaker with metering (_TZ3000_qeuvnohg). https://www.aliexpress.com/item/1005004747066832.html """
+    """Tuya smart circuit breaker with metering (_TZ3000_qeuvnohg) https://www.aliexpress.com/item/1005004747066832.html."""
 
     signature = {
         MODEL: "TS011F",
