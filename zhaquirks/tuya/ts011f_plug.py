@@ -114,7 +114,7 @@ class CircuitBreaker(EnchantedDevice):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     OnOff.cluster_id,
-                    0x0402,
+                    0x0402,  # unknown meaning, it is not temperature
                     Metering.cluster_id,
                     ElectricalMeasurement.cluster_id,
                     TuyaZBE000Cluster.cluster_id,
@@ -145,7 +145,6 @@ class CircuitBreaker(EnchantedDevice):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     TuyaZBOnOffAttributeCluster,
-                    0x0402,
                     TuyaZBMeteringCluster,
                     TuyaZBElectricalMeasurement,
                     TuyaZBE000Cluster,
