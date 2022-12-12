@@ -39,9 +39,9 @@ from zhaquirks.tuya.mcu import (
     TuyaOnOff,
 )
 from zhaquirks.xbee.types import (
-    Bytes,
     uint_t as uint_t_be,  # Temporary workaround until zigpy/zigpy#1124 is merged
 )
+from zhaquirks.xbee.types import Bytes
 
 TUYA_DP_STATE = 1
 TUYA_DP_COUNTDOWN_TIMER = 9
