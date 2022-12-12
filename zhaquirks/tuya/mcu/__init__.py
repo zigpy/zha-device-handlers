@@ -240,7 +240,7 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
             tuya_data = TuyaData()
             tuya_data.dp_type = datapoint_type
             tuya_data.function = 0
-            tuya_data.raw = bytes(reversed(val[1:]))
+            tuya_data.raw = t.LVBytes.deserialize(val)[0]
             self.debug("raw: %s", tuya_data.raw)
             dpd = TuyaDatapointData(dp, tuya_data)
             cmd_payload.datapoints = [dpd]
