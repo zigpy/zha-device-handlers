@@ -38,7 +38,9 @@ from zhaquirks.tuya.mcu import (
     TuyaMCUCluster,
     TuyaOnOff,
 )
-from zhaquirks.xbee.types import Bytes
+from zhaquirks.xbee.types import (
+    uint_t as uint_t_be,  # Temporary workaround until zigpy/zigpy#1124 is merged
+)
 
 TUYA_DP_STATE = 1
 TUYA_DP_COUNTDOWN_TIMER = 9
@@ -96,47 +98,55 @@ class Locking(t.enum8):
 class CostParameters(t.Struct):
     """Tuya cost parameters."""
 
+    cost_parameters: BigEndianInt16
     cost_parameters_enabled: t.Bool
-    cost_parameters: t.uint16_t
 
 
 class LeakageParameters(t.Struct):
     """Tuya leakage parameters."""
 
-    self_test: SelfTest
-    over_leakage_current_alarm: t.Bool
-    over_leakage_current_trip: t.Bool
-    over_leakage_current_threshold: t.uint16_t
-    self_test_auto: t.Bool
-    self_test_auto_hours: t.uint8_t
     self_test_auto_days: t.uint8_t
+    self_test_auto_hours: t.uint8_t
+    self_test_auto: t.Bool
+    over_leakage_current_threshold: BigEndianInt16
+    over_leakage_current_trip: t.Bool
+    over_leakage_current_alarm: t.Bool
+    self_test: SelfTest
 
 
 class VoltageParameters(t.Struct):
     """Tuya voltage parameters."""
 
-    under_voltage_alarm: t.Bool
-    under_voltage_trip: t.Bool
-    under_voltage_threshold: t.uint16_t
-    over_voltage_alarm: t.Bool
+    over_voltage_threshold: BigEndianInt16
     over_voltage_trip: t.Bool
-    over_voltage_threshold: t.uint16_t
+    over_voltage_alarm: t.Bool
+    under_voltage_threshold: BigEndianInt16
+    under_voltage_trip: t.Bool
+    under_voltage_alarm: t.Bool
+
+
+class uint24_t_be(
+    uint_t_be
+):  # TODO: Replace with zigpy big endian type once zigpy/zigpy#1124 is merged
+    """Unsigned int 24 bit big-endian type."""
+
+    _size = 3
 
 
 class CurrentParameters(t.Struct):
     """Tuya current parameters."""
 
-    over_current_alarm: t.Bool
+    over_current_threshold: uint24_t_be
     over_current_trip: t.Bool
-    over_current_threshold: t.uint24_t
+    over_current_alarm: t.Bool
 
 
 class TemperatureSetting(t.Struct):
     """Tuya temperature parameters."""
 
-    over_temperature_alarm: t.Bool
-    over_temperature_trip: t.Bool
     over_temperature_threshold: t.int8s
+    over_temperature_trip: t.Bool
+    over_temperature_alarm: t.Bool
 
 
 class TuyaRCBOBasic(CustomCluster, Basic):
@@ -412,73 +422,71 @@ class TuyaRCBOManufCluster(TuyaMCUCluster):
         ),
         TUYA_DP_COST_PARAMETERS: DPToAttributeMapping(
             TuyaRCBOMetering.ep_attribute,
-            ("cost_parameters_enabled", "cost_parameters"),
+            ("cost_parameters", "cost_parameters_enabled"),
             TuyaDPType.RAW,
-            lambda x: (x[2], x[1] | x[0] << 8),
+            lambda x: (x[1] | x[0] << 8, x[2]),
             lambda *fields: CostParameters(*fields),
         ),
         TUYA_DP_LEAKAGE_PARAMETERS: DPToAttributeMapping(
             TuyaRCBOElectricalMeasurement.ep_attribute,
             (
-                "self_test",
-                "over_leakage_current_alarm",
-                "over_leakage_current_trip",
-                "over_leakage_current_threshold",
-                "self_test_auto",
-                "self_test_auto_hours",
                 "self_test_auto_days",
+                "self_test_auto_hours",
+                "self_test_auto",
+                "over_leakage_current_threshold",
+                "over_leakage_current_trip",
+                "over_leakage_current_alarm",
+                "self_test",
             ),
             TuyaDPType.RAW,
-            lambda x: (SelfTest(x[7]), x[6], x[5], x[4] | x[3] << 8, x[2], x[1], x[0]),
+            lambda x: (x[0], x[1], x[2], x[4] | x[3] << 8, x[5], x[6], SelfTest(x[7])),
             lambda *fields: LeakageParameters(*fields),
         ),
         TUYA_DP_VOLTAGE_THRESHOLD: DPToAttributeMapping(
             TuyaRCBOElectricalMeasurement.ep_attribute,
             (
-                "under_voltage_trip",
-                "rms_extreme_under_voltage",
-                "ac_alarms_mask",
-                "over_voltage_trip",
                 "rms_extreme_over_voltage",
+                "over_voltage_trip",
+                "ac_alarms_mask",
+                "rms_extreme_under_voltage",
+                "under_voltage_trip",
             ),
             TuyaDPType.RAW,
             lambda x: (
-                x[6],
-                x[5] | x[4] << 8,
-                AttributeWithMask(x[3] << 6 | x[7] << 7, 1 << 6 | 1 << 7),
-                x[2],
                 x[1] | x[0] << 8,
+                x[2],
+                AttributeWithMask(x[3] << 6 | x[7] << 7, 1 << 6 | 1 << 7),
+                x[5] | x[4] << 8,
+                x[6],
             ),
-            lambda under_voltage_trip, rms_extreme_under_voltage, ac_alarms_mask, over_voltage_trip, rms_extreme_over_voltage: VoltageParameters(
-                bool(ac_alarms_mask & 0x80),
-                under_voltage_trip,
-                rms_extreme_under_voltage,
-                bool(ac_alarms_mask & 0x40),
-                over_voltage_trip,
+            lambda rms_extreme_over_voltage, over_voltage_trip, ac_alarms_mask, rms_extreme_under_voltage, under_voltage_trip: VoltageParameters(
                 rms_extreme_over_voltage,
+                over_voltage_trip,
+                bool(ac_alarms_mask & 0x40),
+                rms_extreme_under_voltage,
+                under_voltage_trip,
+                bool(ac_alarms_mask & 0x80),
             ),
         ),
         TUYA_DP_CURRENT_THRESHOLD: DPToAttributeMapping(
             TuyaRCBOElectricalMeasurement.ep_attribute,
-            ("ac_alarms_mask", "over_current_trip", "ac_current_overload"),
+            ("ac_current_overload", "over_current_trip", "ac_alarms_mask"),
             TuyaDPType.RAW,
             lambda x: (
-                AttributeWithMask(x[4] << 1, 1 << 1),
-                x[3],
                 (x[2] | x[1] << 8 | x[0] << 16),
+                x[3],
+                AttributeWithMask(x[4] << 1, 1 << 1),
             ),
-            lambda ac_alarms_mask, over_current_trip, ac_current_overload: CurrentParameters(
-                t.Bool(bool(ac_alarms_mask & 0x02)),
-                over_current_trip,
-                ac_current_overload,
+            lambda ac_current_overload, over_current_trip, ac_alarms_mask: CurrentParameters(
+                ac_current_overload, over_current_trip, bool(ac_alarms_mask & 0x02)
             ),
         ),
         TUYA_DP_TEMPERATURE_THRESHOLD: DPToAttributeMapping(
             TuyaRCBODeviceTemperature.ep_attribute,
-            ("dev_temp_alarm_mask", "over_temp_trip", "high_temp_thres"),
+            ("high_temp_thres", "over_temp_trip", "dev_temp_alarm_mask"),
             TuyaDPType.RAW,
-            lambda x: (x[2] << 1, x[1], x[0] if x[0] <= 127 else x[0] - 256),
-            lambda x, y, z: TemperatureSetting(bool(x & 0x02), y, z),
+            lambda x: (x[0] if x[0] <= 127 else x[0] - 256, x[1], x[2] << 1),
+            lambda x, y, z: TemperatureSetting(x, y, bool(z & 0x02)),
         ),
         TUYA_DP_TOTAL_ACTIVE_POWER: DPToAttributeMapping(
             TuyaRCBOMetering.ep_attribute,
