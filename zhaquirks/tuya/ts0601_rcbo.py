@@ -39,6 +39,7 @@ from zhaquirks.tuya.mcu import (
     TuyaOnOff,
 )
 from zhaquirks.xbee.types import (
+    Bytes,
     uint_t as uint_t_be,  # Temporary workaround until zigpy/zigpy#1124 is merged
 )
 
@@ -367,6 +368,7 @@ class TuyaRCBOManufCluster(TuyaMCUCluster):
             TuyaRCBOOnOff.ep_attribute,
             "countdown_timer",
             TuyaDPType.VALUE,
+            dp_converter=lambda x: t.uint32_t.deserialize(x.serialize()[::-1])[0],
         ),
         TUYA_DP_FAULT_CODE: DPToAttributeMapping(
             TuyaRCBOElectricalMeasurement.ep_attribute,
@@ -424,7 +426,9 @@ class TuyaRCBOManufCluster(TuyaMCUCluster):
             ("cost_parameters", "cost_parameters_enabled"),
             TuyaDPType.RAW,
             lambda x: (x[1] | x[0] << 8, x[2]),
-            lambda *fields: CostParameters(*fields),
+            lambda *fields: Bytes.deserialize(
+                CostParameters(*fields).serialize()[::-1]
+            )[0],
         ),
         TUYA_DP_LEAKAGE_PARAMETERS: DPToAttributeMapping(
             TuyaRCBOElectricalMeasurement.ep_attribute,
@@ -439,7 +443,9 @@ class TuyaRCBOManufCluster(TuyaMCUCluster):
             ),
             TuyaDPType.RAW,
             lambda x: (x[0], x[1], x[2], x[4] | x[3] << 8, x[5], x[6], SelfTest(x[7])),
-            lambda *fields: LeakageParameters(*fields),
+            lambda *fields: Bytes.deserialize(
+                LeakageParameters(*fields).serialize()[::-1]
+            )[0],
         ),
         TUYA_DP_VOLTAGE_THRESHOLD: DPToAttributeMapping(
             TuyaRCBOElectricalMeasurement.ep_attribute,
@@ -458,14 +464,18 @@ class TuyaRCBOManufCluster(TuyaMCUCluster):
                 x[5] | x[4] << 8,
                 x[6],
             ),
-            lambda rms_extreme_over_voltage, over_voltage_trip, ac_alarms_mask, rms_extreme_under_voltage, under_voltage_trip: VoltageParameters(
-                rms_extreme_over_voltage,
-                over_voltage_trip,
-                bool(ac_alarms_mask & 0x40),
-                rms_extreme_under_voltage,
-                under_voltage_trip,
-                bool(ac_alarms_mask & 0x80),
-            ),
+            lambda rms_extreme_over_voltage, over_voltage_trip, ac_alarms_mask, rms_extreme_under_voltage, under_voltage_trip: Bytes.deserialize(
+                VoltageParameters(
+                    rms_extreme_over_voltage,
+                    over_voltage_trip,
+                    bool(ac_alarms_mask & 0x40),
+                    rms_extreme_under_voltage,
+                    under_voltage_trip,
+                    bool(ac_alarms_mask & 0x80),
+                ).serialize()[::-1]
+            )[
+                0
+            ],
         ),
         TUYA_DP_CURRENT_THRESHOLD: DPToAttributeMapping(
             TuyaRCBOElectricalMeasurement.ep_attribute,
@@ -476,16 +486,24 @@ class TuyaRCBOManufCluster(TuyaMCUCluster):
                 x[3],
                 AttributeWithMask(x[4] << 1, 1 << 1),
             ),
-            lambda ac_current_overload, over_current_trip, ac_alarms_mask: CurrentParameters(
-                ac_current_overload, over_current_trip, bool(ac_alarms_mask & 0x02)
-            ),
+            lambda ac_current_overload, over_current_trip, ac_alarms_mask: Bytes.deserialize(
+                CurrentParameters(
+                    ac_current_overload,
+                    over_current_trip,
+                    t.Bool(bool(ac_alarms_mask & 0x02)),
+                ).serialize()[::-1]
+            )[
+                0
+            ],
         ),
         TUYA_DP_TEMPERATURE_THRESHOLD: DPToAttributeMapping(
             TuyaRCBODeviceTemperature.ep_attribute,
             ("high_temp_thres", "over_temp_trip", "dev_temp_alarm_mask"),
             TuyaDPType.RAW,
             lambda x: (x[0] if x[0] <= 127 else x[0] - 256, x[1], x[2] << 1),
-            lambda x, y, z: TemperatureSetting(x, y, bool(z & 0x02)),
+            lambda x, y, z: Bytes.deserialize(
+                TemperatureSetting(x, y, bool(z & 0x02)).serialize()[::-1]
+            )[0],
         ),
         TUYA_DP_TOTAL_ACTIVE_POWER: DPToAttributeMapping(
             TuyaRCBOMetering.ep_attribute,
