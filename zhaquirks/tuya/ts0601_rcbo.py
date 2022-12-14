@@ -367,6 +367,7 @@ class TuyaRCBOManufCluster(TuyaMCUCluster):
             TuyaRCBOOnOff.ep_attribute,
             "countdown_timer",
             TuyaDPType.VALUE,
+            dp_converter=lambda x: t.uint32_t.deserialize(x.serialize()[::-1])[0],
         ),
         TUYA_DP_FAULT_CODE: DPToAttributeMapping(
             TuyaRCBOElectricalMeasurement.ep_attribute,
