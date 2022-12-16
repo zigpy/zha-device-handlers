@@ -36,7 +36,7 @@ def test_tuya_data_value():
     assert rest == extra
 
     assert r.dp_type == 2
-    assert r.raw == b"\xdb\x02\x00\x00"
+    assert r.raw == b"\x00\x00\x02\xdb"
     assert r.payload == 731
 
 

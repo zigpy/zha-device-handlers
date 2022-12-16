@@ -22,6 +22,7 @@ from zhaquirks.const import (
     SHORT_PRESS,
     ZHA_SEND_EVENT,
 )
+from zhaquirks.xbee.types import uint32_t as uint32_t_be
 
 # ---------------------------------------------------------
 # Tuya Custom Cluster ID
@@ -172,31 +173,26 @@ class TuyaData(t.Struct):
     function: t.uint8_t
     raw: t.LVBytes
 
-    @classmethod
-    def deserialize(cls, data: bytes) -> Tuple["TuyaData", bytes]:
-        """Deserialize data."""
-        res = cls()
-        res.dp_type, data = TuyaDPType.deserialize(data)
-        res.function, data = t.uint8_t.deserialize(data)
-        res.raw, data = t.LVBytes.deserialize(data)
-        if res.dp_type not in (
-            TuyaDPType.BITMAP,
-            TuyaDPType.STRING,
-            TuyaDPType.ENUM,
-            TuyaDPType.RAW,
-        ):
-            res.raw = res.raw[::-1]
-        return res, data
-
     @property
-    def payload(self) -> Union[t.Bool, t.CharacterString, t.uint32_t, t.data32]:
+    def payload(
+        self,
+    ) -> Union[
+        uint32_t_be,
+        t.Bool,
+        t.CharacterString,
+        t.enum8,
+        t.bitmap8,
+        t.bitmap16,
+        t.bitmap32,
+        t.LVBytes,
+    ]:
         """Payload accordingly to data point type."""
         if self.dp_type == TuyaDPType.VALUE:
-            return t.uint32_t.deserialize(self.raw)[0]
+            return uint32_t_be.deserialize(self.raw)[0]
         elif self.dp_type == TuyaDPType.BOOL:
             return t.Bool.deserialize(self.raw)[0]
         elif self.dp_type == TuyaDPType.STRING:
-            return self.raw.decode("utf8")
+            return t.CharacterString(self.raw.decode("utf8"))
         elif self.dp_type == TuyaDPType.ENUM:
             return t.enum8.deserialize(self.raw)[0]
         elif self.dp_type == TuyaDPType.BITMAP:
@@ -207,8 +203,30 @@ class TuyaData(t.Struct):
                 raise ValueError(f"Wrong bitmap length: {len(self.raw)}") from exc
         elif self.dp_type == TuyaDPType.RAW:
             return self.raw
+        else:
+            raise ValueError(f"Unknown {self.dp_type} datapoint type")
 
-        raise ValueError(f"Unknown {self.dp_type} datapoint type")
+    @payload.setter
+    def payload(self, value):
+        """Set payload accordingly to data point type."""
+        if self.dp_type == TuyaDPType.VALUE:
+            self.raw = uint32_t_be(value).serialize()
+        elif self.dp_type == TuyaDPType.BOOL:
+            self.raw = t.Bool(value).serialize()
+        elif self.dp_type == TuyaDPType.STRING:
+            self.raw = value
+        elif self.dp_type == TuyaDPType.ENUM:
+            self.raw = t.enum8(value).serialize()
+        elif self.dp_type == TuyaDPType.BITMAP:
+            bitmaps = {1: t.bitmap8, 2: t.bitmap16, 4: t.bitmap32}
+            try:
+                self.raw = bitmaps[len(value)](value).serialize()
+            except KeyError as exc:
+                raise ValueError(f"Wrong bitmap length: {len(value)}") from exc
+        elif self.dp_type == TuyaDPType.RAW:
+            self.raw = value.serialize()
+        else:
+            raise ValueError(f"Unknown {self.dp_type} datapoint type")
 
 
 class Data(t.List, item_type=t.uint8_t):
