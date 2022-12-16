@@ -276,12 +276,12 @@ def test_ts0121_signature(assert_signature_matches_quirk):
 
 async def test_tuya_data_conversion():
     """Test tuya conversion from Data to ztype and reverse."""
-    assert Data([4, 0, 0, 1, 39]).to_value(t.uint32_t) == 295
-    assert Data([4, 0, 0, 0, 220]).to_value(t.uint32_t) == 220
-    assert Data([4, 255, 255, 255, 236]).to_value(t.int32s) == -20
-    assert Data.from_value(t.uint32_t(295)) == [4, 0, 0, 1, 39]
-    assert Data.from_value(t.uint32_t(220)) == [4, 0, 0, 0, 220]
-    assert Data.from_value(t.int32s(-20)) == [4, 255, 255, 255, 236]
+    assert t.uint32_t(Data([4, 0, 0, 1, 39])) == 295
+    assert t.uint32_t(Data([4, 0, 0, 0, 220])) == 220
+    assert t.int32s(Data([4, 255, 255, 255, 236])) == -20
+    assert Data(t.uint32_t(295)) == [4, 0, 0, 1, 39]
+    assert Data(t.uint32_t(220)) == [4, 0, 0, 0, 220]
+    assert Data(t.int32s(-20)) == [4, 255, 255, 255, 236]
 
 
 class TuyaTestManufCluster(TuyaManufClusterAttributes):
