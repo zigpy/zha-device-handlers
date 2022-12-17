@@ -78,6 +78,7 @@ class TuyaClusterData(t.Struct):
     """Tuya cluster data."""
 
     endpoint_id: int
+    cluster_name: str
     cluster_attr: str
     attr_value: int  # Maybe also others types?
     expect_reply: bool
@@ -125,6 +126,7 @@ class TuyaAttributesCluster(TuyaLocalCluster):
 
             cluster_data = TuyaClusterData(
                 endpoint_id=self.endpoint.endpoint_id,
+                cluster_name=self.ep_attribute,
                 cluster_attr=self.attributes[record.attrid][0],
                 attr_value=record.value.value,
                 expect_reply=False,
@@ -278,6 +280,10 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
                 )
             )
 
+        endpoint = self.endpoint.device.endpoints[cluster_data.endpoint_id]
+        cluster = getattr(endpoint, cluster_data.cluster_name)
+        cluster.update_attribute(cluster_data.cluster_attr, cluster_data.attr_value)
+
     def get_dp_mapping(
         self, endpoint_id: int, attribute_name: str
     ) -> Optional[Tuple[int, DPToAttributeMapping]]:
@@ -360,6 +366,7 @@ class TuyaOnOff(OnOff, TuyaLocalCluster):
         if command_id in (0x0000, 0x0001):
             cluster_data = TuyaClusterData(
                 endpoint_id=self.endpoint.endpoint_id,
+                cluster_name=self.ep_attribute,
                 cluster_attr="on_off",
                 attr_value=command_id,
                 expect_reply=expect_reply,
@@ -502,14 +509,15 @@ class TuyaLevelControl(LevelControl, TuyaLocalCluster):
         else:
             level = 0
 
-        # (move_to_level_with_on_off --> send the on_off command first)
-        if command_id == 0x0004:
+        on_off = bool(level)  # maybe must be compared against `minimum_level` attribute
+
+        # (move_to_level_with_on_off --> send the on_off command first, but only if needed)
+        if command_id == 0x0004 and self.endpoint.on_off.get("on_off") != on_off:
             cluster_data = TuyaClusterData(
                 endpoint_id=self.endpoint.endpoint_id,
+                cluster_name="on_off",
                 cluster_attr="on_off",
-                attr_value=bool(
-                    level
-                ),  # maybe must be compared against `minimum_level` attribute
+                attr_value=on_off,
                 expect_reply=expect_reply,
                 manufacturer=manufacturer,
             )
@@ -518,10 +526,17 @@ class TuyaLevelControl(LevelControl, TuyaLocalCluster):
                 cluster_data,
             )
 
+        # level 0 --> switched off
+        if command_id == 0x0004 and not on_off:
+            return foundation.GENERAL_COMMANDS[
+                foundation.GeneralCommand.Default_Response
+            ].schema(command_id=command_id, status=foundation.Status.SUCCESS)
+
         # (move_to_level, move, move_to_level_with_on_off)
         if command_id in (0x0000, 0x0001, 0x0004):
             cluster_data = TuyaClusterData(
                 endpoint_id=self.endpoint.endpoint_id,
+                cluster_name=self.ep_attribute,
                 cluster_attr="current_level",
                 attr_value=level,
                 expect_reply=expect_reply,

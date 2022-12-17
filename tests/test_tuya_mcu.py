@@ -114,19 +114,39 @@ async def test_tuya_methods(zigpy_device_from_quirk, quirk):
     tcd_1 = TuyaClusterData(endpoint_id=2, cluster_attr="minimum_level", attr_value=25)
 
     tcd_switch1_on = TuyaClusterData(
-        endpoint_id=1, cluster_attr="on_off", attr_value=1, expect_reply=True
+        endpoint_id=1,
+        cluster_name="on_off",
+        cluster_attr="on_off",
+        attr_value=1,
+        expect_reply=True,
     )
     tcd_dimmer2_on = TuyaClusterData(
-        endpoint_id=2, cluster_attr="on_off", attr_value=1, expect_reply=True
+        endpoint_id=2,
+        cluster_name="on_off",
+        cluster_attr="on_off",
+        attr_value=1,
+        expect_reply=True,
     )
     tcd_dimmer2_off = TuyaClusterData(
-        endpoint_id=2, cluster_attr="on_off", attr_value=0, expect_reply=True
+        endpoint_id=2,
+        cluster_name="on_off",
+        cluster_attr="on_off",
+        attr_value=0,
+        expect_reply=True,
     )
     tcd_dimmer2_level = TuyaClusterData(
-        endpoint_id=2, cluster_attr="current_level", attr_value=75, expect_reply=True
+        endpoint_id=2,
+        cluster_name="level",
+        cluster_attr="current_level",
+        attr_value=75,
+        expect_reply=True,
     )
     tcd_dimmer2_level0 = TuyaClusterData(
-        endpoint_id=2, cluster_attr="current_level", attr_value=0, expect_reply=True
+        endpoint_id=2,
+        cluster_name="level",
+        cluster_attr="current_level",
+        attr_value=0,
+        expect_reply=True,
     )
 
     result_1 = tuya_cluster.from_cluster_data(tcd_1)
@@ -187,30 +207,29 @@ async def test_tuya_methods(zigpy_device_from_quirk, quirk):
         m1.assert_called_with(tcd_dimmer2_level)  # current_level
         assert m1.call_count == 7
 
-        # test `move_to_level_with_on_off` quirk (call on_off + current_level)
+        # test `move_to_level_with_on_off` quirk (call on_off only)
         rsp = await dimmer2_cluster.command(0x0004)
         assert rsp.status == foundation.Status.SUCCESS
-        m1.assert_any_call(tcd_dimmer2_off)  # on_off
-        m1.assert_called_with(tcd_dimmer2_level0)  # current_level
-        assert m1.call_count == 9
+        m1.assert_called_with(tcd_dimmer2_off)  # on_off
+        assert m1.call_count == 8
 
         # test `move_to_level` quirk (only call current_level)
         rsp = await dimmer2_cluster.command(0x0000)
         assert rsp.status == foundation.Status.SUCCESS
         m1.assert_called_with(tcd_dimmer2_level0)  # current_level
-        assert m1.call_count == 10
+        assert m1.call_count == 9
 
         # test `move_to_level` quirk (only call current_level)
         rsp = await dimmer2_cluster.command(0x0000, 75)
         assert rsp.status == foundation.Status.SUCCESS
         m1.assert_called_with(tcd_dimmer2_level)  # current_level
-        assert m1.call_count == 11
+        assert m1.call_count == 10
 
         # test `move_to_level` quirk (only call current_level)
         rsp = await dimmer2_cluster.command(0x0000, level=75)
         assert rsp.status == foundation.Status.SUCCESS
         m1.assert_called_with(tcd_dimmer2_level)  # current_level
-        assert m1.call_count == 12
+        assert m1.call_count == 11
 
 
 async def test_tuya_mcu_classes():
