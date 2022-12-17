@@ -1,6 +1,7 @@
 """Tuya devices."""
 import dataclasses
 import datetime
+import enum
 import logging
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
@@ -225,6 +226,30 @@ class TuyaData(t.Struct):
             self.raw = value.serialize()
         else:
             raise ValueError(f"Unknown {self.dp_type} datapoint type")
+
+    def __new__(cls, *args, **kwargs):
+        """Disable copy constrctor."""
+        return super().__new__(cls)
+
+    def __init__(self, value=None, function=0, *args, **kwargs):
+        """Convert from a zigpy typed value to a tuya data payload."""
+        if value is None:
+            return
+        elif isinstance(value, (t.bitmap8, t.bitmap16, t.bitmap32)):
+            self.dp_type = TuyaDPType.BITMAP
+        elif isinstance(value, (bool, t.Bool)):
+            self.dp_type = TuyaDPType.BOOL
+        elif isinstance(value, enum.Enum):
+            self.dp_type = TuyaDPType.ENUM
+        elif isinstance(value, int):
+            self.dp_type = TuyaDPType.VALUE
+        elif isinstance(value, str):
+            self.dp_type = TuyaDPType.STRING
+        elif isinstance(value, t.Struct):
+            self.dp_type = TuyaDPType.RAW
+
+        self.function = function
+        self.payload = value
 
 
 class Data(t.List, item_type=t.uint8_t):

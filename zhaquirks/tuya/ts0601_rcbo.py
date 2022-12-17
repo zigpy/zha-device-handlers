@@ -34,7 +34,6 @@ from zhaquirks.tuya.mcu import (
     DPToAttributeMapping,
     TuyaAttributesCluster,
     TuyaClusterData,
-    TuyaDPType,
     TuyaMCUCluster,
     TuyaOnOff,
 )
@@ -356,68 +355,56 @@ class TuyaRCBOManufCluster(TuyaMCUCluster):
         TUYA_DP_STATE: DPToAttributeMapping(
             TuyaRCBOOnOff.ep_attribute,
             "on_off",
-            TuyaDPType.BOOL,
         ),
         TUYA_DP_COUNTDOWN_TIMER: DPToAttributeMapping(
             TuyaRCBOOnOff.ep_attribute,
             "countdown_timer",
-            TuyaDPType.VALUE,
         ),
         TUYA_DP_FAULT_CODE: DPToAttributeMapping(
             TuyaRCBOElectricalMeasurement.ep_attribute,
             "alarm",
-            TuyaDPType.ENUM,
             lambda x: FaultCode(x),
         ),
         TUYA_DP_RELAY_STATUS: DPToAttributeMapping(
             TuyaRCBOOnOff.ep_attribute,
             "power_on_state",
-            TuyaDPType.ENUM,
             lambda x: PowerOnState(x),
         ),
         TUYA_DP_CHILD_LOCK: DPToAttributeMapping(
             TuyaRCBOOnOff.ep_attribute,
             "child_lock",
-            TuyaDPType.BOOL,
         ),
         TUYA_DP_VOLTAGE: DPToAttributeMapping(
             TuyaRCBOElectricalMeasurement.ep_attribute,
             "rms_voltage",
-            TuyaDPType.RAW,
             lambda x: x[1] | x[0] << 8,
         ),
         TUYA_DP_CURRENT: DPToAttributeMapping(
             TuyaRCBOElectricalMeasurement.ep_attribute,
             "rms_current",
-            TuyaDPType.RAW,
             lambda x: x[2] | x[1] << 8,
         ),
         TUYA_DP_ACTIVE_POWER: DPToAttributeMapping(
             TuyaRCBOElectricalMeasurement.ep_attribute,
             "active_power",
-            TuyaDPType.RAW,
             lambda x: x[2] | x[1] << 8,
         ),
         TUYA_DP_LEAKAGE_CURRENT: DPToAttributeMapping(
             TuyaRCBOElectricalMeasurement.ep_attribute,
             "leakage_current",
-            TuyaDPType.VALUE,
         ),
         TUYA_DP_TEMPERATURE: DPToAttributeMapping(
             TuyaRCBODeviceTemperature.ep_attribute,
             "current_temperature",
-            TuyaDPType.VALUE,
             lambda x: x * 100,
         ),
         TUYA_DP_REMAINING_ENERGY: DPToAttributeMapping(
             TuyaRCBOMetering.ep_attribute,
             "remaining_energy",
-            TuyaDPType.VALUE,
         ),
         TUYA_DP_COST_PARAMETERS: DPToAttributeMapping(
             TuyaRCBOMetering.ep_attribute,
             ("cost_parameters", "cost_parameters_enabled"),
-            TuyaDPType.RAW,
             lambda x: (x[1] | x[0] << 8, x[2]),
             lambda *fields: CostParameters(*fields),
         ),
@@ -432,7 +419,6 @@ class TuyaRCBOManufCluster(TuyaMCUCluster):
                 "over_leakage_current_alarm",
                 "self_test",
             ),
-            TuyaDPType.RAW,
             lambda x: (x[0], x[1], x[2], x[4] | x[3] << 8, x[5], x[6], SelfTest(x[7])),
             lambda *fields: LeakageParameters(*fields),
         ),
@@ -445,7 +431,6 @@ class TuyaRCBOManufCluster(TuyaMCUCluster):
                 "rms_extreme_under_voltage",
                 "under_voltage_trip",
             ),
-            TuyaDPType.RAW,
             lambda x: (
                 x[1] | x[0] << 8,
                 x[2],
@@ -465,7 +450,6 @@ class TuyaRCBOManufCluster(TuyaMCUCluster):
         TUYA_DP_CURRENT_THRESHOLD: DPToAttributeMapping(
             TuyaRCBOElectricalMeasurement.ep_attribute,
             ("ac_current_overload", "over_current_trip", "ac_alarms_mask"),
-            TuyaDPType.RAW,
             lambda x: (
                 (x[2] | x[1] << 8 | x[0] << 16),
                 x[3],
@@ -478,42 +462,34 @@ class TuyaRCBOManufCluster(TuyaMCUCluster):
         TUYA_DP_TEMPERATURE_THRESHOLD: DPToAttributeMapping(
             TuyaRCBODeviceTemperature.ep_attribute,
             ("high_temp_thres", "over_temp_trip", "dev_temp_alarm_mask"),
-            TuyaDPType.RAW,
             lambda x: (x[0] if x[0] <= 127 else x[0] - 256, x[1], x[2] << 1),
             lambda x, y, z: TemperatureSetting(x, y, bool(z & 0x02)),
         ),
         TUYA_DP_TOTAL_ACTIVE_POWER: DPToAttributeMapping(
             TuyaRCBOMetering.ep_attribute,
             "current_summ_delivered",
-            TuyaDPType.VALUE,
         ),
         TUYA_DP_EQUIPMENT_NUMBER_AND_TYPE: DPToAttributeMapping(
             TuyaRCBOMetering.ep_attribute,
             "meter_number",
-            TuyaDPType.STRING,
             lambda x: x.rstrip(),
         ),
         TUYA_DP_CLEAR_ENERGY: DPToAttributeMapping(
-            TuyaRCBOMetering.ep_attribute, "clear_device_data", TuyaDPType.BOOL
+            TuyaRCBOMetering.ep_attribute, "clear_device_data"
         ),
-        TUYA_DP_LOCKING: DPToAttributeMapping(
-            TuyaRCBOOnOff.ep_attribute, "trip", TuyaDPType.BOOL
-        ),
+        TUYA_DP_LOCKING: DPToAttributeMapping(TuyaRCBOOnOff.ep_attribute, "trip"),
         TUYA_DP_TOTAL_REVERSE_ACTIVE_POWER: DPToAttributeMapping(
             TuyaRCBOMetering.ep_attribute,
             "current_summ_received",
-            TuyaDPType.VALUE,
         ),
         TUYA_DP_HISTORICAL_VOLTAGE: DPToAttributeMapping(
             TuyaRCBOElectricalMeasurement.ep_attribute,
             "rms_historical_voltage",
-            TuyaDPType.RAW,
             lambda x: x[1] | x[0] << 8,
         ),
         TUYA_DP_HISTORICAL_CURRENT: DPToAttributeMapping(
             TuyaRCBOElectricalMeasurement.ep_attribute,
             "rms_historical_current",
-            TuyaDPType.RAW,
             lambda x: x[2] | x[1] << 8,
         ),
     }
