@@ -361,7 +361,7 @@ class TuyaOnOff(OnOff, TuyaLocalCluster):
             cluster_data = TuyaClusterData(
                 endpoint_id=self.endpoint.endpoint_id,
                 cluster_attr="on_off",
-                attr_value=command_id,
+                attr_value=bool(command_id),
                 expect_reply=expect_reply,
                 manufacturer=manufacturer,
             )

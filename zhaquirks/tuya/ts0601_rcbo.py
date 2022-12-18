@@ -88,13 +88,6 @@ class SelfTest(t.enum8):
     TEST = 0x01
 
 
-class Locking(t.enum8):
-    """Locking enum."""
-
-    CLEAR = 0x00
-    TRIP = 0x01
-
-
 class CostParameters(t.Struct):
     """Tuya cost parameters."""
 
@@ -170,7 +163,7 @@ class TuyaRCBOOnOff(TuyaOnOff, TuyaAttributesCluster):
             0x8000: ("child_lock", t.Bool),
             0x8002: ("power_on_state", PowerOnState),
             0xF090: ("countdown_timer", t.uint32_t),
-            0xF740: ("trip", Locking),
+            0xF740: ("trip", t.Bool),
         }
     )
 
@@ -367,7 +360,6 @@ class TuyaRCBOManufCluster(TuyaMCUCluster):
             TuyaRCBOOnOff.ep_attribute,
             "countdown_timer",
             TuyaDPType.VALUE,
-            dp_converter=lambda x: t.uint32_t.deserialize(x.serialize()[::-1])[0],
         ),
         TUYA_DP_FAULT_CODE: DPToAttributeMapping(
             TuyaRCBOElectricalMeasurement.ep_attribute,
@@ -503,7 +495,7 @@ class TuyaRCBOManufCluster(TuyaMCUCluster):
             TuyaRCBOMetering.ep_attribute, "clear_device_data", TuyaDPType.BOOL
         ),
         TUYA_DP_LOCKING: DPToAttributeMapping(
-            TuyaRCBOOnOff.ep_attribute, "trip", TuyaDPType.BOOL, lambda x: Locking(x)
+            TuyaRCBOOnOff.ep_attribute, "trip", TuyaDPType.BOOL
         ),
         TUYA_DP_TOTAL_REVERSE_ACTIVE_POWER: DPToAttributeMapping(
             TuyaRCBOMetering.ep_attribute,
