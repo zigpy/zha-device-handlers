@@ -121,7 +121,7 @@ class TuyaSingleSwitch_GP(TuyaSwitch):
 
     signature = {
         MODELS_INFO: [
-            ("YYYYYYYYYYYY", "TS0601"),
+            ("_TZE200_gbagoilo", "TS0601"),  # reported in #1634
         ],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=51 device_version=1
@@ -159,7 +159,7 @@ class TuyaSingleSwitch_GP(TuyaSwitch):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     MoesSwitchManufCluster,
-                    TuyaOnOff,
+                    TuyaOnOffNM,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
@@ -234,6 +234,7 @@ class TuyaDoubleSwitch_GP(TuyaSwitch):
     signature = {
         MODELS_INFO: [
             ("_TZE200_7deq70b8", "TS0601"),
+            ("_TZE200_nh9m9emk", "TS0601"),  # reported in #1634
         ],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=51 device_version=1
@@ -355,6 +356,7 @@ class TuyaTripleSwitch_GP(TuyaSwitch):
     signature = {
         MODELS_INFO: [
             ("_TZE200_2hf7x9n3", "TS0601"),  # reported #1597
+            ("_TZE200_go3tvswy", "TS0601"),  # reported #1634
         ],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=51 device_version=1
@@ -493,6 +495,7 @@ class TuyaQuadrupleSwitch_GP(TuyaSwitch):
     signature = {
         MODELS_INFO: [
             ("_TZE200_1n2kyphz", "TS0601"),
+            ("_TZE200_mexisfik", "TS0601"),  # reported #1634
         ],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=51 device_version=1
