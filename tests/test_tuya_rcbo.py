@@ -211,7 +211,7 @@ async def test_report_values_rcbo(zigpy_device_from_quirk, frame, cluster, attri
     (
         (
             [],
-            b"\x01\x02\x00\x00\x01\x09\x02\x00\x04\x58\x02\x00\x00",
+            b"\x01\x02\x00\x00\x01\x09\x02\x00\x04\x00\x00\x02\x58",
             "on_off",
             {"countdown_timer": 600},
         ),
