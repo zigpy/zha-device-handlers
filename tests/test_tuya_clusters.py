@@ -143,7 +143,7 @@ def test_tuya_data_bitmap():
     assert r.raw == b"\x40"
     assert r.payload == 0x40
 
-    r.payload = t.bitmap8(0x82)
+    r.payload = 0x82
     assert r.raw == b"\x82"
 
     data = b"\x05\x00\x02\x40\x02"

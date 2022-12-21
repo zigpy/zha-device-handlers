@@ -218,6 +218,8 @@ class TuyaData(t.Struct):
         elif self.dp_type == TuyaDPType.ENUM:
             self.raw = t.enum8(value).serialize()
         elif self.dp_type == TuyaDPType.BITMAP:
+            if not isinstance(value, (t.bitmap8, t.bitmap16, t.bitmap32)):
+                value = t.bitmap8(value)
             self.raw = value.serialize()[::-1]
         elif self.dp_type == TuyaDPType.RAW:
             self.raw = value.serialize()
