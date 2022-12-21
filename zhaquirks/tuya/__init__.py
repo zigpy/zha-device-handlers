@@ -214,15 +214,11 @@ class TuyaData(t.Struct):
         elif self.dp_type == TuyaDPType.BOOL:
             self.raw = t.Bool(value).serialize()
         elif self.dp_type == TuyaDPType.STRING:
-            self.raw = value
+            self.raw = value.encode("utf8")
         elif self.dp_type == TuyaDPType.ENUM:
             self.raw = t.enum8(value).serialize()
         elif self.dp_type == TuyaDPType.BITMAP:
-            bitmaps = {1: t.bitmap8, 2: t.bitmap16, 4: t.bitmap32}
-            try:
-                self.raw = bitmaps[len(value)](value).serialize()
-            except KeyError as exc:
-                raise ValueError(f"Wrong bitmap length: {len(value)}") from exc
+            self.raw = value.serialize()[::-1]
         elif self.dp_type == TuyaDPType.RAW:
             self.raw = value.serialize()
         else:
