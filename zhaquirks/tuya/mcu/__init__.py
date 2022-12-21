@@ -212,12 +212,13 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
                 else:
                     args.append(val)
                 val = mapping.dp_converter(*args)
-                self.debug("converted: %s", val)
+            self.debug("value: %s", val)
 
             tuya_data = TuyaData()
             tuya_data.dp_type = datapoint_type
             tuya_data.function = 0
             tuya_data.payload = val
+            self.debug("raw: %s", tuya_data.raw)
             dpd = TuyaDatapointData(dp, tuya_data)
             cmd_payload.datapoints = [dpd]
 
