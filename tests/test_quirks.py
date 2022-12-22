@@ -615,7 +615,7 @@ KNOWN_DUPLICATE_TRIGGERS = {
             (zhaquirks.aurora.aurora_dimmer.COLOR_DOWN, const.LEFT),
         ],
     ],
-    zhaquirks.ikea.fourbtnremote.IkeaTradfriRemote: [
+    zhaquirks.ikea.fourbtnremote.IkeaTradfriRemoteV1: [
         [
             (const.LONG_RELEASE, const.DIM_UP),
             (const.LONG_RELEASE, const.DIM_DOWN),
