@@ -1,4 +1,6 @@
 """NodOn on/off switch two channels."""
+import logging
+
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
@@ -22,6 +24,8 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class NodOnSIN4220(CustomDevice):
@@ -47,8 +51,7 @@ class NodOnSIN4220(CustomDevice):
                     LightLink.cluster_id,
                     64599,
                 ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
+                OUTPUT_CLUSTERS: [Identify.cluster_id,
                     OnOff.cluster_id,
                     Ota.cluster_id,
                 ],
@@ -68,7 +71,10 @@ class NodOnSIN4220(CustomDevice):
                     OnOffConfiguration.cluster_id,
                     LevelControl.cluster_id,
                 ],
-                OUTPUT_CLUSTERS: [Identify.cluster_id, OnOff.cluster_id],
+                OUTPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    OnOff.cluster_id,
+                ],
             },
             # <SimpleDescriptor endpoint=242 profile=41440 device_type=102
             # input_clusters=[33]
@@ -113,7 +119,10 @@ class NodOnSIN4220(CustomDevice):
                     OnOff.cluster_id,
                     OnOffConfiguration.cluster_id,
                 ],
-                OUTPUT_CLUSTERS: [Identify.cluster_id, OnOff.cluster_id],
+                OUTPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    OnOff.cluster_id,
+                ],
             },
             242: {
                 PROFILE_ID: 41440,
