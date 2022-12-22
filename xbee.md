@@ -1,3 +1,34 @@
+This document describes how to use Digi XBee device as a router or end device.
+
+## Using with non-XBee coordinator
+
+You may need to configure zigpy to listen to the appropriate additional endpoints which it ignores by default. This is an example config for HA ZHA:
+
+```
+zha:
+  zigpy_config:
+    additional_endpoints:
+      - endpoint: 0xE6
+        profile: 0xC105
+        device_type: 0x0000
+        device_version: 0b0000
+        input_clusters: [0xA1]
+        output_clusters: [0x21]
+      - endpoint: 0xE8
+        profile: 0xC105
+        device_type: 0x0000
+        device_version: 0b0000
+        input_clusters: [0x11, 0x92]
+        output_clusters: [0x11]
+```
+If you are using `zigpy_znp`, you might also need need to add
+```
+    znp_config:
+      prefer_endpoint_1: false
+```
+to the `zigpy_config:` section.
+Please note that not all coordinators have been tested yet.
+
 ## Digital GPIO
 
 Digital input/output pins are exposed as switches.
@@ -8,6 +39,7 @@ The switch state will change depending on the state.
 There are two options of reporting the pin state: periodic sampling (`IR`) and on state change (`IC`).
 To configure reporting on state change please set the appropriate bit mask on `IC`, and to send perodic reports every x milliseconds please set `IR` to a value greater than zero.
 The recommended approach is to combine both methods. Please note that Home Assistant will mark a zigbee device as unavailable if it doesn't send any communication for more than two hours.
+Instead of the `IR` command for periodic sampling you can also periodically send `IS` remote command from HA (see below on remote AT commands).
 
 If you want the pin to work as input, it must be configured as input with XCTU.
 
@@ -29,51 +61,7 @@ To use the functionality, enable it with `V+` command and configure periodic sam
 
 ## PWM Output
 
-XBee3 provides two PWM outputs. They are not currently exposed automatically, you must use `zha.set_zigbee_cluster_attribute` service.
-
-To use the functionality, you must configure an `input_number` and an automation for each PWM pin you want to use as per the following example (replace ieee with the one of your device):
-```
-input_number:
-  pwm0:
-    name: PWM0
-    min: 0
-    max: 1023
-  pwm1:
-    name: PWM1
-    min: 0
-    max: 1023
-automation:
-  - id: '1574205383149'
-    alias: XBee PWM0
-    description: 'Update cluster attribute on slider change for PWM0'
-    trigger:
-    - entity_id: input_number.pwm0
-      platform: state
-    action:
-    - service: zha.set_zigbee_cluster_attribute
-      data_template:
-        ieee: 00:13:a2:00:41:a0:7e:1a
-        endpoint_id: 218
-        cluster_id: 13
-        cluster_type: in
-        attribute: 85
-        value: '{{ trigger.to_state.state }}'
-  - id: '1574205383150'
-    alias: XBee PWM1
-    description: 'Update cluster attribute on slider change for PWM1'
-    trigger:
-    - entity_id: input_number.pwm1
-      platform: state
-    action:
-    - service: zha.set_zigbee_cluster_attribute
-      data_template:
-        ieee: 00:13:a2:00:41:a0:7e:1a
-        endpoint_id: 219
-        cluster_id: 13
-        cluster_type: in
-        attribute: 85
-        value: '{{ trigger.to_state.state }}'
-```
+XBee3 provides two PWM outputs. They are exposed as `number` entities.
 
 ## UART
 
@@ -91,7 +79,8 @@ automation:
       event_data:
         device_ieee: 00:13:a2:00:12:34:56:78
         command: receive_data
-        args: Home
+        args:
+          data: Home
     action:
       service: zha.issue_zigbee_cluster_command
       data:
@@ -101,10 +90,11 @@ automation:
         cluster_type: in
         command: 0
         command_type: server
-        args: Assistant
+        params:
+          data: Assistant
 ```
 
-## Raw AT Commands
+## Remote AT Commands
 
 Like with UART, you can send remote AT commands with `zha.issue_zigbee_cluster_command` service.
 If the command is unsuccessful, you will get an exception in the logs. If it is successful, the response will be available as `zha_event` event.
@@ -122,7 +112,7 @@ template:
         command: tp_command_response
     sensor:
       - name: "XBee Temperature"
-        state: '{{ trigger.event.data.args }}'
+        state: '{{ trigger.event.data.args.response }}'
         unit_of_measurement: "°C"
         device_class: temperature
         state_class: measurement
@@ -141,4 +131,5 @@ automation:
         command_type: server
         cluster_type: out
         cluster_id: 33
+        params: {}
 ```

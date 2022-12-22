@@ -168,7 +168,6 @@ class TuyaDPType(t.enum8):
 class TuyaData(t.Struct):
     """Tuya Data type."""
 
-    # dp: t.uint8_t
     dp_type: TuyaDPType
     function: t.uint8_t
     raw: t.LVBytes
@@ -177,11 +176,15 @@ class TuyaData(t.Struct):
     def deserialize(cls, data: bytes) -> Tuple["TuyaData", bytes]:
         """Deserialize data."""
         res = cls()
-        # res.dp, data = t.uint8_t.deserialize(data)
         res.dp_type, data = TuyaDPType.deserialize(data)
         res.function, data = t.uint8_t.deserialize(data)
         res.raw, data = t.LVBytes.deserialize(data)
-        if res.dp_type not in (TuyaDPType.BITMAP, TuyaDPType.STRING, TuyaDPType.ENUM):
+        if res.dp_type not in (
+            TuyaDPType.BITMAP,
+            TuyaDPType.STRING,
+            TuyaDPType.ENUM,
+            TuyaDPType.RAW,
+        ):
             res.raw = res.raw[::-1]
         return res, data
 
@@ -202,6 +205,8 @@ class TuyaData(t.Struct):
                 return bitmaps[len(self.raw)].deserialize(self.raw)[0]
             except KeyError as exc:
                 raise ValueError(f"Wrong bitmap length: {len(self.raw)}") from exc
+        elif self.dp_type == TuyaDPType.RAW:
+            return self.raw
 
         raise ValueError(f"Unknown {self.dp_type} datapoint type")
 
@@ -239,9 +244,6 @@ class TuyaCommand(t.Struct):
 
     status: t.uint8_t
     tsn: t.uint8_t
-    # dp: t.uint8_t
-    # data: TuyaData
-    # datapoints: t.List[TuyaData]
     datapoints: t.List[TuyaDatapointData]
 
 
@@ -1330,7 +1332,7 @@ class DPToAttributeMapping:
     """Container for datapoint to cluster attribute update mapping."""
 
     ep_attribute: str
-    attribute_name: str
+    attribute_name: Union[str, tuple]
     converter: Optional[
         Callable[
             [
@@ -1340,6 +1342,14 @@ class DPToAttributeMapping:
         ]
     ] = None
     endpoint_id: Optional[int] = None
+
+
+@dataclasses.dataclass
+class AttributeWithMask:
+    """Container for the attribute and its mask."""
+
+    value: Any
+    mask: int
 
 
 class TuyaNewManufCluster(CustomCluster):
@@ -1471,4 +1481,14 @@ class TuyaNewManufCluster(CustomCluster):
         if dp_map.converter:
             value = dp_map.converter(value)
 
-        cluster.update_attribute(dp_map.attribute_name, value)
+        if isinstance(dp_map.attribute_name, tuple):
+            for k, v in zip(dp_map.attribute_name, value):
+                if isinstance(v, AttributeWithMask):
+                    v = cluster.get(k, 0) & (~v.mask) | v.value
+                cluster.update_attribute(k, v)
+        else:
+            if isinstance(value, AttributeWithMask):
+                value = (
+                    cluster.get(dp_map.attribute_name, 0) & (~value.mask) | value.value
+                )
+            cluster.update_attribute(dp_map.attribute_name, value)

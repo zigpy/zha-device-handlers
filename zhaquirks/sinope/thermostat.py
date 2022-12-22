@@ -253,7 +253,7 @@ class SinopeTH1300ZB(SinopeTechnologiesThermostat):
 
 
 class SinopeLineThermostats(SinopeTechnologiesThermostat):
-    """TH1123ZB, TH1124ZB, TH1500ZB and OTH3600-GA-ZB thermostat."""
+    """TH1123ZB, TH1124ZB, TH1500ZB and OTH3600-GA-ZB thermostats."""
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=769 device_version=1
@@ -311,6 +311,69 @@ class SinopeLineThermostats(SinopeTechnologiesThermostat):
                     Time.cluster_id,
                     Ota.cluster_id,
                     SINOPE_MANUFACTURER_CLUSTER_ID,
+                ],
+            }
+        }
+    }
+
+
+class SinopeG2Thermostats(SinopeTechnologiesThermostat):
+    """TH1123ZB-G2 and TH1124ZB-G2 thermostats."""
+
+    signature = {
+        # <SimpleDescriptor endpoint=1 profile=260 device_type=769 device_version=1
+        # input_clusters=[0, 3, 4, 5, 513, 516, 1026, 1794, 2820, 2821, 65281]
+        # output_clusters=[3, 10, 25]>
+        MODELS_INFO: [
+            (SINOPE, "TH1123ZB-G2"),
+            (SINOPE, "TH1124ZB-G2"),
+        ],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha_p.PROFILE_ID,
+                DEVICE_TYPE: zha_p.DeviceType.THERMOSTAT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    Thermostat.cluster_id,
+                    UserInterface.cluster_id,
+                    TemperatureMeasurement.cluster_id,
+                    Metering.cluster_id,
+                    ElectricalMeasurement.cluster_id,
+                    Diagnostic.cluster_id,
+                    SINOPE_MANUFACTURER_CLUSTER_ID,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    Time.cluster_id,
+                    Ota.cluster_id,
+                ],
+            }
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    UserInterface.cluster_id,
+                    TemperatureMeasurement.cluster_id,
+                    Metering.cluster_id,
+                    ElectricalMeasurement.cluster_id,
+                    Diagnostic.cluster_id,
+                    SinopeTechnologiesThermostatCluster,
+                    SinopeTechnologiesManufacturerCluster,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    Time.cluster_id,
+                    Ota.cluster_id,
                 ],
             }
         }

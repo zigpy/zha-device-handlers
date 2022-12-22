@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import logging
 import math
-from typing import Iterable, Iterator
+from typing import Any, Iterable, Iterator
 
 from zigpy import types as t
 import zigpy.device
@@ -167,7 +167,7 @@ class XiaomiCluster(CustomCluster):
 
             yield foundation.Attribute(
                 attrid=attr_id,
-                value=foundation.TypeValue(python_type=attr_type, value=attr_val),
+                value=foundation.TypeValue(type=attr_type, value=attr_val),
             ), final_data
 
     def _interpret_attr_reports(
@@ -317,6 +317,7 @@ class XiaomiCluster(CustomCluster):
             "lumi.sens",
             "lumi.weather",
             "lumi.airmonitor.acn01",
+            "lumi.sensor_ht.agl02",
         ]:
             # Temperature sensors send temperature/humidity/pressure updates through this
             # cluster instead of the respective clusters
@@ -345,6 +346,11 @@ class XiaomiCluster(CustomCluster):
             if self.endpoint.device.model == "lumi.motion.ac02":
                 attribute_names.update({105: DETECTION_INTERVAL})
                 attribute_names.update({106: MOTION_SENSITIVITY})
+        elif self.endpoint.device.model == "lumi.motion.agl04":
+            attribute_names.update({102: DETECTION_INTERVAL})
+            attribute_names.update({105: MOTION_SENSITIVITY})
+            attribute_names.update({258: DETECTION_INTERVAL})
+            attribute_names.update({268: MOTION_SENSITIVITY})
         elif self.endpoint.device.model == "lumi.motion.ac01":
             attribute_names.update({5: POWER_OUTAGE_COUNT})
             attribute_names.update({101: PRESENCE_DETECTED})
@@ -648,7 +654,9 @@ class OnOffCluster(OnOff, CustomCluster):
         *args,
         manufacturer: int | t.uint16_t | None = None,
         expect_reply: bool = True,
+        tries: int = 1,
         tsn: int | t.uint8_t | None = None,
+        **kwargs: Any,
     ):
         """Command handler."""
         src_ep = 1

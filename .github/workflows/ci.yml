@@ -10,7 +10,7 @@ on:
 
 env:
   CACHE_VERSION: 1
-  DEFAULT_PYTHON: '3.9.14'
+  PYTHON_VERSION_DEFAULT: '3.9.15'
   PRE_COMMIT_HOME: ~/.cache/pre-commit
 
 jobs:
@@ -21,18 +21,18 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.8.14', '3.9.14', '3.10.7']
+        python-version: ['3.8.14', '3.9.15', '3.10.8', '3.11.0']
     steps:
       - name: Check out code from GitHub
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Set up Python ${{ matrix.python-version }}
         id: python
-        uses: actions/setup-python@v2.1.4
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
       - name: Restore base Python virtual environment
         id: cache-venv
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: venv
           key: >-
@@ -57,15 +57,15 @@ jobs:
     needs: prepare-base
     steps:
       - name: Check out code from GitHub
-        uses: actions/checkout@v2
-      - name: Set up Python ${{ env.DEFAULT_PYTHON }}
-        uses: actions/setup-python@v2.1.4
+        uses: actions/checkout@v3
+      - name: Set up Python ${{ env.PYTHON_VERSION_DEFAULT }}
+        uses: actions/setup-python@v4
         id: python
         with:
-          python-version: ${{ env.DEFAULT_PYTHON }}
+          python-version: ${{ env.PYTHON_VERSION_DEFAULT }}
       - name: Restore base Python virtual environment
         id: cache-venv
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: venv
           key: >-
@@ -80,7 +80,7 @@ jobs:
           exit 1
       - name: Restore pre-commit environment from cache
         id: cache-precommit
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ${{ env.PRE_COMMIT_HOME }}
           key: |
@@ -99,15 +99,15 @@ jobs:
     needs: pre-commit
     steps:
       - name: Check out code from GitHub
-        uses: actions/checkout@v2
-      - name: Set up Python ${{ env.DEFAULT_PYTHON }}
-        uses: actions/setup-python@v2.1.4
+        uses: actions/checkout@v3
+      - name: Set up Python ${{ env.PYTHON_VERSION_DEFAULT }}
+        uses: actions/setup-python@v4
         id: python
         with:
-          python-version: ${{ env.DEFAULT_PYTHON }}
+          python-version: ${{ env.PYTHON_VERSION_DEFAULT }}
       - name: Restore base Python virtual environment
         id: cache-venv
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: venv
           key: >-
@@ -122,7 +122,7 @@ jobs:
           exit 1
       - name: Restore pre-commit environment from cache
         id: cache-precommit
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ${{ env.PRE_COMMIT_HOME }}
           key: |
@@ -143,15 +143,15 @@ jobs:
     needs: pre-commit
     steps:
       - name: Check out code from GitHub
-        uses: actions/checkout@v2
-      - name: Set up Python ${{ env.DEFAULT_PYTHON }}
-        uses: actions/setup-python@v2.1.4
+        uses: actions/checkout@v3
+      - name: Set up Python ${{ env.PYTHON_VERSION_DEFAULT }}
+        uses: actions/setup-python@v4
         id: python
         with:
-          python-version: ${{ env.DEFAULT_PYTHON }}
+          python-version: ${{ env.PYTHON_VERSION_DEFAULT }}
       - name: Restore base Python virtual environment
         id: cache-venv
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: venv
           key: >-
@@ -166,7 +166,7 @@ jobs:
           exit 1
       - name: Restore pre-commit environment from cache
         id: cache-precommit
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ${{ env.PRE_COMMIT_HOME }}
           key: |
@@ -190,15 +190,15 @@ jobs:
     needs: pre-commit
     steps:
       - name: Check out code from GitHub
-        uses: actions/checkout@v2
-      - name: Set up Python ${{ env.DEFAULT_PYTHON }}
-        uses: actions/setup-python@v2.1.4
+        uses: actions/checkout@v3
+      - name: Set up Python ${{ env.PYTHON_VERSION_DEFAULT }}
+        uses: actions/setup-python@v4
         id: python
         with:
-          python-version: ${{ env.DEFAULT_PYTHON }}
+          python-version: ${{ env.PYTHON_VERSION_DEFAULT }}
       - name: Restore base Python virtual environment
         id: cache-venv
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: venv
           key: >-
@@ -213,7 +213,7 @@ jobs:
           exit 1
       - name: Restore pre-commit environment from cache
         id: cache-precommit
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ${{ env.PRE_COMMIT_HOME }}
           key: |
@@ -234,15 +234,15 @@ jobs:
     needs: pre-commit
     steps:
       - name: Check out code from GitHub
-        uses: actions/checkout@v2
-      - name: Set up Python ${{ env.DEFAULT_PYTHON }}
-        uses: actions/setup-python@v2.1.4
+        uses: actions/checkout@v3
+      - name: Set up Python ${{ env.PYTHON_VERSION_DEFAULT }}
+        uses: actions/setup-python@v4
         id: python
         with:
-          python-version: ${{ env.DEFAULT_PYTHON }}
+          python-version: ${{ env.PYTHON_VERSION_DEFAULT }}
       - name: Restore base Python virtual environment
         id: cache-venv
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: venv
           key: >-
@@ -257,7 +257,7 @@ jobs:
           exit 1
       - name: Restore pre-commit environment from cache
         id: cache-precommit
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ${{ env.PRE_COMMIT_HOME }}
           key: |
@@ -280,20 +280,20 @@ jobs:
     needs: prepare-base
     strategy:
       matrix:
-        python-version: ['3.8.14', '3.9.14', '3.10.7']
+        python-version: ['3.8.14', '3.9.15', '3.10.8', '3.11.0']
     name: >-
       Run tests Python ${{ matrix.python-version }}
     steps:
       - name: Check out code from GitHub
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2.1.4
+        uses: actions/setup-python@v4
         id: python
         with:
           python-version: ${{ matrix.python-version }}
       - name: Restore base Python virtual environment
         id: cache-venv
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: venv
           key: >-
@@ -328,7 +328,7 @@ jobs:
             -p no:sugar \
             tests
       - name: Upload coverage artifact
-        uses: actions/upload-artifact@v2.2.0
+        uses: actions/upload-artifact@v3
         with:
           name: coverage-${{ matrix.python-version }}
           path: .coverage
@@ -347,15 +347,15 @@ jobs:
     needs: pytest
     steps:
       - name: Check out code from GitHub
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2.1.4
+        uses: actions/setup-python@v4
         id: python
         with:
-          python-version: ${{ env.DEFAULT_PYTHON }}
+          python-version: ${{ env.PYTHON_VERSION_DEFAULT }}
       - name: Restore base Python virtual environment
         id: cache-venv
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: venv
           key: >-
@@ -369,7 +369,7 @@ jobs:
           echo "Failed to restore Python virtual environment from cache"
           exit 1
       - name: Download all coverage artifacts
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
       - name: Combine coverage results
         run: |
           . venv/bin/activate
@@ -377,7 +377,7 @@ jobs:
           coverage report --fail-under=72
           coverage xml
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v3
       - name: Upload coverage to Coveralls
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

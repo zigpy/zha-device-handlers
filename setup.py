@@ -4,7 +4,7 @@ import pathlib
 
 from setuptools import find_packages, setup
 
-VERSION = "0.0.84"
+VERSION = "0.0.89"
 
 
 setup(
@@ -19,7 +19,7 @@ setup(
     license="Apache License Version 2.0",
     keywords="zha quirks homeassistant hass",
     packages=find_packages(exclude=["tests"]),
-    python_requires=">=3",
-    install_requires=["zigpy>=0.51.1"],
+    python_requires=">=3.8",
+    install_requires=["zigpy>=0.52"],
     tests_require=["pytest"],
 )

@@ -53,7 +53,7 @@ class DPToAttributeMapping:
     """Container for datapoint to cluster attribute update mapping."""
 
     ep_attribute: str
-    attribute_name: str
+    attribute_name: Union[str, tuple]
     dp_type: TuyaDPType
     converter: Optional[
         Callable[
@@ -114,6 +114,8 @@ class TuyaAttributesCluster(TuyaLocalCluster):
 
     async def write_attributes(self, attributes, manufacturer=None):
         """Defer attributes writing to the set_data tuya command."""
+
+        await super().write_attributes(attributes, manufacturer)
 
         records = self._write_attr_records(attributes)
 
@@ -196,46 +198,58 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
     def from_cluster_data(self, data: TuyaClusterData) -> Optional[TuyaCommand]:
         """Convert from cluster data to a tuya data payload."""
 
-        dp, mapping = self.get_dp_mapping(data.endpoint_id, data.cluster_attr)
-        self.debug("from_cluster_data: %s, %s", dp, mapping)
-        if dp:
+        dp_mapping = self.get_dp_mapping(data.endpoint_id, data.cluster_attr)
+        self.debug("from_cluster_data: %s", dp_mapping)
+        if len(dp_mapping) == 0:
+            self.warning(
+                "No cluster_dp found for %s, %s",
+                data.endpoint_id,
+                data.cluster_attr,
+            )
+            return []
+
+        tuya_commands = []
+        for dp, mapping in dp_mapping.items():
             cmd_payload = TuyaCommand()
             cmd_payload.status = 0
             cmd_payload.tsn = self.endpoint.device.application.get_sequence()
 
-            # cmd_payload.dp = dp
-            # cmd_payload.data = TuyaData()
             datapoint_type = mapping.dp_type
-            # cmd_payload.data.dp_type = datapoint_type
-            # cmd_payload.data.function = 0
             val = data.attr_value
             if mapping.dp_converter:
-                val = mapping.dp_converter(val)
+                args = []
+                if isinstance(mapping.attribute_name, tuple):
+                    endpoint = self.endpoint
+                    if mapping.endpoint_id:
+                        endpoint = endpoint.device.endpoints[mapping.endpoint_id]
+                    cluster = getattr(endpoint, mapping.ep_attribute)
+                    for attr in mapping.attribute_name:
+                        args.append(
+                            val if attr == data.cluster_attr else cluster.get(attr)
+                        )
+                else:
+                    args.append(val)
+                val = mapping.dp_converter(*args)
                 self.debug("converted: %s", val)
             if datapoint_type.ztype:
                 val = datapoint_type.ztype(val)
                 self.debug("ztype: %s", val)
             val = Data.from_value(val)
             self.debug("from_value: %s", val)
-            # cmd_payload.data.raw = t.LVBytes.deserialize(val)[0]
-            # self.debug("raw: %s", cmd_payload.data.raw)
 
             tuya_data = TuyaData()
             tuya_data.dp_type = datapoint_type
             tuya_data.function = 0
-            tuya_data.raw = t.LVBytes.deserialize(val)[0]
+            if datapoint_type == TuyaDPType.RAW:
+                tuya_data.raw = bytes(reversed(val[1:]))
+            else:
+                tuya_data.raw = t.LVBytes.deserialize(val)[0]
             self.debug("raw: %s", tuya_data.raw)
             dpd = TuyaDatapointData(dp, tuya_data)
             cmd_payload.datapoints = [dpd]
 
-            return cmd_payload
-        else:
-            self.warning(
-                "No cluster_dp found for %s, %s",
-                data.endpoint_id,
-                data.cluster_attr,
-            )
-            return None
+            tuya_commands.append(cmd_payload)
+        return tuya_commands
 
     def tuya_mcu_command(self, cluster_data: TuyaClusterData):
         """Tuya MCU command listener. Only manufacturer endpoint must listen to MCU commands."""
@@ -245,9 +259,16 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
             cluster_data,
         )
 
-        tuya_command = self.from_cluster_data(cluster_data)
-        self.debug("tuya_command: %s", tuya_command)
-        if tuya_command:
+        tuya_commands = self.from_cluster_data(cluster_data)
+        self.debug("tuya_commands: %s", tuya_commands)
+        if len(tuya_commands) == 0:
+            self.warning(
+                "no MCU command for data %s",
+                cluster_data,
+            )
+            return
+
+        for tuya_command in tuya_commands:
             self.create_catching_task(
                 self.command(
                     TUYA_SET_DATA,
@@ -256,24 +277,30 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
                     manufacturer=cluster_data.manufacturer,
                 )
             )
-        else:
-            self.warning(
-                "no MCU command for data %s",
-                cluster_data,
-            )
 
     def get_dp_mapping(
         self, endpoint_id: int, attribute_name: str
     ) -> Optional[Tuple[int, DPToAttributeMapping]]:
         """Search for the DP in dp_to_attribute."""
 
+        result = {}
         for dp, dp_mapping in self.dp_to_attribute.items():
-            if (attribute_name == dp_mapping.attribute_name) and (
-                endpoint_id in [dp_mapping.endpoint_id, self.endpoint.endpoint_id]
+            if (
+                attribute_name == dp_mapping.attribute_name
+                or (
+                    isinstance(dp_mapping.attribute_name, tuple)
+                    and attribute_name in dp_mapping.attribute_name
+                )
+            ) and (
+                (
+                    dp_mapping.endpoint_id is None
+                    and endpoint_id == self.endpoint.endpoint_id
+                )
+                or (endpoint_id == dp_mapping.endpoint_id)
             ):
                 self.debug("get_dp_mapping --> found DP: %s", dp)
-                return [dp, dp_mapping]
-        return [None, None]
+                result[dp] = dp_mapping
+        return result
 
     def handle_mcu_version_response(self, payload: MCUVersion) -> foundation.Status:
         """Handle MCU version response."""
@@ -285,6 +312,7 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
     def handle_set_time_request(self, payload: t.uint16_t) -> foundation.Status:
         """Handle set_time requests (0x24)."""
 
+        self.debug("handle_set_time_request payload: %s", payload)
         payload_rsp = TuyaTimePayload()
 
         utc_now = datetime.datetime.utcnow()
@@ -301,6 +329,7 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
         payload_rsp.extend(utc_timestamp.to_bytes(4, "big", signed=False))
         payload_rsp.extend(local_timestamp.to_bytes(4, "big", signed=False))
 
+        self.debug("handle_set_time_request response: %s", payload_rsp)
         self.create_catching_task(
             super().command(TUYA_SET_TIME, payload_rsp, expect_reply=False)
         )
@@ -332,7 +361,7 @@ class TuyaOnOff(OnOff, TuyaLocalCluster):
             cluster_data = TuyaClusterData(
                 endpoint_id=self.endpoint.endpoint_id,
                 cluster_attr="on_off",
-                attr_value=command_id,
+                attr_value=bool(command_id),
                 expect_reply=expect_reply,
                 manufacturer=manufacturer,
             )
