@@ -50,7 +50,7 @@ from zhaquirks.ikea import (
 )
 
 
-class IkeaTradfriRemote(CustomDevice):
+class IkeaTradfriRemoteV1(CustomDevice):
     """Custom device representing IKEA of Sweden TRADFRI remote control V1.0.024."""
 
     signature = {
@@ -233,4 +233,4 @@ class IkeaTradfriRemoteV2(CustomDevice):
         }
     }
 
-    device_automation_triggers = IkeaTradfriRemote.device_automation_triggers.copy()
+    device_automation_triggers = IkeaTradfriRemoteV1.device_automation_triggers.copy()
