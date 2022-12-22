@@ -51,7 +51,8 @@ class NodOnSIN4220(CustomDevice):
                     LightLink.cluster_id,
                     64599,
                 ],
-                OUTPUT_CLUSTERS: [Identify.cluster_id,
+                OUTPUT_CLUSTERS: [
+                    Identify.cluster_id,
                     OnOff.cluster_id,
                     Ota.cluster_id,
                 ],
