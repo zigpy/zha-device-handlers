@@ -194,6 +194,7 @@ class TuyaRCBOOnOff(TuyaOnOff, TuyaAttributesCluster):
 
             cluster_data = TuyaClusterData(
                 endpoint_id=self.endpoint.endpoint_id,
+                cluster_name=self.ep_attribute,
                 cluster_attr="trip",
                 attr_value=True,
                 expect_reply=expect_reply,
@@ -328,6 +329,7 @@ class TuyaRCBOMetering(Metering, TuyaAttributesCluster):
         if command_id == 0x73:
             cluster_data = TuyaClusterData(
                 endpoint_id=self.endpoint.endpoint_id,
+                cluster_name=self.ep_attribute,
                 cluster_attr="clear_device_data",
                 attr_value=True,
                 expect_reply=expect_reply,
