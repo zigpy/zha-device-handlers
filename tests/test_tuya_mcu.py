@@ -4,16 +4,14 @@ import datetime
 from unittest import mock
 
 import pytest
-import zigpy.types as t
 from zigpy.zcl import foundation
 
 import zhaquirks
-from zhaquirks.tuya import TUYA_MCU_VERSION_RSP, TUYA_SET_TIME
+from zhaquirks.tuya import TUYA_MCU_VERSION_RSP, TUYA_SET_TIME, TuyaDPType
 from zhaquirks.tuya.mcu import (
     ATTR_MCU_VERSION,
     TuyaAttributesCluster,
     TuyaClusterData,
-    TuyaDPType,
     TuyaMCUCluster,
 )
 
@@ -215,13 +213,6 @@ async def test_tuya_methods(zigpy_device_from_quirk, quirk):
 
 async def test_tuya_mcu_classes():
     """Test tuya conversion from Data to ztype and reverse."""
-
-    # Test TuyaDPType class
-    assert len(TuyaDPType) == 6
-    assert TuyaDPType.BOOL.ztype == t.Bool
-    # no ztype for TuyaDPType.RAW
-    assert not TuyaDPType.RAW.ztype
-    assert TuyaDPType(3) == TuyaDPType.STRING
 
     # Test TuyaMCUCluster.MCUVersion class
     mcu_version = TuyaMCUCluster.MCUVersion.deserialize(b"\x00\x03\x82")[0]

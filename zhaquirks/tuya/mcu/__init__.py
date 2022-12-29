@@ -15,12 +15,12 @@ from zhaquirks.tuya import (
     TUYA_MCU_VERSION_RSP,
     TUYA_SET_DATA,
     TUYA_SET_TIME,
-    Data,
     NoManufacturerCluster,
     PowerOnState,
     TuyaCommand,
     TuyaData,
     TuyaDatapointData,
+    TuyaDPType,
     TuyaLocalCluster,
     TuyaNewManufCluster,
     TuyaTimePayload,
@@ -28,24 +28,6 @@ from zhaquirks.tuya import (
 
 # New manufacturer attributes
 ATTR_MCU_VERSION = 0xEF00
-
-
-class TuyaDPType(t.enum8):
-    """Tuya DataPoint Type."""
-
-    RAW = 0x00, None
-    BOOL = 0x01, t.Bool
-    VALUE = 0x02, t.uint32_t
-    STRING = 0x03, None
-    ENUM = 0x04, t.enum8
-    BITMAP = 0x05, None
-
-    def __new__(cls, value, ztype):
-        """Overload instance to store the ztype."""
-
-        member = t.enum8.__new__(cls, value)
-        member.ztype = ztype
-        return member
 
 
 @dataclasses.dataclass
@@ -230,20 +212,12 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
                 else:
                     args.append(val)
                 val = mapping.dp_converter(*args)
-                self.debug("converted: %s", val)
-            if datapoint_type.ztype:
-                val = datapoint_type.ztype(val)
-                self.debug("ztype: %s", val)
-            val = Data.from_value(val)
-            self.debug("from_value: %s", val)
+            self.debug("value: %s", val)
 
             tuya_data = TuyaData()
             tuya_data.dp_type = datapoint_type
             tuya_data.function = 0
-            if datapoint_type == TuyaDPType.RAW:
-                tuya_data.raw = bytes(reversed(val[1:]))
-            else:
-                tuya_data.raw = t.LVBytes.deserialize(val)[0]
+            tuya_data.payload = val
             self.debug("raw: %s", tuya_data.raw)
             dpd = TuyaDatapointData(dp, tuya_data)
             cmd_payload.datapoints = [dpd]

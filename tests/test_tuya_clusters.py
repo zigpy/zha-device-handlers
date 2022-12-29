@@ -3,6 +3,7 @@
 from unittest import mock
 
 import pytest
+import zigpy.types as t
 import zigpy.zcl.foundation as zcl_f
 
 from zhaquirks.tuya import (
@@ -10,6 +11,7 @@ from zhaquirks.tuya import (
     TUYA_GET_DATA,
     TUYA_SET_DATA_RESPONSE,
     TUYA_SET_TIME,
+    BigEndianInt16,
     TuyaCommand,
     TuyaData,
     TuyaDatapointData,
@@ -26,6 +28,27 @@ def tuya_cluster(zigpy_device_mock):
     return cluster
 
 
+def test_tuya_data_raw():
+    """Test tuya "Raw" datatype."""
+
+    class Test(t.Struct):
+        test_bool: t.Bool
+        test_uint16_t_be: BigEndianInt16
+
+    data = b"\x00\x00\x03\x01\x02\x46"
+    extra = b"extra data"
+
+    r, rest = TuyaData.deserialize(data + extra)
+    assert rest == extra
+
+    assert r.dp_type == 0
+    assert r.raw == b"\x01\x02\x46"
+    assert Test.deserialize(r.payload)[0] == Test(True, 582)
+
+    r.payload = Test(False, 314)
+    assert r.raw == b"\x00\x01\x3a"
+
+
 def test_tuya_data_value():
     """Test tuya "Value" datatype."""
 
@@ -36,8 +59,11 @@ def test_tuya_data_value():
     assert rest == extra
 
     assert r.dp_type == 2
-    assert r.raw == b"\xdb\x02\x00\x00"
+    assert r.raw == b"\x00\x00\x02\xdb"
     assert r.payload == 731
+
+    r.payload = 582
+    assert r.raw == b"\x00\x00\x02\x46"
 
 
 def test_tuya_data_bool():
@@ -53,6 +79,9 @@ def test_tuya_data_bool():
     assert r.raw == b"\x00"
     assert not r.payload
 
+    r.payload = True
+    assert r.raw == b"\x01"
+
     data = b"\x01\x00\x01\x01"
     extra = b"extra data"
 
@@ -62,6 +91,9 @@ def test_tuya_data_bool():
     assert r.dp_type == 1
     assert r.raw == b"\x01"
     assert r.payload
+
+    r.payload = False
+    assert r.raw == b"\x00"
 
 
 def test_tuya_data_enum():
@@ -77,6 +109,9 @@ def test_tuya_data_enum():
     assert r.raw == b"\x40"
     assert r.payload == 0x40
 
+    r.payload = 0x42
+    assert r.raw == b"\x42"
+
 
 def test_tuya_data_string():
     """Test tuya String datatype."""
@@ -90,6 +125,9 @@ def test_tuya_data_string():
     assert r.dp_type == 3
     assert r.raw == b"Tuya"
     assert r.payload == "Tuya"
+
+    r.payload = "Data"
+    assert r.raw == b"Data"
 
 
 def test_tuya_data_bitmap():
@@ -105,13 +143,22 @@ def test_tuya_data_bitmap():
     assert r.raw == b"\x40"
     assert r.payload == 0x40
 
+    r.payload = 0x82
+    assert r.raw == b"\x82"
+
     data = b"\x05\x00\x02\x40\x02"
     r, _ = TuyaData.deserialize(data)
     r.payload == 0x4002
 
+    r.payload = t.bitmap16(0x2004)
+    assert r.raw == b"\x20\x04"
+
     data = b"\x05\x00\x04\x40\x02\x80\x01"
     r, _ = TuyaData.deserialize(data)
     r.payload == 0x40028001
+
+    r.payload = t.bitmap32(0x10082004)
+    assert r.raw == b"\x10\x08\x20\x04"
 
 
 def test_tuya_data_bitmap_invalid():
@@ -125,6 +172,25 @@ def test_tuya_data_bitmap_invalid():
 
     with pytest.raises(ValueError):
         r.payload
+
+
+def test_tuya_data_unknown():
+    """Test tuya unknown datatype."""
+
+    data = b"\x06\x00\x04\x03\x02\x01\x00"
+    extra = b"extra data"
+
+    r, rest = TuyaData.deserialize(data + extra)
+    assert rest == extra
+
+    assert r.dp_type == 6
+    assert r.raw == b"\x03\x02\x01\x00"
+
+    with pytest.raises(ValueError):
+        r.payload
+
+    with pytest.raises(ValueError):
+        r.payload = 0
 
 
 @pytest.mark.parametrize(
