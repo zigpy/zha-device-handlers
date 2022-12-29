@@ -57,7 +57,7 @@ class F000LevelControlCluster(NoManufacturerCluster, LevelControl):
     server_commands = LevelControl.server_commands.copy()
     server_commands[TUYA_CUSTOM_LEVEL_COMMAND] = foundation.ZCLCommandDef(
         "moveToLevelTuya",
-        (TuyaLevelPayload,),
+        {"payload": TuyaLevelPayload},
         is_manufacturer_specific=False,
     )
 
