@@ -1,7 +1,6 @@
 """Tuya TS004F devices."""
 from __future__ import annotations
 
-import asyncio
 import logging
 
 from zigpy.profiles import zha
