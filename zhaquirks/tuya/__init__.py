@@ -233,6 +233,8 @@ class TuyaData(t.Struct):
 
     def __init__(self, value=None, function=0, *args, **kwargs):
         """Convert from a zigpy typed value to a tuya data payload."""
+        self.function = function
+
         if value is None:
             return
         elif isinstance(value, (t.bitmap8, t.bitmap16, t.bitmap32)):
@@ -248,7 +250,6 @@ class TuyaData(t.Struct):
         elif isinstance(value, t.Struct):
             self.dp_type = TuyaDPType.RAW
 
-        self.function = function
         self.payload = value
 
 
