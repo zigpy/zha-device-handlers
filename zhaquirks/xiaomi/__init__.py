@@ -586,7 +586,7 @@ class ElectricalMeasurementCluster(LocalDataCluster, ElectricalMeasurement):
 
     def power_reported(self, value):
         """Power reported."""
-        self._update_attribute(self.POWER_ID, value * 10)
+        self._update_attribute(self.POWER_ID, round(value * 10))
 
     def voltage_reported(self, value):
         """Voltage reported."""
@@ -594,7 +594,7 @@ class ElectricalMeasurementCluster(LocalDataCluster, ElectricalMeasurement):
 
     def consumption_reported(self, value):
         """Consumption reported."""
-        self._update_attribute(self.CONSUMPTION_ID, value * 1000)
+        self._update_attribute(self.CONSUMPTION_ID, round(value * 1000))
 
 
 class MeteringCluster(LocalDataCluster, Metering):
@@ -621,7 +621,7 @@ class MeteringCluster(LocalDataCluster, Metering):
 
     def consumption_reported(self, value):
         """Consumption reported."""
-        self._update_attribute(self.CURRENT_SUMM_DELIVERED_ID, value * 1000)
+        self._update_attribute(self.CURRENT_SUMM_DELIVERED_ID, round(value * 1000))
 
 
 class IlluminanceMeasurementCluster(CustomCluster, IlluminanceMeasurement):
