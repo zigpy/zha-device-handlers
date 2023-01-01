@@ -203,6 +203,11 @@ class Thermostat_TZE200_c88teujp(TuyaThermostat):
             ("_TZE200_9gvruqf5", "TS0601"),
             ("_TZE200_zuhszj9s", "TS0601"),
             ("_TZE200_2ekuz3dz", "TS0601"),
+            ("_TZE200_zr9c0day", "TS0601"),
+            ("_TZE200_0dvm9mva", "TS0601"),
+            ("_TZE200_h4cgnbzg", "TS0601"),
+            ("_TZE200_exfrnlow", "TS0601"),
+            ("_TZE200_9m4kmbfu", "TS0601"),
         ],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=81
