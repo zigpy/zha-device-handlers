@@ -29,6 +29,9 @@ from zhaquirks.tuya import (
 # New manufacturer attributes
 ATTR_MCU_VERSION = 0xEF00
 
+# manufacturer commands
+TUYA_MCU_CONNECTION_STATUS = 0x25
+
 
 @dataclasses.dataclass
 class DPToAttributeMapping:
@@ -150,6 +153,12 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
 
             return None
 
+    class TuyaConnectionStatus(t.Struct):
+        """Tuya connection status data."""
+
+        tsn: t.uint8_t
+        status: t.LVBytes
+
     attributes = TuyaNewManufCluster.attributes.copy()
     attributes.update(
         {
@@ -165,6 +174,28 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
                 "mcu_version_response",
                 {"version": MCUVersion},
                 True,
+                is_manufacturer_specific=True,
+            ),
+        }
+    )
+    client_commands.update(
+        {
+            TUYA_MCU_CONNECTION_STATUS: foundation.ZCLCommandDef(
+                "mcu_connection_status",
+                {"payload": TuyaConnectionStatus},
+                True,
+                is_manufacturer_specific=True,
+            ),
+        }
+    )
+
+    server_commands = TuyaNewManufCluster.server_commands.copy()
+    server_commands.update(
+        {
+            TUYA_MCU_CONNECTION_STATUS: foundation.ZCLCommandDef(
+                "mcu_connection_status_rsp",
+                {"payload": TuyaConnectionStatus},
+                False,
                 is_manufacturer_specific=True,
             ),
         }
@@ -306,6 +337,21 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
         self.debug("handle_set_time_request response: %s", payload_rsp)
         self.create_catching_task(
             super().command(TUYA_SET_TIME, payload_rsp, expect_reply=False)
+        )
+
+        return foundation.Status.SUCCESS
+
+    def handle_mcu_connection_status(
+        self, payload: TuyaConnectionStatus
+    ) -> foundation.Status:
+        """Handle gateway connection status requests (0x25)."""
+
+        payload_rsp = TuyaMCUCluster.TuyaConnectionStatus()
+        payload_rsp.tsn = payload.tsn
+        payload_rsp.status = b"\x01"  # 0x00 not connected to internet | 0x01 connected to internet | 0x02 time out
+
+        self.create_catching_task(
+            super().command(TUYA_MCU_CONNECTION_STATUS, payload_rsp, expect_reply=False)
         )
 
         return foundation.Status.SUCCESS
