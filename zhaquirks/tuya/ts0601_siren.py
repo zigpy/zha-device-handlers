@@ -292,6 +292,7 @@ class TuyaMCUSiren(OnOff, TuyaAttributesCluster):
         if command_id in (0x0000, 0x0001):
             cluster_data = TuyaClusterData(
                 endpoint_id=self.endpoint.endpoint_id,
+                cluster_name=self.ep_attribute,
                 cluster_attr="on_off",
                 attr_value=command_id,
                 expect_reply=expect_reply,

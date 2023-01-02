@@ -15,12 +15,12 @@ from zhaquirks.tuya import (
     TUYA_MCU_VERSION_RSP,
     TUYA_SET_DATA,
     TUYA_SET_TIME,
-    Data,
     NoManufacturerCluster,
     PowerOnState,
     TuyaCommand,
     TuyaData,
     TuyaDatapointData,
+    TuyaDPType,
     TuyaLocalCluster,
     TuyaNewManufCluster,
     TuyaTimePayload,
@@ -29,23 +29,8 @@ from zhaquirks.tuya import (
 # New manufacturer attributes
 ATTR_MCU_VERSION = 0xEF00
 
-
-class TuyaDPType(t.enum8):
-    """Tuya DataPoint Type."""
-
-    RAW = 0x00, None
-    BOOL = 0x01, t.Bool
-    VALUE = 0x02, t.uint32_t
-    STRING = 0x03, None
-    ENUM = 0x04, t.enum8
-    BITMAP = 0x05, None
-
-    def __new__(cls, value, ztype):
-        """Overload instance to store the ztype."""
-
-        member = t.enum8.__new__(cls, value)
-        member.ztype = ztype
-        return member
+# manufacturer commands
+TUYA_MCU_CONNECTION_STATUS = 0x25
 
 
 @dataclasses.dataclass
@@ -78,6 +63,7 @@ class TuyaClusterData(t.Struct):
     """Tuya cluster data."""
 
     endpoint_id: int
+    cluster_name: str
     cluster_attr: str
     attr_value: int  # Maybe also others types?
     expect_reply: bool
@@ -125,6 +111,7 @@ class TuyaAttributesCluster(TuyaLocalCluster):
 
             cluster_data = TuyaClusterData(
                 endpoint_id=self.endpoint.endpoint_id,
+                cluster_name=self.ep_attribute,
                 cluster_attr=self.attributes[record.attrid][0],
                 attr_value=record.value.value,
                 expect_reply=False,
@@ -168,6 +155,12 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
 
             return None
 
+    class TuyaConnectionStatus(t.Struct):
+        """Tuya connection status data."""
+
+        tsn: t.uint8_t
+        status: t.LVBytes
+
     attributes = TuyaNewManufCluster.attributes.copy()
     attributes.update(
         {
@@ -183,6 +176,28 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
                 "mcu_version_response",
                 {"version": MCUVersion},
                 True,
+                is_manufacturer_specific=True,
+            ),
+        }
+    )
+    client_commands.update(
+        {
+            TUYA_MCU_CONNECTION_STATUS: foundation.ZCLCommandDef(
+                "mcu_connection_status",
+                {"payload": TuyaConnectionStatus},
+                True,
+                is_manufacturer_specific=True,
+            ),
+        }
+    )
+
+    server_commands = TuyaNewManufCluster.server_commands.copy()
+    server_commands.update(
+        {
+            TUYA_MCU_CONNECTION_STATUS: foundation.ZCLCommandDef(
+                "mcu_connection_status_rsp",
+                {"payload": TuyaConnectionStatus},
+                False,
                 is_manufacturer_specific=True,
             ),
         }
@@ -230,17 +245,12 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
                 else:
                     args.append(val)
                 val = mapping.dp_converter(*args)
-                self.debug("converted: %s", val)
-            if datapoint_type.ztype:
-                val = datapoint_type.ztype(val)
-                self.debug("ztype: %s", val)
-            val = Data.from_value(val)
-            self.debug("from_value: %s", val)
+            self.debug("value: %s", val)
 
             tuya_data = TuyaData()
             tuya_data.dp_type = datapoint_type
             tuya_data.function = 0
-            tuya_data.raw = t.LVBytes.deserialize(val)[0]
+            tuya_data.payload = val
             self.debug("raw: %s", tuya_data.raw)
             dpd = TuyaDatapointData(dp, tuya_data)
             cmd_payload.datapoints = [dpd]
@@ -274,6 +284,10 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
                     manufacturer=cluster_data.manufacturer,
                 )
             )
+
+        endpoint = self.endpoint.device.endpoints[cluster_data.endpoint_id]
+        cluster = getattr(endpoint, cluster_data.cluster_name)
+        cluster.update_attribute(cluster_data.cluster_attr, cluster_data.attr_value)
 
     def get_dp_mapping(
         self, endpoint_id: int, attribute_name: str
@@ -333,6 +347,21 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
 
         return foundation.Status.SUCCESS
 
+    def handle_mcu_connection_status(
+        self, payload: TuyaConnectionStatus
+    ) -> foundation.Status:
+        """Handle gateway connection status requests (0x25)."""
+
+        payload_rsp = TuyaMCUCluster.TuyaConnectionStatus()
+        payload_rsp.tsn = payload.tsn
+        payload_rsp.status = b"\x01"  # 0x00 not connected to internet | 0x01 connected to internet | 0x02 time out
+
+        self.create_catching_task(
+            super().command(TUYA_MCU_CONNECTION_STATUS, payload_rsp, expect_reply=False)
+        )
+
+        return foundation.Status.SUCCESS
+
 
 class TuyaOnOff(OnOff, TuyaLocalCluster):
     """Tuya MCU OnOff cluster."""
@@ -357,8 +386,9 @@ class TuyaOnOff(OnOff, TuyaLocalCluster):
         if command_id in (0x0000, 0x0001):
             cluster_data = TuyaClusterData(
                 endpoint_id=self.endpoint.endpoint_id,
+                cluster_name=self.ep_attribute,
                 cluster_attr="on_off",
-                attr_value=command_id,
+                attr_value=bool(command_id),
                 expect_reply=expect_reply,
                 manufacturer=manufacturer,
             )
@@ -499,14 +529,15 @@ class TuyaLevelControl(LevelControl, TuyaLocalCluster):
         else:
             level = 0
 
-        # (move_to_level_with_on_off --> send the on_off command first)
-        if command_id == 0x0004:
+        on_off = bool(level)  # maybe must be compared against `minimum_level` attribute
+
+        # (move_to_level_with_on_off --> send the on_off command first, but only if needed)
+        if command_id == 0x0004 and self.endpoint.on_off.get("on_off") != on_off:
             cluster_data = TuyaClusterData(
                 endpoint_id=self.endpoint.endpoint_id,
+                cluster_name="on_off",
                 cluster_attr="on_off",
-                attr_value=bool(
-                    level
-                ),  # maybe must be compared against `minimum_level` attribute
+                attr_value=on_off,
                 expect_reply=expect_reply,
                 manufacturer=manufacturer,
             )
@@ -515,10 +546,17 @@ class TuyaLevelControl(LevelControl, TuyaLocalCluster):
                 cluster_data,
             )
 
+        # level 0 --> switched off
+        if command_id == 0x0004 and not on_off:
+            return foundation.GENERAL_COMMANDS[
+                foundation.GeneralCommand.Default_Response
+            ].schema(command_id=command_id, status=foundation.Status.SUCCESS)
+
         # (move_to_level, move, move_to_level_with_on_off)
         if command_id in (0x0000, 0x0001, 0x0004):
             cluster_data = TuyaClusterData(
                 endpoint_id=self.endpoint.endpoint_id,
+                cluster_name=self.ep_attribute,
                 cluster_attr="current_level",
                 attr_value=level,
                 expect_reply=expect_reply,

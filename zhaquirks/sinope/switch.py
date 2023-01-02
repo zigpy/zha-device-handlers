@@ -10,6 +10,7 @@ import zigpy.types as t
 from zigpy.zcl.clusters.general import (
     Basic,
     BinaryInput,
+    DeviceTemperature,
     Groups,
     Identify,
     LevelControl,
@@ -17,9 +18,11 @@ from zigpy.zcl.clusters.general import (
     Ota,
     PowerConfiguration,
     Scenes,
+    Time,
 )
 from zigpy.zcl.clusters.homeautomation import Diagnostic, ElectricalMeasurement
 from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
+from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.clusters.smartenergy import Metering
 
 from zhaquirks.const import (
@@ -57,6 +60,22 @@ class SinopeLoadControllerManufacturerCluster(CustomCluster):
         0x0060: ("ConnectedLoad", t.uint16_t, True),
         0x0070: ("CurrentLoad", t.bitmap8, True),
         0x00A0: ("Timer", t.uint32_t, True),
+    }
+
+
+class SinopeCalypsoControllerManufacturerCluster(CustomCluster):
+    """SinopeCalypsoControllerManufacturerCluster manufacturer cluster."""
+
+    cluster_id = SINOPE_MANUFACTURER_CLUSTER_ID
+    name = "Sinopé Calypso Controller Manufacturer specific"
+    ep_attribute = "sinope_Calypso_controller_manufacturer_specific"
+    attributes = {
+        0x0060: ("ConnectedLoad", t.uint16_t, True),
+        0x0070: ("CurrentLoad", t.bitmap8, True),
+        0x0076: ("drConfigWaterTempMin", t.uint8_t, True),
+        0x0077: ("drConfigWaterTempTime", t.uint8_t, True),
+        0x0078: ("drWTTimeOn", t.uint16_t, True),
+        0x0283: ("ColdLoadPickupStatus", t.uint8_t, True),
     }
 
 
@@ -123,7 +142,6 @@ class SinopeTechnologiesLoadController(CustomDevice):
         # output_clusters=[3, 4, 25]>
         MODELS_INFO: [
             (SINOPE, "RM3250ZB"),
-            (SINOPE, "RM3500ZB"),
         ],
         ENDPOINTS: {
             1: {
@@ -305,6 +323,87 @@ class SinopeTechnologiesMultiController(CustomDevice):
                     BinaryInput.cluster_id,
                     TemperatureMeasurement.cluster_id,
                     SinopeMultiControllerManufacturerCluster,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+        },
+    }
+
+
+class SinopeTechnologiesCalypso(CustomDevice):
+    """SinopeTechnologiesCalypso custom device."""
+
+    signature = {
+        # <SimpleDescriptor(endpoint=1, profile=260,
+        # device_type=260, device_version=0,
+        # input_clusters=[0, 2, 3, 4, 5, 6, 1026, 1280, 1794, 2820, 2821, 65281]
+        # output_clusters=[10, 25]>
+        MODELS_INFO: [
+            (SINOPE, "RM3500ZB"),
+        ],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha_p.PROFILE_ID,
+                DEVICE_TYPE: zha_p.DeviceType.DIMMER_SWITCH,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    DeviceTemperature.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    TemperatureMeasurement.cluster_id,
+                    IasZone.cluster_id,
+                    Metering.cluster_id,
+                    ElectricalMeasurement.cluster_id,
+                    Diagnostic.cluster_id,
+                    SINOPE_MANUFACTURER_CLUSTER_ID,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Time.cluster_id,
+                    Ota.cluster_id,
+                ],
+            },
+            2: {
+                PROFILE_ID: zha_p.PROFILE_ID,
+                DEVICE_TYPE: zha_p.DeviceType.DIMMER_SWITCH,
+                INPUT_CLUSTERS: [
+                    TemperatureMeasurement.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha_p.PROFILE_ID,
+                DEVICE_TYPE: zha_p.DeviceType.ON_OFF_OUTPUT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    DeviceTemperature.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    TemperatureMeasurement.cluster_id,
+                    IasZone.cluster_id,
+                    Metering.cluster_id,
+                    ElectricalMeasurement.cluster_id,
+                    Diagnostic.cluster_id,
+                    SinopeCalypsoControllerManufacturerCluster,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Time.cluster_id,
+                    Ota.cluster_id,
+                ],
+            },
+            2: {
+                PROFILE_ID: zha_p.PROFILE_ID,
+                DEVICE_TYPE: zha_p.DeviceType.ON_OFF_OUTPUT,
+                INPUT_CLUSTERS: [
+                    TemperatureMeasurement.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [],
             },

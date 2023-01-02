@@ -21,7 +21,7 @@ from zhaquirks.tuya import (
 from zhaquirks.tuya.mcu import EnchantedDevice
 
 
-class TuyaSingleNoNeutralSwitch(TuyaSwitch):
+class TuyaSingleNoNeutralSwitch(EnchantedDevice, TuyaSwitch):
     """Tuya 1 gang no neutral light switch."""
 
     signature = {
@@ -66,7 +66,7 @@ class TuyaSingleNoNeutralSwitch(TuyaSwitch):
     }
 
 
-class TuyaDoubleNoNeutralSwitch(TuyaSwitch):
+class TuyaDoubleNoNeutralSwitch(EnchantedDevice, TuyaSwitch):
     """Tuya 2 gang no neutral light switch."""
 
     signature = {
@@ -212,7 +212,7 @@ class TuyaDoubleNoNeutralSwitch_2(EnchantedDevice, TuyaSwitch):
     }
 
 
-class TuyaTripleNoNeutralSwitch(TuyaSwitch):
+class TuyaTripleNoNeutralSwitch(EnchantedDevice, TuyaSwitch):
     """Tuya 3 gang no neutral light switch."""
 
     signature = {
@@ -308,7 +308,7 @@ class TuyaTripleNoNeutralSwitch(TuyaSwitch):
     }
 
 
-class Tuya_Single_No_N(TuyaSwitch):
+class Tuya_Single_No_N(EnchantedDevice, TuyaSwitch):
     """Tuya 1 gang no neutral light switch."""
 
     signature = {
@@ -357,7 +357,7 @@ class Tuya_Single_No_N(TuyaSwitch):
     }
 
 
-class Tuya_Double_No_N(TuyaSwitch):
+class Tuya_Double_No_N(EnchantedDevice, TuyaSwitch):
     """Tuya 2 gang no neutral light switch."""
 
     signature = {
@@ -438,7 +438,7 @@ class Tuya_Double_No_N(TuyaSwitch):
     }
 
 
-class Tuya_Double_No_N_Plus(TuyaSwitch):
+class Tuya_Double_No_N_Plus(EnchantedDevice, TuyaSwitch):
     """Tuya 2 gang no neutral light switch."""
 
     signature = {
@@ -517,7 +517,7 @@ class Tuya_Double_No_N_Plus(TuyaSwitch):
     }
 
 
-class Tuya_Double_Var05(TuyaSwitch):
+class Tuya_Double_Var05(EnchantedDevice, TuyaSwitch):
     """Tuya 2 gang no neutral light switch (variation 05)."""
 
     signature = {
@@ -587,7 +587,7 @@ class Tuya_Double_Var05(TuyaSwitch):
     }
 
 
-class Tuya_Triple_No_N(TuyaSwitch):
+class Tuya_Triple_No_N(EnchantedDevice, TuyaSwitch):
     """Tuya 3 gang no neutral light switch."""
 
     signature = {
@@ -698,7 +698,7 @@ class Tuya_Triple_No_N(TuyaSwitch):
     }
 
 
-class Tuya_Triple_No_N_Plus(TuyaSwitch):
+class Tuya_Triple_No_N_Plus(EnchantedDevice, TuyaSwitch):
     """Tuya 3 gang no neutral light switch."""
 
     signature = {

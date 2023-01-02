@@ -1,4 +1,4 @@
-"""Tuya HOME-LUX illuminance sensor."""
+"""Tuya illuminance sensors."""
 
 import math
 from typing import Dict
@@ -74,6 +74,7 @@ class TuyaIlluminance(CustomDevice):
         #  endpoint=1, profile=260, device_type=81, device_version=1,
         #  input_clusters=[4, 5, 61184, 0], output_clusters=[25, 10])
         MODELS_INFO: [
+            ("_TZE200_khx7nnka", "TS0601"),
             ("_TZE200_yi4jtqq1", "TS0601"),
         ],
         ENDPOINTS: {

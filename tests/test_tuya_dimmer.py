@@ -21,6 +21,7 @@ async def test_command(zigpy_device_from_quirk, quirk):
     dimmer_dev = zigpy_device_from_quirk(quirk)
     tuya_cluster = dimmer_dev.endpoints[1].tuya_manufacturer
     dimmer1_cluster = dimmer_dev.endpoints[1].level
+    switch1_cluster = dimmer_dev.endpoints[1].on_off
     switch2_cluster = dimmer_dev.endpoints[2].on_off
     tuya_listener = ClusterListener(tuya_cluster)
 
@@ -30,7 +31,7 @@ async def test_command(zigpy_device_from_quirk, quirk):
     with mock.patch.object(
         tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
     ) as m1:
-        rsp = await switch2_cluster.command(0x0001)
+        rsp = await switch2_cluster.command(0x0001)  # turn_on
         await wait_for_zigpy_tasks()
 
         m1.assert_called_with(
@@ -42,13 +43,71 @@ async def test_command(zigpy_device_from_quirk, quirk):
         )
         assert rsp.status == foundation.Status.SUCCESS
 
-        rsp = await dimmer1_cluster.command(0x0000, 225)
+        rsp = await dimmer1_cluster.command(0x0000, 225)  # move_to_level
         await wait_for_zigpy_tasks()
 
         m1.assert_called_with(
             61184,
             4,
             b"\x01\x04\x00\x00\x03\x02\x02\x00\x04\x00\x00\x03r",
+            expect_reply=True,
+            command_id=0,
+        )
+        assert rsp.status == foundation.Status.SUCCESS
+
+        rsp = await switch1_cluster.command(0x0001)  # turn_on
+        await wait_for_zigpy_tasks()
+
+        m1.assert_called_with(
+            61184,
+            6,
+            b"\x01\x06\x00\x00\x05\x01\x01\x00\x01\x01",
+            expect_reply=True,
+            command_id=0,
+        )
+        assert rsp.status == foundation.Status.SUCCESS
+
+        rsp = await dimmer1_cluster.command(0x0004, 125)  # move_to_level_with_on_off
+        await wait_for_zigpy_tasks()
+
+        # Should not trigger switch as it is already on
+        m1.assert_called_with(
+            61184,
+            8,
+            b"\x01\x08\x00\x00\x07\x02\x02\x00\x04\x00\x00\x01\xea",
+            expect_reply=True,
+            command_id=0,
+        )
+        assert rsp.status == foundation.Status.SUCCESS
+
+        rsp = await dimmer1_cluster.command(0x0004, 0)  # move_to_level_with_on_off
+        await wait_for_zigpy_tasks()
+
+        # Should switch off without dimming
+        m1.assert_called_with(
+            61184,
+            10,
+            b"\x01\x0a\x00\x00\x09\x01\x01\x00\x01\x00",
+            expect_reply=True,
+            command_id=0,
+        )
+        assert rsp.status == foundation.Status.SUCCESS
+
+        rsp = await dimmer1_cluster.command(0x0004, 25)  # move_to_level_with_on_off
+        await wait_for_zigpy_tasks()
+
+        # Should switch on and then switch to level
+        m1.assert_any_call(
+            61184,
+            13,
+            b"\x01\r\x00\x00\x0b\x01\x01\x00\x01\x01",
+            expect_reply=True,
+            command_id=0,
+        )
+        m1.assert_called_with(
+            61184,
+            14,
+            b"\x01\x0e\x00\x00\x0c\x02\x02\x00\x04\x00\x00\x00\x62",
             expect_reply=True,
             command_id=0,
         )
