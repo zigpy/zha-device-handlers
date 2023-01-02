@@ -26,13 +26,14 @@ from zhaquirks.const import (
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
-    SKIP_CONFIGURATION,
 )
 from zhaquirks.xiaomi import (
     LUMI,
     AnalogInputCluster,
     BasicCluster,
     ElectricalMeasurementCluster,
+    MeteringCluster,
+    XiaomiAqaraE1Cluster,
     XiaomiCustomDevice,
 )
 
@@ -106,7 +107,6 @@ class Plug(XiaomiCustomDevice):
         },
     }
     replacement = {
-        SKIP_CONFIGURATION: True,
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -122,6 +122,8 @@ class Plug(XiaomiCustomDevice):
                     BinaryOutput.cluster_id,
                     Time.cluster_id,
                     ElectricalMeasurementCluster,
+                    XiaomiAqaraE1Cluster,
+                    MeteringCluster,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id, Time.cluster_id],
             },
