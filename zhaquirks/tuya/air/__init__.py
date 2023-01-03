@@ -52,9 +52,9 @@ class TuyaCO2ManufCluster(TuyaNewManufCluster):
 
     dp_to_attribute: Dict[int, DPToAttributeMapping] = {
         2: DPToAttributeMapping(
-            TuyaAirQualityCO2.ep_attribute,
+            TuyaAirQualityFormaldehyde.ep_attribute,
             "measured_value",
-            lambda x: x * 1e-6,
+            lambda x: x * 1e-9,
         ),
         18: DPToAttributeMapping(
             TuyaAirQualityTemperature.ep_attribute, "measured_value", lambda x: x * 10
@@ -66,7 +66,7 @@ class TuyaCO2ManufCluster(TuyaNewManufCluster):
             TuyaAirQualityVOC.ep_attribute, "measured_value", lambda x: x * 1e-6
         ),
         22: DPToAttributeMapping(
-            TuyaAirQualityFormaldehyde.ep_attribute,
+            TuyaAirQualityCO2.ep_attribute,
             "measured_value",
             lambda x: x * 1e-6,
         ),
