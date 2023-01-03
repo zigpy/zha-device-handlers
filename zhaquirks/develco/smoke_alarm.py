@@ -24,7 +24,7 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 
-from . import DEVELCO, FIENT, DevelcoIasZone, DevelcoPowerConfiguration
+from . import DEVELCO, FRIENT, DevelcoIasZone, DevelcoPowerConfiguration
 
 MANUFACTURER = 0x1015
 
