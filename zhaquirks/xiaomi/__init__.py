@@ -438,6 +438,10 @@ class XiaomiPowerConfiguration(PowerConfiguration, LocalDataCluster):
         self._update_attribute(self.BATTERY_VOLTAGE_ATTR, round(voltage_mv / 100, 1))
         self._update_battery_percentage(voltage_mv)
 
+    def battery_percent_reported(self, battery_percent: int) -> None:
+        """Battery reported as percentage."""
+        self._update_attribute(self.BATTERY_PERCENTAGE_REMAINING, battery_percent * 2)
+
     def _update_battery_percentage(self, voltage_mv: int) -> None:
         voltage_mv = max(voltage_mv, self.MIN_VOLTS_MV)
         voltage_mv = min(voltage_mv, self.MAX_VOLTS_MV)
