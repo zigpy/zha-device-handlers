@@ -34,6 +34,7 @@ from zhaquirks.tuya import (
 )
 from zhaquirks.tuya.mcu import EnchantedDevice
 
+
 # Tuya Zigbee Metering Cluster Correction Implementation
 class TuyaZBMeteringCluster_v2(CustomCluster, Metering):
     """Divides the kWh for tuya."""
