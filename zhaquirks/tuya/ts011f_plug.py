@@ -1,7 +1,7 @@
 """TS011F plug."""
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
+from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
@@ -33,6 +33,15 @@ from zhaquirks.tuya import (
     TuyaZBOnOffAttributeCluster,
 )
 from zhaquirks.tuya.mcu import EnchantedDevice
+
+# Tuya Zigbee Metering Cluster Correction Implementation
+class TuyaZBMeteringCluster_v2(CustomCluster, Metering):
+    """Divides the kWh for tuya."""
+
+    UNIT_OF_MEASURE = 0x0300
+    MULTIPLIER = 0x0301
+    DIVISOR = 0x0302
+    _CONSTANT_ATTRIBUTES = {UNIT_OF_MEASURE: 0, MULTIPLIER: 1, DIVISOR: 100}
 
 
 class Plug(EnchantedDevice):
@@ -1019,6 +1028,53 @@ class Plug_4AC_2USB_Metering(EnchantedDevice):
                 DEVICE_TYPE: 97,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        },
+    }
+
+class Plug_v2(CustomDevice):
+    """Another TS011F Tuya plug."""
+
+    signature = {
+        MODEL: "TS011F",
+        ENDPOINTS: {
+            # "profile_id": 260,
+            # "device_type": "0x0051",
+            # "in_clusters": ["0x0000", "0x0003", "0x0004", "0x0005", "0x0006", "0x0702", "0x0b04", "0xe001"],
+            # "out_clusters": []
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    Metering.cluster_id,
+                    ElectricalMeasurement.cluster_id,
+                    TuyaZBExternalSwitchTypeCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+        },
+    }
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_PLUG_IN_UNIT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaZBOnOffAttributeCluster,
+                    TuyaZBMeteringCluster_v2,
+                    TuyaZBElectricalMeasurement,
+                    TuyaZBExternalSwitchTypeCluster,
+                ],
+                OUTPUT_CLUSTERS: [],
             },
         },
     }
