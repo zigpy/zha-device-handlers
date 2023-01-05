@@ -1032,6 +1032,7 @@ class Plug_4AC_2USB_Metering(EnchantedDevice):
         },
     }
 
+
 class Plug_v2(CustomDevice):
     """Another TS011F Tuya plug."""
 
