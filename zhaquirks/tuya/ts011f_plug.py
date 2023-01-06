@@ -1035,7 +1035,7 @@ class Plug_4AC_2USB_Metering(EnchantedDevice):
 
 
 class Plug_v2(EnchantedDevice):
-    """Another TS011F Tuya plug. First one using this definition is _TZ3000_okaz9tjs"""
+    """Another TS011F Tuya plug. First one using this definition is _TZ3000_okaz9tjs."""
 
     signature = {
         MODEL: "TS011F",
