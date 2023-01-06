@@ -1065,7 +1065,7 @@ class Plug_v2(CustomDevice):
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_PLUG_IN_UNIT,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
