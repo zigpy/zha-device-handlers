@@ -36,7 +36,7 @@ from zhaquirks.tuya.mcu import EnchantedDevice
 
 
 # Tuya Zigbee Metering Cluster Correction Implementation
-class TuyaZBMeteringCluster_v2(CustomCluster, Metering):
+class TuyaZBMeteringClusterWithUnit(CustomCluster, Metering):
     """Divides the kWh for tuya."""
 
     UNIT_OF_MEASURE = 0x0300
@@ -1034,8 +1034,8 @@ class Plug_4AC_2USB_Metering(EnchantedDevice):
     }
 
 
-class Plug_v2(CustomDevice):
-    """Another TS011F Tuya plug."""
+class Plug_v2(EnchantedDevice):
+    """Another TS011F Tuya plug. First one using this definition is _TZ3000_okaz9tjs"""
 
     signature = {
         MODEL: "TS011F",
@@ -1072,7 +1072,7 @@ class Plug_v2(CustomDevice):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     TuyaZBOnOffAttributeCluster,
-                    TuyaZBMeteringCluster_v2,
+                    TuyaZBMeteringClusterWithUnit,
                     TuyaZBElectricalMeasurement,
                     TuyaZBExternalSwitchTypeCluster,
                 ],
