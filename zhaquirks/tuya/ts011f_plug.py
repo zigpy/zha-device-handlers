@@ -1,7 +1,7 @@
 """TS011F plug."""
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
@@ -30,19 +30,10 @@ from zhaquirks.tuya import (
     TuyaZBElectricalMeasurement,
     TuyaZBExternalSwitchTypeCluster,
     TuyaZBMeteringCluster,
+    TuyaZBMeteringClusterWithUnit,
     TuyaZBOnOffAttributeCluster,
 )
 from zhaquirks.tuya.mcu import EnchantedDevice
-
-
-# Tuya Zigbee Metering Cluster Correction Implementation
-class TuyaZBMeteringClusterWithUnit(CustomCluster, Metering):
-    """Divides the kWh for tuya."""
-
-    UNIT_OF_MEASURE = 0x0300
-    MULTIPLIER = 0x0301
-    DIVISOR = 0x0302
-    _CONSTANT_ATTRIBUTES = {UNIT_OF_MEASURE: 0, MULTIPLIER: 1, DIVISOR: 100}
 
 
 class Plug(EnchantedDevice):
