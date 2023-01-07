@@ -23,6 +23,8 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 
+MANUFACTURER_SPECIFIC_CLUSTER_ID = 0x100F  # decimal = 4111
+
 
 class TintRGBCCTColorCluster(CustomCluster, Color):
     """Tint RGB+CCT Lighting custom cluster."""
@@ -66,7 +68,7 @@ class TintRGBCCTLight(CustomDevice):
                     LevelControl.cluster_id,
                     Color.cluster_id,
                     LightLink.cluster_id,
-                    4111,
+                    MANUFACTURER_SPECIFIC_CLUSTER_ID,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
@@ -99,7 +101,7 @@ class TintRGBCCTLight(CustomDevice):
                     LevelControl.cluster_id,
                     TintRGBCCTColorCluster,
                     LightLink.cluster_id,
-                    4111,
+                    MANUFACTURER_SPECIFIC_CLUSTER_ID,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
