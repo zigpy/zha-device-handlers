@@ -26,6 +26,7 @@ from zhaquirks.const import (
 
 class TintManufacturerSpecificCluster(CustomCluster):
     """Tint manufacturer specific cluster."""
+    
     cluster_id = 0x100F  # not inside the manufacturer specific cluster range
 
 
