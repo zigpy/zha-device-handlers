@@ -25,7 +25,6 @@ from zhaquirks.const import (
     DOUBLE_PRESS,
     ENDPOINTS,
     INPUT_CLUSTERS,
-    LEFT,
     LONG_PRESS,
     LONG_RELEASE,
     MODELS_INFO,
@@ -38,6 +37,7 @@ from zhaquirks.const import (
     SHORT_PRESS,
     SHORT_RELEASE,
     TRIPLE_PRESS,
+    TURN_ON,
     ZHA_SEND_EVENT,
 )
 from zhaquirks.philips import PHILIPS, SIGNIFY
@@ -177,14 +177,14 @@ class PhilipsROM001(CustomDevice):
     }
 
     device_automation_triggers = {
-        (SHORT_PRESS, LEFT): {COMMAND: "left_press"},
-        (LONG_PRESS, LEFT): {COMMAND: "left_hold"},
-        (DOUBLE_PRESS, LEFT): {COMMAND: "left_double_press"},
-        (TRIPLE_PRESS, LEFT): {COMMAND: "left_triple_press"},
-        (QUADRUPLE_PRESS, LEFT): {COMMAND: "left_quadruple_press"},
-        (QUINTUPLE_PRESS, LEFT): {COMMAND: "left_quintuple_press"},
-        (SHORT_RELEASE, LEFT): {COMMAND: "left_short_release"},
-        (LONG_RELEASE, LEFT): {COMMAND: "left_long_release"},
+        (SHORT_PRESS, TURN_ON): {COMMAND: "left_press"},
+        (LONG_PRESS, TURN_ON): {COMMAND: "left_hold"},
+        (DOUBLE_PRESS, TURN_ON): {COMMAND: "left_double_press"},
+        (TRIPLE_PRESS, TURN_ON): {COMMAND: "left_triple_press"},
+        (QUADRUPLE_PRESS, TURN_ON): {COMMAND: "left_quadruple_press"},
+        (QUINTUPLE_PRESS, TURN_ON): {COMMAND: "left_quintuple_press"},
+        (SHORT_RELEASE, TURN_ON): {COMMAND: "left_short_release"},
+        (LONG_RELEASE, TURN_ON): {COMMAND: "left_long_release"},
         (SHORT_PRESS, RIGHT): {COMMAND: "right_press"},
         (LONG_PRESS, RIGHT): {COMMAND: "right_hold"},
         (DOUBLE_PRESS, RIGHT): {COMMAND: "right_double_press"},
