@@ -23,7 +23,10 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 
-MANUFACTURER_SPECIFIC_CLUSTER_ID = 0x100F  # decimal = 4111
+
+class TintManufacturerSpecificCluster(CustomCluster):
+    """Tint manufacturer specific cluster."""
+    cluster_id = 0x100F  # not inside the manufacturer specific cluster range
 
 
 class TintRGBCCTColorCluster(CustomCluster, Color):
@@ -41,22 +44,6 @@ class TintRGBCCTLight(CustomDevice):
         MODELS_INFO: [("MLI", "tint-ExtendedColor")],
         ENDPOINTS: {
             1: {
-                #   "profile_id": 260,
-                #   "device_type": "0x010d",
-                #   "in_clusters": [
-                #     "0x0000",
-                #     "0x0003",
-                #     "0x0004",
-                #     "0x0005",
-                #     "0x0006",
-                #     "0x0008",
-                #     "0x0300",
-                #     "0x1000",
-                #     "0x100f"
-                #   ],
-                #   "out_clusters": [
-                #     "0x0019"
-                #   ]
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.EXTENDED_COLOR_LIGHT,
                 INPUT_CLUSTERS: [
@@ -68,17 +55,11 @@ class TintRGBCCTLight(CustomDevice):
                     LevelControl.cluster_id,
                     Color.cluster_id,
                     LightLink.cluster_id,
-                    MANUFACTURER_SPECIFIC_CLUSTER_ID,
+                    TintManufacturerSpecificCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
             242: {
-                #   "profile_id": 41440,
-                #   "device_type": "0x0061",
-                #   "in_clusters": [],
-                #   "out_clusters": [
-                #     "0x0021"
-                #   ]
                 PROFILE_ID: 41440,
                 DEVICE_TYPE: 97,
                 INPUT_CLUSTERS: [],
@@ -101,7 +82,7 @@ class TintRGBCCTLight(CustomDevice):
                     LevelControl.cluster_id,
                     TintRGBCCTColorCluster,
                     LightLink.cluster_id,
-                    MANUFACTURER_SPECIFIC_CLUSTER_ID,
+                    TintManufacturerSpecificCluster,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
