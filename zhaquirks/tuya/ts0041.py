@@ -18,8 +18,7 @@ from zhaquirks.const import (
     PROFILE_ID,
     SHORT_PRESS,
 )
-from zhaquirks.tuya import TuyaSmartRemoteOnOffCluster
-
+from zhaquirks.tuya import TuyaSmartRemoteOnOffCluster, TuyaZBE000Cluster
 
 class TuyaSmartRemote0041TO(CustomDevice):
     """Tuya 1-button remote device with time on out."""
@@ -103,9 +102,9 @@ class TuyaSmartRemote0041TI(CustomDevice):
         (LONG_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: LONG_PRESS},
         (DOUBLE_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: DOUBLE_PRESS},
     }
-    
 
-class TuyaSmartRemote0041TOPlusA(CustomDevice, Tuya4ButtonTriggers):
+
+class TuyaSmartRemote0041TOPlusA(CustomDevice):
     """Tuya 1-button remote device with time on out cluster."""
 
     signature = {
@@ -155,7 +154,7 @@ class TuyaSmartRemote0041TOPlusA(CustomDevice, Tuya4ButtonTriggers):
             },
         },
     }
-    
+
     replacement = {
         ENDPOINTS: {
             1: {
