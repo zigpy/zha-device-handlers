@@ -20,6 +20,7 @@ from zhaquirks.const import (
 )
 from zhaquirks.tuya import TuyaSmartRemoteOnOffCluster, TuyaZBE000Cluster
 
+
 class TuyaSmartRemote0041TO(CustomDevice):
     """Tuya 1-button remote device with time on out."""
 
