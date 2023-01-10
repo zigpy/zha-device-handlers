@@ -1,7 +1,8 @@
 """TS011F plug."""
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
+from zigpy.quirks import CustomCluster, CustomDevice
+import zigpy.types as t
 from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
@@ -33,6 +34,13 @@ from zhaquirks.tuya import (
     TuyaZBOnOffAttributeCluster,
 )
 from zhaquirks.tuya.mcu import EnchantedDevice
+
+
+class TuyaZBOnOffChildLockAttributeCluster(CustomCluster, OnOff):
+    """Tuya Zigbee On Off cluster with extra child-lock attribute."""
+
+    attributes = OnOff.attributes.copy()
+    attributes.update({0x8000: ("child_lock", t.Bool)})
 
 
 class Plug(EnchantedDevice):
@@ -1072,7 +1080,7 @@ class Plug_2AC_hlla45kx(CustomDevice):
                     Time.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaZBOnOffAttributeCluster,
+                    TuyaZBOnOffChildLockAttributeCluster,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
@@ -1082,8 +1090,9 @@ class Plug_2AC_hlla45kx(CustomDevice):
                 INPUT_CLUSTERS: [
                     Groups.cluster_id,
                     Scenes.cluster_id,
+                    OnOff.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [],
-            }
+            },
         },
     }
