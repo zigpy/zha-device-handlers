@@ -1042,7 +1042,7 @@ class Plug_2AC_hlla45kx(CustomDevice):
                     Time.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    OnOff.cluster_id
+                    OnOff.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
@@ -1059,7 +1059,7 @@ class Plug_2AC_hlla45kx(CustomDevice):
                     OnOff.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [],
-            }
+            },
         },
     }
     replacement = {
@@ -1072,7 +1072,7 @@ class Plug_2AC_hlla45kx(CustomDevice):
                     Time.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaZBOnOffAttributeCluster
+                    TuyaZBOnOffAttributeCluster,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
@@ -1082,7 +1082,6 @@ class Plug_2AC_hlla45kx(CustomDevice):
                 INPUT_CLUSTERS: [
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaZBOnOffAttributeCluster
                 ],
                 OUTPUT_CLUSTERS: [],
             }
