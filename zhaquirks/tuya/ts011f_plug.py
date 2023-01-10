@@ -1085,7 +1085,7 @@ class Plug_2AC_hlla45kx(CustomDevice):
     """Tuya 2 outlet with child lock support."""
 
     signature = {
-        MODEL: "TS011F",
+        MODELS_INFO: [("_TYZB01_hlla45kx", "TS011F")],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=9
             # device_version=0
