@@ -1071,3 +1071,69 @@ class Plug_v2(EnchantedDevice):
             },
         },
     }
+
+
+class Plug_2AC_hlla45kx(CustomDevice):
+    """Tuya 2 outlet with child lock support."""
+
+    signature = {
+        MODEL: "TS011F",
+        ENDPOINTS: {
+            # <SimpleDescriptor endpoint=1 profile=260 device_type=9
+            # device_version=0
+            # input_clusters=[0, 10, 4, 5, 6]
+            # output_clusters=[25]>
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.MAIN_POWER_OUTLET,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Time.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id
+                ],
+                OUTPUT_CLUSTERS: [Ota.cluster_id],
+            },
+            # <SimpleDescriptor endpoint=2 profile=260 device_type=9
+            # device_version=0
+            # input_clusters=[4, 5, 6]
+            # output_clusters=[]>
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.MAIN_POWER_OUTLET,
+                INPUT_CLUSTERS: [
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [],
+            }
+        },
+    }
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.MAIN_POWER_OUTLET,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Time.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaZBOnOffAttributeCluster
+                ],
+                OUTPUT_CLUSTERS: [Ota.cluster_id],
+            },
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.MAIN_POWER_OUTLET,
+                INPUT_CLUSTERS: [
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaZBOnOffAttributeCluster
+                ],
+                OUTPUT_CLUSTERS: [],
+            }
+        },
+    }
