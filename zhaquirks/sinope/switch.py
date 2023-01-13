@@ -439,7 +439,7 @@ class SinopeTechnologiesNewSwitch(CustomDevice):
                 ],
                 OUTPUT_CLUSTERS: [
                     Ota.cluster_id,
-                    LightLink.cluster_id,            
+                    LightLink.cluster_id,
                 ],
             }
         },
