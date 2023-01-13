@@ -26,6 +26,7 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.tuya import (
+    PowerOnState,
     TuyaNewManufCluster,
     TuyaZBE000Cluster,
     TuyaZBElectricalMeasurement,
@@ -35,13 +36,6 @@ from zhaquirks.tuya import (
     TuyaZBOnOffAttributeCluster,
 )
 from zhaquirks.tuya.mcu import EnchantedDevice
-
-
-class TuyaZBOnOffChildLockAttributeCluster(CustomCluster, OnOff):
-    """Tuya Zigbee On Off cluster with extra child-lock attribute."""
-
-    attributes = OnOff.attributes.copy()
-    attributes.update({0x8000: ("child_lock", t.Bool)})
 
 
 class Plug(EnchantedDevice):
@@ -1081,8 +1075,16 @@ class Plug_v2(EnchantedDevice):
     }
 
 
-class Plug_2AC_hlla45kx(CustomDevice):
-    """Tuya 2 outlet with child lock support."""
+class TuyaZBOnOffVariantCluster(CustomCluster, OnOff):
+    """Tuya Zigbee On Off cluster variant with only child-lock and power-restore state attributes."""
+
+    attributes = OnOff.attributes.copy()
+    attributes.update({0x8000: ("child_lock", t.Bool)})
+    attributes.update({0x8002: ("power_on_state", PowerOnState)})
+
+
+class Plug_2AC_var03(CustomDevice):
+    """Tuya 2 socket wall outlet with child lock and power-restore state support."""
 
     signature = {
         MODELS_INFO: [("_TYZB01_hlla45kx", "TS011F")],
@@ -1129,7 +1131,7 @@ class Plug_2AC_hlla45kx(CustomDevice):
                     Time.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaZBOnOffChildLockAttributeCluster,
+                    TuyaZBOnOffVariantCluster,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
