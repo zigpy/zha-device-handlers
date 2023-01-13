@@ -21,6 +21,7 @@ from zigpy.zcl.clusters.general import (
     Time,
 )
 from zigpy.zcl.clusters.homeautomation import Diagnostic, ElectricalMeasurement
+from zigpy.zcl.clusters.lightlink import LightLink
 from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.clusters.smartenergy import Metering
@@ -408,4 +409,58 @@ class SinopeTechnologiesCalypso(CustomDevice):
                 OUTPUT_CLUSTERS: [],
             },
         },
+    }
+
+
+class SinopeTechnologiesNewSwitch(CustomDevice):
+    """SinopeTechnologiesNewSwitch custom device."""
+
+    signature = {
+        # <SimpleDescriptor(endpoint=1, profile=260,
+        # device_type=81, device_version=0,
+        # input_clusters=[0, 3, 6, 1794, 2820, 4096, 65281]
+        # output_clusters=[25, 4096]>
+        MODELS_INFO: [
+            (SINOPE, "SP2600ZB"),
+            (SINOPE, "SP2610ZB"),
+        ],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha_p.PROFILE_ID,
+                DEVICE_TYPE: zha_p.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    OnOff.cluster_id,
+                    Metering.cluster_id,
+                    ElectricalMeasurement.cluster_id,
+                    LightLink.cluster_id,
+                    SINOPE_MANUFACTURER_CLUSTER_ID,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Ota.cluster_id,
+                    LightLink.cluster_id,            
+                ],
+            }
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    OnOff.cluster_id,
+                    CustomMeteringCluster,
+                    ElectricalMeasurement.cluster_id,
+                    LightLink.cluster_id,
+                    SINOPE_MANUFACTURER_CLUSTER_ID,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Ota.cluster_id,
+                    LightLink.cluster_id,
+                ],
+            }
+        }
     }
