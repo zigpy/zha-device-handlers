@@ -356,7 +356,7 @@ class TuyaDoubleNoNeutralSwitch_2(EnchantedDevice, TuyaSwitch):
     }
 
 
-class Tuya_TripleNoNeutralSwitch_2(EnchantedDevice, TuyaSwitch):
+class TuyaTripleNoNeutralSwitch_2(EnchantedDevice, TuyaSwitch):
     """Tuya 3 gang no neutral light switch (v2)."""
 
     signature = {
