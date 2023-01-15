@@ -2,7 +2,6 @@
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
-import zigpy.types as t
 from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
