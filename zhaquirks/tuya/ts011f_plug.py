@@ -1,7 +1,7 @@
 """TS011F plug."""
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.quirks import CustomDevice
 import zigpy.types as t
 from zigpy.zcl.clusters.general import (
     Basic,
@@ -26,7 +26,6 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.tuya import (
-    PowerOnState,
     TuyaNewManufCluster,
     TuyaZBE000Cluster,
     TuyaZBElectricalMeasurement,
@@ -1075,19 +1074,11 @@ class Plug_v2(EnchantedDevice):
     }
 
 
-class TuyaZBOnOffVariantCluster(CustomCluster, OnOff):
-    """Tuya Zigbee On Off cluster variant with only child-lock and power-restore state attributes."""
-
-    attributes = OnOff.attributes.copy()
-    attributes.update({0x8000: ("child_lock", t.Bool)})
-    attributes.update({0x8002: ("power_on_state", PowerOnState)})
-
-
 class Plug_2AC_var03(CustomDevice):
     """Tuya 2 socket wall outlet with child lock and power-restore state support."""
 
     signature = {
-        MODELS_INFO: [("_TYZB01_hlla45kx", "TS011F")],
+        MODEL: "TS011F",
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=9
             # device_version=0
@@ -1131,7 +1122,11 @@ class Plug_2AC_var03(CustomDevice):
                     Time.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaZBOnOffVariantCluster,
+                    # N.B. The ClickSmart CMA30036 (_TYZB01_hlla45kx), supports
+                    #      but does not implement the backlight_mode extended
+                    #      attribute. For this device, changing this attribute
+                    #      has no effect on the switch lights.
+                    TuyaZBOnOffAttributeCluster,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
