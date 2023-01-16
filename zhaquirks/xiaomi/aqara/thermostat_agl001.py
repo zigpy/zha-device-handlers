@@ -1,4 +1,5 @@
 """Aqara E1 Radiator Thermostat Quirk."""
+from __future__ import annotations
 
 import functools
 import struct
@@ -85,17 +86,20 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
         super()._update_attribute(attrid, value)
 
     def aqaraHeader(self, counter: int, params: bytearray, action: int) -> bytearray:
+        """Create Aqara header for setting external sensor."""
         header = bytes([0xAA, 0x71, len(params) + 3, 0x44, counter])
         integrity = 512 - functools.reduce(lambda sum, elem: sum + elem, header)
 
         return header + bytes([integrity, action, 0x41, len(params)])
 
-    def float_to_hex(self, f):
+    def _float_to_hex(self, f):
+        """Convert float to hex"""
         return hex(struct.unpack("<I", struct.pack("<f", f))[0])
 
     async def write_attributes(
         self, attributes: dict[str | int, Any], manufacturer: int | None = None
     ) -> list:
+        """Write attributes to device with internal 'attributes' validation."""
         sensor = bytearray.fromhex("00158d00019d1b98")
         attrs = {}
 
@@ -105,7 +109,7 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
             if attr == SENSOR_TEMP:
                 # set external sensor temp. this function expect value to be passed multiplied by 100
                 temperatureBuf = bytearray.fromhex(
-                    self.float_to_hex(round(float(value)))[2:]
+                    self._float_to_hex(round(float(value)))[2:]
                 )
 
                 params = sensor
