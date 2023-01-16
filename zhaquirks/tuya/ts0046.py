@@ -51,7 +51,7 @@ class Tuya6ButtonTriggers:
     }
 
 
-class TuyaSmartRemote0046TOPlusA(EnchantedDevice, Tuya6ButtonTriggers):
+class TuyaSmartRemote0046(EnchantedDevice, Tuya6ButtonTriggers):
     """Tuya 6-button remote device with time on out cluster."""
 
     signature = {
