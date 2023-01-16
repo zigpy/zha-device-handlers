@@ -123,7 +123,9 @@ class DanfossThermostat(CustomDevice):
         # device_version=0 input_clusters=[0, 1, 3, 10,32, 513, 516, 1026, 2821]
         # output_clusters=[0, 25]>
         MODELS_INFO: [
+            (DANFOSS, "TRV001"),
             (DANFOSS, "eTRV0100"),
+            (DANFOSS, "eTRV0101"),
             (DANFOSS, "eTRV0103"),
             (D5X84YU, "eT093WRO"),
         ],
