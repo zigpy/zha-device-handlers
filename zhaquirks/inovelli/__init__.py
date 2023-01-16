@@ -101,6 +101,7 @@ class Inovelli_VZM31SN_Cluster(CustomCluster):
             0x000D: ("default_level_local", t.uint8_t, True),
             0x000E: ("default_level_remote", t.uint8_t, True),
             0x000F: ("state_after_power_restored", t.uint8_t, True),
+            0x0010: ("disable_remote_control", t.uint8_t, True),
             0x0011: ("load_level_indicator_timeout", t.uint8_t, True),
             0x0012: ("active_power_reports", t.uint8_t, True),
             0x0013: ("periodic_power_and_energy_reports", t.uint8_t, True),
