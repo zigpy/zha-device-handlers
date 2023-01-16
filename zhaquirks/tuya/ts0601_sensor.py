@@ -16,12 +16,33 @@ from zhaquirks.const import (
     PROFILE_ID,
     SKIP_CONFIGURATION,
 )
+
+from zigpy.zcl.clusters.measurement import (
+    RelativeHumidity,
+    SoilMoisture,
+    TemperatureMeasurement,
+)
+
 from zhaquirks.tuya import TuyaLocalCluster, TuyaPowerConfigurationCluster2AAA
 from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaDPType, TuyaMCUCluster
 
 
 class TuyaTemperatureMeasurement(TemperatureMeasurement, TuyaLocalCluster):
     """Tuya local TemperatureMeasurement cluster."""
+
+
+class TuyaSoilMoisture(SoilMoisture, TuyaLocalCluster):
+    """Tuya local SoilMoisture cluster with a device RH_MULTIPLIER factor if required."""
+
+    def update_attribute(self, attr_name: str, value: Any) -> None:
+        """Apply a correction factor to value."""
+        if attr_name == "measured_value":
+            value = value * (
+                self.endpoint.device.RH_MULTIPLIER
+                if hasattr(self.endpoint.device, "RH_MULTIPLIER")
+                else 100
+            )
+        return super().update_attribute(attr_name, value)
 
 
 class TuyaRelativeHumidity(RelativeHumidity, TuyaLocalCluster):
@@ -36,7 +57,6 @@ class TuyaRelativeHumidity(RelativeHumidity, TuyaLocalCluster):
                 if hasattr(self.endpoint.device, "RH_MULTIPLIER")
                 else 100
             )
-
         return super().update_attribute(attr_name, value)
 
 
@@ -207,7 +227,8 @@ class TuyaTempHumiditySensorVar03(CustomDevice):
             }
         },
     }
-  
+
+
 class SoilManufCluster(TuyaMCUCluster):
     """Tuya Manufacturer Cluster with Temperature and Humidity data points."""
 
@@ -219,7 +240,7 @@ class SoilManufCluster(TuyaMCUCluster):
             converter=lambda x: x * 100,
         ),
         3: DPToAttributeMapping(
-            TuyaRelativeHumidity.ep_attribute,
+            TuyaSoilMoisture.ep_attribute,
             "measured_value",
             dp_type=TuyaDPType.VALUE,
         ),
@@ -273,7 +294,7 @@ class TuyaSoilSensor(CustomDevice):
                     Scenes.cluster_id,
                     SoilManufCluster,
                     TuyaTemperatureMeasurement,
-                    TuyaRelativeHumidity,
+                    TuyaSoilMoisture,
                     TuyaPowerConfigurationCluster2AAA,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id, Time.cluster_id],
