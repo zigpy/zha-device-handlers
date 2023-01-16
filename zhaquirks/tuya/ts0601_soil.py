@@ -48,7 +48,7 @@ class TemperatureHumidityManufCluster(TuyaMCUCluster):
             TuyaTemperatureMeasurement.ep_attribute,
             "measured_value",
             dp_type=TuyaDPType.VALUE,
-            converter=lambda x: x * 100, 
+            converter=lambda x: x * 100,
         ),
         3: DPToAttributeMapping(
             TuyaRelativeHumidity.ep_attribute,
