@@ -6,6 +6,12 @@ from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time
 
+from zigpy.zcl.clusters.measurement import (
+    RelativeHumidity,
+    SoilMoisture,
+    TemperatureMeasurement,
+)
+
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -14,12 +20,6 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SKIP_CONFIGURATION,
-)
-
-from zigpy.zcl.clusters.measurement import (
-    RelativeHumidity,
-    SoilMoisture,
-    TemperatureMeasurement,
 )
 
 from zhaquirks.tuya import TuyaLocalCluster, TuyaPowerConfigurationCluster2AAA
