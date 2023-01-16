@@ -93,7 +93,7 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
         return header + bytes([integrity, action, 0x41, len(params)])
 
     def _float_to_hex(self, f):
-        """Convert float to hex"""
+        """Convert float to hex."""
         return hex(struct.unpack("<I", struct.pack("<f", f))[0])
 
     async def write_attributes(
