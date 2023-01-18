@@ -2,12 +2,46 @@
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.closures import WindowCovering
-from zigpy.zcl.clusters.general import Basic, Identify, Groups, Scenes, OnOff, LevelControl, Ota, GreenPowerProxy
+from zigpy.zcl.clusters.general import (
+    Basic,
+    GreenPowerProxy,
+    Groups,
+    Identify,
+    LevelControl,
+    OnOff,
+    Ota,
+    Scenes,
+)
 from zigpy.zcl.clusters.lighting import Color
 
-from zhaquirks import MODELS_INFO, ENDPOINTS, PROFILE_ID, DEVICE_TYPE, INPUT_CLUSTERS, OUTPUT_CLUSTERS
-from zhaquirks.const import SHORT_PRESS, TURN_ON, COMMAND, COMMAND_ON, TURN_OFF, COMMAND_OFF, COMMAND_TOGGLE, BUTTON, \
-    OPEN, CLOSE, COMMAND_MOVE_ON_OFF, DIM_UP, COMMAND_MOVE, DIM_DOWN, COMMAND_STOP, STOP, ENDPOINT_ID, ALT_SHORT_PRESS
+from zhaquirks import (
+    DEVICE_TYPE,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    MODELS_INFO,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
+)
+from zhaquirks.const import (
+    ALT_SHORT_PRESS,
+    BUTTON,
+    CLOSE,
+    COMMAND,
+    COMMAND_MOVE,
+    COMMAND_MOVE_ON_OFF,
+    COMMAND_OFF,
+    COMMAND_ON,
+    COMMAND_STOP,
+    COMMAND_TOGGLE,
+    DIM_DOWN,
+    DIM_UP,
+    ENDPOINT_ID,
+    OPEN,
+    SHORT_PRESS,
+    STOP,
+    TURN_OFF,
+    TURN_ON,
+)
 from zhaquirks.insta import INSTA
 
 COMMAND_OPEN = "up_open"
@@ -17,6 +51,8 @@ COMMAND_RECALL = "recall"
 
 
 class InstaNexentroPushbuttonInterface(CustomDevice):
+    """Insta NEXENTRO Pushbutton Interface device."""
+
     signature = {
         MODELS_INFO: [(INSTA, "NEXENTRO Pushbutton Interface")],
         ENDPOINTS: {
@@ -87,13 +123,10 @@ class InstaNexentroPushbuttonInterface(CustomDevice):
             242: {
                 PROFILE_ID: 0xA1E0,
                 DEVICE_TYPE: 0x0061,
-                INPUT_CLUSTERS: [
-                ],
-                OUTPUT_CLUSTERS: [
-                    GreenPowerProxy.cluster_id
-                ],
-            }
-        }
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        },
     }
 
     replacement = {
@@ -149,12 +182,9 @@ class InstaNexentroPushbuttonInterface(CustomDevice):
             242: {
                 PROFILE_ID: 0xA1E0,
                 DEVICE_TYPE: 0x0061,
-                INPUT_CLUSTERS: [
-                ],
-                OUTPUT_CLUSTERS: [
-                    GreenPowerProxy.cluster_id
-                ],
-            }
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
         }
     }
 
