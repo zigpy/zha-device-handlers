@@ -31,16 +31,6 @@ class TuyaTemperatureMeasurement(TemperatureMeasurement, TuyaLocalCluster):
 class TuyaSoilMoisture(SoilMoisture, TuyaLocalCluster):
     """Tuya local SoilMoisture cluster with a device RH_MULTIPLIER factor if required."""
 
-    def update_attribute(self, attr_name: str, value: Any) -> None:
-        """Apply a correction factor to value."""
-        if attr_name == "measured_value":
-            value = value * (
-                self.endpoint.device.RH_MULTIPLIER
-                if hasattr(self.endpoint.device, "RH_MULTIPLIER")
-                else 100
-            )
-        return super().update_attribute(attr_name, value)
-
 
 class TuyaRelativeHumidity(RelativeHumidity, TuyaLocalCluster):
     """Tuya local RelativeHumidity cluster with a device RH_MULTIPLIER factor."""
@@ -240,6 +230,7 @@ class SoilManufCluster(TuyaMCUCluster):
             TuyaSoilMoisture.ep_attribute,
             "measured_value",
             dp_type=TuyaDPType.VALUE,
+            converter=lambda x: x * 100,
         ),
         15: DPToAttributeMapping(
             TuyaPowerConfigurationCluster2AAA.ep_attribute,
