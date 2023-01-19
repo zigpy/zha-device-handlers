@@ -2,7 +2,6 @@
 import logging
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster
 from zigpy.zcl.clusters.general import (
     AnalogInput,
     Basic,
@@ -37,25 +36,6 @@ from zhaquirks.xiaomi import (
 )
 
 _LOGGER = logging.getLogger(__name__)
-
-
-class AnalogInputClusterTotalPower(CustomCluster, AnalogInput):
-    """Analog input cluster, used to relay total power consumption information to Metering."""
-
-    cluster_id = AnalogInput.cluster_id
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        self._current_state = {}
-        super().__init__(*args, **kwargs)
-
-    def _update_attribute(self, attrid, value):
-        super()._update_attribute(attrid, value)
-        # UNCOMMENT BELOW TO TEST 2nd PART OF POSSIBLE FIX
-        # if value is not None and value >= 0:
-        #     self.endpoint.device.consumption_bus.listener_event(
-        #         CONSUMPTION_REPORTED, value
-        #     )
 
 
 class Plug(XiaomiCustomDevice):
@@ -142,7 +122,7 @@ class Plug(XiaomiCustomDevice):
             3: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.METER_INTERFACE,
-                INPUT_CLUSTERS: [AnalogInputClusterTotalPower],
+                INPUT_CLUSTERS: [AnalogInput.cluster_id],
                 OUTPUT_CLUSTERS: [AnalogInput.cluster_id],
             },
         },
@@ -236,7 +216,7 @@ class Plug2(XiaomiCustomDevice):
             3: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.METER_INTERFACE,
-                INPUT_CLUSTERS: [AnalogInputClusterTotalPower],
+                INPUT_CLUSTERS: [AnalogInput.cluster_id],
                 OUTPUT_CLUSTERS: [AnalogInput.cluster_id],
             },
             100: {
