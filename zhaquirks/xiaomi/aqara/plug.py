@@ -32,6 +32,7 @@ from zhaquirks.xiaomi import (
     AnalogInputCluster,
     BasicCluster,
     ElectricalMeasurementCluster,
+    MeteringCluster,
     XiaomiCustomDevice,
 )
 
@@ -128,6 +129,7 @@ class Plug(XiaomiCustomDevice):
                     BinaryOutput.cluster_id,
                     Time.cluster_id,
                     ElectricalMeasurementCluster,
+                    MeteringCluster,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id, Time.cluster_id],
             },
