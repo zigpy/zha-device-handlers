@@ -35,7 +35,7 @@ class TintRGBCCTColorCluster(CustomCluster, Color):
 
     # Set correct capabilities to ct, xy, hs
     # Tint bulbs do not correctly report this attribute
-    _CONSTANT_ATTRIBUTES = {0x400A: 0b11111}
+    _CONSTANT_ATTRIBUTES = {0x400A: 0b11110}
 
 
 class TintRGBCCTLight(CustomDevice):
