@@ -42,6 +42,8 @@ class TuyaWithBacklightOnOffCluster(CustomCluster):
 class TuyaCoveringCluster(CustomCluster, WindowCovering):
     """TuyaSmartCurtainWindowCoveringCluster: Allow to setup Window covering tuya devices."""
 
+    ep_attribute = "tuya_window_covering"
+
     attributes = WindowCovering.attributes.copy()
     attributes.update({0xF000: ("tuya_moving_state", t.enum8)})
     attributes.update({0xF001: ("calibration", t.enum8)})
