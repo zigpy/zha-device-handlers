@@ -1,8 +1,6 @@
 """Smart Plugs."""
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
-import zigpy.types as t
-from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
     Alarms,
     Basic,
@@ -28,6 +26,7 @@ from zhaquirks.const import (
 )
 from zhaquirks.develco import DEVELCO
 
+
 class DeviceTemperatureCluster(CustomCluster, DeviceTemperature):
     """Device Temperature. Modify divisor."""
     cluster_id = DeviceTemperature.cluster_id
@@ -41,6 +40,7 @@ class DeviceTemperatureCluster(CustomCluster, DeviceTemperature):
             value = value * 100
         
         super()._update_attribute(attrid, value)
+
 
 class SPLZB131(CustomDevice):
     """ Custom device Develco smart plug device."""
