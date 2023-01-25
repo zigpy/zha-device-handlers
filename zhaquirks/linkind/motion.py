@@ -57,7 +57,7 @@ class LinkindD0003(CustomDevice):
             }
         },
     }
-  
+
     replacement = {
         ENDPOINTS: {
             1: {
