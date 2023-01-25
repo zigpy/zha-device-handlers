@@ -986,13 +986,23 @@ class TuyaSmartRemoteOnOffCluster(OnOff, EventableCluster):
             )
 
 
+MULTIPLIER = 0x0301
+DIVISOR = 0x0302
+
+
 # Tuya Zigbee Metering Cluster Correction Implementation
 class TuyaZBMeteringCluster(CustomCluster, Metering):
     """Divides the kWh for tuya."""
 
-    MULTIPLIER = 0x0301
-    DIVISOR = 0x0302
     _CONSTANT_ATTRIBUTES = {MULTIPLIER: 1, DIVISOR: 100}
+
+
+# Tuya Zigbee Metering Cluster Correction Implementation
+class TuyaZBMeteringClusterWithUnit(CustomCluster, Metering):
+    """Divides the kWh for tuya."""
+
+    UNIT_OF_MEASURE = 0x0300
+    _CONSTANT_ATTRIBUTES = {UNIT_OF_MEASURE: 0, MULTIPLIER: 1, DIVISOR: 100}
 
 
 class TuyaZBElectricalMeasurement(CustomCluster, ElectricalMeasurement):

@@ -21,6 +21,7 @@ from zigpy.zcl.clusters.general import (
     Time,
 )
 from zigpy.zcl.clusters.homeautomation import Diagnostic, ElectricalMeasurement
+from zigpy.zcl.clusters.lightlink import LightLink
 from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.clusters.smartenergy import Metering
@@ -38,43 +39,20 @@ from zhaquirks.sinope import SINOPE
 SINOPE_MANUFACTURER_CLUSTER_ID = 0xFF01
 
 
-class SinopeMultiControllerManufacturerCluster(CustomCluster):
-    """SinopeMultiControllerManufacturerCluster manufacturer cluster."""
+class SinopeManufacturerCluster(CustomCluster):
+    """SinopeManufacturerCluster manufacturer cluster."""
 
     cluster_id = SINOPE_MANUFACTURER_CLUSTER_ID
-    name = "Sinopé Multi Controller Manufacturer specific"
-    ep_attribute = "sinope_multi_controller_manufacturer_specific"
-    attributes = {
-        0x00A0: ("Timer", t.uint32_t, True),
-    }
-
-
-class SinopeLoadControllerManufacturerCluster(CustomCluster):
-    """SinopeLoadControllerManufacturerCluster manufacturer cluster."""
-
-    cluster_id = SINOPE_MANUFACTURER_CLUSTER_ID
-    name = "Sinopé Load Controller Manufacturer specific"
-    ep_attribute = "sinope_load_controller_manufacturer_specific"
+    name = "Sinopé Manufacturer specific"
+    ep_attribute = "sinope_manufacturer_specific"
     attributes = {
         0x0002: ("KeyboardLock", t.enum8, True),
-        0x0060: ("ConnectedLoad", t.uint16_t, True),
-        0x0070: ("CurrentLoad", t.bitmap8, True),
-        0x00A0: ("Timer", t.uint32_t, True),
-    }
-
-
-class SinopeCalypsoControllerManufacturerCluster(CustomCluster):
-    """SinopeCalypsoControllerManufacturerCluster manufacturer cluster."""
-
-    cluster_id = SINOPE_MANUFACTURER_CLUSTER_ID
-    name = "Sinopé Calypso Controller Manufacturer specific"
-    ep_attribute = "sinope_Calypso_controller_manufacturer_specific"
-    attributes = {
         0x0060: ("ConnectedLoad", t.uint16_t, True),
         0x0070: ("CurrentLoad", t.bitmap8, True),
         0x0076: ("drConfigWaterTempMin", t.uint8_t, True),
         0x0077: ("drConfigWaterTempTime", t.uint8_t, True),
         0x0078: ("drWTTimeOn", t.uint16_t, True),
+        0x00A0: ("Timer", t.uint32_t, True),
         0x0283: ("ColdLoadPickupStatus", t.uint8_t, True),
     }
 
@@ -179,7 +157,7 @@ class SinopeTechnologiesLoadController(CustomDevice):
                     Metering.cluster_id,
                     ElectricalMeasurement.cluster_id,
                     Diagnostic.cluster_id,
-                    SinopeLoadControllerManufacturerCluster,
+                    SinopeManufacturerCluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
@@ -311,7 +289,7 @@ class SinopeTechnologiesMultiController(CustomDevice):
                     TemperatureMeasurement.cluster_id,
                     RelativeHumidity.cluster_id,
                     Diagnostic.cluster_id,
-                    SinopeMultiControllerManufacturerCluster,
+                    SinopeManufacturerCluster,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
@@ -322,7 +300,7 @@ class SinopeTechnologiesMultiController(CustomDevice):
                     OnOff.cluster_id,
                     BinaryInput.cluster_id,
                     TemperatureMeasurement.cluster_id,
-                    SinopeMultiControllerManufacturerCluster,
+                    SinopeManufacturerCluster,
                 ],
                 OUTPUT_CLUSTERS: [],
             },
@@ -392,7 +370,7 @@ class SinopeTechnologiesCalypso(CustomDevice):
                     Metering.cluster_id,
                     ElectricalMeasurement.cluster_id,
                     Diagnostic.cluster_id,
-                    SinopeCalypsoControllerManufacturerCluster,
+                    SinopeManufacturerCluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     Time.cluster_id,
@@ -408,4 +386,58 @@ class SinopeTechnologiesCalypso(CustomDevice):
                 OUTPUT_CLUSTERS: [],
             },
         },
+    }
+
+
+class SinopeTechnologiesNewSwitch(CustomDevice):
+    """SinopeTechnologiesNewSwitch custom device."""
+
+    signature = {
+        # <SimpleDescriptor(endpoint=1, profile=260,
+        # device_type=81, device_version=0,
+        # input_clusters=[0, 3, 6, 1794, 2820, 4096, 65281]
+        # output_clusters=[25, 4096]>
+        MODELS_INFO: [
+            (SINOPE, "SP2600ZB"),
+            (SINOPE, "SP2610ZB"),
+        ],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha_p.PROFILE_ID,
+                DEVICE_TYPE: zha_p.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    OnOff.cluster_id,
+                    Metering.cluster_id,
+                    ElectricalMeasurement.cluster_id,
+                    LightLink.cluster_id,
+                    SINOPE_MANUFACTURER_CLUSTER_ID,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Ota.cluster_id,
+                    LightLink.cluster_id,
+                ],
+            }
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    OnOff.cluster_id,
+                    CustomMeteringCluster,
+                    ElectricalMeasurement.cluster_id,
+                    LightLink.cluster_id,
+                    SINOPE_MANUFACTURER_CLUSTER_ID,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Ota.cluster_id,
+                    LightLink.cluster_id,
+                ],
+            }
+        }
     }

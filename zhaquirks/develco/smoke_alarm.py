@@ -24,7 +24,7 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 
-from . import FRIENT, DevelcoIasZone, DevelcoPowerConfiguration
+from . import DEVELCO, FRIENT, DevelcoIasZone, DevelcoPowerConfiguration
 
 MANUFACTURER = 0x1015
 
@@ -41,7 +41,7 @@ class SMSZB120(CustomDevice):
         # input_clusters=[0, 1, 3, 15, 32, 1280, 1282] output_clusters=[10, 25]>
         # <SimpleDescriptor endpoint=38 profile=260 device_type=770 device_version=0
         # input_clusters=[0, 3, 1026] output_clusters=[3]>
-        MODELS_INFO: [(FRIENT, "SMSZB-120")],
+        MODELS_INFO: [(DEVELCO, "SMSZB-120"), (FRIENT, "SMSZB-120")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: 49353,

@@ -331,6 +331,7 @@ class XiaomiCluster(CustomCluster):
                 }
             )
         elif self.endpoint.device.model in [
+            "lumi.plug",
             "lumi.plug.maus01",
             "lumi.plug.maeu01",
             "lumi.plug.mmeu01",
@@ -437,6 +438,10 @@ class XiaomiPowerConfiguration(PowerConfiguration, LocalDataCluster):
         """Battery reported."""
         self._update_attribute(self.BATTERY_VOLTAGE_ATTR, round(voltage_mv / 100, 1))
         self._update_battery_percentage(voltage_mv)
+
+    def battery_percent_reported(self, battery_percent: int) -> None:
+        """Battery reported as percentage."""
+        self._update_attribute(self.BATTERY_PERCENTAGE_REMAINING, battery_percent * 2)
 
     def _update_battery_percentage(self, voltage_mv: int) -> None:
         voltage_mv = max(voltage_mv, self.MIN_VOLTS_MV)

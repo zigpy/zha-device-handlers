@@ -4,9 +4,19 @@ import logging
 
 from zigpy.profiles import zha
 import zigpy.types as t
-from zigpy.zcl.clusters.general import Basic, Groups, Identify, Ota, Scenes, Time
+from zigpy.zcl import foundation
+from zigpy.zcl.clusters.general import (
+    AnalogOutput,
+    Basic,
+    Groups,
+    Identify,
+    Ota,
+    Scenes,
+    Time,
+)
 from zigpy.zcl.clusters.hvac import Thermostat
 
+from zhaquirks import Bus, LocalDataCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -24,11 +34,12 @@ from zhaquirks.tuya import (
 
 _LOGGER = logging.getLogger(__name__)
 
-SASSWEL_HEATING_SETPOINT_ATTR = 0x0267
-SASSWEL_STATE_ATTR = 0x0165
-SASSWEL_LOCAL_TEMP_ATTR = 0x0266
-SASSWEL_BATTERY_LOW_ATTR = 0x0569
-SASSWEL_SCHEDULE_ENABLE_ATTR = 0x016C
+SASWELL_HEATING_SETPOINT_ATTR = 0x0267
+SASWELL_STATE_ATTR = 0x0165
+SASWELL_LOCAL_TEMP_ATTR = 0x0266
+SASWELL_BATTERY_LOW_ATTR = 0x0569
+SASWELL_SCHEDULE_ENABLE_ATTR = 0x016C
+SASWELL_TEMPERATURE_CALIBRATION_ATTR = 0x021B  # temperature calibration in degrees
 
 CTRL_SEQ_OF_OPER_ATTR = 0x001B
 
@@ -60,17 +71,22 @@ class ManufacturerThermostatCluster(TuyaManufClusterAttributes):
     attributes = TuyaManufClusterAttributes.attributes.copy()
     attributes.update(
         {
-            SASSWEL_STATE_ATTR: ("state", State, True),
-            SASSWEL_HEATING_SETPOINT_ATTR: ("heating_setpoint", t.uint32_t, True),
-            SASSWEL_LOCAL_TEMP_ATTR: ("local_temperature", t.uint32_t, True),
-            SASSWEL_BATTERY_LOW_ATTR: ("battery_state", BatteryState, True),
-            SASSWEL_SCHEDULE_ENABLE_ATTR: ("schedule_enabled", ScheduleState, True),
+            SASWELL_STATE_ATTR: ("state", State, True),
+            SASWELL_HEATING_SETPOINT_ATTR: ("heating_setpoint", t.uint32_t, True),
+            SASWELL_LOCAL_TEMP_ATTR: ("local_temperature", t.uint32_t, True),
+            SASWELL_BATTERY_LOW_ATTR: ("battery_state", BatteryState, True),
+            SASWELL_SCHEDULE_ENABLE_ATTR: ("schedule_enabled", ScheduleState, True),
+            SASWELL_TEMPERATURE_CALIBRATION_ATTR: (
+                "temperature_calibration",
+                t.int32s,
+                True,
+            ),
         }
     )
 
     TEMPERATURE_ATTRS = {
-        SASSWEL_HEATING_SETPOINT_ATTR: "occupied_heating_setpoint",
-        SASSWEL_LOCAL_TEMP_ATTR: "local_temperature",
+        SASWELL_HEATING_SETPOINT_ATTR: "occupied_heating_setpoint",
+        SASWELL_LOCAL_TEMP_ATTR: "local_temperature",
     }
 
     def _update_attribute(self, attrid, value):
@@ -81,15 +97,20 @@ class ManufacturerThermostatCluster(TuyaManufClusterAttributes):
                 self.TEMPERATURE_ATTRS[attrid],
                 value * 10,
             )
-        elif attrid == SASSWEL_STATE_ATTR:
+        elif attrid == SASWELL_STATE_ATTR:
             self.endpoint.device.thermostat_bus.listener_event(
                 "system_mode_reported", value
             )
-        elif attrid == SASSWEL_BATTERY_LOW_ATTR:
+        elif attrid == SASWELL_BATTERY_LOW_ATTR:
             # this device doesn't have battery level reporting, only battery low alert
             # when the alert is active (1) we report 0% and 100% otherwise (0)
             self.endpoint.device.battery_bus.listener_event(
                 "battery_change", 0 if value == 1 else 100
+            )
+
+        elif attrid == (SASWELL_TEMPERATURE_CALIBRATION_ATTR):
+            self.endpoint.device.temperature_calibration_bus.listener_event(
+                "set_value", value
             )
 
 
@@ -128,19 +149,66 @@ class ThermostatCluster(TuyaThermostatCluster):
 
         if attribute == "occupied_heating_setpoint":
             # centidegree to decidegree
-            return {SASSWEL_HEATING_SETPOINT_ATTR: round(value / 10)}
+            return {SASWELL_HEATING_SETPOINT_ATTR: round(value / 10)}
 
         if attribute == "system_mode":
             # this quirk does not support programmig modes so we force the schedule mode to be always off
             # more details: https://github.com/zigpy/zha-device-handlers/issues/1815
             if value == self.SystemMode.Off:
-                return {SASSWEL_STATE_ATTR: 0, SASSWEL_SCHEDULE_ENABLE_ATTR: 0}
+                return {SASWELL_STATE_ATTR: 0, SASWELL_SCHEDULE_ENABLE_ATTR: 0}
             if value == self.SystemMode.Heat:
-                return {SASSWEL_STATE_ATTR: 1, SASSWEL_SCHEDULE_ENABLE_ATTR: 0}
+                return {SASWELL_STATE_ATTR: 1, SASWELL_SCHEDULE_ENABLE_ATTR: 0}
+
+
+class TuyaTemperatureOffset(LocalDataCluster, AnalogOutput):
+    """AnalogOutput cluster for setting temperature offset."""
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self.endpoint.device.temperature_calibration_bus.add_listener(self)
+        self._update_attribute(
+            self.attributes_by_name["description"].id, "Temperature Offset"
+        )
+        self._update_attribute(self.attributes_by_name["max_present_value"].id, 6)
+        self._update_attribute(self.attributes_by_name["min_present_value"].id, -6)
+        self._update_attribute(self.attributes_by_name["resolution"].id, 1)
+        self._update_attribute(self.attributes_by_name["application_type"].id, 0x0009)
+        self._update_attribute(self.attributes_by_name["engineering_units"].id, 62)
+
+    def set_value(self, value):
+        """Set new temperature offset value."""
+        self._update_attribute(self.attributes_by_name["present_value"].id, value)
+
+    def get_value(self):
+        """Get current temperature offset value."""
+        return self._attr_cache.get(self.attributes_by_name["present_value"].id)
+
+    async def write_attributes(self, attributes, manufacturer=None):
+        """Modify value before passing it to the set_data tuya command."""
+        for attrid, value in attributes.items():
+            if isinstance(attrid, str):
+                attrid = self.attributes_by_name[attrid].id
+            if attrid not in self.attributes:
+                self.error("%d is not a valid attribute id", attrid)
+                continue
+            self._update_attribute(attrid, value)
+
+            if attrid == 0x0055:  # `present_value`
+                await self.endpoint.tuya_manufacturer.write_attributes(
+                    {SASWELL_TEMPERATURE_CALIBRATION_ATTR: value}, manufacturer=None
+                )
+
+        return ([foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)],)
 
 
 class Thermostat_TYST11_c88teujp(TuyaThermostat):
     """Saswell 88teujp thermostat valve."""
+
+    def __init__(self, *args, **kwargs):
+        """Init device."""
+        self.temperature_calibration_bus = Bus()
+        super().__init__(*args, **kwargs)
 
     signature = {
         MODELS_INFO: [
@@ -182,6 +250,7 @@ class Thermostat_TYST11_c88teujp(TuyaThermostat):
                     Identify.cluster_id,
                     ThermostatCluster,
                     ManufacturerThermostatCluster,
+                    TuyaTemperatureOffset,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
@@ -194,6 +263,11 @@ class Thermostat_TYST11_c88teujp(TuyaThermostat):
 
 class Thermostat_TZE200_c88teujp(TuyaThermostat):
     """Saswell 88teujp thermostat valve."""
+
+    def __init__(self, *args, **kwargs):
+        """Init device."""
+        self.temperature_calibration_bus = Bus()
+        super().__init__(*args, **kwargs)
 
     signature = {
         MODELS_INFO: [
@@ -240,6 +314,7 @@ class Thermostat_TZE200_c88teujp(TuyaThermostat):
                     Scenes.cluster_id,
                     ThermostatCluster,
                     ManufacturerThermostatCluster,
+                    TuyaTemperatureOffset,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             }

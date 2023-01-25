@@ -122,7 +122,13 @@ class DanfossThermostat(CustomDevice):
         # <SimpleDescriptor endpoint=1 profile=260 device_type=769
         # device_version=0 input_clusters=[0, 1, 3, 10,32, 513, 516, 1026, 2821]
         # output_clusters=[0, 25]>
-        MODELS_INFO: [(DANFOSS, "eTRV0100"), (D5X84YU, "eT093WRO")],
+        MODELS_INFO: [
+            (DANFOSS, "TRV001"),
+            (DANFOSS, "eTRV0100"),
+            (DANFOSS, "eTRV0101"),
+            (DANFOSS, "eTRV0103"),
+            (D5X84YU, "eT093WRO"),
+        ],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha_p.PROFILE_ID,
