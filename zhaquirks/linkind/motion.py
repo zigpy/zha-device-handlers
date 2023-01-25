@@ -10,6 +10,7 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.security import IasZone
+from zhaquirks import MotionWithReset
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -20,7 +21,6 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.linkind import LinkindBasicCluster
-from zhaquirks import MotionWithReset
 
 LINKIND_CLUSTER_ID = 0xFC81
 
