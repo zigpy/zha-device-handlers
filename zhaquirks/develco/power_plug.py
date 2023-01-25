@@ -29,6 +29,7 @@ from zhaquirks.develco import DEVELCO
 
 class DeviceTemperatureCluster(CustomCluster, DeviceTemperature):
     """Device Temperature. Modify divisor."""
+
     cluster_id = DeviceTemperature.cluster_id
 
     def __init__(self, *args, **kwargs):
@@ -38,19 +39,18 @@ class DeviceTemperatureCluster(CustomCluster, DeviceTemperature):
     def _update_attribute(self, attrid, value):
         if attrid == 0x0000 and value is not None and value >= 0:
             value = value * 100
-        
         super()._update_attribute(attrid, value)
 
 
 class SPLZB131(CustomDevice):
-    """ Custom device Develco smart plug device."""
+    """Custom device Develco smart plug device."""
 
     signature = {
         MODELS_INFO: [(DEVELCO, "SPLZB-131")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: 0xC0C9,
-                DEVICE_TYPE: 1,                
+                DEVICE_TYPE: 1,
                 INPUT_CLUSTERS: [
                     Scenes.cluster_id,
                     OnOff.cluster_id,
