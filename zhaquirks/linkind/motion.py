@@ -10,8 +10,8 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.security import IasZone
-from zhaquirks import MotionWithReset
 
+from zhaquirks import MotionWithReset
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
