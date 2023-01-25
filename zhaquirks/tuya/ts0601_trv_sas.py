@@ -218,6 +218,7 @@ class Thermostat_TYST11_c88teujp(TuyaThermostat):
             ("_TYST11_yw7cahqs", "w7cahqs"),
             ("_TYST11_9gvruqf5", "gvruqf5"),
             ("_TYST11_zuhszj9s", "uhszj9s"),
+            ("_TYST11_caj4jz0i", "aj4jz0i"),
         ],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=0
