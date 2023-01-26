@@ -30,7 +30,7 @@ class DimmableLedController(CustomDevice):
     """Tuya dimmable led controller single channel."""
 
     signature = {
-        MODELS_INFO: [("_TZ3210_9q49basr", "TS0501B")],
+        MODELS_INFO: [("_TZ3210_9q49basr", "TS0501B"),("_TZ3210_4zinq6io", "TS0501B"),("_TZ3210_e5t9bfdv", "TS0501B")],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=257
             # input_clusters=[0, 3, 4, 5, 6, 8, 768, 4096, 61184]
