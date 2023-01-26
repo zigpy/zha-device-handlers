@@ -32,10 +32,6 @@ class DeviceTemperatureCluster(CustomCluster, DeviceTemperature):
 
     cluster_id = DeviceTemperature.cluster_id
 
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-
     def _update_attribute(self, attrid, value):
         if attrid == 0x0000 and value is not None and value >= 0:
             value = value * 100
