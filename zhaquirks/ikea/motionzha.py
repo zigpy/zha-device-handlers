@@ -33,7 +33,7 @@ from zhaquirks.ikea import (
 
 
 class IkeaTradfriMotionE1745_Var01(CustomDevice):
-    """Custom device representing IKEA of Sweden TRADFRI motion sensor E1745 variation 1."""
+    """Custom device representing IKEA of Sweden TRADFRI motion sensor E1745 second gen variation 1."""
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=2128
@@ -90,7 +90,7 @@ class IkeaTradfriMotionE1745_Var01(CustomDevice):
 
 
 class IkeaTradfriMotionE1745_Var02(CustomDevice):
-    """Custom device representing IKEA of Sweden TRADFRI motion sensor E1745 variation 2."""
+    """Custom device representing IKEA of Sweden TRADFRI motion sensor E1745 second gen variation 2."""
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=2128
@@ -151,7 +151,7 @@ class IkeaTradfriMotionE1745_Var02(CustomDevice):
 
 
 class IkeaTradfriMotionE1525_Var01(CustomDevice):
-    """Custom device representing IKEA of Sweden TRADFRI motion sensor E1525 variation 1."""
+    """Custom device representing IKEA of Sweden TRADFRI motion sensor E1525 first gen variation 1."""
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=2128
