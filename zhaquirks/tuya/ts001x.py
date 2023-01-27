@@ -948,3 +948,93 @@ class Tuya_Triple_No_N_Plus(EnchantedDevice, TuyaSwitch):
             },
         },
     }
+
+
+class Tuya_Triple_Optional_N(EnchantedDevice, TuyaSwitch):
+    """Tuya 3 gang switch with optional neutral."""
+
+    signature = {
+        MODEL: "TS0013",
+        ENDPOINTS: {
+            # SimpleDescriptor(endpoint=1, profile=260, device_type=256,
+            # device_version=1,
+            # input_clusters=[3, 4, 5, 6, 0],
+            # output_clusters=[25, 10]
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    Basic.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Ota.cluster_id, Time.cluster_id],
+            },
+            # SimpleDescriptor(endpoint=2, profile=260, device_type=256,
+            # device_version=1,
+            # input_clusters=[4, 5, 6],
+            # output_clusters=[])
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            # SimpleDescriptor(endpoint=3, profile=260, device_type=256,
+            # device_version=1,
+            # input_clusters=[4, 5, 6],
+            # output_clusters=[])
+            3: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+        },
+    }
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaZBOnOffAttributeCluster,
+                    Basic.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Ota.cluster_id, Time.cluster_id],
+            },
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaZBOnOffAttributeCluster,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            3: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaZBOnOffAttributeCluster,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+        },
+    }
