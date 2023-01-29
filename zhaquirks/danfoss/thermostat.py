@@ -204,6 +204,10 @@ class DanfossThermostatCluster(CustomCluster, Thermostat):
             await self.setpoint_command(
                 0x01, attributes["occupied_heating_setpoint"], manufacturer=manufacturer
             )
+        elif "system_mode" in attributes and attributes["system_mode"] == 0:
+            # Thermostatic Radiator Valves often cannot be turned off to prevent damage during frost
+            # just turn setpoint down to minumum of 5 degrees Celcius
+            await self.setpoint_command(0x01, 500, manufacturer=manufacturer)
 
         return write_res
 
