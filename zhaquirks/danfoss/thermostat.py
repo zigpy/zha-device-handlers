@@ -117,9 +117,7 @@ class DanfossTRVCluster(CustomCluster, ManufacturerSpecificCluster):
 
     async def bind(self):
         # read attributes before ZHA binds, this makes sure the entity is created
-        result = await read_attributes(
-            self, self.endpoint.thermostat, danfoss_thermostat_attr
-        )
+        await read_attributes(self, self.endpoint.thermostat, danfoss_thermostat_attr)
 
         return await super().bind()
 
