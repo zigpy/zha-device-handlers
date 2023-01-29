@@ -36,32 +36,23 @@ danfoss_thermostat_attr = {
     0x4000: ("open_window_detection", t.enum8, "rp"),
     0x4003: ("external_open_window_detected", t.Bool, "rpw"),
     0x4051: ("window_open_feature", t.Bool, "rpw"),
-
     0x4010: ("exercise_day_of_week", t.enum8, "rpw"),
     0x4011: ("exercise_trigger_time", t.uint16_t, "rpw"),
-    
     0x4012: ("mounting_mode_active", t.Bool, "rp"),
-    0x4013: ("mounting_mode_control", t.Bool, "rpw"), # undocumented
-    
+    0x4013: ("mounting_mode_control", t.Bool, "rpw"),  # undocumented
     0x4014: ("orientation", t.enum8, "rpw"),
-    
     0x4015: ("external_measured_room_sensor", t.int16s, "rpw"),
     0x4016: ("radiator_covered", t.Bool, "rpw"),
-        
-    0x4030: ("heat_available", t.Bool, "rpw"), # undocumented
-    0x4031: ("heat_required", t.Bool, "rp"), # undocumented
-    
+    0x4030: ("heat_available", t.Bool, "rpw"),  # undocumented
+    0x4031: ("heat_required", t.Bool, "rp"),  # undocumented
     0x4032: ("load_balancing_enable", t.Bool, "rpw"),
     0x4040: ("load_room_mean", t.int16s, "rpw"),
     0x404A: ("load_estimate", t.int16s, "rp"),
-
     0x4020: ("control_algorithm_scale_factor", t.uint8_t, "rpw"),
     0x404B: ("regulation_setpoint_offset", t.int8s, "rpw"),
-    
     0x404C: ("adaptation_run_control", t.enum8, "rw"),
     0x404D: ("adaptation_run_status", t.bitmap8, "rp"),
     0x404E: ("adaptation_run_settings", t.bitmap8, "rw"),
-    
     0x404F: ("preheat_status", t.Bool, "rp"),
     0x4050: ("preheat_time", t.uint32_t, "rp"),
 }
@@ -84,27 +75,29 @@ danfoss_interface_attr = {
 # 0x0b05
 danfoss_diagnostic_attr = {
     0x4000: ("sw_error_code", t.bitmap16, "rp"),
-    0x4001: ("wake_time_avg", t.uint32_t, "rp"), # always 0?
-    0x4002: ("wake_time_max_duration", t.uint32_t, "rp"), # always 0?
-    0x4003: ("wake_time_min_duration", t.uint32_t, "rp"), # always 0?
-    0x4004: ("sleep_postponed_count_avg", t.uint32_t, "rp"), # always 0?
-    0x4005: ("sleep_postponed_count_max", t.uint32_t, "rp"), # always 0?
-    0x4006: ("sleep_postponed_count_min", t.uint32_t, "rp"), # always 0?
+    0x4001: ("wake_time_avg", t.uint32_t, "rp"),  # always 0?
+    0x4002: ("wake_time_max_duration", t.uint32_t, "rp"),  # always 0?
+    0x4003: ("wake_time_min_duration", t.uint32_t, "rp"),  # always 0?
+    0x4004: ("sleep_postponed_count_avg", t.uint32_t, "rp"),  # always 0?
+    0x4005: ("sleep_postponed_count_max", t.uint32_t, "rp"),  # always 0?
+    0x4006: ("sleep_postponed_count_min", t.uint32_t, "rp"),  # always 0?
     0x4010: ("motor_step_counter", t.uint32_t, "rp"),
 }
 
 
 async def read_attributes(dest, source, dictionary):
-    """ Automatically reads attributes from source cluster and stores them in the dest cluster """
+    """Automatically reads attributes from source cluster and stores them in the dest cluster"""
     response = {}
-    step = 14 # The device doesn't respond to more than 14 per request it seems
+    step = 14  # The device doesn't respond to more than 14 per request it seems
 
     # read from source
-    for a in range(0, len(dictionary)+step, step):
-        subset = list(dictionary.keys())[a:a+step]
+    for a in range(0, len(dictionary) + step, step):
+        subset = list(dictionary.keys())[a : a + step]
         if subset:
-            response.update((await source.read_attributes(subset, manufacturer=MANUFACTURER))[0])
-    
+            response.update(
+                (await source.read_attributes(subset, manufacturer=MANUFACTURER))[0]
+            )
+
     # store all of them in dest
     for attrid, value in response.items():
         dest.update_attribute(attrid, value)
@@ -124,8 +117,10 @@ class DanfossTRVCluster(CustomCluster, ManufacturerSpecificCluster):
 
     async def bind(self):
         # read attributes before ZHA binds, this makes sure the entity is created
-        result = await read_attributes(self, self.endpoint.thermostat, danfoss_thermostat_attr)
-        
+        result = await read_attributes(
+            self, self.endpoint.thermostat, danfoss_thermostat_attr
+        )
+
         return await super().bind()
 
 
@@ -139,7 +134,9 @@ class DanfossTRVInterfaceCluster(CustomCluster, ManufacturerSpecificCluster):
     attributes.update(danfoss_interface_attr)
 
     async def write_attributes(self, attributes, manufacturer=None):
-        return await self.endpoint.thermostat_ui.write_attributes(attributes, manufacturer)
+        return await self.endpoint.thermostat_ui.write_attributes(
+            attributes, manufacturer
+        )
 
     async def bind(self):
         # read attributes before ZHA binds, this makes sure the entity is created
@@ -163,7 +160,7 @@ class DanfossTRVDiagnosticCluster(CustomCluster, ManufacturerSpecificCluster):
     async def bind(self):
         # read attributes before ZHA binds, this makes sure the entity is created
         await read_attributes(self, self.endpoint.diagnostic, danfoss_diagnostic_attr)
-        
+
         return await super().bind()
 
 
@@ -187,7 +184,7 @@ class DanfossThermostatCluster(CustomCluster, Thermostat):
             # Force: 0 means force, other values for future needs
             {"force": t.enum8, "timestamp": t.uint32_t},
             is_manufacturer_specific=True,
-        )
+        ),
     }
 
     attributes = Thermostat.attributes.copy()
@@ -209,11 +206,11 @@ class DanfossThermostatCluster(CustomCluster, Thermostat):
             )
 
         return write_res
-    
+
     def _update_attribute(self, attrid, value):
         if attrid in {a for (a, *_) in danfoss_thermostat_attr.values()}:
             self.endpoint.danfoss_trv_cluster.update_attribute(attrid, value)
-       
+
         # update local either way
         super()._update_attribute(attrid, value)
 
@@ -227,7 +224,7 @@ class DanfossUserInterfaceCluster(CustomCluster, UserInterface):
     def _update_attribute(self, attrid, value):
         if attrid in {a for (a, *_) in danfoss_interface_attr.values()}:
             self.endpoint.danfoss_trv_interface_cluster.update_attribute(attrid, value)
-       
+
         # update local either way
         super()._update_attribute(attrid, value)
 
@@ -241,7 +238,7 @@ class DanfossDiagnosticCluster(CustomCluster, Diagnostic):
     def _update_attribute(self, attrid, value):
         if attrid in {a for (a, *_) in danfoss_diagnostic_attr.values()}:
             self.endpoint.danfoss_trv_diagnostic_cluster.update_attribute(attrid, value)
-       
+
         # update local either way
         super()._update_attribute(attrid, value)
 
@@ -293,7 +290,6 @@ class DanfossThermostat(CustomDevice):
                     DanfossTRVCluster,
                     DanfossTRVInterfaceCluster,
                     DanfossTRVDiagnosticCluster,
-
                 ],
                 OUTPUT_CLUSTERS: [Basic, Ota],
             }
