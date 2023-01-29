@@ -5,8 +5,6 @@ import zigpy.profiles.zha as zha_p
 from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.zcl.clusters.manufacturer_specific import ManufacturerSpecificCluster
 
-from zhaquirks import Bus
-
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
