@@ -109,8 +109,6 @@ class EUI64(zigpy.types.EUI64):
 class FrameId(uint8_t):
     """Frame ID type."""
 
-    pass
-
 
 class NWK(int):
     """Network address serializable class."""
