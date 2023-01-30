@@ -204,6 +204,7 @@ class IkeaTradfriRemote1(CustomDevice):
         },
     }
 
+
 class IkeaTradfriRemote2(CustomDevice):
     """Custom device representing IKEA of Sweden TRADFRI remote control."""
 
@@ -398,6 +399,7 @@ class IkeaTradfriRemote4(IkeaTradfriRemote2):
     }
 
     device_automation_triggers = IkeaTradfriRemote1.device_automation_triggers.copy()
+
 
 class IkeaTradfriRemote5(IkeaTradfriRemote2):
     """Custom device representing IKEA of Sweden TRADFRI remote control."""
