@@ -1,6 +1,5 @@
 """Device handler for IKEA of Sweden TRADFRI remote control."""
-from zigpy.profiles import zha
-from zigpy.profiles import zll
+from zigpy.profiles import zha, zll
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Alarms,
