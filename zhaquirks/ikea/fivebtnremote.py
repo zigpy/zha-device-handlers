@@ -254,9 +254,10 @@ class IkeaTradfriRemote3(IkeaTradfriRemote1):
     """Custom device representing IKEA of Sweden TRADFRI 5 button remote control."""
 
     signature = {
-        # <SimpleDescriptor endpoint = 1 profile = 260 device_type = 2064
-        # device_version = 2 input_clusters = [0, 1, 3, 9, 2821, 4096]
-        # output_clusters = [3, 4, 5, 6, 8, 25, 4096]
+        # <SimpleDescriptor endpoint=1 profile=260 device_type=2064
+        # device_version=2
+        # input_clusters=[0, 1, 3, 9, 2821, 4096]
+        # output_clusters=[3, 4, 5, 6, 8, 25, 4096]>
         MODELS_INFO: [(IKEA, "TRADFRI remote control")],
         ENDPOINTS: {
             1: {
