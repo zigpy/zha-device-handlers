@@ -418,6 +418,7 @@ class IkeaTradfriRemote5(IkeaTradfriRemote1):
                     Identify.cluster_id,
                     PollControl.cluster_id,
                     LightLinkCluster,
+                    WWAH_CLUSTER_ID,
                     IKEA_CLUSTER_ID,
                 ],
                 OUTPUT_CLUSTERS: [
