@@ -431,4 +431,4 @@ class IkeaTradfriRemote5(IkeaTradfriRemote1):
                 ],
             }
         }
-    }    
+    }
