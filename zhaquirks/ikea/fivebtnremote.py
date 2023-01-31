@@ -250,83 +250,19 @@ class IkeaTradfriRemote2(CustomDevice):
     }
 
     device_automation_triggers = {
-        (SHORT_PRESS, TURN_ON): {
-            COMMAND: COMMAND_TOGGLE,
-            CLUSTER_ID: 6,
-            ENDPOINT_ID: 1,
-        },
-        (LONG_PRESS, TURN_ON): {
-            COMMAND: COMMAND_RELEASE,
-            CLUSTER_ID: 5,
-            ENDPOINT_ID: 1,
-            PARAMS: {"param1": 537},
-        },
-        (SHORT_PRESS, DIM_UP): {
-            COMMAND: COMMAND_STEP_ON_OFF,
-            CLUSTER_ID: 8,
-            ENDPOINT_ID: 1,
-            PARAMS: {"step_mode": 0},
-        },
-        (LONG_PRESS, DIM_UP): {
-            COMMAND: COMMAND_MOVE_ON_OFF,
-            CLUSTER_ID: 8,
-            ENDPOINT_ID: 1,
-            PARAMS: {"move_mode": 0},
-        },
-        (SHORT_PRESS, DIM_DOWN): {
-            COMMAND: COMMAND_STEP,
-            CLUSTER_ID: 8,
-            ENDPOINT_ID: 1,
-            PARAMS: {"step_mode": 1},
-        },
-        (LONG_PRESS, DIM_DOWN): {
-            COMMAND: COMMAND_MOVE,
-            CLUSTER_ID: 8,
-            ENDPOINT_ID: 1,
-            PARAMS: {"move_mode": 1},
-        },
-        (SHORT_PRESS, LEFT): {
-            COMMAND: COMMAND_PRESS,
-            CLUSTER_ID: 5,
-            ENDPOINT_ID: 1,
-            PARAMS: {
-                "param1": 257,
-                "param2": 13,
-                "param3": 0,
-            },
-        },
-        (LONG_PRESS, LEFT): {
-            COMMAND: COMMAND_HOLD,
-            CLUSTER_ID: 5,
-            ENDPOINT_ID: 1,
-            PARAMS: {
-                "param1": 3329,
-                "param2": 0,
-            },
-        },
-        (SHORT_PRESS, RIGHT): {
-            COMMAND: COMMAND_PRESS,
-            CLUSTER_ID: 5,
-            ENDPOINT_ID: 1,
-            PARAMS: {
-                "param1": 256,
-                "param2": 13,
-                "param3": 0,
-            },
-        },
-        (LONG_PRESS, RIGHT): {
-            COMMAND: COMMAND_HOLD,
-            CLUSTER_ID: 5,
-            ENDPOINT_ID: 1,
-            PARAMS: {
-                "param1": 3328,
-                "param2": 0,
+        **IkeaTradfriRemote1.device_automation_triggers,
+        **{
+            (LONG_PRESS, TURN_ON): {
+                COMMAND: COMMAND_RELEASE,
+                CLUSTER_ID: 5,
+                ENDPOINT_ID: 1,
+                PARAMS: {"param1": 537},
             },
         },
     }
 
 
-class IkeaTradfriRemote3(IkeaTradfriRemote1):
+class IkeaTradfriRemote3(IkeaTradfriRemote2):
     """Custom device representing IKEA of Sweden TRADFRI 5 button remote control."""
 
     signature = {
@@ -387,7 +323,7 @@ class IkeaTradfriRemote3(IkeaTradfriRemote1):
     device_automation_triggers = IkeaTradfriRemote2.device_automation_triggers.copy()
 
 
-class IkeaTradfriRemote4(IkeaTradfriRemote1):
+class IkeaTradfriRemote4(IkeaTradfriRemote2):
     """Custom device representing IKEA of Sweden TRADFRI remote control."""
 
     signature = {
@@ -447,78 +383,4 @@ class IkeaTradfriRemote4(IkeaTradfriRemote1):
         }
     }
 
-    device_automation_triggers = {
-        (SHORT_PRESS, TURN_ON): {
-            COMMAND: COMMAND_TOGGLE,
-            CLUSTER_ID: 6,
-            ENDPOINT_ID: 1,
-        },
-        (LONG_PRESS, TURN_ON): {
-            COMMAND: COMMAND_RELEASE,
-            CLUSTER_ID: 5,
-            ENDPOINT_ID: 1,
-            PARAMS: {"param1": 0},
-        },
-        (SHORT_PRESS, DIM_UP): {
-            COMMAND: COMMAND_STEP_ON_OFF,
-            CLUSTER_ID: 8,
-            ENDPOINT_ID: 1,
-            PARAMS: {"step_mode": 0},
-        },
-        (LONG_PRESS, DIM_UP): {
-            COMMAND: COMMAND_MOVE_ON_OFF,
-            CLUSTER_ID: 8,
-            ENDPOINT_ID: 1,
-            PARAMS: {"move_mode": 0},
-        },
-        (SHORT_PRESS, DIM_DOWN): {
-            COMMAND: COMMAND_STEP,
-            CLUSTER_ID: 8,
-            ENDPOINT_ID: 1,
-            PARAMS: {"step_mode": 1},
-        },
-        (LONG_PRESS, DIM_DOWN): {
-            COMMAND: COMMAND_MOVE,
-            CLUSTER_ID: 8,
-            ENDPOINT_ID: 1,
-            PARAMS: {"move_mode": 1},
-        },
-        (SHORT_PRESS, LEFT): {
-            COMMAND: COMMAND_PRESS,
-            CLUSTER_ID: 5,
-            ENDPOINT_ID: 1,
-            PARAMS: {
-                "param1": 257,
-                "param2": 13,
-                "param3": 0,
-            },
-        },
-        (LONG_PRESS, LEFT): {
-            COMMAND: COMMAND_HOLD,
-            CLUSTER_ID: 5,
-            ENDPOINT_ID: 1,
-            PARAMS: {
-                "param1": 3329,
-                "param2": 0,
-            },
-        },
-        (SHORT_PRESS, RIGHT): {
-            COMMAND: COMMAND_PRESS,
-            CLUSTER_ID: 5,
-            ENDPOINT_ID: 1,
-            PARAMS: {
-                "param1": 256,
-                "param2": 13,
-                "param3": 0,
-            },
-        },
-        (LONG_PRESS, RIGHT): {
-            COMMAND: COMMAND_HOLD,
-            CLUSTER_ID: 5,
-            ENDPOINT_ID: 1,
-            PARAMS: {
-                "param1": 3328,
-                "param2": 0,
-            },
-        },
-    }
+    device_automation_triggers = IkeaTradfriRemote1.device_automation_triggers.copy()
