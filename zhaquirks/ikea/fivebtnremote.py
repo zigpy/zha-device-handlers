@@ -54,7 +54,7 @@ from zhaquirks.ikea import (
 
 
 class IkeaTradfriRemote1(CustomDevice):
-    """Custom device representing IKEA of Sweden TRADFRI remote control."""
+    """Custom device representing ZLL version of IKEA five button remote."""
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=49246 device_type=2096
@@ -191,7 +191,7 @@ class IkeaTradfriRemote1(CustomDevice):
 
 
 class IkeaTradfriRemote2(IkeaTradfriRemote1):
-    """Custom device representing IKEA of Sweden TRADFRI remote control."""
+    """Custom device representing variation of IKEA five button remote."""
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=2080
@@ -251,7 +251,7 @@ class IkeaTradfriRemote2(IkeaTradfriRemote1):
 
 
 class IkeaTradfriRemote3(IkeaTradfriRemote1):
-    """Custom device representing IKEA of Sweden TRADFRI 5 button remote control."""
+    """Custom device representing variation of IKEA five button remote."""
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=2064
@@ -311,7 +311,7 @@ class IkeaTradfriRemote3(IkeaTradfriRemote1):
 
 
 class IkeaTradfriRemote4(IkeaTradfriRemote1):
-    """Custom device representing IKEA of Sweden TRADFRI remote control."""
+    """Custom device representing variation of IKEA five button remote."""
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=2080
