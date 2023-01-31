@@ -2,6 +2,7 @@
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
+from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.general import Alarms, Basic, Identify, Ota, PowerConfiguration
 from zigpy.zcl.clusters.security import IasWd, IasZone
 import zigpy.zdo.types
