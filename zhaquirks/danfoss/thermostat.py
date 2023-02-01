@@ -27,7 +27,7 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 
-from . import DANFOSS, HIVE, POPP
+from zhaquirks.danfoss import DANFOSS, HIVE, POPP
 
 MANUFACTURER = 0x1246
 
