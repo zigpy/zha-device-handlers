@@ -226,21 +226,6 @@ class HeimanSmokeN30(CustomDevice):
     }
 
     replacement = {
-        NODE_DESCRIPTOR: zigpy.zdo.types.NodeDescriptor(
-            logical_type=2,
-            complex_descriptor_available=0,
-            user_descriptor_available=0,
-            reserved=0,
-            aps_flags=0,
-            frequency_band=8,
-            mac_capability_flags=128 & 0b1111_1011,
-            manufacturer_code=4619,
-            maximum_buffer_size=127,
-            maximum_incoming_transfer_size=100,
-            server_mask=11264,
-            maximum_outgoing_transfer_size=100,
-            descriptor_capability_field=0,
-        ),
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
