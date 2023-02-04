@@ -5,7 +5,6 @@ manufacturer specific attributes to control displaying and specific configuratio
 import zigpy.profiles.zha as zha_p
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
-from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
     Basic,
     Identify,
@@ -17,6 +16,7 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
 from zigpy.zcl.clusters.manufacturer_specific import ManufacturerSpecificCluster
+from zigpy.zcl.foundation import ZCLAttributeDef, ZCLCommandDef
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -26,10 +26,19 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-
 from zhaquirks.danfoss import DANFOSS, HIVE, POPP
 
-MANUFACTURER = 0x1246
+
+class DanfossOperationModeEnum(t.bitmap8):
+    """Nonstandard and unnecessarily complicated implementation of Programming Operation Mode from Danfoss."""
+
+    Manual = 0b00000000
+    Schedule = 0b00000001
+    Manual_Preheat = 0b00000010
+    Schedule_Preheat = 0b00000011
+
+
+setpoint_change_scheduled = 0x41FF
 
 # 0x0201
 danfoss_thermostat_attr = {
@@ -55,14 +64,32 @@ danfoss_thermostat_attr = {
     0x404E: ("adaptation_run_settings", t.bitmap8, "rw"),
     0x404F: ("preheat_status", t.Bool, "rp"),
     0x4050: ("preheat_time", t.uint32_t, "rp"),
+    # Danfoss deviated heavily from the spec with this one
+    0x0025: ZCLAttributeDef("trv_operation_mode", type=t.bitmap8, access="rpw"),
+    # We need a convenient way to access this, so we create our own attribute
+    0x41FF: ZCLAttributeDef(
+        "occupied_heating_setpoint_scheduled",
+        type=DanfossOperationModeEnum,
+        access="rpw",
+    ),
 }
-# ZCL Attributes Supported: pi_heating_demand (0x0008)
+# ZCL Attributes Supported:
+#   pi_heating_demand (0x0008),
+#   min_heat_setpoint_limit (0x0015)
+#   max_heat_setpoint_limit (0x0016)
+#   setpoint_change_source (0x0030)
+# hardcoded:
+#   abs_min_heat_setpoint_limit (0x0003)=5
+#   abs_max_heat_setpoint_limit (0x0004)=35
+#   start_of_week (0x0020)=Monday
+#   number_of_weekly_transitions (0x0021)=42
+#   number_of_daily_transitions (0x0022)=6
 
-# reading mandatory ZCL attribute 0xFFFD results in UNSUPPORTED_ATTRIBUTE
+zcl_attr = {
+    0xFFFD: ("cluster_revision", t.uint16_t, "r"),
+}
+
 # ZCL Commands Supported: SetWeeklySchedule (0x01), GetWeeklySchedule (0x02), ClearWeeklySchedule (0x03)
-
-# Danfos says they support the following, but Popp eT093WRO responds with UNSUPPORTED_ATTRIBUTE
-#    0x0003, 0x0004, 0x0015, 0x0016, 0x0025, 0x0030, 0x0020, 0x0021, 0x0022
 
 # 0x0204
 danfoss_interface_attr = {
@@ -85,24 +112,6 @@ danfoss_diagnostic_attr = {
 }
 
 
-async def read_attributes(dest, source, dictionary):
-    """Automatically reads attributes from source cluster and stores them in the dest cluster."""
-    response = {}
-    step = 14  # The device doesn't respond to more than 14 per request it seems
-
-    # read from source
-    for a in range(0, len(dictionary) + step, step):
-        subset = list(dictionary.keys())[a : a + step]
-        if subset:
-            response.update(
-                (await source.read_attributes(subset, manufacturer=MANUFACTURER))[0]
-            )
-
-    # store all of them in dest
-    for attrid, value in response.items():
-        dest.update_attribute(attrid, value)
-
-
 class DanfossTRVCluster(CustomCluster, ManufacturerSpecificCluster):
     """Danfoss custom TRV cluster."""
 
@@ -114,13 +123,40 @@ class DanfossTRVCluster(CustomCluster, ManufacturerSpecificCluster):
 
     async def write_attributes(self, attributes, manufacturer=None):
         """Write attributes to thermostat cluster."""
-        return await self.endpoint.thermostat.write_attributes(attributes, manufacturer)
+        return await self.endpoint.thermostat.write_attributes(
+            attributes, manufacturer=manufacturer
+        )
 
-    async def bind(self):
-        """Read attributes before ZHA binds, this makes sure the entity is created."""
-        await read_attributes(self, self.endpoint.thermostat, danfoss_thermostat_attr)
+    async def read_attributes_raw(self, attributes, manufacturer=None):
+        """Operation Mode is a ZCL attribute and needs to be requested without manufacturer code."""
 
-        return await super().bind()
+        # Setpoint_change_scheduled is not a real attribute
+        setpoint_change_scheduled = 0x41FF
+        if setpoint_change_scheduled in attributes:
+            attributes.remove(setpoint_change_scheduled)
+
+        # Operation Mode is nonstandard and therefore manufacturer specific
+        operation_mode = 0x0025
+        result_oper_mode = None
+        if operation_mode in attributes:
+            attributes.remove(operation_mode)
+            result_oper_mode = await self.endpoint.thermostat.read_attributes_raw(
+                [operation_mode], manufacturer=None
+            )
+
+        # Get normal result
+        result = None
+        if attributes:
+            result = await self.endpoint.thermostat.read_attributes_raw(
+                attributes, manufacturer=manufacturer
+            )
+
+        # Combine results
+        if result_oper_mode and result:
+            result[0].append(result_oper_mode[0][0])
+            return result
+        else:
+            return result if result else result_oper_mode
 
 
 class DanfossTRVInterfaceCluster(CustomCluster, ManufacturerSpecificCluster):
@@ -134,16 +170,15 @@ class DanfossTRVInterfaceCluster(CustomCluster, ManufacturerSpecificCluster):
 
     async def write_attributes(self, attributes, manufacturer=None):
         """Write attributes to thermostat user interface cluster."""
-
         return await self.endpoint.thermostat_ui.write_attributes(
-            attributes, manufacturer
+            attributes, manufacturer=manufacturer
         )
 
-    async def bind(self):
-        """Read attributes before ZHA binds, this makes sure the entity is created."""
-        await read_attributes(self, self.endpoint.thermostat_ui, danfoss_interface_attr)
-
-        return await super().bind()
+    def read_attributes_raw(self, attributes, manufacturer=None):
+        """Read in attributes from User Interface Cluster."""
+        return self.endpoint.thermostat_ui.read_attributes_raw(
+            attributes, manufacturer=manufacturer
+        )
 
 
 class DanfossTRVDiagnosticCluster(CustomCluster, ManufacturerSpecificCluster):
@@ -157,13 +192,15 @@ class DanfossTRVDiagnosticCluster(CustomCluster, ManufacturerSpecificCluster):
 
     async def write_attributes(self, attributes, manufacturer=None):
         """Write attributes to diagnostic cluster."""
-        return await self.endpoint.diagnostic.write_attributes(attributes, manufacturer)
+        return await self.endpoint.diagnostic.write_attributes(
+            attributes, manufacturer=manufacturer
+        )
 
-    async def bind(self):
-        """Read attributes before ZHA binds, this makes sure the entity is created."""
-        await read_attributes(self, self.endpoint.diagnostic, danfoss_diagnostic_attr)
-
-        return await super().bind()
+    def read_attributes_raw(self, attributes, manufacturer=None):
+        """Read in attributes from Diagnostic Cluster."""
+        return self.endpoint.diagnostic.read_attributes_raw(
+            attributes, manufacturer=manufacturer
+        )
 
 
 class DanfossThermostatCluster(CustomCluster, Thermostat):
@@ -171,7 +208,7 @@ class DanfossThermostatCluster(CustomCluster, Thermostat):
 
     server_commands = Thermostat.server_commands.copy()
     server_commands = {
-        0x40: foundation.ZCLCommandDef(
+        0x40: ZCLCommandDef(
             "setpoint_command",
             # Types
             # 0: Schedule (relatively slow)
@@ -181,7 +218,7 @@ class DanfossThermostatCluster(CustomCluster, Thermostat):
             is_manufacturer_specific=True,
         ),
         # for synchronizing multiple TRVs preheating
-        0x42: foundation.ZCLCommandDef(
+        0x42: ZCLCommandDef(
             "preheat_command",
             # Force: 0 means force, other values for future needs
             {"force": t.enum8, "timestamp": t.uint32_t},
@@ -191,35 +228,52 @@ class DanfossThermostatCluster(CustomCluster, Thermostat):
 
     attributes = Thermostat.attributes.copy()
     attributes.update(danfoss_thermostat_attr)
+    attributes.update(zcl_attr)
 
     async def write_attributes(self, attributes, manufacturer=None):
         """Send SETPOINT_COMMAND after setpoint change."""
+
+        off = 0x00
+        scheduled = False
+        if "system_mode" in attributes and attributes["system_mode"] == off:
+            # Thermostatic Radiator Valves from Danfoss cannot be turned off to prevent damage during frost
+            # just turn setpoint down to minimum temperature
+            min_heat_setpoint_limit = 0x0015
+            attributes["occupied_heating_setpoint"] = self._attr_cache[
+                min_heat_setpoint_limit
+            ]
+        elif "occupied_heating_setpoint_scheduled" in attributes:
+            attributes["occupied_heating_setpoint"] = attributes.pop(
+                "occupied_heating_setpoint_scheduled"
+            )
+            scheduled = True
 
         write_res = await super().write_attributes(
             attributes, manufacturer=manufacturer
         )
 
-        if "occupied_heating_setpoint" in attributes:
-            self.debug(
-                "sending setpoint command: %s", attributes["occupied_heating_setpoint"]
-            )
+        if "occupied_heating_setpoint" in attributes and not scheduled:
+            aggressive_setpoint = 0x01
             await self.setpoint_command(
-                0x01, attributes["occupied_heating_setpoint"], manufacturer=manufacturer
+                aggressive_setpoint,
+                attributes["occupied_heating_setpoint"],
+                manufacturer=manufacturer,
             )
-        elif "system_mode" in attributes and attributes["system_mode"] == 0:
-            # Thermostatic Radiator Valves often cannot be turned off to prevent damage during frost
-            # just turn setpoint down to minimum of 5 degrees celsius
-            await self.setpoint_command(0x01, 500, manufacturer=manufacturer)
 
         return write_res
 
     def _update_attribute(self, attrid, value):
         """Update attributes of TRV cluster."""
-        if attrid in {a for (a, *_) in danfoss_thermostat_attr.values()}:
-            self.endpoint.danfoss_trv_cluster.update_attribute(attrid, value)
-
-        # update local either way
         super()._update_attribute(attrid, value)
+
+        setpoint_change = 0x0012
+        if attrid == setpoint_change:
+            self.endpoint.danfoss_trv_cluster._update_attribute(
+                setpoint_change_scheduled, value
+            )
+
+        if attrid in danfoss_thermostat_attr:
+            self.endpoint.danfoss_trv_cluster.update_attribute(attrid, value)
 
 
 class DanfossUserInterfaceCluster(CustomCluster, UserInterface):
@@ -227,14 +281,14 @@ class DanfossUserInterfaceCluster(CustomCluster, UserInterface):
 
     attributes = UserInterface.attributes.copy()
     attributes.update(danfoss_interface_attr)
+    attributes.update(zcl_attr)
 
     def _update_attribute(self, attrid, value):
         """Update attributes of TRV interface cluster."""
-        if attrid in {a for (a, *_) in danfoss_interface_attr.values()}:
-            self.endpoint.danfoss_trv_interface_cluster.update_attribute(attrid, value)
-
-        # update local either way
         super()._update_attribute(attrid, value)
+
+        if attrid in danfoss_interface_attr:
+            self.endpoint.danfoss_trv_interface_cluster.update_attribute(attrid, value)
 
 
 class DanfossDiagnosticCluster(CustomCluster, Diagnostic):
@@ -242,20 +296,26 @@ class DanfossDiagnosticCluster(CustomCluster, Diagnostic):
 
     attributes = Diagnostic.attributes.copy()
     attributes.update(danfoss_diagnostic_attr)
+    attributes.update(zcl_attr)
 
     def _update_attribute(self, attrid, value):
         """Update attributes or TRV diagnostic cluster."""
-        if attrid in {a for (a, *_) in danfoss_diagnostic_attr.values()}:
-            self.endpoint.danfoss_trv_diagnostic_cluster.update_attribute(attrid, value)
-
-        # update local either way
         super()._update_attribute(attrid, value)
+
+        if attrid in danfoss_diagnostic_attr:
+            self.endpoint.danfoss_trv_diagnostic_cluster.update_attribute(attrid, value)
 
 
 class DanfossThermostat(CustomDevice):
-    """DanfossThermostat custom device."""
+    """DanfossThermostat custom device.
+
+    manufacturer_code = 0x1246
+    """
 
     signature = {
+        # <SimpleDescriptor endpoint=1 profile=260 device_type=769
+        # device_version=0 input_clusters=[0, 1, 3, 10, 32, 513, 516, 1026, 2821]
+        # output_clusters=[0, 25]>
         MODELS_INFO: [
             (DANFOSS, "eTRV0100"),
             (DANFOSS, "eTRV0101"),
