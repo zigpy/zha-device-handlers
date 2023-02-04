@@ -91,6 +91,8 @@ class IteadRangeExtender(CustomDevice):
                 OUTPUT_CLUSTERS: [],
             },
             242: {
+                PROFILE_ID: 41440,
+                DEVICE_TYPE: 97,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [33],
             },
