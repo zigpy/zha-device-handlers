@@ -8,7 +8,6 @@ from zigpy.zcl.clusters.general import (
     Identify,
     LevelControl,
     OnOff,
-    PollControl,
     Scenes,
 )
 from zigpy.zcl.clusters.lighting import Color
