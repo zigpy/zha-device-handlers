@@ -153,7 +153,7 @@ class TuyaData(t.Struct):
     def payload(
         self,
     ) -> Union[
-        t.uint32_t_be,
+        t.int32s_be,
         t.Bool,
         t.CharacterString,
         t.enum8,
@@ -164,7 +164,7 @@ class TuyaData(t.Struct):
     ]:
         """Payload accordingly to data point type."""
         if self.dp_type == TuyaDPType.VALUE:
-            return t.uint32_t_be.deserialize(self.raw)[0]
+            return t.int32s_be.deserialize(self.raw)[0]
         elif self.dp_type == TuyaDPType.BOOL:
             return t.Bool.deserialize(self.raw)[0]
         elif self.dp_type == TuyaDPType.STRING:
@@ -186,7 +186,7 @@ class TuyaData(t.Struct):
     def payload(self, value):
         """Set payload accordingly to data point type."""
         if self.dp_type == TuyaDPType.VALUE:
-            self.raw = t.uint32_t_be(value).serialize()
+            self.raw = t.int32s_be(value).serialize()
         elif self.dp_type == TuyaDPType.BOOL:
             self.raw = t.Bool(value).serialize()
         elif self.dp_type == TuyaDPType.STRING:
