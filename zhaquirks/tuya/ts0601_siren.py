@@ -94,7 +94,7 @@ class TuyaManufClusterSiren(TuyaManufClusterAttributes):
             TUYA_TEMP_ALARM_ATTR: ("enable_temperature_alarm", t.uint8_t, True),
             TUYA_HUMID_ALARM_ATTR: ("enable_humidity_alarm", t.uint8_t, True),
             TUYA_ALARM_DURATION_ATTR: ("alarm_duration", t.uint32_t, True),
-            TUYA_TEMPERATURE_ATTR: ("temperature", t.uint32_t, True),
+            TUYA_TEMPERATURE_ATTR: ("temperature", t.int32s, True),
             TUYA_HUMIDITY_ATTR: ("humidity", t.uint32_t, True),
             TUYA_ALARM_MIN_TEMP_ATTR: ("alarm_temperature_min", t.uint32_t, True),
             TUYA_ALARM_MAX_TEMP_ATTR: ("alarm_temperature_max", t.uint32_t, True),

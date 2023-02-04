@@ -40,7 +40,7 @@ ZCL_TUYA_SET_TIME_REQUEST = b"\tp\x24\x00\00"
 ZCL_TUYA_MOTION = b"\tL\x01\x00\x05\x03\x04\x00\x01\x02"
 ZCL_TUYA_SWITCH_ON = b"\tQ\x02\x006\x01\x01\x00\x01\x01"
 ZCL_TUYA_SWITCH_OFF = b"\tQ\x02\x006\x01\x01\x00\x01\x00"
-ZCL_TUYA_ATTRIBUTE_617_TO_179 = b"\tp\x02\x00\x02i\x02\x00\x04\x00\x00\x00\xb3"
+ZCL_TUYA_ATTRIBUTE_617_TO_179 = b"\tp\x02\x00\x02i\x02\x00\x04\xff\xff\xff\xe3"
 ZCL_TUYA_SIREN_TEMPERATURE = ZCL_TUYA_ATTRIBUTE_617_TO_179
 ZCL_TUYA_SIREN_HUMIDITY = b"\tp\x02\x00\x02j\x02\x00\x04\x00\x00\x00U"
 ZCL_TUYA_SIREN_ON = b"\t\t\x02\x00\x04h\x01\x00\x01\x01"
@@ -288,7 +288,7 @@ class TuyaTestManufCluster(TuyaManufClusterAttributes):
     """Cluster for synthetic tests."""
 
     attributes = TuyaManufClusterAttributes.attributes.copy()
-    attributes[617] = ("test_attribute", t.uint32_t, True)
+    attributes[617] = ("test_attribute", t.int32s, True)
 
 
 class TuyaTestDevice(CustomDevice):
@@ -331,7 +331,7 @@ async def test_tuya_receive_attribute(zigpy_device_from_quirk, quirk):
 
     assert len(listener.attribute_updates) == 1
     assert listener.attribute_updates[0][0] == 617
-    assert listener.attribute_updates[0][1] == 179
+    assert listener.attribute_updates[0][1] == -29
 
 
 @pytest.mark.parametrize("quirk", (TuyaTestDevice,))
@@ -385,7 +385,7 @@ async def test_siren_state_report(zigpy_device_from_quirk, quirk):
     assert len(temp_listener.cluster_commands) == 0
     assert len(temp_listener.attribute_updates) == 1
     assert temp_listener.attribute_updates[0][0] == 0x0000
-    assert temp_listener.attribute_updates[0][1] == 1790
+    assert temp_listener.attribute_updates[0][1] == -290
 
     assert len(humid_listener.cluster_commands) == 0
     assert len(humid_listener.attribute_updates) == 1
