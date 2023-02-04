@@ -24,21 +24,13 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import (
-    TUYA_MCU_COMMAND,
-    AttributeWithMask,
-    BigEndianInt16,
-    PowerOnState,
-)
+from zhaquirks.tuya import TUYA_MCU_COMMAND, AttributeWithMask, PowerOnState
 from zhaquirks.tuya.mcu import (
     DPToAttributeMapping,
     TuyaAttributesCluster,
     TuyaClusterData,
     TuyaMCUCluster,
     TuyaOnOff,
-)
-from zhaquirks.xbee.types import (
-    uint_t as uint_t_be,  # Temporary workaround until zigpy/zigpy#1124 is merged
 )
 
 TUYA_DP_STATE = 1
@@ -90,7 +82,7 @@ class SelfTest(t.enum8):
 class CostParameters(t.Struct):
     """Tuya cost parameters."""
 
-    cost_parameters: BigEndianInt16
+    cost_parameters: t.uint16_t_be
     cost_parameters_enabled: t.Bool
 
 
@@ -100,7 +92,7 @@ class LeakageParameters(t.Struct):
     self_test_auto_days: t.uint8_t
     self_test_auto_hours: t.uint8_t
     self_test_auto: t.Bool
-    over_leakage_current_threshold: BigEndianInt16
+    over_leakage_current_threshold: t.uint16_t_be
     over_leakage_current_trip: t.Bool
     over_leakage_current_alarm: t.Bool
     self_test: SelfTest
@@ -109,26 +101,18 @@ class LeakageParameters(t.Struct):
 class VoltageParameters(t.Struct):
     """Tuya voltage parameters."""
 
-    over_voltage_threshold: BigEndianInt16
+    over_voltage_threshold: t.uint16_t_be
     over_voltage_trip: t.Bool
     over_voltage_alarm: t.Bool
-    under_voltage_threshold: BigEndianInt16
+    under_voltage_threshold: t.uint16_t_be
     under_voltage_trip: t.Bool
     under_voltage_alarm: t.Bool
-
-
-class uint24_t_be(
-    uint_t_be
-):  # TODO: Replace with zigpy big endian type once zigpy/zigpy#1124 is merged
-    """Unsigned int 24 bit big-endian type."""
-
-    _size = 3
 
 
 class CurrentParameters(t.Struct):
     """Tuya current parameters."""
 
-    over_current_threshold: uint24_t_be
+    over_current_threshold: t.uint24_t_be
     over_current_trip: t.Bool
     over_current_alarm: t.Bool
 

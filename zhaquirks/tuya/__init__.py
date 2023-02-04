@@ -23,7 +23,6 @@ from zhaquirks.const import (
     SHORT_PRESS,
     ZHA_SEND_EVENT,
 )
-from zhaquirks.xbee.types import uint32_t as uint32_t_be
 
 # ---------------------------------------------------------
 # Tuya Custom Cluster ID
@@ -128,31 +127,7 @@ TUYA_CMD_BASE = 0x0100
 _LOGGER = logging.getLogger(__name__)
 
 
-class BigEndianInt16(int):
-    """Helper class to represent big endian 16 bit value."""
-
-    def serialize(self) -> bytes:
-        """Value serialisation."""
-
-        try:
-            return self.to_bytes(2, "big", signed=False)
-        except OverflowError as e:
-            # OverflowError is not a subclass of ValueError, making it annoying to catch
-            raise ValueError(str(e)) from e
-
-    @classmethod
-    def deserialize(cls, data: bytes) -> Tuple["BigEndianInt16", bytes]:
-        """Value deserialisation."""
-
-        if len(data) < 2:
-            raise ValueError(f"Data is too short to contain {cls._size} bytes")
-
-        r = cls.from_bytes(data[:2], "big", signed=False)
-        data = data[2:]
-        return r, data
-
-
-class TuyaTimePayload(t.LVList, item_type=t.uint8_t, length_type=BigEndianInt16):
+class TuyaTimePayload(t.LVList, item_type=t.uint8_t, length_type=t.uint16_t_be):
     """Tuya set time payload definition."""
 
 
@@ -178,7 +153,7 @@ class TuyaData(t.Struct):
     def payload(
         self,
     ) -> Union[
-        uint32_t_be,
+        t.uint32_t_be,
         t.Bool,
         t.CharacterString,
         t.enum8,
@@ -189,7 +164,7 @@ class TuyaData(t.Struct):
     ]:
         """Payload accordingly to data point type."""
         if self.dp_type == TuyaDPType.VALUE:
-            return uint32_t_be.deserialize(self.raw)[0]
+            return t.uint32_t_be.deserialize(self.raw)[0]
         elif self.dp_type == TuyaDPType.BOOL:
             return t.Bool.deserialize(self.raw)[0]
         elif self.dp_type == TuyaDPType.STRING:
@@ -211,7 +186,7 @@ class TuyaData(t.Struct):
     def payload(self, value):
         """Set payload accordingly to data point type."""
         if self.dp_type == TuyaDPType.VALUE:
-            self.raw = uint32_t_be(value).serialize()
+            self.raw = t.uint32_t_be(value).serialize()
         elif self.dp_type == TuyaDPType.BOOL:
             self.raw = t.Bool(value).serialize()
         elif self.dp_type == TuyaDPType.STRING:
