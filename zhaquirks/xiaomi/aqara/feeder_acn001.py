@@ -145,8 +145,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
 
     def _parse_feeder_attribute(self, value: bytes) -> None:
         """Parse the feeder attribute."""
-        # attribute is big endian, so we need to reverse the bytes
-        attribute, _ = types.int32s.deserialize(bytes(reversed(value[3:7])))
+        attribute, _ = types.int32s_be.deserialize(value[3:7])
         LOGGER.debug("OppleCluster._parse_feeder_attribute: attribute: %s", attribute)
         length, _ = types.uint8_t.deserialize(value[7:8])
         LOGGER.debug("OppleCluster._parse_feeder_attribute: length: %s", length)
@@ -164,14 +163,10 @@ class OppleCluster(XiaomiAqaraE1Cluster):
             )
             self._update_attribute(ZCL_LAST_FEEDING_SIZE, int(feeding_size))
         elif attribute == PORTIONS_DISPENSED:
-            portions_per_day, _ = types.uint16_t.deserialize(
-                bytes(reversed(attribute_value))
-            )
+            portions_per_day, _ = types.uint16_t_be.deserialize(attribute_value)
             self._update_attribute(ZCL_PORTIONS_DISPENSED, portions_per_day)
         elif attribute == WEIGHT_DISPENSED:
-            weight_per_day, _ = types.uint32_t.deserialize(
-                bytes(reversed(attribute_value))
-            )
+            weight_per_day, _ = types.uint32_t_be.deserialize(attribute_value)
             self._update_attribute(ZCL_WEIGHT_DISPENSED, weight_per_day)
         elif attribute == SCHEDULING_STRING:
             LOGGER.debug(
@@ -199,16 +194,16 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         self._send_sequence = ((self._send_sequence or 0) + 1) % 256
         val = bytes([0x00, 0x02, self._send_sequence])
         self._send_sequence += 1
-        val += bytes(reversed(types.int32s(attribute_id).serialize()))
+        val += types.int32s_be(attribute_id).serialize()
         if length is not None and value is not None:
-            val += bytes(reversed(types.uint8_t(length).serialize()))
+            val += types.uint8_t(length).serialize()
         if value is not None:
             if length == 1:
                 val += types.uint8_t(value).serialize()
             elif length == 2:
-                val += bytes(reversed(types.uint16_t(value).serialize()))
+                val += types.uint16_t_be(value).serialize()
             elif length == 4:
-                val += bytes(reversed(types.uint32_t(value).serialize()))
+                val += types.uint32_t_be(value).serialize()
             else:
                 val += value
         LOGGER.debug(
