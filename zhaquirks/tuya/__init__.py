@@ -247,7 +247,7 @@ class TuyaData(t.Struct):
             self.dp_type = TuyaDPType.VALUE
         elif isinstance(value, str):
             self.dp_type = TuyaDPType.STRING
-        elif isinstance(value, t.Struct):
+        else:
             self.dp_type = TuyaDPType.RAW
 
         self.payload = value
