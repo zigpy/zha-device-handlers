@@ -22,6 +22,8 @@ from zhaquirks.tuya.mcu import (
 class TuyaInWallLevelControlNM(NoManufacturerCluster, TuyaInWallLevelControl):
     """Tuya Level cluster for inwall dimmable device with NoManufacturerID."""
 
+    pass
+
 
 # --- DEVICE SUMMARY ---
 # TuyaSingleSwitchDimmer: 0x00, 0x04, 0x05, 0xEF00; 0x000A, 0x0019
