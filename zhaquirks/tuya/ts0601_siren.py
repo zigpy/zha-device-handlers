@@ -33,7 +33,6 @@ from zhaquirks.tuya.mcu import (
     DPToAttributeMapping,
     TuyaAttributesCluster,
     TuyaClusterData,
-    TuyaDPType,
     TuyaMCUCluster,
 )
 
@@ -319,28 +318,23 @@ class NeoSirenManufCluster(TuyaMCUCluster):
         5: DPToAttributeMapping(
             TuyaMCUSiren.ep_attribute,
             "volume",
-            dp_type=TuyaDPType.ENUM,
             converter=lambda x: NeoAlarmVolume(x),
         ),
         7: DPToAttributeMapping(
             TuyaMCUSiren.ep_attribute,
             "alarm_duration",
-            dp_type=TuyaDPType.VALUE,
         ),
         13: DPToAttributeMapping(
             TuyaMCUSiren.ep_attribute,
             "on_off",
-            dp_type=TuyaDPType.BOOL,
         ),
         15: DPToAttributeMapping(
             TuyaMCUSiren.ep_attribute,
             "battery",
-            dp_type=TuyaDPType.VALUE,
         ),
         21: DPToAttributeMapping(
             TuyaMCUSiren.ep_attribute,
             "melody",
-            dp_type=TuyaDPType.ENUM,
             converter=lambda x: NeoAlarmMelody(x),
         ),
     }

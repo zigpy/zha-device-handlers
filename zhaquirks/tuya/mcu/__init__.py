@@ -18,9 +18,7 @@ from zhaquirks.tuya import (
     NoManufacturerCluster,
     PowerOnState,
     TuyaCommand,
-    TuyaData,
     TuyaDatapointData,
-    TuyaDPType,
     TuyaLocalCluster,
     TuyaNewManufCluster,
     TuyaTimePayload,
@@ -39,7 +37,6 @@ class DPToAttributeMapping:
 
     ep_attribute: str
     attribute_name: Union[str, tuple]
-    dp_type: TuyaDPType
     converter: Optional[
         Callable[
             [
@@ -229,7 +226,6 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
             cmd_payload.status = 0
             cmd_payload.tsn = self.endpoint.device.application.get_sequence()
 
-            datapoint_type = mapping.dp_type
             val = data.attr_value
             if mapping.dp_converter:
                 args = []
@@ -247,12 +243,8 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
                 val = mapping.dp_converter(*args)
             self.debug("value: %s", val)
 
-            tuya_data = TuyaData()
-            tuya_data.dp_type = datapoint_type
-            tuya_data.function = 0
-            tuya_data.payload = val
-            self.debug("raw: %s", tuya_data.raw)
-            dpd = TuyaDatapointData(dp, tuya_data)
+            dpd = TuyaDatapointData(dp, val)
+            self.debug("raw: %s", dpd.data.raw)
             cmd_payload.datapoints = [dpd]
 
             tuya_commands.append(cmd_payload)
@@ -417,36 +409,30 @@ class TuyaOnOffManufCluster(TuyaMCUCluster):
         1: DPToAttributeMapping(
             TuyaOnOff.ep_attribute,
             "on_off",
-            dp_type=TuyaDPType.BOOL,
         ),
         2: DPToAttributeMapping(
             TuyaOnOff.ep_attribute,
             "on_off",
-            dp_type=TuyaDPType.BOOL,
             endpoint_id=2,
         ),
         3: DPToAttributeMapping(
             TuyaOnOff.ep_attribute,
             "on_off",
-            dp_type=TuyaDPType.BOOL,
             endpoint_id=3,
         ),
         4: DPToAttributeMapping(
             TuyaOnOff.ep_attribute,
             "on_off",
-            dp_type=TuyaDPType.BOOL,
             endpoint_id=4,
         ),
         5: DPToAttributeMapping(
             TuyaOnOff.ep_attribute,
             "on_off",
-            dp_type=TuyaDPType.BOOL,
             endpoint_id=5,
         ),
         6: DPToAttributeMapping(
             TuyaOnOff.ep_attribute,
             "on_off",
-            dp_type=TuyaDPType.BOOL,
             endpoint_id=6,
         ),
     }
@@ -480,7 +466,6 @@ class MoesSwitchManufCluster(TuyaOnOffManufCluster):
             14: DPToAttributeMapping(
                 TuyaMCUCluster.ep_attribute,
                 "power_on_state",
-                dp_type=TuyaDPType.ENUM,
                 converter=lambda x: PowerOnState(x),
             )
         }
@@ -490,7 +475,6 @@ class MoesSwitchManufCluster(TuyaOnOffManufCluster):
             15: DPToAttributeMapping(
                 TuyaMCUCluster.ep_attribute,
                 "backlight_mode",
-                dp_type=TuyaDPType.ENUM,
                 converter=lambda x: MoesBacklight(x),
             ),
         }
@@ -596,37 +580,31 @@ class TuyaLevelControlManufCluster(TuyaMCUCluster):
         1: DPToAttributeMapping(
             TuyaOnOff.ep_attribute,
             "on_off",
-            dp_type=TuyaDPType.BOOL,
         ),
         2: DPToAttributeMapping(
             TuyaLevelControl.ep_attribute,
             "current_level",
-            dp_type=TuyaDPType.VALUE,
             converter=lambda x: (x * 255) // 1000,
             dp_converter=lambda x: (x * 1000) // 255,
         ),
         3: DPToAttributeMapping(
             TuyaLevelControl.ep_attribute,
             "minimum_level",
-            dp_type=TuyaDPType.VALUE,
             converter=lambda x: (x * 255) // 1000,
             dp_converter=lambda x: (x * 1000) // 255,
         ),
         4: DPToAttributeMapping(
             TuyaLevelControl.ep_attribute,
             "bulb_type",
-            dp_type=TuyaDPType.ENUM,
         ),
         7: DPToAttributeMapping(
             TuyaOnOff.ep_attribute,
             "on_off",
-            dp_type=TuyaDPType.BOOL,
             endpoint_id=2,
         ),
         8: DPToAttributeMapping(
             TuyaLevelControl.ep_attribute,
             "current_level",
-            dp_type=TuyaDPType.VALUE,
             converter=lambda x: (x * 255) // 1000,
             dp_converter=lambda x: (x * 1000) // 255,
             endpoint_id=2,
@@ -634,7 +612,6 @@ class TuyaLevelControlManufCluster(TuyaMCUCluster):
         9: DPToAttributeMapping(
             TuyaLevelControl.ep_attribute,
             "minimum_level",
-            dp_type=TuyaDPType.VALUE,
             converter=lambda x: (x * 255) // 1000,
             dp_converter=lambda x: (x * 1000) // 255,
             endpoint_id=2,
@@ -642,19 +619,16 @@ class TuyaLevelControlManufCluster(TuyaMCUCluster):
         10: DPToAttributeMapping(
             TuyaLevelControl.ep_attribute,
             "bulb_type",
-            dp_type=TuyaDPType.ENUM,
             endpoint_id=2,
         ),
         15: DPToAttributeMapping(
             TuyaOnOff.ep_attribute,
             "on_off",
-            dp_type=TuyaDPType.BOOL,
             endpoint_id=3,
         ),
         16: DPToAttributeMapping(
             TuyaLevelControl.ep_attribute,
             "current_level",
-            dp_type=TuyaDPType.VALUE,
             converter=lambda x: (x * 255) // 1000,
             dp_converter=lambda x: (x * 1000) // 255,
             endpoint_id=3,
@@ -662,7 +636,6 @@ class TuyaLevelControlManufCluster(TuyaMCUCluster):
         17: DPToAttributeMapping(
             TuyaLevelControl.ep_attribute,
             "minimum_level",
-            dp_type=TuyaDPType.VALUE,
             converter=lambda x: (x * 255) // 1000,
             dp_converter=lambda x: (x * 1000) // 255,
             endpoint_id=3,
@@ -670,7 +643,6 @@ class TuyaLevelControlManufCluster(TuyaMCUCluster):
         18: DPToAttributeMapping(
             TuyaLevelControl.ep_attribute,
             "bulb_type",
-            dp_type=TuyaDPType.ENUM,
             endpoint_id=3,
         ),
     }

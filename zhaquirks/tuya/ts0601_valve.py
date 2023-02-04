@@ -21,7 +21,6 @@ from zhaquirks.tuya import TuyaLocalCluster
 from zhaquirks.tuya.mcu import (
     DPToAttributeMapping,
     EnchantedDevice,
-    TuyaDPType,
     TuyaMCUCluster,
     TuyaOnOff,
     TuyaOnOffNM,
@@ -59,37 +58,30 @@ class TuyaValveManufCluster(TuyaMCUCluster):
         1: DPToAttributeMapping(
             TuyaOnOff.ep_attribute,
             "on_off",
-            dp_type=TuyaDPType.BOOL,
         ),
         5: DPToAttributeMapping(
             TuyaValveWaterConsumed.ep_attribute,
             "current_summ_delivered",
-            TuyaDPType.VALUE,
         ),
         6: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
             "dp_6",
-            TuyaDPType.VALUE,
         ),
         7: DPToAttributeMapping(
             DoublingPowerConfigurationCluster.ep_attribute,
             "battery_percentage_remaining",
-            TuyaDPType.VALUE,
         ),
         11: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
             "time_left",
-            TuyaDPType.VALUE,
         ),
         12: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
             "state",
-            TuyaDPType.VALUE,
         ),
         15: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
             "last_valve_open_duration",
-            TuyaDPType.VALUE,
         ),
     }
 
@@ -162,33 +154,27 @@ class ParksideTuyaValveManufCluster(TuyaMCUCluster):
         1: DPToAttributeMapping(
             TuyaOnOff.ep_attribute,
             "on_off",
-            TuyaDPType.BOOL,
         ),
         5: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
             "timer_duration",
-            TuyaDPType.VALUE,
         ),
         6: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
             "timer_time_left",
-            TuyaDPType.VALUE,
         ),
         11: DPToAttributeMapping(
             TuyaPowerConfigurationCluster.ep_attribute,
             "battery_percentage_remaining",
-            TuyaDPType.VALUE,
         ),
         108: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
             "frost_lock",
-            TuyaDPType.BOOL,
             lambda x: not x,  # invert for lock entity
         ),
         109: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
             "frost_lock_reset",
-            TuyaDPType.BOOL,
         ),
     }
 
@@ -289,52 +275,42 @@ class GiexValveManufCluster(TuyaMCUCluster):
         1: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
             "irrigation_mode",
-            dp_type=TuyaDPType.BOOL,
         ),
         2: DPToAttributeMapping(
             TuyaOnOffNM.ep_attribute,
             "on_off",
-            dp_type=TuyaDPType.BOOL,
         ),
         101: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
             "irrigation_start_time",
-            dp_type=TuyaDPType.VALUE,
         ),
         102: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
             "irrigation_end_time",
-            dp_type=TuyaDPType.VALUE,
         ),
         103: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
             "irrigation_num_times",
-            dp_type=TuyaDPType.VALUE,
         ),
         104: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
             "irrigation_target",
-            dp_type=TuyaDPType.VALUE,
         ),
         105: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
             "irrigation_interval",
-            dp_type=TuyaDPType.VALUE,
         ),
         108: DPToAttributeMapping(
             TuyaPowerConfigurationCluster.ep_attribute,
             "battery_percentage_remaining",
-            dp_type=TuyaDPType.VALUE,
         ),
         111: DPToAttributeMapping(
             TuyaValveWaterConsumed.ep_attribute,
             "current_summ_delivered",
-            dp_type=TuyaDPType.VALUE,
         ),
         114: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
             "irrigation_duration",
-            dp_type=TuyaDPType.VALUE,
         ),
     }
 
