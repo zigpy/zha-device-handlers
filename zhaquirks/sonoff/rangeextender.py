@@ -24,7 +24,7 @@ from zhaquirks.const import (
 
 
 class IteadRangeExtender(CustomDevice):
-    """Itead dongle with range extender firmware devices."""
+    """Sonoff EZSP dongle with range extender firmware from Itead."""
 
     signature = {
         # SimpleDescriptor endpoint=1
