@@ -65,6 +65,20 @@ def test_tuya_data_value():
     assert r.raw == b"\x00\x00\x02\x46"
 
 
+def test_tuya_negative_value():
+    """Test tuya negative "Value" datatype."""
+
+    data = b"\x02\x00\x04\xff\xff\xff\xf8"
+    extra = b"extra data"
+
+    r, rest = TuyaData.deserialize(data + extra)
+    assert rest == extra
+
+    assert r.dp_type == 2
+    assert r.raw == b"\xff\xff\xff\xf8"
+    assert r.payload == -8
+
+
 def test_tuya_data_bool():
     """Test tuya Bool datatype."""
 
