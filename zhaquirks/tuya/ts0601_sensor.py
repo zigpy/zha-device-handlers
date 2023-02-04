@@ -21,7 +21,7 @@ from zhaquirks.const import (
     SKIP_CONFIGURATION,
 )
 from zhaquirks.tuya import TuyaLocalCluster, TuyaPowerConfigurationCluster2AAA
-from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaDPType, TuyaMCUCluster
+from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster
 
 
 class TuyaTemperatureMeasurement(TemperatureMeasurement, TuyaLocalCluster):
@@ -54,19 +54,16 @@ class TemperatureHumidityManufCluster(TuyaMCUCluster):
         1: DPToAttributeMapping(
             TuyaTemperatureMeasurement.ep_attribute,
             "measured_value",
-            dp_type=TuyaDPType.VALUE,
             converter=lambda x: x * 10,  # decidegree to centidegree
         ),
         2: DPToAttributeMapping(
             TuyaRelativeHumidity.ep_attribute,
             "measured_value",
-            dp_type=TuyaDPType.VALUE,
             # converter=lambda x: x * 10,  --> move conversion to TuyaRelativeHumidity cluster
         ),
         4: DPToAttributeMapping(
             TuyaPowerConfigurationCluster2AAA.ep_attribute,
             "battery_percentage_remaining",
-            dp_type=TuyaDPType.VALUE,
             converter=lambda x: x * 2,  # double reported percentage
         ),
     }
@@ -227,19 +224,16 @@ class SoilManufCluster(TuyaMCUCluster):
         5: DPToAttributeMapping(
             TuyaTemperatureMeasurement.ep_attribute,
             "measured_value",
-            dp_type=TuyaDPType.VALUE,
             converter=lambda x: x * 100,
         ),
         3: DPToAttributeMapping(
             TuyaSoilMoisture.ep_attribute,
             "measured_value",
-            dp_type=TuyaDPType.VALUE,
             converter=lambda x: x * 100,
         ),
         15: DPToAttributeMapping(
             TuyaPowerConfigurationCluster2AAA.ep_attribute,
             "battery_percentage_remaining",
-            dp_type=TuyaDPType.VALUE,
             converter=lambda x: x * 2,  # double reported percentage
         ),
     }

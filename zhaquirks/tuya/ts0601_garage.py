@@ -15,7 +15,7 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.tuya import NoManufacturerCluster
-from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaDPType, TuyaMCUCluster
+from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster
 
 TUYA_MANUFACTURER_GARAGE = "tuya_manufacturer_garage"
 
@@ -44,38 +44,31 @@ class TuyaGarageManufCluster(NoManufacturerCluster, TuyaMCUCluster):
         1: DPToAttributeMapping(
             TUYA_MANUFACTURER_GARAGE,
             "button",
-            dp_type=TuyaDPType.BOOL,
         ),
         2: DPToAttributeMapping(
             TUYA_MANUFACTURER_GARAGE,
             "dp_2",
-            dp_type=TuyaDPType.VALUE,
         ),
         3: DPToAttributeMapping(
             TUYA_MANUFACTURER_GARAGE,
             "contact_sensor",
-            dp_type=TuyaDPType.BOOL,
         ),
         4: DPToAttributeMapping(
             TUYA_MANUFACTURER_GARAGE,
             "dp_4",
-            dp_type=TuyaDPType.VALUE,
         ),
         5: DPToAttributeMapping(
             TUYA_MANUFACTURER_GARAGE,
             "dp_5",
-            dp_type=TuyaDPType.VALUE,
         ),
         11: DPToAttributeMapping(
             TUYA_MANUFACTURER_GARAGE,
             "dp_11",
-            dp_type=TuyaDPType.BOOL,
         ),
         # garage door status (open, closed, ...)
         12: DPToAttributeMapping(
             TUYA_MANUFACTURER_GARAGE,
             "dp_12",
-            dp_type=TuyaDPType.ENUM,
         ),
     }
 

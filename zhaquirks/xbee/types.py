@@ -1,11 +1,4 @@
-"""Types used to serialize and deserialize XBee commands.
-
-Most of them are taken from https://github.com/zigpy/zigpy-xbee/blob/dev/zigpy_xbee/types.py
-"""
-
-import enum
-
-import zigpy.types
+"""Types used to serialize and deserialize XBee commands."""
 
 
 class Bytes(bytes):
@@ -28,104 +21,6 @@ class ATCommand(Bytes):
     def deserialize(cls, data):
         """Deserialize ATCommand."""
         return cls(data[:2]), data[2:]
-
-
-class int_t(int):
-    """Signed int type."""
-
-    _signed = True
-
-    def serialize(self):
-        """Serialize int_t."""
-        return self.to_bytes(self._size, "big", signed=self._signed)
-
-    @classmethod
-    def deserialize(cls, data):
-        """Deserialize int_t."""
-        # Work around https://bugs.python.org/issue23640
-        r = cls(int.from_bytes(data[: cls._size], "big", signed=cls._signed))
-        data = data[cls._size :]
-        return r, data
-
-
-class uint_t(int_t):
-    """Unsigned int type."""
-
-    _signed = False
-
-
-class uint8_t(uint_t):
-    """Unsigned int 8 bit type."""
-
-    _size = 1
-
-
-class int16_t(int_t):
-    """Signed int 16 bit type."""
-
-    _size = 2
-
-
-class uint16_t(uint_t):
-    """Unsigned int 16 bit type."""
-
-    _size = 2
-
-
-class uint32_t(uint_t):
-    """Unsigned int 32 bit type."""
-
-    _size = 4
-
-
-class uint64_t(uint_t):
-    """Unsigned int 64 bit type."""
-
-    _size = 8
-
-
-class Bool(uint8_t, enum.Enum):
-    """Boolean type with values true and false."""
-
-    false = 0x00  # An alias for zero, used for clarity.
-    true = 0x01  # An alias for one, used for clarity.
-
-
-class EUI64(zigpy.types.EUI64):
-    """EUI64 serializable class."""
-
-    @classmethod
-    def deserialize(cls, data):
-        """Deserialize EUI64."""
-        r, data = super().deserialize(data)
-        return cls(r[::-1]), data
-
-    def serialize(self):
-        """Serialize EUI64."""
-        assert self._length == len(self)
-        return super().serialize()[::-1]
-
-
-class FrameId(uint8_t):
-    """Frame ID type."""
-
-
-class NWK(int):
-    """Network address serializable class."""
-
-    _signed = False
-    _size = 2
-
-    def serialize(self):
-        """Serialize NWK."""
-        return self.to_bytes(self._size, "big", signed=self._signed)
-
-    @classmethod
-    def deserialize(cls, data):
-        """Deserialize NWK."""
-        r = cls(int.from_bytes(data[: cls._size], "big", signed=cls._signed))
-        data = data[cls._size :]
-        return r, data
 
 
 class BinaryString(str):

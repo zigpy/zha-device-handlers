@@ -129,15 +129,8 @@ class Plug(XiaomiCustomDevice):
     }
 
 
-class Plug2(XiaomiCustomDevice):
+class Plug2(Plug):
     """lumi.plug with alternative signature."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        self.voltage_bus = Bus()
-        self.consumption_bus = Bus()
-        self.power_bus = Bus()
-        super().__init__(*args, **kwargs)
 
     signature = {
         MODELS_INFO: Plug.signature[MODELS_INFO],
