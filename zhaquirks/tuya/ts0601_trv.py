@@ -1621,6 +1621,11 @@ class MoesHY368_Type1new(TuyaThermostat):
 class MoesHY368_Type2(TuyaThermostat):
     """MoesHY368 Thermostatic radiator valve (2nd cluster signature)."""
 
+    def __init__(self, *args, **kwargs):
+        """Init device."""
+        self.window_detection_bus = Bus()
+        super().__init__(*args, **kwargs)
+
     signature = {
         #  endpoint=1 profile=260 device_type=0 device_version=0 input_clusters=[0, 3]
         #  output_clusters=[3, 25]>
