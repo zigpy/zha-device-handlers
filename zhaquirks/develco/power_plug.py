@@ -53,9 +53,9 @@ class DevelcoElectricalMeasurement(CustomCluster, ElectricalMeasurement):
 
         if attrid == self.ACTIVE_POWER_ID:
             # Power reading is updated. Update power factor as well.
-            self.updatePF()
+            self._updatePF()
 
-    def updatePF(self):
+    def _updatePF(self):
         voltage = self._attr_cache.get(self.RMS_VOLTAGE_ID, 0)
         current = self._attr_cache.get(self.RMS_CURRENT_ID, 0)
         power = self._attr_cache.get(self.ACTIVE_POWER_ID, 0)
