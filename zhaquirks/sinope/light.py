@@ -29,7 +29,10 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.sinope import SINOPE
+from zhaquirks.sinope import (
+    LIGHT_DEVICE_TRIGGERS,
+    SINOPE,
+)
 
 SINOPE_MANUFACTURER_CLUSTER_ID = 0xFF01
 
@@ -109,6 +112,8 @@ class SinopeTechnologieslight(CustomDevice):
         }
     }
 
+    device_automation_triggers = LIGHT_DEVICE_TRIGGERS
+
 
 class SinopeDM2500ZB(SinopeTechnologieslight):
     """DM2500ZB Dimmer."""
@@ -168,6 +173,8 @@ class SinopeDM2500ZB(SinopeTechnologieslight):
             }
         }
     }
+
+    device_automation_triggers = LIGHT_DEVICE_TRIGGERS
 
 
 class SinopeDM2550ZB(SinopeTechnologieslight):
@@ -232,3 +239,5 @@ class SinopeDM2550ZB(SinopeTechnologieslight):
             }
         }
     }
+
+    device_automation_triggers = LIGHT_DEVICE_TRIGGERS
