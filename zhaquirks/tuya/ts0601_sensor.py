@@ -86,7 +86,10 @@ class TuyaTempHumiditySensor(CustomDevice):
         # device_version=1
         # input_clusters=[4, 5, 61184, 0]
         # output_clusters=[25, 10]>
-        MODELS_INFO: [("_TZE200_bjawzodf", "TS0601")],
+        MODELS_INFO: [
+            ("_TZE200_bjawzodf", "TS0601"),
+            ("_TZE200_zl1kmjqx", "TS0601"),
+        ],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
