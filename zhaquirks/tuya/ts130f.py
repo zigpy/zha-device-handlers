@@ -38,11 +38,13 @@ class TuyaWithBacklightOnOffCluster(CustomCluster):
 
     attributes = {0x8001: ("backlight_mode", t.enum8)}
 
+
 class MotorMode(t.enum8):
     """Tuya motor mode enum."""
 
     STRONG_MOTOR = 0x00
     WEAK_MOTOR = 0x01
+
 
 class TuyaCoveringCluster(CustomCluster, WindowCovering):
     """TuyaSmartCurtainWindowCoveringCluster: Allow to setup Window covering tuya devices."""
