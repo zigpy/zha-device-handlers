@@ -21,6 +21,7 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.homeautomation import Diagnostic, ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
 
+from zhaquirks import EventableCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -49,10 +50,16 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
         0x0051: ("offLedColor", t.uint24_t, True),
         0x0052: ("onLedIntensity", t.uint8_t, True),
         0x0053: ("offLedIntensity", t.uint8_t, True),
+        0x0054: ("actionReport", t.enum8, True),
         0x0055: ("minIntensity", t.uint16_t, True),
         0x00A0: ("Timer", t.uint32_t, True),
         0x0119: ("ConnectedLoad", t.uint16_t, True),
+        0x0200: ("Unknown", t.bitmap32, True),
     }
+
+
+class LightManufacturerCluster(EventableCluster, SinopeTechnologiesManufacturerCluster):
+    """LightManufacturerCluster: fire events corresponding to press type."""
 
 
 class SinopeTechnologieslight(CustomDevice):
@@ -101,7 +108,7 @@ class SinopeTechnologieslight(CustomDevice):
                     OnOff.cluster_id,
                     Metering.cluster_id,
                     Diagnostic.cluster_id,
-                    SinopeTechnologiesManufacturerCluster,
+                    LightManufacturerCluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
@@ -163,7 +170,7 @@ class SinopeDM2500ZB(SinopeTechnologieslight):
                     LevelControl.cluster_id,
                     Metering.cluster_id,
                     Diagnostic.cluster_id,
-                    SinopeTechnologiesManufacturerCluster,
+                    LightManufacturerCluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
@@ -228,7 +235,7 @@ class SinopeDM2550ZB(SinopeTechnologieslight):
                     Metering.cluster_id,
                     ElectricalMeasurement.cluster_id,
                     Diagnostic.cluster_id,
-                    SinopeTechnologiesManufacturerCluster,
+                    LightManufacturerCluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
