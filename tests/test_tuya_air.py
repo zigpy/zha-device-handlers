@@ -49,6 +49,16 @@ def air_quality_device(zigpy_device_from_quirk):
             "temperature",
             2880,
         ),
+        (
+            b"\t\x02\x01\x00\x00\x12\x02\x00\x04\x00\x00\xff\xfb",
+            "temperature",
+            -50,
+        ),
+        (
+            b"\t\x02\x01\x00\x00\x12\x02\x00\x04\x00\x00\xff\xef",
+            "temperature",
+            -170,
+        ),
     ),
 )
 def test_co2_sensor(air_quality_device, data, ep_attr, expected_value):
