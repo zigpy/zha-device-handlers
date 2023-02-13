@@ -23,22 +23,16 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zdo.types import NodeDescriptor
 
 from zhaquirks.const import (
-    BUTTON,
     CLUSTER_ID,
-    COMMAND,
-    COMMAND_PRESS,
     DEVICE_TYPE,
     ENDPOINT_ID,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
     NODE_DESCRIPTOR,
-    ON,
     OUTPUT_CLUSTERS,
     PARAMS,
     PROFILE_ID,
-    SHORT_PRESS,
-    TURN_ON,
 )
 
 
@@ -62,7 +56,9 @@ class ZosungIRControl(CustomCluster):
     cluster_id = 0xE004
     ep_attribute = "zosung_ircontrol"
 
-    attributes = {}
+    attributes = {
+        0x0000: ("last_learned_ir_code", t.CharacterString, True)
+    }
 
     server_commands = {
         0x00: foundation.ZCLCommandDef(
@@ -85,27 +81,27 @@ class ZosungIRControl(CustomCluster):
         ),
     }
 
-    def handle_cluster_request(
-        self,
-        hdr: foundation.ZCLHeader,
-        args: List[Any],
-        *,
-        dst_addressing: Optional[
-            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
-        ] = None,
+    def _update_attribute(self, attrid, value):
+        self.debug("_update_attribute attrid:%s value:%s", attrid, value)
+        super()._update_attribute(attrid, value)
+
+    async def read_attributes(
+        self, attributes, allow_cache=False, only_cache=False, manufacturer=None
     ):
-        """Handle a cluster request."""
-        self.debug(
-            "%s: handle_cluster_request - Command: %s Data: %s Data.type: %s",
-            self.name,
-            hdr.command_id,
-            args,
-            type(args),
-        )
-        #        self.debug("self.endpoint.in_clusters: %s", self.endpoint.in_clusters)
-        self.debug("self.command: %s", self.command)
-        for d in args:
-            self.debug("d: %s", d)
+        """Read attributes ZCL foundation command."""
+        self.debug("Attributes: %s", attributes)
+        if 0x0000 in attributes:
+            return ({0:self.endpoint.device.last_learned_ir_code}, [foundation.ReadAttributeRecord(foundation.Status.SUCCESS)])
+        else:
+            attr = await super().read_attributes(
+                attributes,
+                allow_cache=allow_cache,
+                only_cache=only_cache,
+                manufacturer=manufacturer,
+            )
+            self.debug("Return attr: %s", attr)
+            return attr
+
 
     async def command(
         self,
@@ -376,9 +372,10 @@ class ZosungIRTransmit(CustomCluster):
                 super().command(0x05, **new_args_05, expect_reply=False)
             )
         elif hdr.command_id == 0x05:
+            self.endpoint.device.last_learned_ir_code = base64.b64encode(bytes(self.ir_msg)).decode()
             self.info(
                 "Command 0x05: Ir message really totally received: %s",
-                base64.b64encode(bytes(self.ir_msg)),
+                self.endpoint.device.last_learned_ir_code,
             )
             self.debug("Stopping learning mode on device.")
             self.create_catching_task(
@@ -395,6 +392,7 @@ class ZosungIRBlaster(CustomDevice):
 
     seq = -1
     ir_msg_to_send = {}
+    last_learned_ir_code = t.CharacterString()
 
     def __init__(self, *args, **kwargs):
         """Init device."""
@@ -463,13 +461,3 @@ class ZosungIRBlaster(CustomDevice):
         },
     }
 
-    device_automation_triggers = {
-        (BUTTON, ON): {
-            COMMAND: 0,
-            CLUSTER_ID: 0xE004,
-            ENDPOINT_ID: 1,
-            PARAMS: {
-                "data": b'{"study":0}',
-            },
-        },
-    }
