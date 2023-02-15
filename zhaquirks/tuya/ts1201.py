@@ -123,7 +123,7 @@ class ZosungIRControl(CustomCluster):
                 0x00,
                 *new_args,
                 manufacturer=manufacturer,
-                expect_reply=False,
+                expect_reply=True,
                 tsn=tsn,
             )
         elif command_id == 2:
@@ -283,6 +283,12 @@ class ZosungIRTransmit(CustomCluster):
 
         for d in args:
             self.debug("d: %s", d)
+
+        # send default response, so avoid repeated zclframe from device
+        if not hdr.frame_control.disable_default_response:
+            self.debug("Send default response")
+            self.send_default_rsp(hdr, status=foundation.Status.SUCCESS)
+
         if hdr.command_id == 0x00:
             self.debug("hdr.command_id == 0x00")
 
@@ -301,12 +307,11 @@ class ZosungIRTransmit(CustomCluster):
                 "unk3": args.unk3,
             }
             self.create_catching_task(
-                super().command(0x01, **new_args_01, expect_reply=False)
+                super().command(0x01, **new_args_01, expect_reply=True)
             )
-
             new_args_02 = {"seq": args.seq, "position": 0, "maxlen": 0x38}
             self.create_catching_task(
-                super().command(0x02, **new_args_02, expect_reply=False)
+                super().command(0x02, **new_args_02, expect_reply=True)
             )
         elif hdr.command_id == 0x01:
             self.debug("IR-Message-Code01 received, sequence: %s", args.seq)
@@ -316,7 +321,6 @@ class ZosungIRTransmit(CustomCluster):
             seq = args.seq
             maxlen = args.maxlen
             irmsg = self.endpoint.device.ir_msg_to_send[seq]
-#            msgpart = irmsg[position : position + 0x32]
             msgpart = irmsg[position : position + maxlen]
             calculated_crc = 0
             for x in msgpart:
@@ -335,7 +339,7 @@ class ZosungIRTransmit(CustomCluster):
                 "msgpartcrc": calculated_crc,
             }
             self.create_catching_task(
-                super().command(0x03, **new_args_03, expect_reply=False)
+                super().command(0x03, **new_args_03, expect_reply=True)
             )
         elif hdr.command_id == 0x03:
             msg_part_crc = args.msgpartcrc
