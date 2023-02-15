@@ -28,7 +28,6 @@ from zhaquirks.const import (
 from zhaquirks.tuya.mcu import (
     DPToAttributeMapping,
     TuyaDatapointData,
-    TuyaDPType,
     TuyaLocalCluster,
     TuyaMCUCluster,
 )
