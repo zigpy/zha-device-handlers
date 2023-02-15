@@ -6,10 +6,10 @@ See xbee.md for additional information.
 import asyncio
 import enum
 import logging
-from typing import Any, List, Optional, Union
+from typing import Any, List, Optional
 
 from zigpy.quirks import CustomDevice
-import zigpy.types as zt
+import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
     AnalogInput,
@@ -23,7 +23,7 @@ from zigpy.zcl.clusters.general import (
 from zhaquirks import EventableCluster, LocalDataCluster
 from zhaquirks.const import ENDPOINTS, INPUT_CLUSTERS, OUTPUT_CLUSTERS
 
-from . import types as t
+from .types import ATCommand, BinaryString, Bytes, IOSample
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -52,46 +52,46 @@ REMOTE_AT_COMMAND_TIMEOUT = 30
 # https://github.com/zigpy/zigpy-xbee/blob/dev/zigpy_xbee/api.py
 AT_COMMANDS = {
     # Addressing commands
-    "DH": t.uint32_t,
-    "DL": t.uint32_t,
-    "MY": t.uint16_t,
-    "MP": t.uint16_t,
-    "NC": t.uint32_t,  # 0 - MAX_CHILDREN.
-    "SH": t.uint32_t,
-    "SL": t.uint32_t,
-    "NI": t.Bytes,  # 20 byte printable ascii string
+    "DH": t.uint32_t_be,
+    "DL": t.uint32_t_be,
+    "MY": t.uint16_t_be,
+    "MP": t.uint16_t_be,
+    "NC": t.uint32_t_be,  # 0 - MAX_CHILDREN.
+    "SH": t.uint32_t_be,
+    "SL": t.uint32_t_be,
+    "NI": Bytes,  # 20 byte printable ascii string
     # "SE": t.uint8_t,
     # "DE": t.uint8_t,
-    # "CI": t.uint16_t,
+    # "CI": t.uint16_t_be,
     "TO": t.uint8_t,
-    "NP": t.uint16_t,
-    "DD": t.uint32_t,
+    "NP": t.uint16_t_be,
+    "DD": t.uint32_t_be,
     "CR": t.uint8_t,  # 0 - 0x3F
     # Networking commands
     "CH": t.uint8_t,  # 0x0B - 0x1A
     "DA": None,  # no param
-    # "ID": t.uint64_t,
-    "OP": t.uint64_t,
+    # "ID": t.uint64_t_be,
+    "OP": t.uint64_t_be,
     "NH": t.uint8_t,
     "BH": t.uint8_t,  # 0 - 0x1E
-    "OI": t.uint16_t,
+    "OI": t.uint16_t_be,
     "NT": t.uint8_t,  # 0x20 - 0xFF
     "NO": t.uint8_t,  # bitfield, 0 - 3
-    "SC": t.uint16_t,  # 1 - 0xFFFF
+    "SC": t.uint16_t_be,  # 1 - 0xFFFF
     "SD": t.uint8_t,  # 0 - 7
     # "ZS": t.uint8_t,  # 0 - 2
     "NJ": t.uint8_t,
     "JV": t.Bool,
-    "NW": t.uint16_t,  # 0 - 0x64FF
+    "NW": t.uint16_t_be,  # 0 - 0x64FF
     "JN": t.Bool,
     "AR": t.uint8_t,
     "DJ": t.Bool,  # WTF, docs
-    "II": t.uint16_t,
+    "II": t.uint16_t_be,
     # Security commands
     # "EE": t.Bool,
     # "EO": t.uint8_t,
-    # "NK": t.Bytes,  # 128-bit value
-    # "KY": t.Bytes,  # 128-bit value
+    # "NK": Bytes,  # 128-bit value
+    # "KY": Bytes,  # 128-bit value
     # RF interfacing commands
     "PL": t.uint8_t,  # 0 - 4 (basically an Enum)
     "PM": t.Bool,
@@ -108,8 +108,8 @@ AT_COMMANDS = {
     "P3": t.uint8_t,  # 0 - 5 (an Enum)
     "P4": t.uint8_t,  # 0 - 5 (an Enum)
     # I/O commands
-    "IR": t.uint16_t,
-    "IC": t.uint16_t,
+    "IR": t.uint16_t_be,
+    "IC": t.uint16_t_be,
     "D0": t.uint8_t,  # 0 - 5 (an Enum)
     "D1": t.uint8_t,  # 0 - 5 (an Enum)
     "D2": t.uint8_t,  # 0 - 5 (an Enum)
@@ -127,31 +127,31 @@ AT_COMMANDS = {
     "P8": t.uint8_t,  # 0 - 5 (an Enum)
     "P9": t.uint8_t,  # 0 - 5 (an Enum)
     "LT": t.uint8_t,
-    "PR": t.uint16_t,
+    "PR": t.uint16_t_be,
     "RP": t.uint8_t,
-    "%V": t.uint16_t,  # read only
-    "V+": t.uint16_t,
-    "TP": t.int16_t,
-    "M0": t.uint16_t,  # 0 - 0x3FF
-    "M1": t.uint16_t,  # 0 - 0x3FF
+    "%V": t.uint16_t_be,  # read only
+    "V+": t.uint16_t_be,
+    "TP": t.int16s_be,
+    "M0": t.uint16_t_be,  # 0 - 0x3FF
+    "M1": t.uint16_t_be,  # 0 - 0x3FF
     # Diagnostics commands
-    "VR": t.uint16_t,
-    "HV": t.uint16_t,
+    "VR": t.uint16_t_be,
+    "HV": t.uint16_t_be,
     "AI": t.uint8_t,
     # AT command options
-    "CT": t.uint16_t,  # 2 - 0x028F
+    "CT": t.uint16_t_be,  # 2 - 0x028F
     "CN": None,
-    "GT": t.uint16_t,
+    "GT": t.uint16_t_be,
     "CC": t.uint8_t,
     # Sleep commands
     "SM": t.uint8_t,
-    "SN": t.uint16_t,
-    "SP": t.uint16_t,
-    "ST": t.uint16_t,
+    "SN": t.uint16_t_be,
+    "SP": t.uint16_t_be,
+    "ST": t.uint16_t_be,
     "SO": t.uint8_t,
-    "WH": t.uint16_t,
+    "WH": t.uint16_t_be,
     "SI": None,
-    "PO": t.uint16_t,  # 0 - 0x3E8
+    "PO": t.uint16_t_be,  # 0 - 0x3E8
     # Execution commands
     "AC": None,
     "WR": None,
@@ -159,8 +159,8 @@ AT_COMMANDS = {
     "FR": None,
     "NR": t.Bool,
     "CB": t.uint8_t,
-    "DN": t.Bytes,  # "up to 20-Byte printable ASCII string"
-    "IS": t.IOSample,
+    "DN": Bytes,  # "up to 20-Byte printable ASCII string"
+    "IS": IOSample,
     "AS": None,
     # Stuff I've guessed
     # "CE": t.uint8_t,
@@ -314,7 +314,7 @@ class XBeeRemoteATRequest(LocalDataCluster):
 
     async def _remote_at_command(self, options, name, *args):
         _LOGGER.debug("Remote AT command: %s %s", name, args)
-        data = zt.serialize(args, (AT_COMMANDS[name],))
+        data = t.serialize(args, (AT_COMMANDS[name],))
         try:
             return await asyncio.wait_for(
                 await self._command(options, name.encode("ascii"), data, *args),
@@ -334,17 +334,17 @@ class XBeeRemoteATRequest(LocalDataCluster):
             t.uint8_t,
             t.uint8_t,
             t.EUI64,
-            t.NWK,
-            t.Bytes,
-            t.Bytes,
+            t.uint16_t_be,
+            Bytes,
+            Bytes,
         )
-        data = zt.serialize(
+        data = t.serialize(
             (
                 0x32,
                 0x00,
                 options,
                 frame_id,
-                self._endpoint.device.application.state.node_info.ieee,
+                self._endpoint.device.application.state.node_info.ieee[::-1],
                 self._endpoint.device.application.state.node_info.nwk,
                 command,
                 data,
@@ -432,9 +432,7 @@ class XBeeRemoteATResponse(LocalDataCluster):
         hdr: foundation.ZCLHeader,
         args: List[Any],
         *,
-        dst_addressing: Optional[
-            Union[zt.Addressing.Group, zt.Addressing.IEEE, zt.Addressing.NWK]
-        ] = None,
+        dst_addressing: Optional[t.AddrMode] = None,
     ):
         """Handle AT response."""
         if hdr.command_id == DATA_IN_CMD:
@@ -471,9 +469,9 @@ class XBeeRemoteATResponse(LocalDataCluster):
             name="remote_at_response",
             schema={
                 "frame_id": t.uint8_t,
-                "cmd": t.ATCommand,
+                "cmd": ATCommand,
                 "status": t.uint8_t,
-                "value": t.Bytes,
+                "value": Bytes,
             },
             is_manufacturer_specific=True,
         )
@@ -490,9 +488,7 @@ class XBeeDigitalIOCluster(LocalDataCluster, BinaryInput):
         hdr: foundation.ZCLHeader,
         args: List[Any],
         *,
-        dst_addressing: Optional[
-            Union[zt.Addressing.Group, zt.Addressing.IEEE, zt.Addressing.NWK]
-        ] = None,
+        dst_addressing: Optional[t.AddrMode] = None,
     ):
         """Handle the cluster request.
 
@@ -529,7 +525,7 @@ class XBeeDigitalIOCluster(LocalDataCluster, BinaryInput):
     server_commands = {
         SAMPLE_DATA_CMD: foundation.ZCLCommandDef(
             name="io_sample",
-            schema={"io_sample": t.IOSample},
+            schema={"io_sample": IOSample},
             is_manufacturer_specific=True,
         )
     }
@@ -571,7 +567,7 @@ class XBeeSerialDataCluster(LocalDataCluster):
         tsn=None,
     ):
         """Handle outgoing data."""
-        data = t.BinaryString(data).serialize()
+        data = BinaryString(data).serialize()
         return foundation.GENERAL_COMMANDS[
             foundation.GeneralCommand.Default_Response
         ].schema(
@@ -595,9 +591,7 @@ class XBeeSerialDataCluster(LocalDataCluster):
         hdr: foundation.ZCLHeader,
         args: List[Any],
         *,
-        dst_addressing: Optional[
-            Union[zt.Addressing.Group, zt.Addressing.IEEE, zt.Addressing.NWK]
-        ] = None,
+        dst_addressing: Optional[t.AddrMode] = None,
     ):
         """Handle incoming data."""
         if hdr.command_id == DATA_IN_CMD:
@@ -611,14 +605,14 @@ class XBeeSerialDataCluster(LocalDataCluster):
     client_commands = {
         SERIAL_DATA_CMD: foundation.ZCLCommandDef(
             name="send_data",
-            schema={"data": t.BinaryString},
+            schema={"data": BinaryString},
             is_manufacturer_specific=True,
         )
     }
     server_commands = {
         SERIAL_DATA_CMD: foundation.ZCLCommandDef(
             name="receive_data",
-            schema={"data": t.BinaryString},
+            schema={"data": BinaryString},
             is_manufacturer_specific=True,
         )
     }

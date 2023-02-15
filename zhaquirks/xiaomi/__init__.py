@@ -331,6 +331,7 @@ class XiaomiCluster(CustomCluster):
                 }
             )
         elif self.endpoint.device.model in [
+            "lumi.plug",
             "lumi.plug.maus01",
             "lumi.plug.maeu01",
             "lumi.plug.mmeu01",
@@ -437,6 +438,10 @@ class XiaomiPowerConfiguration(PowerConfiguration, LocalDataCluster):
         """Battery reported."""
         self._update_attribute(self.BATTERY_VOLTAGE_ATTR, round(voltage_mv / 100, 1))
         self._update_battery_percentage(voltage_mv)
+
+    def battery_percent_reported(self, battery_percent: int) -> None:
+        """Battery reported as percentage."""
+        self._update_attribute(self.BATTERY_PERCENTAGE_REMAINING, battery_percent * 2)
 
     def _update_battery_percentage(self, voltage_mv: int) -> None:
         voltage_mv = max(voltage_mv, self.MIN_VOLTS_MV)
@@ -586,7 +591,7 @@ class ElectricalMeasurementCluster(LocalDataCluster, ElectricalMeasurement):
 
     def power_reported(self, value):
         """Power reported."""
-        self._update_attribute(self.POWER_ID, value * 10)
+        self._update_attribute(self.POWER_ID, round(value * 10))
 
     def voltage_reported(self, value):
         """Voltage reported."""
@@ -594,7 +599,7 @@ class ElectricalMeasurementCluster(LocalDataCluster, ElectricalMeasurement):
 
     def consumption_reported(self, value):
         """Consumption reported."""
-        self._update_attribute(self.CONSUMPTION_ID, value * 1000)
+        self._update_attribute(self.CONSUMPTION_ID, round(value * 1000))
 
 
 class MeteringCluster(LocalDataCluster, Metering):
@@ -621,7 +626,7 @@ class MeteringCluster(LocalDataCluster, Metering):
 
     def consumption_reported(self, value):
         """Consumption reported."""
-        self._update_attribute(self.CURRENT_SUMM_DELIVERED_ID, value * 1000)
+        self._update_attribute(self.CURRENT_SUMM_DELIVERED_ID, round(value * 1000))
 
 
 class IlluminanceMeasurementCluster(CustomCluster, IlluminanceMeasurement):

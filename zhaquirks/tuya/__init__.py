@@ -1,6 +1,7 @@
 """Tuya devices."""
 import dataclasses
 import datetime
+import enum
 import logging
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
@@ -126,31 +127,7 @@ TUYA_CMD_BASE = 0x0100
 _LOGGER = logging.getLogger(__name__)
 
 
-class BigEndianInt16(int):
-    """Helper class to represent big endian 16 bit value."""
-
-    def serialize(self) -> bytes:
-        """Value serialisation."""
-
-        try:
-            return self.to_bytes(2, "big", signed=False)
-        except OverflowError as e:
-            # OverflowError is not a subclass of ValueError, making it annoying to catch
-            raise ValueError(str(e)) from e
-
-    @classmethod
-    def deserialize(cls, data: bytes) -> Tuple["BigEndianInt16", bytes]:
-        """Value deserialisation."""
-
-        if len(data) < 2:
-            raise ValueError(f"Data is too short to contain {cls._size} bytes")
-
-        r = cls.from_bytes(data[:2], "big", signed=False)
-        data = data[2:]
-        return r, data
-
-
-class TuyaTimePayload(t.LVList, item_type=t.uint8_t, length_type=BigEndianInt16):
+class TuyaTimePayload(t.LVList, item_type=t.uint8_t, length_type=t.uint16_t_be):
     """Tuya set time payload definition."""
 
 
@@ -172,31 +149,26 @@ class TuyaData(t.Struct):
     function: t.uint8_t
     raw: t.LVBytes
 
-    @classmethod
-    def deserialize(cls, data: bytes) -> Tuple["TuyaData", bytes]:
-        """Deserialize data."""
-        res = cls()
-        res.dp_type, data = TuyaDPType.deserialize(data)
-        res.function, data = t.uint8_t.deserialize(data)
-        res.raw, data = t.LVBytes.deserialize(data)
-        if res.dp_type not in (
-            TuyaDPType.BITMAP,
-            TuyaDPType.STRING,
-            TuyaDPType.ENUM,
-            TuyaDPType.RAW,
-        ):
-            res.raw = res.raw[::-1]
-        return res, data
-
     @property
-    def payload(self) -> Union[t.Bool, t.CharacterString, t.uint32_t, t.data32]:
+    def payload(
+        self,
+    ) -> Union[
+        t.int32s_be,
+        t.Bool,
+        t.CharacterString,
+        t.enum8,
+        t.bitmap8,
+        t.bitmap16,
+        t.bitmap32,
+        t.LVBytes,
+    ]:
         """Payload accordingly to data point type."""
         if self.dp_type == TuyaDPType.VALUE:
-            return t.uint32_t.deserialize(self.raw)[0]
+            return t.int32s_be.deserialize(self.raw)[0]
         elif self.dp_type == TuyaDPType.BOOL:
             return t.Bool.deserialize(self.raw)[0]
         elif self.dp_type == TuyaDPType.STRING:
-            return self.raw.decode("utf8")
+            return t.CharacterString(self.raw.decode("utf8"))
         elif self.dp_type == TuyaDPType.ENUM:
             return t.enum8.deserialize(self.raw)[0]
         elif self.dp_type == TuyaDPType.BITMAP:
@@ -207,8 +179,53 @@ class TuyaData(t.Struct):
                 raise ValueError(f"Wrong bitmap length: {len(self.raw)}") from exc
         elif self.dp_type == TuyaDPType.RAW:
             return self.raw
+        else:
+            raise ValueError(f"Unknown {self.dp_type} datapoint type")
 
-        raise ValueError(f"Unknown {self.dp_type} datapoint type")
+    @payload.setter
+    def payload(self, value):
+        """Set payload accordingly to data point type."""
+        if self.dp_type == TuyaDPType.VALUE:
+            self.raw = t.int32s_be(value).serialize()
+        elif self.dp_type == TuyaDPType.BOOL:
+            self.raw = t.Bool(value).serialize()
+        elif self.dp_type == TuyaDPType.STRING:
+            self.raw = value.encode("utf8")
+        elif self.dp_type == TuyaDPType.ENUM:
+            self.raw = t.enum8(value).serialize()
+        elif self.dp_type == TuyaDPType.BITMAP:
+            if not isinstance(value, (t.bitmap8, t.bitmap16, t.bitmap32)):
+                value = t.bitmap8(value)
+            self.raw = value.serialize()[::-1]
+        elif self.dp_type == TuyaDPType.RAW:
+            self.raw = value.serialize()
+        else:
+            raise ValueError(f"Unknown {self.dp_type} datapoint type")
+
+    def __new__(cls, *args, **kwargs):
+        """Disable copy constrctor."""
+        return super().__new__(cls)
+
+    def __init__(self, value=None, function=0, *args, **kwargs):
+        """Convert from a zigpy typed value to a tuya data payload."""
+        self.function = function
+
+        if value is None:
+            return
+        elif isinstance(value, (t.bitmap8, t.bitmap16, t.bitmap32)):
+            self.dp_type = TuyaDPType.BITMAP
+        elif isinstance(value, (bool, t.Bool)):
+            self.dp_type = TuyaDPType.BOOL
+        elif isinstance(value, enum.Enum):
+            self.dp_type = TuyaDPType.ENUM
+        elif isinstance(value, int):
+            self.dp_type = TuyaDPType.VALUE
+        elif isinstance(value, str):
+            self.dp_type = TuyaDPType.STRING
+        else:
+            self.dp_type = TuyaDPType.RAW
+
+        self.payload = value
 
 
 class Data(t.List, item_type=t.uint8_t):
@@ -970,13 +987,23 @@ class TuyaSmartRemoteOnOffCluster(OnOff, EventableCluster):
             )
 
 
+MULTIPLIER = 0x0301
+DIVISOR = 0x0302
+
+
 # Tuya Zigbee Metering Cluster Correction Implementation
 class TuyaZBMeteringCluster(CustomCluster, Metering):
     """Divides the kWh for tuya."""
 
-    MULTIPLIER = 0x0301
-    DIVISOR = 0x0302
     _CONSTANT_ATTRIBUTES = {MULTIPLIER: 1, DIVISOR: 100}
+
+
+# Tuya Zigbee Metering Cluster Correction Implementation
+class TuyaZBMeteringClusterWithUnit(CustomCluster, Metering):
+    """Divides the kWh for tuya."""
+
+    UNIT_OF_MEASURE = 0x0300
+    _CONSTANT_ATTRIBUTES = {UNIT_OF_MEASURE: 0, MULTIPLIER: 1, DIVISOR: 100}
 
 
 class TuyaZBElectricalMeasurement(CustomCluster, ElectricalMeasurement):

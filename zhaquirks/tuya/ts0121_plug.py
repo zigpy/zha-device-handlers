@@ -14,6 +14,7 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.tuya import (
+    TuyaNewManufCluster,
     TuyaZBE000Cluster,
     TuyaZBElectricalMeasurement,
     TuyaZBExternalSwitchTypeCluster,
@@ -111,6 +112,68 @@ class TS0121B(CustomDevice):
                     TuyaZBElectricalMeasurement,
                     TuyaZBE000Cluster,
                     TuyaZBExternalSwitchTypeCluster,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            242: {
+                PROFILE_ID: 0xA1E0,
+                DEVICE_TYPE: 0x0061,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [0x0021],
+            },
+        },
+    }
+
+
+class TS0121_Var03(CustomDevice):
+    """Tuya TS0121 plug DeviceType.MAIN_POWER_OUTLET."""
+
+    signature = {
+        MODEL: "TS0121",
+        ENDPOINTS: {
+            1: {
+                # "profile_id": 260,
+                # "device_type": "0x0009",
+                # "in_clusters": ["0x0000","0x0003","0x0004","0x0005","0x0006","0x0702","0x0b04","0xef00"],
+                # "out_clusters": ["0x000a","0x0019"]
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.MAIN_POWER_OUTLET,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    Metering.cluster_id,
+                    ElectricalMeasurement.cluster_id,
+                    TuyaNewManufCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            242: {
+                # "profile_id": 41440,
+                # "device_type": "0x0061",
+                # "in_clusters": [],
+                # "out_clusters": ["0x0021"]
+                PROFILE_ID: 0xA1E0,
+                DEVICE_TYPE: 0x0061,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [0x0021],
+            },
+        },
+    }
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaZBOnOffAttributeCluster,
+                    TuyaZBMeteringCluster,
+                    TuyaZBElectricalMeasurement,
+                    TuyaNewManufCluster,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },

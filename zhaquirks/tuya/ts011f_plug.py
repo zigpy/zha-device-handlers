@@ -30,6 +30,7 @@ from zhaquirks.tuya import (
     TuyaZBElectricalMeasurement,
     TuyaZBExternalSwitchTypeCluster,
     TuyaZBMeteringCluster,
+    TuyaZBMeteringClusterWithUnit,
     TuyaZBOnOffAttributeCluster,
 )
 from zhaquirks.tuya.mcu import EnchantedDevice
@@ -1019,6 +1020,124 @@ class Plug_4AC_2USB_Metering(EnchantedDevice):
                 DEVICE_TYPE: 97,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        },
+    }
+
+
+class Plug_v2(EnchantedDevice):
+    """Another TS011F Tuya plug. First one using this definition is _TZ3000_okaz9tjs."""
+
+    signature = {
+        MODEL: "TS011F",
+        ENDPOINTS: {
+            # "profile_id": 260,
+            # "device_type": "0x0051",
+            # "in_clusters": ["0x0000", "0x0003", "0x0004", "0x0005", "0x0006", "0x0702", "0x0b04", "0xe001"],
+            # "out_clusters": []
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    Metering.cluster_id,
+                    ElectricalMeasurement.cluster_id,
+                    TuyaZBExternalSwitchTypeCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+        },
+    }
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaZBOnOffAttributeCluster,
+                    TuyaZBMeteringClusterWithUnit,
+                    TuyaZBElectricalMeasurement,
+                    TuyaZBExternalSwitchTypeCluster,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+        },
+    }
+
+
+class Plug_2AC_var03(CustomDevice):
+    """Tuya 2 socket wall outlet with child lock and power-restore state support."""
+
+    signature = {
+        MODEL: "TS011F",
+        ENDPOINTS: {
+            # <SimpleDescriptor endpoint=1 profile=260 device_type=9
+            # device_version=0
+            # input_clusters=[0, 10, 4, 5, 6]
+            # output_clusters=[25]>
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.MAIN_POWER_OUTLET,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Time.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Ota.cluster_id],
+            },
+            # <SimpleDescriptor endpoint=2 profile=260 device_type=9
+            # device_version=0
+            # input_clusters=[4, 5, 6]
+            # output_clusters=[]>
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.MAIN_POWER_OUTLET,
+                INPUT_CLUSTERS: [
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+        },
+    }
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.MAIN_POWER_OUTLET,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Time.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    # N.B. The ClickSmart CMA30036 (_TYZB01_hlla45kx), supports
+                    #      but does not implement the backlight_mode extended
+                    #      attribute. For this device, changing this attribute
+                    #      has no effect on the switch lights.
+                    TuyaZBOnOffAttributeCluster,
+                ],
+                OUTPUT_CLUSTERS: [Ota.cluster_id],
+            },
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.MAIN_POWER_OUTLET,
+                INPUT_CLUSTERS: [
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [],
             },
         },
     }

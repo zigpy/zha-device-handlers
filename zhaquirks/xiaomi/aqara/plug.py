@@ -5,6 +5,7 @@ from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import (
     AnalogInput,
     Basic,
+    BinaryInput,
     BinaryOutput,
     DeviceTemperature,
     Groups,
@@ -24,13 +25,13 @@ from zhaquirks.const import (
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
-    SKIP_CONFIGURATION,
 )
 from zhaquirks.xiaomi import (
     LUMI,
     AnalogInputCluster,
     BasicCluster,
     ElectricalMeasurementCluster,
+    MeteringCluster,
     XiaomiCustomDevice,
 )
 
@@ -93,7 +94,6 @@ class Plug(XiaomiCustomDevice):
         },
     }
     replacement = {
-        SKIP_CONFIGURATION: True,
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -109,6 +109,7 @@ class Plug(XiaomiCustomDevice):
                     BinaryOutput.cluster_id,
                     Time.cluster_id,
                     ElectricalMeasurementCluster,
+                    MeteringCluster,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id, Time.cluster_id],
             },
@@ -123,6 +124,106 @@ class Plug(XiaomiCustomDevice):
                 DEVICE_TYPE: zha.DeviceType.METER_INTERFACE,
                 INPUT_CLUSTERS: [AnalogInput.cluster_id],
                 OUTPUT_CLUSTERS: [AnalogInput.cluster_id],
+            },
+        },
+    }
+
+
+class Plug2(Plug):
+    """lumi.plug with alternative signature."""
+
+    signature = {
+        MODELS_INFO: Plug.signature[MODELS_INFO],
+        ENDPOINTS: {
+            # <SimpleDescriptor endpoint=1 profile=260 device_type=81
+            # device_version=1
+            # input_clusters=[0, 4, 3, 6, 16, 5, 10, 1, 2]
+            # output_clusters=[25, 10]>
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    DeviceTemperature.cluster_id,
+                    Groups.cluster_id,
+                    Identify.cluster_id,
+                    OnOff.cluster_id,
+                    Scenes.cluster_id,
+                    BinaryOutput.cluster_id,
+                    Time.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Ota.cluster_id, Time.cluster_id],
+            },
+            # <SimpleDescriptor endpoint=2 profile=260 device_type=9
+            # device_version=1
+            # input_clusters=[12]
+            # output_clusters=[12, 4]>
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.MAIN_POWER_OUTLET,
+                INPUT_CLUSTERS: [AnalogInput.cluster_id],
+                OUTPUT_CLUSTERS: [AnalogInput.cluster_id, Groups.cluster_id],
+            },
+            # <SimpleDescriptor endpoint=3 profile=260 device_type=83
+            # device_version=1
+            # input_clusters=[12]
+            # output_clusters=[12]>
+            3: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.METER_INTERFACE,
+                INPUT_CLUSTERS: [AnalogInput.cluster_id],
+                OUTPUT_CLUSTERS: [AnalogInput.cluster_id],
+            },
+            # <SimpleDescriptor endpoint=100 profile=260 device_type=263
+            # device_version=1
+            # input_clusters=[15]
+            # output_clusters=[4, 15]>
+            100: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.OCCUPANCY_SENSOR,
+                INPUT_CLUSTERS: [BinaryInput.cluster_id],
+                OUTPUT_CLUSTERS: [Groups.cluster_id, BinaryInput.cluster_id],
+            },
+        },
+    }
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    BasicCluster,
+                    PowerConfiguration.cluster_id,
+                    DeviceTemperature.cluster_id,
+                    Groups.cluster_id,
+                    Identify.cluster_id,
+                    OnOff.cluster_id,
+                    Scenes.cluster_id,
+                    BinaryOutput.cluster_id,
+                    Time.cluster_id,
+                    ElectricalMeasurementCluster,
+                    MeteringCluster,
+                ],
+                OUTPUT_CLUSTERS: [Ota.cluster_id, Time.cluster_id],
+            },
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.MAIN_POWER_OUTLET,
+                INPUT_CLUSTERS: [AnalogInputCluster],
+                OUTPUT_CLUSTERS: [AnalogInput.cluster_id, Groups.cluster_id],
+            },
+            3: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.METER_INTERFACE,
+                INPUT_CLUSTERS: [AnalogInput.cluster_id],
+                OUTPUT_CLUSTERS: [AnalogInput.cluster_id],
+            },
+            100: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.OCCUPANCY_SENSOR,
+                INPUT_CLUSTERS: [BinaryInput.cluster_id],
+                OUTPUT_CLUSTERS: [Groups.cluster_id, BinaryInput.cluster_id],
             },
         },
     }

@@ -49,6 +49,7 @@ class TuyaSingleSwitchDimmer(TuyaDimmerSwitch):
             ("_TZE200_1agwnems", "TS0601"),  # TODO: validation pending?
             ("_TZE200_9cxuhakf", "TS0601"),  # Added for Mercator IKUU SSWM-DIMZ Device
             ("_TZE200_p0gzbqct", "TS0601"),
+            ("_TZE200_w4cryh2i", "TS0601"),
         ],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=0x0051
