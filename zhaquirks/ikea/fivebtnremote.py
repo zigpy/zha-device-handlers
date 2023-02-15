@@ -27,6 +27,8 @@ from zhaquirks.const import (
     COMMAND_RELEASE,
     COMMAND_STEP,
     COMMAND_STEP_ON_OFF,
+    COMMAND_STOP,
+    COMMAND_STOP_ON_OFF,
     COMMAND_TOGGLE,
     DEVICE_TYPE,
     DIM_DOWN,
@@ -36,6 +38,7 @@ from zhaquirks.const import (
     INPUT_CLUSTERS,
     LEFT,
     LONG_PRESS,
+    LONG_RELEASE,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PARAMS,
@@ -138,6 +141,11 @@ class IkeaTradfriRemote1(CustomDevice):
             ENDPOINT_ID: 1,
             PARAMS: {"move_mode": 0},
         },
+        (LONG_RELEASE, DIM_UP): {
+            COMMAND: COMMAND_STOP_ON_OFF,
+            CLUSTER_ID: 8,
+            ENDPOINT_ID: 1,
+        },
         (SHORT_PRESS, DIM_DOWN): {
             COMMAND: COMMAND_STEP,
             CLUSTER_ID: 8,
@@ -149,6 +157,11 @@ class IkeaTradfriRemote1(CustomDevice):
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
             PARAMS: {"move_mode": 1},
+        },
+        (LONG_RELEASE, DIM_DOWN): {
+            COMMAND: COMMAND_STOP,
+            CLUSTER_ID: 8,
+            ENDPOINT_ID: 1,
         },
         (SHORT_PRESS, LEFT): {
             COMMAND: COMMAND_PRESS,
