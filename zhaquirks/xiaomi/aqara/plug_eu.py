@@ -68,6 +68,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
     attributes = {
         0x0009: ("mode", types.uint8_t, True),
         0x0201: ("power_outage_memory", types.Bool, True),
+        0x0207: ("consumer_connected", types.Bool, True),
     }
     # This only exists on older firmware versions. Newer versions always have the behavior as if this was set to true
     attr_config = {0x0009: 0x01}
