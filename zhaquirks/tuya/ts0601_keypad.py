@@ -74,48 +74,39 @@ class WirelessZigbeeKeypadManufCluster(TuyaMCUCluster):
         BATTERY_PERCENTAGE_DP_ID: DPToAttributeMapping(
             PowerConfigurationCluster.ep_attribute,
             "battery_percentage_remaining",
-            TuyaDPType.VALUE,
             converter=lambda x: x * 2,
         ),
         ARM_DELAY_TIME_DP_ID: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
             "arm_delay_time",
-            TuyaDPType.VALUE,
         ),
         ARM_DELAY_BEEPS_DP_ID: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
             "arm_delay_beeps",
-            TuyaDPType.BOOL,
         ),
         KEYPAD_BEEPS_DP_ID: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
             "keypad_beeps",
-            TuyaDPType.BOOL,
         ),
         QUICK_DISARM_DP_ID: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
             "quick_disarm",
-            TuyaDPType.BOOL,
         ),
         QUICK_ARM_DP_ID: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
             "quick_arm",
-            TuyaDPType.BOOL,
         ),
         QUICK_SOS_DP_ID: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
             "quick_sos",
-            TuyaDPType.BOOL,
         ),
         ADMIN_CODE_DP_ID: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
             "admin_code",
-            TuyaDPType.STRING,
         ),
         USER_CODE_DP_ID: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
             "user_code",
-            TuyaDPType.STRING,
         ),
     }
 
