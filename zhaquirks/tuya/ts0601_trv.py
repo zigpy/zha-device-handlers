@@ -52,6 +52,8 @@ _LOGGER = logging.getLogger(__name__)
 class SiterwellManufCluster(TuyaManufClusterAttributes):
     """Manufacturer Specific Cluster of some thermostatic valves."""
 
+    set_time_offset = 1970
+
     attributes = TuyaManufClusterAttributes.attributes.copy()
     attributes.update(
         {
