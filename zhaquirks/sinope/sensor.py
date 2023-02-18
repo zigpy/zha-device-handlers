@@ -45,8 +45,8 @@ class SinopeManufacturerCluster(CustomCluster):
 class SinopeTechnologiesIasZoneCluster(CustomCluster, IasZone):
     """SinopeTechnologiesIasZoneCluster custom cluster."""
 
-    class zoneStatus(t.enum8): 
-        dry = 0x00 
+    class zoneStatus(t.enum8):
+        dry = 0x00
         leak = 0x01
 
     attributes = IasZone.attributes.copy()
