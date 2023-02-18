@@ -30,13 +30,29 @@ from zhaquirks.sinope import SINOPE
 SINOPE_MANUFACTURER_CLUSTER_ID = 0xFF01
 
 
+class SinopeManufacturerCluster(CustomCluster):
+    """SinopeManufacturerCluster manufacturer cluster."""
+
+    cluster_id = SINOPE_MANUFACTURER_CLUSTER_ID
+    name = "Sinopé Manufacturer specific"
+    ep_attribute = "sinope_manufacturer_specific"
+    attributes = {
+        0x0004: ("firmware_version", t.CharacterString, True),
+        0xFFFD: ("cluster_revision", t.uint16_t, True),
+    }
+
+
 class SinopeTechnologiesIasZoneCluster(CustomCluster, IasZone):
     """SinopeTechnologiesIasZoneCluster custom cluster."""
+
+    class zoneStatus(t.enum8): 
+        dry = 0x00 
+        leak = 0x01
 
     attributes = IasZone.attributes.copy()
     attributes.update(
         {
-            0x0030: ("zoneStatus", t.enum8, True),
+            0x0030: ("zoneStatus", zoneStatus, True),
         }
     )
 
@@ -85,7 +101,7 @@ class SinopeTechnologiesSensor(CustomDevice):
                     TemperatureMeasurement.cluster_id,
                     SinopeTechnologiesIasZoneCluster,
                     Diagnostic.cluster_id,
-                    SINOPE_MANUFACTURER_CLUSTER_ID,
+                    SinopeManufacturerCluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
@@ -142,7 +158,7 @@ class SinopeTechnologiesSensor2(CustomDevice):
                     TemperatureMeasurement.cluster_id,
                     SinopeTechnologiesIasZoneCluster,
                     Diagnostic.cluster_id,
-                    SINOPE_MANUFACTURER_CLUSTER_ID,
+                    SinopeManufacturerCluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
