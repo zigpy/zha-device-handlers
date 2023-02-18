@@ -30,10 +30,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.sinope import (
-    LIGHT_DEVICE_TRIGGERS,
-    SINOPE,
-)
+from zhaquirks.sinope import LIGHT_DEVICE_TRIGGERS, SINOPE
 
 SINOPE_MANUFACTURER_CLUSTER_ID = 0xFF01
 
