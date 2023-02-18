@@ -37,40 +37,88 @@ SINOPE_MANUFACTURER_CLUSTER_ID = 0xFF01
 class SinopeTechnologiesManufacturerCluster(CustomCluster):
     """SinopeTechnologiesManufacturerCluster manufacturer cluster."""
 
+    class keypadLock(t.enum8): 
+        Unlocked = 0x00 
+        Locked = 0x01
+
+    class display(t.enum8):
+        Auto = 0x00
+        OutsideTemperature = 0x01
+        Setpoint = 0x02
+
+    class floorMode(t.enum8): 
+        airByFloor = 0x01 
+        Floor = 0x02
+
+    class auxMode(t.enum8): 
+        off = 0x00 
+        on = 0x01
+
+    class sensorType(t.enum8): 
+        Ten_k = 0x00 
+        Twelve_k = 0x01
+
+    class timeFormat(t.enum8): 
+        Twenty_four_h = 0x00 
+        Twelve_h = 0x01
+
+    class gfciStatus(t.enum8): 
+        ok = 0x00 
+        error = 0x01
+
     cluster_id = SINOPE_MANUFACTURER_CLUSTER_ID
     name = "Sinopé Technologies Manufacturer specific"
     ep_attribute = "sinope_manufacturer_specific"
     attributes = {
+        0x0002: ("keypadLockout", keypadLock, True),
+        0x0004: ("firmware_version", t.CharacterString, True),
         0x0010: ("outdoor_temp", t.int16s, True),
         0x0011: ("outdoor_temp_timeout", t.uint16_t, True),
+        0x0012: ("config2ndDisplay", display, True),
         0x0020: ("secs_since_2k", t.uint32_t, True),
         0x0070: ("currentLoad", t.bitmap8, True),
-        0x0105: ("airFloorMode", t.enum8, True),
-        0x0106: ("auxOutputMode", t.enum8, True),
+        0x0071: ("ecoMode", t.int8s, True),
+        0x0072: ("ecoMode1", t.uint8_t, True),
+        0x0073: ("ecoMode2", t.uint8_t, True),
+        0x0104: ("setpoint", t.int16s, True),
+        0x0105: ("airFloorMode", floorMode, True),
+        0x0106: ("auxOutputMode", auxMode, True),
+        0x0107: ("FloorTemperature", t.int16s, True),
         0x0108: ("airMaxLimit", t.int16s, True),
         0x0109: ("floorMinSetpoint", t.int16s, True),
         0x010A: ("floorMaxSetpoint", t.int16s, True),
-        0x010B: ("tempSensorType", t.enum8, True),
+        0x010B: ("tempSensorType", sensorType, True),
         0x010C: ("floorLimitStatus", t.uint8_t, True),
-        0x0114: ("timeFormat", t.enum8, True),
-        0x0115: ("gfciStatus", t.enum8, True),
+        0x010D: ("RoomTemperature", t.int16s, True),
+        0x0114: ("timeFormat", timeFormat, True),
+        0x0115: ("gfciStatus", gfciStatus, True),
         0x0118: ("auxConnectedLoad", t.uint16_t, True),
         0x0119: ("ConnectedLoad", t.uint16_t, True),
         0x0128: ("pumpProtection", t.uint8_t, True),
         0x012D: ("reportLocalTemperature", t.int16s, True),
+        0xFFFD: ("cluster_revision", t.uint16_t, True),
     }
 
 
 class SinopeTechnologiesThermostatCluster(CustomCluster, Thermostat):
     """SinopeTechnologiesThermostatCluster custom cluster."""
 
+    class occupancy(t.enum8): 
+        away = 0x01 
+        home = 0x02
+
+    class backlight(t.enum8): 
+        on_demand = 0x00 
+        always_on = 0x01
+
     attributes = Thermostat.attributes.copy()
     attributes.update(
         {
-            0x0400: ("set_occupancy", t.enum8, True),
+            0x0400: ("set_occupancy", occupancy, True),
             0x0401: ("mainCycleOutput", t.uint16_t, True),
-            0x0402: ("backlightAutoDimParam", t.enum8, True),
+            0x0402: ("backlightAutoDimParam", backlight, True),
             0x0404: ("auxCycleOutput", t.uint16_t, True),
+            0xFFFD: ("cluster_revision", t.uint16_t, True),
         }
     )
 
