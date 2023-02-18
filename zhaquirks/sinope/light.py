@@ -41,20 +41,36 @@ SINOPE_MANUFACTURER_CLUSTER_ID = 0xFF01
 class SinopeTechnologiesManufacturerCluster(CustomCluster):
     """SinopeTechnologiesManufacturerCluster manufacturer cluster."""
 
+    class keypadLock(t.enum8): 
+        Unlocked = 0x00 
+        Locked = 0x01
+
+    class action(t.enum8): 
+        single_on = 0x01 
+        single_release_on = 0x02
+        long_on = 0x03
+        double_on = 0x04
+        single_off = 0x11
+        single_release_off = 0x12
+        long_off = 0x13
+        double_off = 0x14
+
     cluster_id = SINOPE_MANUFACTURER_CLUSTER_ID
     name = "Sinopé Technologies Manufacturer specific"
     ep_attribute = "sinope_manufacturer_specific"
     attributes = {
-        0x0002: ("KeypadLock", t.enum8, True),
+        0x0002: ("keypadLockout", keypadLock, True),
+        0x0004: ("firmware_version", t.CharacterString, True),
         0x0050: ("onLedColor", t.uint24_t, True),
         0x0051: ("offLedColor", t.uint24_t, True),
         0x0052: ("onLedIntensity", t.uint8_t, True),
         0x0053: ("offLedIntensity", t.uint8_t, True),
-        0x0054: ("actionReport", t.enum8, True),
+        0x0054: ("actionReport", action, True),
         0x0055: ("minIntensity", t.uint16_t, True),
         0x00A0: ("Timer", t.uint32_t, True),
         0x0119: ("ConnectedLoad", t.uint16_t, True),
         0x0200: ("Unknown", t.bitmap32, True),
+        0xFFFD: ("cluster_revision", t.uint16_t, True),
     }
 
 
