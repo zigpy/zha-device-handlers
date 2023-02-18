@@ -40,11 +40,13 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
 
     class keypadLock(t.enum8):
         """keypadLockout values."""
+
         Unlocked = 0x00
         Locked = 0x01
 
     class action(t.enum8):
         """actionReport values."""
+
         single_on = 0x01
         single_release_on = 0x02
         long_on = 0x03
