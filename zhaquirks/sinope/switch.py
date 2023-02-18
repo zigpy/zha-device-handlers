@@ -42,8 +42,8 @@ SINOPE_MANUFACTURER_CLUSTER_ID = 0xFF01
 class SinopeManufacturerCluster(CustomCluster):
     """SinopeManufacturerCluster manufacturer cluster."""
 
-    class keypadLock(t.enum8): 
-        Unlocked = 0x00 
+    class keypadLock(t.enum8):
+        Unlocked = 0x00
         Locked = 0x01
 
     cluster_id = SINOPE_MANUFACTURER_CLUSTER_ID
