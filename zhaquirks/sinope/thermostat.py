@@ -37,8 +37,8 @@ SINOPE_MANUFACTURER_CLUSTER_ID = 0xFF01
 class SinopeTechnologiesManufacturerCluster(CustomCluster):
     """SinopeTechnologiesManufacturerCluster manufacturer cluster."""
 
-    class keypadLock(t.enum8): 
-        Unlocked = 0x00 
+    class keypadLock(t.enum8):
+        Unlocked = 0x00
         Locked = 0x01
 
     class display(t.enum8):
@@ -46,24 +46,24 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
         OutsideTemperature = 0x01
         Setpoint = 0x02
 
-    class floorMode(t.enum8): 
-        airByFloor = 0x01 
+    class floorMode(t.enum8):
+        airByFloor = 0x01
         Floor = 0x02
 
-    class auxMode(t.enum8): 
-        off = 0x00 
+    class auxMode(t.enum8):
+        off = 0x00
         on = 0x01
 
-    class sensorType(t.enum8): 
-        Ten_k = 0x00 
+    class sensorType(t.enum8):
+        Ten_k = 0x00
         Twelve_k = 0x01
 
-    class timeFormat(t.enum8): 
-        Twenty_four_h = 0x00 
+    class timeFormat(t.enum8):
+        Twenty_four_h = 0x00
         Twelve_h = 0x01
 
-    class gfciStatus(t.enum8): 
-        ok = 0x00 
+    class gfciStatus(t.enum8):
+        ok = 0x00
         error = 0x01
 
     cluster_id = SINOPE_MANUFACTURER_CLUSTER_ID
@@ -103,12 +103,12 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
 class SinopeTechnologiesThermostatCluster(CustomCluster, Thermostat):
     """SinopeTechnologiesThermostatCluster custom cluster."""
 
-    class occupancy(t.enum8): 
-        away = 0x01 
+    class occupancy(t.enum8):
+        away = 0x01
         home = 0x02
 
-    class backlight(t.enum8): 
-        on_demand = 0x00 
+    class backlight(t.enum8):
+        on_demand = 0x00
         always_on = 0x01
 
     attributes = Thermostat.attributes.copy()
