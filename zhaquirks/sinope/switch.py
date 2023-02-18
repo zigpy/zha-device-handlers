@@ -43,7 +43,8 @@ class SinopeManufacturerCluster(CustomCluster):
     """SinopeManufacturerCluster manufacturer cluster."""
 
     class keypadLock(t.enum8):
-        """keypadLockout values"""
+        """keypadLockout values."""
+
         Unlocked = 0x00
         Locked = 0x01
 
