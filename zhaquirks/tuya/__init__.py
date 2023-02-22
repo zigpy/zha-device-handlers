@@ -231,22 +231,35 @@ class TuyaData(t.Struct):
 class Data(t.List, item_type=t.uint8_t):
     """list of uint8_t."""
 
-    @classmethod
-    def from_value(cls, value):
+    def __init__(self, value=None):
         """Convert from a zigpy typed value to a tuya data payload."""
+        if value is None:
+            super().__init__()
+            return
+        if type(value) is list or type(value) is bytes:
+            super().__init__(value)
+            return
         # serialized in little-endian by zigpy
-        data = cls(value.serialize())
+        super().__init__(value.serialize())
         # we want big-endian, with length prepended
-        data.append(len(data))
-        data.reverse()
-        return data
+        self.append(len(self))
+        self.reverse()
 
-    def to_value(self, ztype):
-        """Convert from a tuya data payload to a zigpy typed value."""
+    def __int__(self):
+        """Convert from a tuya data payload to an int typed value."""
         # first uint8_t is the length of the remaining data
         # tuya data is in big endian whereas ztypes use little endian
-        value, _ = ztype.deserialize(bytes(reversed(self[1:])))
-        return value
+        ints = {1: t.int8s, 2: t.int16s, 3: t.int24s, 4: t.int32s}
+        return ints[self[0]].deserialize(bytes(reversed(self[1:])))[0]
+
+    def __iter__(self):
+        """Convert from a tuya data payload to a list typed value."""
+        return iter(reversed(self[1:]))
+
+    def serialize(self) -> bytes:
+        """Overload serialize to avoid prior implicit conversion to list."""
+        assert self._item_type is not None
+        return b"".join([self._item_type(i).serialize() for i in self[:]])
 
 
 class TuyaDatapointData(t.Struct):
@@ -469,7 +482,7 @@ class TuyaManufClusterAttributes(TuyaManufCluster):
             return
 
         ztype = self.attributes[tuya_cmd].type
-        zvalue = tuya_data.to_value(ztype)
+        zvalue = ztype(tuya_data)
         self._update_attribute(tuya_cmd, zvalue)
 
     def read_attributes(
@@ -492,7 +505,7 @@ class TuyaManufClusterAttributes(TuyaManufCluster):
             cmd_payload.tsn = self.endpoint.device.application.get_sequence()
             cmd_payload.command_id = record.attrid
             cmd_payload.function = 0
-            cmd_payload.data = Data.from_value(record.value.value)
+            cmd_payload.data = record.value.value
 
             await super().command(
                 TUYA_SET_DATA,
