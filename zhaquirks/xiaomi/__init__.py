@@ -45,6 +45,7 @@ from zhaquirks.const import (
     UNKNOWN,
     VALUE,
     ZHA_SEND_EVENT,
+    ZONE_STATE,
 )
 
 BATTERY_LEVEL = "battery_level"
@@ -84,6 +85,7 @@ CONSUMPTION_REPORTED = "consumption_reported"
 VOLTAGE_REPORTED = "voltage_reported"
 ILLUMINANCE_MEASUREMENT = "illuminance_measurement"
 ILLUMINANCE_REPORTED = "illuminance_reported"
+SMOKE = "smoke"
 XIAOMI_AQARA_ATTRIBUTE = 0xFF01
 XIAOMI_AQARA_ATTRIBUTE_E1 = 0x00F7
 XIAOMI_ATTR_3 = "X-attrib-3"
@@ -299,6 +301,8 @@ class XiaomiCluster(CustomCluster):
                 "update_battery_percentage",
                 attributes[BATTERY_PERCENTAGE_REMAINING_ATTRIBUTE],
             )
+        if SMOKE in attributes:
+            self.endpoint.ias_zone.update_attribute(ZONE_STATE, attributes[SMOKE])
 
     def _parse_aqara_attributes(self, value):
         """Parse non standard attributes."""
@@ -363,6 +367,8 @@ class XiaomiCluster(CustomCluster):
             attribute_names.update({323: PRESENCE_EVENT})
             attribute_names.update({324: MONITORING_MODE})
             attribute_names.update({326: APPROACH_DISTANCE})
+        elif self.endpoint.device.model == "lumi.sensor_smoke.acn03":
+            attribute_names.update({160: SMOKE})
         result = {}
 
         # Some attribute reports end with a stray null byte
