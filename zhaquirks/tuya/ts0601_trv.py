@@ -52,6 +52,8 @@ _LOGGER = logging.getLogger(__name__)
 class SiterwellManufCluster(TuyaManufClusterAttributes):
     """Manufacturer Specific Cluster of some thermostatic valves."""
 
+    set_time_offset = 1970
+
     attributes = TuyaManufClusterAttributes.attributes.copy()
     attributes.update(
         {
@@ -1473,6 +1475,7 @@ class SiterwellGS361_Type2(TuyaThermostat):
             ("_TZE200_8daqwrsj", "TS0601"),
             ("_TZE200_czk78ptr", "TS0601"),
             ("_TZE200_2cs6g9i7", "TS0601"),  # Brennenstuhl Zigbee Connect 01
+            ("_TZE200_04yfvweb", "TS0601"),  # Appartme APRM-04-001
         ],
         ENDPOINTS: {
             1: {
@@ -1621,6 +1624,11 @@ class MoesHY368_Type1new(TuyaThermostat):
 class MoesHY368_Type2(TuyaThermostat):
     """MoesHY368 Thermostatic radiator valve (2nd cluster signature)."""
 
+    def __init__(self, *args, **kwargs):
+        """Init device."""
+        self.window_detection_bus = Bus()
+        super().__init__(*args, **kwargs)
+
     signature = {
         #  endpoint=1 profile=260 device_type=0 device_version=0 input_clusters=[0, 3]
         #  output_clusters=[3, 25]>
@@ -1677,14 +1685,16 @@ class ZonnsmartTV01_ZG(TuyaThermostat):
         #  endpoint=1 profile=260 device_type=81 device_version=0 input_clusters=[0, 4, 5, 61184]
         #  output_clusters=[10, 25]>
         MODELS_INFO: [
-            ("_TZE200_7yoranx2", "TS0601"),  # MOES TRV TV01 ZTRV-ZX-TV01-MS
-            ("_TZE200_e9ba97vf", "TS0601"),
-            ("_TZE200_hue3yfsn", "TS0601"),  # TV02-ZG
-            ("_TZE200_husqqvux", "TS0601"),
-            ("_TZE200_kly8gjlz", "TS0601"),
-            ("_TZE200_lnbfnyxd", "TS0601"),
-            ("_TZE200_mudxchsu", "TS0601"),
-            ("_TZE200_kds0pmmv", "TS0601"),  # MOES TRV TV02
+            ("_TZE200_7yoranx2", "TS0601"),  # MOES TV01 ZTRV-ZX-TV01-MS
+            ("_TZE200_e9ba97vf", "TS0601"),  # Zonnsmart TV01-ZG
+            ("_TZE200_hue3yfsn", "TS0601"),  # Zonnsmart TV02-ZG
+            ("_TZE200_husqqvux", "TS0601"),  # Tesla Smart TSL-TRV-TV01ZG
+            ("_TZE200_kly8gjlz", "TS0601"),  # EARU TV05-ZG
+            ("_TZE200_lnbfnyxd", "TS0601"),  # Tesla Smart TSL-TRV-TV01ZG
+            ("_TZE200_mudxchsu", "TS0601"),  # Foluu TV05
+            ("_TZE200_kds0pmmv", "TS0601"),  # MOES TV02
+            ("_TZE200_sur6q7ko", "TS0601"),  # LSC Smart Connect 3012732
+            ("_TZE200_lllliz3p", "TS0601"),  # tuya TV02-Zigbee2
         ],
         ENDPOINTS: {
             1: {

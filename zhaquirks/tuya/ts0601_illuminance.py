@@ -18,7 +18,7 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.tuya import TuyaLocalCluster
-from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaDPType, TuyaMCUCluster
+from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster
 
 TUYA_BRIGHTNESS_LEVEL_DP = 0x01  # 0-2 "Low, Medium, High"
 TUYA_ILLUMINANCE_DP = 0x02  # [0, 0, 3, 232] illuminance
@@ -50,13 +50,11 @@ class TuyaIlluminanceCluster(TuyaMCUCluster):
         TUYA_BRIGHTNESS_LEVEL_DP: DPToAttributeMapping(
             TuyaIlluminanceMeasurement.ep_attribute,
             "manufacturer_brightness_level",
-            dp_type=TuyaDPType.ENUM,
             converter=lambda x: BrightnessLevel(x),
         ),
         TUYA_ILLUMINANCE_DP: DPToAttributeMapping(
             TuyaIlluminanceMeasurement.ep_attribute,
             "measured_value",
-            dp_type=TuyaDPType.VALUE,
             converter=lambda x: (10000.0 * math.log10(x) + 1.0 if x != 0 else 0),
         ),
     }

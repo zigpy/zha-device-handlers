@@ -1,6 +1,7 @@
 """Tuya devices."""
 import dataclasses
 import datetime
+import enum
 import logging
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
@@ -22,7 +23,6 @@ from zhaquirks.const import (
     SHORT_PRESS,
     ZHA_SEND_EVENT,
 )
-from zhaquirks.xbee.types import uint32_t as uint32_t_be
 
 # ---------------------------------------------------------
 # Tuya Custom Cluster ID
@@ -127,31 +127,7 @@ TUYA_CMD_BASE = 0x0100
 _LOGGER = logging.getLogger(__name__)
 
 
-class BigEndianInt16(int):
-    """Helper class to represent big endian 16 bit value."""
-
-    def serialize(self) -> bytes:
-        """Value serialisation."""
-
-        try:
-            return self.to_bytes(2, "big", signed=False)
-        except OverflowError as e:
-            # OverflowError is not a subclass of ValueError, making it annoying to catch
-            raise ValueError(str(e)) from e
-
-    @classmethod
-    def deserialize(cls, data: bytes) -> Tuple["BigEndianInt16", bytes]:
-        """Value deserialisation."""
-
-        if len(data) < 2:
-            raise ValueError(f"Data is too short to contain {cls._size} bytes")
-
-        r = cls.from_bytes(data[:2], "big", signed=False)
-        data = data[2:]
-        return r, data
-
-
-class TuyaTimePayload(t.LVList, item_type=t.uint8_t, length_type=BigEndianInt16):
+class TuyaTimePayload(t.LVList, item_type=t.uint8_t, length_type=t.uint16_t_be):
     """Tuya set time payload definition."""
 
 
@@ -177,7 +153,7 @@ class TuyaData(t.Struct):
     def payload(
         self,
     ) -> Union[
-        uint32_t_be,
+        t.int32s_be,
         t.Bool,
         t.CharacterString,
         t.enum8,
@@ -188,7 +164,7 @@ class TuyaData(t.Struct):
     ]:
         """Payload accordingly to data point type."""
         if self.dp_type == TuyaDPType.VALUE:
-            return uint32_t_be.deserialize(self.raw)[0]
+            return t.int32s_be.deserialize(self.raw)[0]
         elif self.dp_type == TuyaDPType.BOOL:
             return t.Bool.deserialize(self.raw)[0]
         elif self.dp_type == TuyaDPType.STRING:
@@ -210,7 +186,7 @@ class TuyaData(t.Struct):
     def payload(self, value):
         """Set payload accordingly to data point type."""
         if self.dp_type == TuyaDPType.VALUE:
-            self.raw = uint32_t_be(value).serialize()
+            self.raw = t.int32s_be(value).serialize()
         elif self.dp_type == TuyaDPType.BOOL:
             self.raw = t.Bool(value).serialize()
         elif self.dp_type == TuyaDPType.STRING:
@@ -226,26 +202,64 @@ class TuyaData(t.Struct):
         else:
             raise ValueError(f"Unknown {self.dp_type} datapoint type")
 
+    def __new__(cls, *args, **kwargs):
+        """Disable copy constrctor."""
+        return super().__new__(cls)
+
+    def __init__(self, value=None, function=0, *args, **kwargs):
+        """Convert from a zigpy typed value to a tuya data payload."""
+        self.function = function
+
+        if value is None:
+            return
+        elif isinstance(value, (t.bitmap8, t.bitmap16, t.bitmap32)):
+            self.dp_type = TuyaDPType.BITMAP
+        elif isinstance(value, (bool, t.Bool)):
+            self.dp_type = TuyaDPType.BOOL
+        elif isinstance(value, enum.Enum):
+            self.dp_type = TuyaDPType.ENUM
+        elif isinstance(value, int):
+            self.dp_type = TuyaDPType.VALUE
+        elif isinstance(value, str):
+            self.dp_type = TuyaDPType.STRING
+        else:
+            self.dp_type = TuyaDPType.RAW
+
+        self.payload = value
+
 
 class Data(t.List, item_type=t.uint8_t):
     """list of uint8_t."""
 
-    @classmethod
-    def from_value(cls, value):
+    def __init__(self, value=None):
         """Convert from a zigpy typed value to a tuya data payload."""
+        if value is None:
+            super().__init__()
+            return
+        if type(value) is list or type(value) is bytes:
+            super().__init__(value)
+            return
         # serialized in little-endian by zigpy
-        data = cls(value.serialize())
+        super().__init__(value.serialize())
         # we want big-endian, with length prepended
-        data.append(len(data))
-        data.reverse()
-        return data
+        self.append(len(self))
+        self.reverse()
 
-    def to_value(self, ztype):
-        """Convert from a tuya data payload to a zigpy typed value."""
+    def __int__(self):
+        """Convert from a tuya data payload to an int typed value."""
         # first uint8_t is the length of the remaining data
         # tuya data is in big endian whereas ztypes use little endian
-        value, _ = ztype.deserialize(bytes(reversed(self[1:])))
-        return value
+        ints = {1: t.int8s, 2: t.int16s, 3: t.int24s, 4: t.int32s}
+        return ints[self[0]].deserialize(bytes(reversed(self[1:])))[0]
+
+    def __iter__(self):
+        """Convert from a tuya data payload to a list typed value."""
+        return iter(reversed(self[1:]))
+
+    def serialize(self) -> bytes:
+        """Overload serialize to avoid prior implicit conversion to list."""
+        assert self._item_type is not None
+        return b"".join([self._item_type(i).serialize() for i in self[:]])
 
 
 class TuyaDatapointData(t.Struct):
@@ -468,7 +482,7 @@ class TuyaManufClusterAttributes(TuyaManufCluster):
             return
 
         ztype = self.attributes[tuya_cmd].type
-        zvalue = tuya_data.to_value(ztype)
+        zvalue = ztype(tuya_data)
         self._update_attribute(tuya_cmd, zvalue)
 
     def read_attributes(
@@ -491,7 +505,7 @@ class TuyaManufClusterAttributes(TuyaManufCluster):
             cmd_payload.tsn = self.endpoint.device.application.get_sequence()
             cmd_payload.command_id = record.attrid
             cmd_payload.function = 0
-            cmd_payload.data = Data.from_value(record.value.value)
+            cmd_payload.data = record.value.value
 
             await super().command(
                 TUYA_SET_DATA,

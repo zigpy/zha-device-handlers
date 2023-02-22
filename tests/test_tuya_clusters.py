@@ -11,7 +11,6 @@ from zhaquirks.tuya import (
     TUYA_GET_DATA,
     TUYA_SET_DATA_RESPONSE,
     TUYA_SET_TIME,
-    BigEndianInt16,
     TuyaCommand,
     TuyaData,
     TuyaDatapointData,
@@ -33,7 +32,7 @@ def test_tuya_data_raw():
 
     class Test(t.Struct):
         test_bool: t.Bool
-        test_uint16_t_be: BigEndianInt16
+        test_uint16_t_be: t.uint16_t_be
 
     data = b"\x00\x00\x03\x01\x02\x46"
     extra = b"extra data"
@@ -64,6 +63,20 @@ def test_tuya_data_value():
 
     r.payload = 582
     assert r.raw == b"\x00\x00\x02\x46"
+
+
+def test_tuya_negative_value():
+    """Test tuya negative "Value" datatype."""
+
+    data = b"\x02\x00\x04\xff\xff\xff\xf8"
+    extra = b"extra data"
+
+    r, rest = TuyaData.deserialize(data + extra)
+    assert rest == extra
+
+    assert r.dp_type == 2
+    assert r.raw == b"\xff\xff\xff\xf8"
+    assert r.payload == -8
 
 
 def test_tuya_data_bool():

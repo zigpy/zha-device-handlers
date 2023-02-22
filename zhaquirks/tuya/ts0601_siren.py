@@ -33,7 +33,6 @@ from zhaquirks.tuya.mcu import (
     DPToAttributeMapping,
     TuyaAttributesCluster,
     TuyaClusterData,
-    TuyaDPType,
     TuyaMCUCluster,
 )
 
@@ -319,28 +318,23 @@ class NeoSirenManufCluster(TuyaMCUCluster):
         5: DPToAttributeMapping(
             TuyaMCUSiren.ep_attribute,
             "volume",
-            dp_type=TuyaDPType.ENUM,
             converter=lambda x: NeoAlarmVolume(x),
         ),
         7: DPToAttributeMapping(
             TuyaMCUSiren.ep_attribute,
             "alarm_duration",
-            dp_type=TuyaDPType.VALUE,
         ),
         13: DPToAttributeMapping(
             TuyaMCUSiren.ep_attribute,
             "on_off",
-            dp_type=TuyaDPType.BOOL,
         ),
         15: DPToAttributeMapping(
             TuyaMCUSiren.ep_attribute,
             "battery",
-            dp_type=TuyaDPType.VALUE,
         ),
         21: DPToAttributeMapping(
             TuyaMCUSiren.ep_attribute,
             "melody",
-            dp_type=TuyaDPType.ENUM,
             converter=lambda x: NeoAlarmMelody(x),
         ),
     }
@@ -360,7 +354,10 @@ class TuyaSirenGPP_NoSensors(CustomDevice):
     signature = {
         #  endpoint=1 profile=260 device_type=81 device_version=1 input_clusters=[0, 4, 5, 61184]
         #  output_clusters=[25, 10]>
-        MODELS_INFO: [("_TZE200_t1blo2bj", "TS0601")],
+        MODELS_INFO: [
+            ("_TZE200_t1blo2bj", "TS0601"),
+            ("_TZE204_t1blo2bj", "TS0601"),
+        ],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
