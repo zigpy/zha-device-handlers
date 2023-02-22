@@ -60,6 +60,8 @@ class ZLinkyTICManufacturerCluster(CustomCluster, ManufacturerSpecificCluster):
         0x0007: ("hist_current_exceeding_warning_phase_2", t.uint16_t, True),
         # Historical mode: ADIR3 "Avertissement de Dépassement D'intensité phase 3" / Uint16 3 car
         0x0008: ("hist_current_exceeding_warning_phase_3", t.uint16_t, True),
+        # Historical mode: MOTDETAT "Etat du Linky (From V13)" / String 6 car
+        0x0009: ("linky_status", t.LimitedCharString(6), True),
         # Historical and Standard mode: "Linky acquisition time (From V7)"" / Uint8 1 car
         0x0100: ("linky_acquisition_time", t.uint8_t, True),
         # Standard mode: LTARF "Libellé tarif fournisseur en cours" / String 16 car
