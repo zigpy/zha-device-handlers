@@ -40,6 +40,7 @@ from zhaquirks import (
 from zhaquirks.const import (
     ATTRIBUTE_ID,
     ATTRIBUTE_NAME,
+    CLUSTER_COMMAND,
     COMMAND_ATTRIBUTE_UPDATED,
     COMMAND_TRIPLE,
     UNKNOWN,
@@ -302,6 +303,12 @@ class XiaomiCluster(CustomCluster):
                 attributes[BATTERY_PERCENTAGE_REMAINING_ATTRIBUTE],
             )
         if SMOKE in attributes:
+            self.endpoint.ias_zone.listener_event(
+                CLUSTER_COMMAND,
+                253 + attributes[SMOKE],
+                ZONE_STATE,
+                [attributes[SMOKE], 0, 0, 0],
+            )
             self.endpoint.ias_zone.update_attribute(ZONE_STATE, attributes[SMOKE])
 
     def _parse_aqara_attributes(self, value):
