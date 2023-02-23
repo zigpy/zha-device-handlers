@@ -1,4 +1,4 @@
-"""Tests for Paulmann quirks."""
+"""Tests for GLEDOPTO quirks."""
 
 import zhaquirks.gledopto.glc009
 
