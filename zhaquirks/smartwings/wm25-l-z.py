@@ -41,6 +41,7 @@ class InvertedWindowCoveringCluster(CustomCluster, WindowCovering):
         self, command_id, *args, manufacturer=None, expect_reply=True, tsn=None
     ):
         """Override default command to invert percent lift value."""
+
         if command_id == self.CMD_GO_TO_LIFT_PERCENTAGE:
             percent = args[0]
             # Invert the percentage value
