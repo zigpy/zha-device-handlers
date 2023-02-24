@@ -1,4 +1,4 @@
-"""Device handler for Smartwings WM25L-Z blinds."""
+"""Device handler for Smartwings blinds."""
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.zcl.clusters.closures import WindowCovering
@@ -58,7 +58,7 @@ class InvertedWindowCoveringCluster(CustomCluster, WindowCovering):
 
 
 class WM25LBlinds(CustomDevice):
-    """Custom device representing Smartwings WM25/L-Z roller blinds."""
+    """Custom device representing Smartwings WM25LZ blinds."""
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=514
