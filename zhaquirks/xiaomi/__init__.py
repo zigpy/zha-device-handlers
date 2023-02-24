@@ -86,7 +86,13 @@ CONSUMPTION_REPORTED = "consumption_reported"
 VOLTAGE_REPORTED = "voltage_reported"
 ILLUMINANCE_MEASUREMENT = "illuminance_measurement"
 ILLUMINANCE_REPORTED = "illuminance_reported"
-SMOKE = "smoke"
+# SMOKE = "smoke"
+# SMOKE_DENSITY = "smoke_density"
+# TEST = "test"
+# BUZZER_MANUAL_MUTE = "buzzer_manual_mute"
+# HEARTBEAT_INDICATOR = "heartbeat_indicator"
+# LINKAGE_ALARM = "linkage_alarm"
+# LINKAGE_ALARM_STATE = "linkage_alarm_state"
 XIAOMI_AQARA_ATTRIBUTE = 0xFF01
 XIAOMI_AQARA_ATTRIBUTE_E1 = 0x00F7
 XIAOMI_ATTR_3 = "X-attrib-3"
@@ -302,14 +308,14 @@ class XiaomiCluster(CustomCluster):
                 "update_battery_percentage",
                 attributes[BATTERY_PERCENTAGE_REMAINING_ATTRIBUTE],
             )
-        if SMOKE in attributes:
+        if "smoke" in attributes:
             self.endpoint.ias_zone.listener_event(
                 CLUSTER_COMMAND,
-                253 + attributes[SMOKE],
+                253 + attributes["smoke"],
                 ZONE_STATE,
-                [attributes[SMOKE], 0, 0, 0],
+                [attributes["smoke"], 0, 0, 0],
             )
-            self.endpoint.ias_zone.update_attribute(ZONE_STATE, attributes[SMOKE])
+            self.endpoint.ias_zone.update_attribute(ZONE_STATE, attributes["smoke"])
 
     def _parse_aqara_attributes(self, value):
         """Parse non standard attributes."""
@@ -375,7 +381,20 @@ class XiaomiCluster(CustomCluster):
             attribute_names.update({324: MONITORING_MODE})
             attribute_names.update({326: APPROACH_DISTANCE})
         elif self.endpoint.device.model == "lumi.sensor_smoke.acn03":
-            attribute_names.update({160: SMOKE})
+            attribute_names.update({160: "smoke"})
+            attribute_names.update({161: "smoke_density"})
+            attribute_names.update({162: "test"})
+            attribute_names.update({163: "buzzer_manual_mute"})
+            attribute_names.update({164: "heartbeat_indicator"})
+            attribute_names.update({165: "linkage_alarm"})
+            attribute_names.update({294: "buzzer_manual_mute2"})  # duplicated?
+            attribute_names.update({295: "test2"})  # duplicated?
+            attribute_names.update({314: "smoke2"})  # duplicated?
+            attribute_names.update({315: "smoke_density2"})  # duplicated?
+            attribute_names.update({316: "heartbeat_indicator2"})  # duplicated?
+            attribute_names.update({317: "buzzer_manual_alarm2"})  # duplicated?
+            attribute_names.update({331: "linkage_alarm2"})  # duplicated?
+            attribute_names.update({332: "linkage_alarm_state2"})  # duplicated?
         result = {}
 
         # Some attribute reports end with a stray null byte
