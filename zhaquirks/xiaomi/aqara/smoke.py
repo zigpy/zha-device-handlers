@@ -1,4 +1,5 @@
 """Quirk for LUMI lumi.sensor_smoke.acn03 smoke sensor."""
+from typing import Any
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
@@ -8,12 +9,14 @@ from zigpy.zcl.clusters.security import IasZone
 
 from zhaquirks import Bus, LocalDataCluster
 from zhaquirks.const import (
+    CLUSTER_COMMAND,
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
+    ZONE_STATE,
 )
 from zhaquirks.xiaomi import DeviceTemperatureCluster, XiaomiAqaraE1Cluster
 
@@ -32,6 +35,17 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         0x013E: ("buzzer", types.uint32_t, True),
         0x014B: ("linkage_alarm", types.uint8_t, True),
     }
+
+    def _update_attribute(self, attrid: int, value: Any) -> None:
+        super()._update_attribute(attrid, value)
+        if attrid == 0x013A:
+            self.endpoint.ias_zone.listener_event(
+                CLUSTER_COMMAND,
+                253 + value,
+                ZONE_STATE,
+                [value, 0, 0, 0],
+            )
+            self.endpoint.ias_zone.update_attribute(ZONE_STATE, value)
 
 
 class LocalIasZone(LocalDataCluster, IasZone):
