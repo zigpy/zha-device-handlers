@@ -2,6 +2,7 @@
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
+import zigpy.types as types
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PowerConfiguration
 from zigpy.zcl.clusters.security import IasZone
 
@@ -15,6 +16,22 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.xiaomi import DeviceTemperatureCluster, XiaomiAqaraE1Cluster
+
+
+class OppleCluster(XiaomiAqaraE1Cluster):
+    """Opple cluster."""
+
+    ep_attribute = "opple_cluster"
+    attributes = {
+        0x0126: ("buzzer_manual_mute", types.uint8_t, True),
+        0x0127: ("selftest", types.Bool, True),
+        0x013A: ("smoke", types.uint8_t, True),
+        0x013B: ("smoke_density", types.uint8_t, True),
+        0x013C: ("heartbeat_indicator", types.uint8_t, True),
+        0x013D: ("buzzer_manual_alarm", types.uint8_t, True),
+        0x013E: ("buzzer", types.uint32_t, True),
+        0x014B: ("linkage_alarm", types.uint8_t, True),
+    }
 
 
 class LocalIasZone(LocalDataCluster, IasZone):
@@ -63,7 +80,7 @@ class LumiSensorSmokeAcn03(CustomDevice):
                     Identify.cluster_id,
                     LocalIasZone,
                     DeviceTemperatureCluster,
-                    XiaomiAqaraE1Cluster,
+                    OppleCluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     Ota.cluster_id,
