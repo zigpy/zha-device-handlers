@@ -23,9 +23,11 @@ from zhaquirks.const import (
 
 
 class InvertedWindowCoveringCluster(CustomCluster, WindowCovering):
-    """WindowCovering cluster implementation.
+    """
+    WindowCovering cluster implementation.
     This implementation inverts the reported covering percent for non standard
-    devices that don't follow the reporting spec."""
+    devices that don't follow the reporting spec.
+    """
 
     cluster_id = WindowCovering.cluster_id
     CURRENT_POSITION_LIFT_PERCENTAGE = 0x0008
