@@ -41,8 +41,8 @@ from .const import (
     UNKNOWN,
     VALUE,
     ZHA_SEND_EVENT,
-    ZONE_STATE,
     ZONE_STATUS,
+    ZONE_STATUS_CHANGE_COMMAND,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -244,7 +244,9 @@ class _Motion(CustomCluster, IasZone):
     def _turn_off(self):
         self._timer_handle = None
         _LOGGER.debug("%s - Resetting motion sensor", self.endpoint.device.ieee)
-        self.listener_event(CLUSTER_COMMAND, 253, ZONE_STATE, [OFF, 0, 0, 0])
+        self.listener_event(
+            CLUSTER_COMMAND, 253, ZONE_STATUS_CHANGE_COMMAND, [OFF, 0, 0, 0]
+        )
         self._update_attribute(ZONE_STATUS, OFF)
 
 
@@ -266,7 +268,7 @@ class MotionWithReset(_Motion):
         ] = None,
     ):
         """Handle the cluster command."""
-        if hdr.command_id == ZONE_STATE:
+        if hdr.command_id == ZONE_STATUS_CHANGE_COMMAND:
             if self._timer_handle:
                 self._timer_handle.cancel()
             self._timer_handle = self._loop.call_later(self.reset_s, self._turn_off)
@@ -286,7 +288,9 @@ class MotionOnEvent(_Motion):
 
     def motion_event(self):
         """Motion event."""
-        super().listener_event(CLUSTER_COMMAND, 254, ZONE_STATE, [ON, 0, 0, 0])
+        super().listener_event(
+            CLUSTER_COMMAND, 254, ZONE_STATUS_CHANGE_COMMAND, [ON, 0, 0, 0]
+        )
         self._update_attribute(ZONE_STATUS, ON)
 
         _LOGGER.debug("%s - Received motion event message", self.endpoint.device.ieee)
