@@ -243,7 +243,7 @@ class _Motion(CustomCluster, IasZone):
 
     def _turn_off(self):
         self._timer_handle = None
-        _LOGGER.debug("%s - Resetting motion sensor", self.endpoint.device.ieee)
+        self.debug("%s - Resetting motion sensor", self.endpoint.device.ieee)
         self.listener_event(
             CLUSTER_COMMAND, 253, ZONE_STATUS_CHANGE_COMMAND, [OFF, 0, 0, 0]
         )
@@ -293,7 +293,7 @@ class MotionOnEvent(_Motion):
         )
         self._update_attribute(ZONE_STATUS, ON)
 
-        _LOGGER.debug("%s - Received motion event message", self.endpoint.device.ieee)
+        self.debug("%s - Received motion event message", self.endpoint.device.ieee)
 
         if self._timer_handle:
             self._timer_handle.cancel()
