@@ -18,7 +18,7 @@ from zhaquirks.const import (
     PROFILE_ID,
     ZONE_STATE,
 )
-from zhaquirks.xiaomi import DeviceTemperatureCluster, XiaomiAqaraE1Cluster
+from zhaquirks.xiaomi import LUMI, DeviceTemperatureCluster, XiaomiAqaraE1Cluster
 
 
 class OppleCluster(XiaomiAqaraE1Cluster):
@@ -65,7 +65,7 @@ class LumiSensorSmokeAcn03(CustomDevice):
         super().__init__(*args, **kwargs)
 
     signature = {
-        MODELS_INFO: [("LUMI", "lumi.sensor_smoke.acn03")],
+        MODELS_INFO: [(LUMI, "lumi.sensor_smoke.acn03")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
