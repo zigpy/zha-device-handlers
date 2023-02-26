@@ -42,6 +42,7 @@ from .const import (
     VALUE,
     ZHA_SEND_EVENT,
     ZONE_STATE,
+    ZONE_STATUS,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -244,7 +245,7 @@ class _Motion(CustomCluster, IasZone):
         self._timer_handle = None
         _LOGGER.debug("%s - Resetting motion sensor", self.endpoint.device.ieee)
         self.listener_event(CLUSTER_COMMAND, 253, ZONE_STATE, [OFF, 0, 0, 0])
-        self._update_attribute(ZONE_STATE, OFF)
+        self._update_attribute(ZONE_STATUS, OFF)
 
 
 class MotionWithReset(_Motion):
@@ -286,7 +287,7 @@ class MotionOnEvent(_Motion):
     def motion_event(self):
         """Motion event."""
         super().listener_event(CLUSTER_COMMAND, 254, ZONE_STATE, [ON, 0, 0, 0])
-        self._update_attribute(ZONE_STATE, ON)
+        self._update_attribute(ZONE_STATUS, ON)
 
         _LOGGER.debug("%s - Received motion event message", self.endpoint.device.ieee)
 
