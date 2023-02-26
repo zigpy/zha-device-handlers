@@ -268,7 +268,8 @@ class MotionWithReset(_Motion):
         ] = None,
     ):
         """Handle the cluster command."""
-        if hdr.command_id == ZONE_STATUS_CHANGE_COMMAND:
+        # check if the command is for a zone status change of ZoneStatus.Alarm_1 or ZoneStatus.Alarm_2
+        if hdr.command_id == ZONE_STATUS_CHANGE_COMMAND and args[0] & 3:
             if self._timer_handle:
                 self._timer_handle.cancel()
             self._timer_handle = self._loop.call_later(self.reset_s, self._turn_off)
