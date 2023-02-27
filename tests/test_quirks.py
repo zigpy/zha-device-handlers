@@ -586,24 +586,6 @@ def test_migrated_lighting_automation_triggers(quirk: CustomDevice) -> None:
 
 
 KNOWN_DUPLICATE_TRIGGERS = {
-    zhaquirks.xiaomi.aqara.sensor_swit.SwitchAQ3V2: [
-        [
-            (const.LONG_PRESS, const.LONG_PRESS),
-            (const.LONG_RELEASE, const.LONG_RELEASE),
-        ]
-    ],
-    zhaquirks.xiaomi.aqara.sensor_switch_aq3.SwitchAQ3: [
-        [
-            (const.LONG_PRESS, const.LONG_PRESS),
-            (const.LONG_RELEASE, const.LONG_RELEASE),
-        ]
-    ],
-    zhaquirks.xiaomi.aqara.sensor_switch_aq3.SwitchAQ3B: [
-        [
-            (const.LONG_PRESS, const.LONG_PRESS),
-            (const.LONG_RELEASE, const.LONG_RELEASE),
-        ]
-    ],
     zhaquirks.aurora.aurora_dimmer.AuroraDimmerBatteryPowered: [
         [
             # XXX: why is this constant defined in the module?
