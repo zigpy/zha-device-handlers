@@ -104,6 +104,7 @@ SHORT_PRESS = "remote_button_short_press"
 ALT_SHORT_PRESS = "remote_button_alt_short_press"
 SKIP_CONFIGURATION = SIG_SKIP_CONFIG
 SHORT_RELEASE = "remote_button_short_release"
+TOGGLE = "Toggle"
 TRIPLE_PRESS = "remote_button_triple_press"
 TURN_OFF = "turn_off"
 TURN_ON = "turn_on"
