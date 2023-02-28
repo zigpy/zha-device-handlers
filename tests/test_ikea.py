@@ -90,7 +90,7 @@ def test_ikea_sound_remote_gen2(assert_signature_matches_quirk):
                     "0x0003",
                     "0x0020",
                     "0x1000",
-                    "0xfc57"
+                    "0xfc57",
                 ],
                 "out_clusters": [
                     "0x0003",
@@ -99,8 +99,8 @@ def test_ikea_sound_remote_gen2(assert_signature_matches_quirk):
                     "0x0008",
                     "0x0019",
                     "0x1000",
-                    "0xfc7f"
-                ]
+                    "0xfc7f",
+                ],
             }
         },
         "manufacturer": "IKEA of Sweden",
@@ -108,4 +108,6 @@ def test_ikea_sound_remote_gen2(assert_signature_matches_quirk):
         "class": "ikea.symfonisk.IkeaSYMFONISKRemote2",
     }
 
-    assert_signature_matches_quirk(zhaquirks.ikea.symfonisk.IkeaSYMFONISKRemote2, signature)
+    assert_signature_matches_quirk(
+        zhaquirks.ikea.symfonisk.IkeaSYMFONISKRemote2, signature
+    )

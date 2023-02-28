@@ -15,7 +15,6 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.lightlink import LightLink
 
 from zhaquirks import Bus
-
 from zhaquirks.const import (
     BUTTON_1,
     BUTTON_2,
@@ -28,11 +27,14 @@ from zhaquirks.const import (
     COMMAND_STOP,
     COMMAND_TOGGLE,
     DEVICE_TYPE,
+    DIM_DOWN,
+    DIM_UP,
     DOUBLE_PRESS,
     ENDPOINT_ID,
     ENDPOINTS,
     INPUT_CLUSTERS,
     LEFT,
+    LONG_PRESS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PARAMS,
@@ -40,14 +42,19 @@ from zhaquirks.const import (
     RIGHT,
     ROTATED,
     SHORT_PRESS,
-    LONG_PRESS,
     STOP,
     TRIPLE_PRESS,
     TURN_ON,
-    DIM_UP,
-    DIM_DOWN,
 )
-from zhaquirks.ikea import IKEA, WWAH_CLUSTER_ID, IKEA_CLUSTER_ID, LevelControlCluster, ShortcutCluster, PowerConfiguration1CRCluster, PowerConfiguration2AAACluster
+from zhaquirks.ikea import (
+    IKEA,
+    IKEA_CLUSTER_ID,
+    WWAH_CLUSTER_ID,
+    LevelControlCluster,
+    PowerConfiguration1CRCluster,
+    PowerConfiguration2AAACluster,
+    ShortcutCluster,
+)
 
 
 class IkeaSYMFONISK1(CustomDevice):
@@ -240,7 +247,7 @@ class IkeaSYMFONISKRemote2(CustomDevice):
                     LevelControl.cluster_id,
                     Ota.cluster_id,
                     LightLink.cluster_id,
-                    ShortcutCluster.cluster_id
+                    ShortcutCluster.cluster_id,
                 ],
             }
         },
@@ -295,7 +302,7 @@ class IkeaSYMFONISKRemote2(CustomDevice):
         (SHORT_PRESS, LEFT): {
             COMMAND: COMMAND_STEP,
             CLUSTER_ID: 8,
-            PARAMS: {"step_mode": 1}
+            PARAMS: {"step_mode": 1},
         },
         (SHORT_PRESS, RIGHT): {
             COMMAND: COMMAND_STEP,

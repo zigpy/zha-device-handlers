@@ -1,16 +1,14 @@
 """Ikea module."""
 import logging
-
 from typing import Any, List, Optional, Union
 
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import Scenes, LevelControl
+from zigpy.zcl.clusters.general import LevelControl, Scenes
 from zigpy.zcl.clusters.lightlink import LightLink
 
 from zhaquirks import DoublingPowerConfigurationCluster
-
 from zhaquirks.const import ZHA_SEND_EVENT
 
 _LOGGER = logging.getLogger(__name__)
@@ -78,7 +76,7 @@ class ScenesCluster(CustomCluster, Scenes):
 
 
 class LevelControlCluster(CustomCluster, LevelControl):
-    """Ikea LevelControl Cluster for SYMFONISK Sound Control Gen2"""
+    """Ikea LevelControl Cluster for SYMFONISK sound remote Gen2."""
 
     cluster_id = LevelControl.cluster_id
 
@@ -102,7 +100,7 @@ class ShortcutCluster(CustomCluster):
                 "param1": t.int8s,
             },
             False,
-            is_manufacturer_specific=True
+            is_manufacturer_specific=True,
         ),
     }
 
@@ -127,9 +125,13 @@ class ShortcutCluster(CustomCluster):
             self.debug("%s: sending ZHA event", self.name)
 
             event_args = {
-                "step_mode": (LevelControl.StepMode.Up if args.shortcut_mode == 1 else LevelControl.StepMode.Down),
+                "step_mode": (
+                    LevelControl.StepMode.Up
+                    if args.shortcut_mode == 1
+                    else LevelControl.StepMode.Down
+                ),
                 "step_size": args.param1,
-                "transition_time": 0
+                "transition_time": 0,
             }
 
             self.endpoint.device.levelcontrol_bus.listener_event(
