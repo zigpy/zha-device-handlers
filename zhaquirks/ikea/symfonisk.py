@@ -14,11 +14,19 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.lightlink import LightLink
 
+from zhaquirks import Bus
+
 from zhaquirks.const import (
+    BUTTON_1,
+    BUTTON_2,
+    BUTTON_3,
+    BUTTON_4,
     CLUSTER_ID,
     COMMAND,
     COMMAND_MOVE,
+    COMMAND_MOVE_ON_OFF,
     COMMAND_STEP,
+    COMMAND_STEP_ON_OFF,
     COMMAND_STOP,
     COMMAND_TOGGLE,
     DEVICE_TYPE,
@@ -37,8 +45,10 @@ from zhaquirks.const import (
     STOP,
     TRIPLE_PRESS,
     TURN_ON,
+    DIM_UP,
+    DIM_DOWN,
 )
-from zhaquirks.ikea import IKEA, IKEA_CLUSTER_ID, PowerConfiguration1CRCluster
+from zhaquirks.ikea import IKEA, WWAH_CLUSTER_ID, IKEA_CLUSTER_ID, LevelControlCluster, ShortcutCluster, PowerConfiguration1CRCluster, PowerConfiguration2AAACluster
 
 
 class IkeaSYMFONISK1(CustomDevice):
@@ -196,3 +206,103 @@ class IkeaSYMFONISK2(CustomDevice):
     }
 
     device_automation_triggers = IkeaSYMFONISK1.device_automation_triggers.copy()
+
+
+class IkeaSYMFONISKRemote2(CustomDevice):
+    """Custom device representing IKEA of Sweden SYMFONISK sound remote gen2."""
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        self.levelcontrol_bus = Bus()
+        super().__init__(*args, **kwargs)
+
+    signature = {
+        # <SimpleDescriptor endpoint=1 profile=260 device_type=6
+        # device_version=1
+        # input_clusters=[0, 1, 3, 32, 4096, 64599]
+        # output_clusters=[3, 4, 6, 8, 25, 4096, 64639]>
+        MODELS_INFO: [(IKEA, "SYMFONISK sound remote gen2")],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    Identify.cluster_id,
+                    PollControl.cluster_id,
+                    LightLink.cluster_id,
+                    WWAH_CLUSTER_ID,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                    Ota.cluster_id,
+                    LightLink.cluster_id,
+                    ShortcutCluster.cluster_id
+                ],
+            }
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    PowerConfiguration2AAACluster,
+                    Identify.cluster_id,
+                    PollControl.cluster_id,
+                    LightLink.cluster_id,
+                    IKEA_CLUSTER_ID,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    OnOff.cluster_id,
+                    LevelControlCluster,
+                    Ota.cluster_id,
+                    LightLink.cluster_id,
+                    ShortcutCluster,
+                ],
+            }
+        }
+    }
+
+    device_automation_triggers = {
+        (SHORT_PRESS, TURN_ON): {  # Play
+            COMMAND: COMMAND_TOGGLE,
+        },
+        (SHORT_PRESS, DIM_UP): {  # Lauter
+            COMMAND: COMMAND_MOVE_ON_OFF,
+            PARAMS: {"move_mode": 0},
+        },
+        (SHORT_PRESS, DIM_DOWN): {  # Leiser
+            COMMAND: COMMAND_MOVE_ON_OFF,
+            PARAMS: {"move_mode": 1},
+        },
+        (SHORT_PRESS, BUTTON_1): {  # Prev
+            COMMAND: COMMAND_STEP,
+            CLUSTER_ID: 8,
+            PARAMS: {"step_mode": 1}
+        },
+        (SHORT_PRESS, BUTTON_2): {  # Next
+            COMMAND: COMMAND_STEP,
+            CLUSTER_ID: 8,
+            PARAMS: {"step_mode": 0},
+        },
+        (SHORT_PRESS, BUTTON_3): {  # One dot
+            COMMAND: COMMAND_STEP_ON_OFF,
+            CLUSTER_ID: 8,
+            PARAMS: {"step_mode": 0},
+        },
+        (SHORT_PRESS, BUTTON_4): {  # Two dot
+            COMMAND: COMMAND_STEP_ON_OFF,
+            CLUSTER_ID: 8,
+            PARAMS: {"step_mode": 1},
+        },
+    }

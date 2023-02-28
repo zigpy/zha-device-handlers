@@ -1,13 +1,17 @@
 """Ikea module."""
 import logging
 
+from typing import Any, List, Optional, Union
+
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import Scenes
+from zigpy.zcl.clusters.general import Scenes, LevelControl
 from zigpy.zcl.clusters.lightlink import LightLink
 
-from zhaquirks import DoublingPowerConfigurationCluster
+from zhaquirks import DoublingPowerConfigurationCluster, Bus
+
+from zhaquirks.const import ZHA_SEND_EVENT
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -71,6 +75,59 @@ class ScenesCluster(CustomCluster, Scenes):
             ),
         }
     )
+
+
+class LevelControlCluster(CustomCluster, LevelControl):
+    """Ikea LevelControl Cluster for SYMFONISK Sound Control Gen2"""
+
+    cluster_id = LevelControl.cluster_id
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self.endpoint.device.levelcontrol_bus.add_listener(self)
+
+
+class ShortcutCluster(CustomCluster):
+    """Ikea Shortcut Button cluster."""
+
+    name = "ShortcutCluster"
+    cluster_id = 0xFC7F
+
+    server_commands = {
+        0x01: foundation.ZCLCommandDef(
+            "shortcut",
+            {
+                "shortcut_mode": t.int8s,
+                "param1": t.int8s,
+            },
+            False,
+            is_manufacturer_specific=True
+        ),
+    }
+
+    def handle_cluster_request(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: List[Any],
+        *,
+        dst_addressing: Optional[
+            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        ] = None,
+    ):
+        """Handle a cluster request."""
+        self.debug(
+            "%s: handle_cluster_request - Command: %s Data: %s",
+            self.name,
+            hdr.command_id,
+            args,
+        )
+
+        if hdr.command_id == 0x01:
+            self.debug("%s: sending ZHA event", self.name)
+            self.endpoint.device.levelcontrol_bus.listener_event(
+                "listener_event", ZHA_SEND_EVENT, "step_with_on_off", { "step_mode": (args.shortcut_mode - 1), "step_size": args.param1, "transition_time": 0}
+            )
 
 
 class PowerConfiguration2AAACluster(DoublingPowerConfigurationCluster):
