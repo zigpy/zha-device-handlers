@@ -14,7 +14,6 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.lightlink import LightLink
 
-from zhaquirks import Bus
 from zhaquirks.const import (
     BUTTON_1,
     BUTTON_2,
@@ -50,7 +49,6 @@ from zhaquirks.ikea import (
     IKEA,
     IKEA_CLUSTER_ID,
     WWAH_CLUSTER_ID,
-    LevelControlCluster,
     PowerConfiguration1CRCluster,
     PowerConfiguration2AAACluster,
     V1ShortcutCluster,
@@ -217,11 +215,6 @@ class IkeaSYMFONISK2(CustomDevice):
 class IkeaSYMFONISKRemoteGen2V1(CustomDevice):
     """Custom device representing IKEA of Sweden SYMFONISK sound remote gen2 V1.0.012."""
 
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        self.levelcontrol_bus = Bus()
-        super().__init__(*args, **kwargs)
-
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=6
         # device_version=1
@@ -270,7 +263,7 @@ class IkeaSYMFONISKRemoteGen2V1(CustomDevice):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     OnOff.cluster_id,
-                    LevelControlCluster,
+                    LevelControl.cluster_id,
                     Ota.cluster_id,
                     LightLink.cluster_id,
                     V1ShortcutCluster,

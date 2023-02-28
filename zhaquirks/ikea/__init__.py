@@ -75,15 +75,6 @@ class ScenesCluster(CustomCluster, Scenes):
     )
 
 
-class LevelControlCluster(CustomCluster, LevelControl):
-    """Ikea LevelControl Cluster for SYMFONISK sound remote Gen2."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.levelcontrol_bus.add_listener(self)
-
-
 class V1ShortcutCluster(CustomCluster):
     """Ikea Shortcut Button cluster."""
 
@@ -132,8 +123,8 @@ class V1ShortcutCluster(CustomCluster):
                 "transition_time": 0,
             }
 
-            self.endpoint.device.levelcontrol_bus.listener_event(
-                "listener_event", ZHA_SEND_EVENT, "step_with_on_off", event_args
+            self.endpoint.out_clusters[8].listener_event(
+                ZHA_SEND_EVENT, "step_with_on_off", event_args
             )
 
 
