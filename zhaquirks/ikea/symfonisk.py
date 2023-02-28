@@ -19,8 +19,6 @@ from zhaquirks import Bus
 from zhaquirks.const import (
     BUTTON_1,
     BUTTON_2,
-    BUTTON_3,
-    BUTTON_4,
     CLUSTER_ID,
     COMMAND,
     COMMAND_MOVE,
@@ -42,6 +40,7 @@ from zhaquirks.const import (
     RIGHT,
     ROTATED,
     SHORT_PRESS,
+    LONG_PRESS,
     STOP,
     TRIPLE_PRESS,
     TURN_ON,
@@ -285,6 +284,14 @@ class IkeaSYMFONISKRemote2(CustomDevice):
             COMMAND: COMMAND_MOVE_ON_OFF,
             PARAMS: {"move_mode": 1},
         },
+        (LONG_PRESS, DIM_UP): {
+            COMMAND: COMMAND_MOVE,
+            PARAMS: {"move_mode": 0},
+        },
+        (LONG_PRESS, DIM_DOWN): {
+            COMMAND: COMMAND_MOVE,
+            PARAMS: {"move_mode": 1},
+        },
         (SHORT_PRESS, LEFT): {
             COMMAND: COMMAND_STEP,
             CLUSTER_ID: 8,
@@ -298,11 +305,31 @@ class IkeaSYMFONISKRemote2(CustomDevice):
         (SHORT_PRESS, BUTTON_1): {
             COMMAND: COMMAND_STEP_ON_OFF,
             CLUSTER_ID: 8,
-            "args": {"step_mode": 0},
+            "args": {"step_mode": 0, "step_size": 1},
         },
         (SHORT_PRESS, BUTTON_2): {
             COMMAND: COMMAND_STEP_ON_OFF,
             CLUSTER_ID: 8,
-            "args": {"step_mode": 1},
+            "args": {"step_mode": 1, "step_size": 1},
+        },
+        (DOUBLE_PRESS, BUTTON_1): {
+            COMMAND: COMMAND_STEP_ON_OFF,
+            CLUSTER_ID: 8,
+            "args": {"step_mode": 0, "step_size": 2},
+        },
+        (DOUBLE_PRESS, BUTTON_2): {
+            COMMAND: COMMAND_STEP_ON_OFF,
+            CLUSTER_ID: 8,
+            "args": {"step_mode": 1, "step_size": 2},
+        },
+        (LONG_PRESS, BUTTON_1): {
+            COMMAND: COMMAND_STEP_ON_OFF,
+            CLUSTER_ID: 8,
+            "args": {"step_mode": 0, "step_size": 3},
+        },
+        (LONG_PRESS, BUTTON_2): {
+            COMMAND: COMMAND_STEP_ON_OFF,
+            CLUSTER_ID: 8,
+            "args": {"step_mode": 1, "step_size": 3},
         },
     }
