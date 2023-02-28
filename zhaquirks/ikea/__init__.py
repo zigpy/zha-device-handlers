@@ -78,8 +78,6 @@ class ScenesCluster(CustomCluster, Scenes):
 class LevelControlCluster(CustomCluster, LevelControl):
     """Ikea LevelControl Cluster for SYMFONISK sound remote Gen2."""
 
-    cluster_id = LevelControl.cluster_id
-
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
