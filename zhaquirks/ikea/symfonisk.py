@@ -53,7 +53,7 @@ from zhaquirks.ikea import (
     LevelControlCluster,
     PowerConfiguration1CRCluster,
     PowerConfiguration2AAACluster,
-    ShortcutCluster,
+    V1ShortcutCluster,
 )
 
 
@@ -214,8 +214,8 @@ class IkeaSYMFONISK2(CustomDevice):
     device_automation_triggers = IkeaSYMFONISK1.device_automation_triggers.copy()
 
 
-class IkeaSYMFONISKRemote2(CustomDevice):
-    """Custom device representing IKEA of Sweden SYMFONISK sound remote gen2."""
+class IkeaSYMFONISKRemoteGen2V1(CustomDevice):
+    """Custom device representing IKEA of Sweden SYMFONISK sound remote gen2 V1.0.012."""
 
     def __init__(self, *args, **kwargs):
         """Init."""
@@ -247,7 +247,7 @@ class IkeaSYMFONISKRemote2(CustomDevice):
                     LevelControl.cluster_id,
                     Ota.cluster_id,
                     LightLink.cluster_id,
-                    ShortcutCluster.cluster_id,
+                    V1ShortcutCluster.cluster_id,
                 ],
             }
         },
@@ -264,7 +264,7 @@ class IkeaSYMFONISKRemote2(CustomDevice):
                     Identify.cluster_id,
                     PollControl.cluster_id,
                     LightLink.cluster_id,
-                    IKEA_CLUSTER_ID,
+                    WWAH_CLUSTER_ID,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
@@ -273,7 +273,7 @@ class IkeaSYMFONISKRemote2(CustomDevice):
                     LevelControlCluster,
                     Ota.cluster_id,
                     LightLink.cluster_id,
-                    ShortcutCluster,
+                    V1ShortcutCluster,
                 ],
             }
         }

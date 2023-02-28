@@ -86,10 +86,10 @@ class LevelControlCluster(CustomCluster, LevelControl):
         self.endpoint.device.levelcontrol_bus.add_listener(self)
 
 
-class ShortcutCluster(CustomCluster):
+class V1ShortcutCluster(CustomCluster):
     """Ikea Shortcut Button cluster."""
 
-    name = "ShortcutCluster"
+    name = "V1ShortcutCluster"
     cluster_id = 0xFC7F
 
     server_commands = {
