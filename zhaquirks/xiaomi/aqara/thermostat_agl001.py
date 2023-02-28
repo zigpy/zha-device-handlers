@@ -1,4 +1,6 @@
 """Aqara E1 Radiator Thermostat Quirk."""
+from __future__ import annotations
+
 from typing import Any
 
 from zigpy.profiles import zha
