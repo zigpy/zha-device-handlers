@@ -1,9 +1,10 @@
 """Aqara E1 Radiator Thermostat Quirk."""
+from typing import Any
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
-from zigpy.zcl.clusters.general import Basic, Identify, Time
+from zigpy.zcl.clusters.general import Basic, Identify, Ota, Time
 from zigpy.zcl.clusters.hvac import Thermostat
 
 from zhaquirks.const import (
@@ -25,8 +26,53 @@ from zhaquirks.xiaomi import (
 class ThermostatCluster(CustomCluster, Thermostat):
     """Thermostat cluster."""
 
-    _CONSTANT_ATTRIBUTES = {0x001B: 0x02}
+    # remove cooling mode
+    _CONSTANT_ATTRIBUTES = {
+        Thermostat.attributes_by_name[
+            "ctrl_sequence_of_oper"
+        ].id: Thermostat.ControlSequenceOfOperation.Heating_Only
+    }
 
+    async def read_attributes(
+        self,
+        attributes: list[int | str],
+        allow_cache: bool = False,
+        only_cache: bool = False,
+        manufacturer: int | t.uint16_t | None = None,
+    ):
+        """Pass reading attributes to Xiaomi cluster if applicable."""
+        if "system_mode" in attributes:
+            self.debug("Passing 'system_mode' read to Xiaomi cluster")
+            return await self.endpoint.aqara_cluster.read_attributes(
+                [SYSTEM_MODE], allow_cache, only_cache, manufacturer
+            )
+        return await super().read_attributes(
+            attributes, allow_cache, only_cache, manufacturer
+        )
+
+    async def write_attributes(
+        self, attributes: dict[str | int, Any], manufacturer: int | None = None
+    ) -> list:
+        """Pass writing attributes to Xiaomi cluster if applicable."""
+        if "system_mode" in attributes:
+            self.debug("Passing 'system_mode' write to Xiaomi cluster")
+            return await self.endpoint.aqara_cluster.write_attributes(
+                {SYSTEM_MODE: min(int(attributes.get("system_mode")), 1)}
+            )
+        return await super().write_attributes(attributes, manufacturer)
+
+
+SYSTEM_MODE = 0x0271
+PRESET = 0x0272
+WINDOW_DETECTION = 0x0273
+VALVE_DETECTION = 0x0274
+VALVE_ALARM = 0x0275
+CHILD_LOCK = 0x0277
+AWAY_PRESET_TEMPERATURE = 0x0279
+WINDOW_OPEN = 0x027A
+CALIBRATED = 0x027B
+SENSOR = 0x027E
+BATTERY_PERCENTAGE = 0x040A
 
 XIAOMI_CLUSTER_ID = 0xFCC0
 
@@ -39,13 +85,23 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
     attributes = XiaomiAqaraE1Cluster.attributes.copy()
     attributes.update(
         {
-            0x040A: ("battery_percentage", t.uint8_t, True),
+            SYSTEM_MODE: ("system_mode", t.uint8_t, True),
+            PRESET: ("preset", t.uint8_t, True),
+            WINDOW_DETECTION: ("window_detection", t.uint8_t, True),
+            VALVE_DETECTION: ("valve_detection", t.uint8_t, True),
+            VALVE_ALARM: ("valve_alarm", t.uint32_t, True),
+            CHILD_LOCK: ("child_lock", t.uint8_t, True),
+            AWAY_PRESET_TEMPERATURE: ("away_preset_temperature", t.uint32_t, True),
+            WINDOW_OPEN: ("window_open", t.uint8_t, True),
+            CALIBRATED: ("calibrated", t.uint8_t, True),
+            SENSOR: ("sensor", t.uint8_t, True),
+            BATTERY_PERCENTAGE: ("battery_percentage", t.uint8_t, True),
         }
     )
 
     def _update_attribute(self, attrid, value):
-        self.debug("Attribute/Value", attrid, value)
-        if attrid == 0x040A:
+        self.debug("Updating attribute on Xiaomi cluster %s with %s", attrid, value)
+        if attrid == BATTERY_PERCENTAGE:
             self.endpoint.device.battery_bus.listener_event(
                 "battery_percent_reported", value
             )
@@ -97,6 +153,7 @@ class AGL001(XiaomiCustomDevice):
                     Identify.cluster_id,
                     ThermostatCluster,
                     AqaraThermostatSpecificCluster,
+                    Ota.cluster_id,
                 ],
             }
         }
