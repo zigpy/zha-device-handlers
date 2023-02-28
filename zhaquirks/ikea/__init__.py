@@ -9,7 +9,7 @@ from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Scenes, LevelControl
 from zigpy.zcl.clusters.lightlink import LightLink
 
-from zhaquirks import DoublingPowerConfigurationCluster, Bus
+from zhaquirks import DoublingPowerConfigurationCluster
 
 from zhaquirks.const import ZHA_SEND_EVENT
 
@@ -125,8 +125,15 @@ class ShortcutCluster(CustomCluster):
 
         if hdr.command_id == 0x01:
             self.debug("%s: sending ZHA event", self.name)
+
+            event_args = {
+                "step_mode": (LevelControl.StepMode.Up if args.shortcut_mode == 1 else LevelControl.StepMode.Down),
+                "step_size": args.param1,
+                "transition_time": 0
+            }
+
             self.endpoint.device.levelcontrol_bus.listener_event(
-                "listener_event", ZHA_SEND_EVENT, "step_with_on_off", { "step_mode": (args.shortcut_mode - 1), "step_size": args.param1, "transition_time": 0}
+                "listener_event", ZHA_SEND_EVENT, "step_with_on_off", event_args
             )
 
 

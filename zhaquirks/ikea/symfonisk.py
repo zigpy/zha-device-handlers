@@ -274,35 +274,35 @@ class IkeaSYMFONISKRemote2(CustomDevice):
     }
 
     device_automation_triggers = {
-        (SHORT_PRESS, TURN_ON): {  # Play
+        (SHORT_PRESS, TURN_ON): {
             COMMAND: COMMAND_TOGGLE,
         },
-        (SHORT_PRESS, DIM_UP): {  # Lauter
+        (SHORT_PRESS, DIM_UP): {
             COMMAND: COMMAND_MOVE_ON_OFF,
             PARAMS: {"move_mode": 0},
         },
-        (SHORT_PRESS, DIM_DOWN): {  # Leiser
+        (SHORT_PRESS, DIM_DOWN): {
             COMMAND: COMMAND_MOVE_ON_OFF,
             PARAMS: {"move_mode": 1},
         },
-        (SHORT_PRESS, BUTTON_1): {  # Prev
+        (SHORT_PRESS, LEFT): {
             COMMAND: COMMAND_STEP,
             CLUSTER_ID: 8,
             PARAMS: {"step_mode": 1}
         },
-        (SHORT_PRESS, BUTTON_2): {  # Next
+        (SHORT_PRESS, RIGHT): {
             COMMAND: COMMAND_STEP,
             CLUSTER_ID: 8,
             PARAMS: {"step_mode": 0},
         },
-        (SHORT_PRESS, BUTTON_3): {  # One dot
+        (SHORT_PRESS, BUTTON_1): {
             COMMAND: COMMAND_STEP_ON_OFF,
             CLUSTER_ID: 8,
-            PARAMS: {"step_mode": 0},
+            "args": {"step_mode": 0},
         },
-        (SHORT_PRESS, BUTTON_4): {  # Two dot
+        (SHORT_PRESS, BUTTON_2): {
             COMMAND: COMMAND_STEP_ON_OFF,
             CLUSTER_ID: 8,
-            PARAMS: {"step_mode": 1},
+            "args": {"step_mode": 1},
         },
     }
