@@ -6,6 +6,7 @@ import pytest
 import zigpy.device
 import zigpy.types as t
 from zigpy.zcl import foundation
+from zigpy.zcl.clusters.hvac import Thermostat
 from zigpy.zcl.clusters.security import IasZone
 
 import zhaquirks
@@ -526,6 +527,62 @@ async def test_xiaomi_eu_plug_power(zigpy_device_from_quirk, quirk):
     assert len(se_listener.attribute_updates) == 1
     assert se_listener.attribute_updates[0][0] == 0
     assert se_listener.attribute_updates[0][1] == 1  # multiplied by 1000
+
+
+@pytest.mark.parametrize("quirk", (zhaquirks.xiaomi.aqara.thermostat_agl001.AGL001,))
+async def test_xiaomi_e1_thermostat(zigpy_device_from_quirk, quirk):
+    """Test system_mode rw redirection to OppleCluster on Xiaomi E1 thermostat."""
+
+    device = zigpy_device_from_quirk(quirk)
+
+    opple_cluster = device.endpoints[1].opple_cluster
+    opple_cluster._read_attributes = mock.AsyncMock()
+    opple_cluster._write_attributes = mock.AsyncMock()
+
+    ClusterListener(opple_cluster)
+
+    thermostat_cluster = device.endpoints[1].thermostat
+    thermostat_cluster._read_attributes = mock.AsyncMock()
+    thermostat_cluster._write_attributes = mock.AsyncMock()
+    ClusterListener(thermostat_cluster)
+
+    await thermostat_cluster.read_attributes(
+        [Thermostat.attributes_by_name["system_mode"].id]
+    )
+
+    # check that system_mode reads were directed to the Opple cluster
+    assert len(thermostat_cluster._read_attributes.mock_calls) == 0
+    assert len(opple_cluster._read_attributes.mock_calls) == 3
+
+    thermostat_cluster._read_attributes.reset_mock()
+    opple_cluster._read_attributes.reset_mock()
+
+    # check that other attribute reads are not redirected
+    await thermostat_cluster.read_attributes(
+        [Thermostat.attributes_by_name["unoccupied_heating_setpoint"].id]
+    )
+
+    assert len(thermostat_cluster._read_attributes.mock_calls) == 4
+    assert len(opple_cluster._read_attributes.mock_calls) == 0
+
+    await thermostat_cluster.write_attributes(
+        {Thermostat.attributes_by_name["system_mode"].id: Thermostat.SystemMode.Heat}
+    )
+
+    # check that system_mode writes were directed to the Opple cluster
+    assert len(thermostat_cluster._write_attributes.mock_calls) == 0
+    assert len(opple_cluster._write_attributes.mock_calls) == 3
+
+    thermostat_cluster._write_attributes.reset_mock()
+    opple_cluster._write_attributes.reset_mock()
+
+    # check that other attribute writes are not redirected
+    await thermostat_cluster.write_attributes(
+        {Thermostat.attributes_by_name["unoccupied_heating_setpoint"].id: 2000}
+    )
+
+    assert len(thermostat_cluster._write_attributes.mock_calls) == 3
+    assert len(opple_cluster._write_attributes.mock_calls) == 0
 
 
 @pytest.mark.parametrize(
