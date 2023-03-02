@@ -17,12 +17,11 @@ from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zdo import types as zdotypes
 
-from zhaquirks.const import (
+from .const import (
     ATTRIBUTE_ID,
     ATTRIBUTE_NAME,
     CLUSTER_COMMAND,
     COMMAND_ATTRIBUTE_UPDATED,
-    CUSTOM_QUIRKS_PATH,
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -388,11 +387,11 @@ class QuickInitDevice(CustomDevice):
         return device
 
 
-def setup(config: Optional[Dict[str, Any]] = None) -> None:
+def setup(custom_quirks_path: str | None = None) -> None:
     """Register all quirks with zigpy, including optional custom quirks."""
 
     # Import all quirks in the `zhaquirks` package first
-    for importer, modname, ispkg in pkgutil.walk_packages(
+    for importer, modname, _ispkg in pkgutil.walk_packages(
         path=__path__,
         prefix=__name__ + ".",
     ):
@@ -400,10 +399,25 @@ def setup(config: Optional[Dict[str, Any]] = None) -> None:
         importlib.import_module(modname)
 
     # Treat the custom quirk path (e.g. `/config/custom_quirks/`) itself as a module
-    if config and config.get(CUSTOM_QUIRKS_PATH):
-        path = pathlib.Path(config[CUSTOM_QUIRKS_PATH])
-        _LOGGER.debug("Loading custom quirks from %s", path)
+    if custom_quirks_path is None:
+        return
 
-        for importer, modname, ispkg in pkgutil.walk_packages(path=[str(path)]):
-            _LOGGER.debug("Loading custom quirks module %s", modname)
+    path = pathlib.Path(custom_quirks_path)
+    _LOGGER.debug("Loading custom quirks from %s", path)
+
+    loaded = False
+
+    for importer, modname, _ispkg in pkgutil.walk_packages(path=[str(path)]):
+        try:
             importer.find_module(modname).load_module(modname)
+        except ImportError as err:
+            _LOGGER.error("Error importing %s: %s", modname, err)
+        except Exception:
+            _LOGGER.exception("Unexpected exception importing component %s", modname)
+        else:
+            loaded = True
+
+    if loaded:
+        _LOGGER.warning(
+            "Loaded custom quirks. Please contribute it to https://github.com/zigpy/zha-device-handlers",
+        )

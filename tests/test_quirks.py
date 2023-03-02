@@ -397,8 +397,8 @@ def test_quirk_importable(quirk: CustomDevice) -> None:
     ), f"{path} is not importable"
 
 
-def test_quirk_loading_error(tmp_path: Path) -> None:
-    """Ensure quirks do not silently fail to load."""
+def test_quirk_loading_error(tmp_path: Path, caplog) -> None:
+    """Ensure quirks silently fail to load."""
 
     custom_quirks = tmp_path / "custom_zha_quirks"
     custom_quirks.mkdir()
@@ -407,19 +407,23 @@ def test_quirk_loading_error(tmp_path: Path) -> None:
 
     (custom_quirks / "bosch").mkdir()
     (custom_quirks / "bosch/__init__.py").touch()
-    # (custom_quirks / "bosch/custom_quirk.py").write_text('1/0')
 
-    # Syntax errors are not swallowed
+    caplog.clear()
+
+    # Syntax errors are swallowed
     (custom_quirks / "bosch/custom_quirk.py").write_text("1/")
 
-    with pytest.raises(SyntaxError):
-        zhaquirks.setup({zhaquirks.CUSTOM_QUIRKS_PATH: str(custom_quirks)})
+    zhaquirks.setup({zhaquirks.CUSTOM_QUIRKS_PATH: str(custom_quirks)})
+    assert "Unexpected exception importing component bosch.custom_quirk" in caplog.text
 
-    # Nor are import errors
+    # And so are import errors
     (custom_quirks / "bosch/custom_quirk.py").write_text("from os import foobarbaz7")
 
-    with pytest.raises(ImportError):
-        zhaquirks.setup({zhaquirks.CUSTOM_QUIRKS_PATH: str(custom_quirks)})
+    zhaquirks.setup({zhaquirks.CUSTOM_QUIRKS_PATH: str(custom_quirks)})
+    assert (
+        "Error importing bosch.custom_quirk: cannot import name 'foobarbaz7' from 'os'"
+        in caplog.text
+    )
 
 
 def test_custom_quirk_loading(
