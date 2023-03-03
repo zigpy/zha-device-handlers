@@ -135,7 +135,7 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
             PRESET: ("preset", t.uint8_t, True),
             WINDOW_DETECTION: ("window_detection", t.uint8_t, True),
             VALVE_DETECTION: ("valve_detection", t.uint8_t, True),
-            VALVE_ALARM: ("valve_alarm", t.uint32_t, True),
+            VALVE_ALARM: ("valve_alarm", t.uint8_t, True),
             CHILD_LOCK: ("child_lock", t.uint8_t, True),
             AWAY_PRESET_TEMPERATURE: ("away_preset_temperature", t.uint32_t, True),
             WINDOW_OPEN: ("window_open", t.uint8_t, True),
