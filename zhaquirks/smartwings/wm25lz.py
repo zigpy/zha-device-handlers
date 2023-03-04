@@ -30,25 +30,18 @@ class InvertedWindowCoveringCluster(CustomCluster, WindowCovering):
     """
 
     cluster_id = WindowCovering.cluster_id
-    CURRENT_POSITION_LIFT_PERCENTAGE = 0x0008
-    CMD_GO_TO_LIFT_PERCENTAGE = 0x0005
-
-    def _update_attribute(self, attrid, value):
-        if attrid == self.CURRENT_POSITION_LIFT_PERCENTAGE:
-            value = 100 - value
-        super()._update_attribute(attrid, value)
+    CMD_GO_UP = 0x0001  # reported as down_close in ZHA commands
+    CMD_GO_DOWN = 0x0000  # reported as up_open in ZHA commands
 
     async def command(
         self, command_id, *args, manufacturer=None, expect_reply=True, tsn=None
     ):
-        """Override default command to invert percent lift value."""
+        """Override default commands for up and down. they are backwards."""
 
-        if command_id == self.CMD_GO_TO_LIFT_PERCENTAGE:
-            percent = args[0]
-            # Invert the percentage value
-            percent = 100 - percent
-            v = (percent,)
-            return await super().command(command_id, *v)
+        if command_id == self.CMD_GO_UP:
+            return await super().command(self.CMD_GO_DOWN, *args)
+        if command_id == self.CMD_GO_DOWN:
+            return await super().command(self.CMD_GO_UP, *args)
         return await super().command(
             command_id,
             *args,
