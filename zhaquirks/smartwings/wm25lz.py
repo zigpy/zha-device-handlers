@@ -30,11 +30,17 @@ class InvertedWindowCoveringCluster(CustomCluster, WindowCovering):
     """
 
     cluster_id = WindowCovering.cluster_id
-    CMD_GO_UP = 0x0001 #reported as down_close in ZHA commands
-    CMD_GO_DOWN = 0x0000 #reported as up_open in ZHA commands
-    
+    CMD_GO_UP = 0x0001  # reported as down_close in ZHA commands
+    CMD_GO_DOWN = 0x0000  # reported as up_open in ZHA commands
+
     async def command(
-        self, command_id, *args, manufacturer=None, expect_reply=True, tsn=None, **kwargs
+        self,
+        command_id,
+        *args,
+        manufacturer=None,
+        expect_reply=True,
+        tsn=None,
+        **kwargs
     ):
         """Override default commands for up and down. they are backwards."""
 
@@ -50,6 +56,7 @@ class InvertedWindowCoveringCluster(CustomCluster, WindowCovering):
             tsn=tsn,
             **kwargs,
         )
+
 
 class WM25LBlinds(CustomDevice):
     """Custom device representing Smartwings WM25LZ blinds."""
