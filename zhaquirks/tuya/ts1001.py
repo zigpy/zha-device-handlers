@@ -36,10 +36,10 @@ from zhaquirks.const import (
     TURN_OFF,
     TURN_ON,
 )
-from zhaquirks.tuya import TuyaDimmerSwitch, TuyaOnOff
+from zhaquirks.tuya import TuyaOnOff, TuyaSwitch
 
 
-class TuyaRemoteTS1001(TuyaDimmerSwitch):
+class TuyaRemoteTS1001(TuyaSwitch):
     """TS1001 remote control with triggers."""
 
     signature = {
