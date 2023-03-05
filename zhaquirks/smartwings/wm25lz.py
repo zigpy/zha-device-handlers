@@ -64,7 +64,7 @@ class WM25LBlinds(CustomDevice):
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=514
         # device_version=1
-        # input_clusters=[0, 1, 3, 4, 5, 32, 258]
+        # input_clusters=[0, 1, 3, 4, 5, 258]
         # output_clusters=[3, 25]>
         MODELS_INFO: [
             ("Smartwings", "WM25/L-Z"),
