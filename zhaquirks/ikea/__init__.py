@@ -75,8 +75,16 @@ class ScenesCluster(CustomCluster, Scenes):
     )
 
 
+class V1ShortcutEventData(foundation.CommandSchema):
+    """Ikea Shortcut Button cluster event data for Variant 1."""
+
+    step_mode: LevelControl.StepMode
+    step_size: int
+    transition_time: int
+
+
 class V1ShortcutCluster(CustomCluster):
-    """Ikea Shortcut Button cluster."""
+    """Ikea Shortcut Button cluster for Variant 1."""
 
     name = "V1ShortcutCluster"
     cluster_id = 0xFC7F
@@ -113,15 +121,15 @@ class V1ShortcutCluster(CustomCluster):
         if hdr.command_id == 0x01:
             self.debug("%s: sending ZHA event", self.name)
 
-            event_args = {
-                "step_mode": (
+            event_args = V1ShortcutEventData(
+                step_mode=(
                     LevelControl.StepMode.Up
                     if args.shortcut_mode == 1
                     else LevelControl.StepMode.Down
                 ),
-                "step_size": args.param1,
-                "transition_time": 0,
-            }
+                step_size=args.param1,
+                transition_time=0,
+            )
 
             self.endpoint.out_clusters[8].listener_event(
                 ZHA_SEND_EVENT, "step_with_on_off", event_args

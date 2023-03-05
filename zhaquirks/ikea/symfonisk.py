@@ -305,31 +305,31 @@ class IkeaSYMFONISKRemoteGen2V1(CustomDevice):
         (SHORT_PRESS, BUTTON_1): {
             COMMAND: COMMAND_STEP_ON_OFF,
             CLUSTER_ID: 8,
-            "args": {"step_mode": 0, "step_size": 1},
+            PARAMS: {"step_mode": 0, "step_size": 1},
         },
         (SHORT_PRESS, BUTTON_2): {
             COMMAND: COMMAND_STEP_ON_OFF,
             CLUSTER_ID: 8,
-            "args": {"step_mode": 1, "step_size": 1},
+            PARAMS: {"step_mode": 1, "step_size": 1},
         },
         (DOUBLE_PRESS, BUTTON_1): {
             COMMAND: COMMAND_STEP_ON_OFF,
             CLUSTER_ID: 8,
-            "args": {"step_mode": 0, "step_size": 2},
+            PARAMS: {"step_mode": 0, "step_size": 2},
         },
         (DOUBLE_PRESS, BUTTON_2): {
             COMMAND: COMMAND_STEP_ON_OFF,
             CLUSTER_ID: 8,
-            "args": {"step_mode": 1, "step_size": 2},
+            PARAMS: {"step_mode": 1, "step_size": 2},
         },
         (LONG_PRESS, BUTTON_1): {
             COMMAND: COMMAND_STEP_ON_OFF,
             CLUSTER_ID: 8,
-            "args": {"step_mode": 0, "step_size": 3},
+            PARAMS: {"step_mode": 0, "step_size": 3},
         },
         (LONG_PRESS, BUTTON_2): {
             COMMAND: COMMAND_STEP_ON_OFF,
             CLUSTER_ID: 8,
-            "args": {"step_mode": 1, "step_size": 3},
+            PARAMS: {"step_mode": 1, "step_size": 3},
         },
     }
