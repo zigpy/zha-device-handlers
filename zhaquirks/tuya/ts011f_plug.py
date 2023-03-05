@@ -1142,6 +1142,8 @@ class Plug_2AC_var03(CustomDevice):
             },
         },
     }
+    
+    
 class Plug_CB_Metering(EnchantedDevice):
     """Circuit breaker with monitoring, e.g. Tongou TO-Q-SY1-JZT. First one using this definition was _TZ3000_qeuvnohg."""
 
@@ -1162,7 +1164,7 @@ class Plug_CB_Metering(EnchantedDevice):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     OnOff.cluster_id,
-                    TemperatureMeasurement.cluster_id, # Note: no temperature sensor claimed in manual and it's constant -6.3C
+                    TemperatureMeasurement.cluster_id,  # Note: no temperature sensor claimed in manual and it's constant -6.3C
                     Metering.cluster_id,
                     ElectricalMeasurement.cluster_id,
                     TuyaZBE000Cluster.cluster_id,
