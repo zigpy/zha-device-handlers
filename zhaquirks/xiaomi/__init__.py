@@ -308,7 +308,7 @@ class XiaomiCluster(CustomCluster):
                 attributes[BATTERY_PERCENTAGE_REMAINING_ATTRIBUTE],
             )
         if SMOKE in attributes:
-            self.endpoint.ias_zone.update_attribute(ZONE_STATUS, attributes["smoke"])
+            self.endpoint.ias_zone.update_attribute(ZONE_STATUS, attributes[SMOKE])
 
     def _parse_aqara_attributes(self, value):
         """Parse non standard attributes."""
