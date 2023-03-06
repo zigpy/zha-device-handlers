@@ -9,16 +9,25 @@ from zigpy.zcl.clusters.security import IasZone
 
 from zhaquirks import Bus, LocalDataCluster
 from zhaquirks.const import (
-    CLUSTER_COMMAND,
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
-    ZONE_STATE,
+    ZONE_STATUS,
 )
 from zhaquirks.xiaomi import LUMI, DeviceTemperatureCluster, XiaomiAqaraE1Cluster
+
+BUZZER_MANUAL_MUTE = 0x0126
+SELF_TEST = 0x0127
+SMOKE = 0x013A
+SMOKE_DENSITY = 0x013B
+HEARTBEAT_INDICATOR = 0x013C
+BUZZER_MANUAL_ALARM = 0x013D
+BUZZER = 0x013E
+LINKAGE_ALARM = 0x014B
+LINKAGE_ALARM_STATE = 0x014C
 
 
 class OppleCluster(XiaomiAqaraE1Cluster):
@@ -26,26 +35,22 @@ class OppleCluster(XiaomiAqaraE1Cluster):
 
     ep_attribute = "opple_cluster"
     attributes = {
-        0x0126: ("buzzer_manual_mute", types.uint8_t, True),
-        0x0127: ("selftest", types.Bool, True),
-        0x013A: ("smoke", types.uint8_t, True),
-        0x013B: ("smoke_density", types.uint8_t, True),
-        0x013C: ("heartbeat_indicator", types.uint8_t, True),
-        0x013D: ("buzzer_manual_alarm", types.uint8_t, True),
-        0x013E: ("buzzer", types.uint32_t, True),
-        0x014B: ("linkage_alarm", types.uint8_t, True),
+        BUZZER_MANUAL_MUTE: ("buzzer_manual_mute", types.uint8_t, True),
+        SELF_TEST: ("self_test", types.Bool, True),
+        SMOKE: ("smoke", types.uint8_t, True),
+        SMOKE_DENSITY: ("smoke_density", types.uint8_t, True),
+        HEARTBEAT_INDICATOR: ("heartbeat_indicator", types.uint8_t, True),
+        BUZZER_MANUAL_ALARM: ("buzzer_manual_alarm", types.uint8_t, True),
+        BUZZER: ("buzzer", types.uint32_t, True),
+        LINKAGE_ALARM: ("linkage_alarm", types.uint8_t, True),
+        LINKAGE_ALARM_STATE: ("linkage_alarm_state", types.uint8_t, True),
     }
 
     def _update_attribute(self, attrid: int, value: Any) -> None:
+        """Pass attribute update to another cluster if necessary."""
         super()._update_attribute(attrid, value)
-        if attrid == 0x013A:
-            self.endpoint.ias_zone.listener_event(
-                CLUSTER_COMMAND,
-                253 + value,
-                ZONE_STATE,
-                [value, 0, 0, 0],
-            )
-            self.endpoint.ias_zone.update_attribute(ZONE_STATE, value)
+        if attrid == SMOKE:
+            self.endpoint.ias_zone.update_attribute(ZONE_STATUS, value)
 
 
 class LocalIasZone(LocalDataCluster, IasZone):
