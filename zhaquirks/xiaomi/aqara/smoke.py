@@ -28,6 +28,21 @@ BUZZER_MANUAL_ALARM = 0x013D
 BUZZER = 0x013E
 LINKAGE_ALARM = 0x014B
 LINKAGE_ALARM_STATE = 0x014C
+SMOKE_DENSITY_DBM = 0x1403  # fake attribute for smoke density in dB/m
+
+SMOKE_DENSITY_DBM_MAP = {
+    0: 0,
+    1: 0.085,
+    2: 0.088,
+    3: 0.093,
+    4: 0.095,
+    5: 0.100,
+    6: 0.105,
+    7: 0.110,
+    8: 0.115,
+    9: 0.120,
+    10: 0.125,
+}
 
 
 class OppleCluster(XiaomiAqaraE1Cluster):
@@ -44,6 +59,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         BUZZER: ("buzzer", types.uint32_t, True),
         LINKAGE_ALARM: ("linkage_alarm", types.uint8_t, True),
         LINKAGE_ALARM_STATE: ("linkage_alarm_state", types.uint8_t, True),
+        SMOKE_DENSITY_DBM: ("smoke_density_dbm", types.Single, True),
     }
 
     def _update_attribute(self, attrid: int, value: Any) -> None:
@@ -51,6 +67,8 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         super()._update_attribute(attrid, value)
         if attrid == SMOKE:
             self.endpoint.ias_zone.update_attribute(ZONE_STATUS, value)
+        elif attrid == SMOKE_DENSITY:
+            self.update_attribute(SMOKE_DENSITY_DBM, SMOKE_DENSITY_DBM_MAP[value])
 
 
 class LocalIasZone(LocalDataCluster, IasZone):
