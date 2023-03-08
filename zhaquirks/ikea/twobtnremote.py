@@ -94,7 +94,7 @@ class IkeaTradfriRemote2Btn(CustomDevice):
                     Identify.cluster_id,
                     Alarms.cluster_id,
                     PollControl.cluster_id,
-                    LightLinkCluster,
+                    LightLink.cluster_id,
                     IKEA_CLUSTER_ID,
                 ],
                 OUTPUT_CLUSTERS: [
