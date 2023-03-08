@@ -422,5 +422,6 @@ def setup(custom_quirks_path: str | None = None) -> None:
 
     if loaded:
         _LOGGER.warning(
-            "Loaded custom quirks. Please contribute it to https://github.com/zigpy/zha-device-handlers",
+            "Loaded custom quirks. Please contribute them to"
+            " https://github.com/zigpy/zha-device-handlers"
         )
