@@ -41,7 +41,6 @@ from zhaquirks.ikea import (
     IKEA,
     IKEA_CLUSTER_ID,
     DoublingPowerConfig1CRCluster,
-    LightLinkCluster,
 )
 
 
@@ -90,7 +89,7 @@ class IkeaTradfriShortcutBtn(CustomDevice):
                     Identify.cluster_id,
                     Alarms.cluster_id,
                     PollControl.cluster_id,
-                    LightLinkCluster,
+                    LightLink.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
@@ -167,7 +166,7 @@ class IkeaTradfriShortcutBtn2(CustomDevice):
                     Identify.cluster_id,
                     Alarms.cluster_id,
                     PollControl.cluster_id,
-                    LightLinkCluster,
+                    LightLink.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
