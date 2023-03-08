@@ -408,22 +408,27 @@ def test_quirk_loading_error(tmp_path: Path, caplog) -> None:
     (custom_quirks / "bosch").mkdir()
     (custom_quirks / "bosch/__init__.py").touch()
 
-    caplog.clear()
-
     # Syntax errors are swallowed
     (custom_quirks / "bosch/custom_quirk.py").write_text("1/")
 
+    caplog.clear()
     zhaquirks.setup(custom_quirks_path=str(custom_quirks))
-    assert "Unexpected exception importing component bosch.custom_quirk" in caplog.text
+    assert (
+        "Unexpected exception importing custom quirk 'bosch.custom_quirk'"
+        in caplog.text
+    )
+    assert "SyntaxError" in caplog.text
 
     # And so are import errors
     (custom_quirks / "bosch/custom_quirk.py").write_text("from os import foobarbaz7")
 
+    caplog.clear()
     zhaquirks.setup(custom_quirks_path=str(custom_quirks))
     assert (
-        "Error importing bosch.custom_quirk: cannot import name 'foobarbaz7' from 'os'"
+        "Unexpected exception importing custom quirk 'bosch.custom_quirk'"
         in caplog.text
     )
+    assert "cannot import name 'foobarbaz7' from 'os'" in caplog.text
 
 
 def test_custom_quirk_loading(
