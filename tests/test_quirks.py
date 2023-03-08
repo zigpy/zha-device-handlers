@@ -413,13 +413,13 @@ def test_quirk_loading_error(tmp_path: Path, caplog) -> None:
     # Syntax errors are swallowed
     (custom_quirks / "bosch/custom_quirk.py").write_text("1/")
 
-    zhaquirks.setup({zhaquirks.CUSTOM_QUIRKS_PATH: str(custom_quirks)})
+    zhaquirks.setup(custom_quirks_path=str(custom_quirks))
     assert "Unexpected exception importing component bosch.custom_quirk" in caplog.text
 
     # And so are import errors
     (custom_quirks / "bosch/custom_quirk.py").write_text("from os import foobarbaz7")
 
-    zhaquirks.setup({zhaquirks.CUSTOM_QUIRKS_PATH: str(custom_quirks)})
+    zhaquirks.setup(custom_quirks_path=str(custom_quirks))
     assert (
         "Error importing bosch.custom_quirk: cannot import name 'foobarbaz7' from 'os'"
         in caplog.text
@@ -516,7 +516,7 @@ class TestReplacementISWZPR1WP13(CustomDevice):
 '''
     )
 
-    zhaquirks.setup({zhaquirks.CUSTOM_QUIRKS_PATH: str(custom_quirks)})
+    zhaquirks.setup(custom_quirks_path=str(custom_quirks))
 
     assert not isinstance(zq.get_device(device), zhaquirks.bosch.motion.ISWZPR1WP13)
     assert type(zq.get_device(device)).__name__ == "TestReplacementISWZPR1WP13"
