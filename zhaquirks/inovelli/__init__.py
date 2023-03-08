@@ -159,7 +159,7 @@ class Inovelli_VZM31SN_Cluster(CustomCluster):
         0x00: foundation.ZCLCommandDef(
             "button_event",
             {"button_pressed": t.uint8_t, "press_type": t.uint8_t},
-            is_reply=False,
+            direction=foundation.Direction.Server_to_Client,
             is_manufacturer_specific=True,
         ),
         0x01: foundation.ZCLCommandDef(
@@ -170,13 +170,13 @@ class Inovelli_VZM31SN_Cluster(CustomCluster):
                 "led_level": t.uint8_t,
                 "led_duration": t.uint8_t,
             },
-            is_reply=False,
+            direction=foundation.Direction.Server_to_Client,
             is_manufacturer_specific=True,
         ),
         0x02: foundation.ZCLCommandDef(
             "reset_energy_meter",
             {},
-            is_reply=False,
+            direction=foundation.Direction.Server_to_Client,
             is_manufacturer_specific=True,
         ),
         0x03: foundation.ZCLCommandDef(
@@ -188,7 +188,7 @@ class Inovelli_VZM31SN_Cluster(CustomCluster):
                 "led_level": t.uint8_t,
                 "led_duration": t.uint8_t,
             },
-            is_reply=False,
+            direction=foundation.Direction.Server_to_Client,
             is_manufacturer_specific=True,
         ),
         0x24: foundation.ZCLCommandDef(
@@ -196,7 +196,7 @@ class Inovelli_VZM31SN_Cluster(CustomCluster):
             {
                 "notification_type": t.uint8_t,
             },
-            is_reply=False,
+            direction=foundation.Direction.Server_to_Client,
             is_manufacturer_specific=True,
         ),
     }

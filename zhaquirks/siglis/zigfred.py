@@ -60,7 +60,7 @@ class ZigfredCluster(CustomCluster):
         ZIGFRED_CLUSTER_COMMAND_BUTTON_EVENT: foundation.ZCLCommandDef(
             "button_event",
             {"param1": t.uint32_t},
-            is_reply=False,
+            direction=foundation.Direction.Server_to_Client,
             is_manufacturer_specific=True,
         ),
     }
