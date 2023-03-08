@@ -397,8 +397,8 @@ def test_quirk_importable(quirk: CustomDevice) -> None:
     ), f"{path} is not importable"
 
 
-def test_quirk_loading_error(tmp_path: Path) -> None:
-    """Ensure quirks do not silently fail to load."""
+def test_quirk_loading_error(tmp_path: Path, caplog) -> None:
+    """Ensure quirks silently fail to load."""
 
     custom_quirks = tmp_path / "custom_zha_quirks"
     custom_quirks.mkdir()
@@ -407,19 +407,28 @@ def test_quirk_loading_error(tmp_path: Path) -> None:
 
     (custom_quirks / "bosch").mkdir()
     (custom_quirks / "bosch/__init__.py").touch()
-    # (custom_quirks / "bosch/custom_quirk.py").write_text('1/0')
 
-    # Syntax errors are not swallowed
+    # Syntax errors are swallowed
     (custom_quirks / "bosch/custom_quirk.py").write_text("1/")
 
-    with pytest.raises(SyntaxError):
-        zhaquirks.setup({zhaquirks.CUSTOM_QUIRKS_PATH: str(custom_quirks)})
+    caplog.clear()
+    zhaquirks.setup(custom_quirks_path=str(custom_quirks))
+    assert (
+        "Unexpected exception importing custom quirk 'bosch.custom_quirk'"
+        in caplog.text
+    )
+    assert "SyntaxError" in caplog.text
 
-    # Nor are import errors
+    # And so are import errors
     (custom_quirks / "bosch/custom_quirk.py").write_text("from os import foobarbaz7")
 
-    with pytest.raises(ImportError):
-        zhaquirks.setup({zhaquirks.CUSTOM_QUIRKS_PATH: str(custom_quirks)})
+    caplog.clear()
+    zhaquirks.setup(custom_quirks_path=str(custom_quirks))
+    assert (
+        "Unexpected exception importing custom quirk 'bosch.custom_quirk'"
+        in caplog.text
+    )
+    assert "cannot import name 'foobarbaz7' from 'os'" in caplog.text
 
 
 def test_custom_quirk_loading(
@@ -512,7 +521,7 @@ class TestReplacementISWZPR1WP13(CustomDevice):
 '''
     )
 
-    zhaquirks.setup({zhaquirks.CUSTOM_QUIRKS_PATH: str(custom_quirks)})
+    zhaquirks.setup(custom_quirks_path=str(custom_quirks))
 
     assert not isinstance(zq.get_device(device), zhaquirks.bosch.motion.ISWZPR1WP13)
     assert type(zq.get_device(device)).__name__ == "TestReplacementISWZPR1WP13"
