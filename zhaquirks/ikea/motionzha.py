@@ -28,7 +28,6 @@ from zhaquirks.ikea import (
     IKEA_CLUSTER_ID,
     WWAH_CLUSTER_ID,
     DoublingPowerConfig2CRCluster,
-    LightLinkCluster,
 )
 
 
@@ -75,7 +74,7 @@ class IkeaTradfriMotionE1745_Var01(CustomDevice):
                     Identify.cluster_id,
                     Alarms.cluster_id,
                     Diagnostic.cluster_id,
-                    LightLinkCluster,
+                    LightLink.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
@@ -134,7 +133,7 @@ class IkeaTradfriMotionE1745_Var02(CustomDevice):
                     Identify.cluster_id,
                     Alarms.cluster_id,
                     PollControl.cluster_id,
-                    LightLinkCluster,
+                    LightLink.cluster_id,
                     IKEA_CLUSTER_ID,
                 ],
                 OUTPUT_CLUSTERS: [
@@ -193,7 +192,7 @@ class IkeaTradfriMotionE1525_Var01(CustomDevice):
                     DoublingPowerConfig2CRCluster,
                     Identify.cluster_id,
                     PollControl.cluster_id,
-                    LightLinkCluster,
+                    LightLink.cluster_id,
                     IKEA_CLUSTER_ID,
                     WWAH_CLUSTER_ID,
                 ],
