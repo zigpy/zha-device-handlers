@@ -44,7 +44,6 @@ from zhaquirks.ikea import (
     IKEA,
     IKEA_CLUSTER_ID,
     DoublingPowerConfig1CRCluster,
-    LightLinkCluster,
 )
 
 
