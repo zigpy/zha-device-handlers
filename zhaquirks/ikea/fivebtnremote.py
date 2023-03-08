@@ -248,7 +248,7 @@ class IkeaTradfriRemote2(IkeaTradfriRemote1):
                     DoublingPowerConfig1CRCluster,
                     Identify.cluster_id,
                     PollControl.cluster_id,
-                    LightLinkCluster,
+                    LightLink.cluster_id,
                     IKEA_CLUSTER_ID,
                 ],
                 OUTPUT_CLUSTERS: [
