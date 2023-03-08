@@ -397,26 +397,24 @@ def setup(custom_quirks_path: str | None = None) -> None:
         path=__path__,
         prefix=__name__ + ".",
     ):
-        _LOGGER.debug("Loading quirks module %s", modname)
+        _LOGGER.debug("Loading quirks module %r", modname)
         importlib.import_module(modname)
 
     if custom_quirks_path is None:
         return
 
     path = pathlib.Path(custom_quirks_path)
-    _LOGGER.debug("Loading custom quirks from %s", path)
+    _LOGGER.debug("Loading custom quirks from %r", path)
 
     loaded = False
 
     # Treat the custom quirk path (e.g. `/config/custom_quirks/`) itself as a module
     for importer, modname, _ispkg in pkgutil.walk_packages(path=[str(path)]):
         try:
-            _LOGGER.debug("Loading custom quirks module %s", modname)
+            _LOGGER.debug("Loading custom quirk module %r", modname)
             importer.find_module(modname).load_module(modname)
-        except ImportError as err:
-            _LOGGER.error("Error importing %s: %s", modname, err)
         except Exception:
-            _LOGGER.exception("Unexpected exception importing component %s", modname)
+            _LOGGER.exception("Unexpected exception importing custom quirk %r", modname)
         else:
             loaded = True
 
