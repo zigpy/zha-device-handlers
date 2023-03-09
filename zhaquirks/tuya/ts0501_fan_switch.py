@@ -13,7 +13,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import TUYA_CLUSTER_ID
+from zhaquirks.tuya import TUYA_CLUSTER_ID, TuyaManufCluster
 
 
 class FanCluster(CustomCluster, Fan):
@@ -68,7 +68,7 @@ class TS0501FanController(CustomDevice):
                     Scenes.cluster_id,
                     OnOff.cluster_id,
                     FanCluster,
-                    TUYA_CLUSTER_ID,
+                    TuyaManufCluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     Time.cluster_id,
