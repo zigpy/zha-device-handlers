@@ -30,7 +30,7 @@ class FanCluster(CustomCluster, Fan):
         return result
 
 
-class TS0501FanController(CustomDevice):
+class TS0501FanSwitch(CustomDevice):
     """TS0501 fan switch custom device implementation."""
 
     signature = {
