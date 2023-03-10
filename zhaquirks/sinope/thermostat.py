@@ -65,14 +65,14 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
     class SensorType(t.enum8):
         """temp_sensor_type values."""
 
-        K10 = 0x00
-        K12 = 0x01
+        Sensor_10k = 0x00
+        Sensor_12k = 0x01
 
     class TimeFormat(t.enum8):
         """time_format values."""
 
-        H24 = 0x00
-        H12 = 0x01
+        Format_24h = 0x00
+        Format_12h = 0x01
 
     class GfciStatus(t.enum8):
         """gfci_status values."""
