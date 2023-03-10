@@ -59,7 +59,7 @@ class SinopeManufacturerCluster(CustomCluster):
     class ColdStatus(t.enum8):
         """cold_load_pickup_status values."""
 
-        Activ = 0x00
+        Active = 0x00
         Off = 0x01
 
     cluster_id = SINOPE_MANUFACTURER_CLUSTER_ID
