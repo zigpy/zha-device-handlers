@@ -17,7 +17,7 @@ from zhaquirks.const import (
     PROFILE_ID,
     ZONE_STATUS,
 )
-from zhaquirks.xiaomi import LUMI, XiaomiAqaraE1Cluster
+from zhaquirks.xiaomi import LUMI, XiaomiAqaraE1Cluster, XiaomiPowerConfiguration
 
 BUZZER_MANUAL_MUTE = 0x0126
 SELF_TEST = 0x0127
@@ -113,7 +113,7 @@ class LumiSensorSmokeAcn03(CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
+                    XiaomiPowerConfiguration,
                     Identify.cluster_id,
                     LocalIasZone,
                     OppleCluster,
