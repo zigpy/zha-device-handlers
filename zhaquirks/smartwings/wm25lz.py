@@ -23,11 +23,7 @@ from zhaquirks.const import (
 
 
 class InvertedWindowCoveringCluster(CustomCluster, WindowCovering):
-    """WindowCovering cluster implementation.
-
-    This implementation inverts the reported covering percent for non standard
-    devices that don't follow the reporting spec.
-    """
+    """This WindowCovering cluster implementation inverts the commands for up and down."""
 
     CMD_UP_OPEN = WindowCovering.commands_by_name["up_open"].id
     CMD_DOWN_CLOSE = WindowCovering.commands_by_name["down_close"].id
