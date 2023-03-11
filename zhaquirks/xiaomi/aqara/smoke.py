@@ -6,6 +6,7 @@ from zigpy.quirks import CustomDevice
 import zigpy.types as types
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PowerConfiguration
 from zigpy.zcl.clusters.security import IasZone
+from zigpy.zdo.types import NodeDescriptor
 
 from zhaquirks import Bus, LocalDataCluster
 from zhaquirks.const import (
@@ -13,6 +14,7 @@ from zhaquirks.const import (
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
+    NODE_DESCRIPTOR,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     ZONE_STATUS,
@@ -107,6 +109,9 @@ class LumiSensorSmokeAcn03(CustomDevice):
     }
 
     replacement = {
+        NODE_DESCRIPTOR: NodeDescriptor(
+            0x02, 0x40, 0x80, 0x115F, 0x7F, 0x0064, 0x2C00, 0x0064, 0x00
+        ),
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -122,5 +127,5 @@ class LumiSensorSmokeAcn03(CustomDevice):
                     Ota.cluster_id,
                 ],
             }
-        }
+        },
     }
