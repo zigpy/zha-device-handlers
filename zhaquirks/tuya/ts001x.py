@@ -234,6 +234,7 @@ class TuyaTripleNoNeutralSwitch(EnchantedDevice, TuyaSwitch):
         },
     }
 
+
 class TuyaTripleNoNeutralSwitchV2(EnchantedDevice, TuyaSwitch):
     """Tuya 3 gang no neutral light switch (v2)."""
 
@@ -330,6 +331,7 @@ class TuyaTripleNoNeutralSwitchV2(EnchantedDevice, TuyaSwitch):
             },
         },
     }
+
 
 # Switch_2 family = Normal NoNeutralSwitch (without tuya cluster) and with Identify.
 class TuyaSingleNoNeutralSwitch_2(EnchantedDevice, TuyaSwitch):
