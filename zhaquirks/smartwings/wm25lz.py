@@ -1,6 +1,10 @@
 """Device handler for Smartwings blinds."""
+from typing import Any
+
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
+import zigpy.types as t
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import (
     Basic,
@@ -30,13 +34,13 @@ class InvertedWindowCoveringCluster(CustomCluster, WindowCovering):
 
     async def command(
         self,
-        command_id,
+        command_id: foundation.GeneralCommand | int | t.uint8_t,
         *args,
-        manufacturer=None,
-        expect_reply=True,
-        tries=1,
-        tsn=None,
-        **kwargs
+        manufacturer: int | t.uint16_t | None = None,
+        expect_reply: bool = True,
+        tries: int = 1,
+        tsn: int | t.uint8_t | None = None,
+        **kwargs: Any,
     ):
         """Override default commands for up and down. They need to be backwards."""
         # swap up and down commands
