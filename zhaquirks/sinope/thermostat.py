@@ -186,20 +186,23 @@ class SinopeTechnologiesThermostat(CustomDevice):
         ENDPOINTS: {
             1: {
                 INPUT_CLUSTERS: [
-                    Basic,
-                    Identify,
-                    Groups,
-                    Scenes,
-                    UserInterface,
-                    TemperatureMeasurement,
-                    ElectricalMeasurement,
-                    Diagnostic,
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    UserInterface.cluster_id,
+                    TemperatureMeasurement.cluster_id,
+                    ElectricalMeasurement.cluster_id,
+                    Diagnostic.cluster_id,
                     SinopeTechnologiesThermostatCluster,
                     SinopeTechnologiesManufacturerCluster,
                 ],
-                OUTPUT_CLUSTERS: [Ota, SINOPE_MANUFACTURER_CLUSTER_ID],
+                OUTPUT_CLUSTERS: [
+                    Ota.cluster_id,
+                    SINOPE_MANUFACTURER_CLUSTER_ID,
+                ],
             },
-            196: {INPUT_CLUSTERS: [PowerConfiguration]},
+            196: {INPUT_CLUSTERS: [PowerConfiguration.cluster_id]},
         }
     }
 
@@ -241,18 +244,22 @@ class SinopeTH1400ZB(SinopeTechnologiesThermostat):
         ENDPOINTS: {
             1: {
                 INPUT_CLUSTERS: [
-                    Basic,
-                    Identify,
-                    Groups,
-                    Scenes,
-                    UserInterface,
-                    TemperatureMeasurement,
-                    Metering,
-                    Diagnostic,
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    UserInterface.cluster_id,
+                    TemperatureMeasurement.cluster_id,
+                    Metering.cluster_id,
+                    Diagnostic.cluster_id,
                     SinopeTechnologiesThermostatCluster,
                     SinopeTechnologiesManufacturerCluster,
                 ],
-                OUTPUT_CLUSTERS: [Time, Ota, SINOPE_MANUFACTURER_CLUSTER_ID],
+                OUTPUT_CLUSTERS: [
+                    Time.cluster_id,
+                    Ota.cluster_id,
+                    SINOPE_MANUFACTURER_CLUSTER_ID,
+                ],
             }
         }
     }
