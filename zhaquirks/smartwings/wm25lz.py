@@ -1,7 +1,7 @@
 """Device handler for Smartwings blinds."""
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Coroutine
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
@@ -43,7 +43,7 @@ class InvertedWindowCoveringCluster(CustomCluster, WindowCovering):
         tries: int = 1,
         tsn: int | t.uint8_t | None = None,
         **kwargs: Any,
-    ):
+    ) -> Coroutine:
         """Override default commands for up and down. They need to be backwards."""
         # swap up and down commands
         if command_id == self.CMD_UP_OPEN:
