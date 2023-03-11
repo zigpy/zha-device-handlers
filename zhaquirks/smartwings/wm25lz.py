@@ -29,8 +29,8 @@ class InvertedWindowCoveringCluster(CustomCluster, WindowCovering):
     devices that don't follow the reporting spec.
     """
 
-    CMD_GO_UP = WindowCovering.commands_by_name["down_close"].id
-    CMD_GO_DOWN = WindowCovering.commands_by_name["up_open"].id
+    CMD_UP_OPEN = WindowCovering.commands_by_name["up_open"].id
+    CMD_DOWN_CLOSE = WindowCovering.commands_by_name["down_close"].id
 
     async def command(
         self,
@@ -42,12 +42,12 @@ class InvertedWindowCoveringCluster(CustomCluster, WindowCovering):
         tsn=None,
         **kwargs
     ):
-        """Override default commands for up and down. they are backwards."""
-
-        if command_id == self.CMD_GO_UP:
-            command_id = self.CMD_GO_DOWN
-        elif command_id == self.CMD_GO_DOWN:
-            command_id = self.CMD_GO_UP
+        """Override default commands for up and down. They need to be backwards."""
+        # swap up and down commands
+        if command_id == self.CMD_UP_OPEN:
+            command_id = self.CMD_DOWN_CLOSE
+        elif command_id == self.CMD_DOWN_CLOSE:
+            command_id = self.CMD_UP_OPEN
 
         return await super().command(
             command_id,
