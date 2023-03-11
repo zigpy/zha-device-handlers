@@ -235,8 +235,8 @@ class TuyaTripleNoNeutralSwitch(EnchantedDevice, TuyaSwitch):
     }
 
 
-class TuyaTripleNoNeutralSwitchV2(EnchantedDevice, TuyaSwitch):
-    """Tuya 3 gang no neutral light switch (v2)."""
+class TuyaTripleNoNeutralSwitchVar2(EnchantedDevice, TuyaSwitch):
+    """Tuya 3 gang no neutral light switch (variation 2)."""
 
     signature = {
         # "node_descriptor": "NodeDescriptor(byte1=2, byte2=64, mac_capability_flags=128, manufacturer_code=4098,
@@ -249,7 +249,7 @@ class TuyaTripleNoNeutralSwitchV2(EnchantedDevice, TuyaSwitch):
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=100
             # device_version=1
-            # input_clusters=[0, 4, 5, 6]
+            # input_clusters=[0, 3, 4, 5, 6]
             # output_clusters=[a, 19]>
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
