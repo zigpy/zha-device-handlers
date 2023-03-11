@@ -38,6 +38,7 @@ class InvertedWindowCoveringCluster(CustomCluster, WindowCovering):
         *args,
         manufacturer=None,
         expect_reply=True,
+        tries=1,
         tsn=None,
         **kwargs
     ):
@@ -53,6 +54,7 @@ class InvertedWindowCoveringCluster(CustomCluster, WindowCovering):
             *args,
             manufacturer=manufacturer,
             expect_reply=expect_reply,
+            tries=tries,
             tsn=tsn,
             **kwargs,
         )
