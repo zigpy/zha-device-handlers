@@ -91,8 +91,8 @@ def test_basic_cluster_deserialize_wrong_len_2():
         zhaquirks.xiaomi.mija.motion.Motion,
     ),
 )
-async def test_konke_motion(zigpy_device_from_quirk, quirk):
-    """Test Orvibo motion sensor."""
+async def test_xiaomi_motion(zigpy_device_from_quirk, quirk):
+    """Test Xiaomi motion sensor."""
 
     motion_dev = zigpy_device_from_quirk(quirk)
 

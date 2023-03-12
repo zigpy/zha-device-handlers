@@ -15,7 +15,7 @@ zhaquirks.setup()
 
 
 @pytest.mark.parametrize("quirk", (zhaquirks.orvibo.motion.SN10ZW,))
-async def test_konke_motion(zigpy_device_from_quirk, quirk):
+async def test_orvibo_motion(zigpy_device_from_quirk, quirk):
     """Test Orvibo motion sensor."""
 
     motion_dev = zigpy_device_from_quirk(quirk)
