@@ -109,7 +109,7 @@ class TuyaAttributesCluster(TuyaLocalCluster):
             cluster_data = TuyaClusterData(
                 endpoint_id=self.endpoint.endpoint_id,
                 cluster_name=self.ep_attribute,
-                cluster_attr=self.attributes[record.attrid][0],
+                cluster_attr=self.attributes[record.attrid].name,
                 attr_value=record.value.value,
                 expect_reply=False,
                 manufacturer=manufacturer,
