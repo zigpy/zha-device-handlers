@@ -11,6 +11,7 @@ import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
     Basic,
+    GreenPowerProxy,
     Identify,
     Ota,
     PowerConfiguration,
@@ -158,7 +159,7 @@ class ZosungIRControl(CustomCluster):
 class ZosungIRTransmit(CustomCluster):
     """Zosung IR Transmit Cluster (0xED00)."""
 
-    name = "Zosung IR Control Cluster"
+    name = "Zosung IR Transmit Cluster"
     cluster_id = 0xED00
     ep_attribute = "zosung_irtransmit"
 
@@ -418,7 +419,6 @@ class ZosungIRBlaster(CustomDevice):
         #  output_clusters=[10, 25]>
         MODELS_INFO: [
             ("_TZ3290_ot6ewjvmejq5ekhl", "TS1201"),
-            ("_TZ3290_7v1k4vufotpowp9z", "TS1201"),
             ("_TZ3290_acv1iuslxi3shaaj", "TS1201"),
             ("_TZ3290_j37rooaxrcdcqo5n", "TS1201"),
         ],
@@ -460,6 +460,79 @@ class ZosungIRBlaster(CustomDevice):
                 OUTPUT_CLUSTERS: [
                     Time.cluster_id,
                     Ota.cluster_id,
+                ],
+            },
+        },
+    }
+
+class ZosungIRBlaster_ZS06(ZosungIRBlaster):
+    """Zosung IR Blaster ZS06."""
+
+    signature = {
+        #   "node_descriptor": "NodeDescriptor(logical_type=<LogicalType.Router: 1>, complex_descriptor_available=0, user_descriptor_available=0, reserved=0, aps_flags=0, frequency_band=<FrequencyBand.Freq2400MHz: 8>, mac_capability_flags=<MACCapabilityFlags.AllocateAddress|RxOnWhenIdle|MainsPowered|FullFunctionDevice: 142>, manufacturer_code=4098, maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264, maximum_outgoing_transfer_size=82, descriptor_capability_field=<DescriptorCapability.NONE: 0>, *allocate_address=True, *is_alternate_pan_coordinator=False, *is_coordinator=False, *is_end_device=False, *is_full_function_device=True, *is_mains_powered=True, *is_receiver_on_when_idle=True, *is_router=True, *is_security_capable=False)",
+        #  <SimpleDescriptor endpoint=1, profile=260, device_type=61440
+        #  device_version=1
+        #  input_clusters=[0, 3, 4, 5, 6, 57348, 60672]
+        #  output_clusters=[10, 25]>
+        #  <SimpleDescriptor endpoint=242, profile=41440, device_type=97
+        #  device_version=1
+        #  input_clusters=[]
+        #  output_clusters=[33]>
+        MODELS_INFO: [
+            ("_TZ3290_7v1k4vufotpowp9z", "TS1201"),
+        ],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: 0xF000,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    ZosungIRTransmit.cluster_id,
+                    ZosungIRControl.cluster_id,
+                    Groups.cluster_id,
+                    Identify.cluster_id,
+                    OnOff.cluster_id,
+                    Scenes.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Time.cluster_id,
+                    Ota.cluster_id,
+                ],
+            },
+            242: {
+                PROFILE_ID: 0xA1E0,  # 41440 (dec)
+                DEVICE_TYPE: 0x0061,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [
+                    GreenPowerProxy.cluster_id,  # 0x0021 = GreenPowerProxy.cluster_id
+                ],
+            },
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    ZosungIRTransmit,
+                    ZosungIRControl,
+                    Groups.cluster_id,
+                    Identify.cluster_id,
+                    OnOff.cluster_id,
+                    Scenes.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Time.cluster_id,
+                    Ota.cluster_id,
+                ],
+            },
+            242: {
+                PROFILE_ID: 0xA1E0,  # 41440 (dec)
+                DEVICE_TYPE: 0x0061,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [
+                    GreenPowerProxy.cluster_id,  # 0x0021 = GreenPowerProxy.cluster_id
                 ],
             },
         },
