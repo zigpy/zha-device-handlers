@@ -18,15 +18,15 @@ from zhaquirks.const import (
     BUTTON_2,
     CLUSTER_ID,
     COMMAND,
-    COMMAND_MOVE,
-    COMMAND_MOVE_ON_OFF,
-    COMMAND_STEP,
-    COMMAND_TOGGLE,
     COMMAND_M_INITIAL_PRESS,
     COMMAND_M_LONG_PRESS,
     COMMAND_M_LONG_RELEASE,
     COMMAND_M_MULTI_PRESS_COMPLETE,
     COMMAND_M_SHORT_RELEASE,
+    COMMAND_MOVE,
+    COMMAND_MOVE_ON_OFF,
+    COMMAND_STEP,
+    COMMAND_TOGGLE,
     DEVICE_TYPE,
     DIM_DOWN,
     DIM_UP,
@@ -46,7 +46,6 @@ from zhaquirks.const import (
     SHORT_PRESS,
     TOGGLE,
 )
-
 from zhaquirks.ikea import (
     COMMAND_SHORTCUTV1,
     IKEA,
