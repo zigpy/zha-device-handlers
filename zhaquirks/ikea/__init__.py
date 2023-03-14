@@ -4,7 +4,7 @@ import logging
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import OnOff, PowerConfiguration, Scenes
+from zigpy.zcl.clusters.general import PowerConfiguration, Scenes
 from zigpy.zcl.clusters.lightlink import LightLink
 
 from zhaquirks import (
@@ -109,8 +109,8 @@ class ShortcutV1Cluster(EventableCluster):
     }
 
 
-#class ShortcutV2Cluster(OnOff, EventableCluster):
 class ShortcutV2Cluster(EventableCluster):
+#class ShortcutV2Cluster(OnOff, EventableCluster):
     """Ikea Shortcut Button Cluster Variant 2."""
 
     name = "ShortcutClusterV2"
