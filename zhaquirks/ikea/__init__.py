@@ -110,7 +110,7 @@ class ShortcutV1Cluster(EventableCluster):
 
 
 class ShortcutV2Cluster(EventableCluster):
-#class ShortcutV2Cluster(OnOff, EventableCluster):
+    # class ShortcutV2Cluster(OnOff, EventableCluster):
     """Ikea Shortcut Button Cluster Variant 2."""
 
     name = "ShortcutClusterV2"
