@@ -1,44 +1,30 @@
 """Tuya mmw radar occupancy sensor."""
 
 import math
-from typing import Dict, Optional, Tuple, Union
+from typing import Dict
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 import zigpy.types as t
-from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
     AnalogInput,
     AnalogOutput,
     Basic,
-    GreenPowerProxy,
     Groups,
-    Identify,
     Ota,
     Scenes,
     Time,
 )
-from zigpy.zcl.clusters.measurement import (
-    IlluminanceMeasurement,
-    OccupancySensing
-)
-from zigpy.zcl.clusters.security import IasZone
+from zigpy.zcl.clusters.measurement import IlluminanceMeasurement, OccupancySensing
 
-from zhaquirks import Bus, LocalDataCluster, MotionOnEvent
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
-    MODEL,
-    MOTION_EVENT,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import (
-    NoManufacturerCluster,
-    TuyaLocalCluster,
-    TuyaNewManufCluster,
-)
+from zhaquirks.tuya import NoManufacturerCluster, TuyaLocalCluster, TuyaNewManufCluster
 from zhaquirks.tuya.mcu import (
     DPToAttributeMapping,
     TuyaAttributesCluster,
@@ -48,6 +34,7 @@ from zhaquirks.tuya.mcu import (
 
 class TuyaMmwRadarSelfTest(t.enum8):
     """Mmw radar self test values."""
+
     TESTING = 0
     TEST_SUCCESS = 1
     TEST_FAILURE = 2
@@ -70,9 +57,7 @@ class TuyaMmwRadarSensitivity(TuyaAttributesCluster, AnalogOutput):
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
-        self._update_attribute(
-            self.attributes_by_name["description"].id, "Sensitivity"
-        )
+        self._update_attribute(self.attributes_by_name["description"].id, "Sensitivity")
         self._update_attribute(self.attributes_by_name["min_present_value"].id, 1)
         self._update_attribute(self.attributes_by_name["max_present_value"].id, 9)
         self._update_attribute(self.attributes_by_name["resolution"].id, 1)
@@ -84,9 +69,7 @@ class TuyaMmwRadarMinRange(TuyaAttributesCluster, AnalogOutput):
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
-        self._update_attribute(
-            self.attributes_by_name["description"].id, "Min range"
-        )
+        self._update_attribute(self.attributes_by_name["description"].id, "Min range")
         self._update_attribute(self.attributes_by_name["min_present_value"].id, 0)
         self._update_attribute(self.attributes_by_name["max_present_value"].id, 950)
         self._update_attribute(self.attributes_by_name["resolution"].id, 10)
@@ -101,9 +84,7 @@ class TuyaMmwRadarMaxRange(TuyaAttributesCluster, AnalogOutput):
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
-        self._update_attribute(
-            self.attributes_by_name["description"].id, "Max range"
-        )
+        self._update_attribute(self.attributes_by_name["description"].id, "Max range")
         self._update_attribute(self.attributes_by_name["min_present_value"].id, 0)
         self._update_attribute(self.attributes_by_name["max_present_value"].id, 950)
         self._update_attribute(self.attributes_by_name["resolution"].id, 10)
@@ -135,9 +116,7 @@ class TuyaMmwRadarFadingTime(TuyaAttributesCluster, AnalogOutput):
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
-        self._update_attribute(
-            self.attributes_by_name["description"].id, "Fading time"
-        )
+        self._update_attribute(self.attributes_by_name["description"].id, "Fading time")
         self._update_attribute(self.attributes_by_name["min_present_value"].id, 1000)
         self._update_attribute(self.attributes_by_name["max_present_value"].id, 200000)
         self._update_attribute(self.attributes_by_name["resolution"].id, 1000)
@@ -162,6 +141,7 @@ class TuyaMmwRadarTargetDistance(TuyaAttributesCluster, AnalogInput):
 
 class TuyaMmwRadarCluster(NoManufacturerCluster, TuyaMCUCluster):
     """Mmw radar cluster."""
+
     attributes = TuyaMCUCluster.attributes.copy()
     attributes.update(
         {
