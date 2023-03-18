@@ -19,8 +19,7 @@ IKEA = "IKEA of Sweden"
 WWAH_CLUSTER_ID = 0xFC57  # decimal = 64599 ('Works with all Hubs' cluster)
 IKEA_CLUSTER_ID = 0xFC7C  # decimal = 64636
 IKEA_SHORTC_CLUSTER_V1_ID = 0xFC7F  # decimal = 64639 Shortcut V1 commands
-IKEA_M_SWITCH_CLUSTER_ID = (0xFC80  # decimal = 64640 Shortcut V2 commands
-)
+IKEA_M_SWITCH_CLUSTER_ID = 0xFC80  # decimal = 64640 Shortcut V2 commands
 COMMAND_SHORTCUTV1 = "shortcut_v1_events"
 
 # PowerConfiguration cluster attributes
