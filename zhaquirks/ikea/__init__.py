@@ -18,11 +18,10 @@ _LOGGER = logging.getLogger(__name__)
 IKEA = "IKEA of Sweden"
 WWAH_CLUSTER_ID = 0xFC57  # decimal = 64599 ('Works with all Hubs' cluster)
 IKEA_CLUSTER_ID = 0xFC7C  # decimal = 64636
-IKEA_SHORTC_CLUSTER_V1_ID = 0xFC7F  # decimal = 64639 Shortcut V1 commands.
-IKEA_M_SWITCH_CLUSTER_ID = (
-    0xFC80  # decimal = 64640 Shortcut V2 / Matter Switch commands.
+IKEA_SHORTC_CLUSTER_V1_ID = 0xFC7F  # decimal = 64639 Shortcut V1 commands
+IKEA_M_SWITCH_CLUSTER_ID = (0xFC80  # decimal = 64640 Shortcut V2 commands
 )
-COMMAND_SHORTCUTV1 = "ShortCutV1Events"
+COMMAND_SHORTCUTV1 = "shortcut_v1_events"
 
 # PowerConfiguration cluster attributes
 BATTERY_VOLTAGE = PowerConfiguration.attributes_by_name["battery_voltage"].id
@@ -98,10 +97,10 @@ class ShortcutV1Cluster(EventableCluster):
 
     server_commands = {
         0x01: foundation.ZCLCommandDef(
-            "ShortCutV1Events",
+            "shortcut_v1_events",
             {
-                "Shortcut_Button": t.int8s,
-                "Shortcut_Event": t.int8s,
+                "shortcut_button": t.int8s,
+                "shortcut_event": t.int8s,
             },
             False,
             is_manufacturer_specific=True,
@@ -110,7 +109,6 @@ class ShortcutV1Cluster(EventableCluster):
 
 
 class ShortcutV2Cluster(EventableCluster):
-    # class ShortcutV2Cluster(OnOff, EventableCluster):
     """Ikea Shortcut Button Cluster Variant 2."""
 
     name = "ShortcutClusterV2"
@@ -120,7 +118,7 @@ class ShortcutV2Cluster(EventableCluster):
         0x00: foundation.ZCLCommandDef(
             "switch_latched",
             {
-                "NewPosition": t.int8s,
+                "new_position": t.int8s,
             },
             False,
             is_manufacturer_specific=True,
@@ -128,7 +126,7 @@ class ShortcutV2Cluster(EventableCluster):
         0x01: foundation.ZCLCommandDef(
             "initial_press",
             {
-                "NewPosition": t.int8s,
+                "new_position": t.int8s,
             },
             False,
             is_manufacturer_specific=True,
@@ -136,7 +134,7 @@ class ShortcutV2Cluster(EventableCluster):
         0x02: foundation.ZCLCommandDef(
             "long_press",
             {
-                "PreviousPosition": t.int8s,
+                "previous_position": t.int8s,
             },
             False,
             is_manufacturer_specific=True,
@@ -144,7 +142,7 @@ class ShortcutV2Cluster(EventableCluster):
         0x03: foundation.ZCLCommandDef(
             "short_release",
             {
-                "PreviousPosition": t.int8s,
+                "previous_position": t.int8s,
             },
             False,
             is_manufacturer_specific=True,
@@ -152,7 +150,7 @@ class ShortcutV2Cluster(EventableCluster):
         0x04: foundation.ZCLCommandDef(
             "long_release",
             {
-                "PreviousPosition": t.int8s,
+                "previous_position": t.int8s,
             },
             False,
             is_manufacturer_specific=True,
@@ -160,8 +158,8 @@ class ShortcutV2Cluster(EventableCluster):
         0x05: foundation.ZCLCommandDef(
             "multi_press_ongoing",
             {
-                "NewPosition": t.int8s,
-                #                 "CurrentNumberOfPressesCounted": t.int8s, # Not implanted by IKEA for the moment.
+                "new_position": t.int8s,
+                # "current_number_of_presses_counted": t.int8s, # Not implanted.
             },
             False,
             is_manufacturer_specific=True,
@@ -169,8 +167,8 @@ class ShortcutV2Cluster(EventableCluster):
         0x06: foundation.ZCLCommandDef(
             "multi_press_complete",
             {
-                "PreviousPosition": t.int8s,
-                "TotalNumberOfPressesCounted": t.int8s,
+                "previous_position": t.int8s,
+                "total_number_of_presses_counted": t.int8s,
             },
             False,
             is_manufacturer_specific=True,
