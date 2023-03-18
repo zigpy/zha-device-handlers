@@ -174,27 +174,27 @@ class IkeaSYMFONISKgen2V1(CustomDevice):
         {
             (SHORT_PRESS, BUTTON_1): {
                 COMMAND: COMMAND_SHORTCUTV1,
-                PARAMS: {"Shortcut_Button": 1, "Shortcut_Event": 1},
+                PARAMS: {"shortcut_button": 1, "shortcut_event": 1},
             },
             (DOUBLE_PRESS, BUTTON_1): {
                 COMMAND: COMMAND_SHORTCUTV1,
-                PARAMS: {"Shortcut_Button": 1, "Shortcut_Event": 2},
+                PARAMS: {"shortcut_button": 1, "shortcut_event": 2},
             },
             (LONG_PRESS, BUTTON_1): {
                 COMMAND: COMMAND_SHORTCUTV1,
-                PARAMS: {"Shortcut_Button": 1, "Shortcut_Event": 3},
+                PARAMS: {"shortcut_button": 1, "shortcut_event": 3},
             },
             (SHORT_PRESS, BUTTON_2): {
                 COMMAND: COMMAND_SHORTCUTV1,
-                PARAMS: {"Shortcut_Button": 2, "Shortcut_Event": 1},
+                PARAMS: {"shortcut_button": 2, "shortcut_event": 1},
             },
             (DOUBLE_PRESS, BUTTON_2): {
                 COMMAND: COMMAND_SHORTCUTV1,
-                PARAMS: {"Shortcut_Button": 2, "Shortcut_Event": 2},
+                PARAMS: {"shortcut_button": 2, "shortcut_event": 2},
             },
             (LONG_PRESS, BUTTON_2): {
                 COMMAND: COMMAND_SHORTCUTV1,
-                PARAMS: {"Shortcut_Button": 2, "Shortcut_Event": 3},
+                PARAMS: {"shortcut_button": 2, "shortcut_event": 3},
             },
         },
     )
