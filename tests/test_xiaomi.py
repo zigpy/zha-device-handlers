@@ -6,6 +6,7 @@ import pytest
 import zigpy.device
 import zigpy.types as t
 from zigpy.zcl import foundation
+from zigpy.zcl.clusters.general import PowerConfiguration
 from zigpy.zcl.clusters.hvac import Thermostat
 from zigpy.zcl.clusters.security import IasZone
 
@@ -606,7 +607,13 @@ async def test_xiaomi_e1_thermostat_attribute_update(zigpy_device_from_quirk, qu
     thermostat_cluster = device.endpoints[1].thermostat
     thermostat_listener = ClusterListener(thermostat_cluster)
 
+    power_config_cluster = device.endpoints[1].power
+    power_config_listener = ClusterListener(power_config_cluster)
+
     zcl_system_mode_id = Thermostat.attributes_by_name["system_mode"].id
+    zcl_battery_percentage_id = PowerConfiguration.attributes_by_name[
+        "battery_percentage_remaining"
+    ].id
 
     # check that updating Xiaomi system_mode also updates an attribute on the Thermostat cluster
 
@@ -623,6 +630,13 @@ async def test_xiaomi_e1_thermostat_attribute_update(zigpy_device_from_quirk, qu
     assert len(thermostat_listener.attribute_updates) == 2
     assert thermostat_listener.attribute_updates[1][0] == zcl_system_mode_id
     assert thermostat_listener.attribute_updates[1][1] == Thermostat.SystemMode.Heat
+
+    # check that updating battery_percentage on the OppleCluster also updates the PowerConfiguration cluster
+    opple_cluster._update_attribute(0x040A, 50)  # 50% battery
+    assert len(opple_listener.attribute_updates) == 3
+    assert len(power_config_listener.attribute_updates) == 1
+    assert power_config_listener.attribute_updates[0][0] == zcl_battery_percentage_id
+    assert power_config_listener.attribute_updates[0][1] == 100  # ZCL is doubled
 
 
 @pytest.mark.parametrize(
