@@ -140,22 +140,22 @@ class NormalPowerConfiguration1CRXCluster(PowerConfigurationCluster):
 class DoublingPowerConfiguration2AAACluster(
     DoublingPowerConfigurationCluster, NormalPowerConfiguration2AAACluster
 ):
-    """Updating power attributes 2 AAA."""
+    """Doubling power configuration cluster. Updating power attributes 2 AAA."""
 
 
 class DoublingPowerConfiguration2CRCluster(
     DoublingPowerConfigurationCluster, NormalPowerConfiguration2CRCluster
 ):
-    """Updating power attributes 2 CR2032."""
+    """Doubling power configuration cluster. Updating power attributes 2 CR2032."""
 
 
 class DoublingPowerConfiguration1CRCluster(
     DoublingPowerConfigurationCluster, NormalPowerConfiguration1CRCluster
 ):
-    """Updating power attributes 1 CR2032."""
+    """Doubling power configuration cluster. Updating power attributes 1 CR2032."""
 
 
 class DoublingPowerConfiguration1CRXCluster(
     DoublingPowerConfigurationCluster, NormalPowerConfiguration1CRXCluster
 ):
-    """Updating power attributes 1 CR2032 and zero voltage."""
+    """Doubling power configuration cluster. Updating power attributes 1 CR2032 and zero voltage."""
