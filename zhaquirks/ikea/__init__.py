@@ -73,7 +73,7 @@ class ScenesCluster(CustomCluster, Scenes):
     )
 
 
-class PowerConfiguration2AAACluster(DoublingPowerConfigurationCluster):
+class DoublingPowerConfiguration2AAACluster(DoublingPowerConfigurationCluster):
     """Updating Power attributes 2 AAA."""
 
     BATTERY_SIZES = 0x0031
@@ -87,7 +87,7 @@ class PowerConfiguration2AAACluster(DoublingPowerConfigurationCluster):
     }
 
 
-class PowerConfiguration2CRCluster(DoublingPowerConfigurationCluster):
+class DoublingPowerConfiguration2CRCluster(DoublingPowerConfigurationCluster):
     """Updating Power attributes 2 CR2032."""
 
     BATTERY_SIZES = 0x0031
@@ -101,7 +101,7 @@ class PowerConfiguration2CRCluster(DoublingPowerConfigurationCluster):
     }
 
 
-class PowerConfiguration1CRCluster(DoublingPowerConfigurationCluster):
+class DoublingPowerConfiguration1CRCluster(DoublingPowerConfigurationCluster):
     """Updating Power attributes 1 CR2032."""
 
     BATTERY_SIZES = 0x0031
@@ -115,7 +115,7 @@ class PowerConfiguration1CRCluster(DoublingPowerConfigurationCluster):
     }
 
 
-class PowerConfiguration1CRXCluster(DoublingPowerConfigurationCluster):
+class DoublingPowerConfiguration1CRXCluster(DoublingPowerConfigurationCluster):
     """Updating Power attributes 1 CR2032 and Zero voltage."""
 
     BATTERY_VOLTAGE = 0x0020
