@@ -53,6 +53,7 @@ from zhaquirks.ikea import (
     WWAH_CLUSTER_ID,
     DoublingPowerConfiguration1CRCluster,
     LightLinkCluster,
+    NormalPowerConfiguration1CRCluster,
     ScenesCluster,
 )
 
@@ -427,7 +428,7 @@ class IkeaTradfriRemote5(IkeaTradfriRemote1):
                 DEVICE_TYPE: zha.DeviceType.NON_COLOR_CONTROLLER,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
+                    NormalPowerConfiguration1CRCluster,
                     Identify.cluster_id,
                     PollControl.cluster_id,
                     LightLinkCluster,
