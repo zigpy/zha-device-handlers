@@ -7,7 +7,7 @@ from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Scenes
 from zigpy.zcl.clusters.lightlink import LightLink
 
-from zhaquirks import DoublingPowerConfigurationCluster
+from zhaquirks import DoublingPowerConfigurationCluster, PowerConfigurationCluster
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -73,7 +73,10 @@ class ScenesCluster(CustomCluster, Scenes):
     )
 
 
-class DoublingPowerConfiguration2AAACluster(DoublingPowerConfigurationCluster):
+# ZCL compliant IKEA power configuration clusters:
+
+
+class NormalPowerConfiguration2AAACluster(PowerConfigurationCluster):
     """Updating Power attributes 2 AAA."""
 
     BATTERY_SIZES = 0x0031
@@ -87,7 +90,7 @@ class DoublingPowerConfiguration2AAACluster(DoublingPowerConfigurationCluster):
     }
 
 
-class DoublingPowerConfiguration2CRCluster(DoublingPowerConfigurationCluster):
+class NormalPowerConfiguration2CRCluster(PowerConfigurationCluster):
     """Updating Power attributes 2 CR2032."""
 
     BATTERY_SIZES = 0x0031
@@ -101,7 +104,7 @@ class DoublingPowerConfiguration2CRCluster(DoublingPowerConfigurationCluster):
     }
 
 
-class DoublingPowerConfiguration1CRCluster(DoublingPowerConfigurationCluster):
+class NormalPowerConfiguration1CRCluster(PowerConfigurationCluster):
     """Updating Power attributes 1 CR2032."""
 
     BATTERY_SIZES = 0x0031
@@ -115,7 +118,7 @@ class DoublingPowerConfiguration1CRCluster(DoublingPowerConfigurationCluster):
     }
 
 
-class DoublingPowerConfiguration1CRXCluster(DoublingPowerConfigurationCluster):
+class NormalPowerConfiguration1CRXCluster(PowerConfigurationCluster):
     """Updating Power attributes 1 CR2032 and Zero voltage."""
 
     BATTERY_VOLTAGE = 0x0020
@@ -129,3 +132,30 @@ class DoublingPowerConfiguration1CRXCluster(DoublingPowerConfigurationCluster):
         BATTERY_QUANTITY: 1,
         BATTERY_RATED_VOLTAGE: 30,
     }
+
+
+# doubling IKEA power configuration clusters:
+
+
+class DoublingPowerConfiguration2AAACluster(
+    DoublingPowerConfigurationCluster, NormalPowerConfiguration2AAACluster
+):
+    """Updating Power attributes 2 AAA."""
+
+
+class DoublingPowerConfiguration2CRCluster(
+    DoublingPowerConfigurationCluster, NormalPowerConfiguration2CRCluster
+):
+    """Updating Power attributes 2 CR2032."""
+
+
+class DoublingPowerConfiguration1CRCluster(
+    DoublingPowerConfigurationCluster, NormalPowerConfiguration1CRCluster
+):
+    """Updating Power attributes 1 CR2032."""
+
+
+class DoublingPowerConfiguration1CRXCluster(
+    DoublingPowerConfigurationCluster, NormalPowerConfiguration1CRXCluster
+):
+    """Updating Power attributes 1 CR2032 and Zero voltage."""
