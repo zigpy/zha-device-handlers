@@ -527,7 +527,26 @@ class TuyaManufClusterAttributes(TuyaManufCluster):
         return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
 
-class TuyaOnOff(CustomCluster, OnOff):
+class TuyaEnchantableOnOffCluster(CustomCluster, OnOff):
+    """Tuya On/Off cluster that casts a magic spell if TUYA_SPELL is set."""
+
+    async def bind(self):
+        """Bind cluster and start casting the spell."""
+        result = await super().bind()
+        if getattr(self.endpoint.device, "TUYA_SPELL", False):
+            await self.spell()
+        return result
+
+    async def spell(self):
+        """Cast spell, so the Tuya device works correctly."""
+        self.debug("Casting spell on Tuya device %s", self.endpoint.device.ieee)
+        attr_to_read = [4, 0, 1, 5, 7, 0xFFFE]
+        basic_cluster = self.endpoint.device.endpoints[1].in_clusters[0]
+        await basic_cluster.read_attributes(attr_to_read)
+        self.debug("Cast spell on Tuya device %s", self.endpoint.device.ieee)
+
+
+class TuyaOnOff(TuyaEnchantableOnOffCluster):
     """Tuya On/Off cluster for On/Off device."""
 
     def __init__(self, *args, **kwargs):
@@ -933,7 +952,7 @@ class PowerOnState(t.enum8):
     LastState = 0x02
 
 
-class TuyaZBOnOffAttributeCluster(CustomCluster, OnOff):
+class TuyaZBOnOffAttributeCluster(TuyaEnchantableOnOffCluster):
     """Tuya Zigbee On Off cluster with extra attributes."""
 
     attributes = OnOff.attributes.copy()
@@ -943,7 +962,7 @@ class TuyaZBOnOffAttributeCluster(CustomCluster, OnOff):
     attributes.update({0x8004: ("switch_mode", SwitchMode)})
 
 
-class TuyaSmartRemoteOnOffCluster(OnOff, EventableCluster):
+class TuyaSmartRemoteOnOffCluster(TuyaEnchantableOnOffCluster, EventableCluster):
     """TuyaSmartRemoteOnOffCluster: fire events corresponding to press type."""
 
     rotate_type = {
