@@ -832,6 +832,8 @@ class TuyaLocalCluster(LocalDataCluster):
 
 
 class TuyaNoBindPowerConfigurationCluster(PowerConfiguration, CustomCluster):
+    """PowerConfiguration cluster that prevents setting up binding/attribute reports in order to stop battery drain."""
+
     async def bind(self):
         """Prevent bind."""
         return (foundation.Status.SUCCESS,)
