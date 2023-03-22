@@ -346,3 +346,4 @@ class TuyaTripleSwitchDimmerGP(TuyaDimmerSwitch):
             },
         }
     }
+	
