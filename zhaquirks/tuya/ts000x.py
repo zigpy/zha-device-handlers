@@ -323,7 +323,7 @@ class Switch_2G_Metering(EnchantedDevice, CustomDevice):
 
 
 class Switch_2G_Var03(EnchantedDevice, CustomDevice):
-    """Tuya 2 gang (variation 03))."""
+    """Tuya 2 gang (variation 03)."""
 
     signature = {
         MODEL: "TS0002",
