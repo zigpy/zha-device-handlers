@@ -17,7 +17,7 @@ WWAH_CLUSTER_ID = 0xFC57  # decimal = 64599 ('Works with all Hubs' cluster)
 
 # PowerConfiguration cluster attributes
 BATTERY_VOLTAGE = PowerConfiguration.attributes_by_name["battery_voltage"]
-BATTERY_SIZES = PowerConfiguration.attributes_by_name["battery_size"]
+BATTERY_SIZE = PowerConfiguration.attributes_by_name["battery_size"]
 BATTERY_QUANTITY = PowerConfiguration.attributes_by_name["battery_quantity"]
 BATTERY_RATED_VOLTAGE = PowerConfiguration.attributes_by_name["battery_rated_voltage"]
 
@@ -86,7 +86,7 @@ class PowerConfig2AAACluster(PowerConfiguration):
     """Updating power attributes 2 AAA."""
 
     _CONSTANT_ATTRIBUTES = {
-        BATTERY_SIZES: 4,
+        BATTERY_SIZE: 4,
         BATTERY_QUANTITY: 2,
         BATTERY_RATED_VOLTAGE: 15,
     }
@@ -96,7 +96,7 @@ class PowerConfig2CRCluster(PowerConfiguration):
     """Updating power attributes 2 CR2032."""
 
     _CONSTANT_ATTRIBUTES = {
-        BATTERY_SIZES: 10,
+        BATTERY_SIZE: 10,
         BATTERY_QUANTITY: 2,
         BATTERY_RATED_VOLTAGE: 30,
     }
@@ -106,7 +106,7 @@ class PowerConfig1CRCluster(PowerConfiguration):
     """Updating power attributes 1 CR2032."""
 
     _CONSTANT_ATTRIBUTES = {
-        BATTERY_SIZES: 10,
+        BATTERY_SIZE: 10,
         BATTERY_QUANTITY: 1,
         BATTERY_RATED_VOLTAGE: 30,
     }
@@ -117,7 +117,7 @@ class PowerConfig1CRXCluster(PowerConfiguration):
 
     _CONSTANT_ATTRIBUTES = {
         BATTERY_VOLTAGE: 0,
-        BATTERY_SIZES: 10,
+        BATTERY_SIZE: 10,
         BATTERY_QUANTITY: 1,
         BATTERY_RATED_VOLTAGE: 30,
     }
