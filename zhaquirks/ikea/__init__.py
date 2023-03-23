@@ -82,7 +82,7 @@ class ScenesCluster(CustomCluster, Scenes):
 # ZCL compliant IKEA power configuration clusters:
 
 
-class PowerConfig2AAACluster(PowerConfiguration):
+class PowerConfig2AAACluster(CustomCluster, PowerConfiguration):
     """Updating power attributes 2 AAA."""
 
     _CONSTANT_ATTRIBUTES = {
@@ -92,7 +92,7 @@ class PowerConfig2AAACluster(PowerConfiguration):
     }
 
 
-class PowerConfig2CRCluster(PowerConfiguration):
+class PowerConfig2CRCluster(CustomCluster, PowerConfiguration):
     """Updating power attributes 2 CR2032."""
 
     _CONSTANT_ATTRIBUTES = {
@@ -102,7 +102,7 @@ class PowerConfig2CRCluster(PowerConfiguration):
     }
 
 
-class PowerConfig1CRCluster(PowerConfiguration):
+class PowerConfig1CRCluster(CustomCluster, PowerConfiguration):
     """Updating power attributes 1 CR2032."""
 
     _CONSTANT_ATTRIBUTES = {
@@ -112,7 +112,7 @@ class PowerConfig1CRCluster(PowerConfiguration):
     }
 
 
-class PowerConfig1CRXCluster(PowerConfiguration):
+class PowerConfig1CRXCluster(CustomCluster, PowerConfiguration):
     """Updating power attributes 1 CR2032 and zero voltage."""
 
     _CONSTANT_ATTRIBUTES = {
