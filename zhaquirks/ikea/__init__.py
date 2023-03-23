@@ -4,10 +4,10 @@ import logging
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import Scenes
+from zigpy.zcl.clusters.general import PowerConfiguration, Scenes
 from zigpy.zcl.clusters.lightlink import LightLink
 
-from zhaquirks import DoublingPowerConfigurationCluster, PowerConfigurationCluster
+from zhaquirks import DoublingPowerConfigurationCluster
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -76,7 +76,7 @@ class ScenesCluster(CustomCluster, Scenes):
 # ZCL compliant IKEA power configuration clusters:
 
 
-class PowerConfig2AAACluster(PowerConfigurationCluster):
+class PowerConfig2AAACluster(PowerConfiguration):
     """Updating power attributes 2 AAA."""
 
     BATTERY_SIZES = 0x0031
@@ -90,7 +90,7 @@ class PowerConfig2AAACluster(PowerConfigurationCluster):
     }
 
 
-class PowerConfig2CRCluster(PowerConfigurationCluster):
+class PowerConfig2CRCluster(PowerConfiguration):
     """Updating power attributes 2 CR2032."""
 
     BATTERY_SIZES = 0x0031
@@ -104,7 +104,7 @@ class PowerConfig2CRCluster(PowerConfigurationCluster):
     }
 
 
-class PowerConfig1CRCluster(PowerConfigurationCluster):
+class PowerConfig1CRCluster(PowerConfiguration):
     """Updating power attributes 1 CR2032."""
 
     BATTERY_SIZES = 0x0031
@@ -118,7 +118,7 @@ class PowerConfig1CRCluster(PowerConfigurationCluster):
     }
 
 
-class PowerConfig1CRXCluster(PowerConfigurationCluster):
+class PowerConfig1CRXCluster(PowerConfiguration):
     """Updating power attributes 1 CR2032 and zero voltage."""
 
     BATTERY_VOLTAGE = 0x0020
