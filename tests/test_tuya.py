@@ -1546,4 +1546,4 @@ async def test_sm0202_motion_sensor_signature(assert_signature_matches_quirk):
         "model": "SM0202",
         "class": "zhaquirks.tuya.lh992zb.TuyaMotionSM0202",
     }
-    assert_signature_matches_quirk(zhaquirks.tuya.sm0202_motion.SM0202, signature)
+    assert_signature_matches_quirk(zhaquirks.tuya.sm0202_motion.SM0202Motion, signature)
