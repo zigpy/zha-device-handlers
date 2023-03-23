@@ -16,10 +16,12 @@ IKEA_CLUSTER_ID = 0xFC7C  # decimal = 64636
 WWAH_CLUSTER_ID = 0xFC57  # decimal = 64599 ('Works with all Hubs' cluster)
 
 # PowerConfiguration cluster attributes
-BATTERY_VOLTAGE = PowerConfiguration.attributes_by_name["battery_voltage"]
-BATTERY_SIZE = PowerConfiguration.attributes_by_name["battery_size"]
-BATTERY_QUANTITY = PowerConfiguration.attributes_by_name["battery_quantity"]
-BATTERY_RATED_VOLTAGE = PowerConfiguration.attributes_by_name["battery_rated_voltage"]
+BATTERY_VOLTAGE = PowerConfiguration.attributes_by_name["battery_voltage"].id
+BATTERY_SIZE = PowerConfiguration.attributes_by_name["battery_size"].id
+BATTERY_QUANTITY = PowerConfiguration.attributes_by_name["battery_quantity"].id
+BATTERY_RATED_VOLTAGE = PowerConfiguration.attributes_by_name[
+    "battery_rated_voltage"
+].id
 
 
 class LightLinkCluster(CustomCluster, LightLink):
