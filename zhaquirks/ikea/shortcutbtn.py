@@ -37,11 +37,7 @@ from zhaquirks.const import (
     SHORT_PRESS,
     TURN_ON,
 )
-from zhaquirks.ikea import (
-    IKEA,
-    IKEA_CLUSTER_ID,
-    DoublingPowerConfig1CRCluster,
-)
+from zhaquirks.ikea import IKEA, IKEA_CLUSTER_ID, DoublingPowerConfig1CRCluster
 
 
 class IkeaTradfriShortcutBtn(CustomDevice):

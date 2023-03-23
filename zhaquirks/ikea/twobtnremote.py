@@ -43,8 +43,8 @@ from zhaquirks.const import (
 from zhaquirks.ikea import (
     IKEA,
     IKEA_CLUSTER_ID,
-    LightLinkCluster,
     DoublingPowerConfig1CRCluster,
+    LightLinkCluster,
 )
 
 
