@@ -80,8 +80,6 @@ class ScenesCluster(CustomCluster, Scenes):
 
 
 # ZCL compliant IKEA power configuration clusters:
-
-
 class PowerConfig2AAACluster(CustomCluster, PowerConfiguration):
     """Updating power attributes 2 AAA."""
 
@@ -124,8 +122,6 @@ class PowerConfig1CRXCluster(CustomCluster, PowerConfiguration):
 
 
 # doubling IKEA power configuration clusters:
-
-
 class DoublingPowerConfig2AAACluster(
     DoublingPowerConfigurationCluster, PowerConfig2AAACluster
 ):
