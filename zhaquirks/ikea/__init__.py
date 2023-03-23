@@ -12,11 +12,12 @@ from zhaquirks import DoublingPowerConfigurationCluster, EventableCluster
 _LOGGER = logging.getLogger(__name__)
 
 IKEA = "IKEA of Sweden"
-WWAH_CLUSTER_ID = 0xFC57  # decimal = 64599 ('Works with all Hubs' cluster)
 IKEA_CLUSTER_ID = 0xFC7C  # decimal = 64636
-IKEA_SHORTC_CLUSTER_V1_ID = 0xFC7F  # decimal = 64639 Shortcut V1 commands
-IKEA_M_SWITCH_CLUSTER_ID = 0xFC80  # decimal = 64640 Shortcut V2 commands
-COMMAND_SHORTCUTV1 = "shortcut_v1_events"
+WWAH_CLUSTER_ID = 0xFC57  # decimal = 64599 ('Works with all Hubs' cluster)
+
+IKEA_SHORTCUT_CLUSTER_V1_ID = 0xFC7F  # decimal = 64639 Shortcut V1 commands
+IKEA_MATTER_SWITCH_CLUSTER_ID = 0xFC80  # decimal = 64640 Shortcut V2 commands
+COMMAND_SHORTCUT_V1 = "shortcut_v1_events"
 
 # PowerConfiguration cluster attributes
 BATTERY_VOLTAGE = PowerConfiguration.attributes_by_name["battery_voltage"].id
@@ -88,11 +89,11 @@ class ShortcutV1Cluster(EventableCluster):
     """Ikea Shortcut Button Cluster Variant 1."""
 
     name = "ShortCutV1EventsCluster"
-    cluster_id = IKEA_SHORTC_CLUSTER_V1_ID
+    cluster_id = IKEA_SHORTCUT_CLUSTER_V1_ID
 
     server_commands = {
         0x01: foundation.ZCLCommandDef(
-            "shortcut_v1_events",
+            COMMAND_SHORTCUT_V1,
             {
                 "shortcut_button": t.int8s,
                 "shortcut_event": t.int8s,
@@ -107,7 +108,7 @@ class ShortcutV2Cluster(EventableCluster):
     """Ikea Shortcut Button Cluster Variant 2."""
 
     name = "ShortcutClusterV2"
-    cluster_id = IKEA_M_SWITCH_CLUSTER_ID
+    cluster_id = IKEA_MATTER_SWITCH_CLUSTER_ID
 
     server_commands = {
         0x00: foundation.ZCLCommandDef(
@@ -154,7 +155,7 @@ class ShortcutV2Cluster(EventableCluster):
             "multi_press_ongoing",
             {
                 "new_position": t.int8s,
-                # "current_number_of_presses_counted": t.int8s, # Not implanted.
+                # "current_number_of_presses_counted": t.int8s, # not implemented
             },
             False,
             is_manufacturer_specific=True,

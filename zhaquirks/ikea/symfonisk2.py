@@ -47,7 +47,7 @@ from zhaquirks.const import (
     TOGGLE,
 )
 from zhaquirks.ikea import (
-    COMMAND_SHORTCUTV1,
+    COMMAND_SHORTCUT_V1,
     IKEA,
     IKEA_CLUSTER_ID,
     WWAH_CLUSTER_ID,
@@ -173,27 +173,27 @@ class IkeaSYMFONISKgen2V1(CustomDevice):
     device_automation_triggers.update(
         {
             (SHORT_PRESS, BUTTON_1): {
-                COMMAND: COMMAND_SHORTCUTV1,
+                COMMAND: COMMAND_SHORTCUT_V1,
                 PARAMS: {"shortcut_button": 1, "shortcut_event": 1},
             },
             (DOUBLE_PRESS, BUTTON_1): {
-                COMMAND: COMMAND_SHORTCUTV1,
+                COMMAND: COMMAND_SHORTCUT_V1,
                 PARAMS: {"shortcut_button": 1, "shortcut_event": 2},
             },
             (LONG_PRESS, BUTTON_1): {
-                COMMAND: COMMAND_SHORTCUTV1,
+                COMMAND: COMMAND_SHORTCUT_V1,
                 PARAMS: {"shortcut_button": 1, "shortcut_event": 3},
             },
             (SHORT_PRESS, BUTTON_2): {
-                COMMAND: COMMAND_SHORTCUTV1,
+                COMMAND: COMMAND_SHORTCUT_V1,
                 PARAMS: {"shortcut_button": 2, "shortcut_event": 1},
             },
             (DOUBLE_PRESS, BUTTON_2): {
-                COMMAND: COMMAND_SHORTCUTV1,
+                COMMAND: COMMAND_SHORTCUT_V1,
                 PARAMS: {"shortcut_button": 2, "shortcut_event": 2},
             },
             (LONG_PRESS, BUTTON_2): {
-                COMMAND: COMMAND_SHORTCUTV1,
+                COMMAND: COMMAND_SHORTCUT_V1,
                 PARAMS: {"shortcut_button": 2, "shortcut_event": 3},
             },
         },
