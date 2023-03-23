@@ -88,7 +88,6 @@ class ScenesCluster(CustomCluster, Scenes):
 class ShortcutV1Cluster(EventableCluster):
     """Ikea Shortcut Button Cluster Variant 1."""
 
-    name = "ShortCutV1EventsCluster"
     cluster_id = IKEA_SHORTCUT_CLUSTER_V1_ID
 
     server_commands = {
@@ -107,7 +106,6 @@ class ShortcutV1Cluster(EventableCluster):
 class ShortcutV2Cluster(EventableCluster):
     """Ikea Shortcut Button Cluster Variant 2."""
 
-    name = "ShortcutClusterV2"
     cluster_id = IKEA_MATTER_SWITCH_CLUSTER_ID
 
     server_commands = {
