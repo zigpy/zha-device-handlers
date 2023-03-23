@@ -106,7 +106,7 @@ class Symfonisk2CommonTriggers:
     }
 
 
-class IkeaSYMFONISKgen2V1(CustomDevice):
+class IkeaSymfoniskGen2v1(CustomDevice):
     """Custom device representing IKEA SYMFONISK sound remote gen2 V1.0.012."""
 
     signature = {
@@ -200,7 +200,7 @@ class IkeaSYMFONISKgen2V1(CustomDevice):
     )
 
 
-class IkeaSYMFONISKgen2V2(CustomDevice):
+class IkeaSymfoniskGen2v2(CustomDevice):
     """Custom device representing IKEA SYMFONISK sound remote gen2 V1.0.32."""
 
     signature = {
