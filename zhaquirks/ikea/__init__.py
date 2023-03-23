@@ -83,7 +83,7 @@ class ScenesCluster(CustomCluster, Scenes):
 
 # ZCL compliant IKEA power configuration clusters:
 class PowerConfig2AAACluster(CustomCluster, PowerConfiguration):
-    """Updating power attributes 2 AAA."""
+    """Updating power attributes: 2 AAA."""
 
     _CONSTANT_ATTRIBUTES = {
         BATTERY_SIZE: 4,
@@ -93,7 +93,7 @@ class PowerConfig2AAACluster(CustomCluster, PowerConfiguration):
 
 
 class PowerConfig2CRCluster(CustomCluster, PowerConfiguration):
-    """Updating power attributes 2 CR2032."""
+    """Updating power attributes: 2 CR2032."""
 
     _CONSTANT_ATTRIBUTES = {
         BATTERY_SIZE: 10,
@@ -103,7 +103,7 @@ class PowerConfig2CRCluster(CustomCluster, PowerConfiguration):
 
 
 class PowerConfig1CRCluster(CustomCluster, PowerConfiguration):
-    """Updating power attributes 1 CR2032."""
+    """Updating power attributes: 1 CR2032."""
 
     _CONSTANT_ATTRIBUTES = {
         BATTERY_SIZE: 10,
@@ -113,7 +113,7 @@ class PowerConfig1CRCluster(CustomCluster, PowerConfiguration):
 
 
 class PowerConfig1CRXCluster(CustomCluster, PowerConfiguration):
-    """Updating power attributes 1 CR2032 and zero voltage."""
+    """Updating power attributes: 1 CR2032 and zero voltage."""
 
     _CONSTANT_ATTRIBUTES = {
         BATTERY_VOLTAGE: 0,
@@ -127,22 +127,22 @@ class PowerConfig1CRXCluster(CustomCluster, PowerConfiguration):
 class DoublingPowerConfig2AAACluster(
     DoublingPowerConfigurationCluster, PowerConfig2AAACluster
 ):
-    """Doubling power configuration cluster. Updating power attributes 2 AAA."""
+    """Doubling power configuration cluster. Updating power attributes: 2 AAA."""
 
 
 class DoublingPowerConfig2CRCluster(
     DoublingPowerConfigurationCluster, PowerConfig2CRCluster
 ):
-    """Doubling power configuration cluster. Updating power attributes 2 CR2032."""
+    """Doubling power configuration cluster. Updating power attributes: 2 CR2032."""
 
 
 class DoublingPowerConfig1CRCluster(
     DoublingPowerConfigurationCluster, PowerConfig1CRCluster
 ):
-    """Doubling power configuration cluster. Updating power attributes 1 CR2032."""
+    """Doubling power configuration cluster. Updating power attributes: 1 CR2032."""
 
 
 class DoublingPowerConfig1CRXCluster(
     DoublingPowerConfigurationCluster, PowerConfig1CRXCluster
 ):
-    """Doubling power configuration cluster. Updating power attributes 1 CR2032 and zero voltage."""
+    """Doubling power configuration cluster. Updating power attributes: 1 CR2032 and zero voltage."""
