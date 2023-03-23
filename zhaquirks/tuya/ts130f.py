@@ -166,6 +166,7 @@ class TuyaZemismartTS130F(CustomDevice):
         },
     }
 
+
 class TuyaOxtTS130F(CustomDevice):
     """Tuya Oxt smart curtain roller shutter."""
 
@@ -223,6 +224,7 @@ class TuyaOxtTS130F(CustomDevice):
             },
         },
     }
+
 
 class TuyaTS130FTI2(CustomDevice):
     """Tuya smart curtain roller shutter Time In."""
