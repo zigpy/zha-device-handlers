@@ -9,6 +9,7 @@ from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice, get_device
 import zigpy.types as t
 from zigpy.zcl import foundation
+from zigpy.zcl.clusters.general import PowerConfiguration
 
 import zhaquirks
 from zhaquirks.const import (
@@ -24,6 +25,7 @@ from zhaquirks.const import (
 )
 from zhaquirks.tuya import Data, TuyaManufClusterAttributes, TuyaNewManufCluster
 import zhaquirks.tuya.sm0202_motion
+import zhaquirks.tuya.ts0041
 import zhaquirks.tuya.ts0042
 import zhaquirks.tuya.ts0043
 import zhaquirks.tuya.ts0501_fan_switch
@@ -1547,3 +1549,31 @@ async def test_sm0202_motion_sensor_signature(assert_signature_matches_quirk):
         "class": "zhaquirks.tuya.lh992zb.TuyaMotionSM0202",
     }
     assert_signature_matches_quirk(zhaquirks.tuya.sm0202_motion.SM0202Motion, signature)
+
+
+@pytest.mark.parametrize(
+    "quirk",
+    (zhaquirks.tuya.ts0041.TuyaSmartRemote0041TOPlusA,),
+)
+async def test_power_config_no_bind(zigpy_device_from_quirk, quirk):
+    """Test that the power configuration cluster is not bound and no attribute reporting is set up."""
+
+    device = zigpy_device_from_quirk(quirk)
+    power_cluster = device.endpoints[1].power
+
+    request_patch = mock.patch("zigpy.zcl.Cluster.request", mock.AsyncMock())
+    bind_patch = mock.patch("zigpy.zcl.Cluster.bind", mock.AsyncMock())
+
+    with request_patch as request_mock, bind_patch as bind_mock:
+        request_mock.return_value = (foundation.Status.SUCCESS, "done")
+
+        await power_cluster.bind()
+        await power_cluster.configure_reporting(
+            PowerConfiguration.attributes_by_name["battery_percentage_remaining"].id,
+            3600,
+            10800,
+            1,
+        )
+
+        assert len(request_mock.mock_calls) == 0
+        assert len(bind_mock.mock_calls) == 0
