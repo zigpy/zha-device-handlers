@@ -7,11 +7,7 @@ from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import PowerConfiguration, Scenes
 from zigpy.zcl.clusters.lightlink import LightLink
 
-from zhaquirks import (
-    DoublingPowerConfigurationCluster,
-    EventableCluster,
-    PowerConfigurationCluster,
-)
+from zhaquirks import DoublingPowerConfigurationCluster, EventableCluster
 
 _LOGGER = logging.getLogger(__name__)
 
