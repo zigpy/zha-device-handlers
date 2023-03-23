@@ -4,7 +4,7 @@ import logging
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import Scenes
+from zigpy.zcl.clusters.general import PowerConfiguration, Scenes
 from zigpy.zcl.clusters.lightlink import LightLink
 
 from zhaquirks import DoublingPowerConfigurationCluster
@@ -14,6 +14,14 @@ _LOGGER = logging.getLogger(__name__)
 IKEA = "IKEA of Sweden"
 IKEA_CLUSTER_ID = 0xFC7C  # decimal = 64636
 WWAH_CLUSTER_ID = 0xFC57  # decimal = 64599 ('Works with all Hubs' cluster)
+
+# PowerConfiguration cluster attributes
+BATTERY_VOLTAGE = PowerConfiguration.attributes_by_name["battery_voltage"].id
+BATTERY_SIZE = PowerConfiguration.attributes_by_name["battery_size"].id
+BATTERY_QUANTITY = PowerConfiguration.attributes_by_name["battery_quantity"].id
+BATTERY_RATED_VOLTAGE = PowerConfiguration.attributes_by_name[
+    "battery_rated_voltage"
+].id
 
 
 class LightLinkCluster(CustomCluster, LightLink):
@@ -73,59 +81,68 @@ class ScenesCluster(CustomCluster, Scenes):
     )
 
 
-class PowerConfiguration2AAACluster(DoublingPowerConfigurationCluster):
-    """Updating Power attributes 2 AAA."""
-
-    BATTERY_SIZES = 0x0031
-    BATTERY_QUANTITY = 0x0033
-    BATTERY_RATED_VOLTAGE = 0x0034
+# ZCL compliant IKEA power configuration clusters:
+class PowerConfig2AAACluster(CustomCluster, PowerConfiguration):
+    """Updating power attributes: 2 AAA."""
 
     _CONSTANT_ATTRIBUTES = {
-        BATTERY_SIZES: 4,
+        BATTERY_SIZE: 4,
         BATTERY_QUANTITY: 2,
         BATTERY_RATED_VOLTAGE: 15,
     }
 
 
-class PowerConfiguration2CRCluster(DoublingPowerConfigurationCluster):
-    """Updating Power attributes 2 CR2032."""
-
-    BATTERY_SIZES = 0x0031
-    BATTERY_QUANTITY = 0x0033
-    BATTERY_RATED_VOLTAGE = 0x0034
+class PowerConfig2CRCluster(CustomCluster, PowerConfiguration):
+    """Updating power attributes: 2 CR2032."""
 
     _CONSTANT_ATTRIBUTES = {
-        BATTERY_SIZES: 10,
+        BATTERY_SIZE: 10,
         BATTERY_QUANTITY: 2,
         BATTERY_RATED_VOLTAGE: 30,
     }
 
 
-class PowerConfiguration1CRCluster(DoublingPowerConfigurationCluster):
-    """Updating Power attributes 1 CR2032."""
-
-    BATTERY_SIZES = 0x0031
-    BATTERY_QUANTITY = 0x0033
-    BATTERY_RATED_VOLTAGE = 0x0034
+class PowerConfig1CRCluster(CustomCluster, PowerConfiguration):
+    """Updating power attributes: 1 CR2032."""
 
     _CONSTANT_ATTRIBUTES = {
-        BATTERY_SIZES: 10,
+        BATTERY_SIZE: 10,
         BATTERY_QUANTITY: 1,
         BATTERY_RATED_VOLTAGE: 30,
     }
 
 
-class PowerConfiguration1CRXCluster(DoublingPowerConfigurationCluster):
-    """Updating Power attributes 1 CR2032 and Zero voltage."""
-
-    BATTERY_VOLTAGE = 0x0020
-    BATTERY_SIZES = 0x0031
-    BATTERY_QUANTITY = 0x0033
-    BATTERY_RATED_VOLTAGE = 0x0034
+class PowerConfig1CRXCluster(CustomCluster, PowerConfiguration):
+    """Updating power attributes: 1 CR2032 and zero voltage."""
 
     _CONSTANT_ATTRIBUTES = {
         BATTERY_VOLTAGE: 0,
-        BATTERY_SIZES: 10,
+        BATTERY_SIZE: 10,
         BATTERY_QUANTITY: 1,
         BATTERY_RATED_VOLTAGE: 30,
     }
+
+
+# doubling IKEA power configuration clusters:
+class DoublingPowerConfig2AAACluster(
+    DoublingPowerConfigurationCluster, PowerConfig2AAACluster
+):
+    """Doubling power configuration cluster. Updating power attributes: 2 AAA."""
+
+
+class DoublingPowerConfig2CRCluster(
+    DoublingPowerConfigurationCluster, PowerConfig2CRCluster
+):
+    """Doubling power configuration cluster. Updating power attributes: 2 CR2032."""
+
+
+class DoublingPowerConfig1CRCluster(
+    DoublingPowerConfigurationCluster, PowerConfig1CRCluster
+):
+    """Doubling power configuration cluster. Updating power attributes: 1 CR2032."""
+
+
+class DoublingPowerConfig1CRXCluster(
+    DoublingPowerConfigurationCluster, PowerConfig1CRXCluster
+):
+    """Doubling power configuration cluster. Updating power attributes: 1 CR2032 and zero voltage."""

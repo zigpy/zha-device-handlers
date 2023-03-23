@@ -38,7 +38,7 @@ from zhaquirks.const import (
     TRIPLE_PRESS,
     TURN_ON,
 )
-from zhaquirks.ikea import IKEA, IKEA_CLUSTER_ID, PowerConfiguration1CRCluster
+from zhaquirks.ikea import IKEA, IKEA_CLUSTER_ID, DoublingPowerConfig1CRCluster
 
 
 class IkeaSYMFONISK1(CustomDevice):
@@ -80,7 +80,7 @@ class IkeaSYMFONISK1(CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    PowerConfiguration1CRCluster,
+                    DoublingPowerConfig1CRCluster,
                     Identify.cluster_id,
                     PollControl.cluster_id,
                     LightLink.cluster_id,
@@ -176,7 +176,7 @@ class IkeaSYMFONISK2(CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    PowerConfiguration1CRCluster,
+                    DoublingPowerConfig1CRCluster,
                     Identify.cluster_id,
                     PollControl.cluster_id,
                     LightLink.cluster_id,

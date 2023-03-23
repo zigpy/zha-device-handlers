@@ -43,8 +43,8 @@ from zhaquirks.const import (
 from zhaquirks.ikea import (
     IKEA,
     IKEA_CLUSTER_ID,
+    DoublingPowerConfig1CRCluster,
     LightLinkCluster,
-    PowerConfiguration1CRCluster,
 )
 
 
@@ -90,7 +90,7 @@ class IkeaTradfriRemote2Btn(CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.NON_COLOR_CONTROLLER,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    PowerConfiguration1CRCluster,
+                    DoublingPowerConfig1CRCluster,
                     Identify.cluster_id,
                     Alarms.cluster_id,
                     PollControl.cluster_id,
