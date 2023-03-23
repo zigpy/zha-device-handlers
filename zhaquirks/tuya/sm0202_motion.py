@@ -24,10 +24,6 @@ class MotionCluster(MotionWithReset):
 class SM0202Motion(CustomDevice):
     """Quirk for LH-961ZB motion sensor."""
 
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-
     signature = {
         # "endpoint": 1
         # "profile_id": 260,
