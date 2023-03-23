@@ -15,6 +15,12 @@ IKEA = "IKEA of Sweden"
 IKEA_CLUSTER_ID = 0xFC7C  # decimal = 64636
 WWAH_CLUSTER_ID = 0xFC57  # decimal = 64599 ('Works with all Hubs' cluster)
 
+# PowerConfiguration cluster attributes
+BATTERY_VOLTAGE = PowerConfiguration.attributes_by_name["battery_voltage"]
+BATTERY_SIZES = PowerConfiguration.attributes_by_name["battery_size"]
+BATTERY_QUANTITY = PowerConfiguration.attributes_by_name["battery_quantity"]
+BATTERY_RATED_VOLTAGE = PowerConfiguration.attributes_by_name["battery_rated_voltage"]
+
 
 class LightLinkCluster(CustomCluster, LightLink):
     """Ikea LightLink cluster."""
@@ -79,10 +85,6 @@ class ScenesCluster(CustomCluster, Scenes):
 class PowerConfig2AAACluster(PowerConfiguration):
     """Updating power attributes 2 AAA."""
 
-    BATTERY_SIZES = 0x0031
-    BATTERY_QUANTITY = 0x0033
-    BATTERY_RATED_VOLTAGE = 0x0034
-
     _CONSTANT_ATTRIBUTES = {
         BATTERY_SIZES: 4,
         BATTERY_QUANTITY: 2,
@@ -92,10 +94,6 @@ class PowerConfig2AAACluster(PowerConfiguration):
 
 class PowerConfig2CRCluster(PowerConfiguration):
     """Updating power attributes 2 CR2032."""
-
-    BATTERY_SIZES = 0x0031
-    BATTERY_QUANTITY = 0x0033
-    BATTERY_RATED_VOLTAGE = 0x0034
 
     _CONSTANT_ATTRIBUTES = {
         BATTERY_SIZES: 10,
@@ -107,10 +105,6 @@ class PowerConfig2CRCluster(PowerConfiguration):
 class PowerConfig1CRCluster(PowerConfiguration):
     """Updating power attributes 1 CR2032."""
 
-    BATTERY_SIZES = 0x0031
-    BATTERY_QUANTITY = 0x0033
-    BATTERY_RATED_VOLTAGE = 0x0034
-
     _CONSTANT_ATTRIBUTES = {
         BATTERY_SIZES: 10,
         BATTERY_QUANTITY: 1,
@@ -120,11 +114,6 @@ class PowerConfig1CRCluster(PowerConfiguration):
 
 class PowerConfig1CRXCluster(PowerConfiguration):
     """Updating power attributes 1 CR2032 and zero voltage."""
-
-    BATTERY_VOLTAGE = 0x0020
-    BATTERY_SIZES = 0x0031
-    BATTERY_QUANTITY = 0x0033
-    BATTERY_RATED_VOLTAGE = 0x0034
 
     _CONSTANT_ATTRIBUTES = {
         BATTERY_VOLTAGE: 0,
