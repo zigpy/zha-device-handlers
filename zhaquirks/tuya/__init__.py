@@ -533,7 +533,7 @@ class TuyaEnchantableCluster(CustomCluster):
     Preferably, make the device inherit from `EnchantedDevice` and use a subclass of this class in the replacement.
 
     This will only work for clusters that ZHA calls bind() on.
-    At the moment, ZHA does not do this for:
+    At the moment, ZHA does NOT do this for:
     - Basic cluster
     - Identify cluster
     - Groups cluster
@@ -541,6 +541,7 @@ class TuyaEnchantableCluster(CustomCluster):
     - GreenPowerProxy cluster
     - LightLink cluster
     - non-registered manufacturer specific clusters
+    - clusters which would be bound, but that changed their ep_attribute
 
     Make sure to add a subclass of TuyaEnchantableCluster to the quirk replacement. Tests will fail if this is not done.
     Classes like TuyaOnOff, TuyaZBOnOffAttributeCluster, TuyaSmartRemoteOnOffCluster already inherit from this class.
