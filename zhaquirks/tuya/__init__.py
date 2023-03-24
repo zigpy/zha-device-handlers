@@ -983,7 +983,7 @@ class TuyaZBOnOffAttributeCluster(TuyaEnchantableCluster, OnOff):
     attributes.update({0x8004: ("switch_mode", SwitchMode)})
 
 
-class TuyaSmartRemoteOnOffCluster(TuyaEnchantableCluster, OnOff, EventableCluster):
+class TuyaSmartRemoteOnOffCluster(OnOff, EventableCluster):
     """TuyaSmartRemoteOnOffCluster: fire events corresponding to press type."""
 
     rotate_type = {
