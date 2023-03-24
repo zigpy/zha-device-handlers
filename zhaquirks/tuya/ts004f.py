@@ -58,7 +58,11 @@ from zhaquirks.const import (
     TURN_OFF,
     TURN_ON,
 )
-from zhaquirks.tuya import TuyaSmartRemoteOnOffCluster, TuyaZBOnOffAttributeCluster
+from zhaquirks.tuya import (
+    TuyaPowerConfigurationClusterEnchantable,
+    TuyaSmartRemoteOnOffCluster,
+    TuyaZBOnOffAttributeCluster,
+)
 from zhaquirks.tuya.mcu import EnchantedDevice
 
 _LOGGER = logging.getLogger(__name__)
@@ -110,7 +114,7 @@ class TuyaSmartRemote004FROK(EnchantedDevice, CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.NON_COLOR_CONTROLLER,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
+                    TuyaPowerConfigurationClusterEnchantable,
                     Identify.cluster_id,
                     Groups.cluster_id,  # Is needed for adding group then binding is not working.
                     LightLink.cluster_id,
@@ -226,7 +230,7 @@ class TuyaSmartRemote004FDMS(EnchantedDevice, CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.NON_COLOR_CONTROLLER,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
+                    TuyaPowerConfigurationClusterEnchantable,
                     Identify.cluster_id,
                     Groups.cluster_id,  # Is needed for adding group then binding is not working.
                     LightLink.cluster_id,
