@@ -532,10 +532,9 @@ class TuyaEnchantableOnOffCluster(CustomCluster, OnOff):
 
     async def bind(self):
         """Bind cluster and start casting the spell."""
-        result = await super().bind()
         if getattr(self.endpoint.device, "TUYA_SPELL", False):
             await self.spell()
-        return result
+        return await super().bind()
 
     async def spell(self):
         """Cast spell, so the Tuya device works correctly."""
