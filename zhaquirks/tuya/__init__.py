@@ -871,8 +871,16 @@ class TuyaLocalCluster(LocalDataCluster):
         return self._update_attribute(attr.id, value)
 
 
-class TuyaNoBindPowerConfigurationCluster(PowerConfiguration, CustomCluster):
-    """PowerConfiguration cluster that prevents setting up binding/attribute reports in order to stop battery drain."""
+class TuyaPowerConfigurationClusterEnchantable(
+    TuyaEnchantableCluster, PowerConfiguration
+):
+    """Enchantable PowerConfiguration cluster."""
+
+
+class _TuyaNoBindPowerConfigurationCluster(CustomCluster, PowerConfiguration):
+    """PowerConfiguration cluster that prevents setting up binding/attribute reports in order to stop battery drain.
+
+    Note: Use the `TuyaNoBindPowerConfigurationCluster` class instead of this one."""
 
     async def bind(self):
         """Prevent bind."""
@@ -881,6 +889,15 @@ class TuyaNoBindPowerConfigurationCluster(PowerConfiguration, CustomCluster):
     async def _configure_reporting(self, *args, **kwargs):  # pylint: disable=W0221
         """Prevent remote configure reporting."""
         return (foundation.ConfigureReportingResponse.deserialize(b"\x00")[0],)
+
+
+# these classes are needed, so the execution order of bind() is still correct
+class TuyaNoBindPowerConfigurationCluster(
+    TuyaEnchantableCluster, _TuyaNoBindPowerConfigurationCluster
+):
+    """PowerConfiguration cluster that prevents setting up binding/attribute reports in order to stop battery drain.
+
+    This class is also enchantable, so it will cast the Tuya spell if the device inherits from `EnchantedDevice`."""
 
 
 class TuyaPowerConfigurationCluster(PowerConfiguration, TuyaLocalCluster):
