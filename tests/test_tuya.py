@@ -25,6 +25,7 @@ from zhaquirks.const import (
 )
 from zhaquirks.tuya import Data, TuyaManufClusterAttributes, TuyaNewManufCluster
 import zhaquirks.tuya.sm0202_motion
+import zhaquirks.tuya.ts011f_plug
 import zhaquirks.tuya.ts0041
 import zhaquirks.tuya.ts0042
 import zhaquirks.tuya.ts0043
@@ -1577,3 +1578,30 @@ async def test_power_config_no_bind(zigpy_device_from_quirk, quirk):
 
         assert len(request_mock.mock_calls) == 0
         assert len(bind_mock.mock_calls) == 0
+
+
+@pytest.mark.parametrize(
+    "quirk",
+    (zhaquirks.tuya.ts011f_plug.Plug,),
+)
+async def test_tuya_spell(zigpy_device_from_quirk, quirk):
+    """Test that enchanted Tuya devices have their spell applied when binding OnOff cluster."""
+
+    device = zigpy_device_from_quirk(quirk)
+    onoff_cluster = device.endpoints[1].on_off
+
+    request_patch = mock.patch("zigpy.zcl.Cluster.request", mock.AsyncMock())
+    bind_patch = mock.patch("zigpy.zcl.Cluster.bind", mock.AsyncMock())
+
+    with request_patch as request_mock, bind_patch as bind_mock:
+        request_mock.return_value = (foundation.Status.SUCCESS, "done")
+
+        await onoff_cluster.bind()
+
+        assert len(bind_mock.mock_calls) == 1  # original bind is still called
+        assert len(request_mock.mock_calls) == 1
+        assert (
+            request_mock.mock_calls[0][1][1]
+            == foundation.GeneralCommand.Read_Attributes
+        )  # read attributes
+        assert request_mock.mock_calls[0][1][3] == [4, 0, 1, 5, 7, 65534]  # Tuya spell
