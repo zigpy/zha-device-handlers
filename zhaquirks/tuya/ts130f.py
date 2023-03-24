@@ -171,9 +171,12 @@ class TuyaTS130FTOGP(CustomDevice):
     """Tuya Oxt smart curtain roller shutter."""
 
     signature = {
-        # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=0x0202, device_version=1, input_clusters=[0x0000, 0x0004, 0x0005, 0x0102], output_clusters=[0x000a, 0x0019], endpoint=242, profile=41440, device_type=0x0061, input_clusters=[], output_clusters=[0x0021])
         MODEL: "TS130F",
         ENDPOINTS: {
+            # <SimpleDescriptor endpoint=1 profile=260 device_type=0x0202 
+            # device_version=1 
+            # input_clusters=[0x0000, 0x0004, 0x0005, 0x0102] 
+            # output_clusters=[0x000a, 0x0019]>
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
@@ -188,10 +191,10 @@ class TuyaTS130FTOGP(CustomDevice):
                     Ota.cluster_id,
                 ],
             },
+            # <SimpleDescriptor endpoint=242 profile=41440 device_type=97
+            # input_clusters=[]
+            # output_clusters=[33]>
             242: {
-                # <SimpleDescriptor endpoint=242 profile=41440 device_type=97
-                # input_clusters=[]
-                # output_clusters=[33]
                 PROFILE_ID: 41440,
                 DEVICE_TYPE: 97,
                 INPUT_CLUSTERS: [],
