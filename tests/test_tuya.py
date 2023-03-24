@@ -1642,9 +1642,13 @@ def test_tuya_spell_devices_valid():
                 ):
                     enchanted_clusters += 1
 
-        # one EnchantedDevice must have at least one enchanted cluster
+        # one EnchantedDevice must have exactly one enchanted cluster on endpoint 1
         if enchanted_clusters == 0:
             pytest.fail(
                 f"{quirk} does not have a cluster subclassing `TuyaEnchantableCluster` on endpoint 1 "
                 f"as required by the Tuya spell."
+            )
+        if enchanted_clusters > 1:
+            pytest.fail(
+                f"{quirk} has more than one cluster subclassing `TuyaEnchantableCluster` on endpoint 1"
             )
