@@ -5,6 +5,7 @@ import datetime
 from unittest import mock
 
 import pytest
+import zigpy
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice, get_device
 import zigpy.types as t
@@ -23,7 +24,12 @@ from zhaquirks.const import (
     PROFILE_ID,
     ZONE_STATE,
 )
-from zhaquirks.tuya import Data, TuyaManufClusterAttributes, TuyaNewManufCluster
+from zhaquirks.tuya import (
+    Data,
+    TuyaEnchantableOnOffCluster,
+    TuyaManufClusterAttributes,
+    TuyaNewManufCluster,
+)
 import zhaquirks.tuya.sm0202_motion
 import zhaquirks.tuya.ts011f_plug
 import zhaquirks.tuya.ts0041
@@ -1605,3 +1611,38 @@ async def test_tuya_spell(zigpy_device_from_quirk, quirk):
             == foundation.GeneralCommand.Read_Attributes
         )  # read attributes
         assert request_mock.mock_calls[0][1][3] == [4, 0, 1, 5, 7, 65534]  # Tuya spell
+
+
+def test_tuya_spell_devices_valid():
+    """Test that all enchanted Tuya devices implement at least one enchanted cluster."""
+    enchanted_quirks = []
+    for manufacturer in zigpy.quirks._DEVICE_REGISTRY._registry.values():
+        for model_quirk_list in manufacturer.values():
+            for quirk in model_quirk_list:
+                if quirk in enchanted_quirks:
+                    continue
+                # right now, this basically includes `issubclass(quirk, EnchantedDevice)`, as that sets `TUYA_SPELL`
+                if getattr(quirk, "TUYA_SPELL", False):
+                    enchanted_quirks.append(quirk)
+
+    del quirk, model_quirk_list, manufacturer
+
+    for quirk in enchanted_quirks:
+        enchanted_clusters = 0
+
+        # iterate over all clusters in the replacement
+        for endpoint_id, endpoint in quirk.replacement[ENDPOINTS].items():
+            if endpoint_id != 1:  # spell is only activated on endpoint 1 for now
+                continue
+            for cluster in endpoint[INPUT_CLUSTERS] + endpoint[OUTPUT_CLUSTERS]:
+                if not isinstance(cluster, int) and issubclass(
+                    cluster, TuyaEnchantableOnOffCluster
+                ):
+                    enchanted_clusters += 1
+
+        # one EnchantedDevice must have at least one enchanted cluster
+        if enchanted_clusters == 0:
+            pytest.fail(
+                f"{quirk} does not have a cluster subclassing `TuyaEnchantableOnOffCluster` on endpoint 1 "
+                f"as required by the Tuya spell."
+            )
