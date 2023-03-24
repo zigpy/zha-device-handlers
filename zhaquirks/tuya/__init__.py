@@ -531,11 +531,12 @@ class TuyaEnchantableOnOffCluster(CustomCluster, OnOff):
     """Tuya On/Off cluster that casts a magic spell if TUYA_SPELL is set."""
 
     async def bind(self):
-        """Bind cluster and start casting the spell."""
+        """Bind cluster and start casting the spell if necessary."""
         # check if the device needs to have the spell cast
-        # and since the cluster can be used on multiple endpoints, check that the spell was not cast yet
-        if getattr(self.endpoint.device, "TUYA_SPELL", False) and not getattr(
-            self.endpoint.device, "TUYA_SPELL_EXECUTED", False
+        # and since the cluster can be used on multiple endpoints, check that it's endpoint 1
+        if (
+            getattr(self.endpoint.device, "TUYA_SPELL", False)
+            and self.endpoint.endpoint_id == 1
         ):
             await self.spell()
         return await super().bind()
@@ -543,13 +544,10 @@ class TuyaEnchantableOnOffCluster(CustomCluster, OnOff):
     async def spell(self):
         """Cast spell, so the Tuya device works correctly."""
         self.debug("Executing spell on Tuya device %s", self.endpoint.device.ieee)
-
         attr_to_read = [4, 0, 1, 5, 7, 0xFFFE]
         basic_cluster = self.endpoint.device.endpoints[1].in_clusters[0]
         await basic_cluster.read_attributes(attr_to_read)
-
         self.debug("Executed spell on Tuya device %s", self.endpoint.device.ieee)
-        setattr(self.endpoint.device, "TUYA_SPELL_EXECUTED", True)
 
 
 class TuyaOnOff(TuyaEnchantableOnOffCluster):
