@@ -26,7 +26,7 @@ from zhaquirks.const import (
 )
 from zhaquirks.tuya import (
     Data,
-    TuyaEnchantableOnOffCluster,
+    TuyaEnchantableCluster,
     TuyaManufClusterAttributes,
     TuyaNewManufCluster,
 )
@@ -1636,13 +1636,13 @@ def test_tuya_spell_devices_valid():
                 continue
             for cluster in endpoint[INPUT_CLUSTERS] + endpoint[OUTPUT_CLUSTERS]:
                 if not isinstance(cluster, int) and issubclass(
-                    cluster, TuyaEnchantableOnOffCluster
+                    cluster, TuyaEnchantableCluster
                 ):
                     enchanted_clusters += 1
 
         # one EnchantedDevice must have at least one enchanted cluster
         if enchanted_clusters == 0:
             pytest.fail(
-                f"{quirk} does not have a cluster subclassing `TuyaEnchantableOnOffCluster` on endpoint 1 "
+                f"{quirk} does not have a cluster subclassing `TuyaEnchantableCluster` on endpoint 1 "
                 f"as required by the Tuya spell."
             )

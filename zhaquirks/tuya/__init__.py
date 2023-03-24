@@ -527,8 +527,24 @@ class TuyaManufClusterAttributes(TuyaManufCluster):
         return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
 
-class TuyaEnchantableOnOffCluster(CustomCluster, OnOff):
-    """Tuya On/Off cluster that casts a magic spell if TUYA_SPELL is set."""
+class TuyaEnchantableCluster(CustomCluster):
+    """Tuya cluster that casts a magic spell if `TUYA_SPELL` is set.
+
+    Preferably, make the device inherit from `EnchantedDevice` and use a subclass of this class in the replacement.
+
+    This will only work for clusters that ZHA calls bind() on.
+    At the moment, ZHA does not do this for:
+    - Basic cluster
+    - Identify cluster
+    - Groups cluster
+    - OTA cluster
+    - GreenPowerProxy cluster
+    - LightLink cluster
+    - non-registered manufacturer specific clusters
+
+    Make sure to add a subclass of TuyaEnchantableCluster to the quirk replacement. Tests will fail if this is not done.
+    Classes like TuyaOnOff, TuyaZBOnOffAttributeCluster, TuyaSmartRemoteOnOffCluster already inherit from this class.
+    """
 
     async def bind(self):
         """Bind cluster and start casting the spell if necessary."""
@@ -550,7 +566,7 @@ class TuyaEnchantableOnOffCluster(CustomCluster, OnOff):
         self.debug("Executed spell on Tuya device %s", self.endpoint.device.ieee)
 
 
-class TuyaOnOff(TuyaEnchantableOnOffCluster):
+class TuyaOnOff(TuyaEnchantableCluster, OnOff):
     """Tuya On/Off cluster for On/Off device."""
 
     def __init__(self, *args, **kwargs):
@@ -956,7 +972,7 @@ class PowerOnState(t.enum8):
     LastState = 0x02
 
 
-class TuyaZBOnOffAttributeCluster(TuyaEnchantableOnOffCluster):
+class TuyaZBOnOffAttributeCluster(TuyaEnchantableCluster, OnOff):
     """Tuya Zigbee On Off cluster with extra attributes."""
 
     attributes = OnOff.attributes.copy()
@@ -966,7 +982,7 @@ class TuyaZBOnOffAttributeCluster(TuyaEnchantableOnOffCluster):
     attributes.update({0x8004: ("switch_mode", SwitchMode)})
 
 
-class TuyaSmartRemoteOnOffCluster(TuyaEnchantableOnOffCluster, EventableCluster):
+class TuyaSmartRemoteOnOffCluster(TuyaEnchantableCluster, OnOff, EventableCluster):
     """TuyaSmartRemoteOnOffCluster: fire events corresponding to press type."""
 
     rotate_type = {

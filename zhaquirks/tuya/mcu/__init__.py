@@ -6,7 +6,7 @@ from typing import Any, Callable, Dict, Optional, Tuple, Union
 from zigpy.quirks import CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import LevelControl
+from zigpy.zcl.clusters.general import LevelControl, OnOff
 
 from zhaquirks import Bus, DoublingPowerConfigurationCluster
 from zhaquirks.tuya import (
@@ -18,7 +18,7 @@ from zhaquirks.tuya import (
     PowerOnState,
     TuyaCommand,
     TuyaDatapointData,
-    TuyaEnchantableOnOffCluster,
+    TuyaEnchantableCluster,
     TuyaLocalCluster,
     TuyaNewManufCluster,
     TuyaTimePayload,
@@ -355,7 +355,7 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
         return foundation.Status.SUCCESS
 
 
-class TuyaOnOff(TuyaEnchantableOnOffCluster, TuyaLocalCluster):
+class TuyaOnOff(TuyaEnchantableCluster, OnOff, TuyaLocalCluster):
     """Tuya MCU OnOff cluster."""
 
     async def command(
@@ -666,7 +666,8 @@ class TuyaLevelControlManufCluster(TuyaMCUCluster):
 class EnchantedDevice(CustomDevice):
     """Class for Tuya devices which need to be unlocked by casting a 'spell'. This happens during binding.
 
-    To make sure the spell is cast, the device needs to implement `TuyaEnchantableOnOffCluster` or a subclass of it.
+    To make sure the spell is cast, the device needs to implement a subclass of `TuyaEnchantableCluster`.
+    For more information, see the documentation of `TuyaEnchantableCluster`.
     """
 
     TUYA_SPELL = True
