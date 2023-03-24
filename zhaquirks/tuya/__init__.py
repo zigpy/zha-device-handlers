@@ -880,7 +880,8 @@ class TuyaPowerConfigurationClusterEnchantable(
 class _TuyaNoBindPowerConfigurationCluster(CustomCluster, PowerConfiguration):
     """PowerConfiguration cluster that prevents setting up binding/attribute reports in order to stop battery drain.
 
-    Note: Use the `TuyaNoBindPowerConfigurationCluster` class instead of this one."""
+    Note: Use the `TuyaNoBindPowerConfigurationCluster` class instead of this one.
+    """
 
     async def bind(self):
         """Prevent bind."""
@@ -897,7 +898,8 @@ class TuyaNoBindPowerConfigurationCluster(
 ):
     """PowerConfiguration cluster that prevents setting up binding/attribute reports in order to stop battery drain.
 
-    This class is also enchantable, so it will cast the Tuya spell if the device inherits from `EnchantedDevice`."""
+    This class is also enchantable, so it will cast the Tuya spell if the device inherits from `EnchantedDevice`.
+    """
 
 
 class TuyaPowerConfigurationCluster(PowerConfiguration, TuyaLocalCluster):
