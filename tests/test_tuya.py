@@ -1643,7 +1643,20 @@ async def test_tuya_spell(zigpy_device_from_quirk):
                 ):
                     await cluster.bind()
 
-            assert len(request_mock.mock_calls) == 1  # exactly one Tuya spell cast
+            # check that exactly one Tuya spell was cast
+            if len(request_mock.mock_calls) == 0:
+                pytest.fail(
+                    f"Enchanted quirk {quirk} did not cast a Tuya spell. "
+                    f"One bindable cluster subclassing `TuyaEnchantableCluster` on endpoint 1 needs to be implemented. "
+                    f"Also check that enchanted bindable clusters do not modify their `ep_attribute`, "
+                    f"as ZHA will not call bind() in that case."
+                )
+            elif len(request_mock.mock_calls) > 1:
+                pytest.fail(
+                    f"Enchanted quirk {quirk} cast more than one Tuya spell. "
+                    f"Make sure to only implement one cluster subclassing `TuyaEnchantableCluster` on endpoint 1."
+                )
+
             assert (
                 request_mock.mock_calls[0][1][1]
                 == foundation.GeneralCommand.Read_Attributes
@@ -1674,7 +1687,7 @@ def test_tuya_spell_devices_valid():
                 f"{quirk} does not have a cluster subclassing `TuyaEnchantableCluster` on endpoint 1 "
                 f"as required by the Tuya spell."
             )
-        if enchanted_clusters > 1:
+        elif enchanted_clusters > 1:
             pytest.fail(
                 f"{quirk} has more than one cluster subclassing `TuyaEnchantableCluster` on endpoint 1"
             )
