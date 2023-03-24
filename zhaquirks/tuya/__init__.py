@@ -831,6 +831,18 @@ class TuyaLocalCluster(LocalDataCluster):
         return self._update_attribute(attr.id, value)
 
 
+class TuyaNoBindPowerConfigurationCluster(PowerConfiguration, CustomCluster):
+    """PowerConfiguration cluster that prevents setting up binding/attribute reports in order to stop battery drain."""
+
+    async def bind(self):
+        """Prevent bind."""
+        return (foundation.Status.SUCCESS,)
+
+    async def _configure_reporting(self, *args, **kwargs):  # pylint: disable=W0221
+        """Prevent remote configure reporting."""
+        return (foundation.ConfigureReportingResponse.deserialize(b"\x00")[0],)
+
+
 class TuyaPowerConfigurationCluster(PowerConfiguration, TuyaLocalCluster):
     """PowerConfiguration cluster for battery-operated thermostats."""
 
