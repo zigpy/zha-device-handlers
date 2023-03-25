@@ -6,6 +6,7 @@ import pytest
 import zigpy.device
 import zigpy.types as t
 from zigpy.zcl import foundation
+from zigpy.zcl.clusters.security import IasZone
 
 import zhaquirks
 from zhaquirks.const import (
@@ -51,6 +52,7 @@ from zhaquirks.xiaomi.aqara.feeder_acn001 import (
 import zhaquirks.xiaomi.aqara.motion_aq2
 import zhaquirks.xiaomi.aqara.motion_aq2b
 import zhaquirks.xiaomi.aqara.plug_eu
+import zhaquirks.xiaomi.aqara.smoke
 import zhaquirks.xiaomi.mija.motion
 
 from tests.common import ZCL_OCC_ATTR_RPT_OCC, ClusterListener
@@ -699,3 +701,87 @@ async def test_aqara_feeder_attr_reports(
     assert cluster_listener.attribute_updated.call_count == call_count
     for call in calls:
         assert call in cluster_listener.attribute_updated.mock_calls
+
+
+@pytest.mark.parametrize("quirk", (zhaquirks.xiaomi.aqara.smoke.LumiSensorSmokeAcn03,))
+async def test_aqara_smoke_sensor_attribute_update(zigpy_device_from_quirk, quirk):
+    """Test update_attribute on Aqara smoke sensor."""
+
+    device = zigpy_device_from_quirk(quirk)
+
+    opple_cluster = device.endpoints[1].opple_cluster
+    opple_listener = ClusterListener(opple_cluster)
+
+    ias_cluster = device.endpoints[1].ias_zone
+    ias_listener = ClusterListener(ias_cluster)
+
+    zone_status_id = IasZone.attributes_by_name["zone_status"].id
+
+    # check that updating Xiaomi smoke attribute also updates zone status on the Ias Zone cluster
+
+    # turn on smoke alarm
+    opple_cluster._update_attribute(0x013A, 1)
+    assert len(opple_listener.attribute_updates) == 1
+    assert len(ias_listener.attribute_updates) == 1
+    assert ias_listener.attribute_updates[0][0] == zone_status_id
+    assert ias_listener.attribute_updates[0][1] == IasZone.ZoneStatus.Alarm_1
+
+    # turn off smoke alarm
+    opple_cluster._update_attribute(0x013A, 0)
+    assert len(opple_listener.attribute_updates) == 2
+    assert len(ias_listener.attribute_updates) == 2
+    assert ias_listener.attribute_updates[1][0] == zone_status_id
+    assert ias_listener.attribute_updates[1][1] == 0
+
+    # check if fake dB/m smoke density attribute is also updated
+    opple_cluster._update_attribute(0x013B, 10)
+    assert len(opple_listener.attribute_updates) == 4
+    assert opple_listener.attribute_updates[2][0] == 0x013B
+    assert opple_listener.attribute_updates[2][1] == 10
+    assert opple_listener.attribute_updates[3][0] == 0x1403  # fake attribute
+    assert opple_listener.attribute_updates[3][1] == 0.125
+
+
+@pytest.mark.parametrize(
+    "raw_report, expected_zone_status",
+    (
+        (
+            "1C5F11E10AF700413E0121360C0328190421A81305211E0006240200000000082111010A21"
+            "00000C20016620036720016821A800A0210000A12000A22000A32000A42000A52000",
+            0,
+        ),
+    ),
+)
+async def test_aqara_smoke_sensor_xiaomi_attribute_report(
+    zigpy_device_from_quirk, raw_report, expected_zone_status
+):
+    """Test that a Xiaomi attribute report changes the IAS zone status on Aqara smoke sensor."""
+    raw_report = bytes.fromhex(raw_report)
+
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.smoke.LumiSensorSmokeAcn03)
+
+    opple_cluster = device.endpoints[1].opple_cluster
+    opple_listener = ClusterListener(opple_cluster)
+
+    ias_cluster = device.endpoints[1].ias_zone
+    ias_listener = ClusterListener(ias_cluster)
+
+    device.handle_message(
+        260,
+        opple_cluster.cluster_id,
+        opple_cluster.endpoint.endpoint_id,
+        opple_cluster.endpoint.endpoint_id,
+        raw_report,
+    )
+
+    # check that Xiaomi attribute report also updates attribute cache
+    assert len(opple_listener.attribute_updates) == 1
+    assert opple_listener.attribute_updates[0][0] == 0x00F7
+
+    # check that Xiaomi attribute report resets smoke zone status
+    assert len(ias_listener.attribute_updates) == 1
+    assert (
+        ias_listener.attribute_updates[0][0]
+        == IasZone.attributes_by_name["zone_status"].id
+    )
+    assert ias_listener.attribute_updates[0][1] == expected_zone_status
