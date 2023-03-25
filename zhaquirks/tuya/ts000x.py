@@ -1,7 +1,6 @@
 """tuya TS000X Switches."""
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
@@ -31,7 +30,7 @@ from zhaquirks.tuya import (
 from zhaquirks.tuya.mcu import EnchantedDevice
 
 
-class Switch_1G_GPP(EnchantedDevice, CustomDevice):
+class Switch_1G_GPP(EnchantedDevice):
     """Tuya 1 gang switch module with restore power state support."""
 
     signature = {
@@ -87,7 +86,7 @@ class Switch_1G_GPP(EnchantedDevice, CustomDevice):
     }
 
 
-class Switch_1G_Metering(EnchantedDevice, CustomDevice):
+class Switch_1G_Metering(EnchantedDevice):
     """Tuya 1 gang switch with metering support."""
 
     signature = {
@@ -146,7 +145,7 @@ class Switch_1G_Metering(EnchantedDevice, CustomDevice):
     }
 
 
-class Switch_2G_GPP(EnchantedDevice, CustomDevice):
+class Switch_2G_GPP(EnchantedDevice):
     """Tuya 2 gang switch module with restore power state support."""
 
     signature = {
@@ -234,7 +233,7 @@ class Switch_2G_GPP(EnchantedDevice, CustomDevice):
     }
 
 
-class Switch_2G_Metering(EnchantedDevice, CustomDevice):
+class Switch_2G_Metering(EnchantedDevice):
     """Tuya 2 gang switch with metering support."""
 
     signature = {
@@ -322,7 +321,7 @@ class Switch_2G_Metering(EnchantedDevice, CustomDevice):
     }
 
 
-class Switch_2G_Var03(EnchantedDevice, CustomDevice):
+class Switch_2G_Var03(EnchantedDevice):
     """Tuya 2 gang (variation 03)."""
 
     signature = {
@@ -414,7 +413,7 @@ class Switch_2G_Var03(EnchantedDevice, CustomDevice):
     }
 
 
-class Switch_3G_GPP(EnchantedDevice, CustomDevice):
+class Switch_3G_GPP(EnchantedDevice):
     """Tuya 3 gang switch module with restore power state support."""
 
     signature = {
@@ -528,7 +527,7 @@ class Switch_3G_GPP(EnchantedDevice, CustomDevice):
     }
 
 
-class Switch_3G_Metering(EnchantedDevice, CustomDevice):
+class Switch_3G_Metering(EnchantedDevice):
     """Tuya 3 gang switch with metering support."""
 
     signature = {
@@ -639,7 +638,7 @@ class Switch_3G_Metering(EnchantedDevice, CustomDevice):
     }
 
 
-class Switch_4G_GPP(EnchantedDevice, CustomDevice):
+class Switch_4G_GPP(EnchantedDevice):
     """Tuya 4 gang switch module with restore power state support."""
 
     signature = {
@@ -779,7 +778,7 @@ class Switch_4G_GPP(EnchantedDevice, CustomDevice):
     }
 
 
-class Switch_4G_Metering(EnchantedDevice, CustomDevice):
+class Switch_4G_Metering(EnchantedDevice):
     """Tuya 4 gang switch with metering support."""
 
     signature = {
