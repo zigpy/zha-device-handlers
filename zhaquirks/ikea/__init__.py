@@ -7,13 +7,17 @@ from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import PowerConfiguration, Scenes
 from zigpy.zcl.clusters.lightlink import LightLink
 
-from zhaquirks import DoublingPowerConfigurationCluster
+from zhaquirks import DoublingPowerConfigurationCluster, EventableCluster
 
 _LOGGER = logging.getLogger(__name__)
 
 IKEA = "IKEA of Sweden"
 IKEA_CLUSTER_ID = 0xFC7C  # decimal = 64636
 WWAH_CLUSTER_ID = 0xFC57  # decimal = 64599 ('Works with all Hubs' cluster)
+
+IKEA_SHORTCUT_CLUSTER_V1_ID = 0xFC7F  # decimal = 64639 Shortcut V1 commands
+IKEA_MATTER_SWITCH_CLUSTER_ID = 0xFC80  # decimal = 64640 Shortcut V2 commands
+COMMAND_SHORTCUT_V1 = "shortcut_v1_events"
 
 # PowerConfiguration cluster attributes
 BATTERY_VOLTAGE = PowerConfiguration.attributes_by_name["battery_voltage"].id
@@ -79,6 +83,91 @@ class ScenesCluster(CustomCluster, Scenes):
             ),
         }
     )
+
+
+class ShortcutV1Cluster(EventableCluster):
+    """Ikea Shortcut Button Cluster Variant 1."""
+
+    cluster_id = IKEA_SHORTCUT_CLUSTER_V1_ID
+
+    server_commands = {
+        0x01: foundation.ZCLCommandDef(
+            COMMAND_SHORTCUT_V1,
+            {
+                "shortcut_button": t.int8s,
+                "shortcut_event": t.int8s,
+            },
+            False,
+            is_manufacturer_specific=True,
+        ),
+    }
+
+
+class ShortcutV2Cluster(EventableCluster):
+    """Ikea Shortcut Button Cluster Variant 2."""
+
+    cluster_id = IKEA_MATTER_SWITCH_CLUSTER_ID
+
+    server_commands = {
+        0x00: foundation.ZCLCommandDef(
+            "switch_latched",
+            {
+                "new_position": t.int8s,
+            },
+            False,
+            is_manufacturer_specific=True,
+        ),
+        0x01: foundation.ZCLCommandDef(
+            "initial_press",
+            {
+                "new_position": t.int8s,
+            },
+            False,
+            is_manufacturer_specific=True,
+        ),
+        0x02: foundation.ZCLCommandDef(
+            "long_press",
+            {
+                "previous_position": t.int8s,
+            },
+            False,
+            is_manufacturer_specific=True,
+        ),
+        0x03: foundation.ZCLCommandDef(
+            "short_release",
+            {
+                "previous_position": t.int8s,
+            },
+            False,
+            is_manufacturer_specific=True,
+        ),
+        0x04: foundation.ZCLCommandDef(
+            "long_release",
+            {
+                "previous_position": t.int8s,
+            },
+            False,
+            is_manufacturer_specific=True,
+        ),
+        0x05: foundation.ZCLCommandDef(
+            "multi_press_ongoing",
+            {
+                "new_position": t.int8s,
+                # "current_number_of_presses_counted": t.int8s, # not implemented
+            },
+            False,
+            is_manufacturer_specific=True,
+        ),
+        0x06: foundation.ZCLCommandDef(
+            "multi_press_complete",
+            {
+                "previous_position": t.int8s,
+                "total_number_of_presses_counted": t.int8s,
+            },
+            False,
+            is_manufacturer_specific=True,
+        ),
+    }
 
 
 # ZCL compliant IKEA power configuration clusters:
