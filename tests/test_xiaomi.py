@@ -52,7 +52,7 @@ from zhaquirks.xiaomi.aqara.feeder_acn001 import (
 import zhaquirks.xiaomi.aqara.motion_aq2
 import zhaquirks.xiaomi.aqara.motion_aq2b
 import zhaquirks.xiaomi.aqara.plug_eu
-from zhaquirks.xiaomi.aqara.smoke import LumiSensorSmokeAcn03
+import zhaquirks.xiaomi.aqara.smoke
 import zhaquirks.xiaomi.mija.motion
 
 from tests.common import ZCL_OCC_ATTR_RPT_OCC, ClusterListener
@@ -703,7 +703,7 @@ async def test_aqara_feeder_attr_reports(
         assert call in cluster_listener.attribute_updated.mock_calls
 
 
-@pytest.mark.parametrize("quirk", (LumiSensorSmokeAcn03,))
+@pytest.mark.parametrize("quirk", (zhaquirks.xiaomi.aqara.smoke.LumiSensorSmokeAcn03,))
 async def test_aqara_smoke_sensor_attribute_update(zigpy_device_from_quirk, quirk):
     """Test update_attribute on Aqara smoke sensor."""
 
@@ -758,7 +758,7 @@ async def test_aqara_smoke_sensor_xiaomi_attribute_report(
     """Test that a Xiaomi attribute report changes the IAS zone status on Aqara smoke sensor."""
     raw_report = bytes.fromhex(raw_report)
 
-    device = zigpy_device_from_quirk(LumiSensorSmokeAcn03)
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.smoke.LumiSensorSmokeAcn03)
 
     opple_cluster = device.endpoints[1].opple_cluster
     opple_listener = ClusterListener(opple_cluster)
