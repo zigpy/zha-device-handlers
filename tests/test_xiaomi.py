@@ -531,169 +531,6 @@ async def test_xiaomi_eu_plug_power(zigpy_device_from_quirk, quirk):
 
 
 @pytest.mark.parametrize(
-    "attr_redirect, attr_no_redirect",
-    [
-        ("system_mode", "unoccupied_heating_setpoint"),
-        (
-            Thermostat.attributes_by_name["system_mode"].id,
-            Thermostat.attributes_by_name["unoccupied_heating_setpoint"].id,
-        ),
-    ],
-)
-async def test_xiaomi_e1_thermostat_rw_redirection(
-    zigpy_device_from_quirk,
-    attr_redirect,
-    attr_no_redirect,
-):
-    """Test system_mode rw redirection to OppleCluster on Xiaomi E1 thermostat with id and named reads/writes."""
-
-    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.thermostat_agl001.AGL001)
-
-    opple_cluster = device.endpoints[1].opple_cluster
-    opple_listener = ClusterListener(opple_cluster)
-
-    thermostat_cluster = device.endpoints[1].thermostat
-    thermostat_listener = ClusterListener(thermostat_cluster)
-
-    # fake read response for attributes: return 1 for all attributes
-    def mock_read(attributes, manufacturer=None):
-        records = [
-            foundation.ReadAttributeRecord(
-                attr, foundation.Status.SUCCESS, foundation.TypeValue(None, 1)
-            )
-            for attr in attributes
-        ]
-        return (records,)
-
-    # patch read commands
-    patch_opple_read = mock.patch.object(
-        opple_cluster, "_read_attributes", mock.AsyncMock(side_effect=mock_read)
-    )
-    patch_thermostat_read = mock.patch.object(
-        thermostat_cluster, "_read_attributes", mock.AsyncMock(side_effect=mock_read)
-    )
-
-    # patch write commands
-    patch_opple_write = mock.patch.object(
-        opple_cluster,
-        "_write_attributes",
-        mock.AsyncMock(
-            return_value=(
-                [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)],
-            )
-        ),
-    )
-    patch_thermostat_write = mock.patch.object(
-        thermostat_cluster,
-        "_write_attributes",
-        mock.AsyncMock(
-            return_value=(
-                [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)],
-            )
-        ),
-    )
-
-    with patch_opple_read, patch_thermostat_read, patch_opple_write, patch_thermostat_write:
-        # test reads:
-
-        # read system_mode attribute from thermostat cluster
-        await thermostat_cluster.read_attributes([attr_redirect])
-
-        # check that system_mode reads were directed to the Opple cluster
-        assert len(thermostat_cluster._read_attributes.mock_calls) == 0
-        assert len(opple_cluster._read_attributes.mock_calls) == 1
-        assert opple_cluster._read_attributes.mock_calls[0][1][0] == [
-            0x0271
-        ]  # Opple system_mode attribute
-        assert thermostat_listener.attribute_updates[0] == (
-            Thermostat.attributes_by_name["system_mode"].id,
-            Thermostat.SystemMode.Heat,
-        )  # check that attributes are correctly mapped and updated on ZCL thermostat cluster
-
-        thermostat_cluster._read_attributes.reset_mock()
-        opple_cluster._read_attributes.reset_mock()
-
-        # check that other attribute reads are not redirected
-        await thermostat_cluster.read_attributes([attr_no_redirect])
-
-        assert len(thermostat_cluster._read_attributes.mock_calls) == 1
-        assert len(opple_cluster._read_attributes.mock_calls) == 0
-
-        thermostat_cluster._read_attributes.reset_mock()
-        opple_cluster._read_attributes.reset_mock()
-
-        # test writes:
-
-        # write system_mode attribute to thermostat cluster
-        await thermostat_cluster.write_attributes(
-            {attr_redirect: Thermostat.SystemMode.Heat}
-        )
-
-        # check that system_mode writes were directed to the Opple cluster
-        assert len(thermostat_cluster._write_attributes.mock_calls) == 0
-        assert len(opple_cluster._write_attributes.mock_calls) == 1
-        assert opple_listener.attribute_updates[1] == (0x0271, 1)  # Opple system_mode
-
-        assert thermostat_listener.attribute_updates[2] == (
-            Thermostat.attributes_by_name["system_mode"].id,
-            Thermostat.SystemMode.Heat,
-        )  # check ZCL attribute is in correct mode
-
-        thermostat_cluster._write_attributes.reset_mock()
-        opple_cluster._write_attributes.reset_mock()
-
-        # check that other attribute writes are not redirected
-        await thermostat_cluster.write_attributes({attr_no_redirect: 2000})
-
-        assert len(thermostat_cluster._write_attributes.mock_calls) == 1
-        assert len(opple_cluster._write_attributes.mock_calls) == 0
-
-
-@pytest.mark.parametrize("quirk", (zhaquirks.xiaomi.aqara.thermostat_agl001.AGL001,))
-async def test_xiaomi_e1_thermostat_attribute_update(zigpy_device_from_quirk, quirk):
-    """Test update_attribute on Xiaomi E1 thermostat."""
-
-    device = zigpy_device_from_quirk(quirk)
-
-    opple_cluster = device.endpoints[1].opple_cluster
-    opple_listener = ClusterListener(opple_cluster)
-
-    thermostat_cluster = device.endpoints[1].thermostat
-    thermostat_listener = ClusterListener(thermostat_cluster)
-
-    power_config_cluster = device.endpoints[1].power
-    power_config_listener = ClusterListener(power_config_cluster)
-
-    zcl_system_mode_id = Thermostat.attributes_by_name["system_mode"].id
-    zcl_battery_percentage_id = PowerConfiguration.attributes_by_name[
-        "battery_percentage_remaining"
-    ].id
-
-    # check that updating Xiaomi system_mode also updates an attribute on the Thermostat cluster
-
-    # turn off heating
-    opple_cluster._update_attribute(0x0271, 0)
-    assert len(opple_listener.attribute_updates) == 1
-    assert len(thermostat_listener.attribute_updates) == 1
-    assert thermostat_listener.attribute_updates[0][0] == zcl_system_mode_id
-    assert thermostat_listener.attribute_updates[0][1] == Thermostat.SystemMode.Off
-
-    # turn on heating
-    opple_cluster._update_attribute(0x0271, 1)
-    assert len(opple_listener.attribute_updates) == 2
-    assert len(thermostat_listener.attribute_updates) == 2
-    assert thermostat_listener.attribute_updates[1][0] == zcl_system_mode_id
-    assert thermostat_listener.attribute_updates[1][1] == Thermostat.SystemMode.Heat
-
-    # check that updating battery_percentage on the OppleCluster also updates the PowerConfiguration cluster
-    opple_cluster._update_attribute(0x040A, 50)  # 50% battery
-    assert len(opple_listener.attribute_updates) == 3
-    assert len(power_config_listener.attribute_updates) == 1
-    assert power_config_listener.attribute_updates[0][0] == zcl_battery_percentage_id
-    assert power_config_listener.attribute_updates[0][1] == 100  # ZCL is doubled
-
-
-@pytest.mark.parametrize(
     "attribute, value, expected_bytes",
     [
         ("disable_led_indicator", 1, b"\x00\x02\x01\x04\x17\x00U\x01\x01"),
@@ -950,3 +787,166 @@ async def test_aqara_smoke_sensor_xiaomi_attribute_report(
         == IasZone.attributes_by_name["zone_status"].id
     )
     assert ias_listener.attribute_updates[0][1] == expected_zone_status
+
+
+@pytest.mark.parametrize(
+    "attr_redirect, attr_no_redirect",
+    [
+        ("system_mode", "unoccupied_heating_setpoint"),
+        (
+            Thermostat.attributes_by_name["system_mode"].id,
+            Thermostat.attributes_by_name["unoccupied_heating_setpoint"].id,
+        ),
+    ],
+)
+async def test_xiaomi_e1_thermostat_rw_redirection(
+    zigpy_device_from_quirk,
+    attr_redirect,
+    attr_no_redirect,
+):
+    """Test system_mode rw redirection to OppleCluster on Xiaomi E1 thermostat with id and named reads/writes."""
+
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.thermostat_agl001.AGL001)
+
+    opple_cluster = device.endpoints[1].opple_cluster
+    opple_listener = ClusterListener(opple_cluster)
+
+    thermostat_cluster = device.endpoints[1].thermostat
+    thermostat_listener = ClusterListener(thermostat_cluster)
+
+    # fake read response for attributes: return 1 for all attributes
+    def mock_read(attributes, manufacturer=None):
+        records = [
+            foundation.ReadAttributeRecord(
+                attr, foundation.Status.SUCCESS, foundation.TypeValue(None, 1)
+            )
+            for attr in attributes
+        ]
+        return (records,)
+
+    # patch read commands
+    patch_opple_read = mock.patch.object(
+        opple_cluster, "_read_attributes", mock.AsyncMock(side_effect=mock_read)
+    )
+    patch_thermostat_read = mock.patch.object(
+        thermostat_cluster, "_read_attributes", mock.AsyncMock(side_effect=mock_read)
+    )
+
+    # patch write commands
+    patch_opple_write = mock.patch.object(
+        opple_cluster,
+        "_write_attributes",
+        mock.AsyncMock(
+            return_value=(
+                [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)],
+            )
+        ),
+    )
+    patch_thermostat_write = mock.patch.object(
+        thermostat_cluster,
+        "_write_attributes",
+        mock.AsyncMock(
+            return_value=(
+                [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)],
+            )
+        ),
+    )
+
+    with patch_opple_read, patch_thermostat_read, patch_opple_write, patch_thermostat_write:
+        # test reads:
+
+        # read system_mode attribute from thermostat cluster
+        await thermostat_cluster.read_attributes([attr_redirect])
+
+        # check that system_mode reads were directed to the Opple cluster
+        assert len(thermostat_cluster._read_attributes.mock_calls) == 0
+        assert len(opple_cluster._read_attributes.mock_calls) == 1
+        assert opple_cluster._read_attributes.mock_calls[0][1][0] == [
+            0x0271
+        ]  # Opple system_mode attribute
+        assert thermostat_listener.attribute_updates[0] == (
+            Thermostat.attributes_by_name["system_mode"].id,
+            Thermostat.SystemMode.Heat,
+        )  # check that attributes are correctly mapped and updated on ZCL thermostat cluster
+
+        thermostat_cluster._read_attributes.reset_mock()
+        opple_cluster._read_attributes.reset_mock()
+
+        # check that other attribute reads are not redirected
+        await thermostat_cluster.read_attributes([attr_no_redirect])
+
+        assert len(thermostat_cluster._read_attributes.mock_calls) == 1
+        assert len(opple_cluster._read_attributes.mock_calls) == 0
+
+        thermostat_cluster._read_attributes.reset_mock()
+        opple_cluster._read_attributes.reset_mock()
+
+        # test writes:
+
+        # write system_mode attribute to thermostat cluster
+        await thermostat_cluster.write_attributes(
+            {attr_redirect: Thermostat.SystemMode.Heat}
+        )
+
+        # check that system_mode writes were directed to the Opple cluster
+        assert len(thermostat_cluster._write_attributes.mock_calls) == 0
+        assert len(opple_cluster._write_attributes.mock_calls) == 1
+        assert opple_listener.attribute_updates[1] == (0x0271, 1)  # Opple system_mode
+
+        assert thermostat_listener.attribute_updates[2] == (
+            Thermostat.attributes_by_name["system_mode"].id,
+            Thermostat.SystemMode.Heat,
+        )  # check ZCL attribute is in correct mode
+
+        thermostat_cluster._write_attributes.reset_mock()
+        opple_cluster._write_attributes.reset_mock()
+
+        # check that other attribute writes are not redirected
+        await thermostat_cluster.write_attributes({attr_no_redirect: 2000})
+
+        assert len(thermostat_cluster._write_attributes.mock_calls) == 1
+        assert len(opple_cluster._write_attributes.mock_calls) == 0
+
+
+@pytest.mark.parametrize("quirk", (zhaquirks.xiaomi.aqara.thermostat_agl001.AGL001,))
+async def test_xiaomi_e1_thermostat_attribute_update(zigpy_device_from_quirk, quirk):
+    """Test update_attribute on Xiaomi E1 thermostat."""
+
+    device = zigpy_device_from_quirk(quirk)
+
+    opple_cluster = device.endpoints[1].opple_cluster
+    opple_listener = ClusterListener(opple_cluster)
+
+    thermostat_cluster = device.endpoints[1].thermostat
+    thermostat_listener = ClusterListener(thermostat_cluster)
+
+    power_config_cluster = device.endpoints[1].power
+    power_config_listener = ClusterListener(power_config_cluster)
+
+    zcl_system_mode_id = Thermostat.attributes_by_name["system_mode"].id
+    zcl_battery_percentage_id = PowerConfiguration.attributes_by_name[
+        "battery_percentage_remaining"
+    ].id
+
+    # check that updating Xiaomi system_mode also updates an attribute on the Thermostat cluster
+
+    # turn off heating
+    opple_cluster._update_attribute(0x0271, 0)
+    assert len(opple_listener.attribute_updates) == 1
+    assert len(thermostat_listener.attribute_updates) == 1
+    assert thermostat_listener.attribute_updates[0][0] == zcl_system_mode_id
+    assert thermostat_listener.attribute_updates[0][1] == Thermostat.SystemMode.Off
+
+    # turn on heating
+    opple_cluster._update_attribute(0x0271, 1)
+    assert len(opple_listener.attribute_updates) == 2
+    assert len(thermostat_listener.attribute_updates) == 2
+    assert thermostat_listener.attribute_updates[1][0] == zcl_system_mode_id
+    assert thermostat_listener.attribute_updates[1][1] == Thermostat.SystemMode.Heat
+
+    # check that updating battery_percentage on the OppleCluster also updates the PowerConfiguration cluster
+    opple_cluster._update_attribute(0x040A, 50)  # 50% battery
+    assert len(opple_listener.attribute_updates) == 3
+    assert len(power_config_listener.attribute_updates) == 1
+    assert power_config_listener.attribute_updates[0][0] == zcl_battery_percentage_id
+    assert power_config_listener.attribute_updates[0][1] == 100  # ZCL is doubled
