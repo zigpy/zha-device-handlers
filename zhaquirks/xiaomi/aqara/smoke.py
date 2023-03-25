@@ -53,7 +53,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
     ep_attribute = "opple_cluster"
     attributes = {
         BUZZER_MANUAL_MUTE: ("buzzer_manual_mute", types.uint8_t, True),
-        SELF_TEST: ("self_test", types.uint8_t, True),
+        SELF_TEST: ("self_test", types.Bool, True),
         SMOKE: ("smoke", types.uint8_t, True),
         SMOKE_DENSITY: ("smoke_density", types.uint8_t, True),
         HEARTBEAT_INDICATOR: ("heartbeat_indicator", types.uint8_t, True),
