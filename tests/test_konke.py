@@ -14,7 +14,7 @@ from zhaquirks.const import (
     OFF,
     ON,
     PRESS_TYPE,
-    ZONE_STATE,
+    ZONE_STATUS_CHANGE_COMMAND,
 )
 import zhaquirks.konke.motion
 
@@ -46,7 +46,7 @@ async def test_konke_motion(zigpy_device_from_quirk, quirk):
 
     assert len(motion_listener.cluster_commands) == 1
     assert len(motion_listener.attribute_updates) == 0
-    assert motion_listener.cluster_commands[0][1] == ZONE_STATE
+    assert motion_listener.cluster_commands[0][1] == ZONE_STATUS_CHANGE_COMMAND
     assert motion_listener.cluster_commands[0][2][0] == ON
 
     assert len(occupancy_listener.cluster_commands) == 0
@@ -57,7 +57,7 @@ async def test_konke_motion(zigpy_device_from_quirk, quirk):
     await asyncio.sleep(0.1)
 
     assert len(motion_listener.cluster_commands) == 2
-    assert motion_listener.cluster_commands[1][1] == ZONE_STATE
+    assert motion_listener.cluster_commands[1][1] == ZONE_STATUS_CHANGE_COMMAND
     assert motion_listener.cluster_commands[1][2][0] == OFF
 
     assert len(occupancy_listener.cluster_commands) == 0

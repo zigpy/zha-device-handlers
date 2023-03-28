@@ -12,7 +12,6 @@ from tests.common import ClusterListener, wait_for_zigpy_tasks
 zhaquirks.setup()
 
 
-@mock.patch("zhaquirks.tuya.mcu.EnchantedDevice.spell", mock.AsyncMock())
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_valve.ParksidePSBZS,))
 async def test_command_psbzs(zigpy_device_from_quirk, quirk):
     """Test executing cluster commands for PARKSIDE water valve."""
@@ -41,7 +40,6 @@ async def test_command_psbzs(zigpy_device_from_quirk, quirk):
         assert rsp.status == foundation.Status.SUCCESS
 
 
-@mock.patch("zhaquirks.tuya.mcu.EnchantedDevice.spell", mock.AsyncMock())
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_valve.ParksidePSBZS,))
 async def test_write_attr_psbzs(zigpy_device_from_quirk, quirk):
     """Test write cluster attributes for PARKSIDE water valve."""

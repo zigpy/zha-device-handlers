@@ -58,7 +58,10 @@ from zhaquirks.const import (
     TURN_OFF,
     TURN_ON,
 )
-from zhaquirks.tuya import TuyaSmartRemoteOnOffCluster, TuyaZBOnOffAttributeCluster
+from zhaquirks.tuya import (
+    TuyaNoBindPowerConfigurationCluster,
+    TuyaSmartRemoteOnOffCluster,
+)
 from zhaquirks.tuya.mcu import EnchantedDevice
 
 _LOGGER = logging.getLogger(__name__)
@@ -110,7 +113,7 @@ class TuyaSmartRemote004FROK(EnchantedDevice, CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.NON_COLOR_CONTROLLER,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
+                    TuyaNoBindPowerConfigurationCluster,
                     Identify.cluster_id,
                     Groups.cluster_id,  # Is needed for adding group then binding is not working.
                     LightLink.cluster_id,
@@ -226,7 +229,7 @@ class TuyaSmartRemote004FDMS(EnchantedDevice, CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.NON_COLOR_CONTROLLER,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
+                    TuyaNoBindPowerConfigurationCluster,
                     Identify.cluster_id,
                     Groups.cluster_id,  # Is needed for adding group then binding is not working.
                     LightLink.cluster_id,
@@ -357,7 +360,7 @@ class TuyaSmartRemote004F(EnchantedDevice, CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.NON_COLOR_CONTROLLER,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
+                    TuyaNoBindPowerConfigurationCluster,
                     Identify.cluster_id,
                     Groups.cluster_id,  # Is needed for adding group then binding is not working.
                     LightLink.cluster_id,
@@ -368,7 +371,7 @@ class TuyaSmartRemote004F(EnchantedDevice, CustomDevice):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaZBOnOffAttributeCluster,
+                    TuyaSmartRemoteOnOffCluster,
                     LevelControl.cluster_id,
                     LightLink.cluster_id,
                 ],

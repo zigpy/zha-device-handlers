@@ -42,18 +42,41 @@ SINOPE_MANUFACTURER_CLUSTER_ID = 0xFF01
 class SinopeManufacturerCluster(CustomCluster):
     """SinopeManufacturerCluster manufacturer cluster."""
 
+    class KeypadLock(t.enum8):
+        """keypad_lockout values."""
+
+        Unlocked = 0x00
+        Locked = 0x01
+
+    class TankSize(t.enum8):
+        """tank_size values."""
+
+        Gal_40 = 0x01
+        Gal_50 = 0x02
+        Gal_60 = 0x03
+        Gal_80 = 0x04
+
+    class ColdStatus(t.enum8):
+        """cold_load_pickup_status values."""
+
+        Active = 0x00
+        Off = 0x01
+
     cluster_id = SINOPE_MANUFACTURER_CLUSTER_ID
     name = "Sinopé Manufacturer specific"
     ep_attribute = "sinope_manufacturer_specific"
     attributes = {
-        0x0002: ("KeyboardLock", t.enum8, True),
-        0x0060: ("ConnectedLoad", t.uint16_t, True),
-        0x0070: ("CurrentLoad", t.bitmap8, True),
-        0x0076: ("drConfigWaterTempMin", t.uint8_t, True),
-        0x0077: ("drConfigWaterTempTime", t.uint8_t, True),
-        0x0078: ("drWTTimeOn", t.uint16_t, True),
-        0x00A0: ("Timer", t.uint32_t, True),
-        0x0283: ("ColdLoadPickupStatus", t.uint8_t, True),
+        0x0002: ("keypad_lockout", KeypadLock, True),
+        0x0004: ("firmware_version", t.CharacterString, True),
+        0x0013: ("tank_size", TankSize, True),
+        0x0060: ("connected_load", t.uint16_t, True),
+        0x0070: ("current_load", t.bitmap8, True),
+        0x0076: ("dr_config_water_temp_min", t.uint8_t, True),
+        0x0077: ("dr_config_water_temp_time", t.uint8_t, True),
+        0x0078: ("dr_wt_time_on", t.uint16_t, True),
+        0x00A0: ("timer", t.uint32_t, True),
+        0x0283: ("cold_load_pickup_status", ColdStatus, True),
+        0xFFFD: ("cluster_revision", t.uint16_t, True),
     }
 
 
@@ -102,7 +125,7 @@ class SinopeTechnologiesSwitch(CustomDevice):
                     OnOff.cluster_id,
                     CustomMeteringCluster,
                     ElectricalMeasurement.cluster_id,
-                    SINOPE_MANUFACTURER_CLUSTER_ID,
+                    SinopeManufacturerCluster,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             }
@@ -220,7 +243,7 @@ class SinopeTechnologiesValve(CustomDevice):
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
                     Diagnostic.cluster_id,
-                    SINOPE_MANUFACTURER_CLUSTER_ID,
+                    SinopeManufacturerCluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
@@ -432,7 +455,7 @@ class SinopeTechnologiesNewSwitch(CustomDevice):
                     CustomMeteringCluster,
                     ElectricalMeasurement.cluster_id,
                     LightLink.cluster_id,
-                    SINOPE_MANUFACTURER_CLUSTER_ID,
+                    SinopeManufacturerCluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     Ota.cluster_id,

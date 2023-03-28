@@ -21,6 +21,7 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.homeautomation import Diagnostic, ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
 
+from zhaquirks import EventableCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -29,7 +30,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.sinope import SINOPE
+from zhaquirks.sinope import LIGHT_DEVICE_TRIGGERS, SINOPE
 
 SINOPE_MANUFACTURER_CLUSTER_ID = 0xFF01
 
@@ -37,19 +38,45 @@ SINOPE_MANUFACTURER_CLUSTER_ID = 0xFF01
 class SinopeTechnologiesManufacturerCluster(CustomCluster):
     """SinopeTechnologiesManufacturerCluster manufacturer cluster."""
 
+    class KeypadLock(t.enum8):
+        """keypad_lockout values."""
+
+        Unlocked = 0x00
+        Locked = 0x01
+
+    class Action(t.enum8):
+        """action_report values."""
+
+        Single_on = 0x01
+        Single_release_on = 0x02
+        Long_on = 0x03
+        Double_on = 0x04
+        Single_off = 0x11
+        Single_release_off = 0x12
+        Long_off = 0x13
+        Double_off = 0x14
+
     cluster_id = SINOPE_MANUFACTURER_CLUSTER_ID
     name = "Sinopé Technologies Manufacturer specific"
     ep_attribute = "sinope_manufacturer_specific"
     attributes = {
-        0x0002: ("KeypadLock", t.enum8, True),
-        0x0050: ("onLedColor", t.uint24_t, True),
-        0x0051: ("offLedColor", t.uint24_t, True),
-        0x0052: ("onLedIntensity", t.uint8_t, True),
-        0x0053: ("offLedIntensity", t.uint8_t, True),
-        0x0055: ("minIntensity", t.uint16_t, True),
-        0x00A0: ("Timer", t.uint32_t, True),
-        0x0119: ("ConnectedLoad", t.uint16_t, True),
+        0x0002: ("keypad_lockout", KeypadLock, True),
+        0x0004: ("firmware_version", t.CharacterString, True),
+        0x0050: ("on_led_color", t.uint24_t, True),
+        0x0051: ("off_led_color", t.uint24_t, True),
+        0x0052: ("on_led_intensity", t.uint8_t, True),
+        0x0053: ("off_led_intensity", t.uint8_t, True),
+        0x0054: ("action_report", Action, True),
+        0x0055: ("min_intensity", t.uint16_t, True),
+        0x00A0: ("timer", t.uint32_t, True),
+        0x0119: ("connected_load", t.uint16_t, True),
+        0x0200: ("unknown", t.bitmap32, True),
+        0xFFFD: ("cluster_revision", t.uint16_t, True),
     }
+
+
+class LightManufacturerCluster(EventableCluster, SinopeTechnologiesManufacturerCluster):
+    """LightManufacturerCluster: fire events corresponding to press type."""
 
 
 class SinopeTechnologieslight(CustomDevice):
@@ -98,7 +125,7 @@ class SinopeTechnologieslight(CustomDevice):
                     OnOff.cluster_id,
                     Metering.cluster_id,
                     Diagnostic.cluster_id,
-                    SinopeTechnologiesManufacturerCluster,
+                    LightManufacturerCluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
@@ -108,6 +135,8 @@ class SinopeTechnologieslight(CustomDevice):
             }
         }
     }
+
+    device_automation_triggers = LIGHT_DEVICE_TRIGGERS
 
 
 class SinopeDM2500ZB(SinopeTechnologieslight):
@@ -158,7 +187,7 @@ class SinopeDM2500ZB(SinopeTechnologieslight):
                     LevelControl.cluster_id,
                     Metering.cluster_id,
                     Diagnostic.cluster_id,
-                    SinopeTechnologiesManufacturerCluster,
+                    LightManufacturerCluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
@@ -168,6 +197,8 @@ class SinopeDM2500ZB(SinopeTechnologieslight):
             }
         }
     }
+
+    device_automation_triggers = LIGHT_DEVICE_TRIGGERS
 
 
 class SinopeDM2550ZB(SinopeTechnologieslight):
@@ -221,7 +252,7 @@ class SinopeDM2550ZB(SinopeTechnologieslight):
                     Metering.cluster_id,
                     ElectricalMeasurement.cluster_id,
                     Diagnostic.cluster_id,
-                    SinopeTechnologiesManufacturerCluster,
+                    LightManufacturerCluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
@@ -232,3 +263,5 @@ class SinopeDM2550ZB(SinopeTechnologieslight):
             }
         }
     }
+
+    device_automation_triggers = LIGHT_DEVICE_TRIGGERS

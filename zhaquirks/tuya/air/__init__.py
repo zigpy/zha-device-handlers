@@ -1,6 +1,6 @@
 """Tuya Air sensors."""
 
-from typing import Dict
+from typing import Any, Dict
 
 import zigpy.types as t
 from zigpy.zcl.clusters.measurement import (
@@ -31,8 +31,36 @@ class TuyaAirQualityVOC(TuyaLocalCluster):
     client_commands = {}
 
 
+class CustomTemperature(t.Struct):
+    """Custom temperature wrapper."""
+
+    field_1: t.int16s_be
+    temperature: t.int16s_be
+
+    @classmethod
+    def from_value(cls, value):
+        """Convert from a raw value to a Struct data."""
+        return cls.deserialize(value.serialize())[0]
+
+
 class TuyaAirQualityTemperature(TemperatureMeasurement, TuyaLocalCluster):
     """Tuya temperature measurement."""
+
+    attributes = TemperatureMeasurement.attributes.copy()
+    attributes.update(
+        {
+            # ramdom attribute IDs
+            0xEF12: ("custom_temperature", CustomTemperature, False),
+        }
+    )
+
+    def update_attribute(self, attr_name: str, value: Any) -> None:
+        """Calculate the current temperature."""
+
+        super().update_attribute(attr_name, value)
+
+        if attr_name == "custom_temperature":
+            super().update_attribute("measured_value", value.temperature * 10)
 
 
 class TuyaAirQualityHumidity(RelativeHumidity, TuyaLocalCluster):
@@ -57,7 +85,9 @@ class TuyaCO2ManufCluster(TuyaNewManufCluster):
             lambda x: x * 1e-6,
         ),
         18: DPToAttributeMapping(
-            TuyaAirQualityTemperature.ep_attribute, "measured_value", lambda x: x * 10
+            TuyaAirQualityTemperature.ep_attribute,
+            "custom_temperature",
+            lambda x: CustomTemperature.from_value(x),
         ),
         19: DPToAttributeMapping(
             TuyaAirQualityHumidity.ep_attribute, "measured_value", lambda x: x * 10
