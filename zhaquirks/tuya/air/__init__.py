@@ -90,7 +90,9 @@ class TuyaCO2ManufCluster(TuyaNewManufCluster):
             lambda x: x * 1e-6,
         ),
         18: DPToAttributeMapping(
-            TuyaAirQualityTemperature.ep_attribute, "custom_temperature"
+            TuyaAirQualityTemperature.ep_attribute,
+            "custom_temperature",
+            lambda x: CustomTemperature.from_value(x),
         ),
         19: DPToAttributeMapping(
             TuyaAirQualityHumidity.ep_attribute, "measured_value", lambda x: x * 10
