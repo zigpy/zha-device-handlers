@@ -527,7 +527,47 @@ class TuyaManufClusterAttributes(TuyaManufCluster):
         return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
 
-class TuyaOnOff(CustomCluster, OnOff):
+class TuyaEnchantableCluster(CustomCluster):
+    """Tuya cluster that casts a magic spell if `TUYA_SPELL` is set.
+
+    Preferably, make the device inherit from `EnchantedDevice` and use a subclass of this class in the replacement.
+
+    This will only work for clusters that ZHA calls bind() on.
+    At the moment, ZHA does NOT do this for:
+    - Basic cluster
+    - Identify cluster
+    - Groups cluster
+    - OTA cluster
+    - GreenPowerProxy cluster
+    - LightLink cluster
+    - non-registered manufacturer specific clusters
+    - clusters which would be bound, but that changed their ep_attribute
+
+    Make sure to add a subclass of TuyaEnchantableCluster to the quirk replacement. Tests will fail if this is not done.
+    Classes like TuyaOnOff, TuyaZBOnOffAttributeCluster, TuyaSmartRemoteOnOffCluster already inherit from this class.
+    """
+
+    async def bind(self):
+        """Bind cluster and start casting the spell if necessary."""
+        # check if the device needs to have the spell cast
+        # and since the cluster can be used on multiple endpoints, check that it's endpoint 1
+        if (
+            getattr(self.endpoint.device, "TUYA_SPELL", False)
+            and self.endpoint.endpoint_id == 1
+        ):
+            await self.spell()
+        return await super().bind()
+
+    async def spell(self):
+        """Cast spell, so the Tuya device works correctly."""
+        self.debug("Executing spell on Tuya device %s", self.endpoint.device.ieee)
+        attr_to_read = [4, 0, 1, 5, 7, 0xFFFE]
+        basic_cluster = self.endpoint.device.endpoints[1].in_clusters[0]
+        await basic_cluster.read_attributes(attr_to_read)
+        self.debug("Executed spell on Tuya device %s", self.endpoint.device.ieee)
+
+
+class TuyaOnOff(TuyaEnchantableCluster, OnOff):
     """Tuya On/Off cluster for On/Off device."""
 
     def __init__(self, *args, **kwargs):
@@ -831,8 +871,17 @@ class TuyaLocalCluster(LocalDataCluster):
         return self._update_attribute(attr.id, value)
 
 
-class TuyaNoBindPowerConfigurationCluster(PowerConfiguration, CustomCluster):
-    """PowerConfiguration cluster that prevents setting up binding/attribute reports in order to stop battery drain."""
+class TuyaPowerConfigurationClusterEnchantable(
+    TuyaEnchantableCluster, PowerConfiguration
+):
+    """Enchantable PowerConfiguration cluster."""
+
+
+class _TuyaNoBindPowerConfigurationCluster(CustomCluster, PowerConfiguration):
+    """PowerConfiguration cluster that prevents setting up binding/attribute reports in order to stop battery drain.
+
+    Note: Use the `TuyaNoBindPowerConfigurationCluster` class instead of this one.
+    """
 
     async def bind(self):
         """Prevent bind."""
@@ -841,6 +890,16 @@ class TuyaNoBindPowerConfigurationCluster(PowerConfiguration, CustomCluster):
     async def _configure_reporting(self, *args, **kwargs):  # pylint: disable=W0221
         """Prevent remote configure reporting."""
         return (foundation.ConfigureReportingResponse.deserialize(b"\x00")[0],)
+
+
+# these classes are needed, so the execution order of bind() is still correct
+class TuyaNoBindPowerConfigurationCluster(
+    TuyaEnchantableCluster, _TuyaNoBindPowerConfigurationCluster
+):
+    """PowerConfiguration cluster that prevents setting up binding/attribute reports in order to stop battery drain.
+
+    This class is also enchantable, so it will cast the Tuya spell if the device inherits from `EnchantedDevice`.
+    """
 
 
 class TuyaPowerConfigurationCluster(PowerConfiguration, TuyaLocalCluster):
@@ -933,7 +992,7 @@ class PowerOnState(t.enum8):
     LastState = 0x02
 
 
-class TuyaZBOnOffAttributeCluster(CustomCluster, OnOff):
+class TuyaZBOnOffAttributeCluster(TuyaEnchantableCluster, OnOff):
     """Tuya Zigbee On Off cluster with extra attributes."""
 
     attributes = OnOff.attributes.copy()

@@ -1,5 +1,4 @@
 """Tuya MCU comunications."""
-import asyncio
 import dataclasses
 import datetime
 from typing import Any, Callable, Dict, Optional, Tuple, Union
@@ -19,6 +18,7 @@ from zhaquirks.tuya import (
     PowerOnState,
     TuyaCommand,
     TuyaDatapointData,
+    TuyaEnchantableCluster,
     TuyaLocalCluster,
     TuyaNewManufCluster,
     TuyaTimePayload,
@@ -355,7 +355,7 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
         return foundation.Status.SUCCESS
 
 
-class TuyaOnOff(OnOff, TuyaLocalCluster):
+class TuyaOnOff(TuyaEnchantableCluster, OnOff, TuyaLocalCluster):
     """Tuya MCU OnOff cluster."""
 
     async def command(
@@ -664,15 +664,10 @@ class TuyaLevelControlManufCluster(TuyaMCUCluster):
 
 
 class EnchantedDevice(CustomDevice):
-    """Class for enchanted Tuya devices which needs to be unlocked by casting a 'spell'."""
+    """Class for Tuya devices which need to be unlocked by casting a 'spell'. This happens during binding.
 
-    def __init__(self, *args, **kwargs):
-        """Initialize with task."""
-        super().__init__(*args, **kwargs)
-        self._init_device_task = asyncio.create_task(self.spell())
+    To make sure the spell is cast, the device needs to implement a subclass of `TuyaEnchantableCluster`.
+    For more information, see the documentation of `TuyaEnchantableCluster`.
+    """
 
-    async def spell(self) -> None:
-        """Initialize device so that all endpoints become available."""
-        attr_to_read = [4, 0, 1, 5, 7, 0xFFFE]
-        basic_cluster = self.endpoints[1].in_clusters[0]
-        await basic_cluster.read_attributes(attr_to_read)
+    TUYA_SPELL = True
