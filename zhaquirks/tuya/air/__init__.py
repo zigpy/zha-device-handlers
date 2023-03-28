@@ -37,6 +37,11 @@ class CustomTemperature(t.Struct):
     field_1: t.int16s_be
     temperature: t.int16s_be
 
+    @classmethod
+    def from_value(cls, value):
+        """Convert from a raw value to a Struct data."""
+        return cls.deserialize(value.serialize())[0]
+
 
 class TuyaAirQualityTemperature(TemperatureMeasurement, TuyaLocalCluster):
     """Tuya temperature measurement."""
@@ -45,17 +50,19 @@ class TuyaAirQualityTemperature(TemperatureMeasurement, TuyaLocalCluster):
     attributes.update(
         {
             # ramdom attribute IDs
-            0xEF12: ("custom_temperature", t.int32s_be, False),
+            0xEF12: ("custom_temperature", CustomTemperature, False),
         }
     )
 
     def update_attribute(self, attr_name: str, value: Any) -> None:
         """Calculate the current temperature."""
 
-        self._update_attribute(self.attributes_by_name[attr_name].id, value)
+        super().update_attribute(attr_name, value)
 
         if attr_name == "custom_temperature":
-            custom_temperature = CustomTemperature.deserialize(value.serialize())[0]
+            custom_temperature = self._attr_cache.get(
+                self.attributes_by_name[attr_name].id,
+            )
             if custom_temperature:
                 temp = custom_temperature.temperature * 10
                 super().update_attribute("measured_value", temp)
