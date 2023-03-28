@@ -1,17 +1,23 @@
-"""Device handler for Yooksmart D10110 roller blinds."""
+"""Device handler for Smartwings blinds."""
+from __future__ import annotations
+
+from typing import Any, Coroutine
+
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
+import zigpy.types as t
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
     Identify,
     Ota,
-    PollControl,
     PowerConfiguration,
     Scenes,
 )
 
+from zhaquirks import DoublingPowerConfigurationCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -23,31 +29,49 @@ from zhaquirks.const import (
 
 
 class InvertedWindowCoveringCluster(CustomCluster, WindowCovering):
-    """WindowCovering cluster implementation.
+    """This WindowCovering cluster implementation inverts the commands for up and down."""
 
-    This implementation inverts the reported covering percent for non standard
-    devices that don't follow the reporting spec.
-    """
+    CMD_UP_OPEN = WindowCovering.commands_by_name["up_open"].id
+    CMD_DOWN_CLOSE = WindowCovering.commands_by_name["down_close"].id
 
-    cluster_id = WindowCovering.cluster_id
-    CURRENT_POSITION_LIFT_PERCENTAGE = 0x0008
+    async def command(
+        self,
+        command_id: foundation.GeneralCommand | int | t.uint8_t,
+        *args,
+        manufacturer: int | t.uint16_t | None = None,
+        expect_reply: bool = True,
+        tries: int = 1,
+        tsn: int | t.uint8_t | None = None,
+        **kwargs: Any,
+    ) -> Coroutine:
+        """Override default commands for up and down. They need to be backwards."""
+        # swap up and down commands
+        if command_id == self.CMD_UP_OPEN:
+            command_id = self.CMD_DOWN_CLOSE
+        elif command_id == self.CMD_DOWN_CLOSE:
+            command_id = self.CMD_UP_OPEN
 
-    def _update_attribute(self, attrid, value):
-        if attrid == self.CURRENT_POSITION_LIFT_PERCENTAGE:
-            value = 100 - value
-        super()._update_attribute(attrid, value)
+        return await super().command(
+            command_id,
+            *args,
+            manufacturer=manufacturer,
+            expect_reply=expect_reply,
+            tries=tries,
+            tsn=tsn,
+            **kwargs,
+        )
 
 
-class D10110Blinds(CustomDevice):
-    """Custom device representing Yooksmart D10110 roller blinds."""
+class WM25LBlinds(CustomDevice):
+    """Custom device representing Smartwings WM25LZ blinds."""
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=514
         # device_version=1
-        # input_clusters=[0, 1, 3, 4, 5, 32, 258]
+        # input_clusters=[0, 1, 3, 4, 5, 258]
         # output_clusters=[3, 25]>
         MODELS_INFO: [
-            ("yooksmart", "D10110"),
+            ("Smartwings", "WM25/L-Z"),
         ],
         ENDPOINTS: {
             1: {
@@ -59,7 +83,6 @@ class D10110Blinds(CustomDevice):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    PollControl.cluster_id,
                     WindowCovering.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],
@@ -74,11 +97,10 @@ class D10110Blinds(CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
+                    DoublingPowerConfigurationCluster,
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    PollControl.cluster_id,
                     InvertedWindowCoveringCluster,
                 ],
                 OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],

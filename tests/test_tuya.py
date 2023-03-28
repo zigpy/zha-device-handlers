@@ -9,6 +9,7 @@ from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice, get_device
 import zigpy.types as t
 from zigpy.zcl import foundation
+from zigpy.zcl.clusters.general import PowerConfiguration
 
 import zhaquirks
 from zhaquirks.const import (
@@ -23,8 +24,11 @@ from zhaquirks.const import (
     ZONE_STATE,
 )
 from zhaquirks.tuya import Data, TuyaManufClusterAttributes, TuyaNewManufCluster
+import zhaquirks.tuya.sm0202_motion
+import zhaquirks.tuya.ts0041
 import zhaquirks.tuya.ts0042
 import zhaquirks.tuya.ts0043
+import zhaquirks.tuya.ts0501_fan_switch
 import zhaquirks.tuya.ts0601_electric_heating
 import zhaquirks.tuya.ts0601_motion
 import zhaquirks.tuya.ts0601_siren
@@ -276,12 +280,12 @@ def test_ts0121_signature(assert_signature_matches_quirk):
 
 async def test_tuya_data_conversion():
     """Test tuya conversion from Data to ztype and reverse."""
-    assert Data([4, 0, 0, 1, 39]).to_value(t.uint32_t) == 295
-    assert Data([4, 0, 0, 0, 220]).to_value(t.uint32_t) == 220
-    assert Data([4, 255, 255, 255, 236]).to_value(t.int32s) == -20
-    assert Data.from_value(t.uint32_t(295)) == [4, 0, 0, 1, 39]
-    assert Data.from_value(t.uint32_t(220)) == [4, 0, 0, 0, 220]
-    assert Data.from_value(t.int32s(-20)) == [4, 255, 255, 255, 236]
+    assert t.uint32_t(Data([4, 0, 0, 1, 39])) == 295
+    assert t.uint32_t(Data([4, 0, 0, 0, 220])) == 220
+    assert t.int32s(Data([4, 255, 255, 255, 236])) == -20
+    assert Data(t.uint32_t(295)) == [4, 0, 0, 1, 39]
+    assert Data(t.uint32_t(220)) == [4, 0, 0, 0, 220]
+    assert Data(t.int32s(-20)) == [4, 255, 255, 255, 236]
 
 
 class TuyaTestManufCluster(TuyaManufClusterAttributes):
@@ -1502,3 +1506,74 @@ async def test_rh_multiplier(zigpy_device_from_quirk, quirk, quirk_sq):
         square_humidity.get("measured_value")
         == square_data.data.datapoints[0].data.payload * 100
     )  # no square_sensor.RH_MULTIPLIER attribute
+
+
+@mock.patch("zigpy.zcl.Cluster.bind", mock.AsyncMock())
+@pytest.mark.parametrize(
+    "quirk",
+    (zhaquirks.tuya.ts0501_fan_switch.TS0501FanSwitch,),
+)
+async def test_fan_switch_writes_attributes(zigpy_device_from_quirk, quirk):
+    """Test that fan mode sequence attribute is written to the device when binding."""
+
+    device = zigpy_device_from_quirk(quirk)
+    fan_cluster = device.endpoints[1].fan
+
+    with mock.patch.object(fan_cluster.endpoint, "request", mock.AsyncMock()) as m1:
+        m1.return_value = (foundation.Status.SUCCESS, "done")
+
+        await fan_cluster.bind()
+
+        assert len(m1.mock_calls) == 1
+        assert m1.mock_calls[0][1] == (
+            514,
+            1,
+            b"\x00\x01\x02\x01\x000\x00",
+        )
+
+
+async def test_sm0202_motion_sensor_signature(assert_signature_matches_quirk):
+    """Test LH992ZB motion sensor remote signature is matched to its quirk."""
+    signature = {
+        "node_descriptor": "NodeDescriptor(logical_type=<LogicalType.EndDevice: 2>, complex_descriptor_available=0, user_descriptor_available=0, reserved=0, aps_flags=0, frequency_band=<FrequencyBand.Freq2400MHz: 8>, mac_capability_flags=<MACCapabilityFlags.AllocateAddress: 128>, manufacturer_code=4098, maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264, maximum_outgoing_transfer_size=82, descriptor_capability_field=<DescriptorCapability.NONE: 0>, *allocate_address=True, *is_alternate_pan_coordinator=False, *is_coordinator=False, *is_end_device=True, *is_full_function_device=False, *is_mains_powered=False, *is_receiver_on_when_idle=False, *is_router=False, *is_security_capable=False)",
+        "endpoints": {
+            "1": {
+                "profile_id": 260,
+                "device_type": "0x0402",
+                "in_clusters": ["0x0000", "0x0001", "0x0003", "0x0500", "0xeeff"],
+                "out_clusters": ["0x0019"],
+            }
+        },
+        "manufacturer": "_TYZB01_z2umiwvq",
+        "model": "SM0202",
+        "class": "zhaquirks.tuya.lh992zb.TuyaMotionSM0202",
+    }
+    assert_signature_matches_quirk(zhaquirks.tuya.sm0202_motion.SM0202Motion, signature)
+
+
+@pytest.mark.parametrize(
+    "quirk",
+    (zhaquirks.tuya.ts0041.TuyaSmartRemote0041TOPlusA,),
+)
+async def test_power_config_no_bind(zigpy_device_from_quirk, quirk):
+    """Test that the power configuration cluster is not bound and no attribute reporting is set up."""
+
+    device = zigpy_device_from_quirk(quirk)
+    power_cluster = device.endpoints[1].power
+
+    request_patch = mock.patch("zigpy.zcl.Cluster.request", mock.AsyncMock())
+    bind_patch = mock.patch("zigpy.zcl.Cluster.bind", mock.AsyncMock())
+
+    with request_patch as request_mock, bind_patch as bind_mock:
+        request_mock.return_value = (foundation.Status.SUCCESS, "done")
+
+        await power_cluster.bind()
+        await power_cluster.configure_reporting(
+            PowerConfiguration.attributes_by_name["battery_percentage_remaining"].id,
+            3600,
+            10800,
+            1,
+        )
+
+        assert len(request_mock.mock_calls) == 0
+        assert len(bind_mock.mock_calls) == 0

@@ -52,6 +52,8 @@ _LOGGER = logging.getLogger(__name__)
 class SiterwellManufCluster(TuyaManufClusterAttributes):
     """Manufacturer Specific Cluster of some thermostatic valves."""
 
+    set_time_offset = 1970
+
     attributes = TuyaManufClusterAttributes.attributes.copy()
     attributes.update(
         {
@@ -1473,6 +1475,7 @@ class SiterwellGS361_Type2(TuyaThermostat):
             ("_TZE200_8daqwrsj", "TS0601"),
             ("_TZE200_czk78ptr", "TS0601"),
             ("_TZE200_2cs6g9i7", "TS0601"),  # Brennenstuhl Zigbee Connect 01
+            ("_TZE200_04yfvweb", "TS0601"),  # Appartme APRM-04-001
         ],
         ENDPOINTS: {
             1: {
