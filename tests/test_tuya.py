@@ -21,7 +21,7 @@ from zhaquirks.const import (
     ON,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
-    ZONE_STATE,
+    ZONE_STATUS_CHANGE_COMMAND,
 )
 from zhaquirks.tuya import Data, TuyaManufClusterAttributes, TuyaNewManufCluster
 import zhaquirks.tuya.sm0202_motion
@@ -103,14 +103,13 @@ async def test_motion(zigpy_device_from_quirk, quirk):
         tuya_cluster.handle_message(hdr, args)
 
     assert len(motion_listener.cluster_commands) == 1
-    assert len(motion_listener.attribute_updates) == 1
-    assert motion_listener.cluster_commands[0][1] == ZONE_STATE
+    assert motion_listener.cluster_commands[0][1] == ZONE_STATUS_CHANGE_COMMAND
     assert motion_listener.cluster_commands[0][2][0] == ON
 
     await asyncio.gather(asyncio.sleep(0), asyncio.sleep(0), asyncio.sleep(0))
 
     assert len(motion_listener.cluster_commands) == 2
-    assert motion_listener.cluster_commands[1][1] == ZONE_STATE
+    assert motion_listener.cluster_commands[1][1] == ZONE_STATUS_CHANGE_COMMAND
     assert motion_listener.cluster_commands[1][2][0] == OFF
 
 

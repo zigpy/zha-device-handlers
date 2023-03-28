@@ -29,7 +29,7 @@ from zhaquirks.const import (
     TRIPLE_PRESS,
     VALUE,
     ZHA_SEND_EVENT,
-    ZONE_STATE,
+    ZONE_STATUS_CHANGE_COMMAND,
 )
 
 CLICK_TYPES = {1: "single", 2: "double", 3: "triple", 4: "quadruple", 5: "quintuple"}
@@ -91,7 +91,9 @@ class MotionCluster(LocalDataCluster, _Motion):
 
     def motion_event(self):
         """Motion event."""
-        super().listener_event(CLUSTER_COMMAND, 254, ZONE_STATE, [ON, 0, 0, 0])
+        super().listener_event(
+            CLUSTER_COMMAND, 254, ZONE_STATUS_CHANGE_COMMAND, [ON, 0, 0, 0]
+        )
 
         if self._timer_handle:
             self._timer_handle.cancel()
