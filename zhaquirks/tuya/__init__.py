@@ -871,12 +871,6 @@ class TuyaLocalCluster(LocalDataCluster):
         return self._update_attribute(attr.id, value)
 
 
-class TuyaPowerConfigurationClusterEnchantable(
-    TuyaEnchantableCluster, PowerConfiguration
-):
-    """Enchantable PowerConfiguration cluster."""
-
-
 class _TuyaNoBindPowerConfigurationCluster(CustomCluster, PowerConfiguration):
     """PowerConfiguration cluster that prevents setting up binding/attribute reports in order to stop battery drain.
 
