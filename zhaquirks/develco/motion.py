@@ -32,6 +32,7 @@ from zhaquirks.develco import DEVELCO, FRIENT, DevelcoIasZone, DevelcoPowerConfi
 
 MANUFACTURER = 0x1015
 
+
 class MOSZB140(CustomDevice):
     """Custom device Develco Motion Sensor Pro."""
 
@@ -210,6 +211,7 @@ class MOSZB140(CustomDevice):
             },
         }
     }
+
 
 class MOSZB140_Var02(CustomDevice):
     """Custom device Develco Motion Sensor Pro (variation 02)."""
