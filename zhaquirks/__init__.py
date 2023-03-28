@@ -41,7 +41,6 @@ from .const import (
     UNKNOWN,
     VALUE,
     ZHA_SEND_EVENT,
-    ZONE_STATUS,
     ZONE_STATUS_CHANGE_COMMAND,
 )
 
@@ -247,7 +246,6 @@ class _Motion(CustomCluster, IasZone):
         self.listener_event(
             CLUSTER_COMMAND, 253, ZONE_STATUS_CHANGE_COMMAND, [OFF, 0, 0, 0]
         )
-        self._update_attribute(ZONE_STATUS, OFF)
 
 
 class MotionWithReset(_Motion):
@@ -292,7 +290,6 @@ class MotionOnEvent(_Motion):
         super().listener_event(
             CLUSTER_COMMAND, 254, ZONE_STATUS_CHANGE_COMMAND, [ON, 0, 0, 0]
         )
-        self._update_attribute(ZONE_STATUS, ON)
 
         self.debug("%s - Received motion event message", self.endpoint.device.ieee)
 
