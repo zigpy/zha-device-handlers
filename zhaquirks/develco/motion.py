@@ -351,7 +351,7 @@ class MOSZB140_Var02(CustomDevice):
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     Time.cluster_id,
-                    Ota.cluster_id
+                    Ota.cluster_id,
                 ],
             },
             38: {
