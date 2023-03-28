@@ -60,12 +60,7 @@ class TuyaAirQualityTemperature(TemperatureMeasurement, TuyaLocalCluster):
         super().update_attribute(attr_name, value)
 
         if attr_name == "custom_temperature":
-            custom_temperature = self._attr_cache.get(
-                self.attributes_by_name[attr_name].id,
-            )
-            if custom_temperature:
-                temp = custom_temperature.temperature * 10
-                super().update_attribute("measured_value", temp)
+            super().update_attribute("measured_value", value.temperature * 10)
 
 
 class TuyaAirQualityHumidity(RelativeHumidity, TuyaLocalCluster):
