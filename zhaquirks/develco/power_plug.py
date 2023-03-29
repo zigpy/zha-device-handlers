@@ -38,41 +38,6 @@ class DevelcoDeviceTemperature(CustomCluster, DeviceTemperature):
         super()._update_attribute(attrid, value)
 
 
-class DevelcoElectricalMeasurement(CustomCluster, ElectricalMeasurement):
-    """Electrical measurement. Fixes power factor."""
-
-    RMS_VOLTAGE_ID = 0x0505
-    RMS_CURRENT_ID = 0x0508
-    ACTIVE_POWER_ID = 0x050B
-    POWERFACTOR_ID = 0x0510
-
-    """Use current/voltage reading to update power factor."""
-
-    def _update_attribute(self, attrid, value):
-        super()._update_attribute(attrid, value)
-
-        if attrid == self.ACTIVE_POWER_ID:
-            # Power reading is updated. Update power factor as well.
-            self._updatePF()
-
-    def _updatePF(self):
-        voltage = self._attr_cache.get(self.RMS_VOLTAGE_ID, 0)
-        current = self._attr_cache.get(self.RMS_CURRENT_ID, 0)
-        power = self._attr_cache.get(self.ACTIVE_POWER_ID, 0)
-        pf = 0
-
-        if voltage > 0 and current > 0:
-            voltage = voltage / 100
-            current = current / 1000
-            pf = 100 * power / (voltage * current)
-
-            if pf > 100:
-                pf = 100
-            elif pf < 0:
-                pf = 0
-        self._update_attribute(self.POWERFACTOR_ID, pf)
-
-
 class SPLZB131(CustomDevice):
     """Custom device Develco smart plug device."""
 
@@ -127,7 +92,7 @@ class SPLZB131(CustomDevice):
                     OnOff.cluster_id,
                     Alarms.cluster_id,
                     Metering.cluster_id,
-                    DevelcoElectricalMeasurement,
+                    ElectricalMeasurement.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Basic.cluster_id,
