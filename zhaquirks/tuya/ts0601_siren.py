@@ -147,11 +147,11 @@ class TuyaSirenOnOff(LocalDataCluster, OnOff):
 
         if command_id in (0x0000, 0x0001):
             (res,) = await self.endpoint.tuya_manufacturer.write_attributes(
-                {TUYA_ALARM_ATTR: command_id}, manufacturer=manufacturer
+                {TUYA_ALARM_ATTR: bool(command_id)}, manufacturer=manufacturer
             )
             return foundation.GENERAL_COMMANDS[
                 foundation.GeneralCommand.Default_Response
-            ].schema(command_id=command_id, status=res[0].status)
+            ].schema(command_id=bool(command_id), status=res[0].status)
 
         return foundation.GENERAL_COMMANDS[
             foundation.GeneralCommand.Default_Response
@@ -293,7 +293,7 @@ class TuyaMCUSiren(OnOff, TuyaAttributesCluster):
                 endpoint_id=self.endpoint.endpoint_id,
                 cluster_name=self.ep_attribute,
                 cluster_attr="on_off",
-                attr_value=command_id,
+                attr_value=bool(command_id),
                 expect_reply=expect_reply,
                 manufacturer=foundation.ZCLHeader.NO_MANUFACTURER_ID,
             )
