@@ -1,5 +1,7 @@
 """Device handler for IKEA of Sweden VINDSTYRKA Air quality sensor."""
 
+from typing import Dict
+
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
@@ -37,7 +39,7 @@ class VOCIndex(CustomCluster):
     name: str = "VOC Index"
     ep_attribute: str = "voc_index"
 
-    attributes: dict[int, ZCLAttributeDef] = {
+    attributes: Dict[t.uint16_t, ZCLAttributeDef] = {
         0x0000: ZCLAttributeDef(
             "measured_value", type=t.Single, access="rp", mandatory=True
         ),
