@@ -1,11 +1,10 @@
-""" Device handler for IKEA of Sweden VINDSTYRKA Air quality sensor. """
+"""Device handler for IKEA of Sweden VINDSTYRKA Air quality sensor."""
 
 import zigpy.types as t
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice, CustomCluster
 
-from zigpy.zcl import foundation
 from zigpy.zcl.foundation import ZCLAttributeDef
 from zigpy.zcl.clusters.hvac import Fan
 from zigpy.zcl.clusters.measurement import (
@@ -34,7 +33,7 @@ from zhaquirks.const import (
 
 
 class VOCIndex(CustomCluster):
-    """VOC index value as reported by the Senserion SEN54 inside VINDSTYRKA"""
+    """VOC index value as reported by the Senserion SEN54 inside VINDSTYRKA."""
 
     cluster_id: t.uint16_t = 0xFC7E
     name: str = "VOC Index"
@@ -54,6 +53,8 @@ class VOCIndex(CustomCluster):
 
 
 class IkeaVINDSTYRKA(CustomDevice):
+    """IKEA of Sweden VINDSTYRKA Air quality sensor."""
+
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
