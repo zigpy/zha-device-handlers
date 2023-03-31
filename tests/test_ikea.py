@@ -106,6 +106,6 @@ def test_ikea_vindstyrka(assert_signature_matches_quirk):
         },
         "manufacturer": "IKEA of Sweden",
         "model": "VINDSTYRKA",
-        "class": "vindstyrka.IkeaVINDSTYRKA",
+        "class": "ikea.vindstyrka.IkeaVINDSTYRKA",
     }
     assert_signature_matches_quirk(zhaquirks.ikea.vindstyrka.IkeaVINDSTYRKA, signature)
