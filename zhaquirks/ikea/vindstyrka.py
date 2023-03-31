@@ -60,7 +60,7 @@ class IkeaVINDSTYRKA(CustomDevice):
         super().__init__(*args, **kwargs)
 
     signature = {
-        MODELS_INFO: [(IKEA, "VINDSTYRKA"), (IKEA, "VINDSTYRKA")],
+        MODELS_INFO: [(IKEA, "VINDSTYRKA")],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=770
             # device_version=0
