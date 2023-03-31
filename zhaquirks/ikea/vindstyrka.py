@@ -100,7 +100,6 @@ class IkeaVINDSTYRKA(CustomDevice):
         },
     }
     replacement = {
-        MODELS_INFO: [(IKEA, "VINDSTYRKA"), (IKEA, "VINDSTYRKA")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,  # 260
