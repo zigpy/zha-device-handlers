@@ -1,4 +1,4 @@
-"""Tests for Ikea Starkvind quirks."""
+"""Tests for IKEA quirks."""
 
 import zhaquirks.ikea.starkvind
 import zhaquirks.ikea.vindstyrka
