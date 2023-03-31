@@ -1,17 +1,8 @@
 """Device handler for IKEA of Sweden VINDSTYRKA Air quality sensor."""
 
-import zigpy.types as t
-
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice, CustomCluster
-
-from zigpy.zcl.foundation import ZCLAttributeDef
-from zigpy.zcl.clusters.hvac import Fan
-from zigpy.zcl.clusters.measurement import (
-    PM25,
-    TemperatureMeasurement,
-    RelativeHumidity,
-)
+from zigpy.quirks import CustomCluster, CustomDevice
+import zigpy.types as t
 from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
@@ -20,8 +11,14 @@ from zigpy.zcl.clusters.general import (
     Ota,
     PollControl,
 )
+from zigpy.zcl.clusters.hvac import Fan
+from zigpy.zcl.clusters.measurement import (
+    PM25,
+    RelativeHumidity,
+    TemperatureMeasurement,
+)
+from zigpy.zcl.foundation import ZCLAttributeDef
 
-from zhaquirks.ikea import IKEA, IKEA_CLUSTER_ID, WWAH_CLUSTER_ID
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -30,6 +27,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.ikea import IKEA, IKEA_CLUSTER_ID, WWAH_CLUSTER_ID
 
 
 class VOCIndex(CustomCluster):
