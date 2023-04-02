@@ -4,7 +4,6 @@ from __future__ import annotations
 import logging
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -67,7 +66,7 @@ from zhaquirks.tuya.mcu import EnchantedDevice
 _LOGGER = logging.getLogger(__name__)
 
 
-class TuyaSmartRemote004FROK(EnchantedDevice, CustomDevice):
+class TuyaSmartRemote004FROK(EnchantedDevice):
     """Tuya Smart (rotating) Knob device."""
 
     signature = {
@@ -186,7 +185,7 @@ class TuyaSmartRemote004FROK(EnchantedDevice, CustomDevice):
     }
 
 
-class TuyaSmartRemote004FDMS(EnchantedDevice, CustomDevice):
+class TuyaSmartRemote004FDMS(EnchantedDevice):
     """Tuya 4 btton dimmer switch / remote device."""
 
     signature = {
@@ -320,7 +319,7 @@ class TuyaSmartRemote004FDMS(EnchantedDevice, CustomDevice):
     }
 
 
-class TuyaSmartRemote004F(EnchantedDevice, CustomDevice):
+class TuyaSmartRemote004F(EnchantedDevice):
     """Tuya 4-button New version remote device."""
 
     signature = {
