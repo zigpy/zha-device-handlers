@@ -65,19 +65,19 @@ class ZosungIRControl(CustomCluster):
         0x00: foundation.ZCLCommandDef(
             "data",
             schema={"data": Bytes},
-            is_reply=False,
+            direction=foundation.Direction.Server_to_Client,
             is_manufacturer_specific=True,
         ),
         0x01: foundation.ZCLCommandDef(
             "IRLearn",
             schema={"on_off": t.Bool},
-            is_reply=False,
+            direction=foundation.Direction.Server_to_Client,
             is_manufacturer_specific=True,
         ),
         0x02: foundation.ZCLCommandDef(
             "IRSend",
             schema={"code": t.CharacterString},
-            is_reply=False,
+            direction=foundation.Direction.Server_to_Client,
             is_manufacturer_specific=True,
         ),
     }
@@ -178,7 +178,7 @@ class ZosungIRTransmit(CustomCluster):
                 "msgpart": t.LVBytes,
                 "msgpartcrc": t.uint8_t,
             },
-            is_reply=True,
+            direction=foundation.Direction.Client_to_Server,
             is_manufacturer_specific=False,
         ),
         0x05: foundation.ZCLCommandDef(
@@ -187,7 +187,7 @@ class ZosungIRTransmit(CustomCluster):
                 "seq": t.uint16_t,
                 "zero": t.uint16_t,
             },
-            is_reply=False,
+            direction=foundation.Direction.Server_to_Client,
             is_manufacturer_specific=True,
         ),
     }
@@ -203,7 +203,7 @@ class ZosungIRTransmit(CustomCluster):
                 "cmd": t.uint8_t,
                 "unk3": t.uint16_t,
             },
-            is_reply=False,
+            direction=foundation.Direction.Server_to_Client,
             is_manufacturer_specific=True,
         ),
         0x01: foundation.ZCLCommandDef(
@@ -218,7 +218,7 @@ class ZosungIRTransmit(CustomCluster):
                 "cmd": t.uint8_t,
                 "unk3": t.uint16_t,
             },
-            is_reply=False,
+            direction=foundation.Direction.Server_to_Client,
             is_manufacturer_specific=True,
         ),
         0x02: foundation.ZCLCommandDef(
@@ -228,7 +228,7 @@ class ZosungIRTransmit(CustomCluster):
                 "position": t.uint32_t,
                 "maxlen": t.uint8_t,
             },
-            is_reply=False,
+            direction=foundation.Direction.Server_to_Client,
             is_manufacturer_specific=True,
         ),
         0x03: foundation.ZCLCommandDef(
@@ -240,7 +240,7 @@ class ZosungIRTransmit(CustomCluster):
                 "msgpart": t.LVBytes,
                 "msgpartcrc": t.uint8_t,
             },
-            is_reply=True,
+            direction=foundation.Direction.Client_to_Server,
             is_manufacturer_specific=False,
         ),
         0x04: foundation.ZCLCommandDef(
@@ -250,7 +250,7 @@ class ZosungIRTransmit(CustomCluster):
                 "seq": t.uint16_t,
                 "zero1": t.uint16_t,
             },
-            is_reply=False,
+            direction=foundation.Direction.Server_to_Client,
             is_manufacturer_specific=True,
         ),
         0x05: foundation.ZCLCommandDef(
@@ -259,7 +259,7 @@ class ZosungIRTransmit(CustomCluster):
                 "seq": t.uint16_t,
                 "zero": t.uint16_t,
             },
-            is_reply=False,
+            direction=foundation.Direction.Server_to_Client,
             is_manufacturer_specific=True,
         ),
     }
