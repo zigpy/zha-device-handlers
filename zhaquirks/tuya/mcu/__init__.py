@@ -148,7 +148,7 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
                 minor = (self.version_raw & 63) >> 4
                 release = self.version_raw & 15
 
-                return "{}.{}.{}".format(major, minor, release)
+                return f"{major}.{minor}.{release}"
 
             return None
 

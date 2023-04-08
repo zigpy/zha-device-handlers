@@ -188,8 +188,7 @@ class ParksideTuyaValveManufCluster(TuyaMCUCluster):
     }
 
     async def bind(self):
-        """
-        Bind cluster.
+        """Bind cluster.
 
         When adding this device tuya gateway issues factory reset,
         we just need to reset the frost lock, because its state is unknown to us.
