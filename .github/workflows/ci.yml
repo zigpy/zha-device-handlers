@@ -9,7 +9,7 @@ on:
   pull_request: ~
 
 env:
-  CACHE_VERSION: 2
+  CACHE_VERSION: 3
   PYTHON_VERSION_DEFAULT: '3.9.15'
   PRE_COMMIT_CACHE_PATH: ~/.cache/pre-commit
   CODE_FOLDER: zhaquirks
