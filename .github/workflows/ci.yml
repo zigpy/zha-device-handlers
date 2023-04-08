@@ -8,55 +8,11 @@ on:
       - master
   pull_request: ~
 
-env:
-  CACHE_VERSION: 2
-  PYTHON_VERSION_DEFAULT: 3.9.15
-
 jobs:
   shared-ci:
     uses: zigpy/workflows/.github/workflows/ci.yml@main
     with:
-      # with can't interpolate from env so we have duplication
       CODE_FOLDER: zhaquirks
       CACHE_VERSION: 2
       PYTHON_VERSION_DEFAULT: 3.9.15
       PRE_COMMIT_CACHE_PATH:  ~/.cache/pre-commit
-
-  coverage:
-    name: Process test coverage
-    runs-on: ubuntu-latest
-    needs: shared-ci
-    steps:
-      - name: Check out code from GitHub
-        uses: actions/checkout@v3.3.0
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4.5.0
-        id: python
-        with:
-          python-version: ${{ env.PYTHON_VERSION_DEFAULT }}
-      - name: Restore base Python virtual environment
-        id: cache-venv
-        uses: actions/cache/restore@v3.2.6
-        with:
-          fail-on-cache-miss: true
-          path: venv
-          key: >-
-            ${{ env.CACHE_VERSION}}-${{ runner.os }}-base-venv-${{
-            steps.python.outputs.python-version }}-${{
-            hashFiles('setup.py', 'requirements_test.txt') }}
-      - name: Download all coverage artifacts
-        uses: actions/download-artifact@v3
-      - name: Combine coverage results
-        run: |
-          . venv/bin/activate
-          coverage combine coverage*/.coverage*
-          coverage report --fail-under=72
-          coverage xml
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
-      - name: Upload coverage to Coveralls
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          . venv/bin/activate
-          coveralls --finish
