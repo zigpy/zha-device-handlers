@@ -4,7 +4,7 @@ import logging
 import zigpy.profiles.zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
-from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time
+from zigpy.zcl.clusters.general import Basic, GreenPowerProxy, Groups, Ota, Scenes, Time
 from zigpy.zcl.clusters.security import IasZone
 
 from zhaquirks import Bus
@@ -19,7 +19,10 @@ from zhaquirks.const import (
     ZONE_TYPE,
 )
 
-from . import TuyaManufCluster, TuyaManufClusterAttributes
+from zhaquirks.tuya import (
+    TuyaManufCluster,
+    TuyaManufClusterAttributes
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -29,12 +32,9 @@ TUYA_GAS_DETECTED_ATTR = 0x0401  # [0]/[1] [Detected]/[Clear]!
 class TuyaGasDetectorCluster(TuyaManufClusterAttributes):
     """Manufacturer Specific Cluster of the TS0601 gas detector."""
 
-    attributes = TuyaManufClusterAttributes.attributes.copy()
-    attributes.update(
-        {
-            TUYA_GAS_DETECTED_ATTR: ("gas_detected", t.uint8_t, True),
-        }
-    )
+    attributes = {
+        TUYA_GAS_DETECTED_ATTR: ("gas_detected", t.uint8_t, True),
+    }
 
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
@@ -72,7 +72,6 @@ class TuyaGasDetectorZone(CustomCluster, IasZone):
 
 class TuyaGasDetector0601(CustomDevice):
     """TS0601 _TZE200_ggev5fsl quirk."""
-
     def __init__(self, *args, **kwargs):
         """Init."""
         self.ias_bus = Bus()
@@ -114,6 +113,70 @@ class TuyaGasDetector0601(CustomDevice):
                     Time.cluster_id,
                     Ota.cluster_id,
                 ],
+            },
+        },
+    }
+
+
+class TuyaGasDetector0601GP(CustomDevice):
+    """TS0601 Gas Sensor quirk."""
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        self.ias_bus = Bus()
+        super().__init__(*args, **kwargs)
+
+    signature = {
+        MODELS_INFO: [("_TZE204_yojqa8xn", "TS0601")],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zigpy.profiles.zha.PROFILE_ID,
+                DEVICE_TYPE: zigpy.profiles.zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaManufCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Time.cluster_id,
+                    Ota.cluster_id,
+                ],
+            },
+            # <SimpleDescriptor endpoint=242 profile=41440 device_type=97
+            # input_clusters=[]
+            # output_clusters=[33]
+            242: {
+                PROFILE_ID: 41440,
+                DEVICE_TYPE: 97,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zigpy.profiles.zha.PROFILE_ID,
+                DEVICE_TYPE: zigpy.profiles.zha.DeviceType.IAS_ZONE,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaGasDetectorZone,
+                    TuyaGasDetectorCluster,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Time.cluster_id,
+                    Ota.cluster_id,
+                ],
+            },
+            242: {
+                PROFILE_ID: 41440,
+                DEVICE_TYPE: 97,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
         },
     }
