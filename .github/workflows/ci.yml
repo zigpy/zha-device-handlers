@@ -8,15 +8,11 @@ on:
       - master
   pull_request: ~
 
-env:
-  CACHE_VERSION: 3
-  PYTHON_VERSION_DEFAULT: '3.9.15'
-  PRE_COMMIT_CACHE_PATH: ~/.cache/pre-commit
-  CODE_FOLDER: zhaquirks
-
 jobs:
   shared-ci:
     uses: zigpy/workflows/.github/workflows/ci.yml@main
+    env:
+      CODE_FOLDER: zhaquirks
 
   coverage:
     name: Process test coverage
