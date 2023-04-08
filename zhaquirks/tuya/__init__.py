@@ -50,7 +50,7 @@ LEVEL_EVENT = "level_event"
 TUYA_MCU_COMMAND = "tuya_mcu_command"
 
 # Rotating for remotes
-STOP = "stop"  # To constans
+STOP = "stop"  # To constants
 
 # ---------------------------------------------------------
 # Value for dp_type
@@ -216,7 +216,7 @@ class TuyaData(t.Struct):
             self.dp_type = TuyaDPType.BITMAP
         elif isinstance(value, (bool, t.Bool)):
             self.dp_type = TuyaDPType.BOOL
-        elif isinstance(value, enum.Enum):
+        elif isinstance(value, enum.Enum):  # type: ignore # noqa
             self.dp_type = TuyaDPType.ENUM
         elif isinstance(value, int):
             self.dp_type = TuyaDPType.VALUE

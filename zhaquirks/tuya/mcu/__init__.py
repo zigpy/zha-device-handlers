@@ -103,7 +103,6 @@ class TuyaAttributesCluster(TuyaLocalCluster):
         records = self._write_attr_records(attributes)
 
         for record in records:
-
             self.debug("write_attributes --> record: %s", record)
 
             cluster_data = TuyaClusterData(

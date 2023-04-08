@@ -77,7 +77,6 @@ class AnalogOutputRollerE1(CustomCluster, AnalogOutput):
         self._update_attribute(0x006F, 0x00)  # status_flags
 
     def _update_attribute(self, attrid: int, value: Any) -> None:
-
         super()._update_attribute(attrid, value)
 
         if attrid == PRESENT_VALUE:

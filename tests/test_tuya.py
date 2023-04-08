@@ -240,7 +240,6 @@ async def test_singleswitch_requests(zigpy_device_from_quirk, quirk):
     with mock.patch.object(
         tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
     ) as m1:
-
         rsp = await switch_cluster.command(0x0000)
         await wait_for_zigpy_tasks()
         m1.assert_called_with(
@@ -367,7 +366,6 @@ async def test_tuya_send_attribute(zigpy_device_from_quirk, quirk):
     with mock.patch.object(
         tuya_cluster.endpoint, "request", side_effect=async_success
     ) as m1:
-
         (status,) = await tuya_cluster.write_attributes({617: 179})
         m1.assert_called_with(
             61184,
@@ -434,7 +432,6 @@ async def test_siren_send_attribute(zigpy_device_from_quirk, quirk):
     with mock.patch.object(
         tuya_cluster.endpoint, "request", side_effect=async_success
     ) as m1:
-
         _, status = await switch_cluster.command(0x0000)
         m1.assert_called_with(
             61184,
@@ -517,7 +514,6 @@ async def test_zonnsmart_send_attribute(zigpy_device_from_quirk, quirk):
     with mock.patch.object(
         tuya_cluster.endpoint, "request", side_effect=async_success
     ) as m1:
-
         (status,) = await thermostat_cluster.write_attributes(
             {
                 "occupied_heating_setpoint": 2500,
@@ -647,7 +643,6 @@ async def test_valve_send_attribute(zigpy_device_from_quirk, quirk):
     with mock.patch.object(
         tuya_cluster.endpoint, "request", side_effect=async_success
     ) as m1:
-
         (status,) = await thermostat_cluster.write_attributes(
             {
                 "occupied_heating_setpoint": 2500,
@@ -924,7 +919,6 @@ async def test_moes(zigpy_device_from_quirk, quirk):
     with mock.patch.object(
         tuya_cluster.endpoint, "request", side_effect=async_success
     ) as m1:
-
         (status,) = await thermostat_cluster.write_attributes(
             {
                 "occupied_heating_setpoint": 2500,
@@ -1291,7 +1285,6 @@ async def test_eheat_send_attribute(zigpy_device_from_quirk, quirk):
     with mock.patch.object(
         tuya_cluster.endpoint, "request", side_effect=async_success
     ) as m1:
-
         (status,) = await thermostat_cluster.write_attributes(
             {
                 "occupied_heating_setpoint": 2500,
@@ -1631,7 +1624,6 @@ async def test_tuya_spell(zigpy_device_from_quirk):
                 device.endpoints[1].in_clusters.values(),
                 device.endpoints[1].out_clusters.values(),
             ):
-
                 # emulate ZHA calling bind() on most default clusters with an unchanged ep_attribute
                 if (
                     not isinstance(cluster, int)
