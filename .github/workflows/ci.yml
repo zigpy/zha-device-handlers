@@ -8,11 +8,18 @@ on:
       - master
   pull_request: ~
 
+env:
+  CACHE_VERSION: 2
+  CODE_FOLDER: zhaquirks
+  PYTHON_VERSION_DEFAULT: '3.9.15'
+
 jobs:
   shared-ci:
     uses: zigpy/workflows/.github/workflows/ci.yml@main
     with:
-      CODE_FOLDER: zhaquirks
+      CODE_FOLDER: ${{ env.CODE_FOLDER }}
+      CACHE_VERSION: ${{ env.CACHE_VERSION }}
+      PYTHON_VERSION_DEFAULT: ${{ env.PYTHON_VERSION_DEFAULT }}
 
   coverage:
     name: Process test coverage
