@@ -44,11 +44,7 @@ ignore = [
     "D415",   # First line should end with a period, question mark, or exclamation point
     "E501",   # line too long
               # the rules below this line should be corrected
-    "E731",   # do not assign a lambda expression, use a def
-    "B007",   # Loop control variable `id_` not used within loop body
     "PGH004", # Use specific rule codes when using `noqa`
-    "RUF006", # Store a reference to the return value of `asyncio.create_task`
-    "TRY004", # Prefer `TypeError` exception for invalid type
 ]
 
 extend-exclude = [
@@ -65,7 +61,7 @@ keep-runtime-typing = true
 # will group `import x` and `from x import` of the same module.
 force-sort-within-sections = true
 known-first-party = [
-    "zigpy",
+    "zhaquirks",
     "tests",
 ]
 forced-separate = ["tests"]

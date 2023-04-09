@@ -394,7 +394,7 @@ def setup(custom_quirks_path: str | None = None) -> None:
     """Register all quirks with zigpy, including optional custom quirks."""
 
     # Import all quirks in the `zhaquirks` package first
-    for importer, modname, _ispkg in pkgutil.walk_packages(
+    for _importer, modname, _ispkg in pkgutil.walk_packages(
         path=__path__,
         prefix=__name__ + ".",
     ):
