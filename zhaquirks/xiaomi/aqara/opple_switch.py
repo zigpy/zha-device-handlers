@@ -109,7 +109,7 @@ class OppleSwitchCluster(OppleCluster):
                 ATTR_ID: attrid,
                 VALUE: value,
             }
-            action = "{}_{}".format(self.endpoint.endpoint_id, self._current_state)
+            action = f"{self.endpoint.endpoint_id}_{self._current_state}"
             self.listener_event(ZHA_SEND_EVENT, action, event_args)
             # show something in the sensor in HA
             super()._update_attribute(0, action)

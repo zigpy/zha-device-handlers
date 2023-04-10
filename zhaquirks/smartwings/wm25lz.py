@@ -29,7 +29,7 @@ from zhaquirks.const import (
 
 
 class InvertedWindowCoveringCluster(CustomCluster, WindowCovering):
-    """This WindowCovering cluster implementation inverts the commands for up and down."""
+    """WindowCovering cluster implementation that inverts the commands for up and down."""
 
     CMD_UP_OPEN = WindowCovering.commands_by_name["up_open"].id
     CMD_DOWN_CLOSE = WindowCovering.commands_by_name["down_close"].id

@@ -17,7 +17,7 @@ fi
 python3 -m venv venv
 source venv/bin/activate
 
-pip install -r requirements_test_all.txt
+pip install -r requirements_test.txt
 pre-commit install
 
 python3 -m pip install -e .

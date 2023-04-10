@@ -47,8 +47,7 @@ OPPLE_MFG_CODE = 0x115F
 
 
 async def remove_from_ep(dev: zigpy.device.Device) -> None:
-    """
-    Remove devices that are in group 0 by default, so IKEA devices don't control them.
+    """Remove devices that are in group 0 by default, so IKEA devices don't control them.
 
     This is only needed for newer firmware versions. Only a downgrade will fully fix this but this should improve it.
     See https://github.com/zigpy/zha-device-handlers/pull/1656#issuecomment-1244750465 for details.

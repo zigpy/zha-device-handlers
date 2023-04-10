@@ -1,4 +1,5 @@
 """Types used to serialize and deserialize XBee commands."""
+from __future__ import annotations
 
 
 class Bytes(bytes):
@@ -71,7 +72,7 @@ class IOSample(dict):
         ]
         analog_pins = list(reversed(analog_pins))
         if 1 in digital_pins:
-            digital_samples = [
+            digital_samples: list[int | None] = [
                 (int.from_bytes(digital_sample, byteorder="big") >> bit) & 1
                 for bit in range(num_bits - 1, -1, -1)
             ]

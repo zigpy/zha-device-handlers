@@ -6,7 +6,7 @@ import importlib
 import logging
 import pathlib
 import pkgutil
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 import zigpy.device
 import zigpy.endpoint
@@ -108,11 +108,10 @@ class EventableCluster(CustomCluster):
     def handle_cluster_request(
         self,
         hdr: foundation.ZCLHeader,
-        args: List[Any],
+        args: list[Any],
         *,
-        dst_addressing: Optional[
-            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
-        ] = None,
+        dst_addressing: None
+        | (t.Addressing.Group | t.Addressing.IEEE | t.Addressing.NWK) = None,
     ):
         """Send cluster requests as events."""
         if (
@@ -259,11 +258,10 @@ class MotionWithReset(_Motion):
     def handle_cluster_request(
         self,
         hdr: foundation.ZCLHeader,
-        args: List[Any],
+        args: list[Any],
         *,
-        dst_addressing: Optional[
-            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
-        ] = None,
+        dst_addressing: None
+        | (t.Addressing.Group | t.Addressing.IEEE | t.Addressing.NWK) = None,
     ):
         """Handle the cluster command."""
         # check if the command is for a zone status change of ZoneStatus.Alarm_1 or ZoneStatus.Alarm_2
@@ -349,11 +347,11 @@ class OccupancyWithReset(_Occupancy):
 class QuickInitDevice(CustomDevice):
     """Devices with quick initialization from quirk signature."""
 
-    signature: Optional[Dict[str, Any]] = None
+    signature: dict[str, Any] | None = None
 
     @classmethod
     def from_signature(
-        cls, device: zigpy.device.Device, model: Optional[str] = None
+        cls, device: zigpy.device.Device, model: str | None = None
     ) -> zigpy.device.Device:
         """Update device accordingly to quirk signature."""
 
@@ -396,7 +394,7 @@ def setup(custom_quirks_path: str | None = None) -> None:
     """Register all quirks with zigpy, including optional custom quirks."""
 
     # Import all quirks in the `zhaquirks` package first
-    for importer, modname, _ispkg in pkgutil.walk_packages(
+    for _importer, modname, _ispkg in pkgutil.walk_packages(
         path=__path__,
         prefix=__name__ + ".",
     ):

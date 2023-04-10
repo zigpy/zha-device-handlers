@@ -88,7 +88,7 @@ class RemoteB286ACN01(XiaomiCustomDevice):
                     ATTR_ID: attrid,
                     VALUE: value,
                 }
-                action = "{}_{}".format(button, self._current_state)
+                action = f"{button}_{self._current_state}"
                 self.listener_event(ZHA_SEND_EVENT, action, event_args)
                 # show something in the sensor in HA
                 super()._update_attribute(0, action)

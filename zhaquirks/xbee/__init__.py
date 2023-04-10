@@ -447,9 +447,7 @@ class XBeeRemoteATResponse(LocalDataCluster):
                 status = ATCommandResult.ERROR
 
             if status:
-                fut.set_exception(
-                    RuntimeError("AT Command response: {}".format(status.name))
-                )
+                fut.set_exception(RuntimeError(f"AT Command response: {status.name}"))
                 return
 
             response_type = AT_COMMANDS[args.cmd.decode("ascii")]

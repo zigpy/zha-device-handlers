@@ -185,7 +185,6 @@ class Cube(XiaomiQuickInitDevice):
                 )
                 event_args = {VALUE: value}
                 if action is not None:
-
                     if action in (SLIDE, KNOCK):
                         event_args[DESCRIPTION] = MOVEMENT_TYPE_DESCRIPTION[value]
                         event_args[ACTIVATED_FACE] = SIDES[value]

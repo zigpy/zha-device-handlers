@@ -56,7 +56,7 @@ class NoReplyMixin:
         else:
             cmd_expect_reply = expect_reply
 
-        rsp = await super(NoReplyMixin, self).command(
+        rsp = await super().command(
             command, *args, expect_reply=cmd_expect_reply, **kwargs
         )
 
