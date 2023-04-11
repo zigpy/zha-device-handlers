@@ -150,7 +150,7 @@ class Inovelli_VZM31SN_Cluster(CustomCluster):
             0x0062: ("led_intensity_when_off", t.uint8_t, True),
             0x0064: ("led_scaling_mode", t.Bool, True),
             0x007B: ("aux_switch_scenes", t.Bool, True),
-            0x007D: ("off_to_on_sync_level", t.Bool, True),
+            0x007D: ("binding_off_to_on_sync_level", t.Bool, True),
             0x0100: ("local_protection", t.Bool, True),
             0x0101: ("remote_protection", t.Bool, True),
             0x0102: ("output_mode", t.Bool, True),
