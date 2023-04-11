@@ -21,7 +21,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.ikea import IKEA, DoublingPowerConfig2CRCluster, LightLinkCluster
+from zhaquirks.ikea import IKEA, DoublingPowerConfig2CRCluster
 
 
 class IkeaTradfriMotion(CustomDevice):
@@ -67,7 +67,7 @@ class IkeaTradfriMotion(CustomDevice):
                     Identify.cluster_id,
                     Alarms.cluster_id,
                     Diagnostic.cluster_id,
-                    LightLinkCluster,
+                    LightLink.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,

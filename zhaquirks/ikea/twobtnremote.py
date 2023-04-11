@@ -40,12 +40,7 @@ from zhaquirks.const import (
     TURN_OFF,
     TURN_ON,
 )
-from zhaquirks.ikea import (
-    IKEA,
-    IKEA_CLUSTER_ID,
-    DoublingPowerConfig1CRCluster,
-    LightLinkCluster,
-)
+from zhaquirks.ikea import IKEA, IKEA_CLUSTER_ID, DoublingPowerConfig1CRCluster
 
 
 class IkeaTradfriRemote2Btn(CustomDevice):
@@ -183,7 +178,7 @@ class IkeaTradfriRemote2BtnZLL(CustomDevice):
                     DoublingPowerConfig1CRCluster,
                     Identify.cluster_id,
                     Alarms.cluster_id,
-                    LightLinkCluster,
+                    LightLink.cluster_id,
                     IKEA_CLUSTER_ID,
                 ],
                 OUTPUT_CLUSTERS: [
