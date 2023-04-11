@@ -37,7 +37,7 @@ from zhaquirks.const import (
     SHORT_PRESS,
     TURN_ON,
 )
-from zhaquirks.lds import MANUFACTURER, LightLinkCluster
+from zhaquirks.lds import MANUFACTURER
 
 
 class CCTSwitch(CustomDevice):
@@ -81,7 +81,7 @@ class CCTSwitch(CustomDevice):
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
                     Identify.cluster_id,
-                    LightLinkCluster,
+                    LightLink.cluster_id,
                     0xFD01,
                 ],
                 OUTPUT_CLUSTERS: [
