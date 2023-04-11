@@ -156,7 +156,7 @@ class GroupBoundCluster(CustomCluster):
         """Bind cluster to a group."""
         # Ensure coordinator is a member of the group
         application = self._endpoint.device.application
-        coordinator = application.get_device(application.ieee)
+        coordinator = application.get_device(application.state.node_info.ieee)
         await coordinator.add_to_group(
             self.COORDINATOR_GROUP_ID,
             name="Coordinator Group - Created by ZHAQuirks",
