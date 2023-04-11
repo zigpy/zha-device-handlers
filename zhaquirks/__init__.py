@@ -390,6 +390,44 @@ class QuickInitDevice(CustomDevice):
         return device
 
 
+class NoReplyMixin:
+    """A simple mixin.
+
+    Allows a cluster to have configurable list of command
+    ids that do not generate an explicit reply.
+    """
+
+    void_input_commands: set[int] = {}
+
+    async def command(self, command, *args, expect_reply=None, **kwargs):
+        """Override the default Cluster command.
+
+        expect_reply behavior is based on void_input_commands.
+        Note that this method changes the default value of
+        expect_reply to None. This allows the caller to explicitly force
+        expect_reply to true.
+        """
+
+        if expect_reply is None and command in self.void_input_commands:
+            cmd_expect_reply = False
+        elif expect_reply is None:
+            cmd_expect_reply = True  # the default
+        else:
+            cmd_expect_reply = expect_reply
+
+        rsp = await super().command(
+            command, *args, expect_reply=cmd_expect_reply, **kwargs
+        )
+
+        if expect_reply is None and command in self.void_input_commands:
+            # Pretend we received a default reply
+            return foundation.GENERAL_COMMANDS[
+                foundation.GeneralCommand.Default_Response
+            ].schema(command_id=command, status=foundation.Status.SUCCESS)
+
+        return rsp
+
+
 def setup(custom_quirks_path: str | None = None) -> None:
     """Register all quirks with zigpy, including optional custom quirks."""
 

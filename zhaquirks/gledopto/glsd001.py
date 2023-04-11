@@ -13,6 +13,7 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.lightlink import LightLink
 
+from zhaquirks import NoReplyMixin
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -21,7 +22,6 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.kof.kof_mr101z import NoReplyMixin
 
 
 class LevelControlNoReply(NoReplyMixin, CustomCluster, LevelControl):
