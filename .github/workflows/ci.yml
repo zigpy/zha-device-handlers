@@ -9,7 +9,7 @@ on:
 
 jobs:
   shared-ci:
-    uses: zigpy/workflows/.github/workflows/ci.yml@dm/use-precommit-in-ci 
+    uses: zigpy/workflows/.github/workflows/ci.yml@main
     with:
       CODE_FOLDER: zhaquirks
       CACHE_VERSION: 2
