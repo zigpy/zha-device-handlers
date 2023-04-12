@@ -683,7 +683,6 @@ async def test_aqara_feeder_attr_reports(
     """Test Aqara C1 pet feeder attr writing."""
 
     class Listener:
-
         attribute_updated = mock.MagicMock()
 
     device = zigpy_device_from_quirk(AqaraFeederAcn001)
@@ -851,7 +850,9 @@ async def test_xiaomi_e1_thermostat_rw_redirection(
         ),
     )
 
-    with patch_opple_read, patch_thermostat_read, patch_opple_write, patch_thermostat_write:
+    with (
+        patch_opple_read
+    ), patch_thermostat_read, patch_opple_write, patch_thermostat_write:
         # test reads:
 
         # read system_mode attribute from thermostat cluster

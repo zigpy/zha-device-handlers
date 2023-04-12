@@ -6,7 +6,7 @@ import importlib
 import logging
 import pathlib
 import pkgutil
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 import zigpy.device
 import zigpy.endpoint
@@ -108,11 +108,10 @@ class EventableCluster(CustomCluster):
     def handle_cluster_request(
         self,
         hdr: foundation.ZCLHeader,
-        args: List[Any],
+        args: list[Any],
         *,
-        dst_addressing: Optional[
-            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
-        ] = None,
+        dst_addressing: None
+        | (t.Addressing.Group | t.Addressing.IEEE | t.Addressing.NWK) = None,
     ):
         """Send cluster requests as events."""
         if (
@@ -157,7 +156,7 @@ class GroupBoundCluster(CustomCluster):
         """Bind cluster to a group."""
         # Ensure coordinator is a member of the group
         application = self._endpoint.device.application
-        coordinator = application.get_device(application.ieee)
+        coordinator = application.get_device(application.state.node_info.ieee)
         await coordinator.add_to_group(
             self.COORDINATOR_GROUP_ID,
             name="Coordinator Group - Created by ZHAQuirks",
@@ -259,11 +258,10 @@ class MotionWithReset(_Motion):
     def handle_cluster_request(
         self,
         hdr: foundation.ZCLHeader,
-        args: List[Any],
+        args: list[Any],
         *,
-        dst_addressing: Optional[
-            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
-        ] = None,
+        dst_addressing: None
+        | (t.Addressing.Group | t.Addressing.IEEE | t.Addressing.NWK) = None,
     ):
         """Handle the cluster command."""
         # check if the command is for a zone status change of ZoneStatus.Alarm_1 or ZoneStatus.Alarm_2
@@ -349,11 +347,11 @@ class OccupancyWithReset(_Occupancy):
 class QuickInitDevice(CustomDevice):
     """Devices with quick initialization from quirk signature."""
 
-    signature: Optional[Dict[str, Any]] = None
+    signature: dict[str, Any] | None = None
 
     @classmethod
     def from_signature(
-        cls, device: zigpy.device.Device, model: Optional[str] = None
+        cls, device: zigpy.device.Device, model: str | None = None
     ) -> zigpy.device.Device:
         """Update device accordingly to quirk signature."""
 
@@ -392,11 +390,49 @@ class QuickInitDevice(CustomDevice):
         return device
 
 
+class NoReplyMixin:
+    """A simple mixin.
+
+    Allows a cluster to have configurable list of command
+    ids that do not generate an explicit reply.
+    """
+
+    void_input_commands: set[int] = {}
+
+    async def command(self, command, *args, expect_reply=None, **kwargs):
+        """Override the default Cluster command.
+
+        expect_reply behavior is based on void_input_commands.
+        Note that this method changes the default value of
+        expect_reply to None. This allows the caller to explicitly force
+        expect_reply to true.
+        """
+
+        if expect_reply is None and command in self.void_input_commands:
+            cmd_expect_reply = False
+        elif expect_reply is None:
+            cmd_expect_reply = True  # the default
+        else:
+            cmd_expect_reply = expect_reply
+
+        rsp = await super().command(
+            command, *args, expect_reply=cmd_expect_reply, **kwargs
+        )
+
+        if expect_reply is None and command in self.void_input_commands:
+            # Pretend we received a default reply
+            return foundation.GENERAL_COMMANDS[
+                foundation.GeneralCommand.Default_Response
+            ].schema(command_id=command, status=foundation.Status.SUCCESS)
+
+        return rsp
+
+
 def setup(custom_quirks_path: str | None = None) -> None:
     """Register all quirks with zigpy, including optional custom quirks."""
 
     # Import all quirks in the `zhaquirks` package first
-    for importer, modname, _ispkg in pkgutil.walk_packages(
+    for _importer, modname, _ispkg in pkgutil.walk_packages(
         path=__path__,
         prefix=__name__ + ".",
     ):

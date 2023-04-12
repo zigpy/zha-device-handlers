@@ -52,7 +52,6 @@ from zhaquirks.ikea import (
     IKEA_CLUSTER_ID,
     WWAH_CLUSTER_ID,
     DoublingPowerConfig1CRCluster,
-    LightLinkCluster,
     PowerConfig1CRCluster,
     ScenesCluster,
 )
@@ -103,7 +102,7 @@ class IkeaTradfriRemote1(CustomDevice):
                     Identify.cluster_id,
                     Alarms.cluster_id,
                     Diagnostic.cluster_id,
-                    LightLinkCluster,
+                    LightLink.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
@@ -309,7 +308,7 @@ class IkeaTradfriRemote3(IkeaTradfriRemote1):
                     DoublingPowerConfig1CRCluster,
                     Identify.cluster_id,
                     Alarms.cluster_id,
-                    LightLinkCluster,
+                    LightLink.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,

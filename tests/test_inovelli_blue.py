@@ -14,7 +14,6 @@ def test_mfg_cluster_events(zigpy_device_from_quirk):
     endpoint_id = 2
 
     class Listener:
-
         zha_send_event = mock.MagicMock()
 
     device = zigpy_device_from_quirk(InovelliVZM31SNv11)

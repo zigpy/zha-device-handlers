@@ -515,7 +515,6 @@ class MoesThermostat(TuyaThermostatCluster):
         if attribute in self.WORKDAY_SCHEDULE_ATTRS:
             data = data144()
             for num, (attr, default) in enumerate(self.WORKDAY_SCHEDULE_ATTRS.items()):
-
                 if num % 3 == 0:
                     if attr == attribute:
                         val = round(value / 100)
@@ -539,7 +538,6 @@ class MoesThermostat(TuyaThermostatCluster):
         if attribute in self.WEEKEND_SCHEDULE_ATTRS:
             data = data144()
             for num, (attr, default) in enumerate(self.WEEKEND_SCHEDULE_ATTRS.items()):
-
                 if num % 3 == 0:
                     if attr == attribute:
                         val = round(value / 100)
@@ -874,7 +872,6 @@ class MoesWindowDetection(LocalDataCluster, OnOff):
         """Override the default Cluster command."""
 
         if command_id in (0x0000, 0x0001, 0x0002):
-
             if command_id == 0x0000:
                 value = False
             elif command_id == 0x0001:
@@ -1257,7 +1254,6 @@ class ZONNSMARTHelperOnOff(LocalDataCluster, OnOff):
         """Override the default Cluster command."""
 
         if command_id in (0x0000, 0x0001, 0x0002):
-
             if command_id == 0x0000:
                 value = False
             elif command_id == 0x0001:
