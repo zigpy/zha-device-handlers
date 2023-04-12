@@ -1,17 +1,4 @@
-isort
-black
-flake8
-codecov
-colorlog
-codespell
-coveralls
-mypy==0.942
 pre-commit
-pylint
-pytest-cov
-pytest-sugar
 pytest-timeout
 pytest-asyncio
 pytest>=7.1.3
-zigpy>=0.53
-ruff==0.0.261

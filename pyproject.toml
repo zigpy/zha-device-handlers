@@ -15,7 +15,7 @@ keywords = ["zha", "quirks", "homeassistant", "home-assistant", "hass"]
 license = {text = "Apache License Version 2.0"}
 requires-python = ">=3.8"
 dependencies = [
-    "zigpy>=0.53.0"
+    "zigpy>=0.54.1"
 ]
 
 [tool.setuptools.packages.find]
@@ -29,6 +29,7 @@ testing = [
     "pytest-timeout>=2.1.0",
     "pytest-mock>=3.8.2",
     "pytest-cov>=3.0.0",
+    "pre-commit",
 ]
 
 [tool.isort]
