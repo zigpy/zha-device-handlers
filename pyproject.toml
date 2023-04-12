@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "zha-quirks"
-version = "0.0.96"
+version = "0.0.97"
 description = "Library implementing Zigpy quirks for ZHA in Home Assistant"
 urls = {repository = "https://github.com/zigpy/zha-device-handlers"}
 authors = [
