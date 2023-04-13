@@ -1,4 +1,7 @@
 """Tuya TS1201 IR blaster."""
+""" Heavily inspired by work from @mak-42
+https://github.com/Koenkk/zigbee-herdsman-converters/blob/9d5e7b902479582581615cbfac3148d66d4c675c/lib/zosung.js
+"""
 
 import logging
 import base64
@@ -57,9 +60,7 @@ class ZosungIRControl(CustomCluster):
     cluster_id = 0xE004
     ep_attribute = "zosung_ircontrol"
 
-    attributes = {
-        0x0000: ("last_learned_ir_code", t.CharacterString, True)
-    }
+    attributes = {0x0000: ("last_learned_ir_code", t.CharacterString, True)}
 
     server_commands = {
         0x00: foundation.ZCLCommandDef(
@@ -90,7 +91,10 @@ class ZosungIRControl(CustomCluster):
     ):
         """Read attributes ZCL foundation command."""
         if 0x0000 in attributes:
-            return ({0:self.endpoint.device.last_learned_ir_code}, [foundation.ReadAttributeRecord(foundation.Status.SUCCESS)])
+            return (
+                {0: self.endpoint.device.last_learned_ir_code},
+                [foundation.ReadAttributeRecord(foundation.Status.SUCCESS)],
+            )
         else:
             attr = await super().read_attributes(
                 attributes,
@@ -99,7 +103,6 @@ class ZosungIRControl(CustomCluster):
                 manufacturer=manufacturer,
             )
             return attr
-
 
     async def command(
         self,
@@ -363,7 +366,9 @@ class ZosungIRTransmit(CustomCluster):
                 super().command(0x05, **cmd_05_args, expect_reply=False)
             )
         elif hdr.command_id == 0x05:
-            self.endpoint.device.last_learned_ir_code = base64.b64encode(bytes(self.ir_msg)).decode()
+            self.endpoint.device.last_learned_ir_code = base64.b64encode(
+                bytes(self.ir_msg)
+            ).decode()
             self.info(
                 "Command 0x05: Ir message really totally received: %s",
                 self.endpoint.device.last_learned_ir_code,
@@ -451,6 +456,7 @@ class ZosungIRBlaster(CustomDevice):
         },
     }
 
+
 class ZosungIRBlaster_ZS06(ZosungIRBlaster):
     """Zosung IR Blaster ZS06."""
 
@@ -523,4 +529,3 @@ class ZosungIRBlaster_ZS06(ZosungIRBlaster):
             },
         },
     }
-
