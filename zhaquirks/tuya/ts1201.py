@@ -83,14 +83,12 @@ class ZosungIRControl(CustomCluster):
     }
 
     def _update_attribute(self, attrid, value):
-        self.debug("_update_attribute attrid:%s value:%s", attrid, value)
         super()._update_attribute(attrid, value)
 
     async def read_attributes(
         self, attributes, allow_cache=False, only_cache=False, manufacturer=None
     ):
         """Read attributes ZCL foundation command."""
-        self.debug("Attributes: %s", attributes)
         if 0x0000 in attributes:
             return ({0:self.endpoint.device.last_learned_ir_code}, [foundation.ReadAttributeRecord(foundation.Status.SUCCESS)])
         else:
@@ -100,7 +98,6 @@ class ZosungIRControl(CustomCluster):
                 only_cache=only_cache,
                 manufacturer=manufacturer,
             )
-            self.debug("Return attr: %s", attr)
             return attr
 
 
@@ -114,15 +111,14 @@ class ZosungIRControl(CustomCluster):
         **kwargs: Any,
     ):
         """Override the default Cluster command."""
-        self.debug("Receive command with args: %s and kwargs %s", args, kwargs)
         if command_id == 1:
             if kwargs["on_off"]:
-                new_args = {Bytes(b'{"study":0}')}
+                cmd_args = {Bytes(b'{"study":0}')}
             else:
-                new_args = {Bytes(b'{"study":1}')}
+                cmd_args = {Bytes(b'{"study":1}')}
             return await super().command(
                 0x00,
-                *new_args,
+                *cmd_args,
                 manufacturer=manufacturer,
                 expect_reply=True,
                 tsn=tsn,
@@ -274,16 +270,6 @@ class ZosungIRTransmit(CustomCluster):
         ] = None,
     ):
         """Handle a cluster request."""
-        self.debug(
-            "%s: handle_cluster_request - Command: %s Data: %s Data.type: %s",
-            self.name,
-            hdr.command_id,
-            args,
-            type(args),
-        )
-
-        for d in args:
-            self.debug("d: %s", d)
 
         # send default response, so avoid repeated zclframe from device
         if not hdr.frame_control.disable_default_response:
@@ -297,7 +283,7 @@ class ZosungIRTransmit(CustomCluster):
             self.ir_msg.clear()
             self.msg_length = args.length
 
-            new_args_01 = {
+            cmd_01_args = {
                 "zero": 0,
                 "seq": args.seq,
                 "length": args.length,
@@ -308,11 +294,11 @@ class ZosungIRTransmit(CustomCluster):
                 "unk3": args.unk3,
             }
             self.create_catching_task(
-                super().command(0x01, **new_args_01, expect_reply=True)
+                super().command(0x01, **cmd_01_args, expect_reply=True)
             )
-            new_args_02 = {"seq": args.seq, "position": 0, "maxlen": 0x38}
+            cmd_02_args = {"seq": args.seq, "position": 0, "maxlen": 0x38}
             self.create_catching_task(
-                super().command(0x02, **new_args_02, expect_reply=True)
+                super().command(0x02, **cmd_02_args, expect_reply=True)
             )
         elif hdr.command_id == 0x01:
             self.debug("IR-Message-Code01 received, sequence: %s", args.seq)
@@ -332,7 +318,7 @@ class ZosungIRTransmit(CustomCluster):
                 position,
                 msgpart,
             )
-            new_args_03 = {
+            cmd_03_args = {
                 "zero": 0,
                 "seq": seq,
                 "position": position,
@@ -340,7 +326,7 @@ class ZosungIRTransmit(CustomCluster):
                 "msgpartcrc": calculated_crc,
             }
             self.create_catching_task(
-                super().command(0x03, **new_args_03, expect_reply=True)
+                super().command(0x03, **cmd_03_args, expect_reply=True)
             )
         elif hdr.command_id == 0x03:
             msg_part_crc = args.msgpartcrc
@@ -355,26 +341,26 @@ class ZosungIRTransmit(CustomCluster):
             )
             self.ir_msg[args.position :] = args.msgpart
             if args.position + len(args.msgpart) < self.msg_length:
-                new_args_02 = {
+                cmd_02_args = {
                     "seq": args.seq,
                     "position": args.position + len(args.msgpart),
                     "maxlen": 0x38,
                 }
                 self.create_catching_task(
-                    super().command(0x02, **new_args_02, expect_reply=False)
+                    super().command(0x02, **cmd_02_args, expect_reply=False)
                 )
             else:
                 self.debug("Ir message totally received.")
-                new_args_04 = {"zero0": 0, "seq": args.seq, "zero1": 0}
+                cmd_04_args = {"zero0": 0, "seq": args.seq, "zero1": 0}
                 self.create_catching_task(
-                    super().command(0x04, **new_args_04, expect_reply=False)
+                    super().command(0x04, **cmd_04_args, expect_reply=False)
                 )
         elif hdr.command_id == 0x04:
             seq = args.seq
             self.debug("Command 0x04: IRCode has been successfuly sent. (seq:%s)", seq)
-            new_args_05 = {"seq": seq, "zero": 0}
+            cmd_05_args = {"seq": seq, "zero": 0}
             self.create_catching_task(
-                super().command(0x05, **new_args_05, expect_reply=False)
+                super().command(0x05, **cmd_05_args, expect_reply=False)
             )
         elif hdr.command_id == 0x05:
             self.endpoint.device.last_learned_ir_code = base64.b64encode(bytes(self.ir_msg)).decode()
