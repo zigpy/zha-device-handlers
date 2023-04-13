@@ -1,41 +1,33 @@
-"""Tuya TS1201 IR blaster."""
-""" Heavily inspired by work from @mak-42
+"""Tuya TS1201 IR blaster.
+
+   Heavily inspired by work from @mak-42
 https://github.com/Koenkk/zigbee-herdsman-converters/blob/9d5e7b902479582581615cbfac3148d66d4c675c/lib/zosung.js
 """
-
-import logging
 import base64
-from typing import Any, List, Optional, Union, Tuple
+from typing import Any, List, Optional, Union
 
 from zigpy.profiles import zha
-from zigpy.profiles.zha import DeviceType
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
+    Groups,
     Identify,
+    OnOff,
     Ota,
     PowerConfiguration,
-    Time,
-    Groups,
     Scenes,
-    OnOff,
+    Time,
 )
 
-from zigpy.zdo.types import NodeDescriptor
-
 from zhaquirks.const import (
-    CLUSTER_ID,
     DEVICE_TYPE,
-    ENDPOINT_ID,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
-    NODE_DESCRIPTOR,
     OUTPUT_CLUSTERS,
-    PARAMS,
     PROFILE_ID,
 )
 
@@ -360,7 +352,7 @@ class ZosungIRTransmit(CustomCluster):
                 )
         elif hdr.command_id == 0x04:
             seq = args.seq
-            self.debug("Command 0x04: IRCode has been successfuly sent. (seq:%s)", seq)
+            self.debug("Command 0x04: IRCode has been successfully sent. (seq:%s)", seq)
             cmd_05_args = {"seq": seq, "zero": 0}
             self.create_catching_task(
                 super().command(0x05, **cmd_05_args, expect_reply=False)
@@ -396,6 +388,7 @@ class ZosungIRBlaster(CustomDevice):
         super().__init__(*args, **kwargs)
 
     def nextSeq(self):
+        """Next local sequence."""
         self.seq = (self.seq + 1) % 0x10000
         return self.seq
 
