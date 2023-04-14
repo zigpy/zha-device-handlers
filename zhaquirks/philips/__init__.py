@@ -173,7 +173,8 @@ class PhilipsRemoteCluster(CustomCluster):
     ):
         """Handle the cluster command."""
         _LOGGER.debug(
-            "PhilipsRemoteCluster - handle_cluster_request tsn: [%s] command id: %s - args: [%s]",
+            "%s - handle_cluster_request tsn: [%s] command id: %s - args: [%s]",
+            self.__class__.__name__,
             hdr.tsn,
             hdr.command_id,
             args,
@@ -193,7 +194,9 @@ class PhilipsRemoteCluster(CustomCluster):
 
         def send_press_event(click_count):
             _LOGGER.debug(
-                "PhilipsRemoteCluster - send_press_event click_count: [%s]", click_count
+                "%s - send_press_event click_count: [%s]",
+                self.__class__.__name__,
+                click_count,
             )
             press_type = None
             if click_count == 1:
