@@ -151,8 +151,7 @@ class PhilipsRemoteCluster(CustomCluster):
                 "param2": t.uint24_t,
                 "press_type": t.uint8_t,
                 "param4": t.uint8_t,
-                "param5": t.uint8_t,
-                "param6": t.uint8_t,
+                "duration": t.uint16_t,
             },
             False,
             is_manufacturer_specific=True,
@@ -182,11 +181,13 @@ class PhilipsRemoteCluster(CustomCluster):
 
         button = self.BUTTONS.get(args[0], args[0])
         press_type = self.PRESS_TYPES.get(args[2], args[2])
+        duration = args[4]
 
         event_args = {
             BUTTON: button,
             PRESS_TYPE: press_type,
             COMMAND_ID: hdr.command_id,
+            "duration": duration,
             ARGS: args,
         }
 
