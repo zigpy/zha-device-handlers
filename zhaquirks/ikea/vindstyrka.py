@@ -55,10 +55,6 @@ class VOCIndex(CustomCluster):
 class IkeaVINDSTYRKA(CustomDevice):
     """IKEA of Sweden VINDSTYRKA Air quality sensor."""
 
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-
     signature = {
         MODELS_INFO: [(IKEA, "VINDSTYRKA")],
         ENDPOINTS: {
