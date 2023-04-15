@@ -80,7 +80,7 @@ class LocalIlluminanceMeasurementCluster(
 
     def illuminance_reported(self, value):
         """Illuminance reported."""
-        if 0 > value or value > 0xFFDC:
+        if value < 0 or value > 0xFFDC:
             _LOGGER.debug(
                 "Received invalid illuminance value: %s - setting illuminance to 0",
                 value,

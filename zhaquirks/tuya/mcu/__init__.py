@@ -103,7 +103,6 @@ class TuyaAttributesCluster(TuyaLocalCluster):
         records = self._write_attr_records(attributes)
 
         for record in records:
-
             self.debug("write_attributes --> record: %s", record)
 
             cluster_data = TuyaClusterData(
@@ -148,7 +147,7 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
                 minor = (self.version_raw & 63) >> 4
                 release = self.version_raw & 15
 
-                return "{}.{}.{}".format(major, minor, release)
+                return f"{major}.{minor}.{release}"
 
             return None
 

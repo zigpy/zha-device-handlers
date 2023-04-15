@@ -39,5 +39,5 @@ class SamjinIASCluster(CustomCluster, zigpy.zcl.clusters.security.IasZone):
                 COMMAND_ID: hdr.command_id,
                 ARGS: args,
             }
-            action = "button_{}".format(CLICK_TYPES[state])
+            action = f"button_{CLICK_TYPES[state]}"
             self.listener_event(ZHA_SEND_EVENT, action, event_args)

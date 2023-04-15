@@ -65,7 +65,7 @@ class IkeaWindowCovering(CustomCluster, WindowCovering):
         We just want to keep track of direction, to associate it with the stop command.
         """
 
-        cmd_name = self.server_commands.get(hdr.command_id, [hdr.command_id])[0]
+        cmd_name = self.server_commands[hdr.command_id].name
         if cmd_name == COMMAND_OPEN:
             self._is_closing = False
         elif cmd_name == COMMAND_CLOSE:
