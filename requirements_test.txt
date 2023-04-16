@@ -1,4 +1,0 @@
-pre-commit
-pytest-timeout
-pytest-asyncio
-pytest>=7.1.3
