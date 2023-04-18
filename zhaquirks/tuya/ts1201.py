@@ -85,7 +85,7 @@ class ZosungIRControl(CustomCluster):
         if 0x0000 in attributes:
             return (
                 {0: self.endpoint.device.last_learned_ir_code},
-                [foundation.ReadAttributeRecord(foundation.Status.SUCCESS)],
+                {},
             )
         else:
             attr = await super().read_attributes(
