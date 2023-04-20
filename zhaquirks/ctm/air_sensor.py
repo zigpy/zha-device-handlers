@@ -1,17 +1,9 @@
 """CTM Lyng Air Sensor"""
 import zigpy.profiles.zha as zha
 from zigpy.quirks import CustomDevice
-from zigpy.zcl.clusters.general import (
-    Basic,
-    PowerConfiguration,
-    Identify,
-    Ota,
-)
-from zigpy.zcl.clusters.measurement import (
-    TemperatureMeasurement,
-    RelativeHumidity,
-)
+from zigpy.zcl.clusters.general import Basic, Identify, Ota, PowerConfiguration
 from zigpy.zcl.clusters.lightlink import LightLink
+from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
 
 from zhaquirks.const import (
     DEVICE_TYPE,

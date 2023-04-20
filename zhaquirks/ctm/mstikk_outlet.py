@@ -1,20 +1,20 @@
 """CTM Lyng mStikk Outlet"""
 import zigpy.profiles.zha as zha
 from zigpy import types as t
-from zigpy.quirks import CustomDevice, CustomCluster
+from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.zcl.clusters.general import (
+    Alarms,
     Basic,
     DeviceTemperature,
-    Identify,
     Groups,
-    Scenes,
+    Identify,
     OnOff,
-    Alarms,
     Ota,
+    Scenes,
 )
-from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.lightlink import LightLink
+from zigpy.zcl.clusters.smartenergy import Metering
 
 from zhaquirks.const import (
     DEVICE_TYPE,

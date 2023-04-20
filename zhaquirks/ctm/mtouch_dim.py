@@ -1,15 +1,15 @@
 """CTM Lyng mTouch Dim & DimmerPille"""
 import zigpy.profiles.zha as zha
-from zigpy.quirks import CustomDevice, CustomCluster
+from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
     Basic,
-    Identify,
     Groups,
-    Scenes,
-    OnOff,
+    Identify,
     LevelControl,
+    OnOff,
     Ota,
+    Scenes,
 )
 from zigpy.zcl.clusters.lighting import Ballast
 from zigpy.zcl.clusters.lightlink import LightLink

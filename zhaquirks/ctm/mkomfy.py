@@ -3,14 +3,14 @@ import zigpy.profiles.zha as zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
-    PowerConfiguration,
+    BinaryInput,
     Identify,
     Ota,
-    BinaryInput,
+    PowerConfiguration,
 )
+from zigpy.zcl.clusters.lightlink import LightLink
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone
-from zigpy.zcl.clusters.lightlink import LightLink
 
 from zhaquirks import Bus, LocalDataCluster
 from zhaquirks.const import (

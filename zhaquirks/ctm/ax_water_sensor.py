@@ -1,12 +1,7 @@
 """CTM Lyng AX Water Sensor"""
 import zigpy.profiles.zha as zha
 from zigpy.quirks import CustomDevice
-from zigpy.zcl.clusters.general import (
-    Basic,
-    PowerConfiguration,
-    Identify,
-    Ota,
-)
+from zigpy.zcl.clusters.general import Basic, Identify, Ota, PowerConfiguration
 from zigpy.zcl.clusters.security import IasZone
 
 from zhaquirks.const import (

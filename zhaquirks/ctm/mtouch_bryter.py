@@ -1,54 +1,54 @@
 """CTM Lyng mTouch Bryter"""
 import zigpy.profiles.zha as zha
-from zigpy.quirks import CustomDevice, CustomCluster
+from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
-    PowerConfiguration,
-    Identify,
     Groups,
-    Scenes,
-    OnOff,
+    Identify,
     LevelControl,
+    OnOff,
     Ota,
+    PowerConfiguration,
+    Scenes,
 )
-from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.lightlink import LightLink
+from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 
 from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
+    ALT_SHORT_PRESS,
     BUTTON_1,
     BUTTON_2,
     BUTTON_3,
-    DIM_DOWN,
-    DIM_UP,
-    TURN_ON,
-    TURN_OFF,
     COMMAND,
-    SHORT_PRESS,
-    ALT_SHORT_PRESS,
-    LONG_PRESS,
-    LONG_RELEASE,
-    COMMAND_ON,
-    COMMAND_OFF,
-    COMMAND_TOGGLE,
     COMMAND_MOVE,
     COMMAND_MOVE_ON_OFF,
+    COMMAND_OFF,
+    COMMAND_ON,
     COMMAND_STOP,
+    COMMAND_TOGGLE,
+    DEVICE_TYPE,
+    DIM_DOWN,
+    DIM_UP,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    LONG_PRESS,
+    LONG_RELEASE,
+    MODELS_INFO,
+    OUTPUT_CLUSTERS,
     PARAMS,
+    PROFILE_ID,
+    SHORT_PRESS,
+    TURN_OFF,
+    TURN_ON,
 )
 
 from zhaquirks.ctm import (
     CTM,
     CTM_MFCODE,
+    CtmDiagnosticsCluster,
+    CtmGroupConfigCluster,
     CtmPowerConfiguration,
     CtmTemperatureMeasurement,
-    CtmGroupConfigCluster,
-    CtmDiagnosticsCluster,
 )
 
 COMMAND_RECALL = "recall"

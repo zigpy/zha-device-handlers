@@ -1,17 +1,10 @@
 """CTM Lyng MBD"""
 import zigpy.profiles.zha as zha
 from zigpy import types as t
-from zigpy.quirks import CustomDevice, CustomCluster
-from zigpy.zcl.clusters.general import (
-    Basic,
-    Identify,
-    Groups,
-    Scenes,
-    OnOff,
-    Ota,
-)
-from zigpy.zcl.clusters.measurement import IlluminanceMeasurement, OccupancySensing
+from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes
 from zigpy.zcl.clusters.lightlink import LightLink
+from zigpy.zcl.clusters.measurement import IlluminanceMeasurement, OccupancySensing
 
 from zhaquirks import Bus
 from zhaquirks.const import (

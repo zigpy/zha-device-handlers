@@ -1,14 +1,15 @@
 """Quirks for CTM Lyng products."""
 
 import logging
+
 from zigpy import types as t
 from zigpy.quirks import CustomCluster
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import AnalogOutput, OnOff
-from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.hvac import Thermostat
+from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 
-from zhaquirks import PowerConfigurationCluster, LocalDataCluster
+from zhaquirks import LocalDataCluster, PowerConfigurationCluster
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -53,7 +54,7 @@ class CtmThermostatCluster(CustomCluster, Thermostat):
     """CTM Lyng custom thermostat cluster."""
 
     class TemperatureSensor(t.enum8):
-        """Temperatur sensor in use."""
+        """Temperature sensor in use."""
 
         Air = 0x00
         Floor = 0x01
@@ -119,7 +120,7 @@ class CtmGroupConfigCluster(CustomCluster):
     name = "CTM Group Config"
     cluster_id = 0xFEA7
     ep_attribute = "ctm_group_config"
-    attributes: dict[int, foundation.ZCLAttributeDef] = {
+    attributes = {
         0x0000: ("grpup_id", t.uint16_t, True),
         0xFFFD: ("cluster_revision", t.uint16_t),
     }
@@ -131,7 +132,7 @@ class CtmDiagnosticsCluster(CustomCluster):
     name = "CTM Diagnostics"
     cluster_id = 0xFEED
     ep_attribute = "ctm_diagnostics"
-    attributes: dict[int, foundation.ZCLAttributeDef] = {
+    attributes = {
         0x0000: ("last_reset_info", t.uint8_t, True),
         0x0001: ("last_extended_reset_info", t.uint16_t, True),
         0x0002: ("reboot_counter", t.uint16_t, True),
@@ -174,7 +175,7 @@ class CtmStoveGuardCluster(CustomCluster):
     name = "CTM Stove Guard"
     cluster_id = 0xFFC9
     ep_attribute = "ctm_stove_guard"
-    attributes: dict[int, foundation.ZCLAttributeDef] = {
+    attributes = {
         0x0001: ("alarm_status", AlarmStatus, True),
         0x0002: ("battery_alarm", BatteryAlarm, True),
         0x0003: ("temperature", t.uint16_t, True),
@@ -288,7 +289,7 @@ class CtmAnalogOutputDataCluster(LocalDataCluster, AnalogOutput):
 
     async def write_attributes(self, attributes, manufacturer=None):
         """Defer the present_value attribute to write_output_value."""
-        result = False
+        result = None
         for attrid, value in attributes.items():
             if isinstance(attrid, str):
                 attrid = self.attributes_by_name[attrid].id
