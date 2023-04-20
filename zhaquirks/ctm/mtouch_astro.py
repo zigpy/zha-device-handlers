@@ -1,6 +1,6 @@
 """CTM Lyng mTouch Astro"""
-import zigpy.profiles.zha as zha
 from zigpy import types as t
+import zigpy.profiles.zha as zha
 from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
@@ -15,8 +15,12 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-
-from zhaquirks.ctm import CTM, CtmDiagnosticsCluster, CtmGroupConfigCluster, CtmOnOffDataCluster
+from zhaquirks.ctm import (
+    CTM,
+    CtmDiagnosticsCluster,
+    CtmGroupConfigCluster,
+    CtmOnOffDataCluster,
+)
 
 
 class CtmOnOffCluster(CustomCluster, OnOff):

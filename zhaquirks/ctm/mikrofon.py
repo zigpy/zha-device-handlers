@@ -14,7 +14,6 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-
 from zhaquirks.ctm import (
     CTM,
     CtmDiagnosticsCluster,

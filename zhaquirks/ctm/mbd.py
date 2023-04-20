@@ -1,6 +1,6 @@
 """CTM Lyng MBD"""
-import zigpy.profiles.zha as zha
 from zigpy import types as t
+import zigpy.profiles.zha as zha
 from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes
 from zigpy.zcl.clusters.lightlink import LightLink
@@ -15,7 +15,6 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-
 from zhaquirks.ctm import CTM, CtmDiagnosticsCluster, CtmOnOffDataCluster
 
 

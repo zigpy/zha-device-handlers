@@ -41,7 +41,6 @@ from zhaquirks.const import (
     TURN_OFF,
     TURN_ON,
 )
-
 from zhaquirks.ctm import (
     CTM,
     CTM_MFCODE,

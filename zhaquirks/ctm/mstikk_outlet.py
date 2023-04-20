@@ -1,6 +1,6 @@
 """CTM Lyng mStikk Outlet"""
-import zigpy.profiles.zha as zha
 from zigpy import types as t
+import zigpy.profiles.zha as zha
 from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.zcl.clusters.general import (
     Alarms,
@@ -24,7 +24,6 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-
 from zhaquirks.ctm import CTM, CtmDiagnosticsCluster, CtmStoveGuardCluster
 
 

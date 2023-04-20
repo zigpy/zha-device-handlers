@@ -1,5 +1,4 @@
 """CTM Lyng mTouch One"""
-import asyncio
 import logging
 
 import zigpy.profiles.zha as zha
@@ -20,7 +19,6 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-
 from zhaquirks.ctm import (
     CTM,
     CtmAnalogOutputDataCluster,
@@ -67,13 +65,6 @@ class CtmMTouchOneCluster(CtmThermostatCluster):
             ],
             manufacturer=None,
         )
-        return result
-
-    async def set_running_state(self):
-        """Set running_state and help keep running_state more accurate on early versions,
-        which are slow to update heating_active attribute.
-        """
-
         await self.endpoint.basic.read_attributes(
             [
                 "app_version",
@@ -81,18 +72,12 @@ class CtmMTouchOneCluster(CtmThermostatCluster):
             allow_cache=True,
             manufacturer=None,
         )
-        await self.read_attributes(
-            [
-                "running_state",
-                "heating_active",
-                "regulation_mode",
-                "system_mode",
-                "occupied_heating_setpoint",
-                "local_temperature",
-            ],
-            allow_cache=True,
-            manufacturer=None,
-        )
+        return result
+
+    def set_running_state(self):
+        """Set running_state and help keep running_state more accurate on early versions,
+        which are slow to update heating_active attribute.
+        """
 
         running_state = self.RunningState.Idle
         if self.get("heating_active", False):
@@ -196,7 +181,7 @@ class CtmMTouchOneCluster(CtmThermostatCluster):
             self.endpoint.device.away_mode_bus.listener_event(
                 "on_off_change", away_mode
             )
-            task = asyncio.create_task(self.set_running_state())
+            self.set_running_state()
 
         elif attrid == self.attributes_by_name["regulator_setpoint"].id:
             if self.get("regulation_mode") != self.RegulationMode.Regulator:
@@ -208,10 +193,10 @@ class CtmMTouchOneCluster(CtmThermostatCluster):
             super()._update_attribute(
                 self.attributes_by_name["occupied_heating_setpoint"].id, value
             )
-            task = asyncio.create_task(self.set_running_state())
+            self.set_running_state()
 
         elif attrid == self.attributes_by_name["heating_active"].id:
-            task = asyncio.create_task(self.set_running_state())
+            self.set_running_state()
 
         elif attrid == self.attributes_by_name["pi_heating_demand"].id:
             self.heating_demand = value
@@ -242,7 +227,7 @@ class CtmMTouchOneCluster(CtmThermostatCluster):
     async def write_attributes(self, attributes, manufacturer=None):
         """Override writes to thermostat attributes."""
 
-        ovrd_attr = dict()
+        ovrd_attr = {}
         for attr, value in attributes.items():
             if isinstance(attr, int):
                 attr = self.attributes[attr].name
@@ -316,7 +301,8 @@ class CtmTemperatureCluster(LocalDataCluster, TemperatureMeasurement):
 
     def temperature_update(self, value):
         """Thermostat only reports whole degrees and can be a bit bouncy in transitions,
-        so let's use average of new and last temperature."""
+        so let's use average of new and last temperature.
+        """
         new_temp = value
         last_temp = self.last_temp if self.last_temp else new_temp
         value = int((new_temp + last_temp) / 2)
