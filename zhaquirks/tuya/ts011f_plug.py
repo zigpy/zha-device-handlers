@@ -1210,7 +1210,8 @@ class Plug_CB_Metering(EnchantedDevice):
             },
         },
     }
-    
+
+
 class Plug_2AC_var05(EnchantedDevice):
     """Immax TS0011F 2 outlet plug."""
 
