@@ -1,6 +1,6 @@
 """Fixtures for all tests."""
 
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 import zigpy.application
@@ -191,6 +191,9 @@ def assert_signature_matches_quirk():
                 return self.endpoints.get(key)
 
         test_dev = FakeDevice(signature)
+        test_dev._application = Mock()
+        test_dev._application._dblistener = None
+
         device = zigpy.quirks.get_device(test_dev)
         assert isinstance(device, quirk)
 
