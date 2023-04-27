@@ -700,8 +700,21 @@ def test_attributes_updated_not_replaced(quirk: CustomDevice) -> None:
             base_cluster = list(base_clusters)[0]
 
             # Ensure the attribute IDs are extended
-            if not set(base_cluster.attributes) <= set(cluster.attributes):
+            base_attr_ids = set(base_cluster.attributes)
+            quirk_attr_ids = set(cluster.attributes)
+
+            if not base_attr_ids <= quirk_attr_ids:
                 pytest.fail(
                     f"Cluster {cluster} deletes parent class's attributes instead of"
-                    f" extending them: {base_cluster}"
+                    f" extending them: {base_attr_ids - quirk_attr_ids}"
+                )
+
+            # Ensure the attribute names are extended
+            base_attr_names = {a.name for a in base_cluster.attributes.values()}
+            quirk_attr_names = {a.name for a in cluster.attributes.values()}
+
+            if not base_attr_names <= quirk_attr_names:
+                pytest.fail(
+                    f"Cluster {cluster} deletes parent class's attributes instead of"
+                    f" extending them: {base_attr_names - quirk_attr_names}"
                 )
