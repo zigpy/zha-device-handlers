@@ -19,12 +19,12 @@ from zhaquirks.sercomm import SERCOMM, SercommPowerConfiguration
 
 
 class XHS2SE(CustomDevice):
-    """Custom device representing XHS2-SE by Sercomm Corp."""
+    """Custom device representing Sercomm XHS2-SE contact sensor."""
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=0x0402
-        #  input_clusters=["0x0000", "0x0001", "0x0003","0x0020","0x0402", "0x0500", "0x0b05","0xfc01","0xfc02"]
-        #  output_clusters=["0x0003","0x0019"]>
+        #  input_clusters=[0, 1, 3, 32, 1062, 1280, 2821]
+        #  output_clusters=[3, 25]>
         MODELS_INFO: [(SERCOMM, "XHS2-SE")],
         ENDPOINTS: {
             1: {
