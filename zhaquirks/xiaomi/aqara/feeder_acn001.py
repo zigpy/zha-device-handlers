@@ -161,7 +161,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
             self._update_attribute(
                 ZCL_LAST_FEEDING_SOURCE, OppleCluster.FeedingSource(feeding_source)
             )
-            self._update_attribute(ZCL_LAST_FEEDING_SIZE, int(feeding_size))
+            self._update_attribute(ZCL_LAST_FEEDING_SIZE, int(feeding_size, base=16))
         elif attribute == PORTIONS_DISPENSED:
             portions_per_day, _ = types.uint16_t_be.deserialize(attribute_value)
             self._update_attribute(ZCL_PORTIONS_DISPENSED, portions_per_day)

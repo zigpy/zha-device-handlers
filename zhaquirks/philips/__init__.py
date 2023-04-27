@@ -71,12 +71,18 @@ HUE_REMOTE_DEVICE_TRIGGERS = {
 }
 
 
-class OccupancyCluster(CustomCluster, OccupancySensing):
+class PhilipsOccupancySensing(CustomCluster):
     """Philips occupancy cluster."""
+
+    cluster_id = OccupancySensing.cluster_id
+    ep_attribute = "philips_occupancy"
 
     attributes = OccupancySensing.attributes.copy()
     attributes[0x0030] = ("sensitivity", t.uint8_t, True)
     attributes[0x0031] = ("sensitivity_max", t.uint8_t, True)
+
+    server_commands = OccupancySensing.server_commands.copy()
+    client_commands = OccupancySensing.client_commands.copy()
 
 
 class PhilipsBasicCluster(CustomCluster, Basic):

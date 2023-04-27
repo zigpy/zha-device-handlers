@@ -77,7 +77,7 @@ async def test_konke_button(zigpy_device_from_quirk, quirk):
     """Test Konke button remotes."""
 
     device = zigpy_device_from_quirk(quirk)
-    cluster = device.endpoints[1].custom_on_off
+    cluster = device.endpoints[1].konke_on_off
 
     listener = mock.MagicMock()
     cluster.add_listener(listener)
