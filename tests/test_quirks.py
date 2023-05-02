@@ -19,6 +19,7 @@ import zigpy.zdo.types
 
 import zhaquirks
 import zhaquirks.bosch.motion
+import zhaquirks.centralite.cl_3310S
 import zhaquirks.const as const
 from zhaquirks.const import (
     ARGS,
@@ -48,7 +49,10 @@ from zhaquirks.const import (
     PROFILE_ID,
     SKIP_CONFIGURATION,
 )
+import zhaquirks.konke
+import zhaquirks.philips
 from zhaquirks.xiaomi import XIAOMI_NODE_DESC
+import zhaquirks.xiaomi.aqara.vibration_aq1
 
 zhaquirks.setup()
 
@@ -678,6 +682,18 @@ def test_quirk_device_automation_triggers_unique(quirk):
 def test_attributes_updated_not_replaced(quirk: CustomDevice) -> None:
     """Verify no quirks subclass a ZCL cluster but delete its attributes list."""
 
+    base_cluster_attrs_name = {}
+    base_cluster_attrs_id = {}
+
+    for name, cluster in zcl.clusters.CLUSTERS_BY_NAME.items():
+        assert cluster.ep_attribute not in base_cluster_attrs_name
+        base_cluster_attrs_name[cluster.ep_attribute] = set(
+            cluster.attributes_by_name.keys()
+        )
+        base_cluster_attrs_id[cluster.cluster_id] = set(
+            cluster.attributes_by_name.keys()
+        )
+
     for ep_id, ep_data in quirk.replacement[ENDPOINTS].items():
         for cluster in ep_data.get(INPUT_CLUSTERS, []) + ep_data.get(
             OUTPUT_CLUSTERS, []
@@ -688,6 +704,44 @@ def test_attributes_updated_not_replaced(quirk: CustomDevice) -> None:
                 continue
 
             assert issubclass(cluster, zigpy.quirks.CustomCluster)
+
+            # Check if attributes match based on cluster endpoint attribute
+            if not (
+                base_cluster_attrs_name.get(cluster.ep_attribute, set())
+                <= set(cluster.attributes_by_name.keys())
+            ):
+                missing_attrs = base_cluster_attrs_name[cluster.ep_attribute] - set(
+                    cluster.attributes_by_name.keys()
+                )
+
+                # A few are expected to fail and are handled by ZHA
+                if cluster not in (
+                    zhaquirks.centralite.cl_3310S.SmartthingsRelativeHumidityCluster,
+                ):
+                    pytest.fail(
+                        f"Cluster {cluster} with endpoint name {cluster.ep_attribute!r}"
+                        f" does not contain all named attributes: {missing_attrs}"
+                    )
+
+            # Check if attributes match based on cluster ID
+            if not (
+                base_cluster_attrs_id.get(cluster.cluster_id, set())
+                <= set(cluster.attributes_by_name.keys())
+            ):
+                missing_attrs = base_cluster_attrs_id[cluster.cluster_id] - set(
+                    cluster.attributes_by_name.keys()
+                )
+
+                # A few are expected to fail and are handled by ZHA
+                if cluster not in (
+                    zhaquirks.konke.KonkeOnOffCluster,
+                    zhaquirks.philips.PhilipsOccupancySensing,
+                    zhaquirks.xiaomi.aqara.vibration_aq1.VibrationAQ1.MultistateInputCluster,
+                ):
+                    pytest.fail(
+                        f"Cluster {cluster} with endpoint ID 0x{cluster.cluster_id:04X}"
+                        f" does not contain all named attributes: {missing_attrs}"
+                    )
 
             base_clusters = set(cluster.__mro__) & ALL_ZIGPY_CLUSTERS
 
