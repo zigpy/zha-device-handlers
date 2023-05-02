@@ -23,7 +23,7 @@ from zhaquirks.const import (
 from zhaquirks.legrand import LEGRAND, MANUFACTURER_SPECIFIC_CLUSTER_ID, LegrandCluster
 
 
-class SwitchWithNeutral(CustomDevice):
+class LightSwitchWithNeutral(CustomDevice):
     """Light switch with neutral wire."""
 
     signature = {
