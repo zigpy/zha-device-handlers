@@ -6,7 +6,6 @@ from zigpy.zcl.clusters.general import Basic, Identify, Ota, PollControl
 from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.security import IasZone
 
-from zhaquirks import PowerConfigurationCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -15,14 +14,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.sercomm import SERCOMM
-
-
-class SercommPowerConfiguration(PowerConfigurationCluster):
-    """Sercomm power configuration cluster for flood sensor."""
-
-    MAX_VOLTS = 3.2
-    MIN_VOLTS = 2.1
+from zhaquirks.sercomm import SERCOMM, SercommPowerConfiguration
 
 
 class SZWTD02N(CustomDevice):
@@ -31,7 +23,7 @@ class SZWTD02N(CustomDevice):
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=1026
         #  device_version=0
-        #  input_clusters=[0, 1, 3, 1280, 32, 2821]
+        #  input_clusters=[0, 1, 3, 32, 1280, 2821]
         #  output_clusters=[3, 25]>
         MODELS_INFO: [(SERCOMM, "SZ-WTD02N_SF")],
         ENDPOINTS: {
