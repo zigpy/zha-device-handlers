@@ -1,25 +1,24 @@
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice, CustomCluster
+from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.zcl.clusters.closures import DoorLock
 from zigpy.zcl.clusters.general import (
     Basic,
-    PowerConfiguration,
     Groups,
     Identify,
-    Scenes,
     Ota,
-)
-from zigpy.zcl.clusters.closures import (
-    DoorLock,
+    PowerConfiguration,
+    Scenes,
 )
 import zigpy.zdo.types
+
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
+    NODE_DESCRIPTOR,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
-    NODE_DESCRIPTOR,
 )
 
 MANUFACTURER_SPECIFIC_PROFILE_ID = 0xFEA2
@@ -28,7 +27,8 @@ MANUFACTURER_SPECIFIC_PROFILE_ID = 0xFEA2
 class BatteryBasicCluster(CustomCluster, Basic):
     """Basic cluster implementation.
     This implementation sets power source to battery
-    and removes incorrect MainsPowered-flag."""
+    and removes incorrect MainsPowered-flag.
+    """
 
     cluster_id = Basic.cluster_id
     POWER_SOURCE = 0x0007
