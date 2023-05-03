@@ -21,22 +21,17 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import TuyaZBExternalSwitchTypeCluster
+from zhaquirks.tuya import SwitchBackLight, TuyaZBExternalSwitchTypeCluster
 
 ATTR_CURRENT_POSITION_LIFT_PERCENTAGE = 0x0008
 CMD_GO_TO_LIFT_PERCENTAGE = 0x0005
 
 
-class TuyaWithBacklightOnOffCluster(CustomCluster):
-    """TuyaSmartCurtainOnOffCluster: fire events corresponding to press type."""
+class TuyaWithBacklightOnOffCluster(CustomCluster, OnOff):
+    """Tuya Zigbee On Off cluster with extra attributes."""
 
-    cluster_id = OnOff.cluster_id
-
-    LIGHT_MODE_1 = {0x8001: 0}
-    LIGHT_MODE_2 = {0x8001: 1}
-    LIGHT_MODE_3 = {0x8001: 2}
-
-    attributes = {0x8001: ("backlight_mode", t.enum8)}
+    attributes = OnOff.attributes.copy()
+    attributes.update({0x8001: ("backlight_mode", SwitchBackLight)})
 
 
 class MotorMode(t.enum8):
