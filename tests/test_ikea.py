@@ -1,6 +1,14 @@
 """Tests for Ikea Starkvind quirks."""
 
+from unittest import mock
+
+from zigpy.zcl import foundation
+from zigpy.zcl.clusters.measurement import PM25
+
+import zhaquirks
 import zhaquirks.ikea.starkvind
+
+zhaquirks.setup()
 
 
 def test_ikea_starkvind(assert_signature_matches_quirk):
@@ -72,3 +80,45 @@ def test_ikea_starkvind_v2(assert_signature_matches_quirk):
     }
 
     assert_signature_matches_quirk(zhaquirks.ikea.starkvind.IkeaSTARKVIND_v2, signature)
+
+
+async def test_pm25_cluster_read(zigpy_device_from_quirk):
+    """Test reading from PM25 cluster"""
+
+    starkvind_device = zigpy_device_from_quirk(zhaquirks.ikea.starkvind.IkeaSTARKVIND)
+    assert starkvind_device.model == "STARKVIND Air purifier"
+
+    pm25_cluster = starkvind_device.endpoints[1].in_clusters[PM25.cluster_id]
+    ikea_cluster = starkvind_device.endpoints[1].in_clusters[
+        zhaquirks.ikea.starkvind.IkeaAirpurifier.cluster_id
+    ]
+
+    # Mock the read attribute to on the IkeaAirpurifier cluster
+    # to always return 6 for anything.
+    def mock_read(attributes, manufacturer=None):
+        records = [
+            foundation.ReadAttributeRecord(
+                attr, foundation.Status.SUCCESS, foundation.TypeValue(None, 6)
+            )
+            for attr in attributes
+        ]
+        return (records,)
+
+    patch_ikeacluster_read = mock.patch.object(
+        ikea_cluster, "_read_attributes", mock.AsyncMock(side_effect=mock_read)
+    )
+    with patch_ikeacluster_read:
+        # Reading "measured_value" should read the "air_quality_25pm" value from
+        # the IkeaAirpurifier cluster
+        success, fail = await pm25_cluster.read_attributes(["measured_value"])
+        assert success
+        assert 6 in success.values()
+        assert not fail
+
+        # Same call with allow_cache=True; a bug previously prevented this from working
+        success, fail = await pm25_cluster.read_attributes(
+            ["measured_value"], allow_cache=True
+        )
+        assert success
+        assert 6 in success.values()
+        assert not fail
