@@ -12,6 +12,13 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone
 
+from zhaquirks import (
+    DEVICE_TYPE,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
+)
 from zhaquirks.smartthings import SmartThingsAccelCluster
 
 
@@ -19,14 +26,14 @@ class SmartthingsMultiPurposeSensor(CustomDevice):
     """Custom device representing a Smartthings Multi Purpose Sensor."""
 
     signature = {
-        "endpoints": {
+        ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=1026
             # device_version=0 input_clusters=[0, 1, 3, 32, 1026, 1280, 64514]
             # output_clusters=[3, 25]>
             1: {
-                "profile_id": zha.PROFILE_ID,
-                "device_type": zha.DeviceType.IAS_ZONE,
-                "input_clusters": [
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
+                INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
                     Identify.cluster_id,
@@ -35,25 +42,24 @@ class SmartthingsMultiPurposeSensor(CustomDevice):
                     IasZone.cluster_id,
                     SmartThingsAccelCluster.cluster_id,
                 ],
-                "output_clusters": [Identify.cluster_id, Ota.cluster_id],
+                OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],
             }
         }
     }
 
     replacement = {
-        "endpoints": {
+        ENDPOINTS: {
             1: {
-                "input_clusters": [
+                INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
                     Identify.cluster_id,
                     PollControl.cluster_id,
                     TemperatureMeasurement.cluster_id,
                     IasZone.cluster_id,
-                    SmartThingsAccelCluster.cluster_id,
                     SmartThingsAccelCluster,
                 ],
-                "output_clusters": [Identify.cluster_id, Ota.cluster_id],
+                OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],
             }
         }
     }

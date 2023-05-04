@@ -772,3 +772,28 @@ def test_attributes_updated_not_replaced(quirk: CustomDevice) -> None:
                     f"Cluster {cluster} deletes parent class's attributes instead of"
                     f" extending them: {base_attr_names - quirk_attr_names}"
                 )
+
+
+@pytest.mark.parametrize("quirk", ALL_QUIRK_CLASSES)
+def test_no_duplicate_clusters(quirk: CustomDevice) -> None:
+    """Verify no quirks contain clusters with duplicate cluster ids in the replacement."""
+
+    def check_for_duplicate_cluster_ids(clusters) -> None:
+        used_cluster_ids = set()
+
+        for cluster in clusters:
+            if isinstance(cluster, int):
+                cluster_id = cluster
+            else:
+                cluster_id = cluster.cluster_id
+
+            if cluster_id in used_cluster_ids:
+                pytest.fail(
+                    f"Cluster ID 0x{cluster_id:04X} is used more than once in the"
+                    f" replacement for endpoint {ep_id} in {quirk}"
+                )
+            used_cluster_ids.add(cluster_id)
+
+    for ep_id, ep_data in quirk.replacement[ENDPOINTS].items():
+        check_for_duplicate_cluster_ids(ep_data.get(INPUT_CLUSTERS, []))
+        check_for_duplicate_cluster_ids(ep_data.get(OUTPUT_CLUSTERS, []))
