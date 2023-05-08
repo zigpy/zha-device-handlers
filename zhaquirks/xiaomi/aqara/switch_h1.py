@@ -1,26 +1,62 @@
 import copy
 import logging
-from enum import Enum
 
-from zhaquirks.const import (ALT_DOUBLE_PRESS, ALT_SHORT_PRESS, ARGS, ATTR_ID,
-                             BUTTON, CLUSTER_ID, COMMAND, COMMAND_DOUBLE,
-                             COMMAND_HOLD, COMMAND_OFF, COMMAND_SINGLE,
-                             COMMAND_TOGGLE, COMMAND_TRIPLE, DEVICE_TYPE,
-                             DOUBLE_PRESS, ENDPOINT_ID, ENDPOINTS,
-                             INPUT_CLUSTERS, LONG_PRESS, MODELS_INFO,
-                             OUTPUT_CLUSTERS, PROFILE_ID, SHORT_PRESS,
-                             TRIPLE_PRESS, ZHA_SEND_EVENT)
-from zhaquirks.xiaomi import (LUMI, DeviceTemperatureCluster,  # BasicCluster,
-                              OnOffCluster, XiaomiCustomDevice,
-                              XiaomiMeteringCluster)
-from zhaquirks.xiaomi.aqara.opple_remote import (MultistateInputCluster,
-                                                 OppleCluster)
-from zhaquirks.xiaomi.aqara.opple_switch import (OppleIndicatorLight,
-                                                 OppleOperationMode)
 from zigpy import types as t
 from zigpy.profiles import zha
-from zigpy.zcl.clusters.general import (Alarms, Basic, GreenPowerProxy, Groups,
-                                        Identify, OnOff, Ota, Scenes, Time)
+from zigpy.zcl.clusters.general import (
+    Alarms,
+    Basic,
+    GreenPowerProxy,
+    Groups,
+    Identify,
+    OnOff,
+    Ota,
+    Scenes,
+    Time,
+)
+
+from zhaquirks.const import (
+    ALT_DOUBLE_PRESS,
+    ALT_SHORT_PRESS,
+    ARGS,
+    ATTR_ID,
+    BUTTON,
+    CLUSTER_ID,
+    COMMAND,
+    COMMAND_DOUBLE,
+    COMMAND_HOLD,
+    COMMAND_OFF,
+    COMMAND_SINGLE,
+    COMMAND_TOGGLE,
+    COMMAND_TRIPLE,
+    DEVICE_TYPE,
+    DOUBLE_PRESS,
+    ENDPOINT_ID,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    LONG_PRESS,
+    MODELS_INFO,
+    OUTPUT_CLUSTERS,
+    PRESS_TYPE,
+    PROFILE_ID,
+    SHORT_PRESS,
+    TRIPLE_PRESS,
+    VALUE,
+    ZHA_SEND_EVENT,
+)
+from zhaquirks.xiaomi import (
+    LUMI,
+    DeviceTemperatureCluster,
+    OnOffCluster,
+    XiaomiCustomDevice,
+    XiaomiMeteringCluster,
+)
+from zhaquirks.xiaomi.aqara.opple_remote import (
+    PRESS_TYPES,
+    MultistateInputCluster,
+    OppleCluster,
+)
+from zhaquirks.xiaomi.aqara.opple_switch import OppleIndicatorLight, OppleOperationMode
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -143,34 +179,37 @@ class AqaraH1SingleRockerSwitch(XiaomiCustomDevice):
             COMMAND: COMMAND_TRIPLE,
             ARGS: {ATTR_ID: 0x00FB},
         },
-        (LONG_PRESS, BUTTON): {CLUSTER_ID: AqaraH1SwitchCluster.cluster_id, COMMAND: COMMAND_HOLD},
+        (LONG_PRESS, BUTTON): {
+            CLUSTER_ID: AqaraH1SwitchCluster.cluster_id,
+            COMMAND: COMMAND_HOLD,
+        },
         (ALT_SHORT_PRESS, BUTTON): {COMMAND: COMMAND_TOGGLE, ENDPOINT_ID: 1, ARGS: []},
         (ALT_DOUBLE_PRESS, BUTTON): {COMMAND: COMMAND_OFF, ENDPOINT_ID: 1, ARGS: []},
     }
-    #{
-    #    # triggers when operation_mode == event
-    #    # the button doesn't send an release event after hold
-    #    (SHORT_PRESS, BUTTON): {COMMAND: COMMAND_SINGLE},
-    #    (DOUBLE_PRESS, BUTTON): {COMMAND: COMMAND_DOUBLE},
-    #    (TRIPLE_PRESS, BUTTON): {COMMAND: COMMAND_TRIPLE},
-    #    (LONG_PRESS, BUTTON): {COMMAND: COMMAND_1_HOLD},
-    #    # triggers when operation_mode == command
-    #    (ALT_SHORT_PRESS, BUTTON): {COMMAND: COMMAND_TOGGLE, ENDPOINT_ID: 1, ARGS: []},
-    #    (ALT_DOUBLE_PRESS, BUTTON): {COMMAND: COMMAND_OFF, ENDPOINT_ID: 1, ARGS: []},
-    #    (COMMAND_BUTTON_SINGLE, BUTTON_1): {
-    #        ENDPOINT_ID: 1,
-    #        CLUSTER_ID: 18,
-    #        ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: COMMAND_SINGLE, VALUE: 1},
-    #    },
-    #    (COMMAND_BUTTON_DOUBLE, BUTTON_1): {
-    #        ENDPOINT_ID: 1,
-    #        CLUSTER_ID: 18,
-    #        ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: COMMAND_DOUBLE, VALUE: 2},
-    #    },
-    #    (COMMAND_BUTTON_HOLD, BUTTON): {
-    #        ENDPOINT_ID: 1,
-    #        CLUSTER_ID: 0xFCC0,
-    #        # COMMAND: COMMAND_ATTRIBUTE_UPDATED,
-    #        ARGS: {ATTR_ID: 0x00FC, VALUE: False},
-    #    },
-    #}
+    # {
+    #     # triggers when operation_mode == event
+    #     # the button doesn't send an release event after hold
+    #     (SHORT_PRESS, BUTTON): {COMMAND: COMMAND_SINGLE},
+    #     (DOUBLE_PRESS, BUTTON): {COMMAND: COMMAND_DOUBLE},
+    #     (TRIPLE_PRESS, BUTTON): {COMMAND: COMMAND_TRIPLE},
+    #     (LONG_PRESS, BUTTON): {COMMAND: COMMAND_1_HOLD},
+    #     # triggers when operation_mode == command
+    #     (ALT_SHORT_PRESS, BUTTON): {COMMAND: COMMAND_TOGGLE, ENDPOINT_ID: 1, ARGS: []},
+    #     (ALT_DOUBLE_PRESS, BUTTON): {COMMAND: COMMAND_OFF, ENDPOINT_ID: 1, ARGS: []},
+    #     (COMMAND_BUTTON_SINGLE, BUTTON_1): {
+    #         ENDPOINT_ID: 1,
+    #         CLUSTER_ID: 18,
+    #         ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: COMMAND_SINGLE, VALUE: 1},
+    #     },
+    #     (COMMAND_BUTTON_DOUBLE, BUTTON_1): {
+    #         ENDPOINT_ID: 1,
+    #         CLUSTER_ID: 18,
+    #         ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: COMMAND_DOUBLE, VALUE: 2},
+    #     },
+    #     (COMMAND_BUTTON_HOLD, BUTTON): {
+    #         ENDPOINT_ID: 1,
+    #         CLUSTER_ID: 0xFCC0,
+    #         # COMMAND: COMMAND_ATTRIBUTE_UPDATED,
+    #         ARGS: {ATTR_ID: 0x00FC, VALUE: False},
+    #     },
+    # }
