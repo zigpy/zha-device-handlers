@@ -26,14 +26,14 @@ from zhaquirks.const import (
 )
 from zhaquirks.develco import DEVELCO
 
+DEV_TEMP_ID = DeviceTemperature.attributes_by_name["current_temperature"].id
+
 
 class DevelcoDeviceTemperature(CustomCluster, DeviceTemperature):
     """Device Temperature. Modify divisor."""
 
-    DEV_TEMP_ID = 0x0000
-
     def _update_attribute(self, attrid, value):
-        if attrid == self.DEV_TEMP_ID and value is not None:
+        if attrid == DEV_TEMP_ID and value is not None:
             value = value * 100
         super()._update_attribute(attrid, value)
 
