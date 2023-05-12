@@ -11,7 +11,7 @@ zhaquirks.setup()
 
 
 @pytest.mark.parametrize("quirk", (zhaquirks.develco.power_plug.SPLZB131,))
-async def test_develco_plug_device_temp(zigpy_device_from_quirk, quirk):
+async def test_develco_plug_device_temp_multiplier(zigpy_device_from_quirk, quirk):
     """Test device temperature multiplication."""
 
     device = zigpy_device_from_quirk(quirk)
