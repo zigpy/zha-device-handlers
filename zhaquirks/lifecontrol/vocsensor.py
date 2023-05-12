@@ -2,11 +2,15 @@
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
-from zigpy.zcl.clusters.general import Basic, PowerConfiguration, Identify
-from zigpy.zcl.clusters.measurement import TemperatureMeasurement, RelativeHumidity, CarbonDioxideConcentration
+from zigpy.zcl.clusters.general import Basic, Identify, PowerConfiguration
 from zigpy.zcl.clusters.hvac import Thermostat
-from zhaquirks import LocalDataCluster
+from zigpy.zcl.clusters.measurement import (
+    CarbonDioxideConcentration,
+    RelativeHumidity,
+    TemperatureMeasurement,
+)
 
+from zhaquirks import LocalDataCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -27,7 +31,9 @@ class LifeControlMCLH08RelativeHumidity(LocalDataCluster, RelativeHumidity):
     """Humidity is reported in temperature cluster and cannot be requested"""
 
 
-class LifeControlMCLH08CarbonDioxideConcentration(LocalDataCluster, CarbonDioxideConcentration):
+class LifeControlMCLH08CarbonDioxideConcentration(
+    LocalDataCluster, CarbonDioxideConcentration
+):
     """CO2 is reported in temperature cluster and cannot be requested"""
 
 
@@ -40,7 +46,9 @@ class LifeControlMCLH08Temperature(LocalDataCluster, TemperatureMeasurement):
         if attrid == 0x0001:
             self.endpoint.humidity.update_attribute(0x0000, value)
         elif attrid == 0x0002:
-            self.endpoint.carbon_dioxide_concentration.update_attribute(0x0000, value / 1000000)
+            self.endpoint.carbon_dioxide_concentration.update_attribute(
+                0x0000, value / 1000000
+            )
         else:
             super()._update_attribute(attrid, value)
 
