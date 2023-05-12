@@ -27,30 +27,9 @@ class LightSwitchWithNeutral(CustomDevice):
     """Light switch with neutral wire."""
 
     signature = {
-        # {
-        #     "endpoints": {
-        #         "1": {
-        #         "profile_id": 260,
-        #         "device_type": "0x0100",
-        #         "in_clusters": [
-        #             "0x0000",
-        #             "0x0003",
-        #             "0x0004",
-        #             "0x0005",
-        #             "0x0006",
-        #             "0x000f",
-        #             "0xfc01"
-        #         ],
-        #         "out_clusters": [
-        #             "0x0000",
-        #             "0x0019",
-        #             "0xfc01"
-        #         ]
-        #         }
-        #     },
-        #     "manufacturer": " Legrand",
-        #     "model": " Light switch with neutral",
-        # }
+        #  <SimpleDescriptor endpoint=1 profile=260 device_type=256
+        # input_clusters=[0, 3, 4, 5, 6, 15, 64513]
+        # output_clusters=[0, 25, 64513]>
         MODELS_INFO: [(f" {LEGRAND}", " Light switch with neutral")],
         ENDPOINTS: {
             1: {
