@@ -1,4 +1,4 @@
-"""Smart Plugs."""
+"""Develco smart plugs."""
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.zcl.clusters.general import (
@@ -30,7 +30,7 @@ DEV_TEMP_ID = DeviceTemperature.attributes_by_name["current_temperature"].id
 
 
 class DevelcoDeviceTemperature(CustomCluster, DeviceTemperature):
-    """Device Temperature. Modify divisor."""
+    """Custom device temperature cluster to multiply the temperature by 100."""
 
     def _update_attribute(self, attrid, value):
         if attrid == DEV_TEMP_ID and value is not None:
