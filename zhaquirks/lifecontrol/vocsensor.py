@@ -1,9 +1,7 @@
 """Nexturn VOC Sensor"""
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster, CustomDevice
-import zigpy.types as t
-from zigpy.zcl.foundation import ZCLAttributeDef, ZCLCommandDef
+from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, PowerConfiguration, Identify
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement, RelativeHumidity, CarbonDioxideConcentration
 from zigpy.zcl.clusters.hvac import Thermostat
@@ -20,21 +18,21 @@ from zhaquirks.const import (
 
 
 class LifeControlMCLH08PowerConfiguration(LocalDataCluster, PowerConfiguration):
-    '''Power configuration is reported and cannot be requested'''
+    """Power configuration is reported and cannot be requested"""
 
     cluster_id = PowerConfiguration.cluster_id
 
 
 class LifeControlMCLH08RelativeHumidity(LocalDataCluster, RelativeHumidity):
-    '''Humidity is reported in temperature cluster and cannot be requested'''
+    """Humidity is reported in temperature cluster and cannot be requested"""
 
 
 class LifeControlMCLH08CarbonDioxideConcentration(LocalDataCluster, CarbonDioxideConcentration):
-    '''CO2 is reported in temperature cluster and cannot be requested'''
+    """CO2 is reported in temperature cluster and cannot be requested"""
 
 
 class LifeControlMCLH08Temperature(LocalDataCluster, TemperatureMeasurement):
-    '''Device reports all measurements as datapoints of temperature cluster and it cannot be queried'''
+    """Device reports all measurements as datapoints of temperature cluster and it cannot be queried"""
 
     cluster_id = TemperatureMeasurement.cluster_id
 
@@ -59,12 +57,12 @@ class LifeControlMCLH08AirQualitySensor(CustomDevice):
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: 0x0301,
                 INPUT_CLUSTERS: [
-                    Basic.cluster_id,                  # 0x0000
-                    PowerConfiguration.cluster_id,     # 0x0001
-                    Identify.cluster_id,               # 0x0003
-                    Thermostat.cluster_id,             # 0x0201
-                    TemperatureMeasurement.cluster_id, # 0x0402
-                    RelativeHumidity.cluster_id,       # 0x0405
+                    Basic.cluster_id,  # 0x0000
+                    PowerConfiguration.cluster_id,  # 0x0001
+                    Identify.cluster_id,  # 0x0003
+                    Thermostat.cluster_id,  # 0x0201
+                    TemperatureMeasurement.cluster_id,  # 0x0402
+                    RelativeHumidity.cluster_id,  # 0x0405
                 ],
                 OUTPUT_CLUSTERS: [],
             }
