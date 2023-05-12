@@ -56,6 +56,10 @@ import zhaquirks.xiaomi.aqara.motion_aq2b
 import zhaquirks.xiaomi.aqara.plug_eu
 import zhaquirks.xiaomi.aqara.smoke
 import zhaquirks.xiaomi.mija.motion
+from zhaquirks.xiaomi.aqara.thermostat_agl001 import (
+    ScheduleEvent,
+    ScheduleSettings,
+)
 
 from tests.common import ZCL_OCC_ATTR_RPT_OCC, ClusterListener
 
@@ -950,3 +954,58 @@ async def test_xiaomi_e1_thermostat_attribute_update(zigpy_device_from_quirk, qu
     assert len(power_config_listener.attribute_updates) == 1
     assert power_config_listener.attribute_updates[0][0] == zcl_battery_percentage_id
     assert power_config_listener.attribute_updates[0][1] == 100  # ZCL is doubled
+
+@pytest.mark.parametrize("schedule_settings", [
+    'mon,tue,wed,thu,fri|8:00,24.0|18:00,17.0|23:00,22.0|8:00,22.0',
+    'mon,tue,wed,thu,fri,sat,sun|8:00,24.0|18:00,17.0|23:00,22.0|8:00,22.0',
+    'mon|8:00,21.5|18:30,17.5|23:00,22.0|8:00,22.5',
+])
+async def test_xiaomi_e1_thermostat_schedule_settings_string_representation(schedule_settings):
+    """Test creation of ScheduleSettings from str and converting back to same str"""
+
+    s = ScheduleSettings(schedule_settings)
+    assert str(s) == schedule_settings
+
+@pytest.mark.parametrize("schedule_settings", [
+    'invalid|8:00,24.0|18:00,17.0|23:00,22.0|8:00,22.0',
+    'mon,tue,wed,thu,fri|8:00,24.0|18:00,17.0|23:00,22.0',
+    'mon,tue,wed,thu,fri|8:00,24.0|18:00,17.0|23:00,22.0|8:00,22.0|9:00,25.0',
+    'mon,tue,wed,thu,fri,sat,sun,some_day|8:00,24.0|18:00,17.0|23:00,22.0|8:00,22.0',
+    'mon|some_time,21.5|18:30,17.5|23:00,22.0|8:00,22.5',
+    'mon|8:00,some_temp|18:30,17.5|23:00,22.0|8:00,22.5',
+    'mon,tue,wed,thu,fri|8:00,24.0|8:30,17.0|23:00,22.0|8:00,22.0',
+    'mon,tue,wed,thu,fri|8:00,24.0|18:00,17.0|23:00,22.0|9:00,22.0',
+    'mon,tue,wed,thu,fri|8:00.24.0|18:00,17.0|23:00,22.0|9:00,22.0',
+    'mon,tue,wed,thu,fri|-8:00,24.0|18:00,17.0|23:00,22.0|9:00,22.0',
+    'mon,tue,wed,thu,fri|8:00,24.0|18:00,17.0|23:00,22.0|25:00,22.0',
+    'mon,tue,wed,thu,fri|8:00,03.0|18:00,17.0|23:00,22.0|9:00,22.0',
+    'mon,tue,wed,thu,fri|8:00,31.0|18:00,17.0|23:00,22.0|9:00,22.0',
+    b'\x04>\x01\xe0\x00\x00\t`\x048\x00\x00\x06\xa4\x05d\x00\x00\x08\x98\x81\xe0\x00\x00\x08\x98\x00',
+    b'\x00>\x01\xe0\x00\x00\t`\x048\x00\x00\x06\xa4\x05d\x00\x00\x08\x98\x81\xe0\x00\x00\x08\x98',
+    b'\x04\x01\x01\xe0\x00\x00\t`\x048\x00\x00\x06\xa4\x05d\x00\x00\x08\x98\x81\xe0\x00\x00\x08\x98',
+    None,
+])
+async def test_xiaomi_e1_thermostat_schedule_settings_data_validation(schedule_settings):
+    """Test data validation of ScheduleSettings class"""
+
+    with pytest.raises(Exception):
+        ScheduleSettings(schedule_settings)
+
+@pytest.mark.parametrize("schedule_event", [
+    b'\x01\xe0\x00\x00',
+    None,
+])
+async def test_xiaomi_e1_thermostat_schedule_event_data_validation(schedule_event):
+    """Test data validation of ScheduleEvent class"""
+
+    with pytest.raises(Exception):
+        ScheduleEvent(schedule_event)
+
+@pytest.mark.parametrize("schedule_settings, expected_bytes", [
+    ('mon,tue,wed,thu,fri|8:00,24.0|18:00,17.0|23:00,22.0|8:00,22.0', b'\x04>\x01\xe0\x00\x00\t`\x048\x00\x00\x06\xa4\x05d\x00\x00\x08\x98\x81\xe0\x00\x00\x08\x98')
+])
+async def test_xiaomi_e1_thermostat_schedule_settings_serialization(schedule_settings, expected_bytes):
+    """Test that serialization works correctly."""
+
+    s = ScheduleSettings(schedule_settings)
+    assert s.serialize() == expected_bytes

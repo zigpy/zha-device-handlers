@@ -1,6 +1,11 @@
 """Aqara E1 Radiator Thermostat Quirk."""
 from __future__ import annotations
 
+import logging
+import struct
+import math
+from functools import reduce
+
 from typing import Any
 
 from zigpy.profiles import zha
@@ -41,10 +46,13 @@ AWAY_PRESET_TEMPERATURE = 0x0279
 WINDOW_OPEN = 0x027A
 CALIBRATED = 0x027B
 SCHEDULE = 0x027D
+SCHEDULE_SETTINGS = 0x276
 SENSOR = 0x027E
 BATTERY_PERCENTAGE = 0x040A
 
 XIAOMI_CLUSTER_ID = 0xFCC0
+
+LOGGER = logging.getLogger(__name__)
 
 
 class ThermostatCluster(CustomCluster, Thermostat):
@@ -123,6 +131,229 @@ class ThermostatCluster(CustomCluster, Thermostat):
         return result
 
 
+class ScheduleEvent:
+    """Schedule event object"""
+
+    _next_day_flag = 1 << 15
+    _is_next_day = False
+
+    def __init__(self, value, is_next_day = False):
+        if isinstance(value, bytes):
+            self._verify_buffer_len(value)
+            self._time = self._read_time_from_buf(value)
+            self._temp = self._read_temp_from_buf(value)
+            self._validate_time(self._time)
+            self._validate_temp(self._temp)
+        elif isinstance(value, str):
+            groups = value.split(',')
+            if len(groups) != 2:
+                raise ValueError("Time and temperature must contain ',' separator")
+            self._time = self._parse_time(groups[0])
+            self._temp = self._parse_temp(groups[1])
+            self._validate_time(self._time)
+            self._validate_temp(self._temp)
+        else:
+            raise TypeError(f"Cannot create ScheduleEvent object from type: {type(value)}")
+        self._is_next_day = is_next_day
+
+    @staticmethod
+    def _verify_buffer_len(buf):
+        if len(buf) != 6:
+            raise ValueError("Buffer size must equal 6")
+
+    def _read_time_from_buf(self, buf):
+        time = struct.unpack_from('>H', buf, offset=0)[0]
+        time &= ~self._next_day_flag
+        return time
+
+    @staticmethod
+    def _parse_time(str):
+        parts = str.split(':')
+        if len(parts) != 2:
+            raise ValueError("Time must contain ':' separator")
+
+        hours = int(parts[0])
+        minutes = int(parts[1])
+
+        return hours * 60 + minutes
+
+    @staticmethod
+    def _read_temp_from_buf(buf):
+        return struct.unpack_from('>H', buf, offset=4)[0] / 100
+
+    @staticmethod
+    def _parse_temp(str):
+        return float(str)
+
+    @staticmethod
+    def _validate_time(time):
+        if time <= 0:
+            raise ValueError("Time must be between 00:00 and 23:59")
+        if time > 24 * 60:
+            raise ValueError("Time must be between 00:00 and 23:59")
+
+    @staticmethod
+    def _validate_temp(temp):
+        if temp < 5:
+            raise ValueError("Temperature must be between 5 and 30 °C")
+        if temp > 30:
+            raise ValueError("Temperature must be between 5 and 30 °C")
+
+    def _write_time_to_buf(self, buf):
+        time = self._time
+        if self._is_next_day:
+            time |= self._next_day_flag
+        struct.pack_into('>H', buf, 0, time)
+
+    def _write_temp_to_buf(self, buf):
+        struct.pack_into('>H', buf, 4, int(self._temp * 100))
+
+    def is_next_day(self):
+        return self._is_next_day
+
+    def set_next_day(self, is_next_day):
+        self._is_next_day = is_next_day
+
+    def get_time(self):
+        return self._time
+
+    def get_temp(self):
+        return self._temp
+
+    def __str__(self):
+        return f"{math.floor(self._time / 60)}:{'{:0>2}'.format(self._time % 60)},{'{:.1f}'.format(self._temp)}"
+
+    def serialize(self):
+        result = bytearray(6)
+        self._write_time_to_buf(result)
+        self._write_temp_to_buf(result)
+        return result
+
+
+class ScheduleSettings:
+    """Schedule settings object"""
+
+    _days = {
+        'mon': 0x02,
+        'tue': 0x04,
+        'wed': 0x08,
+        'thu': 0x10,
+        'fri': 0x20,
+        'sat': 0x40,
+        'sun': 0x80,
+    }
+    _day_selection = ['mon', 'tue', 'wed', 'thu', 'fri']
+    _events = [
+        ScheduleEvent("8:00,24.0", False),
+        ScheduleEvent("18:00,17.0", False),
+        ScheduleEvent("23:00,22.0", False),
+        ScheduleEvent("8:00,22.0", True),
+    ]
+
+    def __init__(self, value):
+        if isinstance(value, bytes):
+            self._verify_buffer_len(value)
+            self._verify_magic_byte(value)
+            self._day_selection = self._read_day_selection(value)
+            for i in range(4):
+                self._events[i] = self._read_event(value, i)
+        elif isinstance(value, str):
+            groups = value.split('|')
+            self._verify_string(groups)
+            self._day_selection = self._read_day_selection(groups[0])
+            for i in range(4):
+                self._events[i] = self._read_event(groups[i + 1], i)
+        else:
+            raise TypeError(f"Cannot create ScheduleSettings object from type: {type(value)}")
+
+        for i in range(1, 4):
+            if self._events[i].get_time() < self._events[i - 1].get_time():
+                self._events[i].set_next_day(True)
+        self._verify_event_durations(self._events)
+
+    @staticmethod
+    def _verify_buffer_len(buf):
+        if len(buf) != 26:
+            raise ValueError("Buffer size must equal 26")
+
+    @staticmethod
+    def _verify_magic_byte(buf):
+        if struct.unpack_from('c', buf, offset=0)[0][0] != 0x04:
+            raise ValueError("Magic byte must be equal to 0x04")
+
+    def _verify_string(self, groups):
+        if len(groups) != 5:
+            raise ValueError("There must be 5 groups in a string")
+        days = groups[0].split(',')
+        self._verify_day_selection_in_str(days)
+
+    def _verify_day_selection_in_str(self, days):
+        if len(days) == 0 or len(days) > 7:
+            raise ValueError("Number of days selected must be between 1 and 7")
+        for d in days:
+            if d not in self._days.keys():
+                raise ValueError(f"String: {d} is not a valid day name, valid names: mon, tue, wed, thu, fri")
+
+    def _read_day_selection(self, value):
+        day_selection = []
+        if isinstance(value, bytes):
+            byte = struct.unpack_from('c', value, offset=1)[0][0]
+            if byte & 0x01:
+                raise ValueError("Incorrect day selected")
+            for i in self._days:
+                if byte & self._days[i]:
+                    day_selection.append(i)
+            self._verify_day_selection_in_str(day_selection)
+        elif isinstance(value, str):
+            day_selection = value.split(',')
+            self._verify_day_selection_in_str(day_selection)
+        return day_selection
+
+    @staticmethod
+    def _read_event(value, index):
+        if isinstance(value, bytes):
+            event_buf = value[2 + index * 6:8 + index * 6]
+            return ScheduleEvent(event_buf)
+        elif isinstance(value, str):
+            return ScheduleEvent(value)
+
+    @staticmethod
+    def _verify_event_durations(events):
+        full_day = 24 * 60
+        prev_time = events[0].get_time()
+        durations = []
+        for i in range(1, 4):
+            event = events[i]
+            if event.is_next_day():
+                durations.append(full_day - prev_time + event.get_time())
+            else:
+                durations.append(event.get_time() - prev_time)
+            prev_time = event.get_time()
+        if (any(d < 60 for d in durations)):
+            raise ValueError("The individual times must be at least 1 hour apart")
+        if reduce((lambda x, y: x + y), durations) > full_day:
+            raise ValueError("The start and end times must be at most 24 hours apart")
+
+    def _get_day_selection_byte(self):
+        byte = 0x00
+        for d in self._day_selection:
+            byte |= self._days[d]
+        return byte
+
+    def __str__(self):
+        result = ','.join(self._day_selection)
+        for e in self._events:
+            result += f'|{e}'
+        return result
+
+    def serialize(self):
+        result = bytearray(b'\x04')
+        result.append(self._get_day_selection_byte())
+        for e in self._events:
+            result.extend(e.serialize())
+        return result
+
+
 class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
     """Aqara manufacturer specific settings."""
 
@@ -141,6 +372,7 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
             WINDOW_OPEN: ("window_open", t.uint8_t, True),
             CALIBRATED: ("calibrated", t.uint8_t, True),
             SCHEDULE: ("schedule", t.uint8_t, True),
+            SCHEDULE_SETTINGS: ("schedule_settings", ScheduleSettings, True),
             SENSOR: ("sensor", t.uint8_t, True),
             BATTERY_PERCENTAGE: ("battery_percentage", t.uint8_t, True),
         }
