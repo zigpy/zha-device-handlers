@@ -19,14 +19,12 @@ async def test_develco_plug_device_temp(zigpy_device_from_quirk, quirk):
     dev_temp_cluster = device.endpoints[2].device_temperature
     dev_temp_listener = ClusterListener(dev_temp_cluster)
 
-    device_temperature_attribute_id = DeviceTemperature.attributes_by_name[
-        "current_temperature"
-    ].id
+    dev_temp_attr_id = DeviceTemperature.attributes_by_name["current_temperature"].id
 
     # turn off heating
-    dev_temp_cluster._update_attribute(device_temperature_attribute_id, 25)
+    dev_temp_cluster._update_attribute(dev_temp_attr_id, 25)
     assert len(dev_temp_listener.attribute_updates) == 1
-    assert dev_temp_listener.attribute_updates[0][0] == device_temperature_attribute_id
+    assert dev_temp_listener.attribute_updates[0][0] == dev_temp_attr_id
     assert dev_temp_listener.attribute_updates[0][1] == 2500  # multiplied by 100
 
 
