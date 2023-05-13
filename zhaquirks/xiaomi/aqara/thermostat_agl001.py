@@ -1,11 +1,11 @@
 """Aqara E1 Radiator Thermostat Quirk."""
 from __future__ import annotations
 
-import logging
-import struct
-import math
 from functools import reduce
+import logging
+import math
 
+import struct
 from typing import Any
 
 from zigpy.profiles import zha
@@ -223,7 +223,7 @@ class ScheduleEvent:
         return self._temp
 
     def __str__(self):
-        return f"{math.floor(self._time / 60)}:{'{:0>2}'.format(self._time % 60)},{'{:.1f}'.format(self._temp)}"
+        return f"{math.floor(self._time / 60)}:{f'{self._time % 60:0>2}'},{f'{self._temp:.1f}'}"
 
     def serialize(self):
         result = bytearray(6)

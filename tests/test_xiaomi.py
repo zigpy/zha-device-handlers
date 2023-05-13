@@ -55,11 +55,8 @@ import zhaquirks.xiaomi.aqara.motion_aq2
 import zhaquirks.xiaomi.aqara.motion_aq2b
 import zhaquirks.xiaomi.aqara.plug_eu
 import zhaquirks.xiaomi.aqara.smoke
+from zhaquirks.xiaomi.aqara.thermostat_agl001 import ScheduleEvent, ScheduleSettings
 import zhaquirks.xiaomi.mija.motion
-from zhaquirks.xiaomi.aqara.thermostat_agl001 import (
-    ScheduleEvent,
-    ScheduleSettings,
-)
 
 from tests.common import ZCL_OCC_ATTR_RPT_OCC, ClusterListener
 
