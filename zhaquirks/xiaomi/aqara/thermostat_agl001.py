@@ -4,7 +4,6 @@ from __future__ import annotations
 from functools import reduce
 import logging
 import math
-
 import struct
 from typing import Any
 
