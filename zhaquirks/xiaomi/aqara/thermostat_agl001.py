@@ -137,7 +137,7 @@ class ScheduleEvent:
     _next_day_flag = 1 << 15
     _is_next_day = False
 
-    def __init__(self, value, is_next_day = False):
+    def __init__(self, value, is_next_day=False):
         if isinstance(value, bytes):
             self._verify_buffer_len(value)
             self._time = self._read_time_from_buf(value)
@@ -145,7 +145,7 @@ class ScheduleEvent:
             self._validate_time(self._time)
             self._validate_temp(self._temp)
         elif isinstance(value, str):
-            groups = value.split(',')
+            groups = value.split(",")
             if len(groups) != 2:
                 raise ValueError("Time and temperature must contain ',' separator")
             self._time = self._parse_time(groups[0])
@@ -153,7 +153,9 @@ class ScheduleEvent:
             self._validate_time(self._time)
             self._validate_temp(self._temp)
         else:
-            raise TypeError(f"Cannot create ScheduleEvent object from type: {type(value)}")
+            raise TypeError(
+                f"Cannot create ScheduleEvent object from type: {type(value)}"
+            )
         self._is_next_day = is_next_day
 
     @staticmethod
@@ -162,13 +164,13 @@ class ScheduleEvent:
             raise ValueError("Buffer size must equal 6")
 
     def _read_time_from_buf(self, buf):
-        time = struct.unpack_from('>H', buf, offset=0)[0]
+        time = struct.unpack_from(">H", buf, offset=0)[0]
         time &= ~self._next_day_flag
         return time
 
     @staticmethod
     def _parse_time(str):
-        parts = str.split(':')
+        parts = str.split(":")
         if len(parts) != 2:
             raise ValueError("Time must contain ':' separator")
 
@@ -179,7 +181,7 @@ class ScheduleEvent:
 
     @staticmethod
     def _read_temp_from_buf(buf):
-        return struct.unpack_from('>H', buf, offset=4)[0] / 100
+        return struct.unpack_from(">H", buf, offset=4)[0] / 100
 
     @staticmethod
     def _parse_temp(str):
@@ -203,10 +205,10 @@ class ScheduleEvent:
         time = self._time
         if self._is_next_day:
             time |= self._next_day_flag
-        struct.pack_into('>H', buf, 0, time)
+        struct.pack_into(">H", buf, 0, time)
 
     def _write_temp_to_buf(self, buf):
-        struct.pack_into('>H', buf, 4, int(self._temp * 100))
+        struct.pack_into(">H", buf, 4, int(self._temp * 100))
 
     def is_next_day(self):
         return self._is_next_day
@@ -234,15 +236,15 @@ class ScheduleSettings:
     """Schedule settings object"""
 
     _days = {
-        'mon': 0x02,
-        'tue': 0x04,
-        'wed': 0x08,
-        'thu': 0x10,
-        'fri': 0x20,
-        'sat': 0x40,
-        'sun': 0x80,
+        "mon": 0x02,
+        "tue": 0x04,
+        "wed": 0x08,
+        "thu": 0x10,
+        "fri": 0x20,
+        "sat": 0x40,
+        "sun": 0x80,
     }
-    _day_selection = ['mon', 'tue', 'wed', 'thu', 'fri']
+    _day_selection = ["mon", "tue", "wed", "thu", "fri"]
     _events = [
         ScheduleEvent("8:00,24.0", False),
         ScheduleEvent("18:00,17.0", False),
@@ -258,13 +260,15 @@ class ScheduleSettings:
             for i in range(4):
                 self._events[i] = self._read_event(value, i)
         elif isinstance(value, str):
-            groups = value.split('|')
+            groups = value.split("|")
             self._verify_string(groups)
             self._day_selection = self._read_day_selection(groups[0])
             for i in range(4):
                 self._events[i] = self._read_event(groups[i + 1], i)
         else:
-            raise TypeError(f"Cannot create ScheduleSettings object from type: {type(value)}")
+            raise TypeError(
+                f"Cannot create ScheduleSettings object from type: {type(value)}"
+            )
 
         for i in range(1, 4):
             if self._events[i].get_time() < self._events[i - 1].get_time():
@@ -278,13 +282,13 @@ class ScheduleSettings:
 
     @staticmethod
     def _verify_magic_byte(buf):
-        if struct.unpack_from('c', buf, offset=0)[0][0] != 0x04:
+        if struct.unpack_from("c", buf, offset=0)[0][0] != 0x04:
             raise ValueError("Magic byte must be equal to 0x04")
 
     def _verify_string(self, groups):
         if len(groups) != 5:
             raise ValueError("There must be 5 groups in a string")
-        days = groups[0].split(',')
+        days = groups[0].split(",")
         self._verify_day_selection_in_str(days)
 
     def _verify_day_selection_in_str(self, days):
@@ -292,12 +296,14 @@ class ScheduleSettings:
             raise ValueError("Number of days selected must be between 1 and 7")
         for d in days:
             if d not in self._days.keys():
-                raise ValueError(f"String: {d} is not a valid day name, valid names: mon, tue, wed, thu, fri")
+                raise ValueError(
+                    f"String: {d} is not a valid day name, valid names: mon, tue, wed, thu, fri"
+                )
 
     def _read_day_selection(self, value):
         day_selection = []
         if isinstance(value, bytes):
-            byte = struct.unpack_from('c', value, offset=1)[0][0]
+            byte = struct.unpack_from("c", value, offset=1)[0][0]
             if byte & 0x01:
                 raise ValueError("Incorrect day selected")
             for i in self._days:
@@ -305,14 +311,14 @@ class ScheduleSettings:
                     day_selection.append(i)
             self._verify_day_selection_in_str(day_selection)
         elif isinstance(value, str):
-            day_selection = value.split(',')
+            day_selection = value.split(",")
             self._verify_day_selection_in_str(day_selection)
         return day_selection
 
     @staticmethod
     def _read_event(value, index):
         if isinstance(value, bytes):
-            event_buf = value[2 + index * 6:8 + index * 6]
+            event_buf = value[2 + index * 6 : 8 + index * 6]
             return ScheduleEvent(event_buf)
         elif isinstance(value, str):
             return ScheduleEvent(value)
@@ -329,7 +335,7 @@ class ScheduleSettings:
             else:
                 durations.append(event.get_time() - prev_time)
             prev_time = event.get_time()
-        if (any(d < 60 for d in durations)):
+        if any(d < 60 for d in durations):
             raise ValueError("The individual times must be at least 1 hour apart")
         if reduce((lambda x, y: x + y), durations) > full_day:
             raise ValueError("The start and end times must be at most 24 hours apart")
@@ -341,13 +347,13 @@ class ScheduleSettings:
         return byte
 
     def __str__(self):
-        result = ','.join(self._day_selection)
+        result = ",".join(self._day_selection)
         for e in self._events:
-            result += f'|{e}'
+            result += f"|{e}"
         return result
 
     def serialize(self):
-        result = bytearray(b'\x04')
+        result = bytearray(b"\x04")
         result.append(self._get_day_selection_byte())
         for e in self._events:
             result.extend(e.serialize())
