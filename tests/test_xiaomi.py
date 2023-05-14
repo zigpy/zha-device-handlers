@@ -1031,3 +1031,21 @@ async def test_xiaomi_e1_thermostat_schedule_settings_serialization(
 
     s = ScheduleSettings(schedule_settings)
     assert s.serialize() == expected_bytes
+
+
+@pytest.mark.parametrize(
+    "schedule_settings, expected_string",
+    [
+        (
+            b"\x04>\x01\xe0\x00\x00\t`\x048\x00\x00\x06\xa4\x05d\x00\x00\x08\x98\x81\xe0\x00\x00\x08\x98",
+            "mon,tue,wed,thu,fri|8:00,24.0|18:00,17.0|23:00,22.0|8:00,22.0",
+        )
+    ],
+)
+async def test_xiaomi_e1_thermostat_schedule_settings_deserialization(
+    schedule_settings, expected_string
+):
+    """Test that serialization works correctly."""
+
+    s = ScheduleSettings(schedule_settings)
+    assert str(s) == expected_string
