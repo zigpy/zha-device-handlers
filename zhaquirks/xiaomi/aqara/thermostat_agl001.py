@@ -296,6 +296,8 @@ class ScheduleSettings(t.LVBytes):
     def _verify_day_selection_in_str(self, days):
         if len(days) == 0 or len(days) > 7:
             raise ValueError("Number of days selected must be between 1 and 7")
+        if len(days) != len(set(days)):
+            raise ValueError("Duplicate day names present")
         for d in days:
             if d not in self._days.keys():
                 raise ValueError(
