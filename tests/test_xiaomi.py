@@ -1020,7 +1020,7 @@ async def test_xiaomi_e1_thermostat_schedule_event_data_validation(schedule_even
     [
         (
             "mon,tue,wed,thu,fri|8:00,24.0|18:00,17.0|23:00,22.0|8:00,22.0",
-            b"\x04>\x01\xe0\x00\x00\t`\x048\x00\x00\x06\xa4\x05d\x00\x00\x08\x98\x81\xe0\x00\x00\x08\x98",
+            b"\x1a\x04>\x01\xe0\x00\x00\t`\x048\x00\x00\x06\xa4\x05d\x00\x00\x08\x98\x81\xe0\x00\x00\x08\x98",
         )
     ],
 )

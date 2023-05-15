@@ -45,7 +45,7 @@ AWAY_PRESET_TEMPERATURE = 0x0279
 WINDOW_OPEN = 0x027A
 CALIBRATED = 0x027B
 SCHEDULE = 0x027D
-SCHEDULE_SETTINGS = 0x276
+SCHEDULE_SETTINGS = 0x0276
 SENSOR = 0x027E
 BATTERY_PERCENTAGE = 0x040A
 
@@ -231,7 +231,7 @@ class ScheduleEvent:
         return result
 
 
-class ScheduleSettings:
+class ScheduleSettings(t.LVBytes):
     """Schedule settings object"""
 
     _days = {
@@ -250,6 +250,9 @@ class ScheduleSettings:
         ScheduleEvent("23:00,22.0", False),
         ScheduleEvent("8:00,22.0", True),
     ]
+
+    def __new__(cls, *args, **kwargs):
+        return t.LVBytes.__new__(cls)
 
     def __init__(self, value):
         if isinstance(value, bytes):
@@ -356,7 +359,7 @@ class ScheduleSettings:
         result.append(self._get_day_selection_byte())
         for e in self._events:
             result.extend(e.serialize())
-        return result
+        return t.LVBytes(result).serialize()
 
 
 class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
