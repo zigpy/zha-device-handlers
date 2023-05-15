@@ -301,7 +301,7 @@ class ScheduleSettings(t.LVBytes):
         for d in days:
             if d not in self._days.keys():
                 raise ValueError(
-                    f"String: {d} is not a valid day name, valid names: mon, tue, wed, thu, fri"
+                    f"String: {d} is not a valid day name, valid names: mon, tue, wed, thu, fri, sat, sun"
                 )
 
     def _read_day_selection(self, value):
