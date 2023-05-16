@@ -199,6 +199,8 @@ class ScheduleEvent:
             raise ValueError("Temperature must be between 5 and 30 °C")
         if temp > 30:
             raise ValueError("Temperature must be between 5 and 30 °C")
+        if (temp * 10) % 5 != 0:
+            raise ValueError("Temperature must be whole or half degrees")
 
     def _write_time_to_buf(self, buf):
         time = self._time
