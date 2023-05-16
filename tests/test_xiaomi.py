@@ -1047,7 +1047,7 @@ async def test_xiaomi_e1_thermostat_schedule_settings_serialization(
 async def test_xiaomi_e1_thermostat_schedule_settings_deserialization(
     schedule_settings, expected_string
 ):
-    """Test that serialization works correctly."""
+    """Test that deserialization works correctly."""
 
     s = ScheduleSettings(schedule_settings)
     assert str(s) == expected_string

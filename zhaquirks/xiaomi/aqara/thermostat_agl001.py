@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from functools import reduce
-import logging
 import math
 import struct
 from typing import Any
@@ -51,7 +50,16 @@ BATTERY_PERCENTAGE = 0x040A
 
 XIAOMI_CLUSTER_ID = 0xFCC0
 
-LOGGER = logging.getLogger(__name__)
+DAYS_MAP = {
+    "mon": 0x02,
+    "tue": 0x04,
+    "wed": 0x08,
+    "thu": 0x10,
+    "fri": 0x20,
+    "sat": 0x40,
+    "sun": 0x80,
+}
+NEXT_DAY_FLAG = 1 << 15
 
 
 class ThermostatCluster(CustomCluster, Thermostat):
@@ -133,7 +141,6 @@ class ThermostatCluster(CustomCluster, Thermostat):
 class ScheduleEvent:
     """Schedule event object"""
 
-    _next_day_flag = 1 << 15
     _is_next_day = False
 
     def __init__(self, value, is_next_day=False):
@@ -162,9 +169,10 @@ class ScheduleEvent:
         if len(buf) != 6:
             raise ValueError("Buffer size must equal 6")
 
-    def _read_time_from_buf(self, buf):
+    @staticmethod
+    def _read_time_from_buf(buf):
         time = struct.unpack_from(">H", buf, offset=0)[0]
-        time &= ~self._next_day_flag
+        time &= ~NEXT_DAY_FLAG
         return time
 
     @staticmethod
@@ -205,7 +213,7 @@ class ScheduleEvent:
     def _write_time_to_buf(self, buf):
         time = self._time
         if self._is_next_day:
-            time |= self._next_day_flag
+            time |= NEXT_DAY_FLAG
         struct.pack_into(">H", buf, 0, time)
 
     def _write_temp_to_buf(self, buf):
@@ -220,9 +228,6 @@ class ScheduleEvent:
     def get_time(self):
         return self._time
 
-    def get_temp(self):
-        return self._temp
-
     def __str__(self):
         return f"{math.floor(self._time / 60)}:{f'{self._time % 60:0>2}'},{f'{self._temp:.1f}'}"
 
@@ -236,48 +241,36 @@ class ScheduleEvent:
 class ScheduleSettings(t.LVBytes):
     """Schedule settings object"""
 
-    _days = {
-        "mon": 0x02,
-        "tue": 0x04,
-        "wed": 0x08,
-        "thu": 0x10,
-        "fri": 0x20,
-        "sat": 0x40,
-        "sun": 0x80,
-    }
-    _day_selection = ["mon", "tue", "wed", "thu", "fri"]
-    _events = [
-        ScheduleEvent("8:00,24.0", False),
-        ScheduleEvent("18:00,17.0", False),
-        ScheduleEvent("23:00,22.0", False),
-        ScheduleEvent("8:00,22.0", True),
-    ]
-
-    def __new__(cls, *args, **kwargs):
-        return t.LVBytes.__new__(cls)
-
-    def __init__(self, value):
+    def __new__(cls, value):
+        day_selection = None
+        events = [None] * 4
         if isinstance(value, bytes):
-            self._verify_buffer_len(value)
-            self._verify_magic_byte(value)
-            self._day_selection = self._read_day_selection(value)
+            ScheduleSettings._verify_buffer_len(value)
+            ScheduleSettings._verify_magic_byte(value)
+            day_selection = ScheduleSettings._read_day_selection(value)
             for i in range(4):
-                self._events[i] = self._read_event(value, i)
+                events[i] = ScheduleSettings._read_event(value, i)
         elif isinstance(value, str):
             groups = value.split("|")
-            self._verify_string(groups)
-            self._day_selection = self._read_day_selection(groups[0])
+            ScheduleSettings._verify_string(groups)
+            day_selection = ScheduleSettings._read_day_selection(groups[0])
             for i in range(4):
-                self._events[i] = self._read_event(groups[i + 1], i)
+                events[i] = ScheduleSettings._read_event(groups[i + 1], i)
         else:
             raise TypeError(
                 f"Cannot create ScheduleSettings object from type: {type(value)}"
             )
 
         for i in range(1, 4):
-            if self._events[i].get_time() < self._events[i - 1].get_time():
-                self._events[i].set_next_day(True)
-        self._verify_event_durations(self._events)
+            if events[i].get_time() < events[i - 1].get_time():
+                events[i].set_next_day(True)
+        ScheduleSettings._verify_event_durations(events)
+
+        result = bytearray(b"\x04")
+        result.append(ScheduleSettings._get_day_selection_byte(day_selection))
+        for e in events:
+            result.extend(e.serialize())
+        return super().__new__(cls, bytes(result))
 
     @staticmethod
     def _verify_buffer_len(buf):
@@ -289,36 +282,39 @@ class ScheduleSettings(t.LVBytes):
         if struct.unpack_from("c", buf, offset=0)[0][0] != 0x04:
             raise ValueError("Magic byte must be equal to 0x04")
 
-    def _verify_string(self, groups):
+    @staticmethod
+    def _verify_string(groups):
         if len(groups) != 5:
             raise ValueError("There must be 5 groups in a string")
         days = groups[0].split(",")
-        self._verify_day_selection_in_str(days)
+        ScheduleSettings._verify_day_selection_in_str(days)
 
-    def _verify_day_selection_in_str(self, days):
+    @staticmethod
+    def _verify_day_selection_in_str(days):
         if len(days) == 0 or len(days) > 7:
             raise ValueError("Number of days selected must be between 1 and 7")
         if len(days) != len(set(days)):
             raise ValueError("Duplicate day names present")
         for d in days:
-            if d not in self._days.keys():
+            if d not in DAYS_MAP.keys():
                 raise ValueError(
                     f"String: {d} is not a valid day name, valid names: mon, tue, wed, thu, fri, sat, sun"
                 )
 
-    def _read_day_selection(self, value):
+    @staticmethod
+    def _read_day_selection(value):
         day_selection = []
         if isinstance(value, bytes):
             byte = struct.unpack_from("c", value, offset=1)[0][0]
             if byte & 0x01:
                 raise ValueError("Incorrect day selected")
-            for i in self._days:
-                if byte & self._days[i]:
+            for i in DAYS_MAP:
+                if byte & DAYS_MAP[i]:
                     day_selection.append(i)
-            self._verify_day_selection_in_str(day_selection)
+            ScheduleSettings._verify_day_selection_in_str(day_selection)
         elif isinstance(value, str):
             day_selection = value.split(",")
-            self._verify_day_selection_in_str(day_selection)
+            ScheduleSettings._verify_day_selection_in_str(day_selection)
         return day_selection
 
     @staticmethod
@@ -346,24 +342,22 @@ class ScheduleSettings(t.LVBytes):
         if reduce((lambda x, y: x + y), durations) > full_day:
             raise ValueError("The start and end times must be at most 24 hours apart")
 
-    def _get_day_selection_byte(self):
+    @staticmethod
+    def _get_day_selection_byte(day_selection):
         byte = 0x00
-        for d in self._day_selection:
-            byte |= self._days[d]
+        for d in day_selection:
+            byte |= DAYS_MAP[d]
         return byte
 
     def __str__(self):
-        result = ",".join(self._day_selection)
-        for e in self._events:
+        day_selection = ScheduleSettings._read_day_selection(self)
+        events = [None] * 4
+        for i in range(4):
+            events[i] = ScheduleSettings._read_event(self, i)
+        result = ",".join(day_selection)
+        for e in events:
             result += f"|{e}"
         return result
-
-    def serialize(self):
-        result = bytearray(b"\x04")
-        result.append(self._get_day_selection_byte())
-        for e in self._events:
-            result.extend(e.serialize())
-        return t.LVBytes(result).serialize()
 
 
 class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
