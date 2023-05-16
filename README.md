@@ -7,7 +7,7 @@ ZHA Device Handlers are custom quirks implementations for [Zigpy](https://github
 
 ZHA device handlers bridge the functionality gap created when manufacturers deviate from the ZCL specification, handling deviations and exceptions by parsing custom messages to and from Zigbee devices. Zigbee devices that deviate from or do not fully conform to the standard specifications set by the Zigbee Alliance may require the development of custom ZHA Device Handlers (ZHA custom quirks handler implementation) to for all their functions to work properly with the ZHA component in Home Assistant.
 
-Custom quirks implementations for zigpy implemented as ZHA Device Handlers are a similar concept to that of [Hub-connected Device Handlers for the SmartThings Classics platform](https://docs.smartthings.com/en/latest/device-type-developers-guide/) as well that of [Zigbee-Herdsman Converters / Zigbee-Shepherd Converters as used by Zigbee2mqtt](https://www.zigbee2mqtt.io/how_tos/how_to_support_new_devices.html), meaning they are virtual representation of a physical device that expose additional functionality that is not provided out-of-the-box by the existing integration between these platforms. See [Device Specifics](#Device-Specifics) for details.
+Custom quirks implementations for zigpy implemented as ZHA Device Handlers are a similar concept to that of [Hub-connected Device Handlers for the SmartThings Classics platform](https://stdavedemo.readthedocs.io/en/latest/device-type-developers-guide/) as well that of [Zigbee-Herdsman Converters (formerly Zigbee-Shepherd Converters) as used by Zigbee2mqtt](https://www.zigbee2mqtt.io/advanced/support-new-devices/01_support_new_devices.html), meaning they are virtual representation of a physical device that expose additional functionality that is not provided out-of-the-box by the existing integration between these platforms. See [Device Specifics](#Device-Specifics) for details.
 
 # How to contribute
 
@@ -17,15 +17,27 @@ ZHA device handlers and it's provided Quirks allow Zigpy, ZHA and Home Assistant
 
 ## What are these specifications
 
-[Zigbee PRO 2017 (R22) Protocol Specification](https://zigbeealliance.org/wp-content/uploads/2019/11/docs-05-3474-21-0csg-zigbee-specification.pdf)
+Reference official Zigbee specification documentation from Connectivity Standards Alliance (a.k.a. "CSA-IOT", formerly "Zigbee Alliance"):
 
-[Zigbee Cluster Library (R8)](https://zigbeealliance.org/wp-content/uploads/2021/10/07-5123-08-Zigbee-Cluster-Library.pdf)
+- Zigbee Protocol Specification (also known as "Zigbee Pro" specifications)
+  - [Zigbee Protocol Specification 2023 (R23)](https://csa-iot.org/wp-content/uploads/2023/04/05-3474-23-csg-zigbee-specification-compressed.pdf)
+  - [Zigbee Protocol Specification 2017 (R22)](https://github.com/Koenkk/zigbee-herdsman/blob/master/docs/docs-05-3474-22-0csg-zigbee-specification.pdf)
+  - [Zigbee Protocol Specification 2015 (R21)](https://zigbeealliance.org/wp-content/uploads/2019/11/docs-05-3474-21-0csg-zigbee-specification.pdf)
+- Zigbee Cluster Library Specification
+  - [Zigbee Cluster Library Revision 8 (R8)](https://zigbeealliance.org/wp-content/uploads/2021/10/07-5123-08-Zigbee-Cluster-Library.pdf)
+  - [Zigbee Cluster Library Revision 7 (R7)](https://github.com/Koenkk/zigbee-herdsman/blob/master/docs/Zigbee%20Cluster%20Library%20Specification%20v7.pdf)
+  - [Zigbee Cluster Library Revision 6 (R6)](https://zigbeealliance.org/wp-content/uploads/2019/12/07-5123-06-zigbee-cluster-library-specification.pdf)
+- [Zigbee Base Device Behavior Specification (V1.0)](https://zigbeealliance.org/wp-content/uploads/2019/12/docs-13-0402-13-00zi-Base-Device-Behavior-Specification-2-1.pdf)
+- [Zigbee Lighting & Occupancy Device Specification (V1.0)](https://zigbeealliance.org/wp-content/uploads/2019/11/docs-15-0014-05-0plo-Lighting-OccupancyDevice-Specification-V1.0.pdf)
+- [ZigBee Smart Energy Standard (v1.2a)](https://zigbeealliance.org/wp-content/uploads/2019/11/docs-07-5356-19-0zse-zigbee-smart-energy-profile-specification.pdf)
 
-[Zigbee Base Device Behavior Specification (V1.0)](https://zigbeealliance.org/wp-content/uploads/zip/zigbee-base-device-behavior-bdb-v1-0.zip)
+In additional you can also refernce third-party and manufacturer specific documentation:
 
-[Zigbee Lighting & Occupancy Device Specification (V1.0)](https://zigbeealliance.org/wp-content/uploads/2019/11/docs-15-0014-05-0plo-Lighting-OccupancyDevice-Specification-V1.0.pdf)
-
-[Zigbee Primer](https://docs.smartthings.com/en/latest/device-type-developers-guide/zigbee-primer.html)
+- [Tuya - Zigbee Connection Standard (Tuya Smart Documentation)](https://github.com/Koenkk/zigbee-herdsman/blob/master/docs/Zigbee%20Connection%20Standard_Tuya%20Smart_Documentation.pdf)
+  - [Zigbee2MQTT guide on understanding the custom 'manuSpecificTuya' cluster that TuYa devices uses](https://www.zigbee2mqtt.io/advanced/support-new-devices/02_support_new_tuya_devices.html)
+- [Samsung SmartThings -Device Handlers](https://stdavedemo.readthedocs.io/en/latest/device-type-developers-guide/)
+  - [Samsung SmartThings - Zigbee Primer](https://stdavedemo.readthedocs.io/en/latest/device-type-developers-guide/zigbee-primer.html)
+  - [Samsung SmartThings - Building ZigBee Device Handlers](https://stdavedemo.readthedocs.io/en/latest/device-type-developers-guide/building-zigbee-device-handlers.html)
 
 ## What is a device in human terms
 
