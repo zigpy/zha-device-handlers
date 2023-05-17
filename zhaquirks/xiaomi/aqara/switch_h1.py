@@ -1,7 +1,5 @@
-import copy
 import logging
 
-from zigpy import types as t
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import (
     Alarms,
@@ -26,10 +24,7 @@ from zhaquirks.const import (
     COMMAND_ATTRIBUTE_UPDATED,
     COMMAND_DOUBLE,
     COMMAND_HOLD,
-    COMMAND_OFF,
     COMMAND_SINGLE,
-    COMMAND_TOGGLE,
-    COMMAND_TRIPLE,
     DEVICE_TYPE,
     DOUBLE_PRESS,
     ENDPOINT_ID,
@@ -43,7 +38,6 @@ from zhaquirks.const import (
     SHORT_PRESS,
     TRIPLE_PRESS,
     VALUE,
-    ZHA_SEND_EVENT,
 )
 from zhaquirks.xiaomi import (
     LUMI,
@@ -53,12 +47,8 @@ from zhaquirks.xiaomi import (
     XiaomiCustomDevice,
     XiaomiMeteringCluster,
 )
-from zhaquirks.xiaomi.aqara.opple_remote import PRESS_TYPES, MultistateInputCluster
-from zhaquirks.xiaomi.aqara.opple_switch import (
-    OppleIndicatorLight,
-    OppleOperationMode,
-    OppleSwitchCluster,
-)
+from zhaquirks.xiaomi.aqara.opple_remote import MultistateInputCluster
+from zhaquirks.xiaomi.aqara.opple_switch import OppleSwitchCluster
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -106,7 +96,7 @@ class AqaraH1SingleRockerSwitch(XiaomiCustomDevice):
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
                     BasicCluster,  # 0
-                    DeviceTemperatureCluster.cluster_id, # 2
+                    DeviceTemperatureCluster.cluster_id,  # 2
                     Identify.cluster_id,  # 3
                     Groups.cluster_id,  # 4
                     Scenes.cluster_id,  # 5
@@ -143,13 +133,13 @@ class AqaraH1SingleRockerSwitch(XiaomiCustomDevice):
         (SHORT_PRESS, BUTTON): {
             ENDPOINT_ID: 41,
             CLUSTER_ID: 18,
-            COMMAND: '41_{}'.format(COMMAND_SINGLE),
+            COMMAND: f"41_{COMMAND_SINGLE}",
             ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: COMMAND_SINGLE, VALUE: 1},
         },
         (DOUBLE_PRESS, BUTTON): {
             ENDPOINT_ID: 41,
             CLUSTER_ID: 18,
-            COMMAND: '41_{}'.format(COMMAND_DOUBLE),
+            COMMAND: f"41_{COMMAND_DOUBLE}",
             ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: COMMAND_DOUBLE, VALUE: 2},
         },
         # when triple-pressed, you're technically getting an attribute update call, so not sure if it can be used
@@ -157,12 +147,16 @@ class AqaraH1SingleRockerSwitch(XiaomiCustomDevice):
             ENDPOINT_ID: 1,
             CLUSTER_ID: 0,
             COMMAND: COMMAND_ATTRIBUTE_UPDATED,
-            ARGS: {ATTRIBUTE_ID: 5, ATTRIBUTE_NAME: 'model', VALUE: 'lumi.switch.n1aeu1'},
+            ARGS: {
+                ATTRIBUTE_ID: 5,
+                ATTRIBUTE_NAME: "model",
+                VALUE: "lumi.switch.n1aeu1",
+            },
         },
         (LONG_PRESS, BUTTON): {
             ENDPOINT_ID: 1,
             CLUSTER_ID: 64704,
-            COMMAND: '1_{}'.format(COMMAND_HOLD),
+            COMMAND: f"1_{COMMAND_HOLD}",
             ARGS: {ATTR_ID: 0x00FC, PRESS_TYPE: COMMAND_HOLD, VALUE: 0},
         },
     }
