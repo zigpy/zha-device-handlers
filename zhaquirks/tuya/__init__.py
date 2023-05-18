@@ -45,6 +45,7 @@ TUYA_MCU_VERSION_RSP = 0x11
 #
 TUYA_LEVEL_COMMAND = 514
 
+BATTERY_CHANGE = "battery_change"
 COVER_EVENT = "cover_event"
 LEVEL_EVENT = "level_event"
 TUYA_MCU_COMMAND = "tuya_mcu_command"
@@ -1189,6 +1190,15 @@ class TuyaManufacturerWindowCover(TuyaManufCluster):
                     ATTR_COVER_INVERTED,
                     tuya_payload.data[1],  # Check this
                 )
+            elif (
+                self.endpoint.device.tuya_battery_attr is not None
+                and tuya_payload.command_id
+                == TUYA_DP_TYPE_VALUE + self.endpoint.device.tuya_battery_attr
+            ):
+                self.endpoint.device.battery_bus.listener_event(
+                    BATTERY_CHANGE,
+                    tuya_payload.data[4],
+                )
         elif hdr.command_id == TUYA_SET_TIME:
             """Time event call super"""
             super().handle_cluster_request(hdr, args, dst_addressing=dst_addressing)
@@ -1329,9 +1339,13 @@ class TuyaWindowCover(CustomDevice):
     # Don't invert _TZE200_cowvfni3: https://github.com/Koenkk/zigbee2mqtt/issues/6043
     tuya_cover_inverted_by_default = False
 
+    # For covers which report battery, this sets the battery report attribute id
+    tuya_battery_attr = None
+
     def __init__(self, *args, **kwargs):
         """Init device."""
         self.cover_bus = Bus()
+        self.battery_bus = Bus()
         super().__init__(*args, **kwargs)
 
 
