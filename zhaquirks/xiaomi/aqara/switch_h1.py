@@ -1,5 +1,3 @@
-import logging
-
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import (
     Alarms,
@@ -49,8 +47,6 @@ from zhaquirks.xiaomi import (
 )
 from zhaquirks.xiaomi.aqara.opple_remote import MultistateInputCluster
 from zhaquirks.xiaomi.aqara.opple_switch import OppleSwitchCluster
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class AqaraH1SingleRockerSwitch(XiaomiCustomDevice):
