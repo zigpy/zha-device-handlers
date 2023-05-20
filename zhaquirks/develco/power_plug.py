@@ -33,7 +33,7 @@ class DevelcoDeviceTemperature(CustomCluster, DeviceTemperature):
     """Custom device temperature cluster to multiply the temperature by 100."""
 
     def _update_attribute(self, attrid, value):
-        if attrid == DEV_TEMP_ID and value is not None:
+        if attrid == DEV_TEMP_ID:
             value = value * 100
         super()._update_attribute(attrid, value)
 
