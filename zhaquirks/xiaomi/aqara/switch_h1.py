@@ -14,12 +14,9 @@ from zigpy.zcl.clusters.general import (
 from zhaquirks.const import (
     ARGS,
     ATTR_ID,
-    ATTRIBUTE_ID,
-    ATTRIBUTE_NAME,
     BUTTON,
     CLUSTER_ID,
     COMMAND,
-    COMMAND_ATTRIBUTE_UPDATED,
     COMMAND_DOUBLE,
     COMMAND_HOLD,
     COMMAND_SINGLE,
@@ -34,7 +31,6 @@ from zhaquirks.const import (
     PRESS_TYPE,
     PROFILE_ID,
     SHORT_PRESS,
-    TRIPLE_PRESS,
     VALUE,
 )
 from zhaquirks.xiaomi import (
@@ -47,6 +43,10 @@ from zhaquirks.xiaomi import (
 )
 from zhaquirks.xiaomi.aqara.opple_remote import MultistateInputCluster
 from zhaquirks.xiaomi.aqara.opple_switch import OppleSwitchCluster
+
+XIAOMI_COMMAND_SINGLE = "41_single"
+XIAOMI_COMMAND_DOUBLE = "41_double"
+XIAOMI_COMMAND_HOLD = "1_hold"
 
 
 class AqaraH1SingleRockerSwitch(XiaomiCustomDevice):
@@ -129,30 +129,19 @@ class AqaraH1SingleRockerSwitch(XiaomiCustomDevice):
         (SHORT_PRESS, BUTTON): {
             ENDPOINT_ID: 41,
             CLUSTER_ID: 18,
-            COMMAND: f"41_{COMMAND_SINGLE}",
+            COMMAND: XIAOMI_COMMAND_SINGLE,
             ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: COMMAND_SINGLE, VALUE: 1},
         },
         (DOUBLE_PRESS, BUTTON): {
             ENDPOINT_ID: 41,
             CLUSTER_ID: 18,
-            COMMAND: f"41_{COMMAND_DOUBLE}",
+            COMMAND: XIAOMI_COMMAND_DOUBLE,
             ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: COMMAND_DOUBLE, VALUE: 2},
-        },
-        # when triple-pressed, you're technically getting an attribute update call, so not sure if it can be used
-        (TRIPLE_PRESS, BUTTON): {
-            ENDPOINT_ID: 1,
-            CLUSTER_ID: 0,
-            COMMAND: COMMAND_ATTRIBUTE_UPDATED,
-            ARGS: {
-                ATTRIBUTE_ID: 5,
-                ATTRIBUTE_NAME: "model",
-                VALUE: "lumi.switch.n1aeu1",
-            },
         },
         (LONG_PRESS, BUTTON): {
             ENDPOINT_ID: 1,
             CLUSTER_ID: 64704,
-            COMMAND: f"1_{COMMAND_HOLD}",
+            COMMAND: XIAOMI_COMMAND_HOLD,
             ARGS: {ATTR_ID: 0x00FC, PRESS_TYPE: COMMAND_HOLD, VALUE: 0},
         },
     }
