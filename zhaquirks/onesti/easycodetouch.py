@@ -1,5 +1,5 @@
 from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.closures import DoorLock
 from zigpy.zcl.clusters.general import (
     Basic,
@@ -24,22 +24,8 @@ from zhaquirks.const import (
 MANUFACTURER_SPECIFIC_PROFILE_ID = 0xFEA2
 
 
-class BatteryBasicCluster(CustomCluster, Basic):
-    """Basic cluster implementation.
-    This implementation sets power source to battery
-    and removes incorrect MainsPowered-flag.
-    """
-
-    cluster_id = Basic.cluster_id
-    POWER_SOURCE = 0x0007
-
-    _CONSTANT_ATTRIBUTES = {
-        POWER_SOURCE: Basic.PowerSource.Battery,
-    }
-
-
 class EasyCodeTouch(CustomDevice):
-    """onesti.easycodetouch"""
+    """Onesti EasyCodeTouch quirk."""
 
     signature = {
         MODELS_INFO: [("Onesti Products AS", "EasyCodeTouch")],
@@ -65,6 +51,20 @@ class EasyCodeTouch(CustomDevice):
         },
     }
     replacement = {
+        # "node_descriptor": "NodeDescriptor(
+        # logical_type=<LogicalType.EndDevice: 2>,
+        # complex_descriptor_available=0,
+        # user_descriptor_available=0,
+        # reserved=0,
+        # aps_flags=0,
+        # frequency_band=<FrequencyBand.Freq2400MHz: 8>,
+        # mac_capability_flags=<MACCapabilityFlags.AllocateAddress|RxOnWhenIdle|MainsPowered: 140>,
+        # manufacturer_code=4660,
+        # maximum_buffer_size=108,
+        # maximum_incoming_transfer_size=127,
+        # server_mask=11264,
+        # maximum_outgoing_transfer_size=127,
+        # descriptor_capability_field=<DescriptorCapability.NONE: 0>,
         NODE_DESCRIPTOR: zigpy.zdo.types.NodeDescriptor(
             logical_type=2,
             complex_descriptor_available=0,
@@ -85,7 +85,7 @@ class EasyCodeTouch(CustomDevice):
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.DOOR_LOCK,
                 INPUT_CLUSTERS: [
-                    BatteryBasicCluster,
+                    Basic.cluster_id,
                     PowerConfiguration.cluster_id,
                     Groups.cluster_id,
                     Identify.cluster_id,
