@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import Any
 
 from zigpy import types as t
-from zigpy.profiles import (zha, zgp)
+from zigpy.profiles import zha, zgp
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import (
