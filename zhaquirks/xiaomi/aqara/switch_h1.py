@@ -89,6 +89,7 @@ class AqaraH1SingleRockerSwitch(CustomDevice):
     replacement = {
         ENDPOINTS: {
             1: {
+                PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
                     BasicCluster,  # 0
