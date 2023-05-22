@@ -1126,6 +1126,7 @@ class TuyaZBExternalSwitchTypeCluster(CustomCluster):
     cluster_id = TUYA_CLUSTER_E001_ID
     ep_attribute = "tuya_external_switch_type"
     attributes = {0xD030: ("external_switch_type", ExternalSwitchType)}
+    attributes.update({0xD010: ("power_on_state", PowerOnState)})
 
 
 # Tuya Window Cover Implementation
