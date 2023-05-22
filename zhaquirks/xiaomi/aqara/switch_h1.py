@@ -1,4 +1,5 @@
 from zigpy.profiles import zha
+from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Alarms,
     Basic,
@@ -38,7 +39,6 @@ from zhaquirks.xiaomi import (
     BasicCluster,
     DeviceTemperatureCluster,
     OnOffCluster,
-    XiaomiCustomDevice,
     XiaomiMeteringCluster,
 )
 from zhaquirks.xiaomi.aqara.opple_remote import MultistateInputCluster
@@ -49,7 +49,7 @@ XIAOMI_COMMAND_DOUBLE = "41_double"
 XIAOMI_COMMAND_HOLD = "1_hold"
 
 
-class AqaraH1SingleRockerSwitch(XiaomiCustomDevice):
+class AqaraH1SingleRockerSwitch(CustomDevice):
     """Aqara H1 Single Rocker Switch (with neutral)."""
 
     signature = {
