@@ -121,7 +121,7 @@ class PM25Cluster(CustomCluster, PM25):
                 await self.endpoint.device.endpoints[1]
                 .in_clusters[64637]
                 .read_attributes(
-                    {"air_quality_25pm"},
+                    ["air_quality_25pm"],
                     allow_cache=allow_cache,
                     only_cache=only_cache,
                     manufacturer=manufacturer,

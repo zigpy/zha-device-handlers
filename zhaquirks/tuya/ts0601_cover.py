@@ -371,6 +371,7 @@ class TuyaMoesCover0601(TuyaWindowCover):
             ("_TZE200_nhyj64w2", "TS0601"),
             ("_TZE200_cf1sl3tj", "TS0601"),
             ("_TZE200_7eue9vhc", "TS0601"),
+            ("_TZE200_bv1jcqqu", "TS0601"),
         ],
         ENDPOINTS: {
             1: {

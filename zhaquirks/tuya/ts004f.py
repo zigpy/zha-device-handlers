@@ -78,6 +78,7 @@ class TuyaSmartRemote004FROK(EnchantedDevice):
             ("_TZ3000_ixla93vd", "TS004F"),
             ("_TZ3000_qja6nq5z", "TS004F"),
             ("_TZ3000_csflgqj2", "TS004F"),
+            ("_TZ3000_abrsvsou", "TS004F"),
         ],
         ENDPOINTS: {
             1: {

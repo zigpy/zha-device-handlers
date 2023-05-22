@@ -1,7 +1,7 @@
-"""Device handler for Legrand Dimmer switch w/o neutral."""
+"""Module for Legrand dimmers."""
+
 from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster, CustomDevice
-import zigpy.types as t
+from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     BinaryInput,
@@ -15,7 +15,6 @@ from zigpy.zcl.clusters.general import (
     Scenes,
 )
 from zigpy.zcl.clusters.lighting import Ballast
-from zigpy.zcl.clusters.manufacturer_specific import ManufacturerSpecificCluster
 
 from zhaquirks import PowerConfigurationCluster
 from zhaquirks.const import (
@@ -26,29 +25,12 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.legrand import LEGRAND
-
-MANUFACTURER_SPECIFIC_CLUSTER_ID = 0xFC01  # decimal = 64513
-
-
-class LegrandCluster(CustomCluster, ManufacturerSpecificCluster):
-    """LegrandCluster."""
-
-    cluster_id = MANUFACTURER_SPECIFIC_CLUSTER_ID
-    name = "LegrandCluster"
-    ep_attribute = "legrand_cluster"
-    attributes = {
-        0x0000: ("dimmer", t.data16, True),
-        0x0001: ("led_dark", t.Bool, True),
-        0x0002: ("led_on", t.Bool, True),
-    }
-
-
-class LegrandPowerConfigurationCluster(PowerConfigurationCluster):
-    """PowerConfiguration conversor 'V --> %' for Legrand devices."""
-
-    MIN_VOLTS = 2.5
-    MAX_VOLTS = 3.0
+from zhaquirks.legrand import (
+    LEGRAND,
+    MANUFACTURER_SPECIFIC_CLUSTER_ID,
+    LegrandCluster,
+    LegrandPowerConfigurationCluster,
+)
 
 
 class DimmerWithoutNeutral(CustomDevice):

@@ -40,7 +40,7 @@ class TuyaManufClusterDinPower(TuyaManufClusterAttributes):
     """Manufacturer Specific Cluster of the Tuya Power Meter device."""
 
     attributes = {
-        TUYA_TOTAL_ENERGY_ATTR: ("energy", t.uint16_t, True),
+        TUYA_TOTAL_ENERGY_ATTR: ("energy", t.uint32_t, True),
         TUYA_CURRENT_ATTR: ("current", t.int16s, True),
         TUYA_POWER_ATTR: ("power", t.uint16_t, True),
         TUYA_VOLTAGE_ATTR: ("voltage", t.uint16_t, True),
