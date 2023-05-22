@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import Any
 
 from zigpy import types as t
-from zigpy.profiles import zha
+from zigpy.profiles import (zha, zgp)
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import (
@@ -212,8 +212,8 @@ class RollerE1AQ(XiaomiCustomDevice):
             # input_clusters=[]
             # output_clusters=[33]>
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 0x0061,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_MIN,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [
                     GreenPowerProxy.cluster_id,
@@ -245,8 +245,8 @@ class RollerE1AQ(XiaomiCustomDevice):
                 ],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 0x0061,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_MIN,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [
                     GreenPowerProxy.cluster_id,
@@ -291,8 +291,8 @@ class RollerE1AQ_2(RollerE1AQ):
             # input_clusters=[]
             # output_clusters=[33]>
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 0x0061,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_MIN,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [
                     GreenPowerProxy.cluster_id,
@@ -337,8 +337,8 @@ class RollerE1AQ_3(RollerE1AQ):
             # input_clusters=[]
             # output_clusters=[33]>
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 0x0061,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_MIN,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [
                     GreenPowerProxy.cluster_id,
