@@ -67,16 +67,21 @@ class EmulatedTVOCMeasurement(LocalDataCluster):
         return result
 
 
+class TVOCDisplayUnit(t.enum_factory(t.uint8_t)):
+    """Display values."""
+
+    mgm3_celsius = 0x00
+    ppb_celsius = 0x01
+    mgm3_fahrenheit = 0x10
+    ppb_fahrenheit = 0x11
+
+
 class TVOCCluster(XiaomiAqaraE1Cluster):
     """Aqara LUMI Config cluster."""
 
     ep_attribute = "aqara_cluster"
     attributes = {
-        # mgm3_celsius    = 0x00
-        # ppb_celsius     = 0x01
-        # mgm3_fahrenheit = 0x10
-        # ppb_fahrenheit  = 0x11
-        DISPLAY_UNIT: ("display_unit", t.uint8_t, True),
+        DISPLAY_UNIT: ("display_unit", TVOCDisplayUnit, True),
     }
 
 
