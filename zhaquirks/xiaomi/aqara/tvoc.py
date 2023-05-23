@@ -1,6 +1,5 @@
 """Quirk for lumi.airmonitor.acn01 tvoc air monitor."""
 
-from enum import Enum
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
