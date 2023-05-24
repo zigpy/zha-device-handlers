@@ -302,6 +302,7 @@ class NeoMotion(CustomDevice):
         #  output_clusters=[10, 25]>
         MODELS_INFO: [
             ("_TZE200_7hfcudw5", "TS0601"),
+            ("_TZE200_ppuj1vem", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
