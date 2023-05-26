@@ -49,7 +49,32 @@ XIAOMI_COMMAND_DOUBLE = "41_double"
 XIAOMI_COMMAND_HOLD = "1_hold"
 
 
-class AqaraH1SingleRockerSwitchWithNeutral(CustomDevice, AqaraH1SingleRockerDeviceTriggers):
+class AqaraH1SingleRockerBase(CustomDevice):
+    """Device automation triggers for the Aqara H1 Single Rocker Switches"""
+
+    device_automation_triggers = {
+        (SHORT_PRESS, BUTTON): {
+            ENDPOINT_ID: 41,
+            CLUSTER_ID: 18,
+            COMMAND: XIAOMI_COMMAND_SINGLE,
+            ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: COMMAND_SINGLE, VALUE: 1},
+        },
+        (DOUBLE_PRESS, BUTTON): {
+            ENDPOINT_ID: 41,
+            CLUSTER_ID: 18,
+            COMMAND: XIAOMI_COMMAND_DOUBLE,
+            ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: COMMAND_DOUBLE, VALUE: 2},
+        },
+        (LONG_PRESS, BUTTON): {
+            ENDPOINT_ID: 1,
+            CLUSTER_ID: 64704,
+            COMMAND: XIAOMI_COMMAND_HOLD,
+            ARGS: {ATTR_ID: 0x00FC, PRESS_TYPE: COMMAND_HOLD, VALUE: 0},
+        },
+    }
+
+
+class AqaraH1SingleRockerSwitchWithNeutral(AqaraH1SingleRockerBase):
     """Aqara H1 Single Rocker Switch (with neutral)."""
 
     signature = {
@@ -127,7 +152,7 @@ class AqaraH1SingleRockerSwitchWithNeutral(CustomDevice, AqaraH1SingleRockerDevi
     }
 
 
-class AqaraH1SingleRockerSwitchNoNeutral(CustomDevice, AqaraH1SingleRockerDeviceTriggers):
+class AqaraH1SingleRockerSwitchNoNeutral(AqaraH1SingleRockerBase):
     """Aqara H1 Single Rocker Switch (no neutral)."""
 
     signature = {
@@ -197,30 +222,5 @@ class AqaraH1SingleRockerSwitchNoNeutral(CustomDevice, AqaraH1SingleRockerDevice
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
-        },
-    }
-
-
-class AqaraH1SingleRockerDeviceTriggers(CustomDevice):
-    """Device automation triggers for the Aqara H1 Single Rocker Switches"""
-
-    device_automation_triggers = {
-        (SHORT_PRESS, BUTTON): {
-            ENDPOINT_ID: 41,
-            CLUSTER_ID: 18,
-            COMMAND: XIAOMI_COMMAND_SINGLE,
-            ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: COMMAND_SINGLE, VALUE: 1},
-        },
-        (DOUBLE_PRESS, BUTTON): {
-            ENDPOINT_ID: 41,
-            CLUSTER_ID: 18,
-            COMMAND: XIAOMI_COMMAND_DOUBLE,
-            ARGS: {ATTR_ID: 0x0055, PRESS_TYPE: COMMAND_DOUBLE, VALUE: 2},
-        },
-        (LONG_PRESS, BUTTON): {
-            ENDPOINT_ID: 1,
-            CLUSTER_ID: 64704,
-            COMMAND: XIAOMI_COMMAND_HOLD,
-            ARGS: {ATTR_ID: 0x00FC, PRESS_TYPE: COMMAND_HOLD, VALUE: 0},
         },
     }
