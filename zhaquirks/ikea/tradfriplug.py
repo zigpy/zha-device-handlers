@@ -1,5 +1,5 @@
 """Tradfri Plug Quirk."""
-from zigpy.profiles import zha, zll
+from zigpy.profiles import zgp, zha, zll
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
@@ -64,10 +64,10 @@ class TradfriPlug(CustomDevice):
             # device_version=0
             # input_clusters=[33] output_clusters=[33]>
             242: {
-                PROFILE_ID: 0xA1E0,
-                DEVICE_TYPE: 0x0061,
-                INPUT_CLUSTERS: [33],
-                OUTPUT_CLUSTERS: [33],
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
+                INPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
         },
     }
