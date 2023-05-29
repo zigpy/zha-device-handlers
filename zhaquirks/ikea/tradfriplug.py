@@ -3,6 +3,7 @@ from zigpy.profiles import zgp, zha, zll
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
+    GreenPowerProxy,
     Groups,
     Identify,
     LevelControl,
