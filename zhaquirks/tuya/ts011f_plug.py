@@ -1,6 +1,6 @@
 """TS011F plug."""
 
-from zigpy.profiles import zha
+from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
@@ -68,8 +68,8 @@ class Plug(EnchantedDevice):
             # input_clusters=[]
             # output_clusters=[33]>
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
@@ -124,7 +124,7 @@ class Plug_1AC(CustomDevice):
             # input_clusters=[]
             # output_clusters=[33]>
             242: {
-                PROFILE_ID: 41440,
+                PROFILE_ID: zgp.PROFILE_ID,
                 DEVICE_TYPE: 97,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
@@ -146,8 +146,8 @@ class Plug_1AC(CustomDevice):
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
@@ -229,8 +229,8 @@ class Plug_2AC_2USB(EnchantedDevice):
             # input_clusters=[]
             # output_clusters=[33]>
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
@@ -283,8 +283,8 @@ class Plug_2AC_2USB(EnchantedDevice):
                 OUTPUT_CLUSTERS: [],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
@@ -349,8 +349,8 @@ class Plug_3AC_4USB(CustomDevice):
             # input_clusters=[]
             # output_clusters=[33]>
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
@@ -393,8 +393,8 @@ class Plug_3AC_4USB(CustomDevice):
                 OUTPUT_CLUSTERS: [],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
@@ -499,8 +499,8 @@ class Plug_4AC_2USB(CustomDevice):
             # input_clusters=[]
             # output_clusters=[33]>
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
@@ -575,8 +575,8 @@ class Plug_4AC_2USB(CustomDevice):
                 OUTPUT_CLUSTERS: [],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
@@ -630,8 +630,8 @@ class Plug_TZ3210_2AC(CustomDevice):
             # input_clusters=[]
             # output_clusters=[33]>
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
@@ -668,8 +668,8 @@ class Plug_TZ3210_2AC(CustomDevice):
                 OUTPUT_CLUSTERS: [],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
@@ -707,8 +707,8 @@ class Plug_TZ3210_1AC(CustomDevice):
             # input_clusters=[]
             # output_clusters=[33]>
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
@@ -733,8 +733,8 @@ class Plug_TZ3210_1AC(CustomDevice):
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
@@ -831,8 +831,8 @@ class Plug_4AC_2USB_cfnprab5(EnchantedDevice):
             # input_clusters=[]
             # output_clusters=[33]>
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
@@ -899,8 +899,8 @@ class Plug_4AC_2USB_cfnprab5(EnchantedDevice):
                 OUTPUT_CLUSTERS: [],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
@@ -969,8 +969,8 @@ class Plug_4AC_2USB_Metering(EnchantedDevice):
                 # "device_type": "0x0061",
                 # "in_clusters": [],
                 # "out_clusters": ["0x0021"]
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
@@ -1017,8 +1017,8 @@ class Plug_4AC_2USB_Metering(EnchantedDevice):
                 OUTPUT_CLUSTERS: [],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
@@ -1177,8 +1177,8 @@ class Plug_CB_Metering(EnchantedDevice):
             # input_clusters=[]
             # output_clusters=[33]>
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
@@ -1203,8 +1203,8 @@ class Plug_CB_Metering(EnchantedDevice):
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
@@ -1258,8 +1258,8 @@ class Plug_2AC_var05(EnchantedDevice):
                 # "device_type": "0x0061",
                 # "in_clusters": [],
                 # "out_clusters": ["0x0021"]
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
@@ -1295,8 +1295,8 @@ class Plug_2AC_var05(EnchantedDevice):
                 OUTPUT_CLUSTERS: [],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
