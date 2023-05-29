@@ -143,7 +143,7 @@ class TuyaSingleSwitch_GP(TuyaSwitch):
             # output_clusters=[33]
             242: {
                 PROFILE_ID: zgp.PROFILE_ID,
-                DEVICE_TYPE: 97,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
