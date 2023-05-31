@@ -1,6 +1,31 @@
 """Tests for Develco/Frient A/S quirks."""
+import pytest
+from zigpy.zcl.clusters.general import DeviceTemperature
 
 import zhaquirks.develco.motion
+import zhaquirks.develco.power_plug
+
+from tests.common import ClusterListener
+
+zhaquirks.setup()
+
+
+@pytest.mark.parametrize("quirk", (zhaquirks.develco.power_plug.SPLZB131,))
+async def test_develco_plug_device_temp_multiplier(zigpy_device_from_quirk, quirk):
+    """Test device temperature multiplication."""
+
+    device = zigpy_device_from_quirk(quirk)
+
+    dev_temp_cluster = device.endpoints[2].device_temperature
+    dev_temp_listener = ClusterListener(dev_temp_cluster)
+
+    dev_temp_attr_id = DeviceTemperature.attributes_by_name["current_temperature"].id
+
+    # turn off heating
+    dev_temp_cluster._update_attribute(dev_temp_attr_id, 25)
+    assert len(dev_temp_listener.attribute_updates) == 1
+    assert dev_temp_listener.attribute_updates[0][0] == dev_temp_attr_id
+    assert dev_temp_listener.attribute_updates[0][1] == 2500  # multiplied by 100
 
 
 def test_motion_signature(assert_signature_matches_quirk):

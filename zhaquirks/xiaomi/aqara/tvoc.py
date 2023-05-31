@@ -28,6 +28,7 @@ from zhaquirks.xiaomi import (
 )
 
 MEASURED_VALUE = 0x0000
+DISPLAY_UNIT = 0x0114
 
 
 class AnalogInputCluster(CustomCluster, AnalogInput):
@@ -64,6 +65,24 @@ class EmulatedTVOCMeasurement(LocalDataCluster):
             self.MIN_CHANGE,
         )
         return result
+
+
+class TVOCDisplayUnit(t.enum_factory(t.uint8_t)):
+    """Display values."""
+
+    mgm3_celsius = 0x00
+    ppb_celsius = 0x01
+    mgm3_fahrenheit = 0x10
+    ppb_fahrenheit = 0x11
+
+
+class TVOCCluster(XiaomiAqaraE1Cluster):
+    """Aqara LUMI Config cluster."""
+
+    ep_attribute = "aqara_cluster"
+    attributes = {
+        DISPLAY_UNIT: ("display_unit", TVOCDisplayUnit, True),
+    }
 
 
 class TVOCMonitor(XiaomiCustomDevice):
@@ -114,7 +133,7 @@ class TVOCMonitor(XiaomiCustomDevice):
                     RelativeHumidityCluster,
                     AnalogInputCluster,
                     EmulatedTVOCMeasurement,
-                    XiaomiAqaraE1Cluster,
+                    TVOCCluster,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             }
