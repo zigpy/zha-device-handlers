@@ -20,17 +20,22 @@ ZHA device handlers and it's provided Quirks allow Zigpy, ZHA and Home Assistant
 Reference official Zigbee specification documentation from Connectivity Standards Alliance (a.k.a. "CSA-IOT", formerly "Zigbee Alliance"):
 
 - Zigbee Protocol Specification (also known as "Zigbee Pro" specifications)
-  - [Zigbee Protocol Specification 2023 (R23)](https://csa-iot.org/wp-content/uploads/2023/04/05-3474-23-csg-zigbee-specification-compressed.pdf)
-  - [Zigbee Protocol Specification 2017 (R22)](https://github.com/Koenkk/zigbee-herdsman/blob/master/docs/docs-05-3474-22-0csg-zigbee-specification.pdf)
-  - [Zigbee Protocol Specification 2015 (R21)](https://zigbeealliance.org/wp-content/uploads/2019/11/docs-05-3474-21-0csg-zigbee-specification.pdf)
+  - [Zigbee Protocol Specification 2023 (also known as "Zigbee PRO 2023" or just Zigbee R23)](https://csa-iot.org/wp-content/uploads/2023/04/05-3474-23-csg-zigbee-specification-compressed.pdf)
+  - [Zigbee Protocol Specification 2017 (also known as "Zigbee PRO 2017" or just Zigbee R22)](https://csa-iot.org/wp-content/uploads/2022/01/docs-05-3474-22-0csg-zigbee-specification-1.pdf)
+  - [Zigbee Protocol Specification 2015 (also known as "Zigbee PRO 2015" or just Zigbee R21)](https://zigbeealliance.org/wp-content/uploads/2019/11/docs-05-3474-21-0csg-zigbee-specification.pdf)
 - Zigbee Cluster Library Specification
-  - [Zigbee Cluster Library Revision 8 (R8)](https://zigbeealliance.org/wp-content/uploads/2021/10/07-5123-08-Zigbee-Cluster-Library.pdf)
-  - [Zigbee Cluster Library Revision 7 (R7)](https://github.com/Koenkk/zigbee-herdsman/blob/master/docs/Zigbee%20Cluster%20Library%20Specification%20v7.pdf)
-  - [Zigbee Cluster Library Revision 6 (R6)](https://zigbeealliance.org/wp-content/uploads/2019/12/07-5123-06-zigbee-cluster-library-specification.pdf)
-- [Zigbee Base Device Behavior Specification (V1.0)](https://zigbeealliance.org/wp-content/uploads/2019/12/docs-13-0402-13-00zi-Base-Device-Behavior-Specification-2-1.pdf)
-- [Zigbee Lighting & Occupancy Device Specification (V1.0)](https://zigbeealliance.org/wp-content/uploads/2019/11/docs-15-0014-05-0plo-Lighting-OccupancyDevice-Specification-V1.0.pdf)
-- [ZigBee Green Power specification (v1.0a)](https://zigbeealliance.org/wp-content/uploads/2019/11/docs-09-5499-26-batt-zigbee-green-power-specification.pdf)
-- [ZigBee Smart Energy Standard (v1.2a)](https://zigbeealliance.org/wp-content/uploads/2019/11/docs-07-5356-19-0zse-zigbee-smart-energy-profile-specification.pdf)
+  - [Zigbee Cluster Library Specification R8 (Revision 8)](https://zigbeealliance.org/wp-content/uploads/2021/10/07-5123-08-Zigbee-Cluster-Library.pdf)
+  - [Zigbee Cluster Library Specification R7 (Revision 7)](https://github.com/Koenkk/zigbee-herdsman/blob/master/docs/Zigbee%20Cluster%20Library%20Specification%20v7.pdf)
+  - [Zigbee Cluster Library Specification R6 (Revision 6)](https://zigbeealliance.org/wp-content/uploads/2019/12/07-5123-06-zigbee-cluster-library-specification.pdf)
+- Zigbee Device Specifications
+  - [Zigbee Base Device Behavior Specification (V1.0)](https://zigbeealliance.org/wp-content/uploads/2019/12/docs-13-0402-13-00zi-Base-Device-Behavior-Specification-2-1.pdf)
+  - [Zigbee Lighting & Occupancy Device Specification (V1.0)](https://zigbeealliance.org/wp-content/uploads/2019/11/docs-15-0014-05-0plo-Lighting-OccupancyDevice-Specification-V1.0.pdf)
+- ZigBee Green Power (ZGP "GreenPower" Profile) specifications
+  - [Zigbee PRO Green Power feature specification Basic functionality set (v 1.1.1)](https://csa-iot.org/wp-content/uploads/2022/01/docs-14-0563-18-batt-Green-Power-Basic-specification-v1.1.1.pdf)
+  - [Zigbee PRO Green Power feature Specification 1.0a (Revision 26)](https://zigbeealliance.org/wp-content/uploads/2019/11/docs-09-5499-26-batt-zigbee-green-power-specification.pdf)
+- ZigBee Smart Energy (ZSE / Zigbee SE "Smart Energy" Profile) specifications
+  - Zigbee Smart Energy Standard 1.4
+  - [ZigBee Smart Energy Standard (v1.2a)](https://zigbeealliance.org/wp-content/uploads/2019/11/docs-07-5356-19-0zse-zigbee-smart-energy-profile-specification.pdf)
 
 In additional you can also reference third-party and manufacturer specific documentation:
 
