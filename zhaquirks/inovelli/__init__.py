@@ -262,7 +262,6 @@ VZM35SN_REMOVES = [
     0x0019
     0x0034,
     0x0064,
-#   0x007B, ***Checking if AUX Scenes or not actually included***
     0x007D,
     0x0105,
 ]
