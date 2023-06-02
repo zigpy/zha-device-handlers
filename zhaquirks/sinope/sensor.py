@@ -45,7 +45,7 @@ class SinopeManufacturerCluster(CustomCluster):
 class SinopeTechnologiesIasZoneCluster(CustomCluster, IasZone):
     """SinopeTechnologiesIasZoneCluster custom cluster."""
 
-    class ZoneStatus(t.enum8):
+    class LeakStatus(t.enum8):
         """zone_status values."""
 
         Dry = 0x00
@@ -54,7 +54,7 @@ class SinopeTechnologiesIasZoneCluster(CustomCluster, IasZone):
     attributes = IasZone.attributes.copy()
     attributes.update(
         {
-            0x0030: ("zone_status", ZoneStatus, True),
+            0x0030: ("leak_status", LeakStatus, True),
         }
     )
 
