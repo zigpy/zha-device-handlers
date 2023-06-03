@@ -46,7 +46,7 @@ class SinopeTechnologiesIasZoneCluster(CustomCluster, IasZone):
     """SinopeTechnologiesIasZoneCluster custom cluster."""
 
     class LeakStatus(t.enum8):
-        """zone_status values."""
+        """leak_status values."""
 
         Dry = 0x00
         Leak = 0x01
