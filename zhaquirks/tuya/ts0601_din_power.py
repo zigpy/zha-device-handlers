@@ -35,6 +35,10 @@ HIKING_POWER_FACTOR_ATTR = 0x026F
 HIKING_TOTAL_REACTIVE_ATTR = 0x026D
 HIKING_REACTIVE_POWER_ATTR = 0x026E
 
+"""Earu Power Meter Attributes"""
+EARU_TOTAL_ENERGY_DELIVERED_ATTR = 0x0201
+EARU_VOLTAGE_CURRENT_POWER_ATTR = 0x0006
+EARU_DIN_SWITCH_ATTR = 0x0110
 
 class TuyaManufClusterDinPower(TuyaManufClusterAttributes):
     """Manufacturer Specific Cluster of the Tuya Power Meter device."""
@@ -61,6 +65,27 @@ class TuyaManufClusterDinPower(TuyaManufClusterAttributes):
             self.endpoint.device.switch_bus.listener_event(
                 SWITCH_EVENT, self.endpoint.endpoint_id, value
             )
+
+            
+class EaruManufClusterDinPower(TuyaManufClusterAttributes):
+    """Manufacturer Specific Cluster of the Tuya Power Meter device."""
+    
+    attributes = {
+        EARU_TOTAL_ENERGY_DELIVERED_ATTR: ("energy_delivered", t.uint16_t, True),
+        EARU_VOLTAGE_CURRENT_POWER_ATTR: ("voltage_current_power", t.uint64_t, True),
+        EARU_DIN_SWITCH_ATTR: ("switch", t.uint8_t, True),
+    }
+
+    def _update_attribute(self, attrid, value):
+        super()._update_attribute(attrid, value)
+        if attrid == EARU_DIN_SWITCH_ATTR:
+            self.endpoint.device.switch_bus.listener_event(SWITCH_EVENT, 16, value)
+        elif attrid == EARU_TOTAL_ENERGY_DELIVERED_ATTR:
+            self.endpoint.smartenergy_metering.energy_deliver_reported(value / 100)
+        elif attrid == EARU_VOLTAGE_CURRENT_POWER_ATTR:
+            self.endpoint.electrical_measurement.voltage_reported((value>>48 & 0xffff)/10)
+            self.endpoint.electrical_measurement.current_reported((value>>24 & 0xffff))
+            self.endpoint.electrical_measurement.power_reported((value & 0xffff))
 
 
 class TuyaPowerMeasurement(LocalDataCluster, ElectricalMeasurement):
@@ -275,6 +300,55 @@ class HikingPowerMeter(TuyaSwitch):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     HikingManufClusterDinPower,
+                    TuyaElectricalMeasurement,
+                    TuyaPowerMeasurement,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            16: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    TuyaOnOff,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+        }
+    }
+
+
+class EaruPowerMeter(TuyaSwitch):
+    """Earu Power Meter Device"""
+
+    signature = {
+        MODELS_INFO: [
+            ("_TZE204_davzgqq0", "TS0601"),
+        ],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaManufClusterAttributes.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            }
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    EaruManufClusterDinPower,
                     TuyaElectricalMeasurement,
                     TuyaPowerMeasurement,
                 ],
