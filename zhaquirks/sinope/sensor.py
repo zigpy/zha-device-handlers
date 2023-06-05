@@ -67,7 +67,7 @@ class SinopeTechnologiesIasZoneCluster(CustomCluster, IasZone):
             # FIXME: ZHA currently relies on `zone_status` to exist and hold the correct
             # value. Until this can be properly fixed, we need to manually sync these
             # two attributes.
-            super()._update_attribute(self.AttrDefs.zone_status.id, value)
+            super().update_attribute(self.AttrDefs.zone_status.id, value)
 
 
 class SinopeTechnologiesSensor(CustomDevice):
