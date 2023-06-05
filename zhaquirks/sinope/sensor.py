@@ -3,8 +3,6 @@
 It add manufacturer attributes for IasZone cluster for the water leak alarm.
 """
 
-from typing import Any
-
 import zigpy.profiles.zha as zha_p
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
@@ -59,15 +57,6 @@ class SinopeTechnologiesIasZoneCluster(CustomCluster, IasZone):
             0x0030: ("leak_status", LeakStatus, True),
         }
     )
-
-    def _update_attribute(self, attrid: t.uint16_t, value: Any) -> None:
-        super()._update_attribute(attrid, value)
-
-        if attrid == self.AttrDefs.leak_status.id:
-            # FIXME: ZHA currently relies on `zone_status` to exist and hold the correct
-            # value. Until this can be properly fixed, we need to manually sync these
-            # two attributes.
-            super().update_attribute(self.AttrDefs.zone_status.id, value)
 
 
 class SinopeTechnologiesSensor(CustomDevice):
