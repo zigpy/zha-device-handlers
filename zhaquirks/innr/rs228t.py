@@ -1,5 +1,5 @@
 """Innr RS 228 T device."""
-from zigpy.profiles import zha
+from zigpy.profiles import zgp, zha
 from zigpy.profiles.zha import DeviceType
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
@@ -55,8 +55,8 @@ class RS228T(CustomDevice):
             # input_clusters=[]
             # output_clusters=[33]>
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
@@ -81,8 +81,8 @@ class RS228T(CustomDevice):
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },

@@ -1,5 +1,5 @@
 """NodOn on/off switch two channels."""
-from zigpy.profiles import zha
+from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
@@ -79,8 +79,8 @@ class NodOnSIN4220(CustomDevice):
             # input_clusters=[33]
             # output_clusters=[33]
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 102,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.COMBO_BASIC,
                 INPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
@@ -124,8 +124,8 @@ class NodOnSIN4220(CustomDevice):
                 ],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 102,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.COMBO_BASIC,
                 INPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
