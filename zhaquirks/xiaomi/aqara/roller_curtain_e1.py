@@ -100,7 +100,6 @@ class WindowCoveringRollerE1(CustomCluster, WindowCovering):
         *args: Any,
         manufacturer: int | t.uint16_t | None = None,
         expect_reply: bool = True,
-        tries: int = 1,
         tsn: int | t.uint8_t | None = None,
         **kwargs: Any,
     ) -> Any:
