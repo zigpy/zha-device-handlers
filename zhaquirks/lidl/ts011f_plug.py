@@ -1,7 +1,7 @@
 """LIDL TS011F plug."""
 from __future__ import annotations
 
-from zigpy.profiles import zha
+from zigpy.profiles import zgp, zha
 from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
@@ -52,8 +52,8 @@ class Lidl_Plug_3AC_4USB(Plug_3AC_4USB, EnchantedDevice):
             # input_clusters=[]
             # output_clusters=[33]>
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
