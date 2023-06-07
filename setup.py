@@ -4,7 +4,7 @@ import pathlib
 
 from setuptools import find_packages, setup
 
-VERSION = "0.0.100"
+VERSION = "0.0.101"
 
 
 setup(
