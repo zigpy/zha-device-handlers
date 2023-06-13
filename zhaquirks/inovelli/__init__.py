@@ -248,14 +248,6 @@ class Inovelli_VZM31SN_Cluster(CustomCluster):
 
 
 VZM35SN_REMOVES = [
-    0x0001,
-    0x0002,
-    0x0003,
-    0x0004,
-    0x0005,
-    0x0006,
-    0x0007,
-    0x0008,
     0x0012,
     0x0013,
     0x0014,
@@ -278,6 +270,8 @@ class Inovelli_VZM35SN_Cluster(Inovelli_VZM31SN_Cluster):
     attributes.update(
         {
             0x0017: ("quick_start_time", t.uint8_t, True),
+            0x001E: ("non_neutral_aux_med_gear_learn_value", t.uint8_t, True),
+            0x001F: ("non_neutral_aux_low_gear_learn_value", t.uint8_t, True),
             0x0034: ("smart_fan_mode", t.Bool, True),
             0x0106: ("smart_fan_led_display_levels", t.uint8_t, True),
         }
