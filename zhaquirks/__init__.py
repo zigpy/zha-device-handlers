@@ -199,8 +199,8 @@ class PowerConfigurationCluster(CustomCluster, PowerConfiguration):
     BATTERY_RATED_VOLTAGE = 0x0034
     BATTERY_VOLTAGE_MIN_THRESHOLD = 0x0036
     BATTERY_PERCENTAGE_REMAINING = 0x0021
-    MIN_VOLTS = 15  # old 2.1
-    MAX_VOLTS = 28  # old 3.2
+    MIN_VOLTS = 1.5  # old 2.1
+    MAX_VOLTS = 2.8  # old 3.2
 
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
@@ -211,8 +211,8 @@ class PowerConfigurationCluster(CustomCluster, PowerConfiguration):
             )
 
     def _calculate_battery_percentage(self, raw_value):
-        volts_min = self.get(self.BATTERY_VOLTAGE_MIN_THRESHOLD, self.MIN_VOLTS)
-        volts_max = self.get(self.BATTERY_RATED_VOLTAGE, self.MAX_VOLTS)
+        volts_min = self.get(self.BATTERY_VOLTAGE_MIN_THRESHOLD, self.MIN_VOLTS * 10)
+        volts_max = self.get(self.BATTERY_RATED_VOLTAGE, self.MAX_VOLTS * 10)
         volts = raw_value
         volts = max(volts, volts_min)
         volts = min(volts, volts_max)
