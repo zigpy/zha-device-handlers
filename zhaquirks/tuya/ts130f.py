@@ -500,6 +500,7 @@ class TuyaTS130ESTC(CustomDevice):
         },
     }
 
+
 class TuyaTS130Double_GP_ESTC(CustomDevice):
     """Tuya double smart curtain roller shutter with Green Power and External Switch Type Cluster."""
 
@@ -516,12 +517,9 @@ class TuyaTS130Double_GP_ESTC(CustomDevice):
                     Scenes.cluster_id,
                     OnOff.cluster_id,
                     WindowCovering.cluster_id,
-                    TuyaZBExternalSwitchTypeCluster.cluster_id
+                    TuyaZBExternalSwitchTypeCluster.cluster_id,
                 ],
-                OUTPUT_CLUSTERS: [
-                    Time.cluster_id, 
-                    Ota.cluster_id
-                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
             2: {
                 # "profile_id": 260, "device_type": "0x0202",
@@ -534,7 +532,7 @@ class TuyaTS130Double_GP_ESTC(CustomDevice):
                     Scenes.cluster_id,
                     OnOff.cluster_id,
                     WindowCovering.cluster_id,
-                    TuyaZBExternalSwitchTypeCluster.cluster_id
+                    TuyaZBExternalSwitchTypeCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [],
             },
