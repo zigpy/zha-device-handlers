@@ -6,7 +6,7 @@ https://github.com/Koenkk/zigbee-herdsman-converters/blob/9d5e7b902479582581615c
 import base64
 from typing import Any, List, Optional, Union
 
-from zigpy.profiles import zgp, zha
+from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
@@ -485,8 +485,8 @@ class ZosungIRBlaster_ZS06(ZosungIRBlaster):
                 ],
             },
             242: {
-                PROFILE_ID: zgp.PROFILE_ID,  # 41440 (dec)
-                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,  # 0x0061
+                PROFILE_ID: 0xA1E0,  # 41440 (dec)
+                DEVICE_TYPE: 0x0061,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [
                     GreenPowerProxy.cluster_id,  # 0x0021 = GreenPowerProxy.cluster_id
@@ -513,8 +513,8 @@ class ZosungIRBlaster_ZS06(ZosungIRBlaster):
                 ],
             },
             242: {
-                PROFILE_ID: zgp.PROFILE_ID,  # 41440 (dec)
-                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,  # 0x0061
+                PROFILE_ID: 0xA1E0,  # 41440 (dec)
+                DEVICE_TYPE: 0x0061,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [
                     GreenPowerProxy.cluster_id,  # 0x0021 = GreenPowerProxy.cluster_id
