@@ -581,88 +581,96 @@ async def test_aqara_feeder_write_attrs(
             b"\x1c_\x11f\n\xf1\xffA\t\x00\x05\x01\x04\x15\x00U\x01\x01",
             2,
             [
-                mock.call(ZCL_FEEDING, True),
-                mock.call(FEEDER_ATTR, b"\x00\x05\x01\x04\x15\x00U\x01\x01"),
+                mock.call(ZCL_FEEDING, True, mock.ANY),
+                mock.call(FEEDER_ATTR, b"\x00\x05\x01\x04\x15\x00U\x01\x01", mock.ANY),
             ],
         ),
         (
             b"\x1c_\x11l\n\xf1\xffA\x0c\x00\x05\xd0\x04\x15\x02\xbc\x040203",
             3,
             [
-                mock.call(ZCL_LAST_FEEDING_SIZE, 3),
-                mock.call(ZCL_LAST_FEEDING_SOURCE, OppleCluster.FeedingSource.Remote),
-                mock.call(FEEDER_ATTR, b"\x00\x05\xd0\x04\x15\x02\xbc\x040203"),
+                mock.call(ZCL_LAST_FEEDING_SIZE, 3, mock.ANY),
+                mock.call(
+                    ZCL_LAST_FEEDING_SOURCE, OppleCluster.FeedingSource.Remote, mock.ANY
+                ),
+                mock.call(
+                    FEEDER_ATTR, b"\x00\x05\xd0\x04\x15\x02\xbc\x040203", mock.ANY
+                ),
             ],
         ),
         (
             b"\x1c_\x11m\n\xf1\xffA\n\x00\x05\xd1\rh\x00U\x02\x00!",
             2,
             [
-                mock.call(ZCL_PORTIONS_DISPENSED, 33),
-                mock.call(FEEDER_ATTR, b"\x00\x05\xd1\rh\x00U\x02\x00!"),
+                mock.call(ZCL_PORTIONS_DISPENSED, 33, mock.ANY),
+                mock.call(FEEDER_ATTR, b"\x00\x05\xd1\rh\x00U\x02\x00!", mock.ANY),
             ],
         ),
         (
             b"\x1c_\x11n\n\xf1\xffA\x0c\x00\x05\xd2\ri\x00U\x04\x00\x00\x01\x08",
             2,
             [
-                mock.call(ZCL_WEIGHT_DISPENSED, 264),
-                mock.call(FEEDER_ATTR, b"\x00\x05\xd2\ri\x00U\x04\x00\x00\x01\x08"),
+                mock.call(ZCL_WEIGHT_DISPENSED, 264, mock.ANY),
+                mock.call(
+                    FEEDER_ATTR, b"\x00\x05\xd2\ri\x00U\x04\x00\x00\x01\x08", mock.ANY
+                ),
             ],
         ),
         (
             b"\x1c_\x11o\n\xf1\xffA\t\x00\x05\xd3\r\x0b\x00U\x01\x00",
             2,
             [
-                mock.call(ZCL_ERROR_DETECTED, False),
-                mock.call(FEEDER_ATTR, b"\x00\x05\xd3\r\x0b\x00U\x01\x00"),
+                mock.call(ZCL_ERROR_DETECTED, False, mock.ANY),
+                mock.call(FEEDER_ATTR, b"\x00\x05\xd3\r\x0b\x00U\x01\x00", mock.ANY),
             ],
         ),
         (
             b"\x1c_\x11p\n\xf1\xffA\t\x00\x05\x05\x04\x16\x00U\x01\x01",
             2,
             [
-                mock.call(ZCL_CHILD_LOCK, True),
-                mock.call(FEEDER_ATTR, b"\x00\x05\x05\x04\x16\x00U\x01\x01"),
+                mock.call(ZCL_CHILD_LOCK, True, mock.ANY),
+                mock.call(FEEDER_ATTR, b"\x00\x05\x05\x04\x16\x00U\x01\x01", mock.ANY),
             ],
         ),
         (
             b"\x1c_\x11r\n\xf1\xffA\t\x00\x05\t\x04\x17\x00U\x01\x01",
             2,
             [
-                mock.call(ZCL_DISABLE_LED_INDICATOR, True),
-                mock.call(FEEDER_ATTR, b"\x00\x05\t\x04\x17\x00U\x01\x01"),
+                mock.call(ZCL_DISABLE_LED_INDICATOR, True, mock.ANY),
+                mock.call(FEEDER_ATTR, b"\x00\x05\t\x04\x17\x00U\x01\x01", mock.ANY),
             ],
         ),
         (
             b"\x1c_\x11s\n\xf1\xffA\t\x00\x05\x0b\x04\x18\x00U\x01\x01",
             2,
             [
-                mock.call(ZCL_FEEDING_MODE, OppleCluster.FeedingMode.Schedule),
-                mock.call(FEEDER_ATTR, b"\x00\x05\x0b\x04\x18\x00U\x01\x01"),
+                mock.call(
+                    ZCL_FEEDING_MODE, OppleCluster.FeedingMode.Schedule, mock.ANY
+                ),
+                mock.call(FEEDER_ATTR, b"\x00\x05\x0b\x04\x18\x00U\x01\x01", mock.ANY),
             ],
         ),
         (
             b"\x1c_\x11u\n\xf1\xffA\t\x00\x05\x0f\x0e_\x00U\x01\x06",
             2,
             [
-                mock.call(ZCL_PORTION_WEIGHT, 6),
-                mock.call(FEEDER_ATTR, b"\x00\x05\x0f\x0e_\x00U\x01\x06"),
+                mock.call(ZCL_PORTION_WEIGHT, 6, mock.ANY),
+                mock.call(FEEDER_ATTR, b"\x00\x05\x0f\x0e_\x00U\x01\x06", mock.ANY),
             ],
         ),
         (
             b"\x1c_\x11v\n\xf1\xffA\t\x00\x05\x11\x0e\\\x00U\x01\x02",
             2,
             [
-                mock.call(ZCL_SERVING_SIZE, 2),
-                mock.call(FEEDER_ATTR, b"\x00\x05\x11\x0e\\\x00U\x01\x02"),
+                mock.call(ZCL_SERVING_SIZE, 2, mock.ANY),
+                mock.call(FEEDER_ATTR, b"\x00\x05\x11\x0e\\\x00U\x01\x02", mock.ANY),
             ],
         ),
         (
             b"\x1c_\x11{\n\xf7\x00A\x0e\x05!\x0e\x00\r#!%\x00\x00\t!\x02\x03",
             1,
             [
-                mock.call(0x00F7, b"\x05!\x0e\x00\r#!%\x00\x00\t!\x02\x03"),
+                mock.call(0x00F7, b"\x05!\x0e\x00\r#!%\x00\x00\t!\x02\x03", mock.ANY),
             ],
         ),
         (
@@ -672,6 +680,7 @@ async def test_aqara_feeder_write_attrs(
                 mock.call(
                     FEEDER_ATTR,
                     b"\x00\x05\x15\x08\x00\x08\xc8 7F09000100,7F0D000100,7F13000100",
+                    mock.ANY,
                 ),
             ],
         ),
