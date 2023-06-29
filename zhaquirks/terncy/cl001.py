@@ -11,12 +11,8 @@ from zigpy.zcl.clusters.general import (
     Ota,
     Scenes,
 )
-from zigpy.zcl.clusters.lighting import (
-    Color,
-)
-from zigpy.zcl.clusters.lightlink import (
-    LightLink,
-)
+from zigpy.zcl.clusters.lighting import Color
+from zigpy.zcl.clusters.lightlink import LightLink
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -31,10 +27,12 @@ class CustomColorCluster(CustomCluster, Color):
     """Set actual supported CCT range and remove RGB color picker since hardware does not support it."""
 
     _CONSTANT_ATTRIBUTES = {
-        ## AttributeDefs not merged yet.
-        #Color.AttributeDefs.color_capabilities.id: Color.ColorCapabilities.Color_temperature,
-        #Color.AttributeDefs.color_temp_physical_min.id: 50,
-        #Color.AttributeDefs.color_temp_physical_max.id: 500,
+        """
+        #AttributeDefs not merged yet.
+        Color.AttributeDefs.color_capabilities.id: Color.ColorCapabilities.Color_temperature,
+        Color.AttributeDefs.color_temp_physical_min.id: 50,
+        Color.AttributeDefs.color_temp_physical_max.id: 500,
+        """
         Color.attributes_by_name["color_capabilities"].id: Color.ColorCapabilities.Color_temperature,
         Color.attributes_by_name["color_temp_physical_min"].id: 50,
         Color.attributes_by_name["color_temp_physical_max"].id: 500,
