@@ -26,13 +26,13 @@ from zhaquirks.const import (
 class CustomColorCluster(CustomCluster, Color):
     """Set actual supported CCT range and remove RGB color picker since hardware does not support it."""
 
+    """
+    #AttributeDefs not merged yet. Update below after AttributeDefs has been merged.
+    Color.AttributeDefs.color_capabilities.id: Color.ColorCapabilities.Color_temperature,
+    Color.AttributeDefs.color_temp_physical_min.id: 50,
+    Color.AttributeDefs.color_temp_physical_max.id: 500,
+    """
     _CONSTANT_ATTRIBUTES = {
-        """
-        #AttributeDefs not merged yet.
-        Color.AttributeDefs.color_capabilities.id: Color.ColorCapabilities.Color_temperature,
-        Color.AttributeDefs.color_temp_physical_min.id: 50,
-        Color.AttributeDefs.color_temp_physical_max.id: 500,
-        """
         Color.attributes_by_name["color_capabilities"].id: Color.ColorCapabilities.Color_temperature,
         Color.attributes_by_name["color_temp_physical_min"].id: 50,
         Color.attributes_by_name["color_temp_physical_max"].id: 500,
