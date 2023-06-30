@@ -83,7 +83,9 @@ class EaruManufClusterDinPower(TuyaManufClusterAttributes):
         elif attrid == EARU_TOTAL_ENERGY_DELIVERED_ATTR:
             self.endpoint.smartenergy_metering.energy_deliver_reported(value / 100)
         elif attrid == EARU_VOLTAGE_CURRENT_POWER_ATTR:
-            self.endpoint.electrical_measurement.voltage_reported((value>>48 & 0xffff)/10)
+            self.endpoint.electrical_measurement.voltage_reported(
+                (value>>48 & 0xffff)/10
+            )
             self.endpoint.electrical_measurement.current_reported((value>>24 & 0xffff))
             self.endpoint.electrical_measurement.power_reported((value & 0xffff))
 
