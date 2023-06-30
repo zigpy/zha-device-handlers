@@ -13,6 +13,7 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.lightlink import LightLink
+
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -23,7 +24,7 @@ from zhaquirks.const import (
 )
 
 
-class CustomColorCluster(CustomCluster, Color):
+class FixedColorCluster(CustomCluster, Color):
     """Set actual supported CCT range and remove RGB color picker since hardware does not support it."""
 
     _CONSTANT_ATTRIBUTES = {
@@ -74,7 +75,7 @@ class LuminousElement(CustomDevice):
                     Scenes.cluster_id,
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
-                    CustomColorCluster,
+                    FixedColorCluster,
                     LightLink.cluster_id,
                     0xFCCC,
                     0xFCCD,
