@@ -40,6 +40,7 @@ EARU_TOTAL_ENERGY_DELIVERED_ATTR = 0x0201
 EARU_VOLTAGE_CURRENT_POWER_ATTR = 0x0006
 EARU_DIN_SWITCH_ATTR = 0x0110
 
+
 class TuyaManufClusterDinPower(TuyaManufClusterAttributes):
     """Manufacturer Specific Cluster of the Tuya Power Meter device."""
 
@@ -66,10 +67,10 @@ class TuyaManufClusterDinPower(TuyaManufClusterAttributes):
                 SWITCH_EVENT, self.endpoint.endpoint_id, value
             )
 
-            
+
 class EaruManufClusterDinPower(TuyaManufClusterAttributes):
     """Manufacturer Specific Cluster of the Tuya Power Meter device."""
-    
+
     attributes = {
         EARU_TOTAL_ENERGY_DELIVERED_ATTR: ("energy_delivered", t.uint16_t, True),
         EARU_VOLTAGE_CURRENT_POWER_ATTR: ("voltage_current_power", t.uint64_t, True),
