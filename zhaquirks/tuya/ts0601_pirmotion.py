@@ -25,6 +25,7 @@ from zhaquirks.tuya.mcu import (
     TuyaPowerConfigurationCluster,
 )
 
+
 class TuyaOccupancySensing(OccupancySensing, TuyaLocalCluster):
     """Tuya local OccupancySensing cluster."""
 
