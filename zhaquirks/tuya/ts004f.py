@@ -482,11 +482,15 @@ class TuyaSmartRemote004FSK(EnchantedDevice):
         (SHORT_PRESS, BUTTON): {COMMAND: COMMAND_ON, ENDPOINT_ID: 1, CLUSTER_ID: 6},
         (DOUBLE_PRESS, BUTTON): {COMMAND: COMMAND_OFF, ENDPOINT_ID: 1, CLUSTER_ID: 6},
         (LONG_PRESS, BUTTON): {COMMAND: COMMAND_STEP, ENDPOINT_ID: 1, CLUSTER_ID: 8},
-        (LONG_RELEASE, BUTTON): {COMMAND: COMMAND_STOP,  ENDPOINT_ID: 1, CLUSTER_ID: 8},
+        (LONG_RELEASE, BUTTON): {COMMAND: COMMAND_STOP, ENDPOINT_ID: 1, CLUSTER_ID: 8},
         (ALT_SHORT_PRESS, BUTTON): {
             ENDPOINT_ID: 1,
             CLUSTER_ID: 8,
-            PARAMS: {'transition_time': 1, 'options_mask': None, 'options_override': None},
+            PARAMS: {
+                "transition_time": 1,
+                "options_mask": None,
+                "options_override": None,
+            },
         },
         (SHORT_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: SHORT_PRESS},
         (LONG_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: LONG_PRESS},
