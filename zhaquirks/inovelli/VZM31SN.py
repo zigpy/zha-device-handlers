@@ -1,10 +1,11 @@
 """VZM31-SN Two in One Switch/Dimmer Module."""
 
-from zigpy.profiles import zha
+from zigpy.profiles import zgp, zha
 from zigpy.profiles.zha import DeviceType
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
+    GreenPowerProxy,
     Groups,
     Identify,
     LevelControl,
@@ -70,10 +71,10 @@ class InovelliVZM31SNv12(CustomDevice):
                 ],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 0x0061,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [0x0021],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
         },
     }
@@ -112,10 +113,10 @@ class InovelliVZM31SNv12(CustomDevice):
                 ],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 0x0061,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [0x0021],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
         },
     }
@@ -159,10 +160,10 @@ class InovelliVZM31SNv11(CustomDevice):
                 ],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 0x0061,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [0x0021],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
         },
     }
@@ -205,10 +206,10 @@ class InovelliVZM31SNv11(CustomDevice):
                 ],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 0x0061,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [0x0021],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
         },
     }

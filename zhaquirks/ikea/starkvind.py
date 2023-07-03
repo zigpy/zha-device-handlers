@@ -4,7 +4,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from zigpy.profiles import zha
+from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl.clusters.general import (
@@ -177,8 +177,8 @@ class IkeaSTARKVIND(CustomDevice):
             # device_version=0
             # input_clusters=[33] output_clusters=[33]>
             242: {
-                PROFILE_ID: 0xA1E0,  # 41440 (dec)
-                DEVICE_TYPE: 0x0061,
+                PROFILE_ID: zgp.PROFILE_ID,  # 41440 (dec)
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [
                     GreenPowerProxy.cluster_id,  # 0x0021 = GreenPowerProxy.cluster_id
@@ -210,8 +210,8 @@ class IkeaSTARKVIND(CustomDevice):
             # device_version=0
             # input_clusters=[33] output_clusters=[33]>
             242: {
-                PROFILE_ID: 0xA1E0,  # 41440 (dec)
-                DEVICE_TYPE: 0x0061,
+                PROFILE_ID: zgp.PROFILE_ID,  # 41440 (dec)
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [
                     GreenPowerProxy.cluster_id,  # 0x0021 = GreenPowerProxy.cluster_id
@@ -253,8 +253,8 @@ class IkeaSTARKVIND_v2(IkeaSTARKVIND):
             # device_version=0
             # input_clusters=[33] output_clusters=[33]>
             242: {
-                PROFILE_ID: 0xA1E0,  # 41440 (dec)
-                DEVICE_TYPE: 0x0061,
+                PROFILE_ID: zgp.PROFILE_ID,  # 41440 (dec)
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [
                     GreenPowerProxy.cluster_id,  # 0x0021 = GreenPowerProxy.cluster_id
@@ -287,8 +287,8 @@ class IkeaSTARKVIND_v2(IkeaSTARKVIND):
             # device_version=0
             # input_clusters=[33] output_clusters=[33]>
             242: {
-                PROFILE_ID: 0xA1E0,  # 41440 (dec)
-                DEVICE_TYPE: 0x0061,
+                PROFILE_ID: zgp.PROFILE_ID,  # 41440 (dec)
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [
                     GreenPowerProxy.cluster_id,  # 0x0021 = GreenPowerProxy.cluster_id

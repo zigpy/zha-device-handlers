@@ -2,7 +2,7 @@
 import logging
 
 import zigpy
-from zigpy.profiles import zha
+from zigpy.profiles import zgp, zha
 import zigpy.types as types
 from zigpy.zcl.clusters.general import (
     Alarms,
@@ -41,8 +41,6 @@ from zhaquirks.xiaomi import (
 
 _LOGGER = logging.getLogger(__name__)
 
-XIAOMI_PROFILE_ID = 0xA1E0
-XIAOMI_DEVICE_TYPE = 0x61
 OPPLE_MFG_CODE = 0x115F
 
 
@@ -123,8 +121,8 @@ class PlugMMEU01(XiaomiCustomDevice):
             # input_clusters=[]
             # output_clusters=[33]>
             242: {
-                PROFILE_ID: XIAOMI_PROFILE_ID,
-                DEVICE_TYPE: XIAOMI_DEVICE_TYPE,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
         },
@@ -155,8 +153,8 @@ class PlugMMEU01(XiaomiCustomDevice):
                 INPUT_CLUSTERS: [AnalogInputCluster],
             },
             242: {
-                PROFILE_ID: XIAOMI_PROFILE_ID,
-                DEVICE_TYPE: XIAOMI_DEVICE_TYPE,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
         },
@@ -210,8 +208,8 @@ class PlugMMEU01Alt1(PlugMMEU01):
             # input_clusters=[]
             # output_clusters=[33]>
             242: {
-                PROFILE_ID: XIAOMI_PROFILE_ID,
-                DEVICE_TYPE: XIAOMI_DEVICE_TYPE,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
         },
@@ -249,8 +247,8 @@ class PlugMMEU01Alt2(PlugMMEU01):
             # input_clusters=[]
             # output_clusters=[33]>
             242: {
-                PROFILE_ID: XIAOMI_PROFILE_ID,
-                DEVICE_TYPE: XIAOMI_DEVICE_TYPE,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
         },
@@ -306,8 +304,8 @@ class PlugMMEU01Alt3(PlugMMEU01):
             # input_clusters=[]
             # output_clusters=[33]>
             242: {
-                PROFILE_ID: XIAOMI_PROFILE_ID,
-                DEVICE_TYPE: XIAOMI_DEVICE_TYPE,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
         },

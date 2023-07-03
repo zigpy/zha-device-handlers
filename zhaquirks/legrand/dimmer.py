@@ -1,6 +1,6 @@
 """Module for Legrand dimmers."""
 
-from zigpy.profiles import zha
+from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
@@ -116,10 +116,10 @@ class DimmerWithoutNeutral2(DimmerWithoutNeutral):
                 ],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 0x0061,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [0x0021],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
         },
     }
@@ -157,10 +157,10 @@ class DimmerWithoutNeutral3(CustomDevice):
                 ],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 0x0066,
-                INPUT_CLUSTERS: [0x0021],
-                OUTPUT_CLUSTERS: [0x0021],
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.COMBO_BASIC,
+                INPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
         },
     }
@@ -193,8 +193,8 @@ class DimmerWithoutNeutral3(CustomDevice):
             },
             # Green Power End Point
             242: {
-                PROFILE_ID: 0xA1E0,
-                DEVICE_TYPE: 0x0066,  # GP Combo Minimum
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.COMBO_BASIC,
                 INPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
@@ -235,10 +235,10 @@ class DimmerWithoutNeutralAndBallast(CustomDevice):
                 ],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 0x0066,
-                INPUT_CLUSTERS: [0x0021],
-                OUTPUT_CLUSTERS: [0x0021],
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.COMBO_BASIC,
+                INPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
         },
     }
@@ -269,8 +269,8 @@ class DimmerWithoutNeutralAndBallast(CustomDevice):
             },
             # Green Power End Point
             242: {
-                PROFILE_ID: 0xA1E0,
-                DEVICE_TYPE: 0x0066,  # GP Combo Minimum
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.COMBO_BASIC,
                 INPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
@@ -308,10 +308,10 @@ class DimmerWithNeutral(DimmerWithoutNeutral):
                 ],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 0x0066,
-                INPUT_CLUSTERS: [0x0021],
-                OUTPUT_CLUSTERS: [0x0021],
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.COMBO_BASIC,
+                INPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
         },
     }
@@ -348,10 +348,10 @@ class DimmerWithNeutral2(CustomDevice):
                 ],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 0x0066,
-                INPUT_CLUSTERS: [0x0021],
-                OUTPUT_CLUSTERS: [0x0021],
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.COMBO_BASIC,
+                INPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
         },
     }
