@@ -247,12 +247,44 @@ class Inovelli_VZM31SN_Cluster(CustomCluster):
             return
 
 
+VZM35SN_REMOVES = [
+    0x0012,
+    0x0013,
+    0x0014,
+    0x0019,
+    0x0034,
+    0x0064,
+    0x007D,
+    0x0105,
+]
+
+
+class Inovelli_VZM35SN_Cluster(Inovelli_VZM31SN_Cluster):
+    """Inovelli VZM35-SN custom cluster."""
+
+    attributes = {
+        key: Inovelli_VZM31SN_Cluster.attributes[key]
+        for key in Inovelli_VZM31SN_Cluster.attributes
+        if key not in VZM35SN_REMOVES
+    }
+    attributes.update(
+        {
+            0x0017: ("quick_start_time", t.uint8_t, True),
+            0x001E: ("non_neutral_aux_med_gear_learn_value", t.uint8_t, True),
+            0x001F: ("non_neutral_aux_low_gear_learn_value", t.uint8_t, True),
+            0x0034: ("smart_fan_mode", t.Bool, True),
+            0x0106: ("smart_fan_led_display_levels", t.uint8_t, True),
+        }
+    )
+
+
 INOVELLI_AUTOMATION_TRIGGERS = {
     (COMMAND_PRESS, ON): {COMMAND: f"{BUTTON_2}_{COMMAND_PRESS}"},
     (COMMAND_PRESS, OFF): {COMMAND: f"{BUTTON_1}_{COMMAND_PRESS}"},
     (COMMAND_PRESS, CONFIG): {COMMAND: f"{BUTTON_3}_{COMMAND_PRESS}"},
     (COMMAND_HOLD, ON): {COMMAND: f"{BUTTON_2}_{COMMAND_HOLD}"},
     (COMMAND_HOLD, OFF): {COMMAND: f"{BUTTON_1}_{COMMAND_HOLD}"},
+    (COMMAND_HOLD, CONFIG): {COMMAND: f"{BUTTON_3}_{COMMAND_HOLD}"},
     (DOUBLE_PRESS, ON): {COMMAND: f"{BUTTON_2}_{COMMAND_DOUBLE}"},
     (DOUBLE_PRESS, CONFIG): {COMMAND: f"{BUTTON_3}_{COMMAND_DOUBLE}"},
     (DOUBLE_PRESS, OFF): {COMMAND: f"{BUTTON_1}_{COMMAND_DOUBLE}"},
@@ -267,4 +299,5 @@ INOVELLI_AUTOMATION_TRIGGERS = {
     (QUINTUPLE_PRESS, CONFIG): {COMMAND: f"{BUTTON_3}_{COMMAND_QUINTUPLE}"},
     (COMMAND_RELEASE, ON): {COMMAND: f"{BUTTON_2}_{COMMAND_RELEASE}"},
     (COMMAND_RELEASE, OFF): {COMMAND: f"{BUTTON_1}_{COMMAND_RELEASE}"},
+    (COMMAND_RELEASE, CONFIG): {COMMAND: f"{BUTTON_3}_{COMMAND_RELEASE}"},
 }
