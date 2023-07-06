@@ -142,7 +142,7 @@ class HikingManufClusterDinPower(TuyaManufClusterAttributes):
 
     attributes = {
         HIKING_DIN_SWITCH_ATTR: ("switch", t.uint8_t, True),
-        HIKING_TOTAL_ENERGY_DELIVERED_ATTR: ("energy_delivered", t.uint16_t, True),
+        HIKING_TOTAL_ENERGY_DELIVERED_ATTR: ("energy_delivered", t.uint32_t, True),
         HIKING_TOTAL_ENERGY_RECEIVED_ATTR: ("energy_received", t.uint16_t, True),
         HIKING_VOLTAGE_CURRENT_ATTR: ("voltage_current", t.uint32_t, True),
         HIKING_POWER_ATTR: ("power", t.uint16_t, True),
