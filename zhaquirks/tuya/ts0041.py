@@ -184,8 +184,6 @@ class TuyaSmartRemote0041TOPlusA(CustomDevice):
         (LONG_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: LONG_PRESS},
         (DOUBLE_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: DOUBLE_PRESS},
     }
-
-
 class TuyaSmartRemote0041_var04(CustomDevice):
     """Tuya 1-button remote device with time on out cluster."""
 
@@ -224,7 +222,7 @@ class TuyaSmartRemote0041_var04(CustomDevice):
                     TuyaSmartRemoteOnOffCluster,
                 ],
                 OUTPUT_CLUSTERS: [
-                    TuyaSmartRemoteOnOffCluster,
+                    OnOff.cluster_id,
                     Time.cluster_id,
                     Ota.cluster_id,
                 ],
