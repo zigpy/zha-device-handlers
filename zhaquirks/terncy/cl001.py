@@ -24,7 +24,7 @@ from zhaquirks.const import (
 )
 
 
-class FixedColorCluster(CustomCluster, Color):
+class ColorClusterTerncy(CustomCluster, Color):
     """Set actual supported CCT range and remove RGB color picker since hardware does not support it."""
 
     _CONSTANT_ATTRIBUTES = {
