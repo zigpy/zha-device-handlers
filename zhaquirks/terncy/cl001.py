@@ -75,7 +75,7 @@ class LuminousElement(CustomDevice):
                     Scenes.cluster_id,
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
-                    FixedColorCluster,
+                    ColorClusterTerncy,
                     LightLink.cluster_id,
                     0xFCCC,
                     0xFCCD,
