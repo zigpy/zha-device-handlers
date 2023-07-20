@@ -401,3 +401,45 @@ class TuyaSirenGPP_NoSensors(CustomDevice):
             },
         }
     }
+
+
+class TuyaSirenSolar(CustomDevice):
+    """NEO Tuya Siren without sensor."""
+
+    signature = {
+        #  endpoint=1 profile=260 device_type=81 device_version=1 input_clusters=[0, 4, 5, 61184]
+        #  output_clusters=[25, 10]>
+        MODELS_INFO: [
+            ("_TZE200_nlrfgpny", "TS0601"),
+        ],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaManufCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Ota.cluster_id, Time.cluster_id],
+            },
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.IAS_WARNING_DEVICE,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    NeoSirenManufCluster,
+                    TuyaMCUSiren,
+                ],
+                OUTPUT_CLUSTERS: [Ota.cluster_id, Time.cluster_id],
+            },
+        }
+    }
