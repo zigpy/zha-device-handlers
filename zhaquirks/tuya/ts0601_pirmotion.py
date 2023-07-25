@@ -1,4 +1,4 @@
-"""BlitzWolf IS-3/Tuya motion rechargeable occupancy sensor."""
+"""Tuya Battery powered PIR motion and Illuminance sensor."""
 
 import math
 from typing import Dict
