@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "zha-quirks"
-dynamic = ["version"]
+version = "0.0.101"
 description = "Library implementing Zigpy quirks for ZHA in Home Assistant"
 urls = {repository = "https://github.com/zigpy/zha-device-handlers"}
 authors = [
@@ -26,7 +26,7 @@ testing = [
 ]
 
 [tool.setuptools-git-versioning]
-enabled = true
+enabled = false
 
 [tool.isort]
 # https://github.com/timothycrosley/isort
