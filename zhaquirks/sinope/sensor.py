@@ -41,7 +41,7 @@ class SinopeManufacturerCluster(CustomCluster):
     attributes = {
         0x0003: ("firmware_number", t.uint16_t, True),
         0x0004: ("firmware_version", t.CharacterString, True),
-        0x0200: ("unknown", t.bitmap32, True),
+        0x0200: ("unknown_attr_1", t.bitmap32, True),
         0xFFFD: ("cluster_revision", t.uint16_t, True),
     }
 
