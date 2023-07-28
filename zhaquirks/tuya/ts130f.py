@@ -582,3 +582,86 @@ class TuyaTS130Double_GP_ESTC(CustomDevice):
             },
         },
     }
+
+
+class TuyaTS130FDouble_var03(CustomDevice):
+    """Tuya double smart curtain roller shutter with Green Power and External Switch Type Cluster."""
+
+    signature = {
+        # SizePrefixedSimpleDescriptor(endpoint=1, profile=0x0104, device_type=0x0202, device_version=1, input_clusters=[0, 4, 5, 6, 0x0102, 0xE001], output_clusters=[0x000a, 0x0019]))
+        MODEL: "TS130F",
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    WindowCovering.cluster_id,
+                    TuyaZBExternalSwitchTypeCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            2: {
+                # "profile_id": 0x0104, "device_type": "0x0202",
+                # "in_clusters": ["0x0004","0x0005","0x0006","0x0102", 0xE001],
+                # "out_clusters": []
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
+                INPUT_CLUSTERS: [
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    WindowCovering.cluster_id,
+                    TuyaZBExternalSwitchTypeCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            242: {
+                # <SimpleDescriptor endpoint=242 profile=41440 device_type=0x0061
+                # input_clusters=[]
+                # output_clusters=[0x0021]
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        },
+    }
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaWithBacklightOnOffCluster,
+                    TuyaCoveringCluster,
+                    TuyaZBExternalSwitchTypeCluster,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
+                INPUT_CLUSTERS: [
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaWithBacklightOnOffCluster,
+                    TuyaCoveringCluster,
+                    TuyaZBExternalSwitchTypeCluster,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            242: {
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        },
+    }
