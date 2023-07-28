@@ -72,7 +72,7 @@ class TuyaCoveringCluster(CustomCluster, WindowCovering):
             *args,
             manufacturer=manufacturer,
             expect_reply=expect_reply,
-            tsn=tsn
+            tsn=tsn,
         )
 
 
