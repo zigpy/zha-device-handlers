@@ -257,7 +257,10 @@ class TuyaSoilSensor(CustomDevice):
         # "device_type": "0x0051",
         # "in_clusters": ["0x0000","0x0004","0x0005","0xef00"],
         # "out_clusters": ["0x000a","0x0019"]
-        MODELS_INFO: [("_TZE200_myd45weu", "TS0601")],
+        MODELS_INFO: [
+            ("_TZE200_myd45weu", "TS0601"),
+            ("_TZE200_ga1maeof", "TS0601"),
+        ],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
