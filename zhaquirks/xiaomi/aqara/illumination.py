@@ -2,6 +2,7 @@
 import logging
 
 from zigpy.profiles import zha
+import zigpy.types as types
 from zigpy.zcl.clusters.general import Basic, Identify, PowerConfiguration
 from zigpy.zcl.clusters.measurement import IlluminanceMeasurement
 from zigpy.zdo.types import NodeDescriptor
@@ -16,7 +17,12 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.xiaomi import LUMI, BasicCluster, XiaomiCustomDevice
+from zhaquirks.xiaomi import (
+    LUMI,
+    BasicCluster,
+    XiaomiAqaraE1Cluster,
+    XiaomiCustomDevice,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -29,11 +35,7 @@ class Illumination(XiaomiCustomDevice):
         # device_version=1
         # input_clusters=[0, 1, 3, 1024]
         # output_clusters=[3]>
-        MODELS_INFO: [
-            (LUMI, "lumi.sen_ill.mgl01"),
-            (LUMI, "lumi.sen_ill.agl01"),
-            ("XIAOMI", "lumi.sen_ill.mgl01"),
-        ],
+        MODELS_INFO: [(LUMI, "lumi.sen_ill.mgl01"), ("XIAOMI", "lumi.sen_ill.mgl01")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -62,6 +64,42 @@ class Illumination(XiaomiCustomDevice):
                     Identify.cluster_id,
                     IlluminanceMeasurement.cluster_id,
                     PowerConfigurationCluster,
+                ],
+                OUTPUT_CLUSTERS: [Identify.cluster_id],
+            }
+        },
+    }
+
+
+class OppleCluster(XiaomiAqaraE1Cluster):
+    """Opple cluster with configurable detection interval."""
+
+    ep_attribute = "opple_cluster"
+    attributes = {
+        0x0000: ("detection_interval", types.uint16_t, True),
+    }
+
+
+class IlluminationT1(XiaomiCustomDevice):
+    """Aqara LUMI T1 illumination sensor with configurable detection interval."""
+
+    signature = {
+        MODELS_INFO: [(LUMI, "lumi.sen_ill.agl01")],
+        ENDPOINTS: Illumination.signature[ENDPOINTS],
+    }
+
+    replacement = {
+        NODE_DESCRIPTOR: Illumination.replacement[NODE_DESCRIPTOR],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.LIGHT_SENSOR,
+                INPUT_CLUSTERS: [
+                    BasicCluster,
+                    Identify.cluster_id,
+                    IlluminanceMeasurement.cluster_id,
+                    PowerConfigurationCluster,
+                    OppleCluster,
                 ],
                 OUTPUT_CLUSTERS: [Identify.cluster_id],
             }
