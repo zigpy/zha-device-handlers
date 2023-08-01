@@ -34,8 +34,8 @@ class ColorClusterTerncy(CustomCluster, Color):
     }
 
 
-class LuminousElement(CustomDevice):
-    """System call, generate luminous element. Adhere."""
+class TerncyLightCCT(CustomDevice):
+    """Terncy Light CCT device."""
 
     signature = {
         MODELS_INFO: [("Xiaoyan", "CL001")],
