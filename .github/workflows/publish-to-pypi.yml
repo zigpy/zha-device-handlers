@@ -10,3 +10,5 @@ jobs:
     uses: zigpy/workflows/.github/workflows/publish-to-pypi.yml@main
     with:
       PYTHON_VERSION_DEFAULT: 3.9.15
+    secrets:
+      PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
