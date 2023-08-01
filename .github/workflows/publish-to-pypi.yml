@@ -1,30 +1,12 @@
-name: Publish distributions to PyPI and TestPyPI
-on: push
+name: Publish distributions to PyPI
+
+on:
+  release:
+    types:
+      - released
 
 jobs:
-  build-and-publish:
-    name: Build and publish distributions to PyPI and TestPyPI
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-    - name: Set up Python 3.9
-      uses: actions/setup-python@v4
-      with:
-        version: 3.9
-    - name: Install wheel
-      run: >-
-        pip install wheel
-    - name: Build
-      run: >-
-        python3 setup.py sdist bdist_wheel
-    - name: Publish distribution to Test PyPI
-      if: startsWith(github.event.ref, 'refs/tags')
-      uses: pypa/gh-action-pypi-publish@release/v1
-      with:
-        password: ${{ secrets.PYPI_TEST_TOKEN }}
-        repository_url: https://test.pypi.org/legacy/
-    - name: Publish distribution to PyPI
-      if: startsWith(github.event.ref, 'refs/tags')
-      uses: pypa/gh-action-pypi-publish@release/v1
-      with:
-        password: ${{ secrets.PYPI_TOKEN }}
+  shared-ci:
+    uses: zigpy/workflows/.github/workflows/publish-to-pypi.yml@main
+    with:
+      PYTHON_VERSION_DEFAULT: 3.9.15
