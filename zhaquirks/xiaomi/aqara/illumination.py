@@ -1,8 +1,8 @@
-"""Quirk for lumi.sen_ill.mgl01 illumination sensor."""
+"""Quirk for Aqara illumination sensor."""
 import logging
 
 from zigpy.profiles import zha
-from zigpy.zcl.clusters.general import Basic, Identify
+from zigpy.zcl.clusters.general import Basic, Identify, PowerConfiguration
 from zigpy.zcl.clusters.measurement import IlluminanceMeasurement
 from zigpy.zdo.types import NodeDescriptor
 
@@ -22,23 +22,27 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class Illumination(XiaomiCustomDevice):
-    """Aqara LUMI lumi.sen_ill.mgl01."""
+    """Aqara LUMI illumination sensor."""
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=262
         # device_version=1
-        # input_clusters=[0, 1024, 3, 1]
+        # input_clusters=[0, 1, 3, 1024]
         # output_clusters=[3]>
-        MODELS_INFO: [(LUMI, "lumi.sen_ill.mgl01"), ("XIAOMI", "lumi.sen_ill.mgl01")],
+        MODELS_INFO: [
+            (LUMI, "lumi.sen_ill.mgl01"),
+            (LUMI, "lumi.sen_ill.agl01"),
+            ("XIAOMI", "lumi.sen_ill.mgl01"),
+        ],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.LIGHT_SENSOR,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
+                    PowerConfiguration.cluster_id,
                     Identify.cluster_id,
                     IlluminanceMeasurement.cluster_id,
-                    PowerConfigurationCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Identify.cluster_id],
             }
