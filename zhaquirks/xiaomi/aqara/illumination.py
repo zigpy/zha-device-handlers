@@ -28,7 +28,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class Illumination(XiaomiCustomDevice):
-    """Aqara LUMI illumination sensor."""
+    """Aqara LUMI lumi.sen_ill.mgl01 illumination sensor."""
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=262
