@@ -3,7 +3,7 @@ name: Publish distributions to PyPI
 on:
   release:
     types:
-      - released
+      - published
 
 jobs:
   shared-build-and-publish:
