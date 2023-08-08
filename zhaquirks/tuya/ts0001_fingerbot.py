@@ -19,7 +19,6 @@ from zhaquirks.tuya.mcu import (
     EnchantedDevice,
     TuyaMCUCluster,
     TuyaOnOff,
-    TuyaEnchantableCluster,
 )
 
 
@@ -34,7 +33,7 @@ class FingerBotReverse(t.enum8):
     UP_OFF = 0x01
 
 
-class TuyaFingerbotCluster(TuyaEnchantableCluster, TuyaMCUCluster):
+class TuyaFingerbotCluster(TuyaMCUCluster):
     attributes = TuyaMCUCluster.attributes.copy()
     attributes.update({101: ("mode", FingerBotMode)})
     attributes.update({102: ("down_movement", t.uint16_t)})
@@ -134,9 +133,7 @@ class TuyaFingerbot(EnchantedDevice):
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    TuyaOnOff.cluster_id,
+                    TuyaOnOff,
                     TuyaFingerbotCluster,
                 ],
                 OUTPUT_CLUSTERS: [
