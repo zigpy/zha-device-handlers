@@ -42,8 +42,8 @@ class XiaomiAqaraT1Cluster(XiaomiAqaraE1Cluster):
     }
 
 
-class SwitchN0AGL1(XiaomiCustomDevice):
-    """lumi.switch.n0agl1 switch."""
+class SwitchT1(XiaomiCustomDevice):
+    """Aqara T1 relay switch."""
 
     signature = {
         MODELS_INFO: [(LUMI, "lumi.switch.n0agl1"), (LUMI, "lumi.switch.n0acn2")],
@@ -138,8 +138,8 @@ class SwitchN0AGL1(XiaomiCustomDevice):
     }
 
 
-class SwitchN0AGL1Alt1(SwitchN0AGL1):
-    """lumi.switch.n0agl1 switch with alternative signature."""
+class SwitchT1Alt1(SwitchT1):
+    """Aqara T1 relay switch with alternative signature."""
 
     signature = {
         MODELS_INFO: [(LUMI, "lumi.switch.n0agl1"), (LUMI, "lumi.switch.n0acn2")],
