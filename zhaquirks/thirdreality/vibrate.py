@@ -1,4 +1,5 @@
 """Third Reality vibrate devices."""
+from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, Ota, PowerConfiguration
 from zhaquirks import CustomCluster
@@ -28,14 +29,14 @@ class ThirdRealityAccelCluster(CustomCluster):
     }
 
 class Vibrate(CustomDevice):
-    """thirdreality vibrate device - alternate version."""
+    """thirdreality vibrate device."""
 
     signature = {
         MODELS_INFO: [(THIRD_REALITY, "3RVS01031Z")],
         ENDPOINTS: {
             1: {
-                PROFILE_ID: 0x0104,
-                DEVICE_TYPE: 0x0402,
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
@@ -51,7 +52,8 @@ class Vibrate(CustomDevice):
     replacement = {
         ENDPOINTS: {
             1: {
-                DEVICE_TYPE: 0x0402,
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
