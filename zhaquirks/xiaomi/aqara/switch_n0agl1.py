@@ -1,5 +1,6 @@
+"""Aqara T1 (with neutral) relays."""
 from zigpy import types as t
-from zigpy.profiles import zha
+from zigpy.profiles import zgp, zha
 from zigpy.zcl.clusters.general import (
     Alarms,
     AnalogInput,
@@ -42,7 +43,7 @@ class XiaomiAqaraT1Cluster(XiaomiAqaraE1Cluster):
 
 
 class SwitchN0AGL1(XiaomiCustomDevice):
-    """lumi.switch.n0agl1 switch"""
+    """lumi.switch.n0agl1 switch."""
 
     signature = {
         MODELS_INFO: [(LUMI, "lumi.switch.n0agl1"), (LUMI, "lumi.switch.n0acn2")],
@@ -58,9 +59,11 @@ class SwitchN0AGL1(XiaomiCustomDevice):
                     Scenes.cluster_id,
                     Alarms.cluster_id,
                     Time.cluster_id,
-                    0xFCC0,
+                    XiaomiAqaraT1Cluster.cluster_id,
                 ],
-                OUTPUT_CLUSTERS: [Ota.cluster_id],
+                OUTPUT_CLUSTERS: [
+                    Ota.cluster_id,
+                ],
             },
             21: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -81,8 +84,8 @@ class SwitchN0AGL1(XiaomiCustomDevice):
                 OUTPUT_CLUSTERS: [],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 0x0061,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
@@ -126,8 +129,8 @@ class SwitchN0AGL1(XiaomiCustomDevice):
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 0x0061,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
@@ -136,7 +139,7 @@ class SwitchN0AGL1(XiaomiCustomDevice):
 
 
 class SwitchN0AGL1Alt1(SwitchN0AGL1):
-    """lumi.switch.n0agl1 switch with alternative signature"""
+    """lumi.switch.n0agl1 switch with alternative signature."""
 
     signature = {
         MODELS_INFO: [(LUMI, "lumi.switch.n0agl1"), (LUMI, "lumi.switch.n0acn2")],
@@ -152,9 +155,13 @@ class SwitchN0AGL1Alt1(SwitchN0AGL1):
                     Scenes.cluster_id,
                     Alarms.cluster_id,
                     Time.cluster_id,
-                    0xFCC0,
+                    XiaomiAqaraT1Cluster.cluster_id,
                 ],
-                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id, 0xFFFF],
+                OUTPUT_CLUSTERS: [
+                    Time.cluster_id,
+                    Ota.cluster_id,
+                    0xFFFF,
+                ],
             },
             21: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -175,8 +182,8 @@ class SwitchN0AGL1Alt1(SwitchN0AGL1):
                 OUTPUT_CLUSTERS: [],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 0x0061,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
