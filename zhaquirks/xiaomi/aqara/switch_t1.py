@@ -189,5 +189,3 @@ class SwitchN0AGL1Alt1(SwitchN0AGL1):
             },
         },
     }
-
-    replacement = SwitchN0AGL1.replacement
