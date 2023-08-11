@@ -16,7 +16,7 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
 from zigpy.zcl.clusters.manufacturer_specific import ManufacturerSpecificCluster
-from zigpy.zcl.foundation import ZCLAttributeDef, ZCLCommandDef
+from zigpy.zcl.foundation import ZCLCommandDef
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -207,24 +207,26 @@ class DanfossThermostatCluster(CustomCluster, Thermostat):
     """Danfoss cluster for ZCL attributes and forwarding proprietary the attributes."""
 
     server_commands = Thermostat.server_commands.copy()
-    server_commands.update({
-        0x40: ZCLCommandDef(
-            "setpoint_command",
-            # Types
-            # 0: Schedule (relatively slow)
-            # 1: User Interaction (aggressive change)
-            # 2: Preheat (invisible to user)
-            {"type": t.enum8, "heating_setpoint": t.int16s},
-            is_manufacturer_specific=True,
-        ),
-        # for synchronizing multiple TRVs preheating
-        0x42: ZCLCommandDef(
-            "preheat_command",
-            # Force: 0 means force, other values for future needs
-            {"force": t.enum8, "timestamp": t.uint32_t},
-            is_manufacturer_specific=True,
-        ),
-    })
+    server_commands.update(
+        {
+            0x40: ZCLCommandDef(
+                "setpoint_command",
+                # Types
+                # 0: Schedule (relatively slow)
+                # 1: User Interaction (aggressive change)
+                # 2: Preheat (invisible to user)
+                {"type": t.enum8, "heating_setpoint": t.int16s},
+                is_manufacturer_specific=True,
+            ),
+            # for synchronizing multiple TRVs preheating
+            0x42: ZCLCommandDef(
+                "preheat_command",
+                # Force: 0 means force, other values for future needs
+                {"force": t.enum8, "timestamp": t.uint32_t},
+                is_manufacturer_specific=True,
+            ),
+        }
+    )
 
     attributes = Thermostat.attributes.copy()
     attributes.update(danfoss_thermostat_attr)
