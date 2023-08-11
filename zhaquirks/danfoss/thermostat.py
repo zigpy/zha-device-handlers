@@ -65,12 +65,12 @@ danfoss_thermostat_attr = {
     0x404F: ("preheat_status", t.Bool, "rp"),
     0x4050: ("preheat_time", t.uint32_t, "rp"),
     # Danfoss deviated heavily from the spec with this one
-    0x0025: ZCLAttributeDef("trv_operation_mode", type=t.bitmap8, access="rpw"),
+    0x0025: ("programing_oper_mode", t.bitmap8, "rpw"),
     # We need a convenient way to access this, so we create our own attribute
-    0x41FF: ZCLAttributeDef(
+    0x41FF: (
         "occupied_heating_setpoint_scheduled",
-        type=DanfossOperationModeEnum,
-        access="rpw",
+        DanfossOperationModeEnum,
+        "rpw",
     ),
 }
 # ZCL Attributes Supported:
@@ -207,7 +207,7 @@ class DanfossThermostatCluster(CustomCluster, Thermostat):
     """Danfoss cluster for ZCL attributes and forwarding proprietary the attributes."""
 
     server_commands = Thermostat.server_commands.copy()
-    server_commands = {
+    server_commands.update({
         0x40: ZCLCommandDef(
             "setpoint_command",
             # Types
@@ -224,7 +224,7 @@ class DanfossThermostatCluster(CustomCluster, Thermostat):
             {"force": t.enum8, "timestamp": t.uint32_t},
             is_manufacturer_specific=True,
         ),
-    }
+    })
 
     attributes = Thermostat.attributes.copy()
     attributes.update(danfoss_thermostat_attr)
