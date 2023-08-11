@@ -40,12 +40,7 @@ from zhaquirks.const import (
     TURN_OFF,
     TURN_ON,
 )
-from zhaquirks.ikea import (
-    IKEA,
-    IKEA_CLUSTER_ID,
-    LightLinkCluster,
-    PowerConfiguration1CRCluster,
-)
+from zhaquirks.ikea import IKEA, IKEA_CLUSTER_ID, DoublingPowerConfig1CRCluster
 
 
 class IkeaTradfriRemote2Btn(CustomDevice):
@@ -90,11 +85,11 @@ class IkeaTradfriRemote2Btn(CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.NON_COLOR_CONTROLLER,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    PowerConfiguration1CRCluster,
+                    DoublingPowerConfig1CRCluster,
                     Identify.cluster_id,
                     Alarms.cluster_id,
                     PollControl.cluster_id,
-                    LightLinkCluster,
+                    LightLink.cluster_id,
                     IKEA_CLUSTER_ID,
                 ],
                 OUTPUT_CLUSTERS: [
@@ -146,7 +141,7 @@ class IkeaTradfriRemote2BtnZLL(CustomDevice):
         # device_version=248
         # input_clusters=[0, 1, 3, 9, 258, 4096, 64636]
         # output_clusters=[3, 4, 6, 8, 25, 258, 4096]>
-        MODELS_INFO: IkeaTradfriRemote2Btn.signature[MODELS_INFO].copy(),
+        MODELS_INFO: [(IKEA, "TRADFRI on/off switch")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zll.PROFILE_ID,
@@ -160,25 +155,41 @@ class IkeaTradfriRemote2BtnZLL(CustomDevice):
                     LightLink.cluster_id,
                     IKEA_CLUSTER_ID,
                 ],
-                OUTPUT_CLUSTERS: IkeaTradfriRemote2Btn.signature[ENDPOINTS][1][
-                    OUTPUT_CLUSTERS
-                ].copy(),
+                OUTPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                    Ota.cluster_id,
+                    WindowCovering.cluster_id,
+                    LightLink.cluster_id,
+                ],
             }
         },
     }
-    signature[ENDPOINTS][1][INPUT_CLUSTERS].append(WindowCovering.cluster_id)
 
     replacement = {
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zll.PROFILE_ID,
                 DEVICE_TYPE: zll.DeviceType.CONTROLLER,
-                INPUT_CLUSTERS: IkeaTradfriRemote2Btn.replacement[ENDPOINTS][1][
-                    INPUT_CLUSTERS
-                ].copy(),
-                OUTPUT_CLUSTERS: IkeaTradfriRemote2Btn.replacement[ENDPOINTS][1][
-                    OUTPUT_CLUSTERS
-                ].copy(),
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    DoublingPowerConfig1CRCluster,
+                    Identify.cluster_id,
+                    Alarms.cluster_id,
+                    LightLink.cluster_id,
+                    IKEA_CLUSTER_ID,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                    Ota.cluster_id,
+                    WindowCovering.cluster_id,
+                    LightLink.cluster_id,
+                ],
             }
         }
     }

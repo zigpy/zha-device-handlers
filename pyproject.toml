@@ -1,0 +1,201 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel", "setuptools-git-versioning<2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "zha-quirks"
+dynamic = ["version"]
+description = "Library implementing Zigpy quirks for ZHA in Home Assistant"
+urls = {repository = "https://github.com/zigpy/zha-device-handlers"}
+authors = [
+    {name = "David F. Mulcahey", email = "david.mulcahey@icloud.com"}
+]
+readme = "README.md"
+license = {text = "Apache License Version 2.0"}
+requires-python = ">=3.8"
+dependencies = [
+    "zigpy>=0.56.0",
+]
+
+[tool.setuptools.packages.find]
+exclude = ["tests", "tests.*"]
+
+[project.optional-dependencies]
+testing = [
+    "pytest",
+]
+
+[tool.setuptools-git-versioning]
+enabled = true
+
+[tool.isort]
+# https://github.com/timothycrosley/isort
+# https://github.com/timothycrosley/isort/wiki/isort-Settings
+# splits long import on multiple lines indented by 4 spaces
+profile = "black"
+# by default isort don't check module indexes
+not_skip = ["__init__.py"]
+# will group `import x` and `from x import` of the same module.
+force_sort_within_sections = true
+sections = ["FUTURE", "STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
+default_section = "THIRDPARTY"
+known_first_party = ["zhaquirks", "tests"]
+forced_separate = "tests"
+combine_as_imports = true
+use_parentheses = true
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+line_length = 88
+indent = "    "
+
+[tool.mypy]
+python_version = "3.9"
+check_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_untyped_calls = true
+disallow_untyped_defs = true
+follow_imports = "silent"
+ignore_missing_imports = true
+no_implicit_optional = true
+strict_equality = true
+warn_incomplete_stub = true
+warn_redundant_casts = true
+warn_return_any = true
+warn_unreachable = true
+warn_unused_configs = true
+warn_unused_ignores = true
+show_error_codes = true
+show_error_context = true
+error_summary = true
+
+install_types = true
+non_interactive = true
+
+disable_error_code = [
+    "arg-type",
+    "assignment",
+    "attr-defined",
+    "call-arg",
+    "dict-item",
+    "index",
+    "misc",
+    "no-any-return",
+    "no-untyped-call",
+    "no-untyped-def",
+    "override",
+    "return-value",
+    "union-attr",
+    "var-annotated",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = "tests"
+norecursedirs = ".git testing_config"
+
+[tool.flake8]
+exclude = [".venv", ".git", ".tox", "docs", "venv", "bin", "lib", "deps", "build"]
+# To work with Black
+max-line-length = 88
+ignore = [
+    "E501",  # E501: line too long
+    "W503",  # W503: Line break occurred before a binary operator
+    "E203",  # E203: Whitespace before ':'
+    "D202",  # D202 No blank lines allowed after function docstring
+]
+
+[tool.autoflake]
+in-place = true
+recursive = false
+expand-star-imports = false
+exclude = [".venv", ".git", ".tox", "docs", "venv", "bin", "lib", "deps", "build"]
+
+[tool.pydocstyle]
+ignore = [
+    "D202",
+    "D203",
+    "D213",
+]
+
+[tool.pyupgrade]
+py37plus = true
+
+[tool.codespell]
+exclude = "pyproject.toml"
+ignore-words-list = "hass,dout"
+skip = "./.*,test/*"
+quiet-level = 2
+
+[tool.ruff]
+target-version = "py38"
+
+select = [
+    "B007", # Loop control variable {name} not used within loop body
+    "B014", # Exception handler with duplicate exception
+    "C",  # complexity
+    "D",  # docstrings
+    "E",  # pycodestyle
+    "F",  # pyflakes/autoflake
+    "ICN001", # import concentions; {name} should be imported as {asname}
+    "PGH004",  # Use specific rule codes when using noqa
+    "PLC0414", # Useless import alias. Import alias does not rename original package.
+    "SIM105", # Use contextlib.suppress({exception}) instead of try-except-pass
+    "SIM117", # Merge with-statements that use the same scope
+    "SIM118", # Use {key} in {dict} instead of {key} in {dict}.keys()
+    "SIM201", # Use {left} != {right} instead of not {left} == {right}
+    "SIM212", # Use {a} if {a} else {b} instead of {b} if not {a} else {a}
+    "SIM300", # Yoda conditions. Use 'age == 42' instead of '42 == age'.
+    "SIM401", # Use get from dict with default instead of an if block
+    "T20",  # flake8-print
+    "TRY004", # Prefer TypeError exception for invalid type
+    "RUF006", # Store a reference to the return value of asyncio.create_task
+    "UP",  # pyupgrade
+    "W",  # pycodestyle
+]
+
+ignore = [
+    "D100",   # Missing docstring in public module
+    "D101",   # Missing docstring in public class
+    "D102",   # Missing docstring in public method
+    "D103",   # Missing docstring in public function
+    "D104",   # Missing docstring in public package
+    "D105",   # Missing docstring in magic method
+    "D106",   # Missing docstring in public nested class
+    "D107",   # Missing docstring in `__init__`
+    "D202",   # No blank lines allowed after function docstring
+    "D203",   # 1 blank line required before class docstring
+    "D205",   # 1 blank line required between summary line and description
+    "D213",   # Multi-line docstring summary should start at the second line
+    "D400",   # First line should end with a period
+    "D401",   # First line of docstring should be in imperative mood:
+    "D406",   # Section name should end with a newline
+    "D407",   # Section name underlining
+    "D415",   # First line should end with a period, question mark, or exclamation point
+    "E501",   # line too long
+              # the rules below this line should be corrected
+    "PGH004", # Use specific rule codes when using `noqa`
+]
+
+extend-exclude = [
+    "tests"
+]
+
+[tool.ruff.flake8-pytest-style]
+fixture-parentheses = false
+
+[tool.ruff.pyupgrade]
+keep-runtime-typing = true
+
+[tool.ruff.isort]
+# will group `import x` and `from x import` of the same module.
+force-sort-within-sections = true
+known-first-party = [
+    "zhaquirks",
+    "tests",
+]
+forced-separate = ["tests"]
+combine-as-imports = true
+
+[tool.ruff.mccabe]
+max-complexity = 25

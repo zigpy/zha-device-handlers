@@ -1,0 +1,111 @@
+name: Bug report
+description: Report a bug in an existing quirk or a general issue with the project.
+title: "[BUG] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before filing an issue, please try to reproduce your problem using the latest Home Assistant release.
+        Also, search the [existing issues](https://github.com/zigpy/zha-device-handlers/issues) to see if your bug has already been reported.
+        If you have a question, please use [GitHub discussions](https://github.com/zigpy/zha-device-handlers/discussions).
+        
+        If you're using custom quirks, remove them first. Then, restart HA and check if the issue persists.
+        Lastly, make sure to give your issue a descriptive title.
+  - type: markdown
+    attributes:
+      value: |
+        # General information
+  - type: textarea
+    attributes:
+      label: Bug description
+      description: Please describe the bug you are running into.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Steps to reproduce
+      description: Please describe the steps to reproduce the bug.
+      placeholder: |
+        1. Go to '...'
+        2. Click on '....'
+        3. Scroll down to '....'
+        4. See error
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Expected behavior
+      description: Please describe what you expected to happen.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Screenshots/Video
+      description: |
+        If helpful, you can upload screenshots or a video relevant to your bug report.
+      value: |
+        <details><summary>Screenshots/Video</summary>
+
+        [Paste/upload your media here]
+
+        </details>
+  - type: markdown
+    attributes:
+      value: |
+        # Debug information
+  - type: textarea
+    attributes:
+      label: Device signature
+      description: |
+        You can find the device signature by going to the device page, clicking the three dots, clicking on "Manage Zigbee device", and then selecting the "Signature" tab at the top.
+        
+        Copy the contents and paste your device signature in between the lines with the backticks below.
+      value: |
+        <details><summary>Device signature</summary>
+
+        ```json
+        [Paste the device signature here]
+        ```
+
+        </details>
+  - type: textarea
+    attributes:
+      label: Diagnostic information
+      description: |
+        You can find the diagnostic information of the device by going to the device page, clicking the three dots, and then by clicking on "Download diagnostics".
+        
+        Copy the contents of the downloaded text file and paste it in between the lines with the backticks below.
+      value: |
+        <details><summary>Diagnostic information</summary>
+
+        ```json
+        [Paste the diagnostic information here]
+        ```
+
+        </details>
+  - type: textarea
+    attributes:
+      label: Logs
+      description: |
+        To help in resolving the issue faster, you can upload relevant logs here.
+        In some cases, it's helpful to enable debug logging, reproducing the issue again, and then uploading the logs.
+        
+        Note: To enable debug logging, see [this section](https://www.home-assistant.io/integrations/zha/#debug-logging), then restart Home Assistant, reproduce the issue again, and paste the relevant logs in between the lines with the backticks below.
+        
+        You can also enable debug logs at runtime by going to the integrations page in settings, clicking the three dots next to your ZHA integration, and selecting "Enable debug logging".
+        Reproduce the issue again, click on those three dots again, and select "Disable debug logging".
+        Then, copy the relevant log parts from the downloaded file and paste them in between the lines with the backticks below.
+      value: |
+        <details><summary>Logs</summary>
+
+        ```python
+        [Paste the logs here]
+        ```
+
+        </details>
+  - type: textarea
+    attributes:
+      label: Additional information
+      description: |
+        If you have additional information or context about the problem, provide it here.
+        For example, if this issue only started with a specific Home Assistant Core release, please mention the last known working release.

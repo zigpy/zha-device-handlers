@@ -29,7 +29,7 @@ from zhaquirks.const import (
     TRIPLE_PRESS,
     VALUE,
     ZHA_SEND_EVENT,
-    ZONE_STATE,
+    ZONE_STATUS_CHANGE_COMMAND,
 )
 
 CLICK_TYPES = {1: "single", 2: "double", 3: "triple", 4: "quadruple", 5: "quintuple"}
@@ -91,7 +91,9 @@ class MotionCluster(LocalDataCluster, _Motion):
 
     def motion_event(self):
         """Motion event."""
-        super().listener_event(CLUSTER_COMMAND, 254, ZONE_STATE, [ON, 0, 0, 0])
+        super().listener_event(
+            CLUSTER_COMMAND, 254, ZONE_STATUS_CHANGE_COMMAND, [ON, 0, 0, 0]
+        )
 
         if self._timer_handle:
             self._timer_handle.cancel()
@@ -166,7 +168,7 @@ class TerncyRawCluster(CustomCluster):
             if state > 5:
                 state = 5
             event_args = {PRESS_TYPE: CLICK_TYPES[state], "count": count, VALUE: state}
-            action = "button_{}".format(CLICK_TYPES[state])
+            action = f"button_{CLICK_TYPES[state]}"
             self.listener_event(ZHA_SEND_EVENT, action, event_args)
         elif hdr.command_id == 4:  # motion event
             state = args[2]

@@ -50,7 +50,7 @@ LEVEL_EVENT = "level_event"
 TUYA_MCU_COMMAND = "tuya_mcu_command"
 
 # Rotating for remotes
-STOP = "stop"  # To constans
+STOP = "stop"  # To constants
 
 # ---------------------------------------------------------
 # Value for dp_type
@@ -153,7 +153,7 @@ class TuyaData(t.Struct):
     def payload(
         self,
     ) -> Union[
-        t.uint32_t_be,
+        t.int32s_be,
         t.Bool,
         t.CharacterString,
         t.enum8,
@@ -164,7 +164,7 @@ class TuyaData(t.Struct):
     ]:
         """Payload accordingly to data point type."""
         if self.dp_type == TuyaDPType.VALUE:
-            return t.uint32_t_be.deserialize(self.raw)[0]
+            return t.int32s_be.deserialize(self.raw)[0]
         elif self.dp_type == TuyaDPType.BOOL:
             return t.Bool.deserialize(self.raw)[0]
         elif self.dp_type == TuyaDPType.STRING:
@@ -186,7 +186,7 @@ class TuyaData(t.Struct):
     def payload(self, value):
         """Set payload accordingly to data point type."""
         if self.dp_type == TuyaDPType.VALUE:
-            self.raw = t.uint32_t_be(value).serialize()
+            self.raw = t.int32s_be(value).serialize()
         elif self.dp_type == TuyaDPType.BOOL:
             self.raw = t.Bool(value).serialize()
         elif self.dp_type == TuyaDPType.STRING:
@@ -216,7 +216,7 @@ class TuyaData(t.Struct):
             self.dp_type = TuyaDPType.BITMAP
         elif isinstance(value, (bool, t.Bool)):
             self.dp_type = TuyaDPType.BOOL
-        elif isinstance(value, enum.Enum):
+        elif isinstance(value, enum.Enum):  # type: ignore # noqa
             self.dp_type = TuyaDPType.ENUM
         elif isinstance(value, int):
             self.dp_type = TuyaDPType.VALUE
@@ -231,22 +231,44 @@ class TuyaData(t.Struct):
 class Data(t.List, item_type=t.uint8_t):
     """list of uint8_t."""
 
-    @classmethod
-    def from_value(cls, value):
+    def __init__(self, value=None):
         """Convert from a zigpy typed value to a tuya data payload."""
+        if value is None:
+            super().__init__()
+            return
+        if type(value) is list or type(value) is bytes:
+            super().__init__(value)
+            return
         # serialized in little-endian by zigpy
-        data = cls(value.serialize())
+        super().__init__(value.serialize())
         # we want big-endian, with length prepended
-        data.append(len(data))
-        data.reverse()
-        return data
+        self.append(len(self))
+        self.reverse()
 
-    def to_value(self, ztype):
-        """Convert from a tuya data payload to a zigpy typed value."""
+    def __int__(self):
+        """Convert from a tuya data payload to an int typed value."""
         # first uint8_t is the length of the remaining data
         # tuya data is in big endian whereas ztypes use little endian
-        value, _ = ztype.deserialize(bytes(reversed(self[1:])))
-        return value
+        ints = {
+            1: t.int8s,
+            2: t.int16s,
+            3: t.int24s,
+            4: t.int32s,
+            5: t.int40s,
+            6: t.int48s,
+            7: t.int56s,
+            8: t.int64s,
+        }
+        return ints[self[0]].deserialize(bytes(reversed(self[1:])))[0]
+
+    def __iter__(self):
+        """Convert from a tuya data payload to a list typed value."""
+        return iter(reversed(self[1:]))
+
+    def serialize(self) -> bytes:
+        """Overload serialize to avoid prior implicit conversion to list."""
+        assert self._item_type is not None
+        return b"".join([self._item_type(i).serialize() for i in self[:]])
 
 
 class TuyaDatapointData(t.Struct):
@@ -469,7 +491,7 @@ class TuyaManufClusterAttributes(TuyaManufCluster):
             return
 
         ztype = self.attributes[tuya_cmd].type
-        zvalue = tuya_data.to_value(ztype)
+        zvalue = ztype(tuya_data)
         self._update_attribute(tuya_cmd, zvalue)
 
     def read_attributes(
@@ -492,7 +514,7 @@ class TuyaManufClusterAttributes(TuyaManufCluster):
             cmd_payload.tsn = self.endpoint.device.application.get_sequence()
             cmd_payload.command_id = record.attrid
             cmd_payload.function = 0
-            cmd_payload.data = Data.from_value(record.value.value)
+            cmd_payload.data = record.value.value
 
             await super().command(
                 TUYA_SET_DATA,
@@ -505,7 +527,47 @@ class TuyaManufClusterAttributes(TuyaManufCluster):
         return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
 
-class TuyaOnOff(CustomCluster, OnOff):
+class TuyaEnchantableCluster(CustomCluster):
+    """Tuya cluster that casts a magic spell if `TUYA_SPELL` is set.
+
+    Preferably, make the device inherit from `EnchantedDevice` and use a subclass of this class in the replacement.
+
+    This will only work for clusters that ZHA calls bind() on.
+    At the moment, ZHA does NOT do this for:
+    - Basic cluster
+    - Identify cluster
+    - Groups cluster
+    - OTA cluster
+    - GreenPowerProxy cluster
+    - LightLink cluster
+    - non-registered manufacturer specific clusters
+    - clusters which would be bound, but that changed their ep_attribute
+
+    Make sure to add a subclass of TuyaEnchantableCluster to the quirk replacement. Tests will fail if this is not done.
+    Classes like TuyaOnOff, TuyaZBOnOffAttributeCluster, TuyaSmartRemoteOnOffCluster already inherit from this class.
+    """
+
+    async def bind(self):
+        """Bind cluster and start casting the spell if necessary."""
+        # check if the device needs to have the spell cast
+        # and since the cluster can be used on multiple endpoints, check that it's endpoint 1
+        if (
+            getattr(self.endpoint.device, "TUYA_SPELL", False)
+            and self.endpoint.endpoint_id == 1
+        ):
+            await self.spell()
+        return await super().bind()
+
+    async def spell(self):
+        """Cast spell, so the Tuya device works correctly."""
+        self.debug("Executing spell on Tuya device %s", self.endpoint.device.ieee)
+        attr_to_read = [4, 0, 1, 5, 7, 0xFFFE]
+        basic_cluster = self.endpoint.device.endpoints[1].in_clusters[0]
+        await basic_cluster.read_attributes(attr_to_read)
+        self.debug("Executed spell on Tuya device %s", self.endpoint.device.ieee)
+
+
+class TuyaOnOff(TuyaEnchantableCluster, OnOff):
     """Tuya On/Off cluster for On/Off device."""
 
     def __init__(self, *args, **kwargs):
@@ -809,6 +871,31 @@ class TuyaLocalCluster(LocalDataCluster):
         return self._update_attribute(attr.id, value)
 
 
+class _TuyaNoBindPowerConfigurationCluster(CustomCluster, PowerConfiguration):
+    """PowerConfiguration cluster that prevents setting up binding/attribute reports in order to stop battery drain.
+
+    Note: Use the `TuyaNoBindPowerConfigurationCluster` class instead of this one.
+    """
+
+    async def bind(self):
+        """Prevent bind."""
+        return (foundation.Status.SUCCESS,)
+
+    async def _configure_reporting(self, *args, **kwargs):  # pylint: disable=W0221
+        """Prevent remote configure reporting."""
+        return (foundation.ConfigureReportingResponse.deserialize(b"\x00")[0],)
+
+
+# these classes are needed, so the execution order of bind() is still correct
+class TuyaNoBindPowerConfigurationCluster(
+    TuyaEnchantableCluster, _TuyaNoBindPowerConfigurationCluster
+):
+    """PowerConfiguration cluster that prevents setting up binding/attribute reports in order to stop battery drain.
+
+    This class is also enchantable, so it will cast the Tuya spell if the device inherits from `EnchantedDevice`.
+    """
+
+
 class TuyaPowerConfigurationCluster(PowerConfiguration, TuyaLocalCluster):
     """PowerConfiguration cluster for battery-operated thermostats."""
 
@@ -899,7 +986,7 @@ class PowerOnState(t.enum8):
     LastState = 0x02
 
 
-class TuyaZBOnOffAttributeCluster(CustomCluster, OnOff):
+class TuyaZBOnOffAttributeCluster(TuyaEnchantableCluster, OnOff):
     """Tuya Zigbee On Off cluster with extra attributes."""
 
     attributes = OnOff.attributes.copy()

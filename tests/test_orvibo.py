@@ -6,7 +6,7 @@ from unittest import mock
 import pytest
 
 import zhaquirks
-from zhaquirks.const import OFF, ON, ZONE_STATE
+from zhaquirks.const import OFF, ON, ZONE_STATUS_CHANGE_COMMAND
 import zhaquirks.orvibo.motion
 
 from tests.common import ZCL_IAS_MOTION_COMMAND, ClusterListener
@@ -15,7 +15,7 @@ zhaquirks.setup()
 
 
 @pytest.mark.parametrize("quirk", (zhaquirks.orvibo.motion.SN10ZW,))
-async def test_konke_motion(zigpy_device_from_quirk, quirk):
+async def test_orvibo_motion(zigpy_device_from_quirk, quirk):
     """Test Orvibo motion sensor."""
 
     motion_dev = zigpy_device_from_quirk(quirk)
@@ -35,7 +35,7 @@ async def test_konke_motion(zigpy_device_from_quirk, quirk):
 
     assert len(motion_listener.cluster_commands) == 1
     assert len(motion_listener.attribute_updates) == 0
-    assert motion_listener.cluster_commands[0][1] == ZONE_STATE
+    assert motion_listener.cluster_commands[0][1] == ZONE_STATUS_CHANGE_COMMAND
     assert motion_listener.cluster_commands[0][2][0] == ON
 
     assert len(occupancy_listener.cluster_commands) == 0
@@ -46,7 +46,7 @@ async def test_konke_motion(zigpy_device_from_quirk, quirk):
     await asyncio.sleep(0.1)
 
     assert len(motion_listener.cluster_commands) == 2
-    assert motion_listener.cluster_commands[1][1] == ZONE_STATE
+    assert motion_listener.cluster_commands[1][1] == ZONE_STATUS_CHANGE_COMMAND
     assert motion_listener.cluster_commands[1][2][0] == OFF
 
     assert len(occupancy_listener.cluster_commands) == 0

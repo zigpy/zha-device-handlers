@@ -2,7 +2,7 @@
 import logging
 from typing import Dict, Optional, Union
 
-from zigpy.profiles import zha
+from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
@@ -293,7 +293,7 @@ class TuyaMCUSiren(OnOff, TuyaAttributesCluster):
                 endpoint_id=self.endpoint.endpoint_id,
                 cluster_name=self.ep_attribute,
                 cluster_attr="on_off",
-                attr_value=command_id,
+                attr_value=bool(command_id),
                 expect_reply=expect_reply,
                 manufacturer=foundation.ZCLHeader.NO_MANUFACTURER_ID,
             )
@@ -354,7 +354,10 @@ class TuyaSirenGPP_NoSensors(CustomDevice):
     signature = {
         #  endpoint=1 profile=260 device_type=81 device_version=1 input_clusters=[0, 4, 5, 61184]
         #  output_clusters=[25, 10]>
-        MODELS_INFO: [("_TZE200_t1blo2bj", "TS0601")],
+        MODELS_INFO: [
+            ("_TZE200_t1blo2bj", "TS0601"),
+            ("_TZE204_t1blo2bj", "TS0601"),
+        ],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -368,8 +371,8 @@ class TuyaSirenGPP_NoSensors(CustomDevice):
                 OUTPUT_CLUSTERS: [Ota.cluster_id, Time.cluster_id],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
@@ -391,8 +394,8 @@ class TuyaSirenGPP_NoSensors(CustomDevice):
                 OUTPUT_CLUSTERS: [Ota.cluster_id, Time.cluster_id],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },

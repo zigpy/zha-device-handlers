@@ -15,13 +15,13 @@ class ClusterListener:
         self.attribute_updates = []
         cluster.add_listener(self)
 
-    def attribute_updated(self, attr_id, value):
+    def attribute_updated(self, attr_id, value, timestamp):
         """Attribute updated listener."""
         self.attribute_updates.append((attr_id, value))
 
-    def cluster_command(self, tsn, commdand_id, args):
+    def cluster_command(self, tsn, command_id, args):
         """Command received listener."""
-        self.cluster_commands.append((tsn, commdand_id, args))
+        self.cluster_commands.append((tsn, command_id, args))
 
 
 class MockDatetime(datetime.datetime):

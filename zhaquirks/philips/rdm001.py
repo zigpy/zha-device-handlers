@@ -84,7 +84,7 @@ class PhilipsRemoteCluster(CustomCluster):
                 "param6": t.uint8_t,
             },
             is_manufacturer_specific=True,
-            is_reply=False,
+            direction=foundation.Direction.Server_to_Client,
         )
     }
     BUTTONS = {

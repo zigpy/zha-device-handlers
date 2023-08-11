@@ -52,6 +52,8 @@ _LOGGER = logging.getLogger(__name__)
 class SiterwellManufCluster(TuyaManufClusterAttributes):
     """Manufacturer Specific Cluster of some thermostatic valves."""
 
+    set_time_offset = 1970
+
     attributes = TuyaManufClusterAttributes.attributes.copy()
     attributes.update(
         {
@@ -513,7 +515,6 @@ class MoesThermostat(TuyaThermostatCluster):
         if attribute in self.WORKDAY_SCHEDULE_ATTRS:
             data = data144()
             for num, (attr, default) in enumerate(self.WORKDAY_SCHEDULE_ATTRS.items()):
-
                 if num % 3 == 0:
                     if attr == attribute:
                         val = round(value / 100)
@@ -537,7 +538,6 @@ class MoesThermostat(TuyaThermostatCluster):
         if attribute in self.WEEKEND_SCHEDULE_ATTRS:
             data = data144()
             for num, (attr, default) in enumerate(self.WEEKEND_SCHEDULE_ATTRS.items()):
-
                 if num % 3 == 0:
                     if attr == attribute:
                         val = round(value / 100)
@@ -872,7 +872,6 @@ class MoesWindowDetection(LocalDataCluster, OnOff):
         """Override the default Cluster command."""
 
         if command_id in (0x0000, 0x0001, 0x0002):
-
             if command_id == 0x0000:
                 value = False
             elif command_id == 0x0001:
@@ -1255,7 +1254,6 @@ class ZONNSMARTHelperOnOff(LocalDataCluster, OnOff):
         """Override the default Cluster command."""
 
         if command_id in (0x0000, 0x0001, 0x0002):
-
             if command_id == 0x0000:
                 value = False
             elif command_id == 0x0001:
@@ -1473,6 +1471,7 @@ class SiterwellGS361_Type2(TuyaThermostat):
             ("_TZE200_8daqwrsj", "TS0601"),
             ("_TZE200_czk78ptr", "TS0601"),
             ("_TZE200_2cs6g9i7", "TS0601"),  # Brennenstuhl Zigbee Connect 01
+            ("_TZE200_04yfvweb", "TS0601"),  # Appartme APRM-04-001
         ],
         ENDPOINTS: {
             1: {
@@ -1620,6 +1619,11 @@ class MoesHY368_Type1new(TuyaThermostat):
 
 class MoesHY368_Type2(TuyaThermostat):
     """MoesHY368 Thermostatic radiator valve (2nd cluster signature)."""
+
+    def __init__(self, *args, **kwargs):
+        """Init device."""
+        self.window_detection_bus = Bus()
+        super().__init__(*args, **kwargs)
 
     signature = {
         #  endpoint=1 profile=260 device_type=0 device_version=0 input_clusters=[0, 3]

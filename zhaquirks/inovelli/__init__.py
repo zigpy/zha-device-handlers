@@ -108,11 +108,14 @@ class Inovelli_VZM31SN_Cluster(CustomCluster):
             0x0014: ("active_energy_reports", t.uint16_t, True),
             0x0015: ("power_type", t.uint8_t, True),
             0x0016: ("switch_type", t.uint8_t, True),
+            0x0019: ("increased_non_neutral_output", t.Bool, True),
             0x0032: ("button_delay", t.uint8_t, True),
             0x0033: ("device_bind_number", t.uint8_t, True),
             0x0034: ("smart_bulb_mode", t.Bool, True),
-            0x0035: ("double_tap_up_for_max_brightness", t.Bool, True),
-            0x0036: ("double_tap_down_for_min_brightness", t.Bool, True),
+            0x0035: ("double_tap_up_enabled", t.Bool, True),
+            0x0036: ("double_tap_down_enabled", t.Bool, True),
+            0x0037: ("double_tap_up_level", t.uint8_t, True),
+            0x0038: ("double_tap_down_level", t.uint8_t, True),
             0x003C: ("default_led1_strip_color_when_on", t.uint8_t, True),
             0x003D: ("default_led1_strip_color_when_off", t.uint8_t, True),
             0x003E: ("default_led1_strip_intensity_when_on", t.uint8_t, True),
@@ -145,6 +148,9 @@ class Inovelli_VZM31SN_Cluster(CustomCluster):
             0x0060: ("led_color_when_off", t.uint8_t, True),
             0x0061: ("led_intensity_when_on", t.uint8_t, True),
             0x0062: ("led_intensity_when_off", t.uint8_t, True),
+            0x0064: ("led_scaling_mode", t.Bool, True),
+            0x007B: ("aux_switch_scenes", t.Bool, True),
+            0x007D: ("binding_off_to_on_sync_level", t.Bool, True),
             0x0100: ("local_protection", t.Bool, True),
             0x0101: ("remote_protection", t.Bool, True),
             0x0102: ("output_mode", t.Bool, True),
@@ -159,7 +165,7 @@ class Inovelli_VZM31SN_Cluster(CustomCluster):
         0x00: foundation.ZCLCommandDef(
             "button_event",
             {"button_pressed": t.uint8_t, "press_type": t.uint8_t},
-            is_reply=False,
+            direction=foundation.Direction.Server_to_Client,
             is_manufacturer_specific=True,
         ),
         0x01: foundation.ZCLCommandDef(
@@ -170,13 +176,13 @@ class Inovelli_VZM31SN_Cluster(CustomCluster):
                 "led_level": t.uint8_t,
                 "led_duration": t.uint8_t,
             },
-            is_reply=False,
+            direction=foundation.Direction.Server_to_Client,
             is_manufacturer_specific=True,
         ),
         0x02: foundation.ZCLCommandDef(
             "reset_energy_meter",
             {},
-            is_reply=False,
+            direction=foundation.Direction.Server_to_Client,
             is_manufacturer_specific=True,
         ),
         0x03: foundation.ZCLCommandDef(
@@ -188,7 +194,7 @@ class Inovelli_VZM31SN_Cluster(CustomCluster):
                 "led_level": t.uint8_t,
                 "led_duration": t.uint8_t,
             },
-            is_reply=False,
+            direction=foundation.Direction.Server_to_Client,
             is_manufacturer_specific=True,
         ),
         0x24: foundation.ZCLCommandDef(
@@ -196,7 +202,7 @@ class Inovelli_VZM31SN_Cluster(CustomCluster):
             {
                 "notification_type": t.uint8_t,
             },
-            is_reply=False,
+            direction=foundation.Direction.Server_to_Client,
             is_manufacturer_specific=True,
         ),
     }
@@ -241,12 +247,44 @@ class Inovelli_VZM31SN_Cluster(CustomCluster):
             return
 
 
+VZM35SN_REMOVES = [
+    0x0012,
+    0x0013,
+    0x0014,
+    0x0019,
+    0x0034,
+    0x0064,
+    0x007D,
+    0x0105,
+]
+
+
+class Inovelli_VZM35SN_Cluster(Inovelli_VZM31SN_Cluster):
+    """Inovelli VZM35-SN custom cluster."""
+
+    attributes = {
+        key: Inovelli_VZM31SN_Cluster.attributes[key]
+        for key in Inovelli_VZM31SN_Cluster.attributes
+        if key not in VZM35SN_REMOVES
+    }
+    attributes.update(
+        {
+            0x0017: ("quick_start_time", t.uint8_t, True),
+            0x001E: ("non_neutral_aux_med_gear_learn_value", t.uint8_t, True),
+            0x001F: ("non_neutral_aux_low_gear_learn_value", t.uint8_t, True),
+            0x0034: ("smart_fan_mode", t.Bool, True),
+            0x0106: ("smart_fan_led_display_levels", t.uint8_t, True),
+        }
+    )
+
+
 INOVELLI_AUTOMATION_TRIGGERS = {
     (COMMAND_PRESS, ON): {COMMAND: f"{BUTTON_2}_{COMMAND_PRESS}"},
     (COMMAND_PRESS, OFF): {COMMAND: f"{BUTTON_1}_{COMMAND_PRESS}"},
     (COMMAND_PRESS, CONFIG): {COMMAND: f"{BUTTON_3}_{COMMAND_PRESS}"},
     (COMMAND_HOLD, ON): {COMMAND: f"{BUTTON_2}_{COMMAND_HOLD}"},
     (COMMAND_HOLD, OFF): {COMMAND: f"{BUTTON_1}_{COMMAND_HOLD}"},
+    (COMMAND_HOLD, CONFIG): {COMMAND: f"{BUTTON_3}_{COMMAND_HOLD}"},
     (DOUBLE_PRESS, ON): {COMMAND: f"{BUTTON_2}_{COMMAND_DOUBLE}"},
     (DOUBLE_PRESS, CONFIG): {COMMAND: f"{BUTTON_3}_{COMMAND_DOUBLE}"},
     (DOUBLE_PRESS, OFF): {COMMAND: f"{BUTTON_1}_{COMMAND_DOUBLE}"},
@@ -261,4 +299,5 @@ INOVELLI_AUTOMATION_TRIGGERS = {
     (QUINTUPLE_PRESS, CONFIG): {COMMAND: f"{BUTTON_3}_{COMMAND_QUINTUPLE}"},
     (COMMAND_RELEASE, ON): {COMMAND: f"{BUTTON_2}_{COMMAND_RELEASE}"},
     (COMMAND_RELEASE, OFF): {COMMAND: f"{BUTTON_1}_{COMMAND_RELEASE}"},
+    (COMMAND_RELEASE, CONFIG): {COMMAND: f"{BUTTON_3}_{COMMAND_RELEASE}"},
 }

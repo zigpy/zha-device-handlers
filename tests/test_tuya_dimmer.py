@@ -127,7 +127,6 @@ async def test_write_attr(zigpy_device_from_quirk, quirk):
     with mock.patch.object(
         tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
     ) as m1:
-
         (status,) = await dimmer1_cluster.write_attributes(
             {
                 "minimum_level": 25,

@@ -86,7 +86,10 @@ class TuyaTempHumiditySensor(CustomDevice):
         # device_version=1
         # input_clusters=[4, 5, 61184, 0]
         # output_clusters=[25, 10]>
-        MODELS_INFO: [("_TZE200_bjawzodf", "TS0601")],
+        MODELS_INFO: [
+            ("_TZE200_bjawzodf", "TS0601"),
+            ("_TZE200_zl1kmjqx", "TS0601"),
+        ],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -181,6 +184,7 @@ class TuyaTempHumiditySensorVar03(CustomDevice):
             ("_TZE200_yjjdcqsq", "TS0601"),
             ("_TZE200_9yapgbuv", "TS0601"),
             ("_TZE200_qyflbnbj", "TS0601"),
+            ("_TZE200_utkemkbs", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
@@ -253,7 +257,10 @@ class TuyaSoilSensor(CustomDevice):
         # "device_type": "0x0051",
         # "in_clusters": ["0x0000","0x0004","0x0005","0xef00"],
         # "out_clusters": ["0x000a","0x0019"]
-        MODELS_INFO: [("_TZE200_myd45weu", "TS0601")],
+        MODELS_INFO: [
+            ("_TZE200_myd45weu", "TS0601"),
+            ("_TZE200_ga1maeof", "TS0601"),
+        ],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,

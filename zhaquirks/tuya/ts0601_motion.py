@@ -3,7 +3,7 @@
 import math
 from typing import Dict, Optional, Tuple, Union
 
-from zigpy.profiles import zha
+from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
@@ -191,7 +191,7 @@ class MmwRadarManufCluster(TuyaMCUCluster):
         104: DPToAttributeMapping(
             TuyaIlluminanceMeasurement.ep_attribute,
             "measured_value",
-            lambda x: 10000 * math.log10(x) + 1,
+            lambda x: 10000 * math.log10(x) + 1 if x != 0 else 0,
         ),
         105: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
@@ -302,6 +302,7 @@ class NeoMotion(CustomDevice):
         #  output_clusters=[10, 25]>
         MODELS_INFO: [
             ("_TZE200_7hfcudw5", "TS0601"),
+            ("_TZE200_ppuj1vem", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
@@ -414,8 +415,8 @@ class MmwRadarMotionGPP(CustomDevice):
                 # <SimpleDescriptor endpoint=242 profile=41440 device_type=97
                 # input_clusters=[]
                 # output_clusters=[33]
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
@@ -439,8 +440,8 @@ class MmwRadarMotionGPP(CustomDevice):
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },

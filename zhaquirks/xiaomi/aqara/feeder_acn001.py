@@ -4,7 +4,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from zigpy.profiles import zha
+from zigpy.profiles import zgp, zha
 import zigpy.types as types
 from zigpy.zcl.clusters.general import (
     Basic,
@@ -161,7 +161,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
             self._update_attribute(
                 ZCL_LAST_FEEDING_SOURCE, OppleCluster.FeedingSource(feeding_source)
             )
-            self._update_attribute(ZCL_LAST_FEEDING_SIZE, int(feeding_size))
+            self._update_attribute(ZCL_LAST_FEEDING_SIZE, int(feeding_size, base=16))
         elif attribute == PORTIONS_DISPENSED:
             portions_per_day, _ = types.uint16_t_be.deserialize(attribute_value)
             self._update_attribute(ZCL_PORTIONS_DISPENSED, portions_per_day)
@@ -266,8 +266,8 @@ class AqaraFeederAcn001(XiaomiCustomDevice):
                 ],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 0x0061,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [
                     GreenPowerProxy.cluster_id,
@@ -296,8 +296,8 @@ class AqaraFeederAcn001(XiaomiCustomDevice):
                 ],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 0x0061,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [
                     GreenPowerProxy.cluster_id,

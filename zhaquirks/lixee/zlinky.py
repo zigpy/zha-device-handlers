@@ -1,7 +1,7 @@
 """Quirk for ZLinky_TIC."""
 from copy import deepcopy
 
-from zigpy.profiles import zha
+from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl.clusters.general import (
@@ -60,6 +60,8 @@ class ZLinkyTICManufacturerCluster(CustomCluster, ManufacturerSpecificCluster):
         0x0007: ("hist_current_exceeding_warning_phase_2", t.uint16_t, True),
         # Historical mode: ADIR3 "Avertissement de Dépassement D'intensité phase 3" / Uint16 3 car
         0x0008: ("hist_current_exceeding_warning_phase_3", t.uint16_t, True),
+        # Historical mode: MOTDETAT "Etat du Linky (From V13)" / String 6 car
+        0x0009: ("linky_status", t.LimitedCharString(6), True),
         # Historical and Standard mode: "Linky acquisition time (From V7)"" / Uint8 1 car
         0x0100: ("linky_acquisition_time", t.uint8_t, True),
         # Standard mode: LTARF "Libellé tarif fournisseur en cours" / String 16 car
@@ -164,8 +166,8 @@ class ZLinkyTIC(CustomDevice):
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 0x0061,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
@@ -188,8 +190,8 @@ class ZLinkyTIC(CustomDevice):
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 0x0061,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },

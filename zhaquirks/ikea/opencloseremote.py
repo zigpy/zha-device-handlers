@@ -35,7 +35,7 @@ from zhaquirks.const import (
     SHORT_PRESS,
     ZHA_SEND_EVENT,
 )
-from zhaquirks.ikea import IKEA, IKEA_CLUSTER_ID, PowerConfiguration1CRCluster
+from zhaquirks.ikea import IKEA, IKEA_CLUSTER_ID, DoublingPowerConfig1CRCluster
 
 COMMAND_CLOSE = "down_close"
 COMMAND_STOP_OPENING = "stop_opening"
@@ -65,7 +65,7 @@ class IkeaWindowCovering(CustomCluster, WindowCovering):
         We just want to keep track of direction, to associate it with the stop command.
         """
 
-        cmd_name = self.server_commands.get(hdr.command_id, [hdr.command_id])[0]
+        cmd_name = self.server_commands[hdr.command_id].name
         if cmd_name == COMMAND_OPEN:
             self._is_closing = False
         elif cmd_name == COMMAND_CLOSE:
@@ -120,7 +120,7 @@ class IkeaTradfriOpenCloseRemote(CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_CONTROLLER,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    PowerConfiguration1CRCluster,
+                    DoublingPowerConfig1CRCluster,
                     Identify.cluster_id,
                     Alarms.cluster_id,
                     PollControl.cluster_id,
