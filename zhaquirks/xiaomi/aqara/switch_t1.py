@@ -115,7 +115,6 @@ class SwitchT1(XiaomiCustomDevice):
                     XiaomiAqaraT1Cluster,
                 ],
                 OUTPUT_CLUSTERS: [
-                    OnOffCluster,
                     Time.cluster_id,
                     Ota.cluster_id,
                 ],
