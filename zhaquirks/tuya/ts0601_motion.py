@@ -43,10 +43,7 @@ from zhaquirks.tuya import (
     TuyaManufCluster,
     TuyaNewManufCluster,
 )
-from zhaquirks.tuya.mcu import (
-    TuyaAttributesCluster,
-    TuyaMCUCluster,
-)
+from zhaquirks.tuya.mcu import TuyaAttributesCluster, TuyaMCUCluster
 
 ZONE_TYPE = 0x0001
 
@@ -93,7 +90,9 @@ class TuyaMmwRadarMinRange(TuyaAttributesCluster, AnalogOutput):
         self._update_attribute(self.attributes_by_name["min_present_value"].id, 0)
         self._update_attribute(self.attributes_by_name["max_present_value"].id, 950)
         self._update_attribute(self.attributes_by_name["resolution"].id, 10)
-        self._update_attribute(self.attributes_by_name["engineering_units"].id, 118)  # 31: meters
+        self._update_attribute(
+            self.attributes_by_name["engineering_units"].id, 118
+        )  # 31: meters
 
 
 class TuyaMmwRadarMaxRange(TuyaAttributesCluster, AnalogOutput):
@@ -106,7 +105,9 @@ class TuyaMmwRadarMaxRange(TuyaAttributesCluster, AnalogOutput):
         self._update_attribute(self.attributes_by_name["min_present_value"].id, 10)
         self._update_attribute(self.attributes_by_name["max_present_value"].id, 950)
         self._update_attribute(self.attributes_by_name["resolution"].id, 10)
-        self._update_attribute(self.attributes_by_name["engineering_units"].id, 118)  # 31: meters
+        self._update_attribute(
+            self.attributes_by_name["engineering_units"].id, 118
+        )  # 31: meters
 
 
 class TuyaMmwRadarDetectionDelay(TuyaAttributesCluster, AnalogOutput):
@@ -115,11 +116,15 @@ class TuyaMmwRadarDetectionDelay(TuyaAttributesCluster, AnalogOutput):
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
-        self._update_attribute(self.attributes_by_name["description"].id, "detection_delay")
+        self._update_attribute(
+            self.attributes_by_name["description"].id, "detection_delay"
+        )
         self._update_attribute(self.attributes_by_name["min_present_value"].id, 000)
         self._update_attribute(self.attributes_by_name["max_present_value"].id, 20000)
         self._update_attribute(self.attributes_by_name["resolution"].id, 100)
-        self._update_attribute(self.attributes_by_name["engineering_units"].id, 159)  # 73: seconds
+         self._update_attribute(
+            self.attributes_by_name["engineering_units"].id, 159
+        )  # 73: seconds
 
 
 class TuyaMmwRadarFadingTime(TuyaAttributesCluster, AnalogOutput):
@@ -132,8 +137,10 @@ class TuyaMmwRadarFadingTime(TuyaAttributesCluster, AnalogOutput):
         self._update_attribute(self.attributes_by_name["min_present_value"].id, 2000)
         self._update_attribute(self.attributes_by_name["max_present_value"].id, 200000)
         self._update_attribute(self.attributes_by_name["resolution"].id, 1000)
-        self._update_attribute(self.attributes_by_name["engineering_units"].id, 159)  # 73: seconds
-        
+        self._update_attribute(
+            self.attributes_by_name["engineering_units"].id, 159
+        )  # 73: seconds
+
 
 class TuyaMmwRadarTargetDistance(TuyaAttributesCluster, AnalogInput):
     """AnalogInput cluster for target distance."""
@@ -141,8 +148,12 @@ class TuyaMmwRadarTargetDistance(TuyaAttributesCluster, AnalogInput):
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
-        self._update_attribute(self.attributes_by_name["description"].id, "target_distance")
-        self._update_attribute(self.attributes_by_name["engineering_units"].id, 118)  # 31: meters
+        self._update_attribute(
+            self.attributes_by_name["description"].id, "target_distance"
+        )
+        self._update_attribute(
+            self.attributes_by_name["engineering_units"].id, 118
+        )  # 31: meters
 
 
 class NeoBatteryLevel(t.enum8):
@@ -307,8 +318,10 @@ class MmwRadarManufCluster(TuyaMCUCluster):
         108: "_dp_2_attr_update",
     }
 
+
 class TuyaMmwRadarCluster(NoManufacturerCluster, TuyaMCUCluster):
     """Mmw radar cluster."""
+
     attributes = TuyaMCUCluster.attributes.copy()
     attributes.update(
         {
@@ -602,6 +615,7 @@ class MmwRadarMotionGPP(CustomDevice):
 
 class MmwRadarMotionZYM100S2(CustomDevice):
     """Mini/Ceiling Human Breathe Sensor"""
+
     signature = {
         #  endpoint=1, profile=260, device_type=81, device_version=1,
         #  input_clusters=[4, 5, 61184, 0], output_clusters=[25, 10]
