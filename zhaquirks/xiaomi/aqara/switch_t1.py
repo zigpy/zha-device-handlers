@@ -39,6 +39,8 @@ class XiaomiAqaraT1Cluster(XiaomiAqaraE1Cluster):
     ep_attribute = "aqara_cluster"
     attributes = {
         0x000A: ("switch_type", t.uint8_t, True),
+        0x0201: ("power_outage_memory", t.Bool, True),
+        0x0203: ("do_not_disturb", t.Bool, True),
     }
 
 
