@@ -1,9 +1,8 @@
 """Aqara Curtain Driver B1 device."""
 from __future__ import annotations
 
-from typing import Any
-
 import logging
+from typing import Any
 
 from zigpy import types as t
 from zigpy.profiles import zha
@@ -32,7 +31,6 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-
 from zhaquirks.xiaomi import LUMI, XiaomiCustomDevice
 
 _LOGGER = logging.getLogger(__name__)
@@ -56,13 +54,13 @@ class AnalogOutputB1(CustomCluster, AnalogOutput):
         _LOGGER.debug("AnalogOutput update attribute %04x to %s... ", attrid, value)
         super()._update_attribute(attrid, value)
         if attrid == self.attributes_by_name["present_value"].id:
-            self.endpoint.window_covering._update_attribute( # pylint: disable=protected-access
+            self.endpoint.window_covering._update_attribute(  # pylint: disable=protected-access
                 WindowCovering.attributes_by_name[
                     "current_position_lift_percentage"
                 ].id,
                 (100 - value),
             )
-            self.endpoint.on_off._update_attribute( # pylint: disable=protected-access
+            self.endpoint.on_off._update_attribute(  # pylint: disable=protected-access
                 OnOff.attributes_by_name["on_off"].id, value > 0
             )
 
