@@ -38,13 +38,12 @@ from zhaquirks.const import (
 )
 from zhaquirks.tuya import (
     DPToAttributeMapping,
+    NoManufacturerCluster,
     TuyaLocalCluster,
     TuyaManufCluster,
     TuyaNewManufCluster,
-    NoManufacturerCluster,
 )
 from zhaquirks.tuya.mcu import (
-    DPToAttributeMapping,
     TuyaAttributesCluster,
     TuyaMCUCluster,
 )
@@ -78,9 +77,7 @@ class TuyaMmwRadarSensitivity(TuyaAttributesCluster, AnalogOutput):
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
-        self._update_attribute(
-            self.attributes_by_name["description"].id, "sensitivity"
-        )
+        self._update_attribute(self.attributes_by_name["description"].id, "sensitivity")
         self._update_attribute(self.attributes_by_name["min_present_value"].id, 1)
         self._update_attribute(self.attributes_by_name["max_present_value"].id, 9)
         self._update_attribute(self.attributes_by_name["resolution"].id, 1)
@@ -92,15 +89,11 @@ class TuyaMmwRadarMinRange(TuyaAttributesCluster, AnalogOutput):
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
-        self._update_attribute(
-            self.attributes_by_name["description"].id, "min_range"
-        )
+        self._update_attribute(self.attributes_by_name["description"].id, "min_range")
         self._update_attribute(self.attributes_by_name["min_present_value"].id, 0)
         self._update_attribute(self.attributes_by_name["max_present_value"].id, 950)
         self._update_attribute(self.attributes_by_name["resolution"].id, 10)
-        self._update_attribute(
-            self.attributes_by_name["engineering_units"].id, 118
-        )  # 31: meters
+        self._update_attribute(self.attributes_by_name["engineering_units"].id, 118)  # 31: meters
 
 
 class TuyaMmwRadarMaxRange(TuyaAttributesCluster, AnalogOutput):
@@ -109,15 +102,11 @@ class TuyaMmwRadarMaxRange(TuyaAttributesCluster, AnalogOutput):
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
-        self._update_attribute(
-            self.attributes_by_name["description"].id, "max_range"
-        )
+        self._update_attribute(self.attributes_by_name["description"].id, "max_range")
         self._update_attribute(self.attributes_by_name["min_present_value"].id, 10)
         self._update_attribute(self.attributes_by_name["max_present_value"].id, 950)
         self._update_attribute(self.attributes_by_name["resolution"].id, 10)
-        self._update_attribute(
-            self.attributes_by_name["engineering_units"].id, 118
-        )  # 31: meters
+        self._update_attribute(self.attributes_by_name["engineering_units"].id, 118)  # 31: meters
 
 
 class TuyaMmwRadarDetectionDelay(TuyaAttributesCluster, AnalogOutput):
@@ -126,15 +115,11 @@ class TuyaMmwRadarDetectionDelay(TuyaAttributesCluster, AnalogOutput):
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
-        self._update_attribute(
-            self.attributes_by_name["description"].id, "detection_delay"
-        )
+        self._update_attribute(self.attributes_by_name["description"].id, "detection_delay")
         self._update_attribute(self.attributes_by_name["min_present_value"].id, 000)
         self._update_attribute(self.attributes_by_name["max_present_value"].id, 20000)
         self._update_attribute(self.attributes_by_name["resolution"].id, 100)
-        self._update_attribute(
-            self.attributes_by_name["engineering_units"].id, 159
-        )  # 73: seconds
+        self._update_attribute(self.attributes_by_name["engineering_units"].id, 159)  # 73: seconds
 
 
 class TuyaMmwRadarFadingTime(TuyaAttributesCluster, AnalogOutput):
@@ -143,15 +128,11 @@ class TuyaMmwRadarFadingTime(TuyaAttributesCluster, AnalogOutput):
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
-        self._update_attribute(
-            self.attributes_by_name["description"].id, "fading_time"
-        )
+        self._update_attribute(self.attributes_by_name["description"].id, "fading_time")
         self._update_attribute(self.attributes_by_name["min_present_value"].id, 2000)
         self._update_attribute(self.attributes_by_name["max_present_value"].id, 200000)
         self._update_attribute(self.attributes_by_name["resolution"].id, 1000)
-        self._update_attribute(
-            self.attributes_by_name["engineering_units"].id, 159
-        )  # 73: seconds
+        self._update_attribute(self.attributes_by_name["engineering_units"].id, 159)  # 73: seconds
         
 
 class TuyaMmwRadarTargetDistance(TuyaAttributesCluster, AnalogInput):
@@ -160,12 +141,8 @@ class TuyaMmwRadarTargetDistance(TuyaAttributesCluster, AnalogInput):
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
-        self._update_attribute(
-            self.attributes_by_name["description"].id, "target_distance"
-        )
-        self._update_attribute(
-            self.attributes_by_name["engineering_units"].id, 118
-        )  # 31: meters
+        self._update_attribute(self.attributes_by_name["description"].id, "target_distance")
+        self._update_attribute(self.attributes_by_name["engineering_units"].id, 118)  # 31: meters
 
 
 class NeoBatteryLevel(t.enum8):
@@ -349,22 +326,22 @@ class TuyaMmwRadarCluster(NoManufacturerCluster, TuyaMCUCluster):
 
     dp_to_attribute: Dict[int, DPToAttributeMapping] = {
         1: DPToAttributeMapping(
-           TuyaOccupancySensing.ep_attribute,
-           "occupancy",
+            TuyaOccupancySensing.ep_attribute,
+            "occupancy",
         ),
         2: DPToAttributeMapping(
-           TuyaMmwRadarSensitivity.ep_attribute,
-           "present_value",
+            TuyaMmwRadarSensitivity.ep_attribute,
+            "present_value",
         ),
         3: DPToAttributeMapping(
-           TuyaMmwRadarMinRange.ep_attribute,
-           "present_value",
-           endpoint_id=2,
+            TuyaMmwRadarMinRange.ep_attribute,
+            "present_value",
+            endpoint_id=2,
         ),
         4: DPToAttributeMapping(
-           TuyaMmwRadarMaxRange.ep_attribute,
-           "present_value",
-           endpoint_id=3,
+            TuyaMmwRadarMaxRange.ep_attribute,
+            "present_value",
+            endpoint_id=3,
         ),
         9: DPToAttributeMapping(
             TuyaMmwRadarTargetDistance.ep_attribute,
