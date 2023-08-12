@@ -14,7 +14,6 @@ from zigpy.zcl.clusters.general import (
     Scenes,
     Time,
 )
-from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -26,13 +25,16 @@ from zhaquirks.const import (
 )
 from zhaquirks.xiaomi import (
     LUMI,
+    AnalogInputCluster,
     BasicCluster,
     DeviceTemperatureCluster,
+    ElectricalMeasurementCluster,
     OnOffCluster,
     XiaomiAqaraE1Cluster,
     XiaomiCustomDevice,
     XiaomiMeteringCluster,
 )
+from zhaquirks.xiaomi.aqara.opple_remote import MultistateInputCluster
 
 
 class XiaomiAqaraT1Cluster(XiaomiAqaraE1Cluster):
@@ -109,7 +111,7 @@ class SwitchT1(XiaomiCustomDevice):
                     Alarms.cluster_id,
                     Time.cluster_id,
                     XiaomiMeteringCluster,
-                    ElectricalMeasurement.cluster_id,
+                    ElectricalMeasurementCluster,
                     XiaomiAqaraT1Cluster,
                 ],
                 OUTPUT_CLUSTERS: [
