@@ -49,8 +49,7 @@ OCCUPIED_HEATING_SETPOINT_THERM_ATTR = uint16_t(0x0012)
 SETPOINT_CHANGE_THERM_ATTR = uint16_t(0x0012)
 MIN_HEAT_SETPOINT_LIMIT_THERM_ATTR = uint16_t(0x0015)
 
-# This was set to: 0x01, but that is the schedule command not the setpoint command
-AGGRESSIVE_SETPOINT_THERM_COMM = 0x40
+SETPOINT_COMM_AGGRESSIVE_VAL = 0x01
 
 SYSTEM_MODE_THERM_ATTR_OFF_VAL = 0x00
 
@@ -126,7 +125,7 @@ danfoss_diagnostic_attr = {
 }
 
 danfoss_thermostat_comm = {
-    AGGRESSIVE_SETPOINT_THERM_COMM: ZCLCommandDef(
+    0x40: ZCLCommandDef(
         "setpoint_command",
         # Types
         # 0: Schedule (relatively slow)
@@ -162,30 +161,45 @@ class DanfossTRVCluster(CustomCluster):
     async def read_attributes_raw(self, attributes, manufacturer=None):
         """Operation Mode is a ZCL attribute and needs to be requested without manufacturer code."""
 
-        # occupied_heating_setpoint_scheduled is not a real attribute, therefore: request occupied_heating_setpoint
-        occupied_heating_setpoint_in_attributes = OCCUPIED_HEATING_SETPOINT_THERM_ATTR in attributes
-        occupied_heating_setpoint_scheduled_in_attributes = OCCUPIED_HEATING_SETPOINT_SCHEDULED_THERM_ATTR in attributes
+        # store presence of requested attributes
+        occupied_heating_setpoint_in_attributes = (
+            OCCUPIED_HEATING_SETPOINT_THERM_ATTR in attributes
+        )
+        occupied_heating_setpoint_scheduled_in_attributes = (
+            OCCUPIED_HEATING_SETPOINT_SCHEDULED_THERM_ATTR in attributes
+        )
+
+        # if occupied_heating_setpoint_scheduled is requested,
+        # remove it from attributes and request occupied_heating_setpoint
         if occupied_heating_setpoint_scheduled_in_attributes:
             attributes.remove(OCCUPIED_HEATING_SETPOINT_SCHEDULED_THERM_ATTR)
             if not occupied_heating_setpoint_in_attributes:
                 attributes.append(OCCUPIED_HEATING_SETPOINT_THERM_ATTR)
 
-        # Get normal result
+        # Get result
         result = await self.endpoint.thermostat.read_attributes_raw(
             attributes, manufacturer=manufacturer
         )
 
+        # if occupied_heating_setpoint_scheduled is requested, use occupied_heating_setpoint to deliver that
         if occupied_heating_setpoint_scheduled_in_attributes:
             # find record for occupied heating setpoint
             occupied_heating_setpoint_index = None
             for i in range(len(result[0])):
-                print(result[0][i].attrid)
                 if result[0][i].attrid == OCCUPIED_HEATING_SETPOINT_THERM_ATTR:
                     occupied_heating_setpoint_index = i
+                    break
 
+            # if occupied_heating_setpoint is returned,
+            # copy occupied_heating_setpoint and change into occupied_heating_setpoint_scheduled and
+            # remove occupied_heating_setpoint from result if not requested
             if occupied_heating_setpoint_index is not None:
-                occupied_heating_setpoint_record = result[0][occupied_heating_setpoint_index]
-                occupied_heating_setpoint_record.attrid = OCCUPIED_HEATING_SETPOINT_SCHEDULED_THERM_ATTR
+                occupied_heating_setpoint_record = result[0][
+                    occupied_heating_setpoint_index
+                ]
+                occupied_heating_setpoint_record.attrid = (
+                    OCCUPIED_HEATING_SETPOINT_SCHEDULED_THERM_ATTR
+                )
                 result[0].append(occupied_heating_setpoint_record)
 
                 # remove occupied_heating_setpoint if not requested
@@ -268,7 +282,7 @@ class DanfossThermostatCluster(CustomCluster, Thermostat):
 
         if OCCUPIED_HEATING_SETPOINT_TXT in attributes and not scheduled:
             await self.setpoint_command(
-                AGGRESSIVE_SETPOINT_THERM_COMM,
+                SETPOINT_COMM_AGGRESSIVE_VAL,
                 attributes[OCCUPIED_HEATING_SETPOINT_TXT],
                 manufacturer=manufacturer,
             )
