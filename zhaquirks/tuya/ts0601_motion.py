@@ -42,7 +42,11 @@ from zhaquirks.tuya import (
     TuyaManufCluster,
     TuyaNewManufCluster,
 )
-from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaAttributesCluster, TuyaMCUCluster
+from zhaquirks.tuya.mcu import (
+    DPToAttributeMapping,
+    TuyaAttributesCluster,
+    TuyaMCUCluster,
+)
 
 ZONE_TYPE = 0x0001
 
