@@ -121,14 +121,20 @@ class SwitchT1(XiaomiCustomDevice):
             21: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
+                INPUT_CLUSTERS: [AnalogInputCluster],
+                OUTPUT_CLUSTERS: [],
             },
             31: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
+                INPUT_CLUSTERS: [AnalogInput.cluster_id],
+                OUTPUT_CLUSTERS: [],
             },
             41: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
+                INPUT_CLUSTERS: [MultistateInputCluster],
+                OUTPUT_CLUSTERS: [],
             },
             242: {
                 PROFILE_ID: zgp.PROFILE_ID,
