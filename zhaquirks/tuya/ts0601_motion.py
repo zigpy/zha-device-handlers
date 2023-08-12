@@ -37,13 +37,12 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.tuya import (
-    DPToAttributeMapping,
     NoManufacturerCluster,
     TuyaLocalCluster,
     TuyaManufCluster,
     TuyaNewManufCluster,
 )
-from zhaquirks.tuya.mcu import TuyaAttributesCluster, TuyaMCUCluster
+from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaAttributesCluster, TuyaMCUCluster
 
 ZONE_TYPE = 0x0001
 
