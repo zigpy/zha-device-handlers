@@ -122,7 +122,7 @@ class TuyaMmwRadarDetectionDelay(TuyaAttributesCluster, AnalogOutput):
         self._update_attribute(self.attributes_by_name["min_present_value"].id, 000)
         self._update_attribute(self.attributes_by_name["max_present_value"].id, 20000)
         self._update_attribute(self.attributes_by_name["resolution"].id, 100)
-         self._update_attribute(
+        self._update_attribute(
             self.attributes_by_name["engineering_units"].id, 159
         )  # 73: seconds
 
