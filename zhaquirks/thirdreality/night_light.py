@@ -10,14 +10,11 @@ from zigpy.zcl.clusters.general import (
     OnOff,
     Ota,
     Scenes,
-    Time,
 )
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.lightlink import LightLink
-from zigpy.zcl.clusters.manufacturer_specific import ManufacturerSpecificCluster
 from zigpy.zcl.clusters.measurement import (
-    OccupancySensing,
     IlluminanceMeasurement,
 )
 
@@ -28,7 +25,6 @@ from zhaquirks.const import (
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
-    ZONE_STATUS,
 )
 from zhaquirks.thirdreality import THIRD_REALITY
 from zhaquirks import LocalDataCluster
@@ -43,7 +39,6 @@ class ThirdRealitySpecificCluster(CustomCluster):
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
         self.endpoint.ias_zone.update_attribute(IasZone.AttributeDefs.zone_status.id, value)
-
 
 class LocalIasZone(LocalDataCluster, IasZone):
     """Local IAS Zone cluster."""
