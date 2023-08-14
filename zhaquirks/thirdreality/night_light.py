@@ -11,13 +11,12 @@ from zigpy.zcl.clusters.general import (
     Ota,
     Scenes,
 )
-from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.lightlink import LightLink
-from zigpy.zcl.clusters.measurement import (
-    IlluminanceMeasurement,
-)
+from zigpy.zcl.clusters.measurement import IlluminanceMeasurement
+from zigpy.zcl.clusters.security import IasZone
 
+from zhaquirks import LocalDataCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -27,9 +26,9 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.thirdreality import THIRD_REALITY
-from zhaquirks import LocalDataCluster
 
 ThirdReality_Specific_CLUSTER_ID = 0xFC00
+
 
 class ThirdRealitySpecificCluster(CustomCluster):
     """privatecluster, only used to relay ias zone information to ias zone Cluster."""
@@ -38,7 +37,10 @@ class ThirdRealitySpecificCluster(CustomCluster):
 
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
-        self.endpoint.ias_zone.update_attribute(IasZone.AttributeDefs.zone_status.id, value)
+        self.endpoint.ias_zone.update_attribute(
+            IasZone.AttributeDefs.zone_status.id, value
+        )
+
 
 class LocalIasZone(LocalDataCluster, IasZone):
     """Local IAS Zone cluster."""
@@ -46,6 +48,7 @@ class LocalIasZone(LocalDataCluster, IasZone):
     _CONSTANT_ATTRIBUTES = {
         IasZone.attributes_by_name["zone_type"].id: IasZone.ZoneType.Motion_Sensor
     }
+
 
 class Nightlight(CustomDevice):
     """Custom device for 3RSNL02043Z."""
