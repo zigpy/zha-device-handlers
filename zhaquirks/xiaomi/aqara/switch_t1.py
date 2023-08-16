@@ -56,7 +56,7 @@ class SwitchT1(XiaomiCustomDevice):
         self.consumption_bus = Bus()
         self.power_bus = Bus()
         super().__init__(*args, **kwargs)
-        
+
     signature = {
         MODELS_INFO: [(LUMI, "lumi.switch.n0agl1"), (LUMI, "lumi.switch.n0acn2")],
         ENDPOINTS: {
