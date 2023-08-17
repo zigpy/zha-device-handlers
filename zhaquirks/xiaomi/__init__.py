@@ -266,46 +266,64 @@ class XiaomiCluster(CustomCluster):
                 TemperatureMeasurement.AttributeDefs.measured_value.id,
                 attributes[TEMPERATURE_MEASUREMENT],
             )
+
         if HUMIDITY_MEASUREMENT in attributes:
             self.endpoint.humidity.update_attribute(
                 RelativeHumidity.AttributeDefs.measured_value.id,
                 attributes[HUMIDITY_MEASUREMENT],
             )
+
         if PRESSURE_MEASUREMENT in attributes:
             self.endpoint.pressure.update_attribute(
                 PressureMeasurement.AttributeDefs.measured_value.id,
                 attributes[PRESSURE_MEASUREMENT] / 100,
             )
+
         if POWER in attributes:
-            self.endpoint.device.power_bus.listener_event(
-                POWER_REPORTED, attributes[POWER]
+            self.endpoint.electrical_measurement.update_attribute(
+                ElectricalMeasurement.AttributeDefs.active_power.id,
+                round(attributes[POWER] * 10),
             )
+
         if CONSUMPTION in attributes:
-            self.endpoint.device.consumption_bus.listener_event(
-                CONSUMPTION_REPORTED, attributes[CONSUMPTION]
+            self.endpoint.electrical_measurement.update_attribute(
+                ElectricalMeasurement.AttributeDefs.total_active_power.id,
+                round(attributes[CONSUMPTION] * 1000),
             )
+            self.endpoint.smartenergy_metering.update_attribute(
+                Metering.AttributeDefs.current_summ_delivered.id,
+                round(attributes[CONSUMPTION] * 1000),
+            )
+
         if VOLTAGE in attributes:
-            self.endpoint.device.voltage_bus.listener_event(
-                VOLTAGE_REPORTED, attributes[VOLTAGE] * 0.1
+            self.endpoint.electrical_measurement.update_attribute(
+                ElectricalMeasurement.AttributeDefs.rms_voltage.id,
+                attributes[VOLTAGE] * 0.1,
             )
+
         if ILLUMINANCE_MEASUREMENT in attributes:
-            self.endpoint.device.illuminance_bus.listener_event(
-                ILLUMINANCE_REPORTED, attributes[ILLUMINANCE_MEASUREMENT]
+            self.endpoint.illuminance.update_attribute(
+                IlluminanceMeasurement.AttributeDefs.measured_value.id,
+                attributes[ILLUMINANCE_MEASUREMENT],
             )
+
         if TVOC_MEASUREMENT in attributes:
             self.endpoint.voc_level.update_attribute(
                 0x0000, attributes[TVOC_MEASUREMENT]
             )
+
         if TEMPERATURE in attributes:
             if hasattr(self.endpoint, "device_temperature"):
                 self.endpoint.device_temperature.update_attribute(
                     0x0000, attributes[TEMPERATURE] * 100
                 )
+
         if BATTERY_PERCENTAGE_REMAINING_ATTRIBUTE in attributes:
             self.endpoint.device.power_bus_percentage.listener_event(
                 "update_battery_percentage",
                 attributes[BATTERY_PERCENTAGE_REMAINING_ATTRIBUTE],
             )
+
         if SMOKE in attributes:
             self.endpoint.ias_zone.update_attribute(ZONE_STATUS, attributes[SMOKE])
 
@@ -554,7 +572,10 @@ class AnalogInputCluster(CustomCluster, AnalogInput):
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
         if value is not None and value >= 0:
-            self.endpoint.device.power_bus.listener_event(POWER_REPORTED, value)
+            self.endpoint.electrical_measurement.update_attribute(
+                ElectricalMeasurement.AttributeDefs.active_power.id,
+                round(value * 10),
+            )
 
 
 class ElectricalMeasurementCluster(LocalDataCluster, ElectricalMeasurement):
@@ -574,10 +595,6 @@ class ElectricalMeasurementCluster(LocalDataCluster, ElectricalMeasurement):
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
-        self.endpoint.device.voltage_bus.add_listener(self)
-        self.endpoint.device.consumption_bus.add_listener(self)
-        self.endpoint.device.power_bus.add_listener(self)
-
         # put a default value so the sensors are created
         if self.POWER_ID not in self._attr_cache:
             self._update_attribute(self.POWER_ID, 0)
@@ -585,18 +602,6 @@ class ElectricalMeasurementCluster(LocalDataCluster, ElectricalMeasurement):
             self._update_attribute(self.VOLTAGE_ID, 0)
         if self.CONSUMPTION_ID not in self._attr_cache:
             self._update_attribute(self.CONSUMPTION_ID, 0)
-
-    def power_reported(self, value):
-        """Power reported."""
-        self._update_attribute(self.POWER_ID, round(value * 10))
-
-    def voltage_reported(self, value):
-        """Voltage reported."""
-        self._update_attribute(self.VOLTAGE_ID, value)
-
-    def consumption_reported(self, value):
-        """Consumption reported."""
-        self._update_attribute(self.CONSUMPTION_ID, round(value * 1000))
 
 
 class MeteringCluster(LocalDataCluster, Metering):
@@ -615,15 +620,10 @@ class MeteringCluster(LocalDataCluster, Metering):
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
-        self.endpoint.device.consumption_bus.add_listener(self)
 
         # put a default value so the sensor is created
         if self.CURRENT_SUMM_DELIVERED_ID not in self._attr_cache:
             self._update_attribute(self.CURRENT_SUMM_DELIVERED_ID, 0)
-
-    def consumption_reported(self, value):
-        """Consumption reported."""
-        self._update_attribute(self.CURRENT_SUMM_DELIVERED_ID, round(value * 1000))
 
 
 class IlluminanceMeasurementCluster(CustomCluster, IlluminanceMeasurement):
