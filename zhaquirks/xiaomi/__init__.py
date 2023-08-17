@@ -272,8 +272,9 @@ class XiaomiCluster(CustomCluster):
                 attributes[HUMIDITY_MEASUREMENT],
             )
         if PRESSURE_MEASUREMENT in attributes:
-            self.endpoint.device.pressure_bus.listener_event(
-                PRESSURE_REPORTED, attributes[PRESSURE_MEASUREMENT] / 100
+            self.endpoint.pressure.update_attribute(
+                PressureMeasurement.AttributeDefs.measured_value.id,
+                attributes[PRESSURE_MEASUREMENT] / 100,
             )
         if POWER in attributes:
             self.endpoint.device.power_bus.listener_event(
@@ -528,22 +529,16 @@ class PressureMeasurementCluster(CustomCluster, PressureMeasurement):
     """Pressure cluster to receive reports that are sent to the basic cluster."""
 
     cluster_id = PressureMeasurement.cluster_id
-    ATTR_ID = 0
 
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
-        self.endpoint.device.pressure_bus.add_listener(self)
 
     def _update_attribute(self, attrid, value):
         # drop unreasonable values
         # value is in hectopascals
         if attrid == self.ATTR_ID and (0 <= value <= 1100):
             super()._update_attribute(attrid, value)
-
-    def pressure_reported(self, value):
-        """Pressure reported."""
-        self._update_attribute(self.ATTR_ID, value)
 
 
 class AnalogInputCluster(CustomCluster, AnalogInput):
