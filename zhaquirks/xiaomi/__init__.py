@@ -25,6 +25,7 @@ from zigpy.zcl.clusters.measurement import (
     RelativeHumidity,
     TemperatureMeasurement,
 )
+from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.clusters.smartenergy import Metering
 import zigpy.zcl.foundation as foundation
 import zigpy.zdo
@@ -101,7 +102,6 @@ XIAOMI_NODE_DESC = NodeDescriptor(
     maximum_outgoing_transfer_size=100,
     descriptor_capability_field=0,
 )
-ZONE_TYPE = 0x0001
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -494,7 +494,7 @@ class OccupancyCluster(OccupancyWithReset):
 class MotionCluster(LocalDataCluster, MotionOnEvent):
     """Motion cluster."""
 
-    _CONSTANT_ATTRIBUTES = {ZONE_TYPE: MOTION_TYPE}
+    _CONSTANT_ATTRIBUTES = {IasZone.AttributeDefs.zone_type.id: MOTION_TYPE}
     reset_s: int = 70
 
 
