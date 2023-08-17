@@ -514,8 +514,6 @@ class XiaomiMeteringCluster(LocalDataCluster, Metering):
 class TemperatureMeasurementCluster(CustomCluster, TemperatureMeasurement):
     """Temperature cluster that filters out invalid temperature readings."""
 
-    cluster_id = TemperatureMeasurement.cluster_id
-
     def _update_attribute(self, attrid, value):
         # drop values above and below documented range for this sensor
         # value is in centi degrees
@@ -526,8 +524,6 @@ class TemperatureMeasurementCluster(CustomCluster, TemperatureMeasurement):
 class RelativeHumidityCluster(CustomCluster, RelativeHumidity):
     """Humidity cluster that filters out invalid humidity readings."""
 
-    cluster_id = RelativeHumidity.cluster_id
-
     def _update_attribute(self, attrid, value):
         # drop values above and below documented range for this sensor
         if attrid == self.ATTR_ID and (0 <= value <= 9999):
@@ -536,8 +532,6 @@ class RelativeHumidityCluster(CustomCluster, RelativeHumidity):
 
 class PressureMeasurementCluster(CustomCluster, PressureMeasurement):
     """Pressure cluster to receive reports that are sent to the basic cluster."""
-
-    cluster_id = PressureMeasurement.cluster_id
 
     def _update_attribute(self, attrid, value):
         # drop unreasonable values
@@ -548,8 +542,6 @@ class PressureMeasurementCluster(CustomCluster, PressureMeasurement):
 
 class AnalogInputCluster(CustomCluster, AnalogInput):
     """Analog input cluster, only used to relay power consumption information to ElectricalMeasurementCluster."""
-
-    cluster_id = AnalogInput.cluster_id
 
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
@@ -563,7 +555,6 @@ class AnalogInputCluster(CustomCluster, AnalogInput):
 class ElectricalMeasurementCluster(LocalDataCluster, ElectricalMeasurement):
     """Electrical measurement cluster to receive reports that are sent to the basic cluster."""
 
-    cluster_id = ElectricalMeasurement.cluster_id
     POWER_ID = 0x050B
     VOLTAGE_ID = 0x0505
     CONSUMPTION_ID = 0x0304
@@ -589,7 +580,6 @@ class ElectricalMeasurementCluster(LocalDataCluster, ElectricalMeasurement):
 class MeteringCluster(LocalDataCluster, Metering):
     """Metering cluster to receive reports that are sent to the basic cluster."""
 
-    cluster_id = Metering.cluster_id
     CURRENT_SUMM_DELIVERED_ID = 0x0000
     _CONSTANT_ATTRIBUTES = {
         0x0300: 0,  # unit_of_measure: kWh
@@ -609,8 +599,6 @@ class MeteringCluster(LocalDataCluster, Metering):
 
 class IlluminanceMeasurementCluster(CustomCluster, IlluminanceMeasurement):
     """Multistate input cluster."""
-
-    cluster_id = IlluminanceMeasurement.cluster_id
 
     def _update_attribute(self, attrid, value):
         if attrid == self.ATTR_ID and value > 0:
