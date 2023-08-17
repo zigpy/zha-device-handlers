@@ -25,10 +25,8 @@ from zhaquirks.const import (
     ZONE_STATUS_CHANGE_COMMAND,
 )
 from zhaquirks.xiaomi import (
-    CONSUMPTION_REPORTED,
     LUMI,
-    POWER_REPORTED,
-    VOLTAGE_REPORTED,
+    XIAOMI_AQARA_ATTRIBUTE,
     XIAOMI_NODE_DESC,
     BasicCluster,
     XiaomiCustomDevice,
@@ -60,6 +58,15 @@ import zhaquirks.xiaomi.mija.motion
 from tests.common import ZCL_OCC_ATTR_RPT_OCC, ClusterListener
 
 zhaquirks.setup()
+
+
+def create_aqara_attr_report(attributes):
+    """Creates a special Aqara attriubte report with t.Single as a type for all values."""
+    serialized_data = b""
+    for key, value in attributes.items():
+        tv = foundation.TypeValue(0x39, t.Single(value))  # mostly used
+        serialized_data += bytes([key]) + tv.serialize()
+    return serialized_data
 
 
 def test_basic_cluster_deserialize_wrong_len():
@@ -493,25 +500,30 @@ async def test_xiaomi_eu_plug_power(zigpy_device_from_quirk, quirk):
     """Test current power consumption, total power consumption, and current voltage on Xiaomi EU plug."""
 
     device = zigpy_device_from_quirk(quirk)
+    basic_cluster = device.endpoints[1].basic
 
     em_cluster = device.endpoints[1].electrical_measurement
     em_listener = ClusterListener(em_cluster)
 
     # Test voltage on ElectricalMeasurement cluster
-    em_cluster.endpoint.device.voltage_bus.listener_event(VOLTAGE_REPORTED, 230)
+    basic_cluster.update_attribute(
+        XIAOMI_AQARA_ATTRIBUTE, create_aqara_attr_report({150: 2300})
+    )
     assert len(em_listener.attribute_updates) == 1
     assert em_listener.attribute_updates[0][0] == 1285
     assert em_listener.attribute_updates[0][1] == 230
 
     # Test current power consumption on ElectricalMeasurement cluster
-    em_cluster.endpoint.device.power_bus.listener_event(POWER_REPORTED, 15)
+    basic_cluster.update_attribute(
+        XIAOMI_AQARA_ATTRIBUTE, create_aqara_attr_report({152: 15})
+    )
     assert len(em_listener.attribute_updates) == 2
     assert em_listener.attribute_updates[1][0] == 1291
     assert em_listener.attribute_updates[1][1] == 150  # multiplied by 10
 
     # Test total power consumption on ElectricalMeasurement cluster
-    em_cluster.endpoint.device.consumption_bus.listener_event(
-        CONSUMPTION_REPORTED, 0.001
+    basic_cluster.update_attribute(
+        XIAOMI_AQARA_ATTRIBUTE, create_aqara_attr_report({149: 0.001})
     )
     assert len(em_listener.attribute_updates) == 3
     assert em_listener.attribute_updates[2][0] == 772
@@ -521,8 +533,8 @@ async def test_xiaomi_eu_plug_power(zigpy_device_from_quirk, quirk):
     se_cluster = device.endpoints[1].smartenergy_metering
     se_listener = ClusterListener(se_cluster)
 
-    se_cluster.endpoint.device.consumption_bus.listener_event(
-        CONSUMPTION_REPORTED, 0.001
+    basic_cluster.update_attribute(
+        XIAOMI_AQARA_ATTRIBUTE, create_aqara_attr_report({149: 0.001})
     )
     assert len(se_listener.attribute_updates) == 1
     assert se_listener.attribute_updates[0][0] == 0
