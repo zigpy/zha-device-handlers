@@ -517,7 +517,9 @@ class TemperatureMeasurementCluster(CustomCluster, TemperatureMeasurement):
     def _update_attribute(self, attrid, value):
         # drop values above and below documented range for this sensor
         # value is in centi degrees
-        if attrid == self.ATTR_ID and (-6000 <= value <= 6000):
+        if attrid == TemperatureMeasurement.AttributeDefs.measured_value.id and (
+            -6000 <= value <= 6000
+        ):
             super()._update_attribute(attrid, value)
 
 
@@ -526,7 +528,9 @@ class RelativeHumidityCluster(CustomCluster, RelativeHumidity):
 
     def _update_attribute(self, attrid, value):
         # drop values above and below documented range for this sensor
-        if attrid == self.ATTR_ID and (0 <= value <= 9999):
+        if attrid == RelativeHumidity.AttributeDefs.measured_value.id and (
+            0 <= value <= 9999
+        ):
             super()._update_attribute(attrid, value)
 
 
@@ -536,7 +540,9 @@ class PressureMeasurementCluster(CustomCluster, PressureMeasurement):
     def _update_attribute(self, attrid, value):
         # drop unreasonable values
         # value is in hectopascals
-        if attrid == self.ATTR_ID and (0 <= value <= 1100):
+        if attrid == PressureMeasurement.AttributeDefs.measured_value.id and (
+            0 <= value <= 1100
+        ):
             super()._update_attribute(attrid, value)
 
 
