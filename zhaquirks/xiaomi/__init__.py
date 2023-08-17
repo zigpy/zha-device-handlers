@@ -135,7 +135,7 @@ class XiaomiCluster(CustomCluster):
     def _iter_parse_attr_report(
         self, data: bytes
     ) -> Iterator[tuple[foundation.Attribute, bytes]]:
-        """Yield all interpretations of the first attribute in an Xiaomi report."""
+        """Yield all interpretations of the first attribute in a Xiaomi report."""
 
         # Peek at the attribute report
         attr_id, data = t.uint16_t.deserialize(data)
@@ -327,7 +327,7 @@ class XiaomiCluster(CustomCluster):
             self.endpoint.ias_zone.update_attribute(ZONE_STATUS, attributes[SMOKE])
 
     def _parse_aqara_attributes(self, value):
-        """Parse non standard attributes."""
+        """Parse non-standard attributes."""
         attributes = {}
         attribute_names = {
             1: BATTERY_VOLTAGE_MV,
@@ -414,7 +414,7 @@ class XiaomiCluster(CustomCluster):
         return attributes
 
     def _parse_mija_attributes(self, value):
-        """Parse non standard attributes."""
+        """Parse non-standard attributes."""
         attribute_names = (
             STATE,
             BATTERY_VOLTAGE_MV,
