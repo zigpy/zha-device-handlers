@@ -31,7 +31,6 @@ import zigpy.zdo
 from zigpy.zdo.types import NodeDescriptor
 
 from zhaquirks import (
-    Bus,
     LocalDataCluster,
     MotionOnEvent,
     OccupancyWithReset,
@@ -121,7 +120,6 @@ class XiaomiCustomDevice(CustomDevice):
 
     def __init__(self, *args, **kwargs):
         """Init."""
-        self.battery_bus = Bus()
         if not hasattr(self, BATTERY_SIZE):
             self.battery_size = 10
         super().__init__(*args, **kwargs)
@@ -261,9 +259,7 @@ class XiaomiCluster(CustomCluster):
             attributes,
         )
         if BATTERY_VOLTAGE_MV in attributes:
-            self.endpoint.device.battery_bus.listener_event(
-                BATTERY_REPORTED, attributes[BATTERY_VOLTAGE_MV]
-            )
+            self.endpoint.power.battery_reported(attributes[BATTERY_VOLTAGE_MV])
 
         if TEMPERATURE_MEASUREMENT in attributes:
             self.endpoint.device.temperature_bus.listener_event(
@@ -444,7 +440,6 @@ class XiaomiPowerConfiguration(PowerConfiguration, LocalDataCluster):
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
-        self.endpoint.device.battery_bus.add_listener(self)
         self._CONSTANT_ATTRIBUTES = {
             BATTERY_QUANTITY_ATTR: 1,
             BATTERY_SIZE_ATTR: getattr(self.endpoint.device, BATTERY_SIZE, 0xFF),
