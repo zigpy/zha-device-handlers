@@ -262,8 +262,9 @@ class XiaomiCluster(CustomCluster):
             self.endpoint.power.battery_reported(attributes[BATTERY_VOLTAGE_MV])
 
         if TEMPERATURE_MEASUREMENT in attributes:
-            self.endpoint.device.temperature_bus.listener_event(
-                TEMPERATURE_REPORTED, attributes[TEMPERATURE_MEASUREMENT]
+            self.endpoint.temperature.update_attribute(
+                TemperatureMeasurement.AttributeDefs.measured_value.id,
+                attributes[TEMPERATURE_MEASUREMENT],
             )
         if HUMIDITY_MEASUREMENT in attributes:
             self.endpoint.device.humidity_bus.listener_event(
@@ -495,22 +496,16 @@ class TemperatureMeasurementCluster(CustomCluster, TemperatureMeasurement):
     """Temperature cluster that filters out invalid temperature readings."""
 
     cluster_id = TemperatureMeasurement.cluster_id
-    ATTR_ID = 0
 
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
-        self.endpoint.device.temperature_bus.add_listener(self)
 
     def _update_attribute(self, attrid, value):
         # drop values above and below documented range for this sensor
         # value is in centi degrees
         if attrid == self.ATTR_ID and (-6000 <= value <= 6000):
             super()._update_attribute(attrid, value)
-
-    def temperature_reported(self, value):
-        """Temperature reported."""
-        self._update_attribute(self.ATTR_ID, value)
 
 
 class RelativeHumidityCluster(CustomCluster, RelativeHumidity):
