@@ -516,10 +516,6 @@ class TemperatureMeasurementCluster(CustomCluster, TemperatureMeasurement):
 
     cluster_id = TemperatureMeasurement.cluster_id
 
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-
     def _update_attribute(self, attrid, value):
         # drop values above and below documented range for this sensor
         # value is in centi degrees
@@ -532,10 +528,6 @@ class RelativeHumidityCluster(CustomCluster, RelativeHumidity):
 
     cluster_id = RelativeHumidity.cluster_id
 
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-
     def _update_attribute(self, attrid, value):
         # drop values above and below documented range for this sensor
         if attrid == self.ATTR_ID and (0 <= value <= 9999):
@@ -546,10 +538,6 @@ class PressureMeasurementCluster(CustomCluster, PressureMeasurement):
     """Pressure cluster to receive reports that are sent to the basic cluster."""
 
     cluster_id = PressureMeasurement.cluster_id
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
 
     def _update_attribute(self, attrid, value):
         # drop unreasonable values
@@ -562,11 +550,6 @@ class AnalogInputCluster(CustomCluster, AnalogInput):
     """Analog input cluster, only used to relay power consumption information to ElectricalMeasurementCluster."""
 
     cluster_id = AnalogInput.cluster_id
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        self._current_state = {}
-        super().__init__(*args, **kwargs)
 
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
@@ -619,7 +602,6 @@ class MeteringCluster(LocalDataCluster, Metering):
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
-
         # put a default value so the sensor is created
         if self.CURRENT_SUMM_DELIVERED_ID not in self._attr_cache:
             self._update_attribute(self.CURRENT_SUMM_DELIVERED_ID, 0)
@@ -629,10 +611,6 @@ class IlluminanceMeasurementCluster(CustomCluster, IlluminanceMeasurement):
     """Multistate input cluster."""
 
     cluster_id = IlluminanceMeasurement.cluster_id
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
 
     def _update_attribute(self, attrid, value):
         if attrid == self.ATTR_ID and value > 0:
