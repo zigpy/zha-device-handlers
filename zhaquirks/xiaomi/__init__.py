@@ -315,7 +315,8 @@ class XiaomiCluster(CustomCluster):
         if TEMPERATURE in attributes:
             if hasattr(self.endpoint, "device_temperature"):
                 self.endpoint.device_temperature.update_attribute(
-                    0x0000, attributes[TEMPERATURE] * 100
+                    DeviceTemperature.AttributeDefs.current_temperature.id,
+                    attributes[TEMPERATURE] * 100,
                 )
 
         if BATTERY_PERCENTAGE_REMAINING_ATTRIBUTE in attributes:
@@ -452,8 +453,10 @@ class BinaryOutputInterlock(CustomCluster, BinaryOutput):
 class XiaomiPowerConfiguration(PowerConfiguration, LocalDataCluster):
     """Xiaomi power configuration cluster implementation."""
 
-    BATTERY_VOLTAGE_ATTR = 0x0020
-    BATTERY_PERCENTAGE_REMAINING = 0x0021
+    BATTERY_VOLTAGE_ATTR = PowerConfiguration.AttributeDefs.battery_voltage.id
+    BATTERY_PERCENTAGE_REMAINING = (
+        PowerConfiguration.AttributeDefs.battery_percentage_remaining.id
+    )
     MAX_VOLTS_MV = 3100
     MIN_VOLTS_MV = 2820
 
@@ -561,14 +564,15 @@ class AnalogInputCluster(CustomCluster, AnalogInput):
 class ElectricalMeasurementCluster(LocalDataCluster, ElectricalMeasurement):
     """Electrical measurement cluster to receive reports that are sent to the basic cluster."""
 
-    POWER_ID = 0x050B
-    VOLTAGE_ID = 0x0505
-    CONSUMPTION_ID = 0x0304
+    POWER_ID = ElectricalMeasurement.AttributeDefs.active_power.id
+    VOLTAGE_ID = ElectricalMeasurement.AttributeDefs.rms_voltage.id
+    CONSUMPTION_ID = ElectricalMeasurement.AttributeDefs.total_active_power.id
+
     _CONSTANT_ATTRIBUTES = {
-        0x0402: 1,  # power_multiplier
-        0x0403: 1,  # power_divisor
-        0x0604: 1,  # ac_power_multiplier
-        0x0605: 10,  # ac_power_divisor
+        ElectricalMeasurement.AttributeDefs.power_multiplier.id: 1,
+        ElectricalMeasurement.AttributeDefs.power_divisor.id: 1,
+        ElectricalMeasurement.AttributeDefs.ac_power_multiplier.id: 1,
+        ElectricalMeasurement.AttributeDefs.ac_power_divisor.id: 10,
     }
 
     def __init__(self, *args, **kwargs):
@@ -586,13 +590,13 @@ class ElectricalMeasurementCluster(LocalDataCluster, ElectricalMeasurement):
 class MeteringCluster(LocalDataCluster, Metering):
     """Metering cluster to receive reports that are sent to the basic cluster."""
 
-    CURRENT_SUMM_DELIVERED_ID = 0x0000
+    CURRENT_SUMM_DELIVERED_ID = Metering.AttributeDefs.current_summ_delivered.id
     _CONSTANT_ATTRIBUTES = {
-        0x0300: 0,  # unit_of_measure: kWh
-        0x0301: 1,  # multiplier
-        0x0302: 1000,  # divisor
-        0x0303: 0b0_0100_011,  # summation_formatting (read from plug)
-        0x0306: 0,  # metering_device_type: electric
+        Metering.AttributeDefs.unit_of_measure.id: 0,  # kWh
+        Metering.AttributeDefs.multiplier.id: 1,
+        Metering.AttributeDefs.divisor.id: 1000,
+        Metering.AttributeDefs.summation_formatting.id: 0b0_0100_011,  # read from plug
+        Metering.AttributeDefs.metering_device_type.id: 0,  # electric
     }
 
     def __init__(self, *args, **kwargs):
@@ -607,7 +611,10 @@ class IlluminanceMeasurementCluster(CustomCluster, IlluminanceMeasurement):
     """Multistate input cluster."""
 
     def _update_attribute(self, attrid, value):
-        if attrid == self.ATTR_ID and value > 0:
+        if (
+            attrid == IlluminanceMeasurement.AttributeDefs.measured_value.id
+            and value > 0
+        ):
             value = 10000 * math.log10(value) + 1
         super()._update_attribute(attrid, value)
 
