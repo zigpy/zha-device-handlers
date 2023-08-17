@@ -267,8 +267,9 @@ class XiaomiCluster(CustomCluster):
                 attributes[TEMPERATURE_MEASUREMENT],
             )
         if HUMIDITY_MEASUREMENT in attributes:
-            self.endpoint.device.humidity_bus.listener_event(
-                HUMIDITY_REPORTED, attributes[HUMIDITY_MEASUREMENT]
+            self.endpoint.humidity.update_attribute(
+                RelativeHumidity.AttributeDefs.measured_value.id,
+                attributes[HUMIDITY_MEASUREMENT],
             )
         if PRESSURE_MEASUREMENT in attributes:
             self.endpoint.device.pressure_bus.listener_event(
@@ -512,21 +513,15 @@ class RelativeHumidityCluster(CustomCluster, RelativeHumidity):
     """Humidity cluster that filters out invalid humidity readings."""
 
     cluster_id = RelativeHumidity.cluster_id
-    ATTR_ID = 0
 
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
-        self.endpoint.device.humidity_bus.add_listener(self)
 
     def _update_attribute(self, attrid, value):
         # drop values above and below documented range for this sensor
         if attrid == self.ATTR_ID and (0 <= value <= 9999):
             super()._update_attribute(attrid, value)
-
-    def humidity_reported(self, value):
-        """Humidity reported."""
-        self._update_attribute(self.ATTR_ID, value)
 
 
 class PressureMeasurementCluster(CustomCluster, PressureMeasurement):
