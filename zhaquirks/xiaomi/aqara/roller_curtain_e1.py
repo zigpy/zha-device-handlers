@@ -155,20 +155,6 @@ class MultistateOutputRollerE1(CustomCluster, MultistateOutput):
 class PowerConfigurationRollerE1(PowerConfiguration, LocalDataCluster):
     """Xiaomi power configuration cluster implementation."""
 
-    BATTERY_PERCENTAGE_REMAINING = 0x0021
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.power_bus_percentage.add_listener(self)
-
-    def update_battery_percentage(self, value: int) -> None:
-        """Doubles the battery percentage to the Zigbee spec's expected 200% maximum."""
-        super()._update_attribute(
-            self.BATTERY_PERCENTAGE_REMAINING,
-            (value * 2),
-        )
-
 
 class RollerE1AQ(XiaomiCustomDevice):
     """Aqara Roller Shade Driver E1 device."""

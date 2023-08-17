@@ -319,9 +319,8 @@ class XiaomiCluster(CustomCluster):
                 )
 
         if BATTERY_PERCENTAGE_REMAINING_ATTRIBUTE in attributes:
-            self.endpoint.device.power_bus_percentage.listener_event(
-                "update_battery_percentage",
-                attributes[BATTERY_PERCENTAGE_REMAINING_ATTRIBUTE],
+            self.endpoint.power.battery_percent_reported(
+                attributes[BATTERY_PERCENTAGE_REMAINING_ATTRIBUTE]
             )
 
         if SMOKE in attributes:
@@ -630,21 +629,15 @@ class IlluminanceMeasurementCluster(CustomCluster, IlluminanceMeasurement):
     """Multistate input cluster."""
 
     cluster_id = IlluminanceMeasurement.cluster_id
-    ATTR_ID = 0
 
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
-        self.endpoint.device.illuminance_bus.add_listener(self)
 
     def _update_attribute(self, attrid, value):
         if attrid == self.ATTR_ID and value > 0:
             value = 10000 * math.log10(value) + 1
         super()._update_attribute(attrid, value)
-
-    def illuminance_reported(self, value):
-        """Illuminance reported."""
-        self._update_attribute(self.ATTR_ID, value)
 
 
 class OnOffCluster(OnOff, CustomCluster):
