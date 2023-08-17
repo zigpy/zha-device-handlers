@@ -11,7 +11,6 @@ from zigpy.zcl.clusters.general import (
     Scenes,
 )
 
-from zhaquirks import Bus
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -40,12 +39,6 @@ _LOGGER = logging.getLogger(__name__)
 
 class Weather(XiaomiCustomDevice):
     """Xiaomi mija weather sensor device."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        self.temperature_bus = Bus()
-        self.humidity_bus = Bus()
-        super().__init__(*args, **kwargs)
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=24321

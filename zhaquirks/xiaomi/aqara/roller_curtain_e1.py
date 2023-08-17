@@ -24,7 +24,7 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.manufacturer_specific import ManufacturerSpecificCluster
 
-from zhaquirks import Bus, CustomCluster, LocalDataCluster
+from zhaquirks import CustomCluster, LocalDataCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -158,11 +158,6 @@ class PowerConfigurationRollerE1(PowerConfiguration, LocalDataCluster):
 
 class RollerE1AQ(XiaomiCustomDevice):
     """Aqara Roller Shade Driver E1 device."""
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Init."""
-        self.power_bus_percentage: Bus = Bus()  # type: ignore
-        super().__init__(*args, **kwargs)  # type: ignore
 
     signature = {
         MODELS_INFO: [(LUMI, "lumi.curtain.acn002")],

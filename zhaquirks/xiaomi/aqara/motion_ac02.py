@@ -106,8 +106,6 @@ class LumiMotionAC02(CustomDevice):
         """Init."""
         self.battery_size = 11
         self.battery_quantity = 2
-        self.battery_bus = Bus()
-        self.illuminance_bus = Bus()
         self.motion_bus = Bus()
         super().__init__(*args, **kwargs)
 
