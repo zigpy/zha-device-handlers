@@ -479,6 +479,7 @@ class TuyaMoesCover0601_inv_position(TuyaWindowCover):
             ("_TZE200_zuz7f94z", "TS0601"),
             ("_TZE200_3i3exuay", "TS0601"),
             ("_TZE200_nogaemzt", "TS0601"),
+            ("_TZE200_dng9fn0k", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
