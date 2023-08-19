@@ -51,6 +51,8 @@ _LOGGER = logging.getLogger(__name__)
 class HCT020ManufCluster(TuyaManufClusterAttributes):
     """Manufacturer Specific Cluster of HC-T020 gas heating thermostats."""
 
+    set_time_offset = 1970
+
     attributes = {
         HCT020_TARGET_TEMP_ATTR: ("target_temperature", t.uint32_t, True),
         HCT020_TEMPERATURE_ATTR: ("temperature", t.uint32_t, True),
