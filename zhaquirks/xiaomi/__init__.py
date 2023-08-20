@@ -251,7 +251,10 @@ class XiaomiCluster(CustomCluster):
             attributes,
         )
         if BATTERY_VOLTAGE_MV in attributes:
-            self.endpoint.power.battery_reported(attributes[BATTERY_VOLTAGE_MV])
+            # many Xiaomi devices report this, but not all quirks implement the XiaomiPowerConfiguration cluster,
+            # so we check before calling a method on that custom cluster
+            if issubclass(self.endpoint.power, XiaomiPowerConfiguration):
+                self.endpoint.power.battery_reported(attributes[BATTERY_VOLTAGE_MV])
 
         if TEMPERATURE_MEASUREMENT in attributes:
             self.endpoint.temperature.update_attribute(
