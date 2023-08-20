@@ -8,6 +8,7 @@ from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 import zigpy.types as types
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PowerConfiguration
+from zigpy.zcl.clusters.measurement import IlluminanceMeasurement
 
 from zhaquirks import Bus, LocalDataCluster
 from zhaquirks.const import (
@@ -74,9 +75,14 @@ class LocalIlluminanceMeasurementCluster(
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
-        if self.ATTR_ID not in self._attr_cache:
+        if (
+            IlluminanceMeasurement.AttributeDefs.measured_value.id
+            not in self._attr_cache
+        ):
             # put a default value so the sensor is created
-            self._update_attribute(self.ATTR_ID, 0)
+            self._update_attribute(
+                IlluminanceMeasurement.AttributeDefs.measured_value.id, 0
+            )
 
     def illuminance_reported(self, value):
         """Illuminance reported."""
