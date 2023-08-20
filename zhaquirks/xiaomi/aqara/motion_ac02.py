@@ -50,7 +50,9 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         super()._update_attribute(attrid, value)
         if attrid == MOTION_ATTRIBUTE:
             value = value - 65536
-            self.endpoint.illuminance.illuminance_reported(value)
+            self.endpoint.illuminance.update_attribute(
+                IlluminanceMeasurement.AttributeDefs.measured_value.id, value
+            )
             self.endpoint.occupancy.update_attribute(OCCUPANCY, ON)
 
     async def write_attributes(
