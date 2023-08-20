@@ -604,7 +604,7 @@ class MeteringCluster(LocalDataCluster, Metering):
 
 
 class IlluminanceMeasurementCluster(CustomCluster, IlluminanceMeasurement):
-    """Multistate input cluster."""
+    """Illuminance measurement cluster."""
 
     def _update_attribute(self, attrid, value):
         if attrid == self.AttributeDefs.measured_value.id and value > 0:
