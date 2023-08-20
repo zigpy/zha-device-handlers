@@ -1,5 +1,6 @@
 """Tests for xiaomi."""
 import asyncio
+import logging
 import math
 from unittest import mock
 
@@ -66,6 +67,7 @@ from zhaquirks.xiaomi.aqara.feeder_acn001 import (
 import zhaquirks.xiaomi.aqara.motion_ac02
 import zhaquirks.xiaomi.aqara.motion_aq2
 import zhaquirks.xiaomi.aqara.motion_aq2b
+import zhaquirks.xiaomi.aqara.plug
 import zhaquirks.xiaomi.aqara.plug_eu
 import zhaquirks.xiaomi.aqara.smoke
 import zhaquirks.xiaomi.aqara.weather
@@ -1185,3 +1187,35 @@ async def test_xiaomi_motion_sensor_misc(
     assert power_listener.attribute_updates[0][1] == expected_results[2]
     assert power_listener.attribute_updates[1][0] == zcl_power_percent_id
     assert power_listener.attribute_updates[1][1] == expected_results[3]
+
+
+@pytest.mark.parametrize("quirk", (zhaquirks.xiaomi.aqara.plug.Plug,))
+async def test_xiaomi_power_cluster_not_used(zigpy_device_from_quirk, caplog, quirk):
+    """Test that a log is printed which warns when a device reports battery mV readout,
+    even though XiaomiPowerConfigurationCluster is not used.
+
+    This explicitly uses the Plug quirk which will always report this message, as this shouldn't have a battery readout.
+    Other battery-powered devices might implement the XiaomiPowerConfigurationCluster in the future,
+    so they would no longer report this message.
+    """
+    caplog.set_level(logging.DEBUG)  # relevant message is currently DEBUG level
+
+    device = zigpy_device_from_quirk(quirk)
+    basic_cluster = device.endpoints[1].basic
+
+    power_cluster = device.endpoints[1].power
+    power_listener = ClusterListener(power_cluster)
+
+    # fake a battery voltage attribute report
+    basic_cluster.update_attribute(
+        XIAOMI_AQARA_ATTRIBUTE, create_aqara_attr_report({1: 2300})
+    )
+
+    # confirm that no battery voltage attribute was updated
+    assert len(power_listener.attribute_updates) == 0
+
+    # confirm that a debug message was logged
+    assert (
+        "Xiaomi battery voltage attribute received but XiaomiPowerConfiguration not used"
+        in caplog.text
+    )
