@@ -540,8 +540,14 @@ class AnalogInputCluster(CustomCluster, AnalogInput):
 
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
-        if value is not None and value >= 0:
-            self.endpoint.electrical_measurement.update_attribute(
+        if (
+            attrid == self.AttributeDefs.present_value.id
+            and value is not None
+            and value >= 0
+        ):
+            # ElectricalMeasurementCluster is assumed to be on endpoint 1
+            # AnalogInput cluster used for current power seems to always be on endpoint 21
+            self.endpoint.device.endpoints[1].electrical_measurement.update_attribute(
                 ElectricalMeasurement.AttributeDefs.active_power.id,
                 round(value * 10),
             )
