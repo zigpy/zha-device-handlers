@@ -7,10 +7,12 @@ import pytest
 import zigpy.device
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import PowerConfiguration
+from zigpy.zcl.clusters.general import AnalogInput, PowerConfiguration
+from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.hvac import Thermostat
 from zigpy.zcl.clusters.measurement import IlluminanceMeasurement, OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
+from zigpy.zcl.clusters.smartenergy import Metering
 
 import zhaquirks
 from zhaquirks.const import (
@@ -509,39 +511,54 @@ async def test_xiaomi_eu_plug_power(zigpy_device_from_quirk, quirk):
     em_listener = ClusterListener(em_cluster)
 
     # Test voltage on ElectricalMeasurement cluster
+    zcl_em_voltage = ElectricalMeasurement.AttributeDefs.rms_voltage.id
     basic_cluster.update_attribute(
         XIAOMI_AQARA_ATTRIBUTE, create_aqara_attr_report({150: 2300})
     )
     assert len(em_listener.attribute_updates) == 1
-    assert em_listener.attribute_updates[0][0] == 1285
+    assert em_listener.attribute_updates[0][0] == zcl_em_voltage
     assert em_listener.attribute_updates[0][1] == 230
 
     # Test current power consumption on ElectricalMeasurement cluster
+    zcl_em_current_power = ElectricalMeasurement.AttributeDefs.active_power.id
     basic_cluster.update_attribute(
         XIAOMI_AQARA_ATTRIBUTE, create_aqara_attr_report({152: 15})
     )
     assert len(em_listener.attribute_updates) == 2
-    assert em_listener.attribute_updates[1][0] == 1291
+    assert em_listener.attribute_updates[1][0] == zcl_em_current_power
     assert em_listener.attribute_updates[1][1] == 150  # multiplied by 10
 
-    # Test total power consumption on ElectricalMeasurement cluster
-    basic_cluster.update_attribute(
-        XIAOMI_AQARA_ATTRIBUTE, create_aqara_attr_report({149: 0.001})
-    )
-    assert len(em_listener.attribute_updates) == 3
-    assert em_listener.attribute_updates[2][0] == 772
-    assert em_listener.attribute_updates[2][1] == 1  # multiplied by 1000
-
-    # Test total power consumption on SmartEnergy cluster
+    # Test total power consumption on ElectricalMeasurement cluster and SmartEnergy cluster
+    zcl_em_total_power = ElectricalMeasurement.AttributeDefs.total_active_power.id
+    zcl_se_total_power = Metering.AttributeDefs.current_summ_delivered.id
     se_cluster = device.endpoints[1].smartenergy_metering
     se_listener = ClusterListener(se_cluster)
 
     basic_cluster.update_attribute(
         XIAOMI_AQARA_ATTRIBUTE, create_aqara_attr_report({149: 0.001})
     )
+    # electrical measurement cluster
+    assert len(em_listener.attribute_updates) == 3
+    assert em_listener.attribute_updates[2][0] == zcl_em_total_power
+    assert em_listener.attribute_updates[2][1] == 1  # multiplied by 1000
+
+    # smart energy cluster
     assert len(se_listener.attribute_updates) == 1
-    assert se_listener.attribute_updates[0][0] == 0
+    assert se_listener.attribute_updates[0][0] == zcl_se_total_power
     assert se_listener.attribute_updates[0][1] == 1  # multiplied by 1000
+
+    # test current power consumption attribute report on AnalogInput is forwarded to ElectricalMeasurement
+    analog_input_cluster = device.endpoints[21].analog_input
+    analog_input_listener = ClusterListener(analog_input_cluster)
+    zcl_analog_input_value = AnalogInput.AttributeDefs.present_value.id
+
+    analog_input_cluster.update_attribute(zcl_analog_input_value, 40)
+    assert len(analog_input_listener.attribute_updates) == 1
+    assert analog_input_listener.attribute_updates[0][0] == zcl_analog_input_value
+    assert analog_input_listener.attribute_updates[0][1] == 40
+
+    assert em_listener.attribute_updates[3][0] == zcl_em_current_power
+    assert em_listener.attribute_updates[3][1] == 400  # multiplied by 10
 
 
 @pytest.mark.parametrize(
