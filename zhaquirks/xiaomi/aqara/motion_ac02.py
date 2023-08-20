@@ -7,7 +7,7 @@ from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 import zigpy.types as types
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PowerConfiguration
-from zigpy.zcl.clusters.measurement import IlluminanceMeasurement
+from zigpy.zcl.clusters.measurement import IlluminanceMeasurement, OccupancySensing
 
 from zhaquirks import Bus, LocalDataCluster
 from zhaquirks.const import (
@@ -26,8 +26,6 @@ from zhaquirks.xiaomi import (
     XiaomiPowerConfiguration,
 )
 
-OCCUPANCY = 0
-ON = 1
 MOTION_ATTRIBUTE = 274
 DETECTION_INTERVAL = 0x0102
 MOTION_SENSITIVITY = 0x010C
@@ -51,7 +49,10 @@ class OppleCluster(XiaomiAqaraE1Cluster):
             self.endpoint.illuminance.update_attribute(
                 IlluminanceMeasurement.AttributeDefs.measured_value.id, value
             )
-            self.endpoint.occupancy.update_attribute(OCCUPANCY, ON)
+            self.endpoint.occupancy.update_attribute(
+                OccupancySensing.AttributeDefs.occupancy.id,
+                OccupancySensing.Occupancy.Occupied,
+            )
 
     async def write_attributes(
         self, attributes: dict[str | int, Any], manufacturer: int | None = None
