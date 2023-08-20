@@ -1,6 +1,7 @@
 """Xiaomi common components for custom device handlers."""
 from __future__ import annotations
 
+import contextlib
 import logging
 import math
 from typing import Any, Iterable, Iterator
@@ -252,8 +253,8 @@ class XiaomiCluster(CustomCluster):
         )
         if BATTERY_VOLTAGE_MV in attributes:
             # many Xiaomi devices report this, but not all quirks implement the XiaomiPowerConfiguration cluster,
-            # so we check before calling a method on that custom cluster
-            if issubclass(self.endpoint.power, XiaomiPowerConfiguration):
+            # so we might error out if the method doesn't exist
+            with contextlib.suppress(AttributeError):
                 self.endpoint.power.battery_reported(attributes[BATTERY_VOLTAGE_MV])
 
         if TEMPERATURE_MEASUREMENT in attributes:
