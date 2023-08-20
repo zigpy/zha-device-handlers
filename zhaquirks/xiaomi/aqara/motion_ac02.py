@@ -70,25 +70,18 @@ class OppleCluster(XiaomiAqaraE1Cluster):
 class LocalIlluminanceMeasurementCluster(
     LocalDataCluster, IlluminanceMeasurementCluster
 ):
-    """Local lluminance measurement cluster."""
+    """Local illuminance measurement cluster."""
 
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
-        if (
-            IlluminanceMeasurement.AttributeDefs.measured_value.id
-            not in self._attr_cache
-        ):
+        if self.AttributeDefs.measured_value.id not in self._attr_cache:
             # put a default value so the sensor is created
-            self._update_attribute(
-                IlluminanceMeasurement.AttributeDefs.measured_value.id, 0
-            )
+            self._update_attribute(self.AttributeDefs.measured_value.id, 0)
 
     def _update_attribute(self, attrid, value):
-        if (
-            attrid == IlluminanceMeasurement.AttributeDefs.measured_value.id
-            and value < 0
-            or value > 0xFFDC
+        if attrid == self.AttributeDefs.measured_value.id and (
+            value < 0 or value > 0xFFDC
         ):
             self.debug(
                 "Received invalid illuminance value: %s - setting illuminance to 0",
