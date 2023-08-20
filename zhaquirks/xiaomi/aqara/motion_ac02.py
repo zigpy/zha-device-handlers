@@ -84,15 +84,18 @@ class LocalIlluminanceMeasurementCluster(
                 IlluminanceMeasurement.AttributeDefs.measured_value.id, 0
             )
 
-    def illuminance_reported(self, value):
-        """Illuminance reported."""
-        if value < 0 or value > 0xFFDC:
-            _LOGGER.debug(
+    def _update_attribute(self, attrid, value):
+        if (
+            attrid == IlluminanceMeasurement.AttributeDefs.measured_value.id
+            and value < 0
+            or value > 0xFFDC
+        ):
+            self.debug(
                 "Received invalid illuminance value: %s - setting illuminance to 0",
                 value,
             )
             value = 0
-        super().illuminance_reported(value)
+        super()._update_attribute(attrid, value)
 
 
 class LocalOccupancyCluster(LocalDataCluster, OccupancyCluster):
