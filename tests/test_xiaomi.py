@@ -1,5 +1,6 @@
 """Tests for xiaomi."""
 import asyncio
+import math
 from unittest import mock
 
 import pytest
@@ -8,6 +9,7 @@ import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import PowerConfiguration
 from zigpy.zcl.clusters.hvac import Thermostat
+from zigpy.zcl.clusters.measurement import IlluminanceMeasurement, OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
 
 import zhaquirks
@@ -49,6 +51,7 @@ from zhaquirks.xiaomi.aqara.feeder_acn001 import (
     AqaraFeederAcn001,
     OppleCluster,
 )
+import zhaquirks.xiaomi.aqara.motion_ac02
 import zhaquirks.xiaomi.aqara.motion_aq2
 import zhaquirks.xiaomi.aqara.motion_aq2b
 import zhaquirks.xiaomi.aqara.plug_eu
@@ -971,3 +974,54 @@ async def test_xiaomi_e1_thermostat_attribute_update(zigpy_device_from_quirk, qu
     assert len(power_config_listener.attribute_updates) == 1
     assert power_config_listener.attribute_updates[0][0] == zcl_battery_percentage_id
     assert power_config_listener.attribute_updates[0][1] == 100  # ZCL is doubled
+
+
+@pytest.mark.parametrize("quirk", (zhaquirks.xiaomi.aqara.motion_ac02.LumiMotionAC02,))
+async def test_xiaomi_p1_motion_sensor(zigpy_device_from_quirk, quirk):
+    """Test Aqara P1 motion sensor."""
+
+    device = zigpy_device_from_quirk(quirk)
+
+    opple_cluster = device.endpoints[1].opple_cluster
+    opple_listener = ClusterListener(opple_cluster)
+
+    ias_cluster = device.endpoints[1].ias_zone
+    ias_listener = ClusterListener(ias_cluster)
+
+    occupancy_cluster = device.endpoints[1].occupancy
+    occupancy_listener = ClusterListener(occupancy_cluster)
+
+    illuminance_cluster = device.endpoints[1].illuminance
+    illuminance_listener = ClusterListener(illuminance_cluster)
+
+    zcl_zone_status_change_cmd_id = (
+        IasZone.ClientCommandDefs.status_change_notification.id
+    )
+    zcl_occupancy_id = OccupancySensing.AttributeDefs.occupancy.id
+    zcl_iilluminance_id = IlluminanceMeasurement.AttributeDefs.measured_value.id
+
+    # send motion and illuminance report 10
+    opple_cluster._update_attribute(274, 10 + 65536)
+
+    # confirm manufacturer specific attribute report
+    assert len(opple_listener.attribute_updates) == 1
+    assert opple_listener.attribute_updates[0][0] == 274
+    assert opple_listener.attribute_updates[0][1] == 10 + 65536
+
+    # confirm zone status change notification command
+    assert len(ias_listener.cluster_commands) == 1
+    assert ias_listener.cluster_commands[0][1] == zcl_zone_status_change_cmd_id
+    assert ias_listener.cluster_commands[0][2][0] == IasZone.ZoneStatus.Alarm_1
+
+    # confirm occupancy report
+    assert len(occupancy_listener.attribute_updates) == 1
+    assert occupancy_listener.attribute_updates[0][0] == zcl_occupancy_id
+    assert (
+        occupancy_listener.attribute_updates[0][1]
+        == OccupancySensing.Occupancy.Occupied
+    )
+
+    # confirm illuminance report (with conversion)
+    assert len(illuminance_listener.attribute_updates) == 1
+    assert illuminance_listener.attribute_updates[0][0] == zcl_iilluminance_id
+    assert illuminance_listener.attribute_updates[0][1] == 10000 * math.log10(10) + 1
