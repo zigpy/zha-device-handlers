@@ -10,7 +10,13 @@ from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import AnalogInput, PowerConfiguration
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.hvac import Thermostat
-from zigpy.zcl.clusters.measurement import IlluminanceMeasurement, OccupancySensing
+from zigpy.zcl.clusters.measurement import (
+    IlluminanceMeasurement,
+    OccupancySensing,
+    PressureMeasurement,
+    RelativeHumidity,
+    TemperatureMeasurement,
+)
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.clusters.smartenergy import Metering
 
@@ -58,6 +64,7 @@ import zhaquirks.xiaomi.aqara.motion_aq2
 import zhaquirks.xiaomi.aqara.motion_aq2b
 import zhaquirks.xiaomi.aqara.plug_eu
 import zhaquirks.xiaomi.aqara.smoke
+import zhaquirks.xiaomi.aqara.weather
 import zhaquirks.xiaomi.mija.motion
 
 from tests.common import ZCL_OCC_ATTR_RPT_OCC, ClusterListener
@@ -1042,3 +1049,73 @@ async def test_xiaomi_p1_motion_sensor(zigpy_device_from_quirk, quirk):
     assert len(illuminance_listener.attribute_updates) == 1
     assert illuminance_listener.attribute_updates[0][0] == zcl_iilluminance_id
     assert illuminance_listener.attribute_updates[0][1] == 10000 * math.log10(10) + 1
+
+
+@pytest.mark.parametrize(
+    "raw_report, expected_results",
+    (
+        [
+            "18200A01FF412501214F0B0421A84305214E020624010000000064299B096521BE1B662B138D01000A21900D",
+            [
+                2459,  # temperature
+                7102,  # humidity
+                1016.51,  # pressure
+                28.9,  # battery voltage
+                54,  # battery percent
+            ],
+        ],
+    ),
+)
+async def test_xiaomi_weather(zigpy_device_from_quirk, raw_report, expected_results):
+    """Test Aqara weather sensor."""
+    raw_report = bytes.fromhex(raw_report)
+
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.weather.Weather2)
+
+    basic_cluster = device.endpoints[1].basic
+
+    temperature_cluster = device.endpoints[1].temperature
+    temperature_listener = ClusterListener(temperature_cluster)
+
+    humidity_cluster = device.endpoints[1].humidity
+    humidity_listener = ClusterListener(humidity_cluster)
+
+    pressure_cluster = device.endpoints[1].pressure
+    pressure_listener = ClusterListener(pressure_cluster)
+
+    power_cluster = device.endpoints[1].power
+    power_listener = ClusterListener(power_cluster)
+
+    zcl_temperature_id = TemperatureMeasurement.AttributeDefs.measured_value.id
+    zcl_humidity_id = RelativeHumidity.AttributeDefs.measured_value.id
+    zcl_pressure_id = PressureMeasurement.AttributeDefs.measured_value.id
+    zcl_power_voltage_id = PowerConfiguration.AttributeDefs.battery_voltage.id
+    zcl_power_percent_id = (
+        PowerConfiguration.AttributeDefs.battery_percentage_remaining.id
+    )
+
+    device.handle_message(
+        260,
+        basic_cluster.cluster_id,
+        basic_cluster.endpoint.endpoint_id,
+        basic_cluster.endpoint.endpoint_id,
+        raw_report,
+    )
+
+    assert len(temperature_listener.attribute_updates) == 1
+    assert temperature_listener.attribute_updates[0][0] == zcl_temperature_id
+    assert temperature_listener.attribute_updates[0][1] == expected_results[0]
+
+    assert len(humidity_listener.attribute_updates) == 1
+    assert humidity_listener.attribute_updates[0][0] == zcl_humidity_id
+    assert humidity_listener.attribute_updates[0][1] == expected_results[1]
+
+    assert len(pressure_listener.attribute_updates) == 1
+    assert pressure_listener.attribute_updates[0][0] == zcl_pressure_id
+    assert pressure_listener.attribute_updates[0][1] == expected_results[2]
+
+    assert len(power_listener.attribute_updates) == 2
+    assert power_listener.attribute_updates[0][0] == zcl_power_voltage_id
+    assert power_listener.attribute_updates[0][1] == expected_results[3]
+    assert power_listener.attribute_updates[1][0] == zcl_power_percent_id
+    assert power_listener.attribute_updates[1][1] == expected_results[4]
