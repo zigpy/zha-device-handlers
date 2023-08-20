@@ -200,10 +200,10 @@ class XiaomiCluster(CustomCluster):
         reports = list(self._interpret_attr_reports(data))
 
         if not reports:
-            _LOGGER.warning("Failed to parse Xiaomi attribute report: %r", data)
+            self.warning("Failed to parse Xiaomi attribute report: %r", data)
             return super().deserialize(hdr.serialize() + data)
         elif len(reports) > 1:
-            _LOGGER.warning(
+            self.warning(
                 "Xiaomi attribute report has multiple valid interpretations: %r",
                 reports,
             )
@@ -244,7 +244,7 @@ class XiaomiCluster(CustomCluster):
                 )
             return
 
-        _LOGGER.debug(
+        self.debug(
             "%s - Attribute report. attribute_id: [%s] value: [%s]",
             self.endpoint.device.ieee,
             attrid,
