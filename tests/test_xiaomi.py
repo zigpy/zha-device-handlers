@@ -767,7 +767,7 @@ async def test_aqara_smoke_sensor_attribute_update(zigpy_device_from_quirk, quir
     ias_cluster = device.endpoints[1].ias_zone
     ias_listener = ClusterListener(ias_cluster)
 
-    zone_status_id = IasZone.attributes_by_name["zone_status"].id
+    zone_status_id = IasZone.AttributeDefs.zone_status.id
 
     # check that updating Xiaomi smoke attribute also updates zone status on the Ias Zone cluster
 
@@ -832,10 +832,7 @@ async def test_aqara_smoke_sensor_xiaomi_attribute_report(
 
     # check that Xiaomi attribute report resets smoke zone status
     assert len(ias_listener.attribute_updates) == 1
-    assert (
-        ias_listener.attribute_updates[0][0]
-        == IasZone.attributes_by_name["zone_status"].id
-    )
+    assert ias_listener.attribute_updates[0][0] == IasZone.AttributeDefs.zone_status.id
     assert ias_listener.attribute_updates[0][1] == expected_zone_status
 
 
@@ -844,8 +841,8 @@ async def test_aqara_smoke_sensor_xiaomi_attribute_report(
     [
         ("system_mode", "unoccupied_heating_setpoint"),
         (
-            Thermostat.attributes_by_name["system_mode"].id,
-            Thermostat.attributes_by_name["unoccupied_heating_setpoint"].id,
+            Thermostat.AttributeDefs.system_mode.id,
+            Thermostat.AttributeDefs.unoccupied_heating_setpoint.id,
         ),
     ],
 )
@@ -917,7 +914,7 @@ async def test_xiaomi_e1_thermostat_rw_redirection(
             0x0271
         ]  # Opple system_mode attribute
         assert thermostat_listener.attribute_updates[0] == (
-            Thermostat.attributes_by_name["system_mode"].id,
+            Thermostat.AttributeDefs.system_mode.id,
             Thermostat.SystemMode.Heat,
         )  # check that attributes are correctly mapped and updated on ZCL thermostat cluster
 
@@ -946,7 +943,7 @@ async def test_xiaomi_e1_thermostat_rw_redirection(
         assert opple_listener.attribute_updates[1] == (0x0271, 1)  # Opple system_mode
 
         assert thermostat_listener.attribute_updates[2] == (
-            Thermostat.attributes_by_name["system_mode"].id,
+            Thermostat.AttributeDefs.system_mode.id,
             Thermostat.SystemMode.Heat,
         )  # check ZCL attribute is in correct mode
 
@@ -975,10 +972,10 @@ async def test_xiaomi_e1_thermostat_attribute_update(zigpy_device_from_quirk, qu
     power_config_cluster = device.endpoints[1].power
     power_config_listener = ClusterListener(power_config_cluster)
 
-    zcl_system_mode_id = Thermostat.attributes_by_name["system_mode"].id
-    zcl_battery_percentage_id = PowerConfiguration.attributes_by_name[
-        "battery_percentage_remaining"
-    ].id
+    zcl_system_mode_id = Thermostat.AttributeDefs.system_mode.id
+    zcl_battery_percentage_id = (
+        PowerConfiguration.AttributeDefs.battery_percentage_remaining.id
+    )
 
     # check that updating Xiaomi system_mode also updates an attribute on the Thermostat cluster
 
