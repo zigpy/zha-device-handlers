@@ -200,10 +200,10 @@ class XiaomiCluster(CustomCluster):
         reports = list(self._interpret_attr_reports(data))
 
         if not reports:
-            self.warning("Failed to parse Xiaomi attribute report: %r", data)
+            _LOGGER.warning("Failed to parse Xiaomi attribute report: %r", data)
             return super().deserialize(hdr.serialize() + data)
         elif len(reports) > 1:
-            self.warning(
+            _LOGGER.warning(
                 "Xiaomi attribute report has multiple valid interpretations: %r",
                 reports,
             )
@@ -244,7 +244,7 @@ class XiaomiCluster(CustomCluster):
                 )
             return
 
-        self.debug(
+        _LOGGER.debug(
             "%s - Xiaomi attribute report. attribute_id: [%s] value: [%s]",
             self.endpoint.device.ieee,
             attrid,
@@ -259,7 +259,7 @@ class XiaomiCluster(CustomCluster):
                 self.endpoint.power.battery_reported(attributes[BATTERY_VOLTAGE_MV])
             else:
                 # log a debug message if the cluster is not implemented
-                self.debug(
+                _LOGGER.debug(
                     "%s - Xiaomi battery voltage attribute received but XiaomiPowerConfiguration not used",
                     self.endpoint.device.ieee,
                 )
@@ -487,7 +487,7 @@ class XiaomiPowerConfiguration(PowerConfiguration, LocalDataCluster):
 
         percent = round((voltage_mv - self.MIN_VOLTS_MV) * self._slope)
 
-        self.debug(
+        _LOGGER.debug(
             "Voltage mV: [Min]:%s < [RAW]:%s < [Max]:%s, Battery Percent: %s",
             self.MIN_VOLTS_MV,
             voltage_mv,

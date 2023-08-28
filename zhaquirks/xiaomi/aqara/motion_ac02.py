@@ -1,6 +1,7 @@
 """Quirk for LUMI lumi.motion.ac02."""
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from zigpy.profiles import zha
@@ -30,6 +31,7 @@ MOTION_ATTRIBUTE = 274
 DETECTION_INTERVAL = 0x0102
 MOTION_SENSITIVITY = 0x010C
 TRIGGER_INDICATOR = 0x0152
+_LOGGER = logging.getLogger(__name__)
 
 
 class OppleCluster(XiaomiAqaraE1Cluster):
@@ -62,7 +64,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         interval = attributes.get(
             "detection_interval", attributes.get(DETECTION_INTERVAL)
         )
-        self.debug("detection interval: %s", interval)
+        _LOGGER.debug("detection interval: %s", interval)
         if interval is not None:
             self.endpoint.ias_zone.reset_s = int(interval)
         return result
