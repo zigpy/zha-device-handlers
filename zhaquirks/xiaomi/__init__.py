@@ -45,7 +45,6 @@ from zhaquirks.const import (
     UNKNOWN,
     VALUE,
     ZHA_SEND_EVENT,
-    ZONE_STATUS,
 )
 
 BATTERY_LEVEL = "battery_level"
@@ -328,7 +327,9 @@ class XiaomiCluster(CustomCluster):
             )
 
         if SMOKE in attributes:
-            self.endpoint.ias_zone.update_attribute(ZONE_STATUS, attributes[SMOKE])
+            self.endpoint.ias_zone.update_attribute(
+                IasZone.AttributeDefs.zone_status.id, attributes[SMOKE]
+            )
 
     def _parse_aqara_attributes(self, value):
         """Parse non-standard attributes."""
