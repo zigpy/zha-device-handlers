@@ -157,6 +157,17 @@ class MultistateOutputRollerE1(CustomCluster, MultistateOutput):
     )
 
 
+class PowerConfigurationRollerE1(XiaomiPowerConfiguration):
+    """Power cluster which ignores Xiaomi voltage reports."""
+
+    def _update_battery_percentage(self, voltage_mv: int) -> None:
+        """Ignore Xiaomi voltage reports, so they're not used to calculate battery percentage."""
+        # This device sends battery percentage reports which are handled using a XiaomiCluster and
+        # the inherited XiaomiPowerConfiguration cluster.
+        # This device might also send Xiaomi battery reports, so we only want to use those for the voltage attribute,
+        # but not for the battery percentage. XiaomiPowerConfiguration.battery_reported() still updates the voltage.
+
+
 class RollerE1AQ(XiaomiCustomDevice):
     """Aqara Roller Shade Driver E1 device."""
 
@@ -218,7 +229,7 @@ class RollerE1AQ(XiaomiCustomDevice):
                     MultistateOutputRollerE1,
                     Scenes.cluster_id,
                     WindowCoveringRollerE1,
-                    XiaomiPowerConfiguration,
+                    PowerConfigurationRollerE1,
                 ],
                 OUTPUT_CLUSTERS: [
                     Ota.cluster_id,
