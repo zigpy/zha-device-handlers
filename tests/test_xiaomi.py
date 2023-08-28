@@ -70,6 +70,7 @@ import zhaquirks.xiaomi.aqara.motion_aq2
 import zhaquirks.xiaomi.aqara.motion_aq2b
 import zhaquirks.xiaomi.aqara.plug
 import zhaquirks.xiaomi.aqara.plug_eu
+import zhaquirks.xiaomi.aqara.roller_curtain_e1
 import zhaquirks.xiaomi.aqara.smoke
 import zhaquirks.xiaomi.aqara.weather
 import zhaquirks.xiaomi.mija.motion
@@ -1236,3 +1237,42 @@ async def test_xiaomi_power_cluster_not_used(zigpy_device_from_quirk, caplog, qu
         "Xiaomi battery voltage attribute received but XiaomiPowerConfiguration not used"
         in caplog.text
     )
+
+
+@pytest.mark.parametrize(
+    "quirk", (zhaquirks.xiaomi.aqara.roller_curtain_e1.RollerE1AQ,)
+)
+async def test_xiaomi_e1_roller_curtain_battery(zigpy_device_from_quirk, quirk):
+    """Test Aqara E1 roller curtain battery reporting."""
+    # Ideally, get a real Xiaomi "heartbeat" message to test.
+    # For now, fake the heartbeat message and check if battery parsing works.
+
+    device = zigpy_device_from_quirk(quirk)
+
+    basic_cluster = device.endpoints[1].basic
+    ClusterListener(basic_cluster)
+
+    power_cluster = device.endpoints[1].power
+    power_listener = ClusterListener(power_cluster)
+
+    zcl_power_voltage_id = PowerConfiguration.AttributeDefs.battery_voltage.id
+    zcl_power_percent_id = (
+        PowerConfiguration.AttributeDefs.battery_percentage_remaining.id
+    )
+
+    # battery voltage: 2895 mV
+    # battery percentage: 80%
+    basic_cluster.update_attribute(
+        XIAOMI_AQARA_ATTRIBUTE, create_aqara_attr_report({1: 2895, 101: 60})
+    )
+
+    # confirm that battery voltage attribute and percentage were each updated just once,
+    # so we verify the percent value sent was used,
+    # and the voltage value sent was only used for the voltage and not also for the percentage
+    assert len(power_listener.attribute_updates) == 2
+
+    # verify voltage and percentage values match the values sent
+    assert power_listener.attribute_updates[0][0] == zcl_power_voltage_id
+    assert power_listener.attribute_updates[0][1] == 28.9
+    assert power_listener.attribute_updates[1][0] == zcl_power_percent_id
+    assert power_listener.attribute_updates[1][1] == 120
