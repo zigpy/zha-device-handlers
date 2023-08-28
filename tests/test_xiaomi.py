@@ -42,6 +42,7 @@ from zhaquirks.const import (
 from zhaquirks.xiaomi import (
     LUMI,
     XIAOMI_AQARA_ATTRIBUTE,
+    XIAOMI_AQARA_ATTRIBUTE_E1,
     XIAOMI_NODE_DESC,
     BasicCluster,
     XiaomiCustomDevice,
@@ -1028,7 +1029,7 @@ async def test_xiaomi_p1_motion_sensor(zigpy_device_from_quirk, quirk):
     zcl_iilluminance_id = IlluminanceMeasurement.AttributeDefs.measured_value.id
 
     # send motion and illuminance report 10
-    opple_cluster._update_attribute(274, 10 + 65536)
+    opple_cluster.update_attribute(274, 10 + 65536)
 
     # confirm manufacturer specific attribute report
     assert len(opple_listener.attribute_updates) == 1
@@ -1052,6 +1053,22 @@ async def test_xiaomi_p1_motion_sensor(zigpy_device_from_quirk, quirk):
     assert len(illuminance_listener.attribute_updates) == 1
     assert illuminance_listener.attribute_updates[0][0] == zcl_iilluminance_id
     assert illuminance_listener.attribute_updates[0][1] == 10000 * math.log10(10) + 1
+
+    # send invalid illuminance report 0xFFFF (and motion)
+    opple_cluster.update_attribute(274, 0xFFFF)
+
+    # confirm invalid illuminance report is interpreted as 0
+    assert len(illuminance_listener.attribute_updates) == 2
+    assert illuminance_listener.attribute_updates[1][0] == zcl_iilluminance_id
+    assert illuminance_listener.attribute_updates[1][1] == 0
+
+    # send illuminance report only
+    opple_cluster.update_attribute(
+        XIAOMI_AQARA_ATTRIBUTE_E1, create_aqara_attr_report({101: 20})
+    )
+    assert len(illuminance_listener.attribute_updates) == 3
+    assert illuminance_listener.attribute_updates[2][0] == zcl_iilluminance_id
+    assert illuminance_listener.attribute_updates[2][1] == 10000 * math.log10(20) + 1
 
 
 @pytest.mark.parametrize(
