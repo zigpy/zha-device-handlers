@@ -775,21 +775,21 @@ async def test_aqara_smoke_sensor_attribute_update(zigpy_device_from_quirk, quir
     # check that updating Xiaomi smoke attribute also updates zone status on the Ias Zone cluster
 
     # turn on smoke alarm
-    opple_cluster._update_attribute(0x013A, 1)
+    opple_cluster.update_attribute(0x013A, 1)
     assert len(opple_listener.attribute_updates) == 1
     assert len(ias_listener.attribute_updates) == 1
     assert ias_listener.attribute_updates[0][0] == zone_status_id
     assert ias_listener.attribute_updates[0][1] == IasZone.ZoneStatus.Alarm_1
 
     # turn off smoke alarm
-    opple_cluster._update_attribute(0x013A, 0)
+    opple_cluster.update_attribute(0x013A, 0)
     assert len(opple_listener.attribute_updates) == 2
     assert len(ias_listener.attribute_updates) == 2
     assert ias_listener.attribute_updates[1][0] == zone_status_id
     assert ias_listener.attribute_updates[1][1] == 0
 
     # check if fake dB/m smoke density attribute is also updated
-    opple_cluster._update_attribute(0x013B, 10)
+    opple_cluster.update_attribute(0x013B, 10)
     assert len(opple_listener.attribute_updates) == 4
     assert opple_listener.attribute_updates[2][0] == 0x013B
     assert opple_listener.attribute_updates[2][1] == 10
@@ -983,21 +983,21 @@ async def test_xiaomi_e1_thermostat_attribute_update(zigpy_device_from_quirk, qu
     # check that updating Xiaomi system_mode also updates an attribute on the Thermostat cluster
 
     # turn off heating
-    opple_cluster._update_attribute(0x0271, 0)
+    opple_cluster.update_attribute(0x0271, 0)
     assert len(opple_listener.attribute_updates) == 1
     assert len(thermostat_listener.attribute_updates) == 1
     assert thermostat_listener.attribute_updates[0][0] == zcl_system_mode_id
     assert thermostat_listener.attribute_updates[0][1] == Thermostat.SystemMode.Off
 
     # turn on heating
-    opple_cluster._update_attribute(0x0271, 1)
+    opple_cluster.update_attribute(0x0271, 1)
     assert len(opple_listener.attribute_updates) == 2
     assert len(thermostat_listener.attribute_updates) == 2
     assert thermostat_listener.attribute_updates[1][0] == zcl_system_mode_id
     assert thermostat_listener.attribute_updates[1][1] == Thermostat.SystemMode.Heat
 
     # check that updating battery_percentage on the OppleCluster also updates the PowerConfiguration cluster
-    opple_cluster._update_attribute(0x040A, 50)  # 50% battery
+    opple_cluster.update_attribute(0x040A, 50)  # 50% battery
     assert len(opple_listener.attribute_updates) == 3
     assert len(power_config_listener.attribute_updates) == 1
     assert power_config_listener.attribute_updates[0][0] == zcl_battery_percentage_id
