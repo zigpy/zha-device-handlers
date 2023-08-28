@@ -18,13 +18,12 @@ from zigpy.zcl.clusters.general import (
     MultistateOutput,
     OnOff,
     Ota,
-    PowerConfiguration,
     Scenes,
     Time,
 )
 from zigpy.zcl.clusters.manufacturer_specific import ManufacturerSpecificCluster
 
-from zhaquirks import CustomCluster, LocalDataCluster
+from zhaquirks import CustomCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -33,7 +32,13 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.xiaomi import LUMI, BasicCluster, XiaomiCluster, XiaomiCustomDevice
+from zhaquirks.xiaomi import (
+    LUMI,
+    BasicCluster,
+    XiaomiCluster,
+    XiaomiCustomDevice,
+    XiaomiPowerConfiguration,
+)
 
 PRESENT_VALUE = 0x0055
 CURRENT_POSITION_LIFT_PERCENTAGE = 0x0008
@@ -152,10 +157,6 @@ class MultistateOutputRollerE1(CustomCluster, MultistateOutput):
     )
 
 
-class PowerConfigurationRollerE1(PowerConfiguration, LocalDataCluster):
-    """Xiaomi power configuration cluster implementation."""
-
-
 class RollerE1AQ(XiaomiCustomDevice):
     """Aqara Roller Shade Driver E1 device."""
 
@@ -217,7 +218,7 @@ class RollerE1AQ(XiaomiCustomDevice):
                     MultistateOutputRollerE1,
                     Scenes.cluster_id,
                     WindowCoveringRollerE1,
-                    PowerConfigurationRollerE1,
+                    XiaomiPowerConfiguration,
                 ],
                 OUTPUT_CLUSTERS: [
                     Ota.cluster_id,
