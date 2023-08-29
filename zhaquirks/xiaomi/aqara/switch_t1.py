@@ -37,8 +37,8 @@ from zhaquirks.xiaomi import (
 from zhaquirks.xiaomi.aqara.opple_remote import MultistateInputCluster
 
 
-class XiaomiAqaraT1Cluster(XiaomiAqaraE1Cluster):
-    """Xiaomi Aqara T1 cluster."""
+class OppleCluster(XiaomiAqaraE1Cluster):
+    """Xiaomi Aqara T1 relay cluster."""
 
     ep_attribute = "opple_cluster"
     attributes = {
@@ -65,7 +65,7 @@ class SwitchT1(XiaomiCustomDevice):
                     Scenes.cluster_id,
                     Alarms.cluster_id,
                     Time.cluster_id,
-                    XiaomiAqaraT1Cluster.cluster_id,
+                    OppleCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Ota.cluster_id,
@@ -114,7 +114,7 @@ class SwitchT1(XiaomiCustomDevice):
                     Time.cluster_id,
                     XiaomiMeteringCluster,
                     ElectricalMeasurementCluster,
-                    XiaomiAqaraT1Cluster,
+                    OppleCluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     Time.cluster_id,
@@ -166,7 +166,7 @@ class SwitchT1Alt1(SwitchT1):
                     Scenes.cluster_id,
                     Alarms.cluster_id,
                     Time.cluster_id,
-                    XiaomiAqaraT1Cluster.cluster_id,
+                    OppleCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Time.cluster_id,
