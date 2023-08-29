@@ -548,7 +548,11 @@ class PressureMeasurementCluster(CustomCluster, PressureMeasurement):
 
 
 class AnalogInputCluster(CustomCluster, AnalogInput):
-    """Analog input cluster, only used to relay power consumption information to ElectricalMeasurementCluster."""
+    """Analog input cluster, only used to relay power consumption information to ElectricalMeasurementCluster.
+
+    The AnalogInput cluster responsible for reporting power consumption seems to be on endpoint 21 for newer devices
+    and either on endpoint 1 or 2 for older devices.
+    """
 
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
@@ -558,7 +562,6 @@ class AnalogInputCluster(CustomCluster, AnalogInput):
             and value >= 0
         ):
             # ElectricalMeasurementCluster is assumed to be on endpoint 1
-            # AnalogInput cluster used for current power seems to always be on endpoint 21
             self.endpoint.device.endpoints[1].electrical_measurement.update_attribute(
                 ElectricalMeasurement.AttributeDefs.active_power.id,
                 round(value * 10),
