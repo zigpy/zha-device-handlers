@@ -31,7 +31,7 @@ ThirdReality_Specific_CLUSTER_ID = 0xFC00
 
 
 class ThirdRealitySpecificCluster(CustomCluster):
-    """privatecluster, only used to relay ias zone information to ias zone Cluster."""
+    """Manufacturer specific cluster to relay motion event to IAS Zone cluster."""
 
     cluster_id = ThirdReality_Specific_CLUSTER_ID
 
