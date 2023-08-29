@@ -46,7 +46,7 @@ class LocalIasZone(LocalDataCluster, IasZone):
     """Local IAS Zone cluster."""
 
     _CONSTANT_ATTRIBUTES = {
-        IasZone.attributes_by_name["zone_type"].id: IasZone.ZoneType.Motion_Sensor
+        IasZone.AttributeDefs.zone_type.id: IasZone.ZoneType.Motion_Sensor
     }
 
 
