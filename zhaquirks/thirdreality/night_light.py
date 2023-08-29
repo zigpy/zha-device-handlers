@@ -27,14 +27,14 @@ from zhaquirks.const import (
 )
 from zhaquirks.thirdreality import THIRD_REALITY
 
-ThirdReality_Specific_CLUSTER_ID = 0xFC00
+THIRD_REALITY_CLUSTER_ID = 0xFC00
 THIRD_REALITY_MOTION_EVENT_ATTR_ID = 0x0002
 
 
 class ThirdRealitySpecificCluster(CustomCluster):
     """Manufacturer specific cluster to relay motion event to IAS Zone cluster."""
 
-    cluster_id = ThirdReality_Specific_CLUSTER_ID
+    cluster_id = THIRD_REALITY_CLUSTER_ID
 
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
