@@ -16,7 +16,6 @@ from zigpy.zcl.clusters.general import (
     Time,
 )
 
-from zhaquirks import Bus
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -49,13 +48,6 @@ class XiaomiAqaraT1Cluster(XiaomiAqaraE1Cluster):
 
 class SwitchT1(XiaomiCustomDevice):
     """Aqara T1 relay switch."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        self.voltage_bus = Bus()
-        self.consumption_bus = Bus()
-        self.power_bus = Bus()
-        super().__init__(*args, **kwargs)
 
     signature = {
         MODELS_INFO: [(LUMI, "lumi.switch.n0agl1"), (LUMI, "lumi.switch.n0acn2")],
