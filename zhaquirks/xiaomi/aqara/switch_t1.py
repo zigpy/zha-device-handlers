@@ -38,7 +38,9 @@ from zhaquirks.xiaomi.aqara.opple_remote import MultistateInputCluster
 
 
 class XiaomiAqaraT1Cluster(XiaomiAqaraE1Cluster):
-    ep_attribute = "aqara_cluster"
+    """Xiaomi Aqara T1 cluster."""
+
+    ep_attribute = "opple_cluster"
     attributes = {
         0x000A: ("switch_type", t.uint8_t, True),
         0x0201: ("power_outage_memory", t.Bool, True),
