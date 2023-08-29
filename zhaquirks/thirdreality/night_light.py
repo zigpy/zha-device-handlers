@@ -28,6 +28,7 @@ from zhaquirks.const import (
 from zhaquirks.thirdreality import THIRD_REALITY
 
 ThirdReality_Specific_CLUSTER_ID = 0xFC00
+THIRD_REALITY_MOTION_EVENT_ATTR_ID = 0x0002
 
 
 class ThirdRealitySpecificCluster(CustomCluster):
@@ -37,9 +38,10 @@ class ThirdRealitySpecificCluster(CustomCluster):
 
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
-        self.endpoint.ias_zone.update_attribute(
-            IasZone.AttributeDefs.zone_status.id, value
-        )
+        if attrid == THIRD_REALITY_MOTION_EVENT_ATTR_ID:
+            self.endpoint.ias_zone.update_attribute(
+                IasZone.AttributeDefs.zone_status.id, value
+            )
 
 
 class LocalIasZone(LocalDataCluster, IasZone):
