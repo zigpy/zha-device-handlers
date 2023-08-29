@@ -72,6 +72,7 @@ import zhaquirks.xiaomi.aqara.plug
 import zhaquirks.xiaomi.aqara.plug_eu
 import zhaquirks.xiaomi.aqara.roller_curtain_e1
 import zhaquirks.xiaomi.aqara.smoke
+import zhaquirks.xiaomi.aqara.switch_t1
 import zhaquirks.xiaomi.aqara.weather
 import zhaquirks.xiaomi.mija.motion
 
@@ -515,9 +516,15 @@ async def test_xiaomi_eu_plug_binding(zigpy_device_from_quirk, quirk):
         )
 
 
-@pytest.mark.parametrize("quirk", (zhaquirks.xiaomi.aqara.plug_eu.PlugMAEU01,))
-async def test_xiaomi_eu_plug_power(zigpy_device_from_quirk, quirk):
-    """Test current power consumption, total power consumption, and current voltage on Xiaomi EU plug."""
+@pytest.mark.parametrize(
+    "quirk",
+    (
+        zhaquirks.xiaomi.aqara.plug_eu.PlugMAEU01,
+        zhaquirks.xiaomi.aqara.switch_t1.SwitchT1,
+    ),
+)
+async def test_xiaomi_plug_power(zigpy_device_from_quirk, quirk):
+    """Test current power consumption, total power consumption, and current voltage on Xiaomi EU plug and T1 relay."""
 
     device = zigpy_device_from_quirk(quirk)
     basic_cluster = device.endpoints[1].basic
