@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional, Union
 from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time
+from zigpy.zcl.clusters.general import Basic, Ota, Time
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -19,6 +19,7 @@ from zhaquirks.tuya.mcu import (
     EnchantedDevice,
     TuyaMCUCluster,
     TuyaOnOff,
+    TuyaPowerConfigurationCluster,
 )
 
 
@@ -35,13 +36,17 @@ class FingerBotReverse(t.enum8):
 
 class TuyaFingerbotCluster(TuyaMCUCluster):
     attributes = TuyaMCUCluster.attributes.copy()
-    attributes.update({101: ("mode", FingerBotMode)})
-    attributes.update({102: ("down_movement", t.uint16_t)})
-    attributes.update({103: ("sustain_time", t.uint16_t)})
-    attributes.update({104: ("reverse", FingerBotReverse)})
-    attributes.update({105: ("battery", t.uint16_t)})
-    attributes.update({106: ("up_movement", t.uint16_t)})
-    attributes.update({107: ("touch_control", t.Bool)})
+    attributes.update(
+        {
+            101: ("mode", FingerBotMode),
+            102: ("down_movement", t.uint16_t),
+            103: ("sustain_time", t.uint16_t),
+            104: ("reverse", FingerBotReverse),
+            105: ("battery", t.uint16_t),
+            106: ("up_movement", t.uint16_t),
+            107: ("touch_control", t.Bool),
+        }
+    )
 
     async def command(
         self,
@@ -85,7 +90,10 @@ class TuyaFingerbotCluster(TuyaMCUCluster):
             converter=lambda x: FingerBotReverse(x),
         ),
         # Battery
-        105: DPToAttributeMapping(TuyaMCUCluster.ep_attribute, "battery"),
+        105: DPToAttributeMapping(
+            TuyaPowerConfigurationCluster.ep_attribute,
+            "battery_percentage_remaining",
+        ),
         # Up Movement
         106: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
