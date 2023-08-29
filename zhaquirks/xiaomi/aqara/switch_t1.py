@@ -30,9 +30,9 @@ from zhaquirks.xiaomi import (
     BasicCluster,
     DeviceTemperatureCluster,
     ElectricalMeasurementCluster,
+    MeteringCluster,
     XiaomiAqaraE1Cluster,
     XiaomiCustomDevice,
-    XiaomiMeteringCluster,
 )
 from zhaquirks.xiaomi.aqara.opple_remote import MultistateInputCluster
 
@@ -112,7 +112,7 @@ class SwitchT1(XiaomiCustomDevice):
                     OnOff.cluster_id,
                     Alarms.cluster_id,
                     Time.cluster_id,
-                    XiaomiMeteringCluster,
+                    MeteringCluster,
                     ElectricalMeasurementCluster,
                     OppleCluster,
                 ],
