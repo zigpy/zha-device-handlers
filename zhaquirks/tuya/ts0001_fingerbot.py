@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional, Union
 from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import Basic, Ota, Time
+from zigpy.zcl.clusters.general import Basic, OnOff, Ota, Time
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -18,7 +18,6 @@ from zhaquirks.tuya.mcu import (
     DPToAttributeMapping,
     EnchantedDevice,
     TuyaMCUCluster,
-    TuyaOnOff,
     TuyaPowerConfigurationCluster,
 )
 
@@ -69,7 +68,7 @@ class TuyaFingerbotCluster(TuyaMCUCluster):
         )
 
     dp_to_attribute: Dict[int, DPToAttributeMapping] = {
-        1: DPToAttributeMapping(TuyaOnOff.ep_attribute, "on_off"),
+        1: DPToAttributeMapping(OnOff.ep_attribute, "on_off"),
         # Mode
         101: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
@@ -123,7 +122,7 @@ class TuyaFingerbot(EnchantedDevice):
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    TuyaOnOff.cluster_id,
+                    OnOff.cluster_id,
                     TuyaFingerbotCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
@@ -141,7 +140,7 @@ class TuyaFingerbot(EnchantedDevice):
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    TuyaOnOff,
+                    OnOff,
                     TuyaFingerbotCluster,
                 ],
                 OUTPUT_CLUSTERS: [
