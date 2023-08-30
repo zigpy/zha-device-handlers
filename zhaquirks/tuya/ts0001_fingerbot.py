@@ -17,6 +17,7 @@ from zhaquirks.tuya import TUYA_SEND_DATA
 from zhaquirks.tuya.mcu import (
     DPToAttributeMapping,
     EnchantedDevice,
+    TuyaEnchantableCluster,
     TuyaMCUCluster,
     TuyaPowerConfigurationCluster,
 )
@@ -33,7 +34,7 @@ class FingerBotReverse(t.enum8):
     UP_OFF = 0x01
 
 
-class TuyaFingerbotCluster(TuyaMCUCluster):
+class TuyaFingerbotCluster(TuyaEnchantableCluster, TuyaMCUCluster):
     attributes = TuyaMCUCluster.attributes.copy()
     attributes.update(
         {
@@ -140,7 +141,7 @@ class TuyaFingerbot(EnchantedDevice):
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    OnOff,
+                    OnOff.cluster_id,
                     TuyaFingerbotCluster,
                 ],
                 OUTPUT_CLUSTERS: [
