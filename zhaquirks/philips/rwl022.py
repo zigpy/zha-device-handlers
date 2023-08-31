@@ -21,12 +21,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.philips import (
-    HUE_REMOTE_DEVICE_TRIGGERS,
-    SIGNIFY,
-    PhilipsBasicCluster,
-    PhilipsRemoteCluster,
-)
+from zhaquirks.philips import SIGNIFY, PhilipsBasicCluster, PhilipsRemoteCluster
 
 DEVICE_SPECIFIC_UNKNOWN = 64512
 
@@ -91,4 +86,6 @@ class PhilipsRWL022(CustomDevice):
         }
     }
 
-    device_automation_triggers = HUE_REMOTE_DEVICE_TRIGGERS
+    device_automation_triggers = (
+        PhilipsRemoteCluster.generate_device_automation_triggers()
+    )

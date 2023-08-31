@@ -18,22 +18,12 @@ from zhaquirks.const import (
     BUTTON_2,
     BUTTON_3,
     BUTTON_4,
-    COMMAND,
-    COMMAND_HOLD,
-    COMMAND_PRESS,
     DEVICE_TYPE,
-    DOUBLE_PRESS,
     ENDPOINTS,
     INPUT_CLUSTERS,
-    LONG_RELEASE,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
-    QUADRUPLE_PRESS,
-    QUINTUPLE_PRESS,
-    SHORT_PRESS,
-    SHORT_RELEASE,
-    TRIPLE_PRESS,
 )
 from zhaquirks.philips import (
     PHILIPS,
@@ -43,20 +33,14 @@ from zhaquirks.philips import (
 )
 
 
-class PhilipsRdmRemoteCluster(PhilipsRemoteCluster):
-    """Philips remote cluster for RDM devices."""
+class PhilipsRdm002RemoteCluster(PhilipsRemoteCluster):
+    """Philips remote cluster for RDM002."""
 
     BUTTONS = {
         1: BUTTON_1,
         2: BUTTON_2,
         3: BUTTON_3,
         4: BUTTON_4,
-    }
-    PRESS_TYPES = {
-        0: COMMAND_PRESS,
-        1: COMMAND_HOLD,
-        2: SHORT_RELEASE,
-        3: LONG_RELEASE,
     }
 
 
@@ -77,7 +61,7 @@ class PhilipsRDM002(CustomDevice):
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
                     Identify.cluster_id,
-                    PhilipsRdmRemoteCluster.cluster_id,
+                    PhilipsRdm002RemoteCluster.cluster_id,
                     LightLink.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
@@ -103,7 +87,7 @@ class PhilipsRDM002(CustomDevice):
                     PhilipsBasicCluster,
                     PowerConfiguration.cluster_id,
                     Identify.cluster_id,
-                    PhilipsRdmRemoteCluster,
+                    PhilipsRdm002RemoteCluster,
                     LightLink.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
@@ -120,25 +104,6 @@ class PhilipsRDM002(CustomDevice):
         }
     }
 
-    device_automation_triggers = {
-        (SHORT_PRESS, BUTTON_1): {COMMAND: f"{BUTTON_1}_press"},
-        (SHORT_PRESS, BUTTON_2): {COMMAND: f"{BUTTON_2}_press"},
-        (SHORT_PRESS, BUTTON_3): {COMMAND: f"{BUTTON_3}_press"},
-        (SHORT_PRESS, BUTTON_4): {COMMAND: f"{BUTTON_4}_press"},
-        (DOUBLE_PRESS, BUTTON_1): {COMMAND: f"{BUTTON_1}_double_press"},
-        (DOUBLE_PRESS, BUTTON_2): {COMMAND: f"{BUTTON_2}_double_press"},
-        (DOUBLE_PRESS, BUTTON_3): {COMMAND: f"{BUTTON_3}_double_press"},
-        (DOUBLE_PRESS, BUTTON_4): {COMMAND: f"{BUTTON_4}_double_press"},
-        (TRIPLE_PRESS, BUTTON_1): {COMMAND: f"{BUTTON_1}_triple_press"},
-        (TRIPLE_PRESS, BUTTON_2): {COMMAND: f"{BUTTON_2}_triple_press"},
-        (TRIPLE_PRESS, BUTTON_3): {COMMAND: f"{BUTTON_3}_triple_press"},
-        (TRIPLE_PRESS, BUTTON_4): {COMMAND: f"{BUTTON_4}_triple_press"},
-        (QUADRUPLE_PRESS, BUTTON_1): {COMMAND: f"{BUTTON_1}_quadruple_press"},
-        (QUADRUPLE_PRESS, BUTTON_2): {COMMAND: f"{BUTTON_2}_quadruple_press"},
-        (QUADRUPLE_PRESS, BUTTON_3): {COMMAND: f"{BUTTON_3}_quadruple_press"},
-        (QUADRUPLE_PRESS, BUTTON_4): {COMMAND: f"{BUTTON_4}_quadruple_press"},
-        (QUINTUPLE_PRESS, BUTTON_1): {COMMAND: f"{BUTTON_1}_quintuple_press"},
-        (QUINTUPLE_PRESS, BUTTON_2): {COMMAND: f"{BUTTON_2}_quintuple_press"},
-        (QUINTUPLE_PRESS, BUTTON_3): {COMMAND: f"{BUTTON_3}_quintuple_press"},
-        (QUINTUPLE_PRESS, BUTTON_4): {COMMAND: f"{BUTTON_4}_quintuple_press"},
-    }
+    device_automation_triggers = (
+        PhilipsRdm002RemoteCluster.generate_device_automation_triggers()
+    )
