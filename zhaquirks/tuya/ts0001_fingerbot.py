@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional, Union
 from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import Basic, Ota, Time
+from zigpy.zcl.clusters.general import Basic, OnOff, Ota, Time
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -17,8 +17,8 @@ from zhaquirks.tuya import TUYA_SEND_DATA
 from zhaquirks.tuya.mcu import (
     DPToAttributeMapping,
     EnchantedDevice,
+    TuyaEnchantableCluster,
     TuyaMCUCluster,
-    TuyaOnOff,
     TuyaPowerConfigurationCluster,
 )
 
@@ -69,7 +69,6 @@ class TuyaFingerbotCluster(TuyaMCUCluster):
         )
 
     dp_to_attribute: Dict[int, DPToAttributeMapping] = {
-        1: DPToAttributeMapping(TuyaOnOff.ep_attribute, "on_off"),
         # Mode
         101: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
@@ -103,7 +102,6 @@ class TuyaFingerbotCluster(TuyaMCUCluster):
     }
 
     data_point_handlers = {
-        1: "_dp_2_attr_update",
         101: "_dp_2_attr_update",
         102: "_dp_2_attr_update",
         103: "_dp_2_attr_update",
@@ -112,6 +110,10 @@ class TuyaFingerbotCluster(TuyaMCUCluster):
         106: "_dp_2_attr_update",
         107: "_dp_2_attr_update",
     }
+
+
+class OnOffEnchantable(TuyaEnchantableCluster, OnOff):
+    """Enchantable OnOff cluster."""
 
 
 class TuyaFingerbot(EnchantedDevice):
@@ -123,7 +125,7 @@ class TuyaFingerbot(EnchantedDevice):
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    TuyaOnOff.cluster_id,
+                    OnOffEnchantable.cluster_id,
                     TuyaFingerbotCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
@@ -141,7 +143,7 @@ class TuyaFingerbot(EnchantedDevice):
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    TuyaOnOff,
+                    OnOffEnchantable,
                     TuyaFingerbotCluster,
                 ],
                 OUTPUT_CLUSTERS: [
