@@ -34,7 +34,7 @@ class FingerBotReverse(t.enum8):
     UP_OFF = 0x01
 
 
-class TuyaFingerbotCluster(TuyaEnchantableCluster, TuyaMCUCluster):
+class TuyaFingerbotCluster(TuyaMCUCluster):
     attributes = TuyaMCUCluster.attributes.copy()
     attributes.update(
         {
@@ -69,7 +69,6 @@ class TuyaFingerbotCluster(TuyaEnchantableCluster, TuyaMCUCluster):
         )
 
     dp_to_attribute: Dict[int, DPToAttributeMapping] = {
-        1: DPToAttributeMapping(OnOff.ep_attribute, "on_off"),
         # Mode
         101: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
@@ -103,7 +102,6 @@ class TuyaFingerbotCluster(TuyaEnchantableCluster, TuyaMCUCluster):
     }
 
     data_point_handlers = {
-        1: "_dp_2_attr_update",
         101: "_dp_2_attr_update",
         102: "_dp_2_attr_update",
         103: "_dp_2_attr_update",
@@ -112,6 +110,10 @@ class TuyaFingerbotCluster(TuyaEnchantableCluster, TuyaMCUCluster):
         106: "_dp_2_attr_update",
         107: "_dp_2_attr_update",
     }
+
+
+class OnOffEnchantable(TuyaEnchantableCluster, OnOff):
+    """Enchantable OnOff cluster."""
 
 
 class TuyaFingerbot(EnchantedDevice):
@@ -141,7 +143,7 @@ class TuyaFingerbot(EnchantedDevice):
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    OnOff.cluster_id,
+                    OnOffEnchantable,
                     TuyaFingerbotCluster,
                 ],
                 OUTPUT_CLUSTERS: [
