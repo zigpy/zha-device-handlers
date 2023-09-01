@@ -16,7 +16,7 @@ from zigpy.zcl.clusters.general import (
     Time,
 )
 
-from zhaquirks import Bus, EventableCluster
+from zhaquirks import EventableCluster
 from zhaquirks.const import (
     ARGS,
     ATTRIBUTE_ID,
@@ -70,11 +70,6 @@ class CtrlLn(XiaomiCustomDevice):
 
     class WallSwitchMultistateInputCluster(EventableCluster, MultistateInput):
         """WallSwitchMultistateInputCluster: fire events corresponding to press type."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        self.power_bus = Bus()
-        super().__init__(*args, **kwargs)
 
     signature = {
         MODELS_INFO: [(LUMI, "lumi.ctrl_ln1.aq1"), (LUMI, "lumi.ctrl_ln2.aq1")],
