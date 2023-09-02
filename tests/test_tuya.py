@@ -32,6 +32,7 @@ from zhaquirks.const import (
     ON,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
+    SKIP_CONFIGURATION,
     ZONE_STATUS_CHANGE_COMMAND,
 )
 from zhaquirks.tuya import (
@@ -1638,6 +1639,13 @@ async def test_tuya_spell(zigpy_device_from_quirk):
 
         for quirk in ENCHANTED_QUIRKS:
             device = zigpy_device_from_quirk(quirk)
+
+            # fail if SKIP_CONFIGURATION is set, as that will cause ZHA to not call bind()
+            if getattr(device, SKIP_CONFIGURATION, False):
+                pytest.fail(
+                    f"Enchanted quirk {quirk} has SKIP_CONFIGURATION set. "
+                    f"This is not allowed for enchanted devices."
+                )
 
             for cluster in itertools.chain(
                 device.endpoints[1].in_clusters.values(),

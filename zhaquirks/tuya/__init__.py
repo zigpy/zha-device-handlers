@@ -544,7 +544,7 @@ class TuyaEnchantableCluster(CustomCluster):
     - clusters which would be bound, but that changed their ep_attribute
 
     Make sure to add a subclass of TuyaEnchantableCluster to the quirk replacement. Tests will fail if this is not done.
-    Classes like TuyaOnOff, TuyaZBOnOffAttributeCluster, TuyaSmartRemoteOnOffCluster already inherit from this class.
+    Classes like TuyaOnOff, TuyaZBOnOffAttributeCluster, TuyaNoBindPowerConfigurationCluster inherit from this class.
     """
 
     async def bind(self):
