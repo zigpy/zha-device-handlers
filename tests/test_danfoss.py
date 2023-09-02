@@ -2,11 +2,16 @@
 from unittest import mock
 
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.hvac import Thermostat
+from zigpy.zcl.clusters.homeautomation import Diagnostic
+from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
 from zigpy.zcl.foundation import WriteAttributesStatusRecord
 
 import zhaquirks
-from zhaquirks.danfoss.thermostat import DanfossTRVCluster
+from zhaquirks.danfoss.thermostat import (
+    DanfossTRVCluster,
+    DanfossTRVDiagnosticCluster,
+    DanfossTRVInterfaceCluster,
+)
 
 zhaquirks.setup()
 
@@ -143,3 +148,65 @@ async def test_danfoss_thermostat_write_attributes(zigpy_device_from_quirk):
 
             assert operation == 0x01
             assert setting == 5
+
+
+async def test_danfoss_interface_update_attribute(zigpy_device_from_quirk):
+    device = zigpy_device_from_quirk(zhaquirks.danfoss.thermostat.DanfossThermostat)
+
+    danfoss_user_interface_cluster = device.endpoints[1].in_clusters[
+        UserInterface.cluster_id
+    ]
+    danfoss_trv_interface_cluster = device.endpoints[1].in_clusters[
+        DanfossTRVInterfaceCluster.cluster_id
+    ]
+
+    attribute = -100
+    value = -0x01
+
+    def mock_update(attr, val):
+        nonlocal attribute, value
+
+        attribute = attr
+        value = val
+
+    patch_danfoss_trv_interface_update_attribute = mock.patch.object(
+        danfoss_trv_interface_cluster,
+        "_update_attribute",
+        mock.Mock(side_effect=mock_update),
+    )
+
+    with patch_danfoss_trv_interface_update_attribute:
+        danfoss_user_interface_cluster.update_attribute(0x4000, True)
+
+        assert attribute == 0x4000
+        assert value
+
+
+async def test_danfoss_diagnostic_update_attribute(zigpy_device_from_quirk):
+    device = zigpy_device_from_quirk(zhaquirks.danfoss.thermostat.DanfossThermostat)
+
+    danfoss_diagnostic_cluster = device.endpoints[1].in_clusters[Diagnostic.cluster_id]
+    danfoss_trv_diagnostic_cluster = device.endpoints[1].in_clusters[
+        DanfossTRVDiagnosticCluster.cluster_id
+    ]
+
+    attribute = -100
+    value = -0x01
+
+    def mock_update(attr, val):
+        nonlocal attribute, value
+
+        attribute = attr
+        value = val
+
+    patch_danfoss_trv_diagnostic_update_attribute = mock.patch.object(
+        danfoss_trv_diagnostic_cluster,
+        "_update_attribute",
+        mock.Mock(side_effect=mock_update),
+    )
+
+    with patch_danfoss_trv_diagnostic_update_attribute:
+        danfoss_diagnostic_cluster.update_attribute(0x4010, 4546)
+
+        assert attribute == 0x4010
+        assert value == 4546
