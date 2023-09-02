@@ -43,10 +43,8 @@ class DanfossOperationModeEnum(t.bitmap8):
 
 
 OCCUPIED_HEATING_SETPOINT_NAME = "occupied_heating_setpoint"
-OCCUPIED_HEATING_SETPOINT_SCHEDULED_NAME = "occupied_heating_setpoint_scheduled"
 SYSTEM_MODE_NAME = "system_mode"
 
-OCCUPIED_HEATING_SETPOINT_SCHEDULED_THERM_ID = uint16_t(0x41FF)
 OCCUPIED_HEATING_SETPOINT_THERM_ID = uint16_t(0x0012)
 SETPOINT_CHANGE_THERM_ID = uint16_t(0x0012)
 MIN_HEAT_SETPOINT_LIMIT_THERM_ID = uint16_t(0x0015)
@@ -81,12 +79,6 @@ danfoss_thermostat_attr = {
     0x4050: ("preheat_time", t.uint32_t, "rp"),
     # Danfoss deviated heavily from the spec with this one
     0x0025: ("programing_oper_mode", DanfossOperationModeEnum, "rpw"),
-    # We need a convenient way to access this, so we create our own attribute
-    OCCUPIED_HEATING_SETPOINT_SCHEDULED_THERM_ID: (
-        OCCUPIED_HEATING_SETPOINT_SCHEDULED_NAME,
-        t.int16s,
-        "rpw",
-    ),
 }
 # ZCL Attributes Supported:
 #   pi_heating_demand (0x0008),
@@ -277,7 +269,6 @@ class DanfossThermostatCluster(CustomCluster, Thermostat):
         system mode=off is not implemented on Danfoss; this is emulated by setting setpoint to the minimum setpoint
 
         In case of a change on occupied_heating_setpoint or system mode=off, a fast setpoint change is done
-        In case of a schedules heating setpoint change, a slow setpoint change is done
         """
 
         fast_setpoint_change = None
@@ -297,13 +288,6 @@ class DanfossThermostatCluster(CustomCluster, Thermostat):
                 MIN_HEAT_SETPOINT_LIMIT_THERM_ID
             ]
 
-        if OCCUPIED_HEATING_SETPOINT_SCHEDULED_NAME in attributes:
-            # On Danfoss a normal setpoint change means a scheduled setpoint change (slow)
-            # remove setpoint change scheduled, because it is not a real attribute
-            attributes[OCCUPIED_HEATING_SETPOINT_NAME] = attributes.pop(
-                OCCUPIED_HEATING_SETPOINT_SCHEDULED_NAME
-            )
-
         # attributes cannot be empty, because write_res cannot be empty, but it can contain unrequested items
         write_res = await super().write_attributes(
             attributes, manufacturer=manufacturer
@@ -319,27 +303,12 @@ class DanfossThermostatCluster(CustomCluster, Thermostat):
 
         return write_res
 
-    async def read_attributes_raw(self, attributes, manufacturer=None):
-        """ Handle Occupied heating Setpoint as fake attribute """
-        return await read_fakeattr(
-            super().read_attributes_raw,
-            attributes,
-            manufacturer,
-            OCCUPIED_HEATING_SETPOINT_SCHEDULED_THERM_ID,
-            OCCUPIED_HEATING_SETPOINT_THERM_ID)
-
     def _update_attribute(self, attrid, value):
         """Update attributes of TRV cluster."""
         super()._update_attribute(attrid, value)
 
         if attrid in danfoss_thermostat_attr:
             self.endpoint.danfoss_trv_cluster.update_attribute(attrid, value)
-
-        # also update scheduled heating setpoint
-        if attrid == SETPOINT_CHANGE_THERM_ID:
-            self._update_attribute(
-                OCCUPIED_HEATING_SETPOINT_SCHEDULED_THERM_ID, value
-            )
 
 
 class DanfossUserInterfaceCluster(CustomCluster, UserInterface):
