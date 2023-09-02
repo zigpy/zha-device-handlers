@@ -4,6 +4,8 @@ manufacturer specific attributes to control displaying and specific configuratio
 
 manufacturer_code = 0x1246
 """
+from typing import Callable, Tuple, Union
+
 import zigpy.profiles.zha as zha_p
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
@@ -40,18 +42,18 @@ class DanfossOperationModeEnum(t.bitmap8):
     Schedule_Preheat = 0b00000011
 
 
-OCCUPIED_HEATING_SETPOINT_TXT = "occupied_heating_setpoint"
-OCCUPIED_HEATING_SETPOINT_SCHEDULED_TXT = "occupied_heating_setpoint_scheduled"
-SYSTEM_MODE_TXT = "system_mode"
+OCCUPIED_HEATING_SETPOINT_NAME = "occupied_heating_setpoint"
+OCCUPIED_HEATING_SETPOINT_SCHEDULED_NAME = "occupied_heating_setpoint_scheduled"
+SYSTEM_MODE_NAME = "system_mode"
 
-OCCUPIED_HEATING_SETPOINT_SCHEDULED_THERM_ATTR = uint16_t(0x41FF)
-OCCUPIED_HEATING_SETPOINT_THERM_ATTR = uint16_t(0x0012)
-SETPOINT_CHANGE_THERM_ATTR = uint16_t(0x0012)
-MIN_HEAT_SETPOINT_LIMIT_THERM_ATTR = uint16_t(0x0015)
+OCCUPIED_HEATING_SETPOINT_SCHEDULED_THERM_ID = uint16_t(0x41FF)
+OCCUPIED_HEATING_SETPOINT_THERM_ID = uint16_t(0x0012)
+SETPOINT_CHANGE_THERM_ID = uint16_t(0x0012)
+MIN_HEAT_SETPOINT_LIMIT_THERM_ID = uint16_t(0x0015)
 
-SETPOINT_COMM_AGGRESSIVE_VAL = 0x01
+SETPOINT_COMMAND_AGGRESSIVE_VAL = 0x01
 
-SYSTEM_MODE_THERM_ATTR_OFF_VAL = 0x00
+SYSTEM_MODE_THERM_OFF_VAL = 0x00
 
 # 0x0201
 danfoss_thermostat_attr = {
@@ -80,8 +82,8 @@ danfoss_thermostat_attr = {
     # Danfoss deviated heavily from the spec with this one
     0x0025: ("programing_oper_mode", DanfossOperationModeEnum, "rpw"),
     # We need a convenient way to access this, so we create our own attribute
-    OCCUPIED_HEATING_SETPOINT_SCHEDULED_THERM_ATTR: (
-        OCCUPIED_HEATING_SETPOINT_SCHEDULED_TXT,
+    OCCUPIED_HEATING_SETPOINT_SCHEDULED_THERM_ID: (
+        OCCUPIED_HEATING_SETPOINT_SCHEDULED_NAME,
         t.int16s,
         "rpw",
     ),
@@ -144,6 +146,54 @@ danfoss_thermostat_comm = {
 }
 
 
+def get_result_index(result: Tuple[list, list], attr_id: uint16_t) -> Union[int, None]:
+    index = None
+    for i in range(len(result[0])):
+        if result[0][i].attrid == attr_id:
+            index = i
+            break
+    return index
+
+
+async def read_fakeattr(read_func: Callable, attributes, manufacturer,
+                        attr_fake_id: uint16_t, attr_source_id: uint16_t):
+    """
+    First remove fake from attributes
+    Then add source to attributes
+    Request result
+    Duplicate source in results and rename to fake
+    Remove source from results
+    """
+    # store presence of requested attributes
+    source_requested = attr_source_id in attributes
+    fake_requested = attr_fake_id in attributes
+
+    if fake_requested:
+        # fake should not be present in attributes
+        attributes.remove(attr_fake_id)
+        if not source_requested:
+            # if fake is requested, source should be requested
+            attributes.append(attr_source_id)
+
+    # Get result
+    result = await read_func(attributes, manufacturer=manufacturer)
+
+    # if fake is requested, use source to return that
+    if fake_requested:
+        index = get_result_index(result, attr_source_id)
+
+        # if source is returned, copy source and change into fake and remove source from result if not requested
+        if index is not None:
+            attr_fake = result[0][index]
+            attr_fake.attrid = attr_fake_id
+
+            result[0].append(attr_fake)
+
+            # remove source if not requested
+            if not source_requested:
+                result[0].pop(index)
+
+
 class DanfossTRVCluster(CustomCluster):
     """Danfoss custom TRV cluster."""
 
@@ -153,60 +203,17 @@ class DanfossTRVCluster(CustomCluster):
     attributes = danfoss_thermostat_attr
 
     async def write_attributes(self, attributes, manufacturer=None):
-        """Write attributes to thermostat cluster."""
+        """Write attributes to Thermostat cluster."""
         return await self.endpoint.thermostat.write_attributes(
             attributes, manufacturer=manufacturer
         )
 
     async def read_attributes_raw(self, attributes, manufacturer=None):
-        """Operation Mode is a ZCL attribute and needs to be requested without manufacturer code."""
+        """Read attributes from Thermostat cluster"""
 
-        # store presence of requested attributes
-        occupied_heating_setpoint_in_attributes = (
-            OCCUPIED_HEATING_SETPOINT_THERM_ATTR in attributes
-        )
-        occupied_heating_setpoint_scheduled_in_attributes = (
-            OCCUPIED_HEATING_SETPOINT_SCHEDULED_THERM_ATTR in attributes
-        )
-
-        # if occupied_heating_setpoint_scheduled is requested,
-        # remove it from attributes and request occupied_heating_setpoint
-        if occupied_heating_setpoint_scheduled_in_attributes:
-            attributes.remove(OCCUPIED_HEATING_SETPOINT_SCHEDULED_THERM_ATTR)
-            if not occupied_heating_setpoint_in_attributes:
-                attributes.append(OCCUPIED_HEATING_SETPOINT_THERM_ATTR)
-
-        # Get result
-        result = await self.endpoint.thermostat.read_attributes_raw(
-            attributes, manufacturer=manufacturer
-        )
-
-        # if occupied_heating_setpoint_scheduled is requested, use occupied_heating_setpoint to deliver that
-        if occupied_heating_setpoint_scheduled_in_attributes:
-            # find record for occupied heating setpoint
-            occupied_heating_setpoint_index = None
-            for i in range(len(result[0])):
-                if result[0][i].attrid == OCCUPIED_HEATING_SETPOINT_THERM_ATTR:
-                    occupied_heating_setpoint_index = i
-                    break
-
-            # if occupied_heating_setpoint is returned,
-            # copy occupied_heating_setpoint and change into occupied_heating_setpoint_scheduled and
-            # remove occupied_heating_setpoint from result if not requested
-            if occupied_heating_setpoint_index is not None:
-                occupied_heating_setpoint_record = result[0][
-                    occupied_heating_setpoint_index
-                ]
-                occupied_heating_setpoint_record.attrid = (
-                    OCCUPIED_HEATING_SETPOINT_SCHEDULED_THERM_ATTR
-                )
-                result[0].append(occupied_heating_setpoint_record)
-
-                # remove occupied_heating_setpoint if not requested
-                if not occupied_heating_setpoint_in_attributes:
-                    del result[0][occupied_heating_setpoint_index]
-
-        return result
+        return await self.endpoint.thermostat.read_attributes_raw(
+            attributes,
+            manufacturer=manufacturer)
 
 
 class DanfossTRVInterfaceCluster(CustomCluster):
@@ -218,7 +225,7 @@ class DanfossTRVInterfaceCluster(CustomCluster):
     attributes = danfoss_interface_attr
 
     async def write_attributes(self, attributes, manufacturer=None):
-        """Write attributes to thermostat user interface cluster."""
+        """Write attributes to User Interface cluster."""
         return await self.endpoint.thermostat_ui.write_attributes(
             attributes, manufacturer=manufacturer
         )
@@ -239,7 +246,7 @@ class DanfossTRVDiagnosticCluster(CustomCluster):
     attributes = danfoss_diagnostic_attr
 
     async def write_attributes(self, attributes, manufacturer=None):
-        """Write attributes to diagnostic cluster."""
+        """Write attributes to Diagnostic cluster."""
         return await self.endpoint.diagnostic.write_attributes(
             attributes, manufacturer=manufacturer
         )
@@ -261,45 +268,78 @@ class DanfossThermostatCluster(CustomCluster, Thermostat):
     attributes.update({**danfoss_thermostat_attr, **zcl_attr})
 
     async def write_attributes(self, attributes, manufacturer=None):
-        """Send SETPOINT_COMMAND after setpoint change."""
+        """
+        There are 2 types of setpoint changes:
+            Fast and Slow
+            Fast is used for immediate changes; this is done using a command (setpoint_command)
+            Slow is used for scheduled changes; this is done using an attribute (occupied_heating_setpoint)
 
-        scheduled = False
-        if attributes.get(SYSTEM_MODE_TXT) == SYSTEM_MODE_THERM_ATTR_OFF_VAL:
-            # Thermostatic Radiator Valves from Danfoss cannot be turned off to prevent damage during frost
-            # just turn setpoint down to minimum temperature
-            attributes[OCCUPIED_HEATING_SETPOINT_TXT] = self._attr_cache[
-                MIN_HEAT_SETPOINT_LIMIT_THERM_ATTR
+        system mode=off is not implemented on Danfoss; this is emulated by setting setpoint to the minimum setpoint
+
+        In case of a change on occupied_heating_setpoint or system mode=off, a fast setpoint change is done
+        In case of a schedules heating setpoint change, a slow setpoint change is done
+        """
+
+        fast_setpoint_change = None
+
+        if OCCUPIED_HEATING_SETPOINT_NAME in attributes:
+            # On Danfoss an immediate setpoint change is done through a command
+            # store for later in fast_setpoint_change and remove from attributes
+            fast_setpoint_change = attributes[
+                OCCUPIED_HEATING_SETPOINT_NAME
             ]
-        elif OCCUPIED_HEATING_SETPOINT_SCHEDULED_TXT in attributes:
-            attributes[OCCUPIED_HEATING_SETPOINT_TXT] = attributes.pop(
-                OCCUPIED_HEATING_SETPOINT_SCHEDULED_TXT
-            )
-            scheduled = True
 
+        # if: system_mode = off
+        if attributes.get(SYSTEM_MODE_NAME) == SYSTEM_MODE_THERM_OFF_VAL:
+            # Thermostatic Radiator Valves from Danfoss cannot be turned off to prevent damage during frost
+            # just turn setpoint down to minimum temperature using fast_setpoint_change
+            fast_setpoint_change = self._attr_cache[
+                MIN_HEAT_SETPOINT_LIMIT_THERM_ID
+            ]
+
+        if OCCUPIED_HEATING_SETPOINT_SCHEDULED_NAME in attributes:
+            # On Danfoss a normal setpoint change means a scheduled setpoint change (slow)
+            # remove setpoint change scheduled, because it is not a real attribute
+            attributes[OCCUPIED_HEATING_SETPOINT_NAME] = attributes.pop(
+                OCCUPIED_HEATING_SETPOINT_SCHEDULED_NAME
+            )
+
+        # attributes cannot be empty, because write_res cannot be empty, but it can contain unrequested items
         write_res = await super().write_attributes(
             attributes, manufacturer=manufacturer
         )
 
-        if OCCUPIED_HEATING_SETPOINT_TXT in attributes and not scheduled:
+        if fast_setpoint_change is not None:
+            # On Danfoss a fast setpoint change is done through a command
             await self.setpoint_command(
-                SETPOINT_COMM_AGGRESSIVE_VAL,
-                attributes[OCCUPIED_HEATING_SETPOINT_TXT],
+                SETPOINT_COMMAND_AGGRESSIVE_VAL,
+                fast_setpoint_change,
                 manufacturer=manufacturer,
             )
 
         return write_res
 
+    async def read_attributes_raw(self, attributes, manufacturer=None):
+        """ Handle Occupied heating Setpoint as fake attribute """
+        return await read_fakeattr(
+            super().read_attributes_raw,
+            attributes,
+            manufacturer,
+            OCCUPIED_HEATING_SETPOINT_SCHEDULED_THERM_ID,
+            OCCUPIED_HEATING_SETPOINT_THERM_ID)
+
     def _update_attribute(self, attrid, value):
         """Update attributes of TRV cluster."""
         super()._update_attribute(attrid, value)
 
-        if attrid == SETPOINT_CHANGE_THERM_ATTR:
-            self.endpoint.danfoss_trv_cluster._update_attribute(
-                OCCUPIED_HEATING_SETPOINT_SCHEDULED_THERM_ATTR, value
-            )
-
         if attrid in danfoss_thermostat_attr:
             self.endpoint.danfoss_trv_cluster.update_attribute(attrid, value)
+
+        # also update scheduled heating setpoint
+        if attrid == SETPOINT_CHANGE_THERM_ID:
+            self._update_attribute(
+                OCCUPIED_HEATING_SETPOINT_SCHEDULED_THERM_ID, value
+            )
 
 
 class DanfossUserInterfaceCluster(CustomCluster, UserInterface):
