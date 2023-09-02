@@ -34,7 +34,9 @@ from zhaquirks.danfoss import DANFOSS, HIVE, POPP
 
 
 class DanfossOperationModeEnum(t.bitmap8):
-    """Nonstandard and unnecessarily complicated implementation of Programming Operation Mode from Danfoss."""
+    """Nonstandard implementation of Programming Operation Mode from Danfoss.
+    The official specification still works: 0x0 or 0x1, but Danfoss added a preheat bit
+    """
 
     Manual = 0b00000000
     Schedule = 0b00000001
@@ -77,8 +79,7 @@ danfoss_thermostat_attr = {
     0x404E: ("adaptation_run_settings", t.bitmap8, "rw"),
     0x404F: ("preheat_status", t.Bool, "rp"),
     0x4050: ("preheat_time", t.uint32_t, "rp"),
-    # Danfoss deviated heavily from the spec with this one
-    0x0025: ("programing_oper_mode", DanfossOperationModeEnum, "rpw"),
+    0x0025: ("programing_oper_mode", DanfossOperationModeEnum, "rpw"),  # Danfoss deviated from the spec
 }
 # ZCL Attributes Supported:
 #   pi_heating_demand (0x0008),
