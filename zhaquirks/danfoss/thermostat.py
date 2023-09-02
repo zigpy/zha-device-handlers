@@ -139,54 +139,6 @@ danfoss_thermostat_comm = {
 }
 
 
-def get_result_index(result: Tuple[list, list], attr_id: uint16_t) -> Union[int, None]:
-    index = None
-    for i in range(len(result[0])):
-        if result[0][i].attrid == attr_id:
-            index = i
-            break
-    return index
-
-
-async def read_fakeattr(read_func: Callable, attributes, manufacturer,
-                        attr_fake_id: uint16_t, attr_source_id: uint16_t):
-    """
-    First remove fake from attributes
-    Then add source to attributes
-    Request result
-    Duplicate source in results and rename to fake
-    Remove source from results
-    """
-    # store presence of requested attributes
-    source_requested = attr_source_id in attributes
-    fake_requested = attr_fake_id in attributes
-
-    if fake_requested:
-        # fake should not be present in attributes
-        attributes.remove(attr_fake_id)
-        if not source_requested:
-            # if fake is requested, source should be requested
-            attributes.append(attr_source_id)
-
-    # Get result
-    result = await read_func(attributes, manufacturer=manufacturer)
-
-    # if fake is requested, use source to return that
-    if fake_requested:
-        index = get_result_index(result, attr_source_id)
-
-        # if source is returned, copy source and change into fake and remove source from result if not requested
-        if index is not None:
-            attr_fake = result[0][index]
-            attr_fake.attrid = attr_fake_id
-
-            result[0].append(attr_fake)
-
-            # remove source if not requested
-            if not source_requested:
-                result[0].pop(index)
-
-
 class DanfossTRVCluster(CustomCluster):
     """Danfoss custom TRV cluster."""
 
