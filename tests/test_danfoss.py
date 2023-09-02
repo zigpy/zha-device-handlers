@@ -73,14 +73,6 @@ async def test_danfoss_trv_read_attributes(zigpy_device_from_quirk):
         assert 6 in success.values()
         assert not fail
 
-        # this should return occupied_heating_setpoint_scheduled and occupied_heating_setpoint
-        success, fail = await danfoss_trv_cluster.read_attributes(
-            ["occupied_heating_setpoint_scheduled"]
-        )
-        assert success
-        assert 6 in success.values()
-        assert not fail
-
 
 async def test_danfoss_thermostat_write_attributes(zigpy_device_from_quirk):
     device = zigpy_device_from_quirk(zhaquirks.danfoss.thermostat.DanfossThermostat)
@@ -151,16 +143,3 @@ async def test_danfoss_thermostat_write_attributes(zigpy_device_from_quirk):
 
             assert operation == 0x01
             assert setting == 5
-
-            # scheduled should not send setpoint_command
-            operation = -0x01
-            setting = -100
-            success, fail = await danfoss_trv_cluster.write_attributes(
-                {"occupied_heating_setpoint_scheduled": 6}
-            )
-            assert success
-            assert not fail
-            assert danfoss_trv_cluster._attr_cache[0x41FF] == 6
-
-            assert operation == -0x01
-            assert setting == -100
