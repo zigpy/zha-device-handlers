@@ -222,7 +222,6 @@ class DanfossThermostatCluster(CustomCluster, Thermostat):
             Slow is used for scheduled changes; this is done using an attribute (occupied_heating_setpoint)
 
         system mode=off is not implemented on Danfoss; this is emulated by setting setpoint to the minimum setpoint
-
         In case of a change on occupied_heating_setpoint or system mode=off, a fast setpoint change is done
         """
 
