@@ -309,6 +309,7 @@ class TuyaMmwRadarClusterV1(TuyaMmwRadarClusterBase):
         104: "_dp_2_attr_update",
     }
 
+
 class TuyaMmwRadarClusterV2(TuyaMmwRadarClusterBase):
     """Tuya MMW radar cluster, variant 2."""
 
@@ -371,7 +372,6 @@ class TuyaMmwRadarClusterV2(TuyaMmwRadarClusterBase):
         110: "_dp_2_attr_update",
         111: "_dp_2_attr_update",
     }
-
 
 
 class TuyaMmwRadarClusterV3(TuyaMmwRadarClusterBase):
@@ -744,6 +744,7 @@ class TuyaMmwRadarOccupancyVariant2(CustomDevice):
             },
         }
     }
+
 
 class TuyaMmwRadarOccupancyVariant3(CustomDevice):
     """Mini/Ceiling Human Breathe Sensor"""
