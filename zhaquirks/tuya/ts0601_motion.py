@@ -309,7 +309,6 @@ class TuyaMmwRadarClusterV1(TuyaMmwRadarClusterBase):
         104: "_dp_2_attr_update",
     }
 
-
 class TuyaMmwRadarClusterV2(TuyaMmwRadarClusterBase):
     """Tuya MMW radar cluster, variant 2."""
 
@@ -372,6 +371,7 @@ class TuyaMmwRadarClusterV2(TuyaMmwRadarClusterBase):
         110: "_dp_2_attr_update",
         111: "_dp_2_attr_update",
     }
+
 
 
 class TuyaMmwRadarClusterV3(TuyaMmwRadarClusterBase):
@@ -696,7 +696,7 @@ class TuyaMmwRadarOccupancyVariant2(CustomDevice):
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaMmwRadarClusterV3,
+                    TuyaMmwRadarClusterV2,
                     TuyaIlluminanceMeasurement,
                     TuyaOccupancySensing,
                     TuyaMmwRadarTargetDistance,
@@ -745,7 +745,6 @@ class TuyaMmwRadarOccupancyVariant2(CustomDevice):
         }
     }
 
-
 class TuyaMmwRadarOccupancyVariant3(CustomDevice):
     """Mini/Ceiling Human Breathe Sensor"""
 
@@ -788,7 +787,7 @@ class TuyaMmwRadarOccupancyVariant3(CustomDevice):
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaMmwRadarClusterV2,
+                    TuyaMmwRadarClusterV3,
                     TuyaIlluminanceMeasurement,
                     TuyaOccupancySensing,
                     TuyaMmwRadarTargetDistance,
