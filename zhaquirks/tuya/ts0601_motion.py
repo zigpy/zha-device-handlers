@@ -51,6 +51,17 @@ from zhaquirks.tuya.mcu import (
 ZONE_TYPE = 0x0001
 
 
+class TuyaMmwRadarSelfTest(t.enum8):
+    """Mmw radar self test values."""
+
+    TESTING = 0
+    TEST_SUCCESS = 1
+    TEST_FAILURE = 2
+    OTHER = 3
+    COMM_FAULT = 4
+    RADAR_FAULT = 5
+
+
 class TuyaOccupancySensing(OccupancySensing, TuyaLocalCluster):
     """Tuya local OccupancySensing cluster."""
 
@@ -205,43 +216,31 @@ class NeoMotionManufCluster(TuyaNewManufCluster):
         104: "_dp_2_attr_update",
         105: "_dp_2_attr_update",
         113: "_dp_2_attr_update",
-    }
+    }	
 
-
-class MmwRadarManufCluster(TuyaMCUCluster):
-    """Neo manufacturer cluster."""
-
-    # # Possible DPs and values
-    # presence_state: presence
-    # target distance: 1.61m
-    # illuminance: 250lux
-    # sensitivity: 9
-    # minimum_detection_distance: 0.00m
-    # maximum_detection_distance: 4.05m
-    # dp_detection_delay: 0.1
-    # dp_fading_time: 5.0
-    # ¿illuminance?: 255lux
-    # presence_brightness: no control
-    # no_one_brightness: no control
-    # current_brightness: off
+class TuyaMmwRadarClusterBase(NoManufacturerCluster, TuyaMCUCluster):
+    """Mmw radar cluster, base class."""
 
     attributes = TuyaMCUCluster.attributes.copy()
     attributes.update(
         {
             # ramdom attribute IDs
-            0xEF02: ("dp_2", t.uint32_t, True),
-            0xEF03: ("dp_3", t.uint32_t, True),
-            0xEF04: ("dp_4", t.uint32_t, True),
-            0xEF06: ("dp_6", t.enum8, True),
-            0xEF65: ("dp_101", t.uint32_t, True),
-            0xEF66: ("dp_102", t.uint32_t, True),
-            0xEF67: ("dp_103", t.CharacterString, True),
-            0xEF69: ("dp_105", t.enum8, True),
-            0xEF6A: ("dp_106", t.enum8, True),
-            0xEF6B: ("dp_107", t.enum8, True),
-            0xEF6C: ("dp_108", t.uint32_t, True),
+            0xEF01: ("occupancy", t.uint32_t, True),
+            0xEF02: ("sensitivity", t.uint32_t, True),
+            0xEF03: ("min_range", t.uint32_t, True),
+            0xEF04: ("max_range", t.uint32_t, True),
+            0xEF06: ("self_test", TuyaMmwRadarSelfTest, True),
+            0xEF09: ("target_distance", t.uint32_t, True),
+            0xEF65: ("detection_delay", t.uint32_t, True),
+            0xEF66: ("fading_time", t.uint32_t, True),
+            0xEF67: ("cli", t.CharacterString, True),
+            0xEF68: ("illuminance", t.uint32_t, True),
         }
     )
+
+
+class TuyaMmwRadarClusterV1(TuyaMmwRadarClusterBase):
+    """Mmw radar cluster, variant 1."""
 
     dp_to_attribute: Dict[int, DPToAttributeMapping] = {
         1: DPToAttributeMapping(
@@ -249,58 +248,50 @@ class MmwRadarManufCluster(TuyaMCUCluster):
             "occupancy",
         ),
         2: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "dp_2",
+            TuyaMmwRadarSensitivity.ep_attribute,
+            "present_value",
         ),
         3: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "dp_3",
+            TuyaMmwRadarMinRange.ep_attribute,
+            "present_value",
+            endpoint_id=2,
         ),
         4: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "dp_4",
+            TuyaMmwRadarMaxRange.ep_attribute,
+            "present_value",
+            endpoint_id=3,
         ),
         6: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
-            "dp_6",
+            "self_test",
         ),
         9: DPToAttributeMapping(
-            TuyaAnalogInput.ep_attribute,
+            TuyaMmwRadarTargetDistance.ep_attribute,
             "present_value",
             lambda x: x / 100,
         ),
         101: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "dp_101",
+            TuyaMmwRadarDetectionDelay.ep_attribute,
+            "present_value",
+            converter=lambda x: x * 100,
+            dp_converter=lambda x: x // 100,
+            endpoint_id=4,
         ),
         102: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "dp_102",
+            TuyaMmwRadarFadingTime.ep_attribute,
+            "present_value",
+            converter=lambda x: x * 100,
+            dp_converter=lambda x: x // 100,
+            endpoint_id=5,
         ),
         103: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
-            "dp_103",
+            "cli",
         ),
         104: DPToAttributeMapping(
             TuyaIlluminanceMeasurement.ep_attribute,
             "measured_value",
-            lambda x: 10000 * math.log10(x) + 1 if x != 0 else 0,
-        ),
-        105: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "dp_105",
-        ),
-        106: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "dp_106",
-        ),
-        107: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "dp_107",
-        ),
-        108: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "dp_108",
+            converter=lambda x: int(math.log10(x) * 10000 + 1) if x > 0 else int(0),
         ),
     }
 
@@ -315,30 +306,75 @@ class MmwRadarManufCluster(TuyaMCUCluster):
         102: "_dp_2_attr_update",
         103: "_dp_2_attr_update",
         104: "_dp_2_attr_update",
+    }
+
+
+class TuyaMmwRadarClusterV2(TuyaMmwRadarClusterBase):
+    """Tuya MMW radar cluster, variant 2."""
+
+    dp_to_attribute: Dict[int, DPToAttributeMapping] = {
+        103: DPToAttributeMapping(
+            TuyaMCUCluster.ep_attribute,
+            "cli",
+        ),
+        104: DPToAttributeMapping(
+            TuyaIlluminanceMeasurement.ep_attribute,
+            "measured_value",
+            converter=lambda x: int(math.log10(x) * 10000 + 1) if x > 0 else int(0),
+        ),
+        105: DPToAttributeMapping(
+            TuyaOccupancySensing.ep_attribute,
+            "occupancy",
+        ),
+        106: DPToAttributeMapping(
+            TuyaMmwRadarSensitivity.ep_attribute,
+            "present_value",
+        ),
+        107: DPToAttributeMapping(
+            TuyaMmwRadarMaxRange.ep_attribute,
+            "present_value",
+            endpoint_id=3,
+        ),
+        108: DPToAttributeMapping(
+            TuyaMmwRadarMinRange.ep_attribute,
+            "present_value",
+            endpoint_id=2,
+        ),
+        109: DPToAttributeMapping(
+            TuyaMmwRadarTargetDistance.ep_attribute,
+            "present_value",
+        ),
+        110: DPToAttributeMapping(
+            TuyaMmwRadarFadingTime.ep_attribute,
+            "present_value",
+            converter=lambda x: x * 100,
+            dp_converter=lambda x: x // 100,
+            endpoint_id=5,
+        ),
+        111: DPToAttributeMapping(
+            TuyaMmwRadarDetectionDelay.ep_attribute,
+            "present_value",
+            converter=lambda x: x * 100,
+            dp_converter=lambda x: x // 100,
+            endpoint_id=4,
+        ),
+    }
+
+    data_point_handlers = {
+        103: "_dp_2_attr_update",
+        104: "_dp_2_attr_update",
         105: "_dp_2_attr_update",
         106: "_dp_2_attr_update",
         107: "_dp_2_attr_update",
         108: "_dp_2_attr_update",
+        109: "_dp_2_attr_update",
+        110: "_dp_2_attr_update",
+        111: "_dp_2_attr_update",
     }
 
 
-class TuyaMmwRadarCluster(NoManufacturerCluster, TuyaMCUCluster):
-    """Mmw radar cluster."""
-
-    attributes = TuyaMCUCluster.attributes.copy()
-    attributes.update(
-        {
-            # ramdom attribute IDs
-            0xEF01: ("occupancy", t.uint32_t, True),
-            0xEF02: ("sensitivity", t.uint32_t, True),
-            0xEF03: ("min_range", t.uint32_t, True),
-            0xEF04: ("max_range", t.uint32_t, True),
-            0xEF09: ("target_distance", t.uint32_t, True),
-            0xEF65: ("detection_delay", t.uint32_t, True),
-            0xEF66: ("fading_time", t.uint32_t, True),
-            0xEF68: ("illuminance", t.uint32_t, True),
-        }
-    )
+class TuyaMmwRadarClusterV3(TuyaMmwRadarClusterBase):
+    """Mmw radar cluster, variant 3."""
 
     dp_to_attribute: Dict[int, DPToAttributeMapping] = {
         1: DPToAttributeMapping(
@@ -506,56 +542,7 @@ class NeoMotion(CustomDevice):
     }
 
 
-class MmwRadarMotion(CustomDevice):
-    """Millimeter wave occupancy sensor."""
-
-    signature = {
-        #  endpoint=1, profile=260, device_type=81, device_version=1,
-        #  input_clusters=[0, 4, 5, 61184], output_clusters=[25, 10]
-        MODELS_INFO: [
-            ("_TZE200_ar0slwnd", "TS0601"),
-            ("_TZE200_sfiy5tfs", "TS0601"),
-            ("_TZE200_mrf6vtua", "TS0601"),
-            ("_TZE200_ztc6ggyl", "TS0601"),
-            ("_TZE204_ztc6ggyl", "TS0601"),
-            ("_TZE200_wukb7rhc", "TS0601"),
-        ],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    TuyaNewManufCluster.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
-            },
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.OCCUPANCY_SENSOR,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    MmwRadarManufCluster,
-                    TuyaOccupancySensing,
-                    TuyaAnalogInput,
-                    TuyaIlluminanceMeasurement,
-                ],
-                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
-            },
-        }
-    }
-
-
-class MmwRadarMotionGPP(CustomDevice):
+class TuyaMmwRadarOccupancyVariant1GPP(CustomDevice):
     """Millimeter wave occupancy sensor."""
 
     signature = {
@@ -599,7 +586,7 @@ class MmwRadarMotionGPP(CustomDevice):
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    MmwRadarManufCluster,
+                    TuyaMmwRadarClusterV1,
                     TuyaOccupancySensing,
                     TuyaAnalogInput,
                     TuyaIlluminanceMeasurement,
@@ -616,7 +603,57 @@ class MmwRadarMotionGPP(CustomDevice):
     }
 
 
-class MmwRadarMotionZYM100S2(CustomDevice):
+class TuyaMmwRadarOccupancyVariant1(CustomDevice):
+    """Millimeter wave occupancy sensor."""
+
+    signature = {
+        #  endpoint=1, profile=260, device_type=81, device_version=1,
+        #  input_clusters=[0, 4, 5, 61184], output_clusters=[25, 10]
+        MODELS_INFO: [
+            ("_TZE200_ar0slwnd", "TS0601"),
+            ("_TZE200_sfiy5tfs", "TS0601"),
+            ("_TZE200_mrf6vtua", "TS0601"),
+            ("_TZE200_ztc6ggyl", "TS0601"),
+            ("_TZE204_ztc6ggyl", "TS0601"),
+            ("_TZE200_wukb7rhc", "TS0601"),
+        ],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaNewManufCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.OCCUPANCY_SENSOR,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaMmwRadarClusterV1,
+                    TuyaIlluminanceMeasurement,
+                    TuyaOccupancySensing,
+                    TuyaMmwRadarTargetDistance,
+                    TuyaMmwRadarSensitivity,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+        }
+    }
+
+
+class TuyaMmwRadarOccupancyVariant2(CustomDevice):
     """Mini/Ceiling Human Breathe Sensor"""
 
     signature = {
@@ -658,7 +695,99 @@ class MmwRadarMotionZYM100S2(CustomDevice):
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaMmwRadarCluster,
+                    TuyaMmwRadarClusterV3,
+                    TuyaIlluminanceMeasurement,
+                    TuyaOccupancySensing,
+                    TuyaMmwRadarTargetDistance,
+                    TuyaMmwRadarSensitivity,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.COMBINED_INTERFACE,
+                INPUT_CLUSTERS: [
+                    TuyaMmwRadarMinRange,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            3: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.COMBINED_INTERFACE,
+                INPUT_CLUSTERS: [
+                    TuyaMmwRadarMaxRange,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            4: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.COMBINED_INTERFACE,
+                INPUT_CLUSTERS: [
+                    TuyaMmwRadarDetectionDelay,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            5: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.COMBINED_INTERFACE,
+                INPUT_CLUSTERS: [
+                    TuyaMmwRadarFadingTime,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            242: {
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        }
+    }
+
+
+class TuyaMmwRadarOccupancyVariant3(CustomDevice):
+    """Mini/Ceiling Human Breathe Sensor"""
+
+    signature = {
+        #  endpoint=1, profile=260, device_type=81, device_version=1,
+        #  input_clusters=[0, 4, 5, 61184], output_clusters=[25, 10])
+        MODELS_INFO: [
+            ("_TZE204_sxm7l9xa", "TS0601"),
+        ],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaNewManufCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            242: {
+                # <SimpleDescriptor endpoint=242 profile=41440 device_type=97
+                # input_clusters=[]
+                # output_clusters=[33]
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.OCCUPANCY_SENSOR,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaMmwRadarClusterV2,
                     TuyaIlluminanceMeasurement,
                     TuyaOccupancySensing,
                     TuyaMmwRadarTargetDistance,
