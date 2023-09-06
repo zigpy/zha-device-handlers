@@ -311,7 +311,66 @@ class TuyaMmwRadarClusterV1(TuyaMmwRadarClusterBase):
 
 
 class TuyaMmwRadarClusterV2(TuyaMmwRadarClusterBase):
-    """Tuya MMW radar cluster, variant 2."""
+    """Mmw radar cluster, variant 2."""
+
+    dp_to_attribute: Dict[int, DPToAttributeMapping] = {
+        1: DPToAttributeMapping(
+            TuyaOccupancySensing.ep_attribute,
+            "occupancy",
+        ),
+        2: DPToAttributeMapping(
+            TuyaMmwRadarSensitivity.ep_attribute,
+            "present_value",
+        ),
+        3: DPToAttributeMapping(
+            TuyaMmwRadarMinRange.ep_attribute,
+            "present_value",
+            endpoint_id=2,
+        ),
+        4: DPToAttributeMapping(
+            TuyaMmwRadarMaxRange.ep_attribute,
+            "present_value",
+            endpoint_id=3,
+        ),
+        9: DPToAttributeMapping(
+            TuyaMmwRadarTargetDistance.ep_attribute,
+            "present_value",
+        ),
+        101: DPToAttributeMapping(
+            TuyaMmwRadarDetectionDelay.ep_attribute,
+            "present_value",
+            converter=lambda x: x * 100,
+            dp_converter=lambda x: x // 100,
+            endpoint_id=4,
+        ),
+        102: DPToAttributeMapping(
+            TuyaMmwRadarFadingTime.ep_attribute,
+            "present_value",
+            converter=lambda x: x * 100,
+            dp_converter=lambda x: x // 100,
+            endpoint_id=5,
+        ),
+        104: DPToAttributeMapping(
+            TuyaIlluminanceMeasurement.ep_attribute,
+            "measured_value",
+            converter=lambda x: int(math.log10(x) * 10000 + 1) if x > 0 else int(0),
+        ),
+    }
+
+    data_point_handlers = {
+        1: "_dp_2_attr_update",
+        2: "_dp_2_attr_update",
+        3: "_dp_2_attr_update",
+        4: "_dp_2_attr_update",
+        9: "_dp_2_attr_update",
+        101: "_dp_2_attr_update",
+        102: "_dp_2_attr_update",
+        104: "_dp_2_attr_update",
+    }
+
+
+class TuyaMmwRadarClusterV3(TuyaMmwRadarClusterBase):
+    """Tuya MMW radar cluster, variant 3."""
 
     dp_to_attribute: Dict[int, DPToAttributeMapping] = {
         103: DPToAttributeMapping(
@@ -371,65 +430,6 @@ class TuyaMmwRadarClusterV2(TuyaMmwRadarClusterBase):
         109: "_dp_2_attr_update",
         110: "_dp_2_attr_update",
         111: "_dp_2_attr_update",
-    }
-
-
-class TuyaMmwRadarClusterV3(TuyaMmwRadarClusterBase):
-    """Mmw radar cluster, variant 3."""
-
-    dp_to_attribute: Dict[int, DPToAttributeMapping] = {
-        1: DPToAttributeMapping(
-            TuyaOccupancySensing.ep_attribute,
-            "occupancy",
-        ),
-        2: DPToAttributeMapping(
-            TuyaMmwRadarSensitivity.ep_attribute,
-            "present_value",
-        ),
-        3: DPToAttributeMapping(
-            TuyaMmwRadarMinRange.ep_attribute,
-            "present_value",
-            endpoint_id=2,
-        ),
-        4: DPToAttributeMapping(
-            TuyaMmwRadarMaxRange.ep_attribute,
-            "present_value",
-            endpoint_id=3,
-        ),
-        9: DPToAttributeMapping(
-            TuyaMmwRadarTargetDistance.ep_attribute,
-            "present_value",
-        ),
-        101: DPToAttributeMapping(
-            TuyaMmwRadarDetectionDelay.ep_attribute,
-            "present_value",
-            converter=lambda x: x * 100,
-            dp_converter=lambda x: x // 100,
-            endpoint_id=4,
-        ),
-        102: DPToAttributeMapping(
-            TuyaMmwRadarFadingTime.ep_attribute,
-            "present_value",
-            converter=lambda x: x * 100,
-            dp_converter=lambda x: x // 100,
-            endpoint_id=5,
-        ),
-        104: DPToAttributeMapping(
-            TuyaIlluminanceMeasurement.ep_attribute,
-            "measured_value",
-            converter=lambda x: int(math.log10(x) * 10000 + 1) if x > 0 else int(0),
-        ),
-    }
-
-    data_point_handlers = {
-        1: "_dp_2_attr_update",
-        2: "_dp_2_attr_update",
-        3: "_dp_2_attr_update",
-        4: "_dp_2_attr_update",
-        9: "_dp_2_attr_update",
-        101: "_dp_2_attr_update",
-        102: "_dp_2_attr_update",
-        104: "_dp_2_attr_update",
     }
 
 
