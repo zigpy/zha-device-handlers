@@ -216,7 +216,7 @@ class NeoMotionManufCluster(TuyaNewManufCluster):
         104: "_dp_2_attr_update",
         105: "_dp_2_attr_update",
         113: "_dp_2_attr_update",
-    }	
+    }
 
 class TuyaMmwRadarClusterBase(NoManufacturerCluster, TuyaMCUCluster):
     """Mmw radar cluster, base class."""
