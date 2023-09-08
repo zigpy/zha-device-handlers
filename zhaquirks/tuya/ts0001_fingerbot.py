@@ -118,7 +118,7 @@ class OnOffEnchantable(TuyaEnchantableCluster, OnOff):
 
 class TuyaFingerbot(EnchantedDevice):
     signature = {
-        MODELS_INFO: [("_TZ3210_dse8ogfy", "TS0001")],
+        MODELS_INFO: [("_TZ3210_dse8ogfy", "TS0001"), ("_TZ3210_j4pdtz9v", "TS0001")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
