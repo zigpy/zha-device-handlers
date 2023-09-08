@@ -143,6 +143,7 @@ class TuyaFingerbot(EnchantedDevice):
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
+                    TuyaPowerConfigurationCluster,
                     OnOffEnchantable,
                     TuyaFingerbotCluster,
                 ],
