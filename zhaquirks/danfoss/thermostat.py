@@ -141,11 +141,16 @@ danfoss_thermostat_comm = {
     ),
 }
 
+# clusters
+DANFOSS_TRV_CLUSTER = 0xFC05
+DANFOSS_TRV_INTERFACE_CLUSTER = 0xFC06
+DANFOSS_TRV_DIAGNOSTIC_CLUSTER = 0xFC07
+
 
 class DanfossTRVCluster(CustomCluster):
     """Danfoss custom TRV cluster."""
 
-    cluster_id = 0xFC03
+    cluster_id = DANFOSS_TRV_CLUSTER
     ep_attribute = "danfoss_trv_cluster"
 
     attributes = danfoss_thermostat_attr
@@ -167,7 +172,7 @@ class DanfossTRVCluster(CustomCluster):
 class DanfossTRVInterfaceCluster(CustomCluster):
     """Danfoss custom interface cluster."""
 
-    cluster_id = 0xFC04
+    cluster_id = DANFOSS_TRV_INTERFACE_CLUSTER
     ep_attribute = "danfoss_trv_interface_cluster"
 
     attributes = danfoss_interface_attr
@@ -188,7 +193,7 @@ class DanfossTRVInterfaceCluster(CustomCluster):
 class DanfossTRVDiagnosticCluster(CustomCluster):
     """Danfoss custom diagnostic cluster."""
 
-    cluster_id = 0xFC05
+    cluster_id = DANFOSS_TRV_DIAGNOSTIC_CLUSTER
     ep_attribute = "danfoss_trv_diagnostic_cluster"
 
     attributes = danfoss_diagnostic_attr
