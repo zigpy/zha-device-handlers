@@ -1095,7 +1095,7 @@ class Plug_v3(EnchantedDevice):
                     ElectricalMeasurement.cluster_id,
                     LightLink.cluster_id,
                     0x1888,
-                    TuyaZBExternalSwitchTypeCluster.cluster_id,
+                    TuyaZBE000Cluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Ota.cluster_id,
@@ -1128,7 +1128,7 @@ class Plug_v3(EnchantedDevice):
                     TuyaZBElectricalMeasurement,
                     LightLink.cluster_id,
                     0x1888,
-                    TuyaZBExternalSwitchTypeCluster,
+                    TuyaZBE000Cluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     Ota.cluster_id,
