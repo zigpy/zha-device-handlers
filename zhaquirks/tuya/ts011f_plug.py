@@ -28,6 +28,7 @@ from zhaquirks.const import (
 )
 from zhaquirks.tuya import (
     TuyaNewManufCluster,
+    TuyaZB1888Cluster,
     TuyaZBE000Cluster,
     TuyaZBElectricalMeasurement,
     TuyaZBExternalSwitchTypeCluster,
@@ -1094,7 +1095,7 @@ class Plug_v3(EnchantedDevice):
                     Metering.cluster_id,
                     ElectricalMeasurement.cluster_id,
                     LightLink.cluster_id,
-                    0x1888,
+                    TuyaZB1888Cluster.cluster_id,
                     TuyaZBE000Cluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
@@ -1127,7 +1128,7 @@ class Plug_v3(EnchantedDevice):
                     TuyaZBMeteringClusterWithUnit,
                     TuyaZBElectricalMeasurement,
                     LightLink.cluster_id,
-                    0x1888,
+                    TuyaZB1888Cluster,
                     TuyaZBE000Cluster,
                 ],
                 OUTPUT_CLUSTERS: [
