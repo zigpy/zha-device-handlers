@@ -154,7 +154,11 @@ class PhilipsRemoteCluster(CustomCluster):
             args,
         )
 
-        button = self.BUTTONS.get(args[0], args[0])
+        button = self.BUTTONS.get(args[0])
+        # Bail on unknown buttons. (This gets rid of dial button "presses")
+        if button is None:
+            return
+
         press_type = self.PRESS_TYPES.get(args[2], args[2])
         duration = args[4]
 
@@ -198,9 +202,13 @@ class PhilipsRemoteCluster(CustomCluster):
             self.listener_event(ZHA_SEND_EVENT, action, event_args)
 
     @classmethod
-    def generate_device_automation_triggers(cls):
+    def generate_device_automation_triggers(cls, additional=None):
         triggers = {}
         for button in cls.BUTTONS.values():
             for press_type in cls.PRESS_TYPES.values():
                 triggers[(press_type, button)] = {COMMAND: f"{button}_{press_type}"}
+
+        if additional:
+            triggers.update(additional)
+
         return triggers

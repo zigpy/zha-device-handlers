@@ -24,6 +24,14 @@ from zhaquirks.const import (
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
+    SHORT_PRESS,
+    DIM_UP,
+    DIM_DOWN,
+    COMMAND,
+    COMMAND_STEP_ON_OFF,
+    CLUSTER_ID,
+    ENDPOINT_ID,
+    PARAMS,
 )
 from zhaquirks.philips import (
     PHILIPS,
@@ -31,6 +39,22 @@ from zhaquirks.philips import (
     PhilipsBasicCluster,
     PhilipsRemoteCluster,
 )
+
+
+DIAL_TRIGGERS = {
+    (SHORT_PRESS, DIM_UP): {
+        COMMAND: COMMAND_STEP_ON_OFF,
+        CLUSTER_ID: 8,
+        ENDPOINT_ID: 1,
+        PARAMS: {"step_mode": 0},
+    },
+    (SHORT_PRESS, DIM_DOWN): {
+        COMMAND: COMMAND_STEP_ON_OFF,
+        CLUSTER_ID: 8,
+        ENDPOINT_ID: 1,
+        PARAMS: {"step_mode": 1},
+    },
+}
 
 
 class PhilipsRdm002RemoteCluster(PhilipsRemoteCluster):
@@ -105,5 +129,5 @@ class PhilipsRDM002(CustomDevice):
     }
 
     device_automation_triggers = (
-        PhilipsRdm002RemoteCluster.generate_device_automation_triggers()
+        PhilipsRdm002RemoteCluster.generate_device_automation_triggers(DIAL_TRIGGERS)
     )
