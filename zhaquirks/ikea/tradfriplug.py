@@ -104,7 +104,7 @@ class TradfriPlug2(CustomDevice):
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=266
             # device_version=0
-            # input_clusters=[0, 3, 4, 5, 6, 8, 4096] output_clusters=[5, 25, 32]>
+            # input_clusters=[0, 3, 4, 5, 6, 8, 4096] output_clusters=[5, 25, 32, 4096]>
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_PLUG_IN_UNIT,
