@@ -18,20 +18,20 @@ from zhaquirks.const import (
     BUTTON_2,
     BUTTON_3,
     BUTTON_4,
+    CLUSTER_ID,
+    COMMAND,
+    COMMAND_STEP_ON_OFF,
     DEVICE_TYPE,
+    DIM_DOWN,
+    DIM_UP,
+    ENDPOINT_ID,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
+    PARAMS,
     PROFILE_ID,
     SHORT_PRESS,
-    DIM_UP,
-    DIM_DOWN,
-    COMMAND,
-    COMMAND_STEP_ON_OFF,
-    CLUSTER_ID,
-    ENDPOINT_ID,
-    PARAMS,
 )
 from zhaquirks.philips import (
     PHILIPS,
@@ -39,7 +39,6 @@ from zhaquirks.philips import (
     PhilipsBasicCluster,
     PhilipsRemoteCluster,
 )
-
 
 DIAL_TRIGGERS = {
     (SHORT_PRESS, DIM_UP): {
