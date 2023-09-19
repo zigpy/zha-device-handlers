@@ -7,11 +7,6 @@ from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
 from zigpy.zcl.foundation import WriteAttributesStatusRecord
 
 import zhaquirks
-from zhaquirks.danfoss.thermostat import (
-    DanfossTRVCluster,
-    DanfossTRVDiagnosticCluster,
-    DanfossTRVInterfaceCluster,
-)
 
 zhaquirks.setup()
 
@@ -47,43 +42,10 @@ def test_popp_signature(assert_signature_matches_quirk):
     )
 
 
-async def test_danfoss_trv_read_attributes(zigpy_device_from_quirk):
-    device = zigpy_device_from_quirk(zhaquirks.danfoss.thermostat.DanfossThermostat)
-
-    danfoss_thermostat_cluster = device.endpoints[1].in_clusters[Thermostat.cluster_id]
-    danfoss_trv_cluster = device.endpoints[1].in_clusters[DanfossTRVCluster.cluster_id]
-
-    def mock_read(attributes, manufacturer=None):
-        records = [
-            foundation.ReadAttributeRecord(
-                attr, foundation.Status.SUCCESS, foundation.TypeValue(None, 6)
-            )
-            for attr in attributes
-        ]
-        return (records,)
-
-    # data is served from danfoss_thermostat
-    patch_danfoss_thermostat_read = mock.patch.object(
-        danfoss_thermostat_cluster,
-        "_read_attributes",
-        mock.AsyncMock(side_effect=mock_read),
-    )
-
-    with patch_danfoss_thermostat_read:
-        # data should be received from danfoss_trv
-        success, fail = await danfoss_trv_cluster.read_attributes(
-            ["open_window_detection"]
-        )
-        assert success
-        assert 6 in success.values()
-        assert not fail
-
-
 async def test_danfoss_thermostat_write_attributes(zigpy_device_from_quirk):
     device = zigpy_device_from_quirk(zhaquirks.danfoss.thermostat.DanfossThermostat)
 
     danfoss_thermostat_cluster = device.endpoints[1].in_clusters[Thermostat.cluster_id]
-    danfoss_trv_cluster = device.endpoints[1].in_clusters[DanfossTRVCluster.cluster_id]
 
     def mock_write(attributes, manufacturer=None):
         records = [
@@ -114,7 +76,7 @@ async def test_danfoss_thermostat_write_attributes(zigpy_device_from_quirk):
 
     with patch_danfoss_trv_write:
         # data should be written to trv, but reach thermostat
-        success, fail = await danfoss_trv_cluster.write_attributes(
+        success, fail = await danfoss_thermostat_cluster.write_attributes(
             {"external_open_window_detected": False}
         )
         assert success
@@ -136,7 +98,7 @@ async def test_danfoss_thermostat_write_attributes(zigpy_device_from_quirk):
                 0x0015
             ] = 5  # min_limit is present normally
 
-            success, fail = await danfoss_trv_cluster.write_attributes(
+            success, fail = await danfoss_thermostat_cluster.write_attributes(
                 {"system_mode": 0x00}
             )
             assert success
@@ -148,65 +110,3 @@ async def test_danfoss_thermostat_write_attributes(zigpy_device_from_quirk):
 
             assert operation == 0x01
             assert setting == 5
-
-
-async def test_danfoss_interface_update_attribute(zigpy_device_from_quirk):
-    device = zigpy_device_from_quirk(zhaquirks.danfoss.thermostat.DanfossThermostat)
-
-    danfoss_user_interface_cluster = device.endpoints[1].in_clusters[
-        UserInterface.cluster_id
-    ]
-    danfoss_trv_interface_cluster = device.endpoints[1].in_clusters[
-        DanfossTRVInterfaceCluster.cluster_id
-    ]
-
-    attribute = -100
-    value = -0x01
-
-    def mock_update(attr, val):
-        nonlocal attribute, value
-
-        attribute = attr
-        value = val
-
-    patch_danfoss_trv_interface_update_attribute = mock.patch.object(
-        danfoss_trv_interface_cluster,
-        "_update_attribute",
-        mock.Mock(side_effect=mock_update),
-    )
-
-    with patch_danfoss_trv_interface_update_attribute:
-        danfoss_user_interface_cluster.update_attribute(0x4000, True)
-
-        assert attribute == 0x4000
-        assert value
-
-
-async def test_danfoss_diagnostic_update_attribute(zigpy_device_from_quirk):
-    device = zigpy_device_from_quirk(zhaquirks.danfoss.thermostat.DanfossThermostat)
-
-    danfoss_diagnostic_cluster = device.endpoints[1].in_clusters[Diagnostic.cluster_id]
-    danfoss_trv_diagnostic_cluster = device.endpoints[1].in_clusters[
-        DanfossTRVDiagnosticCluster.cluster_id
-    ]
-
-    attribute = -100
-    value = -0x01
-
-    def mock_update(attr, val):
-        nonlocal attribute, value
-
-        attribute = attr
-        value = val
-
-    patch_danfoss_trv_diagnostic_update_attribute = mock.patch.object(
-        danfoss_trv_diagnostic_cluster,
-        "_update_attribute",
-        mock.Mock(side_effect=mock_update),
-    )
-
-    with patch_danfoss_trv_diagnostic_update_attribute:
-        danfoss_diagnostic_cluster.update_attribute(0x4010, 4546)
-
-        assert attribute == 0x4010
-        assert value == 4546
