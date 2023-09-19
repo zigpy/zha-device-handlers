@@ -178,15 +178,15 @@ class PhilipsRemoteCluster(CustomCluster):
             )
             press_type = None
             if click_count == 1:
-                press_type = "press"
+                press_type = SHORT_PRESS
             elif click_count == 2:
-                press_type = "double_press"
+                press_type = DOUBLE_PRESS
             elif click_count == 3:
-                press_type = "triple_press"
+                press_type = TRIPLE_PRESS
             elif click_count == 4:
-                press_type = "quadruple_press"
+                press_type = QUADRUPLE_PRESS
             elif click_count > 4:
-                press_type = "quintuple_press"
+                press_type = QUINTUPLE_PRESS
 
             if press_type:
                 # Override PRESS_TYPE
