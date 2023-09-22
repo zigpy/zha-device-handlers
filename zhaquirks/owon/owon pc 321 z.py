@@ -1,11 +1,13 @@
 """QUIRK FOR OWON PC321 Z"""
 
 import logging
+
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Identify
 from zigpy.zcl.clusters.smartenergy import Metering
+
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
