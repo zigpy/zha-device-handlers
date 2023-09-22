@@ -65,7 +65,7 @@ class ZemismartElectricalMeasurement(TuyaElectricalMeasurement):
     POWER_WATT = 0x0000  # Actually this does not work. Data is interpreted as kWh.
 
     """Setting unit of measurement."""
-    _CONSTANT_ATTRIBUTES = {0x0300: POWER_WATT, POWER_DIVISOR: 1000}
+    _CONSTANT_ATTRIBUTES = {0x0300: POWER_WATT, POWER_DIVISOR: 100}
 
 
 class ZemismartManufCluster(TuyaManufClusterAttributes):
