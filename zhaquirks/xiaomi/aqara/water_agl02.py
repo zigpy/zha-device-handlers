@@ -14,7 +14,12 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.xiaomi import BasicCluster, XiaomiCustomDevice, XiaomiPowerConfiguration
+from zhaquirks.xiaomi import (
+    BasicCluster,
+    XiaomiAqaraE1Cluster,
+    XiaomiCustomDevice,
+    XiaomiPowerConfiguration,
+)
 
 
 class WaterT1(XiaomiCustomDevice):
@@ -52,6 +57,7 @@ class WaterT1(XiaomiCustomDevice):
                     XiaomiPowerConfiguration,
                     Identify.cluster_id,
                     IasZone.cluster_id,
+                    XiaomiAqaraE1Cluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     Ota.cluster_id,
