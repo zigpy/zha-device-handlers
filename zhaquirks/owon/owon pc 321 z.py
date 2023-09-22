@@ -6,7 +6,6 @@ import zigpy.types as t
 from typing import Dict, Final
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
-from zigpy.zcl.foundation import ZCLAttributeDef, ZCLCommandDef
 
 from zigpy.zcl.clusters.general import (
     Basic,
@@ -17,10 +16,8 @@ from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
-    MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
-    SKIP_CONFIGURATION,
 )
 
 
