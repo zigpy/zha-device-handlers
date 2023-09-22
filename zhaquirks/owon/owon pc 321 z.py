@@ -31,7 +31,7 @@ _LOGGER = logging.getLogger(__name__)
 
 class Owon_PC321_Z_Simple_Metering(CustomCluster, Metering):
     """ Owon PC321 CustomCluster """
-
+    
 
     cluster_id = 0x0702
     ep_attribute: str = "owon_smartenergy_metering"
@@ -61,39 +61,30 @@ class Owon_PC321_Z_Simple_Metering(CustomCluster, Metering):
         0x4101: ("L2_phase_reactive_energy_consumption", t.uint48_t, True),
         0x4102: ("L3_phase_reactive_energy_consumption", t.uint48_t, True),
         0x4103: ("reactive_energy_summation_of_the_3_phases", t.uint48_t, True),
+        0x5005: ("frequency", t.uint8_t, True),
         }
     )
 
-
-    server_commands: dict[int, ZCLCommandDef] = {
+    
+    """server_commands: dict[int, ZCLCommandDef] = {
         0x20: ZCLCommandDef("get_history_record", {}, False, is_manufacturer_specific=True),
         0x21: ZCLCommandDef("stop_sending_historical_record", {}, False, is_manufacturer_specific=True),
     }
-
+    
     client_commands: dict[int, ZCLCommandDef] = {
         0x20: ZCLCommandDef("sent_historical_record", {}, True, is_manufacturer_specific=True),
-    }
+    }"""
 
 
 
 
 
-class Owon_OC321_Z_Clear_Metering(CustomCluster):
-    cluster_id = 0xFFE0
-    ep_attribute = "clear_metering"
-
-    attributes: dict[int, ZCLAttributeDef] = {}
-
-    server_commands: dict[int, ZCLCommandDef] = {
-        0x00: ZCLCommandDef("clear_measurement_data", {}, is_manufacturer_specific=True),
-    }
-    client_commands: dict[int, ZCLCommandDef] = {}
-
+    
 
 """ New Device Owon PC321 Z """
 
 class Owon_PC321_Z(CustomDevice):
-
+    
     signature = {
         #MODELS_INFO: [("Owon", "PC321")],
         ENDPOINTS: {
@@ -127,7 +118,6 @@ class Owon_PC321_Z(CustomDevice):
                     Basic.cluster_id,
                     Identify.cluster_id,
                     Owon_PC321_Z_Simple_Metering,
-                    Owon_OC321_Z_Clear_Metering,
                 ],
                 OUTPUT_CLUSTERS: [Identify.cluster_id],
             },
