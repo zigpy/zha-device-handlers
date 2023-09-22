@@ -8,7 +8,7 @@ from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurem
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zdo.types import NodeDescriptor
 
-from zhaquirks import Bus, LocalDataCluster, PowerConfigurationCluster
+from zhaquirks import LocalDataCluster, PowerConfigurationCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -88,12 +88,6 @@ class TVOCCluster(XiaomiAqaraE1Cluster):
 class TVOCMonitor(XiaomiCustomDevice):
     """Aqara LUMI lumi.airmonitor.acn01."""
 
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        self.temperature_bus = Bus()
-        self.humidity_bus = Bus()
-        super().__init__(*args, **kwargs)
-
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=770
         # device_version=1
@@ -143,12 +137,6 @@ class TVOCMonitor(XiaomiCustomDevice):
 
 class TVOCMonitor2(XiaomiCustomDevice):
     """Aqara LUMI lumi.airmonitor.acn01."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        self.temperature_bus = Bus()
-        self.humidity_bus = Bus()
-        super().__init__(*args, **kwargs)
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=1026

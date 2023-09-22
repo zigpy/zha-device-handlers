@@ -10,7 +10,6 @@ from zhaquirks.const import (
     MODEL,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
-    SKIP_CONFIGURATION,
 )
 from zhaquirks.tuya import (
     TuyaSwitch,
@@ -50,7 +49,6 @@ class TuyaSingleNoNeutralSwitch(EnchantedDevice, TuyaSwitch):
     }
 
     replacement = {
-        SKIP_CONFIGURATION: True,
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -112,7 +110,6 @@ class TuyaDoubleNoNeutralSwitch(EnchantedDevice, TuyaSwitch):
     }
 
     replacement = {
-        SKIP_CONFIGURATION: True,
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -198,7 +195,6 @@ class TuyaTripleNoNeutralSwitch(EnchantedDevice, TuyaSwitch):
     }
 
     replacement = {
-        SKIP_CONFIGURATION: True,
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -264,7 +260,6 @@ class TuyaSingleNoNeutralSwitch_2(EnchantedDevice, TuyaSwitch):
         },
     }
     replacement = {
-        SKIP_CONFIGURATION: True,
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -328,7 +323,6 @@ class TuyaDoubleNoNeutralSwitch_2(EnchantedDevice, TuyaSwitch):
     }
 
     replacement = {
-        SKIP_CONFIGURATION: True,
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -416,7 +410,6 @@ class TuyaTripleNoNeutralSwitch_2(EnchantedDevice, TuyaSwitch):
     }
 
     replacement = {
-        SKIP_CONFIGURATION: True,
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,

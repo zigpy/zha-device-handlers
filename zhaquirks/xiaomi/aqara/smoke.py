@@ -8,7 +8,7 @@ from zigpy.zcl.clusters.general import Basic, Identify, Ota, PowerConfiguration
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zdo.types import NodeDescriptor
 
-from zhaquirks import Bus, LocalDataCluster
+from zhaquirks import LocalDataCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -83,11 +83,6 @@ class LocalIasZone(LocalDataCluster, IasZone):
 
 class LumiSensorSmokeAcn03(CustomDevice):
     """lumi.sensor_smoke.acn03 smoke sensor."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        self.battery_bus = Bus()
-        super().__init__(*args, **kwargs)
 
     signature = {
         MODELS_INFO: [(LUMI, "lumi.sensor_smoke.acn03")],
