@@ -10,10 +10,9 @@ from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
-    PROFILE_ID,
     OUTPUT_CLUSTERS,
+    PROFILE_ID,
 )
-
 
 _LOGGER = logging.getLogger(__name__)
 
