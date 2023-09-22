@@ -2,15 +2,9 @@
 
 import logging
 import zigpy.types as t
-
-from typing import Dict, Final
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
-
-from zigpy.zcl.clusters.general import (
-    Basic,
-    Identify,
-)
+from zigpy.zcl.clusters.general import Basic, Identify
 from zigpy.zcl.clusters.smartenergy import Metering
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -21,7 +15,7 @@ from zhaquirks.const import (
 )
 
 
-_LOGGER = logging.getLogger(__name__)
+#_LOGGER = logging.getLogger(__name__)
 
 
 class Owon_PC321_Z_Simple_Metering(CustomCluster, Metering):
