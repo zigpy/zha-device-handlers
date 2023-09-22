@@ -1,21 +1,21 @@
-""" QUIRK FOR OWON PC321 Z                                                                    """
+"""QUIRK FOR OWON PC321 Z"""
 
 import logging
-import zigpy.types as t
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
+import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Identify
 from zigpy.zcl.clusters.smartenergy import Metering
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
-    OUTPUT_CLUSTERS,
     PROFILE_ID,
+    OUTPUT_CLUSTERS,
 )
 
 
-#_LOGGER = logging.getLogger(__name__)
+_LOGGER = logging.getLogger(__name__)
 
 
 class Owon_PC321_Z_Simple_Metering(CustomCluster, Metering):
@@ -54,7 +54,7 @@ class Owon_PC321_Z_Simple_Metering(CustomCluster, Metering):
     )
 
 
-""" New Device Owon PC321 Z """
+"""New Device Owon PC321 Z"""
 
 
 class Owon_PC321_Z(CustomDevice):
