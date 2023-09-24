@@ -1108,7 +1108,7 @@ class TuyaZBE000Cluster(CustomCluster):
 
     name = "Tuya Manufacturer Specific 0"
     cluster_id = TUYA_CLUSTER_E000_ID
-    ep_attribute = "tuya_manufacturer_specific_0"
+    ep_attribute = "tuya_manufacturer_specific_57344"
 
 
 # Tuya Zigbee Cluster 0xE001 Implementation
@@ -1135,7 +1135,7 @@ class TuyaZB1888Cluster(CustomCluster):
 
     name = "Tuya Manufacturer Specific 1"
     cluster_id = TUYA_CLUSTER_1888_ID
-    ep_attribute = "tuya_manufacturer_specific_1"
+    ep_attribute = "tuya_manufacturer_specific_6280"
 
 
 # Tuya Window Cover Implementation
