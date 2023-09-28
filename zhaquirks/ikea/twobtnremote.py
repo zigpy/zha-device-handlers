@@ -196,6 +196,7 @@ class IkeaTradfriRemote2BtnZLL(CustomDevice):
 
     device_automation_triggers = IkeaTradfriRemote2Btn.device_automation_triggers.copy()
 
+
 class IkeaRodretRemote2Btn(CustomDevice):
     """Custom device representing IKEA of Sweden RODRET remote control."""
 
@@ -236,7 +237,7 @@ class IkeaRodretRemote2Btn(CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.NON_COLOR_CONTROLLER,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    DoublingPowerConfig1CRCluster,
+                    PowerConfiguration.cluster_id,
                     Identify.cluster_id,
                     PollControl.cluster_id,
                     LightLink.cluster_id,
