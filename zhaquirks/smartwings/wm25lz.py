@@ -40,7 +40,6 @@ class InvertedWindowCoveringCluster(CustomCluster, WindowCovering):
         *args,
         manufacturer: int | t.uint16_t | None = None,
         expect_reply: bool = True,
-        tries: int = 1,
         tsn: int | t.uint8_t | None = None,
         **kwargs: Any,
     ) -> Coroutine:
@@ -56,7 +55,6 @@ class InvertedWindowCoveringCluster(CustomCluster, WindowCovering):
             *args,
             manufacturer=manufacturer,
             expect_reply=expect_reply,
-            tries=tries,
             tsn=tsn,
             **kwargs,
         )

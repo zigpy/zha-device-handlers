@@ -2,7 +2,7 @@
 import logging
 from typing import Dict, Optional, Union
 
-from zigpy.profiles import zha
+from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
@@ -371,8 +371,8 @@ class TuyaSirenGPP_NoSensors(CustomDevice):
                 OUTPUT_CLUSTERS: [Ota.cluster_id, Time.cluster_id],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
@@ -394,8 +394,8 @@ class TuyaSirenGPP_NoSensors(CustomDevice):
                 OUTPUT_CLUSTERS: [Ota.cluster_id, Time.cluster_id],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },

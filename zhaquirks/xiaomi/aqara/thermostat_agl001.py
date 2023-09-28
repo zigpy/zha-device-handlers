@@ -387,9 +387,7 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
     def _update_attribute(self, attrid, value):
         self.debug("Updating attribute on Xiaomi cluster %s with %s", attrid, value)
         if attrid == BATTERY_PERCENTAGE:
-            self.endpoint.device.battery_bus.listener_event(
-                "battery_percent_reported", value
-            )
+            self.endpoint.power.battery_percent_reported(value)
         elif attrid == SYSTEM_MODE:
             # update ZCL system_mode attribute (e.g. on attribute reports)
             self.endpoint.thermostat.update_attribute(

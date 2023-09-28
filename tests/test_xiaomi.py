@@ -1,14 +1,29 @@
 """Tests for xiaomi."""
 import asyncio
+import logging
+import math
 from unittest import mock
 
 import pytest
 import zigpy.device
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import PowerConfiguration
+from zigpy.zcl.clusters.general import (
+    AnalogInput,
+    DeviceTemperature,
+    PowerConfiguration,
+)
+from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.hvac import Thermostat
+from zigpy.zcl.clusters.measurement import (
+    IlluminanceMeasurement,
+    OccupancySensing,
+    PressureMeasurement,
+    RelativeHumidity,
+    TemperatureMeasurement,
+)
 from zigpy.zcl.clusters.security import IasZone
+from zigpy.zcl.clusters.smartenergy import Metering
 
 import zhaquirks
 from zhaquirks.const import (
@@ -25,10 +40,9 @@ from zhaquirks.const import (
     ZONE_STATUS_CHANGE_COMMAND,
 )
 from zhaquirks.xiaomi import (
-    CONSUMPTION_REPORTED,
     LUMI,
-    POWER_REPORTED,
-    VOLTAGE_REPORTED,
+    XIAOMI_AQARA_ATTRIBUTE,
+    XIAOMI_AQARA_ATTRIBUTE_E1,
     XIAOMI_NODE_DESC,
     BasicCluster,
     XiaomiCustomDevice,
@@ -51,16 +65,30 @@ from zhaquirks.xiaomi.aqara.feeder_acn001 import (
     AqaraFeederAcn001,
     OppleCluster,
 )
+import zhaquirks.xiaomi.aqara.motion_ac02
 import zhaquirks.xiaomi.aqara.motion_aq2
 import zhaquirks.xiaomi.aqara.motion_aq2b
+import zhaquirks.xiaomi.aqara.plug
 import zhaquirks.xiaomi.aqara.plug_eu
+import zhaquirks.xiaomi.aqara.roller_curtain_e1
 import zhaquirks.xiaomi.aqara.smoke
 from zhaquirks.xiaomi.aqara.thermostat_agl001 import ScheduleEvent, ScheduleSettings
+import zhaquirks.xiaomi.aqara.switch_t1
+import zhaquirks.xiaomi.aqara.weather
 import zhaquirks.xiaomi.mija.motion
 
 from tests.common import ZCL_OCC_ATTR_RPT_OCC, ClusterListener
 
 zhaquirks.setup()
+
+
+def create_aqara_attr_report(attributes):
+    """Creates a special Aqara attriubte report with t.Single as a type for all values."""
+    serialized_data = b""
+    for key, value in attributes.items():
+        tv = foundation.TypeValue(0x39, t.Single(value))  # mostly used
+        serialized_data += bytes([key]) + tv.serialize()
+    return serialized_data
 
 
 def test_basic_cluster_deserialize_wrong_len():
@@ -489,45 +517,71 @@ async def test_xiaomi_eu_plug_binding(zigpy_device_from_quirk, quirk):
         )
 
 
-@pytest.mark.parametrize("quirk", (zhaquirks.xiaomi.aqara.plug_eu.PlugMAEU01,))
-async def test_xiaomi_eu_plug_power(zigpy_device_from_quirk, quirk):
-    """Test current power consumption, total power consumption, and current voltage on Xiaomi EU plug."""
+@pytest.mark.parametrize(
+    "quirk",
+    (
+        zhaquirks.xiaomi.aqara.plug_eu.PlugMAEU01,
+        zhaquirks.xiaomi.aqara.switch_t1.SwitchT1,
+    ),
+)
+async def test_xiaomi_plug_power(zigpy_device_from_quirk, quirk):
+    """Test current power consumption, total power consumption, and current voltage on Xiaomi EU plug and T1 relay."""
 
     device = zigpy_device_from_quirk(quirk)
+    basic_cluster = device.endpoints[1].basic
 
     em_cluster = device.endpoints[1].electrical_measurement
     em_listener = ClusterListener(em_cluster)
 
     # Test voltage on ElectricalMeasurement cluster
-    em_cluster.endpoint.device.voltage_bus.listener_event(VOLTAGE_REPORTED, 230)
+    zcl_em_voltage = ElectricalMeasurement.AttributeDefs.rms_voltage.id
+    basic_cluster.update_attribute(
+        XIAOMI_AQARA_ATTRIBUTE, create_aqara_attr_report({150: 2300})
+    )
     assert len(em_listener.attribute_updates) == 1
-    assert em_listener.attribute_updates[0][0] == 1285
+    assert em_listener.attribute_updates[0][0] == zcl_em_voltage
     assert em_listener.attribute_updates[0][1] == 230
 
     # Test current power consumption on ElectricalMeasurement cluster
-    em_cluster.endpoint.device.power_bus.listener_event(POWER_REPORTED, 15)
+    zcl_em_current_power = ElectricalMeasurement.AttributeDefs.active_power.id
+    basic_cluster.update_attribute(
+        XIAOMI_AQARA_ATTRIBUTE, create_aqara_attr_report({152: 15})
+    )
     assert len(em_listener.attribute_updates) == 2
-    assert em_listener.attribute_updates[1][0] == 1291
+    assert em_listener.attribute_updates[1][0] == zcl_em_current_power
     assert em_listener.attribute_updates[1][1] == 150  # multiplied by 10
 
-    # Test total power consumption on ElectricalMeasurement cluster
-    em_cluster.endpoint.device.consumption_bus.listener_event(
-        CONSUMPTION_REPORTED, 0.001
-    )
-    assert len(em_listener.attribute_updates) == 3
-    assert em_listener.attribute_updates[2][0] == 772
-    assert em_listener.attribute_updates[2][1] == 1  # multiplied by 1000
-
-    # Test total power consumption on SmartEnergy cluster
+    # Test total power consumption on ElectricalMeasurement cluster and SmartEnergy cluster
+    zcl_em_total_power = ElectricalMeasurement.AttributeDefs.total_active_power.id
+    zcl_se_total_power = Metering.AttributeDefs.current_summ_delivered.id
     se_cluster = device.endpoints[1].smartenergy_metering
     se_listener = ClusterListener(se_cluster)
 
-    se_cluster.endpoint.device.consumption_bus.listener_event(
-        CONSUMPTION_REPORTED, 0.001
+    basic_cluster.update_attribute(
+        XIAOMI_AQARA_ATTRIBUTE, create_aqara_attr_report({149: 0.001})
     )
+    # electrical measurement cluster
+    assert len(em_listener.attribute_updates) == 3
+    assert em_listener.attribute_updates[2][0] == zcl_em_total_power
+    assert em_listener.attribute_updates[2][1] == 1  # multiplied by 1000
+
+    # smart energy cluster
     assert len(se_listener.attribute_updates) == 1
-    assert se_listener.attribute_updates[0][0] == 0
+    assert se_listener.attribute_updates[0][0] == zcl_se_total_power
     assert se_listener.attribute_updates[0][1] == 1  # multiplied by 1000
+
+    # test current power consumption attribute report on AnalogInput is forwarded to ElectricalMeasurement
+    analog_input_cluster = device.endpoints[21].analog_input
+    analog_input_listener = ClusterListener(analog_input_cluster)
+    zcl_analog_input_value = AnalogInput.AttributeDefs.present_value.id
+
+    analog_input_cluster.update_attribute(zcl_analog_input_value, 40)
+    assert len(analog_input_listener.attribute_updates) == 1
+    assert analog_input_listener.attribute_updates[0][0] == zcl_analog_input_value
+    assert analog_input_listener.attribute_updates[0][1] == 40
+
+    assert em_listener.attribute_updates[3][0] == zcl_em_current_power
+    assert em_listener.attribute_updates[3][1] == 400  # multiplied by 10
 
 
 @pytest.mark.parametrize(
@@ -582,88 +636,96 @@ async def test_aqara_feeder_write_attrs(
             b"\x1c_\x11f\n\xf1\xffA\t\x00\x05\x01\x04\x15\x00U\x01\x01",
             2,
             [
-                mock.call(ZCL_FEEDING, True),
-                mock.call(FEEDER_ATTR, b"\x00\x05\x01\x04\x15\x00U\x01\x01"),
+                mock.call(ZCL_FEEDING, True, mock.ANY),
+                mock.call(FEEDER_ATTR, b"\x00\x05\x01\x04\x15\x00U\x01\x01", mock.ANY),
             ],
         ),
         (
             b"\x1c_\x11l\n\xf1\xffA\x0c\x00\x05\xd0\x04\x15\x02\xbc\x040203",
             3,
             [
-                mock.call(ZCL_LAST_FEEDING_SIZE, 3),
-                mock.call(ZCL_LAST_FEEDING_SOURCE, OppleCluster.FeedingSource.Remote),
-                mock.call(FEEDER_ATTR, b"\x00\x05\xd0\x04\x15\x02\xbc\x040203"),
+                mock.call(ZCL_LAST_FEEDING_SIZE, 3, mock.ANY),
+                mock.call(
+                    ZCL_LAST_FEEDING_SOURCE, OppleCluster.FeedingSource.Remote, mock.ANY
+                ),
+                mock.call(
+                    FEEDER_ATTR, b"\x00\x05\xd0\x04\x15\x02\xbc\x040203", mock.ANY
+                ),
             ],
         ),
         (
             b"\x1c_\x11m\n\xf1\xffA\n\x00\x05\xd1\rh\x00U\x02\x00!",
             2,
             [
-                mock.call(ZCL_PORTIONS_DISPENSED, 33),
-                mock.call(FEEDER_ATTR, b"\x00\x05\xd1\rh\x00U\x02\x00!"),
+                mock.call(ZCL_PORTIONS_DISPENSED, 33, mock.ANY),
+                mock.call(FEEDER_ATTR, b"\x00\x05\xd1\rh\x00U\x02\x00!", mock.ANY),
             ],
         ),
         (
             b"\x1c_\x11n\n\xf1\xffA\x0c\x00\x05\xd2\ri\x00U\x04\x00\x00\x01\x08",
             2,
             [
-                mock.call(ZCL_WEIGHT_DISPENSED, 264),
-                mock.call(FEEDER_ATTR, b"\x00\x05\xd2\ri\x00U\x04\x00\x00\x01\x08"),
+                mock.call(ZCL_WEIGHT_DISPENSED, 264, mock.ANY),
+                mock.call(
+                    FEEDER_ATTR, b"\x00\x05\xd2\ri\x00U\x04\x00\x00\x01\x08", mock.ANY
+                ),
             ],
         ),
         (
             b"\x1c_\x11o\n\xf1\xffA\t\x00\x05\xd3\r\x0b\x00U\x01\x00",
             2,
             [
-                mock.call(ZCL_ERROR_DETECTED, False),
-                mock.call(FEEDER_ATTR, b"\x00\x05\xd3\r\x0b\x00U\x01\x00"),
+                mock.call(ZCL_ERROR_DETECTED, False, mock.ANY),
+                mock.call(FEEDER_ATTR, b"\x00\x05\xd3\r\x0b\x00U\x01\x00", mock.ANY),
             ],
         ),
         (
             b"\x1c_\x11p\n\xf1\xffA\t\x00\x05\x05\x04\x16\x00U\x01\x01",
             2,
             [
-                mock.call(ZCL_CHILD_LOCK, True),
-                mock.call(FEEDER_ATTR, b"\x00\x05\x05\x04\x16\x00U\x01\x01"),
+                mock.call(ZCL_CHILD_LOCK, True, mock.ANY),
+                mock.call(FEEDER_ATTR, b"\x00\x05\x05\x04\x16\x00U\x01\x01", mock.ANY),
             ],
         ),
         (
             b"\x1c_\x11r\n\xf1\xffA\t\x00\x05\t\x04\x17\x00U\x01\x01",
             2,
             [
-                mock.call(ZCL_DISABLE_LED_INDICATOR, True),
-                mock.call(FEEDER_ATTR, b"\x00\x05\t\x04\x17\x00U\x01\x01"),
+                mock.call(ZCL_DISABLE_LED_INDICATOR, True, mock.ANY),
+                mock.call(FEEDER_ATTR, b"\x00\x05\t\x04\x17\x00U\x01\x01", mock.ANY),
             ],
         ),
         (
             b"\x1c_\x11s\n\xf1\xffA\t\x00\x05\x0b\x04\x18\x00U\x01\x01",
             2,
             [
-                mock.call(ZCL_FEEDING_MODE, OppleCluster.FeedingMode.Schedule),
-                mock.call(FEEDER_ATTR, b"\x00\x05\x0b\x04\x18\x00U\x01\x01"),
+                mock.call(
+                    ZCL_FEEDING_MODE, OppleCluster.FeedingMode.Schedule, mock.ANY
+                ),
+                mock.call(FEEDER_ATTR, b"\x00\x05\x0b\x04\x18\x00U\x01\x01", mock.ANY),
             ],
         ),
         (
             b"\x1c_\x11u\n\xf1\xffA\t\x00\x05\x0f\x0e_\x00U\x01\x06",
             2,
             [
-                mock.call(ZCL_PORTION_WEIGHT, 6),
-                mock.call(FEEDER_ATTR, b"\x00\x05\x0f\x0e_\x00U\x01\x06"),
+                mock.call(ZCL_PORTION_WEIGHT, 6, mock.ANY),
+                mock.call(FEEDER_ATTR, b"\x00\x05\x0f\x0e_\x00U\x01\x06", mock.ANY),
             ],
         ),
         (
             b"\x1c_\x11v\n\xf1\xffA\t\x00\x05\x11\x0e\\\x00U\x01\x02",
             2,
             [
-                mock.call(ZCL_SERVING_SIZE, 2),
-                mock.call(FEEDER_ATTR, b"\x00\x05\x11\x0e\\\x00U\x01\x02"),
+                mock.call(ZCL_SERVING_SIZE, 2, mock.ANY),
+                mock.call(FEEDER_ATTR, b"\x00\x05\x11\x0e\\\x00U\x01\x02", mock.ANY),
             ],
         ),
         (
             b"\x1c_\x11{\n\xf7\x00A\x0e\x05!\x0e\x00\r#!%\x00\x00\t!\x02\x03",
             1,
             [
-                mock.call(0x00F7, b"\x05!\x0e\x00\r#!%\x00\x00\t!\x02\x03"),
+                mock.call(0x00F7, b"\x05!\x0e\x00\r#!%\x00\x00\t!\x02\x03", mock.ANY),
             ],
         ),
         (
@@ -673,6 +735,7 @@ async def test_aqara_feeder_write_attrs(
                 mock.call(
                     FEEDER_ATTR,
                     b"\x00\x05\x15\x08\x00\x08\xc8 7F09000100,7F0D000100,7F13000100",
+                    mock.ANY,
                 ),
             ],
         ),
@@ -716,26 +779,26 @@ async def test_aqara_smoke_sensor_attribute_update(zigpy_device_from_quirk, quir
     ias_cluster = device.endpoints[1].ias_zone
     ias_listener = ClusterListener(ias_cluster)
 
-    zone_status_id = IasZone.attributes_by_name["zone_status"].id
+    zone_status_id = IasZone.AttributeDefs.zone_status.id
 
     # check that updating Xiaomi smoke attribute also updates zone status on the Ias Zone cluster
 
     # turn on smoke alarm
-    opple_cluster._update_attribute(0x013A, 1)
+    opple_cluster.update_attribute(0x013A, 1)
     assert len(opple_listener.attribute_updates) == 1
     assert len(ias_listener.attribute_updates) == 1
     assert ias_listener.attribute_updates[0][0] == zone_status_id
     assert ias_listener.attribute_updates[0][1] == IasZone.ZoneStatus.Alarm_1
 
     # turn off smoke alarm
-    opple_cluster._update_attribute(0x013A, 0)
+    opple_cluster.update_attribute(0x013A, 0)
     assert len(opple_listener.attribute_updates) == 2
     assert len(ias_listener.attribute_updates) == 2
     assert ias_listener.attribute_updates[1][0] == zone_status_id
     assert ias_listener.attribute_updates[1][1] == 0
 
     # check if fake dB/m smoke density attribute is also updated
-    opple_cluster._update_attribute(0x013B, 10)
+    opple_cluster.update_attribute(0x013B, 10)
     assert len(opple_listener.attribute_updates) == 4
     assert opple_listener.attribute_updates[2][0] == 0x013B
     assert opple_listener.attribute_updates[2][1] == 10
@@ -781,10 +844,7 @@ async def test_aqara_smoke_sensor_xiaomi_attribute_report(
 
     # check that Xiaomi attribute report resets smoke zone status
     assert len(ias_listener.attribute_updates) == 1
-    assert (
-        ias_listener.attribute_updates[0][0]
-        == IasZone.attributes_by_name["zone_status"].id
-    )
+    assert ias_listener.attribute_updates[0][0] == IasZone.AttributeDefs.zone_status.id
     assert ias_listener.attribute_updates[0][1] == expected_zone_status
 
 
@@ -793,8 +853,8 @@ async def test_aqara_smoke_sensor_xiaomi_attribute_report(
     [
         ("system_mode", "unoccupied_heating_setpoint"),
         (
-            Thermostat.attributes_by_name["system_mode"].id,
-            Thermostat.attributes_by_name["unoccupied_heating_setpoint"].id,
+            Thermostat.AttributeDefs.system_mode.id,
+            Thermostat.AttributeDefs.unoccupied_heating_setpoint.id,
         ),
     ],
 )
@@ -866,7 +926,7 @@ async def test_xiaomi_e1_thermostat_rw_redirection(
             0x0271
         ]  # Opple system_mode attribute
         assert thermostat_listener.attribute_updates[0] == (
-            Thermostat.attributes_by_name["system_mode"].id,
+            Thermostat.AttributeDefs.system_mode.id,
             Thermostat.SystemMode.Heat,
         )  # check that attributes are correctly mapped and updated on ZCL thermostat cluster
 
@@ -895,7 +955,7 @@ async def test_xiaomi_e1_thermostat_rw_redirection(
         assert opple_listener.attribute_updates[1] == (0x0271, 1)  # Opple system_mode
 
         assert thermostat_listener.attribute_updates[2] == (
-            Thermostat.attributes_by_name["system_mode"].id,
+            Thermostat.AttributeDefs.system_mode.id,
             Thermostat.SystemMode.Heat,
         )  # check ZCL attribute is in correct mode
 
@@ -924,29 +984,29 @@ async def test_xiaomi_e1_thermostat_attribute_update(zigpy_device_from_quirk, qu
     power_config_cluster = device.endpoints[1].power
     power_config_listener = ClusterListener(power_config_cluster)
 
-    zcl_system_mode_id = Thermostat.attributes_by_name["system_mode"].id
-    zcl_battery_percentage_id = PowerConfiguration.attributes_by_name[
-        "battery_percentage_remaining"
-    ].id
+    zcl_system_mode_id = Thermostat.AttributeDefs.system_mode.id
+    zcl_battery_percentage_id = (
+        PowerConfiguration.AttributeDefs.battery_percentage_remaining.id
+    )
 
     # check that updating Xiaomi system_mode also updates an attribute on the Thermostat cluster
 
     # turn off heating
-    opple_cluster._update_attribute(0x0271, 0)
+    opple_cluster.update_attribute(0x0271, 0)
     assert len(opple_listener.attribute_updates) == 1
     assert len(thermostat_listener.attribute_updates) == 1
     assert thermostat_listener.attribute_updates[0][0] == zcl_system_mode_id
     assert thermostat_listener.attribute_updates[0][1] == Thermostat.SystemMode.Off
 
     # turn on heating
-    opple_cluster._update_attribute(0x0271, 1)
+    opple_cluster.update_attribute(0x0271, 1)
     assert len(opple_listener.attribute_updates) == 2
     assert len(thermostat_listener.attribute_updates) == 2
     assert thermostat_listener.attribute_updates[1][0] == zcl_system_mode_id
     assert thermostat_listener.attribute_updates[1][1] == Thermostat.SystemMode.Heat
 
     # check that updating battery_percentage on the OppleCluster also updates the PowerConfiguration cluster
-    opple_cluster._update_attribute(0x040A, 50)  # 50% battery
+    opple_cluster.update_attribute(0x040A, 50)  # 50% battery
     assert len(opple_listener.attribute_updates) == 3
     assert len(power_config_listener.attribute_updates) == 1
     assert power_config_listener.attribute_updates[0][0] == zcl_battery_percentage_id
@@ -1051,3 +1111,276 @@ async def test_xiaomi_e1_thermostat_schedule_settings_deserialization(
 
     s = ScheduleSettings(schedule_settings)
     assert str(s) == expected_string
+
+
+@pytest.mark.parametrize("quirk", (zhaquirks.xiaomi.aqara.motion_ac02.LumiMotionAC02,))
+async def test_xiaomi_p1_motion_sensor(zigpy_device_from_quirk, quirk):
+    """Test Aqara P1 motion sensor."""
+
+    device = zigpy_device_from_quirk(quirk)
+
+    opple_cluster = device.endpoints[1].opple_cluster
+    opple_listener = ClusterListener(opple_cluster)
+
+    ias_cluster = device.endpoints[1].ias_zone
+    ias_listener = ClusterListener(ias_cluster)
+
+    occupancy_cluster = device.endpoints[1].occupancy
+    occupancy_listener = ClusterListener(occupancy_cluster)
+
+    illuminance_cluster = device.endpoints[1].illuminance
+    illuminance_listener = ClusterListener(illuminance_cluster)
+
+    zcl_zone_status_change_cmd_id = (
+        IasZone.ClientCommandDefs.status_change_notification.id
+    )
+    zcl_occupancy_id = OccupancySensing.AttributeDefs.occupancy.id
+    zcl_iilluminance_id = IlluminanceMeasurement.AttributeDefs.measured_value.id
+
+    # send motion and illuminance report 10
+    opple_cluster.update_attribute(274, 10 + 65536)
+
+    # confirm manufacturer specific attribute report
+    assert len(opple_listener.attribute_updates) == 1
+    assert opple_listener.attribute_updates[0][0] == 274
+    assert opple_listener.attribute_updates[0][1] == 10 + 65536
+
+    # confirm zone status change notification command
+    assert len(ias_listener.cluster_commands) == 1
+    assert ias_listener.cluster_commands[0][1] == zcl_zone_status_change_cmd_id
+    assert ias_listener.cluster_commands[0][2][0] == IasZone.ZoneStatus.Alarm_1
+
+    # confirm occupancy report
+    assert len(occupancy_listener.attribute_updates) == 1
+    assert occupancy_listener.attribute_updates[0][0] == zcl_occupancy_id
+    assert (
+        occupancy_listener.attribute_updates[0][1]
+        == OccupancySensing.Occupancy.Occupied
+    )
+
+    # confirm illuminance report (with conversion)
+    assert len(illuminance_listener.attribute_updates) == 1
+    assert illuminance_listener.attribute_updates[0][0] == zcl_iilluminance_id
+    assert illuminance_listener.attribute_updates[0][1] == 10000 * math.log10(10) + 1
+
+    # send invalid illuminance report 0xFFFF (and motion)
+    opple_cluster.update_attribute(274, 0xFFFF)
+
+    # confirm invalid illuminance report is interpreted as 0
+    assert len(illuminance_listener.attribute_updates) == 2
+    assert illuminance_listener.attribute_updates[1][0] == zcl_iilluminance_id
+    assert illuminance_listener.attribute_updates[1][1] == 0
+
+    # send illuminance report only
+    opple_cluster.update_attribute(
+        XIAOMI_AQARA_ATTRIBUTE_E1, create_aqara_attr_report({101: 20})
+    )
+    assert len(illuminance_listener.attribute_updates) == 3
+    assert illuminance_listener.attribute_updates[2][0] == zcl_iilluminance_id
+    assert illuminance_listener.attribute_updates[2][1] == 10000 * math.log10(20) + 1
+
+
+@pytest.mark.parametrize(
+    "raw_report, expected_results",
+    (
+        [
+            "18200A01FF412501214F0B0421A84305214E020624010000000064299B096521BE1B662B138D01000A21900D",
+            [
+                2459,  # temperature
+                7102,  # humidity
+                1016.51,  # pressure
+                28.9,  # battery voltage
+                54,  # battery percent * 2
+            ],
+        ],
+    ),
+)
+async def test_xiaomi_weather(zigpy_device_from_quirk, raw_report, expected_results):
+    """Test Aqara weather sensor."""
+    raw_report = bytes.fromhex(raw_report)
+
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.weather.Weather2)
+
+    basic_cluster = device.endpoints[1].basic
+
+    temperature_cluster = device.endpoints[1].temperature
+    temperature_listener = ClusterListener(temperature_cluster)
+
+    humidity_cluster = device.endpoints[1].humidity
+    humidity_listener = ClusterListener(humidity_cluster)
+
+    pressure_cluster = device.endpoints[1].pressure
+    pressure_listener = ClusterListener(pressure_cluster)
+
+    power_cluster = device.endpoints[1].power
+    power_listener = ClusterListener(power_cluster)
+
+    zcl_temperature_id = TemperatureMeasurement.AttributeDefs.measured_value.id
+    zcl_humidity_id = RelativeHumidity.AttributeDefs.measured_value.id
+    zcl_pressure_id = PressureMeasurement.AttributeDefs.measured_value.id
+    zcl_power_voltage_id = PowerConfiguration.AttributeDefs.battery_voltage.id
+    zcl_power_percent_id = (
+        PowerConfiguration.AttributeDefs.battery_percentage_remaining.id
+    )
+
+    device.handle_message(
+        260,
+        basic_cluster.cluster_id,
+        basic_cluster.endpoint.endpoint_id,
+        basic_cluster.endpoint.endpoint_id,
+        raw_report,
+    )
+
+    assert len(temperature_listener.attribute_updates) == 1
+    assert temperature_listener.attribute_updates[0][0] == zcl_temperature_id
+    assert temperature_listener.attribute_updates[0][1] == expected_results[0]
+
+    assert len(humidity_listener.attribute_updates) == 1
+    assert humidity_listener.attribute_updates[0][0] == zcl_humidity_id
+    assert humidity_listener.attribute_updates[0][1] == expected_results[1]
+
+    assert len(pressure_listener.attribute_updates) == 1
+    assert pressure_listener.attribute_updates[0][0] == zcl_pressure_id
+    assert pressure_listener.attribute_updates[0][1] == expected_results[2]
+
+    assert len(power_listener.attribute_updates) == 2
+    assert power_listener.attribute_updates[0][0] == zcl_power_voltage_id
+    assert power_listener.attribute_updates[0][1] == expected_results[3]
+    assert power_listener.attribute_updates[1][0] == zcl_power_percent_id
+    assert power_listener.attribute_updates[1][1] == expected_results[4]
+
+
+@pytest.mark.parametrize(
+    "raw_report, expected_results",
+    (
+        [
+            "1C5F11C10A01FF41210121DB0B03281F0421A8430521B60006240B000000000A21CA356410000B210800",
+            [
+                3100,  # temperature
+                9031.899869919436,  # illuminance
+                30.4,  # battery voltage
+                154,  # battery percent * 2
+            ],
+        ],
+    ),
+)
+async def test_xiaomi_motion_sensor_misc(
+    zigpy_device_from_quirk, raw_report, expected_results
+):
+    """Test device temperature, illuminance, and power from old Aqara motion sensor models."""
+    raw_report = bytes.fromhex(raw_report)
+
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.motion_aq2.MotionAQ2)
+
+    basic_cluster = device.endpoints[1].basic
+
+    device_temperature_cluster = device.endpoints[1].device_temperature
+    device_temperature_listener = ClusterListener(device_temperature_cluster)
+
+    illuminance_cluster = device.endpoints[1].illuminance
+    illuminance_listener = ClusterListener(illuminance_cluster)
+
+    power_cluster = device.endpoints[1].power
+    power_listener = ClusterListener(power_cluster)
+
+    zcl_device_temperature_id = DeviceTemperature.AttributeDefs.current_temperature.id
+    zcl_illuminance_id = IlluminanceMeasurement.AttributeDefs.measured_value.id
+    zcl_power_voltage_id = PowerConfiguration.AttributeDefs.battery_voltage.id
+    zcl_power_percent_id = (
+        PowerConfiguration.AttributeDefs.battery_percentage_remaining.id
+    )
+
+    device.handle_message(
+        260,
+        basic_cluster.cluster_id,
+        basic_cluster.endpoint.endpoint_id,
+        basic_cluster.endpoint.endpoint_id,
+        raw_report,
+    )
+
+    assert len(device_temperature_listener.attribute_updates) == 1
+    assert (
+        device_temperature_listener.attribute_updates[0][0] == zcl_device_temperature_id
+    )
+    assert device_temperature_listener.attribute_updates[0][1] == expected_results[0]
+
+    assert len(illuminance_listener.attribute_updates) == 1
+    assert illuminance_listener.attribute_updates[0][0] == zcl_illuminance_id
+    assert illuminance_listener.attribute_updates[0][1] == expected_results[1]
+
+    assert len(power_listener.attribute_updates) == 2
+    assert power_listener.attribute_updates[0][0] == zcl_power_voltage_id
+    assert power_listener.attribute_updates[0][1] == expected_results[2]
+    assert power_listener.attribute_updates[1][0] == zcl_power_percent_id
+    assert power_listener.attribute_updates[1][1] == expected_results[3]
+
+
+@pytest.mark.parametrize("quirk", (zhaquirks.xiaomi.aqara.plug.Plug,))
+async def test_xiaomi_power_cluster_not_used(zigpy_device_from_quirk, caplog, quirk):
+    """Test that a log is printed which warns when a device reports battery mV readout,
+    even though XiaomiPowerConfigurationCluster is not used.
+
+    This explicitly uses the Plug quirk which will always report this message, as this shouldn't have a battery readout.
+    Other battery-powered devices might implement the XiaomiPowerConfigurationCluster in the future,
+    so they would no longer report this message.
+    """
+    caplog.set_level(logging.DEBUG)  # relevant message is currently DEBUG level
+
+    device = zigpy_device_from_quirk(quirk)
+    basic_cluster = device.endpoints[1].basic
+
+    power_cluster = device.endpoints[1].power
+    power_listener = ClusterListener(power_cluster)
+
+    # fake a battery voltage attribute report
+    basic_cluster.update_attribute(
+        XIAOMI_AQARA_ATTRIBUTE, create_aqara_attr_report({1: 2300})
+    )
+
+    # confirm that no battery voltage attribute was updated
+    assert len(power_listener.attribute_updates) == 0
+
+    # confirm that a debug message was logged
+    assert (
+        "Xiaomi battery voltage attribute received but XiaomiPowerConfiguration not used"
+        in caplog.text
+    )
+
+
+@pytest.mark.parametrize(
+    "quirk", (zhaquirks.xiaomi.aqara.roller_curtain_e1.RollerE1AQ,)
+)
+async def test_xiaomi_e1_roller_curtain_battery(zigpy_device_from_quirk, quirk):
+    """Test Aqara E1 roller curtain battery reporting."""
+    # Ideally, get a real Xiaomi "heartbeat" message to test.
+    # For now, fake the heartbeat message and check if battery parsing works.
+
+    device = zigpy_device_from_quirk(quirk)
+
+    basic_cluster = device.endpoints[1].basic
+    ClusterListener(basic_cluster)
+
+    power_cluster = device.endpoints[1].power
+    power_listener = ClusterListener(power_cluster)
+
+    zcl_power_voltage_id = PowerConfiguration.AttributeDefs.battery_voltage.id
+    zcl_power_percent_id = (
+        PowerConfiguration.AttributeDefs.battery_percentage_remaining.id
+    )
+
+    # battery voltage: 2895 mV
+    # battery percentage: 80%
+    basic_cluster.update_attribute(
+        XIAOMI_AQARA_ATTRIBUTE, create_aqara_attr_report({1: 2895, 101: 60})
+    )
+
+    # confirm that battery voltage attribute and percentage were each updated just once,
+    # so we verify the percent value sent was used,
+    # and the voltage value sent was only used for the voltage and not also for the percentage
+    assert len(power_listener.attribute_updates) == 2
+
+    # verify voltage and percentage values match the values sent
+    assert power_listener.attribute_updates[0][0] == zcl_power_voltage_id
+    assert power_listener.attribute_updates[0][1] == 28.9
+    assert power_listener.attribute_updates[1][0] == zcl_power_percent_id
+    assert power_listener.attribute_updates[1][1] == 120

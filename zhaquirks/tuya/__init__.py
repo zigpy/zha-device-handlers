@@ -30,6 +30,7 @@ from zhaquirks.const import (
 TUYA_CLUSTER_ID = 0xEF00
 TUYA_CLUSTER_E000_ID = 0xE000
 TUYA_CLUSTER_E001_ID = 0xE001
+TUYA_CLUSTER_1888_ID = 0x1888
 # ---------------------------------------------------------
 # Tuya Cluster Commands
 # ---------------------------------------------------------
@@ -544,7 +545,7 @@ class TuyaEnchantableCluster(CustomCluster):
     - clusters which would be bound, but that changed their ep_attribute
 
     Make sure to add a subclass of TuyaEnchantableCluster to the quirk replacement. Tests will fail if this is not done.
-    Classes like TuyaOnOff, TuyaZBOnOffAttributeCluster, TuyaSmartRemoteOnOffCluster already inherit from this class.
+    Classes like TuyaOnOff, TuyaZBOnOffAttributeCluster, TuyaNoBindPowerConfigurationCluster inherit from this class.
     """
 
     async def bind(self):
@@ -1105,9 +1106,9 @@ class TuyaZBElectricalMeasurement(CustomCluster, ElectricalMeasurement):
 class TuyaZBE000Cluster(CustomCluster):
     """Tuya manufacturer specific cluster 57344."""
 
-    name = "Tuya Manufacturer Specific"
+    name = "Tuya Manufacturer Specific 0"
     cluster_id = TUYA_CLUSTER_E000_ID
-    ep_attribute = "tuya_is_pita_0"
+    ep_attribute = "tuya_manufacturer_specific_57344"
 
 
 # Tuya Zigbee Cluster 0xE001 Implementation
@@ -1126,6 +1127,15 @@ class TuyaZBExternalSwitchTypeCluster(CustomCluster):
     cluster_id = TUYA_CLUSTER_E001_ID
     ep_attribute = "tuya_external_switch_type"
     attributes = {0xD030: ("external_switch_type", ExternalSwitchType)}
+
+
+# Tuya Zigbee Cluster 0x1888 Implementation
+class TuyaZB1888Cluster(CustomCluster):
+    """Tuya manufacturer specific cluster 6280."""
+
+    name = "Tuya Manufacturer Specific 1"
+    cluster_id = TUYA_CLUSTER_1888_ID
+    ep_attribute = "tuya_manufacturer_specific_6280"
 
 
 # Tuya Window Cover Implementation

@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import Any
 
 from zigpy import types as t
-from zigpy.profiles import zha
+from zigpy.profiles import zgp, zha
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import (
@@ -18,13 +18,12 @@ from zigpy.zcl.clusters.general import (
     MultistateOutput,
     OnOff,
     Ota,
-    PowerConfiguration,
     Scenes,
     Time,
 )
 from zigpy.zcl.clusters.manufacturer_specific import ManufacturerSpecificCluster
 
-from zhaquirks import Bus, CustomCluster, LocalDataCluster
+from zhaquirks import CustomCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -33,7 +32,13 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.xiaomi import LUMI, BasicCluster, XiaomiCluster, XiaomiCustomDevice
+from zhaquirks.xiaomi import (
+    LUMI,
+    BasicCluster,
+    XiaomiCluster,
+    XiaomiCustomDevice,
+    XiaomiPowerConfiguration,
+)
 
 PRESENT_VALUE = 0x0055
 CURRENT_POSITION_LIFT_PERCENTAGE = 0x0008
@@ -100,7 +105,6 @@ class WindowCoveringRollerE1(CustomCluster, WindowCovering):
         *args: Any,
         manufacturer: int | t.uint16_t | None = None,
         expect_reply: bool = True,
-        tries: int = 1,
         tsn: int | t.uint8_t | None = None,
         **kwargs: Any,
     ) -> Any:
@@ -153,31 +157,19 @@ class MultistateOutputRollerE1(CustomCluster, MultistateOutput):
     )
 
 
-class PowerConfigurationRollerE1(PowerConfiguration, LocalDataCluster):
-    """Xiaomi power configuration cluster implementation."""
+class PowerConfigurationRollerE1(XiaomiPowerConfiguration):
+    """Power cluster which ignores Xiaomi voltage reports."""
 
-    BATTERY_PERCENTAGE_REMAINING = 0x0021
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.power_bus_percentage.add_listener(self)
-
-    def update_battery_percentage(self, value: int) -> None:
-        """Doubles the battery percentage to the Zigbee spec's expected 200% maximum."""
-        super()._update_attribute(
-            self.BATTERY_PERCENTAGE_REMAINING,
-            (value * 2),
-        )
+    def _update_battery_percentage(self, voltage_mv: int) -> None:
+        """Ignore Xiaomi voltage reports, so they're not used to calculate battery percentage."""
+        # This device sends battery percentage reports which are handled using a XiaomiCluster and
+        # the inherited XiaomiPowerConfiguration cluster.
+        # This device might also send Xiaomi battery reports, so we only want to use those for the voltage attribute,
+        # but not for the battery percentage. XiaomiPowerConfiguration.battery_reported() still updates the voltage.
 
 
 class RollerE1AQ(XiaomiCustomDevice):
     """Aqara Roller Shade Driver E1 device."""
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Init."""
-        self.power_bus_percentage: Bus = Bus()  # type: ignore
-        super().__init__(*args, **kwargs)  # type: ignore
 
     signature = {
         MODELS_INFO: [(LUMI, "lumi.curtain.acn002")],
@@ -212,8 +204,8 @@ class RollerE1AQ(XiaomiCustomDevice):
             # input_clusters=[]
             # output_clusters=[33]>
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 0x0061,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [
                     GreenPowerProxy.cluster_id,
@@ -245,8 +237,8 @@ class RollerE1AQ(XiaomiCustomDevice):
                 ],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 0x0061,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [
                     GreenPowerProxy.cluster_id,
@@ -291,8 +283,8 @@ class RollerE1AQ_2(RollerE1AQ):
             # input_clusters=[]
             # output_clusters=[33]>
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 0x0061,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [
                     GreenPowerProxy.cluster_id,
@@ -337,8 +329,8 @@ class RollerE1AQ_3(RollerE1AQ):
             # input_clusters=[]
             # output_clusters=[33]>
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 0x0061,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [
                     GreenPowerProxy.cluster_id,

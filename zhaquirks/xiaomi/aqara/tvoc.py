@@ -8,7 +8,7 @@ from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurem
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zdo.types import NodeDescriptor
 
-from zhaquirks import Bus, LocalDataCluster, PowerConfigurationCluster
+from zhaquirks import LocalDataCluster, PowerConfigurationCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -28,6 +28,7 @@ from zhaquirks.xiaomi import (
 )
 
 MEASURED_VALUE = 0x0000
+DISPLAY_UNIT = 0x0114
 
 
 class AnalogInputCluster(CustomCluster, AnalogInput):
@@ -66,14 +67,26 @@ class EmulatedTVOCMeasurement(LocalDataCluster):
         return result
 
 
+class TVOCDisplayUnit(t.enum_factory(t.uint8_t)):
+    """Display values."""
+
+    mgm3_celsius = 0x00
+    ppb_celsius = 0x01
+    mgm3_fahrenheit = 0x10
+    ppb_fahrenheit = 0x11
+
+
+class TVOCCluster(XiaomiAqaraE1Cluster):
+    """Aqara LUMI Config cluster."""
+
+    ep_attribute = "aqara_cluster"
+    attributes = {
+        DISPLAY_UNIT: ("display_unit", TVOCDisplayUnit, True),
+    }
+
+
 class TVOCMonitor(XiaomiCustomDevice):
     """Aqara LUMI lumi.airmonitor.acn01."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        self.temperature_bus = Bus()
-        self.humidity_bus = Bus()
-        super().__init__(*args, **kwargs)
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=770
@@ -114,7 +127,7 @@ class TVOCMonitor(XiaomiCustomDevice):
                     RelativeHumidityCluster,
                     AnalogInputCluster,
                     EmulatedTVOCMeasurement,
-                    XiaomiAqaraE1Cluster,
+                    TVOCCluster,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             }
@@ -124,12 +137,6 @@ class TVOCMonitor(XiaomiCustomDevice):
 
 class TVOCMonitor2(XiaomiCustomDevice):
     """Aqara LUMI lumi.airmonitor.acn01."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        self.temperature_bus = Bus()
-        self.humidity_bus = Bus()
-        super().__init__(*args, **kwargs)
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=1026

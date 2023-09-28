@@ -1,12 +1,8 @@
-"""Quirk for LUMI lumi.sensor_ht.agl02."""
+"""Quirk for Aqara T1 water leak sensor lumi.flood.agl02."""
 
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PowerConfiguration
-from zigpy.zcl.clusters.measurement import (
-    PressureMeasurement,
-    RelativeHumidity,
-    TemperatureMeasurement,
-)
+from zigpy.zcl.clusters.security import IasZone
 from zigpy.zdo.types import NodeDescriptor
 
 from zhaquirks.const import (
@@ -19,36 +15,32 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.xiaomi import (
-    PressureMeasurementCluster,
-    RelativeHumidityCluster,
-    TemperatureMeasurementCluster,
+    BasicCluster,
     XiaomiAqaraE1Cluster,
     XiaomiCustomDevice,
     XiaomiPowerConfiguration,
 )
 
 
-class LumiSensorHtAgl02(XiaomiCustomDevice):
-    """Lumi lumi.sensor_ht.agl02 custom device implementation."""
+class WaterT1(XiaomiCustomDevice):
+    """Aqara T1 water leak sensor quirk."""
 
     signature = {
-        MODELS_INFO: [("LUMI", "lumi.sensor_ht.agl02")],
+        MODELS_INFO: [("LUMI", "lumi.flood.agl02")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.TEMPERATURE_SENSOR,
+                DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
                     Identify.cluster_id,
-                    TemperatureMeasurement.cluster_id,
-                    PressureMeasurement.cluster_id,
-                    RelativeHumidity.cluster_id,
+                    IasZone.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Ota.cluster_id,
                 ],
-            }
+            },
         },
     }
 
@@ -59,19 +51,17 @@ class LumiSensorHtAgl02(XiaomiCustomDevice):
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.TEMPERATURE_SENSOR,
+                DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
                 INPUT_CLUSTERS: [
-                    Basic.cluster_id,
+                    BasicCluster,
                     XiaomiPowerConfiguration,
                     Identify.cluster_id,
-                    TemperatureMeasurementCluster,
-                    PressureMeasurementCluster,
-                    RelativeHumidityCluster,
+                    IasZone.cluster_id,
                     XiaomiAqaraE1Cluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     Ota.cluster_id,
                 ],
-            }
+            },
         },
     }

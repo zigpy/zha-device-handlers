@@ -371,6 +371,9 @@ class TuyaMoesCover0601(TuyaWindowCover):
             ("_TZE200_nhyj64w2", "TS0601"),
             ("_TZE200_cf1sl3tj", "TS0601"),
             ("_TZE200_7eue9vhc", "TS0601"),
+            ("_TZE200_bv1jcqqu", "TS0601"),
+            ("_TZE200_nw1r9hp6", "TS0601"),
+            ("_TZE200_gaj531w3", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
@@ -477,6 +480,8 @@ class TuyaMoesCover0601_inv_position(TuyaWindowCover):
             ("_TZE200_zuz7f94z", "TS0601"),
             ("_TZE200_3i3exuay", "TS0601"),
             ("_TZE200_nogaemzt", "TS0601"),
+            ("_TZE200_dng9fn0k", "TS0601"),
+            ("_TZE200_9p5xmj5r", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
