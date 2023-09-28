@@ -195,3 +195,63 @@ class IkeaTradfriRemote2BtnZLL(CustomDevice):
     }
 
     device_automation_triggers = IkeaTradfriRemote2Btn.device_automation_triggers.copy()
+
+class IkeaRodretRemote2Btn(CustomDevice):
+    """Custom device representing IKEA of Sweden RODRET remote control."""
+
+    signature = {
+        # <SimpleDescriptor endpoint=1 profile=260 device_type=2080
+        # device_version=1
+        # input_clusters=[0, 1, 3, 9, 32, 4096, 64636]
+        # output_clusters=[3, 4, 6, 8, 25, 258, 4096]>
+        MODELS_INFO: [(IKEA, "RODRET Dimmer")],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.NON_COLOR_CONTROLLER,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    Identify.cluster_id,
+                    PollControl.cluster_id,
+                    LightLink.cluster_id,
+                    IKEA_CLUSTER_ID,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                    Ota.cluster_id,
+                    LightLink.cluster_id,
+                ],
+            }
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.NON_COLOR_CONTROLLER,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    DoublingPowerConfig1CRCluster,
+                    Identify.cluster_id,
+                    PollControl.cluster_id,
+                    LightLink.cluster_id,
+                    IKEA_CLUSTER_ID,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                    Ota.cluster_id,
+                    LightLink.cluster_id,
+                ],
+            }
+        }
+    }
+
+    device_automation_triggers = IkeaTradfriRemote2Btn.device_automation_triggers.copy()
