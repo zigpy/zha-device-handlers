@@ -85,7 +85,7 @@ class IkeaTradfriRemote2Btn(CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.NON_COLOR_CONTROLLER,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    DoublingPowerConfig1CRCluster,
+                    PowerConfiguration.cluster_id,
                     Identify.cluster_id,
                     Alarms.cluster_id,
                     PollControl.cluster_id,
