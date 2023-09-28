@@ -202,8 +202,8 @@ class IkeaRodretRemote2Btn(CustomDevice):
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=2080
         # device_version=1
-        # input_clusters=[0, 1, 3, 9, 32, 4096, 64636]
-        # output_clusters=[3, 4, 6, 8, 25, 258, 4096]>
+        # input_clusters=[0, 1, 3, 32, 4096, 64636]
+        # output_clusters=[3, 4, 6, 8, 258, 4096]>
         MODELS_INFO: [(IKEA, "RODRET Dimmer")],
         ENDPOINTS: {
             1: {
