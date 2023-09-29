@@ -29,7 +29,6 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.danfoss import DANFOSS, HIVE, POPP
 
 
 class DanfossOperationModeEnum(t.bitmap8):
@@ -42,6 +41,10 @@ class DanfossOperationModeEnum(t.bitmap8):
     Manual_Preheat = 0b00000010
     Schedule_Preheat = 0b00000011
 
+
+DANFOSS = "Danfoss"
+HIVE = DANFOSS
+POPP = "D5X84YU"
 
 OCCUPIED_HEATING_SETPOINT_NAME = "occupied_heating_setpoint"
 SYSTEM_MODE_NAME = "system_mode"
@@ -141,75 +144,6 @@ danfoss_thermostat_comm = {
     ),
 }
 
-# clusters
-DANFOSS_TRV_CLUSTER = 0xFC05
-DANFOSS_TRV_INTERFACE_CLUSTER = 0xFC06
-DANFOSS_TRV_DIAGNOSTIC_CLUSTER = 0xFC07
-
-
-class DanfossTRVCluster(CustomCluster):
-    """Danfoss custom TRV cluster."""
-
-    cluster_id = DANFOSS_TRV_CLUSTER
-    ep_attribute = "danfoss_trv_cluster"
-
-    attributes = danfoss_thermostat_attr
-
-    async def write_attributes(self, attributes, manufacturer=None):
-        """Write attributes to Thermostat cluster."""
-        return await self.endpoint.thermostat.write_attributes(
-            attributes, manufacturer=manufacturer
-        )
-
-    async def read_attributes_raw(self, attributes, manufacturer=None):
-        """Read attributes from Thermostat cluster"""
-
-        return await self.endpoint.thermostat.read_attributes_raw(
-            attributes, manufacturer=manufacturer
-        )
-
-
-class DanfossTRVInterfaceCluster(CustomCluster):
-    """Danfoss custom interface cluster."""
-
-    cluster_id = DANFOSS_TRV_INTERFACE_CLUSTER
-    ep_attribute = "danfoss_trv_interface_cluster"
-
-    attributes = danfoss_interface_attr
-
-    async def write_attributes(self, attributes, manufacturer=None):
-        """Write attributes to User Interface cluster."""
-        return await self.endpoint.thermostat_ui.write_attributes(
-            attributes, manufacturer=manufacturer
-        )
-
-    def read_attributes_raw(self, attributes, manufacturer=None):
-        """Read in attributes from User Interface Cluster."""
-        return self.endpoint.thermostat_ui.read_attributes_raw(
-            attributes, manufacturer=manufacturer
-        )
-
-
-class DanfossTRVDiagnosticCluster(CustomCluster):
-    """Danfoss custom diagnostic cluster."""
-
-    cluster_id = DANFOSS_TRV_DIAGNOSTIC_CLUSTER
-    ep_attribute = "danfoss_trv_diagnostic_cluster"
-
-    attributes = danfoss_diagnostic_attr
-
-    async def write_attributes(self, attributes, manufacturer=None):
-        """Write attributes to Diagnostic cluster."""
-        return await self.endpoint.diagnostic.write_attributes(
-            attributes, manufacturer=manufacturer
-        )
-
-    def read_attributes_raw(self, attributes, manufacturer=None):
-        """Read in attributes from Diagnostic Cluster."""
-        return self.endpoint.diagnostic.read_attributes_raw(
-            attributes, manufacturer=manufacturer
-        )
-
 
 class DanfossThermostatCluster(CustomCluster, Thermostat):
     """Danfoss cluster for ZCL attributes and forwarding proprietary attributes."""
@@ -259,13 +193,6 @@ class DanfossThermostatCluster(CustomCluster, Thermostat):
 
         return write_res
 
-    def _update_attribute(self, attrid, value):
-        """Update attributes of TRV cluster."""
-        super()._update_attribute(attrid, value)
-
-        if attrid in danfoss_thermostat_attr:
-            self.endpoint.danfoss_trv_cluster.update_attribute(attrid, value)
-
 
 class DanfossUserInterfaceCluster(CustomCluster, UserInterface):
     """Danfoss cluster for ZCL attributes and forwarding proprietary attributes."""
@@ -273,26 +200,12 @@ class DanfossUserInterfaceCluster(CustomCluster, UserInterface):
     attributes = UserInterface.attributes.copy()
     attributes.update({**danfoss_interface_attr, **zcl_attr})
 
-    def _update_attribute(self, attrid, value):
-        """Update attributes of TRV interface cluster."""
-        super()._update_attribute(attrid, value)
-
-        if attrid in danfoss_interface_attr:
-            self.endpoint.danfoss_trv_interface_cluster.update_attribute(attrid, value)
-
 
 class DanfossDiagnosticCluster(CustomCluster, Diagnostic):
     """Danfoss cluster for ZCL attributes and forwarding proprietary attributes."""
 
     attributes = Diagnostic.attributes.copy()
     attributes.update({**danfoss_diagnostic_attr, **zcl_attr})
-
-    def _update_attribute(self, attrid, value):
-        """Update attributes or TRV diagnostic cluster."""
-        super()._update_attribute(attrid, value)
-
-        if attrid in danfoss_diagnostic_attr:
-            self.endpoint.danfoss_trv_diagnostic_cluster.update_attribute(attrid, value)
 
 
 class DanfossThermostat(CustomDevice):
@@ -342,9 +255,6 @@ class DanfossThermostat(CustomDevice):
                     DanfossThermostatCluster,
                     DanfossUserInterfaceCluster,
                     DanfossDiagnosticCluster,
-                    DanfossTRVCluster,
-                    DanfossTRVInterfaceCluster,
-                    DanfossTRVDiagnosticCluster,
                 ],
                 OUTPUT_CLUSTERS: [Basic, Ota],
             }
