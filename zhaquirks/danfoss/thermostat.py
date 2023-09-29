@@ -29,7 +29,6 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.danfoss import DANFOSS, HIVE, POPP
 
 
 class DanfossOperationModeEnum(t.bitmap8):
@@ -42,6 +41,10 @@ class DanfossOperationModeEnum(t.bitmap8):
     Manual_Preheat = 0b00000010
     Schedule_Preheat = 0b00000011
 
+
+DANFOSS = "Danfoss"
+HIVE = DANFOSS
+POPP = "D5X84YU"
 
 OCCUPIED_HEATING_SETPOINT_NAME = "occupied_heating_setpoint"
 SYSTEM_MODE_NAME = "system_mode"
