@@ -2,8 +2,7 @@
 from unittest import mock
 
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.homeautomation import Diagnostic
-from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
+from zigpy.zcl.clusters.hvac import Thermostat
 from zigpy.zcl.foundation import WriteAttributesStatusRecord
 
 import zhaquirks
