@@ -641,3 +641,21 @@ async def test_io_sample_report_on_at_response(zigpy_device_from_quirk):
     assert 33.33333 < analog_listeners[0].attribute_updates[0][1] < 33.33334
     assert 66.66666 < analog_listeners[2].attribute_updates[0][1] < 66.66667
     assert analog_listeners[4].attribute_updates[0] == (0x0055, 3.305)
+
+
+@mock.patch("zigpy.zdo.ZDO.handle_ieee_addr_req")
+async def test_zdo(handle_mgmt_lqi_resp, zigpy_device_from_quirk):
+    """Test receiving ZDO data from XBee device."""
+
+    xbee3_device = zigpy_device_from_quirk(XBee3Sensor)
+
+    # Receive ZDOCmd.IEEE_addr_req
+    xbee3_device.handle_message(0, 0x0001, 0, 0, b"\x07\x34\x12\x00\x00")
+
+    assert handle_mgmt_lqi_resp.call_count == 1
+    assert len(handle_mgmt_lqi_resp.call_args_list[0][0]) == 4
+    assert handle_mgmt_lqi_resp.call_args_list[0][0][0].tsn == 0x07
+    assert handle_mgmt_lqi_resp.call_args_list[0][0][0].command_id == 0x0001
+    assert handle_mgmt_lqi_resp.call_args_list[0][0][1] == 0x1234
+    assert handle_mgmt_lqi_resp.call_args_list[0][0][2] == 0
+    assert handle_mgmt_lqi_resp.call_args_list[0][0][3] == 0
