@@ -11,9 +11,7 @@ from zigpy.zcl.clusters.general import (
     Scenes,
     Time,
 )
-
 from zigpy.zcl.clusters.lightlink import LightLink
-
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -28,7 +26,6 @@ from zhaquirks.tuya import (
     TuyaZBMeteringCluster,
     TuyaZBOnOffAttributeCluster,
 )
-
 from zhaquirks.tuya.mcu import EnchantedDevice
 
 
