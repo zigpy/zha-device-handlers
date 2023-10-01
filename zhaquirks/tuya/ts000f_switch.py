@@ -12,6 +12,7 @@ from zigpy.zcl.clusters.general import (
     Time,
 )
 from zigpy.zcl.clusters.lightlink import LightLink
+
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -27,6 +28,7 @@ from zhaquirks.tuya import (
     TuyaZBOnOffAttributeCluster,
 )
 from zhaquirks.tuya.mcu import EnchantedDevice
+
 
 class Tuya_1G_Wall_Switch_Metering(EnchantedDevice):
     """Tuya 1 gang wall switch with metering and restore power state support."""
