@@ -12,9 +12,6 @@ from zigpy.zcl.clusters.general import (
     Time,
 )
 
-from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
-from zigpy.zcl.clusters.measurement import TemperatureMeasurement
-from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.clusters.lightlink import LightLink
 
 from zhaquirks.const import (
@@ -53,7 +50,7 @@ class Tuya_1G_Wall_Switch_Metering(EnchantedDevice):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     OnOff.cluster_id,
-                    Time.cluster_id, 
+                    Time.cluster_id,
                     TuyaZBMeteringCluster.cluster_id,
                     TuyaZBElectricalMeasurement.cluster_id,
                     LightLink.cluster_id, 
@@ -84,7 +81,7 @@ class Tuya_1G_Wall_Switch_Metering(EnchantedDevice):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     TuyaZBOnOffAttributeCluster,
-                    Time.cluster_id, 
+                    Time.cluster_id,
                     TuyaZBMeteringCluster,
                     TuyaZBElectricalMeasurement,
                     LightLink.cluster_id, 
