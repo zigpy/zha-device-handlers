@@ -1,7 +1,6 @@
 """tuya TS000F xkap8wtb On/Off In-line Switches with metering support."""
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
@@ -16,26 +15,25 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
+from zigpy.zcl.clusters.lightlink import LightLink
 
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODEL,
-    MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
 from zhaquirks.tuya import (
     TuyaZBE000Cluster,
     TuyaZBElectricalMeasurement,
-    TuyaZBExternalSwitchTypeCluster,
     TuyaZBMeteringCluster,
     TuyaZBOnOffAttributeCluster,
 )
 
 from zhaquirks.tuya.mcu import EnchantedDevice
-from zigpy.zcl.clusters.lightlink import LightLink
+
 
 class Tuya_1G_Wall_Switch_Metering(EnchantedDevice):
     """Tuya 1 gang wall switch with metering and restore power state support."""
