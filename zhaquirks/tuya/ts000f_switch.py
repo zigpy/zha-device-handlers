@@ -28,7 +28,6 @@ from zhaquirks.tuya import (
 )
 from zhaquirks.tuya.mcu import EnchantedDevice
 
-
 class Tuya_1G_Wall_Switch_Metering(EnchantedDevice):
     """Tuya 1 gang wall switch with metering and restore power state support."""
 
