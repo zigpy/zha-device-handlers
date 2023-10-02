@@ -1,6 +1,29 @@
 """Module to handle quirks of the Danfoss thermostat.
 
 manufacturer specific attributes to control displaying and specific configuration.
+
+ZCL Attributes Supported:
+    0x0201 - 0x0025: programing_oper_mode  # Danfoss deviated from the spec
+    all - 0xFFFD: cluster_revision
+
+    0x0201 - pi_heating_demand (0x0008),
+    0x0201 - min_heat_setpoint_limit (0x0015)
+    0x0201 - max_heat_setpoint_limit (0x0016)
+    0x0201 - setpoint_change_source (0x0030)
+    0x0201 - abs_min_heat_setpoint_limit (0x0003)=5
+    0x0201 - abs_max_heat_setpoint_limit (0x0004)=35
+    0x0201 - start_of_week (0x0020)=Monday
+    0x0201 - number_of_weekly_transitions (0x0021)=42
+    0x0201 - number_of_daily_transitions (0x0022)=6
+    0x0204: keypad_lockout (0x0001)
+
+ZCL Commands Supported:
+    0x0201 - SetWeeklySchedule (0x01)
+    0x0201 - GetWeeklySchedule (0x02)
+    0x0201 - ClearWeeklySchedule (0x03)
+
+Broken ZCL Attributes:
+    0x0204 - 0x0000: Writing doesn't seem to do anything
 """
 
 import traceback
@@ -33,17 +56,6 @@ from zhaquirks.const import (
 )
 
 
-class DanfossOperationModeEnum(t.bitmap8):
-    """Nonstandard implementation of Programming Operation Mode from Danfoss.
-    The official specification still works: 0x0 or 0x1, but Danfoss added a preheat bit
-    """
-
-    Manual = 0b00000000
-    Schedule = 0b00000001
-    Manual_Preheat = 0b00000010
-    Schedule_Preheat = 0b00000011
-
-
 DANFOSS = "Danfoss"
 HIVE = DANFOSS
 POPP = "D5X84YU"
@@ -59,33 +71,9 @@ SETPOINT_COMMAND_AGGRESSIVE_VAL = 0x01
 
 SYSTEM_MODE_THERM_OFF_VAL = 0x00
 
-# 0x0201
-# 0x0025: ("programing_oper_mode", DanfossOperationModeEnum, "rpw",)  # Danfoss deviated from the spec
 
-# ZCL Attributes Supported:
-#   pi_heating_demand (0x0008),
-#   min_heat_setpoint_limit (0x0015)
-#   max_heat_setpoint_limit (0x0016)
-#   setpoint_change_source (0x0030)
-# hardcoded:
-#   abs_min_heat_setpoint_limit (0x0003)=5
-#   abs_max_heat_setpoint_limit (0x0004)=35
-#   start_of_week (0x0020)=Monday
-#   number_of_weekly_transitions (0x0021)=42
-#   number_of_daily_transitions (0x0022)=6
-
-# 0xFFFD: ("cluster_revision", t.uint16_t, "r")
-
-# ZCL Commands Supported: SetWeeklySchedule (0x01), GetWeeklySchedule (0x02), ClearWeeklySchedule (0x03)
-
-# 0x0204
-
-# Writing to mandatory ZCL attribute 0x0000 doesn't seem to do anything
-# ZCL Attributes Supported: keypad_lockout (0x0001)
-
-
-class DanfossThermostatCluster(Thermostat, CustomCluster):
-    """Danfoss cluster for ZCL attributes and forwarding proprietary attributes."""
+class DanfossThermostatCluster(CustomCluster, Thermostat):
+    """Danfoss cluster for standard and proprietary danfoss attributes"""
 
     class ServerCommandDefs(Thermostat.ServerCommandDefs):
         setpoint_command = ZCLCommandDef(id=0x40,
@@ -188,15 +176,15 @@ class DanfossThermostatCluster(Thermostat, CustomCluster):
         return await super().bind()
 
 
-class DanfossUserInterfaceCluster(UserInterface, CustomCluster):
-    """Danfoss cluster for ZCL attributes and forwarding proprietary attributes."""
+class DanfossUserInterfaceCluster(CustomCluster, UserInterface):
+    """Danfoss cluster for standard and proprietary danfoss attributes"""
 
     class AttributeDefs(UserInterface.AttributeDefs):
         viewing_direction = ZCLAttributeDef(id=0x4000, type=t.enum8, access="rpw", is_manufacturer_specific=True)
 
 
-class DanfossDiagnosticCluster(Diagnostic, CustomCluster):
-    """Danfoss cluster for ZCL attributes and forwarding proprietary attributes."""
+class DanfossDiagnosticCluster(CustomCluster, Diagnostic):
+    """Danfoss cluster for standard and proprietary danfoss attributes"""
 
     class AttributeDefs(Diagnostic.AttributeDefs):
         sw_error_code = ZCLAttributeDef(id=0x4000, type=t.bitmap16, access="rp", is_manufacturer_specific=True)
@@ -209,7 +197,7 @@ class DanfossDiagnosticCluster(Diagnostic, CustomCluster):
         motor_step_counter = ZCLAttributeDef(id=0x4010, type=t.uint32_t, access="rp", is_manufacturer_specific=True)
 
 
-class DanfossTimeCluster(Time, CustomCluster):
+class DanfossTimeCluster(CustomCluster, Time):
     """Danfoss cluster for fixing the time."""
 
     async def write_time(self):
