@@ -21,7 +21,7 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
-from zigpy.zcl.foundation import ZCLCommandDef
+from zigpy.zcl.foundation import ZCLCommandDef, ZCLAttributeDef
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -60,30 +60,6 @@ SETPOINT_COMMAND_AGGRESSIVE_VAL = 0x01
 SYSTEM_MODE_THERM_OFF_VAL = 0x00
 
 # 0x0201
-danfoss_thermostat_attr = {
-    0x4000: ("open_window_detection", t.enum8, "rp", True),
-    0x4003: ("external_open_window_detected", t.Bool, "rpw", True),
-    0x4051: ("window_open_feature", t.Bool, "rpw", True),
-    0x4010: ("exercise_day_of_week", t.enum8, "rpw", True),
-    0x4011: ("exercise_trigger_time", t.uint16_t, "rpw", True),
-    0x4012: ("mounting_mode_active", t.Bool, "rp", True),
-    0x4013: ("mounting_mode_control", t.Bool, "rpw", True),  # undocumented
-    0x4014: ("orientation", t.enum8, "rpw", True),
-    0x4015: ("external_measured_room_sensor", t.int16s, "rpw", True),
-    0x4016: ("radiator_covered", t.Bool, "rpw", True),
-    0x4030: ("heat_available", t.Bool, "rpw", True),  # undocumented
-    0x4031: ("heat_required", t.Bool, "rp", True),  # undocumented
-    0x4032: ("load_balancing_enable", t.Bool, "rpw", True),
-    0x4040: ("load_room_mean", t.int16s, "rpw", True),
-    0x404A: ("load_estimate", t.int16s, "rp", True),
-    0x4020: ("control_algorithm_scale_factor", t.uint8_t, "rpw", True),
-    0x404B: ("regulation_setpoint_offset", t.int8s, "rpw", True),
-    0x404C: ("adaptation_run_control", t.enum8, "rw", True),
-    0x404D: ("adaptation_run_status", t.bitmap8, "rp", True),
-    0x404E: ("adaptation_run_settings", t.bitmap8, "rw", True),
-    0x404F: ("preheat_status", t.Bool, "rp", True),
-    0x4050: ("preheat_time", t.uint32_t, "rp", True),
-}
 # 0x0025: ("programing_oper_mode", DanfossOperationModeEnum, "rpw",)  # Danfoss deviated from the spec
 
 # ZCL Attributes Supported:
@@ -98,60 +74,60 @@ danfoss_thermostat_attr = {
 #   number_of_weekly_transitions (0x0021)=42
 #   number_of_daily_transitions (0x0022)=6
 
-zcl_attr = {
-    0xFFFD: ("cluster_revision", t.uint16_t, "r"),
-}
+# 0xFFFD: ("cluster_revision", t.uint16_t, "r")
 
 # ZCL Commands Supported: SetWeeklySchedule (0x01), GetWeeklySchedule (0x02), ClearWeeklySchedule (0x03)
 
 # 0x0204
-danfoss_interface_attr = {
-    0x4000: ("viewing_direction", t.enum8, "rpw", True),
-}
 
 # Writing to mandatory ZCL attribute 0x0000 doesn't seem to do anything
 # ZCL Attributes Supported: keypad_lockout (0x0001)
 
-# 0x0b05
-danfoss_diagnostic_attr = {
-    0x4000: ("sw_error_code", t.bitmap16, "rp", True),
-    0x4001: ("wake_time_avg", t.uint32_t, "rp", True),  # always 0?
-    0x4002: ("wake_time_max_duration", t.uint32_t, "rp", True),  # always 0?
-    0x4003: ("wake_time_min_duration", t.uint32_t, "rp", True),  # always 0?
-    0x4004: ("sleep_postponed_count_avg", t.uint32_t, "rp", True),  # always 0?
-    0x4005: ("sleep_postponed_count_max", t.uint32_t, "rp", True),  # always 0?
-    0x4006: ("sleep_postponed_count_min", t.uint32_t, "rp", True),  # always 0?
-    0x4010: ("motor_step_counter", t.uint32_t, "rp", True),
-}
 
-danfoss_thermostat_comm = {
-    0x40: ZCLCommandDef(
-        "setpoint_command",
-        # Types
-        # 0: Schedule (relatively slow)
-        # 1: User Interaction (aggressive change)
-        # 2: Preheat (invisible to user)
-        {"type": t.enum8, "heating_setpoint": t.int16s},
-        is_manufacturer_specific=True,
-    ),
-    # for synchronizing multiple TRVs preheating
-    0x42: ZCLCommandDef(
-        "preheat_command",
-        # Force: 0 means force, other values for future needs
-        {"force": t.enum8, "timestamp": t.uint32_t},
-        is_manufacturer_specific=True,
-    ),
-}
-
-
-class DanfossThermostatCluster(Thermostat):
+class DanfossThermostatCluster(Thermostat, CustomCluster):
     """Danfoss cluster for ZCL attributes and forwarding proprietary attributes."""
 
-    server_commands = Thermostat.server_commands.copy()
-    server_commands.update(danfoss_thermostat_comm)
+    class ServerCommandDefs(Thermostat.ServerCommandDefs):
+        setpoint_command = ZCLCommandDef(id=0x40,
+            # Types
+            # 0: Schedule (relatively slow)
+            # 1: User Interaction (aggressive change)
+            # 2: Preheat (invisible to user)
+            schema={"type": t.enum8, "heating_setpoint": t.int16s},
+            is_manufacturer_specific=True,
+        )
 
-    attributes = Thermostat.attributes.copy()
-    attributes.update({**danfoss_thermostat_attr, **zcl_attr})
+        # for synchronizing multiple TRVs preheating
+        preheat_command = ZCLCommandDef(
+            id=0x42,
+            # Force: 0 means force, other values for future needs
+            schema={"force": t.enum8, "timestamp": t.uint32_t},
+            is_manufacturer_specific=True,
+        )
+
+    class AttributeDefs(Thermostat.AttributeDefs):
+        open_window_detection = ZCLAttributeDef(id=0x4000, type=t.enum8, access="rp", is_manufacturer_specific=True)
+        external_open_window_detected = ZCLAttributeDef(id=0x4003, type=t.Bool, access="rpw", is_manufacturer_specific=True)
+        window_open_feature = ZCLAttributeDef(id=0x4051, type=t.Bool, access="rpw", is_manufacturer_specific=True)
+        exercise_day_of_week = ZCLAttributeDef(id=0x4010, type=t.enum8, access="rpw", is_manufacturer_specific=True)
+        exercise_trigger_time = ZCLAttributeDef(id=0x4011, type=t.uint16_t, access="rpw", is_manufacturer_specific=True)
+        mounting_mode_active = ZCLAttributeDef(id=0x4012, type=t.Bool, access="rp", is_manufacturer_specific=True)
+        mounting_mode_control = ZCLAttributeDef(id=0x4013, type=t.Bool, access="rpw", is_manufacturer_specific=True)
+        orientation = ZCLAttributeDef(id=0x4014, type=t.enum8, access="rpw", is_manufacturer_specific=True)
+        external_measured_room_sensor = ZCLAttributeDef(id=0x4015, type=t.int16s, access="rpw", is_manufacturer_specific=True)
+        radiator_covered = ZCLAttributeDef(id=0x4016, type=t.Bool, access="rpw", is_manufacturer_specific=True)
+        heat_available = ZCLAttributeDef(id=0x4030, type=t.Bool, access="rpw", is_manufacturer_specific=True)
+        heat_required = ZCLAttributeDef(id=0x4031, type=t.Bool, access="rp", is_manufacturer_specific=True)
+        load_balancing_enable = ZCLAttributeDef(id=0x4032, type=t.Bool, access="rpw", is_manufacturer_specific=True)
+        load_room_mean = ZCLAttributeDef(id=0x4040, type=t.int16s, access="rpw", is_manufacturer_specific=True)
+        load_estimate = ZCLAttributeDef(id=0x404A, type=t.int16s, access="rp", is_manufacturer_specific=True)
+        control_algorithm_scale_factor = ZCLAttributeDef(id=0x4020, type=t.uint8_t, access="rpw", is_manufacturer_specific=True)
+        regulation_setpoint_offset = ZCLAttributeDef(id=0x404B, type=t.int8s, access="rpw", is_manufacturer_specific=True)
+        adaptation_run_control = ZCLAttributeDef(id=0x404C, type=t.enum8, access="rw", is_manufacturer_specific=True)
+        adaptation_run_status = ZCLAttributeDef(id=0x404D, type=t.bitmap8, access="rp", is_manufacturer_specific=True)
+        adaptation_run_settings = ZCLAttributeDef(id=0x404E, type=t.bitmap8, access="rw", is_manufacturer_specific=True)
+        preheat_status = ZCLAttributeDef(id=0x404F, type=t.Bool, access="rp", is_manufacturer_specific=True)
+        preheat_time = ZCLAttributeDef(id=0x4050, type=t.uint32_t, access="rp", is_manufacturer_specific=True)
 
     async def write_attributes(self, attributes, manufacturer=None):
         """There are 2 types of setpoint changes:
@@ -212,21 +188,28 @@ class DanfossThermostatCluster(Thermostat):
         return await super().bind()
 
 
-class DanfossUserInterfaceCluster(UserInterface):
+class DanfossUserInterfaceCluster(UserInterface, CustomCluster):
     """Danfoss cluster for ZCL attributes and forwarding proprietary attributes."""
 
-    attributes = UserInterface.attributes.copy()
-    attributes.update({**danfoss_interface_attr, **zcl_attr})
+    class AttributeDefs(UserInterface.AttributeDefs):
+        viewing_direction = ZCLAttributeDef(id=0x4000, type=t.enum8, access="rpw", is_manufacturer_specific=True)
 
 
-class DanfossDiagnosticCluster(Diagnostic):
+class DanfossDiagnosticCluster(Diagnostic, CustomCluster):
     """Danfoss cluster for ZCL attributes and forwarding proprietary attributes."""
 
-    attributes = Diagnostic.attributes.copy()
-    attributes.update({**danfoss_diagnostic_attr, **zcl_attr})
+    class AttributeDefs(Diagnostic.AttributeDefs):
+        sw_error_code = ZCLAttributeDef(id=0x4000, type=t.bitmap16, access="rp", is_manufacturer_specific=True)
+        wake_time_avg = ZCLAttributeDef(id=0x4001, type=t.uint32_t, access="rp", is_manufacturer_specific=True)
+        wake_time_max_duration = ZCLAttributeDef(id=0x4002, type=t.uint32_t, access="rp", is_manufacturer_specific=True)
+        wake_time_min_duration = ZCLAttributeDef(id=0x4003, type=t.uint32_t, access="rp", is_manufacturer_specific=True)
+        sleep_postponed_count_avg = ZCLAttributeDef(id=0x4004, type=t.uint32_t, access="rp", is_manufacturer_specific=True)
+        sleep_postponed_count_max = ZCLAttributeDef(id=0x4005, type=t.uint32_t, access="rp", is_manufacturer_specific=True)
+        sleep_postponed_count_min = ZCLAttributeDef(id=0x4006, type=t.uint32_t, access="rp", is_manufacturer_specific=True)
+        motor_step_counter = ZCLAttributeDef(id=0x4010, type=t.uint32_t, access="rp", is_manufacturer_specific=True)
 
 
-class DanfossTimeCluster(Time):
+class DanfossTimeCluster(Time, CustomCluster):
     """Danfoss cluster for fixing the time."""
 
     async def write_time(self):
