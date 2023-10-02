@@ -90,53 +90,52 @@ class CustomizedStandardCluster(CustomCluster):
     """
 
     @staticmethod
-    def combine_results(result_a, result_b):
-        return [[*result_a[0], *result_b[0]], [*result_a[1:], *result_b[1:]]]
+    def combine_results(*result_lists):
+        result_global = [[], []]
+        for result in result_lists:
+            if len(result) == 1:
+                result_global[0].extend(result[0])
+            elif len(result) == 2:
+                result_global[0].extend(result[0])
+                result_global[1].extend(result[1])
 
-    async def _configure_reporting(self, config_records, *args, **kwargs):
+        return result_global
+
+    async def _configure_reporting(self, records, *args, **kwargs):
         """Configure reporting ZCL foundation command."""
-        config_records_manufacturer_specific = [
-            e
-            for e in config_records
-            if self.attributes[e.attrid].is_manufacturer_specific
+        records_specific = [
+            e for e in records if self.attributes[e.attrid].is_manufacturer_specific
         ]
-        config_records_standard = [
-            e
-            for e in config_records
-            if not self.attributes[e.attrid].is_manufacturer_specific
+        records_standard = [
+            e for e in records if not self.attributes[e.attrid].is_manufacturer_specific
         ]
 
-        result_a = await super()._configure_reporting(
-            config_records_manufacturer_specific,
-            *args,
-            **kwargs,
+        result_specific = await super()._configure_reporting(
+            records_specific, *args, **kwargs
         )
-        result_b = await super()._configure_reporting(
-            config_records_standard,
-            *args,
-            **kwargs,
+        result_standard = await super()._configure_reporting(
+            records_standard, *args, **kwargs
         )
 
-        return self.combine_results(result_a, result_b)
+        return self.combine_results(result_specific, result_standard)
 
-    async def _read_attributes(self, attribute_ids, *args, **kwargs):
+    async def _read_attributes(self, attr_ids, *args, **kwargs):
         """Read attributes ZCL foundation command."""
 
-        attribute_ids_manufacturer_specific = [
-            e for e in attribute_ids if self.attributes[e].is_manufacturer_specific
+        attr_ids_specific = [
+            e for e in attr_ids if self.attributes[e].is_manufacturer_specific
         ]
-        attribute_ids_standard = [
-            e for e in attribute_ids if not self.attributes[e].is_manufacturer_specific
+        attr_ids_standard = [
+            e for e in attr_ids if not self.attributes[e].is_manufacturer_specific
         ]
 
-        result_a = await super()._read_attributes(
-            attribute_ids_manufacturer_specific, *args, **kwargs
+        result_specific = await super()._read_attributes(
+            attr_ids_specific, *args, **kwargs
         )
-
-        result_b = await super()._read_attributes(
-            attribute_ids_standard, *args, **kwargs
+        result_standard = await super()._read_attributes(
+            attr_ids_standard, *args, **kwargs
         )
-        return self.combine_results(result_a, result_b)
+        return self.combine_results(result_specific, result_standard)
 
 
 class DanfossThermostatCluster(CustomizedStandardCluster, Thermostat):

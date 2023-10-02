@@ -1,12 +1,14 @@
 """Tests the Danfoss quirk (all tests were written for the Popp eT093WRO)"""
 from unittest import mock
 
+from zigpy.quirks import CustomCluster
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Time
 from zigpy.zcl.clusters.hvac import Thermostat
-from zigpy.zcl.foundation import WriteAttributesStatusRecord
+from zigpy.zcl.foundation import WriteAttributesStatusRecord, ZCLAttributeDef
 
 import zhaquirks
+from zhaquirks.danfoss.thermostat import CustomizedStandardCluster
 
 zhaquirks.setup()
 
@@ -146,3 +148,67 @@ async def test_danfoss_thermostat_write_attributes(zigpy_device_from_quirk):
 
             assert operation == 0x01
             assert setting == 5
+
+
+async def test_customized_standardcluster(zigpy_device_from_quirk):
+    device = zigpy_device_from_quirk(zhaquirks.danfoss.thermostat.DanfossThermostat)
+
+    danfoss_thermostat_cluster = device.endpoints[1].in_clusters[Thermostat.cluster_id]
+
+    assert CustomizedStandardCluster.combine_results([[4545], [5433]], [[345]]) == [[4545, 345], [5433]]
+    assert CustomizedStandardCluster.combine_results([[4545], [5433]], [[345], [45355]]) == [[4545, 345], [5433, 45355]]
+
+    mock_attributes = {656: ZCLAttributeDef(is_manufacturer_specific=True),
+                       56454: ZCLAttributeDef(is_manufacturer_specific=False)}
+
+    danfoss_thermostat_cluster.attributes = mock_attributes
+
+    reports = None
+
+    def mock_configure_reporting(reps, *args, **kwargs):
+        nonlocal reports
+        if mock_attributes[reps[0].attrid].is_manufacturer_specific:
+            reports = reps
+
+        return [[545], [4545]]
+
+    # data is written to trv
+    patch_danfoss_configure_reporting = mock.patch.object(
+        CustomCluster,
+        "_configure_reporting",
+        mock.AsyncMock(side_effect=mock_configure_reporting),
+    )
+
+    with patch_danfoss_configure_reporting:
+        one = foundation.AttributeReportingConfig()
+        one.direction = True
+        one.timeout = 4
+        one.attrid = 56454
+
+        two = foundation.AttributeReportingConfig()
+        two.direction = True
+        two.timeout = 4
+        two.attrid = 656
+        await danfoss_thermostat_cluster._configure_reporting([one, two])
+        assert reports == [two]
+
+
+    reports = None
+
+    def mock_read_attributes(attrs, *args, **kwargs):
+        nonlocal reports
+        if mock_attributes[attrs[0]].is_manufacturer_specific:
+            reports = attrs
+
+        return [[545], [4545]]
+
+    # data is written to trv
+    patch_danfoss_read_attributes = mock.patch.object(
+        CustomCluster,
+        "_read_attributes",
+        mock.AsyncMock(side_effect=mock_read_attributes),
+    )
+
+    with patch_danfoss_read_attributes:
+        await danfoss_thermostat_cluster._read_attributes([56454, 656])
+        assert reports == [656]
