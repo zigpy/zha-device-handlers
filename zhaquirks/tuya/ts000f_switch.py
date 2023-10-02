@@ -1,5 +1,6 @@
 """tuya TS000F xkap8wtb On/Off In-line Switches with metering support."""
 
+from zigpy.profiles import zgp
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import (
     Basic,
