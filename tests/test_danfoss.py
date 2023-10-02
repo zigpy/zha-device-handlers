@@ -155,11 +155,18 @@ async def test_customized_standardcluster(zigpy_device_from_quirk):
 
     danfoss_thermostat_cluster = device.endpoints[1].in_clusters[Thermostat.cluster_id]
 
-    assert CustomizedStandardCluster.combine_results([[4545], [5433]], [[345]]) == [[4545, 345], [5433]]
-    assert CustomizedStandardCluster.combine_results([[4545], [5433]], [[345], [45355]]) == [[4545, 345], [5433, 45355]]
+    assert CustomizedStandardCluster.combine_results([[4545], [5433]], [[345]]) == [
+        [4545, 345],
+        [5433],
+    ]
+    assert CustomizedStandardCluster.combine_results(
+        [[4545], [5433]], [[345], [45355]]
+    ) == [[4545, 345], [5433, 45355]]
 
-    mock_attributes = {656: ZCLAttributeDef(is_manufacturer_specific=True),
-                       56454: ZCLAttributeDef(is_manufacturer_specific=False)}
+    mock_attributes = {
+        656: ZCLAttributeDef(is_manufacturer_specific=True),
+        56454: ZCLAttributeDef(is_manufacturer_specific=False),
+    }
 
     danfoss_thermostat_cluster.attributes = mock_attributes
 
@@ -191,7 +198,6 @@ async def test_customized_standardcluster(zigpy_device_from_quirk):
         two.attrid = 656
         await danfoss_thermostat_cluster._configure_reporting([one, two])
         assert reports == [two]
-
 
     reports = None
 
