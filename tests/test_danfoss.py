@@ -1,5 +1,4 @@
 """Tests the Danfoss quirk (all tests were written for the Popp eT093WRO)"""
-from datetime import datetime
 from unittest import mock
 
 from zigpy.zcl import foundation

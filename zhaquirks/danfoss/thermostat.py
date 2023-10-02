@@ -93,12 +93,7 @@ class CustomizedStandardCluster(CustomCluster):
     def combine_results(result_a, result_b):
         return [[*result_a[0], *result_b[0]], [*result_a[1:], *result_b[1:]]]
 
-    async def _configure_reporting(
-        self,
-        config_records,
-        *args,
-        **kwargs,
-    ):
+    async def _configure_reporting(self, config_records, *args, **kwargs):
         """Configure reporting ZCL foundation command."""
         config_records_manufacturer_specific = [
             e
@@ -124,12 +119,7 @@ class CustomizedStandardCluster(CustomCluster):
 
         return self.combine_results(result_a, result_b)
 
-    async def _read_attributes(
-        self,
-        attribute_ids,
-        *args,
-        **kwargs,
-    ):
+    async def _read_attributes(self, attribute_ids, *args, **kwargs):
         """Read attributes ZCL foundation command."""
 
         attribute_ids_manufacturer_specific = [
