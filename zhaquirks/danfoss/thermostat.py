@@ -34,6 +34,7 @@ import zigpy.profiles.zha as zha_p
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.types import uint16_t
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
     Basic,
     Identify,
@@ -55,7 +56,6 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 
-
 DANFOSS = "Danfoss"
 HIVE = DANFOSS
 POPP = "D5X84YU"
@@ -72,18 +72,70 @@ SETPOINT_COMMAND_AGGRESSIVE_VAL = 0x01
 SYSTEM_MODE_THERM_OFF_VAL = 0x00
 
 
-class DanfossThermostatCluster(CustomCluster, Thermostat):
+class CustomizedStandardCluster(CustomCluster):
+    """Danfoss customized standard clusters by adding custom attributes
+    Danfoss doesn't allow standard attributes when manufacturer specific is requested
+
+    Therefore this subclass separates manufacturer specific and standard attributes before
+        Zigbee commands allowing manufacturer specific to be passed"""
+    @staticmethod
+    def combine_results(result_a, result_b):
+        return [[*result_a[0], *result_b[0]], [*result_a[1:], *result_b[1:]]]
+
+    async def _configure_reporting(
+        self,
+        config_records,
+        *args, **kwargs,
+    ):
+        """Configure reporting ZCL foundation command."""
+        config_records_manufacturer_specific = [e for e in config_records if self.attributes[e.attrid].is_manufacturer_specific]
+        config_records_standard = [e for e in config_records if not self.attributes[e.attrid].is_manufacturer_specific]
+
+        result_a = await super()._configure_reporting(
+            config_records_manufacturer_specific,
+            *args, **kwargs,
+        )
+        result_b = await super()._configure_reporting(
+            config_records_standard,
+            *args, **kwargs,
+        )
+
+        return self.combine_results(result_a, result_b)
+
+    async def _read_attributes(  # type:ignore[override]
+        self,
+        attribute_ids: list[t.uint16_t],
+        *args,
+        manufacturer: int | t.uint16_t | None = None,
+        **kwargs,
+    ):
+        """Read attributes ZCL foundation command."""
+
+        attribute_ids_manufacturer_specific = [e for e in attribute_ids if self.attributes[e].is_manufacturer_specific]
+        attribute_ids_standard = [e for e in attribute_ids if not self.attributes[e].is_manufacturer_specific]
+
+        result_a = await super()._read_attributes(
+            attribute_ids_manufacturer_specific, *args, **kwargs
+        )
+
+        result_b = await super()._read_attributes(
+            attribute_ids_standard, *args, **kwargs
+        )
+        return self.combine_results(result_a, result_b)
+
+
+class DanfossThermostatCluster(CustomizedStandardCluster, Thermostat):
     """Danfoss cluster for standard and proprietary danfoss attributes"""
 
     class ServerCommandDefs(Thermostat.ServerCommandDefs):
         setpoint_command = ZCLCommandDef(id=0x40,
-            # Types
-            # 0: Schedule (relatively slow)
-            # 1: User Interaction (aggressive change)
-            # 2: Preheat (invisible to user)
-            schema={"type": t.enum8, "heating_setpoint": t.int16s},
-            is_manufacturer_specific=True,
-        )
+                                         # Types
+                                         # 0: Schedule (relatively slow)
+                                         # 1: User Interaction (aggressive change)
+                                         # 2: Preheat (invisible to user)
+                                         schema={"type": t.enum8, "heating_setpoint": t.int16s},
+                                         is_manufacturer_specific=True,
+                                         )
 
         # for synchronizing multiple TRVs preheating
         preheat_command = ZCLCommandDef(
@@ -95,22 +147,26 @@ class DanfossThermostatCluster(CustomCluster, Thermostat):
 
     class AttributeDefs(Thermostat.AttributeDefs):
         open_window_detection = ZCLAttributeDef(id=0x4000, type=t.enum8, access="rp", is_manufacturer_specific=True)
-        external_open_window_detected = ZCLAttributeDef(id=0x4003, type=t.Bool, access="rpw", is_manufacturer_specific=True)
+        external_open_window_detected = ZCLAttributeDef(id=0x4003, type=t.Bool, access="rpw",
+                                                        is_manufacturer_specific=True)
         window_open_feature = ZCLAttributeDef(id=0x4051, type=t.Bool, access="rpw", is_manufacturer_specific=True)
         exercise_day_of_week = ZCLAttributeDef(id=0x4010, type=t.enum8, access="rpw", is_manufacturer_specific=True)
         exercise_trigger_time = ZCLAttributeDef(id=0x4011, type=t.uint16_t, access="rpw", is_manufacturer_specific=True)
         mounting_mode_active = ZCLAttributeDef(id=0x4012, type=t.Bool, access="rp", is_manufacturer_specific=True)
         mounting_mode_control = ZCLAttributeDef(id=0x4013, type=t.Bool, access="rpw", is_manufacturer_specific=True)
         orientation = ZCLAttributeDef(id=0x4014, type=t.enum8, access="rpw", is_manufacturer_specific=True)
-        external_measured_room_sensor = ZCLAttributeDef(id=0x4015, type=t.int16s, access="rpw", is_manufacturer_specific=True)
+        external_measured_room_sensor = ZCLAttributeDef(id=0x4015, type=t.int16s, access="rpw",
+                                                        is_manufacturer_specific=True)
         radiator_covered = ZCLAttributeDef(id=0x4016, type=t.Bool, access="rpw", is_manufacturer_specific=True)
         heat_available = ZCLAttributeDef(id=0x4030, type=t.Bool, access="rpw", is_manufacturer_specific=True)
         heat_required = ZCLAttributeDef(id=0x4031, type=t.Bool, access="rp", is_manufacturer_specific=True)
         load_balancing_enable = ZCLAttributeDef(id=0x4032, type=t.Bool, access="rpw", is_manufacturer_specific=True)
         load_room_mean = ZCLAttributeDef(id=0x4040, type=t.int16s, access="rpw", is_manufacturer_specific=True)
         load_estimate = ZCLAttributeDef(id=0x404A, type=t.int16s, access="rp", is_manufacturer_specific=True)
-        control_algorithm_scale_factor = ZCLAttributeDef(id=0x4020, type=t.uint8_t, access="rpw", is_manufacturer_specific=True)
-        regulation_setpoint_offset = ZCLAttributeDef(id=0x404B, type=t.int8s, access="rpw", is_manufacturer_specific=True)
+        control_algorithm_scale_factor = ZCLAttributeDef(id=0x4020, type=t.uint8_t, access="rpw",
+                                                         is_manufacturer_specific=True)
+        regulation_setpoint_offset = ZCLAttributeDef(id=0x404B, type=t.int8s, access="rpw",
+                                                     is_manufacturer_specific=True)
         adaptation_run_control = ZCLAttributeDef(id=0x404C, type=t.enum8, access="rw", is_manufacturer_specific=True)
         adaptation_run_status = ZCLAttributeDef(id=0x404D, type=t.bitmap8, access="rp", is_manufacturer_specific=True)
         adaptation_run_settings = ZCLAttributeDef(id=0x404E, type=t.bitmap8, access="rw", is_manufacturer_specific=True)
@@ -156,16 +212,6 @@ class DanfossThermostatCluster(CustomCluster, Thermostat):
 
         return write_res
 
-    def add_unsupported_attribute(
-            self, attr: int | str, inhibit_events: bool = False
-    ) -> None:
-        if attr in {8, "pi_heating_demand"}:
-            print("*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n\n\n\n\n")
-            print(f"Unsupported: {attr}")
-            traceback.print_stack()
-            print("^!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n\n\n\n\n")
-        return super().add_unsupported_attribute(attr, inhibit_events=inhibit_events)
-
     async def bind(self):
         """
         According to the documentation of Zigbee2MQTT there is a bug in the Danfoss firmware with the time.
@@ -176,14 +222,14 @@ class DanfossThermostatCluster(CustomCluster, Thermostat):
         return await super().bind()
 
 
-class DanfossUserInterfaceCluster(CustomCluster, UserInterface):
+class DanfossUserInterfaceCluster(CustomizedStandardCluster, UserInterface):
     """Danfoss cluster for standard and proprietary danfoss attributes"""
 
     class AttributeDefs(UserInterface.AttributeDefs):
         viewing_direction = ZCLAttributeDef(id=0x4000, type=t.enum8, access="rpw", is_manufacturer_specific=True)
 
 
-class DanfossDiagnosticCluster(CustomCluster, Diagnostic):
+class DanfossDiagnosticCluster(CustomizedStandardCluster, Diagnostic):
     """Danfoss cluster for standard and proprietary danfoss attributes"""
 
     class AttributeDefs(Diagnostic.AttributeDefs):
@@ -191,13 +237,16 @@ class DanfossDiagnosticCluster(CustomCluster, Diagnostic):
         wake_time_avg = ZCLAttributeDef(id=0x4001, type=t.uint32_t, access="rp", is_manufacturer_specific=True)
         wake_time_max_duration = ZCLAttributeDef(id=0x4002, type=t.uint32_t, access="rp", is_manufacturer_specific=True)
         wake_time_min_duration = ZCLAttributeDef(id=0x4003, type=t.uint32_t, access="rp", is_manufacturer_specific=True)
-        sleep_postponed_count_avg = ZCLAttributeDef(id=0x4004, type=t.uint32_t, access="rp", is_manufacturer_specific=True)
-        sleep_postponed_count_max = ZCLAttributeDef(id=0x4005, type=t.uint32_t, access="rp", is_manufacturer_specific=True)
-        sleep_postponed_count_min = ZCLAttributeDef(id=0x4006, type=t.uint32_t, access="rp", is_manufacturer_specific=True)
+        sleep_postponed_count_avg = ZCLAttributeDef(id=0x4004, type=t.uint32_t, access="rp",
+                                                    is_manufacturer_specific=True)
+        sleep_postponed_count_max = ZCLAttributeDef(id=0x4005, type=t.uint32_t, access="rp",
+                                                    is_manufacturer_specific=True)
+        sleep_postponed_count_min = ZCLAttributeDef(id=0x4006, type=t.uint32_t, access="rp",
+                                                    is_manufacturer_specific=True)
         motor_step_counter = ZCLAttributeDef(id=0x4010, type=t.uint32_t, access="rp", is_manufacturer_specific=True)
 
 
-class DanfossTimeCluster(CustomCluster, Time):
+class DanfossTimeCluster(CustomizedStandardCluster, Time):
     """Danfoss cluster for fixing the time."""
 
     async def write_time(self):
@@ -206,10 +255,10 @@ class DanfossTimeCluster(CustomCluster, Time):
 
         time_zone = (datetime.fromtimestamp(86400) - datetime.utcfromtimestamp(86400)).total_seconds()
 
-        res = await self.write_attributes({"time": current_time,
-                                           "time_status": 0b00000010,  # only bit 1 can be written
-                                           "time_zone": time_zone
-                                           })
+        await self.write_attributes({"time": current_time,
+                                     "time_status": 0b00000010,  # only bit 1 can be written
+                                     "time_zone": time_zone
+                                     })
 
     async def bind(self):
         """
