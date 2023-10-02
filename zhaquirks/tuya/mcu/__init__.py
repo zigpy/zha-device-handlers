@@ -444,12 +444,12 @@ class TuyaOnOffManufCluster(TuyaMCUCluster):
             "on_off",
             endpoint_id=8,
         ),
-	    0x67: DPToAttributeMapping(
+        0x67: DPToAttributeMapping(
             TuyaOnOff.ep_attribute,
             "on_off",
             endpoint_id=9,
         ),
-	    0x68: DPToAttributeMapping(
+        0x68: DPToAttributeMapping(
             TuyaOnOff.ep_attribute,
             "on_off",
             endpoint_id=10,
@@ -459,12 +459,12 @@ class TuyaOnOffManufCluster(TuyaMCUCluster):
             "on_off",
             endpoint_id=11,
         ),
-	    0x6A: DPToAttributeMapping(
+        0x6A: DPToAttributeMapping(
             TuyaOnOff.ep_attribute,
             "on_off",
             endpoint_id=12,
         ),
-	    0x6B: DPToAttributeMapping(
+        0x6B: DPToAttributeMapping(
             TuyaOnOff.ep_attribute,
             "on_off",
             endpoint_id=13,
@@ -474,17 +474,16 @@ class TuyaOnOffManufCluster(TuyaMCUCluster):
             "on_off",
             endpoint_id=14,
         ),
-	    0x6D: DPToAttributeMapping(
+        0x6D: DPToAttributeMapping(
             TuyaOnOff.ep_attribute,
             "on_off",
             endpoint_id=15,
         ),
-	    0x6E: DPToAttributeMapping(
+        0x6E: DPToAttributeMapping(
             TuyaOnOff.ep_attribute,
             "on_off",
             endpoint_id=16,
         ),
-
     }
 
     data_point_handlers = {
