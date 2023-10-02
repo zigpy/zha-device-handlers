@@ -757,7 +757,6 @@ class TuyaSwitchX8_GP(TuyaSwitch):
         MODELS_INFO: [
             ("_TZE200_wktrysab", "TS0601"),
         ],
-
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=81
             # input_clusters=[0x0000,0x0004,0x0005,0xEF00]
@@ -967,7 +966,7 @@ class TuyaSwitchX16_GP(TuyaSwitch):
                 ],
                 OUTPUT_CLUSTERS: [],
             },
-    	    9: {
+            9: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
                 INPUT_CLUSTERS: [
@@ -975,7 +974,7 @@ class TuyaSwitchX16_GP(TuyaSwitch):
                 ],
                 OUTPUT_CLUSTERS: [],
             },
-    	    10: {
+            10: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
                 INPUT_CLUSTERS: [
@@ -983,7 +982,7 @@ class TuyaSwitchX16_GP(TuyaSwitch):
                 ],
                 OUTPUT_CLUSTERS: [],
             },
-    	    11: {
+            11: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
                 INPUT_CLUSTERS: [
@@ -991,7 +990,7 @@ class TuyaSwitchX16_GP(TuyaSwitch):
                 ],
                 OUTPUT_CLUSTERS: [],
             },
-    	    12: {
+            12: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
                 INPUT_CLUSTERS: [
@@ -999,7 +998,7 @@ class TuyaSwitchX16_GP(TuyaSwitch):
                 ],
                 OUTPUT_CLUSTERS: [],
             },
-    	    13: {
+            13: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
                 INPUT_CLUSTERS: [
@@ -1007,7 +1006,7 @@ class TuyaSwitchX16_GP(TuyaSwitch):
                 ],
                 OUTPUT_CLUSTERS: [],
             },
-    	    14: {
+            14: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
                 INPUT_CLUSTERS: [
@@ -1015,7 +1014,7 @@ class TuyaSwitchX16_GP(TuyaSwitch):
                 ],
                 OUTPUT_CLUSTERS: [],
             },
-    	    15: {
+            15: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
                 INPUT_CLUSTERS: [
@@ -1023,7 +1022,7 @@ class TuyaSwitchX16_GP(TuyaSwitch):
                 ],
                 OUTPUT_CLUSTERS: [],
             },
-    	    16: {
+            16: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
                 INPUT_CLUSTERS: [
