@@ -1,9 +1,11 @@
 """Module to handle quirks of the Danfoss thermostat.
 
 manufacturer specific attributes to control displaying and specific configuration.
-
-manufacturer_code = 0x1246
 """
+
+import traceback
+
+from datetime import datetime
 
 import zigpy.profiles.zha as zha_p
 from zigpy.quirks import CustomCluster, CustomDevice
@@ -59,34 +61,31 @@ SYSTEM_MODE_THERM_OFF_VAL = 0x00
 
 # 0x0201
 danfoss_thermostat_attr = {
-    0x4000: ("open_window_detection", t.enum8, "rp"),
-    0x4003: ("external_open_window_detected", t.Bool, "rpw"),
-    0x4051: ("window_open_feature", t.Bool, "rpw"),
-    0x4010: ("exercise_day_of_week", t.enum8, "rpw"),
-    0x4011: ("exercise_trigger_time", t.uint16_t, "rpw"),
-    0x4012: ("mounting_mode_active", t.Bool, "rp"),
-    0x4013: ("mounting_mode_control", t.Bool, "rpw"),  # undocumented
-    0x4014: ("orientation", t.enum8, "rpw"),
-    0x4015: ("external_measured_room_sensor", t.int16s, "rpw"),
-    0x4016: ("radiator_covered", t.Bool, "rpw"),
-    0x4030: ("heat_available", t.Bool, "rpw"),  # undocumented
-    0x4031: ("heat_required", t.Bool, "rp"),  # undocumented
-    0x4032: ("load_balancing_enable", t.Bool, "rpw"),
-    0x4040: ("load_room_mean", t.int16s, "rpw"),
-    0x404A: ("load_estimate", t.int16s, "rp"),
-    0x4020: ("control_algorithm_scale_factor", t.uint8_t, "rpw"),
-    0x404B: ("regulation_setpoint_offset", t.int8s, "rpw"),
-    0x404C: ("adaptation_run_control", t.enum8, "rw"),
-    0x404D: ("adaptation_run_status", t.bitmap8, "rp"),
-    0x404E: ("adaptation_run_settings", t.bitmap8, "rw"),
-    0x404F: ("preheat_status", t.Bool, "rp"),
-    0x4050: ("preheat_time", t.uint32_t, "rp"),
-    0x0025: (
-        "programing_oper_mode",
-        DanfossOperationModeEnum,
-        "rpw",
-    ),  # Danfoss deviated from the spec
+    0x4000: ("open_window_detection", t.enum8, "rp", True),
+    0x4003: ("external_open_window_detected", t.Bool, "rpw", True),
+    0x4051: ("window_open_feature", t.Bool, "rpw", True),
+    0x4010: ("exercise_day_of_week", t.enum8, "rpw", True),
+    0x4011: ("exercise_trigger_time", t.uint16_t, "rpw", True),
+    0x4012: ("mounting_mode_active", t.Bool, "rp", True),
+    0x4013: ("mounting_mode_control", t.Bool, "rpw", True),  # undocumented
+    0x4014: ("orientation", t.enum8, "rpw", True),
+    0x4015: ("external_measured_room_sensor", t.int16s, "rpw", True),
+    0x4016: ("radiator_covered", t.Bool, "rpw", True),
+    0x4030: ("heat_available", t.Bool, "rpw", True),  # undocumented
+    0x4031: ("heat_required", t.Bool, "rp", True),  # undocumented
+    0x4032: ("load_balancing_enable", t.Bool, "rpw", True),
+    0x4040: ("load_room_mean", t.int16s, "rpw", True),
+    0x404A: ("load_estimate", t.int16s, "rp", True),
+    0x4020: ("control_algorithm_scale_factor", t.uint8_t, "rpw", True),
+    0x404B: ("regulation_setpoint_offset", t.int8s, "rpw", True),
+    0x404C: ("adaptation_run_control", t.enum8, "rw", True),
+    0x404D: ("adaptation_run_status", t.bitmap8, "rp", True),
+    0x404E: ("adaptation_run_settings", t.bitmap8, "rw", True),
+    0x404F: ("preheat_status", t.Bool, "rp", True),
+    0x4050: ("preheat_time", t.uint32_t, "rp", True),
 }
+# 0x0025: ("programing_oper_mode", DanfossOperationModeEnum, "rpw",)  # Danfoss deviated from the spec
+
 # ZCL Attributes Supported:
 #   pi_heating_demand (0x0008),
 #   min_heat_setpoint_limit (0x0015)
@@ -107,7 +106,7 @@ zcl_attr = {
 
 # 0x0204
 danfoss_interface_attr = {
-    0x4000: ("viewing_direction", t.enum8, "rpw"),
+    0x4000: ("viewing_direction", t.enum8, "rpw", True),
 }
 
 # Writing to mandatory ZCL attribute 0x0000 doesn't seem to do anything
@@ -115,14 +114,14 @@ danfoss_interface_attr = {
 
 # 0x0b05
 danfoss_diagnostic_attr = {
-    0x4000: ("sw_error_code", t.bitmap16, "rp"),
-    0x4001: ("wake_time_avg", t.uint32_t, "rp"),  # always 0?
-    0x4002: ("wake_time_max_duration", t.uint32_t, "rp"),  # always 0?
-    0x4003: ("wake_time_min_duration", t.uint32_t, "rp"),  # always 0?
-    0x4004: ("sleep_postponed_count_avg", t.uint32_t, "rp"),  # always 0?
-    0x4005: ("sleep_postponed_count_max", t.uint32_t, "rp"),  # always 0?
-    0x4006: ("sleep_postponed_count_min", t.uint32_t, "rp"),  # always 0?
-    0x4010: ("motor_step_counter", t.uint32_t, "rp"),
+    0x4000: ("sw_error_code", t.bitmap16, "rp", True),
+    0x4001: ("wake_time_avg", t.uint32_t, "rp", True),  # always 0?
+    0x4002: ("wake_time_max_duration", t.uint32_t, "rp", True),  # always 0?
+    0x4003: ("wake_time_min_duration", t.uint32_t, "rp", True),  # always 0?
+    0x4004: ("sleep_postponed_count_avg", t.uint32_t, "rp", True),  # always 0?
+    0x4005: ("sleep_postponed_count_max", t.uint32_t, "rp", True),  # always 0?
+    0x4006: ("sleep_postponed_count_min", t.uint32_t, "rp", True),  # always 0?
+    0x4010: ("motor_step_counter", t.uint32_t, "rp", True),
 }
 
 danfoss_thermostat_comm = {
@@ -145,7 +144,7 @@ danfoss_thermostat_comm = {
 }
 
 
-class DanfossThermostatCluster(CustomCluster, Thermostat):
+class DanfossThermostatCluster(Thermostat):
     """Danfoss cluster for ZCL attributes and forwarding proprietary attributes."""
 
     server_commands = Thermostat.server_commands.copy()
@@ -193,23 +192,70 @@ class DanfossThermostatCluster(CustomCluster, Thermostat):
 
         return write_res
 
+    def add_unsupported_attribute(
+            self, attr: int | str, inhibit_events: bool = False
+    ) -> None:
+        if attr in {8, "pi_heating_demand"}:
+            print("*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n\n\n\n\n")
+            print(f"Unsupported: {attr}")
+            traceback.print_stack()
+            print("^!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n\n\n\n\n")
+        return super().add_unsupported_attribute(attr, inhibit_events=inhibit_events)
 
-class DanfossUserInterfaceCluster(CustomCluster, UserInterface):
+    async def bind(self):
+        """
+        According to the documentation of Zigbee2MQTT there is a bug in the Danfoss firmware with the time.
+        It doesn't request it, so it has to be fed the correct time.
+        """
+        await self.endpoint.time.write_time()
+
+        return await super().bind()
+
+
+class DanfossUserInterfaceCluster(UserInterface):
     """Danfoss cluster for ZCL attributes and forwarding proprietary attributes."""
 
     attributes = UserInterface.attributes.copy()
     attributes.update({**danfoss_interface_attr, **zcl_attr})
 
 
-class DanfossDiagnosticCluster(CustomCluster, Diagnostic):
+class DanfossDiagnosticCluster(Diagnostic):
     """Danfoss cluster for ZCL attributes and forwarding proprietary attributes."""
 
     attributes = Diagnostic.attributes.copy()
     attributes.update({**danfoss_diagnostic_attr, **zcl_attr})
 
 
+class DanfossTimeCluster(Time):
+    """Danfoss cluster for fixing the time."""
+
+    async def write_time(self):
+        epoch = datetime(2000, 1, 1, 0, 0, 0, 0)
+        current_time = (datetime.utcnow() - epoch).total_seconds()
+
+        time_zone = (datetime.fromtimestamp(86400) - datetime.utcfromtimestamp(86400)).total_seconds()
+
+        res = await self.write_attributes({"time": current_time,
+                                           "time_status": 0b00000010,  # only bit 1 can be written
+                                           "time_zone": time_zone
+                                           })
+
+    async def bind(self):
+        """
+        According to the documentation of Zigbee2MQTT there is a bug in the Danfoss firmware with the time.
+        It doesn't request it, so it has to be fed the correct time.
+        """
+        result = await super().bind()
+
+        await self.write_time()
+
+        return result
+
+
 class DanfossThermostat(CustomDevice):
     """DanfossThermostat custom device."""
+
+    manufacturer_code = 0x1246
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=769
@@ -250,7 +296,7 @@ class DanfossThermostat(CustomDevice):
                     Basic,
                     PowerConfiguration,
                     Identify,
-                    Time,
+                    DanfossTimeCluster,
                     PollControl,
                     DanfossThermostatCluster,
                     DanfossUserInterfaceCluster,
