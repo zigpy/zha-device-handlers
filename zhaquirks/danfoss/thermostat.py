@@ -68,6 +68,7 @@ MIN_HEAT_SETPOINT_LIMIT_THERM_ID = uint16_t(0x0015)
 SETPOINT_COMMAND_AGGRESSIVE_VAL = 0x01
 
 SYSTEM_MODE_THERM_OFF_VAL = 0x00
+SYSTEM_MODE_THERM_ON_VAL = 0x04
 
 
 class DanfossOperationModeEnum(t.bitmap8):
@@ -258,6 +259,9 @@ class DanfossThermostatCluster(CustomizedStandardCluster, Thermostat):
             # just turn setpoint down to minimum temperature using fast_setpoint_change
             fast_setpoint_change = self._attr_cache[MIN_HEAT_SETPOINT_LIMIT_THERM_ID]
             attributes[OCCUPIED_HEATING_SETPOINT_NAME] = fast_setpoint_change
+
+            # Danfoss doesn't accept off, therefore set to On
+            attributes[SYSTEM_MODE_NAME] = SYSTEM_MODE_THERM_ON_VAL
 
         # attributes cannot be empty, because write_res cannot be empty, but it can contain unrequested items
         write_res = await super().write_attributes(
