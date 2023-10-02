@@ -73,7 +73,7 @@ class Tuya_1G_Wall_Switch_Metering(EnchantedDevice):
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
                 # DEVICE_TYPE caveat: in case the device isn't used as a light source (e.g. switch / in-line power meter) use
-                # the override through configuration.yaml as in https://bit.ly/zha-pull-2613-archived 
+                # the override through configuration.yaml as in https://bit.ly/zha-pull-2613-archived
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
