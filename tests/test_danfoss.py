@@ -1,7 +1,9 @@
 """Tests the Danfoss quirk (all tests were written for the Popp eT093WRO)"""
+from datetime import datetime
 from unittest import mock
 
 from zigpy.zcl import foundation
+from zigpy.zcl.clusters.general import Time
 from zigpy.zcl.clusters.hvac import Thermostat
 from zigpy.zcl.foundation import WriteAttributesStatusRecord
 
@@ -39,6 +41,42 @@ def test_popp_signature(assert_signature_matches_quirk):
     assert_signature_matches_quirk(
         zhaquirks.danfoss.thermostat.DanfossThermostat, signature
     )
+
+
+async def test_danfoss_time_bind(zigpy_device_from_quirk):
+    device = zigpy_device_from_quirk(zhaquirks.danfoss.thermostat.DanfossThermostat)
+
+    danfoss_time_cluster = device.endpoints[1].in_clusters[Time.cluster_id]
+
+    def mock_write(attributes, manufacturer=None):
+        records = [
+            WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+            for attr in attributes
+        ]
+        return [records, []]
+
+    def mock_wildcard(*args, **kwargs):
+        return
+
+    patch_danfoss_trv_write = mock.patch.object(
+        danfoss_time_cluster,
+        "_write_attributes",
+        mock.AsyncMock(side_effect=mock_write),
+    )
+
+    patch_danfoss_trv_bind = mock.patch.object(
+        Time,
+        "bind",
+        mock.AsyncMock(side_effect=mock_wildcard),
+    )
+
+    with patch_danfoss_trv_bind:
+        with patch_danfoss_trv_write:
+            await danfoss_time_cluster.bind()
+
+            assert 0x0000 in danfoss_time_cluster._attr_cache
+            assert 0x0001 in danfoss_time_cluster._attr_cache
+            assert 0x0002 in danfoss_time_cluster._attr_cache
 
 
 async def test_danfoss_thermostat_write_attributes(zigpy_device_from_quirk):
