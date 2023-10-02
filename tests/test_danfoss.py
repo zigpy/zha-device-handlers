@@ -141,7 +141,7 @@ async def test_danfoss_thermostat_write_attributes(zigpy_device_from_quirk):
             )
             assert success
             assert not fail
-            assert danfoss_thermostat_cluster._attr_cache[0x001C] == 0x00
+            assert danfoss_thermostat_cluster._attr_cache[0x001C] == 0x04
 
             # setpoint to min_limit, when system_mode to off
             assert danfoss_thermostat_cluster._attr_cache[0x0012] == 5
