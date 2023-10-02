@@ -22,6 +22,7 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.tuya import (
+    TuyaZB1888Cluster,
     TuyaZBE000Cluster,
     TuyaZBElectricalMeasurement,
     TuyaZBMeteringCluster,
@@ -52,7 +53,7 @@ class Tuya_1G_Wall_Switch_Metering(EnchantedDevice):
                     TuyaZBMeteringCluster.cluster_id,
                     TuyaZBElectricalMeasurement.cluster_id,
                     LightLink.cluster_id,
-                    0x1888,
+                    TuyaZB1888Cluster.cluster_id,
                     TuyaZBE000Cluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
@@ -85,6 +86,7 @@ class Tuya_1G_Wall_Switch_Metering(EnchantedDevice):
                     TuyaZBMeteringCluster,
                     TuyaZBElectricalMeasurement,
                     LightLink.cluster_id,
+                    TuyaZB1888Cluster,
                     TuyaZBE000Cluster,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
