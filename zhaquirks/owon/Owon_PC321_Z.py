@@ -1,6 +1,4 @@
-"""QUIRK FOR OWON PC321 Z"""
-
-import logging
+"""Quirk for Owon PC321 Z."""
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
@@ -12,17 +10,15 @@ from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
+    MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-
-_LOGGER = logging.getLogger(__name__)
-
+from zhaquirks.owon import Owon
 
 class Owon_PC321_Z_Simple_Metering(CustomCluster, Metering):
     """Owon PC321 CustomCluster"""
 
-    cluster_id = 0x0702
     ep_attribute: str = "owon_smartenergy_metering"
 
     attributes = Metering.attributes.copy()
@@ -55,12 +51,13 @@ class Owon_PC321_Z_Simple_Metering(CustomCluster, Metering):
     )
 
 
-"""New Device Owon PC321 Z"""
+"""New Device Owon PC321 Z."""
 
 
 class Owon_PC321_Z(CustomDevice):
+"""New Device Owon PC321 Z."""
     signature = {
-        # MODELS_INFO: [("Owon", "PC321")],
+        MODELS_INFO: [(Owon, "PC321")],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=13
             # device_version=1
@@ -77,13 +74,13 @@ class Owon_PC321_Z(CustomDevice):
                 OUTPUT_CLUSTERS: [Identify.cluster_id],
             },
         },
-        "manufacturer": "OWON Technology Inc.",
+        #"manufacturer": "OWON Technology Inc.",
     }
     replacement = {
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=13
             # device_version=1
-            # input_clusters=[0, 3, 1794, 65504]
+            # input_clusters=[0, 3, 1794]
             # output_clusters=[3]>
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
