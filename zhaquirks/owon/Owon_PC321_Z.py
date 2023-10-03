@@ -51,11 +51,9 @@ class Owon_PC321_Z_Simple_Metering(CustomCluster, Metering):
     )
 
 
-"""New Device Owon PC321 Z."""
-
 
 class Owon_PC321_Z(CustomDevice):
-"""New Device Owon PC321 Z."""
+    """New Device Owon PC321 Z."""
     signature = {
         MODELS_INFO: [(Owon, "PC321")],
         ENDPOINTS: {
