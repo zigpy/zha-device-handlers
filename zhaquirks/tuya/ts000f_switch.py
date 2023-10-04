@@ -88,6 +88,11 @@ class Tuya_1G_Wall_Switch_Metering(EnchantedDevice):
                     TuyaZBE000Cluster,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
+            242: {
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
         },
     }
