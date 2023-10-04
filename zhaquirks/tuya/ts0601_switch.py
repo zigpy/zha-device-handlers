@@ -787,7 +787,7 @@ class TuyaSwitchX8_GP(TuyaSwitch):
     replacement = {
         ENDPOINTS: {
             1: {
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Groups.cluster_id,
@@ -799,7 +799,7 @@ class TuyaSwitchX8_GP(TuyaSwitch):
             },
             2: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
                     TuyaOnOffNM,
                 ],
@@ -807,7 +807,7 @@ class TuyaSwitchX8_GP(TuyaSwitch):
             },
             3: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
                     TuyaOnOffNM,
                 ],
@@ -815,7 +815,7 @@ class TuyaSwitchX8_GP(TuyaSwitch):
             },
             4: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
                     TuyaOnOffNM,
                 ],
@@ -823,7 +823,7 @@ class TuyaSwitchX8_GP(TuyaSwitch):
             },
             5: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
                     TuyaOnOffNM,
                 ],
@@ -831,7 +831,7 @@ class TuyaSwitchX8_GP(TuyaSwitch):
             },
             6: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
                     TuyaOnOffNM,
                 ],
@@ -839,7 +839,7 @@ class TuyaSwitchX8_GP(TuyaSwitch):
             },
             7: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
                     TuyaOnOffNM,
                 ],
@@ -847,7 +847,7 @@ class TuyaSwitchX8_GP(TuyaSwitch):
             },
             8: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
                     TuyaOnOffNM,
                 ],
@@ -900,7 +900,7 @@ class TuyaSwitchX16_GP(TuyaSwitch):
     replacement = {
         ENDPOINTS: {
             1: {
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Groups.cluster_id,
@@ -912,7 +912,7 @@ class TuyaSwitchX16_GP(TuyaSwitch):
             },
             2: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
                     TuyaOnOffNM,
                 ],
@@ -920,7 +920,7 @@ class TuyaSwitchX16_GP(TuyaSwitch):
             },
             3: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
                     TuyaOnOffNM,
                 ],
@@ -928,7 +928,7 @@ class TuyaSwitchX16_GP(TuyaSwitch):
             },
             4: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
                     TuyaOnOffNM,
                 ],
@@ -936,7 +936,7 @@ class TuyaSwitchX16_GP(TuyaSwitch):
             },
             5: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
                     TuyaOnOffNM,
                 ],
@@ -944,7 +944,7 @@ class TuyaSwitchX16_GP(TuyaSwitch):
             },
             6: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
                     TuyaOnOffNM,
                 ],
@@ -952,7 +952,7 @@ class TuyaSwitchX16_GP(TuyaSwitch):
             },
             7: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
                     TuyaOnOffNM,
                 ],
@@ -960,7 +960,7 @@ class TuyaSwitchX16_GP(TuyaSwitch):
             },
             8: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
                     TuyaOnOffNM,
                 ],
@@ -968,7 +968,7 @@ class TuyaSwitchX16_GP(TuyaSwitch):
             },
             9: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
                     TuyaOnOffNM,
                 ],
@@ -976,7 +976,7 @@ class TuyaSwitchX16_GP(TuyaSwitch):
             },
             10: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
                     TuyaOnOffNM,
                 ],
@@ -984,7 +984,7 @@ class TuyaSwitchX16_GP(TuyaSwitch):
             },
             11: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
                     TuyaOnOffNM,
                 ],
@@ -992,7 +992,7 @@ class TuyaSwitchX16_GP(TuyaSwitch):
             },
             12: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
                     TuyaOnOffNM,
                 ],
@@ -1000,7 +1000,7 @@ class TuyaSwitchX16_GP(TuyaSwitch):
             },
             13: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
                     TuyaOnOffNM,
                 ],
@@ -1008,7 +1008,7 @@ class TuyaSwitchX16_GP(TuyaSwitch):
             },
             14: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
                     TuyaOnOffNM,
                 ],
@@ -1016,7 +1016,7 @@ class TuyaSwitchX16_GP(TuyaSwitch):
             },
             15: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
                     TuyaOnOffNM,
                 ],
@@ -1024,7 +1024,7 @@ class TuyaSwitchX16_GP(TuyaSwitch):
             },
             16: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
                     TuyaOnOffNM,
                 ],
