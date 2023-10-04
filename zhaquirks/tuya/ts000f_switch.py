@@ -12,7 +12,6 @@ from zigpy.zcl.clusters.general import (
     Time,
 )
 from zigpy.zcl.clusters.lightlink import LightLink
-
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
