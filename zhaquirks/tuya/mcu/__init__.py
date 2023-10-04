@@ -434,6 +434,56 @@ class TuyaOnOffManufCluster(TuyaMCUCluster):
             "on_off",
             endpoint_id=6,
         ),
+        0x65: DPToAttributeMapping(
+            TuyaOnOff.ep_attribute,
+            "on_off",
+            endpoint_id=7,
+        ),
+        0x66: DPToAttributeMapping(
+            TuyaOnOff.ep_attribute,
+            "on_off",
+            endpoint_id=8,
+        ),
+        0x67: DPToAttributeMapping(
+            TuyaOnOff.ep_attribute,
+            "on_off",
+            endpoint_id=9,
+        ),
+        0x68: DPToAttributeMapping(
+            TuyaOnOff.ep_attribute,
+            "on_off",
+            endpoint_id=10,
+        ),
+        0x69: DPToAttributeMapping(
+            TuyaOnOff.ep_attribute,
+            "on_off",
+            endpoint_id=11,
+        ),
+        0x6A: DPToAttributeMapping(
+            TuyaOnOff.ep_attribute,
+            "on_off",
+            endpoint_id=12,
+        ),
+        0x6B: DPToAttributeMapping(
+            TuyaOnOff.ep_attribute,
+            "on_off",
+            endpoint_id=13,
+        ),
+        0x6C: DPToAttributeMapping(
+            TuyaOnOff.ep_attribute,
+            "on_off",
+            endpoint_id=14,
+        ),
+        0x6D: DPToAttributeMapping(
+            TuyaOnOff.ep_attribute,
+            "on_off",
+            endpoint_id=15,
+        ),
+        0x6E: DPToAttributeMapping(
+            TuyaOnOff.ep_attribute,
+            "on_off",
+            endpoint_id=16,
+        ),
     }
 
     data_point_handlers = {
@@ -443,6 +493,16 @@ class TuyaOnOffManufCluster(TuyaMCUCluster):
         4: "_dp_2_attr_update",
         5: "_dp_2_attr_update",
         6: "_dp_2_attr_update",
+        0x65: "_dp_2_attr_update",
+        0x66: "_dp_2_attr_update",
+        0x67: "_dp_2_attr_update",
+        0x68: "_dp_2_attr_update",
+        0x69: "_dp_2_attr_update",
+        0x6A: "_dp_2_attr_update",
+        0x6B: "_dp_2_attr_update",
+        0x6C: "_dp_2_attr_update",
+        0x6D: "_dp_2_attr_update",
+        0x6E: "_dp_2_attr_update",
     }
 
 
