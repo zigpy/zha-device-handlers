@@ -66,7 +66,7 @@ class Tuya_1G_Wall_Switch_Metering(EnchantedDevice):
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
-        },
+        }
     }
     replacement = {
         ENDPOINTS: {
