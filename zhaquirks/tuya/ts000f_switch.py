@@ -95,3 +95,4 @@ class Tuya_1G_Wall_Switch_Metering(EnchantedDevice):
             },
         },
     }
+}
