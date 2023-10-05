@@ -51,9 +51,9 @@ class Owon_PC321_Z_Simple_Metering(CustomCluster, Metering):
     )
 
 
-
 class Owon_PC321_Z(CustomDevice):
     """New Device Owon PC321 Z."""
+
     signature = {
         MODELS_INFO: [(Owon, "PC321")],
         ENDPOINTS: {
@@ -72,7 +72,6 @@ class Owon_PC321_Z(CustomDevice):
                 OUTPUT_CLUSTERS: [Identify.cluster_id],
             },
         },
-        #"manufacturer": "OWON Technology Inc.",
     }
     replacement = {
         ENDPOINTS: {
