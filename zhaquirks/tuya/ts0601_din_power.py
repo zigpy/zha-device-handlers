@@ -246,18 +246,13 @@ class ZemismartPowerMeasurement(LocalDataCluster, ElectricalMeasurement):
         if phase < 0 or phase > 2:
             phase = 0
 
-        self._update_attribute(
-            self.phase_attributes[phase]["voltage"],
-            int.from_bytes(value[6:8], byteorder="little"),
-        )
-        self._update_attribute(
-            self.phase_attributes[phase]["current"],
-            int.from_bytes(value[3:6], byteorder="little"),
-        )
-        self._update_attribute(
-            self.phase_attributes[phase]["power"],
-            int.from_bytes(value[0:3], byteorder="little"),
-        )
+        voltage = int.from_bytes(value[6:8], byteorder="little")
+        current = int.from_bytes(value[3:6], byteorder="little")
+        power = int.from_bytes(value[0:3], byteorder="little")
+
+        self._update_attribute(self.phase_attributes[phase]["voltage"], voltage)
+        self._update_attribute(self.phase_attributes[phase]["current"], current)
+        self._update_attribute(self.phase_attributes[phase]["power"], power)
 
 
 class ZemismartElectricalMeasurement(TuyaElectricalMeasurement):
