@@ -20,7 +20,7 @@ from zhaquirks.owon import Owon
 class Owon_PC321_Z_Simple_Metering(CustomCluster, Metering):
     """Owon PC321 CustomCluster"""
 
-    ep_attribute: str = "owon_smartenergy_metering"
+    ep_attribute: str = "smartenergy_metering"
 
     attributes = Metering.attributes.copy()
     attributes.update(
