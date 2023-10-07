@@ -74,6 +74,32 @@ class TemperatureHumidityManufCluster(TuyaMCUCluster):
         4: "_dp_2_attr_update",
     }
 
+class TemperatureHumidityBatteryStatesManufCluster(TuyaMCUCluster, TuyaManufClusterAttributes):
+    """Tuya Manufacturer Cluster with Temperature and Humidity data points. Battery states 25, 50 and 100%."""
+
+    dp_to_attribute: Dict[int, DPToAttributeMapping] = {
+        1: DPToAttributeMapping(
+            TuyaTemperatureMeasurement.ep_attribute,
+            "measured_value",
+            converter=lambda x: x * 10,  # decidegree to centidegree
+        ),
+        2: DPToAttributeMapping(
+            TuyaRelativeHumidity.ep_attribute,
+            "measured_value",
+            # converter=lambda x: x * 10,  --> move conversion to TuyaRelativeHumidity cluster
+        ),
+        3: DPToAttributeMapping(
+            TuyaPowerConfigurationCluster2AAA.ep_attribute,
+            "battery_percentage_remaining",
+            converter=lambda x: {0: 25, 1: 50, 2: 100}[x],  # double reported percentage
+        ),
+    }
+
+    data_point_handlers = {
+        1: "_dp_2_attr_update",
+        2: "_dp_2_attr_update",
+        3: "_dp_2_attr_update",
+    }
 
 class TuyaTempHumiditySensor(CustomDevice):
     """Custom device representing tuya temp and humidity sensor with e-ink screen."""
@@ -181,8 +207,6 @@ class TuyaTempHumiditySensorVar03(CustomDevice):
         # "in_clusters": ["0x0000","0x0004","0x0005","0xef00"],
         # "out_clusters": ["0x000a","0x0019"]
         MODELS_INFO: [
-            ("_TZE200_yjjdcqsq", "TS0601"),
-            ("_TZE200_9yapgbuv", "TS0601"),
             ("_TZE200_qyflbnbj", "TS0601"),
             ("_TZE200_utkemkbs", "TS0601"),
         ],
@@ -211,6 +235,53 @@ class TuyaTempHumiditySensorVar03(CustomDevice):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     TemperatureHumidityManufCluster,
+                    TuyaTemperatureMeasurement,
+                    TuyaRelativeHumidity,
+                    TuyaPowerConfigurationCluster2AAA,
+                ],
+                OUTPUT_CLUSTERS: [Ota.cluster_id, Time.cluster_id],
+            }
+        },
+    }
+
+
+class TuyaTempHumiditySensorVar04(CustomDevice):
+    """Tuya temp and humidity sensor (variation 04)."""
+
+    signature = {
+        # "profile_id": 260,
+        # "device_type": "0x0051",
+        # "in_clusters": ["0x0000","0x0004","0x0005","0xef00"],
+        # "out_clusters": ["0x000a","0x0019"]
+        MODELS_INFO: [
+            ("_TZE200_yjjdcqsq", "TS0601"),
+            ("_TZE200_9yapgbuv", "TS0601"),
+        ],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TemperatureHumidityManufCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Ota.cluster_id, Time.cluster_id],
+            }
+        },
+    }
+
+    replacement = {
+        SKIP_CONFIGURATION: True,
+        ENDPOINTS: {
+            1: {
+                DEVICE_TYPE: zha.DeviceType.TEMPERATURE_SENSOR,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TemperatureHumidityBatteryStatesManufCluster,
                     TuyaTemperatureMeasurement,
                     TuyaRelativeHumidity,
                     TuyaPowerConfigurationCluster2AAA,
