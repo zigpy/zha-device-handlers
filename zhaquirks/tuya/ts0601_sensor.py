@@ -74,6 +74,7 @@ class TemperatureHumidityManufCluster(TuyaMCUCluster):
         4: "_dp_2_attr_update",
     }
 
+
 class TemperatureHumidityBatteryStatesManufCluster(TuyaMCUCluster):
     """Tuya Manufacturer Cluster with Temperature and Humidity data points. Battery states 25, 50 and 100%."""
 
@@ -100,6 +101,7 @@ class TemperatureHumidityBatteryStatesManufCluster(TuyaMCUCluster):
         2: "_dp_2_attr_update",
         3: "_dp_2_attr_update",
     }
+
 
 class TuyaTempHumiditySensor(CustomDevice):
     """Custom device representing tuya temp and humidity sensor with e-ink screen."""
