@@ -260,7 +260,7 @@ class ZemismartPowerMeasurement(LocalDataCluster, ElectricalMeasurement):
         self._update_attribute(self.phase_attributes[phase]["current"], current)
         self._update_attribute(self.phase_attributes[phase]["power"], power)
 
-        apparent_power = voltage * current / 1000
+        apparent_power = voltage * current / 10000
         if apparent_power == 0:
             power_factor = (power + 0.0001) / (apparent_power + 0.0001) * 100
         else:
