@@ -47,12 +47,12 @@ import zhaquirks.tuya.ts0041
 import zhaquirks.tuya.ts0042
 import zhaquirks.tuya.ts0043
 import zhaquirks.tuya.ts0501_fan_switch
+import zhaquirks.tuya.ts0601_din_power
 import zhaquirks.tuya.ts0601_electric_heating
 import zhaquirks.tuya.ts0601_motion
 import zhaquirks.tuya.ts0601_siren
 import zhaquirks.tuya.ts0601_trv
 import zhaquirks.tuya.ts0601_valve
-import zhaquirks.tuya.ts0601_din_power
 
 from tests.common import ClusterListener, MockDatetime, wait_for_zigpy_tasks
 
