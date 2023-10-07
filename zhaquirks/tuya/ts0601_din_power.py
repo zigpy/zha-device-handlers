@@ -228,16 +228,22 @@ class ZemismartPowerMeasurement(LocalDataCluster, ElectricalMeasurement):
             "voltage": ElectricalMeasurement.AttributeDefs.rms_voltage.id,
             "current": ElectricalMeasurement.AttributeDefs.rms_current.id,
             "power": ElectricalMeasurement.AttributeDefs.active_power.id,
+            "power_factor": ElectricalMeasurement.AttributeDefs.power_factor.id,
+            "apparent_power": ElectricalMeasurement.AttributeDefs.apparent_power.id,
         },
         {  # Phase 2 (Y)
             "voltage": ElectricalMeasurement.AttributeDefs.rms_voltage_ph_b.id,
             "current": ElectricalMeasurement.AttributeDefs.rms_current_ph_b.id,
             "power": ElectricalMeasurement.AttributeDefs.active_power_ph_b.id,
+            "power_factor": ElectricalMeasurement.AttributeDefs.power_factor_ph_b.id,
+            "apparent_power": ElectricalMeasurement.AttributeDefs.apparent_power_ph_b.id,
         },
         {  # Phase 3 (Z)
             "voltage": ElectricalMeasurement.AttributeDefs.rms_voltage_ph_c.id,
             "current": ElectricalMeasurement.AttributeDefs.rms_current_ph_c.id,
             "power": ElectricalMeasurement.AttributeDefs.active_power_ph_c.id,
+            "power_factor": ElectricalMeasurement.AttributeDefs.power_factor_ph_c.id,
+            "apparent_power": ElectricalMeasurement.AttributeDefs.apparent_power_ph_c.id,
         },
     ]
 
@@ -253,6 +259,19 @@ class ZemismartPowerMeasurement(LocalDataCluster, ElectricalMeasurement):
         self._update_attribute(self.phase_attributes[phase]["voltage"], voltage)
         self._update_attribute(self.phase_attributes[phase]["current"], current)
         self._update_attribute(self.phase_attributes[phase]["power"], power)
+
+        apparent_power = voltage * current / 1000
+        if apparent_power == 0:
+            power_factor = (power + 0.0001) / (apparent_power + 0.0001) * 100
+        else:
+            power_factor = power / apparent_power * 100
+
+        self._update_attribute(
+            self.phase_attributes[phase]["apparent_power"], apparent_power
+        )
+        self._update_attribute(
+            self.phase_attributes[phase]["power_factor"], power_factor
+        )
 
 
 class ZemismartElectricalMeasurement(TuyaElectricalMeasurement):

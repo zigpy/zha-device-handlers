@@ -412,6 +412,8 @@ async def test_zemismart_power_meter_report(zigpy_device_from_quirk, quirk):
         (0x05, 2409),  # RMS Voltage
         (0x08, 904),  # RMS Current
         (0x0B, 175),  # Active power
+        (0x0F, 2177.736),  # Apparent power
+        (0x10, 8.035868443190543),  # Power factor
     ]
     attr_n = len(vcp_expected)
     phase_bases = {
