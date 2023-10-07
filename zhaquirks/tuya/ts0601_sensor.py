@@ -74,7 +74,7 @@ class TemperatureHumidityManufCluster(TuyaMCUCluster):
         4: "_dp_2_attr_update",
     }
 
-class TemperatureHumidityBatteryStatesManufCluster(TuyaMCUCluster, TuyaManufClusterAttributes):
+class TemperatureHumidityBatteryStatesManufCluster(TuyaMCUCluster):
     """Tuya Manufacturer Cluster with Temperature and Humidity data points. Battery states 25, 50 and 100%."""
 
     dp_to_attribute: Dict[int, DPToAttributeMapping] = {
