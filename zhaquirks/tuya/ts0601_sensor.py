@@ -79,16 +79,8 @@ class TemperatureHumidityBatteryStatesManufCluster(TuyaMCUCluster):
     """Tuya Manufacturer Cluster with Temperature and Humidity data points. Battery states 25, 50 and 100%."""
 
     dp_to_attribute: Dict[int, DPToAttributeMapping] = {
-        1: DPToAttributeMapping(
-            TuyaTemperatureMeasurement.ep_attribute,
-            "measured_value",
-            converter=lambda x: x * 10,  # decidegree to centidegree
-        ),
-        2: DPToAttributeMapping(
-            TuyaRelativeHumidity.ep_attribute,
-            "measured_value",
-            # converter=lambda x: x * 10,  --> move conversion to TuyaRelativeHumidity cluster
-        ),
+        1: TemperatureHumidityManufCluster.dp_to_attribute[1],
+        2: TemperatureHumidityManufCluster.dp_to_attribute[2],
         3: DPToAttributeMapping(
             TuyaPowerConfigurationCluster2AAA.ep_attribute,
             "battery_percentage_remaining",
