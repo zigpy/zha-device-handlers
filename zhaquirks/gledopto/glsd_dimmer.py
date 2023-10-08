@@ -30,7 +30,7 @@ class LevelControlNoReply(NoReplyMixin, CustomCluster, LevelControl):
     void_input_commands = {cmd.id for cmd in LevelControl.commands_by_name.values()}
 
 
-class GledoptoGlSd001(CustomDevice):
+class GledoptoGlSdDimmer(CustomDevice):
     """Gledopto GL-SD-001 & GL-SD-003P dimmer custom device implementation."""
 
     signature = {
