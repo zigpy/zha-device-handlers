@@ -8,6 +8,7 @@ import pytest
 import zigpy.device
 import zigpy.types as t
 from zigpy.zcl import foundation
+from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import (
     AnalogInput,
     DeviceTemperature,
@@ -51,6 +52,7 @@ from zhaquirks.xiaomi import (
     XiaomiQuickInitDevice,
     handle_quick_init,
 )
+import zhaquirks.xiaomi.aqara.driver_curtain_e1
 from zhaquirks.xiaomi.aqara.feeder_acn001 import (
     FEEDER_ATTR,
     ZCL_CHILD_LOCK,
@@ -1362,3 +1364,43 @@ async def test_xiaomi_t1_door_sensor(
     assert power_listener.attribute_updates[0][1] == expected_results[0]
     assert power_listener.attribute_updates[1][0] == zcl_power_percent_id
     assert power_listener.attribute_updates[1][1] == expected_results[1]
+
+
+@pytest.mark.parametrize(
+    "command, command_id, value",
+    [
+        (
+            WindowCovering.ServerCommandDefs.up_open.id,
+            WindowCovering.ServerCommandDefs.go_to_lift_percentage.id,
+            0,
+        ),
+        (
+            WindowCovering.ServerCommandDefs.down_close.id,
+            WindowCovering.ServerCommandDefs.go_to_lift_percentage.id,
+            100,
+        ),
+        (
+            WindowCovering.ServerCommandDefs.stop.id,
+            WindowCovering.ServerCommandDefs.stop.id,
+            None,
+        ),
+    ],
+)
+async def test_xiaomi_e1_driver_commands(
+    zigpy_device_from_quirk, command, command_id, value
+):
+    """Test Aqara E1 driver commands for basic movement functions using WindowCovering cluster."""
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.driver_curtain_e1.DriverE1)
+
+    window_covering_cluster = device.endpoints[1].window_covering
+    p = mock.patch.object(window_covering_cluster, "request", mock.AsyncMock())
+
+    with p as request_mock:
+        request_mock.return_value = (foundation.Status.SUCCESS, "done")
+
+        # test command
+        await window_covering_cluster.command(command)
+        assert request_mock.call_count == 1
+        assert request_mock.call_args[0][1] == command_id
+        if value is not None:
+            assert request_mock.call_args[0][3] == value
