@@ -1,4 +1,4 @@
-"""Quirk for GLEDOPTO GL-SD-001."""
+"""Quirk for GLEDOPTO GL-SD-* dimmers."""
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
