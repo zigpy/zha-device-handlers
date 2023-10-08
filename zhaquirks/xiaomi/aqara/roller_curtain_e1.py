@@ -62,7 +62,7 @@ class AnalogOutputRollerE1(CustomCluster, AnalogOutput):
 
     _CONSTANT_ATTRIBUTES = {
         AnalogOutput.AttributeDefs.description.id: "Current position",
-        AnalogOutput.AttributeDefs.max_present_value.id: float(0x064),
+        AnalogOutput.AttributeDefs.max_present_value.id: 100.0,
         AnalogOutput.AttributeDefs.min_present_value.id: 0.0,
         AnalogOutput.AttributeDefs.out_of_service.id: 0,
         AnalogOutput.AttributeDefs.resolution.id: 1.0,
