@@ -31,10 +31,10 @@ class LevelControlNoReply(NoReplyMixin, CustomCluster, LevelControl):
 
 
 class GledoptoGlSd001(CustomDevice):
-    """Gledopto GL-SD-001 dimmer custom device implementation."""
+    """Gledopto GL-SD-001 & GL-SD-003P dimmer custom device implementation."""
 
     signature = {
-        MODELS_INFO: [("GLEDOPTO", "GL-SD-001")],
+        MODELS_INFO: [("GLEDOPTO", "GL-SD-001"), ("GLEDOPTO", "GL-SD-003P")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
