@@ -52,7 +52,7 @@ class WindowCoveringE1(CustomCluster, WindowCovering):
             # TODO: should this always be reversed?
             if (
                 self.get(WindowCovering.AttributeDefs.window_covering_mode.id, 0)
-                & WindowCovering.WindowCoveringMode.Motor_direction_reversed,
+                & WindowCovering.WindowCoveringMode.Motor_direction_reversed
             ):
                 value = 100 - value
         super()._update_attribute(attrid, value)
