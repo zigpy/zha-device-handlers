@@ -60,15 +60,14 @@ class XiaomiAqaraRollerE1(XiaomiAqaraE1Cluster):
 class AnalogOutputRollerE1(CustomCluster, AnalogOutput):
     """Analog output cluster, only used to relay current_value to WindowCovering."""
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Init."""
-        super().__init__(*args, **kwargs)
-
-        self.update_attribute(self.AttributeDefs.max_present_value.id, float(0x064))
-        self.update_attribute(self.AttributeDefs.min_present_value.id, 0.0)
-        self.update_attribute(self.AttributeDefs.out_of_service.id, 0)
-        self.update_attribute(self.AttributeDefs.resolution.id, 1.0)
-        self.update_attribute(self.AttributeDefs.status_flags.id, 0x00)
+    _CONSTANT_ATTRIBUTES = {
+        AnalogOutput.AttributeDefs.description.id: "Current position",
+        AnalogOutput.AttributeDefs.max_present_value.id: float(0x064),
+        AnalogOutput.AttributeDefs.min_present_value.id: 0.0,
+        AnalogOutput.AttributeDefs.out_of_service.id: 0,
+        AnalogOutput.AttributeDefs.resolution.id: 1.0,
+        AnalogOutput.AttributeDefs.status_flags.id: 0x00,
+    }
 
     def _update_attribute(self, attrid: int, value: Any) -> None:
         super()._update_attribute(attrid, value)
