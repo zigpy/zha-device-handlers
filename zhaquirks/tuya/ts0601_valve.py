@@ -137,6 +137,45 @@ class TuyaValve(CustomDevice):
     }
 
 
+class BasicTuyaValve(CustomDevice):
+    """Basic Tuya valve device."""
+
+    signature = {
+        MODELS_INFO: [("_TZE200_1n2zev06", "TS0601")],
+        # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=81, device_version=1,
+        # input_clusters=[0, 4, 5, 61184], output_clusters=[25, 10])
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaValveManufCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            }
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaOnOff,
+                    TuyaValveManufCluster,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            }
+        }
+    }
+
+
 class ParksideTuyaValveManufCluster(TuyaMCUCluster):
     """Manufacturer Specific Cluster for the _TZE200_htnnfasr water valve sold as PARKSIDE."""
 
