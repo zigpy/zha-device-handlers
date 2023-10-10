@@ -51,6 +51,7 @@ class TuyaValveManufCluster(TuyaMCUCluster):
             0xEF02: ("state", t.enum8, True),
             0xEF03: ("last_valve_open_duration", t.uint32_t, True),
             0xEF04: ("dp_6", t.uint32_t, True),
+            0xEF05: ("valve_position", t.uint32_t, True),
         }
     )
 
@@ -83,6 +84,10 @@ class TuyaValveManufCluster(TuyaMCUCluster):
             TuyaMCUCluster.ep_attribute,
             "last_valve_open_duration",
         ),
+        102: DPToAttributeMapping(
+            TuyaMCUCluster.ep_attribute,
+            "valve_position",
+        ),
     }
 
     data_point_handlers = {
@@ -93,6 +98,7 @@ class TuyaValveManufCluster(TuyaMCUCluster):
         11: "_dp_2_attr_update",
         12: "_dp_2_attr_update",
         15: "_dp_2_attr_update",
+        102: "_dp_2_attr_update",
     }
 
 
