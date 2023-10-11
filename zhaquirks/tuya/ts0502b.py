@@ -105,7 +105,7 @@ class DualWhiteLedController(CustomDevice):
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.DIMMABLE_LIGHT,
+                DEVICE_TYPE: zha.DeviceType.COLOR_TEMPERATURE_LIGHT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
