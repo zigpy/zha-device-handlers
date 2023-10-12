@@ -228,7 +228,7 @@ class Awox99099Remote(CustomDevice):
             COMMAND: COMMAND_MOVE_TO_LEVEL_ON_OFF,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
-            PARAMS: {"step_mode": 0},
+            PARAMS: {"level": 254},
         },
         (SHORT_PRESS, DIM_DOWN): {
             COMMAND: COMMAND_STEP_ON_OFF,
@@ -240,7 +240,7 @@ class Awox99099Remote(CustomDevice):
             COMMAND: COMMAND_MOVE_TO_LEVEL_ON_OFF,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
-            PARAMS: {"step_mode": 1},
+            PARAMS: {"level": 1},
         },
         (SHORT_PRESS, "heart_1"): {
             COMMAND: COMMAND_RECALL,
