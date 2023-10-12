@@ -1,20 +1,19 @@
 """Device handler for Avox 99099 Remote (Eglo Remote 2.0)"""
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster
-from zigpy.quirks import CustomDevice
+from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
     Basic,
-    Identify,
     Groups,
-    Scenes,
-    OnOff,
+    Identify,
     LevelControl,
-)
-from zigpy.zcl.clusters.lightlink import LightLink
+    OnOff,
+    Scenes,
+ )
 from zigpy.zcl.clusters.lighting import Color
+from zigpy.zcl.clusters.lightlink import LightLink
 
 from zhaquirks.const import (
     CLUSTER_ID,
@@ -47,6 +46,7 @@ COMMAND_MOVE_TO_COLOR_TEMP = "move_to_color_temp"
 COMMAND_MOVE_TO_HUE_SATURATION = "move_to_hue_and_saturation"
 COMMAND_RECALL = "recall"
 
+
 class Awox99099Remote(CustomDevice):
     """Custom device representing AwoX 99099 remote (EGLO Remote 2.o)"""
 
@@ -73,14 +73,14 @@ class Awox99099Remote(CustomDevice):
         )
 
     signature = {
-        #<SimpleDescriptor endpoint=1 profile=260 device_type=2048
-        #device_version=1
-        #input_clusters=[0, 3, 4, 4096]
-        #output_clusters=[0, 3, 4, 5, 6, 8, 768, 4096]>
-        #<SimpleDescriptor endpoint=3 profile=4751 device_type=2048
-        #device_version=1
-        #input_clusters=[65360, 65361]
-        #output_clusters=[65360, 65361]>
+        # <SimpleDescriptor endpoint=1 profile=260 device_type=2048
+        # device_version=1
+        # input_clusters=[0, 3, 4, 4096]
+        # output_clusters=[0, 3, 4, 5, 6, 8, 768, 4096]>
+        # <SimpleDescriptor endpoint=3 profile=4751 device_type=2048
+        # device_version=1
+        # input_clusters=[65360, 65361]
+        # output_clusters=[65360, 65361]>
         MODELS_INFO: [("AwoX", "TLSR82xx")],
         ENDPOINTS: {
             1: {
@@ -114,7 +114,7 @@ class Awox99099Remote(CustomDevice):
                     0xFF50,
                     0xFF51,
                 ],
-            }
+            },
         },
     }
 
@@ -151,7 +151,7 @@ class Awox99099Remote(CustomDevice):
                     0xFF50,
                     0xFF51,
                 ],
-            }
+            },
         }
     }
 
