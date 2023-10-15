@@ -604,36 +604,7 @@ class TuyaMmwRadarOccupancyVariant1GPP(CustomDevice):
     }
 
 
-class TuyaMmwRadarOccupancyVariant1(CustomDevice):
-    """Millimeter wave occupancy sensor."""
-
-    signature = {
-        #  endpoint=1, profile=260, device_type=81, device_version=1,
-        #  input_clusters=[0, 4, 5, 61184], output_clusters=[25, 10]
-        MODELS_INFO: [
-            ("_TZE200_ar0slwnd", "TS0601"),
-            ("_TZE200_sfiy5tfs", "TS0601"),
-            ("_TZE200_mrf6vtua", "TS0601"),
-            ("_TZE200_ztc6ggyl", "TS0601"),
-            ("_TZE204_ztc6ggyl", "TS0601"),
-            ("_TZE200_wukb7rhc", "TS0601"),
-        ],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    TuyaNewManufCluster.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
-            },
-        },
-    }
-
-    replacement = {
+replacement = {
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -642,13 +613,45 @@ class TuyaMmwRadarOccupancyVariant1(CustomDevice):
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaMmwRadarClusterV1,
+                    TuyaMmwRadarClusterVariant1,
                     TuyaIlluminanceMeasurement,
                     TuyaOccupancySensing,
                     TuyaMmwRadarTargetDistance,
                     TuyaMmwRadarSensitivity,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.COMBINED_INTERFACE,
+                INPUT_CLUSTERS: [
+                    TuyaMmwRadarMinRange,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            3: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.COMBINED_INTERFACE,
+                INPUT_CLUSTERS: [
+                    TuyaMmwRadarMaxRange,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            4: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.COMBINED_INTERFACE,
+                INPUT_CLUSTERS: [
+                    TuyaMmwRadarDetectionDelay,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            5: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.COMBINED_INTERFACE,
+                INPUT_CLUSTERS: [
+                    TuyaMmwRadarFadingTime,
+                ],
+                OUTPUT_CLUSTERS: [],
             },
         }
     }
