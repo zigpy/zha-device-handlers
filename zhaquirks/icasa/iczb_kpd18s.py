@@ -1,5 +1,4 @@
 """icasa KPD18S device."""
-
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
@@ -16,8 +15,8 @@ from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.lightlink import LightLink
 
-from zhaquirks import LevelControlMoveArgumentsCache
 from zhaquirks.const import (
+    ARGS,
     BUTTON_1,
     BUTTON_2,
     BUTTON_3,
@@ -40,7 +39,6 @@ from zhaquirks.const import (
     LONG_RELEASE,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
-    PARAMS,
     PROFILE_ID,
     SHORT_PRESS,
     TURN_OFF,
@@ -96,7 +94,7 @@ class IcasaKPD18S(CustomDevice):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     OnOff.cluster_id,
-                    LevelControlMoveArgumentsCache,
+                    LevelControl.cluster_id,
                     Ota.cluster_id,
                     Color.cluster_id,
                     LightLink.cluster_id,
@@ -115,13 +113,12 @@ class IcasaKPD18S(CustomDevice):
             COMMAND: COMMAND_MOVE_ON_OFF,
             ENDPOINT_ID: 1,
             CLUSTER_ID: 8,
-            PARAMS: {"move_mode": 0, "rate": 50},
+            ARGS: [0, 50],
         },
         (LONG_RELEASE, DIM_UP): {
             COMMAND: COMMAND_STOP,
             ENDPOINT_ID: 1,
             CLUSTER_ID: 8,
-            PARAMS: {"move_mode": 0, "rate": 50},
         },
         (SHORT_PRESS, TURN_OFF): {
             COMMAND: COMMAND_OFF,
@@ -132,84 +129,83 @@ class IcasaKPD18S(CustomDevice):
             COMMAND: COMMAND_MOVE_ON_OFF,
             ENDPOINT_ID: 1,
             CLUSTER_ID: 8,
-            PARAMS: {"move_mode": 1, "rate": 50},
+            ARGS: [1, 50],
         },
         (LONG_RELEASE, DIM_DOWN): {
             COMMAND: COMMAND_STOP,
             ENDPOINT_ID: 1,
             CLUSTER_ID: 8,
-            PARAMS: {"move_mode": 1, "rate": 50},
         },
         (SHORT_PRESS, BUTTON_1): {
             COMMAND: COMMAND_RECALL,
             ENDPOINT_ID: 1,
             CLUSTER_ID: 5,
-            PARAMS: {"group_id": 0, "scene_id": 1},
+            ARGS: [0, 1],
         },
         (SHORT_PRESS, BUTTON_2): {
             COMMAND: COMMAND_RECALL,
             ENDPOINT_ID: 1,
             CLUSTER_ID: 5,
-            PARAMS: {"group_id": 0, "scene_id": 2},
+            ARGS: [0, 2],
         },
         (SHORT_PRESS, BUTTON_3): {
             COMMAND: COMMAND_RECALL,
             ENDPOINT_ID: 1,
             CLUSTER_ID: 5,
-            PARAMS: {"group_id": 0, "scene_id": 3},
+            ARGS: [0, 3],
         },
         (SHORT_PRESS, BUTTON_4): {
             COMMAND: COMMAND_RECALL,
             ENDPOINT_ID: 1,
             CLUSTER_ID: 5,
-            PARAMS: {"group_id": 0, "scene_id": 4},
+            ARGS: [0, 4],
         },
         (SHORT_PRESS, BUTTON_5): {
             COMMAND: COMMAND_RECALL,
             ENDPOINT_ID: 1,
             CLUSTER_ID: 5,
-            PARAMS: {"group_id": 0, "scene_id": 5},
+            ARGS: [0, 5],
         },
         (SHORT_PRESS, BUTTON_6): {
-            COMMAND: COMMAND_RECALL,
+            COMMAND: COMMAND_STORE,
             ENDPOINT_ID: 1,
             CLUSTER_ID: 5,
-            PARAMS: {"group_id": 0, "scene_id": 6},
+            ARGS: [0, 6],
         },
         (LONG_PRESS, BUTTON_1): {
             COMMAND: COMMAND_STORE,
             ENDPOINT_ID: 1,
             CLUSTER_ID: 5,
-            PARAMS: {"group_id": 0, "scene_id": 1},
+            ARGS: [0, 1],
         },
         (LONG_PRESS, BUTTON_2): {
             COMMAND: COMMAND_STORE,
             ENDPOINT_ID: 1,
             CLUSTER_ID: 5,
-            PARAMS: {"group_id": 0, "scene_id": 2},
+            ARGS: [0, 2],
         },
         (LONG_PRESS, BUTTON_3): {
             COMMAND: COMMAND_STORE,
             ENDPOINT_ID: 1,
             CLUSTER_ID: 5,
-            PARAMS: {"group_id": 0, "scene_id": 3},
+            ARGS: [0, 3],
         },
         (LONG_PRESS, BUTTON_4): {
             COMMAND: COMMAND_STORE,
             ENDPOINT_ID: 1,
             CLUSTER_ID: 5,
-            PARAMS: {"group_id": 0, "scene_id": 4},
+            ARGS: [0, 4],
         },
         (LONG_PRESS, BUTTON_5): {
             COMMAND: COMMAND_STORE,
             ENDPOINT_ID: 1,
             CLUSTER_ID: 5,
-            PARAMS: {"group_id": 0, "scene_id": 5},
+            ARGS: [0, 5],
         },
         (LONG_PRESS, BUTTON_6): {
             COMMAND: COMMAND_STORE,
             ENDPOINT_ID: 1,
             CLUSTER_ID: 5,
-            PARAMS: {"group_id": 0, "scene_id": 6},
+            ARGS: [0, 6],
         },
     }

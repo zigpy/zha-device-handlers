@@ -15,8 +15,8 @@ from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.lightlink import LightLink
 
-from zhaquirks import LevelControlMoveArgumentsCache
 from zhaquirks.const import (
+    ARGS,
     CLUSTER_ID,
     COMMAND,
     COMMAND_MOVE_ON_OFF,
@@ -33,7 +33,6 @@ from zhaquirks.const import (
     LONG_RELEASE,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
-    PARAMS,
     PROFILE_ID,
     SHORT_PRESS,
     TURN_OFF,
@@ -89,7 +88,7 @@ class IcasaKPD12(CustomDevice):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     OnOff.cluster_id,
-                    LevelControlMoveArgumentsCache,
+                    LevelControl.cluster_id,
                     Ota.cluster_id,
                     Color.cluster_id,
                     LightLink.cluster_id,
@@ -108,13 +107,12 @@ class IcasaKPD12(CustomDevice):
             COMMAND: COMMAND_MOVE_ON_OFF,
             ENDPOINT_ID: 1,
             CLUSTER_ID: 8,
-            PARAMS: {"move_mode": 0, "rate": 50},
+            ARGS: [0, 50],
         },
         (LONG_RELEASE, DIM_UP): {
             COMMAND: COMMAND_STOP,
             ENDPOINT_ID: 1,
             CLUSTER_ID: 8,
-            PARAMS: {"move_mode": 0, "rate": 50},
         },
         (SHORT_PRESS, TURN_OFF): {
             COMMAND: COMMAND_OFF,
@@ -125,12 +123,12 @@ class IcasaKPD12(CustomDevice):
             COMMAND: COMMAND_MOVE_ON_OFF,
             ENDPOINT_ID: 1,
             CLUSTER_ID: 8,
-            PARAMS: {"move_mode": 1, "rate": 50},
+            ARGS: [1, 50],
         },
         (LONG_RELEASE, DIM_DOWN): {
             COMMAND: COMMAND_STOP,
             ENDPOINT_ID: 1,
             CLUSTER_ID: 8,
-            PARAMS: {"move_mode": 1, "rate": 50},
+            ARGS: [1, 50],
         },
     }
