@@ -85,89 +85,69 @@ class TuyaRelativeHumidity(RelativeHumidity, TuyaLocalCluster):
 class TuyaMmwRadarSensitivity(TuyaAttributesCluster, AnalogOutput):
     """AnalogOutput cluster for sensitivity."""
 
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self._update_attribute(self.AttributeDefs.description.id, "sensitivity")
-        self._update_attribute(self.AttributeDefs.min_present_value.id, 1)
-        self._update_attribute(self.AttributeDefs.max_present_value.id, 9)
-        self._update_attribute(self.AttributeDefs.resolution.id, 1)
+    _CONSTANT_ATTRIBUTES = {
+        AnalogOutput.AttributeDefs.description.id: "sensitivity",
+        AnalogOutput.AttributeDefs.min_present_value.id: 1,
+        AnalogOutput.AttributeDefs.max_present_value.id: 9,
+        AnalogOutput.AttributeDefs.resolution.id: 1,
+    }
 
 
 class TuyaMmwRadarMinRange(TuyaAttributesCluster, AnalogOutput):
     """AnalogOutput cluster for min range."""
 
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self._update_attribute(self.AttributeDefs.description.id, "min_range")
-        self._update_attribute(self.AttributeDefs.min_present_value.id, 0)
-        self._update_attribute(self.AttributeDefs.max_present_value.id, 950)
-        self._update_attribute(self.AttributeDefs.resolution.id, 10)
-        self._update_attribute(
-            self.AttributeDefs.engineering_units.id, 118
-        )  # 31: meters
+    _CONSTANT_ATTRIBUTES = {
+        AnalogOutput.AttributeDefs.description.id: "min_range",
+        AnalogOutput.AttributeDefs.min_present_value.id: 0,
+        AnalogOutput.AttributeDefs.max_present_value.id: 950,
+        AnalogOutput.AttributeDefs.resolution.id: 10,
+        AnalogOutput.AttributeDefs.engineering_units.id: 118,  # 31: meters
+    }
 
 
 class TuyaMmwRadarMaxRange(TuyaAttributesCluster, AnalogOutput):
     """AnalogOutput cluster for max range."""
 
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self._update_attribute(self.AttributeDefs.description.id, "max_range")
-        self._update_attribute(self.AttributeDefs.min_present_value.id, 10)
-        self._update_attribute(self.AttributeDefs.max_present_value.id, 950)
-        self._update_attribute(self.AttributeDefs.resolution.id, 10)
-        self._update_attribute(
-            self.AttributeDefs.engineering_units.id, 118
-        )  # 31: meters
+    _CONSTANT_ATTRIBUTES = {
+        AnalogOutput.AttributeDefs.description.id: "max_range",
+        AnalogOutput.AttributeDefs.min_present_value.id: 10,
+        AnalogOutput.AttributeDefs.max_present_value.id: 950,
+        AnalogOutput.AttributeDefs.resolution.id: 10,
+        AnalogOutput.AttributeDefs.engineering_units.id: 118,  # 31: meters
+    }
 
 
 class TuyaMmwRadarDetectionDelay(TuyaAttributesCluster, AnalogOutput):
     """AnalogOutput cluster for detection delay."""
 
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self._update_attribute(
-            self.AttributeDefs.description.id, "detection_delay"
-        )
-        self._update_attribute(self.AttributeDefs.min_present_value.id, 000)
-        self._update_attribute(self.AttributeDefs.max_present_value.id, 20000)
-        self._update_attribute(self.AttributeDefs.resolution.id, 100)
-        self._update_attribute(
-            self.AttributeDefs.engineering_units.id, 159
-        )  # 73: seconds
+    _CONSTANT_ATTRIBUTES = {
+        AnalogOutput.AttributeDefs.description.id: "detection_delay",
+        AnalogOutput.AttributeDefs.min_present_value.id: 000,
+        AnalogOutput.AttributeDefs.max_present_value.id: 20000,
+        AnalogOutput.AttributeDefs.resolution.id: 100,
+        AnalogOutput.AttributeDefs.engineering_units.id: 159,  # 73: seconds
+    }
 
 
 class TuyaMmwRadarFadingTime(TuyaAttributesCluster, AnalogOutput):
     """AnalogOutput cluster for fading time."""
 
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self._update_attribute(self.AttributeDefs.description.id, "fading_time")
-        self._update_attribute(self.AttributeDefs.min_present_value.id, 2000)
-        self._update_attribute(self.AttributeDefs.max_present_value.id, 200000)
-        self._update_attribute(self.AttributeDefs.resolution.id, 1000)
-        self._update_attribute(
-            self.AttributeDefs.engineering_units.id, 159
-        )  # 73: seconds
+    _CONSTANT_ATTRIBUTES = {
+        AnalogOutput.AttributeDefs.description.id: "fading_time",
+        AnalogOutput.AttributeDefs.min_present_value.id: 2000,
+        AnalogOutput.AttributeDefs.max_present_value.id: 200000,
+        AnalogOutput.AttributeDefs.resolution.id: 1000,
+        AnalogOutput.AttributeDefs.engineering_units.id: 159,  # 73: seconds
+    }
 
 
 class TuyaMmwRadarTargetDistance(TuyaAttributesCluster, AnalogInput):
     """AnalogInput cluster for target distance."""
 
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self._update_attribute(
-            self.AttributeDefs.description.id, "target_distance"
-        )
-        self._update_attribute(
-            self.AttributeDefs.engineering_units.id, 118
-        )  # 31: meters
+    _CONSTANT_ATTRIBUTES = {
+        AnalogOutput.AttributeDefs.description.id: "target_distance",
+        AnalogOutput.AttributeDefs.engineering_units.id: 118,  # 31: meters
+    }
 
 
 class NeoBatteryLevel(t.enum8):
