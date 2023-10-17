@@ -45,17 +45,18 @@ class XiaomiAqaraDriverE1(XiaomiAqaraE1Cluster):
 class WindowCoveringE1(CustomCluster, WindowCovering):
     """Xiaomi Window Covering cluster that inverts the motor direction if needed."""
 
-    def _update_attribute(self, attrid, value):
-        if attrid == WindowCovering.AttributeDefs.current_position_lift_percentage.id:
-            # TODO: improve this check? remove default? initialize? does the motor save this attr?
-            # TODO: should we do this in HA? (does it have a way now to invert motor?)
-            # TODO: should this always be reversed?
-            if (
-                self.get(WindowCovering.AttributeDefs.window_covering_mode.id, 0)
-                & WindowCovering.WindowCoveringMode.Motor_direction_reversed
-            ):
-                value = 100 - value
-        super()._update_attribute(attrid, value)
+    # TODO: commented out for now
+    # def _update_attribute(self, attrid, value):
+    #     if attrid == WindowCovering.AttributeDefs.current_position_lift_percentage.id:
+    #         # TODO: improve this check? remove default? initialize? does the motor save this attr?
+    #         # TODO: should we do this in HA? (does it have a way now to invert motor?)
+    #         # TODO: should this always be reversed?
+    #         if (
+    #             self.get(WindowCovering.AttributeDefs.window_covering_mode.id, 0)
+    #             & WindowCovering.WindowCoveringMode.Motor_direction_reversed
+    #         ):
+    #             value = 100 - value
+    #     super()._update_attribute(attrid, value)
 
     async def command(
         self,
