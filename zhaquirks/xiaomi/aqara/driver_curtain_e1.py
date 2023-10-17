@@ -11,7 +11,7 @@ from zigpy.zcl.clusters.general import Basic, Identify, Ota, PowerConfiguration,
 from zigpy.zcl.clusters.measurement import IlluminanceMeasurement
 from zigpy.zdo.types import NodeDescriptor
 
-from zhaquirks import CustomCluster
+from zhaquirks import CustomCluster, LocalDataCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -61,6 +61,21 @@ class XiaomiAqaraDriverE1(XiaomiAqaraE1Cluster):
                 value * 50,
             )
         super()._update_attribute(attrid, value)
+
+
+# TODO: basically duplicated from motion_ac02.py
+class LocalIlluminanceMeasurementCluster(
+    LocalDataCluster, IlluminanceMeasurementCluster
+):
+    """Local illuminance measurement cluster."""
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        if self.AttributeDefs.measured_value.id not in self._attr_cache:
+            # TODO: check if this is needed
+            # put a default value so the sensor is created
+            self._update_attribute(self.AttributeDefs.measured_value.id, 0)
 
 
 class WindowCoveringE1(CustomCluster, WindowCovering):
@@ -152,7 +167,6 @@ class DriverE1(XiaomiCustomDevice):
         },
     }
     replacement = {
-        # TODO: verify if this is correct
         NODE_DESCRIPTOR: NodeDescriptor(
             0x02, 0x40, 0x80, 0x115F, 0x7F, 0x0064, 0x2C00, 0x0064, 0x00
         ),
@@ -166,7 +180,7 @@ class DriverE1(XiaomiCustomDevice):
                     Identify.cluster_id,
                     Time.cluster_id,
                     WindowCoveringE1,
-                    IlluminanceMeasurementCluster,
+                    LocalIlluminanceMeasurementCluster,
                     XiaomiAqaraDriverE1,
                 ],
                 OUTPUT_CLUSTERS: [
