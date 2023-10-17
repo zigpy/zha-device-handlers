@@ -8,6 +8,7 @@ from zigpy.profiles import zha
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PowerConfiguration, Time
+from zigpy.zcl.clusters.measurement import IlluminanceMeasurement
 from zigpy.zdo.types import NodeDescriptor
 
 from zhaquirks import CustomCluster
@@ -22,6 +23,7 @@ from zhaquirks.const import (
 )
 from zhaquirks.xiaomi import (
     BasicCluster,
+    IlluminanceMeasurementCluster,
     LUMI,
     XiaomiAqaraE1Cluster,
     XiaomiCluster,
@@ -51,6 +53,14 @@ class XiaomiAqaraDriverE1(XiaomiAqaraE1Cluster):
             LIGHT_LEVEL: ("light_level", t.uint8_t, True),
         }
     )
+
+    def _update_attribute(self, attrid, value):
+        if attrid == LIGHT_LEVEL:
+            self.endpoint.illuminance.update_attribute(
+                IlluminanceMeasurement.AttributeDefs.measured_value.id,
+                value * 50,
+            )
+        super()._update_attribute(attrid, value)
 
 
 class WindowCoveringE1(CustomCluster, WindowCovering):
@@ -156,6 +166,7 @@ class DriverE1(XiaomiCustomDevice):
                     Identify.cluster_id,
                     Time.cluster_id,
                     WindowCoveringE1,
+                    IlluminanceMeasurementCluster,
                     XiaomiAqaraDriverE1,
                 ],
                 OUTPUT_CLUSTERS: [
