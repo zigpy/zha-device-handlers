@@ -22,9 +22,9 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.xiaomi import (
+    LUMI,
     BasicCluster,
     IlluminanceMeasurementCluster,
-    LUMI,
     XiaomiAqaraE1Cluster,
     XiaomiCluster,
     XiaomiCustomDevice,
