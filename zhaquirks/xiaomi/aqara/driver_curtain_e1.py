@@ -29,6 +29,13 @@ from zhaquirks.xiaomi import (
     XiaomiPowerConfiguration,
 )
 
+HAND_OPEN = 0x0401
+POSITIONS_STORED = 0x0402
+STORE_POSITION = 0x0407
+HOOKS_LOCK = 0x0427
+HOOKS_STATE = 0x0428
+LIGHT_LEVEL = 0x0429
+
 
 class XiaomiAqaraDriverE1(XiaomiAqaraE1Cluster):
     """Xiaomi mfg cluster implementation specific for E1 Driver."""
@@ -36,8 +43,12 @@ class XiaomiAqaraDriverE1(XiaomiAqaraE1Cluster):
     attributes = XiaomiCluster.attributes.copy()
     attributes.update(
         {
-            0x0402: ("positions_stored", t.Bool, True),
-            0x0407: ("store_position", t.uint8_t, True),
+            HAND_OPEN: ("hand_open", t.Bool, True),
+            POSITIONS_STORED: ("positions_stored", t.Bool, True),
+            STORE_POSITION: ("store_position", t.uint8_t, True),
+            HOOKS_LOCK: ("hooks_lock", t.uint8_t, True),
+            HOOKS_STATE: ("hooks_state", t.uint8_t, True),
+            LIGHT_LEVEL: ("light_level", t.uint8_t, True),
         }
     )
 
