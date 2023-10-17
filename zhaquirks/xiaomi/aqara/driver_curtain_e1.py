@@ -152,10 +152,10 @@ class DriverE1(XiaomiCustomDevice):
         },
     }
     replacement = {
-        # TODO: needed?
-        # NODE_DESCRIPTOR: NodeDescriptor(
-        #     0x02, 0x40, 0x80, 0x115F, 0x7F, 0x0064, 0x2C00, 0x0064, 0x00
-        # ),
+        # TODO: verify if this is correct
+        NODE_DESCRIPTOR: NodeDescriptor(
+            0x02, 0x40, 0x80, 0x115F, 0x7F, 0x0064, 0x2C00, 0x0064, 0x00
+        ),
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
