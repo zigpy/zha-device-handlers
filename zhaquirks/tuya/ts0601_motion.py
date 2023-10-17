@@ -612,7 +612,7 @@ class TuyaMmwRadarOccupancyVariant1(CustomDevice):
             },
         },
     }
-    
+
     replacement = {
         ENDPOINTS: {
             1: {
