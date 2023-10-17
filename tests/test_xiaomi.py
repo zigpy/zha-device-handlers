@@ -11,6 +11,7 @@ from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
     AnalogInput,
     DeviceTemperature,
+    OnOff,
     PowerConfiguration,
 )
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
@@ -45,6 +46,7 @@ from zhaquirks.xiaomi import (
     XIAOMI_AQARA_ATTRIBUTE_E1,
     XIAOMI_NODE_DESC,
     BasicCluster,
+    XiaomiAqaraE1Cluster,
     XiaomiCustomDevice,
     XiaomiQuickInitDevice,
     handle_quick_init,
@@ -65,6 +67,7 @@ from zhaquirks.xiaomi.aqara.feeder_acn001 import (
     AqaraFeederAcn001,
     OppleCluster,
 )
+import zhaquirks.xiaomi.aqara.magnet_agl02
 import zhaquirks.xiaomi.aqara.motion_ac02
 import zhaquirks.xiaomi.aqara.motion_aq2
 import zhaquirks.xiaomi.aqara.motion_aq2b
@@ -1283,3 +1286,79 @@ async def test_xiaomi_e1_roller_curtain_battery(zigpy_device_from_quirk, quirk):
     assert power_listener.attribute_updates[0][1] == 28.9
     assert power_listener.attribute_updates[1][0] == zcl_power_percent_id
     assert power_listener.attribute_updates[1][1] == 120
+
+
+@pytest.mark.parametrize(
+    "raw_report, expected_results",
+    (
+        [
+            "1C5F11670AF700412E0121B00C0328190421A8130521090006240D0000000008211E010A2100000C20016410016620036720016821A800",
+            [
+                32.5,  # battery voltage
+                200,  # battery percent * 2
+            ],
+        ],
+    ),
+)
+async def test_xiaomi_t1_door_sensor(
+    zigpy_device_from_quirk, raw_report, expected_results
+):
+    """Test Aqara T1 door sensor."""
+    raw_report = bytes.fromhex(raw_report)
+
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.magnet_agl02.MagnetT1)
+
+    on_off_cluster = device.endpoints[1].out_clusters[OnOff.cluster_id]
+    on_off_listener = ClusterListener(on_off_cluster)
+
+    # check open state
+    device.handle_message(
+        260,
+        on_off_cluster.cluster_id,
+        on_off_cluster.endpoint.endpoint_id,
+        on_off_cluster.endpoint.endpoint_id,
+        bytes.fromhex("185D0A00001001"),
+    )
+
+    assert len(on_off_listener.attribute_updates) == 1
+    assert on_off_listener.attribute_updates[0][0] == OnOff.AttributeDefs.on_off.id
+    assert on_off_listener.attribute_updates[0][1] == t.Bool.true
+
+    # check closed state
+    device.handle_message(
+        260,
+        on_off_cluster.cluster_id,
+        on_off_cluster.endpoint.endpoint_id,
+        on_off_cluster.endpoint.endpoint_id,
+        bytes.fromhex("18640A00001000"),
+    )
+
+    assert len(on_off_listener.attribute_updates) == 2
+    assert on_off_listener.attribute_updates[1][0] == OnOff.AttributeDefs.on_off.id
+    assert on_off_listener.attribute_updates[1][1] == t.Bool.false
+
+    opple_cluster = device.endpoints[1].in_clusters[XiaomiAqaraE1Cluster.cluster_id]
+    ClusterListener(opple_cluster)
+
+    power_cluster = device.endpoints[1].power
+    power_listener = ClusterListener(power_cluster)
+
+    zcl_power_voltage_id = PowerConfiguration.AttributeDefs.battery_voltage.id
+    zcl_power_percent_id = (
+        PowerConfiguration.AttributeDefs.battery_percentage_remaining.id
+    )
+
+    # check Xiaomi attribute report
+    device.handle_message(
+        260,
+        opple_cluster.cluster_id,
+        opple_cluster.endpoint.endpoint_id,
+        opple_cluster.endpoint.endpoint_id,
+        raw_report,
+    )
+
+    assert len(power_listener.attribute_updates) == 2
+    assert power_listener.attribute_updates[0][0] == zcl_power_voltage_id
+    assert power_listener.attribute_updates[0][1] == expected_results[0]
+    assert power_listener.attribute_updates[1][0] == zcl_power_percent_id
+    assert power_listener.attribute_updates[1][1] == expected_results[1]

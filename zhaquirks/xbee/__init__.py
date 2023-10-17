@@ -629,6 +629,8 @@ class XBeeCommon(CustomDevice):
 
     def deserialize(self, endpoint_id, cluster_id, data):
         """Deserialize."""
+        if endpoint_id == 0:
+            return super().deserialize(endpoint_id, cluster_id, data)
         tsn = self._application.get_sequence()
         command_id = 0x0000
         hdr = foundation.ZCLHeader.cluster(tsn, command_id)
