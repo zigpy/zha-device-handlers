@@ -766,6 +766,7 @@ class TuyaMmwRadarOccupancyVariant3(CustomDevice):
         #  input_clusters=[0, 4, 5, 61184], output_clusters=[25, 10])
         MODELS_INFO: [
             ("_TZE204_sxm7l9xa", "TS0601"),
+            ("_TZE204_e5m9c5hl", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
