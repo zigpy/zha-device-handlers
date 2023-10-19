@@ -202,8 +202,8 @@ class DanfossThermostatCluster(CustomizedStandardCluster, Thermostat):
             id=0x4032, type=t.Bool, access="rw", is_manufacturer_specific=True
         )  # non-configurable reporting
         load_room_mean = ZCLAttributeDef(
-            id=0x4040, type=t.int16s, access="w", is_manufacturer_specific=True
-        )  # non-configurable reporting
+            id=0x4040, type=t.int16s, access="rw", is_manufacturer_specific=True
+        )  # non-configurable reporting (according to the documentation, you cannot read it, but it works anyway)
         load_estimate = ZCLAttributeDef(
             id=0x404A, type=t.int16s, access="rp", is_manufacturer_specific=True
         )
@@ -319,10 +319,16 @@ class DanfossDiagnosticCluster(CustomizedStandardCluster, Diagnostic):
         )
 
         data_logger = ZCLAttributeDef(
-            id=0x4020, type=t.LimitedLVBytes(50), access="rpw", is_manufacturer_specific=True
+            id=0x4020,
+            type=t.LimitedLVBytes(50),
+            access="rpw",
+            is_manufacturer_specific=True,
         )
         control_diagnostics = ZCLAttributeDef(
-            id=0x4021, type=t.LimitedLVBytes(30), access="rp", is_manufacturer_specific=True
+            id=0x4021,
+            type=t.LimitedLVBytes(30),
+            access="rp",
+            is_manufacturer_specific=True,
         )
         control_diagnostics_frequency = ZCLAttributeDef(
             id=0x4022, type=t.uint16_t, access="rw", is_manufacturer_specific=True
