@@ -69,8 +69,6 @@ _LOGGER = logging.getLogger(__name__)
 class VibrationAQ1(XiaomiQuickInitDevice):
     """Xiaomi aqara smart motion sensor device."""
 
-    quirk_id = "XiaomiVibrationAQ1"
-
     manufacturer_id_override = 0x115F
 
     def __init__(self, *args, **kwargs):
