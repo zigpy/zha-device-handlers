@@ -229,13 +229,6 @@ class DanfossThermostatCluster(CustomizedStandardCluster, Thermostat):
             id=0x4050, type=t.uint32_t, access="rp", is_manufacturer_specific=True
         )
 
-        programing_oper_mode = ZCLAttributeDef(
-            id=0x0025,
-            type=DanfossOperationModeEnum,
-            access="rpw",
-            is_manufacturer_specific=True,
-        )  # Danfoss deviated from the spec
-
     async def write_attributes(self, attributes, manufacturer=None):
         """There are 2 types of setpoint changes:
             Fast and Slow
