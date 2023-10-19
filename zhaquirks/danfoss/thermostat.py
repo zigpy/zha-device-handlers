@@ -71,17 +71,6 @@ SYSTEM_MODE_THERM_OFF_VAL = 0x00
 SYSTEM_MODE_THERM_ON_VAL = 0x04
 
 
-class DanfossOperationModeEnum(t.bitmap8):
-    """Nonstandard implementation of Programming Operation Mode from Danfoss.
-    The official specification still works: 0x0 or 0x1, but Danfoss added a preheat bit
-    """
-
-    Manual = 0b00000000
-    Schedule = 0b00000001
-    Manual_Preheat = 0b00000010
-    Schedule_Preheat = 0b00000011
-
-
 class CustomizedStandardCluster(CustomCluster):
     """Danfoss customized standard clusters by adding custom attributes
     Danfoss doesn't allow standard attributes when manufacturer specific is requested
