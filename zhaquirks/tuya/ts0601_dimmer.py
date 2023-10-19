@@ -93,6 +93,7 @@ class TuyaDoubleSwitchDimmer(TuyaDimmerSwitch):
     signature = {
         MODELS_INFO: [
             ("_TZE200_e3oitdyu", "TS0601"),
+            ("_TZE204_zenj4lxv", "TS0601"),
         ],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=0x0051
