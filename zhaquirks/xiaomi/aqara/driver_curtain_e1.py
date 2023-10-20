@@ -187,7 +187,6 @@ class DriverE1(XiaomiCustomDevice):
                     Identify.cluster_id,
                     Time.cluster_id,
                     Ota.cluster_id,
-                    # XiaomiAqaraDriverE1, # TODO: keep in OUTPUT too?
                 ],
             }
         },
