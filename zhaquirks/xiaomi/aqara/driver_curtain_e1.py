@@ -110,8 +110,6 @@ class WindowCoveringE1(CustomCluster, WindowCovering):
         elif command_id == WindowCovering.ServerCommandDefs.down_close.id:
             command_id = WindowCovering.ServerCommandDefs.go_to_lift_percentage.id
             args = (100,)  # TODO: inverted?
-        # elif command_id == WindowCovering.ServerCommandDefs.go_to_lift_percentage.id:
-        #     args = (100 - args[0],)  # TODO: needed to invert here? (depending on attr?)
 
         return await super().command(
             command_id,
