@@ -26,7 +26,6 @@ from zhaquirks.xiaomi import (
     BasicCluster,
     IlluminanceMeasurementCluster,
     XiaomiAqaraE1Cluster,
-    XiaomiCluster,
     XiaomiCustomDevice,
     XiaomiPowerConfiguration,
 )
@@ -42,7 +41,7 @@ LIGHT_LEVEL = 0x0429
 class XiaomiAqaraDriverE1(XiaomiAqaraE1Cluster):
     """Xiaomi mfg cluster implementation specific for E1 Driver."""
 
-    attributes = XiaomiCluster.attributes.copy()
+    attributes = XiaomiAqaraE1Cluster.attributes.copy()
     attributes.update(
         {
             HAND_OPEN: ("hand_open", t.Bool, True),
