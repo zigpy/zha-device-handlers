@@ -1272,6 +1272,7 @@ async def test_gas_heating_state_report(zigpy_device_from_quirk, quirk):
     assert thermostat_listener.attribute_updates[1][0] == 0x0012  # TARGET
     assert thermostat_listener.attribute_updates[1][1] == 2100
 
+
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_electric_heating.MoesBHT,))
 async def test_eheating_state_report(zigpy_device_from_quirk, quirk):
     """Test thermostatic valves standard reporting from incoming commands."""
