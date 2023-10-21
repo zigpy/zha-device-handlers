@@ -65,7 +65,7 @@ class XiaomiAqaraDriverE1(XiaomiAqaraE1Cluster):
 
 
 class WindowCoveringE1(CustomCluster, WindowCovering):
-    """Xiaomi Window Covering cluster that inverts the motor direction if needed."""
+    """Xiaomi Window Covering cluster that maps open/close to lift percentage."""
 
     async def command(
         self,
