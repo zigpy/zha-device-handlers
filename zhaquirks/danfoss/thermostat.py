@@ -367,6 +367,7 @@ class DanfossThermostat(CustomDevice):
             (DANFOSS, "eTRV0100"),
             (DANFOSS, "eTRV0101"),
             (DANFOSS, "eTRV0103"),
+            (DANFOSS, "eTRV0120"),
             (POPP, "eT093WRO"),
             (POPP, "eT093WRG"),
             (HIVE, "TRV001"),
