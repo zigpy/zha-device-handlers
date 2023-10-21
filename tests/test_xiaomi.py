@@ -1404,34 +1404,3 @@ async def test_xiaomi_e1_driver_commands(
         assert request_mock.call_args[0][1] == command_id
         if value is not None:
             assert request_mock.call_args[0][3] == value
-
-
-# @pytest.mark.parametrize(
-#     "set_percentage, expected_percentage, motor_mode",
-#     [
-#         (40, 40, None),
-#         (40, 40, 0),
-#         (40, 60, WindowCovering.WindowCoveringMode.Motor_direction_reversed),
-#     ],
-# )
-# async def test_xiaomi_e1_driver_inverted(
-#     zigpy_device_from_quirk, set_percentage, expected_percentage, motor_mode
-# ):
-#     """Test Aqara E1 driver lift percentage gets inverted depending on motor mode."""
-#     device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.driver_curtain_e1.DriverE1)
-#     window_covering_cluster = device.endpoints[1].window_covering
-#
-#     # set motor mode
-#     if motor_mode is not None:
-#         motor_mode_id = WindowCovering.AttributeDefs.window_covering_mode.id
-#         window_covering_cluster.update_attribute(motor_mode_id, motor_mode)
-#         assert window_covering_cluster.get(motor_mode_id) == motor_mode
-#
-#     window_covering_listener = ClusterListener(window_covering_cluster)
-#     window_lift_id = WindowCovering.AttributeDefs.current_position_lift_percentage.id
-#
-#     # fake lift percentage attribute report
-#     window_covering_cluster.update_attribute(window_lift_id, set_percentage)
-#     assert len(window_covering_listener.attribute_updates) == 1
-#     assert window_covering_listener.attribute_updates[0][0] == window_lift_id
-#     assert window_covering_listener.attribute_updates[0][1] == expected_percentage
