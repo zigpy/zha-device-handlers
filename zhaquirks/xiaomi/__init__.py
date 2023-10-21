@@ -447,6 +447,7 @@ class XiaomiAqaraE1Cluster(XiaomiCluster, ManufacturerSpecificCluster):
     """Xiaomi mfg cluster implementation."""
 
     cluster_id = 0xFCC0
+    ep_attribute = "opple_cluster"
 
 
 class BinaryOutputInterlock(CustomCluster, BinaryOutput):
