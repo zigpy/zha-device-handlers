@@ -33,7 +33,6 @@ MOTION_SENSITIVITY = 0x010C
 class OppleCluster(XiaomiAqaraE1Cluster):
     """Opple cluster."""
 
-    ep_attribute = "opple_cluster"
     attributes = {
         DETECTION_INTERVAL: ("detection_interval", types.uint8_t, True),
         MOTION_SENSITIVITY: ("motion_sensitivity", types.uint8_t, True),

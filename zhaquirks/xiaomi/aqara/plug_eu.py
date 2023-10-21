@@ -60,7 +60,6 @@ async def remove_from_ep(dev: zigpy.device.Device) -> None:
 class OppleCluster(XiaomiAqaraE1Cluster):
     """Opple cluster."""
 
-    ep_attribute = "opple_cluster"
     attributes = {
         0x0009: ("mode", types.uint8_t, True),
         0x0201: ("power_outage_memory", types.Bool, True),

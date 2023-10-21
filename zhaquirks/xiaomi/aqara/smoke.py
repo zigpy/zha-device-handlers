@@ -50,7 +50,6 @@ SMOKE_DENSITY_DBM_MAP = {
 class OppleCluster(XiaomiAqaraE1Cluster):
     """Opple cluster."""
 
-    ep_attribute = "opple_cluster"
     attributes = {
         BUZZER_MANUAL_MUTE: ("buzzer_manual_mute", types.uint8_t, True),
         SELF_TEST: ("self_test", types.Bool, True),
