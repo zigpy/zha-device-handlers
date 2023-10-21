@@ -11,7 +11,7 @@ from zigpy.zcl.clusters.general import Basic, Identify, Ota, PowerConfiguration,
 from zigpy.zcl.clusters.measurement import IlluminanceMeasurement
 from zigpy.zdo.types import NodeDescriptor
 
-from zhaquirks import CustomCluster, LocalDataCluster
+from zhaquirks import CustomCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -24,10 +24,10 @@ from zhaquirks.const import (
 from zhaquirks.xiaomi import (
     LUMI,
     BasicCluster,
-    IlluminanceMeasurementCluster,
+    LocalIlluminanceMeasurementCluster,
     XiaomiAqaraE1Cluster,
     XiaomiCustomDevice,
-    XiaomiPowerConfiguration,
+    XiaomiPowerConfigurationPercent,
 )
 
 HAND_OPEN = 0x0401
@@ -39,7 +39,7 @@ LIGHT_LEVEL = 0x0429
 
 
 class XiaomiAqaraDriverE1(XiaomiAqaraE1Cluster):
-    """Xiaomi mfg cluster implementation specific for E1 Driver."""
+    """Xiaomi Aqara Curtain Driver E1 cluster."""
 
     attributes = XiaomiAqaraE1Cluster.attributes.copy()
     attributes.update(
@@ -55,26 +55,13 @@ class XiaomiAqaraDriverE1(XiaomiAqaraE1Cluster):
 
     def _update_attribute(self, attrid, value):
         if attrid == LIGHT_LEVEL:
+            # Light level value seems like it can be 0, 1, or 2.
+            # Multiply by 50 to map those values to later show: 1 lx, 50 lx, 100 lx.
             self.endpoint.illuminance.update_attribute(
                 IlluminanceMeasurement.AttributeDefs.measured_value.id,
                 value * 50,
             )
         super()._update_attribute(attrid, value)
-
-
-# TODO: basically duplicated from motion_ac02.py
-class LocalIlluminanceMeasurementCluster(
-    LocalDataCluster, IlluminanceMeasurementCluster
-):
-    """Local illuminance measurement cluster."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        if self.AttributeDefs.measured_value.id not in self._attr_cache:
-            # TODO: check if this is needed
-            # put a default value so the sensor is created
-            self._update_attribute(self.AttributeDefs.measured_value.id, 0)
 
 
 class WindowCoveringE1(CustomCluster, WindowCovering):
@@ -105,19 +92,6 @@ class WindowCoveringE1(CustomCluster, WindowCovering):
             tsn=tsn,
             **kwargs,
         )
-
-
-# TODO: check if cluster works
-# TODO: currently duplicated with roller_curtain_e1.py
-class PowerConfigurationDriverE1(XiaomiPowerConfiguration):
-    """Power cluster which ignores Xiaomi voltage reports."""
-
-    def _update_battery_percentage(self, voltage_mv: int) -> None:
-        """Ignore Xiaomi voltage reports, so they're not used to calculate battery percentage."""
-        # This device sends battery percentage reports which are handled using a XiaomiCluster and
-        # the inherited XiaomiPowerConfiguration cluster.
-        # This device might also send Xiaomi battery reports, so we only want to use those for the voltage attribute,
-        # but not for the battery percentage. XiaomiPowerConfiguration.battery_reported() still updates the voltage.
 
 
 class DriverE1(XiaomiCustomDevice):
@@ -160,7 +134,7 @@ class DriverE1(XiaomiCustomDevice):
                 DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
                 INPUT_CLUSTERS: [
                     BasicCluster,
-                    PowerConfigurationDriverE1,
+                    XiaomiPowerConfigurationPercent,
                     Identify.cluster_id,
                     Time.cluster_id,
                     WindowCoveringE1,
