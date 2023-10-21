@@ -11,7 +11,9 @@ from zigpy.zcl import foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import (
     AnalogInput,
+    AnalogOutput,
     DeviceTemperature,
+    MultistateOutput,
     OnOff,
     PowerConfiguration,
 )
@@ -1447,4 +1449,64 @@ async def test_xiaomi_e1_driver_light_level(
             illuminance_listener.attribute_updates[0][1]
             == 10000 * math.log10(converted_level) + 1
         )
+    )
+
+
+@pytest.mark.parametrize(
+    "command, value",
+    [
+        (WindowCovering.ServerCommandDefs.up_open.id, 1),
+        (WindowCovering.ServerCommandDefs.down_close.id, 0),
+        (WindowCovering.ServerCommandDefs.stop.id, 2),
+    ],
+)
+async def test_xiaomi_e1_roller_commands_1(zigpy_device_from_quirk, command, value):
+    """Test Aqara E1 roller commands for basic movement functions using MultistateOutput Cluster."""
+    device = zigpy_device_from_quirk(
+        zhaquirks.xiaomi.aqara.roller_curtain_e1.RollerE1AQ
+    )
+
+    window_covering_cluster = device.endpoints[1].window_covering
+    multistate_cluster = device.endpoints[1].multistate_output
+    multistate_cluster._write_attributes = mock.AsyncMock(
+        return_value=(
+            [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)],
+        )
+    )
+    attr_id = MultistateOutput.AttributeDefs.present_value.id
+
+    # test command
+    await window_covering_cluster.command(command)
+    assert multistate_cluster._write_attributes.call_count == 1
+    assert multistate_cluster._write_attributes.call_args[0][0][0].attrid == attr_id
+    assert multistate_cluster._write_attributes.call_args[0][0][0].value.value == value
+
+
+@pytest.mark.parametrize(
+    "command, value",
+    [
+        (WindowCovering.ServerCommandDefs.go_to_lift_percentage.id, 60),
+    ],
+)
+async def test_xiaomi_e1_roller_commands_2(zigpy_device_from_quirk, command, value):
+    """Test Aqara E1 roller commands for go to lift percentage using AnalogOutput cluster."""
+    device = zigpy_device_from_quirk(
+        zhaquirks.xiaomi.aqara.roller_curtain_e1.RollerE1AQ
+    )
+
+    window_covering_cluster = device.endpoints[1].window_covering
+    analog_cluster = device.endpoints[1].analog_output
+    analog_cluster._write_attributes = mock.AsyncMock(
+        return_value=(
+            [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)],
+        )
+    )
+    attr_id = AnalogOutput.AttributeDefs.present_value.id
+
+    # test go to lift percentage command
+    await window_covering_cluster.go_to_lift_percentage(value)
+    assert analog_cluster._write_attributes.call_count == 1
+    assert analog_cluster._write_attributes.call_args[0][0][0].attrid == attr_id
+    assert (
+        analog_cluster._write_attributes.call_args[0][0][0].value.value == 100 - value
     )
