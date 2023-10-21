@@ -17,7 +17,6 @@ from zigpy.zcl.clusters.general import (
     Time,
 )
 
-from zhaquirks import Bus
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -40,13 +39,6 @@ _LOGGER = logging.getLogger(__name__)
 
 class Plug(XiaomiCustomDevice):
     """lumi.plug plug."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        self.voltage_bus = Bus()
-        self.consumption_bus = Bus()
-        self.power_bus = Bus()
-        super().__init__(*args, **kwargs)
 
     signature = {
         MODELS_INFO: [(LUMI, "lumi.plug")],

@@ -20,7 +20,6 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
 
-from zhaquirks import Bus
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -83,13 +82,6 @@ class OppleCluster(XiaomiAqaraE1Cluster):
 
 class PlugMMEU01(XiaomiCustomDevice):
     """lumi.plug.mmeu01 plug."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        self.voltage_bus = Bus()
-        self.consumption_bus = Bus()
-        self.power_bus = Bus()
-        super().__init__(*args, **kwargs)
 
     signature = {
         MODELS_INFO: [

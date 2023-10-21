@@ -1,7 +1,7 @@
 # ZHA Device Handlers For Home Assistant
 
 ![CI](https://github.com/zigpy/zha-device-handlers/workflows/CI/badge.svg?branch=dev)
-[![Coverage Status](https://codecov.io/gh/zigpy/zha-device-handlers/branch/dev/graph/badge.svg)](https://codecov.io/gh/zigpy/zha-device-handlers)
+[![Coverage Status](https://codecov.io/gh/zigpy/zha-device-handlers/branch/dev/graph/badge.svg)](https://app.codecov.io/gh/zigpy/zha-device-handlers/tree/dev)
 
 ZHA Device Handlers are custom quirks implementations for [Zigpy](https://github.com/zigpy/zigpy), the library that provides the [Zigbee](http://www.zigbee.org) support for the [ZHA](https://www.home-assistant.io/components/zha/) component in [Home Assistant](https://www.home-assistant.io).
 
@@ -13,31 +13,31 @@ Custom quirks implementations for zigpy implemented as ZHA Device Handlers are a
 
 ## Primer
 
-ZHA device handlers and it's provided Quirks allow Zigpy, ZHA and Home Assistant to work with non standard Zigbee devices. If you are reading this you may have a device that isn't working as expected. This can be the case for a number of reasons but in this guide we will cover the cases where functionality is provided by a device in a non specification compliant manner by the device manufacturer.
+ZHA device handlers and its provided Quirks allow Zigpy, ZHA and Home Assistant to work with non-standard Zigbee devices. If you are reading this you may have a device that isn't working as expected. This can be the case for a number of reasons but in this guide we will cover the cases where functionality is provided by a device in a non specification compliant manner by the device manufacturer.
 
 ## What are these specifications
 
 Reference official Zigbee specification documentation from Connectivity Standards Alliance (a.k.a. "CSA-IOT", formerly "Zigbee Alliance"):
 
-- Zigbee Protocol Specification (also known as "Zigbee Pro" specifications)
-  - [Zigbee Protocol Specification 2023 (also known as "Zigbee PRO 2023" or just Zigbee R23)](https://csa-iot.org/wp-content/uploads/2023/04/05-3474-23-csg-zigbee-specification-compressed.pdf)
-  - [Zigbee Protocol Specification 2017 (also known as "Zigbee PRO 2017" or just Zigbee R22)](https://csa-iot.org/wp-content/uploads/2022/01/docs-05-3474-22-0csg-zigbee-specification-1.pdf)
-  - [Zigbee Protocol Specification 2015 (also known as "Zigbee PRO 2015" or just Zigbee R21)](https://zigbeealliance.org/wp-content/uploads/2019/11/docs-05-3474-21-0csg-zigbee-specification.pdf)
 - Zigbee Cluster Library Specification
   - [Zigbee Cluster Library Specification R8 (Revision 8)](https://zigbeealliance.org/wp-content/uploads/2021/10/07-5123-08-Zigbee-Cluster-Library.pdf)
-  - [Zigbee Cluster Library Specification R7 (Revision 7)](https://github.com/Koenkk/zigbee-herdsman/blob/master/docs/Zigbee%20Cluster%20Library%20Specification%20v7.pdf)
+  - [Zigbee Cluster Library Specification R7 (Revision 7)](https://zigbeealliance.org/wp-content/uploads/2021/10/07-5123-07-ZigbeeClusterLibrary_Revision_7-1.pdf)
   - [Zigbee Cluster Library Specification R6 (Revision 6)](https://zigbeealliance.org/wp-content/uploads/2019/12/07-5123-06-zigbee-cluster-library-specification.pdf)
+- Zigbee Protocol Specification (also known as "Zigbee Pro" specifications)
+  - [Zigbee Protocol Specification 2023 (also known as "Zigbee PRO 2023" / Zigbee R23)](https://csa-iot.org/wp-content/uploads/2023/04/05-3474-23-csg-zigbee-specification-compressed.pdf)
+  - [Zigbee Protocol Specification 2017 (also known as "Zigbee PRO 2017" / Zigbee R22)](https://csa-iot.org/wp-content/uploads/2022/01/docs-05-3474-22-0csg-zigbee-specification-1.pdf)
+  - [Zigbee Protocol Specification 2015 (also known as "Zigbee PRO 2015" / Zigbee R21)](https://zigbeealliance.org/wp-content/uploads/2019/11/docs-05-3474-21-0csg-zigbee-specification.pdf)
 - Zigbee Device Specifications
-  - [Zigbee Base Device Behavior Specification (V1.0)](https://zigbeealliance.org/wp-content/uploads/2019/12/docs-13-0402-13-00zi-Base-Device-Behavior-Specification-2-1.pdf)
-  - [Zigbee Lighting & Occupancy Device Specification (V1.0)](https://zigbeealliance.org/wp-content/uploads/2019/11/docs-15-0014-05-0plo-Lighting-OccupancyDevice-Specification-V1.0.pdf)
-- ZigBee Green Power (ZGP "GreenPower" Profile) specifications
-  - [Zigbee PRO Green Power feature specification Basic functionality set (v 1.1.1)](https://csa-iot.org/wp-content/uploads/2022/01/docs-14-0563-18-batt-Green-Power-Basic-specification-v1.1.1.pdf)
-  - [Zigbee PRO Green Power feature Specification 1.0a (Revision 26)](https://zigbeealliance.org/wp-content/uploads/2019/11/docs-09-5499-26-batt-zigbee-green-power-specification.pdf)
-- ZigBee Smart Energy (ZSE / Zigbee SE "Smart Energy" Profile) specifications
+  - [Zigbee Base Device Behavior Specification (v1.0)](https://zigbeealliance.org/wp-content/uploads/2019/12/docs-13-0402-13-00zi-Base-Device-Behavior-Specification-2-1.pdf)
+  - [Zigbee Lighting & Occupancy Device Specification (v1.0)](https://zigbeealliance.org/wp-content/uploads/2019/11/docs-15-0014-05-0plo-Lighting-OccupancyDevice-Specification-V1.0.pdf)
+- Zigbee Green Power (ZGP "GreenPower" Profile) specifications
+  - [Zigbee PRO Green Power feature specification Basic functionality set (v1.1.1)](https://csa-iot.org/wp-content/uploads/2022/01/docs-14-0563-18-batt-Green-Power-Basic-specification-v1.1.1.pdf)
+  - [Zigbee PRO Green Power feature specification 1.0a (Revision 26)](https://zigbeealliance.org/wp-content/uploads/2019/11/docs-09-5499-26-batt-zigbee-green-power-specification.pdf)
+- Zigbee Smart Energy (ZSE / Zigbee SE "Smart Energy" Profile) specifications
   - Zigbee Smart Energy Standard 1.4
   - [ZigBee Smart Energy Standard (v1.2a)](https://zigbeealliance.org/wp-content/uploads/2019/11/docs-07-5356-19-0zse-zigbee-smart-energy-profile-specification.pdf)
 
-In additional you can also reference third-party and manufacturer specific documentation:
+Additionally, see these third-party and manufacturer specific documents:
 
 - [Tuya - Zigbee Connection Standard (Tuya Smart Documentation)](https://github.com/Koenkk/zigbee-herdsman/blob/master/docs/Zigbee%20Connection%20Standard_Tuya%20Smart_Documentation.pdf)
   - [Zigbee2MQTT guide on understanding the custom 'manuSpecificTuya' cluster that TuYa devices uses](https://www.zigbee2mqtt.io/advanced/support-new-devices/02_support_new_tuya_devices.html)
@@ -49,13 +49,13 @@ In additional you can also reference third-party and manufacturer specific docum
 
 A device is a physical object that you want to join to a Zigbee network: a light bulb, a switch, a sensor etc. The host application, in this case Zigpy, needs to understand how to interact with the device so there are standards that define how the application and devices can communicate. The device's functionality is described by several **descriptors** while the device itself contains **endpoints** and **endpoints** contain **clusters**. There are two types of clusters an endpoint contains:
 
-- **in_clusters** - are "Server" clusters in ZCL terms. These clusters control the device, e.g. a smart plug or light bulb would have an `on_off` server cluster. **in_clusters** are also the ones which also send attribute reports and/or you can read an attribute from a **in_cluster**.
+- **in_clusters** - are "Server" clusters in ZCL terms. These clusters control the device, e.g. a smart plug or light bulb would have an `on_off` server cluster. **in_clusters** are also the ones which also send attribute reports and/or you can read an attribute from an **in_cluster**.
 - **out_clusters** - are "Client" clusters. These clusters control some other device, as "Client" cluster sends commands to "Server" cluster. For example an On/Off remote would have an `on_off` client cluster and will generate cluster commands and send those to some other device.
   Zigpy needs to understand all these elements in order to correctly work with the device.
 
 ### Endpoints
 
-Endpoints are essentially groupings of functionality. For example, a typical Zigbee light bulb will have a single endpoint for the light. A multi-gang wall switch may have an endpoint for each individual switch so they can all be controlled separately. Each endpoint has several functions represented by clusters.
+Endpoints are essentially groupings of functionality. For example, a typical Zigbee light bulb will have a single endpoint for the light. A multi-gang wall switch may have an endpoint for each individual switch, so they can all be controlled separately. Each endpoint has several functions represented by clusters.
 
 ### Clusters
 
@@ -67,7 +67,7 @@ For the purposes of Zigpy and Quirks we will focus on two descriptors: **Node De
 
 #### Node Descriptor
 
-A node descriptor explains some basic device attributes to Zigpy. The manufacturer code and the power type are the ones that we generally care about. In most cases you won't have to worry about this but it is good to know why it is there in case you come across it while looking at an existing quirk. Here is an example:
+A node descriptor explains some basic device attributes to Zigpy. The manufacturer code and the power type are the ones that we generally care about. In most cases you won't have to worry about this, but it is good to know why it is there in case you come across it while looking at an existing quirk. Here is an example:
 `<Optional byte1=2 byte2=64 mac_capability_flags=128 manufacturer_code=4174 maximum_buffer_size=82 maximum_incoming_transfer_size=82 server_mask=0 maximum_outgoing_transfer_size=82 descriptor_capability_field=0>`
 
 #### Simple Descriptor
@@ -77,7 +77,7 @@ A simple descriptor is a description of a Zigbee device endpoint and is responsi
 
 ## What the heck is a quirk
 
-In human terms you can think of a quirk like google translate. I know it's a weird comparison but lets dig in a bit. You may only speak one language but there is an interesting article written in another language that you really want to read. Google translate takes the original article and displays it in a format (language) that you understand. A quirk is a file that translates device functionality from the format that the manufacturer chose to implement it in to a format that Zigpy and in turn ZHA understand. The main purpose of a quirk is to serve as a translator. A quirk is comprised of several parts:
+In human terms you can think of a quirk like Google Translate. I know it's a weird comparison but let's dig in a bit. You may only speak one language but there is an interesting article written in another language that you really want to read. Google Translate takes the original article and displays it in a format (language) that you understand. A quirk is a file that translates device functionality from the format that the manufacturer chose to implement it in to a format that Zigpy and in turn ZHA understand. The main purpose of a quirk is to serve as a translator. A quirk comprises several parts:
 
 - Signature - To identify and apply the correct quirk
 - Replacement - To allow Zigpy and ZHA to correctly work with the device
@@ -123,7 +123,7 @@ signature = {
 
 ### Replacement
 
-The replacement on a quirk is what we want the device to be. Remember, we said that quirks were like Google translate... you can think of the replacement like the output from Google translate. The replacement dict is what will actually be used by Zigpy and ZHA to interact with the device. The structure of `replacement` is the same as signature with 2 key differences: `models_info` is generally omitted and there is an extra element `skip_configuration` that instructs the application to skip configuration if necessary. Some manufacturers have not implemented the specifications correctly and the devices come pre-configured and therefore the configuration calls fail (non Zigbee 3.0 Xiaomi devices for instance). Usually, you should not add `skip_configuration`.
+The replacement on a quirk is what we want the device to be. Remember, we said that quirks were like Google Translate... You can think of the replacement like the output from Google Translate. The replacement dict is what will actually be used by Zigpy and ZHA to interact with the device. The structure of `replacement` is the same as signature with 2 key differences: `models_info` is generally omitted and there is an extra element `skip_configuration` that instructs the application to skip configuration if necessary. Some manufacturers have not implemented the specifications correctly and the devices come pre-configured and therefore the configuration calls fail (non Zigbee 3.0 Xiaomi devices for instance). Usually, you should not add `skip_configuration`.
 
 Here is an example:
 
@@ -567,20 +567,8 @@ def test_ts0121_signature(assert_signature_matches_quirk):
 
 ## Zigpy
 
-**[zigpy](https://github.com/zigpy/zigpy)** is **[Zigbee protocol stack](https://en.wikipedia.org/wiki/Zigbee)** integration project to implement the **[Zigbee Home Automation](https://www.zigbee.org/)** standard as a Python 3 library. Zigbee Home Automation integration with zigpy allows you to connect one of many off-the-shelf Zigbee adapters using one of the available Zigbee radio library modules compatible with zigpy to control Zigbee based devices. There is currently support for controlling Zigbee device types such as binary sensors (e.g., motion and door sensors), sensors (e.g., temperature sensors), lightbulbs, switches, locks, fans, covers (blinds, marquees, and more). A working implementation of zigpy exist in **[Home Assistant](https://www.home-assistant.io)** (Python based open source home automation software) as part of its **[ZHA component](https://www.home-assistant.io/components/zha/)**
-
-## ZHA Map
-
-[zha-map](https://github.com/zha-ng/zha-map) project allow building a Zigbee network topology map for ZHA component in Home Assistant.
-
-## zha-network-visualization-card
-
-[zha-network-visualization-card](https://github.com/dmulcahey/zha-network-visualization-card) is a custom Lovelace element for visualizing the Zigbee network map for ZHA component in Home Assistant.
+**[zigpy](https://github.com/zigpy/zigpy)** is a **[Zigbee protocol stack](https://en.wikipedia.org/wiki/Zigbee)** integration project to implement the **[Zigbee Home Automation](https://www.zigbee.org/)** standard as a Python 3 library. Zigbee Home Automation integration with zigpy allows you to connect one of many off-the-shelf Zigbee adapters using one of the available Zigbee radio library modules compatible with zigpy to control Zigbee based devices. There is currently support for controlling Zigbee device types such as binary sensors (e.g., motion and door sensors), sensors (e.g., temperature sensors), light bulbs, switches, locks, fans, covers (blinds, marquees, and more). A working implementation of zigpy exists in **[Home Assistant](https://www.home-assistant.io)** (Python based open source home automation software) as part of its **[ZHA component](https://www.home-assistant.io/components/zha/)**
 
 ## ZHA Network Card
 
 [zha-network-card](https://github.com/dmulcahey/zha-network-card) is a custom Lovelace card that displays ZHA network and device information in Home Assistant
-
-## zigpy-deconz-parser
-
-[zigpy-deconz-parser](https://github.com/zha-ng/zigpy-deconz-parser) project can parse Home Assistant ZHA component debug log using `zigpy-deconz` library if you have ConBee or RaspBee hardware.
