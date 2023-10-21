@@ -48,6 +48,7 @@ import zhaquirks.tuya.ts0042
 import zhaquirks.tuya.ts0043
 import zhaquirks.tuya.ts0501_fan_switch
 import zhaquirks.tuya.ts0601_electric_heating
+import zhaquirks.tuya.ts0601_gas_heating
 import zhaquirks.tuya.ts0601_motion
 import zhaquirks.tuya.ts0601_siren
 import zhaquirks.tuya.ts0601_trv
@@ -1249,6 +1250,27 @@ async def test_moes(zigpy_device_from_quirk, quirk):
         )
         datetime.datetime = origdatetime
 
+
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_gas_heating.HCT020,))
+async def test_gas_heating_state_report(zigpy_device_from_quirk, quirk):
+    """Test thermostatic valves standard reporting from incoming commands."""
+
+    gas_dev = zigpy_device_from_quirk(quirk)
+    tuya_cluster = gas_dev.endpoints[1].tuya_manufacturer
+
+    thermostat_listener = ClusterListener(gas_dev.endpoints[1].thermostat)
+
+    frames = (ZCL_TUYA_EHEAT_TEMPERATURE, ZCL_TUYA_EHEAT_TARGET_TEMP)
+    for frame in frames:
+        hdr, args = tuya_cluster.deserialize(frame)
+        tuya_cluster.handle_message(hdr, args)
+
+    assert len(thermostat_listener.cluster_commands) == 0
+    assert len(thermostat_listener.attribute_updates) == 2
+    assert thermostat_listener.attribute_updates[0][0] == 0x0000  # TEMP
+    assert thermostat_listener.attribute_updates[0][1] == 17900
+    assert thermostat_listener.attribute_updates[1][0] == 0x0012  # TARGET
+    assert thermostat_listener.attribute_updates[1][1] == 2100
 
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_electric_heating.MoesBHT,))
 async def test_eheating_state_report(zigpy_device_from_quirk, quirk):
