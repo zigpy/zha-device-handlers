@@ -13,8 +13,8 @@ from zigpy.zcl.clusters.general import (
     AnalogInput,
     AnalogOutput,
     DeviceTemperature,
-    OnOff,
     MultistateOutput,
+    OnOff,
     PowerConfiguration,
 )
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
