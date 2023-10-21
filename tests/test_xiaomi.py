@@ -1404,3 +1404,47 @@ async def test_xiaomi_e1_driver_commands(
         assert request_mock.call_args[0][1] == command_id
         if value is not None:
             assert request_mock.call_args[0][3] == value
+
+
+@pytest.mark.parametrize(
+    "device_level, converted_level",
+    [
+        (0, 0),
+        (1, 50),
+        (2, 100),
+    ],
+)
+async def test_xiaomi_e1_driver_light_level(
+    zigpy_device_from_quirk, device_level, converted_level
+):
+    """Test Aqara E1 driver light level cluster conversion."""
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.driver_curtain_e1.DriverE1)
+
+    opple_cluster = device.endpoints[1].in_clusters[XiaomiAqaraE1Cluster.cluster_id]
+    opple_listener = ClusterListener(opple_cluster)
+    opple_zcl_iilluminance_id = 0x0429
+
+    illuminance_cluster = device.endpoints[1].illuminance
+    illuminance_listener = ClusterListener(illuminance_cluster)
+    zcl_iilluminance_id = IlluminanceMeasurement.AttributeDefs.measured_value.id
+
+    # send motion and illuminance report 10
+    opple_cluster.update_attribute(opple_zcl_iilluminance_id, device_level)
+
+    # confirm manufacturer specific attribute report
+    assert len(opple_listener.attribute_updates) == 1
+    assert opple_listener.attribute_updates[0][0] == opple_zcl_iilluminance_id
+    assert opple_listener.attribute_updates[0][1] == device_level
+
+    # confirm illuminance report (with conversion)
+    assert len(illuminance_listener.attribute_updates) == 1
+    assert illuminance_listener.attribute_updates[0][0] == zcl_iilluminance_id
+
+    assert (
+        device_level == 0
+        and converted_level == 0
+        or (
+            illuminance_listener.attribute_updates[0][1]
+            == 10000 * math.log10(converted_level) + 1
+        )
+    )
