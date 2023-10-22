@@ -1,4 +1,4 @@
-"""Quirk IDs used for matching quirked devinces in ZHA."""
+"""Quirk IDs used for matching quirked devices in ZHA."""
 
 # Tuya
 TUYA_PLUG_ONOFF = "tuya.plug_on_off_attributes"
