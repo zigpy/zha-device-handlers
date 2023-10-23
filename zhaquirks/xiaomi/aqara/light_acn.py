@@ -31,10 +31,10 @@ class OppleClusterLight(XiaomiAqaraE1Cluster):
 
 
 class LumiLightAcn003(XiaomiCustomDevice):
-    """Aqara ceiling light L1-350 also known as Xiaomi ZNXDD01LM.
+    """Quirk for Aqara ceiling light L1-350 also known as Xiaomi ZNXDD01LM.
 
     Provides dimmable light control with color temperature setting.
-    This quirk adds support for power on behavior by adding OppleCluster.power_outage_memory attribute.
+    This quirk adds support for power on behavior by adding the power_outage_memory attribute.
     """
 
     signature = {
@@ -53,7 +53,7 @@ class LumiLightAcn003(XiaomiCustomDevice):
                     OnOff.cluster_id,  # 0x0006
                     LevelControl.cluster_id,  # 0x0008
                     Color.cluster_id,  # 0x0300
-                    OppleClusterLight.cluster_id,  # 0xFCC0 - Manufacture Specific
+                    OppleClusterLight.cluster_id,  # 0xFCC0 - manufacturer specific
                 ],
                 OUTPUT_CLUSTERS: [
                     Time.cluster_id,  # 0x000A
