@@ -18,7 +18,6 @@ from zigpy.zcl.clusters.general import (
     PowerConfiguration,
 )
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
-from zigpy.zcl.clusters.manufacturer_specific import ManufacturerSpecificCluster
 from zigpy.zcl.clusters.measurement import (
     IlluminanceMeasurement,
     PressureMeasurement,
@@ -443,10 +442,11 @@ class BasicCluster(XiaomiCluster, Basic):
     """Xiaomi basic cluster implementation."""
 
 
-class XiaomiAqaraE1Cluster(XiaomiCluster, ManufacturerSpecificCluster):
+class XiaomiAqaraE1Cluster(XiaomiCluster):
     """Xiaomi mfg cluster implementation."""
 
     cluster_id = 0xFCC0
+    ep_attribute = "opple_cluster"
 
 
 class BinaryOutputInterlock(CustomCluster, BinaryOutput):

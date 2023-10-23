@@ -49,7 +49,6 @@ from zhaquirks.xiaomi import (
     XIAOMI_AQARA_ATTRIBUTE_E1,
     XIAOMI_NODE_DESC,
     BasicCluster,
-    XiaomiAqaraE1Cluster,
     XiaomiCustomDevice,
     XiaomiQuickInitDevice,
     handle_quick_init,
@@ -1341,7 +1340,7 @@ async def test_xiaomi_t1_door_sensor(
     assert on_off_listener.attribute_updates[1][0] == OnOff.AttributeDefs.on_off.id
     assert on_off_listener.attribute_updates[1][1] == t.Bool.false
 
-    opple_cluster = device.endpoints[1].in_clusters[XiaomiAqaraE1Cluster.cluster_id]
+    opple_cluster = device.endpoints[1].opple_cluster
     ClusterListener(opple_cluster)
 
     power_cluster = device.endpoints[1].power
@@ -1422,7 +1421,7 @@ async def test_xiaomi_e1_driver_light_level(
     """Test Aqara E1 driver light level cluster conversion."""
     device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.driver_curtain_e1.DriverE1)
 
-    opple_cluster = device.endpoints[1].in_clusters[XiaomiAqaraE1Cluster.cluster_id]
+    opple_cluster = device.endpoints[1].opple_cluster
     opple_listener = ClusterListener(opple_cluster)
     opple_zcl_iilluminance_id = 0x0429
 

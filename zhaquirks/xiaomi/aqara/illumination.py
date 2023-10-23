@@ -74,7 +74,6 @@ class Illumination(XiaomiCustomDevice):
 class OppleCluster(XiaomiAqaraE1Cluster):
     """Opple cluster with configurable detection interval."""
 
-    ep_attribute = "opple_cluster"
     attributes = {
         0x0000: ("detection_interval", types.uint16_t, True),
     }
