@@ -131,7 +131,7 @@ class LumiLightAcn014(XiaomiCustomDevice):
                     Color.cluster_id,  # 0x0300
                     Metering.cluster_id,  # 0x0702
                     ElectricalMeasurement.cluster_id,  # 0x0B04
-                    OppleClusterLight.cluster_id,  # 0xFCC0 - Manufacture Specific
+                    OppleClusterLight.cluster_id,  # 0xFCC0 - manufacturer specific
                 ],
                 OUTPUT_CLUSTERS: [
                     Time.cluster_id,  # 0x000A
@@ -184,7 +184,7 @@ class LumiLightAcn014(XiaomiCustomDevice):
                     Color.cluster_id,  # 0x0300
                     Metering.cluster_id,  # 0x0702
                     ElectricalMeasurement.cluster_id,  # 0x0B04
-                    OppleClusterLight,  # 0xFCC0 - Manufacture Specific
+                    OppleClusterLight,  # 0xFCC0 - manufacturer specific
                 ],
                 OUTPUT_CLUSTERS: [
                     Time.cluster_id,  # 0x000A
