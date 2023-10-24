@@ -188,5 +188,13 @@ class LumiLightAcn014(XiaomiCustomDevice):
                     Ota.cluster_id,  # 0x0019
                 ],
             },
+            242: {
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [
+                    GreenPowerProxy.cluster_id,  # 0x0021
+                ],
+            },
         }
     }
