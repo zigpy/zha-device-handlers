@@ -600,7 +600,7 @@ class Plug_4AC_2USB(CustomDevice):
 class Plug_TZ3210_2AC(CustomDevice):
     """TS0011F 2 outlet plug."""
 
-    # quirk_id = TUYA_PLUG_ONOFF  # TODO: Why does this quirk not have OnOffAttributeCluster??
+    quirk_id = TUYA_PLUG_ONOFF
 
     signature = {
         MODEL: "TS011F",
@@ -663,7 +663,7 @@ class Plug_TZ3210_2AC(CustomDevice):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    OnOff.cluster_id,
+                    TuyaZBOnOffAttributeCluster,
                     TuyaZBMeteringCluster,
                     TuyaZBElectricalMeasurement,
                     TuyaNewManufCluster,
@@ -677,7 +677,7 @@ class Plug_TZ3210_2AC(CustomDevice):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    OnOff.cluster_id,
+                    TuyaZBOnOffAttributeCluster,
                     TuyaNewManufCluster,
                 ],
                 OUTPUT_CLUSTERS: [],
@@ -695,7 +695,7 @@ class Plug_TZ3210_2AC(CustomDevice):
 class Plug_TZ3210_1AC(CustomDevice):
     """TS0011F 1 outlet plug."""
 
-    # quirk_id = TUYA_PLUG_ONOFF  # TODO: Why does this quirk not have OnOffAttributeCluster??
+    quirk_id = TUYA_PLUG_ONOFF
 
     signature = {
         MODEL: "TS011F",
@@ -742,7 +742,7 @@ class Plug_TZ3210_1AC(CustomDevice):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    OnOff.cluster_id,
+                    TuyaZBOnOffAttributeCluster,
                     TuyaZBMeteringCluster,
                     TuyaZBElectricalMeasurement,
                     TuyaNewManufCluster,
