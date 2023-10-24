@@ -179,11 +179,8 @@ class LumiLightAcn014(XiaomiCustomDevice):
                     LevelControl.cluster_id,  # 0x0008
                     Alarms.cluster_id,  # 0x0009
                     AnalogInput.cluster_id,  # 0x000C
-                    BinaryInput.cluster_id,  # 0x000F
                     MultistateInput.cluster_id,  # 0x0012
                     Color.cluster_id,  # 0x0300
-                    Metering.cluster_id,  # 0x0702
-                    ElectricalMeasurement.cluster_id,  # 0x0B04
                     OppleClusterLight,  # 0xFCC0 - manufacturer specific
                 ],
                 OUTPUT_CLUSTERS: [
