@@ -114,7 +114,7 @@ class DualWhiteLedController(CustomDevice):
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
                     LightLink.cluster_id,
-                    TuyaManufCluster.cluster_id,
+                    TuyaManufCluster,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
