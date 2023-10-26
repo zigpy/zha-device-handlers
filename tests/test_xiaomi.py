@@ -8,9 +8,13 @@ import pytest
 import zigpy.device
 import zigpy.types as t
 from zigpy.zcl import foundation
+from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import (
     AnalogInput,
+    AnalogOutput,
     DeviceTemperature,
+    MultistateOutput,
+    OnOff,
     PowerConfiguration,
 )
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
@@ -49,6 +53,7 @@ from zhaquirks.xiaomi import (
     XiaomiQuickInitDevice,
     handle_quick_init,
 )
+import zhaquirks.xiaomi.aqara.driver_curtain_e1
 from zhaquirks.xiaomi.aqara.feeder_acn001 import (
     FEEDER_ATTR,
     ZCL_CHILD_LOCK,
@@ -65,6 +70,7 @@ from zhaquirks.xiaomi.aqara.feeder_acn001 import (
     AqaraFeederAcn001,
     OppleCluster,
 )
+import zhaquirks.xiaomi.aqara.magnet_agl02
 import zhaquirks.xiaomi.aqara.motion_ac02
 import zhaquirks.xiaomi.aqara.motion_aq2
 import zhaquirks.xiaomi.aqara.motion_aq2b
@@ -1283,3 +1289,308 @@ async def test_xiaomi_e1_roller_curtain_battery(zigpy_device_from_quirk, quirk):
     assert power_listener.attribute_updates[0][1] == 28.9
     assert power_listener.attribute_updates[1][0] == zcl_power_percent_id
     assert power_listener.attribute_updates[1][1] == 120
+
+
+@pytest.mark.parametrize(
+    "raw_report, expected_results",
+    (
+        [
+            "1C5F11670AF700412E0121B00C0328190421A8130521090006240D0000000008211E010A2100000C20016410016620036720016821A800",
+            [
+                32.5,  # battery voltage
+                200,  # battery percent * 2
+            ],
+        ],
+    ),
+)
+async def test_xiaomi_t1_door_sensor(
+    zigpy_device_from_quirk, raw_report, expected_results
+):
+    """Test Aqara T1 door sensor."""
+    raw_report = bytes.fromhex(raw_report)
+
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.magnet_agl02.MagnetT1)
+
+    on_off_cluster = device.endpoints[1].out_clusters[OnOff.cluster_id]
+    on_off_listener = ClusterListener(on_off_cluster)
+
+    # check open state
+    device.handle_message(
+        260,
+        on_off_cluster.cluster_id,
+        on_off_cluster.endpoint.endpoint_id,
+        on_off_cluster.endpoint.endpoint_id,
+        bytes.fromhex("185D0A00001001"),
+    )
+
+    assert len(on_off_listener.attribute_updates) == 1
+    assert on_off_listener.attribute_updates[0][0] == OnOff.AttributeDefs.on_off.id
+    assert on_off_listener.attribute_updates[0][1] == t.Bool.true
+
+    # check closed state
+    device.handle_message(
+        260,
+        on_off_cluster.cluster_id,
+        on_off_cluster.endpoint.endpoint_id,
+        on_off_cluster.endpoint.endpoint_id,
+        bytes.fromhex("18640A00001000"),
+    )
+
+    assert len(on_off_listener.attribute_updates) == 2
+    assert on_off_listener.attribute_updates[1][0] == OnOff.AttributeDefs.on_off.id
+    assert on_off_listener.attribute_updates[1][1] == t.Bool.false
+
+    opple_cluster = device.endpoints[1].opple_cluster
+    ClusterListener(opple_cluster)
+
+    power_cluster = device.endpoints[1].power
+    power_listener = ClusterListener(power_cluster)
+
+    zcl_power_voltage_id = PowerConfiguration.AttributeDefs.battery_voltage.id
+    zcl_power_percent_id = (
+        PowerConfiguration.AttributeDefs.battery_percentage_remaining.id
+    )
+
+    # check Xiaomi attribute report
+    device.handle_message(
+        260,
+        opple_cluster.cluster_id,
+        opple_cluster.endpoint.endpoint_id,
+        opple_cluster.endpoint.endpoint_id,
+        raw_report,
+    )
+
+    assert len(power_listener.attribute_updates) == 2
+    assert power_listener.attribute_updates[0][0] == zcl_power_voltage_id
+    assert power_listener.attribute_updates[0][1] == expected_results[0]
+    assert power_listener.attribute_updates[1][0] == zcl_power_percent_id
+    assert power_listener.attribute_updates[1][1] == expected_results[1]
+
+
+@pytest.mark.parametrize(
+    "command, command_id, value",
+    [
+        (
+            WindowCovering.ServerCommandDefs.up_open.id,
+            WindowCovering.ServerCommandDefs.go_to_lift_percentage.id,
+            0,
+        ),
+        (
+            WindowCovering.ServerCommandDefs.down_close.id,
+            WindowCovering.ServerCommandDefs.go_to_lift_percentage.id,
+            100,
+        ),
+        (
+            WindowCovering.ServerCommandDefs.stop.id,
+            WindowCovering.ServerCommandDefs.stop.id,
+            None,
+        ),
+    ],
+)
+async def test_xiaomi_e1_driver_commands(
+    zigpy_device_from_quirk, command, command_id, value
+):
+    """Test Aqara E1 driver commands for basic movement functions using WindowCovering cluster."""
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.driver_curtain_e1.DriverE1)
+
+    window_covering_cluster = device.endpoints[1].window_covering
+    p = mock.patch.object(window_covering_cluster, "request", mock.AsyncMock())
+
+    with p as request_mock:
+        request_mock.return_value = (foundation.Status.SUCCESS, "done")
+
+        # test command
+        await window_covering_cluster.command(command)
+        assert request_mock.call_count == 1
+        assert request_mock.call_args[0][1] == command_id
+        if value is not None:
+            assert request_mock.call_args[0][3] == value
+
+
+@pytest.mark.parametrize(
+    "device_level, converted_level",
+    [
+        (0, 0),
+        (1, 50),
+        (2, 100),
+    ],
+)
+async def test_xiaomi_e1_driver_light_level(
+    zigpy_device_from_quirk, device_level, converted_level
+):
+    """Test Aqara E1 driver light level cluster conversion."""
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.driver_curtain_e1.DriverE1)
+
+    opple_cluster = device.endpoints[1].opple_cluster
+    opple_listener = ClusterListener(opple_cluster)
+    opple_zcl_iilluminance_id = 0x0429
+
+    illuminance_cluster = device.endpoints[1].illuminance
+    illuminance_listener = ClusterListener(illuminance_cluster)
+    zcl_iilluminance_id = IlluminanceMeasurement.AttributeDefs.measured_value.id
+
+    # send motion and illuminance report 10
+    opple_cluster.update_attribute(opple_zcl_iilluminance_id, device_level)
+
+    # confirm manufacturer specific attribute report
+    assert len(opple_listener.attribute_updates) == 1
+    assert opple_listener.attribute_updates[0][0] == opple_zcl_iilluminance_id
+    assert opple_listener.attribute_updates[0][1] == device_level
+
+    # confirm illuminance report (with conversion)
+    assert len(illuminance_listener.attribute_updates) == 1
+    assert illuminance_listener.attribute_updates[0][0] == zcl_iilluminance_id
+
+    assert (
+        device_level == 0
+        and converted_level == 0
+        or (
+            illuminance_listener.attribute_updates[0][1]
+            == 10000 * math.log10(converted_level) + 1
+        )
+    )
+
+
+@pytest.mark.parametrize(
+    "command, value",
+    [
+        (WindowCovering.ServerCommandDefs.up_open.id, 1),
+        (WindowCovering.ServerCommandDefs.down_close.id, 0),
+        (WindowCovering.ServerCommandDefs.stop.id, 2),
+    ],
+)
+async def test_xiaomi_e1_roller_commands_1(zigpy_device_from_quirk, command, value):
+    """Test Aqara E1 roller commands for basic movement functions using MultistateOutput Cluster."""
+    device = zigpy_device_from_quirk(
+        zhaquirks.xiaomi.aqara.roller_curtain_e1.RollerE1AQ
+    )
+
+    window_covering_cluster = device.endpoints[1].window_covering
+    multistate_cluster = device.endpoints[1].multistate_output
+    multistate_cluster._write_attributes = mock.AsyncMock(
+        return_value=(
+            [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)],
+        )
+    )
+    attr_id = MultistateOutput.AttributeDefs.present_value.id
+
+    # test command
+    await window_covering_cluster.command(command)
+    assert multistate_cluster._write_attributes.call_count == 1
+    assert multistate_cluster._write_attributes.call_args[0][0][0].attrid == attr_id
+    assert multistate_cluster._write_attributes.call_args[0][0][0].value.value == value
+
+
+@pytest.mark.parametrize(
+    "command, value",
+    [
+        (WindowCovering.ServerCommandDefs.go_to_lift_percentage.id, 60),
+    ],
+)
+async def test_xiaomi_e1_roller_commands_2(zigpy_device_from_quirk, command, value):
+    """Test Aqara E1 roller commands for go to lift percentage using AnalogOutput cluster."""
+    device = zigpy_device_from_quirk(
+        zhaquirks.xiaomi.aqara.roller_curtain_e1.RollerE1AQ
+    )
+
+    window_covering_cluster = device.endpoints[1].window_covering
+    analog_cluster = device.endpoints[1].analog_output
+    analog_cluster._write_attributes = mock.AsyncMock(
+        return_value=(
+            [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)],
+        )
+    )
+    attr_id = AnalogOutput.AttributeDefs.present_value.id
+
+    # test go to lift percentage command
+    await window_covering_cluster.go_to_lift_percentage(value)
+    assert analog_cluster._write_attributes.call_count == 1
+    assert analog_cluster._write_attributes.call_args[0][0][0].attrid == attr_id
+    assert (
+        analog_cluster._write_attributes.call_args[0][0][0].value.value == 100 - value
+    )
+
+
+def test_aqara_acn003_signature_match(assert_signature_matches_quirk):
+    signature = {
+        "node_descriptor": "NodeDescriptor(logical_type=<LogicalType.Router: 1>, complex_descriptor_available=0, user_descriptor_available=0, reserved=0, aps_flags=0, frequency_band=<FrequencyBand.Freq2400MHz: 8>, mac_capability_flags=<MACCapabilityFlags.FullFunctionDevice|MainsPowered|RxOnWhenIdle|AllocateAddress: 142>, manufacturer_code=4447, maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264, maximum_outgoing_transfer_size=82, descriptor_capability_field=<DescriptorCapability.NONE: 0>, *allocate_address=True, *is_alternate_pan_coordinator=False, *is_coordinator=False, *is_end_device=False, *is_full_function_device=True, *is_mains_powered=True, *is_receiver_on_when_idle=True, *is_router=True, *is_security_capable=False)",
+        "endpoints": {
+            "1": {
+                "profile_id": 0x0104,
+                "device_type": "0x0102",
+                "in_clusters": [
+                    "0x0000",
+                    "0x0003",
+                    "0x0004",
+                    "0x0005",
+                    "0x0006",
+                    "0x0008",
+                    "0x0300",
+                    "0xfcc0",
+                ],
+                "out_clusters": ["0x000a", "0x0019"],
+            }
+        },
+        "manufacturer": "Aqara",
+        "model": "lumi.light.acn003",
+        "class": "aqara_light.LumiLightAcn003",
+    }
+
+    assert_signature_matches_quirk(
+        zhaquirks.xiaomi.aqara.light_acn.LumiLightAcn003, signature
+    )
+
+
+def test_aqara_acn014_signature_match(assert_signature_matches_quirk):
+    signature = {
+        "node_descriptor": "NodeDescriptor(logical_type=<LogicalType.Router: 1>, complex_descriptor_available=0, user_descriptor_available=0, reserved=0, aps_flags=0, frequency_band=<FrequencyBand.Freq2400MHz: 8>, mac_capability_flags=<MACCapabilityFlags.FullFunctionDevice|MainsPowered|RxOnWhenIdle|AllocateAddress: 142>, manufacturer_code=4447, maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264, maximum_outgoing_transfer_size=82, descriptor_capability_field=<DescriptorCapability.NONE: 0>, *allocate_address=True, *is_alternate_pan_coordinator=False, *is_coordinator=False, *is_end_device=False, *is_full_function_device=True, *is_mains_powered=True, *is_receiver_on_when_idle=True, *is_router=True, *is_security_capable=False)",
+        "endpoints": {
+            "1": {
+                "profile_id": 0x0104,
+                "device_type": "0x010c",
+                "in_clusters": [
+                    "0x0000",
+                    "0x0002",
+                    "0x0003",
+                    "0x0004",
+                    "0x0005",
+                    "0x0006",
+                    "0x0008",
+                    "0x0009",
+                    "0x000c",
+                    "0x000f",
+                    "0x0012",
+                    "0x0300",
+                    "0x0702",
+                    "0x0b04",
+                    "0xfcc0",
+                ],
+                "out_clusters": ["0x000a", "0x0019"],
+            },
+            "21": {
+                "profile_id": 0x0104,
+                "device_type": "0x010c",
+                "in_clusters": ["0x000c"],
+                "out_clusters": [],
+            },
+            "31": {
+                "profile_id": 0x0104,
+                "device_type": "0x010c",
+                "in_clusters": ["0x000c"],
+                "out_clusters": [],
+            },
+            "242": {
+                "profile_id": 0xA1E0,
+                "device_type": "0x0061",
+                "in_clusters": [],
+                "out_clusters": ["0x0021"],
+            },
+        },
+        "manufacturer": "LUMI",
+        "model": "lumi.light.acn014",
+        "class": "zigpy.device.Device",
+    }
+
+    assert_signature_matches_quirk(
+        zhaquirks.xiaomi.aqara.light_acn.LumiLightAcn014, signature
+    )

@@ -79,7 +79,6 @@ class TVOCDisplayUnit(t.enum_factory(t.uint8_t)):
 class TVOCCluster(XiaomiAqaraE1Cluster):
     """Aqara LUMI Config cluster."""
 
-    ep_attribute = "aqara_cluster"
     attributes = {
         DISPLAY_UNIT: ("display_unit", TVOCDisplayUnit, True),
     }

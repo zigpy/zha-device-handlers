@@ -1,4 +1,4 @@
-"""Quirk for GLEDOPTO GL-SD-001."""
+"""Quirk for GLEDOPTO GL-SD-* dimmers."""
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
@@ -30,11 +30,11 @@ class LevelControlNoReply(NoReplyMixin, CustomCluster, LevelControl):
     void_input_commands = {cmd.id for cmd in LevelControl.commands_by_name.values()}
 
 
-class GledoptoGlSd001(CustomDevice):
-    """Gledopto GL-SD-001 dimmer custom device implementation."""
+class GledoptoGlSdDimmer(CustomDevice):
+    """Gledopto GL-SD-001 & GL-SD-003P dimmer custom device implementation."""
 
     signature = {
-        MODELS_INFO: [("GLEDOPTO", "GL-SD-001")],
+        MODELS_INFO: [("GLEDOPTO", "GL-SD-001"), ("GLEDOPTO", "GL-SD-003P")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,

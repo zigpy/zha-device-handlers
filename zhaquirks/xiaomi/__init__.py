@@ -18,7 +18,6 @@ from zigpy.zcl.clusters.general import (
     PowerConfiguration,
 )
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
-from zigpy.zcl.clusters.manufacturer_specific import ManufacturerSpecificCluster
 from zigpy.zcl.clusters.measurement import (
     IlluminanceMeasurement,
     PressureMeasurement,
@@ -443,10 +442,11 @@ class BasicCluster(XiaomiCluster, Basic):
     """Xiaomi basic cluster implementation."""
 
 
-class XiaomiAqaraE1Cluster(XiaomiCluster, ManufacturerSpecificCluster):
+class XiaomiAqaraE1Cluster(XiaomiCluster):
     """Xiaomi mfg cluster implementation."""
 
     cluster_id = 0xFCC0
+    ep_attribute = "opple_cluster"
 
 
 class BinaryOutputInterlock(CustomCluster, BinaryOutput):
@@ -457,7 +457,7 @@ class BinaryOutputInterlock(CustomCluster, BinaryOutput):
 
 
 class XiaomiPowerConfiguration(PowerConfiguration, LocalDataCluster):
-    """Xiaomi power configuration cluster implementation."""
+    """Xiaomi power configuration cluster implementation used for devices that only send battery voltage."""
 
     BATTERY_VOLTAGE_ATTR = PowerConfiguration.AttributeDefs.battery_voltage.id
     BATTERY_PERCENTAGE_REMAINING = (
@@ -499,6 +499,23 @@ class XiaomiPowerConfiguration(PowerConfiguration, LocalDataCluster):
         )
 
         self._update_attribute(self.BATTERY_PERCENTAGE_REMAINING, percent)
+
+
+class XiaomiPowerConfigurationPercent(XiaomiPowerConfiguration):
+    """Power cluster which ignores Xiaomi voltage reports for calculating battery percentage
+
+    Devices that use this cluster (E1 curtain driver/roller) already send the battery percentage on their own
+    as a separate attribute, but additionally also send the battery voltage.
+    This class only uses the voltage reports for the voltage attribute, but not for the battery percentage.
+    The battery percentage is used as is from the battery percentage reports using inherited battery_percent_reported().
+    """
+
+    def _update_battery_percentage(self, voltage_mv: int) -> None:
+        """Ignore Xiaomi voltage reports, so they're not used to calculate battery percentage."""
+        # This device sends battery percentage reports which are handled using a XiaomiCluster and
+        # the inherited XiaomiPowerConfiguration cluster.
+        # This device might also send Xiaomi battery reports, so we only want to use those for the voltage attribute,
+        # but not for the battery percentage. XiaomiPowerConfiguration.battery_reported() still updates the voltage.
 
 
 class OccupancyCluster(OccupancyWithReset):
@@ -623,6 +640,19 @@ class IlluminanceMeasurementCluster(CustomCluster, IlluminanceMeasurement):
         if attrid == self.AttributeDefs.measured_value.id and value > 0:
             value = 10000 * math.log10(value) + 1
         super()._update_attribute(attrid, value)
+
+
+class LocalIlluminanceMeasurementCluster(
+    LocalDataCluster, IlluminanceMeasurementCluster
+):
+    """Illuminance measurement cluster based on LocalDataCluster."""
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        if self.AttributeDefs.measured_value.id not in self._attr_cache:
+            # put a default value so the sensor is created
+            self._update_attribute(self.AttributeDefs.measured_value.id, 0)
 
 
 class OnOffCluster(OnOff, CustomCluster):

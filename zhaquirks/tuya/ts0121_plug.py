@@ -22,6 +22,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.quirk_ids import TUYA_PLUG_ONOFF
 from zhaquirks.tuya import (
     TuyaNewManufCluster,
     TuyaZBE000Cluster,
@@ -34,6 +35,8 @@ from zhaquirks.tuya import (
 
 class Plug(CustomDevice):
     """Tuya TS0121 plug with restore tuya power state support."""
+
+    quirk_id = TUYA_PLUG_ONOFF
 
     signature = {
         MODEL: "TS0121",
@@ -78,6 +81,8 @@ class Plug(CustomDevice):
 
 class TS0121B(CustomDevice):
     """Tuya TS0121 plug with restore tuya power state support and ZGP endpoint."""
+
+    quirk_id = TUYA_PLUG_ONOFF
 
     signature = {
         MODEL: "TS0121",
@@ -136,6 +141,8 @@ class TS0121B(CustomDevice):
 
 class TS0121_Var03(CustomDevice):
     """Tuya TS0121 plug DeviceType.MAIN_POWER_OUTLET."""
+
+    quirk_id = TUYA_PLUG_ONOFF
 
     signature = {
         MODEL: "TS0121",

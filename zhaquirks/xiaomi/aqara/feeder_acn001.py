@@ -96,7 +96,6 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         Manual = 0x00
         Schedule = 0x01
 
-    ep_attribute: str = "opple_cluster"
     attributes = {
         ZCL_FEEDING: ("feeding", types.Bool, True),
         ZCL_LAST_FEEDING_SOURCE: ("last_feeding_source", FeedingSource, True),
