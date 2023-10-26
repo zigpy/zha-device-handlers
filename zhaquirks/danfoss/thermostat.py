@@ -53,6 +53,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.quirk_ids import DANFOSS_THERMOSTAT
 
 DANFOSS = "Danfoss"
 HIVE = DANFOSS
@@ -357,7 +358,7 @@ class DanfossTimeCluster(CustomizedStandardCluster, Time):
 class DanfossThermostat(CustomDevice):
     """DanfossThermostat custom device."""
 
-    quirk_id = "danfoss_thermostat"
+    quirk_id = DANFOSS_THERMOSTAT
 
     manufacturer_code = 0x1246
 
