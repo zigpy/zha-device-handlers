@@ -357,6 +357,8 @@ class DanfossTimeCluster(CustomizedStandardCluster, Time):
 class DanfossThermostat(CustomDevice):
     """DanfossThermostat custom device."""
 
+    quirk_id = "danfoss_thermostat"
+
     manufacturer_code = 0x1246
 
     signature = {
