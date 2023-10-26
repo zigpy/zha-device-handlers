@@ -4,4 +4,5 @@
 TUYA_PLUG_ONOFF = "tuya.plug_on_off_attributes"  # plugs with configurable attributes on the OnOff cluster
 TUYA_PLUG_MANUFACTURER = "tuya.plug_manufacturer_attributes"  # plugs with configurable attributes on a custom cluster
 
-DANFOSS_THERMOSTAT = "danfoss.thermostat"
+# Danfoss
+DANFOSS_THERMOSTAT = "danfoss.thermostat"  # Thermostatic Radiator Valves based on Danfoss Ally with custom clusters
