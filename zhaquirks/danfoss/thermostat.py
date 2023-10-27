@@ -77,20 +77,28 @@ class CustomizedStandardCluster(CustomCluster):
     Danfoss doesn't allow standard attributes when manufacturer specific is requested
 
     Therefore, this subclass separates manufacturer specific and standard attributes before
-    Zigbee commands allowing manufacturer specific to be passed
+    Zigbee commands allowing manufacturer specific to be passed for specific attributes, but not for standard attributes
     """
 
     @staticmethod
     def combine_results(*result_lists):
-        result_global = [[], []]
+        success_global = []
+        failure_global = []
         for result in result_lists:
             if len(result) == 1:
-                result_global[0].extend(result[0])
+                success_global.extend(result[0])
             elif len(result) == 2:
-                result_global[0].extend(result[0])
-                result_global[1].extend(result[1])
+                success_global.extend(result[0])
+                failure_global.extend(result[1])
+            else:
+                raise Exception(f"Unexpected result size: {len(result)}")
 
-        return result_global
+        if failure_global:
+            response = [success_global, failure_global]
+        else:
+            response = [success_global]
+
+        return response
 
     async def _configure_reporting(self, records, *args, **kwargs):
         """Configure reporting ZCL foundation command."""
