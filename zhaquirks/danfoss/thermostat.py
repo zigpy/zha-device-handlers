@@ -28,6 +28,7 @@ Broken ZCL Attributes:
 
 
 from datetime import datetime
+from typing import Callable, Any
 
 import zigpy.profiles.zha as zha_p
 from zigpy.quirks import CustomCluster, CustomDevice
@@ -100,41 +101,36 @@ class CustomizedStandardCluster(CustomCluster):
 
         return response
 
-    async def _configure_reporting(self, records, *args, **kwargs):
+    async def split_command(self, records: list[Any], func: Callable[[list[Any], ...], Any], extract_attrid: Callable[[Any], int], *args, **kwargs):
         """Configure reporting ZCL foundation command."""
         records_specific = [
-            e for e in records if self.attributes[e.attrid].is_manufacturer_specific
+            e for e in records if self.attributes[extract_attrid(e)].is_manufacturer_specific
         ]
         records_standard = [
-            e for e in records if not self.attributes[e.attrid].is_manufacturer_specific
+            e for e in records if not self.attributes[extract_attrid(e)].is_manufacturer_specific
         ]
 
-        result_specific = await super()._configure_reporting(
-            records_specific, *args, **kwargs
-        )
-        result_standard = await super()._configure_reporting(
-            records_standard, *args, **kwargs
-        )
+        result_specific = []
+        result_standard = []
 
-        return self.combine_results(result_specific, result_standard)
+        if records_specific:
+            result_specific = await func(records_specific, *args, **kwargs)
+
+        if records_standard:
+            result_standard = await func(records_standard, *args, **kwargs)
+
+        if result_specific and result_standard:
+            return self.combine_results(result_specific, result_standard)
+        else:
+            return result_standard if result_standard else result_specific
+
+    async def _configure_reporting(self, records, *args, **kwargs):
+        """Configure reporting ZCL foundation command."""
+        return await self.split_command(records, super()._configure_reporting, lambda x: x.attrid, *args, **kwargs)
 
     async def _read_attributes(self, attr_ids, *args, **kwargs):
         """Read attributes ZCL foundation command."""
-
-        attr_ids_specific = [
-            e for e in attr_ids if self.attributes[e].is_manufacturer_specific
-        ]
-        attr_ids_standard = [
-            e for e in attr_ids if not self.attributes[e].is_manufacturer_specific
-        ]
-
-        result_specific = await super()._read_attributes(
-            attr_ids_specific, *args, **kwargs
-        )
-        result_standard = await super()._read_attributes(
-            attr_ids_standard, *args, **kwargs
-        )
-        return self.combine_results(result_specific, result_standard)
+        return await self.split_command(attr_ids, super()._read_attributes, lambda x: x, *args, **kwargs)
 
 
 class DanfossThermostatCluster(CustomizedStandardCluster, Thermostat):
