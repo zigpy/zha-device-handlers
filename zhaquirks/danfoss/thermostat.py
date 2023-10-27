@@ -109,7 +109,7 @@ class CustomizedStandardCluster(CustomCluster):
         *args,
         **kwargs,
     ):
-        """Configure reporting ZCL foundation command."""
+        """Split execution of command in one for manufacturer specific and one for standard attributes"""
         records_specific = [
             e
             for e in records
