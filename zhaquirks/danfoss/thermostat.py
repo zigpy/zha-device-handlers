@@ -28,7 +28,7 @@ Broken ZCL Attributes:
 
 
 from datetime import datetime
-from typing import Any, Callable
+from typing import Any, Callable, List
 
 import zigpy.profiles.zha as zha_p
 from zigpy.quirks import CustomCluster, CustomDevice
@@ -75,10 +75,10 @@ SYSTEM_MODE_THERM_ON_VAL = 0x04
 
 class CustomizedStandardCluster(CustomCluster):
     """Danfoss customized standard clusters by adding custom attributes
-    Danfoss doesn't allow standard attributes when manufacturer specific is requested
+    Danfoss doesn't allow all standard attributes when manufacturer specific is requested
 
-    Therefore, this subclass separates manufacturer specific and standard attributes before
-    Zigbee commands allowing manufacturer specific to be passed for specific attributes, but not for standard attributes
+    Therefore, this subclass separates manufacturer specific and standard attributes for Zigbee commands allowing
+    manufacturer specific to be passed for specific attributes, but not for standard attributes
     """
 
     @staticmethod
@@ -103,8 +103,8 @@ class CustomizedStandardCluster(CustomCluster):
 
     async def split_command(
         self,
-        records: list[Any],
-        func: Callable[[list[Any], ...], Any],
+        records: List[Any],
+        func: Callable[[List[Any], ...], Any],
         extract_attrid: Callable[[Any], int],
         *args,
         **kwargs,
