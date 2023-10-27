@@ -104,7 +104,7 @@ class CustomizedStandardCluster(CustomCluster):
     async def split_command(
         self,
         records: List[Any],
-        func: Callable[[List[Any], ...], Any],
+        func: Callable,
         extract_attrid: Callable[[Any], int],
         *args,
         **kwargs,
