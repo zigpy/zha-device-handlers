@@ -28,7 +28,7 @@ Broken ZCL Attributes:
 
 
 from datetime import datetime
-from typing import Callable, Any
+from typing import Any, Callable
 
 import zigpy.profiles.zha as zha_p
 from zigpy.quirks import CustomCluster, CustomDevice
@@ -101,13 +101,24 @@ class CustomizedStandardCluster(CustomCluster):
 
         return response
 
-    async def split_command(self, records: list[Any], func: Callable[[list[Any], ...], Any], extract_attrid: Callable[[Any], int], *args, **kwargs):
+    async def split_command(
+        self,
+        records: list[Any],
+        func: Callable[[list[Any], ...], Any],
+        extract_attrid: Callable[[Any], int],
+        *args,
+        **kwargs,
+    ):
         """Configure reporting ZCL foundation command."""
         records_specific = [
-            e for e in records if self.attributes[extract_attrid(e)].is_manufacturer_specific
+            e
+            for e in records
+            if self.attributes[extract_attrid(e)].is_manufacturer_specific
         ]
         records_standard = [
-            e for e in records if not self.attributes[extract_attrid(e)].is_manufacturer_specific
+            e
+            for e in records
+            if not self.attributes[extract_attrid(e)].is_manufacturer_specific
         ]
 
         result_specific = []
@@ -126,11 +137,15 @@ class CustomizedStandardCluster(CustomCluster):
 
     async def _configure_reporting(self, records, *args, **kwargs):
         """Configure reporting ZCL foundation command."""
-        return await self.split_command(records, super()._configure_reporting, lambda x: x.attrid, *args, **kwargs)
+        return await self.split_command(
+            records, super()._configure_reporting, lambda x: x.attrid, *args, **kwargs
+        )
 
     async def _read_attributes(self, attr_ids, *args, **kwargs):
         """Read attributes ZCL foundation command."""
-        return await self.split_command(attr_ids, super()._read_attributes, lambda x: x, *args, **kwargs)
+        return await self.split_command(
+            attr_ids, super()._read_attributes, lambda x: x, *args, **kwargs
+        )
 
 
 class DanfossThermostatCluster(CustomizedStandardCluster, Thermostat):
