@@ -207,7 +207,7 @@ class SwitchT1Alt2(SwitchT1):
     """Aqara T1 relay switch with alternative signature."""
 
     signature = {
-        MODELS_INFO: [("LUMI", "lumi.switch.n0agl1")],
+        MODELS_INFO: [(LUMI, "lumi.switch.n0agl1"), (LUMI, "lumi.switch.n0acn2")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
