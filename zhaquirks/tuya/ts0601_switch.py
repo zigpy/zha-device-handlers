@@ -127,6 +127,7 @@ class TuyaSingleSwitch_GP(TuyaSwitch):
     signature = {
         MODELS_INFO: [
             ("_TZE200_gbagoilo", "TS0601"),  # reported in #1634
+            ("_TZE204_6fk3gewc", "TS0601"),
         ],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=51 device_version=1
