@@ -143,6 +143,16 @@ class ShortcutV2Cluster(EventableCluster):
 
 
 # ZCL compliant IKEA power configuration clusters:
+class PowerConfig1AAACluster(CustomCluster, PowerConfiguration):
+    """Updating power attributes: 2 AAA."""
+
+    _CONSTANT_ATTRIBUTES = {
+        BATTERY_SIZE: 4,
+        BATTERY_QUANTITY: 1,
+        BATTERY_RATED_VOLTAGE: 15,
+    }
+
+
 class PowerConfig2AAACluster(CustomCluster, PowerConfiguration):
     """Updating power attributes: 2 AAA."""
 
