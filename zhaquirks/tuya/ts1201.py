@@ -1,15 +1,15 @@
 """Tuya TS1201 IR blaster.
 
-   Heavily inspired by work from @mak-42
+Heavily inspired by work from @mak-42
 https://github.com/Koenkk/zigbee-herdsman-converters/blob/9d5e7b902479582581615cbfac3148d66d4c675c/lib/zosung.js
 """
 import base64
-from typing import Any, List, Optional, Union
+from typing import Any, Final, List, Optional, Union
 
-from zigpy.profiles import zha
+from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
-from zigpy.zcl import foundation
+from zigpy.zcl import BaseAttributeDefs, BaseCommandDefs, foundation
 from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
@@ -52,41 +52,37 @@ class ZosungIRControl(CustomCluster):
     cluster_id = 0xE004
     ep_attribute = "zosung_ircontrol"
 
-    attributes = {0x0000: ("last_learned_ir_code", t.CharacterString, True)}
+    class AttributeDefs(BaseAttributeDefs):
+        last_learned_ir_code: Final = foundation.ZCLAttributeDef(
+            id=0x0000, type=t.CharacterString, access="r", mandatory=True
+        )
 
-    server_commands = {
-        0x00: foundation.ZCLCommandDef(
-            "data",
+    class ServerCommandDefs(BaseCommandDefs):
+        data: Final = foundation.ZCLCommandDef(
+            id=0x00,
             schema={"data": Bytes},
             direction=foundation.Direction.Server_to_Client,
             is_manufacturer_specific=True,
-        ),
-        0x01: foundation.ZCLCommandDef(
-            "IRLearn",
+        )
+        IRLearn: Final = foundation.ZCLCommandDef(
+            id=0x01,
             schema={"on_off": t.Bool},
             direction=foundation.Direction.Server_to_Client,
             is_manufacturer_specific=True,
-        ),
-        0x02: foundation.ZCLCommandDef(
-            "IRSend",
+        )
+        IRSend: Final = foundation.ZCLCommandDef(
+            id=0x02,
             schema={"code": t.CharacterString},
             direction=foundation.Direction.Server_to_Client,
             is_manufacturer_specific=True,
-        ),
-    }
-
-    def _update_attribute(self, attrid, value):
-        super()._update_attribute(attrid, value)
+        )
 
     async def read_attributes(
         self, attributes, allow_cache=False, only_cache=False, manufacturer=None
     ):
         """Read attributes ZCL foundation command."""
-        if 0x0000 in attributes:
-            return (
-                {0: self.endpoint.device.last_learned_ir_code},
-                {},
-            )
+        if self.AttributeDefs.last_learned_ir_code.id in attributes:
+            return {0: self.endpoint.device.last_learned_ir_code}, {}
         else:
             attr = await super().read_attributes(
                 attributes,
@@ -106,7 +102,7 @@ class ZosungIRControl(CustomCluster):
         **kwargs: Any,
     ):
         """Override the default Cluster command."""
-        if command_id == 1:
+        if command_id == self.ServerCommandDefs.IRLearn.id:
             if kwargs["on_off"]:
                 cmd_args = {Bytes(b'{"study":0}')}
             else:
@@ -118,16 +114,16 @@ class ZosungIRControl(CustomCluster):
                 expect_reply=True,
                 tsn=tsn,
             )
-        elif command_id == 2:
-            irMsg = f'{{"key_num":1,"delay":300,"key1":{{"num":1,"freq":38000,"type":1,"key_code":"{kwargs["code"]}"}}}}'
-            self.debug("irMsg to send: %s", irMsg)
-            seq = self.endpoint.device.nextSeq()
-            self.endpoint.device.ir_msg_to_send = {seq: irMsg}
+        elif command_id == self.ServerCommandDefs.IRSend.id:
+            ir_msg = f'{{"key_num":1,"delay":300,"key1":{{"num":1,"freq":38000,"type":1,"key_code":"{kwargs["code"]}"}}}}'
+            self.debug("ir_msg to send: %s", ir_msg)
+            seq = self.endpoint.device.next_seq()
+            self.endpoint.device.ir_msg_to_send = {seq: ir_msg}
             self.create_catching_task(
                 self.endpoint.zosung_irtransmit.command(
                     0x00,
                     seq=seq,
-                    length=len(irMsg),
+                    length=len(ir_msg),
                     unk1=0x00000000,
                     clusterid=0xE004,
                     unk2=0x01,
@@ -158,33 +154,9 @@ class ZosungIRTransmit(CustomCluster):
     msg_length = 0
     ir_msg = []
 
-    attributes = {}
-    client_commands = {
-        0x03: foundation.ZCLCommandDef(
-            "resp_ir_frame_03",
-            schema={
-                "zero": t.uint8_t,
-                "seq": t.uint16_t,
-                "position": t.uint32_t,
-                "msgpart": t.LVBytes,
-                "msgpartcrc": t.uint8_t,
-            },
-            direction=foundation.Direction.Client_to_Server,
-            is_manufacturer_specific=False,
-        ),
-        0x05: foundation.ZCLCommandDef(
-            "resp_ir_frame_05",
-            schema={
-                "seq": t.uint16_t,
-                "zero": t.uint16_t,
-            },
-            direction=foundation.Direction.Server_to_Client,
-            is_manufacturer_specific=True,
-        ),
-    }
-    server_commands = {
-        0x00: foundation.ZCLCommandDef(
-            "receive_ir_frame_00",
+    class ServerCommandDefs(BaseCommandDefs):
+        receive_ir_frame_00: Final = foundation.ZCLCommandDef(
+            id=0x00,
             schema={
                 "seq": t.uint16_t,
                 "length": t.uint32_t,
@@ -196,9 +168,9 @@ class ZosungIRTransmit(CustomCluster):
             },
             direction=foundation.Direction.Server_to_Client,
             is_manufacturer_specific=True,
-        ),
-        0x01: foundation.ZCLCommandDef(
-            "receive_ir_frame_01",
+        )
+        receive_ir_frame_01: Final = foundation.ZCLCommandDef(
+            id=0x01,
             schema={
                 "zero": t.uint8_t,
                 "seq": t.uint16_t,
@@ -211,9 +183,9 @@ class ZosungIRTransmit(CustomCluster):
             },
             direction=foundation.Direction.Server_to_Client,
             is_manufacturer_specific=True,
-        ),
-        0x02: foundation.ZCLCommandDef(
-            "receive_ir_frame_02",
+        )
+        receive_ir_frame_02: Final = foundation.ZCLCommandDef(
+            id=0x02,
             schema={
                 "seq": t.uint16_t,
                 "position": t.uint32_t,
@@ -221,9 +193,9 @@ class ZosungIRTransmit(CustomCluster):
             },
             direction=foundation.Direction.Server_to_Client,
             is_manufacturer_specific=True,
-        ),
-        0x03: foundation.ZCLCommandDef(
-            "receive_ir_frame_03",
+        )
+        receive_ir_frame_03: Final = foundation.ZCLCommandDef(
+            id=0x03,
             schema={
                 "zero": t.uint8_t,
                 "seq": t.uint16_t,
@@ -233,9 +205,9 @@ class ZosungIRTransmit(CustomCluster):
             },
             direction=foundation.Direction.Client_to_Server,
             is_manufacturer_specific=False,
-        ),
-        0x04: foundation.ZCLCommandDef(
-            "receive_ir_frame_04",
+        )
+        receive_ir_frame_04: Final = foundation.ZCLCommandDef(
+            id=0x04,
             schema={
                 "zero0": t.uint8_t,
                 "seq": t.uint16_t,
@@ -243,17 +215,39 @@ class ZosungIRTransmit(CustomCluster):
             },
             direction=foundation.Direction.Server_to_Client,
             is_manufacturer_specific=True,
-        ),
-        0x05: foundation.ZCLCommandDef(
-            "receive_ir_frame_05",
+        )
+        receive_ir_frame_05: Final = foundation.ZCLCommandDef(
+            id=0x05,
             schema={
                 "seq": t.uint16_t,
                 "zero": t.uint16_t,
             },
             direction=foundation.Direction.Server_to_Client,
             is_manufacturer_specific=True,
-        ),
-    }
+        )
+
+    class ClientCommandDefs(BaseCommandDefs):
+        resp_ir_frame_03: Final = foundation.ZCLCommandDef(
+            id=0x03,
+            schema={
+                "zero": t.uint8_t,
+                "seq": t.uint16_t,
+                "position": t.uint32_t,
+                "msgpart": t.LVBytes,
+                "msgpartcrc": t.uint8_t,
+            },
+            direction=foundation.Direction.Client_to_Server,
+            is_manufacturer_specific=False,
+        )
+        resp_ir_frame_05: Final = foundation.ZCLCommandDef(
+            id=0x05,
+            schema={
+                "seq": t.uint16_t,
+                "zero": t.uint16_t,
+            },
+            direction=foundation.Direction.Server_to_Client,
+            is_manufacturer_specific=True,
+        )
 
     def handle_cluster_request(
         self,
@@ -271,7 +265,7 @@ class ZosungIRTransmit(CustomCluster):
             self.debug("Send default response")
             self.send_default_rsp(hdr, status=foundation.Status.SUCCESS)
 
-        if hdr.command_id == 0x00:
+        if hdr.command_id == self.ServerCommandDefs.receive_ir_frame_00.id:
             self.debug("hdr.command_id == 0x00")
 
             self.current_position = 0
@@ -295,10 +289,10 @@ class ZosungIRTransmit(CustomCluster):
             self.create_catching_task(
                 super().command(0x02, **cmd_02_args, expect_reply=True)
             )
-        elif hdr.command_id == 0x01:
+        elif hdr.command_id == self.ServerCommandDefs.receive_ir_frame_01.id:
             self.debug("IR-Message-Code01 received, sequence: %s", args.seq)
             self.debug("msg to send: %s", self.endpoint.device.ir_msg_to_send[args.seq])
-        elif hdr.command_id == 0x02:
+        elif hdr.command_id == self.ServerCommandDefs.receive_ir_frame_02.id:
             position = args.position
             seq = args.seq
             maxlen = args.maxlen
@@ -323,7 +317,7 @@ class ZosungIRTransmit(CustomCluster):
             self.create_catching_task(
                 super().command(0x03, **cmd_03_args, expect_reply=True)
             )
-        elif hdr.command_id == 0x03:
+        elif hdr.command_id == self.ServerCommandDefs.receive_ir_frame_03.id:
             msg_part_crc = args.msgpartcrc
             calculated_crc = 0
             for x in args.msgpart:
@@ -350,14 +344,14 @@ class ZosungIRTransmit(CustomCluster):
                 self.create_catching_task(
                     super().command(0x04, **cmd_04_args, expect_reply=False)
                 )
-        elif hdr.command_id == 0x04:
+        elif hdr.command_id == self.ServerCommandDefs.receive_ir_frame_04.id:
             seq = args.seq
             self.debug("Command 0x04: IRCode has been successfully sent. (seq:%s)", seq)
             cmd_05_args = {"seq": seq, "zero": 0}
             self.create_catching_task(
                 super().command(0x05, **cmd_05_args, expect_reply=False)
             )
-        elif hdr.command_id == 0x05:
+        elif hdr.command_id == self.ServerCommandDefs.receive_ir_frame_05.id:
             self.endpoint.device.last_learned_ir_code = base64.b64encode(
                 bytes(self.ir_msg)
             ).decode()
@@ -387,7 +381,7 @@ class ZosungIRBlaster(CustomDevice):
         self.seq = 0
         super().__init__(*args, **kwargs)
 
-    def nextSeq(self):
+    def next_seq(self):
         """Next local sequence."""
         self.seq = (self.seq + 1) % 0x10000
         return self.seq
@@ -485,11 +479,11 @@ class ZosungIRBlaster_ZS06(ZosungIRBlaster):
                 ],
             },
             242: {
-                PROFILE_ID: 0xA1E0,  # 41440 (dec)
-                DEVICE_TYPE: 0x0061,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [
-                    GreenPowerProxy.cluster_id,  # 0x0021 = GreenPowerProxy.cluster_id
+                    GreenPowerProxy.cluster_id,
                 ],
             },
         },
@@ -513,11 +507,11 @@ class ZosungIRBlaster_ZS06(ZosungIRBlaster):
                 ],
             },
             242: {
-                PROFILE_ID: 0xA1E0,  # 41440 (dec)
-                DEVICE_TYPE: 0x0061,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [
-                    GreenPowerProxy.cluster_id,  # 0x0021 = GreenPowerProxy.cluster_id
+                    GreenPowerProxy.cluster_id,
                 ],
             },
         },
