@@ -54,8 +54,6 @@ BOTH_BUTTONS = "both_buttons"
 class AqaraRemoteManuSpecificCluster(XiaomiAqaraE1Cluster):
     """Aqara manufacturer specific settings."""
 
-    ep_attribute = "aqara_cluster"
-
     # manufacture override code: 4447 (0x115f)
     # to get/set these attributes, you might need to click the button 5 times
     # quickly.

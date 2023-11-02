@@ -53,7 +53,6 @@ class AqaraPresenceEvents(types.enum8):
 class OppleCluster(XiaomiAqaraE1Cluster):
     """Opple cluster."""
 
-    ep_attribute = "opple_cluster"
     attributes = {
         PRESENCE: ("presence", types.uint8_t, True),
         MONITORING_MODE: ("monitoring_mode", types.uint8_t, True),

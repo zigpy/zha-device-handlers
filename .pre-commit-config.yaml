@@ -21,6 +21,8 @@ repos:
     rev: 6.0.0
     hooks:
       - id: flake8
+        additional_dependencies: 
+          - Flake8-pyproject==1.2.3
 
   - repo: https://github.com/PyCQA/isort
     rev: 5.12.0
@@ -31,6 +33,8 @@ repos:
     rev: v2.2.4
     hooks:
       - id: codespell
+        additional_dependencies:
+          - tomli
 
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.2.0

@@ -44,7 +44,6 @@ class MotionT1(XiaomiCustomDevice):
         """Init."""
         self.battery_size = 11
         self.motion_bus = Bus()
-        self.illuminance_bus = Bus()
         super().__init__(*args, **kwargs)
 
     signature = {

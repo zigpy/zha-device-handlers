@@ -13,6 +13,7 @@ from zigpy.zcl.clusters.general import (
     Time,
 )
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
+from zigpy.zcl.clusters.lightlink import LightLink
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
 
@@ -25,8 +26,10 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.quirk_ids import TUYA_PLUG_ONOFF
 from zhaquirks.tuya import (
     TuyaNewManufCluster,
+    TuyaZB1888Cluster,
     TuyaZBE000Cluster,
     TuyaZBElectricalMeasurement,
     TuyaZBExternalSwitchTypeCluster,
@@ -39,6 +42,8 @@ from zhaquirks.tuya.mcu import EnchantedDevice
 
 class Plug(EnchantedDevice):
     """Tuya plug with restore power state support."""
+
+    quirk_id = TUYA_PLUG_ONOFF
 
     signature = {
         MODEL: "TS011F",
@@ -100,6 +105,8 @@ class Plug(EnchantedDevice):
 class Plug_1AC(CustomDevice):
     """Tuya plug without metering with restore power state support."""
 
+    quirk_id = TUYA_PLUG_ONOFF
+
     signature = {
         MODEL: "TS011F",
         ENDPOINTS: {
@@ -157,6 +164,8 @@ class Plug_1AC(CustomDevice):
 
 class Plug_2AC_2USB(EnchantedDevice):
     """Tuya 2 outlet + 2 USB with restore power state support."""
+
+    quirk_id = TUYA_PLUG_ONOFF
 
     signature = {
         MODELS_INFO: [("_TZ3000_3zofvcaa", "TS011F")],
@@ -295,6 +304,8 @@ class Plug_2AC_2USB(EnchantedDevice):
 class Plug_3AC_4USB(CustomDevice):
     """Tuya 3 outlet + 4 USB with restore power state support."""
 
+    quirk_id = TUYA_PLUG_ONOFF
+
     signature = {
         MODEL: "TS011F",
         ENDPOINTS: {
@@ -404,6 +415,8 @@ class Plug_3AC_4USB(CustomDevice):
 
 class Plug_4AC_2USB(CustomDevice):
     """Tuya 4 outlet + 2 USB surge protector with restore power state support."""
+
+    quirk_id = TUYA_PLUG_ONOFF
 
     signature = {
         MODEL: "TS011F",
@@ -587,6 +600,8 @@ class Plug_4AC_2USB(CustomDevice):
 class Plug_TZ3210_2AC(CustomDevice):
     """TS0011F 2 outlet plug."""
 
+    quirk_id = TUYA_PLUG_ONOFF
+
     signature = {
         MODEL: "TS011F",
         ENDPOINTS: {
@@ -648,7 +663,7 @@ class Plug_TZ3210_2AC(CustomDevice):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    OnOff.cluster_id,
+                    TuyaZBOnOffAttributeCluster,
                     TuyaZBMeteringCluster,
                     TuyaZBElectricalMeasurement,
                     TuyaNewManufCluster,
@@ -662,7 +677,7 @@ class Plug_TZ3210_2AC(CustomDevice):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    OnOff.cluster_id,
+                    TuyaZBOnOffAttributeCluster,
                     TuyaNewManufCluster,
                 ],
                 OUTPUT_CLUSTERS: [],
@@ -679,6 +694,8 @@ class Plug_TZ3210_2AC(CustomDevice):
 
 class Plug_TZ3210_1AC(CustomDevice):
     """TS0011F 1 outlet plug."""
+
+    quirk_id = TUYA_PLUG_ONOFF
 
     signature = {
         MODEL: "TS011F",
@@ -725,7 +742,7 @@ class Plug_TZ3210_1AC(CustomDevice):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    OnOff.cluster_id,
+                    TuyaZBOnOffAttributeCluster,
                     TuyaZBMeteringCluster,
                     TuyaZBElectricalMeasurement,
                     TuyaNewManufCluster,
@@ -744,6 +761,8 @@ class Plug_TZ3210_1AC(CustomDevice):
 
 class Plug_4AC_2USB_cfnprab5(EnchantedDevice):
     """Tuya 4 outlet + 2 USB surge protector with restore power state support."""
+
+    quirk_id = TUYA_PLUG_ONOFF
 
     signature = {
         MODEL: "TS011F",
@@ -911,6 +930,8 @@ class Plug_4AC_2USB_cfnprab5(EnchantedDevice):
 class Plug_4AC_2USB_Metering(EnchantedDevice):
     """Tuya Tuya 4 outlet + 2 USB with power metering."""
 
+    quirk_id = TUYA_PLUG_ONOFF
+
     signature = {
         MODEL: "TS011F",
         ENDPOINTS: {
@@ -1029,6 +1050,8 @@ class Plug_4AC_2USB_Metering(EnchantedDevice):
 class Plug_v2(EnchantedDevice):
     """Another TS011F Tuya plug. First one using this definition is _TZ3000_okaz9tjs."""
 
+    quirk_id = TUYA_PLUG_ONOFF
+
     signature = {
         MODEL: "TS011F",
         ENDPOINTS: {
@@ -1074,8 +1097,83 @@ class Plug_v2(EnchantedDevice):
     }
 
 
+class Plug_v3(EnchantedDevice):
+    """Tuya TS011F plug. One plug is _Tz3000_0Zfrhq4I."""
+
+    quirk_id = TUYA_PLUG_ONOFF
+
+    signature = {
+        MODEL: "TS011F",
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    Time.cluster_id,
+                    Metering.cluster_id,
+                    ElectricalMeasurement.cluster_id,
+                    LightLink.cluster_id,
+                    TuyaZB1888Cluster.cluster_id,
+                    TuyaZBE000Cluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Ota.cluster_id,
+                ],
+            },
+            242: {
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [
+                    GreenPowerProxy.cluster_id,
+                ],
+            },
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaZBOnOffAttributeCluster,
+                    Time.cluster_id,
+                    TuyaZBMeteringClusterWithUnit,
+                    TuyaZBElectricalMeasurement,
+                    LightLink.cluster_id,
+                    TuyaZB1888Cluster,
+                    TuyaZBE000Cluster,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Ota.cluster_id,
+                ],
+            },
+            242: {
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [
+                    GreenPowerProxy.cluster_id,
+                ],
+            },
+        },
+    }
+
+
 class Plug_2AC_var03(CustomDevice):
     """Tuya 2 socket wall outlet with child lock and power-restore state support."""
+
+    quirk_id = TUYA_PLUG_ONOFF
 
     signature = {
         MODEL: "TS011F",
@@ -1147,6 +1245,8 @@ class Plug_2AC_var03(CustomDevice):
 class Plug_CB_Metering(EnchantedDevice):
     """Circuit breaker with monitoring, e.g. Tongou TO-Q-SY1-JZT. First one using this definition was _TZ3000_qeuvnohg."""
 
+    quirk_id = TUYA_PLUG_ONOFF
+
     signature = {
         MODEL: "TS011F",
         MODELS_INFO: [("_TZ3000_qeuvnohg", "TS011F")],
@@ -1214,6 +1314,8 @@ class Plug_CB_Metering(EnchantedDevice):
 
 class Plug_2AC_var05(EnchantedDevice):
     """Immax TS0011F 2 outlet plug."""
+
+    quirk_id = TUYA_PLUG_ONOFF
 
     signature = {
         MODEL: "TS011F",

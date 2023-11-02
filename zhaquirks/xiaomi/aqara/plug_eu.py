@@ -20,7 +20,6 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
 
-from zhaquirks import Bus
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -61,7 +60,6 @@ async def remove_from_ep(dev: zigpy.device.Device) -> None:
 class OppleCluster(XiaomiAqaraE1Cluster):
     """Opple cluster."""
 
-    ep_attribute = "opple_cluster"
     attributes = {
         0x0009: ("mode", types.uint8_t, True),
         0x0201: ("power_outage_memory", types.Bool, True),
@@ -83,13 +81,6 @@ class OppleCluster(XiaomiAqaraE1Cluster):
 
 class PlugMMEU01(XiaomiCustomDevice):
     """lumi.plug.mmeu01 plug."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        self.voltage_bus = Bus()
-        self.consumption_bus = Bus()
-        self.power_bus = Bus()
-        super().__init__(*args, **kwargs)
 
     signature = {
         MODELS_INFO: [

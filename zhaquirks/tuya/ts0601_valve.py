@@ -51,6 +51,7 @@ class TuyaValveManufCluster(TuyaMCUCluster):
             0xEF02: ("state", t.enum8, True),
             0xEF03: ("last_valve_open_duration", t.uint32_t, True),
             0xEF04: ("dp_6", t.uint32_t, True),
+            0xEF05: ("valve_position", t.uint32_t, True),
         }
     )
 
@@ -83,6 +84,10 @@ class TuyaValveManufCluster(TuyaMCUCluster):
             TuyaMCUCluster.ep_attribute,
             "last_valve_open_duration",
         ),
+        102: DPToAttributeMapping(
+            TuyaMCUCluster.ep_attribute,
+            "valve_position",
+        ),
     }
 
     data_point_handlers = {
@@ -93,6 +98,7 @@ class TuyaValveManufCluster(TuyaMCUCluster):
         11: "_dp_2_attr_update",
         12: "_dp_2_attr_update",
         15: "_dp_2_attr_update",
+        102: "_dp_2_attr_update",
     }
 
 
@@ -129,6 +135,45 @@ class TuyaValve(CustomDevice):
                     TuyaOnOff,
                     TuyaValveWaterConsumed,
                     DoublingPowerConfigurationCluster,
+                    TuyaValveManufCluster,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            }
+        }
+    }
+
+
+class BasicTuyaValve(CustomDevice):
+    """Basic Tuya valve device."""
+
+    signature = {
+        MODELS_INFO: [("_TZE200_1n2zev06", "TS0601")],
+        # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=81, device_version=1,
+        # input_clusters=[0, 4, 5, 61184], output_clusters=[25, 10])
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaValveManufCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            }
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaOnOff,
                     TuyaValveManufCluster,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
