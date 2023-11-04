@@ -16,6 +16,7 @@ from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.lightlink import LightLink
 
 from zhaquirks.const import (
+    BUTTON,
     CLUSTER_ID,
     COMMAND,
     COMMAND_MOVE_ON_OFF,
@@ -109,7 +110,7 @@ class IcasaKPD12(CustomDevice):
             CLUSTER_ID: 8,
             PARAMS: {"move_mode": 0, "rate": 50},
         },
-        (LONG_RELEASE, DIM_UP): {
+        (LONG_RELEASE, BUTTON): {
             COMMAND: COMMAND_STOP,
             ENDPOINT_ID: 1,
             CLUSTER_ID: 8,
@@ -121,12 +122,6 @@ class IcasaKPD12(CustomDevice):
         },
         (LONG_PRESS, DIM_DOWN): {
             COMMAND: COMMAND_MOVE_ON_OFF,
-            ENDPOINT_ID: 1,
-            CLUSTER_ID: 8,
-            PARAMS: {"move_mode": 1, "rate": 50},
-        },
-        (LONG_RELEASE, DIM_DOWN): {
-            COMMAND: COMMAND_STOP,
             ENDPOINT_ID: 1,
             CLUSTER_ID: 8,
             PARAMS: {"move_mode": 1, "rate": 50},
