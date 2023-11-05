@@ -40,9 +40,6 @@ from zhaquirks.const import (
     TURN_ON,
 )
 
-COMMAND_STORE = "store"
-COMMAND_RECALL = "recall"
-
 
 class IcasaKPD12(CustomDevice):
     """icasa KPD12 device (looks like a white label Sunricher)."""

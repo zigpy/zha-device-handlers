@@ -24,7 +24,9 @@ from zhaquirks.const import (
     COMMAND_MOVE_ON_OFF,
     COMMAND_OFF,
     COMMAND_ON,
+    COMMAND_RECALL,
     COMMAND_STOP,
+    COMMAND_STORE,
     DEVICE_TYPE,
     DIM_DOWN,
     DIM_UP,
@@ -41,9 +43,6 @@ from zhaquirks.const import (
     TURN_OFF,
     TURN_ON,
 )
-
-COMMAND_STORE = "store"
-COMMAND_RECALL = "recall"
 
 
 class IcasaKPD14S(CustomDevice):
