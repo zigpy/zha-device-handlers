@@ -1,5 +1,4 @@
 """Samjin button device."""
-import logging
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
@@ -30,8 +29,6 @@ from zhaquirks.const import (
     SHORT_PRESS,
 )
 from zhaquirks.samjin import SAMJIN, SamjinIASCluster
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class SamjinButton(CustomDevice):

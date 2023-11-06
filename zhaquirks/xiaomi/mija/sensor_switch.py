@@ -1,6 +1,5 @@
 """Xiaomi mija button device."""
 import asyncio
-import logging
 
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import (
@@ -54,8 +53,6 @@ from zhaquirks.xiaomi import (
 )
 
 XIAOMI_CLUSTER_ID = 0xFFFF
-
-_LOGGER = logging.getLogger(__name__)
 
 CLICK_TYPE_MAP = {
     2: COMMAND_DOUBLE,

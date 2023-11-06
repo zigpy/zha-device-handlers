@@ -1,5 +1,4 @@
 """Quirk for Aqara illumination sensor."""
-import logging
 
 from zigpy.profiles import zha
 import zigpy.types as types
@@ -23,8 +22,6 @@ from zhaquirks.xiaomi import (
     XiaomiAqaraE1Cluster,
     XiaomiCustomDevice,
 )
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class Illumination(XiaomiCustomDevice):

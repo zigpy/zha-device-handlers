@@ -1,5 +1,4 @@
 """Xiaomi aqara smart motion sensor device."""
-import logging
 import math
 
 from zigpy.profiles import zha
@@ -63,8 +62,6 @@ MEASUREMENT_TYPE = {
     TILT_VALUE: "Tilt",
     DROP_VALUE: "Drop",
 }
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class VibrationAQ1(XiaomiQuickInitDevice):

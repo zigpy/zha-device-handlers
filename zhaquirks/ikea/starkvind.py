@@ -1,7 +1,6 @@
 """Device handler for IKEA of Sweden STARKVIND Air purifier."""
 from __future__ import annotations
 
-import logging
 from typing import Any
 
 from zigpy.profiles import zgp, zha
@@ -28,8 +27,6 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.ikea import IKEA, IKEA_CLUSTER_ID, WWAH_CLUSTER_ID
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class IkeaAirpurifier(CustomCluster):

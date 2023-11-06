@@ -1,5 +1,4 @@
 """Device handler for smartthings tagV4 sensors."""
-import logging
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
@@ -13,8 +12,6 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-
-_LOGGER = logging.getLogger(__name__)
 
 ARRIVAL_SENSOR_DEVICE_TYPE = 0x8000
 

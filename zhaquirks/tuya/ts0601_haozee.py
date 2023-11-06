@@ -1,5 +1,4 @@
 """Map from manufacturer to standard clusters for thermostatic valves."""
-import logging
 
 import zigpy.profiles.zha
 import zigpy.types as t
@@ -71,8 +70,6 @@ HAOZEE_CURRENT_MODE_ATTR = 0x0480  # [0] manual [1] auto [2] away
 HAOZEE_FAULT_ATTR = 0x0582  # Known fault codes: [4] E2 external sensor error
 
 # Unknown DP - descaling on/off, window detection, window detection settings
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class HY08WEManufCluster(TuyaManufClusterAttributes):
