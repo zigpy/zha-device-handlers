@@ -56,7 +56,7 @@ class NikoConfigCluster(CustomCluster, ManufacturerSpecificCluster):
         # If ButtonOperationMode == Decoupled, then neither buttons nor relay affect the LEDs (i.e. LedOperationMode acts as if ==Decoupled)
         # If LedOperationMode == Decoupled and/or ButtonOperationMode == Decoupled, then LED can nevertheless by controlled by writing LedState ('always on' or 'always off')
 
-    cluster_id = 0xFC00
+    cluster_id = 0xfc00
     ep_attribute = "niko_config_cluster"
     attributes = {
         # If this would ever be expanded to outlets:
@@ -72,7 +72,7 @@ class NikoConfigCluster(CustomCluster, ManufacturerSpecificCluster):
 class NikoActionCluster(EventableCluster, ManufacturerSpecificCluster):
     """manufacturer specific cluster related to registered action (if ButtonOperationMode == Decoupled)"""
 
-    cluster_id = 0xFC01
+    cluster_id = 0xfc01
     ep_attribute = "niko_action_cluster"
     attributes = {
         # Notable behaviour:
@@ -119,14 +119,7 @@ class NikoSingleConnectableSwitch(CustomDevice):
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_PLUG_IN_UNIT,
                 INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
                     OnOff.cluster_id,
-                    Diagnostic.cluster_id,
-                    NikoConfigCluster.cluster_id,
-                    NikoActionCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [],
             },
@@ -136,7 +129,7 @@ class NikoSingleConnectableSwitch(CustomDevice):
             # output_clusters=[33])
             242: {
                 PROFILE_ID: 41440,
-                DEVICE_TYPE: 0x0061,  # ??
+                DEVICE_TYPE: 0x0061,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [
                     GreenPowerProxy.cluster_id,
@@ -171,20 +164,13 @@ class NikoSingleConnectableSwitch(CustomDevice):
                     # Most of the clusters repeated in the second endpoint are not actually independent (i.e. a change in one endpoint also changes it in the other).
                     # Accordingly, one might think you could e.g. control the button and/or LED operation independently for both sides, but that's not actually the case.
                     # As such, the clusters which (I believe) are superfluous have been omitted in the replacement dict.
-                    # Basic.cluster_id,
-                    # Identify.cluster_id,
-                    # Groups.cluster_id,
-                    # Scenes.cluster_id,
                     OnOff.cluster_id,
-                    # Diagnostic.cluster_id,
-                    # NikoConfigCluster,
-                    # NikoActionCluster,
                 ],
                 OUTPUT_CLUSTERS: [],
             },
             242: {
                 PROFILE_ID: 41440,
-                DEVICE_TYPE: 0x0061,  # ??
+                DEVICE_TYPE: 0x0061,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [
                     GreenPowerProxy.cluster_id,
@@ -238,14 +224,7 @@ class NikoDoubleConnectableSwitch(CustomDevice):
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_PLUG_IN_UNIT,
                 INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
                     OnOff.cluster_id,
-                    Diagnostic.cluster_id,
-                    NikoConfigCluster.cluster_id,
-                    NikoActionCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [],
             },
@@ -255,7 +234,7 @@ class NikoDoubleConnectableSwitch(CustomDevice):
             # output_clusters=[33])
             242: {
                 PROFILE_ID: 41440,
-                DEVICE_TYPE: 0x0061,  # ??
+                DEVICE_TYPE: 0x0061,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [
                     GreenPowerProxy.cluster_id,
@@ -290,20 +269,13 @@ class NikoDoubleConnectableSwitch(CustomDevice):
                     # Most of the clusters repeated in the second endpoint are not actually independent (i.e. a change in one endpoint also changes it in the other).
                     # Accordingly, one might think you could e.g. control the button and/or LED operation independently for both sides, but that's not actually the case.
                     # As such, the clusters which (I believe) are superfluous have been omitted in the replacement dict.
-                    # Basic.cluster_id,
-                    # Identify.cluster_id,
-                    # Groups.cluster_id,
-                    # Scenes.cluster_id,
                     OnOff.cluster_id,
-                    # Diagnostic.cluster_id,
-                    # NikoConfigCluster,
-                    # NikoActionCluster,
                 ],
                 OUTPUT_CLUSTERS: [],
             },
             242: {
                 PROFILE_ID: 41440,
-                DEVICE_TYPE: 0x0061,  # ??
+                DEVICE_TYPE: 0x0061,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [
                     GreenPowerProxy.cluster_id,
