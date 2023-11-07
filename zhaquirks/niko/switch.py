@@ -136,7 +136,7 @@ class NikoSingleConnectableSwitch(CustomDevice):
             # output_clusters=[33])
             242: {
                 PROFILE_ID: 41440,
-                DEVICE_TYPE: 0x0061, # ??
+                DEVICE_TYPE: 0x0061,  # ??
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [
                     GreenPowerProxy.cluster_id,
@@ -184,7 +184,7 @@ class NikoSingleConnectableSwitch(CustomDevice):
             },
             242: {
                 PROFILE_ID: 41440,
-                DEVICE_TYPE: 0x0061, # ??
+                DEVICE_TYPE: 0x0061,  # ??
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [
                     GreenPowerProxy.cluster_id,
@@ -255,7 +255,7 @@ class NikoDoubleConnectableSwitch(CustomDevice):
             # output_clusters=[33])
             242: {
                 PROFILE_ID: 41440,
-                DEVICE_TYPE: 0x0061, # ??
+                DEVICE_TYPE: 0x0061,  # ??
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [
                     GreenPowerProxy.cluster_id,
@@ -303,7 +303,7 @@ class NikoDoubleConnectableSwitch(CustomDevice):
             },
             242: {
                 PROFILE_ID: 41440,
-                DEVICE_TYPE: 0x0061, # ??
+                DEVICE_TYPE: 0x0061,  # ??
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [
                     GreenPowerProxy.cluster_id,
