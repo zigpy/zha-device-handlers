@@ -161,14 +161,14 @@ def test_tuya_data_bitmap():
 
     data = b"\x05\x00\x02\x40\x02"
     r, _ = TuyaData.deserialize(data)
-    r.payload == 0x4002
+    assert r.payload == 0x0240
 
     r.payload = t.bitmap16(0x2004)
     assert r.raw == b"\x20\x04"
 
     data = b"\x05\x00\x04\x40\x02\x80\x01"
     r, _ = TuyaData.deserialize(data)
-    r.payload == 0x40028001
+    assert r.payload == 0x1800240
 
     r.payload = t.bitmap32(0x10082004)
     assert r.raw == b"\x10\x08\x20\x04"
