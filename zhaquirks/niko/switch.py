@@ -56,7 +56,7 @@ class NikoConfigCluster(CustomCluster, ManufacturerSpecificCluster):
         # If ButtonOperationMode == Decoupled, then neither buttons nor relay affect the LEDs (i.e. LedOperationMode acts as if ==Decoupled)
         # If LedOperationMode == Decoupled and/or ButtonOperationMode == Decoupled, then LED can nevertheless by controlled by writing LedState ('always on' or 'always off')
 
-    cluster_id = 0xfc00
+    cluster_id = 0xFC00
     ep_attribute = "niko_config_cluster"
     attributes = {
         # If this would ever be expanded to outlets:
@@ -72,7 +72,7 @@ class NikoConfigCluster(CustomCluster, ManufacturerSpecificCluster):
 class NikoActionCluster(EventableCluster, ManufacturerSpecificCluster):
     """manufacturer specific cluster related to registered action (if ButtonOperationMode == Decoupled)"""
 
-    cluster_id = 0xfc01
+    cluster_id = 0xFC01
     ep_attribute = "niko_action_cluster"
     attributes = {
         # Notable behaviour:
