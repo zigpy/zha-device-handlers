@@ -27,7 +27,6 @@ from zhaquirks.salus import COMPUTIME
 class TemperatureMeasurementCluster(CustomCluster, TemperatureMeasurement):
     """Temperature cluster that divides value by 2."""
 
-    cluster_id = TemperatureMeasurement.cluster_id
     ATTR_ID = 0
 
     def _update_attribute(self, attrid, value):

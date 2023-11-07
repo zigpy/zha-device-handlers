@@ -20,7 +20,6 @@ from zhaquirks.const import (
 class CustomPowerConfigurationCluster(PowerConfigurationCluster):
     """Custom PowerConfigurationCluster."""
 
-    cluster_id = PowerConfigurationCluster.cluster_id
     MIN_VOLTS = 2.1
     MAX_VOLTS = 3.0
 

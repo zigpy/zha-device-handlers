@@ -90,8 +90,6 @@ class IkeaAirpurifier(CustomCluster):
 class PM25Cluster(CustomCluster, PM25):
     """PM25 input cluster, only used to show PM2.5 values from IKEA cluster."""
 
-    cluster_id = PM25.cluster_id
-
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)

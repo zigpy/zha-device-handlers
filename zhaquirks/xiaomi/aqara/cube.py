@@ -167,8 +167,6 @@ class Cube(XiaomiQuickInitDevice):
     class MultistateInputCluster(CustomCluster, MultistateInput):
         """Multistate input cluster."""
 
-        cluster_id = MultistateInput.cluster_id
-
         def __init__(self, *args, **kwargs):
             """Init."""
             self._current_state = {}
@@ -201,8 +199,6 @@ class Cube(XiaomiQuickInitDevice):
 
     class AnalogInputCluster(CustomCluster, AnalogInput):
         """Analog input cluster."""
-
-        cluster_id = AnalogInput.cluster_id
 
         def __init__(self, *args, **kwargs):
             """Init."""

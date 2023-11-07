@@ -117,8 +117,6 @@ class ManufacturerThermostatCluster(TuyaManufClusterAttributes):
 class ThermostatCluster(TuyaThermostatCluster):
     """Thermostat cluster."""
 
-    cluster_id = Thermostat.cluster_id
-
     _CONSTANT_ATTRIBUTES = {
         MIN_HEAT_SETPOINT_ATTR: 500,
         MAX_HEAT_SETPOINT_ATTR: 3000,
