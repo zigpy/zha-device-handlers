@@ -32,6 +32,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.niko import NIKO
 
 
 class NikoConfigCluster(CustomCluster, ManufacturerSpecificCluster):
@@ -135,7 +136,7 @@ class NikoSingleConnectableSwitch(CustomDevice):
             # output_clusters=[33])
             242: {
                 PROFILE_ID: 41440,
-                DEVICE_TYPE: 0x0061,  #??
+                DEVICE_TYPE: 0x0061, # ??
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [
                     GreenPowerProxy.cluster_id,
@@ -167,9 +168,9 @@ class NikoSingleConnectableSwitch(CustomDevice):
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_PLUG_IN_UNIT,
                 INPUT_CLUSTERS: [
-                # Most of the clusters repeated in the second endpoint are not actually independent (i.e. a change in one endpoint also changes it in the other).
-                # Accordingly, one might think you could e.g. control the button and/or LED operation independently for both sides, but that's not actually the case.
-                # As such, the clusters which (I believe) are superfluous have been omitted in the replacement dict.
+                    # Most of the clusters repeated in the second endpoint are not actually independent (i.e. a change in one endpoint also changes it in the other).
+                    # Accordingly, one might think you could e.g. control the button and/or LED operation independently for both sides, but that's not actually the case.
+                    # As such, the clusters which (I believe) are superfluous have been omitted in the replacement dict.
                     # Basic.cluster_id,
                     # Identify.cluster_id,
                     # Groups.cluster_id,
@@ -183,7 +184,7 @@ class NikoSingleConnectableSwitch(CustomDevice):
             },
             242: {
                 PROFILE_ID: 41440,
-                DEVICE_TYPE: 0x0061,  #??
+                DEVICE_TYPE: 0x0061, # ??
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [
                     GreenPowerProxy.cluster_id,
@@ -193,12 +194,12 @@ class NikoSingleConnectableSwitch(CustomDevice):
     }
 
     device_automation_triggers = {
-        (COMMAND_CLICK, BUTTON_1): {ARGS: {'value': 64}},
-        (COMMAND_HOLD, BUTTON_1): {ARGS: {'value': 32}},
-        (COMMAND_RELEASE, BUTTON_1): {ARGS: {'value': 48}},
-        (COMMAND_CLICK, BUTTON_2): {ARGS: {'value': 1024}},
-        (COMMAND_HOLD, BUTTON_2): {ARGS: {'value': 512}},
-        (COMMAND_RELEASE, BUTTON_2): {ARGS: {'value': 768}},
+        (COMMAND_CLICK, BUTTON_1): {ARGS: {"value": 64}},
+        (COMMAND_HOLD, BUTTON_1): {ARGS: {"value": 32}},
+        (COMMAND_RELEASE, BUTTON_1): {ARGS: {"value": 48}},
+        (COMMAND_CLICK, BUTTON_2): {ARGS: {"value": 1024}},
+        (COMMAND_HOLD, BUTTON_2): {ARGS: {"value": 512}},
+        (COMMAND_RELEASE, BUTTON_2): {ARGS: {"value": 768}},
     }
 
 
@@ -254,7 +255,7 @@ class NikoDoubleConnectableSwitch(CustomDevice):
             # output_clusters=[33])
             242: {
                 PROFILE_ID: 41440,
-                DEVICE_TYPE: 0x0061,  #??
+                DEVICE_TYPE: 0x0061, # ??
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [
                     GreenPowerProxy.cluster_id,
@@ -286,9 +287,9 @@ class NikoDoubleConnectableSwitch(CustomDevice):
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_PLUG_IN_UNIT,
                 INPUT_CLUSTERS: [
-                # Most of the clusters repeated in the second endpoint are not actually independent (i.e. a change in one endpoint also changes it in the other).
-                # Accordingly, one might think you could e.g. control the button and/or LED operation independently for both sides, but that's not actually the case.
-                # As such, the clusters which (I believe) are superfluous have been omitted in the replacement dict.
+                    # Most of the clusters repeated in the second endpoint are not actually independent (i.e. a change in one endpoint also changes it in the other).
+                    # Accordingly, one might think you could e.g. control the button and/or LED operation independently for both sides, but that's not actually the case.
+                    # As such, the clusters which (I believe) are superfluous have been omitted in the replacement dict.
                     # Basic.cluster_id,
                     # Identify.cluster_id,
                     # Groups.cluster_id,
@@ -302,7 +303,7 @@ class NikoDoubleConnectableSwitch(CustomDevice):
             },
             242: {
                 PROFILE_ID: 41440,
-                DEVICE_TYPE: 0x0061, #??
+                DEVICE_TYPE: 0x0061, # ??
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [
                     GreenPowerProxy.cluster_id,
@@ -312,16 +313,16 @@ class NikoDoubleConnectableSwitch(CustomDevice):
     }
 
     device_automation_triggers = {
-        (COMMAND_CLICK, BUTTON_1): {ARGS: {'value': 64}},
-        (COMMAND_HOLD, BUTTON_1): {ARGS: {'value': 32}},
-        (COMMAND_RELEASE, BUTTON_1): {ARGS: {'value': 48}},
-        (COMMAND_CLICK, BUTTON_2): {ARGS: {'value': 16384}},
-        (COMMAND_HOLD, BUTTON_2): {ARGS: {'value': 8192}},
-        (COMMAND_RELEASE, BUTTON_2): {ARGS: {'value': 12288}},
-        (COMMAND_CLICK, BUTTON_3): {ARGS: {'value': 1024}},
-        (COMMAND_HOLD, BUTTON_3): {ARGS: {'value': 512}},
-        (COMMAND_RELEASE, BUTTON_3): {ARGS: {'value': 768}},
-        (COMMAND_CLICK, BUTTON_4): {ARGS: {'value': 262144}},
-        (COMMAND_HOLD, BUTTON_4): {ARGS: {'value': 131072}},
-        (COMMAND_RELEASE, BUTTON_4): {ARGS: {'value': 196608}},
+        (COMMAND_CLICK, BUTTON_1): {ARGS: {"value": 64}},
+        (COMMAND_HOLD, BUTTON_1): {ARGS: {"value": 32}},
+        (COMMAND_RELEASE, BUTTON_1): {ARGS: {"value": 48}},
+        (COMMAND_CLICK, BUTTON_2): {ARGS: {"value": 16384}},
+        (COMMAND_HOLD, BUTTON_2): {ARGS: {"value": 8192}},
+        (COMMAND_RELEASE, BUTTON_2): {ARGS: {"value": 12288}},
+        (COMMAND_CLICK, BUTTON_3): {ARGS: {"value": 1024}},
+        (COMMAND_HOLD, BUTTON_3): {ARGS: {"value": 512}},
+        (COMMAND_RELEASE, BUTTON_3): {ARGS: {"value": 768}},
+        (COMMAND_CLICK, BUTTON_4): {ARGS: {"value": 262144}},
+        (COMMAND_HOLD, BUTTON_4): {ARGS: {"value": 131072}},
+        (COMMAND_RELEASE, BUTTON_4): {ARGS: {"value": 196608}},
     }
