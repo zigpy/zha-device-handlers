@@ -28,6 +28,23 @@ from zhaquirks.xiaomi import (
 )
 
 
+class PressureMeasurementT1Cluster(PressureMeasurementCluster):
+    """Pressure measurement cluster that multiplies Xiaomi attribute reports again."""
+
+    # Note: For normal attribute reports, zigpy does not call update_attribute().
+    # Instead, _update_attribute() is called directly.
+    # But Xiaomi attribute reports call update_attribute() first, so we override it.
+    def update_attribute(self, attrid, value):
+        """Override update_attribute to multiply pressure values by 100.
+
+        The pressure values in the Xiaomi attribute reports are divided by 100 in xiaomi/__init__.py.
+        However, this sensor sends pressure values that are already in hPa, so we need to undo that division.
+        """
+        if attrid == self.AttributeDefs.measured_value.id:
+            value = value * 100
+        super().update_attribute(attrid, value)
+
+
 class LumiSensorHtAgl02(XiaomiCustomDevice):
     """Lumi lumi.sensor_ht.agl02 custom device implementation."""
 
@@ -65,7 +82,7 @@ class LumiSensorHtAgl02(XiaomiCustomDevice):
                     XiaomiPowerConfiguration,
                     Identify.cluster_id,
                     TemperatureMeasurementCluster,
-                    PressureMeasurementCluster,
+                    PressureMeasurementT1Cluster,
                     RelativeHumidityCluster,
                     XiaomiAqaraE1Cluster,
                 ],
