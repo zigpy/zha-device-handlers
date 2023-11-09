@@ -72,6 +72,7 @@ from zhaquirks.xiaomi.aqara.feeder_acn001 import (
 )
 import zhaquirks.xiaomi.aqara.magnet_agl02
 import zhaquirks.xiaomi.aqara.motion_ac02
+import zhaquirks.xiaomi.aqara.motion_agl02
 import zhaquirks.xiaomi.aqara.motion_aq2
 import zhaquirks.xiaomi.aqara.motion_aq2b
 import zhaquirks.xiaomi.aqara.plug
@@ -1018,9 +1019,17 @@ async def test_xiaomi_e1_thermostat_attribute_update(zigpy_device_from_quirk, qu
     assert power_config_listener.attribute_updates[0][1] == 100  # ZCL is doubled
 
 
-@pytest.mark.parametrize("quirk", (zhaquirks.xiaomi.aqara.motion_ac02.LumiMotionAC02,))
-async def test_xiaomi_p1_motion_sensor(zigpy_device_from_quirk, quirk):
-    """Test Aqara P1 motion sensor."""
+@pytest.mark.parametrize(
+    "quirk, invalid_iilluminance_report",
+    (
+        (zhaquirks.xiaomi.aqara.motion_ac02.LumiMotionAC02, 0),
+        (zhaquirks.xiaomi.aqara.motion_agl02.MotionT1, -1),
+    ),
+)
+async def test_xiaomi_p1_t1_motion_sensor(
+    zigpy_device_from_quirk, quirk, invalid_iilluminance_report
+):
+    """Test Aqara P1 and T1 motion sensors."""
 
     device = zigpy_device_from_quirk(quirk)
 
@@ -1071,10 +1080,11 @@ async def test_xiaomi_p1_motion_sensor(zigpy_device_from_quirk, quirk):
     # send invalid illuminance report 0xFFFF (and motion)
     opple_cluster.update_attribute(274, 0xFFFF)
 
-    # confirm invalid illuminance report is interpreted as 0
+    # confirm invalid illuminance report is interpreted as 0 for P1 sensor,
+    # and -1 for the T1 sensor, as it doesn't seem like the T1 sensor sends invalid illuminance reports
     assert len(illuminance_listener.attribute_updates) == 2
     assert illuminance_listener.attribute_updates[1][0] == zcl_iilluminance_id
-    assert illuminance_listener.attribute_updates[1][1] == 0
+    assert illuminance_listener.attribute_updates[1][1] == invalid_iilluminance_report
 
     # send illuminance report only
     opple_cluster.update_attribute(
