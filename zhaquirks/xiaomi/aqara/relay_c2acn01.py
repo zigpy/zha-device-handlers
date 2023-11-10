@@ -32,6 +32,7 @@ from zhaquirks.xiaomi import (
     BasicCluster,
     BinaryOutputInterlock,
     ElectricalMeasurementCluster,
+    MeteringCluster,
     XiaomiCustomDevice,
 )
 
@@ -99,6 +100,7 @@ class Relay(XiaomiCustomDevice):
                     Scenes.cluster_id,
                     BinaryOutputInterlock,
                     Time.cluster_id,
+                    MeteringCluster,
                     ElectricalMeasurementCluster,
                     AnalogInputCluster,
                 ],
