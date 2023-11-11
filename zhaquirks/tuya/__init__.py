@@ -46,7 +46,6 @@ TUYA_MCU_VERSION_RSP = 0x11
 #
 TUYA_LEVEL_COMMAND = 514
 
-COVER_EVENT = "cover_event"
 LEVEL_EVENT = "level_event"
 TUYA_MCU_COMMAND = "tuya_mcu_command"
 
@@ -108,7 +107,6 @@ ATTR_COVER_INVERTED = 0x8002
 # ---------------------------------------------------------
 SWITCH_EVENT = "switch_event"
 ATTR_ON_OFF = 0x0000
-ATTR_COVER_POSITION = 0x0008
 TUYA_CMD_BASE = 0x0100
 # ---------------------------------------------------------
 # DP Value meanings in Status Report
