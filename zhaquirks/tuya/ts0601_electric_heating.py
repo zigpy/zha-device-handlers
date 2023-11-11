@@ -1,5 +1,4 @@
 """Map from manufacturer to standard clusters for electric heating thermostats."""
-import logging
 
 from zigpy.profiles import zha
 import zigpy.types as t
@@ -30,8 +29,6 @@ MOESBHT_MANUAL_MODE_ATTR = 0x0402  # [1] false [0] true /!\ inverted
 MOESBHT_ENABLED_ATTR = 0x0101  # [0] off [1] on
 MOESBHT_RUNNING_MODE_ATTR = 0x0424  # [1] idle [0] heating /!\ inverted
 MOESBHT_CHILD_LOCK_ATTR = 0x0128  # [0] unlocked [1] child-locked
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class MoesBHTManufCluster(TuyaManufClusterAttributes):

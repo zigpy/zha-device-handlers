@@ -1,5 +1,4 @@
 """Visonic MCT340E device."""
-import logging
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
@@ -20,9 +19,6 @@ from zhaquirks.const import (
 
 OSRAM_DEVICE = 0x0810  # 2064 base 10
 OSRAM_CLUSTER = 0xFD00  # 64768 base 10
-
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class CustomPowerConfigurationCluster(PowerConfigurationCluster):

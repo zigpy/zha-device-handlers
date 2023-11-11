@@ -1,5 +1,4 @@
 """Xiaomi aqara magic cube device."""
-import logging
 
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import (
@@ -142,8 +141,6 @@ SIDES = {
     KNOCK_5_VALUE: 5,
     KNOCK_6_VALUE: 6,
 }
-
-_LOGGER = logging.getLogger(__name__)
 
 
 def extend_dict(dictionary, value, ranges):

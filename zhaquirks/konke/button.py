@@ -1,5 +1,4 @@
 """Konke Button Remote."""
-import logging
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
@@ -31,8 +30,6 @@ from zhaquirks.const import (
 from zhaquirks.konke import KONKE, KonkeOnOffCluster
 
 KONKE_CLUSTER_ID = 0xFCC0
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class KonkeButtonRemote1(CustomDevice):

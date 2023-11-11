@@ -115,11 +115,6 @@ class ZigfredCluster(CustomCluster):
 class ZigfredUno(CustomDevice):
     """zigfred uno device handler."""
 
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        _LOGGER.info("Initializing zigfred uno")
-        super().__init__(*args, **kwargs)
-
     signature = {
         MODELS_INFO: [("Siglis", "zigfred uno")],
         ENDPOINTS: {
@@ -266,11 +261,6 @@ class ZigfredUno(CustomDevice):
 
 class ZigfredPlus(CustomDevice):
     """zigfred plus device handler."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        _LOGGER.info("Initializing zigfred plus")
-        super().__init__(*args, **kwargs)
 
     signature = {
         MODELS_INFO: [("Siglis", "zigfred plus")],

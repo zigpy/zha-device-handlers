@@ -1,5 +1,4 @@
 """Xiaomi aqara double key switch device."""
-import logging
 
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import (
@@ -60,8 +59,6 @@ XIAOMI_CLUSTER_ID = 0xFFFF
 XIAOMI_DEVICE_TYPE = 0x5F01
 XIAOMI_DEVICE_TYPE2 = 0x5F02
 XIAOMI_DEVICE_TYPE3 = 0x5F03
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class RemoteB286ACN01(XiaomiCustomDevice):

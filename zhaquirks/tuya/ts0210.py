@@ -1,6 +1,5 @@
 """TS0210 vibration sensor."""
 
-import logging
 from typing import Optional, Tuple, Union
 
 from zigpy.profiles import zha
@@ -21,8 +20,6 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.tuya import TuyaManufCluster
-
-_LOGGER = logging.getLogger(__name__)
 
 ZONE_TYPE = 0x0001
 IAS_VIBRATION_SENSOR = 0x5F02
