@@ -78,6 +78,7 @@ import zhaquirks.xiaomi.aqara.motion_aq2b
 import zhaquirks.xiaomi.aqara.plug
 import zhaquirks.xiaomi.aqara.plug_eu
 import zhaquirks.xiaomi.aqara.roller_curtain_e1
+import zhaquirks.xiaomi.aqara.sensor_ht_agl02
 import zhaquirks.xiaomi.aqara.smoke
 import zhaquirks.xiaomi.aqara.switch_t1
 import zhaquirks.xiaomi.aqara.weather
@@ -1096,9 +1097,11 @@ async def test_xiaomi_p1_t1_motion_sensor(
 
 
 @pytest.mark.parametrize(
-    "raw_report, expected_results",
+    "quirk, cluster_name, raw_report, expected_results",
     (
-        [
+        (
+            zhaquirks.xiaomi.aqara.weather.Weather2,
+            "basic",
             "18200A01FF412501214F0B0421A84305214E020624010000000064299B096521BE1B662B138D01000A21900D",
             [
                 2459,  # temperature
@@ -1107,16 +1110,29 @@ async def test_xiaomi_p1_t1_motion_sensor(
                 28.9,  # battery voltage
                 54,  # battery percent * 2
             ],
-        ],
+        ),
+        (
+            zhaquirks.xiaomi.aqara.sensor_ht_agl02.LumiSensorHtAgl02,
+            "opple_cluster",
+            "1C5F11860AF700412D0121B60B0328170421A81305210B000624060000000008211D010A210"
+            "0000C200164292D09652904186629E903",
+            [
+                2349,  # temperature
+                6148,  # humidity
+                1001,  # pressure
+                30.0,  # battery voltage
+                127,  # battery percent * 2
+            ],
+        ),
     ),
 )
-async def test_xiaomi_weather(zigpy_device_from_quirk, raw_report, expected_results):
-    """Test Aqara weather sensor."""
+async def test_xiaomi_weather(
+    zigpy_device_from_quirk, quirk, cluster_name, raw_report, expected_results
+):
+    """Test Aqara weather sensors."""
     raw_report = bytes.fromhex(raw_report)
-
-    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.weather.Weather2)
-
-    basic_cluster = device.endpoints[1].basic
+    device = zigpy_device_from_quirk(quirk)
+    xiaomi_attr_cluster = getattr(device.endpoints[1], cluster_name)
 
     temperature_cluster = device.endpoints[1].temperature
     temperature_listener = ClusterListener(temperature_cluster)
@@ -1140,9 +1156,9 @@ async def test_xiaomi_weather(zigpy_device_from_quirk, raw_report, expected_resu
 
     device.handle_message(
         260,
-        basic_cluster.cluster_id,
-        basic_cluster.endpoint.endpoint_id,
-        basic_cluster.endpoint.endpoint_id,
+        xiaomi_attr_cluster.cluster_id,
+        xiaomi_attr_cluster.endpoint.endpoint_id,
+        xiaomi_attr_cluster.endpoint.endpoint_id,
         raw_report,
     )
 

@@ -65,6 +65,7 @@ POWER = "power"
 CONSUMPTION = "consumption"
 VOLTAGE = "voltage"
 PRESSURE_MEASUREMENT = "pressure_measurement"
+PRESSURE_MEASUREMENT_PRECISION = "pressure_measurement_precision"
 STATE = "state"
 TEMPERATURE = "temperature"
 TEMPERATURE_MEASUREMENT = "temperature_measurement"
@@ -277,7 +278,13 @@ class XiaomiCluster(CustomCluster):
         if PRESSURE_MEASUREMENT in attributes:
             self.endpoint.pressure.update_attribute(
                 PressureMeasurement.AttributeDefs.measured_value.id,
-                attributes[PRESSURE_MEASUREMENT] / 100,
+                attributes[PRESSURE_MEASUREMENT],
+            )
+
+        if PRESSURE_MEASUREMENT_PRECISION in attributes:
+            self.endpoint.pressure.update_attribute(
+                PressureMeasurement.AttributeDefs.measured_value.id,
+                attributes[PRESSURE_MEASUREMENT_PRECISION] / 100,
             )
 
         if POWER in attributes:
@@ -357,6 +364,8 @@ class XiaomiCluster(CustomCluster):
                     101: HUMIDITY_MEASUREMENT,
                     102: TVOC_MEASUREMENT
                     if self.endpoint.device.model == "lumi.airmonitor.acn01"
+                    else PRESSURE_MEASUREMENT_PRECISION
+                    if self.endpoint.device.model == "lumi.weather"
                     else PRESSURE_MEASUREMENT,
                 }
             )
