@@ -85,6 +85,8 @@ class VibrationAQ1(XiaomiQuickInitDevice):
     class MultistateInputCluster(CustomCluster, MultistateInput):
         """Multistate input cluster."""
 
+        cluster_id = DoorLock.cluster_id
+
         def __init__(self, *args, **kwargs):
             """Init."""
             self._current_state = {}
