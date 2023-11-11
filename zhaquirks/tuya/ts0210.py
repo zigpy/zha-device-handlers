@@ -28,7 +28,6 @@ IAS_VIBRATION_SENSOR = 0x5F02
 class VibrationCluster(LocalDataCluster, MotionOnEvent, IasZone):
     """Tuya Motion Sensor."""
 
-    cluster_id = IasZone.cluster_id
     _CONSTANT_ATTRIBUTES = {ZONE_TYPE: IasZone.ZoneType.Vibration_Movement_Sensor}
     reset_s = 15
 

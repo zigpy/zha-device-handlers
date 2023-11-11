@@ -31,7 +31,6 @@ MODEL = "SP 120"
 class MeteringCluster(CustomCluster, Metering):
     """Fix multiplier and divisor."""
 
-    cluster_id = Metering.cluster_id
     MULTIPLIER = 0x0301
     DIVISOR = 0x0302
     _CONSTANT_ATTRIBUTES = {MULTIPLIER: 1, DIVISOR: 100}
@@ -40,7 +39,6 @@ class MeteringCluster(CustomCluster, Metering):
 class ElectricalMeasurementCluster(CustomCluster, ElectricalMeasurement):
     """Fix multiplier and divisor."""
 
-    cluster_id = ElectricalMeasurement.cluster_id
     MULTIPLIER = 0x0602
     DIVISOR = 0x0603
     _CONSTANT_ATTRIBUTES = {MULTIPLIER: 1, DIVISOR: 1000}

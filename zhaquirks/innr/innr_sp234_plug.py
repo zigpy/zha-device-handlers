@@ -31,7 +31,6 @@ MODEL = "SP 234"
 class ElectricalMeasurementCluster(CustomCluster, ElectricalMeasurement):
     """Fix divisor."""
 
-    cluster_id = ElectricalMeasurement.cluster_id
     AC_POWER_DIVISOR = 0x0605
     _CONSTANT_ATTRIBUTES = {AC_POWER_DIVISOR: 1}
 

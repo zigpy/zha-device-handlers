@@ -73,7 +73,6 @@ class MijaButton(XiaomiQuickInitDevice):
     class MijaOnOff(CustomCluster, OnOff):
         """Mija on off cluster."""
 
-        cluster_id = OnOff.cluster_id
         hold_duration: float = 1.0
 
         def __init__(self, *args, **kwargs):

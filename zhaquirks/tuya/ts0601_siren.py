@@ -158,7 +158,6 @@ class TuyaSirenOnOff(LocalDataCluster, OnOff):
 class TuyaTemperatureMeasurement(LocalDataCluster, TemperatureMeasurement):
     """Temperature cluster acting from events from temperature bus."""
 
-    cluster_id = TemperatureMeasurement.cluster_id
     ATTR_ID = 0
 
     def __init__(self, *args, **kwargs):
@@ -174,7 +173,6 @@ class TuyaTemperatureMeasurement(LocalDataCluster, TemperatureMeasurement):
 class TuyaRelativeHumidity(LocalDataCluster, RelativeHumidity):
     """Humidity cluster acting from events from humidity bus."""
 
-    cluster_id = RelativeHumidity.cluster_id
     ATTR_ID = 0
 
     def __init__(self, *args, **kwargs):

@@ -67,8 +67,6 @@ class RemoteB286ACN01(XiaomiCustomDevice):
     class MultistateInputCluster(CustomCluster, MultistateInput):
         """Multistate input cluster."""
 
-        cluster_id = MultistateInput.cluster_id
-
         def __init__(self, *args, **kwargs):
             """Init."""
             self._current_state = None
