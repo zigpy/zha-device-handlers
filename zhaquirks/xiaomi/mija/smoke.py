@@ -12,7 +12,6 @@ High Sensitivity: 0x0101000011010003,
 Medium Sensitivity: 0x0102000011010003,
 Low Sensitivity: 0x0103000011010003.
 """
-import logging
 
 from zigpy.profiles import zha
 import zigpy.types as t
@@ -44,8 +43,6 @@ from zhaquirks.xiaomi import (
     XiaomiPowerConfiguration,
     XiaomiQuickInitDevice,
 )
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class XiaomiSmokeIASCluster(CustomCluster, IasZone):

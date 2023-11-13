@@ -363,8 +363,6 @@ class ScheduleSettings(t.LVBytes):
 class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
     """Aqara manufacturer specific settings."""
 
-    ep_attribute = "opple_cluster"
-
     attributes = XiaomiAqaraE1Cluster.attributes.copy()
     attributes.update(
         {

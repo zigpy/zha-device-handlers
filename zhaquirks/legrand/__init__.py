@@ -2,7 +2,6 @@
 
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
-from zigpy.zcl.clusters.manufacturer_specific import ManufacturerSpecificCluster
 
 from zhaquirks import PowerConfigurationCluster
 
@@ -10,7 +9,7 @@ LEGRAND = "Legrand"
 MANUFACTURER_SPECIFIC_CLUSTER_ID = 0xFC01  # decimal = 64513
 
 
-class LegrandCluster(CustomCluster, ManufacturerSpecificCluster):
+class LegrandCluster(CustomCluster):
     """LegrandCluster."""
 
     cluster_id = MANUFACTURER_SPECIFIC_CLUSTER_ID

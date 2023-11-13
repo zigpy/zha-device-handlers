@@ -1,6 +1,5 @@
 """TS0210 vibration sensor."""
 
-import logging
 from typing import Optional, Tuple, Union
 
 from zigpy.profiles import zha
@@ -22,8 +21,6 @@ from zhaquirks.const import (
 )
 from zhaquirks.tuya import TuyaManufCluster
 
-_LOGGER = logging.getLogger(__name__)
-
 ZONE_TYPE = 0x0001
 IAS_VIBRATION_SENSOR = 0x5F02
 
@@ -31,7 +28,6 @@ IAS_VIBRATION_SENSOR = 0x5F02
 class VibrationCluster(LocalDataCluster, MotionOnEvent, IasZone):
     """Tuya Motion Sensor."""
 
-    cluster_id = IasZone.cluster_id
     _CONSTANT_ATTRIBUTES = {ZONE_TYPE: IasZone.ZoneType.Vibration_Movement_Sensor}
     reset_s = 15
 

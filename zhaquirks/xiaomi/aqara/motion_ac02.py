@@ -20,7 +20,7 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.xiaomi import (
-    IlluminanceMeasurementCluster,
+    LocalIlluminanceMeasurementCluster,
     MotionCluster,
     OccupancyCluster,
     XiaomiAqaraE1Cluster,
@@ -37,7 +37,6 @@ _LOGGER = logging.getLogger(__name__)
 class OppleCluster(XiaomiAqaraE1Cluster):
     """Opple cluster."""
 
-    ep_attribute = "opple_cluster"
     attributes = {
         DETECTION_INTERVAL: ("detection_interval", types.uint8_t, True),
         MOTION_SENSITIVITY: ("motion_sensitivity", types.uint8_t, True),
@@ -70,17 +69,8 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         return result
 
 
-class LocalIlluminanceMeasurementCluster(
-    LocalDataCluster, IlluminanceMeasurementCluster
-):
-    """Local illuminance measurement cluster."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        if self.AttributeDefs.measured_value.id not in self._attr_cache:
-            # put a default value so the sensor is created
-            self._update_attribute(self.AttributeDefs.measured_value.id, 0)
+class IlluminanceMeasurementClusterP1(LocalIlluminanceMeasurementCluster):
+    """Local illuminance measurement cluster that also discards more invalid values sent by this device."""
 
     def _update_attribute(self, attrid, value):
         if attrid == self.AttributeDefs.measured_value.id and (
@@ -146,7 +136,7 @@ class LumiMotionAC02(CustomDevice):
                     Identify.cluster_id,
                     LocalOccupancyCluster,
                     LocalMotionCluster,
-                    LocalIlluminanceMeasurementCluster,
+                    IlluminanceMeasurementClusterP1,
                     OppleCluster,
                 ],
                 OUTPUT_CLUSTERS: [

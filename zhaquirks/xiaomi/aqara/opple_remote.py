@@ -1,5 +1,4 @@
 """Xiaomi aqara opple remote devices."""
-import logging
 
 from zigpy.profiles import zha
 import zigpy.types as types
@@ -95,13 +94,9 @@ COMMAND_6_RELEASE = "6_release"
 OPPLE_CLUSTER_ID = 0xFCC0
 OPPLE_MFG_CODE = 0x115F
 
-_LOGGER = logging.getLogger(__name__)
-
 
 class MultistateInputCluster(CustomCluster, MultistateInput):
     """Multistate input cluster."""
-
-    cluster_id = MultistateInput.cluster_id
 
     def __init__(self, *args, **kwargs):
         """Init."""

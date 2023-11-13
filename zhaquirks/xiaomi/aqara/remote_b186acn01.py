@@ -1,5 +1,4 @@
 """Xiaomi aqara single key switch device."""
-import logging
 
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import (
@@ -51,16 +50,12 @@ XIAOMI_DEVICE_TYPE = 0x5F01
 XIAOMI_DEVICE_TYPE2 = 0x5F02
 XIAOMI_DEVICE_TYPE3 = 0x5F03
 
-_LOGGER = logging.getLogger(__name__)
-
 
 class RemoteB186ACN01(XiaomiQuickInitDevice):
     """Aqara single key switch device."""
 
     class MultistateInputCluster(CustomCluster, MultistateInput):
         """Multistate input cluster."""
-
-        cluster_id = MultistateInput.cluster_id
 
         def __init__(self, *args, **kwargs):
             """Init."""

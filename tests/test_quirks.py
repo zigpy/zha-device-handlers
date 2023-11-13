@@ -391,6 +391,40 @@ def test_signature(quirk: CustomDevice) -> None:
             assert isinstance(node_desc, zigpy.zdo.types.NodeDescriptor)
 
 
+@pytest.mark.parametrize(
+    "quirk",
+    [
+        quirk_cls
+        for quirk_cls in ALL_QUIRK_CLASSES
+        if quirk_cls
+        not in (
+            # Some quirks do not yet have model info:
+            zhaquirks.xbee.xbee_io.XBeeSensor,
+            zhaquirks.xbee.xbee3_io.XBee3Sensor,
+            zhaquirks.xiaomi.aqara.opple_switch.XiaomiOpple2ButtonSwitchFace2,
+            zhaquirks.xiaomi.aqara.opple_switch.XiaomiOpple2ButtonSwitchFace1,
+            zhaquirks.tuya.ts0201.MoesTemperatureHumidtySensorWithScreen,
+            zhaquirks.smartthings.tag_v4.SmartThingsTagV4,
+            zhaquirks.smartthings.multi.SmartthingsMultiPurposeSensor,
+            zhaquirks.netvox.z308e3ed.Z308E3ED,
+            zhaquirks.gledopto.soposhgu10.SoposhGU10,
+        )
+    ],
+)
+def test_signature_model_info_given(quirk: CustomDevice) -> None:
+    """Verify that quirks have MODELS_INFO, MODEL or MANUFACTURER in their signature."""
+
+    if (
+        not quirk.signature.get(MODELS_INFO)
+        and not quirk.signature.get(MODEL)
+        and not quirk.signature.get(MANUFACTURER)
+    ):
+        pytest.fail(
+            f"Quirk {quirk} does not have MODELS_INFO, MODEL or MANUFACTURER in its signature. "
+            f"At least one of these is required."
+        )
+
+
 @pytest.mark.parametrize("quirk", ALL_QUIRK_CLASSES)
 def test_quirk_importable(quirk: CustomDevice) -> None:
     """Ensure all quirks can be imported with a normal Python `import` statement."""

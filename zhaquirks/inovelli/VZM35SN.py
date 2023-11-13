@@ -110,6 +110,7 @@ class InovelliVZM35SN(CustomDevice):
                     Identify.cluster_id,
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
+                    Inovelli_VZM35SN_Cluster,
                 ],
             },
             242: {
