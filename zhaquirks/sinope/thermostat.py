@@ -62,6 +62,20 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
         Off = 0x00
         On = 0x01
 
+    class PumpStatus(t.uint8_t):
+        """Pump protection status."""
+
+        Off = 0x00
+        On = 0x01
+
+    class LimitStatus(t.uint8_t):
+        """Floor limit status values."""
+
+        Ok = 0x00
+        Low_reached = 0x01
+        Max_reached = 0x02
+        Max_air_reached = 0x03
+
     class SensorType(t.enum8):
         """temp_sensor_type values."""
 
@@ -88,6 +102,16 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
         Cool = 0x03
         Heat = 0x04
 
+    class PumpDuration(t.enum8):
+        """Pump protection duration period values"""
+
+        T5 = 0x05
+        T10 = 0x0A
+        T15 = 0x0F
+        T20 = 0x14
+        T30 = 0x1E
+        T60 = 0x3C
+
     cluster_id = SINOPE_MANUFACTURER_CLUSTER_ID
     name = "Sinopé Technologies Manufacturer specific"
     ep_attribute = "sinope_manufacturer_specific"
@@ -111,14 +135,15 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
         0x0109: ("floor_min_setpoint", t.int16s, True),
         0x010A: ("floor_max_setpoint", t.int16s, True),
         0x010B: ("floor_sensor_type_param", SensorType, True),
-        0x010C: ("floor_limit_status", t.uint8_t, True),
+        0x010C: ("floor_limit_status", LimitStatus, True),
         0x010D: ("room_temperature", t.int16s, True),
         0x0114: ("time_format", TimeFormat, True),
         0x0115: ("gfci_status", GfciStatus, True),
         0x0116: ("aux_mode", SystemMode, True),
         0x0118: ("aux_connected_load", t.uint16_t, True),
         0x0119: ("connected_load", t.uint16_t, True),
-        0x0128: ("pump_protection", t.uint8_t, True),
+        0x0128: ("pump_protection_status", PumpStatus, True),
+        0x012A: ("pump_protection_duration", PumpDuration, True),
         0x012B: ("current_setpoint", t.int16s, True),
         0x012D: ("report_local_temperature", t.int16s, True),
         0x0200: ("status", t.bitmap32, True),
