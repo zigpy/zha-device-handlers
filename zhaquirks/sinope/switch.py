@@ -103,7 +103,7 @@ class SinopeManufacturerCluster(CustomCluster):
         Gal_80 = 0x04
 
     class FlowDuration(t.uint32_t):
-        """tank_size values."""
+        """Abnormal flow duration."""
 
         M_15 = 0x0384
         M_30 = 0x0708
