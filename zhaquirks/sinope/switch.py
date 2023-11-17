@@ -37,7 +37,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.sinope import SINOPE, FLOWMETER, CURTEMP
+from zhaquirks.sinope import CURTEMP, FLOWMETER, SINOPE
 
 SINOPE_MANUFACTURER_CLUSTER_ID = 0xFF01
 
