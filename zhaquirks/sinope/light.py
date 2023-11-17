@@ -30,11 +30,9 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.sinope import LIGHT_DEVICE_TRIGGERS, SINOPE
+from zhaquirks.sinope import LIGHT_DEVICE_TRIGGERS, SINOPE, ATTRIBUTE_ACTION, CURTEMP
 
 SINOPE_MANUFACTURER_CLUSTER_ID = 0xFF01
-ATTRIBUTE_ACTION = "actionReport"
-CURTEMP = 0x0000
 
 
 class SinopeTechnologiesManufacturerCluster(CustomCluster):
