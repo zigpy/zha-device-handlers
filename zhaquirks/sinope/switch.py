@@ -37,11 +37,9 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.sinope import SINOPE
+from zhaquirks.sinope import SINOPE, FLOWMETER, CURTEMP
 
 SINOPE_MANUFACTURER_CLUSTER_ID = 0xFF01
-CURTEMP = 0x0000
-FLOWMETER = 0x0000
 
 
 class SinopeManufacturerCluster(CustomCluster):
