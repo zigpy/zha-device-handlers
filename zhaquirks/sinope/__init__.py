@@ -19,8 +19,8 @@ from zhaquirks.const import (
 
 SINOPE = "Sinope Technologies"
 ATTRIBUTE_ACTION = "actionReport"
-FLOWMETER = 0x0000
 CURTEMP = 0x0000
+FLOWMETER = 0x0000
 
 LIGHT_DEVICE_TRIGGERS = {
     (SHORT_PRESS, TURN_ON): {
