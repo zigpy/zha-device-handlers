@@ -200,7 +200,7 @@ class CustomDeviceTemperatureCluster(CustomCluster, DeviceTemperature):
 
     def _update_attribute(self, attrid, value):
         if attrid == CURTEMP:
-            super()._update_attribute(attrid, value*100)
+            super()._update_attribute(attrid, value * 100)
 
 
 class CustomFlowMeasurementCluster(CustomCluster, FlowMeasurement):
@@ -208,7 +208,7 @@ class CustomFlowMeasurementCluster(CustomCluster, FlowMeasurement):
 
     def _update_attribute(self, attrid, value):
         if attrid == FLOWMETER:
-            super()._update_attribute(attrid, value/10)
+            super()._update_attribute(attrid, value / 10)
 
 
 class SinopeTechnologiesSwitch(CustomDevice):
