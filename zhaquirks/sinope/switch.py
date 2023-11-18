@@ -197,7 +197,7 @@ class CustomMeteringCluster(CustomCluster, Metering):
 
 
 class CustomFlowMeasurementCluster(CustomCluster, FlowMeasurement):
-    """Custom FlowMeasurement Cluster."""
+    """Custom flow measurement cluster that divides value by 10."""
 
     def _update_attribute(self, attrid, value):
         if attrid == self.AttributeDefs.measured_value.id:
