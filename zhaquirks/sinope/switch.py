@@ -200,7 +200,7 @@ class CustomDeviceTemperatureCluster(CustomCluster, DeviceTemperature):
     """Custom DeviceTemperature Cluster."""
 
     def _update_attribute(self, attrid, value):
-        if attrid == 0x0000:
+        if attrid == self.AttributeDefs.current_temperature.id:
             super()._update_attribute(attrid, value * 100)
 
 
@@ -208,7 +208,7 @@ class CustomFlowMeasurementCluster(CustomCluster, FlowMeasurement):
     """Custom FlowMeasurement Cluster."""
 
     def _update_attribute(self, attrid, value):
-        if attrid == 0x0000:
+        if attrid == self.AttributeDefs.measured_value.id:
             super()._update_attribute(attrid, value / 10)
 
 
