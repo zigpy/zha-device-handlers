@@ -69,14 +69,14 @@ class SinopeManufacturerCluster(CustomCluster):
         Close_notify = 0x03
 
     class PowerSource(t.uint32_t):
-        """Valve power souce types."""
+        """Valve power source types."""
 
         Battery = 0x00000000
         ACUPS_01 = 0x00000001
         DC_power = 0x0001D4C0
 
     class EmergencyPower(t.uint32_t):
-        """Valve emergency power souce types."""
+        """Valve emergency power source types."""
 
         Battery = 0x00000000
         ACUPS_01 = 0x00000001
