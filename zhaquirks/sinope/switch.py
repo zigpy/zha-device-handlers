@@ -24,13 +24,12 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.homeautomation import Diagnostic, ElectricalMeasurement
 from zigpy.zcl.clusters.lightlink import LightLink
 from zigpy.zcl.clusters.measurement import (
+    FlowMeasurement,
     RelativeHumidity,
     TemperatureMeasurement,
-    FlowMeasurement,
 )
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.clusters.smartenergy import Metering
-
 from zigpy.zcl.foundation import Array
 
 from zhaquirks.const import (
