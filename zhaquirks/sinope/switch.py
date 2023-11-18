@@ -40,7 +40,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.sinope import SINOPE
+from zhaquirks.sinope import SINOPE, CustomDeviceTemperatureCluster
 
 SINOPE_MANUFACTURER_CLUSTER_ID = 0xFF01
 
@@ -194,14 +194,6 @@ class CustomMeteringCluster(CustomCluster, Metering):
             0x0300: ("unit_of_measure", UnitOfMeasure, True),
         }
     )
-
-
-class CustomDeviceTemperatureCluster(CustomCluster, DeviceTemperature):
-    """Custom DeviceTemperature Cluster."""
-
-    def _update_attribute(self, attrid, value):
-        if attrid == self.AttributeDefs.current_temperature.id:
-            super()._update_attribute(attrid, value * 100)
 
 
 class CustomFlowMeasurementCluster(CustomCluster, FlowMeasurement):
