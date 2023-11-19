@@ -33,10 +33,9 @@ from zhaquirks.const import (
 from zhaquirks.sinope import (
     LIGHT_DEVICE_TRIGGERS,
     SINOPE,
+    SINOPE_MANUFACTURER_CLUSTER_ID,
     CustomDeviceTemperatureCluster,
 )
-
-SINOPE_MANUFACTURER_CLUSTER_ID = 0xFF01
 
 
 class SinopeTechnologiesManufacturerCluster(CustomCluster):
