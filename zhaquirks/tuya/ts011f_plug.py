@@ -1459,7 +1459,7 @@ class Plug_TZ3000_2AC(CustomDevice):
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    OnOff.cluster_id,
+                    TuyaZBOnOffAttributeCluster,
                     TuyaZBMeteringCluster,
                     TuyaZBElectricalMeasurement,
                 ],
@@ -1471,7 +1471,7 @@ class Plug_TZ3000_2AC(CustomDevice):
                 INPUT_CLUSTERS: [
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    OnOff.cluster_id,
+                    TuyaZBOnOffAttributeCluster,
                     TuyaZBMeteringCluster,
                     TuyaZBElectricalMeasurement,
                 ],
