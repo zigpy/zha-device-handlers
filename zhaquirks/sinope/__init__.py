@@ -21,6 +21,7 @@ from zhaquirks.const import (
 )
 
 SINOPE = "Sinope Technologies"
+SINOPE_MANUFACTURER_CLUSTER_ID = 0xFF01
 ATTRIBUTE_ACTION = "actionReport"
 
 LIGHT_DEVICE_TRIGGERS = {

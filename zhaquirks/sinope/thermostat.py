@@ -29,9 +29,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.sinope import SINOPE
-
-SINOPE_MANUFACTURER_CLUSTER_ID = 0xFF01
+from zhaquirks.sinope import SINOPE, SINOPE_MANUFACTURER_CLUSTER_ID
 
 
 class SinopeTechnologiesManufacturerCluster(CustomCluster):
