@@ -30,7 +30,11 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.sinope import LIGHT_DEVICE_TRIGGERS, SINOPE
+from zhaquirks.sinope import (
+    LIGHT_DEVICE_TRIGGERS,
+    SINOPE,
+    CustomDeviceTemperatureCluster,
+)
 
 SINOPE_MANUFACTURER_CLUSTER_ID = 0xFF01
 
@@ -95,14 +99,6 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
 
 class LightManufacturerCluster(EventableCluster, SinopeTechnologiesManufacturerCluster):
     """LightManufacturerCluster: fire events corresponding to press type."""
-
-
-class CustomDeviceTemperatureCluster(CustomCluster, DeviceTemperature):
-    """Custom DeviceTemperature Cluster."""
-
-    def _update_attribute(self, attrid, value):
-        if attrid == 0x0000:
-            super()._update_attribute(attrid, value * 100)
 
 
 class SinopeTechnologieslight(CustomDevice):
