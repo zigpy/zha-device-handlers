@@ -1434,7 +1434,7 @@ class Plug_TZ3000_2AC(CustomDevice):
             # <SimpleDescriptor endpoint=2 profile=260 device_type=81
             # device_version=1
             # input_clusters=["0x0004", "0x0005", "0x0006", "0x0702", "0x0b04"]
-            # output_clusters=[25, 10]>
+            # output_clusters=[]>
             2: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
