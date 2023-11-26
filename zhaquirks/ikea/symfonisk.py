@@ -80,7 +80,7 @@ class IkeaSYMFONISK1(CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    DoublingPowerConfig1CRCluster,
+                    PowerConfiguration.cluster_id,
                     Identify.cluster_id,
                     PollControl.cluster_id,
                     LightLink.cluster_id,
