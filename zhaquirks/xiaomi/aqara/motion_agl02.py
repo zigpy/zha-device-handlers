@@ -3,7 +3,7 @@ from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import Identify, Ota
 from zigpy.zcl.clusters.measurement import IlluminanceMeasurement, OccupancySensing
 
-from zhaquirks import Bus
+from zhaquirks import Bus, LocalDataCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -42,6 +42,10 @@ class XiaomiManufacturerCluster(XiaomiAqaraE1Cluster):
             )
 
 
+class LocalOccupancyCluster(LocalDataCluster, OccupancyCluster):
+    """Local occupancy cluster."""
+
+
 class MotionT1(XiaomiCustomDevice):
     """Xiaomi motion sensor device."""
 
@@ -78,7 +82,7 @@ class MotionT1(XiaomiCustomDevice):
                     BasicCluster,
                     XiaomiPowerConfiguration,
                     Identify.cluster_id,
-                    OccupancyCluster,
+                    LocalOccupancyCluster,
                     MotionCluster,
                     IlluminanceMeasurementCluster,
                     XiaomiManufacturerCluster,
