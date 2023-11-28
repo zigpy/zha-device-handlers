@@ -39,6 +39,10 @@ class MeteringCluster(CustomCluster, Metering):
     }
 
 
+class InnrCluster(CustomCluster):
+    cluster_id = 0xE001
+
+
 class InnrSp240(CustomDevice):
     """Innr SP 240 custom device implementation."""
 
@@ -58,7 +62,7 @@ class InnrSp240(CustomDevice):
                     Metering.cluster_id,
                     ElectricalMeasurement.cluster_id,
                     LightLink.cluster_id,
-                    0xE001,
+                    InnrCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Time.cluster_id,
@@ -91,7 +95,7 @@ class InnrSp240(CustomDevice):
                     MeteringCluster,
                     ElectricalMeasurement.cluster_id,
                     LightLink.cluster_id,
-                    0xE001,
+                    InnrCluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     Time.cluster_id,
