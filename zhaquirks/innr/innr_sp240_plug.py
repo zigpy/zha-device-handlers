@@ -40,6 +40,8 @@ class MeteringCluster(CustomCluster, Metering):
 
 
 class InnrCluster(CustomCluster):
+    """Innr manufacturer specific cluster."""
+
     cluster_id = 0xE001
 
 
