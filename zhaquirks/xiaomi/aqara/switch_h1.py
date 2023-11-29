@@ -2,10 +2,13 @@ from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Alarms,
+    AnalogInput,
     Basic,
+    DeviceTemperature,
     GreenPowerProxy,
     Groups,
     Identify,
+    MultistateInput,
     OnOff,
     Ota,
     Scenes,
@@ -36,10 +39,12 @@ from zhaquirks.const import (
 )
 from zhaquirks.xiaomi import (
     LUMI,
+    AnalogInputCluster,
     BasicCluster,
     DeviceTemperatureCluster,
+    ElectricalMeasurementCluster,
+    MeteringCluster,
     OnOffCluster,
-    XiaomiMeteringCluster,
 )
 from zhaquirks.xiaomi.aqara.opple_remote import MultistateInputCluster
 from zhaquirks.xiaomi.aqara.opple_switch import OppleSwitchCluster
@@ -75,7 +80,124 @@ class AqaraH1SingleRockerBase(CustomDevice):
 
 
 class AqaraH1SingleRockerSwitchWithNeutral(AqaraH1SingleRockerBase):
-    """Aqara H1 Single Rocker Switch (with neutral)."""
+    """Aqara H1 Single Rocker Switch (with neutral) (inherits above class for device automation triggers)."""
+
+    signature = {
+        MODELS_INFO: [("LUMI", "lumi.switch.n1aeu1")],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    DeviceTemperature.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    MultistateInput.cluster_id,
+                    OppleSwitchCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Time.cluster_id,
+                    Ota.cluster_id,
+                ],
+            },
+            21: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    AnalogInput.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            31: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    AnalogInput.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            41: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    MultistateInput.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            242: {
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [
+                    GreenPowerProxy.cluster_id,
+                ],
+            },
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
+                INPUT_CLUSTERS: [
+                    BasicCluster,
+                    DeviceTemperature.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOffCluster,
+                    MultistateInputCluster,
+                    MeteringCluster,
+                    ElectricalMeasurementCluster,
+                    OppleSwitchCluster,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Time.cluster_id,
+                    Ota.cluster_id,
+                ],
+            },
+            21: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
+                INPUT_CLUSTERS: [
+                    AnalogInputCluster,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            31: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
+                INPUT_CLUSTERS: [
+                    AnalogInput.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            41: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
+                INPUT_CLUSTERS: [
+                    MultistateInputCluster,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            242: {
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [
+                    GreenPowerProxy.cluster_id,
+                ],
+            },
+        },
+    }
+
+
+class AqaraH1SingleRockerSwitchWithNeutralAlt(AqaraH1SingleRockerSwitchWithNeutral):
+    """Aqara H1 Single Rocker Switch (with neutral) signature 2 (inherits above class for replacement + triggers)."""
 
     signature = {
         MODELS_INFO: [(LUMI, "lumi.switch.n1aeu1")],
@@ -85,48 +207,14 @@ class AqaraH1SingleRockerSwitchWithNeutral(AqaraH1SingleRockerBase):
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
                 INPUT_CLUSTERS: [
-                    Basic.cluster_id,  # 0
-                    DeviceTemperatureCluster.cluster_id,  # 2
-                    Identify.cluster_id,  # 3
-                    Groups.cluster_id,  # 4
-                    Scenes.cluster_id,  # 5
-                    OnOff.cluster_id,  # 6
-                    Alarms.cluster_id,  # 9
-                    XiaomiMeteringCluster.cluster_id,  # 0x0702
-                    0x0B04,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Time.cluster_id,  # 0x000a
-                    Ota.cluster_id,  # 0x0019
-                ],
-            },
-            242: {
-                PROFILE_ID: zgp.PROFILE_ID,
-                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
-                INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [
-                    GreenPowerProxy.cluster_id,  # 0x0021
-                ],
-            },
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
-                INPUT_CLUSTERS: [
-                    BasicCluster,  # 0
-                    DeviceTemperatureCluster.cluster_id,  # 2
-                    Identify.cluster_id,  # 3
-                    Groups.cluster_id,  # 4
-                    Scenes.cluster_id,  # 5
-                    OnOffCluster,  # 6
-                    Alarms.cluster_id,  # 9
-                    MultistateInputCluster,  # 18
-                    XiaomiMeteringCluster.cluster_id,  # 0x0702
-                    OppleSwitchCluster,  # 0xFCC0 / 64704
+                    Basic.cluster_id,
+                    DeviceTemperatureCluster.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    Alarms.cluster_id,
+                    MeteringCluster.cluster_id,
                     0x0B04,
                 ],
                 OUTPUT_CLUSTERS: [
@@ -134,26 +222,20 @@ class AqaraH1SingleRockerSwitchWithNeutral(AqaraH1SingleRockerBase):
                     Ota.cluster_id,
                 ],
             },
-            41: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
-                INPUT_CLUSTERS: [
-                    MultistateInputCluster,  # 18
-                ],
-                OUTPUT_CLUSTERS: [],
-            },
             242: {
                 PROFILE_ID: zgp.PROFILE_ID,
                 DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+                OUTPUT_CLUSTERS: [
+                    GreenPowerProxy.cluster_id,
+                ],
             },
         },
     }
 
 
 class AqaraH1SingleRockerSwitchNoNeutral(AqaraH1SingleRockerBase):
-    """Aqara H1 Single Rocker Switch (no neutral)."""
+    """Aqara H1 Single Rocker Switch (no neutral) (inherits class for device triggers)."""
 
     signature = {
         MODELS_INFO: [(LUMI, "lumi.switch.l1aeu1")],
@@ -163,17 +245,17 @@ class AqaraH1SingleRockerSwitchNoNeutral(AqaraH1SingleRockerBase):
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
                 INPUT_CLUSTERS: [
-                    Basic.cluster_id,  # 0
-                    DeviceTemperatureCluster.cluster_id,  # 2
-                    Identify.cluster_id,  # 3
-                    Groups.cluster_id,  # 4
-                    Scenes.cluster_id,  # 5
-                    OnOff.cluster_id,  # 6
-                    Alarms.cluster_id,  # 9
+                    Basic.cluster_id,
+                    DeviceTemperatureCluster.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    Alarms.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
-                    Time.cluster_id,  # 0x000a
-                    Ota.cluster_id,  # 0x0019
+                    Time.cluster_id,
+                    Ota.cluster_id,
                 ],
             },
             242: {
@@ -181,7 +263,7 @@ class AqaraH1SingleRockerSwitchNoNeutral(AqaraH1SingleRockerBase):
                 DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [
-                    GreenPowerProxy.cluster_id,  # 0x0021
+                    GreenPowerProxy.cluster_id,
                 ],
             },
         },
@@ -193,15 +275,15 @@ class AqaraH1SingleRockerSwitchNoNeutral(AqaraH1SingleRockerBase):
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
-                    BasicCluster,  # 0
-                    DeviceTemperatureCluster.cluster_id,  # 2
-                    Identify.cluster_id,  # 3
-                    Groups.cluster_id,  # 4
-                    Scenes.cluster_id,  # 5
-                    OnOffCluster,  # 6
-                    Alarms.cluster_id,  # 9
-                    MultistateInputCluster,  # 18
-                    OppleSwitchCluster,  # 0xFCC0 / 64704
+                    BasicCluster,
+                    DeviceTemperatureCluster.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOffCluster,
+                    Alarms.cluster_id,
+                    MultistateInputCluster,
+                    OppleSwitchCluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     Time.cluster_id,
@@ -212,7 +294,7 @@ class AqaraH1SingleRockerSwitchNoNeutral(AqaraH1SingleRockerBase):
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
-                    MultistateInputCluster,  # 18
+                    MultistateInputCluster,
                 ],
                 OUTPUT_CLUSTERS: [],
             },
