@@ -83,7 +83,7 @@ class AqaraH1SingleRockerSwitchWithNeutral(AqaraH1SingleRockerBase):
     """Aqara H1 Single Rocker Switch (with neutral) (inherits above class for device automation triggers)."""
 
     signature = {
-        MODELS_INFO: [("LUMI", "lumi.switch.n1aeu1")],
+        MODELS_INFO: [(LUMI, "lumi.switch.n1aeu1")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
