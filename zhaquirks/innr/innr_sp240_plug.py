@@ -1,4 +1,4 @@
-"""Quirk for innr SP 240."""
+"""Innr SP 240 plug."""
 
 from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomCluster, CustomDevice
@@ -34,8 +34,8 @@ class InnrCluster(CustomCluster):
     cluster_id = 0xE001
 
 
-class InnrSp240(CustomDevice):
-    """Innr SP 240 custom device implementation."""
+class SP240(CustomDevice):
+    """Innr SP 240  smart plug."""
 
     signature = {
         MODELS_INFO: [(INNR, "SP 240")],
