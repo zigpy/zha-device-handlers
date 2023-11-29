@@ -3,6 +3,7 @@ from zigpy.profiles import zgp, zha
 from zigpy.zcl.clusters.general import (
     Alarms,
     Basic,
+    DeviceTemperature,
     GreenPowerProxy,
     Groups,
     Identify,
@@ -11,6 +12,7 @@ from zigpy.zcl.clusters.general import (
     Scenes,
     Time,
 )
+from zigpy.zcl.clusters.smartenergy import Metering
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -20,7 +22,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.xiaomi import LUMI, DeviceTemperatureCluster, MeteringCluster
+from zhaquirks.xiaomi import LUMI
 from zhaquirks.xiaomi.aqara.opple_switch import XiaomiOpple2ButtonSwitchBase
 
 
@@ -36,13 +38,13 @@ class AqaraH1DoubleRockerSwitchWithNeutral(XiaomiOpple2ButtonSwitchBase):
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    DeviceTemperatureCluster.cluster_id,
+                    DeviceTemperature.cluster_id,
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     OnOff.cluster_id,
                     Alarms.cluster_id,
-                    MeteringCluster.cluster_id,
+                    Metering.cluster_id,
                     0x0B04,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
