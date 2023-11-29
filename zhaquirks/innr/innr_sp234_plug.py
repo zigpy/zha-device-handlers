@@ -23,7 +23,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.innr import INNR
+from zhaquirks.innr import INNR, MeteringClusterInnr
 
 
 class ElectricalMeasurementCluster(CustomCluster, ElectricalMeasurement):
@@ -80,7 +80,7 @@ class SP234(CustomDevice):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     OnOff.cluster_id,
-                    Metering.cluster_id,
+                    MeteringClusterInnr,
                     ElectricalMeasurementCluster,
                     Diagnostic.cluster_id,
                     LightLink.cluster_id,
