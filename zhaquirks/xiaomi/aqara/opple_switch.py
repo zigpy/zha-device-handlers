@@ -42,11 +42,13 @@ from zhaquirks.const import (
 )
 from zhaquirks.xiaomi import (
     LUMI,
+    AnalogInputCluster,
     BasicCluster,
     DeviceTemperatureCluster,
+    ElectricalMeasurementCluster,
+    MeteringCluster,
     OnOffCluster,
     XiaomiCustomDevice,
-    XiaomiMeteringCluster,
 )
 
 from .opple_remote import MultistateInputCluster, OppleCluster
@@ -87,7 +89,6 @@ class OppleSwitchCluster(OppleCluster):
     """Xiaomi mfg cluster implementation."""
 
     attributes = copy.deepcopy(OppleCluster.attributes)
-
     attributes.update(
         {
             0x0002: ("power_outage_count", t.uint8_t, True),
@@ -133,7 +134,8 @@ class XiaomiOpple2ButtonSwitchBase(XiaomiCustomDevice):
                     OnOffCluster,  # 6
                     Alarms.cluster_id,  # 9
                     MultistateInputCluster,  # 18
-                    XiaomiMeteringCluster,  # 0x0702
+                    MeteringCluster,  # 0x0702
+                    ElectricalMeasurementCluster,  # 0x0B04
                     OppleSwitchCluster,  # 0xFCC0 / 64704
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
@@ -156,7 +158,7 @@ class XiaomiOpple2ButtonSwitchBase(XiaomiCustomDevice):
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
                 INPUT_CLUSTERS: [
-                    AnalogInput.cluster_id,  # 12
+                    AnalogInputCluster,  # 12
                 ],
                 OUTPUT_CLUSTERS: [],
             },
@@ -386,7 +388,7 @@ class XiaomiOpple2ButtonSwitchFace2(XiaomiOpple2ButtonSwitchBase):
                     Scenes.cluster_id,  # 5
                     OnOff.cluster_id,  # 6
                     Alarms.cluster_id,  # 9
-                    XiaomiMeteringCluster.cluster_id,  # 0x0702
+                    MeteringCluster.cluster_id,  # 0x0702
                     0x0B04,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
