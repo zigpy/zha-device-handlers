@@ -25,7 +25,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.innr import MeteringClusterInnr
+from zhaquirks.innr import INNR, MeteringClusterInnr
 
 
 class InnrCluster(CustomCluster):
@@ -38,7 +38,7 @@ class InnrSp240(CustomDevice):
     """Innr SP 240 custom device implementation."""
 
     signature = {
-        MODELS_INFO: [("innr", "SP 240")],
+        MODELS_INFO: [(INNR, "SP 240")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,

@@ -2,6 +2,8 @@
 from zigpy.quirks import CustomCluster
 from zigpy.zcl.clusters.smartenergy import Metering
 
+INNR = "innr"
+
 
 class MeteringClusterInnr(CustomCluster, Metering):
     """Provide constant multiplier and divisor.

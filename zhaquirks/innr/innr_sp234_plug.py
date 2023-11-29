@@ -23,9 +23,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-
-MANUFACTURER = "innr"
-MODEL = "SP 234"
+from zhaquirks.innr import INNR
 
 
 class ElectricalMeasurementCluster(CustomCluster, ElectricalMeasurement):
@@ -39,6 +37,7 @@ class SP234(CustomDevice):
     """Innr SP 234 smart plug."""
 
     signature = {
+        MODELS_INFO: [(INNR, "SP 234")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -69,7 +68,6 @@ class SP234(CustomDevice):
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
         },
-        MODELS_INFO: [(MANUFACTURER, MODEL)],
     }
 
     replacement = {
