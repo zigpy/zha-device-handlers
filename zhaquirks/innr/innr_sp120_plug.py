@@ -1,6 +1,6 @@
 """Innr SP 120 plug."""
 from zigpy.profiles import zll
-from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -23,16 +23,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.innr import INNR, MeteringClusterInnr
-
-
-class ElectricalMeasurementCluster(CustomCluster, ElectricalMeasurement):
-    """Fix multiplier and divisor for AC current."""
-
-    _CONSTANT_ATTRIBUTES = {
-        ElectricalMeasurement.AttributeDefs.ac_current_multiplier.id: 1,
-        ElectricalMeasurement.AttributeDefs.ac_current_divisor.id: 1000,
-    }
+from zhaquirks.innr import INNR, ElectricalMeasurementClusterInnr, MeteringClusterInnr
 
 
 class SP120(CustomDevice):
@@ -79,7 +70,7 @@ class SP120(CustomDevice):
                 DEVICE_TYPE: zll.DeviceType.ON_OFF_PLUGIN_UNIT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    ElectricalMeasurementCluster,
+                    ElectricalMeasurementClusterInnr,
                     Groups.cluster_id,
                     Identify.cluster_id,
                     LevelControl.cluster_id,

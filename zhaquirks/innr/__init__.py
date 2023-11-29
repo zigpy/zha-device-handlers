@@ -1,5 +1,6 @@
 """Module for Innr quirks implementations."""
 from zigpy.quirks import CustomCluster
+from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
 
 INNR = "innr"
@@ -14,4 +15,15 @@ class MeteringClusterInnr(CustomCluster, Metering):
     _CONSTANT_ATTRIBUTES = {
         Metering.AttributeDefs.multiplier.id: 1,
         Metering.AttributeDefs.divisor.id: 100,
+    }
+
+
+class ElectricalMeasurementClusterInnr(CustomCluster, ElectricalMeasurement):
+    """Fix multiplier and divisor for AC current."""
+
+    _CONSTANT_ATTRIBUTES = {
+        ElectricalMeasurement.AttributeDefs.ac_current_multiplier.id: 1,
+        ElectricalMeasurement.AttributeDefs.ac_current_divisor.id: 1000,
+        ElectricalMeasurement.AttributeDefs.ac_power_divisor.id: 1,
+        ElectricalMeasurement.AttributeDefs.ac_power_multiplier.id: 1,
     }
