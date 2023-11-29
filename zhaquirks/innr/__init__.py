@@ -8,7 +8,7 @@ INNR = "innr"
 class MeteringClusterInnr(CustomCluster, Metering):
     """Provide constant multiplier and divisor.
 
-    The device supplies the summation_formatting attribute correctly, but ZHA doesn't use it for kWh at the moment.
+    The device seems to supply the summation_formatting attribute correctly, but ZHA doesn't use it for kWh for now.
     """
 
     _CONSTANT_ATTRIBUTES = {
