@@ -29,8 +29,7 @@ from zhaquirks.innr import INNR
 class ElectricalMeasurementCluster(CustomCluster, ElectricalMeasurement):
     """Fix divisor."""
 
-    AC_POWER_DIVISOR = 0x0605
-    _CONSTANT_ATTRIBUTES = {AC_POWER_DIVISOR: 1}
+    _CONSTANT_ATTRIBUTES = {ElectricalMeasurement.AttributeDefs.ac_power_divisor.id: 1}
 
 
 class SP234(CustomDevice):
