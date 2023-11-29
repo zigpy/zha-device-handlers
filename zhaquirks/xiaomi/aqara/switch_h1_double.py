@@ -35,14 +35,14 @@ class XiaomiOpple2ButtonSwitchFace2(XiaomiOpple2ButtonSwitchBase):
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
                 INPUT_CLUSTERS: [
-                    Basic.cluster_id,  # 0
-                    DeviceTemperatureCluster.cluster_id,  # 2
-                    Identify.cluster_id,  # 3
-                    Groups.cluster_id,  # 4
-                    Scenes.cluster_id,  # 5
-                    OnOff.cluster_id,  # 6
-                    Alarms.cluster_id,  # 9
-                    MeteringCluster.cluster_id,  # 0x0702
+                    Basic.cluster_id,
+                    DeviceTemperatureCluster.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    Alarms.cluster_id,
+                    MeteringCluster.cluster_id,
                     0x0B04,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
@@ -52,11 +52,11 @@ class XiaomiOpple2ButtonSwitchFace2(XiaomiOpple2ButtonSwitchBase):
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
                 INPUT_CLUSTERS: [
-                    Basic.cluster_id,  # 0
-                    Identify.cluster_id,  # 3
-                    Groups.cluster_id,  # 4
-                    Scenes.cluster_id,  # 5
-                    OnOff.cluster_id,  # 6
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [],
             },
