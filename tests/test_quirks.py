@@ -401,8 +401,6 @@ def test_signature(quirk: CustomDevice) -> None:
             # Some quirks do not yet have model info:
             zhaquirks.xbee.xbee_io.XBeeSensor,
             zhaquirks.xbee.xbee3_io.XBee3Sensor,
-            zhaquirks.xiaomi.aqara.opple_switch.XiaomiOpple2ButtonSwitchFace2,
-            zhaquirks.xiaomi.aqara.opple_switch.XiaomiOpple2ButtonSwitchFace1,
             zhaquirks.tuya.ts0201.MoesTemperatureHumidtySensorWithScreen,
             zhaquirks.smartthings.tag_v4.SmartThingsTagV4,
             zhaquirks.smartthings.multi.SmartthingsMultiPurposeSensor,

@@ -33,6 +33,7 @@ from zhaquirks.const import (
     ENDPOINT_ID,
     ENDPOINTS,
     INPUT_CLUSTERS,
+    MODELS_INFO,
     OUTPUT_CLUSTERS,
     PRESS_TYPE,
     PROFILE_ID,
@@ -40,6 +41,7 @@ from zhaquirks.const import (
     ZHA_SEND_EVENT,
 )
 from zhaquirks.xiaomi import (
+    LUMI,
     BasicCluster,
     DeviceTemperatureCluster,
     OnOffCluster,
@@ -276,6 +278,7 @@ class XiaomiOpple2ButtonSwitchFace1(XiaomiOpple2ButtonSwitchBase):
     device_automation_triggers = XiaomiOpple2ButtonSwitchBase.device_automation_triggers
 
     signature = {
+        MODELS_INFO: [(LUMI, "lumi.switch.b2naus01")],
         ENDPOINTS: {
             # input_clusters=[0, 2, 3, 4, 5, 6, 18, 64704], output_clusters=[10, 25]
             1: {
@@ -369,6 +372,7 @@ class XiaomiOpple2ButtonSwitchFace2(XiaomiOpple2ButtonSwitchBase):
     device_automation_triggers = XiaomiOpple2ButtonSwitchBase.device_automation_triggers
 
     signature = {
+        MODELS_INFO: [(LUMI, "lumi.switch.n2aeu1")],
         ENDPOINTS: {
             #  input_clusters=[0, 2, 3, 4, 5, 6, 18, 64704], output_clusters=[10, 25]
             1: {
