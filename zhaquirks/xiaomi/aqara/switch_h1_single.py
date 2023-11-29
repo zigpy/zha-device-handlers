@@ -1,3 +1,4 @@
+"""Aqara H1 single rocker switch quirks. Also see opple_switch.py for similar double rocker switches."""
 from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
