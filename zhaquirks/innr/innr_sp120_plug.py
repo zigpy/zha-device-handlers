@@ -27,11 +27,12 @@ from zhaquirks.innr import INNR, MeteringClusterInnr
 
 
 class ElectricalMeasurementCluster(CustomCluster, ElectricalMeasurement):
-    """Fix multiplier and divisor."""
+    """Fix multiplier and divisor for AC current."""
 
-    MULTIPLIER = 0x0602
-    DIVISOR = 0x0603
-    _CONSTANT_ATTRIBUTES = {MULTIPLIER: 1, DIVISOR: 1000}
+    _CONSTANT_ATTRIBUTES = {
+        ElectricalMeasurement.AttributeDefs.ac_current_multiplier.id: 1,
+        ElectricalMeasurement.AttributeDefs.ac_current_divisor.id: 1000,
+    }
 
 
 class SP120(CustomDevice):
