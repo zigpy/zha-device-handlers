@@ -1,4 +1,4 @@
-"""Xiaomi Aqara wall switch devices. Also see switch_h1_single.py for similar H1 single rocker switches."""
+"""Xiaomi Aqara wall switch devices. Also see switch_h1 files similar H1 rocker switches."""
 import copy
 from enum import Enum
 
