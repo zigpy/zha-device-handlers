@@ -19,7 +19,7 @@ class MeteringClusterInnr(CustomCluster, Metering):
 
 
 class ElectricalMeasurementClusterInnr(CustomCluster, ElectricalMeasurement):
-    """Fix multiplier and divisor for AC current."""
+    """Fix multiplier and divisor for AC current and power."""
 
     _CONSTANT_ATTRIBUTES = {
         ElectricalMeasurement.AttributeDefs.ac_current_multiplier.id: 1,
