@@ -23,15 +23,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.innr import INNR
-
-
-class MeteringCluster(CustomCluster, Metering):
-    """Fix multiplier and divisor."""
-
-    MULTIPLIER = 0x0301
-    DIVISOR = 0x0302
-    _CONSTANT_ATTRIBUTES = {MULTIPLIER: 1, DIVISOR: 100}
+from zhaquirks.innr import INNR, MeteringClusterInnr
 
 
 class ElectricalMeasurementCluster(CustomCluster, ElectricalMeasurement):
@@ -90,7 +82,7 @@ class SP120(CustomDevice):
                     Groups.cluster_id,
                     Identify.cluster_id,
                     LevelControl.cluster_id,
-                    MeteringCluster,
+                    MeteringClusterInnr,
                     OnOff.cluster_id,
                     Scenes.cluster_id,
                     Time.cluster_id,
