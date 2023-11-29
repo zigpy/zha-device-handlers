@@ -27,7 +27,7 @@ from zhaquirks.innr import INNR, MeteringClusterInnr
 
 
 class ElectricalMeasurementCluster(CustomCluster, ElectricalMeasurement):
-    """Fix divisor."""
+    """Fix divisor for AC power."""
 
     _CONSTANT_ATTRIBUTES = {ElectricalMeasurement.AttributeDefs.ac_power_divisor.id: 1}
 
