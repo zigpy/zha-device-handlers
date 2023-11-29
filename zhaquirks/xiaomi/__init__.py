@@ -542,10 +542,6 @@ class DeviceTemperatureCluster(LocalDataCluster, DeviceTemperature):
     """Device Temperature Cluster."""
 
 
-class XiaomiMeteringCluster(LocalDataCluster, Metering):
-    """Xiaomi Metering Cluster."""
-
-
 class TemperatureMeasurementCluster(CustomCluster, TemperatureMeasurement):
     """Temperature cluster that filters out invalid temperature readings."""
 
