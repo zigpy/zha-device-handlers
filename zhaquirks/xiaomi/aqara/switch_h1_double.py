@@ -24,8 +24,8 @@ from zhaquirks.xiaomi import LUMI, DeviceTemperatureCluster, MeteringCluster
 from zhaquirks.xiaomi.aqara.opple_switch import XiaomiOpple2ButtonSwitchBase
 
 
-class XiaomiOpple2ButtonSwitchFace2(XiaomiOpple2ButtonSwitchBase):
-    """Xiaomi Opple 2 Button Switch. Face 2."""
+class AqaraH1DoubleRockerSwitchWithNeutral(XiaomiOpple2ButtonSwitchBase):
+    """Aqara H1 Double Rocker Switch (with neutral)."""
 
     signature = {
         MODELS_INFO: [(LUMI, "lumi.switch.n2aeu1")],
