@@ -25,18 +25,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-
-
-class MeteringCluster(CustomCluster, Metering):
-    """Fix multiplier and divisor.
-
-    The device supplies the summation_formatting attribute correctly, but ZHA doesn't use it for kWh at the moment.
-    """
-
-    _CONSTANT_ATTRIBUTES = {
-        Metering.AttributeDefs.multiplier.id: 1,
-        Metering.AttributeDefs.divisor.id: 100,
-    }
+from zhaquirks.innr import MeteringClusterInnr
 
 
 class InnrCluster(CustomCluster):
@@ -94,7 +83,7 @@ class InnrSp240(CustomDevice):
                     Scenes.cluster_id,
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
-                    MeteringCluster,
+                    MeteringClusterInnr,
                     ElectricalMeasurement.cluster_id,
                     LightLink.cluster_id,
                     InnrCluster,
