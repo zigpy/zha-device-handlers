@@ -92,7 +92,7 @@ class TuyaSmartRemote004FROK(EnchantedDevice):
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.NON_COLOR_CONTROLLER,
+                DEVICE_TYPE: zha.DeviceType.DIMMER_SWITCH,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
@@ -143,6 +143,7 @@ class TuyaSmartRemote004FROK(EnchantedDevice):
     }
 
     device_automation_triggers = {
+        # Command mode
         (SHORT_PRESS, BUTTON): {
             COMMAND: COMMAND_TOGGLE,
             ENDPOINT_ID: 1,
@@ -160,7 +161,7 @@ class TuyaSmartRemote004FROK(EnchantedDevice):
             CLUSTER_ID: 768,
         },
         # rotation without pressing contains step_size where you can get ticks count by formula ((step_size - 1) / 12)
-        (ROTATED, RIGHT): {
+        (COMMAND_STEP, RIGHT): {
             COMMAND: COMMAND_STEP,
             ENDPOINT_ID: 1,
             CLUSTER_ID: 8,
@@ -184,7 +185,7 @@ class TuyaSmartRemote004FROK(EnchantedDevice):
             CLUSTER_ID: 8,
             PARAMS: {"step_mode": 0, "transition_time": 3},
         },
-        (ROTATED, LEFT): {
+        (COMMAND_STEP, LEFT): {
             COMMAND: COMMAND_STEP,
             ENDPOINT_ID: 1,
             CLUSTER_ID: 8,
@@ -257,6 +258,7 @@ class TuyaSmartRemote004FROK(EnchantedDevice):
             CLUSTER_ID: 768,
             PARAMS: {"step_mode": 3, "transition_time": 3},
         },
+        # Event mode
         (SHORT_PRESS, BUTTON_1): {
             COMMAND: SHORT_PRESS,
             ENDPOINT_ID: 1,
@@ -273,12 +275,12 @@ class TuyaSmartRemote004FROK(EnchantedDevice):
             ENDPOINT_ID: 1,
             CLUSTER_ID: 6,
         },
-        (COMMAND_STEP, RIGHT): {
+        (ROTATED, RIGHT): {
             COMMAND: RIGHT,
             ENDPOINT_ID: 1,
             CLUSTER_ID: 6,
         },
-        (COMMAND_STEP, LEFT): {
+        (ROTATED, LEFT): {
             COMMAND: LEFT,
             ENDPOINT_ID: 1,
             CLUSTER_ID: 6,
