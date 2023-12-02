@@ -249,7 +249,7 @@ class TuyaSmartRemote004FROK(EnchantedDevice):
         (ROTATED_PRESSED_MEDIUM, LEFT): {
             COMMAND: COMMAND_STEP_COLOR_TEMP,
             ENDPOINT_ID: 1,
-            CLUSTER_ID: 8,
+            CLUSTER_ID: 768,
             PARAMS: {"step_mode": 3, "transition_time": 2},
         },
         (ROTATED_PRESSED_FAST, LEFT): {
