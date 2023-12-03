@@ -1,5 +1,4 @@
 """Xiaomi aqara weather sensor device."""
-import logging
 
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import Groups, Identify
@@ -28,8 +27,6 @@ from zhaquirks.xiaomi import (
 
 TEMPERATURE_HUMIDITY_DEVICE_TYPE = 0x5F01
 XIAOMI_CLUSTER_ID = 0xFFFF
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class Weather(XiaomiQuickInitDevice):

@@ -1,8 +1,6 @@
 """Tuya TS004F devices."""
 from __future__ import annotations
 
-import logging
-
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import (
     Basic,
@@ -64,8 +62,6 @@ from zhaquirks.tuya import (
     TuyaZBExternalSwitchTypeCluster,
 )
 from zhaquirks.tuya.mcu import EnchantedDevice
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class TuyaSmartRemote004FROK(EnchantedDevice):

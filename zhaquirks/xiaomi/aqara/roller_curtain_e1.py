@@ -21,7 +21,6 @@ from zigpy.zcl.clusters.general import (
     Scenes,
     Time,
 )
-from zigpy.zcl.clusters.manufacturer_specific import ManufacturerSpecificCluster
 
 from zhaquirks import CustomCluster
 from zhaquirks.const import (
@@ -35,23 +34,15 @@ from zhaquirks.const import (
 from zhaquirks.xiaomi import (
     LUMI,
     BasicCluster,
+    XiaomiAqaraE1Cluster,
     XiaomiCluster,
     XiaomiCustomDevice,
-    XiaomiPowerConfiguration,
+    XiaomiPowerConfigurationPercent,
 )
 
-PRESENT_VALUE = 0x0055
-CURRENT_POSITION_LIFT_PERCENTAGE = 0x0008
-GO_TO_LIFT_PERCENTAGE = 0x0005
-DOWN_CLOSE = 0x0001
-UP_OPEN = 0x0000
-STOP = 0x0002
 
-
-class XiaomiAqaraRollerE1(XiaomiCluster, ManufacturerSpecificCluster):
+class XiaomiAqaraRollerE1(XiaomiAqaraE1Cluster):
     """Xiaomi mfg cluster implementation specific for E1 Roller."""
-
-    cluster_id = 0xFCC0
 
     attributes = XiaomiCluster.attributes.copy()
     attributes.update(
@@ -69,35 +60,27 @@ class XiaomiAqaraRollerE1(XiaomiCluster, ManufacturerSpecificCluster):
 class AnalogOutputRollerE1(CustomCluster, AnalogOutput):
     """Analog output cluster, only used to relay current_value to WindowCovering."""
 
-    cluster_id = AnalogOutput.cluster_id
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Init."""
-        super().__init__(*args, **kwargs)
-
-        self._update_attribute(0x0041, float(0x064))  # max_present_value
-        self._update_attribute(0x0045, 0.0)  # min_present_value
-        self._update_attribute(0x0051, 0)  # out_of_service
-        self._update_attribute(0x006A, 1.0)  # resolution
-        self._update_attribute(0x006F, 0x00)  # status_flags
+    _CONSTANT_ATTRIBUTES = {
+        AnalogOutput.AttributeDefs.description.id: "Current position",
+        AnalogOutput.AttributeDefs.max_present_value.id: 100.0,
+        AnalogOutput.AttributeDefs.min_present_value.id: 0.0,
+        AnalogOutput.AttributeDefs.out_of_service.id: 0,
+        AnalogOutput.AttributeDefs.resolution.id: 1.0,
+        AnalogOutput.AttributeDefs.status_flags.id: 0x00,
+    }
 
     def _update_attribute(self, attrid: int, value: Any) -> None:
         super()._update_attribute(attrid, value)
 
-        if attrid == PRESENT_VALUE:
-            self.endpoint.window_covering._update_attribute(
-                CURRENT_POSITION_LIFT_PERCENTAGE, (100 - value)
+        if attrid == self.AttributeDefs.present_value.id:
+            self.endpoint.window_covering.update_attribute(
+                WindowCovering.AttributeDefs.current_position_lift_percentage.id,
+                (100 - value),
             )
 
 
 class WindowCoveringRollerE1(CustomCluster, WindowCovering):
     """Window covering cluster to receive commands that are sent to the AnalogOutput's present_value to move the motor."""
-
-    cluster_id = WindowCovering.cluster_id
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Init."""
-        super().__init__(*args, **kwargs)
 
     async def command(
         self,
@@ -113,28 +96,28 @@ class WindowCoveringRollerE1(CustomCluster, WindowCovering):
         We either overwrite analog_output's current_value or multistate_output's current
         value to make the roller work.
         """
-        if command_id == UP_OPEN:
+        if command_id == WindowCovering.ServerCommandDefs.up_open.id:
             (res,) = await self.endpoint.multistate_output.write_attributes(
                 {"present_value": 1}
             )
             return foundation.GENERAL_COMMANDS[
                 foundation.GeneralCommand.Default_Response
             ].schema(command_id=command_id, status=res[0].status)
-        if command_id == DOWN_CLOSE:
+        if command_id == WindowCovering.ServerCommandDefs.down_close.id:
             (res,) = await self.endpoint.multistate_output.write_attributes(
                 {"present_value": 0}
             )
             return foundation.GENERAL_COMMANDS[
                 foundation.GeneralCommand.Default_Response
             ].schema(command_id=command_id, status=res[0].status)
-        if command_id == GO_TO_LIFT_PERCENTAGE:
+        if command_id == WindowCovering.ServerCommandDefs.go_to_lift_percentage.id:
             (res,) = await self.endpoint.analog_output.write_attributes(
                 {"present_value": (100 - args[0])}
             )
             return foundation.GENERAL_COMMANDS[
                 foundation.GeneralCommand.Default_Response
             ].schema(command_id=command_id, status=res[0].status)
-        if command_id == STOP:
+        if command_id == WindowCovering.ServerCommandDefs.stop.id:
             (res,) = await self.endpoint.multistate_output.write_attributes(
                 {"present_value": 2}
             )
@@ -152,20 +135,12 @@ class MultistateOutputRollerE1(CustomCluster, MultistateOutput):
     attributes = MultistateOutput.attributes.copy()
     attributes.update(
         {
-            0x0055: ("present_value", t.uint16_t),
+            MultistateOutput.AttributeDefs.present_value.id: (
+                "present_value",
+                t.uint16_t,
+            ),
         }
     )
-
-
-class PowerConfigurationRollerE1(XiaomiPowerConfiguration):
-    """Power cluster which ignores Xiaomi voltage reports."""
-
-    def _update_battery_percentage(self, voltage_mv: int) -> None:
-        """Ignore Xiaomi voltage reports, so they're not used to calculate battery percentage."""
-        # This device sends battery percentage reports which are handled using a XiaomiCluster and
-        # the inherited XiaomiPowerConfiguration cluster.
-        # This device might also send Xiaomi battery reports, so we only want to use those for the voltage attribute,
-        # but not for the battery percentage. XiaomiPowerConfiguration.battery_reported() still updates the voltage.
 
 
 class RollerE1AQ(XiaomiCustomDevice):
@@ -229,7 +204,7 @@ class RollerE1AQ(XiaomiCustomDevice):
                     MultistateOutputRollerE1,
                     Scenes.cluster_id,
                     WindowCoveringRollerE1,
-                    PowerConfigurationRollerE1,
+                    XiaomiPowerConfigurationPercent,
                 ],
                 OUTPUT_CLUSTERS: [
                     Ota.cluster_id,

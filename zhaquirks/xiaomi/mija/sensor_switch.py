@@ -1,6 +1,5 @@
 """Xiaomi mija button device."""
 import asyncio
-import logging
 
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import (
@@ -55,8 +54,6 @@ from zhaquirks.xiaomi import (
 
 XIAOMI_CLUSTER_ID = 0xFFFF
 
-_LOGGER = logging.getLogger(__name__)
-
 CLICK_TYPE_MAP = {
     2: COMMAND_DOUBLE,
     3: COMMAND_TRIPLE,
@@ -76,7 +73,6 @@ class MijaButton(XiaomiQuickInitDevice):
     class MijaOnOff(CustomCluster, OnOff):
         """Mija on off cluster."""
 
-        cluster_id = OnOff.cluster_id
         hold_duration: float = 1.0
 
         def __init__(self, *args, **kwargs):

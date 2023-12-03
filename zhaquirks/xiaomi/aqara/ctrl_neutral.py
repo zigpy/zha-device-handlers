@@ -1,5 +1,4 @@
 """Xiaomi aqara single key wall switch devices."""
-import logging
 
 from zigpy import types as t
 from zigpy.profiles import zha
@@ -59,8 +58,6 @@ XIAOMI_CLUSTER_ID = 0xFFFF
 XIAOMI_DEVICE_TYPE = 0x5F01
 XIAOMI_DEVICE_TYPE2 = 0x5F02
 XIAOMI_DEVICE_TYPE3 = 0x5F03
-
-_LOGGER = logging.getLogger(__name__)
 
 # click attr 0xF000
 # single click 0x3FF1F00

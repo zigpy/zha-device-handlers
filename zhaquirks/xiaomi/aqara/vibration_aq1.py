@@ -1,5 +1,4 @@
 """Xiaomi aqara smart motion sensor device."""
-import logging
 import math
 
 from zigpy.profiles import zha
@@ -35,6 +34,7 @@ from zhaquirks.const import (
     ZHA_SEND_EVENT,
     ZONE_TYPE,
 )
+from zhaquirks.quirk_ids import XIAOMI_AQARA_VIBRATION_AQ1
 from zhaquirks.xiaomi import (
     LUMI,
     XIAOMI_NODE_DESC,
@@ -63,11 +63,11 @@ MEASUREMENT_TYPE = {
     DROP_VALUE: "Drop",
 }
 
-_LOGGER = logging.getLogger(__name__)
-
 
 class VibrationAQ1(XiaomiQuickInitDevice):
     """Xiaomi aqara smart motion sensor device."""
+
+    quirk_id = XIAOMI_AQARA_VIBRATION_AQ1
 
     manufacturer_id_override = 0x115F
 

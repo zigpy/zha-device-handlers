@@ -1,5 +1,4 @@
 """Xiaomi lumi.relay.c2acn01 relay."""
-import logging
 
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import (
@@ -32,10 +31,9 @@ from zhaquirks.xiaomi import (
     BasicCluster,
     BinaryOutputInterlock,
     ElectricalMeasurementCluster,
+    MeteringCluster,
     XiaomiCustomDevice,
 )
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class Relay(XiaomiCustomDevice):
@@ -99,6 +97,7 @@ class Relay(XiaomiCustomDevice):
                     Scenes.cluster_id,
                     BinaryOutputInterlock,
                     Time.cluster_id,
+                    MeteringCluster,
                     ElectricalMeasurementCluster,
                     AnalogInputCluster,
                 ],

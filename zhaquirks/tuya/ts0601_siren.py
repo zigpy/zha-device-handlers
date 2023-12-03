@@ -1,5 +1,4 @@
 """Map from manufacturer to standard clusters for the NEO Siren device."""
-import logging
 from typing import Dict, Optional, Union
 
 from zigpy.profiles import zgp, zha
@@ -49,8 +48,6 @@ TUYA_ALARM_MIN_HUMID_ATTR = 0x026D  # [0,0,0,18] min alarm humidity threshold
 TUYA_ALARM_MAX_HUMID_ATTR = 0x026E  # [0,0,0,18] max alarm humidity threshold
 TUYA_MELODY_ATTR = 0x0466  # [5] Melody
 TUYA_VOLUME_ATTR = 0x0474  # [0]/[1]/[2] Volume 0-low, 2-high
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class NeoAlarmVolume(t.enum8):
@@ -161,7 +158,6 @@ class TuyaSirenOnOff(LocalDataCluster, OnOff):
 class TuyaTemperatureMeasurement(LocalDataCluster, TemperatureMeasurement):
     """Temperature cluster acting from events from temperature bus."""
 
-    cluster_id = TemperatureMeasurement.cluster_id
     ATTR_ID = 0
 
     def __init__(self, *args, **kwargs):
@@ -177,7 +173,6 @@ class TuyaTemperatureMeasurement(LocalDataCluster, TemperatureMeasurement):
 class TuyaRelativeHumidity(LocalDataCluster, RelativeHumidity):
     """Humidity cluster acting from events from humidity bus."""
 
-    cluster_id = RelativeHumidity.cluster_id
     ATTR_ID = 0
 
     def __init__(self, *args, **kwargs):

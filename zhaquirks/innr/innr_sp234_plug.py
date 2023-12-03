@@ -1,6 +1,6 @@
 """Innr SP 234 plug."""
 from zigpy.profiles import zgp, zha
-from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
@@ -23,23 +23,14 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-
-MANUFACTURER = "innr"
-MODEL = "SP 234"
-
-
-class ElectricalMeasurementCluster(CustomCluster, ElectricalMeasurement):
-    """Fix divisor."""
-
-    cluster_id = ElectricalMeasurement.cluster_id
-    AC_POWER_DIVISOR = 0x0605
-    _CONSTANT_ATTRIBUTES = {AC_POWER_DIVISOR: 1}
+from zhaquirks.innr import INNR, ElectricalMeasurementClusterInnr, MeteringClusterInnr
 
 
 class SP234(CustomDevice):
     """Innr SP 234 smart plug."""
 
     signature = {
+        MODELS_INFO: [(INNR, "SP 234")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -70,7 +61,6 @@ class SP234(CustomDevice):
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
         },
-        MODELS_INFO: [(MANUFACTURER, MODEL)],
     }
 
     replacement = {
@@ -84,8 +74,8 @@ class SP234(CustomDevice):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     OnOff.cluster_id,
-                    Metering.cluster_id,
-                    ElectricalMeasurementCluster,
+                    MeteringClusterInnr,
+                    ElectricalMeasurementClusterInnr,
                     Diagnostic.cluster_id,
                     LightLink.cluster_id,
                     0xFC57,

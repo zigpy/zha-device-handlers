@@ -1,5 +1,4 @@
 """Ikea module."""
-import logging
 
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
@@ -7,8 +6,6 @@ from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import PowerConfiguration, Scenes
 
 from zhaquirks import DoublingPowerConfigurationCluster, EventableCluster
-
-_LOGGER = logging.getLogger(__name__)
 
 IKEA = "IKEA of Sweden"
 IKEA_CLUSTER_ID = 0xFC7C  # decimal = 64636
@@ -143,6 +140,16 @@ class ShortcutV2Cluster(EventableCluster):
 
 
 # ZCL compliant IKEA power configuration clusters:
+class PowerConfig1AAACluster(CustomCluster, PowerConfiguration):
+    """Updating power attributes: 2 AAA."""
+
+    _CONSTANT_ATTRIBUTES = {
+        BATTERY_SIZE: 4,
+        BATTERY_QUANTITY: 1,
+        BATTERY_RATED_VOLTAGE: 15,
+    }
+
+
 class PowerConfig2AAACluster(CustomCluster, PowerConfiguration):
     """Updating power attributes: 2 AAA."""
 
