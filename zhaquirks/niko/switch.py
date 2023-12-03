@@ -13,7 +13,6 @@ from zigpy.zcl.clusters.general import (
     Scenes,
 )
 from zigpy.zcl.clusters.homeautomation import Diagnostic
-from zigpy.zcl.clusters.manufacturer_specific import ManufacturerSpecificCluster
 
 from zhaquirks import EventableCluster
 from zhaquirks.const import (
@@ -35,7 +34,7 @@ from zhaquirks.const import (
 from zhaquirks.niko import NIKO
 
 
-class NikoConfigCluster(CustomCluster, ManufacturerSpecificCluster):
+class NikoConfigCluster(CustomCluster):
     """manufacturer specific cluster related to device settings"""
 
     class ButtonOperationMode(t.enum8):
@@ -69,17 +68,17 @@ class NikoConfigCluster(CustomCluster, ManufacturerSpecificCluster):
     }
 
 
-class NikoActionCluster(EventableCluster, ManufacturerSpecificCluster):
+class NikoActionCluster(EventableCluster):
     """manufacturer specific cluster related to registered action (if ButtonOperationMode == Decoupled)"""
 
     cluster_id = 0xFC01
     ep_attribute = "niko_action_cluster"
     attributes = {
         # Notable behaviour:
-        # BUTTON1 = {16: null, 64: 'click', 32: 'hold', 48: 'release'}
-        # BUTTON2 = {4096: null, 16384: 'click', 8192: 'hold', 12288: 'release'}
-        # BUTTON3 = {4096: null, 16384: 'click', 8192: 'hold', 12288: 'release'}
-        # BUTTON4 = {4096: null, 16384: 'click', 8192: 'hold', 12288: 'release'}
+        # BUTTON1 (left) = {16: null, 64: 'click', 32: 'hold', 48: 'release'}
+        # BUTTON2 (right) = {4096: null, 16384: 'click', 8192: 'hold', 12288: 'release'}
+        # BUTTON3 (left_ext) = {256: null, 1024: 'click', 512: 'hold', 768: 'release'}
+        # BUTTON4 (right_ext) = {65536: null, 262144: 'click', 131072: 'hold', 196608: 'release'}
         0x0002: ("action", t.bitmap32, True),
     }
 
@@ -119,7 +118,14 @@ class NikoSingleConnectableSwitch(CustomDevice):
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_PLUG_IN_UNIT,
                 INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
                     OnOff.cluster_id,
+                    Diagnostic.cluster_id,
+                    NikoConfigCluster.cluster_id,
+                    NikoActionCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [],
             },
@@ -224,7 +230,14 @@ class NikoDoubleConnectableSwitch(CustomDevice):
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_PLUG_IN_UNIT,
                 INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
                     OnOff.cluster_id,
+                    Diagnostic.cluster_id,
+                    NikoConfigCluster.cluster_id,
+                    NikoActionCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [],
             },
