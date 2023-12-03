@@ -72,13 +72,16 @@ from zhaquirks.xiaomi.aqara.feeder_acn001 import (
 )
 import zhaquirks.xiaomi.aqara.magnet_agl02
 import zhaquirks.xiaomi.aqara.motion_ac02
+import zhaquirks.xiaomi.aqara.motion_agl02
 import zhaquirks.xiaomi.aqara.motion_aq2
 import zhaquirks.xiaomi.aqara.motion_aq2b
 import zhaquirks.xiaomi.aqara.plug
 import zhaquirks.xiaomi.aqara.plug_eu
 import zhaquirks.xiaomi.aqara.roller_curtain_e1
+import zhaquirks.xiaomi.aqara.sensor_ht_agl02
 import zhaquirks.xiaomi.aqara.smoke
 import zhaquirks.xiaomi.aqara.switch_t1
+from zhaquirks.xiaomi.aqara.thermostat_agl001 import ScheduleEvent, ScheduleSettings
 import zhaquirks.xiaomi.aqara.weather
 import zhaquirks.xiaomi.mija.motion
 
@@ -1018,9 +1021,117 @@ async def test_xiaomi_e1_thermostat_attribute_update(zigpy_device_from_quirk, qu
     assert power_config_listener.attribute_updates[0][1] == 100  # ZCL is doubled
 
 
-@pytest.mark.parametrize("quirk", (zhaquirks.xiaomi.aqara.motion_ac02.LumiMotionAC02,))
-async def test_xiaomi_p1_motion_sensor(zigpy_device_from_quirk, quirk):
-    """Test Aqara P1 motion sensor."""
+@pytest.mark.parametrize(
+    "schedule_settings",
+    [
+        "mon,tue,wed,thu,fri|8:00,24.0|18:00,17.0|23:00,22.0|8:00,22.0",
+        "mon,tue,wed,thu,fri,sat,sun|8:00,24.0|18:00,17.0|23:00,22.0|8:00,22.0",
+        "mon|8:00,21.5|18:30,17.5|23:00,22.0|8:00,22.5",
+    ],
+)
+async def test_xiaomi_e1_thermostat_schedule_settings_string_representation(
+    schedule_settings,
+):
+    """Test creation of ScheduleSettings from str and converting back to same str"""
+
+    s = ScheduleSettings(schedule_settings)
+    assert str(s) == schedule_settings
+
+
+@pytest.mark.parametrize(
+    "schedule_settings",
+    [
+        "invalid|8:00,24.0|18:00,17.0|23:00,22.0|8:00,22.0",
+        "mon,tue,wed,thu,fri|8:00,24.0|18:00,17.0|23:00,22.0",
+        "mon,tue,wed,thu,fri|8:00,24.0|18:00,17.0|23:00,22.0|8:00,22.0|9:00,25.0",
+        "mon,tue,wed,thu,fri,sat,sun,some_day|8:00,24.0|18:00,17.0|23:00,22.0|8:00,22.0",
+        "mon|some_time,21.5|18:30,17.5|23:00,22.0|8:00,22.5",
+        "mon|8:00,some_temp|18:30,17.5|23:00,22.0|8:00,22.5",
+        "mon,tue,wed,thu,fri|8:00,24.0|8:30,17.0|23:00,22.0|8:00,22.0",
+        "mon,tue,wed,thu,fri|8:00,24.0|18:00,17.0|23:00,22.0|9:00,22.0",
+        "mon,tue,wed,thu,fri|8:00.24.0|18:00,17.0|23:00,22.0|9:00,22.0",
+        "mon,tue,wed,thu,fri|-8:00,24.0|18:00,17.0|23:00,22.0|9:00,22.0",
+        "mon,tue,wed,thu,fri|8:00,24.0|18:00,17.0|23:00,22.0|25:00,22.0",
+        "mon,tue,wed,thu,fri|8:00,03.0|18:00,17.0|23:00,22.0|9:00,22.0",
+        "mon,tue,wed,thu,fri|8:00,31.0|18:00,17.0|23:00,22.0|9:00,22.0",
+        "mon,mon|8:00,24.0|18:00,17.0|23:00,22.0|8:00,22.0",
+        "mon,tue,wed,thu,fri|8:00,24.1|18:00,17.0|23:00,22.0|9:00,22.0",
+        b"\x04>\x01\xe0\x00\x00\t`\x048\x00\x00\x06\xa4\x05d\x00\x00\x08\x98\x81\xe0\x00\x00\x08\x98\x00",
+        b"\x00>\x01\xe0\x00\x00\t`\x048\x00\x00\x06\xa4\x05d\x00\x00\x08\x98\x81\xe0\x00\x00\x08\x98",
+        b"\x04\x01\x01\xe0\x00\x00\t`\x048\x00\x00\x06\xa4\x05d\x00\x00\x08\x98\x81\xe0\x00\x00\x08\x98",
+        None,
+    ],
+)
+async def test_xiaomi_e1_thermostat_schedule_settings_data_validation(
+    schedule_settings,
+):
+    """Test data validation of ScheduleSettings class"""
+
+    with pytest.raises(Exception):
+        ScheduleSettings(schedule_settings)
+
+
+@pytest.mark.parametrize(
+    "schedule_event",
+    [
+        b"\x01\xe0\x00\x00",
+        None,
+    ],
+)
+async def test_xiaomi_e1_thermostat_schedule_event_data_validation(schedule_event):
+    """Test data validation of ScheduleEvent class"""
+
+    with pytest.raises(Exception):
+        ScheduleEvent(schedule_event)
+
+
+@pytest.mark.parametrize(
+    "schedule_settings, expected_bytes",
+    [
+        (
+            "mon,tue,wed,thu,fri|8:00,24.0|18:00,17.0|23:00,22.0|8:00,22.0",
+            b"\x1a\x04>\x01\xe0\x00\x00\t`\x048\x00\x00\x06\xa4\x05d\x00\x00\x08\x98\x81\xe0\x00\x00\x08\x98",
+        )
+    ],
+)
+async def test_xiaomi_e1_thermostat_schedule_settings_serialization(
+    schedule_settings, expected_bytes
+):
+    """Test that serialization works correctly."""
+
+    s = ScheduleSettings(schedule_settings)
+    assert s.serialize() == expected_bytes
+
+
+@pytest.mark.parametrize(
+    "schedule_settings, expected_string",
+    [
+        (
+            b"\x04>\x01\xe0\x00\x00\t`\x048\x00\x00\x06\xa4\x05d\x00\x00\x08\x98\x81\xe0\x00\x00\x08\x98",
+            "mon,tue,wed,thu,fri|8:00,24.0|18:00,17.0|23:00,22.0|8:00,22.0",
+        )
+    ],
+)
+async def test_xiaomi_e1_thermostat_schedule_settings_deserialization(
+    schedule_settings, expected_string
+):
+    """Test that deserialization works correctly."""
+
+    s = ScheduleSettings(schedule_settings)
+    assert str(s) == expected_string
+
+
+@pytest.mark.parametrize(
+    "quirk, invalid_iilluminance_report",
+    (
+        (zhaquirks.xiaomi.aqara.motion_ac02.LumiMotionAC02, 0),
+        (zhaquirks.xiaomi.aqara.motion_agl02.MotionT1, -1),
+    ),
+)
+async def test_xiaomi_p1_t1_motion_sensor(
+    zigpy_device_from_quirk, quirk, invalid_iilluminance_report
+):
+    """Test Aqara P1 and T1 motion sensors."""
 
     device = zigpy_device_from_quirk(quirk)
 
@@ -1071,10 +1182,11 @@ async def test_xiaomi_p1_motion_sensor(zigpy_device_from_quirk, quirk):
     # send invalid illuminance report 0xFFFF (and motion)
     opple_cluster.update_attribute(274, 0xFFFF)
 
-    # confirm invalid illuminance report is interpreted as 0
+    # confirm invalid illuminance report is interpreted as 0 for P1 sensor,
+    # and -1 for the T1 sensor, as it doesn't seem like the T1 sensor sends invalid illuminance reports
     assert len(illuminance_listener.attribute_updates) == 2
     assert illuminance_listener.attribute_updates[1][0] == zcl_iilluminance_id
-    assert illuminance_listener.attribute_updates[1][1] == 0
+    assert illuminance_listener.attribute_updates[1][1] == invalid_iilluminance_report
 
     # send illuminance report only
     opple_cluster.update_attribute(
@@ -1086,9 +1198,11 @@ async def test_xiaomi_p1_motion_sensor(zigpy_device_from_quirk, quirk):
 
 
 @pytest.mark.parametrize(
-    "raw_report, expected_results",
+    "quirk, cluster_name, raw_report, expected_results",
     (
-        [
+        (
+            zhaquirks.xiaomi.aqara.weather.Weather2,
+            "basic",
             "18200A01FF412501214F0B0421A84305214E020624010000000064299B096521BE1B662B138D01000A21900D",
             [
                 2459,  # temperature
@@ -1097,16 +1211,29 @@ async def test_xiaomi_p1_motion_sensor(zigpy_device_from_quirk, quirk):
                 28.9,  # battery voltage
                 54,  # battery percent * 2
             ],
-        ],
+        ),
+        (
+            zhaquirks.xiaomi.aqara.sensor_ht_agl02.LumiSensorHtAgl02,
+            "opple_cluster",
+            "1C5F11860AF700412D0121B60B0328170421A81305210B000624060000000008211D010A210"
+            "0000C200164292D09652904186629E903",
+            [
+                2349,  # temperature
+                6148,  # humidity
+                1001,  # pressure
+                30.0,  # battery voltage
+                127,  # battery percent * 2
+            ],
+        ),
     ),
 )
-async def test_xiaomi_weather(zigpy_device_from_quirk, raw_report, expected_results):
-    """Test Aqara weather sensor."""
+async def test_xiaomi_weather(
+    zigpy_device_from_quirk, quirk, cluster_name, raw_report, expected_results
+):
+    """Test Aqara weather sensors."""
     raw_report = bytes.fromhex(raw_report)
-
-    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.weather.Weather2)
-
-    basic_cluster = device.endpoints[1].basic
+    device = zigpy_device_from_quirk(quirk)
+    xiaomi_attr_cluster = getattr(device.endpoints[1], cluster_name)
 
     temperature_cluster = device.endpoints[1].temperature
     temperature_listener = ClusterListener(temperature_cluster)
@@ -1130,9 +1257,9 @@ async def test_xiaomi_weather(zigpy_device_from_quirk, raw_report, expected_resu
 
     device.handle_message(
         260,
-        basic_cluster.cluster_id,
-        basic_cluster.endpoint.endpoint_id,
-        basic_cluster.endpoint.endpoint_id,
+        xiaomi_attr_cluster.cluster_id,
+        xiaomi_attr_cluster.endpoint.endpoint_id,
+        xiaomi_attr_cluster.endpoint.endpoint_id,
         raw_report,
     )
 

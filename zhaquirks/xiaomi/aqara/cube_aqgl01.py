@@ -1,5 +1,4 @@
 """Xiaomi aqara magic cube device."""
-import logging
 
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import (
@@ -143,8 +142,6 @@ SIDES = {
     KNOCK_6_VALUE: 6,
 }
 
-_LOGGER = logging.getLogger(__name__)
-
 
 def extend_dict(dictionary, value, ranges):
     """Extend a dict."""
@@ -157,8 +154,6 @@ extend_dict(MOVEMENT_TYPE, FLIP, range(FLIP_BEGIN, FLIP_END))
 
 class MultistateInputCluster(CustomCluster, MultistateInput):
     """Multistate input cluster."""
-
-    cluster_id = MultistateInput.cluster_id
 
     def __init__(self, *args, **kwargs):
         """Init."""
@@ -191,8 +186,6 @@ class MultistateInputCluster(CustomCluster, MultistateInput):
 
 class AnalogInputCluster(CustomCluster, AnalogInput):
     """Analog input cluster."""
-
-    cluster_id = AnalogInput.cluster_id
 
     def __init__(self, *args, **kwargs):
         """Init."""

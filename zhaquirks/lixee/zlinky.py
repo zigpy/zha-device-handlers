@@ -12,7 +12,6 @@ from zigpy.zcl.clusters.general import (
     PowerConfiguration,
 )
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement, MeterIdentification
-from zigpy.zcl.clusters.manufacturer_specific import ManufacturerSpecificCluster
 from zigpy.zcl.clusters.smartenergy import Metering
 
 from zhaquirks.const import (
@@ -26,7 +25,7 @@ from zhaquirks.const import (
 from zhaquirks.lixee import LIXEE, ZLINKY_MANUFACTURER_CLUSTER_ID
 
 
-class ZLinkyTICManufacturerCluster(CustomCluster, ManufacturerSpecificCluster):
+class ZLinkyTICManufacturerCluster(CustomCluster):
     """ZLinkyTICManufacturerCluster manufacturer cluster."""
 
     cluster_id = ZLINKY_MANUFACTURER_CLUSTER_ID

@@ -1,5 +1,4 @@
 """Xiaomi lumi.plug.maus01 plug."""
-import logging
 
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import (
@@ -35,8 +34,6 @@ from zhaquirks.xiaomi import (
     XiaomiAqaraE1Cluster,
     XiaomiCustomDevice,
 )
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class Plug(XiaomiCustomDevice):

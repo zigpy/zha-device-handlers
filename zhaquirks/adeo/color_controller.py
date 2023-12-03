@@ -97,8 +97,6 @@ class AdeoManufacturerCluster(EventableCluster):
 class AdeoScenesCluster(Scenes, EventableCluster):
     """Scenes cluster to map preset buttons to the "view" command."""
 
-    cluster_id = Scenes.cluster_id
-
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
