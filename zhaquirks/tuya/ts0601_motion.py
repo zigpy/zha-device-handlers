@@ -621,7 +621,7 @@ class TuyaMmwRadarOccupancyVariant1(CustomDevice):
             },
         },
     }
-    
+
     replacement = {
         ENDPOINTS: {
             1: {
@@ -861,4 +861,3 @@ class TuyaMmwRadarOccupancyVariant3(CustomDevice):
             },
         }
     }
-
