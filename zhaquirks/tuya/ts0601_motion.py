@@ -36,6 +36,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.quirk_ids import TUYA_MMWRADAR
 from zhaquirks.tuya import (
     NoManufacturerCluster,
     TuyaLocalCluster,
@@ -442,6 +443,8 @@ class TuyaManufacturerClusterMotion(TuyaManufCluster):
 class TuyaMotion(CustomDevice):
     """BW-IS3 occupancy sensor."""
 
+    quirk_id = TUYA_MMWRADAR
+
     def __init__(self, *args, **kwargs):
         """Init device."""
         self.motion_bus = Bus()
@@ -480,6 +483,8 @@ class TuyaMotion(CustomDevice):
 
 class NeoMotion(CustomDevice):
     """NAS-PD07 occupancy sensor."""
+
+    quirk_id = TUYA_MMWRADAR
 
     signature = {
         #  endpoint=1 profile=260 device_type=81 device_version=0 input_clusters=[0, 4, 5, 61184]
@@ -526,6 +531,8 @@ class NeoMotion(CustomDevice):
 class TuyaMmwRadarOccupancyVariant1GPP(CustomDevice):
     """Millimeter wave occupancy sensor."""
 
+    quirk_id = TUYA_MMWRADAR
+
     signature = {
         #  endpoint=1, profile=260, device_type=81, device_version=1,
         #  input_clusters=[4, 5, 61184, 0], output_clusters=[25, 10])
@@ -533,7 +540,6 @@ class TuyaMmwRadarOccupancyVariant1GPP(CustomDevice):
             ("_TZE200_ar0slwnd", "TS0601"),
             ("_TZE200_sfiy5tfs", "TS0601"),
             ("_TZE200_mrf6vtua", "TS0601"),
-            ("_TZE204_qasjif9e", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
@@ -588,6 +594,8 @@ class TuyaMmwRadarOccupancyVariant1GPP(CustomDevice):
 class TuyaMmwRadarOccupancyVariant1(CustomDevice):
     """Millimeter wave occupancy sensor."""
 
+    quirk_id = TUYA_MMWRADAR
+
     signature = {
         #  endpoint=1, profile=260, device_type=81, device_version=1,
         #  input_clusters=[0, 4, 5, 61184], output_clusters=[25, 10]
@@ -613,7 +621,7 @@ class TuyaMmwRadarOccupancyVariant1(CustomDevice):
             },
         },
     }
-
+    
     replacement = {
         ENDPOINTS: {
             1: {
@@ -669,6 +677,8 @@ class TuyaMmwRadarOccupancyVariant1(CustomDevice):
 
 class TuyaMmwRadarOccupancyVariant2(CustomDevice):
     """Mini/Ceiling Human Breathe Sensor"""
+
+    quirk_id = TUYA_MMWRADAR
 
     signature = {
         #  endpoint=1, profile=260, device_type=81, device_version=1,
@@ -762,12 +772,13 @@ class TuyaMmwRadarOccupancyVariant2(CustomDevice):
 class TuyaMmwRadarOccupancyVariant3(CustomDevice):
     """Mini/Ceiling Human Breathe Sensor"""
 
+    quirk_id = TUYA_MMWRADAR
+
     signature = {
         #  endpoint=1, profile=260, device_type=81, device_version=1,
         #  input_clusters=[0, 4, 5, 61184], output_clusters=[25, 10])
         MODELS_INFO: [
             ("_TZE204_sxm7l9xa", "TS0601"),
-            ("_TZE204_e5m9c5hl", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
@@ -850,3 +861,4 @@ class TuyaMmwRadarOccupancyVariant3(CustomDevice):
             },
         }
     }
+
