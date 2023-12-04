@@ -18,6 +18,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.quirk_ids import TUYA_TRV_ZONNSMART
 from zhaquirks.tuya import (
     TuyaManufClusterAttributes,
     TuyaPowerConfigurationCluster2AA,
@@ -1651,6 +1652,8 @@ class MoesHY368_Type2(TuyaThermostat):
 
 class ZonnsmartTV01_ZG(TuyaThermostat):
     """ZONNSMART TV01-ZG Thermostatic radiator valve."""
+
+    quirk_id = TUYA_TRV_ZONNSMART
 
     def __init__(self, *args, **kwargs):
         """Init device."""
