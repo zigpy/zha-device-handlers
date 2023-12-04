@@ -470,7 +470,7 @@ async def test_zonnsmart_state_report(zigpy_device_from_quirk, quirk):
         tuya_cluster.handle_message(hdr, args)
 
     assert len(thermostat_listener.cluster_commands) == 0
-    assert len(thermostat_listener.attribute_updates) == 11
+    assert len(thermostat_listener.attribute_updates) == 13
     assert thermostat_listener.attribute_updates[0] == (0x0000, 2110)  # TEMP
     assert thermostat_listener.attribute_updates[1] == (0x0012, 2050)  # TARGET
     assert thermostat_listener.attribute_updates[4] == (0x0014, 1700)  # HOLIDAY
