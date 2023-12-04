@@ -1379,14 +1379,18 @@ class ZONNSMARTThermostat(TuyaThermostatCluster):
         """Set heating state based on current and set temperature."""
         if attrid == ZONNSMART_TEMPERATURE_ATTR:
             temp_current = value * 10
-            temp_set = self._attr_cache.get(
-                self.attributes_by_name["occupied_heating_setpoint"].id
+            temp_set = (
+                self._attr_cache.get(
+                    self.attributes_by_name["occupied_heating_setpoint"].id
+                )
+                or temp_current
             )
         elif attrid == ZONNSMART_TARGET_TEMP_ATTR:
-            temp_current = self._attr_cache.get(
-                self.attributes_by_name["local_temperature"].id
-            )
             temp_set = value * 10
+            temp_current = (
+                self._attr_cache.get(self.attributes_by_name["local_temperature"].id)
+                or temp_set
+            )
         else:
             return
 
