@@ -472,14 +472,14 @@ async def test_zonnsmart_state_report(zigpy_device_from_quirk, quirk):
     assert len(thermostat_listener.cluster_commands) == 0
     assert len(thermostat_listener.attribute_updates) == 13
     assert thermostat_listener.attribute_updates[0] == (0x0000, 2110)  # TEMP
-    assert thermostat_listener.attribute_updates[1] == (0x0012, 2050)  # TARGET
-    assert thermostat_listener.attribute_updates[4] == (0x0014, 1700)  # HOLIDAY
-    assert thermostat_listener.attribute_updates[5] == (0x0010, 110)  # OFFSET
-    assert thermostat_listener.attribute_updates[6] == (0x0025, 0)  # MANUAL
-    assert thermostat_listener.attribute_updates[7] == (0x4002, 1)
-    assert thermostat_listener.attribute_updates[8] == (0x0025, 1)  # SCHEDULE
-    assert thermostat_listener.attribute_updates[9] == (0x4002, 0)
-    assert thermostat_listener.attribute_updates[10] == (0x001C, 4)  # HEAT ON
+    assert thermostat_listener.attribute_updates[3] == (0x0012, 2050)  # TARGET
+    assert thermostat_listener.attribute_updates[6] == (0x0014, 1700)  # HOLIDAY
+    assert thermostat_listener.attribute_updates[7] == (0x0010, 110)  # OFFSET
+    assert thermostat_listener.attribute_updates[8] == (0x0025, 0)  # MANUAL
+    assert thermostat_listener.attribute_updates[9] == (0x4002, 1)
+    assert thermostat_listener.attribute_updates[10] == (0x0025, 1)  # SCHEDULE
+    assert thermostat_listener.attribute_updates[11] == (0x4002, 0)
+    assert thermostat_listener.attribute_updates[12] == (0x001C, 4)  # HEAT ON
 
     assert len(tuya_listener.cluster_commands) == 9
     assert len(tuya_listener.attribute_updates) == 9
