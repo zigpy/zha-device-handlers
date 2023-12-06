@@ -14,9 +14,9 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.foundation import (
-    Direction,
     BaseAttributeDefs,
     BaseCommandDefs,
+    Direction,
     ZCLAttributeDef,
     ZCLCommandDef,
 )
