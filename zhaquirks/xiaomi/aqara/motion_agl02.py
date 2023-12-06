@@ -1,5 +1,9 @@
 """Xiaomi aqara T1 motion sensor device."""
+from __future__ import annotations
+
+import zigpy
 from zigpy.profiles import zha
+from zigpy.typing import AddressingMode
 from zigpy.zcl.clusters.general import Identify, Ota
 from zigpy.zcl.clusters.measurement import IlluminanceMeasurement, OccupancySensing
 
@@ -44,6 +48,15 @@ class XiaomiManufacturerCluster(XiaomiAqaraE1Cluster):
 
 class LocalOccupancyCluster(LocalDataCluster, OccupancyCluster):
     """Local occupancy cluster."""
+
+    def handle_cluster_general_request(
+        self,
+        hdr: zigpy.zcl.foundation.ZCLHeader,
+        args: list,
+        *,
+        dst_addressing: AddressingMode | None = None,
+    ) -> None:
+        """Ignore occupancy attribute reports on this cluster, as they're invalid and sent by the sensor every hour."""
 
 
 class MotionT1(XiaomiCustomDevice):
