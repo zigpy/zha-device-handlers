@@ -2,6 +2,7 @@
 from zigpy.profiles import zgp, zha
 from zigpy.zcl.clusters.general import (
     Alarms,
+    AnalogInput,
     Basic,
     DeviceTemperature,
     GreenPowerProxy,
@@ -72,6 +73,95 @@ class AqaraH1DoubleRockerSwitchWithNeutral(XiaomiOpple2ButtonSwitchBase):
         },
     }
 
+class AqaraH1DoubleRockerSwitchWithNeutralAlt(XiaomiOpple2ButtonSwitchBase):
+    """Aqara H1 Double Rocker Switch (with neutral) alternative signature."""
+
+    signature = {
+        ENDPOINTS: {
+            # input_clusters=[0, 2, 3, 4, 5, 6, 18, 64704], output_clusters=[10, 25]
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,  # 0
+                    DeviceTemperature.cluster_id,  # 2
+                    Identify.cluster_id,  # 3
+                    Groups.cluster_id,  # 4
+                    Scenes.cluster_id,  # 5
+                    OnOff.cluster_id,  # 6
+                    MultistateInput.cluster_id,  # 18
+                    0xFCC0,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            # input_clusters=[0, 3, 4, 5, 6, 18, 64704], output_clusters=[]
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,  # 0
+                    Identify.cluster_id,  # 3
+                    Groups.cluster_id,  # 4
+                    Scenes.cluster_id,  # 5
+                    OnOff.cluster_id,  # 6
+                    MultistateInput.cluster_id,  # 18
+                    0xFCC0,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            # input_clusters=[12], output_clusters=[]
+            21: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    AnalogInput.cluster_id,  # 12
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            # input_clusters=[12], output_clusters=[]
+            31: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    AnalogInput.cluster_id,  # 12
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            # input_clusters=[18], output_clusters=[]
+            41: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    MultistateInput.cluster_id,  # 18
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            # input_clusters=[18], output_clusters=[]
+            42: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    MultistateInput.cluster_id,  # 18
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            # input_clusters=[18], output_clusters=[]
+            51: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    MultistateInput.cluster_id,  # 18
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            242: {
+                PROFILE_ID: 41440,
+                DEVICE_TYPE: 97,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        },
+    }
 
 class AqaraH1DoubleRockerSwitchNoNeutral(XiaomiOpple2ButtonSwitchBase):
     """Aqara H1 Double Rocker Switch (no neutral)."""
