@@ -1,17 +1,24 @@
 """Module for Legrand Cable Outlet (with pilot wire functionality)."""
 
 from zigpy.profiles import zgp, zha
-from zigpy.quirks import CustomDevice, CustomCluster
+from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
-from zigpy.zcl.foundation import Direction, BaseAttributeDefs, BaseCommandDefs, ZCLAttributeDef, ZCLCommandDef
 from zigpy.zcl.clusters.general import (
     Basic,
+    GreenPowerProxy,
     Groups,
     Identify,
     OnOff,
     Ota,
     Scenes,
-    GreenPowerProxy,
+)
+from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
+from zigpy.zcl.foundation import (
+    Direction,
+    BaseAttributeDefs,
+    BaseCommandDefs,
+    ZCLAttributeDef,
+    ZCLCommandDef,
 )
 
 from zhaquirks.const import (
@@ -22,14 +29,15 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zhaquirks.legrand import LEGRAND, MANUFACTURER_SPECIFIC_CLUSTER_ID
 
-MANUFACTURER_SPECIFIC_CLUSTER_ID_2 = 0xFC40 # 64576
+MANUFACTURER_SPECIFIC_CLUSTER_ID_2 = 0xFC40  # 64576
+
 
 class DeviceMode(t.enum16):
     PILOT_OFF = 0x0100
     PILOT_ON = 0x0200
+
 
 class LegrandCluster(CustomCluster):
     """LegrandCluster."""
@@ -41,7 +49,7 @@ class LegrandCluster(CustomCluster):
     class AttributeDefs(BaseAttributeDefs):
         device_mode = ZCLAttributeDef(
             id=0x0000,
-            type=t.data16, # DeviceMode
+            type=t.data16,  # DeviceMode
             is_manufacturer_specific=True,
         )
         led_dark = ZCLAttributeDef(
@@ -63,6 +71,7 @@ class PilotWireMode(t.enum8):
     ECO = 0x03
     FROST_PROTECTION = 0x04
     OFF = 0x05
+
 
 class LegrandCableOutletCluster(CustomCluster):
     """Legrand second manufacturer-specific cluster."""
@@ -119,7 +128,6 @@ class Legrand064882CableOutlet(CustomDevice):
             },
         },
     }
-
 
     replacement = {
         ENDPOINTS: {
