@@ -73,6 +73,7 @@ class AqaraH1DoubleRockerSwitchWithNeutral(XiaomiOpple2ButtonSwitchBase):
         },
     }
 
+
 class AqaraH1DoubleRockerSwitchWithNeutralAlt(XiaomiOpple2ButtonSwitchBase):
     """Aqara H1 Double Rocker Switch (with neutral) alternative signature."""
 
@@ -162,6 +163,7 @@ class AqaraH1DoubleRockerSwitchWithNeutralAlt(XiaomiOpple2ButtonSwitchBase):
             },
         },
     }
+
 
 class AqaraH1DoubleRockerSwitchNoNeutral(XiaomiOpple2ButtonSwitchBase):
     """Aqara H1 Double Rocker Switch (no neutral)."""
