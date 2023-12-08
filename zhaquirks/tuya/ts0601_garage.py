@@ -90,6 +90,7 @@ class TuyaGarageSwitchTO(CustomDevice):
         MODELS_INFO: [
             ("_TZE200_nklqjk62", "TS0601"),
             ("_TZE200_wfxuhoea", "TS0601"),
+            ("_TZE204_nklqjk62", "TS0601"),
         ],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=0x0051
