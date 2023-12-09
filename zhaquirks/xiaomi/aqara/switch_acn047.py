@@ -2,6 +2,7 @@
 from zigpy import types as t
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import (
+    AnalogInput,
     Basic,
     DeviceTemperature,
     Groups,
@@ -124,7 +125,7 @@ class AqaraT2Relay(XiaomiCustomDevice):
             21: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
-                INPUT_CLUSTERS: [AnalogInputCluster],
+                INPUT_CLUSTERS: [AnalogInput.cluster_id],
                 OUTPUT_CLUSTERS: [],
             },
         },
