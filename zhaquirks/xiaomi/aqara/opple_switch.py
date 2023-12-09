@@ -375,7 +375,7 @@ class XiaomiOpple2ButtonSwitch2(XiaomiOpple2ButtonSwitchBase):
     signature = {
         MODELS_INFO: [(LUMI, "lumi.switch.b2naus01")],
         ENDPOINTS: {
-            # input_clusters=[0, 2, 3, 4, 5, 6, 9, 1794, 2820], output_clusters=[10, 25]
+            # input_clusters=[0, 2, 3, 4, 5, 6, 18, 64704], output_clusters=[10, 25]
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
@@ -386,9 +386,8 @@ class XiaomiOpple2ButtonSwitch2(XiaomiOpple2ButtonSwitchBase):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     OnOff.cluster_id,
-                    Alarms.cluster_id,
-                    Metering.cluster_id,
-                    ElectricalMeasurement.cluster_id,
+                    MultistateInput.cluster_id,
+                    OppleSwitchCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Time.cluster_id,
@@ -448,7 +447,7 @@ class XiaomiOpple2ButtonSwitch3(XiaomiOpple2ButtonSwitchBase):
                     Ota.cluster_id,
                 ],
             },
-            # input_clusters=[0, 3, 4, 5, 6], output_clusters=[]
+            # input_clusters=[0, 3, 4, 5, 6, 18, 64704], output_clusters=[]
             2: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
@@ -458,6 +457,8 @@ class XiaomiOpple2ButtonSwitch3(XiaomiOpple2ButtonSwitchBase):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     OnOff.cluster_id,
+                    MultistateInput.cluster_id,
+                    OppleSwitchCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [],
             },
@@ -479,7 +480,7 @@ class XiaomiOpple2ButtonSwitch4(XiaomiOpple2ButtonSwitchBase):
     signature = {
         MODELS_INFO: [(LUMI, "lumi.switch.b2naus01")],
         ENDPOINTS: {
-            # input_clusters=[0, 2, 3, 4, 5, 6, 18, 64704], output_clusters=[10, 25]
+            # input_clusters=[0, 2, 3, 4, 5, 6, 9, 1794, 2820], output_clusters=[10, 25]
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
@@ -490,15 +491,16 @@ class XiaomiOpple2ButtonSwitch4(XiaomiOpple2ButtonSwitchBase):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     OnOff.cluster_id,
-                    MultistateInput.cluster_id,
-                    OppleSwitchCluster.cluster_id,
+                    Alarms.cluster_id,
+                    Metering.cluster_id,
+                    ElectricalMeasurement.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Time.cluster_id,
                     Ota.cluster_id,
                 ],
             },
-            # input_clusters=[0, 3, 4, 5, 6, 18, 64704], output_clusters=[]
+            # input_clusters=[0, 3, 4, 5, 6], output_clusters=[]
             2: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
@@ -508,8 +510,6 @@ class XiaomiOpple2ButtonSwitch4(XiaomiOpple2ButtonSwitchBase):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     OnOff.cluster_id,
-                    MultistateInput.cluster_id,
-                    OppleSwitchCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [],
             },
