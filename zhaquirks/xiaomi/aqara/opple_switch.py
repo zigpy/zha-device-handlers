@@ -281,7 +281,7 @@ class XiaomiOpple2ButtonSwitch1(XiaomiOpple2ButtonSwitchBase):
     """Xiaomi Opple 2 Button Switch. Signature 1."""
 
     signature = {
-        MODELS_INFO: [(LUMI, "lumi.switch.b2naus01"), (LUMI, "lumi.switch.n2aeu1")],
+        MODELS_INFO: [(LUMI, "lumi.switch.b2naus01")],
         ENDPOINTS: {
             # input_clusters=[0, 2, 3, 4, 5, 6, 18, 64704], output_clusters=[10, 25]
             1: {
