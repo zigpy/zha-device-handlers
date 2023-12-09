@@ -1698,6 +1698,7 @@ class ZonnsmartTV01_ZG(TuyaThermostat):
             ("_TZE200_kds0pmmv", "TS0601"),  # MOES TV02
             ("_TZE200_sur6q7ko", "TS0601"),  # LSC Smart Connect 3012732
             ("_TZE200_lllliz3p", "TS0601"),  # tuya TV02-Zigbee2
+            ("_TZE200_fsow0qsk", "TS0601"),  # Tesla Smart TV500
         ],
         ENDPOINTS: {
             1: {
