@@ -27,7 +27,6 @@ from zhaquirks.xiaomi import LUMI
 from zhaquirks.xiaomi.aqara.opple_switch import XiaomiOpple2ButtonSwitchBase
 
 
-# alternative signature for this device also matched by quirk in opple_switch.py: XiaomiOpple2ButtonSwitch1
 class AqaraH1DoubleRockerSwitchWithNeutral(XiaomiOpple2ButtonSwitchBase):
     """Aqara H1 Double Rocker Switch (with neutral)."""
 
