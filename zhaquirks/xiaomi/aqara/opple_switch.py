@@ -277,8 +277,8 @@ class XiaomiOpple2ButtonSwitchBase(XiaomiCustomDevice):
     }
 
 
-class XiaomiOpple2ButtonSwitchFace1(XiaomiOpple2ButtonSwitchBase):
-    """Xiaomi Opple 2 Button Switch. Face 1."""
+class XiaomiOpple2ButtonSwitch1(XiaomiOpple2ButtonSwitchBase):
+    """Xiaomi Opple 2 Button Switch. Signature 1."""
 
     signature = {
         MODELS_INFO: [(LUMI, "lumi.switch.b2naus01")],
