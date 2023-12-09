@@ -59,6 +59,12 @@ class LocalOccupancyCluster(LocalDataCluster, OccupancyCluster):
         """Ignore occupancy attribute reports on this cluster, as they're invalid and sent by the sensor every hour."""
 
 
+class LocalMotionCluster(MotionCluster):
+    """Local motion cluster."""
+
+    reset_s: int = 60
+
+
 class MotionT1(XiaomiCustomDevice):
     """Xiaomi motion sensor device."""
 
@@ -96,7 +102,7 @@ class MotionT1(XiaomiCustomDevice):
                     XiaomiPowerConfiguration,
                     Identify.cluster_id,
                     LocalOccupancyCluster,
-                    MotionCluster,
+                    LocalMotionCluster,
                     IlluminanceMeasurementCluster,
                     XiaomiManufacturerCluster,
                 ],
