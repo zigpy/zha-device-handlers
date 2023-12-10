@@ -126,6 +126,7 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
         0x0071: ("eco_delta_setpoint", t.int8s, True),
         0x0072: ("eco_max_pi_heating_demand", t.uint8_t, True),
         0x0073: ("eco_safety_temperature_delta", t.uint8_t, True),
+        0x0101: ("unknown_attr_1", Array, True),
         0x0104: ("setpoint", t.int16s, True),
         0x0105: ("air_floor_mode", FloorMode, True),
         0x0106: ("aux_output_mode", AuxMode, True),
