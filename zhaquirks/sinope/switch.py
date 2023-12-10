@@ -97,14 +97,6 @@ class SinopeManufacturerCluster(CustomCluster):
         Active = 0x00
         Off = 0x01
 
-    class TankSize(t.enum8):
-        """tank_size values."""
-
-        Gal_40 = 0x01
-        Gal_50 = 0x02
-        Gal_60 = 0x03
-        Gal_80 = 0x04
-
     class FlowDuration(t.uint32_t):
         """Abnormal flow duration."""
 
@@ -127,12 +119,14 @@ class SinopeManufacturerCluster(CustomCluster):
         0x0003: ("firmware_number", t.uint16_t, True),
         0x0004: ("firmware_version", t.CharacterString, True),
         0x0010: ("outdoor_temp", t.int16s, True),
-        0x0013: ("tank_size", TankSize, True),
+        0x0013: ("unknown_attr_1", t.enum8, True),
         0x0060: ("connected_load", t.uint16_t, True),
         0x0070: ("current_load", t.bitmap8, True),
         0x0076: ("dr_config_water_temp_min", t.uint8_t, True),
         0x0077: ("dr_config_water_temp_time", t.uint8_t, True),
         0x0078: ("dr_wt_time_on", t.uint16_t, True),
+        0x007C: ("min_measured_temp", t.int16s, True),
+        0x007D: ("max_measured_temp", t.int16s, True),
         0x0090: ("current_summation_delivered", t.uint32_t, True),
         0x00A0: ("timer", t.uint32_t, True),
         0x00A1: ("timer_countdown", t.uint32_t, True),
@@ -145,7 +139,9 @@ class SinopeManufacturerCluster(CustomCluster):
         0x0251: ("emergency_power_source", EmergencyPower, True),
         0x0252: ("abnormal_flow_duration", FlowDuration, True),
         0x0253: ("abnormal_flow_action", AbnormalAction, True),
+        0x0280: ("max_measured_value", t.int16s, True),
         0x0283: ("cold_load_pickup_status", ColdStatus, True),
+        0x0284: ("cold_load_pickup_remaining_time", t.uint16_t, True),
         0xFFFD: ("cluster_revision", t.uint16_t, True),
     }
 
@@ -157,6 +153,7 @@ class CustomBasicCluster(CustomCluster, Basic):
         """Power source."""
 
         Unknown = 0x0000
+        DC_mains = 0x0001
         Battery = 0x0003
         DC_source = 0x0004
         ACUPS_01 = 0x0081
@@ -585,16 +582,8 @@ class SinopeTechnologiesCalypso(CustomDevice):
                     Time.cluster_id,
                     Ota.cluster_id,
                 ],
-            },
-            2: {
-                PROFILE_ID: zha_p.PROFILE_ID,
-                DEVICE_TYPE: zha_p.DeviceType.ON_OFF_OUTPUT,
-                INPUT_CLUSTERS: [
-                    TemperatureMeasurement.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [],
-            },
-        },
+            }
+        }
     }
 
 
