@@ -27,6 +27,7 @@ from zhaquirks.const import (
 from zhaquirks.xiaomi import LUMI
 from zhaquirks.xiaomi.aqara.opple_switch import (
     OppleSwitchCluster,
+    XiaomiOpple2ButtonSwitch1,
     XiaomiOpple2ButtonSwitchBase,
 )
 
@@ -74,6 +75,15 @@ class AqaraH1DoubleRockerSwitchWithNeutral(XiaomiOpple2ButtonSwitchBase):
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
         },
+    }
+
+
+class AqaraH1DoubleRockerSwitchWithNeutralAlt(XiaomiOpple2ButtonSwitchBase):
+    """Aqara H1 Double Rocker Switch (with neutral) alternative signature."""
+
+    signature = {
+        MODELS_INFO: [(LUMI, "lumi.switch.n2aeu1")],
+        ENDPOINTS: XiaomiOpple2ButtonSwitch1.signature[ENDPOINTS],
     }
 
 
