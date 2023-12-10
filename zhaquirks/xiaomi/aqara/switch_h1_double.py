@@ -24,7 +24,10 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.xiaomi import LUMI
-from zhaquirks.xiaomi.aqara.opple_switch import XiaomiOpple2ButtonSwitchBase
+from zhaquirks.xiaomi.aqara.opple_switch import (
+    OppleSwitchCluster,
+    XiaomiOpple2ButtonSwitchBase,
+)
 
 
 class AqaraH1DoubleRockerSwitchWithNeutral(XiaomiOpple2ButtonSwitchBase):
@@ -91,7 +94,7 @@ class AqaraH1DoubleRockerSwitchNoNeutral(XiaomiOpple2ButtonSwitchBase):
                     Scenes.cluster_id,
                     OnOff.cluster_id,
                     MultistateInput.cluster_id,
-                    0xFCC0,
+                    OppleSwitchCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Time.cluster_id,
@@ -109,7 +112,7 @@ class AqaraH1DoubleRockerSwitchNoNeutral(XiaomiOpple2ButtonSwitchBase):
                     Scenes.cluster_id,
                     OnOff.cluster_id,
                     MultistateInput.cluster_id,
-                    0xFCC0,
+                    OppleSwitchCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [],
             },
