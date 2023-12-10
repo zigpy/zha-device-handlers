@@ -33,7 +33,7 @@ class AqaraH1DoubleRockerSwitchWithNeutral(XiaomiOpple2ButtonSwitchBase):
     signature = {
         MODELS_INFO: [(LUMI, "lumi.switch.n2aeu1")],
         ENDPOINTS: {
-            #  input_clusters=[0, 2, 3, 4, 5, 6, 18, 64704], output_clusters=[10, 25]
+            # input_clusters=[0, 2, 3, 4, 5, 6, 18, 64704], output_clusters=[10, 25]
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
@@ -50,7 +50,7 @@ class AqaraH1DoubleRockerSwitchWithNeutral(XiaomiOpple2ButtonSwitchBase):
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
-            #  input_clusters=[0, 3, 4, 5, 6, 18, 64704], output_clusters=[]
+            # input_clusters=[0, 3, 4, 5, 6, 18, 64704], output_clusters=[]
             2: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
