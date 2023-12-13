@@ -45,7 +45,7 @@ class SocketOutlet(CustomDevice):
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=9
             # device_version=0
-            # input_clusters=[0, 3, 4, 5, 6, 1794, 1800, 2820, 2821, 64516] output_clusters=[5, 25, 32]>
+            # input_clusters=[0, 3, 4, 5, 6, 1794, 1800, 2820, 2821, 64516] output_clusters=[25]>
             6: {
                 PROFILE_ID: 0x0104,
                 DEVICE_TYPE: zha.DeviceType.MAIN_POWER_OUTLET,
