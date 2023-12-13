@@ -28,7 +28,8 @@ from zhaquirks.const import (
     PROFILE_ID,
     SHORT_PRESS,
 )
-from zhaquirks.sonoff import SonoffManufactureCluster
+
+SONOFF_CLUSTER_ID = 0xFC57
 
 
 class SonoffSmartButtonSNZB01P(CustomDevice):
@@ -51,7 +52,7 @@ class SonoffSmartButtonSNZB01P(CustomDevice):
                     PowerConfiguration.cluster_id,
                     Identify.cluster_id,
                     PollControl.cluster_id,
-                    SonoffManufactureCluster.cluster_id,
+                    SONOFF_CLUSTER_ID,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
@@ -72,7 +73,7 @@ class SonoffSmartButtonSNZB01P(CustomDevice):
                     PowerConfiguration.cluster_id,
                     Identify.cluster_id,
                     PollControl.cluster_id,
-                    SonoffManufactureCluster.cluster_id,
+                    SONOFF_CLUSTER_ID,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
