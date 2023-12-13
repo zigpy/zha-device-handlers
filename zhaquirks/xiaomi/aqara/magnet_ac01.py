@@ -18,6 +18,7 @@ from zhaquirks.xiaomi import (
     BasicCluster,
     XiaomiAqaraE1Cluster,
     XiaomiCustomDevice,
+    XiaomiPowerConfiguration,
 )
 
 
@@ -38,6 +39,11 @@ class OppleCluster(XiaomiAqaraE1Cluster):
 
 class LumiMagnetAC01(XiaomiCustomDevice):
     """Custom device representing lumi.magnet.ac01."""
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        self.battery_size = 8
+        super().__init__(*args, **kwargs)
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=1026
@@ -65,7 +71,7 @@ class LumiMagnetAC01(XiaomiCustomDevice):
             1: {
                 INPUT_CLUSTERS: [
                     BasicCluster,
-                    PowerConfiguration.cluster_id,
+                    XiaomiPowerConfiguration,
                     Identify.cluster_id,
                     OppleCluster,
                 ],
