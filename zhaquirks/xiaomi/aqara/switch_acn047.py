@@ -58,8 +58,8 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         Decoupled = 0x00
         ControlRelay = 0x01
 
-    class Mode(t.enum8):
-        """Mode."""
+    class SwitchMode(t.enum8):
+        """Switch Mode."""
 
         Power = 0x00
         Pulse = 0x01
@@ -70,7 +70,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         0x0517: ("startup_on_off", StartupOnOff, True),
         0x0200: ("decoupled_mode", DecoupledMode, True),
         0x02D0: ("interlock", t.Bool, True),
-        0x0289: ("mode", Mode, True),
+        0x0289: ("switch_mode", SwitchMode, True),
         0x00EB: ("pulse_length", t.uint16_t, True),
     }
 
