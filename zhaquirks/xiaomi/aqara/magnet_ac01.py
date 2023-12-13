@@ -18,7 +18,7 @@ from zhaquirks.xiaomi import (
     BasicCluster,
     XiaomiAqaraE1Cluster,
     XiaomiCustomDevice,
-    XiaomiPowerConfiguration,
+    XiaomiPowerConfigurationPercent,
 )
 
 
@@ -71,7 +71,7 @@ class LumiMagnetAC01(XiaomiCustomDevice):
             1: {
                 INPUT_CLUSTERS: [
                     BasicCluster,
-                    XiaomiPowerConfiguration,
+                    XiaomiPowerConfigurationPercent,
                     Identify.cluster_id,
                     OppleCluster,
                 ],
