@@ -141,7 +141,10 @@ class XiaomiOpple2ButtonSwitchBase(XiaomiCustomDevice):
                     ElectricalMeasurementCluster,
                     OppleSwitchCluster,
                 ],
-                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+                OUTPUT_CLUSTERS: [
+                    Time.cluster_id,
+                    Ota.cluster_id,
+                ],
             },
             2: {
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
@@ -214,7 +217,9 @@ class XiaomiOpple2ButtonSwitchBase(XiaomiCustomDevice):
                 PROFILE_ID: zgp.PROFILE_ID,
                 DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+                OUTPUT_CLUSTERS: [
+                    GreenPowerProxy.cluster_id,
+                ],
             },
         },
     }
@@ -297,7 +302,10 @@ class XiaomiOpple2ButtonSwitch1(XiaomiOpple2ButtonSwitchBase):
                     MultistateInput.cluster_id,
                     OppleSwitchCluster.cluster_id,
                 ],
-                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+                OUTPUT_CLUSTERS: [
+                    Time.cluster_id,
+                    Ota.cluster_id,
+                ],
             },
             # input_clusters=[0, 3, 4, 5, 6, 18, 64704], output_clusters=[]
             2: {
@@ -363,7 +371,9 @@ class XiaomiOpple2ButtonSwitch1(XiaomiOpple2ButtonSwitchBase):
                 PROFILE_ID: zgp.PROFILE_ID,
                 DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+                OUTPUT_CLUSTERS: [
+                    GreenPowerProxy.cluster_id,
+                ],
             },
         },
     }
