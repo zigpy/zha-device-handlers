@@ -1,22 +1,21 @@
 """Device handler for Bosch RBSH-TRV0-ZB-EU thermostat."""
 
 from zigpy.profiles import zha
-import zigpy.types as t
 from zigpy.quirks import CustomDevice
-from zigpy.zcl.clusters import general, hvac, homeautomation
-
+import zigpy.types as t
+from zigpy.zcl.clusters import general, homeautomation, hvac
 from zigpy.zcl.clusters.general import (
     Basic,
+    Groups,
     Identify,
     Ota,
     PollControl,
-    Groups,
-    Time,
     PowerConfiguration,
+    Time,
     ZCLAttributeDef,
 )
-from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
 from zigpy.zcl.clusters.homeautomation import Diagnostic
+from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
 
 from zhaquirks import CustomCluster
 from zhaquirks.const import (
@@ -134,8 +133,7 @@ class BoschThermostat(CustomDevice):
                     hvac.UserInterface.cluster_id,
                     homeautomation.Diagnostic.cluster_id,
                 ],
-                OUTPUT_CLUSTERS: [general.Ota.cluster_id,
-                                  general.Time.cluster_id],
+                OUTPUT_CLUSTERS: [general.Ota.cluster_id, general.Time.cluster_id],
             },
         },
     }
