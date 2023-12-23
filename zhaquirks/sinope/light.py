@@ -88,6 +88,7 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
         0x0055: ("min_intensity", t.uint16_t, True),
         0x0056: ("phase_control", PhaseControl, True),
         0x0058: ("double_up_full", DoubleFull, True),
+        0x0090: ("current_summation_delivered", t.uint32_t, True),
         0x00A0: ("timer", t.uint32_t, True),
         0x00A1: ("timer_countdown", t.uint32_t, True),
         0x0119: ("connected_load", t.uint16_t, True),
