@@ -100,16 +100,30 @@ class SinopeManufacturerCluster(CustomCluster):
     class FlowDuration(t.uint32_t):
         """Abnormal flow duration."""
 
+        M_15 = 0x00000384
+        M_30 = 0x00000708
+        M_45 = 0x00000A8C
+        M_60 = 0x00000E10
+        M_75 = 0x00001194
+        M_90 = 0x00001518
+        H_3 = 0x00002A30
+        H_6 = 0x00005460
+        H_12 = 0x0000A8C0
+        H_24 = 0x00015180
+
+    class InputDelay(t.uint16_t):
+        """Delay for on/off input."""
+
+        Off = 0x0000
+        M_1 = 0x003C
+        M_2 = 0x0078
+        M_5 = 0x012C
+        M_10 = 0x0258
         M_15 = 0x0384
         M_30 = 0x0708
-        M_45 = 0x0A8C
-        M_60 = 0x0E10
-        M_75 = 0x1194
-        M_90 = 0x1518
+        H_1 = 0x0E10
+        H_2 = 0x1C20
         H_3 = 0x2A30
-        H_6 = 0x5460
-        H_12 = 0xA8C0
-        H_24 = 0x15180
 
     cluster_id = SINOPE_MANUFACTURER_CLUSTER_ID
     name = "Sinopé Manufacturer specific"
@@ -142,6 +156,8 @@ class SinopeManufacturerCluster(CustomCluster):
         0x0280: ("max_measured_value", t.int16s, True),
         0x0283: ("cold_load_pickup_status", ColdStatus, True),
         0x0284: ("cold_load_pickup_remaining_time", t.uint16_t, True),
+        0x02A0: ("input_on_delay", InputDelay, True),
+        0x02A1: ("input_off_delay", InputDelay, True),
         0xFFFD: ("cluster_revision", t.uint16_t, True),
     }
 
