@@ -36,10 +36,7 @@ class MCT340(CustomDevice):
         # device_version=0
         # input_clusters=[0, 1, 3, 1026, 1280, 32, 2821]
         # output_clusters=[25]>
-        MODELS_INFO: [
-            ("Visonic", "MCT-340 E"),
-            ("Visonic", "MCT-340 SMA")
-        ],
+        MODELS_INFO: [("Visonic", "MCT-340 E"), ("Visonic", "MCT-340 SMA")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
