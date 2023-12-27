@@ -193,6 +193,7 @@ class TuyaSmartRemote004FDMS(EnchantedDevice):
         MODELS_INFO: [
             ("_TZ3000_xabckq1v", "TS004F"),
             ("_TZ3000_czuyt8lz", "TS004F"),
+            ("_TZ3000_b3mgfu0d", "TS004F"),
         ],
         ENDPOINTS: {
             1: {
