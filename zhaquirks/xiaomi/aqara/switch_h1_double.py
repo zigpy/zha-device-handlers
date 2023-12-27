@@ -26,13 +26,14 @@ from zhaquirks.xiaomi import LUMI
 from zhaquirks.xiaomi.aqara.opple_switch import (
     OppleSwitchCluster,
     XiaomiOpple2ButtonSwitch1,
+    XiaomiOpple2ButtonSwitch3,
     XiaomiOpple2ButtonSwitch4,
     XiaomiOpple2ButtonSwitchBase,
 )
 
 
-class AqaraH1DoubleRockerSwitchWithNeutral(XiaomiOpple2ButtonSwitchBase):
-    """Aqara H1 Double Rocker Switch (with neutral)."""
+class AqaraH1DoubleRockerSwitchWithNeutral1(XiaomiOpple2ButtonSwitchBase):
+    """Aqara H1 Double Rocker Switch (with neutral). Based on signature 1."""
 
     signature = {
         MODELS_INFO: [(LUMI, "lumi.switch.n2aeu1")],
@@ -40,8 +41,17 @@ class AqaraH1DoubleRockerSwitchWithNeutral(XiaomiOpple2ButtonSwitchBase):
     }
 
 
-class AqaraH1DoubleRockerSwitchWithNeutralAlt(XiaomiOpple2ButtonSwitchBase):
-    """Aqara H1 Double Rocker Switch (with neutral) alternative signature."""
+class AqaraH1DoubleRockerSwitchWithNeutral3(XiaomiOpple2ButtonSwitchBase):
+    """Aqara H1 Double Rocker Switch (with neutral). Based on signature 3."""
+
+    signature = {
+        MODELS_INFO: [(LUMI, "lumi.switch.n2aeu1")],
+        ENDPOINTS: XiaomiOpple2ButtonSwitch3.signature[ENDPOINTS],
+    }
+
+
+class AqaraH1DoubleRockerSwitchWithNeutral4(XiaomiOpple2ButtonSwitchBase):
+    """Aqara H1 Double Rocker Switch (with neutral). Based on signature 4."""
 
     signature = {
         MODELS_INFO: [(LUMI, "lumi.switch.n2aeu1")],
