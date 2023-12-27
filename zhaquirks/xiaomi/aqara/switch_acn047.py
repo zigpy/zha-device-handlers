@@ -54,7 +54,6 @@ class MultistateInputCluster(CustomCluster, MultistateInput):
         super().__init__(*args, **kwargs)
 
     def _update_attribute(self, attrid, value):
-        super()._update_attribute(attrid, value)
         if attrid == STATUS_TYPE_ATTR:
             self._current_state = PRESS_TYPES.get(value)
             event_args = {
@@ -64,6 +63,8 @@ class MultistateInputCluster(CustomCluster, MultistateInput):
             }
             self.listener_event(ZHA_SEND_EVENT, self, self._current_state, event_args)
             super()._update_attribute(0, self._current_state)
+        else:
+            super()._update_attribute(attrid, value)
 
 
 class OppleCluster(XiaomiAqaraE1Cluster):
