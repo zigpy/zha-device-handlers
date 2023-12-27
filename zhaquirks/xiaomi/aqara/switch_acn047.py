@@ -1,6 +1,7 @@
 """Aqara T2 relay device."""
 from zigpy import types as t
 from zigpy.profiles import zha
+from zigpy.quirks import CustomCluster
 from zigpy.zcl.clusters.general import (
     AnalogInput,
     Basic,
@@ -17,12 +18,18 @@ from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
 
 from zhaquirks.const import (
+    ATTR_ID,
+    COMMAND,
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
+    PRESS_TYPE,
     PROFILE_ID,
+    SHORT_PRESS,
+    VALUE,
+    ZHA_SEND_EVENT,
 )
 from zhaquirks.xiaomi import (
     AnalogInputCluster,
@@ -32,6 +39,31 @@ from zhaquirks.xiaomi import (
     XiaomiAqaraE1Cluster,
     XiaomiCustomDevice,
 )
+
+PRESS_TYPES = {1: "single"}
+SINGLE = "single"
+STATUS_TYPE_ATTR = 0x0055  # decimal = 85
+
+
+class MultistateInputCluster(CustomCluster, MultistateInput):
+    """Multistate input cluster."""
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        self._current_state = None
+        super().__init__(*args, **kwargs)
+
+    def _update_attribute(self, attrid, value):
+        super()._update_attribute(attrid, value)
+        if attrid == STATUS_TYPE_ATTR:
+            self._current_state = PRESS_TYPES.get(value)
+            event_args = {
+                PRESS_TYPE: self._current_state,
+                ATTR_ID: attrid,
+                VALUE: value,
+            }
+            self.listener_event(ZHA_SEND_EVENT, self, self._current_state, event_args)
+            super()._update_attribute(0, self._current_state)
 
 
 class OppleCluster(XiaomiAqaraE1Cluster):
@@ -66,11 +98,11 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         Dry = 0x03
 
     attributes = {
-        0x000A: ("switch_type", SwitchType, True),
-        0x0517: ("startup_on_off", StartupOnOff, True),
-        0x0200: ("decoupled_mode", DecoupledMode, True),
+        0x000A: ("switch_type", t.uint8_t, True),
+        0x0517: ("startup_on_off", t.uint8_t, True),
+        0x0200: ("decoupled_mode", t.uint8_t, True),
         0x02D0: ("interlock", t.Bool, True),
-        0x0289: ("switch_mode", SwitchMode, True),
+        0x0289: ("switch_mode", t.uint8_t, True),
         0x00EB: ("pulse_length", t.uint16_t, True),
     }
 
@@ -142,7 +174,7 @@ class AqaraT2Relay(XiaomiCustomDevice):
                     Scenes.cluster_id,
                     Groups.cluster_id,
                     OnOff.cluster_id,
-                    MultistateInput.cluster_id,
+                    MultistateInputCluster,
                     DeviceTemperature.cluster_id,
                     MeteringCluster,
                     ElectricalMeasurementCluster,
@@ -158,7 +190,7 @@ class AqaraT2Relay(XiaomiCustomDevice):
                     Scenes.cluster_id,
                     Groups.cluster_id,
                     OnOff.cluster_id,
-                    MultistateInput.cluster_id,
+                    MultistateInputCluster,
                     OppleCluster,
                 ],
                 OUTPUT_CLUSTERS: [],
@@ -170,4 +202,8 @@ class AqaraT2Relay(XiaomiCustomDevice):
                 OUTPUT_CLUSTERS: [],
             },
         },
+    }
+
+    device_automation_triggers = {
+        (SHORT_PRESS, SHORT_PRESS): {COMMAND: SINGLE},
     }
