@@ -7,8 +7,8 @@ import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
-from zhaquirks import Bus, LocalDataCluster
 
+from zhaquirks import Bus, LocalDataCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -92,9 +92,7 @@ class Tuya_EnergyMeter_2Clamp(TuyaManufClusterAttributes):
         super().__init__(*args, **kwargs)
 
     def _update_attribute(self, attrid, value):
-        """
-        route the raw sensor data to the correct generic attributes (with units)
-        """
+        """Route the raw sensor data to the correct generic attributes (with units)"""
 
         _LOGGER.debug(f"quirky _update_attribute( 0x{attrid:04x}, {value})")
 
@@ -234,7 +232,7 @@ class Metering_2Clamp(LocalDataCluster, Metering):
     }
 
     def energy_forward_reported(self, value):
-        ## this is "current" as in "now", not "Amperes"
+        # this is "current" as in "now", not "Amperes"
         self._update_attribute(Metering.AttributeDefs.current_summ_delivered.id, value)
 
     def energy_reverse_reported(self, value):
