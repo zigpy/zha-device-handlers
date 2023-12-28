@@ -1,4 +1,6 @@
 """Sonoff Smart Button SNZB-06P"""
+import copy
+
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
@@ -94,14 +96,14 @@ class SonoffCluster(CustomCluster):
     cluster_id = SONOFF_CLUSTER_ID_2
     manufacturer_id_override = SONOFF_MANUFACTURER_ID
 
-    attributes = CustomCluster.attributes.copy()
+    attributes = copy.deepcopy(CustomCluster.attributes)
     attributes.update(
         {
             ATTR_SONOFF_ILLUMINATION_STATUS: ZCLAttributeDef(
                 type=IlluminationStatus,
                 access="r",
                 is_manufacturer_specific=True,
-                name="last_illuminantion_state",
+                name="last_illumination_state",
             ),  # ramdom attribute ID
         }
     )
