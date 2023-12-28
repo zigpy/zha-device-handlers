@@ -69,7 +69,7 @@ class SonoffOccupancyTimeout(LocalDataCluster, AnalogOutput):
         return await super().write_attributes(attributes, manufacturer)
 
 
-class SonoffOccupancyCluster(OccupancySensing):
+class SonoffOccupancyCluster(CustomCluster, OccupancySensing):
     """AnalogOutput cluster for setting the timeout for occupancy state."""
 
     def _update_attribute(self, attrid, value):
@@ -94,14 +94,17 @@ class SonoffCluster(CustomCluster):
     cluster_id = SONOFF_CLUSTER_ID_2
     manufacturer_id_override = SONOFF_MANUFACTURER_ID
 
-    attributes = {
-        ATTR_SONOFF_ILLUMINATION_STATUS: ZCLAttributeDef(
-            type=IlluminationStatus,
-            access="r",
-            is_manufacturer_specific=True,
-            name="illuminantion",
-        ),
-    }
+    attributes = CustomCluster.attributes.copy()
+    attributes.update(
+        {
+            ATTR_SONOFF_ILLUMINATION_STATUS: ZCLAttributeDef(
+                type=IlluminationStatus,
+                access="r",
+                is_manufacturer_specific=True,
+                name="last_illuminantion_state",
+            ),  # ramdom attribute ID
+        }
+    )
 
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
