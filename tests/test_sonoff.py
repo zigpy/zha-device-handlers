@@ -3,6 +3,7 @@
 
 import zhaquirks
 import zhaquirks.sonoff.snzb01p
+import zhaquirks.sonoff.snzb06p
 
 zhaquirks.setup()
 
@@ -27,4 +28,34 @@ def test_sonoff_snzb01p(assert_signature_matches_quirk):
 
     assert_signature_matches_quirk(
         zhaquirks.sonoff.snzb01p.SonoffSmartButtonSNZB01P, signature
+    )
+
+
+def test_sonoff_snzb06p(assert_signature_matches_quirk):
+    """Test 'Sonoff SNZB-06P presence sensor' signature is matched to its quirk."""
+
+    signature = {
+        "node_descriptor": "NodeDescriptor(logical_type=<LogicalType.Router: 1>, complex_descriptor_available=0, user_descriptor_available=0, reserved=0, aps_flags=0, frequency_band=<FrequencyBand.Freq2400MHz: 8>, mac_capability_flags=<MACCapabilityFlags.FullFunctionDevice|MainsPowered|RxOnWhenIdle|AllocateAddress: 142>, manufacturer_code=4742, maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264, maximum_outgoing_transfer_size=82, descriptor_capability_field=<DescriptorCapability.NONE: 0>, *allocate_address=True, *is_alternate_pan_coordinator=False, *is_coordinator=False, *is_end_device=False, *is_full_function_device=True, *is_mains_powered=True, *is_receiver_on_when_idle=True, *is_router=True, *is_security_capable=False)",
+        "endpoints": {
+            "1": {
+                "profile_id": 260,
+                "device_type": "0x0107",
+                "in_clusters": [
+                    "0x0000",
+                    "0x0003",
+                    "0x0406",
+                    "0x0500",
+                    "0xfc11",
+                    "0xfc57",
+                ],
+                "out_clusters": ["0x0003", "0x0019"],
+            }
+        },
+        "manufacturer": "SONOFF",
+        "model": "SNZB-06P",
+        "class": "sonoff.snzb06p.SonoffPresenceSensorSNZB06P",
+    }
+
+    assert_signature_matches_quirk(
+        zhaquirks.sonoff.snzb06p.SonoffPresenceSensorSNZB06P, signature
     )
