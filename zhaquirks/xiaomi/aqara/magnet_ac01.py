@@ -28,9 +28,9 @@ class OppleCluster(XiaomiAqaraE1Cluster):
     class DetectionDistance(t.enum8):
         """Detection distance."""
 
-        TenMilimeters = 0x01
-        TwentyMilimeters = 0x02
-        ThirtyMilimeters = 0x03
+        TenMillimeters = 0x01
+        TwentyMillimeters = 0x02
+        ThirtyMillimeters = 0x03
 
     attributes = {
         0x010C: ("detection_distance", t.uint8_t, True),
