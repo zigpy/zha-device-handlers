@@ -1,8 +1,8 @@
 """Xiaomi aqara button sensor."""
 
 from zigpy.profiles import zha
-from zigpy.zcl.clusters.general import Basic, Identify, MultistateInput, OnOff, Ota
 import zigpy.types as types
+from zigpy.zcl.clusters.general import Basic, Identify, MultistateInput, OnOff, Ota
 
 from zhaquirks import CustomCluster
 from zhaquirks.const import (
@@ -31,9 +31,9 @@ from zhaquirks.xiaomi import (
     LUMI,
     BasicCluster,
     DeviceTemperatureCluster,
+    XiaomiAqaraE1Cluster,
     XiaomiCustomDevice,
     XiaomiPowerConfiguration,
-    XiaomiAqaraE1Cluster,
 )
 
 B1ACN01_HOLD = 0
