@@ -1,7 +1,8 @@
 """Xiaomi aqara button sensor."""
 
 from zigpy.profiles import zha
-from zigpy.zcl.clusters.general import Basic, Identify, MultistateInput, OnOff
+from zigpy.zcl.clusters.general import Basic, Identify, MultistateInput, OnOff, Ota
+import zigpy.types as types
 
 from zhaquirks import CustomCluster
 from zhaquirks.const import (
@@ -32,6 +33,7 @@ from zhaquirks.xiaomi import (
     DeviceTemperatureCluster,
     XiaomiCustomDevice,
     XiaomiPowerConfiguration,
+    XiaomiAqaraE1Cluster,
 )
 
 B1ACN01_HOLD = 0
@@ -55,6 +57,25 @@ MOVEMENT_TYPE = {
     SHAKE: COMMAND_SHAKE,
 }
 
+
+class OppleCluster(XiaomiAqaraE1Cluster):
+    """Opple cluster."""
+
+    attributes = {
+        0x0009: ("mode", types.uint8_t, True),
+    }
+    attr_config = {0x0009: 0x01}
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        self._current_state = None
+        super().__init__(*args, **kwargs)
+
+    async def bind(self):
+        """Bind cluster."""
+        result = await super().bind()
+        await self.write_attributes(self.attr_config, manufacturer=OPPLE_MFG_CODE)
+        return result
 
 class MultistateInputCluster(CustomCluster, MultistateInput):
     """Multistate input cluster."""
@@ -166,4 +187,60 @@ class SwitchAQ3B(XiaomiCustomDevice):
         (SHORT_PRESS, SHORT_PRESS): {COMMAND: COMMAND_SINGLE},
         (LONG_PRESS, LONG_PRESS): {COMMAND: COMMAND_HOLD},
         (LONG_RELEASE, LONG_RELEASE): {COMMAND: COMMAND_RELEASE},
+    }
+
+
+class SwitchAQ3B2(XiaomiCustomDevice):
+    """Aqara button device - alternate version."""
+
+    signature = {
+        # <SimpleDescriptor endpoint=1 profile=260 device_type=259
+        # device_version=1
+        # input_clusters=[0, 1, 3]
+        # output_clusters=[3, 6, 19]>
+        MODELS_INFO: [(LUMI, "lumi.remote.b1acn02")],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: BUTTON_DEVICE_TYPE_B,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    XiaomiPowerConfiguration.cluster_id,
+                    Identify.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    OnOff.cluster_id,
+                    Ota.cluster_id,
+                ],
+            }
+        },
+    }
+    replacement = {
+        SKIP_CONFIGURATION: True,
+        ENDPOINTS: {
+            1: {
+                DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
+                INPUT_CLUSTERS: [
+                    BasicCluster,
+                    XiaomiPowerConfiguration,
+                    Identify.cluster_id,
+                    MultistateInputCluster,
+                    OppleCluster,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    OnOff.cluster_id,
+                    Ota.cluster_id,
+                    OppleCluster,
+                ],
+            }
+        },
+    }
+
+    device_automation_triggers = {
+        (DOUBLE_PRESS, DOUBLE_PRESS): {COMMAND: COMMAND_DOUBLE},
+        (SHORT_PRESS, SHORT_PRESS): {COMMAND: COMMAND_SINGLE},
+        (B1ACN01_HOLD, LONG_PRESS): {COMMAND: COMMAND_HOLD},
+        (B1ACN01_RELEASE, LONG_RELEASE): {COMMAND: COMMAND_RELEASE},
     }
