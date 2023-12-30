@@ -39,6 +39,9 @@ class SinopeManufacturerCluster(CustomCluster):
     attributes = {
         0x0003: ("firmware_number", t.uint16_t, True),
         0x0004: ("firmware_version", t.CharacterString, True),
+        0x0032: ("min_temperature_limit", t.int16s, True),
+        0x0033: ("max_temperature_limit", t.int16s, True),
+        0x0034: ("device_status", t.bitmap8, True),
         0x0200: ("status", t.bitmap32, True),
         0xFFFD: ("cluster_revision", t.uint16_t, True),
     }

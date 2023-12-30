@@ -97,27 +97,33 @@ class SinopeManufacturerCluster(CustomCluster):
         Active = 0x00
         Off = 0x01
 
-    class TankSize(t.enum8):
-        """tank_size values."""
-
-        Gal_40 = 0x01
-        Gal_50 = 0x02
-        Gal_60 = 0x03
-        Gal_80 = 0x04
-
     class FlowDuration(t.uint32_t):
         """Abnormal flow duration."""
 
+        M_15 = 0x00000384
+        M_30 = 0x00000708
+        M_45 = 0x00000A8C
+        M_60 = 0x00000E10
+        M_75 = 0x00001194
+        M_90 = 0x00001518
+        H_3 = 0x00002A30
+        H_6 = 0x00005460
+        H_12 = 0x0000A8C0
+        H_24 = 0x00015180
+
+    class InputDelay(t.uint16_t):
+        """Delay for on/off input."""
+
+        Off = 0x0000
+        M_1 = 0x003C
+        M_2 = 0x0078
+        M_5 = 0x012C
+        M_10 = 0x0258
         M_15 = 0x0384
         M_30 = 0x0708
-        M_45 = 0x0A8C
-        M_60 = 0x0E10
-        M_75 = 0x1194
-        M_90 = 0x1518
+        H_1 = 0x0E10
+        H_2 = 0x1C20
         H_3 = 0x2A30
-        H_6 = 0x5460
-        H_12 = 0xA8C0
-        H_24 = 0x15180
 
     cluster_id = SINOPE_MANUFACTURER_CLUSTER_ID
     name = "Sinopé Manufacturer specific"
@@ -127,12 +133,14 @@ class SinopeManufacturerCluster(CustomCluster):
         0x0003: ("firmware_number", t.uint16_t, True),
         0x0004: ("firmware_version", t.CharacterString, True),
         0x0010: ("outdoor_temp", t.int16s, True),
-        0x0013: ("tank_size", TankSize, True),
+        0x0013: ("unknown_attr_1", t.enum8, True),
         0x0060: ("connected_load", t.uint16_t, True),
         0x0070: ("current_load", t.bitmap8, True),
         0x0076: ("dr_config_water_temp_min", t.uint8_t, True),
         0x0077: ("dr_config_water_temp_time", t.uint8_t, True),
         0x0078: ("dr_wt_time_on", t.uint16_t, True),
+        0x007C: ("min_measured_temp", t.int16s, True),
+        0x007D: ("max_measured_temp", t.int16s, True),
         0x0090: ("current_summation_delivered", t.uint32_t, True),
         0x00A0: ("timer", t.uint32_t, True),
         0x00A1: ("timer_countdown", t.uint32_t, True),
@@ -145,7 +153,11 @@ class SinopeManufacturerCluster(CustomCluster):
         0x0251: ("emergency_power_source", EmergencyPower, True),
         0x0252: ("abnormal_flow_duration", FlowDuration, True),
         0x0253: ("abnormal_flow_action", AbnormalAction, True),
+        0x0280: ("max_measured_value", t.int16s, True),
         0x0283: ("cold_load_pickup_status", ColdStatus, True),
+        0x0284: ("cold_load_pickup_remaining_time", t.uint16_t, True),
+        0x02A0: ("input_on_delay", InputDelay, True),
+        0x02A1: ("input_off_delay", InputDelay, True),
         0xFFFD: ("cluster_revision", t.uint16_t, True),
     }
 
@@ -157,6 +169,7 @@ class CustomBasicCluster(CustomCluster, Basic):
         """Power source."""
 
         Unknown = 0x0000
+        DC_mains = 0x0001
         Battery = 0x0003
         DC_source = 0x0004
         ACUPS_01 = 0x0081
@@ -585,16 +598,8 @@ class SinopeTechnologiesCalypso(CustomDevice):
                     Time.cluster_id,
                     Ota.cluster_id,
                 ],
-            },
-            2: {
-                PROFILE_ID: zha_p.PROFILE_ID,
-                DEVICE_TYPE: zha_p.DeviceType.ON_OFF_OUTPUT,
-                INPUT_CLUSTERS: [
-                    TemperatureMeasurement.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [],
-            },
-        },
+            }
+        }
     }
 
 

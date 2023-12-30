@@ -1,6 +1,7 @@
-"""Tuya dimmable led controller single channel."""
+"""Innr SP 240 plug."""
+
 from zigpy.profiles import zgp, zha
-from zigpy.quirks import CustomDevice
+from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
@@ -12,8 +13,9 @@ from zigpy.zcl.clusters.general import (
     Scenes,
     Time,
 )
-from zigpy.zcl.clusters.lighting import Color
+from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.lightlink import LightLink
+from zigpy.zcl.clusters.smartenergy import Metering
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -23,29 +25,24 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import TuyaManufCluster
+from zhaquirks.innr import INNR, MeteringClusterInnr
 
 
-class DimmableLedController(CustomDevice):
-    """Tuya dimmable led controller single channel."""
+class InnrCluster(CustomCluster):
+    """Innr manufacturer specific cluster."""
+
+    cluster_id = 0xE001
+
+
+class SP240(CustomDevice):
+    """Innr SP 240  smart plug."""
 
     signature = {
-        MODELS_INFO: [
-            ("_TZ3210_9q49basr", "TS0501B"),
-            ("_TZ3210_4zinq6io", "TS0501B"),
-            ("_TZ3210_e5t9bfdv", "TS0501B"),
-            ("_TZ3210_i680rtja", "TS0501B"),
-            ("_TZ3210_dxroobu3", "TS0501B"),
-            ("_TZ3210_dbilpfqk", "TS0501B"),
-            ("_TZ3210_agjx0pxt", "TS0501B"),
-        ],
+        MODELS_INFO: [(INNR, "SP 240")],
         ENDPOINTS: {
-            # <SimpleDescriptor endpoint=1 profile=260 device_type=257
-            # input_clusters=[0, 3, 4, 5, 6, 8, 768, 4096, 61184]
-            # output_clusters=[10, 25]>
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.DIMMABLE_LIGHT,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_PLUG_IN_UNIT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
@@ -53,28 +50,32 @@ class DimmableLedController(CustomDevice):
                     Scenes.cluster_id,
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
-                    Color.cluster_id,
+                    Metering.cluster_id,
+                    ElectricalMeasurement.cluster_id,
                     LightLink.cluster_id,
-                    TuyaManufCluster.cluster_id,
+                    InnrCluster.cluster_id,
                 ],
-                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+                OUTPUT_CLUSTERS: [
+                    Time.cluster_id,
+                    Ota.cluster_id,
+                ],
             },
             242: {
-                # <SimpleDescriptor endpoint=242 profile=41440 device_type=97
-                # input_clusters=[]
-                # output_clusters=[33]
                 PROFILE_ID: zgp.PROFILE_ID,
                 DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+                OUTPUT_CLUSTERS: [
+                    GreenPowerProxy.cluster_id,
+                ],
             },
         },
     }
+
     replacement = {
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.DIMMABLE_LIGHT,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_PLUG_IN_UNIT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
@@ -82,15 +83,23 @@ class DimmableLedController(CustomDevice):
                     Scenes.cluster_id,
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
+                    MeteringClusterInnr,
+                    ElectricalMeasurement.cluster_id,
                     LightLink.cluster_id,
+                    InnrCluster,
                 ],
-                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+                OUTPUT_CLUSTERS: [
+                    Time.cluster_id,
+                    Ota.cluster_id,
+                ],
             },
             242: {
                 PROFILE_ID: zgp.PROFILE_ID,
                 DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+                OUTPUT_CLUSTERS: [
+                    GreenPowerProxy.cluster_id,
+                ],
             },
         },
     }
