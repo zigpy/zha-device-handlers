@@ -1,5 +1,5 @@
 """Woolley CK-BL702-SWP-01 Smart Plug with Energy Monitoring"""
-from zigpy.profiles import zha, zgp
+from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
@@ -9,10 +9,11 @@ from zigpy.zcl.clusters.general import (
     OnOff,
     Ota,
     Scenes,
-    Time
+    Time,
 )
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.lightlink import LightLink
+
 from zhaquirks import LocalDataCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -20,13 +21,14 @@ from zhaquirks.const import (
     INPUT_CLUSTERS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
-    PROFILE_ID
+    PROFILE_ID,
 )
 
 
 class WoolleyManufacturerFC11(CustomCluster):
     """Custom energy monitoring cluster used by Woolley Zigbee 3.0 smart sockets (UK)"""
-    cluster_id = 0xfc11
+
+    cluster_id = 0xFC11
     CURRENT_ID = 0x7004
     VOLTAGE_ID = 0x7005
     POWER_ID = 0x7006
@@ -40,22 +42,27 @@ class WoolleyManufacturerFC11(CustomCluster):
         # Power - /100
         if attrid == self.CURRENT_ID:
             self.endpoint.device.endpoints[1].electrical_measurement.update_attribute(
-                ElectricalMeasurement.AttributeDefs.rms_current.id, value)
+                ElectricalMeasurement.AttributeDefs.rms_current.id, value
+            )
         elif attrid == self.VOLTAGE_ID:
             self.endpoint.device.endpoints[1].electrical_measurement.update_attribute(
-                ElectricalMeasurement.AttributeDefs.rms_voltage.id, int(value / 100))
+                ElectricalMeasurement.AttributeDefs.rms_voltage.id, int(value / 100)
+            )
         elif attrid == self.POWER_ID:
             self.endpoint.device.endpoints[1].electrical_measurement.update_attribute(
-                ElectricalMeasurement.AttributeDefs.active_power.id, int(value / 100))
+                ElectricalMeasurement.AttributeDefs.active_power.id, int(value / 100)
+            )
 
 
 class WoolleyManufacturerFC57(CustomCluster):
     """Unsupported manufacturer cluster"""
-    cluster_id = 0xfc57
+
+    cluster_id = 0xFC57
 
 
 class EmulatedElectricalMeasurement(LocalDataCluster, ElectricalMeasurement):
     """Extended ElectricalMeasurement cluster to support passing through values."""
+
     CURRENT_ID = ElectricalMeasurement.AttributeDefs.rms_current.id
     VOLTAGE_ID = ElectricalMeasurement.AttributeDefs.rms_voltage.id
     POWER_ID = ElectricalMeasurement.AttributeDefs.active_power.id
@@ -117,8 +124,8 @@ class BL702_SWP_01(CustomDevice):
             242: {
                 PROFILE_ID: zgp.PROFILE_ID,
                 DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
-                INPUT_CLUSTERS: [ ],
-                OUTPUT_CLUSTERS: [ GreenPowerProxy.cluster_id ],
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
         },
     }
@@ -151,9 +158,8 @@ class BL702_SWP_01(CustomDevice):
             242: {
                 PROFILE_ID: zgp.PROFILE_ID,
                 DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
-                INPUT_CLUSTERS: [ ],
-                OUTPUT_CLUSTERS: [ GreenPowerProxy.cluster_id ],
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
         },
     }
-
