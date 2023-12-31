@@ -66,11 +66,6 @@ class OppleCluster(XiaomiAqaraE1Cluster):
     }
     attr_config = {0x0009: 0x01}
 
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        self._current_state = None
-        super().__init__(*args, **kwargs)
-
     async def bind(self):
         """Bind cluster."""
         result = await super().bind()
