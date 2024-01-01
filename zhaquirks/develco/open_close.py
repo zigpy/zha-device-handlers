@@ -196,4 +196,3 @@ class WISZB121(CustomDevice):
             },
         }
     }
-    
