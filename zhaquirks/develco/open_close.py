@@ -18,7 +18,6 @@ from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone
 
 from zhaquirks import PowerConfigurationCluster
-
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -27,15 +26,15 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-
 from zhaquirks.develco import DEVELCO, FRIENT
 
 
 class DevelcoPowerConfiguration(PowerConfigurationCluster):
     """Power configuration cluster."""
 
-    MIN_VOLTS = 2.5  # old 2.1
-    MAX_VOLTS = 3.0  # old 3.2
+    MIN_VOLTS = 2.5 #advised voltage to replace batteries
+    MAX_VOLTS = 3.0
+
 
 class DevelcoIASZone(CustomCluster, IasZone):
     """IAS Zone."""
@@ -56,7 +55,7 @@ class DevelcoIASZone(CustomCluster, IasZone):
 
 
 class WISZB120(CustomDevice):
-    """Custom device representing door/windows sensors."""
+    """Custom device representing door/windows sensors, with built-in temperature measuring"""
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=49353 device_type=1 device_version=1
@@ -65,7 +64,7 @@ class WISZB120(CustomDevice):
         # input_clusters=[0, 1, 3, 15, 32, 1280] output_clusters=[10, 25]>
         # <SimpleDescriptor endpoint=38 profile=260 device_type=770 device_version=0
         # input_clusters=[0, 3, 1026] output_clusters=[3]>
-        MODELS_INFO: [(DEVELCO, "WISZB-120"),(FRIENT, "WISZB-120")],
+        MODELS_INFO: [(DEVELCO, "WISZB-120"), (FRIENT, "WISZB-120")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: 0xC0C9,
@@ -139,16 +138,14 @@ class WISZB120(CustomDevice):
 
 
 class WISZB121(CustomDevice):
-    """Custom device representing door/windows sensors."""
+    """Custom device representing door/windows sensors, without built-in temperature measuring"""
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=49353 device_type=1 device_version=1
         # input_clusters=[3, 5, 6] output_clusters=[]>
         # <SimpleDescriptor endpoint=35 profile=260 device_type=1026 device_version=0
         # input_clusters=[0, 1, 3, 15, 32, 1280] output_clusters=[10, 25]>
-        # <SimpleDescriptor endpoint=38 profile=260 device_type=770 device_version=0
-        # input_clusters=[0, 3, 1026] output_clusters=[3]>
-        MODELS_INFO: [(DEVELCO, "WISZB-121"),(FRIENT, "WISZB-121")],
+        MODELS_INFO: [(DEVELCO, "WISZB-121"), (FRIENT, "WISZB-121")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: 0xC0C9,
