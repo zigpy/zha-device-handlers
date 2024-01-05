@@ -37,6 +37,7 @@ TUYA_CLUSTER_1888_ID = 0x1888
 TUYA_SET_DATA = 0x00
 TUYA_GET_DATA = 0x01
 TUYA_SET_DATA_RESPONSE = 0x02
+TUYA_QUERY_DATA = 0x03
 TUYA_SEND_DATA = 0x04
 TUYA_ACTIVE_STATUS_RPT = 0x06
 TUYA_SET_TIME = 0x24
@@ -1488,6 +1489,9 @@ class TuyaNewManufCluster(CustomCluster):
     ep_attribute: str = "tuya_manufacturer"
 
     server_commands = {
+        TUYA_QUERY_DATA: foundation.ZCLCommandDef(
+             "query_data", {}, False, is_manufacturer_specific=True
+        ),
         TUYA_SET_DATA: foundation.ZCLCommandDef(
             "set_data", {"data": TuyaCommand}, False, is_manufacturer_specific=True
         ),
