@@ -1490,7 +1490,7 @@ class TuyaNewManufCluster(CustomCluster):
 
     server_commands = {
         TUYA_QUERY_DATA: foundation.ZCLCommandDef(
-             "query_data", {}, False, is_manufacturer_specific=True
+            "query_data", {}, False, is_manufacturer_specific=True
         ),
         TUYA_SET_DATA: foundation.ZCLCommandDef(
             "set_data", {"data": TuyaCommand}, False, is_manufacturer_specific=True
