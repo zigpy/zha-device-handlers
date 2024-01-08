@@ -28,7 +28,6 @@ from zhaquirks.const import (
     COMMAND,
     COMMAND_ID,
     DEVICE_TYPE,
-    DOUBLE_PRESS,
     ENDPOINTS,
     INPUT_CLUSTERS,
     LONG_PRESS,
@@ -37,12 +36,9 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PRESS_TYPE,
     PROFILE_ID,
-    QUADRUPLE_PRESS,
-    QUINTUPLE_PRESS,
     RIGHT,
     SHORT_PRESS,
     SHORT_RELEASE,
-    TRIPLE_PRESS,
     TURN_ON,
     ZHA_SEND_EVENT,
 )
@@ -93,12 +89,7 @@ class PhilipsRemoteCluster(CustomCluster):
             direction=foundation.Direction.Server_to_Client,
         )
     }
-    BUTTONS = {
-        1: "button_1",
-        2: "button_2",
-        3: "button_3",
-        4: "button_4",
-    }
+    BUTTONS = {1: "button_1", 2: "button_2", 3: "button_3", 4: "button_4"}
     PRESS_TYPES = {0: "press", 1: "hold", 2: "press_release", 3: "hold_release"}
 
     def handle_cluster_request(
