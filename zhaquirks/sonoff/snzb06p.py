@@ -1,3 +1,10 @@
+from zigpy.profiles import zha
+from zigpy.quirks import CustomCluster, CustomDevice
+import zigpy.types as t
+from zigpy.zcl.clusters.general import Basic, Identify, Ota
+from zigpy.zcl.clusters.measurement import OccupancySensing
+from zigpy.zcl.clusters.security import IasZone
+
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -6,12 +13,6 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster, CustomDevice
-import zigpy.types as t
-from zigpy.zcl.clusters.general import Basic, Identify, Ota
-from zigpy.zcl.clusters.measurement import OccupancySensing
-from zigpy.zcl.clusters.security import IasZone
 
 SONOFF_CLUSTER_FC11_ID = 0xFC11
 SONOFF_CLUSTER_FC57_ID = 0xFC57
