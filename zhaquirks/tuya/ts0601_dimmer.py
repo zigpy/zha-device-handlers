@@ -49,6 +49,7 @@ class TuyaSingleSwitchDimmer(TuyaDimmerSwitch):
             ("_TZE200_a0syesf5", "TS0601"),  # Added for Mercator IKUU SSWRM-ZB
             ("_TZE200_p0gzbqct", "TS0601"),
             ("_TZE200_w4cryh2i", "TS0601"),
+            ("_TZE204_dcnsggvz", "TS0601")
         ],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=0x0051
@@ -93,6 +94,7 @@ class TuyaDoubleSwitchDimmer(TuyaDimmerSwitch):
     signature = {
         MODELS_INFO: [
             ("_TZE200_e3oitdyu", "TS0601"),
+            ("_TZE204_bxoo2swd", "TS0601")
         ],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=0x0051
