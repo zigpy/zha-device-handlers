@@ -414,6 +414,7 @@ class PcdmTrv(TuyaThermostat):
         #  endpoint=1 profile=260 device_type=81 device_version=0 input_clusters=[0, 4, 5, 61184]
         #  output_clusters=[10, 25]>
         MODELS_INFO: [
+            ("_TZE204_g2ki0ejr", "TS0601"),
             ("_TZE204_pcdmj88b", "TS0601"),
         ],
         ENDPOINTS: {
