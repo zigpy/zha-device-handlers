@@ -22,3 +22,4 @@
 - [Michael Thingnes](https://github.com/thimic)
 - [Piotr Mis](https://github.com/piomis)
 - [Julien Rivaud](https://github.com/FrnchFrgg)
+- [Matthew Simpson](https://github.com/typhoon2099)
