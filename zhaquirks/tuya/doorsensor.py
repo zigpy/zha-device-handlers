@@ -1,5 +1,5 @@
 """
-Handle Doorsensor not correctly implementing certain clusters
+TuYa Doorsensors
 """
 
 from zigpy.quirks import CustomDevice
@@ -27,7 +27,11 @@ from zigpy.zcl.clusters.general import (
 
 
 class DS01DoorSensor(CustomDevice):
-    """DoorSensor from Sonoff"""
+    """One of the Doorsensors from TuYa
+    It doesn't correctly implement the PollControl Cluster.
+    The device will send "PollControl:checkin()" on PollControl cluster,
+        but doesn't respond when checkin_response is sent after that from the coordinator
+    """
     signature = {
         MODELS_INFO: [
             ("zbeacon", "DS01")
