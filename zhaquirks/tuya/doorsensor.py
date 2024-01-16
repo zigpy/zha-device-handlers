@@ -1,10 +1,15 @@
-"""
-Doorsensors
-"""
-
-from zigpy.quirks import CustomDevice
+"""Doorsensors"""
 
 import zigpy.profiles.zha as zha_p
+from zigpy.quirks import CustomDevice
+from zigpy.zcl.clusters.general import (
+    Basic,
+    Identify,
+    Ota,
+    PollControl,
+    PowerConfiguration,
+)
+from zigpy.zcl.clusters.security import IasZone
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -13,16 +18,6 @@ from zhaquirks.const import (
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
-)
-
-from zigpy.zcl.clusters.security import IasZone
-
-from zigpy.zcl.clusters.general import (
-    Basic,
-    Identify,
-    Ota,
-    PollControl,
-    PowerConfiguration,
 )
 
 
@@ -36,11 +31,9 @@ class DS01DoorSensor(CustomDevice):
     The device tested is sold as Elivco and IHseno IH-MC01 and uses a TuYa ZTU module as described here:
         https://github.com/dresden-elektronik/deconz-rest-plugin/issues/7415
     """
-    signature = {
-        MODELS_INFO: [
-            ("zbeacon", "DS01")
-        ],
 
+    signature = {
+        MODELS_INFO: [("zbeacon", "DS01")],
         ENDPOINTS: {
             # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=1026, device_version=0, input_clusters=[0, 3, 1, 1280, 32], output_clusters=[25])
             1: {
@@ -53,22 +46,15 @@ class DS01DoorSensor(CustomDevice):
                     PollControl.cluster_id,
                     IasZone.cluster_id,
                 ],
-                OUTPUT_CLUSTERS: [
-                    Ota.cluster_id
-                ]
+                OUTPUT_CLUSTERS: [Ota.cluster_id],
             }
-        }
+        },
     }
 
     replacement = {
         ENDPOINTS: {
             1: {
-                INPUT_CLUSTERS: [
-                    Basic,
-                    PowerConfiguration,
-                    Identify,
-                    IasZone
-                ],
+                INPUT_CLUSTERS: [Basic, PowerConfiguration, Identify, IasZone],
                 OUTPUT_CLUSTERS: [
                     Ota,
                 ],
