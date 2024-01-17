@@ -1,7 +1,7 @@
 """Tuya Dimmer TS110E."""
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
-from zigpy.profiles import zha
+from zigpy.profiles import zgp, zha
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
@@ -57,7 +57,7 @@ class F000LevelControlCluster(NoManufacturerCluster, LevelControl):
     server_commands = LevelControl.server_commands.copy()
     server_commands[TUYA_CUSTOM_LEVEL_COMMAND] = foundation.ZCLCommandDef(
         "moveToLevelTuya",
-        (TuyaLevelPayload,),
+        {"payload": TuyaLevelPayload},
         is_manufacturer_specific=False,
     )
 
@@ -89,11 +89,12 @@ class F000LevelControlCluster(NoManufacturerCluster, LevelControl):
 
     async def command(
         self,
-        command_id: Union[foundation.Command, int, t.uint8_t],
+        command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
         *args,
         manufacturer: Optional[Union[int, t.uint16_t]] = None,
         expect_reply: bool = True,
         tsn: Optional[Union[int, t.uint8_t]] = None,
+        **kwargs: Any,
     ):
         """Override the default Cluster command."""
         self.debug(
@@ -103,8 +104,15 @@ class F000LevelControlCluster(NoManufacturerCluster, LevelControl):
         )
         # move_to_level, move, move_to_level_with_on_off
         if command_id in (0x0000, 0x0001, 0x0004):
+            # getting the level value
+            if kwargs and "level" in kwargs:
+                level = kwargs["level"]
+            elif args:
+                level = args[0]
+            else:
+                level = 0
             # convert dim values to 10-1000
-            brightness = args[0] * (1000 - 10) // 254 + 10
+            brightness = level * (1000 - 10) // 254 + 10
             self.debug(
                 "Setting brightness to %s",
                 brightness,
@@ -117,7 +125,9 @@ class F000LevelControlCluster(NoManufacturerCluster, LevelControl):
                 tsn=tsn,
             )
 
-        return super().command(command_id, *args, manufacturer, expect_reply, tsn)
+        return super().command(
+            command_id, *args, manufacturer, expect_reply, tsn, **kwargs
+        )
 
 
 class DimmerSwitchWithNeutral1Gang(TuyaDimmerSwitch):
@@ -146,8 +156,8 @@ class DimmerSwitchWithNeutral1Gang(TuyaDimmerSwitch):
                 # <SimpleDescriptor endpoint=242 profile=41440 device_type=97
                 # input_clusters=[]
                 # output_clusters=[33]
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
@@ -169,8 +179,8 @@ class DimmerSwitchWithNeutral1Gang(TuyaDimmerSwitch):
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },

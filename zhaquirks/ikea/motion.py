@@ -10,6 +10,7 @@ from zigpy.zcl.clusters.general import (
     Ota,
     PowerConfiguration,
 )
+from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.lightlink import LightLink
 
 from zhaquirks.const import (
@@ -20,9 +21,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.ikea import IKEA, LightLinkCluster, PowerConfiguration2CRCluster
-
-DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
+from zhaquirks.ikea import IKEA, DoublingPowerConfig2CRCluster
 
 
 class IkeaTradfriMotion(CustomDevice):
@@ -43,7 +42,7 @@ class IkeaTradfriMotion(CustomDevice):
                     PowerConfiguration.cluster_id,
                     Identify.cluster_id,
                     Alarms.cluster_id,
-                    DIAGNOSTICS_CLUSTER_ID,
+                    Diagnostic.cluster_id,
                     LightLink.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
@@ -64,11 +63,11 @@ class IkeaTradfriMotion(CustomDevice):
                 DEVICE_TYPE: zll.DeviceType.ON_OFF_SENSOR,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    PowerConfiguration2CRCluster,
+                    DoublingPowerConfig2CRCluster,
                     Identify.cluster_id,
                     Alarms.cluster_id,
-                    DIAGNOSTICS_CLUSTER_ID,
-                    LightLinkCluster,
+                    Diagnostic.cluster_id,
+                    LightLink.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,

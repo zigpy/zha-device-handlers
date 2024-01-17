@@ -31,7 +31,6 @@ from zhaquirks.const import (
     ZHA_SEND_EVENT,
 )
 
-DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
 PHILIPS = "Philips"
 SIGNIFY = "Signify Netherlands B.V."
 _LOGGER = logging.getLogger(__name__)
@@ -72,12 +71,18 @@ HUE_REMOTE_DEVICE_TRIGGERS = {
 }
 
 
-class OccupancyCluster(CustomCluster, OccupancySensing):
+class PhilipsOccupancySensing(CustomCluster):
     """Philips occupancy cluster."""
+
+    cluster_id = OccupancySensing.cluster_id
+    ep_attribute = "philips_occupancy"
 
     attributes = OccupancySensing.attributes.copy()
     attributes[0x0030] = ("sensitivity", t.uint8_t, True)
     attributes[0x0031] = ("sensitivity_max", t.uint8_t, True)
+
+    server_commands = OccupancySensing.server_commands.copy()
+    client_commands = OccupancySensing.client_commands.copy()
 
 
 class PhilipsBasicCluster(CustomCluster, Basic):

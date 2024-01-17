@@ -1,6 +1,5 @@
 """TS0210 vibration sensor."""
 
-import logging
 from typing import Optional, Tuple, Union
 
 from zigpy.profiles import zha
@@ -22,8 +21,6 @@ from zhaquirks.const import (
 )
 from zhaquirks.tuya import TuyaManufCluster
 
-_LOGGER = logging.getLogger(__name__)
-
 ZONE_TYPE = 0x0001
 IAS_VIBRATION_SENSOR = 0x5F02
 
@@ -31,7 +28,6 @@ IAS_VIBRATION_SENSOR = 0x5F02
 class VibrationCluster(LocalDataCluster, MotionOnEvent, IasZone):
     """Tuya Motion Sensor."""
 
-    cluster_id = IasZone.cluster_id
     _CONSTANT_ATTRIBUTES = {ZONE_TYPE: IasZone.ZoneType.Vibration_Movement_Sensor}
     reset_s = 15
 
@@ -86,6 +82,56 @@ class TuyaVibration(CustomDevice):
                     VibrationCluster,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
+            }
+        }
+    }
+
+
+class TuyaVibration_TO(CustomDevice):
+    """Tuya vibration sensor (TO)."""
+
+    def __init__(self, *args, **kwargs):
+        """Init device."""
+        self.motion_bus = Bus()
+        super().__init__(*args, **kwargs)
+
+    signature = {
+        MODEL: "TS0210",
+        ENDPOINTS: {
+            # "profile_id": 260,
+            # "device_type": "0x0402",
+            # "in_clusters": ["0x0000", "0x0001", "0x0500"],
+            # "out_clusters": ["0x000a", "0x0019"]
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    IasZone.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Time.cluster_id,
+                    Ota.cluster_id,
+                ],
+            }
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: IAS_VIBRATION_SENSOR,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    VibrationCluster,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Time.cluster_id,
+                    Ota.cluster_id,
+                ],
             }
         }
     }

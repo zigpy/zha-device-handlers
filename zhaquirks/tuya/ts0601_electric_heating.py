@@ -1,5 +1,4 @@
 """Map from manufacturer to standard clusters for electric heating thermostats."""
-import logging
 
 from zigpy.profiles import zha
 import zigpy.types as t
@@ -30,8 +29,6 @@ MOESBHT_MANUAL_MODE_ATTR = 0x0402  # [1] false [0] true /!\ inverted
 MOESBHT_ENABLED_ATTR = 0x0101  # [0] off [1] on
 MOESBHT_RUNNING_MODE_ATTR = 0x0424  # [1] idle [0] heating /!\ inverted
 MOESBHT_CHILD_LOCK_ATTR = 0x0128  # [0] unlocked [1] child-locked
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class MoesBHTManufCluster(TuyaManufClusterAttributes):
@@ -134,7 +131,7 @@ class MoesBHTUserInterface(TuyaUserInterfaceCluster):
 
 
 class MoesBHT(TuyaThermostat):
-    """Moes BHT-002GCLZB Thermostatic radiator valve."""
+    """Tuya thermostat for devices like the Moes BHT-002GCLZB valve and BHT-003GBLZB Electric floor heating."""
 
     signature = {
         #  endpoint=1 profile=260 device_type=81 device_version=1 input_clusters=[0, 4, 5, 61184],
@@ -143,6 +140,7 @@ class MoesBHT(TuyaThermostat):
             ("_TZE200_aoclfnxz", "TS0601"),
             ("_TZE200_2ekuz3dz", "TS0601"),
             ("_TZE200_ye5jkfsb", "TS0601"),
+            ("_TZE200_u9bfwha0", "TS0601"),
         ],
         ENDPOINTS: {
             1: {

@@ -18,6 +18,19 @@ from zhaquirks.const import (
 KONKE = "Konke"
 
 
+class KonkeButtonEvent(t.enum8):
+    Single = 0x80
+    Double = 0x81
+    Hold = 0x82
+
+
+PRESS_TYPES = {
+    KonkeButtonEvent.Single: COMMAND_SINGLE,
+    KonkeButtonEvent.Double: COMMAND_DOUBLE,
+    KonkeButtonEvent.Hold: COMMAND_HOLD,
+}
+
+
 class OccupancyCluster(LocalDataCluster, OccupancyOnEvent):
     """Occupancy cluster."""
 
@@ -31,14 +44,17 @@ class MotionCluster(MotionWithReset):
     send_occupancy_event: bool = True
 
 
-class KonkeOnOffCluster(CustomCluster, OnOff):
+class KonkeOnOffCluster(CustomCluster):
     """Konke OnOff cluster implementation."""
 
-    PRESS_TYPES = {0x80: COMMAND_SINGLE, 0x81: COMMAND_DOUBLE, 0x82: COMMAND_HOLD}
-    ep_attribute = "custom_on_off"
+    cluster_id = OnOff.cluster_id
+    ep_attribute = "konke_on_off"
 
     attributes = OnOff.attributes.copy()
-    attributes[0x0000] = (PRESS_TYPE, t.uint8_t)
+    attributes[0x0000] = ("konke_button_event", KonkeButtonEvent)
+
+    server_commands = OnOff.server_commands.copy()
+    client_commands = OnOff.client_commands.copy()
 
     def handle_cluster_general_request(
         self,
@@ -60,30 +76,13 @@ class KonkeOnOffCluster(CustomCluster, OnOff):
             return
 
         attr = args[0][0]
-        if attr.attrid != 0x0000:
+
+        if attr.attrid != self.attributes_by_name["konke_button_event"].id:
             return
 
         value = attr.value.value
         event_args = {
-            PRESS_TYPE: self.PRESS_TYPES.get(value, value),
-            COMMAND_ID: value,
+            PRESS_TYPE: PRESS_TYPES[value],
+            COMMAND_ID: value.value,  # to maintain backwards compatibility
         }
         self.listener_event(ZHA_SEND_EVENT, event_args[PRESS_TYPE], event_args)
-
-    def deserialize(self, data):
-        """Deserialize fix for Konke butchered Bool ZCL type."""
-        try:
-            return super().deserialize(data)
-        except ValueError:
-            hdr, data = zigpy.zcl.foundation.ZCLHeader.deserialize(data)
-            if (
-                hdr.frame_control.is_cluster
-                or hdr.command_id
-                != zigpy.zcl.foundation.GeneralCommand.Report_Attributes
-            ):
-                raise
-            attr_id, data = t.uint16_t.deserialize(data)
-            attr = zigpy.zcl.foundation.Attribute(
-                attr_id, zigpy.zcl.foundation.TypeValue(t.uint8_t, data[1])
-            )
-            return hdr, [[attr]]

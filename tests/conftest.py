@@ -1,9 +1,6 @@
 """Fixtures for all tests."""
 
-try:
-    from unittest.mock import AsyncMock as CoroutineMock
-except ImportError:
-    from asynctest import CoroutineMock
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 import zigpy.application
@@ -64,8 +61,17 @@ class MockApp(zigpy.application.ControllerApplication):
     async def permit_with_key(self, *args, **kwargs):
         """Mock permit_with_key."""
 
+    async def reset_network_info(self, *args, **kwargs):
+        """Mock reset_network_info."""
+
+    async def send_packet(self, *args, **kwargs):
+        """Mock send_packet."""
+
     async def start_network(self, *args, **kwargs):
         """Mock start_network."""
+
+    async def permit_with_link_key(self, *args, **kwargs):
+        """Mock permit_with_link_key"""
 
     async def write_network_info(self, *args, **kwargs):
         """Mock write_network_info."""
@@ -73,8 +79,8 @@ class MockApp(zigpy.application.ControllerApplication):
     async def add_endpoint(self, descriptor):
         """Mock add_endpoint."""
 
-    mrequest = CoroutineMock()
-    request = CoroutineMock(return_value=(foundation.Status.SUCCESS, None))
+    mrequest = AsyncMock()
+    request = AsyncMock(return_value=(foundation.Status.SUCCESS, None))
 
 
 @pytest.fixture(name="MockAppController")
@@ -188,6 +194,9 @@ def assert_signature_matches_quirk():
                 return self.endpoints.get(key)
 
         test_dev = FakeDevice(signature)
+        test_dev._application = Mock()
+        test_dev._application._dblistener = None
+
         device = zigpy.quirks.get_device(test_dev)
         assert isinstance(device, quirk)
 

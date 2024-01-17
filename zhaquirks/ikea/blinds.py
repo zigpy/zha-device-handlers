@@ -22,9 +22,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.ikea import IKEA
-
-IKEA_CLUSTER_ID = 0xFC7C  # decimal = 64636
+from zhaquirks.ikea import IKEA, IKEA_CLUSTER_ID
 
 
 class IkeaTradfriRollerBlinds(CustomDevice):
@@ -39,6 +37,7 @@ class IkeaTradfriRollerBlinds(CustomDevice):
             (IKEA, "FYRTUR block-out roller blind"),
             (IKEA, "KADRILJ roller blind"),
             (IKEA, "TREDANSEN block-out cellul blind"),
+            (IKEA, "PRAKTLYSING cellular blind"),
         ],
         ENDPOINTS: {
             1: {

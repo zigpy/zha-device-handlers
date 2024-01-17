@@ -2,13 +2,25 @@
 
 import asyncio
 import datetime
+import itertools
 from unittest import mock
 
 import pytest
+import zigpy
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice, get_device
 import zigpy.types as t
 from zigpy.zcl import foundation
+from zigpy.zcl.clusters import CLUSTERS_BY_ID
+from zigpy.zcl.clusters.general import (
+    Basic,
+    GreenPowerProxy,
+    Groups,
+    Identify,
+    Ota,
+    PowerConfiguration,
+)
+from zigpy.zcl.clusters.lightlink import LightLink
 
 import zhaquirks
 from zhaquirks.const import (
@@ -20,18 +32,28 @@ from zhaquirks.const import (
     ON,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
-    ZONE_STATE,
+    SKIP_CONFIGURATION,
+    ZONE_STATUS_CHANGE_COMMAND,
 )
-from zhaquirks.tuya import Data, TuyaManufClusterAttributes
+from zhaquirks.tuya import (
+    Data,
+    TuyaEnchantableCluster,
+    TuyaManufClusterAttributes,
+    TuyaNewManufCluster,
+)
+import zhaquirks.tuya.sm0202_motion
+import zhaquirks.tuya.ts011f_plug
+import zhaquirks.tuya.ts0041
 import zhaquirks.tuya.ts0042
 import zhaquirks.tuya.ts0043
+import zhaquirks.tuya.ts0501_fan_switch
 import zhaquirks.tuya.ts0601_electric_heating
 import zhaquirks.tuya.ts0601_motion
 import zhaquirks.tuya.ts0601_siren
 import zhaquirks.tuya.ts0601_trv
 import zhaquirks.tuya.ts0601_valve
 
-from tests.common import ClusterListener
+from tests.common import ClusterListener, MockDatetime, wait_for_zigpy_tasks
 
 zhaquirks.setup()
 
@@ -82,22 +104,6 @@ ZCL_TUYA_EHEAT_TEMPERATURE = b"\tp\x02\x00\x02\x18\x02\x00\x04\x00\x00\x00\xb3"
 ZCL_TUYA_EHEAT_TARGET_TEMP = b"\t3\x01\x03\x05\x10\x02\x00\x04\x00\x00\x00\x15"
 
 
-class NewDatetime(datetime.datetime):
-    """Override for datetime functions."""
-
-    @classmethod
-    def now(cls):
-        """Return testvalue."""
-
-        return cls(1970, 1, 1, 1, 0, 0)
-
-    @classmethod
-    def utcnow(cls):
-        """Return testvalue."""
-
-        return cls(1970, 1, 1, 2, 0, 0)
-
-
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_motion.TuyaMotion,))
 async def test_motion(zigpy_device_from_quirk, quirk):
     """Test tuya motion sensor."""
@@ -115,14 +121,13 @@ async def test_motion(zigpy_device_from_quirk, quirk):
         tuya_cluster.handle_message(hdr, args)
 
     assert len(motion_listener.cluster_commands) == 1
-    assert len(motion_listener.attribute_updates) == 1
-    assert motion_listener.cluster_commands[0][1] == ZONE_STATE
+    assert motion_listener.cluster_commands[0][1] == ZONE_STATUS_CHANGE_COMMAND
     assert motion_listener.cluster_commands[0][2][0] == ON
 
     await asyncio.gather(asyncio.sleep(0), asyncio.sleep(0), asyncio.sleep(0))
 
     assert len(motion_listener.cluster_commands) == 2
-    assert motion_listener.cluster_commands[1][1] == ZONE_STATE
+    assert motion_listener.cluster_commands[1][1] == ZONE_STATUS_CHANGE_COMMAND
     assert motion_listener.cluster_commands[1][2][0] == OFF
 
 
@@ -236,8 +241,8 @@ async def test_singleswitch_requests(zigpy_device_from_quirk, quirk):
     with mock.patch.object(
         tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
     ) as m1:
-
         rsp = await switch_cluster.command(0x0000)
+        await wait_for_zigpy_tasks()
         m1.assert_called_with(
             61184,
             2,
@@ -248,6 +253,7 @@ async def test_singleswitch_requests(zigpy_device_from_quirk, quirk):
         assert rsp.status == 0
 
         rsp = await switch_cluster.command(0x0001)
+        await wait_for_zigpy_tasks()
         m1.assert_called_with(
             61184,
             4,
@@ -258,6 +264,7 @@ async def test_singleswitch_requests(zigpy_device_from_quirk, quirk):
         assert rsp.status == 0
 
     rsp = await switch_cluster.command(0x0002)
+    await wait_for_zigpy_tasks()
     assert rsp.status == foundation.Status.UNSUP_CLUSTER_COMMAND
 
 
@@ -289,12 +296,12 @@ def test_ts0121_signature(assert_signature_matches_quirk):
 
 async def test_tuya_data_conversion():
     """Test tuya conversion from Data to ztype and reverse."""
-    assert Data([4, 0, 0, 1, 39]).to_value(t.uint32_t) == 295
-    assert Data([4, 0, 0, 0, 220]).to_value(t.uint32_t) == 220
-    assert Data([4, 255, 255, 255, 236]).to_value(t.int32s) == -20
-    assert Data.from_value(t.uint32_t(295)) == [4, 0, 0, 1, 39]
-    assert Data.from_value(t.uint32_t(220)) == [4, 0, 0, 0, 220]
-    assert Data.from_value(t.int32s(-20)) == [4, 255, 255, 255, 236]
+    assert t.uint32_t(Data([4, 0, 0, 1, 39])) == 295
+    assert t.uint32_t(Data([4, 0, 0, 0, 220])) == 220
+    assert t.int32s(Data([4, 255, 255, 255, 236])) == -20
+    assert Data(t.uint32_t(295)) == [4, 0, 0, 1, 39]
+    assert Data(t.uint32_t(220)) == [4, 0, 0, 0, 220]
+    assert Data(t.int32s(-20)) == [4, 255, 255, 255, 236]
 
 
 class TuyaTestManufCluster(TuyaManufClusterAttributes):
@@ -360,7 +367,6 @@ async def test_tuya_send_attribute(zigpy_device_from_quirk, quirk):
     with mock.patch.object(
         tuya_cluster.endpoint, "request", side_effect=async_success
     ) as m1:
-
         (status,) = await tuya_cluster.write_attributes({617: 179})
         m1.assert_called_with(
             61184,
@@ -427,7 +433,6 @@ async def test_siren_send_attribute(zigpy_device_from_quirk, quirk):
     with mock.patch.object(
         tuya_cluster.endpoint, "request", side_effect=async_success
     ) as m1:
-
         _, status = await switch_cluster.command(0x0000)
         m1.assert_called_with(
             61184,
@@ -510,7 +515,6 @@ async def test_zonnsmart_send_attribute(zigpy_device_from_quirk, quirk):
     with mock.patch.object(
         tuya_cluster.endpoint, "request", side_effect=async_success
     ) as m1:
-
         (status,) = await thermostat_cluster.write_attributes(
             {
                 "occupied_heating_setpoint": 2500,
@@ -640,7 +644,6 @@ async def test_valve_send_attribute(zigpy_device_from_quirk, quirk):
     with mock.patch.object(
         tuya_cluster.endpoint, "request", side_effect=async_success
     ) as m1:
-
         (status,) = await thermostat_cluster.write_attributes(
             {
                 "occupied_heating_setpoint": 2500,
@@ -917,7 +920,6 @@ async def test_moes(zigpy_device_from_quirk, quirk):
     with mock.patch.object(
         tuya_cluster.endpoint, "request", side_effect=async_success
     ) as m1:
-
         (status,) = await thermostat_cluster.write_attributes(
             {
                 "occupied_heating_setpoint": 2500,
@@ -1233,10 +1235,11 @@ async def test_moes(zigpy_device_from_quirk, quirk):
         assert status == foundation.Status.UNSUP_CLUSTER_COMMAND
 
         origdatetime = datetime.datetime
-        datetime.datetime = NewDatetime
+        datetime.datetime = MockDatetime
 
         hdr, args = tuya_cluster.deserialize(ZCL_TUYA_SET_TIME_REQUEST)
         tuya_cluster.handle_message(hdr, args)
+        await wait_for_zigpy_tasks()
         m1.assert_called_with(
             61184,
             21,
@@ -1283,7 +1286,6 @@ async def test_eheat_send_attribute(zigpy_device_from_quirk, quirk):
     with mock.patch.object(
         tuya_cluster.endpoint, "request", side_effect=async_success
     ) as m1:
-
         (status,) = await thermostat_cluster.write_attributes(
             {
                 "occupied_heating_setpoint": 2500,
@@ -1405,3 +1407,305 @@ def test_ts0601_valve_signature(assert_signature_matches_quirk):
         "class": "ts0601_valve.TuyaValve",
     }
     assert_signature_matches_quirk(zhaquirks.tuya.ts0601_valve.TuyaValve, signature)
+
+
+def test_ts0601_motion_signature(assert_signature_matches_quirk):
+    """Test TS0601 motion by TreatLife remote signature is matched to its quirk."""
+    signature = {
+        "node_descriptor": "NodeDescriptor(logical_type=<LogicalType.EndDevice: 2>, complex_descriptor_available=0, user_descriptor_available=0, reserved=0, aps_flags=0, frequency_band=<FrequencyBand.Freq2400MHz: 8>, mac_capability_flags=<MACCapabilityFlags.AllocateAddress: 128>, manufacturer_code=4417, maximum_buffer_size=66, maximum_incoming_transfer_size=66, server_mask=10752, maximum_outgoing_transfer_size=66, descriptor_capability_field=<DescriptorCapability.NONE: 0>, *allocate_address=True, *is_alternate_pan_coordinator=False, *is_coordinator=False, *is_end_device=True, *is_full_function_device=False, *is_mains_powered=False, *is_receiver_on_when_idle=False, *is_router=False, *is_security_capable=False)",
+        "endpoints": {
+            "1": {
+                "profile_id": 260,
+                "device_type": "0x0051",
+                "in_clusters": ["0x0000", "0x0004", "0x0005", "0xef00"],
+                "out_clusters": ["0x000a", "0x0019"],
+            }
+        },
+        "manufacturer": "_TZE200_ppuj1vem",
+        "model": "TS0601",
+        "class": "zigpy.device.Device",
+    }
+    assert_signature_matches_quirk(zhaquirks.tuya.ts0601_motion.NeoMotion, signature)
+
+
+def test_multiple_attributes_report():
+    """Test a multi attribute report from Tuya device."""
+
+    ep = mock.Mock()  # fake endpoint object
+
+    message = (
+        b"\x09\x7B\x02\x01\x0F\x01\x01\x00\x01\x01\x05\x02\x00\x04\x00\x00\x00\x07"
+    )
+    hdr, data = TuyaNewManufCluster(ep).deserialize(message)
+
+    assert data
+    assert data.data
+    assert data.data.datapoints
+    assert len(data.data.datapoints) == 2
+    assert data.data.datapoints[0].dp == 1
+    assert data.data.datapoints[1].dp == 5
+
+    message = b"\x09\xE0\x02\x0B\x33\x01\x02\x00\x04\x00\x00\x00\xFD\x02\x02\x00\x04\x00\x00\x00\x47\x04\x02\x00\x04\x00\x00\x00\x64\x0A\x02\x00\x04\x00\x00\x01\x68\x0B\x02\x00\x04\x00\x00\x00\xC8"
+    hdr, data = TuyaNewManufCluster(ep).deserialize(message)
+
+    assert data
+    assert data.data
+    assert data.data.datapoints
+    assert len(data.data.datapoints) == 5
+    assert data.data.datapoints[0].dp == 1
+    assert data.data.datapoints[1].dp == 2
+    assert data.data.datapoints[2].dp == 4
+    assert data.data.datapoints[3].dp == 10
+    assert data.data.datapoints[4].dp == 11
+
+    message = b"\x09\xE1\x02\x0B\x34\x0C\x02\x00\x04\x00\x00\x00\x46\x0D\x02\x00\x04\x00\x00\x00\x14\x11\x02\x00\x04\x00\x00\x00\x1E\x09\x04\x00\x01\x01"
+    hdr, data = TuyaNewManufCluster(ep).deserialize(message)
+
+    assert data
+    assert data.data
+    assert data.data.datapoints
+    assert len(data.data.datapoints) == 4
+    assert data.data.datapoints[0].dp == 12
+    assert data.data.datapoints[1].dp == 13
+    assert data.data.datapoints[2].dp == 17
+    assert data.data.datapoints[3].dp == 9
+
+
+@pytest.mark.parametrize(
+    "quirk", (zhaquirks.tuya.ts0601_sensor.TuyaTempHumiditySensor,)
+)
+async def test_handle_get_data(zigpy_device_from_quirk, quirk):
+    """Test handle_get_data for multiple attributes."""
+
+    ts0601_sensor = zigpy_device_from_quirk(quirk)
+    tuya_cluster = ts0601_sensor.endpoints[1].tuya_manufacturer
+
+    message = b"\x09\xE0\x02\x0B\x33\x01\x02\x00\x04\x00\x00\x00\xFD\x02\x02\x00\x04\x00\x00\x00\x47\x04\x02\x00\x04\x00\x00\x00\x64"
+    hdr, data = tuya_cluster.deserialize(message)
+
+    status = tuya_cluster.handle_get_data(data.data)
+    assert status == foundation.Status.SUCCESS
+
+    message = b"\x09\xE0\x02\x0B\x33\x01\x02\x00\x04\x00\x00\x00\xFD\x02\x02\x00\x04\x00\x00\x00\x47\xFF\x02\x00\x04\x00\x00\x00\x64"
+    hdr, data = tuya_cluster.deserialize(message)
+
+    status = tuya_cluster.handle_get_data(data.data)
+    assert status == foundation.Status.UNSUPPORTED_ATTRIBUTE
+
+
+@pytest.mark.parametrize(
+    "quirk",
+    (zhaquirks.tuya.ts0601_sensor.TuyaTempHumiditySensor,),
+)
+@pytest.mark.parametrize(
+    "quirk_sq", (zhaquirks.tuya.ts0601_sensor.TuyaTempHumiditySensor_Square,)
+)
+async def test_rh_multiplier(zigpy_device_from_quirk, quirk, quirk_sq):
+    """Test handle_get_data for multiple attributes."""
+
+    round_sensor = zigpy_device_from_quirk(quirk)
+    round_cluster = round_sensor.endpoints[1].tuya_manufacturer
+    round_humidity = round_sensor.endpoints[1].humidity
+
+    square_sensor = zigpy_device_from_quirk(quirk_sq)
+    square_cluster = square_sensor.endpoints[1].tuya_manufacturer
+    square_humidity = square_sensor.endpoints[1].humidity
+
+    message = b"\x19\x84\x01\x00\xa5\x02\x02\x00\x04\x00\x00\x02\x2c"
+
+    hdr, round_data = round_cluster.deserialize(message)
+    hdr, square_data = square_cluster.deserialize(message)
+
+    round_status = round_cluster.handle_get_data(round_data.data)
+    assert round_status == foundation.Status.SUCCESS
+
+    square_status = square_cluster.handle_get_data(square_data.data)
+    assert square_status == foundation.Status.SUCCESS
+
+    assert (
+        round_data.data.datapoints[0].data.payload
+        == square_data.data.datapoints[0].data.payload
+    )
+
+    assert (
+        round_humidity.get("measured_value")
+        == round_data.data.datapoints[0].data.payload * round_sensor.RH_MULTIPLIER
+    )
+    assert (
+        square_humidity.get("measured_value")
+        == square_data.data.datapoints[0].data.payload * 100
+    )  # no square_sensor.RH_MULTIPLIER attribute
+
+
+@mock.patch("zigpy.zcl.Cluster.bind", mock.AsyncMock())
+@pytest.mark.parametrize(
+    "quirk",
+    (zhaquirks.tuya.ts0501_fan_switch.TS0501FanSwitch,),
+)
+async def test_fan_switch_writes_attributes(zigpy_device_from_quirk, quirk):
+    """Test that fan mode sequence attribute is written to the device when binding."""
+
+    device = zigpy_device_from_quirk(quirk)
+    fan_cluster = device.endpoints[1].fan
+
+    with mock.patch.object(fan_cluster.endpoint, "request", mock.AsyncMock()) as m1:
+        m1.return_value = (foundation.Status.SUCCESS, "done")
+
+        await fan_cluster.bind()
+
+        assert len(m1.mock_calls) == 1
+        assert m1.mock_calls[0][1] == (
+            514,
+            1,
+            b"\x00\x01\x02\x01\x000\x00",
+        )
+
+
+async def test_sm0202_motion_sensor_signature(assert_signature_matches_quirk):
+    """Test LH992ZB motion sensor remote signature is matched to its quirk."""
+    signature = {
+        "node_descriptor": "NodeDescriptor(logical_type=<LogicalType.EndDevice: 2>, complex_descriptor_available=0, user_descriptor_available=0, reserved=0, aps_flags=0, frequency_band=<FrequencyBand.Freq2400MHz: 8>, mac_capability_flags=<MACCapabilityFlags.AllocateAddress: 128>, manufacturer_code=4098, maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264, maximum_outgoing_transfer_size=82, descriptor_capability_field=<DescriptorCapability.NONE: 0>, *allocate_address=True, *is_alternate_pan_coordinator=False, *is_coordinator=False, *is_end_device=True, *is_full_function_device=False, *is_mains_powered=False, *is_receiver_on_when_idle=False, *is_router=False, *is_security_capable=False)",
+        "endpoints": {
+            "1": {
+                "profile_id": 260,
+                "device_type": "0x0402",
+                "in_clusters": ["0x0000", "0x0001", "0x0003", "0x0500", "0xeeff"],
+                "out_clusters": ["0x0019"],
+            }
+        },
+        "manufacturer": "_TYZB01_z2umiwvq",
+        "model": "SM0202",
+        "class": "zhaquirks.tuya.lh992zb.TuyaMotionSM0202",
+    }
+    assert_signature_matches_quirk(zhaquirks.tuya.sm0202_motion.SM0202Motion, signature)
+
+
+@pytest.mark.parametrize(
+    "quirk",
+    (zhaquirks.tuya.ts0041.TuyaSmartRemote0041TOPlusA,),
+)
+async def test_power_config_no_bind(zigpy_device_from_quirk, quirk):
+    """Test that the power configuration cluster is not bound and no attribute reporting is set up."""
+
+    device = zigpy_device_from_quirk(quirk)
+    power_cluster = device.endpoints[1].power
+
+    request_patch = mock.patch("zigpy.zcl.Cluster.request", mock.AsyncMock())
+    bind_patch = mock.patch("zigpy.zcl.Cluster.bind", mock.AsyncMock())
+
+    with request_patch as request_mock, bind_patch as bind_mock:
+        request_mock.return_value = (foundation.Status.SUCCESS, "done")
+
+        await power_cluster.bind()
+        await power_cluster.configure_reporting(
+            PowerConfiguration.attributes_by_name["battery_percentage_remaining"].id,
+            3600,
+            10800,
+            1,
+        )
+
+        assert len(request_mock.mock_calls) == 0
+        assert len(bind_mock.mock_calls) == 0
+
+
+ENCHANTED_QUIRKS = []
+for manufacturer in zigpy.quirks._DEVICE_REGISTRY._registry.values():
+    for model_quirk_list in manufacturer.values():
+        for quirk_entry in model_quirk_list:
+            if quirk_entry in ENCHANTED_QUIRKS:
+                continue
+            # right now, this basically includes `issubclass(quirk, EnchantedDevice)`, as that sets `TUYA_SPELL`
+            if getattr(quirk_entry, "TUYA_SPELL", False):
+                ENCHANTED_QUIRKS.append(quirk_entry)
+
+del quirk_entry, model_quirk_list, manufacturer
+
+
+@mock.patch("zigpy.zcl.Cluster.bind", mock.AsyncMock())
+async def test_tuya_spell(zigpy_device_from_quirk):
+    """Test that enchanted Tuya devices have their spell applied when binding OnOff cluster."""
+    non_bindable_cluster_ids = [
+        Basic.cluster_id,
+        Identify.cluster_id,
+        Groups.cluster_id,
+        Ota.cluster_id,
+        GreenPowerProxy.cluster_id,
+        LightLink.cluster_id,
+    ]
+
+    request_patch = mock.patch("zigpy.zcl.Cluster.request", mock.AsyncMock())
+    with request_patch as request_mock:
+        request_mock.return_value = (foundation.Status.SUCCESS, "done")
+
+        for quirk in ENCHANTED_QUIRKS:
+            device = zigpy_device_from_quirk(quirk)
+
+            # fail if SKIP_CONFIGURATION is set, as that will cause ZHA to not call bind()
+            if getattr(device, SKIP_CONFIGURATION, False):
+                pytest.fail(
+                    f"Enchanted quirk {quirk} has SKIP_CONFIGURATION set. "
+                    f"This is not allowed for enchanted devices."
+                )
+
+            for cluster in itertools.chain(
+                device.endpoints[1].in_clusters.values(),
+                device.endpoints[1].out_clusters.values(),
+            ):
+                # emulate ZHA calling bind() on most default clusters with an unchanged ep_attribute
+                if (
+                    not isinstance(cluster, int)
+                    and cluster.cluster_id not in non_bindable_cluster_ids
+                    and cluster.cluster_id in CLUSTERS_BY_ID
+                    and CLUSTERS_BY_ID[cluster.cluster_id].ep_attribute
+                    == cluster.ep_attribute
+                ):
+                    await cluster.bind()
+
+            # check that exactly one Tuya spell was cast
+            if len(request_mock.mock_calls) == 0:
+                pytest.fail(
+                    f"Enchanted quirk {quirk} did not cast a Tuya spell. "
+                    f"One bindable cluster subclassing `TuyaEnchantableCluster` on endpoint 1 needs to be implemented. "
+                    f"Also check that enchanted bindable clusters do not modify their `ep_attribute`, "
+                    f"as ZHA will not call bind() in that case."
+                )
+            elif len(request_mock.mock_calls) > 1:
+                pytest.fail(
+                    f"Enchanted quirk {quirk} cast more than one Tuya spell. "
+                    f"Make sure to only implement one cluster subclassing `TuyaEnchantableCluster` on endpoint 1."
+                )
+
+            assert (
+                request_mock.mock_calls[0][1][1]
+                == foundation.GeneralCommand.Read_Attributes
+            )  # read attributes
+            assert request_mock.mock_calls[0][1][3] == [4, 0, 1, 5, 7, 65534]  # spell
+            request_mock.reset_mock()
+
+
+def test_tuya_spell_devices_valid():
+    """Test that all enchanted Tuya devices implement at least one enchanted cluster."""
+
+    for quirk in ENCHANTED_QUIRKS:
+        enchanted_clusters = 0
+
+        # iterate over all clusters in the replacement
+        for endpoint_id, endpoint in quirk.replacement[ENDPOINTS].items():
+            if endpoint_id != 1:  # spell is only activated on endpoint 1 for now
+                continue
+            for cluster in endpoint[INPUT_CLUSTERS] + endpoint[OUTPUT_CLUSTERS]:
+                if not isinstance(cluster, int) and issubclass(
+                    cluster, TuyaEnchantableCluster
+                ):
+                    enchanted_clusters += 1
+
+        # one EnchantedDevice must have exactly one enchanted cluster on endpoint 1
+        if enchanted_clusters == 0:
+            pytest.fail(
+                f"{quirk} does not have a cluster subclassing `TuyaEnchantableCluster` on endpoint 1 "
+                f"as required by the Tuya spell."
+            )
+        elif enchanted_clusters > 1:
+            pytest.fail(
+                f"{quirk} has more than one cluster subclassing `TuyaEnchantableCluster` on endpoint 1"
+            )

@@ -52,6 +52,8 @@ _LOGGER = logging.getLogger(__name__)
 class SiterwellManufCluster(TuyaManufClusterAttributes):
     """Manufacturer Specific Cluster of some thermostatic valves."""
 
+    set_time_offset = 1970
+
     attributes = TuyaManufClusterAttributes.attributes.copy()
     attributes.update(
         {
@@ -513,7 +515,6 @@ class MoesThermostat(TuyaThermostatCluster):
         if attribute in self.WORKDAY_SCHEDULE_ATTRS:
             data = data144()
             for num, (attr, default) in enumerate(self.WORKDAY_SCHEDULE_ATTRS.items()):
-
                 if num % 3 == 0:
                     if attr == attribute:
                         val = round(value / 100)
@@ -537,7 +538,6 @@ class MoesThermostat(TuyaThermostatCluster):
         if attribute in self.WEEKEND_SCHEDULE_ATTRS:
             data = data144()
             for num, (attr, default) in enumerate(self.WEEKEND_SCHEDULE_ATTRS.items()):
-
                 if num % 3 == 0:
                     if attr == attribute:
                         val = round(value / 100)
@@ -872,7 +872,6 @@ class MoesWindowDetection(LocalDataCluster, OnOff):
         """Override the default Cluster command."""
 
         if command_id in (0x0000, 0x0001, 0x0002):
-
             if command_id == 0x0000:
                 value = False
             elif command_id == 0x0001:
@@ -947,31 +946,37 @@ class ZONNSMARTManufCluster(TuyaManufClusterAttributes):
         ZonnsmartManuClusterSelf = self
 
     attributes = TuyaManufClusterAttributes.attributes.copy()
-    attributes = {
-        ZONNSMART_MODE_ATTR: ("mode", t.uint8_t, True),
-        ZONNSMART_WINDOW_DETECT_ATTR: ("window_detection", t.uint8_t, True),
-        ZONNSMART_FROST_PROTECT_ATTR: ("frost_protection", t.uint8_t, True),
-        ZONNSMART_TARGET_TEMP_ATTR: ("target_temperature", t.uint32_t, True),
-        ZONNSMART_TEMPERATURE_ATTR: ("temperature", t.uint32_t, True),
-        ZONNSMART_TEMPERATURE_CALIBRATION_ATTR: (
-            "temperature_calibration",
-            t.int32s,
-            True,
-        ),
-        ZONNSMART_WEEK_FORMAT_ATTR: ("week_format", t.uint8_t, True),
-        ZONNSMART_HOLIDAY_TEMP_ATTR: ("holiday_temperature", t.uint32_t, True),
-        ZONNSMART_BATTERY_ATTR: ("battery", t.uint32_t, True),
-        ZONNSMART_UPTIME_TIME_ATTR: ("uptime", t.uint32_t, True),
-        ZONNSMART_CHILD_LOCK_ATTR: ("child_lock", t.uint8_t, True),
-        ZONNSMART_FAULT_DETECTION_ATTR: ("fault_detected", t.uint8_t, True),
-        ZONNSMART_BOOST_TIME_ATTR: ("boost_duration_seconds", t.uint32_t, True),
-        ZONNSMART_OPENED_WINDOW_TEMP: ("opened_window_temperature", t.uint32_t, True),
-        ZONNSMART_COMFORT_TEMP_ATTR: ("comfort_mode_temperature", t.uint32_t, True),
-        ZONNSMART_ECO_TEMP_ATTR: ("eco_mode_temperature", t.uint32_t, True),
-        ZONNSMART_HEATING_STOPPING_ATTR: ("heating_stop", t.uint8_t, True),
-        ZONNSMART_ONLINE_MODE_BOOL_ATTR: ("online_set", t.uint8_t, True),
-        ZONNSMART_ONLINE_MODE_ENUM_ATTR: ("online", t.uint8_t, True),
-    }
+    attributes.update(
+        {
+            ZONNSMART_MODE_ATTR: ("mode", t.uint8_t, True),
+            ZONNSMART_WINDOW_DETECT_ATTR: ("window_detection", t.uint8_t, True),
+            ZONNSMART_FROST_PROTECT_ATTR: ("frost_protection", t.uint8_t, True),
+            ZONNSMART_TARGET_TEMP_ATTR: ("target_temperature", t.uint32_t, True),
+            ZONNSMART_TEMPERATURE_ATTR: ("temperature", t.uint32_t, True),
+            ZONNSMART_TEMPERATURE_CALIBRATION_ATTR: (
+                "temperature_calibration",
+                t.int32s,
+                True,
+            ),
+            ZONNSMART_WEEK_FORMAT_ATTR: ("week_format", t.uint8_t, True),
+            ZONNSMART_HOLIDAY_TEMP_ATTR: ("holiday_temperature", t.uint32_t, True),
+            ZONNSMART_BATTERY_ATTR: ("battery", t.uint32_t, True),
+            ZONNSMART_UPTIME_TIME_ATTR: ("uptime", t.uint32_t, True),
+            ZONNSMART_CHILD_LOCK_ATTR: ("child_lock", t.uint8_t, True),
+            ZONNSMART_FAULT_DETECTION_ATTR: ("fault_detected", t.uint8_t, True),
+            ZONNSMART_BOOST_TIME_ATTR: ("boost_duration_seconds", t.uint32_t, True),
+            ZONNSMART_OPENED_WINDOW_TEMP: (
+                "opened_window_temperature",
+                t.uint32_t,
+                True,
+            ),
+            ZONNSMART_COMFORT_TEMP_ATTR: ("comfort_mode_temperature", t.uint32_t, True),
+            ZONNSMART_ECO_TEMP_ATTR: ("eco_mode_temperature", t.uint32_t, True),
+            ZONNSMART_HEATING_STOPPING_ATTR: ("heating_stop", t.uint8_t, True),
+            ZONNSMART_ONLINE_MODE_BOOL_ATTR: ("online_set", t.uint8_t, True),
+            ZONNSMART_ONLINE_MODE_ENUM_ATTR: ("online", t.uint8_t, True),
+        }
+    )
 
     DIRECT_MAPPED_ATTRS = {
         ZONNSMART_TEMPERATURE_ATTR: ("local_temperature", lambda value: value * 10),
@@ -1255,7 +1260,6 @@ class ZONNSMARTHelperOnOff(LocalDataCluster, OnOff):
         """Override the default Cluster command."""
 
         if command_id in (0x0000, 0x0001, 0x0002):
-
             if command_id == 0x0000:
                 value = False
             elif command_id == 0x0001:
@@ -1472,6 +1476,8 @@ class SiterwellGS361_Type2(TuyaThermostat):
             ("_TZE200_owwdxjbx", "TS0601"),
             ("_TZE200_8daqwrsj", "TS0601"),
             ("_TZE200_czk78ptr", "TS0601"),
+            ("_TZE200_2cs6g9i7", "TS0601"),  # Brennenstuhl Zigbee Connect 01
+            ("_TZE200_04yfvweb", "TS0601"),  # Appartme APRM-04-001
         ],
         ENDPOINTS: {
             1: {
@@ -1528,6 +1534,8 @@ class MoesHY368_Type1(TuyaThermostat):
             ("_TZE200_4eeyebrt", "TS0601"),
             ("_TZE200_cpmgn2cf", "TS0601"),
             ("_TZE200_9sfg7gm0", "TS0601"),
+            ("_TZE200_8whxpsiw", "TS0601"),
+            ("_TZE200_8thwkzxl", "TS0601"),  # Tervix Pro Line EVA 2
         ],
         ENDPOINTS: {
             1: {
@@ -1619,6 +1627,11 @@ class MoesHY368_Type1new(TuyaThermostat):
 class MoesHY368_Type2(TuyaThermostat):
     """MoesHY368 Thermostatic radiator valve (2nd cluster signature)."""
 
+    def __init__(self, *args, **kwargs):
+        """Init device."""
+        self.window_detection_bus = Bus()
+        super().__init__(*args, **kwargs)
+
     signature = {
         #  endpoint=1 profile=260 device_type=0 device_version=0 input_clusters=[0, 3]
         #  output_clusters=[3, 25]>
@@ -1675,10 +1688,17 @@ class ZonnsmartTV01_ZG(TuyaThermostat):
         #  endpoint=1 profile=260 device_type=81 device_version=0 input_clusters=[0, 4, 5, 61184]
         #  output_clusters=[10, 25]>
         MODELS_INFO: [
-            ("_TZE200_e9ba97vf", "TS0601"),
-            ("_TZE200_husqqvux", "TS0601"),
-            ("_TZE200_kly8gjlz", "TS0601"),
-            ("_TZE200_hue3yfsn", "TS0601"),  # TV02-ZG
+            ("_TZE200_7yoranx2", "TS0601"),  # MOES TV01 ZTRV-ZX-TV01-MS
+            ("_TZE200_e9ba97vf", "TS0601"),  # Zonnsmart TV01-ZG
+            ("_TZE200_hue3yfsn", "TS0601"),  # Zonnsmart TV02-ZG
+            ("_TZE200_husqqvux", "TS0601"),  # Tesla Smart TSL-TRV-TV01ZG
+            ("_TZE200_kly8gjlz", "TS0601"),  # EARU TV05-ZG
+            ("_TZE200_lnbfnyxd", "TS0601"),  # Tesla Smart TSL-TRV-TV01ZG
+            ("_TZE200_mudxchsu", "TS0601"),  # Foluu TV05
+            ("_TZE200_kds0pmmv", "TS0601"),  # MOES TV02
+            ("_TZE200_sur6q7ko", "TS0601"),  # LSC Smart Connect 3012732
+            ("_TZE200_lllliz3p", "TS0601"),  # tuya TV02-Zigbee2
+            ("_TZE200_fsow0qsk", "TS0601"),  # Tesla Smart TV500
         ],
         ENDPOINTS: {
             1: {

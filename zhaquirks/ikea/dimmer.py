@@ -30,7 +30,7 @@ from zhaquirks.const import (
     RIGHT,
     ROTATED,
 )
-from zhaquirks.ikea import IKEA, PowerConfiguration1CRXCluster
+from zhaquirks.ikea import IKEA, DoublingPowerConfig1CRXCluster
 
 
 class IkeaDimmer(CustomDevice):
@@ -72,7 +72,7 @@ class IkeaDimmer(CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.NON_COLOR_CONTROLLER,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    PowerConfiguration1CRXCluster,
+                    DoublingPowerConfig1CRXCluster,
                     Identify.cluster_id,
                     PollControl.cluster_id,
                     LightLink.cluster_id,

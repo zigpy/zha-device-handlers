@@ -1,5 +1,5 @@
 """Lidl dimmable bulb."""
-from zigpy.profiles import zha
+from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
@@ -29,7 +29,11 @@ class DimmableBulb(CustomDevice):
     """Lidl dimmable bulb."""
 
     signature = {
-        MODELS_INFO: [("_TZ3000_nosnx7im", "TS0501A")],
+        MODELS_INFO: [
+            ("_TZ3000_nosnx7im", "TS0501A"),
+            ("_TZ3000_nbnmw9nc", "TS0501A"),
+            ("_TZ3000_7dcddnye", "TS0501A"),
+        ],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=257
             # input_clusters=[0, 3, 4, 5, 6, 8, 768, 4096]
@@ -53,8 +57,8 @@ class DimmableBulb(CustomDevice):
                 # <SimpleDescriptor endpoint=242 profile=41440 device_type=97
                 # input_clusters=[]
                 # output_clusters=[33]
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
@@ -77,8 +81,8 @@ class DimmableBulb(CustomDevice):
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },

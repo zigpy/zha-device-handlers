@@ -30,7 +30,6 @@ from zhaquirks.thirdreality import THIRD_REALITY
 class CustomPowerConfigurationCluster(PowerConfigurationCluster):
     """Custom PowerConfigurationCluster."""
 
-    cluster_id = PowerConfigurationCluster.cluster_id
     MIN_VOLTS = 2.1
     MAX_VOLTS = 3.0
 
@@ -45,8 +44,6 @@ MOVEMENT_TYPE = {
 
 class MultistateInputCluster(CustomCluster, MultistateInput):
     """Multistate input cluster."""
-
-    cluster_id = MultistateInput.cluster_id
 
     def __init__(self, *args, **kwargs):
         """Init."""
@@ -97,7 +94,11 @@ class Button(CustomDevice):
                     CustomPowerConfigurationCluster,
                     MultistateInputCluster,
                 ],
-                OUTPUT_CLUSTERS: [Basic.cluster_id, OnOff.cluster_id],
+                OUTPUT_CLUSTERS: [
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                    Ota.cluster_id,
+                ],
             }
         },
     }

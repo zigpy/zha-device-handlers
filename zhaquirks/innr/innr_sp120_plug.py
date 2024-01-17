@@ -1,6 +1,6 @@
 """Innr SP 120 plug."""
 from zigpy.profiles import zll
-from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -23,33 +23,14 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-
-MANUFACTURER = "innr"
-MODEL = "SP 120"
-
-
-class MeteringCluster(CustomCluster, Metering):
-    """Fix multiplier and divisor."""
-
-    cluster_id = Metering.cluster_id
-    MULTIPLIER = 0x0301
-    DIVISOR = 0x0302
-    _CONSTANT_ATTRIBUTES = {MULTIPLIER: 1, DIVISOR: 100}
-
-
-class ElectricalMeasurementCluster(CustomCluster, ElectricalMeasurement):
-    """Fix multiplier and divisor."""
-
-    cluster_id = ElectricalMeasurement.cluster_id
-    MULTIPLIER = 0x0602
-    DIVISOR = 0x0603
-    _CONSTANT_ATTRIBUTES = {MULTIPLIER: 1, DIVISOR: 1000}
+from zhaquirks.innr import INNR, ElectricalMeasurementClusterInnr, MeteringClusterInnr
 
 
 class SP120(CustomDevice):
     """Innr SP 120 smart plug."""
 
     signature = {
+        MODELS_INFO: [(INNR, "SP 120")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zll.PROFILE_ID,
@@ -80,7 +61,6 @@ class SP120(CustomDevice):
                 OUTPUT_CLUSTERS: [],
             },
         },
-        MODELS_INFO: [(MANUFACTURER, MODEL)],
     }
 
     replacement = {
@@ -90,11 +70,11 @@ class SP120(CustomDevice):
                 DEVICE_TYPE: zll.DeviceType.ON_OFF_PLUGIN_UNIT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    ElectricalMeasurementCluster,
+                    ElectricalMeasurementClusterInnr,
                     Groups.cluster_id,
                     Identify.cluster_id,
                     LevelControl.cluster_id,
-                    MeteringCluster,
+                    MeteringClusterInnr,
                     OnOff.cluster_id,
                     Scenes.cluster_id,
                     Time.cluster_id,

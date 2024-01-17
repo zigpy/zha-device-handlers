@@ -1,5 +1,4 @@
 """Xiaomi aqara magic cube device."""
-import logging
 
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import (
@@ -38,6 +37,7 @@ from zhaquirks.xiaomi import (
 )
 
 ACTIVATED_FACE = "activated_face"
+DEACTIVATED_FACE = "deactivated_face"
 DESCRIPTION = "description"
 DROP = "drop"
 DROP_VALUE = 3
@@ -116,13 +116,13 @@ MOVEMENT_TYPE_DESCRIPTION = {
     SLIDE_1_VALUE: "aqara logo on top",
     SLIDE_2_VALUE: "aqara logo facing user rotated 90 degrees right",
     SLIDE_3_VALUE: "aqara logo facing user upside down",
-    SLIDE_4_VALUE: "arara logo on bottom",
+    SLIDE_4_VALUE: "aqara logo on bottom",
     SLIDE_5_VALUE: "aqara logo facing user rotated 90 degrees left",
     SLIDE_6_VALUE: "aqara logo facing user upright",
     KNOCK_1_VALUE: "aqara logo on top",
     KNOCK_2_VALUE: "aqara logo facing user rotated 90 degrees right",
     KNOCK_3_VALUE: "aqara logo facing user upside down",
-    KNOCK_4_VALUE: "arara logo on bottom",
+    KNOCK_4_VALUE: "aqara logo on bottom",
     KNOCK_5_VALUE: "aqara logo facing user rotated 90 degrees left",
     KNOCK_6_VALUE: "aqara logo facing user upright",
 }
@@ -142,8 +142,6 @@ SIDES = {
     KNOCK_6_VALUE: 6,
 }
 
-_LOGGER = logging.getLogger(__name__)
-
 
 def extend_dict(dictionary, value, ranges):
     """Extend a dict."""
@@ -157,8 +155,6 @@ extend_dict(MOVEMENT_TYPE, FLIP, range(FLIP_BEGIN, FLIP_END))
 class MultistateInputCluster(CustomCluster, MultistateInput):
     """Multistate input cluster."""
 
-    cluster_id = MultistateInput.cluster_id
-
     def __init__(self, *args, **kwargs):
         """Init."""
         self._current_state = {}
@@ -170,7 +166,6 @@ class MultistateInputCluster(CustomCluster, MultistateInput):
             self._current_state[STATUS_TYPE_ATTR] = action = MOVEMENT_TYPE.get(value)
             event_args = {VALUE: value}
             if action is not None:
-
                 if action in (SLIDE, KNOCK):
                     event_args[DESCRIPTION] = MOVEMENT_TYPE_DESCRIPTION[value]
                     event_args[ACTIVATED_FACE] = SIDES[value]
@@ -180,6 +175,7 @@ class MultistateInputCluster(CustomCluster, MultistateInput):
                         event_args[FLIP_DEGREES] = 180
                     else:
                         event_args[FLIP_DEGREES] = 90
+                        event_args[DEACTIVATED_FACE] = (value // 8) % 8 + 1
                     event_args[ACTIVATED_FACE] = int((value % 8) + 1)
 
                 self.listener_event(ZHA_SEND_EVENT, action, event_args)
@@ -190,8 +186,6 @@ class MultistateInputCluster(CustomCluster, MultistateInput):
 
 class AnalogInputCluster(CustomCluster, AnalogInput):
     """Analog input cluster."""
-
-    cluster_id = AnalogInput.cluster_id
 
     def __init__(self, *args, **kwargs):
         """Init."""

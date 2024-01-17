@@ -2,6 +2,7 @@
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, BinaryInput, Identify, Ota, PollControl
+from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone
 
@@ -16,7 +17,6 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 
-DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
 MANUFACTURER_SPECIFIC_CLUSTER_ID = 0xFC0F  # decimal = 64527
 MANUFACTURER_SPECIFIC_PROFILE_ID = 0xC2DF  # decimal = 49887
 
@@ -50,7 +50,7 @@ class CentraLiteIASSensor(CustomDevice):
                     PollControl.cluster_id,
                     TemperatureMeasurement.cluster_id,
                     IasZone.cluster_id,
-                    DIAGNOSTICS_CLUSTER_ID,
+                    Diagnostic.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
@@ -65,7 +65,7 @@ class CentraLiteIASSensor(CustomDevice):
                     Basic.cluster_id,
                     PowerConfigurationCluster.cluster_id,
                     Identify.cluster_id,
-                    DIAGNOSTICS_CLUSTER_ID,
+                    Diagnostic.cluster_id,
                     MANUFACTURER_SPECIFIC_CLUSTER_ID,
                 ],
                 OUTPUT_CLUSTERS: [Identify.cluster_id],
@@ -83,7 +83,7 @@ class CentraLiteIASSensor(CustomDevice):
                     PollControl.cluster_id,
                     TemperatureMeasurement.cluster_id,
                     IasZone.cluster_id,
-                    DIAGNOSTICS_CLUSTER_ID,
+                    Diagnostic.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
@@ -91,7 +91,7 @@ class CentraLiteIASSensor(CustomDevice):
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
-                    DIAGNOSTICS_CLUSTER_ID,
+                    Diagnostic.cluster_id,
                     MANUFACTURER_SPECIFIC_CLUSTER_ID,
                 ],
                 OUTPUT_CLUSTERS: [Identify.cluster_id],
@@ -123,7 +123,7 @@ class CentraLiteIASSensorV2(CustomDevice):
                     BinaryInput.cluster_id,
                     PowerConfigurationCluster.cluster_id,
                     Identify.cluster_id,
-                    DIAGNOSTICS_CLUSTER_ID,
+                    Diagnostic.cluster_id,
                     MANUFACTURER_SPECIFIC_CLUSTER_ID,
                 ],
                 OUTPUT_CLUSTERS: [Identify.cluster_id],
@@ -157,7 +157,7 @@ class CentraLiteIASSensorV3(CustomDevice):
                     BinaryInput.cluster_id,
                     PowerConfigurationCluster.cluster_id,
                     Identify.cluster_id,
-                    DIAGNOSTICS_CLUSTER_ID,
+                    Diagnostic.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Identify.cluster_id],
             },

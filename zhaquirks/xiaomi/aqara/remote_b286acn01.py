@@ -1,5 +1,4 @@
 """Xiaomi aqara double key switch device."""
-import logging
 
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import (
@@ -61,16 +60,12 @@ XIAOMI_DEVICE_TYPE = 0x5F01
 XIAOMI_DEVICE_TYPE2 = 0x5F02
 XIAOMI_DEVICE_TYPE3 = 0x5F03
 
-_LOGGER = logging.getLogger(__name__)
-
 
 class RemoteB286ACN01(XiaomiCustomDevice):
     """Aqara double key switch device."""
 
     class MultistateInputCluster(CustomCluster, MultistateInput):
         """Multistate input cluster."""
-
-        cluster_id = MultistateInput.cluster_id
 
         def __init__(self, *args, **kwargs):
             """Init."""
@@ -88,7 +83,7 @@ class RemoteB286ACN01(XiaomiCustomDevice):
                     ATTR_ID: attrid,
                     VALUE: value,
                 }
-                action = "{}_{}".format(button, self._current_state)
+                action = f"{button}_{self._current_state}"
                 self.listener_event(ZHA_SEND_EVENT, action, event_args)
                 # show something in the sensor in HA
                 super()._update_attribute(0, action)

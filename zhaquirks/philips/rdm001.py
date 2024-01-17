@@ -33,6 +33,7 @@ from zhaquirks.const import (
     PROFILE_ID,
     QUADRUPLE_PRESS,
     QUINTUPLE_PRESS,
+    RIGHT,
     SHORT_PRESS,
     SHORT_RELEASE,
     TRIPLE_PRESS,
@@ -83,7 +84,7 @@ class PhilipsRemoteCluster(CustomCluster):
                 "param6": t.uint8_t,
             },
             is_manufacturer_specific=True,
-            is_reply=False,
+            direction=foundation.Direction.Server_to_Client,
         )
     }
     BUTTONS = {
@@ -184,4 +185,12 @@ class PhilipsROM001(CustomDevice):
         (QUINTUPLE_PRESS, TURN_ON): {COMMAND: "left_quintuple_press"},
         (SHORT_RELEASE, TURN_ON): {COMMAND: "left_short_release"},
         (LONG_RELEASE, TURN_ON): {COMMAND: "left_long_release"},
+        (SHORT_PRESS, RIGHT): {COMMAND: "right_press"},
+        (LONG_PRESS, RIGHT): {COMMAND: "right_hold"},
+        (DOUBLE_PRESS, RIGHT): {COMMAND: "right_double_press"},
+        (TRIPLE_PRESS, RIGHT): {COMMAND: "right_triple_press"},
+        (QUADRUPLE_PRESS, RIGHT): {COMMAND: "right_quadruple_press"},
+        (QUINTUPLE_PRESS, RIGHT): {COMMAND: "right_quintuple_press"},
+        (SHORT_RELEASE, RIGHT): {COMMAND: "right_short_release"},
+        (LONG_RELEASE, RIGHT): {COMMAND: "right_long_release"},
     }

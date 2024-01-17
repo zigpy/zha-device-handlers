@@ -1,5 +1,4 @@
 """Xiaomi lumi.plug.maus01 plug."""
-import logging
 
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import (
@@ -18,7 +17,6 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 
-from zhaquirks import Bus
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -26,28 +24,20 @@ from zhaquirks.const import (
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
-    SKIP_CONFIGURATION,
 )
 from zhaquirks.xiaomi import (
     LUMI,
     AnalogInputCluster,
     BasicCluster,
     ElectricalMeasurementCluster,
+    MeteringCluster,
+    XiaomiAqaraE1Cluster,
     XiaomiCustomDevice,
 )
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class Plug(XiaomiCustomDevice):
     """lumi.plug.maus01 plug."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        self.voltage_bus = Bus()
-        self.consumption_bus = Bus()
-        self.power_bus = Bus()
-        super().__init__(*args, **kwargs)
 
     signature = {
         MODELS_INFO: [(LUMI, "lumi.plug.maus01"), (LUMI, "lumi.plug.mitw01")],
@@ -106,7 +96,6 @@ class Plug(XiaomiCustomDevice):
         },
     }
     replacement = {
-        SKIP_CONFIGURATION: True,
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -122,6 +111,8 @@ class Plug(XiaomiCustomDevice):
                     BinaryOutput.cluster_id,
                     Time.cluster_id,
                     ElectricalMeasurementCluster,
+                    XiaomiAqaraE1Cluster,
+                    MeteringCluster,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id, Time.cluster_id],
             },

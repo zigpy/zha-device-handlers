@@ -11,6 +11,7 @@ from zigpy.zcl.clusters.general import (
     PollControl,
     Scenes,
 )
+from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.measurement import PressureMeasurement, TemperatureMeasurement
 
 from zhaquirks import DoublingPowerConfigurationCluster
@@ -23,7 +24,6 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 
-DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
 KEEN1_CLUSTER_ID = 0xFC01  # decimal = 64513
 KEEN2_CLUSTER_ID = 0xFC02  # decimal = 64514
 
@@ -64,7 +64,7 @@ class KeenHomeSmartVent(CustomDevice):
                     PollControl.cluster_id,
                     TemperatureMeasurement.cluster_id,
                     PressureMeasurement.cluster_id,
-                    DIAGNOSTICS_CLUSTER_ID,
+                    Diagnostic.cluster_id,
                     KEEN1_CLUSTER_ID,
                     KEEN2_CLUSTER_ID,
                 ],
@@ -88,7 +88,7 @@ class KeenHomeSmartVent(CustomDevice):
                     PollControl.cluster_id,
                     TemperatureMeasurement.cluster_id,
                     PressureMeasurement.cluster_id,
-                    DIAGNOSTICS_CLUSTER_ID,
+                    Diagnostic.cluster_id,
                     KEEN1_CLUSTER_ID,
                     KEEN2_CLUSTER_ID,
                 ],

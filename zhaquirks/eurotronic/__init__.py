@@ -92,7 +92,6 @@ class ThermostatCluster(CustomCluster, Thermostat):
             success.append(rar)
 
         if OCCUPIED_HEATING_SETPOINT_ATTR in attributes:
-
             _LOGGER.debug("intercepting OCC_HS")
 
             values = await super().read_attributes_raw(
@@ -135,7 +134,6 @@ class ThermostatCluster(CustomCluster, Thermostat):
     def write_attributes(self, attributes, manufacturer=None):
         """Override wrong writes to thermostat attributes."""
         if "system_mode" in attributes:
-
             host_flags = self._attr_cache.get(HOST_FLAGS_ATTR, 1)
             _LOGGER.debug("current host_flags: %s", host_flags)
 

@@ -1,8 +1,7 @@
 """Map from manufacturer to standard clusters for the NEO Siren device."""
-import logging
 from typing import Dict, Optional, Union
 
-from zigpy.profiles import zha
+from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
@@ -33,7 +32,6 @@ from zhaquirks.tuya.mcu import (
     DPToAttributeMapping,
     TuyaAttributesCluster,
     TuyaClusterData,
-    TuyaDPType,
     TuyaMCUCluster,
 )
 
@@ -50,8 +48,6 @@ TUYA_ALARM_MIN_HUMID_ATTR = 0x026D  # [0,0,0,18] min alarm humidity threshold
 TUYA_ALARM_MAX_HUMID_ATTR = 0x026E  # [0,0,0,18] max alarm humidity threshold
 TUYA_MELODY_ATTR = 0x0466  # [5] Melody
 TUYA_VOLUME_ATTR = 0x0474  # [0]/[1]/[2] Volume 0-low, 2-high
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class NeoAlarmVolume(t.enum8):
@@ -162,7 +158,6 @@ class TuyaSirenOnOff(LocalDataCluster, OnOff):
 class TuyaTemperatureMeasurement(LocalDataCluster, TemperatureMeasurement):
     """Temperature cluster acting from events from temperature bus."""
 
-    cluster_id = TemperatureMeasurement.cluster_id
     ATTR_ID = 0
 
     def __init__(self, *args, **kwargs):
@@ -178,7 +173,6 @@ class TuyaTemperatureMeasurement(LocalDataCluster, TemperatureMeasurement):
 class TuyaRelativeHumidity(LocalDataCluster, RelativeHumidity):
     """Humidity cluster acting from events from humidity bus."""
 
-    cluster_id = RelativeHumidity.cluster_id
     ATTR_ID = 0
 
     def __init__(self, *args, **kwargs):
@@ -292,8 +286,9 @@ class TuyaMCUSiren(OnOff, TuyaAttributesCluster):
         if command_id in (0x0000, 0x0001):
             cluster_data = TuyaClusterData(
                 endpoint_id=self.endpoint.endpoint_id,
+                cluster_name=self.ep_attribute,
                 cluster_attr="on_off",
-                attr_value=command_id,
+                attr_value=bool(command_id),
                 expect_reply=expect_reply,
                 manufacturer=foundation.ZCLHeader.NO_MANUFACTURER_ID,
             )
@@ -318,28 +313,23 @@ class NeoSirenManufCluster(TuyaMCUCluster):
         5: DPToAttributeMapping(
             TuyaMCUSiren.ep_attribute,
             "volume",
-            dp_type=TuyaDPType.ENUM,
             converter=lambda x: NeoAlarmVolume(x),
         ),
         7: DPToAttributeMapping(
             TuyaMCUSiren.ep_attribute,
             "alarm_duration",
-            dp_type=TuyaDPType.VALUE,
         ),
         13: DPToAttributeMapping(
             TuyaMCUSiren.ep_attribute,
             "on_off",
-            dp_type=TuyaDPType.BOOL,
         ),
         15: DPToAttributeMapping(
             TuyaMCUSiren.ep_attribute,
             "battery",
-            dp_type=TuyaDPType.VALUE,
         ),
         21: DPToAttributeMapping(
             TuyaMCUSiren.ep_attribute,
             "melody",
-            dp_type=TuyaDPType.ENUM,
             converter=lambda x: NeoAlarmMelody(x),
         ),
     }
@@ -359,7 +349,10 @@ class TuyaSirenGPP_NoSensors(CustomDevice):
     signature = {
         #  endpoint=1 profile=260 device_type=81 device_version=1 input_clusters=[0, 4, 5, 61184]
         #  output_clusters=[25, 10]>
-        MODELS_INFO: [("_TZE200_t1blo2bj", "TS0601")],
+        MODELS_INFO: [
+            ("_TZE200_t1blo2bj", "TS0601"),
+            ("_TZE204_t1blo2bj", "TS0601"),
+        ],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -373,8 +366,8 @@ class TuyaSirenGPP_NoSensors(CustomDevice):
                 OUTPUT_CLUSTERS: [Ota.cluster_id, Time.cluster_id],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
@@ -396,8 +389,8 @@ class TuyaSirenGPP_NoSensors(CustomDevice):
                 OUTPUT_CLUSTERS: [Ota.cluster_id, Time.cluster_id],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },

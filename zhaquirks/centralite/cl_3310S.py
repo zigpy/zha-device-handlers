@@ -3,6 +3,7 @@ from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PollControl
+from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 
 from zhaquirks import PowerConfigurationCluster
@@ -16,7 +17,6 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 
-DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
 SMRT_THINGS_REL_HUM_CLSTR = 0xFC45
 
 
@@ -55,7 +55,7 @@ class CentraLite3310S(CustomDevice):
                     Identify.cluster_id,
                     PollControl.cluster_id,
                     TemperatureMeasurement.cluster_id,
-                    DIAGNOSTICS_CLUSTER_ID,
+                    Diagnostic.cluster_id,
                     SmartthingsRelativeHumidityCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],
@@ -72,7 +72,7 @@ class CentraLite3310S(CustomDevice):
                     Identify.cluster_id,
                     PollControl.cluster_id,
                     TemperatureMeasurement.cluster_id,
-                    DIAGNOSTICS_CLUSTER_ID,
+                    Diagnostic.cluster_id,
                     SmartthingsRelativeHumidityCluster,
                 ],
                 OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],

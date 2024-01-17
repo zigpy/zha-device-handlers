@@ -1,6 +1,7 @@
 """Tuya devices."""
 import dataclasses
 import datetime
+import enum
 import logging
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
@@ -29,6 +30,7 @@ from zhaquirks.const import (
 TUYA_CLUSTER_ID = 0xEF00
 TUYA_CLUSTER_E000_ID = 0xE000
 TUYA_CLUSTER_E001_ID = 0xE001
+TUYA_CLUSTER_1888_ID = 0x1888
 # ---------------------------------------------------------
 # Tuya Cluster Commands
 # ---------------------------------------------------------
@@ -44,12 +46,11 @@ TUYA_MCU_VERSION_RSP = 0x11
 #
 TUYA_LEVEL_COMMAND = 514
 
-COVER_EVENT = "cover_event"
 LEVEL_EVENT = "level_event"
 TUYA_MCU_COMMAND = "tuya_mcu_command"
 
 # Rotating for remotes
-STOP = "stop"  # To constans
+STOP = "stop"  # To constants
 
 # ---------------------------------------------------------
 # Value for dp_type
@@ -106,7 +107,6 @@ ATTR_COVER_INVERTED = 0x8002
 # ---------------------------------------------------------
 SWITCH_EVENT = "switch_event"
 ATTR_ON_OFF = 0x0000
-ATTR_COVER_POSITION = 0x0008
 TUYA_CMD_BASE = 0x0100
 # ---------------------------------------------------------
 # DP Value meanings in Status Report
@@ -126,31 +126,7 @@ TUYA_CMD_BASE = 0x0100
 _LOGGER = logging.getLogger(__name__)
 
 
-class BigEndianInt16(int):
-    """Helper class to represent big endian 16 bit value."""
-
-    def serialize(self) -> bytes:
-        """Value serialisation."""
-
-        try:
-            return self.to_bytes(2, "big", signed=False)
-        except OverflowError as e:
-            # OverflowError is not a subclass of ValueError, making it annoying to catch
-            raise ValueError(str(e)) from e
-
-    @classmethod
-    def deserialize(cls, data: bytes) -> Tuple["BigEndianInt16", bytes]:
-        """Value deserialisation."""
-
-        if len(data) < 2:
-            raise ValueError(f"Data is too short to contain {cls._size} bytes")
-
-        r = cls.from_bytes(data[:2], "big", signed=False)
-        data = data[2:]
-        return r, data
-
-
-class TuyaTimePayload(t.LVList, item_type=t.uint8_t, length_type=BigEndianInt16):
+class TuyaTimePayload(t.LVList, item_type=t.uint8_t, length_type=t.uint16_t_be):
     """Tuya set time payload definition."""
 
 
@@ -172,26 +148,26 @@ class TuyaData(t.Struct):
     function: t.uint8_t
     raw: t.LVBytes
 
-    @classmethod
-    def deserialize(cls, data: bytes) -> Tuple["TuyaData", bytes]:
-        """Deserialize data."""
-        res = cls()
-        res.dp_type, data = TuyaDPType.deserialize(data)
-        res.function, data = t.uint8_t.deserialize(data)
-        res.raw, data = t.LVBytes.deserialize(data)
-        if res.dp_type not in (TuyaDPType.BITMAP, TuyaDPType.STRING, TuyaDPType.ENUM):
-            res.raw = res.raw[::-1]
-        return res, data
-
     @property
-    def payload(self) -> Union[t.Bool, t.CharacterString, t.uint32_t, t.data32]:
+    def payload(
+        self,
+    ) -> Union[
+        t.int32s_be,
+        t.Bool,
+        t.CharacterString,
+        t.enum8,
+        t.bitmap8,
+        t.bitmap16,
+        t.bitmap32,
+        t.LVBytes,
+    ]:
         """Payload accordingly to data point type."""
         if self.dp_type == TuyaDPType.VALUE:
-            return t.uint32_t.deserialize(self.raw)[0]
+            return t.int32s_be.deserialize(self.raw)[0]
         elif self.dp_type == TuyaDPType.BOOL:
             return t.Bool.deserialize(self.raw)[0]
         elif self.dp_type == TuyaDPType.STRING:
-            return self.raw.decode("utf8")
+            return t.CharacterString(self.raw.decode("utf8"))
         elif self.dp_type == TuyaDPType.ENUM:
             return t.enum8.deserialize(self.raw)[0]
         elif self.dp_type == TuyaDPType.BITMAP:
@@ -200,29 +176,105 @@ class TuyaData(t.Struct):
                 return bitmaps[len(self.raw)].deserialize(self.raw)[0]
             except KeyError as exc:
                 raise ValueError(f"Wrong bitmap length: {len(self.raw)}") from exc
+        elif self.dp_type == TuyaDPType.RAW:
+            return self.raw
+        else:
+            raise ValueError(f"Unknown {self.dp_type} datapoint type")
 
-        raise ValueError(f"Unknown {self.dp_type} datapoint type")
+    @payload.setter
+    def payload(self, value):
+        """Set payload accordingly to data point type."""
+        if self.dp_type == TuyaDPType.VALUE:
+            self.raw = t.int32s_be(value).serialize()
+        elif self.dp_type == TuyaDPType.BOOL:
+            self.raw = t.Bool(value).serialize()
+        elif self.dp_type == TuyaDPType.STRING:
+            self.raw = value.encode("utf8")
+        elif self.dp_type == TuyaDPType.ENUM:
+            self.raw = t.enum8(value).serialize()
+        elif self.dp_type == TuyaDPType.BITMAP:
+            if not isinstance(value, (t.bitmap8, t.bitmap16, t.bitmap32)):
+                value = t.bitmap8(value)
+            self.raw = value.serialize()[::-1]
+        elif self.dp_type == TuyaDPType.RAW:
+            self.raw = value.serialize()
+        else:
+            raise ValueError(f"Unknown {self.dp_type} datapoint type")
+
+    def __new__(cls, *args, **kwargs):
+        """Disable copy constrctor."""
+        return super().__new__(cls)
+
+    def __init__(self, value=None, function=0, *args, **kwargs):
+        """Convert from a zigpy typed value to a tuya data payload."""
+        self.function = function
+
+        if value is None:
+            return
+        elif isinstance(value, (t.bitmap8, t.bitmap16, t.bitmap32)):
+            self.dp_type = TuyaDPType.BITMAP
+        elif isinstance(value, (bool, t.Bool)):
+            self.dp_type = TuyaDPType.BOOL
+        elif isinstance(value, enum.Enum):  # type: ignore # noqa
+            self.dp_type = TuyaDPType.ENUM
+        elif isinstance(value, int):
+            self.dp_type = TuyaDPType.VALUE
+        elif isinstance(value, str):
+            self.dp_type = TuyaDPType.STRING
+        else:
+            self.dp_type = TuyaDPType.RAW
+
+        self.payload = value
 
 
 class Data(t.List, item_type=t.uint8_t):
     """list of uint8_t."""
 
-    @classmethod
-    def from_value(cls, value):
+    def __init__(self, value=None):
         """Convert from a zigpy typed value to a tuya data payload."""
+        if value is None:
+            super().__init__()
+            return
+        if type(value) is list or type(value) is bytes:
+            super().__init__(value)
+            return
         # serialized in little-endian by zigpy
-        data = cls(value.serialize())
+        super().__init__(value.serialize())
         # we want big-endian, with length prepended
-        data.append(len(data))
-        data.reverse()
-        return data
+        self.append(len(self))
+        self.reverse()
 
-    def to_value(self, ztype):
-        """Convert from a tuya data payload to a zigpy typed value."""
+    def __int__(self):
+        """Convert from a tuya data payload to an int typed value."""
         # first uint8_t is the length of the remaining data
         # tuya data is in big endian whereas ztypes use little endian
-        value, _ = ztype.deserialize(bytes(reversed(self[1:])))
-        return value
+        ints = {
+            1: t.int8s,
+            2: t.int16s,
+            3: t.int24s,
+            4: t.int32s,
+            5: t.int40s,
+            6: t.int48s,
+            7: t.int56s,
+            8: t.int64s,
+        }
+        return ints[self[0]].deserialize(bytes(reversed(self[1:])))[0]
+
+    def __iter__(self):
+        """Convert from a tuya data payload to a list typed value."""
+        return iter(reversed(self[1:]))
+
+    def serialize(self) -> bytes:
+        """Overload serialize to avoid prior implicit conversion to list."""
+        assert self._item_type is not None
+        return b"".join([self._item_type(i).serialize() for i in self[:]])
+
+
+class TuyaDatapointData(t.Struct):
+    """Tuya Datapoint and Data."""
+
+    dp: t.uint8_t
+    data: TuyaData
 
 
 class TuyaCommand(t.Struct):
@@ -230,8 +282,7 @@ class TuyaCommand(t.Struct):
 
     status: t.uint8_t
     tsn: t.uint8_t
-    dp: t.uint8_t
-    data: TuyaData
+    datapoints: t.List[TuyaDatapointData]
 
 
 class NoManufacturerCluster(CustomCluster):
@@ -244,6 +295,7 @@ class NoManufacturerCluster(CustomCluster):
         manufacturer: Optional[Union[int, t.uint16_t]] = None,
         expect_reply: bool = True,
         tsn: Optional[Union[int, t.uint8_t]] = None,
+        **kwargs: Any,
     ):
         """Override the default Cluster command."""
         self.debug("Setting the NO manufacturer id in command: %s", command_id)
@@ -253,6 +305,7 @@ class NoManufacturerCluster(CustomCluster):
             manufacturer=foundation.ZCLHeader.NO_MANUFACTURER_ID,
             expect_reply=expect_reply,
             tsn=tsn,
+            **kwargs,
         )
 
 
@@ -437,7 +490,7 @@ class TuyaManufClusterAttributes(TuyaManufCluster):
             return
 
         ztype = self.attributes[tuya_cmd].type
-        zvalue = tuya_data.to_value(ztype)
+        zvalue = ztype(tuya_data)
         self._update_attribute(tuya_cmd, zvalue)
 
     def read_attributes(
@@ -460,7 +513,7 @@ class TuyaManufClusterAttributes(TuyaManufCluster):
             cmd_payload.tsn = self.endpoint.device.application.get_sequence()
             cmd_payload.command_id = record.attrid
             cmd_payload.function = 0
-            cmd_payload.data = Data.from_value(record.value.value)
+            cmd_payload.data = record.value.value
 
             await super().command(
                 TUYA_SET_DATA,
@@ -473,7 +526,47 @@ class TuyaManufClusterAttributes(TuyaManufCluster):
         return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
 
-class TuyaOnOff(CustomCluster, OnOff):
+class TuyaEnchantableCluster(CustomCluster):
+    """Tuya cluster that casts a magic spell if `TUYA_SPELL` is set.
+
+    Preferably, make the device inherit from `EnchantedDevice` and use a subclass of this class in the replacement.
+
+    This will only work for clusters that ZHA calls bind() on.
+    At the moment, ZHA does NOT do this for:
+    - Basic cluster
+    - Identify cluster
+    - Groups cluster
+    - OTA cluster
+    - GreenPowerProxy cluster
+    - LightLink cluster
+    - non-registered manufacturer specific clusters
+    - clusters which would be bound, but that changed their ep_attribute
+
+    Make sure to add a subclass of TuyaEnchantableCluster to the quirk replacement. Tests will fail if this is not done.
+    Classes like TuyaOnOff, TuyaZBOnOffAttributeCluster, TuyaNoBindPowerConfigurationCluster inherit from this class.
+    """
+
+    async def bind(self):
+        """Bind cluster and start casting the spell if necessary."""
+        # check if the device needs to have the spell cast
+        # and since the cluster can be used on multiple endpoints, check that it's endpoint 1
+        if (
+            getattr(self.endpoint.device, "TUYA_SPELL", False)
+            and self.endpoint.endpoint_id == 1
+        ):
+            await self.spell()
+        return await super().bind()
+
+    async def spell(self):
+        """Cast spell, so the Tuya device works correctly."""
+        self.debug("Executing spell on Tuya device %s", self.endpoint.device.ieee)
+        attr_to_read = [4, 0, 1, 5, 7, 0xFFFE]
+        basic_cluster = self.endpoint.device.endpoints[1].in_clusters[0]
+        await basic_cluster.read_attributes(attr_to_read)
+        self.debug("Executed spell on Tuya device %s", self.endpoint.device.ieee)
+
+
+class TuyaOnOff(TuyaEnchantableCluster, OnOff):
     """Tuya On/Off cluster for On/Off device."""
 
     def __init__(self, *args, **kwargs):
@@ -516,9 +609,13 @@ class TuyaOnOff(CustomCluster, OnOff):
                 TUYA_MCU_COMMAND,
                 cmd_payload,
             )
-            return foundation.Status.SUCCESS
+            return foundation.GENERAL_COMMANDS[
+                foundation.GeneralCommand.Default_Response
+            ].schema(command_id=command_id, status=foundation.Status.SUCCESS)
 
-        return foundation.Status.UNSUP_CLUSTER_COMMAND
+        return foundation.GENERAL_COMMANDS[
+            foundation.GeneralCommand.Default_Response
+        ].schema(command_id=command_id, status=foundation.Status.UNSUP_CLUSTER_COMMAND)
 
 
 class TuyaManufacturerClusterOnOff(TuyaManufCluster):
@@ -675,7 +772,9 @@ class TuyaThermostatCluster(LocalDataCluster, Thermostat):
         try:
             current = success[attrid]
         except KeyError:
-            return foundation.Status.FAILURE
+            return foundation.GENERAL_COMMANDS[
+                foundation.GeneralCommand.Default_Response
+            ].schema(command_id=command_id, status=foundation.Status.FAILURE)
 
         # offset is given in decidegrees, see Zigbee cluster specification
         (res,) = await self.write_attributes(
@@ -771,6 +870,31 @@ class TuyaLocalCluster(LocalDataCluster):
         return self._update_attribute(attr.id, value)
 
 
+class _TuyaNoBindPowerConfigurationCluster(CustomCluster, PowerConfiguration):
+    """PowerConfiguration cluster that prevents setting up binding/attribute reports in order to stop battery drain.
+
+    Note: Use the `TuyaNoBindPowerConfigurationCluster` class instead of this one.
+    """
+
+    async def bind(self):
+        """Prevent bind."""
+        return (foundation.Status.SUCCESS,)
+
+    async def _configure_reporting(self, *args, **kwargs):  # pylint: disable=W0221
+        """Prevent remote configure reporting."""
+        return (foundation.ConfigureReportingResponse.deserialize(b"\x00")[0],)
+
+
+# these classes are needed, so the execution order of bind() is still correct
+class TuyaNoBindPowerConfigurationCluster(
+    TuyaEnchantableCluster, _TuyaNoBindPowerConfigurationCluster
+):
+    """PowerConfiguration cluster that prevents setting up binding/attribute reports in order to stop battery drain.
+
+    This class is also enchantable, so it will cast the Tuya spell if the device inherits from `EnchantedDevice`.
+    """
+
+
 class TuyaPowerConfigurationCluster(PowerConfiguration, TuyaLocalCluster):
     """PowerConfiguration cluster for battery-operated thermostats."""
 
@@ -861,7 +985,7 @@ class PowerOnState(t.enum8):
     LastState = 0x02
 
 
-class TuyaZBOnOffAttributeCluster(CustomCluster, OnOff):
+class TuyaZBOnOffAttributeCluster(TuyaEnchantableCluster, OnOff):
     """Tuya Zigbee On Off cluster with extra attributes."""
 
     attributes = OnOff.attributes.copy()
@@ -949,13 +1073,23 @@ class TuyaSmartRemoteOnOffCluster(OnOff, EventableCluster):
             )
 
 
+MULTIPLIER = 0x0301
+DIVISOR = 0x0302
+
+
 # Tuya Zigbee Metering Cluster Correction Implementation
 class TuyaZBMeteringCluster(CustomCluster, Metering):
     """Divides the kWh for tuya."""
 
-    MULTIPLIER = 0x0301
-    DIVISOR = 0x0302
     _CONSTANT_ATTRIBUTES = {MULTIPLIER: 1, DIVISOR: 100}
+
+
+# Tuya Zigbee Metering Cluster Correction Implementation
+class TuyaZBMeteringClusterWithUnit(CustomCluster, Metering):
+    """Divides the kWh for tuya."""
+
+    UNIT_OF_MEASURE = 0x0300
+    _CONSTANT_ATTRIBUTES = {UNIT_OF_MEASURE: 0, MULTIPLIER: 1, DIVISOR: 100}
 
 
 class TuyaZBElectricalMeasurement(CustomCluster, ElectricalMeasurement):
@@ -970,9 +1104,9 @@ class TuyaZBElectricalMeasurement(CustomCluster, ElectricalMeasurement):
 class TuyaZBE000Cluster(CustomCluster):
     """Tuya manufacturer specific cluster 57344."""
 
-    name = "Tuya Manufacturer Specific"
+    name = "Tuya Manufacturer Specific 0"
     cluster_id = TUYA_CLUSTER_E000_ID
-    ep_attribute = "tuya_is_pita_0"
+    ep_attribute = "tuya_manufacturer_specific_57344"
 
 
 # Tuya Zigbee Cluster 0xE001 Implementation
@@ -991,6 +1125,15 @@ class TuyaZBExternalSwitchTypeCluster(CustomCluster):
     cluster_id = TUYA_CLUSTER_E001_ID
     ep_attribute = "tuya_external_switch_type"
     attributes = {0xD030: ("external_switch_type", ExternalSwitchType)}
+
+
+# Tuya Zigbee Cluster 0x1888 Implementation
+class TuyaZB1888Cluster(CustomCluster):
+    """Tuya manufacturer specific cluster 6280."""
+
+    name = "Tuya Manufacturer Specific 1"
+    cluster_id = TUYA_CLUSTER_1888_ID
+    ep_attribute = "tuya_manufacturer_specific_6280"
 
 
 # Tuya Window Cover Implementation
@@ -1269,13 +1412,15 @@ class TuyaLevelControl(CustomCluster, LevelControl):
         manufacturer: Optional[Union[int, t.uint16_t]] = None,
         expect_reply: bool = True,
         tsn: Optional[Union[int, t.uint8_t]] = None,
+        **kwargs: Any,
     ):
         """Override the default Cluster command."""
         _LOGGER.debug(
-            "%s Sending Tuya Cluster Command.. Cluster Command is %x, Arguments are %s",
+            "%s Sending Tuya Cluster Command.. Cluster Command is %x, Arguments are %s, %s",
             self.endpoint.device.ieee,
             command_id,
             args,
+            kwargs,
         )
         # Move to level
         # move_to_level_with_on_off
@@ -1285,7 +1430,14 @@ class TuyaLevelControl(CustomCluster, LevelControl):
             cmd_payload.tsn = 0
             cmd_payload.command_id = TUYA_LEVEL_COMMAND
             cmd_payload.function = 0
-            brightness = (args[0] * 1000) // 255
+
+            if kwargs and "level" in kwargs:
+                level = kwargs["level"]
+            elif args:
+                level = args[0]
+            else:
+                level = 0
+            brightness = (level * 1000) // 255
             val1 = brightness >> 8
             val2 = brightness & 0xFF
             cmd_payload.data = [4, 0, 0, val1, val2]  # Custom Command
@@ -1302,7 +1454,7 @@ class DPToAttributeMapping:
     """Container for datapoint to cluster attribute update mapping."""
 
     ep_attribute: str
-    attribute_name: str
+    attribute_name: Union[str, tuple]
     converter: Optional[
         Callable[
             [
@@ -1312,6 +1464,14 @@ class DPToAttributeMapping:
         ]
     ] = None
     endpoint_id: Optional[int] = None
+
+
+@dataclasses.dataclass
+class AttributeWithMask:
+    """Container for the attribute and its mask."""
+
+    value: Any
+    mask: int
 
 
 class TuyaNewManufCluster(CustomCluster):
@@ -1374,7 +1534,7 @@ class TuyaNewManufCluster(CustomCluster):
         """Handle cluster specific request."""
 
         try:
-            if hdr.is_reply:
+            if hdr.direction == foundation.Direction.Client_to_Server:
                 # server_cluster -> client_cluster cluster specific command
                 handler_name = f"handle_{self.client_commands[hdr.command_id].name}"
             else:
@@ -1404,14 +1564,21 @@ class TuyaNewManufCluster(CustomCluster):
 
     def handle_get_data(self, command: TuyaCommand) -> foundation.Status:
         """Handle get_data response (report)."""
-        try:
-            dp_handler = self.data_point_handlers[command.dp]
-            getattr(self, dp_handler)(command)
-        except (AttributeError, KeyError):
-            self.debug("No datapoint handler for %s", command)
-            return foundation.status.UNSUPPORTED_ATTRIBUTE
+        dp_error = False
+        for record in command.datapoints:
+            try:
+                dp_handler = self.data_point_handlers[record.dp]
+                getattr(self, dp_handler)(record)
+            except (AttributeError, KeyError):
+                self.debug("No datapoint handler for %s", record)
+                dp_error = True
+                # return foundation.Status.UNSUPPORTED_ATTRIBUTE
 
-        return foundation.Status.SUCCESS
+        return (
+            foundation.Status.SUCCESS
+            if not dp_error
+            else foundation.Status.UNSUPPORTED_ATTRIBUTE
+        )
 
     handle_set_data_response = handle_get_data
     handle_active_status_report = handle_get_data
@@ -1420,20 +1587,30 @@ class TuyaNewManufCluster(CustomCluster):
         """Handle Time set request."""
         return foundation.Status.SUCCESS
 
-    def _dp_2_attr_update(self, command: TuyaCommand) -> None:
+    def _dp_2_attr_update(self, datapoint: TuyaDatapointData) -> None:
         """Handle data point to attribute report conversion."""
         try:
-            dp_map = self.dp_to_attribute[command.dp]
+            dp_map = self.dp_to_attribute[datapoint.dp]
         except KeyError:
-            self.debug("No attribute mapping for %s data point", command.dp)
+            self.debug("No attribute mapping for %s data point", datapoint.dp)
             return
 
         endpoint = self.endpoint
         if dp_map.endpoint_id:
             endpoint = self.endpoint.device.endpoints[dp_map.endpoint_id]
         cluster = getattr(endpoint, dp_map.ep_attribute)
-        value = command.data.payload
+        value = datapoint.data.payload
         if dp_map.converter:
             value = dp_map.converter(value)
 
-        cluster.update_attribute(dp_map.attribute_name, value)
+        if isinstance(dp_map.attribute_name, tuple):
+            for k, v in zip(dp_map.attribute_name, value):
+                if isinstance(v, AttributeWithMask):
+                    v = cluster.get(k, 0) & (~v.mask) | v.value
+                cluster.update_attribute(k, v)
+        else:
+            if isinstance(value, AttributeWithMask):
+                value = (
+                    cluster.get(dp_map.attribute_name, 0) & (~value.mask) | value.value
+                )
+            cluster.update_attribute(dp_map.attribute_name, value)

@@ -1,5 +1,5 @@
 """Tuya dimmable led controller single channel."""
-from zigpy.profiles import zha
+from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
@@ -30,7 +30,15 @@ class DimmableLedController(CustomDevice):
     """Tuya dimmable led controller single channel."""
 
     signature = {
-        MODELS_INFO: [("_TZ3210_9q49basr", "TS0501B")],
+        MODELS_INFO: [
+            ("_TZ3210_9q49basr", "TS0501B"),
+            ("_TZ3210_4zinq6io", "TS0501B"),
+            ("_TZ3210_e5t9bfdv", "TS0501B"),
+            ("_TZ3210_i680rtja", "TS0501B"),
+            ("_TZ3210_dxroobu3", "TS0501B"),
+            ("_TZ3210_dbilpfqk", "TS0501B"),
+            ("_TZ3210_agjx0pxt", "TS0501B"),
+        ],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=257
             # input_clusters=[0, 3, 4, 5, 6, 8, 768, 4096, 61184]
@@ -55,8 +63,8 @@ class DimmableLedController(CustomDevice):
                 # <SimpleDescriptor endpoint=242 profile=41440 device_type=97
                 # input_clusters=[]
                 # output_clusters=[33]
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
@@ -79,8 +87,8 @@ class DimmableLedController(CustomDevice):
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },

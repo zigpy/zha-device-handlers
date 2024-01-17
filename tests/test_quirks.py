@@ -19,6 +19,7 @@ import zigpy.zdo.types
 
 import zhaquirks
 import zhaquirks.bosch.motion
+import zhaquirks.centralite.cl_3310S
 import zhaquirks.const as const
 from zhaquirks.const import (
     ARGS,
@@ -48,7 +49,10 @@ from zhaquirks.const import (
     PROFILE_ID,
     SKIP_CONFIGURATION,
 )
+import zhaquirks.konke
+import zhaquirks.philips
 from zhaquirks.xiaomi import XIAOMI_NODE_DESC
+import zhaquirks.xiaomi.aqara.vibration_aq1
 
 zhaquirks.setup()
 
@@ -387,6 +391,38 @@ def test_signature(quirk: CustomDevice) -> None:
             assert isinstance(node_desc, zigpy.zdo.types.NodeDescriptor)
 
 
+@pytest.mark.parametrize(
+    "quirk",
+    [
+        quirk_cls
+        for quirk_cls in ALL_QUIRK_CLASSES
+        if quirk_cls
+        not in (
+            # Some quirks do not yet have model info:
+            zhaquirks.xbee.xbee_io.XBeeSensor,
+            zhaquirks.xbee.xbee3_io.XBee3Sensor,
+            zhaquirks.tuya.ts0201.MoesTemperatureHumidtySensorWithScreen,
+            zhaquirks.smartthings.tag_v4.SmartThingsTagV4,
+            zhaquirks.smartthings.multi.SmartthingsMultiPurposeSensor,
+            zhaquirks.netvox.z308e3ed.Z308E3ED,
+            zhaquirks.gledopto.soposhgu10.SoposhGU10,
+        )
+    ],
+)
+def test_signature_model_info_given(quirk: CustomDevice) -> None:
+    """Verify that quirks have MODELS_INFO, MODEL or MANUFACTURER in their signature."""
+
+    if (
+        not quirk.signature.get(MODELS_INFO)
+        and not quirk.signature.get(MODEL)
+        and not quirk.signature.get(MANUFACTURER)
+    ):
+        pytest.fail(
+            f"Quirk {quirk} does not have MODELS_INFO, MODEL or MANUFACTURER in its signature. "
+            f"At least one of these is required."
+        )
+
+
 @pytest.mark.parametrize("quirk", ALL_QUIRK_CLASSES)
 def test_quirk_importable(quirk: CustomDevice) -> None:
     """Ensure all quirks can be imported with a normal Python `import` statement."""
@@ -397,8 +433,8 @@ def test_quirk_importable(quirk: CustomDevice) -> None:
     ), f"{path} is not importable"
 
 
-def test_quirk_loading_error(tmp_path: Path) -> None:
-    """Ensure quirks do not silently fail to load."""
+def test_quirk_loading_error(tmp_path: Path, caplog) -> None:
+    """Ensure quirks silently fail to load."""
 
     custom_quirks = tmp_path / "custom_zha_quirks"
     custom_quirks.mkdir()
@@ -407,19 +443,28 @@ def test_quirk_loading_error(tmp_path: Path) -> None:
 
     (custom_quirks / "bosch").mkdir()
     (custom_quirks / "bosch/__init__.py").touch()
-    # (custom_quirks / "bosch/custom_quirk.py").write_text('1/0')
 
-    # Syntax errors are not swallowed
+    # Syntax errors are swallowed
     (custom_quirks / "bosch/custom_quirk.py").write_text("1/")
 
-    with pytest.raises(SyntaxError):
-        zhaquirks.setup({zhaquirks.CUSTOM_QUIRKS_PATH: str(custom_quirks)})
+    caplog.clear()
+    zhaquirks.setup(custom_quirks_path=str(custom_quirks))
+    assert (
+        "Unexpected exception importing custom quirk 'bosch.custom_quirk'"
+        in caplog.text
+    )
+    assert "SyntaxError" in caplog.text
 
-    # Nor are import errors
+    # And so are import errors
     (custom_quirks / "bosch/custom_quirk.py").write_text("from os import foobarbaz7")
 
-    with pytest.raises(ImportError):
-        zhaquirks.setup({zhaquirks.CUSTOM_QUIRKS_PATH: str(custom_quirks)})
+    caplog.clear()
+    zhaquirks.setup(custom_quirks_path=str(custom_quirks))
+    assert (
+        "Unexpected exception importing custom quirk 'bosch.custom_quirk'"
+        in caplog.text
+    )
+    assert "cannot import name 'foobarbaz7' from 'os'" in caplog.text
 
 
 def test_custom_quirk_loading(
@@ -512,7 +557,7 @@ class TestReplacementISWZPR1WP13(CustomDevice):
 '''
     )
 
-    zhaquirks.setup({zhaquirks.CUSTOM_QUIRKS_PATH: str(custom_quirks)})
+    zhaquirks.setup(custom_quirks_path=str(custom_quirks))
 
     assert not isinstance(zq.get_device(device), zhaquirks.bosch.motion.ISWZPR1WP13)
     assert type(zq.get_device(device)).__name__ == "TestReplacementISWZPR1WP13"
@@ -586,24 +631,6 @@ def test_migrated_lighting_automation_triggers(quirk: CustomDevice) -> None:
 
 
 KNOWN_DUPLICATE_TRIGGERS = {
-    zhaquirks.xiaomi.aqara.sensor_swit.SwitchAQ3V2: [
-        [
-            (const.LONG_PRESS, const.LONG_PRESS),
-            (const.LONG_RELEASE, const.LONG_RELEASE),
-        ]
-    ],
-    zhaquirks.xiaomi.aqara.sensor_switch_aq3.SwitchAQ3: [
-        [
-            (const.LONG_PRESS, const.LONG_PRESS),
-            (const.LONG_RELEASE, const.LONG_RELEASE),
-        ]
-    ],
-    zhaquirks.xiaomi.aqara.sensor_switch_aq3.SwitchAQ3B: [
-        [
-            (const.LONG_PRESS, const.LONG_PRESS),
-            (const.LONG_RELEASE, const.LONG_RELEASE),
-        ]
-    ],
     zhaquirks.aurora.aurora_dimmer.AuroraDimmerBatteryPowered: [
         [
             # XXX: why is this constant defined in the module?
@@ -615,7 +642,7 @@ KNOWN_DUPLICATE_TRIGGERS = {
             (zhaquirks.aurora.aurora_dimmer.COLOR_DOWN, const.LEFT),
         ],
     ],
-    zhaquirks.ikea.fourbtnremote.IkeaTradfriRemote: [
+    zhaquirks.ikea.fourbtnremote.IkeaTradfriRemoteV1: [
         [
             (const.LONG_RELEASE, const.DIM_UP),
             (const.LONG_RELEASE, const.DIM_DOWN),
@@ -687,6 +714,18 @@ def test_quirk_device_automation_triggers_unique(quirk):
 def test_attributes_updated_not_replaced(quirk: CustomDevice) -> None:
     """Verify no quirks subclass a ZCL cluster but delete its attributes list."""
 
+    base_cluster_attrs_name = {}
+    base_cluster_attrs_id = {}
+
+    for name, cluster in zcl.clusters.CLUSTERS_BY_NAME.items():
+        assert cluster.ep_attribute not in base_cluster_attrs_name
+        base_cluster_attrs_name[cluster.ep_attribute] = set(
+            cluster.attributes_by_name.keys()
+        )
+        base_cluster_attrs_id[cluster.cluster_id] = set(
+            cluster.attributes_by_name.keys()
+        )
+
     for ep_id, ep_data in quirk.replacement[ENDPOINTS].items():
         for cluster in ep_data.get(INPUT_CLUSTERS, []) + ep_data.get(
             OUTPUT_CLUSTERS, []
@@ -697,6 +736,44 @@ def test_attributes_updated_not_replaced(quirk: CustomDevice) -> None:
                 continue
 
             assert issubclass(cluster, zigpy.quirks.CustomCluster)
+
+            # Check if attributes match based on cluster endpoint attribute
+            if not (
+                base_cluster_attrs_name.get(cluster.ep_attribute, set())
+                <= set(cluster.attributes_by_name.keys())
+            ):
+                missing_attrs = base_cluster_attrs_name[cluster.ep_attribute] - set(
+                    cluster.attributes_by_name.keys()
+                )
+
+                # A few are expected to fail and are handled by ZHA
+                if cluster not in (
+                    zhaquirks.centralite.cl_3310S.SmartthingsRelativeHumidityCluster,
+                ):
+                    pytest.fail(
+                        f"Cluster {cluster} with endpoint name {cluster.ep_attribute!r}"
+                        f" does not contain all named attributes: {missing_attrs}"
+                    )
+
+            # Check if attributes match based on cluster ID
+            if not (
+                base_cluster_attrs_id.get(cluster.cluster_id, set())
+                <= set(cluster.attributes_by_name.keys())
+            ):
+                missing_attrs = base_cluster_attrs_id[cluster.cluster_id] - set(
+                    cluster.attributes_by_name.keys()
+                )
+
+                # A few are expected to fail and are handled by ZHA
+                if cluster not in (
+                    zhaquirks.konke.KonkeOnOffCluster,
+                    zhaquirks.philips.PhilipsOccupancySensing,
+                    zhaquirks.xiaomi.aqara.vibration_aq1.VibrationAQ1.MultistateInputCluster,
+                ):
+                    pytest.fail(
+                        f"Cluster {cluster} with endpoint ID 0x{cluster.cluster_id:04X}"
+                        f" does not contain all named attributes: {missing_attrs}"
+                    )
 
             base_clusters = set(cluster.__mro__) & ALL_ZIGPY_CLUSTERS
 
@@ -709,8 +786,46 @@ def test_attributes_updated_not_replaced(quirk: CustomDevice) -> None:
             base_cluster = list(base_clusters)[0]
 
             # Ensure the attribute IDs are extended
-            if not set(base_cluster.attributes) <= set(cluster.attributes):
+            base_attr_ids = set(base_cluster.attributes)
+            quirk_attr_ids = set(cluster.attributes)
+
+            if not base_attr_ids <= quirk_attr_ids:
                 pytest.fail(
                     f"Cluster {cluster} deletes parent class's attributes instead of"
-                    f" extending them: {base_cluster}"
+                    f" extending them: {base_attr_ids - quirk_attr_ids}"
                 )
+
+            # Ensure the attribute names are extended
+            base_attr_names = {a.name for a in base_cluster.attributes.values()}
+            quirk_attr_names = {a.name for a in cluster.attributes.values()}
+
+            if not base_attr_names <= quirk_attr_names:
+                pytest.fail(
+                    f"Cluster {cluster} deletes parent class's attributes instead of"
+                    f" extending them: {base_attr_names - quirk_attr_names}"
+                )
+
+
+@pytest.mark.parametrize("quirk", ALL_QUIRK_CLASSES)
+def test_no_duplicate_clusters(quirk: CustomDevice) -> None:
+    """Verify no quirks contain clusters with duplicate cluster ids in the replacement."""
+
+    def check_for_duplicate_cluster_ids(clusters) -> None:
+        used_cluster_ids = set()
+
+        for cluster in clusters:
+            if isinstance(cluster, int):
+                cluster_id = cluster
+            else:
+                cluster_id = cluster.cluster_id
+
+            if cluster_id in used_cluster_ids:
+                pytest.fail(
+                    f"Cluster ID 0x{cluster_id:04X} is used more than once in the"
+                    f" replacement for endpoint {ep_id} in {quirk}"
+                )
+            used_cluster_ids.add(cluster_id)
+
+    for ep_id, ep_data in quirk.replacement[ENDPOINTS].items():
+        check_for_duplicate_cluster_ids(ep_data.get(INPUT_CLUSTERS, []))
+        check_for_duplicate_cluster_ids(ep_data.get(OUTPUT_CLUSTERS, []))

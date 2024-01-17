@@ -7,6 +7,7 @@ from zigpy.zcl.clusters.general import (
     PollControl,
     PowerConfiguration,
 )
+from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone
 
@@ -20,8 +21,6 @@ from zhaquirks.const import (
 )
 from zhaquirks.samjin import SAMJIN
 from zhaquirks.smartthings import SmartThingsAccelCluster
-
-DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
 
 
 class SmartthingsMultiPurposeSensor2019(CustomDevice):
@@ -44,7 +43,7 @@ class SmartthingsMultiPurposeSensor2019(CustomDevice):
                     PollControl.cluster_id,
                     TemperatureMeasurement.cluster_id,
                     IasZone.cluster_id,
-                    DIAGNOSTICS_CLUSTER_ID,
+                    Diagnostic.cluster_id,
                     SmartThingsAccelCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],
@@ -62,7 +61,7 @@ class SmartthingsMultiPurposeSensor2019(CustomDevice):
                     PollControl.cluster_id,
                     TemperatureMeasurement.cluster_id,
                     IasZone.cluster_id,
-                    DIAGNOSTICS_CLUSTER_ID,
+                    Diagnostic.cluster_id,
                     SmartThingsAccelCluster,
                 ],
                 OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],

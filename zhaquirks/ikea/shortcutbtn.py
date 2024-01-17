@@ -37,7 +37,7 @@ from zhaquirks.const import (
     SHORT_PRESS,
     TURN_ON,
 )
-from zhaquirks.ikea import IKEA, LightLinkCluster, PowerConfiguration1CRCluster
+from zhaquirks.ikea import IKEA, IKEA_CLUSTER_ID, DoublingPowerConfig1CRCluster
 
 
 class IkeaTradfriShortcutBtn(CustomDevice):
@@ -81,11 +81,11 @@ class IkeaTradfriShortcutBtn(CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.NON_COLOR_CONTROLLER,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    PowerConfiguration1CRCluster,
+                    DoublingPowerConfig1CRCluster,
                     Identify.cluster_id,
                     Alarms.cluster_id,
                     PollControl.cluster_id,
-                    LightLinkCluster,
+                    LightLink.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
@@ -137,7 +137,7 @@ class IkeaTradfriShortcutBtn2(CustomDevice):
                     Alarms.cluster_id,
                     PollControl.cluster_id,
                     LightLink.cluster_id,
-                    0xFC7C,  # IKEA Cluster
+                    IKEA_CLUSTER_ID,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
@@ -158,11 +158,11 @@ class IkeaTradfriShortcutBtn2(CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.NON_COLOR_CONTROLLER,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    PowerConfiguration1CRCluster,
+                    DoublingPowerConfig1CRCluster,
                     Identify.cluster_id,
                     Alarms.cluster_id,
                     PollControl.cluster_id,
-                    LightLinkCluster,
+                    LightLink.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,

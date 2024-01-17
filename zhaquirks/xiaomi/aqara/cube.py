@@ -1,5 +1,4 @@
 """Xiaomi mija lumi cube device."""
-import logging
 
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import (
@@ -121,13 +120,13 @@ MOVEMENT_TYPE_DESCRIPTION = {
     SLIDE_1_VALUE: "aqara logo on top",
     SLIDE_2_VALUE: "aqara logo facing user rotated 90 degrees right",
     SLIDE_3_VALUE: "aqara logo facing user upside down",
-    SLIDE_4_VALUE: "arara logo on bottom",
+    SLIDE_4_VALUE: "aqara logo on bottom",
     SLIDE_5_VALUE: "aqara logo facing user rotated 90 degrees left",
     SLIDE_6_VALUE: "aqara logo facing user upright",
     KNOCK_1_VALUE: "aqara logo on top",
     KNOCK_2_VALUE: "aqara logo facing user rotated 90 degrees right",
     KNOCK_3_VALUE: "aqara logo facing user upside down",
-    KNOCK_4_VALUE: "arara logo on bottom",
+    KNOCK_4_VALUE: "aqara logo on bottom",
     KNOCK_5_VALUE: "aqara logo facing user rotated 90 degrees left",
     KNOCK_6_VALUE: "aqara logo facing user upright",
 }
@@ -146,8 +145,6 @@ SIDES = {
     KNOCK_5_VALUE: 5,
     KNOCK_6_VALUE: 6,
 }
-
-_LOGGER = logging.getLogger(__name__)
 
 
 def extend_dict(dictionary, value, ranges):
@@ -170,8 +167,6 @@ class Cube(XiaomiQuickInitDevice):
     class MultistateInputCluster(CustomCluster, MultistateInput):
         """Multistate input cluster."""
 
-        cluster_id = MultistateInput.cluster_id
-
         def __init__(self, *args, **kwargs):
             """Init."""
             self._current_state = {}
@@ -185,7 +180,6 @@ class Cube(XiaomiQuickInitDevice):
                 )
                 event_args = {VALUE: value}
                 if action is not None:
-
                     if action in (SLIDE, KNOCK):
                         event_args[DESCRIPTION] = MOVEMENT_TYPE_DESCRIPTION[value]
                         event_args[ACTIVATED_FACE] = SIDES[value]
@@ -205,8 +199,6 @@ class Cube(XiaomiQuickInitDevice):
 
     class AnalogInputCluster(CustomCluster, AnalogInput):
         """Analog input cluster."""
-
-        cluster_id = AnalogInput.cluster_id
 
         def __init__(self, *args, **kwargs):
             """Init."""

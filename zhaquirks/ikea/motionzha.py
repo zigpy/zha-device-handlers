@@ -12,6 +12,7 @@ from zigpy.zcl.clusters.general import (
     PollControl,
     PowerConfiguration,
 )
+from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.lightlink import LightLink
 
 from zhaquirks.const import (
@@ -22,14 +23,16 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.ikea import IKEA, LightLinkCluster, PowerConfiguration2CRCluster
+from zhaquirks.ikea import (
+    IKEA,
+    IKEA_CLUSTER_ID,
+    WWAH_CLUSTER_ID,
+    DoublingPowerConfig2CRCluster,
+)
 
-IKEA_CLUSTER_ID = 0xFC7C  # decimal = 64636
-DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
 
-
-class IkeaTradfriMotion(CustomDevice):
-    """Custom device representing IKEA of Sweden TRADFRI remote control."""
+class IkeaTradfriMotionE1745_Var01(CustomDevice):
+    """Custom device representing IKEA of Sweden TRADFRI motion sensor E1745 second gen variation 1."""
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=2128
@@ -46,7 +49,7 @@ class IkeaTradfriMotion(CustomDevice):
                     PowerConfiguration.cluster_id,
                     Identify.cluster_id,
                     Alarms.cluster_id,
-                    DIAGNOSTICS_CLUSTER_ID,
+                    Diagnostic.cluster_id,
                     LightLink.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
@@ -67,11 +70,11 @@ class IkeaTradfriMotion(CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SENSOR,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    PowerConfiguration2CRCluster,
+                    DoublingPowerConfig2CRCluster,
                     Identify.cluster_id,
                     Alarms.cluster_id,
-                    DIAGNOSTICS_CLUSTER_ID,
-                    LightLinkCluster,
+                    Diagnostic.cluster_id,
+                    LightLink.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
@@ -85,8 +88,8 @@ class IkeaTradfriMotion(CustomDevice):
     }
 
 
-class IkeaTradfriMotionE1745(CustomDevice):
-    """Custom device representing IKEA of Sweden TRADFRI motion sensor E1745."""
+class IkeaTradfriMotionE1745_Var02(CustomDevice):
+    """Custom device representing IKEA of Sweden TRADFRI motion sensor E1745 second gen variation 2."""
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=2128
@@ -126,11 +129,11 @@ class IkeaTradfriMotionE1745(CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SENSOR,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    PowerConfiguration2CRCluster,
+                    DoublingPowerConfig2CRCluster,
                     Identify.cluster_id,
                     Alarms.cluster_id,
                     PollControl.cluster_id,
-                    LightLinkCluster,
+                    LightLink.cluster_id,
                     IKEA_CLUSTER_ID,
                 ],
                 OUTPUT_CLUSTERS: [
@@ -138,6 +141,65 @@ class IkeaTradfriMotionE1745(CustomDevice):
                     Groups.cluster_id,
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
+                    Ota.cluster_id,
+                    LightLink.cluster_id,
+                ],
+            }
+        }
+    }
+
+
+class IkeaTradfriMotionE1525_Var01(CustomDevice):
+    """Custom device representing IKEA of Sweden TRADFRI motion sensor E1525 first gen variation 1."""
+
+    signature = {
+        # <SimpleDescriptor endpoint=1 profile=260 device_type=2128
+        # device_version=1
+        # input_clusters=[0, 1, 3, 32, 4096, 64636]
+        # output_clusters=[3, 4, 6, 25, 4096]>
+        MODELS_INFO: [(IKEA, "TRADFRI motion sensor")],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SENSOR,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    Identify.cluster_id,
+                    PollControl.cluster_id,
+                    LightLink.cluster_id,
+                    IKEA_CLUSTER_ID,
+                    WWAH_CLUSTER_ID,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    OnOff.cluster_id,
+                    Ota.cluster_id,
+                    LightLink.cluster_id,
+                ],
+            }
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SENSOR,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    DoublingPowerConfig2CRCluster,
+                    Identify.cluster_id,
+                    PollControl.cluster_id,
+                    LightLink.cluster_id,
+                    IKEA_CLUSTER_ID,
+                    WWAH_CLUSTER_ID,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    OnOff.cluster_id,
                     Ota.cluster_id,
                     LightLink.cluster_id,
                 ],

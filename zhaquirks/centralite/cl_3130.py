@@ -9,6 +9,7 @@ from zigpy.zcl.clusters.general import (
     Ota,
     PollControl,
 )
+from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 
 from zhaquirks import PowerConfigurationCluster
@@ -33,13 +34,10 @@ from zhaquirks.const import (
 )
 from zhaquirks.osram import OSRAM
 
-DIAGNOSTICS_CLUSTER_ID = 0x0B05  # decimal = 2821
-
 
 class CustomPowerConfigurationCluster(PowerConfigurationCluster):
     """Custom PowerConfigurationCluster."""
 
-    cluster_id = PowerConfigurationCluster.cluster_id
     MIN_VOLTS = 2.1
     MAX_VOLTS = 3.0
 
@@ -63,7 +61,7 @@ class CentraLite3130(CustomDevice):
                     Identify.cluster_id,
                     PollControl.cluster_id,
                     TemperatureMeasurement.cluster_id,
-                    DIAGNOSTICS_CLUSTER_ID,
+                    Diagnostic.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
@@ -82,7 +80,7 @@ class CentraLite3130(CustomDevice):
                     CustomPowerConfigurationCluster,
                     Identify.cluster_id,
                     PollControl.cluster_id,
-                    DIAGNOSTICS_CLUSTER_ID,
+                    Diagnostic.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,

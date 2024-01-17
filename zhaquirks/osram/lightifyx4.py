@@ -1,6 +1,5 @@
 """Osram Lightify X4 device."""
 import copy
-import logging
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
@@ -44,9 +43,6 @@ from zhaquirks.osram import OSRAM
 OSRAM_DEVICE = 0x0810  # 2064 base 10
 OSRAM_CLUSTER = 0xFD00  # 64768 base 10
 OSRAM_MFG_CODE = 0x110C
-
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class OsramButtonCluster(CustomCluster):

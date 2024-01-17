@@ -1,5 +1,4 @@
 """Tint remote."""
-import logging
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
@@ -28,13 +27,9 @@ from zhaquirks.const import (
 
 TINT_SCENE_ATTR = 0x4005
 
-_LOGGER = logging.getLogger(__name__)
-
 
 class TintRemoteScenesCluster(LocalDataCluster, Scenes):
     """Tint remote cluster."""
-
-    cluster_id = Scenes.cluster_id
 
     def __init__(self, *args, **kwargs):
         """Init."""
@@ -49,12 +44,6 @@ class TintRemoteScenesCluster(LocalDataCluster, Scenes):
 
 class TintRemoteBasicCluster(CustomCluster, Basic):
     """Tint remote cluster."""
-
-    cluster_id = Basic.cluster_id
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
 
     def handle_cluster_general_request(self, hdr, args, *, dst_addressing=None):
         """Send write_attributes value to TintRemoteSceneCluster."""
