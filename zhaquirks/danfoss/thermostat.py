@@ -30,7 +30,7 @@ Broken ZCL Attributes:
 from datetime import datetime
 from typing import Any, Callable, List
 
-import zigpy.profiles.zha as zha_p
+from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.types import uint16_t
@@ -396,8 +396,8 @@ class DanfossThermostat(CustomDevice):
         ],
         ENDPOINTS: {
             1: {
-                PROFILE_ID: zha_p.PROFILE_ID,
-                DEVICE_TYPE: zha_p.DeviceType.THERMOSTAT,
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.THERMOSTAT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
@@ -417,16 +417,16 @@ class DanfossThermostat(CustomDevice):
         ENDPOINTS: {
             1: {
                 INPUT_CLUSTERS: [
-                    Basic,
-                    PowerConfiguration,
-                    Identify,
-                    DanfossTimeCluster,
-                    PollControl,
-                    DanfossThermostatCluster,
-                    DanfossUserInterfaceCluster,
-                    DanfossDiagnosticCluster,
+                    Basic.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    Identify.cluster_id,
+                    DanfossTimeCluster.cluster_id,
+                    PollControl.cluster_id,
+                    DanfossThermostatCluster.cluster_id,
+                    DanfossUserInterfaceCluster.cluster_id,
+                    DanfossDiagnosticCluster.cluster_id,
                 ],
-                OUTPUT_CLUSTERS: [Basic, Ota],
+                OUTPUT_CLUSTERS: [Basic.cluster_id, Ota.cluster_id],
             }
         }
     }
