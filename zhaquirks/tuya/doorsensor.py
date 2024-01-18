@@ -1,6 +1,6 @@
 """Doorsensors"""
 
-import zigpy.profiles.zha as zha_p
+from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
@@ -37,8 +37,8 @@ class DS01DoorSensor(CustomDevice):
         ENDPOINTS: {
             # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=1026, device_version=0, input_clusters=[0, 3, 1, 1280, 32], output_clusters=[25])
             1: {
-                PROFILE_ID: zha_p.PROFILE_ID,
-                DEVICE_TYPE: zha_p.DeviceType.IAS_ZONE,
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
