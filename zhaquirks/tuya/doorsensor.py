@@ -61,7 +61,7 @@ class DS01DoorSensor(CustomDevice):
                     IasZone.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
-                    Ota,
+                    Ota.cluster_id,
                 ],
             }
         }
