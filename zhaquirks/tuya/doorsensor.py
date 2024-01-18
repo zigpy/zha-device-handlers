@@ -54,7 +54,12 @@ class DS01DoorSensor(CustomDevice):
     replacement = {
         ENDPOINTS: {
             1: {
-                INPUT_CLUSTERS: [Basic, PowerConfiguration, Identify, IasZone],
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    Identify.cluster_id,
+                    IasZone.cluster_id,
+                ],
                 OUTPUT_CLUSTERS: [
                     Ota,
                 ],
