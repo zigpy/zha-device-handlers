@@ -4,7 +4,6 @@ from typing import Any, Dict
 
 import zigpy.types as t
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time
 from zigpy.zcl.clusters.measurement import (
     PH,
@@ -24,11 +23,18 @@ from zhaquirks.const import (
 )
 from zhaquirks.quirk_ids import TUYA_POOL_SENSOR
 from zhaquirks.tuya import TuyaLocalCluster, TuyaEnchantableCluster, TUYA_QUERY_DATA
-from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster, EnchantedDevice, TuyaPowerConfigurationCluster
+from zhaquirks.tuya.mcu import (
+    DPToAttributeMapping,
+    TuyaMCUCluster,
+    EnchantedDevice,
+    TuyaPowerConfigurationCluster,
+)
+
 
 # Make the TuyaPowerConfigurationCluster ENchantable, with a specific spell.
-class MyTuyaPowerConfigurationCluster(TuyaPowerConfigurationCluster, TuyaEnchantableCluster):
-
+class MyTuyaPowerConfigurationCluster(
+    TuyaPowerConfigurationCluster, TuyaEnchantableCluster
+):
     async def spell(self):
         """Cast spell, so the Tuya device works correctly."""
         # normal spell (also needed):
@@ -39,19 +45,29 @@ class MyTuyaPowerConfigurationCluster(TuyaPowerConfigurationCluster, TuyaEnchant
         self.debug("Executed spell on Tuya device %s", self.endpoint.device.ieee)
 
         # new part for sending command with id 3 on `0xEF00` cluster
-        self.debug("Executing data query spell on Tuya device %s", self.endpoint.device.ieee)
-        tuya_manuf_cluster = self.endpoint.device.endpoints[1].in_clusters[TuyaMCUCluster.cluster_id]
+        self.debug(
+            "Executing data query spell on Tuya device %s", self.endpoint.device.ieee
+        )
+        tuya_manuf_cluster = self.endpoint.device.endpoints[1].in_clusters[
+            TuyaMCUCluster.cluster_id
+        ]
         await tuya_manuf_cluster.command(TUYA_QUERY_DATA)
-        self.debug("Executed data query spell on Tuya device %s", self.endpoint.device.ieee)
+        self.debug(
+            "Executed data query spell on Tuya device %s", self.endpoint.device.ieee
+        )
+
 
 class TuyaTemperatureMeasurement(TemperatureMeasurement, TuyaLocalCluster):
     """Tuya local TemperatureMeasurement cluster."""
 
+
 class TuyaPH(PH, TuyaLocalCluster):
     """Tuya local pH cluster."""
 
+
 class TuyaORP(TuyaLocalCluster):
     """Tuya local Oxido-Reduction Potential cluster."""
+
     cluster_id = 0x042F
     name = "ORP Level"
     ep_attribute = "redox_potential"
@@ -68,6 +84,7 @@ class TuyaORP(TuyaLocalCluster):
 
 class TuyaTDS(TuyaLocalCluster):
     """Tuya local Total Dissolved Solids cluster."""
+
     cluster_id = 0x0430
     name = "TDS Level"
     ep_attribute = "total_dissolved_solids"
@@ -85,11 +102,14 @@ class TuyaTDS(TuyaLocalCluster):
 class TuyaSodiumConcentration(SodiumConcentration, TuyaLocalCluster):
     """Tuya local NaCl cluster."""
 
+
 class TuyaElectricalConductivity(ElectricalConductivity, TuyaLocalCluster):
     """Tuya local Electrical Conductivity cluster."""
 
+
 class TuyaChlorineConcentration(ChlorineConcentration, TuyaLocalCluster):
     """Tuya local Chlorine Concentration cluster with a device RH_MULTIPLIER factor."""
+
 
 class PoolManufCluster(TuyaMCUCluster):
     """Tuya Manufacturer Cluster with Pool data points."""
@@ -113,10 +133,11 @@ class PoolManufCluster(TuyaMCUCluster):
     def _update_attribute(self, attrid: int, value: Any) -> None:
         """Catch button attribute to emit data_query."""
         super()._update_attribute(attrid, value)
-        if attrid == "0xEF09":
-            tuya_manuf_cluster = self.endpoint.device.endpoints[1].in_clusters[TuyaMCUCluster.cluster_id]
+        if attrid == 0xEF09:
+            tuya_manuf_cluster = self.endpoint.device.endpoints[1].in_clusters[
+                TuyaMCUCluster.cluster_id
+            ]
             tuya_manuf_cluster.command(TUYA_QUERY_DATA)
-
 
     dp_to_attribute: Dict[int, DPToAttributeMapping] = {
         1: DPToAttributeMapping(
@@ -153,36 +174,36 @@ class PoolManufCluster(TuyaMCUCluster):
             "measured_value",
         ),
         106: DPToAttributeMapping(
-             TuyaMCUCluster.ep_attribute,
-             "ph_max_value",
+            TuyaMCUCluster.ep_attribute,
+            "ph_max_value",
         ),
         107: DPToAttributeMapping(
-             TuyaMCUCluster.ep_attribute,
-             "ph_min_value",
+            TuyaMCUCluster.ep_attribute,
+            "ph_min_value",
         ),
         108: DPToAttributeMapping(
-             TuyaMCUCluster.ep_attribute,
-             "ec_max_value",
+            TuyaMCUCluster.ep_attribute,
+            "ec_max_value",
         ),
         109: DPToAttributeMapping(
-             TuyaMCUCluster.ep_attribute,
-             "ec_min_value",
+            TuyaMCUCluster.ep_attribute,
+            "ec_min_value",
         ),
         110: DPToAttributeMapping(
-             TuyaMCUCluster.ep_attribute,
-             "orp_max_value",
+            TuyaMCUCluster.ep_attribute,
+            "orp_max_value",
         ),
         111: DPToAttributeMapping(
-             TuyaMCUCluster.ep_attribute,
-             "orp_min_value",
+            TuyaMCUCluster.ep_attribute,
+            "orp_min_value",
         ),
         112: DPToAttributeMapping(
-             TuyaMCUCluster.ep_attribute,
-             "cl_max_value",
+            TuyaMCUCluster.ep_attribute,
+            "cl_max_value",
         ),
         113: DPToAttributeMapping(
-             TuyaMCUCluster.ep_attribute,
-             "cl_min_value",
+            TuyaMCUCluster.ep_attribute,
+            "cl_min_value",
         ),
         # TODO 114: PH Calibration
         # TODO 115: EC Calibration
@@ -257,7 +278,7 @@ class TuyaPoolSensor(EnchantedDevice):
                     TuyaTDS,
                     TuyaElectricalConductivity,
                     TuyaSodiumConcentration,
-                    MyTuyaPowerConfigurationCluster
+                    MyTuyaPowerConfigurationCluster,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id, Time.cluster_id],
             }
