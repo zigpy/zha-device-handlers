@@ -46,14 +46,14 @@ class MyTuyaPowerConfigurationCluster(
 
         # new part for sending command with id 3 on `0xEF00` cluster
         self.debug(
-            "Executing data query spell on Tuya device %s", self.endpoint.device.ieee
+            "Executing data query on Tuya device %s", self.endpoint.device.ieee
         )
         tuya_manuf_cluster = self.endpoint.device.endpoints[1].in_clusters[
             TuyaMCUCluster.cluster_id
         ]
         await tuya_manuf_cluster.command(TUYA_QUERY_DATA)
         self.debug(
-            "Executed data query spell on Tuya device %s", self.endpoint.device.ieee
+            "Executed data query on Tuya device %s", self.endpoint.device.ieee
         )
 
 
