@@ -22,7 +22,8 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import TuyaLocalCluster, TuyaEnchantableCluster
+from zhaquirks.quirk_ids import TUYA_POOL_SENSOR
+from zhaquirks.tuya import TuyaLocalCluster, TuyaEnchantableCluster, TUYA_QUERY_DATA
 from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster, EnchantedDevice, TuyaPowerConfigurationCluster
 
 # Make the TuyaPowerConfigurationCluster ENchantable, with a specific spell.
@@ -40,7 +41,7 @@ class MyTuyaPowerConfigurationCluster(TuyaPowerConfigurationCluster, TuyaEnchant
         # new part for sending command with id 3 on `0xEF00` cluster
         self.debug("Executing data query spell on Tuya device %s", self.endpoint.device.ieee)
         tuya_manuf_cluster = self.endpoint.device.endpoints[1].in_clusters[TuyaMCUCluster.cluster_id]
-        await tuya_manuf_cluster.command(0x03)
+        await tuya_manuf_cluster.command(TUYA_QUERY_DATA)
         self.debug("Executed data query spell on Tuya device %s", self.endpoint.device.ieee)
 
 class TuyaTemperatureMeasurement(TemperatureMeasurement, TuyaLocalCluster):
@@ -96,17 +97,26 @@ class PoolManufCluster(TuyaMCUCluster):
     attributes = TuyaMCUCluster.attributes.copy()
     attributes.update(
         {
-            # ramdom attribute IDs
-            0xEF01: ("dp_106", t.uint32_t, True),
-            0xEF02: ("dp_107", t.uint32_t, True),
-            0xEF03: ("dp_108", t.uint32_t, True),
-            0xEF04: ("dp_109", t.uint32_t, True),
-            0xEF05: ("dp_110", t.uint32_t, True),
-            0xEF06: ("dp_111", t.uint32_t, True),
-            0xEF07: ("dp_112", t.uint32_t, True),
-            0xEF08: ("dp_113", t.uint32_t, True),
+            # random attribute IDs
+            0xEF01: ("ph_min_value", t.uint32_t, True),
+            0xEF02: ("ph_max_value", t.uint32_t, True),
+            0xEF03: ("cl_min_value", t.uint32_t, True),
+            0xEF04: ("cl_max_value", t.uint32_t, True),
+            0xEF05: ("ec_min_value", t.uint32_t, True),
+            0xEF06: ("ec_max_value", t.uint32_t, True),
+            0xEF07: ("orp_min_value", t.uint32_t, True),
+            0xEF08: ("orp_max_value", t.uint32_t, True),
+            0xEF09: ("update", t.Single, True),
         }
     )
+
+    def _update_attribute(self, attrid: int, value: Any) -> None:
+        """Catch button attribute to emit data_query."""
+        super()._update_attribute(attrid, value)
+        if attrid == "0xEF09":
+            tuya_manuf_cluster = self.endpoint.device.endpoints[1].in_clusters[TuyaMCUCluster.cluster_id]
+            tuya_manuf_cluster.command(TUYA_QUERY_DATA)
+
 
     dp_to_attribute: Dict[int, DPToAttributeMapping] = {
         1: DPToAttributeMapping(
@@ -144,35 +154,35 @@ class PoolManufCluster(TuyaMCUCluster):
         ),
         106: DPToAttributeMapping(
              TuyaMCUCluster.ep_attribute,
-             "dp_106",
+             "ph_max_value",
         ),
         107: DPToAttributeMapping(
              TuyaMCUCluster.ep_attribute,
-             "dp_107",
+             "ph_min_value",
         ),
         108: DPToAttributeMapping(
              TuyaMCUCluster.ep_attribute,
-             "dp_108",
+             "ec_max_value",
         ),
         109: DPToAttributeMapping(
              TuyaMCUCluster.ep_attribute,
-             "dp_109",
+             "ec_min_value",
         ),
         110: DPToAttributeMapping(
              TuyaMCUCluster.ep_attribute,
-             "dp_110",
+             "orp_max_value",
         ),
         111: DPToAttributeMapping(
              TuyaMCUCluster.ep_attribute,
-             "dp_111",
+             "orp_min_value",
         ),
         112: DPToAttributeMapping(
              TuyaMCUCluster.ep_attribute,
-             "dp_112",
+             "cl_max_value",
         ),
         113: DPToAttributeMapping(
              TuyaMCUCluster.ep_attribute,
-             "dp-113",
+             "cl_min_value",
         ),
         # TODO 114: PH Calibration
         # TODO 115: EC Calibration
@@ -205,6 +215,8 @@ class PoolManufCluster(TuyaMCUCluster):
 
 class TuyaPoolSensor(EnchantedDevice):
     """Tuya Pool sensor."""
+
+    quirk_id = TUYA_POOL_SENSOR
 
     signature = {
         # "profile_id": 260,
