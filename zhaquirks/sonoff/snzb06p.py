@@ -29,9 +29,8 @@ class IlluminationStatus(t.enum8):
 class SonoffFC11Cluster(CustomCluster):
     """Sonoff manufacture specific cluster that provides illuminance."""
 
-    name = "Sonoff Manufacture Specific Cluster at 0xFC11"
     cluster_id = SONOFF_CLUSTER_FC11_ID
-    ep_attribute = "sonoff_manufacturer_specific_FC11"
+    ep_attribute = "sonoff_manufacturer"
     attributes = {
         ATTR_SONOFF_ILLUMINATION_STATUS: ("last_illumination_state", IlluminationStatus)
     }
