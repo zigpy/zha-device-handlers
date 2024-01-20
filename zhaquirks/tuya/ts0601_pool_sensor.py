@@ -2,14 +2,14 @@
 
 from typing import Any, Dict
 
-import zigpy.types as t
 from zigpy.profiles import zha
+import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time
 from zigpy.zcl.clusters.measurement import (
     PH,
-    SodiumConcentration,
-    ElectricalConductivity,
     ChlorineConcentration,
+    ElectricalConductivity,
+    SodiumConcentration,
     TemperatureMeasurement,
 )
 
@@ -22,11 +22,11 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.quirk_ids import TUYA_POOL_SENSOR
-from zhaquirks.tuya import TuyaLocalCluster, TuyaEnchantableCluster, TUYA_QUERY_DATA
+from zhaquirks.tuya import TUYA_QUERY_DATA, TuyaEnchantableCluster, TuyaLocalCluster
 from zhaquirks.tuya.mcu import (
     DPToAttributeMapping,
-    TuyaMCUCluster,
     EnchantedDevice,
+    TuyaMCUCluster,
     TuyaPowerConfigurationCluster,
 )
 
