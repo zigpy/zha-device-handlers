@@ -31,9 +31,9 @@ from zhaquirks.tuya.mcu import (
 )
 
 
-# Make the TuyaPowerConfigurationCluster ENchantable, with a specific spell.
+# Make the TuyaPowerConfigurationCluster Enchantable, with a specific spell.
 class MyTuyaPowerConfigurationCluster(
-    TuyaPowerConfigurationCluster, TuyaEnchantableCluster
+    TuyaEnchantableCluster, TuyaPowerConfigurationCluster
 ):
     async def spell(self):
         """Cast spell, so the Tuya device works correctly."""
