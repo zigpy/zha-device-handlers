@@ -1,4 +1,4 @@
-from typing import Any, Coroutine, Union
+from typing import Any, Coroutine, Dict, Union
 
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
@@ -11,7 +11,7 @@ from zigpy.zcl.foundation import ZCLAttributeDef
 class SEBasic(CustomCluster, Basic):
     """Schneider Electric manufacturer specific Basic cluster."""
 
-    attributes: dict[int, ZCLAttributeDef] = Basic.attributes.copy()
+    attributes: Dict[int, ZCLAttributeDef] = Basic.attributes.copy()
 
     attributes.update(
         {
@@ -62,7 +62,7 @@ class SEBasic(CustomCluster, Basic):
 class SEWindowCovering(CustomCluster, WindowCovering):
     """Schneider Electric manufacturer specific Window Covering cluster."""
 
-    attributes: dict[int, ZCLAttributeDef] = WindowCovering.attributes.copy()
+    attributes: Dict[int, ZCLAttributeDef] = WindowCovering.attributes.copy()
 
     attributes.update(
         {
