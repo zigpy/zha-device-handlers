@@ -7,7 +7,7 @@
     - [Shutter](#shutter)
       - [NHPB/SHUTTER/1 ❌](#nhpbshutter1-)
       - [PUCK/SHUTTER/1 ❌](#puckshutter1-)
-      - [1GANG/SHUTTER/1 ❔](#1gangshutter1-)
+      - [1GANG/SHUTTER/1 ✅](#1gangshutter1-)
     - [Switch](#switch)
       - [CH2AX/SWITCH/1 ❌](#ch2axswitch1-)
       - [CH10AX/SWITCH/1 ❌](#ch10axswitch1-)
@@ -80,6 +80,8 @@ Sources :
 Lift percentage is reversed
 
 #### NHPB/SHUTTER/1 ❌
+
+Additional information may be found in [this partial pull request](https://github.com/zigpy/zha-device-handlers/issues/1685).
 
 <details>
     <summary>Device signature</summary>
@@ -2011,7 +2013,1643 @@ From [Jeedom community](https://community.jeedom.com/t/plugin-zigbee-beta-blabla
 
 </details>
 
-#### 1GANG/SHUTTER/1 ❔
+#### 1GANG/SHUTTER/1 ✅
+
+This is the Merten Wiser push-button device MEG5113-0300. 
+
+The only known way to calibrate this device is to manually set the desired lift duration (in seconds) via the provided `SEWindowCovering` cluster.
+
+<details>
+    <summary>Device signature</summary>
+
+```json
+{
+  "node_descriptor": "NodeDescriptor(logical_type=<LogicalType.Router: 1>, complex_descriptor_available=0, user_descriptor_available=0, reserved=0, aps_flags=0, frequency_band=<FrequencyBand.Freq2400MHz: 8>, mac_capability_flags=<MACCapabilityFlags.FullFunctionDevice|MainsPowered|RxOnWhenIdle|AllocateAddress: 142>, manufacturer_code=4190, maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=10752, maximum_outgoing_transfer_size=82, descriptor_capability_field=<DescriptorCapability.NONE: 0>, *allocate_address=True, *is_alternate_pan_coordinator=False, *is_coordinator=False, *is_end_device=False, *is_full_function_device=True, *is_mains_powered=True, *is_receiver_on_when_idle=True, *is_router=True, *is_security_capable=False)",
+  "endpoints": {
+    "5": {
+      "profile_id": "0x0104",
+      "device_type": "0x0202",
+      "input_clusters": [
+        "0x0000",
+        "0x0003",
+        "0x0004",
+        "0x0005",
+        "0x0102",
+        "0x0b05"
+      ],
+      "output_clusters": [
+        "0x0019"
+      ]
+    },
+    "21": {
+      "profile_id": "0x0104",
+      "device_type": "0x0104",
+      "input_clusters": [
+        "0x0000",
+        "0x0003",
+        "0x0b05",
+        "0xff17"
+      ],
+      "output_clusters": [
+        "0x0003",
+        "0x0005",
+        "0x0006",
+        "0x0008",
+        "0x0019",
+        "0x0102"
+      ]
+    }
+  },
+  "manufacturer": "Schneider Electric",
+  "model": "1GANG/SHUTTER/1",
+  "class": "zigpy.device.Device"
+}
+```
+
+</details>
+
+<details>
+    <summary>zha_toolkit.scan_device</summary>
+
+```json
+{
+  "ieee": "68:0a:e2:xx:xx:xx:xx:xe",
+  "nwk": "0xa848",
+  "model": "1GANG/SHUTTER/1",
+  "manufacturer": "Schneider Electric",
+  "manufacturer_id": "0x4190",
+  "endpoints": [
+    {
+      "id": 5,
+      "device_type": "0x0202",
+      "profile": "0x0104",
+      "in_clusters": {
+        "0x0000": {
+          "cluster_id": "0x0000",
+          "title": "Basic",
+          "name": "basic",
+          "attributes": {
+            "0x0000": {
+              "attribute_id": "0x0000",
+              "attribute_name": "zcl_version",
+              "value_type": [
+                "0x20",
+                "uint8_t",
+                "Analog"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": 2
+            },
+            "0x0001": {
+              "attribute_id": "0x0001",
+              "attribute_name": "app_version",
+              "value_type": [
+                "0x20",
+                "uint8_t",
+                "Analog"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": 1
+            },
+            "0x0002": {
+              "attribute_id": "0x0002",
+              "attribute_name": "stack_version",
+              "value_type": [
+                "0x20",
+                "uint8_t",
+                "Analog"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": 5
+            },
+            "0x0003": {
+              "attribute_id": "0x0003",
+              "attribute_name": "hw_version",
+              "value_type": [
+                "0x20",
+                "uint8_t",
+                "Analog"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": 1
+            },
+            "0x0004": {
+              "attribute_id": "0x0004",
+              "attribute_name": "manufacturer",
+              "value_type": [
+                "0x42",
+                "CharacterString",
+                "Discrete"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": "Schneider Electric"
+            },
+            "0x0005": {
+              "attribute_id": "0x0005",
+              "attribute_name": "model",
+              "value_type": [
+                "0x42",
+                "CharacterString",
+                "Discrete"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": "1GANG/SHUTTER/1"
+            },
+            "0x0006": {
+              "attribute_id": "0x0006",
+              "attribute_name": "date_code",
+              "value_type": [
+                "0x42",
+                "CharacterString",
+                "Discrete"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": ""
+            },
+            "0x0007": {
+              "attribute_id": "0x0007",
+              "attribute_name": "power_source",
+              "value_type": [
+                "0x30",
+                "enum8",
+                "Discrete"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": 1
+            },
+            "0x0008": {
+              "attribute_id": "0x0008",
+              "attribute_name": "generic_device_class",
+              "value_type": [
+                "0x30",
+                "enum8",
+                "Discrete"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": 0
+            },
+            "0x0009": {
+              "attribute_id": "0x0009",
+              "attribute_name": "generic_device_type",
+              "value_type": [
+                "0x30",
+                "enum8",
+                "Discrete"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": 225
+            },
+            "0x000a": {
+              "attribute_id": "0x000a",
+              "attribute_name": "product_code",
+              "value_type": [
+                "0x41",
+                "LVBytes",
+                "Discrete"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": ""
+            },
+            "0x000b": {
+              "attribute_id": "0x000b",
+              "attribute_name": "product_url",
+              "value_type": [
+                "0x42",
+                "CharacterString",
+                "Discrete"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": "http://www.schneider-electric.com"
+            },
+            "0x4000": {
+              "attribute_id": "0x4000",
+              "attribute_name": "sw_build_id",
+              "value_type": [
+                "0x42",
+                "CharacterString",
+                "Discrete"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": "001.005.005 R"
+            },
+            "0xfffd": {
+              "attribute_id": "0xfffd",
+              "attribute_name": "cluster_revision",
+              "value_type": [
+                "0x21",
+                "uint16_t",
+                "Analog"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": 1
+            },
+            "0xe001": {
+              "attribute_id": "0xe001",
+              "attribute_name": "57345",
+              "value_type": [
+                "0x42",
+                "CharacterString",
+                "Discrete"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "manf_id": 4190,
+              "attribute_value": "001.005.005 R"
+            },
+            "0xe002": {
+              "attribute_id": "0xe002",
+              "attribute_name": "57346",
+              "value_type": [
+                "0x42",
+                "CharacterString",
+                "Discrete"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "manf_id": 4190,
+              "attribute_value": "001.000.000"
+            },
+            "0xe004": {
+              "attribute_id": "0xe004",
+              "attribute_name": "57348",
+              "value_type": [
+                "0x42",
+                "CharacterString",
+                "Discrete"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "manf_id": 4190,
+              "attribute_value": "5E5338FEFFE20A6"
+            },
+            "0xe007": {
+              "attribute_id": "0xe007",
+              "attribute_name": "57351",
+              "value_type": [
+                "0x31",
+                "enum16",
+                "Discrete"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "manf_id": 4190,
+              "attribute_value": 17500
+            },
+            "0xe008": {
+              "attribute_id": "0xe008",
+              "attribute_name": "57352",
+              "value_type": [
+                "0x42",
+                "CharacterString",
+                "Discrete"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "manf_id": 4190,
+              "attribute_value": "Wiser Light"
+            },
+            "0xe009": {
+              "attribute_id": "0xe009",
+              "attribute_name": "57353",
+              "value_type": [
+                "0x42",
+                "CharacterString",
+                "Discrete"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "manf_id": 4190,
+              "attribute_value": "1GANG/SHUTTER/1"
+            },
+            "0xe00a": {
+              "attribute_id": "0xe00a",
+              "attribute_name": "57354",
+              "value_type": [
+                "0x42",
+                "CharacterString",
+                "Discrete"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "manf_id": 4190,
+              "attribute_value": "Wiser Home"
+            },
+            "0xe00b": {
+              "attribute_id": "0xe00b",
+              "attribute_name": "57355",
+              "value_type": [
+                "0x42",
+                "CharacterString",
+                "Discrete"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "manf_id": 4190
+            }
+          },
+          "commands_received": {
+            "0x00": {
+              "command_id": "0x00",
+              "command_name": "reset_fact_default",
+              "command_arguments": "<class 'zigpy.zcl.foundation.reset_fact_default'>"
+            }
+          },
+          "commands_generated": {}
+        },
+        "0x0003": {
+          "cluster_id": "0x0003",
+          "title": "Identify",
+          "name": "identify",
+          "attributes": {
+            "0x0000": {
+              "attribute_id": "0x0000",
+              "attribute_name": "identify_time",
+              "value_type": [
+                "0x21",
+                "uint16_t",
+                "Analog"
+              ],
+              "access": "READ|WRITE|REPORT",
+              "access_acl": 7,
+              "attribute_value": 0
+            },
+            "0xfffd": {
+              "attribute_id": "0xfffd",
+              "attribute_name": "cluster_revision",
+              "value_type": [
+                "0x21",
+                "uint16_t",
+                "Analog"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": 1
+            }
+          },
+          "commands_received": {},
+          "commands_generated": {
+            "0x00": {
+              "command_id": "0x00",
+              "command_name": "identify_query_response",
+              "command_args": "<class 'zigpy.zcl.foundation.identify_query_response'>"
+            }
+          }
+        },
+        "0x0004": {
+          "cluster_id": "0x0004",
+          "title": "Groups",
+          "name": "groups",
+          "attributes": {
+            "0x0000": {
+              "attribute_id": "0x0000",
+              "attribute_name": "name_support",
+              "value_type": [
+                "0x18",
+                "bitmap8",
+                "Discrete"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": 0
+            },
+            "0xfffd": {
+              "attribute_id": "0xfffd",
+              "attribute_name": "cluster_revision",
+              "value_type": [
+                "0x21",
+                "uint16_t",
+                "Analog"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": 1
+            }
+          },
+          "commands_received": {
+            "0x00": {
+              "command_id": "0x00",
+              "command_name": "add",
+              "command_arguments": "<class 'zigpy.zcl.foundation.add'>"
+            },
+            "0x01": {
+              "command_id": "0x01",
+              "command_name": "view",
+              "command_arguments": "<class 'zigpy.zcl.foundation.view'>"
+            },
+            "0x02": {
+              "command_id": "0x02",
+              "command_name": "get_membership",
+              "command_arguments": "<class 'zigpy.zcl.foundation.get_membership'>"
+            },
+            "0x03": {
+              "command_id": "0x03",
+              "command_name": "remove",
+              "command_arguments": "<class 'zigpy.zcl.foundation.remove'>"
+            },
+            "0x04": {
+              "command_id": "0x04",
+              "command_name": "remove_all",
+              "command_arguments": "<class 'zigpy.zcl.foundation.remove_all'>"
+            },
+            "0x05": {
+              "command_id": "0x05",
+              "command_name": "add_if_identifying",
+              "command_arguments": "<class 'zigpy.zcl.foundation.add_if_identifying'>"
+            }
+          },
+          "commands_generated": {
+            "0x00": {
+              "command_id": "0x00",
+              "command_name": "add_response",
+              "command_args": "<class 'zigpy.zcl.foundation.add_response'>"
+            },
+            "0x01": {
+              "command_id": "0x01",
+              "command_name": "view_response",
+              "command_args": "<class 'zigpy.zcl.foundation.view_response'>"
+            },
+            "0x02": {
+              "command_id": "0x02",
+              "command_name": "get_membership_response",
+              "command_args": "<class 'zigpy.zcl.foundation.get_membership_response'>"
+            },
+            "0x03": {
+              "command_id": "0x03",
+              "command_name": "remove_response",
+              "command_args": "<class 'zigpy.zcl.foundation.remove_response'>"
+            }
+          }
+        },
+        "0x0005": {
+          "cluster_id": "0x0005",
+          "title": "Scenes",
+          "name": "scenes",
+          "attributes": {
+            "0x0000": {
+              "attribute_id": "0x0000",
+              "attribute_name": "count",
+              "value_type": [
+                "0x20",
+                "uint8_t",
+                "Analog"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": 0
+            },
+            "0x0001": {
+              "attribute_id": "0x0001",
+              "attribute_name": "current_scene",
+              "value_type": [
+                "0x20",
+                "uint8_t",
+                "Analog"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": 0
+            },
+            "0x0002": {
+              "attribute_id": "0x0002",
+              "attribute_name": "current_group",
+              "value_type": [
+                "0x21",
+                "uint16_t",
+                "Analog"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": 0
+            },
+            "0x0003": {
+              "attribute_id": "0x0003",
+              "attribute_name": "scene_valid",
+              "value_type": [
+                "0x10",
+                "Bool",
+                "Discrete"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": 0
+            },
+            "0x0004": {
+              "attribute_id": "0x0004",
+              "attribute_name": "name_support",
+              "value_type": [
+                "0x18",
+                "bitmap8",
+                "Discrete"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": 0
+            },
+            "0xfffd": {
+              "attribute_id": "0xfffd",
+              "attribute_name": "cluster_revision",
+              "value_type": [
+                "0x21",
+                "uint16_t",
+                "Analog"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": 1
+            }
+          },
+          "commands_received": {
+            "0x00": {
+              "command_id": "0x00",
+              "command_name": "add",
+              "command_arguments": "<class 'zigpy.zcl.foundation.add'>"
+            },
+            "0x01": {
+              "command_id": "0x01",
+              "command_name": "view",
+              "command_arguments": "<class 'zigpy.zcl.foundation.view'>"
+            },
+            "0x02": {
+              "command_id": "0x02",
+              "command_name": "remove",
+              "command_arguments": "<class 'zigpy.zcl.foundation.remove'>"
+            },
+            "0x03": {
+              "command_id": "0x03",
+              "command_name": "remove_all",
+              "command_arguments": "<class 'zigpy.zcl.foundation.remove_all'>"
+            },
+            "0x04": {
+              "command_id": "0x04",
+              "command_name": "store",
+              "command_arguments": "<class 'zigpy.zcl.foundation.store'>"
+            },
+            "0x05": {
+              "command_id": "0x05",
+              "command_name": "recall",
+              "command_arguments": "<class 'zigpy.zcl.foundation.recall'>"
+            },
+            "0x06": {
+              "command_id": "0x06",
+              "command_name": "get_scene_membership",
+              "command_arguments": "<class 'zigpy.zcl.foundation.get_scene_membership'>"
+            }
+          },
+          "commands_generated": {
+            "0x00": {
+              "command_id": "0x00",
+              "command_name": "add_scene_response",
+              "command_args": "<class 'zigpy.zcl.foundation.add_scene_response'>"
+            },
+            "0x01": {
+              "command_id": "0x01",
+              "command_name": "view_response",
+              "command_args": "<class 'zigpy.zcl.foundation.view_response'>"
+            },
+            "0x02": {
+              "command_id": "0x02",
+              "command_name": "remove_scene_response",
+              "command_args": "<class 'zigpy.zcl.foundation.remove_scene_response'>"
+            },
+            "0x03": {
+              "command_id": "0x03",
+              "command_name": "remove_all_scenes_response",
+              "command_args": "<class 'zigpy.zcl.foundation.remove_all_scenes_response'>"
+            },
+            "0x04": {
+              "command_id": "0x04",
+              "command_name": "store_scene_response",
+              "command_args": "<class 'zigpy.zcl.foundation.store_scene_response'>"
+            },
+            "0x06": {
+              "command_id": "0x06",
+              "command_name": "get_scene_membership_response",
+              "command_args": "<class 'zigpy.zcl.foundation.get_scene_membership_response'>"
+            }
+          }
+        },
+        "0x0102": {
+          "cluster_id": "0x0102",
+          "title": "Window Covering",
+          "name": "window_covering",
+          "attributes": {
+            "0x0000": {
+              "attribute_id": "0x0000",
+              "attribute_name": "window_covering_type",
+              "value_type": [
+                "0x30",
+                "enum8",
+                "Discrete"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": 0
+            },
+            "0x0007": {
+              "attribute_id": "0x0007",
+              "attribute_name": "config_status",
+              "value_type": [
+                "0x18",
+                "bitmap8",
+                "Discrete"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": 3
+            },
+            "0x0008": {
+              "attribute_id": "0x0008",
+              "attribute_name": "current_position_lift_percentage",
+              "value_type": [
+                "0x20",
+                "uint8_t",
+                "Analog"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": 100
+            },
+            "0x0017": {
+              "attribute_id": "0x0017",
+              "attribute_name": "window_covering_mode",
+              "value_type": [
+                "0x18",
+                "bitmap8",
+                "Discrete"
+              ],
+              "access": "READ|WRITE|REPORT",
+              "access_acl": 7,
+              "attribute_value": 8
+            },
+            "0xfffd": {
+              "attribute_id": "0xfffd",
+              "attribute_name": "65533",
+              "value_type": [
+                "0x21",
+                "uint16_t",
+                "Analog"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": 1
+            },
+            "0xe000": {
+              "attribute_id": "0xe000",
+              "attribute_name": "57344",
+              "value_type": [
+                "0x21",
+                "uint16_t",
+                "Analog"
+              ],
+              "access": "READ|WRITE|REPORT",
+              "access_acl": 7,
+              "manf_id": 4190,
+              "attribute_value": 120
+            },
+            "0xe010": {
+              "attribute_id": "0xe010",
+              "attribute_name": "57360",
+              "value_type": [
+                "0x18",
+                "bitmap8",
+                "Discrete"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "manf_id": 4190,
+              "attribute_value": 0
+            },
+            "0xe012": {
+              "attribute_id": "0xe012",
+              "attribute_name": "57362",
+              "value_type": [
+                "0x21",
+                "uint16_t",
+                "Analog"
+              ],
+              "access": "READ|WRITE|REPORT",
+              "access_acl": 7,
+              "manf_id": 4190,
+              "attribute_value": 32767
+            },
+            "0xe013": {
+              "attribute_id": "0xe013",
+              "attribute_name": "57363",
+              "value_type": [
+                "0x18",
+                "bitmap8",
+                "Discrete"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "manf_id": 4190,
+              "attribute_value": 0
+            }
+          },
+          "commands_received": {},
+          "commands_generated": {}
+        },
+        "0x0b05": {
+          "cluster_id": "0x0b05",
+          "title": "Diagnostic",
+          "name": "diagnostic",
+          "attributes": {
+            "0x011c": {
+              "attribute_id": "0x011c",
+              "attribute_name": "last_message_lqi",
+              "value_type": [
+                "0x20",
+                "uint8_t",
+                "Analog"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": 236
+            },
+            "0x011d": {
+              "attribute_id": "0x011d",
+              "attribute_name": "last_message_rssi",
+              "value_type": [
+                "0x28",
+                "int8s",
+                "Analog"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": -41
+            },
+            "0xfffd": {
+              "attribute_id": "0xfffd",
+              "attribute_name": "cluster_revision",
+              "value_type": [
+                "0x21",
+                "uint16_t",
+                "Analog"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": 1
+            }
+          },
+          "commands_received": {},
+          "commands_generated": {}
+        }
+      },
+      "out_clusters": {
+        "0x0019": {
+          "cluster_id": "0x0019",
+          "title": "Ota",
+          "name": "ota",
+          "attributes": {
+            "0x0000": {
+              "attribute_id": "0x0000",
+              "attribute_name": "upgrade_server_id",
+              "value_type": [
+                "0xf0",
+                "EUI64",
+                "Discrete"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": [
+                255,
+                255,
+                255,
+                255,
+                255,
+                255,
+                255,
+                255
+              ]
+            },
+            "0x0002": {
+              "attribute_id": "0x0002",
+              "attribute_name": "current_file_version",
+              "value_type": [
+                "0x23",
+                "uint32_t",
+                "Analog"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": 17106431
+            },
+            "0x0006": {
+              "attribute_id": "0x0006",
+              "attribute_name": "image_upgrade_status",
+              "value_type": [
+                "0x30",
+                "enum8",
+                "Discrete"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": 0
+            },
+            "0x0007": {
+              "attribute_id": "0x0007",
+              "attribute_name": "manufacturer_id",
+              "value_type": [
+                "0x21",
+                "uint16_t",
+                "Analog"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": 4190
+            },
+            "0x0008": {
+              "attribute_id": "0x0008",
+              "attribute_name": "image_type_id",
+              "value_type": [
+                "0x21",
+                "uint16_t",
+                "Analog"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": 11
+            }
+          },
+          "commands_received": {},
+          "commands_generated": {
+            "0x01": {
+              "command_id": "0x01",
+              "command_name": "1",
+              "command_args": "not_in_zcl"
+            },
+            "0x03": {
+              "command_id": "0x03",
+              "command_name": "3",
+              "command_args": "not_in_zcl"
+            },
+            "0x06": {
+              "command_id": "0x06",
+              "command_name": "6",
+              "command_args": "not_in_zcl"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": 21,
+      "device_type": "0x0104",
+      "profile": "0x0104",
+      "in_clusters": {
+        "0x0000": {
+          "cluster_id": "0x0000",
+          "title": "Basic",
+          "name": "basic",
+          "attributes": {
+            "0x0000": {
+              "attribute_id": "0x0000",
+              "attribute_name": "zcl_version",
+              "value_type": [
+                "0x20",
+                "uint8_t",
+                "Analog"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": 2
+            },
+            "0x0001": {
+              "attribute_id": "0x0001",
+              "attribute_name": "app_version",
+              "value_type": [
+                "0x20",
+                "uint8_t",
+                "Analog"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": 1
+            },
+            "0x0002": {
+              "attribute_id": "0x0002",
+              "attribute_name": "stack_version",
+              "value_type": [
+                "0x20",
+                "uint8_t",
+                "Analog"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": 5
+            },
+            "0x0003": {
+              "attribute_id": "0x0003",
+              "attribute_name": "hw_version",
+              "value_type": [
+                "0x20",
+                "uint8_t",
+                "Analog"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": 1
+            },
+            "0x0004": {
+              "attribute_id": "0x0004",
+              "attribute_name": "manufacturer",
+              "value_type": [
+                "0x42",
+                "CharacterString",
+                "Discrete"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": "Schneider Electric"
+            },
+            "0x0005": {
+              "attribute_id": "0x0005",
+              "attribute_name": "model",
+              "value_type": [
+                "0x42",
+                "CharacterString",
+                "Discrete"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": "1GANG/SHUTTER/1"
+            },
+            "0x0006": {
+              "attribute_id": "0x0006",
+              "attribute_name": "date_code",
+              "value_type": [
+                "0x42",
+                "CharacterString",
+                "Discrete"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": ""
+            },
+            "0x0007": {
+              "attribute_id": "0x0007",
+              "attribute_name": "power_source",
+              "value_type": [
+                "0x30",
+                "enum8",
+                "Discrete"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": 1
+            },
+            "0x0008": {
+              "attribute_id": "0x0008",
+              "attribute_name": "generic_device_class",
+              "value_type": [
+                "0x30",
+                "enum8",
+                "Discrete"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": 0
+            },
+            "0x0009": {
+              "attribute_id": "0x0009",
+              "attribute_name": "generic_device_type",
+              "value_type": [
+                "0x30",
+                "enum8",
+                "Discrete"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": 225
+            },
+            "0x000a": {
+              "attribute_id": "0x000a",
+              "attribute_name": "product_code",
+              "value_type": [
+                "0x41",
+                "LVBytes",
+                "Discrete"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": ""
+            },
+            "0x000b": {
+              "attribute_id": "0x000b",
+              "attribute_name": "product_url",
+              "value_type": [
+                "0x42",
+                "CharacterString",
+                "Discrete"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": "http://www.schneider-electric.com"
+            },
+            "0x4000": {
+              "attribute_id": "0x4000",
+              "attribute_name": "sw_build_id",
+              "value_type": [
+                "0x42",
+                "CharacterString",
+                "Discrete"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": "001.005.005 R"
+            },
+            "0xfffd": {
+              "attribute_id": "0xfffd",
+              "attribute_name": "cluster_revision",
+              "value_type": [
+                "0x21",
+                "uint16_t",
+                "Analog"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": 1
+            },
+            "0xe001": {
+              "attribute_id": "0xe001",
+              "attribute_name": "57345",
+              "value_type": [
+                "0x42",
+                "CharacterString",
+                "Discrete"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "manf_id": 4190,
+              "attribute_value": "001.005.005 R"
+            },
+            "0xe002": {
+              "attribute_id": "0xe002",
+              "attribute_name": "57346",
+              "value_type": [
+                "0x42",
+                "CharacterString",
+                "Discrete"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "manf_id": 4190,
+              "attribute_value": "001.000.000"
+            },
+            "0xe004": {
+              "attribute_id": "0xe004",
+              "attribute_name": "57348",
+              "value_type": [
+                "0x42",
+                "CharacterString",
+                "Discrete"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "manf_id": 4190,
+              "attribute_value": "5E5338FEFFE20A6"
+            },
+            "0xe007": {
+              "attribute_id": "0xe007",
+              "attribute_name": "57351",
+              "value_type": [
+                "0x31",
+                "enum16",
+                "Discrete"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "manf_id": 4190,
+              "attribute_value": 17500
+            },
+            "0xe008": {
+              "attribute_id": "0xe008",
+              "attribute_name": "57352",
+              "value_type": [
+                "0x42",
+                "CharacterString",
+                "Discrete"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "manf_id": 4190,
+              "attribute_value": "Wiser Light"
+            },
+            "0xe009": {
+              "attribute_id": "0xe009",
+              "attribute_name": "57353",
+              "value_type": [
+                "0x42",
+                "CharacterString",
+                "Discrete"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "manf_id": 4190,
+              "attribute_value": "1GANG/SHUTTER/1"
+            },
+            "0xe00a": {
+              "attribute_id": "0xe00a",
+              "attribute_name": "57354",
+              "value_type": [
+                "0x42",
+                "CharacterString",
+                "Discrete"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "manf_id": 4190,
+              "attribute_value": "Wiser Home"
+            },
+            "0xe00b": {
+              "attribute_id": "0xe00b",
+              "attribute_name": "57355",
+              "value_type": [
+                "0x42",
+                "CharacterString",
+                "Discrete"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "manf_id": 4190
+            }
+          },
+          "commands_received": {
+            "0x00": {
+              "command_id": "0x00",
+              "command_name": "reset_fact_default",
+              "command_arguments": "<class 'zigpy.zcl.foundation.reset_fact_default'>"
+            }
+          },
+          "commands_generated": {}
+        },
+        "0x0003": {
+          "cluster_id": "0x0003",
+          "title": "Identify",
+          "name": "identify",
+          "attributes": {
+            "0x0000": {
+              "attribute_id": "0x0000",
+              "attribute_name": "identify_time",
+              "value_type": [
+                "0x21",
+                "uint16_t",
+                "Analog"
+              ],
+              "access": "READ|WRITE|REPORT",
+              "access_acl": 7,
+              "attribute_value": 0
+            },
+            "0xfffd": {
+              "attribute_id": "0xfffd",
+              "attribute_name": "cluster_revision",
+              "value_type": [
+                "0x21",
+                "uint16_t",
+                "Analog"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": 1
+            }
+          },
+          "commands_received": {},
+          "commands_generated": {
+            "0x00": {
+              "command_id": "0x00",
+              "command_name": "identify_query_response",
+              "command_args": "<class 'zigpy.zcl.foundation.identify_query_response'>"
+            }
+          }
+        },
+        "0x0b05": {
+          "cluster_id": "0x0b05",
+          "title": "Diagnostic",
+          "name": "diagnostic",
+          "attributes": {
+            "0x011c": {
+              "attribute_id": "0x011c",
+              "attribute_name": "last_message_lqi",
+              "value_type": [
+                "0x20",
+                "uint8_t",
+                "Analog"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": 232
+            },
+            "0x011d": {
+              "attribute_id": "0x011d",
+              "attribute_name": "last_message_rssi",
+              "value_type": [
+                "0x28",
+                "int8s",
+                "Analog"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": -42
+            },
+            "0xfffd": {
+              "attribute_id": "0xfffd",
+              "attribute_name": "cluster_revision",
+              "value_type": [
+                "0x21",
+                "uint16_t",
+                "Analog"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": 1
+            }
+          },
+          "commands_received": {},
+          "commands_generated": {}
+        },
+        "0xff17": {
+          "cluster_id": "0xff17",
+          "title": "Manufacturer Specific",
+          "name": "manufacturer_specific",
+          "attributes": {
+            "0x0000": {
+              "attribute_id": "0x0000",
+              "attribute_name": "0",
+              "value_type": [
+                "0x30",
+                "enum8",
+                "Discrete"
+              ],
+              "access": "READ|WRITE|REPORT",
+              "access_acl": 7,
+              "manf_id": 4190,
+              "attribute_value": 0
+            },
+            "0x0001": {
+              "attribute_id": "0x0001",
+              "attribute_name": "1",
+              "value_type": [
+                "0x30",
+                "enum8",
+                "Discrete"
+              ],
+              "access": "READ|WRITE|REPORT",
+              "access_acl": 7,
+              "manf_id": 4190,
+              "attribute_value": 3
+            },
+            "0x0010": {
+              "attribute_id": "0x0010",
+              "attribute_name": "16",
+              "value_type": [
+                "0x20",
+                "uint8_t",
+                "Analog"
+              ],
+              "access": "READ|WRITE|REPORT",
+              "access_acl": 7,
+              "manf_id": 4190,
+              "attribute_value": 0
+            },
+            "0x0011": {
+              "attribute_id": "0x0011",
+              "attribute_name": "17",
+              "value_type": [
+                "0x21",
+                "uint16_t",
+                "Analog"
+              ],
+              "access": "READ|WRITE|REPORT",
+              "access_acl": 7,
+              "manf_id": 4190,
+              "attribute_value": 0
+            },
+            "0x0020": {
+              "attribute_id": "0x0020",
+              "attribute_name": "32",
+              "value_type": [
+                "0x20",
+                "uint8_t",
+                "Analog"
+              ],
+              "access": "READ|WRITE|REPORT",
+              "access_acl": 7,
+              "manf_id": 4190,
+              "attribute_value": 1
+            },
+            "0x0021": {
+              "attribute_id": "0x0021",
+              "attribute_name": "33",
+              "value_type": [
+                "0x21",
+                "uint16_t",
+                "Analog"
+              ],
+              "access": "READ|WRITE|REPORT",
+              "access_acl": 7,
+              "manf_id": 4190,
+              "attribute_value": 0
+            },
+            "0xfffd": {
+              "attribute_id": "0xfffd",
+              "attribute_name": "65533",
+              "value_type": [
+                "0x21",
+                "uint16_t",
+                "Analog"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "manf_id": 4190,
+              "attribute_value": 1
+            }
+          },
+          "commands_received": {},
+          "commands_generated": {}
+        }
+      },
+      "out_clusters": {
+        "0x0003": {
+          "cluster_id": "0x0003",
+          "title": "Identify",
+          "name": "identify",
+          "attributes": {},
+          "commands_received": {
+            "0x00": {
+              "command_id": "0x00",
+              "command_name": "identify",
+              "command_arguments": "<class 'zigpy.zcl.foundation.identify'>"
+            }
+          },
+          "commands_generated": {
+            "0x00": {
+              "command_id": "0x00",
+              "command_name": "identify_query_response",
+              "command_args": "<class 'zigpy.zcl.foundation.identify_query_response'>"
+            },
+            "0x01": {
+              "command_id": "0x01",
+              "command_name": "1",
+              "command_args": "not_in_zcl"
+            }
+          }
+        },
+        "0x0005": {
+          "cluster_id": "0x0005",
+          "title": "Scenes",
+          "name": "scenes",
+          "attributes": {},
+          "commands_received": {},
+          "commands_generated": {
+            "0x00": {
+              "command_id": "0x00",
+              "command_name": "add_scene_response",
+              "command_args": "<class 'zigpy.zcl.foundation.add_scene_response'>"
+            },
+            "0x01": {
+              "command_id": "0x01",
+              "command_name": "view_response",
+              "command_args": "<class 'zigpy.zcl.foundation.view_response'>"
+            },
+            "0x02": {
+              "command_id": "0x02",
+              "command_name": "remove_scene_response",
+              "command_args": "<class 'zigpy.zcl.foundation.remove_scene_response'>"
+            },
+            "0x03": {
+              "command_id": "0x03",
+              "command_name": "remove_all_scenes_response",
+              "command_args": "<class 'zigpy.zcl.foundation.remove_all_scenes_response'>"
+            },
+            "0x04": {
+              "command_id": "0x04",
+              "command_name": "store_scene_response",
+              "command_args": "<class 'zigpy.zcl.foundation.store_scene_response'>"
+            },
+            "0x05": {
+              "command_id": "0x05",
+              "command_name": "5",
+              "command_args": "not_in_zcl"
+            },
+            "0x06": {
+              "command_id": "0x06",
+              "command_name": "get_scene_membership_response",
+              "command_args": "<class 'zigpy.zcl.foundation.get_scene_membership_response'>"
+            }
+          }
+        },
+        "0x0006": {
+          "cluster_id": "0x0006",
+          "title": "On/Off",
+          "name": "on_off",
+          "attributes": {},
+          "commands_received": {},
+          "commands_generated": {
+            "0x00": {
+              "command_id": "0x00",
+              "command_name": "0",
+              "command_args": "not_in_zcl"
+            },
+            "0x01": {
+              "command_id": "0x01",
+              "command_name": "1",
+              "command_args": "not_in_zcl"
+            },
+            "0x02": {
+              "command_id": "0x02",
+              "command_name": "2",
+              "command_args": "not_in_zcl"
+            }
+          }
+        },
+        "0x0008": {
+          "cluster_id": "0x0008",
+          "title": "Level control",
+          "name": "level",
+          "attributes": {},
+          "commands_received": {},
+          "commands_generated": {
+            "0x00": {
+              "command_id": "0x00",
+              "command_name": "0",
+              "command_args": "not_in_zcl"
+            },
+            "0x01": {
+              "command_id": "0x01",
+              "command_name": "1",
+              "command_args": "not_in_zcl"
+            },
+            "0x02": {
+              "command_id": "0x02",
+              "command_name": "2",
+              "command_args": "not_in_zcl"
+            },
+            "0x03": {
+              "command_id": "0x03",
+              "command_name": "3",
+              "command_args": "not_in_zcl"
+            },
+            "0x04": {
+              "command_id": "0x04",
+              "command_name": "4",
+              "command_args": "not_in_zcl"
+            },
+            "0x05": {
+              "command_id": "0x05",
+              "command_name": "5",
+              "command_args": "not_in_zcl"
+            },
+            "0x06": {
+              "command_id": "0x06",
+              "command_name": "6",
+              "command_args": "not_in_zcl"
+            },
+            "0x07": {
+              "command_id": "0x07",
+              "command_name": "7",
+              "command_args": "not_in_zcl"
+            }
+          }
+        },
+        "0x0019": {
+          "cluster_id": "0x0019",
+          "title": "Ota",
+          "name": "ota",
+          "attributes": {
+            "0x0000": {
+              "attribute_id": "0x0000",
+              "attribute_name": "upgrade_server_id",
+              "value_type": [
+                "0xf0",
+                "EUI64",
+                "Discrete"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": [
+                109,
+                245,
+                34,
+                254,
+                255,
+                39,
+                135,
+                4
+              ]
+            },
+            "0x0002": {
+              "attribute_id": "0x0002",
+              "attribute_name": "current_file_version",
+              "value_type": [
+                "0x23",
+                "uint32_t",
+                "Analog"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": 17106431
+            },
+            "0x0006": {
+              "attribute_id": "0x0006",
+              "attribute_name": "image_upgrade_status",
+              "value_type": [
+                "0x30",
+                "enum8",
+                "Discrete"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": 0
+            },
+            "0x0007": {
+              "attribute_id": "0x0007",
+              "attribute_name": "manufacturer_id",
+              "value_type": [
+                "0x21",
+                "uint16_t",
+                "Analog"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": 4190
+            },
+            "0x0008": {
+              "attribute_id": "0x0008",
+              "attribute_name": "image_type_id",
+              "value_type": [
+                "0x21",
+                "uint16_t",
+                "Analog"
+              ],
+              "access": "READ|REPORT",
+              "access_acl": 5,
+              "attribute_value": 11
+            }
+          },
+          "commands_received": {},
+          "commands_generated": {
+            "0x01": {
+              "command_id": "0x01",
+              "command_name": "1",
+              "command_args": "not_in_zcl"
+            },
+            "0x03": {
+              "command_id": "0x03",
+              "command_name": "3",
+              "command_args": "not_in_zcl"
+            },
+            "0x06": {
+              "command_id": "0x06",
+              "command_name": "6",
+              "command_args": "not_in_zcl"
+            }
+          }
+        },
+        "0x0102": {
+          "cluster_id": "0x0102",
+          "title": "Window Covering",
+          "name": "window_covering",
+          "attributes": {},
+          "commands_received": {},
+          "commands_generated": {
+            "0x00": {
+              "command_id": "0x00",
+              "command_name": "0",
+              "command_args": "not_in_zcl"
+            },
+            "0x01": {
+              "command_id": "0x01",
+              "command_name": "1",
+              "command_args": "not_in_zcl"
+            },
+            "0x02": {
+              "command_id": "0x02",
+              "command_name": "2",
+              "command_args": "not_in_zcl"
+            }
+          }
+        }
+      }
+    }
+  ]
+}
+```
+
+</details>
 
 ### Switch
 
@@ -4247,7 +5885,7 @@ From [Jeedom community](https://community.jeedom.com/t/plugin-zigbee-beta-blabla
 
 [zigbee2mqtt](https://www.zigbee2mqtt.io/devices/550D6001.html)
 
-> Depending on the firmware version the device may support both 1-channel and 2-channel mode. In 1-channel mode both the upper and lower buttons works as the upper buttons. On some firmware versions (incl. those sold as Elko EKO07117) the device starts out in 1-channel mode and must be switched into 2-channel mode either by using the Elko / Wiser gateway or by holding down button 1 and 4 (upper left and lower right) for approx. 10 seconds - the led will flash red and the become green once successfull.
+> Depending on the firmware version the device may support both 1-channel and 2-channel mode. In 1-channel mode both the upper and lower buttons works as the upper buttons. On some firmware versions (incl. those sold as Elko EKO07117) the device starts out in 1-channel mode and must be switched into 2-channel mode either by using the Elko / Wiser gateway or by holding down button 1 and 4 (upper left and lower right) for approx. 10 seconds - the led will flash red and the become green once successful.
 
 [zigbee-herdsman-converters](https://github.com/Koenkk/zigbee-herdsman-converters/blob/d1f00202a79a5cd4b6548dd1d15057895a3e6666/devices/schneider_electric.js#L292-L311)
 
