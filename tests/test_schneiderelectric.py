@@ -91,6 +91,26 @@ async def test_1gang_shutter_1_go_to_lift_percentage_cmd(zigpy_device_from_quirk
         assert request_mock.call_args[0][3] == 42  # 100 - 58
 
 
+async def test_1gang_shutter_1_unpatched_cmd(zigpy_device_from_quirk):
+    """Asserts that unpatched ZCL commands keep working."""
+
+    device = zigpy_device_from_quirk(
+        zhaquirks.schneiderelectric.devices.shutters.OneGangShutter1
+    )
+    window_covering_cluster = device.endpoints[5].window_covering
+
+    p = mock.patch.object(window_covering_cluster, "request", mock.AsyncMock())
+    with p as request_mock:
+        request_mock.return_value = (foundation.Status.SUCCESS, "done")
+
+        await window_covering_cluster.up_open()
+
+        assert request_mock.call_count == 1
+        assert request_mock.call_args[0][1] == (
+            WindowCovering.ServerCommandDefs.up_open.id
+        )
+
+
 async def test_1gang_shutter_1_lift_percentage_updates(zigpy_device_from_quirk):
     """Asserts that updates to the ``current_position_lift_percentage`` attribute
     (e.g., by the device) invert the reported percentage value."""
