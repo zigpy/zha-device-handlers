@@ -184,3 +184,56 @@ class TuyaSmartRemote0041TOPlusA(CustomDevice):
         (LONG_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: LONG_PRESS},
         (DOUBLE_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: DOUBLE_PRESS},
     }
+
+
+class TuyaSmartRemote0041_var04(CustomDevice):
+    """Tuya 1-button remote device with time on out cluster."""
+
+    signature = {
+        MODEL: "TS0041A",
+        ENDPOINTS: {
+            # "profile_id": 260,
+            # "device_type": "0x0000",
+            # "in_clusters": ["0x0000","0x0001","0x0006"],
+            # "out_clusters": ["0x0006","0x000a","0x0019"]
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    OnOff.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [
+                    OnOff.cluster_id,
+                    Time.cluster_id,
+                    Ota.cluster_id,
+                ],
+            },
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    TuyaSmartRemoteOnOffCluster,
+                ],
+                OUTPUT_CLUSTERS: [
+                    OnOff.cluster_id,
+                    Time.cluster_id,
+                    Ota.cluster_id,
+                ],
+            },
+        },
+    }
+
+    device_automation_triggers = {
+        (SHORT_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: SHORT_PRESS},
+        (LONG_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: LONG_PRESS},
+        (DOUBLE_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: DOUBLE_PRESS},
+    }

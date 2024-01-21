@@ -250,6 +250,7 @@ class TuyaTempHumiditySensorVar04(CustomDevice):
         MODELS_INFO: [
             ("_TZE200_yjjdcqsq", "TS0601"),
             ("_TZE200_9yapgbuv", "TS0601"),
+            ("_TZE204_yjjdcqsq", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
