@@ -216,7 +216,8 @@ class CustomFlowMeasurementCluster(CustomCluster, FlowMeasurement):
 
     def _update_attribute(self, attrid, value):
         if attrid == self.AttributeDefs.measured_value.id:
-            super()._update_attribute(attrid, value / 10)
+            value = value / 10
+        super()._update_attribute(attrid, value)
 
 
 class SinopeTechnologiesSwitch(CustomDevice):
