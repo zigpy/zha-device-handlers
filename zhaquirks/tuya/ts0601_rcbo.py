@@ -251,7 +251,7 @@ class TuyaRCBOElectricalMeasurement(ElectricalMeasurement, TuyaAttributesCluster
                 power_factor = value / apparent_power * 100
                 if power_factor > 100:
                     power_factor = 100
-                super().update_attribute("power_factor", int(power_factor))
+                super().update_attribute("power_factor", int(round(power_factor)))
 
 
 class TuyaRCBODeviceTemperature(DeviceTemperature, TuyaAttributesCluster):
