@@ -69,4 +69,5 @@ class CustomDeviceTemperatureCluster(CustomCluster, DeviceTemperature):
 
     def _update_attribute(self, attrid, value):
         if attrid == self.AttributeDefs.current_temperature.id:
-            super()._update_attribute(attrid, value * 100)
+            value = value * 100
+        super()._update_attribute(attrid, value)
