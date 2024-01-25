@@ -33,7 +33,6 @@ from typing import Any, Callable, List
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
-from zigpy.types import uint16_t
 from zigpy.zcl.clusters.general import (
     Basic,
     Identify,
@@ -60,17 +59,7 @@ DANFOSS = "Danfoss"
 HIVE = DANFOSS
 POPP = "D5X84YU"
 
-OCCUPIED_HEATING_SETPOINT_NAME = "occupied_heating_setpoint"
-SYSTEM_MODE_NAME = "system_mode"
-
-OCCUPIED_HEATING_SETPOINT_THERM_ID = uint16_t(0x0012)
-SETPOINT_CHANGE_THERM_ID = uint16_t(0x0012)
-MIN_HEAT_SETPOINT_LIMIT_THERM_ID = uint16_t(0x0015)
-
 SETPOINT_COMMAND_AGGRESSIVE_VAL = 0x01
-
-SYSTEM_MODE_THERM_OFF_VAL = 0x00
-SYSTEM_MODE_THERM_ON_VAL = 0x04
 
 
 class CustomizedStandardCluster(CustomCluster):
@@ -250,20 +239,31 @@ class DanfossThermostatCluster(CustomizedStandardCluster, Thermostat):
 
         fast_setpoint_change = None
 
-        if OCCUPIED_HEATING_SETPOINT_NAME in attributes:
+        if Thermostat.AttributeDefs.occupied_heating_setpoint.name in attributes:
             # On Danfoss an immediate setpoint change is done through a command
             # store for later in fast_setpoint_change and remove from attributes
-            fast_setpoint_change = attributes[OCCUPIED_HEATING_SETPOINT_NAME]
+            fast_setpoint_change = attributes[
+                Thermostat.AttributeDefs.occupied_heating_setpoint.name
+            ]
 
         # if: system_mode = off
-        if attributes.get(SYSTEM_MODE_NAME) == SYSTEM_MODE_THERM_OFF_VAL:
+        if (
+            attributes.get(Thermostat.AttributeDefs.system_mode.name)
+            == Thermostat.AttributeDefs.system_mode.type.Off
+        ):
             # Thermostatic Radiator Valves from Danfoss cannot be turned off to prevent damage during frost
             # just turn setpoint down to minimum temperature using fast_setpoint_change
-            fast_setpoint_change = self._attr_cache[MIN_HEAT_SETPOINT_LIMIT_THERM_ID]
-            attributes[OCCUPIED_HEATING_SETPOINT_NAME] = fast_setpoint_change
+            fast_setpoint_change = self._attr_cache[
+                Thermostat.AttributeDefs.min_heat_setpoint_limit.id
+            ]
+            attributes[
+                Thermostat.AttributeDefs.occupied_heating_setpoint.name
+            ] = fast_setpoint_change
 
             # Danfoss doesn't accept off, therefore set to On
-            attributes[SYSTEM_MODE_NAME] = SYSTEM_MODE_THERM_ON_VAL
+            attributes[
+                Thermostat.AttributeDefs.system_mode.name
+            ] = Thermostat.AttributeDefs.system_mode.type.Heat
 
         # attributes cannot be empty, because write_res cannot be empty, but it can contain unrequested items
         write_res = await super().write_attributes(
