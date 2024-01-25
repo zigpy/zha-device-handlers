@@ -17,26 +17,42 @@ from zigpy.zcl.clusters.general import (
     GreenPowerProxy,
     Groups,
     Identify,
+    LevelControl,
+    MoveMode,
+    OnOff,
     Ota,
     PowerConfiguration,
+    StepMode as BaseStepMode,
 )
+from zigpy.zcl.clusters.lighting import Color, StepMode as LightStepMode
 from zigpy.zcl.clusters.lightlink import LightLink
 
 import zhaquirks
 from zhaquirks.const import (
+    COMMAND_MOVE_SATURATION,
+    COMMAND_STEP,
+    COMMAND_STEP_COLOR_TEMP,
+    COMMAND_STOP_MOVE_STEP,
+    COMMAND_TOGGLE,
     DEVICE_TYPE,
+    DOUBLE_PRESS,
     ENDPOINTS,
     INPUT_CLUSTERS,
+    LEFT,
+    LONG_PRESS,
     MODELS_INFO,
     OFF,
     ON,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
+    RIGHT,
+    SHORT_PRESS,
     SKIP_CONFIGURATION,
     ZONE_STATUS_CHANGE_COMMAND,
 )
 from zhaquirks.tuya import (
     Data,
+    SwitchMode,
     TuyaEnchantableCluster,
     TuyaManufClusterAttributes,
     TuyaNewManufCluster,
@@ -1426,6 +1442,452 @@ def test_ts0601_motion_signature(assert_signature_matches_quirk):
         "class": "zigpy.device.Device",
     }
     assert_signature_matches_quirk(zhaquirks.tuya.ts0601_motion.NeoMotion, signature)
+
+
+@pytest.mark.parametrize(
+    "manufacturer, model",
+    (
+        ("_TZ3000_4fjiwweb", "TS004F"),
+        ("_TZ3000_uri7ongn", "TS004F"),
+        ("_TZ3000_ixla93vd", "TS004F"),
+        ("_TZ3000_qja6nq5z", "TS004F"),
+        ("_TZ3000_csflgqj2", "TS004F"),
+        ("_TZ3000_abrsvsou", "TS004F"),
+    ),
+)
+def test_ts004f_rotating_smart_knob_signature(
+    assert_signature_matches_quirk, manufacturer, model
+):
+    """Test Moes Smart Knob ERS-10TZBVK-AA is matched to its quirk."""
+    signature = {
+        "endpoints": {
+            "1": {
+                "profile_id": 260,
+                "device_type": "0x0104",
+                "in_clusters": [
+                    "0x0000",
+                    "0x0001",
+                    "0x0003",
+                    "0x0004",
+                    "0x0006",
+                    "0x1000",
+                ],
+                "out_clusters": [
+                    "0x0019",
+                    "0x000A",
+                    "0x0003",
+                    "0x0004",
+                    "0x0005",
+                    "0x0006",
+                    "0x0008",
+                    "0x1000",
+                ],
+            }
+        },
+        "manufacturer": manufacturer,
+        "model": model,
+    }
+    assert_signature_matches_quirk(
+        zhaquirks.tuya.ts004f.TuyaSmartRemote004FROK, signature
+    )
+
+
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts004f.TuyaSmartRemote004FROK,))
+async def test_smart_rotating_knob_actions(zigpy_device_from_quirk, quirk):
+    """Test messages from TuyaSmartRemote004FROK"""
+    profile_id = 260
+    on_off_cluster_id = OnOff.cluster_id
+    level_cluster_id = LevelControl.cluster_id
+    color_cluster_id = Color.cluster_id
+    endpoint_id = 1
+
+    device = zigpy_device_from_quirk(quirk)
+    level_cluster = device.endpoints[endpoint_id].out_clusters[level_cluster_id]
+    on_off_cluster = device.endpoints[endpoint_id].out_clusters[on_off_cluster_id]
+    color_cluster = device.endpoints[endpoint_id].out_clusters[color_cluster_id]
+
+    listener = mock.MagicMock()
+    level_cluster.add_listener(listener)
+    on_off_cluster.add_listener(listener)
+    color_cluster.add_listener(listener)
+
+    # command mode
+    # short press
+    message = b"\x01!\x02"
+    device.handle_message(
+        profile_id,
+        on_off_cluster_id,
+        endpoint_id,
+        endpoint_id,
+        message,
+    )
+    assert listener.cluster_command.call_count == 1
+    params = listener.method_calls[0][1][2]
+    assert params.command.name == COMMAND_TOGGLE
+    listener.reset_mock()
+
+    # long press
+    message = b'\x01"\x04\x01\xc8'
+    device.handle_message(
+        profile_id,
+        color_cluster_id,
+        endpoint_id,
+        endpoint_id,
+        message,
+    )
+    assert listener.cluster_command.call_count == 1
+    params = listener.method_calls[0][1][2]
+    assert params.command.name == COMMAND_MOVE_SATURATION
+    assert params.move_mode == MoveMode.Down
+    assert params.rate == 200
+    assert params.options_mask is None
+    assert params.options_override is None
+    listener.reset_mock()
+
+    # long release
+    message = b"\x01\x04G"
+    device.handle_message(
+        profile_id,
+        color_cluster_id,
+        endpoint_id,
+        endpoint_id,
+        message,
+    )
+    assert listener.cluster_command.call_count == 1
+    params = listener.method_calls[0][1][2]
+    assert params.command.name == COMMAND_STOP_MOVE_STEP
+    assert params.options_mask is None
+    assert params.options_override is None
+    listener.reset_mock()
+
+    # slow right rotate
+    message = b"\x01\x10\x02\x00\r\x01\x00"
+    device.handle_message(
+        profile_id,
+        level_cluster_id,
+        endpoint_id,
+        endpoint_id,
+        message,
+    )
+    assert listener.cluster_command.call_count == 1
+    params = listener.method_calls[0][1][2]
+    assert params.command.name == COMMAND_STEP
+    assert params.step_mode == BaseStepMode.Up
+    assert params.step_size == 13
+    assert params.transition_time == 1
+    assert params.options_mask is None
+    assert params.options_override is None
+    listener.reset_mock()
+
+    # medium right rotate
+    message = b"\x010\x02\x00=\x02\x00"
+    device.handle_message(
+        profile_id,
+        level_cluster_id,
+        endpoint_id,
+        endpoint_id,
+        message,
+    )
+    assert listener.cluster_command.call_count == 1
+    params = listener.method_calls[0][1][2]
+    assert params.command.name == COMMAND_STEP
+    assert params.step_mode == BaseStepMode.Up
+    assert params.step_size == 61
+    assert params.transition_time == 2
+    assert params.options_mask is None
+    assert params.options_override is None
+    listener.reset_mock()
+
+    # fast right rotate
+    message = b"\x01/\x02\x00\xa9\x03\x00"
+    device.handle_message(
+        profile_id,
+        level_cluster_id,
+        endpoint_id,
+        endpoint_id,
+        message,
+    )
+    assert listener.cluster_command.call_count == 1
+    params = listener.method_calls[0][1][2]
+    assert params.command.name == COMMAND_STEP
+    assert params.step_mode == BaseStepMode.Up
+    assert params.step_size == 169
+    assert params.transition_time == 3
+    assert params.options_mask is None
+    assert params.options_override is None
+    listener.reset_mock()
+
+    # slow right pressed rotate
+    message = b"\x01\x13L\x01\x12\x00\x01\x00\x99\x00\xf4\x01"
+    device.handle_message(
+        profile_id,
+        color_cluster_id,
+        endpoint_id,
+        endpoint_id,
+        message,
+    )
+    assert listener.cluster_command.call_count == 1
+    params = listener.method_calls[0][1][2]
+    assert params.command.name == COMMAND_STEP_COLOR_TEMP
+    assert params.step_mode == LightStepMode.Up
+    assert params.step_size == 18
+    assert params.transition_time == 1
+    assert params.options_mask is None
+    assert params.options_override is None
+    listener.reset_mock()
+
+    # medium right pressed rotate
+    message = b"\x016L\x01V\x00\x02\x00\x99\x00\xf4\x01"
+    device.handle_message(
+        profile_id,
+        color_cluster_id,
+        endpoint_id,
+        endpoint_id,
+        message,
+    )
+    assert listener.cluster_command.call_count == 1
+    params = listener.method_calls[0][1][2]
+    assert params.command.name == COMMAND_STEP_COLOR_TEMP
+    assert params.step_mode == LightStepMode.Up
+    assert params.step_size == 86
+    assert params.transition_time == 2
+    assert params.options_mask is None
+    assert params.options_override is None
+    listener.reset_mock()
+
+    # fast right pressed rotate
+    message = b"\x018L\x01\xde\x00\x03\x00\x99\x00\xf4\x01"
+    device.handle_message(
+        profile_id,
+        color_cluster_id,
+        endpoint_id,
+        endpoint_id,
+        message,
+    )
+    assert listener.cluster_command.call_count == 1
+    params = listener.method_calls[0][1][2]
+    assert params.command.name == COMMAND_STEP_COLOR_TEMP
+    assert params.step_mode == LightStepMode.Up
+    assert params.step_size == 222
+    assert params.transition_time == 3
+    assert params.options_mask is None
+    assert params.options_override is None
+    listener.reset_mock()
+
+    # slow left rotate
+    message = b"\x01\x11\x02\x01\r\x01\x00"
+    device.handle_message(
+        profile_id,
+        level_cluster_id,
+        endpoint_id,
+        endpoint_id,
+        message,
+    )
+    assert listener.cluster_command.call_count == 1
+    params = listener.method_calls[0][1][2]
+    assert params.command.name == COMMAND_STEP
+    assert params.step_mode == BaseStepMode.Down
+    assert params.step_size == 13
+    assert params.transition_time == 1
+    assert params.options_mask is None
+    assert params.options_override is None
+    listener.reset_mock()
+
+    # medium left rotate
+    message = b"\x01>\x02\x01%\x02\x00"
+    device.handle_message(
+        profile_id,
+        level_cluster_id,
+        endpoint_id,
+        endpoint_id,
+        message,
+    )
+    assert listener.cluster_command.call_count == 1
+    params = listener.method_calls[0][1][2]
+    assert params.command.name == COMMAND_STEP
+    assert params.step_mode == BaseStepMode.Down
+    assert params.step_size == 37
+    assert params.transition_time == 2
+    assert params.options_mask is None
+    assert params.options_override is None
+    listener.reset_mock()
+
+    # fast left rotate
+    message = b"\x01@\x02\x01\x91\x03\x00"
+    device.handle_message(
+        profile_id,
+        level_cluster_id,
+        endpoint_id,
+        endpoint_id,
+        message,
+    )
+    assert listener.cluster_command.call_count == 1
+    params = listener.method_calls[0][1][2]
+    assert params.command.name == COMMAND_STEP
+    assert params.step_mode == BaseStepMode.Down
+    assert params.step_size == 145
+    assert params.transition_time == 3
+    assert params.options_mask is None
+    assert params.options_override is None
+    listener.reset_mock()
+
+    # slow left pressed rotate
+    message = b"\x01\x05L\x03\x12\x00\x01\x00\x99\x00\xf4\x01"
+    device.handle_message(
+        profile_id,
+        color_cluster_id,
+        endpoint_id,
+        endpoint_id,
+        message,
+    )
+    assert listener.cluster_command.call_count == 1
+    params = listener.method_calls[0][1][2]
+    assert params.command.name == COMMAND_STEP_COLOR_TEMP
+    assert params.step_mode == LightStepMode.Down
+    assert params.step_size == 18
+    assert params.transition_time == 1
+    assert params.options_mask is None
+    assert params.options_override is None
+    listener.reset_mock()
+
+    # medium left pressed rotate
+    message = b"\x01HL\x03E\x00\x02\x00\x99\x00\xf4\x01"
+    device.handle_message(
+        profile_id,
+        color_cluster_id,
+        endpoint_id,
+        endpoint_id,
+        message,
+    )
+    assert listener.cluster_command.call_count == 1
+    params = listener.method_calls[0][1][2]
+    assert params.command.name == COMMAND_STEP_COLOR_TEMP
+    assert params.step_mode == LightStepMode.Down
+    assert params.step_size == 69
+    assert params.transition_time == 2
+    assert params.options_mask is None
+    assert params.options_override is None
+    listener.reset_mock()
+
+    # fast left pressed rotate
+    message = b"\x01\x06L\x03x\x00\x03\x00\x99\x00\xf4\x01"
+    device.handle_message(
+        profile_id,
+        color_cluster_id,
+        endpoint_id,
+        endpoint_id,
+        message,
+    )
+    assert listener.cluster_command.call_count == 1
+    params = listener.method_calls[0][1][2]
+    assert params.command.name == COMMAND_STEP_COLOR_TEMP
+    assert params.step_mode == LightStepMode.Down
+    assert params.step_size == 120
+    assert params.transition_time == 3
+    assert params.options_mask is None
+    assert params.options_override is None
+    listener.reset_mock()
+
+    # Event mode
+    # short press
+    message = b"\x01L\xfd\x00"
+    device.handle_message(
+        profile_id,
+        on_off_cluster_id,
+        endpoint_id,
+        endpoint_id,
+        message,
+    )
+    assert listener.zha_send_event.call_count == 1
+    params = listener.method_calls[0][1]
+    assert params[0] == SHORT_PRESS
+    listener.reset_mock()
+
+    # double press
+    message = b"\x01M\xfd\x01"
+    device.handle_message(
+        profile_id,
+        on_off_cluster_id,
+        endpoint_id,
+        endpoint_id,
+        message,
+    )
+    assert listener.zha_send_event.call_count == 1
+    params = listener.method_calls[0][1]
+    assert params[0] == DOUBLE_PRESS
+    listener.reset_mock()
+
+    # long press
+    message = b"\x01N\xfd\x02"
+    device.handle_message(
+        profile_id,
+        on_off_cluster_id,
+        endpoint_id,
+        endpoint_id,
+        message,
+    )
+    assert listener.zha_send_event.call_count == 1
+    params = listener.method_calls[0][1]
+    assert params[0] == LONG_PRESS
+    listener.reset_mock()
+
+    # right rotate
+    message = b"\x01W\xfc\x00"
+    device.handle_message(
+        profile_id,
+        on_off_cluster_id,
+        endpoint_id,
+        endpoint_id,
+        message,
+    )
+    assert listener.zha_send_event.call_count == 1
+    params = listener.method_calls[0][1]
+    assert params[0] == RIGHT
+    listener.reset_mock()
+
+    # left rotate
+    message = b"\x01P\xfc\x01"
+    device.handle_message(
+        profile_id,
+        on_off_cluster_id,
+        endpoint_id,
+        endpoint_id,
+        message,
+    )
+    assert listener.zha_send_event.call_count == 1
+    params = listener.method_calls[0][1]
+    assert params[0] == LEFT
+    listener.reset_mock()
+
+    # mode switched to Event
+    message = b"\x08V\n\x04\x800\x01"
+    device.handle_message(
+        profile_id,
+        on_off_cluster_id,
+        endpoint_id,
+        endpoint_id,
+        message,
+    )
+    assert listener.zha_send_event.call_count == 1
+    assert listener.attribute_updated.call_count == 1
+    assert listener.zha_send_event.call_args[0][1]["attribute_name"] == "switch_mode"
+    assert listener.zha_send_event.call_args[0][1]["value"] == SwitchMode.Event
+    listener.reset_mock()
+
+    # mode switched to Command
+    message = b"\x08T\n\x04\x800\x00"
+    device.handle_message(
+        profile_id,
+        on_off_cluster_id,
+        endpoint_id,
+        endpoint_id,
+        message,
+    )
+    assert listener.zha_send_event.call_count == 1
+    assert listener.attribute_updated.call_count == 1
+    assert listener.zha_send_event.call_args[0][1]["attribute_name"] == "switch_mode"
+    assert listener.zha_send_event.call_args[0][1]["value"] == SwitchMode.Command
+    listener.reset_mock()
 
 
 def test_multiple_attributes_report():

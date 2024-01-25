@@ -25,11 +25,13 @@ from zhaquirks.const import (
     BUTTON_4,
     CLUSTER_ID,
     COMMAND,
+    COMMAND_ATTRIBUTE_UPDATED,
     COMMAND_MOVE,
     COMMAND_MOVE_SATURATION,
     COMMAND_OFF,
     COMMAND_ON,
     COMMAND_STEP,
+    COMMAND_STEP_COLOR_TEMP,
     COMMAND_STOP,
     COMMAND_STOP_MOVE_STEP,
     COMMAND_TOGGLE,
@@ -51,6 +53,11 @@ from zhaquirks.const import (
     RIGHT,
     ROTATED,
     ROTATED_FAST,
+    ROTATED_MEDIUM,
+    ROTATED_PRESSED,
+    ROTATED_PRESSED_FAST,
+    ROTATED_PRESSED_MEDIUM,
+    ROTATED_PRESSED_SLOW,
     ROTATED_SLOW,
     SHORT_PRESS,
     TURN_OFF,
@@ -69,11 +76,15 @@ class TuyaSmartRemote004FROK(EnchantedDevice):
 
     signature = {
         # "node_descriptor": "NodeDescriptor(byte1=2, byte2=64, mac_capability_flags=128, manufacturer_code=4098, maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264, maximum_outgoing_transfer_size=82, descriptor_capability_field=0, *allocate_address=True, *complex_descriptor_available=False, *is_alternate_pan_coordinator=False, *is_coordinator=False, *is_end_device=True, *is_full_function_device=False, *is_mains_powered=False, *is_receiver_on_when_idle=False, *is_router=False, *is_security_capable=False, *is_valid=True, *logical_type=<LogicalType.EndDevice: 2>, *user_descriptor_available=False)",
-        # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=260, device_version=1, input_clusters=[0, 1, 3, 4, 6, 4096], output_clusters=[25, 10, 3, 4, 5, 6, 8, 4096])
+        # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=260,
+        # device_version=1,
+        # input_clusters=[0, 1, 3, 4, 6, 4096],
+        # output_clusters=[25, 10, 3, 4, 5, 6, 8, 4096])
         MODELS_INFO: [
             ("_TZ3000_4fjiwweb", "TS004F"),
             ("_TZ3000_uri7ongn", "TS004F"),
             ("_TZ3000_ixla93vd", "TS004F"),
+            # Moes Smart Knob ERS-10TZBVK-AA
             ("_TZ3000_qja6nq5z", "TS004F"),
             ("_TZ3000_csflgqj2", "TS004F"),
             ("_TZ3000_abrsvsou", "TS004F"),
@@ -132,45 +143,138 @@ class TuyaSmartRemote004FROK(EnchantedDevice):
     }
 
     device_automation_triggers = {
-        (SHORT_PRESS, BUTTON): {COMMAND: COMMAND_TOGGLE, ENDPOINT_ID: 1, CLUSTER_ID: 6},
+        # Command mode
+        (SHORT_PRESS, BUTTON): {
+            COMMAND: COMMAND_TOGGLE,
+            ENDPOINT_ID: 1,
+            CLUSTER_ID: 6,
+        },
+        # 3 seconds
+        (LONG_PRESS, BUTTON): {
+            COMMAND: COMMAND_MOVE_SATURATION,
+            ENDPOINT_ID: 1,
+            CLUSTER_ID: 768,
+        },
         (LONG_RELEASE, BUTTON): {
             COMMAND: COMMAND_STOP_MOVE_STEP,
             ENDPOINT_ID: 1,
             CLUSTER_ID: 768,
         },
-        (LONG_PRESS, BUTTON): {
-            COMMAND: COMMAND_MOVE_SATURATION,
+        # rotation without pressing contains step_size where you can get ticks count by formula ((step_size - 1) / 12)
+        (COMMAND_STEP, RIGHT): {
+            COMMAND: COMMAND_STEP,
             ENDPOINT_ID: 1,
-            CLUSTER_ID: 768,
-            PARAMS: {"move_mode": 1},
+            CLUSTER_ID: 8,
+            PARAMS: {"step_mode": 0},
         },
         (ROTATED_SLOW, RIGHT): {
             COMMAND: COMMAND_STEP,
             ENDPOINT_ID: 1,
             CLUSTER_ID: 8,
-            PARAMS: {"step_mode": 0, "step_size": 13},
+            PARAMS: {"step_mode": 0, "transition_time": 1},
+        },
+        (ROTATED_MEDIUM, RIGHT): {
+            COMMAND: COMMAND_STEP,
+            ENDPOINT_ID: 1,
+            CLUSTER_ID: 8,
+            PARAMS: {"step_mode": 0, "transition_time": 2},
+        },
+        (ROTATED_FAST, RIGHT): {
+            COMMAND: COMMAND_STEP,
+            ENDPOINT_ID: 1,
+            CLUSTER_ID: 8,
+            PARAMS: {"step_mode": 0, "transition_time": 3},
+        },
+        (COMMAND_STEP, LEFT): {
+            COMMAND: COMMAND_STEP,
+            ENDPOINT_ID: 1,
+            CLUSTER_ID: 8,
+            PARAMS: {"step_mode": 1},
         },
         (ROTATED_SLOW, LEFT): {
             COMMAND: COMMAND_STEP,
             ENDPOINT_ID: 1,
             CLUSTER_ID: 8,
-            PARAMS: {"step_mode": 1, "step_size": 13},
+            PARAMS: {"step_mode": 1, "transition_time": 1},
         },
-        (ROTATED_FAST, RIGHT): {
+        (ROTATED_MEDIUM, LEFT): {
             COMMAND: COMMAND_STEP,
-            CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
-            PARAMS: {"step_mode": 0, "step_size": 37},
+            CLUSTER_ID: 8,
+            PARAMS: {"step_mode": 1, "transition_time": 2},
         },
         (ROTATED_FAST, LEFT): {
             COMMAND: COMMAND_STEP,
-            CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
-            PARAMS: {"step_mode": 1, "step_size": 37},
+            CLUSTER_ID: 8,
+            PARAMS: {"step_mode": 1, "transition_time": 3},
         },
-        (SHORT_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: SHORT_PRESS},
-        (LONG_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: LONG_PRESS},
-        (DOUBLE_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: DOUBLE_PRESS},
+        # rotation with pressing contains step_size where you can get ticks count by formula ((step_size - 1) / 17)
+        (ROTATED_PRESSED, RIGHT): {
+            COMMAND: COMMAND_STEP_COLOR_TEMP,
+            ENDPOINT_ID: 1,
+            CLUSTER_ID: 768,
+            PARAMS: {"step_mode": 1},
+        },
+        (ROTATED_PRESSED_SLOW, RIGHT): {
+            COMMAND: COMMAND_STEP_COLOR_TEMP,
+            ENDPOINT_ID: 1,
+            CLUSTER_ID: 768,
+            PARAMS: {"step_mode": 1, "transition_time": 1},
+        },
+        (ROTATED_PRESSED_MEDIUM, RIGHT): {
+            COMMAND: COMMAND_STEP_COLOR_TEMP,
+            ENDPOINT_ID: 1,
+            CLUSTER_ID: 8,
+            PARAMS: {"step_mode": 1, "transition_time": 2},
+        },
+        (ROTATED_PRESSED_FAST, RIGHT): {
+            COMMAND: COMMAND_STEP_COLOR_TEMP,
+            ENDPOINT_ID: 1,
+            CLUSTER_ID: 768,
+            PARAMS: {"step_mode": 1, "transition_time": 3},
+        },
+        (ROTATED_PRESSED, LEFT): {
+            COMMAND: COMMAND_STEP_COLOR_TEMP,
+            ENDPOINT_ID: 1,
+            CLUSTER_ID: 768,
+            PARAMS: {"step_mode": 3},
+        },
+        (ROTATED_PRESSED_SLOW, LEFT): {
+            COMMAND: COMMAND_STEP_COLOR_TEMP,
+            ENDPOINT_ID: 1,
+            CLUSTER_ID: 768,
+            PARAMS: {"step_mode": 3, "transition_time": 1},
+        },
+        (ROTATED_PRESSED_MEDIUM, LEFT): {
+            COMMAND: COMMAND_STEP_COLOR_TEMP,
+            ENDPOINT_ID: 1,
+            CLUSTER_ID: 768,
+            PARAMS: {"step_mode": 3, "transition_time": 2},
+        },
+        (ROTATED_PRESSED_FAST, LEFT): {
+            COMMAND: COMMAND_STEP_COLOR_TEMP,
+            ENDPOINT_ID: 1,
+            CLUSTER_ID: 768,
+            PARAMS: {"step_mode": 3, "transition_time": 3},
+        },
+        # Event mode
+        (SHORT_PRESS, BUTTON_1): {
+            COMMAND: SHORT_PRESS,
+            ENDPOINT_ID: 1,
+            CLUSTER_ID: 6,
+        },
+        (DOUBLE_PRESS, BUTTON_1): {
+            COMMAND: DOUBLE_PRESS,
+            ENDPOINT_ID: 1,
+            CLUSTER_ID: 6,
+        },
+        # only on releasing after 3 seconds
+        (LONG_PRESS, BUTTON_1): {
+            COMMAND: LONG_PRESS,
+            ENDPOINT_ID: 1,
+            CLUSTER_ID: 6,
+        },
         (ROTATED, RIGHT): {
             COMMAND: RIGHT,
             ENDPOINT_ID: 1,
@@ -178,6 +282,12 @@ class TuyaSmartRemote004FROK(EnchantedDevice):
         },
         (ROTATED, LEFT): {
             COMMAND: LEFT,
+            ENDPOINT_ID: 1,
+            CLUSTER_ID: 6,
+        },
+        # Mode changed
+        (COMMAND_ATTRIBUTE_UPDATED, BUTTON): {
+            COMMAND: COMMAND_ATTRIBUTE_UPDATED,
             ENDPOINT_ID: 1,
             CLUSTER_ID: 6,
         },
