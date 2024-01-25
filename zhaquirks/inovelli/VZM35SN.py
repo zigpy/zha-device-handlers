@@ -14,6 +14,7 @@ from zigpy.zcl.clusters.general import (
     Scenes,
 )
 from zigpy.zcl.clusters.homeautomation import Diagnostic
+from zigpy.zcl.clusters.hvac import Fan
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -45,6 +46,7 @@ class InovelliVZM35SN(CustomDevice):
                     Scenes.cluster_id,
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
+                    Fan.cluster_id,
                     Diagnostic.cluster_id,
                     INOVELLI_VZM35SN_CLUSTER_ID,
                     WWAH_CLUSTER_ID,
@@ -54,6 +56,21 @@ class InovelliVZM35SN(CustomDevice):
                 ],
             },
             2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: DeviceType.DIMMER_SWITCH,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                ],
+            },
+            3: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: DeviceType.DIMMER_SWITCH,
                 INPUT_CLUSTERS: [
@@ -89,6 +106,7 @@ class InovelliVZM35SN(CustomDevice):
                     Scenes.cluster_id,
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
+                    Fan.cluster_id,
                     Diagnostic.cluster_id,
                     Inovelli_VZM35SN_Cluster,
                     WWAH_CLUSTER_ID,
