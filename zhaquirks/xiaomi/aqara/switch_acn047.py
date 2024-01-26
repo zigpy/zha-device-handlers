@@ -21,6 +21,7 @@ from zhaquirks.const import (
     ATTR_ID,
     COMMAND,
     DEVICE_TYPE,
+    ENDPOINT_ID,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
@@ -30,7 +31,6 @@ from zhaquirks.const import (
     SHORT_PRESS,
     VALUE,
     ZHA_SEND_EVENT,
-    ENDPOINT_ID,
 )
 from zhaquirks.xiaomi import (
     AnalogInputCluster,
@@ -207,6 +207,12 @@ class AqaraT2Relay(XiaomiCustomDevice):
     }
 
     device_automation_triggers = {
-        (SHORT_PRESS, PRESS_TYPES.get(1)): {ENDPOINT_ID: 1, COMMAND: PRESS_TYPES.get(1)},
-        (SHORT_PRESS, PRESS_TYPES.get(2)): {ENDPOINT_ID: 2, COMMAND: PRESS_TYPES.get(2)},
+        (SHORT_PRESS, PRESS_TYPES.get(1)): {
+            ENDPOINT_ID: 1,
+            COMMAND: PRESS_TYPES.get(1),
+        },
+        (SHORT_PRESS, PRESS_TYPES.get(2)): {
+            ENDPOINT_ID: 2,
+            COMMAND: PRESS_TYPES.get(2),
+        },
     }
