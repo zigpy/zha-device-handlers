@@ -245,8 +245,8 @@ async def test_singleswitch_requests(zigpy_device_from_quirk, quirk):
         await wait_for_zigpy_tasks()
         m1.assert_called_with(
             61184,
-            2,
-            b"\x01\x02\x00\x00\x01\x01\x01\x00\x01\x00",
+            1,
+            b"\x01\x01\x00\x00\x01\x01\x01\x00\x01\x00",
             expect_reply=True,
             command_id=0,
         )
@@ -256,8 +256,8 @@ async def test_singleswitch_requests(zigpy_device_from_quirk, quirk):
         await wait_for_zigpy_tasks()
         m1.assert_called_with(
             61184,
-            4,
-            b"\x01\x04\x00\x00\x03\x01\x01\x00\x01\x01",
+            2,
+            b"\x01\x02\x00\x00\x02\x01\x01\x00\x01\x01",
             expect_reply=True,
             command_id=0,
         )
@@ -1242,8 +1242,8 @@ async def test_moes(zigpy_device_from_quirk, quirk):
         await wait_for_zigpy_tasks()
         m1.assert_called_with(
             61184,
-            21,
-            b"\x01\x15\x24\x00\x08\x00\x00\x1C\x20\x00\x00\x0E\x10",
+            1,
+            b"\x01\x01\x24\x00\x08\x00\x00\x1C\x20\x00\x00\x0E\x10",
             expect_reply=False,
             command_id=0x0024,
         )
