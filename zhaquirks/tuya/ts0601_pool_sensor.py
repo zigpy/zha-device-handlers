@@ -1,4 +1,4 @@
-"""Tuya Pool sensor."""
+"""Tuya pool sensor."""
 
 from typing import Any, Dict
 
@@ -31,26 +31,12 @@ from zhaquirks.tuya.mcu import (
 )
 
 
-# Make the TuyaPowerConfigurationCluster Enchantable, with a specific spell.
-class MyTuyaPowerConfigurationCluster(
+# XXX: Move this to a shared location later, as the TuyaPowerConfigurationCluster name is used twice:
+# once in zhaquirks.tuya and once in zhaquirks.tuya.mcu. Both have a different function.
+class TuyaPowerConfigurationSpellCluster(
     TuyaEnchantableCluster, TuyaPowerConfigurationCluster
 ):
-    async def spell(self):
-        """Cast spell, so the Tuya device works correctly."""
-        # normal spell (also needed):
-        self.debug("Executing spell on Tuya device %s", self.endpoint.device.ieee)
-        attr_to_read = [4, 0, 1, 5, 7, 0xFFFE]
-        basic_cluster = self.endpoint.device.endpoints[1].in_clusters[0]
-        await basic_cluster.read_attributes(attr_to_read)
-        self.debug("Executed spell on Tuya device %s", self.endpoint.device.ieee)
-
-        # new part for sending command with id 3 on `0xEF00` cluster
-        self.debug("Executing data query on Tuya device %s", self.endpoint.device.ieee)
-        tuya_manuf_cluster = self.endpoint.device.endpoints[1].in_clusters[
-            TuyaMCUCluster.cluster_id
-        ]
-        await tuya_manuf_cluster.command(TUYA_QUERY_DATA)
-        self.debug("Executed data query on Tuya device %s", self.endpoint.device.ieee)
+    """Doubling, local, and enchantable TuyaPowerConfigurationCluster."""
 
 
 class TuyaTemperatureMeasurement(TemperatureMeasurement, TuyaLocalCluster):
@@ -154,7 +140,7 @@ class PoolManufCluster(TuyaMCUCluster):
             "measured_value",
         ),
         7: DPToAttributeMapping(
-            MyTuyaPowerConfigurationCluster.ep_attribute,
+            TuyaPowerConfigurationSpellCluster.ep_attribute,
             "battery_percentage_remaining",
         ),
         # TODO 103 pH Calibration
@@ -234,6 +220,7 @@ class TuyaPoolSensor(EnchantedDevice):
     """Tuya Pool sensor."""
 
     quirk_id = TUYA_POOL_SENSOR
+    tuya_spell_data_query = True
 
     signature = {
         # "profile_id": 260,
@@ -274,7 +261,7 @@ class TuyaPoolSensor(EnchantedDevice):
                     TuyaTDS,
                     TuyaElectricalConductivity,
                     TuyaSodiumConcentration,
-                    MyTuyaPowerConfigurationCluster,
+                    TuyaPowerConfigurationSpellCluster,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id, Time.cluster_id],
             }
