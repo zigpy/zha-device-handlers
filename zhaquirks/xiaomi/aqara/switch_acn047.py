@@ -207,12 +207,12 @@ class AqaraT2Relay(XiaomiCustomDevice):
     }
 
     device_automation_triggers = {
-        (SHORT_PRESS, PRESS_TYPES.get(1)): {
+        (SHORT_PRESS, PRESS_TYPES[1]): {
             ENDPOINT_ID: 1,
-            COMMAND: PRESS_TYPES.get(1),
+            COMMAND: PRESS_TYPES[1]),
         },
-        (SHORT_PRESS, PRESS_TYPES.get(2)): {
+        (SHORT_PRESS, PRESS_TYPES[2]): {
             ENDPOINT_ID: 2,
-            COMMAND: PRESS_TYPES.get(2),
+            COMMAND: PRESS_TYPES[2]),
         },
     }
