@@ -527,6 +527,18 @@ class TuyaManufClusterAttributes(TuyaManufCluster):
         return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
 
+class EnchantedDevice(CustomDevice):
+    """Class for Tuya devices which need to be unlocked by casting a 'spell'. This happens during binding.
+
+    To make sure the spell is cast, the device needs to implement a subclass of `TuyaEnchantableCluster`.
+    For more information, see the documentation of `TuyaEnchantableCluster`.
+    """
+
+    # These values can be overridden from a quirk to enable (or disable) additional Tuya spells:
+    tuya_spell_read_attributes: bool = True  # spell reading attributes on Basic cluster
+    tuya_spell_data_query: bool = False  # additional spell needed for some devices
+
+
 class TuyaEnchantableCluster(CustomCluster):
     """Tuya cluster that casts a magic spell if `TUYA_SPELL` is set.
 
@@ -549,15 +561,16 @@ class TuyaEnchantableCluster(CustomCluster):
 
     async def bind(self):
         """Bind cluster and start casting the spell if necessary."""
-        # check if the device needs to have the spell cast
+        device = self.endpoint.device
+
+        # check if the device is an EnchantedDevice
         # and since the cluster can be used on multiple endpoints, check that it's endpoint 1
-        if self.endpoint.endpoint_id == 1:
-            tuya_spell_level = getattr(self.endpoint.device, "TUYA_SPELL", 0)
-            # execute the 'attribute read spell' on all levels, and also the 'data query spell' on level 2 and up
-            if tuya_spell_level >= 1:
+        if isinstance(device, EnchantedDevice) and self.endpoint.endpoint_id == 1:
+            if device.tuya_spell_read_attributes:
                 await self.spell_attribute_reads()
-            if tuya_spell_level >= 2:
+            if device.tuya_spell_data_query:
                 await self.spell_data_query()
+
         return await super().bind()
 
     async def spell_attribute_reads(self):
@@ -575,21 +588,10 @@ class TuyaEnchantableCluster(CustomCluster):
 
     async def spell_data_query(self):
         """Cast 'data query' spell, also required for some Tuya devices to send data."""
-        # check if the device has a Tuya cluster with the Tuya query data command,
-        # but we should still make sure a quirk doesn't call this on a device that doesn't have it
-        if (
-            TuyaNewManufCluster.cluster_id
-            not in self.endpoint.device.endpoints[1].in_clusters
-        ):
-            self.debug(
-                "Tuya device %s has no TuyaNewManufCluster/TuyaMCUCluster, skipping data query spell",
-                self.endpoint.device.ieee,
-            )
-            return
-
         self.debug(
             "Executing data query spell on Tuya device %s", self.endpoint.device.ieee
         )
+        # tests verify that a device with an enabled 'data query spell' has a TuyaNewManufCluster (subclass)
         tuya_cluster = self.endpoint.device.endpoints[1].in_clusters[
             TuyaNewManufCluster.cluster_id
         ]
