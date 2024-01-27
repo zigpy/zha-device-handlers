@@ -17,6 +17,7 @@ from zigpy.zcl.clusters.general import (
     GreenPowerProxy,
     Groups,
     Identify,
+    OnOff,
     Ota,
     PowerConfiguration,
 )
@@ -42,6 +43,7 @@ from zhaquirks.tuya import (
     TuyaEnchantableCluster,
     TuyaManufClusterAttributes,
     TuyaNewManufCluster,
+    TuyaZBOnOffAttributeCluster,
 )
 import zhaquirks.tuya.sm0202_motion
 import zhaquirks.tuya.ts011f_plug
@@ -1610,7 +1612,44 @@ async def test_power_config_no_bind(zigpy_device_from_quirk, quirk):
         assert len(bind_mock.mock_calls) == 0
 
 
-ENCHANTED_QUIRKS = []
+class TuyaTestSpellDevice(EnchantedDevice):
+    """Tuya test spell device."""
+
+    tuya_spell_data_query = True  # enable additional data query spell
+
+    signature = {
+        MODELS_INFO: [("UjqjHq6ZErY23tgs", "zo9WD7q5dbvDj96y")],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    OnOff.cluster_id,
+                    TuyaNewManufCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [],
+            }
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    TuyaZBOnOffAttributeCluster,
+                    TuyaNewManufCluster,
+                ],
+                OUTPUT_CLUSTERS: [],
+            }
+        }
+    }
+
+
+ENCHANTED_QUIRKS = [TuyaTestSpellDevice]
 for manufacturer in zigpy.quirks._DEVICE_REGISTRY._registry.values():
     for model_quirk_list in manufacturer.values():
         for quirk_entry in model_quirk_list:
