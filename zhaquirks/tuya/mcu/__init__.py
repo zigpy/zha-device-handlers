@@ -729,4 +729,6 @@ class EnchantedDevice(CustomDevice):
     For more information, see the documentation of `TuyaEnchantableCluster`.
     """
 
-    TUYA_SPELL = True
+    # Tuya spell level:
+    # 1 is the 'read attribute spell', 2 also adds the 'query data spell'
+    TUYA_SPELL: int = 1

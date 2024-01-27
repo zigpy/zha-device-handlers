@@ -36,6 +36,7 @@ from zhaquirks.const import (
     ZONE_STATUS_CHANGE_COMMAND,
 )
 from zhaquirks.tuya import (
+    TUYA_QUERY_DATA,
     Data,
     TuyaEnchantableCluster,
     TuyaManufClusterAttributes,
@@ -1615,7 +1616,7 @@ for manufacturer in zigpy.quirks._DEVICE_REGISTRY._registry.values():
             if quirk_entry in ENCHANTED_QUIRKS:
                 continue
             # right now, this basically includes `issubclass(quirk, EnchantedDevice)`, as that sets `TUYA_SPELL`
-            if getattr(quirk_entry, "TUYA_SPELL", False):
+            if getattr(quirk_entry, "TUYA_SPELL", 0):
                 ENCHANTED_QUIRKS.append(quirk_entry)
 
 del quirk_entry, model_quirk_list, manufacturer
@@ -1623,7 +1624,7 @@ del quirk_entry, model_quirk_list, manufacturer
 
 @mock.patch("zigpy.zcl.Cluster.bind", mock.AsyncMock())
 async def test_tuya_spell(zigpy_device_from_quirk):
-    """Test that enchanted Tuya devices have their spell applied when binding OnOff cluster."""
+    """Test that enchanted Tuya devices have their spell applied when binding bindable cluster."""
     non_bindable_cluster_ids = [
         Basic.cluster_id,
         Identify.cluster_id,
@@ -1661,6 +1662,9 @@ async def test_tuya_spell(zigpy_device_from_quirk):
                 ):
                     await cluster.bind()
 
+            # the Tuya spell level also defines the number of Tuya spells that are allowed to be cast
+            tuya_spell_level = getattr(device, "TUYA_SPELL")
+
             # check that exactly one Tuya spell was cast
             if len(request_mock.mock_calls) == 0:
                 pytest.fail(
@@ -1669,17 +1673,25 @@ async def test_tuya_spell(zigpy_device_from_quirk):
                     f"Also check that enchanted bindable clusters do not modify their `ep_attribute`, "
                     f"as ZHA will not call bind() in that case."
                 )
-            elif len(request_mock.mock_calls) > 1:
+            # check that no more than one call was made for each Tuya spell level
+            elif len(request_mock.mock_calls) > tuya_spell_level:
                 pytest.fail(
                     f"Enchanted quirk {quirk} cast more than one Tuya spell. "
                     f"Make sure to only implement one cluster subclassing `TuyaEnchantableCluster` on endpoint 1."
                 )
 
+            # check 'attribute read spell' was cast correctly
             assert (
                 request_mock.mock_calls[0][1][1]
                 == foundation.GeneralCommand.Read_Attributes
-            )  # read attributes
+            )
             assert request_mock.mock_calls[0][1][3] == [4, 0, 1, 5, 7, 65534]  # spell
+
+            # check 'query data spell' was cast correctly on Tuya spell level 2 and higher
+            if tuya_spell_level >= 2:
+                assert not request_mock.mock_calls[1][1][0]
+                assert request_mock.mock_calls[1][1][1] == TUYA_QUERY_DATA
+
             request_mock.reset_mock()
 
 
@@ -1688,18 +1700,21 @@ def test_tuya_spell_devices_valid():
 
     for quirk in ENCHANTED_QUIRKS:
         enchanted_clusters = 0
+        tuya_new_manf_cluster_exists = False
+        tuya_spell_level = getattr(quirk, "TUYA_SPELL")
 
         # iterate over all clusters in the replacement
         for endpoint_id, endpoint in quirk.replacement[ENDPOINTS].items():
             if endpoint_id != 1:  # spell is only activated on endpoint 1 for now
                 continue
             for cluster in endpoint[INPUT_CLUSTERS] + endpoint[OUTPUT_CLUSTERS]:
-                if not isinstance(cluster, int) and issubclass(
-                    cluster, TuyaEnchantableCluster
-                ):
-                    enchanted_clusters += 1
+                if not isinstance(cluster, int):
+                    if issubclass(cluster, TuyaEnchantableCluster):
+                        enchanted_clusters += 1
+                    if issubclass(cluster, TuyaNewManufCluster):
+                        tuya_new_manf_cluster_exists = True
 
-        # one EnchantedDevice must have exactly one enchanted cluster on endpoint 1
+        # an EnchantedDevice must have exactly one enchanted cluster on endpoint 1
         if enchanted_clusters == 0:
             pytest.fail(
                 f"{quirk} does not have a cluster subclassing `TuyaEnchantableCluster` on endpoint 1 "
@@ -1708,4 +1723,10 @@ def test_tuya_spell_devices_valid():
         elif enchanted_clusters > 1:
             pytest.fail(
                 f"{quirk} has more than one cluster subclassing `TuyaEnchantableCluster` on endpoint 1"
+            )
+
+        # an EnchantedDevice with TUYA_SPELL >= 2 must have a cluster subclassing TuyaNewManufCluster on endpoint 1
+        if tuya_spell_level >= 2 and not tuya_new_manf_cluster_exists:
+            pytest.fail(
+                f"{quirk} has TUYA_SPELL >= 2 but no cluster subclassing `TuyaNewManufCluster` on endpoint 1"
             )
