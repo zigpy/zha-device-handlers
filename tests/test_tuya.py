@@ -1730,9 +1730,14 @@ def test_tuya_spell_devices_valid():
                 continue
             for cluster in endpoint[INPUT_CLUSTERS] + endpoint[OUTPUT_CLUSTERS]:
                 if not isinstance(cluster, int):
+                    # count all clusters which would apply the spell on bind()
                     if issubclass(cluster, TuyaEnchantableCluster):
                         enchanted_clusters += 1
-                    if issubclass(cluster, TuyaNewManufCluster):
+                    # check if there's a valid Tuya cluster where the id wasn't modified
+                    if (
+                        issubclass(cluster, TuyaNewManufCluster)
+                        and cluster.cluster_id == TuyaNewManufCluster.cluster_id
+                    ):
                         tuya_cluster_exists = True
 
         # an EnchantedDevice must have exactly one enchanted cluster on endpoint 1
