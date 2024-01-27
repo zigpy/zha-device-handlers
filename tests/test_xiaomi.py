@@ -1652,7 +1652,7 @@ async def test_aqara_t2_relay(zigpy_device_from_quirk, endpoint):
     mi_cluster.update_attribute(MultistateInput.AttributeDefs.present_value.id, 1)
     assert len(mi_listener.attribute_updates) == 1
     assert mi_listener.attribute_updates[0][0] == 0
-    assert mi_listener.attribute_updates[0][1] == "switch_" + endpoint
+    assert mi_listener.attribute_updates[0][1] == "switch_" + str(endpoint)
 
     mi_cluster.update_attribute(MultistateInput.AttributeDefs.state_text.id, "foo")
     assert len(mi_listener.attribute_updates) == 2
