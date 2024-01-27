@@ -1639,9 +1639,7 @@ async def test_xiaomi_e1_roller_commands_2(zigpy_device_from_quirk, command, val
     )
 
 
-@pytest.mark.parametrize(
-    "endpoint", [(1), (2)]
-)
+@pytest.mark.parametrize("endpoint", [(1), (2)])
 async def test_aqara_t2_relay(zigpy_device_from_quirk, endpoint):
     """Test Aqara T2 relay."""
 
