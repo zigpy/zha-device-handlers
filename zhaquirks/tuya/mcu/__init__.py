@@ -3,7 +3,6 @@ import dataclasses
 import datetime
 from typing import Any, Callable, Dict, Optional, Tuple, Union
 
-from zigpy.quirks import CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import LevelControl, OnOff
@@ -23,6 +22,9 @@ from zhaquirks.tuya import (
     TuyaNewManufCluster,
     TuyaTimePayload,
 )
+
+# add EnchantedDevice import for custom quirks backwards compatibility
+from zhaquirks.tuya import EnchantedDevice  # noqa: F401
 
 # New manufacturer attributes
 ATTR_MCU_VERSION = 0xEF00
@@ -720,13 +722,3 @@ class TuyaLevelControlManufCluster(TuyaMCUCluster):
         17: "_dp_2_attr_update",
         18: "_dp_2_attr_update",
     }
-
-
-class EnchantedDevice(CustomDevice):
-    """Class for Tuya devices which need to be unlocked by casting a 'spell'. This happens during binding.
-
-    To make sure the spell is cast, the device needs to implement a subclass of `TuyaEnchantableCluster`.
-    For more information, see the documentation of `TuyaEnchantableCluster`.
-    """
-
-    TUYA_SPELL = True
