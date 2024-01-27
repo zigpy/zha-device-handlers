@@ -22,13 +22,13 @@ from zhaquirks.const import (
 )
 from zhaquirks.quirk_ids import TUYA_PLUG_ONOFF
 from zhaquirks.tuya import (
+    EnchantedDevice,
     TuyaZBE000Cluster,
     TuyaZBElectricalMeasurement,
     TuyaZBExternalSwitchTypeCluster,
     TuyaZBMeteringCluster,
     TuyaZBOnOffAttributeCluster,
 )
-from zhaquirks.tuya.mcu import EnchantedDevice
 
 
 class Switch_1G_GPP(EnchantedDevice):
