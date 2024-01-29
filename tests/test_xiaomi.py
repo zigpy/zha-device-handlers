@@ -43,6 +43,8 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     ZONE_STATUS_CHANGE_COMMAND,
+    BUTTON_1,
+    BUTTON_2,
 )
 from zhaquirks.xiaomi import (
     LUMI,
@@ -1647,10 +1649,12 @@ async def test_aqara_t2_relay(zigpy_device_from_quirk, endpoint):
     mi_cluster = device.endpoints[endpoint].multistate_input
     mi_listener = ClusterListener(mi_cluster)
 
+    buttons = {1: BUTTON_1, 2: BUTTON_2}
+
     mi_cluster.update_attribute(MultistateInput.AttributeDefs.present_value.id, 1)
     assert len(mi_listener.attribute_updates) == 1
     assert mi_listener.attribute_updates[0][0] == 0
-    assert mi_listener.attribute_updates[0][1] == f"switch_{endpoint}"
+    assert mi_listener.attribute_updates[0][1] == buttons[endpoint]
 
     mi_cluster.update_attribute(MultistateInput.AttributeDefs.state_text.id, "foo")
     assert len(mi_listener.attribute_updates) == 2
