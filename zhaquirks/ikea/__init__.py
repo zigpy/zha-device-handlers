@@ -3,9 +3,9 @@
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import PowerConfiguration, Scenes
+from zigpy.zcl.clusters.general import Basic, PowerConfiguration, Scenes
 
-from zhaquirks import DoublingPowerConfigurationCluster, EventableCluster
+from zhaquirks import EventableCluster
 
 IKEA = "IKEA of Sweden"
 IKEA_CLUSTER_ID = 0xFC7C  # decimal = 64636
@@ -192,25 +192,55 @@ class PowerConfig1CRXCluster(CustomCluster, PowerConfiguration):
 
 
 # doubling IKEA power configuration clusters:
+
+
+class DoublingPowerConfigClusterIKEA(CustomCluster, PowerConfiguration):
+    """PowerConfiguration cluster implementation for IKEA devices.
+
+    This implementation doubles battery pct remaining for IKEA devices with old firmware.
+    """
+
+    def _update_attribute(self, attrid, value):
+        if attrid == PowerConfiguration.AttributeDefs.battery_percentage_remaining.id:
+            # get sw_build_id from attribute cache if available
+            sw_build_id = self.endpoint.basic.get(
+                Basic.AttributeDefs.sw_build_id.id, None
+            )
+
+            # if sw_build_id is not available, create task to read from device, since it should be awake now
+            # this will be used for next time battery percentage is updated
+            if sw_build_id is None:
+                self.create_catching_task(
+                    self.endpoint.basic.read_attributes(
+                        [Basic.AttributeDefs.sw_build_id.id]
+                    )
+                )
+
+            # double value if sw_build_id is not available or major version is less than 24
+            if sw_build_id is None or int(sw_build_id.split(".")[0]) < 24:
+                value = value * 2
+        super()._update_attribute(attrid, value)
+
+
 class DoublingPowerConfig2AAACluster(
-    DoublingPowerConfigurationCluster, PowerConfig2AAACluster
+    DoublingPowerConfigClusterIKEA, PowerConfig2AAACluster
 ):
     """Doubling power configuration cluster. Updating power attributes: 2 AAA."""
 
 
 class DoublingPowerConfig2CRCluster(
-    DoublingPowerConfigurationCluster, PowerConfig2CRCluster
+    DoublingPowerConfigClusterIKEA, PowerConfig2CRCluster
 ):
     """Doubling power configuration cluster. Updating power attributes: 2 CR2032."""
 
 
 class DoublingPowerConfig1CRCluster(
-    DoublingPowerConfigurationCluster, PowerConfig1CRCluster
+    DoublingPowerConfigClusterIKEA, PowerConfig1CRCluster
 ):
     """Doubling power configuration cluster. Updating power attributes: 1 CR2032."""
 
 
 class DoublingPowerConfig1CRXCluster(
-    DoublingPowerConfigurationCluster, PowerConfig1CRXCluster
+    DoublingPowerConfigClusterIKEA, PowerConfig1CRXCluster
 ):
     """Doubling power configuration cluster. Updating power attributes: 1 CR2032 and zero voltage."""
