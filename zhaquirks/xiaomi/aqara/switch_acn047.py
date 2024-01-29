@@ -19,6 +19,8 @@ from zigpy.zcl.clusters.smartenergy import Metering
 
 from zhaquirks.const import (
     ATTR_ID,
+    BUTTON_1,
+    BUTTON_2,
     COMMAND,
     DEVICE_TYPE,
     ENDPOINT_ID,
@@ -31,8 +33,6 @@ from zhaquirks.const import (
     SHORT_PRESS,
     VALUE,
     ZHA_SEND_EVENT,
-    BUTTON_1,
-    BUTTON_2,
 )
 from zhaquirks.xiaomi import (
     AnalogInputCluster,
