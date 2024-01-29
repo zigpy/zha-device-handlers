@@ -31,6 +31,8 @@ from zhaquirks.const import (
     SHORT_PRESS,
     VALUE,
     ZHA_SEND_EVENT,
+    BUTTON_1,
+    BUTTON_2,
 )
 from zhaquirks.xiaomi import (
     AnalogInputCluster,
@@ -41,7 +43,7 @@ from zhaquirks.xiaomi import (
     XiaomiCustomDevice,
 )
 
-PRESS_TYPES = {1: "switch_1", 2: "switch_2"}
+PRESS_TYPES = {1: BUTTON_1, 2: BUTTON_2}
 STATUS_TYPE_ATTR = 0x0055  # decimal = 85
 
 
