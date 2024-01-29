@@ -21,7 +21,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya.mcu import EnchantedDevice
+from zhaquirks.tuya import EnchantedDevice
 from zhaquirks.tuya.ts011f_plug import Plug_3AC_4USB
 
 
