@@ -200,24 +200,42 @@ class DoublingPowerConfigClusterIKEA(CustomCluster, PowerConfiguration):
     This implementation doubles battery pct remaining for IKEA devices with old firmware.
     """
 
-    def _update_attribute(self, attrid, value):
-        if attrid == PowerConfiguration.AttributeDefs.battery_percentage_remaining.id:
-            # get sw_build_id from attribute cache if available
-            sw_build_id = self.endpoint.basic.get(
-                Basic.AttributeDefs.sw_build_id.id, None
+    def _is_firmware_old(self):
+        # get sw_build_id from attribute cache if available
+        sw_build_id = self.endpoint.basic.get(Basic.AttributeDefs.sw_build_id.id, None)
+
+        # if first part of sw_build_id is 24 or higher, then firmware is new
+        if sw_build_id and int(sw_build_id.split(".")[0]) >= 24:
+            return False
+
+        return True
+
+    async def _read_fw_and_update_battery_pct(self, reported_battery_pct):
+        """Read firmware version and update battery percentage remaining if necessary."""
+        # read sw_build_id from device
+        await self.endpoint.basic.read_attributes([Basic.AttributeDefs.sw_build_id.id])
+
+        # check if sw_build_id was read successfully and new firmware is installed
+        # if so, update cache with reported battery percentage (non-doubled)
+        if not self._is_firmware_old():
+            self._update_attribute(
+                PowerConfiguration.AttributeDefs.battery_percentage_remaining.id,
+                reported_battery_pct,
             )
 
-            # if sw_build_id is not available, create task to read from device, since it should be awake now
-            # this will be used for next time battery percentage is updated
-            if sw_build_id is None:
-                self.create_catching_task(
-                    self.endpoint.basic.read_attributes(
-                        [Basic.AttributeDefs.sw_build_id.id]
-                    )
-                )
+    def _update_attribute(self, attrid, value):
+        if attrid == PowerConfiguration.AttributeDefs.battery_percentage_remaining.id:
+            # if sw_build_id is not cached, create task to read from device, since it should be awake now
+            if (
+                self.endpoint.basic.get(Basic.AttributeDefs.sw_build_id.id, None)
+                is None
+            ):
+                self.create_catching_task(self._read_fw_and_update_battery_pct(value))
 
-            # double value if sw_build_id is not available or major version is less than 24
-            if sw_build_id is None or int(sw_build_id.split(".")[0]) < 24:
+            # double percentage if the firmware is old or unknown
+            # the coroutine above will not have executed yet if the firmware is unknown,
+            # so we will double for now in that case too, and it updates again later if our doubling was wrong
+            if self._is_firmware_old():
                 value = value * 2
         super()._update_attribute(attrid, value)
 
