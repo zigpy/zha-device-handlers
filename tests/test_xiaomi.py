@@ -32,6 +32,8 @@ from zigpy.zcl.clusters.smartenergy import Metering
 
 import zhaquirks
 from zhaquirks.const import (
+    BUTTON_1,
+    BUTTON_2,
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -43,8 +45,6 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     ZONE_STATUS_CHANGE_COMMAND,
-    BUTTON_1,
-    BUTTON_2,
 )
 from zhaquirks.xiaomi import (
     LUMI,
