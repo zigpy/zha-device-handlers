@@ -200,6 +200,12 @@ class DoublingPowerConfigClusterIKEA(CustomCluster, PowerConfiguration):
     This implementation doubles battery pct remaining for IKEA devices with old firmware.
     """
 
+    async def bind(self):
+        """Bind cluster and read the sw_build_id for later use."""
+        result = await super().bind()
+        await self.endpoint.basic.read_attributes([Basic.AttributeDefs.sw_build_id.id])
+        return result
+
     def _is_firmware_old(self):
         """Checks if firmware is old or unknown."""
         # get sw_build_id from attribute cache if available

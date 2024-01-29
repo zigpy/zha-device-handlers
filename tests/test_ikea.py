@@ -128,6 +128,7 @@ async def test_pm25_cluster_read(zigpy_device_from_quirk):
         assert not fail
 
 
+@mock.patch("zigpy.zcl.Cluster.bind", mock.AsyncMock())
 @pytest.mark.parametrize(
     "firmware, pct_device, pct_correct, expected_pct_updates",
     (
@@ -197,3 +198,8 @@ async def test_double_power_config_firmware(
         # check no attribute reads were requested when sw_build_id is known
         assert mock_task.call_count == 0
         assert request_mock.call_count == 0
+
+        # make sure a call to bind() always reads sw_build_id (e.g. on join or to refresh when repaired/reconfigured)
+        await power_cluster.bind()
+        assert request_mock.call_count == 1
+        assert request_mock.mock_calls[0][1][0][0] == sw_build_id
