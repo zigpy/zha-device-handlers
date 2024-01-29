@@ -201,6 +201,7 @@ class DoublingPowerConfigClusterIKEA(CustomCluster, PowerConfiguration):
     """
 
     def _is_firmware_old(self):
+        """Checks if firmware is old or unknown."""
         # get sw_build_id from attribute cache if available
         sw_build_id = self.endpoint.basic.get(Basic.AttributeDefs.sw_build_id.id, None)
 
@@ -224,6 +225,11 @@ class DoublingPowerConfigClusterIKEA(CustomCluster, PowerConfiguration):
             )
 
     def _update_attribute(self, attrid, value):
+        """Update attribute to double battery percentage if firmware is old/unknown.
+
+        If the firmware version is unknown, a background task to read the firmware version is also started,
+        but the percentage is also doubled for now then, as that task happens asynchronously.
+        """
         if attrid == PowerConfiguration.AttributeDefs.battery_percentage_remaining.id:
             # if sw_build_id is not cached, create task to read from device, since it should be awake now
             if (
@@ -234,7 +240,7 @@ class DoublingPowerConfigClusterIKEA(CustomCluster, PowerConfiguration):
 
             # double percentage if the firmware is old or unknown
             # the coroutine above will not have executed yet if the firmware is unknown,
-            # so we will double for now in that case too, and it updates again later if our doubling was wrong
+            # so we double for now in that case too, and it updates again later if our doubling was wrong
             if self._is_firmware_old():
                 value = value * 2
         super()._update_attribute(attrid, value)
