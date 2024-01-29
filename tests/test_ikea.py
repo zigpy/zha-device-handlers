@@ -128,76 +128,6 @@ async def test_pm25_cluster_read(zigpy_device_from_quirk):
         assert not fail
 
 
-@pytest.mark.parametrize("quirk", (zhaquirks.ikea.fivebtnremote.IkeaTradfriRemote1,))
-async def test_double_power_config_firmware(zigpy_device_from_quirk, quirk):
-    """Test battery percentage remaining is doubled for old firmware."""
-
-    device = zigpy_device_from_quirk(quirk)
-
-    basic_cluster = device.endpoints[1].basic
-    ClusterListener(basic_cluster)
-    sw_build_id = Basic.AttributeDefs.sw_build_id.id
-
-    power_cluster = device.endpoints[1].power
-    power_listener = ClusterListener(power_cluster)
-    battery_percentage_id = (
-        PowerConfiguration.AttributeDefs.battery_percentage_remaining.id
-    )
-
-    # fake read response for attributes: return "24.0.0" for all attributes
-    def mock_read(attributes, manufacturer=None):
-        records = [
-            foundation.ReadAttributeRecord(
-                attr, foundation.Status.SUCCESS, foundation.TypeValue(None, "24.0.0")
-            )
-            for attr in attributes
-        ]
-        return (records,)
-
-    p1 = mock.patch.object(power_cluster, "create_catching_task")
-    p2 = mock.patch.object(
-        basic_cluster, "_read_attributes", mock.AsyncMock(side_effect=mock_read)
-    )
-
-    with p1 as mock_task, p2 as request_mock:
-        # update battery percentage with no firmware in attr cache, check pct doubled for now
-        power_cluster.update_attribute(battery_percentage_id, 50)
-        assert len(power_listener.attribute_updates) == 1
-        assert power_listener.attribute_updates[0] == (battery_percentage_id, 100)
-
-        # but also check that sw_build_id read is requested in the background for next update
-        assert mock_task.call_count == 1
-        await mock_task.call_args[0][0]  # await coroutine to read attribute
-        assert request_mock.call_count == 1  # verify request to read sw_build_id
-        assert request_mock.mock_calls[0][1][0][0] == sw_build_id
-
-        # battery pct was updated again because the attribute read returned new firmware, check pct not doubled now
-        assert len(power_listener.attribute_updates) == 2
-        assert power_listener.attribute_updates[1] == (battery_percentage_id, 50)
-
-        # reset mocks for testing when sw_build_id is known next
-        mock_task.reset_mock()
-        request_mock.reset_mock()
-
-        # update battery percentage with old firmware in attr cache, check pct doubled
-        basic_cluster.update_attribute(sw_build_id, "2.3.075")
-        power_cluster.update_attribute(battery_percentage_id, 50)
-        assert len(power_listener.attribute_updates) == 3
-        assert power_listener.attribute_updates[2] == (battery_percentage_id, 100)
-        # check no reads were made when sw_build_id is known
-        assert mock_task.call_count == 0
-        assert request_mock.call_count == 0
-
-        # update battery percentage with new firmware in attr cache, check pct not doubled
-        basic_cluster.update_attribute(sw_build_id, "24.4.5")
-        power_cluster.update_attribute(battery_percentage_id, 50)
-        assert len(power_listener.attribute_updates) == 4
-        assert power_listener.attribute_updates[3] == (battery_percentage_id, 50)
-        # check no reads were made when sw_build_id is known
-        assert mock_task.call_count == 0
-        assert request_mock.call_count == 0
-
-
 @pytest.mark.parametrize(
     "firmware, pct_device, pct_correct, expected_pct_updates",
     (
@@ -205,7 +135,7 @@ async def test_double_power_config_firmware(zigpy_device_from_quirk, quirk):
         ("24.4.5", 50, 50, 2),
     ),
 )
-async def test_double_power_config_firmware_2(
+async def test_double_power_config_firmware(
     zigpy_device_from_quirk, firmware, pct_device, pct_correct, expected_pct_updates
 ):
     """Test battery percentage remaining is doubled for old firmware."""
