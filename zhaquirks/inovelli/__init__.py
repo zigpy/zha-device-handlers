@@ -272,6 +272,14 @@ class Inovelli_VZM35SN_Cluster(Inovelli_VZM31SN_Cluster):
             0x001E: ("non_neutral_aux_med_gear_learn_value", t.uint8_t, True),
             0x001F: ("non_neutral_aux_low_gear_learn_value", t.uint8_t, True),
             0x0034: ("smart_fan_mode", t.Bool, True),
+            0x0078: ("fan_single_tap_behavior", t.uint8_t, True),
+            0x0079: ("fan_timer_display", t.Bool, True),
+            0x0081: ("fan_breeze_mode", t.uint32_t, True),
+            0x0082: ("fan_module_binding_control", t.uint8_t, True),
+            0x0083: ("low_for_bound_control", t.uint8_t, True),
+            0x0084: ("medium_for_bound_control", t.uint8_t, True),
+            0x0085: ("high_for_bound_control", t.uint8_t, True),
+            0x0086: ("led_color_for_bound_control", t.uint8_t, True),
             0x0107: ("smart_fan_led_display_levels", t.uint8_t, True),
         }
     )
