@@ -130,14 +130,21 @@ async def test_pm25_cluster_read(zigpy_device_from_quirk):
 
 @mock.patch("zigpy.zcl.Cluster.bind", mock.AsyncMock())
 @pytest.mark.parametrize(
-    "firmware, pct_device, pct_correct, expected_pct_updates",
+    "firmware, pct_device, pct_correct, expected_pct_updates, expect_log_warning",
     (
-        ("2.3.075", 50, 100, 1),
-        ("24.4.5", 50, 50, 2),
+        ("2.3.075", 50, 100, 1, False),
+        ("24.4.5", 50, 50, 2, False),
+        ("invalid_fw_string", 50, 50, 2, True),
     ),
 )
 async def test_double_power_config_firmware(
-    zigpy_device_from_quirk, firmware, pct_device, pct_correct, expected_pct_updates
+    caplog,
+    zigpy_device_from_quirk,
+    firmware,
+    pct_device,
+    pct_correct,
+    expected_pct_updates,
+    expect_log_warning,
 ):
     """Test battery percentage remaining is doubled for old firmware."""
 
@@ -203,3 +210,7 @@ async def test_double_power_config_firmware(
         await power_cluster.bind()
         assert request_mock.call_count == 1
         assert request_mock.mock_calls[0][1][0][0] == sw_build_id
+
+        # check log output if we expect a warning
+        if expect_log_warning:
+            assert f"sw_build_id is not a number: {firmware} for device" in caplog.text

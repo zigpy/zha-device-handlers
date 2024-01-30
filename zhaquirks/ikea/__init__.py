@@ -1,4 +1,5 @@
 """Ikea module."""
+import logging
 
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
@@ -6,6 +7,8 @@ from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, PowerConfiguration, Scenes
 
 from zhaquirks import EventableCluster
+
+_LOGGER = logging.getLogger(__name__)
 
 IKEA = "IKEA of Sweden"
 IKEA_CLUSTER_ID = 0xFC7C  # decimal = 64636
@@ -211,10 +214,21 @@ class DoublingPowerConfigClusterIKEA(CustomCluster, PowerConfiguration):
         # get sw_build_id from attribute cache if available
         sw_build_id = self.endpoint.basic.get(Basic.AttributeDefs.sw_build_id.id, None)
 
-        # if first part of sw_build_id is 24 or higher, then firmware is new
-        if sw_build_id and int(sw_build_id.split(".")[0]) >= 24:
+        # guard against possible future version formatting which includes more than just numbers
+        try:
+            # if first part of sw_build_id is 24 or higher, then firmware is new
+            if sw_build_id and int(sw_build_id.split(".")[0]) >= 24:
+                return False
+        except ValueError:
+            _LOGGER.warning(
+                "sw_build_id is not a number: %s for device %s",
+                sw_build_id,
+                self.endpoint.device.ieee,
+            )
+            # sw_build_id is not a number, so it must be new firmware
             return False
 
+        # unknown or old firmware
         return True
 
     async def _read_fw_and_update_battery_pct(self, reported_battery_pct):
