@@ -3,19 +3,19 @@
 manufacturer specific attributes to control displaying and specific configuration.
 
 ZCL Attributes Supported:
-    0x0201 - 0x0025: programing_oper_mode  # Danfoss deviated from the spec
-    all - 0xFFFD: cluster_revision
+    0x0201 - ThermostatProgrammingOperationMode (0x0025): Danfoss deviated from the spec
+    all    - ClusterRevision (0xFFFD)
 
-    0x0201 - pi_heating_demand (0x0008),
-    0x0201 - min_heat_setpoint_limit (0x0015)
-    0x0201 - max_heat_setpoint_limit (0x0016)
-    0x0201 - setpoint_change_source (0x0030)
-    0x0201 - abs_min_heat_setpoint_limit (0x0003)=5
-    0x0201 - abs_max_heat_setpoint_limit (0x0004)=35
-    0x0201 - start_of_week (0x0020)=Monday
-    0x0201 - number_of_weekly_transitions (0x0021)=42
-    0x0201 - number_of_daily_transitions (0x0022)=6
-    0x0204: keypad_lockout (0x0001)
+    0x0201 - PIHeatingDemand (0x0008),
+    0x0201 - MinHeatSetpointLimit (0x0015)
+    0x0201 - MaxHeatSetpointLimit (0x0016)
+    0x0201 - SetpointChangeSource (0x0030)
+    0x0201 - AbsMinHeatSetpointLimit (0x0003)=5
+    0x0201 - AbsMaxHeatSetpointLimit (0x0004)=35
+    0x0201 - StartOfWeek (0x0020)=Monday
+    0x0201 - NumberOfWeeklyTransitions (0x0021)=42
+    0x0201 - NumberOfDailyTransitions (0x0022)=6
+    0x0204 - KeypadLockout (0x0001)
 
 ZCL Commands Supported:
     0x0201 - SetWeeklySchedule (0x01)
@@ -23,7 +23,7 @@ ZCL Commands Supported:
     0x0201 - ClearWeeklySchedule (0x03)
 
 Broken ZCL Attributes:
-    0x0204 - 0x0000: Writing doesn't seem to do anything
+    0x0204 - TemperatureDisplayMode (0x0000): Writing doesn't seem to do anything
 """
 
 
