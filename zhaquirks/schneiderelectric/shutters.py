@@ -21,8 +21,12 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.schneiderelectric import SE_MANUF_NAME
-from zhaquirks.schneiderelectric.clusters import SEBasic, SESpecific, SEWindowCovering
+from zhaquirks.schneiderelectric import (
+    SE_MANUF_NAME,
+    SEBasic,
+    SESpecific,
+    SEWindowCovering,
+)
 
 
 class OneGangShutter1(CustomDevice):

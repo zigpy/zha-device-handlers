@@ -4,7 +4,7 @@ from unittest import mock
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 
-import zhaquirks.schneiderelectric.devices.shutters
+import zhaquirks.schneiderelectric.shutters
 
 from tests.common import ClusterListener
 
@@ -66,7 +66,7 @@ def test_1gang_shutter_1_signature(assert_signature_matches_quirk):
         "class": "zigpy.device.Device",
     }
     assert_signature_matches_quirk(
-        zhaquirks.schneiderelectric.devices.shutters.OneGangShutter1, signature
+        zhaquirks.schneiderelectric.shutters.OneGangShutter1, signature
     )
 
 
@@ -74,7 +74,7 @@ async def test_1gang_shutter_1_go_to_lift_percentage_cmd(zigpy_device_from_quirk
     """Asserts that the go_to_lift_percentage command inverts the percentage value."""
 
     device = zigpy_device_from_quirk(
-        zhaquirks.schneiderelectric.devices.shutters.OneGangShutter1
+        zhaquirks.schneiderelectric.shutters.OneGangShutter1
     )
     window_covering_cluster = device.endpoints[5].window_covering
 
@@ -95,7 +95,7 @@ async def test_1gang_shutter_1_unpatched_cmd(zigpy_device_from_quirk):
     """Asserts that unpatched ZCL commands keep working."""
 
     device = zigpy_device_from_quirk(
-        zhaquirks.schneiderelectric.devices.shutters.OneGangShutter1
+        zhaquirks.schneiderelectric.shutters.OneGangShutter1
     )
     window_covering_cluster = device.endpoints[5].window_covering
 
@@ -116,7 +116,7 @@ async def test_1gang_shutter_1_lift_percentage_updates(zigpy_device_from_quirk):
     (e.g., by the device) invert the reported percentage value."""
 
     device = zigpy_device_from_quirk(
-        zhaquirks.schneiderelectric.devices.shutters.OneGangShutter1
+        zhaquirks.schneiderelectric.shutters.OneGangShutter1
     )
     window_covering_cluster = device.endpoints[5].window_covering
     cluster_listener = ClusterListener(window_covering_cluster)
