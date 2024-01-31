@@ -14,21 +14,12 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.lightlink import LightLink
 
 from zhaquirks.const import (
-    COMMAND,
     DEVICE_TYPE,
-    DOUBLE_PRESS,
     ENDPOINTS,
     INPUT_CLUSTERS,
-    LONG_PRESS,
-    LONG_RELEASE,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
-    QUADRUPLE_PRESS,
-    QUINTUPLE_PRESS,
-    SHORT_PRESS,
-    SHORT_RELEASE,
-    TRIPLE_PRESS,
     TURN_ON,
 )
 from zhaquirks.philips import (
@@ -39,6 +30,14 @@ from zhaquirks.philips import (
 )
 
 DEVICE_SPECIFIC_UNKNOWN = 64512
+
+
+class PhilipsRom001RemoteCluster(PhilipsRemoteCluster):
+    """Philips remote cluster for ROM001."""
+
+    BUTTONS = {
+        1: TURN_ON,
+    }
 
 
 class PhilipsROM001(CustomDevice):
@@ -84,7 +83,7 @@ class PhilipsROM001(CustomDevice):
                     PhilipsBasicCluster,
                     PowerConfiguration.cluster_id,
                     Identify.cluster_id,
-                    PhilipsRemoteCluster,
+                    PhilipsRom001RemoteCluster,
                     LightLink.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
@@ -101,13 +100,6 @@ class PhilipsROM001(CustomDevice):
         }
     }
 
-    device_automation_triggers = {
-        (SHORT_PRESS, TURN_ON): {COMMAND: "on_press"},
-        (LONG_PRESS, TURN_ON): {COMMAND: "on_hold"},
-        (DOUBLE_PRESS, TURN_ON): {COMMAND: "on_double_press"},
-        (TRIPLE_PRESS, TURN_ON): {COMMAND: "on_triple_press"},
-        (QUADRUPLE_PRESS, TURN_ON): {COMMAND: "on_quadruple_press"},
-        (QUINTUPLE_PRESS, TURN_ON): {COMMAND: "on_quintuple_press"},
-        (SHORT_RELEASE, TURN_ON): {COMMAND: "on_short_release"},
-        (LONG_RELEASE, TURN_ON): {COMMAND: "on_long_release"},
-    }
+    device_automation_triggers = (
+        PhilipsRom001RemoteCluster.generate_device_automation_triggers()
+    )

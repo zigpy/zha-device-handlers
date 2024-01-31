@@ -35,41 +35,6 @@ PHILIPS = "Philips"
 SIGNIFY = "Signify Netherlands B.V."
 _LOGGER = logging.getLogger(__name__)
 
-HUE_REMOTE_DEVICE_TRIGGERS = {
-    (SHORT_PRESS, TURN_ON): {COMMAND: "on_press"},
-    (SHORT_PRESS, TURN_OFF): {COMMAND: "off_press"},
-    (SHORT_PRESS, DIM_UP): {COMMAND: "up_press"},
-    (SHORT_PRESS, DIM_DOWN): {COMMAND: "down_press"},
-    (LONG_PRESS, TURN_ON): {COMMAND: "on_hold"},
-    (LONG_PRESS, TURN_OFF): {COMMAND: "off_hold"},
-    (LONG_PRESS, DIM_UP): {COMMAND: "up_hold"},
-    (LONG_PRESS, DIM_DOWN): {COMMAND: "down_hold"},
-    (DOUBLE_PRESS, TURN_ON): {COMMAND: "on_double_press"},
-    (DOUBLE_PRESS, TURN_OFF): {COMMAND: "off_double_press"},
-    (DOUBLE_PRESS, DIM_UP): {COMMAND: "up_double_press"},
-    (DOUBLE_PRESS, DIM_DOWN): {COMMAND: "down_double_press"},
-    (TRIPLE_PRESS, TURN_ON): {COMMAND: "on_triple_press"},
-    (TRIPLE_PRESS, TURN_OFF): {COMMAND: "off_triple_press"},
-    (TRIPLE_PRESS, DIM_UP): {COMMAND: "up_triple_press"},
-    (TRIPLE_PRESS, DIM_DOWN): {COMMAND: "down_triple_press"},
-    (QUADRUPLE_PRESS, TURN_ON): {COMMAND: "on_quadruple_press"},
-    (QUADRUPLE_PRESS, TURN_OFF): {COMMAND: "off_quadruple_press"},
-    (QUADRUPLE_PRESS, DIM_UP): {COMMAND: "up_quadruple_press"},
-    (QUADRUPLE_PRESS, DIM_DOWN): {COMMAND: "down_quadruple_press"},
-    (QUINTUPLE_PRESS, TURN_ON): {COMMAND: "on_quintuple_press"},
-    (QUINTUPLE_PRESS, TURN_OFF): {COMMAND: "off_quintuple_press"},
-    (QUINTUPLE_PRESS, DIM_UP): {COMMAND: "up_quintuple_press"},
-    (QUINTUPLE_PRESS, DIM_DOWN): {COMMAND: "down_quintuple_press"},
-    (SHORT_RELEASE, TURN_ON): {COMMAND: "on_short_release"},
-    (SHORT_RELEASE, TURN_OFF): {COMMAND: "off_short_release"},
-    (SHORT_RELEASE, DIM_UP): {COMMAND: "up_short_release"},
-    (SHORT_RELEASE, DIM_DOWN): {COMMAND: "down_short_release"},
-    (LONG_RELEASE, TURN_ON): {COMMAND: "on_long_release"},
-    (LONG_RELEASE, TURN_OFF): {COMMAND: "off_long_release"},
-    (LONG_RELEASE, DIM_UP): {COMMAND: "up_long_release"},
-    (LONG_RELEASE, DIM_DOWN): {COMMAND: "down_long_release"},
-}
-
 
 class PhilipsOccupancySensing(CustomCluster):
     """Philips occupancy cluster."""
@@ -151,15 +116,23 @@ class PhilipsRemoteCluster(CustomCluster):
                 "param2": t.uint24_t,
                 "press_type": t.uint8_t,
                 "param4": t.uint8_t,
-                "param5": t.uint8_t,
-                "param6": t.uint8_t,
+                "duration": t.uint16_t,
             },
             False,
             is_manufacturer_specific=True,
         )
     }
-    BUTTONS = {1: "on", 2: "up", 3: "down", 4: "off"}
-    PRESS_TYPES = {0: "press", 1: "hold", 2: "short_release", 3: "long_release"}
+    BUTTONS = {1: TURN_ON, 2: DIM_UP, 3: DIM_DOWN, 4: TURN_OFF}
+    PRESS_TYPES = {
+        0: SHORT_PRESS,
+        1: LONG_PRESS,
+        2: SHORT_RELEASE,
+        3: LONG_RELEASE,
+        4: DOUBLE_PRESS,
+        5: TRIPLE_PRESS,
+        6: QUADRUPLE_PRESS,
+        7: QUINTUPLE_PRESS,
+    }
 
     button_press_queue = ButtonPressQueue()
 
@@ -174,37 +147,46 @@ class PhilipsRemoteCluster(CustomCluster):
     ):
         """Handle the cluster command."""
         _LOGGER.debug(
-            "PhilipsRemoteCluster - handle_cluster_request tsn: [%s] command id: %s - args: [%s]",
+            "%s - handle_cluster_request tsn: [%s] command id: %s - args: [%s]",
+            self.__class__.__name__,
             hdr.tsn,
             hdr.command_id,
             args,
         )
 
-        button = self.BUTTONS.get(args[0], args[0])
+        button = self.BUTTONS.get(args[0])
+        # Bail on unknown buttons. (This gets rid of dial button "presses")
+        if button is None:
+            return
+
         press_type = self.PRESS_TYPES.get(args[2], args[2])
+        duration = args[4]
 
         event_args = {
             BUTTON: button,
             PRESS_TYPE: press_type,
             COMMAND_ID: hdr.command_id,
+            "duration": duration,
             ARGS: args,
         }
 
         def send_press_event(click_count):
             _LOGGER.debug(
-                "PhilipsRemoteCluster - send_press_event click_count: [%s]", click_count
+                "%s - send_press_event click_count: [%s]",
+                self.__class__.__name__,
+                click_count,
             )
             press_type = None
             if click_count == 1:
-                press_type = "press"
+                press_type = SHORT_PRESS
             elif click_count == 2:
-                press_type = "double_press"
+                press_type = DOUBLE_PRESS
             elif click_count == 3:
-                press_type = "triple_press"
+                press_type = TRIPLE_PRESS
             elif click_count == 4:
-                press_type = "quadruple_press"
+                press_type = QUADRUPLE_PRESS
             elif click_count > 4:
-                press_type = "quintuple_press"
+                press_type = QUINTUPLE_PRESS
 
             if press_type:
                 # Override PRESS_TYPE
@@ -218,3 +200,15 @@ class PhilipsRemoteCluster(CustomCluster):
         else:
             action = f"{button}_{press_type}"
             self.listener_event(ZHA_SEND_EVENT, action, event_args)
+
+    @classmethod
+    def generate_device_automation_triggers(cls, additional=None):
+        triggers = {}
+        for button in cls.BUTTONS.values():
+            for press_type in cls.PRESS_TYPES.values():
+                triggers[(press_type, button)] = {COMMAND: f"{button}_{press_type}"}
+
+        if additional:
+            triggers.update(additional)
+
+        return triggers
