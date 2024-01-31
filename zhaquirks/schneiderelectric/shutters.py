@@ -43,16 +43,16 @@ class OneGangShutter1(CustomDevice):
             # output_clusters=[25]>
             5: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,  # 0x0202
+                DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
                 INPUT_CLUSTERS: [
-                    Basic.cluster_id,  # 0x0000
-                    Identify.cluster_id,  # 0x0003
-                    Groups.cluster_id,  # 0x0004
-                    Scenes.cluster_id,  # 0x0005
-                    WindowCovering.cluster_id,  # 0x0102
-                    Diagnostic.cluster_id,  # 0x0B05
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    WindowCovering.cluster_id,
+                    Diagnostic.cluster_id,
                 ],
-                OUTPUT_CLUSTERS: [Ota.cluster_id],  # 0x0019
+                OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
             # <SimpleDescriptor endpoint=21, profile=260, device_type=260,
             # device_version=0,
@@ -60,20 +60,20 @@ class OneGangShutter1(CustomDevice):
             # output_clusters=[3, 5, 6, 8, 25, 258]>
             21: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.DIMMER_SWITCH,  # 0x0104
+                DEVICE_TYPE: zha.DeviceType.DIMMER_SWITCH,
                 INPUT_CLUSTERS: [
-                    Basic.cluster_id,  # 0x0000
-                    Identify.cluster_id,  # 0x0003
-                    Diagnostic.cluster_id,  # 0x0B05
-                    SESpecific.cluster_id,  # 0xFF17
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Diagnostic.cluster_id,
+                    SESpecific.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,  # 0x0003
-                    Scenes.cluster_id,  # 0x0005
-                    OnOff.cluster_id,  # 0x0006
-                    LevelControl.cluster_id,  # 0x0008
-                    Ota.cluster_id,  # 0x0019
-                    WindowCovering.cluster_id,  # 0x0102
+                    Identify.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                    Ota.cluster_id,
+                    WindowCovering.cluster_id,
                 ],
             },
         },
@@ -83,33 +83,33 @@ class OneGangShutter1(CustomDevice):
         ENDPOINTS: {
             5: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,  # 0x0202
+                DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
                 INPUT_CLUSTERS: [
-                    SEBasic,  # 0x0000
-                    Identify.cluster_id,  # 0x0003
-                    Groups.cluster_id,  # 0x0004
-                    Scenes.cluster_id,  # 0x0005
-                    SEWindowCovering,  # 0x0102
-                    Diagnostic.cluster_id,  # 0x0B05
+                    SEBasic,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    SEWindowCovering,
+                    Diagnostic.cluster_id,
                 ],
-                OUTPUT_CLUSTERS: [Ota.cluster_id],  # 0x0019
+                OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
             21: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.DIMMER_SWITCH,  # 0x0104
+                DEVICE_TYPE: zha.DeviceType.DIMMER_SWITCH,
                 INPUT_CLUSTERS: [
-                    SEBasic,  # 0x0000
-                    Identify.cluster_id,  # 0x0003
-                    Diagnostic.cluster_id,  # 0x0B05
-                    SESpecific,  # 0xff17
+                    SEBasic,
+                    Identify.cluster_id,
+                    Diagnostic.cluster_id,
+                    SESpecific,
                 ],
                 OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,  # 0x0003
-                    Scenes.cluster_id,  # 0x0005
-                    OnOff.cluster_id,  # 0x0006
-                    LevelControl.cluster_id,  # 0x0008
-                    Ota.cluster_id,  # 0x0019
-                    SEWindowCovering,  # 0x0102
+                    Identify.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                    Ota.cluster_id,
+                    SEWindowCovering,
                 ],
             },
         }
