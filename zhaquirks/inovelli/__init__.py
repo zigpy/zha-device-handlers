@@ -192,8 +192,7 @@ class Inovelli_VZM31SN_Cluster(Inovelli_Cluster):
     ep_attribute = "inovelli_vzm31sn_cluster"
 
     attributes = {
-        key: Inovelli_Cluster.attributes[key]
-        for key in Inovelli_Cluster.attributes
+        key: Inovelli_Cluster.attributes[key] for key in Inovelli_Cluster.attributes
     }
 
     attributes.update(
@@ -267,8 +266,7 @@ class Inovelli_VZM35SN_Cluster(Inovelli_Cluster):
     ep_attribute = "inovelli_vzm31sn_cluster"
 
     attributes = {
-        key: Inovelli_Cluster.attributes[key]
-        for key in Inovelli_Cluster.attributes
+        key: Inovelli_Cluster.attributes[key] for key in Inovelli_Cluster.attributes
     }
 
     attributes.update(
@@ -347,8 +345,7 @@ class Inovelli_VZM36_Light_Cluster(Inovelli_Cluster):
     ep_attribute = "inovelli_vzm31sn_cluster"
 
     attributes = {
-        key: Inovelli_Cluster.attributes[key]
-        for key in Inovelli_Cluster.attributes
+        key: Inovelli_Cluster.attributes[key] for key in Inovelli_Cluster.attributes
     }
 
     attributes.update(
@@ -368,8 +365,7 @@ class Inovelli_VZM36_Fan_Cluster(Inovelli_Cluster):
     ep_attribute = "inovelli_vzm31sn_cluster"
 
     attributes = {
-        key: Inovelli_Cluster.attributes[key]
-        for key in Inovelli_Cluster.attributes
+        key: Inovelli_Cluster.attributes[key] for key in Inovelli_Cluster.attributes
     }
 
     attributes.update(
