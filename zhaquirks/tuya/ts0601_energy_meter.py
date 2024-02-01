@@ -1,9 +1,12 @@
 """Tuya Energy Meter."""
 
 from typing import Dict, Union
+
 from zigpy.profiles import zgp, zha
+from zigpy.quirks import CustomDevice
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, GreenPowerProxy, Groups, Ota, Scenes, Time
+
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -18,7 +21,7 @@ from zhaquirks.tuya import (
     TuyaZBElectricalMeasurement,
     TuyaZBMeteringClusterWithUnit,
 )
-from zhaquirks.tuya.mcu import DPToAttributeMapping, EnchantedDevice, TuyaMCUCluster
+from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster
 
 AC_FREQUENCY_COEF = 0x027A
 CURRENT_SUMM_DELIVERED_COEF = 0x0277
@@ -770,7 +773,7 @@ class TuyaEnergyMeterManufClusterB2Clamp(TuyaEnergyMeterManufCluster):
             self.update_multi_clamp_metering_clusters()
 
 
-class TuyaEnergyMeter1Clamp(EnchantedDevice):
+class TuyaEnergyMeter1Clamp(CustomDevice):
     """Tuya PJ-MGW1203 1 Clamp Energy Meter."""
 
     signature = {
@@ -813,7 +816,7 @@ class TuyaEnergyMeter1Clamp(EnchantedDevice):
     }
 
 
-class TuyaEnergyMeterB1ClampZGP(EnchantedDevice):
+class TuyaEnergyMeterB1ClampZGP(CustomDevice):
     """Tuya Bidirectional 1 Clamp Energy Meter with Zigbee Green Power."""
 
     signature = {
@@ -871,7 +874,7 @@ class TuyaEnergyMeterB1ClampZGP(EnchantedDevice):
     }
 
 
-class TuyaEnergyMeterB2Clamp(EnchantedDevice):
+class TuyaEnergyMeterB2Clamp(CustomDevice):
     """Tuya EARU PC311-Z-TY Bidirectional 2 Clamp Energy Meter."""
 
     signature = {
@@ -938,7 +941,7 @@ class TuyaEnergyMeterB2Clamp(EnchantedDevice):
     }
 
 
-class TuyaEnergyMeterB2ClampZGP(EnchantedDevice):
+class TuyaEnergyMeterB2ClampZGP(CustomDevice):
     """Tuya PJ-1203A Bidirectional 2 Clamp Energy Meter with Zigbee Green Power."""
 
     signature = {
