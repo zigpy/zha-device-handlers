@@ -511,7 +511,7 @@ class TuyaEnergyMeterManufClusterB1Clamp(TuyaEnergyMeterManufCluster):
 
 
 class TuyaEnergyMeterManufClusterB2Clamp(TuyaEnergyMeterManufCluster):
-    """Tuya Energy Meter bidirectional 2 clamp manufacturer cluster."""
+    """MatSee Plus Tuya Energy Meter bidirectional 2 clamp manufacturer cluster."""
 
     TUYA_DP_AC_FREQUENCY = 111
     TUYA_DP_AC_FREQUENCY_COEF = 122
@@ -603,10 +603,6 @@ class TuyaEnergyMeterManufClusterB2Clamp(TuyaEnergyMeterManufCluster):
             TuyaMCUCluster.ep_attribute,
             "instantaneous_demand_coefficient_b",
         ),
-        TUYA_DP_INSTANTANEOUS_DEMAND_TOTAL: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "instantaneous_demand_total",
-        ),
         TUYA_DP_POWER_FACTOR: DPToAttributeMapping(
             TuyaElectricalMeasurement.ep_attribute,
             "power_factor",
@@ -672,7 +668,6 @@ class TuyaEnergyMeterManufClusterB2Clamp(TuyaEnergyMeterManufCluster):
         TUYA_DP_INSTANTANEOUS_DEMAND_B: "_dp_2_attr_update",
         TUYA_DP_INSTANTANEOUS_DEMAND_COEF: "_dp_2_attr_update",
         TUYA_DP_INSTANTANEOUS_DEMAND_COEF_B: "_dp_2_attr_update",
-        TUYA_DP_INSTANTANEOUS_DEMAND_TOTAL: "_dp_2_attr_update",
         TUYA_DP_POWER_FACTOR: "_dp_2_attr_update",
         TUYA_DP_POWER_FACTOR_B: "_dp_2_attr_update",
         TUYA_DP_POWER_FLOW: "_dp_2_attr_update",
@@ -773,6 +768,132 @@ class TuyaEnergyMeterManufClusterB2Clamp(TuyaEnergyMeterManufCluster):
             self.update_multi_clamp_metering_clusters()
 
 
+class TuyaEnergyMeterManufClusterB2ClampEARU(TuyaEnergyMeterManufClusterB2Clamp):
+    """EARU Tuya Energy Meter bidirectional 2 clamp manufacturer cluster."""
+
+    TUYA_DP_AC_FREQUENCY = 113
+    TUYA_DP_CURRENT_SUMM_DELIVERED = 101
+    TUYA_DP_CURRENT_SUMM_DELIVERED_B = 103
+    TUYA_DP_CURRENT_SUMM_DELIVERED_TOTAL = 1
+    TUYA_DP_CURRENT_SUMM_RECEIVED = 102
+    TUYA_DP_CURRENT_SUMM_RECEIVED_B = 104
+    TUYA_DP_CURRENT_SUMM_RECEIVED_TOTAL = 2
+    TUYA_DP_INSTANTANEOUS_DEMAND = 108
+    TUYA_DP_INSTANTANEOUS_DEMAND_B = 111
+    TUYA_DP_INSTANTANEOUS_DEMAND_TOTAL = 9
+    TUYA_DP_POWER_FACTOR = 109
+    TUYA_DP_POWER_FACTOR_B = 112
+    TUYA_DP_POWER_FLOW = 114
+    TUYA_DP_POWER_FLOW_B = 115
+    TUYA_DP_UPDATE_PERIOD = 116
+    TUYA_DP_RMS_CURRENT = 107
+    TUYA_DP_RMS_CURRENT_B = 110
+    TUYA_DP_RMS_CURRENT_TOTAL = 105
+    TUYA_DP_RMS_VOLTAGE = 106
+
+    dp_to_attribute: Dict[int, DPToAttributeMapping] = {
+        TUYA_DP_AC_FREQUENCY: DPToAttributeMapping(
+            TuyaElectricalMeasurement.ep_attribute,
+            "ac_frequency",
+        ),
+        TUYA_DP_CURRENT_SUMM_DELIVERED: DPToAttributeMapping(
+            TuyaMetering.ep_attribute,
+            "current_summ_delivered",
+            converter=lambda x: x * 100,
+        ),
+        TUYA_DP_CURRENT_SUMM_DELIVERED_B: DPToAttributeMapping(
+            TuyaMetering.ep_attribute,
+            "current_summ_delivered",
+            endpoint_id=2,
+            converter=lambda x: x * 100,
+        ),
+        TUYA_DP_CURRENT_SUMM_RECEIVED: DPToAttributeMapping(
+            TuyaMetering.ep_attribute,
+            "current_summ_received",
+            converter=lambda x: x * 100,
+        ),
+        TUYA_DP_CURRENT_SUMM_RECEIVED_B: DPToAttributeMapping(
+            TuyaMetering.ep_attribute,
+            "current_summ_received",
+            endpoint_id=2,
+            converter=lambda x: x * 100,
+        ),
+        TUYA_DP_INSTANTANEOUS_DEMAND: DPToAttributeMapping(
+            TuyaMCUCluster.ep_attribute,
+            "instantaneous_demand",
+        ),
+        TUYA_DP_INSTANTANEOUS_DEMAND_B: DPToAttributeMapping(
+            TuyaMCUCluster.ep_attribute,
+            "instantaneous_demand_b",
+        ),
+        TUYA_DP_INSTANTANEOUS_DEMAND_TOTAL: DPToAttributeMapping(
+            TuyaMCUCluster.ep_attribute,
+            "instantaneous_demand_total",
+        ),
+        TUYA_DP_POWER_FACTOR: DPToAttributeMapping(
+            TuyaElectricalMeasurement.ep_attribute,
+            "power_factor",
+        ),
+        TUYA_DP_POWER_FACTOR_B: DPToAttributeMapping(
+            TuyaElectricalMeasurement.ep_attribute,
+            "power_factor",
+            endpoint_id=2,
+        ),
+        TUYA_DP_POWER_FLOW: DPToAttributeMapping(
+            TuyaMCUCluster.ep_attribute,
+            "power_flow",
+            converter=lambda x: PowerFlow(x),
+        ),
+        TUYA_DP_POWER_FLOW_B: DPToAttributeMapping(
+            TuyaMCUCluster.ep_attribute,
+            "power_flow_b",
+            converter=lambda x: PowerFlow(x),
+        ),
+        TUYA_DP_RMS_CURRENT: DPToAttributeMapping(
+            TuyaElectricalMeasurement.ep_attribute,
+            "rms_current",
+        ),
+        TUYA_DP_RMS_CURRENT_B: DPToAttributeMapping(
+            TuyaElectricalMeasurement.ep_attribute,
+            "rms_current",
+            endpoint_id=2,
+        ),
+        TUYA_DP_RMS_VOLTAGE: DPToAttributeMapping(
+            TuyaElectricalMeasurement.ep_attribute,
+            "rms_voltage",
+        ),
+        TUYA_DP_UPDATE_PERIOD: DPToAttributeMapping(
+            TuyaMCUCluster.ep_attribute,
+            "update_period",
+        ),
+    }
+
+    data_point_handlers = {
+        TUYA_DP_AC_FREQUENCY: "_dp_2_attr_update",
+        TUYA_DP_CURRENT_SUMM_DELIVERED: "_dp_2_attr_update",
+        TUYA_DP_CURRENT_SUMM_DELIVERED_B: "_dp_2_attr_update",
+        TUYA_DP_CURRENT_SUMM_RECEIVED: "_dp_2_attr_update",
+        TUYA_DP_CURRENT_SUMM_RECEIVED_B: "_dp_2_attr_update",
+        TUYA_DP_INSTANTANEOUS_DEMAND: "_dp_2_attr_update",
+        TUYA_DP_INSTANTANEOUS_DEMAND_B: "_dp_2_attr_update",
+        TUYA_DP_INSTANTANEOUS_DEMAND_TOTAL: "_dp_2_attr_update",
+        TUYA_DP_POWER_FACTOR: "_dp_2_attr_update",
+        TUYA_DP_POWER_FACTOR_B: "_dp_2_attr_update",
+        TUYA_DP_POWER_FLOW: "_dp_2_attr_update",
+        TUYA_DP_POWER_FLOW_B: "_dp_2_attr_update",
+        TUYA_DP_RMS_CURRENT: "_dp_2_attr_update",
+        TUYA_DP_RMS_CURRENT_B: "_dp_2_attr_update",
+        TUYA_DP_RMS_VOLTAGE: "_dp_2_attr_update",
+        TUYA_DP_UPDATE_PERIOD: "_dp_2_attr_update",
+    }
+
+    attributes = {
+        **TuyaEnergyMeterManufCluster.attributes,
+        SUPPRESS_NEGATIVE: ("suppress_negative", t.Bool, True),
+        SUPPRESS_NEGATIVE_B: ("suppress_negative_b", t.Bool, True),
+    }
+
+
 class TuyaEnergyMeter1Clamp(CustomDevice):
     """Tuya PJ-MGW1203 1 Clamp Energy Meter."""
 
@@ -837,10 +958,10 @@ class TuyaEnergyMeterB1ClampZGP(CustomDevice):
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
+            # <SimpleDescriptor endpoint=242 profile=41440 device_type=97
+            # input_clusters=[]
+            # output_clusters=[33]
             242: {
-                # <SimpleDescriptor endpoint=242 profile=41440 device_type=97
-                # input_clusters=[]
-                # output_clusters=[33]
                 PROFILE_ID: zgp.PROFILE_ID,
                 DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
@@ -878,17 +999,11 @@ class TuyaEnergyMeterB2Clamp(CustomDevice):
     """Tuya EARU PC311-Z-TY Bidirectional 2 Clamp Energy Meter."""
 
     signature = {
-        # "node_descriptor": "<NodeDescriptor byte1=1 byte2=64 mac_capability_flags=142 manufacturer_code=4417
-        #                       maximum_buffer_size=66 maximum_incoming_transfer_size=66 server_mask=10752
-        #                       maximum_outgoing_transfer_size=66 descriptor_capability_field=0>",
-        # device_version=1
-        # input_clusters=[0x0000, 0x0004, 0x0005, 0xef00]
-        # output_clusters=[0x000a, 0x0019]
         MODELS_INFO: [("_TZE200_rks0sgb7", "TS0601")],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=51
             # device_version=1
-            # input_clusters=[0, 4, 5, 61184]
+            # input_clusters: [0, 4, 5, 61184, 65382]
             # output_clusters=[10, 25]>
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -914,7 +1029,7 @@ class TuyaEnergyMeterB2Clamp(CustomDevice):
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaEnergyMeterManufClusterB2Clamp,
+                    TuyaEnergyMeterManufClusterB2ClampEARU,
                     TuyaElectricalMeasurement,
                     TuyaMetering,
                 ],
@@ -945,12 +1060,6 @@ class TuyaEnergyMeterB2ClampZGP(CustomDevice):
     """Tuya PJ-1203A Bidirectional 2 Clamp Energy Meter with Zigbee Green Power."""
 
     signature = {
-        # "node_descriptor": "<NodeDescriptor byte1=1 byte2=64 mac_capability_flags=142 manufacturer_code=4417
-        #                       maximum_buffer_size=66 maximum_incoming_transfer_size=66 server_mask=10752
-        #                       maximum_outgoing_transfer_size=66 descriptor_capability_field=0>",
-        # device_version=1
-        # input_clusters=[0x0000, 0x0004, 0x0005, 0xef00]
-        # output_clusters=[0x000a, 0x0019]
         MODELS_INFO: [("_TZE204_81yrt3lo", "TS0601")],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=51
@@ -968,10 +1077,10 @@ class TuyaEnergyMeterB2ClampZGP(CustomDevice):
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
+            # <SimpleDescriptor endpoint=242 profile=41440 device_type=97
+            # input_clusters=[]
+            # output_clusters=[33]
             242: {
-                # <SimpleDescriptor endpoint=242 profile=41440 device_type=97
-                # input_clusters=[]
-                # output_clusters=[33]
                 PROFILE_ID: zgp.PROFILE_ID,
                 DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
