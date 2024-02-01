@@ -792,16 +792,7 @@ class TuyaEnergyMeter1Clamp(EnchantedDevice):
                     TuyaMCUCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
-            },
-            242: {
-                # <SimpleDescriptor endpoint=242 profile=41440 device_type=97
-                # input_clusters=[]
-                # output_clusters=[33]
-                PROFILE_ID: zgp.PROFILE_ID,
-                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
-                INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
-            },
+            }
         },
     }
 
@@ -819,19 +810,13 @@ class TuyaEnergyMeter1Clamp(EnchantedDevice):
                     TuyaMetering,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
-            },
-            242: {
-                PROFILE_ID: zgp.PROFILE_ID,
-                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
-                INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
-            },
+            }
         }
     }
 
 
-class TuyaEnergyMeterB1Clamp(EnchantedDevice):
-    """Tuya PJ-1203A Bidirectional 1 Clamp Energy Meter."""
+class TuyaEnergyMeterB1ClampZGP(EnchantedDevice):
+    """Tuya Bidirectional 1 Clamp Energy Meter with Zigbee Green Power."""
 
     signature = {
         MODELS_INFO: [("_TZE204_ac0fhfiq", "TS0601")],
@@ -898,7 +883,73 @@ class TuyaEnergyMeterB2Clamp(EnchantedDevice):
         # device_version=1
         # input_clusters=[0x0000, 0x0004, 0x0005, 0xef00]
         # output_clusters=[0x000a, 0x0019]
-        MODELS_INFO: [("_TZE204_81yrt3lo", "TS0601"), ("_TZE200_rks0sgb7", "TS0601")],
+        MODELS_INFO: [("_TZE200_rks0sgb7", "TS0601")],
+        ENDPOINTS: {
+            # <SimpleDescriptor endpoint=1 profile=260 device_type=51
+            # device_version=1
+            # input_clusters=[0, 4, 5, 61184]
+            # output_clusters=[10, 25]>
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaMCUCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.METER_INTERFACE,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaEnergyMeterManufClusterB2Clamp,
+                    TuyaElectricalMeasurement,
+                    TuyaMetering,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.METER_INTERFACE,
+                INPUT_CLUSTERS: [
+                    TuyaElectricalMeasurement,
+                    TuyaMetering,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            3: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.METER_INTERFACE,
+                INPUT_CLUSTERS: [
+                    TuyaMetering,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+        }
+    }
+
+
+class TuyaEnergyMeterB2ClampZGP(EnchantedDevice):
+    """Tuya PJ-1203A Bidirectional 2 Clamp Energy Meter with Zigbee Green Power."""
+
+    signature = {
+        # "node_descriptor": "<NodeDescriptor byte1=1 byte2=64 mac_capability_flags=142 manufacturer_code=4417
+        #                       maximum_buffer_size=66 maximum_incoming_transfer_size=66 server_mask=10752
+        #                       maximum_outgoing_transfer_size=66 descriptor_capability_field=0>",
+        # device_version=1
+        # input_clusters=[0x0000, 0x0004, 0x0005, 0xef00]
+        # output_clusters=[0x000a, 0x0019]
+        MODELS_INFO: [("_TZE204_81yrt3lo", "TS0601")],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=51
             # device_version=1
