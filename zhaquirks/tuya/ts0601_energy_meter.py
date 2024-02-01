@@ -1,8 +1,8 @@
 """Tuya Energy Meter."""
 
-import zigpy.types as t
-from typing import Dict
+from typing import Dict, Union
 from zigpy.profiles import zgp, zha
+import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, GreenPowerProxy, Groups, Ota, Scenes, Time
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -18,11 +18,7 @@ from zhaquirks.tuya import (
     TuyaZBElectricalMeasurement,
     TuyaZBMeteringClusterWithUnit,
 )
-from zhaquirks.tuya.mcu import (
-    DPToAttributeMapping,
-    EnchantedDevice,
-    TuyaMCUCluster,
-)
+from zhaquirks.tuya.mcu import DPToAttributeMapping, EnchantedDevice, TuyaMCUCluster
 
 AC_FREQUENCY_COEF = 0x027A
 CURRENT_SUMM_DELIVERED_COEF = 0x0277
@@ -44,6 +40,8 @@ UPDATE_PERIOD = 0x0281
 METER_CONFIGURATION = 0x5000
 SUPPRESS_NEGATIVE = 0x5001
 SUPPRESS_NEGATIVE_B = 0x5002
+
+EARU_MANUFACTURER_CLUSTER = 0xFF66
 
 
 class MeterConfiguration(t.enum8):
@@ -135,7 +133,7 @@ class TuyaPowerPhase:
 class TuyaEnergyMeterCluster(TuyaLocalCluster):
     """Parent class for Tuya Energy Meter reporting clusters."""
 
-    def attr_present(self, attr_names: str | tuple):
+    def attr_present(self, attr_names: Union[str, tuple]):
         if not isinstance(attr_names, tuple):
             attr_names = (attr_names,)
         return all(
@@ -148,7 +146,7 @@ class TuyaEnergyMeterCluster(TuyaLocalCluster):
         )
 
     @property
-    def clamp_id(self):
+    def channel_id(self):
         map = {2: "b", 3: "c"}
         return map.get(self.endpoint.endpoint_id, None)
 
@@ -163,14 +161,14 @@ class TuyaEnergyMeterCluster(TuyaLocalCluster):
 
     def suppress_negative(self, value: int):
         if value < 0 and self.mcu_attr(
-            f"suppress_negative{'_' + self.clamp_id if self.clamp_id else ''}"
+            f"suppress_negative{'_' + self.channel_id if self.channel_id else ''}"
         ):
             value = 0
         return value
 
     def value_with_power_flow(self, value: int):
         power_flow = self.mcu_attr(
-            f"power_flow{'_' + self.clamp_id if self.clamp_id else ''}"
+            f"power_flow{'_' + self.channel_id if self.channel_id else ''}"
         )
         if power_flow in (PowerFlow.forward, PowerFlow.reverse):
             value = value * (-1 if power_flow else 1)
@@ -395,7 +393,7 @@ class TuyaEnergyMeterManufCluster(NoManufacturerCluster, TuyaMCUCluster):
 
         cls.attributes = {**cls.attributes}
         cls.reporting_attributes = []
-        for dp, dp_map in cls.dp_to_attribute.items():
+        for _dp, dp_map in cls.dp_to_attribute.items():
             attr_names = (
                 dp_map.attribute_name
                 if isinstance(dp_map.attribute_name, tuple)
@@ -874,7 +872,7 @@ class TuyaEnergyMeterB1ClampZGP(EnchantedDevice):
 
 
 class TuyaEnergyMeterB2Clamp(EnchantedDevice):
-    """Tuya PJ-1203A Bidirectional 2 Clamp Energy Meter."""
+    """Tuya EARU PC311-Z-TY Bidirectional 2 Clamp Energy Meter."""
 
     signature = {
         # "node_descriptor": "<NodeDescriptor byte1=1 byte2=64 mac_capability_flags=142 manufacturer_code=4417
@@ -897,6 +895,7 @@ class TuyaEnergyMeterB2Clamp(EnchantedDevice):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     TuyaMCUCluster.cluster_id,
+                    EARU_MANUFACTURER_CLUSTER,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
