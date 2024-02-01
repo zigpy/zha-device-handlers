@@ -28,6 +28,7 @@ from zhaquirks.const import (
 )
 from zhaquirks.quirk_ids import TUYA_PLUG_ONOFF
 from zhaquirks.tuya import (
+    EnchantedDevice,
     TuyaNewManufCluster,
     TuyaZB1888Cluster,
     TuyaZBE000Cluster,
@@ -37,7 +38,6 @@ from zhaquirks.tuya import (
     TuyaZBMeteringClusterWithUnit,
     TuyaZBOnOffAttributeCluster,
 )
-from zhaquirks.tuya.mcu import EnchantedDevice
 
 
 class Plug(EnchantedDevice):

@@ -32,6 +32,8 @@ from zigpy.zcl.clusters.smartenergy import Metering
 
 import zhaquirks
 from zhaquirks.const import (
+    BUTTON_1,
+    BUTTON_2,
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -1610,31 +1612,6 @@ async def test_xiaomi_e1_roller_commands_1(zigpy_device_from_quirk, command, val
 
 
 @pytest.mark.parametrize(
-    "quirk",
-    (zhaquirks.xiaomi.aqara.switch_acn047.AqaraT2Relay,),
-)
-async def test_aqara_t2_relay(zigpy_device_from_quirk, quirk):
-    """Test Aqara T2 relay."""
-
-    device = zigpy_device_from_quirk(quirk)
-    mi_cluster = device.endpoints[1].multistate_input
-    mi_listener = ClusterListener(mi_cluster)
-
-    mi_cluster.update_attribute(MultistateInput.AttributeDefs.present_value.id, 1)
-    assert len(mi_listener.attribute_updates) == 1
-    assert mi_listener.attribute_updates[0][0] == 0
-    assert mi_listener.attribute_updates[0][1] == "single"
-
-    mi_cluster.update_attribute(MultistateInput.AttributeDefs.state_text.id, "foo")
-    assert len(mi_listener.attribute_updates) == 2
-    assert (
-        mi_listener.attribute_updates[1][0]
-        == MultistateInput.AttributeDefs.state_text.id
-    )
-    assert mi_listener.attribute_updates[1][1] == "foo"
-
-
-@pytest.mark.parametrize(
     "command, value",
     [
         (WindowCovering.ServerCommandDefs.go_to_lift_percentage.id, 60),
@@ -1662,6 +1639,30 @@ async def test_xiaomi_e1_roller_commands_2(zigpy_device_from_quirk, command, val
     assert (
         analog_cluster._write_attributes.call_args[0][0][0].value.value == 100 - value
     )
+
+
+@pytest.mark.parametrize("endpoint", [(1), (2)])
+async def test_aqara_t2_relay(zigpy_device_from_quirk, endpoint):
+    """Test Aqara T2 relay."""
+
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.switch_acn047.AqaraT2Relay)
+    mi_cluster = device.endpoints[endpoint].multistate_input
+    mi_listener = ClusterListener(mi_cluster)
+
+    buttons = {1: BUTTON_1, 2: BUTTON_2}
+
+    mi_cluster.update_attribute(MultistateInput.AttributeDefs.present_value.id, 1)
+    assert len(mi_listener.attribute_updates) == 1
+    assert mi_listener.attribute_updates[0][0] == 0
+    assert mi_listener.attribute_updates[0][1] == buttons[endpoint]
+
+    mi_cluster.update_attribute(MultistateInput.AttributeDefs.state_text.id, "foo")
+    assert len(mi_listener.attribute_updates) == 2
+    assert (
+        mi_listener.attribute_updates[1][0]
+        == MultistateInput.AttributeDefs.state_text.id
+    )
+    assert mi_listener.attribute_updates[1][1] == "foo"
 
 
 def test_aqara_acn003_signature_match(assert_signature_matches_quirk):

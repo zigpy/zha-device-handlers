@@ -19,8 +19,11 @@ from zigpy.zcl.clusters.smartenergy import Metering
 
 from zhaquirks.const import (
     ATTR_ID,
+    BUTTON_1,
+    BUTTON_2,
     COMMAND,
     DEVICE_TYPE,
+    ENDPOINT_ID,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
@@ -40,8 +43,7 @@ from zhaquirks.xiaomi import (
     XiaomiCustomDevice,
 )
 
-PRESS_TYPES = {1: "single"}
-SINGLE = "single"
+PRESS_TYPES = {1: BUTTON_1, 2: BUTTON_2}
 STATUS_TYPE_ATTR = 0x0055  # decimal = 85
 
 
@@ -54,14 +56,15 @@ class MultistateInputCluster(CustomCluster, MultistateInput):
         super().__init__(*args, **kwargs)
 
     def _update_attribute(self, attrid, value):
-        if attrid == STATUS_TYPE_ATTR:
-            self._current_state = PRESS_TYPES.get(value)
+        if attrid == STATUS_TYPE_ATTR and value == 1:
+            self._current_state = PRESS_TYPES.get(self.endpoint.endpoint_id)
             event_args = {
                 PRESS_TYPE: self._current_state,
                 ATTR_ID: attrid,
                 VALUE: value,
+                ENDPOINT_ID: self.endpoint.endpoint_id,
             }
-            self.listener_event(ZHA_SEND_EVENT, self, self._current_state, event_args)
+            self.listener_event(ZHA_SEND_EVENT, self._current_state, event_args)
             super()._update_attribute(0, self._current_state)
         else:
             super()._update_attribute(attrid, value)
@@ -206,5 +209,12 @@ class AqaraT2Relay(XiaomiCustomDevice):
     }
 
     device_automation_triggers = {
-        (SHORT_PRESS, SHORT_PRESS): {COMMAND: SINGLE},
+        (SHORT_PRESS, PRESS_TYPES[1]): {
+            ENDPOINT_ID: 1,
+            COMMAND: PRESS_TYPES[1],
+        },
+        (SHORT_PRESS, PRESS_TYPES[2]): {
+            ENDPOINT_ID: 2,
+            COMMAND: PRESS_TYPES[2],
+        },
     }

@@ -57,11 +57,11 @@ from zhaquirks.const import (
     TURN_ON,
 )
 from zhaquirks.tuya import (
+    EnchantedDevice,
     TuyaNoBindPowerConfigurationCluster,
     TuyaSmartRemoteOnOffCluster,
     TuyaZBExternalSwitchTypeCluster,
 )
-from zhaquirks.tuya.mcu import EnchantedDevice
 
 
 class TuyaSmartRemote004FROK(EnchantedDevice):
