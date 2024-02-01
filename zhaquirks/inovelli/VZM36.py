@@ -25,7 +25,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.inovelli import INOVELLI_AUTOMATION_TRIGGERS, Inovelli_VZM36_Cluster, Inovelli_VZM36_Fan_Cluster
+from zhaquirks.inovelli import INOVELLI_AUTOMATION_TRIGGERS, Inovelli_VZM36_Light_Cluster, Inovelli_VZM36_Fan_Cluster
 
 INOVELLI_VZM36_CLUSTER_ID = 64561
 WWAH_CLUSTER_ID = 64599
