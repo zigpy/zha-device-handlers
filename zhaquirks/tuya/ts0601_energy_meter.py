@@ -68,7 +68,7 @@ class PowerFlow(t.enum8):
 
 
 class PowerCalculation:
-    """For calculating power in different meter configurations."""
+    """For calculating power values in different device configurations."""
 
     @staticmethod
     def a_plus_b(a, b):
@@ -81,18 +81,6 @@ class PowerCalculation:
     @staticmethod
     def power_flow_preempt_a_plus_b(a, b, c, flow: PowerFlow):
         return PowerFlow.forward if flow == PowerFlow.reverse and a > b - c else flow
-
-    POWER_C_METHODS = {
-        MeterConfiguration.a_plus_b: a_plus_b,
-        MeterConfiguration.a_minus_b: a_minus_b,
-        MeterConfiguration.grid_plus_production: a_plus_b,
-        MeterConfiguration.demand_minus_grid: a_minus_b,
-        MeterConfiguration.demand_minus_production: a_minus_b,
-    }
-
-    POWER_FLOW_PREEMPT_METHODS = {
-        MeterConfiguration.grid_plus_production: power_flow_preempt_a_plus_b,
-    }
 
     @classmethod
     def power_c(cls, meter_configuration, a, b):
@@ -107,6 +95,85 @@ class PowerCalculation:
         if method:
             return method(a, b, c, flow)
         return flow
+
+    @staticmethod
+    def active_power_from_apparent_power_and_power_factor(apparent_power, power_factor):
+        if apparent_power is None or power_factor is None:
+            return
+        power_factor *= 0.01
+        return apparent_power * power_factor
+
+    @staticmethod
+    def apparent_power_from_rms_current_and_rms_voltage(
+        rms_current,
+        rms_voltage,
+        ac_current_divisor: int = 1,
+        ac_current_multiplier: int = 1,
+        ac_voltage_divisor: int = 1,
+        ac_voltage_multiplier: int = 1,
+        ac_power_divisor: int = 1,
+        ac_power_multiplier: int = 1,
+    ):
+        if rms_current is None or rms_voltage is None:
+            return
+        return (
+            (rms_current * ac_current_multiplier / ac_current_divisor)
+            * (rms_voltage * ac_voltage_multiplier / ac_voltage_divisor)
+            * ac_power_divisor
+            / ac_power_multiplier
+        )
+
+    @staticmethod
+    def reactive_power_from_apparent_power_and_active_power(
+        apparent_power, active_power
+    ):
+        if (
+            apparent_power is None
+            or active_power is None
+            or apparent_power < abs(active_power)
+        ):
+            return
+        return (apparent_power**2 - active_power**2) ** 0.5
+
+    @staticmethod
+    def reactive_power_from_apparent_power_and_power_factor(
+        apparent_power, power_factor
+    ):
+        if apparent_power is None or power_factor is None:
+            return
+        power_factor *= 0.01
+        return (apparent_power**2 * (1 - power_factor**2)) ** 0.5
+
+    @staticmethod
+    def suppress_negative(value):
+        if value and value < 0:
+            value = 0
+        return value
+
+    @staticmethod
+    def align_power_with_power_flow(value: int, power_flow=None):
+        if not value:
+            pass
+        elif (
+            value > 0
+            and power_flow == PowerFlow.reverse
+            or value < 0
+            and power_flow == PowerFlow.forward
+        ):
+            value = value * -1
+        return value
+
+    POWER_C_METHODS = {
+        MeterConfiguration.a_plus_b: a_plus_b,
+        MeterConfiguration.a_minus_b: a_minus_b,
+        MeterConfiguration.grid_plus_production: a_plus_b,
+        MeterConfiguration.demand_minus_grid: a_minus_b,
+        MeterConfiguration.demand_minus_production: a_minus_b,
+    }
+
+    POWER_FLOW_PREEMPT_METHODS = {
+        MeterConfiguration.grid_plus_production: power_flow_preempt_a_plus_b,
+    }
 
 
 class TuyaPowerPhase:
@@ -163,19 +230,19 @@ class TuyaEnergyMeterCluster(TuyaLocalCluster):
         return value
 
     def suppress_negative(self, value: int):
-        if value < 0 and self.mcu_attr(
+        if self.mcu_attr(
             f"suppress_negative{'_' + self.channel_id if self.channel_id else ''}"
         ):
-            value = 0
+            value = PowerCalculation.suppress_negative(value)
         return value
 
     def value_with_power_flow(self, value: int):
-        power_flow = self.mcu_attr(
-            f"power_flow{'_' + self.channel_id if self.channel_id else ''}"
+        return PowerCalculation.align_power_with_power_flow(
+            value,
+            self.mcu_attr(
+                f"power_flow{'_' + self.channel_id if self.channel_id else ''}"
+            ),
         )
-        if power_flow in (PowerFlow.forward, PowerFlow.reverse):
-            value = value * (-1 if power_flow else 1)
-        return value
 
 
 class TuyaElectricalMeasurement(
@@ -195,11 +262,13 @@ class TuyaElectricalMeasurement(
         **TuyaZBElectricalMeasurement._CONSTANT_ATTRIBUTES,
         AC_FREQUENCY_DIVISOR: 100,
         AC_FREQUENCY_MULTIPLIER: 1,
-        AC_POWER_DIVISOR: 100,
+        AC_POWER_DIVISOR: 100,  # For 2 decimal places
         AC_POWER_MULTIPLIER: 1,
         AC_VOLTAGE_DIVISOR: 10,
         AC_VOLTAGE_MULTIPLIER: 1,
     }
+
+    _DIRECTIONAL_ATTRIBUTES = ("active_power", "reactive_power")
 
     _MEASUREMENT_TYPES = {
         "active_power": 0b000001001,
@@ -213,71 +282,74 @@ class TuyaElectricalMeasurement(
         "apparent_power_ph_c": 0b000100100,
     }
 
-    def update_measurement_type(self, attr_name=None):
+    def update_measurement_type(self, attr_name=None) -> None:
         measurement_type = 0b000000000
         for measurement, mask in self._MEASUREMENT_TYPES.items():
             if measurement == attr_name or self.get(measurement) is not None:
                 measurement_type |= mask
         super().update_attribute("measurement_type", measurement_type)
 
-    def active_power_from_apparent_power_and_power_factor(self, value):
-        power_factor = self.get("power_factor")
-        if power_factor is None:
-            return
-        power_factor *= 0.01
-        active_power = value * power_factor
-        self.update_attribute("active_power", round(active_power))
+    def calculated_cluster_attributes(self, attr_name, value) -> None:
+        if attr_name == "active_power" and not self.attr_present("reactive_power"):
+            reactive_power = (
+                PowerCalculation.reactive_power_from_apparent_power_and_active_power(
+                    value, self.get("power_factor")
+                )
+            )
+            if reactive_power is not None:
+                self.update_attribute("reactive_power", round(reactive_power))
 
-    def apparent_power_from_rms_current_and_rms_voltage(self, value):
-        rms_voltage = self.get("rms_voltage") or self.endpoint.device.endpoints[
-            1
-        ].electrical_measurement.get("rms_voltage")
-        if rms_voltage is None:
-            return
-        ac_current_divisor = self.get("ac_current_divisor", 1)
-        ac_current_multiplier = self.get("ac_current_multiplier", 1)
-        ac_power_divisor = self.get("ac_power_divisor", 1)
-        ac_power_multiplier = self.get("ac_power_multiplier", 1)
-        ac_voltage_divisor = self.get("ac_voltage_divisor", 1)
-        ac_voltage_multiplier = self.get("ac_voltage_multiplier", 1)
+        if attr_name == "apparent_power" and not self.attr_present("reactive_power"):
+            reactive_power = (
+                PowerCalculation.reactive_power_from_apparent_power_and_power_factor(
+                    value, self.get("power_factor")
+                )
+            )
+            if reactive_power is not None:
+                self.update_attribute("reactive_power", round(reactive_power))
 
-        current = value / ac_current_divisor * ac_current_multiplier
-        voltage = rms_voltage / ac_voltage_divisor * ac_voltage_multiplier
-        apparent_power = (current * voltage) * ac_power_divisor / ac_power_multiplier
-        self.update_attribute("apparent_power", round(apparent_power))
+        if attr_name == "apparent_power" and not self.attr_present("active_power"):
+            active_power = (
+                PowerCalculation.active_power_from_apparent_power_and_power_factor(
+                    value, self.get("power_factor")
+                )
+            )
+            if active_power is not None:
+                self.update_attribute("active_power", round(active_power))
 
-    def reactive_power_from_apparent_power_and_power_factor(self, value):
-        power_factor = self.get("power_factor")
-        if power_factor is None:
-            return
-        power_factor *= 0.01
-        reactive_power = (value**2 * (1 - power_factor**2)) ** 0.5
-        self.update_attribute("reactive_power", round(reactive_power))
-
-    def reactive_power_from_apparent_power_and_active_power(self, value):
-        apparent_power = self.get("apparent_power")
-        if apparent_power is None or apparent_power < abs(value):
-            return
-        reactive_power = (apparent_power**2 - value**2) ** 0.5
-        self.update_attribute("reactive_power", round(reactive_power))
+        if attr_name == "rms_current" and not self.attr_present("apparent_power"):
+            rms_voltage = self.get("rms_voltage") or self.endpoint.device.endpoints[
+                1
+            ].electrical_measurement.get("rms_voltage")
+            apparent_power = (
+                PowerCalculation.apparent_power_from_rms_current_and_rms_voltage(
+                    value,
+                    rms_voltage,
+                    self.get("ac_current_divisor", 1),
+                    self.get("ac_current_multiplier", 1),
+                    self.get("ac_voltage_divisor", 1),
+                    self.get("ac_voltage_multiplier", 1),
+                    self.get("ac_power_divisor", 1),
+                    self.get("ac_power_multiplier", 1),
+                )
+            )
+            if apparent_power is not None:
+                self.update_attribute(
+                    "apparent_power",
+                    round(apparent_power),
+                )
 
     def update_attribute(self, attr_name: str, value) -> None:
         if attr_name in self._MEASUREMENT_TYPES:
             self.update_measurement_type(attr_name)
-        if attr_name in ("active_power", "reactive_power"):
+
+        if attr_name in self._DIRECTIONAL_ATTRIBUTES:
             value = self.value_with_power_flow(value)
             value = self.suppress_negative(value)
 
         super().update_attribute(attr_name, value)
 
-        if attr_name == "active_power" and not self.attr_present("reactive_power"):
-            self.reactive_power_from_apparent_power_and_active_power(value)
-        if attr_name == "apparent_power" and not self.attr_present("reactive_power"):
-            self.reactive_power_from_apparent_power_and_power_factor(value)
-        if attr_name == "apparent_power" and not self.attr_present("active_power"):
-            self.active_power_from_apparent_power_and_power_factor(value)
-        if attr_name == "rms_current" and not self.attr_present("apparent_power"):
-            self.apparent_power_from_rms_current_and_rms_voltage(value)
+        self.calculated_cluster_attributes(attr_name, value)
 
 
 class TuyaMetering(
@@ -296,10 +368,12 @@ class TuyaMetering(
         **TuyaZBMeteringClusterWithUnit._CONSTANT_ATTRIBUTES,
         STATUS: 0x00,
         MULTIPLIER: 1,
-        DIVISOR: 10000,
+        DIVISOR: 100000,  # For 2 decimal places after conversion from kW to W
         SUMMATION_FORMATTING: 0b01111010,
         DEMAND_FORMATTING: 0b01111010,
     }
+
+    _DIRECTIONAL_ATTRIBUTES = "instantaneous_demand"
 
     _METER_DEVICE_TYPES = {
         (1, MeterConfiguration.production): 11,
@@ -317,19 +391,20 @@ class TuyaMetering(
     def update_attribute(self, attr_name: str, value) -> None:
         if attr_name != "metering_device_type":
             self.update_metering_device_type()
-        if attr_name in ("instantaneous_demand"):
+
+        if attr_name in self._DIRECTIONAL_ATTRIBUTES:
             value = self.value_with_power_flow(value)
             value = self.suppress_negative(value)
+
         super().update_attribute(attr_name, value)
 
 
 class TuyaEnergyMeterManufCluster(NoManufacturerCluster, TuyaMCUCluster):
     """Manufactuter cluster for Tuya Energy Meter devices."""
 
-    LOCAL_ATTRIBUTES = (METER_CONFIGURATION, SUPPRESS_NEGATIVE, SUPPRESS_NEGATIVE_B)
-    LOCAL_DEFAULTS = {METER_CONFIGURATION: 0}
+    _LOCAL_ATTRIBUTES = (METER_CONFIGURATION, SUPPRESS_NEGATIVE, SUPPRESS_NEGATIVE_B)
 
-    _attributes = {
+    _ATTRIBUTES = {
         AC_FREQUENCY_COEF: ("ac_frequency_coefficient", t.uint32_t_be, True),
         CURRENT_SUMM_DELIVERED_COEF: (
             "current_summ_delivered_coefficient",
@@ -391,7 +466,7 @@ class TuyaEnergyMeterManufCluster(NoManufacturerCluster, TuyaMCUCluster):
         """Initializes device specific configuration"""
 
         attr_name_to_id = {}
-        for attr_id, attr in cls._attributes.items():
+        for attr_id, attr in cls._ATTRIBUTES.items():
             attr_name_to_id[attr[0] if isinstance(attr, tuple) else attr.name] = attr_id
 
         cls.attributes = {**cls.attributes}
@@ -407,25 +482,118 @@ class TuyaEnergyMeterManufCluster(NoManufacturerCluster, TuyaMCUCluster):
                 if dp_map.ep_attribute == TuyaMCUCluster.ep_attribute:
                     attr_id = attr_name_to_id.get(attr_name)
                     if attr_id is not None:
-                        cls.attributes[attr_id] = cls._attributes[attr_id]
+                        cls.attributes[attr_id] = cls._ATTRIBUTES[attr_id]
 
                 # Attributes available in reporting clusters
                 elif attr_name not in cls.reporting_attributes:
                     cls.reporting_attributes.append(
                         (dp_map.ep_attribute, attr_name, dp_map.endpoint_id or 1)
                     )
+
+        # Device type specific meter_configuration enums
+        if getattr(cls, "METER_CONFIGURATION_TYPE", None):
+            cls.attributes[METER_CONFIGURATION] = (
+                "meter_configuration",
+                cls.METER_CONFIGURATION_TYPE,
+                True,
+            )
+
         super().__init_subclass__()
 
     async def write_attributes(self, attributes, manufacturer=None):
         """Handle writes to local configuration attributes."""
 
         local_attributes = {}
-        for attr_id in set(self.LOCAL_ATTRIBUTES).intersection(set(attributes)):
+        for attr_id in set(self._LOCAL_ATTRIBUTES).intersection(set(attributes)):
             local_attributes[attr_id] = self.attributes[attr_id].type(
                 attributes.pop(attr_id)
             )
         await TuyaLocalCluster.write_attributes(self, local_attributes, manufacturer)
         return await super().write_attributes(attributes, manufacturer=manufacturer)
+
+
+class B2ClampReportOrchestrator:
+    """Methods for co-ordinating updates to device reporting clusters of asynchronous power and power_flow readings."""
+
+    def get_cluster(
+        self,
+        endpoint_id: int,
+        ep_attribute: str,
+    ):
+        return getattr(self.endpoint.device.endpoints[endpoint_id], ep_attribute)
+
+    def update_multi_clamp_metering_clusters(self):
+        """Orchestrate updates to reporting clusters."""
+
+        metering_a = self.get_cluster(1, TuyaMetering.ep_attribute)
+        metering_b = self.get_cluster(2, TuyaMetering.ep_attribute)
+        metering_c = self.get_cluster(3, TuyaMetering.ep_attribute)
+
+        instantaneous_demand = self.get("instantaneous_demand")
+        instantaneous_demand_b = self.get("instantaneous_demand_b")
+        instantaneous_demand_c = getattr(self, "instantaneous_demand_c", 0)
+
+        meter_configuration = self.get(
+            "meter_configuration", MeterConfiguration.a_plus_b
+        )
+
+        self.update_attribute(
+            "power_flow",
+            PowerCalculation.power_flow_preempt(
+                meter_configuration,
+                instantaneous_demand,
+                instantaneous_demand_b,
+                instantaneous_demand_c,
+                self.get("power_flow"),
+            ),
+        )
+        self.update_attribute(
+            "power_flow_b",
+            PowerCalculation.power_flow_preempt(
+                meter_configuration,
+                instantaneous_demand_b,
+                instantaneous_demand,
+                instantaneous_demand_c,
+                self.get("power_flow_b"),
+            ),
+        )
+
+        metering_a.update_attribute("instantaneous_demand", instantaneous_demand)
+        metering_b.update_attribute("instantaneous_demand", instantaneous_demand_b)
+
+        current_summ_delivered_c = PowerCalculation.power_c(
+            meter_configuration,
+            metering_a.get("current_summ_delivered"),
+            metering_b.get("current_summ_delivered"),
+        )
+        current_summ_received_c = PowerCalculation.power_c(
+            meter_configuration,
+            metering_a.get("current_summ_received"),
+            metering_b.get("current_summ_received"),
+        )
+        self.instantaneous_demand_c = PowerCalculation.power_c(
+            meter_configuration,
+            metering_a.get("instantaneous_demand"),
+            metering_b.get("instantaneous_demand"),
+        )
+
+        metering_c.update_attribute(
+            "current_summ_delivered",
+            current_summ_delivered_c,
+        )
+        metering_c.update_attribute(
+            "current_summ_received",
+            current_summ_received_c,
+        )
+        metering_c.update_attribute(
+            "instantaneous_demand",
+            self.instantaneous_demand_c,
+        )
+
+    def update_attribute(self, attr_name: str, value) -> None:
+        super().update_attribute(attr_name, value)
+        if attr_name == "instantaneous_demand_b":
+            self.update_multi_clamp_metering_clusters()
 
 
 class TuyaEnergyMeterManufCluster1Clamp(TuyaEnergyMeterManufCluster):
@@ -440,11 +608,12 @@ class TuyaEnergyMeterManufCluster1Clamp(TuyaEnergyMeterManufCluster):
         TUYA_DP_CURRENT_SUMM_DELIVERED: DPToAttributeMapping(
             TuyaMetering.ep_attribute,
             "current_summ_delivered",
-            converter=lambda x: x * 10,
+            converter=lambda x: x * 100,
         ),
         TUYA_DP_INSTANTANEOUS_DEMAND: DPToAttributeMapping(
             TuyaMetering.ep_attribute,
             "instantaneous_demand",
+            converter=lambda x: x * 10,
         ),
         TUYA_DP_RMS_CURRENT: DPToAttributeMapping(
             TuyaElectricalMeasurement.ep_attribute,
@@ -477,17 +646,17 @@ class TuyaEnergyMeterManufClusterB1Clamp(TuyaEnergyMeterManufCluster):
         TUYA_DP_CURRENT_SUMM_DELIVERED: DPToAttributeMapping(
             TuyaMetering.ep_attribute,
             "current_summ_delivered",
-            converter=lambda x: x * 100,
+            converter=lambda x: x * 1000,
         ),
         TUYA_DP_CURRENT_SUMM_RECEIVED: DPToAttributeMapping(
             TuyaMetering.ep_attribute,
             "current_summ_received",
-            converter=lambda x: x * 100,
+            converter=lambda x: x * 1000,
         ),
         TUYA_DP_INSTANTANEOUS_DEMAND: DPToAttributeMapping(
             TuyaMetering.ep_attribute,
             "instantaneous_demand",
-            converter=lambda x: x * 10,
+            converter=lambda x: x * 100,
         ),
         TUYA_DP_POWER_FLOW: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
@@ -510,7 +679,9 @@ class TuyaEnergyMeterManufClusterB1Clamp(TuyaEnergyMeterManufCluster):
     }
 
 
-class TuyaEnergyMeterManufClusterB2Clamp(TuyaEnergyMeterManufCluster):
+class TuyaEnergyMeterManufClusterB2Clamp(
+    B2ClampReportOrchestrator, TuyaEnergyMeterManufCluster
+):
     """MatSee Plus Tuya Energy Meter bidirectional 2 clamp manufacturer cluster."""
 
     TUYA_DP_AC_FREQUENCY = 111
@@ -552,13 +723,13 @@ class TuyaEnergyMeterManufClusterB2Clamp(TuyaEnergyMeterManufCluster):
         TUYA_DP_CURRENT_SUMM_DELIVERED: DPToAttributeMapping(
             TuyaMetering.ep_attribute,
             "current_summ_delivered",
-            converter=lambda x: x * 100,
+            converter=lambda x: x * 1000,
         ),
         TUYA_DP_CURRENT_SUMM_DELIVERED_B: DPToAttributeMapping(
             TuyaMetering.ep_attribute,
             "current_summ_delivered",
             endpoint_id=2,
-            converter=lambda x: x * 100,
+            converter=lambda x: x * 1000,
         ),
         TUYA_DP_CURRENT_SUMM_DELIVERED_COEF: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
@@ -571,13 +742,13 @@ class TuyaEnergyMeterManufClusterB2Clamp(TuyaEnergyMeterManufCluster):
         TUYA_DP_CURRENT_SUMM_RECEIVED: DPToAttributeMapping(
             TuyaMetering.ep_attribute,
             "current_summ_received",
-            converter=lambda x: x * 100,
+            converter=lambda x: x * 1000,
         ),
         TUYA_DP_CURRENT_SUMM_RECEIVED_B: DPToAttributeMapping(
             TuyaMetering.ep_attribute,
             "current_summ_received",
             endpoint_id=2,
-            converter=lambda x: x * 100,
+            converter=lambda x: x * 1000,
         ),
         TUYA_DP_CURRENT_SUMM_RECEIVED_COEF: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
@@ -590,10 +761,12 @@ class TuyaEnergyMeterManufClusterB2Clamp(TuyaEnergyMeterManufCluster):
         TUYA_DP_INSTANTANEOUS_DEMAND: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
             "instantaneous_demand",
+            converter=lambda x: x * 10,
         ),
         TUYA_DP_INSTANTANEOUS_DEMAND_B: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
             "instantaneous_demand_b",
+            converter=lambda x: x * 10,
         ),
         TUYA_DP_INSTANTANEOUS_DEMAND_COEF: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
@@ -687,88 +860,10 @@ class TuyaEnergyMeterManufClusterB2Clamp(TuyaEnergyMeterManufCluster):
         SUPPRESS_NEGATIVE_B: ("suppress_negative_b", t.Bool, True),
     }
 
-    def get_cluster(
-        self,
-        endpoint_id: int,
-        ep_attribute: str,
-    ):
-        return getattr(self.endpoint.device.endpoints[endpoint_id], ep_attribute)
 
-    def update_multi_clamp_metering_clusters(self):
-        """Orchestrate updates to reporting clusters."""
-
-        metering_a = self.get_cluster(1, TuyaMetering.ep_attribute)
-        metering_b = self.get_cluster(2, TuyaMetering.ep_attribute)
-        metering_c = self.get_cluster(3, TuyaMetering.ep_attribute)
-
-        instantaneous_demand = self.get("instantaneous_demand")
-        instantaneous_demand_b = self.get("instantaneous_demand_b")
-        instantaneous_demand_c = getattr(self, "instantaneous_demand_c", 0)
-
-        meter_configuration = self.get(
-            "meter_configuration", MeterConfiguration.a_plus_b
-        )
-
-        self.update_attribute(
-            "power_flow",
-            PowerCalculation.power_flow_preempt(
-                meter_configuration,
-                instantaneous_demand,
-                instantaneous_demand_b,
-                instantaneous_demand_c,
-                self.get("power_flow"),
-            ),
-        )
-        self.update_attribute(
-            "power_flow_b",
-            PowerCalculation.power_flow_preempt(
-                meter_configuration,
-                instantaneous_demand_b,
-                instantaneous_demand,
-                instantaneous_demand_c,
-                self.get("power_flow_b"),
-            ),
-        )
-
-        metering_a.update_attribute("instantaneous_demand", instantaneous_demand)
-        metering_b.update_attribute("instantaneous_demand", instantaneous_demand_b)
-
-        current_summ_delivered_c = PowerCalculation.power_c(
-            meter_configuration,
-            metering_a.get("current_summ_delivered"),
-            metering_b.get("current_summ_delivered"),
-        )
-        current_summ_received_c = PowerCalculation.power_c(
-            meter_configuration,
-            metering_a.get("current_summ_received"),
-            metering_b.get("current_summ_received"),
-        )
-        self.instantaneous_demand_c = PowerCalculation.power_c(
-            meter_configuration,
-            metering_a.get("instantaneous_demand"),
-            metering_b.get("instantaneous_demand"),
-        )
-
-        metering_c.update_attribute(
-            "current_summ_delivered",
-            current_summ_delivered_c,
-        )
-        metering_c.update_attribute(
-            "current_summ_received",
-            current_summ_received_c,
-        )
-        metering_c.update_attribute(
-            "instantaneous_demand",
-            self.instantaneous_demand_c,
-        )
-
-    def update_attribute(self, attr_name: str, value) -> None:
-        super().update_attribute(attr_name, value)
-        if attr_name == "instantaneous_demand_b":
-            self.update_multi_clamp_metering_clusters()
-
-
-class TuyaEnergyMeterManufClusterB2ClampEARU(TuyaEnergyMeterManufClusterB2Clamp):
+class TuyaEnergyMeterManufClusterB2ClampEARU(
+    B2ClampReportOrchestrator, TuyaEnergyMeterManufCluster
+):
     """EARU Tuya Energy Meter bidirectional 2 clamp manufacturer cluster."""
 
     TUYA_DP_AC_FREQUENCY = 113
@@ -799,36 +894,34 @@ class TuyaEnergyMeterManufClusterB2ClampEARU(TuyaEnergyMeterManufClusterB2Clamp)
         TUYA_DP_CURRENT_SUMM_DELIVERED: DPToAttributeMapping(
             TuyaMetering.ep_attribute,
             "current_summ_delivered",
-            converter=lambda x: x * 100,
+            converter=lambda x: x * 1000,
         ),
         TUYA_DP_CURRENT_SUMM_DELIVERED_B: DPToAttributeMapping(
             TuyaMetering.ep_attribute,
             "current_summ_delivered",
             endpoint_id=2,
-            converter=lambda x: x * 100,
+            converter=lambda x: x * 1000,
         ),
         TUYA_DP_CURRENT_SUMM_RECEIVED: DPToAttributeMapping(
             TuyaMetering.ep_attribute,
             "current_summ_received",
-            converter=lambda x: x * 100,
+            converter=lambda x: x * 1000,
         ),
         TUYA_DP_CURRENT_SUMM_RECEIVED_B: DPToAttributeMapping(
             TuyaMetering.ep_attribute,
             "current_summ_received",
             endpoint_id=2,
-            converter=lambda x: x * 100,
+            converter=lambda x: x * 1000,
         ),
         TUYA_DP_INSTANTANEOUS_DEMAND: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
             "instantaneous_demand",
+            converter=lambda x: x * 10,
         ),
         TUYA_DP_INSTANTANEOUS_DEMAND_B: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
             "instantaneous_demand_b",
-        ),
-        TUYA_DP_INSTANTANEOUS_DEMAND_TOTAL: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "instantaneous_demand_total",
+            converter=lambda x: x * 10,
         ),
         TUYA_DP_POWER_FACTOR: DPToAttributeMapping(
             TuyaElectricalMeasurement.ep_attribute,
