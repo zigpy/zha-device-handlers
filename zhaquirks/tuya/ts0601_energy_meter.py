@@ -48,13 +48,31 @@ EARU_MANUFACTURER_CLUSTER = 0xFF66
 
 
 class MeterConfiguration(t.enum8):
-    """Enums for different Energy Meter configurations."""
+    """Enums for for all Energy Meter configurations."""
 
     a = 0x00
     a_plus_b = 0x01
     a_minus_b = 0x02
     grid = 0x03
     production = 0x04
+    grid_plus_production = 0x05
+    demand_minus_grid = 0x06
+    demand_minus_production = 0x07
+
+
+class MeterConfiguration1Channel(t.enum8):
+    """Enums for 1 Channel Energy Meter configurations."""
+
+    a = 0x00
+    grid = 0x03
+    production = 0x04
+
+
+class MeterConfiguration2Channel(t.enum8):
+    """Enums for 2 Channel Energy Meter configurations."""
+
+    a_plus_b = 0x01
+    a_minus_b = 0x02
     grid_plus_production = 0x05
     demand_minus_grid = 0x06
     demand_minus_production = 0x07
@@ -200,8 +218,10 @@ class TuyaPowerPhase:
         return voltage, current, power * 100
 
 
-class TuyaEnergyMeterCluster(TuyaLocalCluster):
+class TuyaEnergyMeterReportingCluster(TuyaLocalCluster):
     """Parent class for Tuya Energy Meter reporting clusters."""
+
+    _ENDPOINT_TO_CHANNEL = {2: "b", 3: "c"}
 
     def attr_present(self, attr_names: Union[str, tuple]):
         if not isinstance(attr_names, tuple):
@@ -217,8 +237,7 @@ class TuyaEnergyMeterCluster(TuyaLocalCluster):
 
     @property
     def channel_id(self):
-        map = {2: "b", 3: "c"}
-        return map.get(self.endpoint.endpoint_id, None)
+        return self._ENDPOINT_TO_CHANNEL.get(self.endpoint.endpoint_id, None)
 
     def mcu_attr(self, attr_name: str, default=None):
         try:
@@ -246,7 +265,7 @@ class TuyaEnergyMeterCluster(TuyaLocalCluster):
 
 
 class TuyaElectricalMeasurement(
-    TuyaEnergyMeterCluster,
+    TuyaEnergyMeterReportingCluster,
     TuyaZBElectricalMeasurement,
 ):
     """Tuya ElectricalMeasurement cluster for Energy Meter devices."""
@@ -353,7 +372,7 @@ class TuyaElectricalMeasurement(
 
 
 class TuyaMetering(
-    TuyaEnergyMeterCluster,
+    TuyaEnergyMeterReportingCluster,
     TuyaZBMeteringClusterWithUnit,
 ):
     """Tuya Metering cluster for Energy Meter devices."""
@@ -375,7 +394,7 @@ class TuyaMetering(
 
     _DIRECTIONAL_ATTRIBUTES = "instantaneous_demand"
 
-    _METER_DEVICE_TYPES = {
+    _METERING_DEVICE_TYPES = {
         (1, MeterConfiguration.production): 11,
         (2, MeterConfiguration.demand_minus_production): 11,
         (2, MeterConfiguration.grid_plus_production): 11,
@@ -383,7 +402,7 @@ class TuyaMetering(
     }
 
     def update_metering_device_type(self):
-        metering_device_type = self._METER_DEVICE_TYPES.get(
+        metering_device_type = self._METERING_DEVICE_TYPES.get(
             (self.endpoint.endpoint_id, self.mcu_attr("meter_configuration")), 0
         )
         super().update_attribute("metering_device_type", metering_device_type)
@@ -456,11 +475,21 @@ class TuyaEnergyMeterManufCluster(NoManufacturerCluster, TuyaMCUCluster):
         ),
     }
 
+    _REPORTING_CHANNELS_METER_CONFIGURATION = {
+        1: (MeterConfiguration1Channel, MeterConfiguration.a),
+        2: (MeterConfiguration2Channel, MeterConfiguration.a_plus_b),
+    }
+
     def __init__(self, *args, **kwargs):
-        """Init defaults for local attributes."""
+        """Init."""
         super().__init__(*args, **kwargs)
-        # if self.get("meter_configuration") is None:
-        #    self.update_attribute("meter_configuration", MeterConfiguration.a)
+
+        # Set default Meter Configuration for device type
+        if self.get("meter_configuration") is None:
+            _attr_type, default = self._REPORTING_CHANNELS_METER_CONFIGURATION.get(
+                self.REPORTING_CHANNELS, (MeterConfiguration, None)
+            )
+            self.update_attribute("meter_configuration", default)
 
     def __init_subclass__(cls) -> None:
         """Initializes device specific configuration"""
@@ -471,6 +500,7 @@ class TuyaEnergyMeterManufCluster(NoManufacturerCluster, TuyaMCUCluster):
 
         cls.attributes = {**cls.attributes}
         cls.reporting_attributes = []
+
         for _dp, dp_map in cls.dp_to_attribute.items():
             attr_names = (
                 dp_map.attribute_name
@@ -490,13 +520,15 @@ class TuyaEnergyMeterManufCluster(NoManufacturerCluster, TuyaMCUCluster):
                         (dp_map.ep_attribute, attr_name, dp_map.endpoint_id or 1)
                     )
 
-        # Device type specific meter_configuration enums
-        if getattr(cls, "METER_CONFIGURATION_TYPE", None):
-            cls.attributes[METER_CONFIGURATION] = (
-                "meter_configuration",
-                cls.METER_CONFIGURATION_TYPE,
-                True,
-            )
+        # Device MeterConfiguration attribute enum type
+        attr_type, _default = cls._REPORTING_CHANNELS_METER_CONFIGURATION.get(
+            cls.REPORTING_CHANNELS, (MeterConfiguration, None)
+        )
+        cls.attributes[METER_CONFIGURATION] = (
+            "meter_configuration",
+            attr_type,
+            True,
+        )
 
         super().__init_subclass__()
 
@@ -599,6 +631,8 @@ class B2ClampReportOrchestrator:
 class TuyaEnergyMeterManufCluster1Clamp(TuyaEnergyMeterManufCluster):
     """Tuya Energy Meter manufacturer cluster."""
 
+    REPORTING_CHANNELS = 1
+
     TUYA_DP_CURRENT_SUMM_DELIVERED = 101
     TUYA_DP_INSTANTANEOUS_DEMAND = 19
     TUYA_DP_RMS_CURRENT = 18
@@ -642,6 +676,8 @@ class TuyaEnergyMeterManufClusterB1Clamp(TuyaEnergyMeterManufCluster):
     TUYA_DP_POWER_FLOW = 102
     TUYA_DP_POWER_PHASE = 6
 
+    REPORTING_CHANNELS = 1
+
     dp_to_attribute: Dict[int, DPToAttributeMapping] = {
         TUYA_DP_CURRENT_SUMM_DELIVERED: DPToAttributeMapping(
             TuyaMetering.ep_attribute,
@@ -683,6 +719,8 @@ class TuyaEnergyMeterManufClusterB2Clamp(
     B2ClampReportOrchestrator, TuyaEnergyMeterManufCluster
 ):
     """MatSee Plus Tuya Energy Meter bidirectional 2 clamp manufacturer cluster."""
+
+    REPORTING_CHANNELS = 2
 
     TUYA_DP_AC_FREQUENCY = 111
     TUYA_DP_AC_FREQUENCY_COEF = 122
@@ -865,6 +903,8 @@ class TuyaEnergyMeterManufClusterB2ClampEARU(
     B2ClampReportOrchestrator, TuyaEnergyMeterManufCluster
 ):
     """EARU Tuya Energy Meter bidirectional 2 clamp manufacturer cluster."""
+
+    REPORTING_CHANNELS = 2
 
     TUYA_DP_AC_FREQUENCY = 113
     TUYA_DP_CURRENT_SUMM_DELIVERED = 101
