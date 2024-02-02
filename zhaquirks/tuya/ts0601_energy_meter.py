@@ -169,7 +169,7 @@ class PowerCalculation:
         return value
 
     @staticmethod
-    def align_power_with_power_flow(value: int, power_flow=None):
+    def align_value_with_power_flow(value: int, power_flow=None):
         if not value:
             pass
         elif (
@@ -208,14 +208,14 @@ class TuyaPowerPhase:
         voltage = value[1] | value[0] << 8
         current = value[4] | value[3] << 8
         power = value[7] | value[6] << 8
-        return voltage, current, power * 100
+        return voltage, current, power * 10
 
     @staticmethod
     def variant_3(value):
         voltage = (value[0] << 8) | value[1]
         current = (value[2] << 16) | (value[3] << 8) | value[4]
         power = (value[5] << 16) | (value[6] << 8) | value[7]
-        return voltage, current, power * 100
+        return voltage, current, power * 10
 
 
 class TuyaEnergyMeterReportingCluster(TuyaLocalCluster):
@@ -256,7 +256,7 @@ class TuyaEnergyMeterReportingCluster(TuyaLocalCluster):
         return value
 
     def value_with_power_flow(self, value: int):
-        return PowerCalculation.align_power_with_power_flow(
+        return PowerCalculation.align_value_with_power_flow(
             value,
             self.mcu_attr(
                 f"power_flow{'_' + self.channel_id if self.channel_id else ''}"
@@ -270,21 +270,14 @@ class TuyaElectricalMeasurement(
 ):
     """Tuya ElectricalMeasurement cluster for Energy Meter devices."""
 
-    AC_FREQUENCY_DIVISOR = 0x0401
-    AC_FREQUENCY_MULTIPLIER = 0x0400
-    AC_POWER_DIVISOR = 0x0605
-    AC_POWER_MULTIPLIER = 0x0604
-    AC_VOLTAGE_DIVISOR = 0x0601
-    AC_VOLTAGE_MULTIPLIER = 0x0600
-
     _CONSTANT_ATTRIBUTES = {
         **TuyaZBElectricalMeasurement._CONSTANT_ATTRIBUTES,
-        AC_FREQUENCY_DIVISOR: 100,
-        AC_FREQUENCY_MULTIPLIER: 1,
-        AC_POWER_DIVISOR: 100,  # For 2 decimal places
-        AC_POWER_MULTIPLIER: 1,
-        AC_VOLTAGE_DIVISOR: 10,
-        AC_VOLTAGE_MULTIPLIER: 1,
+        TuyaZBElectricalMeasurement.AttributeDefs.ac_frequency_divisor.id: 100,
+        TuyaZBElectricalMeasurement.AttributeDefs.ac_frequency_multiplier.id: 1,
+        TuyaZBElectricalMeasurement.AttributeDefs.ac_power_divisor.id: 10,  # 1 decimal place
+        TuyaZBElectricalMeasurement.AttributeDefs.ac_power_multiplier.id: 1,
+        TuyaZBElectricalMeasurement.AttributeDefs.ac_voltage_divisor.id: 10,
+        TuyaZBElectricalMeasurement.AttributeDefs.ac_voltage_multiplier.id: 1,
     }
 
     _DIRECTIONAL_ATTRIBUTES = ("active_power", "reactive_power")
@@ -377,19 +370,13 @@ class TuyaMetering(
 ):
     """Tuya Metering cluster for Energy Meter devices."""
 
-    STATUS = 0x0200
-    MULTIPLIER = 0x0301
-    DIVISOR = 0x0302
-    SUMMATION_FORMATTING = 0x0303
-    DEMAND_FORMATTING = 0x0304
-
     _CONSTANT_ATTRIBUTES = {
         **TuyaZBMeteringClusterWithUnit._CONSTANT_ATTRIBUTES,
-        STATUS: 0x00,
-        MULTIPLIER: 1,
-        DIVISOR: 100000,  # For 2 decimal places after conversion from kW to W
-        SUMMATION_FORMATTING: 0b01111010,
-        DEMAND_FORMATTING: 0b01111010,
+        TuyaZBMeteringClusterWithUnit.AttributeDefs.status.id: 0x00,
+        TuyaZBMeteringClusterWithUnit.AttributeDefs.multiplier.id: 1,
+        TuyaZBMeteringClusterWithUnit.AttributeDefs.divisor.id: 10000,  # 1 decimal place after conversion from kW to W
+        TuyaZBMeteringClusterWithUnit.AttributeDefs.summation_formatting.id: 0b1_111_010,  # Suppress leading zeroes, 2 decimal places
+        TuyaZBMeteringClusterWithUnit.AttributeDefs.demand_formatting.id: 0b1_111_001,  # Suppress leading zeroes, 1 decimal place
     }
 
     _DIRECTIONAL_ATTRIBUTES = "instantaneous_demand"
@@ -642,12 +629,11 @@ class TuyaEnergyMeterManufCluster1Clamp(TuyaEnergyMeterManufCluster):
         TUYA_DP_CURRENT_SUMM_DELIVERED: DPToAttributeMapping(
             TuyaMetering.ep_attribute,
             "current_summ_delivered",
-            converter=lambda x: x * 100,
+            converter=lambda x: x * 10,
         ),
         TUYA_DP_INSTANTANEOUS_DEMAND: DPToAttributeMapping(
             TuyaMetering.ep_attribute,
             "instantaneous_demand",
-            converter=lambda x: x * 10,
         ),
         TUYA_DP_RMS_CURRENT: DPToAttributeMapping(
             TuyaElectricalMeasurement.ep_attribute,
@@ -682,17 +668,17 @@ class TuyaEnergyMeterManufClusterB1Clamp(TuyaEnergyMeterManufCluster):
         TUYA_DP_CURRENT_SUMM_DELIVERED: DPToAttributeMapping(
             TuyaMetering.ep_attribute,
             "current_summ_delivered",
-            converter=lambda x: x * 1000,
+            converter=lambda x: x * 100,
         ),
         TUYA_DP_CURRENT_SUMM_RECEIVED: DPToAttributeMapping(
             TuyaMetering.ep_attribute,
             "current_summ_received",
-            converter=lambda x: x * 1000,
+            converter=lambda x: x * 100,
         ),
         TUYA_DP_INSTANTANEOUS_DEMAND: DPToAttributeMapping(
             TuyaMetering.ep_attribute,
             "instantaneous_demand",
-            converter=lambda x: x * 100,
+            converter=lambda x: x * 10,
         ),
         TUYA_DP_POWER_FLOW: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
@@ -761,13 +747,13 @@ class TuyaEnergyMeterManufClusterB2Clamp(
         TUYA_DP_CURRENT_SUMM_DELIVERED: DPToAttributeMapping(
             TuyaMetering.ep_attribute,
             "current_summ_delivered",
-            converter=lambda x: x * 1000,
+            converter=lambda x: x * 100,
         ),
         TUYA_DP_CURRENT_SUMM_DELIVERED_B: DPToAttributeMapping(
             TuyaMetering.ep_attribute,
             "current_summ_delivered",
             endpoint_id=2,
-            converter=lambda x: x * 1000,
+            converter=lambda x: x * 100,
         ),
         TUYA_DP_CURRENT_SUMM_DELIVERED_COEF: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
@@ -780,13 +766,13 @@ class TuyaEnergyMeterManufClusterB2Clamp(
         TUYA_DP_CURRENT_SUMM_RECEIVED: DPToAttributeMapping(
             TuyaMetering.ep_attribute,
             "current_summ_received",
-            converter=lambda x: x * 1000,
+            converter=lambda x: x * 100,
         ),
         TUYA_DP_CURRENT_SUMM_RECEIVED_B: DPToAttributeMapping(
             TuyaMetering.ep_attribute,
             "current_summ_received",
             endpoint_id=2,
-            converter=lambda x: x * 1000,
+            converter=lambda x: x * 100,
         ),
         TUYA_DP_CURRENT_SUMM_RECEIVED_COEF: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
@@ -799,12 +785,10 @@ class TuyaEnergyMeterManufClusterB2Clamp(
         TUYA_DP_INSTANTANEOUS_DEMAND: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
             "instantaneous_demand",
-            converter=lambda x: x * 10,
         ),
         TUYA_DP_INSTANTANEOUS_DEMAND_B: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
             "instantaneous_demand_b",
-            converter=lambda x: x * 10,
         ),
         TUYA_DP_INSTANTANEOUS_DEMAND_COEF: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
@@ -934,34 +918,32 @@ class TuyaEnergyMeterManufClusterB2ClampEARU(
         TUYA_DP_CURRENT_SUMM_DELIVERED: DPToAttributeMapping(
             TuyaMetering.ep_attribute,
             "current_summ_delivered",
-            converter=lambda x: x * 1000,
+            converter=lambda x: x * 100,
         ),
         TUYA_DP_CURRENT_SUMM_DELIVERED_B: DPToAttributeMapping(
             TuyaMetering.ep_attribute,
             "current_summ_delivered",
             endpoint_id=2,
-            converter=lambda x: x * 1000,
+            converter=lambda x: x * 100,
         ),
         TUYA_DP_CURRENT_SUMM_RECEIVED: DPToAttributeMapping(
             TuyaMetering.ep_attribute,
             "current_summ_received",
-            converter=lambda x: x * 1000,
+            converter=lambda x: x * 100,
         ),
         TUYA_DP_CURRENT_SUMM_RECEIVED_B: DPToAttributeMapping(
             TuyaMetering.ep_attribute,
             "current_summ_received",
             endpoint_id=2,
-            converter=lambda x: x * 1000,
+            converter=lambda x: x * 100,
         ),
         TUYA_DP_INSTANTANEOUS_DEMAND: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
             "instantaneous_demand",
-            converter=lambda x: x * 10,
         ),
         TUYA_DP_INSTANTANEOUS_DEMAND_B: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
             "instantaneous_demand_b",
-            converter=lambda x: x * 10,
         ),
         TUYA_DP_POWER_FACTOR: DPToAttributeMapping(
             TuyaElectricalMeasurement.ep_attribute,
