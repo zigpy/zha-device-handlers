@@ -55,6 +55,7 @@ class SinopeManufacturerCluster(CustomCluster):
 
         Unlocked = 0x00
         Locked = 0x01
+        Partial_lock = 0x02
 
     class FlowAlarm(t.enum8):
         """Abnormal flow alarm."""
