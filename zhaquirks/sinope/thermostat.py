@@ -41,6 +41,7 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
 
         Unlocked = 0x00
         Locked = 0x01
+        Partial_lock = 0x02
 
     class Display(t.enum8):
         """config_2nd_display values."""
@@ -165,6 +166,7 @@ class SinopeTechnologiesThermostatCluster(CustomCluster, Thermostat):
 
         On_demand = 0x00
         Always_on = 0x01
+        Bedroom = 0x02
 
     class CycleOutput(t.uint16_t):
         """main and aux cycle period values."""
