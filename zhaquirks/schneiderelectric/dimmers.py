@@ -26,7 +26,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.schneiderelectric import SE_MANUF_NAME, SESpecific
+from zhaquirks.schneiderelectric import SE_MANUF_ID, SE_MANUF_NAME, SEBasic, SESpecific
 
 
 class ControlMode(t.enum8):
@@ -38,10 +38,18 @@ class ControlMode(t.enum8):
     RL_LED = 3
 
 
-class WiserBallast(CustomCluster, Ballast):
+class SEBallast(CustomCluster, Ballast):
+    manufacturer_id_override = SE_MANUF_ID
+
     class AttributeDefs(Ballast.AttributeDefs):
         control_mode: Final = ZCLAttributeDef(
             id=0xE000, type=ControlMode, is_manufacturer_specific=True
+        )
+        unknown_attribute_e001: Final = ZCLAttributeDef(
+            id=0xE002, type=t.enum8, is_manufacturer_specific=True
+        )
+        unknown_attribute_e002: Final = ZCLAttributeDef(
+            id=0xE002, type=t.enum8, is_manufacturer_specific=True
         )
 
 
@@ -104,13 +112,13 @@ class NHRotaryDimmer1(CustomDevice):
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.DIMMABLE_LIGHT,
                 INPUT_CLUSTERS: [
-                    Basic.cluster_id,
+                    SEBasic,
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
-                    WiserBallast,
+                    SEBallast,
                     Diagnostic.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
@@ -121,7 +129,7 @@ class NHRotaryDimmer1(CustomDevice):
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.DIMMER_SWITCH,
                 INPUT_CLUSTERS: [
-                    Basic.cluster_id,
+                    SEBasic,
                     Identify.cluster_id,
                     Diagnostic.cluster_id,
                     SESpecific,
