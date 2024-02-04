@@ -1,8 +1,8 @@
 """Module to handle quirks of the Danfoss thermostat.
 
-manufacturer specific attributes to control displaying and specific configuration.
+Manufacturer specific attributes to control displaying and specific configuration.
 
-ZCL Attributes Supported:
+ZCL attributes supported:
     0x0201 - ThermostatProgrammingOperationMode (0x0025): Danfoss deviated from the spec
     all    - ClusterRevision (0xFFFD)
 
@@ -17,12 +17,12 @@ ZCL Attributes Supported:
     0x0201 - NumberOfDailyTransitions (0x0022)=6
     0x0204 - KeypadLockout (0x0001)
 
-ZCL Commands Supported:
+ZCL commands supported:
     0x0201 - SetWeeklySchedule (0x01)
     0x0201 - GetWeeklySchedule (0x02)
     0x0201 - ClearWeeklySchedule (0x03)
 
-Broken ZCL Attributes:
+Broken ZCL attributes:
     0x0204 - TemperatureDisplayMode (0x0000): Writing doesn't seem to do anything
 """
 
@@ -72,7 +72,7 @@ class DanfossViewingDirectionEnum(types.enum8):
 
 
 class DanfossAdaptationRunControlEnum(types.enum8):
-    """Initiate or Cancel Adaptation Run."""
+    """Initiate or Cancel adaptation run."""
 
     Nothing = 0x00
     Initiate = 0x01
@@ -111,7 +111,6 @@ class DanfossSetpointCommandEnum(types.enum8):
 
 class DanfossPreheatCommandEnum(types.enum8):
     """Set behaviour of preheat command.
-
     Only one option available, but other values are possible in the future.
     """
 
@@ -119,11 +118,11 @@ class DanfossPreheatCommandEnum(types.enum8):
 
 
 class CustomizedStandardCluster(CustomCluster):
-    """Danfoss customized standard clusters by adding custom attributes
-    Danfoss doesn't allow all standard attributes when manufacturer specific is requested
+    """Danfoss customized standard clusters by adding custom attributes.
 
+    Danfoss doesn't allow all standard attributes when manufacturer specific is requested.
     Therefore, this subclass separates manufacturer specific and standard attributes for Zigbee commands allowing
-    manufacturer specific to be passed for specific attributes, but not for standard attributes
+    manufacturer specific to be passed for specific attributes, but not for standard attributes.
     """
 
     @staticmethod
@@ -154,7 +153,7 @@ class CustomizedStandardCluster(CustomCluster):
         *args,
         **kwargs,
     ):
-        """Split execution of command in one for manufacturer specific and one for standard attributes"""
+        """Split execution of command in one for manufacturer specific and one for standard attributes."""
         records_specific = [
             e
             for e in records
@@ -194,7 +193,7 @@ class CustomizedStandardCluster(CustomCluster):
 
 
 class DanfossThermostatCluster(CustomizedStandardCluster, Thermostat):
-    """Danfoss cluster for standard and proprietary danfoss attributes"""
+    """Danfoss cluster for standard and proprietary danfoss attributes."""
 
     class ServerCommandDefs(Thermostat.ServerCommandDefs):
         setpoint_command = ZCLCommandDef(
@@ -291,13 +290,12 @@ class DanfossThermostatCluster(CustomizedStandardCluster, Thermostat):
         )
 
     async def write_attributes(self, attributes, manufacturer=None):
-        """There are 2 types of setpoint changes:
-            Fast and Slow
-            Fast is used for immediate changes; this is done using a command (setpoint_command)
-            Slow is used for scheduled changes; this is done using an attribute (occupied_heating_setpoint)
+        """There are 2 types of setpoint changes: Fast and Slow.
+        Fast is used for immediate changes; this is done using a command (setpoint_command).
+        Slow is used for scheduled changes; this is done using an attribute (occupied_heating_setpoint).
 
-        system mode=off is not implemented on Danfoss; this is emulated by setting setpoint to the minimum setpoint
-        In case of a change on occupied_heating_setpoint or system mode=off, a fast setpoint change is done
+        system mode=off is not implemented on Danfoss; this is emulated by setting setpoint to the minimum setpoint.
+        In case of a change on occupied_heating_setpoint or system mode=off, a fast setpoint change is done.
         """
 
         fast_setpoint_change = None
@@ -314,7 +312,7 @@ class DanfossThermostatCluster(CustomizedStandardCluster, Thermostat):
             fast_setpoint_change = self._attr_cache[min_heat_setpoint_limit.id]
             attributes[occupied_heating_setpoint.name] = fast_setpoint_change
 
-            # Danfoss doesn't accept off, therefore set to On
+            # Danfoss doesn't accept off, therefore set to on
             attributes[system_mode.name] = system_mode.type.Heat
 
         # attributes cannot be empty, because write_res cannot be empty, but it can contain unrequested items
@@ -342,7 +340,7 @@ class DanfossThermostatCluster(CustomizedStandardCluster, Thermostat):
 
 
 class DanfossUserInterfaceCluster(CustomizedStandardCluster, UserInterface):
-    """Danfoss cluster for standard and proprietary danfoss attributes"""
+    """Danfoss cluster for standard and proprietary danfoss attributes."""
 
     class AttributeDefs(UserInterface.AttributeDefs):
         viewing_direction = ZCLAttributeDef(
@@ -354,7 +352,7 @@ class DanfossUserInterfaceCluster(CustomizedStandardCluster, UserInterface):
 
 
 class DanfossDiagnosticCluster(CustomizedStandardCluster, Diagnostic):
-    """Danfoss cluster for standard and proprietary danfoss attributes"""
+    """Danfoss cluster for standard and proprietary danfoss attributes."""
 
     class AttributeDefs(Diagnostic.AttributeDefs):
         sw_error_code = ZCLAttributeDef(
