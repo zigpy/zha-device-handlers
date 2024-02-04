@@ -251,7 +251,7 @@ def test_tuya_cluster_request(
 ):
     """Test cluster specific request."""
 
-    hdr = zcl_f.ZCLHeader.general(1, cmd_id, direction=zcl_f.Direction.Client_to_Server)
+    hdr = zcl_f.ZCLHeader.general(1, cmd_id, direction=zcl_f.Direction.Server_to_Client)
     hdr.frame_control.disable_default_response = False
 
     with mock.patch.object(TuyaCluster, handler_name) as handler:
@@ -266,7 +266,7 @@ def test_tuya_cluster_request(
 def test_tuya_cluster_request_unk_command(default_rsp_mock, TuyaCluster):
     """Test cluster specific request handler -- no handler."""
 
-    hdr = zcl_f.ZCLHeader.general(1, 0xFE, direction=zcl_f.Direction.Client_to_Server)
+    hdr = zcl_f.ZCLHeader.general(1, 0xFE, direction=zcl_f.Direction.Server_to_Client)
     hdr.frame_control.disable_default_response = False
 
     TuyaCluster.handle_cluster_request(hdr, (mock.sentinel.args,))
@@ -278,7 +278,7 @@ def test_tuya_cluster_request_unk_command(default_rsp_mock, TuyaCluster):
 def test_tuya_cluster_request_no_handler(default_rsp_mock, TuyaCluster):
     """Test cluster specific request handler -- no handler."""
 
-    hdr = zcl_f.ZCLHeader.general(1, 0xFE, direction=zcl_f.Direction.Client_to_Server)
+    hdr = zcl_f.ZCLHeader.general(1, 0xFE, direction=zcl_f.Direction.Server_to_Client)
     hdr.frame_control.disable_default_response = False
 
     new_client_commands = TuyaCluster.client_commands.copy()
