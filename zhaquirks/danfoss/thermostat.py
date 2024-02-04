@@ -30,9 +30,9 @@ Broken ZCL Attributes:
 from datetime import datetime
 from typing import Any, Callable, List
 
+from zigpy import types
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
-import zigpy.types as t
 from zigpy.zcl.clusters.general import (
     Basic,
     Identify,
@@ -55,11 +55,67 @@ from zhaquirks.const import (
 )
 from zhaquirks.quirk_ids import DANFOSS_ALLY_THERMOSTAT
 
+occupied_heating_setpoint = Thermostat.AttributeDefs.occupied_heating_setpoint
+system_mode = Thermostat.AttributeDefs.system_mode
+min_heat_setpoint_limit = Thermostat.AttributeDefs.min_heat_setpoint_limit
+
 DANFOSS = "Danfoss"
 HIVE = DANFOSS
 POPP = "D5X84YU"
 
-SETPOINT_COMMAND_AGGRESSIVE_VAL = 0x01
+
+class DanfossViewingDirectionEnum(types.enum8):
+    """Default (button above screen when looking at it) or Inverted (button below screen when looking at it)."""
+
+    Default = 0x00
+    Inverted = 0x01
+
+
+class DanfossAdaptationRunControlEnum(types.enum8):
+    """Initiate or Cancel Adaptation Run."""
+
+    Nothing = 0x00
+    Initiate = 0x01
+    Cancel = 0x02
+
+
+class DanfossExerciseDayOfTheWeekEnum(types.enum8):
+    """Day of the week."""
+
+    Sunday = 0
+    Monday = 1
+    Tuesday = 2
+    Wednesday = 3
+    Thursday = 4
+    Friday = 5
+    Saturday = 6
+
+
+class DanfossOpenWindowDetectionEnum(types.enum8):
+    """Danfoss open window detection judgments."""
+
+    Quarantine = 0x00
+    Closed = 0x01
+    Maybe = 0x02
+    Open = 0x03
+    External = 0x04
+
+
+class DanfossSetpointCommandEnum(types.enum8):
+    """Set behaviour to change the setpoint."""
+
+    Schedule = 0  # relatively slow
+    User_Interaction = 1  # aggressive change
+    Preheat = 2  # invisible to user
+
+
+class DanfossPreheatCommandEnum(types.enum8):
+    """Set behaviour of preheat command.
+
+    Only one option available, but other values are possible in the future.
+    """
+
+    Force = 0
 
 
 class CustomizedStandardCluster(CustomCluster):
@@ -143,88 +199,95 @@ class DanfossThermostatCluster(CustomizedStandardCluster, Thermostat):
     class ServerCommandDefs(Thermostat.ServerCommandDefs):
         setpoint_command = ZCLCommandDef(
             id=0x40,
-            # Types
-            # 0: Schedule (relatively slow)
-            # 1: User Interaction (aggressive change)
-            # 2: Preheat (invisible to user)
-            schema={"type": t.enum8, "heating_setpoint": t.int16s},
+            schema={
+                "type": DanfossSetpointCommandEnum,
+                "heating_setpoint": types.int16s,
+            },
             is_manufacturer_specific=True,
         )
 
         # for synchronizing multiple TRVs preheating
         preheat_command = ZCLCommandDef(
             id=0x42,
-            # Force: 0 means force, other values for future needs
-            schema={"force": t.enum8, "timestamp": t.uint32_t},
+            schema={"force": DanfossPreheatCommandEnum, "timestamp": types.uint32_t},
             is_manufacturer_specific=True,
         )
 
     class AttributeDefs(Thermostat.AttributeDefs):
         open_window_detection = ZCLAttributeDef(
-            id=0x4000, type=t.enum8, access="rp", is_manufacturer_specific=True
+            id=0x4000,
+            type=DanfossOpenWindowDetectionEnum,
+            access="rp",
+            is_manufacturer_specific=True,
         )
         external_open_window_detected = ZCLAttributeDef(
-            id=0x4003, type=t.Bool, access="rw", is_manufacturer_specific=True
+            id=0x4003, type=types.Bool, access="rw", is_manufacturer_specific=True
         )  # non-configurable reporting
         window_open_feature = ZCLAttributeDef(
-            id=0x4051, type=t.Bool, access="rw", is_manufacturer_specific=True
+            id=0x4051, type=types.Bool, access="rw", is_manufacturer_specific=True
         )  # non-configurable reporting
         exercise_day_of_week = ZCLAttributeDef(
-            id=0x4010, type=t.enum8, access="rw", is_manufacturer_specific=True
+            id=0x4010,
+            type=DanfossExerciseDayOfTheWeekEnum,
+            access="rw",
+            is_manufacturer_specific=True,
         )
         exercise_trigger_time = ZCLAttributeDef(
-            id=0x4011, type=t.uint16_t, access="rw", is_manufacturer_specific=True
+            id=0x4011, type=types.uint16_t, access="rw", is_manufacturer_specific=True
         )
         mounting_mode_active = ZCLAttributeDef(
-            id=0x4012, type=t.Bool, access="rp", is_manufacturer_specific=True
+            id=0x4012, type=types.Bool, access="rp", is_manufacturer_specific=True
         )
         mounting_mode_control = ZCLAttributeDef(
-            id=0x4013, type=t.Bool, access="rw", is_manufacturer_specific=True
+            id=0x4013, type=types.Bool, access="rw", is_manufacturer_specific=True
         )  # non-configurable reporting
-        orientation = ZCLAttributeDef(
-            id=0x4014, type=t.Bool, access="rw", is_manufacturer_specific=True
+        orientation = ZCLAttributeDef(  # Horizontal = False and Vertical = True
+            id=0x4014, type=types.Bool, access="rw", is_manufacturer_specific=True
         )  # non-configurable reporting
         external_measured_room_sensor = ZCLAttributeDef(
-            id=0x4015, type=t.int16s, access="rw", is_manufacturer_specific=True
+            id=0x4015, type=types.int16s, access="rw", is_manufacturer_specific=True
         )
         radiator_covered = ZCLAttributeDef(
-            id=0x4016, type=t.Bool, access="rw", is_manufacturer_specific=True
+            id=0x4016, type=types.Bool, access="rw", is_manufacturer_specific=True
         )  # non-configurable reporting
         heat_available = ZCLAttributeDef(
-            id=0x4030, type=t.Bool, access="rw", is_manufacturer_specific=True
+            id=0x4030, type=types.Bool, access="rw", is_manufacturer_specific=True
         )  # non-configurable reporting
         heat_required = ZCLAttributeDef(
-            id=0x4031, type=t.Bool, access="rp", is_manufacturer_specific=True
+            id=0x4031, type=types.Bool, access="rp", is_manufacturer_specific=True
         )
         load_balancing_enable = ZCLAttributeDef(
-            id=0x4032, type=t.Bool, access="rw", is_manufacturer_specific=True
+            id=0x4032, type=types.Bool, access="rw", is_manufacturer_specific=True
         )  # non-configurable reporting
         load_room_mean = ZCLAttributeDef(
-            id=0x4040, type=t.int16s, access="rw", is_manufacturer_specific=True
+            id=0x4040, type=types.int16s, access="rw", is_manufacturer_specific=True
         )  # non-configurable reporting (according to the documentation, you cannot read it, but it works anyway)
         load_estimate = ZCLAttributeDef(
-            id=0x404A, type=t.int16s, access="rp", is_manufacturer_specific=True
+            id=0x404A, type=types.int16s, access="rp", is_manufacturer_specific=True
         )
         control_algorithm_scale_factor = ZCLAttributeDef(
-            id=0x4020, type=t.uint8_t, access="rw", is_manufacturer_specific=True
+            id=0x4020, type=types.uint8_t, access="rw", is_manufacturer_specific=True
         )  # non-configurable reporting
         regulation_setpoint_offset = ZCLAttributeDef(
-            id=0x404B, type=t.int8s, access="rw", is_manufacturer_specific=True
+            id=0x404B, type=types.int8s, access="rw", is_manufacturer_specific=True
         )
         adaptation_run_control = ZCLAttributeDef(
-            id=0x404C, type=t.enum8, access="rw", is_manufacturer_specific=True
+            id=0x404C,
+            type=DanfossAdaptationRunControlEnum,
+            access="rw",
+            is_manufacturer_specific=True,
         )  # non-configurable reporting
         adaptation_run_status = ZCLAttributeDef(
-            id=0x404D, type=t.bitmap8, access="rp", is_manufacturer_specific=True
+            id=0x404D, type=types.bitmap8, access="rp", is_manufacturer_specific=True
         )
         adaptation_run_settings = ZCLAttributeDef(
-            id=0x404E, type=t.bitmap8, access="rw", is_manufacturer_specific=True
+            id=0x404E, type=types.bitmap8, access="rw", is_manufacturer_specific=True
         )
         preheat_status = ZCLAttributeDef(
-            id=0x404F, type=t.Bool, access="rp", is_manufacturer_specific=True
+            id=0x404F, type=types.Bool, access="rp", is_manufacturer_specific=True
         )
         preheat_time = ZCLAttributeDef(
-            id=0x4050, type=t.uint32_t, access="rp", is_manufacturer_specific=True
+            id=0x4050, type=types.uint32_t, access="rp", is_manufacturer_specific=True
         )
 
     async def write_attributes(self, attributes, manufacturer=None):
@@ -239,31 +302,20 @@ class DanfossThermostatCluster(CustomizedStandardCluster, Thermostat):
 
         fast_setpoint_change = None
 
-        if Thermostat.AttributeDefs.occupied_heating_setpoint.name in attributes:
+        if occupied_heating_setpoint.name in attributes:
             # On Danfoss an immediate setpoint change is done through a command
             # store for later in fast_setpoint_change and remove from attributes
-            fast_setpoint_change = attributes[
-                Thermostat.AttributeDefs.occupied_heating_setpoint.name
-            ]
+            fast_setpoint_change = attributes[occupied_heating_setpoint.name]
 
         # if: system_mode = off
-        if (
-            attributes.get(Thermostat.AttributeDefs.system_mode.name)
-            == Thermostat.AttributeDefs.system_mode.type.Off
-        ):
+        if attributes.get(system_mode.name) == system_mode.type.Off:
             # Thermostatic Radiator Valves from Danfoss cannot be turned off to prevent damage during frost
             # just turn setpoint down to minimum temperature using fast_setpoint_change
-            fast_setpoint_change = self._attr_cache[
-                Thermostat.AttributeDefs.min_heat_setpoint_limit.id
-            ]
-            attributes[
-                Thermostat.AttributeDefs.occupied_heating_setpoint.name
-            ] = fast_setpoint_change
+            fast_setpoint_change = self._attr_cache[min_heat_setpoint_limit.id]
+            attributes[occupied_heating_setpoint.name] = fast_setpoint_change
 
             # Danfoss doesn't accept off, therefore set to On
-            attributes[
-                Thermostat.AttributeDefs.system_mode.name
-            ] = Thermostat.AttributeDefs.system_mode.type.Heat
+            attributes[system_mode.name] = system_mode.type.Heat
 
         # attributes cannot be empty, because write_res cannot be empty, but it can contain unrequested items
         write_res = await super().write_attributes(
@@ -273,7 +325,7 @@ class DanfossThermostatCluster(CustomizedStandardCluster, Thermostat):
         if fast_setpoint_change is not None:
             # On Danfoss a fast setpoint change is done through a command
             await self.setpoint_command(
-                SETPOINT_COMMAND_AGGRESSIVE_VAL,
+                DanfossSetpointCommandEnum.User_Interaction,
                 fast_setpoint_change,
                 manufacturer=manufacturer,
             )
@@ -294,7 +346,10 @@ class DanfossUserInterfaceCluster(CustomizedStandardCluster, UserInterface):
 
     class AttributeDefs(UserInterface.AttributeDefs):
         viewing_direction = ZCLAttributeDef(
-            id=0x4000, type=t.enum8, access="rw", is_manufacturer_specific=True
+            id=0x4000,
+            type=DanfossViewingDirectionEnum,
+            access="rw",
+            is_manufacturer_specific=True,
         )  # non-configurable reporting
 
 
@@ -303,44 +358,44 @@ class DanfossDiagnosticCluster(CustomizedStandardCluster, Diagnostic):
 
     class AttributeDefs(Diagnostic.AttributeDefs):
         sw_error_code = ZCLAttributeDef(
-            id=0x4000, type=t.bitmap16, access="rpw", is_manufacturer_specific=True
+            id=0x4000, type=types.bitmap16, access="rpw", is_manufacturer_specific=True
         )
         wake_time_avg = ZCLAttributeDef(
-            id=0x4001, type=t.uint32_t, access="r", is_manufacturer_specific=True
+            id=0x4001, type=types.uint32_t, access="r", is_manufacturer_specific=True
         )
         wake_time_max_duration = ZCLAttributeDef(
-            id=0x4002, type=t.uint32_t, access="r", is_manufacturer_specific=True
+            id=0x4002, type=types.uint32_t, access="r", is_manufacturer_specific=True
         )
         wake_time_min_duration = ZCLAttributeDef(
-            id=0x4003, type=t.uint32_t, access="r", is_manufacturer_specific=True
+            id=0x4003, type=types.uint32_t, access="r", is_manufacturer_specific=True
         )
         sleep_postponed_count_avg = ZCLAttributeDef(
-            id=0x4004, type=t.uint32_t, access="r", is_manufacturer_specific=True
+            id=0x4004, type=types.uint32_t, access="r", is_manufacturer_specific=True
         )
         sleep_postponed_count_max = ZCLAttributeDef(
-            id=0x4005, type=t.uint32_t, access="r", is_manufacturer_specific=True
+            id=0x4005, type=types.uint32_t, access="r", is_manufacturer_specific=True
         )
         sleep_postponed_count_min = ZCLAttributeDef(
-            id=0x4006, type=t.uint32_t, access="r", is_manufacturer_specific=True
+            id=0x4006, type=types.uint32_t, access="r", is_manufacturer_specific=True
         )
         motor_step_counter = ZCLAttributeDef(
-            id=0x4010, type=t.uint32_t, access="rp", is_manufacturer_specific=True
+            id=0x4010, type=types.uint32_t, access="rp", is_manufacturer_specific=True
         )
 
         data_logger = ZCLAttributeDef(
             id=0x4020,
-            type=t.LimitedLVBytes(50),
+            type=types.LimitedLVBytes(50),
             access="rpw",
             is_manufacturer_specific=True,
         )
         control_diagnostics = ZCLAttributeDef(
             id=0x4021,
-            type=t.LimitedLVBytes(30),
+            type=types.LimitedLVBytes(30),
             access="rp",
             is_manufacturer_specific=True,
         )
         control_diagnostics_frequency = ZCLAttributeDef(
-            id=0x4022, type=t.uint16_t, access="rw", is_manufacturer_specific=True
+            id=0x4022, type=types.uint16_t, access="rw", is_manufacturer_specific=True
         )  # non-configurable reporting
 
 
@@ -358,7 +413,7 @@ class DanfossTimeCluster(CustomizedStandardCluster, Time):
         await self.write_attributes(
             {
                 "time": current_time,
-                "time_status": 0b00000010,  # only bit 1 can be written
+                "time_status": 0b00000010,  # only bit 1 can be set
                 "time_zone": time_zone,
             }
         )
