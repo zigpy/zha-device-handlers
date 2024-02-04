@@ -71,7 +71,7 @@ class AdeoManufacturerCluster(EventableCluster):
         0x00: foundation.ZCLCommandDef(
             "preset",
             {"param1": t.uint8_t, "param2": t.uint8_t},
-            direction=foundation.Direction.Server_to_Client,
+            direction=foundation.Direction.Client_to_Server,
             is_manufacturer_specific=True,
         )
     }

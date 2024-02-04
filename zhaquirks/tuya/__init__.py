@@ -1572,7 +1572,7 @@ class TuyaNewManufCluster(CustomCluster):
         """Handle cluster specific request."""
 
         try:
-            if hdr.direction == foundation.Direction.Client_to_Server:
+            if hdr.direction == foundation.Direction.Server_to_Client:
                 # server_cluster -> client_cluster cluster specific command
                 handler_name = f"handle_{self.client_commands[hdr.command_id].name}"
             else:
