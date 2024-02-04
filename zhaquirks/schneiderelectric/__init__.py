@@ -9,7 +9,7 @@ from zigpy.zcl.clusters.general import Basic
 from zigpy.zcl.foundation import ZCLAttributeDef
 
 SE_MANUF_NAME = "Schneider Electric"
-SE_MANUF_ID = 0x4190
+SE_MANUF_ID = 4190
 
 
 class SEBasic(CustomCluster, Basic):
