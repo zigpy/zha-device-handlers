@@ -105,9 +105,9 @@ class VibrationAQ1(XiaomiQuickInitDevice):
                         SEND_EVENT, self._current_state[STATUS_TYPE_ATTR], {}
                     )
             elif attrid == ORIENTATION_ATTR:
-                x = value & 0xFFFF
-                y = (value >> 16) & 0xFFFF
-                z = (value >> 32) & 0xFFFF
+                x = ((value & 0xFFFF) ^ 0x8000) - 0x8000                        
+                y = (((value >> 16) & 0xFFFF) ^ 0x8000) - 0x8000                
+                z = (((value >> 32) & 0xFFFF) ^ 0x8000) - 0x8000
                 X = 0.0 + x
                 Y = 0.0 + y
                 Z = 0.0 + z
