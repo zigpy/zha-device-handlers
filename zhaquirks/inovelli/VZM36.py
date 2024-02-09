@@ -27,8 +27,8 @@ from zhaquirks.const import (
 )
 from zhaquirks.inovelli import (
     INOVELLI_AUTOMATION_TRIGGERS,
-    Inovelli_VZM36_Fan_Cluster,
-    Inovelli_VZM36_Light_Cluster,
+    InovelliVZM36FanCluster,
+    InovelliVZM36LightCluster,
 )
 
 INOVELLI_VZM36_CLUSTER_ID = 64561
@@ -102,7 +102,7 @@ class InovelliVZM36(CustomDevice):
                     LevelControl.cluster_id,
                     Diagnostic.cluster_id,
                     LightLink.cluster_id,
-                    Inovelli_VZM36_Light_Cluster,
+                    InovelliVZM36LightCluster,
                     WWAH_CLUSTER_ID,
                 ],
                 OUTPUT_CLUSTERS: [
@@ -122,7 +122,7 @@ class InovelliVZM36(CustomDevice):
                     Fan.cluster_id,
                     Diagnostic.cluster_id,
                     LightLink.cluster_id,
-                    Inovelli_VZM36_Fan_Cluster,
+                    InovelliVZM36FanCluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     Ota.cluster_id,

@@ -84,7 +84,7 @@ AUX_CONFIG = "Aux Config"
 NOTIFICATION_TYPE = "notification_type"
 
 
-class Inovelli_Cluster(CustomCluster):
+class InovelliCluster(CustomCluster):
     """Inovelli base cluster."""
 
     attributes = {
@@ -193,7 +193,7 @@ class Inovelli_Cluster(CustomCluster):
             return
 
 
-class Inovelli_VZM31SN_Cluster(Inovelli_Cluster):
+class InovelliVZM31SNCluster(InovelliCluster):
     """Inovelli VZM31-SN custom cluster."""
 
     cluster_id = 0xFC31
@@ -267,7 +267,7 @@ class Inovelli_VZM31SN_Cluster(Inovelli_Cluster):
     )
 
 
-class Inovelli_VZM35SN_Cluster(Inovelli_Cluster):
+class InovelliVZM35SNCluster(InovelliCluster):
     """Inovelli VZM35-SN custom cluster."""
 
     cluster_id = 0xFC31
@@ -346,7 +346,7 @@ class Inovelli_VZM35SN_Cluster(Inovelli_Cluster):
     )
 
 
-class Inovelli_VZM36_Light_Cluster(Inovelli_Cluster):
+class InovelliVZM36LightCluster(InovelliCluster):
     """Inovelli VZM36 Light custom cluster."""
 
     cluster_id = 0xFC31
@@ -366,7 +366,7 @@ class Inovelli_VZM36_Light_Cluster(Inovelli_Cluster):
     )
 
 
-class Inovelli_VZM36_Fan_Cluster(Inovelli_Cluster):
+class InovelliVZM36FanCluster(InovelliCluster):
     """Inovelli VZM36 Fan custom cluster."""
 
     cluster_id = 0xFC31
