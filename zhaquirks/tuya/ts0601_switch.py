@@ -438,7 +438,7 @@ class TuyaTripleSwitch_GP(TuyaSwitch):
     }
 
 
-class TuyaTripleSwitch_var03(TuyaSwitch):
+class TuyaTripleSwitchVar03(TuyaSwitch):
     """Tuya triple channel switch (variation 03)."""
 
     signature = {
