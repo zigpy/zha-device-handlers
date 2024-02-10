@@ -1,11 +1,18 @@
 """Tests for Sinope."""
 
+from unittest import mock
 import pytest
+from zhaquirks.sinope import SINOPE_MANUFACTURER_CLUSTER_ID
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import DeviceTemperature
 from zigpy.zcl.clusters.measurement import FlowMeasurement
+from zigpy.device import Device
+from zhaquirks.const import COMMAND_BUTTON_DOUBLE
+
+import zhaquirks.sinope.switch
+import zhaquirks.sinope.light
 
 from tests.common import ClusterListener
-import zhaquirks.sinope.switch
 
 zhaquirks.setup()
 
@@ -57,3 +64,54 @@ async def test_sinope_flow_measurement(zigpy_device_from_quirk, quirk):
         == flow_measurement_other_attr_id
     )
     assert flow_measurement_listener.attribute_updates[1][1] == 25  # not modified
+
+@pytest.mark.parametrize("quirk", (zhaquirks.sinope.light.SinopeTechnologieslight,))
+async def test_sinope_light_switch(zigpy_device_from_quirk, quirk):
+    """Test that button presses are sent as events"""
+    device: Device = zigpy_device_from_quirk(quirk)
+
+    data = b"\x1c\x9c\x11\x81\nT\x000\x04"  # off button double down
+    cluster_id = 0xFF01
+    endpoint_id = 1
+
+    class Listener:
+        zha_send_event = mock.MagicMock()
+
+    cluster_listener = Listener()
+    device.endpoints[endpoint_id].in_clusters[cluster_id].add_listener(cluster_listener)
+
+    device.handle_message(260, cluster_id, endpoint_id, endpoint_id, data)
+
+    assert cluster_listener.zha_send_event.call_count == 1
+    assert cluster_listener.zha_send_event.call_args == mock.call(
+        COMMAND_BUTTON_DOUBLE,
+        {"attribute_id": 84, "attribute_name": "action_report", "value": 4},
+    )
+
+    cluster_listener.zha_send_event.reset_mock()
+
+
+@pytest.mark.parametrize("quirk", (zhaquirks.sinope.light.SinopeTechnologieslight,))
+async def test_sinope_light_switch_reporting(zigpy_device_from_quirk, quirk):
+    """Test that button presses are sent as events"""
+    device: Device = zigpy_device_from_quirk(quirk)
+    from pudb import set_trace; set_trace();
+
+    manu_cluster = device.endpoints[1].in_clusters[SINOPE_MANUFACTURER_CLUSTER_ID]
+
+    request_patch = mock.patch("zigpy.zcl.Cluster.request", mock.AsyncMock())
+    bind_patch = mock.patch("zigpy.zcl.Cluster.bind", mock.AsyncMock())
+
+    with request_patch as request_mock, bind_patch as bind_mock:
+        request_mock.return_value = (foundation.Status.SUCCESS, "done")
+
+        await manu_cluster.bind()
+        await manu_cluster.configure_reporting(
+            zhaquirks.sinope.light.SinopeTechnologiesManufacturerCluster.attributes_by_name['action_report'].id,
+            3600,
+            10800,
+            1,
+        )
+
+        assert len(request_mock.mock_calls) == 0
+        assert len(bind_mock.mock_calls) == 0
