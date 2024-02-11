@@ -344,7 +344,7 @@ class InovelliVZM35SNCluster(InovelliCluster):
 class InovelliVZM36LightCluster(InovelliCluster):
     """Inovelli VZM36 Light custom cluster."""
 
-    name = "InovelliVZM36LightCluster""
+    name = "InovelliVZM36LightCluster"
 
     attributes = InovelliCluster.attributes.copy()
 
