@@ -87,6 +87,9 @@ NOTIFICATION_TYPE = "notification_type"
 class InovelliCluster(CustomCluster):
     """Inovelli base cluster."""
 
+    cluster_id = 0xFC31
+    ep_attribute = "inovelli_vzm31sn_cluster"
+
     attributes = {
         0x0001: ("dimming_speed_up_remote", t.uint8_t, True),
         0x0003: ("ramp_rate_off_to_on_remote", t.uint8_t, True),
@@ -196,13 +199,9 @@ class InovelliCluster(CustomCluster):
 class InovelliVZM31SNCluster(InovelliCluster):
     """Inovelli VZM31-SN custom cluster."""
 
-    cluster_id = 0xFC31
     name = "InovelliVZM31SNCluster"
-    ep_attribute = "inovelli_vzm31sn_cluster"
 
-    attributes = {
-        key: InovelliCluster.attributes[key] for key in InovelliCluster.attributes
-    }
+    attributes = InovelliCluster.attributes.copy()
 
     attributes.update(
         {
@@ -270,13 +269,9 @@ class InovelliVZM31SNCluster(InovelliCluster):
 class InovelliVZM35SNCluster(InovelliCluster):
     """Inovelli VZM35-SN custom cluster."""
 
-    cluster_id = 0xFC31
     name = "InovelliVZM35SNCluster"
-    ep_attribute = "inovelli_vzm31sn_cluster"
 
-    attributes = {
-        key: InovelliCluster.attributes[key] for key in InovelliCluster.attributes
-    }
+    attributes = InovelliCluster.attributes.copy()
 
     attributes.update(
         {
@@ -349,13 +344,9 @@ class InovelliVZM35SNCluster(InovelliCluster):
 class InovelliVZM36LightCluster(InovelliCluster):
     """Inovelli VZM36 Light custom cluster."""
 
-    cluster_id = 0xFC31
-    name = "InovelliVZM36LightCluster"
-    ep_attribute = "inovelli_vzm31sn_cluster"
+    name = "InovelliVZM36LightCluster""
 
-    attributes = {
-        key: InovelliCluster.attributes[key] for key in InovelliCluster.attributes
-    }
+    attributes = InovelliCluster.attributes.copy()
 
     attributes.update(
         {
@@ -369,13 +360,10 @@ class InovelliVZM36LightCluster(InovelliCluster):
 class InovelliVZM36FanCluster(InovelliCluster):
     """Inovelli VZM36 Fan custom cluster."""
 
-    cluster_id = 0xFC31
     name = "InovelliVZM36FanCluster"
-    ep_attribute = "inovelli_vzm31sn_cluster"
 
-    attributes = {
-        key: InovelliCluster.attributes[key] for key in InovelliCluster.attributes
-    }
+
+    attributes = InovelliCluster.attributes.copy()
 
     attributes.update(
         {
