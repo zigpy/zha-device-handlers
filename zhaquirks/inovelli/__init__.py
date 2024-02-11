@@ -202,7 +202,6 @@ class InovelliVZM31SNCluster(InovelliCluster):
     name = "InovelliVZM31SNCluster"
 
     attributes = InovelliCluster.attributes.copy()
-
     attributes.update(
         {
             0x0002: ("dimming_speed_up_local", t.uint8_t, True),
@@ -272,7 +271,6 @@ class InovelliVZM35SNCluster(InovelliCluster):
     name = "InovelliVZM35SNCluster"
 
     attributes = InovelliCluster.attributes.copy()
-
     attributes.update(
         {
             0x0002: ("dimming_speed_up_local", t.uint8_t, True),
@@ -347,7 +345,6 @@ class InovelliVZM36LightCluster(InovelliCluster):
     name = "InovelliVZM36LightCluster"
 
     attributes = InovelliCluster.attributes.copy()
-
     attributes.update(
         {
             0x0017: ("quick_start_time", t.uint8_t, True),
@@ -363,7 +360,6 @@ class InovelliVZM36FanCluster(InovelliCluster):
     name = "InovelliVZM36FanCluster"
 
     attributes = InovelliCluster.attributes.copy()
-
     attributes.update(
         {
             0x0017: ("quick_start_time", t.uint8_t, True),
