@@ -362,7 +362,6 @@ class InovelliVZM36FanCluster(InovelliCluster):
 
     name = "InovelliVZM36FanCluster"
 
-
     attributes = InovelliCluster.attributes.copy()
 
     attributes.update(
