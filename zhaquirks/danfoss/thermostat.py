@@ -3,7 +3,9 @@
 Manufacturer specific attributes to control displaying and specific configuration.
 
 ZCL attributes supported:
-    0x0201 - ThermostatProgrammingOperationMode (0x0025): Danfoss deviated from the spec
+    0x0201 - ThermostatProgrammingOperationMode (0x0025):
+        Danfoss writes in a presentation document that it implemented a preheat function with the second bit,
+        but this is contradicted by a detailed and up-to-date document.
     all    - ClusterRevision (0xFFFD)
 
     0x0201 - PIHeatingDemand (0x0008),
