@@ -77,9 +77,9 @@ BUTTONS = {1: BUTTON_1, 2: BUTTON_2, 3: BUTTON_3, 4: BUTTON_4, 5: BUTTON_5, 6: B
 ON = "Up"
 OFF = "Down"
 CONFIG = "Config"
-AUX_ON = "Aux Up"
-AUX_OFF = "Aux Down"
-AUX_CONFIG = "Aux Config"
+AUX_ON = "Aux up"
+AUX_OFF = "Aux down"
+AUX_CONFIG = "Aux config"
 
 NOTIFICATION_TYPE = "notification_type"
 
