@@ -22,13 +22,13 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.tuya import (
+    EnchantedDevice,
     TuyaZB1888Cluster,
     TuyaZBE000Cluster,
     TuyaZBElectricalMeasurement,
     TuyaZBMeteringCluster,
     TuyaZBOnOffAttributeCluster,
 )
-from zhaquirks.tuya.mcu import EnchantedDevice
 
 
 class Tuya_1G_Wall_Switch_Metering(EnchantedDevice):

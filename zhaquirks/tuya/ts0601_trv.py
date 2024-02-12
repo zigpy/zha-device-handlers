@@ -1536,6 +1536,7 @@ class MoesHY368_Type1(TuyaThermostat):
             ("_TZE200_9sfg7gm0", "TS0601"),
             ("_TZE200_8whxpsiw", "TS0601"),
             ("_TZE200_8thwkzxl", "TS0601"),  # Tervix Pro Line EVA 2
+            ("_TZE200_xby0s3ta", "TS0601"),  # Sandy Beach HY367
         ],
         ENDPOINTS: {
             1: {
@@ -1698,6 +1699,7 @@ class ZonnsmartTV01_ZG(TuyaThermostat):
             ("_TZE200_kds0pmmv", "TS0601"),  # MOES TV02
             ("_TZE200_sur6q7ko", "TS0601"),  # LSC Smart Connect 3012732
             ("_TZE200_lllliz3p", "TS0601"),  # tuya TV02-Zigbee2
+            ("_TZE200_fsow0qsk", "TS0601"),  # Tesla Smart TV500
         ],
         ENDPOINTS: {
             1: {

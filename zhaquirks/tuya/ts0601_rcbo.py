@@ -248,10 +248,10 @@ class TuyaRCBOElectricalMeasurement(ElectricalMeasurement, TuyaAttributesCluster
         if attr_name == "active_power":
             apparent_power = self.get("apparent_power")
             if apparent_power:
-                power_factor = value / apparent_power * 1000
-                if power_factor > 1000:
-                    power_factor = 1000
-                super().update_attribute("power_factor", int(power_factor))
+                power_factor = value / apparent_power * 100
+                if power_factor > 100:
+                    power_factor = 100
+                super().update_attribute("power_factor", round(power_factor))
 
 
 class TuyaRCBODeviceTemperature(DeviceTemperature, TuyaAttributesCluster):

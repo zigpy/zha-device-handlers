@@ -12,12 +12,12 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.tuya import (
+    EnchantedDevice,
     TuyaSwitch,
     TuyaZBE000Cluster,
     TuyaZBExternalSwitchTypeCluster,
     TuyaZBOnOffAttributeCluster,
 )
-from zhaquirks.tuya.mcu import EnchantedDevice
 
 
 # NoNeutralSwitch family = without tuya cluster and Identify.
