@@ -24,7 +24,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.inovelli import INOVELLI_AUTOMATION_TRIGGERS, Inovelli_VZM35SN_Cluster
+from zhaquirks.inovelli import INOVELLI_AUTOMATION_TRIGGERS, InovelliVZM35SNCluster
 
 INOVELLI_VZM35SN_CLUSTER_ID = 64561
 WWAH_CLUSTER_ID = 64599
@@ -91,7 +91,7 @@ class InovelliVZM35SN(CustomDevice):
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
                     Diagnostic.cluster_id,
-                    Inovelli_VZM35SN_Cluster,
+                    InovelliVZM35SNCluster,
                     WWAH_CLUSTER_ID,
                 ],
                 OUTPUT_CLUSTERS: [
@@ -111,7 +111,7 @@ class InovelliVZM35SN(CustomDevice):
                     Identify.cluster_id,
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
-                    Inovelli_VZM35SN_Cluster,
+                    InovelliVZM35SNCluster,
                 ],
             },
             242: {
@@ -204,7 +204,7 @@ class InovelliVZM35SNv5(CustomDevice):
                     LevelControl.cluster_id,
                     Fan.cluster_id,
                     Diagnostic.cluster_id,
-                    Inovelli_VZM35SN_Cluster,
+                    InovelliVZM35SNCluster,
                     WWAH_CLUSTER_ID,
                 ],
                 OUTPUT_CLUSTERS: [
@@ -224,7 +224,7 @@ class InovelliVZM35SNv5(CustomDevice):
                     Identify.cluster_id,
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
-                    Inovelli_VZM35SN_Cluster,
+                    InovelliVZM35SNCluster,
                 ],
             },
             3: {
@@ -240,7 +240,7 @@ class InovelliVZM35SNv5(CustomDevice):
                     Identify.cluster_id,
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
-                    Inovelli_VZM35SN_Cluster,
+                    InovelliVZM35SNCluster,
                 ],
             },
             242: {
