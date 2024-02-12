@@ -346,11 +346,11 @@ async def test_power_factor(zigpy_device_from_quirk):
         b"\x09\x07\x01\x02\x03g\x00\x00\x0c\x00\x09\xbf\x00\x09\xbf\x00\x00\x00\x00\x00\x00"
     )
     tuya_cluster.handle_message(hdr, args)  # active_power
-    assert tuya_listener.attribute_updates == [(0x050B, 2495), (0x0510, 1000)]
+    assert tuya_listener.attribute_updates == [(0x050B, 2495), (0x0510, 100)]
 
     tuya_listener.attribute_updates = []
     hdr, args = tuya_cluster.deserialize(
         b"\x09\x08\x01\x02\x03g\x00\x00\x0c\x00\x06\x4b\x00\x06\x4b\x00\x00\x00\x00\x00\x00"
     )
     tuya_cluster.handle_message(hdr, args)  # active_power
-    assert tuya_listener.attribute_updates == [(0x050B, 1611), (0x0510, 987)]
+    assert tuya_listener.attribute_updates == [(0x050B, 1611), (0x0510, 99)]

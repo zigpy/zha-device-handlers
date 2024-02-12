@@ -17,10 +17,9 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import TuyaLocalCluster
+from zhaquirks.tuya import EnchantedDevice, TuyaLocalCluster
 from zhaquirks.tuya.mcu import (
     DPToAttributeMapping,
-    EnchantedDevice,
     TuyaMCUCluster,
     TuyaOnOff,
     TuyaOnOffNM,

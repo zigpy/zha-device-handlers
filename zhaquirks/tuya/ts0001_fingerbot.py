@@ -13,10 +13,9 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import TUYA_SEND_DATA
+from zhaquirks.tuya import TUYA_SEND_DATA, EnchantedDevice
 from zhaquirks.tuya.mcu import (
     DPToAttributeMapping,
-    EnchantedDevice,
     TuyaEnchantableCluster,
     TuyaMCUCluster,
     TuyaPowerConfigurationCluster,

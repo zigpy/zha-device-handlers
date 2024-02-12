@@ -267,7 +267,7 @@ class HeimanSmokeEF30(CustomDevice):
         ENDPOINTS: {
             # "profile_id": "0x0104", "device_type": "0x0402",
             # "input_clusters": ["0x0000", "0x0001", "0x0003", "0x0020", "0x0500", "0x0502", "0x0b05"],
-            #  "output_clusters": ["0x0003", "0x0019"]
+            # "output_clusters": ["0x0003", "0x0019"]
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
@@ -303,6 +303,51 @@ class HeimanSmokeEF30(CustomDevice):
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
+                    Ota.cluster_id,
+                ],
+            },
+        },
+    }
+
+
+class HeimanSmokeEM(CustomDevice):
+    """SmokeEM quirk."""
+
+    signature = {
+        MODELS_INFO: [("HEIMAN", "SmokeSensor-EM")],
+        ENDPOINTS: {
+            # "profile_id": "0x0104", "device_type": "0x0402",
+            # "input_clusters": ["0x0000", "0x0001", "0x0003", "0x0500", "0x0502"],
+            # "output_clusters": ["0x0019"]
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    Identify.cluster_id,
+                    IasZone.cluster_id,
+                    IasWd.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Ota.cluster_id,
+                ],
+            },
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    Identify.cluster_id,
+                    IasZone.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [
                     Ota.cluster_id,
                 ],
             },

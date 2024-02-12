@@ -84,7 +84,7 @@ class LegrandCableOutletCluster(CustomCluster):
         set_pilot_wire_mode = ZCLCommandDef(
             id=0x00,
             schema={"mode": PilotWireMode},
-            direction=Direction.Server_to_Client,
+            direction=Direction.Client_to_Server,
             is_manufacturer_specific=True,
         )
 

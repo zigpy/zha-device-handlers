@@ -41,6 +41,7 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
 
         Unlocked = 0x00
         Locked = 0x01
+        Partial_lock = 0x02
 
     class Display(t.enum8):
         """config_2nd_display values."""
@@ -157,14 +158,15 @@ class SinopeTechnologiesThermostatCluster(CustomCluster, Thermostat):
     class Occupancy(t.enum8):
         """set_occupancy values."""
 
-        Home = 0x00
-        Away = 0x01
+        Away = 0x00
+        Home = 0x01
 
     class Backlight(t.enum8):
         """backlight_auto_dim_param values."""
 
         On_demand = 0x00
         Always_on = 0x01
+        Bedroom = 0x02
 
     class CycleOutput(t.uint16_t):
         """main and aux cycle period values."""
