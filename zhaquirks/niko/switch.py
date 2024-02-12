@@ -47,7 +47,7 @@ class NikoConfigCluster(CustomCluster):
         Off = 0x00
         On = 0xFF
 
-    class LedOperationMode(t.uint24_t):
+    class LedOperationMode(t.enum8):
         Decoupled = 0x00
         ControlledByRelay = 0x01
         # Notable behaviour:
