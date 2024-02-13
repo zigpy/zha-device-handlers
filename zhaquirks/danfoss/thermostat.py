@@ -91,6 +91,7 @@ class DanfossExerciseDayOfTheWeekEnum(types.enum8):
     Thursday = 4
     Friday = 5
     Saturday = 6
+    Undefined = 7
 
 
 class DanfossOpenWindowDetectionEnum(types.enum8):
@@ -137,15 +138,11 @@ class CustomizedStandardCluster(CustomCluster):
             elif len(result) == 2:
                 success_global.extend(result[0])
                 failure_global.extend(result[1])
-            else:
-                raise Exception(f"Unexpected result size: {len(result)}")
 
         if failure_global:
-            response = [success_global, failure_global]
+            return [success_global, failure_global]
         else:
-            response = [success_global]
-
-        return response
+            return [success_global]
 
     async def split_command(
         self,
@@ -167,19 +164,15 @@ class CustomizedStandardCluster(CustomCluster):
             if not self.attributes[extract_attrid(e)].is_manufacturer_specific
         ]
 
-        result_specific = []
-        result_standard = []
+        result_specific = (
+            await func(records_specific, *args, **kwargs) if records_specific else []
+        )
 
-        if records_specific:
-            result_specific = await func(records_specific, *args, **kwargs)
+        result_standard = (
+            await func(records_standard, *args, **kwargs) if records_standard else []
+        )
 
-        if records_standard:
-            result_standard = await func(records_standard, *args, **kwargs)
-
-        if result_specific and result_standard:
-            return self.combine_results(result_specific, result_standard)
-        else:
-            return result_standard if result_standard else result_specific
+        return self.combine_results(result_specific, result_standard)
 
     async def _configure_reporting(self, records, *args, **kwargs):
         """Configure reporting ZCL foundation command."""
