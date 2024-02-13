@@ -1,5 +1,4 @@
 """Xiaomi aqara contact sensor device."""
-import logging
 
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import (
@@ -32,8 +31,6 @@ from zhaquirks.xiaomi import (
 
 OPEN_CLOSE_DEVICE_TYPE = 0x5F01
 XIAOMI_CLUSTER_ID = 0xFFFF
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class Magnet(XiaomiQuickInitDevice):

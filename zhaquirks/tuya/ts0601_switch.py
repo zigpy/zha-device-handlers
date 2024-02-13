@@ -438,6 +438,63 @@ class TuyaTripleSwitch_GP(TuyaSwitch):
     }
 
 
+class TuyaTripleSwitchVar03(TuyaSwitch):
+    """Tuya triple channel switch (variation 03)."""
+
+    signature = {
+        MODELS_INFO: [
+            ("_TZE200_kyfqmmyl", "TS0601"),  # reported: #2469
+        ],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    Time.cluster_id,
+                    TuyaOnOffManufCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Ota.cluster_id],
+            }
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    Time.cluster_id,
+                    MoesSwitchManufCluster,
+                    TuyaOnOff,
+                ],
+                OUTPUT_CLUSTERS: [Ota.cluster_id],
+            },
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    TuyaOnOff,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            3: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    TuyaOnOff,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+        }
+    }
+
+
 class TuyaQuadrupleSwitchTO(TuyaSwitch):
     """Tuya quadruple channel switch time on out cluster device."""
 

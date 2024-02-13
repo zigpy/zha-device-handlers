@@ -1,5 +1,4 @@
-"""Visonic MCT340E device."""
-import logging
+"""Visonic MCT340 device."""
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
@@ -22,26 +21,22 @@ OSRAM_DEVICE = 0x0810  # 2064 base 10
 OSRAM_CLUSTER = 0xFD00  # 64768 base 10
 
 
-_LOGGER = logging.getLogger(__name__)
-
-
 class CustomPowerConfigurationCluster(PowerConfigurationCluster):
     """Custom PowerConfigurationCluster."""
 
-    cluster_id = PowerConfigurationCluster.cluster_id
     MIN_VOLTS = 2.1
     MAX_VOLTS = 3.0
 
 
-class MCT340E(CustomDevice):
-    """Visonic MCT340E device."""
+class MCT340(CustomDevice):
+    """Visonic MCT340 device."""
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=1026
         # device_version=0
         # input_clusters=[0, 1, 3, 1026, 1280, 32, 2821]
         # output_clusters=[25]>
-        MODELS_INFO: [("Visonic", "MCT-340 E")],
+        MODELS_INFO: [("Visonic", "MCT-340 E"), ("Visonic", "MCT-340 SMA")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,

@@ -184,7 +184,6 @@ class DoublingPowerConfigurationCluster(CustomCluster, PowerConfiguration):
     that don't follow the reporting spec.
     """
 
-    cluster_id = PowerConfiguration.cluster_id
     BATTERY_PERCENTAGE_REMAINING = 0x0021
 
     def _update_attribute(self, attrid, value):
@@ -196,7 +195,6 @@ class DoublingPowerConfigurationCluster(CustomCluster, PowerConfiguration):
 class PowerConfigurationCluster(CustomCluster, PowerConfiguration):
     """Common use power configuration cluster."""
 
-    cluster_id = PowerConfiguration.cluster_id
     BATTERY_VOLTAGE_ATTR = 0x0020
     BATTERY_PERCENTAGE_REMAINING = 0x0021
     MIN_VOLTS = 1.5  # old 2.1

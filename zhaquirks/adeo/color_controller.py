@@ -71,7 +71,7 @@ class AdeoManufacturerCluster(EventableCluster):
         0x00: foundation.ZCLCommandDef(
             "preset",
             {"param1": t.uint8_t, "param2": t.uint8_t},
-            direction=foundation.Direction.Server_to_Client,
+            direction=foundation.Direction.Client_to_Server,
             is_manufacturer_specific=True,
         )
     }
@@ -96,8 +96,6 @@ class AdeoManufacturerCluster(EventableCluster):
 
 class AdeoScenesCluster(Scenes, EventableCluster):
     """Scenes cluster to map preset buttons to the "view" command."""
-
-    cluster_id = Scenes.cluster_id
 
     def __init__(self, *args, **kwargs):
         """Init."""

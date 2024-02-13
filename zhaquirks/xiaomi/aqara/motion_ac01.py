@@ -1,7 +1,6 @@
 """Quirk for aqara lumi.motion.ac01."""
 from __future__ import annotations
 
-import logging
 from typing import Any
 
 from zigpy.profiles import zha
@@ -32,8 +31,6 @@ MOTION_SENSITIVITY = 0x010C
 APPROACH_DISTANCE = 0x0146
 RESET_NO_PRESENCE_STATUS = 0x0157
 SENSOR = "sensor"
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class AqaraPresenceEvents(types.enum8):

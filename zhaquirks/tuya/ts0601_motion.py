@@ -398,6 +398,7 @@ class MmwRadarMotionGPP(CustomDevice):
             ("_TZE200_ar0slwnd", "TS0601"),
             ("_TZE200_sfiy5tfs", "TS0601"),
             ("_TZE200_mrf6vtua", "TS0601"),
+            ("_TZE204_qasjif9e", "TS0601"),
         ],
         ENDPOINTS: {
             1: {

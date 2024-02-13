@@ -1,5 +1,4 @@
 """Device handler for hivehome.com MOT003 sensors."""
-import logging
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
@@ -25,8 +24,6 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.hivehome import HIVEHOME, MotionCluster
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class MOT003(CustomDevice):

@@ -79,7 +79,10 @@ class TuyaGasDetector0601(CustomDevice):
         super().__init__(*args, **kwargs)
 
     signature = {
-        MODELS_INFO: [("_TZE200_ggev5fsl", "TS0601")],
+        MODELS_INFO: [
+            ("_TZE200_ggev5fsl", "TS0601"),
+            ("_TZE200_rjxqso4a", "TS0601"),
+        ],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zigpy.profiles.zha.PROFILE_ID,

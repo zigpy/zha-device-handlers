@@ -1,4 +1,7 @@
 """Module for Sinope quirks implementations."""
+from zigpy.quirks import CustomCluster
+from zigpy.zcl.clusters.general import DeviceTemperature
+
 from zhaquirks.const import (
     ARGS,
     ATTRIBUTE_ID,
@@ -18,6 +21,7 @@ from zhaquirks.const import (
 )
 
 SINOPE = "Sinope Technologies"
+SINOPE_MANUFACTURER_CLUSTER_ID = 0xFF01
 ATTRIBUTE_ACTION = "actionReport"
 
 LIGHT_DEVICE_TRIGGERS = {
@@ -58,3 +62,12 @@ LIGHT_DEVICE_TRIGGERS = {
         ARGS: {ATTRIBUTE_ID: 84, ATTRIBUTE_NAME: ATTRIBUTE_ACTION, VALUE: 19},
     },
 }
+
+
+class CustomDeviceTemperatureCluster(CustomCluster, DeviceTemperature):
+    """Custom device temperature cluster that multiplies temperature by 100."""
+
+    def _update_attribute(self, attrid, value):
+        if attrid == self.AttributeDefs.current_temperature.id:
+            value = value * 100
+        super()._update_attribute(attrid, value)

@@ -60,7 +60,7 @@ class ZigfredCluster(CustomCluster):
         ZIGFRED_CLUSTER_COMMAND_BUTTON_EVENT: foundation.ZCLCommandDef(
             "button_event",
             {"param1": t.uint32_t},
-            direction=foundation.Direction.Server_to_Client,
+            direction=foundation.Direction.Client_to_Server,
             is_manufacturer_specific=True,
         ),
     }
@@ -114,11 +114,6 @@ class ZigfredCluster(CustomCluster):
 
 class ZigfredUno(CustomDevice):
     """zigfred uno device handler."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        _LOGGER.info("Initializing zigfred uno")
-        super().__init__(*args, **kwargs)
 
     signature = {
         MODELS_INFO: [("Siglis", "zigfred uno")],
@@ -266,11 +261,6 @@ class ZigfredUno(CustomDevice):
 
 class ZigfredPlus(CustomDevice):
     """zigfred plus device handler."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        _LOGGER.info("Initializing zigfred plus")
-        super().__init__(*args, **kwargs)
 
     signature = {
         MODELS_INFO: [("Siglis", "zigfred plus")],

@@ -26,8 +26,6 @@ from zhaquirks.const import (
 class IasZoneDoorbellCluster(CustomCluster, IasZone):
     """Custom IasZone cluster for the doorbell."""
 
-    cluster_id = IasZone.cluster_id
-
     def handle_cluster_request(
         self,
         hdr: foundation.ZCLHeader,

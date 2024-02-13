@@ -23,6 +23,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.innr import INNR
 
 
 class RS228T(CustomDevice):
@@ -33,7 +34,7 @@ class RS228T(CustomDevice):
         # device_version=1
         # input_clusters=[0, 3, 4, 5, 6, 8, 768, 4096]
         # output_clusters=[25]>
-        MODELS_INFO: [("innr", "RS 228 T")],
+        MODELS_INFO: [(INNR, "RS 228 T")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,

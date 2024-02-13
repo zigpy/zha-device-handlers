@@ -946,31 +946,37 @@ class ZONNSMARTManufCluster(TuyaManufClusterAttributes):
         ZonnsmartManuClusterSelf = self
 
     attributes = TuyaManufClusterAttributes.attributes.copy()
-    attributes = {
-        ZONNSMART_MODE_ATTR: ("mode", t.uint8_t, True),
-        ZONNSMART_WINDOW_DETECT_ATTR: ("window_detection", t.uint8_t, True),
-        ZONNSMART_FROST_PROTECT_ATTR: ("frost_protection", t.uint8_t, True),
-        ZONNSMART_TARGET_TEMP_ATTR: ("target_temperature", t.uint32_t, True),
-        ZONNSMART_TEMPERATURE_ATTR: ("temperature", t.uint32_t, True),
-        ZONNSMART_TEMPERATURE_CALIBRATION_ATTR: (
-            "temperature_calibration",
-            t.int32s,
-            True,
-        ),
-        ZONNSMART_WEEK_FORMAT_ATTR: ("week_format", t.uint8_t, True),
-        ZONNSMART_HOLIDAY_TEMP_ATTR: ("holiday_temperature", t.uint32_t, True),
-        ZONNSMART_BATTERY_ATTR: ("battery", t.uint32_t, True),
-        ZONNSMART_UPTIME_TIME_ATTR: ("uptime", t.uint32_t, True),
-        ZONNSMART_CHILD_LOCK_ATTR: ("child_lock", t.uint8_t, True),
-        ZONNSMART_FAULT_DETECTION_ATTR: ("fault_detected", t.uint8_t, True),
-        ZONNSMART_BOOST_TIME_ATTR: ("boost_duration_seconds", t.uint32_t, True),
-        ZONNSMART_OPENED_WINDOW_TEMP: ("opened_window_temperature", t.uint32_t, True),
-        ZONNSMART_COMFORT_TEMP_ATTR: ("comfort_mode_temperature", t.uint32_t, True),
-        ZONNSMART_ECO_TEMP_ATTR: ("eco_mode_temperature", t.uint32_t, True),
-        ZONNSMART_HEATING_STOPPING_ATTR: ("heating_stop", t.uint8_t, True),
-        ZONNSMART_ONLINE_MODE_BOOL_ATTR: ("online_set", t.uint8_t, True),
-        ZONNSMART_ONLINE_MODE_ENUM_ATTR: ("online", t.uint8_t, True),
-    }
+    attributes.update(
+        {
+            ZONNSMART_MODE_ATTR: ("mode", t.uint8_t, True),
+            ZONNSMART_WINDOW_DETECT_ATTR: ("window_detection", t.uint8_t, True),
+            ZONNSMART_FROST_PROTECT_ATTR: ("frost_protection", t.uint8_t, True),
+            ZONNSMART_TARGET_TEMP_ATTR: ("target_temperature", t.uint32_t, True),
+            ZONNSMART_TEMPERATURE_ATTR: ("temperature", t.uint32_t, True),
+            ZONNSMART_TEMPERATURE_CALIBRATION_ATTR: (
+                "temperature_calibration",
+                t.int32s,
+                True,
+            ),
+            ZONNSMART_WEEK_FORMAT_ATTR: ("week_format", t.uint8_t, True),
+            ZONNSMART_HOLIDAY_TEMP_ATTR: ("holiday_temperature", t.uint32_t, True),
+            ZONNSMART_BATTERY_ATTR: ("battery", t.uint32_t, True),
+            ZONNSMART_UPTIME_TIME_ATTR: ("uptime", t.uint32_t, True),
+            ZONNSMART_CHILD_LOCK_ATTR: ("child_lock", t.uint8_t, True),
+            ZONNSMART_FAULT_DETECTION_ATTR: ("fault_detected", t.uint8_t, True),
+            ZONNSMART_BOOST_TIME_ATTR: ("boost_duration_seconds", t.uint32_t, True),
+            ZONNSMART_OPENED_WINDOW_TEMP: (
+                "opened_window_temperature",
+                t.uint32_t,
+                True,
+            ),
+            ZONNSMART_COMFORT_TEMP_ATTR: ("comfort_mode_temperature", t.uint32_t, True),
+            ZONNSMART_ECO_TEMP_ATTR: ("eco_mode_temperature", t.uint32_t, True),
+            ZONNSMART_HEATING_STOPPING_ATTR: ("heating_stop", t.uint8_t, True),
+            ZONNSMART_ONLINE_MODE_BOOL_ATTR: ("online_set", t.uint8_t, True),
+            ZONNSMART_ONLINE_MODE_ENUM_ATTR: ("online", t.uint8_t, True),
+        }
+    )
 
     DIRECT_MAPPED_ATTRS = {
         ZONNSMART_TEMPERATURE_ATTR: ("local_temperature", lambda value: value * 10),
@@ -1529,6 +1535,8 @@ class MoesHY368_Type1(TuyaThermostat):
             ("_TZE200_cpmgn2cf", "TS0601"),
             ("_TZE200_9sfg7gm0", "TS0601"),
             ("_TZE200_8whxpsiw", "TS0601"),
+            ("_TZE200_8thwkzxl", "TS0601"),  # Tervix Pro Line EVA 2
+            ("_TZE200_xby0s3ta", "TS0601"),  # Sandy Beach HY367
         ],
         ENDPOINTS: {
             1: {
@@ -1691,6 +1699,7 @@ class ZonnsmartTV01_ZG(TuyaThermostat):
             ("_TZE200_kds0pmmv", "TS0601"),  # MOES TV02
             ("_TZE200_sur6q7ko", "TS0601"),  # LSC Smart Connect 3012732
             ("_TZE200_lllliz3p", "TS0601"),  # tuya TV02-Zigbee2
+            ("_TZE200_fsow0qsk", "TS0601"),  # Tesla Smart TV500
         ],
         ENDPOINTS: {
             1: {
