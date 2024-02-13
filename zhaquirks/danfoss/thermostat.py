@@ -295,29 +295,25 @@ class DanfossThermostatCluster(CustomizedStandardCluster, Thermostat):
         """There are 2 types of setpoint changes: Fast and Slow.
         Fast is used for immediate changes; this is done using a command (setpoint_command).
         Slow is used for scheduled changes; this is done using an attribute (occupied_heating_setpoint).
+        In case of a change on occupied_heating_setpoint, a setpoint_command is used.
 
-        system mode=off is not implemented on Danfoss; this is emulated by setting setpoint to the minimum setpoint.
-        In case of a change on occupied_heating_setpoint or system mode=off, a fast setpoint change is done.
+        Thermostatic radiator valves from Danfoss cannot be turned off to prevent damage during frost.
+        This is emulated by setting setpoint to the minimum setpoint.
         """
 
         fast_setpoint_change = None
 
         if occupied_heating_setpoint.name in attributes:
-            # On Danfoss an immediate setpoint change is done through a command
-            # store for later in fast_setpoint_change and remove from attributes
+            # Store setpoint for use in command
             fast_setpoint_change = attributes[occupied_heating_setpoint.name]
 
-        # if: system_mode = off
         if attributes.get(system_mode.name) == system_mode.type.Off:
-            # Thermostatic Radiator Valves from Danfoss cannot be turned off to prevent damage during frost
-            # just turn setpoint down to minimum temperature using fast_setpoint_change
+            # Just turn setpoint down to minimum temperature using fast_setpoint_change
             fast_setpoint_change = self._attr_cache[min_heat_setpoint_limit.id]
             attributes[occupied_heating_setpoint.name] = fast_setpoint_change
-
-            # Danfoss doesn't accept off, therefore set to on
             attributes[system_mode.name] = system_mode.type.Heat
 
-        # attributes cannot be empty, because write_res cannot be empty, but it can contain unrequested items
+        # Attributes cannot be empty, because write_res cannot be empty, but it can contain unrequested items
         write_res = await super().write_attributes(
             attributes, manufacturer=manufacturer
         )
