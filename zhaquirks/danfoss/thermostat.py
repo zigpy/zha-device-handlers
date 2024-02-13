@@ -144,7 +144,7 @@ class DanfossSetpointCommandEnum(types.enum8):
     """Set behaviour to change the setpoint."""
 
     Schedule = 0  # relatively slow
-    User_Interaction = 1  # aggressive change
+    User_interaction = 1  # aggressive change
     Preheat = 2  # invisible to user
 
 
@@ -360,7 +360,7 @@ class DanfossThermostatCluster(CustomizedStandardCluster, Thermostat):
         if fast_setpoint_change is not None:
             # On Danfoss a fast setpoint change is done through a command
             await self.setpoint_command(
-                DanfossSetpointCommandEnum.User_Interaction,
+                DanfossSetpointCommandEnum.User_interaction,
                 fast_setpoint_change,
                 manufacturer=manufacturer,
             )
