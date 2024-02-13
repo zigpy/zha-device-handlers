@@ -76,7 +76,7 @@ class DanfossViewingDirectionEnum(types.enum8):
 class DanfossAdaptationRunControlEnum(types.enum8):
     """Initiate or Cancel adaptation run."""
 
-    Nothing = 0x00  # not documented everywhere
+    Nothing = 0x00  # not documented in all documentation, but in some places and seems to work
     Initiate = 0x01
     Cancel = 0x02
 
@@ -136,7 +136,7 @@ class DanfossAdaptationRunStatusBitmap(types.bitmap8):
 class DanfossAdaptationRunSettingsBitmap(types.bitmap8):
     """Danfoss Adaptation run settings bitmap."""
 
-    Disabled = 0x00
+    Disabled = 0x00  # Undocumented, but seems to work
     Enabled = 0x01
 
 
