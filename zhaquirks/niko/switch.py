@@ -1,5 +1,6 @@
 """Niko switches (only Niko Double connectable switch,10A (552-721X2) at this time)"""
 
+from typing import Final
 from zigpy import types as t
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
@@ -11,6 +12,10 @@ from zigpy.zcl.clusters.general import (
     OnOff,
     Ota,
     Scenes,
+)
+from zigpy.zcl.foundation import (
+    BaseAttributeDefs,
+    ZCLAttributeDef,
 )
 from zigpy.zcl.clusters.homeautomation import Diagnostic
 
@@ -33,39 +38,51 @@ from zhaquirks.const import (
 )
 from zhaquirks.niko import NIKO
 
+class ButtonOperationMode(t.enum8):
+    # WARN: while one can technically write 0x00 to the operationMode attribute
+    #       this seems to brick the device and it will need to be rejoined
+    Decoupled = 0x01
+    ControlRelay = 0x02
+
+class LedState(t.enum_factory(t.uint8_t)):
+    Off = 0x00
+    On = 0xFF
+
+class LedOperationMode(t.enum8):
+    Decoupled = 0x00
+    ControlledByRelay = 0x01
+    # Notable behaviour:
+    # If LedOperationMode == ControlledByRelay, ButtonOperationMode == ControlRelay and LedState == On, then LED reflects status of corresponding relay
+    # If ButtonOperationMode == Decoupled, then neither buttons nor relay affect the LEDs (i.e. LedOperationMode acts as if ==Decoupled)
+    # If LedOperationMode == Decoupled and/or ButtonOperationMode == Decoupled, then LED can nevertheless by controlled by writing LedState ('always on' or 'always off')
+
 
 class NikoConfigCluster(CustomCluster):
     """manufacturer specific cluster related to device settings"""
 
-    class ButtonOperationMode(t.enum8):
-        # WARN: while one can technically write 0x00 to the operationMode attribute
-        #       this seems to brick the device and it will need to be rejoined
-        Decoupled = 0x01
-        ControlRelay = 0x02
-
-    class LedState(t.enum_factory(t.uint8_t)):
-        Off = 0x00
-        On = 0xFF
-
-    class LedOperationMode(t.enum8):
-        Decoupled = 0x00
-        ControlledByRelay = 0x01
-        # Notable behaviour:
-        # If LedOperationMode == ControlledByRelay, ButtonOperationMode == ControlRelay and LedState == On, then LED reflects status of corresponding relay
-        # If ButtonOperationMode == Decoupled, then neither buttons nor relay affect the LEDs (i.e. LedOperationMode acts as if ==Decoupled)
-        # If LedOperationMode == Decoupled and/or ButtonOperationMode == Decoupled, then LED can nevertheless by controlled by writing LedState ('always on' or 'always off')
+    ButtonOperationMode: Final = ButtonOperationMode
+    LedState: Final = LedState
+    LedOperationMode: Final = LedOperationMode
 
     cluster_id = 0xFC00
     ep_attribute = "niko_config_cluster"
-    attributes = {
-        # If this would ever be expanded to outlets:
-        # WARNING: 0x0000 has different datatypes!
-        # enum8 (switch) vs. bitmap8 (outlet)
-        # unknown usage/function on outlet
-        0x0000: ("button_operation_mode", ButtonOperationMode, True),
-        0x0100: ("led_state", LedState, True),
-        0x0104: ("led_operation_mode", LedOperationMode, True),
-    }
+
+    class AttributeDefs(BaseAttributeDefs):
+        button_operation_mode = ZCLAttributeDef(
+            id=0x0000,
+            type=ButtonOperationMode,
+            is_manufacturer_specific=True,
+        )
+        led_state = ZCLAttributeDef(
+            id=0x0100,
+            type=LedState,
+            is_manufacturer_specific=True,
+        )
+        led_operation_mode = ZCLAttributeDef(
+            id=0x0104,
+            type=LedOperationMode,
+            is_manufacturer_specific=True,
+        )
 
 
 class NikoActionCluster(EventableCluster):
@@ -73,14 +90,18 @@ class NikoActionCluster(EventableCluster):
 
     cluster_id = 0xFC01
     ep_attribute = "niko_action_cluster"
-    attributes = {
+
+    class AttributeDefs(BaseAttributeDefs):
         # Notable behaviour:
         # BUTTON1 (left) = {16: null, 64: 'click', 32: 'hold', 48: 'release'}
         # BUTTON2 (right) = {4096: null, 16384: 'click', 8192: 'hold', 12288: 'release'}
         # BUTTON3 (left_ext) = {256: null, 1024: 'click', 512: 'hold', 768: 'release'}
         # BUTTON4 (right_ext) = {65536: null, 262144: 'click', 131072: 'hold', 196608: 'release'}
-        0x0002: ("action", t.bitmap32, True),
-    }
+        action = ZCLAttributeDef(
+            id=0x0002,
+            type=t.bitmap32,
+            is_manufacturer_specific=True,
+        )
 
 
 class NikoSingleConnectableSwitch(CustomDevice):
