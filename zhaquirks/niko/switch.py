@@ -43,7 +43,7 @@ class NikoConfigCluster(CustomCluster):
         Decoupled = 0x01
         ControlRelay = 0x02
 
-    class LedState(t.uint8_t):
+    class LedState(t.enum_factory(t.uint8_t)):
         Off = 0x00
         On = 0xFF
 
