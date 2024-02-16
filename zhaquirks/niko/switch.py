@@ -1,6 +1,7 @@
 """Niko switches (only Niko Double connectable switch,10A (552-721X2) at this time)"""
 
 from typing import Final
+
 from zigpy import types as t
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
@@ -13,11 +14,8 @@ from zigpy.zcl.clusters.general import (
     Ota,
     Scenes,
 )
-from zigpy.zcl.foundation import (
-    BaseAttributeDefs,
-    ZCLAttributeDef,
-)
 from zigpy.zcl.clusters.homeautomation import Diagnostic
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 from zhaquirks import EventableCluster
 from zhaquirks.const import (
@@ -38,15 +36,18 @@ from zhaquirks.const import (
 )
 from zhaquirks.niko import NIKO
 
+
 class ButtonOperationMode(t.enum8):
     # WARN: while one can technically write 0x00 to the operationMode attribute
     #       this seems to brick the device and it will need to be rejoined
     Decoupled = 0x01
     ControlRelay = 0x02
 
+
 class LedState(t.enum_factory(t.uint8_t)):
     Off = 0x00
     On = 0xFF
+
 
 class LedOperationMode(t.enum8):
     Decoupled = 0x00
