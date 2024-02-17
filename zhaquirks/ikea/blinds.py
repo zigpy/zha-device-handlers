@@ -176,4 +176,3 @@ class IkeaTradfriRollerBlinds3(CustomDevice):
             }
         }
     }
-
