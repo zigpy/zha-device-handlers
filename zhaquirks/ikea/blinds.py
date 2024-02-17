@@ -113,6 +113,7 @@ class IkeaTradfriRollerBlinds2(CustomDevice):
 
     replacement = IkeaTradfriRollerBlinds.replacement
 
+
 class IkeaTradfriRollerBlinds3(CustomDevice):
     """Custom device representing IKEA of Sweden TRADFRI Fyrtur blinds."""
 
