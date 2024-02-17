@@ -142,7 +142,11 @@ class IkeaTradfriRollerBlinds3(CustomDevice):
                     LightLink.cluster_id,
                     IKEA_CLUSTER_ID,
                 ],
-                OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id, LightLink.cluster_id],
+                OUTPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    Ota.cluster_id,
+                    LightLink.cluster_id
+                ],
             }
         },
     }
@@ -163,7 +167,11 @@ class IkeaTradfriRollerBlinds3(CustomDevice):
                     LightLink.cluster_id,
                     IKEA_CLUSTER_ID,
                 ],
-                OUTPUT_CLUSTERS: [Identify.cluster_id,Ota.cluster_id, LightLink.cluster_id],
+                OUTPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    Ota.cluster_id,
+                    LightLink.cluster_id
+                ],
             }
         }
     }
