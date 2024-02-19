@@ -1,6 +1,4 @@
 """Device handler for eWeLink WB01."""
-import logging
-
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, Identify, OnOff, PowerConfiguration
@@ -22,15 +20,9 @@ from zhaquirks.const import (
     SHORT_PRESS,
 )
 
-_LOGGER = logging.getLogger(__name__)
-
 
 class SonoffButton(CustomDevice):
     """Custom device representing sonoff devices."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=0 device_version=0

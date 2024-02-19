@@ -1,5 +1,4 @@
 """Xiaomi Aqara EU plugs."""
-import logging
 
 import zigpy
 from zigpy.profiles import zgp, zha
@@ -37,8 +36,6 @@ from zhaquirks.xiaomi import (
     XiaomiAqaraE1Cluster,
     XiaomiCustomDevice,
 )
-
-_LOGGER = logging.getLogger(__name__)
 
 OPPLE_MFG_CODE = 0x115F
 

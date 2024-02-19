@@ -1,5 +1,4 @@
 """Xiaomi mija weather sensor device."""
-import logging
 
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import (
@@ -33,8 +32,6 @@ TEMPERATURE_HUMIDITY_DEVICE_TYPE = 0x5F01
 TEMPERATURE_HUMIDITY_DEVICE_TYPE2 = 0x5F02
 TEMPERATURE_HUMIDITY_DEVICE_TYPE3 = 0x5F03
 XIAOMI_CLUSTER_ID = 0xFFFF
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class Weather(XiaomiCustomDevice):

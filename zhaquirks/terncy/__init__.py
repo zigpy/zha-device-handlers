@@ -57,7 +57,6 @@ ZONE_TYPE = 0x0001
 class IlluminanceMeasurementCluster(CustomCluster, IlluminanceMeasurement):
     """Terncy Illuminance Measurement Cluster."""
 
-    cluster_id = IlluminanceMeasurement.cluster_id
     ATTR_ID = 0
 
     def _update_attribute(self, attrid, value):
@@ -69,7 +68,6 @@ class IlluminanceMeasurementCluster(CustomCluster, IlluminanceMeasurement):
 class TemperatureMeasurementCluster(CustomCluster, TemperatureMeasurement):
     """Terncy Temperature Cluster."""
 
-    cluster_id = TemperatureMeasurement.cluster_id
     ATTR_ID = 0
 
     def _update_attribute(self, attrid, value):

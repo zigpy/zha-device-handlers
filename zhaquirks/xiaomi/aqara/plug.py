@@ -1,5 +1,4 @@
 """Xiaomi lumi.plug plug."""
-import logging
 
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import (
@@ -33,8 +32,6 @@ from zhaquirks.xiaomi import (
     MeteringCluster,
     XiaomiCustomDevice,
 )
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class Plug(XiaomiCustomDevice):

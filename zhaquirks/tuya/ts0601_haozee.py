@@ -1,5 +1,4 @@
 """Map from manufacturer to standard clusters for thermostatic valves."""
-import logging
 
 import zigpy.profiles.zha
 import zigpy.types as t
@@ -71,8 +70,6 @@ HAOZEE_CURRENT_MODE_ATTR = 0x0480  # [0] manual [1] auto [2] away
 HAOZEE_FAULT_ATTR = 0x0582  # Known fault codes: [4] E2 external sensor error
 
 # Unknown DP - descaling on/off, window detection, window detection settings
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class HY08WEManufCluster(TuyaManufClusterAttributes):
@@ -228,8 +225,10 @@ class HY08WEThermostat(TuyaThermostatCluster):
         elif value == 2:
             prog_mode = self.ProgrammingOperationMode.Simple
             occupancy = self.Occupancy.Unoccupied
-        self._update_attribute(self.attridx["programing_oper_mode"], prog_mode)
-        self._update_attribute(self.attridx["occupancy"], occupancy)
+        self._update_attribute(
+            self.attributes_by_name["programing_oper_mode"].id, prog_mode
+        )
+        self._update_attribute(self.attributes_by_name["occupancy"].id, occupancy)
 
     def enabled_change(self, value):
         """System mode change."""
@@ -237,7 +236,7 @@ class HY08WEThermostat(TuyaThermostatCluster):
             mode = self.SystemMode.Off
         else:
             mode = self.SystemMode.Heat
-        self._update_attribute(self.attridx["system_mode"], mode)
+        self._update_attribute(self.attributes_by_name["system_mode"].id, mode)
 
 
 class HY08WEUserInterface(TuyaUserInterfaceCluster):

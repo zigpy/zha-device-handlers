@@ -9,7 +9,7 @@ from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.closures import WindowCovering
-from zigpy.zcl.clusters.general import LevelControl, OnOff, PowerConfiguration
+from zigpy.zcl.clusters.general import Basic, LevelControl, OnOff, PowerConfiguration
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
 from zigpy.zcl.clusters.smartenergy import Metering
@@ -37,6 +37,7 @@ TUYA_CLUSTER_1888_ID = 0x1888
 TUYA_SET_DATA = 0x00
 TUYA_GET_DATA = 0x01
 TUYA_SET_DATA_RESPONSE = 0x02
+TUYA_QUERY_DATA = 0x03
 TUYA_SEND_DATA = 0x04
 TUYA_ACTIVE_STATUS_RPT = 0x06
 TUYA_SET_TIME = 0x24
@@ -46,7 +47,6 @@ TUYA_MCU_VERSION_RSP = 0x11
 #
 TUYA_LEVEL_COMMAND = 514
 
-COVER_EVENT = "cover_event"
 LEVEL_EVENT = "level_event"
 TUYA_MCU_COMMAND = "tuya_mcu_command"
 
@@ -108,7 +108,6 @@ ATTR_COVER_INVERTED = 0x8002
 # ---------------------------------------------------------
 SWITCH_EVENT = "switch_event"
 ATTR_ON_OFF = 0x0000
-ATTR_COVER_POSITION = 0x0008
 TUYA_CMD_BASE = 0x0100
 # ---------------------------------------------------------
 # DP Value meanings in Status Report
@@ -528,6 +527,18 @@ class TuyaManufClusterAttributes(TuyaManufCluster):
         return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
 
+class EnchantedDevice(CustomDevice):
+    """Class for Tuya devices which need to be unlocked by casting a 'spell'. This happens during binding.
+
+    To make sure the spell is cast, the device needs to implement a subclass of `TuyaEnchantableCluster`.
+    For more information, see the documentation of `TuyaEnchantableCluster`.
+    """
+
+    # These values can be overridden from a quirk to enable (or disable) additional Tuya spells:
+    tuya_spell_read_attributes: bool = True  # spell reading attributes on Basic cluster
+    tuya_spell_data_query: bool = False  # additional spell needed for some devices
+
+
 class TuyaEnchantableCluster(CustomCluster):
     """Tuya cluster that casts a magic spell if `TUYA_SPELL` is set.
 
@@ -550,22 +561,44 @@ class TuyaEnchantableCluster(CustomCluster):
 
     async def bind(self):
         """Bind cluster and start casting the spell if necessary."""
-        # check if the device needs to have the spell cast
+        device = self.endpoint.device
+
+        # check if the device is an EnchantedDevice
         # and since the cluster can be used on multiple endpoints, check that it's endpoint 1
-        if (
-            getattr(self.endpoint.device, "TUYA_SPELL", False)
-            and self.endpoint.endpoint_id == 1
-        ):
-            await self.spell()
+        if isinstance(device, EnchantedDevice) and self.endpoint.endpoint_id == 1:
+            if device.tuya_spell_read_attributes:
+                await self.spell_attribute_reads()
+            if device.tuya_spell_data_query:
+                await self.spell_data_query()
+
         return await super().bind()
 
-    async def spell(self):
-        """Cast spell, so the Tuya device works correctly."""
-        self.debug("Executing spell on Tuya device %s", self.endpoint.device.ieee)
+    async def spell_attribute_reads(self):
+        """Cast 'attribute read' spell, so the Tuya device works correctly."""
+        self.debug(
+            "Executing attribute read spell on Tuya device %s",
+            self.endpoint.device.ieee,
+        )
         attr_to_read = [4, 0, 1, 5, 7, 0xFFFE]
-        basic_cluster = self.endpoint.device.endpoints[1].in_clusters[0]
+        basic_cluster = self.endpoint.device.endpoints[1].in_clusters[Basic.cluster_id]
         await basic_cluster.read_attributes(attr_to_read)
-        self.debug("Executed spell on Tuya device %s", self.endpoint.device.ieee)
+        self.debug(
+            "Executed attribute read spell on Tuya device %s", self.endpoint.device.ieee
+        )
+
+    async def spell_data_query(self):
+        """Cast 'data query' spell, also required for some Tuya devices to send data."""
+        self.debug(
+            "Executing data query spell on Tuya device %s", self.endpoint.device.ieee
+        )
+        # tests verify that a device with an enabled 'data query spell' has a TuyaNewManufCluster (subclass)
+        tuya_cluster = self.endpoint.device.endpoints[1].in_clusters[
+            TuyaNewManufCluster.cluster_id
+        ]
+        await tuya_cluster.command(TUYA_QUERY_DATA)
+        self.debug(
+            "Executed data query spell on Tuya device %s", self.endpoint.device.ieee
+        )
 
 
 class TuyaOnOff(TuyaEnchantableCluster, OnOff):
@@ -1490,6 +1523,9 @@ class TuyaNewManufCluster(CustomCluster):
     ep_attribute: str = "tuya_manufacturer"
 
     server_commands = {
+        TUYA_QUERY_DATA: foundation.ZCLCommandDef(
+            "query_data", {}, False, is_manufacturer_specific=True
+        ),
         TUYA_SET_DATA: foundation.ZCLCommandDef(
             "set_data", {"data": TuyaCommand}, False, is_manufacturer_specific=True
         ),
@@ -1536,7 +1572,7 @@ class TuyaNewManufCluster(CustomCluster):
         """Handle cluster specific request."""
 
         try:
-            if hdr.direction == foundation.Direction.Client_to_Server:
+            if hdr.direction == foundation.Direction.Server_to_Client:
                 # server_cluster -> client_cluster cluster specific command
                 handler_name = f"handle_{self.client_commands[hdr.command_id].name}"
             else:
