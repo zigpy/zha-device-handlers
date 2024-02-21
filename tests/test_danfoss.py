@@ -206,7 +206,7 @@ async def test_customized_standardcluster(zigpy_device_from_quirk):
         if mock_attributes[attrs[0]].is_manufacturer_specific:
             reports = attrs
 
-        return [[545], [4545]]
+        return [[545]]
 
     # data is written to trv
     patch_danfoss_read_attributes = mock.patch.object(
@@ -216,5 +216,27 @@ async def test_customized_standardcluster(zigpy_device_from_quirk):
     )
 
     with patch_danfoss_read_attributes:
-        await danfoss_thermostat_cluster._read_attributes([56454, 656])
+        result, fail = await danfoss_thermostat_cluster._read_attributes([56454, 656])
+        assert result
+        assert not fail
+        assert reports == [656]
+
+    def mock_read_attributes_fail(attrs, *args, **kwargs):
+        nonlocal reports
+        if mock_attributes[attrs[0]].is_manufacturer_specific:
+            reports = attrs
+
+        return [[545], [4545]]
+
+    # data is written to trv
+    patch_danfoss_read_attributes_fail = mock.patch.object(
+        CustomCluster,
+        "_read_attributes",
+        mock.AsyncMock(side_effect=mock_read_attributes_fail),
+    )
+
+    with patch_danfoss_read_attributes_fail:
+        result, fail = await danfoss_thermostat_cluster._read_attributes([56454, 656])
+        assert result
+        assert fail
         assert reports == [656]
