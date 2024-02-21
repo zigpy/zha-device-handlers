@@ -216,9 +216,8 @@ async def test_customized_standardcluster(zigpy_device_from_quirk):
     )
 
     with patch_danfoss_read_attributes:
-        result, fail = await danfoss_thermostat_cluster._read_attributes([56454, 656])
+        result = await danfoss_thermostat_cluster._read_attributes([56454, 656])
         assert result
-        assert not fail
         assert reports == [656]
 
     def mock_read_attributes_fail(attrs, *args, **kwargs):
