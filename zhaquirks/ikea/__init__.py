@@ -228,7 +228,7 @@ class DoublingPowerConfigClusterIKEA(CustomCluster, PowerConfiguration):
 
                 # new firmware is either 24.4.5 or above, or 2.4.5 or above
                 # old firmware is 2.3.x or below
-                return first_part >= 24 or (first_part >= 2 and second_part >= 4)
+                return first_part >= 3 or (first_part >= 2 and second_part >= 4)
             except ValueError:
                 _LOGGER.warning(
                     "sw_build_id is not a number: %s for device %s",
