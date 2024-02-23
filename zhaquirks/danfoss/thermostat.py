@@ -57,13 +57,13 @@ from zhaquirks.const import (
 )
 from zhaquirks.quirk_ids import DANFOSS_ALLY_THERMOSTAT
 
-occupied_heating_setpoint = Thermostat.AttributeDefs.occupied_heating_setpoint
-system_mode = Thermostat.AttributeDefs.system_mode
-min_heat_setpoint_limit = Thermostat.AttributeDefs.min_heat_setpoint_limit
-
 DANFOSS = "Danfoss"
 HIVE = DANFOSS
 POPP = "D5X84YU"
+
+occupied_heating_setpoint = Thermostat.AttributeDefs.occupied_heating_setpoint
+system_mode = Thermostat.AttributeDefs.system_mode
+min_heat_setpoint_limit = Thermostat.AttributeDefs.min_heat_setpoint_limit
 
 
 class DanfossViewingDirectionEnum(types.enum8):
