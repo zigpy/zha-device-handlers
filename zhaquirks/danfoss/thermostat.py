@@ -523,6 +523,3 @@ class DanfossThermostat(CustomDevice):
             }
         }
     }
-
-
-z = DanfossAdaptationRunStatusBitmap
