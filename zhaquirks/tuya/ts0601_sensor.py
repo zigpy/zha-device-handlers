@@ -202,7 +202,6 @@ class TuyaTempHumiditySensorVar03(CustomDevice):
         # "out_clusters": ["0x000a","0x0019"]
         MODELS_INFO: [
             ("_TZE200_qyflbnbj", "TS0601"),
-            ("_TZE200_utkemkbs", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
@@ -251,6 +250,8 @@ class TuyaTempHumiditySensorVar04(CustomDevice):
             ("_TZE200_yjjdcqsq", "TS0601"),
             ("_TZE200_9yapgbuv", "TS0601"),
             ("_TZE204_yjjdcqsq", "TS0601"),
+            ("_TZE200_utkemkbs", "TS0601"),
+            ("_TZE204_utkemkbs", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
