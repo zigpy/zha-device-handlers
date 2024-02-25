@@ -115,6 +115,16 @@ class ChannelConfiguration_2CHB(t.enum8):
     DEFAULT = A_PLUS_B  # Grid plus production
 
 
+class Metering:
+    """Functions for use with the ZCL Metering cluster."""
+
+    @staticmethod
+    def format(int_digits: int, dec_digits: int, suppresss_leading_zeroes: bool = True):
+        assert 0 <= int_digits <= 7, "int_digits must be between 0 and 7."
+        assert 0 <= dec_digits <= 7, "dec_digits must be between 0 and 7."
+        return (suppresss_leading_zeroes << 6) | (int_digits << 3) | dec_digits
+
+
 class PowerFlow(t.enum1):
     """Indicates power flow direction."""
 
@@ -225,15 +235,15 @@ class MeterChannelClusterBase:
     @property
     def channel(self) -> Union[str, None]:
         return self._ENDPOINT_TO_CHANNEL.get(
-            (self.channel_config_type, self.endpoint.endpoint_id), None
+            (self.channel_configuration_type, self.endpoint.endpoint_id), None
         )
 
     @property
-    def channel_config(self) -> Union[ChannelConfiguration, None]:
+    def channel_configuration(self) -> Union[ChannelConfiguration, None]:
         return self.manufacturer_cluster.get_optional("channel_configuration")
 
     @property
-    def channel_config_type(self):
+    def channel_configuration_type(self):
         try:
             return self.manufacturer_cluster.AttributeDefs.channel_configuration.type
         except Exception:
@@ -286,7 +296,7 @@ class MeterChannelClusterBase:
         """Returns a specified device cluster."""
         if channel_or_endpoint_id in Channel:
             channel_or_endpoint_id = self._CHANNEL_TO_ENDPOINT.get(
-                (self.channel_config_type, channel_or_endpoint_id), None
+                (self.channel_configuration_type, channel_or_endpoint_id), None
             )
         assert channel_or_endpoint_id is not None, "Invalid channel_or_endpoint_id."
         return getattr(
@@ -339,11 +349,13 @@ class PowerFlowPreempt:
     def power_flow_preempt_handler(self, attr_name: str, value):
         if (
             not self.power_flow_preempt
-            or self.channel_config != ChannelConfiguration.A_PLUS_B
+            or self.channel_configuration != ChannelConfiguration.A_PLUS_B
             or self.channel not in self._PF_PREEMPT_SOURCE_CHANNELS
             or attr_name not in self._PF_PREEMPT_SOURCE_ATTR
         ):
             return
+
+        self.warning("preempting power flow")
 
         if self.channel is not self._PF_PREEMPT_TRIGGER_CHANNEL:
             action = None
@@ -407,7 +419,7 @@ class VirtualChannel:
 
     def update_virtual_cluster(self, attr_name: str) -> None:
         if (
-            self.channel_config
+            self.channel_configuration
             not in (ChannelConfiguration.A_PLUS_B, ChannelConfiguration.A_MINUS_B)
             or self.channel != self._VIRTUAL_UPDATE_TRIGGER_CHANNEL
             or attr_name
@@ -423,9 +435,9 @@ class VirtualChannel:
 
         method = None
         if attr_name in self._VIRTUAL_CUMULATIVE_ATTRIBUTES:
-            method = self._VIRTUAL_CUMULATIVE_METHODS.get(self.channel_config)
+            method = self._VIRTUAL_CUMULATIVE_METHODS.get(self.channel_configuration)
         elif attr_name in self._VIRTUAL_DISCRETE_ATTRIBUTES:
-            method = self._VIRTUAL_DISCRETE_METHODS.get(self.channel_config)
+            method = self._VIRTUAL_DISCRETE_METHODS.get(self.channel_configuration)
             if getattr(self.attr_type(attr_name), "_signed", None) is False:
                 value_a = PowerFlow.align_value(value_a, cluster_a.power_flow)
                 value_b = PowerFlow.align_value(value_b, cluster_b.power_flow)
@@ -569,23 +581,15 @@ class TuyaMetering(
 ):
     """Tuya Metering cluster for Energy Meter devices."""
 
-    @staticmethod
-    def metering_format(
-        int_digits: int, dec_digits: int, suppresss_leading_zeroes: bool = True
-    ):
-        assert 0 <= int_digits <= 7, "int_digits must be between 0 and 7."
-        assert 0 <= dec_digits <= 7, "dec_digits must be between 0 and 7."
-        return (suppresss_leading_zeroes << 6) | (int_digits << 3) | dec_digits
-
     _CONSTANT_ATTRIBUTES = {
         **TuyaZBMeteringClusterWithUnit._CONSTANT_ATTRIBUTES,
         TuyaZBMeteringClusterWithUnit.AttributeDefs.status.id: 0x00,
         TuyaZBMeteringClusterWithUnit.AttributeDefs.multiplier.id: 1,
         TuyaZBMeteringClusterWithUnit.AttributeDefs.divisor.id: 10000,  # 1 decimal place after conversion from kW to W
-        TuyaZBMeteringClusterWithUnit.AttributeDefs.summation_formatting.id: metering_format(
+        TuyaZBMeteringClusterWithUnit.AttributeDefs.summation_formatting.id: Metering.format(
             7, 2, True
         ),
-        TuyaZBMeteringClusterWithUnit.AttributeDefs.demand_formatting.id: metering_format(
+        TuyaZBMeteringClusterWithUnit.AttributeDefs.demand_formatting.id: Metering.format(
             7, 1, True
         ),
     }
@@ -593,8 +597,8 @@ class TuyaMetering(
     _DIRECTIONAL_ATTRIBUTES = ("instantaneous_demand",)
 
     _VIRTUAL_CUMULATIVE_ATTRIBUTES = (
-        "current_summation_delivered",
-        "current_summation_received",
+        "current_summ_delivered",
+        "current_summ_received",
     )
     _VIRTUAL_DISCRETE_ATTRIBUTES = ("instantaneous_demand",)
 
