@@ -7,7 +7,6 @@ from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomDevice
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, GreenPowerProxy, Groups, Ota, Scenes, Time
-from zigpy.zcl.clusters.homeautomation import MeasurementType
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -24,6 +23,9 @@ from zhaquirks.tuya import (
     TuyaZBMeteringClusterWithUnit,
 )
 from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster
+
+# from zigpy.zcl.clusters.homeautomation import MeasurementType
+
 
 # Manufacturer cluster identifiers for device signatures
 EARU_MANUFACTURER_CLUSTER_ID = 0xFF66
@@ -59,6 +61,20 @@ POWER_FLOW_PREEMPT = 0x5020
 
 # Suffix for device attributes which need power flow direction applied
 UNSIGNED_POWER_ATTR_SUFFIX = "_attr_unsigned"
+
+
+class MeasurementType(t.bitmap32):
+    """Defines the measurement type bits for the ElectricalMeasurement cluster."""
+
+    Active_measurement_AC = 1 << 0
+    Reactive_measurement_AC = 1 << 1
+    Apparent_measurement_AC = 1 << 2
+    Phase_A_measurement = 1 << 3
+    Phase_B_measurement = 1 << 4
+    Phase_C_measurement = 1 << 5
+    DC_measurement = 1 << 6
+    Harmonics_measurement = 1 << 7
+    Power_quality_measurement = 1 << 8
 
 
 class Channel(str, Enum):
@@ -230,7 +246,8 @@ class MeterChannelClusterBase:
         (ChannelConfiguration_2CHB, 2): Channel.B,
         (ChannelConfiguration_2CHB, 3): Channel.AB,
     }
-    _CHANNEL_TO_ENDPOINT = {(k[0], v): k[1] for k, v in _ENDPOINT_TO_CHANNEL.items()}
+
+    _channel_to_endpoint = {(k[0], v): k[1] for k, v in _ENDPOINT_TO_CHANNEL.items()}
 
     @property
     def channel(self) -> Union[str, None]:
@@ -295,7 +312,7 @@ class MeterChannelClusterBase:
     ):
         """Returns a specified device cluster."""
         if channel_or_endpoint_id in Channel:
-            channel_or_endpoint_id = self._CHANNEL_TO_ENDPOINT.get(
+            channel_or_endpoint_id = self._channel_to_endpoint.get(
                 (self.channel_configuration_type, channel_or_endpoint_id), None
             )
         assert channel_or_endpoint_id is not None, "Invalid channel_or_endpoint_id."
@@ -324,11 +341,17 @@ class PowerFlowPreempt:
 
     _PF_PREEMPT_HOLD_PREFIX = "power_flow_preempt_hold_"
     _PF_PREEMPT_SOURCE_ATTR = (
-        "rms_current",
-        "active_power",
-        "instantaneous_demand",
-        "active_power" + UNSIGNED_POWER_ATTR_SUFFIX,
-        "instantaneous_demand" + UNSIGNED_POWER_ATTR_SUFFIX,
+        (TuyaZBElectricalMeasurement.ep_attribute, "rms_current"),
+        (TuyaZBElectricalMeasurement.ep_attribute, "active_power"),
+        (TuyaZBMeteringClusterWithUnit.ep_attribute, "instantaneous_demand"),
+        (
+            TuyaZBElectricalMeasurement.ep_attribute,
+            "active_power" + UNSIGNED_POWER_ATTR_SUFFIX,
+        ),
+        (
+            TuyaZBMeteringClusterWithUnit.ep_attribute,
+            "instantaneous_demand" + UNSIGNED_POWER_ATTR_SUFFIX,
+        ),
     )
     _PF_PREEMPT_SOURCE_CHANNELS = (Channel.A, Channel.B)
     _PF_PREEMPT_TRIGGER_CHANNEL = Channel.B
@@ -351,11 +374,9 @@ class PowerFlowPreempt:
             not self.power_flow_preempt
             or self.channel_configuration != ChannelConfiguration.A_PLUS_B
             or self.channel not in self._PF_PREEMPT_SOURCE_CHANNELS
-            or attr_name not in self._PF_PREEMPT_SOURCE_ATTR
+            or (self.ep_attribute, attr_name) not in self._PF_PREEMPT_SOURCE_ATTR
         ):
             return
-
-        self.warning("preempting power flow")
 
         if self.channel is not self._PF_PREEMPT_TRIGGER_CHANNEL:
             action = None
@@ -449,6 +470,14 @@ class VirtualChannel:
             return
         cluster_ab = self.get_cluster(Channel.AB, self.ep_attribute)
         cluster_ab.update_attribute(attr_name, value_ab)
+
+        if value_ab < 0 and self.channel_configuration is ChannelConfiguration.A_PLUS_B:
+            self.warning(
+                "Negative virtual channel AB value: %s from A: %s B: %s",
+                value_ab,
+                value_a,
+                value_b,
+            )
 
 
 class TuyaElectricalMeasurement(
@@ -564,11 +593,10 @@ class TuyaElectricalMeasurement(
 
     def update_measurement_type(self, attr_name=None) -> None:
         """Derives the measurement type from reported attributes."""
-        measurement_type = sum(
-            mask
-            for measurement, mask in self._ATTRIBUTE_MEASUREMENT_TYPES.items()
-            if measurement == attr_name or self.get(measurement) is not None
-        )
+        measurement_type = 0
+        for measurement, mask in self._ATTRIBUTE_MEASUREMENT_TYPES.items():
+            if measurement == attr_name or self.get(measurement) is not None:
+                measurement_type |= mask
         super().update_attribute("measurement_type", measurement_type)
 
 
