@@ -135,10 +135,10 @@ class Metering:
     """Functions for use with the ZCL Metering cluster."""
 
     @staticmethod
-    def format(int_digits: int, dec_digits: int, suppresss_leading_zeroes: bool = True):
+    def format(int_digits: int, dec_digits: int, suppresss_leading_zeros: bool = True):
         assert 0 <= int_digits <= 7, "int_digits must be between 0 and 7."
         assert 0 <= dec_digits <= 7, "dec_digits must be between 0 and 7."
-        return (suppresss_leading_zeroes << 6) | (int_digits << 3) | dec_digits
+        return (suppresss_leading_zeros << 6) | (int_digits << 3) | dec_digits
 
 
 class PowerFlow(t.enum1):
@@ -471,14 +471,6 @@ class VirtualChannel:
         cluster_ab = self.get_cluster(Channel.AB, self.ep_attribute)
         cluster_ab.update_attribute(attr_name, value_ab)
 
-        if value_ab < 0 and self.channel_configuration is ChannelConfiguration.A_PLUS_B:
-            self.warning(
-                "Negative virtual channel AB value: %s from A: %s B: %s",
-                value_ab,
-                value_a,
-                value_b,
-            )
-
 
 class TuyaElectricalMeasurement(
     PowerFlowPreempt,
@@ -582,9 +574,9 @@ class TuyaElectricalMeasurement(
             )
 
     def update_attribute(self, attr_name: str, value) -> None:
-        attr_name, value = self.directional_attribute_handler(attr_name, value)
         if self.power_flow_preempt_handler(attr_name, value) == "hold":
             return
+        attr_name, value = self.directional_attribute_handler(attr_name, value)
         if attr_name in self._ATTRIBUTE_MEASUREMENT_TYPES:
             self.update_measurement_type(attr_name)
         super().update_attribute(attr_name, value)
@@ -631,9 +623,9 @@ class TuyaMetering(
     _VIRTUAL_DISCRETE_ATTRIBUTES = ("instantaneous_demand",)
 
     def update_attribute(self, attr_name: str, value) -> None:
-        attr_name, value = self.directional_attribute_handler(attr_name, value)
         if self.power_flow_preempt_handler(attr_name, value) == "hold":
             return
+        attr_name, value = self.directional_attribute_handler(attr_name, value)
         super().update_attribute(attr_name, value)
         self.update_virtual_cluster(attr_name)
 
