@@ -254,6 +254,7 @@ class InovelliVZM35SNv5(CustomDevice):
 
     device_automation_triggers = INOVELLI_AUTOMATION_TRIGGERS
 
+
 class InovelliVZM35SNv7(CustomDevice):
     """VZM35-SN Fan Switch with v1.07 firmware."""
 
