@@ -84,7 +84,6 @@ class TuyaSingleSwitchTO(TuyaSwitch):
         MODELS_INFO: [
             ("_TZE200_amp6tsvy", "TS0601"),
             ("_TZE200_oisqyl4o", "TS0601"),
-            ("_TZE200_vhy3iakz", "TS0601"),  # ¿1 or 4 gangs?
             ("_TZ3000_uim07oem", "TS0601"),  # ¿1 or 4 gangs?
             ("_TZE200_wfxuhoea", "TS0601"),
             ("_TZE200_tviaymwx", "TS0601"),
@@ -314,6 +313,7 @@ class TuyaTripleSwitchTO(TuyaSwitch):
         MODELS_INFO: [
             # ("_TZE200_kyfqmmyl", "TS0601"),  ## candidate reported in #716
             ("_TZE200_tz32mtza", "TS0601"),
+            ("_TZE200_vhy3iakz", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
