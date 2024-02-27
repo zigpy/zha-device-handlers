@@ -637,7 +637,7 @@ class VirtualChannel(EnergyMeterPowerFlow, EnergyMeterChannel):
             attr_name in self._EXTENSIVE_CUMULATIVE_ATTRIBUTES
             and ChannelConfiguration.A_MINUS_B in self.channel_configuration_type
         ):
-            setattr(self, self._PREV_ATTR_VALUE_PREFIX + attr_name, value)
+            setattr(self, self._PREV_ATTR_VALUE_PREFIX + attr_name, self.get(attr_name))
         super().update_attribute(attr_name, value)
 
     def virtual_channel_handler(self, attr_name: str) -> None:
