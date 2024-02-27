@@ -1,12 +1,13 @@
 """Tuya Energy Meter."""
 
 from enum import Enum
-from typing import Dict, Union
+from typing import Any, Callable, Dict, Optional, Tuple, Type, Union
 
 from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomDevice
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, GreenPowerProxy, Groups, Ota, Scenes, Time
+from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -26,7 +27,6 @@ from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster
 
 # from zigpy.zcl.clusters.homeautomation import MeasurementType
 
-
 # Manufacturer cluster identifiers for device signatures
 EARU_MANUFACTURER_CLUSTER_ID = 0xFF66
 
@@ -39,28 +39,34 @@ POWER_FLOW = 102 + DP_ATTR_OFFSET  # PowerFlow (0: forward, 1: reverse)
 POWER_FLOW_B = 104 + DP_ATTR_OFFSET  # PowerFlow (0: forward, 1: reverse)
 
 # Calibration attributes
+AC_FREQUENCY_COEF = 122 + DP_ATTR_OFFSET  # uint32_t_be
 CURRENT_SUMM_DELIVERED_COEF = 119 + DP_ATTR_OFFSET  # uint32_t_be
 CURRENT_SUMM_DELIVERED_COEF_B = 125 + DP_ATTR_OFFSET  # uint32_t_be
 CURRENT_SUMM_RECEIVED_COEF = 127 + DP_ATTR_OFFSET  # uint32_t_be
 CURRENT_SUMM_RECEIVED_COEF_B = 128 + DP_ATTR_OFFSET  # uint32_t_be
 INSTANTANEOUS_DEMAND_COEF = 118 + DP_ATTR_OFFSET  # uint32_t_be
 INSTANTANEOUS_DEMAND_COEF_B = 124 + DP_ATTR_OFFSET  # uint32_t_be
-AC_FREQUENCY_COEF = 122 + DP_ATTR_OFFSET  # uint32_t_be
 RMS_CURRENT_COEF = 117 + DP_ATTR_OFFSET  # uint32_t_be
 RMS_CURRENT_COEF_B = 123 + DP_ATTR_OFFSET  # uint32_t_be
 RMS_VOLTAGE_COEF = 116 + DP_ATTR_OFFSET  # uint32_t_be
+
 
 # Device configuration attributes
 UPDATE_PERIOD = 129 + DP_ATTR_OFFSET  # uint32_t_be (3-60 seconds supported)
 
 # Local configuration attributes
 CHANNEL_CONFIGURATION = 0x5000
-SUPPRESS_NEGATIVE = 0x5010
-SUPPRESS_NEGATIVE_B = 0x5011
+SUPPRESS_REVERSE_FLOW = 0x5010
+SUPPRESS_REVERSE_FLOW_B = 0x5011
 POWER_FLOW_PREEMPT = 0x5020
 
 # Suffix for device attributes which need power flow direction applied
 UNSIGNED_POWER_ATTR_SUFFIX = "_attr_unsigned"
+
+
+def is_type_uint(attr_type: t) -> bool:
+    """True if the specified attribute type is an unsigned integer."""
+    return issubclass(attr_type, int) and not getattr(attr_type, "_signed", True)
 
 
 class MeasurementType(t.bitmap32):
@@ -94,7 +100,7 @@ class Channel(str, Enum):
 
 
 class ChannelConfiguration(t.enum8):
-    """Enums for for all Energy Meter configurations."""
+    """Enums for for all energy meter configurations."""
 
     SINGLE = 0x00
     A_PLUS_B = 0x01
@@ -102,21 +108,21 @@ class ChannelConfiguration(t.enum8):
 
 
 class ChannelConfiguration_1CH(t.enum8):
-    """Single channel Energy Meter configuration."""
+    """Enums for 1 channel energy meter configuration."""
 
     SINGLE = ChannelConfiguration.SINGLE
     DEFAULT = SINGLE
 
 
 class ChannelConfiguration_1CHB(t.enum8):
-    """Single channel bidirectional Energy Meter configuration."""
+    """Enums for 1 channel bidirectional energy meter configuration."""
 
     SINGLE = ChannelConfiguration.SINGLE
     DEFAULT = SINGLE
 
 
 class ChannelConfiguration_2CH(t.enum8):
-    """Dual channel Energy Meter configuration."""
+    """Enums for 2 channel energy meter configuration."""
 
     A_PLUS_B = ChannelConfiguration.A_PLUS_B
     A_MINUS_B = ChannelConfiguration.A_MINUS_B
@@ -124,7 +130,7 @@ class ChannelConfiguration_2CH(t.enum8):
 
 
 class ChannelConfiguration_2CHB(t.enum8):
-    """Dual channel bidirectional Energy Meter configuration."""
+    """Enums for 2 channel bidirectional energy meter configuration."""
 
     A_PLUS_B = ChannelConfiguration.A_PLUS_B
     A_MINUS_B = ChannelConfiguration.A_MINUS_B
@@ -135,10 +141,13 @@ class Metering:
     """Functions for use with the ZCL Metering cluster."""
 
     @staticmethod
-    def format(int_digits: int, dec_digits: int, suppresss_leading_zeros: bool = True):
-        assert 0 <= int_digits <= 7, "int_digits must be between 0 and 7."
-        assert 0 <= dec_digits <= 7, "dec_digits must be between 0 and 7."
-        return (suppresss_leading_zeros << 6) | (int_digits << 3) | dec_digits
+    def format(
+        int_digits: int, dec_digits: int, suppress_leading_zeros: bool = True
+    ) -> int:
+        """Returns the formatter value for summation and demand Metering attributes."""
+        assert 0 <= int_digits <= 7, "int_digits must be within range of 0 to 7."
+        assert 0 <= dec_digits <= 7, "dec_digits must be within range of 0 to 7."
+        return (suppress_leading_zeros << 6) | (int_digits << 3) | dec_digits
 
 
 class PowerFlow(t.enum1):
@@ -148,7 +157,8 @@ class PowerFlow(t.enum1):
     REVERSE = 0x1
 
     @classmethod
-    def align_value(cls, value: int, power_flow=None):
+    def align_value(cls, value: int, power_flow=None) -> int:
+        """Aligns the value with the power_flow direction."""
         if (
             power_flow == cls.REVERSE
             and value > 0
@@ -163,20 +173,20 @@ class TuyaPowerPhase:
     """Extracts values from Tuya power phase datapoints."""
 
     @staticmethod
-    def variant_1(value):
+    def variant_1(value) -> Tuple[int, int, int]:
         voltage = value[14] | value[13] << 8
         current = value[12] | value[11] << 8
         return voltage, current
 
     @staticmethod
-    def variant_2(value):
+    def variant_2(value) -> Tuple[int, int, int]:
         voltage = value[1] | value[0] << 8
         current = value[4] | value[3] << 8
         power = value[7] | value[6] << 8
         return voltage, current, power * 10
 
     @staticmethod
-    def variant_3(value):
+    def variant_3(value) -> Tuple[int, int, int]:
         voltage = (value[0] << 8) | value[1]
         current = (value[2] << 16) | (value[3] << 8) | value[4]
         power = (value[5] << 16) | (value[6] << 8) | value[7]
@@ -188,34 +198,38 @@ class PowerCalculation:
 
     @staticmethod
     def active_power_from_apparent_power_power_factor_and_power_flow(
-        apparent_power, power_factor, power_flow=None
-    ):
+        apparent_power: Optional[int],
+        power_factor: Optional[int],
+        power_flow: Optional[PowerFlow] = None,
+    ) -> Optional[int]:
         if apparent_power is None or power_factor is None:
             return
         power_factor *= 0.01
-        return apparent_power * abs(power_factor) * (-1 if power_flow else 1)
+        return round(apparent_power * abs(power_factor) * (-1 if power_flow else 1))
 
     @staticmethod
-    def apparent_power_from_active_power_and_power_factor(active_power, power_factor):
+    def apparent_power_from_active_power_and_power_factor(
+        active_power: Optional[int], power_factor: Optional[int]
+    ) -> Optional[int]:
         if active_power is None or power_factor is None:
             return
         power_factor *= 0.01
-        return abs(active_power) / abs(power_factor)
+        return round(abs(active_power) / abs(power_factor))
 
     @staticmethod
     def apparent_power_from_rms_current_and_rms_voltage(
-        rms_current,
-        rms_voltage,
+        rms_current: Optional[int],
+        rms_voltage: Optional[int],
         ac_current_divisor: int = 1,
         ac_current_multiplier: int = 1,
         ac_voltage_divisor: int = 1,
         ac_voltage_multiplier: int = 1,
         ac_power_divisor: int = 1,
         ac_power_multiplier: int = 1,
-    ):
+    ) -> Optional[int]:
         if rms_current is None or rms_voltage is None:
             return
-        return (
+        return round(
             (rms_current * ac_current_multiplier / ac_current_divisor)
             * (rms_voltage * ac_voltage_multiplier / ac_voltage_divisor)
             * ac_power_divisor
@@ -224,21 +238,23 @@ class PowerCalculation:
 
     @staticmethod
     def reactive_power_from_apparent_power_and_power_factor(
-        apparent_power, power_factor
-    ):
+        apparent_power: Optional[int], power_factor: Optional[int]
+    ) -> Optional[int]:
         if apparent_power is None or power_factor is None:
             return
         power_factor *= 0.01
-        return (apparent_power * (1 - power_factor**2) ** 0.5) * (
-            -1 if power_factor < 0 else 1
+        return round(
+            (apparent_power * (1 - power_factor**2) ** 0.5)
+            * (-1 if power_factor < 0 else 1)
         )
 
 
-class MeterChannelClusterBase:
-    """Common methods and properties for energy meter reporting clusters."""
+class EnergyMeterChannel:
+    """Common methods and properties for energy meter clusters."""
 
-    _DIRECTIONAL_ATTRIBUTES = ()
-    _ENDPOINT_TO_CHANNEL = {
+    _ENDPOINT_TO_CHANNEL: Dict[Tuple[Type, int], Channel] = {
+        (ChannelConfiguration_1CH, 1): Channel.A,
+        (ChannelConfiguration_1CHB, 1): Channel.A,
         (ChannelConfiguration_2CH, 1): Channel.A,
         (ChannelConfiguration_2CH, 2): Channel.B,
         (ChannelConfiguration_2CH, 3): Channel.AB,
@@ -247,241 +263,371 @@ class MeterChannelClusterBase:
         (ChannelConfiguration_2CHB, 3): Channel.AB,
     }
 
-    _channel_to_endpoint = {(k[0], v): k[1] for k, v in _ENDPOINT_TO_CHANNEL.items()}
+    _EXTENSIVE_ATTRIBUTES = ()
+    _EXTENSIVE_CUMULATIVE_ATTRIBUTES = ()
+    _INTENSIVE_ATTRIBUTES = ()
+
+    _channel_to_endpoint: Dict[Tuple[Type, Channel], int] = {
+        (k[0], v): k[1] for k, v in _ENDPOINT_TO_CHANNEL.items()
+    }
 
     @property
-    def channel(self) -> Union[str, None]:
+    def channel(self) -> Optional[str]:
+        """Returns the cluster's channel."""
         return self._ENDPOINT_TO_CHANNEL.get(
             (self.channel_configuration_type, self.endpoint.endpoint_id), None
         )
 
     @property
-    def channel_configuration(self) -> Union[ChannelConfiguration, None]:
+    def channel_configuration(self) -> Optional[ChannelConfiguration]:
+        """Returns the device's current channel configuration."""
         return self.manufacturer_cluster.get_optional("channel_configuration")
 
     @property
-    def channel_configuration_type(self):
+    def channel_configuration_type(self) -> Optional[Type]:
+        """Returns the device's channel configuration type."""
         try:
             return self.manufacturer_cluster.AttributeDefs.channel_configuration.type
-        except Exception:
-            pass
+        except AttributeError:
+            return
 
     @property
     def manufacturer_cluster(self):
-        return self.get_cluster(1, TuyaMCUCluster.ep_attribute)
+        """Returns the device's manufacturer cluster."""
+        return (
+            self.endpoint.device.endpoints[1],
+            TuyaEnergyMeterManufCluster.ep_attribute,
+        )
+
+    def attr_present(
+        self,
+        *attr_names: str,
+        ep_attribute: Optional[str] = None,
+        endpoint_id: Optional[int] = None,
+    ) -> bool:
+        """Returns True if any of the specified attributes are provided by the device."""
+        ep_attribute = ep_attribute or self.ep_attribute
+        endpoint_id = endpoint_id or self.endpoint.endpoint_id
+        return any(
+            attr in self.manufacturer_cluster.device_reported_attributes
+            for attr in tuple(
+                (ep_attribute, attr_name, endpoint_id) for attr_name in attr_names
+            )
+        )
+
+    def attr_type(self, attr_name: str) -> Type:
+        """Returns the type of the specified attribute."""
+        return getattr(self.AttributeDefs, attr_name).type
+
+    def get_cluster(
+        self,
+        channel_or_endpoint_id: Union[Channel, int],
+        ep_attribute: Optional[str] = None,
+    ):
+        """Returns the device cluster for the given channel or endpoint."""
+        if channel_or_endpoint_id in Channel:
+            channel_or_endpoint_id = self._channel_to_endpoint.get(
+                (self.channel_configuration_type, channel_or_endpoint_id), None
+            )
+        assert channel_or_endpoint_id is not None, "Invalid channel or endpoint."
+        return getattr(
+            self.endpoint.device.endpoints[channel_or_endpoint_id],
+            ep_attribute or self.ep_attribute,
+        )
+
+    def update_calculated_attribute(self, attr_name: str, calculated_value) -> None:
+        """Updates the specified attribute if the calculated value is valid."""
+        if calculated_value is None:
+            return
+        self.update_attribute(attr_name)
+
+
+class EnergyMeterPowerFlow(EnergyMeterChannel):
+    """Methods and properties for handling power flow on Tuya energy meter devices."""
 
     @property
-    def power_flow(self) -> Union[PowerFlow, None]:
+    def power_flow(self) -> Optional[PowerFlow]:
+        """Returns the channel's current power flow direction."""
         return self.manufacturer_cluster.get_optional(
             Channel.attr_with_channel("power_flow", self.channel)
         )
 
     @power_flow.setter
-    def power_flow(self, value: PowerFlow):
+    def power_flow(self, value: PowerFlow) -> None:
+        """Updates the channel's power flow direction."""
         self.manufacturer_cluster.update_attribute(
             Channel.attr_with_channel("power_flow", self.channel), value
         )
 
-    def attr_present(self, *attr_names) -> bool:
-        """Returns True if any of the specified attributes are provided by the device."""
-        return any(
-            attr in self.manufacturer_cluster.device_reported_attributes
-            for attr in tuple(
-                (self.ep_attribute, attr_name, self.endpoint.endpoint_id)
-                for attr_name in attr_names
-            )
+    @property
+    def suppress_reverse_flow(self) -> bool:
+        """Returns True if suppress_reverse_flow is enabled for the channel."""
+        return self.manufacturer_cluster.get_optional(
+            Channel.attr_with_channel("suppress_reverse_flow", self.channel), False
         )
 
-    def attr_type(self, attr_name: str):
-        """Returns the type of the specified attribute."""
-        return getattr(self.AttributeDefs, attr_name).type
-
-    def directional_attribute_handler(self, attr_name: str, value) -> tuple:
-        """Orchestrates handling of directional meter attributes."""
+    def _align_unsigned_attribute_with_power_flow(
+        self, attr_name: str, value
+    ) -> Tuple[str, Any]:
+        """Attributes marked as unsigned are aligned with the current power flow direction."""
         if attr_name.endswith(UNSIGNED_POWER_ATTR_SUFFIX):
             attr_name = attr_name.removesuffix(UNSIGNED_POWER_ATTR_SUFFIX)
             value = PowerFlow.align_value(value, self.power_flow)
-        if attr_name in self._DIRECTIONAL_ATTRIBUTES:
-            value = self.suppress_negative(value)
         return attr_name, value
 
-    def get_cluster(
-        self,
-        channel_or_endpoint_id: Union[Channel, int],
-        ep_attribute: str,
-    ):
-        """Returns a specified device cluster."""
-        if channel_or_endpoint_id in Channel:
-            channel_or_endpoint_id = self._channel_to_endpoint.get(
-                (self.channel_configuration_type, channel_or_endpoint_id), None
-            )
-        assert channel_or_endpoint_id is not None, "Invalid channel_or_endpoint_id."
-        return getattr(
-            self.endpoint.device.endpoints[channel_or_endpoint_id], ep_attribute
-        )
-
-    def suppress_negative(self, value: int) -> int:
-        """Negative values are 0 if suppress_negative is enabled."""
-        if value < 0 and self.manufacturer_cluster.get_optional(
-            Channel.attr_with_channel("suppress_negative", self.channel)
+    def _suppress_reverse_power_flow(self, attr_name: str, value) -> Any:
+        """Returns 0 if suppress_reverse_flow is enabled and PowerFlow is REVERSE."""
+        if (
+            self.suppress_reverse_flow
+            and attr_name in self._EXTENSIVE_ATTRIBUTES
+            and self.power_flow == PowerFlow.REVERSE
         ):
             value = 0
         return value
 
-    def update_calculated_attribute(self, target_attr: str, value) -> None:
-        """Updates a target attribute if the calculated value is valid."""
-        if value is None:
-            return
-        value = round(value)
-        self.update_attribute(target_attr, value)
+    def get_value_aligned_with_power_flow(self, attr_name: str) -> Optional[int]:
+        """Returns the specified attribute value aligned with the channel power flow."""
+        value = self.get(attr_name)
+        if value is not None and is_type_uint(self.attr_type(attr_name)):
+            value = PowerFlow.align_value(value, self.power_flow)
+        return value
+
+    def power_flow_handler(self, attr_name: str, value) -> Tuple[str, Any]:
+        """Orchestrates processing of directional attributes."""
+        attr_name, value = self._align_unsigned_attribute_with_power_flow(
+            attr_name, value
+        )
+        value = self._suppress_reverse_power_flow(attr_name, value)
+        return attr_name, value
 
 
-class PowerFlowPreempt:
-    """Logic for preempting delayed power flow direction change on dual channel devices."""
+class PowerFlowPreemptConfiguration:
+    """Contains the parameters for preempting power_flow direction."""
 
-    _PF_PREEMPT_HOLD_PREFIX = "power_flow_preempt_hold_"
-    _PF_PREEMPT_SOURCE_ATTR = (
-        (TuyaZBElectricalMeasurement.ep_attribute, "rms_current"),
-        (TuyaZBElectricalMeasurement.ep_attribute, "active_power"),
-        (TuyaZBMeteringClusterWithUnit.ep_attribute, "instantaneous_demand"),
-        (
-            TuyaZBElectricalMeasurement.ep_attribute,
-            "active_power" + UNSIGNED_POWER_ATTR_SUFFIX,
-        ),
-        (
-            TuyaZBMeteringClusterWithUnit.ep_attribute,
-            "instantaneous_demand" + UNSIGNED_POWER_ATTR_SUFFIX,
-        ),
-    )
-    _PF_PREEMPT_SOURCE_CHANNELS = (Channel.A, Channel.B)
-    _PF_PREEMPT_TRIGGER_CHANNEL = Channel.B
+    def __init__(
+        self,
+        source_channels: tuple = (),
+        trigger_channel: Optional[Channel] = None,
+        preempt_method: Optional[Callable] = None,
+    ) -> None:
+        self.source_channels = source_channels
+        self.trigger_channel = trigger_channel
+        self.preempt_method = preempt_method
 
-    power_flow: PowerFlow
+
+class PowerFlowPreempt(EnergyMeterPowerFlow, EnergyMeterChannel):
+    """Logic for preempting delayed power flow direction change on 2 channel devices."""
+
+    _STORED_ATTR_PREFIX = "_preempt_stored_attr_"
+
+    HOLD = "hold"
+    PREEMPT = "preempt"
+    RELEASE = "release"
 
     @property
     def power_flow_preempt(self) -> bool:
+        """Returns True if power_flow_preempt is enabled for the device."""
         return self.manufacturer_cluster.get_optional("power_flow_preempt", False)
 
-    @staticmethod
-    def _power_flow_preempt_a_plus_b(a, b, flow: PowerFlow):
-        """Compensates for delay in reported direction."""
-        return (
-            PowerFlow.FORWARD if flow == PowerFlow.REVERSE and abs(a) > abs(b) else flow
+    def _preempt_a_plus_b(self, attr_name: str) -> None:
+        """Power flow preempt method for a_plus_b configured devices."""
+        cluster_a = self.get_cluster(Channel.A)
+        cluster_b = self.get_cluster(Channel.B)
+        value_a = cluster_a._get_preempt_value(attr_name)
+        value_b = cluster_b._get_preempt_value(attr_name)
+        if None in (value_a, value_b):
+            return
+        cluster_a.power_flow = (
+            PowerFlow.FORWARD
+            if cluster_a.power_flow == PowerFlow.REVERSE and abs(value_a) > abs(value_b)
+            else cluster_a.power_flow
+        )
+        cluster_b.power_flow = (
+            PowerFlow.FORWARD
+            if cluster_b.power_flow == PowerFlow.REVERSE and abs(value_b) > abs(value_a)
+            else cluster_b.power_flow
         )
 
-    def power_flow_preempt_handler(self, attr_name: str, value):
+    _PREEMPT_CONFIGURATION: Dict[
+        ChannelConfiguration, PowerFlowPreemptConfiguration
+    ] = {
+        ChannelConfiguration.A_PLUS_B: PowerFlowPreemptConfiguration(
+            (Channel.A, Channel.B),
+            Channel.B,
+            _preempt_a_plus_b,
+        ),
+    }
+
+    def _preempt_action(
+        self, attr_name: str, value: int, trigger_channel: Channel
+    ) -> str:
+        """Returns the action for the power flow preempt handler."""
+        if self.channel == trigger_channel:
+            return self.PREEMPT
+        if getattr(self, self._STORED_ATTR_PREFIX + attr_name, None) != value:
+            return self.HOLD
+        return self.RELEASE
+
+    def _get_preempt_value(self, attr_name: str) -> Optional[int]:
+        """Retrieves the value which was held for consideration in the preempt method."""
+        return getattr(self, self._STORED_ATTR_PREFIX + attr_name, None)
+
+    def _store_preempt_value(self, attr_name: str, value: int) -> None:
+        """Stores the value for consideration in the preempt method."""
+        setattr(self, self._STORED_ATTR_PREFIX + attr_name, value)
+
+    def _release_preempt_values(
+        self, attr_name, source_channels, trigger_channel
+    ) -> None:
+        """Releases held values to update the cluster attributes following the preempt method."""
+        for channel in source_channels:
+            cluster = self.get_cluster(channel)
+            if channel != trigger_channel:
+                value = getattr(cluster, self._STORED_ATTR_PREFIX + attr_name, None)
+                if value is None:
+                    continue
+                cluster.update_attribute(attr_name, value)
+            setattr(cluster, self._STORED_ATTR_PREFIX + attr_name, None)
+
+    def power_flow_preempt_handler(self, attr_name: str, value) -> Optional[str]:
+        """Compensates for delay in reported power flow direction."""
+
         if (
             not self.power_flow_preempt
-            or self.channel_configuration != ChannelConfiguration.A_PLUS_B
-            or self.channel not in self._PF_PREEMPT_SOURCE_CHANNELS
-            or (self.ep_attribute, attr_name) not in self._PF_PREEMPT_SOURCE_ATTR
+            or attr_name.removesuffix(UNSIGNED_POWER_ATTR_SUFFIX)
+            not in self._EXTENSIVE_ATTRIBUTES
+            or not self.attr_present(attr_name)
         ):
             return
 
-        if self.channel is not self._PF_PREEMPT_TRIGGER_CHANNEL:
-            action = None
-            if getattr(self, self._PF_PREEMPT_HOLD_PREFIX + attr_name, None) != value:
-                setattr(self, self._PF_PREEMPT_HOLD_PREFIX + attr_name, value)
-                action = "hold"
+        config = self._PREEMPT_CONFIGURATION.get(
+            self.channel_configuration, PowerFlowPreemptConfiguration()
+        )
+        if not config.preempt_method or self.channel not in config.source_channels:
+            return
+
+        action = self._preempt_action(attr_name, value, config.trigger_channel)
+        if action != self.RELEASE:
+            self._store_preempt_value(attr_name, value)
+        if action != self.PREEMPT:
             return action
-
-        cluster_a = self.get_cluster(Channel.A, self.ep_attribute)
-        value_a = getattr(cluster_a, self._PF_PREEMPT_HOLD_PREFIX + attr_name, None)
-        if value_a is None:
-            return
-
-        cluster_a.power_flow = self._power_flow_preempt_a_plus_b(
-            value_a,
-            value,
-            cluster_a.power_flow,
+        config.preempt_method(self, attr_name)
+        self._release_preempt_values(
+            attr_name, config.source_channels, config.trigger_channel
         )
-        self.power_flow = self._power_flow_preempt_a_plus_b(
-            value,
-            value_a,
-            self.power_flow,
-        )
-
-        cluster_a.update_attribute(attr_name, value_a)
-        setattr(cluster_a, self._PF_PREEMPT_HOLD_PREFIX + attr_name, None)
+        return action
 
 
-class VirtualChannel:
-    """Logic for updating the virtual cluster on dual channel devices."""
+class VirtualChannelConfiguration:
+    """Contains the parameters for updating a virtual channel."""
 
-    @staticmethod
-    def _discrete_a_plus_b(a, b):
-        return a + b
+    def __init__(
+        self,
+        virtual_channel: Optional[Channel] = None,
+        trigger_channel: Optional[Channel] = None,
+        discrete_method: Optional[Callable] = None,
+        cumulative_method: Optional[Callable] = None,
+    ) -> None:
+        self.virtual_channel = virtual_channel
+        self.trigger_channel = trigger_channel
+        self.discrete_method = discrete_method
+        self.cumulative_method = cumulative_method
 
-    @staticmethod
-    def _discrete_a_minus_b(a, b):
-        return a - b
 
-    @staticmethod
-    def _cumulative_a_plus_b(a, b):
-        return a + b
+class VirtualChannel(EnergyMeterPowerFlow, EnergyMeterChannel):
+    """Methods and properties for updating virtual energy meter channel clusters."""
 
-    def _cumulative_a_minus_b(a, b):
-        return a - b
+    @property
+    def virtual_channel(self) -> Optional[Channel]:
+        """Returns the virtual channel for the current configuration."""
+        return self._VIRTUAL_CHANNEL_CONFIGURATION.get(
+            self.channel_configuration,
+            VirtualChannelConfiguration(),
+        ).virtual_channel
 
-    _VIRTUAL_CHANNEL = Channel.AB
-    _VIRTUAL_CUMULATIVE_ATTRIBUTES = ()
-    _VIRTUAL_DISCRETE_ATTRIBUTES = ()
-    _VIRTUAL_UPDATE_TRIGGER_CHANNEL = Channel.B
-
-    _VIRTUAL_DISCRETE_METHODS = {
-        ChannelConfiguration.A_PLUS_B: _discrete_a_plus_b,
-        ChannelConfiguration.A_MINUS_B: _discrete_a_minus_b,
-    }
-
-    _VIRTUAL_CUMULATIVE_METHODS = {
-        ChannelConfiguration.A_PLUS_B: _cumulative_a_plus_b,
-        # ChannelConfiguration.A_MINUS_B: _cumulative_a_minus_b, This needs work
-    }
-
-    def update_virtual_cluster(self, attr_name: str) -> None:
-        if (
-            self.channel_configuration
-            not in (ChannelConfiguration.A_PLUS_B, ChannelConfiguration.A_MINUS_B)
-            or self.channel != self._VIRTUAL_UPDATE_TRIGGER_CHANNEL
-            or attr_name
-            not in self._VIRTUAL_DISCRETE_ATTRIBUTES
-            + self._VIRTUAL_CUMULATIVE_ATTRIBUTES
-        ):
+    def _discrete_a_plus_b(self, attr_name: str) -> Optional[int]:
+        """Method for calculating virtual channel values in a_plus_b configuration."""
+        cluster_a = self.get_cluster(Channel.A)
+        cluster_b = self.get_cluster(Channel.B)
+        value_a = cluster_a.get_value_aligned_with_power_flow(attr_name)
+        value_b = cluster_b.get_value_aligned_with_power_flow(attr_name)
+        if None in (value_a, value_b):
             return
+        return value_a + value_b
 
-        cluster_a = self.get_cluster(Channel.A, self.ep_attribute)
-        cluster_b = self.get_cluster(Channel.B, self.ep_attribute)
+    def _discrete_a_minus_b(self, attr_name: str) -> Optional[int]:
+        """Method for calculating virtual channel values in a_minus_b configuration."""
+        cluster_a = self.get_cluster(Channel.A)
+        cluster_b = self.get_cluster(Channel.B)
+        value_a = cluster_a.get_value_aligned_with_power_flow(attr_name)
+        value_b = cluster_b.get_value_aligned_with_power_flow(attr_name)
+        if None in (value_a, value_b):
+            return
+        return value_a - value_b
+
+    def _cumulative_a_plus_b(self, attr_name: str) -> Optional[int]:
+        """Method for calculating cumulative virtual channel values in a_plus_b configuration."""
+        cluster_a = self.get_cluster(Channel.A)
+        cluster_b = self.get_cluster(Channel.B)
         value_a = cluster_a.get(attr_name)
         value_b = cluster_b.get(attr_name)
+        if None in (value_a, value_b):
+            return
+        return value_a + value_b
 
+    _VIRTUAL_CHANNEL_CONFIGURATION: Dict[
+        ChannelConfiguration, VirtualChannelConfiguration
+    ] = {
+        ChannelConfiguration.A_PLUS_B: VirtualChannelConfiguration(
+            Channel.AB,
+            Channel.B,
+            _discrete_a_plus_b,
+            _cumulative_a_plus_b,
+        ),
+        ChannelConfiguration.A_MINUS_B: VirtualChannelConfiguration(
+            Channel.AB,
+            Channel.B,
+            _discrete_a_minus_b,
+            None,
+        ),
+    }
+
+    def virtual_channel_handler(self, attr_name: str) -> None:
+        """Handles updates to a virtual energy meter channel."""
+
+        config = self._VIRTUAL_CHANNEL_CONFIGURATION.get(
+            self.channel_configuration,
+            VirtualChannelConfiguration(),
+        )
+
+        if self.channel != config.trigger_channel:
+            return
         method = None
-        if attr_name in self._VIRTUAL_CUMULATIVE_ATTRIBUTES:
-            method = self._VIRTUAL_CUMULATIVE_METHODS.get(self.channel_configuration)
-        elif attr_name in self._VIRTUAL_DISCRETE_ATTRIBUTES:
-            method = self._VIRTUAL_DISCRETE_METHODS.get(self.channel_configuration)
-            if getattr(self.attr_type(attr_name), "_signed", None) is False:
-                value_a = PowerFlow.align_value(value_a, cluster_a.power_flow)
-                value_b = PowerFlow.align_value(value_b, cluster_b.power_flow)
+        if attr_name in self._EXTENSIVE_ATTRIBUTES:
+            method = config.discrete_method
+        elif attr_name in self._EXTENSIVE_CUMULATIVE_ATTRIBUTES:
+            method = config.cumulative_method
         if not method:
             return
 
-        value_ab = method(value_a, value_b)
-        if value_ab is None:
+        virtual_value = method(self, attr_name)
+        if virtual_value is None:
             return
-        cluster_ab = self.get_cluster(Channel.AB, self.ep_attribute)
-        cluster_ab.update_attribute(attr_name, value_ab)
+        virtual_cluster = self.get_cluster(config.virtual_channel)
+        virtual_cluster.update_attribute(attr_name, virtual_value)
 
 
 class TuyaElectricalMeasurement(
-    PowerFlowPreempt,
     VirtualChannel,
-    MeterChannelClusterBase,
+    PowerFlowPreempt,
+    EnergyMeterPowerFlow,
+    EnergyMeterChannel,
     TuyaLocalCluster,
     TuyaZBElectricalMeasurement,
 ):
-    """Tuya ElectricalMeasurement cluster for Energy Meter devices."""
+    """ElectricalMeasurement cluster for Tuya energy meter devices."""
 
-    _CONSTANT_ATTRIBUTES = {
+    _CONSTANT_ATTRIBUTES: Dict[int, Any] = {
         **TuyaZBElectricalMeasurement._CONSTANT_ATTRIBUTES,
         TuyaZBElectricalMeasurement.AttributeDefs.ac_frequency_divisor.id: 100,
         TuyaZBElectricalMeasurement.AttributeDefs.ac_frequency_multiplier.id: 1,
@@ -491,7 +637,7 @@ class TuyaElectricalMeasurement(
         TuyaZBElectricalMeasurement.AttributeDefs.ac_voltage_multiplier.id: 1,
     }
 
-    _ATTRIBUTE_MEASUREMENT_TYPES = {
+    _ATTRIBUTE_MEASUREMENT_TYPES: Dict[str, MeasurementType] = {
         "active_power": MeasurementType.Active_measurement_AC
         | MeasurementType.Phase_A_measurement,
         "active_power_ph_b": MeasurementType.Active_measurement_AC
@@ -512,20 +658,19 @@ class TuyaElectricalMeasurement(
         | MeasurementType.Phase_C_measurement,
     }
 
-    _DIRECTIONAL_ATTRIBUTES = ("active_power",)
-
-    _VIRTUAL_DISCRETE_ATTRIBUTES = (
+    _EXTENSIVE_ATTRIBUTES = (
         "active_power",
         "apparent_power",
         "reactive_power",
         "rms_current",
     )
+    _INTENSIVE_ATTRIBUTES = ("rms_voltage",)
 
     def calculated_attributes(self, attr_name: str, value) -> None:
-        """Invoked following completion of parent update_attribute."""
+        """Calculates attributes that are not reported by the device."""
 
         if (
-            self.channel == self._VIRTUAL_CHANNEL
+            self.channel == self.virtual_channel
         ):  # Attributes are not calculated for the virtual channel.
             return
 
@@ -561,9 +706,7 @@ class TuyaElectricalMeasurement(
                 PowerCalculation.apparent_power_from_rms_current_and_rms_voltage(
                     value,
                     self.get("rms_voltage")
-                    or self.endpoint.device.endpoints[1].electrical_measurement.get(
-                        "rms_voltage"
-                    ),
+                    or self.get_cluster(Channel.A).get("rms_voltage"),
                     self.get("ac_current_divisor", 1),
                     self.get("ac_current_multiplier", 1),
                     self.get("ac_voltage_divisor", 1),
@@ -574,17 +717,19 @@ class TuyaElectricalMeasurement(
             )
 
     def update_attribute(self, attr_name: str, value) -> None:
-        if self.power_flow_preempt_handler(attr_name, value) == "hold":
+        """Updates the cluster attribute."""
+        if self.power_flow_preempt_handler(attr_name, value) == PowerFlowPreempt.HOLD:
             return
-        attr_name, value = self.directional_attribute_handler(attr_name, value)
-        if attr_name in self._ATTRIBUTE_MEASUREMENT_TYPES:
-            self.update_measurement_type(attr_name)
+        attr_name, value = self.power_flow_handler(attr_name, value)
+        self.update_measurement_type(attr_name)
         super().update_attribute(attr_name, value)
-        self.update_virtual_cluster(attr_name)
         self.calculated_attributes(attr_name, value)
+        self.virtual_channel_handler(attr_name)
 
-    def update_measurement_type(self, attr_name=None) -> None:
+    def update_measurement_type(self, attr_name: str) -> None:
         """Derives the measurement type from reported attributes."""
+        if attr_name not in self._ATTRIBUTE_MEASUREMENT_TYPES:
+            return
         measurement_type = 0
         for measurement, mask in self._ATTRIBUTE_MEASUREMENT_TYPES.items():
             if measurement == attr_name or self.get(measurement) is not None:
@@ -593,15 +738,16 @@ class TuyaElectricalMeasurement(
 
 
 class TuyaMetering(
-    PowerFlowPreempt,
     VirtualChannel,
-    MeterChannelClusterBase,
+    PowerFlowPreempt,
+    EnergyMeterPowerFlow,
+    EnergyMeterChannel,
     TuyaLocalCluster,
     TuyaZBMeteringClusterWithUnit,
 ):
-    """Tuya Metering cluster for Energy Meter devices."""
+    """Metering cluster for Tuya energy meter devices."""
 
-    _CONSTANT_ATTRIBUTES = {
+    _CONSTANT_ATTRIBUTES: Dict[int, Any] = {
         **TuyaZBMeteringClusterWithUnit._CONSTANT_ATTRIBUTES,
         TuyaZBMeteringClusterWithUnit.AttributeDefs.status.id: 0x00,
         TuyaZBMeteringClusterWithUnit.AttributeDefs.multiplier.id: 1,
@@ -614,26 +760,25 @@ class TuyaMetering(
         ),
     }
 
-    _DIRECTIONAL_ATTRIBUTES = ("instantaneous_demand",)
-
-    _VIRTUAL_CUMULATIVE_ATTRIBUTES = (
+    _EXTENSIVE_ATTRIBUTES = ("instantaneous_demand",)
+    _EXTENSIVE_CUMULATIVE_ATTRIBUTES = (
         "current_summ_delivered",
         "current_summ_received",
     )
-    _VIRTUAL_DISCRETE_ATTRIBUTES = ("instantaneous_demand",)
 
     def update_attribute(self, attr_name: str, value) -> None:
-        if self.power_flow_preempt_handler(attr_name, value) == "hold":
+        """Updates the cluster attribute."""
+        if self.power_flow_preempt_handler(attr_name, value) == PowerFlowPreempt.HOLD:
             return
-        attr_name, value = self.directional_attribute_handler(attr_name, value)
+        attr_name, value = self.power_flow_handler(attr_name, value)
         super().update_attribute(attr_name, value)
-        self.update_virtual_cluster(attr_name)
+        self.virtual_channel_handler(attr_name)
 
 
 class TuyaEnergyMeterManufCluster(NoManufacturerCluster, TuyaMCUCluster):
-    """Manufactuter cluster for Tuya Energy Meter devices."""
+    """Manufactuter cluster for Tuya energy meter devices."""
 
-    attributes: Dict[int, tuple] = {
+    attributes: Dict[int, ZCLAttributeDef] = {
         AC_FREQUENCY_COEF: ("ac_frequency_coefficient", t.uint32_t_be, True),
         CURRENT_SUMM_DELIVERED_COEF: (
             "current_summ_delivered_coefficient",
@@ -681,11 +826,11 @@ class TuyaEnergyMeterManufCluster(NoManufacturerCluster, TuyaMCUCluster):
         ),
         UPDATE_PERIOD: ("update_period", t.uint32_t_be, True),
         POWER_FLOW_PREEMPT: ("power_flow_preempt", t.Bool, True),
-        SUPPRESS_NEGATIVE: ("suppress_negative", t.Bool, True),
-        SUPPRESS_NEGATIVE_B: ("suppress_negative_ch_b", t.Bool, True),
+        SUPPRESS_REVERSE_FLOW: ("suppress_reverse_flow", t.Bool, True),
+        SUPPRESS_REVERSE_FLOW_B: ("suppress_reverse_flow_ch_b", t.Bool, True),
     }
 
-    _LOCAL_ATTRIBUTES: Dict[int, tuple] = {
+    _LOCAL_ATTRIBUTES: Dict[int, Tuple[Type]] = {
         CHANNEL_CONFIGURATION: (
             ChannelConfiguration_1CH,
             ChannelConfiguration_1CHB,
@@ -693,8 +838,8 @@ class TuyaEnergyMeterManufCluster(NoManufacturerCluster, TuyaMCUCluster):
             ChannelConfiguration_2CHB,
         ),
         POWER_FLOW_PREEMPT: (ChannelConfiguration_2CHB,),
-        SUPPRESS_NEGATIVE: (ChannelConfiguration_1CHB, ChannelConfiguration_2CHB),
-        SUPPRESS_NEGATIVE_B: (ChannelConfiguration_2CHB,),
+        SUPPRESS_REVERSE_FLOW: (ChannelConfiguration_1CHB, ChannelConfiguration_2CHB),
+        SUPPRESS_REVERSE_FLOW_B: (ChannelConfiguration_2CHB,),
     }
 
     def __init__(self, *args, **kwargs):
@@ -712,8 +857,8 @@ class TuyaEnergyMeterManufCluster(NoManufacturerCluster, TuyaMCUCluster):
     def _device_attribute_setup(cls) -> None:
         """Setup mapped datapoints for the device."""
 
-        # Allows clusters to check whether an attribute is provided natively
-        cls.device_reported_attributes = tuple(
+        # Used by clusters to check whether an attribute is provided by the device
+        cls.device_reported_attributes: Tuple[Tuple[str, str, int]] = tuple(
             (dp_map.ep_attribute, attr_name, dp_map.endpoint_id or 1)
             for dp_map in cls.dp_to_attribute.values()
             for attr_name in (
@@ -724,12 +869,12 @@ class TuyaEnergyMeterManufCluster(NoManufacturerCluster, TuyaMCUCluster):
         )
 
         # Setup MCU attributes for mapped device datapoints
-        attr_name_to_id = {
+        attr_name_to_id: Dict[str, int] = {
             attr[0] if isinstance(attr, tuple) else attr.name: attr_id
             for attr_id, attr in TuyaEnergyMeterManufCluster.attributes.items()
         }
         for ep_attribute, attr_name, _endpoint_id in cls.device_reported_attributes:
-            if ep_attribute != TuyaMCUCluster.ep_attribute:
+            if ep_attribute != TuyaEnergyMeterManufCluster.ep_attribute:
                 continue
             attr_id = attr_name_to_id.get(attr_name)
             if attr_id is not None:
@@ -740,7 +885,7 @@ class TuyaEnergyMeterManufCluster(NoManufacturerCluster, TuyaMCUCluster):
     def _local_attribute_defaults(self) -> None:
         """Set default initial values for local configuration attributes."""
 
-        defaults = {}
+        defaults: Dict[int, Any] = {}
         for attr_id in set(self._LOCAL_ATTRIBUTES).intersection(set(self.attributes)):
             default = getattr(self.attributes[attr_id].type, "DEFAULT", None)
             if default is not None and self.get(self.attributes[attr_id].name) is None:
@@ -748,7 +893,7 @@ class TuyaEnergyMeterManufCluster(NoManufacturerCluster, TuyaMCUCluster):
         if defaults:
             self.create_catching_task(self.write_attributes(defaults))
 
-    def _local_attribute_setup(cls, configuration_type) -> None:
+    def _local_attribute_setup(cls, configuration_type: Optional[Type]) -> None:
         """Setup local attributes for the device channel configuration type."""
 
         if configuration_type is None:
@@ -767,7 +912,7 @@ class TuyaEnergyMeterManufCluster(NoManufacturerCluster, TuyaMCUCluster):
             config_attr.is_manufacturer_specific,
         )
 
-    def get_optional(self, attr_name, default=None):
+    def get_optional(self, attr_name, default=None) -> Optional[Any]:
         """Returns the default value if an attribute is undefined."""
         try:
             return self.get(attr_name, default)
@@ -789,7 +934,7 @@ class TuyaEnergyMeterManufCluster(NoManufacturerCluster, TuyaMCUCluster):
 class TuyaEnergyMeterManufCluster_1CH(
     TuyaEnergyMeterManufCluster, configuration_type=ChannelConfiguration_1CH
 ):
-    """Tuya Energy Meter manufacturer cluster."""
+    """Tuya 1 channel energy meter manufacturer cluster."""
 
     TUYA_DP_CURRENT_SUMM_DELIVERED = 101
     TUYA_DP_INSTANTANEOUS_DEMAND_UINT = 19
@@ -828,7 +973,7 @@ class TuyaEnergyMeterManufCluster_1CHB(
     TuyaEnergyMeterManufCluster,
     configuration_type=ChannelConfiguration_1CHB,
 ):
-    """Tuya Energy Meter bidirectional manufacturer cluster."""
+    """Tuya 1 channel bidirectional energy meter manufacturer cluster."""
 
     TUYA_DP_CURRENT_SUMM_DELIVERED = 1
     TUYA_DP_CURRENT_SUMM_RECEIVED = 2
@@ -853,7 +998,7 @@ class TuyaEnergyMeterManufCluster_1CHB(
             converter=lambda x: x * 10,
         ),
         TUYA_DP_POWER_FLOW: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
+            TuyaEnergyMeterManufCluster.ep_attribute,
             "power_flow",
             converter=lambda x: PowerFlow(x),
         ),
@@ -877,10 +1022,10 @@ class TuyaEnergyMeterManufCluster_1CHB(
     }
 
 
-class TuyaEnergyMeterManufCluster_2CHB_MatSee(
+class TuyaEnergyMeterManufCluster_2CHB_MatSeePlus(
     TuyaEnergyMeterManufCluster, configuration_type=ChannelConfiguration_2CHB
 ):
-    """MatSee Plus Tuya Energy Meter bidirectional 2 clamp manufacturer cluster."""
+    """MatSee Plus Tuya 2 channel bidirectional energy meter manufacturer cluster."""
 
     TUYA_DP_AC_FREQUENCY = 111
     TUYA_DP_AC_FREQUENCY_COEF = 122
@@ -914,7 +1059,7 @@ class TuyaEnergyMeterManufCluster_2CHB_MatSee(
             "ac_frequency",
         ),
         TUYA_DP_AC_FREQUENCY_COEF: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
+            TuyaEnergyMeterManufCluster.ep_attribute,
             "ac_frequency_coefficient",
         ),
         TUYA_DP_CURRENT_SUMM_DELIVERED: DPToAttributeMapping(
@@ -929,11 +1074,11 @@ class TuyaEnergyMeterManufCluster_2CHB_MatSee(
             converter=lambda x: x * 100,
         ),
         TUYA_DP_CURRENT_SUMM_DELIVERED_COEF: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
+            TuyaEnergyMeterManufCluster.ep_attribute,
             "current_summ_delivered_coefficient",
         ),
         TUYA_DP_CURRENT_SUMM_DELIVERED_COEF_B: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
+            TuyaEnergyMeterManufCluster.ep_attribute,
             "current_summ_delivered_coefficient_ch_b",
         ),
         TUYA_DP_CURRENT_SUMM_RECEIVED: DPToAttributeMapping(
@@ -948,11 +1093,11 @@ class TuyaEnergyMeterManufCluster_2CHB_MatSee(
             converter=lambda x: x * 100,
         ),
         TUYA_DP_CURRENT_SUMM_RECEIVED_COEF: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
+            TuyaEnergyMeterManufCluster.ep_attribute,
             "current_summ_received_coefficient",
         ),
         TUYA_DP_CURRENT_SUMM_RECEIVED_COEF_B: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
+            TuyaEnergyMeterManufCluster.ep_attribute,
             "current_summ_received_coefficient_ch_b",
         ),
         TUYA_DP_INSTANTANEOUS_DEMAND_UINT: DPToAttributeMapping(
@@ -965,11 +1110,11 @@ class TuyaEnergyMeterManufCluster_2CHB_MatSee(
             endpoint_id=2,
         ),
         TUYA_DP_INSTANTANEOUS_DEMAND_COEF: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
+            TuyaEnergyMeterManufCluster.ep_attribute,
             "instantaneous_demand_coefficient",
         ),
         TUYA_DP_INSTANTANEOUS_DEMAND_COEF_B: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
+            TuyaEnergyMeterManufCluster.ep_attribute,
             "instantaneous_demand_coefficient_ch_b",
         ),
         TUYA_DP_POWER_FACTOR: DPToAttributeMapping(
@@ -982,12 +1127,12 @@ class TuyaEnergyMeterManufCluster_2CHB_MatSee(
             endpoint_id=2,
         ),
         TUYA_DP_POWER_FLOW: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
+            TuyaEnergyMeterManufCluster.ep_attribute,
             "power_flow",
             converter=lambda x: PowerFlow(x),
         ),
         TUYA_DP_POWER_FLOW_B: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
+            TuyaEnergyMeterManufCluster.ep_attribute,
             "power_flow_ch_b",
             converter=lambda x: PowerFlow(x),
         ),
@@ -1001,11 +1146,11 @@ class TuyaEnergyMeterManufCluster_2CHB_MatSee(
             endpoint_id=2,
         ),
         TUYA_DP_RMS_CURRENT_COEF: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
+            TuyaEnergyMeterManufCluster.ep_attribute,
             "rms_current_coefficient",
         ),
         TUYA_DP_RMS_CURRENT_COEF_B: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
+            TuyaEnergyMeterManufCluster.ep_attribute,
             "rms_current_coefficient_ch_b",
         ),
         TUYA_DP_RMS_VOLTAGE: DPToAttributeMapping(
@@ -1013,11 +1158,11 @@ class TuyaEnergyMeterManufCluster_2CHB_MatSee(
             "rms_voltage",
         ),
         TUYA_DP_RMS_VOLTAGE_COEF: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
+            TuyaEnergyMeterManufCluster.ep_attribute,
             "rms_voltage_coefficient",
         ),
         TUYA_DP_UPDATE_PERIOD: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
+            TuyaEnergyMeterManufCluster.ep_attribute,
             "update_period",
         ),
     }
@@ -1054,7 +1199,7 @@ class TuyaEnergyMeterManufCluster_2CHB_MatSee(
 class TuyaEnergyMeterManufCluster_2CHB_EARU(
     TuyaEnergyMeterManufCluster, configuration_type=ChannelConfiguration_2CHB
 ):
-    """EARU Tuya Energy Meter bidirectional 2 clamp manufacturer cluster."""
+    """EARU Tuya 2 channel bidirectional energy meter manufacturer cluster."""
 
     TUYA_DP_AC_FREQUENCY = 113
     TUYA_DP_CURRENT_SUMM_DELIVERED = 101
@@ -1118,12 +1263,12 @@ class TuyaEnergyMeterManufCluster_2CHB_EARU(
             endpoint_id=2,
         ),
         TUYA_DP_POWER_FLOW: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
+            TuyaEnergyMeterManufCluster.ep_attribute,
             "power_flow",
             converter=lambda x: PowerFlow(x),
         ),
         TUYA_DP_POWER_FLOW_B: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
+            TuyaEnergyMeterManufCluster.ep_attribute,
             "power_flow_ch_b",
             converter=lambda x: PowerFlow(x),
         ),
@@ -1141,7 +1286,7 @@ class TuyaEnergyMeterManufCluster_2CHB_EARU(
             "rms_voltage",
         ),
         TUYA_DP_UPDATE_PERIOD: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
+            TuyaEnergyMeterManufCluster.ep_attribute,
             "update_period",
         ),
     }
@@ -1165,8 +1310,8 @@ class TuyaEnergyMeterManufCluster_2CHB_EARU(
     }
 
 
-class TuyaEnergyMeter1Clamp(CustomDevice):
-    """Tuya PJ-MGW1203 1 Clamp Energy Meter."""
+class TuyaEnergyMeter_1CH(CustomDevice):
+    """Tuya PJ-MGW1203 1 channel energy meter."""
 
     signature = {
         MODELS_INFO: [("_TZE204_cjbofhxw", "TS0601")],
@@ -1208,8 +1353,8 @@ class TuyaEnergyMeter1Clamp(CustomDevice):
     }
 
 
-class TuyaEnergyMeterB1ClampZGP(CustomDevice):
-    """Tuya Bidirectional 1 Clamp Energy Meter with Zigbee Green Power."""
+class TuyaEnergyMeter_1CHB(CustomDevice):
+    """Tuya bidirectional 1 channel energy meter with Zigbee Green Power."""
 
     signature = {
         MODELS_INFO: [("_TZE204_ac0fhfiq", "TS0601")],
@@ -1266,8 +1411,8 @@ class TuyaEnergyMeterB1ClampZGP(CustomDevice):
     }
 
 
-class TuyaEnergyMeter1CHB(CustomDevice):
-    """Tuya EARU PC311-Z-TY Bidirectional 2 Clamp Energy Meter."""
+class TuyaEnergyMeter_2CHB_EARU(CustomDevice):
+    """EARU Tuya PC311-Z-TY bidirectional 2 channel energy meter."""
 
     signature = {
         MODELS_INFO: [("_TZE200_rks0sgb7", "TS0601")],
@@ -1328,8 +1473,8 @@ class TuyaEnergyMeter1CHB(CustomDevice):
     }
 
 
-class TuyaEnergyMeter1CHBZGP(CustomDevice):
-    """Tuya PJ-1203A Bidirectional 2 Clamp Energy Meter with Zigbee Green Power."""
+class TuyaEnergyMeter_2CHB_MatSeePlus(CustomDevice):
+    """MatSee Plus Tuya PJ-1203A 2 channel bidirectional energy meter with Zigbee Green Power."""
 
     signature = {
         MODELS_INFO: [("_TZE204_81yrt3lo", "TS0601")],
@@ -1370,7 +1515,7 @@ class TuyaEnergyMeter1CHBZGP(CustomDevice):
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaEnergyMeterManufCluster_2CHB_MatSee,
+                    TuyaEnergyMeterManufCluster_2CHB_MatSeePlus,
                     TuyaElectricalMeasurement,
                     TuyaMetering,
                 ],
