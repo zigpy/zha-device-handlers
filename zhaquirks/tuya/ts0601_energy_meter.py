@@ -525,11 +525,13 @@ class VirtualChannelConfiguration:
     def __init__(
         self,
         virtual_channel: Optional[Channel] = None,
+        source_channels: tuple = (),
         trigger_channel: Optional[Channel] = None,
         discrete_method: Optional[Callable] = None,
         cumulative_method: Optional[Callable] = None,
     ) -> None:
         self.virtual_channel = virtual_channel
+        self.source_channels = source_channels
         self.trigger_channel = trigger_channel
         self.discrete_method = discrete_method
         self.cumulative_method = cumulative_method
@@ -650,24 +652,28 @@ class VirtualChannel(EnergyMeterPowerFlow, EnergyMeterChannel):
     ] = {
         ChannelConfiguration.A_PLUS_B: VirtualChannelConfiguration(
             Channel.AB,
+            (Channel.A, Channel.B),
             Channel.B,
             _a_plus_b,
             _a_plus_b,
         ),
         ChannelConfiguration.A_MINUS_B: VirtualChannelConfiguration(
             Channel.AB,
+            (Channel.A, Channel.B),
             Channel.B,
             _a_minus_b,
             _a_minus_b,
         ),
         ChannelConfiguration.GRID_PLUS_PRODUCTION: VirtualChannelConfiguration(
             Channel.AB,
+            (Channel.A, Channel.B),
             Channel.B,
             _a_plus_b,
             _cumulative_grid_plus_production,
         ),
         ChannelConfiguration.CONSUMPTION_MINUS_PRODUCTION: VirtualChannelConfiguration(
             Channel.AB,
+            (Channel.A, Channel.B),
             Channel.B,
             _a_minus_b,
             _cumulative_consumption_minus_production,
@@ -701,8 +707,13 @@ class VirtualChannel(EnergyMeterPowerFlow, EnergyMeterChannel):
             VirtualChannelConfiguration(),
         )
 
-        if self.channel != config.trigger_channel:
+        if (
+            self.channel not in config.source_channels
+            or self.channel != config.trigger_channel
+            and attr_name in self._EXTENSIVE_ATTRIBUTES
+        ):
             return
+
         method = None
         if attr_name in self._EXTENSIVE_ATTRIBUTES:
             method = config.discrete_method
@@ -886,6 +897,8 @@ class TuyaMetering(
 class TuyaEnergyMeterManufCluster(NoManufacturerCluster, TuyaMCUCluster):
     """Manufactuter cluster for Tuya energy meter devices."""
 
+    _ATTRIBUTE_DEFAULTS: Dict[str, Any] = {}
+
     attributes: Dict[int, ZCLAttributeDef] = {
         AC_FREQUENCY_COEF: ("ac_frequency_coefficient", t.uint32_t_be, True),
         CURRENT_SUMM_DELIVERED_COEF: (
@@ -996,21 +1009,14 @@ class TuyaEnergyMeterManufCluster(NoManufacturerCluster, TuyaMCUCluster):
             config_attr.is_manufacturer_specific,
         )
 
-    def get(self, key: Union[int, str], default: Optional[Any] = None) -> Optional[Any]:
-        """Get cached attribute value and fallback to its type default if defined."""
-        value = super().get(key, default)
-        if value is None:
-            value = getattr(self.find_attribute(key).type, "DEFAULT", default)
-        return value
-
-    def get_optional(
-        self, attr_name: Union[int, str], default: Optional[Any] = None
-    ) -> Any:
-        """Returns the default value if an attribute is undefined."""
-        try:
-            return self.get(attr_name, default)
-        except KeyError:
-            return default
+    def _attr_default(
+        self, attrid: Union[str, int], default: Optional[Any] = None
+    ) -> Optional[Any]:
+        """Returns an attribute's default value."""
+        attr_def = self.find_attribute(attrid)
+        return self._ATTRIBUTE_DEFAULTS.get(
+            attr_def.name, getattr(attr_def.type, "DEFAULT", default)
+        )
 
     def _format_attr_value(self, attrid: Union[str, int], value: Any) -> Optional[Any]:
         """Used to format the input the input value with the attribute's type."""
@@ -1031,12 +1037,26 @@ class TuyaEnergyMeterManufCluster(NoManufacturerCluster, TuyaMCUCluster):
             )
         return
 
+    def get(self, key: Union[int, str], default: Optional[Any] = None) -> Optional[Any]:
+        """Get cached attribute value and fall back to its type default if defined."""
+        value = super().get(key, default)
+        if value is None:
+            value = self._attr_default(key, default)
+        return value
+
+    def get_optional(self, key: Union[int, str], default: Optional[Any] = None) -> Any:
+        """Returns the default value if an attribute is undefined."""
+        try:
+            return self.get(key, default)
+        except KeyError:
+            return default
+
     async def read_attributes(self, attributes, *args, **kwargs):
         """Handle reads to local configuration attrtibutes."""
         success, failure = await super().read_attributes(attributes, *args, **kwargs)
         for attrid in set(self._LOCAL_ATTRIBUTES).intersection(set(attributes)):
             if attrid not in success:
-                default = getattr(self.attributes[attrid].type, "DEFAULT", None)
+                default = self._attr_default(attrid)
                 if default is None:
                     continue
                 success[attrid] = default
@@ -1155,6 +1175,10 @@ class TuyaEnergyMeterManufCluster_2CHB_MatSeePlus(
     TuyaEnergyMeterManufCluster, configuration_type=ChannelConfiguration_2CHB
 ):
     """MatSee Plus Tuya 2 channel bidirectional energy meter manufacturer cluster."""
+
+    _ATTRIBUTE_DEFAULTS: Dict[str, Any] = {
+        "power_flow_preempt": True,
+    }
 
     TUYA_DP_AC_FREQUENCY = 111
     TUYA_DP_AC_FREQUENCY_COEF = 122
