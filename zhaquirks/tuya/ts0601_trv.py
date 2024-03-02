@@ -1002,6 +1002,7 @@ class ZONNSMARTScheduleSet(t.FixedList, item_type=t.uint8_t, length=31):
 
     def __init__(self, value, *args, **kwargs):
         """Parse the schedule string and serialize it."""
+        self.raw = []
 
         super().__init__(*args, **kwargs)
         if value is None:
