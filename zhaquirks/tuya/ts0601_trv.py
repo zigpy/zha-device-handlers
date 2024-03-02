@@ -1057,6 +1057,7 @@ class ZONNSMARTScheduleSet(t.FixedList, item_type=t.uint8_t, length=31):
                 raise ValueError("Invalid time : " + tokens[0] + ":" + tokens[1])
             if time <= prevTime:
                 raise ValueError("Period time must always increase")
+            prevTime = time
             temperature = int(float(tokens[2]) * 10)
             if (
                 temperature < ZONNSMART_MIN_TEMPERATURE_VAL / 10
