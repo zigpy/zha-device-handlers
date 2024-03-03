@@ -1019,25 +1019,25 @@ class ZONNSMARTScheduleSet(t.FixedList, item_type=t.uint8_t, length=31):
         day = periods[0]
         periods.pop(0)
         if day == "monday" or day == "mon":
-            b += [0x1]
+            b += [0b00000001]
         elif day == "tuesday" or day == "tue":
-            b += [0x2]
+            b += [0b00000010]
         elif day == "wednesday" or day == "wed":
-            b += [0x4]
+            b += [0b00000100]
         elif day == "thursday" or day == "thu":
-            b += [0x8]
+            b += [0b00001000]
         elif day == "friday" or day == "fri":
-            b += [0x10]
+            b += [0b00010000]
         elif day == "saturday" or day == "sat":
-            b += [0x20]
+            b += [0b00100000]
         elif day == "sunday" or day == "sun":
-            b += [0x40]
+            b += [0b01000000]
         elif day == "work" or day == "mon-fri":
-            b += [0x1F]
+            b += [0b00011111]
         elif day == "weekend" or day == "sat-sun":
-            b += [0x60]
+            b += [0b01100000]
         elif day == "week" or day == "mon-sun":
-            b += [0x7F]
+            b += [0b01111111]
         else:
             raise ValueError(
                 "Invalid day provided, should be a day of the week or 'mon-fri', 'sat-sun' or 'mon-sun'"
