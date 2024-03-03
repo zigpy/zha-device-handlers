@@ -16,7 +16,12 @@ Quirks v2 use a fluent interface style. While this isn't common in python it was
 
 ## QuirksV2RegistryEntry
 
-- `add_to_registry_v2` - This method is used to add a quirk to the registry. It takes two arguments, the manufacturer and the model. It returns a `QuirksV2RegistryEntry` object.
+<details>
+  <summary>add_to_registry_v2</summary>
+
+This method is used to add a quirk to the registry. It takes two arguments, the manufacturer and the model. It returns a `QuirksV2RegistryEntry` object.
+
+</details>
 
 The `QuirksV2RegistryEntry` class is used to build up a quirk. It has a number of methods that can be chained together to build up the quirk. The `QuirksV2RegistryEntry` class has the following methods:
 
@@ -41,6 +46,10 @@ Returns:
 """
 ```
 
+Example:
+
+https://github.com/zigpy/zigpy/blob/6062e41d28ad99bafa9dd803cab1c3ae4a8fe6ba/tests/test_quirks_v2.py#L600-L627
+
 </details>
 
 <details>
@@ -63,6 +72,10 @@ Example:
 
 """
 ```
+
+Example:
+
+https://github.com/zigpy/zigpy/blob/6062e41d28ad99bafa9dd803cab1c3ae4a8fe6ba/tests/test_quirks_v2.py#L76-L118
 
 </details>
 
@@ -93,6 +106,10 @@ Returns:
 """
 ```
 
+Example:
+
+https://github.com/zigpy/zigpy/blob/6062e41d28ad99bafa9dd803cab1c3ae4a8fe6ba/tests/test_quirks_v2.py#L359-L387
+
 </details>
 
 <details>
@@ -115,6 +132,10 @@ This method allows removing a cluster from a device when the quirk is applied.
 """
 ```
 
+Example:
+
+https://github.com/zigpy/zigpy/blob/6062e41d28ad99bafa9dd803cab1c3ae4a8fe6ba/tests/test_quirks_v2.py#L304-L313
+
 </details>
 
 <details>
@@ -136,6 +157,10 @@ Returns:
 """
 ```
 
+Example:
+
+https://github.com/zigpy/zigpy/blob/6062e41d28ad99bafa9dd803cab1c3ae4a8fe6ba/tests/test_quirks_v2.py#L817-L824
+
 </details>
 
 <details>
@@ -155,6 +180,10 @@ Returns:
 """
 ```
 
+Example:
+
+https://github.com/zigpy/zigpy/blob/6062e41d28ad99bafa9dd803cab1c3ae4a8fe6ba/tests/test_quirks_v2.py#L226-L243
+
 </details>
 
 <details>
@@ -172,6 +201,10 @@ Returns:
     QuirksV2RegistryEntry: The updated instance of QuirksV2RegistryEntry.
 """
 ```
+
+Example:
+
+https://github.com/zigpy/zigpy/blob/6062e41d28ad99bafa9dd803cab1c3ae4a8fe6ba/tests/test_quirks_v2.py#L250-L279
 
 </details>
 
@@ -191,6 +224,10 @@ Returns:
     QuirksV2RegistryEntry: The instance of the QuirksV2RegistryEntry class.
 """
 ```
+
+Example:
+
+https://github.com/zigpy/zigpy/blob/6062e41d28ad99bafa9dd803cab1c3ae4a8fe6ba/tests/test_quirks_v2.py#L286-L297
 
 </details>
 
@@ -230,6 +267,10 @@ Returns:
 """
 ```
 
+Example:
+
+https://github.com/zigpy/zigpy/blob/6062e41d28ad99bafa9dd803cab1c3ae4a8fe6ba/tests/test_quirks_v2.py#L103-L118
+
 </details>
 
 <details>
@@ -262,6 +303,10 @@ Returns:
 """
 ```
 
+Example:
+
+https://github.com/zigpy/zigpy/blob/6062e41d28ad99bafa9dd803cab1c3ae4a8fe6ba/tests/test_quirks_v2.py#L359-L387
+
 </details>
 
 <details>
@@ -288,6 +333,10 @@ Returns:
     QuirksV2RegistryEntry: The registry entry for the binary sensor.
 """
 ```
+
+Example:
+
+https://github.com/zigpy/zigpy/blob/6062e41d28ad99bafa9dd803cab1c3ae4a8fe6ba/tests/test_quirks_v2.py#L482-L511
 
 </details>
 
@@ -319,6 +368,10 @@ Returns:
     QuirksV2RegistryEntry: The updated QuirksV2RegistryEntry object.
 """
 ```
+
+Example:
+
+https://github.com/zigpy/zigpy/blob/6062e41d28ad99bafa9dd803cab1c3ae4a8fe6ba/tests/test_quirks_v2.py#L394-L429
 
 </details>
 
@@ -353,6 +406,10 @@ Returns:
 """
 ```
 
+Example:
+
+https://github.com/zigpy/zigpy/blob/6062e41d28ad99bafa9dd803cab1c3ae4a8fe6ba/tests/test_quirks_v2.py#L436-L475
+
 </details>
 
 <details>
@@ -382,6 +439,10 @@ Returns:
 """
 ```
 
+Example:
+
+https://github.com/zigpy/zigpy/blob/6062e41d28ad99bafa9dd803cab1c3ae4a8fe6ba/tests/test_quirks_v2.py#L518-L551
+
 </details>
 
 <details>
@@ -410,6 +471,10 @@ Returns:
     QuirksV2RegistryEntry: The updated QuirksV2RegistryEntry object.
 """
 ```
+
+Example:
+
+https://github.com/zigpy/zigpy/blob/6062e41d28ad99bafa9dd803cab1c3ae4a8fe6ba/tests/test_quirks_v2.py#L558-L593
 
 </details>
 
