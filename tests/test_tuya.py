@@ -501,7 +501,7 @@ async def test_zonnsmart_state_report(zigpy_device_from_quirk, quirk):
 
 
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_trv.ZonnsmartTV01_ZG,))
-async def test_zonnsmart_send_attribute(zigpy_device_from_quirk, quirk):
+async def test_zonnsmart_send_attribute(caplog, zigpy_device_from_quirk, quirk):
     """Test thermostatic valve outgoing commands."""
 
     valve_dev = zigpy_device_from_quirk(quirk)
@@ -751,6 +751,68 @@ async def test_zonnsmart_send_attribute(zigpy_device_from_quirk, quirk):
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
         ]
+
+        # Error testing
+
+        with pytest.raises(ValueError):
+            (status,) = await tuya_cluster.write_attributes(
+                {"holiday_start_stop": " | 2023/03/23 13:05"}
+            )
+
+        # No error should be returned for this test
+        (status,) = await tuya_cluster.write_attributes({"schedule_set": None})
+
+        (status,) = await tuya_cluster.write_attributes({"schedule_set": True})
+        assert "Only string value allowed" in caplog.records[-1].message
+
+        (status,) = await tuya_cluster.write_attributes({"schedule_set": "mon-fri"})
+        assert "At least a day and a period are needed" in caplog.records[-1].message
+
+        (status,) = await tuya_cluster.write_attributes(
+            {"schedule_set": "man 24:00/20.0"}
+        )
+        assert (
+            "Invalid day provided, should be a day of the week"
+            in caplog.records[-1].message
+        )
+
+        (status,) = await tuya_cluster.write_attributes(
+            {"schedule_set": "mon 24:0020.0"}
+        )
+        assert "Invalid period" in caplog.records[-1].message
+
+        (status,) = await tuya_cluster.write_attributes(
+            {"schedule_set": "mon 25:00/20.0"}
+        )
+        assert "Invalid time" in caplog.records[-1].message
+
+        (status,) = await tuya_cluster.write_attributes(
+            {"schedule_set": "mon 2:00/20.0 1:00/19.0 24:00/18.0"}
+        )
+        assert "Period time must always increase" in caplog.records[-1].message
+
+        (status,) = await tuya_cluster.write_attributes(
+            {"schedule_set": "mon 24:00/0.0"}
+        )
+        assert "Invalid temperature" in caplog.records[-1].message
+
+        (status,) = await tuya_cluster.write_attributes(
+            {"schedule_set": "mon 24:00/20.1"}
+        )
+        assert "Temperature must be whole or half degrees" in caplog.records[-1].message
+
+        (status,) = await tuya_cluster.write_attributes(
+            {"schedule_set": "mon 23:00/20.0"}
+        )
+        assert "The last period must be 24:00" in caplog.records[-1].message
+
+        (status,) = await tuya_cluster.write_attributes(
+            {"schedule_monday": "mon 23:00/20.0"}
+        )
+        assert (
+            "Attribute cannot be set, use schedule_set attribute"
+            in caplog.records[-1].message
+        )
 
 
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_trv.SiterwellGS361_Type1,))
