@@ -196,6 +196,8 @@ class PowerConfigurationCluster(CustomCluster, PowerConfiguration):
     """Common use power configuration cluster."""
 
     BATTERY_VOLTAGE_ATTR = 0x0020
+    BATTERY_RATED_VOLTAGE = 0x0034
+    BATTERY_VOLTAGE_MIN_THRESHOLD = 0x0036
     BATTERY_PERCENTAGE_REMAINING = 0x0021
     MIN_VOLTS = 1.5  # old 2.1
     MAX_VOLTS = 2.8  # old 3.2
@@ -209,19 +211,19 @@ class PowerConfigurationCluster(CustomCluster, PowerConfiguration):
             )
 
     def _calculate_battery_percentage(self, raw_value):
-        volts = raw_value / 10
-        volts = max(volts, self.MIN_VOLTS)
-        volts = min(volts, self.MAX_VOLTS)
+        volts_min = self.get(self.BATTERY_VOLTAGE_MIN_THRESHOLD, self.MIN_VOLTS * 10)
+        volts_max = self.get(self.BATTERY_RATED_VOLTAGE, self.MAX_VOLTS * 10)
+        volts = raw_value
+        volts = max(volts, volts_min)
+        volts = min(volts, volts_max)
 
-        percent = round(
-            ((volts - self.MIN_VOLTS) / (self.MAX_VOLTS - self.MIN_VOLTS)) * 200
-        )
+        percent = round(((volts - volts_min) / (volts_max - volts_min)) * 200)
 
         self.debug(
             "Voltage [RAW]:%s [Max]:%s [Min]:%s, Battery Percent: %s",
             raw_value,
-            self.MAX_VOLTS,
-            self.MIN_VOLTS,
+            volts_min,
+            volts_max,
             percent / 2,
         )
 
