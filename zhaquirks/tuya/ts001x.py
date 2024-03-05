@@ -1039,3 +1039,101 @@ class TuyaTripleGang_var05(EnchantedDevice, TuyaSwitch):
             },
         },
     }
+
+
+class TuyaTripleGang_Z811(EnchantedDevice, TuyaSwitch):
+    """Tuya 3 gang light switch (ZemiSmart model Z811)."""
+
+    signature = {
+        # "node_descriptor": "NodeDescriptor(logical_type=<LogicalType.EndDevice: 2>, complex_descriptor_available=0,
+        # user_descriptor_available=0, reserved=0, aps_flags=0, frequency_band=<FrequencyBand.Freq2400MHz: 8>,
+        # mac_capability_flags=<MACCapabilityFlags.AllocateAddress: 128>, manufacturer_code=4098, maximum_buffer_size=82,
+        # maximum_incoming_transfer_size=82, server_mask=11264, maximum_outgoing_transfer_size=82,
+        # descriptor_capability_field=<DescriptorCapability.NONE: 0>, *allocate_address=True, *is_alternate_pan_coordinator=False,
+        # *is_coordinator=False, *is_end_device=True, *is_full_function_device=False, *is_mains_powered=False,
+        # *is_receiver_on_when_idle=False, *is_router=False, *is_security_capable=False)",
+        MODEL: "TS0013",
+        ENDPOINTS: {
+            # "profile_id": 260, "device_type": "0x0100",
+            # "in_clusters": ["0x0000","0x0003","0x0004","0x0005","0x0006"],
+            # "out_clusters": ["0x000a","0x0019"]
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Ota.cluster_id, Time.cluster_id],
+            },
+            # "profile_id": 260, "device_type": "0x0100",
+            # "in_clusters": ["0x0003","0x0004","0x0005","0x0006"],
+            # "out_clusters": []
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            # "profile_id": 260, "device_type": "0x0100",
+            # "in_clusters": ["0x0003","0x0004","0x0005","0x0006"],
+            # "out_clusters": []
+            3: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+        },
+    }
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaZBOnOffAttributeCluster,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaZBOnOffAttributeCluster,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            3: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaZBOnOffAttributeCluster,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+        },
+    }
