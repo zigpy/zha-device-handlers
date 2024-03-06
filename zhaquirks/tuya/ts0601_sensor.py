@@ -142,6 +142,7 @@ class TuyaTempHumiditySensor(CustomDevice):
         },
     }
 
+
 class TuyaTempHumiditySensor_Conecto_Display(CustomDevice):
     """Custom device representing tuya temp and humidity sensor with e-ink screen."""
 
