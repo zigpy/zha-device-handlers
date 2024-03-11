@@ -7,8 +7,8 @@ import zigpy.application
 import zigpy.device
 import zigpy.quirks
 import zigpy.types
-import zigpy.zcl.foundation as foundation
 from zigpy.zcl.clusters.general import Basic
+import zigpy.zcl.foundation as foundation
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -162,13 +162,13 @@ def zigpy_device_from_v2_quirk(MockAppController, ieee_mock):
     """Create zigpy device from Quirk's signature."""
 
     def _dev(
-            manufacturer: str,
-            model: str,
-            endpoint_ids: list[int] = [1],
-            ieee=None,
-            nwk=zigpy.types.NWK(0x1234),
-            apply_quirk=True
-        ):
+        manufacturer: str,
+        model: str,
+        endpoint_ids: list[int] = [1],
+        ieee=None,
+        nwk=zigpy.types.NWK(0x1234),
+        apply_quirk=True,
+    ):
         if ieee is None:
             ieee = ieee_mock
 
