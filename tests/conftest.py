@@ -8,6 +8,7 @@ import zigpy.device
 import zigpy.quirks
 import zigpy.types
 import zigpy.zcl.foundation as foundation
+from zigpy.zcl.clusters.general import Basic
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -152,6 +153,54 @@ def zigpy_device_from_quirk(MockAppController, ieee_mock):
         MockAppController.devices[ieee] = device
 
         return device
+
+    return _dev
+
+
+@pytest.fixture
+def zigpy_device_from_v2_quirk(MockAppController, ieee_mock):
+    """Create zigpy device from Quirk's signature."""
+
+    def _dev(
+            manufacturer: str,
+            model: str,
+            endpoint_ids: list[int] = [1],
+            ieee=None,
+            nwk=zigpy.types.NWK(0x1234),
+            apply_quirk=True
+        ):
+        if ieee is None:
+            ieee = ieee_mock
+
+        raw_device = zigpy.device.Device(MockAppController, ieee, nwk)
+        raw_device.manufacturer = manufacturer
+        raw_device.model = model
+
+        for endpoint_id in endpoint_ids:
+            ep = raw_device.add_endpoint(endpoint_id)
+            # basic is mandatory
+            if endpoint_id == 1:
+                ep.add_input_cluster(Basic.cluster_id)
+
+        quirked = zigpy.quirks.get_device(raw_device)
+
+        if not apply_quirk:
+            for ep_id, ep_data in quirked.endpoints.items():
+                if ep_id != 0:
+                    ep = raw_device.add_endpoint(ep_id)
+                    ep.profile_id = ep_data.get(PROFILE_ID, 0x0260)
+                    ep.device_type = ep_data.get(DEVICE_TYPE, 0xFEDB)
+                    in_clusters = ep_data.get(INPUT_CLUSTERS, [])
+                    for cluster_id in in_clusters:
+                        ep.add_input_cluster(cluster_id)
+                    out_clusters = ep_data.get(OUTPUT_CLUSTERS, [])
+                    for cluster_id in out_clusters:
+                        ep.add_output_cluster(cluster_id)
+            return raw_device
+
+        MockAppController.devices[ieee] = quirked
+
+        return quirked
 
     return _dev
 
