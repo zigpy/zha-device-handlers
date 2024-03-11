@@ -37,11 +37,6 @@ MANUFACTURER_SPECIFIC_CLUSTER_ID_2 = 0xFC40  # 64576
 HEAT_MODE_ATTR = 0x00
 
 
-class DeviceMode(t.enum16):
-    PILOT_OFF = 0x0100
-    PILOT_ON = 0x0200
-
-
 class LegrandCluster(CustomCluster):
     """LegrandCluster."""
 
@@ -52,7 +47,7 @@ class LegrandCluster(CustomCluster):
     class AttributeDefs(BaseAttributeDefs):
         device_mode = ZCLAttributeDef(
             id=0x0000,
-            type=t.data16,  # DeviceMode
+            type=t.data16,
             is_manufacturer_specific=True,
         )
         led_dark = ZCLAttributeDef(
@@ -68,12 +63,12 @@ class LegrandCluster(CustomCluster):
 
 
 class HeatMode(t.enum8):
-    COMFORT = 0x00
-    COMFORT_MINUS_1 = 0x01
-    COMFORT_MINUS_2 = 0x02
-    ECO = 0x03
-    FROST_PROTECTION = 0x04
-    OFF = 0x05
+    Comfort = 0x00
+    Comfort_minus_1 = 0x01
+    Comfort_minus_2 = 0x02
+    Eco = 0x03
+    Frost_protection = 0x04
+    Off = 0x05
 
 
 class LegrandCableOutletCluster(CustomCluster):
