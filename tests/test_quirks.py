@@ -696,7 +696,7 @@ def test_quirk_device_automation_triggers_unique(quirk):
             triggers_text = "\n".join(
                 [f" * {event} <- {trigger}" for trigger, event in triggers_and_events]
             )
-            fail_func(f"Triggers are not unique for {quirk}:\n{triggers_text}")
+            fail_func(f"Triggers are not unique for {quirk}:\n{triggers_text}")  # noqa
 
 
 @pytest.mark.parametrize(
@@ -771,7 +771,7 @@ def test_attributes_updated_not_replaced(quirk: CustomDevice) -> None:
                     zhaquirks.xiaomi.aqara.vibration_aq1.VibrationAQ1.MultistateInputCluster,
                 ):
                     pytest.fail(
-                        f"Cluster {cluster} with endpoint ID 0x{cluster.cluster_id:04X}"
+                        f"Cluster {cluster} with endpoint ID 0x{cluster.cluster_id:04X}"  # noqa
                         f" does not contain all named attributes: {missing_attrs}"
                     )
 
@@ -821,7 +821,7 @@ def test_no_duplicate_clusters(quirk: CustomDevice) -> None:
 
             if cluster_id in used_cluster_ids:
                 pytest.fail(
-                    f"Cluster ID 0x{cluster_id:04X} is used more than once in the"
+                    f"Cluster ID 0x{cluster_id:04X} is used more than once in the"  # noqa
                     f" replacement for endpoint {ep_id} in {quirk}"
                 )
             used_cluster_ids.add(cluster_id)

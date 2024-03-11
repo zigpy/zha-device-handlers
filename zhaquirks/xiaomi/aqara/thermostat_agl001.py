@@ -1,4 +1,5 @@
 """Aqara E1 Radiator Thermostat Quirk."""
+
 from __future__ import annotations
 
 from functools import reduce
@@ -229,7 +230,7 @@ class ScheduleEvent:
         return self._time
 
     def __str__(self):
-        return f"{math.floor(self._time / 60)}:{f'{self._time % 60:0>2}'},{f'{self._temp:.1f}'}"
+        return f"{math.floor(self._time / 60)}:{f'{self._time % 60:0>2}'},{f'{self._temp:.1f}'}"  # noqa
 
     def serialize(self):
         result = bytearray(6)
