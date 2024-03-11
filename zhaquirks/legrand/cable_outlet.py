@@ -3,6 +3,7 @@
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import add_to_registry_v2
+from zigpy.quirks.v2.homeassistant import EntityType
 import zigpy.types as t
 from zigpy.zcl import ClusterType
 from zigpy.zcl.foundation import (
@@ -93,4 +94,11 @@ class LegrandCableOutletCluster(CustomCluster):
     .replaces(LegrandCluster)
     .replaces(LegrandCableOutletCluster)
     .replaces(LegrandCluster, cluster_type=ClusterType.Client)
+    .enum(
+        attribute_name=LegrandCableOutletCluster.AttributeDefs.heat_mode.name,
+        enum_class=HeatMode,
+        cluster_id=LegrandCableOutletCluster.cluster_id,
+        translation_key="heat_mode",
+        entity_type=EntityType.STANDARD,
+    )
 )
