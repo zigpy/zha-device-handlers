@@ -1,4 +1,6 @@
 """Tests for Legrand."""
+from unittest import mock
+
 import pytest
 
 import zhaquirks
@@ -53,4 +55,26 @@ def test_light_switch_with_neutral_signature(assert_signature_matches_quirk):
     }
     assert_signature_matches_quirk(
         zhaquirks.legrand.switch.LightSwitchWithNeutral, signature
+    )
+
+
+async def test_cable_outlet_write_attrs(zigpy_device_from_quirk):
+    """Test Legrand cable outlet heat mode attr writing."""
+
+    device = zigpy_device_from_quirk(
+        zhaquirks.legrand.cable_outlet.Legrand064882CableOutlet
+    )
+    cable_outlet_cluster = device.endpoints[1].cable_outlet_cluster
+    cable_outlet_cluster._write_attributes = mock.AsyncMock()
+    cable_outlet_cluster.set_heat_mode = mock.AsyncMock()
+
+    await cable_outlet_cluster.write_attributes({0x00: 0x02}, manufacturer=0xFC40)
+
+    cable_outlet_cluster.set_heat_mode.assert_awaited_with(
+        0x02,
+        manufacturer=0xFC40,
+    )
+    cable_outlet_cluster._write_attributes.assert_awaited_with(
+        [],
+        manufacturer=0xFC40,
     )
