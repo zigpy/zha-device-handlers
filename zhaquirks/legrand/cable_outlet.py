@@ -84,7 +84,7 @@ class LegrandCableOutletCluster(CustomCluster):
     ep_attribute = "cable_outlet_cluster"
 
     class AttributeDefs(BaseAttributeDefs):
-        device_mode = ZCLAttributeDef(
+        heat_mode = ZCLAttributeDef(
             id=HEAT_MODE_ATTR,
             type=HeatMode,
             is_manufacturer_specific=True,
@@ -92,7 +92,7 @@ class LegrandCableOutletCluster(CustomCluster):
 
     class ServerCommandDefs(BaseCommandDefs):
         set_heat_mode = ZCLCommandDef(
-            id=0x00,
+            id=HEAT_MODE_ATTR,
             schema={"mode": HeatMode},
             direction=Direction.Client_to_Server,
             is_manufacturer_specific=True,
