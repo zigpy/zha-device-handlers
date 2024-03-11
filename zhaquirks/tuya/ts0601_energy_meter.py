@@ -64,9 +64,9 @@ POWER_FLOW_PREEMPT = 0x5020
 UNSIGNED_POWER_ATTR_SUFFIX = "_attr_unsigned"
 
 
-def is_type_uint(attr_type: t) -> bool:
+def is_type_uint(attr_type: Type) -> bool:
     """True if the specified attribute type is an unsigned integer."""
-    return issubclass(attr_type, int) and not getattr(attr_type, "_signed", True)
+    return issubclass(attr_type, t.uint_t)
 
 
 class Channel(str, Enum):
@@ -206,9 +206,9 @@ class PowerCalculation:
     @staticmethod
     def active_power_from_apparent_power_power_factor_and_power_flow(
         apparent_power: Optional[t.uint_t],
-        power_factor: Optional[int],
+        power_factor: Optional[t.int_t],
         power_flow: Optional[PowerFlow] = None,
-    ) -> Optional[int]:
+    ) -> Optional[t.int_t]:
         if apparent_power is None or power_factor is None:
             return
         power_factor *= 0.01
@@ -216,7 +216,7 @@ class PowerCalculation:
 
     @staticmethod
     def apparent_power_from_active_power_and_power_factor(
-        active_power: Optional[int], power_factor: Optional[int]
+        active_power: Optional[t.int_t], power_factor: Optional[t.int_t]
     ) -> Optional[t.uint_t]:
         if active_power is None or power_factor is None:
             return
@@ -245,8 +245,8 @@ class PowerCalculation:
 
     @staticmethod
     def reactive_power_from_apparent_power_and_power_factor(
-        apparent_power: Optional[t.uint_t], power_factor: Optional[int]
-    ) -> Optional[int]:
+        apparent_power: Optional[t.uint_t], power_factor: Optional[t.int_t]
+    ) -> Optional[t.int_t]:
         if apparent_power is None or power_factor is None:
             return
         power_factor *= 0.01
@@ -256,8 +256,211 @@ class PowerCalculation:
         )
 
 
+class LocalClusterAttributes:
+    """Methods for handling local configuration attributes on device."""
+
+    _ATTRIBUTE_DEFAULTS: Dict[int, Any] = {}
+    _LOCAL_ATTRIBUTES: Tuple[int] = ()
+
+    def _attr_default(
+        self, attrid: Union[str, int], default: Optional[Any] = None
+    ) -> Optional[Any]:
+        """Returns an attribute's default value."""
+        attr_def = self.find_attribute(attrid)
+        return self._ATTRIBUTE_DEFAULTS.get(
+            attr_def.id, getattr(attr_def.type, "DEFAULT", default)
+        )
+
+    def _format_attr_value(self, attrid: Union[str, int], value: Any) -> Optional[Any]:
+        """Used to format the input the input value with the attribute's type."""
+        try:
+            attr_def = self.find_attribute(attrid)
+            value = attr_def.type(value)
+            return value
+        except KeyError:
+            self.error("%s is not a valid attribute id", attrid)
+        except ValueError as e:
+            self.error(
+                "Failed to convert attribute %s from %s (%s) to type %s: %s",
+                attr_def.id,
+                value,
+                type(value),
+                attr_def.type,
+                e,
+            )
+        return
+
+    def get(self, key: Union[int, str], default: Optional[Any] = None) -> Optional[Any]:
+        """Get cached attribute value and fall back to its device/type default if defined."""
+        value = super().get(key, default)
+        if value is None:
+            value = self._attr_default(key, default)
+        return value
+
+    async def read_attributes(self, attributes, *args, **kwargs):
+        """Handle reads to local configuration attributes."""
+        success, failure = await super().read_attributes(attributes, *args, **kwargs)
+        for attrid in set(self._LOCAL_ATTRIBUTES).intersection(set(attributes)):
+            if attrid not in success:
+                default = self._attr_default(attrid)
+                if default is None:
+                    continue
+                success[attrid] = default
+                failure.pop(attrid, None)
+            if success[attrid] not in (None, ""):
+                success[attrid] = self.attributes[attrid].type(success[attrid])
+        return success, failure
+
+    async def write_attributes(self, attributes, *args, **kwargs):
+        """Handle writes to local configuration attributes."""
+        local_attributes = {}
+        for attrid in set(self._LOCAL_ATTRIBUTES).intersection(set(attributes)):
+            value = attributes.pop(attrid)
+            if value in (None, ""):
+                local_attributes[attrid] = None
+                continue
+            value = self._format_attr_value(attrid, value)
+            if value is not None:
+                local_attributes[attrid] = value
+        await TuyaLocalCluster.write_attributes(self, local_attributes, *args, **kwargs)
+        return await super().write_attributes(attributes, *args, **kwargs)
+
+
+class TuyaEnergyMeterManufCluster(
+    LocalClusterAttributes, NoManufacturerCluster, TuyaMCUCluster
+):
+    """Manufactuter cluster for Tuya energy meter devices."""
+
+    _CHANNEL_CONFIGURATION_ATTRIBUTES: Dict[Type, Tuple[int]] = {
+        ChannelConfiguration_1CHB: (SUPPRESS_REVERSE_FLOW,),
+        ChannelConfiguration_2CHB: (
+            POWER_FLOW_PREEMPT,
+            SUPPRESS_REVERSE_FLOW,
+            SUPPRESS_REVERSE_FLOW_B,
+        ),
+    }
+
+    _LOCAL_ATTRIBUTES: Tuple[int] = (
+        CHANNEL_CONFIGURATION,
+        POWER_FLOW_PREEMPT,
+        SUPPRESS_REVERSE_FLOW,
+        SUPPRESS_REVERSE_FLOW_B,
+    )
+
+    attributes: Dict[int, ZCLAttributeDef] = {
+        AC_FREQUENCY_COEF: ("ac_frequency_coefficient", t.uint32_t_be, True),
+        CURRENT_SUMM_DELIVERED_COEF: (
+            "current_summ_delivered_coefficient",
+            t.uint32_t_be,
+            True,
+        ),
+        CURRENT_SUMM_DELIVERED_COEF_B: (
+            "current_summ_delivered_coefficient_ch_b",
+            t.uint32_t_be,
+            True,
+        ),
+        CURRENT_SUMM_RECEIVED_COEF: (
+            "current_summ_received_coefficient",
+            t.uint32_t_be,
+            True,
+        ),
+        CURRENT_SUMM_RECEIVED_COEF_B: (
+            "current_summ_received_coefficient_ch_b",
+            t.uint32_t_be,
+            True,
+        ),
+        INSTANTANEOUS_DEMAND_COEF: (
+            "instantaneous_demand_coefficient",
+            t.uint32_t_be,
+            True,
+        ),
+        INSTANTANEOUS_DEMAND_COEF_B: (
+            "instantaneous_demand_coefficient_ch_b",
+            t.uint32_t_be,
+            True,
+        ),
+        POWER_FLOW: ("power_flow", PowerFlow, True),
+        POWER_FLOW_B: ("power_flow_ch_b", PowerFlow, True),
+        RMS_CURRENT_COEF: ("rms_current_coefficient", t.uint32_t_be, True),
+        RMS_CURRENT_COEF_B: (
+            "rms_current_coefficient_ch_b",
+            t.uint32_t_be,
+            True,
+        ),
+        RMS_VOLTAGE_COEF: ("rms_voltage_coefficient", t.uint32_t_be, True),
+        CHANNEL_CONFIGURATION: (
+            "channel_configuration",
+            ChannelConfiguration,
+            True,
+        ),
+        UPDATE_PERIOD: ("update_period", t.uint32_t_be, True),
+        POWER_FLOW_PREEMPT: ("power_flow_preempt", t.Bool, True),
+        SUPPRESS_REVERSE_FLOW: ("suppress_reverse_flow", t.Bool, True),
+        SUPPRESS_REVERSE_FLOW_B: ("suppress_reverse_flow_ch_b", t.Bool, True),
+    }
+
+    def get_optional(
+        self, key: Union[int, str], default: Optional[Any] = None
+    ) -> Optional[Any]:
+        """Returns the provided default value or None if an attribute is undefined."""
+        try:
+            return self.get(key, default)
+        except KeyError:
+            return default
+
+    def __init_subclass__(cls, configuration_type: Type) -> None:
+        """Init cluster subclass."""
+        cls.attributes = {**TuyaMCUCluster.attributes}
+        cls._create_mapped_attributes_lookup(cls)
+        cls._setup_channel_config_attributes(cls, configuration_type)
+        cls._setup_device_attributes(cls)
+        super().__init_subclass__()
+
+    def _setup_channel_config_attributes(cls, configuration_type: Type) -> None:
+        """Setup local attributes for the device channel configuration type."""
+        config_type_attr = TuyaEnergyMeterManufCluster.attributes[CHANNEL_CONFIGURATION]
+        cls.attributes[CHANNEL_CONFIGURATION] = (
+            config_type_attr.name,
+            configuration_type,
+            config_type_attr.is_manufacturer_specific,
+        )
+        config_attr = cls._CHANNEL_CONFIGURATION_ATTRIBUTES.get(configuration_type, ())
+        if not config_attr:
+            return
+        for attrid in config_attr:
+            cls.attributes[attrid] = TuyaEnergyMeterManufCluster.attributes[attrid]
+
+    def _setup_device_attributes(cls) -> None:
+        """Setup manufacturer cluster attributes for mapped device data points."""
+        attr_name_to_id: Dict[str, int] = {
+            attr[0] if isinstance(attr, tuple) else attr.name: attrid
+            for attrid, attr in TuyaEnergyMeterManufCluster.attributes.items()
+        }
+        for ep_attribute, attr_name, endpoint_id in cls.mapped_attributes:
+            if ep_attribute != cls.ep_attribute:
+                continue
+            assert (
+                endpoint_id == 1
+            ), "Check endpoint_id of TuyaEnergyMeterManufCluster dp_to_attribute."
+            attrid = attr_name_to_id.get(attr_name)
+            if attrid is not None:
+                cls.attributes[attrid] = TuyaEnergyMeterManufCluster.attributes[attrid]
+
+    def _create_mapped_attributes_lookup(cls) -> None:
+        """Stores a tuple of attributes mapped from device data points."""
+        cls.mapped_attributes: Tuple[Tuple[str, str, int]] = tuple(
+            (dp_map.ep_attribute, attr_name, dp_map.endpoint_id or 1)
+            for dp_map in cls.dp_to_attribute.values()
+            for attr_name in (
+                dp_map.attribute_name
+                if isinstance(dp_map.attribute_name, tuple)
+                else (dp_map.attribute_name,)
+            )
+        )
+
+
 class EnergyMeterChannel:
-    """Common methods and properties for energy meter clusters."""
+    """Methods and properties for energy meter channel clusters."""
 
     _ENDPOINT_TO_CHANNEL: Dict[Tuple[Type, int], Channel] = {
         (ChannelConfiguration_1CH, 1): Channel.A,
@@ -298,7 +501,7 @@ class EnergyMeterChannel:
         return self.manufacturer_cluster.AttributeDefs.channel_configuration.type
 
     @property
-    def manufacturer_cluster(self):
+    def manufacturer_cluster(self) -> TuyaEnergyMeterManufCluster:
         """Returns the device's manufacturer cluster."""
         return getattr(
             self.endpoint.device.endpoints[1],
@@ -315,7 +518,7 @@ class EnergyMeterChannel:
         ep_attribute = ep_attribute or self.ep_attribute
         endpoint_id = endpoint_id or self.endpoint.endpoint_id
         return any(
-            attr in self.manufacturer_cluster.device_reported_attributes
+            attr in self.manufacturer_cluster.mapped_attributes
             for attr in tuple(
                 (ep_attribute, attr_name, endpoint_id) for attr_name in attr_names
             )
@@ -335,7 +538,7 @@ class EnergyMeterChannel:
             channel_or_endpoint_id = self._channel_to_endpoint.get(
                 (self.channel_configuration_type, channel_or_endpoint_id), None
             )
-        assert channel_or_endpoint_id is not None, "Invalid channel or endpoint."
+        assert channel_or_endpoint_id is not None, "Invalid channel_or_endpoint_id."
         return getattr(
             self.endpoint.device.endpoints[channel_or_endpoint_id],
             ep_attribute or self.ep_attribute,
@@ -746,7 +949,7 @@ class TuyaElectricalMeasurement(
         **TuyaZBElectricalMeasurement._CONSTANT_ATTRIBUTES,
         TuyaZBElectricalMeasurement.AttributeDefs.ac_frequency_divisor.id: 100,
         TuyaZBElectricalMeasurement.AttributeDefs.ac_frequency_multiplier.id: 1,
-        TuyaZBElectricalMeasurement.AttributeDefs.ac_power_divisor.id: 10,  # 1 decimal place
+        TuyaZBElectricalMeasurement.AttributeDefs.ac_power_divisor.id: 10,
         TuyaZBElectricalMeasurement.AttributeDefs.ac_power_multiplier.id: 1,
         TuyaZBElectricalMeasurement.AttributeDefs.ac_voltage_divisor.id: 10,
         TuyaZBElectricalMeasurement.AttributeDefs.ac_voltage_multiplier.id: 1,
@@ -894,192 +1097,6 @@ class TuyaMetering(
         self.virtual_channel_handler(attr_name)
 
 
-class TuyaEnergyMeterManufCluster(NoManufacturerCluster, TuyaMCUCluster):
-    """Manufactuter cluster for Tuya energy meter devices."""
-
-    _ATTRIBUTE_DEFAULTS: Dict[str, Any] = {}
-
-    attributes: Dict[int, ZCLAttributeDef] = {
-        AC_FREQUENCY_COEF: ("ac_frequency_coefficient", t.uint32_t_be, True),
-        CURRENT_SUMM_DELIVERED_COEF: (
-            "current_summ_delivered_coefficient",
-            t.uint32_t_be,
-            True,
-        ),
-        CURRENT_SUMM_DELIVERED_COEF_B: (
-            "current_summ_delivered_coefficient_ch_b",
-            t.uint32_t_be,
-            True,
-        ),
-        CURRENT_SUMM_RECEIVED_COEF: (
-            "current_summ_received_coefficient",
-            t.uint32_t_be,
-            True,
-        ),
-        CURRENT_SUMM_RECEIVED_COEF_B: (
-            "current_summ_received_coefficient_ch_b",
-            t.uint32_t_be,
-            True,
-        ),
-        INSTANTANEOUS_DEMAND_COEF: (
-            "instantaneous_demand_coefficient",
-            t.uint32_t_be,
-            True,
-        ),
-        INSTANTANEOUS_DEMAND_COEF_B: (
-            "instantaneous_demand_coefficient_ch_b",
-            t.uint32_t_be,
-            True,
-        ),
-        POWER_FLOW: ("power_flow", PowerFlow, True),
-        POWER_FLOW_B: ("power_flow_ch_b", PowerFlow, True),
-        RMS_CURRENT_COEF: ("rms_current_coefficient", t.uint32_t_be, True),
-        RMS_CURRENT_COEF_B: (
-            "rms_current_coefficient_ch_b",
-            t.uint32_t_be,
-            True,
-        ),
-        RMS_VOLTAGE_COEF: ("rms_voltage_coefficient", t.uint32_t_be, True),
-        CHANNEL_CONFIGURATION: (
-            "channel_configuration",
-            ChannelConfiguration,
-            True,
-        ),
-        UPDATE_PERIOD: ("update_period", t.uint32_t_be, True),
-        POWER_FLOW_PREEMPT: ("power_flow_preempt", t.Bool, True),
-        SUPPRESS_REVERSE_FLOW: ("suppress_reverse_flow", t.Bool, True),
-        SUPPRESS_REVERSE_FLOW_B: ("suppress_reverse_flow_ch_b", t.Bool, True),
-    }
-
-    _LOCAL_ATTRIBUTES: Dict[int, Tuple[Type]] = {
-        CHANNEL_CONFIGURATION: (
-            ChannelConfiguration_1CH,
-            ChannelConfiguration_1CHB,
-            ChannelConfiguration_2CH,
-            ChannelConfiguration_2CHB,
-        ),
-        POWER_FLOW_PREEMPT: (ChannelConfiguration_2CHB,),
-        SUPPRESS_REVERSE_FLOW: (ChannelConfiguration_1CHB, ChannelConfiguration_2CHB),
-        SUPPRESS_REVERSE_FLOW_B: (ChannelConfiguration_2CHB,),
-    }
-
-    def __init_subclass__(cls, configuration_type: Type) -> None:
-        """Init cluster subclass."""
-        cls.attributes = {**TuyaMCUCluster.attributes}
-        cls._device_attribute_setup(cls)
-        cls._local_attribute_setup(cls, configuration_type)
-        super().__init_subclass__()
-
-    def _device_attribute_setup(cls) -> None:
-        """Setup mapped datapoint attributes for the device."""
-        # Used by clusters to check whether an attribute is provided by the device
-        cls.device_reported_attributes: Tuple[Tuple[str, str, int]] = tuple(
-            (dp_map.ep_attribute, attr_name, dp_map.endpoint_id or 1)
-            for dp_map in cls.dp_to_attribute.values()
-            for attr_name in (
-                dp_map.attribute_name
-                if isinstance(dp_map.attribute_name, tuple)
-                else (dp_map.attribute_name,)
-            )
-        )
-
-        # Setup MCU attributes for mapped device datapoints
-        attr_name_to_id: Dict[str, int] = {
-            attr[0] if isinstance(attr, tuple) else attr.name: attrid
-            for attrid, attr in TuyaEnergyMeterManufCluster.attributes.items()
-        }
-        for ep_attribute, attr_name, _endpoint_id in cls.device_reported_attributes:
-            if ep_attribute != TuyaEnergyMeterManufCluster.ep_attribute:
-                continue
-            attrid = attr_name_to_id.get(attr_name)
-            if attrid is not None:
-                cls.attributes[attrid] = TuyaEnergyMeterManufCluster.attributes[attrid]
-
-    def _local_attribute_setup(cls, configuration_type: Type) -> None:
-        """Setup local attributes for the device channel configuration type."""
-
-        for attrid, config_types in cls._LOCAL_ATTRIBUTES.items():
-            if configuration_type not in config_types:
-                continue
-            cls.attributes[attrid] = TuyaEnergyMeterManufCluster.attributes[attrid]
-        config_attr = cls.attributes[CHANNEL_CONFIGURATION]
-        cls.attributes[CHANNEL_CONFIGURATION] = (
-            config_attr.name,
-            configuration_type,
-            config_attr.is_manufacturer_specific,
-        )
-
-    def _attr_default(
-        self, attrid: Union[str, int], default: Optional[Any] = None
-    ) -> Optional[Any]:
-        """Returns an attribute's default value."""
-        attr_def = self.find_attribute(attrid)
-        return self._ATTRIBUTE_DEFAULTS.get(
-            attr_def.name, getattr(attr_def.type, "DEFAULT", default)
-        )
-
-    def _format_attr_value(self, attrid: Union[str, int], value: Any) -> Optional[Any]:
-        """Used to format the input the input value with the attribute's type."""
-        try:
-            attr_def = self.find_attribute(attrid)
-            value = attr_def.type(value)
-            return value
-        except KeyError:
-            self.error("%s is not a valid attribute id", attrid)
-        except ValueError as e:
-            self.error(
-                "Failed to convert attribute 0x%04X from %s (%s) to type %s: %s",
-                attr_def.id,
-                value,
-                type(value),
-                attr_def.type,
-                e,
-            )
-        return
-
-    def get(self, key: Union[int, str], default: Optional[Any] = None) -> Optional[Any]:
-        """Get cached attribute value and fall back to its type default if defined."""
-        value = super().get(key, default)
-        if value is None:
-            value = self._attr_default(key, default)
-        return value
-
-    def get_optional(self, key: Union[int, str], default: Optional[Any] = None) -> Any:
-        """Returns the default value if an attribute is undefined."""
-        try:
-            return self.get(key, default)
-        except KeyError:
-            return default
-
-    async def read_attributes(self, attributes, *args, **kwargs):
-        """Handle reads to local configuration attrtibutes."""
-        success, failure = await super().read_attributes(attributes, *args, **kwargs)
-        for attrid in set(self._LOCAL_ATTRIBUTES).intersection(set(attributes)):
-            if attrid not in success:
-                default = self._attr_default(attrid)
-                if default is None:
-                    continue
-                success[attrid] = default
-                failure.pop(attrid, None)
-            if success[attrid] not in (None, ""):
-                success[attrid] = self.attributes[attrid].type(success[attrid])
-        return success, failure
-
-    async def write_attributes(self, attributes, *args, **kwargs):
-        """Handle writes to local configuration attributes."""
-        local_attributes = {}
-        for attrid in set(self._LOCAL_ATTRIBUTES).intersection(set(attributes)):
-            value = attributes.pop(attrid)
-            if value in (None, ""):
-                local_attributes[attrid] = None
-                continue
-            value = self._format_attr_value(attrid, value)
-            if value is not None:
-                local_attributes[attrid] = value
-        await TuyaLocalCluster.write_attributes(self, local_attributes, *args, **kwargs)
-        return await super().write_attributes(attributes, *args, **kwargs)
-
-
 class TuyaEnergyMeterManufCluster_1CH(
     TuyaEnergyMeterManufCluster, configuration_type=ChannelConfiguration_1CH
 ):
@@ -1176,8 +1193,8 @@ class TuyaEnergyMeterManufCluster_2CHB_MatSeePlus(
 ):
     """MatSee Plus Tuya 2 channel bidirectional energy meter manufacturer cluster."""
 
-    _ATTRIBUTE_DEFAULTS: Dict[str, Any] = {
-        "power_flow_preempt": True,
+    _ATTRIBUTE_DEFAULTS: Dict[int, Any] = {
+        POWER_FLOW_PREEMPT: True,
     }
 
     TUYA_DP_AC_FREQUENCY = 111
