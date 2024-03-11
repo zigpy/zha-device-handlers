@@ -1,5 +1,6 @@
 """Module for Legrand Cable Outlet (with pilot wire functionality)."""
 
+
 from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
@@ -13,13 +14,7 @@ from zigpy.zcl.clusters.general import (
     Scenes,
 )
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
-from zigpy.zcl.foundation import (
-    BaseAttributeDefs,
-    BaseCommandDefs,
-    Direction,
-    ZCLAttributeDef,
-    ZCLCommandDef,
-)
+from zigpy.zcl.foundation import Direction, ZCLCommandDef
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -33,10 +28,7 @@ from zhaquirks.legrand import LEGRAND, MANUFACTURER_SPECIFIC_CLUSTER_ID
 
 MANUFACTURER_SPECIFIC_CLUSTER_ID_2 = 0xFC40  # 64576
 
-
-class DeviceMode(t.enum16):
-    PILOT_OFF = 0x0100
-    PILOT_ON = 0x0200
+HEAT_MODE_ATTR = 0x00
 
 
 class LegrandCluster(CustomCluster):
@@ -45,48 +37,49 @@ class LegrandCluster(CustomCluster):
     cluster_id = MANUFACTURER_SPECIFIC_CLUSTER_ID
     name = "LegrandCluster"
     ep_attribute = "legrand_cluster"
-
-    class AttributeDefs(BaseAttributeDefs):
-        device_mode = ZCLAttributeDef(
-            id=0x0000,
-            type=t.data16,  # DeviceMode
-            is_manufacturer_specific=True,
-        )
-        led_dark = ZCLAttributeDef(
-            id=0x0001,
-            type=t.Bool,
-            is_manufacturer_specific=True,
-        )
-        led_on = ZCLAttributeDef(
-            id=0x0002,
-            type=t.Bool,
-            is_manufacturer_specific=True,
-        )
-
-
-class PilotWireMode(t.enum8):
-    COMFORT = 0x00
-    COMFORT_MINUS_1 = 0x01
-    COMFORT_MINUS_2 = 0x02
-    ECO = 0x03
-    FROST_PROTECTION = 0x04
-    OFF = 0x05
+    attributes = {
+        0x0000: ("device_mode", t.data16, True),
+        0x0001: ("led_dark", t.Bool, True),
+        0x0002: ("led_on", t.Bool, True),
+    }
 
 
 class LegrandCableOutletCluster(CustomCluster):
     """Legrand second manufacturer-specific cluster."""
 
+    class HeatMode(t.enum8):
+        COMFORT = 0x00
+        COMFORT_MINUS_1 = 0x01
+        COMFORT_MINUS_2 = 0x02
+        ECO = 0x03
+        FROST_PROTECTION = 0x04
+        OFF = 0x05
+
     cluster_id = MANUFACTURER_SPECIFIC_CLUSTER_ID_2
     name = "CableOutlet"
     ep_attribute = "cable_outlet_cluster"
 
-    class ServerCommandDefs(BaseCommandDefs):
-        set_pilot_wire_mode = ZCLCommandDef(
-            id=0x00,
-            schema={"mode": PilotWireMode},
+    attributes = {HEAT_MODE_ATTR: ("heat_mode", HeatMode, True)}
+
+    server_commands = {
+        HEAT_MODE_ATTR: ZCLCommandDef(
+            "set_heat_mode",
+            schema={"mode": HeatMode},
             direction=Direction.Client_to_Server,
             is_manufacturer_specific=True,
         )
+    }
+
+    async def write_attributes(self, attributes, manufacturer=None) -> list:
+        attrs = {}
+        for attr, value in attributes.items():
+            attr_def = self.find_attribute(attr)
+            attr_id = attr_def.id
+            if attr_id == HEAT_MODE_ATTR:
+                await self.set_heat_mode(value, manufacturer=manufacturer)
+            else:
+                attrs[attr] = value
+        return await super().write_attributes(attrs, manufacturer)
 
 
 class Legrand064882CableOutlet(CustomDevice):
