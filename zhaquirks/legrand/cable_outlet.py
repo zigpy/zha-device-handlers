@@ -1,19 +1,10 @@
 """Module for Legrand Cable Outlet (with pilot wire functionality)."""
 
 
-from zigpy.profiles import zgp, zha
-from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.quirks import CustomCluster
+from zigpy.quirks.v2 import add_to_registry_v2
 import zigpy.types as t
-from zigpy.zcl.clusters.general import (
-    Basic,
-    GreenPowerProxy,
-    Groups,
-    Identify,
-    OnOff,
-    Ota,
-    Scenes,
-)
-from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
+from zigpy.zcl import ClusterType
 from zigpy.zcl.foundation import (
     BaseAttributeDefs,
     BaseCommandDefs,
@@ -22,14 +13,6 @@ from zigpy.zcl.foundation import (
     ZCLCommandDef,
 )
 
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-)
 from zhaquirks.legrand import LEGRAND, MANUFACTURER_SPECIFIC_CLUSTER_ID
 
 MANUFACTURER_SPECIFIC_CLUSTER_ID_2 = 0xFC40  # 64576
@@ -63,12 +46,12 @@ class LegrandCluster(CustomCluster):
 
 
 class HeatMode(t.enum8):
-    Comfort = 0x00
-    Comfort_minus_1 = 0x01
-    Comfort_minus_2 = 0x02
-    Eco = 0x03
-    Frost_protection = 0x04
-    Off = 0x05
+    comfort = 0x00
+    comfort_minus_1 = 0x01
+    comfort_minus_2 = 0x02
+    eco = 0x03
+    frost_protection = 0x04
+    off = 0x05
 
 
 class LegrandCableOutletCluster(CustomCluster):
@@ -105,74 +88,9 @@ class LegrandCableOutletCluster(CustomCluster):
         return await super().write_attributes(attrs, manufacturer)
 
 
-class Legrand064882CableOutlet(CustomDevice):
-    signature = {
-        #  <SimpleDescriptor endpoint=1 profile=260 device_type=1
-        # input_clusters=[0, 3, 4, 6, 5, 64513, 2820, 64576]
-        # output_clusters=[6, 0, 64513, 5, 25]>
-        MODELS_INFO: [(f" {LEGRAND}", " Cable outlet")],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.LEVEL_CONTROL_SWITCH,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    OnOff.cluster_id,
-                    Scenes.cluster_id,
-                    MANUFACTURER_SPECIFIC_CLUSTER_ID,
-                    ElectricalMeasurement.cluster_id,
-                    MANUFACTURER_SPECIFIC_CLUSTER_ID_2,
-                ],
-                OUTPUT_CLUSTERS: [
-                    OnOff.cluster_id,
-                    Basic.cluster_id,
-                    MANUFACTURER_SPECIFIC_CLUSTER_ID,
-                    Scenes.cluster_id,
-                    Ota.cluster_id,
-                ],
-            },
-            #  <SimpleDescriptor endpoint=242 profile=41440 device_type=102
-            # input_clusters=[33]
-            # output_clusters=[33]>
-            242: {
-                PROFILE_ID: zgp.PROFILE_ID,
-                DEVICE_TYPE: zgp.DeviceType.COMBO_BASIC,
-                INPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
-                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
-            },
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.LEVEL_CONTROL_SWITCH,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    OnOff.cluster_id,
-                    Scenes.cluster_id,
-                    LegrandCluster,
-                    ElectricalMeasurement.cluster_id,
-                    LegrandCableOutletCluster,
-                ],
-                OUTPUT_CLUSTERS: [
-                    OnOff.cluster_id,
-                    Basic.cluster_id,
-                    LegrandCluster,
-                    Scenes.cluster_id,
-                    Ota.cluster_id,
-                ],
-            },
-            242: {
-                PROFILE_ID: zgp.PROFILE_ID,
-                DEVICE_TYPE: zgp.DeviceType.COMBO_BASIC,
-                INPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
-                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
-            },
-        },
-    }
+(
+    add_to_registry_v2(f" {LEGRAND}", " Cable outlet")
+    .replaces(LegrandCluster)
+    .replaces(LegrandCableOutletCluster)
+    .replaces(LegrandCluster, cluster_type=ClusterType.Client)
+)
