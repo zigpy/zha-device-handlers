@@ -28,6 +28,10 @@ testing = [
 [tool.setuptools-git-versioning]
 enabled = true
 
+[tool.pylint]
+max-line-length = 120
+disable = ["C0103", "W0212"]
+
 [tool.mypy]
 python_version = "3.12"
 check_untyped_defs = true
