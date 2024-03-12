@@ -1,3 +1,5 @@
+"""Schneider Electric dimmers and switches quirks."""
+
 from typing import Final
 
 from zigpy.profiles import zgp, zha
@@ -30,7 +32,7 @@ from zhaquirks.schneiderelectric import SE_MANUF_ID, SE_MANUF_NAME, SEBasic, SES
 
 
 class ControlMode(t.enum8):
-    """Dimming mode for PUCK/DIMMER/* and NHROTARY/DIMMER/1"""
+    """Dimming mode for PUCK/DIMMER/* and NHROTARY/DIMMER/1."""
 
     Auto = 0
     RC = 1
@@ -39,9 +41,13 @@ class ControlMode(t.enum8):
 
 
 class SEBallast(CustomCluster, Ballast):
+    """Schneider Electric Ballast cluster."""
+
     manufacturer_id_override = SE_MANUF_ID
 
     class AttributeDefs(Ballast.AttributeDefs):
+        """Attribute definitions."""
+
         control_mode: Final = ZCLAttributeDef(
             id=0xE000, type=ControlMode, is_manufacturer_specific=True
         )
@@ -54,7 +60,7 @@ class SEBallast(CustomCluster, Ballast):
 
 
 class NHRotaryDimmer1(CustomDevice):
-    """NHROTARY/DIMMER/1 by Schneider Electric"""
+    """NHROTARY/DIMMER/1 by Schneider Electric."""
 
     signature = {
         MODELS_INFO: [

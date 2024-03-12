@@ -103,7 +103,7 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
         Heat = 0x04
 
     class PumpDuration(t.enum8):
-        """Pump protection duration period values"""
+        """Pump protection duration period values."""
 
         T5 = 0x05
         T10 = 0x0A

@@ -1,5 +1,6 @@
 """Map from manufacturer to standard clusters for the NEO Siren device."""
-from typing import Dict, Optional, Union
+
+from typing import Optional, Union
 
 from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomDevice
@@ -106,15 +107,18 @@ class TuyaManufClusterSiren(TuyaManufClusterAttributes):
         super()._update_attribute(attrid, value)
         if attrid == TUYA_TEMPERATURE_ATTR:
             self.endpoint.device.temperature_bus.listener_event(
-                "temperature_reported", value * 10  # decidegree to centidegree
+                "temperature_reported",
+                value * 10,  # decidegree to centidegree
             )
         elif attrid == TUYA_HUMIDITY_ATTR:
             self.endpoint.device.humidity_bus.listener_event(
-                "humidity_reported", value * 100  # whole percentage to 1/1000th
+                "humidity_reported",
+                value * 100,  # whole percentage to 1/1000th
             )
         elif attrid == TUYA_ALARM_ATTR:
             self.endpoint.device.switch_bus.listener_event(
-                "switch_event", value  # boolean 1=on / 0=off
+                "switch_event",
+                value,  # boolean 1=on / 0=off
             )
 
 
@@ -309,7 +313,7 @@ class TuyaMCUSiren(OnOff, TuyaAttributesCluster):
 class NeoSirenManufCluster(TuyaMCUCluster):
     """Tuya with NEO Siren data points."""
 
-    dp_to_attribute: Dict[int, DPToAttributeMapping] = {
+    dp_to_attribute: dict[int, DPToAttributeMapping] = {
         5: DPToAttributeMapping(
             TuyaMCUSiren.ep_attribute,
             "volume",

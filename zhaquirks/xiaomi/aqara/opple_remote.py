@@ -1,7 +1,7 @@
 """Xiaomi aqara opple remote devices."""
 
+from zigpy import types
 from zigpy.profiles import zha
-import zigpy.types as types
 from zigpy.zcl.clusters.general import (
     Basic,
     Identify,

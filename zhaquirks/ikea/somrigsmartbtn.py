@@ -1,4 +1,5 @@
-"""Device handler for IKEA of Sweden SOMRIG shortcut button"""
+"""Device handler for IKEA of Sweden SOMRIG shortcut button."""
+
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
@@ -44,7 +45,7 @@ from zhaquirks.ikea import (
 
 
 class IkeaSomrigSmartButton(CustomDevice):
-    """Custom device representing IKEA SOMRIG shortcut button"""
+    """Custom device representing IKEA SOMRIG shortcut button."""
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260, device_type=6

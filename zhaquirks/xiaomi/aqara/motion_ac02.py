@@ -4,9 +4,9 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from zigpy import types
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
-import zigpy.types as types
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PowerConfiguration
 from zigpy.zcl.clusters.measurement import IlluminanceMeasurement, OccupancySensing
 

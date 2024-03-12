@@ -4,10 +4,9 @@
 import pytest
 from zigpy.zcl.clusters.security import IasZone
 
+from tests.common import ClusterListener
 import zhaquirks
 import zhaquirks.thirdreality.night_light
-
-from tests.common import ClusterListener
 
 zhaquirks.setup()
 
