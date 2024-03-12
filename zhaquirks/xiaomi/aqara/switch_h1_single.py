@@ -1,4 +1,5 @@
 """Aqara H1 single rocker switch quirks. Also see opple_switch.py for similar double rocker switches."""
+
 from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
@@ -56,7 +57,7 @@ XIAOMI_COMMAND_HOLD = "1_hold"
 
 
 class AqaraH1SingleRockerBase(CustomDevice):
-    """Device automation triggers for the Aqara H1 Single Rocker Switches"""
+    """Device automation triggers for the Aqara H1 Single Rocker Switches."""
 
     device_automation_triggers = {
         (SHORT_PRESS, BUTTON): {

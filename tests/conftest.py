@@ -7,8 +7,8 @@ import zigpy.application
 import zigpy.device
 import zigpy.quirks
 import zigpy.types
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic
-import zigpy.zcl.foundation as foundation
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -72,7 +72,7 @@ class MockApp(zigpy.application.ControllerApplication):
         """Mock start_network."""
 
     async def permit_with_link_key(self, *args, **kwargs):
-        """Mock permit_with_link_key"""
+        """Mock permit_with_link_key."""
 
     async def write_network_info(self, *args, **kwargs):
         """Mock write_network_info."""

@@ -1,5 +1,4 @@
 """Tuya based cover and blinds."""
-from typing import Dict
 
 from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomDevice
@@ -39,7 +38,7 @@ class TuyaGarageManufCluster(NoManufacturerCluster, TuyaMCUCluster):
         }
     )
 
-    dp_to_attribute: Dict[int, DPToAttributeMapping] = {
+    dp_to_attribute: dict[int, DPToAttributeMapping] = {
         # garage door trigger ¿on movement, on open, on closed?
         1: DPToAttributeMapping(
             TUYA_MANUFACTURER_GARAGE,

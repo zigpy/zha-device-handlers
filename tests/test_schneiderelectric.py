@@ -1,18 +1,19 @@
 """Tests for Schneider Electric devices."""
+
 from unittest import mock
 
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 
+from tests.common import ClusterListener
 import zhaquirks.schneiderelectric.dimmers
 import zhaquirks.schneiderelectric.shutters
-
-from tests.common import ClusterListener
 
 zhaquirks.setup()
 
 
 def test_1gang_shutter_1_signature(assert_signature_matches_quirk):
+    """Test signature."""
     signature = {
         "node_descriptor": (
             "NodeDescriptor(logical_type=<LogicalType.Router: 1>, "
@@ -113,8 +114,10 @@ async def test_1gang_shutter_1_unpatched_cmd(zigpy_device_from_quirk):
 
 
 async def test_1gang_shutter_1_lift_percentage_updates(zigpy_device_from_quirk):
-    """Asserts that updates to the ``current_position_lift_percentage`` attribute
-    (e.g., by the device) invert the reported percentage value."""
+    """Asserts that updates to the ``current_position_lift_percentage`` attribute.
+
+    (e.g., by the device) invert the reported percentage value.
+    """
 
     device = zigpy_device_from_quirk(
         zhaquirks.schneiderelectric.shutters.OneGangShutter1
@@ -136,6 +139,7 @@ async def test_1gang_shutter_1_lift_percentage_updates(zigpy_device_from_quirk):
 
 
 def test_nh_rotary_dimmer_1_signature(assert_signature_matches_quirk):
+    """Test signature."""
     signature = {
         "node_descriptor": (
             "NodeDescriptor(logical_type=<LogicalType.Router: 1>, complex_descriptor_available=0, "

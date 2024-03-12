@@ -7,10 +7,9 @@ from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, PowerConfiguration
 from zigpy.zcl.clusters.measurement import PM25
 
+from tests.common import ClusterListener
 import zhaquirks
 import zhaquirks.ikea.starkvind
-
-from tests.common import ClusterListener
 
 zhaquirks.setup()
 
@@ -87,7 +86,7 @@ def test_ikea_starkvind_v2(assert_signature_matches_quirk):
 
 
 async def test_pm25_cluster_read(zigpy_device_from_quirk):
-    """Test reading from PM25 cluster"""
+    """Test reading from PM25 cluster."""
 
     starkvind_device = zigpy_device_from_quirk(zhaquirks.ikea.starkvind.IkeaSTARKVIND)
     assert starkvind_device.model == "STARKVIND Air purifier"

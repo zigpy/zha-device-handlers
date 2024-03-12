@@ -1,6 +1,6 @@
 """Tuya temp and humidity sensors."""
 
-from typing import Any, Dict
+from typing import Any
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
@@ -50,7 +50,7 @@ class TuyaRelativeHumidity(RelativeHumidity, TuyaLocalCluster):
 class TemperatureHumidityManufCluster(TuyaMCUCluster):
     """Tuya Manufacturer Cluster with Temperature and Humidity data points."""
 
-    dp_to_attribute: Dict[int, DPToAttributeMapping] = {
+    dp_to_attribute: dict[int, DPToAttributeMapping] = {
         1: DPToAttributeMapping(
             TuyaTemperatureMeasurement.ep_attribute,
             "measured_value",
@@ -78,7 +78,7 @@ class TemperatureHumidityManufCluster(TuyaMCUCluster):
 class TemperatureHumidityBatteryStatesManufCluster(TuyaMCUCluster):
     """Tuya Manufacturer Cluster with Temperature and Humidity data points. Battery states 25, 50 and 100%."""
 
-    dp_to_attribute: Dict[int, DPToAttributeMapping] = {
+    dp_to_attribute: dict[int, DPToAttributeMapping] = {
         1: TemperatureHumidityManufCluster.dp_to_attribute[1],
         2: TemperatureHumidityManufCluster.dp_to_attribute[2],
         3: DPToAttributeMapping(
@@ -291,7 +291,7 @@ class TuyaTempHumiditySensorVar04(CustomDevice):
 class SoilManufCluster(TuyaMCUCluster):
     """Tuya Manufacturer Cluster with Temperature and Humidity data points."""
 
-    dp_to_attribute: Dict[int, DPToAttributeMapping] = {
+    dp_to_attribute: dict[int, DPToAttributeMapping] = {
         5: DPToAttributeMapping(
             TuyaTemperatureMeasurement.ep_attribute,
             "measured_value",
