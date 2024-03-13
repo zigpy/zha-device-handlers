@@ -275,7 +275,6 @@ class TuyaTempHumiditySensorVar04(EnchantedDevice):
     }
 
     replacement = {
-        SKIP_CONFIGURATION: True,
         ENDPOINTS: {
             1: {
                 DEVICE_TYPE: zha.DeviceType.TEMPERATURE_SENSOR,
