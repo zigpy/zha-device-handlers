@@ -1,4 +1,4 @@
-"""Doorsensors"""
+"""Doorsensors."""
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
@@ -22,7 +22,8 @@ from zhaquirks.const import (
 
 
 class DS01DoorSensor(CustomDevice):
-    """One of the long rectangular Doorsensors working on 2xAAA
+    """One of the long rectangular Doorsensors working on 2xAAA.
+
     It doesn't correctly implement the PollControl Cluster.
     The device will send "PollControl:checkin()" on PollControl cluster,
         but doesn't respond when checkin_response is sent after that from the coordinator
@@ -35,7 +36,9 @@ class DS01DoorSensor(CustomDevice):
     signature = {
         MODELS_INFO: [("zbeacon", "DS01")],
         ENDPOINTS: {
-            # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=1026, device_version=0, input_clusters=[0, 3, 1, 1280, 32], output_clusters=[25])
+            # SizePrefixedSimpleDescriptor(
+            # endpoint=1, profile=260, device_type=1026, device_version=0,
+            # input_clusters=[0, 3, 1, 1280, 32], output_clusters=[25])
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.IAS_ZONE,

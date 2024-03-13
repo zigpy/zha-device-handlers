@@ -1,4 +1,5 @@
 """Door/Windows sensors."""
+
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
@@ -55,7 +56,7 @@ class DevelcoIASZone(CustomCluster, IasZone):
 
 
 class WISZB120(CustomDevice):
-    """Custom device representing door/windows sensors, with built-in temperature measuring"""
+    """Custom device representing door/windows sensors, with built-in temperature measuring."""
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=49353 device_type=1 device_version=1
@@ -138,7 +139,7 @@ class WISZB120(CustomDevice):
 
 
 class WISZB121(CustomDevice):
-    """Custom device representing door/windows sensors, without built-in temperature measuring"""
+    """Custom device representing door/windows sensors, without built-in temperature measuring."""
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=49353 device_type=1 device_version=1

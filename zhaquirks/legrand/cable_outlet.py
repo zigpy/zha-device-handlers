@@ -29,6 +29,8 @@ class LegrandCluster(CustomCluster):
     ep_attribute = "legrand_cluster"
 
     class AttributeDefs(BaseAttributeDefs):
+        """Attribute definitions."""
+
         device_mode = ZCLAttributeDef(
             id=0x0000,
             type=t.data16,
@@ -47,6 +49,8 @@ class LegrandCluster(CustomCluster):
 
 
 class HeatMode(t.enum8):
+    """Heat mode."""
+
     comfort = 0x00
     comfort_minus_1 = 0x01
     comfort_minus_2 = 0x02
@@ -70,6 +74,8 @@ class LegrandCableOutletCluster(CustomCluster):
         )
 
     class ServerCommandDefs(BaseCommandDefs):
+        """Server command definitions."""
+  
         set_heat_mode = ZCLCommandDef(
             id=HEAT_MODE_ATTR,
             schema={"mode": HeatMode},

@@ -1,4 +1,5 @@
 """Tests for xiaomi."""
+
 import asyncio
 import logging
 import math
@@ -30,6 +31,7 @@ from zigpy.zcl.clusters.measurement import (
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.clusters.smartenergy import Metering
 
+from tests.common import ZCL_OCC_ATTR_RPT_OCC, ClusterListener
 import zhaquirks
 from zhaquirks.const import (
     BUTTON_1,
@@ -88,13 +90,11 @@ from zhaquirks.xiaomi.aqara.thermostat_agl001 import ScheduleEvent, ScheduleSett
 import zhaquirks.xiaomi.aqara.weather
 import zhaquirks.xiaomi.mija.motion
 
-from tests.common import ZCL_OCC_ATTR_RPT_OCC, ClusterListener
-
 zhaquirks.setup()
 
 
 def create_aqara_attr_report(attributes):
-    """Creates a special Aqara attriubte report with t.Single as a type for all values."""
+    """Create a special Aqara attribute report with t.Single as a type for all values."""
     serialized_data = b""
     for key, value in attributes.items():
         tv = foundation.TypeValue(0x39, t.Single(value))  # mostly used
@@ -218,7 +218,7 @@ def test_xiaomi_quick_init_wrong_ep(raw_device, ep_id, cluster, message):
         ),  # wrong command
         (
             0,
-            b"\x18\x00\xFF\x05\x00B\x11lumi.sensor_sm0ke\x01\x00 \x01",
+            b"\x18\x00\xff\x05\x00B\x11lumi.sensor_sm0ke\x01\x00 \x01",
         ),  # unknown command
         (0, b"\x18\x00\n\x04\x00B\x11lumi.sensor_sm0ke\x01\x00 \x01"),  # wrong attr id
         (0, b"\x18\x00\n\x05\x00B\x11lumi.sensor_sm0ke\x01\x00 "),  # data under run
@@ -923,8 +923,11 @@ async def test_xiaomi_e1_thermostat_rw_redirection(
     )
 
     with (
-        patch_opple_read
-    ), patch_thermostat_read, patch_opple_write, patch_thermostat_write:
+        patch_opple_read,
+        patch_thermostat_read,
+        patch_opple_write,
+        patch_thermostat_write,
+    ):
         # test reads:
 
         # read system_mode attribute from thermostat cluster
@@ -936,9 +939,12 @@ async def test_xiaomi_e1_thermostat_rw_redirection(
         assert opple_cluster._read_attributes.mock_calls[0][1][0] == [
             0x0271
         ]  # Opple system_mode attribute
-        assert thermostat_listener.attribute_updates[0] == (
-            Thermostat.AttributeDefs.system_mode.id,
-            Thermostat.SystemMode.Heat,
+        assert (
+            thermostat_listener.attribute_updates[0]
+            == (
+                Thermostat.AttributeDefs.system_mode.id,
+                Thermostat.SystemMode.Heat,
+            )
         )  # check that attributes are correctly mapped and updated on ZCL thermostat cluster
 
         thermostat_cluster._read_attributes.reset_mock()
@@ -1035,7 +1041,7 @@ async def test_xiaomi_e1_thermostat_attribute_update(zigpy_device_from_quirk, qu
 async def test_xiaomi_e1_thermostat_schedule_settings_string_representation(
     schedule_settings,
 ):
-    """Test creation of ScheduleSettings from str and converting back to same str"""
+    """Test creation of ScheduleSettings from str and converting back to same str."""
 
     s = ScheduleSettings(schedule_settings)
     assert str(s) == schedule_settings
@@ -1068,7 +1074,7 @@ async def test_xiaomi_e1_thermostat_schedule_settings_string_representation(
 async def test_xiaomi_e1_thermostat_schedule_settings_data_validation(
     schedule_settings,
 ):
-    """Test data validation of ScheduleSettings class"""
+    """Test data validation of ScheduleSettings class."""
 
     with pytest.raises(Exception):
         ScheduleSettings(schedule_settings)
@@ -1082,7 +1088,7 @@ async def test_xiaomi_e1_thermostat_schedule_settings_data_validation(
     ],
 )
 async def test_xiaomi_e1_thermostat_schedule_event_data_validation(schedule_event):
-    """Test data validation of ScheduleEvent class"""
+    """Test data validation of ScheduleEvent class."""
 
     with pytest.raises(Exception):
         ScheduleEvent(schedule_event)
@@ -1352,10 +1358,10 @@ async def test_xiaomi_motion_sensor_misc(
 
 @pytest.mark.parametrize("quirk", (zhaquirks.xiaomi.aqara.plug.Plug,))
 async def test_xiaomi_power_cluster_not_used(zigpy_device_from_quirk, caplog, quirk):
-    """Test that a log is printed which warns when a device reports battery mV readout,
-    even though XiaomiPowerConfigurationCluster is not used.
+    """Test log is printed which warns when a device reports battery mV readout.
 
-    This explicitly uses the Plug quirk which will always report this message, as this shouldn't have a battery readout.
+    ... even though XiaomiPowerConfigurationCluster is not used. This explicitly uses the Plug quirk
+    which will always report this message, as this shouldn't have a battery readout.
     Other battery-powered devices might implement the XiaomiPowerConfigurationCluster in the future,
     so they would no longer report this message.
     """
@@ -1666,6 +1672,7 @@ async def test_aqara_t2_relay(zigpy_device_from_quirk, endpoint):
 
 
 def test_aqara_acn003_signature_match(assert_signature_matches_quirk):
+    """Test signature."""
     signature = {
         "node_descriptor": "NodeDescriptor(logical_type=<LogicalType.Router: 1>, complex_descriptor_available=0, user_descriptor_available=0, reserved=0, aps_flags=0, frequency_band=<FrequencyBand.Freq2400MHz: 8>, mac_capability_flags=<MACCapabilityFlags.FullFunctionDevice|MainsPowered|RxOnWhenIdle|AllocateAddress: 142>, manufacturer_code=4447, maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264, maximum_outgoing_transfer_size=82, descriptor_capability_field=<DescriptorCapability.NONE: 0>, *allocate_address=True, *is_alternate_pan_coordinator=False, *is_coordinator=False, *is_end_device=False, *is_full_function_device=True, *is_mains_powered=True, *is_receiver_on_when_idle=True, *is_router=True, *is_security_capable=False)",
         "endpoints": {
@@ -1696,6 +1703,7 @@ def test_aqara_acn003_signature_match(assert_signature_matches_quirk):
 
 
 def test_aqara_acn014_signature_match(assert_signature_matches_quirk):
+    """Test signature."""
     signature = {
         "node_descriptor": "NodeDescriptor(logical_type=<LogicalType.Router: 1>, complex_descriptor_available=0, user_descriptor_available=0, reserved=0, aps_flags=0, frequency_band=<FrequencyBand.Freq2400MHz: 8>, mac_capability_flags=<MACCapabilityFlags.FullFunctionDevice|MainsPowered|RxOnWhenIdle|AllocateAddress: 142>, manufacturer_code=4447, maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264, maximum_outgoing_transfer_size=82, descriptor_capability_field=<DescriptorCapability.NONE: 0>, *allocate_address=True, *is_alternate_pan_coordinator=False, *is_coordinator=False, *is_end_device=False, *is_full_function_device=True, *is_mains_powered=True, *is_receiver_on_when_idle=True, *is_router=True, *is_security_capable=False)",
         "endpoints": {
