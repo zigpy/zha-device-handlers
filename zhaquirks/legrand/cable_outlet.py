@@ -1,6 +1,5 @@
 """Module for Legrand Cable Outlet (with pilot wire functionality)."""
 
-
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import add_to_registry_v2
 from zigpy.quirks.v2.homeassistant import EntityType
@@ -67,6 +66,8 @@ class LegrandCableOutletCluster(CustomCluster):
     ep_attribute = "cable_outlet_cluster"
 
     class AttributeDefs(BaseAttributeDefs):
+        """Attribute definitions for LegrandCluster."""
+
         heat_mode = ZCLAttributeDef(
             id=HEAT_MODE_ATTR,
             type=HeatMode,
@@ -75,7 +76,7 @@ class LegrandCableOutletCluster(CustomCluster):
 
     class ServerCommandDefs(BaseCommandDefs):
         """Server command definitions."""
-  
+
         set_heat_mode = ZCLCommandDef(
             id=HEAT_MODE_ATTR,
             schema={"mode": HeatMode},
@@ -84,6 +85,8 @@ class LegrandCableOutletCluster(CustomCluster):
         )
 
     async def write_attributes(self, attributes, manufacturer=None) -> list:
+        """Write attributes to the cluster."""
+
         attrs = {}
         for attr, value in attributes.items():
             attr_def = self.find_attribute(attr)
