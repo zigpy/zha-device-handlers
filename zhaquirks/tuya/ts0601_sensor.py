@@ -20,11 +20,11 @@ from zhaquirks.const import (
     PROFILE_ID,
     SKIP_CONFIGURATION,
 )
-from zhaquirks.tuya import TuyaLocalCluster, TuyaPowerConfigurationCluster2AAA
+from zhaquirks.tuya import TuyaLocalCluster, TuyaPowerConfigurationCluster2AAA, EnchantedDevice, TuyaEnchantableCluster
 from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster
 
 
-class TuyaTemperatureMeasurement(TemperatureMeasurement, TuyaLocalCluster):
+class TuyaTemperatureMeasurement(TuyaEnchantableCluster, TemperatureMeasurement, TuyaLocalCluster):
     """Tuya local TemperatureMeasurement cluster."""
 
 
@@ -238,9 +238,11 @@ class TuyaTempHumiditySensorVar03(CustomDevice):
     }
 
 
-class TuyaTempHumiditySensorVar04(CustomDevice):
+class TuyaTempHumiditySensorVar04(EnchantedDevice):
     """Tuya temp and humidity sensor (variation 04)."""
 
+    tuya_spell_data_query = True
+    
     signature = {
         # "profile_id": 260,
         # "device_type": "0x0051",
@@ -265,7 +267,7 @@ class TuyaTempHumiditySensorVar04(CustomDevice):
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TemperatureHumidityManufCluster.cluster_id,
+                    TemperatureHumidityBatteryStatesManufCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id, Time.cluster_id],
             }
