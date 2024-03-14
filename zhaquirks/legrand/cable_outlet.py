@@ -183,4 +183,9 @@ class LegrandCableOutletThermostat(CustomDeviceV2):
     .replaces(LegrandCableOutletCluster)
     .replaces(LegrandCluster, cluster_type=ClusterType.Client)
     .adds(LegrandCableOutletThermostatCluster)
+    .enum(
+        attribute_name=LegrandCableOutletCluster.AttributeDefs.heat_mode.name,
+        enum_class=HeatMode,
+        cluster_id=LegrandCableOutletCluster.cluster_id,
+    )
 )
