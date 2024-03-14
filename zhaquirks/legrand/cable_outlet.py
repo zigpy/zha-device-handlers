@@ -1,7 +1,7 @@
 """Module for Legrand Cable Outlet (with pilot wire functionality)."""
 
 from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import CustomDeviceV2, add_to_registry_v2
+from zigpy.quirks.v2 import add_to_registry_v2
 import zigpy.types as t
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.hvac import SystemMode, Thermostat
@@ -13,7 +13,6 @@ from zigpy.zcl.foundation import (
     ZCLCommandDef,
 )
 
-from zhaquirks import Bus
 from zhaquirks.legrand import LEGRAND, MANUFACTURER_SPECIFIC_CLUSTER_ID
 
 MANUFACTURER_SPECIFIC_CLUSTER_ID_2 = 0xFC40  # 64576
@@ -69,17 +68,14 @@ class LegrandCableOutletThermostatCluster(CustomCluster, Thermostat):
         0x001B: Thermostat.ControlSequenceOfOperation.Heating_Only,
     }
 
-    attributes = Thermostat.attributes.copy()
-    attributes.update(
-        {
-            OPERATION_PRESET_ATTR: ("operation_preset", HeatMode),
-        }
-    )
+    class AttributeDefs(Thermostat.AttributeDefs):
+        """Attribute definitions."""
 
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.thermostat_bus.add_listener(self)
+        operation_preset = ZCLAttributeDef(
+            id=OPERATION_PRESET_ATTR,
+            type=HeatMode,
+            is_manufacturer_specific=True,
+        )
 
     def heat_mode_change(self, value):
         """Handle the change in heat mode."""
@@ -162,23 +158,11 @@ class LegrandCableOutletCluster(CustomCluster):
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
         if attrid == HEAT_MODE_ATTR:
-            self.endpoint.device.thermostat_bus.listener_event(
-                "heat_mode_change", value
-            )
-
-
-class LegrandCableOutletThermostat(CustomDeviceV2):
-    """Legrand Cable Outlet Thermostat device."""
-
-    def __init__(self, *args, **kwargs):
-        """Init device."""
-        self.thermostat_bus = Bus()
-        super().__init__(*args, **kwargs)
+            self.endpoint.thermostat.heat_mode_change(value)
 
 
 (
     add_to_registry_v2(f" {LEGRAND}", " Cable outlet")
-    .device_class(LegrandCableOutletThermostat)
     .replaces(LegrandCluster)
     .replaces(LegrandCableOutletCluster)
     .replaces(LegrandCluster, cluster_type=ClusterType.Client)
