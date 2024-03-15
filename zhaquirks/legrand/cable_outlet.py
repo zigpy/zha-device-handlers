@@ -57,12 +57,6 @@ class LegrandCluster(CustomCluster):
             type=DeviceMode,
         )
 
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self._send_sequence: int = None
-        self._attr_cache = {ZCL_DEVICE_MODE: 0x01}
-
     async def write_attributes(self, attributes, manufacturer=None) -> list:
         """Write attributes to the cluster."""
 
