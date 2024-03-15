@@ -6,7 +6,7 @@ See xbee.md for additional information.
 import asyncio
 import enum
 import logging
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 from zigpy.quirks import CustomDevice
 import zigpy.types as t
@@ -320,7 +320,7 @@ class XBeeRemoteATRequest(LocalDataCluster):
                 await self._command(options, name.encode("ascii"), data, *args),
                 timeout=REMOTE_AT_COMMAND_TIMEOUT,
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             _LOGGER.warning("No response to %s command", name)
             raise
 
@@ -430,7 +430,7 @@ class XBeeRemoteATResponse(LocalDataCluster):
     def handle_cluster_request(
         self,
         hdr: foundation.ZCLHeader,
-        args: List[Any],
+        args: list[Any],
         *,
         dst_addressing: Optional[t.AddrMode] = None,
     ):
@@ -484,7 +484,7 @@ class XBeeDigitalIOCluster(LocalDataCluster, BinaryInput):
     def handle_cluster_request(
         self,
         hdr: foundation.ZCLHeader,
-        args: List[Any],
+        args: list[Any],
         *,
         dst_addressing: Optional[t.AddrMode] = None,
     ):
@@ -587,7 +587,7 @@ class XBeeSerialDataCluster(LocalDataCluster):
     def handle_cluster_request(
         self,
         hdr: foundation.ZCLHeader,
-        args: List[Any],
+        args: list[Any],
         *,
         dst_addressing: Optional[t.AddrMode] = None,
     ):
@@ -629,6 +629,8 @@ class XBeeCommon(CustomDevice):
 
     def deserialize(self, endpoint_id, cluster_id, data):
         """Deserialize."""
+        if endpoint_id == 0:
+            return super().deserialize(endpoint_id, cluster_id, data)
         tsn = self._application.get_sequence()
         command_id = 0x0000
         hdr = foundation.ZCLHeader.cluster(tsn, command_id)

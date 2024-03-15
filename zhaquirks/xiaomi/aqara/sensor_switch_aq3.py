@@ -1,5 +1,4 @@
 """Xiaomi aqara button sensor."""
-import logging
 
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import Basic, Identify, MultistateInput, OnOff
@@ -55,8 +54,6 @@ MOVEMENT_TYPE = {
     B1ACN01_RELEASE: COMMAND_RELEASE,
     SHAKE: COMMAND_SHAKE,
 }
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class MultistateInputCluster(CustomCluster, MultistateInput):

@@ -66,8 +66,6 @@ class TuyaManufClusterDinPower(TuyaManufClusterAttributes):
 class TuyaPowerMeasurement(LocalDataCluster, ElectricalMeasurement):
     """Custom class for power, voltage and current measurement."""
 
-    cluster_id = ElectricalMeasurement.cluster_id
-
     POWER_ID = 0x050B
     VOLTAGE_ID = 0x0505
     CURRENT_ID = 0x0508
@@ -120,7 +118,6 @@ class TuyaPowerMeasurement(LocalDataCluster, ElectricalMeasurement):
 class TuyaElectricalMeasurement(LocalDataCluster, Metering):
     """Custom class for total energy measurement."""
 
-    cluster_id = Metering.cluster_id
     CURRENT_DELIVERED_ID = 0x0000
     CURRENT_RECEIVED_ID = 0x0001
     POWER_WATT = 0x0000
@@ -142,7 +139,7 @@ class HikingManufClusterDinPower(TuyaManufClusterAttributes):
 
     attributes = {
         HIKING_DIN_SWITCH_ATTR: ("switch", t.uint8_t, True),
-        HIKING_TOTAL_ENERGY_DELIVERED_ATTR: ("energy_delivered", t.uint16_t, True),
+        HIKING_TOTAL_ENERGY_DELIVERED_ATTR: ("energy_delivered", t.uint32_t, True),
         HIKING_TOTAL_ENERGY_RECEIVED_ATTR: ("energy_received", t.uint16_t, True),
         HIKING_VOLTAGE_CURRENT_ATTR: ("voltage_current", t.uint32_t, True),
         HIKING_POWER_ATTR: ("power", t.uint16_t, True),

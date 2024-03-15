@@ -1,10 +1,11 @@
 """VZM31-SN Two in One Switch/Dimmer Module."""
 
-from zigpy.profiles import zha
+from zigpy.profiles import zgp, zha
 from zigpy.profiles.zha import DeviceType
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
+    GreenPowerProxy,
     Groups,
     Identify,
     LevelControl,
@@ -23,7 +24,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.inovelli import INOVELLI_AUTOMATION_TRIGGERS, Inovelli_VZM31SN_Cluster
+from zhaquirks.inovelli import INOVELLI_AUTOMATION_TRIGGERS, InovelliVZM31SNCluster
 
 INOVELLI_VZM31SN_CLUSTER_ID = 64561
 WWAH_CLUSTER_ID = 64599
@@ -70,10 +71,10 @@ class InovelliVZM31SNv12(CustomDevice):
                 ],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 0x0061,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [0x0021],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
         },
     }
@@ -93,7 +94,7 @@ class InovelliVZM31SNv12(CustomDevice):
                     Metering.cluster_id,
                     ElectricalMeasurement.cluster_id,
                     Diagnostic.cluster_id,
-                    Inovelli_VZM31SN_Cluster,
+                    InovelliVZM31SNCluster,
                     WWAH_CLUSTER_ID,
                 ],
                 OUTPUT_CLUSTERS: [
@@ -108,14 +109,14 @@ class InovelliVZM31SNv12(CustomDevice):
                     Identify.cluster_id,
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
-                    Inovelli_VZM31SN_Cluster,
+                    InovelliVZM31SNCluster,
                 ],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 0x0061,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [0x0021],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
         },
     }
@@ -159,10 +160,10 @@ class InovelliVZM31SNv11(CustomDevice):
                 ],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 0x0061,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [0x0021],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
         },
     }
@@ -182,7 +183,7 @@ class InovelliVZM31SNv11(CustomDevice):
                     Metering.cluster_id,
                     ElectricalMeasurement.cluster_id,
                     Diagnostic.cluster_id,
-                    Inovelli_VZM31SN_Cluster,
+                    InovelliVZM31SNCluster,
                     WWAH_CLUSTER_ID,
                 ],
                 OUTPUT_CLUSTERS: [
@@ -190,7 +191,7 @@ class InovelliVZM31SNv11(CustomDevice):
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
                     Ota.cluster_id,
-                    Inovelli_VZM31SN_Cluster,
+                    InovelliVZM31SNCluster,
                 ],
             },
             2: {
@@ -201,14 +202,14 @@ class InovelliVZM31SNv11(CustomDevice):
                     Identify.cluster_id,
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
-                    Inovelli_VZM31SN_Cluster,
+                    InovelliVZM31SNCluster,
                 ],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 0x0061,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [0x0021],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
         },
     }
@@ -269,7 +270,7 @@ class InovelliVZM31SNv10(CustomDevice):
                     Metering.cluster_id,
                     ElectricalMeasurement.cluster_id,
                     Diagnostic.cluster_id,
-                    Inovelli_VZM31SN_Cluster,
+                    InovelliVZM31SNCluster,
                     WWAH_CLUSTER_ID,
                 ],
                 OUTPUT_CLUSTERS: [
@@ -277,7 +278,7 @@ class InovelliVZM31SNv10(CustomDevice):
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
                     Ota.cluster_id,
-                    Inovelli_VZM31SN_Cluster,
+                    InovelliVZM31SNCluster,
                 ],
             },
             2: {
@@ -288,7 +289,7 @@ class InovelliVZM31SNv10(CustomDevice):
                     Identify.cluster_id,
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
-                    Inovelli_VZM31SN_Cluster,
+                    InovelliVZM31SNCluster,
                 ],
             },
         },
@@ -350,7 +351,7 @@ class InovelliVZM31SNv9(CustomDevice):
                     Metering.cluster_id,
                     ElectricalMeasurement.cluster_id,
                     Diagnostic.cluster_id,
-                    Inovelli_VZM31SN_Cluster,
+                    InovelliVZM31SNCluster,
                     WWAH_CLUSTER_ID,
                 ],
                 OUTPUT_CLUSTERS: [
@@ -358,7 +359,7 @@ class InovelliVZM31SNv9(CustomDevice):
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
                     Ota.cluster_id,
-                    Inovelli_VZM31SN_Cluster,
+                    InovelliVZM31SNCluster,
                 ],
             },
             2: {
@@ -369,7 +370,7 @@ class InovelliVZM31SNv9(CustomDevice):
                     Identify.cluster_id,
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
-                    Inovelli_VZM31SN_Cluster,
+                    InovelliVZM31SNCluster,
                 ],
             },
         },
@@ -429,14 +430,14 @@ class InovelliVZM31SN(CustomDevice):
                     Metering.cluster_id,
                     ElectricalMeasurement.cluster_id,
                     Diagnostic.cluster_id,
-                    Inovelli_VZM31SN_Cluster,
+                    InovelliVZM31SNCluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
                     Ota.cluster_id,
-                    Inovelli_VZM31SN_Cluster,
+                    InovelliVZM31SNCluster,
                 ],
             },
             2: {
@@ -447,7 +448,7 @@ class InovelliVZM31SN(CustomDevice):
                     Identify.cluster_id,
                     OnOff.cluster_id,
                     LevelControl.cluster_id,
-                    Inovelli_VZM31SN_Cluster,
+                    InovelliVZM31SNCluster,
                 ],
             },
         },

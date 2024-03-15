@@ -1,7 +1,6 @@
 """Tuya based cover and blinds."""
-from typing import Dict
 
-from zigpy.profiles import zha
+from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomDevice
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, GreenPowerProxy, Groups, Ota, Scenes, Time
@@ -39,7 +38,7 @@ class TuyaGarageManufCluster(NoManufacturerCluster, TuyaMCUCluster):
         }
     )
 
-    dp_to_attribute: Dict[int, DPToAttributeMapping] = {
+    dp_to_attribute: dict[int, DPToAttributeMapping] = {
         # garage door trigger ¿on movement, on open, on closed?
         1: DPToAttributeMapping(
             TUYA_MANUFACTURER_GARAGE,
@@ -90,6 +89,7 @@ class TuyaGarageSwitchTO(CustomDevice):
         MODELS_INFO: [
             ("_TZE200_nklqjk62", "TS0601"),
             ("_TZE200_wfxuhoea", "TS0601"),
+            ("_TZE204_nklqjk62", "TS0601"),
         ],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=0x0051
@@ -110,8 +110,8 @@ class TuyaGarageSwitchTO(CustomDevice):
             # input_clusters=[]
             # output_clusters=[33]
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
@@ -131,8 +131,8 @@ class TuyaGarageSwitchTO(CustomDevice):
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },

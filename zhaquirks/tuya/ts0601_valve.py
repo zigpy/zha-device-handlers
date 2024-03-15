@@ -1,5 +1,4 @@
 """Collection of Tuya Valve devices e.g. water valves, gas valve etc."""
-from typing import Dict
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
@@ -17,10 +16,9 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import TuyaLocalCluster
+from zhaquirks.tuya import EnchantedDevice, TuyaLocalCluster
 from zhaquirks.tuya.mcu import (
     DPToAttributeMapping,
-    EnchantedDevice,
     TuyaMCUCluster,
     TuyaOnOff,
     TuyaOnOffNM,
@@ -51,10 +49,11 @@ class TuyaValveManufCluster(TuyaMCUCluster):
             0xEF02: ("state", t.enum8, True),
             0xEF03: ("last_valve_open_duration", t.uint32_t, True),
             0xEF04: ("dp_6", t.uint32_t, True),
+            0xEF05: ("valve_position", t.uint32_t, True),
         }
     )
 
-    dp_to_attribute: Dict[int, DPToAttributeMapping] = {
+    dp_to_attribute: dict[int, DPToAttributeMapping] = {
         1: DPToAttributeMapping(
             TuyaOnOff.ep_attribute,
             "on_off",
@@ -83,6 +82,10 @@ class TuyaValveManufCluster(TuyaMCUCluster):
             TuyaMCUCluster.ep_attribute,
             "last_valve_open_duration",
         ),
+        102: DPToAttributeMapping(
+            TuyaMCUCluster.ep_attribute,
+            "valve_position",
+        ),
     }
 
     data_point_handlers = {
@@ -93,6 +96,7 @@ class TuyaValveManufCluster(TuyaMCUCluster):
         11: "_dp_2_attr_update",
         12: "_dp_2_attr_update",
         15: "_dp_2_attr_update",
+        102: "_dp_2_attr_update",
     }
 
 
@@ -137,6 +141,45 @@ class TuyaValve(CustomDevice):
     }
 
 
+class BasicTuyaValve(CustomDevice):
+    """Basic Tuya valve device."""
+
+    signature = {
+        MODELS_INFO: [("_TZE200_1n2zev06", "TS0601")],
+        # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=81, device_version=1,
+        # input_clusters=[0, 4, 5, 61184], output_clusters=[25, 10])
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaValveManufCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            }
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaOnOff,
+                    TuyaValveManufCluster,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            }
+        }
+    }
+
+
 class ParksideTuyaValveManufCluster(TuyaMCUCluster):
     """Manufacturer Specific Cluster for the _TZE200_htnnfasr water valve sold as PARKSIDE."""
 
@@ -150,7 +193,7 @@ class ParksideTuyaValveManufCluster(TuyaMCUCluster):
         }
     )
 
-    dp_to_attribute: Dict[int, DPToAttributeMapping] = {
+    dp_to_attribute: dict[int, DPToAttributeMapping] = {
         1: DPToAttributeMapping(
             TuyaOnOff.ep_attribute,
             "on_off",
@@ -249,7 +292,7 @@ GIEX_MODE_ATTR = 0xEF01  # Mode [0] duration [1] capacity
 GIEX_START_TIME_ATTR = 0xEF65  # Last irrigation start time (GMT)
 GIEX_END_TIME_ATTR = 0xEF66  # Last irrigation end time (GMT)
 GIEX_NUM_TIMES_ATTR = 0xEF67  # Number of cycle irrigation times min=0 max=100
-GIEX_TARGET_ATTR = 0xEF68  # Irrigation target, duration in seconds or capacity in litres (depending on mode) min=0 max=3600
+GIEX_TARGET_ATTR = 0xEF68  # Irrigation target, duration in sec or capacity in litres (depending on mode) min=0 max=3600
 GIEX_INTERVAL_ATTR = 0xEF69  # Cycle irrigation interval in seconds min=0 max=3600
 GIEX_DURATION_ATTR = 0xEF72  # Last irrigation duration
 
@@ -270,7 +313,7 @@ class GiexValveManufCluster(TuyaMCUCluster):
         }
     )
 
-    dp_to_attribute: Dict[int, DPToAttributeMapping] = {
+    dp_to_attribute: dict[int, DPToAttributeMapping] = {
         1: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
             "irrigation_mode",

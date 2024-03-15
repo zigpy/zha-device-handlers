@@ -1,6 +1,6 @@
 """Tuya Air Quality sensor."""
 
-from zigpy.profiles import zha
+from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, GreenPowerProxy, Groups, Ota, Scenes, Time
 
@@ -33,8 +33,9 @@ class TuyaCO2Sensor(CustomDevice):
         # output_clusters=[25, 10])
         MODELS_INFO: [
             ("_TZE200_8ygsuhe1", "TS0601"),
+            ("_TZE200_ryfmq5rl", "TS0601"),
             ("_TZE200_yvx5lh6k", "TS0601"),
-            ("_TZE200_dwcarsat", "TS0601"),
+            ("_TZE200_c2fmom5z", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
@@ -82,9 +83,9 @@ class TuyaCO2SensorGPP(CustomDevice):
         # input_clusters=[0, 4, 5, 61184],
         # output_clusters=[25, 10])
         MODELS_INFO: [
+            ("_TZE200_8ygsuhe1", "TS0601"),
             ("_TZE200_ryfmq5rl", "TS0601"),
             ("_TZE200_yvx5lh6k", "TS0601"),
-            ("_TZE200_dwcarsat", "TS0601"),
             ("_TZE200_c2fmom5z", "TS0601"),
         ],
         ENDPOINTS: {
@@ -103,8 +104,8 @@ class TuyaCO2SensorGPP(CustomDevice):
                 # <SimpleDescriptor endpoint=242 profile=41440 device_type=97
                 # input_clusters=[]
                 # output_clusters=[33]
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
@@ -129,8 +130,8 @@ class TuyaCO2SensorGPP(CustomDevice):
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
@@ -166,8 +167,8 @@ class TuyaNDIRCO2SensorGPP(CustomDevice):
                 # <SimpleDescriptor endpoint=242 profile=41440 device_type=97
                 # input_clusters=[]
                 # output_clusters=[33]
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
@@ -188,8 +189,8 @@ class TuyaNDIRCO2SensorGPP(CustomDevice):
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },

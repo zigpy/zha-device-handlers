@@ -51,7 +51,6 @@ class ElkoUserInterfaceCluster(LocalDataCluster, UserInterface):
 class ElkoElectricalMeasurementCluster(LocalDataCluster, ElectricalMeasurement):
     """Electrical measurement cluster for Elko Thermostats."""
 
-    cluster_id = ElectricalMeasurement.cluster_id
     ACTIVE_POWER_ID = 0x050B
 
     def __init__(self, *args, **kwargs):

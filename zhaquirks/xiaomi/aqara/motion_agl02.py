@@ -1,7 +1,7 @@
 """Xiaomi aqara T1 motion sensor device."""
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import Identify, Ota
-from zigpy.zcl.clusters.measurement import OccupancySensing
+from zigpy.zcl.clusters.measurement import IlluminanceMeasurement, OccupancySensing
 
 from zhaquirks import Bus
 from zhaquirks.const import (
@@ -33,8 +33,13 @@ class XiaomiManufacturerCluster(XiaomiAqaraE1Cluster):
         super()._update_attribute(attrid, value)
         if attrid == 274:
             value = value - 65536
-            self.endpoint.illuminance.illuminance_reported(value)
-            self.endpoint.occupancy.update_attribute(0, 1)
+            self.endpoint.illuminance.update_attribute(
+                IlluminanceMeasurement.AttributeDefs.measured_value.id, value
+            )
+            self.endpoint.occupancy.update_attribute(
+                OccupancySensing.AttributeDefs.occupancy.id,
+                OccupancySensing.Occupancy.Occupied,
+            )
 
 
 class MotionT1(XiaomiCustomDevice):
@@ -44,7 +49,6 @@ class MotionT1(XiaomiCustomDevice):
         """Init."""
         self.battery_size = 11
         self.motion_bus = Bus()
-        self.illuminance_bus = Bus()
         super().__init__(*args, **kwargs)
 
     signature = {

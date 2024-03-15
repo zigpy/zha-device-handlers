@@ -9,7 +9,6 @@ from zigpy.zcl.clusters.measurement import (
 )
 from zigpy.zdo.types import NodeDescriptor
 
-from zhaquirks import Bus
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -31,13 +30,6 @@ from zhaquirks.xiaomi import (
 
 class LumiSensorHtAgl02(XiaomiCustomDevice):
     """Lumi lumi.sensor_ht.agl02 custom device implementation."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        self.temperature_bus = Bus()
-        self.humidity_bus = Bus()
-        self.pressure_bus = Bus()
-        super().__init__(*args, **kwargs)
 
     signature = {
         MODELS_INFO: [("LUMI", "lumi.sensor_ht.agl02")],

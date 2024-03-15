@@ -1,9 +1,9 @@
 """BlitzWolf IS-3/Tuya motion rechargeable occupancy sensor."""
 
 import math
-from typing import Dict, Optional, Tuple, Union
+from typing import Optional, Union
 
-from zigpy.profiles import zha
+from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
@@ -86,7 +86,7 @@ class NeoMotionManufCluster(TuyaNewManufCluster):
         }
     )
 
-    dp_to_attribute: Dict[int, DPToAttributeMapping] = {
+    dp_to_attribute: dict[int, DPToAttributeMapping] = {
         101: DPToAttributeMapping(
             TuyaOccupancySensing.ep_attribute,
             "occupancy",
@@ -150,7 +150,7 @@ class MmwRadarManufCluster(TuyaMCUCluster):
         }
     )
 
-    dp_to_attribute: Dict[int, DPToAttributeMapping] = {
+    dp_to_attribute: dict[int, DPToAttributeMapping] = {
         1: DPToAttributeMapping(
             TuyaOccupancySensing.ep_attribute,
             "occupancy",
@@ -242,7 +242,7 @@ class TuyaManufacturerClusterMotion(TuyaManufCluster):
     def handle_cluster_request(
         self,
         hdr: foundation.ZCLHeader,
-        args: Tuple[TuyaManufCluster.Command],
+        args: tuple[TuyaManufCluster.Command],
         *,
         dst_addressing: Optional[
             Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
@@ -398,6 +398,7 @@ class MmwRadarMotionGPP(CustomDevice):
             ("_TZE200_ar0slwnd", "TS0601"),
             ("_TZE200_sfiy5tfs", "TS0601"),
             ("_TZE200_mrf6vtua", "TS0601"),
+            ("_TZE204_qasjif9e", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
@@ -415,8 +416,8 @@ class MmwRadarMotionGPP(CustomDevice):
                 # <SimpleDescriptor endpoint=242 profile=41440 device_type=97
                 # input_clusters=[]
                 # output_clusters=[33]
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
@@ -440,8 +441,8 @@ class MmwRadarMotionGPP(CustomDevice):
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },

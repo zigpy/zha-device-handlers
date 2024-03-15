@@ -1,6 +1,6 @@
 """Tuya temp and humidity sensors."""
 
-from typing import Any, Dict
+from typing import Any
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
@@ -50,7 +50,7 @@ class TuyaRelativeHumidity(RelativeHumidity, TuyaLocalCluster):
 class TemperatureHumidityManufCluster(TuyaMCUCluster):
     """Tuya Manufacturer Cluster with Temperature and Humidity data points."""
 
-    dp_to_attribute: Dict[int, DPToAttributeMapping] = {
+    dp_to_attribute: dict[int, DPToAttributeMapping] = {
         1: DPToAttributeMapping(
             TuyaTemperatureMeasurement.ep_attribute,
             "measured_value",
@@ -72,6 +72,26 @@ class TemperatureHumidityManufCluster(TuyaMCUCluster):
         1: "_dp_2_attr_update",
         2: "_dp_2_attr_update",
         4: "_dp_2_attr_update",
+    }
+
+
+class TemperatureHumidityBatteryStatesManufCluster(TuyaMCUCluster):
+    """Tuya Manufacturer Cluster with Temperature and Humidity data points. Battery states 25, 50 and 100%."""
+
+    dp_to_attribute: dict[int, DPToAttributeMapping] = {
+        1: TemperatureHumidityManufCluster.dp_to_attribute[1],
+        2: TemperatureHumidityManufCluster.dp_to_attribute[2],
+        3: DPToAttributeMapping(
+            TuyaPowerConfigurationCluster2AAA.ep_attribute,
+            "battery_percentage_remaining",
+            converter=lambda x: {0: 25, 1: 50, 2: 100}[x],  # double reported percentage
+        ),
+    }
+
+    data_point_handlers = {
+        1: "_dp_2_attr_update",
+        2: "_dp_2_attr_update",
+        3: "_dp_2_attr_update",
     }
 
 
@@ -181,10 +201,7 @@ class TuyaTempHumiditySensorVar03(CustomDevice):
         # "in_clusters": ["0x0000","0x0004","0x0005","0xef00"],
         # "out_clusters": ["0x000a","0x0019"]
         MODELS_INFO: [
-            ("_TZE200_yjjdcqsq", "TS0601"),
-            ("_TZE200_9yapgbuv", "TS0601"),
             ("_TZE200_qyflbnbj", "TS0601"),
-            ("_TZE200_utkemkbs", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
@@ -221,10 +238,60 @@ class TuyaTempHumiditySensorVar03(CustomDevice):
     }
 
 
+class TuyaTempHumiditySensorVar04(CustomDevice):
+    """Tuya temp and humidity sensor (variation 04)."""
+
+    signature = {
+        # "profile_id": 260,
+        # "device_type": "0x0051",
+        # "in_clusters": ["0x0000","0x0004","0x0005","0xef00"],
+        # "out_clusters": ["0x000a","0x0019"]
+        MODELS_INFO: [
+            ("_TZE200_yjjdcqsq", "TS0601"),
+            ("_TZE200_9yapgbuv", "TS0601"),
+            ("_TZE204_yjjdcqsq", "TS0601"),
+            ("_TZE200_utkemkbs", "TS0601"),
+            ("_TZE204_utkemkbs", "TS0601"),
+        ],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TemperatureHumidityManufCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Ota.cluster_id, Time.cluster_id],
+            }
+        },
+    }
+
+    replacement = {
+        SKIP_CONFIGURATION: True,
+        ENDPOINTS: {
+            1: {
+                DEVICE_TYPE: zha.DeviceType.TEMPERATURE_SENSOR,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TemperatureHumidityBatteryStatesManufCluster,
+                    TuyaTemperatureMeasurement,
+                    TuyaRelativeHumidity,
+                    TuyaPowerConfigurationCluster2AAA,
+                ],
+                OUTPUT_CLUSTERS: [Ota.cluster_id, Time.cluster_id],
+            }
+        },
+    }
+
+
 class SoilManufCluster(TuyaMCUCluster):
     """Tuya Manufacturer Cluster with Temperature and Humidity data points."""
 
-    dp_to_attribute: Dict[int, DPToAttributeMapping] = {
+    dp_to_attribute: dict[int, DPToAttributeMapping] = {
         5: DPToAttributeMapping(
             TuyaTemperatureMeasurement.ep_attribute,
             "measured_value",
@@ -257,7 +324,10 @@ class TuyaSoilSensor(CustomDevice):
         # "device_type": "0x0051",
         # "in_clusters": ["0x0000","0x0004","0x0005","0xef00"],
         # "out_clusters": ["0x000a","0x0019"]
-        MODELS_INFO: [("_TZE200_myd45weu", "TS0601")],
+        MODELS_INFO: [
+            ("_TZE200_myd45weu", "TS0601"),
+            ("_TZE200_ga1maeof", "TS0601"),
+        ],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,

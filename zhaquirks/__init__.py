@@ -3,9 +3,11 @@ from __future__ import annotations
 
 import asyncio
 import importlib
+import importlib.util
 import logging
 import pathlib
 import pkgutil
+import sys
 from typing import Any
 
 import zigpy.device
@@ -182,7 +184,6 @@ class DoublingPowerConfigurationCluster(CustomCluster, PowerConfiguration):
     that don't follow the reporting spec.
     """
 
-    cluster_id = PowerConfiguration.cluster_id
     BATTERY_PERCENTAGE_REMAINING = 0x0021
 
     def _update_attribute(self, attrid, value):
@@ -194,7 +195,6 @@ class DoublingPowerConfigurationCluster(CustomCluster, PowerConfiguration):
 class PowerConfigurationCluster(CustomCluster, PowerConfiguration):
     """Common use power configuration cluster."""
 
-    cluster_id = PowerConfiguration.cluster_id
     BATTERY_VOLTAGE_ATTR = 0x0020
     BATTERY_PERCENTAGE_REMAINING = 0x0021
     MIN_VOLTS = 1.5  # old 2.1
@@ -449,9 +449,13 @@ def setup(custom_quirks_path: str | None = None) -> None:
 
     # Treat the custom quirk path (e.g. `/config/custom_quirks/`) itself as a module
     for importer, modname, _ispkg in pkgutil.walk_packages(path=[str(path)]):
+        _LOGGER.debug("Loading custom quirk module %r", modname)
+
         try:
-            _LOGGER.debug("Loading custom quirk module %r", modname)
-            importer.find_module(modname).load_module(modname)
+            spec = importer.find_spec(modname)
+            module = importlib.util.module_from_spec(spec)
+            sys.modules[modname] = module
+            spec.loader.exec_module(module)
         except Exception:
             _LOGGER.exception("Unexpected exception importing custom quirk %r", modname)
         else:

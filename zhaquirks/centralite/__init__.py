@@ -1,10 +1,8 @@
 """Centralite module for custom device handlers."""
-import logging
 
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
 
-_LOGGER = logging.getLogger(__name__)
 CENTRALITE = "CentraLite"
 
 

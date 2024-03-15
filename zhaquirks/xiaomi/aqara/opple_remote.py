@@ -1,8 +1,7 @@
 """Xiaomi aqara opple remote devices."""
-import logging
 
+from zigpy import types
 from zigpy.profiles import zha
-import zigpy.types as types
 from zigpy.zcl.clusters.general import (
     Basic,
     Identify,
@@ -51,7 +50,12 @@ from zhaquirks.const import (
     VALUE,
     ZHA_SEND_EVENT,
 )
-from zhaquirks.xiaomi import LUMI, BasicCluster, XiaomiCustomDevice
+from zhaquirks.xiaomi import (
+    LUMI,
+    BasicCluster,
+    XiaomiAqaraE1Cluster,
+    XiaomiCustomDevice,
+)
 
 PRESS_TYPES = {0: "hold", 1: "single", 2: "double", 3: "triple", 255: "release"}
 STATUS_TYPE_ATTR = 0x0055  # decimal = 85
@@ -92,16 +96,11 @@ COMMAND_6_TRIPLE = "6_triple"
 COMMAND_6_HOLD = "6_hold"
 COMMAND_6_RELEASE = "6_release"
 
-OPPLE_CLUSTER_ID = 0xFCC0
 OPPLE_MFG_CODE = 0x115F
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class MultistateInputCluster(CustomCluster, MultistateInput):
     """Multistate input cluster."""
-
-    cluster_id = MultistateInput.cluster_id
 
     def __init__(self, *args, **kwargs):
         """Init."""
@@ -134,11 +133,9 @@ class MultistateInputCluster(CustomCluster, MultistateInput):
             super()._update_attribute(0, action)
 
 
-class OppleCluster(CustomCluster):
+class OppleCluster(XiaomiAqaraE1Cluster):
     """Opple cluster."""
 
-    ep_attribute = "opple_cluster"
-    cluster_id = OPPLE_CLUSTER_ID
     attributes = {
         0x0009: ("mode", types.uint8_t, True),
     }

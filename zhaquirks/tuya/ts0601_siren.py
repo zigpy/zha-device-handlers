@@ -1,8 +1,8 @@
 """Map from manufacturer to standard clusters for the NEO Siren device."""
-import logging
-from typing import Dict, Optional, Union
 
-from zigpy.profiles import zha
+from typing import Optional, Union
+
+from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
@@ -49,8 +49,6 @@ TUYA_ALARM_MIN_HUMID_ATTR = 0x026D  # [0,0,0,18] min alarm humidity threshold
 TUYA_ALARM_MAX_HUMID_ATTR = 0x026E  # [0,0,0,18] max alarm humidity threshold
 TUYA_MELODY_ATTR = 0x0466  # [5] Melody
 TUYA_VOLUME_ATTR = 0x0474  # [0]/[1]/[2] Volume 0-low, 2-high
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class NeoAlarmVolume(t.enum8):
@@ -109,15 +107,18 @@ class TuyaManufClusterSiren(TuyaManufClusterAttributes):
         super()._update_attribute(attrid, value)
         if attrid == TUYA_TEMPERATURE_ATTR:
             self.endpoint.device.temperature_bus.listener_event(
-                "temperature_reported", value * 10  # decidegree to centidegree
+                "temperature_reported",
+                value * 10,  # decidegree to centidegree
             )
         elif attrid == TUYA_HUMIDITY_ATTR:
             self.endpoint.device.humidity_bus.listener_event(
-                "humidity_reported", value * 100  # whole percentage to 1/1000th
+                "humidity_reported",
+                value * 100,  # whole percentage to 1/1000th
             )
         elif attrid == TUYA_ALARM_ATTR:
             self.endpoint.device.switch_bus.listener_event(
-                "switch_event", value  # boolean 1=on / 0=off
+                "switch_event",
+                value,  # boolean 1=on / 0=off
             )
 
 
@@ -161,7 +162,6 @@ class TuyaSirenOnOff(LocalDataCluster, OnOff):
 class TuyaTemperatureMeasurement(LocalDataCluster, TemperatureMeasurement):
     """Temperature cluster acting from events from temperature bus."""
 
-    cluster_id = TemperatureMeasurement.cluster_id
     ATTR_ID = 0
 
     def __init__(self, *args, **kwargs):
@@ -177,7 +177,6 @@ class TuyaTemperatureMeasurement(LocalDataCluster, TemperatureMeasurement):
 class TuyaRelativeHumidity(LocalDataCluster, RelativeHumidity):
     """Humidity cluster acting from events from humidity bus."""
 
-    cluster_id = RelativeHumidity.cluster_id
     ATTR_ID = 0
 
     def __init__(self, *args, **kwargs):
@@ -314,7 +313,7 @@ class TuyaMCUSiren(OnOff, TuyaAttributesCluster):
 class NeoSirenManufCluster(TuyaMCUCluster):
     """Tuya with NEO Siren data points."""
 
-    dp_to_attribute: Dict[int, DPToAttributeMapping] = {
+    dp_to_attribute: dict[int, DPToAttributeMapping] = {
         5: DPToAttributeMapping(
             TuyaMCUSiren.ep_attribute,
             "volume",
@@ -371,8 +370,8 @@ class TuyaSirenGPP_NoSensors(CustomDevice):
                 OUTPUT_CLUSTERS: [Ota.cluster_id, Time.cluster_id],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
@@ -394,8 +393,8 @@ class TuyaSirenGPP_NoSensors(CustomDevice):
                 OUTPUT_CLUSTERS: [Ota.cluster_id, Time.cluster_id],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },

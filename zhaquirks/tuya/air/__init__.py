@@ -1,9 +1,10 @@
 """Tuya Air sensors."""
 
-from typing import Any, Dict
+from typing import Any
 
 import zigpy.types as t
 from zigpy.zcl.clusters.measurement import (
+    PM25,
     CarbonDioxideConcentration,
     FormaldehydeConcentration,
     RelativeHumidity,
@@ -67,6 +68,10 @@ class TuyaAirQualityHumidity(RelativeHumidity, TuyaLocalCluster):
     """Tuya relative humidity measurement."""
 
 
+class TuyaAirQualityPM25(PM25, TuyaLocalCluster):
+    """Tuya PM25 concentration measurement."""
+
+
 class TuyaAirQualityCO2(CarbonDioxideConcentration, TuyaLocalCluster):
     """Tuya Carbon Dioxide concentration measurement."""
 
@@ -78,7 +83,7 @@ class TuyaAirQualityFormaldehyde(FormaldehydeConcentration, TuyaLocalCluster):
 class TuyaCO2ManufCluster(TuyaNewManufCluster):
     """Tuya with Air quality data points."""
 
-    dp_to_attribute: Dict[int, DPToAttributeMapping] = {
+    dp_to_attribute: dict[int, DPToAttributeMapping] = {
         2: DPToAttributeMapping(
             TuyaAirQualityCO2.ep_attribute,
             "measured_value",
@@ -91,6 +96,9 @@ class TuyaCO2ManufCluster(TuyaNewManufCluster):
         ),
         19: DPToAttributeMapping(
             TuyaAirQualityHumidity.ep_attribute, "measured_value", lambda x: x * 10
+        ),
+        20: DPToAttributeMapping(
+            TuyaAirQualityPM25.ep_attribute, "measured_value", lambda x: x
         ),
         21: DPToAttributeMapping(
             TuyaAirQualityVOC.ep_attribute, "measured_value", lambda x: x * 1e-6
@@ -106,6 +114,7 @@ class TuyaCO2ManufCluster(TuyaNewManufCluster):
         2: "_dp_2_attr_update",
         18: "_dp_2_attr_update",
         19: "_dp_2_attr_update",
+        20: "_dp_2_attr_update",
         21: "_dp_2_attr_update",
         22: "_dp_2_attr_update",
     }

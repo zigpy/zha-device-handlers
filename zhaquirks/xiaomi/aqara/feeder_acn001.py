@@ -4,8 +4,9 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from zigpy.profiles import zha
-import zigpy.types as types
+from zigpy import types
+from zigpy.profiles import zgp, zha
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
@@ -16,7 +17,6 @@ from zigpy.zcl.clusters.general import (
     Scenes,
     Time,
 )
-import zigpy.zcl.foundation as foundation
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -96,7 +96,6 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         Manual = 0x00
         Schedule = 0x01
 
-    ep_attribute: str = "opple_cluster"
     attributes = {
         ZCL_FEEDING: ("feeding", types.Bool, True),
         ZCL_LAST_FEEDING_SOURCE: ("last_feeding_source", FeedingSource, True),
@@ -266,8 +265,8 @@ class AqaraFeederAcn001(XiaomiCustomDevice):
                 ],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 0x0061,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [
                     GreenPowerProxy.cluster_id,
@@ -296,8 +295,8 @@ class AqaraFeederAcn001(XiaomiCustomDevice):
                 ],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 0x0061,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [
                     GreenPowerProxy.cluster_id,
