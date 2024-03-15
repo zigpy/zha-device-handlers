@@ -567,7 +567,10 @@ If you have bought a non-standard Zigbee device that is not yet supported in Hom
 4. Add configuration with the full path to the directory that now containing custom quirk module(s) that will override and take precedence over any built-in quirks matching any device that has the same Zigbee device signature. to Home Assistant's config.yaml
 ```
 zha:
+  database_path: /config/zigbee.db
+  enable_quirks: true
   custom_quirks_path: /config/zha_quirks/
+ 
 ```
 5. Restart Home Assistant to make the quirk take effect.
 
