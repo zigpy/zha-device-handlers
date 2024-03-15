@@ -3,6 +3,7 @@
 from unittest import mock
 
 import pytest
+from zigpy.zcl import foundation
 
 import zhaquirks
 from zhaquirks.legrand import LEGRAND
@@ -77,5 +78,33 @@ async def test_cable_outlet_write_attrs(zigpy_device_from_v2_quirk):
     )
     cable_outlet_cluster._write_attributes.assert_awaited_with(
         [],
+        manufacturer=0xFC40,
+    )
+
+@pytest.mark.parametrize(
+    "value, expected_value",
+    [
+        (0x01, [1, 0]),
+        (0x02, [2, 0]),
+    ],
+)
+async def test_legrand_write_device_mode(zigpy_device_from_v2_quirk, value, expected_value):
+    """Test Legrand cable outlet heat mode attr writing."""
+
+    device = zigpy_device_from_v2_quirk(f" {LEGRAND}", " Cable outlet")
+    legrand_cluster = device.endpoints[1].legrand_cluster
+    legrand_cluster._write_attributes = mock.AsyncMock()
+
+    await legrand_cluster.write_attributes({ 0x4000: value }, manufacturer=0xFC40)
+
+    expected = foundation.Attribute(0x0000, foundation.TypeValue())
+    expected_attr_def = legrand_cluster.find_attribute(0x0000)
+    expected.value.type = foundation.DATA_TYPES.pytype_to_datatype_id(
+        expected_attr_def.type
+    )
+    expected.value.value = expected_attr_def.type(expected_value)
+
+    legrand_cluster._write_attributes.assert_awaited_with(
+        [expected],
         manufacturer=0xFC40,
     )
