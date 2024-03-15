@@ -102,9 +102,4 @@ class LegrandCableOutletCluster(CustomCluster):
     .replaces(LegrandCluster)
     .replaces(LegrandCableOutletCluster)
     .replaces(LegrandCluster, cluster_type=ClusterType.Client)
-    .enum(
-        attribute_name=LegrandCableOutletCluster.AttributeDefs.heat_mode.name,
-        enum_class=HeatMode,
-        cluster_id=LegrandCableOutletCluster.cluster_id,
-    )
 )
