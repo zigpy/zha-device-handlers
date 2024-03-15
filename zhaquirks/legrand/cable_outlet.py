@@ -17,6 +17,14 @@ from zhaquirks.legrand import LEGRAND, MANUFACTURER_SPECIFIC_CLUSTER_ID
 MANUFACTURER_SPECIFIC_CLUSTER_ID_2 = 0xFC40  # 64576
 
 HEAT_MODE_ATTR = 0x00
+ZCL_DEVICE_MODE = 0x4000
+
+
+class DeviceMode(t.enum16):
+    """Device mode."""
+
+    Standard = 0x01
+    Wire_pilot = 0x02
 
 
 class LegrandCluster(CustomCluster):
@@ -44,6 +52,34 @@ class LegrandCluster(CustomCluster):
             type=t.Bool,
             is_manufacturer_specific=True,
         )
+        device_mode_enum = ZCLAttributeDef(
+            id=ZCL_DEVICE_MODE,
+            type=DeviceMode,
+        )
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self._send_sequence: int = None
+        self._attr_cache = {ZCL_DEVICE_MODE: 0x01}
+
+    async def write_attributes(self, attributes, manufacturer=None) -> list:
+        """Write attributes to the cluster."""
+
+        attrs = {}
+        for attr, value in attributes.items():
+            attr_def = self.find_attribute(attr)
+            attr_id = attr_def.id
+            if attr_id == ZCL_DEVICE_MODE:
+                attrs[0x0000] = [value, 0x00]
+            else:
+                attrs[attr] = value
+        return await super().write_attributes(attrs, manufacturer)
+
+    def _update_attribute(self, attrid, value) -> None:
+        super()._update_attribute(attrid, value)
+        if attrid == 0x0000:
+            self._update_attribute(ZCL_DEVICE_MODE, value[0])
 
 
 class HeatMode(t.enum8):
@@ -102,4 +138,10 @@ class LegrandCableOutletCluster(CustomCluster):
     .replaces(LegrandCluster)
     .replaces(LegrandCableOutletCluster)
     .replaces(LegrandCluster, cluster_type=ClusterType.Client)
+    .enum(
+        attribute_name=LegrandCluster.AttributeDefs.device_mode_enum.name,
+        cluster_id=LegrandCluster.cluster_id,
+        enum_class=DeviceMode,
+        translation_key="device_mode",
+    )
 )
