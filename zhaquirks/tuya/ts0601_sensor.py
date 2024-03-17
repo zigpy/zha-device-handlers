@@ -143,11 +143,8 @@ class TuyaTempHumiditySensor(CustomDevice):
     }
 
 
-class TuyaTempHumiditySensor_Conecto_Display(CustomDevice):
+class TuyaTempHumiditySensorVar02(CustomDevice):
     """Custom device representing tuya temp and humidity sensor with e-ink screen."""
-
-    # RelativeHumidity multiplier
-    # RH_MULTIPLIER = 100
 
     signature = {
         # <SimpleDescriptor endpoint=1, profile=260, device_type=81
@@ -155,7 +152,7 @@ class TuyaTempHumiditySensor_Conecto_Display(CustomDevice):
         # input_clusters=[4, 5, 61184, 0]
         # output_clusters=[25, 10]>
         MODELS_INFO: [
-            ("_TZE200_zppcgbdj", "TS0601"),
+            ("_TZE200_zppcgbdj", "TS0601"),  # Conecto TH
         ],
         ENDPOINTS: {
             1: {
