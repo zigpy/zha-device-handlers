@@ -1,6 +1,7 @@
 """Test Tuya Air quality sensor."""
 
 from unittest import mock
+from unittest.mock import MagicMock
 
 import pytest
 import zigpy.profiles.zha
@@ -17,6 +18,7 @@ zhaquirks.setup()
 def air_quality_device(zigpy_device_from_quirk):
     """Tuya Air Quality Sensor."""
     dev = zigpy_device_from_quirk(TuyaCO2Sensor)
+    dev._packet_debouncer.filter = MagicMock(return_value=False)
     cluster = dev.endpoints[1].in_clusters[TuyaNewManufCluster.cluster_id]
     with mock.patch.object(cluster, "send_default_rsp"):
         yield dev
@@ -76,6 +78,7 @@ def test_co2_sensor(air_quality_device, data, ep_attr, expected_value):
 def smart_air_quality_device(zigpy_device_from_quirk):
     """Tuya Smart Air Quality Sensor."""
     dev = zigpy_device_from_quirk(TuyaSmartAirSensor)
+    dev._packet_debouncer.filter = MagicMock(return_value=False)
     cluster = dev.endpoints[1].in_clusters[TuyaNewManufCluster.cluster_id]
     with mock.patch.object(cluster, "send_default_rsp"):
         yield dev

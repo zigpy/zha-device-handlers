@@ -1,3 +1,5 @@
+"""Aqara light."""
+
 from zigpy import types as t
 from zigpy.profiles import zgp, zha
 from zigpy.zcl.clusters.general import (

@@ -1,5 +1,6 @@
 """Tests for inovelli blue series manufacturer cluster."""
 from unittest import mock
+from unittest.mock import MagicMock
 
 import zhaquirks
 from zhaquirks.inovelli.VZM31SN import InovelliVZM31SNv11
@@ -17,6 +18,7 @@ def test_mfg_cluster_events(zigpy_device_from_quirk):
         zha_send_event = mock.MagicMock()
 
     device = zigpy_device_from_quirk(InovelliVZM31SNv11)
+    device._packet_debouncer.filter = MagicMock(return_value=False)
     cluster_listener = Listener()
     device.endpoints[endpoint_id].out_clusters[cluster_id].add_listener(
         cluster_listener

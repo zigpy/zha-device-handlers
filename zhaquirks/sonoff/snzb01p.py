@@ -1,4 +1,5 @@
-"""Sonoff Smart Button SNZB-01P"""
+"""Sonoff Smart Button SNZB-01P."""
+
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
@@ -33,7 +34,7 @@ SONOFF_CLUSTER_ID = 0xFC57
 
 
 class SonoffSmartButtonSNZB01P(CustomDevice):
-    """Sonoff smart button remote - model SNZB-01P"""
+    """Sonoff smart button remote - model SNZB-01P."""
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=0
