@@ -4,7 +4,7 @@ Heavily inspired by work from @mak-42
 https://github.com/Koenkk/zigbee-herdsman-converters/blob/9d5e7b902479582581615cbfac3148d66d4c675c/lib/zosung.js
 """
 import base64
-from typing import Any, Final, List, Optional, Union
+from typing import Any, Final, Optional, Union
 
 from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomCluster, CustomDevice
@@ -53,11 +53,15 @@ class ZosungIRControl(CustomCluster):
     ep_attribute = "zosung_ircontrol"
 
     class AttributeDefs(BaseAttributeDefs):
+        """Attribute definitions."""
+
         last_learned_ir_code: Final = foundation.ZCLAttributeDef(
             id=0x0000, type=t.CharacterString, access="r", mandatory=True
         )
 
     class ServerCommandDefs(BaseCommandDefs):
+        """Server command definitions."""
+
         data: Final = foundation.ZCLCommandDef(
             id=0x00,
             schema={"data": Bytes},
@@ -152,6 +156,8 @@ class ZosungIRTransmit(CustomCluster):
     ir_msg = []
 
     class ServerCommandDefs(BaseCommandDefs):
+        """Server command definitions."""
+
         receive_ir_frame_00: Final = foundation.ZCLCommandDef(
             id=0x00,
             schema={
@@ -224,6 +230,8 @@ class ZosungIRTransmit(CustomCluster):
         )
 
     class ClientCommandDefs(BaseCommandDefs):
+        """Client command definitions."""
+
         resp_ir_frame_03: Final = foundation.ZCLCommandDef(
             id=0x03,
             schema={
@@ -249,7 +257,7 @@ class ZosungIRTransmit(CustomCluster):
     def handle_cluster_request(
         self,
         hdr: foundation.ZCLHeader,
-        args: List[Any],
+        args: list[Any],
         *,
         dst_addressing: Optional[
             Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
