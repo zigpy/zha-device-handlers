@@ -1627,7 +1627,6 @@ async def test_ts1201_ir_blaster(zigpy_device_from_quirk, quirk):
     # a learned code
     irCode_to_learn = "A/AESQFAAwUIAvAErwHgAQNADwXwBK8BrwFABcADAXYfwAkBrwHACeABBwXwBK8BrwFABcAD4GgvAgRJAQ=="
     # my TV poweroff/on code
-    # codespell: ignore
     irCode_to_send = "B3wPfA/5AcoH4AUDAeUDgAPAC+AHB+AHA+ADN+ALBw=="
 
     irmsg = '{"key_num":1,"delay":300,"key1":{"num":1,"freq":38000,"type":1,"key_code":"' + irCode_to_send + '"}}'
