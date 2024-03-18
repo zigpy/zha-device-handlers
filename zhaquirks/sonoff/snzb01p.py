@@ -90,7 +90,7 @@ class SonoffSmartButtonSNZB01P(CustomDevice):
     }
 
 
-class SonoffSmartButtonSNZB01P2(CustomDevice):
+class SonoffSmartButtonSNZB01P2(SonoffSmartButtonSNZB01P):
     """Sonoff smart button remote - model SNZB-01P without PollControl."""
 
     signature = {
