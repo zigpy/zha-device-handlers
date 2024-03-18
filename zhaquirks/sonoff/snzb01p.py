@@ -41,9 +41,7 @@ class SonoffSmartButtonSNZB01P(CustomDevice):
         #  device_version=1
         #  input_clusters=[0, 1, 3, 32, 64599]
         #  output_clusters=[3, 6, 25]>
-        MODELS_INFO: [
-            ("eWeLink", "SNZB-01P"),
-        ],
+        MODELS_INFO: [("eWeLink", "SNZB-01P")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -89,4 +87,47 @@ class SonoffSmartButtonSNZB01P(CustomDevice):
         (SHORT_PRESS, BUTTON): {COMMAND: COMMAND_TOGGLE, CLUSTER_ID: 6, ENDPOINT_ID: 1},
         (DOUBLE_PRESS, BUTTON): {COMMAND: COMMAND_ON, CLUSTER_ID: 6, ENDPOINT_ID: 1},
         (LONG_PRESS, BUTTON): {COMMAND: COMMAND_OFF, CLUSTER_ID: 6, ENDPOINT_ID: 1},
+    }
+
+
+class SonoffSmartButtonSNZB01P2(CustomDevice):
+    """Sonoff smart button remote - model SNZB-01P without PollControl."""
+
+    signature = {
+        #  <SimpleDescriptor endpoint=1 profile=260 device_type=0
+        #  device_version=1
+        #  input_clusters=[0, 1, 3]
+        #  output_clusters=[6]>
+        MODELS_INFO: [("eWeLink", "WB01")],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    Identify.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [
+                    OnOff.cluster_id,
+                ],
+            },
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    Identify.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [
+                    OnOff.cluster_id,
+                ],
+            },
+        },
     }
