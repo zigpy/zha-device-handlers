@@ -213,7 +213,7 @@ class DoublingPowerConfigClusterIKEA(CustomCluster, PowerConfiguration):
     def _is_firmware_new(self):
         """Check if new firmware is installed that does not require battery doubling."""
         # get sw_build_id from attribute cache if available
-        sw_build_id = self.endpoint.basic.get(Basic.AttributeDefs.sw_build_id.id, None)
+        sw_build_id = self.endpoint.basic.get(Basic.AttributeDefs.sw_build_id.id)
 
         # sw_build_id is not cached or empty, so we consider it old firmware for now
         if not sw_build_id:
