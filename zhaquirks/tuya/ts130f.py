@@ -1,4 +1,5 @@
 """Device handler for loratap TS130F smart curtain switch."""
+
 from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
@@ -273,7 +274,7 @@ class TuyaTS130FTO(CustomDevice):
 
     signature = {
         # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=0x0202, device_version=1, input_clusters=[0, 4, 5, 6, 10, 0x0102], output_clusters=[25]))
-        # This singnature is not correct is one copy of the first one and the cluster is not inline with the device.
+        # This signature is not correct is one copy of the first one and the cluster is not inline with the device.
         MODEL: "TS130F",
         ENDPOINTS: {
             1: {

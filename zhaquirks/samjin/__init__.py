@@ -1,5 +1,6 @@
 """Module for Samjin quirks implementations."""
-from typing import Any, List, Optional, Union
+
+from typing import Any, Optional, Union
 
 from zigpy.quirks import CustomCluster
 from zigpy.types import Addressing
@@ -22,7 +23,7 @@ class SamjinIASCluster(CustomCluster, zigpy.zcl.clusters.security.IasZone):
     def handle_cluster_request(
         self,
         hdr: foundation.ZCLHeader,
-        args: List[Any],
+        args: list[Any],
         *,
         dst_addressing: Optional[
             Union[Addressing.Group, Addressing.IEEE, Addressing.NWK]

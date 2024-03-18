@@ -6,6 +6,7 @@ from unittest import mock
 import pytest
 from zigpy.zcl import foundation
 
+from tests.common import ClusterListener, MockDatetime
 import zhaquirks
 from zhaquirks.tuya import TUYA_MCU_VERSION_RSP, TUYA_SET_TIME, TuyaDPType
 from zhaquirks.tuya.mcu import (
@@ -15,8 +16,6 @@ from zhaquirks.tuya.mcu import (
     TuyaClusterData,
     TuyaMCUCluster,
 )
-
-from tests.common import ClusterListener, MockDatetime
 
 zhaquirks.setup()
 

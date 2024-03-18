@@ -1,6 +1,7 @@
 """zigfred device handler."""
+
 import logging
-from typing import Any, List, Optional, Union
+from typing import Any, Optional, Union
 
 from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomCluster, CustomDevice
@@ -93,7 +94,7 @@ class ZigfredCluster(CustomCluster):
             PRESS_TYPE: press_type,
         }
 
-        _LOGGER.info(f"Got button press on zigfred cluster: {action}")
+        _LOGGER.info("Got button press on zigfred cluster: %s", action)
 
         if button and press_type:
             self.listener_event(ZHA_SEND_EVENT, action, event_args)
@@ -101,7 +102,7 @@ class ZigfredCluster(CustomCluster):
     def handle_cluster_request(
         self,
         hdr: foundation.ZCLHeader,
-        args: List[Any],
+        args: list[Any],
         *,
         dst_addressing: Optional[
             Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]

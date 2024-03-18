@@ -1,4 +1,5 @@
 """Ikea module."""
+
 import logging
 
 from zigpy.quirks import CustomCluster
@@ -209,26 +210,36 @@ class DoublingPowerConfigClusterIKEA(CustomCluster, PowerConfiguration):
         await self.endpoint.basic.read_attributes([Basic.AttributeDefs.sw_build_id.id])
         return result
 
-    def _is_firmware_old(self):
-        """Checks if firmware is old or unknown."""
+    def _is_firmware_new(self):
+        """Check if new firmware is installed that does not require battery doubling."""
         # get sw_build_id from attribute cache if available
-        sw_build_id = self.endpoint.basic.get(Basic.AttributeDefs.sw_build_id.id, None)
+        sw_build_id = self.endpoint.basic.get(Basic.AttributeDefs.sw_build_id.id)
 
-        # guard against possible future version formatting which includes more than just numbers
-        try:
-            # if first part of sw_build_id is 24 or higher, then firmware is new
-            if sw_build_id and int(sw_build_id.split(".")[0]) >= 24:
-                return False
-        except ValueError:
-            _LOGGER.warning(
-                "sw_build_id is not a number: %s for device %s",
-                sw_build_id,
-                self.endpoint.device.ieee,
-            )
-            # sw_build_id is not a number, so it must be new firmware
+        # sw_build_id is not cached or empty, so we consider it old firmware for now
+        if not sw_build_id:
             return False
 
-        # unknown or old firmware
+        # split sw_build_id into parts to check for new firmware
+        split_fw_version = sw_build_id.split(".")
+        if len(split_fw_version) >= 2:
+            # guard against possible future version formatting which includes more than just numbers
+            try:
+                first_part = int(split_fw_version[0])
+                second_part = int(split_fw_version[1])
+
+                # new firmware is either 24.4.5 or above, or 2.4.5 or above
+                # old firmware is 2.3.x or below
+                return first_part >= 3 or (first_part >= 2 and second_part >= 4)
+            except ValueError:
+                _LOGGER.warning(
+                    "sw_build_id is not a number: %s for device %s",
+                    sw_build_id,
+                    self.endpoint.device.ieee,
+                )
+                # sw_build_id is not a number, so it must be new firmware
+                return True
+
+        # unknown formatting of sw_build_id, so it must be new firmware
         return True
 
     async def _read_fw_and_update_battery_pct(self, reported_battery_pct):
@@ -238,7 +249,7 @@ class DoublingPowerConfigClusterIKEA(CustomCluster, PowerConfiguration):
 
         # check if sw_build_id was read successfully and new firmware is installed
         # if so, update cache with reported battery percentage (non-doubled)
-        if not self._is_firmware_old():
+        if self._is_firmware_new():
             self._update_attribute(
                 PowerConfiguration.AttributeDefs.battery_percentage_remaining.id,
                 reported_battery_pct,
@@ -261,7 +272,7 @@ class DoublingPowerConfigClusterIKEA(CustomCluster, PowerConfiguration):
             # double percentage if the firmware is old or unknown
             # the coroutine above will not have executed yet if the firmware is unknown,
             # so we double for now in that case too, and it updates again later if our doubling was wrong
-            if self._is_firmware_old():
+            if not self._is_firmware_new():
                 value = value * 2
         super()._update_attribute(attrid, value)
 

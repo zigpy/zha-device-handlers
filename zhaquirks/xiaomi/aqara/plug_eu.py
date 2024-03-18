@@ -1,8 +1,8 @@
 """Xiaomi Aqara EU plugs."""
 
 import zigpy
+from zigpy import types
 from zigpy.profiles import zgp, zha
-import zigpy.types as types
 from zigpy.zcl.clusters.general import (
     Alarms,
     AnalogInput,

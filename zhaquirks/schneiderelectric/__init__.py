@@ -1,5 +1,7 @@
 """Quirks implementations for Schneider Electric devices."""
-from typing import Any, Coroutine, Final, Union
+
+from collections.abc import Coroutine
+from typing import Any, Final, Union
 
 from zigpy import types as t
 from zigpy.quirks import CustomCluster
@@ -16,6 +18,8 @@ class SEBasic(CustomCluster, Basic):
     """Schneider Electric manufacturer specific Basic cluster."""
 
     class AttributeDefs(Basic.AttributeDefs):
+        """Attribute definitions."""
+
         se_sw_build_id: Final = ZCLAttributeDef(
             id=0xE001,
             type=t.CharacterString,
@@ -62,6 +66,8 @@ class SEWindowCovering(CustomCluster, WindowCovering):
     """Schneider Electric manufacturer specific Window Covering cluster."""
 
     class AttributeDefs(WindowCovering.AttributeDefs):
+        """Attribute definitions."""
+
         unknown_attribute_65533: Final = ZCLAttributeDef(
             id=0xFFFD,
             type=t.uint16_t,
@@ -120,6 +126,7 @@ class SEWindowCovering(CustomCluster, WindowCovering):
         *args: Any,
         **kwargs: Any,
     ) -> Coroutine:
+        """Override the command method to invert the percent lift value."""
         command = self.server_commands[command_id]
 
         # Override default command to invert percent lift value.
@@ -152,6 +159,8 @@ class SESpecific(CustomCluster):
     cluster_id = 0xFF17
 
     class AttributeDefs(BaseAttributeDefs):
+        """Attribute definitions."""
+
         led_indicator_signals: Final = ZCLAttributeDef(
             id=0x0000,
             type=SELedIndicatorSignals,

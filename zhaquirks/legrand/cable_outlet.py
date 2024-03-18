@@ -35,6 +35,8 @@ MANUFACTURER_SPECIFIC_CLUSTER_ID_2 = 0xFC40  # 64576
 
 
 class DeviceMode(t.enum16):
+    """Device mode."""
+
     PILOT_OFF = 0x0100
     PILOT_ON = 0x0200
 
@@ -47,6 +49,8 @@ class LegrandCluster(CustomCluster):
     ep_attribute = "legrand_cluster"
 
     class AttributeDefs(BaseAttributeDefs):
+        """Attribute definitions."""
+
         device_mode = ZCLAttributeDef(
             id=0x0000,
             type=t.data16,  # DeviceMode
@@ -65,6 +69,8 @@ class LegrandCluster(CustomCluster):
 
 
 class PilotWireMode(t.enum8):
+    """Pilot wire mode."""
+
     COMFORT = 0x00
     COMFORT_MINUS_1 = 0x01
     COMFORT_MINUS_2 = 0x02
@@ -81,6 +87,8 @@ class LegrandCableOutletCluster(CustomCluster):
     ep_attribute = "cable_outlet_cluster"
 
     class ServerCommandDefs(BaseCommandDefs):
+        """Server command definitions."""
+
         set_pilot_wire_mode = ZCLCommandDef(
             id=0x00,
             schema={"mode": PilotWireMode},
@@ -90,6 +98,8 @@ class LegrandCableOutletCluster(CustomCluster):
 
 
 class Legrand064882CableOutlet(CustomDevice):
+    """Legrand 064882 Cable Outlet device."""
+
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=1
         # input_clusters=[0, 3, 4, 6, 5, 64513, 2820, 64576]

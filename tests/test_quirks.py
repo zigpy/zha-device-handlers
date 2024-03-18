@@ -1,4 +1,5 @@
 """General quirk tests."""
+
 from __future__ import annotations
 
 import collections
@@ -8,19 +9,19 @@ from pathlib import Path
 from unittest import mock
 
 import pytest
+from zigpy import zcl
 import zigpy.device
 import zigpy.endpoint
 import zigpy.profiles
 import zigpy.quirks as zq
 from zigpy.quirks import CustomDevice
 import zigpy.types
-import zigpy.zcl as zcl
 import zigpy.zdo.types
 
 import zhaquirks
+from zhaquirks import const
 import zhaquirks.bosch.motion
 import zhaquirks.centralite.cl_3310S
-import zhaquirks.const as const
 from zhaquirks.const import (
     ARGS,
     COMMAND,
@@ -278,10 +279,8 @@ def test_dev_from_signature(
         assert ep.status == zigpy.endpoint.Status.ZDO_INIT
         assert ep.profile_id == ep_data[PROFILE_ID]
         assert ep.device_type == ep_data[DEVICE_TYPE]
-        assert [cluster_id for cluster_id in ep.in_clusters] == ep_data[INPUT_CLUSTERS]
-        assert [cluster_id for cluster_id in ep.out_clusters] == ep_data[
-            OUTPUT_CLUSTERS
-        ]
+        assert list(ep.in_clusters) == ep_data[INPUT_CLUSTERS]
+        assert list(ep.out_clusters) == ep_data[OUTPUT_CLUSTERS]
 
 
 @pytest.mark.parametrize(
@@ -309,7 +308,7 @@ def test_signature(quirk: CustomDevice) -> None:
     """Make sure signature look sane for all custom devices."""
 
     def _check_range(cluster: zcl.Cluster) -> bool:
-        for range in zcl.Cluster._registry_range.keys():
+        for range in zcl.Cluster._registry_range:
             if range[0] <= cluster <= range[1]:
                 return True
         return False
@@ -429,7 +428,7 @@ def test_quirk_importable(quirk: CustomDevice) -> None:
 
     path = f"{quirk.__module__}.{quirk.__name__}"
     assert all(
-        [m and m.isidentifier() for m in path.split(".")]
+        m and m.isidentifier() for m in path.split(".")
     ), f"{path} is not importable"
 
 
@@ -592,7 +591,7 @@ def test_migrated_lighting_automation_triggers(quirk: CustomDevice) -> None:
     if not hasattr(quirk, "device_automation_triggers"):
         return
 
-    for trigger, event in quirk.device_automation_triggers.items():
+    for event in quirk.device_automation_triggers.values():
         if COMMAND not in event:
             continue
 
@@ -717,7 +716,7 @@ def test_attributes_updated_not_replaced(quirk: CustomDevice) -> None:
     base_cluster_attrs_name = {}
     base_cluster_attrs_id = {}
 
-    for name, cluster in zcl.clusters.CLUSTERS_BY_NAME.items():
+    for cluster in zcl.clusters.CLUSTERS_BY_NAME.values():
         assert cluster.ep_attribute not in base_cluster_attrs_name
         base_cluster_attrs_name[cluster.ep_attribute] = set(
             cluster.attributes_by_name.keys()
@@ -726,13 +725,15 @@ def test_attributes_updated_not_replaced(quirk: CustomDevice) -> None:
             cluster.attributes_by_name.keys()
         )
 
-    for ep_id, ep_data in quirk.replacement[ENDPOINTS].items():
+    for ep_data in quirk.replacement[ENDPOINTS].values():
         for cluster in ep_data.get(INPUT_CLUSTERS, []) + ep_data.get(
             OUTPUT_CLUSTERS, []
         ):
-            if isinstance(cluster, int) or not issubclass(cluster, zcl.Cluster):
-                continue
-            elif cluster in ALL_ZIGPY_CLUSTERS:
+            if (
+                isinstance(cluster, int)
+                or not issubclass(cluster, zcl.Cluster)
+                or cluster in ALL_ZIGPY_CLUSTERS
+            ):
                 continue
 
             assert issubclass(cluster, zigpy.quirks.CustomCluster)
@@ -826,6 +827,6 @@ def test_no_duplicate_clusters(quirk: CustomDevice) -> None:
                 )
             used_cluster_ids.add(cluster_id)
 
-    for ep_id, ep_data in quirk.replacement[ENDPOINTS].items():
+    for ep_id, ep_data in quirk.replacement[ENDPOINTS].items():  # noqa: B007
         check_for_duplicate_cluster_ids(ep_data.get(INPUT_CLUSTERS, []))
         check_for_duplicate_cluster_ids(ep_data.get(OUTPUT_CLUSTERS, []))
