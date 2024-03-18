@@ -62,21 +62,21 @@ def test_light_switch_with_neutral_signature(assert_signature_matches_quirk):
     )
 
 
-async def test_cable_outlet_write_attrs(zigpy_device_from_v2_quirk):
+async def test_legrand_wire_pilot_cluster_write_attrs(zigpy_device_from_v2_quirk):
     """Test Legrand cable outlet heat mode attr writing."""
 
     device = zigpy_device_from_v2_quirk(f" {LEGRAND}", " Cable outlet")
-    cable_outlet_cluster = device.endpoints[1].cable_outlet_cluster
-    cable_outlet_cluster._write_attributes = mock.AsyncMock()
-    cable_outlet_cluster.set_heat_mode = mock.AsyncMock()
+    legrand_wire_pilot_cluster = device.endpoints[1].legrand_wire_pilot_cluster
+    legrand_wire_pilot_cluster._write_attributes = mock.AsyncMock()
+    legrand_wire_pilot_cluster.set_heat_mode = mock.AsyncMock()
 
-    await cable_outlet_cluster.write_attributes({0x00: 0x02}, manufacturer=0xFC40)
+    await legrand_wire_pilot_cluster.write_attributes({0x00: 0x02}, manufacturer=0xFC40)
 
-    cable_outlet_cluster.set_heat_mode.assert_awaited_with(
+    legrand_wire_pilot_cluster.set_heat_mode.assert_awaited_with(
         0x02,
         manufacturer=0xFC40,
     )
-    cable_outlet_cluster._write_attributes.assert_awaited_with(
+    legrand_wire_pilot_cluster._write_attributes.assert_awaited_with(
         [],
         manufacturer=0xFC40,
     )
@@ -84,11 +84,11 @@ async def test_cable_outlet_write_attrs(zigpy_device_from_v2_quirk):
 @pytest.mark.parametrize(
     "value, expected_value",
     [
-        (0x01, [1, 0]),
-        (0x02, [2, 0]),
+        (False, [1, 0]),
+        (True, [2, 0]),
     ],
 )
-async def test_legrand_write_device_mode(zigpy_device_from_v2_quirk, value, expected_value):
+async def test_legrand_wire_pilot_mode_write_attrs(zigpy_device_from_v2_quirk, value, expected_value):
     """Test Legrand cable outlet heat mode attr writing."""
 
     device = zigpy_device_from_v2_quirk(f" {LEGRAND}", " Cable outlet")
@@ -108,3 +108,4 @@ async def test_legrand_write_device_mode(zigpy_device_from_v2_quirk, value, expe
         [expected],
         manufacturer=0xFC40,
     )
+
