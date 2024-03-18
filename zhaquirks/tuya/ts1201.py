@@ -81,16 +81,13 @@ class ZosungIRControl(CustomCluster):
         self, attributes, allow_cache=False, only_cache=False, manufacturer=None
     ):
         """Read attributes ZCL foundation command."""
-        if self.AttributeDefs.last_learned_ir_code.id in attributes:
+        if (
+            self.AttributeDefs.last_learned_ir_code.id in attributes
+            or "last_learned_ir_code" in attributes
+        ):
             return {0: self.endpoint.device.last_learned_ir_code}, {}
         else:
-            attr = await super().read_attributes(
-                attributes,
-                allow_cache=allow_cache,
-                only_cache=only_cache,
-                manufacturer=manufacturer,
-            )
-            return attr
+            return {}, {0: foundation.Status.UNSUPPORTED_ATTRIBUTE}
 
     async def command(
         self,
@@ -115,7 +112,7 @@ class ZosungIRControl(CustomCluster):
                 tsn=tsn,
             )
         elif command_id == self.ServerCommandDefs.IRSend.id:
-            ir_msg = f'{{"key_num":1,"delay":300,"key1":{{"num":1,"freq":38000,"type":1,"key_code":"{kwargs["code"]}"}}}}'
+            ir_msg = f"""{{"key_num":1,"delay":300,"key1":{{"num":1,"freq":38000,"type":1,"key_code":"{kwargs["code"]}"}}}}"""
             self.debug("ir_msg to send: %s", ir_msg)
             seq = self.endpoint.device.next_seq()
             self.endpoint.device.ir_msg_to_send = {seq: ir_msg}
