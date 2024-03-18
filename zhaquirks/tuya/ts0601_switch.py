@@ -1050,7 +1050,7 @@ class TuyaSwitchX12_GP(TuyaSwitch):
                     TuyaOnOffNM,
                 ],
                 OUTPUT_CLUSTERS: [],
-            },            
+            },
             10: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
