@@ -2,6 +2,7 @@
 
 import asyncio
 import datetime
+import struct
 from unittest import mock
 
 import pytest
@@ -1617,3 +1618,174 @@ def test_ts1201_signature(assert_signature_matches_quirk):
         "class": "zhaquirks.tuya.ts1201.ZosungIRBlaster",
     }
     assert_signature_matches_quirk(zhaquirks.tuya.ts1201.ZosungIRBlaster, signature)
+
+
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts1201.ZosungIRBlaster,))
+async def test_ts1201_ir_blaster(zigpy_device_from_quirk, quirk):
+    """Test tuya TS1201 IR blaster."""
+
+    irCode_to_learn = "A/AESQFAAwUIAvAErwHgAQNADwXwBK8BrwFABcADAXYfwAkBrwHACeABBwXwBK8BrwFABcAD4GgvAgRJAQ==" # a learned code
+    irCode_to_send = "B3wPfA/5AcoH4AUDAeUDgAPAC+AHB+AHA+ADN+ALBw==" # my TV poweroff/on code
+
+    irmsg = '{"key_num":1,"delay":300,"key1":{"num":1,"freq":38000,"type":1,"key_code":"' + irCode_to_send + '"}}'
+    irmsg_length = len(irmsg)
+    part_max_length = 0x38
+    position = 0
+    control_clusterid = 57348
+    transmit_clusterid = 60672
+
+    ts1201_dev = zigpy_device_from_quirk(quirk)
+    ts1201_control_cluster = ts1201_dev.endpoints[1].zosung_ircontrol
+    ts1201_transmit_cluster = ts1201_dev.endpoints[1].zosung_irtransmit
+    ts1201_transmit_listener = ClusterListener(ts1201_transmit_cluster)
+
+    # test Byte helper class
+    a, b = zhaquirks.tuya.ts1201.Bytes.deserialize(data = b'\x00\x01\x02\x03\x04')
+    assert b == b''
+    assert a == b'\x00\x01\x02\x03\x04'
+
+    with mock.patch.object(
+        ts1201_control_cluster.endpoint,
+        "request",
+        return_value=foundation.Status.SUCCESS,
+    ) as m1:
+        # study mode on
+        rsp = await ts1201_control_cluster.command(0x0001, on_off=True)
+        await wait_for_zigpy_tasks()
+        m1.assert_called_with(
+            control_clusterid,
+            1,
+            b"\x01\x01\x00" + b'{"study":0}',
+            expect_reply=True,
+            command_id=0,
+        )
+        assert rsp == foundation.Status.SUCCESS
+
+        # simulate receive_ir_frame_00 (the first frame when device sends # learned code)
+        hdr, args = ts1201_transmit_cluster.deserialize(b"\x01k\x00\x01\x00=\x00\x00\x00\x00\x00\x00\x00\x04\xe0\x01\x04\x00\x00")
+        ts1201_transmit_cluster.handle_message(hdr, args)
+        await wait_for_zigpy_tasks()
+        m1.assert_called_with(
+            transmit_clusterid,
+            3,
+            b'\x01\x03\x02\x01\x00' + struct.pack("<L", position) + struct.pack("<B", part_max_length),
+            expect_reply=True,
+            command_id=2,
+        )
+        assert type(ts1201_transmit_listener.cluster_commands[0][2]).__name__ == "receive_ir_frame_00"
+        assert ts1201_transmit_listener.cluster_commands[0][2].length == 61
+        assert ts1201_transmit_listener.cluster_commands[0][2].clusterid == control_clusterid
+        assert ts1201_transmit_listener.cluster_commands[0][2].cmd == 0x04
+
+        # simulate receive_ir_frame_01
+        position += part_max_length -1
+        hdr, args = ts1201_transmit_cluster.deserialize(b"\tl\x03\x00\x01\x00\x00\x00\x00\x007\x03\xf0\x04I\x01@\x03\x05\x08\x02\xf0\x04\xaf\x01\xe0\x01\x03@\x0f\x05\xf0\x04\xaf\x01\xaf\x01@\x05\xc0\x03\x01v\x1f\xc0\t\x01\xaf\x01\xc0\t\xe0\x01\x07\x05\xf0\x04\xaf\x01\xaf\x01@\x05\xc0\x03\xe0\xcd")
+        ts1201_transmit_cluster.handle_message(hdr, args)
+        await wait_for_zigpy_tasks()
+        m1.assert_called_with(
+            transmit_clusterid,
+            4,
+            b'\x01\x04\x02\x01\x00' + struct.pack("<L", position) + struct.pack("<B", part_max_length),
+            expect_reply=False,
+            command_id=2,
+        )
+        assert type(ts1201_transmit_listener.cluster_commands[1][2]).__name__ == "resp_ir_frame_03"
+        assert ts1201_transmit_listener.cluster_commands[1][2].position == 0
+        assert ts1201_transmit_listener.cluster_commands[1][2].msgpart == b'\x03\xf0\x04I\x01@\x03\x05\x08\x02\xf0\x04\xaf\x01\xe0\x01\x03@\x0f\x05\xf0\x04\xaf\x01\xaf\x01@\x05\xc0\x03\x01v\x1f\xc0\t\x01\xaf\x01\xc0\t\xe0\x01\x07\x05\xf0\x04\xaf\x01\xaf\x01@\x05\xc0\x03\xe0'
+        assert ts1201_transmit_listener.cluster_commands[1][2].msgpartcrc == 205
+
+        # simulate second receive_ir_frame_01
+        position += part_max_length -1
+        hdr, args = ts1201_transmit_cluster.deserialize(b"\tm\x03\x00\x01\x007\x00\x00\x00\x06h/\x02\x04I\x01\xe7")
+        ts1201_transmit_cluster.handle_message(hdr, args)
+        await wait_for_zigpy_tasks()
+        m1.assert_called_with(
+            transmit_clusterid,
+            5,
+            b'\x01\x05\x04\x00\x01\x00\x00\x00',
+            expect_reply=False,
+            command_id=4,
+        )
+        assert type(ts1201_transmit_listener.cluster_commands[2][2]).__name__ == "resp_ir_frame_03"
+        assert ts1201_transmit_listener.cluster_commands[2][2].position == position - part_max_length + 1
+        assert ts1201_transmit_listener.cluster_commands[2][2].msgpart == b'h/\x02\x04I\x01'
+        assert ts1201_transmit_listener.cluster_commands[2][2].msgpartcrc == 231
+
+        # simulate last receive_ir_frame_01
+        hdr, args = ts1201_transmit_cluster.deserialize(b"\tn\x05\x01\x00\x00\x00")
+        ts1201_transmit_cluster.handle_message(hdr, args)
+        await wait_for_zigpy_tasks()
+        m1.assert_called_with(
+            control_clusterid,
+            6,
+            b'\x01\x06\x00{"study":1}',
+            expect_reply=True,
+            command_id=0,
+        )
+        assert type(ts1201_transmit_listener.cluster_commands[3][2]).__name__ == "resp_ir_frame_05"
+
+        # should return learned IR code
+        succ, fail = await ts1201_control_cluster.read_attributes(("last_learned_ir_code",))
+        assert succ[0] == irCode_to_learn
+
+        # test unknown attribute
+        succ, fail = await ts1201_control_cluster.read_attributes(("another_attribute",))
+        assert fail[0] == foundation.Status.UNSUPPORTED_ATTRIBUTE
+
+        # IR Send tests
+        rsp = await ts1201_control_cluster.command(0x0002, code=irCode_to_send)
+        await wait_for_zigpy_tasks()
+        # IRSend must call irtransmit command id 0x00
+        m1.assert_called_with(
+            transmit_clusterid,
+            7,
+            b"\x01\x07\x00\x01\x00" + struct.pack("<I", irmsg_length)
+            + b"\x00\x00\x00\x00" + struct.pack("<H", control_clusterid) + b"\x01\x02\x00\x00",
+            expect_reply=False,
+            command_id=0,
+        )
+
+        hdr, args = ts1201_transmit_cluster.deserialize(b"\x05\x02\x10\x01\x00\x01\x00z\x00\x00\x00\x00\x00\x00\x00\x04\xe0\x01\x02\x00\x00")
+        ts1201_transmit_cluster.handle_message(hdr, args)
+        await wait_for_zigpy_tasks()
+#        \x01\t\x02\x01\x00\x00\x00\x00\x008
+        m1.assert_called_with(
+            transmit_clusterid,
+            9,
+            b'\x01\x09\x02\x01\x00\x00\x00\x00\x00' + struct.pack("<B", part_max_length),
+            expect_reply=True,
+            command_id=2,
+        )
+        assert type(ts1201_transmit_listener.cluster_commands[4][2]).__name__ == "receive_ir_frame_00"
+        assert ts1201_transmit_listener.cluster_commands[4][2].length == irmsg_length
+        assert ts1201_transmit_listener.cluster_commands[4][2].clusterid == control_clusterid
+        assert ts1201_transmit_listener.cluster_commands[4][2].cmd == 2
+
+        hdr, args = ts1201_transmit_cluster.deserialize(b"\x01f\x01\x00\x01\x00z\x00\x00\x00\x00\x00\x00\x00\x04\xe0\x01\x02\x00\x00")
+        ts1201_transmit_cluster.handle_message(hdr, args)
+        await wait_for_zigpy_tasks()
+
+        hdr, args = ts1201_transmit_cluster.deserialize(b"\x11g\x02\x01\x00\x00\x00\x00\x00@")
+        rsp = ts1201_transmit_cluster.handle_message(hdr, args)
+        await wait_for_zigpy_tasks()
+
+        hdr, args = ts1201_transmit_cluster.deserialize(b"\x01i\x04\x00\x01\x00\x00\x00")
+        ts1201_transmit_cluster.handle_message(hdr, args)
+        await wait_for_zigpy_tasks()
+
+        # test raw data command
+        rsp = await ts1201_control_cluster.command(0x0000, zhaquirks.tuya.ts1201.Bytes(b'\x00\x01\x02\x03\x04'))
+        await wait_for_zigpy_tasks()
+        m1.assert_called_with(
+            control_clusterid,
+            12,
+            b"\x01\x0c\x00\x00\x01\x02\x03\x04",
+            expect_reply=True,
+            command_id=0,
+        )
+        assert rsp == foundation.Status.SUCCESS
+
+        # test unknown request from device
+        hdr, args = ts1201_transmit_cluster.deserialize(b"\x110\x06\x01\x00\x00\x00\x00\x00")
+        rsp = ts1201_transmit_cluster.handle_message(hdr, args)
+
