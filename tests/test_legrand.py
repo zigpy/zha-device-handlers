@@ -5,6 +5,7 @@ from unittest import mock
 import pytest
 from zigpy.zcl import foundation
 
+from tests.common import ClusterListener
 import zhaquirks
 from zhaquirks.legrand import LEGRAND
 
@@ -84,8 +85,10 @@ async def test_legrand_wire_pilot_cluster_write_attrs(zigpy_device_from_v2_quirk
 @pytest.mark.parametrize(
     "attr, value, expected_attr, expected_value",
     [
+        # Wire pilot mode attribute
         (0x4000, False, 0x0000, [1, 0]),
         (0x4000, True, 0x0000, [2, 0]),
+        # Other attributes
         (0x0001, False, 0x0001, False),
         (0x0002, True, 0x0002, True),
     ],
@@ -110,3 +113,27 @@ async def test_legrand_wire_pilot_mode_write_attrs(zigpy_device_from_v2_quirk, a
         [expected],
         manufacturer=0xFC40,
     )
+
+@pytest.mark.parametrize(
+    "attr, value, expected_attr, expected_value",
+    [
+        # Device mode attribute
+        (0x0000, [1, 0], 0x4000, False),
+        (0x0000, [2, 0], 0x4000, True),
+    ],
+)
+async def test_legrand_wire_pilot_mode_update_attr(zigpy_device_from_v2_quirk, attr, value, expected_attr, expected_value):
+    """Test Legrand cable outlet attr update."""
+
+    device = zigpy_device_from_v2_quirk(f" {LEGRAND}", " Cable outlet")
+    legrand_cluster = device.endpoints[1].legrand_cluster
+
+    legrand_cluster_listener = ClusterListener(legrand_cluster)
+
+    legrand_cluster.update_attribute(attr, value)
+
+    assert len(legrand_cluster_listener.attribute_updates) == 2
+    assert legrand_cluster_listener.attribute_updates[0][0] == attr
+    assert legrand_cluster_listener.attribute_updates[0][1] == value
+    assert legrand_cluster_listener.attribute_updates[1][0] == expected_attr
+    assert legrand_cluster_listener.attribute_updates[1][1] == expected_value
