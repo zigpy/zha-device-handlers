@@ -82,23 +82,25 @@ async def test_legrand_wire_pilot_cluster_write_attrs(zigpy_device_from_v2_quirk
     )
 
 @pytest.mark.parametrize(
-    "value, expected_value",
+    "attr, value, expected_attr, expected_value",
     [
-        (False, [1, 0]),
-        (True, [2, 0]),
+        (0x4000, False, 0x0000, [1, 0]),
+        (0x4000, True, 0x0000, [2, 0]),
+        (0x0001, False, 0x0001, False),
+        (0x0002, True, 0x0002, True),
     ],
 )
-async def test_legrand_wire_pilot_mode_write_attrs(zigpy_device_from_v2_quirk, value, expected_value):
-    """Test Legrand cable outlet heat mode attr writing."""
+async def test_legrand_wire_pilot_mode_write_attrs(zigpy_device_from_v2_quirk, attr, value, expected_attr, expected_value):
+    """Test Legrand cable outlet attr writing."""
 
     device = zigpy_device_from_v2_quirk(f" {LEGRAND}", " Cable outlet")
     legrand_cluster = device.endpoints[1].legrand_cluster
     legrand_cluster._write_attributes = mock.AsyncMock()
 
-    await legrand_cluster.write_attributes({ 0x4000: value }, manufacturer=0xFC40)
+    await legrand_cluster.write_attributes({ attr: value }, manufacturer=0xFC40)
 
-    expected = foundation.Attribute(0x0000, foundation.TypeValue())
-    expected_attr_def = legrand_cluster.find_attribute(0x0000)
+    expected = foundation.Attribute(expected_attr, foundation.TypeValue())
+    expected_attr_def = legrand_cluster.find_attribute(expected_attr)
     expected.value.type = foundation.DATA_TYPES.pytype_to_datatype_id(
         expected_attr_def.type
     )
@@ -108,4 +110,3 @@ async def test_legrand_wire_pilot_mode_write_attrs(zigpy_device_from_v2_quirk, v
         [expected],
         manufacturer=0xFC40,
     )
-
