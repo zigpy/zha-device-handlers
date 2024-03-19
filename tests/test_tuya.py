@@ -1,6 +1,7 @@
 """Tests for Tuya quirks."""
 
 import asyncio
+import base64
 import datetime
 import struct
 from unittest import mock
@@ -1624,14 +1625,22 @@ def test_ts1201_signature(assert_signature_matches_quirk):
 async def test_ts1201_ir_blaster(zigpy_device_from_quirk, quirk):
     """Test tuya TS1201 IR blaster."""
 
+    part_max_length = 0x38
     # a learned code
     irCode_to_learn = "A/AESQFAAwUIAvAErwHgAQNADwXwBK8BrwFABcADAXYfwAkBrwHACeABBwXwBK8BrwFABcAD4GgvAgRJAQ=="
+    irCode_to_learn_bytes = base64.b64decode(irCode_to_learn)
+    irCode_to_learn_part1 = irCode_to_learn_bytes[:part_max_length-1]
+    crc1 = 0
+    for x in irCode_to_learn_part1:
+        crc1 = (crc1 + x ) % 0x100
+    irCode_to_learn_part2 = irCode_to_learn_bytes[part_max_length-1:]
+    crc2 = 0
+    for x in irCode_to_learn_part2:
+        crc2 = (crc2 + x) % 0x100
     # my TV poweroff/on code
     irCode_to_send = "B3wPfA/5AcoH4AUDAeUDgAPAC+AHB+AHA+ADN+ALBw=="
-
     irmsg = '{"key_num":1,"delay":300,"key1":{"num":1,"freq":38000,"type":1,"key_code":"' + irCode_to_send + '"}}'
     irmsg_length = len(irmsg)
-    part_max_length = 0x38
     position = 0
     control_clusterid = 57348
     transmit_clusterid = 60672
@@ -1663,7 +1672,7 @@ async def test_ts1201_ir_blaster(zigpy_device_from_quirk, quirk):
         )
         assert rsp == foundation.Status.SUCCESS
 
-        # simulate receive_ir_frame_00 (the first frame when device sends # learned code)
+        # simulate receive_ir_frame_00 (the first frame when device sends a learned code)
         hdr, args = ts1201_transmit_cluster.deserialize(b"\x01k\x00\x01\x00=\x00\x00\x00\x00\x00\x00\x00\x04\xe0\x01\x04\x00\x00")
         ts1201_transmit_cluster.handle_message(hdr, args)
         await wait_for_zigpy_tasks()
@@ -1693,8 +1702,8 @@ async def test_ts1201_ir_blaster(zigpy_device_from_quirk, quirk):
         )
         assert type(ts1201_transmit_listener.cluster_commands[1][2]).__name__ == "resp_ir_frame_03"
         assert ts1201_transmit_listener.cluster_commands[1][2].position == 0
-        assert ts1201_transmit_listener.cluster_commands[1][2].msgpart == b'\x03\xf0\x04I\x01@\x03\x05\x08\x02\xf0\x04\xaf\x01\xe0\x01\x03@\x0f\x05\xf0\x04\xaf\x01\xaf\x01@\x05\xc0\x03\x01v\x1f\xc0\t\x01\xaf\x01\xc0\t\xe0\x01\x07\x05\xf0\x04\xaf\x01\xaf\x01@\x05\xc0\x03\xe0'
-        assert ts1201_transmit_listener.cluster_commands[1][2].msgpartcrc == 205
+        assert ts1201_transmit_listener.cluster_commands[1][2].msgpart == irCode_to_learn_part1
+        assert ts1201_transmit_listener.cluster_commands[1][2].msgpartcrc == crc1
 
         # simulate second receive_ir_frame_01
         position += part_max_length -1
@@ -1710,8 +1719,8 @@ async def test_ts1201_ir_blaster(zigpy_device_from_quirk, quirk):
         )
         assert type(ts1201_transmit_listener.cluster_commands[2][2]).__name__ == "resp_ir_frame_03"
         assert ts1201_transmit_listener.cluster_commands[2][2].position == position - part_max_length + 1
-        assert ts1201_transmit_listener.cluster_commands[2][2].msgpart == b'h/\x02\x04I\x01'
-        assert ts1201_transmit_listener.cluster_commands[2][2].msgpartcrc == 231
+        assert ts1201_transmit_listener.cluster_commands[2][2].msgpart == irCode_to_learn_part2
+        assert ts1201_transmit_listener.cluster_commands[2][2].msgpartcrc == crc2
 
         # simulate last receive_ir_frame_01
         hdr, args = ts1201_transmit_cluster.deserialize(b"\tn\x05\x01\x00\x00\x00")
