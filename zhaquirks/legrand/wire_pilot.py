@@ -118,8 +118,6 @@ class LegrandWirePilotCluster(CustomCluster):
             attr_id = attr_def.id
             if attr_id == LEGRAND_HEAT_MODE_ATTR:
                 await self.set_heat_mode(value, manufacturer=manufacturer)
-            else:
-                attrs[attr] = value
         return await super().write_attributes(attrs, manufacturer)
 
     def _update_attribute(self, attrid, value):
