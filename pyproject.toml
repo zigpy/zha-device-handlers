@@ -78,7 +78,7 @@ testpaths = "tests"
 norecursedirs = ".git testing_config"
 
 [tool.codespell]
-skip = "Contributors.md, tests/test_tuya.py"
+skip = "Contributors.md,tests/test_tuya.py"
 ignore-words-list = "hass, dout, potentiels"
 quiet-level = 2
 
