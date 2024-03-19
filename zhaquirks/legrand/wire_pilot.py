@@ -4,7 +4,7 @@ from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import add_to_registry_v2
 import zigpy.types as t
 from zigpy.zcl import ClusterType
-from zigpy.zcl.clusters.hvac import Thermostat
+from zigpy.zcl.clusters.hvac import SystemMode, Thermostat
 from zigpy.zcl.foundation import (
     BaseAttributeDefs,
     BaseCommandDefs,
@@ -18,10 +18,12 @@ from zhaquirks.legrand import LEGRAND, MANUFACTURER_SPECIFIC_CLUSTER_ID
 
 MANUFACTURER_SPECIFIC_CLUSTER_ID_2 = 0xFC40  # 64576
 
+
 WIRE_PILOT_MODE_ATTR = 0x4000
 
 LEGRAND_HEAT_MODE_ATTR = 0x00
 THERMOSTAT_HEAT_MODE_ATTR = 0x4000
+THERMOSTAT_SYSTEM_MODE_ATTR = Thermostat.attributes_by_name["system_mode"].id
 
 
 class LegrandCluster(CustomCluster):
@@ -137,27 +139,48 @@ class LegrandWirePilotThermostatCluster(LocalDataCluster, Thermostat):
         heat_mode = ZCLAttributeDef(
             id=THERMOSTAT_HEAT_MODE_ATTR,
             type=HeatMode,
-            is_manufacturer_specific=True,
         )
 
     async def write_attributes(self, attributes, manufacturer=None) -> list:
         """Write attributes to the cluster."""
 
         attrs = {}
+        mode: HeatMode = None
         for attr, value in attributes.items():
             attr_def = self.find_attribute(attr)
             attr_id = attr_def.id
             if attr_id == THERMOSTAT_HEAT_MODE_ATTR:
-                await self.endpoint.legrand_wire_pilot_cluster.set_heat_mode(
-                    value, manufacturer=manufacturer
-                )
+                mode = value
+            elif attr_id == THERMOSTAT_SYSTEM_MODE_ATTR:
+                current = self._attr_cache.get(THERMOSTAT_SYSTEM_MODE_ATTR)
+                if current != value:
+                    mode = (
+                        HeatMode.Comfort if value == SystemMode.Heat else HeatMode.Off
+                    )
             else:
                 attrs[attr] = value
+
+        if mode is not None:
+            await self.endpoint.legrand_wire_pilot_cluster.set_heat_mode(
+                mode, manufacturer=manufacturer
+            )
         return await super().write_attributes(attrs, manufacturer)
 
     def heat_mode_change(self, value):
         """Handle the change in heat mode."""
 
+        system_mode = SystemMode.Off
+        if value in (
+            HeatMode.Comfort,
+            HeatMode.Comfort_minus_1,
+            HeatMode.Comfort_minus_2,
+            HeatMode.Eco,
+            HeatMode.Frost_protection,
+        ):
+            system_mode = SystemMode.Heat
+
+        """Heat mode changed reported."""
+        self._update_attribute(THERMOSTAT_SYSTEM_MODE_ATTR, system_mode)
         self._update_attribute(THERMOSTAT_HEAT_MODE_ATTR, value)
 
 
