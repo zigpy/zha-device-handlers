@@ -4,6 +4,7 @@ from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import add_to_registry_v2
 import zigpy.types as t
 from zigpy.zcl import ClusterType
+from zigpy.zcl.clusters.hvac import Thermostat
 from zigpy.zcl.foundation import (
     BaseAttributeDefs,
     BaseCommandDefs,
@@ -12,13 +13,15 @@ from zigpy.zcl.foundation import (
     ZCLCommandDef,
 )
 
+from zhaquirks import LocalDataCluster
 from zhaquirks.legrand import LEGRAND, MANUFACTURER_SPECIFIC_CLUSTER_ID
 
 MANUFACTURER_SPECIFIC_CLUSTER_ID_2 = 0xFC40  # 64576
 
-WIRE_PILOT_HEAT_MODE_ATTR = 0x00
+WIRE_PILOT_MODE_ATTR = 0x4000
 
-ZCL_WIRE_PILOT_MODE = 0x4000
+LEGRAND_HEAT_MODE_ATTR = 0x00
+THERMOSTAT_HEAT_MODE_ATTR = 0x4000
 
 
 class LegrandCluster(CustomCluster):
@@ -46,9 +49,7 @@ class LegrandCluster(CustomCluster):
             type=t.Bool,
             is_manufacturer_specific=True,
         )
-        wire_pilot_mode = ZCLAttributeDef(
-            id=ZCL_WIRE_PILOT_MODE, type=t.Bool
-        )
+        wire_pilot_mode = ZCLAttributeDef(id=WIRE_PILOT_MODE_ATTR, type=t.Bool)
 
     async def write_attributes(self, attributes, manufacturer=None) -> list:
         """Write attributes to the cluster."""
@@ -57,7 +58,7 @@ class LegrandCluster(CustomCluster):
         for attr, value in attributes.items():
             attr_def = self.find_attribute(attr)
             attr_id = attr_def.id
-            if attr_id == ZCL_WIRE_PILOT_MODE:
+            if attr_id == WIRE_PILOT_MODE_ATTR:
                 attrs[0x0000] = [0x02, 0x00] if value else [0x01, 0x00]
             else:
                 attrs[attr] = value
@@ -66,7 +67,7 @@ class LegrandCluster(CustomCluster):
     def _update_attribute(self, attrid, value) -> None:
         super()._update_attribute(attrid, value)
         if attrid == 0x0000:
-            self._update_attribute(ZCL_WIRE_PILOT_MODE, value[0] == 0x02)
+            self._update_attribute(WIRE_PILOT_MODE_ATTR, value[0] == 0x02)
 
 
 class HeatMode(t.enum8):
@@ -91,7 +92,7 @@ class LegrandWirePilotCluster(CustomCluster):
         """Attribute definitions for LegrandCluster."""
 
         heat_mode = ZCLAttributeDef(
-            id=WIRE_PILOT_HEAT_MODE_ATTR,
+            id=LEGRAND_HEAT_MODE_ATTR,
             type=HeatMode,
             is_manufacturer_specific=True,
         )
@@ -100,7 +101,7 @@ class LegrandWirePilotCluster(CustomCluster):
         """Server command definitions."""
 
         set_heat_mode = ZCLCommandDef(
-            id=WIRE_PILOT_HEAT_MODE_ATTR,
+            id=LEGRAND_HEAT_MODE_ATTR,
             schema={"mode": HeatMode},
             direction=Direction.Client_to_Server,
             is_manufacturer_specific=True,
@@ -113,11 +114,51 @@ class LegrandWirePilotCluster(CustomCluster):
         for attr, value in attributes.items():
             attr_def = self.find_attribute(attr)
             attr_id = attr_def.id
-            if attr_id == WIRE_PILOT_HEAT_MODE_ATTR:
+            if attr_id == LEGRAND_HEAT_MODE_ATTR:
                 await self.set_heat_mode(value, manufacturer=manufacturer)
             else:
                 attrs[attr] = value
         return await super().write_attributes(attrs, manufacturer)
+
+    def _update_attribute(self, attrid, value):
+        super()._update_attribute(attrid, value)
+        if attrid == LEGRAND_HEAT_MODE_ATTR:
+            self.endpoint.thermostat.heat_mode_change(value)
+
+
+class LegrandWirePilotThermostatCluster(LocalDataCluster, Thermostat):
+    """Thermostat cluster for Legrand wire pilot thermostats."""
+
+    _CONSTANT_ATTRIBUTES = {0x001B: Thermostat.ControlSequenceOfOperation.Heating_Only}
+
+    class AttributeDefs(Thermostat.AttributeDefs):
+        """Attribute definitions."""
+
+        heat_mode = ZCLAttributeDef(
+            id=THERMOSTAT_HEAT_MODE_ATTR,
+            type=HeatMode,
+            is_manufacturer_specific=True,
+        )
+
+    async def write_attributes(self, attributes, manufacturer=None) -> list:
+        """Write attributes to the cluster."""
+
+        attrs = {}
+        for attr, value in attributes.items():
+            attr_def = self.find_attribute(attr)
+            attr_id = attr_def.id
+            if attr_id == THERMOSTAT_HEAT_MODE_ATTR:
+                await self.endpoint.legrand_wire_pilot_cluster.set_heat_mode(
+                    value, manufacturer=manufacturer
+                )
+            else:
+                attrs[attr] = value
+        return await super().write_attributes(attrs, manufacturer)
+
+    def heat_mode_change(self, value):
+        """Handle the change in heat mode."""
+
+        self._update_attribute(THERMOSTAT_HEAT_MODE_ATTR, value)
 
 
 (
@@ -125,6 +166,7 @@ class LegrandWirePilotCluster(CustomCluster):
     .replaces(LegrandCluster)
     .replaces(LegrandWirePilotCluster)
     .replaces(LegrandCluster, cluster_type=ClusterType.Client)
+    .adds(LegrandWirePilotThermostatCluster)
     .switch(
         attribute_name=LegrandCluster.AttributeDefs.wire_pilot_mode.name,
         cluster_id=LegrandCluster.cluster_id,
