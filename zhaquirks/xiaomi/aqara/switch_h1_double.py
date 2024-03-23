@@ -63,7 +63,7 @@ class AqaraH1DoubleRockerSwitchNoNeutral(XiaomiOpple2ButtonSwitchBase):
     """Aqara H1 Double Rocker Switch (no neutral)."""
 
     signature = {
-        MODELS_INFO: [(LUMI, "lumi.switch.l2aeu1")],
+        MODELS_INFO: [(LUMI, "lumi.switch.l2aeu1"), (LUMI, "lumi.switch.b2lc04")],
         ENDPOINTS: {
             # input_clusters=[0, 2, 3, 4, 5, 6, 18, 64704], output_clusters=[10, 25]
             1: {
@@ -142,7 +142,7 @@ class AqaraH1DoubleRockerSwitchNoNeutralAlt(XiaomiOpple2ButtonSwitchBase):
     """Aqara H1 Double Rocker Switch (no neutral) alternative signature."""
 
     signature = {
-        MODELS_INFO: [(LUMI, "lumi.switch.l2aeu1")],
+        MODELS_INFO: [(LUMI, "lumi.switch.l2aeu1"), (LUMI, "lumi.switch.b2lc04")],
         ENDPOINTS: {
             # input_clusters=[0, 2, 3, 4, 5, 6, 9], output_clusters=[10, 25]
             1: {
