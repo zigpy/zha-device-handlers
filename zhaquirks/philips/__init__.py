@@ -219,3 +219,24 @@ class PhilipsRemoteCluster(CustomCluster):
         else:
             action = f"{button}_{press_type}"
             self.listener_event(ZHA_SEND_EVENT, action, event_args)
+
+
+class PhilipsEffectCluster(CustomCluster):
+    """Philips effect cluster."""
+
+    cluster_id = 0xFC03
+    ep_attribute = "philips_effect"
+
+    server_commands = {
+        0x00: foundation.ZCLCommandDef(
+            "set_effect",
+            schema={
+                "param1": t.uint8_t,
+                "param2": t.uint8_t,
+                "param3": t.uint8_t,
+                "param4": t.uint8_t,
+            },
+            direction=foundation.Direction.Client_to_Server,
+            is_manufacturer_specific=True,
+        )
+    }
