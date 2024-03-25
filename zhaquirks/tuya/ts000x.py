@@ -855,7 +855,7 @@ class Switch_4G_GPP(EnchantedDevice):
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     Identify.cluster_id,
@@ -869,7 +869,7 @@ class Switch_4G_GPP(EnchantedDevice):
             },
             2: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
                     Groups.cluster_id,
                     Scenes.cluster_id,
@@ -880,7 +880,7 @@ class Switch_4G_GPP(EnchantedDevice):
             },
             3: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
                     Groups.cluster_id,
                     Scenes.cluster_id,
@@ -891,7 +891,7 @@ class Switch_4G_GPP(EnchantedDevice):
             },
             4: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
                     Groups.cluster_id,
                     Scenes.cluster_id,
