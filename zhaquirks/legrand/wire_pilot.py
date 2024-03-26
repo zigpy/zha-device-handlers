@@ -57,14 +57,14 @@ class LegrandCluster(CustomCluster):
             attr_def = self.find_attribute(attr)
             attr_id = attr_def.id
             if attr_id == WIRE_PILOT_MODE_ATTR:
-                attrs[0x0000] = [0x02, 0x00] if value else [0x01, 0x00]
+                attrs[LegrandCluster.AttributeDefs.device_mode.id] = [0x02, 0x00] if value else [0x01, 0x00]
             else:
                 attrs[attr] = value
         return await super().write_attributes(attrs, manufacturer)
 
     def _update_attribute(self, attrid, value) -> None:
         super()._update_attribute(attrid, value)
-        if attrid == 0x0000:
+        if attrid == LegrandCluster.AttributeDefs.device_mode.id:
             self._update_attribute(WIRE_PILOT_MODE_ATTR, value[0] == 0x02)
 
 
@@ -112,7 +112,7 @@ class LegrandWirePilotCluster(CustomCluster):
         for attr, value in attributes.items():
             attr_def = self.find_attribute(attr)
             attr_id = attr_def.id
-            if attr_id == LEGRAND_HEAT_MODE_ATTR:
+            if attr_id == LegrandWirePilotCluster.AttributeDefs.heat_mode.id:
                 await self.set_heat_mode(value, manufacturer=manufacturer)
         return await super().write_attributes(attrs, manufacturer)
 
