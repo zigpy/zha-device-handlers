@@ -17,11 +17,6 @@ from zhaquirks.legrand import LEGRAND, MANUFACTURER_SPECIFIC_CLUSTER_ID
 MANUFACTURER_SPECIFIC_CLUSTER_ID_2 = 0xFC40  # 64576
 
 
-WIRE_PILOT_MODE_ATTR = 0x4000
-
-LEGRAND_HEAT_MODE_ATTR = 0x00
-
-
 class LegrandCluster(CustomCluster):
     """LegrandCluster."""
 
@@ -47,7 +42,7 @@ class LegrandCluster(CustomCluster):
             type=t.Bool,
             is_manufacturer_specific=True,
         )
-        wire_pilot_mode = ZCLAttributeDef(id=WIRE_PILOT_MODE_ATTR, type=t.Bool)
+        wire_pilot_mode = ZCLAttributeDef(id=0x4000, type=t.Bool)
 
     async def write_attributes(self, attributes, manufacturer=None) -> list:
         """Write attributes to the cluster."""
@@ -56,8 +51,10 @@ class LegrandCluster(CustomCluster):
         for attr, value in attributes.items():
             attr_def = self.find_attribute(attr)
             attr_id = attr_def.id
-            if attr_id == WIRE_PILOT_MODE_ATTR:
-                attrs[LegrandCluster.AttributeDefs.device_mode.id] = [0x02, 0x00] if value else [0x01, 0x00]
+            if attr_id == LegrandCluster.AttributeDefs.wire_pilot_mode.id:
+                attrs[LegrandCluster.AttributeDefs.device_mode.id] = (
+                    [0x02, 0x00] if value else [0x01, 0x00]
+                )
             else:
                 attrs[attr] = value
         return await super().write_attributes(attrs, manufacturer)
@@ -65,7 +62,9 @@ class LegrandCluster(CustomCluster):
     def _update_attribute(self, attrid, value) -> None:
         super()._update_attribute(attrid, value)
         if attrid == LegrandCluster.AttributeDefs.device_mode.id:
-            self._update_attribute(WIRE_PILOT_MODE_ATTR, value[0] == 0x02)
+            self._update_attribute(
+                LegrandCluster.AttributeDefs.wire_pilot_mode.id, value[0] == 0x02
+            )
 
 
 class HeatMode(t.enum8):
@@ -90,7 +89,7 @@ class LegrandWirePilotCluster(CustomCluster):
         """Attribute definitions for LegrandCluster."""
 
         heat_mode = ZCLAttributeDef(
-            id=LEGRAND_HEAT_MODE_ATTR,
+            id=0x00,
             type=HeatMode,
             is_manufacturer_specific=True,
         )
@@ -99,7 +98,7 @@ class LegrandWirePilotCluster(CustomCluster):
         """Server command definitions."""
 
         set_heat_mode = ZCLCommandDef(
-            id=LEGRAND_HEAT_MODE_ATTR,
+            id=0x00,
             schema={"mode": HeatMode},
             direction=Direction.Client_to_Server,
             is_manufacturer_specific=True,
