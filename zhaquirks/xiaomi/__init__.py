@@ -11,6 +11,7 @@ from zigpy import types as t
 import zigpy.device
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.typing import AddressingMode
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
     AnalogInput,
@@ -541,6 +542,19 @@ class MotionCluster(LocalDataCluster, MotionOnEvent):
 
     _CONSTANT_ATTRIBUTES = {IasZone.AttributeDefs.zone_type.id: MOTION_TYPE}
     reset_s: int = 70
+
+
+class LocalOccupancyCluster(LocalDataCluster, OccupancyCluster):
+    """Local occupancy cluster that ignores messages from device."""
+
+    def handle_cluster_general_request(
+        self,
+        hdr: zigpy.zcl.foundation.ZCLHeader,
+        args: list,
+        *,
+        dst_addressing: AddressingMode | None = None,
+    ) -> None:
+        """Ignore occupancy attribute reports on this cluster, as they're invalid and sent by the sensor every hour."""
 
 
 class DeviceTemperatureCluster(LocalDataCluster, DeviceTemperature):
