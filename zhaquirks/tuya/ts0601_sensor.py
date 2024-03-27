@@ -20,11 +20,16 @@ from zhaquirks.const import (
     PROFILE_ID,
     SKIP_CONFIGURATION,
 )
-from zhaquirks.tuya import TuyaLocalCluster, TuyaPowerConfigurationCluster2AAA
+from zhaquirks.tuya import (
+    EnchantedDevice,
+    TuyaEnchantableCluster,
+    TuyaLocalCluster,
+    TuyaPowerConfigurationCluster2AAA,
+)
 from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster
 
 
-class TuyaTemperatureMeasurement(TemperatureMeasurement, TuyaLocalCluster):
+class TuyaTemperatureMeasurement(TuyaEnchantableCluster, TemperatureMeasurement, TuyaLocalCluster):
     """Tuya local TemperatureMeasurement cluster."""
 
 
@@ -282,8 +287,10 @@ class TuyaTempHumiditySensorVar03(CustomDevice):
     }
 
 
-class TuyaTempHumiditySensorVar04(CustomDevice):
+class TuyaTempHumiditySensorVar04(EnchantedDevice):
     """Tuya temp and humidity sensor (variation 04)."""
+
+    tuya_spell_data_query = True
 
     signature = {
         # "profile_id": 260,
@@ -296,6 +303,10 @@ class TuyaTempHumiditySensorVar04(CustomDevice):
             ("_TZE204_yjjdcqsq", "TS0601"),
             ("_TZE200_utkemkbs", "TS0601"),
             ("_TZE204_utkemkbs", "TS0601"),
+            ("_TZE204_9yapgbuv", "TS0601"),
+            ("_TZE204_upagmta9", "TS0601"),
+            ("_TZE200_upagmta9", "TS0601"),
+            ("_TZE200_cirvgep4", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
@@ -305,7 +316,7 @@ class TuyaTempHumiditySensorVar04(CustomDevice):
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TemperatureHumidityManufCluster.cluster_id,
+                    TemperatureHumidityBatteryStatesManufCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id, Time.cluster_id],
             }
@@ -313,7 +324,6 @@ class TuyaTempHumiditySensorVar04(CustomDevice):
     }
 
     replacement = {
-        SKIP_CONFIGURATION: True,
         ENDPOINTS: {
             1: {
                 DEVICE_TYPE: zha.DeviceType.TEMPERATURE_SENSOR,
