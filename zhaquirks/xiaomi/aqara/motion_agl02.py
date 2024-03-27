@@ -44,12 +44,6 @@ class XiaomiManufacturerCluster(XiaomiAqaraE1Cluster):
             )
 
 
-class LocalMotionCluster(MotionCluster):
-    """Local motion cluster."""
-
-    reset_s: int = 60
-
-
 class MotionT1(XiaomiCustomDevice):
     """Xiaomi motion sensor device."""
 
@@ -87,7 +81,7 @@ class MotionT1(XiaomiCustomDevice):
                     XiaomiPowerConfiguration,
                     Identify.cluster_id,
                     LocalOccupancyCluster,
-                    LocalMotionCluster,
+                    MotionCluster,
                     IlluminanceMeasurementCluster,
                     XiaomiManufacturerCluster,
                 ],
