@@ -1,4 +1,4 @@
-"""Signify RDM001 device."""
+"""Signify wall switch devices (at the moment RDM001 and RDM004)."""
 
 import logging
 from typing import Any, Optional, Union
@@ -125,15 +125,20 @@ class PhilipsRemoteCluster(CustomCluster):
         self.listener_event(ZHA_SEND_EVENT, action, event_args)
 
 
-class PhilipsROM001(CustomDevice):
-    """Philips ROM001 device."""
+class PhilipsWallSwitch(CustomDevice):
+    """Philips RDM001 or RDM004 device."""
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=2080
         #  device_version=1
         #  input_clusters=[0, 1, 3, 64512]
         #  output_clusters=[3, 4, 6, 8, 25]>
-        MODELS_INFO: [(PHILIPS, "RDM001"), (SIGNIFY, "RDM001")],
+        MODELS_INFO: [
+            (PHILIPS, "RDM001"),
+            (SIGNIFY, "RDM001"),
+            (PHILIPS, "RDM004"),
+            (SIGNIFY, "RDM004"),
+        ],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
