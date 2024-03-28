@@ -63,6 +63,9 @@ POWER_FLOW_PREEMPT = 0x5020
 # Suffix for device attributes which need power flow direction applied
 UNSIGNED_POWER_ATTR_SUFFIX = "_attr_unsigned"
 
+# Default Tuya MCU cluster endpoint_id
+TUYA_MCU_ENDPOINT_ID = 1
+
 
 def is_type_uint(attr_type: Type) -> bool:
     """True if the specified attribute type is an unsigned integer."""
@@ -411,10 +414,22 @@ class TuyaEnergyMeterManufCluster(
     def __init_subclass__(cls, configuration_type: Type) -> None:
         """Init cluster subclass."""
         cls.attributes = {**TuyaMCUCluster.attributes}
-        cls._create_mapped_attributes_lookup(cls)
+        cls._populate_mapped_attributes_lookup(cls)
         cls._setup_channel_config_attributes(cls, configuration_type)
         cls._setup_device_attributes(cls)
         super().__init_subclass__()
+
+    def _populate_mapped_attributes_lookup(cls) -> None:
+        """Stores a tuple for each cluster attribute mapped from MCU data points."""
+        cls.mapped_attributes: Tuple[Tuple[str, str, int]] = tuple(
+            (dp_map.ep_attribute, attr_name, dp_map.endpoint_id or TUYA_MCU_ENDPOINT_ID)
+            for dp_map in cls.dp_to_attribute.values()
+            for attr_name in (
+                dp_map.attribute_name
+                if isinstance(dp_map.attribute_name, tuple)
+                else (dp_map.attribute_name,)
+            )
+        )
 
     def _setup_channel_config_attributes(cls, configuration_type: Type) -> None:
         """Setup local attributes for the device channel configuration type."""
@@ -425,8 +440,6 @@ class TuyaEnergyMeterManufCluster(
             config_type_attr.is_manufacturer_specific,
         )
         config_attr = cls._CHANNEL_CONFIGURATION_ATTRIBUTES.get(configuration_type, ())
-        if not config_attr:
-            return
         for attrid in config_attr:
             cls.attributes[attrid] = TuyaEnergyMeterManufCluster.attributes[attrid]
 
@@ -445,18 +458,6 @@ class TuyaEnergyMeterManufCluster(
             attrid = attr_name_to_id.get(attr_name)
             if attrid is not None:
                 cls.attributes[attrid] = TuyaEnergyMeterManufCluster.attributes[attrid]
-
-    def _create_mapped_attributes_lookup(cls) -> None:
-        """Stores a tuple of attributes mapped from device data points."""
-        cls.mapped_attributes: Tuple[Tuple[str, str, int]] = tuple(
-            (dp_map.ep_attribute, attr_name, dp_map.endpoint_id or 1)
-            for dp_map in cls.dp_to_attribute.values()
-            for attr_name in (
-                dp_map.attribute_name
-                if isinstance(dp_map.attribute_name, tuple)
-                else (dp_map.attribute_name,)
-            )
-        )
 
 
 class EnergyMeterChannel:
@@ -479,9 +480,18 @@ class EnergyMeterChannel:
     _CUMULATIVE_REVERSE_ATTRIBUTES: Tuple[str] = ()
     _INVERSE_ATTRIBUTES: Dict[str, str] = {}
 
-    _channel_to_endpoint: Dict[Tuple[Type, Channel], int] = {
-        (k[0], v): k[1] for k, v in _ENDPOINT_TO_CHANNEL.items()
-    }
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        self._CHANNEL_TO_ENDPOINT: Dict[Tuple[Type, Channel], int] = {
+            (k[0], v): k[1] for k, v in self._ENDPOINT_TO_CHANNEL.items()
+        }
+        self._INVERSE_ATTRIBUTES.update(
+            {v: k for k, v in dict(self._INVERSE_ATTRIBUTES).items()}
+        )
+        self._CUMULATIVE_ATTRIBUTES = (
+            self._CUMULATIVE_FORWARD_ATTRIBUTES + self._CUMULATIVE_REVERSE_ATTRIBUTES
+        )
+        super().__init__(*args, **kwargs)
 
     @property
     def channel(self) -> Optional[str]:
@@ -504,7 +514,7 @@ class EnergyMeterChannel:
     def manufacturer_cluster(self) -> TuyaEnergyMeterManufCluster:
         """Returns the device's manufacturer cluster."""
         return getattr(
-            self.endpoint.device.endpoints[1],
+            self.endpoint.device.endpoints[TUYA_MCU_ENDPOINT_ID],
             TuyaEnergyMeterManufCluster.ep_attribute,
         )
 
@@ -535,7 +545,7 @@ class EnergyMeterChannel:
     ):
         """Returns the device cluster for the given channel or endpoint."""
         if channel_or_endpoint_id in Channel:
-            channel_or_endpoint_id = self._channel_to_endpoint.get(
+            channel_or_endpoint_id = self._CHANNEL_TO_ENDPOINT.get(
                 (self.channel_configuration_type, channel_or_endpoint_id), None
             )
         assert channel_or_endpoint_id is not None, "Invalid channel_or_endpoint_id."
@@ -631,8 +641,8 @@ class PowerFlowPreempt(EnergyMeterPowerFlow, EnergyMeterChannel):
 
     def __init__(self, *args, **kwargs):
         """Init."""
-        super().__init__(*args, **kwargs)
         self._preempt_values: Dict[str, Optional[int]] = {}
+        super().__init__(*args, **kwargs)
 
     def _preempt_grid_plus_production(self, attr_name: str) -> None:
         """Power flow preempt method for grid_plus_production configured devices."""
@@ -753,8 +763,8 @@ class VirtualChannel(EnergyMeterPowerFlow, EnergyMeterChannel):
 
     def __init__(self, *args, **kwargs):
         """Init."""
+        self._virtual_channel_stored_values: Dict[str, Dict[str, int]] = {}
         super().__init__(*args, **kwargs)
-        self._virtual_channel_stored_values: Dict[str, Optional[int]] = {}
 
     def _a_plus_b(self, attr_name: str) -> Optional[int]:
         """Method for calculating virtual channel values in a_plus_b configuration types."""
@@ -798,8 +808,9 @@ class VirtualChannel(EnergyMeterPowerFlow, EnergyMeterChannel):
         if attr_name in self._CUMULATIVE_REVERSE_ATTRIBUTES:
             return 0
         inv_attr_name = self._INVERSE_ATTRIBUTES.get(attr_name, None)
-        if not inv_attr_name:
-            return
+        assert (
+            inv_attr_name is not None
+        ), "An inverse attribute must be defined for cumulative values."
 
         cluster_a = self.get_cluster(Channel.A)
         cluster_b = self.get_cluster(Channel.B)
@@ -818,8 +829,9 @@ class VirtualChannel(EnergyMeterPowerFlow, EnergyMeterChannel):
         """Method for calculating cumulative virtual channel values in consumption_minus_production configuration."""
 
         inv_attr_name = self._INVERSE_ATTRIBUTES.get(attr_name, None)
-        if not inv_attr_name:
-            return
+        assert (
+            inv_attr_name is not None
+        ), "An inverse attribute must be defined for cumulative values."
 
         cluster_a = self.get_cluster(Channel.A)
         cluster_b = self.get_cluster(Channel.B)
@@ -831,14 +843,14 @@ class VirtualChannel(EnergyMeterPowerFlow, EnergyMeterChannel):
         value_ab = cluster_ab.get(attr_name, 0)
 
         value_a_prev = cluster_a._get_previous_value(attr_name)
-        value_a_inv_prev = cluster_a._get_previous_value(inv_attr_name)
+        value_a_inv_prev = cluster_a._get_previous_value(inv_attr_name, attr_name)
         value_b_prev = cluster_a._get_previous_value(attr_name)
-        value_b_inv_prev = cluster_b._get_previous_value(inv_attr_name)
+        value_b_inv_prev = cluster_b._get_previous_value(inv_attr_name, attr_name)
 
-        cluster_a._store_value(value_a)
-        cluster_a._store_value(value_a_inv)
-        cluster_b._store_value(value_b)
-        cluster_b._store_value(value_b_inv)
+        cluster_a._store_current_value(attr_name)
+        cluster_a._store_current_value(inv_attr_name, attr_name)
+        cluster_b._store_current_value(attr_name)
+        cluster_b._store_current_value(inv_attr_name, attr_name)
 
         if None in (value_a, value_a_inv, value_b, value_b_inv):
             return
@@ -883,21 +895,35 @@ class VirtualChannel(EnergyMeterPowerFlow, EnergyMeterChannel):
         ),
     }
 
-    def _get_previous_value(self, attr_name: str) -> Optional[int]:
+    def _get_previous_value(
+        self, attr_name: str, child_key: Optional[str] = None
+    ) -> Optional[int]:
         """Returns the stored value of the attribute."""
-        return self._virtual_channel_stored_values.get(attr_name, self.get(attr_name))
+        child_key = child_key if child_key else attr_name
+        if attr_name in self._virtual_channel_stored_values:
+            return self._virtual_channel_stored_values[attr_name].get(
+                child_key, self._virtual_channel_stored_values[attr_name][attr_name]
+            )
+        else:
+            return self.get(attr_name)
 
-    def _store_current_value(self, attr_name: str) -> None:
+    def _store_current_value(
+        self, attr_name: str, child_key: Optional[str] = None
+    ) -> None:
         """Stores the current value of the attribute."""
-        self._virtual_channel_stored_values[attr_name] = self.get(attr_name)
+        child_key = child_key if child_key else attr_name
+        value = self.get(attr_name)
+        if attr_name in self._virtual_channel_stored_values:
+            self._virtual_channel_stored_values[attr_name][child_key] = value
+        else:
+            self._virtual_channel_stored_values[attr_name] = {child_key: value}
 
-    def virtual_channel_pre_update_handler(self, attr_name: str, value):
-        """Retains the previous attribute value for use in delta calculations."""
+    def virtual_channel_initial_values(self, attr_name: str, value):
+        """Retains the initial attribute value for use in delta calculations."""
         if (
-            ChannelConfiguration.CONSUMPTION_MINUS_PRODUCTION
+            attr_name in self._CUMULATIVE_ATTRIBUTES
+            and ChannelConfiguration.CONSUMPTION_MINUS_PRODUCTION
             in self.channel_configuration_type
-            and attr_name
-            in self._CUMULATIVE_FORWARD_ATTRIBUTES + self._CUMULATIVE_REVERSE_ATTRIBUTES
             and attr_name not in self._virtual_channel_stored_values
         ):
             self._store_current_value(attr_name)
@@ -913,17 +939,14 @@ class VirtualChannel(EnergyMeterPowerFlow, EnergyMeterChannel):
         if (
             self.channel not in config.source_channels
             or self.channel != config.trigger_channel
-            and attr_name in self._EXTENSIVE_ATTRIBUTES
+            and attr_name not in self._CUMULATIVE_ATTRIBUTES
         ):
             return
 
         method = None
         if attr_name in self._EXTENSIVE_ATTRIBUTES:
             method = config.discrete_method
-        elif (
-            attr_name
-            in self._CUMULATIVE_FORWARD_ATTRIBUTES + self._CUMULATIVE_REVERSE_ATTRIBUTES
-        ):
+        elif attr_name in self._CUMULATIVE_ATTRIBUTES:
             method = config.cumulative_method
         if not method:
             return
@@ -1041,7 +1064,7 @@ class TuyaElectricalMeasurement(
         attr_name, value = self.power_flow_handler(attr_name, value)
         self.update_measurement_type(attr_name)
         self.calculated_attributes(attr_name, value)
-        self.virtual_channel_pre_update_handler(attr_name, value)
+        self.virtual_channel_initial_values(attr_name, value)
         super().update_attribute(attr_name, value)
         self.virtual_channel_handler(attr_name)
 
@@ -1084,7 +1107,6 @@ class TuyaMetering(
     _CUMULATIVE_REVERSE_ATTRIBUTES: Tuple[str] = ("current_summ_received",)
     _INVERSE_ATTRIBUTES: Dict[str, str] = {
         "current_summ_delivered": "current_summ_received",
-        "current_summ_received": "current_summ_delivered",
     }
 
     def update_attribute(self, attr_name: str, value) -> None:
@@ -1092,7 +1114,7 @@ class TuyaMetering(
         if self.power_flow_preempt_handler(attr_name, value) == PowerFlowPreempt.HOLD:
             return
         attr_name, value = self.power_flow_handler(attr_name, value)
-        self.virtual_channel_pre_update_handler(attr_name, value)
+        self.virtual_channel_initial_values(attr_name, value)
         super().update_attribute(attr_name, value)
         self.virtual_channel_handler(attr_name)
 
