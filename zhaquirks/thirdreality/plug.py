@@ -32,7 +32,7 @@ THIRD_REALITY_PLUG_CLUSTER_ID = 0xFF03
 RESET_SUMMATION_DELIVERED_ATTR_ID = 0x0000
 
 class ControlMode(t.uint8_t):
-    """Reset mode for not clear and clear"""
+    """Reset mode for not clear and clear."""
     NOT = 0
     CLEAR = 1
     
