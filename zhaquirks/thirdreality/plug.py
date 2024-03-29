@@ -67,7 +67,7 @@ class Plug(CustomDevice):
                     OnOff.cluster_id,   # 0x0006
                     Metering.cluster_id, # 0x0702
                     ElectricalMeasurement.cluster_id,   # 0x0b04
-                    ThirdRealityPlugCluster.cluster_id
+                    ThirdRealityPlugCluster.cluster_id  # 0xFF03 
                 ],
                 OUTPUT_CLUSTERS: [
                     Ota.cluster_id, # 0x0019
