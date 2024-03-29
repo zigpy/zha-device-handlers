@@ -1,21 +1,27 @@
-"""Third Reality vibrate devices."""
+"""Third Reality Plug devices."""
+from typing import Final
+
+
+
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 import zigpy.types as t
-from typing import Final
-from zigpy.zcl.foundation import BaseAttributeDefs
+
 from zigpy.zcl.clusters.general import (
+    
     Basic, 
+    
     GreenPowerProxy,
     Groups,
     Identify,
     OnOff,
     Ota, 
+    
     Scenes
 )
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
-from zigpy.zcl.foundation import ZCLAttributeDef
+from zigpy.zcl.foundation import ZCLAttributeDef, BaseAttributeDefs
 
 from zhaquirks import CustomCluster
 from zhaquirks.const import (
@@ -69,6 +75,7 @@ class Plug(CustomDevice):
                     OnOff.cluster_id,   # 0x0006
                     Metering.cluster_id, # 0x0702
                     ElectricalMeasurement.cluster_id,   # 0x0b04
+                    
                     ThirdRealityPlugCluster.cluster_id  # 0xFF03 
                 ],
                 OUTPUT_CLUSTERS: [
@@ -98,6 +105,7 @@ class Plug(CustomDevice):
                     OnOff.cluster_id,   # 0x0006
                     Metering.cluster_id, # 0x0702
                     ElectricalMeasurement.cluster_id,   # 0x0b04
+                    
                     ThirdRealityPlugCluster  # 0xFF03  
                 ],
                 OUTPUT_CLUSTERS: [
