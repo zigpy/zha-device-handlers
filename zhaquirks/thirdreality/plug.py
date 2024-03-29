@@ -32,6 +32,7 @@ THIRD_REALITY_PLUG_CLUSTER_ID = 0xFF03
 RESET_SUMMATION_DELIVERED_ATTR_ID = 0x0000
 
 class ControlMode(t.uint8_t):
+    """Reset mode for not clear and clear"""
     NOT = 0
     CLEAR = 1
     
@@ -41,6 +42,7 @@ class ThirdRealityPlugCluster(CustomCluster):
 
     cluster_id = THIRD_REALITY_PLUG_CLUSTER_ID
     class AttributeDefs(BaseAttributeDefs):
+        """Attribute definitions."""
         reset_summation_delivered: Final = ZCLAttributeDef(
             id=RESET_SUMMATION_DELIVERED_ATTR_ID, type=ControlMode, is_manufacturer_specific=True
         )
