@@ -151,6 +151,7 @@ class TuyaSingleSwitchDimmerGP(TuyaDimmerSwitch):
             ("_TZE200_ip2akl4w", "TS0601"),
             ("_TZE200_vucankjx", "TS0601"),  # Loratap
             ("_TZE200_y8yjulon", "TS0601"),
+            ("_TZE204_n9ctkb6j", "TS0601"),  # For BSEED switch
         ],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=0x0100

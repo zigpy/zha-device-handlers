@@ -1,4 +1,6 @@
 """Xiaomi aqara T1 motion sensor device."""
+from __future__ import annotations
+
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import Identify, Ota
 from zigpy.zcl.clusters.measurement import IlluminanceMeasurement, OccupancySensing
@@ -16,8 +18,8 @@ from zhaquirks.xiaomi import (
     LUMI,
     BasicCluster,
     IlluminanceMeasurementCluster,
+    LocalOccupancyCluster,
     MotionCluster,
-    OccupancyCluster,
     XiaomiAqaraE1Cluster,
     XiaomiCustomDevice,
     XiaomiPowerConfiguration,
@@ -78,7 +80,7 @@ class MotionT1(XiaomiCustomDevice):
                     BasicCluster,
                     XiaomiPowerConfiguration,
                     Identify.cluster_id,
-                    OccupancyCluster,
+                    LocalOccupancyCluster,
                     MotionCluster,
                     IlluminanceMeasurementCluster,
                     XiaomiManufacturerCluster,

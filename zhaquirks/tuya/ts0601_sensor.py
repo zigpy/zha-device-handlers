@@ -143,6 +143,50 @@ class TuyaTempHumiditySensor(CustomDevice):
     }
 
 
+class TuyaTempHumiditySensorVar02(CustomDevice):
+    """Custom device representing tuya temp and humidity sensor with e-ink screen."""
+
+    signature = {
+        # <SimpleDescriptor endpoint=1, profile=260, device_type=81
+        # device_version=1
+        # input_clusters=[4, 5, 61184, 0]
+        # output_clusters=[25, 10]>
+        MODELS_INFO: [
+            ("_TZE200_zppcgbdj", "TS0601"),  # Conecto TH
+        ],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TemperatureHumidityManufCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Ota.cluster_id, Time.cluster_id],
+            }
+        },
+    }
+
+    replacement = {
+        SKIP_CONFIGURATION: True,
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.TEMPERATURE_SENSOR,
+                INPUT_CLUSTERS: [
+                    TemperatureHumidityManufCluster,  # Single bus for temp, humidity, and battery
+                    TuyaTemperatureMeasurement,
+                    TuyaRelativeHumidity,
+                    TuyaPowerConfigurationCluster2AAA,
+                ],
+                OUTPUT_CLUSTERS: [Ota.cluster_id, Time.cluster_id],
+            }
+        },
+    }
+
+
 class TuyaTempHumiditySensor_Square(CustomDevice):
     """Custom device representing tuya temp and humidity sensor with e-ink screen."""
 

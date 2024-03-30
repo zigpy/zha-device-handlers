@@ -1,4 +1,5 @@
 """Tuya based cover and blinds."""
+
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
 
@@ -375,6 +376,7 @@ class TuyaMoesCover0601(TuyaWindowCover):
             ("_TZE200_bv1jcqqu", "TS0601"),
             ("_TZE200_nw1r9hp6", "TS0601"),
             ("_TZE200_gaj531w3", "TS0601"),
+            ("_TZE200_icka1clh", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
