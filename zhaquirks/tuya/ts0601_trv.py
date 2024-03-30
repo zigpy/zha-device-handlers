@@ -1,4 +1,5 @@
 """Map from manufacturer to standard clusters for thermostatic valves."""
+
 import logging
 from typing import Optional, Union
 
@@ -525,13 +526,12 @@ class MoesThermostat(TuyaThermostatCluster):
                             )
                             / 100
                         )
+                elif attr == attribute:
+                    val = value
                 else:
-                    if attr == attribute:
-                        val = value
-                    else:
-                        val = self._attr_cache.get(
-                            self.attributes_by_name[attr].id, default
-                        )
+                    val = self._attr_cache.get(
+                        self.attributes_by_name[attr].id, default
+                    )
 
                 data.append(val)
             return {MOES_SCHEDULE_WORKDAY_ATTR: data}
@@ -548,13 +548,12 @@ class MoesThermostat(TuyaThermostatCluster):
                             )
                             / 100
                         )
+                elif attr == attribute:
+                    val = value
                 else:
-                    if attr == attribute:
-                        val = value
-                    else:
-                        val = self._attr_cache.get(
-                            self.attributes_by_name[attr].id, default
-                        )
+                    val = self._attr_cache.get(
+                        self.attributes_by_name[attr].id, default
+                    )
 
                 data.append(val)
             return {MOES_SCHEDULE_WEEKEND_ATTR: data}
@@ -567,10 +566,7 @@ class MoesThermostat(TuyaThermostatCluster):
         elif value == 1:
             prog_mode = self.ProgrammingOperationMode.Schedule_programming_mode
             occupancy = self.Occupancy.Occupied
-        elif value == 2:
-            prog_mode = self.ProgrammingOperationMode.Simple
-            occupancy = self.Occupancy.Occupied
-        elif value == 3:
+        elif value in (2, 3):
             prog_mode = self.ProgrammingOperationMode.Simple
             occupancy = self.Occupancy.Occupied
         elif value == 4:
@@ -942,7 +938,7 @@ class ZONNSMARTManufCluster(TuyaManufClusterAttributes):
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
-        global ZonnsmartManuClusterSelf
+        global ZonnsmartManuClusterSelf  # noqa: PLW0603
         ZonnsmartManuClusterSelf = self
 
     attributes = TuyaManufClusterAttributes.attributes.copy()

@@ -6,6 +6,7 @@ import pytest
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import AnalogOutput, Basic, LevelControl, OnOff
 
+from tests.common import ClusterListener
 import zhaquirks
 from zhaquirks.xbee import (
     XBEE_AT_ENDPOINT,
@@ -18,8 +19,6 @@ from zhaquirks.xbee import (
 )
 from zhaquirks.xbee.xbee3_io import XBee3Sensor
 from zhaquirks.xbee.xbee_io import XBeeSensor
-
-from tests.common import ClusterListener
 
 zhaquirks.setup()
 
