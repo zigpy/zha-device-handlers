@@ -5,9 +5,8 @@ from unittest import mock
 import pytest
 from zigpy.zcl import foundation
 
-import zhaquirks
-
 from tests.common import ClusterListener, wait_for_zigpy_tasks
+import zhaquirks
 
 zhaquirks.setup()
 
@@ -32,8 +31,8 @@ async def test_command_psbzs(zigpy_device_from_quirk, quirk):
         await wait_for_zigpy_tasks()
         m1.assert_called_with(
             61184,
-            2,
-            b"\x01\x02\x00\x00\x01\x01\x01\x00\x01\x01",
+            1,
+            b"\x01\x01\x00\x00\x01\x01\x01\x00\x01\x01",
             expect_reply=True,
             command_id=0,
         )
@@ -58,8 +57,8 @@ async def test_write_attr_psbzs(zigpy_device_from_quirk, quirk):
         await wait_for_zigpy_tasks()
         m1.assert_called_with(
             61184,
-            2,
-            b"\x01\x02\x00\x00\x01\x05\x02\x00\x04\x00\x00\x00\x0f",
+            1,
+            b"\x01\x01\x00\x00\x01\x05\x02\x00\x04\x00\x00\x00\x0f",
             expect_reply=False,
             command_id=0,
         )
@@ -75,8 +74,8 @@ async def test_write_attr_psbzs(zigpy_device_from_quirk, quirk):
         await wait_for_zigpy_tasks()
         m1.assert_called_with(
             61184,
-            4,
-            b"\x01\x04\x00\x00\x03\x6d\x01\x00\x01\x00",
+            2,
+            b"\x01\x02\x00\x00\x02m\x01\x00\x01\x00",
             expect_reply=False,
             command_id=0,
         )

@@ -5,11 +5,10 @@ from unittest import mock
 
 import pytest
 
+from tests.common import ZCL_IAS_MOTION_COMMAND, ClusterListener
 import zhaquirks
 from zhaquirks.const import OFF, ON, ZONE_STATUS_CHANGE_COMMAND
 import zhaquirks.orvibo.motion
-
-from tests.common import ZCL_IAS_MOTION_COMMAND, ClusterListener
 
 zhaquirks.setup()
 

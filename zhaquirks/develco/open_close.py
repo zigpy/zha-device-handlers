@@ -1,4 +1,5 @@
 """Door/Windows sensors."""
+
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
@@ -17,6 +18,7 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone
 
+from zhaquirks import PowerConfigurationCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -25,7 +27,14 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.develco import DEVELCO, DevelcoPowerConfiguration
+from zhaquirks.develco import DEVELCO, FRIENT
+
+
+class DevelcoPowerConfiguration(PowerConfigurationCluster):
+    """Power configuration cluster."""
+
+    MIN_VOLTS = 2.5  # advised voltage to replace batteries, device will blink red when this state hits.
+    MAX_VOLTS = 3.0
 
 
 class DevelcoIASZone(CustomCluster, IasZone):
@@ -47,7 +56,7 @@ class DevelcoIASZone(CustomCluster, IasZone):
 
 
 class WISZB120(CustomDevice):
-    """Custom device representing door/windows sensors."""
+    """Custom device representing door/windows sensors, with built-in temperature measuring."""
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=49353 device_type=1 device_version=1
@@ -56,7 +65,7 @@ class WISZB120(CustomDevice):
         # input_clusters=[0, 1, 3, 15, 32, 1280] output_clusters=[10, 25]>
         # <SimpleDescriptor endpoint=38 profile=260 device_type=770 device_version=0
         # input_clusters=[0, 3, 1026] output_clusters=[3]>
-        MODELS_INFO: [(DEVELCO, "WISZB-120")],
+        MODELS_INFO: [(DEVELCO, "WISZB-120"), (FRIENT, "WISZB-120")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: 0xC0C9,
@@ -124,6 +133,67 @@ class WISZB120(CustomDevice):
                     TemperatureMeasurement.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Identify.cluster_id],
+            },
+        }
+    }
+
+
+class WISZB121(CustomDevice):
+    """Custom device representing door/windows sensors, without built-in temperature measuring."""
+
+    signature = {
+        # <SimpleDescriptor endpoint=1 profile=49353 device_type=1 device_version=1
+        # input_clusters=[3, 5, 6] output_clusters=[]>
+        # <SimpleDescriptor endpoint=35 profile=260 device_type=1026 device_version=0
+        # input_clusters=[0, 1, 3, 15, 32, 1280] output_clusters=[10, 25]>
+        MODELS_INFO: [(DEVELCO, "WISZB-121"), (FRIENT, "WISZB-121")],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: 0xC0C9,
+                DEVICE_TYPE: 1,
+                INPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            35: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    Identify.cluster_id,
+                    BinaryInput.cluster_id,
+                    PollControl.cluster_id,
+                    IasZone.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                INPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            35: {
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    DevelcoPowerConfiguration,
+                    Identify.cluster_id,
+                    BinaryInput.cluster_id,
+                    PollControl.cluster_id,
+                    DevelcoIASZone,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
         }
     }

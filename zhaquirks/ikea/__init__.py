@@ -1,11 +1,15 @@
 """Ikea module."""
 
+import logging
+
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import PowerConfiguration, Scenes
+from zigpy.zcl.clusters.general import Basic, PowerConfiguration, Scenes
 
-from zhaquirks import DoublingPowerConfigurationCluster, EventableCluster
+from zhaquirks import EventableCluster
+
+_LOGGER = logging.getLogger(__name__)
 
 IKEA = "IKEA of Sweden"
 IKEA_CLUSTER_ID = 0xFC7C  # decimal = 64636
@@ -192,25 +196,106 @@ class PowerConfig1CRXCluster(CustomCluster, PowerConfiguration):
 
 
 # doubling IKEA power configuration clusters:
+
+
+class DoublingPowerConfigClusterIKEA(CustomCluster, PowerConfiguration):
+    """PowerConfiguration cluster implementation for IKEA devices.
+
+    This implementation doubles battery pct remaining for IKEA devices with old firmware.
+    """
+
+    async def bind(self):
+        """Bind cluster and read the sw_build_id for later use."""
+        result = await super().bind()
+        await self.endpoint.basic.read_attributes([Basic.AttributeDefs.sw_build_id.id])
+        return result
+
+    def _is_firmware_new(self):
+        """Check if new firmware is installed that does not require battery doubling."""
+        # get sw_build_id from attribute cache if available
+        sw_build_id = self.endpoint.basic.get(Basic.AttributeDefs.sw_build_id.id)
+
+        # sw_build_id is not cached or empty, so we consider it old firmware for now
+        if not sw_build_id:
+            return False
+
+        # split sw_build_id into parts to check for new firmware
+        split_fw_version = sw_build_id.split(".")
+        if len(split_fw_version) >= 2:
+            # guard against possible future version formatting which includes more than just numbers
+            try:
+                first_part = int(split_fw_version[0])
+                second_part = int(split_fw_version[1])
+
+                # new firmware is either 24.4.5 or above, or 2.4.5 or above
+                # old firmware is 2.3.x or below
+                return first_part >= 3 or (first_part >= 2 and second_part >= 4)
+            except ValueError:
+                _LOGGER.warning(
+                    "sw_build_id is not a number: %s for device %s",
+                    sw_build_id,
+                    self.endpoint.device.ieee,
+                )
+                # sw_build_id is not a number, so it must be new firmware
+                return True
+
+        # unknown formatting of sw_build_id, so it must be new firmware
+        return True
+
+    async def _read_fw_and_update_battery_pct(self, reported_battery_pct):
+        """Read firmware version and update battery percentage remaining if necessary."""
+        # read sw_build_id from device
+        await self.endpoint.basic.read_attributes([Basic.AttributeDefs.sw_build_id.id])
+
+        # check if sw_build_id was read successfully and new firmware is installed
+        # if so, update cache with reported battery percentage (non-doubled)
+        if self._is_firmware_new():
+            self._update_attribute(
+                PowerConfiguration.AttributeDefs.battery_percentage_remaining.id,
+                reported_battery_pct,
+            )
+
+    def _update_attribute(self, attrid, value):
+        """Update attribute to double battery percentage if firmware is old/unknown.
+
+        If the firmware version is unknown, a background task to read the firmware version is also started,
+        but the percentage is also doubled for now then, as that task happens asynchronously.
+        """
+        if attrid == PowerConfiguration.AttributeDefs.battery_percentage_remaining.id:
+            # if sw_build_id is not cached, create task to read from device, since it should be awake now
+            if (
+                self.endpoint.basic.get(Basic.AttributeDefs.sw_build_id.id, None)
+                is None
+            ):
+                self.create_catching_task(self._read_fw_and_update_battery_pct(value))
+
+            # double percentage if the firmware is old or unknown
+            # the coroutine above will not have executed yet if the firmware is unknown,
+            # so we double for now in that case too, and it updates again later if our doubling was wrong
+            if not self._is_firmware_new():
+                value = value * 2
+        super()._update_attribute(attrid, value)
+
+
 class DoublingPowerConfig2AAACluster(
-    DoublingPowerConfigurationCluster, PowerConfig2AAACluster
+    DoublingPowerConfigClusterIKEA, PowerConfig2AAACluster
 ):
     """Doubling power configuration cluster. Updating power attributes: 2 AAA."""
 
 
 class DoublingPowerConfig2CRCluster(
-    DoublingPowerConfigurationCluster, PowerConfig2CRCluster
+    DoublingPowerConfigClusterIKEA, PowerConfig2CRCluster
 ):
     """Doubling power configuration cluster. Updating power attributes: 2 CR2032."""
 
 
 class DoublingPowerConfig1CRCluster(
-    DoublingPowerConfigurationCluster, PowerConfig1CRCluster
+    DoublingPowerConfigClusterIKEA, PowerConfig1CRCluster
 ):
     """Doubling power configuration cluster. Updating power attributes: 1 CR2032."""
 
 
 class DoublingPowerConfig1CRXCluster(
-    DoublingPowerConfigurationCluster, PowerConfig1CRXCluster
+    DoublingPowerConfigClusterIKEA, PowerConfig1CRXCluster
 ):
     """Doubling power configuration cluster. Updating power attributes: 1 CR2032 and zero voltage."""

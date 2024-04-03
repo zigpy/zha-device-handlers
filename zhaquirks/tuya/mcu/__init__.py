@@ -1,19 +1,23 @@
-"""Tuya MCU comunications."""
+"""Tuya MCU communications."""
+
+from collections.abc import Callable
 import dataclasses
 import datetime
-from typing import Any, Callable, Dict, Optional, Tuple, Union
+from typing import Any, Optional, Union
 
-from zigpy.quirks import CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import LevelControl, OnOff
 
 from zhaquirks import Bus, DoublingPowerConfigurationCluster
+
+# add EnchantedDevice import for custom quirks backwards compatibility
 from zhaquirks.tuya import (
     TUYA_MCU_COMMAND,
     TUYA_MCU_VERSION_RSP,
     TUYA_SET_DATA,
     TUYA_SET_TIME,
+    EnchantedDevice,  # noqa: F401
     NoManufacturerCluster,
     PowerOnState,
     TuyaCommand,
@@ -282,7 +286,7 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
 
     def get_dp_mapping(
         self, endpoint_id: int, attribute_name: str
-    ) -> Optional[Tuple[int, DPToAttributeMapping]]:
+    ) -> Optional[tuple[int, DPToAttributeMapping]]:
         """Search for the DP in dp_to_attribute."""
 
         result = {}
@@ -317,7 +321,7 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
         self.debug("handle_set_time_request payload: %s", payload)
         payload_rsp = TuyaTimePayload()
 
-        utc_now = datetime.datetime.utcnow()
+        utc_now = datetime.datetime.utcnow()  # noqa: DTZ003
         now = datetime.datetime.now()
 
         offset_time = datetime.datetime(self.set_time_offset, 1, 1)
@@ -404,7 +408,7 @@ class TuyaOnOffNM(NoManufacturerCluster, TuyaOnOff):
 class TuyaOnOffManufCluster(TuyaMCUCluster):
     """Tuya with On/Off data points."""
 
-    dp_to_attribute: Dict[int, DPToAttributeMapping] = {
+    dp_to_attribute: dict[int, DPToAttributeMapping] = {
         1: DPToAttributeMapping(
             TuyaOnOff.ep_attribute,
             "on_off",
@@ -517,9 +521,9 @@ class MoesSwitchManufCluster(TuyaOnOffManufCluster):
         }
     )
 
-    dp_to_attribute: Dict[
-        int, DPToAttributeMapping
-    ] = TuyaOnOffManufCluster.dp_to_attribute.copy()
+    dp_to_attribute: dict[int, DPToAttributeMapping] = (
+        TuyaOnOffManufCluster.dp_to_attribute.copy()
+    )
     dp_to_attribute.update(
         {
             14: DPToAttributeMapping(
@@ -635,7 +639,7 @@ class TuyaInWallLevelControl(TuyaAttributesCluster, TuyaLevelControl):
 class TuyaLevelControlManufCluster(TuyaMCUCluster):
     """Tuya with Level Control data points."""
 
-    dp_to_attribute: Dict[int, DPToAttributeMapping] = {
+    dp_to_attribute: dict[int, DPToAttributeMapping] = {
         1: DPToAttributeMapping(
             TuyaOnOff.ep_attribute,
             "on_off",
@@ -720,13 +724,3 @@ class TuyaLevelControlManufCluster(TuyaMCUCluster):
         17: "_dp_2_attr_update",
         18: "_dp_2_attr_update",
     }
-
-
-class EnchantedDevice(CustomDevice):
-    """Class for Tuya devices which need to be unlocked by casting a 'spell'. This happens during binding.
-
-    To make sure the spell is cast, the device needs to implement a subclass of `TuyaEnchantableCluster`.
-    For more information, see the documentation of `TuyaEnchantableCluster`.
-    """
-
-    TUYA_SPELL = True

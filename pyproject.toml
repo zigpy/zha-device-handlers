@@ -12,9 +12,9 @@ authors = [
 ]
 readme = "README.md"
 license = {text = "Apache License Version 2.0"}
-requires-python = ">=3.8"
+requires-python = ">=3.12"
 dependencies = [
-    "zigpy>=0.56.0",
+    "zigpy>=0.63.5",
 ]
 
 [tool.setuptools.packages.find]
@@ -28,29 +28,12 @@ testing = [
 [tool.setuptools-git-versioning]
 enabled = true
 
-[tool.isort]
-# https://github.com/timothycrosley/isort
-# https://github.com/timothycrosley/isort/wiki/isort-Settings
-# splits long import on multiple lines indented by 4 spaces
-profile = "black"
-# by default isort don't check module indexes
-not_skip = ["__init__.py"]
-# will group `import x` and `from x import` of the same module.
-force_sort_within_sections = true
-sections = ["FUTURE", "STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
-default_section = "THIRDPARTY"
-known_first_party = ["zhaquirks", "tests"]
-forced_separate = "tests"
-combine_as_imports = true
-use_parentheses = true
-multi_line_output = 3
-include_trailing_comma = true
-force_grid_wrap = 0
-line_length = 88
-indent = "    "
+[tool.pylint]
+max-line-length = 120
+disable = ["C0103", "W0212"]
 
 [tool.mypy]
-python_version = "3.9"
+python_version = "3.12"
 check_untyped_defs = true
 disallow_incomplete_defs = true
 disallow_untyped_calls = true
@@ -94,108 +77,145 @@ asyncio_mode = "auto"
 testpaths = "tests"
 norecursedirs = ".git testing_config"
 
-[tool.flake8]
-exclude = [".venv", ".git", ".tox", "docs", "venv", "bin", "lib", "deps", "build"]
-# To work with Black
-max-line-length = 88
-ignore = [
-    "E501",  # E501: line too long
-    "W503",  # W503: Line break occurred before a binary operator
-    "E203",  # E203: Whitespace before ':'
-    "D202",  # D202 No blank lines allowed after function docstring
-]
-
-[tool.autoflake]
-in-place = true
-recursive = false
-expand-star-imports = false
-exclude = [".venv", ".git", ".tox", "docs", "venv", "bin", "lib", "deps", "build"]
-
-[tool.pydocstyle]
-ignore = [
-    "D202",
-    "D203",
-    "D213",
-]
-
-[tool.pyupgrade]
-py37plus = true
-
 [tool.codespell]
-exclude = "pyproject.toml"
-ignore-words-list = "hass,dout"
-skip = "./.*,test/*"
+skip = "Contributors.md"
+ignore-words-list = "hass, dout, potentiels"
 quiet-level = 2
 
 [tool.ruff]
-target-version = "py38"
+target-version = "py312"
 
+[tool.ruff.lint]
 select = [
+    "B002", # Python does not support the unary prefix increment
     "B007", # Loop control variable {name} not used within loop body
     "B014", # Exception handler with duplicate exception
-    "C",  # complexity
-    "D",  # docstrings
-    "E",  # pycodestyle
-    "F",  # pyflakes/autoflake
+    "B023", # Function definition does not bind loop variable {name}
+    "B026", # Star-arg unpacking after a keyword argument is strongly discouraged
+    "B904", # Use raise from to specify exception cause
+    "C", # complexity
+    "COM818", # Trailing comma on bare tuple prohibited
+    "D", # docstrings
+    "DTZ003", # Use datetime.now(tz=) instead of datetime.utcnow()
+    "DTZ004", # Use datetime.fromtimestamp(ts, tz=) instead of datetime.utcfromtimestamp(ts)
+    "E", # pycodestyle
+    "F", # pyflakes/autoflake
+    "G", # flake8-logging-format
+    "I", # isort
     "ICN001", # import concentions; {name} should be imported as {asname}
-    "PGH004",  # Use specific rule codes when using noqa
+    "N804", # First argument of a class method should be named cls
+    "N805", # First argument of a method should be named self
+    "N815", # Variable {name} in class scope should not be mixedCase
+    "PERF101", # Do not cast an iterable to list before iterating over it
+    "PERF102", # When using only the {subset} of a dict use the {subset}() method
+    "PERF203", # try-except within a loop incurs performance overhead
+    "PGH004", # Use specific rule codes when using noqa
     "PLC0414", # Useless import alias. Import alias does not rename original package.
+    "PLC", # pylint
+    "PLE", # pylint
+    "PLR", # pylint
+    "PLW", # pylint
+    "Q000", # Double quotes found but single quotes preferred
+    "RUF006", # Store a reference to the return value of asyncio.create_task
+    "S102", # Use of exec detected
+    "S103", # bad-file-permissions
+    "S108", # hardcoded-temp-file
+    "S306", # suspicious-mktemp-usage
+    "S307", # suspicious-eval-usage
+    "S313", # suspicious-xmlc-element-tree-usage
+    "S314", # suspicious-xml-element-tree-usage
+    "S315", # suspicious-xml-expat-reader-usage
+    "S316", # suspicious-xml-expat-builder-usage
+    "S317", # suspicious-xml-sax-usage
+    "S318", # suspicious-xml-mini-dom-usage
+    "S319", # suspicious-xml-pull-dom-usage
+    "S320", # suspicious-xmle-tree-usage
+    "S601", # paramiko-call
+    "S602", # subprocess-popen-with-shell-equals-true
+    "S604", # call-with-shell-equals-true
+    "S608", # hardcoded-sql-expression
+    "S609", # unix-command-wildcard-injection
     "SIM105", # Use contextlib.suppress({exception}) instead of try-except-pass
+    "SIM114", # Combine if branches using logical or operator
     "SIM117", # Merge with-statements that use the same scope
     "SIM118", # Use {key} in {dict} instead of {key} in {dict}.keys()
     "SIM201", # Use {left} != {right} instead of not {left} == {right}
+    "SIM208", # Use {expr} instead of not (not {expr})
     "SIM212", # Use {a} if {a} else {b} instead of {b} if not {a} else {a}
     "SIM300", # Yoda conditions. Use 'age == 42' instead of '42 == age'.
     "SIM401", # Use get from dict with default instead of an if block
-    "T20",  # flake8-print
+    "T100", # Trace found: {name} used
+    "T20", # flake8-print
+    "TID251", # Banned imports
     "TRY004", # Prefer TypeError exception for invalid type
-    "RUF006", # Store a reference to the return value of asyncio.create_task
-    "UP",  # pyupgrade
-    "W",  # pycodestyle
+    "TRY302", # Remove exception handler; error is immediately re-raised
+    "UP", # pyupgrade
+    "W", # pycodestyle
 ]
 
 ignore = [
-    "D100",   # Missing docstring in public module
-    "D101",   # Missing docstring in public class
-    "D102",   # Missing docstring in public method
-    "D103",   # Missing docstring in public function
-    "D104",   # Missing docstring in public package
-    "D105",   # Missing docstring in magic method
-    "D106",   # Missing docstring in public nested class
-    "D107",   # Missing docstring in `__init__`
-    "D202",   # No blank lines allowed after function docstring
-    "D203",   # 1 blank line required before class docstring
-    "D205",   # 1 blank line required between summary line and description
-    "D213",   # Multi-line docstring summary should start at the second line
-    "D400",   # First line should end with a period
-    "D401",   # First line of docstring should be in imperative mood:
-    "D406",   # Section name should end with a newline
-    "D407",   # Section name underlining
-    "D415",   # First line should end with a period, question mark, or exclamation point
-    "E501",   # line too long
-              # the rules below this line should be corrected
-    "PGH004", # Use specific rule codes when using `noqa`
+    "D202", # No blank lines allowed after function docstring
+    "D203", # 1 blank line required before class docstring
+    "D213", # Multi-line docstring summary should start at the second line
+    "D406", # Section name should end with a newline
+    "D407", # Section name underlining
+    "E501", # line too long
+    "E731", # do not assign a lambda expression, use a def
+
+    # Ignore ignored, as the rule is now back in preview/nursery, which cannot
+    # be ignored anymore without warnings.
+    # https://github.com/astral-sh/ruff/issues/7491
+    # "PLC1901", # Lots of false positives
+
+    # False positives https://github.com/astral-sh/ruff/issues/5386
+    "PLC0208", # Use a sequence type instead of a `set` when iterating over values
+    "PLR0911", # Too many return statements ({returns} > {max_returns})
+    "PLR0912", # Too many branches ({branches} > {max_branches})
+    "PLR0913", # Too many arguments to function call ({c_args} > {max_args})
+    "PLR0915", # Too many statements ({statements} > {max_statements})
+    "PLR2004", # Magic value used in comparison, consider replacing {value} with a constant variable
+    "PLW2901", # Outer {outer_kind} variable {name} overwritten by inner {inner_kind} target
+    "UP006", # keep type annotation style as is
+    "UP007", # keep type annotation style as is
+    # Ignored due to performance: https://github.com/charliermarsh/ruff/issues/2923
+    "UP038", # Use `X | Y` in `isinstance` call instead of `(X, Y)`
+
+    # May conflict with the formatter, https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules
+    "W191",
+    "E111",
+    "E114",
+    "E117",
+    "D206",
+    "D300",
+    "Q000",
+    "Q001",
+    "Q002",
+    "Q003",
+    "COM812",
+    "COM819",
+    "ISC001",
+    "ISC002",
+
+    # Disabled because ruff does not understand type of __all__ generated by a function
+    "PLE0605",
 ]
 
-extend-exclude = [
-    "tests"
-]
-
-[tool.ruff.flake8-pytest-style]
+[tool.ruff.lint.flake8-pytest-style]
 fixture-parentheses = false
 
-[tool.ruff.pyupgrade]
-keep-runtime-typing = true
-
-[tool.ruff.isort]
-# will group `import x` and `from x import` of the same module.
+[tool.ruff.lint.isort]
 force-sort-within-sections = true
 known-first-party = [
     "zhaquirks",
     "tests",
 ]
-forced-separate = ["tests"]
 combine-as-imports = true
+split-on-trailing-comma = false
 
-[tool.ruff.mccabe]
-max-complexity = 25
+[tool.ruff.lint.per-file-ignores]
+
+# Allow for main entry & scripts to write to stdout
+"script/*" = ["T20"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 27

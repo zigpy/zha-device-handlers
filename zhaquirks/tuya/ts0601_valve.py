@@ -1,5 +1,4 @@
 """Collection of Tuya Valve devices e.g. water valves, gas valve etc."""
-from typing import Dict
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
@@ -17,10 +16,9 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import TuyaLocalCluster
+from zhaquirks.tuya import EnchantedDevice, TuyaLocalCluster
 from zhaquirks.tuya.mcu import (
     DPToAttributeMapping,
-    EnchantedDevice,
     TuyaMCUCluster,
     TuyaOnOff,
     TuyaOnOffNM,
@@ -55,7 +53,7 @@ class TuyaValveManufCluster(TuyaMCUCluster):
         }
     )
 
-    dp_to_attribute: Dict[int, DPToAttributeMapping] = {
+    dp_to_attribute: dict[int, DPToAttributeMapping] = {
         1: DPToAttributeMapping(
             TuyaOnOff.ep_attribute,
             "on_off",
@@ -195,7 +193,7 @@ class ParksideTuyaValveManufCluster(TuyaMCUCluster):
         }
     )
 
-    dp_to_attribute: Dict[int, DPToAttributeMapping] = {
+    dp_to_attribute: dict[int, DPToAttributeMapping] = {
         1: DPToAttributeMapping(
             TuyaOnOff.ep_attribute,
             "on_off",
@@ -294,7 +292,7 @@ GIEX_MODE_ATTR = 0xEF01  # Mode [0] duration [1] capacity
 GIEX_START_TIME_ATTR = 0xEF65  # Last irrigation start time (GMT)
 GIEX_END_TIME_ATTR = 0xEF66  # Last irrigation end time (GMT)
 GIEX_NUM_TIMES_ATTR = 0xEF67  # Number of cycle irrigation times min=0 max=100
-GIEX_TARGET_ATTR = 0xEF68  # Irrigation target, duration in seconds or capacity in litres (depending on mode) min=0 max=3600
+GIEX_TARGET_ATTR = 0xEF68  # Irrigation target, duration in sec or capacity in litres (depending on mode) min=0 max=3600
 GIEX_INTERVAL_ATTR = 0xEF69  # Cycle irrigation interval in seconds min=0 max=3600
 GIEX_DURATION_ATTR = 0xEF72  # Last irrigation duration
 
@@ -315,7 +313,7 @@ class GiexValveManufCluster(TuyaMCUCluster):
         }
     )
 
-    dp_to_attribute: Dict[int, DPToAttributeMapping] = {
+    dp_to_attribute: dict[int, DPToAttributeMapping] = {
         1: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
             "irrigation_mode",

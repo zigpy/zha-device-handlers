@@ -1,4 +1,5 @@
 """Tests for Legrand."""
+
 import pytest
 
 import zhaquirks
@@ -29,6 +30,7 @@ async def test_legrand_battery(zigpy_device_from_quirk, voltage, bpr):
 
 
 def test_light_switch_with_neutral_signature(assert_signature_matches_quirk):
+    """Test signature."""
     signature = {
         "node_descriptor": "NodeDescriptor(logical_type=<LogicalType.Router: 1>, complex_descriptor_available=0, user_descriptor_available=1, reserved=0, aps_flags=0, frequency_band=<FrequencyBand.Freq2400MHz: 8>, mac_capability_flags=<MACCapabilityFlags.AllocateAddress|RxOnWhenIdle|MainsPowered|FullFunctionDevice: 142>, manufacturer_code=4129, maximum_buffer_size=89, maximum_incoming_transfer_size=63, server_mask=10752, maximum_outgoing_transfer_size=63, descriptor_capability_field=<DescriptorCapability.NONE: 0>, *allocate_address=True, *is_alternate_pan_coordinator=False, *is_coordinator=False, *is_end_device=False, *is_full_function_device=True, *is_mains_powered=True, *is_receiver_on_when_idle=True, *is_router=True, *is_security_capable=False)",
         "endpoints": {

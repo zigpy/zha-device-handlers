@@ -1,4 +1,6 @@
-from typing import Any, Dict, Optional, Union
+"""Tuya Fingerbot device."""
+
+from typing import Any, Optional, Union
 
 from zigpy.profiles import zha
 import zigpy.types as t
@@ -13,10 +15,9 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import TUYA_SEND_DATA
+from zhaquirks.tuya import TUYA_SEND_DATA, EnchantedDevice
 from zhaquirks.tuya.mcu import (
     DPToAttributeMapping,
-    EnchantedDevice,
     TuyaEnchantableCluster,
     TuyaMCUCluster,
     TuyaPowerConfigurationCluster,
@@ -24,17 +25,23 @@ from zhaquirks.tuya.mcu import (
 
 
 class FingerBotMode(t.enum8):
+    """FingerBot mode."""
+
     CLICK = 0x00
     SWITCH = 0x01
     PROGRAM = 0x02
 
 
 class FingerBotReverse(t.enum8):
+    """FingerBot reverse."""
+
     UP_ON = 0x00
     UP_OFF = 0x01
 
 
 class TuyaFingerbotCluster(TuyaMCUCluster):
+    """Tuya Fingerbot cluster."""
+
     attributes = TuyaMCUCluster.attributes.copy()
     attributes.update(
         {
@@ -68,7 +75,7 @@ class TuyaFingerbotCluster(TuyaMCUCluster):
             **kwargs,
         )
 
-    dp_to_attribute: Dict[int, DPToAttributeMapping] = {
+    dp_to_attribute: dict[int, DPToAttributeMapping] = {
         # Mode
         101: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
@@ -117,6 +124,8 @@ class OnOffEnchantable(TuyaEnchantableCluster, OnOff):
 
 
 class TuyaFingerbot(EnchantedDevice):
+    """Tuya finger bot device."""
+
     signature = {
         MODELS_INFO: [("_TZ3210_dse8ogfy", "TS0001"), ("_TZ3210_j4pdtz9v", "TS0001")],
         ENDPOINTS: {

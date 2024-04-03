@@ -5,9 +5,8 @@ from unittest import mock
 import pytest
 from zigpy.zcl import foundation
 
-import zhaquirks
-
 from tests.common import ClusterListener, wait_for_zigpy_tasks
+import zhaquirks
 
 zhaquirks.setup()
 
@@ -36,8 +35,8 @@ async def test_command(zigpy_device_from_quirk, quirk):
 
         m1.assert_called_with(
             61184,
-            2,
-            b"\x01\x02\x00\x00\x01\x07\x01\x00\x01\x01",
+            1,
+            b"\x01\x01\x00\x00\x01\x07\x01\x00\x01\x01",
             expect_reply=True,
             command_id=0,
         )
@@ -48,8 +47,8 @@ async def test_command(zigpy_device_from_quirk, quirk):
 
         m1.assert_called_with(
             61184,
-            4,
-            b"\x01\x04\x00\x00\x03\x02\x02\x00\x04\x00\x00\x03r",
+            2,
+            b"\x01\x02\x00\x00\x02\x02\x02\x00\x04\x00\x00\x03r",
             expect_reply=True,
             command_id=0,
         )
@@ -60,8 +59,8 @@ async def test_command(zigpy_device_from_quirk, quirk):
 
         m1.assert_called_with(
             61184,
-            6,
-            b"\x01\x06\x00\x00\x05\x01\x01\x00\x01\x01",
+            3,
+            b"\x01\x03\x00\x00\x03\x01\x01\x00\x01\x01",
             expect_reply=True,
             command_id=0,
         )
@@ -73,8 +72,8 @@ async def test_command(zigpy_device_from_quirk, quirk):
         # Should not trigger switch as it is already on
         m1.assert_called_with(
             61184,
-            8,
-            b"\x01\x08\x00\x00\x07\x02\x02\x00\x04\x00\x00\x01\xea",
+            4,
+            b"\x01\x04\x00\x00\x04\x02\x02\x00\x04\x00\x00\x01\xea",
             expect_reply=True,
             command_id=0,
         )
@@ -86,8 +85,8 @@ async def test_command(zigpy_device_from_quirk, quirk):
         # Should switch off without dimming
         m1.assert_called_with(
             61184,
-            10,
-            b"\x01\x0a\x00\x00\x09\x01\x01\x00\x01\x00",
+            5,
+            b"\x01\x05\x00\x00\x05\x01\x01\x00\x01\x00",
             expect_reply=True,
             command_id=0,
         )
@@ -99,15 +98,15 @@ async def test_command(zigpy_device_from_quirk, quirk):
         # Should switch on and then switch to level
         m1.assert_any_call(
             61184,
-            13,
-            b"\x01\r\x00\x00\x0b\x01\x01\x00\x01\x01",
+            6,
+            b"\x01\x06\x00\x00\x06\x01\x01\x00\x01\x01",
             expect_reply=True,
             command_id=0,
         )
         m1.assert_called_with(
             61184,
-            14,
-            b"\x01\x0e\x00\x00\x0c\x02\x02\x00\x04\x00\x00\x00\x62",
+            7,
+            b"\x01\x07\x00\x00\x07\x02\x02\x00\x04\x00\x00\x00b",
             expect_reply=True,
             command_id=0,
         )
@@ -135,8 +134,8 @@ async def test_write_attr(zigpy_device_from_quirk, quirk):
         await wait_for_zigpy_tasks()
         m1.assert_called_with(
             61184,
-            2,
-            b"\x01\x02\x00\x00\x01\x03\x02\x00\x04\x00\x00\x00b",
+            1,
+            b"\x01\x01\x00\x00\x01\x03\x02\x00\x04\x00\x00\x00b",
             expect_reply=False,
             command_id=0,
         )

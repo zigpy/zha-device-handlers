@@ -3,8 +3,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from zigpy import types
 from zigpy.profiles import zha
-import zigpy.types as types
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PowerConfiguration
 from zigpy.zcl.clusters.measurement import OccupancySensing
 
@@ -19,8 +19,8 @@ from zhaquirks.const import (
 )
 from zhaquirks.xiaomi import (
     DeviceTemperatureCluster,
+    LocalOccupancyCluster,
     MotionCluster,
-    OccupancyCluster,
     XiaomiAqaraE1Cluster,
     XiaomiCustomDevice,
     XiaomiPowerConfiguration,
@@ -98,7 +98,7 @@ class LumiLumiMotionAgl04(XiaomiCustomDevice):
                     XiaomiPowerConfiguration,
                     Identify.cluster_id,
                     DeviceTemperatureCluster,
-                    OccupancyCluster,
+                    LocalOccupancyCluster,
                     LocalMotionCluster,
                     OppleCluster,
                 ],

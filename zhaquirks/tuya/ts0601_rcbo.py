@@ -1,5 +1,6 @@
 """Tuya Din RCBO Circuit Breaker."""
-from typing import Any, Dict, Optional, Union
+
+from typing import Any, Optional, Union
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
@@ -248,10 +249,10 @@ class TuyaRCBOElectricalMeasurement(ElectricalMeasurement, TuyaAttributesCluster
         if attr_name == "active_power":
             apparent_power = self.get("apparent_power")
             if apparent_power:
-                power_factor = value / apparent_power * 1000
-                if power_factor > 1000:
-                    power_factor = 1000
-                super().update_attribute("power_factor", int(power_factor))
+                power_factor = value / apparent_power * 100
+                if power_factor > 100:
+                    power_factor = 100
+                super().update_attribute("power_factor", round(power_factor))
 
 
 class TuyaRCBODeviceTemperature(DeviceTemperature, TuyaAttributesCluster):
@@ -335,7 +336,7 @@ class TuyaRCBOMetering(Metering, TuyaAttributesCluster):
 class TuyaRCBOManufCluster(TuyaMCUCluster):
     """Tuya with power measurement data points."""
 
-    dp_to_attribute: Dict[int, DPToAttributeMapping] = {
+    dp_to_attribute: dict[int, DPToAttributeMapping] = {
         TUYA_DP_STATE: DPToAttributeMapping(
             TuyaRCBOOnOff.ep_attribute,
             "on_off",
@@ -422,7 +423,11 @@ class TuyaRCBOManufCluster(TuyaMCUCluster):
                 x[5] | x[4] << 8,
                 x[6],
             ),
-            lambda rms_extreme_over_voltage, over_voltage_trip, ac_alarms_mask, rms_extreme_under_voltage, under_voltage_trip: VoltageParameters(
+            lambda rms_extreme_over_voltage,
+            over_voltage_trip,
+            ac_alarms_mask,
+            rms_extreme_under_voltage,
+            under_voltage_trip: VoltageParameters(
                 rms_extreme_over_voltage,
                 over_voltage_trip,
                 bool(ac_alarms_mask & 0x40),
@@ -439,7 +444,9 @@ class TuyaRCBOManufCluster(TuyaMCUCluster):
                 x[3],
                 AttributeWithMask(x[4] << 1, 1 << 1),
             ),
-            lambda ac_current_overload, over_current_trip, ac_alarms_mask: CurrentParameters(
+            lambda ac_current_overload,
+            over_current_trip,
+            ac_alarms_mask: CurrentParameters(
                 ac_current_overload, over_current_trip, bool(ac_alarms_mask & 0x02)
             ),
         ),
@@ -478,7 +485,7 @@ class TuyaRCBOManufCluster(TuyaMCUCluster):
         ),
     }
 
-    data_point_handlers: Dict[int, str] = {
+    data_point_handlers: dict[int, str] = {
         TUYA_DP_STATE: "_dp_2_attr_update",
         TUYA_DP_COUNTDOWN_TIMER: "_dp_2_attr_update",
         TUYA_DP_FAULT_CODE: "_dp_2_attr_update",

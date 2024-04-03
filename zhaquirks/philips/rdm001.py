@@ -1,6 +1,7 @@
 """Signify RDM001 device."""
+
 import logging
-from typing import Any, List, Optional, Union
+from typing import Any, Optional, Union
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
@@ -84,7 +85,7 @@ class PhilipsRemoteCluster(CustomCluster):
                 "param6": t.uint8_t,
             },
             is_manufacturer_specific=True,
-            direction=foundation.Direction.Server_to_Client,
+            direction=foundation.Direction.Client_to_Server,
         )
     }
     BUTTONS = {
@@ -96,7 +97,7 @@ class PhilipsRemoteCluster(CustomCluster):
     def handle_cluster_request(
         self,
         hdr: foundation.ZCLHeader,
-        args: List[Any],
+        args: list[Any],
         *,
         dst_addressing: Optional[
             Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]

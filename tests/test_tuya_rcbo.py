@@ -5,9 +5,8 @@ from unittest import mock
 import pytest
 from zigpy.zcl import foundation
 
-import zhaquirks
-
 from tests.common import ClusterListener, wait_for_zigpy_tasks
+import zhaquirks
 
 zhaquirks.setup()
 
@@ -32,8 +31,8 @@ async def test_command_rcbo(zigpy_device_from_quirk):
         await wait_for_zigpy_tasks()
         m1.assert_called_with(
             61184,
-            2,
-            b"\x01\x02\x00\x00\x01\x01\x01\x00\x01\x01",
+            1,
+            b"\x01\x01\x00\x00\x01\x01\x01\x00\x01\x01",
             expect_reply=True,
             command_id=0,
         )
@@ -45,8 +44,8 @@ async def test_command_rcbo(zigpy_device_from_quirk):
         await wait_for_zigpy_tasks()
         m1.assert_called_with(
             61184,
-            4,
-            b"\x01\x04\x00\x00\x03t\x01\x00\x01\x01",
+            2,
+            b"\x01\x02\x00\x00\x02t\x01\x00\x01\x01",
             expect_reply=True,
             command_id=0,
         )
@@ -58,8 +57,8 @@ async def test_command_rcbo(zigpy_device_from_quirk):
         await wait_for_zigpy_tasks()
         m1.assert_called_with(
             61184,
-            6,
-            b"\x01\x06\x00\x00\x05s\x01\x00\x01\x01",
+            3,
+            b"\x01\x03\x00\x00\x03s\x01\x00\x01\x01",
             expect_reply=True,
             command_id=0,
         )
@@ -211,27 +210,27 @@ async def test_report_values_rcbo(zigpy_device_from_quirk, frame, cluster, attri
     (
         (
             [],
-            b"\x01\x02\x00\x00\x01\x09\x02\x00\x04\x00\x00\x02\x58",
+            b"\x01\x01\x00\x00\x01\t\x02\x00\x04\x00\x00\x02X",
             "on_off",
             {"countdown_timer": 600},
         ),
-        ([], b"\x01\x02\x00\x00\x01\x1d\x01\x00\x01\x01", "on_off", {"child_lock": 1}),
+        ([], b"\x01\x01\x00\x00\x01\x1d\x01\x00\x01\x01", "on_off", {"child_lock": 1}),
         (
             [],
-            b"\x01\x02\x00\x00\x01\x1b\x04\x00\x01\x01",
+            b"\x01\x01\x00\x00\x01\x1b\x04\x00\x01\x01",
             "on_off",
             {"power_on_state": 1},
         ),
-        ([], b"\x01\x02\x00\x00\x01t\x01\x00\x01\x00", "on_off", {"trip": 0}),
+        ([], b"\x01\x01\x00\x00\x01t\x01\x00\x01\x00", "on_off", {"trip": 0}),
         (
             [],
-            b"\x01\x06\x00\x00\x03p\x00\x00\x03\x5a\x00\x00",
+            b"\x01\x03\x00\x00\x03p\x00\x00\x03Z\x00\x00",
             "device_temperature",
             {"high_temp_thres": 90, "over_temp_trip": 0, "dev_temp_alarm_mask": 0},
         ),
         (
             [],
-            b"\x01\x0e\x00\x00\x07m\x00\x00\x08\x01\x00\x00\x01\x2c\x00\x00\x00",
+            b"\x01\x07\x00\x00\x07m\x00\x00\x08\x01\x00\x00\x01,\x00\x00\x00",
             "electrical_measurement",
             {
                 "self_test_auto_days": 1,
@@ -245,7 +244,7 @@ async def test_report_values_rcbo(zigpy_device_from_quirk, frame, cluster, attri
         ),
         (
             [],
-            b'\x01\x0a\x00\x00\x06n\x00\x00\x08\x0b"\x00\x00\x01\xf4\x00\x00',
+            b'\x01\x04\x00\x00\x06n\x00\x00\x08\x0b"\x00\x00\x01\xf4\x00\x00',
             "electrical_measurement",
             {
                 "rms_extreme_over_voltage": 2850,
@@ -260,7 +259,7 @@ async def test_report_values_rcbo(zigpy_device_from_quirk, frame, cluster, attri
                 b'\x09\x0e\x01\x02\x03n\x00\x00\x08\x0b"\x00\x00\x01\xf4\x00\x00',
                 b"\x09\x0f\x01\x02\x03o\x00\x00\x05\x01\x86\xa0\x00\x00",
             ],
-            b"\x01\x08\x00\x00\x04o\x00\x00\x05\x01\x5f\x90\x01\x01",
+            b"\x01\x04\x00\x00\x04o\x00\x00\x05\x01_\x90\x01\x01",
             "electrical_measurement",
             {
                 "ac_current_overload": 90000,
@@ -273,7 +272,7 @@ async def test_report_values_rcbo(zigpy_device_from_quirk, frame, cluster, attri
                 b'\x09\x0e\x01\x02\x03n\x00\x00\x08\x0b"\x00\x00\x01\xf4\x00\x00',
                 b"\x09\x0f\x01\x02\x03o\x00\x00\x05\x01\x86\xa0\x00\x01",
             ],
-            b"\x01\x02\x00\x00\x01o\x00\x00\x05\x01\x86\xa0\x00\x01",
+            b"\x01\x01\x00\x00\x01o\x00\x00\x05\x01\x86\xa0\x00\x01",
             "electrical_measurement",
             {
                 "ac_current_overload": 100000,
@@ -281,7 +280,7 @@ async def test_report_values_rcbo(zigpy_device_from_quirk, frame, cluster, attri
         ),
         (
             [],
-            b"\x01\x04\x00\x00\x02l\x00\x00\x03\x14\xb4\x01",
+            b"\x01\x02\x00\x00\x02l\x00\x00\x03\x14\xb4\x01",
             "smartenergy_metering",
             {"cost_parameters": 5300, "cost_parameters_enabled": 1},
         ),
@@ -346,11 +345,11 @@ async def test_power_factor(zigpy_device_from_quirk):
         b"\x09\x07\x01\x02\x03g\x00\x00\x0c\x00\x09\xbf\x00\x09\xbf\x00\x00\x00\x00\x00\x00"
     )
     tuya_cluster.handle_message(hdr, args)  # active_power
-    assert tuya_listener.attribute_updates == [(0x050B, 2495), (0x0510, 1000)]
+    assert tuya_listener.attribute_updates == [(0x050B, 2495), (0x0510, 100)]
 
     tuya_listener.attribute_updates = []
     hdr, args = tuya_cluster.deserialize(
         b"\x09\x08\x01\x02\x03g\x00\x00\x0c\x00\x06\x4b\x00\x06\x4b\x00\x00\x00\x00\x00\x00"
     )
     tuya_cluster.handle_message(hdr, args)  # active_power
-    assert tuya_listener.attribute_updates == [(0x050B, 1611), (0x0510, 987)]
+    assert tuya_listener.attribute_updates == [(0x050B, 1611), (0x0510, 99)]
