@@ -195,6 +195,7 @@ class TuyaDoubleSwitchTO(TuyaSwitch):
         MODELS_INFO: [
             ("_TZE200_g1ib5ldv", "TS0601"),
             ("_TZE200_wunufsil", "TS0601"),
+            ("_TZE204_wvovwe9h", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
@@ -372,6 +373,7 @@ class TuyaTripleSwitch_GP(TuyaSwitch):
         MODELS_INFO: [
             ("_TZE200_2hf7x9n3", "TS0601"),  # reported #1597
             ("_TZE200_go3tvswy", "TS0601"),  # reported #1634
+            ("_TZE204_2imwyigp", "TS0601"),
         ],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=51 device_version=1
