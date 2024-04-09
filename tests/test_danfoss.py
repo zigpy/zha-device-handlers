@@ -77,7 +77,7 @@ async def test_danfoss_thermostat_write_attributes(zigpy_device_from_quirk):
     """Test the Thermostat writes behaving correctly, in particular regarding setpoint."""
     device = zigpy_device_from_quirk(zhaquirks.danfoss.thermostat.DanfossThermostat)
 
-    danfoss_thermostat_cluster = device.endpoints[1].in_clusters[Thermostat.cluster_id]
+    danfoss_thermostat_cluster = device.endpoints[1].thermostat
 
     def mock_write(attributes, manufacturer=None):
         records = [
