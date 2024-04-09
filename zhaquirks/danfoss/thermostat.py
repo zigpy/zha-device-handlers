@@ -29,8 +29,9 @@ Broken ZCL attributes:
 """
 
 
-from datetime import datetime
-from typing import Any, Callable, List
+from collections.abc import Callable
+from datetime import UTC, datetime
+from typing import Any, List
 
 from zigpy import types
 from zigpy.profiles import zha
@@ -441,11 +442,11 @@ class DanfossTimeCluster(CustomizedStandardCluster, Time):
     """Danfoss cluster for fixing the time."""
 
     async def write_time(self):
-        epoch = datetime(2000, 1, 1, 0, 0, 0, 0)
-        current_time = (datetime.utcnow() - epoch).total_seconds()
+        epoch = datetime(2000, 1, 1, 0, 0, 0, 0, tzinfo=UTC)
+        current_time = (datetime.now(UTC) - epoch).total_seconds()
 
         time_zone = (
-            datetime.fromtimestamp(86400) - datetime.utcfromtimestamp(86400)
+            datetime.fromtimestamp(86400) - datetime.fromtimestamp(86400, UTC)
         ).total_seconds()
 
         await self.write_attributes(

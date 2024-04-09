@@ -44,6 +44,7 @@ def test_popp_signature(assert_signature_matches_quirk):
     )
 
 
+@mock.patch("zigpy.zcl.Cluster.bind", mock.AsyncMock())
 async def test_danfoss_time_bind(zigpy_device_from_quirk):
     device = zigpy_device_from_quirk(zhaquirks.danfoss.thermostat.DanfossThermostat)
 
@@ -56,28 +57,18 @@ async def test_danfoss_time_bind(zigpy_device_from_quirk):
         ]
         return [records, []]
 
-    def mock_wildcard(*args, **kwargs):
-        return
-
     patch_danfoss_trv_write = mock.patch.object(
         danfoss_time_cluster,
         "_write_attributes",
         mock.AsyncMock(side_effect=mock_write),
     )
 
-    patch_danfoss_trv_bind = mock.patch.object(
-        Time,
-        "bind",
-        mock.AsyncMock(side_effect=mock_wildcard),
-    )
+    with patch_danfoss_trv_write:
+        await danfoss_time_cluster.bind()
 
-    with patch_danfoss_trv_bind:
-        with patch_danfoss_trv_write:
-            await danfoss_time_cluster.bind()
-
-            assert 0x0000 in danfoss_time_cluster._attr_cache
-            assert 0x0001 in danfoss_time_cluster._attr_cache
-            assert 0x0002 in danfoss_time_cluster._attr_cache
+        assert 0x0000 in danfoss_time_cluster._attr_cache
+        assert 0x0001 in danfoss_time_cluster._attr_cache
+        assert 0x0002 in danfoss_time_cluster._attr_cache
 
 
 async def test_danfoss_thermostat_write_attributes(zigpy_device_from_quirk):
