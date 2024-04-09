@@ -50,7 +50,7 @@ async def test_danfoss_time_bind(zigpy_device_from_quirk):
     """Test the time being set when binding the Time cluster."""
     device = zigpy_device_from_quirk(zhaquirks.danfoss.thermostat.DanfossThermostat)
 
-    danfoss_time_cluster = device.endpoints[1].in_clusters[Time.cluster_id]
+    danfoss_time_cluster = device.endpoints[1].time
 
     def mock_write(attributes, manufacturer=None):
         records = [
