@@ -3,7 +3,6 @@ from unittest import mock
 
 from zigpy.quirks import CustomCluster
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import Time
 from zigpy.zcl.clusters.hvac import Thermostat
 from zigpy.zcl.foundation import WriteAttributesStatusRecord, ZCLAttributeDef
 
@@ -51,6 +50,7 @@ async def test_danfoss_time_bind(zigpy_device_from_quirk):
     device = zigpy_device_from_quirk(zhaquirks.danfoss.thermostat.DanfossThermostat)
 
     danfoss_time_cluster = device.endpoints[1].time
+    danfoss_thermostat_cluster = device.endpoints[1].thermostat
 
     def mock_write(attributes, manufacturer=None):
         records = [
@@ -66,7 +66,7 @@ async def test_danfoss_time_bind(zigpy_device_from_quirk):
     )
 
     with patch_danfoss_trv_write:
-        await danfoss_time_cluster.bind()
+        await danfoss_thermostat_cluster.bind()
 
         assert 0x0000 in danfoss_time_cluster._attr_cache
         assert 0x0001 in danfoss_time_cluster._attr_cache
