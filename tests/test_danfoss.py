@@ -55,7 +55,7 @@ async def test_danfoss_time_bind(zigpy_device_from_quirk):
     def mock_write(attributes, manufacturer=None):
         records = [
             WriteAttributesStatusRecord(foundation.Status.SUCCESS)
-            for attr in attributes
+            for _ in attributes
         ]
         return [records, []]
 

@@ -27,10 +27,9 @@ ZCL commands supported:
 Broken ZCL attributes:
     0x0204 - TemperatureDisplayMode (0x0000): Writing doesn't seem to do anything
 """
-
-
 from collections.abc import Callable
 from datetime import UTC, datetime
+import time
 from typing import Any
 
 from zigpy import types
@@ -454,19 +453,19 @@ class DanfossTimeCluster(CustomizedStandardCluster, Time):
     """Danfoss cluster for fixing the time."""
 
     async def write_time(self):
-        """Write time info to Time Cluster."""
+        """Write time info to Time Cluster.
+
+        It supports adjusting for daylight saving time, but this is not trivial to retrieve with the modules:
+            zoneinfo, datetime or time
+        """
         epoch = datetime(2000, 1, 1, 0, 0, 0, 0, tzinfo=UTC)
         current_time = (datetime.now(UTC) - epoch).total_seconds()
-
-        time_zone = (
-            datetime.fromtimestamp(86400) - datetime.fromtimestamp(86400, UTC)
-        ).total_seconds()
 
         await self.write_attributes(
             {
                 "time": current_time,
                 "time_status": 0b00000010,  # only bit 1 can be set
-                "time_zone": time_zone,
+                "time_zone": time.timezone
             }
         )
 
