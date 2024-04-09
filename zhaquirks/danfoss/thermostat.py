@@ -475,9 +475,7 @@ class DanfossTimeCluster(CustomizedStandardCluster, Time):
         It doesn't request it, so it has to be fed the correct time.
         """
         result = await super().bind()
-
         await self.write_time()
-
         return result
 
 
