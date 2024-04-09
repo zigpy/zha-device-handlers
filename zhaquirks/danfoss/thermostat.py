@@ -31,7 +31,7 @@ Broken ZCL attributes:
 
 from collections.abc import Callable
 from datetime import UTC, datetime
-from typing import Any, List
+from typing import Any
 
 from zigpy import types
 from zigpy.profiles import zha
@@ -151,6 +151,7 @@ class DanfossSetpointCommandEnum(types.enum8):
 
 class DanfossPreheatCommandEnum(types.enum8):
     """Set behaviour of preheat command.
+
     Only one option available, but other values are possible in the future.
     """
 
@@ -167,6 +168,7 @@ class CustomizedStandardCluster(CustomCluster):
 
     @staticmethod
     def combine_results(*result_lists):
+        """Combine results from 1 or more result lists from zigbee commands."""
         success_global = []
         failure_global = []
         for result in result_lists:
@@ -183,7 +185,7 @@ class CustomizedStandardCluster(CustomCluster):
 
     async def split_command(
         self,
-        records: List[Any],
+        records: list[Any],
         func: Callable,
         extract_attrid: Callable[[Any], int],
         *args,
@@ -228,6 +230,8 @@ class DanfossThermostatCluster(CustomizedStandardCluster, Thermostat):
     """Danfoss cluster for standard and proprietary danfoss attributes."""
 
     class ServerCommandDefs(Thermostat.ServerCommandDefs):
+        """Server Command Definitions."""
+
         setpoint_command = ZCLCommandDef(
             id=0x40,
             schema={
@@ -244,6 +248,8 @@ class DanfossThermostatCluster(CustomizedStandardCluster, Thermostat):
         )
 
     class AttributeDefs(Thermostat.AttributeDefs):
+        """Attribute Definitions."""
+
         open_window_detection = ZCLAttributeDef(  # etrv_open_window_detection
             id=0x4000,
             type=DanfossOpenWindowDetectionEnum,
@@ -333,6 +339,7 @@ class DanfossThermostatCluster(CustomizedStandardCluster, Thermostat):
 
     async def write_attributes(self, attributes, manufacturer=None):
         """There are 2 types of setpoint changes: Fast and Slow.
+
         Fast is used for immediate changes; this is done using a command (setpoint_command).
         Slow is used for scheduled changes; this is done using an attribute (occupied_heating_setpoint).
         In case of a change on occupied_heating_setpoint, a setpoint_command is used.
@@ -370,6 +377,7 @@ class DanfossThermostatCluster(CustomizedStandardCluster, Thermostat):
 
     async def bind(self):
         """According to the documentation of Zigbee2MQTT there is a bug in the Danfoss firmware with the time.
+
         It doesn't request it, so it has to be fed the correct time.
         """
         await self.endpoint.time.write_time()
@@ -381,6 +389,8 @@ class DanfossUserInterfaceCluster(CustomizedStandardCluster, UserInterface):
     """Danfoss cluster for standard and proprietary danfoss attributes."""
 
     class AttributeDefs(UserInterface.AttributeDefs):
+        """Attribute Definitions."""
+
         viewing_direction = ZCLAttributeDef(
             id=0x4000,
             type=DanfossViewingDirectionEnum,
@@ -393,6 +403,8 @@ class DanfossDiagnosticCluster(CustomizedStandardCluster, Diagnostic):
     """Danfoss cluster for standard and proprietary danfoss attributes."""
 
     class AttributeDefs(Diagnostic.AttributeDefs):
+        """Attribute Definitions."""
+
         sw_error_code = ZCLAttributeDef(
             id=0x4000,
             type=DanfossSoftwareErrorCodeBitmap,
@@ -442,6 +454,7 @@ class DanfossTimeCluster(CustomizedStandardCluster, Time):
     """Danfoss cluster for fixing the time."""
 
     async def write_time(self):
+        """Write time info to Time Cluster."""
         epoch = datetime(2000, 1, 1, 0, 0, 0, 0, tzinfo=UTC)
         current_time = (datetime.now(UTC) - epoch).total_seconds()
 
@@ -459,6 +472,7 @@ class DanfossTimeCluster(CustomizedStandardCluster, Time):
 
     async def bind(self):
         """According to the documentation of Zigbee2MQTT there is a bug in the Danfoss firmware with the time.
+
         It doesn't request it, so it has to be fed the correct time.
         """
         result = await super().bind()
