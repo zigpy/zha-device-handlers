@@ -36,7 +36,7 @@ WWAH_CLUSTER_ID = 64599
 
 
 class InovelliVZM36(CustomDevice):
-    """VZM36 Canopy Module"""
+    """VZM36 Canopy Module."""
 
     signature = {
         MODELS_INFO: [("Inovelli", "VZM36")],

@@ -84,7 +84,6 @@ class TuyaSingleSwitchTO(TuyaSwitch):
         MODELS_INFO: [
             ("_TZE200_amp6tsvy", "TS0601"),
             ("_TZE200_oisqyl4o", "TS0601"),
-            ("_TZE200_vhy3iakz", "TS0601"),  # ¿1 or 4 gangs?
             ("_TZ3000_uim07oem", "TS0601"),  # ¿1 or 4 gangs?
             ("_TZE200_wfxuhoea", "TS0601"),
             ("_TZE200_tviaymwx", "TS0601"),
@@ -196,6 +195,7 @@ class TuyaDoubleSwitchTO(TuyaSwitch):
         MODELS_INFO: [
             ("_TZE200_g1ib5ldv", "TS0601"),
             ("_TZE200_wunufsil", "TS0601"),
+            ("_TZE204_wvovwe9h", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
@@ -314,6 +314,7 @@ class TuyaTripleSwitchTO(TuyaSwitch):
         MODELS_INFO: [
             # ("_TZE200_kyfqmmyl", "TS0601"),  ## candidate reported in #716
             ("_TZE200_tz32mtza", "TS0601"),
+            ("_TZE200_vhy3iakz", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
@@ -372,6 +373,7 @@ class TuyaTripleSwitch_GP(TuyaSwitch):
         MODELS_INFO: [
             ("_TZE200_2hf7x9n3", "TS0601"),  # reported #1597
             ("_TZE200_go3tvswy", "TS0601"),  # reported #1634
+            ("_TZE204_2imwyigp", "TS0601"),
         ],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=51 device_version=1
@@ -924,6 +926,150 @@ class TuyaSwitchX8_GP(TuyaSwitch):
                 OUTPUT_CLUSTERS: [],
             },
             8: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
+                INPUT_CLUSTERS: [
+                    TuyaOnOffNM,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            242: {
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        }
+    }
+
+class TuyaSwitchX12_GP(TuyaSwitch):
+    """Tuya x12 channels switch with GreenPowerProxy cluster device."""
+
+    signature = {
+        MODELS_INFO: [
+            ("_TZE204_dqolcpcp", "TS0601"),
+        ],
+        ENDPOINTS: {
+            # <SimpleDescriptor endpoint=1 profile=260 device_type=81
+            # input_clusters=[0x0000,0x0004,0x0005,0xEF00]
+            # output_clusters=[0x000A,0x0019]>
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaOnOffManufCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            # <SimpleDescriptor endpoint=242 profile=41440 device_type=97
+            # input_clusters=[]
+            # output_clusters=[33]
+            242: {
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaOnOffManufCluster,
+                    TuyaOnOffNM,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
+                INPUT_CLUSTERS: [
+                    TuyaOnOffNM,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            3: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
+                INPUT_CLUSTERS: [
+                    TuyaOnOffNM,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            4: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
+                INPUT_CLUSTERS: [
+                    TuyaOnOffNM,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            5: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
+                INPUT_CLUSTERS: [
+                    TuyaOnOffNM,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            6: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
+                INPUT_CLUSTERS: [
+                    TuyaOnOffNM,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            7: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
+                INPUT_CLUSTERS: [
+                    TuyaOnOffNM,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            8: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
+                INPUT_CLUSTERS: [
+                    TuyaOnOffNM,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            9: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
+                INPUT_CLUSTERS: [
+                    TuyaOnOffNM,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            10: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
+                INPUT_CLUSTERS: [
+                    TuyaOnOffNM,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            11: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
+                INPUT_CLUSTERS: [
+                    TuyaOnOffNM,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            12: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [

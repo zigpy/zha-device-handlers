@@ -1,4 +1,5 @@
 """Aqara E1 Radiator Thermostat Quirk."""
+
 from __future__ import annotations
 
 from functools import reduce
@@ -139,11 +140,12 @@ class ThermostatCluster(CustomCluster, Thermostat):
 
 
 class ScheduleEvent:
-    """Schedule event object"""
+    """Schedule event object."""
 
     _is_next_day = False
 
     def __init__(self, value, is_next_day=False):
+        """Create ScheduleEvent object from bytes or string."""
         if isinstance(value, bytes):
             self._verify_buffer_len(value)
             self._time = self._read_time_from_buf(value)
@@ -176,8 +178,8 @@ class ScheduleEvent:
         return time
 
     @staticmethod
-    def _parse_time(str):
-        parts = str.split(":")
+    def _parse_time(string):
+        parts = string.split(":")
         if len(parts) != 2:
             raise ValueError("Time must contain ':' separator")
 
@@ -191,8 +193,8 @@ class ScheduleEvent:
         return struct.unpack_from(">H", buf, offset=4)[0] / 100
 
     @staticmethod
-    def _parse_temp(str):
-        return float(str)
+    def _parse_temp(string):
+        return float(string)
 
     @staticmethod
     def _validate_time(time):
@@ -220,18 +222,23 @@ class ScheduleEvent:
         struct.pack_into(">H", buf, 4, int(self._temp * 100))
 
     def is_next_day(self):
+        """Return if event is on the next day."""
         return self._is_next_day
 
     def set_next_day(self, is_next_day):
+        """Set if event is on the next day."""
         self._is_next_day = is_next_day
 
     def get_time(self):
+        """Return event time."""
         return self._time
 
     def __str__(self):
+        """Return event as string."""
         return f"{math.floor(self._time / 60)}:{f'{self._time % 60:0>2}'},{f'{self._temp:.1f}'}"
 
     def serialize(self):
+        """Serialize event to bytes."""
         result = bytearray(6)
         self._write_time_to_buf(result)
         self._write_temp_to_buf(result)
@@ -239,9 +246,10 @@ class ScheduleEvent:
 
 
 class ScheduleSettings(t.LVBytes):
-    """Schedule settings object"""
+    """Schedule settings object."""
 
     def __new__(cls, value):
+        """Create ScheduleSettings object from bytes or string."""
         day_selection = None
         events = [None] * 4
         if isinstance(value, bytes):
@@ -296,7 +304,7 @@ class ScheduleSettings(t.LVBytes):
         if len(days) != len(set(days)):
             raise ValueError("Duplicate day names present")
         for d in days:
-            if d not in DAYS_MAP.keys():
+            if d not in DAYS_MAP:
                 raise ValueError(
                     f"String: {d} is not a valid day name, valid names: mon, tue, wed, thu, fri, sat, sun"
                 )
@@ -308,8 +316,8 @@ class ScheduleSettings(t.LVBytes):
             byte = struct.unpack_from("c", value, offset=1)[0][0]
             if byte & 0x01:
                 raise ValueError("Incorrect day selected")
-            for i in DAYS_MAP:
-                if byte & DAYS_MAP[i]:
+            for i, v in DAYS_MAP.items():
+                if byte & v:
                     day_selection.append(i)
             ScheduleSettings._verify_day_selection_in_str(day_selection)
         elif isinstance(value, str):
@@ -350,6 +358,7 @@ class ScheduleSettings(t.LVBytes):
         return byte
 
     def __str__(self):
+        """Return ScheduleSettings as string."""
         day_selection = ScheduleSettings._read_day_selection(self)
         events = [None] * 4
         for i in range(4):

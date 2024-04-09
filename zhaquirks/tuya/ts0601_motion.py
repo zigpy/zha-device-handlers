@@ -1,7 +1,7 @@
 """BlitzWolf IS-3/Tuya motion rechargeable occupancy sensor."""
 
 import math
-from typing import Dict, Optional, Tuple, Union
+from typing import Optional, Union
 
 from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomDevice
@@ -86,7 +86,7 @@ class NeoMotionManufCluster(TuyaNewManufCluster):
         }
     )
 
-    dp_to_attribute: Dict[int, DPToAttributeMapping] = {
+    dp_to_attribute: dict[int, DPToAttributeMapping] = {
         101: DPToAttributeMapping(
             TuyaOccupancySensing.ep_attribute,
             "occupancy",
@@ -150,7 +150,7 @@ class MmwRadarManufCluster(TuyaMCUCluster):
         }
     )
 
-    dp_to_attribute: Dict[int, DPToAttributeMapping] = {
+    dp_to_attribute: dict[int, DPToAttributeMapping] = {
         1: DPToAttributeMapping(
             TuyaOccupancySensing.ep_attribute,
             "occupancy",
@@ -242,7 +242,7 @@ class TuyaManufacturerClusterMotion(TuyaManufCluster):
     def handle_cluster_request(
         self,
         hdr: foundation.ZCLHeader,
-        args: Tuple[TuyaManufCluster.Command],
+        args: tuple[TuyaManufCluster.Command],
         *,
         dst_addressing: Optional[
             Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
