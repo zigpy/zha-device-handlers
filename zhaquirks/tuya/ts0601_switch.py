@@ -87,6 +87,7 @@ class TuyaSingleSwitchTO(TuyaSwitch):
             ("_TZ3000_uim07oem", "TS0601"),  # ¿1 or 4 gangs?
             ("_TZE200_wfxuhoea", "TS0601"),
             ("_TZE200_tviaymwx", "TS0601"),
+            ("_TZE204_ptaqh9tk", "TS0601"),  # reported in #2780
         ],
         ENDPOINTS: {
             1: {
@@ -127,7 +128,6 @@ class TuyaSingleSwitch_GP(TuyaSwitch):
         MODELS_INFO: [
             ("_TZE200_gbagoilo", "TS0601"),  # reported in #1634
             ("_TZE204_6fk3gewc", "TS0601"),
-            ("_TZE204_ptaqh9tk", "TS0601"),  # reported in #2780
         ],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=51 device_version=1
