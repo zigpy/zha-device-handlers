@@ -87,7 +87,7 @@ class TuyaSingleSwitchTO(TuyaSwitch):
             ("_TZ3000_uim07oem", "TS0601"),  # ¿1 or 4 gangs?
             ("_TZE200_wfxuhoea", "TS0601"),
             ("_TZE200_tviaymwx", "TS0601"),
-            ("_TZE204_ptaqh9tk", "TS0601"),  # reported in #2780
+            ("_TZE204_ptaqh9tk", "TS0601"),  # reported in #3099
         ],
         ENDPOINTS: {
             1: {
