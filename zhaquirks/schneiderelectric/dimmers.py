@@ -1,10 +1,8 @@
 """Schneider Electric dimmers and switches quirks."""
 
-from typing import Final
 
 from zigpy.profiles import zgp, zha
-from zigpy.quirks import CustomCluster, CustomDevice
-import zigpy.types as t
+from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import (
     Basic,
@@ -18,7 +16,6 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.lighting import Ballast
-from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -28,35 +25,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.schneiderelectric import SE_MANUF_ID, SE_MANUF_NAME, SEBasic, SESpecific
-
-
-class ControlMode(t.enum8):
-    """Dimming mode for PUCK/DIMMER/* and NHROTARY/DIMMER/1."""
-
-    Auto = 0
-    RC = 1
-    RL = 2
-    RL_LED = 3
-
-
-class SEBallast(CustomCluster, Ballast):
-    """Schneider Electric Ballast cluster."""
-
-    manufacturer_id_override = SE_MANUF_ID
-
-    class AttributeDefs(Ballast.AttributeDefs):
-        """Attribute definitions."""
-
-        control_mode: Final = ZCLAttributeDef(
-            id=0xE000, type=ControlMode, is_manufacturer_specific=True
-        )
-        unknown_attribute_e001: Final = ZCLAttributeDef(
-            id=0xE002, type=t.enum8, is_manufacturer_specific=True
-        )
-        unknown_attribute_e002: Final = ZCLAttributeDef(
-            id=0xE002, type=t.enum8, is_manufacturer_specific=True
-        )
+from zhaquirks.schneiderelectric import SE_MANUF_NAME, SEBallast, SEBasic, SESpecific
 
 
 class NHRotaryDimmer1(CustomDevice):
