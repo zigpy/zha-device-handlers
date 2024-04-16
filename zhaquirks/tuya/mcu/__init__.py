@@ -3,20 +3,33 @@
 from collections.abc import Callable
 import dataclasses
 import datetime
+import logging
 from typing import Any, Optional, Union
 
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import LevelControl, OnOff
+from zigpy.zcl.clusters.closures import WindowCovering
+from zigpy.zcl.clusters.general import LevelControl, OnOff, PowerConfiguration
 
 from zhaquirks import Bus, DoublingPowerConfigurationCluster
 
 # add EnchantedDevice import for custom quirks backwards compatibility
 from zhaquirks.tuya import (
+    ATTR_COVER_DIRECTION,
+    ATTR_COVER_DIRECTION_NAME,
+    ATTR_COVER_INVERTED,
+    ATTR_COVER_INVERTED_NAME,
+    ATTR_COVER_LIFTPERCENT_CONTROL,
+    ATTR_COVER_LIFTPERCENT_CONTROL_NAME,
+    ATTR_COVER_LIFTPERCENT_NAME,
     TUYA_MCU_COMMAND,
     TUYA_MCU_VERSION_RSP,
     TUYA_SET_DATA,
     TUYA_SET_TIME,
+    WINDOW_COVER_COMMAND_DOWNCLOSE,
+    WINDOW_COVER_COMMAND_LIFTPERCENT,
+    WINDOW_COVER_COMMAND_STOP,
+    WINDOW_COVER_COMMAND_UPOPEN,
     EnchantedDevice,  # noqa: F401
     NoManufacturerCluster,
     PowerOnState,
@@ -34,6 +47,7 @@ ATTR_MCU_VERSION = 0xEF00
 # manufacturer commands
 TUYA_MCU_CONNECTION_STATUS = 0x25
 
+_LOGGER = logging.getLogger(__name__)
 
 @dataclasses.dataclass
 class DPToAttributeMapping:
@@ -368,6 +382,7 @@ class TuyaOnOff(TuyaEnchantableCluster, OnOff, TuyaLocalCluster):
         manufacturer: Optional[Union[int, t.uint16_t]] = None,
         expect_reply: bool = True,
         tsn: Optional[Union[int, t.uint8_t]] = None,
+        **_kwargs: Any
     ):
         """Override the default Cluster command."""
 
@@ -529,7 +544,7 @@ class MoesSwitchManufCluster(TuyaOnOffManufCluster):
             14: DPToAttributeMapping(
                 TuyaMCUCluster.ep_attribute,
                 "power_on_state",
-                converter=lambda x: PowerOnState(x),
+                converter=PowerOnState,
             )
         }
     )
@@ -538,7 +553,7 @@ class MoesSwitchManufCluster(TuyaOnOffManufCluster):
             15: DPToAttributeMapping(
                 TuyaMCUCluster.ep_attribute,
                 "backlight_mode",
-                converter=lambda x: MoesBacklight(x),
+                converter=MoesBacklight,
             ),
         }
     )
@@ -546,6 +561,154 @@ class MoesSwitchManufCluster(TuyaOnOffManufCluster):
     data_point_handlers = TuyaOnOffManufCluster.data_point_handlers.copy()
     data_point_handlers.update({14: "_dp_2_attr_update"})
     data_point_handlers.update({15: "_dp_2_attr_update"})
+
+
+class TuyaNewManufClusterForWindowCover(TuyaMCUCluster):
+    """Manufacturer Specific Cluster for cover device (based on new TuyaMCUCluster).
+
+    I.e. Uses newer TuyaMCUCluster mechanism for translations between cluster attributes and
+    Tuya data points.
+    """
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+
+        self.dp_to_attribute: dict[int, DPToAttributeMapping] = {
+            1: DPToAttributeMapping(
+                TuyaNewWindowCoverControl.ep_attribute,
+                ATTR_COVER_DIRECTION_NAME,
+                # make sure this is sent as a enum, regardless that tuya_cover_command probably
+                # contains ints.
+                None,
+                t.enum8
+            ),
+            2: DPToAttributeMapping(
+                TuyaNewWindowCoverControl.ep_attribute,
+                ATTR_COVER_LIFTPERCENT_CONTROL_NAME,
+                self.convert_lift_percent,
+                self.convert_lift_percent
+            ),
+            3: DPToAttributeMapping(
+                TuyaNewWindowCoverControl.ep_attribute,
+                ATTR_COVER_LIFTPERCENT_NAME,
+                self.convert_lift_percent,
+                self.convert_lift_percent
+            ),
+            13: DPToAttributeMapping(
+                PowerConfiguration.ep_attribute,
+                PowerConfiguration.AttributeDefs.battery_percentage_remaining.name
+                # Tuya report real percent, zigbee expects value*2, but
+                # TuyaPowerConfigurationCluster will convert it
+            ),
+        }
+
+    data_point_handlers = {
+        1: "_dp_2_attr_update",
+        2: "_dp_2_attr_update",
+        3: "_dp_2_attr_update",
+        # Define DPs 5 & 7 to avoid warning logs, but I'm not sure what they are so just ignore
+        # updates from them
+        5: "ignore_update",
+        7: "ignore_update",
+        13: "_dp_2_attr_update",
+    }
+
+    def convert_lift_percent(self, input_value: int):
+        """Convert/invert lift percent when needed.
+
+        HA shows % open. The zigbee cluster value is called 'lift_percent' but seems to need to
+        be % closed. This logic follows the convention of other Tuya covers, inverting the value
+        by default and reversing that invert if tuya_cover_inverted_by_default or the cluster
+        invert attribute is set. (This seems strange to me, but it's better to be consistent.)
+        """
+
+        invert_attr = self.endpoint.window_covering._attr_cache.get(ATTR_COVER_INVERTED) == 1
+        invert = (
+            not invert_attr
+            if self.endpoint.device.tuya_cover_inverted_by_default
+            else invert_attr
+        )
+        return input_value if invert else 100 - input_value
+
+    def ignore_update(self, _datapoint: TuyaDatapointData) -> None:
+        """Process (and ignore) some data point updates."""
+        return None
+
+
+class TuyaNewWindowCoverControl(TuyaLocalCluster, WindowCovering):
+    """Tuya Window Cover Cluster, based on new TuyaNewManufClusterForWindowCover.
+
+    Derive from TuyaLocalCluster to disable attribute writes, in a way that's compatible with
+    TuyaNewManufClusterForWindowCover (not TuyaManufacturerWindowCover.)
+    """
+
+    attributes = WindowCovering.attributes.copy()
+    # cover direction and lift percent control attributes are not very useful to HA, but needed to
+    # allow TuyaMCUCluster to map to the data point.
+    attributes.update({ATTR_COVER_DIRECTION: (ATTR_COVER_DIRECTION_NAME, t.enum8)})
+    attributes.update({ATTR_COVER_INVERTED: (ATTR_COVER_INVERTED_NAME, t.Bool)})
+    attributes.update({ATTR_COVER_LIFTPERCENT_CONTROL: (ATTR_COVER_LIFTPERCENT_CONTROL_NAME, t.uint16_t)})
+
+    async def command(
+        self,
+        command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
+        *args,
+        manufacturer: Optional[Union[int, t.uint16_t]] = None,
+        expect_reply: bool = True,
+        tsn: Optional[Union[int, t.uint8_t]] = None,
+        **_kwargs: Any
+    ):
+        """Override the default Cluster command."""
+
+        _LOGGER.debug(
+            "Sending Tuya Cluster Command... Cluster Command is %x, Arguments are %s",
+            command_id,
+            args,
+        )
+
+        # Open Close or Stop commands
+        if command_id in (
+            WINDOW_COVER_COMMAND_UPOPEN,
+            WINDOW_COVER_COMMAND_DOWNCLOSE,
+            WINDOW_COVER_COMMAND_STOP,
+        ):
+            cluster_data = TuyaClusterData(
+                endpoint_id=self.endpoint.endpoint_id,
+                cluster_name=self.ep_attribute,
+                cluster_attr=ATTR_COVER_DIRECTION_NAME,
+                # Map from zigbee command to tuya DP value
+                attr_value=self.endpoint.device.tuya_cover_command[command_id],
+                expect_reply=expect_reply,
+                manufacturer=manufacturer,
+            )
+            self.endpoint.device.command_bus.listener_event(
+                TUYA_MCU_COMMAND,
+                cluster_data,
+            )
+            return foundation.GENERAL_COMMANDS[
+                foundation.GeneralCommand.Default_Response
+            ].schema(command_id=command_id, status=foundation.Status.SUCCESS)
+        elif command_id == WINDOW_COVER_COMMAND_LIFTPERCENT:
+            cluster_data = TuyaClusterData(
+                endpoint_id=self.endpoint.endpoint_id,
+                cluster_name=self.ep_attribute,
+                cluster_attr=ATTR_COVER_LIFTPERCENT_CONTROL_NAME,
+                attr_value=args[0],
+                expect_reply=expect_reply,
+                manufacturer=manufacturer,
+            )
+            self.endpoint.device.command_bus.listener_event(
+                TUYA_MCU_COMMAND,
+                cluster_data,
+            )
+            return foundation.GENERAL_COMMANDS[
+                foundation.GeneralCommand.Default_Response
+            ].schema(command_id=command_id, status=foundation.Status.SUCCESS)
+        _LOGGER.warning("Unsupported command_id: %s", command_id)
+        return foundation.GENERAL_COMMANDS[
+            foundation.GeneralCommand.Default_Response
+        ].schema(command_id=command_id, status=foundation.Status.UNSUP_CLUSTER_COMMAND)
 
 
 class TuyaLevelControl(LevelControl, TuyaLocalCluster):

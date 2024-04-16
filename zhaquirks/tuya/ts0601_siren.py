@@ -27,9 +27,12 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import TuyaManufCluster, TuyaManufClusterAttributes
-from zhaquirks.tuya.mcu import (
+from zhaquirks.tuya import (
     TUYA_MCU_COMMAND,
+    TuyaManufCluster,
+    TuyaManufClusterAttributes,
+)
+from zhaquirks.tuya.mcu import (
     DPToAttributeMapping,
     TuyaAttributesCluster,
     TuyaClusterData,

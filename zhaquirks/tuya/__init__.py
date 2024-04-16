@@ -103,7 +103,12 @@ WINDOW_COVER_COMMAND_CUSTOM = 0x0006
 COVER_EVENT = "cover_event"
 ATTR_COVER_POSITION = 0x0008
 ATTR_COVER_DIRECTION = 0x8001
+ATTR_COVER_DIRECTION_NAME = "motor_direction"
 ATTR_COVER_INVERTED = 0x8002
+ATTR_COVER_INVERTED_NAME = "cover_inverted"
+ATTR_COVER_LIFTPERCENT_NAME = "current_position_lift_percentage"
+ATTR_COVER_LIFTPERCENT_CONTROL = 0x8003
+ATTR_COVER_LIFTPERCENT_CONTROL_NAME = "current_position_lift_percentage_control"
 
 # ---------------------------------------------------------
 # TUYA Switch Custom Values
@@ -1175,7 +1180,11 @@ class TuyaZB1888Cluster(CustomCluster):
 
 # Tuya Window Cover Implementation
 class TuyaManufacturerWindowCover(TuyaManufCluster):
-    """Manufacturer Specific Cluster for cover device."""
+    """Manufacturer Specific Cluster for cover device.
+
+    Consider using TuyaNewManufClusterForWindowCover instead, it's based on a newer TuyaMCUCluster
+    base class.
+    """
 
     def handle_cluster_request(
         self,
@@ -1230,7 +1239,7 @@ class TuyaManufacturerWindowCover(TuyaManufCluster):
                     tuya_payload.data[1],  # Check this
                 )
         elif hdr.command_id == TUYA_SET_TIME:
-            """Time event call super"""
+            # Time event call super
             super().handle_cluster_request(hdr, args, dst_addressing=dst_addressing)
         else:
             _LOGGER.debug(
@@ -1243,12 +1252,16 @@ class TuyaManufacturerWindowCover(TuyaManufCluster):
 
 
 class TuyaWindowCoverControl(LocalDataCluster, WindowCovering):
-    """Manufacturer Specific Cluster of Device cover."""
+    """Window Covering cluster for cover device.
+
+    Consider using TuyaNewWindowCoverControl instead, it's compatible with the newer
+    TuyaMCUCluster implementation method.
+    """
 
     # Add additional attributes for direction
     attributes = WindowCovering.attributes.copy()
-    attributes.update({ATTR_COVER_DIRECTION: ("motor_direction", t.Bool)})
-    attributes.update({ATTR_COVER_INVERTED: ("cover_inverted", t.Bool)})
+    attributes.update({ATTR_COVER_DIRECTION: (ATTR_COVER_DIRECTION_NAME, t.enum8)})
+    attributes.update({ATTR_COVER_INVERTED: (ATTR_COVER_INVERTED_NAME, t.Bool)})
 
     def __init__(self, *args, **kwargs):
         """Initialize instance."""
@@ -1312,7 +1325,7 @@ class TuyaWindowCoverControl(LocalDataCluster, WindowCovering):
             tuya_payload.tsn = tsn if tsn else 0
             tuya_payload.command_id = TUYA_DP_TYPE_VALUE + TUYA_DP_ID_PERCENT_CONTROL
             tuya_payload.function = 0
-            """Check direction and correct value"""
+            # Check direction and correct value
             invert_attr = self._attr_cache.get(ATTR_COVER_INVERTED) == 1
             invert = (
                 not invert_attr
@@ -1362,7 +1375,11 @@ class TuyaWindowCover(CustomDevice):
     """Tuya Window cover device."""
 
     # For most tuya devices 0 = Up/Open, 1 = Stop, 2 = Down/Close
-    tuya_cover_command = {0x0000: 0x0000, 0x0001: 0x0002, 0x0002: 0x0001}
+    tuya_cover_command = {
+        WINDOW_COVER_COMMAND_UPOPEN: 0x0000,
+        WINDOW_COVER_COMMAND_DOWNCLOSE: 0x0002,
+        WINDOW_COVER_COMMAND_STOP: 0x0001
+    }
 
     # For all covers which need their position inverted by default
     # Default (False) is 100 = open, 0 = closed; When True use 0 = open, 100 = closed instead

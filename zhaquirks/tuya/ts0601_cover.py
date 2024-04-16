@@ -17,6 +17,11 @@ from zhaquirks.tuya import (
     TuyaWindowCover,
     TuyaWindowCoverControl,
 )
+from zhaquirks.tuya.mcu import (
+    TuyaNewManufClusterForWindowCover,
+    TuyaNewWindowCoverControl,
+    TuyaPowerConfigurationCluster,
+)
 
 
 class TuyaZemismartSmartCover0601(TuyaWindowCover):
@@ -559,6 +564,59 @@ class TuyaCloneCover0601(TuyaWindowCover):
                     TuyaWindowCoverControl,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
+            }
+        }
+    }
+
+
+class TuyaCover0601MultipleDataPoints(TuyaWindowCover):
+    """Tuya window cover device.
+
+    This variant supports:
+        - multiple data points included in tuya set_data_response.
+        - non-inverted control inputs,
+        - battery percentage remaining
+
+    Most/all the quirks above are based on TuyaManufacturerWindowCover that only decodes
+    ONE attribute from the Tuya set_data_response packet. This quirk is based on
+    TuyaNewManufClusterForWindowCover which can handle multiple updates in one zigby frame.
+    """
+
+    signature = {
+        MODELS_INFO: [
+            ("_TZE200_eevqq1uv", "TS0601"),  # Zemismart ZM25R3 roller blind motor
+        ],
+        # SimpleDescriptor(endpoint=1, profile=260, device_type=81, device_version=1,
+        # input_clusters=[0, 4, 5, 61184],
+        # output_clusters=[25, 10])
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaNewManufClusterForWindowCover.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            }
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaNewWindowCoverControl,
+                    TuyaPowerConfigurationCluster,
+                    TuyaNewManufClusterForWindowCover,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             }
         }
     }
