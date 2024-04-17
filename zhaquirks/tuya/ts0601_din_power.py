@@ -241,6 +241,7 @@ class ZemismartPowerMeasurement(LocalDataCluster, ElectricalMeasurement):
 
     # Voltage, current, power is delivered in one value
     def vcp_reported(self, value, phase=0):
+        """Voltage, current, power reported."""
         if phase < 0 or phase > 2:
             phase = 0
 
