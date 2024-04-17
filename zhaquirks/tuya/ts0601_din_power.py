@@ -213,8 +213,6 @@ class ZemismartManufCluster(TuyaManufClusterAttributes):
 class ZemismartPowerMeasurement(LocalDataCluster, ElectricalMeasurement):
     """Custom class for power, voltage and current measurement."""
 
-    cluster_id = ElectricalMeasurement.cluster_id
-
     """Setting unit of measurement."""
     _CONSTANT_ATTRIBUTES = {
         ElectricalMeasurement.AttributeDefs.ac_voltage_multiplier.id: 1,
