@@ -16,7 +16,8 @@ zhaquirks.setup()
 @pytest.mark.parametrize("command, expected_frame",
     (
         # Window cover open, close, stop commands are 0, 1 & 2 respectively
-        # DP 1 should be 0 for open, 2 for close, 1 to stop
+        # Expected frame is a set_value command for data point 1, with an enum value of 0 for open,
+        # 2 for close, 1 to stop
         (
             0x00,
             b'\x01\x01\x00\x00\x01\x01\x04\x00\x01\x00',
@@ -75,17 +76,42 @@ async def test_cover_set_position_command(zigpy_device_from_quirk):
     with mock.patch.object(
         tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
     ) as m1:
+        # command #5 is go_to_lift_percentage (WindowCovering.ServerCommandDefs.go_to_lift_percentage.id)
         rsp = await cover_cluster.command(5, 20)
 
         await wait_for_zigpy_tasks()
         m1.assert_called_with(
             0xef00,
             1,
+            # expect a frame to set data point id 4 to a int value of 80 (100-20%)
             b'\x01\x01\x00\x00\x01\x02\x02\x00\x04\x00\x00\x00\x50',
             expect_reply=True,
             command_id=0,
         )
         assert rsp.status == foundation.Status.SUCCESS
+
+async def test_cover_unknown_command(zigpy_device_from_quirk):
+    """Test executing unexpected cluster command returns an unsupported status."""
+
+    device = zigpy_device_from_quirk(
+        zhaquirks.tuya.ts0601_cover.TuyaCover0601MultipleDataPoints
+    )
+    tuya_cluster = device.endpoints[1].tuya_manufacturer
+    tuya_listener = ClusterListener(tuya_cluster)
+    cover_cluster = device.endpoints[1].window_covering
+
+    assert len(tuya_listener.cluster_commands) == 0
+    assert len(tuya_listener.attribute_updates) == 0
+
+    with mock.patch.object(
+        tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ) as m1:
+        # send a command, use the max (uint8) value as an example unsupported command id
+        rsp = await cover_cluster.command(0xFF)
+
+        await wait_for_zigpy_tasks()
+        m1.assert_not_called()
+        assert rsp.status == foundation.Status.UNSUP_CLUSTER_COMMAND
 
 @pytest.mark.parametrize(
     "frame, cluster, attributes",
