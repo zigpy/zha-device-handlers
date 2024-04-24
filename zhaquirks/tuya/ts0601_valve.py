@@ -381,7 +381,7 @@ class GiexValve(CustomDevice):
     """GiEX valve device."""
 
     signature = {
-        MODELS_INFO: [("_TZE200_sh1btabb", "TS0601"), ("_TZE200_a7sghmms", "TS0601")],
+        MODELS_INFO: [("_TZE200_sh1btabb", "TS0601"), ("_TZE200_a7sghmms", "TS0601"), ( "_TZE204_7ytb3h8u", "TS0601")],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=0x0051
             # input_clusters=[0x0000, 0x0004, 0x0005, 0xef00]
