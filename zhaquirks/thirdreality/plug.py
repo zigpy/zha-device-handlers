@@ -4,10 +4,7 @@ from typing import Final
 
 from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomDevice
-from zigpy.quirks.registry import DeviceRegistry
-from zigpy.quirks.v2 import CustomDeviceV2, EntityMetadata
 import zigpy.types as t
-from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
