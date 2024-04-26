@@ -2,9 +2,12 @@
 
 from typing import Final
 
-from zigpy.profiles import zha
+from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomDevice
+from zigpy.quirks.registry import DeviceRegistry
+from zigpy.quirks.v2 import CustomDeviceV2, EntityMetadata
 import zigpy.types as t
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
@@ -36,7 +39,6 @@ RESET_SUMMATION_DELIVERED_ATTR_ID = 0x0000
 class ControlMode(t.uint8_t):
     """Reset mode for not clear and clear."""
 
-    NOT = 0
     CLEAR = 1
 
 
@@ -55,6 +57,7 @@ class ThirdRealityPlugCluster(CustomCluster):
         )
 
 
+
 class Plug(CustomDevice):
     """ThirdReality Plug device."""
 
@@ -69,25 +72,25 @@ class Plug(CustomDevice):
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
                 INPUT_CLUSTERS: [
-                    Basic.cluster_id,  # 0x0000
-                    Identify.cluster_id,  # 0x0003
-                    Groups.cluster_id,  # 0x0004
-                    Scenes.cluster_id,  # 0x0005
-                    OnOff.cluster_id,  # 0x0006
-                    Metering.cluster_id,  # 0x0702
-                    ElectricalMeasurement.cluster_id,  # 0x0b04
-                    ThirdRealityPlugCluster.cluster_id,  # 0xFF03
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    Metering.cluster_id,
+                    ElectricalMeasurement.cluster_id,
+                    ThirdRealityPlugCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
-                    Ota.cluster_id,  # 0x0019
+                    Ota.cluster_id,
                 ],
             },
             242: {
-                PROFILE_ID: 0xA1E0,
-                DEVICE_TYPE: 0x0061,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [
-                    GreenPowerProxy.cluster_id,  # 0x0021
+                    GreenPowerProxy.cluster_id,
                 ],
             },
         },
@@ -98,25 +101,25 @@ class Plug(CustomDevice):
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
                 INPUT_CLUSTERS: [
-                    Basic.cluster_id,  # 0x0000
-                    Identify.cluster_id,  # 0x0003
-                    Groups.cluster_id,  # 0x0004
-                    Scenes.cluster_id,  # 0x0005
-                    OnOff.cluster_id,  # 0x0006
-                    Metering.cluster_id,  # 0x0702
-                    ElectricalMeasurement.cluster_id,  # 0x0b04
-                    ThirdRealityPlugCluster,  # 0xFF03
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    Metering.cluster_id,
+                    ElectricalMeasurement.cluster_id,
+                    ThirdRealityPlugCluster,
                 ],
                 OUTPUT_CLUSTERS: [
-                    Ota.cluster_id,  # 0x0019
+                    Ota.cluster_id,
                 ],
             },
             242: {
-                PROFILE_ID: 0xA1E0,
-                DEVICE_TYPE: 0x0061,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [
-                    GreenPowerProxy.cluster_id,  # 0x0021
+                    GreenPowerProxy.cluster_id,
                 ],
             },
         },
