@@ -15,25 +15,38 @@ from zhaquirks import Bus, DoublingPowerConfigurationCluster
 
 # add EnchantedDevice import for custom quirks backwards compatibility
 from zhaquirks.tuya import (
-    ATTR_COVER_DIRECTION,
-    ATTR_COVER_DIRECTION_NAME,
-    ATTR_COVER_INVERTED,
-    ATTR_COVER_INVERTED_NAME,
-    ATTR_COVER_LIFTPERCENT_CONTROL,
-    ATTR_COVER_LIFTPERCENT_CONTROL_NAME,
+    ATTR_COVER_DIRECTION_SETTING,
+    ATTR_COVER_DIRECTION_SETTING_NAME,
+    ATTR_COVER_INVERTED_SETTING,
+    ATTR_COVER_INVERTED_SETTING_NAME,
     ATTR_COVER_LIFTPERCENT_NAME,
+    ATTR_COVER_MAIN_CONTROL,
+    ATTR_COVER_MAIN_CONTROL_NAME,
+    TUYA_DP_ID_BATTERY_PERCENT,
+    TUYA_DP_ID_CONTROL,
+    TUYA_DP_ID_DIRECTION_SETTING,
+    TUYA_DP_ID_LIMIT_SETTINGS,
+    TUYA_DP_ID_PERCENT_CONTROL,
+    TUYA_DP_ID_PERCENT_STATE,
+    TUYA_DP_ID_SMALL_STEP,
     TUYA_MCU_COMMAND,
+    TUYA_MCU_SET_DATA,
     TUYA_MCU_VERSION_RSP,
     TUYA_SET_DATA,
     TUYA_SET_TIME,
     WINDOW_COVER_COMMAND_DOWNCLOSE,
     WINDOW_COVER_COMMAND_LIFTPERCENT,
+    WINDOW_COVER_COMMAND_SMALL_STEP,
+    WINDOW_COVER_COMMAND_SMALL_STEP_NAME,
     WINDOW_COVER_COMMAND_STOP,
+    WINDOW_COVER_COMMAND_UPDATE_LIMITS,
+    WINDOW_COVER_COMMAND_UPDATE_LIMITS_NAME,
     WINDOW_COVER_COMMAND_UPOPEN,
     EnchantedDevice,  # noqa: F401
     NoManufacturerCluster,
     PowerOnState,
     TuyaCommand,
+    TuyaData,
     TuyaDatapointData,
     TuyaEnchantableCluster,
     TuyaLocalCluster,
@@ -92,6 +105,37 @@ class MoesBacklight(t.enum8):
     light_when_on = 0x01
     light_when_off = 0x02
     freeze = 0x03
+
+class CoverCommandStepDirection(t.enum8):
+    """Window cover step command direction enum."""
+
+    Open = 0
+    Close = 1
+
+
+class CoverMotorStatus(t.enum8):
+    """Window cover motor states enum."""
+
+    Opening = 0
+    Stopped = 1
+    Closing = 2
+
+
+class CoverSettingMotorDirection(t.enum8):
+    """Window cover motor direction configuration enum."""
+
+    Forward = 0
+    Backward = 1
+
+
+class CoverSettingLimitOperation(t.enum8):
+    """Window cover limits item to set / clear."""
+
+    SetOpen = 0
+    SetClose = 1
+    ClearOpen = 2
+    ClearClose = 3
+    ClearBoth = 4
 
 
 class TuyaPowerConfigurationCluster(
@@ -297,6 +341,33 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
         endpoint = self.endpoint.device.endpoints[cluster_data.endpoint_id]
         cluster = getattr(endpoint, cluster_data.cluster_name)
         cluster.update_attribute(cluster_data.cluster_attr, cluster_data.attr_value)
+
+    def _tuya_mcu_set_data(
+        self,
+        datapoints: list[TuyaDatapointData],
+        manufacturer: Optional[Union[int, t.uint16_t]] = None,
+        expect_reply: bool = True,
+    ):
+        # TODO - merge with tuya_mcu_command, or just rename to TUYA_MCU_SET_CLUSTER_DATA & TUYA_MCU_SET_DATAPOINTS
+        self.debug("tuya_mcu_set_data: datapoints=%s", datapoints)
+
+        if len(datapoints) == 0:
+            self.warning("no datapoints for tuya_mcu_set_data")
+            return
+
+        cmd_payload = TuyaCommand()
+        cmd_payload.status = 0
+        cmd_payload.tsn = self.endpoint.device.application.get_sequence()
+        cmd_payload.datapoints = datapoints
+
+        self.create_catching_task(
+            self.command(
+                TUYA_SET_DATA,
+                cmd_payload,
+                manufacturer=manufacturer,
+                expect_reply=expect_reply,
+            )
+        )
 
     def get_dp_mapping(
         self, endpoint_id: int, attribute_name: str
@@ -570,73 +641,62 @@ class TuyaNewManufClusterForWindowCover(TuyaMCUCluster):
     Tuya data points.
     """
 
+    # TODO - work out if I can do this as a class function, yet still access the invert attribute value
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
 
         self.dp_to_attribute: dict[int, DPToAttributeMapping] = {
-            1: DPToAttributeMapping(
+            TUYA_DP_ID_CONTROL: DPToAttributeMapping(
                 TuyaNewWindowCoverControl.ep_attribute,
-                ATTR_COVER_DIRECTION_NAME,
-                # make sure this is sent as a enum, regardless that tuya_cover_command probably
-                # contains ints.
-                None,
-                t.enum8
+                ATTR_COVER_MAIN_CONTROL_NAME,
+                # Converting raw ints to a type allows the attributes UI show meaningful values
+                CoverMotorStatus,
+                CoverMotorStatus,
             ),
-            2: DPToAttributeMapping(
-                TuyaNewWindowCoverControl.ep_attribute,
-                ATTR_COVER_LIFTPERCENT_CONTROL_NAME,
-                self.convert_lift_percent,
-                self.convert_lift_percent
-            ),
-            3: DPToAttributeMapping(
+            TUYA_DP_ID_PERCENT_STATE: DPToAttributeMapping(
                 TuyaNewWindowCoverControl.ep_attribute,
                 ATTR_COVER_LIFTPERCENT_NAME,
-                self.convert_lift_percent,
-                self.convert_lift_percent
+                self._convert_lift_percent,
+                self._convert_lift_percent,
             ),
-            13: DPToAttributeMapping(
+            TUYA_DP_ID_DIRECTION_SETTING: DPToAttributeMapping(
+                TuyaNewWindowCoverControl.ep_attribute,
+                ATTR_COVER_DIRECTION_SETTING_NAME,
+                CoverSettingMotorDirection,
+                CoverSettingMotorDirection,
+            ),
+            TUYA_DP_ID_BATTERY_PERCENT: DPToAttributeMapping(
                 PowerConfiguration.ep_attribute,
-                PowerConfiguration.AttributeDefs.battery_percentage_remaining.name
+                PowerConfiguration.AttributeDefs.battery_percentage_remaining.name,
                 # Tuya report real percent, zigbee expects value*2, but
                 # TuyaPowerConfigurationCluster will convert it
             ),
         }
 
     data_point_handlers = {
-        1: "_dp_2_attr_update",
-        2: "_dp_2_attr_update",
-        3: "_dp_2_attr_update",
-        # Define DPs 5 & 7 to avoid warning logs, but I'm not sure what they are so just ignore
-        # updates from them
-        5: "ignore_update",
+        TUYA_DP_ID_CONTROL: "_dp_2_attr_update",
+        TUYA_DP_ID_PERCENT_STATE: "_dp_2_attr_update",
+        TUYA_DP_ID_DIRECTION_SETTING: "_dp_2_attr_update",
+        TUYA_DP_ID_BATTERY_PERCENT: "_dp_2_attr_update",
+        # Ignore updates from data points that are used as write-only commands to the device, we
+        # don't need attributes to display their values, but they're they're echoed back in
+        # get_data and would otherwise log debug messages.
+        TUYA_DP_ID_PERCENT_CONTROL: "ignore_update",
+        # I don't know what 7 is, but it's part of set_data_response
         7: "ignore_update",
-        13: "_dp_2_attr_update",
+        TUYA_DP_ID_LIMIT_SETTINGS: "ignore_update",
+        TUYA_DP_ID_SMALL_STEP: "ignore_update",
     }
 
-    def convert_lift_percent(self, input_value: int):
-        """Convert/invert lift percent when needed.
-
-        HA shows % open. The zigbee cluster value is called 'lift_percent' but seems to need to
-        be % closed. This logic follows the convention of other Tuya covers, inverting the value
-        by default and reversing that invert if tuya_cover_inverted_by_default or the cluster
-        invert attribute is set. (This seems strange to me, but it's better to be consistent.)
-        """
-
-        invert_attr = self.endpoint.window_covering._attr_cache.get(ATTR_COVER_INVERTED) == 1
-        invert = (
-            not invert_attr
-            if self.endpoint.device.tuya_cover_inverted_by_default
-            else invert_attr
-        )
-        return input_value if invert else 100 - input_value
+    def _convert_lift_percent(self, input_value: int):
+        return self.endpoint.window_covering.convert_lift_percent(input_value)
 
     def ignore_update(self, _datapoint: TuyaDatapointData) -> None:
         """Process (and ignore) some data point updates."""
         return None
 
-
-class TuyaNewWindowCoverControl(TuyaLocalCluster, WindowCovering):
+class TuyaNewWindowCoverControl(TuyaAttributesCluster, WindowCovering):
     """Tuya Window Cover Cluster, based on new TuyaNewManufClusterForWindowCover.
 
     Derive from TuyaLocalCluster to disable attribute writes, in a way that's compatible with
@@ -644,11 +704,53 @@ class TuyaNewWindowCoverControl(TuyaLocalCluster, WindowCovering):
     """
 
     attributes = WindowCovering.attributes.copy()
-    # cover direction and lift percent control attributes are not very useful to HA, but needed to
-    # allow TuyaMCUCluster to map to the data point.
-    attributes.update({ATTR_COVER_DIRECTION: (ATTR_COVER_DIRECTION_NAME, t.enum8)})
-    attributes.update({ATTR_COVER_INVERTED: (ATTR_COVER_INVERTED_NAME, t.Bool)})
-    attributes.update({ATTR_COVER_LIFTPERCENT_CONTROL: (ATTR_COVER_LIFTPERCENT_CONTROL_NAME, t.uint16_t)})
+    # main control attribute is logically write-only, only used by commands and not very useful
+    # to HA, but it's return in a set_data and set_data_response packet so I've mapped it to
+    # an attribute.
+    attributes.update(
+        {
+            ATTR_COVER_MAIN_CONTROL: (ATTR_COVER_MAIN_CONTROL_NAME, t.enum8),
+            ATTR_COVER_INVERTED_SETTING: (
+                ATTR_COVER_INVERTED_SETTING_NAME,
+                t.Bool,
+            ),
+            ATTR_COVER_DIRECTION_SETTING: (
+                ATTR_COVER_DIRECTION_SETTING_NAME,
+                CoverSettingMotorDirection,
+            ),
+        }
+    )
+
+    server_commands = WindowCovering.server_commands.copy()
+    server_commands.update(
+        {
+            WINDOW_COVER_COMMAND_SMALL_STEP: foundation.ZCLCommandDef(
+                WINDOW_COVER_COMMAND_SMALL_STEP,
+                {"direction": CoverCommandStepDirection},
+                foundation.Direction.Client_to_Server,
+                is_manufacturer_specific=True,
+                name=WINDOW_COVER_COMMAND_SMALL_STEP_NAME,
+            ),
+            WINDOW_COVER_COMMAND_UPDATE_LIMITS: foundation.ZCLCommandDef(
+                WINDOW_COVER_COMMAND_UPDATE_LIMITS,
+                {"operation": CoverSettingLimitOperation},
+                foundation.Direction.Client_to_Server,
+                is_manufacturer_specific=True,
+                name=WINDOW_COVER_COMMAND_UPDATE_LIMITS_NAME,
+            ),
+        }
+    )
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+
+        # For most tuya devices Up/Open = 0, Stop = 1, Down/Close = 2
+        self.tuya_cover_command = {
+            WINDOW_COVER_COMMAND_UPOPEN: 0x0000,
+            WINDOW_COVER_COMMAND_DOWNCLOSE: 0x0002,
+            WINDOW_COVER_COMMAND_STOP: 0x0001,
+        }
 
     async def command(
         self,
@@ -657,14 +759,15 @@ class TuyaNewWindowCoverControl(TuyaLocalCluster, WindowCovering):
         manufacturer: Optional[Union[int, t.uint16_t]] = None,
         expect_reply: bool = True,
         tsn: Optional[Union[int, t.uint8_t]] = None,
-        **_kwargs: Any
+        **kwargs: Any,
     ):
         """Override the default Cluster command."""
 
         _LOGGER.debug(
-            "Sending Tuya Cluster Command... Cluster Command is %x, Arguments are %s",
+            "Sending Tuya Cluster Command... Cluster Command is %x, args=%s, kwargs=%s",
             command_id,
             args,
+            kwargs,
         )
 
         # Open Close or Stop commands
@@ -676,9 +779,9 @@ class TuyaNewWindowCoverControl(TuyaLocalCluster, WindowCovering):
             cluster_data = TuyaClusterData(
                 endpoint_id=self.endpoint.endpoint_id,
                 cluster_name=self.ep_attribute,
-                cluster_attr=ATTR_COVER_DIRECTION_NAME,
+                cluster_attr=ATTR_COVER_MAIN_CONTROL_NAME,
                 # Map from zigbee command to tuya DP value
-                attr_value=self.endpoint.device.tuya_cover_command[command_id],
+                attr_value=self.tuya_cover_command[command_id],
                 expect_reply=expect_reply,
                 manufacturer=manufacturer,
             )
@@ -686,30 +789,75 @@ class TuyaNewWindowCoverControl(TuyaLocalCluster, WindowCovering):
                 TUYA_MCU_COMMAND,
                 cluster_data,
             )
-            return foundation.GENERAL_COMMANDS[
-                foundation.GeneralCommand.Default_Response
-            ].schema(command_id=command_id, status=foundation.Status.SUCCESS)
+            return self._default_response(command_id)
+        # TODO - refactor command to DP mapping into something similar to _dp_2_attr_update & remove send_tuya_set_data_command or move it to TuyaMCUCluster
         elif command_id == WINDOW_COVER_COMMAND_LIFTPERCENT:
-            cluster_data = TuyaClusterData(
-                endpoint_id=self.endpoint.endpoint_id,
-                cluster_name=self.ep_attribute,
-                cluster_attr=ATTR_COVER_LIFTPERCENT_CONTROL_NAME,
-                attr_value=args[0],
+            self.send_tuya_set_data_command(
+                TUYA_DP_ID_PERCENT_CONTROL,
+                self.convert_lift_percent(args[0]),
                 expect_reply=expect_reply,
                 manufacturer=manufacturer,
             )
-            self.endpoint.device.command_bus.listener_event(
-                TUYA_MCU_COMMAND,
-                cluster_data,
+            return self._default_response(command_id)
+        elif command_id == WINDOW_COVER_COMMAND_SMALL_STEP:
+            self.send_tuya_set_data_command(
+                TUYA_DP_ID_SMALL_STEP,
+                kwargs["direction"],
+                expect_reply=expect_reply,
+                manufacturer=manufacturer,
             )
-            return foundation.GENERAL_COMMANDS[
-                foundation.GeneralCommand.Default_Response
-            ].schema(command_id=command_id, status=foundation.Status.SUCCESS)
+            return self._default_response(command_id)
+        elif command_id == WINDOW_COVER_COMMAND_UPDATE_LIMITS:
+            self.send_tuya_set_data_command(
+                TUYA_DP_ID_LIMIT_SETTINGS,
+                kwargs["operation"],
+                expect_reply=expect_reply,
+                manufacturer=manufacturer,
+            )
+            return self._default_response(command_id)
         _LOGGER.warning("Unsupported command_id: %s", command_id)
         return foundation.GENERAL_COMMANDS[
             foundation.GeneralCommand.Default_Response
         ].schema(command_id=command_id, status=foundation.Status.UNSUP_CLUSTER_COMMAND)
 
+    def send_tuya_set_data_command(
+        self,
+        dp: t.uint8_t,
+        data: TuyaData,
+        manufacturer: Optional[Union[int, t.uint16_t]] = None,
+        expect_reply: bool = True,
+    ):
+        """Send a set_data for a Tuya data point value (via the mcu cluster)."""
+
+        datapoints = [TuyaDatapointData(dp, data)]
+        self.debug("Sending TUYA_MCU_SET_DATA: %s", datapoints)
+
+        self.endpoint.device.command_bus.listener_event(
+            TUYA_MCU_SET_DATA, datapoints, manufacturer, expect_reply
+        )
+
+    # TODO - move this to TuyaMCUCluster
+    def _default_response(
+        self, command_id: Union[foundation.GeneralCommand, int, t.uint8_t]
+    ):
+        return foundation.GENERAL_COMMANDS[
+            foundation.GeneralCommand.Default_Response
+        ].schema(command_id=command_id, status=foundation.Status.SUCCESS)
+
+    def convert_lift_percent(self, input_value: int):
+        """Convert/invert lift percent when needed.
+
+        HA shows % open. The zigbee cluster value is called 'lift_percent' but seems to need to
+        be % closed. This logic follows the convention of other Tuya covers, inverting the value
+        by default, unless the cluster invert attribute is set. (This seems strange to me, but it's
+        better to be consistent.)
+
+        It's safe to use the same calculation converting motor position to zigbee attribute value
+        and attribute value to motor position command.
+        """
+
+        invert = self._attr_cache.get(ATTR_COVER_INVERTED_SETTING) == 1
+        return input_value if invert else 100 - input_value
 
 class TuyaLevelControl(LevelControl, TuyaLocalCluster):
     """Tuya MCU Level cluster for dimmable device."""

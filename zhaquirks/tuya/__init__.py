@@ -51,12 +51,14 @@ TUYA_LEVEL_COMMAND = 514
 
 LEVEL_EVENT = "level_event"
 TUYA_MCU_COMMAND = "tuya_mcu_command"
+TUYA_MCU_SET_DATA = "_tuya_mcu_set_data"
 
 # Rotating for remotes
 STOP = "stop"  # To constants
 
 # ---------------------------------------------------------
 # Value for dp_type
+# https://developer.tuya.com/en/docs/iot/tuya-zigbee-universal-docking-access-standard?id=K9ik6zvofpzql
 # ---------------------------------------------------------
 # ID    Name            Description
 # ---------------------------------------------------------
@@ -73,22 +75,29 @@ TUYA_DP_TYPE_STRING = 0x0300
 TUYA_DP_TYPE_ENUM = 0x0400
 TUYA_DP_TYPE_FAULT = 0x0500
 # ---------------------------------------------------------
-# Value for dp_identifier (These are device specific)
+# Value for dp_identifier. These are device type and potentially device specific.
+# The ones we use here appear to be consistent for all covers we support.
+# https://developer.tuya.com/en/docs/iot/f?id=K9gf46o5mtfyc
 # ---------------------------------------------------------
 # ID    Name               Type    Description
 # ---------------------------------------------------------
 # 0x01  control            enum    open, stop, close, continue
 # 0x02  percent_control    value   0-100% control
 # 0x03  percent_state      value   Report from motor about current percentage
-# 0x04  control_back       enum    Configures motor direction (untested)
-# 0x05  work_state         enum    Motor Direction Setting
+# 0x05  control_back_mode  enum    Configures motor direction
 # 0x06  situation_set      enum    Configures if 100% equals to fully closed or fully open (untested)
 # 0x07  fault              bitmap  Anything but 0 means something went wrong (untested)
+# 13    fault              value   Battery charge percentage
+# 16    border             enum    set open limit, set close limit, clear open, clear close, clear both
+# 20    click control      enum    move up/open a small step, move down/close
 TUYA_DP_ID_CONTROL = 0x01
 TUYA_DP_ID_PERCENT_CONTROL = 0x02
 TUYA_DP_ID_PERCENT_STATE = 0x03
-TUYA_DP_ID_DIRECTION_CHANGE = 0x05
+TUYA_DP_ID_DIRECTION_SETTING = 0x05
 TUYA_DP_ID_COVER_INVERTED = 0x06
+TUYA_DP_ID_BATTERY_PERCENT = 13
+TUYA_DP_ID_LIMIT_SETTINGS = 16
+TUYA_DP_ID_SMALL_STEP = 20
 # ---------------------------------------------------------
 # Window Cover Server Commands
 # ---------------------------------------------------------
@@ -97,18 +106,31 @@ WINDOW_COVER_COMMAND_DOWNCLOSE = 0x0001
 WINDOW_COVER_COMMAND_STOP = 0x0002
 WINDOW_COVER_COMMAND_LIFTPERCENT = 0x0005
 WINDOW_COVER_COMMAND_CUSTOM = 0x0006
+
+# TODO - What are appropriate ids for a custom commands we introduce that aren't part
+# of the zigbee spec, nor tuya manufacturer specific extensions?
+# I've used a high uint8 number to try to reduce the chance of conflicts with future
+# zigbee/tuya changes. (I believe it needs to be a uint8 to pass to ZclCommandDef,
+# despite other ids being declared as 16 bits.)
+WINDOW_COVER_COMMAND_SMALL_STEP = 0xF0
+WINDOW_COVER_COMMAND_SMALL_STEP_NAME = "move_small_step"
+WINDOW_COVER_COMMAND_UPDATE_LIMITS = 0xF1
+WINDOW_COVER_COMMAND_UPDATE_LIMITS_NAME = "update_limits"
+
 # ---------------------------------------------------------
 # TUYA Cover Custom Values
 # ---------------------------------------------------------
 COVER_EVENT = "cover_event"
 ATTR_COVER_POSITION = 0x0008
-ATTR_COVER_DIRECTION = 0x8001
-ATTR_COVER_DIRECTION_NAME = "motor_direction"
-ATTR_COVER_INVERTED = 0x8002
-ATTR_COVER_INVERTED_NAME = "cover_inverted"
 ATTR_COVER_LIFTPERCENT_NAME = "current_position_lift_percentage"
-ATTR_COVER_LIFTPERCENT_CONTROL = 0x8003
-ATTR_COVER_LIFTPERCENT_CONTROL_NAME = "current_position_lift_percentage_control"
+ATTR_COVER_MAIN_CONTROL = 0x8000
+ATTR_COVER_MAIN_CONTROL_NAME = "motor_status"
+ATTR_COVER_DIRECTION_SETTING = 0x8001
+ATTR_COVER_DIRECTION_SETTING_NAME = "motor_direction"
+# Note: I'd like to rename this to lift_percent_inverted (since it's a little ambiguous with
+# motor_direction,) but I'm not sure if that will lose the value for existing instances
+ATTR_COVER_INVERTED_SETTING = 0x8002
+ATTR_COVER_INVERTED_SETTING_NAME = "cover_inverted"
 
 # ---------------------------------------------------------
 # TUYA Switch Custom Values
@@ -213,7 +235,7 @@ class TuyaData(t.Struct):
         """Disable copy constructor."""
         return super().__new__(cls)
 
-    def __init__(self, value=None, function=0, *args, **kwargs):
+    def __init__(self, value=None, function=0, *_args, **_kwargs):
         """Convert from a zigpy typed value to a tuya data payload."""
         self.function = function
 
@@ -327,7 +349,13 @@ class TuyaManufCluster(CustomCluster):
     set_time_local_offset = None
 
     class Command(t.Struct):
-        """Tuya manufacturer cluster command."""
+        """Tuya manufacturer cluster command.
+
+        Note: This doesn't seem to match the way tuya define their packet structure. (e.g. command
+        should be 1 byte, followed by a list of data points.) It may have changed over time but
+        TuyaCommand is a better match for their newer devices.
+        https://developer.tuya.com/en/docs/iot/tuya-zigbee-universal-docking-access-standard?id=K9ik6zvofpzql
+        """
 
         status: t.uint8_t
         tsn: t.uint8_t
@@ -686,7 +714,7 @@ class TuyaManufacturerClusterOnOff(TuyaManufCluster):
                 tuya_payload.data[1],
             )
         elif hdr.command_id == TUYA_SET_TIME:
-            """Time event call super"""
+            # Time event call super
             _LOGGER.debug("TUYA_SET_TIME --> hdr: %s, args: %s", hdr, args)
             super().handle_cluster_request(hdr, args, dst_addressing=dst_addressing)
         else:
@@ -737,7 +765,7 @@ class TuyaThermostatCluster(LocalDataCluster, Thermostat):
         self._update_attribute(self.attributes_by_name["running_state"].id, state)
 
     # pylint: disable=R0201
-    def map_attribute(self, attribute, value):
+    def map_attribute(self, _attribute, _value):
         """Map standardized attribute value to dict of manufacturer values."""
         return {}
 
@@ -845,7 +873,7 @@ class TuyaUserInterfaceCluster(LocalDataCluster, UserInterface):
 
         self._update_attribute(self.attributes_by_name["keypad_lockout"].id, lockout)
 
-    def map_attribute(self, attribute, value):
+    def map_attribute(self, _attribute, _value):
         """Map standardized attribute value to dict of manufacturer values."""
         return {}
 
@@ -1223,11 +1251,11 @@ class TuyaManufacturerWindowCover(TuyaManufCluster):
                 )
             elif (
                 tuya_payload.command_id
-                == TUYA_DP_TYPE_ENUM + TUYA_DP_ID_DIRECTION_CHANGE
+                == TUYA_DP_TYPE_ENUM + TUYA_DP_ID_DIRECTION_SETTING
             ):
                 self.endpoint.device.cover_bus.listener_event(
                     COVER_EVENT,
-                    ATTR_COVER_DIRECTION,
+                    ATTR_COVER_DIRECTION_SETTING,
                     tuya_payload.data[1],
                 )
             elif (
@@ -1235,7 +1263,7 @@ class TuyaManufacturerWindowCover(TuyaManufCluster):
             ):
                 self.endpoint.device.cover_bus.listener_event(
                     COVER_EVENT,
-                    ATTR_COVER_INVERTED,
+                    ATTR_COVER_INVERTED_SETTING,
                     tuya_payload.data[1],  # Check this
                 )
         elif hdr.command_id == TUYA_SET_TIME:
@@ -1260,8 +1288,8 @@ class TuyaWindowCoverControl(LocalDataCluster, WindowCovering):
 
     # Add additional attributes for direction
     attributes = WindowCovering.attributes.copy()
-    attributes.update({ATTR_COVER_DIRECTION: (ATTR_COVER_DIRECTION_NAME, t.enum8)})
-    attributes.update({ATTR_COVER_INVERTED: (ATTR_COVER_INVERTED_NAME, t.Bool)})
+    attributes.update({ATTR_COVER_DIRECTION_SETTING: (ATTR_COVER_DIRECTION_SETTING_NAME, t.enum8)})
+    attributes.update({ATTR_COVER_INVERTED_SETTING: (ATTR_COVER_INVERTED_SETTING_NAME, t.Bool)})
 
     def __init__(self, *args, **kwargs):
         """Initialize instance."""
@@ -1271,7 +1299,7 @@ class TuyaWindowCoverControl(LocalDataCluster, WindowCovering):
     def cover_event(self, attribute, value):
         """Event listener for cover events."""
         if attribute == ATTR_COVER_POSITION:
-            invert_attr = self._attr_cache.get(ATTR_COVER_INVERTED) == 1
+            invert_attr = self._attr_cache.get(ATTR_COVER_INVERTED_SETTING) == 1
             invert = (
                 not invert_attr
                 if self.endpoint.device.tuya_cover_inverted_by_default
@@ -1326,7 +1354,7 @@ class TuyaWindowCoverControl(LocalDataCluster, WindowCovering):
             tuya_payload.command_id = TUYA_DP_TYPE_VALUE + TUYA_DP_ID_PERCENT_CONTROL
             tuya_payload.function = 0
             # Check direction and correct value
-            invert_attr = self._attr_cache.get(ATTR_COVER_INVERTED) == 1
+            invert_attr = self._attr_cache.get(ATTR_COVER_INVERTED_SETTING) == 1
             invert = (
                 not invert_attr
                 if self.endpoint.device.tuya_cover_inverted_by_default
@@ -1635,7 +1663,7 @@ class TuyaNewManufCluster(CustomCluster):
     handle_set_data_response = handle_get_data
     handle_active_status_report = handle_get_data
 
-    def handle_set_time_request(self, payload: t.uint16_t) -> foundation.Status:
+    def handle_set_time_request(self, _payload: t.uint16_t) -> foundation.Status:
         """Handle Time set request."""
         return foundation.Status.SUCCESS
 
