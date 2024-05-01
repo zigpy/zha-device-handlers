@@ -147,6 +147,7 @@ class TuyaSingleSwitchDimmerGP(TuyaDimmerSwitch):
 
     signature = {
         MODELS_INFO: [
+            ("_TZE204_vevc4c6g", "TS0601"),
             ("_TZE200_3p5ydos3", "TS0601"),
             ("_TZE200_ip2akl4w", "TS0601"),
             ("_TZE200_vucankjx", "TS0601"),  # Loratap
