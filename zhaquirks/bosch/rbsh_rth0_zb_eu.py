@@ -23,24 +23,33 @@ WINDOW_OPEN_ATTR_ID = 0x4042
 BOOST_ATTR_ID = 0x4043
 
 """Bosch specific user interface attribute ids."""
-SCREEN_TIMEOUT_ATTR_ID = 0x403a
-SCREEN_BRIGHTNESS_ATTR_ID = 0x403b
+SCREEN_TIMEOUT_ATTR_ID = 0x403A
+SCREEN_BRIGHTNESS_ATTR_ID = 0x403B
 
 """Bosh operating mode attribute values."""
+
+
 class BoschOperatingMode(t.enum8):
     Schedule = 0x00
     Manual = 0x01
     Pause = 0x05
 
+
 """Bosch thermostat preset."""
+
+
 class BoschPreset(t.enum8):
     Normal = 0x00
     Boost = 0x01
 
+
 """Binary attribute (window open) value."""
+
+
 class State(t.enum8):
     Off = 0x00
     On = 0x01
+
 
 class BoschThermostatCluster(CustomCluster, Thermostat):
     """Bosch thermostat cluster."""
@@ -94,10 +103,9 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
 class BoschThermostat(CustomDeviceV2):
     """Bosch thermostat custom device."""
 
+
 (
-    add_to_registry_v2(
-        "Bosch", "RBSH-RTH0-ZB-EU"
-    )
+    add_to_registry_v2("Bosch", "RBSH-RTH0-ZB-EU")
     .device_class(BoschThermostat)
     .replaces(BoschThermostatCluster)
     .replaces(BoschUserInterfaceCluster)
@@ -106,20 +114,20 @@ class BoschThermostat(CustomDeviceV2):
         BoschThermostatCluster.AttributeDefs.operating_mode.name,
         BoschOperatingMode,
         BoschThermostatCluster.cluster_id,
-        translation_key="switch_mode"
+        translation_key="switch_mode",
     )
     # Preset - normal/boost.
     .enum(
         BoschThermostatCluster.AttributeDefs.boost.name,
         BoschPreset,
         BoschThermostatCluster.cluster_id,
-        translation_key="preset"
+        translation_key="preset",
     )
     # Window open switch: manually set or through an automation.
     .switch(
         BoschThermostatCluster.AttributeDefs.window_open.name,
         BoschThermostatCluster.cluster_id,
-        translation_key="window_detection"
+        translation_key="window_detection",
     )
     # Display time-out
     .number(
@@ -128,7 +136,7 @@ class BoschThermostat(CustomDeviceV2):
         min_value=5,
         max_value=30,
         step=1,
-        translation_key="on_off_transition_time"
+        translation_key="on_off_transition_time",
     )
     # Display brightness
     .number(
@@ -137,6 +145,6 @@ class BoschThermostat(CustomDeviceV2):
         min_value=0,
         max_value=10,
         step=1,
-        translation_key="backlight_mode"
+        translation_key="backlight_mode",
     )
 )
