@@ -1,82 +1,231 @@
 """Device handler for Bosch RBSH-TRV0-ZB-EU thermostat."""
 
+from typing import Any, Final
+
+from zigpy.device import Device
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
+from zigpy.quirks import CustomCluster
+from zigpy.quirks.registry import DeviceRegistry
+from zigpy.quirks.v2 import (
+    CustomDeviceV2,
+    add_to_registry_v2,
+)
+from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 import zigpy.types as t
-from zigpy.zcl.clusters import general, homeautomation, hvac
-from zigpy.zcl.clusters.general import (
-    Basic,
-    Groups,
-    Identify,
-    Ota,
-    PollControl,
-    PowerConfiguration,
-    Time,
-    ZCLAttributeDef,
-)
-from zigpy.zcl.clusters.homeautomation import Diagnostic
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef, ZCLCommandDef
 
-from zhaquirks import CustomCluster
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-)
+"""Bosch specific thermostat attribute ids."""
+OPERATING_MODE_ATTR_ID = 0x4007
+VALVE_POSITION_ATTR_ID = 0x4020
+REMOTE_TEMPERATURE_ATTR_ID = 0x4040
+WINDOW_OPEN_ATTR_ID = 0x4042
+BOOST_ATTR_ID = 0x4043
 
+"""Bosch specific user interface attribute ids."""
+SCREEN_ORIENTATION_ATTR_ID = 0x400b
+DISPLAY_MODE_ATTR_ID = 0x4039
+SCREEN_TIMEOUT_ATTR_ID = 0x403a
+SCREEN_BRIGHTNESS_ATTR_ID = 0x403b
 
+"""Bosh operating mode attribute values."""
 class BoschOperatingMode(t.enum8):
     Schedule = 0x00
     Manual = 0x01
     Pause = 0x05
 
+"""Bosch thermostat preset."""
+class BoschPreset(t.enum8):
+    Normal = 0x00
+    Boost = 0x01
 
+"""Binary attribute (window open) value."""
 class State(t.enum8):
     Off = 0x00
     On = 0x01
 
-
+"""Bosch display orientation attribute values."""
 class BoschDisplayOrientation(t.enum8):
     Normal = 0x00
     Flipped = 0x01
 
-
+"""Bosch displayed temperature attribute values."""
 class BoschDisplayedTemperature(t.enum8):
     Target = 0x00
     Measured = 0x01
 
+"""HA thermostat attribute that needs special handling in the Bosch thermostat entity."""
+SYSTEM_MODE_ATTR = Thermostat.AttributeDefs.system_mode
+
+"""Bosch operating mode to HA system mode mapping."""
+OPERATING_MODE_TO_SYSTEM_MODE_MAP = {
+    BoschOperatingMode.Schedule: Thermostat.SystemMode.Auto,
+    BoschOperatingMode.Manual: Thermostat.SystemMode.Heat,
+    BoschOperatingMode.Pause: Thermostat.SystemMode.Off,
+    "BoschOperatingMode.Schedule": Thermostat.SystemMode.Auto,
+    "BoschOperatingMode.Manual": Thermostat.SystemMode.Heat,
+    "BoschOperatingMode.Pause": Thermostat.SystemMode.Off
+}
+
+"""HA system mode to Bosch operating mode mapping."""
+SYSTEM_MODE_TO_OPERATING_MODE_MAP = {
+    Thermostat.SystemMode.Off: BoschOperatingMode.Pause,
+    Thermostat.SystemMode.Heat: BoschOperatingMode.Manual,
+    Thermostat.SystemMode.Auto: BoschOperatingMode.Schedule,
+    "SystemMode.Off": BoschOperatingMode.Pause,
+    "SystemMode.Heat": BoschOperatingMode.Manual,
+    "SystemMode.Auto": BoschOperatingMode.Schedule
+}
+
+DISPLAY_ORIENTATION_ENUM_TO_INT_MAP = {
+    0x00: 0x00,
+    0x01: 0x01,
+    "BoschDisplayOrientation.Normal": 0x00,
+    "BoschDisplayOrientation.Flipped": 0x01
+}
 
 class BoschThermostatCluster(CustomCluster, Thermostat):
     """Bosch thermostat cluster."""
 
     class AttributeDefs(Thermostat.AttributeDefs):
         operating_mode = ZCLAttributeDef(
-            id=t.uint16_t(0x4007),
+            id=t.uint16_t(OPERATING_MODE_ATTR_ID),
             type=BoschOperatingMode,
             is_manufacturer_specific=True,
         )
 
         pi_heating_demand = ZCLAttributeDef(
-            id=t.uint16_t(0x4020),
+            id=t.uint16_t(VALVE_POSITION_ATTR_ID),
             # Values range from 0-100
             type=t.enum8,
             is_manufacturer_specific=True,
         )
 
         window_open = ZCLAttributeDef(
-            id=t.uint16_t(0x4042),
+            id=t.uint16_t(WINDOW_OPEN_ATTR_ID),
             type=State,
             is_manufacturer_specific=True,
         )
 
         boost = ZCLAttributeDef(
-            id=t.uint16_t(0x4043),
-            type=State,
+            id=t.uint16_t(BOOST_ATTR_ID),
+            type=BoschPreset,
             is_manufacturer_specific=True,
         )
+
+        remote_temperature = ZCLAttributeDef(
+            id=t.uint16_t(REMOTE_TEMPERATURE_ATTR_ID),
+            type=t.int16s,
+            is_manufacturer_specific=True,
+        )
+
+    async def write_attributes(
+        self,
+        attributes: dict[str | int, Any],
+        manufacturer: int | None = None
+    ) -> list:
+        """system_mode special handling:
+            - turn off by setting operating_mode to Pause
+            - turn on by setting operating_mode to Manual
+            - add new system_mode value to the internal zigpy Cluster cache
+        """
+
+        operating_mode_attr = self.AttributeDefs.operating_mode
+
+        result = []
+        remaining_attributes = attributes.copy()
+        system_mode_value = None
+        operating_mode_value = None
+
+        """Check if SYSTEM_MODE_ATTR is being written (can be numeric or string):
+            - do not write it to the device since it is not supported
+            - keep the value to be converted to the supported operating_mode 
+        """
+        if SYSTEM_MODE_ATTR.id in attributes:
+            remaining_attributes.pop(SYSTEM_MODE_ATTR.id)
+            system_mode_value = attributes.get(SYSTEM_MODE_ATTR.id)
+        elif SYSTEM_MODE_ATTR.name in attributes:
+            remaining_attributes.pop(SYSTEM_MODE_ATTR.name)
+            system_mode_value = attributes.get(SYSTEM_MODE_ATTR.name)
+
+        """Check if operating_mode_attr is being written (can be numeric or string).
+            - ignore incoming operating_mode when system_mode is also written  
+            - system_mode has priority and its value would be converted to operating_mode
+            - add resulting system_mode to the internal zigpy Cluster cache
+        """
+        operating_mode_attribute_id = None
+        if operating_mode_attr.id in attributes:
+            operating_mode_attribute_id = operating_mode_attr.id
+        elif operating_mode_attr.name in attributes:
+            operating_mode_attribute_id = operating_mode_attr.name
+
+        if operating_mode_attribute_id is not None:
+            if system_mode_value is not None:
+                operating_mode_value = remaining_attributes.pop(operating_mode_attribute_id)
+            else:
+                operating_mode_value = attributes.get(operating_mode_attribute_id)
+
+        if system_mode_value is not None:
+            """Write operating_mode (from system_mode value)."""
+            new_operating_mode_value = SYSTEM_MODE_TO_OPERATING_MODE_MAP[system_mode_value]
+            result += await super().write_attributes({operating_mode_attr.id: new_operating_mode_value}, manufacturer)
+            self._update_attribute(SYSTEM_MODE_ATTR.id, system_mode_value)
+        elif operating_mode_value is not None:
+            new_system_mode_value = OPERATING_MODE_TO_SYSTEM_MODE_MAP[operating_mode_value]
+            self._update_attribute(SYSTEM_MODE_ATTR.id, new_system_mode_value)
+
+        """Write the remaining attributes to thermostat cluster."""
+        if remaining_attributes:
+            result += await super().write_attributes(remaining_attributes, manufacturer)
+        return result
+
+
+    async def read_attributes(
+        self,
+        attributes: list[int | str],
+        allow_cache: bool = False,
+        only_cache: bool = False,
+        manufacturer: int | t.uint16_t | None = None,
+    ):
+        """system_mode special handling:
+            - read and convert operating_mode to system_mode.
+        """
+
+        operating_mode_attr = self.AttributeDefs.operating_mode
+
+        successful_r, failed_r = {}, {}
+        remaining_attributes = attributes.copy()
+        system_mode_attribute_id = None
+
+        """Check if SYSTEM_MODE_ATTR is being read (can be numeric or string)."""
+        if SYSTEM_MODE_ATTR.id in attributes:
+            system_mode_attribute_id = SYSTEM_MODE_ATTR.id
+        elif SYSTEM_MODE_ATTR.name in attributes:
+            system_mode_attribute_id = SYSTEM_MODE_ATTR.name
+
+        """Read operating_mode instead and convert it to system_mode."""
+        if system_mode_attribute_id is not None:
+            remaining_attributes.remove(system_mode_attribute_id)
+            successful_r, failed_r = await super().read_attributes(
+                [operating_mode_attr.name], allow_cache, only_cache, manufacturer
+            )
+            if operating_mode_attr.name in successful_r:
+                operating_mode_value = successful_r.pop(operating_mode_attr.name)
+                system_mode_value = OPERATING_MODE_TO_SYSTEM_MODE_MAP[operating_mode_value]
+                successful_r[system_mode_attribute_id] = system_mode_value
+                self._update_attribute(SYSTEM_MODE_ATTR.id, system_mode_value)
+
+        """Read remaining attributes from thermostat cluster."""
+        if remaining_attributes:
+            remaining_result = await super().read_attributes(
+                remaining_attributes, allow_cache, only_cache, manufacturer
+            )
+
+            successful_r.update(remaining_result[0])
+            failed_r.update(remaining_result[1])
+
+        return successful_r, failed_r
 
 
 class BoschUserInterfaceCluster(CustomCluster, UserInterface):
@@ -84,76 +233,130 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
 
     class AttributeDefs(UserInterface.AttributeDefs):
         display_orientation = ZCLAttributeDef(
-            id=t.uint16_t(0x400B),
-            type=BoschDisplayOrientation,
+            id=t.uint16_t(SCREEN_ORIENTATION_ATTR_ID),
+            # To be matched to BoschDisplayOrientation enum.
+            type=t.uint8_t,
             is_manufacturer_specific=True,
         )
 
         display_ontime = ZCLAttributeDef(
-            id=t.uint16_t(0x403A),
-            # Usable values range from 2-30
+            id=t.uint16_t(SCREEN_TIMEOUT_ATTR_ID),
+            # Usable values range from 5-30
             type=t.enum8,
             is_manufacturer_specific=True,
         )
 
         display_brightness = ZCLAttributeDef(
-            id=t.uint16_t(0x403B),
+            id=t.uint16_t(SCREEN_BRIGHTNESS_ATTR_ID),
             # Values range from 0-10
             type=t.enum8,
             is_manufacturer_specific=True,
         )
 
         displayed_temperature = ZCLAttributeDef(
-            id=t.uint16_t(0x4039),
+            id=t.uint16_t(DISPLAY_MODE_ATTR_ID),
             type=BoschDisplayedTemperature,
             is_manufacturer_specific=True,
         )
 
+    async def write_attributes(
+        self,
+        attributes: dict[str | int, Any],
+        manufacturer: int | None = None
+    ) -> list:
+        """display_orientation special handling:
+            - convert from enum to uint8_t
+        """
+        display_orientation_attr = self.AttributeDefs.display_orientation
 
-class BoschThermostat(CustomDevice):
+        remaining_attributes = attributes.copy()
+        display_orientation_attribute_id = None
+
+        """Check if display_orientation is being written (can be numeric or string)."""
+        if display_orientation_attr.id in attributes:
+            display_orientation_attribute_id = display_orientation_attr.id
+        elif display_orientation_attr.name in attributes:
+            display_orientation_attribute_id = display_orientation_attr.name
+
+        if display_orientation_attribute_id is not None:
+            display_orientation_value = remaining_attributes.pop(display_orientation_attr.id)
+            new_display_orientation_value = DISPLAY_ORIENTATION_ENUM_TO_INT_MAP[display_orientation_value]
+            remaining_attributes[display_orientation_attribute_id] = new_display_orientation_value
+
+        return await super().write_attributes(remaining_attributes, manufacturer)
+
+
+class BoschThermostat(CustomDeviceV2):
     """Bosch thermostat custom device."""
 
-    signature = {
-        MODELS_INFO: [("BOSCH", "RBSH-TRV0-ZB-EU")],
-        ENDPOINTS: {
-            # <SimpleDescriptor endpoint=1 profile=260 device_type=769
-            # device_version=1
-            # input_clusters=[0, 1, 3, 4, 32, 513, 516, 2821]
-            # output_clusters=[10, 25]>
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.THERMOSTAT,
-                INPUT_CLUSTERS: [
-                    general.Basic.cluster_id,
-                    general.PowerConfiguration.cluster_id,
-                    general.Identify.cluster_id,
-                    general.Groups.cluster_id,
-                    general.PollControl.cluster_id,
-                    hvac.Thermostat.cluster_id,
-                    hvac.UserInterface.cluster_id,
-                    homeautomation.Diagnostic.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [general.Ota.cluster_id, general.Time.cluster_id],
-            },
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                INPUT_CLUSTERS: [
-                    Basic,
-                    BoschThermostatCluster,
-                    BoschUserInterfaceCluster,
-                    Diagnostic,
-                    Groups,
-                    Identify,
-                    Ota,
-                    PollControl,
-                    PowerConfiguration,
-                    Time,
-                ],
-                OUTPUT_CLUSTERS: [Ota, Time],
-            },
-        },
-    }
+(
+    add_to_registry_v2(
+        "BOSCH", "RBSH-TRV0-ZB-EU"
+    )
+    .device_class(BoschThermostat)
+    .replaces(BoschThermostatCluster)
+    .replaces(BoschUserInterfaceCluster)
+    # Operating mode: controlled automatically through Thermostat.system_mode (HAVC mode).
+    .enum(
+        BoschThermostatCluster.AttributeDefs.operating_mode.name,
+        BoschOperatingMode,
+        BoschThermostatCluster.cluster_id,
+        translation_key="switch_mode"
+    )
+    # Preset - normal/boost.
+    .enum(
+        BoschThermostatCluster.AttributeDefs.boost.name,
+        BoschPreset,
+        BoschThermostatCluster.cluster_id,
+        translation_key="preset"
+    )
+    # Window open switch: manually set or through an automation.
+    .switch(
+        BoschThermostatCluster.AttributeDefs.window_open.name,
+        BoschThermostatCluster.cluster_id,
+        translation_key="window_detection"
+    )
+    # Remote temperature
+    .number(
+        BoschThermostatCluster.AttributeDefs.remote_temperature.name,
+        BoschThermostatCluster.cluster_id,
+        min_value=5,
+        max_value=30,
+        step=0.1,
+        multiplier=100,
+        device_class=NumberDeviceClass.TEMPERATURE,
+        #translation_key="external_sensor"
+    )
+    # Display temperature.
+    .enum(
+        BoschUserInterfaceCluster.AttributeDefs.displayed_temperature.name,
+        BoschDisplayedTemperature,
+        BoschUserInterfaceCluster.cluster_id,
+        translation_key="device_temperature"
+    )
+    # Display orientation
+    .enum(
+        BoschUserInterfaceCluster.AttributeDefs.display_orientation.name,
+        BoschDisplayOrientation,
+        BoschUserInterfaceCluster.cluster_id,
+        translation_key="inverted"
+    )
+    # Display time-out
+    .number(
+        BoschUserInterfaceCluster.AttributeDefs.display_ontime.name,
+        BoschUserInterfaceCluster.cluster_id,
+        min_value=5,
+        max_value=30,
+        step=1,
+        translation_key="on_off_transition_time"
+    )
+    # Display brightness
+    .number(
+        BoschUserInterfaceCluster.AttributeDefs.display_brightness.name,
+        BoschUserInterfaceCluster.cluster_id,
+        min_value=0,
+        max_value=10,
+        step=1,
+        translation_key="backlight_mode"
+    )
+)
