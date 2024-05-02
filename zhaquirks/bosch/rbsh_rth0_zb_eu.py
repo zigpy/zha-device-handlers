@@ -1,4 +1,4 @@
-        """Device handler for Bosch RBSH-RTH0-ZB-EU thermostat."""
+"""Device handler for Bosch RBSH-RTH0-ZB-EU thermostat."""
 
 from typing import Any, Final
 
