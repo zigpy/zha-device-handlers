@@ -51,6 +51,7 @@ TUYA_LEVEL_COMMAND = 514
 
 LEVEL_EVENT = "level_event"
 TUYA_MCU_COMMAND = "tuya_mcu_command"
+TUYA_MCU_SET_CLUSTER_DATA = "tuya_mcu_set_cluster_data"
 TUYA_MCU_SET_DATAPOINTS = "tuya_mcu_set_datapoints"
 
 # Rotating for remotes

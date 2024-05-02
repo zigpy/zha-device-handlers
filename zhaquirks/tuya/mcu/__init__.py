@@ -29,7 +29,7 @@ from zhaquirks.tuya import (
     TUYA_DP_ID_PERCENT_CONTROL,
     TUYA_DP_ID_PERCENT_STATE,
     TUYA_DP_ID_SMALL_STEP,
-    TUYA_MCU_COMMAND,
+    TUYA_MCU_SET_CLUSTER_DATA,
     TUYA_MCU_SET_DATAPOINTS,
     TUYA_MCU_VERSION_RSP,
     TUYA_SET_DATA,
@@ -176,7 +176,7 @@ class TuyaAttributesCluster(TuyaLocalCluster):
                 manufacturer=manufacturer,
             )
             self.endpoint.device.command_bus.listener_event(
-                TUYA_MCU_COMMAND,
+                TUYA_MCU_SET_CLUSTER_DATA,
                 cluster_data,
             )
 
@@ -311,11 +311,14 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
             tuya_commands.append(cmd_payload)
         return tuya_commands
 
-    def tuya_mcu_command(self, cluster_data: TuyaClusterData):
-        """Tuya MCU command listener. Only manufacturer endpoint must listen to MCU commands."""
+    def tuya_mcu_set_cluster_data(self, cluster_data: TuyaClusterData):
+        """Tuya MCU listener to send/set tuya data points from cluster attributes.
+
+        Only manufacturer endpoint must listen to MCU commands.
+        """
 
         self.debug(
-            "tuya_mcu_command: cluster_data=%s",
+            "tuya_mcu_set_cluster_data: cluster_data=%s",
             cluster_data,
         )
 
@@ -475,7 +478,7 @@ class TuyaOnOff(TuyaEnchantableCluster, OnOff, TuyaLocalCluster):
                 manufacturer=manufacturer,
             )
             self.endpoint.device.command_bus.listener_event(
-                TUYA_MCU_COMMAND,
+                TUYA_MCU_SET_CLUSTER_DATA,
                 cluster_data,
             )
             return foundation.GENERAL_COMMANDS[
@@ -787,7 +790,7 @@ class TuyaNewWindowCoverControl(TuyaAttributesCluster, WindowCovering):
                 manufacturer=manufacturer,
             )
             self.endpoint.device.command_bus.listener_event(
-                TUYA_MCU_COMMAND,
+                TUYA_MCU_SET_CLUSTER_DATA,
                 cluster_data,
             )
             return self._default_response(command_id)
@@ -901,7 +904,7 @@ class TuyaLevelControl(LevelControl, TuyaLocalCluster):
                 manufacturer=manufacturer,
             )
             self.endpoint.device.command_bus.listener_event(
-                TUYA_MCU_COMMAND,
+                TUYA_MCU_SET_CLUSTER_DATA,
                 cluster_data,
             )
 
@@ -922,7 +925,7 @@ class TuyaLevelControl(LevelControl, TuyaLocalCluster):
                 manufacturer=manufacturer,
             )
             self.endpoint.device.command_bus.listener_event(
-                TUYA_MCU_COMMAND,
+                TUYA_MCU_SET_CLUSTER_DATA,
                 cluster_data,
             )
             return foundation.GENERAL_COMMANDS[
