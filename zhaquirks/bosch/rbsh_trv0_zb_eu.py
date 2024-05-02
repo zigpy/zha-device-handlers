@@ -17,55 +17,69 @@ from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef, ZCLCommandDef
 
 """Bosch specific thermostat attribute ids."""
+
+# Mode of operation with values BoschOperatingMode.
 OPERATING_MODE_ATTR_ID = 0x4007
+
+# Valve position: 0% - 100%
 VALVE_POSITION_ATTR_ID = 0x4020
+
+# Remote measured temperature.
 REMOTE_TEMPERATURE_ATTR_ID = 0x4040
+
+# Window open switch (changes to a lower target temperature when on).
 WINDOW_OPEN_ATTR_ID = 0x4042
+
+# Boost preset mode.
 BOOST_ATTR_ID = 0x4043
 
 """Bosch specific user interface attribute ids."""
-SCREEN_ORIENTATION_ATTR_ID = 0x400B
-DISPLAY_MODE_ATTR_ID = 0x4039
-SCREEN_TIMEOUT_ATTR_ID = 0x403A
-SCREEN_BRIGHTNESS_ATTR_ID = 0x403B
 
-"""Bosh operating mode attribute values."""
+# Display orientation with values BoschDisplayOrientation.
+SCREEN_ORIENTATION_ATTR_ID = 0x400B
+
+# Displayed temperature with values BoschDisplayedTemperature.
+DISPLAY_MODE_ATTR_ID = 0x4039
+
+# Display on-time (5s - 30s).
+SCREEN_TIMEOUT_ATTR_ID = 0x403A
+
+# Display brightness (0 - 10).
+SCREEN_BRIGHTNESS_ATTR_ID = 0x403B
 
 
 class BoschOperatingMode(t.enum8):
+    """Bosh operating mode attribute values."""
+
     Schedule = 0x00
     Manual = 0x01
     Pause = 0x05
 
 
-"""Bosch thermostat preset."""
-
-
 class BoschPreset(t.enum8):
+    """Bosch thermostat preset."""
+
     Normal = 0x00
     Boost = 0x01
 
 
-"""Binary attribute (window open) value."""
-
-
 class State(t.enum8):
+    """Binary attribute (window open) value."""
+
     Off = 0x00
     On = 0x01
 
 
-"""Bosch display orientation attribute values."""
-
-
 class BoschDisplayOrientation(t.enum8):
+    """Bosch display orientation attribute values."""
+
     Normal = 0x00
     Flipped = 0x01
 
 
-"""Bosch displayed temperature attribute values."""
-
-
 class BoschDisplayedTemperature(t.enum8):
+    """Bosch displayed temperature attribute values."""
+
     Target = 0x00
     Measured = 0x01
 
@@ -342,7 +356,7 @@ class BoschThermostat(CustomDeviceV2):
         BoschThermostatCluster.cluster_id,
         translation_key="window_detection",
     )
-    # Remote temperature
+    # Remote temperature.
     .number(
         BoschThermostatCluster.AttributeDefs.remote_temperature.name,
         BoschThermostatCluster.cluster_id,
@@ -360,14 +374,14 @@ class BoschThermostat(CustomDeviceV2):
         BoschUserInterfaceCluster.cluster_id,
         translation_key="device_temperature",
     )
-    # Display orientation
+    # Display orientation.
     .enum(
         BoschUserInterfaceCluster.AttributeDefs.display_orientation.name,
         BoschDisplayOrientation,
         BoschUserInterfaceCluster.cluster_id,
         translation_key="inverted",
     )
-    # Display time-out
+    # Display time-out.
     .number(
         BoschUserInterfaceCluster.AttributeDefs.display_ontime.name,
         BoschUserInterfaceCluster.cluster_id,
@@ -376,7 +390,7 @@ class BoschThermostat(CustomDeviceV2):
         step=1,
         translation_key="on_off_transition_time",
     )
-    # Display brightness
+    # Display brightness.
     .number(
         BoschUserInterfaceCluster.AttributeDefs.display_brightness.name,
         BoschUserInterfaceCluster.cluster_id,
