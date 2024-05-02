@@ -30,7 +30,7 @@ from zhaquirks.tuya import (
     TUYA_DP_ID_PERCENT_STATE,
     TUYA_DP_ID_SMALL_STEP,
     TUYA_MCU_COMMAND,
-    TUYA_MCU_SET_DATA,
+    TUYA_MCU_SET_DATAPOINTS,
     TUYA_MCU_VERSION_RSP,
     TUYA_SET_DATA,
     TUYA_SET_TIME,
@@ -342,17 +342,18 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
         cluster = getattr(endpoint, cluster_data.cluster_name)
         cluster.update_attribute(cluster_data.cluster_attr, cluster_data.attr_value)
 
-    def _tuya_mcu_set_data(
+    def tuya_mcu_set_datapoints(
         self,
         datapoints: list[TuyaDatapointData],
         manufacturer: Optional[Union[int, t.uint16_t]] = None,
         expect_reply: bool = True,
     ):
-        # TODO - merge with tuya_mcu_command, or just rename to TUYA_MCU_SET_CLUSTER_DATA & TUYA_MCU_SET_DATAPOINTS
-        self.debug("tuya_mcu_set_data: datapoints=%s", datapoints)
+        """Tuya MCU listener to send/set tuya datapoint values."""
+
+        self.debug("tuya_mcu_set_datapoints: datapoints=%s", datapoints)
 
         if len(datapoints) == 0:
-            self.warning("no datapoints for tuya_mcu_set_data")
+            self.warning("no datapoints for tuya_mcu_set_datapoints")
             return
 
         cmd_payload = TuyaCommand()
@@ -830,10 +831,10 @@ class TuyaNewWindowCoverControl(TuyaAttributesCluster, WindowCovering):
         """Send a set_data for a Tuya data point value (via the mcu cluster)."""
 
         datapoints = [TuyaDatapointData(dp, data)]
-        self.debug("Sending TUYA_MCU_SET_DATA: %s", datapoints)
+        self.debug("Sending TUYA_MCU_SET_DATAPOINTS: %s", datapoints)
 
         self.endpoint.device.command_bus.listener_event(
-            TUYA_MCU_SET_DATA, datapoints, manufacturer, expect_reply
+            TUYA_MCU_SET_DATAPOINTS, datapoints, manufacturer, expect_reply
         )
 
     # TODO - move this to TuyaMCUCluster
