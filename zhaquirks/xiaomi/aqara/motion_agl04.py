@@ -19,8 +19,8 @@ from zhaquirks.const import (
 )
 from zhaquirks.xiaomi import (
     DeviceTemperatureCluster,
-    LocalOccupancyCluster,
     MotionCluster,
+    OccupancyCluster,
     XiaomiAqaraE1Cluster,
     XiaomiCustomDevice,
     XiaomiPowerConfiguration,
@@ -98,7 +98,7 @@ class LumiLumiMotionAgl04(XiaomiCustomDevice):
                     XiaomiPowerConfiguration,
                     Identify.cluster_id,
                     DeviceTemperatureCluster,
-                    LocalOccupancyCluster,
+                    OccupancyCluster,
                     LocalMotionCluster,
                     OppleCluster,
                 ],
