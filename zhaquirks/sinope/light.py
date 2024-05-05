@@ -28,17 +28,13 @@ from zhaquirks import EventableCluster
 from zhaquirks.const import (
     ATTRIBUTE_ID,
     ATTRIBUTE_NAME,
-    COMMAND,
     COMMAND_BUTTON_DOUBLE,
     COMMAND_BUTTON_HOLD,
-    COMMAND_BUTTON_SINGLE,
-    COMMAND_ID,
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
-    PRESS_TYPE,
     PROFILE_ID,
     VALUE,
     ZHA_SEND_EVENT,
@@ -46,10 +42,10 @@ from zhaquirks.const import (
 from zhaquirks.sinope import (
     ATTRIBUTE_ACTION,
     LIGHT_DEVICE_TRIGGERS,
-    SINOPE,
-    SINOPE_MANUFACTURER_CLUSTER_ID,
-    CustomDeviceTemperatureCluster,
+    SINOPE
 )
+
+SINOPE_MANUFACTURER_CLUSTER_ID = 0xFF01
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -234,7 +230,7 @@ class SinopeTechnologieslight(CustomDevice):
                 DEVICE_TYPE: zha_p.DeviceType.ON_OFF_LIGHT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    CustomDeviceTemperatureCluster,
+                    DeviceTemperature,
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
@@ -298,7 +294,7 @@ class SinopeDM2500ZB(SinopeTechnologieslight):
                 DEVICE_TYPE: zha_p.DeviceType.DIMMABLE_LIGHT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    CustomDeviceTemperatureCluster,
+                    DeviceTemperature,
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
@@ -365,7 +361,7 @@ class SinopeDM2550ZB(SinopeTechnologieslight):
                 DEVICE_TYPE: zha_p.DeviceType.DIMMABLE_LIGHT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    CustomDeviceTemperatureCluster,
+                    DeviceTemperature,
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
