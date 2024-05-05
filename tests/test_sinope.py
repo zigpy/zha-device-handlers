@@ -95,7 +95,6 @@ async def test_sinope_light_switch(zigpy_device_from_quirk, quirk):
 async def test_sinope_light_switch_reporting(zigpy_device_from_quirk, quirk):
     """Test that button presses are sent as events"""
     device: Device = zigpy_device_from_quirk(quirk)
-    from pudb import set_trace; set_trace();
 
     manu_cluster = device.endpoints[1].in_clusters[SINOPE_MANUFACTURER_CLUSTER_ID]
 
