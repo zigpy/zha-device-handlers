@@ -6,6 +6,8 @@ DM2550ZB-G2.
 
 import logging
 from typing import Any, Optional, Union
+from homeassistant.components.zha.core.cluster_handlers import AttrReportConfig
+from homeassistant.components.zha.core.const import REPORT_CONFIG_IMMEDIATE
 import zigpy.profiles.zha as zha_p
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
@@ -42,7 +44,8 @@ from zhaquirks.const import (
 from zhaquirks.sinope import (
     ATTRIBUTE_ACTION,
     LIGHT_DEVICE_TRIGGERS,
-    SINOPE
+    SINOPE,
+    CustomDeviceTemperatureCluster
 )
 
 SINOPE_MANUFACTURER_CLUSTER_ID = 0xFF01
@@ -84,14 +87,8 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
         Long_off = 0x13
         Double_off = 0x14
 
-    async def configure_reporting(self, *args, **kwargs):
-        _LOGGER.debug(
-            "Configuring reporting on sinope mfg cluster: %s, %s", *args, **kwargs
-        )
-        return await super().configure_reporting(*args, **kwargs)
-
     cluster_id = SINOPE_MANUFACTURER_CLUSTER_ID
-    name = "Sinopé Technologies Manufacturer specific"
+    name = "SinopeTechnologiesManufacturerCluster"
     ep_attribute = "sinope_manufacturer_specific"
     attributes = {
         0x0002: ("keypad_lockout", KeypadLock, True),
@@ -123,18 +120,6 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
         )
     }
 
-    # def handle_cluster_request(
-    #     self,
-    #     hdr: foundation.ZCLHeader,
-    #     args: list,
-    #     *,
-    #     dst_addressing: t.Addressing.Group | t.Addressing.IEEE | t.Addressing.NWK | None = None
-    # ) -> None:
-    #     _LOGGER.debug(
-    #         "sinope cluster request: hdr %s, args %s, dst %s", hdr, args, dst_addressing
-    #     )
-    #     return super().handle_cluster_request(hdr, args, dst_addressing=dst_addressing)
-
     def handle_cluster_general_request(
         self,
         hdr: foundation.ZCLHeader,
@@ -145,8 +130,8 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
         ] = None,
     ):
         """Handle the cluster command."""
-        _LOGGER.debug(
-            "sinope general request - handle_cluster_general_request: hdr: %s - args: [%s]",
+        self.debug(
+            "SINOPE cluster general request: hdr: %s - args: [%s]",
             hdr,
             args,
         )
@@ -165,7 +150,7 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
             ATTRIBUTE_NAME: ATTRIBUTE_ACTION,
             VALUE: value.value,
         }
-        action = self.get_command_from_action(Action(value))
+        action = self.get_command_from_action(self.Action(value))
         if not action:
             return
         self.listener_event(ZHA_SEND_EVENT, action, event_args)
@@ -174,11 +159,11 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
         # const lookup = {2: 'up_single', 3: 'up_hold', 4: 'up_double',
         #             18: 'down_single', 19: 'down_hold', 20: 'down_double'};
         match action:
-            case Action.Single_off | Action.Single_on:
+            case self.Action.Single_off | self.Action.Single_on:
                 return None
-            case Action.Double_off | Action.Double_on:
+            case self.Action.Double_off | self.Action.Double_on:
                 return COMMAND_BUTTON_DOUBLE
-            case Action.Long_off | Action.Long_on:
+            case self.Action.Long_off | self.Action.Long_on:
                 return COMMAND_BUTTON_HOLD
             case _:
                 return None
@@ -230,7 +215,7 @@ class SinopeTechnologieslight(CustomDevice):
                 DEVICE_TYPE: zha_p.DeviceType.ON_OFF_LIGHT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    DeviceTemperature.cluster_id,
+                    CustomDeviceTemperatureCluster,
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
@@ -294,7 +279,7 @@ class SinopeDM2500ZB(SinopeTechnologieslight):
                 DEVICE_TYPE: zha_p.DeviceType.DIMMABLE_LIGHT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    DeviceTemperature.cluster_id,
+                    CustomDeviceTemperatureCluster,
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
@@ -361,7 +346,7 @@ class SinopeDM2550ZB(SinopeTechnologieslight):
                 DEVICE_TYPE: zha_p.DeviceType.DIMMABLE_LIGHT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    DeviceTemperature.cluster_id,
+                    CustomDeviceTemperatureCluster,
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
