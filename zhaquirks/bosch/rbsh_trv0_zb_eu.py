@@ -1,20 +1,13 @@
 """Device handler for Bosch RBSH-TRV0-ZB-EU thermostat."""
 
-from typing import Any, Final
+from typing import Any
 
-from zigpy.device import Device
-from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster
-from zigpy.quirks.registry import DeviceRegistry
-from zigpy.quirks.v2 import (
-    CustomDeviceV2,
-    add_to_registry_v2,
-)
+from zigpy.quirks.v2 import CustomDeviceV2, add_to_registry_v2
 from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 import zigpy.types as t
-from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
-from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef, ZCLCommandDef
+from zigpy.zcl.foundation import ZCLAttributeDef
 
 """Bosch specific thermostat attribute ids."""
 
@@ -112,6 +105,8 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
     """Bosch thermostat cluster."""
 
     class AttributeDefs(Thermostat.AttributeDefs):
+        """Bosch thermostat manufacturer specific attributes."""
+
         operating_mode = ZCLAttributeDef(
             id=t.uint16_t(OPERATING_MODE_ATTR_ID),
             type=BoschOperatingMode,
@@ -146,7 +141,8 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
     async def write_attributes(
         self, attributes: dict[str | int, Any], manufacturer: int | None = None
     ) -> list:
-        """system_mode special handling:
+        """system_mode special handling.
+
         - turn off by setting operating_mode to Pause
         - turn on by setting operating_mode to Manual
         - add new system_mode value to the internal zigpy Cluster cache
@@ -161,7 +157,7 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
 
         """Check if SYSTEM_MODE_ATTR is being written (can be numeric or string):
             - do not write it to the device since it is not supported
-            - keep the value to be converted to the supported operating_mode 
+            - keep the value to be converted to the supported operating_mode
         """
         if SYSTEM_MODE_ATTR.id in attributes:
             remaining_attributes.pop(SYSTEM_MODE_ATTR.id)
@@ -171,7 +167,7 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
             system_mode_value = attributes.get(SYSTEM_MODE_ATTR.name)
 
         """Check if operating_mode_attr is being written (can be numeric or string).
-            - ignore incoming operating_mode when system_mode is also written  
+            - ignore incoming operating_mode when system_mode is also written
             - system_mode has priority and its value would be converted to operating_mode
             - add resulting system_mode to the internal zigpy Cluster cache
         """
@@ -216,7 +212,8 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
         only_cache: bool = False,
         manufacturer: int | t.uint16_t | None = None,
     ):
-        """system_mode special handling:
+        """system_mode special handling.
+
         - read and convert operating_mode to system_mode.
         """
 
@@ -262,6 +259,8 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
     """Bosch UserInterface cluster."""
 
     class AttributeDefs(UserInterface.AttributeDefs):
+        """Bosch user interface manufacturer specific attributes."""
+
         display_orientation = ZCLAttributeDef(
             id=t.uint16_t(SCREEN_ORIENTATION_ATTR_ID),
             # To be matched to BoschDisplayOrientation enum.
@@ -292,7 +291,8 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
     async def write_attributes(
         self, attributes: dict[str | int, Any], manufacturer: int | None = None
     ) -> list:
-        """display_orientation special handling:
+        """display_orientation special handling.
+
         - convert from enum to uint8_t
         """
         display_orientation_attr = self.AttributeDefs.display_orientation
