@@ -2,7 +2,7 @@
 
 
 from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import CustomDeviceV2, add_to_registry_v2
+from zigpy.quirks.v2 import add_to_registry_v2
 import zigpy.types as t
 from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
 from zigpy.zcl.foundation import ZCLAttributeDef
@@ -98,13 +98,8 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         )
 
 
-class BoschThermostat(CustomDeviceV2):
-    """Bosch thermostat custom device."""
-
-
 (
     add_to_registry_v2("Bosch", "RBSH-RTH0-ZB-EU")
-    .device_class(BoschThermostat)
     .replaces(BoschThermostatCluster)
     .replaces(BoschUserInterfaceCluster)
     # Operating mode: controlled automatically through Thermostat.system_mode (HAVC mode).
