@@ -1,20 +1,11 @@
 """Device handler for Bosch RBSH-RTH0-ZB-EU thermostat."""
 
-from typing import Any, Final
 
-from zigpy.device import Device
-from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster
-from zigpy.quirks.registry import DeviceRegistry
-from zigpy.quirks.v2 import (
-    CustomDeviceV2,
-    add_to_registry_v2,
-)
-from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
+from zigpy.quirks.v2 import CustomDeviceV2, add_to_registry_v2
 import zigpy.types as t
-from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
-from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef, ZCLCommandDef
+from zigpy.zcl.foundation import ZCLAttributeDef
 
 """Bosch specific thermostat attribute ids."""
 
@@ -58,6 +49,8 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
     """Bosch thermostat cluster."""
 
     class AttributeDefs(Thermostat.AttributeDefs):
+        """Bosch thermostat manufacturer specific attributes."""
+
         operating_mode = ZCLAttributeDef(
             id=t.uint16_t(OPERATING_MODE_ATTR_ID),
             type=BoschOperatingMode,
@@ -88,6 +81,8 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
     """Bosch UserInterface cluster."""
 
     class AttributeDefs(UserInterface.AttributeDefs):
+        """Bosch user interface manufacturer specific attributes."""
+
         display_on_time = ZCLAttributeDef(
             id=t.uint16_t(SCREEN_TIMEOUT_ATTR_ID),
             # Usable values range from 5-30
