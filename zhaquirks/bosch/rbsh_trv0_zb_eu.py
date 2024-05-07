@@ -56,13 +56,6 @@ class BoschOperatingMode(t.enum8):
     Pause = 0x05
 
 
-class BoschPreset(t.enum8):
-    """Bosch thermostat preset."""
-
-    Normal = 0x00
-    Boost = 0x01
-
-
 class State(t.enum8):
     """Binary attribute (window open) value."""
 
@@ -140,7 +133,7 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
 
         boost = ZCLAttributeDef(
             id=t.uint16_t(BOOST_ATTR_ID),
-            type=BoschPreset,
+            type=State,
             is_manufacturer_specific=True,
         )
 
@@ -276,7 +269,7 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
             is_manufacturer_specific=True,
         )
 
-        display_ontime = ZCLAttributeDef(
+        display_on_time = ZCLAttributeDef(
             id=t.uint16_t(SCREEN_TIMEOUT_ATTR_ID),
             # Usable values range from 5-30
             type=t.enum8,
@@ -341,20 +334,19 @@ class BoschThermostat(CustomDeviceV2):
         BoschThermostatCluster.AttributeDefs.operating_mode.name,
         BoschOperatingMode,
         BoschThermostatCluster.cluster_id,
-        translation_key="switch_mode",
+        translation_key="operating_mode",
     )
-    # Preset - normal/boost.
-    .enum(
+    # Fast heating/boost.
+    .switch(
         BoschThermostatCluster.AttributeDefs.boost.name,
-        BoschPreset,
         BoschThermostatCluster.cluster_id,
-        translation_key="preset",
+        translation_key="boost",
     )
     # Window open switch: manually set or through an automation.
     .switch(
         BoschThermostatCluster.AttributeDefs.window_open.name,
         BoschThermostatCluster.cluster_id,
-        translation_key="window_detection",
+        translation_key="window_open",
     )
     # Remote temperature.
     .number(
@@ -365,30 +357,30 @@ class BoschThermostat(CustomDeviceV2):
         step=0.1,
         multiplier=100,
         device_class=NumberDeviceClass.TEMPERATURE,
-        # translation_key="external_sensor"
+        # translation_key="remote_temperature"
     )
     # Display temperature.
     .enum(
         BoschUserInterfaceCluster.AttributeDefs.displayed_temperature.name,
         BoschDisplayedTemperature,
         BoschUserInterfaceCluster.cluster_id,
-        translation_key="device_temperature",
+        translation_key="displayed_temperature",
     )
     # Display orientation.
     .enum(
         BoschUserInterfaceCluster.AttributeDefs.display_orientation.name,
         BoschDisplayOrientation,
         BoschUserInterfaceCluster.cluster_id,
-        translation_key="inverted",
+        translation_key="display_orientation",
     )
     # Display time-out.
     .number(
-        BoschUserInterfaceCluster.AttributeDefs.display_ontime.name,
+        BoschUserInterfaceCluster.AttributeDefs.display_on_time.name,
         BoschUserInterfaceCluster.cluster_id,
         min_value=5,
         max_value=30,
         step=1,
-        translation_key="on_off_transition_time",
+        translation_key="display_on_time",
     )
     # Display brightness.
     .number(
@@ -397,6 +389,6 @@ class BoschThermostat(CustomDeviceV2):
         min_value=0,
         max_value=10,
         step=1,
-        translation_key="backlight_mode",
+        translation_key="display_brightness",
     )
 )
