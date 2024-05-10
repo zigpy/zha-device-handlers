@@ -1,4 +1,5 @@
 """Tretakt Plug Quirk."""
+
 from zigpy.profiles import zgp, zha, zll
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
@@ -24,6 +25,7 @@ from zhaquirks.const import (
 )
 from zhaquirks.ikea import IKEA, IKEA_CLUSTER_ID, WWAH_CLUSTER_ID
 
+
 class TretaktPlug(CustomDevice):
     """Tretakt Smart plug."""
 
@@ -46,7 +48,7 @@ class TretaktPlug(CustomDevice):
                     LightLink.cluster_id,
                     WWAH_CLUSTER_ID,
                     IKEA_CLUSTER_ID,
-                    0xfc85,
+                    0xFC85,
                 ],
                 OUTPUT_CLUSTERS: [
                     Ota.cluster_id,
