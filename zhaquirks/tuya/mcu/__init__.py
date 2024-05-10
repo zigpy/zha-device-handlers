@@ -731,69 +731,6 @@ class MoesSwitchManufCluster(TuyaOnOffManufCluster):
     data_point_handlers.update({15: "_dp_2_attr_update"})
 
 
-class TuyaNewManufClusterForWindowCover(TuyaMCUCluster):
-    """Manufacturer Specific Cluster for cover device (based on new TuyaMCUCluster).
-
-    I.e. Uses newer TuyaMCUCluster mechanism for translations between cluster attributes and
-    Tuya data points.
-    """
-
-    # TODO - work out if I can do this as a class function, yet still access the invert attribute value
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-
-        self.dp_to_attribute: dict[int, DPToAttributeMapping] = {
-            TUYA_DP_ID_CONTROL: DPToAttributeMapping(
-                TuyaNewWindowCoverControl.ep_attribute,
-                ATTR_COVER_MAIN_CONTROL_NAME,
-                # Converting raw ints to a type allows the attributes UI show meaningful values
-                CoverMotorStatus,
-                CoverMotorStatus,
-            ),
-            TUYA_DP_ID_PERCENT_STATE: DPToAttributeMapping(
-                TuyaNewWindowCoverControl.ep_attribute,
-                ATTR_COVER_LIFTPERCENT_NAME,
-                self._convert_lift_percent,
-                self._convert_lift_percent,
-            ),
-            TUYA_DP_ID_DIRECTION_SETTING: DPToAttributeMapping(
-                TuyaNewWindowCoverControl.ep_attribute,
-                ATTR_COVER_DIRECTION_SETTING_NAME,
-                CoverSettingMotorDirection,
-                CoverSettingMotorDirection,
-            ),
-            TUYA_DP_ID_BATTERY_PERCENT: DPToAttributeMapping(
-                PowerConfiguration.ep_attribute,
-                PowerConfiguration.AttributeDefs.battery_percentage_remaining.name,
-                # Tuya report real percent, zigbee expects value*2, but
-                # TuyaPowerConfigurationCluster will convert it
-            ),
-        }
-
-    data_point_handlers = {
-        TUYA_DP_ID_CONTROL: "_dp_2_attr_update",
-        TUYA_DP_ID_PERCENT_STATE: "_dp_2_attr_update",
-        TUYA_DP_ID_DIRECTION_SETTING: "_dp_2_attr_update",
-        TUYA_DP_ID_BATTERY_PERCENT: "_dp_2_attr_update",
-        # Ignore updates from data points that are used as write-only commands to the device, we
-        # don't need attributes to display their values, but they're they're echoed back in
-        # get_data and would otherwise log debug messages.
-        TUYA_DP_ID_PERCENT_CONTROL: "ignore_update",
-        # I don't know what 7 is, but it's part of set_data_response
-        7: "ignore_update",
-        TUYA_DP_ID_LIMIT_SETTINGS: "ignore_update",
-        TUYA_DP_ID_SMALL_STEP: "ignore_update",
-    }
-
-    def _convert_lift_percent(self, input_value: int):
-        return self.endpoint.window_covering.convert_lift_percent(input_value)
-
-    def ignore_update(self, _datapoint: TuyaDatapointData) -> None:
-        """Process (and ignore) some data point updates."""
-        return None
-
-
 class TuyaNewWindowCoverControl(TuyaAttributesCluster, TuyaCommandCluster, WindowCovering):
     """Tuya Window Cover Cluster, based on new TuyaNewManufClusterForWindowCover.
 
@@ -927,6 +864,69 @@ class TuyaNewWindowCoverControl(TuyaAttributesCluster, TuyaCommandCluster, Windo
 
         invert = self._attr_cache.get(ATTR_COVER_INVERTED_SETTING) == 1
         return input_value if invert else 100 - input_value
+
+
+class TuyaNewManufClusterForWindowCover(TuyaMCUCluster):
+    """Manufacturer Specific Cluster for cover device (based on new TuyaMCUCluster).
+
+    I.e. Uses newer TuyaMCUCluster mechanism for translations between cluster attributes and
+    Tuya data points.
+    """
+
+    # TODO - work out if I can do this as a class function, yet still access the invert attribute value
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+
+        self.dp_to_attribute: dict[int, DPToAttributeMapping] = {
+            TUYA_DP_ID_CONTROL: DPToAttributeMapping(
+                TuyaNewWindowCoverControl.ep_attribute,
+                ATTR_COVER_MAIN_CONTROL_NAME,
+                # Converting raw ints to a type allows the attributes UI show meaningful values
+                CoverMotorStatus,
+                CoverMotorStatus,
+            ),
+            TUYA_DP_ID_PERCENT_STATE: DPToAttributeMapping(
+                TuyaNewWindowCoverControl.ep_attribute,
+                ATTR_COVER_LIFTPERCENT_NAME,
+                self._convert_lift_percent,
+                self._convert_lift_percent,
+            ),
+            TUYA_DP_ID_DIRECTION_SETTING: DPToAttributeMapping(
+                TuyaNewWindowCoverControl.ep_attribute,
+                ATTR_COVER_DIRECTION_SETTING_NAME,
+                CoverSettingMotorDirection,
+                CoverSettingMotorDirection,
+            ),
+            TUYA_DP_ID_BATTERY_PERCENT: DPToAttributeMapping(
+                PowerConfiguration.ep_attribute,
+                PowerConfiguration.AttributeDefs.battery_percentage_remaining.name,
+                # Tuya report real percent, zigbee expects value*2, but
+                # TuyaPowerConfigurationCluster will convert it
+            ),
+        }
+
+    data_point_handlers = {
+        TUYA_DP_ID_CONTROL: "_dp_2_attr_update",
+        TUYA_DP_ID_PERCENT_STATE: "_dp_2_attr_update",
+        TUYA_DP_ID_DIRECTION_SETTING: "_dp_2_attr_update",
+        TUYA_DP_ID_BATTERY_PERCENT: "_dp_2_attr_update",
+        # Ignore updates from data points that are used as write-only commands to the device, we
+        # don't need attributes to display their values, but they're they're echoed back in
+        # get_data and would otherwise log debug messages.
+        TUYA_DP_ID_PERCENT_CONTROL: "ignore_update",
+        # I don't know what 7 is, but it's part of set_data_response
+        7: "ignore_update",
+        TUYA_DP_ID_LIMIT_SETTINGS: "ignore_update",
+        TUYA_DP_ID_SMALL_STEP: "ignore_update",
+    }
+
+    def _convert_lift_percent(self, input_value: int):
+        return self.endpoint.window_covering.convert_lift_percent(input_value)
+
+    def ignore_update(self, _datapoint: TuyaDatapointData) -> None:
+        """Process (and ignore) some data point updates."""
+        return None
 
 
 class TuyaLevelControl(LevelControl, TuyaLocalCluster):
