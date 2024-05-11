@@ -1,6 +1,11 @@
 """Tests for Tuya Smoke Detector."""
 
+import pytest
+from zigpy.zcl.clusters.security import IasZone
+
 import zhaquirks.tuya.ts0205
+
+from tests.common import ClusterListener
 
 zhaquirks.setup()
 
@@ -30,3 +35,33 @@ def test_ts0205_signature(assert_signature_matches_quirk):
     assert_signature_matches_quirk(
         zhaquirks.tuya.ts0205.TuyaSmokeDetectorTS0205, signature
     )
+
+
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0205.TuyaSmokeDetectorTS0205,))
+async def test_tuya_smoke_sensor_attribute_update(zigpy_device_from_quirk, quirk):
+    """Test update_attribute on Tuya smoke sensor."""
+
+    device = zigpy_device_from_quirk(quirk)
+
+    opple_cluster = device.endpoints[1].tuya_manufacturer
+    opple_listener = ClusterListener(opple_cluster)
+
+    ias_cluster = device.endpoints[1].ias_zone
+    ias_listener = ClusterListener(ias_cluster)
+
+    zone_status_id = IasZone.AttributeDefs.zone_status.id
+
+    # check that updating smoke attribute also updates zone status on the Ias Zone cluster
+
+    # turn on smoke alarm
+    opple_cluster.update_attribute(0x0401, 1)
+    assert len(opple_listener.attribute_updates) == 1
+    assert len(ias_listener.attribute_updates) == 1
+    assert ias_listener.attribute_updates[0][0] == zone_status_id
+    assert ias_listener.attribute_updates[0][1] == 0
+    # turn off smoke alarm
+    opple_cluster.update_attribute(0x0401, 0)
+    assert len(opple_listener.attribute_updates) == 2
+    assert len(ias_listener.attribute_updates) == 2
+    assert ias_listener.attribute_updates[1][0] == zone_status_id
+    assert ias_listener.attribute_updates[1][1] == IasZone.ZoneStatus.Alarm_1
