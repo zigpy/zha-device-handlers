@@ -1,3 +1,4 @@
+"""Tuya TS0205 smoke detector."""
 import logging
 
 from zigpy.profiles import zha
@@ -69,7 +70,7 @@ class TuyaIasZone(LocalDataCluster, IasZone):
 
 
 class TuyaSmokeDetectorTS0205(CustomDevice):
-    """Tuya smoke sensor PST-YG500A"""
+    """Tuya smoke sensor PST-YG500A."""
 
     signature = {
         MODELS_INFO: [("_TZ3210_up3pngle", "TS0205")],
