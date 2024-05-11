@@ -1,9 +1,10 @@
+"""Test linkind."""
+
 import pytest
 from zigpy.zcl.clusters.security import IasZone
 
-import zhaquirks
-
 from tests.common import ClusterListener
+import zhaquirks
 
 zhaquirks.setup()
 

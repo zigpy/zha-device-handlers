@@ -1,6 +1,6 @@
 """Tuya Air sensors."""
 
-from typing import Any, Dict
+from typing import Any
 
 import zigpy.types as t
 from zigpy.zcl.clusters.measurement import (
@@ -69,7 +69,7 @@ class TuyaAirQualityHumidity(RelativeHumidity, TuyaLocalCluster):
 
 
 class TuyaAirQualityPM25(PM25, TuyaLocalCluster):
-    """Tuya PM25 concentration measurement"""
+    """Tuya PM25 concentration measurement."""
 
 
 class TuyaAirQualityCO2(CarbonDioxideConcentration, TuyaLocalCluster):
@@ -83,7 +83,7 @@ class TuyaAirQualityFormaldehyde(FormaldehydeConcentration, TuyaLocalCluster):
 class TuyaCO2ManufCluster(TuyaNewManufCluster):
     """Tuya with Air quality data points."""
 
-    dp_to_attribute: Dict[int, DPToAttributeMapping] = {
+    dp_to_attribute: dict[int, DPToAttributeMapping] = {
         2: DPToAttributeMapping(
             TuyaAirQualityCO2.ep_attribute,
             "measured_value",

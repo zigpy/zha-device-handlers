@@ -1,9 +1,9 @@
 """Quirk for LUMI lumi.sensor_smoke.acn03 smoke sensor."""
 from typing import Any
 
+from zigpy import types
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
-import zigpy.types as types
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PowerConfiguration
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zdo.types import NodeDescriptor

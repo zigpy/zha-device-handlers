@@ -4,8 +4,9 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from zigpy import types
 from zigpy.profiles import zgp, zha
-import zigpy.types as types
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
@@ -16,7 +17,6 @@ from zigpy.zcl.clusters.general import (
     Scenes,
     Time,
 )
-import zigpy.zcl.foundation as foundation
 
 from zhaquirks.const import (
     DEVICE_TYPE,

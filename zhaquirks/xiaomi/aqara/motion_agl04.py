@@ -3,8 +3,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from zigpy import types
 from zigpy.profiles import zha
-import zigpy.types as types
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PowerConfiguration
 from zigpy.zcl.clusters.measurement import OccupancySensing
 

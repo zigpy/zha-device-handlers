@@ -1,7 +1,7 @@
 """Module for Inovelli quirks implementations."""
 
 import logging
-from typing import Any, List, Optional, Union
+from typing import Any, Optional, Union
 
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
@@ -159,7 +159,7 @@ class InovelliCluster(CustomCluster):
     def handle_cluster_request(
         self,
         hdr: foundation.ZCLHeader,
-        args: List[Any],
+        args: list[Any],
         *,
         dst_addressing: Optional[
             Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
@@ -254,8 +254,15 @@ class InovelliVZM31SNCluster(InovelliCluster):
             0x0060: ("led_color_when_off", t.uint8_t, True),
             0x0062: ("led_intensity_when_off", t.uint8_t, True),
             0x0064: ("led_scaling_mode", t.Bool, True),
+            0x0078: ("fan_single_tap_behavior", t.uint8_t, True),
+            0x0079: ("fan_timer_display", t.Bool, True),
             0x007B: ("aux_switch_scenes", t.Bool, True),
             0x007D: ("binding_off_to_on_sync_level", t.Bool, True),
+            0x0082: ("fan_module_binding_control", t.uint8_t, True),
+            0x0083: ("low_for_bound_control", t.uint8_t, True),
+            0x0084: ("medium_for_bound_control", t.uint8_t, True),
+            0x0085: ("high_for_bound_control", t.uint8_t, True),
+            0x0086: ("led_color_for_bound_control", t.uint8_t, True),
             0x0100: ("local_protection", t.Bool, True),
             0x0103: ("on_off_led_mode", t.Bool, True),
             0x0104: ("firmware_progress_led", t.Bool, True),

@@ -1,3 +1,5 @@
+"""Sonoff SNZB-06 - Zigbee presence sensor."""
+
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t

@@ -42,6 +42,7 @@ class KeenHomeSmartVent(CustomDevice):
             ("Keen Home Inc", "SV01-410-MP-1.1"),
             ("Keen Home Inc", "SV01-410-MP-1.4"),
             ("Keen Home Inc", "SV01-410-MP-1.5"),
+            ("Keen Home Inc", "SV02-410-MP-1.2"),
             ("Keen Home Inc", "SV02-410-MP-1.3"),
             ("Keen Home Inc", "SV01-412-MP-1.0"),
             ("Keen Home Inc", "SV01-610-MP-1.0"),

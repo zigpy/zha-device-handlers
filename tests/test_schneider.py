@@ -3,9 +3,8 @@
 import pytest
 from zigpy.zcl.clusters.smartenergy import Metering
 
-import zhaquirks.schneider.outlet
-
 from tests.common import ClusterListener
+import zhaquirks.schneider.outlet
 
 zhaquirks.setup()
 

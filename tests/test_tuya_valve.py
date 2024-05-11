@@ -5,9 +5,8 @@ from unittest import mock
 import pytest
 from zigpy.zcl import foundation
 
-import zhaquirks
-
 from tests.common import ClusterListener, wait_for_zigpy_tasks
+import zhaquirks
 
 zhaquirks.setup()
 

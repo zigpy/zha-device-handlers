@@ -1,6 +1,6 @@
 """TS0210 vibration sensor."""
 
-from typing import Optional, Tuple, Union
+from typing import Optional, Union
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
@@ -34,7 +34,7 @@ class VibrationCluster(LocalDataCluster, MotionOnEvent, IasZone):
     def handle_cluster_request(
         self,
         hdr: foundation.ZCLHeader,
-        args: Tuple[TuyaManufCluster.Command],
+        args: tuple[TuyaManufCluster.Command],
         *,
         dst_addressing: Optional[
             Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
@@ -53,7 +53,8 @@ class TuyaVibration(CustomDevice):
         super().__init__(*args, **kwargs)
 
     signature = {
-        #   SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=1026, device_version=0, input_clusters=[0, 10, 1, 1280], output_clusters=[25])
+        # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=1026, device_version=0,
+        # input_clusters=[0, 10, 1, 1280], output_clusters=[25])
         MODEL: "TS0210",
         ENDPOINTS: {
             1: {

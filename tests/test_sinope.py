@@ -4,9 +4,8 @@ import pytest
 from zigpy.zcl.clusters.general import DeviceTemperature
 from zigpy.zcl.clusters.measurement import FlowMeasurement
 
-import zhaquirks.sinope.switch
-
 from tests.common import ClusterListener
+import zhaquirks.sinope.switch
 
 zhaquirks.setup()
 
