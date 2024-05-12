@@ -4,7 +4,11 @@
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import add_to_registry_v2
 import zigpy.types as t
-from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
+from zigpy.zcl.clusters.hvac import (
+    ControlSequenceOfOperation,
+    Thermostat,
+    UserInterface,
+)
 from zigpy.zcl.foundation import ZCLAttributeDef
 
 """Bosch specific thermostat attribute ids."""
@@ -29,6 +33,8 @@ SCREEN_TIMEOUT_ATTR_ID = 0x403A
 # Display brightness (0 - 10).
 SCREEN_BRIGHTNESS_ATTR_ID = 0x403B
 
+# Control sequence of operation (heating/cooling)
+CTRL_SEQUENCE_OF_OPERATION_ID = 0x001B
 
 class BoschOperatingMode(t.enum8):
     """Bosh operating mode attribute values."""
@@ -43,6 +49,13 @@ class State(t.enum8):
 
     Off = 0x00
     On = 0x01
+
+
+class BoschControlSequenceOfOperation(t.enum8):
+    """Supported ControlSequenceOfOperation modes."""
+
+    Cooling = ControlSequenceOfOperation.Cooling_Only
+    Heating = ControlSequenceOfOperation.Heating_Only
 
 
 class BoschThermostatCluster(CustomCluster, Thermostat):
@@ -138,5 +151,11 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         max_value=10,
         step=1,
         translation_key="display_brightness",
+    )
+    .enum(
+        Thermostat.AttributeDefs.ctrl_sequence_of_oper.name,
+        BoschControlSequenceOfOperation,
+        BoschThermostatCluster.cluster_id,
+        translation_key="ctrl_sequence_of_oper",
     )
 )
