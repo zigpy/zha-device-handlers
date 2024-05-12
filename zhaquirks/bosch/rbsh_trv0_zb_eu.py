@@ -334,7 +334,7 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
 
         if display_orientation_attribute_id is not None:
             display_orientation_value = remaining_attributes.pop(
-                display_orientation_attr.id
+                display_orientation_attribute_id
             )
             new_display_orientation_value = DISPLAY_ORIENTATION_ENUM_TO_INT_MAP[
                 display_orientation_value
