@@ -152,6 +152,7 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         step=1,
         translation_key="display_brightness",
     )
+    # Heating vs Cooling.
     .enum(
         Thermostat.AttributeDefs.ctrl_sequence_of_oper.name,
         BoschControlSequenceOfOperation,
