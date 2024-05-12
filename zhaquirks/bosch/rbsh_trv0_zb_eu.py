@@ -100,9 +100,11 @@ OPERATING_MODE_TO_SYSTEM_MODE_MAP = {
 SYSTEM_MODE_TO_OPERATING_MODE_MAP = {
     Thermostat.SystemMode.Off: BoschOperatingMode.Pause,
     Thermostat.SystemMode.Heat: BoschOperatingMode.Manual,
+    Thermostat.SystemMode.Cool: BoschOperatingMode.Manual,
     Thermostat.SystemMode.Auto: BoschOperatingMode.Schedule,
     "SystemMode.Off": BoschOperatingMode.Pause,
     "SystemMode.Heat": BoschOperatingMode.Manual,
+    "SystemMode.Cool": BoschOperatingMode.Manual,
     "SystemMode.Auto": BoschOperatingMode.Schedule,
 }
 
@@ -245,14 +247,25 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
         """Read operating_mode instead and convert it to system_mode."""
         if system_mode_attribute_id is not None:
             remaining_attributes.remove(system_mode_attribute_id)
+
+            ctrl_sequence_of_oper_attr = Thermostat.AttributeDefs.ctrl_sequence_of_oper
+
             successful_r, failed_r = await super().read_attributes(
-                [operating_mode_attr.name], allow_cache, only_cache, manufacturer
+                [operating_mode_attr.name, ctrl_sequence_of_oper_attr.name], allow_cache, only_cache, manufacturer
             )
             if operating_mode_attr.name in successful_r:
                 operating_mode_value = successful_r.pop(operating_mode_attr.name)
                 system_mode_value = OPERATING_MODE_TO_SYSTEM_MODE_MAP[
                     operating_mode_value
                 ]
+
+                """Heating or cooling? Depends on both operating_mode and ctrl_sequence_of_operation."""
+                ctrl_sequence_of_oper_value = None
+                if ctrl_sequence_of_oper_attr.name in successful_r:
+                    ctrl_sequence_of_oper_value = successful_r.pop(ctrl_sequence_of_oper_attr.name)
+                    if ctrl_sequence_of_oper_value == BoschControlSequenceOfOperation.Cooling and system_mode_value == Thermostat.SystemMode.Heat:
+                        system_mode_value = Thermostat.SystemMode.Cool
+
                 successful_r[system_mode_attribute_id] = system_mode_value
                 self._update_attribute(SYSTEM_MODE_ATTR.id, system_mode_value)
 
@@ -398,6 +411,7 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         max_value=10,
         step=1,
         translation_key="display_brightness",
+    # Heating vs Cooling.
     ).enum(
         Thermostat.AttributeDefs.ctrl_sequence_of_oper.name,
         BoschControlSequenceOfOperation,
