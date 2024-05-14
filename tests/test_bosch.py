@@ -7,8 +7,10 @@ from zigpy.zcl.foundation import WriteAttributesStatusRecord
 
 import zhaquirks
 from zhaquirks.bosch.rbsh_trv0_zb_eu import (
+    BoschDisplayOrientation,
     BoschOperatingMode,
     BoschThermostatCluster as BoschTrvThermostatCluster,
+    BoschUserInterfaceCluster as BoschTrvUserInterfaceCluster,
 )
 
 zhaquirks.setup()
@@ -45,9 +47,9 @@ async def test_bosch_radiator_thermostat_II_write_attributes(zigpy_device_from_v
         assert bosch_thermostat_cluster._attr_cache[
                    Thermostat.AttributeDefs.ctrl_sequence_of_oper.id] == ControlSequenceOfOperation.Heating_Only
 
-        # -- Off
+        # -- Off (by-name)
         success, fail = await bosch_thermostat_cluster.write_attributes(
-            {"system_mode": Thermostat.SystemMode.Off}
+            {Thermostat.AttributeDefs.system_mode.name: Thermostat.SystemMode.Off}
         )
         assert success
         assert not fail
@@ -56,9 +58,9 @@ async def test_bosch_radiator_thermostat_II_write_attributes(zigpy_device_from_v
         assert bosch_thermostat_cluster._attr_cache[
                    Thermostat.AttributeDefs.ctrl_sequence_of_oper.id] == ControlSequenceOfOperation.Heating_Only
 
-        # -- Heat
+        # -- Heat (by-name)
         success, fail = await bosch_thermostat_cluster.write_attributes(
-            {"system_mode": Thermostat.SystemMode.Heat}
+            {Thermostat.AttributeDefs.system_mode.name: Thermostat.SystemMode.Heat}
         )
         assert success
         assert not fail
@@ -69,6 +71,54 @@ async def test_bosch_radiator_thermostat_II_write_attributes(zigpy_device_from_v
         assert bosch_thermostat_cluster._attr_cache[
                    Thermostat.AttributeDefs.ctrl_sequence_of_oper.id] == ControlSequenceOfOperation.Heating_Only
 
+        # -- Off (by-id)
+        success, fail = await bosch_thermostat_cluster.write_attributes(
+            {Thermostat.AttributeDefs.system_mode.id: Thermostat.SystemMode.Off}
+        )
+        assert success
+        assert not fail
+        assert bosch_thermostat_cluster._attr_cache[
+                   Thermostat.AttributeDefs.system_mode.id] == Thermostat.SystemMode.Off
+        assert bosch_thermostat_cluster._attr_cache[
+                   BoschTrvThermostatCluster.AttributeDefs.operating_mode.id] == BoschOperatingMode.Pause
+        assert bosch_thermostat_cluster._attr_cache[
+                   Thermostat.AttributeDefs.ctrl_sequence_of_oper.id] == ControlSequenceOfOperation.Heating_Only
+
+        # -- Heat (by-id)
+        success, fail = await bosch_thermostat_cluster.write_attributes(
+            {Thermostat.AttributeDefs.system_mode.id: Thermostat.SystemMode.Heat}
+        )
+        assert success
+        assert not fail
+        assert bosch_thermostat_cluster._attr_cache[
+                   Thermostat.AttributeDefs.system_mode.id] == Thermostat.SystemMode.Heat
+        assert bosch_thermostat_cluster._attr_cache[
+                   BoschTrvThermostatCluster.AttributeDefs.operating_mode.id] == BoschOperatingMode.Manual
+        assert bosch_thermostat_cluster._attr_cache[
+                   Thermostat.AttributeDefs.ctrl_sequence_of_oper.id] == ControlSequenceOfOperation.Heating_Only
+
+        # -- operating_mode (by-id) changes system_mode
+        success, fail = await bosch_thermostat_cluster.write_attributes(
+            {BoschTrvThermostatCluster.AttributeDefs.operating_mode.id: BoschOperatingMode.Pause}
+        )
+        assert success
+        assert not fail
+        assert bosch_thermostat_cluster._attr_cache[
+                   Thermostat.AttributeDefs.system_mode.id] == Thermostat.SystemMode.Off
+        assert bosch_thermostat_cluster._attr_cache[
+                   BoschTrvThermostatCluster.AttributeDefs.operating_mode.id] == BoschOperatingMode.Pause
+
+        # -- operating_mode (by-name) changes system_mode
+        success, fail = await bosch_thermostat_cluster.write_attributes(
+            {BoschTrvThermostatCluster.AttributeDefs.operating_mode.name: BoschOperatingMode.Manual}
+        )
+        assert success
+        assert not fail
+        assert bosch_thermostat_cluster._attr_cache[
+                   Thermostat.AttributeDefs.system_mode.id] == Thermostat.SystemMode.Heat
+        assert bosch_thermostat_cluster._attr_cache[
+                   BoschTrvThermostatCluster.AttributeDefs.operating_mode.id] == BoschOperatingMode.Manual
+
         # - Cooling operation
         success, fail = await bosch_thermostat_cluster.write_attributes(
             {"ctrl_sequence_of_oper": ControlSequenceOfOperation.Cooling_Only}
@@ -78,9 +128,9 @@ async def test_bosch_radiator_thermostat_II_write_attributes(zigpy_device_from_v
         assert bosch_thermostat_cluster._attr_cache[
                    Thermostat.AttributeDefs.ctrl_sequence_of_oper.id] == ControlSequenceOfOperation.Cooling_Only
 
-        # -- Off
+        # -- Off (by-name)
         success, fail = await bosch_thermostat_cluster.write_attributes(
-            {"system_mode": Thermostat.SystemMode.Off}
+            {Thermostat.AttributeDefs.system_mode.name: Thermostat.SystemMode.Off}
         )
         assert success
         assert not fail
@@ -89,9 +139,9 @@ async def test_bosch_radiator_thermostat_II_write_attributes(zigpy_device_from_v
         assert bosch_thermostat_cluster._attr_cache[
                    Thermostat.AttributeDefs.ctrl_sequence_of_oper.id] == ControlSequenceOfOperation.Cooling_Only
 
-        # -- Cool
+        # -- Cool (by-name)
         success, fail = await bosch_thermostat_cluster.write_attributes(
-            {"system_mode": Thermostat.SystemMode.Cool}
+            {Thermostat.AttributeDefs.system_mode.name: Thermostat.SystemMode.Cool}
         )
         assert success
         assert not fail
@@ -102,6 +152,53 @@ async def test_bosch_radiator_thermostat_II_write_attributes(zigpy_device_from_v
         assert bosch_thermostat_cluster._attr_cache[
                    Thermostat.AttributeDefs.ctrl_sequence_of_oper.id] == ControlSequenceOfOperation.Cooling_Only
 
+        # -- Off (by-id)
+        success, fail = await bosch_thermostat_cluster.write_attributes(
+            {Thermostat.AttributeDefs.system_mode.id: Thermostat.SystemMode.Off}
+        )
+        assert success
+        assert not fail
+        assert bosch_thermostat_cluster._attr_cache[Thermostat.AttributeDefs.system_mode.id] == Thermostat.SystemMode.Off
+        assert bosch_thermostat_cluster._attr_cache[BoschTrvThermostatCluster.AttributeDefs.operating_mode.id] == BoschOperatingMode.Pause
+        assert bosch_thermostat_cluster._attr_cache[
+                   Thermostat.AttributeDefs.ctrl_sequence_of_oper.id] == ControlSequenceOfOperation.Cooling_Only
+
+        # -- Cool (by-id)
+        success, fail = await bosch_thermostat_cluster.write_attributes(
+            {Thermostat.AttributeDefs.system_mode.id: Thermostat.SystemMode.Cool}
+        )
+        assert success
+        assert not fail
+        assert bosch_thermostat_cluster._attr_cache[
+                   Thermostat.AttributeDefs.system_mode.id] == Thermostat.SystemMode.Cool
+        assert bosch_thermostat_cluster._attr_cache[
+                       BoschTrvThermostatCluster.AttributeDefs.operating_mode.id] == BoschOperatingMode.Manual
+        assert bosch_thermostat_cluster._attr_cache[
+                   Thermostat.AttributeDefs.ctrl_sequence_of_oper.id] == ControlSequenceOfOperation.Cooling_Only
+
+        # -- operating_mode (by-id) gets ignored when system_mode is written
+        success, fail = await bosch_thermostat_cluster.write_attributes(
+            {Thermostat.AttributeDefs.system_mode.id: Thermostat.SystemMode.Off,
+             BoschTrvThermostatCluster.AttributeDefs.operating_mode.id: BoschOperatingMode.Manual}
+        )
+        assert success
+        assert not fail
+        assert bosch_thermostat_cluster._attr_cache[
+                   Thermostat.AttributeDefs.system_mode.id] == Thermostat.SystemMode.Off
+        assert bosch_thermostat_cluster._attr_cache[
+                   BoschTrvThermostatCluster.AttributeDefs.operating_mode.id] == BoschOperatingMode.Pause
+
+        # -- operating_mode (by-name) gets ignored when system_mode is written
+        success, fail = await bosch_thermostat_cluster.write_attributes(
+            {Thermostat.AttributeDefs.system_mode.id: Thermostat.SystemMode.Cool,
+             BoschTrvThermostatCluster.AttributeDefs.operating_mode.name: BoschOperatingMode.Pause}
+        )
+        assert success
+        assert not fail
+        assert bosch_thermostat_cluster._attr_cache[
+                   Thermostat.AttributeDefs.system_mode.id] == Thermostat.SystemMode.Cool
+        assert bosch_thermostat_cluster._attr_cache[
+                   BoschTrvThermostatCluster.AttributeDefs.operating_mode.id] == BoschOperatingMode.Manual
 
 async def test_bosch_room_thermostat_II_230v_write_attributes(zigpy_device_from_v2_quirk):
     """Test the Room Thermostat II 230v system_mode writes behaving correctly."""
@@ -138,7 +235,7 @@ async def test_bosch_room_thermostat_II_230v_write_attributes(zigpy_device_from_
 
         # -- Off
         success, fail = await bosch_thermostat_cluster.write_attributes(
-            {"system_mode": Thermostat.SystemMode.Off}
+            {Thermostat.AttributeDefs.system_mode.name: Thermostat.SystemMode.Off}
         )
         assert success
         assert not fail
@@ -148,7 +245,7 @@ async def test_bosch_room_thermostat_II_230v_write_attributes(zigpy_device_from_
 
         # -- Heat
         success, fail = await bosch_thermostat_cluster.write_attributes(
-            {"system_mode": Thermostat.SystemMode.Heat}
+            {Thermostat.AttributeDefs.system_mode.name: Thermostat.SystemMode.Heat}
         )
         assert success
         assert not fail
@@ -168,7 +265,7 @@ async def test_bosch_room_thermostat_II_230v_write_attributes(zigpy_device_from_
 
         # -- Off
         success, fail = await bosch_thermostat_cluster.write_attributes(
-            {"system_mode": Thermostat.SystemMode.Off}
+            {Thermostat.AttributeDefs.system_mode.name: Thermostat.SystemMode.Off}
         )
         assert success
         assert not fail
@@ -178,7 +275,7 @@ async def test_bosch_room_thermostat_II_230v_write_attributes(zigpy_device_from_
 
         # -- Cool
         success, fail = await bosch_thermostat_cluster.write_attributes(
-            {"system_mode": Thermostat.SystemMode.Cool}
+            {Thermostat.AttributeDefs.system_mode.name: Thermostat.SystemMode.Cool}
         )
         assert success
         assert not fail
@@ -186,3 +283,62 @@ async def test_bosch_room_thermostat_II_230v_write_attributes(zigpy_device_from_
                    Thermostat.AttributeDefs.system_mode.id] == Thermostat.SystemMode.Cool
         assert bosch_thermostat_cluster._attr_cache[
                    Thermostat.AttributeDefs.ctrl_sequence_of_oper.id] == ControlSequenceOfOperation.Cooling_Only
+
+async def test_bosch_radiator_thermostat_II_user_interface_write_attributes(zigpy_device_from_v2_quirk):
+    """Test the Radiator Thermostat II user-interface writes behaving correctly."""
+
+    device = zigpy_device_from_v2_quirk(manufacturer="BOSCH", model="RBSH-TRV0-ZB-EU")
+
+    bosch_thermostat_ui_cluster = device.endpoints[1].thermostat_ui
+
+    def mock_write(attributes, manufacturer=None):
+        records = [
+            WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+            for _ in attributes
+        ]
+        return [records, []]
+
+    # data is written to trv ui
+    patch_bosch_trv_ui_write = mock.patch.object(
+        bosch_thermostat_ui_cluster,
+        "_write_attributes",
+        mock.AsyncMock(side_effect=mock_write),
+    )
+
+    # check that display_orientation gets converted to supported value type:
+    with patch_bosch_trv_ui_write:
+        # - orientation (by-id) normal
+        success, fail = await bosch_thermostat_ui_cluster.write_attributes(
+            {BoschTrvUserInterfaceCluster.AttributeDefs.display_orientation.id: BoschDisplayOrientation.Normal}
+        )
+        assert success
+        assert not fail
+        assert bosch_thermostat_ui_cluster._attr_cache[
+                   BoschTrvUserInterfaceCluster.AttributeDefs.display_orientation.id] == 0
+
+        # - orientation (by-id) flipped
+        success, fail = await bosch_thermostat_ui_cluster.write_attributes(
+            {BoschTrvUserInterfaceCluster.AttributeDefs.display_orientation.id: BoschDisplayOrientation.Flipped}
+        )
+        assert success
+        assert not fail
+        assert bosch_thermostat_ui_cluster._attr_cache[
+                   BoschTrvUserInterfaceCluster.AttributeDefs.display_orientation.id] == 1
+
+        # - orientation (by-name) normal
+        success, fail = await bosch_thermostat_ui_cluster.write_attributes(
+            {BoschTrvUserInterfaceCluster.AttributeDefs.display_orientation.name: BoschDisplayOrientation.Normal}
+        )
+        assert success
+        assert not fail
+        assert bosch_thermostat_ui_cluster._attr_cache[
+                   BoschTrvUserInterfaceCluster.AttributeDefs.display_orientation.id] == 0
+
+        # - orientation (by-name) flipped
+        success, fail = await bosch_thermostat_ui_cluster.write_attributes(
+            {BoschTrvUserInterfaceCluster.AttributeDefs.display_orientation.name: BoschDisplayOrientation.Flipped}
+        )
+        assert success
+        assert not fail
+        assert bosch_thermostat_ui_cluster._attr_cache[
+                   BoschTrvUserInterfaceCluster.AttributeDefs.display_orientation.id] == 1
