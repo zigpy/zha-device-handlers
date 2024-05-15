@@ -200,6 +200,48 @@ async def test_bosch_radiator_thermostat_II_write_attributes(zigpy_device_from_v
         assert bosch_thermostat_cluster._attr_cache[
                    BoschTrvThermostatCluster.AttributeDefs.operating_mode.id] == BoschOperatingMode.Manual
 
+async def test_bosch_radiator_thermostat_II_read_attributes(zigpy_device_from_v2_quirk):
+    """Test the Radiator Thermostat II reads behaving correctly."""
+
+    device = zigpy_device_from_v2_quirk(manufacturer="BOSCH", model="RBSH-TRV0-ZB-EU")
+
+    bosch_thermostat_cluster = device.endpoints[1].thermostat
+
+    # fake read response for attributes: return BoschOperatingMode.Pause for all attributes
+    def mock_read(attributes, manufacturer=None):
+        records = [
+            foundation.ReadAttributeRecord(
+                attr, foundation.Status.SUCCESS, foundation.TypeValue(None, BoschOperatingMode.Pause)
+            )
+            for attr in attributes
+        ]
+        return (records,)
+
+    # data is read from trv
+    patch_bosch_trv_read = mock.patch.object(
+        bosch_thermostat_cluster,
+        "_read_attributes",
+        mock.AsyncMock(side_effect=mock_read),
+    )
+
+    # check that system_mode ends-up reading operating_mode:
+    with patch_bosch_trv_read:
+        # - system_mode by id
+        success, fail = await bosch_thermostat_cluster.read_attributes(
+            [Thermostat.AttributeDefs.system_mode.id]
+        )
+        assert success
+        assert not fail
+        assert Thermostat.SystemMode.Off in success.values()
+
+        # - system_mode by name
+        success, fail = await bosch_thermostat_cluster.read_attributes(
+            [Thermostat.AttributeDefs.system_mode.name]
+        )
+        assert success
+        assert not fail
+        assert Thermostat.SystemMode.Off in success.values()
+
 async def test_bosch_room_thermostat_II_230v_write_attributes(zigpy_device_from_v2_quirk):
     """Test the Room Thermostat II 230v system_mode writes behaving correctly."""
 
