@@ -4,7 +4,7 @@ from collections.abc import Callable
 import dataclasses
 import datetime
 import logging
-from typing import Any, Optional, Union
+from typing import Any, Optional, Protocol, Union
 
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
@@ -63,6 +63,7 @@ TUYA_MCU_CONNECTION_STATUS = 0x25
 
 _LOGGER = logging.getLogger(__name__)
 
+
 @dataclasses.dataclass
 class DPToAttributeMapping:
     """Container for datapoint to cluster attribute update mapping."""
@@ -88,12 +89,23 @@ class DPToAttributeMapping:
     endpoint_id: Optional[int] = None
 
 
+class CommandToDPValueMappingCallback(Protocol):
+    """Protocol describing CommandToDPValueMapping callbacks."""
+
+    def __call__(
+        self,
+        command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
+        *args,
+        **kwargs: Any) -> TuyaData:
+        """Call back with self, command id, ordered and named variable args."""
+
+
 @dataclasses.dataclass
 class CommandToDPValueMapping:
     """Container for command id to datapoint value mapping."""
 
     dp: t.uint8_t
-    value_source: Union[int, str, Callable[..., TuyaData]]
+    value_source: Union[int, str, CommandToDPValueMappingCallback]
 
 
 class TuyaClusterData(t.Struct):
@@ -114,6 +126,7 @@ class MoesBacklight(t.enum8):
     light_when_on = 0x01
     light_when_off = 0x02
     freeze = 0x03
+
 
 class CoverCommandStepDirection(t.enum8):
     """Window cover step command direction enum."""
@@ -199,8 +212,9 @@ class TuyaCommandCluster(CustomCluster):
     into data point updates, sent to the tuya mcu cluster to send a set data command to the device.
     """
 
-    command_to_dp: dict[Union[foundation.GeneralCommand, int, t.uint8_t], CommandToDPValueMapping] = {
-    }
+    command_to_dp: dict[
+        Union[foundation.GeneralCommand, int, t.uint8_t], CommandToDPValueMapping
+    ] = {}
 
     async def command(
         self,
@@ -229,15 +243,18 @@ class TuyaCommandCluster(CustomCluster):
             elif isinstance(command_map.value_source, str):
                 value = kwargs[command_map.value_source]
             else:
-                value = command_map.value_source(*args, **kwargs)
+                value = command_map.value_source(self, command_id, *args, **kwargs)
 
-            self.send_tuya_set_datapoints_command(command_map.dp, value, expect_reply=expect_reply,
-                manufacturer=manufacturer)
+            self.send_tuya_set_datapoints_command(
+                command_map.dp,
+                value,
+                expect_reply=expect_reply,
+                manufacturer=manufacturer,
+            )
             return self.default_response(command_id)
 
         _LOGGER.warning("Unsupported command_id: %s", command_id)
         return self.unsupported_response(command_id)
-
 
     def send_tuya_set_datapoints_command(
         self,
@@ -255,7 +272,6 @@ class TuyaCommandCluster(CustomCluster):
             TUYA_MCU_SET_DATAPOINTS, datapoints, manufacturer, expect_reply
         )
 
-
     def default_response(
         self, command_id: Union[foundation.GeneralCommand, int, t.uint8_t]
     ):
@@ -264,7 +280,6 @@ class TuyaCommandCluster(CustomCluster):
         return foundation.GENERAL_COMMANDS[
             foundation.GeneralCommand.Default_Response
         ].schema(command_id=command_id, status=foundation.Status.SUCCESS)
-
 
     def unsupported_response(
         self, command_id: Union[foundation.GeneralCommand, int, t.uint8_t]
@@ -550,7 +565,7 @@ class TuyaOnOff(TuyaEnchantableCluster, OnOff, TuyaLocalCluster):
         manufacturer: Optional[Union[int, t.uint16_t]] = None,
         expect_reply: bool = True,
         tsn: Optional[Union[int, t.uint8_t]] = None,
-        **_kwargs: Any
+        **_kwargs: Any,
     ):
         """Override the default Cluster command."""
 
@@ -731,7 +746,9 @@ class MoesSwitchManufCluster(TuyaOnOffManufCluster):
     data_point_handlers.update({15: "_dp_2_attr_update"})
 
 
-class TuyaNewWindowCoverControl(TuyaAttributesCluster, TuyaCommandCluster, WindowCovering):
+class TuyaNewWindowCoverControl(
+    TuyaAttributesCluster, TuyaCommandCluster, WindowCovering
+):
     """Tuya Window Cover Cluster, based on new TuyaNewManufClusterForWindowCover.
 
     Derive from TuyaLocalCluster to disable attribute writes, in a way that's compatible with
@@ -776,9 +793,27 @@ class TuyaNewWindowCoverControl(TuyaAttributesCluster, TuyaCommandCluster, Windo
         }
     )
 
-    command_to_dp: dict[Union[foundation.GeneralCommand, int, t.uint8_t], CommandToDPValueMapping] = {
-        WINDOW_COVER_COMMAND_SMALL_STEP: CommandToDPValueMapping(TUYA_DP_ID_SMALL_STEP, "direction"),
-        WINDOW_COVER_COMMAND_UPDATE_LIMITS: CommandToDPValueMapping(TUYA_DP_ID_LIMIT_SETTINGS, "operation"),
+    def lift_percent_command_dp_value(
+        self,
+        _command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
+        *args,
+        **_kwargs: Any,
+    ):
+        """Compute the tuya data point value to apply when given a set lift percent command."""
+        return self._compute_lift_percent(args[0])
+
+    command_to_dp: dict[
+        Union[foundation.GeneralCommand, int, t.uint8_t], CommandToDPValueMapping
+    ] = {
+        WINDOW_COVER_COMMAND_LIFTPERCENT: CommandToDPValueMapping(
+            TUYA_DP_ID_PERCENT_CONTROL, lift_percent_command_dp_value
+        ),
+        WINDOW_COVER_COMMAND_SMALL_STEP: CommandToDPValueMapping(
+            TUYA_DP_ID_SMALL_STEP, "direction"
+        ),
+        WINDOW_COVER_COMMAND_UPDATE_LIMITS: CommandToDPValueMapping(
+            TUYA_DP_ID_LIMIT_SETTINGS, "operation"
+        ),
     }
 
     # For most tuya devices Up/Open = 0, Stop = 1, Down/Close = 2
@@ -829,15 +864,6 @@ class TuyaNewWindowCoverControl(TuyaAttributesCluster, TuyaCommandCluster, Windo
                 cluster_data,
             )
             return self.default_response(command_id)
-        # TODO - Use command to dp mapping for lift percent, but need a way to call convert_lift_percent
-        elif command_id == WINDOW_COVER_COMMAND_LIFTPERCENT:
-            self.send_tuya_set_datapoints_command(
-                TUYA_DP_ID_PERCENT_CONTROL,
-                self._compute_lift_percent(args[0]),
-                expect_reply=expect_reply,
-                manufacturer=manufacturer,
-            )
-            return self.default_response(command_id)
 
         # now let TuyaCommandCluster handle any remaining commands mapped to data points
         return await super().command(
@@ -846,8 +872,8 @@ class TuyaNewWindowCoverControl(TuyaAttributesCluster, TuyaCommandCluster, Windo
             manufacturer=manufacturer,
             expect_reply=expect_reply,
             tsn=tsn,
-            **kwargs
-            )
+            **kwargs,
+        )
 
     def _compute_lift_percent(self, input_value: int):
         """Convert/invert lift percent when needed.
@@ -863,7 +889,6 @@ class TuyaNewWindowCoverControl(TuyaAttributesCluster, TuyaCommandCluster, Windo
 
         invert = self._attr_cache.get(ATTR_COVER_INVERTED_SETTING) == 1
         return input_value if invert else 100 - input_value
-
 
     def update_lift_percent(self, raw_value: int):
         """Update lift percent attribute when it's data point data is received."""
