@@ -135,8 +135,20 @@ class CoverCommandStepDirection(t.enum8):
     Close = 1
 
 
+class CoverMotorCommand(t.enum8):
+    """Window cover motor command states enum."""
+
+    Open = 0
+    Stop = 1
+    Close = 2
+
+
 class CoverMotorStatus(t.enum8):
-    """Window cover motor states enum."""
+    """Window cover motor states enum.
+
+    Uses the same Tuya data point to send a command and receive the status, so needs the same
+    values as CoverMotorCommand.
+    """
 
     Opening = 0
     Stopped = 1
@@ -757,7 +769,7 @@ class TuyaNewWindowCoverControl(
 
     attributes = WindowCovering.attributes.copy()
     # main control attribute is logically write-only, only used by commands and not very useful
-    # to HA, but it's return in a set_data and set_data_response packet so I've mapped it to
+    # to HA, but it's returned in the set_data and set_data_response packets so I've mapped it to
     # an attribute.
     attributes.update(
         {
@@ -793,6 +805,23 @@ class TuyaNewWindowCoverControl(
         }
     )
 
+    # For most tuya devices Up/Open = 0, Stop = 1, Down/Close = 2
+    tuya_cover_command = {
+        WINDOW_COVER_COMMAND_UPOPEN: 0x0000,
+        WINDOW_COVER_COMMAND_DOWNCLOSE: 0x0002,
+        WINDOW_COVER_COMMAND_STOP: 0x0001,
+    }
+
+    def move_command_dp_value(
+        self,
+        command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
+        *_args,
+        **_kwargs: Any,
+    ):
+        """Translate the tuya data point value to use when commanded to move."""
+        return CoverMotorCommand(self.tuya_cover_command[command_id])
+
+
     def lift_percent_command_dp_value(
         self,
         _command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
@@ -802,78 +831,17 @@ class TuyaNewWindowCoverControl(
         """Compute the tuya data point value to apply when given a set lift percent command."""
         return self._compute_lift_percent(args[0])
 
-    command_to_dp: dict[
-        Union[foundation.GeneralCommand, int, t.uint8_t], CommandToDPValueMapping
-    ] = {
-        WINDOW_COVER_COMMAND_LIFTPERCENT: CommandToDPValueMapping(
-            TUYA_DP_ID_PERCENT_CONTROL, lift_percent_command_dp_value
-        ),
-        WINDOW_COVER_COMMAND_SMALL_STEP: CommandToDPValueMapping(
-            TUYA_DP_ID_SMALL_STEP, "direction"
-        ),
-        WINDOW_COVER_COMMAND_UPDATE_LIMITS: CommandToDPValueMapping(
-            TUYA_DP_ID_LIMIT_SETTINGS, "operation"
-        ),
-    }
 
-    # For most tuya devices Up/Open = 0, Stop = 1, Down/Close = 2
-    tuya_cover_command = {
-        WINDOW_COVER_COMMAND_UPOPEN: 0x0000,
-        WINDOW_COVER_COMMAND_DOWNCLOSE: 0x0002,
-        WINDOW_COVER_COMMAND_STOP: 0x0001,
-    }
+    def update_lift_percent(self, raw_value: int):
+        """Update lift percent attribute when it's data point data is received.
 
-    async def command(
-        self,
-        command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
-        *args,
-        manufacturer: Optional[Union[int, t.uint16_t]] = None,
-        expect_reply: bool = True,
-        tsn: Optional[Union[int, t.uint8_t]] = None,
-        **kwargs: Any,
-    ):
-        """Override the default Cluster command."""
+        This can't be done as a dp_to_attribute entry in the mcu cluster because it needs access
+        to self.
+        """
 
-        _LOGGER.debug(
-            "Sending Tuya Cluster Command... Cluster Command is %x, args=%s, kwargs=%s",
-            command_id,
-            args,
-            kwargs,
-        )
+        new_attribute_value = self._compute_lift_percent(raw_value)
+        self.update_attribute(ATTR_COVER_LIFTPERCENT_NAME, new_attribute_value)
 
-        # Custom command processing first
-        # Open Close or Stop commands
-        # TODO - consider using command to dp mapping for these (knowing that the attribute will be
-        # updated) when the device echos the dp values.
-        if command_id in (
-            WINDOW_COVER_COMMAND_UPOPEN,
-            WINDOW_COVER_COMMAND_DOWNCLOSE,
-            WINDOW_COVER_COMMAND_STOP,
-        ):
-            cluster_data = TuyaClusterData(
-                endpoint_id=self.endpoint.endpoint_id,
-                cluster_name=self.ep_attribute,
-                cluster_attr=ATTR_COVER_MAIN_CONTROL_NAME,
-                # Map from zigbee command to tuya DP value
-                attr_value=self.tuya_cover_command[command_id],
-                expect_reply=expect_reply,
-                manufacturer=manufacturer,
-            )
-            self.endpoint.device.command_bus.listener_event(
-                TUYA_MCU_SET_CLUSTER_DATA,
-                cluster_data,
-            )
-            return self.default_response(command_id)
-
-        # now let TuyaCommandCluster handle any remaining commands mapped to data points
-        return await super().command(
-            command_id,
-            *args,
-            manufacturer=manufacturer,
-            expect_reply=expect_reply,
-            tsn=tsn,
-            **kwargs,
-        )
 
     def _compute_lift_percent(self, input_value: int):
         """Convert/invert lift percent when needed.
@@ -890,11 +858,30 @@ class TuyaNewWindowCoverControl(
         invert = self._attr_cache.get(ATTR_COVER_INVERTED_SETTING) == 1
         return input_value if invert else 100 - input_value
 
-    def update_lift_percent(self, raw_value: int):
-        """Update lift percent attribute when it's data point data is received."""
 
-        new_attribute_value = self._compute_lift_percent(raw_value)
-        self.update_attribute(ATTR_COVER_LIFTPERCENT_NAME, new_attribute_value)
+    command_to_dp: dict[
+        Union[foundation.GeneralCommand, int, t.uint8_t], CommandToDPValueMapping
+    ] = {
+
+        WINDOW_COVER_COMMAND_UPOPEN: CommandToDPValueMapping(
+            TUYA_DP_ID_CONTROL, move_command_dp_value
+        ),
+        WINDOW_COVER_COMMAND_DOWNCLOSE: CommandToDPValueMapping(
+            TUYA_DP_ID_CONTROL, move_command_dp_value
+        ),
+        WINDOW_COVER_COMMAND_STOP: CommandToDPValueMapping(
+            TUYA_DP_ID_CONTROL, move_command_dp_value
+        ),
+        WINDOW_COVER_COMMAND_LIFTPERCENT: CommandToDPValueMapping(
+            TUYA_DP_ID_PERCENT_CONTROL, lift_percent_command_dp_value
+        ),
+        WINDOW_COVER_COMMAND_SMALL_STEP: CommandToDPValueMapping(
+            TUYA_DP_ID_SMALL_STEP, "direction"
+        ),
+        WINDOW_COVER_COMMAND_UPDATE_LIMITS: CommandToDPValueMapping(
+            TUYA_DP_ID_LIMIT_SETTINGS, "operation"
+        ),
+    }
 
 
 class TuyaNewManufClusterForWindowCover(TuyaMCUCluster):
@@ -910,7 +897,7 @@ class TuyaNewManufClusterForWindowCover(TuyaMCUCluster):
             ATTR_COVER_MAIN_CONTROL_NAME,
             # Converting raw ints to a type allows the attributes UI show meaningful values
             CoverMotorStatus,
-            CoverMotorStatus,
+            CoverMotorCommand,
         ),
         TUYA_DP_ID_DIRECTION_SETTING: DPToAttributeMapping(
             TuyaNewWindowCoverControl.ep_attribute,
