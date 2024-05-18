@@ -226,6 +226,28 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
                         new_system_mode_value = Thermostat.SystemMode.Cool
 
             self._update_attribute(SYSTEM_MODE_ATTR.id, new_system_mode_value)
+        else:
+            """Sync system_mode with ctrl_sequence_of_oper."""
+            ctrl_sequence_of_oper_attr = Thermostat.AttributeDefs.ctrl_sequence_of_oper
+
+            ctrl_sequence_of_oper_value = None
+            if ctrl_sequence_of_oper_attr.id in attributes:
+                ctrl_sequence_of_oper_value = attributes.get(ctrl_sequence_of_oper_attr.id)
+            elif ctrl_sequence_of_oper_attr.name in attributes:
+                ctrl_sequence_of_oper_value = attributes.get(ctrl_sequence_of_oper_attr.name)
+
+            if ctrl_sequence_of_oper_value is not None:
+                successful_r, failed_r = await super().read_attributes(
+                    [operating_mode_attr.name], True, False, manufacturer
+                )
+                if operating_mode_attr.name in successful_r:
+                    operating_mode_attr_value = successful_r.pop(operating_mode_attr.name)
+                    if operating_mode_attr_value == BoschOperatingMode.Manual:
+                        new_system_mode_value = Thermostat.SystemMode.Heat
+                        if ctrl_sequence_of_oper_value == BoschControlSequenceOfOperation.Cooling:
+                            new_system_mode_value = Thermostat.SystemMode.Cool
+
+                        self._update_attribute(SYSTEM_MODE_ATTR.id, new_system_mode_value)
 
         """Write the remaining attributes to thermostat cluster."""
         if remaining_attributes:
