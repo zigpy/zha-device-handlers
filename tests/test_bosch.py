@@ -36,8 +36,28 @@ async def test_bosch_radiator_thermostat_II_write_attributes(zigpy_device_from_v
         mock.AsyncMock(side_effect=mock_write),
     )
 
+    # fake read response for attributes: return BoschOperatingMode.Manual for all attributes
+    def mock_read(attributes, manufacturer=None):
+        records = [
+            foundation.ReadAttributeRecord(
+                attr, foundation.Status.SUCCESS, foundation.TypeValue(None, BoschOperatingMode.Manual)
+            )
+            for attr in attributes
+        ]
+        return (records,)
+
+    # data is read from trv
+    patch_bosch_trv_read = mock.patch.object(
+        bosch_thermostat_cluster,
+        "_read_attributes",
+        mock.AsyncMock(side_effect=mock_read),
+    )
+
     # check that system_mode ends-up writing operating_mode:
-    with patch_bosch_trv_write:
+    with (
+        patch_bosch_trv_write,
+        patch_bosch_trv_read
+    ):
         # - Heating operation
         success, fail = await bosch_thermostat_cluster.write_attributes(
             {"ctrl_sequence_of_oper": ControlSequenceOfOperation.Heating_Only}
