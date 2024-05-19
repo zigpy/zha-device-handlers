@@ -123,32 +123,32 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
         """Bosch thermostat manufacturer specific attributes."""
 
         operating_mode = ZCLAttributeDef(
-            id=t.uint16_t(OPERATING_MODE_ATTR_ID),
+            id=OPERATING_MODE_ATTR_ID,
             type=BoschOperatingMode,
             is_manufacturer_specific=True,
         )
 
         pi_heating_demand = ZCLAttributeDef(
-            id=t.uint16_t(VALVE_POSITION_ATTR_ID),
+            id=VALVE_POSITION_ATTR_ID,
             # Values range from 0-100
             type=t.enum8,
             is_manufacturer_specific=True,
         )
 
         window_open = ZCLAttributeDef(
-            id=t.uint16_t(WINDOW_OPEN_ATTR_ID),
+            id=WINDOW_OPEN_ATTR_ID,
             type=State,
             is_manufacturer_specific=True,
         )
 
         boost = ZCLAttributeDef(
-            id=t.uint16_t(BOOST_ATTR_ID),
+            id=BOOST_ATTR_ID,
             type=State,
             is_manufacturer_specific=True,
         )
 
         remote_temperature = ZCLAttributeDef(
-            id=t.uint16_t(REMOTE_TEMPERATURE_ATTR_ID),
+            id=REMOTE_TEMPERATURE_ATTR_ID,
             type=t.int16s,
             is_manufacturer_specific=True,
         )
@@ -321,28 +321,28 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         """Bosch user interface manufacturer specific attributes."""
 
         display_orientation = ZCLAttributeDef(
-            id=t.uint16_t(SCREEN_ORIENTATION_ATTR_ID),
+            id=SCREEN_ORIENTATION_ATTR_ID,
             # To be matched to BoschDisplayOrientation enum.
             type=t.uint8_t,
             is_manufacturer_specific=True,
         )
 
         display_on_time = ZCLAttributeDef(
-            id=t.uint16_t(SCREEN_TIMEOUT_ATTR_ID),
+            id=SCREEN_TIMEOUT_ATTR_ID,
             # Usable values range from 5-30
             type=t.enum8,
             is_manufacturer_specific=True,
         )
 
         display_brightness = ZCLAttributeDef(
-            id=t.uint16_t(SCREEN_BRIGHTNESS_ATTR_ID),
+            id=SCREEN_BRIGHTNESS_ATTR_ID,
             # Values range from 0-10
             type=t.enum8,
             is_manufacturer_specific=True,
         )
 
         displayed_temperature = ZCLAttributeDef(
-            id=t.uint16_t(DISPLAY_MODE_ATTR_ID),
+            id=DISPLAY_MODE_ATTR_ID,
             type=BoschDisplayedTemperature,
             is_manufacturer_specific=True,
         )
