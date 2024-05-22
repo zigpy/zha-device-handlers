@@ -1,24 +1,14 @@
 """Third Reality Motion devices."""
 
 from typing import Final
+
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
+import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Ota, PowerConfiguration
 from zigpy.zcl.clusters.security import IasZone
-from zigpy.zcl.clusters.measurement import OccupancySensing
-import zigpy.types as t
-from zigpy.zcl.clusters.general import (
-    Basic,
-    GreenPowerProxy,
-    Groups,
-    Identify,
-    OnOff,
-    Ota,
-    Scenes,
-)
-
-from zhaquirks.thirdreality import THIRD_REALITY
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+
 from zhaquirks import CustomCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -28,11 +18,14 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-
 from zhaquirks.thirdreality import THIRD_REALITY
 
 THIRD_REALITY_MOTION_BRIGHTNESS_CLUSTER_ID = 0xFF00
 THIRD_REALITY_MOTION_DELAY_CLUSTER_ID = 0xFF01
+
+class ControlMode(t.uint8_t):  # noqa: D101
+
+    pass
 
 
 class ThirdRealityMotionCluster(CustomCluster):
@@ -48,11 +41,21 @@ class ThirdRealityMotionBrightnessCluster(CustomCluster):
     """ThirdReality Acceleration Cluster."""
 
     cluster_id = THIRD_REALITY_MOTION_BRIGHTNESS_CLUSTER_ID
+    class AttributeDefs(BaseAttributeDefs):
+        """Attribute definitions."""
 
-    attributes = {
-        0x0000: ("red_light", t.uint8_t, False),
-        0x0002: ("blue_light", t.uint8_t, False),
-    }
+        red_light: Final = ZCLAttributeDef(
+            id=0x0000,
+            type=ControlMode,
+            is_manufacturer_specific=True,
+        )
+
+        blue_light: Final = ZCLAttributeDef(
+            id=0x0002,
+            type=ControlMode,
+            is_manufacturer_specific=True,
+        )
+
 
 class Motion(CustomDevice):
     """ThirdReality Motion device."""
