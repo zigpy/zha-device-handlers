@@ -1,4 +1,6 @@
-"""Third Reality Door devices."""
+"""
+Third Reality Door devices.
+"""
 
 from typing import Final
 from zigpy.profiles import zha
@@ -39,7 +41,9 @@ BRIGHTNESS_BLUE_LIGHT_ATTR_ID = 0x0002
 
 
 class ControlMode(t.uint8_t):
-    """Reset mode for not clear and clear."""
+    """
+    Reset mode for not clear and clear.
+    """
 
     DELAY: int = 10
     
@@ -49,12 +53,16 @@ class BrightnessControlMode(t.uint8_t):
 
 
 class ThirdRealityDoorCluster(CustomCluster):
-    """ThirdReality Acceleration Cluster."""
+    """
+    ThirdReality Acceleration Cluster.
+    """
 
     cluster_id = THIRD_REALITY_DOOR_CLUSTER_ID
 
     class AttributeDefs(BaseAttributeDefs):
-        """Attribute definitions."""
+        """
+        Attribute definitions.
+        """
 
         delay_open: Final = ZCLAttributeDef(
             id=DELAY_OPEN_ATTR_ID,
@@ -63,7 +71,9 @@ class ThirdRealityDoorCluster(CustomCluster):
         )
 
 class ThirdRealityDoorBrightnessCluster(CustomCluster):
-    """ThirdReality Acceleration Cluster."""
+    """
+    ThirdReality Acceleration Cluster.
+    """
 
     cluster_id = THIRD_REALITY_DOOR_BRIGHTNESS_CLUSTER_ID
 
@@ -81,7 +91,9 @@ class ThirdRealityDoorBrightnessCluster(CustomCluster):
         )
 
 class Door(CustomDevice):
-    """ThirdReality Door device."""
+    """
+    ThirdReality Door device.
+    """
 
     signature = {
         MODELS_INFO: [
