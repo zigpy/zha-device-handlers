@@ -3,7 +3,6 @@
 import logging
 
 from zigpy.profiles import zha
-from zigpy.quirks import _DEVICE_REGISTRY
 from zigpy.quirks.v2 import add_to_registry_v2
 from zigpy.quirks.v2.homeassistant import EntityType
 from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
