@@ -1,25 +1,14 @@
-"""
-Third Reality Door devices.
-"""
+"""Third Reality Door devices."""
 
 from typing import Final
+
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
+import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Ota, PowerConfiguration
 from zigpy.zcl.clusters.security import IasZone
-import zigpy.types as t
-from zigpy.zcl.clusters.general import (
-    Basic,
-    GreenPowerProxy,
-    Groups,
-    Identify,
-    OnOff,
-    Ota,
-    Scenes,
-)
-
-from zhaquirks.thirdreality import THIRD_REALITY
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+
 from zhaquirks import CustomCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -29,7 +18,6 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-
 from zhaquirks.thirdreality import THIRD_REALITY
 
 THIRD_REALITY_DOOR_CLUSTER_ID = 0xFF01
@@ -41,28 +29,22 @@ BRIGHTNESS_BLUE_LIGHT_ATTR_ID = 0x0002
 
 
 class ControlMode(t.uint8_t):
-    """
-    Reset mode for not clear and clear.
-    """
+    """Reset mode for not clear and clear."""
 
     DELAY: int = 10
-    
-class BrightnessControlMode(t.uint8_t):
-    
+
+class BrightnessControlMode(t.uint8_t):  # noqa: D101
+
     pass
 
 
 class ThirdRealityDoorCluster(CustomCluster):
-    """
-    ThirdReality Acceleration Cluster.
-    """
+    """ThirdReality Acceleration Cluster."""
 
     cluster_id = THIRD_REALITY_DOOR_CLUSTER_ID
 
     class AttributeDefs(BaseAttributeDefs):
-        """
-        Attribute definitions.
-        """
+        """Attribute definitions."""
 
         delay_open: Final = ZCLAttributeDef(
             id=DELAY_OPEN_ATTR_ID,
@@ -71,19 +53,17 @@ class ThirdRealityDoorCluster(CustomCluster):
         )
 
 class ThirdRealityDoorBrightnessCluster(CustomCluster):
-    """
-    ThirdReality Acceleration Cluster.
-    """
+    """ThirdReality Acceleration Cluster."""
 
     cluster_id = THIRD_REALITY_DOOR_BRIGHTNESS_CLUSTER_ID
 
-    class AttributeDefs(BaseAttributeDefs):
+    class AttributeDefs(BaseAttributeDefs):  # noqa: D106
         red_light: Final = ZCLAttributeDef(
             id=BRIGHTNESS_RED_LIGHT_ATTR_ID,
             type=BrightnessControlMode,
             is_manufacturer_specific=True,
         )
-        
+
         blue_light: Final = ZCLAttributeDef(
             id=BRIGHTNESS_BLUE_LIGHT_ATTR_ID,
             type=BrightnessControlMode,
@@ -91,9 +71,7 @@ class ThirdRealityDoorBrightnessCluster(CustomCluster):
         )
 
 class Door(CustomDevice):
-    """
-    ThirdReality Door device.
-    """
+    """ThirdReality Door device."""
 
     signature = {
         MODELS_INFO: [
