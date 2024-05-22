@@ -33,9 +33,16 @@ class ThirdRealityMotionCluster(CustomCluster):
 
     cluster_id = THIRD_REALITY_MOTION_DELAY_CLUSTER_ID
 
-    attributes = {
-        0x0001: ("detected_to_undetected_delay", t.uint8_t, True),
-    }
+    class AttributeDefs(BaseAttributeDefs):
+        """Attribute definitions."""
+
+    detected_to_undetected_delay: Final = ZCLAttributeDef(
+        id=0x0001,
+        type=ControlMode,
+        is_manufacturer_specific=True,
+    )
+
+
 
 class ThirdRealityMotionBrightnessCluster(CustomCluster):
     """ThirdReality Acceleration Cluster."""
