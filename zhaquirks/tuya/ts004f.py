@@ -401,7 +401,7 @@ class TuyaSmartRemote004FSK(EnchantedDevice):
         (DOUBLE_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: DOUBLE_PRESS},
     }
 
-class TuyaSmartRemote004FSK_v2(EnchantedDevice):
+class TuyaSmartRemote004FSK_v2(TuyaSmartRemote004FSK):
     """Tuya Smart (Single) Knob device."""
 
     signature = {
@@ -413,7 +413,7 @@ class TuyaSmartRemote004FSK_v2(EnchantedDevice):
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: 0x0000,
+                DEVICE_TYPE: DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
@@ -434,52 +434,6 @@ class TuyaSmartRemote004FSK_v2(EnchantedDevice):
                 ],
             },
         },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.NON_COLOR_CONTROLLER,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    TuyaNoBindPowerConfigurationCluster,
-                    Identify.cluster_id,
-                    Groups.cluster_id,  # Is needed for adding group then binding is not working.
-                    LightLink.cluster_id,
-                    TuyaZBExternalSwitchTypeCluster,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Ota.cluster_id,
-                    Time.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    TuyaSmartRemoteOnOffCluster,
-                    LevelControl.cluster_id,
-                    Color.cluster_id,
-                    LightLink.cluster_id,
-                ],
-            },
-        },
-    }
-
-    device_automation_triggers = {
-        (SHORT_PRESS, BUTTON): {COMMAND: COMMAND_ON, ENDPOINT_ID: 1, CLUSTER_ID: 6},
-        (DOUBLE_PRESS, BUTTON): {COMMAND: COMMAND_OFF, ENDPOINT_ID: 1, CLUSTER_ID: 6},
-        (LONG_PRESS, BUTTON): {COMMAND: COMMAND_STEP, ENDPOINT_ID: 1, CLUSTER_ID: 8},
-        (LONG_RELEASE, BUTTON): {COMMAND: COMMAND_STOP, ENDPOINT_ID: 1, CLUSTER_ID: 8},
-        (ALT_SHORT_PRESS, BUTTON): {
-            ENDPOINT_ID: 1,
-            CLUSTER_ID: 8,
-            PARAMS: {
-                "transition_time": 1,
-                "options_mask": None,
-                "options_override": None,
-            },
-        },
-        (SHORT_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: SHORT_PRESS},
-        (LONG_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: LONG_PRESS},
-        (DOUBLE_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: DOUBLE_PRESS},
     }
 
 class TuyaSmartRemote004F(EnchantedDevice):
