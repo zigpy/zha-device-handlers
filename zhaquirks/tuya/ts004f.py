@@ -413,7 +413,7 @@ class TuyaSmartRemote004FSK_v2(TuyaSmartRemote004FSK):
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: DeviceType.ON_OFF_SWITCH,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
