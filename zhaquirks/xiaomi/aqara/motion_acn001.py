@@ -1,4 +1,4 @@
-"""Xiaomi Aqara T1 motion sensor device lumi.motion.acn001."""
+"""Xiaomi Aqara E1 motion sensor device lumi.motion.acn001."""
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import Identify, Ota
 from zigpy.zcl.clusters.measurement import OccupancySensing, IlluminanceMeasurement
@@ -22,24 +22,7 @@ from zhaquirks.xiaomi import (
     XiaomiCustomDevice,
     XiaomiPowerConfiguration,
 )
-
-XIAOMI_CLUSTER_ID = 0xFCC0
-
-
-class XiaomiManufacturerCluster(XiaomiAqaraE1Cluster):
-    """Xiaomi manufacturer cluster."""
-
-    def _update_attribute(self, attrid, value):
-        super()._update_attribute(attrid, value)
-        if attrid == 274:
-            value = value - 65536
-            self.endpoint.illuminance.update_attribute(
-                IlluminanceMeasurement.AttributeDefs.measured_value.id, value
-            )
-            self.endpoint.occupancy.update_attribute(
-                OccupancySensing.AttributeDefs.occupancy.id,
-                OccupancySensing.Occupancy.Occupied,
-            )
+from zhaquirks.xiaomi.aqara.motion_agl02 import XiaomiManufacturerCluster
 
 
 class MotionACN001(XiaomiCustomDevice):
@@ -49,25 +32,21 @@ class MotionACN001(XiaomiCustomDevice):
         """Init."""
         self.battery_size = 11
         self.motion_bus = Bus()
-        self.illuminance_bus = Bus()
         super().__init__(*args, **kwargs)
 
     signature = {
         MODELS_INFO: [(LUMI, "lumi.motion.acn001")],
         ENDPOINTS: {
             1: {
-                PROFILE_ID: 0x0104,
-                DEVICE_TYPE: 0x0402,
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
                 INPUT_CLUSTERS: [
-                    0x0000,
-                    0x0001,
-                    0x0003,
-                    XIAOMI_CLUSTER_ID,
+                    BasicCluster.cluster_id,
+                    XiaomiPowerConfiguration.cluster_id,
+                    Identify.cluster_id,
+                    XiaomiAqaraE1Cluster.cluster_id,
                 ],
-                OUTPUT_CLUSTERS: [
-                    0x0003,
-                    0x0019,
-                ],
+                OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],
             }
         },
     }
