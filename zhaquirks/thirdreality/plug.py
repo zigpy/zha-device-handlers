@@ -2,11 +2,11 @@
 
 from typing import Final
 
+from zigpy.quirks.v2 import ClusterType, add_to_registry_v2
 import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
-from zigpy.quirks.v2 import add_to_registry_v2
+
 from zhaquirks import CustomCluster
-from zigpy.quirks.v2 import ClusterType
 from zhaquirks.thirdreality import THIRD_REALITY
 
 
