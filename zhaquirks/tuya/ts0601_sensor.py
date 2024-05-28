@@ -372,6 +372,7 @@ class TuyaSoilSensor(CustomDevice):
             ("_TZE200_myd45weu", "TS0601"),
             ("_TZE200_ga1maeof", "TS0601"),
             ("_TZE200_9cqcpkgb", "TS0601"),
+            ("_TZE204_myd45weu", "TS0601"),
         ],
         ENDPOINTS: {
             1: {

@@ -10,6 +10,7 @@ from zigpy.zcl.clusters.measurement import PM25
 from tests.common import ClusterListener
 import zhaquirks
 import zhaquirks.ikea.starkvind
+from zhaquirks.ikea.starkvind import IkeaAirpurifier
 
 zhaquirks.setup()
 
@@ -83,6 +84,33 @@ def test_ikea_starkvind_v2(assert_signature_matches_quirk):
     }
 
     assert_signature_matches_quirk(zhaquirks.ikea.starkvind.IkeaSTARKVIND_v2, signature)
+
+
+@pytest.mark.parametrize("attribute", ["fan_speed", "fan_mode"])
+@pytest.mark.parametrize("value,expected", [
+        (0, 0),  # off
+        (1, 1),  # auto
+        (10, 2),
+        (20, 4),
+        (50, 10),
+    ]
+ )
+async def test_fan_speed_mode_update(zigpy_device_from_quirk, attribute, value, expected):
+    """Test reading the fan speed and mode."""
+
+    starkvind_device = zigpy_device_from_quirk(zhaquirks.ikea.starkvind.IkeaSTARKVIND)
+    assert starkvind_device.model == "STARKVIND Air purifier"
+
+    ikea_cluster = starkvind_device.endpoints[1].in_clusters[
+        zhaquirks.ikea.starkvind.IkeaAirpurifier.cluster_id
+    ]
+    ikea_listener = ClusterListener(ikea_cluster)
+
+    attr_id = getattr(IkeaAirpurifier.AttributeDefs, attribute).id
+
+    ikea_cluster.update_attribute(attr_id, value)
+    assert len(ikea_listener.attribute_updates) == 1
+    assert ikea_listener.attribute_updates[0] == (attr_id, expected)
 
 
 async def test_pm25_cluster_read(zigpy_device_from_quirk):
