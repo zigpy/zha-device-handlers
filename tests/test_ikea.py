@@ -159,14 +159,14 @@ async def test_pm25_cluster_read(zigpy_device_from_quirk):
 @pytest.mark.parametrize(
     "firmware, pct_device, pct_correct, expected_pct_updates, expect_log_warning",
     (
-        ("1.0.024", 50, 100, 1, False),  # old firmware, doubling
-        ("2.3.075", 50, 100, 1, False),  # old firmware, doubling
-        ("2.4.5", 50, 50, 2, False),  # new firmware, no doubling
-        ("3.0.0", 50, 50, 2, False),  # new firmware, no doubling
-        ("24.4.5", 50, 50, 2, False),  # new firmware, no doubling
-        ("invalid_fw_string_1", 50, 50, 2, False),  # treated as new, no doubling
-        ("invalid.fw.string.2", 50, 50, 2, True),  # treated as new, no doubling + log
-        ("", 50, 100, 1, False),  # treated as old fw, doubling
+        ("1.0.024", 50, 100, 2, False),  # old firmware, doubling
+        ("2.3.075", 50, 100, 2, False),  # old firmware, doubling
+        ("2.4.5", 50, 50, 1, False),  # new firmware, no doubling
+        ("3.0.0", 50, 50, 1, False),  # new firmware, no doubling
+        ("24.4.5", 50, 50, 1, False),  # new firmware, no doubling
+        ("invalid_fw_string_1", 50, 50, 1, False),  # treated as new, no doubling
+        ("invalid.fw.string.2", 50, 50, 1, True),  # treated as new, no doubling + log
+        ("", 50, 50, 1, False),  # treated as new fw, no doubling
     ),
 )
 async def test_double_power_config_firmware(
@@ -206,10 +206,10 @@ async def test_double_power_config_firmware(
     )
 
     with p1 as mock_task, p2 as request_mock:
-        # update battery percentage with no firmware in attr cache, check pct doubled for now
+        # update battery percentage with no firmware in attr cache, check pct not doubled for now
         power_cluster.update_attribute(battery_pct_id, pct_device)
         assert len(power_listener.attribute_updates) == 1
-        assert power_listener.attribute_updates[0] == (battery_pct_id, pct_device * 2)
+        assert power_listener.attribute_updates[0] == (battery_pct_id, pct_device)
 
         # but also check that sw_build_id read is requested in the background for next update
         assert mock_task.call_count == 1
