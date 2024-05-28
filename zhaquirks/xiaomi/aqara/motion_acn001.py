@@ -1,7 +1,6 @@
 """Xiaomi Aqara E1 motion sensor device lumi.motion.acn001."""
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import Identify, Ota
-from zigpy.zcl.clusters.measurement import OccupancySensing, IlluminanceMeasurement
 
 from zhaquirks import Bus
 from zhaquirks.const import (
@@ -16,8 +15,8 @@ from zhaquirks.xiaomi import (
     LUMI,
     BasicCluster,
     IlluminanceMeasurementCluster,
-    MotionCluster,
     LocalOccupancyCluster,
+    MotionCluster,
     XiaomiAqaraE1Cluster,
     XiaomiCustomDevice,
     XiaomiPowerConfiguration,
