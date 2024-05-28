@@ -1135,12 +1135,13 @@ async def test_xiaomi_e1_thermostat_schedule_settings_deserialization(
     (
         (zhaquirks.xiaomi.aqara.motion_ac02.LumiMotionAC02, 0),
         (zhaquirks.xiaomi.aqara.motion_agl02.MotionT1, -1),
+        (zhaquirks.xiaomi.aqara.motion_acn001.MotionE1, -1),
     ),
 )
 async def test_xiaomi_p1_t1_motion_sensor(
     zigpy_device_from_quirk, quirk, invalid_iilluminance_report
 ):
-    """Test Aqara P1 and T1 motion sensors."""
+    """Test Aqara P1, T1, and E1 motion sensors."""
 
     device = zigpy_device_from_quirk(quirk)
 
@@ -1192,12 +1193,12 @@ async def test_xiaomi_p1_t1_motion_sensor(
     opple_cluster.update_attribute(274, 0xFFFF)
 
     # confirm invalid illuminance report is interpreted as 0 for P1 sensor,
-    # and -1 for the T1 sensor, as it doesn't seem like the T1 sensor sends invalid illuminance reports
+    # and -1 for the T1/E1 sensors, as they don't seem to send invalid illuminance reports
     assert len(illuminance_listener.attribute_updates) == 2
     assert illuminance_listener.attribute_updates[1][0] == zcl_iilluminance_id
     assert illuminance_listener.attribute_updates[1][1] == invalid_iilluminance_report
 
-    # send illuminance report only
+    # send illuminance report only, parsed via Xiaomi cluster implementation
     opple_cluster.update_attribute(
         XIAOMI_AQARA_ATTRIBUTE_E1, create_aqara_attr_report({101: 20})
     )
