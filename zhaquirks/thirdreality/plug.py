@@ -11,16 +11,12 @@ from zhaquirks.thirdreality import THIRD_REALITY
 
 
 class ThirdRealityPlugCluster(CustomCluster):
-    """
-    The private cluster id of Third Reality's PLUG.
-    """
+    """The private cluster id of Third Reality's PLUG."""
 
     cluster_id = 0xFF03
 
     class AttributeDefs(BaseAttributeDefs):
-        """
-        Attribute of private cluster id.
-        """
+        """Attribute of private cluster id."""
 
         reset_summation_delivered: Final = ZCLAttributeDef(
             id=0x0000,
