@@ -24,6 +24,7 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.measurement import (
     IlluminanceMeasurement,
+    OccupancySensing,
     PressureMeasurement,
     RelativeHumidity,
     TemperatureMeasurement,
@@ -462,6 +463,22 @@ class XiaomiAqaraE1Cluster(XiaomiCluster):
 
     cluster_id = 0xFCC0
     ep_attribute = "opple_cluster"
+
+
+class XiaomiMotionManufacturerCluster(XiaomiAqaraE1Cluster):
+    """Xiaomi manufacturer cluster to parse motion and illuminance reports."""
+
+    def _update_attribute(self, attrid, value):
+        super()._update_attribute(attrid, value)
+        if attrid == 274:
+            value = value - 65536
+            self.endpoint.illuminance.update_attribute(
+                IlluminanceMeasurement.AttributeDefs.measured_value.id, value
+            )
+            self.endpoint.occupancy.update_attribute(
+                OccupancySensing.AttributeDefs.occupancy.id,
+                OccupancySensing.Occupancy.Occupied,
+            )
 
 
 class BinaryOutputInterlock(CustomCluster, BinaryOutput):

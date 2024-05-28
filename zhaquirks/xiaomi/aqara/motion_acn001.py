@@ -1,4 +1,4 @@
-"""Xiaomi Aqara E1 motion sensor device lumi.motion.acn001."""
+"""Xiaomi Aqara E1 motion sensor device."""
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import Identify, Ota
 
@@ -19,12 +19,12 @@ from zhaquirks.xiaomi import (
     MotionCluster,
     XiaomiAqaraE1Cluster,
     XiaomiCustomDevice,
+    XiaomiMotionManufacturerCluster,
     XiaomiPowerConfiguration,
 )
-from zhaquirks.xiaomi.aqara.motion_agl02 import XiaomiManufacturerCluster
 
 
-class MotionACN001(XiaomiCustomDevice):
+class MotionE1(XiaomiCustomDevice):
     """Xiaomi motion sensor device lumi.motion.acn001."""
 
     def __init__(self, *args, **kwargs):
@@ -60,7 +60,7 @@ class MotionACN001(XiaomiCustomDevice):
                     LocalOccupancyCluster,
                     MotionCluster,
                     IlluminanceMeasurementCluster,
-                    XiaomiManufacturerCluster,
+                    XiaomiMotionManufacturerCluster,
                 ],
                 OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],
             }
