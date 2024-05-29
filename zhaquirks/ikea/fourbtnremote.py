@@ -1,5 +1,6 @@
 """Device handler for IKEA of Sweden TRADFRI remote control."""
 from zigpy.quirks.v2 import add_to_registry_v2
+from zigpy.zcl import ClusterType
 
 from zhaquirks.const import (
     CLUSTER_ID,
@@ -24,11 +25,12 @@ from zhaquirks.const import (
     TURN_OFF,
     TURN_ON,
 )
-from zhaquirks.ikea import IKEA, DoublingPowerConfig2AAACluster
+from zhaquirks.ikea import IKEA, DoublingPowerConfig2AAACluster, ScenesCluster
 
 (
     add_to_registry_v2(IKEA, "Remote Control N2")
     .replaces(DoublingPowerConfig2AAACluster)  # will only double for old firmware
+    .replaces(ScenesCluster, cluster_type=ClusterType.Client)
     .device_automation_triggers(
         {
             (SHORT_PRESS, TURN_ON): {
