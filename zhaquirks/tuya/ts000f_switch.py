@@ -159,7 +159,7 @@ class Tuya_2G_Wall_Switch_Metering(EnchantedDevice):
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    OnOff.cluster_id,
+                    TuyaZBOnOffAttributeCluster,
                     TuyaZBE000Cluster,
                     TuyaZBExternalSwitchTypeCluster
                 ],
