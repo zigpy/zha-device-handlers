@@ -26,9 +26,9 @@ from zhaquirks.tuya import (
     TuyaZB1888Cluster,
     TuyaZBE000Cluster,
     TuyaZBElectricalMeasurement,
+    TuyaZBExternalSwitchTypeCluster,
     TuyaZBMeteringCluster,
     TuyaZBOnOffAttributeCluster,
-    TuyaZBExternalSwitchTypeCluster,
 )
 
 
