@@ -8,11 +8,11 @@ from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
     Groups,
+    Identify,
     OnOff,
     Ota,
     Scenes,
     Time,
-    Identify,
 )
 
 from zhaquirks.const import (
