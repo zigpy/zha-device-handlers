@@ -268,6 +268,46 @@ class TuyaTS130FTI2(CustomDevice):
         },
     }
 
+class TuyaTS130FUL(CustomDevice):
+    """Tuya Cover variant from UseeLink"""
+
+    signature = {
+        # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=0x0202, device_version=1, input_clusters=[0, 4, 5, 6, 10, 0x0102], output_clusters=[25]))
+        # This signature is not correct is one copy of the first one and the cluster is not inline with the device.
+        MODEL: "TS130F",
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    WindowCovering.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id],
+            },
+        },
+    }
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    TuyaCoveringCluster,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id],
+            },
+        },
+    }
 
 class TuyaTS130FTO(CustomDevice):
     """Tuya smart curtain roller shutter Time Out."""
