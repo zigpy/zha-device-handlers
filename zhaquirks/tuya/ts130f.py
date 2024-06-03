@@ -12,6 +12,7 @@ from zigpy.zcl.clusters.general import (
     Ota,
     Scenes,
     Time,
+    Identify,
 )
 
 from zhaquirks.const import (
