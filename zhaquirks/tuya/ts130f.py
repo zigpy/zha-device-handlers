@@ -270,7 +270,7 @@ class TuyaTS130FTI2(CustomDevice):
     }
 
 class TuyaTS130FUL(CustomDevice):
-    """Tuya Cover variant from UseeLink"""
+    """Tuya Cover variant from UseeLink."""
 
     signature = {
         # This signature was copied from TuyaTS130FTO and changed to fit the UseeLink device.
