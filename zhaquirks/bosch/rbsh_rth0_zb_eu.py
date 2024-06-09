@@ -3,6 +3,7 @@
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import add_to_registry_v2
+from zigpy.quirks.v2.homeassistant import EntityPlatform, EntityType
 import zigpy.types as t
 from zigpy.zcl.clusters.hvac import (
     ControlSequenceOfOperation,
@@ -115,12 +116,14 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
     add_to_registry_v2("Bosch", "RBSH-RTH0-ZB-EU")
     .replaces(BoschThermostatCluster)
     .replaces(BoschUserInterfaceCluster)
-    # Operating mode: controlled automatically through Thermostat.system_mode (HAVC mode).
+    # Operating mode - read-only: controlled automatically through Thermostat.system_mode (HAVC mode).
     .enum(
         BoschThermostatCluster.AttributeDefs.operating_mode.name,
         BoschOperatingMode,
         BoschThermostatCluster.cluster_id,
         translation_key="operating_mode",
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.DIAGNOSTIC,
     )
     # Fast heating/boost.
     .switch(
