@@ -51,7 +51,7 @@ class SinopeManufacturerCluster(CustomCluster):
     """SinopeManufacturerCluster manufacturer cluster."""
 
     class KeypadLock(t.enum8):
-        """keypad_lockout values."""
+        """Keypad_lockout values."""
 
         Unlocked = 0x00
         Locked = 0x01
@@ -94,7 +94,7 @@ class SinopeManufacturerCluster(CustomCluster):
         Close_notify = 0x0003
 
     class ColdStatus(t.enum8):
-        """cold_load_pickup_status values."""
+        """Cold_load_pickup_status values."""
 
         Active = 0x00
         Off = 0x01
@@ -189,14 +189,14 @@ class CustomMeteringCluster(CustomCluster, Metering):
     """Custom Metering Cluster."""
 
     class ValveStatus(t.bitmap8):
-        """valve_status."""
+        """Valve_status."""
 
         Off = 0x00
         Off_armed = 0x01
         On = 0x02
 
     class UnitOfMeasure(t.enum8):
-        """unit_of_measure."""
+        """Unit_of_measure."""
 
         KWh = 0x00
         Lh = 0x07
