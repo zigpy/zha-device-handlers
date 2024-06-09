@@ -70,6 +70,7 @@ class SinopeManufacturerCluster(CustomCluster):
         Notify = 0x01
         Close = 0x02
         Close_notify = 0x03
+        No_flow = 0x04
 
     class PowerSource(t.uint32_t):
         """Valve power source types."""
@@ -307,6 +308,67 @@ class SinopeTechnologiesLoadController(CustomDevice):
             1: {
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    Metering.cluster_id,
+                    ElectricalMeasurement.cluster_id,
+                    Diagnostic.cluster_id,
+                    SinopeManufacturerCluster,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Ota.cluster_id,
+                ],
+            }
+        }
+    }
+
+
+class SinopeTechnologiesNewLoadController(CustomDevice):
+    """SinopeTechnologiesNewLoadController custom device."""
+
+    signature = {
+        # <SimpleDescriptor(endpoint=1, profile=260,
+        # device_type=2, device_version=0,
+        # input_clusters=[0, 2, 3, 4, 5, 6, 1794, 2820, 2821, 65281]
+        # output_clusters=[3, 4, 25]>
+        MODELS_INFO: [
+            (SINOPE, "RM3250ZB"),
+        ],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha_p.PROFILE_ID,
+                DEVICE_TYPE: zha_p.DeviceType.ON_OFF_OUTPUT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    DeviceTemperature.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    Metering.cluster_id,
+                    ElectricalMeasurement.cluster_id,
+                    Diagnostic.cluster_id,
+                    SINOPE_MANUFACTURER_CLUSTER_ID,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Ota.cluster_id,
+                ],
+            }
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    CustomDeviceTemperatureCluster,
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
