@@ -641,12 +641,6 @@ KNOWN_DUPLICATE_TRIGGERS = {
             (zhaquirks.aurora.aurora_dimmer.COLOR_DOWN, const.LEFT),
         ],
     ],
-    zhaquirks.ikea.fourbtnremote.IkeaTradfriRemoteV1: [
-        [
-            (const.LONG_RELEASE, const.DIM_UP),
-            (const.LONG_RELEASE, const.DIM_DOWN),
-        ]
-    ],
     zhaquirks.paulmann.fourbtnremote.PaulmannRemote4Btn: [
         [
             (const.LONG_RELEASE, const.BUTTON_1),
@@ -666,6 +660,7 @@ KNOWN_DUPLICATE_TRIGGERS = {
 }
 
 
+# XXX: Test does not handle v2 quirks
 @pytest.mark.parametrize(
     "quirk",
     [q for q in ALL_QUIRK_CLASSES if getattr(q, "device_automation_triggers", None)],
