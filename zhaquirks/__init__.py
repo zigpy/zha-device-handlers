@@ -12,7 +12,11 @@ from typing import Any
 
 import zigpy.device
 import zigpy.endpoint
-from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.quirks import (
+    _DEVICE_REGISTRY as DEVICE_REGISTRY,
+    CustomCluster,
+    CustomDevice,
+)
 import zigpy.types as t
 from zigpy.util import ListenableMixin
 from zigpy.zcl import foundation
@@ -428,8 +432,12 @@ class NoReplyMixin:
         return rsp
 
 
-def setup(custom_quirks_path: str | None = None) -> None:
+def setup(custom_quirks_path: str | None = None, *, clear_existing: bool = True) -> None:
     """Register all quirks with zigpy, including optional custom quirks."""
+
+    if clear_existing:
+        DEVICE_REGISTRY._registry.clear()
+        DEVICE_REGISTRY._registry_v2.clear()
 
     # Import all quirks in the `zhaquirks` package first
     for _importer, modname, _ispkg in pkgutil.walk_packages(
