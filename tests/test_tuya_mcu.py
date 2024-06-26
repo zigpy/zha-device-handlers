@@ -276,14 +276,14 @@ async def test_tuya_methods(zigpy_device_from_quirk, quirk):
     assert not result_2
 
     with mock.patch.object(tuya_cluster, "create_catching_task") as m1:
-        tuya_cluster.tuya_mcu_command(tcd_2)
+        tuya_cluster.tuya_mcu_set_cluster_data(tcd_2)
         # no DP resolution will not call TUYA_SET_DATA command
         m1.assert_not_called()
 
     result_3 = await dimmer2_cluster.command(0x0006)
     assert result_3.status == foundation.Status.UNSUP_CLUSTER_COMMAND
 
-    with mock.patch.object(tuya_cluster, "tuya_mcu_command") as m1:
+    with mock.patch.object(tuya_cluster, "tuya_mcu_set_cluster_data") as m1:
         rsp = await switch1_cluster.command(0x0001)
 
         m1.assert_called_once_with(tcd_switch1_on)

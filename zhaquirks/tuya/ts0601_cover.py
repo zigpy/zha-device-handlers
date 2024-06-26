@@ -1,6 +1,10 @@
 """Tuya based cover and blinds."""
 
+import logging
+
 from zigpy.profiles import zha
+from zigpy.quirks.v2 import add_to_registry_v2
+from zigpy.quirks.v2.homeassistant import EntityType
 from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
 
 from zhaquirks.const import (
@@ -12,11 +16,24 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.tuya import (
+    ATTR_COVER_DIRECTION_SETTING_NAME,
+    WINDOW_COVER_COMMAND_SMALL_STEP_NAME,
+    WINDOW_COVER_COMMAND_UPDATE_LIMITS_NAME,
     TuyaManufacturerWindowCover,
     TuyaManufCluster,
     TuyaWindowCover,
     TuyaWindowCoverControl,
 )
+from zhaquirks.tuya.mcu import (
+    CoverCommandStepDirection,
+    CoverSettingLimitOperation,
+    CoverSettingMotorDirection,
+    TuyaNewManufClusterForWindowCover,
+    TuyaNewWindowCoverControl,
+    TuyaPowerConfigurationCluster,
+)
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class TuyaZemismartSmartCover0601(TuyaWindowCover):
@@ -617,3 +634,74 @@ class TuyaCloneCover0601(TuyaWindowCover):
             }
         }
     }
+
+
+def register_v2_quirks() -> None:
+    """Register v2 Quirks."""
+
+    # Tuya window cover device.
+    #
+    # This variant supports:
+    #     - multiple data points included in tuya set_data_response.
+    #     - non-inverted control inputs,
+    #     - battery percentage remaining
+    #
+    # Most/all the quirks above are based on TuyaManufacturerWindowCover that only decodes
+    # ONE attribute from the Tuya set_data_response packet. This quirk is based on
+    # TuyaNewManufClusterForWindowCover which can handle multiple updates in one zigby frame.
+    #
+    # "_TZE200_eevqq1uv", "TS0601" - Zemismart ZM25R3 roller blind motor
+    add_to_registry_v2("_TZE200_68nvbio9", "TS0601"
+    ).also_applies_to("_TZE200_eevqq1uv", "TS0601"
+    ).replaces(TuyaNewManufClusterForWindowCover
+    ).adds(TuyaNewWindowCoverControl
+    ).adds(TuyaPowerConfigurationCluster
+    ).command_button(
+        WINDOW_COVER_COMMAND_SMALL_STEP_NAME,
+        TuyaNewWindowCoverControl.cluster_id,
+        None,
+        {"direction": CoverCommandStepDirection.Open},
+        entity_type=EntityType.STANDARD,
+        translation_key="small_step_open",
+    ).command_button(
+        WINDOW_COVER_COMMAND_SMALL_STEP_NAME,
+        TuyaNewWindowCoverControl.cluster_id,
+        None,
+        {"direction": CoverCommandStepDirection.Close},
+        entity_type=EntityType.STANDARD,
+        translation_key="small_step_close",
+    ).enum(
+        ATTR_COVER_DIRECTION_SETTING_NAME,
+        CoverSettingMotorDirection,
+        TuyaNewWindowCoverControl.cluster_id,
+        translation_key="motor_direction",
+    ).command_button(
+        WINDOW_COVER_COMMAND_UPDATE_LIMITS_NAME,
+        TuyaNewWindowCoverControl.cluster_id,
+        None,
+        {"operation": CoverSettingLimitOperation.SetOpen},
+        translation_key="set_open_limit",
+    ).command_button(
+        WINDOW_COVER_COMMAND_UPDATE_LIMITS_NAME,
+        TuyaNewWindowCoverControl.cluster_id,
+        None,
+        {"operation": CoverSettingLimitOperation.SetClose},
+        translation_key="set_close_limit",
+    ).command_button(
+        WINDOW_COVER_COMMAND_UPDATE_LIMITS_NAME,
+        TuyaNewWindowCoverControl.cluster_id,
+        None,
+        {"operation": CoverSettingLimitOperation.ClearOpen},
+        translation_key="clear_open_limit",
+    ).command_button(
+        WINDOW_COVER_COMMAND_UPDATE_LIMITS_NAME,
+        TuyaNewWindowCoverControl.cluster_id,
+        None,
+        {"operation": CoverSettingLimitOperation.ClearClose},
+        translation_key="clear_close_limit",
+    )
+
+
+(
+    register_v2_quirks()
+)

@@ -27,9 +27,12 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import TuyaManufCluster, TuyaManufClusterAttributes
+from zhaquirks.tuya import (
+    TUYA_MCU_SET_CLUSTER_DATA,
+    TuyaManufCluster,
+    TuyaManufClusterAttributes,
+)
 from zhaquirks.tuya.mcu import (
-    TUYA_MCU_COMMAND,
     DPToAttributeMapping,
     TuyaAttributesCluster,
     TuyaClusterData,
@@ -297,7 +300,7 @@ class TuyaMCUSiren(OnOff, TuyaAttributesCluster):
                 manufacturer=foundation.ZCLHeader.NO_MANUFACTURER_ID,
             )
             self.endpoint.device.command_bus.listener_event(
-                TUYA_MCU_COMMAND,
+                TUYA_MCU_SET_CLUSTER_DATA,
                 cluster_data,
             )
             return foundation.GENERAL_COMMANDS[

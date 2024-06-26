@@ -25,7 +25,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import TUYA_MCU_COMMAND, AttributeWithMask, PowerOnState
+from zhaquirks.tuya import TUYA_MCU_SET_CLUSTER_DATA, AttributeWithMask, PowerOnState
 from zhaquirks.tuya.mcu import (
     DPToAttributeMapping,
     TuyaAttributesCluster,
@@ -185,7 +185,7 @@ class TuyaRCBOOnOff(TuyaOnOff, TuyaAttributesCluster):
                 manufacturer=manufacturer,
             )
             self.endpoint.device.command_bus.listener_event(
-                TUYA_MCU_COMMAND,
+                TUYA_MCU_SET_CLUSTER_DATA,
                 cluster_data,
             )
             return foundation.GENERAL_COMMANDS[
@@ -320,7 +320,7 @@ class TuyaRCBOMetering(Metering, TuyaAttributesCluster):
                 manufacturer=manufacturer,
             )
             self.endpoint.device.command_bus.listener_event(
-                TUYA_MCU_COMMAND,
+                TUYA_MCU_SET_CLUSTER_DATA,
                 cluster_data,
             )
             return foundation.GENERAL_COMMANDS[
