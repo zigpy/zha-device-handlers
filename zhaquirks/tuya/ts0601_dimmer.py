@@ -153,6 +153,7 @@ class TuyaSingleSwitchDimmerGP(TuyaDimmerSwitch):
             ("_TZE200_y8yjulon", "TS0601"),
             ("_TZE204_n9ctkb6j", "TS0601"),  # BSEED
             ("_TZE204_vevc4c6g", "TS0601"),  # BSEED
+            ("_TZE204_5cuocqty", "TS0601"),  # Avattto ZDMS16-1
         ],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=0x0100
@@ -214,6 +215,7 @@ class TuyaDoubleSwitchDimmerGP(TuyaDimmerSwitch):
             ("_TZE200_fjjbhx9d", "TS0601"),
             ("_TZE200_gwkapsoq", "TS0601"),  # Loratap
             ("_TZE204_zenj4lxv", "TS0601"),
+            ("_TZE204_o9gyszw2", "TS0601"),  # Avattto ZDMS16-2
         ],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=0x0100
