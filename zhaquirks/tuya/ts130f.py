@@ -301,7 +301,7 @@ class TuyaTS130FUL(CustomDevice):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    OnOff.cluster_id,
+                    TuyaWithBacklightOnOffCluster,
                     TuyaCoveringCluster,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id],
