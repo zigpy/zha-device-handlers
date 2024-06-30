@@ -69,6 +69,7 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
             id=OPERATING_MODE_ATTR_ID,
             type=BoschOperatingMode,
             is_manufacturer_specific=True,
+            name="operating_mode",
         )
 
         pi_heating_demand = ZCLAttributeDef(
@@ -76,18 +77,21 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
             # Values range from 0-100
             type=t.enum8,
             is_manufacturer_specific=True,
+            name="pi_heating_demand",
         )
 
         window_open = ZCLAttributeDef(
             id=WINDOW_OPEN_ATTR_ID,
             type=State,
             is_manufacturer_specific=True,
+            name="window_open",
         )
 
         boost = ZCLAttributeDef(
             id=BOOST_ATTR_ID,
             type=State,
             is_manufacturer_specific=True,
+            name="boost",
         )
 
 
@@ -102,6 +106,7 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
             # Usable values range from 5-30
             type=t.enum8,
             is_manufacturer_specific=True,
+            name="display_on_time",
         )
 
         display_brightness = ZCLAttributeDef(
@@ -109,6 +114,7 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
             # Values range from 0-10
             type=t.enum8,
             is_manufacturer_specific=True,
+            name="display_brightness",
         )
 
 
