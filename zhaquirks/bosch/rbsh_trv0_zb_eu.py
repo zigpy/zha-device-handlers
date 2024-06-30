@@ -92,9 +92,6 @@ OPERATING_MODE_TO_SYSTEM_MODE_MAP = {
     BoschOperatingMode.Schedule: Thermostat.SystemMode.Auto,
     BoschOperatingMode.Manual: Thermostat.SystemMode.Heat,
     BoschOperatingMode.Pause: Thermostat.SystemMode.Off,
-    "BoschOperatingMode.Schedule": Thermostat.SystemMode.Auto,
-    "BoschOperatingMode.Manual": Thermostat.SystemMode.Heat,
-    "BoschOperatingMode.Pause": Thermostat.SystemMode.Off,
 }
 
 """HA system mode to Bosch operating mode mapping."""
@@ -103,17 +100,12 @@ SYSTEM_MODE_TO_OPERATING_MODE_MAP = {
     Thermostat.SystemMode.Heat: BoschOperatingMode.Manual,
     Thermostat.SystemMode.Cool: BoschOperatingMode.Manual,
     Thermostat.SystemMode.Auto: BoschOperatingMode.Schedule,
-    "SystemMode.Off": BoschOperatingMode.Pause,
-    "SystemMode.Heat": BoschOperatingMode.Manual,
-    "SystemMode.Cool": BoschOperatingMode.Manual,
-    "SystemMode.Auto": BoschOperatingMode.Schedule,
 }
 
+"""Bosch display orientation enum to uint8_t mapping."""
 DISPLAY_ORIENTATION_ENUM_TO_INT_MAP = {
-    0x00: 0x00,
-    0x01: 0x01,
-    "BoschDisplayOrientation.Normal": 0x00,
-    "BoschDisplayOrientation.Flipped": 0x01,
+    BoschDisplayOrientation.Normal: 0x00,
+    BoschDisplayOrientation.Flipped: 0x01,
 }
 
 
