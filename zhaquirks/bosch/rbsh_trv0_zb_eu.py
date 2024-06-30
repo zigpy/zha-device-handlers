@@ -119,6 +119,7 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
             id=OPERATING_MODE_ATTR_ID,
             type=BoschOperatingMode,
             is_manufacturer_specific=True,
+            name="operating_mode",
         )
 
         pi_heating_demand = ZCLAttributeDef(
@@ -126,24 +127,28 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
             # Values range from 0-100
             type=t.enum8,
             is_manufacturer_specific=True,
+            name="pi_heating_demand",
         )
 
         window_open = ZCLAttributeDef(
             id=WINDOW_OPEN_ATTR_ID,
             type=State,
             is_manufacturer_specific=True,
+            name="window_open",
         )
 
         boost = ZCLAttributeDef(
             id=BOOST_ATTR_ID,
             type=State,
             is_manufacturer_specific=True,
+            name="boost",
         )
 
         remote_temperature = ZCLAttributeDef(
             id=REMOTE_TEMPERATURE_ATTR_ID,
             type=t.int16s,
             is_manufacturer_specific=True,
+            name="remote_temperature",
         )
 
     async def write_attributes(
@@ -318,6 +323,7 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
             # To be matched to BoschDisplayOrientation enum.
             type=t.uint8_t,
             is_manufacturer_specific=True,
+            name="display_orientation",
         )
 
         display_on_time = ZCLAttributeDef(
@@ -325,6 +331,7 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
             # Usable values range from 5-30
             type=t.enum8,
             is_manufacturer_specific=True,
+            name="display_on_time",
         )
 
         display_brightness = ZCLAttributeDef(
@@ -332,12 +339,14 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
             # Values range from 0-10
             type=t.enum8,
             is_manufacturer_specific=True,
+            name="display_brightness",
         )
 
         displayed_temperature = ZCLAttributeDef(
             id=DISPLAY_MODE_ATTR_ID,
             type=BoschDisplayedTemperature,
             is_manufacturer_specific=True,
+            name="displayed_temperature",
         )
 
     async def write_attributes(
