@@ -53,7 +53,7 @@ class PhilipsBasicCluster(CustomCluster, Basic):
     attributes.update(
         {
             0x0031: ("philips", t.bitmap16, True),
-            0x0034: ("mode", t.enum8, True),    
+            0x0034: ("mode", t.enum8, True),
         }
     )
 
