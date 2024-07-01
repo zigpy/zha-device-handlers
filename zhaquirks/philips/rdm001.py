@@ -125,8 +125,8 @@ class PhilipsRemoteCluster(CustomCluster):
         self.listener_event(ZHA_SEND_EVENT, action, event_args)
 
 
-class PhilipsROM001(CustomDevice):
-    """Philips ROM001 device."""
+class PhilipsRDM001(CustomDevice):
+    """Philips RDM001 device."""
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=2080
