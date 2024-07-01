@@ -1,6 +1,6 @@
 """Signify RDM004 device."""
 import logging
-from typing import Any, List, Optional, Union
+from typing import Any, Optional, Union
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
