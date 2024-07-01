@@ -1,4 +1,5 @@
 """Signify RDM004 device."""
+
 import logging
 from typing import Any, Optional, Union
 
@@ -96,7 +97,7 @@ class PhilipsRemoteCluster(CustomCluster):
     def handle_cluster_request(
         self,
         hdr: foundation.ZCLHeader,
-        args: List[Any],
+        args: list[Any],
         *,
         dst_addressing: Optional[
             Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
