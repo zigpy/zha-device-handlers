@@ -69,9 +69,6 @@ class OppleCluster(XiaomiAqaraE1Cluster):
 
     async def bind(self):
         """Bind cluster."""
-        result = await super().bind()
-        await self.write_attributes(self.attr_config, manufacturer=OPPLE_MFG_CODE)
-        return result
 
 class MultistateInputCluster(CustomCluster, MultistateInput):
     """Multistate input cluster."""
