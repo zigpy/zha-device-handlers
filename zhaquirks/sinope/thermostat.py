@@ -37,27 +37,27 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
     """SinopeTechnologiesManufacturerCluster manufacturer cluster."""
 
     class KeypadLock(t.enum8):
-        """keypad_lockout values."""
+        """Keypad_lockout values."""
 
         Unlocked = 0x00
         Locked = 0x01
         Partial_lock = 0x02
 
     class Display(t.enum8):
-        """config_2nd_display values."""
+        """Config_2nd_display values."""
 
         Auto = 0x00
         Setpoint = 0x01
         Outside_temperature = 0x02
 
     class FloorMode(t.enum8):
-        """air_floor_mode values."""
+        """Air_floor_mode values."""
 
         Air_by_floor = 0x01
         Floor = 0x02
 
     class AuxMode(t.enum8):
-        """aux_output_mode values."""
+        """Aux_output_mode values."""
 
         Off = 0x00
         On = 0x01
@@ -77,25 +77,25 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
         Max_air_reached = 0x03
 
     class SensorType(t.enum8):
-        """temp_sensor_type values."""
+        """Temp_sensor_type values."""
 
         Sensor_10k = 0x00
         Sensor_12k = 0x01
 
     class TimeFormat(t.enum8):
-        """time_format values."""
+        """Time_format values."""
 
         Format_24h = 0x00
         Format_12h = 0x01
 
     class GfciStatus(t.enum8):
-        """gfci_status values."""
+        """Gfci_status values."""
 
         Ok = 0x00
         Error = 0x01
 
     class SystemMode(t.enum8):
-        """system mode values."""
+        """System mode values."""
 
         Off = 0x00
         Auto = 0x01
@@ -111,6 +111,12 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
         T20 = 0x14
         T30 = 0x1E
         T60 = 0x3C
+
+    class CycleLength(t.uint16_t):
+        """"Cycle length, 15 sec (15) or 15 min (900 sec)."""
+
+        Sec_15 = 0x000F
+        Min_15 = 0x0384
 
     cluster_id = SINOPE_MANUFACTURER_CLUSTER_ID
     name = "Sinopé Technologies Manufacturer specific"
@@ -140,7 +146,7 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
         0x010D: ("room_temperature", t.int16s, True),
         0x0114: ("time_format", TimeFormat, True),
         0x0115: ("gfci_status", GfciStatus, True),
-        0x0116: ("aux_mode", SystemMode, True),
+        0x0116: ("hvac_mode", SystemMode, True),
         0x0118: ("aux_connected_load", t.uint16_t, True),
         0x0119: ("connected_load", t.uint16_t, True),
         0x0128: ("pump_protection_status", PumpStatus, True),
@@ -148,6 +154,7 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
         0x012B: ("current_setpoint", t.int16s, True),
         0x012D: ("report_local_temperature", t.int16s, True),
         0x0200: ("status", t.bitmap32, True),
+        0x0281: ("cycle_length", CycleLength, True),
         0xFFFD: ("cluster_revision", t.uint16_t, True),
     }
 
@@ -156,20 +163,20 @@ class SinopeTechnologiesThermostatCluster(CustomCluster, Thermostat):
     """SinopeTechnologiesThermostatCluster custom cluster."""
 
     class Occupancy(t.enum8):
-        """set_occupancy values."""
+        """Set_occupancy values."""
 
         Away = 0x00
         Home = 0x01
 
     class Backlight(t.enum8):
-        """backlight_auto_dim_param values."""
+        """Backlight_auto_dim_param values."""
 
         On_demand = 0x00
         Always_on = 0x01
         Bedroom = 0x02
 
     class CycleOutput(t.uint16_t):
-        """main and aux cycle period values."""
+        """Main and aux cycle period values."""
 
         Sec_15 = 0x000F
         Min_5 = 0x012C

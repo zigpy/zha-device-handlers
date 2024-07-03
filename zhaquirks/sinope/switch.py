@@ -51,7 +51,7 @@ class SinopeManufacturerCluster(CustomCluster):
     """SinopeManufacturerCluster manufacturer cluster."""
 
     class KeypadLock(t.enum8):
-        """keypad_lockout values."""
+        """Keypad_lockout values."""
 
         Unlocked = 0x00
         Locked = 0x01
@@ -70,6 +70,7 @@ class SinopeManufacturerCluster(CustomCluster):
         Notify = 0x01
         Close = 0x02
         Close_notify = 0x03
+        No_flow = 0x04
 
     class PowerSource(t.uint32_t):
         """Valve power source types."""
@@ -93,7 +94,7 @@ class SinopeManufacturerCluster(CustomCluster):
         Close_notify = 0x0003
 
     class ColdStatus(t.enum8):
-        """cold_load_pickup_status values."""
+        """Cold_load_pickup_status values."""
 
         Active = 0x00
         Off = 0x01
@@ -188,14 +189,14 @@ class CustomMeteringCluster(CustomCluster, Metering):
     """Custom Metering Cluster."""
 
     class ValveStatus(t.bitmap8):
-        """valve_status."""
+        """Valve_status."""
 
         Off = 0x00
         Off_armed = 0x01
         On = 0x02
 
     class UnitOfMeasure(t.enum8):
-        """unit_of_measure."""
+        """Unit_of_measure."""
 
         KWh = 0x00
         Lh = 0x07
@@ -307,6 +308,67 @@ class SinopeTechnologiesLoadController(CustomDevice):
             1: {
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    Metering.cluster_id,
+                    ElectricalMeasurement.cluster_id,
+                    Diagnostic.cluster_id,
+                    SinopeManufacturerCluster,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Ota.cluster_id,
+                ],
+            }
+        }
+    }
+
+
+class SinopeTechnologiesLoadController_V2(CustomDevice):
+    """SinopeTechnologiesLoadController version 2 custom device."""
+
+    signature = {
+        # <SimpleDescriptor(endpoint=1, profile=260,
+        # device_type=2, device_version=0,
+        # input_clusters=[0, 2, 3, 4, 5, 6, 1794, 2820, 2821, 65281]
+        # output_clusters=[3, 4, 25]>
+        MODELS_INFO: [
+            (SINOPE, "RM3250ZB"),
+        ],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha_p.PROFILE_ID,
+                DEVICE_TYPE: zha_p.DeviceType.ON_OFF_OUTPUT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    DeviceTemperature.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    Metering.cluster_id,
+                    ElectricalMeasurement.cluster_id,
+                    Diagnostic.cluster_id,
+                    SINOPE_MANUFACTURER_CLUSTER_ID,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Ota.cluster_id,
+                ],
+            }
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    CustomDeviceTemperatureCluster,
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
@@ -605,8 +667,8 @@ class SinopeTechnologiesCalypso(CustomDevice):
     }
 
 
-class SinopeTechnologiesNewSwitch(CustomDevice):
-    """SinopeTechnologiesNewSwitch custom device."""
+class SinopeTechnologiesSwitch_V2(CustomDevice):
+    """SinopeTechnologiesSwitch version 2 custom device."""
 
     signature = {
         # <SimpleDescriptor(endpoint=1, profile=260,

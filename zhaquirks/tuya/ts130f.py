@@ -8,6 +8,7 @@ from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
     Groups,
+    Identify,
     OnOff,
     Ota,
     Scenes,
@@ -268,6 +269,45 @@ class TuyaTS130FTI2(CustomDevice):
         },
     }
 
+class TuyaTS130FUL(CustomDevice):
+    """Tuya Cover variant from UseeLink."""
+
+    signature = {
+        # This signature was copied from TuyaTS130FTO and changed to fit the UseeLink device.
+        MODEL: "TS130F",
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    WindowCovering.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id],
+            },
+        },
+    }
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaWithBacklightOnOffCluster,
+                    TuyaCoveringCluster,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id],
+            },
+        },
+    }
 
 class TuyaTS130FTO(CustomDevice):
     """Tuya smart curtain roller shutter Time Out."""
