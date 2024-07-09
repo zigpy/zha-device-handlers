@@ -13,5 +13,7 @@ zhaquirks.setup()
 async def test_singleswitch_state_report(zigpy_device_from_quirk, quirk):
     """Test philips single switch bind attributes"""
     switch_dev = zigpy_device_from_quirk(quirk)
-    switch_cluster = switch_dev.endpoints[1].on_off
-    switch_listener = ClusterListener(switch_cluster)
+    switch_cluster = switch_dev.endpoints[1]
+    switch_listener = ClusterListener(switch_cluster.OnOff)
+
+    assert switch_listener.cluster_commands[1][4] == "left" #remote cluster = 
