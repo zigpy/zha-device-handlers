@@ -18,7 +18,7 @@ zhaquirks.setup()
     ],
 )
 
-def test_RDM_family_signature(
+def test_RDM001_signature(
     manufacturer: str, model: str, assert_signature_matches_quirk
 ) -> None:
     """Test that the signature of all supported RDM devices is matched to its quirk."""
@@ -39,13 +39,39 @@ def test_RDM_family_signature(
         },
         "manufacturer": manufacturer,
         "model": model,
-        "class": "zhaquirks.philips.wall_switch.PhilipsWallSwitch",
+        "class": "zhaquirks.philips.rdm001.PhilipsRDM001,
     }
 
     assert_signature_matches_quirk(
         zhaquirks.philips.rdm001.PhilipsRDM001, signature
     )
 
+def test_RDM004_signature(
+    manufacturer: str, model: str, assert_signature_matches_quirk
+) -> None:
+    """Test that the signature of all supported RDM devices is matched to its quirk."""
+    signature = {
+        "node_descriptor": "<SimpleDescriptor endpoint=1 profile=260 device_type=2080 device_version=1 input_clusters=[0, 1, 3, 64512] output_clusters=[3, 4, 6, 8, 25]>",
+        "endpoints": {
+            "1": {
+                "profile_id": 260,
+                "device_type": "0x820",
+                "in_clusters": [
+                    "0x0",
+                    "0x1",
+                    "0x3",
+                    "0xFC00",
+                ],
+                "out_clusters": ["0x3", "0x4", "0x6", "0x8", "0x19"],
+            }
+        },
+        "manufacturer": manufacturer,
+        "model": model,
+        "class": "zhaquirks.philips.rdm004.PhilipsRDM004,
+    }
+
     assert_signature_matches_quirk(
-        zhaquirks.philips.rdm002.PhilipsRDM004, signature
+        zhaquirks.philips.rdm004.PhilipsRDM004, signature
     )
+
+    
