@@ -148,7 +148,6 @@ async def test_ts0021_switch(zigpy_device_from_quirk, quirk):
     switch_listener = ClusterListener(tuya_cluster)
 
     ZCL_BTN1_SINGLE_PRESS = b"\tT\x06\x01$\x01\x04\x00\x01\x00"
-
     hdr, args = tuya_cluster.deserialize(ZCL_BTN1_SINGLE_PRESS)
     assert args.data.datapoints[0].dp == 1
     assert args.data.datapoints[0].data.raw == b"\x00"
