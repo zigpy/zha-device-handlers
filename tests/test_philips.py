@@ -43,5 +43,9 @@ def test_RDM_family_signature(
     }
 
     assert_signature_matches_quirk(
-        zhaquirks.philips.wall_switch.PhilipsWallSwitch, signature
+        zhaquirks.philips.wall_switch.PhilipsRDM001, signature
+    )
+
+    assert_signature_matches_quirk(
+        zhaquirks.philips.wall_switch.PhilipsRDM004, signature
     )
