@@ -11,7 +11,7 @@ zhaquirks.setup()
 
 @pytest.mark.parametrize("quirk", (zhaquirks.philips.PhilipsRDM001.bind,))
 async def test_singleswitch_state_report(zigpy_device_from_quirk, quirk):
-    """Test philips single switch bind attributes"""
+    """Test philips single switch bind attributes."""
     switch_dev = zigpy_device_from_quirk(quirk)
     switch_cluster = switch_dev.endpoints[1]
     switch_listener = ClusterListener(switch_cluster.OnOff)
