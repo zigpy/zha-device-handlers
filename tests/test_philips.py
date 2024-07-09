@@ -1,4 +1,4 @@
-"""Tests for Philips RDM004 quirks."""
+"""Tests for Philips RDM001 and RDM004 quirks."""
 import pytest
 
 from tests.common import ClusterListener
@@ -9,11 +9,39 @@ import zhaquirks.philips.PhilipsRDM004
 
 zhaquirks.setup()
 
-@pytest.mark.parametrize("quirk", (zhaquirks.philips.PhilipsRDM001.bind,))
-async def test_singleswitch_state_report(zigpy_device_from_quirk, quirk):
-    """Test philips single switch bind attributes."""
-    switch_dev = zigpy_device_from_quirk(quirk)
-    switch_cluster = switch_dev.endpoints[1]
-    switch_listener = ClusterListener(switch_cluster.OnOff)
+@pytest.mark.parametrize("manufacturer,model",
+    [
+        ("Philips", "RDM001"),
+        ("Signify Netherlands B.V.", "RDM001"),
+        ("Philips", "RDM004"),
+        ("Signify Netherlands B.V.", "RDM004"),
+    ],
+)
 
-    assert switch_listener.cluster_commands[1][4] == "left" #remote cluster = 
+def test_RDM_family_signature(
+    manufacturer: str, model: str, assert_signature_matches_quirk
+) -> None:
+    """Test that the signature of all supported RDM devices is matched to its quirk."""
+    signature = {
+        "node_descriptor": "<SimpleDescriptor endpoint=1 profile=260 device_type=2080 device_version=1 input_clusters=[0, 1, 3, 64512] output_clusters=[3, 4, 6, 8, 25]>",
+        "endpoints": {
+            "1": {
+                "profile_id": 260,
+                "device_type": "0x820",
+                "in_clusters": [
+                    "0x0",
+                    "0x1",
+                    "0x3",
+                    "0xFC00",
+                ],
+                "out_clusters": ["0x3", "0x4", "0x6", "0x8", "0x19"],
+            }
+        },
+        "manufacturer": manufacturer,
+        "model": model,
+        "class": "zhaquirks.philips.wall_switch.PhilipsWallSwitch",
+    }
+
+    assert_signature_matches_quirk(
+        zhaquirks.philips.wall_switch.PhilipsWallSwitch, signature
+    )
