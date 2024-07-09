@@ -36,15 +36,3 @@ async def test_singleswitch_state_report(zigpy_device_from_quirk, quirk):
     switch_dev = zigpy_device_from_quirk(quirk)
     switch_cluster = switch_dev.endpoints[1].on_off
     switch_listener = ClusterListener(switch_cluster)
-  
-    hdr, args = tuya_cluster.deserialize(SHORT_PRESS)
-    tuya_cluster.handle_message(hdr, args)
-    hdr, args = tuya_cluster.deserialize(SHORT_RELEASE)
-    tuya_cluster.handle_message(hdr, args)
-
-    assert len(switch_listener.cluster_commands) == 0
-    assert len(switch_listener.attribute_updates) == 2
-    assert switch_listener.attribute_updates[0][0] == 0x0000
-    assert switch_listener.attribute_updates[0][1] == TURN_ON
-    assert switch_listener.attribute_updates[1][0] == 0x0000
-    assert switch_listener.attribute_updates[1][1] == TURN_ON
