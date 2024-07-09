@@ -39,7 +39,7 @@ def test_RDM001_signature(
         },
         "manufacturer": manufacturer,
         "model": model,
-        "class": "zhaquirks.philips.rdm001.PhilipsRDM001,
+        "class": "zhaquirks.philips.rdm001.PhilipsRDM001",
     }
 
     assert_signature_matches_quirk(
@@ -67,7 +67,7 @@ def test_RDM004_signature(
         },
         "manufacturer": manufacturer,
         "model": model,
-        "class": "zhaquirks.philips.rdm004.PhilipsRDM004,
+        "class": "zhaquirks.philips.rdm004.PhilipsRDM004",
     }
 
     assert_signature_matches_quirk(
