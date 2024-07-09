@@ -1,30 +1,9 @@
 """Tests for Philips RDM004 quirks."""
-
-import asyncio
-import datetime
-from unittest import mock
-
 import pytest
-from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice, get_device
-import zigpy.types as t
-from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import PowerConfiguration
 
-from tests.common import ClusterListener, MockDatetime, wait_for_zigpy_tasks
+from tests.common import ClusterListener
+
 import zhaquirks
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OFF,
-    ON,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-    ZONE_STATUS_CHANGE_COMMAND,
-)
-from zhaquirks.philips import Data, PhilipsBasicCluster, PhilipsRemoteCluster
 import zhaquirks.philips.PhilipsRDM001
 import zhaquirks.philips.PhilipsRDM004
 
