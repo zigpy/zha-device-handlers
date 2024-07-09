@@ -26,6 +26,7 @@ from zhaquirks.const import (
 )
 from zhaquirks.tuya import Data, TuyaManufClusterAttributes, TuyaNewManufCluster
 import zhaquirks.tuya.sm0202_motion
+import zhaquirks.tuya.ts0021
 import zhaquirks.tuya.ts0041
 import zhaquirks.tuya.ts0042
 import zhaquirks.tuya.ts0043
@@ -135,6 +136,74 @@ async def test_singleswitch_state_report(zigpy_device_from_quirk, quirk):
     assert switch_listener.attribute_updates[0][1] == ON
     assert switch_listener.attribute_updates[1][0] == 0x0000
     assert switch_listener.attribute_updates[1][1] == OFF
+
+
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0021.TS0021,))
+async def test_ts0021_switch(zigpy_device_from_quirk, quirk):
+    """Test tuya TS0021 2-gang switch."""
+
+    device = zigpy_device_from_quirk(quirk)
+
+    tuya_cluster = device.endpoints[1].tuya_manufacturer
+    switch_listener = ClusterListener(tuya_cluster)
+
+    ZCL_BTN1_SINGLE_PRESS = b"\tT\x06\x01$\x01\x04\x00\x01\x00"
+
+    hdr, args = tuya_cluster.deserialize(ZCL_BTN1_SINGLE_PRESS)
+    assert args.data.datapoints[0].dp == 1
+    assert args.data.datapoints[0].data.raw == b"\x00"
+    tuya_cluster.handle_message(hdr, args)
+
+    ZCL_BTN1_DOUBLE_PRESS = b"\tU\x06\x01%\x01\x04\x00\x01\x01"
+    hdr, args = tuya_cluster.deserialize(ZCL_BTN1_DOUBLE_PRESS)
+    assert args.data.datapoints[0].dp == 1
+    assert args.data.datapoints[0].data.raw == b"\x01"
+    tuya_cluster.handle_message(hdr, args)
+
+    ZCL_BTN1_LONG_PRESS = b"\tk\x06\x03\x11\x01\x04\x00\x01\x02"
+    hdr, args = tuya_cluster.deserialize(ZCL_BTN1_LONG_PRESS)
+    assert args.data.datapoints[0].dp == 1
+    assert args.data.datapoints[0].data.raw == b"\x02"
+    tuya_cluster.handle_message(hdr, args)
+
+    ZCL_BTN2_SINGLE_PRESS = b"\tN\x06\x01\x1f\x02\x04\x00\x01\x00"
+    hdr, args = tuya_cluster.deserialize(ZCL_BTN2_SINGLE_PRESS)
+    assert args.data.datapoints[0].dp == 2
+    assert args.data.datapoints[0].data.raw == b"\x00"
+    tuya_cluster.handle_message(hdr, args)
+
+    ZCL_BTN2_DOUBLE_PRESS = b"\tj\x06\x03\x10\x02\x04\x00\x01\x01"
+    hdr, args = tuya_cluster.deserialize(ZCL_BTN2_DOUBLE_PRESS)
+    assert args.data.datapoints[0].dp == 2
+    assert args.data.datapoints[0].data.raw == b"\x01"
+    tuya_cluster.handle_message(hdr, args)
+
+    ZCL_BTN2_LONG_PRESS = b"\tl\x06\x03\x12\x02\x04\x00\x01\x02"
+    hdr, args = tuya_cluster.deserialize(ZCL_BTN2_LONG_PRESS)
+    assert args.data.datapoints[0].dp == 2
+    assert args.data.datapoints[0].data.raw == b"\x02"
+    tuya_cluster.handle_message(hdr, args)
+
+    assert len(switch_listener.cluster_commands) == 6
+    assert len(switch_listener.attribute_updates) == 6
+    # Button 1 single press.
+    assert switch_listener.attribute_updates[0][0] == "btn_1_pressed"
+    assert switch_listener.attribute_updates[0][1] == 0x00
+    # Button 1 double press.
+    assert switch_listener.attribute_updates[1][0] == "btn_1_pressed"
+    assert switch_listener.attribute_updates[1][1] == 0x01
+    # Button 1 long press.
+    assert switch_listener.attribute_updates[2][0] == "btn_1_pressed"
+    assert switch_listener.attribute_updates[2][1] == 0x02
+    # Button 2 single press.
+    assert switch_listener.attribute_updates[3][0] == "btn_2_pressed"
+    assert switch_listener.attribute_updates[3][1] == 0x00
+    # Button 2 double press.
+    assert switch_listener.attribute_updates[4][0] == "btn_2_pressed"
+    assert switch_listener.attribute_updates[4][1] == 0x01
+    # Button 2 long press.
+    assert switch_listener.attribute_updates[5][0] == "btn_2_pressed"
+    assert switch_listener.attribute_updates[5][1] == 0x02
 
 
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_switch.TuyaDoubleSwitchTO,))
