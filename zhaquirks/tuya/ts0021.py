@@ -1,19 +1,19 @@
 """Device handler the TS0021."""
 
 from zigpy.profiles import zha
+from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, Ota, PowerConfiguration, Time
 from zigpy.zcl.clusters.security import IasZone
 
 from zhaquirks import EventableCluster
-from zigpy.quirks import CustomDevice
 from zhaquirks.const import (
     ARGS,
     ATTRIBUTE_ID,
     CLUSTER_ID,
-    COMMAND_ATTRIBUTE_UPDATED,
     COMMAND,
-    SKIP_CONFIGURATION,
+    COMMAND_ATTRIBUTE_UPDATED,
     DEVICE_TYPE,
+    DOUBLE_PRESS,
     ENDPOINT_ID,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -22,15 +22,10 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SHORT_PRESS,
-    DOUBLE_PRESS,
+    SKIP_CONFIGURATION,
     VALUE,
 )
-from zhaquirks.tuya import (
-    TUYA_CLUSTER_ID,
-    TuyaNewManufCluster,
-    DPToAttributeMapping,
-)
-
+from zhaquirks.tuya import TUYA_CLUSTER_ID, DPToAttributeMapping, TuyaNewManufCluster
 
 BTN_1 = "Button 1"
 BTN_2 = "Button 2"
@@ -40,6 +35,8 @@ ATTR_BTN_2_PRESSED = "btn_2_pressed"
 
 
 class TuyaCustomCluster(TuyaNewManufCluster, EventableCluster):
+    """Tuya Custom Cluster for mapping data points to attributes."""
+
     dp_to_attribute: dict[int, DPToAttributeMapping] = {
         1: DPToAttributeMapping(
             TuyaNewManufCluster.ep_attribute,
@@ -58,6 +55,8 @@ class TuyaCustomCluster(TuyaNewManufCluster, EventableCluster):
 
 
 class TS0021(CustomDevice):
+    """Tuya TS0021 2-button switch device."""
+
     signature = {
         # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=1026,
         # device_version=1,
