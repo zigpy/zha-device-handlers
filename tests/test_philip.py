@@ -30,7 +30,7 @@ import zhaquirks.philips.PhilipsRDM004
 
 zhaquirks.setup()
 
-@pytest.mark.parametrize("quirk", (zhaquirk.sphilips.PhilipsRDM001.bind,))
+@pytest.mark.parametrize("quirk", (zhaquirks.philips.PhilipsRDM001.bind,))
 async def test_singleswitch_state_report(zigpy_device_from_quirk, quirk):
     """Test philips single switch bind attributes"""
     switch_dev = zigpy_device_from_quirk(quirk)
