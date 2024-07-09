@@ -4,8 +4,8 @@ import pytest
 from tests.common import ClusterListener
 
 import zhaquirks
-import zhaquirks.philips.PhilipsRDM001
-import zhaquirks.philips.PhilipsRDM004
+from zhaquirks.philips.rdm001 import PhilipsRDM001
+from zhaquirks.philips.rdm004 import PhilipsRDM004
 
 zhaquirks.setup()
 
