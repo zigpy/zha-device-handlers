@@ -13,8 +13,6 @@ zhaquirks.setup()
     [
         ("Philips", "RDM001"),
         ("Signify Netherlands B.V.", "RDM001"),
-        ("Philips", "RDM004"),
-        ("Signify Netherlands B.V.", "RDM004"),
     ],
 )
 
@@ -45,6 +43,14 @@ def test_RDM001_signature(
     assert_signature_matches_quirk(
         zhaquirks.philips.rdm001.PhilipsRDM001, signature
     )
+
+
+@pytest.mark.parametrize("manufacturer,model",
+    [
+        ("Philips", "RDM004"),
+        ("Signify Netherlands B.V.", "RDM004"),
+    ],
+)
 
 def test_RDM004_signature(
     manufacturer: str, model: str, assert_signature_matches_quirk
