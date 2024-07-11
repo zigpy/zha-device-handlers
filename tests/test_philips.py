@@ -4,18 +4,18 @@ import pytest
 from tests.common import ClusterListener
 
 import zhaquirks
-from zhaquirks.philips.rdm004 import PhilipsRDM004
+from zhaquirks.philips.rdm001 import PhilipsRDM001
 
 zhaquirks.setup()
 
 @pytest.mark.parametrize("manufacturer,model",
     [
-        ("Philips", "RDM004"),
-        ("Signify Netherlands B.V.", "RDM004"),
+        ("Philips", "RDM001"),
+        ("Signify Netherlands B.V.", "RDM001"),
     ],
 )
 
-def test_RDM004_signature(
+def test_RDM001_signature(
     manufacturer: str, model: str, assert_signature_matches_quirk
 ) -> None:
     """Test that the signature of all supported RDM devices is matched to its quirk."""
@@ -36,11 +36,9 @@ def test_RDM004_signature(
         },
         "manufacturer": manufacturer,
         "model": model,
-        "class": "zhaquirks.philips.rdm004.PhilipsRDM004",
+        "class": "zhaquirks.philips.rdm001.PhilipsRDM001",
     }
 
     assert_signature_matches_quirk(
-        zhaquirks.philips.rdm004.PhilipsRDM004, signature
-    )
-
-    
+        zhaquirks.philips.rdm001.PhilipsRDM001, signature
+    ) 
