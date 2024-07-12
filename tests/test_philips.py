@@ -9,12 +9,12 @@ from zhaquirks.philips.rdm004 import PhilipsRDM004
 
 zhaquirks.setup()
 
-#@pytest.mark.parametrize("manufacturer,model",
-#    [
-#        ("Philips", "RDM001"),
-#        ("Signify Netherlands B.V.", "RDM001"),
-#    ],
-#)
+@pytest.mark.parametrize("manufacturer,model",
+    [
+        ("Philips", "RDM001"),
+        ("Signify Netherlands B.V.", "RDM001"),
+    ],
+)
 
 def test_RDM001_signature(
     manufacturer: str, model: str, assert_signature_matches_quirk
@@ -35,11 +35,11 @@ def test_RDM001_signature(
                 "out_clusters": ["0x3", "0x4", "0x6", "0x8", "0x19"],
             }
         },
-        "manufacturer": "Philips",
-        "model": "RDM001",
+        "manufacturer": manufacturer,
+        "model": model,
         "class": "zhaquirks.philips.rdm001.PhilipsRDM001",
     }
 
     assert_signature_matches_quirk(
         zhaquirks.philips.rdm001.PhilipsRDM001, signature
-    ) 
+    )
