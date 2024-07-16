@@ -9,7 +9,7 @@ on:
 
 jobs:
   shared-ci:
-    uses: zigpy/workflows/.github/workflows/ci.yml@main
+    uses: zigpy/workflows/.github/workflows/ci.yml@d0d508a74b8a1ff6ecca9344ebcbc2a83e19fa18
     with:
       CODE_FOLDER: zhaquirks
       CACHE_VERSION: 3
