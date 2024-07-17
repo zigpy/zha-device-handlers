@@ -1249,7 +1249,6 @@ class Plug_CB_Metering(EnchantedDevice):
 
     signature = {
         MODEL: "TS011F",
-        MODELS_INFO: [("_TZ3000_qeuvnohg", "TS011F")],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=266
             # device_version=1
