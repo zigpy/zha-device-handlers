@@ -355,7 +355,7 @@ class PlugAEU001(PlugAEU001)
             (LUMI, "lumi.plug.aeu001"),
         ],
         ENDPOINTS: {
-            # <SimpleDescriptor endpoint=1 profile=104 device_type=0
+            # <SimpleDescriptor endpoint=1 profile=260 device_type=81
             # device_version=1
             # input_clusters=[0, 3, 4, 5, 6, 18, 1026, 1794, 2820, 64704]
             # output_clusters=[]>
