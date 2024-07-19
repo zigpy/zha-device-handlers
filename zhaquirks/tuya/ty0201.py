@@ -25,7 +25,8 @@ class TuyaTempHumiditySensor(CustomDevice):
         #  input_clusters=["0x000", "0x0001", "0x0003", "0x0402", "0x0405"]
         #  output_clusters=["0x0019"]>
         MODELS_INFO: [("_TZ3000_bjawzodf", "TY0201"),
-                      ("_TZ3000_zl1kmjqx", "TY0201")],
+                      ("_TZ3000_zl1kmjqx", "TY0201"),
+                      ("_TZ3000_zl1kmjqx", "")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
