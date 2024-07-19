@@ -346,3 +346,61 @@ class PlugMAEU01Alt3(PlugMAEU01):
     }
 
     replacement = PlugMAEU01.replacement
+
+class PlugAEU001(PlugAEU001)
+    """lumi.plug.aeu0001 plug H2 EU"""
+    
+    # Code copied 1:1 from lumi.plug.mmeu01 and needs to be changed accordingly
+    
+    signature = {
+        MODELS_INFO: [
+            (LUMI, "lumi.plug.eu001"),
+        ],
+        ENDPOINTS: {
+            # <SimpleDescriptor endpoint=1 profile=104 device_type=0
+            # device_version=1
+            # input_clusters=[0, 3, 4, 5, 6, 64704]
+            # output_clusters=[10, 25]>
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    DeviceTemperature.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    OppleCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            # <SimpleDescriptor endpoint=21 profile=260 device_type=81
+            # device_version=1
+            # input_clusters=[12]
+            # output_clusters=[]>
+            21: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [AnalogInput.cluster_id],
+            },
+            # <SimpleDescriptor endpoint=22 profile=260 device_type=81
+            # device_version=1
+            # input_clusters=[12]
+            # output_clusters=[]>
+            22: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [AnalogInput.cluster_id],
+            },
+            # <SimpleDescriptor endpoint=242 profile=41440 device_type=97
+            # device_version=0
+            # input_clusters=[]
+            # output_clusters=[33]>
+            242: {
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        },
+    }
