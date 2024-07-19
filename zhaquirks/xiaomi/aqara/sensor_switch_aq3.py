@@ -1,6 +1,5 @@
 """Xiaomi aqara button sensor."""
 
-from zigpy import types
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import Basic, Identify, MultistateInput, OnOff, Ota
 
