@@ -46,7 +46,6 @@ RELEASE = 17
 SHAKE = 18
 SINGLE = 1
 STATUS_TYPE_ATTR = 0x0055  # decimal = 85
-OPPLE_MFG_CODE = 0x115F
 
 MOVEMENT_TYPE = {
     B1ACN01_HOLD: COMMAND_HOLD,
@@ -62,13 +61,8 @@ MOVEMENT_TYPE = {
 class OppleCluster(XiaomiAqaraE1Cluster):
     """Opple cluster."""
 
-    attributes = {
-        0x0009: ("mode", types.uint8_t, True),
-    }
-    attr_config = {0x0009: 0x01}
 
-    async def bind(self):
-        """Bind cluster."""
+
 
 class MultistateInputCluster(CustomCluster, MultistateInput):
     """Multistate input cluster."""
@@ -210,7 +204,6 @@ class SwitchAQ3B2(XiaomiCustomDevice):
         },
     }
     replacement = {
-        SKIP_CONFIGURATION: True,
         ENDPOINTS: {
             1: {
                 DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
@@ -219,7 +212,6 @@ class SwitchAQ3B2(XiaomiCustomDevice):
                     XiaomiPowerConfiguration,
                     Identify.cluster_id,
                     MultistateInputCluster,
-                    OppleCluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
