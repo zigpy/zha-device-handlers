@@ -7,7 +7,8 @@ from zigpy import types as t
 from zigpy.quirks import CustomCluster
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.closures import WindowCovering
-from zigpy.zcl.clusters.general import Basic
+from zigpy.zcl.clusters.general import Basic, OnOff
+from zigpy.zcl.clusters.lighting import Ballast
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 SE_MANUF_NAME = "Schneider Electric"
@@ -20,46 +21,157 @@ class SEBasic(CustomCluster, Basic):
     class AttributeDefs(Basic.AttributeDefs):
         """Attribute definitions."""
 
-        se_sw_build_id: Final = ZCLAttributeDef(
+        # The Application FW Version attribute specifies the firmware version of the application. The format of this
+        # attribute is XXX.YYY.ZZZ V.
+        # XXX = major version
+        # YYY = minor version
+        # ZZZ = patch version
+        # V = Build Type (One of the following: D = Development version, T0, T1 = Verification version, V = Validation
+        # version, R = Official Release version).
+        se_application_fw_version: Final = ZCLAttributeDef(
             id=0xE001,
             type=t.CharacterString,
             is_manufacturer_specific=True,
-        )  # value: "002.004.016 R"
-        unknown_attribute_57346: Final = ZCLAttributeDef(
+        )
+        # The Application HWVersion attribute specifies the hardware version of the application design in format
+        # AAA.BBB.CCC. Meaning:
+        # AAA - major version
+        # BBB - minor version
+        # CCC - patch version
+        # If version is 000.000.000, HW version is not available.
+        se_application_hw_version: Final = ZCLAttributeDef(
             id=0xE002,
             type=t.CharacterString,
             is_manufacturer_specific=True,
-        )  # value: "001.000.000"
-        unknown_attribute_57348: Final = ZCLAttributeDef(
+        )
+        # Device serial number. Hexadecimal string of 15 chars length.
+        se_device_serial_number: Final = ZCLAttributeDef(
             id=0xE004,
             type=t.CharacterString,
             is_manufacturer_specific=True,
-        )  # value: "213249FEFF5ECFD"
-        unknown_attribute_57351: Final = ZCLAttributeDef(
+        )
+        # The ProductIdentifier attribute specifies the unique internal numerical identifier of the product. See device
+        # description for this value.
+        se_product_identifier: Final = ZCLAttributeDef(
             id=0xE007,
             type=t.enum16,
             is_manufacturer_specific=True,
         )
-        se_device_type: Final = ZCLAttributeDef(
+        # The ProductRange attribute specifies the name of the range to which the product belongs.
+        se_product_range: Final = ZCLAttributeDef(
             id=0xE008,
             type=t.CharacterString,
             is_manufacturer_specific=True,
-        )  # value: "Wiser Light"
-        se_model: Final = ZCLAttributeDef(
+        )
+        # The ProductModel attribute specifies the name of the product model. Same value as model identifier attribute
+        # 0x0005.
+        se_product_model: Final = ZCLAttributeDef(
             id=0xE009,
             type=t.CharacterString,
             is_manufacturer_specific=True,
-        )  # value: "NHPB/SHUTTER/1"
-        se_realm: Final = ZCLAttributeDef(
+        )
+        # The ProductFamily attribute specifies the name of the family to which the product belongs.
+        se_product_family: Final = ZCLAttributeDef(
             id=0xE00A,
             type=t.CharacterString,
             is_manufacturer_specific=True,
-        )  # value: "Wiser Home"
-        unknown_attribute_57355: Final = ZCLAttributeDef(
+        )
+        # VendorURL, value: "http://www.schneider-electric.com"
+        se_vendor_url: Final = ZCLAttributeDef(
             id=0xE00B,
             type=t.CharacterString,
             is_manufacturer_specific=True,
-        )  # value: "http://www.schneider-electric.com"
+        )
+
+
+class SEOnTimeReloadOptions(t.bitmap8):
+    """Valid values for the SE OnTimeReloadOptions attr."""
+
+    # OnTimeReload timer can be canceled by receiving OFF command -> light is going OFF immediately.
+    # If this bit is not set, the timer can not be canceled, it is always restarted.
+    OnTimeReloadCanceledByOffCommand = 0x1
+
+    # Impulse mode active. Whenever output should be switched ON, it will be switched ON only for 200msec.
+    # OnTimeReload attributes is ignored, also bit0 inside this attribute has no sense. If this bit is not set,
+    # impulse mode is disabled.
+    ImpulseMode = 0x2
+
+
+class SEOnOff(CustomCluster, OnOff):
+    """Schneider Electric manufacturer specific OnOff cluster."""
+
+    class AttributeDefs(OnOff.AttributeDefs):
+        """Attribute definitions."""
+
+        # Has meaning only if attribute OnTimeReload is not 0. Defines number of seconds before the light is switched
+        # off automatically when the user is somehow inform the light will be switched off automatically. Value 0 or
+        # 0xFFFF disables pre-warning. For switch is just short switch OFF and ON, for dimmer device goes to 60
+        # percent and starts slowly dim down. During this time user can reload the time and postpone automatic switch
+        # off for time defined in OnTimeReload. If you enter value greater than 6553, after reboot you will read again
+        # value 6553. If you enter 0xFFFF, functionality will be disabled.
+        se_pre_warning_time: Final = ZCLAttributeDef(
+            id=0xE000,
+            type=t.uint16_t,
+            is_manufacturer_specific=True,
+        )
+
+        # Defines number of seconds before the light is switched off automatically. Time is in seconds.
+        # Value 0 disable the functionality. When brightness is changed, or ON command is received, timer is always
+        # restarted. Check OnTimeReloadOptions for possible impulse mode (if attribute is implemented).
+        se_on_time_reload: Final = ZCLAttributeDef(
+            id=0xE001,
+            type=t.uint32_t,
+            is_manufacturer_specific=True,
+        )
+
+        se_on_time_reload_options: Final = ZCLAttributeDef(
+            id=0xE002,
+            type=SEOnTimeReloadOptions,
+            is_manufacturer_specific=True,
+        )
+
+
+class SEControlMode(t.enum8):
+    """Dimming mode for PUCK/DIMMER/* and NHROTARY/DIMMER/1."""
+
+    Auto = 0
+    RC = 1
+    RL = 2
+    RL_LED = 3
+
+
+class SEWiringMode(t.enum8):
+    """Dimmer wiring mode.  Default value depends on how the dimmer is connected to the mains."""
+
+    TwoWiredMode = 0
+    ThreeWiredMode = 1
+
+
+class SEDimmingCurve(t.enum8):
+    """Dimmer dimming curve."""
+
+    Logarithmic = 0
+    Linear = 1  # Not supported in current FW, but defined in the spec
+    Exponential = 2  # Not supported in current FW, but defined in the spec
+
+
+class SEBallast(CustomCluster, Ballast):
+    """Schneider Electric Ballast cluster."""
+
+    manufacturer_id_override = SE_MANUF_ID
+
+    class AttributeDefs(Ballast.AttributeDefs):
+        """Attribute definitions."""
+
+        se_control_mode: Final = ZCLAttributeDef(
+            id=0xE000, type=SEControlMode, is_manufacturer_specific=True
+        )
+        se_wiring_mode: Final = ZCLAttributeDef(
+            id=0xE002, type=t.enum8, is_manufacturer_specific=True
+        )
+        se_dimming_curve: Final = ZCLAttributeDef(
+            id=0xE002, type=t.enum8, is_manufacturer_specific=True
+        )
 
 
 class SEWindowCovering(CustomCluster, WindowCovering):
@@ -138,17 +250,59 @@ class SEWindowCovering(CustomCluster, WindowCovering):
         return await super().command(command_id, *args, **kwargs)
 
 
-class SELedIndicatorSignals(t.enum8):
+class SESwitchIndication(t.enum8):
     """Available LED indicator signal combinations.
 
     Shutter movement can be indicated with a red LED signal. A green LED
     light permanently provides orientation, if desired.
     """
 
-    MOVEMENT_ONLY = 0x00
-    MOVEMENT_AND_ORIENTATION = 0x01
-    ORIENTATION_ONLY = 0x02
-    NONE = 0x03
+    # For lights: LED is on when load is on.  For shutter controllers: red LED is on while shutter is moving.
+    FollowsLoad = 0x00
+    # For lights: LED is always on. For shutter controllers: red LED is on while shutter is moving, green LED indicates
+    # direction.
+    AlwaysOn = 0x01
+    # For lights: LED is on when load is off.  For shutter controllers: red LED is never on, green LED indicates
+    # direction.
+    InverseOfLoad = 0x02
+    # LED(s) are always off.
+    AlwaysOff = 0x03
+
+
+class SESwitchAction(t.enum8):
+    """Valid values for the SE SwitchAction attribute."""
+
+    # Behave like a light switch (Up = On, Down = Off)
+    Light = 0x00
+    # Behave like an inverted light switch (Up = Off, Down = On)
+    LightOpposite = 0xFE
+    # Behave like a dimmer (Up/rotate right = on and/or dim up, Down/rotate left = off and/or dim down)
+    Dimmer = 0x01
+    # Behave like an inverted dimmer (Up/rotate right = off and/or dim down, Down/rotate left = on and/or dim up)
+    DimmerOpposite = 0xFD
+    # Behave like a standard shutter controller (up/rotate right = move shutter up, down/rotate left = move shutter
+    # down, short press to stop movement)
+    StandardShutter = 0x02
+    # Behave like an inverted standard shutter controller (up/rotate right = move shutter down, down/rotate left = move
+    # shutter up, short press to stop movement)
+    StandardShutterOpposite = 0xFC
+    # Behave like a Schneider shutter controller using SE custom Window Covering cluster (up/rotate right = move
+    # shutter up, down/rotate left = move shutter down, short press to stop movement)
+    SchneiderShutter = 0x03
+    # Behave like an inverted Schneider shutter controller using SE custom Window Covering cluster (up/rotate right =
+    # move shutter down, down/rotate left = move shutter up, short press to stop movement)
+    SchneiderShutterOpposite = 0xFB
+    # Recall scenes according to the Up/DownSceneID attributes, and group using the Up/DownGroupID attributes.
+    Scene = 0x04
+    # No observable function?
+    ToggleLight = 0x05
+    # No observable function?
+    ToggleDimmer = 0x06
+    # No observable function?
+    AlternateLight = 0x07
+    # No observable function?
+    AlternateDimmer = 0x08
+    NotUsed = 0x7F
 
 
 class SESpecific(CustomCluster):
@@ -161,37 +315,50 @@ class SESpecific(CustomCluster):
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
 
-        led_indicator_signals: Final = ZCLAttributeDef(
+        se_switch_indication: Final = ZCLAttributeDef(
             id=0x0000,
-            type=SELedIndicatorSignals,
+            type=SESwitchIndication,
             is_manufacturer_specific=True,
         )
-        unknown_attribute_1: Final = ZCLAttributeDef(
+        # Default values depends on endpoint and device type. More info you find in device description.
+        se_switch_actions: Final = ZCLAttributeDef(
             id=0x0001,
-            type=t.enum8,
+            type=SESwitchAction,
             is_manufacturer_specific=True,
         )
-        unknown_attribute_16: Final = ZCLAttributeDef(
+        # The UpSceneID attribute represents the Scene Id field value of any Scene command cluster transmitted by the
+        # device when user activates is rocker up side according to the rocker configuration. See SwitchActions
+        # attribute.
+        se_up_scene_id: Final = ZCLAttributeDef(
             id=0x0010,
             type=t.uint8_t,
             is_manufacturer_specific=True,
         )
-        unknown_attribute_17: Final = ZCLAttributeDef(
+        # The UpGroupID attribute represents the Group Id field value of any Scene command cluster transmitted by the
+        # device when user activates is rocker up side according to the rocker configuration. Value greater than 0xFFF7
+        # means, no command is sent. See SwitchActions attribute.
+        se_up_group_id: Final = ZCLAttributeDef(
             id=0x0011,
             type=t.uint16_t,
             is_manufacturer_specific=True,
         )
-        unknown_attribute_32: Final = ZCLAttributeDef(
+        # The DownSceneID attribute represents the Scene Id field value of any Scene command cluster transmitted by the
+        # device when user activates is rocker down side according to the rocker configuration. See SwitchActions
+        # attribute.
+        se_down_scene_id: Final = ZCLAttributeDef(
             id=0x0020,
             type=t.uint8_t,
             is_manufacturer_specific=True,
         )
-        unknown_attribute_33: Final = ZCLAttributeDef(
+        # The DownGroupID attribute represents the Group Id field value of any Scene command cluster transmitted by the
+        # device when user activates is rocker down side according to the rocker configuration. Value greater than
+        # 0xFFF7 means, no command is sent. See SwitchActions attribute.
+        se_down_group_id: Final = ZCLAttributeDef(
             id=0x0021,
             type=t.uint16_t,
             is_manufacturer_specific=True,
         )
-        unknown_attribute_65533: Final = ZCLAttributeDef(
+        se_cluster_revision: Final = ZCLAttributeDef(
             id=0xFFFD,
             type=t.uint16_t,
             is_manufacturer_specific=True,

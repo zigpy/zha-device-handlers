@@ -17,3 +17,5 @@ jobs:
       PRE_COMMIT_CACHE_PATH:  ~/.cache/pre-commit
       MINIMUM_COVERAGE_PERCENTAGE: 80
       PYTHON_MATRIX: "3.12"
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

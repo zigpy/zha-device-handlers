@@ -11,6 +11,7 @@ from zigpy import types as t
 import zigpy.device
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.typing import AddressingMode
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
     AnalogInput,
@@ -23,6 +24,7 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.measurement import (
     IlluminanceMeasurement,
+    OccupancySensing,
     PressureMeasurement,
     RelativeHumidity,
     TemperatureMeasurement,
@@ -388,7 +390,7 @@ class XiaomiCluster(CustomCluster):
             attribute_names.update({11: ILLUMINANCE_MEASUREMENT})
         elif self.endpoint.device.model == "lumi.curtain.acn002":
             attribute_names.update({101: BATTERY_PERCENTAGE_REMAINING_ATTRIBUTE})
-        elif self.endpoint.device.model in ["lumi.motion.agl02", "lumi.motion.ac02"]:
+        elif self.endpoint.device.model in ["lumi.motion.agl02", "lumi.motion.ac02", "lumi.motion.acn001"]:
             attribute_names.update({101: ILLUMINANCE_MEASUREMENT})
             if self.endpoint.device.model == "lumi.motion.ac02":
                 attribute_names.update({105: DETECTION_INTERVAL})
@@ -461,6 +463,22 @@ class XiaomiAqaraE1Cluster(XiaomiCluster):
 
     cluster_id = 0xFCC0
     ep_attribute = "opple_cluster"
+
+
+class XiaomiMotionManufacturerCluster(XiaomiAqaraE1Cluster):
+    """Xiaomi manufacturer cluster to parse motion and illuminance reports."""
+
+    def _update_attribute(self, attrid, value):
+        super()._update_attribute(attrid, value)
+        if attrid == 274:
+            value = value - 65536
+            self.endpoint.illuminance.update_attribute(
+                IlluminanceMeasurement.AttributeDefs.measured_value.id, value
+            )
+            self.endpoint.occupancy.update_attribute(
+                OccupancySensing.AttributeDefs.occupancy.id,
+                OccupancySensing.Occupancy.Occupied,
+            )
 
 
 class BinaryOutputInterlock(CustomCluster, BinaryOutput):
@@ -541,6 +559,19 @@ class MotionCluster(LocalDataCluster, MotionOnEvent):
 
     _CONSTANT_ATTRIBUTES = {IasZone.AttributeDefs.zone_type.id: MOTION_TYPE}
     reset_s: int = 70
+
+
+class LocalOccupancyCluster(LocalDataCluster, OccupancyCluster):
+    """Local occupancy cluster that ignores messages from device."""
+
+    def handle_cluster_general_request(
+        self,
+        hdr: zigpy.zcl.foundation.ZCLHeader,
+        args: list,
+        *,
+        dst_addressing: AddressingMode | None = None,
+    ) -> None:
+        """Ignore occupancy attribute reports on this cluster, as they're invalid and sent by the sensor every hour."""
 
 
 class DeviceTemperatureCluster(LocalDataCluster, DeviceTemperature):

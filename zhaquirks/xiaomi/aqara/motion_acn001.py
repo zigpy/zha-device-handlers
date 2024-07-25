@@ -1,9 +1,6 @@
-"""Xiaomi aqara T1 motion sensor device."""
-from __future__ import annotations
-
+"""Xiaomi Aqara E1 motion sensor device."""
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import Identify, Ota
-from zigpy.zcl.clusters.measurement import OccupancySensing
 
 from zhaquirks import Bus
 from zhaquirks.const import (
@@ -20,14 +17,15 @@ from zhaquirks.xiaomi import (
     IlluminanceMeasurementCluster,
     LocalOccupancyCluster,
     MotionCluster,
+    XiaomiAqaraE1Cluster,
     XiaomiCustomDevice,
     XiaomiMotionManufacturerCluster,
     XiaomiPowerConfiguration,
 )
 
 
-class MotionT1(XiaomiCustomDevice):
-    """Xiaomi motion sensor device."""
+class MotionE1(XiaomiCustomDevice):
+    """Xiaomi motion sensor device lumi.motion.acn001."""
 
     def __init__(self, *args, **kwargs):
         """Init."""
@@ -36,20 +34,16 @@ class MotionT1(XiaomiCustomDevice):
         super().__init__(*args, **kwargs)
 
     signature = {
-        #  <SimpleDescriptor endpoint=1 profile=260 device_type=263
-        #  device_version=1
-        #  input_clusters=[0, 1, 3, 1030]
-        #  output_clusters=[3, 19]>
-        MODELS_INFO: [(LUMI, "lumi.motion.agl02")],
+        MODELS_INFO: [(LUMI, "lumi.motion.acn001")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.OCCUPANCY_SENSOR,
+                DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
                 INPUT_CLUSTERS: [
                     BasicCluster.cluster_id,
                     XiaomiPowerConfiguration.cluster_id,
                     Identify.cluster_id,
-                    OccupancySensing.cluster_id,
+                    XiaomiAqaraE1Cluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],
             }
