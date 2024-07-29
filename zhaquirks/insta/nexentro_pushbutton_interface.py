@@ -1,4 +1,5 @@
 """Device handler for Insta NEXENTRO Pushbutton Interface."""
+
 from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.closures import WindowCovering

@@ -1,4 +1,5 @@
 """Third Reality switch devices."""
+
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes

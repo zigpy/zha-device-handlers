@@ -460,6 +460,7 @@ class TuyaMoesCover0601_alt_controls(TuyaWindowCover):
         }
     }
 
+
 class TuyaMoesCover0601_alt_controls2(TuyaWindowCover):
     """Tuya blind controller device."""
 

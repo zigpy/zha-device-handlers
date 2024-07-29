@@ -1,4 +1,5 @@
 """Module to handle quirks of the Elko Smart Super thermostat."""
+
 import zigpy.profiles.zha as zha_p
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Groups, Identify, Ota, Scenes
