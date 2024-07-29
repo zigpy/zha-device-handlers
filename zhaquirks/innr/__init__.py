@@ -1,4 +1,5 @@
 """Module for Innr quirks implementations."""
+
 from zigpy.quirks import CustomCluster
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering

@@ -1,4 +1,5 @@
 """Linkind sensors."""
+
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic

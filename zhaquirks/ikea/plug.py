@@ -1,4 +1,5 @@
 """IKEA plugs quirk."""
+
 from zigpy.quirks.v2 import add_to_registry_v2
 from zigpy.zcl.clusters.general import LevelControl
 

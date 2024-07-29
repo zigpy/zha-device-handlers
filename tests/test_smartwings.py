@@ -1,4 +1,5 @@
 """Tests for Smartwings."""
+
 from unittest import mock
 
 import pytest

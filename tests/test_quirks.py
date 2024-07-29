@@ -67,6 +67,7 @@ for manufacturer in zq._DEVICE_REGISTRY._registry.values():
 
 del quirk, model_quirk_list, manufacturer
 
+
 ALL_ZIGPY_CLUSTERS = frozenset(zcl.clusters.CLUSTERS_BY_NAME.values())
 
 
@@ -284,7 +285,8 @@ def test_dev_from_signature(
 
 
 @pytest.mark.parametrize(
-    "quirk", (q for q in ALL_QUIRK_CLASSES if issubclass(q, zhaquirks.QuickInitDevice))
+    "quirk",
+    (q for q in ALL_QUIRK_CLASSES if issubclass(q, zhaquirks.QuickInitDevice)),
 )
 def test_quirk_quickinit(quirk: zigpy.quirks.CustomDevice) -> None:
     """Make sure signature in QuickInit Devices have all required attributes."""
@@ -576,7 +578,10 @@ def test_zigpy_custom_cluster_pollution() -> None:
         )
 
 
-@pytest.mark.parametrize("module_name", {q.__module__ for q in ALL_QUIRK_CLASSES})
+@pytest.mark.parametrize(
+    "module_name",
+    sorted({q.__module__ for q in ALL_QUIRK_CLASSES}),
+)
 def test_no_module_level_device_automation_triggers(module_name: str) -> None:
     """Ensure no quirk module has a module-level `device_automation_triggers` dict."""
 

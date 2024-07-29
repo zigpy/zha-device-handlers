@@ -1,4 +1,5 @@
 """Device handler for IKEA of Sweden STARKVIND Air purifier."""
+
 from __future__ import annotations
 
 from typing import Any

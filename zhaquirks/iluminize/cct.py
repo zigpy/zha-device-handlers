@@ -1,4 +1,5 @@
 """Quirk for iluminize CCT actor."""
+
 from zigpy.profiles import zgp, zll
 from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.zcl.clusters.general import (

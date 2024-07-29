@@ -1,4 +1,5 @@
 """Device handler for Sonoff buttons."""
+
 from zigpy.quirks.v2 import add_to_registry_v2
 
 from zhaquirks.const import (

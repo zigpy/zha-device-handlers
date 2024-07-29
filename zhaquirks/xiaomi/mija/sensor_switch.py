@@ -1,4 +1,5 @@
 """Xiaomi mija button device."""
+
 import asyncio
 
 from zigpy.profiles import zha
