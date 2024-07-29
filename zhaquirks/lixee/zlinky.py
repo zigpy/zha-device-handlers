@@ -1,4 +1,5 @@
 """Quirk for ZLinky_TIC."""
+
 from copy import deepcopy
 
 from zigpy.profiles import zgp, zha

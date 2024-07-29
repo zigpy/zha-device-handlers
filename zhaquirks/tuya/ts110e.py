@@ -1,4 +1,5 @@
 """Tuya Dimmer TS110E."""
+
 from typing import Any, Optional, Union
 
 from zigpy.profiles import zgp, zha

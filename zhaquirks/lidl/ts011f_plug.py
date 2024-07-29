@@ -1,4 +1,5 @@
 """LIDL TS011F plug."""
+
 from __future__ import annotations
 
 from zigpy.profiles import zgp, zha

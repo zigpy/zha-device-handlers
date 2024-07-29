@@ -1,4 +1,5 @@
 """Quirk for LUMI lumi.motion.ac02."""
+
 from __future__ import annotations
 
 import logging

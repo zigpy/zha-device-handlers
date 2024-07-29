@@ -1,4 +1,5 @@
 """Centralite 3310S implementation."""
+
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t

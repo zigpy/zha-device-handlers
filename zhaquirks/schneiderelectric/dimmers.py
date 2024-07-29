@@ -1,6 +1,5 @@
 """Schneider Electric dimmers and switches quirks."""
 
-
 from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.closures import WindowCovering
