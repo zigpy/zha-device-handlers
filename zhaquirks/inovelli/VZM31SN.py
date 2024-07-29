@@ -29,6 +29,7 @@ from zhaquirks.inovelli import INOVELLI_AUTOMATION_TRIGGERS, InovelliVZM31SNClus
 INOVELLI_VZM31SN_CLUSTER_ID = 64561
 WWAH_CLUSTER_ID = 64599
 
+
 class InovelliVZM31SNv13(CustomDevice):
     """VZM31-SN 2 in 1 Switch/Dimmer Module Firmware version 2.17 and above."""
 
@@ -148,6 +149,7 @@ class InovelliVZM31SNv13(CustomDevice):
     }
 
     device_automation_triggers = INOVELLI_AUTOMATION_TRIGGERS
+
 
 class InovelliVZM31SNv12(CustomDevice):
     """VZM31-SN 2 in 1 Switch/Dimmer Module Firmware version 2.08 and above."""

@@ -1,4 +1,5 @@
 """GLEDOPTO GL-C-009P device."""
+
 from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (

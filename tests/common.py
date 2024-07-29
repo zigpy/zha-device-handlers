@@ -1,4 +1,5 @@
 """Quirks common helpers."""
+
 import asyncio
 import datetime
 

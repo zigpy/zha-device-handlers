@@ -1,4 +1,5 @@
 """Xiaomi aqara T1 motion sensor device."""
+
 from __future__ import annotations
 
 from zigpy.profiles import zha
