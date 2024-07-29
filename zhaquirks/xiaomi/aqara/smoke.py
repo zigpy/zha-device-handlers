@@ -1,4 +1,5 @@
 """Quirk for LUMI lumi.sensor_smoke.acn03 smoke sensor."""
+
 from typing import Any
 
 from zigpy import types

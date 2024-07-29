@@ -1,4 +1,5 @@
 """Smoke Sensor."""
+
 import logging
 
 import zigpy.profiles.zha

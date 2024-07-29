@@ -27,6 +27,7 @@ ZCL commands supported:
 Broken ZCL attributes:
     0x0204 - TemperatureDisplayMode (0x0000): Writing doesn't seem to do anything
 """
+
 from collections.abc import Callable
 from datetime import UTC, datetime
 import time
@@ -465,7 +466,7 @@ class DanfossTimeCluster(CustomizedStandardCluster, Time):
             {
                 "time": current_time,
                 "time_status": 0b00000010,  # only bit 1 can be set
-                "time_zone": time.timezone
+                "time_zone": time.timezone,
             }
         )
 

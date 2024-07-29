@@ -1,4 +1,5 @@
 """Trust."""
+
 from zhaquirks import MotionWithReset
 
 TRUST = "Trust"

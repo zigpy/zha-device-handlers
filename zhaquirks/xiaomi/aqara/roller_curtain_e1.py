@@ -1,4 +1,5 @@
 """Aqara Roller Shade Driver E1 device."""
+
 from __future__ import annotations
 
 from typing import Any

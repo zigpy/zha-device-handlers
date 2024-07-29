@@ -1,4 +1,5 @@
 """Ledvance quirks elements."""
+
 from zigpy.quirks import CustomCluster
 from zigpy.zcl import foundation
 
