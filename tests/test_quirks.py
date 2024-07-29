@@ -67,7 +67,6 @@ for manufacturer in zq._DEVICE_REGISTRY._registry.values():
 
 del quirk, model_quirk_list, manufacturer
 
-ALL_QUIRK_CLASSES = sorted(ALL_QUIRK_CLASSES, key=lambda q: q.__name__)
 
 ALL_ZIGPY_CLUSTERS = frozenset(zcl.clusters.CLUSTERS_BY_NAME.values())
 
@@ -287,10 +286,7 @@ def test_dev_from_signature(
 
 @pytest.mark.parametrize(
     "quirk",
-    sorted(
-        (q for q in ALL_QUIRK_CLASSES if issubclass(q, zhaquirks.QuickInitDevice)),
-        key=lambda q: q.__name__,
-    ),
+    (q for q in ALL_QUIRK_CLASSES if issubclass(q, zhaquirks.QuickInitDevice)),
 )
 def test_quirk_quickinit(quirk: zigpy.quirks.CustomDevice) -> None:
     """Make sure signature in QuickInit Devices have all required attributes."""
@@ -398,24 +394,21 @@ def test_signature(quirk: CustomDevice) -> None:
 
 @pytest.mark.parametrize(
     "quirk",
-    sorted(
-        [
-            quirk_cls
-            for quirk_cls in ALL_QUIRK_CLASSES
-            if quirk_cls
-            not in (
-                # Some quirks do not yet have model info:
-                zhaquirks.xbee.xbee_io.XBeeSensor,
-                zhaquirks.xbee.xbee3_io.XBee3Sensor,
-                zhaquirks.tuya.ts0201.MoesTemperatureHumidtySensorWithScreen,
-                zhaquirks.smartthings.tag_v4.SmartThingsTagV4,
-                zhaquirks.smartthings.multi.SmartthingsMultiPurposeSensor,
-                zhaquirks.netvox.z308e3ed.Z308E3ED,
-                zhaquirks.gledopto.soposhgu10.SoposhGU10,
-            )
-        ],
-        key=lambda q: q.__name__,
-    ),
+    [
+        quirk_cls
+        for quirk_cls in ALL_QUIRK_CLASSES
+        if quirk_cls
+        not in (
+            # Some quirks do not yet have model info:
+            zhaquirks.xbee.xbee_io.XBeeSensor,
+            zhaquirks.xbee.xbee3_io.XBee3Sensor,
+            zhaquirks.tuya.ts0201.MoesTemperatureHumidtySensorWithScreen,
+            zhaquirks.smartthings.tag_v4.SmartThingsTagV4,
+            zhaquirks.smartthings.multi.SmartthingsMultiPurposeSensor,
+            zhaquirks.netvox.z308e3ed.Z308E3ED,
+            zhaquirks.gledopto.soposhgu10.SoposhGU10,
+        )
+    ],
 )
 def test_signature_model_info_given(quirk: CustomDevice) -> None:
     """Verify that quirks have MODELS_INFO, MODEL or MANUFACTURER in their signature."""
@@ -675,14 +668,7 @@ KNOWN_DUPLICATE_TRIGGERS = {
 # XXX: Test does not handle v2 quirks
 @pytest.mark.parametrize(
     "quirk",
-    sorted(
-        [
-            q
-            for q in ALL_QUIRK_CLASSES
-            if getattr(q, "device_automation_triggers", None)
-        ],
-        key=lambda q: q.__name__,
-    ),
+    [q for q in ALL_QUIRK_CLASSES if getattr(q, "device_automation_triggers", None)],
 )
 def test_quirk_device_automation_triggers_unique(quirk):
     """Ensure all quirks have unique device automation triggers."""
@@ -714,18 +700,15 @@ def test_quirk_device_automation_triggers_unique(quirk):
 
 @pytest.mark.parametrize(
     "quirk",
-    sorted(
-        [
-            quirk_cls
-            for quirk_cls in ALL_QUIRK_CLASSES
-            if quirk_cls
-            not in (
-                zhaquirks.xbee.xbee_io.XBeeSensor,
-                zhaquirks.xbee.xbee3_io.XBee3Sensor,
-            )
-        ],
-        key=lambda q: q.__name__,
-    ),
+    [
+        quirk_cls
+        for quirk_cls in ALL_QUIRK_CLASSES
+        if quirk_cls
+        not in (
+            zhaquirks.xbee.xbee_io.XBeeSensor,
+            zhaquirks.xbee.xbee3_io.XBee3Sensor,
+        )
+    ],
 )
 def test_attributes_updated_not_replaced(quirk: CustomDevice) -> None:
     """Verify no quirks subclass a ZCL cluster but delete its attributes list."""
