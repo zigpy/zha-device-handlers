@@ -71,62 +71,113 @@ class OwonMetering(CustomCluster, Metering):
 
         # Consumption
         if attrid == OWON_METERING_ENERGY_CONSUMPTION_PH_A_ATTR:
-            self.endpoint.device.energy_consumption_ph_a_bus.listener_event("energy_consumption_ph_a_reported", value)
+            self.endpoint.device.energy_consumption_ph_a_bus.listener_event(
+                "energy_consumption_ph_a_reported", value
+            )
         elif attrid == OWON_METERING_ENERGY_CONSUMPTION_PH_B_ATTR:
-            self.endpoint.device.energy_consumption_ph_b_bus.listener_event("energy_consumption_ph_b_reported", value)
+            self.endpoint.device.energy_consumption_ph_b_bus.listener_event(
+                "energy_consumption_ph_b_reported", value
+            )
         elif attrid == OWON_METERING_ENERGY_CONSUMPTION_PH_C_ATTR:
-            self.endpoint.device.energy_consumption_ph_c_bus.listener_event("energy_consumption_ph_c_reported", value)
+            self.endpoint.device.energy_consumption_ph_c_bus.listener_event(
+                "energy_consumption_ph_c_reported", value
+            )
         elif attrid == OWON_METERING_TOTAL_ENERGY_CONSUMPTION_ATTR:
-            self.endpoint.device.total_energy_consumption_bus.listener_event("total_energy_consumption_reported", value)
+            self.endpoint.device.total_energy_consumption_bus.listener_event(
+                "total_energy_consumption_reported", value
+            )
         # Active power
         elif attrid == OWON_METERING_ACTIVE_POWER_PH_A_ATTR:
-            self.endpoint.device.active_power_bus.listener_event("active_power_reported", value)
+            self.endpoint.device.active_power_bus.listener_event(
+                "active_power_reported", value
+            )
         elif attrid == OWON_METERING_ACTIVE_POWER_PH_B_ATTR:
-            self.endpoint.device.active_power_ph_b_bus.listener_event("active_power_ph_b_reported", value)
+            self.endpoint.device.active_power_ph_b_bus.listener_event(
+                "active_power_ph_b_reported", value
+            )
         elif attrid == OWON_METERING_ACTIVE_POWER_PH_C_ATTR:
-            self.endpoint.device.active_power_ph_c_bus.listener_event("active_power_ph_c_reported", value)
+            self.endpoint.device.active_power_ph_c_bus.listener_event(
+                "active_power_ph_c_reported", value
+            )
         elif attrid == OWON_METERING_TOTAL_ACTIVE_POWER_ATTR:
-            self.endpoint.device.total_active_power_bus.listener_event("total_active_power_reported", value)
+            self.endpoint.device.total_active_power_bus.listener_event(
+                "total_active_power_reported", value
+            )
         # Reactive power
         elif attrid == OWON_METERING_REACTIVE_POWER_PH_A_ATTR:
-            self.endpoint.device.reactive_power_bus.listener_event("reactive_power_reported", value)
+            self.endpoint.device.reactive_power_bus.listener_event(
+                "reactive_power_reported", value
+            )
         elif attrid == OWON_METERING_REACTIVE_POWER_PH_B_ATTR:
-            self.endpoint.device.reactive_power_ph_b_bus.listener_event("reactive_power_ph_b_reported", value)
+            self.endpoint.device.reactive_power_ph_b_bus.listener_event(
+                "reactive_power_ph_b_reported", value
+            )
         elif attrid == OWON_METERING_REACTIVE_POWER_PH_C_ATTR:
-            self.endpoint.device.reactive_power_ph_c_bus.listener_event("reactive_power_ph_c_reported", value)
+            self.endpoint.device.reactive_power_ph_c_bus.listener_event(
+                "reactive_power_ph_c_reported", value
+            )
         elif attrid == OWON_METERING_TOTAL_REACTIVE_POWER_ATTR:
-            self.endpoint.device.total_reactive_power_bus.listener_event("total_reactive_power_reported", value)
+            self.endpoint.device.total_reactive_power_bus.listener_event(
+                "total_reactive_power_reported", value
+            )
         # Voltage
         elif attrid == OWON_METERING_VOLTAGE_PH_A_ATTR:
-            self.endpoint.device.rms_voltage_bus.listener_event("rms_voltage_reported", value)
+            self.endpoint.device.rms_voltage_bus.listener_event(
+                "rms_voltage_reported", value
+            )
         elif attrid == OWON_METERING_VOLTAGE_PH_B_ATTR:
-            self.endpoint.device.rms_voltage_ph_b_bus.listener_event("rms_voltage_ph_b_reported", value)
+            self.endpoint.device.rms_voltage_ph_b_bus.listener_event(
+                "rms_voltage_ph_b_reported", value
+            )
         elif attrid == OWON_METERING_VOLTAGE_PH_C_ATTR:
-            self.endpoint.device.rms_voltage_ph_c_bus.listener_event("rms_voltage_ph_c_reported", value)
+            self.endpoint.device.rms_voltage_ph_c_bus.listener_event(
+                "rms_voltage_ph_c_reported", value
+            )
         # Active current
         elif attrid == OWON_METERING_ACTIVE_CURRENT_PH_A_ATTR:
-            self.endpoint.device.active_current_bus.listener_event("active_current_reported", value)
+            self.endpoint.device.active_current_bus.listener_event(
+                "active_current_reported", value
+            )
         elif attrid == OWON_METERING_ACTIVE_CURRENT_PH_B_ATTR:
-            self.endpoint.device.active_current_ph_b_bus.listener_event("active_current_ph_b_reported", value)
+            self.endpoint.device.active_current_ph_b_bus.listener_event(
+                "active_current_ph_b_reported", value
+            )
         elif attrid == OWON_METERING_ACTIVE_CURRENT_PH_C_ATTR:
-            self.endpoint.device.active_current_ph_c_bus.listener_event("active_current_ph_c_reported", value)
+            self.endpoint.device.active_current_ph_c_bus.listener_event(
+                "active_current_ph_c_reported", value
+            )
         elif attrid == OWON_METERING_TOTAL_ACTIVE_CURRENT_ATTR:
-            self.endpoint.device.instantaneous_active_current_bus.listener_event("instantaneous_active_current_reported", value)
+            self.endpoint.device.instantaneous_active_current_bus.listener_event(
+                "instantaneous_active_current_reported", value
+            )
         # Reactive energy consumption
         elif attrid == OWON_METERING_REACTIVE_ENERGY_CONSUMPTION_PH_A_ATTR:
-            self.endpoint.device.reactive_energy_consumption_ph_a_bus.listener_event("reactive_energy_consumption_ph_a_reported", value)
+            self.endpoint.device.reactive_energy_consumption_ph_a_bus.listener_event(
+                "reactive_energy_consumption_ph_a_reported", value
+            )
         elif attrid == OWON_METERING_REACTIVE_ENERGY_CONSUMPTION_PH_B_ATTR:
-            self.endpoint.device.reactive_energy_consumption_ph_b_bus.listener_event("reactive_energy_consumption_ph_b_reported", value)
+            self.endpoint.device.reactive_energy_consumption_ph_b_bus.listener_event(
+                "reactive_energy_consumption_ph_b_reported", value
+            )
         elif attrid == OWON_METERING_REACTIVE_ENERGY_CONSUMPTION_PH_C_ATTR:
-            self.endpoint.device.reactive_energy_consumption_ph_c_bus.listener_event("reactive_energy_consumption_ph_c_reported", value)
+            self.endpoint.device.reactive_energy_consumption_ph_c_bus.listener_event(
+                "reactive_energy_consumption_ph_c_reported", value
+            )
         elif attrid == OWON_METERING_TOTAL_REACTIVE_ENERGY_CONSUMPTION_ATTR:
-            self.endpoint.device.total_reactive_energy_consumption_bus.listener_event("total_reactive_energy_consumption_reported", value)
+            self.endpoint.device.total_reactive_energy_consumption_bus.listener_event(
+                "total_reactive_energy_consumption_reported", value
+            )
         # Frequency
         elif attrid == OWON_METERING_AC_FREQUENCY_ATTR:
-            self.endpoint.device.ac_frequency_bus.listener_event("ac_frequency_reported", value)
+            self.endpoint.device.ac_frequency_bus.listener_event(
+                "ac_frequency_reported", value
+            )
         # Leakage
         elif attrid == OWON_METERING_LEAKAGE_CURRENT_ATTR:
-            self.endpoint.device.leakage_current_bus.listener_event("leakage_current_reported", value)
+            self.endpoint.device.leakage_current_bus.listener_event(
+                "leakage_current_reported", value
+            )
+
 
 class OwonManufacturerSpecific(LocalDataCluster):
     """Owon manufacturer specific attributes."""
@@ -136,34 +187,98 @@ class OwonManufacturerSpecific(LocalDataCluster):
 
     attributes = {
         # Energy Consumption
-        OWON_METERING_ENERGY_CONSUMPTION_PH_A_ATTR: ("energy_consumption_ph_a", t.uint48_t, True),
-        OWON_METERING_ENERGY_CONSUMPTION_PH_B_ATTR: ("energy_consumption_ph_b", t.uint48_t, True),
-        OWON_METERING_ENERGY_CONSUMPTION_PH_C_ATTR: ("energy_consumption_ph_c", t.uint48_t, True),
-        OWON_METERING_TOTAL_ENERGY_CONSUMPTION_ATTR: ("total_energy_consumption", t.uint48_t, True),
+        OWON_METERING_ENERGY_CONSUMPTION_PH_A_ATTR: (
+            "energy_consumption_ph_a",
+            t.uint48_t,
+            True,
+        ),
+        OWON_METERING_ENERGY_CONSUMPTION_PH_B_ATTR: (
+            "energy_consumption_ph_b",
+            t.uint48_t,
+            True,
+        ),
+        OWON_METERING_ENERGY_CONSUMPTION_PH_C_ATTR: (
+            "energy_consumption_ph_c",
+            t.uint48_t,
+            True,
+        ),
+        OWON_METERING_TOTAL_ENERGY_CONSUMPTION_ATTR: (
+            "total_energy_consumption",
+            t.uint48_t,
+            True,
+        ),
         # Active power
         OWON_METERING_ACTIVE_POWER_PH_A_ATTR: ("active_power_ph_a", t.uint24_t, True),
         OWON_METERING_ACTIVE_POWER_PH_B_ATTR: ("active_power_ph_b", t.uint24_t, True),
         OWON_METERING_ACTIVE_POWER_PH_C_ATTR: ("active_power_ph_c", t.uint24_t, True),
         OWON_METERING_TOTAL_ACTIVE_POWER_ATTR: ("total_active_power", t.uint24_t, True),
         # Reactive power
-        OWON_METERING_REACTIVE_POWER_PH_A_ATTR: ("reactive_power_ph_a", t.uint24_t, True),
-        OWON_METERING_REACTIVE_POWER_PH_B_ATTR: ("reactive_power_ph_b", t.uint24_t, True),
-        OWON_METERING_REACTIVE_POWER_PH_C_ATTR: ("reactive_power_ph_c", t.uint24_t, True),
-        OWON_METERING_TOTAL_REACTIVE_POWER_ATTR: ("total_reactive_power", t.uint24_t, True),
+        OWON_METERING_REACTIVE_POWER_PH_A_ATTR: (
+            "reactive_power_ph_a",
+            t.uint24_t,
+            True,
+        ),
+        OWON_METERING_REACTIVE_POWER_PH_B_ATTR: (
+            "reactive_power_ph_b",
+            t.uint24_t,
+            True,
+        ),
+        OWON_METERING_REACTIVE_POWER_PH_C_ATTR: (
+            "reactive_power_ph_c",
+            t.uint24_t,
+            True,
+        ),
+        OWON_METERING_TOTAL_REACTIVE_POWER_ATTR: (
+            "total_reactive_power",
+            t.uint24_t,
+            True,
+        ),
         # Voltage
         OWON_METERING_VOLTAGE_PH_A_ATTR: ("rms_voltage_ph_a", t.uint24_t, True),
         OWON_METERING_VOLTAGE_PH_B_ATTR: ("rms_voltage_ph_b", t.uint24_t, True),
         OWON_METERING_VOLTAGE_PH_C_ATTR: ("rms_voltage_ph_c", t.uint24_t, True),
         # Active current
-        OWON_METERING_ACTIVE_CURRENT_PH_A_ATTR: ("active_current_ph_a", t.uint24_t, True),
-        OWON_METERING_ACTIVE_CURRENT_PH_B_ATTR: ("active_current_ph_b", t.uint24_t, True),
-        OWON_METERING_ACTIVE_CURRENT_PH_C_ATTR: ("active_current_ph_c", t.uint24_t, True),
-        OWON_METERING_TOTAL_ACTIVE_CURRENT_ATTR: ("total_active_current", t.uint24_t, True),
+        OWON_METERING_ACTIVE_CURRENT_PH_A_ATTR: (
+            "active_current_ph_a",
+            t.uint24_t,
+            True,
+        ),
+        OWON_METERING_ACTIVE_CURRENT_PH_B_ATTR: (
+            "active_current_ph_b",
+            t.uint24_t,
+            True,
+        ),
+        OWON_METERING_ACTIVE_CURRENT_PH_C_ATTR: (
+            "active_current_ph_c",
+            t.uint24_t,
+            True,
+        ),
+        OWON_METERING_TOTAL_ACTIVE_CURRENT_ATTR: (
+            "total_active_current",
+            t.uint24_t,
+            True,
+        ),
         # Reactive energy consumption
-        OWON_METERING_REACTIVE_ENERGY_CONSUMPTION_PH_A_ATTR: ("reactive_energy_consumption_ph_a", t.uint48_t, True),
-        OWON_METERING_REACTIVE_ENERGY_CONSUMPTION_PH_B_ATTR: ("reactive_energy_consumption_ph_b", t.uint48_t, True),
-        OWON_METERING_REACTIVE_ENERGY_CONSUMPTION_PH_C_ATTR: ("reactive_energy_consumption_ph_c", t.uint48_t, True),
-        OWON_METERING_TOTAL_REACTIVE_ENERGY_CONSUMPTION_ATTR: ("total_reactive_energy_consumption", t.uint48_t, True),
+        OWON_METERING_REACTIVE_ENERGY_CONSUMPTION_PH_A_ATTR: (
+            "reactive_energy_consumption_ph_a",
+            t.uint48_t,
+            True,
+        ),
+        OWON_METERING_REACTIVE_ENERGY_CONSUMPTION_PH_B_ATTR: (
+            "reactive_energy_consumption_ph_b",
+            t.uint48_t,
+            True,
+        ),
+        OWON_METERING_REACTIVE_ENERGY_CONSUMPTION_PH_C_ATTR: (
+            "reactive_energy_consumption_ph_c",
+            t.uint48_t,
+            True,
+        ),
+        OWON_METERING_TOTAL_REACTIVE_ENERGY_CONSUMPTION_ATTR: (
+            "total_reactive_energy_consumption",
+            t.uint48_t,
+            True,
+        ),
         # Frequency
         OWON_METERING_AC_FREQUENCY_ATTR: ("ac_frequency", t.uint8_t, True),
         # Leakage
@@ -211,81 +326,113 @@ class OwonManufacturerSpecific(LocalDataCluster):
     def energy_consumption_ph_a_reported(self, value):
         """Energy Consumption Phase A reported."""
         self._update_attribute(OWON_METERING_ENERGY_CONSUMPTION_PH_A_ATTR, value)
+
     def energy_consumption_ph_b_reported(self, value):
         """Energy Consumption Phase B reported."""
         self._update_attribute(OWON_METERING_ENERGY_CONSUMPTION_PH_B_ATTR, value)
+
     def energy_consumption_ph_c_reported(self, value):
         """Energy Consumption Phase C reported."""
         self._update_attribute(OWON_METERING_ENERGY_CONSUMPTION_PH_C_ATTR, value)
+
     def total_energy_consumption_reported(self, value):
         """Total Energy Consumption reported."""
         self._update_attribute(OWON_METERING_TOTAL_ENERGY_CONSUMPTION_ATTR, value)
+
     # Active power
     def active_power_reported(self, value):
         """Active Power Phase A reported."""
         self._update_attribute(OWON_METERING_ACTIVE_POWER_PH_A_ATTR, value)
+
     def active_power_ph_b_reported(self, value):
         """Active Power Phase B reported."""
         self._update_attribute(OWON_METERING_ACTIVE_POWER_PH_B_ATTR, value)
+
     def active_power_ph_c_reported(self, value):
         """Active Power Phase C reported."""
         self._update_attribute(OWON_METERING_ACTIVE_POWER_PH_C_ATTR, value)
+
     def total_active_power_reported(self, value):
         """Total Active Power reported."""
         self._update_attribute(OWON_METERING_TOTAL_ACTIVE_POWER_ATTR, value)
+
     # Reactive power
     def reactive_power_reported(self, value):
         """Reactive Power Phase A reported."""
         self._update_attribute(OWON_METERING_REACTIVE_POWER_PH_A_ATTR, value)
+
     def reactive_power_ph_b_reported(self, value):
         """Reactive Power Phase B reported."""
         self._update_attribute(OWON_METERING_REACTIVE_POWER_PH_B_ATTR, value)
+
     def reactive_power_ph_c_reported(self, value):
         """Reactive Power Phase C reported."""
         self._update_attribute(OWON_METERING_REACTIVE_POWER_PH_C_ATTR, value)
+
     def total_reactive_power_reported(self, value):
         """Total Reactive Power reported."""
         self._update_attribute(OWON_METERING_TOTAL_REACTIVE_POWER_ATTR, value)
+
     # Voltage
     def rms_voltage_reported(self, value):
         """RMS Voltage Phase A reported."""
         self._update_attribute(OWON_METERING_VOLTAGE_PH_A_ATTR, value)
+
     def rms_voltage_ph_b_reported(self, value):
         """RMS Voltage Phase B reported."""
         self._update_attribute(OWON_METERING_VOLTAGE_PH_B_ATTR, value)
+
     def rms_voltage_ph_c_reported(self, value):
         """RMS Voltage Phase C reported."""
         self._update_attribute(OWON_METERING_VOLTAGE_PH_C_ATTR, value)
+
     # Active current
     def active_current_reported(self, value):
         """Active Current Phase A reported."""
         self._update_attribute(OWON_METERING_ACTIVE_CURRENT_PH_A_ATTR, value)
+
     def active_current_ph_b_reported(self, value):
         """Active Current Phase B reported."""
         self._update_attribute(OWON_METERING_ACTIVE_CURRENT_PH_B_ATTR, value)
+
     def active_current_ph_c_reported(self, value):
         """Active Current Phase C reported."""
         self._update_attribute(OWON_METERING_ACTIVE_CURRENT_PH_C_ATTR, value)
+
     def instantaneous_active_current_reported(self, value):
         """Instantaneous Total Active Current reported."""
         self._update_attribute(OWON_METERING_TOTAL_ACTIVE_CURRENT_ATTR, value)
+
     # Reactive Energy Consumption
     def reactive_energy_consumption_ph_a_reported(self, value):
         """Reactive Energy Consumption Phase A reported."""
-        self._update_attribute(OWON_METERING_REACTIVE_ENERGY_CONSUMPTION_PH_A_ATTR, value)
+        self._update_attribute(
+            OWON_METERING_REACTIVE_ENERGY_CONSUMPTION_PH_A_ATTR, value
+        )
+
     def reactive_energy_consumption_ph_b_reported(self, value):
         """Reactive Energy Consumption Phase B reported."""
-        self._update_attribute(OWON_METERING_REACTIVE_ENERGY_CONSUMPTION_PH_B_ATTR, value)
+        self._update_attribute(
+            OWON_METERING_REACTIVE_ENERGY_CONSUMPTION_PH_B_ATTR, value
+        )
+
     def reactive_energy_consumption_ph_c_reported(self, value):
         """Reactive Energy Consumption Phase C reported."""
-        self._update_attribute(OWON_METERING_REACTIVE_ENERGY_CONSUMPTION_PH_C_ATTR, value)
+        self._update_attribute(
+            OWON_METERING_REACTIVE_ENERGY_CONSUMPTION_PH_C_ATTR, value
+        )
+
     def total_reactive_energy_consumption_reported(self, value):
         """Total Reactive Energy Consumption reported."""
-        self._update_attribute(OWON_METERING_TOTAL_REACTIVE_ENERGY_CONSUMPTION_ATTR, value)
+        self._update_attribute(
+            OWON_METERING_TOTAL_REACTIVE_ENERGY_CONSUMPTION_ATTR, value
+        )
+
     # Frequency
     def ac_frequency_reported(self, value):
         """AC Frequency reported."""
         self._update_attribute(OWON_METERING_AC_FREQUENCY_ATTR, value)
+
     # Leakage
     def leakage_current_reported(self, value):
         """Leakage Current reported."""
@@ -332,56 +479,105 @@ class OwonElectricalMeasurement(LocalDataCluster, ElectricalMeasurement):
     # Active power
     def active_power_reported(self, value):
         """Active Power Phase A reported."""
-        self._update_attribute(ElectricalMeasurement.attributes_by_name['active_power'].id, value)
+        self._update_attribute(
+            ElectricalMeasurement.attributes_by_name["active_power"].id, value
+        )
+
     def active_power_ph_b_reported(self, value):
         """Active Power Phase B reported."""
-        self._update_attribute(ElectricalMeasurement.attributes_by_name['active_power_ph_b'].id, value)
+        self._update_attribute(
+            ElectricalMeasurement.attributes_by_name["active_power_ph_b"].id, value
+        )
+
     def active_power_ph_c_reported(self, value):
         """Active Power Phase C reported."""
-        self._update_attribute(ElectricalMeasurement.attributes_by_name['active_power_ph_c'].id, value)
+        self._update_attribute(
+            ElectricalMeasurement.attributes_by_name["active_power_ph_c"].id, value
+        )
+
     def total_active_power_reported(self, value):
         """Total Active Power reported."""
-        self._update_attribute(ElectricalMeasurement.attributes_by_name['total_active_power'].id, value)
+        self._update_attribute(
+            ElectricalMeasurement.attributes_by_name["total_active_power"].id, value
+        )
+
     # Reactive power
     def reactive_power_reported(self, value):
         """Reactive Power Phase A reported."""
-        self._update_attribute(ElectricalMeasurement.attributes_by_name['reactive_power'].id, value)
+        self._update_attribute(
+            ElectricalMeasurement.attributes_by_name["reactive_power"].id, value
+        )
+
     def reactive_power_ph_b_reported(self, value):
         """Reactive Power Phase B reported."""
-        self._update_attribute(ElectricalMeasurement.attributes_by_name['reactive_power_ph_b'].id, value)
+        self._update_attribute(
+            ElectricalMeasurement.attributes_by_name["reactive_power_ph_b"].id, value
+        )
+
     def reactive_power_ph_c_reported(self, value):
         """Reactive Power Phase C reported."""
-        self._update_attribute(ElectricalMeasurement.attributes_by_name['reactive_power_ph_c'].id, value)
+        self._update_attribute(
+            ElectricalMeasurement.attributes_by_name["reactive_power_ph_c"].id, value
+        )
+
     def total_reactive_power_reported(self, value):
         """Total Reactive Power reported."""
-        self._update_attribute(ElectricalMeasurement.attributes_by_name['total_reactive_power'].id, value)
+        self._update_attribute(
+            ElectricalMeasurement.attributes_by_name["total_reactive_power"].id, value
+        )
+
     # Voltage
     def rms_voltage_reported(self, value):
         """RMS Voltage Phase A reported."""
-        self._update_attribute(ElectricalMeasurement.attributes_by_name['rms_voltage'].id, value)
+        self._update_attribute(
+            ElectricalMeasurement.attributes_by_name["rms_voltage"].id, value
+        )
+
     def rms_voltage_ph_b_reported(self, value):
         """RMS Voltage Phase B reported."""
-        self._update_attribute(ElectricalMeasurement.attributes_by_name['rms_voltage_ph_b'].id, value)
+        self._update_attribute(
+            ElectricalMeasurement.attributes_by_name["rms_voltage_ph_b"].id, value
+        )
+
     def rms_voltage_ph_c_reported(self, value):
         """RMS Voltage Phase C reported."""
-        self._update_attribute(ElectricalMeasurement.attributes_by_name['rms_voltage_ph_c'].id, value)
+        self._update_attribute(
+            ElectricalMeasurement.attributes_by_name["rms_voltage_ph_c"].id, value
+        )
+
     # Active current
     def active_current_reported(self, value):
         """Active Current Phase A reported."""
-        self._update_attribute(ElectricalMeasurement.attributes_by_name['active_current'].id, value)
+        self._update_attribute(
+            ElectricalMeasurement.attributes_by_name["active_current"].id, value
+        )
+
     def active_current_ph_b_reported(self, value):
         """Active Current Phase B reported."""
-        self._update_attribute(ElectricalMeasurement.attributes_by_name['active_current_ph_b'].id, value)
+        self._update_attribute(
+            ElectricalMeasurement.attributes_by_name["active_current_ph_b"].id, value
+        )
+
     def active_current_ph_c_reported(self, value):
         """Active Current Phase C reported."""
-        self._update_attribute(ElectricalMeasurement.attributes_by_name['active_current_ph_c'].id, value)
+        self._update_attribute(
+            ElectricalMeasurement.attributes_by_name["active_current_ph_c"].id, value
+        )
+
     def instantaneous_active_current_reported(self, value):
         """Instantaneous Active Current reported."""
-        self._update_attribute(ElectricalMeasurement.attributes_by_name['instantaneous_active_current'].id, value)
+        self._update_attribute(
+            ElectricalMeasurement.attributes_by_name["instantaneous_active_current"].id,
+            value,
+        )
+
     # Frequency
     def ac_frequency_reported(self, value):
         """AC Frequency reported."""
-        self._update_attribute(ElectricalMeasurement.attributes_by_name['ac_frequency'].id, value)
+        self._update_attribute(
+            ElectricalMeasurement.attributes_by_name["ac_frequency"].id, value
+        )
+
 
 class Owon_PC321(CustomDevice):
     """OwonPC321 Custom Device."""
