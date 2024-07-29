@@ -1,4 +1,5 @@
 """Develco Air Quality Sensor."""
+
 import logging
 
 from zigpy.profiles import zha

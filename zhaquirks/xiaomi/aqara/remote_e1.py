@@ -1,4 +1,5 @@
 """Aqara E1-series wireless remote."""
+
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import (
     Basic,

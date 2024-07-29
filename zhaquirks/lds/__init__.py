@@ -1,2 +1,3 @@
 """LDS module."""
+
 MANUFACTURER = "LDS"

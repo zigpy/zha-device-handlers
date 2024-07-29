@@ -1,4 +1,5 @@
 """Innr RS 228 T device."""
+
 from zigpy.profiles import zgp, zha
 from zigpy.profiles.zha import DeviceType
 from zigpy.quirks import CustomDevice

@@ -1,4 +1,5 @@
 """Test units for Tuya covers."""
+
 from zhaquirks.tuya.ts0601_cover import TuyaMoesCover0601
 
 

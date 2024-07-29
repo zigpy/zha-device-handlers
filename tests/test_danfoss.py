@@ -1,4 +1,5 @@
 """Tests the Danfoss quirk (all tests were written for the Popp eT093WRO)."""
+
 from unittest import mock
 
 from zigpy.quirks import CustomCluster
@@ -54,8 +55,7 @@ async def test_danfoss_time_bind(zigpy_device_from_quirk):
 
     def mock_write(attributes, manufacturer=None):
         records = [
-            WriteAttributesStatusRecord(foundation.Status.SUCCESS)
-            for _ in attributes
+            WriteAttributesStatusRecord(foundation.Status.SUCCESS) for _ in attributes
         ]
         return [records, []]
 
@@ -81,8 +81,7 @@ async def test_danfoss_thermostat_write_attributes(zigpy_device_from_quirk):
 
     def mock_write(attributes, manufacturer=None):
         records = [
-            WriteAttributesStatusRecord(foundation.Status.SUCCESS)
-            for _ in attributes
+            WriteAttributesStatusRecord(foundation.Status.SUCCESS) for _ in attributes
         ]
         return [records, []]
 
@@ -126,9 +125,9 @@ async def test_danfoss_thermostat_write_attributes(zigpy_device_from_quirk):
             assert operation == 0x01
             assert setting == 6
 
-            danfoss_thermostat_cluster._attr_cache[
-                0x0015
-            ] = 5  # min_limit is present normally
+            danfoss_thermostat_cluster._attr_cache[0x0015] = (
+                5  # min_limit is present normally
+            )
 
             success, fail = await danfoss_thermostat_cluster.write_attributes(
                 {"system_mode": 0x00}

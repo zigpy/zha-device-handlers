@@ -1,4 +1,5 @@
 """Device handler for IKEA of Sweden TRADFRI remote control."""
+
 from zigpy.quirks.v2 import add_to_registry_v2
 from zigpy.zcl import ClusterType
 
