@@ -1,4 +1,5 @@
 """Quirks implementations for the ZHA component of Homeassistant."""
+
 from __future__ import annotations
 
 import asyncio

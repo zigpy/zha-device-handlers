@@ -113,7 +113,7 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
         T60 = 0x3C
 
     class CycleLength(t.uint16_t):
-        """"Cycle length, 15 sec (15) or 15 min (900 sec)."""
+        """Cycle length, 15 sec (15) or 15 min (900 sec)."""
 
         Sec_15 = 0x000F
         Min_15 = 0x0384
