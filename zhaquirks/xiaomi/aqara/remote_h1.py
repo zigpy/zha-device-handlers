@@ -1,4 +1,5 @@
 """Aqara H1-series wireless remote."""
+
 from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl.clusters.general import (

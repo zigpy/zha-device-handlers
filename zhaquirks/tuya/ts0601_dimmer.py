@@ -1,4 +1,5 @@
 """Tuya based touch switch."""
+
 from zigpy.profiles import zgp, zha
 from zigpy.zcl.clusters.general import Basic, GreenPowerProxy, Groups, Ota, Scenes, Time
 

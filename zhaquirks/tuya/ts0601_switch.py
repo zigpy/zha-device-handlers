@@ -1,4 +1,5 @@
 """Tuya DP based switches."""
+
 from zigpy.profiles import zgp, zha
 from zigpy.zcl.clusters.general import Basic, GreenPowerProxy, Groups, Ota, Scenes, Time
 
@@ -1019,6 +1020,7 @@ class TuyaSwitchX8_GP(TuyaSwitch):
             },
         }
     }
+
 
 class TuyaSwitchX12_GP(TuyaSwitch):
     """Tuya x12 channels switch with GreenPowerProxy cluster device."""

@@ -269,6 +269,7 @@ class TuyaTS130FTI2(CustomDevice):
         },
     }
 
+
 class TuyaTS130FUL(CustomDevice):
     """Tuya Cover variant from UseeLink."""
 
@@ -308,6 +309,7 @@ class TuyaTS130FUL(CustomDevice):
             },
         },
     }
+
 
 class TuyaTS130FTO(CustomDevice):
     """Tuya smart curtain roller shutter Time Out."""

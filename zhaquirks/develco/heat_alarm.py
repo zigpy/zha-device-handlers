@@ -1,4 +1,5 @@
 """Develco Heat Alarm."""
+
 import zigpy.profiles.zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (

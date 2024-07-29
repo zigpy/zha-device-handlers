@@ -1,4 +1,5 @@
 """Xiaomi aqara smart motion sensor device."""
+
 import math
 
 from zigpy import types

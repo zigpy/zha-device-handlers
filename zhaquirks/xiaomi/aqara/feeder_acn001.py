@@ -1,4 +1,5 @@
 """Quirk for Aqara aqara.feeder.acn001."""
+
 from __future__ import annotations
 
 import logging

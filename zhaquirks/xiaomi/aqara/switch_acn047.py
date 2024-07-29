@@ -1,4 +1,5 @@
 """Aqara T2 relay device."""
+
 from zigpy import types as t
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster

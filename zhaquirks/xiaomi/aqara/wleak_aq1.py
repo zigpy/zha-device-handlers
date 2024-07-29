@@ -1,4 +1,5 @@
 """Xiaomi aqara leak sensor device."""
+
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster
 from zigpy.zcl.clusters.general import Identify, Ota

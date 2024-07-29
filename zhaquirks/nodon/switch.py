@@ -1,4 +1,5 @@
 """NodOn on/off switch two channels."""
+
 from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (

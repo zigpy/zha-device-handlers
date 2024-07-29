@@ -1,4 +1,5 @@
 """Tests for KOF."""
+
 from unittest import mock
 
 import zigpy.device
