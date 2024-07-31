@@ -57,6 +57,19 @@ OWON_METERING_AC_FREQUENCY_ATTR = 0x5005
 # Leakage
 OWON_METERING_LEAKAGE_CURRENT_ATTR = 0x3104
 
+METERING_CONSTANT_ATTRIBUTES = {
+    Metering.AttributeDefs.unit_of_measure.id: 0,
+    Metering.AttributeDefs.multiplier.id: 1,
+    Metering.AttributeDefs.divisor.id: 1000,
+    Metering.AttributeDefs.summation_formatting.id: 251,
+    Metering.AttributeDefs.metering_device_type.id: 0,
+    Metering.AttributeDefs.status: 0,
+}
+
+ELECTRICAL_MEASUREMENT_CONSTANT_ATTRIBUTES = {
+    ElectricalMeasurement.AttributeDefs.ac_voltage_multiplier.id: 1,
+    ElectricalMeasurement.AttributeDefs.ac_voltage_divisor.id: 10,
+}
 
 class OwonMetering(CustomCluster, Metering):
     """Owon non-standard Metering cluster attributes, to be mapped into bus for later use in another clusters."""
@@ -442,16 +455,7 @@ class OwonManufacturerSpecific(LocalDataCluster):
 class OwonMeteringPhaseA(LocalDataCluster, Metering):
     """Owon metering Phase A - only attributes."""
 
-    cluster_id = Metering.cluster_id
-
-    _CONSTANT_ATTRIBUTES = {
-        Metering.AttributeDefs.unit_of_measure.id: 0,
-        Metering.AttributeDefs.multiplier.id: 1,
-        Metering.AttributeDefs.divisor.id: 1000,
-        Metering.AttributeDefs.summation_formatting.id: 251,
-        Metering.AttributeDefs.metering_device_type.id: 0,
-        Metering.AttributeDefs.status: 0,
-    }
+    _CONSTANT_ATTRIBUTES = METERING_CONSTANT_ATTRIBUTES.copy()
 
     def __init__(self, *args, **kwargs):
         """Init."""
@@ -472,16 +476,7 @@ class OwonMeteringPhaseA(LocalDataCluster, Metering):
 class OwonMeteringPhaseB(LocalDataCluster, Metering):
     """Owon metering Phase B - only attributes."""
 
-    cluster_id = Metering.cluster_id
-
-    _CONSTANT_ATTRIBUTES = {
-        Metering.AttributeDefs.unit_of_measure.id: 0,
-        Metering.AttributeDefs.multiplier.id: 1,
-        Metering.AttributeDefs.divisor.id: 1000,
-        Metering.AttributeDefs.summation_formatting.id: 251,
-        Metering.AttributeDefs.metering_device_type.id: 0,
-        Metering.AttributeDefs.status: 0,
-    }
+    _CONSTANT_ATTRIBUTES = METERING_CONSTANT_ATTRIBUTES.copy()
 
     def __init__(self, *args, **kwargs):
         """Init."""
@@ -502,14 +497,7 @@ class OwonMeteringPhaseB(LocalDataCluster, Metering):
 class OwonMeteringPhaseC(LocalDataCluster, Metering):
     """Owon metering Phase C - only attributes."""
 
-    _CONSTANT_ATTRIBUTES = {
-        Metering.AttributeDefs.unit_of_measure.id: 0,
-        Metering.AttributeDefs.multiplier.id: 1,
-        Metering.AttributeDefs.divisor.id: 1000,
-        Metering.AttributeDefs.summation_formatting.id: 251,
-        Metering.AttributeDefs.metering_device_type.id: 0,
-        Metering.AttributeDefs.status: 0,
-    }
+    _CONSTANT_ATTRIBUTES = METERING_CONSTANT_ATTRIBUTES.copy()
 
     def __init__(self, *args, **kwargs):
         """Init."""
@@ -530,18 +518,12 @@ class OwonMeteringPhaseC(LocalDataCluster, Metering):
 class OwonElectricalMeasurementPhaseA(LocalDataCluster, ElectricalMeasurement):
     """Owon PC321 PhaseA-only attributes that can be mapped to ElectricalMeasurement cluster."""
 
-    cluster_id = ElectricalMeasurement.cluster_id
-
-    attributes = ElectricalMeasurement.attributes.copy()
-    attributes.pop(ElectricalMeasurement.AttributeDefs.power_factor.id)
-    attributes.pop(ElectricalMeasurement.AttributeDefs.ac_frequency.id)
-    attributes.pop(ElectricalMeasurement.AttributeDefs.apparent_power.id)
-    attributes.pop(ElectricalMeasurement.AttributeDefs.rms_current.id)
-
-    _CONSTANT_ATTRIBUTES = {
-        ElectricalMeasurement.AttributeDefs.ac_voltage_multiplier.id: 1,
-        ElectricalMeasurement.AttributeDefs.ac_voltage_divisor.id: 10,
-    }
+    # attributes = ElectricalMeasurement.attributes.copy()
+    # attributes.pop(ElectricalMeasurement.AttributeDefs.power_factor.id)
+    # attributes.pop(ElectricalMeasurement.AttributeDefs.ac_frequency.id)
+    # attributes.pop(ElectricalMeasurement.AttributeDefs.apparent_power.id)
+    # attributes.pop(ElectricalMeasurement.AttributeDefs.rms_current.id)
+    _CONSTANT_ATTRIBUTES = ELECTRICAL_MEASUREMENT_CONSTANT_ATTRIBUTES.copy()
 
     def __init__(self, *args, **kwargs):
         """Init."""
@@ -566,18 +548,12 @@ class OwonElectricalMeasurementPhaseA(LocalDataCluster, ElectricalMeasurement):
 class OwonElectricalMeasurementPhaseB(LocalDataCluster, ElectricalMeasurement):
     """Owon PC321 PhaseB-only attributes that can be mapped to ElectricalMeasurement cluster."""
 
-    cluster_id = ElectricalMeasurement.cluster_id
-
-    attributes = ElectricalMeasurement.attributes.copy()
-    attributes.pop(ElectricalMeasurement.AttributeDefs.power_factor.id)
-    attributes.pop(ElectricalMeasurement.AttributeDefs.ac_frequency.id)
-    attributes.pop(ElectricalMeasurement.AttributeDefs.apparent_power.id)
-    attributes.pop(ElectricalMeasurement.AttributeDefs.rms_current.id)
-
-    _CONSTANT_ATTRIBUTES = {
-        ElectricalMeasurement.AttributeDefs.ac_voltage_multiplier.id: 1,
-        ElectricalMeasurement.AttributeDefs.ac_voltage_divisor.id: 10,
-    }
+    # attributes = ElectricalMeasurement.attributes.copy()
+    # attributes.pop(ElectricalMeasurement.AttributeDefs.power_factor.id)
+    # attributes.pop(ElectricalMeasurement.AttributeDefs.ac_frequency.id)
+    # attributes.pop(ElectricalMeasurement.AttributeDefs.apparent_power.id)
+    # attributes.pop(ElectricalMeasurement.AttributeDefs.rms_current.id)
+    _CONSTANT_ATTRIBUTES = ELECTRICAL_MEASUREMENT_CONSTANT_ATTRIBUTES.copy()
 
     def __init__(self, *args, **kwargs):
         """Init."""
@@ -601,18 +577,12 @@ class OwonElectricalMeasurementPhaseB(LocalDataCluster, ElectricalMeasurement):
 class OwonElectricalMeasurementPhaseC(LocalDataCluster, ElectricalMeasurement):
     """Owon PC321 PhaseC-only attributes that can be mapped to ElectricalMeasurement cluster."""
 
-    cluster_id = ElectricalMeasurement.cluster_id
-
-    attributes = ElectricalMeasurement.attributes.copy()
-    attributes.pop(ElectricalMeasurement.AttributeDefs.power_factor.id)
-    attributes.pop(ElectricalMeasurement.AttributeDefs.ac_frequency.id)
-    attributes.pop(ElectricalMeasurement.AttributeDefs.apparent_power.id)
-    attributes.pop(ElectricalMeasurement.AttributeDefs.rms_current.id)
-
-    _CONSTANT_ATTRIBUTES = {
-        ElectricalMeasurement.AttributeDefs.ac_voltage_multiplier.id: 1,
-        ElectricalMeasurement.AttributeDefs.ac_voltage_divisor.id: 10,
-    }
+    # attributes = ElectricalMeasurement.attributes.copy()
+    # attributes.pop(ElectricalMeasurement.AttributeDefs.power_factor.id)
+    # attributes.pop(ElectricalMeasurement.AttributeDefs.ac_frequency.id)
+    # attributes.pop(ElectricalMeasurement.AttributeDefs.apparent_power.id)
+    # attributes.pop(ElectricalMeasurement.AttributeDefs.rms_current.id)
+    _CONSTANT_ATTRIBUTES = ELECTRICAL_MEASUREMENT_CONSTANT_ATTRIBUTES.copy()
 
     def __init__(self, *args, **kwargs):
         """Init."""
