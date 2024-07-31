@@ -71,6 +71,7 @@ ELECTRICAL_MEASUREMENT_CONSTANT_ATTRIBUTES = {
     ElectricalMeasurement.AttributeDefs.ac_voltage_divisor.id: 10,
 }
 
+
 class OwonMetering(CustomCluster, Metering):
     """Owon non-standard Metering cluster attributes, to be mapped into bus for later use in another clusters."""
 
