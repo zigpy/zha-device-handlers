@@ -439,143 +439,197 @@ class OwonManufacturerSpecific(LocalDataCluster):
         self._update_attribute(OWON_METERING_LEAKAGE_CURRENT_ATTR, value)
 
 
-class OwonElectricalMeasurement(LocalDataCluster, ElectricalMeasurement):
-    """Owon PC321 attributes that can be mapped to ElectricalMeasurement cluster."""
+class OwonMeteringPhaseA(LocalDataCluster, Metering):
+    """Owon metering Phase A - only attributes."""
 
-    cluster_id = ElectricalMeasurement.cluster_id
+    cluster_id = Metering.cluster_id
+
+    _CONSTANT_ATTRIBUTES = {
+        Metering.AttributeDefs.unit_of_measure.id: 0,
+        Metering.AttributeDefs.multiplier.id: 1,
+        Metering.AttributeDefs.divisor.id: 1000,
+        Metering.AttributeDefs.summation_formatting.id: 251,
+        Metering.AttributeDefs.metering_device_type.id: 0,
+        Metering.AttributeDefs.status: 0,
+    }
 
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
-        # Active power
+        # Energy Consumption
+        self.endpoint.device.energy_consumption_ph_a_bus.add_listener(self)
         self.endpoint.device.active_power_bus.add_listener(self)
+
+    def energy_consumption_ph_a_reported(self, value):
+        """Energy Consumption Phase A reported."""
+        self._update_attribute(Metering.AttributeDefs.current_summ_delivered.id, value)
+
+    def active_power_reported(self, value):
+        """Total Active Power reported."""
+        self._update_attribute(Metering.AttributeDefs.instantaneous_demand.id, value)
+
+
+class OwonMeteringPhaseB(LocalDataCluster, Metering):
+    """Owon metering Phase B - only attributes."""
+
+    cluster_id = Metering.cluster_id
+
+    _CONSTANT_ATTRIBUTES = {
+        Metering.AttributeDefs.unit_of_measure.id: 0,
+        Metering.AttributeDefs.multiplier.id: 1,
+        Metering.AttributeDefs.divisor.id: 1000,
+        Metering.AttributeDefs.summation_formatting.id: 251,
+        Metering.AttributeDefs.metering_device_type.id: 0,
+        Metering.AttributeDefs.status: 0,
+    }
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        # Energy Consumption
+        self.endpoint.device.energy_consumption_ph_b_bus.add_listener(self)
         self.endpoint.device.active_power_ph_b_bus.add_listener(self)
+
+    def energy_consumption_ph_b_reported(self, value):
+        """Energy Consumption Phase B reported."""
+        self._update_attribute(Metering.AttributeDefs.current_summ_delivered.id, value)
+
+    def active_power_ph_b_reported(self, value):
+        """Active Power phase B reported."""
+        self._update_attribute(Metering.AttributeDefs.instantaneous_demand.id, value)
+
+
+class OwonMeteringPhaseC(LocalDataCluster, Metering):
+    """Owon metering Phase C - only attributes."""
+
+    _CONSTANT_ATTRIBUTES = {
+        Metering.AttributeDefs.unit_of_measure.id: 0,
+        Metering.AttributeDefs.multiplier.id: 1,
+        Metering.AttributeDefs.divisor.id: 1000,
+        Metering.AttributeDefs.summation_formatting.id: 251,
+        Metering.AttributeDefs.metering_device_type.id: 0,
+        Metering.AttributeDefs.status: 0,
+    }
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        # Energy Consumption
+        self.endpoint.device.energy_consumption_ph_c_bus.add_listener(self)
         self.endpoint.device.active_power_ph_c_bus.add_listener(self)
-        self.endpoint.device.total_active_power_bus.add_listener(self)
-        # Reactive power
-        self.endpoint.device.reactive_power_bus.add_listener(self)
-        self.endpoint.device.reactive_power_ph_b_bus.add_listener(self)
-        self.endpoint.device.reactive_power_ph_c_bus.add_listener(self)
-        self.endpoint.device.total_reactive_power_bus.add_listener(self)
-        # Voltage
-        self.endpoint.device.rms_voltage_bus.add_listener(self)
-        self.endpoint.device.rms_voltage_ph_b_bus.add_listener(self)
-        self.endpoint.device.rms_voltage_ph_c_bus.add_listener(self)
-        # Active current
-        self.endpoint.device.active_current_bus.add_listener(self)
-        self.endpoint.device.active_current_ph_b_bus.add_listener(self)
-        self.endpoint.device.active_current_ph_c_bus.add_listener(self)
-        self.endpoint.device.instantaneous_active_current_bus.add_listener(self)
-        # Frequency
-        self.endpoint.device.ac_frequency_bus.add_listener(self)
+
+    def energy_consumption_ph_c_reported(self, value):
+        """Energy Consumption Phase C reported."""
+        self._update_attribute(Metering.AttributeDefs.current_summ_delivered.id, value)
+
+    def active_power_ph_c_reported(self, value):
+        """Active Power phase C reported."""
+        self._update_attribute(Metering.AttributeDefs.instantaneous_demand.id, value)
+
+
+class OwonElectricalMeasurementPhaseA(LocalDataCluster, ElectricalMeasurement):
+    """Owon PC321 PhaseA-only attributes that can be mapped to ElectricalMeasurement cluster."""
+
+    cluster_id = ElectricalMeasurement.cluster_id
+
+    attributes = ElectricalMeasurement.attributes.copy()
+    attributes.pop(ElectricalMeasurement.AttributeDefs.power_factor.id)
+    attributes.pop(ElectricalMeasurement.AttributeDefs.ac_frequency.id)
+    attributes.pop(ElectricalMeasurement.AttributeDefs.apparent_power.id)
+    attributes.pop(ElectricalMeasurement.AttributeDefs.rms_current.id)
 
     _CONSTANT_ATTRIBUTES = {
         ElectricalMeasurement.AttributeDefs.ac_voltage_multiplier.id: 1,
         ElectricalMeasurement.AttributeDefs.ac_voltage_divisor.id: 10,
-        ElectricalMeasurement.AttributeDefs.ac_frequency_multiplier.id: 1,
-        ElectricalMeasurement.AttributeDefs.ac_frequency_divisor.id: 1,
     }
 
-    # Active power
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self.endpoint.device.rms_voltage_bus.add_listener(self)
+        self.endpoint.device.active_power_bus.add_listener(self)
+        self.endpoint.device.active_current_bus.add_listener(self)
+
+    def rms_voltage_reported(self, value):
+        """Voltage Phase A reported."""
+        self._update_attribute(
+            ElectricalMeasurement.AttributeDefs.rms_voltage.id, value
+        )
+
     def active_power_reported(self, value):
         """Active Power Phase A reported."""
         self._update_attribute(
-            ElectricalMeasurement.attributes_by_name["active_power"].id, value
+            ElectricalMeasurement.AttributeDefs.active_power.id, value
+        )
+
+
+class OwonElectricalMeasurementPhaseB(LocalDataCluster, ElectricalMeasurement):
+    """Owon PC321 PhaseB-only attributes that can be mapped to ElectricalMeasurement cluster."""
+
+    cluster_id = ElectricalMeasurement.cluster_id
+
+    attributes = ElectricalMeasurement.attributes.copy()
+    attributes.pop(ElectricalMeasurement.AttributeDefs.power_factor.id)
+    attributes.pop(ElectricalMeasurement.AttributeDefs.ac_frequency.id)
+    attributes.pop(ElectricalMeasurement.AttributeDefs.apparent_power.id)
+    attributes.pop(ElectricalMeasurement.AttributeDefs.rms_current.id)
+
+    _CONSTANT_ATTRIBUTES = {
+        ElectricalMeasurement.AttributeDefs.ac_voltage_multiplier.id: 1,
+        ElectricalMeasurement.AttributeDefs.ac_voltage_divisor.id: 10,
+    }
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self.endpoint.device.rms_voltage_ph_b_bus.add_listener(self)
+        self.endpoint.device.active_power_ph_b_bus.add_listener(self)
+
+    def rms_voltage_ph_b_reported(self, value):
+        """Voltage Phase B reported."""
+        self._update_attribute(
+            ElectricalMeasurement.AttributeDefs.rms_voltage.id, value
         )
 
     def active_power_ph_b_reported(self, value):
         """Active Power Phase B reported."""
         self._update_attribute(
-            ElectricalMeasurement.attributes_by_name["active_power_ph_b"].id, value
+            ElectricalMeasurement.AttributeDefs.active_power.id, value
+        )
+
+
+class OwonElectricalMeasurementPhaseC(LocalDataCluster, ElectricalMeasurement):
+    """Owon PC321 PhaseC-only attributes that can be mapped to ElectricalMeasurement cluster."""
+
+    cluster_id = ElectricalMeasurement.cluster_id
+
+    attributes = ElectricalMeasurement.attributes.copy()
+    attributes.pop(ElectricalMeasurement.AttributeDefs.power_factor.id)
+    attributes.pop(ElectricalMeasurement.AttributeDefs.ac_frequency.id)
+    attributes.pop(ElectricalMeasurement.AttributeDefs.apparent_power.id)
+    attributes.pop(ElectricalMeasurement.AttributeDefs.rms_current.id)
+
+    _CONSTANT_ATTRIBUTES = {
+        ElectricalMeasurement.AttributeDefs.ac_voltage_multiplier.id: 1,
+        ElectricalMeasurement.AttributeDefs.ac_voltage_divisor.id: 10,
+    }
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self.endpoint.device.rms_voltage_ph_c_bus.add_listener(self)
+        self.endpoint.device.active_power_ph_c_bus.add_listener(self)
+
+    def rms_voltage_ph_c_reported(self, value):
+        """Voltage Phase C reported."""
+        self._update_attribute(
+            ElectricalMeasurement.AttributeDefs.rms_voltage.id, value
         )
 
     def active_power_ph_c_reported(self, value):
         """Active Power Phase C reported."""
         self._update_attribute(
-            ElectricalMeasurement.attributes_by_name["active_power_ph_c"].id, value
-        )
-
-    def total_active_power_reported(self, value):
-        """Total Active Power reported."""
-        self._update_attribute(
-            ElectricalMeasurement.attributes_by_name["total_active_power"].id, value
-        )
-
-    # Reactive power
-    def reactive_power_reported(self, value):
-        """Reactive Power Phase A reported."""
-        self._update_attribute(
-            ElectricalMeasurement.attributes_by_name["reactive_power"].id, value
-        )
-
-    def reactive_power_ph_b_reported(self, value):
-        """Reactive Power Phase B reported."""
-        self._update_attribute(
-            ElectricalMeasurement.attributes_by_name["reactive_power_ph_b"].id, value
-        )
-
-    def reactive_power_ph_c_reported(self, value):
-        """Reactive Power Phase C reported."""
-        self._update_attribute(
-            ElectricalMeasurement.attributes_by_name["reactive_power_ph_c"].id, value
-        )
-
-    def total_reactive_power_reported(self, value):
-        """Total Reactive Power reported."""
-        self._update_attribute(
-            ElectricalMeasurement.attributes_by_name["total_reactive_power"].id, value
-        )
-
-    # Voltage
-    def rms_voltage_reported(self, value):
-        """RMS Voltage Phase A reported."""
-        self._update_attribute(
-            ElectricalMeasurement.attributes_by_name["rms_voltage"].id, value
-        )
-
-    def rms_voltage_ph_b_reported(self, value):
-        """RMS Voltage Phase B reported."""
-        self._update_attribute(
-            ElectricalMeasurement.attributes_by_name["rms_voltage_ph_b"].id, value
-        )
-
-    def rms_voltage_ph_c_reported(self, value):
-        """RMS Voltage Phase C reported."""
-        self._update_attribute(
-            ElectricalMeasurement.attributes_by_name["rms_voltage_ph_c"].id, value
-        )
-
-    # Active current
-    def active_current_reported(self, value):
-        """Active Current Phase A reported."""
-        self._update_attribute(
-            ElectricalMeasurement.attributes_by_name["active_current"].id, value
-        )
-
-    def active_current_ph_b_reported(self, value):
-        """Active Current Phase B reported."""
-        self._update_attribute(
-            ElectricalMeasurement.attributes_by_name["active_current_ph_b"].id, value
-        )
-
-    def active_current_ph_c_reported(self, value):
-        """Active Current Phase C reported."""
-        self._update_attribute(
-            ElectricalMeasurement.attributes_by_name["active_current_ph_c"].id, value
-        )
-
-    def instantaneous_active_current_reported(self, value):
-        """Instantaneous Active Current reported."""
-        self._update_attribute(
-            ElectricalMeasurement.attributes_by_name["instantaneous_active_current"].id,
-            value,
-        )
-
-    # Frequency
-    def ac_frequency_reported(self, value):
-        """AC Frequency reported."""
-        self._update_attribute(
-            ElectricalMeasurement.attributes_by_name["ac_frequency"].id, value
+            ElectricalMeasurement.AttributeDefs.active_power.id, value
         )
 
 
@@ -648,10 +702,36 @@ class Owon_PC321(CustomDevice):
                     Basic.cluster_id,
                     Identify.cluster_id,
                     OwonMetering,
-                    OwonElectricalMeasurement,
                     OwonManufacturerSpecific,
                 ],
                 OUTPUT_CLUSTERS: [Identify.cluster_id],
+            },
+            11: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.CONSUMPTION_AWARENESS_DEVICE,
+                INPUT_CLUSTERS: [
+                    OwonMeteringPhaseA,
+                    OwonElectricalMeasurementPhaseA,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            12: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.CONSUMPTION_AWARENESS_DEVICE,
+                INPUT_CLUSTERS: [
+                    OwonMeteringPhaseB,
+                    OwonElectricalMeasurementPhaseB,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            13: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.CONSUMPTION_AWARENESS_DEVICE,
+                INPUT_CLUSTERS: [
+                    OwonMeteringPhaseC,
+                    OwonElectricalMeasurementPhaseC,
+                ],
+                OUTPUT_CLUSTERS: [],
             },
         },
     }
