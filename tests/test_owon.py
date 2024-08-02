@@ -73,7 +73,7 @@ def test_has_correct_replacement(zigpy_device_from_quirk, quirk):
     # check that the replacement first endpoint has ManufacturerSpecificCluster
     assert quirk.replacement[ENDPOINTS][1][INPUT_CLUSTERS].pop().cluster_id == 0xFD32
 
-    # check that quirk has necessary busses
+    # check that quirk has necessary buses
     for bus in BUS_NAMES:
         assert isinstance(device.__dict__[bus], zhaquirks.Bus)
 
