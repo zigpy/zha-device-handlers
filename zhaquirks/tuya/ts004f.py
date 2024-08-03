@@ -1,4 +1,5 @@
 """Tuya TS004F devices."""
+
 from __future__ import annotations
 
 from zigpy.profiles import zha
@@ -401,6 +402,7 @@ class TuyaSmartRemote004FSK(EnchantedDevice):
         (DOUBLE_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: DOUBLE_PRESS},
     }
 
+
 class TuyaSmartRemote004FSK_v2(TuyaSmartRemote004FSK):
     """Tuya Smart (Single) Knob device."""
 
@@ -435,6 +437,7 @@ class TuyaSmartRemote004FSK_v2(TuyaSmartRemote004FSK):
             },
         },
     }
+
 
 class TuyaSmartRemote004F(EnchantedDevice):
     """Tuya 4-button New version remote device."""
