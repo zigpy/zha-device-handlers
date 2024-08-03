@@ -1,5 +1,6 @@
 """Device handler for Sonoff buttons."""
-from zigpy.quirks.v2 import add_to_registry_v2
+
+from zigpy.quirks.v2 import QuirkBuilder
 
 from zhaquirks.const import (
     BUTTON,
@@ -13,7 +14,7 @@ from zhaquirks.const import (
 )
 
 (
-    add_to_registry_v2("eWeLink", "WB01")
+    QuirkBuilder("eWeLink", "WB01")
     .also_applies_to("eWeLink", "SNZB-01P")
     .device_automation_triggers(
         {
@@ -22,4 +23,5 @@ from zhaquirks.const import (
             (LONG_PRESS, BUTTON): {COMMAND: COMMAND_OFF},
         }
     )
+    .add_to_registry()
 )

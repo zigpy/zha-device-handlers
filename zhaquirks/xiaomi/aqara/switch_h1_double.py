@@ -1,4 +1,5 @@
 """Aqara H1 double rocker switch quirks. Also see opple_switch.py for similar double rocker switches."""
+
 from zigpy.profiles import zgp, zha
 from zigpy.zcl.clusters.general import (
     Alarms,

@@ -87,15 +87,19 @@ def test_ikea_starkvind_v2(assert_signature_matches_quirk):
 
 
 @pytest.mark.parametrize("attribute", ["fan_speed", "fan_mode"])
-@pytest.mark.parametrize("value,expected", [
+@pytest.mark.parametrize(
+    "value,expected",
+    [
         (0, 0),  # off
         (1, 1),  # auto
         (10, 2),
         (20, 4),
         (50, 10),
-    ]
- )
-async def test_fan_speed_mode_update(zigpy_device_from_quirk, attribute, value, expected):
+    ],
+)
+async def test_fan_speed_mode_update(
+    zigpy_device_from_quirk, attribute, value, expected
+):
     """Test reading the fan speed and mode."""
 
     starkvind_device = zigpy_device_from_quirk(zhaquirks.ikea.starkvind.IkeaSTARKVIND)

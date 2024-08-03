@@ -1,4 +1,5 @@
 """Osram Lightify X4 device."""
+
 import copy
 
 from zigpy.profiles import zha
