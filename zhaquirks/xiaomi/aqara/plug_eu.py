@@ -347,7 +347,7 @@ class PlugMAEU01Alt3(PlugMAEU01):
 
     replacement = PlugMAEU01.replacement
 
-class PlugAEU001(PlugAEU001)
+class PlugAEU001(PlugMAEU01):
     """lumi.plug.aeu001 plug H2 EU"""
     
     signature = {
@@ -361,20 +361,23 @@ class PlugAEU001(PlugAEU001)
             # output_clusters=[]>
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,                   #    0
                     Identify.cluster_id,                #    3
                     Groups.cluster_id,                  #    4
                     Scenes.cluster_id,                  #    5
                     OnOff.cluster_id,                   #    6
-                    #Missing Cluster                    #   18
-                    #Missing Cluster                    # 1026
+                    MultistateInput.cluster_id          #   18
+                    TemperatureMeasurement.cluster_id   # 1026
                     Metering.cluster_id,                # 1794
                     ElectricalMeasurement.cluster_id,   # 2820
-                    OppleCluster.cluster_id,            #64704
+                    0xfcc0,                             #64704
                 ],
-                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+                OUTPUT_CLUSTERS: [
+                    Time.cluster_id,
+                    Ota.cluster_id,
+                ],
             },
             # <SimpleDescriptor endpoint=1 profile=104 device_type=0
             # device_version=1
@@ -395,6 +398,49 @@ class PlugAEU001(PlugAEU001)
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
                 INPUT_CLUSTERS: [AnalogInput.cluster_id],
+            },
+        },
+    }
+    
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
+                INPUT_CLUSTERS: [
+                    BasicCluster,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    MultistateInput.cluster_id,
+                    TemperatureMeasurement.cluster_id,
+                    MeteringCluster,
+                    ElectricalMeasurementCluster,
+                    OppleCluster,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Time.cluster_id,
+                    Ota.cluster_id,
+                ],
+            },
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    OnOff.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [
+                ],
+            },
+            21: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    AnalogInputCluster,
+                ],
+                OUTPUT_CLUSTERS:[
+                ],
             },
         },
     }
