@@ -368,8 +368,8 @@ class PlugAEU001(PlugMAEU01):
                     Groups.cluster_id,                  #    4
                     Scenes.cluster_id,                  #    5
                     OnOff.cluster_id,                   #    6
-                    MultistateInput.cluster_id          #   18
-                    TemperatureMeasurement.cluster_id   # 1026
+                    MultistateInput.cluster_id,         #   18
+                    TemperatureMeasurement.cluster_id,  # 1026
                     Metering.cluster_id,                # 1794
                     ElectricalMeasurement.cluster_id,   # 2820
                     0xfcc0,                             #64704
