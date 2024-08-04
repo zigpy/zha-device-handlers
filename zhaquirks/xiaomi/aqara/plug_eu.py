@@ -363,16 +363,16 @@ class PlugAEU001(PlugMAEU01):
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
-                    Basic.cluster_id,                   #    0
-                    Identify.cluster_id,                #    3
-                    Groups.cluster_id,                  #    4
-                    Scenes.cluster_id,                  #    5
-                    OnOff.cluster_id,                   #    6
-                    MultistateInput.cluster_id,         #   18
-                    TemperatureMeasurement.cluster_id,  # 1026
-                    Metering.cluster_id,                # 1794
-                    ElectricalMeasurement.cluster_id,   # 2820
-                    0xfcc0,                             #64704
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    MultistateInput.cluster_id,
+                    TemperatureMeasurement.cluster_id,
+                    Metering.cluster_id,
+                    ElectricalMeasurement.cluster_id,
+                    0xfcc0,
                 ],
                 OUTPUT_CLUSTERS: [
                     Time.cluster_id,
@@ -430,8 +430,7 @@ class PlugAEU001(PlugMAEU01):
                 INPUT_CLUSTERS: [
                     OnOff.cluster_id,
                 ],
-                OUTPUT_CLUSTERS: [
-                ],
+                OUTPUT_CLUSTERS: [],
             },
             21: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -439,8 +438,7 @@ class PlugAEU001(PlugMAEU01):
                 INPUT_CLUSTERS: [
                     AnalogInputCluster,
                 ],
-                OUTPUT_CLUSTERS:[
-                ],
+                OUTPUT_CLUSTERS:[],
             },
         },
     }
