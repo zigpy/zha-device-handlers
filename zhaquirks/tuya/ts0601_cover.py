@@ -377,6 +377,7 @@ class TuyaMoesCover0601(TuyaWindowCover):
             ("_TZE200_nw1r9hp6", "TS0601"),
             ("_TZE200_gaj531w3", "TS0601"),
             ("_TZE200_icka1clh", "TS0601"),
+            ("_TZE200_1vxgqfba", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
@@ -459,6 +460,7 @@ class TuyaMoesCover0601_alt_controls(TuyaWindowCover):
             }
         }
     }
+
 
 class TuyaMoesCover0601_alt_controls2(TuyaWindowCover):
     """Tuya blind controller device."""

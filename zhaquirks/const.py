@@ -1,4 +1,5 @@
 """Common constants for zhaquirks."""
+
 from zigpy.quirks import (
     SIG_ENDPOINTS,
     SIG_EP_INPUT,
