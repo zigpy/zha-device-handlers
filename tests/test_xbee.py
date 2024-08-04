@@ -234,7 +234,7 @@ async def test_receive_serial_data(zigpy_device_from_quirk):
             15,
             None,
             b"2\x00\x02\x01\xff\xff\xff\xff\xff\xff\xff\xff\xff\xfeOP",
-            b"\x01OP\x00\xFF\xEE\xDD\xCC\xBB\xAA\x99\x88",
+            b"\x01OP\x00\xff\xee\xdd\xcc\xbb\xaa\x99\x88",
             "op_command_response",
             0xFFEEDDCCBBAA9988,
         ),
@@ -242,7 +242,7 @@ async def test_receive_serial_data(zigpy_device_from_quirk):
         (
             15,
             0xFEDCBA9876543210,
-            b"2\x00\x02\x01\xff\xff\xff\xff\xff\xff\xff\xff\xff\xfeOP\xFE\xDC\xBA\x98\x76\x54\x32\x10",
+            b"2\x00\x02\x01\xff\xff\xff\xff\xff\xff\xff\xff\xff\xfeOP\xfe\xdc\xba\x98\x76\x54\x32\x10",
             b"\x01OP\x00",
             "op_command_response",
             None,
@@ -252,7 +252,7 @@ async def test_receive_serial_data(zigpy_device_from_quirk):
             1,
             None,
             b"2\x00\x02\x01\xff\xff\xff\xff\xff\xff\xff\xff\xff\xfeDH",
-            b"\x01DH\x00\xFF\xEE\xDD\xCC",
+            b"\x01DH\x00\xff\xee\xdd\xcc",
             "dh_command_response",
             0xFFEEDDCC,
         ),
@@ -270,7 +270,7 @@ async def test_receive_serial_data(zigpy_device_from_quirk):
             65,
             None,
             b"2\x00\x02\x01\xff\xff\xff\xff\xff\xff\xff\xff\xff\xfe%V",
-            b"\x01%V\x00\x0C\xE4",
+            b"\x01%V\x00\x0c\xe4",
             "percentv_command_response",
             3300,
         ),
@@ -278,7 +278,7 @@ async def test_receive_serial_data(zigpy_device_from_quirk):
         (
             66,
             2700,
-            b"2\x00\x02\x01\xff\xff\xff\xff\xff\xff\xff\xff\xff\xfeV+\x0A\x8C",
+            b"2\x00\x02\x01\xff\xff\xff\xff\xff\xff\xff\xff\xff\xfeV+\x0a\x8c",
             b"\x01V+\x00",
             "vplus_command_response",
             None,
@@ -520,7 +520,7 @@ async def test_io_sample_report(zigpy_device_from_quirk):
         XBEE_IO_CLUSTER,
         XBEE_DATA_ENDPOINT,
         XBEE_DATA_ENDPOINT,
-        b"\x01\x55\x55\x85\x11\x11\x01\x55\x02\xAA\x0c\xe9",
+        b"\x01\x55\x55\x85\x11\x11\x01\x55\x02\xaa\x0c\xe9",
     )
 
     for i in range(len(digital_listeners)):
@@ -569,7 +569,7 @@ async def test_io_sample_report_on_at_response(zigpy_device_from_quirk):
             XBEE_AT_RESPONSE_CLUSTER,
             XBEE_AT_ENDPOINT,
             XBEE_AT_ENDPOINT,
-            b"\x01IS\x00\x01\x55\x55\x85\x11\x11\x01\x55\x02\xAA\x0c\xe9",
+            b"\x01IS\x00\x01\x55\x55\x85\x11\x11\x01\x55\x02\xaa\x0c\xe9",
         )
         return mock.DEFAULT
 

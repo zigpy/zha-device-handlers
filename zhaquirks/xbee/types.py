@@ -1,4 +1,5 @@
 """Types used to serialize and deserialize XBee commands."""
+
 from __future__ import annotations
 
 

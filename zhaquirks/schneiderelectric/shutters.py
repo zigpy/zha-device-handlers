@@ -1,4 +1,5 @@
 """Quirks for Schneider Electric shutters."""
+
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.closures import WindowCovering

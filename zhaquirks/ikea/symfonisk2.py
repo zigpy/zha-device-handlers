@@ -1,4 +1,5 @@
 """Device handler for IKEA of Sweden SYMFONISK sound remote gen2."""
+
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
