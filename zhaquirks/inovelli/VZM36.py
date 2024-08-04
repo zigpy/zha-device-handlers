@@ -1,6 +1,6 @@
 """VZM36 Canopy Module."""
 
-from zigpy.quirks.v2 import add_to_registry_v2
+from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.zcl import ClusterType
 
 from zhaquirks.inovelli import (
@@ -10,7 +10,7 @@ from zhaquirks.inovelli import (
 )
 
 (
-    add_to_registry_v2("Inovelli", "VZM36")
+    QuirkBuilder("Inovelli", "VZM36")
     .replaces(InovelliVZM36LightCluster)
     .replaces(InovelliVZM36FanCluster, endpoint_id=2, cluster_type=ClusterType.Client)
     .device_automation_triggers(INOVELLI_AUTOMATION_TRIGGERS)
