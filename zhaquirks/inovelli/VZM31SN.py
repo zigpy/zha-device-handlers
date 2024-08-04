@@ -10,4 +10,5 @@ from zhaquirks.inovelli import INOVELLI_AUTOMATION_TRIGGERS, InovelliVZM31SNClus
     .replaces(InovelliVZM31SNCluster)
     .replaces(InovelliVZM31SNCluster, endpoint_id=2, cluster_type=ClusterType.Client)
     .device_automation_triggers(INOVELLI_AUTOMATION_TRIGGERS)
+    .add_to_registry()
 )
