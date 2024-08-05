@@ -49,57 +49,44 @@ VIBRATION_EP_ID = 3
 class CustomBasicCluster(CustomCluster, Basic):
     """Custom Basic cluster to report power source."""
 
-    def __init__(self, endpoint: Endpoint, is_server: bool = True):
-        """Init constructor that sets the power source to battery."""
-        super().__init__(endpoint=endpoint, is_server=is_server)
-
-        self.update_attribute(
-            attrid=Basic.AttributeDefs.power_source.id,
-            value=Basic.PowerSource.Battery,
-        )
+    _CONSTANT_ATTRIBUTES = {
+        Basic.AttributeDefs.power_source.id: Basic.PowerSource.Battery
+    }
 
 
 class CustomTuyaPowerConfigurationCluster(TuyaLocalCluster, PowerConfiguration):
     """Custom Power Configuration cluster that represents battery reports."""
 
+    _CONSTANT_ATTRIBUTES = {
+        PowerConfiguration.AttributeDefs.battery_size.id: PowerConfiguration.BatterySize.AAA,
+        PowerConfiguration.AttributeDefs.battery_quantity.id: 2,
+    }
+
     def __init__(self, endpoint: Endpoint, is_server: bool = True):
         """Init constructor that initializes battery attributes."""
         super().__init__(endpoint=endpoint, is_server=is_server)
 
-        self.update_attribute(
-            attr_name=PowerConfiguration.AttributeDefs.battery_size.name,
-            value=PowerConfiguration.BatterySize.AAA,
-        )
-
-        self.update_attribute(
-            attr_name=PowerConfiguration.AttributeDefs.battery_quantity.name,
-            value=2,
-        )
-
+        # Initialize remaining battery to 100% until a proper measurement arrives.
+        # Device measures battery in 1% steps, while the ZCL specifies it in 0.5% steps.
         self.update_attribute(
             attr_name=PowerConfiguration.AttributeDefs.battery_percentage_remaining.name,
             value=100 * 2,
-            # Device measures battery in 1% steps, while the ZCL specifies it in 0.5% steps
         )
 
 
 class CustomTuyaContactSwitchCluster(TuyaLocalCluster, IasZone):
     """Custom IasZone cluster that represents the Open/Closed sensor."""
 
+    _CONSTANT_ATTRIBUTES = {
+        IasZone.AttributeDefs.zone_state.id: ZONE_STATE,
+        IasZone.AttributeDefs.zone_type.id: ZoneType.Contact_Switch,
+    }
+
     def __init__(self, endpoint: Endpoint, is_server: bool = True):
         """Init constructor that initializes the major IasZone attributes."""
         super().__init__(endpoint=endpoint, is_server=is_server)
 
-        self.update_attribute(
-            attr_name=IasZone.AttributeDefs.zone_state.name,
-            value=ZONE_STATE,
-        )
-
-        self.update_attribute(
-            attr_name=IasZone.AttributeDefs.zone_type.name,
-            value=ZoneType.Contact_Switch,
-        )
-
+        # Initialize zone status until a proper update comes.
         self.update_attribute(
             attr_name=IasZone.AttributeDefs.zone_status.name,
             value=0x0000,
@@ -109,20 +96,16 @@ class CustomTuyaContactSwitchCluster(TuyaLocalCluster, IasZone):
 class CustomTuyaVibrationCluster(TuyaLocalCluster, IasZone):
     """Custom IasZone cluster that represents the vibration sensor."""
 
+    _CONSTANT_ATTRIBUTES = {
+        IasZone.AttributeDefs.zone_state.id: ZONE_STATE,
+        IasZone.AttributeDefs.zone_type.id: ZoneType.Vibration_Movement_Sensor,
+    }
+
     def __init__(self, endpoint: Endpoint, is_server: bool = True):
         """Init constructor that initializes the major IasZone attributes."""
         super().__init__(endpoint=endpoint, is_server=is_server)
 
-        self.update_attribute(
-            attr_name=IasZone.AttributeDefs.zone_state.name,
-            value=ZONE_STATE,
-        )
-
-        self.update_attribute(
-            attr_name=IasZone.AttributeDefs.zone_type.name,
-            value=ZoneType.Vibration_Movement_Sensor,
-        )
-
+        # Initialize zone status until a proper update comes.
         self.update_attribute(
             attr_name=IasZone.AttributeDefs.zone_status.name,
             value=0x0000,
@@ -185,10 +168,6 @@ class TS0601Door(CustomDevice):
 
     Extra details about the physical device: https://www.aliexpress.com/item/1005004443361928.html?spm=a2g0o.order_list.order_list_main.53.35a81802wiZASs
     """
-
-    def __init__(self, *args, **kwargs):
-        """Init constructor."""
-        super().__init__(*args, **kwargs)
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=81
