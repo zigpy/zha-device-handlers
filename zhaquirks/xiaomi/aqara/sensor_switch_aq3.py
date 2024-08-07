@@ -57,12 +57,6 @@ MOVEMENT_TYPE = {
 }
 
 
-class OppleCluster(XiaomiAqaraE1Cluster):
-    """Opple cluster."""
-
-
-
-
 class MultistateInputCluster(CustomCluster, MultistateInput):
     """Multistate input cluster."""
 
@@ -216,7 +210,7 @@ class SwitchAQ3B2(XiaomiCustomDevice):
                     Identify.cluster_id,
                     OnOff.cluster_id,
                     Ota.cluster_id,
-                    OppleCluster,
+                    XiaomiAqaraE1Cluster,
                 ],
             }
         },
