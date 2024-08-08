@@ -4,12 +4,11 @@ from unittest import mock
 from unittest.mock import MagicMock
 
 import zhaquirks
-from zhaquirks.inovelli.VZM31SN import InovelliVZM31SNv11
 
 zhaquirks.setup()
 
 
-def test_mfg_cluster_events(zigpy_device_from_quirk):
+def test_mfg_cluster_events(zigpy_device_from_v2_quirk):
     """Test Inovelli manufacturer cluster generates correct events."""
     data = b"\x15/\x12\x05\x00\x03\x00"  # button_3_press event
     cluster_id = 0xFC31
@@ -18,7 +17,7 @@ def test_mfg_cluster_events(zigpy_device_from_quirk):
     class Listener:
         zha_send_event = mock.MagicMock()
 
-    device = zigpy_device_from_quirk(InovelliVZM31SNv11)
+    device = zigpy_device_from_v2_quirk("Inovelli", "VZM31-SN")
     device._packet_debouncer.filter = MagicMock(return_value=False)
     cluster_listener = Listener()
     device.endpoints[endpoint_id].out_clusters[cluster_id].add_listener(
