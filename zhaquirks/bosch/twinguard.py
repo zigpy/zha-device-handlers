@@ -1,5 +1,5 @@
 """Quirk for Bosch Twinguard smoke detector
-     Identifies at 'Champion' """
+     Identifies as 'Champion' """
 import zigpy.types as t
 import math
 #import logging
