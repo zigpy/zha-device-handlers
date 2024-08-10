@@ -22,7 +22,6 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SHORT_PRESS,
-    SKIP_CONFIGURATION,
     VALUE,
 )
 from zhaquirks.tuya import TUYA_CLUSTER_ID, DPToAttributeMapping, TuyaNewManufCluster
