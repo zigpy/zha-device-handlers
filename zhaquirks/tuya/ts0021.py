@@ -82,7 +82,6 @@ class TS0021(CustomDevice):
     }
 
     replacement = {
-        SKIP_CONFIGURATION: False,
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
