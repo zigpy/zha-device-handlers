@@ -50,7 +50,7 @@ class TuyaAirQualityTemperature(TemperatureMeasurement, TuyaLocalCluster):
     attributes = TemperatureMeasurement.attributes.copy()
     attributes.update(
         {
-            # ramdom attribute IDs
+            # random attribute IDs
             0xEF12: ("custom_temperature", CustomTemperature, False),
         }
     )

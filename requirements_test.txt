@@ -3,7 +3,7 @@ black
 flake8
 codecov
 colorlog
-codespell
+codespell>=2.3.0
 coveralls
 mypy==0.942
 pre-commit
@@ -13,5 +13,5 @@ pytest-sugar
 pytest-timeout
 pytest-asyncio
 pytest>=7.1.3
-zigpy>=0.65.2
+zigpy>=0.65.3
 ruff==0.0.261
