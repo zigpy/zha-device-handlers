@@ -54,7 +54,7 @@ class TuyaIlluminanceCluster(TuyaMCUCluster):
         TUYA_ILLUMINANCE_DP: DPToAttributeMapping(
             TuyaIlluminanceMeasurement.ep_attribute,
             "measured_value",
-            converter=lambda x: (10000.0 * math.log10(x) + 1.0 if x != 0 else 0),
+            converter=lambda x: 10000 * math.log10(x + 1),
         ),
     }
 

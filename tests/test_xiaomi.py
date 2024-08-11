@@ -1187,7 +1187,7 @@ async def test_xiaomi_p1_t1_motion_sensor(
     # confirm illuminance report (with conversion)
     assert len(illuminance_listener.attribute_updates) == 1
     assert illuminance_listener.attribute_updates[0][0] == zcl_iilluminance_id
-    assert illuminance_listener.attribute_updates[0][1] == 10000 * math.log10(10) + 1
+    assert illuminance_listener.attribute_updates[0][1] == 10000 * math.log10(10 + 1)
 
     # send invalid illuminance report 0xFFFF (and motion)
     opple_cluster.update_attribute(274, 0xFFFF)
@@ -1204,7 +1204,7 @@ async def test_xiaomi_p1_t1_motion_sensor(
     )
     assert len(illuminance_listener.attribute_updates) == 3
     assert illuminance_listener.attribute_updates[2][0] == zcl_iilluminance_id
-    assert illuminance_listener.attribute_updates[2][1] == 10000 * math.log10(20) + 1
+    assert illuminance_listener.attribute_updates[2][1] == 10000 * math.log10(20 + 1)
 
 
 @pytest.mark.parametrize(
@@ -1299,7 +1299,7 @@ async def test_xiaomi_weather(
             "1C5F11C10A01FF41210121DB0B03281F0421A8430521B60006240B000000000A21CA356410000B210800",
             [
                 3100,  # temperature
-                9031.899869919436,  # illuminance
+                9542.42509439325,  # illuminance
                 30.4,  # battery voltage
                 154,  # battery percent * 2
             ],
@@ -1578,13 +1578,8 @@ async def test_xiaomi_e1_driver_light_level(
     assert len(illuminance_listener.attribute_updates) == 1
     assert illuminance_listener.attribute_updates[0][0] == zcl_iilluminance_id
 
-    assert (
-        device_level == 0
-        and converted_level == 0
-        or (
-            illuminance_listener.attribute_updates[0][1]
-            == 10000 * math.log10(converted_level) + 1
-        )
+    assert illuminance_listener.attribute_updates[0][1] == 10000 * math.log10(
+        converted_level + 1
     )
 
 
