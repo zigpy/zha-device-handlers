@@ -262,9 +262,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         self,
         dp_id: int,
         illuminance_cfg: TuyaLocalCluster = TuyaIlluminance,
-        converter: Callable[[Any], Any] | None = (
-            lambda x: 10000 * math.log10(x) + 1 if x != 0 else 0
-        ),
+        converter: Callable[[Any], Any] | None = (lambda x: 10000 * math.log10(x) + 1),
     ) -> QuirkBuilder:
         """Add a Tuya Illuminance Configuration."""
         self.tuya_dp(
