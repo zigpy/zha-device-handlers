@@ -82,7 +82,7 @@ class NeoMotionManufCluster(TuyaNewManufCluster):
     attributes = TuyaNewManufCluster.attributes.copy()
     attributes.update(
         {
-            0xEF0D: ("dp_113", t.enum8, True),  # ramdom attribute ID
+            0xEF0D: ("dp_113", t.enum8, True),  # random attribute ID
         }
     )
 
@@ -135,7 +135,7 @@ class MmwRadarManufCluster(TuyaMCUCluster):
     attributes = TuyaMCUCluster.attributes.copy()
     attributes.update(
         {
-            # ramdom attribute IDs
+            # random attribute IDs
             0xEF02: ("dp_2", t.uint32_t, True),
             0xEF03: ("dp_3", t.uint32_t, True),
             0xEF04: ("dp_4", t.uint32_t, True),

@@ -3,7 +3,7 @@ black
 flake8
 codecov
 colorlog
-codespell
+codespell>=2.3.0
 coveralls
 mypy==0.942
 pre-commit
