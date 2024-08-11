@@ -27,7 +27,7 @@ class TuyaGarageManufCluster(NoManufacturerCluster, TuyaMCUCluster):
     attributes = TuyaMCUCluster.attributes.copy()
     attributes.update(
         {
-            # ramdom attribute IDs
+            # random attribute IDs
             0xEF01: ("button", t.Bool, True),
             0xEF02: ("dp_2", t.uint32_t, True),
             0xEF03: ("contact_sensor", t.Bool, True),
