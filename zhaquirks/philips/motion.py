@@ -1,4 +1,5 @@
 """Quirk for Philips motion sensors."""
+
 from zigpy.profiles import zha, zll
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t

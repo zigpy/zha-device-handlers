@@ -1,4 +1,5 @@
 """Quirk for iluminize DIM actor."""
+
 from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.zcl.clusters.general import (

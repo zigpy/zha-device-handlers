@@ -1,4 +1,5 @@
 """Texas Instruments Z-Stack router device."""
+
 from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t

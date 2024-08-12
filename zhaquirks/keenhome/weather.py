@@ -1,4 +1,5 @@
 """Keen Home temperature/humidity/pressure sensor."""
+
 from zigpy.profiles import zha
 from zigpy.profiles.zha import DeviceType
 from zigpy.quirks import CustomCluster, CustomDevice

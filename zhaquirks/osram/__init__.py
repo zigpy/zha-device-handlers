@@ -1,4 +1,5 @@
 """Osram quirks elements."""
+
 from zigpy.quirks import CustomCluster
 from zigpy.zcl.foundation import ZCLCommandDef
 

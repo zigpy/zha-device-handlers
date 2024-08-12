@@ -1,4 +1,5 @@
 """Quirk for LUMI lumi.motion.agl04."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -19,8 +20,8 @@ from zhaquirks.const import (
 )
 from zhaquirks.xiaomi import (
     DeviceTemperatureCluster,
-    LocalOccupancyCluster,
     MotionCluster,
+    OccupancyCluster,
     XiaomiAqaraE1Cluster,
     XiaomiCustomDevice,
     XiaomiPowerConfiguration,
@@ -98,7 +99,7 @@ class LumiLumiMotionAgl04(XiaomiCustomDevice):
                     XiaomiPowerConfiguration,
                     Identify.cluster_id,
                     DeviceTemperatureCluster,
-                    LocalOccupancyCluster,
+                    OccupancyCluster,
                     LocalMotionCluster,
                     OppleCluster,
                 ],

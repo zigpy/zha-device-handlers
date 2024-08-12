@@ -14,7 +14,7 @@ readme = "README.md"
 license = {text = "Apache License Version 2.0"}
 requires-python = ">=3.12"
 dependencies = [
-    "zigpy>=0.63.5",
+    "zigpy>=0.65.2",
 ]
 
 [tool.setuptools.packages.find]
@@ -78,8 +78,8 @@ testpaths = "tests"
 norecursedirs = ".git testing_config"
 
 [tool.codespell]
-skip = "Contributors.md,tests/test_tuya.py"
-ignore-words-list = "hass, dout, potentiels"
+skip = "Contributors.md"
+ignore-words-list = "hass, dout, potentiels, checkin"
 quiet-level = 2
 
 [tool.ruff]

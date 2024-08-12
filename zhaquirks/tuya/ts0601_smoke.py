@@ -1,4 +1,5 @@
 """Smoke Sensor."""
+
 import logging
 
 import zigpy.profiles.zha
@@ -80,6 +81,7 @@ class TuyaSmokeDetector0601(CustomDevice):
             ("_TZE200_dq1mfjug", "TS0601"),
             ("_TZE200_m9skfctm", "TS0601"),
             ("_TZE200_ntcy3xu1", "TS0601"),
+            ("_TZE200_rccxox8p", "TS0601"),
             ("_TZE200_vzekyi4c", "TS0601"),
             ("_TZE204_ntcy3xu1", "TS0601"),
         ],

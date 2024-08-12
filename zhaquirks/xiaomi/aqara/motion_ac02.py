@@ -1,4 +1,5 @@
 """Quirk for LUMI lumi.motion.ac02."""
+
 from __future__ import annotations
 
 import logging
@@ -8,7 +9,6 @@ from zigpy import types
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PowerConfiguration
-from zigpy.zcl.clusters.measurement import IlluminanceMeasurement, OccupancySensing
 
 from zhaquirks import Bus, LocalDataCluster
 from zhaquirks.const import (
@@ -23,7 +23,7 @@ from zhaquirks.xiaomi import (
     LocalIlluminanceMeasurementCluster,
     MotionCluster,
     OccupancyCluster,
-    XiaomiAqaraE1Cluster,
+    XiaomiMotionManufacturerCluster,
     XiaomiPowerConfiguration,
 )
 
@@ -34,26 +34,18 @@ TRIGGER_INDICATOR = 0x0152
 _LOGGER = logging.getLogger(__name__)
 
 
-class OppleCluster(XiaomiAqaraE1Cluster):
-    """Opple cluster."""
+class OppleCluster(XiaomiMotionManufacturerCluster):
+    """Xiaomi manufacturer cluster.
+
+    This uses the shared XiaomiMotionManufacturerCluster implementation
+    which parses motion and illuminance reports from Xiaomi devices.
+    """
 
     attributes = {
         DETECTION_INTERVAL: ("detection_interval", types.uint8_t, True),
         MOTION_SENSITIVITY: ("motion_sensitivity", types.uint8_t, True),
         TRIGGER_INDICATOR: ("trigger_indicator", types.uint8_t, True),
     }
-
-    def _update_attribute(self, attrid: int, value: Any) -> None:
-        super()._update_attribute(attrid, value)
-        if attrid == MOTION_ATTRIBUTE:
-            value = value - 65536
-            self.endpoint.illuminance.update_attribute(
-                IlluminanceMeasurement.AttributeDefs.measured_value.id, value
-            )
-            self.endpoint.occupancy.update_attribute(
-                OccupancySensing.AttributeDefs.occupancy.id,
-                OccupancySensing.Occupancy.Occupied,
-            )
 
     async def write_attributes(
         self, attributes: dict[str | int, Any], manufacturer: int | None = None

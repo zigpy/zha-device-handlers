@@ -1,4 +1,5 @@
 """Device handler for IKEA of Sweden STARKVIND Air purifier."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -68,9 +69,9 @@ class IkeaAirpurifier(CustomCluster):
                 value is not None and value < 5500
             ):  # > 5500 = out of scale; if value is 65535 (0xFFFF), device is off
                 self.endpoint.device.pm25_bus.listener_event("update_state", value)
-        elif attrid == 0x0006:
-            if value > 9 and value < 51:
-                value = value / 5
+        elif attrid in (0x0006, 0x0007):
+            if value >= 10 and value <= 50:
+                value = value // 5
         super()._update_attribute(attrid, value)
 
     async def write_attributes(

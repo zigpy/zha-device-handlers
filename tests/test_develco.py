@@ -1,4 +1,5 @@
 """Tests for Develco/Frient A/S quirks."""
+
 import pytest
 from zigpy.zcl.clusters.general import DeviceTemperature
 

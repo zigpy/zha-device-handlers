@@ -1,4 +1,5 @@
 """Device handler for centralite 3450L."""
+
 # pylint disable=C0103
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice

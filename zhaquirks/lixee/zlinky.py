@@ -1,4 +1,5 @@
 """Quirk for ZLinky_TIC."""
+
 from copy import deepcopy
 
 from zigpy.profiles import zgp, zha
@@ -102,7 +103,7 @@ class ZLinkyTICManufacturerCluster(CustomCluster):
         0x0215: ("std_message_short", t.LimitedCharString(32), True),
         # Standard mode: MSG2 "Message ultra court" / String 16 car
         0x0216: ("std_message_ultra_short", t.LimitedCharString(16), True),
-        # Standard mode: STGE "Registre de Statuts" / String 8 car
+        # Standard mode: STGE "Registre de Statuts" / String 8 car /* codespell:ignore */
         0x0217: ("std_status_register", t.LimitedCharString(8), True),
         # Standard mode: DPM1 "Début Pointe Mobile 1" / Uint8 2 car
         0x0218: ("std_mobile_peak_start_1", t.uint8_t, True),
