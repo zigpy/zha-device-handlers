@@ -380,7 +380,7 @@ class ZosungIRBlaster(CustomDevice):
 
     seq = -1
     ir_msg_to_send = {}
-    last_learned_ir_code = t.CharacterString()
+    last_learned_ir_code = t.CharacterString("")
 
     def __init__(self, *args, **kwargs):
         """Init device."""
