@@ -3,6 +3,7 @@
 Heavily inspired by work from @mak-42
 https://github.com/Koenkk/zigbee-herdsman-converters/blob/9d5e7b902479582581615cbfac3148d66d4c675c/lib/zosung.js
 """
+
 import base64
 from typing import Any, Final, Optional, Union
 
