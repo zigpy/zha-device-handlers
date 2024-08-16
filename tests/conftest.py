@@ -88,7 +88,6 @@ class MockApp(zigpy.application.ControllerApplication):
 def app_controller_mock():
     """App controller mock."""
     config = {"device": {"path": "/dev/ttyUSB0"}, "database": None}
-    config = MockApp.SCHEMA(config)
     app = MockApp(config)
     return app
 
