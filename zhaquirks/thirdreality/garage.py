@@ -1,5 +1,6 @@
-"""Third Reality vibrate devices."""
+"""Third Reality garage sensor devices."""
 from zigpy.profiles import zha
+from typing import Final
 from zigpy.quirks import CustomDevice
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Ota, PowerConfiguration
@@ -15,27 +16,41 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.thirdreality import THIRD_REALITY
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
-MANUFACTURER_SPECIFIC_CLUSTER_ID = 0xFFF1
+THIRD_REALITY_GARAGE_CLUSTER_ID = 0xFF01
+DELAY_OPEN_ATTR_ID = 0x0000
+ZCL_CABRATION_ATTR_ID = 0x0003
+
+class ControlMode(t.uint16_t):
+    """Reset mode for not clear and clear."""
+	
+
+class ThirdRealityGarageCluster(CustomCluster):
+	"""ThirdReality Acceleration Cluster."""
+	cluster_id = THIRD_REALITY_GARAGE_CLUSTER_ID
+
+	class AttributeDefs(BaseAttributeDefs):
+		delay_open: Final = ZCLAttributeDef(
+		id=DELAY_OPEN_ATTR_ID,
+		type=ControlMode,
+		is_manufacturer_specific=True
+		)
+		zcl_cabration: Final = ZCLAttributeDef(
+		id=ZCL_CABRATION_ATTR_ID,
+		type=t.uint8_t,
+		is_manufacturer_specific=True
+		)
+		
+		
+    
 
 
-class ThirdRealityAccelCluster(CustomCluster):
-    """ThirdReality Acceleration Cluster."""
-
-    cluster_id = MANUFACTURER_SPECIFIC_CLUSTER_ID
-    attributes = {
-        0x0001: ("x_axis", t.int16s, True),
-        0x0002: ("y_axis", t.int16s, True),
-        0x0003: ("z_axis", t.int16s, True),
-        0x0004: ("cooldown_period", t.uint16_t, True),
-    }
-
-
-class Vibrate(CustomDevice):
-    """ThirdReality vibrate device."""
+class Garage(CustomDevice):
+    """ThirdReality garage device."""
 
     signature = {
-        MODELS_INFO: [(THIRD_REALITY, "3RVS01031Z")],
+        MODELS_INFO: [(THIRD_REALITY, "3RDTS01056Z")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -44,7 +59,7 @@ class Vibrate(CustomDevice):
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
                     IasZone.cluster_id,
-                    ThirdRealityAccelCluster.cluster_id,
+                    ThirdRealityGarageCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Ota.cluster_id,
@@ -61,7 +76,7 @@ class Vibrate(CustomDevice):
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
                     IasZone.cluster_id,
-                    ThirdRealityAccelCluster,
+                    ThirdRealityGarageCluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     Ota.cluster_id,
