@@ -6,8 +6,7 @@ DM2550ZB-G2.
 
 import logging
 from typing import Any, Optional, Union
-from homeassistant.components.zha.core.cluster_handlers import AttrReportConfig
-from homeassistant.components.zha.core.const import REPORT_CONFIG_IMMEDIATE
+
 import zigpy.profiles.zha as zha_p
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
@@ -45,7 +44,7 @@ from zhaquirks.sinope import (
     ATTRIBUTE_ACTION,
     LIGHT_DEVICE_TRIGGERS,
     SINOPE,
-    CustomDeviceTemperatureCluster
+    CustomDeviceTemperatureCluster,
 )
 
 SINOPE_MANUFACTURER_CLUSTER_ID = 0xFF01
@@ -150,12 +149,12 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
             ATTRIBUTE_NAME: ATTRIBUTE_ACTION,
             VALUE: value.value,
         }
-        action = self.get_command_from_action(self.Action(value))
+        action = self._get_command_from_action(self.Action(value))
         if not action:
             return
         self.listener_event(ZHA_SEND_EVENT, action, event_args)
 
-    def get_command_from_action(self, action: Action) -> str | None:
+    def _get_command_from_action(self, action: Action) -> str | None:
         # const lookup = {2: 'up_single', 3: 'up_hold', 4: 'up_double',
         #             18: 'down_single', 19: 'down_hold', 20: 'down_double'};
         match action:

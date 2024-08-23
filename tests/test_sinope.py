@@ -1,18 +1,18 @@
 """Tests for Sinope."""
 
 from unittest import mock
+
 import pytest
-from zhaquirks.sinope import SINOPE_MANUFACTURER_CLUSTER_ID
+from zigpy.device import Device
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import DeviceTemperature
 from zigpy.zcl.clusters.measurement import FlowMeasurement
-from zigpy.device import Device
-from zhaquirks.const import COMMAND_BUTTON_DOUBLE
-
-import zhaquirks.sinope.switch
-import zhaquirks.sinope.light
 
 from tests.common import ClusterListener
+from zhaquirks.const import COMMAND_BUTTON_DOUBLE
+from zhaquirks.sinope import SINOPE_MANUFACTURER_CLUSTER_ID
+import zhaquirks.sinope.light
+import zhaquirks.sinope.switch
 
 zhaquirks.setup()
 
@@ -65,9 +65,10 @@ async def test_sinope_flow_measurement(zigpy_device_from_quirk, quirk):
     )
     assert flow_measurement_listener.attribute_updates[1][1] == 25  # not modified
 
+
 @pytest.mark.parametrize("quirk", (zhaquirks.sinope.light.SinopeTechnologieslight,))
 async def test_sinope_light_switch(zigpy_device_from_quirk, quirk):
-    """Test that button presses are sent as events"""
+    """Test that button presses are sent as events."""
     device: Device = zigpy_device_from_quirk(quirk)
 
     data = b"\x1c\x9c\x11\x81\nT\x000\x04"  # off button double down
@@ -93,7 +94,7 @@ async def test_sinope_light_switch(zigpy_device_from_quirk, quirk):
 
 @pytest.mark.parametrize("quirk", (zhaquirks.sinope.light.SinopeTechnologieslight,))
 async def test_sinope_light_switch_reporting(zigpy_device_from_quirk, quirk):
-    """Test that button presses are sent as events"""
+    """Test that configuring reporting for action_report works."""
     device: Device = zigpy_device_from_quirk(quirk)
 
     manu_cluster = device.endpoints[1].in_clusters[SINOPE_MANUFACTURER_CLUSTER_ID]
@@ -106,11 +107,13 @@ async def test_sinope_light_switch_reporting(zigpy_device_from_quirk, quirk):
 
         await manu_cluster.bind()
         await manu_cluster.configure_reporting(
-            zhaquirks.sinope.light.SinopeTechnologiesManufacturerCluster.attributes_by_name['action_report'].id,
+            zhaquirks.sinope.light.SinopeTechnologiesManufacturerCluster.attributes_by_name[
+                "action_report"
+            ].id,
             3600,
             10800,
             1,
         )
 
-        assert len(request_mock.mock_calls) == 0
-        assert len(bind_mock.mock_calls) == 0
+        assert len(request_mock.mock_calls) == 1
+        assert len(bind_mock.mock_calls) == 1
