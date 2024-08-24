@@ -93,10 +93,14 @@ def _get_xbee_packet_data(
 @pytest.mark.parametrize(
     "press_type,exp_event",
     (
+        (ButtonAction.Single_off, None),
+        (ButtonAction.Single_on, None),
         (ButtonAction.Double_on, COMMAND_BUTTON_DOUBLE),
         (ButtonAction.Double_off, COMMAND_BUTTON_DOUBLE),
         (ButtonAction.Long_on, COMMAND_BUTTON_HOLD),
         (ButtonAction.Long_off, COMMAND_BUTTON_HOLD),
+        # Should gracefully handle broken actions.
+        (t.uint8_t(0x00), None),
     ),
 )
 async def test_sinope_light_switch(
@@ -123,15 +127,18 @@ async def test_sinope_light_switch(
     data = _get_xbee_packet_data(foundation.GeneralCommand.Report_Attributes, attr)
     device.handle_message(260, cluster_id, endpoint_id, endpoint_id, data)
 
-    assert cluster_listener.zha_send_event.call_count == 1
-    assert cluster_listener.zha_send_event.call_args == mock.call(
-        exp_event,
-        {
-            "attribute_id": 84,
-            "attribute_name": "action_report",
-            "value": press_type.value,
-        },
-    )
+    if exp_event is None:
+        assert cluster_listener.zha_send_event.call_count == 0
+    else:
+        assert cluster_listener.zha_send_event.call_count == 1
+        assert cluster_listener.zha_send_event.call_args == mock.call(
+            exp_event,
+            {
+                "attribute_id": 84,
+                "attribute_name": "action_report",
+                "value": press_type.value,
+            },
+        )
 
 
 @pytest.mark.parametrize("quirk", (SinopeTechnologieslight,))
