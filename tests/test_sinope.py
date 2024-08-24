@@ -4,17 +4,25 @@ from unittest import mock
 
 import pytest
 from zigpy.device import Device
+import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import DeviceTemperature
 from zigpy.zcl.clusters.measurement import FlowMeasurement
 
 from tests.common import ClusterListener
-from zhaquirks.const import COMMAND_BUTTON_DOUBLE
+from zhaquirks.const import COMMAND_BUTTON_DOUBLE, COMMAND_BUTTON_HOLD
 from zhaquirks.sinope import SINOPE_MANUFACTURER_CLUSTER_ID
-import zhaquirks.sinope.light
+from zhaquirks.sinope.light import (
+    SinopeTechnologieslight,
+    SinopeTechnologiesManufacturerCluster,
+)
 import zhaquirks.sinope.switch
 
 zhaquirks.setup()
+
+ButtonAction = SinopeTechnologiesManufacturerCluster.Action
+
+SINOPE_MANUFACTURER_ID = 4508  # 0x119C
 
 
 @pytest.mark.parametrize("quirk", (zhaquirks.sinope.switch.SinopeTechnologiesCalypso,))
@@ -66,13 +74,37 @@ async def test_sinope_flow_measurement(zigpy_device_from_quirk, quirk):
     assert flow_measurement_listener.attribute_updates[1][1] == 25  # not modified
 
 
+def _get_xbee_packet_data(
+    command: foundation.GeneralCommand,
+    attr: foundation.Attribute | None = None,
+    dirc: foundation.Direction = foundation.Direction.Server_to_Client,
+) -> bytes:
+    hdr = foundation.ZCLHeader.general(
+        1, command, SINOPE_MANUFACTURER_ID, dirc
+    ).serialize()
+    if attr is not None:
+        cmd = foundation.GENERAL_COMMANDS[command].schema([attr]).serialize()
+    else:
+        cmd = b""
+    return t.SerializableBytes(hdr + cmd).serialize()
+
+
 @pytest.mark.parametrize("quirk", (zhaquirks.sinope.light.SinopeTechnologieslight,))
-async def test_sinope_light_switch(zigpy_device_from_quirk, quirk):
+@pytest.mark.parametrize(
+    "press_type,exp_event",
+    (
+        (ButtonAction.Double_on, COMMAND_BUTTON_DOUBLE),
+        (ButtonAction.Double_off, COMMAND_BUTTON_DOUBLE),
+        (ButtonAction.Long_on, COMMAND_BUTTON_HOLD),
+        (ButtonAction.Long_off, COMMAND_BUTTON_HOLD),
+    ),
+)
+async def test_sinope_light_switch(
+    zigpy_device_from_quirk, quirk, press_type, exp_event
+):
     """Test that button presses are sent as events."""
     device: Device = zigpy_device_from_quirk(quirk)
-
-    data = b"\x1c\x9c\x11\x81\nT\x000\x04"  # off button double down
-    cluster_id = 0xFF01
+    cluster_id = SINOPE_MANUFACTURER_CLUSTER_ID
     endpoint_id = 1
 
     class Listener:
@@ -81,18 +113,66 @@ async def test_sinope_light_switch(zigpy_device_from_quirk, quirk):
     cluster_listener = Listener()
     device.endpoints[endpoint_id].in_clusters[cluster_id].add_listener(cluster_listener)
 
+    attr = foundation.Attribute(
+        attrid=0x54,  # "action_report" attribute
+        value=foundation.TypeValue(
+            type=t.enum8(0x30),
+            value=press_type,
+        ),
+    )
+    data = _get_xbee_packet_data(foundation.GeneralCommand.Report_Attributes, attr)
     device.handle_message(260, cluster_id, endpoint_id, endpoint_id, data)
 
     assert cluster_listener.zha_send_event.call_count == 1
     assert cluster_listener.zha_send_event.call_args == mock.call(
-        COMMAND_BUTTON_DOUBLE,
-        {"attribute_id": 84, "attribute_name": "action_report", "value": 4},
+        exp_event,
+        {
+            "attribute_id": 84,
+            "attribute_name": "action_report",
+            "value": press_type.value,
+        },
     )
 
-    cluster_listener.zha_send_event.reset_mock()
+
+@pytest.mark.parametrize("quirk", (SinopeTechnologieslight,))
+async def test_sinope_light_switch_non_action_report(zigpy_device_from_quirk, quirk):
+    """Test commands not handled by custom handler.
+
+    Make sure that non attribute report commands and attribute reports that don't
+    concern action_report are passed through to base class.
+    """
+
+    device: Device = zigpy_device_from_quirk(quirk)
+    cluster_id = SINOPE_MANUFACTURER_CLUSTER_ID
+    endpoint_id = 1
+
+    class Listener:
+        zha_send_event = mock.MagicMock()
+
+    cluster_listener = Listener()
+    device.endpoints[endpoint_id].in_clusters[cluster_id].add_listener(cluster_listener)
+
+    # read attributes general command
+    data = _get_xbee_packet_data(foundation.GeneralCommand.Read_Attributes)
+    device.handle_message(260, cluster_id, endpoint_id, endpoint_id, data)
+    # no ZHA events emitted because we only handle Report_Attributes
+    assert cluster_listener.zha_send_event.call_count == 0
+
+    # report attributes command, but not "action_report"
+    attr = foundation.Attribute(
+        attrid=0x10,  # "on_intensity" attribute
+        value=foundation.TypeValue(
+            type=t.int16s(0x29), value=t.int16s(50)
+        ),  # 0x29 = t.int16s
+    )
+    data = _get_xbee_packet_data(foundation.GeneralCommand.Report_Attributes, attr)
+    device.handle_message(260, cluster_id, endpoint_id, endpoint_id, data)
+    # ZHA event emitted because we pass non "action_report"
+    # reports to the base class handler.
+    assert cluster_listener.zha_send_event.call_count == 1
 
 
-@pytest.mark.parametrize("quirk", (zhaquirks.sinope.light.SinopeTechnologieslight,))
+@pytest.mark.parametrize("quirk", (SinopeTechnologieslight,))
 async def test_sinope_light_switch_reporting(zigpy_device_from_quirk, quirk):
     """Test that configuring reporting for action_report works."""
     device: Device = zigpy_device_from_quirk(quirk)
@@ -107,7 +187,7 @@ async def test_sinope_light_switch_reporting(zigpy_device_from_quirk, quirk):
 
         await manu_cluster.bind()
         await manu_cluster.configure_reporting(
-            zhaquirks.sinope.light.SinopeTechnologiesManufacturerCluster.attributes_by_name[
+            SinopeTechnologiesManufacturerCluster.attributes_by_name[
                 "action_report"
             ].id,
             3600,

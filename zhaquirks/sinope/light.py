@@ -136,12 +136,16 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
         )
 
         if hdr.command_id != foundation.GeneralCommand.Report_Attributes:
-            return
+            return super().handle_cluster_general_request(
+                hdr, args, dst_addressing=dst_addressing
+            )
 
         attr = args[0][0]
 
         if attr.attrid != self.attributes_by_name["action_report"].id:
-            return
+            return super().handle_cluster_general_request(
+                hdr, args, dst_addressing=dst_addressing
+            )
 
         value = attr.value.value
         event_args = {
