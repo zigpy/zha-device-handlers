@@ -410,7 +410,7 @@ class TuyaSoilSensor(CustomDevice):
 
 
 class SoilManufClusterVar02(TuyaMCUCluster):
-    """Tuya Manufacturer Cluster with Temperature and Humidity data points (variation 02)"""
+    """Tuya Manufacturer Cluster with Temperature and Humidity data points (variation 02)."""
 
     dp_to_attribute: dict[int, DPToAttributeMapping] = {
         5: DPToAttributeMapping(
