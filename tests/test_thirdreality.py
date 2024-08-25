@@ -1,6 +1,5 @@
 """Tests for Third Reality quirks."""
 
-
 import pytest
 from zigpy.zcl.clusters.security import IasZone
 

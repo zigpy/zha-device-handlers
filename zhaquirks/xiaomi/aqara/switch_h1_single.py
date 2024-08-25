@@ -309,6 +309,7 @@ class AqaraH1SingleRockerSwitchNoNeutral(AqaraH1SingleRockerBase):
         },
     }
 
+
 class AqaraSingleButtonSwitchWithNeutral(AqaraH1SingleRockerBase):
     """Aqara US Wall Switch with neutral (WS-USC03)."""
 

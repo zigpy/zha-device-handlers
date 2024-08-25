@@ -1,4 +1,5 @@
 """Tuya Din Power Meter."""
+
 from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time
