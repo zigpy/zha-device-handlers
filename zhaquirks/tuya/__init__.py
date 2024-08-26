@@ -958,6 +958,19 @@ class TuyaPowerConfigurationCluster2AAA(PowerConfiguration, TuyaLocalCluster):
         BATTERY_RATED_VOLTAGE: 15,
     }
 
+class TuyaPowerConfigurationCluster3AAA(PowerConfiguration, TuyaLocalCluster):
+    """PowerConfiguration cluster for devices with 3 AAA."""
+
+    BATTERY_SIZES = 0x0031
+    BATTERY_QUANTITY = 0x0033
+    BATTERY_RATED_VOLTAGE = 0x0034
+
+    _CONSTANT_ATTRIBUTES = {
+        BATTERY_SIZES: 4,
+        BATTERY_QUANTITY: 3,
+        BATTERY_RATED_VOLTAGE: 15,
+    }
+
 
 class TuyaPowerConfigurationCluster2AA(TuyaPowerConfigurationCluster):
     """PowerConfiguration cluster for devices with 2 AA."""
