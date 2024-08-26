@@ -1,21 +1,19 @@
 """Tests for Philips RDM001 and RDM004 quirks."""
+
 import pytest
 
-from tests.common import ClusterListener
-
 import zhaquirks
-from zhaquirks.philips.rdm001 import PhilipsRDM001
-from zhaquirks.philips.rdm004 import PhilipsRDM004
 
 zhaquirks.setup()
 
-@pytest.mark.parametrize("manufacturer,model",
+
+@pytest.mark.parametrize(
+    "manufacturer,model",
     [
         ("Philips", "RDM001"),
         ("Signify Netherlands B.V.", "RDM001"),
     ],
 )
-
 def test_RDM001_signature(
     manufacturer: str, model: str, assert_signature_matches_quirk
 ) -> None:
@@ -40,6 +38,4 @@ def test_RDM001_signature(
         "class": "zhaquirks.philips.rdm001.PhilipsRDM001",
     }
 
-    assert_signature_matches_quirk(
-        zhaquirks.philips.rdm001.PhilipsRDM001, signature
-    )
+    assert_signature_matches_quirk(zhaquirks.philips.rdm001.PhilipsRDM001, signature)
