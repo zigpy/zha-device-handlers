@@ -115,11 +115,11 @@ class Tuya_2G_Wall_Switch_Metering(EnchantedDevice):
                     Scenes.cluster_id,
                     OnOff.cluster_id,
                     TuyaZBE000Cluster.cluster_id,
-                    TuyaZBExternalSwitchTypeCluster.cluster_id
+                    TuyaZBExternalSwitchTypeCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Time.cluster_id,
-                    Ota.cluster_id
+                    Ota.cluster_id,
                 ],
             },
             2: {
@@ -129,7 +129,7 @@ class Tuya_2G_Wall_Switch_Metering(EnchantedDevice):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     OnOff.cluster_id,
-                    TuyaZBExternalSwitchTypeCluster.cluster_id
+                    TuyaZBExternalSwitchTypeCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [],
             },
