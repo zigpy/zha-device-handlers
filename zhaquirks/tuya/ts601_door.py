@@ -62,17 +62,6 @@ class CustomTuyaPowerConfigurationCluster(TuyaLocalCluster, PowerConfiguration):
         PowerConfiguration.AttributeDefs.battery_quantity.id: 2,
     }
 
-    def __init__(self, endpoint: Endpoint, is_server: bool = True):
-        """Init constructor that initializes battery attributes."""
-        super().__init__(endpoint=endpoint, is_server=is_server)
-
-        # Initialize remaining battery to 100% until a proper measurement arrives.
-        # Device measures battery in 1% steps, while the ZCL specifies it in 0.5% steps.
-        self.update_attribute(
-            attr_name=PowerConfiguration.AttributeDefs.battery_percentage_remaining.name,
-            value=100 * 2,
-        )
-
 
 class CustomTuyaContactSwitchCluster(TuyaLocalCluster, IasZone):
     """Custom IasZone cluster that represents the Open/Closed sensor."""
@@ -82,16 +71,6 @@ class CustomTuyaContactSwitchCluster(TuyaLocalCluster, IasZone):
         IasZone.AttributeDefs.zone_type.id: ZoneType.Contact_Switch,
     }
 
-    def __init__(self, endpoint: Endpoint, is_server: bool = True):
-        """Init constructor that initializes the major IasZone attributes."""
-        super().__init__(endpoint=endpoint, is_server=is_server)
-
-        # Initialize zone status until a proper update comes.
-        self.update_attribute(
-            attr_name=IasZone.AttributeDefs.zone_status.name,
-            value=0x0000,
-        )
-
 
 class CustomTuyaVibrationCluster(TuyaLocalCluster, IasZone):
     """Custom IasZone cluster that represents the vibration sensor."""
@@ -100,16 +79,6 @@ class CustomTuyaVibrationCluster(TuyaLocalCluster, IasZone):
         IasZone.AttributeDefs.zone_state.id: ZONE_STATE,
         IasZone.AttributeDefs.zone_type.id: ZoneType.Vibration_Movement_Sensor,
     }
-
-    def __init__(self, endpoint: Endpoint, is_server: bool = True):
-        """Init constructor that initializes the major IasZone attributes."""
-        super().__init__(endpoint=endpoint, is_server=is_server)
-
-        # Initialize zone status until a proper update comes.
-        self.update_attribute(
-            attr_name=IasZone.AttributeDefs.zone_status.name,
-            value=0x0000,
-        )
 
 
 class CustomTuyaDPProcessor(TuyaNewManufCluster):
