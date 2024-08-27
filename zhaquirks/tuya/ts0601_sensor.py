@@ -447,6 +447,7 @@ class TuyaSoilSensorVar02(CustomDevice):
         # "out_clusters": ["0x000a","0x0019"]
         MODELS_INFO: [
             ("_TZE284_aao3yzhs", "TS0601"),
+            ("_TZE284_sgabhwa6", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
