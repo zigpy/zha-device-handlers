@@ -1,7 +1,5 @@
 """Tuya TS0205 smoke detector."""
 
-import logging
-
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 import zigpy.types as t
@@ -30,8 +28,6 @@ from zhaquirks.const import (
 )
 from zhaquirks.tuya import TuyaManufClusterAttributes
 
-_LOGGER = logging.getLogger(__name__)
-
 
 class TuyaSmokeDetectorCluster(TuyaManufClusterAttributes):
     """Manufacturer Specific Cluster of the TS0205 smoke detector."""
@@ -56,14 +52,6 @@ class TuyaSmokeDetectorCluster(TuyaManufClusterAttributes):
                 self.endpoint.ias_zone.update_attribute(
                     IasZone.AttributeDefs.zone_status.id, 0
                 )
-        else:
-            _LOGGER.warning(
-                "[0x%04x:%s:0x%04x] unhandled attribute: 0x%04x",
-                self.endpoint.device.nwk,
-                self.endpoint.endpoint_id,
-                self.cluster_id,
-                attrid,
-            )
 
 
 class TuyaIasZone(LocalDataCluster, IasZone):
