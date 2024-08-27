@@ -84,7 +84,7 @@ class TemperatureHumidityBatteryStatesManufCluster(TuyaMCUCluster):
         3: DPToAttributeMapping(
             TuyaPowerConfigurationCluster2AAA.ep_attribute,
             "battery_percentage_remaining",
-            converter=lambda x: {0: 25, 1: 50, 2: 100}[x],  # double reported percentage
+            converter=lambda x: {0: 50, 1: 100, 2: 200}[x],
         ),
     }
 
@@ -296,6 +296,7 @@ class TuyaTempHumiditySensorVar04(CustomDevice):
             ("_TZE204_yjjdcqsq", "TS0601"),
             ("_TZE200_utkemkbs", "TS0601"),
             ("_TZE204_utkemkbs", "TS0601"),
+            ("_TZE204_yjjdcqsq", "TS0601"),
         ],
         ENDPOINTS: {
             1: {

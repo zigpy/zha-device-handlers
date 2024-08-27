@@ -948,42 +948,30 @@ class TuyaPowerConfigurationCluster(PowerConfiguration, TuyaLocalCluster):
 class TuyaPowerConfigurationCluster2AAA(PowerConfiguration, TuyaLocalCluster):
     """PowerConfiguration cluster for devices with 2 AAA."""
 
-    BATTERY_SIZES = 0x0031
-    BATTERY_QUANTITY = 0x0033
-    BATTERY_RATED_VOLTAGE = 0x0034
-
     _CONSTANT_ATTRIBUTES = {
-        BATTERY_SIZES: 4,
-        BATTERY_QUANTITY: 2,
-        BATTERY_RATED_VOLTAGE: 15,
+        PowerConfiguration.AttributeDefs.battery_size.id: 4,
+        PowerConfiguration.AttributeDefs.battery_rated_voltage.id: 15,
+        PowerConfiguration.AttributeDefs.battery_quantity.id: 2,
     }
 
 
 class TuyaPowerConfigurationCluster2AA(TuyaPowerConfigurationCluster):
     """PowerConfiguration cluster for devices with 2 AA."""
 
-    BATTERY_SIZES = 0x0031
-    BATTERY_RATED_VOLTAGE = 0x0034
-    BATTERY_QUANTITY = 0x0033
-
     _CONSTANT_ATTRIBUTES = {
-        BATTERY_SIZES: 3,
-        BATTERY_RATED_VOLTAGE: 15,
-        BATTERY_QUANTITY: 2,
+        PowerConfiguration.AttributeDefs.battery_size.id: 3,
+        PowerConfiguration.AttributeDefs.battery_rated_voltage.id: 15,
+        PowerConfiguration.AttributeDefs.battery_quantity.id: 2,
     }
 
 
 class TuyaPowerConfigurationCluster3AA(TuyaPowerConfigurationCluster):
     """PowerConfiguration cluster for devices with 3 AA."""
 
-    BATTERY_SIZES = 0x0031
-    BATTERY_RATED_VOLTAGE = 0x0034
-    BATTERY_QUANTITY = 0x0033
-
     _CONSTANT_ATTRIBUTES = {
-        BATTERY_SIZES: 3,
-        BATTERY_RATED_VOLTAGE: 15,
-        BATTERY_QUANTITY: 3,
+        PowerConfiguration.AttributeDefs.battery_size.id: 3,
+        PowerConfiguration.AttributeDefs.battery_rated_voltage.id: 15,
+        PowerConfiguration.AttributeDefs.battery_quantity.id: 3,
     }
 
 
