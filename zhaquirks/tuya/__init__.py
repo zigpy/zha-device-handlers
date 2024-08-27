@@ -945,7 +945,7 @@ class TuyaPowerConfigurationCluster(PowerConfiguration, TuyaLocalCluster):
         self.update_attribute("battery_percentage_remaining", value * 2)
 
 
-class TuyaPowerConfigurationCluster2AAA(TuyaPowerConfigurationCluster):
+class TuyaPowerConfigurationCluster2AAA(PowerConfiguration, TuyaLocalCluster):
     """PowerConfiguration cluster for devices with 2 AAA."""
 
     _CONSTANT_ATTRIBUTES = {
