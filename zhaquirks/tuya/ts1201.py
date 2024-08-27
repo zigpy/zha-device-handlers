@@ -120,8 +120,10 @@ class ZosungIRControl(CustomCluster):
                 tsn=tsn,
             )
         elif command_id == self.ServerCommandDefs.IRSend.id:
-            ir_msg = f"""{{"key_num":1,"delay":300,"key1":
-                {{"num":1,"freq":38000,"type":1,"key_code":"{kwargs["code"]}"}}}}"""
+            ir_msg = (
+                f'{{"key_num":1,"delay":300,"key1":'
+                f'{{"num":1,"freq":38000,"type":1,"key_code":"{kwargs["code"]}"}}}}'
+            )
             _LOGGER.debug(
                 "Sending IR code: %s to %s", ir_msg, self.endpoint.device.ieee
             )
