@@ -104,8 +104,10 @@ class TemperatureHumidityBatteryStatesManufClusterVar02(TuyaMCUCluster):
         3: DPToAttributeMapping(
             TuyaPowerConfigurationCluster2AAA.ep_attribute,
             "battery_percentage_remaining",
-            converter=lambda x: {0: 40, 1: 100, 2: 200}[x],  # double reported percentage
-            #for some reason values are halved somewhere downstream
+            converter=lambda x: {0: 40, 1: 100, 2: 200}[
+                x
+            ],  # double reported percentage
+            # for some reason values are halved somewhere downstream
         ),
     }
 
