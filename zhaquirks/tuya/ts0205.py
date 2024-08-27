@@ -17,6 +17,7 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.lightlink import LightLink
 from zigpy.zcl.clusters.security import IasZone
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 from zhaquirks import LocalDataCluster
 from zhaquirks.const import (
@@ -31,19 +32,22 @@ from zhaquirks.tuya import TuyaManufClusterAttributes
 
 _LOGGER = logging.getLogger(__name__)
 
-TUYA_SMOKE_DETECTED_ATTR = 0x0401  # [0]/[1] [Detected]/[Clear]!
-
 
 class TuyaSmokeDetectorCluster(TuyaManufClusterAttributes):
     """Manufacturer Specific Cluster of the TS0205 smoke detector."""
 
-    attributes = {
-        TUYA_SMOKE_DETECTED_ATTR: ("smoke_detected", t.uint8_t, True),
-    }
+    class AttributeDefs(BaseAttributeDefs):
+        """Attribute definitions."""
+
+        smoke_detected = ZCLAttributeDef(
+            id=0x0401,  # [0]/[1] [Detected]/[Clear]
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
 
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
-        if attrid == TUYA_SMOKE_DETECTED_ATTR:
+        if attrid == self.AttributeDefs.smoke_detected.id:
             if value == 0:
                 self.endpoint.ias_zone.update_attribute(
                     IasZone.AttributeDefs.zone_status.id, IasZone.ZoneStatus.Alarm_1
