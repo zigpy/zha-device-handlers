@@ -5,6 +5,7 @@ https://github.com/Koenkk/zigbee-herdsman-converters/blob/9d5e7b902479582581615c
 """
 
 import base64
+import logging
 from typing import Any, Final, Optional, Union
 
 from zigpy.profiles import zgp, zha
@@ -31,6 +32,8 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class Bytes(bytes):
@@ -103,7 +106,7 @@ class ZosungIRControl(CustomCluster):
         tsn: Optional[Union[int, t.uint8_t]] = None,
         **kwargs: Any,
     ):
-        """Override the default Cluster command."""
+        """Override the default cluster command."""
         if command_id == self.ServerCommandDefs.IRLearn.id:
             if kwargs["on_off"]:
                 cmd_args = {Bytes(b'{"study":0}')}
@@ -117,8 +120,11 @@ class ZosungIRControl(CustomCluster):
                 tsn=tsn,
             )
         elif command_id == self.ServerCommandDefs.IRSend.id:
-            ir_msg = f"""{{"key_num":1,"delay":300,"key1":{{"num":1,"freq":38000,"type":1,"key_code":"{kwargs["code"]}"}}}}"""
-            self.debug("ir_msg to send: %s", ir_msg)
+            ir_msg = f"""{{"key_num":1,"delay":300,"key1":
+                {{"num":1,"freq":38000,"type":1,"key_code":"{kwargs["code"]}"}}}}"""
+            _LOGGER.debug(
+                "Sending IR code: %s to %s", ir_msg, self.endpoint.device.ieee
+            )
             seq = self.endpoint.device.next_seq()
             self.endpoint.device.ir_msg_to_send = {seq: ir_msg}
             self.create_catching_task(
@@ -266,13 +272,13 @@ class ZosungIRTransmit(CustomCluster):
     ):
         """Handle a cluster request."""
 
-        # send default response, so avoid repeated zclframe from device
+        # send default response to avoid repeated zcl frame from device
         if not hdr.frame_control.disable_default_response:
-            self.debug("Send default response")
+            _LOGGER.debug("Sending default response to %s", self.endpoint.device.ieee)
             self.send_default_rsp(hdr, status=foundation.Status.SUCCESS)
 
         if hdr.command_id == self.ServerCommandDefs.receive_ir_frame_00.id:
-            self.debug("hdr.command_id == 0x00")
+            _LOGGER.debug("Received IR frame 0x00 from %s", self.endpoint.device.ieee)
 
             self.current_position = 0
             self.ir_msg.clear()
@@ -296,8 +302,16 @@ class ZosungIRTransmit(CustomCluster):
                 super().command(0x02, **cmd_02_args, expect_reply=True)
             )
         elif hdr.command_id == self.ServerCommandDefs.receive_ir_frame_01.id:
-            self.debug("IR-Message-Code01 received, sequence: %s", args.seq)
-            self.debug("msg to send: %s", self.endpoint.device.ir_msg_to_send[args.seq])
+            _LOGGER.debug(
+                "IR-Message-Code01 received, sequence: %s, from %s",
+                args.seq,
+                self.endpoint.device.ieee,
+            )
+            _LOGGER.debug(
+                "Message to send: %s, to %s",
+                self.endpoint.device.ir_msg_to_send[args.seq],
+                self.endpoint.device.ieee,
+            )
         elif hdr.command_id == self.ServerCommandDefs.receive_ir_frame_02.id:
             position = args.position
             seq = args.seq
@@ -307,8 +321,9 @@ class ZosungIRTransmit(CustomCluster):
             calculated_crc = 0
             for x in msgpart:
                 calculated_crc = (calculated_crc + ord(x)) % 0x100
-            self.debug(
-                "hdr.command_id == 0x02 ; msgcrc=%s ; position=%s ; msgpart=%s",
+            _LOGGER.debug(
+                "Received IR frame 0x02 from %s, msgsrc: %s, position: %s, msgpart: %s",
+                self.endpoint.device.ieee,
                 calculated_crc,
                 position,
                 msgpart,
@@ -328,8 +343,10 @@ class ZosungIRTransmit(CustomCluster):
             calculated_crc = 0
             for x in args.msgpart:
                 calculated_crc = (calculated_crc + x) % 0x100
-            self.debug(
-                "hdr.command_id == 0x03 ; msgcrc=%s ; calculated_crc=%s ; position=%s",
+            _LOGGER.debug(
+                "Received IR frame 0x03 from %s, msgcrc: %s, "
+                "calculated_crc: %s, position: %s",
+                self.endpoint.device.ieee,
                 msg_part_crc,
                 calculated_crc,
                 args.position,
@@ -345,14 +362,18 @@ class ZosungIRTransmit(CustomCluster):
                     super().command(0x02, **cmd_02_args, expect_reply=False)
                 )
             else:
-                self.debug("Ir message totally received.")
+                _LOGGER.debug(
+                    "IR message completely received from %s", self.endpoint.device.ieee
+                )
                 cmd_04_args = {"zero0": 0, "seq": args.seq, "zero1": 0}
                 self.create_catching_task(
                     super().command(0x04, **cmd_04_args, expect_reply=False)
                 )
         elif hdr.command_id == self.ServerCommandDefs.receive_ir_frame_04.id:
             seq = args.seq
-            self.debug("Command 0x04: IRCode has been successfully sent. (seq:%s)", seq)
+            _LOGGER.debug(
+                "IR code has been sent to %s (seq:%s)", self.endpoint.device.ieee, seq
+            )
             cmd_05_args = {"seq": seq, "zero": 0}
             self.create_catching_task(
                 super().command(0x05, **cmd_05_args, expect_reply=False)
@@ -361,18 +382,25 @@ class ZosungIRTransmit(CustomCluster):
             self.endpoint.device.last_learned_ir_code = base64.b64encode(
                 bytes(self.ir_msg)
             ).decode()
-            self.info(
-                "Command 0x05: Ir message really totally received: %s",
+            _LOGGER.info(
+                "IR message really totally received: %s, from %s",
                 self.endpoint.device.last_learned_ir_code,
+                self.endpoint.device.ieee,
             )
-            self.debug("Stopping learning mode on device.")
+            _LOGGER.debug(
+                "Stopping learning mode on device %s", self.endpoint.device.ieee
+            )
             self.create_catching_task(
                 self.endpoint.zosung_ircontrol.command(
                     0x01, on_off=False, expect_reply=False
                 )
             )
         else:
-            self.debug("hdr.command_id: %s", hdr.command_id)
+            _LOGGER.debug(
+                "Unhandled command: %s, from %s",
+                hdr.command_id,
+                self.endpoint.device.ieee,
+            )
 
 
 class ZosungIRBlaster(CustomDevice):
@@ -393,7 +421,18 @@ class ZosungIRBlaster(CustomDevice):
         return self.seq
 
     signature = {
-        # "node_descriptor": "NodeDescriptor(logical_type=<LogicalType.EndDevice: 2>, complex_descriptor_available=0, user_descriptor_available=0, reserved=0, aps_flags=0, frequency_band=<FrequencyBand.Freq2400MHz: 8>, mac_capability_flags=<MACCapabilityFlags.AllocateAddress: 128>, manufacturer_code=4098, maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264, maximum_outgoing_transfer_size=82, descriptor_capability_field=<DescriptorCapability.NONE: 0>, *allocate_address=True, *is_alternate_pan_coordinator=False, *is_coordinator=False, *is_end_device=True, *is_full_function_device=False, *is_mains_powered=False, *is_receiver_on_when_idle=False, *is_router=False, *is_security_capable=False)",
+        # "node_descriptor": "NodeDescriptor(logical_type=<LogicalType.EndDevice: 2>,
+        # complex_descriptor_available=0, user_descriptor_available=0, reserved=0,
+        # aps_flags=0, frequency_band=<FrequencyBand.Freq2400MHz: 8>,
+        # mac_capability_flags=<MACCapabilityFlags.AllocateAddress: 128>,
+        # manufacturer_code=4098, maximum_buffer_size=82,
+        # maximum_incoming_transfer_size=82, server_mask=11264,
+        # maximum_outgoing_transfer_size=82,
+        # descriptor_capability_field=<DescriptorCapability.NONE: 0>,
+        # *allocate_address=True, *is_alternate_pan_coordinator=False,
+        # *is_coordinator=False, *is_end_device=True, *is_full_function_device=False,
+        # *is_mains_powered=False, *is_receiver_on_when_idle=False, *is_router=False,
+        # *is_security_capable=False)",
         # input_clusters=[0x0000, 0x0001, 0x0003, 0x0004, 0x0005, 0x0006,
         #                 0xe004, 0xed00]
         # output_clusters=[0x000a, 0x0019]
