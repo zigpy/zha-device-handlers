@@ -1,4 +1,5 @@
 """Tuya TS0205 smoke detector."""
+
 import logging
 
 from zigpy.profiles import zha
