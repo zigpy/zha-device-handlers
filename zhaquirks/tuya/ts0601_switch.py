@@ -818,6 +818,7 @@ class TuyaSextupleSwitchTO_GP(TuyaSwitch):
     signature = {
         MODELS_INFO: [
             ("_TZE200_9mahtqtg", "TS0601"),
+            ("_TZE200_emxxanvi", "TS0601"),
         ],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=81

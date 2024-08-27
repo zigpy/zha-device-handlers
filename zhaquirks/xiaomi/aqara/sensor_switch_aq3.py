@@ -1,7 +1,7 @@
 """Xiaomi aqara button sensor."""
 
 from zigpy.profiles import zha
-from zigpy.zcl.clusters.general import Basic, Identify, MultistateInput, OnOff
+from zigpy.zcl.clusters.general import Basic, Identify, MultistateInput, OnOff, Ota
 
 from zhaquirks import CustomCluster
 from zhaquirks.const import (
@@ -30,6 +30,7 @@ from zhaquirks.xiaomi import (
     LUMI,
     BasicCluster,
     DeviceTemperatureCluster,
+    XiaomiAqaraE1Cluster,
     XiaomiCustomDevice,
     XiaomiPowerConfiguration,
 )
@@ -157,6 +158,60 @@ class SwitchAQ3B(XiaomiCustomDevice):
                     MultistateInputCluster,
                 ],
                 OUTPUT_CLUSTERS: [Basic.cluster_id],
+            }
+        },
+    }
+
+    device_automation_triggers = {
+        (DOUBLE_PRESS, DOUBLE_PRESS): {COMMAND: COMMAND_DOUBLE},
+        (SHORT_PRESS, SHORT_PRESS): {COMMAND: COMMAND_SINGLE},
+        (LONG_PRESS, LONG_PRESS): {COMMAND: COMMAND_HOLD},
+        (LONG_RELEASE, LONG_RELEASE): {COMMAND: COMMAND_RELEASE},
+    }
+
+
+class SwitchAQ3B2(XiaomiCustomDevice):
+    """Aqara button device - alternate version."""
+
+    signature = {
+        # <SimpleDescriptor endpoint=1 profile=260 device_type=259
+        # device_version=1
+        # input_clusters=[0, 1, 3]
+        # output_clusters=[3, 6, 19]>
+        MODELS_INFO: [(LUMI, "lumi.remote.b1acn02")],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: BUTTON_DEVICE_TYPE_B,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    XiaomiPowerConfiguration.cluster_id,
+                    Identify.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    OnOff.cluster_id,
+                    Ota.cluster_id,
+                ],
+            }
+        },
+    }
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
+                INPUT_CLUSTERS: [
+                    BasicCluster,
+                    XiaomiPowerConfiguration,
+                    Identify.cluster_id,
+                    MultistateInputCluster,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    OnOff.cluster_id,
+                    Ota.cluster_id,
+                    XiaomiAqaraE1Cluster,
+                ],
             }
         },
     }
