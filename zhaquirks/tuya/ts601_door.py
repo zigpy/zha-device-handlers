@@ -8,7 +8,6 @@ The device reports:
 Extra details: https://www.aliexpress.com/item/1005004443361928.html?spm=a2g0o.order_list.order_list_main.53.35a81802wiZASs
 """
 
-from zigpy.endpoint import Endpoint
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.zcl.clusters.general import (
