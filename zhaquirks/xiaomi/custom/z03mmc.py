@@ -1,7 +1,7 @@
 """Xiaomi LYWSD03MMC Bluetooth temperature and humidity sensor."""
 
 from zigpy.profiles import zha
-from zigpy.types import Bool, int16s
+from zigpy.types import Bool, int16s, uint16_t
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PowerConfiguration
 from zigpy.zcl.clusters.hvac import UserInterface
 from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
@@ -96,7 +96,7 @@ class SmileyUserInterfaceCluster(CustomCluster):
         # comfort humidity min: A value in 0.01%RH to set minimum comfort humidity for happy face
         comfort_humidity_min = ZCLAttributeDef(
             id=0x0104,
-            type=int16s,
+            type=uint16_t,
             access="rw",
             is_manufacturer_specific=True,
         )
@@ -104,7 +104,7 @@ class SmileyUserInterfaceCluster(CustomCluster):
         # comfort humidity max: A value in 0.01%RH to set maximum comfort humidity for happy face
         comfort_humidity_max = ZCLAttributeDef(
             id=0x0105,
-            type=int16s,
+            type=uint16_t,
             access="rw",
             is_manufacturer_specific=True,
         )
