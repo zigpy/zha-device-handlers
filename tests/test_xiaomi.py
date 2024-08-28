@@ -627,9 +627,9 @@ async def test_aqara_feeder_write_attrs(
 
     expected_attr_def = opple_cluster.find_attribute(0xFFF1)
     expected = foundation.Attribute(0xFFF1, foundation.TypeValue())
-    expected.value.type = foundation.DATA_TYPES.pytype_to_datatype_id(
+    expected.value.type = foundation.DataType.from_python_type(
         expected_attr_def.type
-    )
+    ).type_id
     expected.value.value = expected_attr_def.type(expected_bytes)
 
     await opple_cluster.write_attributes({attribute: value}, manufacturer=0x115F)
