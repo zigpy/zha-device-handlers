@@ -8,7 +8,7 @@ from zigpy.zcl.clusters.measurement import (
     RelativeHumidity as RelativeHumidityBase,
     TemperatureMeasurement as TemperatureMeasurementBase,
 )
-from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks import CustomCluster
 from zhaquirks.const import (
@@ -52,21 +52,17 @@ class RelativeHumidity(CustomCluster, RelativeHumidityBase):
         )
 
 
-class UserInterface(CustomCluster):
+class UserInterface(CustomCluster, UserInterfaceBase):
     """Custom User Interface Cluster with smiley control."""
 
-    cluster_id = UserInterfaceBase.cluster_id
-
-    class AttributeDefs(BaseAttributeDefs):
+    class AttributeDefs(UserInterfaceBase.AttributeDefs):
         """Attribute Definitions."""
 
-        # of the 3 ZCL spec attributes, only the first one (TemperatureDisplayMode) is implemented
+        # of the 3 ZCL Thermostat User Interface spec attributes,
+        # only the first one (TemperatureDisplayMode) is implemented fully.
         # KeypadLockout is implemented but completely unused in the device firmware
-        # ScheduleProgrammingVisibility is not implemented at all
+        # and ScheduleProgrammingVisibility is not implemented at all
         # https://github.com/devbis/z03mmc/blob/1.1.0/src/sensorEpCfg.c#L256
-        temperature_display_mode = (
-            UserInterfaceBase.AttributeDefs.temperature_display_mode
-        )
 
         # 0 - smiley is off, 1 - smiley is on (according to comfort values)
         smiley = ZCLAttributeDef(
