@@ -120,8 +120,8 @@ class UserInterface(CustomCluster):
 # https://github.com/devbis/z03mmc
 # defined by 1.1.0 firmware (0x11003001)
 # see README.md in the repo for more info
-class LYWSD03MMC(XiaomiCustomDevice):
-    """LYWSD03MMC sensor."""
+class LYWSD03MMC_devbis(XiaomiCustomDevice):
+    """LYWSD03MMC sensor with devbis custom firmware."""
 
     signature = {
         MODELS_INFO: [("Xiaomi", "LYWSD03MMC")],

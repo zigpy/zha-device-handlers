@@ -1783,4 +1783,6 @@ def test_custom_z03mmc_signature_match(assert_signature_matches_quirk):
         "class": "zigpy.device.Device",
     }
 
-    assert_signature_matches_quirk(zhaquirks.xiaomi.custom.z03mmc.LYWSD03MMC, signature)
+    assert_signature_matches_quirk(
+        zhaquirks.xiaomi.custom.z03mmc.LYWSD03MMC_devbis, signature
+    )
