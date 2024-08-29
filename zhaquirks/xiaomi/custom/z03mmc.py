@@ -52,6 +52,8 @@ class CalibratableRelativeHumidityCluster(CustomCluster, RelativeHumidity):
 class SmileyUserInterfaceCluster(CustomCluster):
     """Custom User Interface Cluster with smiley control."""
 
+    cluster_id = UserInterface.cluster_id
+
     class AttributeDefs(BaseAttributeDefs):
         """Attribute Definitions."""
 
