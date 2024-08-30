@@ -1,16 +1,14 @@
 """Third Reality WaterLeak devices."""
-
-from typing import Final  # noqa: I001
-
-from zigpy.profiles import zha  # type: ignore
-from zigpy.quirks import CustomDevice  # type: ignore
+from typing import Final
+from zigpy.profiles import zha
+from zigpy.quirks import CustomDevice
 import zigpy.types as t  # type: ignore
-from zigpy.zcl.clusters.general import Basic, OnOff, Ota, PowerConfiguration  # type: ignore
-from zigpy.zcl.clusters.security import IasZone  # type: ignore
-from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef  # type: ignore
+from zigpy.zcl.clusters.general import Basic, OnOff, Ota, PowerConfiguration
+from zigpy.zcl.clusters.security import IasZone
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
-from zhaquirks import CustomCluster  # type: ignore
-from zhaquirks.const import (  # type: ignore
+from zhaquirks import CustomCluster  
+from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -18,14 +16,14 @@ from zhaquirks.const import (  # type: ignore
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.thirdreality import THIRD_REALITY  # type: ignore
+from zhaquirks.thirdreality import THIRD_REALITY
 
 THIRD_REALITY_WATERLEAK_CLUSTER_ID = 0xFF01
 THIRD_REALITY_WATERLEAK_BRIGHTNESS_CLUSTER_ID = 0xFF00
 DELAY_OPEN_ATTR_ID = 0x0000
 
 
-class ControlMode(t.uint8_t):  # noqa: D101
+class ControlMode(t.uint8_t): 
     pass
 
 
@@ -83,14 +81,14 @@ class WaterLeak(CustomDevice):
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
                 INPUT_CLUSTERS: [
-                    Basic.cluster_id,  # 0x0000
-                    PowerConfiguration.cluster_id,  # 0x0001
-                    IasZone.cluster_id,  # 0x0500
-                    ThirdRealityWaterLeakCluster.cluster_id,  # 0xFF01
-                    ThirdRealityWaterLeakBrightnessCluster.cluster_id,  # 0xFF00
+                    Basic.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    IasZone.cluster_id,
+                    ThirdRealityWaterLeakCluster.cluster_id,
+                    ThirdRealityWaterLeakBrightnessCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
-                    Ota.cluster_id,  # 0x0019
+                    Ota.cluster_id,
                     OnOff.cluster_id,
                 ],
             },
@@ -102,14 +100,14 @@ class WaterLeak(CustomDevice):
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
                 INPUT_CLUSTERS: [
-                    Basic.cluster_id,  # 0x0000
-                    PowerConfiguration.cluster_id,  # 0x0001
-                    IasZone.cluster_id,  # 0x0500
-                    ThirdRealityWaterLeakCluster,  # 0xFF01
+                    Basic.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    IasZone.cluster_id,
+                    ThirdRealityWaterLeakCluster,
                     ThirdRealityWaterLeakBrightnessCluster,
                 ],
                 OUTPUT_CLUSTERS: [
-                    Ota.cluster_id,  # 0x0019
+                    Ota.cluster_id,
                     OnOff.cluster_id,
                 ],
             },
