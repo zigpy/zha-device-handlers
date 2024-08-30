@@ -1,6 +1,5 @@
 """Device handler for Bosch RBSH-RTH0-ZB-EU thermostat."""
 
-
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import add_to_registry_v2
 from zigpy.quirks.v2.homeassistant import EntityPlatform, EntityType
@@ -36,6 +35,7 @@ SCREEN_BRIGHTNESS_ATTR_ID = 0x403B
 
 # Control sequence of operation (heating/cooling)
 CTRL_SEQUENCE_OF_OPERATION_ID = 0x001B
+
 
 class BoschOperatingMode(t.enum8):
     """Bosh operating mode attribute values."""
