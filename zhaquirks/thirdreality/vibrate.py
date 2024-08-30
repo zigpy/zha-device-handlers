@@ -1,5 +1,4 @@
 """Third Reality vibrate devices."""
-
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 import zigpy.types as t
@@ -28,6 +27,7 @@ class ThirdRealityAccelCluster(CustomCluster):
         0x0001: ("x_axis", t.int16s, True),
         0x0002: ("y_axis", t.int16s, True),
         0x0003: ("z_axis", t.int16s, True),
+        0x0004: ("cooldown_period", t.uint16_t, True),
     }
 
 
