@@ -69,29 +69,25 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
             id=OPERATING_MODE_ATTR_ID,
             type=BoschOperatingMode,
             is_manufacturer_specific=True,
-            name="operating_mode",
         )
 
         pi_heating_demand = ZCLAttributeDef(
             id=VALVE_POSITION_ATTR_ID,
             # Values range from 0-100
-            type=t.enum8,
+            type=t.uint8_t,
             is_manufacturer_specific=True,
-            name="pi_heating_demand",
         )
 
         window_open = ZCLAttributeDef(
             id=WINDOW_OPEN_ATTR_ID,
             type=State,
             is_manufacturer_specific=True,
-            name="window_open",
         )
 
         boost = ZCLAttributeDef(
             id=BOOST_ATTR_ID,
             type=State,
             is_manufacturer_specific=True,
-            name="boost",
         )
 
 
@@ -104,17 +100,15 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         display_on_time = ZCLAttributeDef(
             id=SCREEN_TIMEOUT_ATTR_ID,
             # Usable values range from 5-30
-            type=t.enum8,
+            type=t.uint8_t,
             is_manufacturer_specific=True,
-            name="display_on_time",
         )
 
         display_brightness = ZCLAttributeDef(
             id=SCREEN_BRIGHTNESS_ATTR_ID,
             # Values range from 0-10
-            type=t.enum8,
+            type=t.uint8_t,
             is_manufacturer_specific=True,
-            name="display_brightness",
         )
 
 
@@ -127,7 +121,6 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         BoschThermostatCluster.AttributeDefs.operating_mode.name,
         BoschOperatingMode,
         BoschThermostatCluster.cluster_id,
-        translation_key="operating_mode",
         entity_platform=EntityPlatform.SENSOR,
         entity_type=EntityType.DIAGNOSTIC,
     )
@@ -135,13 +128,11 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
     .switch(
         BoschThermostatCluster.AttributeDefs.boost.name,
         BoschThermostatCluster.cluster_id,
-        translation_key="boost",
     )
     # Window open switch: manually set or through an automation.
     .switch(
         BoschThermostatCluster.AttributeDefs.window_open.name,
         BoschThermostatCluster.cluster_id,
-        translation_key="window_open",
     )
     # Display time-out.
     .number(
@@ -150,7 +141,6 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         min_value=5,
         max_value=30,
         step=1,
-        translation_key="display_on_time",
     )
     # Display brightness.
     .number(
@@ -159,14 +149,12 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         min_value=0,
         max_value=10,
         step=1,
-        translation_key="display_brightness",
     )
     # Heating vs Cooling.
     .enum(
         Thermostat.AttributeDefs.ctrl_sequence_of_oper.name,
         BoschControlSequenceOfOperation,
         BoschThermostatCluster.cluster_id,
-        translation_key="ctrl_sequence_of_oper",
     )
     .add_to_registry()
 )
