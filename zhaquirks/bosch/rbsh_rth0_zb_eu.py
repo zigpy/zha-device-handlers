@@ -1,7 +1,7 @@
 """Device handler for Bosch RBSH-RTH0-ZB-EU thermostat."""
 
 from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import add_to_registry_v2
+from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.quirks.v2.homeassistant import EntityPlatform, EntityType
 import zigpy.types as t
 from zigpy.zcl.clusters.hvac import (
@@ -119,7 +119,7 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
 
 
 (
-    add_to_registry_v2("Bosch", "RBSH-RTH0-ZB-EU")
+    QuirkBuilder("Bosch", "RBSH-RTH0-ZB-EU")
     .replaces(BoschThermostatCluster)
     .replaces(BoschUserInterfaceCluster)
     # Operating mode - read-only: controlled automatically through Thermostat.system_mode (HAVC mode).
@@ -168,4 +168,5 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         BoschThermostatCluster.cluster_id,
         translation_key="ctrl_sequence_of_oper",
     )
+    .add_to_registry()
 )
