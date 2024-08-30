@@ -29,9 +29,9 @@ class ControlMode(t.uint16_t):
 
 class ThirdRealityGarageCluster(CustomCluster):
 	"""ThirdReality Acceleration Cluster."""
-      
+
 	cluster_id = THIRD_REALITY_GARAGE_CLUSTER_ID
-	
+
 	class AttributeDefs(BaseAttributeDefs):
          """ThirdReality Acceleration Cluster."""
 
@@ -45,9 +45,9 @@ class ThirdRealityGarageCluster(CustomCluster):
             type=t.uint8_t,
             is_manufacturer_specific=True
 		)
-		
-		
-    
+
+
+
 
 
 class Garage(CustomDevice):
