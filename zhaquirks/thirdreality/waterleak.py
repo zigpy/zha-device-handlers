@@ -1,5 +1,7 @@
 """Third Reality WaterLeak devices."""
+
 from typing import Final
+
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 import zigpy.types as t  # type: ignore
@@ -7,7 +9,7 @@ from zigpy.zcl.clusters.general import Basic, OnOff, Ota, PowerConfiguration
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
-from zhaquirks import CustomCluster  
+from zhaquirks import CustomCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -23,7 +25,7 @@ THIRD_REALITY_WATERLEAK_BRIGHTNESS_CLUSTER_ID = 0xFF00
 DELAY_OPEN_ATTR_ID = 0x0000
 
 
-class ControlMode(t.uint8_t): 
+class ControlMode(t.uint8_t):
     pass
 
 
