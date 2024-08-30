@@ -29,9 +29,9 @@ class ControlMode(t.uint16_t):
 
 class ThirdRealityGarageCluster(CustomCluster):
 	"""ThirdReality Acceleration Cluster."""
-      
+
 	cluster_id = THIRD_REALITY_GARAGE_CLUSTER_ID
-	
+
 	class AttributeDefs(BaseAttributeDefs):
         """ThirdReality Acceleration Cluster."""
 
@@ -40,7 +40,7 @@ class ThirdRealityGarageCluster(CustomCluster):
             type=ControlMode,
             is_manufacturer_specific=True
 		)
-         
+
 		zcl_cabration: Final = ZCLAttributeDef(
             id=ZCL_CABRATION_ATTR_ID,
             type=ControlMode,

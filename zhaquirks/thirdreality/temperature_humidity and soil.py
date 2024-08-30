@@ -1,19 +1,16 @@
 """Third Reality Temperature humidity devices."""
-from typing import Final
-from zigpy.profiles import zha 
-from zigpy.quirks import CustomDevice 
-import zigpy.types as t 
-from zigpy.zcl.clusters.general import Basic, Ota, PowerConfiguration 
-from zigpy.zcl.clusters.measurement import TemperatureMeasurement ,RelativeHumidity 
-from zhaquirks import CustomCluster 
-from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef 
-from zigpy.zcl.clusters.general import (
-    Basic,
-    Identify,
-    Ota,
-)
 
-from zhaquirks.const import ( 
+from typing import Final
+
+from zigpy.profiles import zha
+from zigpy.quirks import CustomDevice
+import zigpy.types as t
+from zigpy.zcl.clusters.general import Basic, Identify, Ota, PowerConfiguration
+from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+
+from zhaquirks import CustomCluster
+from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
@@ -21,14 +18,16 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.thirdreality import THIRD_REALITY 
+from zhaquirks.thirdreality import THIRD_REALITY
 
 THIRDREALITY_CLUSTER_ID = 0xFF01
 
 
 class ControlMode(t.int16s):
     """ThirdReality Temperature humidity Cluster."""
+
     pass
+
 
 class ThirdRealityCluster(CustomCluster):
     """ThirdReality Temperature humidity Cluster."""
@@ -55,7 +54,6 @@ class ThirdRealityCluster(CustomCluster):
             type=ControlMode,
             is_manufacturer_specific=True,
         )
-
 
 
 class Temperature_humidity(CustomDevice):
