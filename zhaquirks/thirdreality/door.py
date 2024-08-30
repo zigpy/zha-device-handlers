@@ -61,6 +61,8 @@ class ThirdRealityDoorBrightnessCluster(CustomCluster):
     cluster_id = THIRD_REALITY_DOOR_BRIGHTNESS_CLUSTER_ID
 
     class AttributeDefs(BaseAttributeDefs):
+        """ThirdReality Acceleration Cluster."""
+        
         red_light: Final = ZCLAttributeDef(
             id=BRIGHTNESS_RED_LIGHT_ATTR_ID,
             type=BrightnessControlMode,
