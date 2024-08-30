@@ -23,8 +23,10 @@ from zhaquirks.thirdreality import THIRD_REALITY
 THIRD_REALITY_MOTION_BRIGHTNESS_CLUSTER_ID = 0xFF00
 THIRD_REALITY_MOTION_DELAY_CLUSTER_ID = 0xFF01
 
+
 class ControlMode(t.uint16_t):
     """ThirdReality Acceleration Cluster."""
+
     pass
 
 
@@ -43,11 +45,11 @@ class ThirdRealityMotionCluster(CustomCluster):
         )
 
 
-
 class ThirdRealityMotionBrightnessCluster(CustomCluster):
     """ThirdReality Acceleration Cluster."""
 
     cluster_id = THIRD_REALITY_MOTION_BRIGHTNESS_CLUSTER_ID
+
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
 

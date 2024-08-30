@@ -33,8 +33,10 @@ class ControlMode(t.uint16_t):
 
     DELAY: int = 10
 
+
 class BrightnessControlMode(t.uint16_t):
     """ThirdReality Acceleration Cluster."""
+
     pass
 
 
@@ -51,6 +53,7 @@ class ThirdRealityDoorCluster(CustomCluster):
             type=ControlMode,
             is_manufacturer_specific=True,
         )
+
 
 class ThirdRealityDoorBrightnessCluster(CustomCluster):
     """ThirdReality Acceleration Cluster."""
@@ -70,6 +73,7 @@ class ThirdRealityDoorBrightnessCluster(CustomCluster):
             is_manufacturer_specific=True,
         )
 
+
 class Door(CustomDevice):
     """ThirdReality Door device."""
 
@@ -86,7 +90,7 @@ class Door(CustomDevice):
                     PowerConfiguration.cluster_id,
                     IasZone.cluster_id,
                     ThirdRealityDoorCluster.cluster_id,
-                    ThirdRealityDoorBrightnessCluster.cluster_id
+                    ThirdRealityDoorBrightnessCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Ota.cluster_id,
@@ -102,9 +106,9 @@ class Door(CustomDevice):
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
-                    IasZone.cluster_id, 
+                    IasZone.cluster_id,
                     ThirdRealityDoorCluster,
-                    ThirdRealityDoorBrightnessCluster
+                    ThirdRealityDoorBrightnessCluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     Ota.cluster_id,

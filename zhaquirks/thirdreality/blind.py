@@ -1,11 +1,12 @@
 """Third Reality blind devices."""
 
 from typing import Final
+
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 import zigpy.types as t
-from zigpy.zcl.clusters.general import Basic, Ota, PowerConfiguration, OnOff
 from zigpy.zcl.clusters.closures import WindowCovering
+from zigpy.zcl.clusters.general import Basic, OnOff, Ota, PowerConfiguration
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 from zhaquirks import CustomCluster
@@ -34,7 +35,6 @@ class ThirdRealityBlindCluster(CustomCluster):
 
     cluster_id = MANUFACTURER_SPECIFIC_CLUSTER_ID
 
-
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
 
@@ -58,11 +58,11 @@ class blind(CustomDevice):
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
                     WindowCovering.cluster_id,
-                    OnOff.cluster_id,  
+                    OnOff.cluster_id,
                     ThirdRealityBlindCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
-                    OnOff.cluster_id,  
+                    OnOff.cluster_id,
                     Ota.cluster_id,
                     WindowCovering.cluster_id,
                 ],
@@ -78,11 +78,11 @@ class blind(CustomDevice):
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
                     WindowCovering.cluster_id,
-                    OnOff.cluster_id,  
+                    OnOff.cluster_id,
                     ThirdRealityBlindCluster,
                 ],
                 OUTPUT_CLUSTERS: [
-                    OnOff.cluster_id,  
+                    OnOff.cluster_id,
                     Ota.cluster_id,
                     WindowCovering.cluster_id,
                 ],
