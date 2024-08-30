@@ -26,6 +26,7 @@ DELAY_OPEN_ATTR_ID = 0x0000
 
 
 class ControlMode(t.uint8_t):
+    """ThirdReality Acceleration Cluster."""
     pass
 
 
