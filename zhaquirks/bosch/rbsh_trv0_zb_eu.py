@@ -48,6 +48,7 @@ SCREEN_BRIGHTNESS_ATTR_ID = 0x403B
 # Control sequence of operation (heating/cooling)
 CTRL_SEQUENCE_OF_OPERATION_ID = 0x001B
 
+
 class BoschOperatingMode(t.enum8):
     """Bosh operating mode attribute values."""
 
@@ -214,13 +215,20 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
 
             if new_system_mode_value == Thermostat.SystemMode.Heat:
                 """Heating or cooling? Depends on both operating_mode and ctrl_sequence_of_operation."""
-                ctrl_sequence_of_oper_attr = Thermostat.AttributeDefs.ctrl_sequence_of_oper
+                ctrl_sequence_of_oper_attr = (
+                    Thermostat.AttributeDefs.ctrl_sequence_of_oper
+                )
                 successful_r, failed_r = await super().read_attributes(
                     [ctrl_sequence_of_oper_attr.name], True, False, manufacturer
                 )
                 if ctrl_sequence_of_oper_attr.name in successful_r:
-                    ctrl_sequence_of_oper_value = successful_r.pop(ctrl_sequence_of_oper_attr.name)
-                    if ctrl_sequence_of_oper_value == BoschControlSequenceOfOperation.Cooling:
+                    ctrl_sequence_of_oper_value = successful_r.pop(
+                        ctrl_sequence_of_oper_attr.name
+                    )
+                    if (
+                        ctrl_sequence_of_oper_value
+                        == BoschControlSequenceOfOperation.Cooling
+                    ):
                         new_system_mode_value = Thermostat.SystemMode.Cool
 
             self._update_attribute(SYSTEM_MODE_ATTR.id, new_system_mode_value)
@@ -230,22 +238,33 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
 
             ctrl_sequence_of_oper_value = None
             if ctrl_sequence_of_oper_attr.id in attributes:
-                ctrl_sequence_of_oper_value = attributes.get(ctrl_sequence_of_oper_attr.id)
+                ctrl_sequence_of_oper_value = attributes.get(
+                    ctrl_sequence_of_oper_attr.id
+                )
             elif ctrl_sequence_of_oper_attr.name in attributes:
-                ctrl_sequence_of_oper_value = attributes.get(ctrl_sequence_of_oper_attr.name)
+                ctrl_sequence_of_oper_value = attributes.get(
+                    ctrl_sequence_of_oper_attr.name
+                )
 
             if ctrl_sequence_of_oper_value is not None:
                 successful_r, failed_r = await super().read_attributes(
                     [operating_mode_attr.name], True, False, manufacturer
                 )
                 if operating_mode_attr.name in successful_r:
-                    operating_mode_attr_value = successful_r.pop(operating_mode_attr.name)
+                    operating_mode_attr_value = successful_r.pop(
+                        operating_mode_attr.name
+                    )
                     if operating_mode_attr_value == BoschOperatingMode.Manual:
                         new_system_mode_value = Thermostat.SystemMode.Heat
-                        if ctrl_sequence_of_oper_value == BoschControlSequenceOfOperation.Cooling:
+                        if (
+                            ctrl_sequence_of_oper_value
+                            == BoschControlSequenceOfOperation.Cooling
+                        ):
                             new_system_mode_value = Thermostat.SystemMode.Cool
 
-                        self._update_attribute(SYSTEM_MODE_ATTR.id, new_system_mode_value)
+                        self._update_attribute(
+                            SYSTEM_MODE_ATTR.id, new_system_mode_value
+                        )
 
         """Write the remaining attributes to thermostat cluster."""
         if remaining_attributes:
@@ -283,7 +302,10 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
             ctrl_sequence_of_oper_attr = Thermostat.AttributeDefs.ctrl_sequence_of_oper
 
             successful_r, failed_r = await super().read_attributes(
-                [operating_mode_attr.name, ctrl_sequence_of_oper_attr.name], allow_cache, only_cache, manufacturer
+                [operating_mode_attr.name, ctrl_sequence_of_oper_attr.name],
+                allow_cache,
+                only_cache,
+                manufacturer,
             )
             if operating_mode_attr.name in successful_r:
                 operating_mode_value = successful_r.pop(operating_mode_attr.name)
@@ -293,8 +315,14 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
 
                 """Heating or cooling? Depends on both operating_mode and ctrl_sequence_of_operation."""
                 if ctrl_sequence_of_oper_attr.name in successful_r:
-                    ctrl_sequence_of_oper_value = successful_r.pop(ctrl_sequence_of_oper_attr.name)
-                    if ctrl_sequence_of_oper_value == BoschControlSequenceOfOperation.Cooling and system_mode_value == Thermostat.SystemMode.Heat:
+                    ctrl_sequence_of_oper_value = successful_r.pop(
+                        ctrl_sequence_of_oper_attr.name
+                    )
+                    if (
+                        ctrl_sequence_of_oper_value
+                        == BoschControlSequenceOfOperation.Cooling
+                        and system_mode_value == Thermostat.SystemMode.Heat
+                    ):
                         system_mode_value = Thermostat.SystemMode.Cool
 
                 successful_r[system_mode_attribute_id] = system_mode_value
@@ -448,8 +476,9 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         max_value=10,
         step=1,
         translation_key="display_brightness",
-    # Heating vs Cooling.
-    ).enum(
+        # Heating vs Cooling.
+    )
+    .enum(
         Thermostat.AttributeDefs.ctrl_sequence_of_oper.name,
         BoschControlSequenceOfOperation,
         BoschThermostatCluster.cluster_id,
