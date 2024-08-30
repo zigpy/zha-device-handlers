@@ -1,5 +1,7 @@
 """Third Reality WaterLeak devices."""
+
 from typing import Final
+
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 import zigpy.types as t
