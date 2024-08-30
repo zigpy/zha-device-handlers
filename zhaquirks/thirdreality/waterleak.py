@@ -1,10 +1,8 @@
 """Third Reality WaterLeak devices."""
-
 from typing import Final
-
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
-import zigpy.types as t  # type: ignore
+import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, OnOff, Ota, PowerConfiguration
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
