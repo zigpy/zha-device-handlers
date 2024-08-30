@@ -26,25 +26,24 @@ class ControlMode(t.uint16_t):
     """Reset mode for not clear and clear."""
     pass
 
-
 class ThirdRealityGarageCluster(CustomCluster):
 	"""ThirdReality Acceleration Cluster."""
 
 	cluster_id = THIRD_REALITY_GARAGE_CLUSTER_ID
 
 	class AttributeDefs(BaseAttributeDefs):
-        """ThirdReality Acceleration Cluster."""
+		"""ThirdReality Acceleration Cluster."""
 
 		delay_open: Final = ZCLAttributeDef(
-            id=DELAY_OPEN_ATTR_ID,
-            type=ControlMode,
-            is_manufacturer_specific=True
+		    id=DELAY_OPEN_ATTR_ID,
+		    type=ControlMode,
+		    is_manufacturer_specific=True
 		)
 
 		zcl_cabration: Final = ZCLAttributeDef(
-            id=ZCL_CABRATION_ATTR_ID,
-            type=ControlMode,
-            is_manufacturer_specific=True
+	            id=ZCL_CABRATION_ATTR_ID,
+	            type=ControlMode,
+	            is_manufacturer_specific=True
 		)
 
 
