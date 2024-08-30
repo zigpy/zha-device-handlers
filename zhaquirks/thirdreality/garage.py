@@ -1,10 +1,13 @@
 """Third Reality garage sensor devices."""
-from zigpy.profiles import zha
+
 from typing import Final
+
+from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Ota, PowerConfiguration
 from zigpy.zcl.clusters.security import IasZone
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 from zhaquirks import CustomCluster
 from zhaquirks.const import (
@@ -16,36 +19,33 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.thirdreality import THIRD_REALITY
-from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 THIRD_REALITY_GARAGE_CLUSTER_ID = 0xFF01
 DELAY_OPEN_ATTR_ID = 0x0000
 ZCL_CABRATION_ATTR_ID = 0x0003
 
+
 class ControlMode(t.uint16_t):
     """Reset mode for not clear and clear."""
+
     pass
 
+
 class ThirdRealityGarageCluster(CustomCluster):
-	"""ThirdReality Acceleration Cluster."""
+    """ThirdReality Acceleration Cluster."""
 
-	cluster_id = THIRD_REALITY_GARAGE_CLUSTER_ID
+    cluster_id = THIRD_REALITY_GARAGE_CLUSTER_ID
 
-	class AttributeDefs(BaseAttributeDefs):
-		"""ThirdReality Acceleration Cluster."""
+    class AttributeDefs(BaseAttributeDefs):
+        """ThirdReality Acceleration Cluster."""
 
-		delay_open: Final = ZCLAttributeDef(
-		    id=DELAY_OPEN_ATTR_ID,
-		    type=ControlMode,
-		    is_manufacturer_specific=True
-		)
+        delay_open: Final = ZCLAttributeDef(
+            id=DELAY_OPEN_ATTR_ID, type=ControlMode, is_manufacturer_specific=True
+        )
 
-		zcl_cabration: Final = ZCLAttributeDef(
-	            id=ZCL_CABRATION_ATTR_ID,
-	            type=ControlMode,
-	            is_manufacturer_specific=True
-		)
-
+        zcl_cabration: Final = ZCLAttributeDef(
+            id=ZCL_CABRATION_ATTR_ID, type=ControlMode, is_manufacturer_specific=True
+        )
 
 
 class Garage(CustomDevice):
