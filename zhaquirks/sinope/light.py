@@ -5,7 +5,7 @@ DM2550ZB-G2.
 """
 
 import logging
-from typing import Any, Optional, Union
+from typing import Any, Final, Optional, Union
 
 import zigpy.profiles.zha as zha_p
 from zigpy.quirks import CustomCluster, CustomDevice
@@ -52,63 +52,110 @@ SINOPE_MANUFACTURER_CLUSTER_ID = 0xFF01
 _LOGGER = logging.getLogger(__name__)
 
 
+class KeypadLock(t.enum8):
+    """Keypad_lockout values."""
+
+    Unlocked = 0x00
+    Locked = 0x01
+    Partial_lock = 0x02
+
+
+class PhaseControl(t.enum8):
+    """Phase control value, reverse / forward."""
+
+    Forward = 0x00
+    Reverse = 0x01
+
+
+class DoubleFull(t.enum8):
+    """Double click up set full intensity."""
+
+    Off = 0x00
+    On = 0x01
+
+
+class ButtonAction(t.enum8):
+    """Action_report values."""
+
+    Single_on = 0x01
+    Single_release_on = 0x02
+    Long_on = 0x03
+    Double_on = 0x04
+    Single_off = 0x11
+    Single_release_off = 0x12
+    Long_off = 0x13
+    Double_off = 0x14
+
+
 class SinopeTechnologiesManufacturerCluster(CustomCluster):
     """SinopeTechnologiesManufacturerCluster manufacturer cluster."""
 
-    class KeypadLock(t.enum8):
-        """Keypad_lockout values."""
+    KeypadLock: Final = KeypadLock
+    PhaseControl: Final = PhaseControl
+    DoubleFull: Final = DoubleFull
+    Action: Final = ButtonAction
 
-        Unlocked = 0x00
-        Locked = 0x01
-        Partial_lock = 0x02
+    cluster_id: Final[t.uint16_t] = SINOPE_MANUFACTURER_CLUSTER_ID
+    name: Final = "SinopeTechnologiesManufacturerCluster"
+    ep_attribute: Final = "sinope_manufacturer_specific"
 
-    class PhaseControl(t.enum8):
-        """Phase control value, reverse / forward."""
+    class AttributeDefs(foundation.BaseAttributeDefs):
+        """Sinope Manufacturer Cluster Attributes."""
 
-        Forward = 0x00
-        Reverse = 0x01
-
-    class DoubleFull(t.enum8):
-        """Double click up set full intensity."""
-
-        Off = 0x00
-        On = 0x01
-
-    class Action(t.enum8):
-        """Action_report values."""
-
-        Single_on = 0x01
-        Single_release_on = 0x02
-        Long_on = 0x03
-        Double_on = 0x04
-        Single_off = 0x11
-        Single_release_off = 0x12
-        Long_off = 0x13
-        Double_off = 0x14
-
-    cluster_id = SINOPE_MANUFACTURER_CLUSTER_ID
-    name = "SinopeTechnologiesManufacturerCluster"
-    ep_attribute = "sinope_manufacturer_specific"
-    attributes = {
-        0x0002: ("keypad_lockout", KeypadLock, True),
-        0x0003: ("firmware_number", t.uint16_t, True),
-        0x0004: ("firmware_version", t.CharacterString, True),
-        0x0010: ("on_intensity", t.int16s, True),
-        0x0050: ("on_led_color", t.uint24_t, True),
-        0x0051: ("off_led_color", t.uint24_t, True),
-        0x0052: ("on_led_intensity", t.uint8_t, True),
-        0x0053: ("off_led_intensity", t.uint8_t, True),
-        0x0054: ("action_report", Action, True),
-        0x0055: ("min_intensity", t.uint16_t, True),
-        0x0056: ("phase_control", PhaseControl, True),
-        0x0058: ("double_up_full", DoubleFull, True),
-        0x0090: ("current_summation_delivered", t.uint32_t, True),
-        0x00A0: ("timer", t.uint32_t, True),
-        0x00A1: ("timer_countdown", t.uint32_t, True),
-        0x0119: ("connected_load", t.uint16_t, True),
-        0x0200: ("status", t.bitmap32, True),
-        0xFFFD: ("cluster_revision", t.uint16_t, True),
-    }
+        keypad_lockout: Final = foundation.ZCLAttributeDef(
+            id=0x0002, type=KeypadLock, access="rw", is_manufacturer_specific=True
+        )
+        firmware_number: Final = foundation.ZCLAttributeDef(
+            id=0x0003, type=t.uint16_t, access="r", is_manufacturer_specific=True
+        )
+        firmware_version: Final = foundation.ZCLAttributeDef(
+            id=0x0004, type=t.CharacterString, access="r", is_manufacturer_specific=True
+        )
+        on_intensity: Final = foundation.ZCLAttributeDef(
+            id=0x0010, type=t.int16s, access="rw", is_manufacturer_specific=True
+        )
+        on_led_color: Final = foundation.ZCLAttributeDef(
+            id=0x0050, type=t.uint24_t, access="rw", is_manufacturer_specific=True
+        )
+        off_led_color: Final = foundation.ZCLAttributeDef(
+            id=0x0051, type=t.uint24_t, access="rw", is_manufacturer_specific=True
+        )
+        on_led_intensity: Final = foundation.ZCLAttributeDef(
+            id=0x0052, type=t.uint8_t, access="rw", is_manufacturer_specific=True
+        )
+        off_led_intensity: Final = foundation.ZCLAttributeDef(
+            id=0x0053, type=t.uint8_t, access="rw", is_manufacturer_specific=True
+        )
+        action_report: Final = foundation.ZCLAttributeDef(
+            id=0x0054, type=ButtonAction, access="rp", is_manufacturer_specific=True
+        )
+        min_intensity: Final = foundation.ZCLAttributeDef(
+            id=0x0055, type=t.uint16_t, access="rw", is_manufacturer_specific=True
+        )
+        phase_control: Final = foundation.ZCLAttributeDef(
+            id=0x0056, type=PhaseControl, access="rw", is_manufacturer_specific=True
+        )
+        double_up_full: Final = foundation.ZCLAttributeDef(
+            id=0x0058, type=DoubleFull, access="rw", is_manufacturer_specific=True
+        )
+        current_summation_delivered: Final = foundation.ZCLAttributeDef(
+            id=0x0090, type=t.uint32_t, access="rp", is_manufacturer_specific=True
+        )
+        timer: Final = foundation.ZCLAttributeDef(
+            id=0x00A0, type=t.uint32_t, access="rw", is_manufacturer_specific=True
+        )
+        timer_countdown: Final = foundation.ZCLAttributeDef(
+            id=0x00A1, type=t.uint32_t, access="r", is_manufacturer_specific=True
+        )
+        connected_load: Final = foundation.ZCLAttributeDef(
+            id=0x0119, type=t.uint16_t, access="rw", is_manufacturer_specific=True
+        )
+        status: Final = foundation.ZCLAttributeDef(
+            id=0x0200, type=t.bitmap32, access="rp", is_manufacturer_specific=True
+        )
+        cluster_revision: Final = foundation.ZCLAttributeDef(
+            id=0xFFFD, type=t.uint16_t, access="r", is_manufacturer_specific=True
+        )
 
     server_commands = {
         0x54: foundation.ZCLCommandDef(
@@ -158,7 +205,7 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
             return
         self.listener_event(ZHA_SEND_EVENT, action, event_args)
 
-    def _get_command_from_action(self, action: Action) -> str | None:
+    def _get_command_from_action(self, action: ButtonAction) -> str | None:
         # const lookup = {2: 'up_single', 3: 'up_hold', 4: 'up_double',
         #             18: 'down_single', 19: 'down_hold', 20: 'down_double'};
         match action:
