@@ -10,13 +10,14 @@ from zigpy.zcl.clusters.general import DeviceTemperature
 from zigpy.zcl.clusters.measurement import FlowMeasurement
 
 from tests.common import ClusterListener
+import zhaquirks
 from zhaquirks.const import COMMAND_BUTTON_DOUBLE, COMMAND_BUTTON_HOLD
 from zhaquirks.sinope import SINOPE_MANUFACTURER_CLUSTER_ID
 from zhaquirks.sinope.light import (
     SinopeTechnologieslight,
     SinopeTechnologiesManufacturerCluster,
 )
-import zhaquirks.sinope.switch
+from zhaquirks.sinope.switch import SinopeTechnologiesCalypso, SinopeTechnologiesValveG2
 
 zhaquirks.setup()
 
@@ -25,7 +26,7 @@ ButtonAction = SinopeTechnologiesManufacturerCluster.Action
 SINOPE_MANUFACTURER_ID = 4508  # 0x119C
 
 
-@pytest.mark.parametrize("quirk", (zhaquirks.sinope.switch.SinopeTechnologiesCalypso,))
+@pytest.mark.parametrize("quirk", (SinopeTechnologiesCalypso,))
 async def test_sinope_device_temp(zigpy_device_from_quirk, quirk):
     """Test that device temperature is multiplied."""
     device = zigpy_device_from_quirk(quirk)
@@ -48,7 +49,7 @@ async def test_sinope_device_temp(zigpy_device_from_quirk, quirk):
     assert dev_temp_listener.attribute_updates[1][1] == 25  # not modified
 
 
-@pytest.mark.parametrize("quirk", (zhaquirks.sinope.switch.SinopeTechnologiesValveG2,))
+@pytest.mark.parametrize("quirk", (SinopeTechnologiesValveG2,))
 async def test_sinope_flow_measurement(zigpy_device_from_quirk, quirk):
     """Test that flow measurement measured value is divided."""
     device = zigpy_device_from_quirk(quirk)
@@ -89,7 +90,7 @@ def _get_packet_data(
     return t.SerializableBytes(hdr + cmd).serialize()
 
 
-@pytest.mark.parametrize("quirk", (zhaquirks.sinope.light.SinopeTechnologieslight,))
+@pytest.mark.parametrize("quirk", (SinopeTechnologieslight,))
 @pytest.mark.parametrize(
     "press_type,exp_event",
     (
