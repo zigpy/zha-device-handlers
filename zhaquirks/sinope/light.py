@@ -189,7 +189,7 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
 
         attr = args[0][0]
 
-        if attr.attrid != self.attributes_by_name["action_report"].id:
+        if attr.attrid != self.AttributeDefs.action_report.id:
             return super().handle_cluster_general_request(
                 hdr, args, dst_addressing=dst_addressing
             )
