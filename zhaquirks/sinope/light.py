@@ -44,10 +44,9 @@ from zhaquirks.sinope import (
     ATTRIBUTE_ACTION,
     LIGHT_DEVICE_TRIGGERS,
     SINOPE,
+    SINOPE_MANUFACTURER_CLUSTER_ID,
     CustomDeviceTemperatureCluster,
 )
-
-SINOPE_MANUFACTURER_CLUSTER_ID = 0xFF01
 
 _LOGGER = logging.getLogger(__name__)
 
