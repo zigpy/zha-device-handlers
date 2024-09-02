@@ -136,7 +136,7 @@ class InputDelay(t.uint16_t):
     H_3 = 0x2A30
 
 
-class PowerSource(t.enum8):
+class EnergySource(t.enum8):
     """Power source."""
 
     Unknown = 0x0000
@@ -272,13 +272,13 @@ class SinopeManufacturerCluster(CustomCluster):
 class SinopeTechnologiesBasicCluster(CustomCluster, Basic):
     """SinopetechnologiesBasicCluster custom cluster ."""
 
-    PowerSource: Final = PowerSource
+    EnergySource: Final = EnergySource
 
     class AttributeDefs(Basic.AttributeDefs):
         """Sinope Manufacturer Basic Cluster Attributes."""
 
         power_source: Final = foundation.ZCLAttributeDef(
-            id=0x0007, type=PowerSource, access="r", is_manufacturer_specific=True
+            id=0x0007, type=EnergySource, access="r", is_manufacturer_specific=True
         )
 
 
