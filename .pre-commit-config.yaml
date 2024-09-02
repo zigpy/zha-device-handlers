@@ -1,3 +1,8 @@
+ci:
+  autofix_commit_msg: "Apply pre-commit auto fixes"
+  autoupdate_commit_msg: "Auto-update pre-commit hooks"
+  skip: [mypy]
+
 repos:
   - repo: https://github.com/codespell-project/codespell
     rev: v2.3.0
