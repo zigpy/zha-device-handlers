@@ -182,7 +182,6 @@ class SinopeManufacturerCluster(CustomCluster):
     class AttributeDefs(foundation.BaseAttributeDefs):
         """Sinope Manufacturer Cluster Attributes."""
 
-
         keypad_lockout: Final = foundation.ZCLAttributeDef(
             id=0x0002, type=KeypadLock, access="rw", is_manufacturer_specific=True
         )
