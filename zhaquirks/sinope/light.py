@@ -152,9 +152,7 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
         status: Final = foundation.ZCLAttributeDef(
             id=0x0200, type=t.bitmap32, access="rp", is_manufacturer_specific=True
         )
-        cluster_revision: Final = foundation.ZCLAttributeDef(
-            id=0xFFFD, type=t.uint16_t, access="r", is_manufacturer_specific=True
-        )
+        cluster_revision: Final = foundation.ZCL_CLUSTER_REVISION_ATTR
 
     server_commands = {
         0x54: foundation.ZCLCommandDef(
