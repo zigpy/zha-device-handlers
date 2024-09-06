@@ -442,7 +442,8 @@ async def test_zemismart_power_meter_report(zigpy_device_from_quirk, quirk):
 
     # Test invalid phase id
     spm_dev.endpoints[1].electrical_measurement.vcp_reported(
-        [176, 0, 0, 122, 3, 0, 117, 9], 3  # 242.1V 0.89A 176W
+        [176, 0, 0, 122, 3, 0, 117, 9],
+        3,  # 242.1V 0.89A 176W
     )
     assert len(electrical_measurement_listener.attribute_updates) == (3 + 1) * attr_n
     assert electrical_measurement_listener.attribute_updates[3 * attr_n][0] == 0x0505
