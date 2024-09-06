@@ -396,6 +396,7 @@ class TuyaZemismartPowerMeter(CustomDevice):
         # output_clusters=[0x000a, 0x0019]
         MODELS_INFO: [
             ("_TZE200_bcusnqt8", "TS0601"),  # SPM01
+            ("_TZE200_qhlxve78", "TS0601"),  # SPM01
             ("_TZE204_ves1ycwx", "TS0601"),  # SPM02
             ("_TZE200_ves1ycwx", "TS0601"),  # SPM02
         ],
