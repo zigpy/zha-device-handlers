@@ -7,14 +7,20 @@ from zigpy.zcl.foundation import ZCLHeader
 
 import zhaquirks
 from zhaquirks.const import (
+    BUTTON_1,
+    BUTTON_2,
+    BUTTON_3,
+    BUTTON_4,
+    CLUSTER_ID,
     COMMAND,
     COMMAND_HOLD,
-    COMMAND_M_LONG_RELEASE,
     DIM_DOWN,
     DIM_UP,
     DOUBLE_PRESS,
+    ENDPOINT_ID,
     LONG_PRESS,
     LONG_RELEASE,
+    PARAMS,
     QUADRUPLE_PRESS,
     QUINTUPLE_PRESS,
     RIGHT,
@@ -25,8 +31,9 @@ from zhaquirks.const import (
     TURN_ON,
 )
 import zhaquirks.philips
-from zhaquirks.philips import ButtonPressQueue
-from zhaquirks.philips.rdm001 import PhilipsROM001 as PhilipsRDM001
+from zhaquirks.philips import Button, ButtonPressQueue, PhilipsRemoteCluster, PressType
+from zhaquirks.philips.rdm001 import PhilipsRDM001
+from zhaquirks.philips.rdm002 import PhilipsRDM002
 from zhaquirks.philips.rom001 import PhilipsROM001
 from zhaquirks.philips.rwl022 import PhilipsRWL022
 from zhaquirks.philips.rwlfirstgen import PhilipsRWLFirstGen, PhilipsRWLFirstGen2
@@ -117,6 +124,179 @@ def test_legacy_remote_automation_triggers(classes, triggers):
         assert cls.device_automation_triggers == triggers
 
 
+class _SimpleRemote(PhilipsRemoteCluster):
+    BUTTONS = {
+        1: Button("turn_on"),
+        2: Button("right"),
+    }
+    PRESS_TYPES = {
+        0: PressType("remote_button_long_release", "remote_button_long_release"),
+    }
+    SIMULATE_SHORT_EVENTS = None
+
+
+class _RemoteWithTriggerOverrides(_SimpleRemote):
+    BUTTONS = {
+        1: Button("turn_on", "turn_on", "left"),
+        2: Button("right"),
+    }
+
+
+class _RemoteWithSimulatedRelease(_SimpleRemote):
+    SIMULATE_SHORT_EVENTS = [
+        PressType("remote_button_short_press", "remote_button_short_press"),
+        PressType("remote_button_short_release", "remote_button_short_release"),
+    ]
+
+
+class _RemoteWithCommandOverrides(_SimpleRemote):
+    PRESS_TYPES: dict[int, PressType] = {
+        1: PressType(LONG_PRESS, COMMAND_HOLD),
+        3: PressType(LONG_RELEASE, "release"),
+    }
+
+
+class _RemoteWithSimulatedReleaseAndCommandOverride(_SimpleRemote):
+    SIMULATE_SHORT_EVENTS = [
+        PressType("remote_button_short_press", "short_press"),
+        PressType("remote_button_short_release", "remote_button_short_release"),
+    ]
+
+
+@pytest.mark.parametrize(
+    "cls, expected_value",
+    (
+        (
+            _SimpleRemote,
+            {
+                ("remote_button_long_release", "turn_on"): {
+                    COMMAND: "turn_on_remote_button_long_release"
+                },
+                ("remote_button_long_release", "right"): {
+                    COMMAND: "right_remote_button_long_release"
+                },
+            },
+        ),
+        (
+            _RemoteWithTriggerOverrides,
+            {
+                ("remote_button_long_release", "turn_on"): {
+                    COMMAND: "left_remote_button_long_release"
+                },
+                ("remote_button_long_release", "right"): {
+                    COMMAND: "right_remote_button_long_release"
+                },
+            },
+        ),
+        (
+            _RemoteWithSimulatedRelease,
+            {
+                ("remote_button_long_release", "turn_on"): {
+                    COMMAND: "turn_on_remote_button_long_release"
+                },
+                ("remote_button_long_release", "right"): {
+                    COMMAND: "right_remote_button_long_release"
+                },
+                ("remote_button_short_press", "turn_on"): {
+                    COMMAND: "turn_on_remote_button_short_press"
+                },
+                ("remote_button_short_press", "right"): {
+                    COMMAND: "right_remote_button_short_press"
+                },
+                ("remote_button_short_release", "turn_on"): {
+                    COMMAND: "turn_on_remote_button_short_release"
+                },
+                ("remote_button_short_release", "right"): {
+                    COMMAND: "right_remote_button_short_release"
+                },
+                ("remote_button_double_press", "turn_on"): {
+                    COMMAND: "turn_on_double_press"
+                },
+                ("remote_button_double_press", "right"): {
+                    COMMAND: "right_double_press"
+                },
+                ("remote_button_triple_press", "turn_on"): {
+                    COMMAND: "turn_on_triple_press"
+                },
+                ("remote_button_triple_press", "right"): {
+                    COMMAND: "right_triple_press"
+                },
+                ("remote_button_quadruple_press", "turn_on"): {
+                    COMMAND: "turn_on_quadruple_press"
+                },
+                ("remote_button_quadruple_press", "right"): {
+                    COMMAND: "right_quadruple_press"
+                },
+                ("remote_button_quintuple_press", "turn_on"): {
+                    COMMAND: "turn_on_quintuple_press"
+                },
+                ("remote_button_quintuple_press", "right"): {
+                    COMMAND: "right_quintuple_press"
+                },
+            },
+        ),
+        (
+            _RemoteWithCommandOverrides,
+            {
+                ("remote_button_long_press", "turn_on"): {COMMAND: "turn_on_hold"},
+                ("remote_button_long_press", "right"): {COMMAND: "right_hold"},
+                ("remote_button_long_release", "turn_on"): {COMMAND: "turn_on_release"},
+                ("remote_button_long_release", "right"): {COMMAND: "right_release"},
+            },
+        ),
+        (
+            _RemoteWithSimulatedReleaseAndCommandOverride,
+            {
+                ("remote_button_long_release", "turn_on"): {
+                    COMMAND: "turn_on_remote_button_long_release"
+                },
+                ("remote_button_long_release", "right"): {
+                    COMMAND: "right_remote_button_long_release"
+                },
+                ("remote_button_short_press", "turn_on"): {
+                    COMMAND: "turn_on_short_press"
+                },
+                ("remote_button_short_press", "right"): {COMMAND: "right_short_press"},
+                ("remote_button_short_release", "turn_on"): {
+                    COMMAND: "turn_on_remote_button_short_release"
+                },
+                ("remote_button_short_release", "right"): {
+                    COMMAND: "right_remote_button_short_release"
+                },
+                ("remote_button_double_press", "turn_on"): {
+                    COMMAND: "turn_on_double_press"
+                },
+                ("remote_button_double_press", "right"): {
+                    COMMAND: "right_double_press"
+                },
+                ("remote_button_triple_press", "turn_on"): {
+                    COMMAND: "turn_on_triple_press"
+                },
+                ("remote_button_triple_press", "right"): {
+                    COMMAND: "right_triple_press"
+                },
+                ("remote_button_quadruple_press", "turn_on"): {
+                    COMMAND: "turn_on_quadruple_press"
+                },
+                ("remote_button_quadruple_press", "right"): {
+                    COMMAND: "right_quadruple_press"
+                },
+                ("remote_button_quintuple_press", "turn_on"): {
+                    COMMAND: "turn_on_quintuple_press"
+                },
+                ("remote_button_quintuple_press", "right"): {
+                    COMMAND: "right_quintuple_press"
+                },
+            },
+        ),
+    ),
+)
+def test_generate_device_automation_triggers(cls, expected_value):
+    """Test trigger generation and button overrides."""
+
+    assert cls.generate_device_automation_triggers() == expected_value
+
+
 class ManuallyFiredButtonPressQueue:
     """Philips button queue to derive multiple press events."""
 
@@ -154,7 +334,7 @@ class ManuallyFiredButtonPressQueue:
             PhilipsRDM001,
             1,
             "left",
-            ["press", "press_release"],
+            ["press", "short_release"],
         ),
         (
             PhilipsROM001,
@@ -207,6 +387,7 @@ def test_PhilipsRemoteCluster_short_press(
                 "button": button,
                 "press_type": events[0],
                 "command_id": None,
+                "duration": 0,
                 "args": [1, 0, 0, 0, 0],
             },
         ),
@@ -216,13 +397,13 @@ def test_PhilipsRemoteCluster_short_press(
                 "button": button,
                 "press_type": events[1],
                 "command_id": None,
+                "duration": 0,
                 "args": [1, 0, 2, 0, 0],
             },
         ),
     ]
 
-    # TODO: remove any_order=True
-    listener.zha_send_event.assert_has_calls(calls, any_order=True)
+    listener.zha_send_event.assert_has_calls(calls)
 
 
 @pytest.mark.parametrize(
@@ -232,6 +413,11 @@ def test_PhilipsRemoteCluster_short_press(
             PhilipsROM001,
             1,
             "on",
+        ),
+        (
+            PhilipsRDM001,
+            1,
+            "left",
         ),
         (
             PhilipsRWLFirstGen,
@@ -283,9 +469,8 @@ def test_PhilipsRemoteCluster_multi_press(
         cluster.handle_cluster_request(ZCLHeader(), [1, 0, 2, 0, 0])
     cluster.button_press_queue.fire()
 
-    # TODO: Due to a bug, single press events are sent during a multi-press sequence
-    # assert listener.zha_send_event.call_count == 1
-    args_button_id = 0
+    assert listener.zha_send_event.call_count == 1
+    args_button_id = count + 2
     listener.zha_send_event.assert_has_calls(
         [
             mock.call(
@@ -294,6 +479,7 @@ def test_PhilipsRemoteCluster_multi_press(
                     "button": button,
                     "press_type": action_press_type,
                     "command_id": None,
+                    "duration": 0,
                     "args": [1, 0, args_button_id, 0, 0],
                 },
             ),
@@ -304,8 +490,7 @@ def test_PhilipsRemoteCluster_multi_press(
 @pytest.mark.parametrize(
     "dev, ep",
     (
-        # TODO: RDM001 passes through unknown buttons
-        # (PhilipsRDM001, 1),
+        (PhilipsRDM001, 1),
         (PhilipsROM001, 1),
         (PhilipsRWLFirstGen, 2),
         (PhilipsRWLFirstGen2, 2),
@@ -327,37 +512,40 @@ def test_PhilipsRemoteCluster_ignore_unknown_buttons(zigpy_device_from_quirk, de
 
 
 @pytest.mark.parametrize(
-    "dev, ep, button, release_press_type",
+    "dev, ep, button, hold_press_type, release_press_type, release_press_type_arg",
     (
-        (
-            PhilipsROM001,
-            1,
-            "on",
-            COMMAND_M_LONG_RELEASE,
-        ),
+        (PhilipsROM001, 1, "on", "hold", "long_release", "hold_release"),
         (
             PhilipsRDM001,
             1,
             "left",
+            "hold",
+            "long_release",
             "hold_release",
         ),
         (
             PhilipsRWLFirstGen,
             2,
             "on",
-            COMMAND_M_LONG_RELEASE,
+            "hold",
+            "long_release",
+            "long_release",
         ),
         (
             PhilipsRWLFirstGen2,
             2,
             "on",
-            COMMAND_M_LONG_RELEASE,
+            "hold",
+            "long_release",
+            "long_release",
         ),
         (
             PhilipsRWL022,
             1,
             "on",
-            COMMAND_M_LONG_RELEASE,
+            "hold",
+            "long_release",
+            "long_release",
         ),
     ),
 )
@@ -370,7 +558,14 @@ def test_PhilipsRemoteCluster_ignore_unknown_buttons(zigpy_device_from_quirk, de
     ),
 )
 def test_PhilipsRemoteCluster_long_press(
-    zigpy_device_from_quirk, dev, ep, button, release_press_type, count
+    zigpy_device_from_quirk,
+    dev,
+    ep,
+    button,
+    hold_press_type,
+    release_press_type,
+    release_press_type_arg,
+    count,
 ):
     """Test PhilipsRemoteCluster button long press logic."""
 
@@ -390,18 +585,18 @@ def test_PhilipsRemoteCluster_long_press(
     cluster.handle_cluster_request(ZCLHeader(), [1, 0, 3, 0, count * 40 + 10])
     cluster.button_press_queue.fire()
 
-    # TODO: all remotes also fire short press events, hence the extra +1
-    assert listener.zha_send_event.call_count == count + 1 + 1
+    assert listener.zha_send_event.call_count == count + 1
 
     calls = []
     for i in range(0, count):
         calls.append(
             mock.call(
-                f"{button}_{COMMAND_HOLD}",
+                f"{button}_{hold_press_type}",
                 {
                     "button": button,
-                    "press_type": COMMAND_HOLD,
+                    "press_type": hold_press_type,
                     "command_id": None,
+                    "duration": (i + 1) * 40,
                     "args": [1, 0, 1, 0, (i + 1) * 40],
                 },
             )
@@ -411,8 +606,9 @@ def test_PhilipsRemoteCluster_long_press(
             f"{button}_{release_press_type}",
             {
                 "button": button,
-                "press_type": release_press_type,
+                "press_type": release_press_type_arg,
                 "command_id": None,
+                "duration": count * 40 + 10,
                 "args": [1, 0, 3, 0, count * 40 + 10],
             },
         )
@@ -500,3 +696,45 @@ async def test_ButtonPressQueue_presses_with_pause(press_sequence, results):
         calls.append(mock.call(res))
 
     cb.assert_has_calls(calls)
+
+
+def test_rdm002_triggers():
+    """Ensure RDM002 triggers won't break."""
+
+    buttons = [BUTTON_1, BUTTON_2, BUTTON_3, BUTTON_4]
+    actions = {
+        "remote_button_short_press": "press",
+        "remote_button_long_press": "hold",
+        "remote_button_short_release": "short_release",
+        "remote_button_long_release": "long_release",
+        "remote_button_double_press": "double_press",
+        "remote_button_triple_press": "triple_press",
+        "remote_button_quadruple_press": "quadruple_press",
+        "remote_button_quintuple_press": "quintuple_press",
+    }
+
+    expected_triggers = {}
+    for button in buttons:
+        for action, command in actions.items():
+            expected_triggers[(action, button)] = {COMMAND: f"{button}_{command}"}
+
+    expected_triggers.update(
+        {
+            ("remote_button_short_press", "dim_up"): {
+                COMMAND: "step_with_on_off",
+                CLUSTER_ID: 8,
+                ENDPOINT_ID: 1,
+                PARAMS: {"step_mode": 0},
+            },
+            ("remote_button_short_press", "dim_down"): {
+                COMMAND: "step_with_on_off",
+                CLUSTER_ID: 8,
+                ENDPOINT_ID: 1,
+                PARAMS: {"step_mode": 1},
+            },
+        }
+    )
+
+    actual_triggers = PhilipsRDM002.device_automation_triggers
+
+    assert actual_triggers == expected_triggers

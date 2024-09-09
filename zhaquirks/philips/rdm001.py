@@ -1,12 +1,8 @@
 """Signify RDM001 device."""
 
-import logging
-from typing import Any, Optional, Union
-
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
-from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -18,33 +14,23 @@ from zigpy.zcl.clusters.general import (
 )
 
 from zhaquirks.const import (
-    ARGS,
-    BUTTON,
-    COMMAND,
-    COMMAND_ID,
     DEVICE_TYPE,
-    DOUBLE_PRESS,
     ENDPOINTS,
     INPUT_CLUSTERS,
+    LEFT,
     LONG_PRESS,
     LONG_RELEASE,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
-    PRESS_TYPE,
     PROFILE_ID,
-    QUADRUPLE_PRESS,
-    QUINTUPLE_PRESS,
     RIGHT,
     SHORT_PRESS,
     SHORT_RELEASE,
-    TRIPLE_PRESS,
     TURN_ON,
-    ZHA_SEND_EVENT,
 )
-from zhaquirks.philips import PHILIPS, SIGNIFY
+from zhaquirks.philips import PHILIPS, SIGNIFY, Button, PhilipsRemoteCluster, PressType
 
 DEVICE_SPECIFIC_UNKNOWN = 64512
-_LOGGER = logging.getLogger(__name__)
 
 
 class PhilipsBasicCluster(CustomCluster, Basic):
@@ -67,66 +53,27 @@ class PhilipsBasicCluster(CustomCluster, Basic):
         return result
 
 
-class PhilipsRemoteCluster(CustomCluster):
-    """Philips remote cluster."""
+class PhilipsRdm001RemoteCluster(PhilipsRemoteCluster):
+    """Philips RDM001 remote cluster."""
 
-    cluster_id = 64512
-    name = "PhilipsRemoteCluster"
-    ep_attribute = "philips_remote_cluster"
-    client_commands = {
-        0x00: foundation.ZCLCommandDef(
-            "notification",
-            {
-                "param1": t.uint8_t,
-                "param2": t.uint24_t,
-                "param3": t.uint8_t,
-                "param4": t.uint8_t,
-                "param5": t.uint8_t,
-                "param6": t.uint8_t,
-            },
-            is_manufacturer_specific=True,
-            direction=foundation.Direction.Client_to_Server,
-        )
-    }
     BUTTONS = {
-        1: "left",
-        2: "right",
+        1: Button(LEFT, TURN_ON),
+        2: Button(RIGHT),
     }
-    PRESS_TYPES = {0: "press", 1: "hold", 2: "press_release", 3: "hold_release"}
 
-    def handle_cluster_request(
-        self,
-        hdr: foundation.ZCLHeader,
-        args: list[Any],
-        *,
-        dst_addressing: Optional[
-            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
-        ] = None,
-    ):
-        """Handle the cluster command."""
-        _LOGGER.debug(
-            "PhilipsRemoteCluster - handle_cluster_request tsn: [%s] command id: %s - args: [%s]",
-            hdr.tsn,
-            hdr.command_id,
-            args,
-        )
+    PRESS_TYPES: dict[int, PressType] = {
+        1: PressType(LONG_PRESS, "hold"),
+        3: PressType(LONG_RELEASE, "long_release", "hold_release"),
+    }
 
-        button = self.BUTTONS.get(args[0], args[0])
-        press_type = self.PRESS_TYPES.get(args[2], args[2])
-
-        event_args = {
-            BUTTON: button,
-            PRESS_TYPE: press_type,
-            COMMAND_ID: hdr.command_id,
-            ARGS: args,
-        }
-
-        action = f"{button}_{press_type}"
-        self.listener_event(ZHA_SEND_EVENT, action, event_args)
+    SIMULATE_SHORT_EVENTS = [
+        PressType(SHORT_PRESS, "press"),
+        PressType(SHORT_RELEASE, "short_release"),
+    ]
 
 
-class PhilipsROM001(CustomDevice):
-    """Philips ROM001 device."""
+class PhilipsRDM001(CustomDevice):
+    """Philips RDM001 device."""
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=2080
@@ -164,7 +111,7 @@ class PhilipsROM001(CustomDevice):
                     PhilipsBasicCluster,
                     PowerConfiguration.cluster_id,
                     Identify.cluster_id,
-                    PhilipsRemoteCluster,
+                    PhilipsRdm001RemoteCluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     Ota.cluster_id,
@@ -177,21 +124,6 @@ class PhilipsROM001(CustomDevice):
         }
     }
 
-    device_automation_triggers = {
-        (SHORT_PRESS, TURN_ON): {COMMAND: "left_press"},
-        (LONG_PRESS, TURN_ON): {COMMAND: "left_hold"},
-        (DOUBLE_PRESS, TURN_ON): {COMMAND: "left_double_press"},
-        (TRIPLE_PRESS, TURN_ON): {COMMAND: "left_triple_press"},
-        (QUADRUPLE_PRESS, TURN_ON): {COMMAND: "left_quadruple_press"},
-        (QUINTUPLE_PRESS, TURN_ON): {COMMAND: "left_quintuple_press"},
-        (SHORT_RELEASE, TURN_ON): {COMMAND: "left_short_release"},
-        (LONG_RELEASE, TURN_ON): {COMMAND: "left_long_release"},
-        (SHORT_PRESS, RIGHT): {COMMAND: "right_press"},
-        (LONG_PRESS, RIGHT): {COMMAND: "right_hold"},
-        (DOUBLE_PRESS, RIGHT): {COMMAND: "right_double_press"},
-        (TRIPLE_PRESS, RIGHT): {COMMAND: "right_triple_press"},
-        (QUADRUPLE_PRESS, RIGHT): {COMMAND: "right_quadruple_press"},
-        (QUINTUPLE_PRESS, RIGHT): {COMMAND: "right_quintuple_press"},
-        (SHORT_RELEASE, RIGHT): {COMMAND: "right_short_release"},
-        (LONG_RELEASE, RIGHT): {COMMAND: "right_long_release"},
-    }
+    device_automation_triggers = (
+        PhilipsRdm001RemoteCluster.generate_device_automation_triggers()
+    )
