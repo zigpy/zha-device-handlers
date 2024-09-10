@@ -393,3 +393,88 @@ class RemoteH1DoubleRocker4(RemoteH1DoubleRocker1):
             },
         },
     }
+
+
+class RemoteH1DoubleRocker5(RemoteH1DoubleRocker1):
+    """Aqara H1 Wireless Remote Double Rocker Version WRS-R02, variant 5."""
+
+    signature = {
+        MODELS_INFO: [(LUMI, "lumi.remote.b28ac1")],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.COLOR_DIMMER_SWITCH,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    PowerConfiguration.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                    Color.cluster_id,
+                ],
+            },
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
+                INPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    OnOff.cluster_id,
+                ],
+            },
+            3: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
+                INPUT_CLUSTERS: [Identify.cluster_id],
+                OUTPUT_CLUSTERS: [OnOff.cluster_id],
+            },
+        },
+    }
+
+
+class RemoteH1DoubleRocker6(RemoteH1DoubleRocker1):
+    """Aqara H1 Wireless Remote Double Rocker Version WRS-R02, variant 6."""
+
+    signature = {
+        MODELS_INFO: [(LUMI, "lumi.remote.b28ac1")],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    Identify.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    OnOff.cluster_id,
+                ],
+            },
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
+                INPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    OnOff.cluster_id,
+                ],
+            },
+            3: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
+                INPUT_CLUSTERS: [Identify.cluster_id],
+                OUTPUT_CLUSTERS: [OnOff.cluster_id],
+            },
+            4: {},
+            5: {},
+            6: {},
+        },
+    }
