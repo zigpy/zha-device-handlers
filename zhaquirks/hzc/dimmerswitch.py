@@ -1,7 +1,7 @@
 """Quirk for HZC Dimmer-Switch-ZB3.0 (e.g. D688-ZG)."""
 
-from zigpy.profiles import zha, zgp
-from zigpy.quirks import CustomDevice, CustomCluster
+from zigpy.profiles import zgp, zha
+from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
     GreenPowerProxy,
