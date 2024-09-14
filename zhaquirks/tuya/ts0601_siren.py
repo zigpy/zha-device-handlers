@@ -356,6 +356,7 @@ class TuyaSirenGPP_NoSensors(CustomDevice):
         MODELS_INFO: [
             ("_TZE200_t1blo2bj", "TS0601"),
             ("_TZE204_t1blo2bj", "TS0601"),
+            ("_TZE204_hcxvyxa5", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
