@@ -33,7 +33,7 @@ class HzcOnOff(NoReplyMixin, CustomCluster, OnOff):
 
 
 class DimmerSwitch(CustomDevice):
-    """Dimmer-Switch-ZB3.0 by HZC / Shyugj"""
+    """Dimmer-Switch-ZB3.0 by HZC / Shyugj."""
 
     signature = {
         MODELS_INFO: [
