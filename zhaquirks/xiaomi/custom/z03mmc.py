@@ -3,11 +3,8 @@
 from zigpy.profiles import zha
 from zigpy.types import Bool, int16s, uint16_t
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PowerConfiguration
-from zigpy.zcl.clusters.hvac import UserInterface as UserInterfaceBase
-from zigpy.zcl.clusters.measurement import (
-    RelativeHumidity as RelativeHumidityBase,
-    TemperatureMeasurement as TemperatureMeasurementBase,
-)
+from zigpy.zcl.clusters.hvac import UserInterface
+from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
 from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks import CustomCluster
@@ -22,10 +19,10 @@ from zhaquirks.const import (
 from zhaquirks.xiaomi import XiaomiCustomDevice
 
 
-class TemperatureMeasurement(CustomCluster, TemperatureMeasurementBase):
+class TemperatureMeasurementCustom(CustomCluster, TemperatureMeasurement):
     """Temperature Measurement Cluster with calibration attribute."""
 
-    class AttributeDefs(TemperatureMeasurementBase.AttributeDefs):
+    class AttributeDefs(TemperatureMeasurement.AttributeDefs):
         """Attribute Definitions."""
 
         # A value in 0.01ºC offset to fix up incorrect values from sensor
@@ -37,10 +34,10 @@ class TemperatureMeasurement(CustomCluster, TemperatureMeasurementBase):
         )
 
 
-class RelativeHumidity(CustomCluster, RelativeHumidityBase):
+class RelativeHumidityCustom(CustomCluster, RelativeHumidity):
     """Relative Humidity Cluster with calibration attribute."""
 
-    class AttributeDefs(RelativeHumidityBase.AttributeDefs):
+    class AttributeDefs(RelativeHumidity.AttributeDefs):
         """Attribute Definitions."""
 
         # A value in 0.01%RH offset to fix up incorrect values from sensor
@@ -52,10 +49,10 @@ class RelativeHumidity(CustomCluster, RelativeHumidityBase):
         )
 
 
-class UserInterface(CustomCluster, UserInterfaceBase):
+class UserInterfaceCustom(CustomCluster, UserInterface):
     """Custom User Interface Cluster with smiley control."""
 
-    class AttributeDefs(UserInterfaceBase.AttributeDefs):
+    class AttributeDefs(UserInterface.AttributeDefs):
         """Attribute Definitions."""
 
         # of the 3 ZCL Thermostat User Interface spec attributes,
@@ -129,9 +126,9 @@ class LYWSD03MMC_devbis(XiaomiCustomDevice):
                     Basic.cluster_id,
                     Identify.cluster_id,
                     PowerConfiguration.cluster_id,
-                    RelativeHumidityBase.cluster_id,
-                    TemperatureMeasurementBase.cluster_id,
-                    UserInterfaceBase.cluster_id,
+                    RelativeHumidity.cluster_id,
+                    TemperatureMeasurement.cluster_id,
+                    UserInterface.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
@@ -146,9 +143,9 @@ class LYWSD03MMC_devbis(XiaomiCustomDevice):
                     Basic.cluster_id,
                     Identify.cluster_id,
                     PowerConfiguration.cluster_id,
-                    RelativeHumidity,
-                    TemperatureMeasurement,
-                    UserInterface,
+                    RelativeHumidityCustom,
+                    TemperatureMeasurementCustom,
+                    UserInterfaceCustom,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
