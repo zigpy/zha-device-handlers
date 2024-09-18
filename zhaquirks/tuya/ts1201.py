@@ -506,6 +506,7 @@ class ZosungIRBlaster_ZS06(ZosungIRBlaster):
             ("_TZ3290_7v1k4vufotpowp9z", "TS1201"),
             ("_TZ3290_acv1iuslxi3shaaj", "TS1201"),
             ("_TZ3290_gnl5a6a5xvql7c2a", "TS1201"),
+            ("_TZ3290_rlkmy85q4pzoxobl", "TS1201"),
         ],
         ENDPOINTS: {
             1: {
