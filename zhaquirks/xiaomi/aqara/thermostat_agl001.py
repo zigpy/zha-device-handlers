@@ -1,34 +1,20 @@
 """Aqara E1 Radiator Thermostat Quirk."""
 
 from __future__ import annotations
-from zigpy.zcl import ClusterType
 
 from functools import reduce
-from zigpy.quirks.v2 import QuirkBuilder
 import math
 import struct
 from typing import Any
 
-from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster
+from zigpy.quirks.v2 import QuirkBuilder
 import zigpy.types as t
-from zigpy.zcl.clusters.general import Basic, Identify, Ota, Time
+from zigpy.zcl import ClusterType
+from zigpy.zcl.clusters.general import Ota
 from zigpy.zcl.clusters.hvac import Thermostat
 
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-)
-from zhaquirks.xiaomi import (
-    LUMI,
-    XiaomiAqaraE1Cluster,
-    XiaomiCustomDevice,
-    XiaomiPowerConfiguration,
-)
+from zhaquirks.xiaomi import LUMI, XiaomiAqaraE1Cluster, XiaomiPowerConfiguration
 
 ZCL_SYSTEM_MODE = Thermostat.attributes_by_name["system_mode"].id
 
