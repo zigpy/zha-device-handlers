@@ -1,8 +1,10 @@
 """Aqara E1 Radiator Thermostat Quirk."""
 
 from __future__ import annotations
+from zigpy.zcl import ClusterType
 
 from functools import reduce
+from zigpy.quirks.v2 import QuirkBuilder
 import math
 import struct
 from typing import Any
@@ -35,6 +37,7 @@ XIAOMI_SYSTEM_MODE_MAP = {
     1: Thermostat.SystemMode.Heat,
 }
 
+CALIBRATE = 0x0270
 SYSTEM_MODE = 0x0271
 PRESET = 0x0272
 WINDOW_DETECTION = 0x0273
@@ -375,6 +378,7 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
     attributes = XiaomiAqaraE1Cluster.attributes.copy()
     attributes.update(
         {
+            CALIBRATE: ("calibrate", t.uint8_t, True),
             SYSTEM_MODE: ("system_mode", t.uint8_t, True),
             PRESET: ("preset", t.uint8_t, True),
             WINDOW_DETECTION: ("window_detection", t.uint8_t, True),
@@ -403,53 +407,16 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
         super()._update_attribute(attrid, value)
 
 
-class AGL001(XiaomiCustomDevice):
-    """Aqara E1 Radiator Thermostat (AGL001) Device."""
-
-    signature = {
-        # <SimpleDescriptor endpoint=1 profile=260 device_type=769
-        # device_version=1
-        # input_clusters=[0, 1, 3, 513, 64704]
-        # output_clusters=[3, 513, 64704]>
-        MODELS_INFO: [(LUMI, "lumi.airrtc.agl001")],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.THERMOSTAT,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    Thermostat.cluster_id,
-                    Time.cluster_id,
-                    XiaomiPowerConfiguration.cluster_id,
-                    AqaraThermostatSpecificCluster.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Thermostat.cluster_id,
-                    AqaraThermostatSpecificCluster.cluster_id,
-                ],
-            }
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    ThermostatCluster,
-                    Time.cluster_id,
-                    XiaomiPowerConfiguration,
-                    AqaraThermostatSpecificCluster,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    ThermostatCluster,
-                    AqaraThermostatSpecificCluster,
-                    Ota.cluster_id,
-                ],
-            }
-        }
-    }
+(
+    QuirkBuilder(LUMI, "lumi.airrtc.agl001")
+    .replaces(XiaomiPowerConfiguration)
+    .replaces(AqaraThermostatSpecificCluster)
+    .adds(Ota, endpoint_id=1, cluster_type=ClusterType.Client)
+    .write_attr_button(
+        attribute_name="calibrate",
+        attribute_value=1,
+        cluster_id=AqaraThermostatSpecificCluster.cluster_id,
+        translation_key="calibrate",
+    )
+    .add_to_registry()
+)
