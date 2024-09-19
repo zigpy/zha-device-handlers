@@ -409,6 +409,7 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
 
 (
     QuirkBuilder(LUMI, "lumi.airrtc.agl001")
+    .replaces(ThermostatCluster)
     .replaces(XiaomiPowerConfiguration)
     .replaces(AqaraThermostatSpecificCluster)
     .adds(Ota, endpoint_id=1, cluster_type=ClusterType.Client)
