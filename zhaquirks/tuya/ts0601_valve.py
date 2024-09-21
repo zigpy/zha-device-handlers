@@ -16,7 +16,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import EnchantedDevice, TuyaLocalCluster
+from zhaquirks.tuya import TUYA_CLUSTER_ED00_ID, EnchantedDevice, TuyaLocalCluster
 from zhaquirks.tuya.mcu import (
     DPToAttributeMapping,
     TuyaMCUCluster,
@@ -398,6 +398,51 @@ class GiexValve(CustomDevice):
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
+                    GiexValveManufCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            }
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaOnOffNM,
+                    TuyaPowerConfigurationCluster,
+                    TuyaValveWaterConsumed,
+                    GiexValveManufCluster,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            }
+        }
+    }
+
+
+class GiexValveVar02(CustomDevice):
+    """GiEX valve device, variant 2."""
+
+    signature = {
+        MODELS_INFO: [
+            ("_TZE284_7ytb3h8u", "TS0601"),
+        ],
+        ENDPOINTS: {
+            # <SimpleDescriptor endpoint=1 profile=260 device_type=0x0051
+            # input_clusters=[0x0000, 0x0004, 0x0005, 0xed00, 0xef00]
+            # output_clusters=[0x000a, 0x0019]>
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TUYA_CLUSTER_ED00_ID,
                     GiexValveManufCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],

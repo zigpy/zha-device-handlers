@@ -33,6 +33,7 @@ TUYA_CLUSTER_ID = 0xEF00
 TUYA_CLUSTER_E000_ID = 0xE000
 TUYA_CLUSTER_E001_ID = 0xE001
 TUYA_CLUSTER_1888_ID = 0x1888
+TUYA_CLUSTER_ED00_ID = 0xED00
 # ---------------------------------------------------------
 # Tuya Cluster Commands
 # ---------------------------------------------------------
