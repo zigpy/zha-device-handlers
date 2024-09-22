@@ -25,8 +25,10 @@ class NodOnPilotWireMode(t.enum8):
     ComfortMinus1 = 0x04
     ComfortMinus2 = 0x05
 
+
 NODON = "NodOn"
-NODON_PILOT_WIRE_CLUSTER_ID = 0xFC00  #64512
+NODON_PILOT_WIRE_CLUSTER_ID = 0xFC00  # 64512
+
 
 class NodOnPilotWireCluster(CustomCluster):
     """NodOn manufacturer specific cluster to set Pilot Wire mode."""
