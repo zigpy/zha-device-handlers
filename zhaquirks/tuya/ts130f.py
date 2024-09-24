@@ -168,7 +168,6 @@ class TuyaZemismartWNEC1ETS130F(CustomDevice):
     """Tuya ZemiSmart smart curtain roller shutter. WN-EC1E version."""
 
     signature = {
-        # SizePrefixedSimpleDescriptor(endpoint=1, profile=104, device_type=0x0202, device_version=1, input_clusters=[0x0000, 0x0003, 0x0004, 0x0005, 0x0102], output_clusters=[0x0019]))
         MODEL: "TS130F",
         ENDPOINTS: {
             1: {
