@@ -195,9 +195,7 @@ async def test_sinope_light_switch_reporting(zigpy_device_from_quirk, quirk):
 
         await manu_cluster.bind()
         await manu_cluster.configure_reporting(
-            SinopeTechnologiesManufacturerCluster.attributes_by_name[
-                "action_report"
-            ].id,
+            SinopeTechnologiesManufacturerCluster.AttributeDefs.action_report.id
             3600,
             10800,
             1,
