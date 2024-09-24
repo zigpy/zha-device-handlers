@@ -196,6 +196,7 @@ class TuyaZemismartWNEC1ETS130F(CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
+                    Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     TuyaWithBacklightOnOffCluster,
