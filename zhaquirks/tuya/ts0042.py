@@ -240,7 +240,7 @@ class TuyaSmartRemote0042TOPlusA(CustomDevice):
 
 
 class TuyaSmartRemote0042NO(CustomDevice):
-    """Tuya 2-button remote device with no time cluster ."""
+    """Tuya 2-button remote device with no time cluster."""
 
     signature = {
         # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=0, device_version=1, input_clusters=[0, 1, 6], output_clusters=[25]))
