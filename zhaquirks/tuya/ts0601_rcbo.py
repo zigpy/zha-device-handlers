@@ -250,8 +250,7 @@ class TuyaRCBOElectricalMeasurement(ElectricalMeasurement, TuyaAttributesCluster
             apparent_power = self.get("apparent_power")
             if apparent_power:
                 power_factor = value / apparent_power * 100
-                if power_factor > 100:
-                    power_factor = 100
+                power_factor = min(power_factor, 100)
                 super().update_attribute("power_factor", round(power_factor))
 
 

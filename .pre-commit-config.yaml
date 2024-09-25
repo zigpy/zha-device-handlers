@@ -1,18 +1,23 @@
+ci:
+  autofix_commit_msg: "Apply pre-commit auto fixes"
+  autoupdate_commit_msg: "Auto-update pre-commit hooks"
+  skip: [mypy]
+
 repos:
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.2.6
+    rev: v2.3.0
     hooks:
       - id: codespell
         additional_dependencies: [tomli]
         args: ["--toml", "pyproject.toml"]
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.9.0
+    rev: v1.11.2
     hooks:
       - id: mypy
   
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.3.2
+    rev: v0.6.7
     hooks:
       - id: ruff
         args: ["--fix", "--exit-non-zero-on-fix", "--config", "pyproject.toml"]
