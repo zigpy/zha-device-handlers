@@ -313,7 +313,7 @@ def test_quirk_quickinit(quirk: zigpy.quirks.CustomDevice) -> None:
         if quirk_cls
         not in (
             # Some devices do not have model info:
-            zhaquirks.tuya.ty0201.TuyaTempHumiditySensor,
+            zhaquirks.tuya.ty0201.TuyaTempHumiditySensorNoModel,
         )
     ],
 )

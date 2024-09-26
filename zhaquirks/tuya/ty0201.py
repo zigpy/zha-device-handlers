@@ -27,7 +27,6 @@ class TuyaTempHumiditySensor(CustomDevice):
         MODELS_INFO: [
             ("_TZ3000_bjawzodf", "TY0201"),
             ("_TZ3000_zl1kmjqx", "TY0201"),
-            ("_TZ3000_zl1kmjqx", ""),
         ],
         ENDPOINTS: {
             1: {
@@ -62,4 +61,13 @@ class TuyaTempHumiditySensor(CustomDevice):
                 ],
             },
         },
+    }
+
+
+class TuyaTempHumiditySensorNoModel(TuyaTempHumiditySensor):
+    """Temu/Aliexpress temperature and humidity sensor with empty model."""
+
+    signature = {
+        MODELS_INFO: [("_TZ3000_zl1kmjqx", "")],
+        ENDPOINTS: TuyaTempHumiditySensor.signature[ENDPOINTS],
     }
