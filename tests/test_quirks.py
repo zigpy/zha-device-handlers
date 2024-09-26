@@ -52,8 +52,6 @@ from zhaquirks.const import (
 )
 import zhaquirks.konke
 import zhaquirks.philips
-import zhaquirks.tuya
-import zhaquirks.tuya.ty0201
 from zhaquirks.xiaomi import XIAOMI_NODE_DESC
 import zhaquirks.xiaomi.aqara.vibration_aq1
 
@@ -305,9 +303,6 @@ def test_quirk_quickinit(quirk: zigpy.quirks.CustomDevice) -> None:
         assert DEVICE_TYPE in ep_data
         assert isinstance(ep_data[INPUT_CLUSTERS], list)
         assert isinstance(ep_data[OUTPUT_CLUSTERS], list)
-
-
-# @pytest.mark.parametrize("quirk", ALL_QUIRK_CLASSES)
 
 
 @pytest.mark.parametrize(
