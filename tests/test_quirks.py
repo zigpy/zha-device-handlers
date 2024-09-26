@@ -329,10 +329,8 @@ def test_signature(quirk: CustomDevice) -> None:
                 assert manufacturer
             if model is not None:
                 assert isinstance(model, str)
-                try:
+                if manufacturer not in MANUFACTURER_WHITE_LIST:
                     assert model
-                except AssertionError:
-                    assert manufacturer in MANUFACTURER_WHITE_LIST
 
     for m_m in (MANUFACTURER, MODEL):
         value = quirk.signature.get(m_m)
