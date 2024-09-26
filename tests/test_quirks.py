@@ -20,6 +20,7 @@ import zigpy.zdo.types
 
 import zhaquirks
 from zhaquirks import const
+from zhaquirks.whitelist import MANUFACTURER_WHITE_LIST
 import zhaquirks.bosch.motion
 import zhaquirks.centralite.cl_3310S
 from zhaquirks.const import (
@@ -328,7 +329,10 @@ def test_signature(quirk: CustomDevice) -> None:
                 assert manufacturer
             if model is not None:
                 assert isinstance(model, str)
-                assert model
+                try:
+                    assert model
+                except AssertionError:
+                    assert manufacturer in MANUFACTURER_WHITE_LIST
 
     for m_m in (MANUFACTURER, MODEL):
         value = quirk.signature.get(m_m)

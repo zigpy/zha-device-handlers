@@ -47,6 +47,8 @@ from .const import (
     ZONE_STATUS_CHANGE_COMMAND,
 )
 
+from .whitelist import MANUFACTURER_WHITE_LIST
+
 _LOGGER = logging.getLogger(__name__)
 
 
