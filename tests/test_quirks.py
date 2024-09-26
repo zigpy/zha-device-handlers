@@ -20,7 +20,6 @@ import zigpy.zdo.types
 
 import zhaquirks
 from zhaquirks import const
-from zhaquirks.whitelist import MANUFACTURER_WHITE_LIST
 import zhaquirks.bosch.motion
 import zhaquirks.centralite.cl_3310S
 from zhaquirks.const import (
@@ -53,6 +52,7 @@ from zhaquirks.const import (
 )
 import zhaquirks.konke
 import zhaquirks.philips
+from zhaquirks.whitelist import MANUFACTURER_WHITE_LIST
 from zhaquirks.xiaomi import XIAOMI_NODE_DESC
 import zhaquirks.xiaomi.aqara.vibration_aq1
 
