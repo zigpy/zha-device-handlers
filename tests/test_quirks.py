@@ -52,7 +52,8 @@ from zhaquirks.const import (
 )
 import zhaquirks.konke
 import zhaquirks.philips
-from zhaquirks.whitelist import MANUFACTURER_WHITE_LIST
+import zhaquirks.tuya
+import zhaquirks.tuya.ty0201
 from zhaquirks.xiaomi import XIAOMI_NODE_DESC
 import zhaquirks.xiaomi.aqara.vibration_aq1
 
@@ -306,7 +307,20 @@ def test_quirk_quickinit(quirk: zigpy.quirks.CustomDevice) -> None:
         assert isinstance(ep_data[OUTPUT_CLUSTERS], list)
 
 
-@pytest.mark.parametrize("quirk", ALL_QUIRK_CLASSES)
+#@pytest.mark.parametrize("quirk", ALL_QUIRK_CLASSES)
+
+@pytest.mark.parametrize(
+    "quirk",
+    [
+        quirk_cls
+        for quirk_cls in ALL_QUIRK_CLASSES
+        if quirk_cls
+        not in (
+            # Some devices do not have model info:
+            zhaquirks.tuya.ty0201.TuyaTempHumiditySensor,
+        )
+    ],
+)
 def test_signature(quirk: CustomDevice) -> None:
     """Make sure signature look sane for all custom devices."""
 
@@ -329,7 +343,7 @@ def test_signature(quirk: CustomDevice) -> None:
                 assert manufacturer
             if model is not None:
                 assert isinstance(model, str)
-                assert model or manufacturer in MANUFACTURER_WHITE_LIST
+                assert model
 
     for m_m in (MANUFACTURER, MODEL):
         value = quirk.signature.get(m_m)
