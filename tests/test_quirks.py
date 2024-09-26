@@ -307,7 +307,8 @@ def test_quirk_quickinit(quirk: zigpy.quirks.CustomDevice) -> None:
         assert isinstance(ep_data[OUTPUT_CLUSTERS], list)
 
 
-#@pytest.mark.parametrize("quirk", ALL_QUIRK_CLASSES)
+# @pytest.mark.parametrize("quirk", ALL_QUIRK_CLASSES)
+
 
 @pytest.mark.parametrize(
     "quirk",
