@@ -315,7 +315,6 @@ def test_signature(quirk: CustomDevice) -> None:
             if range[0] <= cluster <= range[1]:
                 return True
         return False
-
     # enforce new style of signature
     assert ENDPOINTS in quirk.signature
     numeric = [eid for eid in quirk.signature if isinstance(eid, int)]
@@ -329,8 +328,7 @@ def test_signature(quirk: CustomDevice) -> None:
                 assert manufacturer
             if model is not None:
                 assert isinstance(model, str)
-                if manufacturer not in MANUFACTURER_WHITE_LIST:
-                    assert model
+                assert (model or manufacturer in MANUFACTURER_WHITE_LIST)
 
     for m_m in (MANUFACTURER, MODEL):
         value = quirk.signature.get(m_m)
