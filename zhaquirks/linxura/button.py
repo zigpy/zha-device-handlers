@@ -1,53 +1,43 @@
 """Linxura button device."""
 
-from zigpy.profiles import zgp, zha
-from zigpy.quirks import CustomDevice
-from zigpy.zcl.clusters.general import (
-    Basic,
-    GreenPowerProxy,
-    Identify,
-    Ota,
-    PollControl,
-    PowerConfiguration,
-)
-from zigpy.zcl.clusters.homeautomation import Diagnostic
-from zigpy.zcl.clusters.measurement import TemperatureMeasurement
+from typing import Any, Optional, Union
+
+from zigpy.profiles import zha
+from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.types import Addressing
+from zigpy.zcl import foundation
+from zigpy.zcl.clusters.general import Basic
+import zigpy.zcl.clusters.security
 from zigpy.zcl.clusters.security import IasZone
 
 from zhaquirks.const import (
-    BUTTON,
+    ARGS,
+    CLUSTER_ID,
     COMMAND,
     COMMAND_BUTTON_DOUBLE,
     COMMAND_BUTTON_HOLD,
     COMMAND_BUTTON_SINGLE,
-    CLUSTER_ID,
+    COMMAND_ID,
     DEVICE_TYPE,
     DOUBLE_PRESS,
-    ENDPOINTS,
     ENDPOINT_ID,
+    ENDPOINTS,
     INPUT_CLUSTERS,
     LONG_PRESS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
+    PRESS_TYPE,
     PROFILE_ID,
     SHORT_PRESS,
+    ZHA_SEND_EVENT,
 )
 
-#from __init__ import LINXURA, LinxuraIASCluster
+# from __init__ import LINXURA, LinxuraIASCluster
 from zhaquirks.linxura import LINXURA
-
-from typing import Any, Optional, Union
-
-from zigpy.quirks import CustomCluster
-from zigpy.types import Addressing
-from zigpy.zcl import foundation
-import zigpy.zcl.clusters.security
-
-from zhaquirks.const import ARGS, COMMAND_ID, PRESS_TYPE, ZHA_SEND_EVENT
 
 DOUBLE = 2
 HOLD = 3
-#LINXURA = "Linxura"
+# LINXURA = "Linxura"
 SINGLE = 1
 
 CLICK_TYPES = {SINGLE: "single", DOUBLE: "double", HOLD: "hold"}
@@ -56,6 +46,7 @@ BTN_1 = "Button 1"
 BTN_2 = "Button 2"
 BTN_3 = "Button 3"
 BTN_4 = "Button 4"
+
 
 class LinxuraIASCluster(CustomCluster, zigpy.zcl.clusters.security.IasZone):
     """Occupancy cluster."""
@@ -68,7 +59,6 @@ class LinxuraIASCluster(CustomCluster, zigpy.zcl.clusters.security.IasZone):
         dst_addressing: Optional[
             Union[Addressing.Group, Addressing.IEEE, Addressing.NWK]
         ] = None,
-
     ):
         """Handle a cluster command received on this cluster."""
         self.info(
@@ -78,8 +68,8 @@ class LinxuraIASCluster(CustomCluster, zigpy.zcl.clusters.security.IasZone):
         )
         if hdr.command_id == 0:
             self.info(
-            "Linxura general request - state: %s",
-            args[0],
+                "Linxura general request - state: %s",
+                args[0],
             )
             state = args[0]
             if state >= 4:
@@ -91,6 +81,7 @@ class LinxuraIASCluster(CustomCluster, zigpy.zcl.clusters.security.IasZone):
             }
             action = f"button_{CLICK_TYPES[state]}"
             self.listener_event(ZHA_SEND_EVENT, action, event_args)
+
 
 class LinxuraButton(CustomDevice):
     """Linxura button device."""
@@ -179,21 +170,64 @@ class LinxuraButton(CustomDevice):
     }
 
     device_automation_triggers = {
-        (DOUBLE_PRESS, BTN_1): {COMMAND: COMMAND_BUTTON_DOUBLE, CLUSTER_ID: IasZone.cluster_id, ENDPOINT_ID: 1,},
-        (SHORT_PRESS, BTN_1): {COMMAND: COMMAND_BUTTON_SINGLE, CLUSTER_ID: IasZone.cluster_id, ENDPOINT_ID: 1,},
-        (LONG_PRESS, BTN_1): {COMMAND: COMMAND_BUTTON_HOLD, CLUSTER_ID: IasZone.cluster_id, ENDPOINT_ID: 1,},
-
-        (DOUBLE_PRESS, BTN_2): {COMMAND: COMMAND_BUTTON_DOUBLE, CLUSTER_ID: IasZone.cluster_id, ENDPOINT_ID: 2,},
-        (SHORT_PRESS, BTN_2): {COMMAND: COMMAND_BUTTON_SINGLE, CLUSTER_ID: IasZone.cluster_id, ENDPOINT_ID: 2,},
-        (LONG_PRESS, BTN_2): {COMMAND: COMMAND_BUTTON_HOLD, CLUSTER_ID: IasZone.cluster_id, ENDPOINT_ID: 2,},
-
-        (DOUBLE_PRESS, BTN_3): {COMMAND: COMMAND_BUTTON_DOUBLE, CLUSTER_ID: IasZone.cluster_id, ENDPOINT_ID: 3,},
-        (SHORT_PRESS, BTN_3): {COMMAND: COMMAND_BUTTON_SINGLE, CLUSTER_ID: IasZone.cluster_id, ENDPOINT_ID: 3,},
-        (LONG_PRESS, BTN_3): {COMMAND: COMMAND_BUTTON_HOLD, CLUSTER_ID: IasZone.cluster_id, ENDPOINT_ID: 3,},
-
-        (DOUBLE_PRESS, BTN_4): {COMMAND: COMMAND_BUTTON_DOUBLE, CLUSTER_ID: IasZone.cluster_id, ENDPOINT_ID: 4,},
-        (SHORT_PRESS, BTN_4): {COMMAND: COMMAND_BUTTON_SINGLE, CLUSTER_ID: IasZone.cluster_id, ENDPOINT_ID: 4,},
-        (LONG_PRESS, BTN_4): {COMMAND: COMMAND_BUTTON_HOLD, CLUSTER_ID: IasZone.cluster_id, ENDPOINT_ID: 4,},
+        (DOUBLE_PRESS, BTN_1): {
+            COMMAND: COMMAND_BUTTON_DOUBLE,
+            CLUSTER_ID: IasZone.cluster_id,
+            ENDPOINT_ID: 1,
+        },
+        (SHORT_PRESS, BTN_1): {
+            COMMAND: COMMAND_BUTTON_SINGLE,
+            CLUSTER_ID: IasZone.cluster_id,
+            ENDPOINT_ID: 1,
+        },
+        (LONG_PRESS, BTN_1): {
+            COMMAND: COMMAND_BUTTON_HOLD,
+            CLUSTER_ID: IasZone.cluster_id,
+            ENDPOINT_ID: 1,
+        },
+        (DOUBLE_PRESS, BTN_2): {
+            COMMAND: COMMAND_BUTTON_DOUBLE,
+            CLUSTER_ID: IasZone.cluster_id,
+            ENDPOINT_ID: 2,
+        },
+        (SHORT_PRESS, BTN_2): {
+            COMMAND: COMMAND_BUTTON_SINGLE,
+            CLUSTER_ID: IasZone.cluster_id,
+            ENDPOINT_ID: 2,
+        },
+        (LONG_PRESS, BTN_2): {
+            COMMAND: COMMAND_BUTTON_HOLD,
+            CLUSTER_ID: IasZone.cluster_id,
+            ENDPOINT_ID: 2,
+        },
+        (DOUBLE_PRESS, BTN_3): {
+            COMMAND: COMMAND_BUTTON_DOUBLE,
+            CLUSTER_ID: IasZone.cluster_id,
+            ENDPOINT_ID: 3,
+        },
+        (SHORT_PRESS, BTN_3): {
+            COMMAND: COMMAND_BUTTON_SINGLE,
+            CLUSTER_ID: IasZone.cluster_id,
+            ENDPOINT_ID: 3,
+        },
+        (LONG_PRESS, BTN_3): {
+            COMMAND: COMMAND_BUTTON_HOLD,
+            CLUSTER_ID: IasZone.cluster_id,
+            ENDPOINT_ID: 3,
+        },
+        (DOUBLE_PRESS, BTN_4): {
+            COMMAND: COMMAND_BUTTON_DOUBLE,
+            CLUSTER_ID: IasZone.cluster_id,
+            ENDPOINT_ID: 4,
+        },
+        (SHORT_PRESS, BTN_4): {
+            COMMAND: COMMAND_BUTTON_SINGLE,
+            CLUSTER_ID: IasZone.cluster_id,
+            ENDPOINT_ID: 4,
+        },
+        (LONG_PRESS, BTN_4): {
+            COMMAND: COMMAND_BUTTON_HOLD,
+            CLUSTER_ID: IasZone.cluster_id,
+            ENDPOINT_ID: 4,
+        },
     }
-    
-
