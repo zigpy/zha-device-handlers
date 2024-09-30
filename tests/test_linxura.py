@@ -29,6 +29,7 @@ async def test_Linxura_button(zigpy_device_from_quirk, quirk):
 
     device = zigpy_device_from_quirk(quirk)
 
+    # endpoint 1
     cluster = device.endpoints[1].ias_zone
     ias_zone_listener = ClusterListener(cluster)
     ias_zone_status_attr_id = IasZone.AttributeDefs.zone_status.id
@@ -62,7 +63,7 @@ async def test_Linxura_button(zigpy_device_from_quirk, quirk):
 
 
 
-    #endpoint 2
+    # endpoint 2
     cluster2 = device.endpoints[2].ias_zone
     ias_zone_listener2 = ClusterListener(cluster2)
     ias_zone_status_attr_id = IasZone.AttributeDefs.zone_status.id
@@ -90,7 +91,7 @@ async def test_Linxura_button(zigpy_device_from_quirk, quirk):
 
 
 
-    #endpoint 3
+    # endpoint 3
     cluster3 = device.endpoints[3].ias_zone
     ias_zone_listener3 = ClusterListener(cluster3)
     ias_zone_status_attr_id = IasZone.AttributeDefs.zone_status.id
@@ -117,7 +118,7 @@ async def test_Linxura_button(zigpy_device_from_quirk, quirk):
     assert ias_zone_listener3.attribute_updates[2][1] == 3
 
 
-    #endpoint 4
+    # endpoint 4
     cluster4 = device.endpoints[4].ias_zone
     ias_zone_listener4 = ClusterListener(cluster4)
     ias_zone_status_attr_id = IasZone.AttributeDefs.zone_status.id
