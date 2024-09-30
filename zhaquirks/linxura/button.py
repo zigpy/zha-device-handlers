@@ -61,16 +61,16 @@ class LinxuraIASCluster(CustomCluster, zigpy.zcl.clusters.security.IasZone):
         ] = None,
     ):
         """Handle a cluster command received on this cluster."""
-        #self.info(
+        # self.info(
         #    "Linxura general request - handle_cluster_general_request: header: %s - args: [%s]",
         #    hdr,
         #    args,
-        #)
+        # )
         if hdr.command_id == 0:
-            #self.info(
+            # self.info(
             #    "Linxura general request - state: %s",
             #    args[0],
-            #)
+            # )
             state = args[0]
             if state >= 4:
                 return
