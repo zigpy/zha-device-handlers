@@ -118,6 +118,7 @@ async def test_Linxura_button(zigpy_device_from_quirk, quirk):
     assert ias_zone_listener3.attribute_updates[2][1] == 3
 
 
+
     # endpoint 4
     cluster4 = device.endpoints[4].ias_zone
     ias_zone_listener4 = ClusterListener(cluster4)
