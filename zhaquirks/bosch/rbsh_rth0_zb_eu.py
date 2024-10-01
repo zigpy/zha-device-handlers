@@ -22,8 +22,8 @@ VALVE_POSITION_ATTR_ID = 0x4020
 # Window open switch (changes to a lower target temperature when on).
 WINDOW_OPEN_ATTR_ID = 0x4042
 
-# Boost preset mode.
-BOOST_ATTR_ID = 0x4043
+# Boost heating preset mode.
+BOOST_HEATING_ATTR_ID = 0x4043
 
 """Bosch specific user interface attribute ids."""
 
@@ -84,8 +84,8 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
             is_manufacturer_specific=True,
         )
 
-        boost = ZCLAttributeDef(
-            id=BOOST_ATTR_ID,
+        boost_heating = ZCLAttributeDef(
+            id=BOOST_HEATING_ATTR_ID,
             type=State,
             is_manufacturer_specific=True,
         )
@@ -126,7 +126,7 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
     )
     # Fast heating/boost.
     .switch(
-        BoschThermostatCluster.AttributeDefs.boost.name,
+        BoschThermostatCluster.AttributeDefs.boost_heating.name,
         BoschThermostatCluster.cluster_id,
     )
     # Window open switch: manually set or through an automation.
