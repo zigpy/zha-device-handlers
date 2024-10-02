@@ -345,14 +345,14 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         display_on_time = ZCLAttributeDef(
             id=SCREEN_TIMEOUT_ATTR_ID,
             # Usable values range from 5-30
-            type=t.uint8_t,
+            type=t.enum8,
             is_manufacturer_specific=True,
         )
 
         display_brightness = ZCLAttributeDef(
             id=SCREEN_BRIGHTNESS_ATTR_ID,
             # Values range from 0-10
-            type=t.uint8_t,
+            type=t.enum8,
             is_manufacturer_specific=True,
         )
 
