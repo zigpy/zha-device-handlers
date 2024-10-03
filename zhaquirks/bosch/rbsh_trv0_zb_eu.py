@@ -7,6 +7,7 @@ from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.quirks.v2.homeassistant import EntityPlatform, EntityType
 from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 import zigpy.types as t
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.hvac import (
     ControlSequenceOfOperation,
     Thermostat,
@@ -327,6 +328,32 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
             failed_r.update(remaining_result[1])
 
         return successful_r, failed_r
+
+    async def _configure_reporting(
+        self,
+        config_records: list[foundation.AttributeReportingConfig],
+        *args,
+        manufacturer: int | t.uint16_t | None = None,
+        **kwargs,
+    ):
+        """system_mode special handling.
+
+        - prevent system_mode reporting (TRV reports always SystemMode.Heat).
+        """
+
+        new_config_records = config_records.copy()
+        [
+            new_config_records.pop(record)
+            for record in new_config_records
+            if record.attrid == SYSTEM_MODE_ATTR.id
+        ]
+
+        return await super()._configure_reporting(
+            new_config_records,
+            *args,
+            manufacturer,
+            **kwargs,
+        )
 
 
 class BoschUserInterfaceCluster(CustomCluster, UserInterface):
