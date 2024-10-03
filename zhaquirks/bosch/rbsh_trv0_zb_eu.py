@@ -1,6 +1,6 @@
 """Device handler for Bosch RBSH-TRV0-ZB-EU thermostat."""
 
-from typing import Any
+from typing import Any, Optional, Union
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
@@ -329,31 +329,34 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
 
         return successful_r, failed_r
 
-    async def _configure_reporting(
+    def handle_cluster_general_request(
         self,
-        config_records: list[foundation.AttributeReportingConfig],
-        *args,
-        manufacturer: int | t.uint16_t | None = None,
-        **kwargs,
+        hdr: foundation.ZCLHeader,
+        args: list[Any],
+        *,
+        dst_addressing: Optional[
+            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        ] = None,
     ):
         """system_mode special handling.
 
-        - prevent system_mode reporting (TRV reports always SystemMode.Heat).
+        - ignore updates of system_mode coming from device (TRV incorrectly
+          reports being in Heat mode, even when turned off).
         """
 
-        new_config_records = config_records.copy()
-        [
-            new_config_records.remove(record)  # type: ignore
-            for record in new_config_records
-            if record.attrid == SYSTEM_MODE_ATTR.id
-        ]
+        """Pass-through anything that is not related to attributes reporting."""
+        if hdr.command_id != foundation.GeneralCommand.Report_Attributes:
+            return super().handle_cluster_general_request(
+                hdr, args, dst_addressing=dst_addressing
+            )
 
-        return await super()._configure_reporting(
-            new_config_records,
-            *args,
-            manufacturer=manufacturer,
-            **kwargs,
-        )
+        attr = args[0][0]
+
+        """Pass-through reports of all attributes, except for system_mode."""
+        if attr.attrid != SYSTEM_MODE_ATTR.id:
+            return super().handle_cluster_general_request(
+                hdr, args, dst_addressing=dst_addressing
+            )
 
 
 class BoschUserInterfaceCluster(CustomCluster, UserInterface):
