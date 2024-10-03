@@ -343,7 +343,7 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
 
         new_config_records = config_records.copy()
         [
-            new_config_records.pop(record)
+            new_config_records.remove(record)  # type: ignore
             for record in new_config_records
             if record.attrid == SYSTEM_MODE_ATTR.id
         ]
@@ -351,7 +351,7 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
         return await super()._configure_reporting(
             new_config_records,
             *args,
-            manufacturer,
+            manufacturer=manufacturer,
             **kwargs,
         )
 
