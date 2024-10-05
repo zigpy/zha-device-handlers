@@ -47,7 +47,7 @@ SCREEN_TIMEOUT_ATTR_ID = 0x403A
 SCREEN_BRIGHTNESS_ATTR_ID = 0x403B
 
 # Control sequence of operation (heating/cooling)
-CTRL_SEQUENCE_OF_OPERATION_ID = 0x001B
+CTRL_SEQUENCE_OF_OPERATION_ID = Thermostat.AttributeDefs.ctrl_sequence_of_oper.id
 
 
 class BoschOperatingMode(t.enum8):
