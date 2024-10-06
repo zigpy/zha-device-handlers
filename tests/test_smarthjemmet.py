@@ -2,16 +2,18 @@
 
 import pytest
 from zigpy.profiles import zha
-from zigpy.zcl.clusters.general import Basic, OnOffConfiguration, OnOff
+from zigpy.zcl.clusters.general import Basic, OnOff, OnOffConfiguration
+
+import zhaquirks
 from zhaquirks.smarthjemmet.quadzigsw import (
     QUAD_ZIG_SW_V1,
     QUAD_ZIG_SW_V2,
     CR2032PowerConfigurationCluster,
     CustomMultistateInputCluster,
 )
-import zhaquirks
 
 zhaquirks.setup()
+
 
 @pytest.mark.parametrize("quirk_cls", [QUAD_ZIG_SW_V1, QUAD_ZIG_SW_V2])
 async def test_quad_zig_sw_signature(zigpy_device_from_quirk, quirk_cls):
