@@ -1,39 +1,41 @@
 """Device handler for smarthjemmet.dk QUAD-ZIG-SW."""
 
 from zigpy.profiles import zha
-import zigpy.zcl.foundation
-from zigpy.quirks import CustomCluster, CustomDevice
-from zhaquirks import PowerConfigurationCluster
-from zigpy.zcl.clusters.general import Basic
-from zigpy.zcl.clusters.general import MultistateInput
-from zigpy.zcl.clusters.general import OnOffConfiguration
-from zigpy.zcl.clusters.general import PowerConfiguration
-from zigpy.zcl.clusters.general import OnOff
 from zigpy.profiles.zha import DeviceType
+from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.zcl.clusters.general import (
+    Basic,
+    MultistateInput,
+    OnOff,
+    OnOffConfiguration,
+    PowerConfiguration,
+)
+import zigpy.zcl.foundation
 
+from zhaquirks import PowerConfigurationCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
+    ENDPOINT_ID,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
-    ENDPOINT_ID,
     SKIP_CONFIGURATION,
 )
 
 from zhaquirks.const import (
     COMMAND,
+    COMMAND_DOUBLE,
     COMMAND_HOLD,
     COMMAND_RELEASE,
     COMMAND_SINGLE,
-    COMMAND_DOUBLE,
     COMMAND_TRIPLE,
-    SHORT_PRESS,
     DOUBLE_PRESS,
-    TRIPLE_PRESS,
     LONG_PRESS,
     LONG_RELEASE,
+    SHORT_PRESS,
+    TRIPLE_PRESS,
     VALUE,
     ZHA_SEND_EVENT,
 )
