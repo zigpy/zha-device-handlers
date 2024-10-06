@@ -14,27 +14,24 @@ import zigpy.zcl.foundation
 
 from zhaquirks import PowerConfigurationCluster
 from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINT_ID,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-    SKIP_CONFIGURATION,
-)
-
-from zhaquirks.const import (
     COMMAND,
     COMMAND_DOUBLE,
     COMMAND_HOLD,
     COMMAND_RELEASE,
     COMMAND_SINGLE,
     COMMAND_TRIPLE,
+    DEVICE_TYPE,
     DOUBLE_PRESS,
+    ENDPOINT_ID,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
     LONG_PRESS,
     LONG_RELEASE,
+    MODELS_INFO,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
     SHORT_PRESS,
+    SKIP_CONFIGURATION,
     TRIPLE_PRESS,
     VALUE,
     ZHA_SEND_EVENT,
@@ -50,6 +47,7 @@ ACTION_TYPE = {
     3: COMMAND_TRIPLE,
     4: COMMAND_HOLD,
 }
+
 
 class CR2032PowerConfigurationCluster(PowerConfigurationCluster):
     """CR2032 Power Configuration Cluster."""
@@ -93,6 +91,7 @@ class CustomMultistateInputCluster(CustomCluster, MultistateInput):
 
 class QUAD_ZIG_SW_BASE(CustomDevice):
     """Base class for QUAD-ZIG-SW."""
+
     def __init__(self, *args, **kwargs):
         """Init device."""
         super().__init__(*args, **kwargs)
@@ -311,6 +310,7 @@ class QUAD_ZIG_SW_BASE(CustomDevice):
 
 class QUAD_ZIG_SW_V1(QUAD_ZIG_SW_BASE):
     """Firmware version 1 device class."""
+
     signature = QUAD_ZIG_SW_BASE.get_signature_v1()
     replacement = QUAD_ZIG_SW_BASE.get_replacement()
     device_automation_triggers = QUAD_ZIG_SW_BASE.get_triggers()
@@ -318,6 +318,7 @@ class QUAD_ZIG_SW_V1(QUAD_ZIG_SW_BASE):
 
 class QUAD_ZIG_SW_V2(QUAD_ZIG_SW_BASE):
     """Firmware version 2 device class."""
+
     signature = QUAD_ZIG_SW_BASE.get_signature_v2()
     replacement = QUAD_ZIG_SW_BASE.get_replacement()
     device_automation_triggers = QUAD_ZIG_SW_BASE.get_triggers()
