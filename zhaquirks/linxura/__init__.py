@@ -34,19 +34,19 @@ class LinxuraIASCluster(CustomCluster, zigpy.zcl.clusters.security.IasZone):
         #    hdr,
         #    args,
         # )
-        if hdr.command_id == 0:
+        # if hdr.command_id == 0:
             # self.info(
             #    "Linxura general request - state: %s",
             #    args[0],
             # )
-            state = args[0]
-            if state >= 4:
-                return
-            else:
-                event_args = {
-                    PRESS_TYPE: CLICK_TYPES[state],
-                    COMMAND_ID: hdr.command_id,
-                    ARGS: args,
-                }
-                action = f"button_{CLICK_TYPES[state]}"
-                self.listener_event(ZHA_SEND_EVENT, action, event_args)
+        state = args[0]
+        if state >= 4:
+            return
+        else:
+            event_args = {
+                PRESS_TYPE: CLICK_TYPES[state],
+                COMMAND_ID: hdr.command_id,
+                ARGS: args,
+            }
+            action = f"button_{CLICK_TYPES[state]}"
+            self.listener_event(ZHA_SEND_EVENT, action, event_args)
