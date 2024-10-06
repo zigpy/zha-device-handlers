@@ -232,7 +232,7 @@ class QUAD_ZIG_SW_BASE(CustomDevice):
         }
 
     def get_replacement():
-        """Replacements for QUAD-ZIG-SW."""
+        """Return replacement for QUAD-ZIG-SW."""
         return {
             SKIP_CONFIGURATION: True,
             ENDPOINTS: {
