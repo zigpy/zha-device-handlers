@@ -2,16 +2,10 @@
 
 import pytest
 from zigpy.zcl.clusters.security import IasZone
-from unittest.mock import MagicMock
-from zigpy.zcl.foundation import ZCLHeader
-from zigpy.zcl import foundation
-import zhaquirks.linxura
 
 from tests.common import ClusterListener
 import zhaquirks
-from zhaquirks.linxura import LinxuraIASCluster
-
-
+import zhaquirks.linxura
 
 zhaquirks.setup()
 
@@ -146,18 +140,18 @@ async def test_Linxura_button(zigpy_device_from_quirk, quirk):
     assert ias_zone_listener4.attribute_updates[2][0] == ias_zone_status_attr_id
     assert ias_zone_listener4.attribute_updates[2][1] == 3
 
+
 # @pytest.mark.parametrize("quirk", (zhaquirks.linxura.button.LinxuraButton,))
 # async def test_handle_cluster_request(zigpy_device_from_quirk, quirk):
 #     device = zigpy_device_from_quirk(quirk)
 #     cluster = device.endpoints[1].ias_zone
-    
+
 #    # hdr = ZCLHeader.command_id  # Simulate command ID 0 (used in handle_cluster_request)
 #     hdr = ZCLHeader
 #     args = [1]  # Simulate single press state
 #     cluster.handle_cluster_request(hdr, args)
 #     # Validate event listener triggers the right event
 
-    
 
 # Test Edge Cases
 @pytest.mark.parametrize("quirk", (zhaquirks.linxura.button.LinxuraButton,))
@@ -172,5 +166,6 @@ async def test_edge_case_request(zigpy_device_from_quirk, quirk):
     ias_zone_status_attr_id = IasZone.AttributeDefs.zone_status.id
 
     cluster.update_attribute(ias_zone_status_attr_id, 4)
-    assert len(ias_zone_listener.attribute_updates) == 1  # No update should occur for state >= 4
-
+    assert (
+        len(ias_zone_listener.attribute_updates) == 1
+    )  # No update should occur for state >= 4
