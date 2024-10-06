@@ -5,34 +5,15 @@ LINXURA = "Linxura"
 
 from typing import Any, Optional, Union
 
-from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.quirks import CustomCluster
 from zigpy.types import Addressing
 from zigpy.zcl import foundation
-from zigpy.zcl.foundation import ZCLHeader
-from zigpy.zcl.clusters.general import Basic
 import zigpy.zcl.clusters.security
-from zigpy.zcl.clusters.security import IasZone
 
 from zhaquirks.const import (
     ARGS,
-    CLUSTER_ID,
-    COMMAND,
-    COMMAND_BUTTON_DOUBLE,
-    COMMAND_BUTTON_HOLD,
-    COMMAND_BUTTON_SINGLE,
     COMMAND_ID,
-    DEVICE_TYPE,
-    DOUBLE_PRESS,
-    ENDPOINT_ID,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    LONG_PRESS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
     PRESS_TYPE,
-    PROFILE_ID,
-    SHORT_PRESS,
     ZHA_SEND_EVENT,
 )
 
