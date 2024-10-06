@@ -6,18 +6,12 @@ LINXURA = "Linxura"
 from typing import Any, Optional, Union
 
 from zigpy.quirks import CustomCluster
+import zigpy.types as t
 from zigpy.types import Addressing
 from zigpy.zcl import foundation
 import zigpy.zcl.clusters.security
-import zigpy.types as t
 
-from zhaquirks.const import (
-    ARGS,
-    COMMAND_ID,
-    PRESS_TYPE,
-    ZHA_SEND_EVENT,
-)
-
+from zhaquirks.const import ARGS, COMMAND_ID, PRESS_TYPE, ZHA_SEND_EVENT
 
 DOUBLE = 2
 HOLD = 3
@@ -26,6 +20,7 @@ SINGLE = 1
 ACT_ERROR = 4
 STATUS_PARAM = 0
 CLICK_TYPES = {SINGLE: "single", DOUBLE: "double", HOLD: "hold"}
+
 
 class LinxuraIASCluster(CustomCluster, zigpy.zcl.clusters.security.IasZone):
     """Occupancy cluster."""
@@ -36,6 +31,7 @@ class LinxuraIASCluster(CustomCluster, zigpy.zcl.clusters.security.IasZone):
             {"press_type": t.uint8_t},
         ),
     }
+
     def handle_cluster_request(
         self,
         hdr: foundation.ZCLHeader,
@@ -52,10 +48,10 @@ class LinxuraIASCluster(CustomCluster, zigpy.zcl.clusters.security.IasZone):
         #    args,
         # )
         # if hdr.command_id == 0:
-            # self.info(
-            #    "Linxura general request - state: %s",
-            #    args[0],
-            # )
+        # self.info(
+        #    "Linxura general request - state: %s",
+        #    args[0],
+        # )
         if hdr.command_id == self.commands_by_name["button_event"].id:
             state = args[STATUS_PARAM]
             if state >= ACT_ERROR:
