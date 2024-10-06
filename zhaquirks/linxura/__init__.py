@@ -1,8 +1,5 @@
 """Linxura button device."""
 
-LINXURA = "Linxura"
-
-
 from typing import Any, Optional, Union
 
 from zigpy.quirks import CustomCluster
@@ -15,7 +12,7 @@ from zhaquirks.const import ARGS, COMMAND_ID, PRESS_TYPE, ZHA_SEND_EVENT
 
 DOUBLE = 2
 HOLD = 3
-# LINXURA = "Linxura"
+LINXURA = "Linxura"
 SINGLE = 1
 ACT_ERROR = 4
 STATUS_PARAM = 0
