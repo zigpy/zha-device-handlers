@@ -1,3 +1,5 @@
+"""Device handler for smarthjemmet.dk QUAD-ZIG-SW."""
+
 from zigpy.profiles import zha
 import zigpy.zcl.foundation
 from zigpy.quirks import CustomCluster, CustomDevice
@@ -20,9 +22,6 @@ from zhaquirks.const import (
     SKIP_CONFIGURATION,
 )
 
-MANUFACTURER = "smarthjemmet.dk"
-MODEL_ID = "QUAD-ZIG-SW"
-
 from zhaquirks.const import (
     COMMAND,
     COMMAND_HOLD,
@@ -39,6 +38,9 @@ from zhaquirks.const import (
     ZHA_SEND_EVENT,
 )
 
+MANUFACTURER = "smarthjemmet.dk"
+MODEL_ID = "QUAD-ZIG-SW"
+
 ACTION_TYPE = {
     0: COMMAND_RELEASE,
     1: COMMAND_SINGLE,
@@ -47,9 +49,8 @@ ACTION_TYPE = {
     4: COMMAND_HOLD,
 }
 
-
 class CR2032PowerConfigurationCluster(PowerConfigurationCluster):
-    """CR2032 Power Configuration Cluster"""
+    """CR2032 Power Configuration Cluster."""
 
     MIN_VOLTS = 2.2
     MAX_VOLTS = 3.0
@@ -64,12 +65,15 @@ class CustomMultistateInputCluster(CustomCluster, MultistateInput):
         super().__init__(*args, **kwargs)
 
     async def bind(self):
+        """Prevent bind."""
         return zigpy.zcl.foundation.Status.SUCCESS
 
     async def unbind(self):
+        """Prevent unbind."""
         return zigpy.zcl.foundation.Status.SUCCESS
 
     async def _configure_reporting(self, *args, **kwargs):
+        """Prevent remote configure reporting."""
         return (
             zigpy.zcl.foundation.ConfigureReportingResponse.deserialize(b"\x00")[0],
         )
@@ -86,11 +90,13 @@ class CustomMultistateInputCluster(CustomCluster, MultistateInput):
 
 
 class QUAD_ZIG_SW_BASE(CustomDevice):
+    """Base class for QUAD-ZIG-SW."""
     def __init__(self, *args, **kwargs):
         """Init device."""
         super().__init__(*args, **kwargs)
 
     def get_signature_v1():
+        """Firmware version 1 signature."""
         return {
             MODELS_INFO: [(MANUFACTURER, MODEL_ID)],
             ENDPOINTS: {
@@ -151,6 +157,7 @@ class QUAD_ZIG_SW_BASE(CustomDevice):
         }
 
     def get_signature_v2():
+        """Firmware version 2 signature."""
         return {
             MODELS_INFO: [(MANUFACTURER, MODEL_ID)],
             ENDPOINTS: {
@@ -224,6 +231,7 @@ class QUAD_ZIG_SW_BASE(CustomDevice):
         }
 
     def get_replacement():
+        """Replacements for QUAD-ZIG-SW."""
         return {
             SKIP_CONFIGURATION: True,
             ENDPOINTS: {
@@ -273,6 +281,7 @@ class QUAD_ZIG_SW_BASE(CustomDevice):
         }
 
     def get_triggers():
+        """Triggers for QUAD-ZIG-SW."""
         triggers = {}
         for i in range(1, 6):
             triggers[(SHORT_PRESS, f"button_{i}")] = {
@@ -297,12 +306,16 @@ class QUAD_ZIG_SW_BASE(CustomDevice):
             }
         return triggers
 
+
 class QUAD_ZIG_SW_V1(QUAD_ZIG_SW_BASE):
+    """Firmware version 1 device class."""
     signature = QUAD_ZIG_SW_BASE.get_signature_v1()
     replacement = QUAD_ZIG_SW_BASE.get_replacement()
     device_automation_triggers = QUAD_ZIG_SW_BASE.get_triggers()
 
+
 class QUAD_ZIG_SW_V2(QUAD_ZIG_SW_BASE):
+    """Firmware version 2 device class."""
     signature = QUAD_ZIG_SW_BASE.get_signature_v2()
     replacement = QUAD_ZIG_SW_BASE.get_replacement()
     device_automation_triggers = QUAD_ZIG_SW_BASE.get_triggers()
