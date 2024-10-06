@@ -1,11 +1,9 @@
 """Linxura button device."""
 
-
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic
 from zigpy.zcl.clusters.security import IasZone
-from zhaquirks.linxura import LinxuraIASCluster
 
 from zhaquirks.const import (
     CLUSTER_ID,
@@ -26,7 +24,7 @@ from zhaquirks.const import (
 )
 
 # from __init__ import LINXURA, LinxuraIASCluster
-from zhaquirks.linxura import LINXURA
+from zhaquirks.linxura import LINXURA, LinxuraIASCluster
 
 # DOUBLE = 2
 # HOLD = 3
