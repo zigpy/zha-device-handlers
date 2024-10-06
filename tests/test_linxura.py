@@ -141,13 +141,12 @@ async def test_Linxura_button(zigpy_device_from_quirk, quirk):
     assert ias_zone_listener4.attribute_updates[2][0] == ias_zone_status_attr_id
     assert ias_zone_listener4.attribute_updates[2][1] == 3
 
+    # @pytest.mark.parametrize("quirk", (zhaquirks.linxura.button.LinxuraButton,))
+    # async def test_handle_cluster_request(zigpy_device_from_quirk, quirk):
+    #     device = zigpy_device_from_quirk(quirk)
+    #     cluster = device.endpoints[1].ias_zone
 
-# @pytest.mark.parametrize("quirk", (zhaquirks.linxura.button.LinxuraButton,))
-# async def test_handle_cluster_request(zigpy_device_from_quirk, quirk):
-#     device = zigpy_device_from_quirk(quirk)
-#     cluster = device.endpoints[1].ias_zone
-
-   # hdr = ZCLHeader.command_id  # Simulate command ID 0 (used in handle_cluster_request)
+    # hdr = ZCLHeader.command_id  # Simulate command ID 0 (used in handle_cluster_request)
     hdr = ZCLHeader
     args = [1]  # Simulate single press state
     cluster.handle_cluster_request(hdr, args)
