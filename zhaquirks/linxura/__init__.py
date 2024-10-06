@@ -2,14 +2,11 @@
 
 LINXURA = "Linxura"
 
-
 from typing import Any, Optional, Union
-
 from zigpy.quirks import CustomCluster
 from zigpy.types import Addressing
 from zigpy.zcl import foundation
 import zigpy.zcl.clusters.security
-
 from zhaquirks.const import (
     ARGS,
     COMMAND_ID,
@@ -17,13 +14,11 @@ from zhaquirks.const import (
     ZHA_SEND_EVENT,
 )
 
-
 DOUBLE = 2
 HOLD = 3
 # LINXURA = "Linxura"
 SINGLE = 1
 CLICK_TYPES = {SINGLE: "single", DOUBLE: "double", HOLD: "hold"}
-
 
 class LinxuraIASCluster(CustomCluster, zigpy.zcl.clusters.security.IasZone):
     """Occupancy cluster."""
