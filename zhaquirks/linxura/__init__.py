@@ -13,7 +13,6 @@ LINXURA = "Linxura"
 SINGLE = 1
 CLICK_TYPES = {SINGLE: "single", DOUBLE: "double", HOLD: "hold"}
 
-
 class LinxuraIASCluster(CustomCluster, zigpy.zcl.clusters.security.IasZone):
     """Occupancy cluster."""
 
