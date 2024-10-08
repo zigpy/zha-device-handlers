@@ -76,8 +76,7 @@ class LocalDataCluster(CustomCluster):
 
     async def _configure_reporting(self, *args, **kwargs):  # pylint: disable=W0221
         """Prevent remote configure reporting."""
-        self.log(
-            logging.DEBUG,
+        self.debug(
             f"configuring reporting for LocalDataCluster with cluster_id: {self.cluster_id}",
             *args,
             **kwargs,
