@@ -144,11 +144,10 @@ async def test_Linxura_button(zigpy_device_from_quirk, quirk):
 
 @pytest.mark.parametrize("quirk", (zhaquirks.linxura.button.LinxuraButton,))
 async def test_handle_cluster_request(zigpy_device_from_quirk, quirk):
-    
     device = zigpy_device_from_quirk(quirk)
     cluster = device.endpoints[1].ias_zone
 
-   # hdr = ZCLHeader.command_id  # Simulate command ID 0 (used in handle_cluster_request)
+    # hdr = ZCLHeader.command_id  # Simulate command ID 0 (used in handle_cluster_request)
     hdr = ZCLHeader
     args = [1]  # Simulate single press state
     cluster.handle_cluster_request(hdr, args)
