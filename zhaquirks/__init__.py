@@ -76,13 +76,13 @@ class LocalDataCluster(CustomCluster):
 
     async def _configure_reporting(self, *args, **kwargs):  # pylint: disable=W0221
         """Prevent remote configure reporting."""
-        self.debug("configuring reporting for LocalDataCluster", *args, **kwargs)
+        self.debug("configuring reporting for LocalDataCluster")
         return (foundation.ConfigureReportingResponse.deserialize(b"\x00")[0],)
 
     async def read_attributes_raw(self, attributes, manufacturer=None):
         """Prevent remote reads."""
         msg = "reading attributes for LocalDataCluster"
-        self.debug(f"{msg} attributes: {attributes} manufacturer: {manufacturer}")
+        self.debug(f"{msg}: attributes={attributes} manufacturer={manufacturer}")
         records = [
             foundation.ReadAttributeRecord(
                 attr, foundation.Status.UNSUPPORTED_ATTRIBUTE, foundation.TypeValue()
@@ -101,7 +101,7 @@ class LocalDataCluster(CustomCluster):
     async def write_attributes(self, attributes, manufacturer=None):
         """Prevent remote writes."""
         msg = "writing attributes for LocalDataCluster"
-        self.debug(f"{msg} attributes: {attributes} manufacturer: {manufacturer}")
+        self.debug(f"{msg}: attributes={attributes} manufacturer={manufacturer}")
         for attrid, value in attributes.items():
             if isinstance(attrid, str):
                 attrid = self.attributes_by_name[attrid].id
