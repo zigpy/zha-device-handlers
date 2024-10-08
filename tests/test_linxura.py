@@ -153,7 +153,7 @@ async def test_handle_cluster_request(zigpy_device_from_quirk, quirk):
     # hdr = ZCLHeader.command_id  # Simulate command ID 0 (used in handle_cluster_request)
     hdr = ZCLHeader
     args = [1]  # Simulate single press state
-    cluster.handle_cluster_request(hdr, args)
+    cluster.handle_cluster_general_request(hdr, args)
     # Validate event listener triggers the right event
 
 
