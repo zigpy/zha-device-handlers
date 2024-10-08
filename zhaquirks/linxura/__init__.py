@@ -56,7 +56,7 @@ class LinxuraIASCluster(CustomCluster, zigpy.zcl.clusters.security.IasZone):
         else:
             event_args = {
                 PRESS_TYPE: CLICK_TYPES[state],
-                # COMMAND_ID: hdr.command_id,
+                COMMAND_ID: 0,
                 ARGS: args,
             }
             action = f"button_{CLICK_TYPES[state]}"
