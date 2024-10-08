@@ -49,7 +49,7 @@ class LinxuraIASCluster(CustomCluster, zigpy.zcl.clusters.security.IasZone):
         #    "Linxura general request - state: %s",
         #    args[0],
         # )
-        if hdr.command_id == zigpy.zcl.foundation.GeneralCommand.Read_Attributes:
+        if hdr.command_id == 0:
             state = args[STATUS_PARAM]
             if state >= ACT_ERROR:
                 return
