@@ -31,7 +31,7 @@ class LinxuraIASCluster(CustomCluster, zigpy.zcl.clusters.security.IasZone):
 
     def handle_cluster_request(
         self,
-        hdr: foundation.ZCLHeader,
+        hdr: zigpy.zcl.foundation.ZCLHeader,
         args: list[Any],
         *,
         dst_addressing: Optional[
