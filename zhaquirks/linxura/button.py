@@ -4,7 +4,6 @@ from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic
 from zigpy.zcl.clusters.security import IasZone
-from zhaquirks.linxura import LINXURA, LinxuraIASCluster
 
 from zhaquirks.const import (
     CLUSTER_ID,
@@ -23,11 +22,13 @@ from zhaquirks.const import (
     PROFILE_ID,
     SHORT_PRESS,
 )
+from zhaquirks.linxura import LINXURA, LinxuraIASCluster
 
 BTN_1 = "Button 1"
 BTN_2 = "Button 2"
 BTN_3 = "Button 3"
 BTN_4 = "Button 4"
+
 
 class LinxuraButton(CustomDevice):
     """Linxura button device."""

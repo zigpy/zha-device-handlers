@@ -10,6 +10,7 @@ import zhaquirks.linxura
 
 zhaquirks.setup()
 
+
 @pytest.mark.parametrize("quirk", (zhaquirks.linxura.button.LinxuraButton,))
 async def test_Linxura_button(zigpy_device_from_quirk, quirk):
     """Test Linxura button remotes."""
@@ -138,7 +139,6 @@ async def test_handle_cluster_request(zigpy_device_from_quirk, quirk):
     args = [1]  # Simulate single press state
     cluster.handle_cluster_general_request(hdr, args)
     # Validate event listener triggers the right event
-
 
 
 @pytest.mark.parametrize("quirk", (zhaquirks.linxura.button.LinxuraButton,))
