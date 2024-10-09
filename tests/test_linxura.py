@@ -10,21 +10,6 @@ import zhaquirks.linxura
 
 zhaquirks.setup()
 
-
-# ZCL_LINXURA_BUTTON_1_SINGLE_PRESS = b"\t\x01\x00\x01\x00\x00\x00\x00\x00"
-# ZCL_LINXURA_BUTTON_1_DOUBLE_PRESS = b"\t\x02\x00\x02\x00\x00\x00\x00\x00"
-# ZCL_LINXURA_BUTTON_1_LONG_PRESS = b"\t\x03\x00\x03\x00\x00\x00\x00\x00"
-# ZCL_LINXURA_BUTTON_2_SINGLE_PRESS = b"\tN\x06\x01\x1f\x02\x04\x00\x01\x00"
-# ZCL_LINXURA_BUTTON_2_DOUBLE_PRESS = b"\tj\x06\x03\x10\x02\x04\x00\x01\x01"
-# ZCL_LINXURA_BUTTON_2_LONG_PRESS = b"\tl\x06\x03\x12\x02\x04\x00\x01\x02"
-# ZCL_LINXURA_BUTTON_3_SINGLE_PRESS = b"\tT\x06\x01$\x01\x04\x00\x01\x00"
-# ZCL_LINXURA_BUTTON_3_DOUBLE_PRESS = b"\tU\x06\x01%\x01\x04\x00\x01\x01"
-# ZCL_LINXURA_BUTTON_3_LONG_PRESS = b"\tk\x06\x03\x11\x01\x04\x00\x01\x02"
-# ZCL_LINXURA_BUTTON_4_SINGLE_PRESS = b"\tT\x06\x01$\x01\x04\x00\x01\x00"
-# ZCL_LINXURA_BUTTON_4_DOUBLE_PRESS = b"\tU\x06\x01%\x01\x04\x00\x01\x01"
-# ZCL_LINXURA_BUTTON_4_LONG_PRESS = b"\tk\x06\x03\x11\x01\x04\x00\x01\x02"
-
-
 @pytest.mark.parametrize("quirk", (zhaquirks.linxura.button.LinxuraButton,))
 async def test_Linxura_button(zigpy_device_from_quirk, quirk):
     """Test Linxura button remotes."""
@@ -144,23 +129,21 @@ async def test_Linxura_button(zigpy_device_from_quirk, quirk):
 
 @pytest.mark.parametrize("quirk", (zhaquirks.linxura.button.LinxuraButton,))
 async def test_handle_cluster_request(zigpy_device_from_quirk, quirk):
-    """Test Edge Cases."""
+    """Test handle cluster request."""
 
     device = zigpy_device_from_quirk(quirk)
     cluster = device.endpoints[1].ias_zone
 
-    # hdr = ZCLHeader.command_id  # Simulate command ID 0 (used in handle_cluster_request)
-    # hdr = ZCLHeader.command_id  # Simulate command ID 0 (used in handle_cluster_request)
     hdr = ZCLHeader.general(tsn=0, command_id=0)
     args = [1]  # Simulate single press state
     cluster.handle_cluster_general_request(hdr, args)
     # Validate event listener triggers the right event
 
 
-# Test Edge Cases
+
 @pytest.mark.parametrize("quirk", (zhaquirks.linxura.button.LinxuraButton,))
 async def test_edge_case_request(zigpy_device_from_quirk, quirk):
-    """Test Linxura button remotes."""
+    """Test edge case"""
 
     device = zigpy_device_from_quirk(quirk)
 
