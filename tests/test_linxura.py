@@ -143,7 +143,7 @@ async def test_handle_cluster_request(zigpy_device_from_quirk, quirk):
 
 @pytest.mark.parametrize("quirk", (zhaquirks.linxura.button.LinxuraButton,))
 async def test_edge_case_request(zigpy_device_from_quirk, quirk):
-    """Test edge case"""
+    """Test edge case."""
 
     device = zigpy_device_from_quirk(quirk)
 
