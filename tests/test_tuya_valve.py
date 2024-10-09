@@ -30,11 +30,14 @@ async def test_command_psbzs(zigpy_device_from_quirk, quirk):
 
         await wait_for_zigpy_tasks()
         m1.assert_called_with(
-            61184,
-            1,
-            b"\x01\x01\x00\x00\x01\x01\x01\x00\x01\x01",
-            expect_reply=True,
+            cluster=61184,
+            sequence=1,
+            data=b"\x01\x01\x00\x00\x01\x01\x01\x00\x01\x01",
             command_id=0,
+            timeout=5,
+            expect_reply=True,
+            use_ieee=False,
+            ask_for_ack=None,
         )
         assert rsp.status == foundation.Status.SUCCESS
 
@@ -56,11 +59,14 @@ async def test_write_attr_psbzs(zigpy_device_from_quirk, quirk):
         )
         await wait_for_zigpy_tasks()
         m1.assert_called_with(
-            61184,
-            1,
-            b"\x01\x01\x00\x00\x01\x05\x02\x00\x04\x00\x00\x00\x0f",
-            expect_reply=False,
+            cluster=61184,
+            sequence=1,
+            data=b"\x01\x01\x00\x00\x01\x05\x02\x00\x04\x00\x00\x00\x0f",
             command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -73,11 +79,14 @@ async def test_write_attr_psbzs(zigpy_device_from_quirk, quirk):
         )
         await wait_for_zigpy_tasks()
         m1.assert_called_with(
-            61184,
-            2,
-            b"\x01\x02\x00\x00\x02m\x01\x00\x01\x00",
-            expect_reply=False,
+            cluster=61184,
+            sequence=2,
+            data=b"\x01\x02\x00\x00\x02m\x01\x00\x01\x00",
             command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
