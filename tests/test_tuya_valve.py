@@ -7,6 +7,8 @@ from zigpy.zcl import foundation
 
 from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
+import zhaquirks.tuya
+import zhaquirks.tuya.ts0601_valve
 
 zhaquirks.setup()
 
@@ -114,3 +116,36 @@ async def test_report_values_psbzs(zigpy_device_from_quirk, quirk):
     assert tuya_listener.attribute_updates[2][1] == 0  # frost lock state is inverted
     assert tuya_listener.attribute_updates[3][0] == 0xEF13
     assert tuya_listener.attribute_updates[3][1] == 1  # frost lock state is inverted
+
+
+@pytest.mark.parametrize(
+    "model,manuf",
+    [
+        ("_TZE284_8zizsafo", "TS0601"),
+    ],
+)
+async def test_giex_03_quirk(zigpy_device_from_v2_quirk, model, manuf):
+    """Test Giex GX03 Valve Quirk."""
+
+    quirked_device = zigpy_device_from_v2_quirk(model, manuf)
+    tuya_cluster = quirked_device.endpoints[1].tuya_manufacturer
+
+    with mock.patch.object(
+        tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ) as m1:
+        (status,) = await tuya_cluster.write_attributes(
+            {
+                "valve_one_duration": 10,
+            }
+        )
+        await wait_for_zigpy_tasks()
+        m1.assert_called_with(
+            61184,
+            1,
+            b"\x01\x01\x00\x00\x01\x19\x02\x00\x04\x00\x00\x00\x0a",
+            expect_reply=False,
+            command_id=0,
+        )
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
