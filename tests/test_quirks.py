@@ -15,7 +15,9 @@ import zigpy.endpoint
 import zigpy.profiles
 import zigpy.quirks as zq
 from zigpy.quirks import CustomDevice
+from zigpy.quirks.v2 import QuirkBuilder
 import zigpy.types
+from zigpy.zcl import foundation
 import zigpy.zdo.types
 
 import zhaquirks
@@ -841,3 +843,40 @@ def test_no_duplicate_clusters(quirk: CustomDevice) -> None:
     for ep_id, ep_data in quirk.replacement[ENDPOINTS].items():  # noqa: B007
         check_for_duplicate_cluster_ids(ep_data.get(INPUT_CLUSTERS, []))
         check_for_duplicate_cluster_ids(ep_data.get(OUTPUT_CLUSTERS, []))
+
+
+async def test_local_data_cluster(zigpy_device_from_v2_quirk) -> None:
+    """Ensure reading attributes from a LocalDataCluster works as expected."""
+
+    class TestLocalCluster(zhaquirks.LocalDataCluster):
+        """Test cluster."""
+
+        cluster_id = 0x1234
+        _CONSTANT_ATTRIBUTES = {1: 10}
+        _VALID_ATTRIBUTES = [2]
+
+    (
+        QuirkBuilder("manufacturer-local-test", "model")
+        .adds(TestLocalCluster)
+        .add_to_registry()
+    )
+    device = zigpy_device_from_v2_quirk("manufacturer-local-test", "model")
+    assert isinstance(device.endpoints[1].in_clusters[0x1234], TestLocalCluster)
+
+    # reading invalid attribute return unsupported attribute
+    assert await device.endpoints[1].in_clusters[0x1234].read_attributes([0]) == (
+        {},
+        {0: foundation.Status.UNSUPPORTED_ATTRIBUTE},
+    )
+
+    # reading constant attribute works
+    assert await device.endpoints[1].in_clusters[0x1234].read_attributes([1]) == (
+        {1: 10},
+        {},
+    )
+
+    # reading valid attribute returns None with success status
+    assert await device.endpoints[1].in_clusters[0x1234].read_attributes([2]) == (
+        {2: None},
+        {},
+    )
