@@ -22,6 +22,7 @@ from zhaquirks.tuya import (
     TUYA_SET_TIME,
     EnchantedDevice,  # noqa: F401
     NoManufacturerCluster,
+    PowerConfiguration,
     PowerOnState,
     TuyaCommand,
     TuyaDatapointData,
@@ -763,7 +764,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         ] = None,
         endpoint_id: Optional[int] = None,
         dp_handler: str = "_dp_2_attr_update",
-    ):
+    ) -> QuirkBuilder:
         """Add Tuya DP Converter."""
         self.tuya_dp_to_attribute.update(
             {
@@ -777,6 +778,75 @@ class TuyaQuirkBuilder(QuirkBuilder):
             }
         )
         self.tuya_data_point_handlers.update({dp_id: dp_handler})
+        return self
+
+    def add_battery_config(
+        self,
+        dp_id: int,
+        power_cfg: PowerConfiguration,
+        converter: Optional[
+            Callable[
+                [
+                    Any,
+                ],
+                Any,
+            ]
+        ] = lambda x: x * 2,
+    ) -> QuirkBuilder:
+        """Add a Tuya Battery Power Configuration."""
+        self.add_tuya_dp(
+            dp_id,
+            power_cfg.ep_attribute,
+            "battery_percentage_remaining",
+            converter=converter,
+        )
+        self.adds(power_cfg)
+        return self
+
+    def add_soil_moisture_config(
+        self,
+        dp_id: int,
+        soil_cfg: TuyaLocalCluster,
+        converter: Optional[
+            Callable[
+                [
+                    Any,
+                ],
+                Any,
+            ]
+        ] = lambda x: x * 100,
+    ) -> QuirkBuilder:
+        """Add a Tuya Soil Moisture Configuration."""
+        self.add_tuya_dp(
+            dp_id,
+            soil_cfg.ep_attribute,
+            "measured_value",
+            converter=lambda x: x * 100,
+        )
+        self.adds(soil_cfg)
+        return self
+
+    def add_temperature_config(
+        self,
+        dp_id: int,
+        temp_cfg: TuyaLocalCluster,
+        converter: Optional[
+            Callable[
+                [
+                    Any,
+                ],
+                Any,
+            ]
+        ] = lambda x: x * 100,
+    ) -> QuirkBuilder:
+        """Add a Tuya Soil Moisture Configuration."""
+        self.add_tuya_dp(
+            dp_id,
+            temp_cfg.ep_attribute,
+            "measured_value",
+            converter=converter,
+        )
+        self.adds(temp_cfg)
         return self
 
     def add_to_registry(self) -> QuirksV2RegistryEntry:

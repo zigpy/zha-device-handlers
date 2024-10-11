@@ -337,25 +337,10 @@ class TuyaTempHumiditySensorVar04(CustomDevice):
 (
     TuyaQuirkBuilder("_TZE284_aao3yzhs", "TS0601")
     .also_applies_to("_TZE284_sgabhwa6", "TS0601")
-    .add_tuya_dp(
-        5,
-        TuyaTemperatureMeasurement.ep_attribute,
-        "measured_value",
-        converter=lambda x: x * 10,
-    )
-    .add_tuya_dp(
-        3,
-        TuyaSoilMoisture.ep_attribute,
-        "measured_value",
-        converter=lambda x: x * 100,
-    )
-    .add_tuya_dp(
-        15,
-        TuyaPowerConfigurationCluster2AAA.ep_attribute,
-        "battery_percentage_remaining",
-        converter=lambda x: x * 2,
-    )
-    .adds(TuyaPowerConfigurationCluster2AAA)
+    .add_battery_config(15, TuyaPowerConfigurationCluster2AAA)
+    .add_temperature_config(5, TuyaTemperatureMeasurement, converter=lambda x: x * 10)
+    .add_battery_config(15, TuyaPowerConfigurationCluster2AAA)
+    .add_soil_moisture_config(3, TuyaSoilMoisture)
     .adds(TuyaSoilMoisture)
     .adds(TuyaTemperatureMeasurement)
     .add_to_registry()
@@ -367,26 +352,8 @@ class TuyaTempHumiditySensorVar04(CustomDevice):
     .also_applies_to("_TZE200_ga1maeof", "TS0601")
     .also_applies_to("_TZE200_9cqcpkgb", "TS0601")
     .also_applies_to("_TZE204_myd45weu", "TS0601")
-    .add_tuya_dp(
-        5,
-        TuyaTemperatureMeasurement.ep_attribute,
-        "measured_value",
-        converter=lambda x: x * 100,
-    )
-    .add_tuya_dp(
-        3,
-        TuyaSoilMoisture.ep_attribute,
-        "measured_value",
-        converter=lambda x: x * 100,
-    )
-    .add_tuya_dp(
-        15,
-        TuyaPowerConfigurationCluster2AAA.ep_attribute,
-        "battery_percentage_remaining",
-        converter=lambda x: x * 2,
-    )
-    .adds(TuyaPowerConfigurationCluster2AAA)
-    .adds(TuyaSoilMoisture)
-    .adds(TuyaTemperatureMeasurement)
+    .add_temperature_config(5, TuyaTemperatureMeasurement)
+    .add_battery_config(15, TuyaPowerConfigurationCluster2AAA)
+    .add_soil_moisture_config(3, TuyaSoilMoisture)
     .add_to_registry()
 )
