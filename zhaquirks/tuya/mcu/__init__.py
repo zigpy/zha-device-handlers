@@ -788,11 +788,11 @@ class TuyaQuirkBuilder(QuirkBuilder):
         ] = lambda x: x * 100,
     ) -> QuirkBuilder:
         """Add a Tuya Soil Moisture Configuration."""
-        self.add_tuya_dp(
+        self.tuya_dp(
             dp_id,
             soil_cfg.ep_attribute,
             "measured_value",
-            converter=lambda x: x * 100,
+            converter=converter,
         )
         self.adds(soil_cfg)
         return self
@@ -811,7 +811,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         ] = lambda x: x * 100,
     ) -> QuirkBuilder:
         """Add a Tuya Soil Moisture Configuration."""
-        self.add_tuya_dp(
+        self.tuya_dp(
             dp_id,
             temp_cfg.ep_attribute,
             "measured_value",
