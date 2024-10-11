@@ -1,4 +1,4 @@
-"""Signify RDM001 device."""
+"""Signify RDM004 device."""
 
 import logging
 from typing import Any, Optional, Union
@@ -85,7 +85,7 @@ class PhilipsRemoteCluster(CustomCluster):
                 "param6": t.uint8_t,
             },
             is_manufacturer_specific=True,
-            direction=foundation.Direction.Client_to_Server,
+            direction=foundation.Direction.Server_to_Client,
         )
     }
     BUTTONS = {
@@ -125,19 +125,19 @@ class PhilipsRemoteCluster(CustomCluster):
         self.listener_event(ZHA_SEND_EVENT, action, event_args)
 
 
-class PhilipsRDM001(CustomDevice):
-    """Philips RDM001 device."""
+class PhilipsRDM004(CustomDevice):
+    """Philips RDM004 device."""
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=2080
         #  device_version=1
         #  input_clusters=[0, 1, 3, 64512]
         #  output_clusters=[3, 4, 6, 8, 25]>
-        MODELS_INFO: [(PHILIPS, "RDM001"), (SIGNIFY, "RDM001")],
+        MODELS_INFO: [(PHILIPS, "RDM004"), (SIGNIFY, "RDM004")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.NON_COLOR_CONTROLLER,
+                DEVICE_TYPE: zha.DeviceType.NON_COLOR_SCENE_CONTROLLER,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
@@ -145,6 +145,7 @@ class PhilipsRDM001(CustomDevice):
                     DEVICE_SPECIFIC_UNKNOWN,
                 ],
                 OUTPUT_CLUSTERS: [
+                    Basic.cluster_id,
                     Identify.cluster_id,
                     Groups.cluster_id,
                     OnOff.cluster_id,
