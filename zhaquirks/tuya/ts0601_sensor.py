@@ -5,11 +5,7 @@ from typing import Any
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time
-from zigpy.zcl.clusters.measurement import (
-    RelativeHumidity,
-    SoilMoisture,
-    TemperatureMeasurement,
-)
+from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -21,15 +17,12 @@ from zhaquirks.const import (
     SKIP_CONFIGURATION,
 )
 from zhaquirks.tuya import TuyaLocalCluster, TuyaPowerConfigurationCluster2AAA
-from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster, TuyaQuirkBuilder
-
-
-class TuyaTemperatureMeasurement(TemperatureMeasurement, TuyaLocalCluster):
-    """Tuya local TemperatureMeasurement cluster."""
-
-
-class TuyaSoilMoisture(SoilMoisture, TuyaLocalCluster):
-    """Tuya local SoilMoisture cluster with a device RH_MULTIPLIER factor if required."""
+from zhaquirks.tuya.mcu import (
+    DPToAttributeMapping,
+    TuyaMCUCluster,
+    TuyaQuirkBuilder,
+    TuyaTemperatureMeasurement,
+)
 
 
 class TuyaRelativeHumidity(RelativeHumidity, TuyaLocalCluster):
@@ -337,12 +330,9 @@ class TuyaTempHumiditySensorVar04(CustomDevice):
 (
     TuyaQuirkBuilder("_TZE284_aao3yzhs", "TS0601")
     .also_applies_to("_TZE284_sgabhwa6", "TS0601")
-    .add_battery_config(15, TuyaPowerConfigurationCluster2AAA)
-    .add_temperature_config(5, TuyaTemperatureMeasurement, converter=lambda x: x * 10)
-    .add_battery_config(15, TuyaPowerConfigurationCluster2AAA)
-    .add_soil_moisture_config(3, TuyaSoilMoisture)
-    .adds(TuyaSoilMoisture)
-    .adds(TuyaTemperatureMeasurement)
+    .temperature(5, converter=lambda x: x * 10)
+    .battery(15)
+    .soil_moisture(3)
     .add_to_registry()
 )
 
@@ -352,8 +342,8 @@ class TuyaTempHumiditySensorVar04(CustomDevice):
     .also_applies_to("_TZE200_ga1maeof", "TS0601")
     .also_applies_to("_TZE200_9cqcpkgb", "TS0601")
     .also_applies_to("_TZE204_myd45weu", "TS0601")
-    .add_temperature_config(5, TuyaTemperatureMeasurement)
-    .add_battery_config(15, TuyaPowerConfigurationCluster2AAA)
-    .add_soil_moisture_config(3, TuyaSoilMoisture)
+    .temperature(5)
+    .battery(15)
+    .soil_moisture(3)
     .add_to_registry()
 )
