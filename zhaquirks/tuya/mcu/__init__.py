@@ -5,6 +5,8 @@ import dataclasses
 import datetime
 from typing import Any, Optional, Union
 
+from zigpy.quirks import _DEVICE_REGISTRY
+from zigpy.quirks.registry import DeviceRegistry
 from zigpy.quirks.v2 import QuirkBuilder, QuirksV2RegistryEntry
 import zigpy.types as t
 from zigpy.zcl import foundation
@@ -730,9 +732,13 @@ class TuyaLevelControlManufCluster(TuyaMCUCluster):
 class TuyaQuirkBuilder(QuirkBuilder):
     """Tuya QuirkBuilder."""
 
-    tuya_attributes = TuyaMCUCluster.attributes.copy()
-    tuya_data_point_handlers: dict[int, str] = {}
-    tuya_dp_to_attribute: dict[int, DPToAttributeMapping] = {}
+    def __init__(
+        self, manufacturer: str, model: str, registry: DeviceRegistry = _DEVICE_REGISTRY
+    ) -> None:
+        """Init the TuyaQuirkBuilder."""
+        self.tuya_data_point_handlers: dict[int, str] = {}
+        self.tuya_dp_to_attribute: dict[int, DPToAttributeMapping] = {}
+        super().__init__(manufacturer, model, registry)
 
     def add_tuya_dp(
         self,
