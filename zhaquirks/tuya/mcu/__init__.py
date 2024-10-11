@@ -753,7 +753,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
 
     def battery(
         self,
-        dp_id: int,
+        dp_id: int = 15,
         power_cfg: PowerConfiguration = TuyaPowerConfigurationCluster2AAA,
         converter: Optional[
             Callable[
@@ -776,7 +776,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
 
     def soil_moisture(
         self,
-        dp_id: int,
+        dp_id: int = 3,
         soil_cfg: TuyaLocalCluster = TuyaSoilMoisture,
         converter: Optional[
             Callable[
@@ -799,7 +799,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
 
     def temperature(
         self,
-        dp_id: int,
+        dp_id: int = 5,
         temp_cfg: TuyaLocalCluster = TuyaTemperatureMeasurement,
         converter: Optional[
             Callable[
