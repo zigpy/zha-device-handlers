@@ -135,3 +135,25 @@ def test_tuya_spell_devices_valid():
                 f"Enable at least one Tuya spell by setting `TUYA_SPELL_READ_ATTRIBUTES` or `TUYA_SPELL_DATA_QUERY` "
                 f"or inherit CustomDevice rather than EnchantedDevice."
             )
+
+        tuya_cluster_exists = False  # cluster subclassing TuyaNewManufCluster existing
+
+        # iterate over all clusters in the replacement
+        for endpoint_id, endpoint in quirk.replacement[ENDPOINTS].items():
+            if endpoint_id != 1:  # cluster with data query spell command on endpoint 1
+                continue
+            for cluster in endpoint[INPUT_CLUSTERS] + endpoint[OUTPUT_CLUSTERS]:
+                if not isinstance(cluster, int):
+                    # check if there's a valid Tuya cluster where the id wasn't modified
+                    if (
+                        issubclass(cluster, TuyaNewManufCluster)
+                        and cluster.cluster_id == TuyaNewManufCluster.cluster_id
+                    ):
+                        tuya_cluster_exists = True
+                        break
+
+        # an EnchantedDevice with the data query spell must also have a cluster subclassing TuyaNewManufCluster
+        if quirk.tuya_spell_data_query and not tuya_cluster_exists:
+            pytest.fail(
+                f"{quirk} set Tuya data query spell but has no cluster subclassing `TuyaNewManufCluster` on endpoint 1"
+            )
