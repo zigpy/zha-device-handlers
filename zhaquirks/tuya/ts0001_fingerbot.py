@@ -3,6 +3,7 @@
 from typing import Any, Optional, Union
 
 from zigpy.profiles import zha
+from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, OnOff, Ota, Time
@@ -18,7 +19,6 @@ from zhaquirks.const import (
 from zhaquirks.tuya import TUYA_SEND_DATA, EnchantedDevice
 from zhaquirks.tuya.mcu import (
     DPToAttributeMapping,
-    TuyaEnchantableCluster,
     TuyaMCUCluster,
     TuyaPowerConfigurationCluster,
 )
@@ -119,7 +119,7 @@ class TuyaFingerbotCluster(TuyaMCUCluster):
     }
 
 
-class OnOffEnchantable(TuyaEnchantableCluster, OnOff):
+class OnOffEnchantable(CustomCluster, OnOff):
     """Enchantable OnOff cluster."""
 
 
