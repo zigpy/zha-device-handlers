@@ -804,25 +804,11 @@ class TuyaQuirkBuilder(QuirkBuilder):
         dp_id: int,
         ep_attribute: str,
         attribute_name: Union[str, tuple],
-        converter: Optional[
-            Callable[
-                [
-                    Any,
-                ],
-                Any,
-            ]
-        ] = None,
-        dp_converter: Optional[
-            Callable[
-                [
-                    Any,
-                ],
-                Any,
-            ]
-        ] = None,
+        converter: Optional[Callable[[Any,], Any,]] = None,
+        dp_converter: Optional[Callable[[Any,], Any,]] = None,
         endpoint_id: Optional[int] = None,
         dp_handler: str = "_dp_2_attr_update",
-    ) -> QuirkBuilder:
+    ) -> QuirkBuilder:  # fmt: skip
         """Add Tuya DP Converter."""
         self.tuya_dp_to_attribute.update(
             {
