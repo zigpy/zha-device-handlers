@@ -330,7 +330,7 @@ class TuyaTempHumiditySensorVar04(CustomDevice):
 (
     TuyaQuirkBuilder("_TZE284_aao3yzhs", "TS0601")
     .also_applies_to("_TZE284_sgabhwa6", "TS0601")
-    .temperature(dp_id=5, converter=lambda x: x * 10)
+    .temperature(dp_id=5, scale=10)
     .battery(dp_id=15)
     .soil_moisture(dp_id=3)
     .add_to_registry()
