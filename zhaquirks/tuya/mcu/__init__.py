@@ -5,6 +5,7 @@ import dataclasses
 import datetime
 from typing import Any, Optional, Union
 
+from zigpy.quirks.v2 import QuirkBuilder, QuirksV2RegistryEntry
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import LevelControl, OnOff
@@ -724,3 +725,62 @@ class TuyaLevelControlManufCluster(TuyaMCUCluster):
         17: "_dp_2_attr_update",
         18: "_dp_2_attr_update",
     }
+
+
+class TuyaQuirkBuilder(QuirkBuilder):
+    """Tuya QuirkBuilder."""
+
+    tuya_attributes = TuyaMCUCluster.attributes.copy()
+    tuya_data_point_handlers: dict[int, str] = {}
+    tuya_dp_to_attribute: dict[int, DPToAttributeMapping] = {}
+
+    def add_tuya_dp(
+        self,
+        dp_id: int,
+        ep_attribute: str,
+        attribute_name: Union[str, tuple],
+        converter: Optional[
+            Callable[
+                [
+                    Any,
+                ],
+                Any,
+            ]
+        ] = None,
+        dp_converter: Optional[
+            Callable[
+                [
+                    Any,
+                ],
+                Any,
+            ]
+        ] = None,
+        endpoint_id: Optional[int] = None,
+        dp_handler: str = "_dp_2_attr_update",
+    ):
+        """Add Tuya DP Converter."""
+        self.tuya_dp_to_attribute.update(
+            {
+                dp_id: DPToAttributeMapping(
+                    ep_attribute,
+                    attribute_name,
+                    converter=converter,
+                    dp_converter=dp_converter,
+                    endpoint_id=endpoint_id,
+                )
+            }
+        )
+        self.tuya_data_point_handlers.update({dp_id: dp_handler})
+        return self
+
+    def add_to_registry(self) -> QuirksV2RegistryEntry:
+        """Build the quirks v2 registry entry."""
+
+        class TuyaReplacementCluster(TuyaMCUCluster):
+            """Replacement Tuya Cluster."""
+
+            data_point_handlers: dict[int, str] = self.tuya_data_point_handlers
+            dp_to_attribute: dict[int, DPToAttributeMapping] = self.tuya_dp_to_attribute
+
+        self.replaces(TuyaReplacementCluster)
+        return super().add_to_registry()
