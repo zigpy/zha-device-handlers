@@ -753,69 +753,48 @@ class TuyaQuirkBuilder(QuirkBuilder):
 
     def battery(
         self,
-        dp_id: int = 15,
+        dp_id: int,
         power_cfg: PowerConfiguration = TuyaPowerConfigurationCluster2AAA,
-        converter: Optional[
-            Callable[
-                [
-                    Any,
-                ],
-                Any,
-            ]
-        ] = lambda x: x * 2,
+        scale=2,
     ) -> QuirkBuilder:
         """Add a Tuya Battery Power Configuration."""
         self.tuya_dp(
             dp_id,
             power_cfg.ep_attribute,
             "battery_percentage_remaining",
-            converter=converter,
+            converter=lambda x: x * scale,
         )
         self.adds(power_cfg)
         return self
 
     def soil_moisture(
         self,
-        dp_id: int = 3,
+        dp_id: int,
         soil_cfg: TuyaLocalCluster = TuyaSoilMoisture,
-        converter: Optional[
-            Callable[
-                [
-                    Any,
-                ],
-                Any,
-            ]
-        ] = lambda x: x * 100,
+        scale=100,
     ) -> QuirkBuilder:
         """Add a Tuya Soil Moisture Configuration."""
         self.tuya_dp(
             dp_id,
             soil_cfg.ep_attribute,
             "measured_value",
-            converter=converter,
+            converter=lambda x: x * scale,
         )
         self.adds(soil_cfg)
         return self
 
     def temperature(
         self,
-        dp_id: int = 5,
+        dp_id: int,
         temp_cfg: TuyaLocalCluster = TuyaTemperatureMeasurement,
-        converter: Optional[
-            Callable[
-                [
-                    Any,
-                ],
-                Any,
-            ]
-        ] = lambda x: x * 100,
+        scale=100,
     ) -> QuirkBuilder:
         """Add a Tuya Soil Moisture Configuration."""
         self.tuya_dp(
             dp_id,
             temp_cfg.ep_attribute,
             "measured_value",
-            converter=converter,
+            converter=lambda x: x * scale,
         )
         self.adds(temp_cfg)
         return self
