@@ -780,7 +780,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         self.new_attributes: dict[int, foundation.ZCLAttributeDef] = {}
         super().__init__(manufacturer, model, registry)
 
-    def battery(
+    def tuya_battery(
         self,
         dp_id: int,
         power_cfg: PowerConfiguration = TuyaPowerConfigurationCluster2AAA,
@@ -796,7 +796,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         self.adds(power_cfg)
         return self
 
-    def metering(
+    def tuya_metering(
         self,
         dp_id: int,
         metering_cfg: TuyaLocalCluster = TuyaValveWaterConsumed,
@@ -808,8 +808,9 @@ class TuyaQuirkBuilder(QuirkBuilder):
             "current_summ_delivered",
         )
         self.adds(metering_cfg)
+        return self
 
-    def onoff(
+    def tuya_onoff(
         self,
         dp_id: int,
         onoff_cfg: TuyaLocalCluster = TuyaOnOffNM,
@@ -821,8 +822,9 @@ class TuyaQuirkBuilder(QuirkBuilder):
             "on_off",
         )
         self.adds(onoff_cfg)
+        return self
 
-    def soil_moisture(
+    def tuya_soil_moisture(
         self,
         dp_id: int,
         soil_cfg: TuyaLocalCluster = TuyaSoilMoisture,
@@ -838,7 +840,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         self.adds(soil_cfg)
         return self
 
-    def temperature(
+    def tuya_temperature(
         self,
         dp_id: int,
         temp_cfg: TuyaLocalCluster = TuyaTemperatureMeasurement,
