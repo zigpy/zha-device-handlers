@@ -2,11 +2,7 @@
 
 from zigpy.quirks.v2 import EntityType, QuirkBuilder
 
-from zhaquirks.nodon import (
-    NODON,
-    NodOnPilotWireCluster,
-    NodOnPilotWireMode,
-)
+from zhaquirks.nodon import NODON, NodOnPilotWireCluster, NodOnPilotWireMode
 
 (
     QuirkBuilder(NODON, "SIN-4-FP-21")
