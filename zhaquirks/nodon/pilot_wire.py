@@ -4,7 +4,6 @@ from zigpy.quirks.v2 import EntityType, QuirkBuilder
 
 from zhaquirks.nodon import (
     NODON,
-    NODON_PILOT_WIRE_CLUSTER_ID,
     NodOnPilotWireCluster,
     NodOnPilotWireMode,
 )
@@ -15,7 +14,7 @@ from zhaquirks.nodon import (
     .enum(
         attribute_name=NodOnPilotWireCluster.AttributeDefs.pilot_wire_mode.name,
         enum_class=NodOnPilotWireMode,
-        cluster_id=NODON_PILOT_WIRE_CLUSTER_ID,
+        cluster_id=NodOnPilotWireCluster.cluster_id,
         entity_type=EntityType.STANDARD,
     )
     .add_to_registry()
