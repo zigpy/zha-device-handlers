@@ -18,15 +18,18 @@ from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
+    MANUFACTURER,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.gledopto import GLEDOPTO
 
 
 class SoposhGU10(CustomDevice):
     """GLEDOPTO Soposh Dual White and color 5W GU10 300lm."""
 
     signature = {
+        MANUFACTURER: GLEDOPTO,
         ENDPOINTS: {
             11: {
                 PROFILE_ID: zll.PROFILE_ID,
@@ -48,7 +51,7 @@ class SoposhGU10(CustomDevice):
                 INPUT_CLUSTERS: [LightLink.cluster_id],
                 OUTPUT_CLUSTERS: [LightLink.cluster_id],
             },
-        }
+        },
     }
 
     replacement = {
