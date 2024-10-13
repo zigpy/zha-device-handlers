@@ -11,7 +11,14 @@ from zigpy.zcl.clusters.measurement import FlowMeasurement
 
 from tests.common import ClusterListener
 import zhaquirks
-from zhaquirks.const import COMMAND_BUTTON_DOUBLE, COMMAND_BUTTON_HOLD
+from zhaquirks.const import (
+    COMMAND_M_INITIAL_PRESS,
+    COMMAND_M_LONG_RELEASE,
+    COMMAND_M_MULTI_PRESS_COMPLETE,
+    COMMAND_M_SHORT_RELEASE,
+    TURN_OFF,
+    TURN_ON,
+)
 from zhaquirks.sinope import SINOPE_MANUFACTURER_CLUSTER_ID
 from zhaquirks.sinope.light import (
     SinopeTechnologieslight,
@@ -92,20 +99,22 @@ def _get_packet_data(
 
 @pytest.mark.parametrize("quirk", (SinopeTechnologieslight,))
 @pytest.mark.parametrize(
-    "press_type,exp_event",
+    "press_type,button,exp_event",
     (
-        (ButtonAction.Single_off, None),
-        (ButtonAction.Single_on, None),
-        (ButtonAction.Double_on, COMMAND_BUTTON_DOUBLE),
-        (ButtonAction.Double_off, COMMAND_BUTTON_DOUBLE),
-        (ButtonAction.Long_on, COMMAND_BUTTON_HOLD),
-        (ButtonAction.Long_off, COMMAND_BUTTON_HOLD),
+        (ButtonAction.Single_off, TURN_OFF, COMMAND_M_INITIAL_PRESS),
+        (ButtonAction.Single_on, TURN_ON, COMMAND_M_INITIAL_PRESS),
+        (ButtonAction.Single_release_off, TURN_OFF, COMMAND_M_SHORT_RELEASE),
+        (ButtonAction.Single_release_on, TURN_ON, COMMAND_M_SHORT_RELEASE),
+        (ButtonAction.Double_on, TURN_ON, COMMAND_M_MULTI_PRESS_COMPLETE),
+        (ButtonAction.Double_off, TURN_OFF, COMMAND_M_MULTI_PRESS_COMPLETE),
+        (ButtonAction.Long_on, TURN_ON, COMMAND_M_LONG_RELEASE),
+        (ButtonAction.Long_off, TURN_OFF, COMMAND_M_LONG_RELEASE),
         # Should gracefully handle broken actions.
-        (t.uint8_t(0x00), None),
+        (t.uint8_t(0x00), None, None),
     ),
 )
 async def test_sinope_light_switch(
-    zigpy_device_from_quirk, quirk, press_type, exp_event
+    zigpy_device_from_quirk, quirk, press_type, button, exp_event
 ):
     """Test that button presses are sent as events."""
     device: Device = zigpy_device_from_quirk(quirk)
@@ -137,6 +146,7 @@ async def test_sinope_light_switch(
             {
                 "attribute_id": 84,
                 "attribute_name": "action_report",
+                "button": button,
                 "value": press_type.value,
             },
         )
