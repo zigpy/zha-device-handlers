@@ -24,7 +24,12 @@ from zhaquirks.const import (
     SHORT_PRESS,
     VALUE,
 )
-from zhaquirks.tuya import TUYA_CLUSTER_ID, DPToAttributeMapping, TuyaNewManufCluster
+from zhaquirks.tuya import (
+    TUYA_CLUSTER_ID,
+    DPToAttributeMapping,
+    TuyaDatapointData,
+    TuyaNewManufCluster,
+)
 
 BTN_1 = "Button 1"
 BTN_2 = "Button 2"
@@ -35,6 +40,8 @@ ATTR_BTN_2_PRESSED = "btn_2_pressed"
 
 class TuyaCustomCluster(TuyaNewManufCluster, EventableCluster):
     """Tuya Custom Cluster for mapping data points to attributes."""
+
+    PRESS_TYPE = {0: "single", 1: "double", 2: "long"}
 
     dp_to_attribute: dict[int, DPToAttributeMapping] = {
         1: DPToAttributeMapping(
@@ -51,6 +58,20 @@ class TuyaCustomCluster(TuyaNewManufCluster, EventableCluster):
         1: "_dp_2_attr_update",
         2: "_dp_2_attr_update",
     }
+
+    def _dp_2_attr_update(self, datapoint: TuyaDatapointData) -> None:
+        super()._dp_2_attr_update(datapoint)
+        button_n = datapoint.dp
+        press_type = self.PRESS_TYPE.get(datapoint.data.payload, "unknown")
+        action = f"button_{button_n}_{press_type}_press"
+        self.listener_event(
+            "zha_send_event",
+            action,
+            {
+                "button": button_n,
+                "press_type": press_type,
+            },
+        )
 
 
 class TS0021(CustomDevice):
@@ -87,8 +108,6 @@ class TS0021(CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    IasZone.cluster_id,
                     TuyaCustomCluster,
                 ],
                 OUTPUT_CLUSTERS: [
