@@ -3,7 +3,6 @@
 from collections.abc import Callable
 import dataclasses
 import datetime
-import logging
 from typing import Any, Optional, Union
 
 import zigpy.types as t
@@ -34,8 +33,6 @@ ATTR_MCU_VERSION = 0xEF00
 
 # manufacturer commands
 TUYA_MCU_CONNECTION_STATUS = 0x25
-
-_LOGGER = logging.getLogger(__name__)
 
 
 @dataclasses.dataclass
