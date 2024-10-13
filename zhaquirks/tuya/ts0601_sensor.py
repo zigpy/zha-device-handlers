@@ -17,12 +17,8 @@ from zhaquirks.const import (
     SKIP_CONFIGURATION,
 )
 from zhaquirks.tuya import TuyaLocalCluster, TuyaPowerConfigurationCluster2AAA
-from zhaquirks.tuya.mcu import (
-    DPToAttributeMapping,
-    TuyaMCUCluster,
-    TuyaQuirkBuilder,
-    TuyaTemperatureMeasurement,
-)
+from zhaquirks.tuya.builder import TuyaQuirkBuilder, TuyaTemperatureMeasurement
+from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster
 
 
 class TuyaRelativeHumidity(RelativeHumidity, TuyaLocalCluster):
