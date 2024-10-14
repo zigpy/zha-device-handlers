@@ -393,6 +393,8 @@ class TuyaQuirkBuilder(QuirkBuilder):
         dp_id: int,
         attribute_name: str,
         type: type,
+        converter: Optional[Callable[[Any,], Any,]] = None,
+        dp_converter: Optional[Callable[[Any,], Any,]] = None,
         endpoint_id: int = 1,
         divisor: int = 1,
         multiplier: int = 1,
@@ -404,7 +406,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         attribute_initialized_from_cache: bool = True,
         translation_key: str | None = None,
         fallback_name: str | None = None,
-    ) -> QuirkBuilder:
+    ) -> QuirkBuilder:  # fmt: skip
         """Add an EntityMetadata containing ZCLSensorMetadata and return self.
 
         This method allows exposing a sensor entity in Home Assistant.
@@ -414,6 +416,8 @@ class TuyaQuirkBuilder(QuirkBuilder):
             dp_id=dp_id,
             attribute_name=attribute_name,
             type=type,
+            converter=converter,
+            dp_converter=dp_converter,
             access=foundation.ZCLAttributeAccess.Read
             | foundation.ZCLAttributeAccess.Report,
         )
