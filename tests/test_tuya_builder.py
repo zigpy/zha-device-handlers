@@ -106,6 +106,7 @@ async def test_tuya_quirkbuilder(device_mock):
 
     tuya_cluster = ep.tuya_manufacturer
     tuya_listener = ClusterListener(tuya_cluster)
+    assert tuya_cluster.attributes_by_name["mcu_version"].id == 0xEF00
     assert tuya_cluster.attributes_by_name["test_onoff"].id == 0xEF06
     assert tuya_cluster.attributes_by_name["test_number"].id == 0xEF07
     assert tuya_cluster.attributes_by_name["test_binary"].id == 0xEF08
