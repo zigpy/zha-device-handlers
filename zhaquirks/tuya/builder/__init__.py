@@ -13,7 +13,11 @@ from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.measurement import SoilMoisture, TemperatureMeasurement
+from zigpy.zcl.clusters.measurement import (
+    RelativeHumidity,
+    SoilMoisture,
+    TemperatureMeasurement,
+)
 from zigpy.zcl.clusters.smartenergy import Metering
 
 from zhaquirks.tuya import (
@@ -23,6 +27,10 @@ from zhaquirks.tuya import (
     TuyaPowerConfigurationCluster2AAA,
 )
 from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster, TuyaOnOffNM
+
+
+class TuyaRelativeHumidity(RelativeHumidity, TuyaLocalCluster):
+    """Tuya local RelativeHumidity cluster."""
 
 
 class TuyaTemperatureMeasurement(TemperatureMeasurement, TuyaLocalCluster):
@@ -105,6 +113,22 @@ class TuyaQuirkBuilder(QuirkBuilder):
             "on_off",
         )
         self.adds(onoff_cfg)
+        return self
+
+    def tuya_humidity(
+        self,
+        dp_id: int,
+        rh_cfg: TuyaLocalCluster = TuyaRelativeHumidity,
+        scale: float = 100,
+    ) -> QuirkBuilder:
+        """Add a Tuya Relative Humidity Configuration."""
+        self.tuya_dp(
+            dp_id,
+            rh_cfg.ep_attribute,
+            "measured_value",
+            converter=lambda x: x * scale,
+        )
+        self.adds(rh_cfg)
         return self
 
     def tuya_soil_moisture(

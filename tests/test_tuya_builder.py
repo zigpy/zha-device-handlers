@@ -13,7 +13,9 @@ from zigpy.zcl.clusters.general import Basic
 from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
 from zhaquirks.tuya.builder import (
+    TuyaPowerConfigurationCluster2AAA,
     TuyaQuirkBuilder,
+    TuyaRelativeHumidity,
     TuyaSoilMoisture,
     TuyaTemperatureMeasurement,
     TuyaValveWaterConsumed,
@@ -85,6 +87,7 @@ async def test_tuya_quirkbuilder(device_mock):
             attribute_name="test_enum",
             enum_class=TestEnum,
         )
+        .tuya_humidity(dp_id=11)
         .add_to_registry()
     )
 
@@ -113,6 +116,9 @@ async def test_tuya_quirkbuilder(device_mock):
     assert tuya_cluster.attributes_by_name["test_sensor"].id == 0xEF09
     assert tuya_cluster.attributes_by_name["test_enum"].id == 0xEF0A
 
+    assert ep.power is not None
+    assert isinstance(ep.power, TuyaPowerConfigurationCluster2AAA)
+
     assert ep.smartenergy_metering is not None
     assert isinstance(ep.smartenergy_metering, TuyaValveWaterConsumed)
 
@@ -124,6 +130,9 @@ async def test_tuya_quirkbuilder(device_mock):
 
     assert ep.temperature is not None
     assert isinstance(ep.temperature, TuyaTemperatureMeasurement)
+
+    assert ep.humidity is not None
+    assert isinstance(ep.humidity, TuyaRelativeHumidity)
 
     with mock.patch.object(
         tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
