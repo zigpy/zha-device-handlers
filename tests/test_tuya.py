@@ -1773,11 +1773,17 @@ async def test_fan_switch_writes_attributes(zigpy_device_from_quirk, quirk):
         await fan_cluster.bind()
 
         assert len(m1.mock_calls) == 1
-        assert m1.mock_calls[0][1] == (
-            514,
-            1,
-            b"\x00\x01\x02\x01\x000\x00",
-        )
+        assert m1.mock_calls[0].kwargs == {
+            "cluster": 514,
+            "sequence": 1,
+            "data": b"\x00\x01\x02\x01\x000\x00",
+            "command_id": 2,
+            "timeout": 5,
+            "expect_reply": True,
+            "use_ieee": False,
+            "ask_for_ack": None,
+            "priority": t.PacketPriority.NORMAL,
+        }
 
 
 async def test_sm0202_motion_sensor_signature(assert_signature_matches_quirk):
