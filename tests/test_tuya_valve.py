@@ -3,6 +3,7 @@
 from unittest import mock
 
 import pytest
+import zigpy.types as t
 from zigpy.zcl import foundation
 
 from tests.common import ClusterListener, wait_for_zigpy_tasks
@@ -38,6 +39,7 @@ async def test_command_psbzs(zigpy_device_from_quirk, quirk):
             expect_reply=True,
             use_ieee=False,
             ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
         assert rsp.status == foundation.Status.SUCCESS
 
@@ -67,6 +69,7 @@ async def test_write_attr_psbzs(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             use_ieee=False,
             ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -87,6 +90,7 @@ async def test_write_attr_psbzs(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             use_ieee=False,
             ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
