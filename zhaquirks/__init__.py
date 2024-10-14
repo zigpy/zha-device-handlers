@@ -76,7 +76,7 @@ class LocalDataCluster(CustomCluster):
         """Prevent remote configure reporting."""
         return (foundation.ConfigureReportingResponse.deserialize(b"\x00")[0],)
 
-    async def read_attributes_raw(self, attributes, manufacturer=None):
+    async def read_attributes_raw(self, attributes, manufacturer=None, **kwargs):
         """Prevent remote reads."""
         records = [
             foundation.ReadAttributeRecord(
@@ -93,7 +93,7 @@ class LocalDataCluster(CustomCluster):
                 record.status = foundation.Status.SUCCESS
         return (records,)
 
-    async def write_attributes(self, attributes, manufacturer=None):
+    async def write_attributes(self, attributes, manufacturer=None, **kwargs):
         """Prevent remote writes."""
         for attrid, value in attributes.items():
             if isinstance(attrid, str):
