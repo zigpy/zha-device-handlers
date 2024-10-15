@@ -1,8 +1,8 @@
 """Signify SOC001 device."""
 
-from zigpy.quirks.v2 import QuirkBuilder, ClusterType, BinarySensorDeviceClass
-import zigpy.types as types
+from zigpy import types
 from zigpy.quirks import CustomCluster
+from zigpy.quirks.v2 import BinarySensorDeviceClass, ClusterType, QuirkBuilder
 
 
 class PhilipsContactCluster(CustomCluster):
