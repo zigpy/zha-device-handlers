@@ -9,6 +9,7 @@ from zhaquirks.ikea import IKEA
 (
     QuirkBuilder(IKEA, "TRADFRI control outlet")
     .also_applies_to(IKEA, "TRETAKT Smart plug")
+    .also_applies_to(IKEA, "INSPELNING Smart plug")
     .removes(LevelControl.cluster_id)
     .add_to_registry()
 )
