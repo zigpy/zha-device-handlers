@@ -197,7 +197,7 @@ class PhilipsRemoteCluster(CustomCluster):
         ] = None,
     ):
         """Handle the cluster command."""
-        self.debug(
+        _LOGGER.debug(
             "%s - handle_cluster_request tsn: [%s] command id: %s - args: [%s]",
             self.__class__.__name__,
             hdr.tsn,
