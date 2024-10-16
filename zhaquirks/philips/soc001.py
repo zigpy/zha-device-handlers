@@ -2,7 +2,12 @@
 
 from zigpy import types
 from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import BinarySensorDeviceClass, ClusterType, QuirkBuilder
+from zigpy.quirks.v2 import (
+    BinarySensorDeviceClass,
+    ClusterType,
+    QuirkBuilder,
+    EntityType,
+)
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 
@@ -70,16 +75,20 @@ class PhilipsContactCluster(CustomCluster):
     )
     .replaces(PhilipsContactCluster, endpoint_id=2)
     .binary_sensor(
-        attribute_name="contact",
-        cluster_id=64518,  # 0xfc06
+        "contact",
+        PhilipsContactCluster.cluster_id,
         endpoint_id=2,
         device_class=BinarySensorDeviceClass.OPENING,
+        fallback_name="Contact",
+        entity_type=EntityType.STANDARD,
     )
     .binary_sensor(
-        attribute_name="tamper",
-        cluster_id=64518,  # 0xfc06
+        "tamper",
+        PhilipsContactCluster.cluster_id,
         endpoint_id=2,
         device_class=BinarySensorDeviceClass.TAMPER,
+        fallback_name="Tamper",
+        entity_type=EntityType.DIAGNOSTIC,
     )
     .add_to_registry()
 )
