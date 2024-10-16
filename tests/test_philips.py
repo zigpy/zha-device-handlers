@@ -32,11 +32,11 @@ from zhaquirks.const import (
 )
 import zhaquirks.philips
 from zhaquirks.philips import Button, ButtonPressQueue, PhilipsRemoteCluster, PressType
-from zhaquirks.philips.rdm001 import PhilipsRDM001
 from zhaquirks.philips.rdm002 import PhilipsRDM002
 from zhaquirks.philips.rom001 import PhilipsROM001
 from zhaquirks.philips.rwl022 import PhilipsRWL022
 from zhaquirks.philips.rwlfirstgen import PhilipsRWLFirstGen, PhilipsRWLFirstGen2
+from zhaquirks.philips.wall_switch import PhilipsWallSwitch
 
 zhaquirks.setup()
 
@@ -95,7 +95,7 @@ zhaquirks.setup()
             },
         ),
         (
-            [PhilipsRDM001],
+            [PhilipsWallSwitch],
             {
                 (SHORT_PRESS, TURN_ON): {COMMAND: "left_press"},
                 (LONG_PRESS, TURN_ON): {COMMAND: "left_hold"},
@@ -331,7 +331,7 @@ class ManuallyFiredButtonPressQueue:
     "dev, ep, button, events",
     (
         (
-            PhilipsRDM001,
+            PhilipsWallSwitch,
             1,
             "left",
             ["press", "short_release"],
@@ -415,7 +415,7 @@ def test_PhilipsRemoteCluster_short_press(
             "on",
         ),
         (
-            PhilipsRDM001,
+            PhilipsWallSwitch,
             1,
             "left",
         ),
@@ -490,7 +490,7 @@ def test_PhilipsRemoteCluster_multi_press(
 @pytest.mark.parametrize(
     "dev, ep",
     (
-        (PhilipsRDM001, 1),
+        (PhilipsWallSwitch, 1),
         (PhilipsROM001, 1),
         (PhilipsRWLFirstGen, 2),
         (PhilipsRWLFirstGen2, 2),
@@ -516,7 +516,7 @@ def test_PhilipsRemoteCluster_ignore_unknown_buttons(zigpy_device_from_quirk, de
     (
         (PhilipsROM001, 1, "on", "hold", "long_release", "hold_release"),
         (
-            PhilipsRDM001,
+            PhilipsWallSwitch,
             1,
             "left",
             "hold",
