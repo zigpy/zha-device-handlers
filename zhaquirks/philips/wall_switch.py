@@ -1,4 +1,4 @@
-"""Signify RDM001 device."""
+"""Signify wall switch devices (RDM001 and RDM004)."""
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
@@ -72,15 +72,20 @@ class PhilipsRdm001RemoteCluster(PhilipsRemoteCluster):
     ]
 
 
-class PhilipsRDM001(CustomDevice):
-    """Philips RDM001 device."""
+class PhilipsWallSwitch(CustomDevice):
+    """Philips RDM001 or RDM004 device."""
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=2080
         #  device_version=1
         #  input_clusters=[0, 1, 3, 64512]
         #  output_clusters=[3, 4, 6, 8, 25]>
-        MODELS_INFO: [(PHILIPS, "RDM001"), (SIGNIFY, "RDM001")],
+        MODELS_INFO: [
+            (PHILIPS, "RDM001"),
+            (SIGNIFY, "RDM001"),
+            (PHILIPS, "RDM004"),  # likely not needed
+            (SIGNIFY, "RDM004"),
+        ],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
