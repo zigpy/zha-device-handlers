@@ -1,5 +1,7 @@
 """Signify wall switch devices (RDM001 and RDM004)."""
 
+from typing import Final
+
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
@@ -12,6 +14,7 @@ from zigpy.zcl.clusters.general import (
     Ota,
     PowerConfiguration,
 )
+from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -36,15 +39,21 @@ DEVICE_SPECIFIC_UNKNOWN = 64512
 class PhilipsBasicCluster(CustomCluster, Basic):
     """Philips Basic cluster."""
 
-    attributes = Basic.attributes.copy()
-    attributes.update(
-        {
-            0x0031: ("philips", t.bitmap16, True),
-            0x0034: ("mode", t.enum8, True),
-        }
-    )
+    class AttributeDefs(Basic.AttributeDefs):
+        """Attribute definitions."""
 
-    attr_config = {0x0031: 0x000B, 0x0034: 0x02}
+        philips: Final = ZCLAttributeDef(
+            id=0x0031,
+            type=t.bitmap16,
+            is_manufacturer_specific=True,
+        )
+        mode: Final = ZCLAttributeDef(
+            id=0x0034,
+            type=t.enum8,
+            is_manufacturer_specific=True,
+        )
+
+    attr_config = {AttributeDefs.philips.id: 0x000B, AttributeDefs.mode.id: 0x02}
 
     async def bind(self):
         """Bind cluster."""
