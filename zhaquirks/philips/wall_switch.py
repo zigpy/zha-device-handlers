@@ -53,8 +53,8 @@ class PhilipsBasicCluster(CustomCluster, Basic):
         return result
 
 
-class PhilipsRdm001RemoteCluster(PhilipsRemoteCluster):
-    """Philips RDM001 remote cluster."""
+class PhilipsWallSwitchRemoteCluster(PhilipsRemoteCluster):
+    """Philips wall switch remote cluster."""
 
     BUTTONS = {
         1: Button(LEFT, TURN_ON),
@@ -116,7 +116,7 @@ class PhilipsWallSwitch(CustomDevice):
                     PhilipsBasicCluster,
                     PowerConfiguration.cluster_id,
                     Identify.cluster_id,
-                    PhilipsRdm001RemoteCluster,
+                    PhilipsWallSwitchRemoteCluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     Ota.cluster_id,
@@ -130,5 +130,5 @@ class PhilipsWallSwitch(CustomDevice):
     }
 
     device_automation_triggers = (
-        PhilipsRdm001RemoteCluster.generate_device_automation_triggers()
+        PhilipsWallSwitchRemoteCluster.generate_device_automation_triggers()
     )
