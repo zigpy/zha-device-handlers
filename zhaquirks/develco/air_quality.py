@@ -26,9 +26,9 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.develco import DEVELCO, DevelcoPowerConfiguration
 
-MANUFACTURER = 0x1015
+from . import DEVELCO, MANUFACTURER_ID, DevelcoPowerConfiguration
+
 VOC_MEASURED_VALUE = 0x0000
 VOC_MIN_MEASURED_VALUE = 0x0001
 VOC_MAX_MEASURED_VALUE = 0x0002
@@ -166,7 +166,7 @@ class EmulatedVOCMeasurement(LocalDataCluster):
 class AQSZB110(CustomDevice):
     """Custom device Develco air quality sensor."""
 
-    manufacturer_id_override = MANUFACTURER
+    manufacturer_id_override = MANUFACTURER_ID
 
     def __init__(self, *args, **kwargs):
         """Init."""

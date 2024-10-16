@@ -24,15 +24,20 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.develco import DEVELCO, FRIENT, DevelcoIasZone, DevelcoPowerConfiguration
 
-MANUFACTURER = 0x1015
+from . import (
+    DEVELCO,
+    FRIENT,
+    MANUFACTURER_ID,
+    DevelcoIasZone,
+    DevelcoPowerConfiguration,
+)
 
 
 class HESZB120(CustomDevice):
     """Custom device heat alarm."""
 
-    manufacturer_id_override = MANUFACTURER
+    manufacturer_id_override = MANUFACTURER_ID
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=49353 device_type=1 device_version=1
@@ -123,7 +128,7 @@ class HESZB120(CustomDevice):
 class HESZB120F(CustomDevice):
     """Frient A/S  Heat Alarm."""
 
-    manufacturer_id_override = MANUFACTURER
+    manufacturer_id_override = MANUFACTURER_ID
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=49353 device_type=1 device_version=1
