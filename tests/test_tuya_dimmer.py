@@ -3,7 +3,6 @@
 from unittest import mock
 
 import pytest
-import zigpy.types as t
 from zigpy.zcl import foundation
 
 from tests.common import ClusterListener, wait_for_zigpy_tasks
@@ -35,15 +34,11 @@ async def test_command(zigpy_device_from_quirk, quirk):
         await wait_for_zigpy_tasks()
 
         m1.assert_called_with(
-            cluster=61184,
-            sequence=1,
-            data=b"\x01\x01\x00\x00\x01\x07\x01\x00\x01\x01",
-            command_id=0,
-            timeout=5,
+            61184,
+            1,
+            b"\x01\x01\x00\x00\x01\x07\x01\x00\x01\x01",
             expect_reply=True,
-            use_ieee=False,
-            ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            command_id=0,
         )
         assert rsp.status == foundation.Status.SUCCESS
 
@@ -51,15 +46,11 @@ async def test_command(zigpy_device_from_quirk, quirk):
         await wait_for_zigpy_tasks()
 
         m1.assert_called_with(
-            cluster=61184,
-            sequence=2,
-            data=b"\x01\x02\x00\x00\x02\x02\x02\x00\x04\x00\x00\x03r",
-            command_id=0,
-            timeout=5,
+            61184,
+            2,
+            b"\x01\x02\x00\x00\x02\x02\x02\x00\x04\x00\x00\x03r",
             expect_reply=True,
-            use_ieee=False,
-            ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            command_id=0,
         )
         assert rsp.status == foundation.Status.SUCCESS
 
@@ -67,15 +58,11 @@ async def test_command(zigpy_device_from_quirk, quirk):
         await wait_for_zigpy_tasks()
 
         m1.assert_called_with(
-            cluster=61184,
-            sequence=3,
-            data=b"\x01\x03\x00\x00\x03\x01\x01\x00\x01\x01",
-            command_id=0,
-            timeout=5,
+            61184,
+            3,
+            b"\x01\x03\x00\x00\x03\x01\x01\x00\x01\x01",
             expect_reply=True,
-            use_ieee=False,
-            ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            command_id=0,
         )
         assert rsp.status == foundation.Status.SUCCESS
 
@@ -84,15 +71,11 @@ async def test_command(zigpy_device_from_quirk, quirk):
 
         # Should not trigger switch as it is already on
         m1.assert_called_with(
-            cluster=61184,
-            sequence=4,
-            data=b"\x01\x04\x00\x00\x04\x02\x02\x00\x04\x00\x00\x01\xea",
-            command_id=0,
-            timeout=5,
+            61184,
+            4,
+            b"\x01\x04\x00\x00\x04\x02\x02\x00\x04\x00\x00\x01\xea",
             expect_reply=True,
-            use_ieee=False,
-            ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            command_id=0,
         )
         assert rsp.status == foundation.Status.SUCCESS
 
@@ -101,15 +84,11 @@ async def test_command(zigpy_device_from_quirk, quirk):
 
         # Should switch off without dimming
         m1.assert_called_with(
-            cluster=61184,
-            sequence=5,
-            data=b"\x01\x05\x00\x00\x05\x01\x01\x00\x01\x00",
-            command_id=0,
-            timeout=5,
+            61184,
+            5,
+            b"\x01\x05\x00\x00\x05\x01\x01\x00\x01\x00",
             expect_reply=True,
-            use_ieee=False,
-            ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            command_id=0,
         )
         assert rsp.status == foundation.Status.SUCCESS
 
@@ -118,26 +97,18 @@ async def test_command(zigpy_device_from_quirk, quirk):
 
         # Should switch on and then switch to level
         m1.assert_any_call(
-            cluster=61184,
-            sequence=6,
-            data=b"\x01\x06\x00\x00\x06\x01\x01\x00\x01\x01",
-            command_id=0,
-            timeout=5,
+            61184,
+            6,
+            b"\x01\x06\x00\x00\x06\x01\x01\x00\x01\x01",
             expect_reply=True,
-            use_ieee=False,
-            ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            command_id=0,
         )
         m1.assert_called_with(
-            cluster=61184,
-            sequence=7,
-            data=b"\x01\x07\x00\x00\x07\x02\x02\x00\x04\x00\x00\x00b",
-            command_id=0,
-            timeout=5,
+            61184,
+            7,
+            b"\x01\x07\x00\x00\x07\x02\x02\x00\x04\x00\x00\x00b",
             expect_reply=True,
-            use_ieee=False,
-            ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            command_id=0,
         )
         assert rsp.status == foundation.Status.SUCCESS
 
@@ -162,15 +133,11 @@ async def test_write_attr(zigpy_device_from_quirk, quirk):
         )
         await wait_for_zigpy_tasks()
         m1.assert_called_with(
-            cluster=61184,
-            sequence=1,
-            data=b"\x01\x01\x00\x00\x01\x03\x02\x00\x04\x00\x00\x00b",
-            command_id=0,
-            timeout=5,
+            61184,
+            1,
+            b"\x01\x01\x00\x00\x01\x03\x02\x00\x04\x00\x00\x00b",
             expect_reply=False,
-            use_ieee=False,
-            ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            command_id=0,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)

@@ -511,33 +511,21 @@ async def test_xiaomi_eu_plug_binding(zigpy_device_from_quirk, quirk):
         assert len(request_mock.mock_calls) == 1
         assert mock_task.call_count == 1
 
-        assert request_mock.mock_calls[0].kwargs == {
-            "cluster": 4,
-            "sequence": 1,
-            "data": b"\x01\x01\x03\x00\x00",
-            "command_id": 3,
-            "timeout": 5,
-            "expect_reply": True,
-            "use_ieee": False,
-            "ask_for_ack": None,
-            "priority": t.PacketPriority.NORMAL,
-        }
+        assert request_mock.mock_calls[0][1] == (
+            4,
+            1,
+            b"\x01\x01\x03\x00\x00",
+        )
 
         # Await call writing OppleMode attribute
         await mock_task.call_args[0][0]
 
         assert len(request_mock.mock_calls) == 2
-        assert request_mock.mock_calls[1].kwargs == {
-            "cluster": 64704,
-            "sequence": 2,
-            "data": b"\x04_\x11\x02\x02\t\x00 \x01",
-            "command_id": 2,
-            "timeout": 5,
-            "expect_reply": True,
-            "use_ieee": False,
-            "ask_for_ack": None,
-            "priority": t.PacketPriority.NORMAL,
-        }
+        assert request_mock.mock_calls[1][1] == (
+            64704,
+            2,
+            b"\x04_\x11\x02\x02\t\x00 \x01",
+        )
 
 
 @pytest.mark.parametrize(
