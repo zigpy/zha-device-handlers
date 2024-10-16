@@ -45,9 +45,7 @@ class PhilipsContactCluster(CustomCluster):
     #  output_clusters=[0, 3, 6, 25]>
     QuirkBuilder("Signify Netherlands B.V.", "SOC001")
     .removes(cluster_id=6, endpoint_id=2, cluster_type=ClusterType.Client)
-    .replaces(
-        replacement_cluster_class=PhilipsContactCluster, cluster_id=64518, endpoint_id=2
-    )
+    .replaces(PhilipsContactCluster, endpoint_id=2)
     .binary_sensor(
         attribute_name="contact",
         cluster_id=64518,  # 0xfc06
