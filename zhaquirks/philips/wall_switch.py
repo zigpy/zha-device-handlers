@@ -3,7 +3,7 @@
 from typing import Final
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.quirks import CustomDevice
 import zigpy.types as t
 from zigpy.zcl.clusters.general import (
     Basic,
@@ -31,35 +31,31 @@ from zhaquirks.const import (
     SHORT_RELEASE,
     TURN_ON,
 )
-from zhaquirks.philips import PHILIPS, SIGNIFY, Button, PhilipsRemoteCluster, PressType
+from zhaquirks.philips import (
+    PHILIPS,
+    SIGNIFY,
+    Button,
+    PhilipsBasicCluster,
+    PhilipsRemoteCluster,
+    PressType,
+)
 
 DEVICE_SPECIFIC_UNKNOWN = 64512
 
 
-class PhilipsBasicCluster(CustomCluster, Basic):
-    """Philips Basic cluster."""
+class PhilipsWallSwitchBasicCluster(PhilipsBasicCluster):
+    """Philips wall switch Basic cluster."""
 
-    class AttributeDefs(Basic.AttributeDefs):
+    class AttributeDefs(PhilipsBasicCluster.AttributeDefs):
         """Attribute definitions."""
 
-        philips: Final = ZCLAttributeDef(
-            id=0x0031,
-            type=t.bitmap16,
-            is_manufacturer_specific=True,
-        )
         mode: Final = ZCLAttributeDef(
             id=0x0034,
             type=t.enum8,
             is_manufacturer_specific=True,
         )
 
-    attr_config = {AttributeDefs.philips.id: 0x000B, AttributeDefs.mode.id: 0x02}
-
-    async def bind(self):
-        """Bind cluster."""
-        result = await super().bind()
-        await self.write_attributes(self.attr_config, manufacturer=0x100B)
-        return result
+    attr_config = {**PhilipsBasicCluster.attr_config, AttributeDefs.mode.id: 0x02}
 
 
 class PhilipsWallSwitchRemoteCluster(PhilipsRemoteCluster):
@@ -122,7 +118,7 @@ class PhilipsWallSwitch(CustomDevice):
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.NON_COLOR_CONTROLLER,
                 INPUT_CLUSTERS: [
-                    PhilipsBasicCluster,
+                    PhilipsWallSwitchBasicCluster,
                     PowerConfiguration.cluster_id,
                     Identify.cluster_id,
                     PhilipsWallSwitchRemoteCluster,
