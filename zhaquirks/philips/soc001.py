@@ -3,6 +3,7 @@
 from zigpy import types
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import BinarySensorDeviceClass, ClusterType, QuirkBuilder
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 
 class PhilipsContactCluster(CustomCluster):
@@ -11,12 +12,30 @@ class PhilipsContactCluster(CustomCluster):
     cluster_id = 64518  # 0xfc06
     name = "Philips contact cluster"
     ep_attribute = "philips_contact_cluster"
-    attributes = {
-        0x0100: ("contact", types.enum8, True),
-        0x0101: ("last_contact_change", types.uint32_t, True),
-        0x0102: ("tamper", types.enum8, True),
-        0x0103: ("last_tamper_change", types.uint32_t, True),
-    }
+
+    class AttributeDefs(BaseAttributeDefs):
+        """Attribute definitions."""
+
+        contact = ZCLAttributeDef(
+            id=0x0100,
+            type=types.enum8,
+            is_manufacturer_specific=True,
+        )
+        last_contact_change = ZCLAttributeDef(
+            id=0x0101,
+            type=types.uint32_t,
+            is_manufacturer_specific=True,
+        )
+        tamper = ZCLAttributeDef(
+            id=0x0102,
+            type=types.enum8,
+            is_manufacturer_specific=True,
+        )
+        last_tamper_change = ZCLAttributeDef(
+            id=0x0103,
+            type=types.uint32_t,
+            is_manufacturer_specific=True,
+        )
 
 
 (
