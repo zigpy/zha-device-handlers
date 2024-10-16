@@ -22,7 +22,6 @@ from zhaquirks.tuya import (
     PowerOnState,
     TuyaCommand,
     TuyaDatapointData,
-    TuyaEnchantableCluster,
     TuyaLocalCluster,
     TuyaNewManufCluster,
     TuyaTimePayload,
@@ -358,7 +357,7 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
         return foundation.Status.SUCCESS
 
 
-class TuyaOnOff(TuyaEnchantableCluster, OnOff, TuyaLocalCluster):
+class TuyaOnOff(OnOff, TuyaLocalCluster):
     """Tuya MCU OnOff cluster."""
 
     async def command(
