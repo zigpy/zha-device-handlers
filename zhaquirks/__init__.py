@@ -9,6 +9,7 @@ import logging
 import pathlib
 import pkgutil
 import sys
+import typing
 from typing import Any
 
 import zigpy.device
@@ -60,9 +61,15 @@ class Bus(ListenableMixin):
 
 
 class LocalDataCluster(CustomCluster):
-    """Cluster meant to prevent remote calls."""
+    """Cluster meant to prevent remote calls.
 
-    _CONSTANT_ATTRIBUTES = {}
+    Set _CONSTANT_ATTRIBUTES to provide constant values for attribute ids.
+    Set _VALID_ATTRIBUTES to provide a list of valid attribute ids that will never be shown as unsupported.
+    These are attributes that should be populated later.
+    """
+
+    _CONSTANT_ATTRIBUTES: dict[int, typing.Any] = {}
+    _VALID_ATTRIBUTES: list[int] = []
 
     async def bind(self):
         """Prevent bind."""
@@ -94,7 +101,10 @@ class LocalDataCluster(CustomCluster):
                 record.value.value = self._CONSTANT_ATTRIBUTES[record.attrid]
             else:
                 record.value.value = self._attr_cache.get(record.attrid)
-            if record.value.value is not None:
+            if (
+                record.value.value is not None
+                or record.attrid in self._VALID_ATTRIBUTES
+            ):
                 record.status = foundation.Status.SUCCESS
         return (records,)
 

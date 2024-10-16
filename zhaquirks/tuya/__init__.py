@@ -864,7 +864,7 @@ class TuyaLocalCluster(LocalDataCluster):
     """
 
     def update_attribute(self, attr_name: str, value: Any) -> None:
-        """Update attribute by attribute name."""
+        """Update attribute by name and safeguard against unknown attributes."""
 
         try:
             attr = self.attributes_by_name[attr_name]
@@ -1497,7 +1497,31 @@ class TuyaNewManufCluster(CustomCluster):
         ),
     }
 
+    dp_to_attribute: dict[int, DPToAttributeMapping] = {}
     data_point_handlers: dict[int, str] = {}
+
+    def __init__(self, *args, **kwargs):
+        """Initialize the cluster and mark attributes as valid on LocalDataClusters."""
+        super().__init__(*args, **kwargs)
+        for dp_map in self.dp_to_attribute.values():
+            # get the endpoint that is being mapped to
+            endpoint = self.endpoint
+            if dp_map.endpoint_id:
+                endpoint = self.endpoint.device.endpoints.get(dp_map.endpoint_id)
+
+            # the endpoint to be mapped to might not actually exist within all quirks
+            if not endpoint:
+                continue
+
+            cluster = getattr(endpoint, dp_map.ep_attribute, None)
+            # the cluster to be mapped to might not actually exist within all quirks
+            if not cluster:
+                continue
+
+            # mark mapped to attribute as valid if existing and if on a LocalDataCluster
+            attr = cluster.attributes_by_name.get(dp_map.attribute_name)
+            if attr and isinstance(cluster, LocalDataCluster):
+                cluster._VALID_ATTRIBUTES.append(attr.id)
 
     def handle_cluster_request(
         self,
