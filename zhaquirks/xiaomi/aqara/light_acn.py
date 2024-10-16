@@ -20,6 +20,7 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.smartenergy import Metering
+from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -37,12 +38,35 @@ from zhaquirks.xiaomi import (
 )
 
 
+class LumiPowerOnBehaviorMode(t.uint8_t):
+    """Power on behavior mode."""
+
+    On = 0x00
+    """Will be turned on after power outage."""
+    PreserveState = 0x01
+    """Will keep the state it was before power outage."""
+    Off = 0x02
+    """Will be turned off after power outage."""
+
+
 class OppleClusterLight(XiaomiAqaraE1Cluster):
     """Add Opple cluster for power outage memory attribute."""
 
     attributes = {
         0x0201: ("power_outage_memory", t.Bool, True),
     }
+
+
+class LumiClusterLight(XiaomiAqaraE1Cluster):
+    """Add power on behavior management for Lumi devices."""
+
+    manufacturer_id_override = 4447
+
+    attributes = XiaomiAqaraE1Cluster.attributes.copy()
+    attributes[0x0517] = ZCLAttributeDef(
+        id=0x0517, type=LumiPowerOnBehaviorMode, is_manufacturer_specific=True,
+        name="power_on_behavior"
+    )
 
 
 class LumiLightAcn003(XiaomiCustomDevice):
@@ -198,5 +222,89 @@ class LumiLightAcn014(XiaomiCustomDevice):
                     GreenPowerProxy.cluster_id,  # 0x0021
                 ],
             },
+        }
+    }
+
+
+class LumiLightAcn032(XiaomiCustomDevice):
+    """Aqara Light T1M (ceiling light with RGB ring).
+
+    This quirk adds support for power on behavior by adding the power_outage_memory attribute, the rest works out
+    of the box.
+
+    It MIGHT also work for the Model T1 (acn031) but it has not been tested.
+    """
+
+    signature = {
+        MODELS_INFO: [("Aqara", "lumi.light.acn032"), ],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.COLOR_DIMMABLE_LIGHT,
+                INPUT_CLUSTERS: [
+                    BasicCluster.cluster_id,  # 0x0000
+                    Identify.cluster_id,  # 0x0003
+                    Groups.cluster_id,  # 0x0004
+                    Scenes.cluster_id,  # 0x0005
+                    OnOff.cluster_id,  # 0x0006
+                    LevelControl.cluster_id,  # 0x0008
+                    Color.cluster_id,  # 0x0300
+                    LumiClusterLight.cluster_id,  # 0xFCC0 - manufacturer specific
+                ],
+                OUTPUT_CLUSTERS: [
+                    Time.cluster_id,  # 0x000A
+                    Ota.cluster_id,  # 0x0019
+                ],
+            },
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.COLOR_DIMMABLE_LIGHT,
+                INPUT_CLUSTERS: [
+                    Identify.cluster_id,  # 0x0003
+                    Groups.cluster_id,  # 0x0004
+                    Scenes.cluster_id,  # 0x0005
+                    OnOff.cluster_id,  # 0x0006
+                    LevelControl.cluster_id,  # 0x0008
+                    Color.cluster_id,  # 0x0300
+                    LumiClusterLight.cluster_id,  # 0xFCC0 - manufacturer specific
+                ],
+                OUTPUT_CLUSTERS: [],
+            }
+        }
+    }
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.COLOR_DIMMABLE_LIGHT,
+                INPUT_CLUSTERS: [
+                    BasicCluster.cluster_id,
+                    Identify.cluster_id,  # 0x0003
+                    Groups.cluster_id,  # 0x0004
+                    Scenes.cluster_id,  # 0x0005
+                    OnOff.cluster_id,  # 0x0006
+                    LevelControl.cluster_id,  # 0x0008
+                    Color.cluster_id,  # 0x0300
+                    LumiClusterLight,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Time.cluster_id,  # 0x000A
+                    Ota.cluster_id,  # 0x0019
+                ],
+            },
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.COLOR_DIMMABLE_LIGHT,
+                INPUT_CLUSTERS: [
+                    Identify.cluster_id,  # 0x0003
+                    Groups.cluster_id,  # 0x0004
+                    Scenes.cluster_id,  # 0x0005
+                    OnOff.cluster_id,  # 0x0006
+                    LevelControl.cluster_id,  # 0x0008
+                    Color.cluster_id,  # 0x0300
+                    LumiClusterLight.cluster_id,  # 0xFCC0 - manufacturer specific
+                ],
+                OUTPUT_CLUSTERS: [],
+            }
         }
     }
