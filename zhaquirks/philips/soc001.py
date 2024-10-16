@@ -5,8 +5,8 @@ from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import (
     BinarySensorDeviceClass,
     ClusterType,
-    QuirkBuilder,
     EntityType,
+    QuirkBuilder,
 )
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
