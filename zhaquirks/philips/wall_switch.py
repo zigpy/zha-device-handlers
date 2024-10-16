@@ -1,4 +1,4 @@
-"""Signify wall switch devices (at the moment RDM001 and RDM004)."""
+"""Signify wall switch devices (RDM001 and RDM004)."""
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
@@ -83,7 +83,7 @@ class PhilipsWallSwitch(CustomDevice):
         MODELS_INFO: [
             (PHILIPS, "RDM001"),
             (SIGNIFY, "RDM001"),
-            (PHILIPS, "RDM004"),
+            (PHILIPS, "RDM004"),  # likely not needed
             (SIGNIFY, "RDM004"),
         ],
         ENDPOINTS: {
