@@ -62,7 +62,7 @@ class IlluminanceMeasurementCluster(CustomCluster, IlluminanceMeasurement):
 
     def _update_attribute(self, attrid, value):
         if attrid == self.ATTR_ID and value > 0:
-            value = 10000 * math.log10(value) + 1
+            value = 10000 * math.log10(value + 1)
         super()._update_attribute(attrid, value)
 
 
