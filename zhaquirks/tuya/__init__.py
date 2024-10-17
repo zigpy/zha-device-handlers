@@ -1507,6 +1507,9 @@ class TuyaNewManufCluster(CustomCluster):
     cluster_id: t.uint16_t = TUYA_CLUSTER_ID
     ep_attribute: str = "tuya_manufacturer"
 
+    class AttributeDefs(CustomCluster.AttributeDefs):
+        """Attribute Definitions."""
+
     server_commands = {
         TUYA_QUERY_DATA: foundation.ZCLCommandDef(
             "query_data", {}, False, is_manufacturer_specific=True

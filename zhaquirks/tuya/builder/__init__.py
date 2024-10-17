@@ -62,13 +62,17 @@ class TuyaValveWaterConsumed(Metering, TuyaLocalCluster):
 class TuyaQuirkBuilder(QuirkBuilder):
     """Tuya QuirkBuilder."""
 
+    class AttributeDefs(TuyaMCUCluster.AttributeDefs):
+        """Attribute Definitions."""
+
     def __init__(
         self, manufacturer: str, model: str, registry: DeviceRegistry = _DEVICE_REGISTRY
     ) -> None:
         """Init the TuyaQuirkBuilder."""
         self.tuya_data_point_handlers: dict[int, str] = {}
         self.tuya_dp_to_attribute: dict[int, DPToAttributeMapping] = {}
-        self.new_attributes: dict[int, foundation.ZCLAttributeDef] = {}
+        # self.new_attributes: dict[int, foundation.ZCLAttributeDef] = {}
+        # self.new_attributes: set[foundation.ZCLAttributeDef] = set()
         super().__init__(manufacturer, model, registry)
 
     def tuya_battery(
@@ -173,17 +177,29 @@ class TuyaQuirkBuilder(QuirkBuilder):
     ) -> QuirkBuilder:
         """Add an attribute to AttributeDefs."""
         attr_id: int = int.from_bytes([0xEF, dp_id])
-        self.new_attributes.update(
-            {
-                attr_id: foundation.ZCLAttributeDef(
-                    id=attr_id,
-                    type=type,
-                    access=access,
-                    is_manufacturer_specific=is_manufacturer_specific,
-                    name=attribute_name,
-                )
-            }
+
+        new_attr = foundation.ZCLAttributeDef(
+            id=attr_id,
+            type=type,
+            access=access,
+            is_manufacturer_specific=is_manufacturer_specific,
+            name=attribute_name,
         )
+
+        setattr(self.AttributeDefs, new_attr.name, new_attr)
+
+        # self.new_attributes.add(
+        #     #{
+        #         #attr_id:
+        #         foundation.ZCLAttributeDef(
+        #             id=attr_id,
+        #             type=type,
+        #             access=access,
+        #             is_manufacturer_specific=is_manufacturer_specific,
+        #             name=attribute_name,
+        #         )
+        #     #}
+        # )
 
         return self
 
@@ -296,8 +312,8 @@ class TuyaQuirkBuilder(QuirkBuilder):
         access: foundation.ZCLAttributeAccess = foundation.ZCLAttributeAccess.Read
         | foundation.ZCLAttributeAccess.Write,
         endpoint_id: int = 1,
-        entity_type: EntityType = EntityType.CONFIG,
         entity_platform: EntityPlatform = EntityPlatform.SELECT,
+        entity_type: EntityType = EntityType.CONFIG,
         initially_disabled: bool = False,
         attribute_initialized_from_cache: bool = True,
         translation_key: str | None = None,
@@ -318,8 +334,8 @@ class TuyaQuirkBuilder(QuirkBuilder):
             enum_class=enum_class,
             cluster_id=TUYA_CLUSTER_ID,
             endpoint_id=endpoint_id,
-            entity_type=entity_type,
             entity_platform=entity_platform,
+            entity_type=entity_type,
             initially_disabled=initially_disabled,
             attribute_initialized_from_cache=attribute_initialized_from_cache,
             translation_key=translation_key,
@@ -342,6 +358,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         unit: str | None = None,
         mode: str | None = None,
         multiplier: float | None = None,
+        entity_type: EntityType = EntityType.CONFIG,
         device_class: NumberDeviceClass | None = None,
         initially_disabled: bool = False,
         attribute_initialized_from_cache: bool = True,
@@ -368,6 +385,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
             unit=unit,
             mode=mode,
             multiplier=multiplier,
+            entity_type=entity_type,
             device_class=device_class,
             initially_disabled=initially_disabled,
             attribute_initialized_from_cache=attribute_initialized_from_cache,
@@ -466,15 +484,20 @@ class TuyaQuirkBuilder(QuirkBuilder):
     def add_to_registry(self) -> QuirksV2RegistryEntry:
         """Build the quirks v2 registry entry."""
 
-        attr_dict: dict[int, foundation.ZCLAttributeDef] = self.new_attributes
+        class NewAttributeDefs(TuyaMCUCluster.AttributeDefs):
+            """Attribute Definitions."""
+
+        for attr in self.AttributeDefs:
+            setattr(NewAttributeDefs, attr.name, attr)
 
         class TuyaReplacementCluster(TuyaMCUCluster):
             """Replacement Tuya Cluster."""
 
             data_point_handlers: dict[int, str]
             dp_to_attribute: dict[int, DPToAttributeMapping]
-            attributes = TuyaMCUCluster.attributes.copy()
-            attributes.update(attr_dict)
+
+            class AttributeDefs(NewAttributeDefs):
+                """Attribute Definitions."""
 
             async def write_attributes(self, attributes, manufacturer=None):
                 """Overwrite to force manufacturer code."""
@@ -483,10 +506,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
                     attributes, manufacturer=foundation.ZCLHeader.NO_MANUFACTURER_ID
                 )
 
-        TuyaReplacementCluster.data_point_handlers = (
-            TuyaMCUCluster.data_point_handlers.copy()
-        )
-        TuyaReplacementCluster.data_point_handlers.update(self.tuya_data_point_handlers)
+        TuyaReplacementCluster.data_point_handlers = self.tuya_data_point_handlers
         TuyaReplacementCluster.dp_to_attribute = self.tuya_dp_to_attribute
 
         self.replaces(TuyaReplacementCluster)
