@@ -92,10 +92,6 @@ class CustomMultistateInputCluster(CustomCluster, MultistateInput):
 class QUAD_ZIG_SW_BASE(CustomDevice):
     """Base class for QUAD-ZIG-SW."""
 
-    def __init__(self, *args, **kwargs):
-        """Init device."""
-        super().__init__(*args, **kwargs)
-
     def get_signature_v1():
         """Firmware version 1 signature."""
         return {
