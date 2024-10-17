@@ -87,6 +87,7 @@ class TuyaCO2SensorGPP(CustomDevice):
             ("_TZE200_8ygsuhe1", "TS0601"),
             ("_TZE200_ryfmq5rl", "TS0601"),
             ("_TZE200_yvx5lh6k", "TS0601"),
+            ("_TZE204_yvx5lh6k", "TS0601"),
             ("_TZE200_c2fmom5z", "TS0601"),
         ],
         ENDPOINTS: {
