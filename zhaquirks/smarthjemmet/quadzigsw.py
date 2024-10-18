@@ -1,15 +1,8 @@
 """Device handler for smarthjemmet.dk QUAD-ZIG-SW."""
 
-from zigpy.profiles import zha
-from zigpy.profiles.zha import DeviceType
-from zigpy.quirks import CustomCluster, CustomDevice
-from zigpy.zcl.clusters.general import (
-    Basic,
-    MultistateInput,
-    OnOff,
-    OnOffConfiguration,
-    PowerConfiguration,
-)
+from zigpy.quirks import CustomCluster
+from zigpy.quirks.v2 import QuirkBuilder
+from zigpy.zcl.clusters.general import MultistateInput
 import zigpy.zcl.foundation
 
 from zhaquirks import PowerConfigurationCluster
@@ -20,18 +13,11 @@ from zhaquirks.const import (
     COMMAND_RELEASE,
     COMMAND_SINGLE,
     COMMAND_TRIPLE,
-    DEVICE_TYPE,
     DOUBLE_PRESS,
     ENDPOINT_ID,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
     LONG_PRESS,
     LONG_RELEASE,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
     SHORT_PRESS,
-    SKIP_CONFIGURATION,
     TRIPLE_PRESS,
     VALUE,
     ZHA_SEND_EVENT,
@@ -83,203 +69,26 @@ class CustomMultistateInputCluster(CustomCluster, MultistateInput):
             super()._update_attribute(0, action)
 
 
-class QUAD_ZIG_SW_v1(CustomDevice):
-    """Firmware version 1 device class for QUAD-ZIG-SW."""
-
-    signature = {
-        MODELS_INFO: [(MANUFACTURER, MODEL_ID)],
-        ENDPOINTS: {
-            # <SimpleDescriptor endpoint=1 profile=260 device_type=65534
-            # input_clusters=[0, 1, 7]
-            # output_clusters=[0, 1, 18]>
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: 65534,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    OnOffConfiguration.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    CustomMultistateInputCluster.cluster_id,
-                ],
-            },
-            # <SimpleDescriptor endpoint=2 profile=260 device_type=65534
-            # input_clusters=[7]
-            # output_clusters=[18]>
-            2: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: 65534,
-                INPUT_CLUSTERS: [OnOffConfiguration.cluster_id],
-                OUTPUT_CLUSTERS: [CustomMultistateInputCluster.cluster_id],
-            },
-            # <SimpleDescriptor endpoint=3 profile=260 device_type=65534
-            # input_clusters=[7]
-            # output_clusters=[18]>
-            3: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: 65534,
-                INPUT_CLUSTERS: [OnOffConfiguration.cluster_id],
-                OUTPUT_CLUSTERS: [CustomMultistateInputCluster.cluster_id],
-            },
-            # <SimpleDescriptor endpoint=4 profile=260 device_type=65534
-            # input_clusters=[7]
-            # output_clusters=[18]>
-            4: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: 65534,
-                INPUT_CLUSTERS: [OnOffConfiguration.cluster_id],
-                OUTPUT_CLUSTERS: [CustomMultistateInputCluster.cluster_id],
-            },
-            # <SimpleDescriptor endpoint=5 profile=260 device_type=65534
-            # input_clusters=[7]
-            # output_clusters=[18]>
-            5: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: 65534,
-                INPUT_CLUSTERS: [OnOffConfiguration.cluster_id],
-                OUTPUT_CLUSTERS: [CustomMultistateInputCluster.cluster_id],
-            },
-        },
-    }
-
-    replacement = {
-        SKIP_CONFIGURATION: True,
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: DeviceType.REMOTE_CONTROL,
-                INPUT_CLUSTERS: [Basic.cluster_id, CR2032PowerConfigurationCluster],
-                OUTPUT_CLUSTERS: [Basic.cluster_id],
-            },
-            2: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: DeviceType.REMOTE_CONTROL,
-                INPUT_CLUSTERS: [
-                    CustomMultistateInputCluster,
-                    OnOffConfiguration.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [CustomMultistateInputCluster.cluster_id],
-            },
-            3: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: DeviceType.REMOTE_CONTROL,
-                INPUT_CLUSTERS: [
-                    CustomMultistateInputCluster,
-                    OnOffConfiguration.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [CustomMultistateInputCluster.cluster_id],
-            },
-            4: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: DeviceType.REMOTE_CONTROL,
-                INPUT_CLUSTERS: [
-                    CustomMultistateInputCluster,
-                    OnOffConfiguration.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [CustomMultistateInputCluster.cluster_id],
-            },
-            5: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: DeviceType.REMOTE_CONTROL,
-                INPUT_CLUSTERS: [
-                    CustomMultistateInputCluster,
-                    OnOffConfiguration.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [CustomMultistateInputCluster.cluster_id],
-            },
-        },
-    }
-
-    device_automation_triggers = {
-        (press_type, f"button_{i}"): {
-            COMMAND: command,
-            ENDPOINT_ID: i + 1,
+(
+    QuirkBuilder(MANUFACTURER, MODEL_ID)
+    .skip_configuration()
+    .replaces(CR2032PowerConfigurationCluster)
+    .replace_cluster_occurrences(CustomMultistateInputCluster)
+    .device_automation_triggers(
+        {
+            (press_type, f"button_{i}"): {
+                COMMAND: command,
+                ENDPOINT_ID: i + 1,
+            }
+            for i in range(1, 6)
+            for press_type, command in {
+                (SHORT_PRESS, COMMAND_SINGLE),
+                (DOUBLE_PRESS, COMMAND_DOUBLE),
+                (TRIPLE_PRESS, COMMAND_TRIPLE),
+                (LONG_PRESS, COMMAND_HOLD),
+                (LONG_RELEASE, COMMAND_RELEASE),
+            }
         }
-        for i in range(1, 6)
-        for press_type, command in {
-            (SHORT_PRESS, COMMAND_SINGLE),
-            (DOUBLE_PRESS, COMMAND_DOUBLE),
-            (TRIPLE_PRESS, COMMAND_TRIPLE),
-            (LONG_PRESS, COMMAND_HOLD),
-            (LONG_RELEASE, COMMAND_RELEASE),
-        }
-    }
-
-
-class QUAD_ZIG_SW_v2(QUAD_ZIG_SW_v1):
-    """Firmware version 2 device class for QUAD-ZIG-SW, inherits from v1 class."""
-
-    signature = {
-        MODELS_INFO: [(MANUFACTURER, MODEL_ID)],
-        ENDPOINTS: {
-            # <SimpleDescriptor endpoint=1 profile=260 device_type=65535
-            # input_clusters=[0, 1, 7]
-            # output_clusters=[0, 1, 18, 6]>
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: DeviceType.REMOTE_CONTROL,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    OnOffConfiguration.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    CustomMultistateInputCluster.cluster_id,
-                    OnOff.cluster_id,
-                ],
-            },
-            # <SimpleDescriptor endpoint=2 profile=260 device_type=65535
-            # input_clusters=[7]
-            # output_clusters=[18, 6]>
-            2: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: DeviceType.REMOTE_CONTROL,
-                INPUT_CLUSTERS: [OnOffConfiguration.cluster_id],
-                OUTPUT_CLUSTERS: [
-                    CustomMultistateInputCluster.cluster_id,
-                    OnOff.cluster_id,
-                ],
-            },
-            # <SimpleDescriptor endpoint=3 profile=260 device_type=65535
-            # input_clusters=[7]
-            # output_clusters=[18, 6]>
-            3: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: DeviceType.REMOTE_CONTROL,
-                INPUT_CLUSTERS: [OnOffConfiguration.cluster_id],
-                OUTPUT_CLUSTERS: [
-                    CustomMultistateInputCluster.cluster_id,
-                    OnOff.cluster_id,
-                ],
-            },
-            # <SimpleDescriptor endpoint=4 profile=260 device_type=65535
-            # input_clusters=[7]
-            # output_clusters=[18, 6]>
-            4: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: DeviceType.REMOTE_CONTROL,
-                INPUT_CLUSTERS: [OnOffConfiguration.cluster_id],
-                OUTPUT_CLUSTERS: [
-                    CustomMultistateInputCluster.cluster_id,
-                    OnOff.cluster_id,
-                ],
-            },
-            # <SimpleDescriptor endpoint=5 profile=260 device_type=65535
-            # input_clusters=[7]
-            # output_clusters=[18, 6]>
-            5: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: DeviceType.REMOTE_CONTROL,
-                INPUT_CLUSTERS: [OnOffConfiguration.cluster_id],
-                OUTPUT_CLUSTERS: [
-                    CustomMultistateInputCluster.cluster_id,
-                    OnOff.cluster_id,
-                ],
-            },
-        },
-    }
+    )
+    .add_to_registry()
+)
