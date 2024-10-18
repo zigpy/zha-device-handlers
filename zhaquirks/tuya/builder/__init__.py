@@ -62,17 +62,13 @@ class TuyaValveWaterConsumed(Metering, TuyaLocalCluster):
 class TuyaQuirkBuilder(QuirkBuilder):
     """Tuya QuirkBuilder."""
 
-    class AttributeDefs(TuyaMCUCluster.AttributeDefs):
-        """Attribute Definitions."""
-
     def __init__(
         self, manufacturer: str, model: str, registry: DeviceRegistry = _DEVICE_REGISTRY
     ) -> None:
         """Init the TuyaQuirkBuilder."""
         self.tuya_data_point_handlers: dict[int, str] = {}
         self.tuya_dp_to_attribute: dict[int, DPToAttributeMapping] = {}
-        # self.new_attributes: dict[int, foundation.ZCLAttributeDef] = {}
-        # self.new_attributes: set[foundation.ZCLAttributeDef] = set()
+        self.new_attributes: set[foundation.ZCLAttributeDef] = set()
         super().__init__(manufacturer, model, registry)
 
     def tuya_battery(
@@ -178,28 +174,15 @@ class TuyaQuirkBuilder(QuirkBuilder):
         """Add an attribute to AttributeDefs."""
         attr_id: int = int.from_bytes([0xEF, dp_id])
 
-        new_attr = foundation.ZCLAttributeDef(
-            id=attr_id,
-            type=type,
-            access=access,
-            is_manufacturer_specific=is_manufacturer_specific,
-            name=attribute_name,
+        self.new_attributes.add(
+            foundation.ZCLAttributeDef(
+                id=attr_id,
+                type=type,
+                access=access,
+                is_manufacturer_specific=is_manufacturer_specific,
+                name=attribute_name,
+            )
         )
-
-        setattr(self.AttributeDefs, new_attr.name, new_attr)
-
-        # self.new_attributes.add(
-        #     #{
-        #         #attr_id:
-        #         foundation.ZCLAttributeDef(
-        #             id=attr_id,
-        #             type=type,
-        #             access=access,
-        #             is_manufacturer_specific=is_manufacturer_specific,
-        #             name=attribute_name,
-        #         )
-        #     #}
-        # )
 
         return self
 
@@ -487,7 +470,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         class NewAttributeDefs(TuyaMCUCluster.AttributeDefs):
             """Attribute Definitions."""
 
-        for attr in self.AttributeDefs:
+        for attr in self.new_attributes:
             setattr(NewAttributeDefs, attr.name, attr)
 
         class TuyaReplacementCluster(TuyaMCUCluster):

@@ -131,6 +131,16 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
     set_time_offset = 1970  # MCU timestamp from 1/1/1970
     set_time_local_offset = None
 
+    class AttributeDefs(TuyaNewManufCluster.AttributeDefs):
+        """Attribute Definitions."""
+
+        mcu_version = foundation.ZCLAttributeDef(
+            id=ATTR_MCU_VERSION,
+            type=t.uint48_t,
+            access=foundation.ZCLAttributeAccess.Read,
+            is_manufacturer_specific=True,
+        )
+
     class MCUVersion(t.Struct):
         """Tuya MCU version response Zcl payload."""
 
@@ -160,16 +170,6 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
 
         tsn: t.uint8_t
         status: t.LVBytes
-
-    class AttributeDefs(TuyaNewManufCluster.AttributeDefs):
-        """Attribute Definitions."""
-
-        mcu_version = foundation.ZCLAttributeDef(
-            id=ATTR_MCU_VERSION,
-            type=t.uint48_t,
-            access=foundation.ZCLAttributeAccess.Read,
-            is_manufacturer_specific=True,
-        )
 
     client_commands = TuyaNewManufCluster.client_commands.copy()
     client_commands.update(
