@@ -8,6 +8,7 @@ from zhaquirks.tuya.builder import TuyaPowerConfigurationCluster2AAA, TuyaQuirkB
     .tuya_temperature(dp_id=1)
     .tuya_humidity(dp_id=2, scale=10)
     .tuya_battery(dp_id=4)
+    .skip_configuration()
     .add_to_registry()
 )
 
@@ -20,6 +21,7 @@ from zhaquirks.tuya.builder import TuyaPowerConfigurationCluster2AAA, TuyaQuirkB
     .tuya_temperature(dp_id=1)
     .tuya_humidity(dp_id=2)
     .tuya_battery(dp_id=4)
+    .skip_configuration()
     .add_to_registry()
 )
 
@@ -41,6 +43,7 @@ from zhaquirks.tuya.builder import TuyaPowerConfigurationCluster2AAA, TuyaQuirkB
         converter=lambda x: {0: 50, 1: 100, 2: 200}[x],
     )
     .adds(TuyaPowerConfigurationCluster2AAA)
+    .skip_configuration()
     .add_to_registry()
 )
 
@@ -51,6 +54,7 @@ from zhaquirks.tuya.builder import TuyaPowerConfigurationCluster2AAA, TuyaQuirkB
     .tuya_temperature(dp_id=5, scale=10)
     .tuya_battery(dp_id=15)
     .tuya_soil_moisture(dp_id=3)
+    .skip_configuration()
     .add_to_registry()
 )
 
@@ -63,5 +67,6 @@ from zhaquirks.tuya.builder import TuyaPowerConfigurationCluster2AAA, TuyaQuirkB
     .tuya_temperature(dp_id=5)
     .tuya_battery(dp_id=15)
     .tuya_soil_moisture(dp_id=3)
+    .skip_configuration()
     .add_to_registry()
 )
