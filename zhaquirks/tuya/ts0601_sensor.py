@@ -4,7 +4,7 @@ from typing import Any
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
-from zigpy.quirks.v2 import EntityPlatform, EntityType, QuirkBuilder
+from zigpy.quirks.v2.homeassistant import EntityPlatform, EntityType
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time
 from zigpy.zcl.clusters.measurement import (
@@ -23,6 +23,7 @@ from zhaquirks.const import (
     SKIP_CONFIGURATION,
 )
 from zhaquirks.tuya import TuyaLocalCluster, TuyaPowerConfigurationCluster2AAA
+from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster
 
 
@@ -489,77 +490,23 @@ class TuyaSoilSensorVar02(CustomDevice):
     }
 
 
-class GiexSoilModel04(TuyaMCUCluster):
-    """GiEX soil manufacturer cluster."""
+class GiexBatteryStatus(t.enum8):
+    """Giex Soil Battery Status Enum."""
 
-    TEMP_SW_ATTR = 0xEF09
-    BATTERY_STAT_ATTR = 0xEF0E
-
-    class GiexBatteryStatus(t.enum8):
-        """Giex Soil Battery Status Enum."""
-
-        Low = 0x00
-        Middle = 0x01
-        High = 0x02
-
-    class GiexTempEnum(t.enum8):
-        """Giex Soil Temp Switch Enum."""
-
-        Celsius = 0x00
-        Fahrenheit = 0x01
-
-    attributes = TuyaMCUCluster.attributes.copy()
-    attributes.update(
-        {
-            BATTERY_STAT_ATTR: ("battery_status", GiexBatteryStatus, True),
-            TEMP_SW_ATTR: ("temp_cf_switch", GiexTempEnum, True),
-        }
-    )
-
-    dp_to_attribute: dict[int, DPToAttributeMapping] = {
-        3: DPToAttributeMapping(
-            TuyaSoilMoisture.ep_attribute,
-            "measured_value",
-            converter=lambda x: x * 100,
-        ),
-        5: DPToAttributeMapping(
-            TuyaTemperatureMeasurement.ep_attribute,
-            "measured_value",
-            converter=lambda x: x * 10,
-        ),
-        9: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "temp_cf_switch",
-        ),
-        14: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "battery_status",
-        ),
-        15: DPToAttributeMapping(
-            TuyaPowerConfigurationCluster2AAA.ep_attribute,
-            "battery_percentage_remaining",
-            converter=lambda x: x * 2,
-        ),
-    }
-    data_point_handlers = {
-        3: "_dp_2_attr_update",
-        5: "_dp_2_attr_update",
-        9: "_dp_2_attr_update",
-        14: "_dp_2_attr_update",
-        15: "_dp_2_attr_update",
-    }
+    Low = 0x00
+    Middle = 0x01
+    High = 0x02
 
 
 (
-    QuirkBuilder("_TZE284_nhgdf6qr", "TS0601")
-    .replaces(GiexSoilModel04)
-    .adds(TuyaPowerConfigurationCluster2AAA)
-    .adds(TuyaSoilMoisture)
-    .adds(TuyaTemperatureMeasurement)
-    .enum(
-        "battery_status",
-        GiexSoilModel04.GiexBatteryStatus,
-        GiexSoilModel04.cluster_id,
+    TuyaQuirkBuilder("_TZE284_nhgdf6qr", "TS0601")  # Giex GX04
+    .tuya_battery(dp_id=15)
+    .tuya_temperature(dp_id=5, scale=10)
+    .tuya_soil_moisture(dp_id=3)
+    .tuya_enum(
+        dp_id=14,
+        attribute_name="battery_status",
+        enum_class=GiexBatteryStatus,
         translation_key="battery_status",
         fallback_name="Battery Status",
         entity_type=EntityType.DIAGNOSTIC,
