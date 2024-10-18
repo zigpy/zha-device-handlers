@@ -2,21 +2,12 @@
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
-from zigpy.quirks.v2 import EntityPlatform, EntityType, QuirkBuilder
+from zigpy.quirks.v2 import EntityPlatform, EntityType
 from zigpy.quirks.v2.homeassistant import UnitOfTime
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import (
-    Basic,
-    Groups,
-    Identify,
-    OnOff,
-    Ota,
-    PowerConfiguration,
-    Scenes,
-    Time,
-)
+from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
 from zigpy.zcl.clusters.smartenergy import Metering
 
 from zhaquirks import DoublingPowerConfigurationCluster
@@ -28,7 +19,13 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import TUYA_CLUSTER_ED00_ID, EnchantedDevice, TuyaLocalCluster
+from zhaquirks.tuya import (
+    TUYA_CLUSTER_ED00_ID,
+    EnchantedDevice,
+    TuyaLocalCluster,
+    TuyaPowerConfigurationCluster4AA,
+)
+from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import (
     DPToAttributeMapping,
     TuyaMCUCluster,
@@ -507,242 +504,59 @@ class GiexValveVar02(CustomDevice):
     }
 
 
-class GiexPowerConfigurationCluster4AA(TuyaPowerConfigurationCluster):
-    """PowerConfiguration cluster for devices with 4 AA."""
+class GiexIrrigationStatus(t.enum8):
+    """Giex Irrigation Status Enum."""
 
-    _CONSTANT_ATTRIBUTES = {
-        PowerConfiguration.AttributeDefs.battery_size.id: 3,
-        PowerConfiguration.AttributeDefs.battery_rated_voltage.id: 15,
-        PowerConfiguration.AttributeDefs.battery_quantity.id: 4,
-    }
-
-
-class GiexValveManufClusterModel03(TuyaMCUCluster):
-    """GiEX valve manufacturer cluster - two outlet version (GX03)."""
-
-    MAX_DURATION_MIN = 1440
-    VALVE_ONE_SW_ATTR = 0xEF01
-    VALVE_TWO_SW_ATTR = 0xEF02
-    VALVE_ONE_CNT_DWN_ATTR = 0xEF0D
-    VALVE_TWO_CNT_DWN_ATTR = 0xEF0E
-    VALVE_ONE_DUR_ATTR = 0xEF19
-    VALVE_TWO_DUR_ATTR = 0xEF1A
-    VALVE_ONE_WX_ATTR = 0xEF25
-    VALVE_TWO_WX_ATTR = 0xEF6A
-    VALVE_ONE_STAT_ATTR = 0xEF68
-    VALVE_TWO_STAT_ATTR = 0xEF69
-    VALVE_FAULT_ATTR = 0xEF67
-
-    class GiexIrrigationStatus(t.enum8):
-        """Giex Irrigation Status Enum."""
-
-        Manual = 0x00
-        Auto = 0x01
-        Idle = 0x02
-
-    class GiexIrrigationWeatherDelay(t.enum8):
-        """Giex Irrigation Weather Delay Enum."""
-
-        NoDelay = 0x00
-        OneDayDelay = 0x01
-        TwoDayDelay = 0x02
-        ThreeDayDelay = 0x03
-        FourDayDelay = 0x04
-        FiveDayDelay = 0x05
-        SixDayDelay = 0x06
-        SevenDayDelay = 0x07
-
-    attributes = TuyaMCUCluster.attributes.copy()
-    attributes.update(
-        {
-            VALVE_ONE_SW_ATTR: ("valve_one_on_off", t.Bool, True),
-            VALVE_TWO_SW_ATTR: ("valve_two_on_off", t.Bool, True),
-            VALVE_ONE_CNT_DWN_ATTR: (
-                "valve_one_countdown",
-                t.uint16_t,
-                True,
-            ),
-            VALVE_TWO_CNT_DWN_ATTR: ("valve_two_countdown", t.uint16_t, True),
-            VALVE_ONE_DUR_ATTR: (
-                "valve_one_duration",
-                t.uint32_t,
-                True,
-            ),
-            VALVE_TWO_DUR_ATTR: ("valve_two_duration", t.uint32_t, True),
-            VALVE_ONE_WX_ATTR: (
-                "valve_one_weather_delay",
-                GiexIrrigationWeatherDelay,
-                True,
-            ),
-            VALVE_TWO_WX_ATTR: (
-                "valve_two_weather_delay",
-                GiexIrrigationWeatherDelay,
-                True,
-            ),
-            VALVE_ONE_STAT_ATTR: ("valve_one_status", GiexIrrigationStatus, True),
-            VALVE_TWO_STAT_ATTR: ("valve_two_status", GiexIrrigationStatus, True),
-            VALVE_FAULT_ATTR: ("valve_fault", t.uint8_t, True),
-        }
-    )
-
-    dp_to_attribute: dict[int, DPToAttributeMapping] = {
-        1: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "valve_one_on_off",
-        ),
-        2: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "valve_two_on_off",
-        ),
-        13: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "valve_one_countdown",
-        ),
-        14: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "valve_two_countdown",
-        ),
-        25: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "valve_one_duration",
-        ),
-        26: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "valve_two_duration",
-        ),
-        37: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "valve_one_weather_delay",
-            converter=lambda x: GiexValveManufClusterModel03.GiexIrrigationWeatherDelay(
-                x
-            ),
-        ),
-        59: DPToAttributeMapping(
-            GiexPowerConfigurationCluster4AA.ep_attribute,
-            "battery_percentage_remaining",
-        ),
-        101: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "valve_one_ptds",
-        ),
-        102: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "valve_one_xhds",
-        ),
-        103: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "valve_fault",
-        ),
-        104: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "valve_one_status",
-            converter=lambda x: GiexValveManufClusterModel03.GiexIrrigationStatus(x),
-        ),
-        105: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "valve_two_status",
-            converter=lambda x: GiexValveManufClusterModel03.GiexIrrigationStatus(x),
-        ),
-        106: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "valve_two_weather_delay",
-            converter=lambda x: GiexValveManufClusterModel03.GiexIrrigationWeatherDelay(
-                x
-            ),
-        ),
-        107: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "valve_two_ptds",
-        ),
-        108: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "valve_two_xhds",
-        ),
-    }
-    data_point_handlers = {
-        1: "_dp_2_attr_update",
-        2: "_dp_2_attr_update",
-        13: "_dp_2_attr_update",
-        14: "_dp_2_attr_update",
-        25: "_dp_2_attr_update",
-        26: "_dp_2_attr_update",
-        37: "_dp_2_attr_update",
-        59: "_dp_2_attr_update",
-        101: "_dp_2_attr_update",
-        102: "_dp_2_attr_update",
-        103: "_dp_2_attr_update",
-        104: "_dp_2_attr_update",
-        105: "_dp_2_attr_update",
-        106: "_dp_2_attr_update",
-        107: "_dp_2_attr_update",
-        108: "_dp_2_attr_update",
-    }
-
-    async def write_attributes(self, attributes, manufacturer=None):
-        """Overwrite to force manufacturer code."""
-
-        return await super().write_attributes(
-            attributes, manufacturer=foundation.ZCLHeader.NO_MANUFACTURER_ID
-        )
+    Manual = 0x00
+    Auto = 0x01
+    Idle = 0x02
 
 
 (
-    QuirkBuilder("_TZE284_8zizsafo", "TS0601")
-    .replaces(GiexValveManufClusterModel03)
-    .adds(GiexPowerConfigurationCluster4AA)
-    .switch(
-        "valve_one_on_off",
-        GiexValveManufClusterModel03.cluster_id,
+    TuyaQuirkBuilder("_TZE284_8zizsafo", "TS0601")  # Giex GX04
+    .tuya_battery(dp_id=59, power_cfg=TuyaPowerConfigurationCluster4AA)
+    .tuya_switch(
+        dp_id=1,
+        attribute_name="valve_one_on_off",
+        entity_type=EntityType.STANDARD,
         translation_key="valve_one_on_off",
         fallback_name="Valve 1",
     )
-    .switch(
-        "valve_two_on_off",
-        GiexValveManufClusterModel03.cluster_id,
+    .tuya_switch(
+        dp_id=2,
+        attribute_name="valve_two_on_off",
+        entity_type=EntityType.STANDARD,
         translation_key="valve_two_on_off",
         fallback_name="Valve 2",
     )
-    .number(
-        "valve_one_countdown",
-        GiexValveManufClusterModel03.cluster_id,
+    .tuya_number(
+        dp_id=13,
+        attribute_name="valve_one_countdown",
+        type=t.uint16_t,
         device_class=SensorDeviceClass.DURATION,
         unit=UnitOfTime.MINUTES,
         min_value=0,
-        max_value=GiexValveManufClusterModel03.MAX_DURATION_MIN,
+        max_value=1440,
         step=1,
         translation_key="valve_one_countdown",
         fallback_name="Irrigation Time 1",
     )
-    .number(
-        "valve_two_countdown",
-        GiexValveManufClusterModel03.cluster_id,
+    .tuya_number(
+        dp_id=14,
+        attribute_name="valve_two_countdown",
+        type=t.uint16_t,
         device_class=SensorDeviceClass.DURATION,
         unit=UnitOfTime.MINUTES,
         min_value=0,
-        max_value=GiexValveManufClusterModel03.MAX_DURATION_MIN,
+        max_value=1440,
         step=1,
         translation_key="valve_two_countdown",
         fallback_name="Irrigation Time 2",
     )
-    .enum(
-        "valve_one_weather_delay",
-        GiexValveManufClusterModel03.GiexIrrigationWeatherDelay,
-        GiexValveManufClusterModel03.cluster_id,
-        translation_key="weather_delay",
-        fallback_name="Weather Delay 1",
-        initially_disabled=True,
-    )
-    .enum(
-        "valve_two_weather_delay",
-        GiexValveManufClusterModel03.GiexIrrigationWeatherDelay,
-        GiexValveManufClusterModel03.cluster_id,
-        translation_key="weather_delay",
-        fallback_name="Weather Delay 2",
-        initially_disabled=True,
-    )
-    .sensor(
-        "valve_one_duration",
-        GiexValveManufClusterModel03.cluster_id,
+    .tuya_sensor(
+        dp_id=25,
+        attribute_name="valve_one_duration",
+        type=t.uint32_t,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.DURATION,
         unit=UnitOfTime.SECONDS,
@@ -750,9 +564,10 @@ class GiexValveManufClusterModel03(TuyaMCUCluster):
         translation_key="irrigation_duration",
         fallback_name="Irrigation Duration 1",
     )
-    .sensor(
-        "valve_two_duration",
-        GiexValveManufClusterModel03.cluster_id,
+    .tuya_sensor(
+        dp_id=26,
+        attribute_name="valve_two_duration",
+        type=t.uint32_t,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.DURATION,
         unit=UnitOfTime.SECONDS,
@@ -760,19 +575,19 @@ class GiexValveManufClusterModel03(TuyaMCUCluster):
         translation_key="irrigation_duration",
         fallback_name="Irrigation Duration 2",
     )
-    .enum(
-        "valve_one_status",
-        GiexValveManufClusterModel03.GiexIrrigationStatus,
-        GiexValveManufClusterModel03.cluster_id,
+    .tuya_enum(
+        dp_id=104,
+        attribute_name="valve_one_status",
+        enum_class=GiexIrrigationStatus,
         entity_platform=EntityPlatform.SENSOR,
         entity_type=EntityType.STANDARD,
         translation_key="valve_one_status",
         fallback_name="Status 1",
     )
-    .enum(
-        "valve_two_status",
-        GiexValveManufClusterModel03.GiexIrrigationStatus,
-        GiexValveManufClusterModel03.cluster_id,
+    .tuya_enum(
+        dp_id=105,
+        attribute_name="valve_two_status",
+        enum_class=GiexIrrigationStatus,
         entity_platform=EntityPlatform.SENSOR,
         entity_type=EntityType.STANDARD,
         translation_key="valve_two_status",

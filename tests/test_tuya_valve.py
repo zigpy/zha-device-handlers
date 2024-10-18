@@ -153,11 +153,15 @@ async def test_giex_03_quirk(zigpy_device_from_v2_quirk, model, manuf):
         )
         await wait_for_zigpy_tasks()
         m1.assert_called_with(
-            61184,
-            1,
-            b"\x01\x01\x00\x00\x01\x19\x02\x00\x04\x00\x00\x00\x0a",
-            expect_reply=False,
+            cluster=61184,
+            sequence=1,
+            data=b"\x01\x01\x00\x00\x01\x19\x02\x00\x04\x00\x00\x00\x0a",
             command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
