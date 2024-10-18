@@ -4,6 +4,8 @@ from typing import Any
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
+from zigpy.quirks.v2.homeassistant import EntityPlatform, EntityType
+import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time
 from zigpy.zcl.clusters.measurement import (
     RelativeHumidity,
@@ -21,6 +23,7 @@ from zhaquirks.const import (
     SKIP_CONFIGURATION,
 )
 from zhaquirks.tuya import TuyaLocalCluster, TuyaPowerConfigurationCluster2AAA
+from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster
 
 
@@ -485,3 +488,30 @@ class TuyaSoilSensorVar02(CustomDevice):
             }
         },
     }
+
+
+class GiexBatteryStatus(t.enum8):
+    """Giex Soil Battery Status Enum."""
+
+    Low = 0x00
+    Middle = 0x01
+    High = 0x02
+
+
+(
+    TuyaQuirkBuilder("_TZE284_nhgdf6qr", "TS0601")  # Giex GX04
+    .tuya_battery(dp_id=15)
+    .tuya_temperature(dp_id=5, scale=10)
+    .tuya_soil_moisture(dp_id=3)
+    .tuya_enum(
+        dp_id=14,
+        attribute_name="battery_status",
+        enum_class=GiexBatteryStatus,
+        translation_key="battery_status",
+        fallback_name="Battery Status",
+        entity_type=EntityType.DIAGNOSTIC,
+        entity_platform=EntityPlatform.SENSOR,
+        initially_disabled=True,
+    )
+    .add_to_registry()
+)
