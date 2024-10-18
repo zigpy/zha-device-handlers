@@ -338,7 +338,7 @@ gx02_base_quirk = (
     .tuya_battery(dp_id=59, power_cfg=TuyaPowerConfigurationCluster4AA)
     .tuya_metering(dp_id=111)
     .tuya_onoff(dp_id=2)
-    .tuya_number(  # Good
+    .tuya_number(
         dp_id=103,
         attribute_name="irrigation_num_times",
         type=t.uint32_t,
@@ -348,14 +348,14 @@ gx02_base_quirk = (
         translation_key="irrigation_num_times",
         fallback_name="Irrigation Num Times",
     )
-    .tuya_enum(  # Good
+    .tuya_enum(
         dp_id=1,
         attribute_name="irrigation_mode",
         enum_class=GiexIrrigationMode,
         translation_key="irrigation_mode",
         fallback_name="Irrigation Mode",
     )
-    .tuya_enum(  # Good
+    .tuya_enum(
         dp_id=107,
         attribute_name="weather_delay",
         enum_class=GiexIrrigationWeatherDelay,
@@ -363,7 +363,7 @@ gx02_base_quirk = (
         fallback_name="Weather Delay",
         initially_disabled=True,
     )
-    .tuya_sensor(  # Good
+    .tuya_sensor(
         dp_id=114,
         attribute_name="irrigation_duration",
         type=t.uint32_t,
@@ -375,7 +375,7 @@ gx02_base_quirk = (
         fallback_name="Last Irrigation Duration",
     )
     .tuya_sensor(
-        dp_id=101,  # Good
+        dp_id=101,
         attribute_name="irrigation_start_time",
         type=t.CharacterString,
         converter=lambda x: giex_string_to_dt(x),
@@ -383,7 +383,7 @@ gx02_base_quirk = (
         translation_key="irrigation_start_time",
         fallback_name="Irrigation Start Time",
     )
-    .tuya_sensor(  # Good
+    .tuya_sensor(
         dp_id=102,
         attribute_name="irrigation_end_time",
         type=t.CharacterString,
