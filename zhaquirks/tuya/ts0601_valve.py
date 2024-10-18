@@ -20,6 +20,7 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.tuya import (
+    TUYA_CLUSTER_ID,
     EnchantedDevice,
     TuyaLocalCluster,
     TuyaPowerConfigurationCluster4AA,
@@ -321,7 +322,7 @@ def giex_string_to_td(v: str) -> int:
     return timedelta(hours=dt.hour, minutes=dt.minute, seconds=dt.second).seconds
 
 
-def giex_string_to_dt(v: str) -> datetime | None:
+def giex_string_to_ts(v: str) -> int | None:
     """Convert Giex String Duration datetime."""
     dev_tz = timezone(timedelta(hours=4))
     dev_dt = datetime.now(dev_tz)
@@ -330,27 +331,32 @@ def giex_string_to_dt(v: str) -> datetime | None:
         dev_dt.replace(hour=dt.hour, minute=dt.minute, second=dt.second)
     except ValueError:
         return None  # on initial start the device will return '--:--:--'
-    return dev_dt.timestamp() + UNIX_EPOCH_TO_ZCL_EPOCH
+    return int(dev_dt.timestamp() + UNIX_EPOCH_TO_ZCL_EPOCH)
 
 
 gx02_base_quirk = (
     TuyaQuirkBuilder()
-    .tuya_battery(dp_id=59, power_cfg=TuyaPowerConfigurationCluster4AA)
+    .tuya_battery(dp_id=108, power_cfg=TuyaPowerConfigurationCluster4AA)
     .tuya_metering(dp_id=111)
     .tuya_onoff(dp_id=2)
     .tuya_number(
         dp_id=103,
         attribute_name="irrigation_num_times",
-        type=t.uint32_t,
+        type=t.uint8_t,
         min_value=0,
         max_value=100,
         step=1,
         translation_key="irrigation_num_times",
         fallback_name="Irrigation Num Times",
     )
-    .tuya_enum(
+    .tuya_dp_attribute(
         dp_id=1,
         attribute_name="irrigation_mode",
+        type=t.Bool,
+    )
+    .enum(
+        attribute_name="irrigation_mode",
+        cluster_id=TUYA_CLUSTER_ID,
         enum_class=GiexIrrigationMode,
         translation_key="irrigation_mode",
         fallback_name="Irrigation Mode",
@@ -378,7 +384,7 @@ gx02_base_quirk = (
         dp_id=101,
         attribute_name="irrigation_start_time",
         type=t.CharacterString,
-        converter=lambda x: giex_string_to_dt(x),
+        converter=lambda x: giex_string_to_ts(x),
         device_class=SensorDeviceClass.TIMESTAMP,
         translation_key="irrigation_start_time",
         fallback_name="Irrigation Start Time",
@@ -387,11 +393,12 @@ gx02_base_quirk = (
         dp_id=102,
         attribute_name="irrigation_end_time",
         type=t.CharacterString,
-        converter=lambda x: giex_string_to_dt(x),
+        converter=lambda x: giex_string_to_ts(x),
         device_class=SensorDeviceClass.TIMESTAMP,
         translation_key="irrigation_end_time",
         fallback_name="Irrigation End Time",
     )
+    .skip_configuration()
 )
 
 
