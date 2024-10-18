@@ -7,7 +7,6 @@ from zigpy.zcl.clusters.general import Basic
 import zhaquirks
 import zhaquirks.tuya
 from zhaquirks.tuya.mcu import TuyaMCUCluster
-import zhaquirks.tuya.ts0601_valve
 
 zhaquirks.setup()
 
