@@ -29,18 +29,24 @@ from zhaquirks import EventableCluster
 from zhaquirks.const import (
     ATTRIBUTE_ID,
     ATTRIBUTE_NAME,
-    COMMAND_BUTTON_DOUBLE,
-    COMMAND_BUTTON_HOLD,
+    BUTTON,
+    COMMAND_M_INITIAL_PRESS,
+    COMMAND_M_LONG_RELEASE,
+    COMMAND_M_MULTI_PRESS_COMPLETE,
+    COMMAND_M_SHORT_RELEASE,
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
+    TURN_OFF,
+    TURN_ON,
     VALUE,
     ZHA_SEND_EVENT,
 )
-from zhaquirks.sinope import (
+
+from . import (
     ATTRIBUTE_ACTION,
     LIGHT_DEVICE_TRIGGERS,
     SINOPE,
@@ -192,28 +198,51 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
             )
 
         value = attr.value.value
+
+        action, button = self._get_command_from_action(self.Action(value))
+        if not action or not button:
+            return
+
         event_args = {
             ATTRIBUTE_ID: 84,
             ATTRIBUTE_NAME: ATTRIBUTE_ACTION,
+            BUTTON: button,
             VALUE: value.value,
         }
-        action = self._get_command_from_action(self.Action(value))
-        if not action:
-            return
+
+        self.debug(
+            "SINOPE ZHA_SEND_EVENT action: '%s' event_args: %s",
+            self.Action(value),
+            event_args,
+        )
+
         self.listener_event(ZHA_SEND_EVENT, action, event_args)
 
-    def _get_command_from_action(self, action: ButtonAction) -> str | None:
-        # const lookup = {2: 'up_single', 3: 'up_hold', 4: 'up_double',
-        #             18: 'down_single', 19: 'down_hold', 20: 'down_double'};
+    def _get_command_from_action(
+        self, action: ButtonAction
+    ) -> tuple[str | None, str | None]:
+        # const lookup = {1: 'up_single', 2: 'up_single_released', 3: 'up_hold', 4: 'up_double',
+        #             17: 'down_single, 18: 'down_single_released', 19: 'down_hold', 20: 'down_double'};
         match action:
-            case self.Action.Single_off | self.Action.Single_on:
-                return None
-            case self.Action.Double_off | self.Action.Double_on:
-                return COMMAND_BUTTON_DOUBLE
-            case self.Action.Long_off | self.Action.Long_on:
-                return COMMAND_BUTTON_HOLD
+            case self.Action.Single_off:
+                return COMMAND_M_INITIAL_PRESS, TURN_OFF
+            case self.Action.Single_on:
+                return COMMAND_M_INITIAL_PRESS, TURN_ON
+            case self.Action.Single_release_off:
+                return COMMAND_M_SHORT_RELEASE, TURN_OFF
+            case self.Action.Single_release_on:
+                return COMMAND_M_SHORT_RELEASE, TURN_ON
+            case self.Action.Double_off:
+                return COMMAND_M_MULTI_PRESS_COMPLETE, TURN_OFF
+            case self.Action.Double_on:
+                return COMMAND_M_MULTI_PRESS_COMPLETE, TURN_ON
+            case self.Action.Long_off:
+                return COMMAND_M_LONG_RELEASE, TURN_OFF
+            case self.Action.Long_on:
+                return COMMAND_M_LONG_RELEASE, TURN_ON
             case _:
-                return None
+                self.debug("SINOPE unhandled action: %s", action)
+                return None, None
 
 
 class LightManufacturerCluster(EventableCluster, SinopeTechnologiesManufacturerCluster):
