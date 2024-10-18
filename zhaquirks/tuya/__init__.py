@@ -929,6 +929,16 @@ class TuyaPowerConfigurationCluster3AA(TuyaPowerConfigurationCluster):
     }
 
 
+class TuyaPowerConfigurationCluster4AA(PowerConfiguration, TuyaLocalCluster):
+    """PowerConfiguration cluster for devices with 4 AA."""
+
+    _CONSTANT_ATTRIBUTES = {
+        PowerConfiguration.AttributeDefs.battery_size.id: 3,
+        PowerConfiguration.AttributeDefs.battery_rated_voltage.id: 15,
+        PowerConfiguration.AttributeDefs.battery_quantity.id: 4,
+    }
+
+
 class TuyaThermostat(CustomDevice):
     """Generic Tuya thermostat device."""
 

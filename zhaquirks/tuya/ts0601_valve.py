@@ -2,6 +2,9 @@
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
+from zigpy.quirks.v2 import EntityPlatform, EntityType
+from zigpy.quirks.v2.homeassistant import UnitOfTime
+from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
@@ -16,7 +19,13 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import TUYA_CLUSTER_ED00_ID, EnchantedDevice, TuyaLocalCluster
+from zhaquirks.tuya import (
+    TUYA_CLUSTER_ED00_ID,
+    EnchantedDevice,
+    TuyaLocalCluster,
+    TuyaPowerConfigurationCluster4AA,
+)
+from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import (
     DPToAttributeMapping,
     TuyaMCUCluster,
@@ -493,3 +502,96 @@ class GiexValveVar02(CustomDevice):
             }
         }
     }
+
+
+class GiexIrrigationStatus(t.enum8):
+    """Giex Irrigation Status Enum."""
+
+    Manual = 0x00
+    Auto = 0x01
+    Idle = 0x02
+
+
+(
+    TuyaQuirkBuilder("_TZE284_8zizsafo", "TS0601")  # Giex GX04
+    .tuya_battery(dp_id=59, power_cfg=TuyaPowerConfigurationCluster4AA)
+    .tuya_switch(
+        dp_id=1,
+        attribute_name="valve_one_on_off",
+        entity_type=EntityType.STANDARD,
+        translation_key="valve_one_on_off",
+        fallback_name="Valve 1",
+    )
+    .tuya_switch(
+        dp_id=2,
+        attribute_name="valve_two_on_off",
+        entity_type=EntityType.STANDARD,
+        translation_key="valve_two_on_off",
+        fallback_name="Valve 2",
+    )
+    .tuya_number(
+        dp_id=13,
+        attribute_name="valve_one_countdown",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.MINUTES,
+        min_value=0,
+        max_value=1440,
+        step=1,
+        translation_key="valve_one_countdown",
+        fallback_name="Irrigation Time 1",
+    )
+    .tuya_number(
+        dp_id=14,
+        attribute_name="valve_two_countdown",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.MINUTES,
+        min_value=0,
+        max_value=1440,
+        step=1,
+        translation_key="valve_two_countdown",
+        fallback_name="Irrigation Time 2",
+    )
+    .tuya_sensor(
+        dp_id=25,
+        attribute_name="valve_one_duration",
+        type=t.uint32_t,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        entity_type=EntityType.STANDARD,
+        translation_key="irrigation_duration",
+        fallback_name="Irrigation Duration 1",
+    )
+    .tuya_sensor(
+        dp_id=26,
+        attribute_name="valve_two_duration",
+        type=t.uint32_t,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        entity_type=EntityType.STANDARD,
+        translation_key="irrigation_duration",
+        fallback_name="Irrigation Duration 2",
+    )
+    .tuya_enum(
+        dp_id=104,
+        attribute_name="valve_one_status",
+        enum_class=GiexIrrigationStatus,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.STANDARD,
+        translation_key="valve_one_status",
+        fallback_name="Status 1",
+    )
+    .tuya_enum(
+        dp_id=105,
+        attribute_name="valve_two_status",
+        enum_class=GiexIrrigationStatus,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.STANDARD,
+        translation_key="valve_two_status",
+        fallback_name="Status 2",
+    )
+    .add_to_registry()
+)
