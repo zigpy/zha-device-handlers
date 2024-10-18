@@ -301,22 +301,30 @@ async def test_singleswitch_requests(zigpy_device_from_quirk, quirk):
         rsp = await switch_cluster.command(0x0000)
         await wait_for_zigpy_tasks()
         m1.assert_called_with(
-            61184,
-            1,
-            b"\x01\x01\x00\x00\x01\x01\x01\x00\x01\x00",
+            cluster=0xEF00,
+            sequence=1,
+            data=b"\x01\x01\x00\x00\x01\x01\x01\x00\x01\x00",
+            command_id=0x00,
+            timeout=5,
             expect_reply=True,
-            command_id=0,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
         assert rsp.status == 0
 
         rsp = await switch_cluster.command(0x0001)
         await wait_for_zigpy_tasks()
         m1.assert_called_with(
-            61184,
-            2,
-            b"\x01\x02\x00\x00\x02\x01\x01\x00\x01\x01",
+            cluster=0xEF00,
+            sequence=2,
+            data=b"\x01\x02\x00\x00\x02\x01\x01\x00\x01\x01",
+            command_id=0x00,
+            timeout=5,
             expect_reply=True,
-            command_id=0,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
         assert rsp.status == 0
 
@@ -426,11 +434,15 @@ async def test_tuya_send_attribute(zigpy_device_from_quirk, quirk):
     ) as m1:
         (status,) = await tuya_cluster.write_attributes({617: 179})
         m1.assert_called_with(
-            61184,
-            1,
-            b"\x01\x01\x00\x00\x01i\x02\x00\x04\x00\x00\x00\xb3",
-            expect_reply=False,
+            cluster=0xEF00,
+            sequence=1,
+            data=b"\x01\x01\x00\x00\x01i\x02\x00\x04\x00\x00\x00\xb3",
             command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -492,21 +504,29 @@ async def test_siren_send_attribute(zigpy_device_from_quirk, quirk):
     ) as m1:
         _, status = await switch_cluster.command(0x0000)
         m1.assert_called_with(
-            61184,
-            1,
-            b"\x01\x01\x00\x00\x01h\x01\x00\x01\x00",
-            expect_reply=False,
+            cluster=0xEF00,
+            sequence=1,
+            data=b"\x01\x01\x00\x00\x01h\x01\x00\x01\x00",
             command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
         assert status == foundation.Status.SUCCESS
 
         _, status = await switch_cluster.command(0x0001)
         m1.assert_called_with(
-            61184,
-            2,
-            b"\x01\x02\x00\x00\x02h\x01\x00\x01\x01",
-            expect_reply=False,
+            cluster=0xEF00,
+            sequence=2,
+            data=b"\x01\x02\x00\x00\x02h\x01\x00\x01\x01",
             command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
         assert status == foundation.Status.SUCCESS
 
@@ -578,11 +598,15 @@ async def test_zonnsmart_send_attribute(zigpy_device_from_quirk, quirk):
             }
         )
         m1.assert_called_with(
-            61184,
-            1,
-            b"\x01\x01\x00\x00\x01\x10\x02\x00\x04\x00\x00\x00\xfa",
-            expect_reply=False,
+            cluster=0xEF00,
+            sequence=1,
+            data=b"\x01\x01\x00\x00\x01\x10\x02\x00\x04\x00\x00\x00\xfa",
             command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -594,11 +618,15 @@ async def test_zonnsmart_send_attribute(zigpy_device_from_quirk, quirk):
             }
         )
         m1.assert_called_with(
-            61184,
-            2,
-            b"\x01\x02\x00\x00\x02\x02\x04\x00\x01\x01",
-            expect_reply=False,
+            cluster=0xEF00,
+            sequence=2,
+            data=b"\x01\x02\x00\x00\x02\x02\x04\x00\x01\x01",
             command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -610,11 +638,15 @@ async def test_zonnsmart_send_attribute(zigpy_device_from_quirk, quirk):
             }
         )
         m1.assert_called_with(
-            61184,
-            3,
-            b"\x01\x03\x00\x00\x03\x0a\x01\x00\x01\x01",
-            expect_reply=False,
+            cluster=0xEF00,
+            sequence=3,
+            data=b"\x01\x03\x00\x00\x03\x0a\x01\x00\x01\x01",
             command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -626,11 +658,15 @@ async def test_zonnsmart_send_attribute(zigpy_device_from_quirk, quirk):
             }
         )
         m1.assert_called_with(
-            61184,
-            4,
-            b"\x01\x04\x00\x00\x04\x6b\x01\x00\x01\x01",
-            expect_reply=False,
+            cluster=0xEF00,
+            sequence=4,
+            data=b"\x01\x04\x00\x00\x04\x6b\x01\x00\x01\x01",
             command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -707,11 +743,15 @@ async def test_valve_send_attribute(zigpy_device_from_quirk, quirk):
             }
         )
         m1.assert_called_with(
-            61184,
-            1,
-            b"\x01\x01\x00\x00\x01\x02\x02\x00\x04\x00\x00\x00\xfa",
-            expect_reply=False,
+            cluster=0xEF00,
+            sequence=1,
+            data=b"\x01\x01\x00\x00\x01\x02\x02\x00\x04\x00\x00\x00\xfa",
             command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -723,11 +763,15 @@ async def test_valve_send_attribute(zigpy_device_from_quirk, quirk):
             }
         )
         m1.assert_called_with(
-            61184,
-            2,
-            b"\x01\x02\x00\x00\x02\x04\x04\x00\x01\x00",
-            expect_reply=False,
+            cluster=0xEF00,
+            sequence=2,
+            data=b"\x01\x02\x00\x00\x02\x04\x04\x00\x01\x00",
             command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -739,11 +783,15 @@ async def test_valve_send_attribute(zigpy_device_from_quirk, quirk):
             }
         )
         m1.assert_called_with(
-            61184,
-            3,
-            b"\x01\x03\x00\x00\x03\x04\x04\x00\x01\x02",
-            expect_reply=False,
+            cluster=0xEF00,
+            sequence=3,
+            data=b"\x01\x03\x00\x00\x03\x04\x04\x00\x01\x02",
             command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -755,11 +803,15 @@ async def test_valve_send_attribute(zigpy_device_from_quirk, quirk):
             }
         )
         m1.assert_called_with(
-            61184,
-            4,
-            b"\x01\x04\x00\x00\x04\x04\x04\x00\x01\x01",
-            expect_reply=False,
+            cluster=0xEF00,
+            sequence=4,
+            data=b"\x01\x04\x00\x00\x04\x04\x04\x00\x01\x01",
             command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -770,11 +822,15 @@ async def test_valve_send_attribute(zigpy_device_from_quirk, quirk):
         tuya_cluster.handle_message(hdr, args)
         _, status = await thermostat_cluster.command(0x0000, 0x00, 20)
         m1.assert_called_with(
-            61184,
-            5,
-            b"\x01\x05\x00\x00\x05\x02\x02\x00\x04\x00\x00\x00F",
-            expect_reply=False,
+            cluster=0xEF00,
+            sequence=5,
+            data=b"\x01\x05\x00\x00\x05\x02\x02\x00\x04\x00\x00\x00F",
             command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
         assert status == foundation.Status.SUCCESS
 
@@ -983,11 +1039,15 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             }
         )
         m1.assert_called_with(
-            61184,
-            1,
-            b"\x01\x01\x00\x00\x01\x02\x02\x00\x04\x00\x00\x00\xfa",
-            expect_reply=False,
+            cluster=0xEF00,
+            sequence=1,
+            data=b"\x01\x01\x00\x00\x01\x02\x02\x00\x04\x00\x00\x00\xfa",
             command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -999,11 +1059,15 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             }
         )
         m1.assert_called_with(
-            61184,
-            2,
-            b"\x01\x02\x00\x00\x02\x04\x04\x00\x01\x00",
-            expect_reply=False,
+            cluster=0xEF00,
+            sequence=2,
+            data=b"\x01\x02\x00\x00\x02\x04\x04\x00\x01\x00",
             command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1015,11 +1079,15 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             }
         )
         m1.assert_called_with(
-            61184,
-            3,
-            b"\x01\x03\x00\x00\x03\x04\x04\x00\x01\x02",
-            expect_reply=False,
+            cluster=0xEF00,
+            sequence=3,
+            data=b"\x01\x03\x00\x00\x03\x04\x04\x00\x01\x02",
             command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1030,11 +1098,15 @@ async def test_moes(zigpy_device_from_quirk, quirk):
         tuya_cluster.handle_message(hdr, args)
         _, status = await thermostat_cluster.command(0x0000, 0x00, 20)
         m1.assert_called_with(
-            61184,
-            4,
-            b"\x01\x04\x00\x00\x04\x02\x02\x00\x04\x00\x00\x00F",
-            expect_reply=False,
+            cluster=0xEF00,
+            sequence=4,
+            data=b"\x01\x04\x00\x00\x04\x02\x02\x00\x04\x00\x00\x00F",
             command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
         assert status == foundation.Status.SUCCESS
 
@@ -1046,11 +1118,15 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             }
         )
         m1.assert_called_with(
-            61184,
-            5,
-            b"\x01\x05\x00\x00\x05\x68\x00\x00\x03\x00\x14\x02",
-            expect_reply=False,
+            cluster=0xEF00,
+            sequence=5,
+            data=b"\x01\x05\x00\x00\x05\x68\x00\x00\x03\x00\x14\x02",
             command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1062,11 +1138,15 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             }
         )
         m1.assert_called_with(
-            61184,
-            6,
-            b"\x01\x06\x00\x00\x06\x04\x04\x00\x01\x00",
-            expect_reply=False,
+            cluster=0xEF00,
+            sequence=6,
+            data=b"\x01\x06\x00\x00\x06\x04\x04\x00\x01\x00",
             command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1079,11 +1159,15 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             }
         )
         m1.assert_called_with(
-            61184,
-            7,
-            b"\x01\x07\x00\x00\x07\x04\x04\x00\x01\x02",
-            expect_reply=False,
+            cluster=0xEF00,
+            sequence=7,
+            data=b"\x01\x07\x00\x00\x07\x04\x04\x00\x01\x02",
             command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1095,11 +1179,15 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             }
         )
         m1.assert_called_with(
-            61184,
-            8,
-            b"\x01\x08\x00\x00\x08\x04\x04\x00\x01\x01",
-            expect_reply=False,
+            cluster=0xEF00,
+            sequence=8,
+            data=b"\x01\x08\x00\x00\x08\x04\x04\x00\x01\x01",
             command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1111,11 +1199,15 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             }
         )
         m1.assert_called_with(
-            61184,
-            9,
-            b"\x01\x09\x00\x00\x09\x04\x04\x00\x01\x04",
-            expect_reply=False,
+            cluster=0xEF00,
+            sequence=9,
+            data=b"\x01\x09\x00\x00\x09\x04\x04\x00\x01\x04",
             command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1127,11 +1219,15 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             }
         )
         m1.assert_called_with(
-            61184,
-            10,
-            b"\x01\x0a\x00\x00\x0a\x70\x00\x00\x12\x06\x00\x11\x08\x00\x0f\x0b\x1e\x0f\x0c\x1e\x0f\x11\x1e\x14\x16\x00\x0f",
-            expect_reply=False,
+            cluster=0xEF00,
+            sequence=10,
+            data=b"\x01\x0a\x00\x00\x0a\x70\x00\x00\x12\x06\x00\x11\x08\x00\x0f\x0b\x1e\x0f\x0c\x1e\x0f\x11\x1e\x14\x16\x00\x0f",
             command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1143,11 +1239,15 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             }
         )
         m1.assert_called_with(
-            61184,
-            11,
-            b"\x01\x0b\x00\x00\x0b\x70\x00\x00\x12\x06\x2d\x14\x08\x00\x0f\x0b\x1e\x0f\x0c\x1e\x0f\x11\x1e\x14\x16\x00\x0f",
-            expect_reply=False,
+            cluster=0xEF00,
+            sequence=11,
+            data=b"\x01\x0b\x00\x00\x0b\x70\x00\x00\x12\x06\x2d\x14\x08\x00\x0f\x0b\x1e\x0f\x0c\x1e\x0f\x11\x1e\x14\x16\x00\x0f",
             command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1159,11 +1259,15 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             }
         )
         m1.assert_called_with(
-            61184,
-            12,
-            b"\x01\x0c\x00\x00\x0c\x70\x00\x00\x12\x05\x00\x14\x08\x00\x0f\x0b\x1e\x0f\x0c\x1e\x0f\x11\x1e\x14\x16\x00\x0f",
-            expect_reply=False,
+            cluster=0xEF00,
+            sequence=12,
+            data=b"\x01\x0c\x00\x00\x0c\x70\x00\x00\x12\x05\x00\x14\x08\x00\x0f\x0b\x1e\x0f\x0c\x1e\x0f\x11\x1e\x14\x16\x00\x0f",
             command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1175,11 +1279,15 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             }
         )
         m1.assert_called_with(
-            61184,
-            13,
-            b"\x01\x0d\x00\x00\x0d\x71\x00\x00\x12\x06\x00\x11\x08\x00\x0f\x0b\x1e\x0f\x0c\x1e\x0f\x11\x1e\x14\x16\x00\x0f",
-            expect_reply=False,
+            cluster=0xEF00,
+            sequence=13,
+            data=b"\x01\x0d\x00\x00\x0d\x71\x00\x00\x12\x06\x00\x11\x08\x00\x0f\x0b\x1e\x0f\x0c\x1e\x0f\x11\x1e\x14\x16\x00\x0f",
             command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1191,11 +1299,15 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             }
         )
         m1.assert_called_with(
-            61184,
-            14,
-            b"\x01\x0e\x00\x00\x0e\x71\x00\x00\x12\x06\x2d\x14\x08\x00\x0f\x0b\x1e\x0f\x0c\x1e\x0f\x11\x1e\x14\x16\x00\x0f",
-            expect_reply=False,
+            cluster=0xEF00,
+            sequence=14,
+            data=b"\x01\x0e\x00\x00\x0e\x71\x00\x00\x12\x06\x2d\x14\x08\x00\x0f\x0b\x1e\x0f\x0c\x1e\x0f\x11\x1e\x14\x16\x00\x0f",
             command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1207,11 +1319,15 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             }
         )
         m1.assert_called_with(
-            61184,
-            15,
-            b"\x01\x0f\x00\x00\x0f\x71\x00\x00\x12\x05\x00\x14\x08\x00\x0f\x0b\x1e\x0f\x0c\x1e\x0f\x11\x1e\x14\x16\x00\x0f",
-            expect_reply=False,
+            cluster=0xEF00,
+            sequence=15,
+            data=b"\x01\x0f\x00\x00\x0f\x71\x00\x00\x12\x05\x00\x14\x08\x00\x0f\x0b\x1e\x0f\x0c\x1e\x0f\x11\x1e\x14\x16\x00\x0f",
             command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1223,11 +1339,15 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             }
         )
         m1.assert_called_with(
-            61184,
-            16,
-            b"\x01\x10\x00\x00\x10\x04\x04\x00\x01\x06",
-            expect_reply=False,
+            cluster=0xEF00,
+            sequence=16,
+            data=b"\x01\x10\x00\x00\x10\x04\x04\x00\x01\x06",
             command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1239,11 +1359,15 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             }
         )
         m1.assert_called_with(
-            61184,
-            17,
-            b"\x01\x11\x00\x00\x11\x74\x01\x00\x01\x00",
-            expect_reply=False,
+            cluster=0xEF00,
+            sequence=17,
+            data=b"\x01\x11\x00\x00\x11\x74\x01\x00\x01\x00",
             command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1251,32 +1375,44 @@ async def test_moes(zigpy_device_from_quirk, quirk):
 
         _, status = await onoff_cluster.command(0x0000)
         m1.assert_called_with(
-            61184,
-            18,
-            b"\x01\x12\x00\x00\x12\x68\x00\x00\x03\x00\x10\x05",
-            expect_reply=False,
+            cluster=0xEF00,
+            sequence=18,
+            data=b"\x01\x12\x00\x00\x12\x68\x00\x00\x03\x00\x10\x05",
             command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
         assert status == foundation.Status.SUCCESS
 
         _, status = await onoff_cluster.command(0x0001)
 
         m1.assert_called_with(
-            61184,
-            19,
-            b"\x01\x13\x00\x00\x13\x68\x00\x00\x03\x01\x10\x05",
-            expect_reply=False,
+            cluster=0xEF00,
+            sequence=19,
+            data=b"\x01\x13\x00\x00\x13\x68\x00\x00\x03\x01\x10\x05",
             command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
         assert status == foundation.Status.SUCCESS
 
         _, status = await onoff_cluster.command(0x0002)
         m1.assert_called_with(
-            61184,
-            20,
-            b"\x01\x14\x00\x00\x14\x68\x00\x00\x03\x00\x10\x05",
-            expect_reply=False,
+            cluster=0xEF00,
+            sequence=20,
+            data=b"\x01\x14\x00\x00\x14\x68\x00\x00\x03\x00\x10\x05",
             command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
         assert status == foundation.Status.SUCCESS
 
@@ -1298,11 +1434,15 @@ async def test_moes(zigpy_device_from_quirk, quirk):
         tuya_cluster.handle_message(hdr, args)
         await wait_for_zigpy_tasks()
         m1.assert_called_with(
-            61184,
-            1,
-            b"\x01\x01\x24\x00\x08\x00\x00\x1c\x20\x00\x00\x0e\x10",
+            cluster=0xEF00,
+            sequence=1,
+            data=b"\x01\x01\x24\x00\x08\x00\x00\x1c\x20\x00\x00\x0e\x10",
+            command_id=0x24,
+            timeout=5,
             expect_reply=False,
-            command_id=0x0024,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
         datetime.datetime = origdatetime
 
@@ -1349,11 +1489,15 @@ async def test_eheat_send_attribute(zigpy_device_from_quirk, quirk):
             }
         )
         m1.assert_called_with(
-            61184,
-            1,
-            b"\x01\x01\x00\x00\x01\x10\x02\x00\x04\x00\x00\x00\x19",
-            expect_reply=False,
+            cluster=0xEF00,
+            sequence=1,
+            data=b"\x01\x01\x00\x00\x01\x10\x02\x00\x04\x00\x00\x00\x19",
             command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1365,11 +1509,15 @@ async def test_eheat_send_attribute(zigpy_device_from_quirk, quirk):
             }
         )
         m1.assert_called_with(
-            61184,
-            2,
-            b"\x01\x02\x00\x00\x02\x01\x01\x00\x01\x00",
-            expect_reply=False,
+            cluster=0xEF00,
+            sequence=2,
+            data=b"\x01\x02\x00\x00\x02\x01\x01\x00\x01\x00",
             command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1381,11 +1529,15 @@ async def test_eheat_send_attribute(zigpy_device_from_quirk, quirk):
             }
         )
         m1.assert_called_with(
-            61184,
-            3,
-            b"\x01\x03\x00\x00\x03\x01\x01\x00\x01\x01",
-            expect_reply=False,
+            cluster=0xEF00,
+            sequence=3,
+            data=b"\x01\x03\x00\x00\x03\x01\x01\x00\x01\x01",
             command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1396,11 +1548,15 @@ async def test_eheat_send_attribute(zigpy_device_from_quirk, quirk):
         tuya_cluster.handle_message(hdr, args)
         _, status = await thermostat_cluster.command(0x0000, 0x00, 20)
         m1.assert_called_with(
-            61184,
-            4,
-            b"\x01\x04\x00\x00\x04\x10\x02\x00\x04\x00\x00\x00\x17",
-            expect_reply=False,
+            cluster=0xEF00,
+            sequence=4,
+            data=b"\x01\x04\x00\x00\x04\x10\x02\x00\x04\x00\x00\x00\x17",
             command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
         assert status == foundation.Status.SUCCESS
 
@@ -1617,11 +1773,9 @@ async def test_fan_switch_writes_attributes(zigpy_device_from_quirk, quirk):
         await fan_cluster.bind()
 
         assert len(m1.mock_calls) == 1
-        assert m1.mock_calls[0][1] == (
-            514,
-            1,
-            b"\x00\x01\x02\x01\x000\x00",
-        )
+        assert m1.mock_calls[0].kwargs["cluster"] == 514
+        assert m1.mock_calls[0].kwargs["sequence"] == 1
+        assert m1.mock_calls[0].kwargs["data"] == b"\x00\x01\x02\x01\x000\x00"
 
 
 async def test_sm0202_motion_sensor_signature(assert_signature_matches_quirk):
@@ -1749,11 +1903,15 @@ async def test_ts1201_ir_blaster(zigpy_device_from_quirk):
         rsp = await ts1201_control_cluster.command(0x0001, on_off=True)
         await wait_for_zigpy_tasks()
         m1.assert_called_with(
-            control_cluster_id,
-            1,
-            b"\x01\x01\x00" + b'{"study":0}',
-            expect_reply=True,
+            cluster=control_cluster_id,
+            sequence=1,
+            data=b"\x01\x01\x00" + b'{"study":0}',
             command_id=0,
+            timeout=5,
+            expect_reply=True,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
         assert rsp == foundation.Status.SUCCESS
 
@@ -1764,13 +1922,19 @@ async def test_ts1201_ir_blaster(zigpy_device_from_quirk):
         ts1201_transmit_cluster.handle_message(hdr, args)
         await wait_for_zigpy_tasks()
         m1.assert_called_with(
-            transmit_cluster_id,
-            3,
-            b"\x01\x03\x02\x01\x00"
-            + struct.pack("<L", position)
-            + struct.pack("<B", part_max_length),
-            expect_reply=True,
+            cluster=transmit_cluster_id,
+            sequence=3,
+            data=(
+                b"\x01\x03\x02\x01\x00"
+                + struct.pack("<L", position)
+                + struct.pack("<B", part_max_length)
+            ),
             command_id=2,
+            timeout=5,
+            expect_reply=True,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
         assert (
             ts1201_transmit_listener.cluster_commands[0][2].command.name
@@ -1794,13 +1958,19 @@ async def test_ts1201_ir_blaster(zigpy_device_from_quirk):
         ts1201_transmit_cluster.handle_message(hdr, args)
         await wait_for_zigpy_tasks()
         m1.assert_called_with(
-            transmit_cluster_id,
-            4,
-            b"\x01\x04\x02\x01\x00"
-            + struct.pack("<L", position)
-            + struct.pack("<B", part_max_length),
-            expect_reply=False,
+            cluster=transmit_cluster_id,
+            sequence=4,
+            data=(
+                b"\x01\x04\x02\x01\x00"
+                + struct.pack("<L", position)
+                + struct.pack("<B", part_max_length)
+            ),
             command_id=2,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
         assert (
             ts1201_transmit_listener.cluster_commands[1][2].command.name
@@ -1821,11 +1991,15 @@ async def test_ts1201_ir_blaster(zigpy_device_from_quirk):
         ts1201_transmit_cluster.handle_message(hdr, args)
         await wait_for_zigpy_tasks()
         m1.assert_called_with(
-            transmit_cluster_id,
-            5,
-            b"\x01\x05\x04\x00\x01\x00\x00\x00",
-            expect_reply=False,
+            cluster=transmit_cluster_id,
+            sequence=5,
+            data=b"\x01\x05\x04\x00\x01\x00\x00\x00",
             command_id=4,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
         assert (
             ts1201_transmit_listener.cluster_commands[2][2].command.name
@@ -1846,11 +2020,15 @@ async def test_ts1201_ir_blaster(zigpy_device_from_quirk):
         ts1201_transmit_cluster.handle_message(hdr, args)
         await wait_for_zigpy_tasks()
         m1.assert_called_with(
-            control_cluster_id,
-            6,
-            b'\x01\x06\x00{"study":1}',
-            expect_reply=True,
+            cluster=control_cluster_id,
+            sequence=6,
+            data=b'\x01\x06\x00{"study":1}',
             command_id=0,
+            timeout=5,
+            expect_reply=True,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
         assert (
             ts1201_transmit_listener.cluster_commands[3][2].command.name
@@ -1874,15 +2052,21 @@ async def test_ts1201_ir_blaster(zigpy_device_from_quirk):
         await wait_for_zigpy_tasks()
         # IR send must call ir transmit command id 0x00
         m1.assert_called_with(
-            transmit_cluster_id,
-            7,
-            b"\x01\x07\x00\x01\x00"
-            + struct.pack("<I", ir_msg_length)
-            + b"\x00\x00\x00\x00"
-            + struct.pack("<H", control_cluster_id)
-            + b"\x01\x02\x00\x00",
-            expect_reply=False,
+            cluster=transmit_cluster_id,
+            sequence=7,
+            data=(
+                b"\x01\x07\x00\x01\x00"
+                + struct.pack("<I", ir_msg_length)
+                + b"\x00\x00\x00\x00"
+                + struct.pack("<H", control_cluster_id)
+                + b"\x01\x02\x00\x00"
+            ),
             command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
 
         # simulate receive_ir_frame_00
@@ -1892,12 +2076,18 @@ async def test_ts1201_ir_blaster(zigpy_device_from_quirk):
         ts1201_transmit_cluster.handle_message(hdr, args)
         await wait_for_zigpy_tasks()
         m1.assert_called_with(
-            transmit_cluster_id,
-            9,
-            b"\x01\x09\x02\x01\x00\x00\x00\x00\x00"
-            + struct.pack("<B", part_max_length),
-            expect_reply=True,
+            cluster=transmit_cluster_id,
+            sequence=9,
+            data=(
+                b"\x01\x09\x02\x01\x00\x00\x00\x00\x00"
+                + struct.pack("<B", part_max_length)
+            ),
             command_id=2,
+            timeout=5,
+            expect_reply=True,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
         assert (
             ts1201_transmit_listener.cluster_commands[4][2].command.name
@@ -1945,11 +2135,15 @@ async def test_ts1201_ir_blaster(zigpy_device_from_quirk):
         ts1201_transmit_cluster.handle_message(hdr, args)
         await wait_for_zigpy_tasks()
         m1.assert_called_with(
-            transmit_cluster_id,
-            11,
-            b"\x01\x0b\x05\x01\x00\x00\x00",
-            expect_reply=False,
+            cluster=transmit_cluster_id,
+            sequence=11,
+            data=b"\x01\x0b\x05\x01\x00\x00\x00",
             command_id=5,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
         assert (
             ts1201_transmit_listener.cluster_commands[7][2].command.name
@@ -1962,11 +2156,15 @@ async def test_ts1201_ir_blaster(zigpy_device_from_quirk):
         )
         await wait_for_zigpy_tasks()
         m1.assert_called_with(
-            control_cluster_id,
-            12,
-            b"\x01\x0c\x00\x00\x01\x02\x03\x04",
-            expect_reply=True,
+            cluster=control_cluster_id,
+            sequence=12,
+            data=b"\x01\x0c\x00\x00\x01\x02\x03\x04",
             command_id=0,
+            timeout=5,
+            expect_reply=True,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
         )
         assert rsp == foundation.Status.SUCCESS
 
