@@ -4,13 +4,14 @@ import asyncio
 import itertools
 import logging
 import time
-from typing import Any, Optional, Union
+from typing import Any, Final, Optional, Union
 
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic
 from zigpy.zcl.clusters.measurement import OccupancySensing
+from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks.const import (
     ARGS,
@@ -59,10 +60,14 @@ class PhilipsOccupancySensing(CustomCluster):
 class PhilipsBasicCluster(CustomCluster, Basic):
     """Philips Basic cluster."""
 
-    attributes = Basic.attributes.copy()
-    attributes[0x0031] = ("philips", t.bitmap16, True)
+    class AttributeDefs(Basic.AttributeDefs):
+        """Attribute definitions."""
 
-    attr_config = {0x0031: 0x000B}
+        philips: Final = ZCLAttributeDef(
+            id=0x0031, type=t.bitmap16, is_manufacturer_specific=True
+        )
+
+    attr_config = {AttributeDefs.philips.id: 0x000B}
 
     async def bind(self):
         """Bind cluster."""
