@@ -18,7 +18,6 @@ from zhaquirks.const import (
 from zhaquirks.tuya import TUYA_SEND_DATA, EnchantedDevice
 from zhaquirks.tuya.mcu import (
     DPToAttributeMapping,
-    TuyaEnchantableCluster,
     TuyaMCUCluster,
     TuyaPowerConfigurationCluster,
 )
@@ -119,10 +118,6 @@ class TuyaFingerbotCluster(TuyaMCUCluster):
     }
 
 
-class OnOffEnchantable(TuyaEnchantableCluster, OnOff):
-    """Enchantable OnOff cluster."""
-
-
 class TuyaFingerbot(EnchantedDevice):
     """Tuya finger bot device."""
 
@@ -134,7 +129,7 @@ class TuyaFingerbot(EnchantedDevice):
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    OnOffEnchantable.cluster_id,
+                    OnOff.cluster_id,
                     TuyaFingerbotCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
@@ -153,7 +148,7 @@ class TuyaFingerbot(EnchantedDevice):
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     TuyaPowerConfigurationCluster,
-                    OnOffEnchantable,
+                    OnOff.cluster_id,
                     TuyaFingerbotCluster,
                 ],
                 OUTPUT_CLUSTERS: [
