@@ -9,7 +9,7 @@ from typing import Any, Optional, Union
 
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
-from zigpy.zcl import foundation
+from zigpy.zcl import BaseAttributeDefs, foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import Basic, LevelControl, OnOff, PowerConfiguration
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
@@ -1460,6 +1460,9 @@ class TuyaNewManufCluster(CustomCluster):
     name: str = "Tuya Manufacturer Specific"
     cluster_id: t.uint16_t = TUYA_CLUSTER_ID
     ep_attribute: str = "tuya_manufacturer"
+
+    class AttributeDefs(BaseAttributeDefs):
+        """Attribute Definitions."""
 
     server_commands = {
         TUYA_QUERY_DATA: foundation.ZCLCommandDef(
