@@ -42,16 +42,24 @@ class TuyaValveWaterConsumed(Metering, TuyaLocalCluster):
 class TuyaValveManufCluster(TuyaMCUCluster):
     """On/Off Tuya cluster with extra device attributes."""
 
-    attributes = TuyaMCUCluster.attributes.copy()
-    attributes.update(
-        {
-            0xEF01: ("time_left", t.uint32_t, True),
-            0xEF02: ("state", t.enum8, True),
-            0xEF03: ("last_valve_open_duration", t.uint32_t, True),
-            0xEF04: ("dp_6", t.uint32_t, True),
-            0xEF05: ("valve_position", t.uint32_t, True),
-        }
-    )
+    class AttributeDefs(TuyaMCUCluster.AttributeDefs):
+        """Attribute Definitions."""
+
+        time_left = foundation.ZCLAttributeDef(
+            id=0xEF01, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        state = foundation.ZCLAttributeDef(
+            id=0xEF02, type=t.enum8, is_manufacturer_specific=True
+        )
+        last_valve_open_duration = foundation.ZCLAttributeDef(
+            id=0xEF03, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        dp_6 = foundation.ZCLAttributeDef(
+            id=0xEF04, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        valve_position = foundation.ZCLAttributeDef(
+            id=0xEF05, type=t.uint32_t, is_manufacturer_specific=True
+        )
 
     dp_to_attribute: dict[int, DPToAttributeMapping] = {
         1: DPToAttributeMapping(
@@ -183,15 +191,21 @@ class BasicTuyaValve(CustomDevice):
 class ParksideTuyaValveManufCluster(TuyaMCUCluster):
     """Manufacturer Specific Cluster for the _TZE200_htnnfasr water valve sold as PARKSIDE."""
 
-    attributes = TuyaMCUCluster.attributes.copy()
-    attributes.update(
-        {
-            0xEF11: ("timer_duration", t.uint32_t, True),
-            0xEF12: ("timer_time_left", t.uint32_t, True),
-            0xEF13: ("frost_lock", t.Bool, True),
-            0xEF14: ("frost_lock_reset", t.Bool, True),  # 0 resets frost lock
-        }
-    )
+    class AttributeDefs(TuyaMCUCluster.AttributeDefs):
+        """Attribute Definitions."""
+
+        timer_duration = foundation.ZCLAttributeDef(
+            id=0xEF11, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        timer_time_left = foundation.ZCLAttributeDef(
+            id=0xEF12, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        frost_lock = foundation.ZCLAttributeDef(
+            id=0xEF13, type=t.Bool, is_manufacturer_specific=True
+        )
+        frost_lock_reset = foundation.ZCLAttributeDef(
+            id=0xEF14, type=t.Bool, is_manufacturer_specific=True
+        )  # 0 resets frost lock
 
     dp_to_attribute: dict[int, DPToAttributeMapping] = {
         1: DPToAttributeMapping(
@@ -300,18 +314,30 @@ GIEX_DURATION_ATTR = 0xEF72  # Last irrigation duration
 class GiexValveManufCluster(TuyaMCUCluster):
     """GiEX valve manufacturer cluster."""
 
-    attributes = TuyaMCUCluster.attributes.copy()
-    attributes.update(
-        {
-            GIEX_MODE_ATTR: ("irrigation_mode", t.Bool, True),
-            GIEX_START_TIME_ATTR: ("irrigation_start_time", t.uint32_t, True),
-            GIEX_END_TIME_ATTR: ("irrigation_end_time", t.uint32_t, True),
-            GIEX_NUM_TIMES_ATTR: ("irrigation_num_times", t.uint32_t, True),
-            GIEX_TARGET_ATTR: ("irrigation_target", t.uint32_t, True),
-            GIEX_INTERVAL_ATTR: ("irrigation_interval", t.uint32_t, True),
-            GIEX_DURATION_ATTR: ("irrigation_duration", t.uint32_t, True),
-        }
-    )
+    class AttributeDefs(TuyaMCUCluster.AttributeDefs):
+        """Attribute Definitions."""
+
+        irrigation_mode = foundation.ZCLAttributeDef(
+            id=GIEX_MODE_ATTR, type=t.Bool, is_manufacturer_specific=True
+        )
+        irrigation_start_time = foundation.ZCLAttributeDef(
+            id=GIEX_START_TIME_ATTR, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        irrigation_end_time = foundation.ZCLAttributeDef(
+            id=GIEX_END_TIME_ATTR, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        irrigation_num_times = foundation.ZCLAttributeDef(
+            id=GIEX_NUM_TIMES_ATTR, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        irrigation_target = foundation.ZCLAttributeDef(
+            id=GIEX_TARGET_ATTR, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        irrigation_interval = foundation.ZCLAttributeDef(
+            id=GIEX_INTERVAL_ATTR, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        irrigation_duration = foundation.ZCLAttributeDef(
+            id=GIEX_DURATION_ATTR, type=t.uint32_t, is_manufacturer_specific=True
+        )
 
     dp_to_attribute: dict[int, DPToAttributeMapping] = {
         1: DPToAttributeMapping(
