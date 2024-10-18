@@ -36,6 +36,7 @@ import zhaquirks.tuya.ts0042
 import zhaquirks.tuya.ts0043
 import zhaquirks.tuya.ts011f_plug
 import zhaquirks.tuya.ts0501_fan_switch
+import zhaquirks.tuya.ts0601_din_power
 import zhaquirks.tuya.ts0601_electric_heating
 import zhaquirks.tuya.ts0601_motion
 import zhaquirks.tuya.ts0601_siren
@@ -447,6 +448,75 @@ async def test_tuya_send_attribute(zigpy_device_from_quirk, quirk):
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
         ]
+
+
+@pytest.mark.parametrize(
+    "quirk", (zhaquirks.tuya.ts0601_din_power.TuyaZemismartPowerMeter,)
+)
+async def test_zemismart_power_meter_report(zigpy_device_from_quirk, quirk):
+    """Test zemismart power mwter standard state reporting from incoming commands."""
+
+    spm_dev = zigpy_device_from_quirk(quirk)
+    tuya_cluster = spm_dev.endpoints[1].tuya_manufacturer
+
+    smartenergy_metering_listener = ClusterListener(
+        spm_dev.endpoints[1].smartenergy_metering
+    )
+    electrical_measurement_listener = ClusterListener(
+        spm_dev.endpoints[1].electrical_measurement
+    )
+
+    frames = (
+        b"\t@\x01\x00\x1f\x01\x02\x00\x04\x00\x00 \xe5",  # Summation
+        b"\tA\x01\x00 \x02\x02\x00\x04\x00\x00\x00\x00",  # Delivered
+        b"\tB\x01\x00!\x06\x00\x00\x08\ti\x00\x03\x88\x00\x00\xaf",  # VCP phase 1
+        b"\tB\x01\x00!\x07\x00\x00\x08\ti\x00\x03\x88\x00\x00\xaf",  # VCP phase 2
+        b"\tB\x01\x00!\x08\x00\x00\x08\ti\x00\x03\x88\x00\x00\xaf",  # VCP phase 3
+    )
+    for frame in frames:
+        hdr, args = tuya_cluster.deserialize(frame)
+        tuya_cluster.handle_message(hdr, args)
+
+    vcp_expected = [
+        (0x05, 2409),  # RMS Voltage
+        (0x08, 904),  # RMS Current
+        (0x0B, 175),  # Active power
+    ]
+    attr_n = len(vcp_expected)
+    phase_bases = {
+        0: 0x0500,
+        1: 0x0900,
+        2: 0x0A00,
+    }
+
+    assert len(smartenergy_metering_listener.cluster_commands) == 0
+    assert len(smartenergy_metering_listener.attribute_updates) == 2
+    assert smartenergy_metering_listener.attribute_updates[0][0] == 0
+    assert smartenergy_metering_listener.attribute_updates[0][1] == 8421
+    assert smartenergy_metering_listener.attribute_updates[1][0] == 1
+    assert smartenergy_metering_listener.attribute_updates[1][1] == 0
+
+    assert len(electrical_measurement_listener.cluster_commands) == 0
+    assert len(electrical_measurement_listener.attribute_updates) == 3 * attr_n
+    for phase in range(3):
+        for i, (attr, val) in enumerate(vcp_expected):
+            assert (
+                electrical_measurement_listener.attribute_updates[phase * attr_n + i][0]
+                == phase_bases[phase] + attr
+            )
+            assert (
+                electrical_measurement_listener.attribute_updates[phase * attr_n + i][1]
+                == val
+            )
+
+    # Test invalid phase id
+    spm_dev.endpoints[1].electrical_measurement.vcp_reported(
+        [176, 0, 0, 122, 3, 0, 117, 9],
+        3,  # 242.1V 0.89A 176W
+    )
+    assert len(electrical_measurement_listener.attribute_updates) == (3 + 1) * attr_n
+    assert electrical_measurement_listener.attribute_updates[3 * attr_n][0] == 0x0505
+    assert electrical_measurement_listener.attribute_updates[3 * attr_n][1] == 2421
 
 
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_siren.TuyaSiren,))
