@@ -4,22 +4,10 @@ from datetime import datetime, timedelta, timezone
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
-from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.quirks.v2.homeassistant import UnitOfTime
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
-from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import (
-    Basic,
-    Groups,
-    Identify,
-    OnOff,
-    Ota,
-    PowerConfiguration,
-    Scenes,
-    Time,
-)
-from zigpy.zcl.clusters.measurement import TemperatureMeasurement
+from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
 from zigpy.zcl.clusters.smartenergy import Metering
 
 from zhaquirks import DoublingPowerConfigurationCluster
@@ -31,12 +19,16 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import TUYA_CLUSTER_ED00_ID, EnchantedDevice, TuyaLocalCluster
+from zhaquirks.tuya import (
+    EnchantedDevice,
+    TuyaLocalCluster,
+    TuyaPowerConfigurationCluster4AA,
+)
+from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import (
     DPToAttributeMapping,
     TuyaMCUCluster,
     TuyaOnOff,
-    TuyaOnOffNM,
     TuyaPowerConfigurationCluster,
 )
 
@@ -302,45 +294,25 @@ class ParksidePSBZS(EnchantedDevice):
     }
 
 
-class GiexPowerConfigurationCluster4AA(TuyaPowerConfigurationCluster):
-    """PowerConfiguration cluster for devices with 4 AA."""
-
-    _CONSTANT_ATTRIBUTES = {
-        PowerConfiguration.AttributeDefs.battery_size.id: 3,
-        PowerConfiguration.AttributeDefs.battery_rated_voltage.id: 15,
-        PowerConfiguration.AttributeDefs.battery_quantity.id: 4,
-    }
-
-
-class TuyaTemperatureMeasurement(TemperatureMeasurement, TuyaLocalCluster):
-    """Tuya local TemperatureMeasurement cluster."""
-
-
-class GiexValveWaterConsumed(TuyaValveWaterConsumed):
-    """Giex Valve Water consumed cluster."""
-
-    def __init__(self, *args, **kwargs):
-        """Init a GiexValveWaterConsumed cluster."""
-        super().__init__(*args, **kwargs)
-        self.add_unsupported_attribute(Metering.AttributeDefs.instantaneous_demand.id)
-
-
-GIEX_MODE_ATTR = 0xEF01  # Mode [0] duration [1] capacity
-GIEX_START_TIME_ATTR = 0xEF65  # Last irrigation start time (GMT)
-GIEX_END_TIME_ATTR = 0xEF66  # Last irrigation end time (GMT)
-GIEX_NUM_TIMES_ATTR = 0xEF67  # Number of cycle irrigation times min=0 max=100
-GIEX_TARGET_ATTR = 0xEF68  # Irrigation target, duration in sec or capacity in litres (depending on mode) min=0 max=3600
-GIEX_INTERVAL_ATTR = 0xEF69  # Cycle irrigation interval in seconds min=0 max=3600
-GIEX_WX_DELAY_ATTR = 0xEF6B  # Weather Delay [0-3] No Delay, 24hr,48hr, 72hr
-GIEX_CIRC_IRR_PARAM = 0xEF6D  # Circular irrigation parameters
-GIEX_RT_DURATION_SEC = 0xEF6E  # Real-time cumulative duration (seconds)
-GIEX_OTHER_EXT = 0xEF70  # Other extensions string
-GIEX_TIMEING_FUNC = 0xEF71  # Timing Function,Add or remove schedule.
-GIEX_DURATION_ATTR = 0xEF72  # Last irrigation duration
-GIEX_TZ_ATTR = 0xEF73  # Offset in hours
 GIEX_12HRS_AS_SEC = 43200
 GIEX_24HRS_AS_MIN = 1440
 UNIX_EPOCH_TO_ZCL_EPOCH = 946684800
+
+
+class GiexIrrigationMode(t.enum8):
+    """Giex Irrigation Mode Enum."""
+
+    Duration = 0x00
+    Capacity = 0x01
+
+
+class GiexIrrigationWeatherDelay(t.enum8):
+    """Giex Irrigation Weather Delay Enum."""
+
+    NoDelay = 0x00
+    TwentyFourHourDelay = 0x01
+    FortyEightHourDelay = 0x02
+    SeventyTwoHourDelay = 0x03
 
 
 def giex_string_to_td(v: str) -> int:
@@ -361,243 +333,121 @@ def giex_string_to_dt(v: str) -> datetime | None:
     return dev_dt.timestamp() + UNIX_EPOCH_TO_ZCL_EPOCH
 
 
-class GiexValveManufCluster(TuyaMCUCluster):
-    """GiEX valve manufacturer cluster."""
-
-    class GiexIrrigationMode(t.enum8):
-        """Giex Irrigation Mode Enum."""
-
-        Duration = 0x00
-        Capacity = 0x01
-
-    class GiexIrrigationWeatherDelay(t.enum8):
-        """Giex Irrigation Weather Delay Enum."""
-
-        NoDelay = 0x00
-        TwentyFourHourDelay = 0x01
-        FortyEightHourDelay = 0x02
-        SeventyTwoHourDelay = 0x03
-
-    attributes = TuyaMCUCluster.attributes.copy()
-    attributes.update(
-        {
-            GIEX_MODE_ATTR: ("irrigation_mode", t.Bool, True),
-            GIEX_START_TIME_ATTR: ("irrigation_start_time", t.CharacterString, True),
-            GIEX_END_TIME_ATTR: ("irrigation_end_time", t.CharacterString, True),
-            GIEX_NUM_TIMES_ATTR: ("irrigation_num_times", t.uint32_t, True),
-            GIEX_TARGET_ATTR: ("irrigation_target", t.uint32_t, True),
-            GIEX_INTERVAL_ATTR: ("irrigation_interval", t.uint32_t, True),
-            GIEX_WX_DELAY_ATTR: ("weather_delay", t.uint8_t, True),
-            GIEX_CIRC_IRR_PARAM: ("irrigation_circ_parm", t.LVBytes, True),
-            GIEX_RT_DURATION_SEC: ("irrigation_accu_secs", t.uint32_t, True),
-            GIEX_OTHER_EXT: ("irrigation_other_ext", t.CharacterString, True),
-            GIEX_TIMEING_FUNC: ("irrigation_timeing_func", t.LVBytes, True),
-            GIEX_DURATION_ATTR: ("irrigation_duration", t.uint32_t, True),
-            GIEX_TZ_ATTR: ("device_tz", t.uint8_t, True),
-        }
+gx02_base_quirk = (
+    TuyaQuirkBuilder()
+    .tuya_battery(dp_id=59, power_cfg=TuyaPowerConfigurationCluster4AA)
+    .tuya_metering(dp_id=111)
+    .tuya_onoff(dp_id=2)
+    .tuya_number(  # Good
+        dp_id=103,
+        attribute_name="irrigation_num_times",
+        type=t.uint32_t,
+        min_value=0,
+        max_value=100,
+        step=1,
+        translation_key="irrigation_num_times",
+        fallback_name="Irrigation Num Times",
     )
-
-    dp_to_attribute: dict[int, DPToAttributeMapping] = {
-        1: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "irrigation_mode",
-        ),
-        2: DPToAttributeMapping(
-            TuyaOnOffNM.ep_attribute,
-            "on_off",
-        ),
-        101: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "irrigation_start_time",
-            converter=lambda x: giex_string_to_dt(x),
-        ),
-        102: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "irrigation_end_time",
-            converter=lambda x: giex_string_to_dt(x),
-        ),
-        103: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "irrigation_num_times",
-        ),
-        104: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "irrigation_target",
-        ),
-        105: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "irrigation_interval",
-        ),
-        106: DPToAttributeMapping(
-            TuyaTemperatureMeasurement.ep_attribute,
-            "measured_value",
-        ),
-        107: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "weather_delay",
-        ),
-        108: DPToAttributeMapping(
-            GiexPowerConfigurationCluster4AA.ep_attribute,
-            "battery_percentage_remaining",
-        ),
-        109: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "irrigation_circ_parm",
-        ),
-        110: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "irrigation_accu_secs",
-        ),
-        111: DPToAttributeMapping(
-            TuyaValveWaterConsumed.ep_attribute,
-            "current_summ_delivered",
-        ),
-        112: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "irrigation_other_ext",
-        ),
-        113: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "irrigation_timeing_func",
-        ),
-        114: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "irrigation_duration",
-            converter=lambda x: giex_string_to_td(x),
-        ),
-        115: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "device_tz",
-        ),
-    }
-    data_point_handlers = {
-        1: "_dp_2_attr_update",
-        2: "_dp_2_attr_update",
-        101: "_dp_2_attr_update",
-        102: "_dp_2_attr_update",
-        103: "_dp_2_attr_update",
-        104: "_dp_2_attr_update",
-        105: "_dp_2_attr_update",
-        106: "_dp_2_attr_update",
-        107: "_dp_2_attr_update",
-        108: "_dp_2_attr_update",
-        109: "_dp_2_attr_update",
-        110: "_dp_2_attr_update",
-        111: "_dp_2_attr_update",
-        112: "_dp_2_attr_update",
-        113: "_dp_2_attr_update",
-        114: "_dp_2_attr_update",
-        115: "_dp_2_attr_update",
-    }
-
-    async def write_attributes(self, attributes, manufacturer=None):
-        """Overwrite to force manufacturer code."""
-
-        return await super().write_attributes(
-            attributes, manufacturer=foundation.ZCLHeader.NO_MANUFACTURER_ID
-        )
-
-
-class GX02BaseQuirk:
-    """Giex GX02 Valve Base Quirk."""
-
-    base_quirk: QuirkBuilder
-
-    def __init__(self, max_duration: int) -> None:
-        """Init a base quirk that applies to all GX02 valves."""
-        time_unit: int = UnitOfTime.SECONDS
-
-        if max_duration == GIEX_24HRS_AS_MIN:
-            time_unit = UnitOfTime.MINUTES
-
-        self.base_quirk = (
-            QuirkBuilder("GIEX", "GX02")
-            .replaces(GiexValveManufCluster)
-            .removes(TUYA_CLUSTER_ED00_ID)
-            .adds(TuyaOnOffNM)
-            .adds(GiexPowerConfigurationCluster4AA)
-            .adds(GiexValveWaterConsumed)
-            .number(
-                "irrigation_num_times",
-                GiexValveManufCluster.cluster_id,
-                min_value=0,
-                max_value=100,
-                step=1,
-                translation_key="irrigation_num_times",
-                fallback_name="Irrigation Num Times",
-            )
-            .enum(
-                "irrigation_mode",
-                GiexValveManufCluster.GiexIrrigationMode,
-                GiexValveManufCluster.cluster_id,
-                translation_key="irrigation_mode",
-                fallback_name="Irrigation Mode",
-            )
-            .enum(
-                "weather_delay",
-                GiexValveManufCluster.GiexIrrigationWeatherDelay,
-                GiexValveManufCluster.cluster_id,
-                translation_key="weather_delay",
-                fallback_name="Weather Delay",
-                initially_disabled=True,
-            )
-            .sensor(
-                "irrigation_duration",
-                GiexValveManufCluster.cluster_id,
-                state_class=SensorStateClass.MEASUREMENT,
-                device_class=SensorDeviceClass.DURATION,
-                unit=UnitOfTime.SECONDS,
-                translation_key="irrigation_duration",
-                fallback_name="Last Irrigation Duration",
-            )
-            .sensor(
-                "irrigation_start_time",
-                GiexValveManufCluster.cluster_id,
-                device_class=SensorDeviceClass.TIMESTAMP,
-                translation_key="irrigation_start_time",
-                fallback_name="Irrigation Start Time",
-            )
-            .sensor(
-                "irrigation_end_time",
-                GiexValveManufCluster.cluster_id,
-                device_class=SensorDeviceClass.TIMESTAMP,
-                translation_key="irrigation_end_time",
-                fallback_name="Irrigation End Time",
-            )
-            .number(
-                "irrigation_target",
-                GiexValveManufCluster.cluster_id,
-                min_value=0,
-                max_value=max_duration,
-                step=1,
-                translation_key="irrigation_target",
-                fallback_name="Irrigation Target",
-            )
-            .number(
-                "irrigation_interval",
-                GiexValveManufCluster.cluster_id,
-                min_value=0,
-                max_value=max_duration,
-                step=1,
-                unit=time_unit,
-                translation_key="irrigation_interval",
-                fallback_name="Irrigation Interval",
-            )
-        )
-        self.base_quirk.manufacturer_model_metadata = []
+    .tuya_enum(  # Good
+        dp_id=1,
+        attribute_name="irrigation_mode",
+        enum_class=GiexIrrigationMode,
+        translation_key="irrigation_mode",
+        fallback_name="Irrigation Mode",
+    )
+    .tuya_enum(  # Good
+        dp_id=107,
+        attribute_name="weather_delay",
+        enum_class=GiexIrrigationWeatherDelay,
+        translation_key="weather_delay",
+        fallback_name="Weather Delay",
+        initially_disabled=True,
+    )
+    .tuya_sensor(  # Good
+        dp_id=114,
+        attribute_name="irrigation_duration",
+        type=t.uint32_t,
+        converter=lambda x: giex_string_to_td(x),
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        translation_key="irrigation_duration",
+        fallback_name="Last Irrigation Duration",
+    )
+    .tuya_sensor(
+        dp_id=101,  # Good
+        attribute_name="irrigation_start_time",
+        type=t.CharacterString,
+        converter=lambda x: giex_string_to_dt(x),
+        device_class=SensorDeviceClass.TIMESTAMP,
+        translation_key="irrigation_start_time",
+        fallback_name="Irrigation Start Time",
+    )
+    .tuya_sensor(  # Good
+        dp_id=102,
+        attribute_name="irrigation_end_time",
+        type=t.CharacterString,
+        converter=lambda x: giex_string_to_dt(x),
+        device_class=SensorDeviceClass.TIMESTAMP,
+        translation_key="irrigation_end_time",
+        fallback_name="Irrigation End Time",
+    )
+)
 
 
 (
-    GX02BaseQuirk(GIEX_24HRS_AS_MIN)
-    .base_quirk.also_applies_to("_TZE200_sh1btabb", "TS0601")
+    gx02_base_quirk.clone()
+    .also_applies_to("_TZE200_sh1btabb", "TS0601")
+    .tuya_number(
+        dp_id=104,
+        attribute_name="irrigation_target",
+        type=t.uint32_t,
+        min_value=0,
+        max_value=GIEX_24HRS_AS_MIN,
+        step=1,
+        translation_key="irrigation_target",
+        fallback_name="Irrigation Target",
+    )
+    .tuya_number(
+        dp_id=105,
+        attribute_name="irrigation_interval",
+        min_value=0,
+        type=t.uint32_t,
+        max_value=GIEX_24HRS_AS_MIN,
+        step=1,
+        unit=UnitOfTime.MINUTES,
+        translation_key="irrigation_interval",
+        fallback_name="Irrigation Interval",
+    )
     .add_to_registry()
 )
 (
-    GX02BaseQuirk(GIEX_12HRS_AS_SEC)
-    .base_quirk.also_applies_to("_TZE200_a7sghmms", "TS0601")
+    gx02_base_quirk.clone()
+    .also_applies_to("_TZE200_a7sghmms", "TS0601")
     .also_applies_to("_TZE204_a7sghmms", "TS0601")
     .also_applies_to("_TZE200_7ytb3h8u", "TS0601")
     .also_applies_to("_TZE204_7ytb3h8u", "TS0601")
     .also_applies_to("_TZE284_7ytb3h8u", "TS0601")
+    .tuya_number(
+        dp_id=104,
+        attribute_name="irrigation_target",
+        type=t.uint32_t,
+        min_value=0,
+        max_value=GIEX_12HRS_AS_SEC,
+        step=1,
+        translation_key="irrigation_target",
+        fallback_name="Irrigation Target",
+    )
+    .tuya_number(
+        dp_id=105,
+        attribute_name="irrigation_interval",
+        type=t.uint32_t,
+        min_value=0,
+        max_value=GIEX_12HRS_AS_SEC,
+        step=1,
+        unit=UnitOfTime.SECONDS,
+        translation_key="irrigation_interval",
+        fallback_name="Irrigation Interval",
+    )
     .add_to_registry()
 )
