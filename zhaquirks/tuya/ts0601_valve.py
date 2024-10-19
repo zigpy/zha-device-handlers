@@ -7,6 +7,7 @@ from zigpy.quirks import CustomDevice
 from zigpy.quirks.v2.homeassistant import UnitOfTime
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
 from zigpy.zcl.clusters.smartenergy import Metering
 
@@ -50,16 +51,24 @@ class TuyaValveWaterConsumed(Metering, TuyaLocalCluster):
 class TuyaValveManufCluster(TuyaMCUCluster):
     """On/Off Tuya cluster with extra device attributes."""
 
-    attributes = TuyaMCUCluster.attributes.copy()
-    attributes.update(
-        {
-            0xEF01: ("time_left", t.uint32_t, True),
-            0xEF02: ("state", t.enum8, True),
-            0xEF03: ("last_valve_open_duration", t.uint32_t, True),
-            0xEF04: ("dp_6", t.uint32_t, True),
-            0xEF05: ("valve_position", t.uint32_t, True),
-        }
-    )
+    class AttributeDefs(TuyaMCUCluster.AttributeDefs):
+        """Attribute Definitions."""
+
+        time_left = foundation.ZCLAttributeDef(
+            id=0xEF01, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        state = foundation.ZCLAttributeDef(
+            id=0xEF02, type=t.enum8, is_manufacturer_specific=True
+        )
+        last_valve_open_duration = foundation.ZCLAttributeDef(
+            id=0xEF03, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        dp_6 = foundation.ZCLAttributeDef(
+            id=0xEF04, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        valve_position = foundation.ZCLAttributeDef(
+            id=0xEF05, type=t.uint32_t, is_manufacturer_specific=True
+        )
 
     dp_to_attribute: dict[int, DPToAttributeMapping] = {
         1: DPToAttributeMapping(
@@ -191,15 +200,21 @@ class BasicTuyaValve(CustomDevice):
 class ParksideTuyaValveManufCluster(TuyaMCUCluster):
     """Manufacturer Specific Cluster for the _TZE200_htnnfasr water valve sold as PARKSIDE."""
 
-    attributes = TuyaMCUCluster.attributes.copy()
-    attributes.update(
-        {
-            0xEF11: ("timer_duration", t.uint32_t, True),
-            0xEF12: ("timer_time_left", t.uint32_t, True),
-            0xEF13: ("frost_lock", t.Bool, True),
-            0xEF14: ("frost_lock_reset", t.Bool, True),  # 0 resets frost lock
-        }
-    )
+    class AttributeDefs(TuyaMCUCluster.AttributeDefs):
+        """Attribute Definitions."""
+
+        timer_duration = foundation.ZCLAttributeDef(
+            id=0xEF11, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        timer_time_left = foundation.ZCLAttributeDef(
+            id=0xEF12, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        frost_lock = foundation.ZCLAttributeDef(
+            id=0xEF13, type=t.Bool, is_manufacturer_specific=True
+        )
+        frost_lock_reset = foundation.ZCLAttributeDef(
+            id=0xEF14, type=t.Bool, is_manufacturer_specific=True
+        )  # 0 resets frost lock
 
     dp_to_attribute: dict[int, DPToAttributeMapping] = {
         1: DPToAttributeMapping(
