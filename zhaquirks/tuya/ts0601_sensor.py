@@ -508,7 +508,7 @@ class GiexBatteryStatus(t.enum8):
         attribute_name="battery_status",
         enum_class=GiexBatteryStatus,
         translation_key="battery_status",
-        fallback_name="Battery Status",
+        fallback_name="Battery status",
         entity_type=EntityType.DIAGNOSTIC,
         entity_platform=EntityPlatform.SENSOR,
         initially_disabled=True,
