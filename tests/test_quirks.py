@@ -419,7 +419,6 @@ def test_signature(quirk: CustomDevice) -> None:
             zhaquirks.smartthings.tag_v4.SmartThingsTagV4,
             zhaquirks.smartthings.multi.SmartthingsMultiPurposeSensor,
             zhaquirks.netvox.z308e3ed.Z308E3ED,
-            zhaquirks.gledopto.soposhgu10.SoposhGU10,
         )
     ],
 )
