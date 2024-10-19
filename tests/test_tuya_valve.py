@@ -148,7 +148,7 @@ async def test_giex_03_quirk(zigpy_device_from_v2_quirk, model, manuf):
     ) as m1:
         (status,) = await tuya_cluster.write_attributes(
             {
-                "valve_one_duration": 10,
+                "valve_duration_1": 10,
             }
         )
         await wait_for_zigpy_tasks()
