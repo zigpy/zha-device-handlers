@@ -69,7 +69,7 @@ class LocalDataCluster(CustomCluster):
     """
 
     _CONSTANT_ATTRIBUTES: dict[int, typing.Any] = {}
-    _VALID_ATTRIBUTES: list[int] = []
+    _VALID_ATTRIBUTES: set[int] = set()
 
     async def bind(self):
         """Prevent bind."""
