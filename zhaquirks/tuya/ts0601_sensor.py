@@ -513,5 +513,6 @@ class GiexBatteryStatus(t.enum8):
         entity_platform=EntityPlatform.SENSOR,
         initially_disabled=True,
     )
+    .skip_configuration()
     .add_to_registry()
 )
