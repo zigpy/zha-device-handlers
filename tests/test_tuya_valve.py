@@ -182,3 +182,40 @@ async def test_giex_functions():
             == datetime.fromisoformat("2024-10-02T12:10:23+04:00").timestamp()
             + zhaquirks.tuya.ts0601_valve.UNIX_EPOCH_TO_ZCL_EPOCH
         )
+
+
+@pytest.mark.parametrize(
+    "model,manuf",
+    [
+        ("_TZE284_8zizsafo", "TS0601"),
+    ],
+)
+async def test_giex_03_quirk(zigpy_device_from_v2_quirk, model, manuf):
+    """Test Giex GX03 Valve Quirk."""
+
+    quirked_device = zigpy_device_from_v2_quirk(model, manuf)
+    tuya_cluster = quirked_device.endpoints[1].tuya_manufacturer
+
+    with mock.patch.object(
+        tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ) as m1:
+        (status,) = await tuya_cluster.write_attributes(
+            {
+                "valve_duration_1": 10,
+            }
+        )
+        await wait_for_zigpy_tasks()
+        m1.assert_called_with(
+            cluster=61184,
+            sequence=1,
+            data=b"\x01\x01\x00\x00\x01\x19\x02\x00\x04\x00\x00\x00\x0a",
+            command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
+        )
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
