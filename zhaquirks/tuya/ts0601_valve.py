@@ -517,21 +517,21 @@ class GiexIrrigationStatus(t.enum8):
     .tuya_battery(dp_id=59, power_cfg=TuyaPowerConfigurationCluster4AA)
     .tuya_switch(
         dp_id=1,
-        attribute_name="valve_one_on_off",
+        attribute_name="valve_on_off_1",
         entity_type=EntityType.STANDARD,
         translation_key="valve_on_off_1",
         fallback_name="Valve 1",
     )
     .tuya_switch(
         dp_id=2,
-        attribute_name="valve_two_on_off",
+        attribute_name="valve_on_off_2",
         entity_type=EntityType.STANDARD,
         translation_key="valve_on_off_2",
         fallback_name="Valve 2",
     )
     .tuya_number(
         dp_id=13,
-        attribute_name="valve_one_countdown",
+        attribute_name="valve_countdown_1",
         type=t.uint16_t,
         device_class=SensorDeviceClass.DURATION,
         unit=UnitOfTime.MINUTES,
@@ -543,7 +543,7 @@ class GiexIrrigationStatus(t.enum8):
     )
     .tuya_number(
         dp_id=14,
-        attribute_name="valve_two_countdown",
+        attribute_name="valve_countdown_2",
         type=t.uint16_t,
         device_class=SensorDeviceClass.DURATION,
         unit=UnitOfTime.MINUTES,
@@ -555,7 +555,7 @@ class GiexIrrigationStatus(t.enum8):
     )
     .tuya_sensor(
         dp_id=25,
-        attribute_name="valve_one_duration",
+        attribute_name="valve_duration_1",
         type=t.uint32_t,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.DURATION,
@@ -566,7 +566,7 @@ class GiexIrrigationStatus(t.enum8):
     )
     .tuya_sensor(
         dp_id=26,
-        attribute_name="valve_two_duration",
+        attribute_name="valve_duration_2",
         type=t.uint32_t,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.DURATION,
@@ -577,7 +577,7 @@ class GiexIrrigationStatus(t.enum8):
     )
     .tuya_enum(
         dp_id=104,
-        attribute_name="valve_one_status",
+        attribute_name="valve_status_1",
         enum_class=GiexIrrigationStatus,
         entity_platform=EntityPlatform.SENSOR,
         entity_type=EntityType.STANDARD,
@@ -586,7 +586,7 @@ class GiexIrrigationStatus(t.enum8):
     )
     .tuya_enum(
         dp_id=105,
-        attribute_name="valve_two_status",
+        attribute_name="valve_status_2",
         enum_class=GiexIrrigationStatus,
         entity_platform=EntityPlatform.SENSOR,
         entity_type=EntityType.STANDARD,
