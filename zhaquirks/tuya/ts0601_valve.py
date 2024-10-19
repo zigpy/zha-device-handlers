@@ -363,7 +363,7 @@ gx02_base_quirk = (
         max_value=100,
         step=1,
         translation_key="irrigation_num_times",
-        fallback_name="Irrigation Num Times",
+        fallback_name="Irrigation num Times",
     )
     .tuya_dp_attribute(
         dp_id=1,
@@ -375,14 +375,14 @@ gx02_base_quirk = (
         cluster_id=TUYA_CLUSTER_ID,
         enum_class=GiexIrrigationMode,
         translation_key="irrigation_mode",
-        fallback_name="Irrigation Mode",
+        fallback_name="Irrigation mode",
     )
     .tuya_enum(
         dp_id=107,
         attribute_name="weather_delay",
         enum_class=GiexIrrigationWeatherDelay,
         translation_key="weather_delay",
-        fallback_name="Weather Delay",
+        fallback_name="Weather delay",
         initially_disabled=True,
     )
     .tuya_sensor(
@@ -394,7 +394,7 @@ gx02_base_quirk = (
         device_class=SensorDeviceClass.DURATION,
         unit=UnitOfTime.SECONDS,
         translation_key="irrigation_duration",
-        fallback_name="Last Irrigation Duration",
+        fallback_name="Last irrigation duration",
     )
     .tuya_sensor(
         dp_id=101,
@@ -403,7 +403,7 @@ gx02_base_quirk = (
         converter=lambda x: giex_string_to_ts(x),
         device_class=SensorDeviceClass.TIMESTAMP,
         translation_key="irrigation_start_time",
-        fallback_name="Irrigation Start Time",
+        fallback_name="Irrigation start time",
     )
     .tuya_sensor(
         dp_id=102,
@@ -412,7 +412,7 @@ gx02_base_quirk = (
         converter=lambda x: giex_string_to_ts(x),
         device_class=SensorDeviceClass.TIMESTAMP,
         translation_key="irrigation_end_time",
-        fallback_name="Irrigation End Time",
+        fallback_name="Irrigation end time",
     )
     .skip_configuration()
 )
@@ -429,7 +429,7 @@ gx02_base_quirk = (
         max_value=GIEX_24HRS_AS_MIN,
         step=1,
         translation_key="irrigation_target",
-        fallback_name="Irrigation Target",
+        fallback_name="Irrigation target",
     )
     .tuya_number(
         dp_id=105,
@@ -440,7 +440,7 @@ gx02_base_quirk = (
         step=1,
         unit=UnitOfTime.MINUTES,
         translation_key="irrigation_interval",
-        fallback_name="Irrigation Interval",
+        fallback_name="Irrigation interval",
     )
     .add_to_registry()
 )
@@ -448,9 +448,9 @@ gx02_base_quirk = (
     gx02_base_quirk.clone()
     .applies_to("_TZE200_a7sghmms", "TS0601")
     .applies_to("_TZE204_a7sghmms", "TS0601")
-    .applies_to("_TZE200_7ytb3h8u", "TS0601")
-    .applies_to("_TZE204_7ytb3h8u", "TS0601")
-    .applies_to("_TZE284_7ytb3h8u", "TS0601")
+    .applies_to("_TZE200_7ytb3h8u", "TS0601")  # Giex GX02 Var 1
+    .applies_to("_TZE204_7ytb3h8u", "TS0601")  # Giex GX02 Var 1
+    .applies_to("_TZE284_7ytb3h8u", "TS0601")  # Giex GX02 Var 3
     .tuya_number(
         dp_id=104,
         attribute_name="irrigation_target",
@@ -459,7 +459,7 @@ gx02_base_quirk = (
         max_value=GIEX_12HRS_AS_SEC,
         step=1,
         translation_key="irrigation_target",
-        fallback_name="Irrigation Target",
+        fallback_name="Irrigation target",
     )
     .tuya_number(
         dp_id=105,
@@ -470,7 +470,7 @@ gx02_base_quirk = (
         step=1,
         unit=UnitOfTime.SECONDS,
         translation_key="irrigation_interval",
-        fallback_name="Irrigation Interval",
+        fallback_name="Irrigation interval",
     )
     .add_to_registry()
 )
