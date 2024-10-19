@@ -68,13 +68,13 @@ async def test_handle_get_data(
 @pytest.mark.parametrize(
     "model,manuf,rh_scale,temp_scale",
     [
-        ("_TZE200_yjjdcqsq", "TS0601", 100, 100),
-        ("_TZE200_9yapgbuv", "TS0601", 100, 100),
-        ("_TZE204_yjjdcqsq", "TS0601", 100, 100),
-        ("_TZE200_utkemkbs", "TS0601", 100, 100),
-        ("_TZE204_utkemkbs", "TS0601", 100, 100),
-        ("_TZE204_yjjdcqsq", "TS0601", 100, 100),
-        ("_TZE204_ksz749x8", "TS0601", 100, 100),
+        ("_TZE200_yjjdcqsq", "TS0601", 100, 10),
+        ("_TZE200_9yapgbuv", "TS0601", 100, 10),
+        ("_TZE204_yjjdcqsq", "TS0601", 100, 10),
+        ("_TZE200_utkemkbs", "TS0601", 100, 10),
+        ("_TZE204_utkemkbs", "TS0601", 100, 10),
+        ("_TZE204_yjjdcqsq", "TS0601", 100, 10),
+        ("_TZE204_ksz749x8", "TS0601", 100, 10),
     ],
 )
 async def test_handle_get_data_enum_batt(
