@@ -593,5 +593,6 @@ class GiexIrrigationStatus(t.enum8):
         translation_key="valve_two_status",
         fallback_name="Status 2",
     )
+    .skip_configuration()
     .add_to_registry()
 )
