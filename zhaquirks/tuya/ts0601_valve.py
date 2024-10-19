@@ -419,7 +419,7 @@ gx02_base_quirk = (
 
 (
     gx02_base_quirk.clone()
-    .also_applies_to("_TZE200_sh1btabb", "TS0601")
+    .applies_to("_TZE200_sh1btabb", "TS0601")
     .tuya_number(
         dp_id=104,
         attribute_name="irrigation_target",
@@ -445,11 +445,11 @@ gx02_base_quirk = (
 )
 (
     gx02_base_quirk.clone()
-    .also_applies_to("_TZE200_a7sghmms", "TS0601")
-    .also_applies_to("_TZE204_a7sghmms", "TS0601")
-    .also_applies_to("_TZE200_7ytb3h8u", "TS0601")
-    .also_applies_to("_TZE204_7ytb3h8u", "TS0601")
-    .also_applies_to("_TZE284_7ytb3h8u", "TS0601")
+    .applies_to("_TZE200_a7sghmms", "TS0601")
+    .applies_to("_TZE204_a7sghmms", "TS0601")
+    .applies_to("_TZE200_7ytb3h8u", "TS0601")
+    .applies_to("_TZE204_7ytb3h8u", "TS0601")
+    .applies_to("_TZE284_7ytb3h8u", "TS0601")
     .tuya_number(
         dp_id=104,
         attribute_name="irrigation_target",
