@@ -12,18 +12,20 @@ zhaquirks.setup()
 
 
 @pytest.mark.parametrize(
-    "model,manuf,scale",
+    "model,manuf,rh_scale,temp_scale",
     [
-        ("_TZE200_bjawzodf", "TS0601", 10),
-        ("_TZE200_zl1kmjqx", "TS0601", 10),
-        ("_TZE200_a8sdabtg", "TS0601", 100),  # Variant without screen, round
-        ("_TZE200_qoy0ekbd", "TS0601", 100),
-        ("_TZE200_znbl8dj5", "TS0601", 100),
-        ("_TZE200_qyflbnbj", "TS0601", 100),
-        ("_TZE200_zppcgbdj", "TS0601", 100),
+        ("_TZE200_bjawzodf", "TS0601", 10, 10),
+        ("_TZE200_zl1kmjqx", "TS0601", 10, 10),
+        ("_TZE200_a8sdabtg", "TS0601", 100, 10),  # Variant without screen, round
+        ("_TZE200_qoy0ekbd", "TS0601", 100, 10),
+        ("_TZE200_znbl8dj5", "TS0601", 100, 10),
+        ("_TZE200_qyflbnbj", "TS0601", 100, 10),
+        ("_TZE200_zppcgbdj", "TS0601", 100, 10),
     ],
 )
-async def test_handle_get_data(zigpy_device_from_v2_quirk, model, manuf, scale):
+async def test_handle_get_data(
+    zigpy_device_from_v2_quirk, model, manuf, rh_scale, temp_scale
+):
     """Test handle_get_data for multiple attributes - normal battery."""
 
     quirked = zigpy_device_from_v2_quirk(model, manuf)
@@ -43,12 +45,12 @@ async def test_handle_get_data(zigpy_device_from_v2_quirk, model, manuf, scale):
 
     assert (
         ep.temperature.get("measured_value")
-        == data.data.datapoints[0].data.payload * 100
+        == data.data.datapoints[0].data.payload * temp_scale
     )
 
     assert (
         ep.humidity.get("measured_value")
-        == data.data.datapoints[1].data.payload * scale
+        == data.data.datapoints[1].data.payload * rh_scale
     )
 
     assert (
@@ -64,19 +66,19 @@ async def test_handle_get_data(zigpy_device_from_v2_quirk, model, manuf, scale):
 
 
 @pytest.mark.parametrize(
-    "model,manuf,scale",
+    "model,manuf,rh_scale,temp_scale",
     [
-        ("_TZE200_yjjdcqsq", "TS0601", 100),
-        ("_TZE200_9yapgbuv", "TS0601", 100),
-        ("_TZE204_yjjdcqsq", "TS0601", 100),
-        ("_TZE200_utkemkbs", "TS0601", 100),
-        ("_TZE204_utkemkbs", "TS0601", 100),
-        ("_TZE204_yjjdcqsq", "TS0601", 100),
-        ("_TZE204_ksz749x8", "TS0601", 100),
+        ("_TZE200_yjjdcqsq", "TS0601", 100, 100),
+        ("_TZE200_9yapgbuv", "TS0601", 100, 100),
+        ("_TZE204_yjjdcqsq", "TS0601", 100, 100),
+        ("_TZE200_utkemkbs", "TS0601", 100, 100),
+        ("_TZE204_utkemkbs", "TS0601", 100, 100),
+        ("_TZE204_yjjdcqsq", "TS0601", 100, 100),
+        ("_TZE204_ksz749x8", "TS0601", 100, 100),
     ],
 )
 async def test_handle_get_data_enum_batt(
-    zigpy_device_from_v2_quirk, model, manuf, scale
+    zigpy_device_from_v2_quirk, model, manuf, rh_scale, temp_scale
 ):
     """Test handle_get_data for multiple attributes - enum battery."""
 
@@ -98,12 +100,12 @@ async def test_handle_get_data_enum_batt(
 
     assert (
         ep.temperature.get("measured_value")
-        == data.data.datapoints[0].data.payload * 100
+        == data.data.datapoints[0].data.payload * temp_scale
     )
 
     assert (
         ep.humidity.get("measured_value")
-        == data.data.datapoints[1].data.payload * scale
+        == data.data.datapoints[1].data.payload * rh_scale
     )
 
     assert ep.power.get("battery_percentage_remaining") == 100

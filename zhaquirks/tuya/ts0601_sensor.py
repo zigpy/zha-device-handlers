@@ -5,7 +5,7 @@ from zhaquirks.tuya.builder import TuyaPowerConfigurationCluster2AAA, TuyaQuirkB
 (
     TuyaQuirkBuilder("_TZE200_bjawzodf", "TS0601")
     .applies_to("_TZE200_zl1kmjqx", "TS0601")
-    .tuya_temperature(dp_id=1)
+    .tuya_temperature(dp_id=1, scale=10)
     .tuya_humidity(dp_id=2, scale=10)
     .tuya_battery(dp_id=4)
     .skip_configuration()
@@ -18,7 +18,7 @@ from zhaquirks.tuya.builder import TuyaPowerConfigurationCluster2AAA, TuyaQuirkB
     .applies_to("_TZE200_znbl8dj5", "TS0601")
     .applies_to("_TZE200_qyflbnbj", "TS0601")
     .applies_to("_TZE200_zppcgbdj", "TS0601")
-    .tuya_temperature(dp_id=1)
+    .tuya_temperature(dp_id=1, scale=10)
     .tuya_humidity(dp_id=2)
     .tuya_battery(dp_id=4)
     .skip_configuration()
