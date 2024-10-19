@@ -519,14 +519,14 @@ class GiexIrrigationStatus(t.enum8):
         dp_id=1,
         attribute_name="valve_one_on_off",
         entity_type=EntityType.STANDARD,
-        translation_key="valve_one_on_off",
+        translation_key="valve_on_off_1",
         fallback_name="Valve 1",
     )
     .tuya_switch(
         dp_id=2,
         attribute_name="valve_two_on_off",
         entity_type=EntityType.STANDARD,
-        translation_key="valve_two_on_off",
+        translation_key="valve_on_off_2",
         fallback_name="Valve 2",
     )
     .tuya_number(
@@ -538,7 +538,7 @@ class GiexIrrigationStatus(t.enum8):
         min_value=0,
         max_value=1440,
         step=1,
-        translation_key="valve_one_countdown",
+        translation_key="valve_countdown_1",
         fallback_name="Irrigation time 1",
     )
     .tuya_number(
@@ -550,7 +550,7 @@ class GiexIrrigationStatus(t.enum8):
         min_value=0,
         max_value=1440,
         step=1,
-        translation_key="valve_two_countdown",
+        translation_key="valve_countdown_2",
         fallback_name="Irrigation time 2",
     )
     .tuya_sensor(
@@ -561,7 +561,7 @@ class GiexIrrigationStatus(t.enum8):
         device_class=SensorDeviceClass.DURATION,
         unit=UnitOfTime.SECONDS,
         entity_type=EntityType.STANDARD,
-        translation_key="irrigation_duration",
+        translation_key="irrigation_duration_1",
         fallback_name="Irrigation duration 1",
     )
     .tuya_sensor(
@@ -572,7 +572,7 @@ class GiexIrrigationStatus(t.enum8):
         device_class=SensorDeviceClass.DURATION,
         unit=UnitOfTime.SECONDS,
         entity_type=EntityType.STANDARD,
-        translation_key="irrigation_duration",
+        translation_key="irriation_duration_2",
         fallback_name="Irrigation duration 2",
     )
     .tuya_enum(
@@ -581,7 +581,7 @@ class GiexIrrigationStatus(t.enum8):
         enum_class=GiexIrrigationStatus,
         entity_platform=EntityPlatform.SENSOR,
         entity_type=EntityType.STANDARD,
-        translation_key="valve_one_status",
+        translation_key="valve_status_1",
         fallback_name="Status 1",
     )
     .tuya_enum(
@@ -590,7 +590,7 @@ class GiexIrrigationStatus(t.enum8):
         enum_class=GiexIrrigationStatus,
         entity_platform=EntityPlatform.SENSOR,
         entity_type=EntityType.STANDARD,
-        translation_key="valve_two_status",
+        translation_key="valve_status_2",
         fallback_name="Status 2",
     )
     .skip_configuration()
