@@ -539,7 +539,7 @@ class GiexIrrigationStatus(t.enum8):
         max_value=1440,
         step=1,
         translation_key="valve_one_countdown",
-        fallback_name="Irrigation Time 1",
+        fallback_name="Irrigation time 1",
     )
     .tuya_number(
         dp_id=14,
@@ -551,7 +551,7 @@ class GiexIrrigationStatus(t.enum8):
         max_value=1440,
         step=1,
         translation_key="valve_two_countdown",
-        fallback_name="Irrigation Time 2",
+        fallback_name="Irrigation time 2",
     )
     .tuya_sensor(
         dp_id=25,
@@ -562,7 +562,7 @@ class GiexIrrigationStatus(t.enum8):
         unit=UnitOfTime.SECONDS,
         entity_type=EntityType.STANDARD,
         translation_key="irrigation_duration",
-        fallback_name="Irrigation Duration 1",
+        fallback_name="Irrigation duration 1",
     )
     .tuya_sensor(
         dp_id=26,
@@ -573,7 +573,7 @@ class GiexIrrigationStatus(t.enum8):
         unit=UnitOfTime.SECONDS,
         entity_type=EntityType.STANDARD,
         translation_key="irrigation_duration",
-        fallback_name="Irrigation Duration 2",
+        fallback_name="Irrigation duration 2",
     )
     .tuya_enum(
         dp_id=104,
