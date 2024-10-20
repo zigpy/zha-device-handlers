@@ -1534,7 +1534,11 @@ class TuyaNewManufCluster(CustomCluster):
             # mark mapped to attribute as valid if existing and if on a LocalDataCluster
             attr = cluster.attributes_by_name.get(dp_map.attribute_name)
             if attr and isinstance(cluster, LocalDataCluster):
-                cluster._VALID_ATTRIBUTES.append(attr.id)
+                # _VALID_ATTRIBUTES is only a class variable, but as want to modify it
+                # per instance here, we need to create an instance variable first
+                if "_VALID_ATTRIBUTES" not in cluster.__dict__:
+                    cluster._VALID_ATTRIBUTES = set()
+                cluster._VALID_ATTRIBUTES.add(attr.id)
 
     def handle_cluster_request(
         self,

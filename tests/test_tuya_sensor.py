@@ -2,10 +2,11 @@
 
 import pytest
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import Basic
+from zigpy.zcl.clusters.general import Basic, PowerConfiguration
+from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
 
 import zhaquirks
-import zhaquirks.tuya
+from zhaquirks.tuya import TuyaLocalCluster
 from zhaquirks.tuya.mcu import TuyaMCUCluster
 
 zhaquirks.setup()
@@ -115,3 +116,26 @@ async def test_handle_get_data_enum_batt(
 
     status = ep.tuya_manufacturer.handle_get_data(data.data)
     assert status == foundation.Status.UNSUPPORTED_ATTRIBUTE
+
+
+def test_valid_attributes(zigpy_device_from_v2_quirk):
+    """Test that valid attributes on virtual clusters are populated by Tuya datapoints mappings."""
+    quirked = zigpy_device_from_v2_quirk("_TZE200_bjawzodf", "TS0601")
+    ep = quirked.endpoints[1]
+
+    temperature_attr_id = TemperatureMeasurement.AttributeDefs.measured_value.id
+    humidity_attr_id = RelativeHumidity.AttributeDefs.measured_value.id
+    power_attr_id = PowerConfiguration.AttributeDefs.battery_percentage_remaining.id
+
+    temperature_cluster = ep.temperature
+    humidity_cluster = ep.humidity
+    power_config_cluster = ep.power
+
+    assert isinstance(temperature_cluster, TuyaLocalCluster)
+    assert isinstance(humidity_cluster, TuyaLocalCluster)
+    assert isinstance(power_config_cluster, TuyaLocalCluster)
+
+    # check that the virtual clusters have expected valid attributes
+    assert {temperature_attr_id} == temperature_cluster._VALID_ATTRIBUTES
+    assert {humidity_attr_id} == humidity_cluster._VALID_ATTRIBUTES
+    assert {power_attr_id} == power_config_cluster._VALID_ATTRIBUTES
