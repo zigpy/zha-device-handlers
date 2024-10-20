@@ -63,7 +63,10 @@ class TuyaQuirkBuilder(QuirkBuilder):
     """Tuya QuirkBuilder."""
 
     def __init__(
-        self, manufacturer: str, model: str, registry: DeviceRegistry = _DEVICE_REGISTRY
+        self,
+        manufacturer: str | None = None,
+        model: str | None = None,
+        registry: DeviceRegistry = _DEVICE_REGISTRY,
     ) -> None:
         """Init the TuyaQuirkBuilder."""
         self.tuya_data_point_handlers: dict[int, str] = {}
