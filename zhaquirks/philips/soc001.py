@@ -50,8 +50,9 @@ class PhilipsContactCluster(CustomCluster):
         PhilipsContactCluster.cluster_id,
         endpoint_id=2,
         device_class=BinarySensorDeviceClass.TAMPER,
-        fallback_name="Tamper",
         entity_type=EntityType.DIAGNOSTIC,
+        translation_key="tamper",
+        fallback_name="Tamper",
     )
     .add_to_registry()
 )
