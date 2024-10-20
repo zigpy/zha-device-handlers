@@ -357,13 +357,13 @@ gx02_base_quirk = (
     .tuya_onoff(dp_id=2)
     .tuya_number(
         dp_id=103,
-        attribute_name="irrigation_num_times",
+        attribute_name="irrigation_cycles",
         type=t.uint8_t,
         min_value=0,
         max_value=100,
         step=1,
-        translation_key="irrigation_num_times",
-        fallback_name="Irrigation num Times",
+        translation_key="irrigation_cycles",
+        fallback_name="Irrigation cycles",
     )
     .tuya_dp_attribute(
         dp_id=1,
