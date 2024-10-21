@@ -65,7 +65,7 @@ class CustomMultistateInputCluster(CustomCluster, MultistateInput):
                 COMMAND: command,
                 ENDPOINT_ID: i + 1,
             }
-            for i in range(1, 6)
+            for i in range(1, 5)
             for press_type, command in {
                 (SHORT_PRESS, COMMAND_SINGLE),
                 (DOUBLE_PRESS, COMMAND_DOUBLE),
