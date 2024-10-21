@@ -3,7 +3,6 @@
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.zcl.clusters.general import MultistateInput
-import zigpy.zcl.foundation
 
 from zhaquirks import PowerConfigurationCluster
 from zhaquirks.const import (
@@ -44,20 +43,6 @@ class CR2032PowerConfigurationCluster(PowerConfigurationCluster):
 
 class CustomMultistateInputCluster(CustomCluster, MultistateInput):
     """Multistate input cluster."""
-
-    async def bind(self):
-        """Prevent bind."""
-        return zigpy.zcl.foundation.Status.SUCCESS
-
-    async def unbind(self):
-        """Prevent unbind."""
-        return zigpy.zcl.foundation.Status.SUCCESS
-
-    async def _configure_reporting(self, *args, **kwargs):
-        """Prevent remote configure reporting."""
-        return (
-            zigpy.zcl.foundation.ConfigureReportingResponse.deserialize(b"\x00")[0],
-        )
 
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
