@@ -2,6 +2,7 @@
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import MultistateInput
 
 from zhaquirks import PowerConfigurationCluster
@@ -58,7 +59,14 @@ class CustomMultistateInputCluster(CustomCluster, MultistateInput):
     QuirkBuilder(MANUFACTURER, MODEL_ID)
     .skip_configuration()
     .replaces(CR2032PowerConfigurationCluster)
-    .replace_cluster_occurrences(CustomMultistateInputCluster)
+    .removes(MultistateInput.cluster_id, cluster_type=ClusterType.Client, endpoint_id=2)
+    .removes(MultistateInput.cluster_id, cluster_type=ClusterType.Client, endpoint_id=3)
+    .removes(MultistateInput.cluster_id, cluster_type=ClusterType.Client, endpoint_id=4)
+    .removes(MultistateInput.cluster_id, cluster_type=ClusterType.Client, endpoint_id=5)
+    .adds(CustomMultistateInputCluster, endpoint_id=2)
+    .adds(CustomMultistateInputCluster, endpoint_id=3)
+    .adds(CustomMultistateInputCluster, endpoint_id=4)
+    .adds(CustomMultistateInputCluster, endpoint_id=5)
     .device_automation_triggers(
         {
             (press_type, f"button_{i}"): {
