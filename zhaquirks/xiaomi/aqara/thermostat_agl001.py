@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from functools import reduce
 import math
 import struct
@@ -12,6 +13,7 @@ from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, Time
 from zigpy.zcl.clusters.hvac import Thermostat
+
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -48,8 +50,12 @@ SCHEDULE = 0x027D
 SCHEDULE_SETTINGS = 0x0276
 SENSOR = 0x027E
 BATTERY_PERCENTAGE = 0x040A
+SENSOR_TEMP = 0x0FFF2
+
 
 XIAOMI_CLUSTER_ID = 0xFCC0
+
+XIAOMI_SENSOR_VALUE = bytes.fromhex("00158d00019d1b98")
 
 DAYS_MAP = {
     "mon": 0x02,
@@ -61,6 +67,8 @@ DAYS_MAP = {
     "sun": 0x80,
 }
 NEXT_DAY_FLAG = 1 << 15
+
+MANUFACTUER_ID = 0x115F
 
 
 class ThermostatCluster(CustomCluster, Thermostat):
@@ -388,8 +396,115 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
             SCHEDULE_SETTINGS: ("schedule_settings", ScheduleSettings, True),
             SENSOR: ("sensor", t.uint8_t, True),
             BATTERY_PERCENTAGE: ("battery_percentage", t.uint8_t, True),
+            SENSOR_TEMP: ("sensor_temp", t.LVBytes, True),
         }
     )
+
+    @staticmethod
+    def lumi_header(counter: int, params: bytes, action: int) -> bytes:
+        """Create the lumi header."""
+        header = bytearray([0xAA, 0x71, len(params) + 3, 0x44, counter])
+        integrity = 512 - sum(header)
+
+        return bytes(header + bytearray([integrity, action, 0x41, len(params)]))
+
+    @staticmethod
+    def convert_sensor_write(value: Any, ieee: t.EUI64) -> list[bytes]:
+        """Convert sensor write value to bytes."""
+        device = bytes(reversed(ieee))
+        timestamp = struct.pack(">I", int(datetime.now().timestamp()))
+
+        if value == 1:
+            params1 = (
+                timestamp
+                + b"\x3d\x04"
+                + device
+                + XIAOMI_SENSOR_VALUE
+                + b"\x00\x01\x00\x55\x13\x0a\x02\x00\x00\x64\x04\xce\xc2\xb6\xc8\x00\x00\x00\x00\x00\x01\x3d\x64\x65"
+            )
+
+            params2 = (
+                timestamp
+                + b"\x3d\x05"
+                + device
+                + XIAOMI_SENSOR_VALUE
+                + b"\x08\x00\x07\xfd\x16\x0a\x02\x0a\xc9\xe8\xb1\xb8\xd4\xda\xcf\xdf\xc0\xeb\x00\x00\x00\x00\x00\x01\x3d\x04\x65"
+            )
+
+            return [
+                AqaraThermostatSpecificCluster.lumi_header(0x12, params1, 0x02)
+                + params1,
+                AqaraThermostatSpecificCluster.lumi_header(0x13, params2, 0x02)
+                + params2,
+            ]
+        else:
+            params1 = (
+                timestamp
+                + b"\x3d\x05"
+                + device
+                + b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+            )
+
+            params2 = (
+                timestamp
+                + b"\x3d\x04"
+                + device
+                + b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+            )
+
+            return [
+                AqaraThermostatSpecificCluster.lumi_header(0x12, params1, 0x04)
+                + params1,
+                AqaraThermostatSpecificCluster.lumi_header(0x13, params2, 0x04)
+                + params2,
+            ]
+
+    @staticmethod
+    def convert_sensor_temp_write(value: Any) -> bytes:
+        """Convert sensor temperature write value to bytes."""
+        temp = struct.pack(">f", round(float(value) * 100))
+
+        params = XIAOMI_SENSOR_VALUE + b"\x00\x01\x00\x55" + temp
+        return AqaraThermostatSpecificCluster.lumi_header(0x12, params, 0x05) + params
+
+    async def write_attributes(
+        self, attributes: dict[str | int, Any], manufacturer: int | None = None
+    ) -> list:
+        """Write attributes to the device."""
+        result = []
+
+        if SENSOR in attributes:
+            values = AqaraThermostatSpecificCluster.convert_sensor_write(
+                attributes[SENSOR], self.endpoint.device.ieee
+            )
+
+            attributes.pop(SENSOR)
+
+            for value in values:
+                result += await super().write_attributes(
+                    {SENSOR_TEMP: value}, manufacturer=MANUFACTUER_ID
+                )
+
+            # keep only last result in list
+            if len(result) > 1:
+                result = result[-1]
+
+        elif SENSOR_TEMP in attributes:
+            result += await super().write_attributes(
+                {
+                    SENSOR_TEMP: AqaraThermostatSpecificCluster.convert_sensor_temp_write(
+                        attributes[SENSOR_TEMP]
+                    )
+                },
+                manufacturer=MANUFACTUER_ID,
+            )
+            attributes.pop(SENSOR_TEMP)
+
+        if len(attributes) == 0:
+            return result
+
+        result += await super().write_attributes(attributes, manufacturer)
+        return result
 
     def _update_attribute(self, attrid, value):
         self.debug("Updating attribute on Xiaomi cluster %s with %s", attrid, value)
