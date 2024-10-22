@@ -101,10 +101,10 @@ def _get_packet_data(
 @pytest.mark.parametrize(
     "press_type,button,exp_event",
     (
-        (ButtonAction.Single_off, TURN_OFF, COMMAND_M_INITIAL_PRESS),
-        (ButtonAction.Single_on, TURN_ON, COMMAND_M_INITIAL_PRESS),
-        (ButtonAction.Single_release_off, TURN_OFF, COMMAND_M_SHORT_RELEASE),
-        (ButtonAction.Single_release_on, TURN_ON, COMMAND_M_SHORT_RELEASE),
+        (ButtonAction.Pressed_off, TURN_OFF, COMMAND_M_INITIAL_PRESS),
+        (ButtonAction.Pressed_on, TURN_ON, COMMAND_M_INITIAL_PRESS),
+        (ButtonAction.Released_off, TURN_OFF, COMMAND_M_SHORT_RELEASE),
+        (ButtonAction.Released_on, TURN_ON, COMMAND_M_SHORT_RELEASE),
         (ButtonAction.Double_on, TURN_ON, COMMAND_M_MULTI_PRESS_COMPLETE),
         (ButtonAction.Double_off, TURN_OFF, COMMAND_M_MULTI_PRESS_COMPLETE),
         (ButtonAction.Long_on, TURN_ON, COMMAND_M_LONG_RELEASE),
@@ -135,7 +135,16 @@ async def test_sinope_light_switch(
         ),
     )
     data = _get_packet_data(foundation.GeneralCommand.Report_Attributes, attr)
-    device.handle_message(260, cluster_id, endpoint_id, endpoint_id, data)
+
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=260,
+            cluster_id=cluster_id,
+            src_ep=endpoint_id,
+            dst_ep=endpoint_id,
+            data=t.SerializableBytes(data),
+        )
+    )
 
     if exp_event is None:
         assert cluster_listener.zha_send_event.call_count == 0
@@ -147,6 +156,7 @@ async def test_sinope_light_switch(
                 "attribute_id": 84,
                 "attribute_name": "action_report",
                 "button": button,
+                "description": press_type.name,
                 "value": press_type.value,
             },
         )
@@ -172,7 +182,15 @@ async def test_sinope_light_switch_non_action_report(zigpy_device_from_quirk, qu
 
     # read attributes general command
     data = _get_packet_data(foundation.GeneralCommand.Read_Attributes)
-    device.handle_message(260, cluster_id, endpoint_id, endpoint_id, data)
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=260,
+            cluster_id=cluster_id,
+            src_ep=endpoint_id,
+            dst_ep=endpoint_id,
+            data=t.SerializableBytes(data),
+        )
+    )
     # no ZHA events emitted because we only handle Report_Attributes
     assert cluster_listener.zha_send_event.call_count == 0
 
@@ -184,7 +202,15 @@ async def test_sinope_light_switch_non_action_report(zigpy_device_from_quirk, qu
         ),  # 0x29 = t.int16s
     )
     data = _get_packet_data(foundation.GeneralCommand.Report_Attributes, attr)
-    device.handle_message(260, cluster_id, endpoint_id, endpoint_id, data)
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=260,
+            cluster_id=cluster_id,
+            src_ep=endpoint_id,
+            dst_ep=endpoint_id,
+            data=t.SerializableBytes(data),
+        )
+    )
     # ZHA event emitted because we pass non "action_report"
     # reports to the base class handler.
     assert cluster_listener.zha_send_event.call_count == 1
