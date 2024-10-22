@@ -1,6 +1,7 @@
 """Module for Sinope quirks implementations."""
 
 from zigpy.quirks import CustomCluster
+import zigpy.types as t
 from zigpy.zcl.clusters.general import DeviceTemperature
 
 from zhaquirks.const import (
@@ -16,7 +17,7 @@ from zhaquirks.const import (
     COMMAND_M_SHORT_RELEASE,
     DOUBLE_PRESS,
     ENDPOINT_ID,
-    LONG_RELEASE,
+    LONG_PRESS,
     SHORT_PRESS,
     SHORT_RELEASE,
     TURN_OFF,
@@ -28,6 +29,20 @@ SINOPE = "Sinope Technologies"
 SINOPE_MANUFACTURER_CLUSTER_ID = 0xFF01
 ATTRIBUTE_ACTION = "action_report"
 
+
+class ButtonAction(t.enum8):
+    """Action_report values."""
+
+    Pressed_on = 0x01
+    Released_on = 0x02
+    Long_on = 0x03
+    Double_on = 0x04
+    Pressed_off = 0x11
+    Released_off = 0x12
+    Long_off = 0x13
+    Double_off = 0x14
+
+
 LIGHT_DEVICE_TRIGGERS = {
     (SHORT_PRESS, TURN_ON): {
         ENDPOINT_ID: 1,
@@ -37,7 +52,7 @@ LIGHT_DEVICE_TRIGGERS = {
             ATTRIBUTE_ID: 84,
             ATTRIBUTE_NAME: ATTRIBUTE_ACTION,
             BUTTON: TURN_ON,
-            VALUE: 1,
+            VALUE: ButtonAction.Pressed_on,
         },
     },
     (SHORT_PRESS, TURN_OFF): {
@@ -48,7 +63,7 @@ LIGHT_DEVICE_TRIGGERS = {
             ATTRIBUTE_ID: 84,
             ATTRIBUTE_NAME: ATTRIBUTE_ACTION,
             BUTTON: TURN_OFF,
-            VALUE: 17,
+            VALUE: ButtonAction.Pressed_off,
         },
     },
     (SHORT_RELEASE, TURN_ON): {
@@ -59,7 +74,7 @@ LIGHT_DEVICE_TRIGGERS = {
             ATTRIBUTE_ID: 84,
             ATTRIBUTE_NAME: ATTRIBUTE_ACTION,
             BUTTON: TURN_ON,
-            VALUE: 2,
+            VALUE: ButtonAction.Released_on,
         },
     },
     (SHORT_RELEASE, TURN_OFF): {
@@ -70,7 +85,7 @@ LIGHT_DEVICE_TRIGGERS = {
             ATTRIBUTE_ID: 84,
             ATTRIBUTE_NAME: ATTRIBUTE_ACTION,
             BUTTON: TURN_OFF,
-            VALUE: 18,
+            VALUE: ButtonAction.Released_off,
         },
     },
     (DOUBLE_PRESS, TURN_ON): {
@@ -81,7 +96,7 @@ LIGHT_DEVICE_TRIGGERS = {
             ATTRIBUTE_ID: 84,
             ATTRIBUTE_NAME: ATTRIBUTE_ACTION,
             BUTTON: TURN_ON,
-            VALUE: 4,
+            VALUE: ButtonAction.Double_on,
         },
     },
     (DOUBLE_PRESS, TURN_OFF): {
@@ -92,10 +107,10 @@ LIGHT_DEVICE_TRIGGERS = {
             ATTRIBUTE_ID: 84,
             ATTRIBUTE_NAME: ATTRIBUTE_ACTION,
             BUTTON: TURN_OFF,
-            VALUE: 20,
+            VALUE: ButtonAction.Double_off,
         },
     },
-    (LONG_RELEASE, TURN_ON): {
+    (LONG_PRESS, TURN_ON): {
         ENDPOINT_ID: 1,
         CLUSTER_ID: 65281,
         COMMAND: COMMAND_M_LONG_RELEASE,
@@ -103,10 +118,10 @@ LIGHT_DEVICE_TRIGGERS = {
             ATTRIBUTE_ID: 84,
             ATTRIBUTE_NAME: ATTRIBUTE_ACTION,
             BUTTON: TURN_ON,
-            VALUE: 3,
+            VALUE: ButtonAction.Long_on,
         },
     },
-    (LONG_RELEASE, TURN_OFF): {
+    (LONG_PRESS, TURN_OFF): {
         ENDPOINT_ID: 1,
         CLUSTER_ID: 65281,
         COMMAND: COMMAND_M_LONG_RELEASE,
@@ -114,7 +129,7 @@ LIGHT_DEVICE_TRIGGERS = {
             ATTRIBUTE_ID: 84,
             ATTRIBUTE_NAME: ATTRIBUTE_ACTION,
             BUTTON: TURN_OFF,
-            VALUE: 19,
+            VALUE: ButtonAction.Long_off,
         },
     },
 }
