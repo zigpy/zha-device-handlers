@@ -14,7 +14,6 @@ import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, Time
 from zigpy.zcl.clusters.hvac import Thermostat
 
-
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
