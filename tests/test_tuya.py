@@ -1731,6 +1731,44 @@ async def test_sm0202_motion_sensor_signature(assert_signature_matches_quirk):
     assert_signature_matches_quirk(zhaquirks.tuya.sm0202_motion.SM0202Motion, signature)
 
 
+def test_ts0502b_led_controller_signature(assert_signature_matches_quirk):
+    """Test TS0502B signature is matched to its quirk."""
+    signature = {
+        "node_descriptor": "NodeDescriptor(logical_type=<LogicalType.Router: 1>, complex_descriptor_available=0, user_descriptor_available=0, reserved=0, aps_flags=0, frequency_band=<FrequencyBand.Freq2400MHz: 8>, mac_capability_flags=<MACCapabilityFlags.FullFunctionDevice|MainsPowered|RxOnWhenIdle|AllocateAddress: 142>, manufacturer_code=4417, maximum_buffer_size=66, maximum_incoming_transfer_size=66, server_mask=10752, maximum_outgoing_transfer_size=66, descriptor_capability_field=<DescriptorCapability.NONE: 0>, *allocate_address=True, *is_alternate_pan_coordinator=False, *is_coordinator=False, *is_end_device=False, *is_full_function_device=True, *is_mains_powered=True, *is_receiver_on_when_idle=True, *is_router=True, *is_security_capable=False)",
+        "endpoints": {
+            "1": {
+                "profile_id": 0x0104,
+                "device_type": "0x010c",
+                "in_clusters": [
+                    "0x0000",
+                    "0x0003",
+                    "0x0004",
+                    "0x0005",
+                    "0x0006",
+                    "0x0008",
+                    "0x0300",
+                    "0x1000",
+                    "0xef00",
+                ],
+                "out_clusters": ["0x000a", "0x0019"],
+            },
+            "242": {
+                "profile_id": 0xA1E0,
+                "device_type": "0x0061",
+                "in_clusters": [],
+                "out_clusters": ["0x0021"],
+            },
+        },
+        "manufacturer": "_TZ3210_xwqng7ol",
+        "model": "TS0502B",
+        "class": "zigpy.device.Device",
+    }
+    print(zhaquirks.tuya.ts0502b.DualWhiteLedController.signature)
+    assert_signature_matches_quirk(
+        zhaquirks.tuya.ts0502b.DualWhiteLedController, signature
+    )
+
+
 @pytest.mark.parametrize(
     "quirk",
     (zhaquirks.tuya.ts0041.TuyaSmartRemote0041TOPlusA,),
