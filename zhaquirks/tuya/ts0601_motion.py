@@ -212,7 +212,7 @@ class MmwRadarManufCluster(TuyaMCUCluster):
         104: DPToAttributeMapping(
             TuyaIlluminanceMeasurement.ep_attribute,
             "measured_value",
-            lambda x: 10000 * math.log10(x) + 1 if x != 0 else 0,
+            lambda x: 10000 * math.log10(x + 1),
         ),
         105: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
