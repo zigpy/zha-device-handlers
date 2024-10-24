@@ -9,6 +9,7 @@ from zhaquirks import PowerConfigurationCluster
 
 FRIENT = "frient A/S"
 DEVELCO = "Develco Products A/S"
+MANUFACTURER_ID = 0x1015
 
 
 class DevelcoPowerConfiguration(PowerConfigurationCluster):
