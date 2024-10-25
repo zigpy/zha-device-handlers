@@ -1,31 +1,24 @@
 """Quirk for ZLinky_TIC."""
 
-from copy import deepcopy
-
-from zigpy.profiles import zgp, zha
-from zigpy.quirks import CustomCluster, CustomDevice
+from zha.units import UnitOfApparentPower
+from zigpy.quirks import CustomCluster
+from zigpy.quirks.v2 import EntityPlatform, EntityType, QuirkBuilder
 import zigpy.types as t
-from zigpy.zcl.clusters.general import (
-    Basic,
-    GreenPowerProxy,
-    Identify,
-    Ota,
-    PowerConfiguration,
-    Time,
-)
-from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement, MeterIdentification
+from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
 
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-)
 from zhaquirks.lixee import LIXEE, ZLINKY_MANUFACTURER_CLUSTER_ID
-from zhaquirks.tuya import TuyaManufCluster
+
+
+class ZLinkyTICTarif(t.enum8):
+    """ZLinkyTICTarif tarif enumeration."""
+
+    BLEU_HC = 0x01
+    BLEU_HP = 0x02
+    BLANC_HC = 0x03
+    BLANC_HP = 0x04
+    ROUGE_HC = 0x05
+    ROUGE_HP = 0x06
 
 
 class ZLinkyTICManufacturerCluster(CustomCluster):
@@ -148,79 +141,30 @@ class ZLinkyTICMetering(CustomCluster, Metering):
     _CONSTANT_ATTRIBUTES = {MULTIPLIER: 1, DIVISOR: 1000}
 
 
-class ZLinkyTIC(CustomDevice):
-    """ZLinky_TIC from LiXee."""
-
-    signature = {
-        MODELS_INFO: [(LIXEE, "ZLinky_TIC")],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.METER_INTERFACE,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    Metering.cluster_id,
-                    MeterIdentification.cluster_id,
-                    ElectricalMeasurement.cluster_id,
-                    ZLinkyTICManufacturerCluster.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [Ota.cluster_id],
-            },
-            242: {
-                PROFILE_ID: zgp.PROFILE_ID,
-                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
-                INPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
-                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
-            },
-        },
-    }
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.METER_INTERFACE,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    Identify.cluster_id,
-                    ZLinkyTICMetering,
-                    MeterIdentification.cluster_id,
-                    ElectricalMeasurement.cluster_id,
-                    ZLinkyTICManufacturerCluster,
-                ],
-                OUTPUT_CLUSTERS: [Ota.cluster_id],
-            },
-            242: {
-                PROFILE_ID: zgp.PROFILE_ID,
-                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
-                INPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
-                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
-            },
-        },
-    }
-
-
-class ZLinkyTICFWV12(ZLinkyTIC):
-    """ZLinky_TIC from LiXee with firmware v12.0 & v13.0."""
-
-    signature = deepcopy(ZLinkyTIC.signature)
-
-    # Insert PowerConfiguration cluster in signature for devices with firmware v12.0 & v13.0
-    signature[ENDPOINTS][1][INPUT_CLUSTERS].insert(1, PowerConfiguration.cluster_id)
-
-
-class ZLinkyTICFWV14(ZLinkyTICFWV12):
-    """ZLinky_TIC from LiXee with firmware v14.0+."""
-
-    signature = deepcopy(ZLinkyTICFWV12.signature)
-    replacement = deepcopy(ZLinkyTICFWV12.replacement)
-
-    # Insert Time configuration cluster in signature for devices with firmware v14.0+
-    signature[ENDPOINTS][1][INPUT_CLUSTERS].insert(1, Time.cluster_id)
-
-    # Insert Tuya cluster in signature for devices with firmware v14.0+
-    signature[ENDPOINTS][1][INPUT_CLUSTERS].insert(7, TuyaManufCluster.cluster_id)
-    signature[ENDPOINTS][1][OUTPUT_CLUSTERS].insert(1, TuyaManufCluster.cluster_id)
-
-    replacement[ENDPOINTS][1][INPUT_CLUSTERS].insert(1, Time.cluster_id)
+(
+    QuirkBuilder(LIXEE, "ZLinky_TIC")
+    .replaces(ZLinkyTICMetering)
+    .replaces(ZLinkyTICManufacturerCluster)
+    .sensor(
+        ZLinkyTICMetering.AttributeDefs.site_id.name,
+        ZLinkyTICMetering.cluster_id,
+        translation_key="atmospheric_pressure",
+        fallback_name="PRN",
+    )
+    .sensor(
+        ElectricalMeasurement.AttributeDefs.active_power_max.name,
+        ElectricalMeasurement.cluster_id,
+        translation_key="Power Max",
+        unit=UnitOfApparentPower.VOLT_AMPERE,
+        # device_class=SensorDeviceClass.APPARENT_POWER,
+        fallback_name="Max Power",
+    )
+    .enum(
+        "std_current_tariff_index_number",
+        ZLinkyTICTarif,
+        ZLinkyTICManufacturerCluster.cluster_id,
+        entity_type=EntityType.STANDARD,
+        entity_platform=EntityPlatform.SENSOR,
+    )
+    .add_to_registry()
+)
