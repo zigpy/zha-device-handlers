@@ -46,8 +46,7 @@ from zhaquirks.const import (
     VALUE,
     ZHA_SEND_EVENT,
 )
-
-from . import (
+from zhaquirks.sinope import (
     ATTRIBUTE_ACTION,
     LIGHT_DEVICE_TRIGGERS,
     SINOPE,
