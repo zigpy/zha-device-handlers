@@ -507,5 +507,16 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         translation_key="ctrl_sequence_of_oper",
         fallback_name="Control sequence",
     )
+    # Local temperature calibration.
+    .number(
+        Thermostat.AttributeDefs.local_temperature_calibration.name,
+        BoschThermostatCluster.cluster_id,
+        min_value=-5,
+        max_value=5,
+        step=0.1,
+        multiplier=0.1,
+        translation_key="local_temperature_calibration",
+        fallback_name="Local temperature offset",
+    )
     .add_to_registry()
 )
