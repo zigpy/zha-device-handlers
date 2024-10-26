@@ -435,16 +435,22 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         BoschThermostatCluster.cluster_id,
         entity_platform=EntityPlatform.SENSOR,
         entity_type=EntityType.DIAGNOSTIC,
+        translation_key="operating_mode",
+        fallback_name="Operating mode",
     )
     # Fast heating/boost.
     .switch(
         BoschThermostatCluster.AttributeDefs.boost_heating.name,
         BoschThermostatCluster.cluster_id,
+        translation_key="boost_heating",
+        fallback_name="Boost",
     )
     # Window open switch: manually set or through an automation.
     .switch(
         BoschThermostatCluster.AttributeDefs.window_open.name,
         BoschThermostatCluster.cluster_id,
+        translation_key="window_open",
+        fallback_name="Window open",
     )
     # Remote temperature.
     .number(
@@ -455,18 +461,23 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         step=0.1,
         multiplier=100,
         device_class=NumberDeviceClass.TEMPERATURE,
+        fallback_name="Remote temperature",
     )
     # Display temperature.
     .enum(
         BoschUserInterfaceCluster.AttributeDefs.displayed_temperature.name,
         BoschDisplayedTemperature,
         BoschUserInterfaceCluster.cluster_id,
+        translation_key="displayed_temperature",
+        fallback_name="Displayed temperature",
     )
     # Display orientation.
     .enum(
         BoschUserInterfaceCluster.AttributeDefs.display_orientation.name,
         BoschDisplayOrientation,
         BoschUserInterfaceCluster.cluster_id,
+        translation_key="display_orientation",
+        fallback_name="Display orientation",
     )
     # Display time-out.
     .number(
@@ -475,6 +486,8 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         min_value=5,
         max_value=30,
         step=1,
+        translation_key="display_on_time",
+        fallback_name="Display on-time",
     )
     # Display brightness.
     .number(
@@ -483,12 +496,16 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         min_value=0,
         max_value=10,
         step=1,
+        translation_key="display_brightness",
+        fallback_name="Display brightness",
     )
     # Heating vs Cooling.
     .enum(
         Thermostat.AttributeDefs.ctrl_sequence_of_oper.name,
         BoschControlSequenceOfOperation,
         BoschThermostatCluster.cluster_id,
+        translation_key="ctrl_sequence_of_oper",
+        fallback_name="Control sequence",
     )
     .add_to_registry()
 )
