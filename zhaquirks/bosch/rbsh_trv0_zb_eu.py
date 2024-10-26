@@ -459,7 +459,7 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         min_value=5,
         max_value=30,
         step=0.1,
-        multiplier=100,
+        multiplier=0.01,
         device_class=NumberDeviceClass.TEMPERATURE,
         fallback_name="Remote temperature",
     )
