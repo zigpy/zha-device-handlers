@@ -1,7 +1,9 @@
 """Signify wall switch devices (RDM001 and RDM004)."""
 
+from typing import Final
+
 from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.quirks import CustomDevice
 import zigpy.types as t
 from zigpy.zcl.clusters.general import (
     Basic,
@@ -12,6 +14,7 @@ from zigpy.zcl.clusters.general import (
     Ota,
     PowerConfiguration,
 )
+from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -28,29 +31,31 @@ from zhaquirks.const import (
     SHORT_RELEASE,
     TURN_ON,
 )
-from zhaquirks.philips import PHILIPS, SIGNIFY, Button, PhilipsRemoteCluster, PressType
+from zhaquirks.philips import (
+    PHILIPS,
+    SIGNIFY,
+    Button,
+    PhilipsBasicCluster,
+    PhilipsRemoteCluster,
+    PressType,
+)
 
 DEVICE_SPECIFIC_UNKNOWN = 64512
 
 
-class PhilipsBasicCluster(CustomCluster, Basic):
-    """Philips Basic cluster."""
+class PhilipsWallSwitchBasicCluster(PhilipsBasicCluster):
+    """Philips wall switch Basic cluster."""
 
-    attributes = Basic.attributes.copy()
-    attributes.update(
-        {
-            0x0031: ("philips", t.bitmap16, True),
-            0x0034: ("mode", t.enum8, True),
-        }
-    )
+    class AttributeDefs(PhilipsBasicCluster.AttributeDefs):
+        """Attribute definitions."""
 
-    attr_config = {0x0031: 0x000B, 0x0034: 0x02}
+        mode: Final = ZCLAttributeDef(
+            id=0x0034,
+            type=t.enum8,
+            is_manufacturer_specific=True,
+        )
 
-    async def bind(self):
-        """Bind cluster."""
-        result = await super().bind()
-        await self.write_attributes(self.attr_config, manufacturer=0x100B)
-        return result
+    attr_config = {**PhilipsBasicCluster.attr_config, AttributeDefs.mode.id: 0x02}
 
 
 class PhilipsWallSwitchRemoteCluster(PhilipsRemoteCluster):
@@ -113,7 +118,7 @@ class PhilipsWallSwitch(CustomDevice):
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.NON_COLOR_CONTROLLER,
                 INPUT_CLUSTERS: [
-                    PhilipsBasicCluster,
+                    PhilipsWallSwitchBasicCluster,
                     PowerConfiguration.cluster_id,
                     Identify.cluster_id,
                     PhilipsWallSwitchRemoteCluster,

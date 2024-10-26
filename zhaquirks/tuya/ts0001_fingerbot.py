@@ -18,7 +18,6 @@ from zhaquirks.const import (
 from zhaquirks.tuya import TUYA_SEND_DATA, EnchantedDevice
 from zhaquirks.tuya.mcu import (
     DPToAttributeMapping,
-    TuyaEnchantableCluster,
     TuyaMCUCluster,
     TuyaPowerConfigurationCluster,
 )
@@ -42,18 +41,30 @@ class FingerBotReverse(t.enum8):
 class TuyaFingerbotCluster(TuyaMCUCluster):
     """Tuya Fingerbot cluster."""
 
-    attributes = TuyaMCUCluster.attributes.copy()
-    attributes.update(
-        {
-            101: ("mode", FingerBotMode),
-            102: ("down_movement", t.uint16_t),
-            103: ("sustain_time", t.uint16_t),
-            104: ("reverse", FingerBotReverse),
-            105: ("battery", t.uint16_t),
-            106: ("up_movement", t.uint16_t),
-            107: ("touch_control", t.Bool),
-        }
-    )
+    class AttributeDefs(TuyaMCUCluster.AttributeDefs):
+        """Attribute Definitions."""
+
+        mode = foundation.ZCLAttributeDef(
+            id=101, type=FingerBotMode, is_manufacturer_specific=True
+        )
+        down_movement = foundation.ZCLAttributeDef(
+            id=102, type=t.uint16_t, is_manufacturer_specific=True
+        )
+        sustain_time = foundation.ZCLAttributeDef(
+            id=103, type=t.uint16_t, is_manufacturer_specific=True
+        )
+        reverse = foundation.ZCLAttributeDef(
+            id=104, type=FingerBotReverse, is_manufacturer_specific=True
+        )
+        battery = foundation.ZCLAttributeDef(
+            id=105, type=t.uint16_t, is_manufacturer_specific=True
+        )
+        up_movement = foundation.ZCLAttributeDef(
+            id=106, type=t.uint16_t, is_manufacturer_specific=True
+        )
+        touch_control = foundation.ZCLAttributeDef(
+            id=107, type=t.Bool, is_manufacturer_specific=True
+        )
 
     async def command(
         self,
@@ -119,10 +130,6 @@ class TuyaFingerbotCluster(TuyaMCUCluster):
     }
 
 
-class OnOffEnchantable(TuyaEnchantableCluster, OnOff):
-    """Enchantable OnOff cluster."""
-
-
 class TuyaFingerbot(EnchantedDevice):
     """Tuya finger bot device."""
 
@@ -134,7 +141,7 @@ class TuyaFingerbot(EnchantedDevice):
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    OnOffEnchantable.cluster_id,
+                    OnOff.cluster_id,
                     TuyaFingerbotCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
@@ -153,7 +160,7 @@ class TuyaFingerbot(EnchantedDevice):
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     TuyaPowerConfigurationCluster,
-                    OnOffEnchantable,
+                    OnOff.cluster_id,
                     TuyaFingerbotCluster,
                 ],
                 OUTPUT_CLUSTERS: [
