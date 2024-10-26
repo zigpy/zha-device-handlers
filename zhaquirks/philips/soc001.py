@@ -2,8 +2,25 @@
 
 from zigpy import types
 from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import BinarySensorDeviceClass, EntityType, QuirkBuilder
+from zigpy.quirks.v2 import (
+    BinarySensorDeviceClass,
+    EntityType,
+    QuirkBuilder,
+    ClusterType,
+)
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+from zigpy.zcl.clusters.general import OnOff
+
+
+class PhilipsOnOffCluster(CustomCluster, OnOff):
+    """Philips OnOff cluster for contact sensor."""
+
+    """Prevents the creation of the on_off entity."""
+
+    cluster_id = 6  # 0x0006
+    name = "Philips OnOff cluster"
+    ep_attribute = "philips_onoff_cluster"
+    SKIP_CONFIGURATION = True
 
 
 class PhilipsContactCluster(CustomCluster):
@@ -44,7 +61,21 @@ class PhilipsContactCluster(CustomCluster):
     #  input_clusters=[0, 1, 3, 64518]
     #  output_clusters=[0, 3, 6, 25]>
     QuirkBuilder("Signify Netherlands B.V.", "SOC001")
+    .replaces(
+        PhilipsOnOffCluster,
+        cluster_type=ClusterType.Client,
+        endpoint_id=2,
+    )
     .replaces(PhilipsContactCluster, endpoint_id=2)
+    .binary_sensor(
+        "contact",
+        PhilipsContactCluster.cluster_id,
+        endpoint_id=2,
+        device_class=BinarySensorDeviceClass.OPENING,
+        EntityType=EntityType.STANDARD,
+        translation_key="contact",
+        fallback_name="Contact",
+    )
     .binary_sensor(
         "tamper",
         PhilipsContactCluster.cluster_id,
