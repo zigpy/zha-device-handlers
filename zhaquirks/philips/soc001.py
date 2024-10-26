@@ -4,12 +4,12 @@ from zigpy import types
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import (
     BinarySensorDeviceClass,
+    ClusterType,
     EntityType,
     QuirkBuilder,
-    ClusterType,
 )
-from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 from zigpy.zcl.clusters.general import OnOff
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 
 class PhilipsOnOffCluster(CustomCluster, OnOff):
