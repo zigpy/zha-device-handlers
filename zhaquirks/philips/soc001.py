@@ -73,7 +73,6 @@ class PhilipsContactCluster(CustomCluster):
         endpoint_id=2,
         device_class=BinarySensorDeviceClass.OPENING,
         EntityType=EntityType.STANDARD,
-        translation_key="contact",
         fallback_name="Contact",
     )
     .binary_sensor(
@@ -82,7 +81,6 @@ class PhilipsContactCluster(CustomCluster):
         endpoint_id=2,
         device_class=BinarySensorDeviceClass.TAMPER,
         entity_type=EntityType.DIAGNOSTIC,
-        translation_key="tamper",
         fallback_name="Tamper",
     )
     .add_to_registry()
