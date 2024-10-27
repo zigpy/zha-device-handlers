@@ -3,6 +3,7 @@
 from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.zdo.types import NodeDescriptor
 
+from zhaquirks import DoublingPowerConfigurationCluster
 from zhaquirks.nimly import NIMLY
 
 # clears the mains powered mac capability flag
@@ -25,12 +26,18 @@ NIMLY_LOCK_NODE_DESCRIPTOR = NodeDescriptor(
 
 
 (
+    QuirkBuilder(NIMLY, "EasyFingerTouch")
+    .also_applies_to(NIMLY, "EasyCodeTouch")
+    .node_descriptor(NIMLY_LOCK_NODE_DESCRIPTOR)
+    .add_to_registry()
+)
+
+(
     QuirkBuilder(NIMLY, "NimlyPRO")
     .also_applies_to(NIMLY, "NimlyCode")
     .also_applies_to(NIMLY, "NimlyTouch")
     .also_applies_to(NIMLY, "NimlyIn")
-    .also_applies_to(NIMLY, "EasyFingerTouch")
-    .also_applies_to(NIMLY, "EasyCodeTouch")
     .node_descriptor(NIMLY_LOCK_NODE_DESCRIPTOR)
+    .replaces(DoublingPowerConfigurationCluster, endpoint_id=11)
     .add_to_registry()
 )
