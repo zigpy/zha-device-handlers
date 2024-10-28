@@ -1,13 +1,25 @@
 """Quirk for ZLinky_TIC."""
 
-from zha.units import UnitOfApparentPower
+from zha.units import UnitOfApparentPower, UnitOfElectricCurrent
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import EntityPlatform, EntityType, QuirkBuilder
 import zigpy.types as t
+from zigpy.zcl.clusters.general import Basic
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
 
 from zhaquirks.lixee import LIXEE, ZLINKY_MANUFACTURER_CLUSTER_ID
+
+
+class ZLinkyTICModeIdentifier(t.enum8):
+    """ZLinkyTICTarif tarif enumeration."""
+
+    historique_monophase = 0
+    standard_monophase = 1
+    historique_triphase = 2
+    standard_triphase = 3
+    standard_monophase_producteur = 5
+    standard_triphase_producteur = 7
 
 
 class ZLinkyTICTarif(t.enum8):
@@ -141,30 +153,80 @@ class ZLinkyTICMetering(CustomCluster, Metering):
     _CONSTANT_ATTRIBUTES = {MULTIPLIER: 1, DIVISOR: 1000}
 
 
+class ZLinkyTICElectricalMeasurement(CustomCluster, ElectricalMeasurement):
+    """ZLinky_TIC custom lectricalMeasurement cluster."""
+
+    attributes = ElectricalMeasurement.attributes.copy()
+
+    attributes[0x0908] = ("rms_current_p2", t.uint16_t, True)
+    attributes[0x0A08] = ("rms_current_p3", t.uint16_t, True)
+
+
 (
     QuirkBuilder(LIXEE, "ZLinky_TIC")
     .replaces(ZLinkyTICMetering)
+    .replaces(ZLinkyTICElectricalMeasurement)
     .replaces(ZLinkyTICManufacturerCluster)
     .sensor(
         ZLinkyTICMetering.AttributeDefs.site_id.name,
         ZLinkyTICMetering.cluster_id,
-        translation_key="atmospheric_pressure",
         fallback_name="PRN",
+    )
+    .sensor(
+        Basic.AttributeDefs.model.name,
+        Basic.cluster_id,
+        fallback_name="Model",
+    )
+    .sensor(
+        ZLinkyTICMetering.AttributeDefs.meter_serial_number.name,
+        ZLinkyTICMetering.cluster_id,
+        fallback_name="Serial Number",
     )
     .sensor(
         ElectricalMeasurement.AttributeDefs.active_power_max.name,
         ElectricalMeasurement.cluster_id,
         translation_key="Power Max",
         unit=UnitOfApparentPower.VOLT_AMPERE,
-        # device_class=SensorDeviceClass.APPARENT_POWER,
         fallback_name="Max Power",
     )
+    .sensor(
+        ZLinkyTICElectricalMeasurement.AttributeDefs.rms_current.name,
+        ZLinkyTICElectricalMeasurement.cluster_id,
+        unit=UnitOfElectricCurrent.AMPERE,
+        fallback_name="Current Phase 1",
+    )
+    .sensor(
+        ZLinkyTICElectricalMeasurement.AttributeDefs.rms_current_p2.name,
+        ZLinkyTICElectricalMeasurement.cluster_id,
+        unit=UnitOfElectricCurrent.AMPERE,
+        fallback_name="Current Phase 2",
+    )
+    .sensor(
+        ZLinkyTICElectricalMeasurement.AttributeDefs.rms_current_p3.name,
+        ZLinkyTICElectricalMeasurement.cluster_id,
+        unit=UnitOfElectricCurrent.AMPERE,
+        fallback_name="Current Phase 3",
+    )
+    # .sensor(
+    #     ZLinkyTICManufacturerCluster.AttributeDefs.std_current_supplier_price_description.name,
+    #     ZLinkyTICManufacturerCluster.cluster_id,
+    #     fallback_name="Tariff",
+    # )
     .enum(
         "std_current_tariff_index_number",
         ZLinkyTICTarif,
         ZLinkyTICManufacturerCluster.cluster_id,
         entity_type=EntityType.STANDARD,
         entity_platform=EntityPlatform.SENSOR,
+        fallback_name="Tariff",
+    )
+    .enum(
+        "linky_mode",
+        ZLinkyTICModeIdentifier,
+        ZLinkyTICManufacturerCluster.cluster_id,
+        entity_type=EntityType.STANDARD,
+        entity_platform=EntityPlatform.SENSOR,
+        fallback_name="Linky Mode",
     )
     .add_to_registry()
 )
