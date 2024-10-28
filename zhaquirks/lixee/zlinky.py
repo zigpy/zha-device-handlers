@@ -171,21 +171,24 @@ class ZLinkyTICElectricalMeasurement(CustomCluster, ElectricalMeasurement):
         ZLinkyTICMetering.AttributeDefs.site_id.name,
         ZLinkyTICMetering.cluster_id,
         fallback_name="PRN",
+        translation_key="PRN",
     )
     .sensor(
         Basic.AttributeDefs.model.name,
         Basic.cluster_id,
         fallback_name="Model",
+        translation_key="Model",
     )
     .sensor(
         ZLinkyTICMetering.AttributeDefs.meter_serial_number.name,
         ZLinkyTICMetering.cluster_id,
         fallback_name="Serial Number",
+        translation_key="serial_number",
     )
     .sensor(
         ElectricalMeasurement.AttributeDefs.active_power_max.name,
         ElectricalMeasurement.cluster_id,
-        translation_key="Power Max",
+        translation_key="power_max",
         unit=UnitOfApparentPower.VOLT_AMPERE,
         fallback_name="Max Power",
     )
@@ -193,18 +196,21 @@ class ZLinkyTICElectricalMeasurement(CustomCluster, ElectricalMeasurement):
         ZLinkyTICElectricalMeasurement.AttributeDefs.rms_current.name,
         ZLinkyTICElectricalMeasurement.cluster_id,
         unit=UnitOfElectricCurrent.AMPERE,
+        translation_key="current_phase1",
         fallback_name="Current Phase 1",
     )
     .sensor(
         ZLinkyTICElectricalMeasurement.AttributeDefs.rms_current_p2.name,
         ZLinkyTICElectricalMeasurement.cluster_id,
         unit=UnitOfElectricCurrent.AMPERE,
+        translation_key="current_phase2",
         fallback_name="Current Phase 2",
     )
     .sensor(
         ZLinkyTICElectricalMeasurement.AttributeDefs.rms_current_p3.name,
         ZLinkyTICElectricalMeasurement.cluster_id,
         unit=UnitOfElectricCurrent.AMPERE,
+        translation_key="current_phase3",
         fallback_name="Current Phase 3",
     )
     # .sensor(
@@ -218,6 +224,7 @@ class ZLinkyTICElectricalMeasurement(CustomCluster, ElectricalMeasurement):
         ZLinkyTICManufacturerCluster.cluster_id,
         entity_type=EntityType.STANDARD,
         entity_platform=EntityPlatform.SENSOR,
+        translation_key="Tariff",
         fallback_name="Tariff",
     )
     .enum(
@@ -226,6 +233,7 @@ class ZLinkyTICElectricalMeasurement(CustomCluster, ElectricalMeasurement):
         ZLinkyTICManufacturerCluster.cluster_id,
         entity_type=EntityType.STANDARD,
         entity_platform=EntityPlatform.SENSOR,
+        translation_key="linky_mode",
         fallback_name="Linky Mode",
     )
     .add_to_registry()
