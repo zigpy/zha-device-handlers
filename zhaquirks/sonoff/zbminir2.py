@@ -60,7 +60,7 @@ class SonoffExternalSwitchTriggerType(types.enum8):
 
 (
     QuirkBuilder("SONOFF", "ZBMINIR2")
-    .replaces(CustomSonoffCluster)
+    .replaces(SonoffCluster)
     .enum(
         SonoffCluster.AttributeDefs.external_trigger_mode.name,
         SonoffExternalSwitchTriggerType,
