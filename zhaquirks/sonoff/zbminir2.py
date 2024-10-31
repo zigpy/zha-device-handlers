@@ -8,7 +8,7 @@ from zigpy.zcl import foundation
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 
-class CustomSonoffCluster(CustomCluster):
+class SonoffCluster(CustomCluster):
     """Custom Sonoff cluster."""
 
     cluster_id = 0xFC11
@@ -16,19 +16,18 @@ class CustomSonoffCluster(CustomCluster):
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
 
-        ExternalTriggerMode = ZCLAttributeDef(
-            name="ExternalTriggerMode",
+        external_trigger_mode = ZCLAttributeDef(
             id=0x0016,
             type=t.uint8_t,
         )
-
-        DetachRelay = ZCLAttributeDef(
-            name="DetachRelay",
+        detach_relay = ZCLAttributeDef(
             id=0x0017,
             type=t.Bool,
         )
-
-        TurboMode = ZCLAttributeDef(name="TurboMode", id=0x0012, type=t.int16s)
+        turbo_mode = ZCLAttributeDef(
+            id=0x0012,
+            type=t.int16s,
+        )
 
     async def _read_attributes(
         self,
@@ -63,21 +62,21 @@ class SonoffExternalSwitchTriggerType(types.enum8):
     QuirkBuilder("SONOFF", "ZBMINIR2")
     .replaces(CustomSonoffCluster)
     .enum(
-        CustomSonoffCluster.AttributeDefs.ExternalTriggerMode.name,
+        SonoffCluster.AttributeDefs.external_trigger_mode.name,
         SonoffExternalSwitchTriggerType,
-        CustomSonoffCluster.cluster_id,
+        SonoffCluster.cluster_id,
         fallback_name="External Trigger Mode",
     )
     .switch(
-        CustomSonoffCluster.AttributeDefs.TurboMode.name,
-        CustomSonoffCluster.cluster_id,
+        SonoffCluster.AttributeDefs.turbo_mode.name,
+        SonoffCluster.cluster_id,
         off_value=9,
         on_value=20,
         fallback_name="Turbo Mode",
     )
     .switch(
-        CustomSonoffCluster.AttributeDefs.DetachRelay.name,
-        CustomSonoffCluster.cluster_id,
+        SonoffCluster.AttributeDefs.detach_relay.name,
+        SonoffCluster.cluster_id,
         off_value=0,
         on_value=1,
         fallback_name="Detach Relay",
