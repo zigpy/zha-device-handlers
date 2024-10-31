@@ -53,7 +53,7 @@ class SonoffExternalSwitchTriggerType(types.enum8):
     """extern switch trigger type."""
 
     edge_trigger = 0x00
-    pluse_trigger = 0x01
+    pulse_trigger = 0x01
     normally_off_follow_trigger = 0x02
     normally_on_follow_trigger = 0x82
 
