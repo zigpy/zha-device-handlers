@@ -65,21 +65,21 @@ class SonoffExternalSwitchTriggerType(types.enum8):
         SonoffCluster.AttributeDefs.external_trigger_mode.name,
         SonoffExternalSwitchTriggerType,
         SonoffCluster.cluster_id,
-        fallback_name="External Trigger Mode",
+        fallback_name="External trigger mode",
     )
     .switch(
         SonoffCluster.AttributeDefs.turbo_mode.name,
         SonoffCluster.cluster_id,
         off_value=9,
         on_value=20,
-        fallback_name="Turbo Mode",
+        fallback_name="Turbo mode",
     )
     .switch(
         SonoffCluster.AttributeDefs.detach_relay.name,
         SonoffCluster.cluster_id,
         off_value=0,
         on_value=1,
-        fallback_name="Detach Relay",
+        fallback_name="Detach relay",
     )
     .add_to_registry()
 )
