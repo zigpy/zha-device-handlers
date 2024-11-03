@@ -194,6 +194,18 @@ Adds a DP converter.
     )
 ```
 
+#### tuya_attribute
+
+Add an Attribute definition
+
+```python
+    .tuya_attribute(
+        dp_id=4,
+        attribute_name="irrigation_mode",
+        type=t.Bool,
+    )
+```
+
 #### tuya_dp_attribute
 
 Add a DP converter and corresponding Attribute definition.
