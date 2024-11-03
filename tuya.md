@@ -14,63 +14,136 @@ The first step in building a Tuya quirk is to identify the Tuya Datapoints (DPs)
 ## TuyaQuirkBuilder is a subclass of QuirkBuilder, retaining all of the V2 QuirkBuilder methods and adding Tuya specific methods
 
 ### Convenience Methods
+
   These methods allow exposing the most common Tuya clusters.
 
 #### tuya_battery(dp_id: int, power_cfg: PowerConfiguration = TuyaPowerConfigurationCluster2AAA, scale: float = 2)
+
 - Adds a battery power cluster.
 - `.tuya_battery(dp_id=2, power_config=TuyaPowerConfigurationCluster4AAA)`
 
 #### tuya_metering(dp_id: int, metering_cfg: TuyaLocalCluster = TuyaValveWaterConsumed)
+
 - Adds a metering cluster.
 - `.tuya_metering(dp_id=3)`
 
 #### tuya_onoff(dp_id: int, onoff_cfg: TuyaLocalCluster = TuyaOnOffNM)
+
 - Adds an on/off cluster.
 - `.tuya_onoff(dp_id=4)`
 
 #### tuya_humidity(dp_id: int, rh_cfg: TuyaLocalCluster = TuyaRelativeHumidity, scale: float = 100)
+
 - Adds a humidity cluster.
 - `.tuya_humidity(dp_id=5)`
 
 #### tuya_soil_moisture(dp_id: int, soil_cfg: TuyaLocalCluster = TuyaSoilMoisture, scale: float = 100)
+
 - Adds a soil moisture cluster.
 - `.tuya_soil_moisture(dp_id=6, scale=10)`
 
 #### tuya_temperature(dp_id: int, temp_cfg: TuyaLocalCluster = TuyaTemperatureMeasurement, scale: float = 10)
+
 - Adds a temperature cluster.
 - `.tuya_temperature(dp_id=7)`
 
 ### Entity Methods
-- These methods expose an entity to Home Assistant.
+
+These methods expose an entity to Home Assistant.
 
 #### tuya_switch
-```
-tuya_switch(
-    dp_id=int,
-    endpoint_id: int = 1,
-    force_inverted: bool = False,
-    invert_attribute_name: str | None = None,
-    off_value: int = 0,
-    on_value: int = 1,
-    entity_platform=EntityPlatform.SWITCH,
-    entity_type: EntityType = EntityType.CONFIG,
-    initially_disabled: bool = False,
-    attribute_initialized_from_cache: bool = True,
-    translation_key: str | None = None,
-    fallback_name: str | None = None,
-)
+
+Adds a switch entity.
+
+```python
+    .tuya_switch(
+        dp_id=1,
+        attribute_name="valve_on_off_1",
+        entity_type=EntityType.STANDARD,
+        translation_key="valve_on_off_1",
+        fallback_name="Valve 1",
+    )
 ```
 
 #### tuya_enum
 
+Adds a enum entity.
+
+```python
+    .tuya_enum(
+        dp_id=14,
+        attribute_name="battery_status",
+        enum_class=GiexBatteryStatus,
+        translation_key="battery_status",
+        fallback_name="Battery Status",
+        entity_type=EntityType.DIAGNOSTIC,
+        entity_platform=EntityPlatform.SENSOR,
+        initially_disabled=True,
+    )
+```
+
+
 #### tuya_number
+
+Adds a number entity.
+
+```python
+    .tuya_number(
+        dp_id=13,
+        attribute_name="valve_countdown_1",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.MINUTES,
+        min_value=0,
+        max_value=1440,
+        step=1,
+        translation_key="valve_countdown_1",
+        fallback_name="Irrigation time 1",
+    )
+```
 
 #### tuya_binary_sensor
 
+Adds a binary sensor entity.
+
+```python
+    .tuya_binary_sensor(
+        dp_id=8,
+        attribute_name="system_online",
+        translation_key="system_online",
+        fallback_name="System online",
+    )
+```
+
+
 #### tuya_sensor
+
+Adds a sensor entity.
+
+```python
+    .tuya_sensor(
+        dp_id=25,
+        attribute_name="valve_duration_1",
+        type=t.uint32_t,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        entity_type=EntityType.STANDARD,
+        translation_key="irrigation_duration_1",
+        fallback_name="Irrigation duration 1",
+    )
+```
 
 ### Base Methods
 
-#### tuya_dp
-
 #### tuya_dp_attribute
+
+Add a DP converter and corresponding Attribute definition.
+
+```python
+    .tuya_dp_attribute(
+        dp_id=1,
+        attribute_name="irrigation_mode",
+        type=t.Bool,
+    )
+```
