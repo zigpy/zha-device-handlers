@@ -17,31 +17,31 @@ The first step in building a Tuya quirk is to identify the Tuya Datapoints (DPs)
   These methods allow exposing the most common Tuya clusters.
 
 #### tuya_battery(dp_id: int, power_cfg: PowerConfiguration = TuyaPowerConfigurationCluster2AAA, scale: float = 2)
-  Adds a battery power cluster.
-  `.tuya_battery(dp_id=2, power_config=TuyaPowerConfigurationCluster4AAA)`
+- Adds a battery power cluster.
+- `.tuya_battery(dp_id=2, power_config=TuyaPowerConfigurationCluster4AAA)`
 
 #### tuya_metering(dp_id: int, metering_cfg: TuyaLocalCluster = TuyaValveWaterConsumed)
-  Adds a metering cluster.
-  `.tuya_metering(dp_id=3)`
+- Adds a metering cluster.
+- `.tuya_metering(dp_id=3)`
 
 #### tuya_onoff(dp_id: int, onoff_cfg: TuyaLocalCluster = TuyaOnOffNM)
-  Adds an on/off cluster.
-  `.tuya_onoff(dp_id=4)`
+- Adds an on/off cluster.
+- `.tuya_onoff(dp_id=4)`
 
 #### tuya_humidity(dp_id: int, rh_cfg: TuyaLocalCluster = TuyaRelativeHumidity, scale: float = 100)
-  Adds a humidity cluster.
-  `.tuya_humidity(dp_id=5)`
+- Adds a humidity cluster.
+- `.tuya_humidity(dp_id=5)`
 
 #### tuya_soil_moisture(dp_id: int, soil_cfg: TuyaLocalCluster = TuyaSoilMoisture, scale: float = 100)
-  Adds a soil moisture cluster.
-  `.tuya_soil_moisture(dp_id=6, scale=10)`
+- Adds a soil moisture cluster.
+- `.tuya_soil_moisture(dp_id=6, scale=10)`
 
 #### tuya_temperature(dp_id: int, temp_cfg: TuyaLocalCluster = TuyaTemperatureMeasurement, scale: float = 10)
-  Adds a temperature cluster.
-  `.tuya_temperature(dp_id=7)`
+- Adds a temperature cluster.
+- `.tuya_temperature(dp_id=7)`
 
 ### Entity Methods
-  These methods expose an entity to Home Assistant.
+- These methods expose an entity to Home Assistant.
 
 #### tuya_switch( \
         dp_id=int, \   
