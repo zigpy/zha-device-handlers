@@ -43,20 +43,20 @@ The first step in building a Tuya quirk is to identify the Tuya Datapoints (DPs)
 ### Entity Methods
 - These methods expose an entity to Home Assistant.
 
-#### tuya_switch( \
-        dp_id=int, \   
-        endpoint_id: int = 1, \
-        force_inverted: bool = False, \
-        invert_attribute_name: str | None = None, \
-        off_value: int = 0, \
-        on_value: int = 1, \
-        entity_platform=EntityPlatform.SWITCH, \
-        entity_type: EntityType = EntityType.CONFIG, \
-        initially_disabled: bool = False, \
-        attribute_initialized_from_cache: bool = True, \
-        translation_key: str | None = None, \
-        fallback_name: str | None = None, \
-    )
+#### tuya_switch( 
+####    dp_id=int,    
+####    endpoint_id: int = 1, 
+####    force_inverted: bool = False, 
+####    invert_attribute_name: str | None = None, 
+####    off_value: int = 0, 
+####    on_value: int = 1, 
+####    entity_platform=EntityPlatform.SWITCH, 
+####    entity_type: EntityType = EntityType.CONFIG, 
+####    initially_disabled: bool = False, 
+####    attribute_initialized_from_cache: bool = True, 
+####    translation_key: str | None = None, 
+####    fallback_name: str | None = None, 
+#### )
 
 #### tuya_enum
 
