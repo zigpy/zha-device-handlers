@@ -11,7 +11,15 @@ The first step in building a Tuya quirk is to identify the Tuya Datapoints (DPs)
 
 # Using the datapoints to develop a Tuya Quirk
 
-Once the DPs are identified, the quirk can be built. See below for all available methods.
+Once the DPs are identified, the quirk can be built. See below for all available methods. For each DP, identify the correct replacement for the quirk. For commonly used replacements, such as a power configuration cluster, we can use a convenience method, such as `.tuya_battery`. 
+
+Note: Convenience methods will only work once, if your device has multiple clusters, such as on_off, use multiple `.tuya_switch` calls instead.
+
+For more complex replacements you may need to use a lower level method, such as `.tuya_dp_attribute` or even `.tuya_dp` and `.tuya_attribute`.
+
+All V2 QuirkBuilder methods are available, so using `.tuya_dp` to add a DP converter then `.adds` is valid.
+
+Once the quirk is complete, enable custom quirks and test.
 
 ## Example Tuya Quirk
 
@@ -215,5 +223,34 @@ Add a DP converter and corresponding Attribute definition.
         dp_id=1,
         attribute_name="irrigation_mode",
         type=t.Bool,
+    )
+```
+
+### Building tests for V2 Quirks
+
+To get a device from a V2 Quirk, use `zigpy_device_from_v2_quirk`.
+
+```python
+async def test_tuya():
+    """Example Tuya Test."""
+
+    quirked = zigpy_device_from_v2_quirk(model, manuf)
+    ep = quirked.endpoints[1]
+
+    assert ep.basic is not None
+    assert isinstance(ep.basic, Basic)
+
+    assert ep.tuya_manufacturer is not None
+    assert isinstance(ep.tuya_manufacturer, TuyaMCUCluster)
+
+    message = b"\x09\xe0\x02\x0b\x33\x01\x02\x00\x04\x00\x00\x00\xfd\x02\x02\x00\x04\x00\x00\x00\x47\x04\x02\x00\x04\x00\x00\x00\x64"
+    hdr, data = ep.tuya_manufacturer.deserialize(message)
+
+    status = ep.tuya_manufacturer.handle_get_data(data.data)
+    assert status == foundation.Status.SUCCESS
+
+    assert (
+        ep.temperature.get("measured_value")
+        == data.data.datapoints[0].data.payload * temp_scale
     )
 ```
