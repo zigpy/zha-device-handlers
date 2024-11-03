@@ -109,6 +109,13 @@ Adds a switch entity.
 Adds a enum entity.
 
 ```python
+    class GiexBatteryStatus(t.enum8):
+    """Giex Soil Battery Status Enum."""
+
+    Low = 0x00
+    Middle = 0x01
+    High = 0x02
+
     .tuya_enum(
         dp_id=14,
         attribute_name="battery_status",
