@@ -11,20 +11,28 @@ The first step in building a Tuya quirk is to identify the Tuya Datapoints (DPs)
 
 # Using the datapoints to develop a Tuya Quirk
 
-Once the DPs are identified, the quirk can be built. See below for all available methods. For each DP, identify the correct replacement for the quirk. For commonly used replacements, such as a power configuration cluster, we can use a convenience method, such as `.tuya_battery`. 
+Once the DPs are identified, the quirk can be built. For each DP, identify the correct replacement for the quirk using the available methods below. For commonly used replacements, such as a power configuration cluster, we can use a convenience method, such as `.tuya_battery`. 
 
-Note: Convenience methods will only work once, if your device has multiple clusters, such as on_off, use multiple `.tuya_switch` calls instead.
+Note: Convenience methods will only work once, if your device has multiple identical clusters, such as on_off, use multiple `.tuya_switch` calls instead. Otherwise, only one switch will be generated.
 
 For more complex replacements you may need to use a lower level method, such as `.tuya_dp_attribute` or even `.tuya_dp` and `.tuya_attribute`.
 
-All V2 QuirkBuilder methods are available, so using `.tuya_dp` to add a DP converter then `.adds` is valid.
+All V2 QuirkBuilder methods are available, so using `.tuya_dp` to add a DP converter then `.adds` to add the correct class is valid.
+
+Most V2 quirks will match only on the model and manufacturer, this reduces duplicated code where a new variant appears with a slightly different signature. Should you need to filter on a signature also, use `.filter`.
+
+```python
+from zigpy.quirks import signature_matches
+
+.filter(signature_matches(device_signature))
+```
 
 Once the quirk is complete, enable custom quirks and test. See [Configuration - YAML in ZHA documentation](https://www.home-assistant.io/integrations/zha/).
 
 ## Example Tuya Quirk
 
 ```python
-from zhaquirks.tuya.builder import TuyaPowerConfigurationCluster2AAA, TuyaQuirkBuilder
+from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 (
     TuyaQuirkBuilder("_TZE200_bjawzodf", "TS0601")
@@ -40,11 +48,10 @@ from zhaquirks.tuya.builder import TuyaPowerConfigurationCluster2AAA, TuyaQuirkB
 ## TuyaQuirkBuilder
 
 TuyaQuirkBuilder is a subclass of QuirkBuilder, retaining all of the V2 QuirkBuilder methods and adding Tuya specific methods.
-For all available options on each method see [TuyaQuirkBuilder](https://github.com/zigpy/zha-device-handlers/blob/dev/zhaquirks/tuya/builder/__init__.py).
 
 ### Convenience Methods
 
-  These methods allow exposing the most common Tuya clusters.
+These methods allow exposing the most common Tuya clusters.
 
 #### tuya_battery(dp_id: int, power_cfg: PowerConfiguration = TuyaPowerConfigurationCluster2AAA, scale: float = 2)
 
@@ -96,7 +103,7 @@ Adds a temperature cluster.
 
 ### Entity Methods
 
-These methods expose an entity to Home Assistant.
+These methods expose an entity to Home Assistant. The following examples do not cover all available arguments, nor are they listed here to help keep this documentation accurate. For available arguments on each method see [TuyaQuirkBuilder](https://github.com/zigpy/zha-device-handlers/blob/dev/zhaquirks/tuya/builder/__init__.py).
 
 #### tuya_switch
 
