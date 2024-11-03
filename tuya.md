@@ -103,13 +103,13 @@ These methods expose an entity to Home Assistant.
 Adds a switch entity.
 
 ```python
-    .tuya_switch(
-        dp_id=1,
-        attribute_name="valve_on_off_1",
-        entity_type=EntityType.STANDARD,
-        translation_key="valve_on_off_1",
-        fallback_name="Valve 1",
-    )
+.tuya_switch(
+    dp_id=1,
+    attribute_name="valve_on_off_1",
+    entity_type=EntityType.STANDARD,
+    translation_key="valve_on_off_1",
+    fallback_name="Valve 1",
+)
 ```
 
 #### tuya_enum
@@ -117,23 +117,23 @@ Adds a switch entity.
 Adds a enum entity. Note: in the Tuya developer console these will appear to be string enums. I have yet to run into a string enum, assume that they are `t.enum8`.
 
 ```python
-    class GiexBatteryStatus(t.enum8):
-    """Giex Soil Battery Status Enum."""
+class GiexBatteryStatus(t.enum8):
+"""Giex Soil Battery Status Enum."""
 
-        Low = 0x00
-        Middle = 0x01
-        High = 0x02
+    Low = 0x00
+    Middle = 0x01
+    High = 0x02
 
-    .tuya_enum(
-        dp_id=14,
-        attribute_name="battery_status",
-        enum_class=GiexBatteryStatus,
-        translation_key="battery_status",
-        fallback_name="Battery Status",
-        entity_type=EntityType.DIAGNOSTIC,
-        entity_platform=EntityPlatform.SENSOR,
-        initially_disabled=True,
-    )
+.tuya_enum(
+    dp_id=14,
+    attribute_name="battery_status",
+    enum_class=GiexBatteryStatus,
+    translation_key="battery_status",
+    fallback_name="Battery Status",
+    entity_type=EntityType.DIAGNOSTIC,
+    entity_platform=EntityPlatform.SENSOR,
+    initially_disabled=True,
+)
 ```
 
 #### tuya_number
@@ -141,18 +141,18 @@ Adds a enum entity. Note: in the Tuya developer console these will appear to be 
 Adds a number entity.
 
 ```python
-    .tuya_number(
-        dp_id=13,
-        attribute_name="valve_countdown_1",
-        type=t.uint16_t,
-        device_class=SensorDeviceClass.DURATION,
-        unit=UnitOfTime.MINUTES,
-        min_value=0,
-        max_value=1440,
-        step=1,
-        translation_key="valve_countdown_1",
-        fallback_name="Irrigation time 1",
-    )
+.tuya_number(
+    dp_id=13,
+    attribute_name="valve_countdown_1",
+    type=t.uint16_t,
+    device_class=SensorDeviceClass.DURATION,
+    unit=UnitOfTime.MINUTES,
+    min_value=0,
+    max_value=1440,
+    step=1,
+    translation_key="valve_countdown_1",
+    fallback_name="Irrigation time 1",
+)
 ```
 
 #### tuya_binary_sensor
@@ -160,31 +160,51 @@ Adds a number entity.
 Adds a binary sensor entity.
 
 ```python
-    .tuya_binary_sensor(
-        dp_id=8,
-        attribute_name="system_online",
-        translation_key="system_online",
-        fallback_name="System online",
-    )
+.tuya_binary_sensor(
+    dp_id=8,
+    attribute_name="system_online",
+    translation_key="system_online",
+    fallback_name="System online",
+)
 ```
-
 
 #### tuya_sensor
 
-Adds a sensor entity.
+Adds a sensor entity. Sensors can't return string values, you also need to ensure the return type matches the device_class.
 
 ```python
-    .tuya_sensor(
-        dp_id=25,
-        attribute_name="valve_duration_1",
-        type=t.uint32_t,
-        state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.DURATION,
-        unit=UnitOfTime.SECONDS,
-        entity_type=EntityType.STANDARD,
-        translation_key="irrigation_duration_1",
-        fallback_name="Irrigation duration 1",
-    )
+.tuya_sensor(
+    dp_id=25,
+    attribute_name="valve_duration_1",
+    type=t.uint32_t,
+    state_class=SensorStateClass.MEASUREMENT,
+    device_class=SensorDeviceClass.DURATION,
+    unit=UnitOfTime.SECONDS,
+    entity_type=EntityType.STANDARD,
+    translation_key="irrigation_duration_1",
+    fallback_name="Irrigation duration 1",
+)
+```
+
+Some Tuya DPs will return an incompatible type, this example returns a string value that must be converted via a function.
+
+```python
+def giex_string_to_td(v: str) -> int:
+    """Convert Giex String Duration to seconds."""
+    dt = datetime.strptime(v, "%H:%M:%S,%f")
+    return timedelta(hours=dt.hour, minutes=dt.minute, seconds=dt.second).seconds
+
+.tuya_sensor(
+    dp_id=114,
+    attribute_name="irrigation_duration",
+    type=t.uint32_t,
+    converter=lambda x: giex_string_to_td(x),
+    state_class=SensorStateClass.MEASUREMENT,
+    device_class=SensorDeviceClass.DURATION,
+    unit=UnitOfTime.SECONDS,
+    translation_key="irrigation_duration",
+    fallback_name="Last irrigation duration",
+)
 ```
 
 ### Base Methods
@@ -194,12 +214,12 @@ Adds a sensor entity.
 Adds a DP converter.
 
 ```python
-    .tuya_dp(
-        dp_id=4,
-        ep_attribute=TuyaPowerConfigurationCluster2AAA.ep_attribute,
-        attribute_name="battery_percentage_remaining",
-        converter=lambda x: {0: 50, 1: 100, 2: 200}[x],
-    )
+.tuya_dp(
+    dp_id=4,
+    ep_attribute=TuyaPowerConfigurationCluster2AAA.ep_attribute,
+    attribute_name="battery_percentage_remaining",
+    converter=lambda x: {0: 50, 1: 100, 2: 200}[x],
+)
 ```
 
 #### tuya_attribute
@@ -207,11 +227,11 @@ Adds a DP converter.
 Add an Attribute definition
 
 ```python
-    .tuya_attribute(
-        dp_id=4,
-        attribute_name="irrigation_mode",
-        type=t.Bool,
-    )
+.tuya_attribute(
+    dp_id=4,
+    attribute_name="irrigation_mode",
+    type=t.Bool,
+)
 ```
 
 #### tuya_dp_attribute
@@ -219,11 +239,11 @@ Add an Attribute definition
 Add a DP converter and corresponding Attribute definition.
 
 ```python
-    .tuya_dp_attribute(
-        dp_id=1,
-        attribute_name="irrigation_mode",
-        type=t.Bool,
-    )
+.tuya_dp_attribute(
+    dp_id=1,
+    attribute_name="irrigation_mode",
+    type=t.Bool,
+)
 ```
 
 ### Building tests for V2 Quirks
