@@ -112,9 +112,9 @@ Adds a enum entity.
     class GiexBatteryStatus(t.enum8):
     """Giex Soil Battery Status Enum."""
 
-    Low = 0x00
-    Middle = 0x01
-    High = 0x02
+        Low = 0x00
+        Middle = 0x01
+        High = 0x02
 
     .tuya_enum(
         dp_id=14,
