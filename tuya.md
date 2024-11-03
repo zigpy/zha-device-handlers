@@ -31,7 +31,8 @@ from zhaquirks.tuya.builder import TuyaPowerConfigurationCluster2AAA, TuyaQuirkB
 
 ## TuyaQuirkBuilder
 
-TuyaQuirkBuilder is a subclass of QuirkBuilder, retaining all of the V2 QuirkBuilder methods and adding Tuya specific methods
+TuyaQuirkBuilder is a subclass of QuirkBuilder, retaining all of the V2 QuirkBuilder methods and adding Tuya specific methods.
+For all available options on each method see [TuyaQuirkBuilder]https://github.com/zigpy/zha-device-handlers/blob/dev/zhaquirks/tuya/builder/__init__.py.
 
 ### Convenience Methods
 
