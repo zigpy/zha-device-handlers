@@ -19,7 +19,7 @@ For more complex replacements you may need to use a lower level method, such as 
 
 All V2 QuirkBuilder methods are available, so using `.tuya_dp` to add a DP converter then `.adds` is valid.
 
-Once the quirk is complete, enable custom quirks and test.
+Once the quirk is complete, enable custom quirks and test. See [Configuration - YAML in ZHA documentation](https://www.home-assistant.io/integrations/zha/).
 
 ## Example Tuya Quirk
 
