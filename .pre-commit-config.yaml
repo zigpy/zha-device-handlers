@@ -12,12 +12,12 @@ repos:
         args: ["--toml", "pyproject.toml"]
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.11.2
+    rev: v1.13.0
     hooks:
       - id: mypy
   
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.6.9
+    rev: v0.7.1
     hooks:
       - id: ruff
         args: ["--fix", "--exit-non-zero-on-fix", "--config", "pyproject.toml"]

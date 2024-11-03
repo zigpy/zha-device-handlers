@@ -69,11 +69,9 @@ class PhilipsBasicCluster(CustomCluster, Basic):
 
     attr_config = {AttributeDefs.philips.id: 0x000B}
 
-    async def bind(self):
-        """Bind cluster."""
-        result = await super().bind()
+    async def apply_custom_configuration(self, *args, **kwargs):
+        """Apply custom configuration."""
         await self.write_attributes(self.attr_config, manufacturer=0x100B)
-        return result
 
 
 class ButtonPressQueue:

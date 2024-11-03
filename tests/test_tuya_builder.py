@@ -67,25 +67,35 @@ async def test_tuya_quirkbuilder(device_mock):
         .tuya_switch(
             dp_id=6,
             attribute_name="test_onoff",
+            translation_key="test_onoff",
+            fallback_name="Test on/off",
         )
         .tuya_number(
             dp_id=7,
             attribute_name="test_number",
             type=t.uint16_t,
+            translation_key="test_number",
+            fallback_name="Test number",
         )
         .tuya_binary_sensor(
             dp_id=8,
             attribute_name="test_binary",
+            translation_key="test_binary",
+            fallback_name="Test binary",
         )
         .tuya_sensor(
             dp_id=9,
             attribute_name="test_sensor",
             type=t.uint8_t,
+            translation_key="test_sensor",
+            fallback_name="Test sensor",
         )
         .tuya_enum(
             dp_id=10,
             attribute_name="test_enum",
             enum_class=TestEnum,
+            translation_key="test_enum",
+            fallback_name="Test enum",
         )
         .tuya_humidity(dp_id=11)
         .add_to_registry()
