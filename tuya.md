@@ -11,7 +11,27 @@ The first step in building a Tuya quirk is to identify the Tuya Datapoints (DPs)
 
 # Using the datapoints to develop a Tuya Quirk
 
-## TuyaQuirkBuilder is a subclass of QuirkBuilder, retaining all of the V2 QuirkBuilder methods and adding Tuya specific methods
+Once the DPs are identified, the quirk can be built. See below for all available methods.
+
+## Example Tuya Quirk
+
+```python
+from zhaquirks.tuya.builder import TuyaPowerConfigurationCluster2AAA, TuyaQuirkBuilder
+
+(
+    TuyaQuirkBuilder("_TZE200_bjawzodf", "TS0601")
+    .applies_to("_TZE200_zl1kmjqx", "TS0601")
+    .tuya_temperature(dp_id=1, scale=10)
+    .tuya_humidity(dp_id=2, scale=10)
+    .tuya_battery(dp_id=4)
+    .skip_configuration()
+    .add_to_registry()
+)
+```
+
+## TuyaQuirkBuilder
+
+TuyaQuirkBuilder is a subclass of QuirkBuilder, retaining all of the V2 QuirkBuilder methods and adding Tuya specific methods
 
 ### Convenience Methods
 
@@ -135,6 +155,19 @@ Adds a sensor entity.
 ```
 
 ### Base Methods
+
+#### tuya_dp
+
+Adds a DP converter.
+
+```python
+    .tuya_dp(
+        dp_id=4,
+        ep_attribute=TuyaPowerConfigurationCluster2AAA.ep_attribute,
+        attribute_name="battery_percentage_remaining",
+        converter=lambda x: {0: 50, 1: 100, 2: 200}[x],
+    )
+```
 
 #### tuya_dp_attribute
 
