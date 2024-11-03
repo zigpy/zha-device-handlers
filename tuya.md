@@ -114,7 +114,7 @@ Adds a switch entity.
 
 #### tuya_enum
 
-Adds a enum entity.
+Adds a enum entity. Note: in the Tuya developer console these will appear to be string enums. I have yet to run into a string enum, assume that they are `t.enum8`.
 
 ```python
     class GiexBatteryStatus(t.enum8):
