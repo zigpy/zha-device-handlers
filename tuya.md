@@ -51,7 +51,7 @@ TuyaQuirkBuilder is a subclass of QuirkBuilder, retaining all of the V2 QuirkBui
 
 ### Convenience Methods
 
-These methods allow exposing the most common Tuya clusters.
+These methods allow exposing the most common Tuya clusters. These methods were added as part of the quirk building process and it is likely that there are other convenience methods that should be created. If you find that you are repeating the `.tuya_dp` and `.adds` formula, please PR or suggest additional methods.
 
 #### tuya_battery(dp_id: int, power_cfg: PowerConfiguration = TuyaPowerConfigurationCluster2AAA, scale: float = 2)
 
