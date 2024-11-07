@@ -1,13 +1,15 @@
 """Konke motion sensor."""
 
 import math
+
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice, CustomCluster
-from zigpy.zcl.clusters.general import Basic, Identify, PowerConfiguration, Ota
-from zigpy.zcl.clusters.security import IasZone
+from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.zcl.clusters.general import Basic, Identify, Ota, PowerConfiguration
 from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.measurement import IlluminanceMeasurement
-from zhaquirks import Bus, PowerConfigurationCluster, MotionWithReset
+from zigpy.zcl.clusters.security import IasZone
+
+from zhaquirks import Bus, MotionWithReset, PowerConfigurationCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -22,6 +24,7 @@ KONKE_CLUSTER_ID = 0xFCC0
 
 #   定义IlluminanceMeasurementCluster（应用于控客人体状态感应器）
 
+
 class IlluminanceMeasurementCluster(CustomCluster, IlluminanceMeasurement):
     """Terncy Illuminance Measurement Cluster."""
 
@@ -32,12 +35,15 @@ class IlluminanceMeasurementCluster(CustomCluster, IlluminanceMeasurement):
             value = 10000 * math.log10(value) + 1
         super()._update_attribute(attrid, value)
 
-#定义MotionClusterC（应用于KK-BS-J01W）
+
+# 定义MotionClusterC（应用于KK-BS-J01W）
+
 
 class MotionClusterC(MotionWithReset):
     """Motion cluster."""
 
     reset_s: int = 60
+
 
 class KonkeMotion(CustomDevice):
     """Custom device representing konke motion sensors."""
@@ -187,8 +193,8 @@ class KonkeMotionC(CustomDevice):
             }
         }
     }
-    
-    
+
+
 class KonkeMotionD(CustomDevice):
     """Custom device representing konke motion sensors."""
 
@@ -210,9 +216,9 @@ class KonkeMotionD(CustomDevice):
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
                 INPUT_CLUSTERS: [
-                    Basic.cluster_id, # 0  
-                    Identify.cluster_id, # 3
-                    IlluminanceMeasurement.cluster_id,          # 400
+                    Basic.cluster_id,  # 0
+                    Identify.cluster_id,  # 3
+                    IlluminanceMeasurement.cluster_id,  # 400
                     IasZone.cluster_id,  # 500
                     Diagnostic.cluster_id,
                     KONKE_CLUSTER_ID,
@@ -226,9 +232,9 @@ class KonkeMotionD(CustomDevice):
         ENDPOINTS: {
             1: {
                 INPUT_CLUSTERS: [
-                    Basic.cluster_id, # 0  
-                    Identify.cluster_id, # 3
-                    #IlluminanceMeasurement.cluster_id,       # 400
+                    Basic.cluster_id,  # 0
+                    Identify.cluster_id,  # 3
+                    # IlluminanceMeasurement.cluster_id,       # 400
                     IlluminanceMeasurementCluster,
                     IasZone.cluster_id,  # 500
                     Diagnostic.cluster_id,
