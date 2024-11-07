@@ -574,11 +574,10 @@ zha:
 ```
 5. Restart Home Assistant to make the quirk take effect.
 
-Note! If your Home Assistant is running inside a container then you must then you must edit and add the file inside that container, see https://github.com/zigpy/zha-device-handlers/discussions/693
+6. If and when a better ZHA Device Handler quirk is merged into the zha-quirks package then remove the custom quirk you added and possibly the whole folder if it is the last one. Make sure to revert at least `enable_quirks: true` to `false` in the settings then reboot Home Assistant
 
-6. Once the quirk is merge
+Note! If your Home Assistant is running inside a container then you must then you must edit and add or remove the file inside that container, see https://github.com/zigpy/zha-device-handlers/discussions/693
 
-Remove the custom quirk and possibly the whole folder if it's the last one. Make sure to revert at least `enable_quirks: true` to `false` in the settings then reboot home assistant
 # Thanks
 
 - Special thanks to damarco for the majority of the device tracker code
