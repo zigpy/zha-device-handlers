@@ -22,6 +22,7 @@ from zhaquirks.konke import KONKE, MotionCluster, OccupancyCluster
 
 KONKE_CLUSTER_ID = 0xFCC0
 
+
 class IlluminanceMeasurementCluster(CustomCluster, IlluminanceMeasurement):
     """Terncy Illuminance Measurement Cluster."""
 
@@ -37,6 +38,7 @@ class MotionClusterC(MotionWithReset):
     """Motion cluster."""
 
     reset_s: int = 60
+
 
 class KonkeMotion(CustomDevice):
     """Custom device representing konke motion sensors."""
@@ -136,8 +138,6 @@ class KonkeMotionB(CustomDevice):
             }
         }
     }
-
-
 
 
 class KonkeMotionC(CustomDevice):
