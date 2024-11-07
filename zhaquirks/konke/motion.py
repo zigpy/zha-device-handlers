@@ -18,7 +18,7 @@ from zhaquirks.const import (
 )
 from zhaquirks.konke import KONKE, MotionCluster, OccupancyCluster
 
-KONKE_CLUSTER_ID = 0xfcc0
+KONKE_CLUSTER_ID = 0xFCC0
 
 #   定义IlluminanceMeasurementCluster（应用于控客人体状态感应器）
 
@@ -150,8 +150,8 @@ class KonkeMotionC(CustomDevice):
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=0x0104 device_type=0x0402
         #  device_version=0
-        #  input_clusters=[0, 1, 3, 500, 2821, 64704]
-        #  output_clusters=[19, 64704]>
+        #  input_clusters=[0, 1, 3, 1280, 2821, 64704]
+        #  output_clusters=[25, 64704]>
         MODELS_INFO: [
             (KONKE, "3AFE08010402100D"),
         ],
@@ -163,7 +163,7 @@ class KonkeMotionC(CustomDevice):
                     Basic.cluster_id,  # 0
                     PowerConfiguration.cluster_id,  # 1
                     Identify.cluster_id,  # 3
-                    IasZone.cluster_id,  # 500
+                    IasZone.cluster_id,  # 1280
                     Diagnostic.cluster_id,  # 2821
                     KONKE_CLUSTER_ID,  # 64704
                 ],
@@ -198,10 +198,10 @@ class KonkeMotionD(CustomDevice):
         super().__init__(*args, **kwargs)
 
     signature = {
-        #  <SimpleDescriptor endpoint=1 profile=260 device_type=1026
+        #  <SimpleDescriptor endpoint=1 profile=0x0104 device_type=0x0402
         #  device_version=0
-        #  input_clusters=[0, 1, 3, 1280]
-        #  output_clusters=[3]>
+        #  input_clusters=[0, 3, 1024, 1280, 2821, 64704]
+        #  output_clusters=[0, 25, 64704]>
         MODELS_INFO: [
             (KONKE, "3AFE13010402020D"),
         ],
