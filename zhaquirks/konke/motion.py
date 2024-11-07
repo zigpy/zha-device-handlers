@@ -22,9 +22,6 @@ from zhaquirks.konke import KONKE, MotionCluster, OccupancyCluster
 
 KONKE_CLUSTER_ID = 0xFCC0
 
-#   定义IlluminanceMeasurementCluster（应用于控客人体状态感应器）
-
-
 class IlluminanceMeasurementCluster(CustomCluster, IlluminanceMeasurement):
     """Terncy Illuminance Measurement Cluster."""
 
@@ -36,14 +33,10 @@ class IlluminanceMeasurementCluster(CustomCluster, IlluminanceMeasurement):
         super()._update_attribute(attrid, value)
 
 
-# 定义MotionClusterC（应用于KK-BS-J01W）
-
-
 class MotionClusterC(MotionWithReset):
     """Motion cluster."""
 
     reset_s: int = 60
-
 
 class KonkeMotion(CustomDevice):
     """Custom device representing konke motion sensors."""
@@ -143,6 +136,8 @@ class KonkeMotionB(CustomDevice):
             }
         }
     }
+
+
 
 
 class KonkeMotionC(CustomDevice):
