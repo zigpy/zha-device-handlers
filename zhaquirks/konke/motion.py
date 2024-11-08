@@ -222,6 +222,8 @@ class KonkeMotionD(CustomDevice):
             }
         }
     }
+
+
 class IlluminanceMeasurementCluster(CustomCluster, IlluminanceMeasurement):
     """Terncy Illuminance Measurement Cluster."""
 
