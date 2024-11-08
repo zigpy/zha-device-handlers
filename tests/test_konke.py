@@ -23,7 +23,7 @@ zhaquirks.setup()
 
 
 @pytest.mark.parametrize(
-    "quirk", (zhaquirks.konke.motion.KonkeMotion, zhaquirks.konke.motion.KonkeMotionB)
+    "quirk", (zhaquirks.konke.motion.KonkeMotion, zhaquirks.konke.motion.KonkeMotionB, zhaquirks.konke.motion.KonkeMotionC, zhaquirks.konke.motion.KonkeMotionD)
 )
 async def test_konke_motion(zigpy_device_from_quirk, quirk):
     """Test konke motion sensor."""
