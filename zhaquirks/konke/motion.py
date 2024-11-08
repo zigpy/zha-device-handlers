@@ -23,6 +23,23 @@ from zhaquirks.konke import KONKE, MotionCluster, OccupancyCluster
 KONKE_CLUSTER_ID = 0xFCC0
 
 
+class IlluminanceMeasurementCluster(CustomCluster, IlluminanceMeasurement):
+    """Terncy Illuminance Measurement Cluster."""
+
+    ATTR_ID = 0
+
+    def _update_attribute(self, attrid, value):
+        if attrid == self.ATTR_ID and value > 0:
+            value = 10000 * math.log10(value) + 1
+        super()._update_attribute(attrid, value)
+
+
+class MotionClusterC(MotionWithReset):
+    """Motion cluster."""
+
+    reset_s: int = 60
+
+
 class KonkeMotion(CustomDevice):
     """Custom device representing konke motion sensors."""
 
@@ -212,7 +229,6 @@ class KonkeMotionD(CustomDevice):
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,  # 0
                     Identify.cluster_id,  # 3
-                    # IlluminanceMeasurement.cluster_id,       # 400
                     IlluminanceMeasurementCluster,
                     IasZone.cluster_id,  # 500
                     Diagnostic.cluster_id,
@@ -222,20 +238,3 @@ class KonkeMotionD(CustomDevice):
             }
         }
     }
-
-
-class IlluminanceMeasurementCluster(CustomCluster, IlluminanceMeasurement):
-    """Terncy Illuminance Measurement Cluster."""
-
-    ATTR_ID = 0
-
-    def _update_attribute(self, attrid, value):
-        if attrid == self.ATTR_ID and value > 0:
-            value = 10000 * math.log10(value) + 1
-        super()._update_attribute(attrid, value)
-
-
-class MotionClusterC(MotionWithReset):
-    """Motion cluster."""
-
-    reset_s: int = 60
