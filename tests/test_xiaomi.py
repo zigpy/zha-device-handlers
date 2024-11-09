@@ -87,10 +87,10 @@ import zhaquirks.xiaomi.aqara.sensor_ht_agl02
 import zhaquirks.xiaomi.aqara.smoke
 import zhaquirks.xiaomi.aqara.switch_t1
 from zhaquirks.xiaomi.aqara.thermostat_agl001 import (
+    XIAOMI_SENSOR_VALUE,
     AqaraThermostatSpecificCluster,
     ScheduleEvent,
     ScheduleSettings,
-    XIAOMI_SENSOR_VALUE,
 )
 import zhaquirks.xiaomi.aqara.weather
 import zhaquirks.xiaomi.mija.motion
@@ -943,9 +943,12 @@ async def test_xiaomi_e1_thermostat_rw_redirection(
         assert opple_cluster._read_attributes.mock_calls[0][1][0] == [
             0x0271
         ]  # Opple system_mode attribute
-        assert thermostat_listener.attribute_updates[0] == (
-            Thermostat.AttributeDefs.system_mode.id,
-            Thermostat.SystemMode.Heat,
+        assert (
+            thermostat_listener.attribute_updates[0]
+            == (
+                Thermostat.AttributeDefs.system_mode.id,
+                Thermostat.SystemMode.Heat,
+            )
         )  # check that attributes are correctly mapped and updated on ZCL thermostat cluster
 
         thermostat_cluster._read_attributes.reset_mock()
@@ -1168,11 +1171,13 @@ async def test_xiaomi_e1_thermostat_sensor_temp_serialization(
 
     assert AqaraThermostatSpecificCluster.convert_sensor_temp_write(input) == attr
 
+
 @pytest.mark.parametrize(
     "input",
     [
-        (1),(0),
-    ]
+        (1),
+        (0),
+    ],
 )
 async def test_xiaomi_e1_thermostat_temp_sensor(input, ieee_mock):
     """Test that temperature source switch works correctly."""
@@ -1185,6 +1190,7 @@ async def test_xiaomi_e1_thermostat_temp_sensor(input, ieee_mock):
         assert bytes(reversed(ieee_mock)) in b
         if input == 1:
             assert XIAOMI_SENSOR_VALUE in b
+
 
 @pytest.mark.parametrize(
     "quirk, invalid_iilluminance_report",
