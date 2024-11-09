@@ -462,11 +462,9 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
     def convert_sensor_temp_write(value: Any) -> bytes:
         """Convert sensor temperature write value to bytes."""
         value = float(value)
-        if value < 0:
-            value = 0
+        value = max(value, 0)
 
-        if value > 55:
-            value = 55
+        value = min(value, 55)
 
         temp = struct.pack(">f", round(value * 100))
 

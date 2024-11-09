@@ -87,9 +87,9 @@ import zhaquirks.xiaomi.aqara.sensor_ht_agl02
 import zhaquirks.xiaomi.aqara.smoke
 import zhaquirks.xiaomi.aqara.switch_t1
 from zhaquirks.xiaomi.aqara.thermostat_agl001 import (
+    AqaraThermostatSpecificCluster,
     ScheduleEvent,
     ScheduleSettings,
-    AqaraThermostatSpecificCluster,
 )
 import zhaquirks.xiaomi.aqara.weather
 import zhaquirks.xiaomi.mija.motion
@@ -942,9 +942,12 @@ async def test_xiaomi_e1_thermostat_rw_redirection(
         assert opple_cluster._read_attributes.mock_calls[0][1][0] == [
             0x0271
         ]  # Opple system_mode attribute
-        assert thermostat_listener.attribute_updates[0] == (
-            Thermostat.AttributeDefs.system_mode.id,
-            Thermostat.SystemMode.Heat,
+        assert (
+            thermostat_listener.attribute_updates[0]
+            == (
+                Thermostat.AttributeDefs.system_mode.id,
+                Thermostat.SystemMode.Heat,
+            )
         )  # check that attributes are correctly mapped and updated on ZCL thermostat cluster
 
         thermostat_cluster._read_attributes.reset_mock()
