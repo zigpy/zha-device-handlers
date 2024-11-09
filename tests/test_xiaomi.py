@@ -86,7 +86,11 @@ import zhaquirks.xiaomi.aqara.roller_curtain_e1
 import zhaquirks.xiaomi.aqara.sensor_ht_agl02
 import zhaquirks.xiaomi.aqara.smoke
 import zhaquirks.xiaomi.aqara.switch_t1
-from zhaquirks.xiaomi.aqara.thermostat_agl001 import ScheduleEvent, ScheduleSettings
+from zhaquirks.xiaomi.aqara.thermostat_agl001 import (
+    ScheduleEvent,
+    ScheduleSettings,
+    AqaraThermostatSpecificCluster,
+)
 import zhaquirks.xiaomi.aqara.weather
 import zhaquirks.xiaomi.mija.motion
 
@@ -938,12 +942,9 @@ async def test_xiaomi_e1_thermostat_rw_redirection(
         assert opple_cluster._read_attributes.mock_calls[0][1][0] == [
             0x0271
         ]  # Opple system_mode attribute
-        assert (
-            thermostat_listener.attribute_updates[0]
-            == (
-                Thermostat.AttributeDefs.system_mode.id,
-                Thermostat.SystemMode.Heat,
-            )
+        assert thermostat_listener.attribute_updates[0] == (
+            Thermostat.AttributeDefs.system_mode.id,
+            Thermostat.SystemMode.Heat,
         )  # check that attributes are correctly mapped and updated on ZCL thermostat cluster
 
         thermostat_cluster._read_attributes.reset_mock()
@@ -1127,6 +1128,47 @@ async def test_xiaomi_e1_thermostat_schedule_settings_deserialization(
 
     s = ScheduleSettings(schedule_settings)
     assert str(s) == expected_string
+
+
+@pytest.mark.parametrize(
+    "input_temperature, attr_value",
+    [
+        (
+            "24.0",
+            b"\xaa\x71\x13\x44\x12\x7c\x05\x41\x10\x00\x15\x8d\x00\x01\x9d\x1b\x98\x00\x01\x00\x55\x45\x16\x00\x00",
+        ),
+        (
+            "20.3",
+            b"\xaa\x71\x13\x44\x12\x7c\x05\x41\x10\x00\x15\x8d\x00\x01\x9d\x1b\x98\x00\x01\x00\x55\x44\xfd\xc0\x00",
+        ),
+        (
+            "0",
+            b"\xaa\x71\x13\x44\x12\x7c\x05\x41\x10\x00\x15\x8d\x00\x01\x9d\x1b\x98\x00\x01\x00\x55\x00\x00\x00\x00",
+        ),
+        (
+            "-5",
+            b"\xaa\x71\x13\x44\x12\x7c\x05\x41\x10\x00\x15\x8d\x00\x01\x9d\x1b\x98\x00\x01\x00\x55\x00\x00\x00\x00",
+        ),
+        (
+            "55",
+            b"\xaa\x71\x13\x44\x12\x7c\x05\x41\x10\x00\x15\x8d\x00\x01\x9d\x1b\x98\x00\x01\x00\x55\x45\xab\xe0\x00",
+        ),
+        (
+            "55.5",
+            b"\xaa\x71\x13\x44\x12\x7c\x05\x41\x10\x00\x15\x8d\x00\x01\x9d\x1b\x98\x00\x01\x00\x55\x45\xab\xe0\x00",
+        ),
+    ],
+)
+async def test_xiaomi_e1_thermostat_sensor_temp_serialization(
+    input_temperature,
+    attr_value,
+):
+    """Test that temperature serialization works correctly."""
+
+    assert (
+        AqaraThermostatSpecificCluster.convert_sensor_temp_write(input_temperature)
+        == attr_value
+    )
 
 
 @pytest.mark.parametrize(
