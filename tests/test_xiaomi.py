@@ -90,6 +90,7 @@ from zhaquirks.xiaomi.aqara.thermostat_agl001 import (
     AqaraThermostatSpecificCluster,
     ScheduleEvent,
     ScheduleSettings,
+    XIAOMI_SENSOR_VALUE,
 )
 import zhaquirks.xiaomi.aqara.weather
 import zhaquirks.xiaomi.mija.motion
@@ -942,12 +943,9 @@ async def test_xiaomi_e1_thermostat_rw_redirection(
         assert opple_cluster._read_attributes.mock_calls[0][1][0] == [
             0x0271
         ]  # Opple system_mode attribute
-        assert (
-            thermostat_listener.attribute_updates[0]
-            == (
-                Thermostat.AttributeDefs.system_mode.id,
-                Thermostat.SystemMode.Heat,
-            )
+        assert thermostat_listener.attribute_updates[0] == (
+            Thermostat.AttributeDefs.system_mode.id,
+            Thermostat.SystemMode.Heat,
         )  # check that attributes are correctly mapped and updated on ZCL thermostat cluster
 
         thermostat_cluster._read_attributes.reset_mock()
@@ -1134,7 +1132,7 @@ async def test_xiaomi_e1_thermostat_schedule_settings_deserialization(
 
 
 @pytest.mark.parametrize(
-    "input_temperature, attr_value",
+    "input, attr",
     [
         (
             "24.0",
@@ -1163,16 +1161,30 @@ async def test_xiaomi_e1_thermostat_schedule_settings_deserialization(
     ],
 )
 async def test_xiaomi_e1_thermostat_sensor_temp_serialization(
-    input_temperature,
-    attr_value,
+    input,
+    attr,
 ):
     """Test that temperature serialization works correctly."""
 
-    assert (
-        AqaraThermostatSpecificCluster.convert_sensor_temp_write(input_temperature)
-        == attr_value
-    )
+    assert AqaraThermostatSpecificCluster.convert_sensor_temp_write(input) == attr
 
+@pytest.mark.parametrize(
+    "input",
+    [
+        (1),(0),
+    ]
+)
+async def test_xiaomi_e1_thermostat_temp_sensor(input, ieee_mock):
+    """Test that temperature source switch works correctly."""
+
+    msgs = AqaraThermostatSpecificCluster.convert_sensor_write(input, ieee_mock)
+    assert len(msgs) == 2
+
+    for msg in msgs:
+        b = bytearray(msg)
+        assert bytes(reversed(ieee_mock)) in b
+        if input == 1:
+            assert XIAOMI_SENSOR_VALUE in b
 
 @pytest.mark.parametrize(
     "quirk, invalid_iilluminance_report",
