@@ -1,6 +1,6 @@
 """Device handler for Bosch RBSH-TRV0-ZB-EU thermostat."""
 
-from typing import Any, Optional, Union
+from typing import Any, Final, Optional, Union
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
@@ -13,7 +13,7 @@ from zigpy.zcl.clusters.hvac import (
     Thermostat,
     UserInterface,
 )
-from zigpy.zcl.foundation import ZCLAttributeDef
+from zigpy.zcl.foundation import ZCLAttributeDef, ZCLCommandDef
 
 """Bosch specific thermostat attribute ids."""
 
@@ -22,6 +22,9 @@ OPERATING_MODE_ATTR_ID = 0x4007
 
 # Valve position: 0% - 100%
 VALVE_POSITION_ATTR_ID = 0x4020
+
+# Valve adaptation status.
+VALVE_ADAPT_STATUS_ATTR_ID = 0x4022
 
 # Remote measured temperature.
 REMOTE_TEMPERATURE_ATTR_ID = 0x4040
@@ -49,13 +52,28 @@ SCREEN_BRIGHTNESS_ATTR_ID = 0x403B
 # Control sequence of operation (heating/cooling)
 CTRL_SEQUENCE_OF_OPERATION_ID = Thermostat.AttributeDefs.ctrl_sequence_of_oper.id
 
+"""Bosch specific commands."""
+
+# Trigger valve calibration.
+CALIBRATE_VALVE_CMD_ID = 0x41
+
 
 class BoschOperatingMode(t.enum8):
-    """Bosh operating mode attribute values."""
+    """Bosch operating mode attribute values."""
 
     Schedule = 0x00
     Manual = 0x01
     Pause = 0x05
+
+
+class BoschValveAdaptStatus(t.enum8):
+    """Bosch valve adapt status attribute values."""
+
+    Unknown = 0x00
+    ReadyToCalibrate = 0x01
+    CalibrationInProgress = 0x02
+    Error = 0x03
+    Success = 0x04
 
 
 class State(t.enum8):
@@ -117,29 +135,42 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
     class AttributeDefs(Thermostat.AttributeDefs):
         """Bosch thermostat manufacturer specific attributes."""
 
-        operating_mode = ZCLAttributeDef(
+        operating_mode: Final = ZCLAttributeDef(
             id=OPERATING_MODE_ATTR_ID,
             type=BoschOperatingMode,
             is_manufacturer_specific=True,
         )
 
-        pi_heating_demand = ZCLAttributeDef(
+        pi_heating_demand: Final = ZCLAttributeDef(
             id=VALVE_POSITION_ATTR_ID,
             # Values range from 0-100
             type=t.enum8,
             is_manufacturer_specific=True,
         )
 
-        window_open = ZCLAttributeDef(
+        valve_adapt_status: Final = ZCLAttributeDef(
+            id=VALVE_ADAPT_STATUS_ATTR_ID,
+            type=BoschValveAdaptStatus,
+            is_manufacturer_specific=True,
+        )
+
+        window_open: Final = ZCLAttributeDef(
             id=WINDOW_OPEN_ATTR_ID, type=State, is_manufacturer_specific=True
         )
 
-        boost_heating = ZCLAttributeDef(
+        boost_heating: Final = ZCLAttributeDef(
             id=BOOST_HEATING_ATTR_ID, type=State, is_manufacturer_specific=True
         )
 
-        remote_temperature = ZCLAttributeDef(
+        remote_temperature: Final = ZCLAttributeDef(
             id=REMOTE_TEMPERATURE_ATTR_ID, type=t.int16s, is_manufacturer_specific=True
+        )
+
+    class ServerCommandDefs(Thermostat.ServerCommandDefs):
+        """Bosch thermostat manufacturer specific server commands."""
+
+        calibrate_valve: Final = ZCLCommandDef(
+            id=CALIBRATE_VALVE_CMD_ID, schema={}, direction=False
         )
 
     async def write_attributes(
@@ -365,28 +396,28 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
     class AttributeDefs(UserInterface.AttributeDefs):
         """Bosch user interface manufacturer specific attributes."""
 
-        display_orientation = ZCLAttributeDef(
+        display_orientation: Final = ZCLAttributeDef(
             id=SCREEN_ORIENTATION_ATTR_ID,
             # To be matched to BoschDisplayOrientation enum.
             type=t.uint8_t,
             is_manufacturer_specific=True,
         )
 
-        display_on_time = ZCLAttributeDef(
+        display_on_time: Final = ZCLAttributeDef(
             id=SCREEN_TIMEOUT_ATTR_ID,
             # Usable values range from 5-30
             type=t.enum8,
             is_manufacturer_specific=True,
         )
 
-        display_brightness = ZCLAttributeDef(
+        display_brightness: Final = ZCLAttributeDef(
             id=SCREEN_BRIGHTNESS_ATTR_ID,
             # Values range from 0-10
             type=t.enum8,
             is_manufacturer_specific=True,
         )
 
-        displayed_temperature = ZCLAttributeDef(
+        displayed_temperature: Final = ZCLAttributeDef(
             id=DISPLAY_MODE_ATTR_ID,
             type=BoschDisplayedTemperature,
             is_manufacturer_specific=True,
@@ -438,6 +469,16 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         translation_key="operating_mode",
         fallback_name="Operating mode",
     )
+    # Valve adapt status - read-only.
+    .enum(
+        BoschThermostatCluster.AttributeDefs.valve_adapt_status.name,
+        BoschValveAdaptStatus,
+        BoschThermostatCluster.cluster_id,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.DIAGNOSTIC,
+        translation_key="valve_adapt_status",
+        fallback_name="Valve adaptation status",
+    )
     # Fast heating/boost.
     .switch(
         BoschThermostatCluster.AttributeDefs.boost_heating.name,
@@ -462,6 +503,13 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         multiplier=0.01,
         device_class=NumberDeviceClass.TEMPERATURE,
         fallback_name="Remote temperature",
+    )
+    # Valve calibration.
+    .command_button(
+        BoschThermostatCluster.ServerCommandDefs.calibrate_valve.name,
+        BoschThermostatCluster.cluster_id,
+        translation_key="calibrate_valve",
+        fallback_name="Calibrate valve",
     )
     # Display temperature.
     .enum(
