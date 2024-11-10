@@ -243,7 +243,11 @@ async def test_sinope_light_switch_reporting(zigpy_device_from_quirk, quirk):
 
 @pytest.mark.parametrize("quirk", (SinopeTechnologieslight,))
 async def test_sinope_light_device_triggers_def(zigpy_device_from_quirk, quirk):
-    """Test that configuring reporting for action_report works."""
+    """Test device automation triggers.
+
+    Make sure that values are actual ints and not instances of an enum class.
+    """
+
     device: Device = zigpy_device_from_quirk(quirk)
 
     for config in device.device_automation_triggers.values():
