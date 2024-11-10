@@ -700,7 +700,7 @@ class SinopeHPThermostats(SinopeTechnologiesThermostat):
                     SINOPE_MANUFACTURER_CLUSTER_ID,
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
-            }
+            },
         },
     }
 
