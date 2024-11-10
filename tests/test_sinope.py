@@ -247,7 +247,6 @@ async def test_sinope_light_device_triggers_def(zigpy_device_from_quirk, quirk):
     device: Device = zigpy_device_from_quirk(quirk)
 
     for config in device.device_automation_triggers.values():
-        # from pudb import set_trace; set_trace();
         val = config.get("args", {}).get("value")
         if val is not None:
             assert type(val) is int, type(val)
