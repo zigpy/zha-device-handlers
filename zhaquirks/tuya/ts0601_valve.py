@@ -25,8 +25,8 @@ from zhaquirks.tuya import (
     TUYA_CLUSTER_ID,
     EnchantedDevice,
     TuyaLocalCluster,
+    TuyaPowerConfigurationCluster2AAA,
     TuyaPowerConfigurationCluster4AA,
-    TuyaPowerConfigurationCluster2AAA
 )
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import (
@@ -579,12 +579,14 @@ class RoyalGardineerWeatherDelay(t.enum8):
     Delayed_48h = 0x02
     Delayed_72h = 0x03
 
+
 class RoyalGardineerTimerState(t.enum8):
     """Royal Gardineer Irrigation Valve timer state enum."""
 
     Disabled = 0x00
     Active = 0x01
     Enabled = 0x02
+
 
 (
     TuyaQuirkBuilder("_TZE200_2wg5qrjy", "TS0601")
@@ -601,7 +603,7 @@ class RoyalGardineerTimerState(t.enum8):
         min_value=1,
         max_value=600,
         step=1,
-        multiplier=1/60,
+        multiplier=1 / 60,
         unit=UnitOfTime.MINUTES,
         translation_key="timer_time_left",
         fallback_name="Timer time left",
