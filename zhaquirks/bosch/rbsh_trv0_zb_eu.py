@@ -508,6 +508,7 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
     .command_button(
         BoschThermostatCluster.ServerCommandDefs.calibrate_valve.name,
         BoschThermostatCluster.cluster_id,
+        entity_type=EntityType.DIAGNOSTIC,
         translation_key="calibrate_valve",
         fallback_name="Calibrate valve",
     )
