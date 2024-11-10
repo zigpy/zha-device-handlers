@@ -26,6 +26,7 @@ from zhaquirks.tuya import (
     EnchantedDevice,
     TuyaLocalCluster,
     TuyaPowerConfigurationCluster4AA,
+    TuyaPowerConfigurationCluster2AAA
 )
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import (
@@ -566,5 +567,74 @@ class GiexIrrigationStatus(t.enum8):
         fallback_name="Status 2",
     )
     .skip_configuration()
+    .add_to_registry()
+)
+
+
+class RoyalGardineerWeatherDelay(t.enum8):
+    """Royal Gardineer Irrigation Valve weather delay enum."""
+
+    Disabled = 0x00
+    Delayed_24h = 0x01
+    Delayed_48h = 0x02
+    Delayed_72h = 0x03
+
+class RoyalGardineerTimerState(t.enum8):
+    """Royal Gardineer Irrigation Valve timer state enum."""
+
+    Disabled = 0x00
+    Active = 0x01
+    Enabled = 0x02
+
+(
+    TuyaQuirkBuilder("_TZE200_2wg5qrjy", "TS0601")
+    .tuya_onoff(dp_id=1)
+    #!!! should be TuyaPowerConfigurationCluster2AA, but it is broken at this time.
+    .tuya_battery(dp_id=7, power_cfg=TuyaPowerConfigurationCluster2AAA)
+    # Might need a convertor: x // 10
+    .tuya_metering(dp_id=5)
+    # Timer time left/remaining (raw value in seconds).
+    .tuya_number(
+        dp_id=11,
+        attribute_name="timer_time_left",
+        type=t.uint32_t,
+        min_value=1,
+        max_value=600,
+        step=1,
+        multiplier=1/60,
+        unit=UnitOfTime.MINUTES,
+        translation_key="timer_time_left",
+        fallback_name="Timer time left",
+    )
+    # Weather delay.
+    .tuya_enum(
+        dp_id=10,
+        attribute_name="weather_delay",
+        enum_class=RoyalGardineerWeatherDelay,
+        translation_key="weather_delay",
+        fallback_name="Weather delay",
+        initially_disabled=True,
+    )
+    # Timer state - read-only.
+    .tuya_enum(
+        dp_id=12,
+        attribute_name="timer_state",
+        enum_class=RoyalGardineerTimerState,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.DIAGNOSTIC,
+        translation_key="timer_state",
+        fallback_name="Timer state",
+    )
+    # Last valve open duration - read-only (raw value in seconds).
+    .tuya_sensor(
+        dp_id=15,
+        attribute_name="last_valve_open_duration",
+        type=t.uint32_t,
+        divisor=60,
+        entity_type=EntityType.DIAGNOSTIC,
+        unit=UnitOfTime.MINUTES,
+        translation_key="last_valve_open_duration",
+        fallback_name="Last valve open duration",
+    )
     .add_to_registry()
 )
