@@ -52,7 +52,7 @@ LIGHT_DEVICE_TRIGGERS = {
             ATTRIBUTE_ID: 84,
             ATTRIBUTE_NAME: ATTRIBUTE_ACTION,
             BUTTON: TURN_ON,
-            VALUE: ButtonAction.Pressed_on,
+            VALUE: int(ButtonAction.Pressed_on),
         },
     },
     (SHORT_PRESS, TURN_OFF): {
@@ -63,7 +63,7 @@ LIGHT_DEVICE_TRIGGERS = {
             ATTRIBUTE_ID: 84,
             ATTRIBUTE_NAME: ATTRIBUTE_ACTION,
             BUTTON: TURN_OFF,
-            VALUE: ButtonAction.Pressed_off,
+            VALUE: int(ButtonAction.Pressed_off),
         },
     },
     (SHORT_RELEASE, TURN_ON): {
@@ -74,7 +74,7 @@ LIGHT_DEVICE_TRIGGERS = {
             ATTRIBUTE_ID: 84,
             ATTRIBUTE_NAME: ATTRIBUTE_ACTION,
             BUTTON: TURN_ON,
-            VALUE: ButtonAction.Released_on,
+            VALUE: int(ButtonAction.Released_on),
         },
     },
     (SHORT_RELEASE, TURN_OFF): {
@@ -85,7 +85,7 @@ LIGHT_DEVICE_TRIGGERS = {
             ATTRIBUTE_ID: 84,
             ATTRIBUTE_NAME: ATTRIBUTE_ACTION,
             BUTTON: TURN_OFF,
-            VALUE: ButtonAction.Released_off,
+            VALUE: int(ButtonAction.Released_off),
         },
     },
     (DOUBLE_PRESS, TURN_ON): {
@@ -96,7 +96,7 @@ LIGHT_DEVICE_TRIGGERS = {
             ATTRIBUTE_ID: 84,
             ATTRIBUTE_NAME: ATTRIBUTE_ACTION,
             BUTTON: TURN_ON,
-            VALUE: ButtonAction.Double_on,
+            VALUE: int(ButtonAction.Double_on),
         },
     },
     (DOUBLE_PRESS, TURN_OFF): {
@@ -107,7 +107,7 @@ LIGHT_DEVICE_TRIGGERS = {
             ATTRIBUTE_ID: 84,
             ATTRIBUTE_NAME: ATTRIBUTE_ACTION,
             BUTTON: TURN_OFF,
-            VALUE: ButtonAction.Double_off,
+            VALUE: int(ButtonAction.Double_off),
         },
     },
     (LONG_PRESS, TURN_ON): {
@@ -118,7 +118,7 @@ LIGHT_DEVICE_TRIGGERS = {
             ATTRIBUTE_ID: 84,
             ATTRIBUTE_NAME: ATTRIBUTE_ACTION,
             BUTTON: TURN_ON,
-            VALUE: ButtonAction.Long_on,
+            VALUE: int(ButtonAction.Long_on),
         },
     },
     (LONG_PRESS, TURN_OFF): {
@@ -129,7 +129,7 @@ LIGHT_DEVICE_TRIGGERS = {
             ATTRIBUTE_ID: 84,
             ATTRIBUTE_NAME: ATTRIBUTE_ACTION,
             BUTTON: TURN_OFF,
-            VALUE: ButtonAction.Long_off,
+            VALUE: int(ButtonAction.Long_off),
         },
     },
 }
