@@ -3,7 +3,7 @@
 from typing import Any, Final, Optional, Union
 
 from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder
+from zigpy.quirks.v2 import QuirkBuilder, ReportingConfig
 from zigpy.quirks.v2.homeassistant import EntityPlatform, EntityType
 from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 import zigpy.types as t
@@ -127,6 +127,11 @@ DISPLAY_ORIENTATION_ENUM_TO_INT_MAP = {
     BoschDisplayOrientation.Normal: 0x00,
     BoschDisplayOrientation.Flipped: 0x01,
 }
+
+"""Battery saving Reporting Configuration"""
+REPORT_CONFIG_BATTERY_SAVE = ReportingConfig(
+    min_interval=3600, max_interval=10800, reportable_change=1
+)
 
 
 class BoschThermostatCluster(CustomCluster, Thermostat):
@@ -466,6 +471,7 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         BoschThermostatCluster.cluster_id,
         entity_platform=EntityPlatform.SENSOR,
         entity_type=EntityType.DIAGNOSTIC,
+        reporting_config=REPORT_CONFIG_BATTERY_SAVE,
         translation_key="operating_mode",
         fallback_name="Operating mode",
     )
@@ -476,6 +482,7 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         BoschThermostatCluster.cluster_id,
         entity_platform=EntityPlatform.SENSOR,
         entity_type=EntityType.DIAGNOSTIC,
+        reporting_config=REPORT_CONFIG_BATTERY_SAVE,
         translation_key="valve_adapt_status",
         fallback_name="Valve adaptation status",
     )
@@ -483,6 +490,7 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
     .switch(
         BoschThermostatCluster.AttributeDefs.boost_heating.name,
         BoschThermostatCluster.cluster_id,
+        reporting_config=REPORT_CONFIG_BATTERY_SAVE,
         translation_key="boost_heating",
         fallback_name="Boost",
     )
