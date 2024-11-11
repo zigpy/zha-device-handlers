@@ -13,7 +13,7 @@ from zigpy.zcl.clusters.hvac import (
     Thermostat,
     UserInterface,
 )
-from zigpy.zcl.foundation import ZCLAttributeDef, ZCLCommandDef
+from zigpy.zcl.foundation import Direction, ZCLAttributeDef, ZCLCommandDef
 
 """Bosch specific thermostat attribute ids."""
 
@@ -128,9 +128,9 @@ DISPLAY_ORIENTATION_ENUM_TO_INT_MAP = {
     BoschDisplayOrientation.Flipped: 0x01,
 }
 
-"""Battery saving Reporting Configuration"""
-REPORT_CONFIG_BATTERY_SAVE = ReportingConfig(
-    min_interval=3600, max_interval=10800, reportable_change=1
+"""Bosch Attributes Reporting Configuration"""
+BOSCH_ATTR_REPORT_CONFIG = ReportingConfig(
+    min_interval=10, max_interval=10800, reportable_change=1
 )
 
 
@@ -175,7 +175,10 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
         """Bosch thermostat manufacturer specific server commands."""
 
         calibrate_valve: Final = ZCLCommandDef(
-            id=CALIBRATE_VALVE_CMD_ID, schema={}, direction=False
+            id=CALIBRATE_VALVE_CMD_ID,
+            schema={},
+            direction=Direction.Client_to_Server,
+            is_manufacturer_specific=True,
         )
 
     async def write_attributes(
@@ -471,7 +474,7 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         BoschThermostatCluster.cluster_id,
         entity_platform=EntityPlatform.SENSOR,
         entity_type=EntityType.DIAGNOSTIC,
-        reporting_config=REPORT_CONFIG_BATTERY_SAVE,
+        reporting_config=BOSCH_ATTR_REPORT_CONFIG,
         translation_key="operating_mode",
         fallback_name="Operating mode",
     )
@@ -482,7 +485,7 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         BoschThermostatCluster.cluster_id,
         entity_platform=EntityPlatform.SENSOR,
         entity_type=EntityType.DIAGNOSTIC,
-        reporting_config=REPORT_CONFIG_BATTERY_SAVE,
+        reporting_config=BOSCH_ATTR_REPORT_CONFIG,
         translation_key="valve_adapt_status",
         fallback_name="Valve adaptation status",
     )
@@ -490,7 +493,7 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
     .switch(
         BoschThermostatCluster.AttributeDefs.boost_heating.name,
         BoschThermostatCluster.cluster_id,
-        reporting_config=REPORT_CONFIG_BATTERY_SAVE,
+        reporting_config=BOSCH_ATTR_REPORT_CONFIG,
         translation_key="boost_heating",
         fallback_name="Boost",
     )
