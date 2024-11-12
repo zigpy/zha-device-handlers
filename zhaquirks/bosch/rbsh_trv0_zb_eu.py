@@ -389,13 +389,30 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
                 hdr, args, dst_addressing=dst_addressing
             )
 
-        attr = args[0][0]
-
         """Pass-through reports of all attributes, except for system_mode."""
-        if attr.attrid != SYSTEM_MODE_ATTR.id:
+        has_system_mode_report = False
+        for attr in args.attribute_reports:
+            if attr.attrid == SYSTEM_MODE_ATTR.id:
+                has_system_mode_report = True
+                break
+
+        if not has_system_mode_report:
             return super().handle_cluster_general_request(
                 hdr, args, dst_addressing=dst_addressing
             )
+        else:
+            update_attributes = [
+                attr
+                for attr in args.attribute_reports
+                if attr.attrid != SYSTEM_MODE_ATTR.id
+            ]
+            if len(update_attributes) > 0:
+                msg = foundation.GENERAL_COMMANDS[
+                    foundation.GeneralCommand.Report_Attributes
+                ].schema(attribute_reports=update_attributes)
+                return super().handle_cluster_general_request(
+                    hdr, msg, dst_addressing=dst_addressing
+                )
 
 
 class BoschUserInterfaceCluster(CustomCluster, UserInterface):
