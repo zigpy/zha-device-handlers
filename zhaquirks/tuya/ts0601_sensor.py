@@ -78,15 +78,15 @@ from zhaquirks.tuya.builder import TuyaPowerConfigurationCluster2AAA, TuyaQuirkB
 )
 
 (
-    TuyaQuirkBuilder("_TZE200_pay2byax", "TS0601") # Cusam ZG-102ZL
-    .applies_to("_TZE200_n8dljorx",  "TS0601")
+    TuyaQuirkBuilder("_TZE200_pay2byax", "TS0601")  # Cusam ZG-102ZL
+    .applies_to("_TZE200_n8dljorx", "TS0601")
     .tuya_sensor(
         dp_id=101,
         attribute_name="measured_value",
         type=t.uint16_t,
         fallback_name="Illuminance",
         device_class=SensorDeviceClass.ILLUMINANCE,
-        state_class=SensorStateClass.MEASUREMENT
+        state_class=SensorStateClass.MEASUREMENT,
     )
     .tuya_binary_sensor(
         dp_id=1,
