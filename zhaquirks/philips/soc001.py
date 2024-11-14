@@ -72,7 +72,7 @@ class PhilipsContactCluster(CustomCluster):
         PhilipsContactCluster.cluster_id,
         endpoint_id=2,
         device_class=BinarySensorDeviceClass.OPENING,
-        EntityType=EntityType.STANDARD,
+        entity_type=EntityType.STANDARD,
         fallback_name="Contact",
     )
     .binary_sensor(
