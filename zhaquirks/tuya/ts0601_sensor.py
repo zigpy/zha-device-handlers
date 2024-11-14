@@ -95,6 +95,7 @@ from zhaquirks.tuya.builder import TuyaPowerConfigurationCluster2AAA, TuyaQuirkB
         fallback_name="Opening",
         entity_type=EntityType.STANDARD,
     )
+    .tuya_battery(dp_id=2)
     .skip_configuration()
     .add_to_registry()
 )
