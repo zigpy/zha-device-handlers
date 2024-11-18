@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import logging
 from typing import Any
 
 from zigpy import types
@@ -29,8 +28,6 @@ RESTART_DEVICE_ATTR_ID = 0x00E8  # BOOL Trigger device restart
 
 RESET_NO_PRESENCE_STATUS_WRITE_VALUE = 1
 RESTART_DEVICE_WRITE_VALUE = 0
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class AqaraMotionSensitivity(types.enum8):
