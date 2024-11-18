@@ -15,7 +15,7 @@ from zigpy.quirks.v2 import (
 from zigpy.zcl.clusters.general import DeviceTemperature
 from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
-from zigpy.zcl.foundation import ZCLAttributeDef
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 from zhaquirks.xiaomi import XiaomiAqaraE1Cluster
 
@@ -54,8 +54,8 @@ class AqaraMotion(types.enum8):
 class OppleCluster(XiaomiAqaraE1Cluster):
     """Aqara manufacturer cluster for the FP1E presence sensor."""
 
-    class AttributeDefs(XiaomiAqaraE1Cluster.AttributeDefs):
-        """Aqara occupancy sensor manufacturer specific attributes."""
+    class AttributeDefs(BaseAttributeDefs):
+        """Manufacturer specific attributes."""
 
         approach_distance = ZCLAttributeDef(
             id=APPROACH_DISTANCE_ATTR_ID,
