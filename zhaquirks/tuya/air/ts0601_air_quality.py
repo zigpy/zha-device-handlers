@@ -152,6 +152,7 @@ class TuyaNDIRCO2SensorGPP(CustomDevice):
         # output_clusters=[25, 10])
         MODELS_INFO: [
             ("_TZE200_ogkdpgy2", "TS0601"),
+            ("_TZE204_ogkdpgy2", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
