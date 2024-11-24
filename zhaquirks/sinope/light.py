@@ -301,7 +301,7 @@ class SinopeTechnologieslight(CustomDevice):
     device_automation_triggers = LIGHT_DEVICE_TRIGGERS
 
 
-class SinopeDM2500ZB(SinopeTechnologieslight):
+class SinopeDM2500ZB(CustomDevice):
     """DM2500ZB, DM2500ZB-G2 Dimmers."""
 
     signature = {
@@ -366,7 +366,7 @@ class SinopeDM2500ZB(SinopeTechnologieslight):
     device_automation_triggers = LIGHT_DEVICE_TRIGGERS
 
 
-class SinopeDM2550ZB(SinopeTechnologieslight):
+class SinopeDM2550ZB(CustomDevice):
     """DM2550ZB, DM2550ZB-G2 Dimmers."""
 
     signature = {
