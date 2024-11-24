@@ -402,7 +402,7 @@ class SinopeTechnologiesThermostat(CustomDevice):
     }
 
 
-class SinopeTH1400ZB(SinopeTechnologiesThermostat):
+class SinopeTH1400ZB(CustomDevice):
     """TH1400ZB thermostat."""
 
     signature = {
@@ -460,7 +460,7 @@ class SinopeTH1400ZB(SinopeTechnologiesThermostat):
     }
 
 
-class SinopeTH1300ZB(SinopeTechnologiesThermostat):
+class SinopeTH1300ZB(CustomDevice):
     """TH1300ZB thermostat."""
 
     signature = {
@@ -520,7 +520,7 @@ class SinopeTH1300ZB(SinopeTechnologiesThermostat):
     }
 
 
-class SinopeLineThermostats(SinopeTechnologiesThermostat):
+class SinopeLineThermostats(CustomDevice):
     """TH1123ZB, TH1124ZB, TH1500ZB and OTH3600-GA-ZB thermostats."""
 
     signature = {
@@ -585,7 +585,7 @@ class SinopeLineThermostats(SinopeTechnologiesThermostat):
     }
 
 
-class SinopeG2Thermostats(SinopeTechnologiesThermostat):
+class SinopeG2Thermostats(CustomDevice):
     """TH1123ZB-G2 and TH1124ZB-G2 thermostats."""
 
     signature = {
@@ -648,7 +648,7 @@ class SinopeG2Thermostats(SinopeTechnologiesThermostat):
     }
 
 
-class SinopeHPThermostats(SinopeTechnologiesThermostat):
+class SinopeHPThermostats(CustomDevice):
     """HP6000ZB-MA and HP6000ZB-GE thermostats."""
 
     signature = {
