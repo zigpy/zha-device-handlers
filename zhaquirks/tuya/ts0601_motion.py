@@ -79,12 +79,14 @@ class NeoBatteryLevel(t.enum8):
 class NeoMotionManufCluster(TuyaNewManufCluster):
     """Neo manufacturer cluster."""
 
-    attributes = TuyaNewManufCluster.attributes.copy()
-    attributes.update(
-        {
-            0xEF0D: ("dp_113", t.enum8, True),  # random attribute ID
-        }
-    )
+    class AttributeDefs(TuyaNewManufCluster.AttributeDefs):
+        """Attribute Definitions."""
+
+        dp_113 = foundation.ZCLAttributeDef(
+            id=0xEF0D,
+            type=t.enum8,
+            is_manufacturer_specific=True,
+        )  # random attribute ID
 
     dp_to_attribute: dict[int, DPToAttributeMapping] = {
         101: DPToAttributeMapping(
@@ -132,23 +134,42 @@ class MmwRadarManufCluster(TuyaMCUCluster):
     # no_one_brightness: no control
     # current_brightness: off
 
-    attributes = TuyaMCUCluster.attributes.copy()
-    attributes.update(
-        {
-            # random attribute IDs
-            0xEF02: ("dp_2", t.uint32_t, True),
-            0xEF03: ("dp_3", t.uint32_t, True),
-            0xEF04: ("dp_4", t.uint32_t, True),
-            0xEF06: ("dp_6", t.enum8, True),
-            0xEF65: ("dp_101", t.uint32_t, True),
-            0xEF66: ("dp_102", t.uint32_t, True),
-            0xEF67: ("dp_103", t.CharacterString, True),
-            0xEF69: ("dp_105", t.enum8, True),
-            0xEF6A: ("dp_106", t.enum8, True),
-            0xEF6B: ("dp_107", t.enum8, True),
-            0xEF6C: ("dp_108", t.uint32_t, True),
-        }
-    )
+    class AttributeDefs(TuyaMCUCluster.AttributeDefs):
+        """Attribute Definitions."""
+
+        dp_2 = foundation.ZCLAttributeDef(
+            id=0xEF02, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        dp_3 = foundation.ZCLAttributeDef(
+            id=0xEF03, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        dp_4 = foundation.ZCLAttributeDef(
+            id=0xEF04, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        dp_6 = foundation.ZCLAttributeDef(
+            id=0xEF06, type=t.enum8, is_manufacturer_specific=True
+        )
+        dp_101 = foundation.ZCLAttributeDef(
+            id=0xEF65, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        dp_102 = foundation.ZCLAttributeDef(
+            id=0xEF66, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        dp_103 = foundation.ZCLAttributeDef(
+            id=0xEF67, type=t.CharacterString, is_manufacturer_specific=True
+        )
+        dp_105 = foundation.ZCLAttributeDef(
+            id=0xEF69, type=t.enum8, is_manufacturer_specific=True
+        )
+        dp_106 = foundation.ZCLAttributeDef(
+            id=0xEF6A, type=t.enum8, is_manufacturer_specific=True
+        )
+        dp_107 = foundation.ZCLAttributeDef(
+            id=0xEF6B, type=t.enum8, is_manufacturer_specific=True
+        )
+        dp_108 = foundation.ZCLAttributeDef(
+            id=0xEF6C, type=t.uint32_t, is_manufacturer_specific=True
+        )
 
     dp_to_attribute: dict[int, DPToAttributeMapping] = {
         1: DPToAttributeMapping(
