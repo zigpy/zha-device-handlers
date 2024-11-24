@@ -649,7 +649,7 @@ class SinopeG2Thermostats(CustomDevice):
 
 
 class SinopeHPThermostats(CustomDevice):
-    """HP6000ZB-MA and HP6000ZB-GE thermostats."""
+    """HP6000ZB-GE, HP6000ZB-HS and HP6000ZB-MA thermostats."""
 
     signature = {
         # <SimpleDescriptor endpoint=1 profile=260 device_type=775 device_version=1
