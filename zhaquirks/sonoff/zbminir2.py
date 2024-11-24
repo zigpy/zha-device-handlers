@@ -52,10 +52,10 @@ class SonoffCluster(CustomCluster):
 class SonoffExternalSwitchTriggerType(types.enum8):
     """extern switch trigger type."""
 
-    edge_trigger = 0x00
-    pulse_trigger = 0x01
-    normally_off_follow_trigger = 0x02
-    normally_on_follow_trigger = 0x82
+    Edge_trigger = 0x00
+    Pulse_trigger = 0x01
+    Normally_off_follow_trigger = 0x02
+    Normally_on_follow_trigger = 0x82
 
 
 (
