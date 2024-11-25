@@ -21,18 +21,24 @@ from zhaquirks.xiaomi import XiaomiAqaraE1Cluster
 
 
 class AqaraMotion(types.enum8):
+    """Aqara motion attribute values."""
+
     Idle = 0x02
     Moving = 0x03
     Still = 0x04
 
 
 class AqaraMotionSensitivity(types.enum8):
+    """Aqara motion sensitivity attribute values."""
+
     Low = 0x01
     Medium = 0x02
     High = 0x03
 
 
 class AqaraOccupancy(types.enum8):
+    """Aqara occupancy attribute values."""
+
     Unoccupied = 0x00
     Occupied = 0x01
 
@@ -87,7 +93,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
             is_manufacturer_specific=True,
         )
 
-        # Occupancy detected
+        # Detected occupancy
         occupancy = ZCLAttributeDef(
             id=0x0142,
             type=AqaraOccupancy,
