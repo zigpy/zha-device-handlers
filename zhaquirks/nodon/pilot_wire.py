@@ -14,20 +14,6 @@ from zigpy.zcl.foundation import (
 from zigpy.zdo.types import NodeDescriptor
 
 
-class NodOnPilotWireMode(t.enum8):
-    """Pilot wire mode."""
-
-    # Codes taken from
-    # https://github.com/Koenkk/zigbee-herdsman-converters/blob/0f4833340a20db3dae625a61c41d9be0a6f952be/src/converters/fromZigbee.ts#L5285.
-
-    Off = 0x00
-    Comfort = 0x01
-    Eco = 0x02
-    FrostProtection = 0x03
-    ComfortMinus1 = 0x04
-    ComfortMinus2 = 0x05
-
-
 NODON = "NodOn"
 NODON_MANUFACTURER_ID = 4747
 NODON_PILOT_WIRE_CLUSTER_ID = 0xFC00  # 64512
@@ -50,6 +36,20 @@ ADEO_NODE_DESCRIPTION_WITH_CORRECTED_MANUFACTURER_CODE = NodeDescriptor(
     maximum_outgoing_transfer_size=500,
     descriptor_capability_field=0,
 )
+
+
+class NodOnPilotWireMode(t.enum8):
+    """Pilot wire mode."""
+
+    # Codes taken from
+    # https://github.com/Koenkk/zigbee-herdsman-converters/blob/0f4833340a20db3dae625a61c41d9be0a6f952be/src/converters/fromZigbee.ts#L5285.
+
+    Off = 0x00
+    Comfort = 0x01
+    Eco = 0x02
+    FrostProtection = 0x03
+    ComfortMinus1 = 0x04
+    ComfortMinus2 = 0x05
 
 
 class BasePilotWireCluster(CustomCluster):
