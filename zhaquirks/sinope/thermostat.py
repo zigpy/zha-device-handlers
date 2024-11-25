@@ -1,4 +1,4 @@
-"""Module to handle quirks of the  Sinopé Technologies thermostat.
+"""Module to handle quirks of the Sinopé Technologies thermostats.
 
 Manufacturer specific cluster implements attributes to control displaying
 of outdoor temperature, setting occupancy on/off and setting device time.
@@ -14,13 +14,14 @@ from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
     Identify,
+    LevelControl,
     Ota,
     PowerConfiguration,
     Scenes,
     Time,
 )
 from zigpy.zcl.clusters.homeautomation import Diagnostic, ElectricalMeasurement
-from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
+from zigpy.zcl.clusters.hvac import Fan, Thermostat, UserInterface
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.foundation import Array
@@ -401,7 +402,7 @@ class SinopeTechnologiesThermostat(CustomDevice):
     }
 
 
-class SinopeTH1400ZB(SinopeTechnologiesThermostat):
+class SinopeTH1400ZB(CustomDevice):
     """TH1400ZB thermostat."""
 
     signature = {
@@ -459,7 +460,7 @@ class SinopeTH1400ZB(SinopeTechnologiesThermostat):
     }
 
 
-class SinopeTH1300ZB(SinopeTechnologiesThermostat):
+class SinopeTH1300ZB(CustomDevice):
     """TH1300ZB thermostat."""
 
     signature = {
@@ -519,7 +520,7 @@ class SinopeTH1300ZB(SinopeTechnologiesThermostat):
     }
 
 
-class SinopeLineThermostats(SinopeTechnologiesThermostat):
+class SinopeLineThermostats(CustomDevice):
     """TH1123ZB, TH1124ZB, TH1500ZB and OTH3600-GA-ZB thermostats."""
 
     signature = {
@@ -584,7 +585,7 @@ class SinopeLineThermostats(SinopeTechnologiesThermostat):
     }
 
 
-class SinopeG2Thermostats(SinopeTechnologiesThermostat):
+class SinopeG2Thermostats(CustomDevice):
     """TH1123ZB-G2 and TH1124ZB-G2 thermostats."""
 
     signature = {
@@ -643,5 +644,95 @@ class SinopeG2Thermostats(SinopeTechnologiesThermostat):
                     Ota.cluster_id,
                 ],
             }
+        }
+    }
+
+
+class SinopeHPThermostats(CustomDevice):
+    """HP6000ZB-GE, HP6000ZB-HS and HP6000ZB-MA thermostats."""
+
+    signature = {
+        # <SimpleDescriptor endpoint=1 profile=260 device_type=775 device_version=1
+        # input_clusters=[0, 3, 4, 5, 8, 513, 514, 516, 1026, 2821, 65281]
+        # output_clusters=[25]>
+        MODELS_INFO: [
+            (SINOPE, "HP6000ZB-GE"),
+            (SINOPE, "HP6000ZB-HS"),
+            (SINOPE, "HP6000ZB-MA"),
+        ],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha_p.PROFILE_ID,
+                DEVICE_TYPE: zha_p.DeviceType.MINI_SPLIT_AC,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    LevelControl.cluster_id,
+                    Thermostat.cluster_id,
+                    Fan.cluster_id,
+                    UserInterface.cluster_id,
+                    TemperatureMeasurement.cluster_id,
+                    Diagnostic.cluster_id,
+                    SINOPE_MANUFACTURER_CLUSTER_ID,
+                ],
+                OUTPUT_CLUSTERS: [Ota.cluster_id],
+            },
+            2: {
+                PROFILE_ID: zha_p.PROFILE_ID,
+                DEVICE_TYPE: zha_p.DeviceType.MINI_SPLIT_AC,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    LevelControl.cluster_id,
+                    Thermostat.cluster_id,
+                    Fan.cluster_id,
+                    UserInterface.cluster_id,
+                    TemperatureMeasurement.cluster_id,
+                    Diagnostic.cluster_id,
+                    SINOPE_MANUFACTURER_CLUSTER_ID,
+                ],
+                OUTPUT_CLUSTERS: [Ota.cluster_id],
+            },
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    LevelControl.cluster_id,
+                    Fan.cluster_id,
+                    UserInterface.cluster_id,
+                    TemperatureMeasurement.cluster_id,
+                    Diagnostic.cluster_id,
+                    SinopeTechnologiesThermostatCluster,
+                    SinopeTechnologiesManufacturerCluster,
+                ],
+                OUTPUT_CLUSTERS: [Ota.cluster_id],
+            },
+            2: {
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    LevelControl.cluster_id,
+                    Fan.cluster_id,
+                    UserInterface.cluster_id,
+                    TemperatureMeasurement.cluster_id,
+                    Diagnostic.cluster_id,
+                    SinopeTechnologiesThermostatCluster,
+                    SinopeTechnologiesManufacturerCluster,
+                ],
+                OUTPUT_CLUSTERS: [Ota.cluster_id],
+            },
         }
     }

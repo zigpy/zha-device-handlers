@@ -40,8 +40,6 @@ from zhaquirks.philips import (
     PressType,
 )
 
-DEVICE_SPECIFIC_UNKNOWN = 64512
-
 
 class PhilipsWallSwitchBasicCluster(PhilipsBasicCluster):
     """Philips wall switch Basic cluster."""
@@ -99,7 +97,7 @@ class PhilipsWallSwitch(CustomDevice):
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
                     Identify.cluster_id,
-                    DEVICE_SPECIFIC_UNKNOWN,
+                    PhilipsWallSwitchRemoteCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
@@ -132,6 +130,61 @@ class PhilipsWallSwitch(CustomDevice):
                 ],
             }
         }
+    }
+
+    device_automation_triggers = (
+        PhilipsWallSwitchRemoteCluster.generate_device_automation_triggers()
+    )
+
+
+class PhilipsWallSwitchRDM004(CustomDevice):
+    """Philips RDM004 variant."""
+
+    signature = {
+        MODELS_INFO: [(SIGNIFY, "RDM004")],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.NON_COLOR_SCENE_CONTROLLER,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    Identify.cluster_id,
+                    PhilipsWallSwitchRemoteCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                    Ota.cluster_id,
+                ],
+            },
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.NON_COLOR_SCENE_CONTROLLER,
+                INPUT_CLUSTERS: [
+                    PhilipsWallSwitchBasicCluster,
+                    PowerConfiguration.cluster_id,
+                    Identify.cluster_id,
+                    PhilipsWallSwitchRemoteCluster,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                    Ota.cluster_id,
+                ],
+            },
+        },
     }
 
     device_automation_triggers = (

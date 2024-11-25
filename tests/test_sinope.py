@@ -239,3 +239,18 @@ async def test_sinope_light_switch_reporting(zigpy_device_from_quirk, quirk):
 
         assert len(request_mock.mock_calls) == 1
         assert len(bind_mock.mock_calls) == 1
+
+
+@pytest.mark.parametrize("quirk", (SinopeTechnologieslight,))
+async def test_sinope_light_device_triggers_def(zigpy_device_from_quirk, quirk):
+    """Test device automation triggers.
+
+    Make sure that values are actual ints and not instances of an enum class.
+    """
+
+    device: Device = zigpy_device_from_quirk(quirk)
+
+    for config in device.device_automation_triggers.values():
+        val = config.get("args", {}).get("value")
+        if val is not None:
+            assert type(val) is int, type(val)
