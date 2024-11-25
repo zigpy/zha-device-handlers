@@ -65,7 +65,7 @@ class PhilipsROM001(CustomDevice):
         #  device_version=1
         #  input_clusters=[0, 1, 3, 64512, 4096]
         #  output_clusters=[25, 0, 3, 4, 6, 8, 5, 4096]>
-        MODELS_INFO: [(PHILIPS, "ROM001"), (SIGNIFY, "ROM001")],
+        MODELS_INFO: [(PHILIPS, "ROM001"), (SIGNIFY, "ROM001"), (SIGNIFY, "RDM003")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
