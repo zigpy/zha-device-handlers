@@ -43,7 +43,7 @@ class EwelinkCluster(CustomCluster):
         entity_platform=EntityPlatform.SENSOR,
         entity_type=EntityType.DIAGNOSTIC,
         translation_key="water_valve_state",
-        fallback_name="Water valve state"
+        fallback_name="Water valve state",
     )
     .add_to_registry()
 )
