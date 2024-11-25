@@ -20,35 +20,32 @@ from zhaquirks import LocalDataCluster
 from zhaquirks.xiaomi import XiaomiAqaraE1Cluster
 
 
-class AqaraMotionSensitivity(types.enum8):
-    """Aqara motion sensitivity."""
-
-    Low = 0x01
-    Medium = 0x02
-    High = 0x03
-
-
 class AqaraMotion(types.enum8):
-    """Aqara motion."""
-
-    Unknown_0 = 0x00
-    Unknown_1 = 0x01
     Idle = 0x02
     Moving = 0x03
     Still = 0x04
 
 
+class AqaraMotionSensitivity(types.enum8):
+    Low = 0x01
+    Medium = 0x02
+    High = 0x03
+
+
+class AqaraOccupancy(types.enum8):
+    Unoccupied = 0x00
+    Occupied = 0x01
+
+
 class IasZoneLocal(LocalDataCluster, IasZone):
     """Virtual cluster for IasZone."""
 
-    # required to make sure ZHA creates sensors when initially pairing
     _VALID_ATTRIBUTES = {IasZone.AttributeDefs.zone_status.id}
 
 
 class OccupancySensingLocal(LocalDataCluster, OccupancySensing):
     """Virtual cluster for OccupancySensing."""
 
-    # required to make sure ZHA creates sensors when initially pairing
     _VALID_ATTRIBUTES = {OccupancySensing.AttributeDefs.occupancy.id}
 
 
@@ -66,10 +63,10 @@ class OppleCluster(XiaomiAqaraE1Cluster):
             is_manufacturer_specific=True,
         )
 
-        # Detected motion (0x02 = no movement, 0x03 = large movement, 0x04 = small movement)
+        # Detected motion
         motion = ZCLAttributeDef(
             id=0x0160,
-            type=types.uint8_t,
+            type=AqaraMotion,
             access="rp",
             is_manufacturer_specific=True,
         )
@@ -82,18 +79,18 @@ class OppleCluster(XiaomiAqaraE1Cluster):
             is_manufacturer_specific=True,
         )
 
-        # The configurable detection sensitivity (0x01 = low, 0x02 = medium, 0x03 = high, default 0x03 = high)
+        # The configurable detection sensitivity
         motion_sensitivity = ZCLAttributeDef(
             id=0x010C,
-            type=types.uint8_t,
+            type=AqaraMotionSensitivity,
             access="rw",
             is_manufacturer_specific=True,
         )
 
-        # Occupancy detected (0x0 = absence, 0x01 = presence)
+        # Occupancy detected
         occupancy = ZCLAttributeDef(
             id=0x0142,
-            type=types.uint8_t,
+            type=AqaraOccupancy,
             access="rp",
             is_manufacturer_specific=True,
         )
@@ -119,14 +116,14 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         if attrid == self.AttributeDefs.occupancy.id:
             self.endpoint.occupancy.update_attribute(
                 OccupancySensing.AttributeDefs.occupancy.id,
-                OccupancySensing.Occupancy(value),
+                OccupancySensing.Occupancy.Occupied
+                if value == AqaraOccupancy.Occupied
+                else OccupancySensing.Occupancy.Unoccupied,
             )
         elif attrid == self.AttributeDefs.motion.id:
             self.endpoint.ias_zone.update_attribute(
                 IasZone.AttributeDefs.zone_status.id,
-                IasZone.ZoneStatus(
-                    IasZone.ZoneStatus.Alarm_1 if value == AqaraMotion.Moving else 0
-                ),
+                IasZone.ZoneStatus.Alarm_1 if value == AqaraMotion.Moving else 0,
             )
 
 
