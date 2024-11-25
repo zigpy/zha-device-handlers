@@ -11,6 +11,7 @@ from zigpy.quirks.v2 import (
     SensorDeviceClass,
     SensorStateClass,
 )
+from zigpy.quirks.v2.homeassistant import EntityType, UnitOfLength
 from zigpy.zcl.clusters.general import DeviceTemperature
 from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
@@ -151,7 +152,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         min_value=0,
         max_value=6,
         step=0.1,
-        # unit=UnitOfLength.METERS,
+        unit=UnitOfLength.METERS,
         multiplier=0.01,
         device_class=NumberDeviceClass.DISTANCE,
         translation_key="approach_distance",
@@ -160,7 +161,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
     .sensor(
         OppleCluster.AttributeDefs.motion_distance.name,
         OppleCluster.cluster_id,
-        # unit=UnitOfLength.METERS,
+        unit=UnitOfLength.METERS,
         multiplier=0.01,
         device_class=SensorDeviceClass.DISTANCE,
         state_class=SensorStateClass.MEASUREMENT,
@@ -185,7 +186,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         OppleCluster.AttributeDefs.restart_device.name,
         0,
         OppleCluster.cluster_id,
-        # entity_type=EntityType.DIAGNOSTIC,
+        entity_type=EntityType.DIAGNOSTIC,
         translation_key="restart_device",
         fallback_name="Restart device",
     )
