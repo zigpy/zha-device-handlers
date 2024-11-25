@@ -1,8 +1,12 @@
 """Quirk for ZLinky_TIC."""
 
-from zha.units import UnitOfApparentPower, UnitOfElectricCurrent, UnitOfPower
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import EntityPlatform, EntityType, QuirkBuilder
+from zigpy.quirks.v2.homeassistant import (
+    UnitOfApparentPower,
+    UnitOfElectricCurrent,
+    UnitOfPower,
+)
 import zigpy.types as t
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement, MeterIdentification
 from zigpy.zcl.clusters.smartenergy import Metering
