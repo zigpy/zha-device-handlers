@@ -1,11 +1,10 @@
 """Quirk for ZLinky_TIC."""
 
+from zha.units import UnitOfApparentPower, UnitOfElectricCurrent, UnitOfPower
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import EntityPlatform, EntityType, QuirkBuilder
-from zigpy.quirks.v2.homeassistant import UnitOfApparentPower, UnitOfElectricCurrent
 import zigpy.types as t
-from zigpy.zcl.clusters.general import Basic
-from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
+from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement, MeterIdentification
 from zigpy.zcl.clusters.smartenergy import Metering
 
 from zhaquirks.lixee import LIXEE, ZLINKY_MANUFACTURER_CLUSTER_ID
@@ -174,10 +173,32 @@ class ZLinkyTICElectricalMeasurement(CustomCluster, ElectricalMeasurement):
         translation_key="PRN",
     )
     .sensor(
-        Basic.AttributeDefs.model.name,
-        Basic.cluster_id,
-        fallback_name="Model",
-        translation_key="Model",
+        MeterIdentification.AttributeDefs.power_threshold.name,
+        MeterIdentification.cluster_id,
+        unit=UnitOfApparentPower.VOLT_AMPERE,
+        fallback_name="Cut-off Power Threshold",
+        translation_key="power_threshold",
+    )
+    .sensor(
+        ElectricalMeasurement.AttributeDefs.active_power_ph_b.name,
+        ElectricalMeasurement.cluster_id,
+        unit=UnitOfPower.WATT,
+        fallback_name="Active Power Phase 2",
+        translation_key="active_power_phase_2",
+    )
+    .sensor(
+        ElectricalMeasurement.AttributeDefs.active_power_ph_b.name,
+        ElectricalMeasurement.cluster_id,
+        unit=UnitOfPower.WATT,
+        fallback_name="Active Power Phase 2",
+        translation_key="active_power_phase_2",
+    )
+    .sensor(
+        ElectricalMeasurement.AttributeDefs.active_power_ph_c.name,
+        ElectricalMeasurement.cluster_id,
+        unit=UnitOfPower.WATT,
+        fallback_name="Active Power Phase 3",
+        translation_key="active_power_phase_3",
     )
     .sensor(
         ZLinkyTICMetering.AttributeDefs.meter_serial_number.name,
@@ -191,6 +212,20 @@ class ZLinkyTICElectricalMeasurement(CustomCluster, ElectricalMeasurement):
         translation_key="power_max",
         unit=UnitOfApparentPower.VOLT_AMPERE,
         fallback_name="Max Power",
+    )
+    .sensor(
+        ElectricalMeasurement.AttributeDefs.active_power_max_ph_b.name,
+        ElectricalMeasurement.cluster_id,
+        translation_key="power_max",
+        unit=UnitOfApparentPower.VOLT_AMPERE,
+        fallback_name="Max Power Phase 2",
+    )
+    .sensor(
+        ElectricalMeasurement.AttributeDefs.active_power_max_ph_c.name,
+        ElectricalMeasurement.cluster_id,
+        translation_key="power_max",
+        unit=UnitOfApparentPower.VOLT_AMPERE,
+        fallback_name="Max Power Phase 3",
     )
     .sensor(
         ZLinkyTICElectricalMeasurement.AttributeDefs.rms_current.name,
@@ -213,11 +248,6 @@ class ZLinkyTICElectricalMeasurement(CustomCluster, ElectricalMeasurement):
         translation_key="current_phase3",
         fallback_name="Current Phase 3",
     )
-    # .sensor(
-    #     ZLinkyTICManufacturerCluster.AttributeDefs.std_current_supplier_price_description.name,
-    #     ZLinkyTICManufacturerCluster.cluster_id,
-    #     fallback_name="Tariff",
-    # )
     .enum(
         "std_current_tariff_index_number",
         ZLinkyTICTarif,
