@@ -98,7 +98,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
             is_manufacturer_specific=True,
         )
 
-        # Trigger AI spatial learning (write 1 to tigger)
+        # Trigger AI spatial learning (write 1)
         reset_no_presence_status = ZCLAttributeDef(
             id=0x0157,
             type=types.uint8_t,
@@ -106,7 +106,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
             is_manufacturer_specific=True,
         )
 
-        # Trigger device restart (write 0 to tigger)
+        # Trigger device restart (write 0)
         restart_device = ZCLAttributeDef(
             id=0x00E8,
             type=types.Bool,
