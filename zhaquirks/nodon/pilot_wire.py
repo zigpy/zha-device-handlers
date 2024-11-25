@@ -13,7 +13,6 @@ from zigpy.zcl.foundation import (
 )
 from zigpy.zdo.types import NodeDescriptor
 
-
 NODON = "NodOn"
 NODON_MANUFACTURER_ID = 4747
 NODON_PILOT_WIRE_CLUSTER_ID = 0xFC00  # 64512
