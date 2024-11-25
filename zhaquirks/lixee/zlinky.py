@@ -187,13 +187,6 @@ class ZLinkyTICElectricalMeasurement(CustomCluster, ElectricalMeasurement):
         translation_key="active_power_phase_2",
     )
     .sensor(
-        ElectricalMeasurement.AttributeDefs.active_power_ph_b.name,
-        ElectricalMeasurement.cluster_id,
-        unit=UnitOfPower.WATT,
-        fallback_name="Active Power Phase 2",
-        translation_key="active_power_phase_2",
-    )
-    .sensor(
         ElectricalMeasurement.AttributeDefs.active_power_ph_c.name,
         ElectricalMeasurement.cluster_id,
         unit=UnitOfPower.WATT,
