@@ -1,28 +1,9 @@
 """Quirk for EcoDim 05 two gang dimmer (e.g. HZC Smart Double Dimmer D686-ZG)."""
 
-from zigpy.profiles import zgp, zha
-from zigpy.quirks import CustomCluster, CustomDevice
-from zigpy.zcl.clusters.general import (
-    Basic,
-    GreenPowerProxy,
-    Groups,
-    Identify,
-    LevelControl,
-    OnOff,
-    Ota,
-    Scenes,
-)
-from zigpy.zcl.clusters.lightlink import LightLink
+from zigpy.quirks import CustomCluster
+from zigpy.zcl.clusters.general import OnOff
 
 from zhaquirks import NoReplyMixin
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-)
 
 
 class HzcOnOff(NoReplyMixin, CustomCluster, OnOff):
