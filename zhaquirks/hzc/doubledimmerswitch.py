@@ -15,7 +15,6 @@ class HzcOnOff(NoReplyMixin, CustomCluster, OnOff):
 
 (
     QuirkBuilder("EcoDim BV", "EcoDim-Zigbee 3.0")
-    .replaces(HzcOnOff)
-    .replaces(HzcOnOff, endpoint_id=2)
+    .replace_cluster_occurrences(HzcOnOff, replace_client_instances=False)
     .add_to_registry()
 )
