@@ -5,7 +5,8 @@ from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
 
-from zhaquirks.tuya.builder import TuyaPowerConfigurationCluster2AAA, TuyaQuirkBuilder
+from zhaquirks.tuya.builder import TuyaQuirkBuilder
+from zhaquirks.tuya.power_config import TuyaPowerConfigurationCluster2AAA
 
 (
     TuyaQuirkBuilder("_TZE200_bjawzodf", "TS0601")

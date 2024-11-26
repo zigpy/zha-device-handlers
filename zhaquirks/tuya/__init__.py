@@ -899,18 +899,8 @@ class TuyaPowerConfigurationCluster(PowerConfiguration, TuyaLocalCluster):
         self.update_attribute("battery_percentage_remaining", value * 2)
 
 
-class TuyaPowerConfigurationCluster2AAA(PowerConfiguration, TuyaLocalCluster):
-    """PowerConfiguration cluster for devices with 2 AAA."""
-
-    _CONSTANT_ATTRIBUTES = {
-        PowerConfiguration.AttributeDefs.battery_size.id: 4,
-        PowerConfiguration.AttributeDefs.battery_rated_voltage.id: 15,
-        PowerConfiguration.AttributeDefs.battery_quantity.id: 2,
-    }
-
-
 class TuyaPowerConfigurationCluster2AA(TuyaPowerConfigurationCluster):
-    """PowerConfiguration cluster for devices with 2 AA."""
+    """Legacy PowerConfiguration cluster for devices with 2 AA."""
 
     _CONSTANT_ATTRIBUTES = {
         PowerConfiguration.AttributeDefs.battery_size.id: 3,
@@ -920,22 +910,12 @@ class TuyaPowerConfigurationCluster2AA(TuyaPowerConfigurationCluster):
 
 
 class TuyaPowerConfigurationCluster3AA(TuyaPowerConfigurationCluster):
-    """PowerConfiguration cluster for devices with 3 AA."""
+    """Legacy PowerConfiguration cluster for devices with 3 AA."""
 
     _CONSTANT_ATTRIBUTES = {
         PowerConfiguration.AttributeDefs.battery_size.id: 3,
         PowerConfiguration.AttributeDefs.battery_rated_voltage.id: 15,
         PowerConfiguration.AttributeDefs.battery_quantity.id: 3,
-    }
-
-
-class TuyaPowerConfigurationCluster4AA(PowerConfiguration, TuyaLocalCluster):
-    """PowerConfiguration cluster for devices with 4 AA."""
-
-    _CONSTANT_ATTRIBUTES = {
-        PowerConfiguration.AttributeDefs.battery_size.id: 3,
-        PowerConfiguration.AttributeDefs.battery_rated_voltage.id: 15,
-        PowerConfiguration.AttributeDefs.battery_quantity.id: 4,
     }
 
 

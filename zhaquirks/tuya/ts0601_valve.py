@@ -21,12 +21,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import (
-    TUYA_CLUSTER_ID,
-    EnchantedDevice,
-    TuyaLocalCluster,
-    TuyaPowerConfigurationCluster4AA,
-)
+from zhaquirks.tuya import TUYA_CLUSTER_ID, EnchantedDevice, TuyaLocalCluster
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import (
     DPToAttributeMapping,
@@ -34,6 +29,7 @@ from zhaquirks.tuya.mcu import (
     TuyaOnOff,
     TuyaPowerConfigurationCluster,
 )
+from zhaquirks.tuya.power_config import TuyaPowerConfigurationCluster4AA
 
 
 class TuyaValveWaterConsumed(Metering, TuyaLocalCluster):

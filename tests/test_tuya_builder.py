@@ -13,7 +13,6 @@ from zigpy.zcl.clusters.general import Basic
 from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
 from zhaquirks.tuya.builder import (
-    TuyaPowerConfigurationCluster2AAA,
     TuyaQuirkBuilder,
     TuyaRelativeHumidity,
     TuyaSoilMoisture,
@@ -21,6 +20,7 @@ from zhaquirks.tuya.builder import (
     TuyaValveWaterConsumed,
 )
 from zhaquirks.tuya.mcu import TuyaMCUCluster, TuyaOnOffNM
+from zhaquirks.tuya.power_config import TuyaPowerConfigurationCluster2AAA
 
 from .async_mock import sentinel
 

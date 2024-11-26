@@ -20,13 +20,9 @@ from zigpy.zcl.clusters.measurement import (
 )
 from zigpy.zcl.clusters.smartenergy import Metering
 
-from zhaquirks.tuya import (
-    TUYA_CLUSTER_ID,
-    PowerConfiguration,
-    TuyaLocalCluster,
-    TuyaPowerConfigurationCluster2AAA,
-)
+from zhaquirks.tuya import TUYA_CLUSTER_ID, PowerConfiguration, TuyaLocalCluster
 from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster, TuyaOnOffNM
+from zhaquirks.tuya.power_config import TuyaPowerConfigurationCluster2AAA
 
 
 class TuyaRelativeHumidity(RelativeHumidity, TuyaLocalCluster):
