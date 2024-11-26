@@ -139,7 +139,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
 
 (
     QuirkBuilder("aqara", "lumi.sensor_occupy.agl1")
-    .friendly_name(model="Presence Sensor FP1E", manufacturer="Aqara")
+    .friendly_name(manufacturer="Aqara", model="Presence Sensor FP1E")
     .adds(DeviceTemperature)
     .adds(OccupancySensingLocal)
     .adds(IasZoneLocal)
