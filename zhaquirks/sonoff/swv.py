@@ -1,7 +1,7 @@
 """Sonoff SWV - Zigbee smart water valve."""
 
 from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import EntityPlatform, EntityType, QuirkBuilder
+from zigpy.quirks.v2 import QuirkBuilder
 import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
@@ -33,8 +33,4 @@ class EwelinkCluster(CustomCluster):
         return False
 
 
-(
-    QuirkBuilder("SONOFF", "SWV")
-    .replaces(EwelinkCluster)
-    .add_to_registry()
-)
+(QuirkBuilder("SONOFF", "SWV").replaces(EwelinkCluster).add_to_registry())
