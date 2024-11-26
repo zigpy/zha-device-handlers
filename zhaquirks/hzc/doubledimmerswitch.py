@@ -2,6 +2,7 @@
 
 from zigpy.quirks import CustomCluster
 from zigpy.zcl.clusters.general import OnOff
+from zigpy.quirks.v2 import QuirkBuilder
 
 from zhaquirks import NoReplyMixin
 
