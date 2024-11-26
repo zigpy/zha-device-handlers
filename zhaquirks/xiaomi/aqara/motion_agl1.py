@@ -142,9 +142,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
     .friendly_name(model="Presence Sensor FP1E", manufacturer="Aqara")
     .adds(DeviceTemperature)
     .adds(OccupancySensingLocal)
-    .adds(
-        IasZoneLocal,
-    )
+    .adds(IasZoneLocal)
     .replaces(OppleCluster)
     .number(
         OppleCluster.AttributeDefs.approach_distance.name,
