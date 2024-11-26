@@ -1761,8 +1761,8 @@ def test_aqara_acn014_signature_match(assert_signature_matches_quirk):
 @pytest.mark.parametrize(
     "occupancy_value, expected_occ_status, motion_value, expected_motion_status",
     [
-        (1, OccupancySensing.Occupancy.Occupied, 2, 0),
-        (0, OccupancySensing.Occupancy.Unoccupied, 3, IasZone.ZoneStatus.Alarm_1),
+        (0, OccupancySensing.Occupancy.Unoccupied, 2, 0),
+        (1, OccupancySensing.Occupancy.Occupied, 3, IasZone.ZoneStatus.Alarm_1),
     ],
 )
 async def test_aqara_fp1e_sensor(
