@@ -1763,6 +1763,7 @@ def test_aqara_acn014_signature_match(assert_signature_matches_quirk):
     [
         (0, OccupancySensing.Occupancy.Unoccupied, 2, 0),
         (1, OccupancySensing.Occupancy.Occupied, 3, IasZone.ZoneStatus.Alarm_1),
+        (1, OccupancySensing.Occupancy.Occupied, 4, 0),
     ],
 )
 async def test_aqara_fp1e_sensor(
