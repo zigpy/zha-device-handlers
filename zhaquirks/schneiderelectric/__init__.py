@@ -167,7 +167,7 @@ class SEBallast(CustomCluster, Ballast):
             id=0xE000, type=SEControlMode, is_manufacturer_specific=True
         )
         se_wiring_mode: Final = ZCLAttributeDef(
-            id=0xE002, type=SEWiringMode, is_manufacturer_specific=True
+            id=0xE001, type=SEWiringMode, is_manufacturer_specific=True
         )
         se_dimming_curve: Final = ZCLAttributeDef(
             id=0xE002, type=SEDimmingCurve, is_manufacturer_specific=True

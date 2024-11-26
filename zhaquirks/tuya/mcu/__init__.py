@@ -65,7 +65,7 @@ class TuyaClusterData(t.Struct):
     endpoint_id: int
     cluster_name: str
     cluster_attr: str
-    attr_value: int | str  # Maybe also others types?
+    attr_value: int  # Maybe also others types?
     expect_reply: bool
     manufacturer: int
 

@@ -3,6 +3,7 @@
 from zigpy import types
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import BinarySensorDeviceClass, EntityType, QuirkBuilder
+from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 
@@ -36,6 +37,22 @@ class PhilipsContactCluster(CustomCluster):
             type=types.uint32_t,
             is_manufacturer_specific=True,
         )
+
+    # catch when contact attribute is updated and forward to OnOff cluster
+    def _update_attribute(self, attrid, value):
+        super()._update_attribute(attrid, value)
+
+        on_off_cluster = self.endpoint.out_clusters[OnOff.cluster_id]
+        if (
+            attrid == self.AttributeDefs.contact.id
+            and on_off_cluster.get(OnOff.AttributeDefs.on_off.id) != value
+        ):
+            # This seems to happen after the real OnOff attribute change,
+            # so we can avoid a duplicate event by checking the current value.
+            # We'll only update the OnOff cluster if the value is different then,
+            # this is likely only the case when an update was missed, and we later
+            # get an attribute report for the custom contact attribute.
+            on_off_cluster.update_attribute(OnOff.AttributeDefs.on_off.id, value)
 
 
 (
