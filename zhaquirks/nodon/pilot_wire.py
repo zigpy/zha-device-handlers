@@ -5,7 +5,6 @@ from zigpy.quirks.v2 import EntityType, QuirkBuilder
 import zigpy.types as t
 from zigpy.zcl.foundation import (
     BaseAttributeDefs,
-    BaseCommandDefs,
     DataTypeId,
     Direction,
     ZCLAttributeDef,
@@ -32,8 +31,8 @@ class NodOnPilotWireMode(t.enum8):
     ComfortMinus2 = 0x05
 
 
-class BasePilotWireCluster(CustomCluster):
-    """Base cluster to set Pilot Wire mode."""
+class NodOnPilotWireCluster(CustomCluster):
+    """NodOn manufacturer specific cluster to set Pilot Wire mode."""
 
     name: str = "PilotWireCluster"
     cluster_id: t.uint16_t = NODON_PILOT_WIRE_CLUSTER_ID
@@ -51,24 +50,8 @@ class BasePilotWireCluster(CustomCluster):
             is_manufacturer_specific=True,
         )
 
-    class ServerCommandDefs(BaseCommandDefs):
-        """Server command definitions."""
 
-        set_pilot_wire_mode = ZCLCommandDef(
-            id=0x00,
-            schema={"mode": NodOnPilotWireMode},
-            direction=Direction.Client_to_Server,
-            is_manufacturer_specific=True,
-        )
-
-
-class NodOnPilotWireCluster(BasePilotWireCluster):
-    """NodOn manufacturer specific cluster to set Pilot Wire mode."""
-
-    pass
-
-
-class AdeoPilotWireCluster(BasePilotWireCluster):
+class AdeoPilotWireCluster(NodOnPilotWireCluster):
     """Adeo manufacturer specific cluster to set Pilot Wire mode."""
 
     # Adeo SIN-4-FP-21_EQU has a weird setup where it reports 4727
@@ -86,7 +69,7 @@ nodon = (
         cluster_id=NodOnPilotWireCluster.cluster_id,
         entity_type=EntityType.STANDARD,
         translation_key="pilot_wire",
-        fallback_name="Pilot Wire",
+        fallback_name="Pilot wire",
     )
 )
 
