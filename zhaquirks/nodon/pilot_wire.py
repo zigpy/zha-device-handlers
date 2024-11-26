@@ -53,7 +53,10 @@ class AdeoPilotWireCluster(NodOnPilotWireCluster):
     manufacturer_id_override: t.uint16_t = NODON_MANUFACTURER_ID
 
 
-nodon = QuirkBuilder(NODON, "SIN-4-FP-21").replaces(NodOnPilotWireCluster)
+nodon = (
+    QuirkBuilder(NODON, "SIN-4-FP-21")
+    .replaces(NodOnPilotWireCluster)
+)  # fmt: skip
 
 adeo = (
     nodon.clone(omit_man_model_data=True)
