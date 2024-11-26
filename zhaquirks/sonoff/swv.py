@@ -33,4 +33,8 @@ class EwelinkCluster(CustomCluster):
         return False
 
 
-(QuirkBuilder("SONOFF", "SWV").replaces(EwelinkCluster).add_to_registry())
+(
+    QuirkBuilder("SONOFF", "SWV")
+    .replaces(EwelinkCluster)
+    .add_to_registry()
+)  # fmt: skip
