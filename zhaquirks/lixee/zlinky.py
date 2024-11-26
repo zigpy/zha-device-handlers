@@ -14,6 +14,13 @@ from zigpy.zcl.clusters.smartenergy import Metering
 from zhaquirks.lixee import LIXEE, ZLINKY_MANUFACTURER_CLUSTER_ID
 
 
+class ZLinkyTICRelay(t.enum8):
+    """ZLinkyTICTarif tarif enumeration."""
+
+    Off = 0
+    On = 1
+
+
 class ZLinkyTICModeIdentifier(t.enum8):
     """ZLinkyTICTarif tarif enumeration."""
 
@@ -262,6 +269,15 @@ class ZLinkyTICElectricalMeasurement(CustomCluster, ElectricalMeasurement):
         entity_platform=EntityPlatform.SENSOR,
         translation_key="linky_mode",
         fallback_name="Linky Mode",
+    )
+    .enum(
+        "std_relay",
+        ZLinkyTICRelay,
+        ZLinkyTICManufacturerCluster.cluster_id,
+        entity_type=EntityType.STANDARD,
+        entity_platform=EntityPlatform.SENSOR,
+        translation_key="relay_HPHC",
+        fallback_name="Relay HPHC",
     )
     .add_to_registry()
 )
