@@ -36,14 +36,5 @@ class EwelinkCluster(CustomCluster):
 (
     QuirkBuilder("SONOFF", "SWV")
     .replaces(EwelinkCluster)
-    .enum(
-        EwelinkCluster.AttributeDefs.water_valve_state.name,
-        ValveState,
-        EwelinkCluster.cluster_id,
-        entity_platform=EntityPlatform.SENSOR,
-        entity_type=EntityType.DIAGNOSTIC,
-        translation_key="water_valve_state",
-        fallback_name="Water valve state",
-    )
     .add_to_registry()
 )
