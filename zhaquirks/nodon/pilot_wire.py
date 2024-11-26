@@ -56,14 +56,6 @@ class AdeoPilotWireCluster(NodOnPilotWireCluster):
 nodon = (
     QuirkBuilder(NODON, "SIN-4-FP-21")
     .replaces(NodOnPilotWireCluster)
-    .enum(
-        attribute_name=NodOnPilotWireCluster.AttributeDefs.pilot_wire_mode.name,
-        enum_class=NodOnPilotWireMode,
-        cluster_id=NodOnPilotWireCluster.cluster_id,
-        entity_type=EntityType.STANDARD,
-        translation_key="pilot_wire",
-        fallback_name="Pilot wire",
-    )
 )
 
 adeo = (
