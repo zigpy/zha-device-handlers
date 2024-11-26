@@ -3,13 +3,7 @@
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import EntityType, QuirkBuilder
 import zigpy.types as t
-from zigpy.zcl.foundation import (
-    BaseAttributeDefs,
-    DataTypeId,
-    Direction,
-    ZCLAttributeDef,
-    ZCLCommandDef,
-)
+from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
 
 NODON = "NodOn"
 NODON_MANUFACTURER_ID = 4747
