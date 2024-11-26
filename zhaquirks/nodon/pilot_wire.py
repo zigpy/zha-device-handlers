@@ -11,7 +11,6 @@ from zigpy.zcl.foundation import (
     ZCLAttributeDef,
     ZCLCommandDef,
 )
-from zigpy.zdo.types import NodeDescriptor
 
 NODON = "NodOn"
 NODON_MANUFACTURER_ID = 4747
