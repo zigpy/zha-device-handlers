@@ -919,6 +919,13 @@ class TuyaPowerConfigurationCluster3AA(TuyaPowerConfigurationCluster):
     }
 
 
+# Avoid breaking custom quirks, located here to avoid circular dependencies.
+from zhaquirks.tuya.power_config import (  # noqa: E402
+    TuyaPowerConfigurationCluster2AAA as TuyaPowerConfigurationCluster2AAA,  # noqa: PLC0414
+    TuyaPowerConfigurationCluster4AA as TuyaPowerConfigurationCluster4AA,  # noqa: PLC0414
+)
+
+
 class TuyaThermostat(CustomDevice):
     """Generic Tuya thermostat device."""
 
