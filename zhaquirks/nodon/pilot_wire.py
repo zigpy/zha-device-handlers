@@ -16,25 +16,7 @@ from zigpy.zdo.types import NodeDescriptor
 NODON = "NodOn"
 NODON_MANUFACTURER_ID = 4747
 NODON_PILOT_WIRE_CLUSTER_ID = 0xFC00  # 64512
-
 ADEO = "Adeo"
-ADEO_NODE_DESCRIPTION_WITH_CORRECTED_MANUFACTURER_CODE = NodeDescriptor(
-    # the values are from a real Adeo device
-    logical_type=1,
-    complex_descriptor_available=0,
-    user_descriptor_available=0,
-    reserved=0,
-    aps_flags=0,
-    frequency_band=8,
-    mac_capability_flags=142,
-    # manufacturer_code = 4727,
-    manufacturer_code=NODON_MANUFACTURER_ID,
-    maximum_buffer_size=82,
-    maximum_incoming_transfer_size=500,
-    server_mask=11264,
-    maximum_outgoing_transfer_size=500,
-    descriptor_capability_field=0,
-)
 
 
 class NodOnPilotWireMode(t.enum8):
@@ -93,10 +75,6 @@ class AdeoPilotWireCluster(BasePilotWireCluster):
     # Adeo SIN-4-FP-21_EQU has a weird setup where it reports 4727
     # manufacturer_code in node_descriptor(), but requires NodOn's (4747)
     # manufacturer_id to execute commands and get/set attributes.
-
-    # This seems to have no effect, but I'll still leave it here.
-    # Maybe it will get fixed in future releases. NodeDescriptor magic won't
-    # be necessary then.
     manufacturer_id_override: t.uint16_t = NODON_MANUFACTURER_ID
 
 
@@ -117,8 +95,6 @@ adeo = (
     nodon.clone(omit_man_model_data=True)
     .applies_to(ADEO, "SIN-4-FP-21_EQU")
     .replaces(AdeoPilotWireCluster)
-    # please read the comment in AdeoPilotWireCluster
-    .node_descriptor(ADEO_NODE_DESCRIPTION_WITH_CORRECTED_MANUFACTURER_CODE)
 )
 
 nodon.add_to_registry()
