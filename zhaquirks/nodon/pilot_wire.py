@@ -38,8 +38,7 @@ class NodOnPilotWireCluster(CustomCluster):
         pilot_wire_mode = ZCLAttributeDef(
             id=0x0000,
             type=NodOnPilotWireMode,
-            # I got the following error without setting zcl_type explicitly to int:
-            # Failed to write attribute pilot_wire_mode=<NodOnPilotWireMode.FrostProtection: 3>: <Status.INVALID_DATA_TYPE: 141>
+            # need to explicitly set ZCL type
             zcl_type=DataTypeId.uint8,
             is_manufacturer_specific=True,
         )
