@@ -47,7 +47,9 @@ class AqaraOccupancy(types.enum8):
 class IasZoneLocal(LocalDataCluster, IasZone):
     """Virtual cluster for IasZone."""
 
-    _CONSTANT_ATTRIBUTES = {IasZone.AttributeDefs.zone_type.id: IasZone.ZoneType.Motion_Sensor}
+    _CONSTANT_ATTRIBUTES = {
+        IasZone.AttributeDefs.zone_type.id: IasZone.ZoneType.Motion_Sensor
+    }
     _VALID_ATTRIBUTES = {IasZone.AttributeDefs.zone_status.id}
 
 
