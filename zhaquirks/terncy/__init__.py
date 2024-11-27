@@ -164,8 +164,7 @@ class TerncyRawCluster(CustomCluster):
                 return  # ignore repeated event for single action.
             else:
                 self._last_clicks.append((state, count))
-            if state > 5:
-                state = 5
+            state = min(state, 5)
             event_args = {PRESS_TYPE: CLICK_TYPES[state], "count": count, VALUE: state}
             action = f"button_{CLICK_TYPES[state]}"
             self.listener_event(ZHA_SEND_EVENT, action, event_args)
