@@ -2,6 +2,16 @@
 
 from datetime import datetime, timedelta, timezone
 
+from zigpy.profiles import zha
+from zigpy.quirks import CustomDevice
+from zigpy.quirks.v2 import EntityPlatform, EntityType
+from zigpy.quirks.v2.homeassistant import UnitOfTime
+from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
+import zigpy.types as t
+from zigpy.zcl import foundation
+from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
+from zigpy.zcl.clusters.smartenergy import Metering
+
 from zhaquirks import DoublingPowerConfigurationCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -25,15 +35,6 @@ from zhaquirks.tuya.mcu import (
     TuyaOnOff,
     TuyaPowerConfigurationCluster,
 )
-from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
-from zigpy.quirks.v2 import EntityPlatform, EntityType
-from zigpy.quirks.v2.homeassistant import UnitOfTime
-from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
-import zigpy.types as t
-from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
-from zigpy.zcl.clusters.smartenergy import Metering
 
 
 class TuyaValveWaterConsumed(Metering, TuyaLocalCluster):

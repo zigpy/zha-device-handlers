@@ -4,13 +4,6 @@ from collections.abc import Callable
 from enum import Enum
 from typing import Any, Optional
 
-from zhaquirks.tuya import (
-    TUYA_CLUSTER_ID,
-    PowerConfiguration,
-    TuyaLocalCluster,
-    TuyaPowerConfigurationCluster2AAA,
-)
-from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster, TuyaOnOffNM
 from zigpy.quirks import _DEVICE_REGISTRY
 from zigpy.quirks.registry import DeviceRegistry
 from zigpy.quirks.v2 import QuirkBuilder, QuirksV2RegistryEntry
@@ -27,6 +20,14 @@ from zigpy.zcl.clusters.measurement import (
 )
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.clusters.smartenergy import Metering
+
+from zhaquirks.tuya import (
+    TUYA_CLUSTER_ID,
+    PowerConfiguration,
+    TuyaLocalCluster,
+    TuyaPowerConfigurationCluster2AAA,
+)
+from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster, TuyaOnOffNM
 
 
 class TuyaIasContact(IasZone, TuyaLocalCluster):
