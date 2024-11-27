@@ -4,6 +4,13 @@ from collections.abc import Callable
 from enum import Enum
 from typing import Any, Optional
 
+from zhaquirks.tuya import (
+    TUYA_CLUSTER_ID,
+    PowerConfiguration,
+    TuyaLocalCluster,
+    TuyaPowerConfigurationCluster2AAA,
+)
+from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster, TuyaOnOffNM
 from zigpy.quirks import _DEVICE_REGISTRY
 from zigpy.quirks.registry import DeviceRegistry
 from zigpy.quirks.v2 import QuirkBuilder, QuirksV2RegistryEntry
@@ -20,14 +27,6 @@ from zigpy.zcl.clusters.measurement import (
 )
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.clusters.smartenergy import Metering
-
-from zhaquirks.tuya import (
-    TUYA_CLUSTER_ID,
-    PowerConfiguration,
-    TuyaLocalCluster,
-    TuyaPowerConfigurationCluster2AAA,
-)
-from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster, TuyaOnOffNM
 
 
 class TuyaIasContact(IasZone, TuyaLocalCluster):
@@ -144,13 +143,15 @@ class TuyaQuirkBuilder(QuirkBuilder):
     def tuya_metering(
         self,
         dp_id: int,
+        converter: Optional[Callable[[Any], Any]] = None,
         metering_cfg: TuyaLocalCluster = TuyaValveWaterConsumed,
     ) -> QuirkBuilder:
         """Add a Tuya Metering Configuration."""
         self.tuya_dp(
             dp_id,
             metering_cfg.ep_attribute,
-            "current_summ_delivered",
+            attribute_name="current_summ_delivered",
+            converter=converter,
         )
         self.adds(metering_cfg)
         return self

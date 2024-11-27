@@ -2,16 +2,6 @@
 
 from datetime import datetime, timedelta, timezone
 
-from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
-from zigpy.quirks.v2 import EntityPlatform, EntityType
-from zigpy.quirks.v2.homeassistant import UnitOfTime
-from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
-import zigpy.types as t
-from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
-from zigpy.zcl.clusters.smartenergy import Metering
-
 from zhaquirks import DoublingPowerConfigurationCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -35,6 +25,15 @@ from zhaquirks.tuya.mcu import (
     TuyaOnOff,
     TuyaPowerConfigurationCluster,
 )
+from zigpy.profiles import zha
+from zigpy.quirks import CustomDevice
+from zigpy.quirks.v2 import EntityPlatform, EntityType
+from zigpy.quirks.v2.homeassistant import UnitOfTime
+from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
+import zigpy.types as t
+from zigpy.zcl import foundation
+from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
+from zigpy.zcl.clusters.smartenergy import Metering
 
 
 class TuyaValveWaterConsumed(Metering, TuyaLocalCluster):
@@ -593,8 +592,8 @@ class RoyalGardineerTimerState(t.enum8):
     TuyaQuirkBuilder("_TZE200_2wg5qrjy", "TS0601")
     .tuya_onoff(dp_id=1)
     .tuya_battery(dp_id=7, power_cfg=TuyaPowerConfigurationCluster2AA)
-    # Might need a converter: x // 10
-    .tuya_metering(dp_id=5)
+    # Water consumed (value comes in deciliters - convert it to liters)
+    .tuya_metering(dp_id=5, converter=lambda x: x // 10)
     # Timer time left/remaining (raw value in seconds)
     .tuya_number(
         dp_id=11,
