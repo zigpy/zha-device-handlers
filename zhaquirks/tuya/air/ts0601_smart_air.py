@@ -34,6 +34,7 @@ class TuyaSmartAirSensor(CustomDevice):
         MODELS_INFO: [
             ("_TZE200_mja3fuja", "TS0601"),
             ("_TZE200_dwcarsat", "TS0601"),
+            ("_TZE204_dwcarsat", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
@@ -84,6 +85,7 @@ class TuyaSmartAirSensorGPP(CustomDevice):
         MODELS_INFO: [
             ("_TZE200_mja3fuja", "TS0601"),
             ("_TZE200_dwcarsat", "TS0601"),
+            ("_TZE204_dwcarsat", "TS0601"),
         ],
         ENDPOINTS: {
             1: {

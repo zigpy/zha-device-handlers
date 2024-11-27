@@ -3,6 +3,7 @@
 from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomDevice
 import zigpy.types as t
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, GreenPowerProxy, Groups, Ota, Scenes, Time
 
 from zhaquirks.const import (
@@ -24,19 +25,30 @@ class TuyaGarageManufCluster(NoManufacturerCluster, TuyaMCUCluster):
 
     ep_attribute = TUYA_MANUFACTURER_GARAGE
 
-    attributes = TuyaMCUCluster.attributes.copy()
-    attributes.update(
-        {
-            # random attribute IDs
-            0xEF01: ("button", t.Bool, True),
-            0xEF02: ("dp_2", t.uint32_t, True),
-            0xEF03: ("contact_sensor", t.Bool, True),
-            0xEF04: ("dp_4", t.uint32_t, True),
-            0xEF05: ("dp_5", t.uint32_t, True),
-            0xEF0B: ("dp_11", t.Bool, True),
-            0xEF0C: ("dp_12", t.enum8, True),
-        }
-    )
+    class AttributeDefs(TuyaMCUCluster.AttributeDefs):
+        """Attribute Definitions."""
+
+        button = foundation.ZCLAttributeDef(
+            id=0xEF01, type=t.Bool, is_manufacturer_specific=True
+        )
+        dp_2 = foundation.ZCLAttributeDef(
+            id=0xEF02, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        contact_sensor = foundation.ZCLAttributeDef(
+            id=0xEF03, type=t.Bool, is_manufacturer_specific=True
+        )
+        dp_4 = foundation.ZCLAttributeDef(
+            id=0xEF04, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        dp_5 = foundation.ZCLAttributeDef(
+            id=0xEF05, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        dp_11 = foundation.ZCLAttributeDef(
+            id=0xEF0B, type=t.Bool, is_manufacturer_specific=True
+        )
+        dp_12 = foundation.ZCLAttributeDef(
+            id=0xEF0C, type=t.enum8, is_manufacturer_specific=True
+        )
 
     dp_to_attribute: dict[int, DPToAttributeMapping] = {
         # garage door trigger ¿on movement, on open, on closed?
