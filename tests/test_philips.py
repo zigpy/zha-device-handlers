@@ -3,8 +3,10 @@
 from unittest import mock
 
 import pytest
+from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.foundation import ZCLHeader
 
+from tests.common import ClusterListener
 import zhaquirks
 from zhaquirks.const import (
     BUTTON_1,
@@ -738,3 +740,31 @@ def test_rdm002_triggers():
     actual_triggers = PhilipsRDM002.device_automation_triggers
 
     assert actual_triggers == expected_triggers
+
+
+def test_contact_sensor(zigpy_device_from_v2_quirk):
+    """Test that the Hue contact attribute is forwarded to the OnOff cluster."""
+    quirk = zigpy_device_from_v2_quirk(
+        "Signify Netherlands B.V.", "SOC001", endpoint_ids=[1, 2]
+    )
+    # Add output OnOff cluster to the endpoint. The device has this,
+    # but the quirk doesn't modify that cluster, so we need to add it manually.
+    quirk.endpoints[2].add_output_cluster(OnOff.cluster_id)
+
+    hue_cluster = quirk.endpoints[2].philips_contact_cluster
+    on_off_cluster = quirk.endpoints[2].out_clusters[OnOff.cluster_id]
+    on_off_listener = ClusterListener(on_off_cluster)
+
+    # update the contact attribute and check that it is forwarded to the OnOff cluster
+    hue_cluster.update_attribute(hue_cluster.AttributeDefs.contact.id, 0)
+    assert on_off_listener.attribute_updates[0] == (0, 0)
+
+    hue_cluster.update_attribute(hue_cluster.AttributeDefs.contact.id, 1)
+    assert on_off_listener.attribute_updates[1] == (0, 1)
+
+    # check we didn't exceed the number of expected updates
+    assert len(on_off_listener.attribute_updates) == 2
+
+    # update again with the same value and except no new update
+    hue_cluster.update_attribute(hue_cluster.AttributeDefs.contact.id, 1)
+    assert len(on_off_listener.attribute_updates) == 2

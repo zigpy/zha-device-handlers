@@ -1756,3 +1756,51 @@ def test_aqara_acn014_signature_match(assert_signature_matches_quirk):
     assert_signature_matches_quirk(
         zhaquirks.xiaomi.aqara.light_acn.LumiLightAcn014, signature
     )
+
+
+@pytest.mark.parametrize(
+    "occupancy_value, expected_occ_status, motion_value, expected_motion_status",
+    [
+        (0, OccupancySensing.Occupancy.Unoccupied, 2, 0),
+        (1, OccupancySensing.Occupancy.Occupied, 3, IasZone.ZoneStatus.Alarm_1),
+        (1, OccupancySensing.Occupancy.Occupied, 4, 0),
+    ],
+)
+async def test_aqara_fp1e_sensor(
+    zigpy_device_from_v2_quirk,
+    occupancy_value,
+    expected_occ_status,
+    motion_value,
+    expected_motion_status,
+):
+    """Test Aqara FP1E sensor."""
+    quirk = zigpy_device_from_v2_quirk("aqara", "lumi.sensor_occupy.agl1")
+
+    opple_cluster = quirk.endpoints[1].opple_cluster
+    ias_cluster = quirk.endpoints[1].ias_zone
+    occupancy_cluster = quirk.endpoints[1].occupancy
+
+    opple_listener = ClusterListener(opple_cluster)
+    ias_listener = ClusterListener(ias_cluster)
+    occupancy_listener = ClusterListener(occupancy_cluster)
+
+    # update custom occupancy attribute id
+    opple_cluster.update_attribute(0x0142, occupancy_value)
+    assert len(opple_listener.attribute_updates) == 1
+
+    # confirm occupancy cluster is updated
+    assert len(occupancy_listener.attribute_updates) == 1
+    assert (
+        occupancy_listener.attribute_updates[0][0]
+        == OccupancySensing.AttributeDefs.occupancy.id
+    )
+    assert occupancy_listener.attribute_updates[0][1] == expected_occ_status
+
+    # update custom motion attribute id
+    opple_cluster.update_attribute(0x0160, motion_value)
+    assert len(opple_listener.attribute_updates) == 2
+
+    # confirm ias cluster is updated
+    assert len(ias_listener.attribute_updates) == 1
+    assert ias_listener.attribute_updates[0][0] == IasZone.AttributeDefs.zone_status.id
+    assert ias_listener.attribute_updates[0][1] == expected_motion_status
