@@ -591,11 +591,10 @@ class RoyalGardineerTimerState(t.enum8):
 (
     TuyaQuirkBuilder("_TZE200_2wg5qrjy", "TS0601")
     .tuya_onoff(dp_id=1)
-    # Should be TuyaPowerConfigurationCluster2AA, but it is broken at this time.
     .tuya_battery(dp_id=7, power_cfg=TuyaPowerConfigurationCluster2AA)
     # Might need a converter: x // 10
     .tuya_metering(dp_id=5)
-    # Timer time left/remaining (raw value in seconds).
+    # Timer time left/remaining (raw value in seconds)
     .tuya_number(
         dp_id=11,
         attribute_name="timer_time_left",
@@ -608,7 +607,7 @@ class RoyalGardineerTimerState(t.enum8):
         translation_key="timer_time_left",
         fallback_name="Timer time left",
     )
-    # Weather delay.
+    # Weather delay
     .tuya_enum(
         dp_id=10,
         attribute_name="weather_delay",
@@ -617,7 +616,7 @@ class RoyalGardineerTimerState(t.enum8):
         fallback_name="Weather delay",
         initially_disabled=True,
     )
-    # Timer state - read-only.
+    # Timer state - read-only
     .tuya_enum(
         dp_id=12,
         attribute_name="timer_state",
@@ -627,7 +626,7 @@ class RoyalGardineerTimerState(t.enum8):
         translation_key="timer_state",
         fallback_name="Timer state",
     )
-    # Last valve open duration - read-only (raw value in seconds).
+    # Last valve open duration - read-only (raw value in seconds)
     .tuya_sensor(
         dp_id=15,
         attribute_name="last_valve_open_duration",
