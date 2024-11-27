@@ -144,15 +144,15 @@ class TuyaQuirkBuilder(QuirkBuilder):
     def tuya_metering(
         self,
         dp_id: int,
-        converter: Optional[Callable[[Any], Any]] = None,
         metering_cfg: TuyaLocalCluster = TuyaValveWaterConsumed,
+        scale: float = 1,
     ) -> QuirkBuilder:
         """Add a Tuya Metering Configuration."""
         self.tuya_dp(
             dp_id,
             metering_cfg.ep_attribute,
             attribute_name="current_summ_delivered",
-            converter=converter,
+            converter=lambda x: x * scale,
         )
         self.adds(metering_cfg)
         return self
