@@ -892,7 +892,9 @@ class TuyaPowerConfigurationCluster(PowerConfiguration, TuyaLocalCluster):
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
-        self.endpoint.device.battery_bus.add_listener(self)
+        # listening to battery_bus required for legacy and custom Tuya TRV quirks
+        if hasattr(self.endpoint.device, "battery_bus"):
+            self.endpoint.device.battery_bus.add_listener(self)
 
     def battery_change(self, value):
         """Change of reported battery percentage remaining."""
