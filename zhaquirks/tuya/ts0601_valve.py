@@ -25,6 +25,7 @@ from zhaquirks.tuya import (
     TUYA_CLUSTER_ID,
     EnchantedDevice,
     TuyaLocalCluster,
+    TuyaPowerConfigurationCluster2AA,
     TuyaPowerConfigurationCluster4AA,
 )
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
