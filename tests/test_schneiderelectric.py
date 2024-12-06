@@ -1,15 +1,15 @@
 """Tests for Schneider Electric devices."""
 
 from unittest import mock
-import pytest
 
+import pytest
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.smartenergy import Metering
-from tests.common import ClusterListener
-import zhaquirks.schneiderelectric.shutters
-import zhaquirks.schneiderelectric.outlet
 
+from tests.common import ClusterListener
+import zhaquirks.schneiderelectric.outlet
+import zhaquirks.schneiderelectric.shutters
 
 zhaquirks.setup()
 
@@ -138,6 +138,7 @@ async def test_1gang_shutter_1_lift_percentage_updates(zigpy_device_from_quirk):
         23,  # 100 - 77
     )
     assert len(cluster_listener.cluster_commands) == 0
+
 
 @pytest.mark.parametrize("quirk", (zhaquirks.schneiderelectric.outlet.SocketOutlet,))
 async def test_schneider_device_temp(zigpy_device_from_quirk, quirk):
