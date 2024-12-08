@@ -81,10 +81,8 @@ async def test_tuya_smoke_sensor_attribute_update(zigpy_device_from_quirk, quirk
         ("_TZE200_rccxox8p", "TS0601"),
         ("_TZE200_vzekyi4c", "TS0601"),
         ("_TZE204_vawy74yh", "TS0601"),
-        (
-            "_TZE204_ntcy3xu1",
-            "TS0601",
-        ),
+        ("_TZE204_ntcy3xu1", "TS0601"),
+        ("_TZE284_0zaf1cr8", "TS0601"),
     ],
 )
 async def test_handle_get_data(zigpy_device_from_v2_quirk, model, manuf):

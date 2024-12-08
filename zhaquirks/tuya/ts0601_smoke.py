@@ -10,6 +10,7 @@ from zhaquirks.tuya.builder import TuyaPowerConfigurationCluster2AAA, TuyaQuirkB
     .applies_to("_TZE200_rccxox8p", "TS0601")
     .applies_to("_TZE200_vzekyi4c", "TS0601")
     .applies_to("_TZE204_vawy74yh", "TS0601")
+    .applies_to("_TZE284_0zaf1cr8", "TS0601")
     .tuya_ias(dp_id=1)
     .skip_configuration()
     .add_to_registry()
