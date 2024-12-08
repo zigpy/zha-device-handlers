@@ -1,9 +1,13 @@
 """Tests for Tuya Smoke Detector."""
 
 import pytest
+from zigpy.zcl import foundation
+from zigpy.zcl.clusters.general import Basic
 from zigpy.zcl.clusters.security import IasZone
 
 from tests.common import ClusterListener
+import zhaquirks
+from zhaquirks.tuya.mcu import TuyaMCUCluster
 import zhaquirks.tuya.ts0205
 
 zhaquirks.setup()
@@ -66,3 +70,49 @@ async def test_tuya_smoke_sensor_attribute_update(zigpy_device_from_quirk, quirk
     assert len(ias_listener.attribute_updates) == 2
     assert ias_listener.attribute_updates[1][0] == zone_status_id
     assert ias_listener.attribute_updates[1][1] == IasZone.ZoneStatus.Alarm_1
+
+
+@pytest.mark.parametrize(
+    "model,manuf",
+    [
+        ("_TZE200_dq1mfjug", "TS0601"),
+        ("_TZE200_m9skfctm", "TS0601"),
+        ("_TZE200_ntcy3xu1", "TS0601"),
+        ("_TZE200_rccxox8p", "TS0601"),
+        ("_TZE200_vzekyi4c", "TS0601"),
+        ("_TZE204_vawy74yh", "TS0601"),
+        (
+            "_TZE204_ntcy3xu1",
+            "TS0601",
+        ),
+    ],
+)
+async def test_handle_get_data(zigpy_device_from_v2_quirk, model, manuf):
+    """Test handle_get_data for multiple attributes."""
+
+    zone_status_id = IasZone.AttributeDefs.zone_status.id
+
+    quirked = zigpy_device_from_v2_quirk(model, manuf)
+    ep = quirked.endpoints[1]
+
+    assert ep.basic is not None
+    assert isinstance(ep.basic, Basic)
+
+    assert ep.tuya_manufacturer is not None
+    assert isinstance(ep.tuya_manufacturer, TuyaMCUCluster)
+
+    message = b"\t;\x02\x00\x13\x01\x04\x00\x01\x01"
+    hdr, data = ep.tuya_manufacturer.deserialize(message)
+
+    status = ep.tuya_manufacturer.handle_get_data(data.data)
+    assert status == foundation.Status.SUCCESS
+
+    assert ep.ias_zone.get(zone_status_id) == IasZone.ZoneStatus.Alarm_1
+
+    message = b"\t9\x02\x00\x11\x01\x04\x00\x01\x00"
+    hdr, data = ep.tuya_manufacturer.deserialize(message)
+
+    status = ep.tuya_manufacturer.handle_get_data(data.data)
+    assert status == foundation.Status.SUCCESS
+
+    assert ep.ias_zone.get(zone_status_id) == 0

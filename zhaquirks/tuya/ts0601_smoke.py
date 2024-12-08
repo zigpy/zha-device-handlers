@@ -8,9 +8,9 @@ from zhaquirks.tuya.builder import TuyaPowerConfigurationCluster2AAA, TuyaQuirkB
     TuyaQuirkBuilder("_TZE200_aycxwiau", "TS0601")
     .applies_to("_TZE200_dq1mfjug", "TS0601")
     .applies_to("_TZE200_m9skfctm", "TS0601")
+    .applies_to("_TZE200_ntcy3xu1", "TS0601")
     .applies_to("_TZE200_rccxox8p", "TS0601")
     .applies_to("_TZE200_vzekyi4c", "TS0601")
-    .applies_to("_TZE204_ntcy3xu1", "TS0601")
     .applies_to("_TZE204_vawy74yh", "TS0601")
     .tuya_ias(dp_id=1)
     .skip_configuration()
@@ -31,7 +31,7 @@ from zhaquirks.tuya.builder import TuyaPowerConfigurationCluster2AAA, TuyaQuirkB
         dp_id=14,
         ep_attribute=TuyaPowerConfigurationCluster2AAA.ep_attribute,
         attribute_name="battery_percentage_remaining",
-        converter=lambda x: {0: 5, 1: 100}[x],
+        converter=lambda x: {0: 5, 1: 40, 2: 100}[x],
     )
     .adds(TuyaPowerConfigurationCluster2AAA)
     .skip_configuration()
