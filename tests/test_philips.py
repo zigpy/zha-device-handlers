@@ -744,3 +744,53 @@ def test_contact_sensor(zigpy_device_from_v2_quirk):
     # update again with the same value and except no new update
     hue_cluster.update_attribute(hue_cluster.AttributeDefs.contact.id, 1)
     assert len(on_off_listener.attribute_updates) == 2
+
+
+@pytest.mark.parametrize(
+    "dev, ep, button_events, expected_actions",
+    (
+        (
+            PhilipsWallSwitch,
+            1,
+            (
+                [
+                    b"\x1d\x0b\x106\x00\x01\x00\x000\x00!\x00\x00",
+                    b"\x1d\x0b\x107\x00\x01\x00\x000\x02!\x01\x00",
+                ],
+                [
+                    b"\x1d\x0b\x108\x00\x02\x00\x000\x00!\x00\x00",
+                    b"\x1d\x0b\x109\x00\x02\x00\x000\x02!\x01\x00",
+                ],
+            ),
+            ["left_press", "left_short_release", "right_press", "right_short_release"],
+        ),
+    ),
+)
+def test_PhilipsRemoteCluster_multi_button_press(
+    zigpy_device_from_quirk, dev, ep, button_events, expected_actions
+):
+    """Test PhilipsRemoteCluster short button press logic."""
+
+    device = zigpy_device_from_quirk(dev)
+
+    remote_cluster = device.endpoints[ep].philips_remote_cluster
+    remote_cluster.button_press_queue = {
+        k: ManuallyFiredButtonPressQueue() for k in remote_cluster.BUTTONS
+    }
+    remote_listener = mock.MagicMock()
+    remote_cluster.add_listener(remote_listener)
+
+    expected_event_count = 0
+    for button in button_events:
+        for eventData in button:
+            hdr, args = remote_cluster.deserialize(eventData)
+            remote_cluster.handle_message(hdr, args)
+            expected_event_count += 1
+
+    for q in remote_cluster.button_press_queue.values():
+        q.fire()
+
+    assert remote_listener.zha_send_event.call_count == expected_event_count
+
+    for i, expected_action in enumerate(expected_actions):
+        assert remote_listener.zha_send_event.call_args_list[i][0][0] == expected_action
