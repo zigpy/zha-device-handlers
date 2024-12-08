@@ -1,7 +1,5 @@
 """Smoke Sensor."""
 
-from zigpy.quirks.v2 import BinarySensorDeviceClass, EntityType
-
 from zhaquirks.tuya.builder import TuyaPowerConfigurationCluster2AAA, TuyaQuirkBuilder
 
 (
@@ -20,13 +18,6 @@ from zhaquirks.tuya.builder import TuyaPowerConfigurationCluster2AAA, TuyaQuirkB
 (
     TuyaQuirkBuilder("_TZE204_ntcy3xu1", "TS0601")
     .tuya_ias(dp_id=1)
-    .tuya_binary_sensor(
-        dp_id=4,
-        attribute_name="tamper_status",
-        device_class=BinarySensorDeviceClass.TAMPER,
-        fallback_name="Tamper",
-        entity_type=EntityType.DIAGNOSTIC,
-    )
     .tuya_dp(
         dp_id=14,
         ep_attribute=TuyaPowerConfigurationCluster2AAA.ep_attribute,
