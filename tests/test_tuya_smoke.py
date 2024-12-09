@@ -73,19 +73,27 @@ async def test_tuya_smoke_sensor_attribute_update(zigpy_device_from_quirk, quirk
 
 
 @pytest.mark.parametrize(
-    "model,manuf",
+    "model,manuf,battery_test",
     [
-        ("_TZE200_dq1mfjug", "TS0601"),
-        ("_TZE200_m9skfctm", "TS0601"),
-        ("_TZE200_ntcy3xu1", "TS0601"),
-        ("_TZE200_rccxox8p", "TS0601"),
-        ("_TZE200_vzekyi4c", "TS0601"),
-        ("_TZE204_vawy74yh", "TS0601"),
-        ("_TZE204_ntcy3xu1", "TS0601"),
-        ("_TZE284_0zaf1cr8", "TS0601"),
+        ("_TZE200_dq1mfjug", "TS0601", []),
+        ("_TZE200_m9skfctm", "TS0601", []),
+        ("_TZE200_ntcy3xu1", "TS0601", []),
+        ("_TZE200_rccxox8p", "TS0601", []),
+        ("_TZE200_vzekyi4c", "TS0601", []),
+        ("_TZE204_vawy74yh", "TS0601", []),
+        (
+            "_TZE204_ntcy3xu1",
+            "TS0601",
+            (
+                (b"\x09\x3a\x02\x00\x12\x0e\x04\x00\x01\x02", 200),
+                (b"\x09\x3a\x02\x00\x12\x0e\x04\x00\x01\x01", 80),
+                (b"\x09\x3a\x02\x00\x12\x0e\x04\x00\x01\x00", 10),
+            ),
+        ),
+        ("_TZE284_0zaf1cr8", "TS0601", []),
     ],
 )
-async def test_handle_get_data(zigpy_device_from_v2_quirk, model, manuf):
+async def test_handle_get_data(zigpy_device_from_v2_quirk, model, manuf, battery_test):
     """Test handle_get_data for multiple attributes."""
 
     zone_status_id = IasZone.AttributeDefs.zone_status.id
@@ -99,11 +107,17 @@ async def test_handle_get_data(zigpy_device_from_v2_quirk, model, manuf):
     assert ep.tuya_manufacturer is not None
     assert isinstance(ep.tuya_manufacturer, TuyaMCUCluster)
 
+    ias_listener = ClusterListener(ep.ias_zone)
+
     message = b"\x09\x39\x02\x00\x11\x01\x04\x00\x01\x00"
     hdr, data = ep.tuya_manufacturer.deserialize(message)
 
     status = ep.tuya_manufacturer.handle_get_data(data.data)
     assert status == foundation.Status.SUCCESS
+
+    assert len(ias_listener.attribute_updates) == 1
+    assert ias_listener.attribute_updates[0][0] == zone_status_id
+    assert ias_listener.attribute_updates[0][1] == IasZone.ZoneStatus.Alarm_1
 
     assert ep.ias_zone.get(zone_status_id) == IasZone.ZoneStatus.Alarm_1
 
@@ -113,16 +127,18 @@ async def test_handle_get_data(zigpy_device_from_v2_quirk, model, manuf):
     status = ep.tuya_manufacturer.handle_get_data(data.data)
     assert status == foundation.Status.SUCCESS
 
+    assert len(ias_listener.attribute_updates) == 2
+    assert ias_listener.attribute_updates[1][0] == zone_status_id
+    assert ias_listener.attribute_updates[1][1] == 0
+
     assert ep.ias_zone.get(zone_status_id) == 0
 
-    if model in ("_TZE204_ntcy3xu1"):
-        for message, state in (
-            (b"\x09\x3a\x02\x00\x12\x0e\x04\x00\x01\x02", 200),
-            (b"\x09\x3a\x02\x00\x12\x0e\x04\x00\x01\x01", 80),
-            (b"\x09\x3a\x02\x00\x12\x0e\x04\x00\x01\x00", 10),
-        ):
-            hdr, data = ep.tuya_manufacturer.deserialize(message)
+    for message, state in battery_test:
+        power_listener = ClusterListener(ep.power)
 
-            status = ep.tuya_manufacturer.handle_get_data(data.data)
-            assert status == foundation.Status.SUCCESS
-            assert ep.power.get("battery_percentage_remaining") == state
+        hdr, data = ep.tuya_manufacturer.deserialize(message)
+        status = ep.tuya_manufacturer.handle_get_data(data.data)
+        assert status == foundation.Status.SUCCESS
+
+        assert len(power_listener.attribute_updates) == 1
+        assert power_listener.attribute_updates[0][1] == state

@@ -30,7 +30,7 @@ from zhaquirks.tuya import (
 from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster, TuyaOnOffNM
 
 
-class TuyaIAS(IasZone, TuyaLocalCluster):
+class TuyaIASFire(IasZone, TuyaLocalCluster):
     """Tuya local IAS cluster."""
 
     _CONSTANT_ATTRIBUTES = {
@@ -116,7 +116,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
     def tuya_ias(
         self,
         dp_id: int,
-        ias_cfg: TuyaLocalCluster = TuyaIAS,
+        ias_cfg: TuyaLocalCluster = TuyaIASFire,
     ) -> QuirkBuilder:
         """Add a Tuya IAS Configuration."""
         self.tuya_dp(
