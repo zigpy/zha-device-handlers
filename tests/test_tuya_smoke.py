@@ -114,3 +114,16 @@ async def test_handle_get_data(zigpy_device_from_v2_quirk, model, manuf):
     assert status == foundation.Status.SUCCESS
 
     assert ep.ias_zone.get(zone_status_id) == 0
+
+    if model in ("_TZE204_ntcy3xu1"):
+        for message, state in (
+            (b"\t:\x02\x00\x12\x0e\x04\x00\x01\x02", 100),
+            (b"\t:\x02\x00\x12\x0e\x04\x00\x01\x01", 40),
+            (b"\t:\x02\x00\x12\x0e\x04\x00\x01\x00", 5),
+        ):
+            hdr, data = ep.tuya_manufacturer.deserialize(message)
+
+            status = ep.tuya_manufacturer.handle_get_data(data.data)
+            assert status == foundation.Status.SUCCESS
+
+            assert ep.power.get("battery_percentage_remaining") == state
