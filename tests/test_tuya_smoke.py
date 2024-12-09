@@ -99,7 +99,8 @@ async def test_handle_get_data(zigpy_device_from_v2_quirk, model, manuf):
     assert ep.tuya_manufacturer is not None
     assert isinstance(ep.tuya_manufacturer, TuyaMCUCluster)
 
-    message = b"\t;\x02\x00\x13\x01\x04\x00\x01\x01"
+    
+    message = b"\x74\x09\x02\x00\x11\x01\x04\x00\x01\x00"
     hdr, data = ep.tuya_manufacturer.deserialize(message)
 
     status = ep.tuya_manufacturer.handle_get_data(data.data)
@@ -107,7 +108,7 @@ async def test_handle_get_data(zigpy_device_from_v2_quirk, model, manuf):
 
     assert ep.ias_zone.get(zone_status_id) == IasZone.ZoneStatus.Alarm_1
 
-    message = b"\t9\x02\x00\x11\x01\x04\x00\x01\x00"
+    message = b"\x74\x3B\x02\x00\x13\x01\x04\x00\x01\x01"
     hdr, data = ep.tuya_manufacturer.deserialize(message)
 
     status = ep.tuya_manufacturer.handle_get_data(data.data)

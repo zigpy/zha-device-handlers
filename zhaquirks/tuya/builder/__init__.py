@@ -123,7 +123,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
             dp_id,
             ias_cfg.ep_attribute,
             IasZone.AttributeDefs.zone_status.name,
-            converter=lambda x: IasZone.ZoneStatus.Alarm_1 if x == 1 else 0,
+            converter=lambda x: IasZone.ZoneStatus.Alarm_1 if x == 0 else 0,
         )
         self.adds(ias_cfg)
         return self
