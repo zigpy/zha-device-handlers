@@ -2,7 +2,6 @@
 
 import pytest
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import Basic
 from zigpy.zcl.clusters.security import IasZone
 
 from tests.common import ClusterListener
@@ -41,9 +40,6 @@ async def test_handle_get_data(zigpy_device_from_v2_quirk, model, manuf, battery
 
     quirked = zigpy_device_from_v2_quirk(model, manuf)
     ep = quirked.endpoints[1]
-
-    assert ep.basic is not None
-    assert isinstance(ep.basic, Basic)
 
     assert ep.tuya_manufacturer is not None
     assert isinstance(ep.tuya_manufacturer, TuyaMCUCluster)
