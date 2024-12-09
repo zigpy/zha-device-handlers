@@ -1,6 +1,7 @@
 # Supporting Tuya Devices
 
-Caution, the following should work for most Tuya devices, some devices may require additional reverse engineering to unlock all functions.
+> [!IMPORTANT]
+> The following should work for most Tuya devices. Some devices may require additional reverse engineering to unlock all functions.
 
 # Identify Tuya Data Points
 
@@ -13,13 +14,15 @@ The first step in building a Tuya quirk is to identify the Tuya Datapoints (DPs)
 
 Once the DPs are identified, the quirk can be built. For each DP, identify the correct replacement for the quirk using the available methods below. For commonly used replacements, such as a power configuration cluster, we can use a convenience method, such as `.tuya_battery`. 
 
-Note: Convenience methods will only work once, if your device has multiple identical clusters, such as on_off, use multiple `.tuya_switch` calls instead. Otherwise, only one switch will be generated.
+> [!NOTE]  
+> Convenience methods will only work once, as these methods internally map Tuya datapoints to standard-compliant ZCL attributes.
+> If your device has multiple identical clusters, such as `OnOff`, use multiple `.tuya_switch` calls instead to expose custom entities in Home Assistant. Otherwise, only one switch will be exposed.
 
 For more complex replacements you may need to use a lower level method, such as `.tuya_dp_attribute` or even `.tuya_dp` and `.tuya_attribute`.
 
-All V2 QuirkBuilder methods are available, so using `.tuya_dp` to add a DP converter then `.adds` to add the correct class is valid.
+All v2 QuirkBuilder methods are available, so using `.tuya_dp` to add a DP converter, then `.adds` to add the correct class is valid.
 
-Most V2 quirks will match only on the model and manufacturer, this reduces duplicated code where a new variant appears with a slightly different signature. Should you need to filter on a signature also, use `.filter`.
+Most v2 quirks will match only on the model and manufacturer. This reduces duplicated code where a new variant appears with a slightly different signature. Should you need to filter on a signature as well, use `.filter`.
 
 ```python
 from zigpy.quirks import signature_matches
@@ -47,7 +50,7 @@ from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 ## TuyaQuirkBuilder
 
-TuyaQuirkBuilder is a subclass of QuirkBuilder, retaining all of the V2 QuirkBuilder methods and adding Tuya specific methods.
+TuyaQuirkBuilder is a subclass of QuirkBuilder, retaining all of the v2 QuirkBuilder methods and adding Tuya specific methods.
 
 ### Convenience Methods
 
@@ -121,7 +124,9 @@ Adds a switch entity.
 
 #### tuya_enum
 
-Adds a enum entity. Note: in the Tuya developer console these will appear to be string enums. I have yet to run into a string enum, assume that they are `t.enum8`.
+Adds an enum entity.
+
+Note: In the Tuya developer console, these will appear to be string enums. I have yet to run into a string enum, so assume that they are `t.enum8`.
 
 ```python
 class GiexBatteryStatus(t.enum8):
@@ -177,7 +182,7 @@ Adds a binary sensor entity.
 
 #### tuya_sensor
 
-Adds a sensor entity. Sensors can't return string values, you also need to ensure the return type matches the device_class.
+Adds a sensor entity. Sensors can't return string values, you also need to ensure the return type matches the [device_class](https://developers.home-assistant.io/docs/core/entity/sensor/#available-device-classes).
 
 ```python
 .tuya_sensor(
@@ -253,9 +258,9 @@ Add a DP converter and corresponding Attribute definition.
 )
 ```
 
-### Building tests for V2 Quirks
+### Building tests for v2 Quirks
 
-To get a device from a V2 Quirk, use `zigpy_device_from_v2_quirk`.
+To get a device from a v2 Quirk, use `zigpy_device_from_v2_quirk`.
 
 ```python
 async def test_tuya():
