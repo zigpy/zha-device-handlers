@@ -15,7 +15,7 @@ from zigpy.quirks.v2.homeassistant import EntityType, UnitOfLength
 from zigpy.zcl.clusters.general import DeviceTemperature
 from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
-from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
 
 from zhaquirks import LocalDataCluster
 from zhaquirks.xiaomi import XiaomiAqaraE1Cluster
@@ -77,6 +77,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         motion = ZCLAttributeDef(
             id=0x0160,
             type=AqaraMotion,
+            zcl_type=DataTypeId.uint8,
             access="rp",
             is_manufacturer_specific=True,
         )
@@ -93,6 +94,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         motion_sensitivity = ZCLAttributeDef(
             id=0x010C,
             type=AqaraMotionSensitivity,
+            zcl_type=DataTypeId.uint8,
             access="rw",
             is_manufacturer_specific=True,
         )
@@ -101,6 +103,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         occupancy = ZCLAttributeDef(
             id=0x0142,
             type=AqaraOccupancy,
+            zcl_type=DataTypeId.uint8,
             access="rp",
             is_manufacturer_specific=True,
         )
