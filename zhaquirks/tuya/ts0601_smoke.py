@@ -23,7 +23,7 @@ from zhaquirks.tuya.builder import TuyaPowerConfigurationCluster2AAA, TuyaQuirkB
         dp_id=14,
         ep_attribute=TuyaPowerConfigurationCluster2AAA.ep_attribute,
         attribute_name="battery_percentage_remaining",
-        converter=lambda x: {0: 5, 1: 40, 2: 100}[x],
+        converter=lambda x: {0: 10, 1: 80, 2: 200}[x],
     )
     .adds(TuyaPowerConfigurationCluster2AAA)
     .skip_configuration()

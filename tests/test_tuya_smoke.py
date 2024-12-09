@@ -117,9 +117,9 @@ async def test_handle_get_data(zigpy_device_from_v2_quirk, model, manuf):
 
     if model in ("_TZE204_ntcy3xu1"):
         for message, state in (
-            (b"\x09\x3a\x02\x00\x12\x0e\x04\x00\x01\x02", 100),
-            (b"\x09\x3a\x02\x00\x12\x0e\x04\x00\x01\x01", 40),
-            (b"\x09\x3a\x02\x00\x12\x0e\x04\x00\x01\x00", 5),
+            (b"\x09\x3a\x02\x00\x12\x0e\x04\x00\x01\x02", 200),
+            (b"\x09\x3a\x02\x00\x12\x0e\x04\x00\x01\x01", 80),
+            (b"\x09\x3a\x02\x00\x12\x0e\x04\x00\x01\x00", 10),
         ):
             hdr, data = ep.tuya_manufacturer.deserialize(message)
 
