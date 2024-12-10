@@ -269,8 +269,7 @@ async def test_tuya():
     quirked = zigpy_device_from_v2_quirk(model, manuf)
     ep = quirked.endpoints[1]
 
-    assert ep.basic is not None
-    assert isinstance(ep.basic, Basic)
+    temperature_listener = ClusterListener(ep.temperature)
 
     assert ep.tuya_manufacturer is not None
     assert isinstance(ep.tuya_manufacturer, TuyaMCUCluster)
@@ -281,8 +280,9 @@ async def test_tuya():
     status = ep.tuya_manufacturer.handle_get_data(data.data)
     assert status == foundation.Status.SUCCESS
 
+    assert len(temperature_listener.attribute_updates) == 1
     assert (
-        ep.temperature.get("measured_value")
+        temperature_listener.attribute_updates[0][1]
         == data.data.datapoints[0].data.payload * temp_scale
     )
 ```
