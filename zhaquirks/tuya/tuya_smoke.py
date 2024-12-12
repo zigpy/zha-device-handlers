@@ -12,14 +12,14 @@ from zhaquirks.tuya.builder import TuyaPowerConfigurationCluster2AAA, TuyaQuirkB
     .applies_to("_TZE204_vawy74yh", "TS0601")
     .applies_to("_TZE284_0zaf1cr8", "TS0601")
     .applies_to("_TZ3210_up3pngle", "TS0205")
-    .tuya_ias(dp_id=1)
+    .tuya_smoke(dp_id=1)
     .skip_configuration()
     .add_to_registry()
 )
 
 (
     TuyaQuirkBuilder("_TZE204_ntcy3xu1", "TS0601")
-    .tuya_ias(dp_id=1)
+    .tuya_smoke(dp_id=1)
     .tuya_dp(
         dp_id=14,
         ep_attribute=TuyaPowerConfigurationCluster2AAA.ep_attribute,
