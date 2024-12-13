@@ -70,7 +70,7 @@ async def test_convenience_methods(device_mock, method_name, attr_name, exp_clas
         device_mock.manufacturer, device_mock.model, registry=registry
     )
     entry = getattr(entry, method_name)(dp_id=1)
-    entry.skip_configuration().skip_configuration().add_to_registry()
+    entry.skip_configuration().add_to_registry()
 
     quirked = registry.get_device(device_mock)
     assert isinstance(quirked, CustomDeviceV2)
