@@ -30,7 +30,7 @@ from zhaquirks.tuya import (
 from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster, TuyaOnOffNM
 
 
-class TuyaIASContact(IasZone, TuyaLocalCluster):
+class TuyaIasContact(IasZone, TuyaLocalCluster):
     """Tuya local IAS contact cluster."""
 
     _CONSTANT_ATTRIBUTES = {
@@ -38,7 +38,7 @@ class TuyaIASContact(IasZone, TuyaLocalCluster):
     }
 
 
-class TuyaIASFire(IasZone, TuyaLocalCluster):
+class TuyaIasFire(IasZone, TuyaLocalCluster):
     """Tuya local IAS smoke/fire cluster."""
 
     _CONSTANT_ATTRIBUTES = {
@@ -111,7 +111,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         """Add a Tuya IAS contact sensor."""
         self.tuya_ias(
             dp_id=dp_id,
-            ias_cfg=TuyaIASContact,
+            ias_cfg=TuyaIasContact,
             converter=lambda x: IasZone.ZoneStatus.Alarm_1 if x != 0 else 0,
         )
         return self
@@ -120,7 +120,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         """Add a Tuya IAS smoke/fire sensor."""
         self.tuya_ias(
             dp_id=dp_id,
-            ias_cfg=TuyaIASFire,
+            ias_cfg=TuyaIasFire,
             converter=lambda x: IasZone.ZoneStatus.Alarm_1 if x == 0 else 0,
         )
         return self

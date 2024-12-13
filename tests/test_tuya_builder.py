@@ -13,8 +13,8 @@ from zigpy.zcl.clusters.general import Basic
 from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
 from zhaquirks.tuya.builder import (
-    TuyaIASContact,
-    TuyaIASFire,
+    TuyaIasContact,
+    TuyaIasFire,
     TuyaPowerConfigurationCluster2AAA,
     TuyaQuirkBuilder,
     TuyaRelativeHumidity,
@@ -57,8 +57,8 @@ def real_device(MockAppController):
         ("tuya_soil_moisture", "soil_moisture", TuyaSoilMoisture),
         ("tuya_temperature", "temperature", TuyaTemperatureMeasurement),
         ("tuya_humidity", "humidity", TuyaRelativeHumidity),
-        ("tuya_smoke", "ias_zone", TuyaIASFire),
-        ("tuya_contact", "ias_zone", TuyaIASContact),
+        ("tuya_smoke", "ias_zone", TuyaIasFire),
+        ("tuya_contact", "ias_zone", TuyaIasContact),
     ],
 )
 async def test_convenience_methods(device_mock, method_name, attr_name, exp_class):
