@@ -30,8 +30,16 @@ from zhaquirks.tuya import (
 from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster, TuyaOnOffNM
 
 
-class TuyaIASFire(IasZone, TuyaLocalCluster):
-    """Tuya local IAS cluster."""
+class TuyaIasContact(IasZone, TuyaLocalCluster):
+    """Tuya local IAS contact cluster."""
+
+    _CONSTANT_ATTRIBUTES = {
+        IasZone.AttributeDefs.zone_type.id: IasZone.ZoneType.Contact_Switch
+    }
+
+
+class TuyaIasFire(IasZone, TuyaLocalCluster):
+    """Tuya local IAS smoke/fire cluster."""
 
     _CONSTANT_ATTRIBUTES = {
         IasZone.AttributeDefs.zone_type.id: IasZone.ZoneType.Fire_Sensor
@@ -99,6 +107,40 @@ class TuyaQuirkBuilder(QuirkBuilder):
         self.adds(power_cfg)
         return self
 
+    def tuya_contact(self, dp_id: int):
+        """Add a Tuya IAS contact sensor."""
+        self.tuya_ias(
+            dp_id=dp_id,
+            ias_cfg=TuyaIasContact,
+            converter=lambda x: IasZone.ZoneStatus.Alarm_1 if x != 0 else 0,
+        )
+        return self
+
+    def tuya_smoke(self, dp_id: int):
+        """Add a Tuya IAS smoke/fire sensor."""
+        self.tuya_ias(
+            dp_id=dp_id,
+            ias_cfg=TuyaIasFire,
+            converter=lambda x: IasZone.ZoneStatus.Alarm_1 if x == 0 else 0,
+        )
+        return self
+
+    def tuya_ias(
+        self,
+        dp_id: int,
+        ias_cfg: TuyaLocalCluster,
+        converter: Optional[Callable[[Any], Any]] = None,
+    ) -> QuirkBuilder:
+        """Add a Tuya IAS Configuration."""
+        self.tuya_dp(
+            dp_id,
+            ias_cfg.ep_attribute,
+            IasZone.AttributeDefs.zone_status.name,
+            converter=converter,
+        )
+        self.adds(ias_cfg)
+        return self
+
     def tuya_metering(
         self,
         dp_id: int,
@@ -111,21 +153,6 @@ class TuyaQuirkBuilder(QuirkBuilder):
             "current_summ_delivered",
         )
         self.adds(metering_cfg)
-        return self
-
-    def tuya_ias(
-        self,
-        dp_id: int,
-        ias_cfg: TuyaLocalCluster = TuyaIASFire,
-    ) -> QuirkBuilder:
-        """Add a Tuya IAS Configuration."""
-        self.tuya_dp(
-            dp_id,
-            ias_cfg.ep_attribute,
-            IasZone.AttributeDefs.zone_status.name,
-            converter=lambda x: IasZone.ZoneStatus.Alarm_1 if x == 0 else 0,
-        )
-        self.adds(ias_cfg)
         return self
 
     def tuya_onoff(
