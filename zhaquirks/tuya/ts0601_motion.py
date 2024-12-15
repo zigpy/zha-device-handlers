@@ -164,3 +164,18 @@ base_tuya_motion = (
     # 106?
     .add_to_registry()
 )
+
+
+(
+    TuyaQuirkBuilder("_TYST11_i5j6ifxj", "5j6ifxj")
+    .applies_to("_TYST11_7hfcudw5", "hfcudw5")
+    .tuya_dp(
+        dp_id=3,
+        ep_attribute=TuyaOccupancySensing.ep_attribute,
+        attribute_name=OccupancySensing.AttributeDefs.occupancy.name,
+        converter=lambda x: True if x == 2 else False,
+    )
+    .adds(TuyaOccupancySensing)
+    .skip_configuration()
+    .add_to_registry()
+)
