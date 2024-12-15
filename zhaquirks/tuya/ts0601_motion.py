@@ -20,14 +20,8 @@ class TuyaOccupancySensing(OccupancySensing, TuyaLocalCluster):
     """Tuya local OccupancySensing cluster."""
 
 
-(
-    TuyaQuirkBuilder("_TZE200_ya4ft0w4", "TS0601")
-    .tuya_dp(
-        dp_id=1,
-        ep_attribute=TuyaOccupancySensing.ep_attribute,
-        attribute_name=OccupancySensing.AttributeDefs.occupancy.name,
-        converter=lambda x: True if x in (1, 2) else False,
-    )
+base_tuya_motion = (
+    TuyaQuirkBuilder()
     .adds(TuyaOccupancySensing)
     .tuya_number(
         dp_id=2,
@@ -92,12 +86,25 @@ class TuyaOccupancySensing(OccupancySensing, TuyaLocalCluster):
         translation_key="presence_sensitivity",
         fallback_name="Presence sensitivity",
     )
+    .adds(TuyaIlluminanceCluster)
+    .skip_configuration()
+)
+
+(
+    base_tuya_motion.clone()
+    .applies_to("_TZE200_ya4ft0w4", "TS0601")
+    .tuya_dp(
+        dp_id=1,
+        ep_attribute=TuyaOccupancySensing.ep_attribute,
+        attribute_name=OccupancySensing.AttributeDefs.occupancy.name,
+        converter=lambda x: True if x in (1, 2) else False,
+    )
     .tuya_dp(
         dp_id=103,
         ep_attribute=TuyaIlluminanceCluster.ep_attribute,
         attribute_name=TuyaIlluminanceCluster.AttributeDefs.measured_value.name,
+        converter=lambda x: 10000 * math.log10(x) + 1 if x != 0 else 0,
     )
-    .adds(TuyaIlluminanceCluster)
     .tuya_number(
         dp_id=105,
         attribute_name="presence_timeout",
@@ -110,7 +117,6 @@ class TuyaOccupancySensing(OccupancySensing, TuyaLocalCluster):
         translation_key="presence_timeout",
         fallback_name="Fade time",
     )
-    .skip_configuration()
     .add_to_registry()
 )
 
@@ -132,7 +138,8 @@ class TuyaOccupancySensing(OccupancySensing, TuyaLocalCluster):
 )
 
 (
-    TuyaQuirkBuilder("_TZE200_ar0slwnd", "TS0601")
+    base_tuya_motion.clone()
+    .applies_to("_TZE200_ar0slwnd", "TS0601")
     .applies_to("_TZE200_mrf6vtua", "TS0601")
     .applies_to("_TZE200_sfiy5tfs", "TS0601")
     .applies_to("_TZE204_sooucan5", "TS0601")
@@ -147,70 +154,6 @@ class TuyaOccupancySensing(OccupancySensing, TuyaLocalCluster):
         attribute_name=OccupancySensing.AttributeDefs.occupancy.name,
         converter=lambda x: True if x == 1 else False,
     )
-    .adds(TuyaOccupancySensing)
-    .tuya_number(
-        dp_id=2,
-        attribute_name="move_sensitivity",
-        type=t.uint16_t,
-        min_value=0,
-        max_value=10,
-        step=1,
-        translation_key="move_sensitivity",
-        fallback_name="Motion sensitivity",
-    )
-    .tuya_number(
-        dp_id=3,
-        attribute_name="detection_distance_min",
-        type=t.uint16_t,
-        device_class=SensorDeviceClass.DISTANCE,
-        unit=UnitOfLength.METERS,
-        min_value=0,
-        max_value=8.25,
-        step=0.75,
-        translation_key="detection_distance_min",
-        fallback_name="Minimum range",
-    )
-    .tuya_number(
-        dp_id=4,
-        attribute_name="detection_distance_max",
-        type=t.uint16_t,
-        device_class=SensorDeviceClass.DISTANCE,
-        unit=UnitOfLength.METERS,
-        min_value=0.75,
-        max_value=9.0,
-        step=0.75,
-        translation_key="detection_distance_max",
-        fallback_name="Maximum range",
-    )
-    .tuya_sensor(
-        dp_id=9,
-        attribute_name="distance",
-        type=t.uint16_t,
-        divisor=100,
-        state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.DISTANCE,
-        unit=UnitOfLength.METERS,
-        entity_type=EntityType.STANDARD,
-        translation_key="distance",
-        fallback_name="Target distance",
-    )
-    .tuya_switch(
-        dp_id=101,
-        attribute_name="find_switch",
-        entity_type=EntityType.STANDARD,
-        translation_key="find_switch",
-        fallback_name="Distance switch",
-    )
-    .tuya_number(
-        dp_id=102,
-        attribute_name="presence_sensitivity",
-        type=t.uint16_t,
-        min_value=0,
-        max_value=10,
-        step=1,
-        translation_key="presence_sensitivity",
-        fallback_name="Presence sensitivity",
-    )
     # 103?
     .tuya_dp(
         dp_id=104,
@@ -218,7 +161,6 @@ class TuyaOccupancySensing(OccupancySensing, TuyaLocalCluster):
         attribute_name=TuyaIlluminanceCluster.AttributeDefs.measured_value.name,
         converter=lambda x: 10000 * math.log10(x) + 1 if x != 0 else 0,
     )
-    .adds(TuyaIlluminanceCluster)
     # 106?
     .add_to_registry()
 )
