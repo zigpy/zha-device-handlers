@@ -482,6 +482,7 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
 
 (
     QuirkBuilder("BOSCH", "RBSH-TRV0-ZB-EU")
+    .applies_to("BOSCH", "RBSH-TRV1-ZB-EU")
     .replaces(BoschThermostatCluster)
     .replaces(BoschUserInterfaceCluster)
     # Operating mode - read-only: controlled automatically through Thermostat.system_mode (HAVC mode).
@@ -583,17 +584,6 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         BoschThermostatCluster.cluster_id,
         translation_key="ctrl_sequence_of_oper",
         fallback_name="Control sequence",
-    )
-    # Local temperature calibration.
-    .number(
-        Thermostat.AttributeDefs.local_temperature_calibration.name,
-        BoschThermostatCluster.cluster_id,
-        min_value=-5,
-        max_value=5,
-        step=0.1,
-        multiplier=0.1,
-        translation_key="local_temperature_calibration",
-        fallback_name="Local temperature offset",
     )
     .add_to_registry()
 )
