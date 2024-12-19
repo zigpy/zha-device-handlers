@@ -22,7 +22,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.schneider import SCHNEIDER
+from zhaquirks.schneiderelectric import SE_MANUF_NAME
 
 
 class MeteringCluster(CustomCluster, Metering):
@@ -39,8 +39,8 @@ class SocketOutlet(CustomDevice):
 
     signature = {
         MODELS_INFO: [
-            (SCHNEIDER, "SOCKET/OUTLET/1"),
-            (SCHNEIDER, "SOCKET/OUTLET/2"),
+            (SE_MANUF_NAME, "SOCKET/OUTLET/1"),
+            (SE_MANUF_NAME, "SOCKET/OUTLET/2"),
         ],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=9

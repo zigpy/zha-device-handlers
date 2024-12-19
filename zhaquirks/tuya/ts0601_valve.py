@@ -487,6 +487,7 @@ class GiexIrrigationStatus(t.enum8):
 
 (
     TuyaQuirkBuilder("_TZE284_8zizsafo", "TS0601")  # Giex GX04
+    .applies_to("_TZE284_eaet5qt5", "TS0601")  # Insoma SGW08W
     .tuya_battery(dp_id=59, power_cfg=TuyaPowerConfigurationCluster4AA)
     .tuya_switch(
         dp_id=1,

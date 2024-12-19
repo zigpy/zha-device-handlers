@@ -27,16 +27,17 @@ NIMLY_LOCK_NODE_DESCRIPTOR = NodeDescriptor(
 
 (
     QuirkBuilder(NIMLY, "EasyFingerTouch")
-    .also_applies_to(NIMLY, "EasyCodeTouch")
+    .applies_to(NIMLY, "EasyCodeTouch")
+    .applies_to(NIMLY, "easyCodeTouch_v1")
     .node_descriptor(NIMLY_LOCK_NODE_DESCRIPTOR)
     .add_to_registry()
 )
 
 (
     QuirkBuilder(NIMLY, "NimlyPRO")
-    .also_applies_to(NIMLY, "NimlyCode")
-    .also_applies_to(NIMLY, "NimlyTouch")
-    .also_applies_to(NIMLY, "NimlyIn")
+    .applies_to(NIMLY, "NimlyCode")
+    .applies_to(NIMLY, "NimlyTouch")
+    .applies_to(NIMLY, "NimlyIn")
     .node_descriptor(NIMLY_LOCK_NODE_DESCRIPTOR)
     .replaces(DoublingPowerConfigurationCluster, endpoint_id=11)
     .add_to_registry()

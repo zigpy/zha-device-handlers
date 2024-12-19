@@ -13,6 +13,8 @@ from zigpy.zcl.clusters.general import Basic
 from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
 from zhaquirks.tuya.builder import (
+    TuyaIasContact,
+    TuyaIasFire,
     TuyaPowerConfigurationCluster2AAA,
     TuyaQuirkBuilder,
     TuyaRelativeHumidity,
@@ -46,6 +48,41 @@ def real_device(MockAppController):
     return device
 
 
+@pytest.mark.parametrize(
+    "method_name,attr_name,exp_class",
+    [
+        ("tuya_battery", "power", TuyaPowerConfigurationCluster2AAA),
+        ("tuya_metering", "smartenergy_metering", TuyaValveWaterConsumed),
+        ("tuya_onoff", "on_off", TuyaOnOffNM),
+        ("tuya_soil_moisture", "soil_moisture", TuyaSoilMoisture),
+        ("tuya_temperature", "temperature", TuyaTemperatureMeasurement),
+        ("tuya_humidity", "humidity", TuyaRelativeHumidity),
+        ("tuya_smoke", "ias_zone", TuyaIasFire),
+        ("tuya_contact", "ias_zone", TuyaIasContact),
+    ],
+)
+async def test_convenience_methods(device_mock, method_name, attr_name, exp_class):
+    """Test TuyaQuirkBuilder convenience methods."""
+
+    registry = DeviceRegistry()
+
+    entry = TuyaQuirkBuilder(
+        device_mock.manufacturer, device_mock.model, registry=registry
+    )
+    entry = getattr(entry, method_name)(dp_id=1)
+    entry.skip_configuration().add_to_registry()
+
+    quirked = registry.get_device(device_mock)
+    assert isinstance(quirked, CustomDeviceV2)
+    assert quirked in registry
+
+    ep = quirked.endpoints[1]
+
+    ep_attr = getattr(ep, attr_name)
+    assert ep_attr is not None
+    assert isinstance(ep_attr, exp_class)
+
+
 async def test_tuya_quirkbuilder(device_mock):
     """Test adding a v2 Tuya Quirk to the registry and getting back a quirked device."""
 
@@ -60,10 +97,7 @@ async def test_tuya_quirkbuilder(device_mock):
     entry = (
         TuyaQuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
         .tuya_battery(dp_id=1)
-        .tuya_metering(dp_id=2)
         .tuya_onoff(dp_id=3)
-        .tuya_soil_moisture(dp_id=4)
-        .tuya_temperature(dp_id=5)
         .tuya_switch(
             dp_id=6,
             attribute_name="test_onoff",
@@ -97,7 +131,7 @@ async def test_tuya_quirkbuilder(device_mock):
             translation_key="test_enum",
             fallback_name="Test enum",
         )
-        .tuya_humidity(dp_id=11)
+        .skip_configuration()
         .add_to_registry()
     )
 
@@ -125,24 +159,6 @@ async def test_tuya_quirkbuilder(device_mock):
     assert tuya_cluster.attributes_by_name["test_binary"].id == 0xEF08
     assert tuya_cluster.attributes_by_name["test_sensor"].id == 0xEF09
     assert tuya_cluster.attributes_by_name["test_enum"].id == 0xEF0A
-
-    assert ep.power is not None
-    assert isinstance(ep.power, TuyaPowerConfigurationCluster2AAA)
-
-    assert ep.smartenergy_metering is not None
-    assert isinstance(ep.smartenergy_metering, TuyaValveWaterConsumed)
-
-    assert ep.on_off is not None
-    assert isinstance(ep.on_off, TuyaOnOffNM)
-
-    assert ep.soil_moisture is not None
-    assert isinstance(ep.soil_moisture, TuyaSoilMoisture)
-
-    assert ep.temperature is not None
-    assert isinstance(ep.temperature, TuyaTemperatureMeasurement)
-
-    assert ep.humidity is not None
-    assert isinstance(ep.humidity, TuyaRelativeHumidity)
 
     with mock.patch.object(
         tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
