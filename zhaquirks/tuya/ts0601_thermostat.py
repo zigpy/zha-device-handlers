@@ -55,6 +55,17 @@ class TuyaThermostat(Thermostat, TuyaAttributesCluster):
         Thermostat.AttributeDefs.ctrl_sequence_of_oper.id: Thermostat.ControlSequenceOfOperation.Heating_Only
     }
 
+    def __init__(self, *args, **kwargs):
+        """Init a TuyaThermostat cluster."""
+        super().__init__(*args, **kwargs)
+        self.add_unsupported_attribute(Thermostat.AttributeDefs.pi_heating_demand.id)
+        self.add_unsupported_attribute(
+            Thermostat.AttributeDefs.setpoint_change_source.id
+        )
+        self.add_unsupported_attribute(
+            Thermostat.AttributeDefs.setpoint_change_source_timestamp.id
+        )
+
 
 (
     TuyaQuirkBuilder("_TZE204_p3lqqy2r", "TS0601")
