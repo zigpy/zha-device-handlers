@@ -96,7 +96,7 @@ class TuyaThermostat(Thermostat, TuyaAttributesCluster):
         ep_attribute=TuyaThermostat.ep_attribute,
         attribute_name=TuyaThermostat.AttributeDefs.occupied_heating_setpoint.name,
         converter=lambda x: x * 100,
-        dp_converter=lambda x: x / 100,
+        dp_converter=lambda x: x // 100,
     )
     .tuya_dp(
         dp_id=24,
@@ -109,7 +109,7 @@ class TuyaThermostat(Thermostat, TuyaAttributesCluster):
         ep_attribute=TuyaThermostat.ep_attribute,
         attribute_name=Thermostat.AttributeDefs.local_temperature_calibration.name,
         converter=lambda x: x * 100,
-        dp_converter=lambda x: x / 100,
+        dp_converter=lambda x: x // 100,
     )
     .tuya_switch(
         dp_id=30,
@@ -151,7 +151,7 @@ class TuyaThermostat(Thermostat, TuyaAttributesCluster):
         ep_attribute=TuyaThermostat.ep_attribute,
         attribute_name=TuyaThermostat.AttributeDefs.max_heat_setpoint_limit.name,
         converter=lambda x: x * 100,
-        dp_converter=lambda x: x / 100,
+        dp_converter=lambda x: x // 100,
     )
     .tuya_enum(
         dp_id=108,
