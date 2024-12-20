@@ -46,16 +46,16 @@ zhaquirks.setup()
             "_TZE204_p3lqqy2r",
             "TS0601",
             b"\t\x1c\x02\x00\x0fh\x01\x00\x01\x01",
-            Thermostat.AttributeDefs.running_mode,
-            Thermostat.RunningMode.Heat,
-        ),  # Running mode, dp 104
+            Thermostat.AttributeDefs.running_state,
+            Thermostat.RunningState.Heat_State_On,
+        ),  # Running state, dp 104
         (
             "_TZE204_p3lqqy2r",
             "TS0601",
             b"\t\x1d\x02\x00\x10k\x02\x00\x04\x00\x00\x00\x1b",
             Thermostat.AttributeDefs.max_heat_setpoint_limit,
             2700,
-        ),  # Running mode, dp 107
+        ),  # Max heat set point, dp 107
     ],
 )
 async def test_handle_get_data(

@@ -137,7 +137,7 @@ class TuyaThermostat(Thermostat, TuyaAttributesCluster):
         dp_id=104,
         ep_attribute=TuyaThermostat.ep_attribute,
         attribute_name=TuyaThermostat.AttributeDefs.running_state.name,
-        converter=lambda x: 0x01 if not x else 0x00,
+        converter=lambda x: 0x00 if not x else 0x01,
     )
     .tuya_binary_sensor(
         dp_id=106,
