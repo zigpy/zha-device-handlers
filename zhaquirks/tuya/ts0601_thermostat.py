@@ -89,6 +89,8 @@ class TuyaThermostat(Thermostat, TuyaLocalCluster):
         dp_id=28,
         ep_attribute=TuyaThermostat.ep_attribute,
         attribute_name=Thermostat.AttributeDefs.local_temperature_calibration.name,
+        converter=lambda x: x * 100,
+        dp_converter=lambda x: x / 100,
     )
     .tuya_switch(
         dp_id=30,
@@ -117,7 +119,7 @@ class TuyaThermostat(Thermostat, TuyaLocalCluster):
         dp_id=104,
         ep_attribute=TuyaThermostat.ep_attribute,
         attribute_name=TuyaThermostat.AttributeDefs.running_mode.name,
-        converter=lambda x: {0x00: 0x00, 0x04: 0x00}[x],
+        converter=lambda x: 0x00 if not x else 0x04,
     )
     .tuya_binary_sensor(
         dp_id=106,
@@ -160,6 +162,7 @@ class TuyaThermostat(Thermostat, TuyaLocalCluster):
         dp_id=120,
         attribute_name="current",
         type=t.int16s,
+        divisor=10,
         device_class=SensorDeviceClass.CURRENT,
         state_class=SensorStateClass.MEASUREMENT,
         unit=UnitOfElectricCurrent.AMPERE,
@@ -190,6 +193,7 @@ class TuyaThermostat(Thermostat, TuyaLocalCluster):
         dp_id=123,
         attribute_name="energy",
         type=t.int16s,
+        divisor=100,
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL,
         unit=UnitOfEnergy.KILO_WATT_HOUR,

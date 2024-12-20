@@ -35,6 +35,27 @@ zhaquirks.setup()
             Thermostat.AttributeDefs.occupied_heating_setpoint,
             2500,
         ),  # Setpoint to 25, dp 16
+        (
+            "_TZE204_p3lqqy2r",
+            "TS0601",
+            b"\t\x17\x02\x00\n\x1c\x02\x00\x04\x00\x00\x00\x00",
+            Thermostat.AttributeDefs.local_temperature_calibration,
+            0,
+        ),  # Local calibration to 2, dp 28
+        (
+            "_TZE204_p3lqqy2r",
+            "TS0601",
+            b"\t\x1c\x02\x00\x0fh\x01\x00\x01\x01",
+            Thermostat.AttributeDefs.running_mode,
+            Thermostat.RunningMode.Heat,
+        ),  # Running mode, dp 104
+        (
+            "_TZE204_p3lqqy2r",
+            "TS0601",
+            b"\t\x1d\x02\x00\x10k\x02\x00\x04\x00\x00\x00\x1b",
+            Thermostat.AttributeDefs.max_heat_setpoint_limit,
+            27,
+        ),  # Running mode, dp 107
     ],
 )
 async def test_handle_get_data(
