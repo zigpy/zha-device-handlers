@@ -131,6 +131,8 @@ class TuyaThermostat(Thermostat, TuyaLocalCluster):
         dp_id=107,
         ep_attribute=TuyaThermostat.ep_attribute,
         attribute_name=TuyaThermostat.AttributeDefs.max_heat_setpoint_limit.name,
+        converter=lambda x: x * 100,
+        dp_converter=lambda x: x / 100,
     )
     .tuya_enum(
         dp_id=108,

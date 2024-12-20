@@ -41,7 +41,7 @@ zhaquirks.setup()
             b"\t\x17\x02\x00\n\x1c\x02\x00\x04\x00\x00\x00\x00",
             Thermostat.AttributeDefs.local_temperature_calibration,
             0,
-        ),  # Local calibration to 2, dp 28
+        ),  # Local calibration to 0, dp 28
         (
             "_TZE204_p3lqqy2r",
             "TS0601",
@@ -54,7 +54,7 @@ zhaquirks.setup()
             "TS0601",
             b"\t\x1d\x02\x00\x10k\x02\x00\x04\x00\x00\x00\x1b",
             Thermostat.AttributeDefs.max_heat_setpoint_limit,
-            27,
+            2700,
         ),  # Running mode, dp 107
     ],
 )
