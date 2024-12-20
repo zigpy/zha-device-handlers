@@ -11,8 +11,8 @@ from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateC
 from zigpy.types import t
 from zigpy.zcl.clusters.hvac import Thermostat
 
-from zhaquirks.tuya import TuyaLocalCluster
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
+from zhaquirks.tuya.mcu import TuyaAttributesCluster
 
 
 class RegulatorPeriod(t.enum8):
@@ -48,7 +48,7 @@ class SensorMode(t.enum8):
     Both = 0x02
 
 
-class TuyaThermostat(Thermostat, TuyaLocalCluster):
+class TuyaThermostat(Thermostat, TuyaAttributesCluster):
     """Tuya local thermostat cluster."""
 
     _CONSTANT_ATTRIBUTES = {
