@@ -76,13 +76,14 @@ class TuyaThermostat(Thermostat, TuyaLocalCluster):
         dp_id=16,
         ep_attribute=TuyaThermostat.ep_attribute,
         attribute_name=TuyaThermostat.AttributeDefs.occupied_heating_setpoint.name,
+        converter=lambda x: x * 100,
+        dp_converter=lambda x: x / 100,
     )
     .tuya_dp(
         dp_id=24,
         ep_attribute=TuyaThermostat.ep_attribute,
         attribute_name=TuyaThermostat.AttributeDefs.local_temperature.name,
-        converter=lambda x: x * 10,
-        dp_converter=lambda x: x / 10,
+        converter=lambda x: x * 100,
     )
     .tuya_dp(
         dp_id=28,
