@@ -9,6 +9,7 @@ from zigpy.quirks.v2.homeassistant import (
 )
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 from zigpy.types import t
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.hvac import Thermostat
 
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
@@ -64,6 +65,13 @@ class TuyaThermostat(Thermostat, TuyaAttributesCluster):
         )
         self.add_unsupported_attribute(
             Thermostat.AttributeDefs.setpoint_change_source_timestamp.id
+        )
+
+    async def write_attributes(self, attributes, manufacturer=None):
+        """Overwrite to force manufacturer code."""
+
+        return await super().write_attributes(
+            attributes, manufacturer=foundation.ZCLHeader.NO_MANUFACTURER_ID
         )
 
 
