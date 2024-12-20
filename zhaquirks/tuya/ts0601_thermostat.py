@@ -59,7 +59,6 @@ class TuyaThermostat(Thermostat, TuyaAttributesCluster):
     def __init__(self, *args, **kwargs):
         """Init a TuyaThermostat cluster."""
         super().__init__(*args, **kwargs)
-        self.add_unsupported_attribute(Thermostat.AttributeDefs.pi_heating_demand.id)
         self.add_unsupported_attribute(
             Thermostat.AttributeDefs.setpoint_change_source.id
         )
@@ -137,8 +136,8 @@ class TuyaThermostat(Thermostat, TuyaAttributesCluster):
     .tuya_dp(
         dp_id=104,
         ep_attribute=TuyaThermostat.ep_attribute,
-        attribute_name=TuyaThermostat.AttributeDefs.running_mode.name,
-        converter=lambda x: 0x00 if not x else 0x04,
+        attribute_name=TuyaThermostat.AttributeDefs.running_state.name,
+        converter=lambda x: 0x01 if not x else 0x00,
     )
     .tuya_binary_sensor(
         dp_id=106,
