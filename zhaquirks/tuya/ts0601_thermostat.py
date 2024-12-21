@@ -17,7 +17,7 @@ from zhaquirks.tuya.mcu import TuyaAttributesCluster
 
 
 class RegulatorPeriod(t.enum8):
-    """Tuya Rregulator Period enum."""
+    """Tuya Regulator Period enum."""
 
     FifteenMin = 0x00
     ThirtyMin = 0x01
@@ -77,7 +77,7 @@ class TuyaThermostat(Thermostat, TuyaAttributesCluster):
         ep_attribute=TuyaThermostat.ep_attribute,
         attribute_name=TuyaThermostat.AttributeDefs.system_mode.name,
         converter=lambda x: 0x00 if not x else 0x04,
-        dp_converter=lambda x: False if x == 0x00 else True,
+        dp_converter=lambda x: x != 0x00,
     )
     .tuya_enum(
         dp_id=2,
