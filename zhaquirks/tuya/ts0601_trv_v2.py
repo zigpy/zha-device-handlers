@@ -35,10 +35,16 @@ class TuyaThermostat(Thermostat, TuyaAttributesCluster):
         dp_id=2,
         ep_attribute=TuyaThermostat.ep_attribute,
         attribute_name=TuyaThermostat.AttributeDefs.system_mode.name,
-        converter=lambda x: {0x00: 0x01, 0x01: 0x00, 0x02: 0x04}[x],  # Auto, Off, Heat
-        dp_converter=lambda x: {0x01: 0x00, 0x00: 0x01, 0x04: 0x02}[
-            x
-        ],  # Auto, Off, Heat
+        converter=lambda x: {
+            0x00: 0x01,  # auto
+            0x01: 0x04,  # heat
+            0x02: 0x00,  # off
+        }[x],
+        dp_converter=lambda x: {
+            0x01: 0x00,  # auto
+            0x04: 0x01,  # heat
+            0x00: 0x02,  # off
+        }[x],
     )
     .tuya_dp(
         dp_id=4,
@@ -57,8 +63,8 @@ class TuyaThermostat(Thermostat, TuyaAttributesCluster):
         dp_id=47,
         ep_attribute=TuyaThermostat.ep_attribute,
         attribute_name=Thermostat.AttributeDefs.local_temperature_calibration.name,
-        converter=lambda x: x * 10,
-        dp_converter=lambda x: x // 10,
+        converter=lambda x: x,
+        dp_converter=lambda x: x + 0x100000000 if x < 0 else x,
     )
     .tuya_switch(
         dp_id=7,
