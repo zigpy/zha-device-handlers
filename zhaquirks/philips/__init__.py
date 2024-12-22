@@ -181,9 +181,7 @@ class PhilipsRemoteCluster(CustomCluster):
 
     def __init__(self, endpoint, is_server=True):
         """Initialize button press queue for each button."""
-
         super().__init__(endpoint, is_server)
-
         self.button_press_queue = {k: ButtonPressQueue() for k in self.BUTTONS}
 
     def handle_cluster_request(
