@@ -292,7 +292,7 @@ class PhilipsRemoteCluster(CustomCluster):
                 sim_event_args[ARGS][2] = 2
                 action = f"{button.action}_{press_type.action}"
                 _LOGGER.debug(
-                    "%s - send_press_event emitting simulated action: [%s] event_args: %s",
+                    "%s - send_press_event emitting simulated action: [%s], event_args: %s",
                     self.__class__.__name__,
                     action,
                     sim_event_args,
