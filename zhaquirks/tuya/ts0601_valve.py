@@ -594,7 +594,7 @@ class RoyalGardineerTimerState(t.enum8):
     .tuya_onoff(dp_id=1)
     .tuya_battery(dp_id=7, power_cfg=TuyaPowerConfigurationCluster2AA)
     # Water consumed (value comes in deciliters - convert it to liters)
-    .tuya_metering(dp_id=5, scale=1 / 10)
+    .tuya_metering(dp_id=5, scale=0.1)
     # Timer time left/remaining (raw value in seconds)
     .tuya_number(
         dp_id=11,
