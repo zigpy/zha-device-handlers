@@ -1,4 +1,4 @@
-"""Tests for Tuya Smoke Detector."""
+"""Tests for Tuya Thermostat."""
 
 import pytest
 from zigpy.zcl import foundation
