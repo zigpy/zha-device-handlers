@@ -203,7 +203,6 @@ base_tuya_motion = (
 (
     TuyaQuirkBuilder("_TYST11_i5j6ifxj", "5j6ifxj")
     .applies_to("_TYST11_7hfcudw5", "hfcudw5")
-    .tuya_motion(dp_id=3)
     .tuya_ias(
         dp_id=3,
         ias_cfg=TuyaMotionWithReset,
