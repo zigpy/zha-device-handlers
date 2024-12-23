@@ -153,7 +153,7 @@ class TuyaThermostat(Thermostat, TuyaAttributesCluster):
         attribute_name="thermostat_mode",
         enum_class=ThermostatMode,
         translation_key="thermostat_mode",
-        fallback_name="Mode",
+        fallback_name="Thermostat mode",
     )
     .tuya_enum(
         dp_id=109,
@@ -182,7 +182,6 @@ class TuyaThermostat(Thermostat, TuyaAttributesCluster):
         device_class=SensorDeviceClass.CURRENT,
         state_class=SensorStateClass.MEASUREMENT,
         unit=UnitOfElectricCurrent.AMPERE,
-        translation_key="current",
         fallback_name="Current",
     )
     .tuya_sensor(
@@ -192,7 +191,6 @@ class TuyaThermostat(Thermostat, TuyaAttributesCluster):
         device_class=SensorDeviceClass.VOLTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         unit=UnitOfElectricPotential.VOLT,
-        translation_key="voltage",
         fallback_name="Voltage",
     )
     .tuya_sensor(
@@ -202,7 +200,6 @@ class TuyaThermostat(Thermostat, TuyaAttributesCluster):
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
         unit=UnitOfPower.WATT,
-        translation_key="power",
         fallback_name="Power",
     )
     .tuya_sensor(
@@ -213,7 +210,6 @@ class TuyaThermostat(Thermostat, TuyaAttributesCluster):
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL,
         unit=UnitOfEnergy.KILO_WATT_HOUR,
-        translation_key="energy",
         fallback_name="Energy",
     )
     .skip_configuration()
