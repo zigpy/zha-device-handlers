@@ -128,7 +128,7 @@ base_tuya_motion = (
         dp_id=101,
         ep_attribute=TuyaOccupancySensing.ep_attribute,
         attribute_name=OccupancySensing.AttributeDefs.occupancy.name,
-        converter=lambda x: True if x == 1 else False,
+        converter=lambda x: x == 1,
     )
     .adds(TuyaOccupancySensing)
     .tuya_temperature(dp_id=104, scale=10)
@@ -152,7 +152,7 @@ base_tuya_motion = (
         dp_id=1,
         ep_attribute=TuyaOccupancySensing.ep_attribute,
         attribute_name=OccupancySensing.AttributeDefs.occupancy.name,
-        converter=lambda x: True if x == 1 else False,
+        converter=lambda x: x == 1,
     )
     # 103?
     .tuya_dp(
@@ -173,7 +173,7 @@ base_tuya_motion = (
         dp_id=3,
         ep_attribute=TuyaOccupancySensing.ep_attribute,
         attribute_name=OccupancySensing.AttributeDefs.occupancy.name,
-        converter=lambda x: True if x == 2 else False,
+        converter=lambda x: x == 2,
     )
     .adds(TuyaOccupancySensing)
     .skip_configuration()
