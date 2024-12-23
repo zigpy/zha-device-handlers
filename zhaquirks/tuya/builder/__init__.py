@@ -46,14 +46,6 @@ class TuyaIasFire(IasZone, TuyaLocalCluster):
     }
 
 
-class TuyaIasMotion(IasZone, TuyaLocalCluster):
-    """Tuya local IAS motion cluster."""
-
-    _CONSTANT_ATTRIBUTES = {
-        IasZone.AttributeDefs.zone_type.id: IasZone.ZoneType.Motion_Sensor
-    }
-
-
 class TuyaRelativeHumidity(RelativeHumidity, TuyaLocalCluster):
     """Tuya local RelativeHumidity cluster."""
 
@@ -130,15 +122,6 @@ class TuyaQuirkBuilder(QuirkBuilder):
             dp_id=dp_id,
             ias_cfg=TuyaIasFire,
             converter=lambda x: IasZone.ZoneStatus.Alarm_1 if x == 0 else 0,
-        )
-        return self
-
-    def tuya_motion(self, dp_id: int):
-        """Add a Tuya IAS motion sensor."""
-        self.tuya_ias(
-            dp_id=dp_id,
-            ias_cfg=TuyaIasMotion,
-            converter=lambda x: IasZone.ZoneStatus.Alarm_1 if x == 2 else 0,
         )
         return self
 
