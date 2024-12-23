@@ -26,6 +26,9 @@ class TuyaOccupancySensing(OccupancySensing, TuyaLocalCluster):
 class TuyaMotionWithReset(IasZone, TuyaLocalCluster):
     """Tuya local IAS motion cluster with reset."""
 
+    _CONSTANT_ATTRIBUTES = {
+        IasZone.AttributeDefs.zone_type.id: IasZone.ZoneType.Motion_Sensor
+    }
     reset_s: int = 15
 
     def __init__(self, *args, **kwargs):
