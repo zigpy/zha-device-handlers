@@ -3,6 +3,7 @@
 import pytest
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.measurement import OccupancySensing
+from zigpy.zcl.clusters.security import IasZone
 
 from tests.common import ClusterListener
 import zhaquirks
@@ -32,12 +33,10 @@ zhaquirks.setup()
         ("_TZE200_ztc6ggyl", "TS0601", ZCL_TUYA_MOTION),
         ("_TZE204_ztc6ggyl", "TS0601", ZCL_TUYA_MOTION),
         ("_TZE204_ztqnh5cg", "TS0601", ZCL_TUYA_MOTION),
-        ("_TYST11_i5j6ifxj", "5j6ifxj", ZCL_TUYA_MOTION_V3),
-        ("_TYST11_7hfcudw5", "hfcudw5", ZCL_TUYA_MOTION_V3),
     ],
 )
-async def test_tuya_motion_quirk(zigpy_device_from_v2_quirk, model, manuf, occ_msg):
-    """Test Tuya Motion Quirks."""
+async def test_tuya_motion_quirk_occ(zigpy_device_from_v2_quirk, model, manuf, occ_msg):
+    """Test Tuya Motion Quirks using Occupancy cluster."""
     quirked_device = zigpy_device_from_v2_quirk(model, manuf)
     ep = quirked_device.endpoints[1]
 
@@ -62,3 +61,35 @@ async def test_tuya_motion_quirk(zigpy_device_from_v2_quirk, model, manuf, occ_m
         occupancy_listener.attribute_updates[0][1]
         == OccupancySensing.Occupancy.Occupied
     )
+
+
+@pytest.mark.parametrize(
+    "model,manuf,occ_msg",
+    [
+        ("_TYST11_i5j6ifxj", "5j6ifxj", ZCL_TUYA_MOTION_V3),
+        ("_TYST11_7hfcudw5", "hfcudw5", ZCL_TUYA_MOTION_V3),
+    ],
+)
+async def test_tuya_motion_quirk_ias(zigpy_device_from_v2_quirk, model, manuf, occ_msg):
+    """Test Tuya Motion Quirks using IasZone cluster."""
+    quirked_device = zigpy_device_from_v2_quirk(model, manuf)
+    ep = quirked_device.endpoints[1]
+
+    assert ep.tuya_manufacturer is not None
+    assert isinstance(ep.tuya_manufacturer, TuyaMCUCluster)
+
+    assert ep.ias_zone is not None
+    assert isinstance(ep.ias_zone, IasZone)
+
+    ias_zone_listener = ClusterListener(ep.ias_zone)
+
+    hdr, data = ep.tuya_manufacturer.deserialize(occ_msg)
+    status = ep.tuya_manufacturer.handle_get_data(data.data)
+
+    assert status == foundation.Status.SUCCESS
+
+    zcl_zone_status_id = IasZone.AttributeDefs.zone_status.id
+
+    assert len(ias_zone_listener.attribute_updates) == 1
+    assert ias_zone_listener.attribute_updates[0][0] == zcl_zone_status_id
+    assert ias_zone_listener.attribute_updates[0][1] == IasZone.ZoneStatus.Alarm_1
