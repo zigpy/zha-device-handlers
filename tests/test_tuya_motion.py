@@ -1,5 +1,7 @@
 """Tests for Tuya quirks."""
 
+import asyncio
+
 import pytest
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.measurement import OccupancySensing
@@ -70,6 +72,7 @@ async def test_tuya_motion_quirk_occ(zigpy_device_from_v2_quirk, model, manuf, o
         ("_TYST11_7hfcudw5", "hfcudw5", ZCL_TUYA_MOTION_V3),
     ],
 )
+@pytest.mark.asyncio
 async def test_tuya_motion_quirk_ias(zigpy_device_from_v2_quirk, model, manuf, occ_msg):
     """Test Tuya Motion Quirks using IasZone cluster."""
     quirked_device = zigpy_device_from_v2_quirk(model, manuf)
@@ -81,6 +84,9 @@ async def test_tuya_motion_quirk_ias(zigpy_device_from_v2_quirk, model, manuf, o
     assert ep.ias_zone is not None
     assert isinstance(ep.ias_zone, IasZone)
 
+    # lower reset_s of IasZone cluster
+    ep.ias_zone.reset_s = 0
+
     ias_zone_listener = ClusterListener(ep.ias_zone)
 
     hdr, data = ep.tuya_manufacturer.deserialize(occ_msg)
@@ -90,6 +96,14 @@ async def test_tuya_motion_quirk_ias(zigpy_device_from_v2_quirk, model, manuf, o
 
     zcl_zone_status_id = IasZone.AttributeDefs.zone_status.id
 
+    # check that the zone status is set to alarm_1
     assert len(ias_zone_listener.attribute_updates) == 1
     assert ias_zone_listener.attribute_updates[0][0] == zcl_zone_status_id
     assert ias_zone_listener.attribute_updates[0][1] == IasZone.ZoneStatus.Alarm_1
+
+    await asyncio.sleep(0.01)
+
+    # check that the zone status is reset automatically
+    assert len(ias_zone_listener.attribute_updates) == 2
+    assert ias_zone_listener.attribute_updates[1][0] == zcl_zone_status_id
+    assert ias_zone_listener.attribute_updates[1][1] == 0
