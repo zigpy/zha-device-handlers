@@ -82,7 +82,6 @@ class ButtonPressQueue:
         self._ms_threshold = 300
         self._ms_last_click = 0
         self._click_counter = 1
-        self._button = None
         self._callback = lambda x: None
         self._task = None
 
@@ -90,19 +89,11 @@ class ButtonPressQueue:
         await asyncio.sleep(self._ms_threshold / 1000)
         self._callback(self._click_counter)
 
-    def _reset(self, button):
-        if self._task:
-            self._task.cancel()
-        self._click_counter = 1
-        self._button = button
-
-    def press(self, callback, button):
+    def press(self, callback):
         """Process a button press."""
         self._callback = callback
         now_ms = time.time() * 1000
-        if self._button != button:
-            self._reset(button)
-        elif now_ms - self._ms_last_click > self._ms_threshold:
+        if now_ms - self._ms_last_click > self._ms_threshold:
             self._click_counter = 1
         else:
             self._task.cancel()
@@ -188,7 +179,10 @@ class PhilipsRemoteCluster(CustomCluster):
         PressType(SHORT_RELEASE, COMMAND_M_SHORT_RELEASE),
     ]
 
-    button_press_queue = ButtonPressQueue()
+    def __init__(self, endpoint, is_server=True):
+        """Initialize button press queue for each button."""
+        super().__init__(endpoint, is_server)
+        self.button_press_queue = {k: ButtonPressQueue() for k in self.BUTTONS}
 
     def handle_cluster_request(
         self,
@@ -209,15 +203,20 @@ class PhilipsRemoteCluster(CustomCluster):
         )
 
         button = self.BUTTONS.get(args[0])
+        # Bail on unknown buttons. (This gets rid of dial button "presses")
+        if button is None:
+            _LOGGER.debug(
+                "%s - handle_cluster_request unknown button id [%s]",
+                self.__class__.__name__,
+                args[0],
+            )
+            return
         _LOGGER.debug(
             "%s - handle_cluster_request button id: [%s], button name: [%s]",
             self.__class__.__name__,
             args[0],
             button,
         )
-        # Bail on unknown buttons. (This gets rid of dial button "presses")
-        if button is None:
-            return
 
         press_type = self.PRESS_TYPES.get(args[2])
         if (
@@ -227,6 +226,11 @@ class PhilipsRemoteCluster(CustomCluster):
         ):
             press_type = self.SIMULATE_SHORT_EVENTS[1]
         if press_type is None:
+            _LOGGER.debug(
+                "%s - handle_cluster_request unknown button press type: [%s]",
+                self.__class__.__name__,
+                press_type,
+            )
             return
 
         duration = args[4]
@@ -288,15 +292,21 @@ class PhilipsRemoteCluster(CustomCluster):
                 sim_event_args[ARGS][2] = 2
                 action = f"{button.action}_{press_type.action}"
                 _LOGGER.debug(
-                    "%s - send_press_event emitting simulated action: [%s]",
+                    "%s - send_press_event emitting simulated action: [%s], event_args: %s",
                     self.__class__.__name__,
                     action,
+                    sim_event_args,
                 )
                 self.listener_event(ZHA_SEND_EVENT, action, sim_event_args)
 
         # Derive Multiple Presses
         if press_type.name == SHORT_RELEASE:
-            self.button_press_queue.press(send_press_event, button.id)
+            _LOGGER.debug(
+                "%s - handle_cluster_request handling short release. Push to button press queue for button %s",
+                self.__class__.__name__,
+                args[0],
+            )
+            self.button_press_queue[args[0]].press(send_press_event)
         else:
             action = f"{button.action}_{press_type.action}"
             self.listener_event(ZHA_SEND_EVENT, action, event_args)

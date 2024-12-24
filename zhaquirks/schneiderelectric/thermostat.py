@@ -3,7 +3,14 @@
 from typing import Final
 
 from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder
+from zigpy.quirks.v2 import EntityType, QuirkBuilder
+from zigpy.quirks.v2.homeassistant import (
+    EntityPlatform,
+    UnitOfPower,
+    UnitOfTemperature,
+    UnitOfTime,
+)
+from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 import zigpy.types as t
 from zigpy.zcl.clusters.hvac import SystemMode, Thermostat, UserInterface
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
@@ -285,7 +292,7 @@ class SEThermostat(CustomCluster, Thermostat):
             access="r",
             is_manufacturer_specific=True,
         )
-        se_local_temperature_souce_select: Final = ZCLAttributeDef(
+        se_local_temperature_source_select: Final = ZCLAttributeDef(
             id=0xE212,
             type=SELocalTemperatureSourceSelect,
             access="rw",
@@ -328,7 +335,7 @@ class SEThermostat(CustomCluster, Thermostat):
             is_manufacturer_specific=True,
         )
         se_heating_emitter_type: Final = ZCLAttributeDef(
-            id=0xE218,
+            id=0xE21A,
             type=SEHeatingEmitterType,
             access="rw",
             is_manufacturer_specific=True,
@@ -572,5 +579,213 @@ class SEHeatingCoolingOutput(CustomCluster):
     .replaces(SEMetering, endpoint_id=5)
     .replaces(SECycleTime)
     .replaces(SEHeatingCoolingOutput)
+    .number(
+        cluster_id=SEMetering.cluster_id,
+        endpoint_id=5,
+        attribute_name=SEMetering.AttributeDefs.se_fixed_load_demand.name,
+        translation_key="fixed_load_demand",
+        fallback_name="Fixed load demand",
+        device_class=NumberDeviceClass.POWER,
+        unit=UnitOfPower.WATT,
+        min_value=0,
+        max_value=10000,
+        step=1,
+    )
+    .number(
+        cluster_id=SEUserInterface.cluster_id,
+        endpoint_id=1,
+        attribute_name=SEUserInterface.AttributeDefs.se_brightness.name,
+        translation_key="display_brightness",
+        fallback_name="Display brightness",
+        # unit="%",
+        min_value=0,
+        max_value=100,
+        step=1,
+    )
+    .number(
+        cluster_id=SEUserInterface.cluster_id,
+        endpoint_id=1,
+        attribute_name=SEUserInterface.AttributeDefs.se_inactive_brightness.name,
+        translation_key="display_inactive_brightness",
+        fallback_name="Display inactive brightness",
+        # unit="%",
+        min_value=0,
+        max_value=100,
+        step=1,
+    )
+    .number(
+        cluster_id=SEUserInterface.cluster_id,
+        endpoint_id=1,
+        attribute_name=SEUserInterface.AttributeDefs.se_activity_timeout.name,
+        translation_key="display_activity_timeout",
+        fallback_name="Display activity timeout",
+        device_class=NumberDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        min_value=0,
+        max_value=3600,
+        step=1,
+    )
+    .binary_sensor(
+        cluster_id=SEThermostat.cluster_id,
+        endpoint_id=1,
+        attribute_name=SEThermostat.AttributeDefs.se_open_window_detection_status.name,
+        translation_key="open_window_detection_status",
+        fallback_name="Open window detection status",
+        entity_type=EntityType.DIAGNOSTIC,
+    )
+    .number(
+        cluster_id=SEThermostat.cluster_id,
+        endpoint_id=1,
+        attribute_name=SEThermostat.AttributeDefs.se_open_window_detection_threshold.name,
+        translation_key="open_window_detection_threshold",
+        fallback_name="Open window detection threshold",
+        device_class=NumberDeviceClass.TEMPERATURE,
+        unit=UnitOfTemperature.CELSIUS,
+        min_value=0,
+        max_value=12,
+        multiplier=0.1,
+        step=0.1,
+    )
+    .number(
+        cluster_id=SEThermostat.cluster_id,
+        endpoint_id=1,
+        attribute_name=SEThermostat.AttributeDefs.se_open_window_event_duration.name,
+        translation_key="open_window_event_duration",
+        fallback_name="Open window event duration",
+        device_class=NumberDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        min_value=0,
+        max_value=7620,
+        step=1,
+    )
+    .number(
+        cluster_id=SEThermostat.cluster_id,
+        endpoint_id=1,
+        attribute_name=SEThermostat.AttributeDefs.se_open_window_detection_guard_period.name,
+        translation_key="open_window_detection_guard_period",
+        fallback_name="Open window detection guard period",
+        device_class=NumberDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        min_value=0,
+        max_value=7620,
+        step=1,
+    )
+    .number(
+        cluster_id=SEThermostat.cluster_id,
+        endpoint_id=1,
+        attribute_name=SEThermostat.AttributeDefs.se_fallback_timeout.name,
+        translation_key="fallback_timeout",
+        fallback_name="Fallback timeout",
+        device_class=NumberDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        min_value=30,
+        max_value=10800,
+        step=1,
+    )
+    .number(
+        cluster_id=SEThermostat.cluster_id,
+        endpoint_id=1,
+        attribute_name=SEThermostat.AttributeDefs.se_boost_amount.name,
+        translation_key="boost_amount",
+        fallback_name="Boost amount",
+        device_class=NumberDeviceClass.TEMPERATURE,
+        unit=UnitOfTemperature.CELSIUS,
+        min_value=0,
+        max_value=10,
+        multiplier=0.01,
+        step=0.5,
+    )
+    .enum(
+        cluster_id=SEThermostat.cluster_id,
+        endpoint_id=1,
+        attribute_name=SEThermostat.AttributeDefs.se_control_status.name,
+        translation_key="control_status",
+        fallback_name="Control status",
+        enum_class=SEControlStatus,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.DIAGNOSTIC,
+    )
+    .enum(
+        cluster_id=SEThermostat.cluster_id,
+        endpoint_id=1,
+        attribute_name=SEThermostat.AttributeDefs.se_local_temperature_source_select.name,
+        translation_key="local_temperature_source",
+        fallback_name="Local temperature source",
+        enum_class=SELocalTemperatureSourceSelect,
+    )
+    .enum(
+        cluster_id=SEThermostat.cluster_id,
+        endpoint_id=1,
+        attribute_name=SEThermostat.AttributeDefs.se_control_type.name,
+        translation_key="control_type",
+        fallback_name="Control type",
+        enum_class=SEControlType,
+    )
+    .enum(
+        cluster_id=SEThermostat.cluster_id,
+        endpoint_id=1,
+        attribute_name=SEThermostat.AttributeDefs.se_thermostat_application.name,
+        translation_key="thermostat_application",
+        fallback_name="Thermostat application",
+        enum_class=SEThermostatApplication,
+    )
+    .enum(
+        cluster_id=SEThermostat.cluster_id,
+        endpoint_id=1,
+        attribute_name=SEThermostat.AttributeDefs.se_heating_fuel.name,
+        translation_key="heating_fuel",
+        fallback_name="Heating fuel",
+        enum_class=SEHeatingFuel,
+    )
+    .enum(
+        cluster_id=SEThermostat.cluster_id,
+        endpoint_id=1,
+        attribute_name=SEThermostat.AttributeDefs.se_heat_transfer_medium.name,
+        translation_key="heat_transfer_medium",
+        fallback_name="Heat transfer medium",
+        enum_class=SEHeatTransferMedium,
+    )
+    .enum(
+        cluster_id=SEThermostat.cluster_id,
+        endpoint_id=1,
+        attribute_name=SEThermostat.AttributeDefs.se_heating_emitter_type.name,
+        translation_key="heating_emitter_type",
+        fallback_name="Heating emitter type",
+        enum_class=SEHeatingEmitterType,
+    )
+    .number(
+        cluster_id=SETemperatureMeasurement.cluster_id,
+        endpoint_id=2,
+        attribute_name=SETemperatureMeasurement.AttributeDefs.se_sensor_correction.name,
+        translation_key="ambient_sensor_correction",
+        fallback_name="Ambient sensor correction",
+        device_class=NumberDeviceClass.TEMPERATURE,
+        unit=UnitOfTemperature.CELSIUS,
+        min_value=-10,
+        max_value=10,
+        step=0.1,
+        multiplier=0.01,
+    )
+    .number(
+        cluster_id=SETemperatureMeasurementExternal.cluster_id,
+        endpoint_id=3,
+        attribute_name=SETemperatureMeasurementExternal.AttributeDefs.se_sensor_correction.name,
+        translation_key="external_sensor_correction",
+        fallback_name="External sensor correction",
+        device_class=NumberDeviceClass.TEMPERATURE,
+        unit=UnitOfTemperature.CELSIUS,
+        min_value=-10,
+        max_value=10,
+        step=0.1,
+        multiplier=0.01,
+    )
+    .enum(
+        cluster_id=SETemperatureMeasurementExternal.cluster_id,
+        endpoint_id=3,
+        attribute_name=SETemperatureMeasurementExternal.AttributeDefs.se_temperature_sensor_type.name,
+        translation_key="external_temperature_sensor_type",
+        fallback_name="External temperature sensor type",
+        enum_class=SETemperatureSensorType,
+    )
     .add_to_registry()
 )

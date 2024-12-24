@@ -317,15 +317,10 @@ class ManuallyFiredButtonPressQueue:
 
         self._click_counter = 0
         self._callback = None
-        self._button = None
 
-    def press(self, callback, button):
+    def press(self, callback):
         """Process a button press."""
-        if button != self._button:
-            self._click_counter = 1
-        else:
-            self._click_counter += 1
-        self._button = button
+        self._click_counter += 1
         self._callback = callback
 
 
@@ -374,11 +369,14 @@ def test_PhilipsRemoteCluster_short_press(
     cluster = device.endpoints[ep].philips_remote_cluster
     listener = mock.MagicMock()
     cluster.add_listener(listener)
-    cluster.button_press_queue = ManuallyFiredButtonPressQueue()
+    cluster.button_press_queue = {
+        k: ManuallyFiredButtonPressQueue() for k in cluster.BUTTONS
+    }
 
     cluster.handle_cluster_request(ZCLHeader(), [1, 0, 0, 0, 0])
     cluster.handle_cluster_request(ZCLHeader(), [1, 0, 2, 0, 0])
-    cluster.button_press_queue.fire()
+    for q in cluster.button_press_queue.values():
+        q.fire()
 
     assert listener.zha_send_event.call_count == 2
 
@@ -462,14 +460,17 @@ def test_PhilipsRemoteCluster_multi_press(
     cluster = device.endpoints[ep].philips_remote_cluster
     listener = mock.MagicMock()
     cluster.add_listener(listener)
-    cluster.button_press_queue = ManuallyFiredButtonPressQueue()
+    cluster.button_press_queue = {
+        k: ManuallyFiredButtonPressQueue() for k in cluster.BUTTONS
+    }
 
     for _ in range(0, count):
         # btn1 short press
         cluster.handle_cluster_request(ZCLHeader(), [1, 0, 0, 0, 0])
         # btn1 short release
         cluster.handle_cluster_request(ZCLHeader(), [1, 0, 2, 0, 0])
-    cluster.button_press_queue.fire()
+    for q in cluster.button_press_queue.values():
+        q.fire()
 
     assert listener.zha_send_event.call_count == 1
     args_button_id = count + 2
@@ -620,30 +621,21 @@ def test_PhilipsRemoteCluster_long_press(
 
 
 @pytest.mark.parametrize(
-    "button_presses, result_count",
+    "button_presses",
     (
-        (
-            [1],
-            1,
-        ),
-        (
-            [1, 1],
-            2,
-        ),
-        (
-            [1, 1, 3, 3, 3, 2, 2, 2, 2],
-            4,
-        ),
+        (1),
+        (2),
+        (4),
     ),
 )
-def test_ButtonPressQueue_presses_without_pause(button_presses, result_count):
+def test_ButtonPressQueue_presses_without_pause(button_presses):
     """Test ButtonPressQueue presses without pause in between presses."""
 
     q = ButtonPressQueue()
     q._ms_threshold = 50
     cb = mock.MagicMock()
-    for btn in button_presses:
-        q.press(cb, btn)
+    for _ in range(button_presses):
+        q.press(cb)
 
     # await cluster.button_press_queue._task
     # Instead of awaiting the job, significantly extending the time
@@ -653,33 +645,17 @@ def test_ButtonPressQueue_presses_without_pause(button_presses, result_count):
     q._task.cancel()
     q._ms_last_click = 0
     q._callback(q._click_counter)
-    cb.assert_called_once_with(result_count)
+    cb.assert_called_once_with(button_presses)
 
 
 @pytest.mark.parametrize(
-    "press_sequence, results",
+    "press_sequence",
     (
-        (
-            # switch buttons within a sequence,
-            # new sequence start with different button
-            (
-                [1, 1, 3, 3],
-                [2, 2, 2],
-            ),
-            (2, 3),
-        ),
-        (
-            # no button switch within a sequence,
-            # new sequence with same button
-            (
-                [1, 1, 1],
-                [1],
-            ),
-            (3, 1),
-        ),
+        ((2, 3)),
+        ((3, 1)),
     ),
 )
-async def test_ButtonPressQueue_presses_with_pause(press_sequence, results):
+async def test_ButtonPressQueue_presses_with_pause(press_sequence):
     """Test ButtonPressQueue with pauses in between button press sequences."""
 
     q = ButtonPressQueue()
@@ -687,14 +663,14 @@ async def test_ButtonPressQueue_presses_with_pause(press_sequence, results):
     cb = mock.MagicMock()
 
     for seq in press_sequence:
-        for btn in seq:
-            q.press(cb, btn)
+        for _ in range(seq):
+            q.press(cb)
         await q._task
 
-    assert cb.call_count == len(results)
+    assert cb.call_count == len(press_sequence)
 
     calls = []
-    for res in results:
+    for res in press_sequence:
         calls.append(mock.call(res))
 
     cb.assert_has_calls(calls)
@@ -768,3 +744,53 @@ def test_contact_sensor(zigpy_device_from_v2_quirk):
     # update again with the same value and except no new update
     hue_cluster.update_attribute(hue_cluster.AttributeDefs.contact.id, 1)
     assert len(on_off_listener.attribute_updates) == 2
+
+
+@pytest.mark.parametrize(
+    "dev, ep, button_events, expected_actions",
+    (
+        (
+            PhilipsWallSwitch,
+            1,
+            (
+                [
+                    b"\x1d\x0b\x106\x00\x01\x00\x000\x00!\x00\x00",
+                    b"\x1d\x0b\x107\x00\x01\x00\x000\x02!\x01\x00",
+                ],
+                [
+                    b"\x1d\x0b\x108\x00\x02\x00\x000\x00!\x00\x00",
+                    b"\x1d\x0b\x109\x00\x02\x00\x000\x02!\x01\x00",
+                ],
+            ),
+            ["left_press", "left_short_release", "right_press", "right_short_release"],
+        ),
+    ),
+)
+def test_PhilipsRemoteCluster_multi_button_press(
+    zigpy_device_from_quirk, dev, ep, button_events, expected_actions
+):
+    """Test PhilipsRemoteCluster short button press logic."""
+
+    device = zigpy_device_from_quirk(dev)
+
+    remote_cluster = device.endpoints[ep].philips_remote_cluster
+    remote_cluster.button_press_queue = {
+        k: ManuallyFiredButtonPressQueue() for k in remote_cluster.BUTTONS
+    }
+    remote_listener = mock.MagicMock()
+    remote_cluster.add_listener(remote_listener)
+
+    expected_event_count = 0
+    for button in button_events:
+        for eventData in button:
+            hdr, args = remote_cluster.deserialize(eventData)
+            remote_cluster.handle_message(hdr, args)
+            expected_event_count += 1
+
+    for q in remote_cluster.button_press_queue.values():
+        q.fire()
+
+    assert remote_listener.zha_send_event.call_count == expected_event_count
+
+    for i, expected_action in enumerate(expected_actions):
+        assert remote_listener.zha_send_event.call_args_list[i][0][0] == expected_action
