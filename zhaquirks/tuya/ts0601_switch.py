@@ -918,6 +918,7 @@ class TuyaSwitchX8_GP(TuyaSwitch):
     signature = {
         MODELS_INFO: [
             ("_TZE200_wktrysab", "TS0601"),
+            ("_TZE204_wktrysab", "TS0601"),
         ],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=81

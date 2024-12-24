@@ -1,16 +1,9 @@
 """Aqara H1-series wireless remote."""
 
-from zigpy.profiles import zha
-import zigpy.types as t
-from zigpy.zcl.clusters.general import (
-    Basic,
-    Identify,
-    LevelControl,
-    MultistateInput,
-    OnOff,
-    PowerConfiguration,
-)
-from zigpy.zcl.clusters.lighting import Color
+from zigpy import types
+from zigpy.quirks.v2 import ClusterType, QuirkBuilder
+from zigpy.zcl.clusters.general import Identify, OnOff
+from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
 
 from zhaquirks import PowerConfigurationCluster
 from zhaquirks.const import (
@@ -21,26 +14,15 @@ from zhaquirks.const import (
     COMMAND,
     COMMAND_OFF,
     COMMAND_TOGGLE,
-    DEVICE_TYPE,
     DOUBLE_PRESS,
     ENDPOINT_ID,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
     LEFT,
     LONG_PRESS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
     RIGHT,
     SHORT_PRESS,
     TRIPLE_PRESS,
 )
-from zhaquirks.xiaomi import (
-    LUMI,
-    BasicCluster,
-    XiaomiAqaraE1Cluster,
-    XiaomiCustomDevice,
-)
+from zhaquirks.xiaomi import LUMI, XiaomiAqaraE1Cluster
 from zhaquirks.xiaomi.aqara.opple_remote import (
     COMMAND_1_DOUBLE,
     COMMAND_1_HOLD,
@@ -60,28 +42,43 @@ from zhaquirks.xiaomi.aqara.opple_remote import (
 BOTH_BUTTONS = "both_buttons"
 
 
-class AqaraRemoteManuSpecificCluster(XiaomiAqaraE1Cluster):
-    """Aqara manufacturer specific settings."""
+class AqaraSwitchClickMode(types.enum8):
+    """Aqara switch click mode attribute values."""
 
-    # manufacture override code: 4447 (0x115f)
-    # to get/set these attributes, you might need to click the button 5 times
-    # quickly.
-    attributes = XiaomiAqaraE1Cluster.attributes.copy()
-    attributes.update(
-        {
-            # operation_mode:
-            # 0 means "command" mode.
-            # 1 means "event" mode.
-            0x0009: ("operation_mode", t.uint8_t, True),
-            # click_mode:
-            # 1 means single click mode, which is low latency (50ms) but only sends
-            #   single click events.
-            # 2 means multiple click mode, which has a slightly higher latency but
-            #   supports single/double/triple click and long press.
-            # default value after factory reset: 1.
-            0x0125: ("click_mode", t.uint8_t, True),
-        }
-    )
+    Single = 0x01  # Low latency (50ms) but only sends single click events.
+    Multiple = 0x02  # (default) Slightly higher latency but supports single/double/triple click and long press.
+
+
+class AqaraSwitchOperationMode(types.enum8):
+    """Aqara switch operation mode attribute values."""
+
+    Command = 0x00
+    Event = 0x01
+
+
+class AqaraRemoteManuSpecificCluster(XiaomiAqaraE1Cluster):
+    """Aqara manufacturer cluster for the presence sensor FP1E."""
+
+    class AttributeDefs(BaseAttributeDefs):
+        """Manufacturer specific attributes."""
+
+        # To get/set these attributes, you might need to click the button 5 times quickly.
+
+        operation_mode = ZCLAttributeDef(
+            id=0x0009,
+            type=AqaraSwitchOperationMode,
+            zcl_type=DataTypeId.uint8,
+            access="rw",
+            is_manufacturer_specific=True,
+        )
+
+        click_mode = ZCLAttributeDef(
+            id=0x0125,
+            type=AqaraSwitchClickMode,
+            zcl_type=DataTypeId.uint8,
+            access="rw",
+            is_manufacturer_specific=True,
+        )
 
 
 class PowerConfigurationClusterH1Remote(PowerConfigurationCluster):
@@ -93,303 +90,108 @@ class PowerConfigurationClusterH1Remote(PowerConfigurationCluster):
     MAX_VOLTS = 3.0
 
 
-class RemoteH1SingleRocker(XiaomiCustomDevice):
-    """Aqara H1 Wireless Remote Single Rocker Version WRS-R01."""
-
-    signature = {
-        MODELS_INFO: [(LUMI, "lumi.remote.b18ac1")],
-        ENDPOINTS: {
-            # SizePrefixedSimpleDescriptor(
-            #   endpoint=1, profile=260, device_type=259, device_version=1,
-            #   input_clusters=[0, 3, 1], output_clusters=[3, 6])
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    Identify.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    OnOff.cluster_id,
-                ],
-            }
-        },
-    }
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
-                INPUT_CLUSTERS: [
-                    BasicCluster,
-                    Identify.cluster_id,
-                    PowerConfigurationClusterH1Remote,
-                    MultistateInputCluster,
-                    AqaraRemoteManuSpecificCluster,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    OnOff.cluster_id,
-                ],
-            }
-        }
-    }
-    device_automation_triggers = {
-        # triggers when operation_mode == event
-        # the button doesn't send an release event after hold
-        (SHORT_PRESS, BUTTON): {COMMAND: COMMAND_1_SINGLE},
-        (DOUBLE_PRESS, BUTTON): {COMMAND: COMMAND_1_DOUBLE},
-        (TRIPLE_PRESS, BUTTON): {COMMAND: COMMAND_1_TRIPLE},
-        (LONG_PRESS, BUTTON): {COMMAND: COMMAND_1_HOLD},
-        # triggers when operation_mode == command
-        (ALT_SHORT_PRESS, BUTTON): {COMMAND: COMMAND_TOGGLE, ENDPOINT_ID: 1, ARGS: []},
-        (ALT_DOUBLE_PRESS, BUTTON): {COMMAND: COMMAND_OFF, ENDPOINT_ID: 1, ARGS: []},
-    }
-
-
-class RemoteH1DoubleRocker1(XiaomiCustomDevice):
-    """Aqara H1 Wireless Remote Double Rocker Version WRS-R02, variant 1."""
-
-    signature = {
-        MODELS_INFO: [(LUMI, "lumi.remote.b28ac1")],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    Identify.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    OnOff.cluster_id,
-                ],
+(
+    QuirkBuilder(LUMI, "lumi.remote.b18ac1")
+    # temporarily commented out due to potentially breaking existing blueprints
+    # .friendly_name(
+    #     manufacturer="Aqara", model="Wireless Remote Switch H1 (Single Rocker)"
+    # )
+    .replaces(AqaraRemoteManuSpecificCluster)
+    .replaces(MultistateInputCluster)
+    .replaces(PowerConfigurationClusterH1Remote)
+    .enum(
+        AqaraRemoteManuSpecificCluster.AttributeDefs.click_mode.name,
+        AqaraSwitchClickMode,
+        AqaraRemoteManuSpecificCluster.cluster_id,
+        translation_key="click_mode",
+        fallback_name="Click mode",
+    )
+    .enum(
+        AqaraRemoteManuSpecificCluster.AttributeDefs.operation_mode.name,
+        AqaraSwitchOperationMode,
+        AqaraRemoteManuSpecificCluster.cluster_id,
+        translation_key="operation_mode",
+        fallback_name="Operation mode",
+    )
+    .device_automation_triggers(
+        {
+            # triggers when operation_mode == event
+            # the button doesn't send an release event after hold
+            (SHORT_PRESS, BUTTON): {COMMAND: COMMAND_1_SINGLE},
+            (DOUBLE_PRESS, BUTTON): {COMMAND: COMMAND_1_DOUBLE},
+            (TRIPLE_PRESS, BUTTON): {COMMAND: COMMAND_1_TRIPLE},
+            (LONG_PRESS, BUTTON): {COMMAND: COMMAND_1_HOLD},
+            # triggers when operation_mode == command
+            (ALT_SHORT_PRESS, BUTTON): {
+                COMMAND: COMMAND_TOGGLE,
+                ENDPOINT_ID: 1,
+                ARGS: [],
             },
-            3: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
-                INPUT_CLUSTERS: [Identify.cluster_id],
-                OUTPUT_CLUSTERS: [OnOff.cluster_id],
-            },
-        },
-    }
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
-                INPUT_CLUSTERS: [
-                    BasicCluster,
-                    Identify.cluster_id,
-                    PowerConfigurationClusterH1Remote,
-                    MultistateInputCluster,
-                    AqaraRemoteManuSpecificCluster,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    OnOff.cluster_id,
-                ],
-            },
-            2: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
-                INPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    MultistateInputCluster,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    OnOff.cluster_id,
-                ],
-            },
-            3: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
-                INPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    MultistateInputCluster,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    OnOff.cluster_id,
-                ],
+            (ALT_DOUBLE_PRESS, BUTTON): {
+                COMMAND: COMMAND_OFF,
+                ENDPOINT_ID: 1,
+                ARGS: [],
             },
         }
-    }
-    device_automation_triggers = {
-        # triggers when operation_mode == event
-        # the button doesn't send a release event after hold
-        (SHORT_PRESS, LEFT): {COMMAND: COMMAND_1_SINGLE},
-        (DOUBLE_PRESS, LEFT): {COMMAND: COMMAND_1_DOUBLE},
-        (TRIPLE_PRESS, LEFT): {COMMAND: COMMAND_1_TRIPLE},
-        (LONG_PRESS, LEFT): {COMMAND: COMMAND_1_HOLD},
-        (SHORT_PRESS, RIGHT): {COMMAND: COMMAND_2_SINGLE},
-        (DOUBLE_PRESS, RIGHT): {COMMAND: COMMAND_2_DOUBLE},
-        (TRIPLE_PRESS, RIGHT): {COMMAND: COMMAND_2_TRIPLE},
-        (LONG_PRESS, RIGHT): {COMMAND: COMMAND_2_HOLD},
-        (SHORT_PRESS, BOTH_BUTTONS): {COMMAND: COMMAND_3_SINGLE},
-        (DOUBLE_PRESS, BOTH_BUTTONS): {COMMAND: COMMAND_3_DOUBLE},
-        (TRIPLE_PRESS, BOTH_BUTTONS): {COMMAND: COMMAND_3_TRIPLE},
-        (LONG_PRESS, BOTH_BUTTONS): {COMMAND: COMMAND_3_HOLD},
-        # triggers when operation_mode == command
-        # known issue: it seems impossible to know which button being pressed
-        # when operation_mode == command
-        (ALT_SHORT_PRESS, BUTTON): {COMMAND: COMMAND_TOGGLE, ENDPOINT_ID: 1, ARGS: []},
-    }
+    )
+    .add_to_registry()
+)
 
 
-class RemoteH1DoubleRocker2(RemoteH1DoubleRocker1):
-    """Aqara H1 Wireless Remote Double Rocker Version WRS-R02, variant 2."""
-
-    signature = {
-        MODELS_INFO: [(LUMI, "lumi.remote.b28ac1")],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    Identify.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    OnOff.cluster_id,
-                ],
+(
+    QuirkBuilder(LUMI, "lumi.remote.b28ac1")
+    # temporarily commented out due to potentially breaking existing blueprints
+    # .friendly_name(
+    #     manufacturer="Aqara", model="Wireless Remote Switch H1 (Double Rocker)"
+    # )
+    .replaces(AqaraRemoteManuSpecificCluster)
+    .adds(Identify)
+    .replaces(MultistateInputCluster)
+    .replaces(MultistateInputCluster, endpoint_id=2)
+    .replaces(MultistateInputCluster, endpoint_id=3)
+    .adds(OnOff, cluster_type=ClusterType.Client)
+    .adds(OnOff, endpoint_id=2, cluster_type=ClusterType.Client)
+    .adds(OnOff, endpoint_id=3, cluster_type=ClusterType.Client)
+    .replaces(PowerConfigurationClusterH1Remote)
+    .enum(
+        AqaraRemoteManuSpecificCluster.AttributeDefs.click_mode.name,
+        AqaraSwitchClickMode,
+        AqaraRemoteManuSpecificCluster.cluster_id,
+        translation_key="click_mode",
+        fallback_name="Click mode",
+    )
+    .enum(
+        AqaraRemoteManuSpecificCluster.AttributeDefs.operation_mode.name,
+        AqaraSwitchOperationMode,
+        AqaraRemoteManuSpecificCluster.cluster_id,
+        translation_key="operation_mode",
+        fallback_name="Operation mode",
+    )
+    .device_automation_triggers(
+        {
+            # triggers when operation_mode == event
+            # the button doesn't send a release event after hold
+            (SHORT_PRESS, LEFT): {COMMAND: COMMAND_1_SINGLE},
+            (DOUBLE_PRESS, LEFT): {COMMAND: COMMAND_1_DOUBLE},
+            (TRIPLE_PRESS, LEFT): {COMMAND: COMMAND_1_TRIPLE},
+            (LONG_PRESS, LEFT): {COMMAND: COMMAND_1_HOLD},
+            (SHORT_PRESS, RIGHT): {COMMAND: COMMAND_2_SINGLE},
+            (DOUBLE_PRESS, RIGHT): {COMMAND: COMMAND_2_DOUBLE},
+            (TRIPLE_PRESS, RIGHT): {COMMAND: COMMAND_2_TRIPLE},
+            (LONG_PRESS, RIGHT): {COMMAND: COMMAND_2_HOLD},
+            (SHORT_PRESS, BOTH_BUTTONS): {COMMAND: COMMAND_3_SINGLE},
+            (DOUBLE_PRESS, BOTH_BUTTONS): {COMMAND: COMMAND_3_DOUBLE},
+            (TRIPLE_PRESS, BOTH_BUTTONS): {COMMAND: COMMAND_3_TRIPLE},
+            (LONG_PRESS, BOTH_BUTTONS): {COMMAND: COMMAND_3_HOLD},
+            # triggers when operation_mode == command
+            # known issue: it seems impossible to know which button being pressed
+            # when operation_mode == command
+            (ALT_SHORT_PRESS, BUTTON): {
+                COMMAND: COMMAND_TOGGLE,
+                ENDPOINT_ID: 1,
+                ARGS: [],
             },
-            2: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
-                INPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    OnOff.cluster_id,
-                ],
-            },
-            3: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
-                INPUT_CLUSTERS: [Identify.cluster_id],
-                OUTPUT_CLUSTERS: [OnOff.cluster_id],
-            },
-        },
-    }
-
-
-class RemoteH1DoubleRocker3(RemoteH1DoubleRocker1):
-    """Aqara H1 Wireless Remote Double Rocker Version WRS-R02, variant 3."""
-
-    signature = {
-        MODELS_INFO: [(LUMI, "lumi.remote.b28ac1")],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.COLOR_DIMMER_SWITCH,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    Identify.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    OnOff.cluster_id,
-                    LevelControl.cluster_id,
-                    Color.cluster_id,
-                ],
-            },
-            2: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
-                INPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    OnOff.cluster_id,
-                ],
-            },
-            3: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
-                INPUT_CLUSTERS: [Identify.cluster_id],
-                OUTPUT_CLUSTERS: [OnOff.cluster_id],
-            },
-            4: {},
-            5: {},
-            6: {},
-        },
-    }
-
-
-class RemoteH1DoubleRocker4(RemoteH1DoubleRocker1):
-    """Aqara H1 Wireless Remote Double Rocker Version WRS-R02, variant 4."""
-
-    signature = {
-        MODELS_INFO: [(LUMI, "lumi.remote.b28ac1")],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.COLOR_DIMMER_SWITCH,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    Identify.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    OnOff.cluster_id,
-                    LevelControl.cluster_id,
-                    Color.cluster_id,
-                ],
-            },
-            2: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
-                INPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    OnOff.cluster_id,
-                ],
-            },
-            3: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
-                INPUT_CLUSTERS: [Identify.cluster_id],
-                OUTPUT_CLUSTERS: [OnOff.cluster_id],
-            },
-            4: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
-                INPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    MultistateInput.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [OnOff.cluster_id],
-            },
-            5: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
-                INPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    MultistateInput.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [OnOff.cluster_id],
-            },
-            6: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
-                INPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    MultistateInput.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [OnOff.cluster_id],
-            },
-        },
-    }
+        }
+    )
+    .add_to_registry()
+)

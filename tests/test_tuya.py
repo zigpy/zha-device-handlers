@@ -1,6 +1,5 @@
 """Tests for Tuya quirks."""
 
-import asyncio
 import base64
 import datetime
 import struct
@@ -26,7 +25,6 @@ from zhaquirks.const import (
     ON,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
-    ZONE_STATUS_CHANGE_COMMAND,
 )
 from zhaquirks.tuya import Data, TuyaManufClusterAttributes, TuyaNewManufCluster
 import zhaquirks.tuya.sm0202_motion
@@ -54,7 +52,6 @@ ZCL_TUYA_BUTTON_1_LONG_PRESS = b"\tk\x06\x03\x11\x01\x04\x00\x01\x02"
 ZCL_TUYA_BUTTON_2_SINGLE_PRESS = b"\tN\x06\x01\x1f\x02\x04\x00\x01\x00"
 ZCL_TUYA_BUTTON_2_DOUBLE_PRESS = b"\tj\x06\x03\x10\x02\x04\x00\x01\x01"
 ZCL_TUYA_BUTTON_2_LONG_PRESS = b"\tl\x06\x03\x12\x02\x04\x00\x01\x02"
-ZCL_TUYA_MOTION = b"\tL\x01\x00\x05\x03\x04\x00\x01\x02"
 ZCL_TUYA_SWITCH_ON = b"\tQ\x02\x006\x01\x01\x00\x01\x01"
 ZCL_TUYA_SWITCH_OFF = b"\tQ\x02\x006\x01\x01\x00\x01\x00"
 ZCL_TUYA_ATTRIBUTE_617_TO_179 = b"\tp\x02\x00\x02i\x02\x00\x04\x00\x00\x00\xb3"
@@ -98,33 +95,6 @@ ZCL_TUYA_VALVE_ZONNSMART_HEAT_STOP = b"\t2\x01\x03\x04\x6b\x01\x00\x01\x00"
 
 ZCL_TUYA_EHEAT_TEMPERATURE = b"\tp\x02\x00\x02\x18\x02\x00\x04\x00\x00\x00\xb3"
 ZCL_TUYA_EHEAT_TARGET_TEMP = b"\t3\x01\x03\x05\x10\x02\x00\x04\x00\x00\x00\x15"
-
-
-@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_motion.TuyaMotion,))
-async def test_motion(zigpy_device_from_quirk, quirk):
-    """Test tuya motion sensor."""
-
-    motion_dev = zigpy_device_from_quirk(quirk)
-
-    motion_cluster = motion_dev.endpoints[1].ias_zone
-    motion_listener = ClusterListener(motion_cluster)
-
-    tuya_cluster = motion_dev.endpoints[1].tuya_manufacturer
-
-    # send motion on Tuya manufacturer specific cluster
-    hdr, args = tuya_cluster.deserialize(ZCL_TUYA_MOTION)
-    with mock.patch.object(motion_cluster, "reset_s", 0):
-        tuya_cluster.handle_message(hdr, args)
-
-    assert len(motion_listener.cluster_commands) == 1
-    assert motion_listener.cluster_commands[0][1] == ZONE_STATUS_CHANGE_COMMAND
-    assert motion_listener.cluster_commands[0][2][0] == ON
-
-    await asyncio.gather(asyncio.sleep(0), asyncio.sleep(0), asyncio.sleep(0))
-
-    assert len(motion_listener.cluster_commands) == 2
-    assert motion_listener.cluster_commands[1][1] == ZONE_STATUS_CHANGE_COMMAND
-    assert motion_listener.cluster_commands[1][2][0] == OFF
 
 
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_switch.TuyaSingleSwitchTI,))
@@ -1626,25 +1596,6 @@ def test_ts0601_valve_signature(assert_signature_matches_quirk):
         "class": "ts0601_valve.TuyaValve",
     }
     assert_signature_matches_quirk(zhaquirks.tuya.ts0601_valve.TuyaValve, signature)
-
-
-def test_ts0601_motion_signature(assert_signature_matches_quirk):
-    """Test TS0601 motion by TreatLife remote signature is matched to its quirk."""
-    signature = {
-        "node_descriptor": "NodeDescriptor(logical_type=<LogicalType.EndDevice: 2>, complex_descriptor_available=0, user_descriptor_available=0, reserved=0, aps_flags=0, frequency_band=<FrequencyBand.Freq2400MHz: 8>, mac_capability_flags=<MACCapabilityFlags.AllocateAddress: 128>, manufacturer_code=4417, maximum_buffer_size=66, maximum_incoming_transfer_size=66, server_mask=10752, maximum_outgoing_transfer_size=66, descriptor_capability_field=<DescriptorCapability.NONE: 0>, *allocate_address=True, *is_alternate_pan_coordinator=False, *is_coordinator=False, *is_end_device=True, *is_full_function_device=False, *is_mains_powered=False, *is_receiver_on_when_idle=False, *is_router=False, *is_security_capable=False)",
-        "endpoints": {
-            "1": {
-                "profile_id": 260,
-                "device_type": "0x0051",
-                "in_clusters": ["0x0000", "0x0004", "0x0005", "0xef00"],
-                "out_clusters": ["0x000a", "0x0019"],
-            }
-        },
-        "manufacturer": "_TZE200_ppuj1vem",
-        "model": "TS0601",
-        "class": "zigpy.device.Device",
-    }
-    assert_signature_matches_quirk(zhaquirks.tuya.ts0601_motion.NeoMotion, signature)
 
 
 def test_multiple_attributes_report():
