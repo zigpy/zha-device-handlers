@@ -267,7 +267,6 @@ class Tuya3PhaseElectricalMeasurement(ElectricalMeasurement, TuyaLocalCluster):
         state_class=SensorStateClass.TOTAL_INCREASING,
         device_class=SensorDeviceClass.ENERGY,
         unit=UnitOfEnergy.KILO_WATT_HOUR,
-        translation_key="total_energy",
         fallback_name="Total energy",
     )
     .tuya_sensor(
@@ -278,8 +277,8 @@ class Tuya3PhaseElectricalMeasurement(ElectricalMeasurement, TuyaLocalCluster):
         state_class=SensorStateClass.TOTAL_INCREASING,
         device_class=SensorDeviceClass.ENERGY,
         unit=UnitOfEnergy.KILO_WATT_HOUR,
-        translation_key="energy",
-        fallback_name="Energy",
+        translation_key="energy_ph_a",
+        fallback_name="Energy phase A",
     )
     .tuya_sensor(
         dp_id=0x72,
@@ -289,8 +288,8 @@ class Tuya3PhaseElectricalMeasurement(ElectricalMeasurement, TuyaLocalCluster):
         state_class=SensorStateClass.TOTAL_INCREASING,
         device_class=SensorDeviceClass.ENERGY,
         unit=UnitOfEnergy.KILO_WATT_HOUR,
-        translation_key="energy_2",
-        fallback_name="Energy 2",
+        translation_key="energy_ph_b",
+        fallback_name="Energy phase B",
     )
     .tuya_sensor(
         dp_id=0x74,
@@ -300,8 +299,8 @@ class Tuya3PhaseElectricalMeasurement(ElectricalMeasurement, TuyaLocalCluster):
         state_class=SensorStateClass.TOTAL_INCREASING,
         device_class=SensorDeviceClass.ENERGY,
         unit=UnitOfEnergy.KILO_WATT_HOUR,
-        translation_key="energy_3",
-        fallback_name="Energy 3",
+        translation_key="energy_ph_c",
+        fallback_name="Energy phase C",
     )
     # Energy produced
     .tuya_sensor(
@@ -312,8 +311,8 @@ class Tuya3PhaseElectricalMeasurement(ElectricalMeasurement, TuyaLocalCluster):
         state_class=SensorStateClass.TOTAL_INCREASING,
         device_class=SensorDeviceClass.ENERGY,
         unit=UnitOfEnergy.KILO_WATT_HOUR,
-        translation_key="total_energy_produced",
-        fallback_name="Total energy produced",
+        translation_key="energy_produced",
+        fallback_name="Energy produced",
     )
     .tuya_sensor(
         dp_id=0x71,
@@ -323,8 +322,8 @@ class Tuya3PhaseElectricalMeasurement(ElectricalMeasurement, TuyaLocalCluster):
         state_class=SensorStateClass.TOTAL_INCREASING,
         device_class=SensorDeviceClass.ENERGY,
         unit=UnitOfEnergy.KILO_WATT_HOUR,
-        translation_key="energy_produced",
-        fallback_name="Energy produced",
+        translation_key="energy_produced_ph_a",
+        fallback_name="Energy produced phase A",
     )
     .tuya_sensor(
         dp_id=0x73,
@@ -334,8 +333,8 @@ class Tuya3PhaseElectricalMeasurement(ElectricalMeasurement, TuyaLocalCluster):
         state_class=SensorStateClass.TOTAL_INCREASING,
         device_class=SensorDeviceClass.ENERGY,
         unit=UnitOfEnergy.KILO_WATT_HOUR,
-        translation_key="energy_produced_2",
-        fallback_name="Energy produced 2",
+        translation_key="energy_produced_ph_b",
+        fallback_name="Energy produced phase B",
     )
     .tuya_sensor(
         dp_id=0x75,
@@ -345,8 +344,8 @@ class Tuya3PhaseElectricalMeasurement(ElectricalMeasurement, TuyaLocalCluster):
         state_class=SensorStateClass.TOTAL_INCREASING,
         device_class=SensorDeviceClass.ENERGY,
         unit=UnitOfEnergy.KILO_WATT_HOUR,
-        translation_key="energy_produced_3",
-        fallback_name="Energy produced 3",
+        translation_key="energy_produced_ph_c",
+        fallback_name="Energy produced phase C",
     )
     # Power
     .tuya_dp(
