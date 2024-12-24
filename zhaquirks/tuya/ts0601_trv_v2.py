@@ -8,6 +8,14 @@ from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import TuyaAttributesCluster
 
 
+class TuyaThermostatSystemMode(t.enum8):
+    """Tuya thermostat system mode enum."""
+
+    Auto = 0x00
+    Heat = 0x01
+    Off = 0x02
+
+
 class TuyaThermostat(Thermostat, TuyaAttributesCluster):
     """Tuya local thermostat cluster."""
 
@@ -36,14 +44,14 @@ class TuyaThermostat(Thermostat, TuyaAttributesCluster):
         ep_attribute=TuyaThermostat.ep_attribute,
         attribute_name=TuyaThermostat.AttributeDefs.system_mode.name,
         converter=lambda x: {
-            0x00: 0x01,  # auto
-            0x01: 0x04,  # heat
-            0x02: 0x00,  # off
+            TuyaThermostatSystemMode.Auto: Thermostat.SystemMode.Auto,
+            TuyaThermostatSystemMode.Heat: Thermostat.SystemMode.Heat,
+            TuyaThermostatSystemMode.Off: Thermostat.SystemMode.Off,
         }[x],
         dp_converter=lambda x: {
-            0x01: 0x00,  # auto
-            0x04: 0x01,  # heat
-            0x00: 0x02,  # off
+            Thermostat.SystemMode.Auto: TuyaThermostatSystemMode.Auto,
+            Thermostat.SystemMode.Heat: TuyaThermostatSystemMode.Heat,
+            Thermostat.SystemMode.Off: TuyaThermostatSystemMode.Off,
         }[x],
     )
     .tuya_dp(
