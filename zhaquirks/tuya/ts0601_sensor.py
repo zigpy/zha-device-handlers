@@ -15,6 +15,17 @@ from zhaquirks.tuya.builder import TuyaPowerConfigurationCluster2AAA, TuyaQuirkB
     .add_to_registry()
 )
 
+
+(
+    TuyaQuirkBuilder("_TZE200_s1xgth2u", "TS0601")  # Nedis ZBSC30WT
+    .tuya_temperature(dp_id=1, scale=10)
+    .tuya_humidity(dp_id=2, scale=100)
+    .tuya_battery(dp_id=4)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
 (
     TuyaQuirkBuilder("_TZE200_a8sdabtg", "TS0601")  # Variant without screen, round
     .applies_to("_TZE200_qoy0ekbd", "TS0601")
