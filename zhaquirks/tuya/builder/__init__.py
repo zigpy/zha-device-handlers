@@ -67,6 +67,14 @@ class TuyaPM25Concetration(PM25, TuyaLocalCluster):
     """Tuya PM25 concentration measurement."""
 
 
+class TuyaIasGas(IasZone, TuyaLocalCluster):
+    """Tuya local IAS gas cluster."""
+
+    _CONSTANT_ATTRIBUTES = {
+        IasZone.AttributeDefs.zone_type.id: IasZone.ZoneType.Carbon_Monoxide_Sensor
+    }
+
+
 class TuyaRelativeHumidity(RelativeHumidity, TuyaLocalCluster):
     """Tuya local RelativeHumidity cluster."""
 
@@ -223,6 +231,15 @@ class TuyaQuirkBuilder(QuirkBuilder):
             converter=lambda x: x * scale,
         )
         self.adds(pm25_cfg)
+        return self
+
+    def tuya_gas(self, dp_id: int):
+        """Add a Tuya IAS gas sensor."""
+        self.tuya_ias(
+            dp_id=dp_id,
+            ias_cfg=TuyaIasGas,
+            converter=lambda x: IasZone.ZoneStatus.Alarm_1 if x == 0 else 0,
+        )
         return self
 
     def tuya_smoke(self, dp_id: int):

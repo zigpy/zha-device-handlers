@@ -1,123 +1,55 @@
-"""Gas Sensor."""
+"""Tuya Gas Sensor."""
 
-import logging
-
-import zigpy.profiles.zha
-from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.quirks.v2 import EntityPlatform, EntityType
+from zigpy.quirks.v2.homeassistant import CONCENTRATION_PARTS_PER_MILLION
+from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
-from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time
-from zigpy.zcl.clusters.security import IasZone
 
-from zhaquirks import Bus
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-    ZONE_STATUS,
-    ZONE_TYPE,
-)
-
-from . import TuyaManufCluster, TuyaManufClusterAttributes
-
-_LOGGER = logging.getLogger(__name__)
-
-TUYA_GAS_DETECTED_ATTR = 0x0401  # [0]/[1] [Detected]/[Clear]!
+from zhaquirks.tuya import TuyaPowerConfigurationCluster2AA
+from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 
-class TuyaGasDetectorCluster(TuyaManufClusterAttributes):
-    """Manufacturer Specific Cluster of the TS0601 gas detector."""
+class TuyaSelfTestResult(t.enum8):
+    """Tuya self test result enum."""
 
-    attributes = TuyaManufClusterAttributes.attributes.copy()
-    attributes.update(
-        {
-            TUYA_GAS_DETECTED_ATTR: ("gas_detected", t.uint8_t, True),
-        }
+    Checking = 0x00
+    Success = 0x01
+    Failure = 0x02
+    Others = 0x03
+
+
+(
+    TuyaQuirkBuilder("_TZE200_ggev5fsl", "TS0601")
+    .applies_to("_TZE200_hr0tdd47", "TS0601")
+    .applies_to("_TZE200_rjxqso4a", "TS0601")
+    .applies_to("_TZE284_rjxqso4a", "TS0601")
+    .tuya_gas(dp_id=1)
+    .tuya_sensor(
+        dp_id=2,
+        attribute_name="co",
+        type=t.int16s,
+        device_class=SensorDeviceClass.CO,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=CONCENTRATION_PARTS_PER_MILLION,
+        fallback_name="CO concetration",
     )
-
-    def _update_attribute(self, attrid, value):
-        super()._update_attribute(attrid, value)
-        if attrid == TUYA_GAS_DETECTED_ATTR:
-            if value == 0:
-                self.endpoint.device.ias_bus.listener_event(
-                    "update_zone_status", IasZone.ZoneStatus.Alarm_1
-                )
-            else:
-                self.endpoint.device.ias_bus.listener_event("update_zone_status", 0)
-        else:
-            _LOGGER.warning(
-                "[0x%04x:%s:0x%04x] unhandled attribute: 0x%04x",
-                self.endpoint.device.nwk,
-                self.endpoint.endpoint_id,
-                self.cluster_id,
-                attrid,
-            )
-
-
-class TuyaGasDetectorZone(CustomCluster, IasZone):
-    """IAS Zone."""
-
-    _CONSTANT_ATTRIBUTES = {ZONE_TYPE: IasZone.ZoneType.Carbon_Monoxide_Sensor}
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        super().__init__(*args, **kwargs)
-        self.endpoint.device.ias_bus.add_listener(self)
-
-    def update_zone_status(self, value):
-        """Update IAS status."""
-        super()._update_attribute(ZONE_STATUS, value)
-
-
-class TuyaGasDetector0601(CustomDevice):
-    """TS0601 _TZE200_ggev5fsl quirk."""
-
-    def __init__(self, *args, **kwargs):
-        """Init."""
-        self.ias_bus = Bus()
-        super().__init__(*args, **kwargs)
-
-    signature = {
-        MODELS_INFO: [
-            ("_TZE200_ggev5fsl", "TS0601"),
-            ("_TZE200_rjxqso4a", "TS0601"),
-        ],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zigpy.profiles.zha.PROFILE_ID,
-                DEVICE_TYPE: zigpy.profiles.zha.DeviceType.SMART_PLUG,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    TuyaManufCluster.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Time.cluster_id,
-                    Ota.cluster_id,
-                ],
-            },
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zigpy.profiles.zha.PROFILE_ID,
-                DEVICE_TYPE: zigpy.profiles.zha.DeviceType.IAS_ZONE,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    TuyaGasDetectorZone,
-                    TuyaGasDetectorCluster,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Time.cluster_id,
-                    Ota.cluster_id,
-                ],
-            },
-        },
-    }
+    .tuya_enum(
+        dp_id=9,
+        attribute_name="self_test_result",
+        enum_class=TuyaSelfTestResult,
+        entity_type=EntityType.DIAGNOSTIC,
+        entity_platform=EntityPlatform.SENSOR,
+        translation_key="self_test_result",
+        fallback_name="Self test result",
+    )
+    .tuya_battery(dp_id=15, power_cfg=TuyaPowerConfigurationCluster2AA)
+    .tuya_switch(
+        dp_id=16,
+        attribute_name="silence",
+        entity_type=EntityType.STANDARD,
+        translation_key="silence",
+        fallback_name="Silence",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
