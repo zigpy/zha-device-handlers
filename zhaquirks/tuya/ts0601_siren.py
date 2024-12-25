@@ -313,29 +313,39 @@ class TuyaMCUSiren(OnOff, TuyaAttributesCluster):
 class NeoSirenManufCluster(TuyaMCUCluster):
     """Tuya with NEO Siren data points."""
 
-    dp_to_attribute: dict[int, DPToAttributeMapping] = {
-        5: DPToAttributeMapping(
-            TuyaMCUSiren.ep_attribute,
-            "volume",
-            converter=lambda x: NeoAlarmVolume(x),
-        ),
-        7: DPToAttributeMapping(
-            TuyaMCUSiren.ep_attribute,
-            "alarm_duration",
-        ),
-        13: DPToAttributeMapping(
-            TuyaMCUSiren.ep_attribute,
-            "on_off",
-        ),
-        15: DPToAttributeMapping(
-            TuyaMCUSiren.ep_attribute,
-            "battery",
-        ),
-        21: DPToAttributeMapping(
-            TuyaMCUSiren.ep_attribute,
-            "melody",
-            converter=lambda x: NeoAlarmMelody(x),
-        ),
+    dp_to_attribute: dict[int, list[DPToAttributeMapping]] = {
+        5: [
+            DPToAttributeMapping(
+                TuyaMCUSiren.ep_attribute,
+                "volume",
+                converter=lambda x: NeoAlarmVolume(x),
+            )
+        ],
+        7: [
+            DPToAttributeMapping(
+                TuyaMCUSiren.ep_attribute,
+                "alarm_duration",
+            )
+        ],
+        13: [
+            DPToAttributeMapping(
+                TuyaMCUSiren.ep_attribute,
+                "on_off",
+            )
+        ],
+        15: [
+            DPToAttributeMapping(
+                TuyaMCUSiren.ep_attribute,
+                "battery",
+            )
+        ],
+        21: [
+            DPToAttributeMapping(
+                TuyaMCUSiren.ep_attribute,
+                "melody",
+                converter=lambda x: NeoAlarmMelody(x),
+            )
+        ],
     }
 
     data_point_handlers = {

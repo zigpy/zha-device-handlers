@@ -292,21 +292,22 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
 
         result = {}
         for dp, dp_mapping in self.dp_to_attribute.items():
-            if (
-                attribute_name == dp_mapping.attribute_name
-                or (
-                    isinstance(dp_mapping.attribute_name, tuple)
-                    and attribute_name in dp_mapping.attribute_name
-                )
-            ) and (
-                (
-                    dp_mapping.endpoint_id is None
-                    and endpoint_id == self.endpoint.endpoint_id
-                )
-                or (endpoint_id == dp_mapping.endpoint_id)
-            ):
-                self.debug("get_dp_mapping --> found DP: %s", dp)
-                result[dp] = dp_mapping
+            for mapped_attr in dp_mapping:
+                if (
+                    attribute_name == mapped_attr.attribute_name
+                    or (
+                        isinstance(mapped_attr.attribute_name, tuple)
+                        and attribute_name in mapped_attr.attribute_name
+                    )
+                ) and (
+                    (
+                        mapped_attr.endpoint_id is None
+                        and endpoint_id == self.endpoint.endpoint_id
+                    )
+                    or (endpoint_id == mapped_attr.endpoint_id)
+                ):
+                    self.debug("get_dp_mapping --> found DP: %s", dp)
+                    result[dp] = mapped_attr
         return result
 
     def handle_mcu_version_response(self, payload: MCUVersion) -> foundation.Status:
@@ -409,86 +410,118 @@ class TuyaOnOffNM(NoManufacturerCluster, TuyaOnOff):
 class TuyaOnOffManufCluster(TuyaMCUCluster):
     """Tuya with On/Off data points."""
 
-    dp_to_attribute: dict[int, DPToAttributeMapping] = {
-        1: DPToAttributeMapping(
-            TuyaOnOff.ep_attribute,
-            "on_off",
-        ),
-        2: DPToAttributeMapping(
-            TuyaOnOff.ep_attribute,
-            "on_off",
-            endpoint_id=2,
-        ),
-        3: DPToAttributeMapping(
-            TuyaOnOff.ep_attribute,
-            "on_off",
-            endpoint_id=3,
-        ),
-        4: DPToAttributeMapping(
-            TuyaOnOff.ep_attribute,
-            "on_off",
-            endpoint_id=4,
-        ),
-        5: DPToAttributeMapping(
-            TuyaOnOff.ep_attribute,
-            "on_off",
-            endpoint_id=5,
-        ),
-        6: DPToAttributeMapping(
-            TuyaOnOff.ep_attribute,
-            "on_off",
-            endpoint_id=6,
-        ),
-        0x65: DPToAttributeMapping(
-            TuyaOnOff.ep_attribute,
-            "on_off",
-            endpoint_id=7,
-        ),
-        0x66: DPToAttributeMapping(
-            TuyaOnOff.ep_attribute,
-            "on_off",
-            endpoint_id=8,
-        ),
-        0x67: DPToAttributeMapping(
-            TuyaOnOff.ep_attribute,
-            "on_off",
-            endpoint_id=9,
-        ),
-        0x68: DPToAttributeMapping(
-            TuyaOnOff.ep_attribute,
-            "on_off",
-            endpoint_id=10,
-        ),
-        0x69: DPToAttributeMapping(
-            TuyaOnOff.ep_attribute,
-            "on_off",
-            endpoint_id=11,
-        ),
-        0x6A: DPToAttributeMapping(
-            TuyaOnOff.ep_attribute,
-            "on_off",
-            endpoint_id=12,
-        ),
-        0x6B: DPToAttributeMapping(
-            TuyaOnOff.ep_attribute,
-            "on_off",
-            endpoint_id=13,
-        ),
-        0x6C: DPToAttributeMapping(
-            TuyaOnOff.ep_attribute,
-            "on_off",
-            endpoint_id=14,
-        ),
-        0x6D: DPToAttributeMapping(
-            TuyaOnOff.ep_attribute,
-            "on_off",
-            endpoint_id=15,
-        ),
-        0x6E: DPToAttributeMapping(
-            TuyaOnOff.ep_attribute,
-            "on_off",
-            endpoint_id=16,
-        ),
+    dp_to_attribute: dict[int, list[DPToAttributeMapping]] = {
+        1: [
+            DPToAttributeMapping(
+                TuyaOnOff.ep_attribute,
+                "on_off",
+            )
+        ],
+        2: [
+            DPToAttributeMapping(
+                TuyaOnOff.ep_attribute,
+                "on_off",
+                endpoint_id=2,
+            )
+        ],
+        3: [
+            DPToAttributeMapping(
+                TuyaOnOff.ep_attribute,
+                "on_off",
+                endpoint_id=3,
+            )
+        ],
+        4: [
+            DPToAttributeMapping(
+                TuyaOnOff.ep_attribute,
+                "on_off",
+                endpoint_id=4,
+            )
+        ],
+        5: [
+            DPToAttributeMapping(
+                TuyaOnOff.ep_attribute,
+                "on_off",
+                endpoint_id=5,
+            )
+        ],
+        6: [
+            DPToAttributeMapping(
+                TuyaOnOff.ep_attribute,
+                "on_off",
+                endpoint_id=6,
+            )
+        ],
+        0x65: [
+            DPToAttributeMapping(
+                TuyaOnOff.ep_attribute,
+                "on_off",
+                endpoint_id=7,
+            )
+        ],
+        0x66: [
+            DPToAttributeMapping(
+                TuyaOnOff.ep_attribute,
+                "on_off",
+                endpoint_id=8,
+            )
+        ],
+        0x67: [
+            DPToAttributeMapping(
+                TuyaOnOff.ep_attribute,
+                "on_off",
+                endpoint_id=9,
+            )
+        ],
+        0x68: [
+            DPToAttributeMapping(
+                TuyaOnOff.ep_attribute,
+                "on_off",
+                endpoint_id=10,
+            )
+        ],
+        0x69: [
+            DPToAttributeMapping(
+                TuyaOnOff.ep_attribute,
+                "on_off",
+                endpoint_id=11,
+            )
+        ],
+        0x6A: [
+            DPToAttributeMapping(
+                TuyaOnOff.ep_attribute,
+                "on_off",
+                endpoint_id=12,
+            )
+        ],
+        0x6B: [
+            DPToAttributeMapping(
+                TuyaOnOff.ep_attribute,
+                "on_off",
+                endpoint_id=13,
+            )
+        ],
+        0x6C: [
+            DPToAttributeMapping(
+                TuyaOnOff.ep_attribute,
+                "on_off",
+                endpoint_id=14,
+            )
+        ],
+        0x6D: [
+            DPToAttributeMapping(
+                TuyaOnOff.ep_attribute,
+                "on_off",
+                endpoint_id=15,
+            )
+        ],
+        0x6E: [
+            DPToAttributeMapping(
+                TuyaOnOff.ep_attribute,
+                "on_off",
+                endpoint_id=16,
+            )
+        ],
     }
 
     data_point_handlers = {
@@ -522,25 +555,29 @@ class MoesSwitchManufCluster(TuyaOnOffManufCluster):
         }
     )
 
-    dp_to_attribute: dict[int, DPToAttributeMapping] = (
+    dp_to_attribute: dict[int, list[DPToAttributeMapping]] = (
         TuyaOnOffManufCluster.dp_to_attribute.copy()
     )
     dp_to_attribute.update(
         {
-            14: DPToAttributeMapping(
-                TuyaMCUCluster.ep_attribute,
-                "power_on_state",
-                converter=lambda x: PowerOnState(x),
-            )
+            14: [
+                DPToAttributeMapping(
+                    TuyaMCUCluster.ep_attribute,
+                    "power_on_state",
+                    converter=lambda x: PowerOnState(x),
+                )
+            ]
         }
     )
     dp_to_attribute.update(
         {
-            15: DPToAttributeMapping(
-                TuyaMCUCluster.ep_attribute,
-                "backlight_mode",
-                converter=lambda x: MoesBacklight(x),
-            ),
+            15: [
+                DPToAttributeMapping(
+                    TuyaMCUCluster.ep_attribute,
+                    "backlight_mode",
+                    converter=lambda x: MoesBacklight(x),
+                )
+            ],
         }
     )
 
@@ -640,75 +677,99 @@ class TuyaInWallLevelControl(TuyaAttributesCluster, TuyaLevelControl):
 class TuyaLevelControlManufCluster(TuyaMCUCluster):
     """Tuya with Level Control data points."""
 
-    dp_to_attribute: dict[int, DPToAttributeMapping] = {
-        1: DPToAttributeMapping(
-            TuyaOnOff.ep_attribute,
-            "on_off",
-        ),
-        2: DPToAttributeMapping(
-            TuyaLevelControl.ep_attribute,
-            "current_level",
-            converter=lambda x: (x * 255) // 1000,
-            dp_converter=lambda x: (x * 1000) // 255,
-        ),
-        3: DPToAttributeMapping(
-            TuyaLevelControl.ep_attribute,
-            "minimum_level",
-            converter=lambda x: (x * 255) // 1000,
-            dp_converter=lambda x: (x * 1000) // 255,
-        ),
-        4: DPToAttributeMapping(
-            TuyaLevelControl.ep_attribute,
-            "bulb_type",
-        ),
-        7: DPToAttributeMapping(
-            TuyaOnOff.ep_attribute,
-            "on_off",
-            endpoint_id=2,
-        ),
-        8: DPToAttributeMapping(
-            TuyaLevelControl.ep_attribute,
-            "current_level",
-            converter=lambda x: (x * 255) // 1000,
-            dp_converter=lambda x: (x * 1000) // 255,
-            endpoint_id=2,
-        ),
-        9: DPToAttributeMapping(
-            TuyaLevelControl.ep_attribute,
-            "minimum_level",
-            converter=lambda x: (x * 255) // 1000,
-            dp_converter=lambda x: (x * 1000) // 255,
-            endpoint_id=2,
-        ),
-        10: DPToAttributeMapping(
-            TuyaLevelControl.ep_attribute,
-            "bulb_type",
-            endpoint_id=2,
-        ),
-        15: DPToAttributeMapping(
-            TuyaOnOff.ep_attribute,
-            "on_off",
-            endpoint_id=3,
-        ),
-        16: DPToAttributeMapping(
-            TuyaLevelControl.ep_attribute,
-            "current_level",
-            converter=lambda x: (x * 255) // 1000,
-            dp_converter=lambda x: (x * 1000) // 255,
-            endpoint_id=3,
-        ),
-        17: DPToAttributeMapping(
-            TuyaLevelControl.ep_attribute,
-            "minimum_level",
-            converter=lambda x: (x * 255) // 1000,
-            dp_converter=lambda x: (x * 1000) // 255,
-            endpoint_id=3,
-        ),
-        18: DPToAttributeMapping(
-            TuyaLevelControl.ep_attribute,
-            "bulb_type",
-            endpoint_id=3,
-        ),
+    dp_to_attribute: dict[int, list[DPToAttributeMapping]] = {
+        1: [
+            DPToAttributeMapping(
+                TuyaOnOff.ep_attribute,
+                "on_off",
+            )
+        ],
+        2: [
+            DPToAttributeMapping(
+                TuyaLevelControl.ep_attribute,
+                "current_level",
+                converter=lambda x: (x * 255) // 1000,
+                dp_converter=lambda x: (x * 1000) // 255,
+            )
+        ],
+        3: [
+            DPToAttributeMapping(
+                TuyaLevelControl.ep_attribute,
+                "minimum_level",
+                converter=lambda x: (x * 255) // 1000,
+                dp_converter=lambda x: (x * 1000) // 255,
+            )
+        ],
+        4: [
+            DPToAttributeMapping(
+                TuyaLevelControl.ep_attribute,
+                "bulb_type",
+            )
+        ],
+        7: [
+            DPToAttributeMapping(
+                TuyaOnOff.ep_attribute,
+                "on_off",
+                endpoint_id=2,
+            )
+        ],
+        8: [
+            DPToAttributeMapping(
+                TuyaLevelControl.ep_attribute,
+                "current_level",
+                converter=lambda x: (x * 255) // 1000,
+                dp_converter=lambda x: (x * 1000) // 255,
+                endpoint_id=2,
+            )
+        ],
+        9: [
+            DPToAttributeMapping(
+                TuyaLevelControl.ep_attribute,
+                "minimum_level",
+                converter=lambda x: (x * 255) // 1000,
+                dp_converter=lambda x: (x * 1000) // 255,
+                endpoint_id=2,
+            )
+        ],
+        10: [
+            DPToAttributeMapping(
+                TuyaLevelControl.ep_attribute,
+                "bulb_type",
+                endpoint_id=2,
+            )
+        ],
+        15: [
+            DPToAttributeMapping(
+                TuyaOnOff.ep_attribute,
+                "on_off",
+                endpoint_id=3,
+            )
+        ],
+        16: [
+            DPToAttributeMapping(
+                TuyaLevelControl.ep_attribute,
+                "current_level",
+                converter=lambda x: (x * 255) // 1000,
+                dp_converter=lambda x: (x * 1000) // 255,
+                endpoint_id=3,
+            )
+        ],
+        17: [
+            DPToAttributeMapping(
+                TuyaLevelControl.ep_attribute,
+                "minimum_level",
+                converter=lambda x: (x * 255) // 1000,
+                dp_converter=lambda x: (x * 1000) // 255,
+                endpoint_id=3,
+            )
+        ],
+        18: [
+            DPToAttributeMapping(
+                TuyaLevelControl.ep_attribute,
+                "bulb_type",
+                endpoint_id=3,
+            )
+        ],
     }
 
     data_point_handlers = {

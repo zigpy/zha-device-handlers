@@ -72,39 +72,55 @@ class TuyaValveManufCluster(TuyaMCUCluster):
             id=0xEF05, type=t.uint32_t, is_manufacturer_specific=True
         )
 
-    dp_to_attribute: dict[int, DPToAttributeMapping] = {
-        1: DPToAttributeMapping(
-            TuyaOnOff.ep_attribute,
-            "on_off",
-        ),
-        5: DPToAttributeMapping(
-            TuyaValveWaterConsumed.ep_attribute,
-            "current_summ_delivered",
-        ),
-        6: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "dp_6",
-        ),
-        7: DPToAttributeMapping(
-            DoublingPowerConfigurationCluster.ep_attribute,
-            "battery_percentage_remaining",
-        ),
-        11: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "time_left",
-        ),
-        12: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "state",
-        ),
-        15: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "last_valve_open_duration",
-        ),
-        102: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "valve_position",
-        ),
+    dp_to_attribute: dict[int, list[DPToAttributeMapping]] = {
+        1: [
+            DPToAttributeMapping(
+                TuyaOnOff.ep_attribute,
+                "on_off",
+            )
+        ],
+        5: [
+            DPToAttributeMapping(
+                TuyaValveWaterConsumed.ep_attribute,
+                "current_summ_delivered",
+            )
+        ],
+        6: [
+            DPToAttributeMapping(
+                TuyaMCUCluster.ep_attribute,
+                "dp_6",
+            )
+        ],
+        7: [
+            DPToAttributeMapping(
+                DoublingPowerConfigurationCluster.ep_attribute,
+                "battery_percentage_remaining",
+            )
+        ],
+        11: [
+            DPToAttributeMapping(
+                TuyaMCUCluster.ep_attribute,
+                "time_left",
+            )
+        ],
+        12: [
+            DPToAttributeMapping(
+                TuyaMCUCluster.ep_attribute,
+                "state",
+            )
+        ],
+        15: [
+            DPToAttributeMapping(
+                TuyaMCUCluster.ep_attribute,
+                "last_valve_open_duration",
+            )
+        ],
+        102: [
+            DPToAttributeMapping(
+                TuyaMCUCluster.ep_attribute,
+                "valve_position",
+            )
+        ],
     }
 
     data_point_handlers = {
@@ -218,32 +234,44 @@ class ParksideTuyaValveManufCluster(TuyaMCUCluster):
             id=0xEF14, type=t.Bool, is_manufacturer_specific=True
         )  # 0 resets frost lock
 
-    dp_to_attribute: dict[int, DPToAttributeMapping] = {
-        1: DPToAttributeMapping(
-            TuyaOnOff.ep_attribute,
-            "on_off",
-        ),
-        5: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "timer_duration",
-        ),
-        6: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "timer_time_left",
-        ),
-        11: DPToAttributeMapping(
-            TuyaPowerConfigurationCluster.ep_attribute,
-            "battery_percentage_remaining",
-        ),
-        108: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "frost_lock",
-            lambda x: not x,  # invert for lock entity
-        ),
-        109: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "frost_lock_reset",
-        ),
+    dp_to_attribute: dict[int, list[DPToAttributeMapping]] = {
+        1: [
+            DPToAttributeMapping(
+                TuyaOnOff.ep_attribute,
+                "on_off",
+            )
+        ],
+        5: [
+            DPToAttributeMapping(
+                TuyaMCUCluster.ep_attribute,
+                "timer_duration",
+            )
+        ],
+        6: [
+            DPToAttributeMapping(
+                TuyaMCUCluster.ep_attribute,
+                "timer_time_left",
+            )
+        ],
+        11: [
+            DPToAttributeMapping(
+                TuyaPowerConfigurationCluster.ep_attribute,
+                "battery_percentage_remaining",
+            )
+        ],
+        108: [
+            DPToAttributeMapping(
+                TuyaMCUCluster.ep_attribute,
+                "frost_lock",
+                lambda x: not x,  # invert for lock entity
+            )
+        ],
+        109: [
+            DPToAttributeMapping(
+                TuyaMCUCluster.ep_attribute,
+                "frost_lock_reset",
+            )
+        ],
     }
 
     data_point_handlers = {

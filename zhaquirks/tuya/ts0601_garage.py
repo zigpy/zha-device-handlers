@@ -50,37 +50,51 @@ class TuyaGarageManufCluster(NoManufacturerCluster, TuyaMCUCluster):
             id=0xEF0C, type=t.enum8, is_manufacturer_specific=True
         )
 
-    dp_to_attribute: dict[int, DPToAttributeMapping] = {
+    dp_to_attribute: dict[int, list[DPToAttributeMapping]] = {
         # garage door trigger ¿on movement, on open, on closed?
-        1: DPToAttributeMapping(
-            TUYA_MANUFACTURER_GARAGE,
-            "button",
-        ),
-        2: DPToAttributeMapping(
-            TUYA_MANUFACTURER_GARAGE,
-            "dp_2",
-        ),
-        3: DPToAttributeMapping(
-            TUYA_MANUFACTURER_GARAGE,
-            "contact_sensor",
-        ),
-        4: DPToAttributeMapping(
-            TUYA_MANUFACTURER_GARAGE,
-            "dp_4",
-        ),
-        5: DPToAttributeMapping(
-            TUYA_MANUFACTURER_GARAGE,
-            "dp_5",
-        ),
-        11: DPToAttributeMapping(
-            TUYA_MANUFACTURER_GARAGE,
-            "dp_11",
-        ),
+        1: [
+            DPToAttributeMapping(
+                TUYA_MANUFACTURER_GARAGE,
+                "button",
+            )
+        ],
+        2: [
+            DPToAttributeMapping(
+                TUYA_MANUFACTURER_GARAGE,
+                "dp_2",
+            )
+        ],
+        3: [
+            DPToAttributeMapping(
+                TUYA_MANUFACTURER_GARAGE,
+                "contact_sensor",
+            )
+        ],
+        4: [
+            DPToAttributeMapping(
+                TUYA_MANUFACTURER_GARAGE,
+                "dp_4",
+            )
+        ],
+        5: [
+            DPToAttributeMapping(
+                TUYA_MANUFACTURER_GARAGE,
+                "dp_5",
+            )
+        ],
+        11: [
+            DPToAttributeMapping(
+                TUYA_MANUFACTURER_GARAGE,
+                "dp_11",
+            )
+        ],
         # garage door status (open, closed, ...)
-        12: DPToAttributeMapping(
-            TUYA_MANUFACTURER_GARAGE,
-            "dp_12",
-        ),
+        12: [
+            DPToAttributeMapping(
+                TUYA_MANUFACTURER_GARAGE,
+                "dp_12",
+            )
+        ],
     }
 
     data_point_handlers = {

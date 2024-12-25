@@ -87,7 +87,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
     ) -> None:
         """Init the TuyaQuirkBuilder."""
         self.tuya_data_point_handlers: dict[int, str] = {}
-        self.tuya_dp_to_attribute: dict[int, DPToAttributeMapping] = {}
+        self.tuya_dp_to_attribute: dict[int, list[DPToAttributeMapping]] = {}
         self.new_attributes: set[foundation.ZCLAttributeDef] = set()
         super().__init__(manufacturer, model, registry)
 
@@ -255,15 +255,28 @@ class TuyaQuirkBuilder(QuirkBuilder):
         """Add Tuya DP Converter."""
         self.tuya_dp_to_attribute.update(
             {
-                dp_id: DPToAttributeMapping(
-                    ep_attribute,
-                    attribute_name,
-                    converter=converter,
-                    dp_converter=dp_converter,
-                    endpoint_id=endpoint_id,
-                )
+                dp_id: [
+                    DPToAttributeMapping(
+                        ep_attribute,
+                        attribute_name,
+                        converter=converter,
+                        dp_converter=dp_converter,
+                        endpoint_id=endpoint_id,
+                    )
+                ]
             }
         )
+        self.tuya_data_point_handlers.update({dp_id: dp_handler})
+        return self
+
+    def tuya_dp_multi(
+        self,
+        dp_id: int,
+        attribute_mapping: list[DPToAttributeMapping],
+        dp_handler: str = "_dp_2_attr_update",
+    ) -> QuirkBuilder:  # fmt: skip
+        """Add Tuya DP Converter that maps to multiple attributes."""
+        self.tuya_dp_to_attribute.update({dp_id: attribute_mapping})
         self.tuya_data_point_handlers.update({dp_id: dp_handler})
         return self
 
@@ -535,7 +548,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
             """Replacement Tuya Cluster."""
 
             data_point_handlers: dict[int, str]
-            dp_to_attribute: dict[int, DPToAttributeMapping]
+            dp_to_attribute: dict[int, list[DPToAttributeMapping]]
 
             class AttributeDefs(NewAttributeDefs):
                 """Attribute Definitions."""
@@ -549,6 +562,5 @@ class TuyaQuirkBuilder(QuirkBuilder):
 
         TuyaReplacementCluster.data_point_handlers = self.tuya_data_point_handlers
         TuyaReplacementCluster.dp_to_attribute = self.tuya_dp_to_attribute
-
         self.replaces(TuyaReplacementCluster)
         return super().add_to_registry()

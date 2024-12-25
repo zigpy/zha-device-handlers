@@ -88,26 +88,32 @@ class CustomTuyaDPProcessor(TuyaNewManufCluster):
     attribute (attribute_name).
     """
 
-    dp_to_attribute: dict[int, DPToAttributeMapping] = {
-        DOOR_HANDLE_DP_ID: DPToAttributeMapping(
-            endpoint_id=DOOR_HANDLE_EP_ID,
-            ep_attribute=IasZone.ep_attribute,
-            attribute_name=IasZone.AttributeDefs.zone_status.name,
-            converter=lambda x: ZoneStatus.Alarm_1 & x,
-        ),
-        VIBRATION_DP_ID: DPToAttributeMapping(
-            endpoint_id=VIBRATION_EP_ID,
-            ep_attribute=IasZone.ep_attribute,
-            attribute_name=IasZone.AttributeDefs.zone_status.name,
-            converter=lambda x: ZoneStatus.Alarm_1 & x,
-        ),
-        BATTERY_STATE_DP_ID: DPToAttributeMapping(
-            endpoint_id=DP_HANDLER_EP_ID,
-            ep_attribute=PowerConfiguration.ep_attribute,
-            attribute_name=PowerConfiguration.AttributeDefs.battery_percentage_remaining.name,
-            converter=lambda x: 2 * x,
-            # Device measures battery in 1% steps, while the ZCL specifies it in 0.5% steps
-        ),
+    dp_to_attribute: dict[int, list[DPToAttributeMapping]] = {
+        DOOR_HANDLE_DP_ID: [
+            DPToAttributeMapping(
+                endpoint_id=DOOR_HANDLE_EP_ID,
+                ep_attribute=IasZone.ep_attribute,
+                attribute_name=IasZone.AttributeDefs.zone_status.name,
+                converter=lambda x: ZoneStatus.Alarm_1 & x,
+            )
+        ],
+        VIBRATION_DP_ID: [
+            DPToAttributeMapping(
+                endpoint_id=VIBRATION_EP_ID,
+                ep_attribute=IasZone.ep_attribute,
+                attribute_name=IasZone.AttributeDefs.zone_status.name,
+                converter=lambda x: ZoneStatus.Alarm_1 & x,
+            )
+        ],
+        BATTERY_STATE_DP_ID: [
+            DPToAttributeMapping(
+                endpoint_id=DP_HANDLER_EP_ID,
+                ep_attribute=PowerConfiguration.ep_attribute,
+                attribute_name=PowerConfiguration.AttributeDefs.battery_percentage_remaining.name,
+                converter=lambda x: 2 * x,
+                # Device measures battery in 1% steps, while the ZCL specifies it in 0.5% steps
+            )
+        ],
     }
 
     data_point_handlers = {
