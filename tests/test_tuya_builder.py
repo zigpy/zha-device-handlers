@@ -13,8 +13,12 @@ from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
 from zhaquirks.tuya import TUYA_QUERY_DATA
 from zhaquirks.tuya.builder import (
+    TuyaAirQualityVOC,
+    TuyaCO2Concetration,
+    TuyaFormaldehydeConcetration,
     TuyaIasContact,
     TuyaIasFire,
+    TuyaPM25Concetration,
     TuyaPowerConfigurationCluster2AAA,
     TuyaQuirkBuilder,
     TuyaRelativeHumidity,
@@ -38,6 +42,14 @@ zhaquirks.setup()
         ("tuya_humidity", "humidity", TuyaRelativeHumidity),
         ("tuya_smoke", "ias_zone", TuyaIasFire),
         ("tuya_contact", "ias_zone", TuyaIasContact),
+        ("tuya_co2", "carbon_dioxide_concentration", TuyaCO2Concetration),
+        ("tuya_pm25", "pm25", TuyaPM25Concetration),
+        ("tuya_voc", "voc_level", TuyaAirQualityVOC),
+        (
+            "tuya_formaldehyde",
+            "formaldehyde_concentration",
+            TuyaFormaldehydeConcetration,
+        ),
     ],
 )
 async def test_convenience_methods(device_mock, method_name, attr_name, exp_class):

@@ -14,12 +14,16 @@ from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateC
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.measurement import (
+    PM25,
+    CarbonDioxideConcentration,
+    FormaldehydeConcentration,
     RelativeHumidity,
     SoilMoisture,
     TemperatureMeasurement,
 )
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.clusters.smartenergy import Metering
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 from zhaquirks.tuya import (
     TUYA_CLUSTER_ID,
@@ -29,6 +33,14 @@ from zhaquirks.tuya import (
     TuyaPowerConfigurationCluster2AAA,
 )
 from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster, TuyaOnOffNM
+
+
+class TuyaCO2Concetration(CarbonDioxideConcentration, TuyaLocalCluster):
+    """Tuya Carbon Dioxide concentration measurement."""
+
+
+class TuyaFormaldehydeConcetration(FormaldehydeConcentration, TuyaLocalCluster):
+    """Tuya Formaldehyde concentration measurement."""
 
 
 class TuyaIasContact(IasZone, TuyaLocalCluster):
@@ -45,6 +57,10 @@ class TuyaIasFire(IasZone, TuyaLocalCluster):
     _CONSTANT_ATTRIBUTES = {
         IasZone.AttributeDefs.zone_type.id: IasZone.ZoneType.Fire_Sensor
     }
+
+
+class TuyaPM25Concetration(PM25, TuyaLocalCluster):
+    """Tuya PM25 concentration measurement."""
 
 
 class TuyaRelativeHumidity(RelativeHumidity, TuyaLocalCluster):
@@ -75,6 +91,42 @@ class TuyaValveWaterConsumed(Metering, TuyaLocalCluster):
         """Init a TuyaValveWaterConsumed cluster."""
         super().__init__(*args, **kwargs)
         self.add_unsupported_attribute(Metering.AttributeDefs.instantaneous_demand.id)
+
+
+class TuyaAirQualityVOC(TuyaLocalCluster):
+    """Tuya VOC level cluster."""
+
+    cluster_id = 0x042E
+    name = "VOC Level"
+    ep_attribute = "voc_level"
+
+    class AttributeDefs(BaseAttributeDefs):
+        """Attribute Definitions."""
+
+        measured_value = ZCLAttributeDef(
+            id=0x0000,
+            type=t.Single,
+            access="rp",
+            is_manufacturer_specific=True,
+        )
+        min_measured_value = ZCLAttributeDef(
+            id=0x0001,
+            type=t.Single,
+            access="rp",
+            is_manufacturer_specific=True,
+        )
+        max_measured_value = ZCLAttributeDef(
+            id=0x0002,
+            type=t.Single,
+            access="rp",
+            is_manufacturer_specific=True,
+        )
+        tolerance = ZCLAttributeDef(
+            id=0x0003,
+            type=t.Single,
+            access="rp",
+            is_manufacturer_specific=True,
+        )
 
 
 class TuyaQuirkBuilder(QuirkBuilder):
@@ -115,6 +167,54 @@ class TuyaQuirkBuilder(QuirkBuilder):
             ias_cfg=TuyaIasContact,
             converter=lambda x: IasZone.ZoneStatus.Alarm_1 if x != 0 else 0,
         )
+        return self
+
+    def tuya_co2(
+        self,
+        dp_id: int,
+        co2_cfg: TuyaLocalCluster = TuyaCO2Concetration,
+        scale: float = 1e-6,
+    ) -> QuirkBuilder:
+        """Add a Tuya CO2 Configuration."""
+        self.tuya_dp(
+            dp_id,
+            co2_cfg.ep_attribute,
+            CarbonDioxideConcentration.AttributeDefs.measured_value.name,
+            converter=lambda x: x * scale,
+        )
+        self.adds(co2_cfg)
+        return self
+
+    def tuya_formaldehyde(
+        self,
+        dp_id: int,
+        form_cfg: TuyaLocalCluster = TuyaFormaldehydeConcetration,
+        scale: float = 1e-6,
+    ) -> QuirkBuilder:
+        """Add a Tuya Formaldehyde Configuration."""
+        self.tuya_dp(
+            dp_id,
+            form_cfg.ep_attribute,
+            FormaldehydeConcentration.AttributeDefs.measured_value.name,
+            converter=lambda x: x * scale,
+        )
+        self.adds(form_cfg)
+        return self
+
+    def tuya_pm25(
+        self,
+        dp_id: int,
+        pm25_cfg: TuyaLocalCluster = TuyaPM25Concetration,
+        scale: float = 1,
+    ) -> QuirkBuilder:
+        """Add a Tuya PM25 Configuration."""
+        self.tuya_dp(
+            dp_id,
+            pm25_cfg.ep_attribute,
+            PM25.AttributeDefs.measured_value.name,
+            converter=lambda x: x * scale,
+        )
+        self.adds(pm25_cfg)
         return self
 
     def tuya_smoke(self, dp_id: int):
@@ -210,7 +310,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         temp_cfg: TuyaLocalCluster = TuyaTemperatureMeasurement,
         scale: float = 100,
     ) -> QuirkBuilder:
-        """Add a Tuya Soil Moisture Configuration."""
+        """Add a Tuya Temperature Configuration."""
         self.tuya_dp(
             dp_id,
             temp_cfg.ep_attribute,
@@ -218,6 +318,22 @@ class TuyaQuirkBuilder(QuirkBuilder):
             converter=lambda x: x * scale,
         )
         self.adds(temp_cfg)
+        return self
+
+    def tuya_voc(
+        self,
+        dp_id: int,
+        voc_cfg: TuyaLocalCluster = TuyaAirQualityVOC,
+        scale: float = 1e-6,
+    ) -> QuirkBuilder:
+        """Add a Tuya VOC Configuration."""
+        self.tuya_dp(
+            dp_id,
+            voc_cfg.ep_attribute,
+            TuyaAirQualityVOC.AttributeDefs.measured_value.name,
+            converter=lambda x: x * scale,
+        )
+        self.adds(voc_cfg)
         return self
 
     def tuya_attribute(
