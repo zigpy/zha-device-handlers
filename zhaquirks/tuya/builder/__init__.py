@@ -522,7 +522,9 @@ class TuyaQuirkBuilder(QuirkBuilder):
 
         return self
 
-    def add_to_registry(self) -> QuirksV2RegistryEntry:
+    def add_to_registry(
+        self, replacement_cluster: TuyaMCUCluster = TuyaMCUCluster
+    ) -> QuirksV2RegistryEntry:
         """Build the quirks v2 registry entry."""
 
         class NewAttributeDefs(TuyaMCUCluster.AttributeDefs):
@@ -531,7 +533,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         for attr in self.new_attributes:
             setattr(NewAttributeDefs, attr.name, attr)
 
-        class TuyaReplacementCluster(TuyaMCUCluster):
+        class TuyaReplacementCluster(replacement_cluster):  # type: ignore[valid-type]
             """Replacement Tuya Cluster."""
 
             data_point_handlers: dict[int, str]

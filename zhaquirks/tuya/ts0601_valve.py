@@ -2,258 +2,100 @@
 
 from datetime import datetime, timedelta, timezone
 
-from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
 from zigpy.quirks.v2 import EntityPlatform, EntityType
 from zigpy.quirks.v2.homeassistant import UnitOfTime
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
-from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
-from zigpy.zcl.clusters.smartenergy import Metering
 
-from zhaquirks import DoublingPowerConfigurationCluster
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-)
 from zhaquirks.tuya import (
     TUYA_CLUSTER_ID,
-    EnchantedDevice,
-    TuyaLocalCluster,
     TuyaPowerConfigurationCluster2AA,
     TuyaPowerConfigurationCluster4AA,
 )
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
-from zhaquirks.tuya.mcu import (
-    DPToAttributeMapping,
-    TuyaMCUCluster,
-    TuyaOnOff,
-    TuyaPowerConfigurationCluster,
+from zhaquirks.tuya.mcu import TuyaMCUCluster
+
+
+class TuyaValveWeatherDelay(t.enum8):
+    """Tuya Irrigation Valve weather delay enum."""
+
+    Disabled = 0x00
+    Delayed_24h = 0x01
+    Delayed_48h = 0x02
+    Delayed_72h = 0x03
+
+
+class TuyaValveTimerState(t.enum8):
+    """Tuya Irrigation Valve timer state enum."""
+
+    Disabled = 0x00
+    Active = 0x01
+    Enabled = 0x02
+
+
+(
+    TuyaQuirkBuilder("_TZE200_81isopgh", "TS0601")
+    .applies_to("_TZE200_1n2zev06", "TS0601")
+    .tuya_onoff(dp_id=1)
+    .tuya_metering(
+        dp_id=5, scale=0.0295735
+    )  # per z2m reports in fl oz, convert to liters
+    .tuya_dp_attribute(
+        dp_id=6,
+        attribute_name="dp_6",
+        type=t.uint32_t,
+    )
+    .tuya_battery(dp_id=7, power_cfg=TuyaPowerConfigurationCluster4AA)
+    .tuya_enum(
+        dp_id=10,
+        attribute_name="weather_delay",
+        enum_class=TuyaValveWeatherDelay,
+        translation_key="weather_delay",
+        fallback_name="Weather delay",
+        initially_disabled=True,
+    )
+    .tuya_sensor(
+        dp_id=11,
+        attribute_name="time_left",
+        type=t.uint32_t,
+        converter=lambda x: x / 60,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        translation_key="time_left",
+        fallback_name="Time left",
+    )
+    .tuya_enum(
+        dp_id=12,
+        attribute_name="timer_state",
+        enum_class=TuyaValveTimerState,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.DIAGNOSTIC,
+        translation_key="timer_state",
+        fallback_name="Timer state",
+    )
+    .tuya_sensor(
+        dp_id=15,
+        attribute_name="last_valve_open_duration",
+        type=t.uint32_t,
+        divisor=60,
+        entity_type=EntityType.DIAGNOSTIC,
+        unit=UnitOfTime.MINUTES,
+        translation_key="last_valve_open_duration",
+        fallback_name="Last valve open duration",
+    )
+    .tuya_dp_attribute(
+        dp_id=102,
+        attribute_name="valve_position",
+        type=t.uint32_t,
+    )
+    .skip_configuration()
+    .add_to_registry()
 )
-
-
-class TuyaValveWaterConsumed(Metering, TuyaLocalCluster):
-    """Tuya Valve Water consumed cluster."""
-
-    VOLUME_LITERS = 0x0007
-    WATER_METERING = 0x02
-
-    """Setting unit of measurement."""
-    _CONSTANT_ATTRIBUTES = {
-        0x0300: VOLUME_LITERS,
-        0x0306: WATER_METERING,
-    }
-
-
-class TuyaValveManufCluster(TuyaMCUCluster):
-    """On/Off Tuya cluster with extra device attributes."""
-
-    class AttributeDefs(TuyaMCUCluster.AttributeDefs):
-        """Attribute Definitions."""
-
-        time_left = foundation.ZCLAttributeDef(
-            id=0xEF01, type=t.uint32_t, is_manufacturer_specific=True
-        )
-        state = foundation.ZCLAttributeDef(
-            id=0xEF02, type=t.enum8, is_manufacturer_specific=True
-        )
-        last_valve_open_duration = foundation.ZCLAttributeDef(
-            id=0xEF03, type=t.uint32_t, is_manufacturer_specific=True
-        )
-        dp_6 = foundation.ZCLAttributeDef(
-            id=0xEF04, type=t.uint32_t, is_manufacturer_specific=True
-        )
-        valve_position = foundation.ZCLAttributeDef(
-            id=0xEF05, type=t.uint32_t, is_manufacturer_specific=True
-        )
-
-    dp_to_attribute: dict[int, DPToAttributeMapping] = {
-        1: DPToAttributeMapping(
-            TuyaOnOff.ep_attribute,
-            "on_off",
-        ),
-        5: DPToAttributeMapping(
-            TuyaValveWaterConsumed.ep_attribute,
-            "current_summ_delivered",
-        ),
-        6: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "dp_6",
-        ),
-        7: DPToAttributeMapping(
-            DoublingPowerConfigurationCluster.ep_attribute,
-            "battery_percentage_remaining",
-        ),
-        11: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "time_left",
-        ),
-        12: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "state",
-        ),
-        15: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "last_valve_open_duration",
-        ),
-        102: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "valve_position",
-        ),
-    }
-
-    data_point_handlers = {
-        1: "_dp_2_attr_update",
-        5: "_dp_2_attr_update",
-        6: "_dp_2_attr_update",
-        7: "_dp_2_attr_update",
-        11: "_dp_2_attr_update",
-        12: "_dp_2_attr_update",
-        15: "_dp_2_attr_update",
-        102: "_dp_2_attr_update",
-    }
-
-
-class TuyaValve(CustomDevice):
-    """Tuya valve device."""
-
-    signature = {
-        MODELS_INFO: [("_TZE200_81isopgh", "TS0601")],
-        # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=81, device_version=1,
-        # input_clusters=[0, 4, 5, 61184], output_clusters=[25, 10])
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    TuyaValveManufCluster.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
-            }
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    TuyaOnOff,
-                    TuyaValveWaterConsumed,
-                    DoublingPowerConfigurationCluster,
-                    TuyaValveManufCluster,
-                ],
-                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
-            }
-        }
-    }
-
-
-class BasicTuyaValve(CustomDevice):
-    """Basic Tuya valve device."""
-
-    signature = {
-        MODELS_INFO: [("_TZE200_1n2zev06", "TS0601")],
-        # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=81, device_version=1,
-        # input_clusters=[0, 4, 5, 61184], output_clusters=[25, 10])
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    TuyaValveManufCluster.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
-            }
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    TuyaOnOff,
-                    TuyaValveManufCluster,
-                ],
-                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
-            }
-        }
-    }
 
 
 class ParksideTuyaValveManufCluster(TuyaMCUCluster):
     """Manufacturer Specific Cluster for the _TZE200_htnnfasr water valve sold as PARKSIDE."""
-
-    class AttributeDefs(TuyaMCUCluster.AttributeDefs):
-        """Attribute Definitions."""
-
-        timer_duration = foundation.ZCLAttributeDef(
-            id=0xEF11, type=t.uint32_t, is_manufacturer_specific=True
-        )
-        timer_time_left = foundation.ZCLAttributeDef(
-            id=0xEF12, type=t.uint32_t, is_manufacturer_specific=True
-        )
-        frost_lock = foundation.ZCLAttributeDef(
-            id=0xEF13, type=t.Bool, is_manufacturer_specific=True
-        )
-        frost_lock_reset = foundation.ZCLAttributeDef(
-            id=0xEF14, type=t.Bool, is_manufacturer_specific=True
-        )  # 0 resets frost lock
-
-    dp_to_attribute: dict[int, DPToAttributeMapping] = {
-        1: DPToAttributeMapping(
-            TuyaOnOff.ep_attribute,
-            "on_off",
-        ),
-        5: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "timer_duration",
-        ),
-        6: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "timer_time_left",
-        ),
-        11: DPToAttributeMapping(
-            TuyaPowerConfigurationCluster.ep_attribute,
-            "battery_percentage_remaining",
-        ),
-        108: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "frost_lock",
-            lambda x: not x,  # invert for lock entity
-        ),
-        109: DPToAttributeMapping(
-            TuyaMCUCluster.ep_attribute,
-            "frost_lock_reset",
-        ),
-    }
-
-    data_point_handlers = {
-        1: "_dp_2_attr_update",
-        5: "_dp_2_attr_update",
-        6: "_dp_2_attr_update",
-        11: "_dp_2_attr_update",
-        108: "_dp_2_attr_update",
-        109: "_dp_2_attr_update",
-    }
 
     async def bind(self):
         """Bind cluster.
@@ -266,50 +108,57 @@ class ParksideTuyaValveManufCluster(TuyaMCUCluster):
         return result
 
 
-class ParksidePSBZS(EnchantedDevice):
-    """LIDL Parkside water without implemented scheduler."""
-
-    signature = {
-        MODELS_INFO: [("_TZE200_htnnfasr", "TS0601")],  # HG06875
-        ENDPOINTS: {
-            # <SimpleDescriptor endpoint=1 profile=260 device_type=0
-            # device_version=1
-            # input_clusters=[0, 1, 3, 4, 5, 6, 61184]
-            # output_clusters=[10, 25]>
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    ParksideTuyaValveManufCluster.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
-            },
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    TuyaOnOff,
-                    TuyaPowerConfigurationCluster,
-                    ParksideTuyaValveManufCluster,
-                ],
-                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
-            },
-        },
-    }
+(
+    TuyaQuirkBuilder(
+        "_TZE200_htnnfasr", "TS0601"
+    )  # HG06875, Lidl - Parkside smart watering timer
+    .tuya_onoff(dp_id=1)
+    .tuya_number(
+        dp_id=5,
+        attribute_name="timer_duration",
+        type=t.uint32_t,
+        min_value=1,
+        max_value=599,
+        step=1,
+        unit=UnitOfTime.MINUTES,
+        translation_key="timer_duration",
+        fallback_name="Timer duration",
+    )
+    .tuya_sensor(
+        dp_id=6,
+        attribute_name="time_left",
+        type=t.uint32_t,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        translation_key="time_left",
+        fallback_name="Time left",
+    )
+    .tuya_battery(dp_id=11, power_cfg=TuyaPowerConfigurationCluster4AA)
+    .tuya_switch(
+        dp_id=108,
+        attribute_name="frost_lock",
+        entity_type=EntityType.STANDARD,
+        on_value=0,  # Invert
+        off_value=1,
+        translation_key="frost_lock",
+        fallback_name="Frost lock",
+    )
+    .tuya_dp_attribute(
+        dp_id=109,
+        attribute_name="frost_lock_reset",
+        type=t.Bool,
+    )
+    .write_attr_button(
+        attribute_name="frost_lock_reset",
+        cluster_id=TUYA_CLUSTER_ID,
+        attribute_value=0x00,  # 0 resets frost lock
+        translation_key="frost_lock_reset",
+        fallback_name="Frost lock reset",
+    )
+    .skip_configuration()
+    .add_to_registry(replacement_cluster=ParksideTuyaValveManufCluster)
+)
 
 
 GIEX_12HRS_AS_SEC = 43200
@@ -572,23 +421,6 @@ class GiexIrrigationStatus(t.enum8):
 )
 
 
-class RoyalGardineerWeatherDelay(t.enum8):
-    """Royal Gardineer Irrigation Valve weather delay enum."""
-
-    Disabled = 0x00
-    Delayed_24h = 0x01
-    Delayed_48h = 0x02
-    Delayed_72h = 0x03
-
-
-class RoyalGardineerTimerState(t.enum8):
-    """Royal Gardineer Irrigation Valve timer state enum."""
-
-    Disabled = 0x00
-    Active = 0x01
-    Enabled = 0x02
-
-
 (
     TuyaQuirkBuilder("_TZE200_2wg5qrjy", "TS0601")
     .tuya_onoff(dp_id=1)
@@ -612,7 +444,7 @@ class RoyalGardineerTimerState(t.enum8):
     .tuya_enum(
         dp_id=10,
         attribute_name="weather_delay",
-        enum_class=RoyalGardineerWeatherDelay,
+        enum_class=TuyaValveWeatherDelay,
         translation_key="weather_delay",
         fallback_name="Weather delay",
         initially_disabled=True,
@@ -621,7 +453,7 @@ class RoyalGardineerTimerState(t.enum8):
     .tuya_enum(
         dp_id=12,
         attribute_name="timer_state",
-        enum_class=RoyalGardineerTimerState,
+        enum_class=TuyaValveTimerState,
         entity_platform=EntityPlatform.SENSOR,
         entity_type=EntityType.DIAGNOSTIC,
         translation_key="timer_state",
