@@ -1487,7 +1487,7 @@ class TuyaNewManufCluster(CustomCluster):
             "send_data", {"data": TuyaCommand}, False, is_manufacturer_specific=True
         ),
         TUYA_SET_TIME: foundation.ZCLCommandDef(
-            "set_time", {"time": TuyaTimePayload}, False, is_manufacturer_specific=True
+            "set_time", {"time": TuyaTimePayload}, False, is_manufacturer_specific=False
         ),
     }
 
