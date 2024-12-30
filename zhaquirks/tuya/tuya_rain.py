@@ -2,7 +2,7 @@
 
 import math
 
-from zigpy.quirks.v2.homeassistant import LIGHT_LUX, EntityType
+from zigpy.quirks.v2.homeassistant import EntityType
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
 from zigpy.zcl.clusters.measurement import IlluminanceMeasurement
@@ -39,7 +39,7 @@ class TuyaIlluminanceCluster(IlluminanceMeasurement, TuyaLocalCluster):
         type=t.uint32_t,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.DURATION,
-        unit=LIGHT_LUX,
+        # unit=LIGHT_LUX,
         entity_type=EntityType.DIAGNOSTIC,
         translation_key="average_light_intensity_20mins",
         fallback_name="Average light intensity last 20 min",
@@ -50,7 +50,7 @@ class TuyaIlluminanceCluster(IlluminanceMeasurement, TuyaLocalCluster):
         type=t.uint32_t,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.DURATION,
-        unit=LIGHT_LUX,
+        # unit=LIGHT_LUX,
         entity_type=EntityType.DIAGNOSTIC,
         translation_key="todays_max_light_intensity",
         fallback_name="Todays max light intensity",
