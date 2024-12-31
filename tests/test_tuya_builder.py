@@ -227,8 +227,6 @@ async def test_tuya_spell(device_mock, read_attr_spell, data_query_spell):
     with request_patch as request_mock:
         request_mock.return_value = (foundation.Status.SUCCESS, "done")
 
-        # assert isinstance(quirked, EnchantedDeviceV2)
-
         # call apply_custom_configuration() on each EnchantedDevice
         # ZHA does this during device configuration normally
         await quirked.apply_custom_configuration()
