@@ -6,13 +6,14 @@ from typing import Any, Optional
 
 from zigpy.quirks import _DEVICE_REGISTRY
 from zigpy.quirks.registry import DeviceRegistry
-from zigpy.quirks.v2 import QuirkBuilder, QuirksV2RegistryEntry
+from zigpy.quirks.v2 import CustomDeviceV2, QuirkBuilder, QuirksV2RegistryEntry
 from zigpy.quirks.v2.homeassistant import EntityPlatform, EntityType
 from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
 from zigpy.zcl import foundation
+from zigpy.zcl.clusters.general import Basic
 from zigpy.zcl.clusters.measurement import (
     RelativeHumidity,
     SoilMoisture,
@@ -23,8 +24,10 @@ from zigpy.zcl.clusters.smartenergy import Metering
 
 from zhaquirks.tuya import (
     TUYA_CLUSTER_ID,
+    TUYA_QUERY_DATA,
     PowerConfiguration,
     TuyaLocalCluster,
+    TuyaNewManufCluster,
     TuyaPowerConfigurationCluster2AAA,
 )
 from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster, TuyaOnOffNM
@@ -519,6 +522,64 @@ class TuyaQuirkBuilder(QuirkBuilder):
             translation_key=translation_key,
             fallback_name=fallback_name,
         )
+
+        return self
+
+    def tuya_enchantment(
+        self, read_attr_spell: bool = True, data_query_spell: bool = False
+    ) -> QuirkBuilder:
+        """Set the Tuya enchantment spells."""
+
+        class EnchantedDeviceV2(CustomDeviceV2):
+            """Class for Tuya devices which need to be unlocked by casting a 'spell'.
+
+            The spell is applied during device configuration.
+            """
+
+            # These values can be overridden from a quirk to enable (or disable) additional Tuya spells:
+            tuya_spell_read_attributes: bool = (
+                True  # spell reading attributes on Basic cluster
+            )
+            tuya_spell_data_query: bool = (
+                False  # additional spell needed for some devices
+            )
+
+            async def apply_custom_configuration(self, *args, **kwargs):
+                """Hooks device configuration to apply custom configuration."""
+                # cast Tuya spell
+                if self.tuya_spell_read_attributes:
+                    await self.spell_attribute_reads()
+                if self.tuya_spell_data_query:
+                    await self.spell_data_query()
+
+                # also apply custom configuration to clusters if defined
+                await super().apply_custom_configuration(*args, **kwargs)
+
+            async def spell_attribute_reads(self):
+                """Cast 'attribute read' spell, so the Tuya device works correctly."""
+                self.debug(
+                    "Executing attribute read spell on Tuya device %s",
+                    self.ieee,
+                )
+                attr_to_read = [4, 0, 1, 5, 7, 0xFFFE]
+                basic_cluster = self.endpoints[1].in_clusters[Basic.cluster_id]
+                await basic_cluster.read_attributes(attr_to_read)
+                self.debug("Executed attribute read spell on Tuya device %s", self.ieee)
+
+            async def spell_data_query(self):
+                """Cast 'data query' spell, also required for some Tuya devices to send data."""
+                self.debug("Executing data query spell on Tuya device %s", self.ieee)
+                # tests verify that a device with an enabled 'data query spell' has a TuyaNewManufCluster (subclass)
+                tuya_cluster = self.endpoints[1].in_clusters[
+                    TuyaNewManufCluster.cluster_id
+                ]
+                await tuya_cluster.command(TUYA_QUERY_DATA)
+                self.debug("Executed data query spell on Tuya device %s", self.ieee)
+
+        EnchantedDeviceV2.tuya_spell_read_attributes = read_attr_spell
+        EnchantedDeviceV2.tuya_spell_data_query = data_query_spell
+
+        self.device_class(EnchantedDeviceV2)
 
         return self
 

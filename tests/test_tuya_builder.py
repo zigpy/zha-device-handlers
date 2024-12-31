@@ -12,6 +12,7 @@ from zigpy.zcl.clusters.general import Basic
 
 from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
+from zhaquirks.tuya import TUYA_QUERY_DATA
 from zhaquirks.tuya.builder import (
     TuyaIasContact,
     TuyaIasFire,
@@ -187,3 +188,75 @@ async def test_tuya_quirkbuilder(device_mock):
 
     assert tuya_listener.attribute_updates[0][0] == 0xEF0A
     assert tuya_listener.attribute_updates[0][1] == TestEnum.B
+
+
+@pytest.mark.parametrize(
+    "read_attr_spell,data_query_spell",
+    [
+        (True, False),
+        (False, True),
+        (True, True),
+        (False, False),
+    ],
+)
+async def test_tuya_spell(device_mock, read_attr_spell, data_query_spell):
+    """Test that enchanted Tuya devices have their spells applied during configuration."""
+    registry = DeviceRegistry()
+
+    entry = (
+        TuyaQuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
+        .tuya_battery(dp_id=1)
+        .tuya_onoff(dp_id=3)
+        .tuya_enchantment(
+            read_attr_spell=read_attr_spell, data_query_spell=data_query_spell
+        )
+        .skip_configuration()
+        .add_to_registry()
+    )
+
+    # coverage for overridden __eq__ method
+    assert entry.adds_metadata[0] != entry.adds_metadata[1]
+    assert entry.adds_metadata[0] != entry
+
+    quirked = registry.get_device(device_mock)
+
+    assert isinstance(quirked, CustomDeviceV2)
+    assert quirked in registry
+
+    request_patch = mock.patch("zigpy.zcl.Cluster.request", mock.AsyncMock())
+    with request_patch as request_mock:
+        request_mock.return_value = (foundation.Status.SUCCESS, "done")
+
+        # assert isinstance(quirked, EnchantedDeviceV2)
+
+        # call apply_custom_configuration() on each EnchantedDevice
+        # ZHA does this during device configuration normally
+        await quirked.apply_custom_configuration()
+
+        # the number of Tuya spells that are allowed to be cast, so the sum of enabled Tuya spells
+        enabled_tuya_spells_num = (
+            quirked.tuya_spell_read_attributes + quirked.tuya_spell_data_query
+        )
+
+        # verify request was called the correct number of times
+        assert request_mock.call_count == enabled_tuya_spells_num
+
+        # used to check list of mock calls below
+        messages = 0
+
+        # check 'attribute read spell' was cast correctly (if enabled)
+        if quirked.tuya_spell_read_attributes:
+            assert (
+                request_mock.mock_calls[messages][1][1]
+                == foundation.GeneralCommand.Read_Attributes
+            )
+            assert request_mock.mock_calls[messages][1][3] == [4, 0, 1, 5, 7, 65534]
+            messages += 1
+
+        # check 'query data spell' was cast correctly (if enabled)
+        if quirked.tuya_spell_data_query:
+            assert not request_mock.mock_calls[messages][1][0]
+            assert request_mock.mock_calls[messages][1][1] == TUYA_QUERY_DATA
+            messages += 1
+
+        request_mock.reset_mock()
