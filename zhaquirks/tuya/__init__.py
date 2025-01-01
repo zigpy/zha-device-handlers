@@ -956,9 +956,9 @@ class TuyaThermostat(CustomDevice):
 class SwitchBackLight(t.enum8):
     """Tuya switch back light mode enum."""
 
-    Mode_0 = 0x00
-    Mode_1 = 0x01
-    Mode_2 = 0x02
+    Off = 0x00
+    Normal = 0x01
+    Reverse = 0x02
 
 
 class SwitchMode(t.enum8):
