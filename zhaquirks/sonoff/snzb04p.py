@@ -15,7 +15,7 @@ from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 class SonoffOnOffCluster(CustomCluster, OnOff):
     """Sonoff OnOff cluster for contact sensor."""
 
-    """Prevents the creation of the on_off entity since it is not functionnal."""
+    """Prevents the creation of the on_off entity since it is not functional."""
 
     cluster_id = 6  # 0x0006
     name = "Sonoff OnOff cluster"
