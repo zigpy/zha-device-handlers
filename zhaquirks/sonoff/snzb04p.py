@@ -2,9 +2,15 @@
 
 from zigpy import types
 from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import BinarySensorDeviceClass, EntityType, QuirkBuilder, ClusterType
+from zigpy.quirks.v2 import (
+    BinarySensorDeviceClass,
+    ClusterType,
+    EntityType,
+    QuirkBuilder,
+)
 from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+
 
 class SonoffOnOffCluster(CustomCluster, OnOff):
     """Sonoff OnOff cluster for contact sensor."""
@@ -15,6 +21,7 @@ class SonoffOnOffCluster(CustomCluster, OnOff):
     name = "Sonoff OnOff cluster"
     ep_attribute = "sonoff_onoff_cluster"
     SKIP_CONFIGURATION = True
+
 
 class SonoffContactCluster(CustomCluster):
     """Sonoff manufacturer specific cluster for contact sensor."""
@@ -32,6 +39,7 @@ class SonoffContactCluster(CustomCluster):
             is_manufacturer_specific=True,
         )
 
+
 (
     #  <SimpleDescriptor endpoint=1 profile=260 device_type=1026
     #  device_version=0
@@ -39,9 +47,9 @@ class SonoffContactCluster(CustomCluster):
     #  output_clusters=[3, 6, 25]>
     QuirkBuilder("eWeLink", "SNZB-04P")
     .replaces(
-    SonoffOnOffCluster,
-    cluster_type=ClusterType.Client,
-    endpoint_id=1,
+        SonoffOnOffCluster,
+        cluster_type=ClusterType.Client,
+        endpoint_id=1,
     )
     .replaces(SonoffContactCluster, endpoint_id=1)
     .binary_sensor(
