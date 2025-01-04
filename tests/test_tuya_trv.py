@@ -3,10 +3,11 @@
 from unittest import mock
 
 import pytest
+import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.hvac import Thermostat
 
-from tests.common import ClusterListener
+from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
 from zhaquirks.tuya import TUYA_QUERY_DATA
 from zhaquirks.tuya.mcu import TuyaMCUCluster
@@ -100,3 +101,39 @@ async def test_tuya_spell(zigpy_device_from_v2_quirk):
             messages += 1
 
         request_mock.reset_mock()
+
+
+async def test_ensure_no_manuf_id(zigpy_device_from_v2_quirk):
+    """Test that write attributes is sent without a manuf id."""
+
+    device = zigpy_device_from_v2_quirk("_TZE204_ogx8u5z6", "TS0601")
+
+    tuya_cluster = device.endpoints[1].tuya_manufacturer
+    thermostat_cluster = device.endpoints[1].thermostat
+
+    async def async_success(*args, **kwargs):
+        return foundation.Status.SUCCESS
+
+    with mock.patch.object(
+        tuya_cluster.endpoint, "request", side_effect=async_success
+    ) as m1:
+        (status,) = await thermostat_cluster.write_attributes(
+            {
+                "occupied_heating_setpoint": 2500,
+            }
+        )
+        await wait_for_zigpy_tasks()
+        m1.assert_called_with(
+            cluster=0xEF00,
+            sequence=1,
+            data=b"\x01\x01\x00\x00\x01\x04\x02\x00\x04\x00\x00\x00\xfa",
+            command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
+        )
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]

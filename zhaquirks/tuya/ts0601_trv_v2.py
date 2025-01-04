@@ -80,6 +80,13 @@ class TuyaThermostat(Thermostat, TuyaAttributesCluster):
         )
         self.add_unsupported_attribute(Thermostat.AttributeDefs.pi_heating_demand.id)
 
+    async def write_attributes(self, attributes, manufacturer=None):
+        """Overwrite to force manufacturer code."""
+
+        return await super().write_attributes(
+            attributes, manufacturer=foundation.ZCLHeader.NO_MANUFACTURER_ID
+        )
+
 
 (
     TuyaQuirkBuilder("_TZE204_ogx8u5z6", "TS0601")
