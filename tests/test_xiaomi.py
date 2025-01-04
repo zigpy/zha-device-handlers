@@ -1807,8 +1807,8 @@ async def test_aqara_fp1e_sensor(
 
 
 def test_h1_wireless_remotes(zigpy_device_from_v2_quirk):
-    """Test Aqara H1 wireless remote signature replacement adds missing endpoints."""
-    # create device with only endpoint 1 and verify we don't get a KeyError
+    """Test Aqara H1 wireless remote quirk adds missing endpoints."""
+    # create device with endpoint 1 only and verify we don't get a KeyError
     quirk = zigpy_device_from_v2_quirk(LUMI, "lumi.remote.b28ac1")
 
     # verify the quirk adds endpoints 2 and 3
