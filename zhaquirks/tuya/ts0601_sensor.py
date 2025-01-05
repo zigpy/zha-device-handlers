@@ -24,6 +24,7 @@ from zhaquirks.tuya.builder import TuyaPowerConfigurationCluster2AAA, TuyaQuirkB
     .applies_to("_TZE200_zppcgbdj", "TS0601")
     .applies_to("_TZE204_s139roas", "TS0601")
     .applies_to("_TZE200_s1xgth2u", "TS0601")  # Nedis ZBSC30WT
+    .applies_to("_TZE284_qyflbnbj", "TS0601")
     .tuya_temperature(dp_id=1, scale=10)
     .tuya_humidity(dp_id=2)
     .tuya_battery(dp_id=4)
