@@ -529,7 +529,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         """Set the Tuya enchantment spells."""
 
         class EnchantedDeviceV2(CustomDeviceV2, BaseEnchantedDevice):
-            """Enchanted device class for v1 quirks."""
+            """Enchanted device class for v2 quirks."""
 
         EnchantedDeviceV2.tuya_spell_read_attributes = read_attr_spell
         EnchantedDeviceV2.tuya_spell_data_query = data_query_spell
