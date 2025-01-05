@@ -486,3 +486,69 @@ base_tuya_motion = (
     )
     .add_to_registry()
 )
+
+(
+    TuyaQuirkBuilder("_TZE204_muvkrjr5", "TS0601")
+    .tuya_dp(
+        dp_id=1,
+        ep_attribute=TuyaOccupancySensing.ep_attribute,
+        attribute_name=OccupancySensing.AttributeDefs.occupancy.name,
+        converter=lambda x: x == 1,
+    )
+    .adds(TuyaOccupancySensing)
+    .tuya_number(
+        dp_id=13,
+        attribute_name="detection_distance_max",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DISTANCE,
+        unit=UnitOfLength.METERS,
+        min_value=1.5,
+        max_value=6.0,
+        step=0.75,
+        multiplier=0.01,
+        translation_key="detection_distance_max",
+        fallback_name="Maximum range",
+    )
+    .tuya_number(
+        dp_id=16,
+        attribute_name="move_sensitivity",
+        type=t.uint16_t,
+        min_value=68,
+        max_value=90,
+        step=1,
+        translation_key="move_sensitivity",
+        fallback_name="Motion sensitivity",
+    )
+    .tuya_sensor(
+        dp_id=19,
+        attribute_name="distance",
+        type=t.uint16_t,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.DISTANCE,
+        unit=UnitOfLength.CENTIMETERS,
+        entity_type=EntityType.STANDARD,
+        translation_key="distance",
+        fallback_name="Target distance",
+    )
+    .tuya_binary_sensor(
+        dp_id=101,
+        attribute_name="led_indicator",
+        translation_key="led_indicator",
+        fallback_name="LED indicator",
+    )
+    # 102 is ignored, per z2m
+    .tuya_number(
+        dp_id=103,
+        attribute_name="fading_time",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        min_value=3,
+        max_value=1799,
+        step=1,
+        translation_key="fading_time",
+        fallback_name="Fading time",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
