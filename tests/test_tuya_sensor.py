@@ -15,16 +15,19 @@ zhaquirks.setup()
 @pytest.mark.parametrize(
     "model,manuf,rh_scale,temp_scale,test_neg",
     [
-        ("_TZE200_bjawzodf", "TS0601", 10, 10, False),
-        ("_TZE200_zl1kmjqx", "TS0601", 10, 10, False),
-        ("_TZE200_a8sdabtg", "TS0601", 100, 10, True),  # Variant without screen, round
-        ("_TZE200_qoy0ekbd", "TS0601", 100, 10, True),
-        ("_TZE200_znbl8dj5", "TS0601", 100, 10, True),
+        ("_TZE200_bjawzodf", "TS0601", 10, 10, True),
+        ("_TZE200_zl1kmjqx", "TS0601", 10, 10, True),
+        ("_TZE200_a8sdabtg", "TS0601", 100, 10, False),  # Variant without screen, round
+        ("_TZE200_qoy0ekbd", "TS0601", 100, 10, False),
+        ("_TZE200_znbl8dj5", "TS0601", 100, 10, False),
         ("_TZE200_qyflbnbj", "TS0601", 100, 10, True),
-        ("_TZE200_zppcgbdj", "TS0601", 100, 10, True),
-        ("_TZE200_s1xgth2u", "TS0601", 100, 10, True),
+        ("_TZE200_zppcgbdj", "TS0601", 100, 10, False),
+        ("_TZE200_s1xgth2u", "TS0601", 100, 10, False),
         ("_TZE284_qyflbnbj", "TS0601", 100, 10, True),
-        ("_TZE204_s139roas", "TS0601", 100, 10, True),
+        ("_TZE204_s139roas", "TS0601", 100, 10, False),
+        ("_TZE200_bq5c8xfe", "TS0601", 100, 10, True),
+        ("_TZE200_vs0skpuc", "TS0601", 100, 10, True),
+        ("_TZE200_44af8vyi", "TS0601", 100, 10, True),
     ],
 )
 async def test_handle_get_data(
