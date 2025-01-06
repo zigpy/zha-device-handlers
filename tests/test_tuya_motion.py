@@ -24,6 +24,7 @@ zhaquirks.setup()
     "model,manuf,occ_msg",
     [
         ("_TZE200_ya4ft0w4", "TS0601", ZCL_TUYA_MOTION),
+        ("_TZE204_ya4ft0w4", "TS0601", ZCL_TUYA_MOTION),
         ("_TZE200_7hfcudw5", "TS0601", ZCL_TUYA_MOTION_V2),
         ("_TZE200_ppuj1vem", "TS0601", ZCL_TUYA_MOTION_V2),
         ("_TZE200_ar0slwnd", "TS0601", ZCL_TUYA_MOTION),
