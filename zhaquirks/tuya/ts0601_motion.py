@@ -105,6 +105,14 @@ class TuyaMotionSensorMode(t.enum8):
     Unoccupied = 0x03
 
 
+class TuyaHumanMotionState(t.enum8):
+    """Tuya human motion state enum."""
+
+    Off = 0x00
+    Small = 0x01
+    Large = 0x02
+
+
 base_tuya_motion = (
     TuyaQuirkBuilder()
     .adds(TuyaOccupancySensing)
@@ -548,6 +556,84 @@ base_tuya_motion = (
         step=1,
         translation_key="fading_time",
         fallback_name="Fading time",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+(
+    TuyaQuirkBuilder("_TZE204_kyhbrfyl", "TS0601")
+    .tuya_dp(
+        dp_id=1,
+        ep_attribute=TuyaOccupancySensing.ep_attribute,
+        attribute_name=OccupancySensing.AttributeDefs.occupancy.name,
+        converter=lambda x: x == 1,
+    )
+    .adds(TuyaOccupancySensing)
+    .tuya_enum(
+        dp_id=11,
+        attribute_name="human_motion_state",
+        enum_class=TuyaHumanMotionState,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.STANDARD,
+        translation_key="human_motion_state",
+        fallback_name="Human motion state",
+    )
+    .tuya_number(
+        dp_id=12,
+        attribute_name="fading_time",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        min_value=3,
+        max_value=600,
+        step=1,
+        translation_key="fading_time",
+        fallback_name="Fading time",
+    )
+    .tuya_number(
+        dp_id=13,
+        attribute_name="detection_distance_max",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DISTANCE,
+        unit=UnitOfLength.CENTIMETERS,
+        min_value=150,
+        max_value=600,
+        step=1,
+        translation_key="detection_distance_max",
+        fallback_name="Maximum range",
+    )
+    .tuya_number(
+        dp_id=15,
+        attribute_name="radar_sensitivity",
+        type=t.uint16_t,
+        min_value=0,
+        max_value=7,
+        step=1,
+        translation_key="radar_sensitivity",
+        fallback_name="Radar sensitivity",
+    )
+    .tuya_number(
+        dp_id=16,
+        attribute_name="presence_sensitivity",
+        type=t.uint16_t,
+        min_value=0,
+        max_value=7,
+        step=1,
+        translation_key="presence_sensitivity",
+        fallback_name="Presence sensitivity",
+    )
+    .tuya_sensor(
+        dp_id=19,
+        attribute_name="distance",
+        type=t.uint16_t,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.DISTANCE,
+        unit=UnitOfLength.CENTIMETERS,
+        entity_type=EntityType.STANDARD,
+        translation_key="distance",
+        fallback_name="Target distance",
     )
     .skip_configuration()
     .add_to_registry()
