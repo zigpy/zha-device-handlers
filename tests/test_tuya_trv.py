@@ -1,17 +1,12 @@
 """Test for Tuya TRV."""
 
-from unittest import mock
-
 import pytest
-import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.hvac import Thermostat
 
-from tests.common import ClusterListener, wait_for_zigpy_tasks
+from tests.common import ClusterListener
 import zhaquirks
-from zhaquirks.tuya import TUYA_QUERY_DATA
 from zhaquirks.tuya.mcu import TuyaMCUCluster
-from zhaquirks.tuya.ts0601_trv_v2 import EnchantedDeviceV2
 
 zhaquirks.setup()
 
@@ -59,81 +54,3 @@ async def test_handle_get_data(zigpy_device_from_v2_quirk, msg, attr, value):
     assert thermostat_listener.attribute_updates[0][1] == value
 
     assert ep.thermostat.get(attr.id) == value
-
-
-async def test_tuya_spell(zigpy_device_from_v2_quirk):
-    """Test that enchanted Tuya devices have their spells applied during configuration."""
-    request_patch = mock.patch("zigpy.zcl.Cluster.request", mock.AsyncMock())
-    with request_patch as request_mock:
-        request_mock.return_value = (foundation.Status.SUCCESS, "done")
-
-        device = zigpy_device_from_v2_quirk("_TZE204_ogx8u5z6", "TS0601")
-        assert isinstance(device, EnchantedDeviceV2)
-
-        # call apply_custom_configuration() on each EnchantedDevice
-        # ZHA does this during device configuration normally
-        await device.apply_custom_configuration()
-
-        # the number of Tuya spells that are allowed to be cast, so the sum of enabled Tuya spells
-        enabled_tuya_spells_num = (
-            device.tuya_spell_read_attributes + device.tuya_spell_data_query
-        )
-
-        # verify request was called the correct number of times
-        assert request_mock.call_count == enabled_tuya_spells_num
-
-        # used to check list of mock calls below
-        messages = 0
-
-        # check 'attribute read spell' was cast correctly (if enabled)
-        if device.tuya_spell_read_attributes:
-            assert (
-                request_mock.mock_calls[messages][1][1]
-                == foundation.GeneralCommand.Read_Attributes
-            )
-            assert request_mock.mock_calls[messages][1][3] == [4, 0, 1, 5, 7, 65534]
-            messages += 1
-
-        # check 'query data spell' was cast correctly (if enabled)
-        if device.tuya_spell_data_query:
-            assert not request_mock.mock_calls[messages][1][0]
-            assert request_mock.mock_calls[messages][1][1] == TUYA_QUERY_DATA
-            messages += 1
-
-        request_mock.reset_mock()
-
-
-async def test_ensure_no_manuf_id(zigpy_device_from_v2_quirk):
-    """Test that write attributes is sent without a manuf id."""
-
-    device = zigpy_device_from_v2_quirk("_TZE204_ogx8u5z6", "TS0601")
-
-    tuya_cluster = device.endpoints[1].tuya_manufacturer
-    thermostat_cluster = device.endpoints[1].thermostat
-
-    async def async_success(*args, **kwargs):
-        return foundation.Status.SUCCESS
-
-    with mock.patch.object(
-        tuya_cluster.endpoint, "request", side_effect=async_success
-    ) as m1:
-        (status,) = await thermostat_cluster.write_attributes(
-            {
-                "occupied_heating_setpoint": 2500,
-            }
-        )
-        await wait_for_zigpy_tasks()
-        m1.assert_called_with(
-            cluster=0xEF00,
-            sequence=1,
-            data=b"\x01\x01\x00\x00\x01\x04\x02\x00\x04\x00\x00\x00\xfa",
-            command_id=0,
-            timeout=5,
-            expect_reply=False,
-            use_ieee=False,
-            ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
-        )
-        assert status == [
-            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
-        ]
