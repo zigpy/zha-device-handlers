@@ -1,6 +1,7 @@
 """Aqara H1-series wireless remote."""
 
 from zigpy import types
+from zigpy.profiles import zha
 from zigpy.quirks.v2 import ClusterType, QuirkBuilder
 from zigpy.zcl.clusters.general import Identify, OnOff
 from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
@@ -144,6 +145,9 @@ class PowerConfigurationClusterH1Remote(PowerConfigurationCluster):
     # .friendly_name(
     #     manufacturer="Aqara", model="Wireless Remote Switch H1 (Double Rocker)"
     # )
+    # add endpoints that are present but not exposed sometimes
+    .adds_endpoint(2, device_type=zha.DeviceType.ON_OFF_LIGHT_SWITCH)
+    .adds_endpoint(3, device_type=zha.DeviceType.ON_OFF_LIGHT_SWITCH)
     .replaces(AqaraRemoteManuSpecificCluster)
     .adds(Identify)
     .replaces(MultistateInputCluster)
