@@ -1,10 +1,13 @@
 """Test for Tuya TRV."""
 
+from unittest import mock
+
 import pytest
+import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.hvac import Thermostat
 
-from tests.common import ClusterListener
+from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
 from zhaquirks.tuya.mcu import TuyaMCUCluster
 
@@ -54,3 +57,30 @@ async def test_handle_get_data(zigpy_device_from_v2_quirk, msg, attr, value):
     assert thermostat_listener.attribute_updates[0][1] == value
 
     assert ep.thermostat.get(attr.id) == value
+
+    async def async_success(*args, **kwargs):
+        return foundation.Status.SUCCESS
+
+    with mock.patch.object(
+        ep.tuya_manufacturer.endpoint, "request", side_effect=async_success
+    ) as m1:
+        (status,) = await ep.thermostat.write_attributes(
+            {
+                "occupied_heating_setpoint": 2500,
+            }
+        )
+        await wait_for_zigpy_tasks()
+        m1.assert_called_with(
+            cluster=0xEF00,
+            sequence=1,
+            data=b"\x01\x01\x00\x00\x01\x04\x02\x00\x04\x00\x00\x00\xfa",
+            command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
+        )
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
