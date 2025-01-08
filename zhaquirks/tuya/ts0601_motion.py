@@ -6,6 +6,7 @@ from typing import Any
 
 from zigpy.quirks.v2 import EntityPlatform, EntityType
 from zigpy.quirks.v2.homeassistant import UnitOfLength, UnitOfTime
+from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
 from zigpy.zcl.clusters.measurement import IlluminanceMeasurement, OccupancySensing
@@ -634,6 +635,63 @@ base_tuya_motion = (
         entity_type=EntityType.STANDARD,
         translation_key="target_distance",
         fallback_name="Target distance",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+# Heimen HS80S-TY
+(
+    TuyaQuirkBuilder("_TZ6210_duv6fhwt", "TS0601")
+    .tuya_dp(
+        dp_id=1,
+        ep_attribute=TuyaOccupancySensing.ep_attribute,
+        attribute_name=OccupancySensing.AttributeDefs.occupancy.name,
+        converter=lambda x: x == 1,
+    )
+    .tuya_dp(
+        dp_id=101,
+        ep_attribute=TuyaIlluminanceCluster.ep_attribute,
+        attribute_name=TuyaIlluminanceCluster.AttributeDefs.measured_value.name,
+        converter=lambda x: 10000 * math.log10(x) + 1 if x != 0 else 0,
+    )
+    .adds(TuyaOccupancySensing)
+    .tuya_switch(
+        dp_id=102,
+        attribute_name="find_switch",
+        entity_type=EntityType.STANDARD,
+        translation_key="find_switch",
+        fallback_name="Find switch",
+    )
+    .tuya_binary_sensor(
+        dp_id=103,
+        attribute_name="tamper",
+        device_class=BinarySensorDeviceClass.TAMPER,
+        entity_type=EntityType.DIAGNOSTIC,
+        translation_key="tamper",
+        fallback_name="Tamper",
+    )
+    .tuya_number(
+        dp_id=104,
+        attribute_name="presence_sensitivity",
+        type=t.uint16_t,
+        min_value=0,
+        max_value=7,
+        step=1,
+        translation_key="presence_sensitivity",
+        fallback_name="Presence sensitivity",
+    )
+    .tuya_number(
+        dp_id=105,
+        attribute_name="presence_timeout",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        min_value=1,
+        max_value=15000,
+        step=1,
+        translation_key="presence_timeout",
+        fallback_name="Fade time",
     )
     .skip_configuration()
     .add_to_registry()
