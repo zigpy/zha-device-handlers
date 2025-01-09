@@ -673,22 +673,22 @@ base_tuya_motion = (
     )
     .tuya_number(
         dp_id=104,
-        attribute_name="presence_sensitivity",
+        attribute_name="motionless_detection",
         type=t.uint16_t,
         min_value=0,
-        max_value=7,
+        max_value=100,
         step=1,
-        translation_key="presence_sensitivity",
-        fallback_name="Presence sensitivity",
+        translation_key="motionless_detection",
+        fallback_name="Motionless detection",
     )
     .tuya_number(
         dp_id=105,
         attribute_name="presence_timeout",
         type=t.uint16_t,
         device_class=SensorDeviceClass.DURATION,
-        unit=UnitOfTime.SECONDS,
+        unit=UnitOfTime.MINUTES,
         min_value=1,
-        max_value=15000,
+        max_value=30,
         step=1,
         translation_key="presence_timeout",
         fallback_name="Fade time",
