@@ -693,6 +693,7 @@ base_tuya_motion = (
         translation_key="presence_timeout",
         fallback_name="Fade time",
     )
+    .adds(TuyaIlluminanceCluster)
     .skip_configuration()
     .add_to_registry()
 )
