@@ -41,6 +41,15 @@ from zhaquirks.philips import (
 )
 
 
+class SwitchMode(t.enum8):
+    """Wall switch modes. See https://zigbee.blakadder.com/Philips_RDM001.html."""
+
+    SingleRocker = 0x00
+    SinglePush = 0x01
+    DoubleRocker = 0x02
+    DoublePush = 0x03
+
+
 class PhilipsWallSwitchBasicCluster(PhilipsBasicCluster):
     """Philips wall switch Basic cluster."""
 
@@ -49,11 +58,14 @@ class PhilipsWallSwitchBasicCluster(PhilipsBasicCluster):
 
         mode: Final = ZCLAttributeDef(
             id=0x0034,
-            type=t.enum8,
+            type=SwitchMode,
             is_manufacturer_specific=True,
         )
 
-    attr_config = {**PhilipsBasicCluster.attr_config, AttributeDefs.mode.id: 0x02}
+    attr_config = {
+        **PhilipsBasicCluster.attr_config,
+        AttributeDefs.mode.id: SwitchMode.DoublePush,
+    }
 
 
 class PhilipsWallSwitchRemoteCluster(PhilipsRemoteCluster):

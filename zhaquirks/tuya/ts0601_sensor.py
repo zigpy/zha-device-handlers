@@ -1,7 +1,5 @@
 """Tuya temp and humidity sensors."""
 
-from zigpy.quirks.v2.homeassistant import EntityType
-from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
 
@@ -17,6 +15,7 @@ from zhaquirks.tuya.builder import TuyaPowerConfigurationCluster2AAA, TuyaQuirkB
     .add_to_registry()
 )
 
+
 (
     TuyaQuirkBuilder("_TZE200_a8sdabtg", "TS0601")  # Variant without screen, round
     .applies_to("_TZE200_qoy0ekbd", "TS0601")
@@ -24,6 +23,8 @@ from zhaquirks.tuya.builder import TuyaPowerConfigurationCluster2AAA, TuyaQuirkB
     .applies_to("_TZE200_qyflbnbj", "TS0601")
     .applies_to("_TZE200_zppcgbdj", "TS0601")
     .applies_to("_TZE204_s139roas", "TS0601")
+    .applies_to("_TZE200_s1xgth2u", "TS0601")  # Nedis ZBSC30WT
+    .applies_to("_TZE284_qyflbnbj", "TS0601")
     .tuya_temperature(dp_id=1, scale=10)
     .tuya_humidity(dp_id=2)
     .tuya_battery(dp_id=4)
@@ -90,13 +91,7 @@ from zhaquirks.tuya.builder import TuyaPowerConfigurationCluster2AAA, TuyaQuirkB
         device_class=SensorDeviceClass.ILLUMINANCE,
         state_class=SensorStateClass.MEASUREMENT,
     )
-    .tuya_binary_sensor(
-        dp_id=1,
-        attribute_name="zone_status",
-        device_class=BinarySensorDeviceClass.OPENING,
-        fallback_name="Opening",
-        entity_type=EntityType.STANDARD,
-    )
+    .tuya_contact(dp_id=1)
     .tuya_battery(dp_id=2)
     .skip_configuration()
     .add_to_registry()
