@@ -2,13 +2,14 @@
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
-from zigpy.zcl.clusters.general import Basic, Ota, PowerConfiguration
-from zigpy.zcl.clusters.measurement import TemperatureMeasurement ,RelativeHumidity
-from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 from zigpy.zcl.clusters.general import (
+    Basic,
     Identify,
+    Ota,
     PollControl,
+    PowerConfiguration,
 )
+from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -18,7 +19,6 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.thirdreality import THIRD_REALITY 
 
 
 class Temperature_humidity_lite(CustomDevice):
