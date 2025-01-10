@@ -97,6 +97,13 @@ class TimeFormat(t.enum8):
     Format_12h = 0x01
 
 
+class WeatherIcon(t.enum8):
+    """Show weather on screen."""
+
+    Hide = 0x00
+    Show = 0x01
+
+
 class GfciStatus(t.enum8):
     """Gfci_status values."""
 
@@ -170,6 +177,7 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
     LimitStatus: Final = LimitStatus
     SensorType: Final = SensorType
     TimeFormat: Final = TimeFormat
+    WeatherIcon: Final = WeatherIcon
     GfciStatus: Final = GfciStatus
     SystemMode: Final = SystemMode
     PumpDuration: Final = PumpDuration
@@ -202,6 +210,9 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
         )
         config_2nd_display: Final = foundation.ZCLAttributeDef(
             id=0x0012, type=Display, access="rwp", is_manufacturer_specific=True
+        )
+        weather_icon: Final = foundation.ZCLAttributeDef(
+            id=0x0013, type=WeatherIcon, access="rwp", is_manufacturer_specific=True
         )
         secs_since_2k: Final = foundation.ZCLAttributeDef(
             id=0x0020, type=t.uint32_t, access="rwp", is_manufacturer_specific=True
@@ -278,6 +289,18 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
         report_local_temperature: Final = foundation.ZCLAttributeDef(
             id=0x012D, type=t.int16s, access="rp", is_manufacturer_specific=True
         )
+        balance_point: Final = foundation.ZCLAttributeDef(
+            id=0x0134, type=t.int16s, access="rwp", is_manufacturer_specific=True
+        )
+        min_heat_setpoint_limit: Final = foundation.ZCLAttributeDef(
+            id=0x0137, type=t.int16s, access="rwp", is_manufacturer_specific=True
+        )
+        heatLockoutTemperature: Final = foundation.ZCLAttributeDef(
+            id=0x0139, type=t.int16s, access="rwp", is_manufacturer_specific=True
+        )
+        coolLockoutTemperature: Final = foundation.ZCLAttributeDef(
+            id=0x013A, type=t.int16s, access="rwp", is_manufacturer_specific=True
+        )
         unknown_attr_11: Final = foundation.ZCLAttributeDef(
             id=0x013B, type=t.bitmap8, access="rp", is_manufacturer_specific=True
         )
@@ -287,8 +310,23 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
         unknown_attr_12: Final = foundation.ZCLAttributeDef(
             id=0x0202, type=t.enum8, access="r", is_manufacturer_specific=True
         )
+        hc_model_mac_addr: Final = foundation.ZCLAttributeDef(
+            id=0x0267, type=t.EUI64, access="rwp", is_manufacturer_specific=True
+        )
+        max_heat_setpoint_limit: Final = foundation.ZCLAttributeDef(
+            id=0x026C, type=t.int16s, access="rwp", is_manufacturer_specific=True
+        )
+        min_cool_setpoint_limit: Final = foundation.ZCLAttributeDef(
+            id=0x026D, type=t.int16s, access="rwp", is_manufacturer_specific=True
+        )
+        max_cool_setpoint_limit: Final = foundation.ZCLAttributeDef(
+            id=0x026E, type=t.int16s, access="rwp", is_manufacturer_specific=True
+        )
         cycle_length: Final = foundation.ZCLAttributeDef(
             id=0x0281, type=CycleLength, access="rwp", is_manufacturer_specific=True
+        )
+        cool_cycle_length: Final = foundation.ZCLAttributeDef(
+            id=0x0282, type=t.uint16_t, access="rwp", is_manufacturer_specific=True
         )
         cluster_revision: Final = foundation.ZCL_CLUSTER_REVISION_ATTR
 
@@ -734,5 +772,67 @@ class SinopeHPThermostats(CustomDevice):
                 ],
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
+        }
+    }
+
+
+class SinopeHCThermostats(CustomDevice):
+    """TH1134ZB-HC thermostats."""
+
+    signature = {
+        # <SimpleDescriptor endpoint=1 profile=260 device_type=769 device_version=1
+        # input_clusters=[0, 3, 4, 5, 513, 514, 516, 1026, 1794, 2820, 2821, 65281]
+        # output_clusters=[3, 10, 25]>
+        MODELS_INFO: [(SINOPE, "TH1134ZB-HC")],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha_p.PROFILE_ID,
+                DEVICE_TYPE: zha_p.DeviceType.THERMOSTAT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    Thermostat.cluster_id,
+                    Fan.cluster_id,
+                    UserInterface.cluster_id,
+                    TemperatureMeasurement.cluster_id,
+                    Metering.cluster_id,
+                    ElectricalMeasurement.cluster_id,
+                    Diagnostic.cluster_id,
+                    SINOPE_MANUFACTURER_CLUSTER_ID,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    Time.cluster_id,
+                    Ota.cluster_id,
+                ],
+            }
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    Fan.cluster_id,
+                    UserInterface.cluster_id,
+                    TemperatureMeasurement.cluster_id,
+                    Metering.cluster_id,
+                    Diagnostic.cluster_id,
+                    SinopeTechnologiesElectricalMeasurementCluster,
+                    SinopeTechnologiesThermostatCluster,
+                    SinopeTechnologiesManufacturerCluster,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    Time.cluster_id,
+                    Ota.cluster_id,
+                ],
+            }
         }
     }
