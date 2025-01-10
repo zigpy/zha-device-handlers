@@ -62,4 +62,3 @@ class Temperature_humidity_lite(CustomDevice):
             }
         },
     }
-
