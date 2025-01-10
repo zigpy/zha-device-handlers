@@ -37,7 +37,6 @@ class Temperature_humidity_lite(CustomDevice):
                     PollControl.cluster_id,
                     TemperatureMeasurement.cluster_id,
                     RelativeHumidity.cluster_id,
-                    # ThirdRealityCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Ota.cluster_id,
@@ -56,7 +55,6 @@ class Temperature_humidity_lite(CustomDevice):
                     Identify.cluster_id,
                     TemperatureMeasurement.cluster_id,
                     RelativeHumidity.cluster_id,
-                    # ThirdRealityCluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     Ota.cluster_id,
