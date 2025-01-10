@@ -80,7 +80,7 @@ class TuyaSirenRingtone(t.enum8):
         translation_key="alarm_state",
         fallback_name="Alarm State",
     )
-    .tuya_encantment()
+    .tuya_enchantment()
     .skip_configuration()
     .add_to_registry()
 )
