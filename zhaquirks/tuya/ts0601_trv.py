@@ -1854,8 +1854,8 @@ class ZonnsmartTV01_ZG(TuyaThermostat):
     )
     .tuya_binary_sensor(
         dp_id=35,
-        attribute_name="error",
-        translation_key="error",
+        attribute_name="error_or_battery_low",
+        translation_key="error_or_battery_low",
         fallback_name="Error or battery low",
     )
     .adds(TuyaThermostatV2)
