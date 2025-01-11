@@ -626,13 +626,13 @@ base_tuya_motion = (
     )
     .tuya_sensor(
         dp_id=19,
-        attribute_name="distance",
+        attribute_name="target_distance",
         type=t.uint16_t,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.DISTANCE,
         unit=UnitOfLength.CENTIMETERS,
         entity_type=EntityType.STANDARD,
-        translation_key="distance",
+        translation_key="target_distance",
         fallback_name="Target distance",
     )
     .skip_configuration()
