@@ -2,6 +2,7 @@
 
 from zigpy.quirks.v2 import EntityType
 from zigpy.quirks.v2.homeassistant import UnitOfTime
+from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 import zigpy.types as t
 
 from zhaquirks.tuya import TuyaPowerConfigurationClusterOther
@@ -28,15 +29,10 @@ class TuyaSirenRingtone(t.enum8):
 (
     TuyaQuirkBuilder("_TZE204_nlrfgpny", "TS0601")
     .tuya_binary_sensor(
-        dp_id=1,
-        attribute_name="alarm_state",
-        translation_key="alarm_state",
-        fallback_name="Alarm state",
-    )
-    .tuya_binary_sensor(
         dp_id=6,
         attribute_name="charge_state",
         translation_key="charge_state",
+        device_class=BinarySensorDeviceClass.BATTERY_CHARGING,
         fallback_name="Charge state",
     )
     .tuya_number(
@@ -55,10 +51,17 @@ class TuyaSirenRingtone(t.enum8):
         attribute_name="alarm_switch",
         entity_type=EntityType.STANDARD,
         translation_key="alarm_switch",
-        fallback_name="Alarm trigger",
+        fallback_name="Siren on",
     )
     .tuya_battery(dp_id=15, power_cfg=TuyaPowerConfigurationClusterOther)
-    .tuya_contact(dp_id=20)
+    .tuya_binary_sensor(
+        dp_id=20,
+        attribute_name="tamper_state",
+        device_class=BinarySensorDeviceClass.TAMPER,
+        entity_type=EntityType.STANDARD,
+        translation_key="tamper_state",
+        fallback_name="Tamper state",
+    )
     .tuya_enum(
         dp_id=21,
         attribute_name="alarm_ringtone",
@@ -71,7 +74,7 @@ class TuyaSirenRingtone(t.enum8):
         attribute_name="tamper_alarm_switch",
         entity_type=EntityType.STANDARD,
         translation_key="tamper_alarm_switch",
-        fallback_name="Clear tamper alarm",
+        fallback_name="Enable tamper alarm",
     )
     .tuya_enum(
         dp_id=102,
