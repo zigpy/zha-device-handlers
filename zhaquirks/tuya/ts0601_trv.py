@@ -4,6 +4,8 @@ import logging
 from typing import Optional, Union
 
 from zigpy.profiles import zha
+from zigpy.quirks.v2.homeassistant import UnitOfTemperature
+from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
@@ -1789,6 +1791,153 @@ class ZonnsmartTV01_ZG(TuyaThermostat):
             },
         }
     }
+
+
+class TuyaThermostatSystemMode(t.enum8):
+    """Tuya thermostat system mode enum."""
+
+    Auto = 0x00
+    Heat = 0x01
+    Off = 0x02
+
+
+class TuyaThermostatEcoMode(t.enum8):
+    """Tuya thermostat eco mode enum."""
+
+    Comfort = 0x00
+    Eco = 0x01
+
+
+class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
+    """Tuya local thermostat cluster."""
+
+    manufacturer_id_override: t.uint16_t = foundation.ZCLHeader.NO_MANUFACTURER_ID
+
+    _CONSTANT_ATTRIBUTES = {
+        Thermostat.AttributeDefs.ctrl_sequence_of_oper.id: Thermostat.ControlSequenceOfOperation.Heating_Only
+    }
+
+    def __init__(self, *args, **kwargs):
+        """Init a TuyaThermostat cluster."""
+        super().__init__(*args, **kwargs)
+        self.add_unsupported_attribute(
+            Thermostat.AttributeDefs.setpoint_change_source.id
+        )
+        self.add_unsupported_attribute(
+            Thermostat.AttributeDefs.setpoint_change_source_timestamp.id
+        )
+        self.add_unsupported_attribute(Thermostat.AttributeDefs.pi_heating_demand.id)
+
+    async def write_attributes(self, attributes, manufacturer=None):
+        """Overwrite to force manufacturer code."""
+
+        return await super().write_attributes(
+            attributes, manufacturer=foundation.ZCLHeader.NO_MANUFACTURER_ID
+        )
+
+
+(
+    TuyaQuirkBuilder("_TZE204_rtrmfadk", "TS0601")
+    .tuya_dp(
+        dp_id=1,
+        ep_attribute=TuyaThermostatV2.ep_attribute,
+        attribute_name=TuyaThermostatV2.AttributeDefs.system_mode.name,
+        converter=lambda x: {
+            TuyaThermostatSystemMode.Auto: Thermostat.SystemMode.Auto,
+            TuyaThermostatSystemMode.Heat: Thermostat.SystemMode.Heat,
+            TuyaThermostatSystemMode.Off: Thermostat.SystemMode.Off,
+        }[x],
+        dp_converter=lambda x: {
+            Thermostat.SystemMode.Auto: TuyaThermostatSystemMode.Auto,
+            Thermostat.SystemMode.Heat: TuyaThermostatSystemMode.Heat,
+            Thermostat.SystemMode.Off: TuyaThermostatSystemMode.Off,
+        }[x],
+    )
+    .tuya_dp(
+        dp_id=2,
+        ep_attribute=TuyaThermostatV2.ep_attribute,
+        attribute_name=TuyaThermostatV2.AttributeDefs.occupied_heating_setpoint.name,
+        converter=lambda x: x * 10,
+        dp_converter=lambda x: x // 10,
+    )
+    .tuya_dp(
+        dp_id=3,
+        ep_attribute=TuyaThermostatV2.ep_attribute,
+        attribute_name=TuyaThermostatV2.AttributeDefs.local_temperature.name,
+        converter=lambda x: x * 10,
+    )
+    .tuya_dp(
+        dp_id=6,
+        ep_attribute=TuyaThermostatV2.ep_attribute,
+        attribute_name=TuyaThermostatV2.AttributeDefs.running_state.name,
+        converter=lambda x: 0x01 if not x else 0x00,  # Heat, Idle
+    )
+    .tuya_binary_sensor(
+        dp_id=7,
+        attribute_name="window",
+        device_class=BinarySensorDeviceClass.WINDOW,
+        translation_key="window",
+        fallback_name="Window open",
+    )
+    .tuya_switch(
+        dp_id=8,
+        attribute_name="window_detection",
+        translation_key="window_detection",
+        fallback_name="Window detection",
+    )
+    .tuya_switch(
+        dp_id=12,
+        attribute_name="child_lock",
+        translation_key="child_lock",
+        fallback_name="Child lock",
+    )
+    .tuya_battery(dp_id=13)
+    .tuya_binary_sensor(
+        dp_id=14,
+        attribute_name="error",
+        translation_key="error",
+        fallback_name="Error or battery low",
+    )
+    .tuya_number(
+        dp_id=15,
+        attribute_name="min_temperature",
+        type=t.uint16_t,
+        min_value=1,
+        max_value=15,
+        unit=UnitOfTemperature.CELSIUS,
+        step=1,
+        translation_key="min_temperature",
+        fallback_name="Min temperature",
+    )
+    .tuya_number(
+        dp_id=16,
+        attribute_name="max_temperature",
+        type=t.uint16_t,
+        min_value=15,
+        max_value=35,
+        unit=UnitOfTemperature.CELSIUS,
+        step=1,
+        translation_key="max_temperature",
+        fallback_name="Mac temperature",
+    )
+    .tuya_dp(
+        dp_id=101,
+        ep_attribute=TuyaThermostatV2.ep_attribute,
+        attribute_name=TuyaThermostatV2.AttributeDefs.local_temperature_calibration.name,
+        converter=lambda x: x,
+        dp_converter=lambda x: x + 0x100000000 if x < 0 else x,
+    )
+    .tuya_enum(
+        dp_id=114,
+        attribute_name="eco_mode",
+        enum_class=TuyaThermostatEcoMode,
+        translation_key="eco_mode",
+        fallback_name="Eco mode",
+    )
+    .adds(TuyaThermostatV2)
+    .skip_configuration()
+    .add_to_registry()
+)
 
 
 (
