@@ -1,6 +1,6 @@
 """Tuya Siren."""
 
-from zigpy.quirks.v2 import EntityType
+from zigpy.quirks.v2 import EntityPlatform, EntityType
 from zigpy.quirks.v2.homeassistant import UnitOfTime
 from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 import zigpy.types as t
@@ -28,6 +28,15 @@ class TuyaSirenRingtone(t.enum8):
 
 (
     TuyaQuirkBuilder("_TZE204_nlrfgpny", "TS0601")
+    .tuya_enum(
+        dp_id=1,
+        attribute_name="alarm_state",
+        enum_class=TuyaSirenState,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.STANDARD,
+        translation_key="alarm_state",
+        fallback_name="Alarm state",
+    )
     .tuya_binary_sensor(
         dp_id=6,
         attribute_name="charge_state",
@@ -78,10 +87,10 @@ class TuyaSirenRingtone(t.enum8):
     )
     .tuya_enum(
         dp_id=102,
-        attribute_name="alarm_state",
+        attribute_name="alarm_mode",
         enum_class=TuyaSirenState,
-        translation_key="alarm_state",
-        fallback_name="Alarm State",
+        translation_key="alarm_mode",
+        fallback_name="Alarm mode",
     )
     .tuya_enchantment()
     .skip_configuration()
