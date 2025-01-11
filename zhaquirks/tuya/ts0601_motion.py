@@ -511,23 +511,23 @@ base_tuya_motion = (
     )
     .tuya_number(
         dp_id=16,
-        attribute_name="move_sensitivity",
+        attribute_name="motion_sensitivity",
         type=t.uint16_t,
         min_value=68,
         max_value=90,
         step=1,
-        translation_key="move_sensitivity",
+        translation_key="motion_sensitivity",
         fallback_name="Motion sensitivity",
     )
     .tuya_sensor(
         dp_id=19,
-        attribute_name="distance",
+        attribute_name="target_distance",
         type=t.uint16_t,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.DISTANCE,
         unit=UnitOfLength.CENTIMETERS,
         entity_type=EntityType.STANDARD,
-        translation_key="distance",
+        translation_key="target_distance",
         fallback_name="Target distance",
     )
     .tuya_binary_sensor(
