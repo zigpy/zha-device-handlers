@@ -117,10 +117,10 @@ class TuyaNousTempHumiAlarm(t.enum8):
     )
     .tuya_enum(
         dp_id=9,
-        attribute_name="temp_unit_conv",
+        attribute_name="display_unit",
         enum_class=TuyaTempUnitConvert,
         entity_type=EntityType.CONFIG,
-        translation_key="self_test",
+        translation_key="display_unit",
         fallback_name="Display unit",
     )
     .tuya_enum(
@@ -134,7 +134,7 @@ class TuyaNousTempHumiAlarm(t.enum8):
     )
     .tuya_number(
         dp_id=10,
-        attribute_name="max_temperature",
+        attribute_name="alarm_temperature_max",
         type=t.uint16_t,
         unit=UnitOfTemperature.CELSIUS,
         min_value=-20,
@@ -142,12 +142,12 @@ class TuyaNousTempHumiAlarm(t.enum8):
         step=1,
         multiplier=0.1,
         entity_type=EntityType.CONFIG,
-        translation_key="max_temperature",
+        translation_key="alarm_temperature_max",
         fallback_name="Alarm temperature max",
     )
     .tuya_number(
         dp_id=11,
-        attribute_name="min_temperature",
+        attribute_name="alarm_temperature_min",
         type=t.uint16_t,
         unit=UnitOfTemperature.CELSIUS,
         min_value=-20,
@@ -155,7 +155,7 @@ class TuyaNousTempHumiAlarm(t.enum8):
         step=1,
         multiplier=0.1,
         entity_type=EntityType.CONFIG,
-        translation_key="min_temperature",
+        translation_key="alarm_temperature_min",
         fallback_name="Alarm temperature min",
     )
     .tuya_number(
@@ -182,31 +182,31 @@ class TuyaNousTempHumiAlarm(t.enum8):
     )
     .tuya_number(
         dp_id=12,
-        attribute_name="max_humidity",
+        attribute_name="alarm_humidity_max",
         type=t.uint16_t,
         unit=PERCENTAGE,
         min_value=0,
         max_value=100,
         step=1,
         entity_type=EntityType.CONFIG,
-        translation_key="max_humidity",
+        translation_key="alarm_humidity_max",
         fallback_name="Alarm humidity max",
     )
     .tuya_number(
         dp_id=13,
-        attribute_name="min_humidity",
+        attribute_name="alarm_humidity_min",
         type=t.uint16_t,
         unit=PERCENTAGE,
         min_value=0,
         max_value=100,
         step=1,
         entity_type=EntityType.CONFIG,
-        translation_key="min_humidity",
+        translation_key="alarm_humidity_min",
         fallback_name="Alarm humidity min",
     )
     .tuya_number(
         dp_id=20,
-        attribute_name="humidity_sensitivity",
+        attribute_name="humidity_report_interval",
         type=t.uint16_t,
         unit=PERCENTAGE,
         min_value=1,
