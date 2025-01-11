@@ -2,11 +2,41 @@
 
 from zigpy import types as t
 from zigpy.quirks.v2 import CustomCluster, EntityType, QuirkBuilder
+from zigpy.zcl import AttributeReportedEvent, AttributeUpdatedEvent
 from zigpy.zcl.clusters.general import Basic, Groups, Identify, Scenes
 from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
+from zhaquirks import LocalDataCluster
+from zhaquirks.const import (
+    BUTTON,
+    BUTTON_1,
+    BUTTON_2,
+    BUTTON_3,
+    BUTTON_4,
+    COMMAND,
+    LONG_PRESS,
+    LONG_RELEASE,
+    PRESS_TYPE,
+    SHORT_PRESS,
+    SHORT_RELEASE,
+    ZHA_SEND_EVENT,
+)
 from zhaquirks.niko import NIKO, NIKO_MFG_CODE
+
+BUTTONS = [
+    BUTTON_1,
+    BUTTON_2,
+    BUTTON_3,
+    BUTTON_4,
+]
+
+PRESS_TYPES = {
+    0x1: SHORT_PRESS,
+    0x4: SHORT_RELEASE,
+    0x2: LONG_PRESS,
+    0x3: LONG_RELEASE,
+}
 
 
 class NikoCluster(CustomCluster):
@@ -14,9 +44,34 @@ class NikoCluster(CustomCluster):
 
     attr_config = {}
 
+    def __init__(self, *args, **kwargs):
+        """Initialize the cluster."""
+        super().__init__(*args, **kwargs)
+        self.on_event(AttributeReportedEvent.event_type, self._handle_attribute_event)
+        self.on_event(AttributeUpdatedEvent.event_type, self._handle_attribute_event)
+
     async def apply_custom_configuration(self, *args, **kwargs):
         """Apply custom configuration."""
         await self.write_attributes(self.attr_config, manufacturer=NIKO_MFG_CODE)
+
+    def _handle_attribute_event(
+        self, event: AttributeReportedEvent | AttributeUpdatedEvent
+    ):
+        """Inform the buttons cluster of attribute updates."""
+        attrid = event.attribute_id
+        value = event.value
+        self._notify_cluster("buttons", {attrid: value})
+
+    def _notify_cluster(self, ep_attribute, attributes):
+        """Notifies the cluster of attributes changes."""
+        if ep_attribute != self.ep_attribute:
+            cluster = getattr(self.endpoint, ep_attribute)
+            for attrid, value in attributes.items():
+                if isinstance(attrid, int):
+                    attrid = self.attributes[attrid].name
+                callback_name = f"{attrid}_changed"
+                if hasattr(cluster, callback_name):
+                    getattr(cluster, callback_name)(value)
 
 
 class ButtonsDefaultAction(t.enum8):
@@ -185,6 +240,74 @@ class NikoStateCluster(NikoCluster):
     }
 
 
+class ButtonsCluster(NikoCluster, LocalDataCluster):
+    """Virtual cluster to manage individual button state and attributes."""
+
+    cluster_id = 0xFC02
+    ep_attribute = "buttons"
+
+    # pylint: disable=R0903
+    class AttributeDefs(BaseAttributeDefs):
+        """Attributes for button configuration."""
+
+        # Button press state
+        button_1_pressed = ZCLAttributeDef(
+            id=0x0001,
+            type=t.Bool,
+            access="rp",
+            is_manufacturer_specific=True,
+        )
+        button_2_pressed = ZCLAttributeDef(
+            id=0x0002,
+            type=t.Bool,
+            access="rp",
+            is_manufacturer_specific=True,
+        )
+        button_3_pressed = ZCLAttributeDef(
+            id=0x0003,
+            type=t.Bool,
+            access="rp",
+            is_manufacturer_specific=True,
+        )
+        button_4_pressed = ZCLAttributeDef(
+            id=0x0004,
+            type=t.Bool,
+            access="rp",
+            is_manufacturer_specific=True,
+        )
+
+    _VALID_ATTRIBUTES = [attr.id for attr in AttributeDefs]
+
+    PRESSED_ATTRIBUTES = [
+        AttributeDefs.button_1_pressed,
+        AttributeDefs.button_2_pressed,
+        AttributeDefs.button_3_pressed,
+        AttributeDefs.button_4_pressed,
+    ]
+
+    def __init__(self, *args, **kwargs):
+        """Initialize the cluster."""
+        super().__init__(*args, **kwargs)
+        self.presses = [0] * len(self.PRESSED_ATTRIBUTES)
+        for attr in self.attributes:
+            self.update_attribute(attr, t.Bool.false)
+
+    def buttons_state_changed(self, state):
+        """Emit events based on button state changes."""
+        for b, button in enumerate(BUTTONS):
+            code = state >> (4 * b + 4) & 0xF
+            press = PRESS_TYPES.get(code)
+            if press and self.presses[b] != code:
+                self.presses[b] = code
+                down = t.Bool(press in {SHORT_PRESS, LONG_PRESS})
+                self._update_attribute(self.PRESSED_ATTRIBUTES[b].id, down)
+                self.listener_event(
+                    ZHA_SEND_EVENT,
+                    f"{button}_{press}",
+                    {BUTTON: button, PRESS_TYPE: press},
+                )
+
+
 class NikoQuirkBuilder(QuirkBuilder):
     """QuirkBuilder for Niko devices."""
 
@@ -193,9 +316,29 @@ class NikoQuirkBuilder(QuirkBuilder):
         super().__init__(NIKO, model)
         self.replaces(NikoConfigCluster, endpoint_id=1)
         self.replaces(NikoStateCluster, endpoint_id=1)
+        self.adds(ButtonsCluster)
 
-    def setup_buttons(self):
+    def setup_buttons(self, button_count):
         """Set up the device's physical buttons."""
+        # Button triggers
+        self.device_automation_triggers(
+            {
+                (press_type, button): {COMMAND: f"{button}_{press_type}"}
+                for press_type in PRESS_TYPES.values()
+                for button in BUTTONS[:button_count]
+            }
+        )
+
+        # Button entities
+        for b, key in enumerate(BUTTONS[:button_count]):
+            self.binary_sensor(
+                ButtonsCluster.PRESSED_ATTRIBUTES[b].name,
+                ButtonsCluster.cluster_id,
+                entity_type=EntityType.STANDARD,
+                translation_key=key,
+                fallback_name=f"Button {b + 1}",
+            )
+
         # Configuration entities
         self.switch(
             NikoConfigCluster.AttributeDefs.buttons_default_action.name,
@@ -220,14 +363,14 @@ class NikoQuirkBuilder(QuirkBuilder):
 (
     NikoQuirkBuilder("Single connectable switch,10A")
     .friendly_name(manufacturer="Niko", model="Connected single switch")
-    .setup_buttons()
+    .setup_buttons(2)
     .add_to_registry()
 )
 
 (
     NikoQuirkBuilder("Double connectable switch,10A")
     .friendly_name(manufacturer="Niko", model="Connected double switch")
-    .setup_buttons()
+    .setup_buttons(4)
     # Remove duplicated clusters in second endpoint
     .removes(Basic.cluster_id, endpoint_id=2)
     .removes(Identify.cluster_id, endpoint_id=2)
