@@ -1874,9 +1874,9 @@ class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
     )
     .tuya_binary_sensor(
         dp_id=7,
-        attribute_name="window",
+        attribute_name="window_open",
         device_class=BinarySensorDeviceClass.WINDOW,
-        translation_key="window",
+        translation_key="window_open",
         fallback_name="Window open",
     )
     .tuya_switch(
@@ -1894,8 +1894,8 @@ class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
     .tuya_battery(dp_id=13)
     .tuya_binary_sensor(
         dp_id=14,
-        attribute_name="error",
-        translation_key="error",
+        attribute_name="error_or_battery_low",
+        translation_key="error_or_battery_low",
         fallback_name="Error or battery low",
     )
     .tuya_number(
@@ -1918,7 +1918,7 @@ class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
         unit=UnitOfTemperature.CELSIUS,
         step=1,
         translation_key="max_temperature",
-        fallback_name="Mac temperature",
+        fallback_name="Max temperature",
     )
     .tuya_dp(
         dp_id=101,
