@@ -48,9 +48,9 @@ class TuyaSirenRingtone(t.enum8):
     )
     .tuya_switch(
         dp_id=13,
-        attribute_name="alarm_switch",
+        attribute_name="siren_on",
         entity_type=EntityType.STANDARD,
-        translation_key="alarm_switch",
+        translation_key="siren_on",
         fallback_name="Siren on",
     )
     .tuya_battery(dp_id=15, power_cfg=TuyaPowerConfigurationClusterOther)
@@ -71,9 +71,9 @@ class TuyaSirenRingtone(t.enum8):
     )
     .tuya_switch(
         dp_id=101,
-        attribute_name="tamper_alarm_switch",
+        attribute_name="enable_tamper_alarm",
         entity_type=EntityType.STANDARD,
-        translation_key="tamper_alarm_switch",
+        translation_key="enable_tamper_alarm",
         fallback_name="Enable tamper alarm",
     )
     .tuya_enum(
