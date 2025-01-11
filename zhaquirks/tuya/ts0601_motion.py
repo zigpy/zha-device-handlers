@@ -479,9 +479,9 @@ base_tuya_motion = (
     # 114 factory_parameters, z2m doesn't expose
     .tuya_enum(
         dp_id=115,
-        attribute_name="sensor",
+        attribute_name="sensor_mode",
         enum_class=TuyaMotionSensorMode,
-        translation_key="sensor",
+        translation_key="sensor_mode",
         fallback_name="Sensor mode",
     )
     .add_to_registry()
