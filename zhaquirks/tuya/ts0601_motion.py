@@ -392,13 +392,13 @@ base_tuya_motion = (
     .adds(TuyaOccupancySensing)
     .tuya_sensor(
         dp_id=101,
-        attribute_name="distance",
+        attribute_name="target_distance",
         type=t.uint16_t,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.DISTANCE,
         unit=UnitOfLength.CENTIMETERS,
         entity_type=EntityType.STANDARD,
-        translation_key="distance",
+        translation_key="target_distance",
         fallback_name="Target distance",
     )
     .tuya_dp(
@@ -422,10 +422,10 @@ base_tuya_motion = (
     )
     .tuya_switch(
         dp_id=104,
-        attribute_name="find_switch",
+        attribute_name="indicator_switch",
         entity_type=EntityType.STANDARD,
-        translation_key="find_switch",
-        fallback_name="Indicator",
+        translation_key="indicator_switch",
+        fallback_name="Indicator switch",
     )
     .tuya_number(
         dp_id=107,
