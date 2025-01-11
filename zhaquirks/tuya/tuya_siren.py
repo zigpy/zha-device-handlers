@@ -51,7 +51,7 @@ class TuyaSirenRingtone(t.enum8):
         type=t.uint16_t,
         max_value=60,
         step=1,
-        unit=UnitOfTime.SECONDS,
+        unit=UnitOfTime.MINUTES,
         translation_key="alarm_duration",
         fallback_name="Alarm duration",
     )
