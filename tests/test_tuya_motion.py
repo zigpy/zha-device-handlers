@@ -16,7 +16,7 @@ ZCL_TUYA_MOTION = b"\tL\x01\x00\x05\x01\x01\x00\x01\x01"  # DP 1
 ZCL_TUYA_MOTION_V2 = b"\tL\x01\x00\x05\x65\x01\x00\x01\x01"  # DP 101
 ZCL_TUYA_MOTION_V3 = b"\tL\x01\x00\x05\x03\x04\x00\x01\x02"  # DP 3, enum
 ZCL_TUYA_MOTION_V4 = b"\tL\x01\x00\x05\x69\x01\x00\x01\x01"  # DP 105
-
+ZCL_TUYA_MOTION_V5 = b"\tL\x01\x00\x05\x01\x01\x00\x01\x04"  # DP 1, motion is 0x04
 
 zhaquirks.setup()
 
@@ -56,6 +56,7 @@ zhaquirks.setup()
         ("_TZE200_ttcovulf", "TS0601", ZCL_TUYA_MOTION),
         ("_TZE204_sxm7l9xa", "TS0601", ZCL_TUYA_MOTION_V4),
         ("_TZE204_e5m9c5hl", "TS0601", ZCL_TUYA_MOTION_V4),
+        ("_TZE204_uxllnywp", "TS0601", ZCL_TUYA_MOTION_V5),
     ],
 )
 async def test_tuya_motion_quirk_occ(zigpy_device_from_v2_quirk, model, manuf, occ_msg):
