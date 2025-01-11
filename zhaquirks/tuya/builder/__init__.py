@@ -34,6 +34,8 @@ from zhaquirks.tuya import (
 )
 from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster, TuyaOnOffNM
 
+MOL_VOL_AIR_NTP = 0.2445  # molar volume of air at NTP in cL/mol
+
 
 class TuyaCO2Concetration(CarbonDioxideConcentration, TuyaLocalCluster):
     """Tuya Carbon Dioxide concentration measurement."""
@@ -41,6 +43,8 @@ class TuyaCO2Concetration(CarbonDioxideConcentration, TuyaLocalCluster):
 
 class TuyaFormaldehydeConcetration(FormaldehydeConcentration, TuyaLocalCluster):
     """Tuya Formaldehyde concentration measurement."""
+
+    MOLECULAR_MASS = 30.026
 
 
 class TuyaIasContact(IasZone, TuyaLocalCluster):
@@ -189,14 +193,18 @@ class TuyaQuirkBuilder(QuirkBuilder):
         self,
         dp_id: int,
         form_cfg: TuyaLocalCluster = TuyaFormaldehydeConcetration,
-        scale: float = 1e-6,
+        # Convert from µg/m3 to ppm, note, ZHA will scale by 1e6
+        converter: float = lambda x: round(
+            ((MOL_VOL_AIR_NTP * x) / TuyaFormaldehydeConcetration.MOLECULAR_MASS), 2
+        )
+        * 1e-6,
     ) -> QuirkBuilder:
         """Add a Tuya Formaldehyde Configuration."""
         self.tuya_dp(
             dp_id,
             form_cfg.ep_attribute,
             FormaldehydeConcentration.AttributeDefs.measured_value.name,
-            converter=lambda x: x * scale,
+            converter=converter,
         )
         self.adds(form_cfg)
         return self

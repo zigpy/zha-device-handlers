@@ -43,7 +43,7 @@ def air_quality_device(zigpy_device_from_v2_quirk):
         (
             b"\t\x02\x01\x00\x01\x16\x02\x00\x04\x00\x00\x00\x02",
             "formaldehyde_concentration",
-            2 * 1e-6,
+            2 * 1e-8,
         ),
         (
             b"\t\x02\x01\x00\x00\x12\x02\x00\x04\x00\x00\x01 ",
@@ -105,7 +105,7 @@ def smart_air_quality_device(zigpy_device_from_v2_quirk):
         (
             b"\t\x02\x01\x00\x01\x16\x02\x00\x04\x00\x00\x00\x02",
             "formaldehyde_concentration",
-            2 * 1e-6,
+            2 * 1e-8,
         ),
         (
             b"\t\x02\x01\x00\x00\x12\x02\x00\x04\x00\x00\x01 ",
