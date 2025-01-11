@@ -6,6 +6,7 @@ import pytest
 from zigpy import types as t
 from zigpy.zcl import foundation
 
+from tests.common import wait_for_zigpy_tasks
 import zhaquirks
 
 zhaquirks.setup()
@@ -43,6 +44,21 @@ class TestNikoSwitch:
                 0x0107: foundation.ZCLAttributeAccess.from_str("rw"),
             }
 
+        @mock.patch("zigpy.zcl.Cluster.bind", mock.AsyncMock())
+        async def test_config_cluster_preloading(
+            self, zigpy_device_from_v2_quirk, switch
+        ):
+            """Test whether the config cluster pre-loads all attributes."""
+            device = zigpy_device_from_v2_quirk(*switch[0], **switch[1])
+            cluster = device.endpoints[1].niko_config
+
+            with mock.patch.object(
+                cluster, "read_attributes", mock.AsyncMock()
+            ) as read_attributes:
+                await cluster.bind()
+                read_attributes.assert_called_with(cluster.attributes)
+                await wait_for_zigpy_tasks()
+
         def test_state_cluster(self, zigpy_device_from_v2_quirk, switch):
             """Test the state cluster."""
             device = zigpy_device_from_v2_quirk(*switch[0], **switch[1])
@@ -64,6 +80,14 @@ class TestNikoSwitch:
                 0x0002: foundation.ZCLAttributeAccess.from_str("rp"),
                 0x0003: foundation.ZCLAttributeAccess.from_str("rp"),
                 0x0004: foundation.ZCLAttributeAccess.from_str("rp"),
+                # Status LED on/off
+                0x0011: foundation.ZCLAttributeAccess.from_str("rwp"),
+                0x0013: foundation.ZCLAttributeAccess.from_str("rwp"),
+                # Status LED sync
+                0x0021: foundation.ZCLAttributeAccess.from_str("rw"),
+                0x0023: foundation.ZCLAttributeAccess.from_str("rw"),
+                # Status LED alert color
+                0x0100: foundation.ZCLAttributeAccess.from_str("rw"),
             }
 
     @pytest.mark.parametrize("switch", [SWITCH_SINGLE, SWITCH_DOUBLE])
@@ -353,3 +377,217 @@ class TestNikoSwitch:
                             "press_type": press_type,
                         },
                     )
+
+    @pytest.mark.parametrize("switch", [SWITCH_SINGLE, SWITCH_DOUBLE])
+    class TestLedState:
+        """Test reading and writing status LED state."""
+
+        @pytest.mark.parametrize(
+            "case",
+            [
+                [(0b00, t.Bool.false, t.Bool.false)],
+                [(0b01, t.Bool.true, t.Bool.false)],
+                [(0b10, t.Bool.false, t.Bool.true)],
+                [(0b11, t.Bool.true, t.Bool.true)],
+            ],
+        )
+        async def test_read(self, zigpy_device_from_v2_quirk, switch, case):
+            """Test whether led state changes cause attribute changes in the buttons cluster."""
+            device = zigpy_device_from_v2_quirk(*switch[0], **switch[1])
+
+            config_cluster = device.endpoints[1].niko_config
+            buttons_cluster = device.endpoints[1].buttons
+
+            with mock.patch.object(
+                config_cluster.endpoint, "request", mock.AsyncMock()
+            ) as request:
+                request.return_value = (foundation.Status.SUCCESS, "done")
+
+                for state, led1, led3 in case:
+                    config_cluster.update_attribute(0x0105, state)
+
+                    attrs, _ = await buttons_cluster.read_attributes([0x0011, 0x0013])
+                    assert attrs[0x0011] == led1
+                    assert attrs[0x0013] == led3
+
+        @pytest.mark.parametrize(
+            "case",
+            [
+                # LED 1
+                [
+                    (0x0011, t.Bool.false, 0b00),
+                    (0x0011, t.Bool.true, 0b01),
+                    (0x0011, t.Bool.true, 0b01),
+                    (0x0011, t.Bool.false, 0b00),
+                ],
+                # LED 3
+                [
+                    (0x0013, t.Bool.false, 0b00),
+                    (0x0013, t.Bool.true, 0b10),
+                    (0x0013, t.Bool.true, 0b10),
+                    (0x0013, t.Bool.false, 0b00),
+                ],
+                # Mixed
+                [
+                    (0x0011, t.Bool.false, 0b00),
+                    (0x0013, t.Bool.false, 0b00),
+                    (0x0011, t.Bool.true, 0b01),
+                    (0x0013, t.Bool.true, 0b11),
+                ],
+            ],
+        )
+        async def test_write(self, zigpy_device_from_v2_quirk, switch, case):
+            """Test writes of LED state."""
+            device = zigpy_device_from_v2_quirk(*switch[0], **switch[1])
+            config_cluster = device.endpoints[1].niko_config
+            buttons_cluster = device.endpoints[1].buttons
+
+            with mock.patch.object(
+                config_cluster.endpoint, "request", mock.AsyncMock()
+            ) as request:
+                request.return_value = ([], foundation.Status.SUCCESS)
+                for attrid, value, expected in case:
+                    await buttons_cluster.write_attributes({attrid: value})
+                    await wait_for_zigpy_tasks()
+
+                    attr = config_cluster.get(0x0105)
+                    assert (0 if attr is None else attr) == expected
+
+    @pytest.mark.parametrize("switch", [SWITCH_SINGLE, SWITCH_DOUBLE])
+    class TestLedSync:
+        """Test reading and writing status LED synchronization state."""
+
+        @pytest.mark.parametrize(
+            "case",
+            [
+                [(0x00, 0x0, 0x0)],
+                [(0x01, 0x1, 0x0)],
+                [(0x02, 0x2, 0x0)],
+                [(0x10, 0x0, 0x1)],
+                [(0x20, 0x0, 0x2)],
+                [(0x11, 0x1, 0x1)],
+                [(0x22, 0x2, 0x2)],
+            ],
+        )
+        async def test_read(self, zigpy_device_from_v2_quirk, switch, case):
+            """Test whether led sync changes cause attribute changes in the buttons cluster."""
+            device = zigpy_device_from_v2_quirk(*switch[0], **switch[1])
+
+            config_cluster = device.endpoints[1].niko_config
+            buttons_cluster = device.endpoints[1].buttons
+
+            with mock.patch.object(
+                config_cluster.endpoint, "request", mock.AsyncMock()
+            ) as request:
+                request.return_value = (foundation.Status.SUCCESS, "done")
+
+                for state, led1_sync, led3_sync in case:
+                    config_cluster.update_attribute(0x0107, state)
+
+                    attrs, _ = await buttons_cluster.read_attributes([0x0021, 0x0023])
+                    assert attrs[0x0021] == led1_sync
+                    assert attrs[0x0023] == led3_sync
+
+        @pytest.mark.parametrize(
+            "case",
+            [
+                # LED 1
+                [
+                    (0x0021, 0x0, 0x00),
+                    (0x0021, 0x1, 0x01),
+                    (0x0021, 0x2, 0x02),
+                ],
+                # LED 3
+                [
+                    (0x0023, 0x0, 0x00),
+                    (0x0023, 0x1, 0x10),
+                    (0x0023, 0x2, 0x20),
+                ],
+                # Mixed
+                [
+                    (0x0021, 0x0, 0x00),
+                    (0x0023, 0x0, 0x00),
+                    (0x0021, 0x1, 0x01),
+                    (0x0023, 0x1, 0x11),
+                    (0x0021, 0x2, 0x12),
+                    (0x0023, 0x2, 0x22),
+                ],
+            ],
+        )
+        async def test_write(self, zigpy_device_from_v2_quirk, switch, case):
+            """Test writes of LED sync."""
+            device = zigpy_device_from_v2_quirk(*switch[0], **switch[1])
+            config_cluster = device.endpoints[1].niko_config
+            buttons_cluster = device.endpoints[1].buttons
+
+            with mock.patch.object(
+                config_cluster.endpoint, "request", mock.AsyncMock()
+            ) as request:
+                request.return_value = ([], foundation.Status.SUCCESS)
+                for attrid, value, expected in case:
+                    await buttons_cluster.write_attributes({attrid: value})
+                    await wait_for_zigpy_tasks()
+
+                    attr = config_cluster.get(0x0107)
+                    assert (0 if attr is None else attr) == expected
+
+    @pytest.mark.parametrize("switch", [SWITCH_SINGLE, SWITCH_DOUBLE])
+    class TestLedsAlert:
+        """Test reading and writing status LED alert state."""
+
+        @pytest.mark.parametrize(
+            "case",
+            [
+                (0x000000,),
+                (0x0000FF,),
+                (0x00FF00,),
+                (0xFF0000,),
+                (0xFFFFFF,),
+            ],
+        )
+        async def test_read(self, zigpy_device_from_v2_quirk, switch, case):
+            """Test whether LED alert changes cause attribute changes in the buttons cluster."""
+            device = zigpy_device_from_v2_quirk(*switch[0], **switch[1])
+
+            config_cluster = device.endpoints[1].niko_config
+            buttons_cluster = device.endpoints[1].buttons
+
+            with mock.patch.object(
+                config_cluster.endpoint, "request", mock.AsyncMock()
+            ) as request:
+                request.return_value = (foundation.Status.SUCCESS, "done")
+
+                for led_alert in case:
+                    config_cluster.update_attribute(0x0100, led_alert)
+
+                    attrs, _ = await buttons_cluster.read_attributes([0x0100])
+                    assert attrs[0x0100] == led_alert
+
+        @pytest.mark.parametrize(
+            "case",
+            [
+                (0x000000,),
+                (0x0000FF,),
+                (0x00FF00,),
+                (0xFF0000,),
+                (0xFFFFFF,),
+            ],
+        )
+        async def test_write(self, zigpy_device_from_v2_quirk, switch, case):
+            """Test writes of LED alert color."""
+            device = zigpy_device_from_v2_quirk(*switch[0], **switch[1])
+            config_cluster = device.endpoints[1].niko_config
+            buttons_cluster = device.endpoints[1].buttons
+
+            with mock.patch.object(
+                config_cluster.endpoint, "request", mock.AsyncMock()
+            ) as request:
+                request.return_value = ([], foundation.Status.SUCCESS)
+                for value in case:
+                    await buttons_cluster.write_attributes({0x0100: value})
+                    await wait_for_zigpy_tasks()
+
+                    attrs, _ = await config_cluster.read_attributes(
+                        [0x0100], only_cache=True
+                    )
+                    assert attrs[0x0100] == value

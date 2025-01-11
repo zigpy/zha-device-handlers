@@ -54,6 +54,12 @@ class NikoCluster(CustomCluster):
         """Apply custom configuration."""
         await self.write_attributes(self.attr_config, manufacturer=NIKO_MFG_CODE)
 
+    async def write_attributes(self, attributes, **kwargs):
+        """Write the attributes and inform the config cluster."""
+        result = await super().write_attributes(attributes, **kwargs)
+        self._notify_cluster("niko_config", attributes)
+        return result
+
     def _handle_attribute_event(
         self, event: AttributeReportedEvent | AttributeUpdatedEvent
     ):
@@ -173,6 +179,59 @@ class NikoConfigCluster(NikoCluster):
         AttributeDefs.leds_functionality.id: LedsFunctionality.Enabled,
     }
 
+    async def bind(self):
+        """Bind cluster and pre-load attributes."""
+        self.create_catching_task(self.read_attributes(self.attributes))
+        return await super().bind()
+
+    def led_1_on_changed(self, value: bool):
+        """Process a write to the led_1_on attribute."""
+        self.create_catching_task(self.write_led_on(0, value))
+
+    def led_3_on_changed(self, value: bool):
+        """Process a write to the led_3_on attribute."""
+        self.create_catching_task(self.write_led_on(1, value))
+
+    def led_1_switch_sync_changed(self, value: LedSwitchSyncOptions):
+        """Process a write to the led_1_switch_sync attribute."""
+        self.create_catching_task(self.write_led_switch_sync(0, value))
+
+    def led_3_switch_sync_changed(self, value: LedSwitchSyncOptions):
+        """Process a write to the led_3_switch_sync attribute."""
+        self.create_catching_task(self.write_led_switch_sync(1, value))
+
+    def alert_color_changed(self, value: LedsAlertColors):
+        """Process a write to the alert_color attribute."""
+        self.create_catching_task(self.write_leds_alert(value))
+
+    async def write_led_on(self, led: int, value: bool):
+        """Set the status LED to on or off using the leds_on attribute."""
+        # Determine the previous state of the specific status LED
+        state = self.get(self.AttributeDefs.leds_on.id) or 0
+        mask = 1 << led
+        previous = bool(state & mask)
+
+        # If the status LED changed, update the leds_on attribute
+        if value != previous:
+            state = (state | mask) if value else state & ~mask
+            await self.write_attributes({self.AttributeDefs.leds_on.id: state})
+
+    async def write_led_switch_sync(self, led: int, value: LedSwitchSyncOptions):
+        """Set LED/switch synchronization using the leds_switch_sync attribute."""
+        # Determine previous state of individual LED
+        state = self.get(self.AttributeDefs.leds_switch_sync.id) or 0
+        shift = led << 2
+        previous = state >> shift & 0xF
+
+        # Update if the LED's state changed
+        if value != previous:
+            state = state & ~(0xF << shift) | (value << shift)
+            await self.write_attributes({self.AttributeDefs.leds_switch_sync.id: state})
+
+    async def write_leds_alert(self, value: LedsAlertColors):
+        """Write the leds_alert attribute."""
+        await self.write_attributes({self.AttributeDefs.leds_alert.id: value})
+
 
 class ButtonStateReporting(t.bitmap8):
     """Report state changes for these buttons."""
@@ -276,6 +335,42 @@ class ButtonsCluster(NikoCluster, LocalDataCluster):
             is_manufacturer_specific=True,
         )
 
+        # Status lights
+        led_1_on = ZCLAttributeDef(
+            id=0x0011,
+            type=t.Bool,
+            access="rwp",
+            is_manufacturer_specific=True,
+        )
+        led_3_on = ZCLAttributeDef(
+            id=0x0013,
+            type=t.Bool,
+            access="rwp",
+            is_manufacturer_specific=True,
+        )
+
+        # Status light synchronization with switches
+        led_1_switch_sync = ZCLAttributeDef(
+            id=0x0021,
+            type=LedSwitchSyncOptions,
+            access="rw",
+            is_manufacturer_specific=True,
+        )
+        led_3_switch_sync = ZCLAttributeDef(
+            id=0x0023,
+            type=LedSwitchSyncOptions,
+            access="rw",
+            is_manufacturer_specific=True,
+        )
+
+        # Status light alerts
+        alert_color = ZCLAttributeDef(
+            id=0x0100,
+            type=LedsAlertColors,
+            access="rw",
+            is_manufacturer_specific=True,
+        )
+
     _VALID_ATTRIBUTES = [attr.id for attr in AttributeDefs]
 
     PRESSED_ATTRIBUTES = [
@@ -283,6 +378,14 @@ class ButtonsCluster(NikoCluster, LocalDataCluster):
         AttributeDefs.button_2_pressed,
         AttributeDefs.button_3_pressed,
         AttributeDefs.button_4_pressed,
+    ]
+    LED_ON_ATTRIBUTES = [
+        AttributeDefs.led_1_on,
+        AttributeDefs.led_3_on,
+    ]
+    LED_SWITCH_SYNC_ATTRIBUTES = [
+        AttributeDefs.led_1_switch_sync,
+        AttributeDefs.led_3_switch_sync,
     ]
 
     def __init__(self, *args, **kwargs):
@@ -306,6 +409,22 @@ class ButtonsCluster(NikoCluster, LocalDataCluster):
                     f"{button}_{press}",
                     {BUTTON: button, PRESS_TYPE: press},
                 )
+
+    def leds_on_changed(self, value):
+        """Reflect leds_on in individual led_on_x attributes."""
+        for i, attr in enumerate(self.LED_ON_ATTRIBUTES):
+            on = t.Bool(value >> i & 0b1)
+            self._update_attribute(attr.id, on)
+
+    def leds_switch_sync_changed(self, value):
+        """Reflect leds_switch_sync in individual leds_switch_sync_x attributes."""
+        for i, attr in enumerate(self.LED_SWITCH_SYNC_ATTRIBUTES):
+            sync = (value >> 4 * i) & 0xF
+            self._update_attribute(attr.id, sync)
+
+    def leds_alert_changed(self, value: LedsAlert):
+        """Mirror leds_alert in the alert_color property."""
+        self._update_attribute(self.AttributeDefs.alert_color.id, value)
 
 
 class NikoQuirkBuilder(QuirkBuilder):
@@ -339,6 +458,17 @@ class NikoQuirkBuilder(QuirkBuilder):
                 fallback_name=f"Button {b + 1}",
             )
 
+        # Status LED entities
+        for b, key in enumerate(BUTTONS[::2]):
+            self.switch(
+                ButtonsCluster.LED_ON_ATTRIBUTES[b].name,
+                ButtonsCluster.cluster_id,
+                entity_type=EntityType.STANDARD,
+                translation_key=f"{key}_led_indicator",
+                fallback_name=f"Button {2 * b + 1} LED",
+                initially_disabled=True,
+            )
+
         # Configuration entities
         self.switch(
             NikoConfigCluster.AttributeDefs.buttons_default_action.name,
@@ -355,6 +485,24 @@ class NikoQuirkBuilder(QuirkBuilder):
             entity_type=EntityType.CONFIG,
             translation_key="enabled_led_indicator",
             fallback_name="Enable LEDs",
+            initially_disabled=True,
+        )
+        for b, key in enumerate(BUTTONS[::2]):
+            self.enum(
+                ButtonsCluster.LED_SWITCH_SYNC_ATTRIBUTES[b].name,
+                LedSwitchSyncOptions,
+                ButtonsCluster.cluster_id,
+                entity_type=EntityType.CONFIG,
+                translation_key=f"{key}_sync",
+                fallback_name=f"Button {b + 1} LED Switch Sync",
+            )
+        self.enum(
+            ButtonsCluster.AttributeDefs.alert_color.name,
+            LedsAlertColors,
+            ButtonsCluster.cluster_id,
+            entity_type=EntityType.CONFIG,
+            translation_key="alert",
+            fallback_name="Alert",
             initially_disabled=True,
         )
         return self
