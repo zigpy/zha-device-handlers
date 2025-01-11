@@ -3,7 +3,6 @@
 from unittest import mock
 
 import pytest
-from zigpy.device import Device
 from zigpy.quirks.registry import DeviceRegistry
 from zigpy.quirks.v2 import CustomDeviceV2
 import zigpy.types as t
@@ -25,28 +24,7 @@ from zhaquirks.tuya.builder import (
 )
 from zhaquirks.tuya.mcu import TuyaMCUCluster, TuyaOnOffNM
 
-from .async_mock import sentinel
-
 zhaquirks.setup()
-
-
-@pytest.fixture(name="device_mock")
-def real_device(MockAppController):
-    """Device fixture with a single endpoint."""
-    ieee = sentinel.ieee
-    nwk = 0x2233
-    device = Device(MockAppController, ieee, nwk)
-
-    device.add_endpoint(1)
-    device[1].profile_id = 0x0104
-    device[1].device_type = 0x0051
-    device.model = "model"
-    device.manufacturer = "manufacturer"
-    device[1].add_input_cluster(0x0000)
-    device[1].add_input_cluster(0xEF00)
-    device[1].add_output_cluster(0x000A)
-    device[1].add_output_cluster(0x0019)
-    return device
 
 
 @pytest.mark.parametrize(
