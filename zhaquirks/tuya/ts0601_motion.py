@@ -138,6 +138,14 @@ class TuyaMotionFadeTime(t.enum8):
     _120_seconds = 0x03
 
 
+class TuyaSensitivityMode(t.enum8):
+    """Tuya sensitivity mode enum."""
+
+    Low = 0x00
+    Medium = 0x01
+    High = 0x02
+
+
 base_tuya_motion = (
     TuyaQuirkBuilder()
     .adds(TuyaOccupancySensing)
@@ -1077,6 +1085,59 @@ base_tuya_motion = (
         multiplier=0.1,
         translation_key="detection_delay",
         fallback_name="Detection delay",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+# Tuya PIR Motion Sensor ZM-35ZH-Q occupancy sensor
+(
+    TuyaQuirkBuilder("_TZE200_gjldowol", "TS0601")
+    .tuya_dp(
+        dp_id=1,
+        ep_attribute=TuyaOccupancySensing.ep_attribute,
+        attribute_name=OccupancySensing.AttributeDefs.occupancy.name,
+        converter=lambda x: x == 1,
+    )
+    .adds(TuyaOccupancySensing)
+    .tuya_battery(dp_id=4)
+    .tuya_enum(
+        dp_id=9,
+        attribute_name="motion_sensitivity",
+        enum_class=TuyaSensitivityMode,
+        translation_key="motion_sensitivity",
+        fallback_name="Motion sensitivity",
+    )
+    .tuya_dp(
+        dp_id=12,
+        ep_attribute=TuyaIlluminanceCluster.ep_attribute,
+        attribute_name=TuyaIlluminanceCluster.AttributeDefs.measured_value.name,
+        converter=lambda x: 10000 * math.log10(x) + 1 if x != 0 else 0,
+    )
+    .adds(TuyaIlluminanceCluster)
+    .tuya_number(
+        dp_id=101,
+        attribute_name="illuminance_interval",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.MINUTES,
+        min_value=1,
+        max_value=720,
+        step=1,
+        translation_key="illuminance_interval",
+        fallback_name="Illuminance interval",
+    )
+    .tuya_number(
+        dp_id=102,
+        attribute_name="fading_time",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        min_value=5,
+        max_value=3600,
+        step=1,
+        translation_key="fading_time",
+        fallback_name="Fading time",
     )
     .skip_configuration()
     .add_to_registry()
