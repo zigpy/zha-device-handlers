@@ -76,7 +76,7 @@ class LocalDataCluster(CustomCluster):
         self.debug("binding LocalDataCluster")
         return (foundation.Status.SUCCESS,)
 
-    async def unbind(self):
+    def unbind(self):
         """Prevent unbind."""
         self.debug("unbinding LocalDataCluster")
         return (foundation.Status.SUCCESS,)
