@@ -375,14 +375,14 @@ class DanfossThermostatCluster(CustomizedStandardCluster, Thermostat):
 
         return write_res
 
-    async def bind(self):
+    def bind(self):
         """According to the documentation of Zigbee2MQTT there is a bug in the Danfoss firmware with the time.
 
         It doesn't request it, so it has to be fed the correct time.
         """
-        await self.endpoint.time.write_time()
+        self.create_catching_task(self.endpoint.time.write_time())
 
-        return await super().bind()
+        return super().bind()
 
 
 class DanfossUserInterfaceCluster(CustomizedStandardCluster, UserInterface):
@@ -470,13 +470,13 @@ class DanfossTimeCluster(CustomizedStandardCluster, Time):
             }
         )
 
-    async def bind(self):
+    def bind(self):
         """According to the documentation of Zigbee2MQTT there is a bug in the Danfoss firmware with the time.
 
         It doesn't request it, so it has to be fed the correct time.
         """
-        result = await super().bind()
-        await self.write_time()
+        result = super().bind()
+        self.create_catching_task(self.write_time())
         return result
 
 

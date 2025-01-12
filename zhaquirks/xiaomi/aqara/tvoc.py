@@ -55,14 +55,16 @@ class EmulatedTVOCMeasurement(LocalDataCluster):
         MEASURED_VALUE: ("measured_value", t.Single),
     }
 
-    async def bind(self):
+    def bind(self):
         """Bind cluster."""
-        result = await self.endpoint.analog_input.bind()
-        await self.endpoint.analog_input.configure_reporting(
-            self.PRESENT_VALUE,
-            self.TEN_SECONDS,
-            self.ONE_HOUR,
-            self.MIN_CHANGE,
+        result = self.endpoint.analog_input.bind()
+        self.create_catching_task(
+            self.endpoint.analog_input.configure_reporting(
+                self.PRESENT_VALUE,
+                self.TEN_SECONDS,
+                self.ONE_HOUR,
+                self.MIN_CHANGE,
+            )
         )
         return result
 

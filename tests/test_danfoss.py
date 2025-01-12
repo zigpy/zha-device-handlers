@@ -8,6 +8,7 @@ from zigpy.zcl import foundation
 from zigpy.zcl.clusters.hvac import Thermostat
 from zigpy.zcl.foundation import WriteAttributesStatusRecord, ZCLAttributeDef
 
+from tests.common import wait_for_zigpy_tasks
 import zhaquirks
 from zhaquirks.danfoss.thermostat import CustomizedStandardCluster
 
@@ -46,7 +47,7 @@ def test_popp_signature(assert_signature_matches_quirk):
     )
 
 
-@mock.patch("zigpy.zcl.Cluster.bind", mock.AsyncMock())
+@mock.patch("zigpy.zcl.Cluster.bind", mock.Mock())
 async def test_danfoss_time_bind(zigpy_device_from_quirk):
     """Test the time being set when binding the Time cluster."""
     device = zigpy_device_from_quirk(zhaquirks.danfoss.thermostat.DanfossThermostat)
@@ -67,7 +68,8 @@ async def test_danfoss_time_bind(zigpy_device_from_quirk):
     )
 
     with patch_danfoss_trv_write:
-        await danfoss_thermostat_cluster.bind()
+        danfoss_thermostat_cluster.bind()
+        await wait_for_zigpy_tasks()
 
         assert 0x0000 in danfoss_time_cluster._attr_cache
         assert 0x0001 in danfoss_time_cluster._attr_cache

@@ -23,10 +23,10 @@ class FanCluster(CustomCluster, Fan):
         Fan.attributes_by_name["fan_mode_sequence"].id: Fan.FanModeSequence.Low_Med_High
     }
 
-    async def bind(self):
+    def bind(self):
         """Bind fan cluster and write attributes."""
-        result = await super().bind()
-        await self.write_attributes(self.attr_config)
+        result = super().bind()
+        self.create_catching_task(self.write_attributes(self.attr_config))
         return result
 
 

@@ -7,7 +7,7 @@ from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, PowerConfiguration
 from zigpy.zcl.clusters.measurement import PM25
 
-from tests.common import ClusterListener
+from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
 import zhaquirks.ikea.starkvind
 from zhaquirks.ikea.starkvind import IkeaAirpurifier
@@ -159,7 +159,7 @@ async def test_pm25_cluster_read(zigpy_device_from_quirk):
         assert not fail
 
 
-@mock.patch("zigpy.zcl.Cluster.bind", mock.AsyncMock())
+@mock.patch("zigpy.zcl.Cluster.bind", mock.Mock())
 @pytest.mark.parametrize(
     "firmware, pct_device, pct_correct, expected_pct_updates, expect_log_warning",
     (
@@ -204,20 +204,18 @@ async def test_double_power_config_firmware(
         ]
         return (records,)
 
-    p1 = mock.patch.object(power_cluster, "create_catching_task")
-    p2 = mock.patch.object(
+    p1 = mock.patch.object(
         basic_cluster, "_read_attributes", mock.AsyncMock(side_effect=mock_read)
     )
 
-    with p1 as mock_task, p2 as request_mock:
+    with p1 as request_mock:
         # update battery percentage with no firmware in attr cache, check pct not doubled for now
         power_cluster.update_attribute(battery_pct_id, pct_device)
         assert len(power_listener.attribute_updates) == 1
         assert power_listener.attribute_updates[0] == (battery_pct_id, pct_device)
 
         # but also check that sw_build_id read is requested in the background for next update
-        assert mock_task.call_count == 1
-        await mock_task.call_args[0][0]  # await coroutine to read attribute
+        await wait_for_zigpy_tasks()
         assert request_mock.call_count == 1  # verify request to read sw_build_id
         assert request_mock.mock_calls[0][1][0][0] == sw_build_id
 
@@ -228,7 +226,6 @@ async def test_double_power_config_firmware(
             assert power_listener.attribute_updates[1] == (battery_pct_id, pct_correct)
 
         # reset mocks for testing when sw_build_id is known next
-        mock_task.reset_mock()
         request_mock.reset_mock()
         power_listener = ClusterListener(power_cluster)
 
@@ -239,11 +236,11 @@ async def test_double_power_config_firmware(
         assert power_listener.attribute_updates[0] == (battery_pct_id, pct_correct)
 
         # check no attribute reads were requested when sw_build_id is known
-        assert mock_task.call_count == 0
         assert request_mock.call_count == 0
 
         # make sure a call to bind() always reads sw_build_id (e.g. on join or to refresh when repaired/reconfigured)
-        await power_cluster.bind()
+        power_cluster.bind()
+        await wait_for_zigpy_tasks()
         assert request_mock.call_count == 1
         assert request_mock.mock_calls[0][1][0][0] == sw_build_id
 

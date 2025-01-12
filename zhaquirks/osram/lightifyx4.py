@@ -85,10 +85,12 @@ class OsramButtonCluster(CustomCluster):
         0x002F: 0xFFFF,
     }
 
-    async def bind(self):
+    def bind(self):
         """Bind cluster."""
-        result = await super().bind()
-        await self.write_attributes(self.attr_config, manufacturer=OSRAM_MFG_CODE)
+        result = super().bind()
+        self.create_catching_task(
+            self.write_attributes(self.attr_config, manufacturer=OSRAM_MFG_CODE)
+        )
         return result
 
 

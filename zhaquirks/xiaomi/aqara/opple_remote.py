@@ -146,10 +146,12 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         self._current_state = None
         super().__init__(*args, **kwargs)
 
-    async def bind(self):
+    def bind(self):
         """Bind cluster."""
-        result = await super().bind()
-        await self.write_attributes(self.attr_config, manufacturer=OPPLE_MFG_CODE)
+        result = super().bind()
+        self.create_catching_task(
+            self.write_attributes(self.attr_config, manufacturer=OPPLE_MFG_CODE)
+        )
         return result
 
 

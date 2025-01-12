@@ -65,14 +65,14 @@ class OppleCluster(XiaomiAqaraE1Cluster):
     # This only exists on older firmware versions. Newer versions always have the behavior as if this was set to true
     attr_config = {0x0009: 0x01}
 
-    async def bind(self):
+    def bind(self):
         """Bind cluster."""
-        result = await super().bind()
+        result = super().bind()
+        self.create_catching_task(remove_from_ep(self.endpoint.device))
         # Request seems to time out, but still writes the attribute successfully
         self.create_catching_task(
             self.write_attributes(self.attr_config, manufacturer=OPPLE_MFG_CODE)
         )
-        await remove_from_ep(self.endpoint.device)
         return result
 
 

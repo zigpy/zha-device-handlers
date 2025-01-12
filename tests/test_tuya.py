@@ -1641,7 +1641,7 @@ def test_multiple_attributes_report():
     assert data.data.datapoints[3].dp == 9
 
 
-@mock.patch("zigpy.zcl.Cluster.bind", mock.AsyncMock())
+@mock.patch("zigpy.zcl.Cluster.bind", mock.Mock())
 @pytest.mark.parametrize(
     "quirk",
     (zhaquirks.tuya.ts0501_fan_switch.TS0501FanSwitch,),
@@ -1655,7 +1655,8 @@ async def test_fan_switch_writes_attributes(zigpy_device_from_quirk, quirk):
     with mock.patch.object(fan_cluster.endpoint, "request", mock.AsyncMock()) as m1:
         m1.return_value = (foundation.Status.SUCCESS, "done")
 
-        await fan_cluster.bind()
+        fan_cluster.bind()
+        await wait_for_zigpy_tasks()
 
         assert len(m1.mock_calls) == 1
         assert m1.mock_calls[0].kwargs["cluster"] == 514
@@ -1693,12 +1694,13 @@ async def test_power_config_no_bind(zigpy_device_from_quirk, quirk):
     power_cluster = device.endpoints[1].power
 
     request_patch = mock.patch("zigpy.zcl.Cluster.request", mock.AsyncMock())
-    bind_patch = mock.patch("zigpy.zcl.Cluster.bind", mock.AsyncMock())
+    bind_patch = mock.patch("zigpy.zcl.Cluster.bind")
 
     with request_patch as request_mock, bind_patch as bind_mock:
         request_mock.return_value = (foundation.Status.SUCCESS, "done")
 
-        await power_cluster.bind()
+        power_cluster.bind()
+        await wait_for_zigpy_tasks()
         await power_cluster.configure_reporting(
             PowerConfiguration.attributes_by_name["battery_percentage_remaining"].id,
             3600,

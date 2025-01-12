@@ -255,14 +255,16 @@ class ParksideTuyaValveManufCluster(TuyaMCUCluster):
         109: "_dp_2_attr_update",
     }
 
-    async def bind(self):
+    def bind(self):
         """Bind cluster.
 
         When adding this device tuya gateway issues factory reset,
         we just need to reset the frost lock, because its state is unknown to us.
         """
-        result = await super().bind()
-        await self.write_attributes({self.attributes_by_name["frost_lock_reset"].id: 0})
+        result = super().bind()
+        self.create_catching_task(
+            self.write_attributes({self.attributes_by_name["frost_lock_reset"].id: 0})
+        )
         return result
 
 

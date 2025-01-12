@@ -9,7 +9,7 @@ from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import DeviceTemperature
 from zigpy.zcl.clusters.measurement import FlowMeasurement
 
-from tests.common import ClusterListener
+from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
 from zhaquirks.const import (
     COMMAND_M_INITIAL_PRESS,
@@ -224,12 +224,12 @@ async def test_sinope_light_switch_reporting(zigpy_device_from_quirk, quirk):
     manu_cluster = device.endpoints[1].in_clusters[SINOPE_MANUFACTURER_CLUSTER_ID]
 
     request_patch = mock.patch("zigpy.zcl.Cluster.request", mock.AsyncMock())
-    bind_patch = mock.patch("zigpy.zcl.Cluster.bind", mock.AsyncMock())
 
-    with request_patch as request_mock, bind_patch as bind_mock:
+    with request_patch as request_mock:
         request_mock.return_value = (foundation.Status.SUCCESS, "done")
 
-        await manu_cluster.bind()
+        manu_cluster.bind()
+        await wait_for_zigpy_tasks()
         await manu_cluster.configure_reporting(
             SinopeTechnologiesManufacturerCluster.AttributeDefs.action_report.id,
             3600,
@@ -238,7 +238,6 @@ async def test_sinope_light_switch_reporting(zigpy_device_from_quirk, quirk):
         )
 
         assert len(request_mock.mock_calls) == 1
-        assert len(bind_mock.mock_calls) == 1
 
 
 @pytest.mark.parametrize("quirk", (SinopeTechnologieslight,))

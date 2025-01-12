@@ -130,10 +130,9 @@ class EmulatedVOCMeasurement(LocalDataCluster):
         super().__init__(*args, **kwargs)
         self.endpoint.device.voc_bus.add_listener(self)
 
-    async def bind(self):
+    def bind(self):
         """Bind cluster."""
-        result = await self.endpoint.device.app_cluster.bind()
-        return result
+        return self.endpoint.device.app_cluster.bind()
 
     async def write_attributes(self, attributes, manufacturer=None):
         """Ignore write_attributes."""

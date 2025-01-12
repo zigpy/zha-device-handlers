@@ -46,9 +46,9 @@ class EmulatedIasZone(LocalDataCluster, IasZone):
         self.endpoint.device.ias_bus.add_listener(self)
         super()._update_attribute(ZONE_TYPE, MOISTURE_TYPE)
 
-    async def bind(self):
+    def bind(self):
         """Bind cluster."""
-        return await self.endpoint.device.app_cluster.bind()
+        return self.endpoint.device.app_cluster.bind()
 
     async def write_attributes(self, attributes, manufacturer=None):
         """Ignore write_attributes."""

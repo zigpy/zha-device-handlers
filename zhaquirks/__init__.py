@@ -71,7 +71,7 @@ class LocalDataCluster(CustomCluster):
     _CONSTANT_ATTRIBUTES: dict[int, typing.Any] = {}
     _VALID_ATTRIBUTES: set[int] = set()
 
-    async def bind(self):
+    def bind(self):
         """Prevent bind."""
         self.debug("binding LocalDataCluster")
         return (foundation.Status.SUCCESS,)
@@ -172,14 +172,16 @@ class GroupBoundCluster(CustomCluster):
 
     COORDINATOR_GROUP_ID = 0x30  # Group id with only coordinator as a member
 
-    async def bind(self):
+    def bind(self):
         """Bind cluster to a group."""
         # Ensure coordinator is a member of the group
         application = self._endpoint.device.application
         coordinator = application.get_device(application.state.node_info.ieee)
-        await coordinator.add_to_group(
-            self.COORDINATOR_GROUP_ID,
-            name="Coordinator Group - Created by ZHAQuirks",
+        self.create_catching_task(
+            coordinator.add_to_group(
+                self.COORDINATOR_GROUP_ID,
+                name="Coordinator Group - Created by ZHAQuirks",
+            )
         )
 
         # Bind cluster to group
@@ -187,11 +189,13 @@ class GroupBoundCluster(CustomCluster):
         dstaddr.addrmode = 1
         dstaddr.nwk = self.COORDINATOR_GROUP_ID
         dstaddr.endpoint = self._endpoint.endpoint_id
-        return await self._endpoint.device.zdo.Bind_req(
-            self._endpoint.device.ieee,
-            self._endpoint.endpoint_id,
-            self.cluster_id,
-            dstaddr,
+        self.create_catching_task(
+            self._endpoint.device.zdo.Bind_req(
+                self._endpoint.device.ieee,
+                self._endpoint.endpoint_id,
+                self.cluster_id,
+                dstaddr,
+            )
         )
 
 
