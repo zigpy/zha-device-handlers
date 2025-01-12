@@ -69,6 +69,16 @@ class TuyaSelfCheckResult(t.enum8):
     RadarFault = 0x05
 
 
+class TuyaPresenceState(t.enum8):
+    """Tuya presence state enum."""
+
+    Unoccupied = 0x00
+    Presence = 0x01
+    Peaceful = 0x02
+    Small_movement = 0x03
+    Large_movement = 0x04
+
+
 class TuyaBreakerMode(t.enum8):
     """Tuya breaker mode enum."""
 
@@ -470,6 +480,157 @@ base_tuya_motion = (
     .add_to_registry()
 )
 
+
+(
+    TuyaQuirkBuilder("_TZE204_dapwryy7", "TS0601")
+    .tuya_dp(
+        dp_id=1,
+        ep_attribute=TuyaOccupancySensing.ep_attribute,
+        attribute_name=OccupancySensing.AttributeDefs.occupancy.name,
+        converter=lambda x: x != TuyaPresenceState.Unoccupied,
+    )
+    .adds(TuyaOccupancySensing)
+    .tuya_number(
+        dp_id=101,
+        attribute_name="target_distance",
+        type=t.uint16_t,
+        min_value=0,
+        max_value=10,
+        step=0.01,
+        unit=UnitOfLength.METERS,
+        multiplier=0.01,
+        translation_key="target_distance",
+        fallback_name="Target distance",
+    )
+    .tuya_dp(
+        dp_id=102,
+        ep_attribute=TuyaIlluminanceCluster.ep_attribute,
+        attribute_name=TuyaIlluminanceCluster.AttributeDefs.measured_value.name,
+        converter=lambda x: 10000 * math.log10(x) + 1 if x != 0 else 0,
+    )
+    .adds(TuyaIlluminanceCluster)
+    .tuya_number(
+        dp_id=103,
+        attribute_name="hold_delay_time",
+        type=t.uint16_t,
+        min_value=0,
+        max_value=28800,
+        step=1,
+        unit=UnitOfTime.SECONDS,
+        translation_key="hold_delay_time",
+        fallback_name="Hold delay time",
+    )
+    .tuya_switch(
+        dp_id=104,
+        attribute_name="led_indicator",
+        translation_key="led_indicator",
+        fallback_name="LED indicator",
+    )
+    .tuya_number(
+        dp_id=107,
+        attribute_name="detection_distance_max",
+        type=t.uint16_t,
+        min_value=0,
+        max_value=10,
+        step=0.01,
+        unit=UnitOfLength.METERS,
+        multiplier=0.01,
+        translation_key="detection_distance_max",
+        fallback_name="Maximum range",
+    )
+    .tuya_number(
+        dp_id=108,
+        attribute_name="detection_distance_min",
+        type=t.uint16_t,
+        min_value=0,
+        max_value=10,
+        step=0.01,
+        unit=UnitOfLength.METERS,
+        multiplier=0.01,
+        translation_key="detection_distance_min",
+        fallback_name="Minimum range",
+    )
+    .tuya_number(
+        dp_id=109,
+        attribute_name="breath_detection_max",
+        type=t.uint16_t,
+        min_value=0,
+        max_value=6,
+        step=0.01,
+        unit=UnitOfLength.METERS,
+        multiplier=0.01,
+        translation_key="breath_detection_max",
+        fallback_name="Breath detection max",
+    )
+    .tuya_number(
+        dp_id=110,
+        attribute_name="breath_detection_min",
+        type=t.uint16_t,
+        min_value=0,
+        max_value=6,
+        step=0.01,
+        unit=UnitOfLength.METERS,
+        multiplier=0.01,
+        translation_key="breath_detection_min",
+        fallback_name="Breath detection min",
+    )
+    .tuya_number(
+        dp_id=114,
+        attribute_name="small_move_detection_max",
+        type=t.uint16_t,
+        min_value=0,
+        max_value=6,
+        step=0.01,
+        unit=UnitOfLength.METERS,
+        multiplier=0.01,
+        translation_key="small_move_detection_max",
+        fallback_name="Small move detection max",
+    )
+    .tuya_number(
+        dp_id=115,
+        attribute_name="small_move_detection_min",
+        type=t.uint16_t,
+        min_value=0,
+        max_value=6,
+        step=0.01,
+        unit=UnitOfLength.METERS,
+        multiplier=0.01,
+        translation_key="small_move_detection_min",
+        fallback_name="Small move detection min",
+    )
+    .tuya_number(
+        dp_id=116,
+        attribute_name="move_sensitivity",
+        type=t.uint16_t,
+        min_value=0,
+        max_value=10,
+        step=1,
+        translation_key="move_sensitivity",
+        fallback_name="Motion sensitivity",
+    )
+    .tuya_number(
+        dp_id=117,
+        attribute_name="small_move_sensitivity",
+        type=t.uint16_t,
+        min_value=0,
+        max_value=10,
+        step=1,
+        translation_key="small_move_sensitivity",
+        fallback_name="Small move sensitivity",
+    )
+    .tuya_number(
+        dp_id=118,
+        attribute_name="breath_sensitivity",
+        type=t.uint16_t,
+        min_value=0,
+        max_value=10,
+        step=1,
+        translation_key="breath_sensitivity",
+        fallback_name="Breath sensitivity",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
 
 (
     base_tuya_motion.clone()
