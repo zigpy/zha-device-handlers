@@ -53,7 +53,6 @@ from zhaquirks.tuya.builder import (
     .applies_to("_TZE200_zppcgbdj", "TS0601")
     .applies_to("_TZE204_s139roas", "TS0601")
     .applies_to("_TZE200_s1xgth2u", "TS0601")  # Nedis ZBSC30WT
-    # Not using tuya_temperature because device reports negative values incorrectly
     .tuya_temperature(dp_id=1, scale=10)
     .adds(TuyaTemperatureMeasurement)
     .tuya_humidity(dp_id=2)
