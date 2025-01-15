@@ -215,6 +215,9 @@ class SinopeManufacturerCluster(CustomCluster):
         max_measured_temp: Final = foundation.ZCLAttributeDef(
             id=0x007D, type=t.int16s, access="rp", is_manufacturer_specific=True
         )
+        water_temp_protection_type: Final = foundation.ZCLAttributeDef(
+            id=0x007E, type=t.enum8, access="rwp", is_manufacturer_specific=True
+        )
         current_summation_delivered: Final = foundation.ZCLAttributeDef(
             id=0x0090, type=t.uint32_t, access="rp", is_manufacturer_specific=True
         )
