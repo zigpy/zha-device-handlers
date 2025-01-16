@@ -1805,7 +1805,7 @@ class ZonnsmartTV01_ZG(TuyaThermostat):
     .applies_to("_TZE284_c6wv4xyo", "TS0601")
     .applies_to("_TZE204_o3x45p96", "TS0601")
     .applies_to("_TZE204_ogx8u5z6", "TS0601")
-        .tuya_dp(
+    .tuya_dp(
         dp_id=2,
         ep_attribute=TuyaThermostatV2.ep_attribute,
         attribute_name=TuyaThermostatV2.AttributeDefs.system_mode.name,
