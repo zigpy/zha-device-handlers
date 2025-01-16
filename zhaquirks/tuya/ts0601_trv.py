@@ -1792,79 +1792,6 @@ class ZonnsmartTV01_ZG(TuyaThermostat):
 
 
 (
-    TuyaQuirkBuilder("_TZE204_ogx8u5z6", "TS0601")
-    .tuya_dp(
-        dp_id=2,
-        ep_attribute=TuyaThermostatV2.ep_attribute,
-        attribute_name=TuyaThermostatV2.AttributeDefs.system_mode.name,
-        converter=lambda x: {
-            TuyaThermostatSystemMode.Auto: Thermostat.SystemMode.Auto,
-            TuyaThermostatSystemMode.Heat: Thermostat.SystemMode.Heat,
-            TuyaThermostatSystemMode.Off: Thermostat.SystemMode.Off,
-        }[x],
-        dp_converter=lambda x: {
-            Thermostat.SystemMode.Auto: TuyaThermostatSystemMode.Auto,
-            Thermostat.SystemMode.Heat: TuyaThermostatSystemMode.Heat,
-            Thermostat.SystemMode.Off: TuyaThermostatSystemMode.Off,
-        }[x],
-    )
-    .tuya_dp(
-        dp_id=3,
-        ep_attribute=TuyaThermostatV2.ep_attribute,
-        attribute_name=TuyaThermostatV2.AttributeDefs.running_state.name,
-        converter=lambda x: 0x01 if not x else 0x00,  # Heat, Idle
-    )
-    .tuya_dp(
-        dp_id=4,
-        ep_attribute=TuyaThermostatV2.ep_attribute,
-        attribute_name=TuyaThermostatV2.AttributeDefs.occupied_heating_setpoint.name,
-        converter=lambda x: x * 10,
-        dp_converter=lambda x: x // 10,
-    )
-    .tuya_dp(
-        dp_id=5,
-        ep_attribute=TuyaThermostatV2.ep_attribute,
-        attribute_name=TuyaThermostatV2.AttributeDefs.local_temperature.name,
-        converter=lambda x: x * 10,
-    )
-    .tuya_dp(
-        dp_id=47,
-        ep_attribute=TuyaThermostatV2.ep_attribute,
-        attribute_name=TuyaThermostatV2.AttributeDefs.local_temperature_calibration.name,
-        converter=lambda x: x,
-        dp_converter=lambda x: x + 0x100000000 if x < 0 else x,
-    )
-    .tuya_switch(
-        dp_id=7,
-        attribute_name="child_lock",
-        translation_key="child_lock",
-        fallback_name="Child lock",
-    )
-    .tuya_switch(
-        dp_id=35,
-        attribute_name="frost_protection",
-        translation_key="frost_protection",
-        fallback_name="Frost protection",
-    )
-    .tuya_switch(
-        dp_id=39,
-        attribute_name="scale_protection",
-        translation_key="scale_protection",
-        fallback_name="Scale protection",
-    )
-    .tuya_binary_sensor(
-        dp_id=35,
-        attribute_name="error_or_battery_low",
-        translation_key="error_or_battery_low",
-        fallback_name="Error or battery low",
-    )
-    .adds(TuyaThermostatV2)
-    .skip_configuration()
-    .add_to_registry()
-)
-
-
-(
     TuyaQuirkBuilder("_TZE200_bvu2wnxz", "TS0601")
     .applies_to("_TZE200_6rdj8dzm", "TS0601")
     .applies_to("_TZE200_9xfjixap", "TS0601")
@@ -1877,7 +1804,8 @@ class ZonnsmartTV01_ZG(TuyaThermostat):
     .applies_to("_TZE284_o3x45p96", "TS0601")
     .applies_to("_TZE284_c6wv4xyo", "TS0601")
     .applies_to("_TZE204_o3x45p96", "TS0601")
-    .tuya_dp(
+    .applies_to("_TZE204_ogx8u5z6", "TS0601")
+        .tuya_dp(
         dp_id=2,
         ep_attribute=TuyaThermostatV2.ep_attribute,
         attribute_name=TuyaThermostatV2.AttributeDefs.system_mode.name,
@@ -1925,16 +1853,16 @@ class ZonnsmartTV01_ZG(TuyaThermostat):
         fallback_name="Child lock",
     )
     .tuya_switch(
-        dp_id=36,
-        attribute_name="frost_protection",
-        translation_key="frost_protection",
-        fallback_name="Frost protection",
-    )
-    .tuya_switch(
         dp_id=39,
         attribute_name="scale_protection",
         translation_key="scale_protection",
         fallback_name="Scale protection",
+    )
+    .tuya_switch(
+        dp_id=36,
+        attribute_name="frost_protection",
+        translation_key="frost_protection",
+        fallback_name="Frost protection",
     )
     .tuya_binary_sensor(
         dp_id=35,
