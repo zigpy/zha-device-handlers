@@ -1852,11 +1852,11 @@ class ZonnsmartTV01_ZG(TuyaThermostat):
         translation_key="child_lock",
         fallback_name="Child lock",
     )
-    .tuya_switch(
-        dp_id=39,
-        attribute_name="scale_protection",
-        translation_key="scale_protection",
-        fallback_name="Scale protection",
+    .tuya_binary_sensor(
+        dp_id=35,
+        attribute_name="error_or_battery_low",
+        translation_key="error_or_battery_low",
+        fallback_name="Error or battery low",
     )
     .tuya_switch(
         dp_id=36,
@@ -1864,11 +1864,11 @@ class ZonnsmartTV01_ZG(TuyaThermostat):
         translation_key="frost_protection",
         fallback_name="Frost protection",
     )
-    .tuya_binary_sensor(
-        dp_id=35,
-        attribute_name="error_or_battery_low",
-        translation_key="error_or_battery_low",
-        fallback_name="Error or battery low",
+    .tuya_switch(
+        dp_id=39,
+        attribute_name="scale_protection",
+        translation_key="scale_protection",
+        fallback_name="Scale protection",
     )
     .adds(TuyaThermostatV2)
     .skip_configuration()
