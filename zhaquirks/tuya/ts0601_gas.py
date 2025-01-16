@@ -45,10 +45,10 @@ class TuyaSelfTestResult(t.enum8):
     .tuya_battery(dp_id=15, power_cfg=TuyaPowerConfigurationCluster2AA)
     .tuya_switch(
         dp_id=16,
-        attribute_name="silence",
+        attribute_name="mute_siren",
         entity_type=EntityType.STANDARD,
-        translation_key="silence",
-        fallback_name="Silence",
+        translation_key="mute_siren",
+        fallback_name="Mute siren",
     )
     .skip_configuration()
     .add_to_registry()
