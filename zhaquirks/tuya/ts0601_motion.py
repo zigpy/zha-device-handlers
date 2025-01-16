@@ -185,7 +185,7 @@ base_tuya_motion = (
         attribute_name="find_switch",
         entity_type=EntityType.STANDARD,
         translation_key="find_switch",
-        fallback_name="Distance switch",
+        fallback_name="Find switch",
     )
     .tuya_number(
         dp_id=102,
@@ -258,7 +258,7 @@ base_tuya_motion = (
         attribute_name="find_switch",
         entity_type=EntityType.STANDARD,
         translation_key="find_switch",
-        fallback_name="Distance switch",
+        fallback_name="Find switch",
     )
     .tuya_number(
         dp_id=102,
