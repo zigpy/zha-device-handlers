@@ -31,7 +31,7 @@ class TuyaSelfTestResult(t.enum8):
         device_class=SensorDeviceClass.CO,
         state_class=SensorStateClass.MEASUREMENT,
         unit=CONCENTRATION_PARTS_PER_MILLION,
-        fallback_name="CO concetration",
+        fallback_name="CO concentration",
     )
     .tuya_enum(
         dp_id=9,
