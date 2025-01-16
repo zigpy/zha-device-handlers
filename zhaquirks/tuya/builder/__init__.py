@@ -523,7 +523,6 @@ class TuyaQuirkBuilder(QuirkBuilder):
 
         return self
 
-
     def tuya_enchantment(
         self, read_attr_spell: bool = True, data_query_spell: bool = False
     ) -> QuirkBuilder:
@@ -538,7 +537,6 @@ class TuyaQuirkBuilder(QuirkBuilder):
         self.device_class(EnchantedDeviceV2)
 
         return self
-
 
     def add_to_registry(
         self, replacement_cluster: TuyaMCUCluster = TuyaMCUCluster
