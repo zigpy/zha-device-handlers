@@ -184,8 +184,8 @@ base_tuya_motion = (
         dp_id=101,
         attribute_name="find_switch",
         entity_type=EntityType.STANDARD,
-        translation_key="find_switch",
-        fallback_name="Find switch",
+        translation_key="led_indicator",
+        fallback_name="LED indicator",
     )
     .tuya_number(
         dp_id=102,
@@ -257,8 +257,8 @@ base_tuya_motion = (
         dp_id=101,
         attribute_name="find_switch",
         entity_type=EntityType.STANDARD,
-        translation_key="find_switch",
-        fallback_name="Find switch",
+        translation_key="led_indicator",
+        fallback_name="LED indicator",
     )
     .tuya_number(
         dp_id=102,
@@ -541,7 +541,8 @@ base_tuya_motion = (
     )
     .tuya_binary_sensor(
         dp_id=101,
-        attribute_name="led_indicator",
+        attribute_name="find_switch",
+        entity_type=EntityType.STANDARD,
         translation_key="led_indicator",
         fallback_name="LED indicator",
     )
@@ -660,8 +661,8 @@ base_tuya_motion = (
         dp_id=102,
         attribute_name="find_switch",
         entity_type=EntityType.STANDARD,
-        translation_key="find_switch",
-        fallback_name="Find switch",
+        translation_key="led_indicator",
+        fallback_name="LED indicator",
     )
     .tuya_binary_sensor(
         dp_id=103,
