@@ -158,6 +158,7 @@ class TuyaAirQualityVOC(TuyaLocalCluster):
             is_manufacturer_specific=True,
         )
 
+
 class TuyaIlluminance(IlluminanceMeasurement, TuyaLocalCluster):
     """Tuya local illuminance cluster."""
 
