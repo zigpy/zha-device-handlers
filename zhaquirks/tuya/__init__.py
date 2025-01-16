@@ -7,7 +7,7 @@ import enum
 import logging
 from typing import Any, Optional, Union
 
-from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.quirks import BaseCustomDevice, CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl import BaseAttributeDefs, foundation
 from zigpy.zcl.clusters.closures import WindowCovering
@@ -529,7 +529,7 @@ class TuyaManufClusterAttributes(TuyaManufCluster):
         return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
 
-class EnchantedDevice(CustomDevice):
+class BaseEnchantedDevice(BaseCustomDevice):
     """Class for Tuya devices which need to be unlocked by casting a 'spell'.
 
     The spell is applied during device configuration.
@@ -568,6 +568,10 @@ class EnchantedDevice(CustomDevice):
         tuya_cluster = self.endpoints[1].in_clusters[TuyaNewManufCluster.cluster_id]
         await tuya_cluster.command(TUYA_QUERY_DATA)
         self.debug("Executed data query spell on Tuya device %s", self.ieee)
+
+
+class EnchantedDevice(CustomDevice, BaseEnchantedDevice):
+    """Enchanted device class for v1 quirks."""
 
 
 class TuyaOnOff(CustomCluster, OnOff):

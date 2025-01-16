@@ -68,6 +68,43 @@ class TuyaSelfCheckResult(t.enum8):
     RadarFault = 0x05
 
 
+class TuyaBreakerMode(t.enum8):
+    """Tuya breaker mode enum."""
+
+    Standard = 0x00
+    Local = 0x01
+
+
+class TuyaBreakerStatus(t.enum8):
+    """Tuya breaker status enum."""
+
+    Off = 0x00
+    On = 0x01
+
+
+class TuyaStatusIndication(t.enum8):
+    """Tuya status indication enum."""
+
+    Off = 0x00
+    On = 0x01
+
+
+class TuyaBreakerPolarity(t.enum8):
+    """Tuya breaker polarity enum."""
+
+    NC = 0x00
+    NO = 0x01
+
+
+class TuyaMotionSensorMode(t.enum8):
+    """Tuya motion sensor mode enum."""
+
+    On = 0x00
+    Off = 0x01
+    Occupied = 0x02
+    Unoccupied = 0x03
+
+
 base_tuya_motion = (
     TuyaQuirkBuilder()
     .adds(TuyaOccupancySensing)
@@ -307,5 +344,145 @@ base_tuya_motion = (
     .tuya_temperature(dp_id=104, scale=10)
     .tuya_humidity(dp_id=105)
     .skip_configuration()
+    .add_to_registry()
+)
+
+(
+    base_tuya_motion.clone()
+    .applies_to("_TZE204_sbyx0lm6", "TS0601")
+    .applies_to("_TZE204_clrdrnya", "TS0601")
+    .applies_to("_TZE204_dtzziy1e", "TS0601")
+    .applies_to("_TZE204_iaeejhvf", "TS0601")
+    .applies_to("_TZE204_mtoaryre", "TS0601")
+    .applies_to("_TZE200_mp902om5", "TS0601")
+    .applies_to("_TZE204_pfayrzcw", "TS0601")
+    .applies_to("_TZE284_4qznlkbu", "TS0601")
+    .applies_to("_TZE200_sbyx0lm6", "TS0601")
+    .tuya_dp(
+        dp_id=1,
+        ep_attribute=TuyaOccupancySensing.ep_attribute,
+        attribute_name=OccupancySensing.AttributeDefs.occupancy.name,
+        converter=lambda x: x == 1,
+    )
+    # 2, 3, 4, and 9 from base, z2m has slightly different values limits and names
+    # 6 is equipment_status, z2m doesn't expose
+    .tuya_number(
+        dp_id=101,
+        attribute_name="detection_delay",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        min_value=1,
+        max_value=10,
+        step=0.1,
+        multiplier=0.1,
+        translation_key="detection_delay",
+        fallback_name="Detection delay",
+    )
+    .tuya_number(
+        dp_id=102,
+        attribute_name="fading_time",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        min_value=0,
+        max_value=600,
+        step=1,
+        translation_key="fading_time",
+        fallback_name="Fading time",
+    )
+    # 103 cline, z2m doesn't expose
+    .tuya_dp(
+        dp_id=104,
+        ep_attribute=TuyaIlluminanceCluster.ep_attribute,
+        attribute_name=TuyaIlluminanceCluster.AttributeDefs.measured_value.name,
+        converter=lambda x: 10000 * math.log10(x) + 1 if x != 0 else 0,
+    )
+    .tuya_number(
+        dp_id=105,
+        attribute_name="entry_sensitivity",
+        type=t.uint16_t,
+        min_value=0,
+        max_value=9,
+        step=1,
+        translation_key="entry_sensitivity",
+        fallback_name="Entry sensitivity",
+    )
+    .tuya_number(
+        dp_id=106,
+        attribute_name="entry_distance_indentation",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DISTANCE,
+        unit=UnitOfLength.METERS,
+        min_value=0,
+        max_value=9,
+        step=0.1,
+        multiplier=0.01,
+        translation_key="entry_distance_indentation",
+        fallback_name="Entry distance indentation",
+    )
+    .tuya_enum(
+        dp_id=107,
+        attribute_name="breaker_mode",
+        enum_class=TuyaBreakerMode,
+        translation_key="breaker_mode",
+        fallback_name="Breaker mode",
+    )
+    .tuya_enum(
+        dp_id=108,
+        attribute_name="breaker_status",
+        enum_class=TuyaBreakerStatus,
+        translation_key="breaker_status",
+        fallback_name="Breaker status",
+    )
+    .tuya_enum(
+        dp_id=109,
+        attribute_name="status_indication",
+        enum_class=TuyaStatusIndication,
+        translation_key="status_indication",
+        fallback_name="Status indication",
+    )
+    .tuya_number(
+        dp_id=110,
+        attribute_name="illuminance_threshold",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.ILLUMINANCE,
+        # unit=LIGHT_LUX, # Not supported ZHA yet
+        min_value=0,
+        max_value=420,
+        step=0.1,
+        multiplier=0.1,
+        translation_key="illuminance_threshold",
+        fallback_name="Illuminance threshold",
+    )
+    .tuya_enum(
+        dp_id=111,
+        attribute_name="breaker_polarity",
+        enum_class=TuyaBreakerPolarity,
+        translation_key="breaker_polarity",
+        fallback_name="Breaker polarity",
+    )
+    .tuya_number(
+        dp_id=112,
+        attribute_name="block_time",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        min_value=0,
+        max_value=10,
+        step=0.1,
+        multiplier=0.1,
+        translation_key="block_time",
+        fallback_name="Block time",
+    )
+    # 113 parameter_setting_result, z2m doesn't expose
+    # 114 factory_parameters, z2m doesn't expose
+    .tuya_enum(
+        dp_id=115,
+        attribute_name="sensor_mode",
+        enum_class=TuyaMotionSensorMode,
+        translation_key="sensor_mode",
+        fallback_name="Sensor mode",
+    )
     .add_to_registry()
 )

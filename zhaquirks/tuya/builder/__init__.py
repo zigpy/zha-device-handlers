@@ -6,7 +6,7 @@ from typing import Any, Optional
 
 from zigpy.quirks import _DEVICE_REGISTRY
 from zigpy.quirks.registry import DeviceRegistry
-from zigpy.quirks.v2 import QuirkBuilder, QuirksV2RegistryEntry
+from zigpy.quirks.v2 import CustomDeviceV2, QuirkBuilder, QuirksV2RegistryEntry
 from zigpy.quirks.v2.homeassistant import EntityPlatform, EntityType
 from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
@@ -23,6 +23,7 @@ from zigpy.zcl.clusters.smartenergy import Metering
 
 from zhaquirks.tuya import (
     TUYA_CLUSTER_ID,
+    BaseEnchantedDevice,
     PowerConfiguration,
     TuyaLocalCluster,
     TuyaPowerConfigurationCluster2AAA,
@@ -521,6 +522,23 @@ class TuyaQuirkBuilder(QuirkBuilder):
         )
 
         return self
+
+
+    def tuya_enchantment(
+        self, read_attr_spell: bool = True, data_query_spell: bool = False
+    ) -> QuirkBuilder:
+        """Set the Tuya enchantment spells."""
+
+        class EnchantedDeviceV2(CustomDeviceV2, BaseEnchantedDevice):
+            """Enchanted device class for v2 quirks."""
+
+        EnchantedDeviceV2.tuya_spell_read_attributes = read_attr_spell
+        EnchantedDeviceV2.tuya_spell_data_query = data_query_spell
+
+        self.device_class(EnchantedDeviceV2)
+
+        return self
+
 
     def add_to_registry(
         self, replacement_cluster: TuyaMCUCluster = TuyaMCUCluster
