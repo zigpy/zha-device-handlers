@@ -1,6 +1,7 @@
 """BlitzWolf IS-3/Tuya motion rechargeable occupancy sensor."""
 
 import asyncio
+import math
 from typing import Any
 
 from zigpy.quirks.v2 import EntityPlatform, EntityType
@@ -12,7 +13,7 @@ from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
 
 from zhaquirks.tuya import TuyaLocalCluster
-from zhaquirks.tuya.builder import TuyaIlluminance, TuyaQuirkBuilder
+from zhaquirks.tuya.builder import TuyaIlluminanceCluster, TuyaQuirkBuilder
 
 
 class TuyaOccupancySensing(OccupancySensing, TuyaLocalCluster):
@@ -202,7 +203,7 @@ base_tuya_motion = (
         translation_key="distance",
         fallback_name="Target distance",
     )
-    .adds(TuyaIlluminance)
+    .adds(TuyaIlluminanceCluster)
     .skip_configuration()
 )
 
@@ -951,7 +952,7 @@ base_tuya_motion = (
         translation_key="presence_timeout",
         fallback_name="Fade time",
     )
-    .adds(TuyaIlluminance)
+    .adds(TuyaIlluminanceCluster)
     .skip_configuration()
     .add_to_registry()
 )
