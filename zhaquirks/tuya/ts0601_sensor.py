@@ -3,35 +3,63 @@
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
 
-from zhaquirks.tuya.builder import TuyaPowerConfigurationCluster2AAA, TuyaQuirkBuilder
+from zhaquirks.tuya.builder import (
+    TuyaPowerConfigurationCluster2AAA,
+    TuyaQuirkBuilder,
+    TuyaTemperatureMeasurement,
+)
 
 (
     TuyaQuirkBuilder("_TZE200_bjawzodf", "TS0601")
     .applies_to("_TZE200_zl1kmjqx", "TS0601")
-    .tuya_temperature(dp_id=1, scale=10)
+    # Not using tuya_temperature because device reports negative values incorrectly
+    .tuya_dp(
+        dp_id=1,
+        ep_attribute=TuyaTemperatureMeasurement.ep_attribute,
+        attribute_name=TuyaTemperatureMeasurement.AttributeDefs.measured_value.name,
+        converter=lambda x: ((x - 0xFFFF if x > 0x2000 else x) * 10),
+    )
+    .adds(TuyaTemperatureMeasurement)
     .tuya_humidity(dp_id=2, scale=10)
     .tuya_battery(dp_id=4)
     .skip_configuration()
     .add_to_registry()
 )
 
-
 (
-    TuyaQuirkBuilder("_TZE200_a8sdabtg", "TS0601")  # Variant without screen, round
-    .applies_to("_TZE200_qoy0ekbd", "TS0601")
-    .applies_to("_TZE200_znbl8dj5", "TS0601")
+    TuyaQuirkBuilder("_TZE200_bq5c8xfe", "TS0601")
+    .applies_to("_TZE200_vs0skpuc", "TS0601")
     .applies_to("_TZE200_qyflbnbj", "TS0601")
-    .applies_to("_TZE200_zppcgbdj", "TS0601")
-    .applies_to("_TZE204_s139roas", "TS0601")
-    .applies_to("_TZE200_s1xgth2u", "TS0601")  # Nedis ZBSC30WT
     .applies_to("_TZE284_qyflbnbj", "TS0601")
-    .tuya_temperature(dp_id=1, scale=10)
+    .applies_to("_TZE200_44af8vyi", "TS0601")
+    # Not using tuya_temperature because device reports negative values incorrectly
+    .tuya_dp(
+        dp_id=1,
+        ep_attribute=TuyaTemperatureMeasurement.ep_attribute,
+        attribute_name=TuyaTemperatureMeasurement.AttributeDefs.measured_value.name,
+        converter=lambda x: ((x - 0xFFFF if x > 0x2000 else x) * 10),
+    )
+    .adds(TuyaTemperatureMeasurement)
     .tuya_humidity(dp_id=2)
     .tuya_battery(dp_id=4)
     .skip_configuration()
     .add_to_registry()
 )
 
+(
+    TuyaQuirkBuilder("_TZE200_a8sdabtg", "TS0601")  # Variant without screen, round
+    .applies_to("_TZE200_qoy0ekbd", "TS0601")
+    .applies_to("_TZE200_znbl8dj5", "TS0601")
+    .applies_to("_TZE200_zppcgbdj", "TS0601")
+    .applies_to("_TZE204_s139roas", "TS0601")
+    .applies_to("_TZE200_s1xgth2u", "TS0601")  # Nedis ZBSC30WT
+    .tuya_temperature(dp_id=1, scale=10)
+    .adds(TuyaTemperatureMeasurement)
+    .tuya_humidity(dp_id=2)
+    .tuya_battery(dp_id=4)
+    .skip_configuration()
+    .add_to_registry()
+)
 
 (
     TuyaQuirkBuilder("_TZE200_yjjdcqsq", "TS0601")
@@ -73,6 +101,7 @@ from zhaquirks.tuya.builder import TuyaPowerConfigurationCluster2AAA, TuyaQuirkB
     .applies_to("_TZE200_ga1maeof", "TS0601")
     .applies_to("_TZE200_9cqcpkgb", "TS0601")
     .applies_to("_TZE204_myd45weu", "TS0601")
+    .applies_to("_TZE200_2se8efxh", "TS0601")  # Immax Neo
     .tuya_temperature(dp_id=5)
     .tuya_battery(dp_id=15)
     .tuya_soil_moisture(dp_id=3)

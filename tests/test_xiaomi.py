@@ -1804,3 +1804,20 @@ async def test_aqara_fp1e_sensor(
     assert len(ias_listener.attribute_updates) == 1
     assert ias_listener.attribute_updates[0][0] == IasZone.AttributeDefs.zone_status.id
     assert ias_listener.attribute_updates[0][1] == expected_motion_status
+
+
+def test_h1_wireless_remotes(zigpy_device_from_v2_quirk):
+    """Test Aqara H1 wireless remote quirk adds missing endpoints."""
+    # create device with endpoint 1 only and verify we don't get a KeyError
+    quirk = zigpy_device_from_v2_quirk(LUMI, "lumi.remote.b28ac1")
+
+    # verify the quirk adds endpoints 2 and 3
+    assert 2 in quirk.endpoints
+    assert 3 in quirk.endpoints
+
+    # verify the quirk adds the correct clusters to the new endpoints
+    assert OnOff.cluster_id in quirk.endpoints[2].out_clusters
+    assert OnOff.cluster_id in quirk.endpoints[3].out_clusters
+
+    assert MultistateInput.cluster_id in quirk.endpoints[2].in_clusters
+    assert MultistateInput.cluster_id in quirk.endpoints[3].in_clusters

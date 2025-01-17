@@ -4,7 +4,6 @@ from collections.abc import ByteString
 from unittest import mock
 
 import pytest
-from zigpy.device import Device
 from zigpy.quirks.registry import DeviceRegistry
 from zigpy.quirks.v2 import CustomDeviceV2
 import zigpy.types as t
@@ -15,6 +14,7 @@ from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
 from zhaquirks.tuya import (
+    TUYA_QUERY_DATA,
     DPToAttributeMapping,
     TuyaCommand,
     TuyaData,
@@ -22,8 +22,12 @@ from zhaquirks.tuya import (
     TuyaLocalCluster,
 )
 from zhaquirks.tuya.builder import (
+    TuyaAirQualityVOC,
+    TuyaCO2Concetration,
+    TuyaFormaldehydeConcetration,
     TuyaIasContact,
     TuyaIasFire,
+    TuyaPM25Concetration,
     TuyaPowerConfigurationCluster2AAA,
     TuyaQuirkBuilder,
     TuyaRelativeHumidity,
@@ -33,28 +37,7 @@ from zhaquirks.tuya.builder import (
 )
 from zhaquirks.tuya.mcu import TuyaMCUCluster, TuyaOnOffNM
 
-from .async_mock import sentinel
-
 zhaquirks.setup()
-
-
-@pytest.fixture(name="device_mock")
-def real_device(MockAppController):
-    """Device fixture with a single endpoint."""
-    ieee = sentinel.ieee
-    nwk = 0x2233
-    device = Device(MockAppController, ieee, nwk)
-
-    device.add_endpoint(1)
-    device[1].profile_id = 0x0104
-    device[1].device_type = 0x0051
-    device.model = "model"
-    device.manufacturer = "manufacturer"
-    device[1].add_input_cluster(0x0000)
-    device[1].add_input_cluster(0xEF00)
-    device[1].add_output_cluster(0x000A)
-    device[1].add_output_cluster(0x0019)
-    return device
 
 
 @pytest.mark.parametrize(
@@ -68,6 +51,14 @@ def real_device(MockAppController):
         ("tuya_humidity", "humidity", TuyaRelativeHumidity),
         ("tuya_smoke", "ias_zone", TuyaIasFire),
         ("tuya_contact", "ias_zone", TuyaIasContact),
+        ("tuya_co2", "carbon_dioxide_concentration", TuyaCO2Concetration),
+        ("tuya_pm25", "pm25", TuyaPM25Concetration),
+        ("tuya_voc", "voc_level", TuyaAirQualityVOC),
+        (
+            "tuya_formaldehyde",
+            "formaldehyde_concentration",
+            TuyaFormaldehydeConcetration,
+        ),
     ],
 )
 async def test_convenience_methods(device_mock, method_name, attr_name, exp_class):
@@ -240,3 +231,73 @@ async def test_tuya_quirkbuilder(device_mock):
     assert electrical_meas_cluster.get("active_power") == "3"
     assert electrical_meas_cluster.get("rms_current") == "4"
     assert electrical_meas_cluster.get("rms_voltage") == "5"
+
+
+@pytest.mark.parametrize(
+    "read_attr_spell,data_query_spell",
+    [
+        (True, False),
+        (False, True),
+        (True, True),
+        (False, False),
+    ],
+)
+async def test_tuya_spell(device_mock, read_attr_spell, data_query_spell):
+    """Test that enchanted Tuya devices have their spells applied during configuration."""
+    registry = DeviceRegistry()
+
+    entry = (
+        TuyaQuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
+        .tuya_battery(dp_id=1)
+        .tuya_onoff(dp_id=3)
+        .tuya_enchantment(
+            read_attr_spell=read_attr_spell, data_query_spell=data_query_spell
+        )
+        .skip_configuration()
+        .add_to_registry()
+    )
+
+    # coverage for overridden __eq__ method
+    assert entry.adds_metadata[0] != entry.adds_metadata[1]
+    assert entry.adds_metadata[0] != entry
+
+    quirked = registry.get_device(device_mock)
+
+    assert isinstance(quirked, CustomDeviceV2)
+    assert quirked in registry
+
+    request_patch = mock.patch("zigpy.zcl.Cluster.request", mock.AsyncMock())
+    with request_patch as request_mock:
+        request_mock.return_value = (foundation.Status.SUCCESS, "done")
+
+        # call apply_custom_configuration() on each EnchantedDevice
+        # ZHA does this during device configuration normally
+        await quirked.apply_custom_configuration()
+
+        # the number of Tuya spells that are allowed to be cast, so the sum of enabled Tuya spells
+        enabled_tuya_spells_num = (
+            quirked.tuya_spell_read_attributes + quirked.tuya_spell_data_query
+        )
+
+        # verify request was called the correct number of times
+        assert request_mock.call_count == enabled_tuya_spells_num
+
+        # used to check list of mock calls below
+        messages = 0
+
+        # check 'attribute read spell' was cast correctly (if enabled)
+        if quirked.tuya_spell_read_attributes:
+            assert (
+                request_mock.mock_calls[messages][1][1]
+                == foundation.GeneralCommand.Read_Attributes
+            )
+            assert request_mock.mock_calls[messages][1][3] == [4, 0, 1, 5, 7, 65534]
+            messages += 1
+
+        # check 'query data spell' was cast correctly (if enabled)
+        if quirked.tuya_spell_data_query:
+            assert not request_mock.mock_calls[messages][1][0]
+            assert request_mock.mock_calls[messages][1][1] == TUYA_QUERY_DATA
+            messages += 1
+
+        request_mock.reset_mock()
