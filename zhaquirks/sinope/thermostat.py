@@ -198,7 +198,7 @@ class CycleOutput(t.uint16_t):
 
 
 class Language(t.enum8):
-    """Display langauge mode values."""
+    """Display_language values."""
 
     En = 0x00
     Fr = 0x01
