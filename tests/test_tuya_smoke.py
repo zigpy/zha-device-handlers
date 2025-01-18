@@ -16,11 +16,19 @@ zhaquirks.setup()
     [
         ("_TZE200_dq1mfjug", "TS0601", []),
         ("_TZE200_m9skfctm", "TS0601", []),
-        ("_TZE200_ntcy3xu1", "TS0601", []),
         ("_TZE200_rccxox8p", "TS0601", []),
         ("_TZE284_rccxox8p", "TS0601", []),
         ("_TZE200_vzekyi4c", "TS0601", []),
         ("_TZE204_vawy74yh", "TS0601", []),
+        (
+            "_TZE200_ntcy3xu1",
+            "TS0601",
+            (
+                (b"\x09\x3a\x02\x00\x12\x0e\x04\x00\x01\x02", 200),
+                (b"\x09\x3a\x02\x00\x12\x0e\x04\x00\x01\x01", 80),
+                (b"\x09\x3a\x02\x00\x12\x0e\x04\x00\x01\x00", 10),
+            ),
+        ),
         (
             "_TZE204_ntcy3xu1",
             "TS0601",
