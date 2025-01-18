@@ -99,40 +99,40 @@ class TimeFormat(t.enum8):
 
 
 class WeatherIcon(t.enum8):
-    """Show weather icons on screen."""
+    """weather_icons values."""
 
     Hide = 0x00
     Sun = 0x01
-    Sun = 0x02
-    CloudSun = 0x03
-    CloudSun = 0x04
+    Sun_2 = 0x02
+    Cloud_sun = 0x03
+    Cloud_sun_2 = 0x04
     Cloud = 0x05
-    cloudRainSun = 0x06
-    cloudRainSun = 0x07
-    Cloud = 0x08
-    Cloud = 0x09
-    cloudRain = 0x0A
-    cloudLightning = 0x0B
-    cloudLightning = 0x0C
-    cloudSnow = 0x0D
-    cloudSnow = 0x0E
-    cloudSnow = 0x0F
-    cloudSnow = 0x10
-    cloudFog = 0x11
-    cloudMoon = 0x13
-    cloudMoon = 0x14
-    cloudMoon = 0x15
-    cloudSnow = 0x16
-    cloudRainMoon = 0x17
-    cloudRainMoon = 0x18
-    cloudRainMoon = 0x19
-    cloudSnow = 0x1A
-    cloudRain = 0x1C
-    cloudRain = 0x1D
-    cloudRainSun = 0x1E
-    cloudRainMoon = 0x1F
-    cloudRainSun = 0x20
-    cloudRainMoon = 0x21
+    Cloud_2 = 0x08
+    Cloud_3 = 0x09
+    Cloud_rain_sun = 0x06
+    Cloud_rain_sun_2 = 0x07
+    Cloud_rain_sun_3 = 0x1E
+    Cloud_rain_sun_4 = 0x20
+    Cloud_rain = 0x0A
+    Cloud_rain_2 = 0x1C
+    Cloud_rain_3 = 0x1D
+    Cloud_lightning = 0x0B
+    Cloud_lightning_2 = 0x0C
+    Cloud_snow = 0x0D
+    Cloud_snow_2 = 0x0E
+    Cloud_snow_3 = 0x0F
+    Cloud_snow_4 = 0x10
+    Cloud_snow_5 = 0x16
+    Cloud_snow_6 = 0x1A
+    Cloud_fog = 0x11
+    Cloud_moon = 0x13
+    Cloud_moon_2 = 0x14
+    Cloud_moon_3 = 0x15
+    Cloud_rain_moon = 0x17
+    Cloud_rain_moon_2 = 0x18
+    Cloud_rain_moon_3 = 0X19
+    Cloud_rain_moon_4 = 0X1E
+    Cloud_rain_moon_5 = 0X21
 
 
 class GfciStatus(t.enum8):
