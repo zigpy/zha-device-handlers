@@ -37,7 +37,7 @@ class TuyaSmokeDetectorCluster(TuyaManufClusterAttributes):
         if attrid == self.AttributeDefs.smoke_detected.id:
             self.endpoint.ias_zone.update_attribute(
                 IasZone.AttributeDefs.zone_status.id,
-                lambda x: IasZone.ZoneStatus.Alarm_1 if x == 0 else 0,
+                IasZone.ZoneStatus.Alarm_1 if value == 0 else 0,
             )
 
 
