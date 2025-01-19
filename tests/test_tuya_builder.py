@@ -120,7 +120,10 @@ async def test_battery_methods(
     ep = quirked.endpoints[1]
 
     assert ep.power is not None
-    assert isinstance(ep.power, TuyaPowerConfigurationCluster)
+    if power_cfg:
+        assert isinstance(ep.power, power_cfg)
+    else:
+        assert isinstance(ep.power, TuyaPowerConfigurationCluster)
 
     assert ep.power.get("battery_size") == expected_size
     assert ep.power.get("battery_quantity") == expected_qty
