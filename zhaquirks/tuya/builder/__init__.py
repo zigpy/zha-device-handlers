@@ -164,6 +164,22 @@ class TuyaQuirkBuilder(QuirkBuilder):
         self.new_attributes: set[foundation.ZCLAttributeDef] = set()
         super().__init__(manufacturer, model, registry)
 
+    def _tuya_battery(
+        self,
+        dp_id: int,
+        power_cfg: PowerConfiguration,
+        scale: float,
+    ) -> QuirkBuilder:
+        """Add a Tuya Battery Power Configuration."""
+        self.tuya_dp(
+            dp_id,
+            power_cfg.ep_attribute,
+            PowerConfiguration.AttributeDefs.battery_percentage_remaining.name,
+            converter=lambda x: x * scale,
+        )
+        self.adds(power_cfg)
+        return self
+
     def tuya_battery(
         self,
         dp_id: int,
@@ -174,6 +190,9 @@ class TuyaQuirkBuilder(QuirkBuilder):
         scale: float = 2,
     ) -> QuirkBuilder:
         """Add a Tuya Battery Power Configuration."""
+
+        if power_cfg:
+            return self._tuya_battery(dp_id=dp_id, power_cfg=power_cfg, scale=scale)
 
         if not battery_voltage and (battery_type and battery_qty):
             battery_voltage = BATTERY_VOLTAGES.get(battery_type)
@@ -187,17 +206,9 @@ class TuyaQuirkBuilder(QuirkBuilder):
                 PowerConfiguration.AttributeDefs.battery_quantity.id: battery_qty,
             }
 
-        if not power_cfg:
-            power_cfg = TuyaPowerConfigurationClusterBattery
-
-        self.tuya_dp(
-            dp_id,
-            power_cfg.ep_attribute,
-            "battery_percentage_remaining",
-            converter=lambda x: x * scale,
+        return self._tuya_battery(
+            dp_id=dp_id, power_cfg=TuyaPowerConfigurationClusterBattery, scale=scale
         )
-        self.adds(power_cfg)
-        return self
 
     def tuya_contact(self, dp_id: int):
         """Add a Tuya IAS contact sensor."""
