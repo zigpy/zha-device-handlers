@@ -1,10 +1,28 @@
 """Tuya temp and humidity sensors."""
 
+from zigpy.quirks.v2 import EntityPlatform, EntityType
+from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature, UnitOfTime
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
 
 from zhaquirks.tuya import TuyaPowerConfigurationCluster2AAA
 from zhaquirks.tuya.builder import TuyaQuirkBuilder, TuyaTemperatureMeasurement
+
+
+class TuyaTempUnitConvert(t.enum8):
+    """Tuya temperature unit convert enum."""
+
+    Celsius = 0x00
+    Fahrenheit = 0x01
+
+
+class TuyaNousTempHumiAlarm(t.enum8):
+    """Tuya temperature and humidity alarm enum."""
+
+    LowerAlarm = 0x00
+    UpperAlarm = 0x01
+    Canceled = 0x02
+
 
 (
     TuyaQuirkBuilder("_TZE200_bjawzodf", "TS0601")
@@ -54,6 +72,150 @@ from zhaquirks.tuya.builder import TuyaQuirkBuilder, TuyaTemperatureMeasurement
     .adds(TuyaTemperatureMeasurement)
     .tuya_humidity(dp_id=2)
     .tuya_battery(dp_id=4)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+# TH01Z - Temperature and humidity sensor with clock
+(
+    TuyaQuirkBuilder("_TZE200_lve3dvpy", "TS0601")
+    .applies_to("_TZE200_c7emyjom", "TS0601")
+    .applies_to("_TZE200_locansqn", "TS0601")
+    .applies_to("_TZE200_qrztc3ev", "TS0601")
+    .applies_to("_TZE200_snloy4rw", "TS0601")
+    .applies_to("_TZE200_eanjj2pa", "TS0601")
+    .applies_to("_TZE200_ydrdfkim", "TS0601")
+    .applies_to("_TZE284_locansqn", "TS0601")
+    .tuya_temperature(dp_id=1, scale=10)
+    .tuya_humidity(dp_id=2)
+    .tuya_battery(dp_id=4)
+    .tuya_number(
+        dp_id=17,
+        attribute_name="temperature_report_interval",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.MINUTES,
+        min_value=5,
+        max_value=120,
+        step=5,
+        entity_type=EntityType.CONFIG,
+        translation_key="temperature_report_interval",
+        fallback_name="Temperature report interval",
+    )
+    .tuya_number(
+        dp_id=18,
+        attribute_name="humidity_report_interval",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.MINUTES,
+        min_value=5,
+        max_value=120,
+        step=5,
+        entity_type=EntityType.CONFIG,
+        translation_key="humidity_report_interval",
+        fallback_name="Humidity report interval",
+    )
+    .tuya_enum(
+        dp_id=9,
+        attribute_name="temp_unit_conv",
+        enum_class=TuyaTempUnitConvert,
+        entity_type=EntityType.CONFIG,
+        translation_key="self_test",
+        fallback_name="Display unit",
+    )
+    .tuya_enum(
+        dp_id=14,
+        attribute_name="temperature_alarm",
+        enum_class=TuyaNousTempHumiAlarm,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.STANDARD,
+        translation_key="temperature_alarm",
+        fallback_name="Temperature alarm",
+    )
+    .tuya_number(
+        dp_id=10,
+        attribute_name="max_temperature",
+        type=t.uint16_t,
+        unit=UnitOfTemperature.CELSIUS,
+        min_value=-20,
+        max_value=60,
+        step=1,
+        multiplier=0.1,
+        entity_type=EntityType.CONFIG,
+        translation_key="max_temperature",
+        fallback_name="Alarm temperature max",
+    )
+    .tuya_number(
+        dp_id=11,
+        attribute_name="min_temperature",
+        type=t.uint16_t,
+        unit=UnitOfTemperature.CELSIUS,
+        min_value=-20,
+        max_value=60,
+        step=1,
+        multiplier=0.1,
+        entity_type=EntityType.CONFIG,
+        translation_key="min_temperature",
+        fallback_name="Alarm temperature min",
+    )
+    .tuya_number(
+        dp_id=19,
+        attribute_name="temperature_sensitivity",
+        type=t.uint16_t,
+        unit=UnitOfTemperature.CELSIUS,
+        min_value=0.1,
+        max_value=50,
+        step=0.1,
+        multiplier=0.1,
+        entity_type=EntityType.CONFIG,
+        translation_key="temperature_sensitivity",
+        fallback_name="Temperature sensitivity",
+    )
+    .tuya_enum(
+        dp_id=15,
+        attribute_name="humidity_alarm",
+        enum_class=TuyaNousTempHumiAlarm,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.STANDARD,
+        translation_key="humidity_alarm",
+        fallback_name="Humidity alarm",
+    )
+    .tuya_number(
+        dp_id=12,
+        attribute_name="max_humidity",
+        type=t.uint16_t,
+        unit=PERCENTAGE,
+        min_value=0,
+        max_value=100,
+        step=1,
+        entity_type=EntityType.CONFIG,
+        translation_key="max_humidity",
+        fallback_name="Alarm humidity max",
+    )
+    .tuya_number(
+        dp_id=13,
+        attribute_name="min_humidity",
+        type=t.uint16_t,
+        unit=PERCENTAGE,
+        min_value=0,
+        max_value=100,
+        step=1,
+        entity_type=EntityType.CONFIG,
+        translation_key="min_humidity",
+        fallback_name="Alarm humidity min",
+    )
+    .tuya_number(
+        dp_id=20,
+        attribute_name="humidity_sensitivity",
+        type=t.uint16_t,
+        unit=PERCENTAGE,
+        min_value=1,
+        max_value=100,
+        step=1,
+        entity_type=EntityType.CONFIG,
+        translation_key="humidity_report_interval",
+        fallback_name="Humidity report interval",
+    )
     .skip_configuration()
     .add_to_registry()
 )

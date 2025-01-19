@@ -28,6 +28,19 @@ zhaquirks.setup()
         ("_TZE200_bq5c8xfe", "TS0601", 100, 10, True),
         ("_TZE200_vs0skpuc", "TS0601", 100, 10, True),
         ("_TZE200_44af8vyi", "TS0601", 100, 10, True),
+        (
+            "_TZE200_lve3dvpy",
+            "TS0601",
+            100,
+            10,
+        ),  # TH01Z - Temperature and humidity sensor with clock
+        ("_TZE200_c7emyjom", "TS0601", 100, 10),
+        ("_TZE200_locansqn", "TS0601", 100, 10),
+        ("_TZE200_qrztc3ev", "TS0601", 100, 10),
+        ("_TZE200_snloy4rw", "TS0601", 100, 10),
+        ("_TZE200_eanjj2pa", "TS0601", 100, 10),
+        ("_TZE200_ydrdfkim", "TS0601", 100, 10),
+        ("_TZE284_locansqn", "TS0601", 100, 10),
     ],
 )
 async def test_handle_get_data(
