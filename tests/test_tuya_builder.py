@@ -1,5 +1,6 @@
 """Tests for TuyaQuirkBuilder."""
 
+import datetime
 from unittest import mock
 
 import pytest
@@ -9,13 +10,9 @@ import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, BatterySize
 
-from tests.common import ClusterListener, wait_for_zigpy_tasks
+from tests.common import ClusterListener, MockDatetime, wait_for_zigpy_tasks
 import zhaquirks
-from zhaquirks.tuya import (
-    TUYA_QUERY_DATA,
-    TuyaPowerConfigurationCluster,
-    TuyaPowerConfigurationCluster2AAA,
-)
+from zhaquirks.tuya import TUYA_QUERY_DATA, TUYA_SET_TIME
 from zhaquirks.tuya.builder import (
     TuyaAirQualityVOC,
     TuyaCO2Concentration,
@@ -31,6 +28,9 @@ from zhaquirks.tuya.builder import (
     TuyaValveWaterConsumed,
 )
 from zhaquirks.tuya.mcu import TuyaMCUCluster, TuyaOnOffNM
+from zhaquirks.tuya.ts0601_sensor import NoManufTimeTuyaMCUCluster
+
+ZCL_TUYA_SET_TIME = b"\x09\x12\x24\x0d\x00"
 
 zhaquirks.setup()
 
@@ -307,3 +307,49 @@ async def test_tuya_spell(device_mock, read_attr_spell, data_query_spell):
             messages += 1
 
         request_mock.reset_mock()
+
+
+async def test_tuya_mcu_set_time(device_mock):
+    """Test TuyaQuirkBuilder replacement cluster, set_time requests (0x24) messages for MCU devices."""
+
+    registry = DeviceRegistry()
+
+    (
+        TuyaQuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
+        .tuya_battery(dp_id=1)
+        .skip_configuration()
+        .add_to_registry(replacement_cluster=NoManufTimeTuyaMCUCluster)
+    )
+
+    quirked = registry.get_device(device_mock)
+    assert isinstance(quirked, CustomDeviceV2)
+    assert quirked in registry
+
+    ep = quirked.endpoints[1]
+
+    assert not ep.tuya_manufacturer._is_manuf_specific
+    assert not ep.tuya_manufacturer.server_commands[
+        TUYA_SET_TIME
+    ].is_manufacturer_specific
+
+    # Mock datetime
+    origdatetime = datetime.datetime
+    datetime.datetime = MockDatetime
+
+    # simulate a SET_TIME message
+    hdr, args = ep.tuya_manufacturer.deserialize(ZCL_TUYA_SET_TIME)
+    assert hdr.command_id == TUYA_SET_TIME
+
+    with mock.patch.object(
+        ep.tuya_manufacturer._endpoint,
+        "request",
+        return_value=foundation.Status.SUCCESS,
+    ) as m1:
+        ep.tuya_manufacturer.handle_message(hdr, args)
+        await wait_for_zigpy_tasks()
+
+        res_hdr = foundation.ZCLHeader.deserialize(m1.await_args[1]["data"])
+        assert not res_hdr[0].manufacturer
+        assert not res_hdr[0].frame_control.is_manufacturer_specific
+
+    datetime.datetime = origdatetime  # restore datetime
