@@ -9,8 +9,8 @@ from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 from zhaquirks import LocalDataCluster
-from zhaquirks.tuya import TuyaManufClusterAttributes
-from zhaquirks.tuya.builder import TuyaPowerConfigurationCluster2AAA, TuyaQuirkBuilder
+from zhaquirks.tuya import TuyaManufClusterAttributes, TuyaPowerConfigurationCluster2AAA
+from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 
 class TuyaIasZone(LocalDataCluster, IasZone):
