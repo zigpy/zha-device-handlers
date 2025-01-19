@@ -140,6 +140,9 @@ async def test_tuya_quirkbuilder(device_mock):
         A = 0x00
         B = 0x01
 
+    class ModTuyaMCUCluster(TuyaMCUCluster):
+        """Modified Cluster."""
+
     entry = (
         TuyaQuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
         .tuya_battery(dp_id=1)
@@ -178,7 +181,7 @@ async def test_tuya_quirkbuilder(device_mock):
             fallback_name="Test enum",
         )
         .skip_configuration()
-        .add_to_registry()
+        .add_to_registry(replacement_cluster=ModTuyaMCUCluster)
     )
 
     # coverage for overridden __eq__ method
@@ -195,6 +198,7 @@ async def test_tuya_quirkbuilder(device_mock):
     assert isinstance(ep.basic, Basic)
 
     assert ep.tuya_manufacturer is not None
+    assert isinstance(ep.tuya_manufacturer, ModTuyaMCUCluster)
     assert isinstance(ep.tuya_manufacturer, TuyaMCUCluster)
 
     tuya_cluster = ep.tuya_manufacturer

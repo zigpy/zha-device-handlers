@@ -4,9 +4,15 @@ from zigpy.quirks.v2 import EntityPlatform, EntityType
 from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature, UnitOfTime
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
+from zigpy.zcl import foundation
 
-from zhaquirks.tuya import TuyaPowerConfigurationCluster2AAA
+from zhaquirks.tuya import (
+    TUYA_SET_TIME,
+    TuyaPowerConfigurationCluster2AAA,
+    TuyaTimePayload,
+)
 from zhaquirks.tuya.builder import TuyaQuirkBuilder, TuyaTemperatureMeasurement
+from zhaquirks.tuya.mcu import TuyaMCUCluster
 
 
 class TuyaTempUnitConvert(t.enum8):
@@ -75,6 +81,26 @@ class TuyaNousTempHumiAlarm(t.enum8):
     .skip_configuration()
     .add_to_registry()
 )
+
+
+class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
+    """Tuya Manufacturer Cluster with set_time mod."""
+
+    set_time_offset = 1970
+    set_time_local_offset = 1970
+
+    server_commands = TuyaMCUCluster.server_commands.copy()
+    server_commands.update(
+        {
+            TUYA_SET_TIME: foundation.ZCLCommandDef(
+                "set_time",
+                {"time": TuyaTimePayload},
+                False,
+                is_manufacturer_specific=False,
+            ),
+        }
+    )
+
 
 # TH01Z - Temperature and humidity sensor with clock
 (
@@ -206,18 +232,18 @@ class TuyaNousTempHumiAlarm(t.enum8):
     )
     .tuya_number(
         dp_id=20,
-        attribute_name="humidity_report_interval",
+        attribute_name="humidity_sensitivity",
         type=t.uint16_t,
         unit=PERCENTAGE,
         min_value=1,
         max_value=100,
         step=1,
         entity_type=EntityType.CONFIG,
-        translation_key="humidity_report_interval",
-        fallback_name="Humidity report interval",
+        translation_key="humidity_sensitivity",
+        fallback_name="Humidity sensitivity",
     )
     .skip_configuration()
-    .add_to_registry()
+    .add_to_registry(replacement_cluster=NoManufTimeTuyaMCUCluster)
 )
 
 (
