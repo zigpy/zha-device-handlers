@@ -13,6 +13,7 @@ from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
 from zigpy.zcl import foundation
+from zigpy.zcl.clusters.general import BatterySize
 from zigpy.zcl.clusters.measurement import (
     PM25,
     CarbonDioxideConcentration,
@@ -30,11 +31,26 @@ from zhaquirks.tuya import (
     BaseEnchantedDevice,
     PowerConfiguration,
     TuyaLocalCluster,
-    TuyaPowerConfigurationCluster2AAA,
+    TuyaPowerConfigurationCluster,
 )
 from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster, TuyaOnOffNM
 
 MOL_VOL_AIR_NTP = 0.2445  # molar volume of air at NTP in cL/mol
+
+
+BATTERY_VOLTAGES = {
+    BatterySize.No_battery: None,
+    BatterySize.Built_in: None,
+    BatterySize.Other: None,
+    BatterySize.AA: 15,
+    BatterySize.AAA: 15,
+    BatterySize.C: 15,
+    BatterySize.D: 15,
+    BatterySize.AA: 15,
+    BatterySize.CR2: 30,
+    BatterySize.CR123A: 30,
+    BatterySize.Unknown: None,
+}
 
 
 class TuyaCO2Concetration(CarbonDioxideConcentration, TuyaLocalCluster):
@@ -151,10 +167,29 @@ class TuyaQuirkBuilder(QuirkBuilder):
     def tuya_battery(
         self,
         dp_id: int,
-        power_cfg: PowerConfiguration = TuyaPowerConfigurationCluster2AAA,
+        power_cfg: PowerConfiguration | None = None,
+        battery_type: BatterySize | None = BatterySize.AA,
+        battery_qty: int | None = 2,
+        battery_voltage: int | None = None,
         scale: float = 2,
     ) -> QuirkBuilder:
         """Add a Tuya Battery Power Configuration."""
+
+        if not battery_voltage and (battery_type and battery_qty):
+            battery_voltage = BATTERY_VOLTAGES.get(battery_type)
+
+        class TuyaPowerConfigurationClusterBattery(TuyaPowerConfigurationCluster):
+            """PowerConfiguration cluster for Tuya devices."""
+
+            _CONSTANT_ATTRIBUTES = {
+                PowerConfiguration.AttributeDefs.battery_size.id: battery_type,
+                PowerConfiguration.AttributeDefs.battery_rated_voltage.id: battery_voltage,
+                PowerConfiguration.AttributeDefs.battery_quantity.id: battery_qty,
+            }
+
+        if not power_cfg:
+            power_cfg = TuyaPowerConfigurationClusterBattery
+
         self.tuya_dp(
             dp_id,
             power_cfg.ep_attribute,

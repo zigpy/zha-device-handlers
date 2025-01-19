@@ -7,11 +7,15 @@ from zigpy.quirks.registry import DeviceRegistry
 from zigpy.quirks.v2 import CustomDeviceV2
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import Basic
+from zigpy.zcl.clusters.general import Basic, BatterySize
 
 from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
-from zhaquirks.tuya import TUYA_QUERY_DATA
+from zhaquirks.tuya import (
+    TUYA_QUERY_DATA,
+    TuyaPowerConfigurationCluster,
+    TuyaPowerConfigurationCluster2AAA,
+)
 from zhaquirks.tuya.builder import (
     TuyaAirQualityVOC,
     TuyaCO2Concetration,
@@ -19,7 +23,6 @@ from zhaquirks.tuya.builder import (
     TuyaIasContact,
     TuyaIasFire,
     TuyaPM25Concetration,
-    TuyaPowerConfigurationCluster2AAA,
     TuyaQuirkBuilder,
     TuyaRelativeHumidity,
     TuyaSoilMoisture,
@@ -34,7 +37,7 @@ zhaquirks.setup()
 @pytest.mark.parametrize(
     "method_name,attr_name,exp_class",
     [
-        ("tuya_battery", "power", TuyaPowerConfigurationCluster2AAA),
+        ("tuya_battery", "power", TuyaPowerConfigurationCluster),
         ("tuya_metering", "smartenergy_metering", TuyaValveWaterConsumed),
         ("tuya_onoff", "on_off", TuyaOnOffNM),
         ("tuya_soil_moisture", "soil_moisture", TuyaSoilMoisture),
@@ -72,6 +75,65 @@ async def test_convenience_methods(device_mock, method_name, attr_name, exp_clas
     ep_attr = getattr(ep, attr_name)
     assert ep_attr is not None
     assert isinstance(ep_attr, exp_class)
+
+
+@pytest.mark.parametrize(
+    "power_cfg,battery_type,battery_qty,battery_voltage",
+    [
+        (TuyaPowerConfigurationCluster2AAA, None, None, None),
+        (None, BatterySize.CR123A, 1, 60),
+        (None, BatterySize.CR123A, 1, None),
+        (None, BatterySize.AA, None, None),
+        (None, None, None, None),
+    ],
+)
+async def test_battery_methods(
+    device_mock, power_cfg, battery_type, battery_qty, battery_voltage
+):
+    """Test the battery convenience method."""
+
+    registry = DeviceRegistry()
+
+    (
+        TuyaQuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
+        .tuya_battery(
+            dp_id=1,
+            power_cfg=power_cfg,
+            battery_type=battery_type,
+            battery_qty=battery_qty,
+            battery_voltage=battery_voltage,
+        )
+        .tuya_onoff(dp_id=3)
+        .skip_configuration()
+        .add_to_registry()
+    )
+
+    quirked = registry.get_device(device_mock)
+    ep = quirked.endpoints[1]
+
+    assert ep.power is not None
+
+    if power_cfg:
+        assert isinstance(ep.power, TuyaPowerConfigurationCluster2AAA)
+        assert ep.power.get("battery_size") == BatterySize.AAA
+        assert ep.power.get("battery_quantity") == 2
+        assert ep.power.get("battery_rated_voltage") == 15
+
+    elif battery_type or battery_qty or battery_voltage:
+        if battery_type:
+            assert ep.power.get("battery_size") == battery_type
+        else:
+            assert ep.power.get("battery_size") == BatterySize.AA
+
+        if battery_qty:
+            assert ep.power.get("battery_quantity") == battery_qty
+        else:
+            assert ep.power.get("battery_quantity") is None
+
+        if battery_voltage:
+            assert ep.power.get("battery_rated_voltage") == battery_voltage
+        elif battery_qty:
+            assert ep.power.get("battery_rated_voltage") == 30
 
 
 async def test_tuya_quirkbuilder(device_mock):

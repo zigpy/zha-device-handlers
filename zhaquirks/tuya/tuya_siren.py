@@ -4,8 +4,8 @@ from zigpy.quirks.v2 import EntityPlatform, EntityType
 from zigpy.quirks.v2.homeassistant import UnitOfTime
 from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 import zigpy.types as t
+from zigpy.zcl.clusters.general import BatterySize
 
-from zhaquirks.tuya import TuyaPowerConfigurationClusterOther
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 
@@ -62,7 +62,9 @@ class TuyaSirenRingtone(t.enum8):
         translation_key="siren_on",
         fallback_name="Siren on",
     )
-    .tuya_battery(dp_id=15, power_cfg=TuyaPowerConfigurationClusterOther)
+    .tuya_battery(
+        dp_id=15, battery_type=BatterySize.Other, battery_qty=1, battery_voltage=30
+    )
     .tuya_binary_sensor(
         dp_id=20,
         attribute_name="tamper_state",

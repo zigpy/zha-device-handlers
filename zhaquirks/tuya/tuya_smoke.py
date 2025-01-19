@@ -1,6 +1,7 @@
 """Smoke Sensor."""
 
-from zhaquirks.tuya.builder import TuyaPowerConfigurationCluster2AAA, TuyaQuirkBuilder
+from zhaquirks.tuya import TuyaPowerConfigurationCluster2AAA
+from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 (
     TuyaQuirkBuilder("_TZE200_aycxwiau", "TS0601")
