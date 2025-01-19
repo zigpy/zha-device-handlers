@@ -382,6 +382,21 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
 class SinopeTechnologiesThermostatCluster(CustomCluster, Thermostat):
     """SinopeTechnologiesThermostatCluster custom cluster."""
 
+    def _update_attribute(self, attrid, value):
+        """Adjust temperature values."""
+        if attrid == self.AttributeDefs.occupied_cooling_setpoint.id:
+            value = float(value / 100)
+        super()._update_attribute(attrid, value)
+        if attrid == self.AttributeDefs.occupied_heating_setpoint.id:
+            value = float(value / 100)
+        super()._update_attribute(attrid, value)
+        if attrid == self.AttributeDefs.unoccupied_cooling_setpoint.id:
+            value = float(value / 100)
+        super()._update_attribute(attrid, value)
+        if attrid == self.AttributeDefs.unoccupied_heating_setpoint.id:
+            value = float(value / 100)
+        super()._update_attribute(attrid, value)
+
     Occupancy: Final = Occupancy
     Backlight: Final = Backlight
     CycleOutput: Final = CycleOutput
