@@ -133,6 +133,7 @@ class WeatherIcon(t.enum8):
     Cloudrainmoon3 = 0X19
     Cloudrainmoon4 = 0X1F
     Cloudrainmoon5 = 0X21
+    Moonstar = 0x12
 
 
 class GfciStatus(t.enum8):
