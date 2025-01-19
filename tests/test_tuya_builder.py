@@ -78,17 +78,25 @@ async def test_convenience_methods(device_mock, method_name, attr_name, exp_clas
 
 
 @pytest.mark.parametrize(
-    "power_cfg,battery_type,battery_qty,battery_voltage",
+    "power_cfg,battery_type,battery_qty,battery_voltage,"
+    "expected_size,expected_qty,expected_voltage",
     [
-        (TuyaPowerConfigurationCluster2AAA, None, None, None),
-        (None, BatterySize.CR123A, 1, 60),
-        (None, BatterySize.CR123A, 1, None),
-        (None, BatterySize.AA, None, None),
-        (None, None, None, None),
+        (TuyaPowerConfigurationCluster2AAA, None, None, None, BatterySize.AAA, 2, 15),
+        (None, BatterySize.CR123A, 1, 60, BatterySize.CR123A, 1, 60),
+        (None, BatterySize.CR123A, 1, None, BatterySize.CR123A, 1, 30),
+        (None, BatterySize.AA, None, None, BatterySize.AA, None, None),
+        (None, None, None, None, None, None, None),
     ],
 )
 async def test_battery_methods(
-    device_mock, power_cfg, battery_type, battery_qty, battery_voltage
+    device_mock,
+    power_cfg,
+    battery_type,
+    battery_qty,
+    battery_voltage,
+    expected_size,
+    expected_qty,
+    expected_voltage,
 ):
     """Test the battery convenience method."""
 
@@ -112,28 +120,11 @@ async def test_battery_methods(
     ep = quirked.endpoints[1]
 
     assert ep.power is not None
+    assert isinstance(ep.power, TuyaPowerConfigurationCluster)
 
-    if power_cfg:
-        assert isinstance(ep.power, TuyaPowerConfigurationCluster2AAA)
-        assert ep.power.get("battery_size") == BatterySize.AAA
-        assert ep.power.get("battery_quantity") == 2
-        assert ep.power.get("battery_rated_voltage") == 15
-
-    elif battery_type or battery_qty or battery_voltage:
-        if battery_type:
-            assert ep.power.get("battery_size") == battery_type
-        else:
-            assert ep.power.get("battery_size") == BatterySize.AA
-
-        if battery_qty:
-            assert ep.power.get("battery_quantity") == battery_qty
-        else:
-            assert ep.power.get("battery_quantity") is None
-
-        if battery_voltage:
-            assert ep.power.get("battery_rated_voltage") == battery_voltage
-        elif battery_qty:
-            assert ep.power.get("battery_rated_voltage") == 30
+    assert ep.power.get("battery_size") == expected_size
+    assert ep.power.get("battery_quantity") == expected_qty
+    assert ep.power.get("battery_rated_voltage") == expected_voltage
 
 
 async def test_tuya_quirkbuilder(device_mock):
