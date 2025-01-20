@@ -114,6 +114,23 @@ class TuyaHumanMotionState(t.enum8):
     Large = 0x02
 
 
+class TuyaMotionPresenceSensitivity(t.enum8):
+    """Tuya motion presence sensitivity enum."""
+
+    Low = 0x00
+    Medium = 0x01
+    High = 0x02
+
+
+class TuyaMotionFadeTime(t.enum8):
+    """Tuya motion fade time enum."""
+
+    _10_seconds = 0x00
+    _30_seconds = 0x01
+    _60_seconds = 0x02
+    _120_seconds = 0x03
+
+
 base_tuya_motion = (
     TuyaQuirkBuilder()
     .adds(TuyaOccupancySensing)
@@ -695,6 +712,58 @@ base_tuya_motion = (
         fallback_name="Fade time",
     )
     .adds(TuyaIlluminanceCluster)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# TuyaZG-204ZL
+(
+    TuyaQuirkBuilder("_TZE200_3towulqd", "TS0601")
+    .applies_to("_TZE200_1ibpyhdc", "TS0601")
+    .applies_to("_TZE200_bh3n6gk8", "TS0601")
+    .applies_to("_TZE200_ttcovulf", "TS0601")
+    .tuya_dp(
+        dp_id=1,
+        ep_attribute=TuyaOccupancySensing.ep_attribute,
+        attribute_name=OccupancySensing.AttributeDefs.occupancy.name,
+        converter=lambda x: x == 1,
+    )
+    .adds(TuyaOccupancySensing)
+    .tuya_battery(dp_id=4)
+    .tuya_enum(
+        dp_id=9,
+        attribute_name="presence_sensitivity",
+        enum_class=TuyaMotionPresenceSensitivity,
+        translation_key="presence_sensitivity",
+        fallback_name="Presence sensitivity",
+    )
+    .tuya_enum(
+        dp_id=10,
+        attribute_name="fade_time",
+        enum_class=TuyaMotionFadeTime,
+        translation_key="fade_time",
+        fallback_name="Fade time",
+    )
+    .tuya_dp(
+        dp_id=12,
+        ep_attribute=TuyaIlluminanceCluster.ep_attribute,
+        attribute_name=TuyaIlluminanceCluster.AttributeDefs.measured_value.name,
+        converter=lambda x: 10000 * math.log10(x) + 1 if x != 0 else 0,
+    )
+    .adds(TuyaIlluminanceCluster)
+    .tuya_number(
+        dp_id=105,
+        attribute_name="illuminance_interval",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.MINUTES,
+        min_value=1,
+        max_value=720,
+        step=1,
+        translation_key="illuminance_interval",
+        fallback_name="Illuminance interval",
+    )
     .skip_configuration()
     .add_to_registry()
 )
