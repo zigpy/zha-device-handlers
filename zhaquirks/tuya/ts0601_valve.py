@@ -6,12 +6,9 @@ from zigpy.quirks.v2 import EntityPlatform, EntityType
 from zigpy.quirks.v2.homeassistant import UnitOfTime
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
+from zigpy.zcl.clusters.general import BatterySize
 
-from zhaquirks.tuya import (
-    TUYA_CLUSTER_ID,
-    TuyaPowerConfigurationCluster2AA,
-    TuyaPowerConfigurationCluster4AA,
-)
+from zhaquirks.tuya import TUYA_CLUSTER_ID
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import TuyaMCUCluster
 
@@ -45,7 +42,7 @@ class TuyaValveTimerState(t.enum8):
         attribute_name="dp_6",
         type=t.uint32_t,
     )
-    .tuya_battery(dp_id=7, power_cfg=TuyaPowerConfigurationCluster4AA)
+    .tuya_battery(dp_id=7, battery_type=BatterySize.AA, battery_qty=4)
     .tuya_enum(
         dp_id=10,
         attribute_name="weather_delay",
@@ -134,7 +131,7 @@ class ParksideTuyaValveManufCluster(TuyaMCUCluster):
         translation_key="time_left",
         fallback_name="Time left",
     )
-    .tuya_battery(dp_id=11, power_cfg=TuyaPowerConfigurationCluster4AA)
+    .tuya_battery(dp_id=11, battery_type=BatterySize.AA, battery_qty=4)
     .tuya_switch(
         dp_id=108,
         attribute_name="frost_lock",
@@ -202,7 +199,7 @@ def giex_string_to_ts(v: str) -> int | None:
 
 gx02_base_quirk = (
     TuyaQuirkBuilder()
-    .tuya_battery(dp_id=108, power_cfg=TuyaPowerConfigurationCluster4AA)
+    .tuya_battery(dp_id=108, battery_type=BatterySize.AA, battery_qty=4)
     .tuya_metering(dp_id=111)
     .tuya_onoff(dp_id=2)
     .tuya_number(
@@ -337,7 +334,7 @@ class GiexIrrigationStatus(t.enum8):
 (
     TuyaQuirkBuilder("_TZE284_8zizsafo", "TS0601")  # Giex GX04
     .applies_to("_TZE284_eaet5qt5", "TS0601")  # Insoma SGW08W
-    .tuya_battery(dp_id=59, power_cfg=TuyaPowerConfigurationCluster4AA)
+    .tuya_battery(dp_id=59, battery_type=BatterySize.AA, battery_qty=4)
     .tuya_switch(
         dp_id=1,
         attribute_name="valve_on_off_1",
@@ -424,7 +421,7 @@ class GiexIrrigationStatus(t.enum8):
 (
     TuyaQuirkBuilder("_TZE200_2wg5qrjy", "TS0601")
     .tuya_onoff(dp_id=1)
-    .tuya_battery(dp_id=7, power_cfg=TuyaPowerConfigurationCluster2AA)
+    .tuya_battery(dp_id=7, battery_type=BatterySize.AA, battery_qty=2)
     # Water consumed (value comes in deciliters - convert it to liters)
     .tuya_metering(dp_id=5, scale=0.1)
     # Timer time left/remaining (raw value in seconds)
