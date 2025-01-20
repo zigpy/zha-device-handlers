@@ -13,6 +13,7 @@ from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
 from zigpy.zcl import foundation
+from zigpy.zcl.clusters.general import BatterySize
 from zigpy.zcl.clusters.measurement import (
     PM25,
     CarbonDioxideConcentration,
@@ -30,18 +31,33 @@ from zhaquirks.tuya import (
     BaseEnchantedDevice,
     PowerConfiguration,
     TuyaLocalCluster,
-    TuyaPowerConfigurationCluster2AAA,
+    TuyaPowerConfigurationCluster,
 )
 from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster, TuyaOnOffNM
 
 MOL_VOL_AIR_NTP = 0.2445  # molar volume of air at NTP in cL/mol
 
 
-class TuyaCO2Concetration(CarbonDioxideConcentration, TuyaLocalCluster):
+BATTERY_VOLTAGES = {
+    BatterySize.No_battery: None,
+    BatterySize.Built_in: None,
+    BatterySize.Other: None,
+    BatterySize.AA: 15,
+    BatterySize.AAA: 15,
+    BatterySize.C: 15,
+    BatterySize.D: 15,
+    BatterySize.AA: 15,
+    BatterySize.CR2: 30,
+    BatterySize.CR123A: 30,
+    BatterySize.Unknown: None,
+}
+
+
+class TuyaCO2Concentration(CarbonDioxideConcentration, TuyaLocalCluster):
     """Tuya Carbon Dioxide concentration measurement."""
 
 
-class TuyaFormaldehydeConcetration(FormaldehydeConcentration, TuyaLocalCluster):
+class TuyaFormaldehydeConcentration(FormaldehydeConcentration, TuyaLocalCluster):
     """Tuya Formaldehyde concentration measurement."""
 
     MOLECULAR_MASS = 30.026
@@ -63,8 +79,16 @@ class TuyaIasFire(IasZone, TuyaLocalCluster):
     }
 
 
-class TuyaPM25Concetration(PM25, TuyaLocalCluster):
+class TuyaPM25Concentration(PM25, TuyaLocalCluster):
     """Tuya PM25 concentration measurement."""
+
+
+class TuyaIasGas(IasZone, TuyaLocalCluster):
+    """Tuya local IAS gas cluster."""
+
+    _CONSTANT_ATTRIBUTES = {
+        IasZone.AttributeDefs.zone_type.id: IasZone.ZoneType.Carbon_Monoxide_Sensor
+    }
 
 
 class TuyaRelativeHumidity(RelativeHumidity, TuyaLocalCluster):
@@ -148,21 +172,51 @@ class TuyaQuirkBuilder(QuirkBuilder):
         self.new_attributes: set[foundation.ZCLAttributeDef] = set()
         super().__init__(manufacturer, model, registry)
 
-    def tuya_battery(
+    def _tuya_battery(
         self,
         dp_id: int,
-        power_cfg: PowerConfiguration = TuyaPowerConfigurationCluster2AAA,
-        scale: float = 2,
+        power_cfg: PowerConfiguration,
+        scale: float,
     ) -> QuirkBuilder:
         """Add a Tuya Battery Power Configuration."""
         self.tuya_dp(
             dp_id,
             power_cfg.ep_attribute,
-            "battery_percentage_remaining",
+            PowerConfiguration.AttributeDefs.battery_percentage_remaining.name,
             converter=lambda x: x * scale,
         )
         self.adds(power_cfg)
         return self
+
+    def tuya_battery(
+        self,
+        dp_id: int,
+        power_cfg: PowerConfiguration | None = None,
+        battery_type: BatterySize | None = BatterySize.AA,
+        battery_qty: int | None = 2,
+        battery_voltage: int | None = None,
+        scale: float = 2,
+    ) -> QuirkBuilder:
+        """Add a Tuya Battery Power Configuration."""
+
+        if power_cfg:
+            return self._tuya_battery(dp_id=dp_id, power_cfg=power_cfg, scale=scale)
+
+        if not battery_voltage and (battery_type and battery_qty):
+            battery_voltage = BATTERY_VOLTAGES.get(battery_type)
+
+        class TuyaPowerConfigurationClusterBattery(TuyaPowerConfigurationCluster):
+            """PowerConfiguration cluster for Tuya devices."""
+
+            _CONSTANT_ATTRIBUTES = {
+                PowerConfiguration.AttributeDefs.battery_size.id: battery_type,
+                PowerConfiguration.AttributeDefs.battery_rated_voltage.id: battery_voltage,
+                PowerConfiguration.AttributeDefs.battery_quantity.id: battery_qty,
+            }
+
+        return self._tuya_battery(
+            dp_id=dp_id, power_cfg=TuyaPowerConfigurationClusterBattery, scale=scale
+        )
 
     def tuya_contact(self, dp_id: int):
         """Add a Tuya IAS contact sensor."""
@@ -176,7 +230,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
     def tuya_co2(
         self,
         dp_id: int,
-        co2_cfg: TuyaLocalCluster = TuyaCO2Concetration,
+        co2_cfg: TuyaLocalCluster = TuyaCO2Concentration,
         scale: float = 1e-6,
     ) -> QuirkBuilder:
         """Add a Tuya CO2 Configuration."""
@@ -192,10 +246,10 @@ class TuyaQuirkBuilder(QuirkBuilder):
     def tuya_formaldehyde(
         self,
         dp_id: int,
-        form_cfg: TuyaLocalCluster = TuyaFormaldehydeConcetration,
+        form_cfg: TuyaLocalCluster = TuyaFormaldehydeConcentration,
         # Convert from µg/m3 to ppm, note, ZHA will scale by 1e6
         converter: float = lambda x: round(
-            ((MOL_VOL_AIR_NTP * x) / TuyaFormaldehydeConcetration.MOLECULAR_MASS), 2
+            ((MOL_VOL_AIR_NTP * x) / TuyaFormaldehydeConcentration.MOLECULAR_MASS), 2
         )
         * 1e-6,
     ) -> QuirkBuilder:
@@ -212,7 +266,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
     def tuya_pm25(
         self,
         dp_id: int,
-        pm25_cfg: TuyaLocalCluster = TuyaPM25Concetration,
+        pm25_cfg: TuyaLocalCluster = TuyaPM25Concentration,
         scale: float = 1,
     ) -> QuirkBuilder:
         """Add a Tuya PM25 Configuration."""
@@ -223,6 +277,15 @@ class TuyaQuirkBuilder(QuirkBuilder):
             converter=lambda x: x * scale,
         )
         self.adds(pm25_cfg)
+        return self
+
+    def tuya_gas(self, dp_id: int):
+        """Add a Tuya IAS gas sensor."""
+        self.tuya_ias(
+            dp_id=dp_id,
+            ias_cfg=TuyaIasGas,
+            converter=lambda x: IasZone.ZoneStatus.Alarm_1 if x == 0 else 0,
+        )
         return self
 
     def tuya_smoke(self, dp_id: int):
