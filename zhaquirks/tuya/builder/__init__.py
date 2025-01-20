@@ -53,11 +53,11 @@ BATTERY_VOLTAGES = {
 }
 
 
-class TuyaCO2Concetration(CarbonDioxideConcentration, TuyaLocalCluster):
+class TuyaCO2Concentration(CarbonDioxideConcentration, TuyaLocalCluster):
     """Tuya Carbon Dioxide concentration measurement."""
 
 
-class TuyaFormaldehydeConcetration(FormaldehydeConcentration, TuyaLocalCluster):
+class TuyaFormaldehydeConcentration(FormaldehydeConcentration, TuyaLocalCluster):
     """Tuya Formaldehyde concentration measurement."""
 
     MOLECULAR_MASS = 30.026
@@ -79,8 +79,16 @@ class TuyaIasFire(IasZone, TuyaLocalCluster):
     }
 
 
-class TuyaPM25Concetration(PM25, TuyaLocalCluster):
+class TuyaPM25Concentration(PM25, TuyaLocalCluster):
     """Tuya PM25 concentration measurement."""
+
+
+class TuyaIasGas(IasZone, TuyaLocalCluster):
+    """Tuya local IAS gas cluster."""
+
+    _CONSTANT_ATTRIBUTES = {
+        IasZone.AttributeDefs.zone_type.id: IasZone.ZoneType.Carbon_Monoxide_Sensor
+    }
 
 
 class TuyaRelativeHumidity(RelativeHumidity, TuyaLocalCluster):
@@ -222,7 +230,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
     def tuya_co2(
         self,
         dp_id: int,
-        co2_cfg: TuyaLocalCluster = TuyaCO2Concetration,
+        co2_cfg: TuyaLocalCluster = TuyaCO2Concentration,
         scale: float = 1e-6,
     ) -> QuirkBuilder:
         """Add a Tuya CO2 Configuration."""
@@ -238,10 +246,10 @@ class TuyaQuirkBuilder(QuirkBuilder):
     def tuya_formaldehyde(
         self,
         dp_id: int,
-        form_cfg: TuyaLocalCluster = TuyaFormaldehydeConcetration,
+        form_cfg: TuyaLocalCluster = TuyaFormaldehydeConcentration,
         # Convert from µg/m3 to ppm, note, ZHA will scale by 1e6
         converter: float = lambda x: round(
-            ((MOL_VOL_AIR_NTP * x) / TuyaFormaldehydeConcetration.MOLECULAR_MASS), 2
+            ((MOL_VOL_AIR_NTP * x) / TuyaFormaldehydeConcentration.MOLECULAR_MASS), 2
         )
         * 1e-6,
     ) -> QuirkBuilder:
@@ -258,7 +266,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
     def tuya_pm25(
         self,
         dp_id: int,
-        pm25_cfg: TuyaLocalCluster = TuyaPM25Concetration,
+        pm25_cfg: TuyaLocalCluster = TuyaPM25Concentration,
         scale: float = 1,
     ) -> QuirkBuilder:
         """Add a Tuya PM25 Configuration."""
@@ -269,6 +277,15 @@ class TuyaQuirkBuilder(QuirkBuilder):
             converter=lambda x: x * scale,
         )
         self.adds(pm25_cfg)
+        return self
+
+    def tuya_gas(self, dp_id: int):
+        """Add a Tuya IAS gas sensor."""
+        self.tuya_ias(
+            dp_id=dp_id,
+            ias_cfg=TuyaIasGas,
+            converter=lambda x: IasZone.ZoneStatus.Alarm_1 if x == 0 else 0,
+        )
         return self
 
     def tuya_smoke(self, dp_id: int):

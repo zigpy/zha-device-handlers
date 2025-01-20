@@ -469,3 +469,33 @@ class GiexIrrigationStatus(t.enum8):
     )
     .add_to_registry()
 )
+
+
+# Tuya Rain Seer Valve
+(
+    TuyaQuirkBuilder("_TZ3210_0jxeoadc", "TS0049")
+    .tuya_sensor(
+        dp_id=26,
+        attribute_name="error_status",
+        type=t.uint32_t,
+        entity_type=EntityType.DIAGNOSTIC,
+        translation_key="error_status",
+        fallback_name="Error status",
+    )
+    .tuya_onoff(dp_id=101)
+    .tuya_number(
+        dp_id=111,
+        attribute_name="valve_duration",
+        type=t.uint32_t,
+        min_value=0,
+        max_value=255,
+        step=1,
+        unit=UnitOfTime.MINUTES,
+        translation_key="valve_duration",
+        fallback_name="Irrigation duration",
+    )
+    .tuya_battery(dp_id=115, battery_type=BatterySize.AA, battery_qty=2)
+    .tuya_enchantment()
+    .skip_configuration()
+    .add_to_registry()
+)
