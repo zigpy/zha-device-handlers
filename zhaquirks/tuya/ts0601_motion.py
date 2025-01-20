@@ -427,10 +427,10 @@ base_tuya_motion = (
     )
     .tuya_switch(
         dp_id=104,
-        attribute_name="indicator_switch",
+        attribute_name="find_switch",
         entity_type=EntityType.STANDARD,
-        translation_key="indicator_switch",
-        fallback_name="Indicator switch",
+        translation_key="led_indicator",
+        fallback_name="LED indicator",
     )
     .tuya_number(
         dp_id=107,
