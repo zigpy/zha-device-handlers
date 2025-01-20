@@ -1,13 +1,10 @@
 """Tuya Gas Sensor."""
 
 from zigpy.quirks.v2 import BinarySensorDeviceClass, EntityPlatform, EntityType
-from zigpy.quirks.v2.homeassistant import CONCENTRATION_PARTS_PER_MILLION
-from zigpy.quirks.v2.homeassistant import UnitOfTime
+from zigpy.quirks.v2.homeassistant import CONCENTRATION_PARTS_PER_MILLION, UnitOfTime
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
-from zigpy.zcl.clusters.general import BatterySize
-
-
 import zigpy.types as t
+from zigpy.zcl.clusters.general import BatterySize
 from zigpy.zcl.clusters.security import IasZone
 
 from zhaquirks.tuya import TuyaLocalCluster
@@ -47,9 +44,9 @@ class TuyaIasGasLEL(IasZone, TuyaLocalCluster):
         IasZone.AttributeDefs.zone_type.id: IasZone.ZoneType.Standard_Warning_Device
     }
 
+
 (
-    TuyaQuirkBuilder("_TZE200_ggev5fsl", "TS0601")
-    .applies_to("_TZE200_hr0tdd47", "TS0601")
+    TuyaQuirkBuilder("_TZE200_hr0tdd47", "TS0601")
     .applies_to("_TZE200_rjxqso4a", "TS0601")
     .applies_to("_TZE284_rjxqso4a", "TS0601")
     .tuya_gas(dp_id=1)
@@ -71,7 +68,7 @@ class TuyaIasGasLEL(IasZone, TuyaLocalCluster):
         translation_key="self_test_result",
         fallback_name="Self test result",
     )
-    .tuya_battery(dp_id=15,battery_type=BatterySize.AA, battery_qty=2)
+    .tuya_battery(dp_id=15, battery_type=BatterySize.AA, battery_qty=2)
     .tuya_switch(
         dp_id=16,
         attribute_name="mute_siren",
@@ -95,7 +92,6 @@ tuya_gas_alarm_base = (
     )  # Reports as enum, not bool
     .tuya_switch(
         dp_id=8,
-        attribute_name="self_test_switch",
         attribute_name="self_test_switch",
         entity_type=EntityType.STANDARD,
         translation_key="self_test_switch",
@@ -134,9 +130,9 @@ tuya_gas_alarm_base = (
         type=t.int16s,
         divisor=10,
         state_class=SensorStateClass.MEASUREMENT,
-        unit="\%LEL", # Not present in zigpy
+        unit=r"\%LEL",  # Not present in zigpy
         translation_key="lower_explosive_limit",
-        fallback_name="\% Lower explosive limit",
+        fallback_name=r"\% Lower explosive limit",
     )
     .tuya_enum(
         dp_id=6,
