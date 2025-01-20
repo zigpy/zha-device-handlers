@@ -118,6 +118,7 @@ tuya_gas_alarm_base = (
     .skip_configuration()
 )
 
+
 (
     tuya_gas_alarm_base.clone()  # 1, 8, 9, and 16 from base
     .applies_to("_TZE200_yojqa8xn", "TS0601")
@@ -130,9 +131,9 @@ tuya_gas_alarm_base = (
         type=t.int16s,
         divisor=10,
         state_class=SensorStateClass.MEASUREMENT,
-        unit=r"%LEL",  # Not present in zigpy
+        unit=r"LEL",  # Not present in zigpy
         translation_key="lower_explosive_limit",
-        fallback_name=r"% Lower explosive limit",
+        fallback_name="% Lower explosive limit",
     )
     .tuya_enum(
         dp_id=6,
@@ -162,6 +163,7 @@ tuya_gas_alarm_base = (
     # 13 ignored in z2m
     .add_to_registry()
 )
+
 
 (
     tuya_gas_alarm_base.clone()  # 1, 8, 9, and 16 from base
