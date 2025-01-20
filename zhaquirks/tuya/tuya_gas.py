@@ -169,7 +169,7 @@ tuya_gas_alarm_base = (
 
 (
     tuya_gas_alarm_base.clone()  # 1, 8, 9, and 16 from base
-    .applies_to("'_TZE200_ggev5fsl", "TS0601")
+    .applies_to("_TZE200_ggev5fsl", "TS0601")
     .applies_to("_TZE200_u319yc66", "TS0601")
     .applies_to("_TZE200_kvpwq8z7", "TS0601")
     .tuya_binary_sensor(
