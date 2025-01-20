@@ -1847,7 +1847,7 @@ class ZonnsmartTV01_ZG(TuyaThermostat):
         dp_id=8,
         attribute_name="window_detection",
         translation_key="window_detection",
-        fallback_name="Window detection",
+        fallback_name="Open window detection",
     )
     .tuya_switch(
         dp_id=12,
