@@ -62,6 +62,13 @@ class TuyaThermostatSystemMode(t.enum8):
     Off = 0x02
 
 
+class TuyaThermostatEcoMode(t.enum8):
+    """Tuya thermostat eco mode enum."""
+
+    Comfort = 0x00
+    Eco = 0x01
+
+
 class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
     """Tuya local thermostat cluster."""
 
@@ -1791,49 +1798,6 @@ class ZonnsmartTV01_ZG(TuyaThermostat):
             },
         }
     }
-
-
-class TuyaThermostatSystemMode(t.enum8):
-    """Tuya thermostat system mode enum."""
-
-    Auto = 0x00
-    Heat = 0x01
-    Off = 0x02
-
-
-class TuyaThermostatEcoMode(t.enum8):
-    """Tuya thermostat eco mode enum."""
-
-    Comfort = 0x00
-    Eco = 0x01
-
-
-class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
-    """Tuya local thermostat cluster."""
-
-    manufacturer_id_override: t.uint16_t = foundation.ZCLHeader.NO_MANUFACTURER_ID
-
-    _CONSTANT_ATTRIBUTES = {
-        Thermostat.AttributeDefs.ctrl_sequence_of_oper.id: Thermostat.ControlSequenceOfOperation.Heating_Only
-    }
-
-    def __init__(self, *args, **kwargs):
-        """Init a TuyaThermostat cluster."""
-        super().__init__(*args, **kwargs)
-        self.add_unsupported_attribute(
-            Thermostat.AttributeDefs.setpoint_change_source.id
-        )
-        self.add_unsupported_attribute(
-            Thermostat.AttributeDefs.setpoint_change_source_timestamp.id
-        )
-        self.add_unsupported_attribute(Thermostat.AttributeDefs.pi_heating_demand.id)
-
-    async def write_attributes(self, attributes, manufacturer=None):
-        """Overwrite to force manufacturer code."""
-
-        return await super().write_attributes(
-            attributes, manufacturer=foundation.ZCLHeader.NO_MANUFACTURER_ID
-        )
 
 
 (
