@@ -3,11 +3,8 @@
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
 
-from zhaquirks.tuya.builder import (
-    TuyaPowerConfigurationCluster2AAA,
-    TuyaQuirkBuilder,
-    TuyaTemperatureMeasurement,
-)
+from zhaquirks.tuya import TuyaPowerConfigurationCluster2AAA
+from zhaquirks.tuya.builder import TuyaQuirkBuilder, TuyaTemperatureMeasurement
 
 (
     TuyaQuirkBuilder("_TZE200_bjawzodf", "TS0601")
