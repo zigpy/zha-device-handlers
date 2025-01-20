@@ -341,7 +341,9 @@ class NeoBatteryState(t.enum8):
         translation_key="siren_on",
         fallback_name="Siren on",
     )
-    .tuya_battery(dp_id=15)
+    .tuya_battery(
+        dp_id=15, battery_type=BatterySize.Other, battery_qty=1, battery_voltage=30
+    )
     .tuya_enum(
         dp_id=21,
         attribute_name="alarm_ringtone",
@@ -440,7 +442,9 @@ class NeoBatteryState(t.enum8):
         fallback_name="Siren on",
     )
     # DP 14, battery level enum skipped
-    .tuya_battery(dp_id=15, power_cfg=TuyaPowerConfigurationClusterOther)
+    .tuya_battery(
+        dp_id=15, battery_type=BatterySize.Other, battery_qty=1, battery_voltage=30
+    )
     .tuya_enum(
         dp_id=21,
         attribute_name="alarm_ringtone",
