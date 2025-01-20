@@ -494,7 +494,7 @@ class GiexIrrigationStatus(t.enum8):
         translation_key="valve_duration",
         fallback_name="Irrigation duration",
     )
-    .tuya_battery(dp_id=115, power_cfg=TuyaPowerConfigurationCluster2AA)
+    .tuya_battery(dp_id=115, battery_type=BatterySize.AA, battery_qty=2)
     .tuya_enchantment()
     .skip_configuration()
     .add_to_registry()
