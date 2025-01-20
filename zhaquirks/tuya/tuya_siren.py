@@ -145,9 +145,8 @@ class NeoBatteryState(t.enum8):
     .tuya_binary_sensor(
         dp_id=6,
         attribute_name="charge_state",
-        translation_key="charge_state",
         device_class=BinarySensorDeviceClass.BATTERY_CHARGING,
-        fallback_name="Charge state",
+        fallback_name="Charging",
     )
     .tuya_number(
         dp_id=7,
@@ -419,9 +418,8 @@ class NeoBatteryState(t.enum8):
     .tuya_binary_sensor(
         dp_id=6,
         attribute_name="charge_state",
-        translation_key="charge_state",
         device_class=BinarySensorDeviceClass.BATTERY_CHARGING,
-        fallback_name="Charge state",
+        fallback_name="Charging",
     )
     .tuya_number(
         dp_id=7,
