@@ -5,7 +5,7 @@ import math
 from typing import Any
 
 from zigpy.quirks.v2 import EntityPlatform, EntityType
-from zigpy.quirks.v2.homeassistant import UnitOfLength, UnitOfTime
+from zigpy.quirks.v2.homeassistant import LIGHT_LUX, UnitOfLength, UnitOfTime
 from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
@@ -463,7 +463,7 @@ base_tuya_motion = (
         attribute_name="illuminance_threshold",
         type=t.uint16_t,
         device_class=SensorDeviceClass.ILLUMINANCE,
-        # unit=LIGHT_LUX, # Not supported ZHA yet
+        unit=LIGHT_LUX,
         min_value=0,
         max_value=420,
         step=0.1,
