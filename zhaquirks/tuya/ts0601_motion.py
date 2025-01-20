@@ -193,6 +193,7 @@ base_tuya_motion = (
     .skip_configuration()
 )
 
+
 (
     base_tuya_motion.clone()
     .applies_to("_TZE200_ya4ft0w4", "TS0601")
@@ -242,6 +243,7 @@ base_tuya_motion = (
     )
     .add_to_registry()
 )
+
 
 (
     base_tuya_motion.clone()
@@ -305,6 +307,7 @@ base_tuya_motion = (
     .add_to_registry()
 )
 
+
 (
     base_tuya_motion.clone()
     .applies_to("_TZE204_qasjif9e", "TS0601")
@@ -351,6 +354,7 @@ base_tuya_motion = (
     .add_to_registry()
 )
 
+
 (
     TuyaQuirkBuilder("_TYST11_i5j6ifxj", "5j6ifxj")
     .applies_to("_TYST11_7hfcudw5", "hfcudw5")
@@ -362,6 +366,7 @@ base_tuya_motion = (
     .skip_configuration()
     .add_to_registry()
 )
+
 
 # Neo motion, NAS-PD07 occupancy sensor
 (
@@ -464,6 +469,7 @@ base_tuya_motion = (
     .skip_configuration()
     .add_to_registry()
 )
+
 
 (
     base_tuya_motion.clone()
@@ -605,6 +611,7 @@ base_tuya_motion = (
     .add_to_registry()
 )
 
+
 (
     TuyaQuirkBuilder("_TZE204_muvkrjr5", "TS0601")
     .tuya_dp(
@@ -671,6 +678,7 @@ base_tuya_motion = (
     .skip_configuration()
     .add_to_registry()
 )
+
 
 (
     TuyaQuirkBuilder("_TZE204_kyhbrfyl", "TS0601")
@@ -749,6 +757,7 @@ base_tuya_motion = (
     .add_to_registry()
 )
 
+
 # Heimen HS80S-TY
 (
     TuyaQuirkBuilder("_TZ6210_duv6fhwt", "TS0601")
@@ -806,6 +815,7 @@ base_tuya_motion = (
     .skip_configuration()
     .add_to_registry()
 )
+
 
 # NEO NAS-PS10B2
 (
@@ -927,6 +937,7 @@ base_tuya_motion = (
     .add_to_registry()
 )
 
+
 # TuyaZG-204ZL
 (
     TuyaQuirkBuilder("_TZE200_3towulqd", "TS0601")
@@ -977,6 +988,7 @@ base_tuya_motion = (
     .skip_configuration()
     .add_to_registry()
 )
+
 
 # Tuya Mini human breath sensor ZY-M100-S_1
 (
