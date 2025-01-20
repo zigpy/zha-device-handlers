@@ -36,7 +36,6 @@ import zhaquirks.tuya.ts011f_plug
 import zhaquirks.tuya.ts0501_fan_switch
 import zhaquirks.tuya.ts0601_electric_heating
 import zhaquirks.tuya.ts0601_motion
-import zhaquirks.tuya.ts0601_siren
 import zhaquirks.tuya.ts0601_trv
 import zhaquirks.tuya.ts0601_valve
 import zhaquirks.tuya.ts601_door
@@ -55,10 +54,6 @@ ZCL_TUYA_BUTTON_2_LONG_PRESS = b"\tl\x06\x03\x12\x02\x04\x00\x01\x02"
 ZCL_TUYA_SWITCH_ON = b"\tQ\x02\x006\x01\x01\x00\x01\x01"
 ZCL_TUYA_SWITCH_OFF = b"\tQ\x02\x006\x01\x01\x00\x01\x00"
 ZCL_TUYA_ATTRIBUTE_617_TO_179 = b"\tp\x02\x00\x02i\x02\x00\x04\x00\x00\x00\xb3"
-ZCL_TUYA_SIREN_TEMPERATURE = ZCL_TUYA_ATTRIBUTE_617_TO_179
-ZCL_TUYA_SIREN_HUMIDITY = b"\tp\x02\x00\x02j\x02\x00\x04\x00\x00\x00U"
-ZCL_TUYA_SIREN_ON = b"\t\t\x02\x00\x04h\x01\x00\x01\x01"
-ZCL_TUYA_SIREN_OFF = b"\t\t\x02\x00\x04h\x01\x00\x01\x00"
 ZCL_TUYA_VALVE_TEMPERATURE = b"\tp\x02\x00\x02\x03\x02\x00\x04\x00\x00\x00\xb3"
 ZCL_TUYA_VALVE_TARGET_TEMP = b"\t3\x01\x03\x05\x02\x02\x00\x04\x00\x00\x002"
 ZCL_TUYA_VALVE_OFF = b"\t2\x01\x03\x04\x04\x04\x00\x01\x00"
@@ -417,91 +412,6 @@ async def test_tuya_send_attribute(zigpy_device_from_quirk, quirk):
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
         ]
-
-
-@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_siren.TuyaSiren,))
-async def test_siren_state_report(zigpy_device_from_quirk, quirk):
-    """Test tuya siren standard state reporting from incoming commands."""
-
-    siren_dev = zigpy_device_from_quirk(quirk)
-    tuya_cluster = siren_dev.endpoints[1].tuya_manufacturer
-
-    temp_listener = ClusterListener(siren_dev.endpoints[1].temperature)
-    humid_listener = ClusterListener(siren_dev.endpoints[1].humidity)
-    switch_listener = ClusterListener(siren_dev.endpoints[1].on_off)
-
-    frames = (
-        ZCL_TUYA_SIREN_TEMPERATURE,
-        ZCL_TUYA_SIREN_HUMIDITY,
-        ZCL_TUYA_SIREN_ON,
-        ZCL_TUYA_SIREN_OFF,
-    )
-    for frame in frames:
-        hdr, args = tuya_cluster.deserialize(frame)
-        tuya_cluster.handle_message(hdr, args)
-
-    assert len(temp_listener.cluster_commands) == 0
-    assert len(temp_listener.attribute_updates) == 1
-    assert temp_listener.attribute_updates[0][0] == 0x0000
-    assert temp_listener.attribute_updates[0][1] == 1790
-
-    assert len(humid_listener.cluster_commands) == 0
-    assert len(humid_listener.attribute_updates) == 1
-    assert humid_listener.attribute_updates[0][0] == 0x0000
-    assert humid_listener.attribute_updates[0][1] == 8500
-
-    assert len(switch_listener.cluster_commands) == 0
-    assert len(switch_listener.attribute_updates) == 2
-    assert switch_listener.attribute_updates[0][0] == 0x0000
-    assert switch_listener.attribute_updates[0][1] == ON
-    assert switch_listener.attribute_updates[1][0] == 0x0000
-    assert switch_listener.attribute_updates[1][1] == OFF
-
-
-@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_siren.TuyaSiren,))
-async def test_siren_send_attribute(zigpy_device_from_quirk, quirk):
-    """Test tuya siren outgoing commands."""
-
-    siren_dev = zigpy_device_from_quirk(quirk)
-    tuya_cluster = siren_dev.endpoints[1].tuya_manufacturer
-    switch_cluster = siren_dev.endpoints[1].on_off
-
-    async def async_success(*args, **kwargs):
-        return foundation.Status.SUCCESS
-
-    with mock.patch.object(
-        tuya_cluster.endpoint, "request", side_effect=async_success
-    ) as m1:
-        _, status = await switch_cluster.command(0x0000)
-        m1.assert_called_with(
-            cluster=0xEF00,
-            sequence=1,
-            data=b"\x01\x01\x00\x00\x01h\x01\x00\x01\x00",
-            command_id=0,
-            timeout=5,
-            expect_reply=False,
-            use_ieee=False,
-            ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
-        )
-        assert status == foundation.Status.SUCCESS
-
-        _, status = await switch_cluster.command(0x0001)
-        m1.assert_called_with(
-            cluster=0xEF00,
-            sequence=2,
-            data=b"\x01\x02\x00\x00\x02h\x01\x00\x01\x01",
-            command_id=0,
-            timeout=5,
-            expect_reply=False,
-            use_ieee=False,
-            ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
-        )
-        assert status == foundation.Status.SUCCESS
-
-        _, status = await switch_cluster.command(0x0003)
-        assert status == foundation.Status.UNSUP_CLUSTER_COMMAND
 
 
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_trv.ZonnsmartTV01_ZG,))
