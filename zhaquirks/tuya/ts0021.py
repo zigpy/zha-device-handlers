@@ -36,19 +36,15 @@ ATTR_BTN_2_PRESSED = "btn_2_pressed"
 class TuyaCustomCluster(TuyaNewManufCluster, EventableCluster):
     """Tuya Custom Cluster for mapping data points to attributes."""
 
-    dp_to_attribute: dict[int, list[DPToAttributeMapping]] = {
-        1: [
-            DPToAttributeMapping(
-                TuyaNewManufCluster.ep_attribute,
-                ATTR_BTN_1_PRESSED,
-            )
-        ],
-        2: [
-            DPToAttributeMapping(
-                TuyaNewManufCluster.ep_attribute,
-                ATTR_BTN_2_PRESSED,
-            )
-        ],
+    dp_to_attribute: dict[int, DPToAttributeMapping] = {
+        1: DPToAttributeMapping(
+            TuyaNewManufCluster.ep_attribute,
+            ATTR_BTN_1_PRESSED,
+        ),
+        2: DPToAttributeMapping(
+            TuyaNewManufCluster.ep_attribute,
+            ATTR_BTN_2_PRESSED,
+        ),
     }
 
     data_point_handlers = {

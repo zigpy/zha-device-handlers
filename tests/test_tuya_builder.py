@@ -1,6 +1,5 @@
 """Tests for TuyaQuirkBuilder."""
 
-from collections.abc import ByteString
 from unittest import mock
 
 import pytest
@@ -9,18 +8,10 @@ from zigpy.quirks.v2 import CustomDeviceV2
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic
-from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 
 from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
-from zhaquirks.tuya import (
-    TUYA_QUERY_DATA,
-    DPToAttributeMapping,
-    TuyaCommand,
-    TuyaData,
-    TuyaDatapointData,
-    TuyaLocalCluster,
-)
+from zhaquirks.tuya import TUYA_QUERY_DATA
 from zhaquirks.tuya.builder import (
     TuyaAirQualityVOC,
     TuyaCO2Concetration,
@@ -94,18 +85,6 @@ async def test_tuya_quirkbuilder(device_mock):
         A = 0x00
         B = 0x01
 
-    def dpToPower(data: ByteString) -> int:
-        return data[0]
-
-    def dpToCurrent(data: ByteString) -> int:
-        return data[1]
-
-    def dpToVoltage(data: ByteString) -> int:
-        return data[2]
-
-    class Tuya3PhaseElectricalMeasurement(ElectricalMeasurement, TuyaLocalCluster):
-        """Tuya Electrical Measurement cluster."""
-
     entry = (
         TuyaQuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
         .tuya_battery(dp_id=1)
@@ -143,27 +122,6 @@ async def test_tuya_quirkbuilder(device_mock):
             translation_key="test_enum",
             fallback_name="Test enum",
         )
-        .tuya_dp_multi(
-            dp_id=11,
-            attribute_mapping=[
-                DPToAttributeMapping(
-                    ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
-                    attribute_name="active_power",
-                    converter=dpToPower,
-                ),
-                DPToAttributeMapping(
-                    ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
-                    attribute_name="rms_current",
-                    converter=dpToCurrent,
-                ),
-                DPToAttributeMapping(
-                    ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
-                    attribute_name="rms_voltage",
-                    converter=dpToVoltage,
-                ),
-            ],
-        )
-        .adds(Tuya3PhaseElectricalMeasurement)
         .skip_configuration()
         .add_to_registry()
     )
@@ -220,17 +178,6 @@ async def test_tuya_quirkbuilder(device_mock):
 
     assert tuya_listener.attribute_updates[0][0] == 0xEF0A
     assert tuya_listener.attribute_updates[0][1] == TestEnum.B
-
-    electric_data = TuyaCommand(
-        status=0,
-        tsn=2,
-        datapoints=[TuyaDatapointData(11, TuyaData("345"))],
-    )
-    tuya_cluster.handle_get_data(electric_data)
-    electrical_meas_cluster = ep.electrical_measurement
-    assert electrical_meas_cluster.get("active_power") == "3"
-    assert electrical_meas_cluster.get("rms_current") == "4"
-    assert electrical_meas_cluster.get("rms_voltage") == "5"
 
 
 @pytest.mark.parametrize(

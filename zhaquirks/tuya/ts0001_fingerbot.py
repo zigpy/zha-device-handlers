@@ -86,47 +86,37 @@ class TuyaFingerbotCluster(TuyaMCUCluster):
             **kwargs,
         )
 
-    dp_to_attribute: dict[int, list[DPToAttributeMapping]] = {
+    dp_to_attribute: dict[int, DPToAttributeMapping] = {
         # Mode
-        101: [
-            DPToAttributeMapping(
-                TuyaMCUCluster.ep_attribute,
-                "mode",
-                converter=lambda x: FingerBotMode(x),
-            )
-        ],
+        101: DPToAttributeMapping(
+            TuyaMCUCluster.ep_attribute,
+            "mode",
+            converter=lambda x: FingerBotMode(x),
+        ),
         # Down Movement
-        102: [
-            DPToAttributeMapping(
-                TuyaMCUCluster.ep_attribute,
-                "down_movement",
-            )
-        ],
+        102: DPToAttributeMapping(
+            TuyaMCUCluster.ep_attribute,
+            "down_movement",
+        ),
         # Sustain Time
-        103: [DPToAttributeMapping(TuyaMCUCluster.ep_attribute, "sustain_time")],
+        103: DPToAttributeMapping(TuyaMCUCluster.ep_attribute, "sustain_time"),
         # Reverse
-        104: [
-            DPToAttributeMapping(
-                TuyaMCUCluster.ep_attribute,
-                "reverse",
-                converter=lambda x: FingerBotReverse(x),
-            )
-        ],
+        104: DPToAttributeMapping(
+            TuyaMCUCluster.ep_attribute,
+            "reverse",
+            converter=lambda x: FingerBotReverse(x),
+        ),
         # Battery
-        105: [
-            DPToAttributeMapping(
-                TuyaPowerConfigurationCluster.ep_attribute,
-                "battery_percentage_remaining",
-            )
-        ],
+        105: DPToAttributeMapping(
+            TuyaPowerConfigurationCluster.ep_attribute,
+            "battery_percentage_remaining",
+        ),
         # Up Movement
-        106: [
-            DPToAttributeMapping(
-                TuyaMCUCluster.ep_attribute,
-                "up_movement",
-            )
-        ],
-        107: [DPToAttributeMapping(TuyaMCUCluster.ep_attribute, "touch_control")],
+        106: DPToAttributeMapping(
+            TuyaMCUCluster.ep_attribute,
+            "up_movement",
+        ),
+        107: DPToAttributeMapping(TuyaMCUCluster.ep_attribute, "touch_control"),
     }
 
     data_point_handlers = {

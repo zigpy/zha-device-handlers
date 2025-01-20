@@ -1532,13 +1532,13 @@ class TuyaNewManufCluster(CustomCluster):
         ),
     }
 
-    dp_to_attribute: dict[int, list[DPToAttributeMapping]] = {}
+    dp_to_attribute: dict[int, DPToAttributeMapping | list[DPToAttributeMapping]] = {}
     data_point_handlers: dict[int, str] = {}
 
     def __init__(self, *args, **kwargs):
         """Initialize the cluster and mark attributes as valid on LocalDataClusters."""
         super().__init__(*args, **kwargs)
-        for dp_map in self.dp_to_attribute.values():
+        for dp_map in self._dp_to_attributes.values():
             # get the endpoint that is being mapped to
             endpoint = self.endpoint
             for mapped_attr in dp_map:
@@ -1630,10 +1630,18 @@ class TuyaNewManufCluster(CustomCluster):
         """Handle Time set request."""
         return foundation.Status.SUCCESS
 
+    @property
+    def _dp_to_attributes(self) -> dict[int, list[DPToAttributeMapping]]:
+        """Convert from legacy single attribute dp mappings."""
+        return {
+            dp: attr if isinstance(attr, list) else [attr]
+            for dp, attr in self.dp_to_attribute.items()
+        }
+
     def _dp_2_attr_update(self, datapoint: TuyaDatapointData) -> None:
         """Handle data point to attribute report conversion."""
         try:
-            dp_map = self.dp_to_attribute[datapoint.dp]
+            dp_map = self._dp_to_attributes[datapoint.dp]
         except KeyError:
             self.debug("No attribute mapping for %s data point", datapoint.dp)
             return
