@@ -114,6 +114,13 @@ class TuyaHumanMotionState(t.enum8):
     Large = 0x02
 
 
+class TuyaMotionWorkMode(t.enum8):
+    """Tuya motion working mode enum."""
+
+    Manual = 0x00
+    Auto = 0x01
+
+
 base_tuya_motion = (
     TuyaQuirkBuilder()
     .adds(TuyaOccupancySensing)
@@ -695,6 +702,127 @@ base_tuya_motion = (
         fallback_name="Fade time",
     )
     .adds(TuyaIlluminanceCluster)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# NEO NAS-PS10B2
+(
+    TuyaQuirkBuilder("_TZE204_1youk3hj", "TS0601")
+    .tuya_dp(
+        dp_id=1,
+        ep_attribute=TuyaOccupancySensing.ep_attribute,
+        attribute_name=OccupancySensing.AttributeDefs.occupancy.name,
+        converter=lambda x: x == 1,
+    )
+    .adds(TuyaOccupancySensing)
+    .tuya_enum(
+        dp_id=11,
+        attribute_name="human_motion_state",
+        enum_class=TuyaHumanMotionState,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.STANDARD,
+        translation_key="human_motion_state",
+        fallback_name="Human motion state",
+    )
+    .tuya_number(
+        dp_id=12,
+        attribute_name="fading_time",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        min_value=3,
+        max_value=600,
+        step=1,
+        translation_key="fading_time",
+        fallback_name="Fading time",
+    )
+    .tuya_number(
+        dp_id=13,
+        attribute_name="detection_distance_max",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DISTANCE,
+        unit=UnitOfLength.CENTIMETERS,
+        min_value=150,
+        max_value=600,
+        step=75,
+        translation_key="detection_distance_max",
+        fallback_name="Maximum range",
+    )
+    .tuya_number(
+        dp_id=15,
+        attribute_name="radar_sensitivity",
+        type=t.uint16_t,
+        min_value=0,
+        max_value=7,
+        step=1,
+        translation_key="radar_sensitivity",
+        fallback_name="Radar sensitivity",
+    )
+    .tuya_sensor(
+        dp_id=19,
+        attribute_name="target_distance",
+        type=t.uint16_t,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.DISTANCE,
+        unit=UnitOfLength.CENTIMETERS,
+        entity_type=EntityType.STANDARD,
+        translation_key="target_distance",
+        fallback_name="Target distance",
+    )
+    .tuya_number(
+        dp_id=16,
+        attribute_name="motionless_sensitivity",
+        type=t.uint8_t,
+        min_value=0,
+        max_value=7,
+        step=1,
+        translation_key="motionless_sensitivity",
+        fallback_name="Motionless detection sensitivity",
+    )
+    .tuya_enum(
+        dp_id=101,
+        attribute_name="work_mode",
+        enum_class=TuyaMotionWorkMode,
+        entity_type=EntityType.STANDARD,
+        translation_key="work_mode",
+        fallback_name="Work mode",
+    )
+    .tuya_dp(
+        dp_id=102,
+        ep_attribute=TuyaIlluminanceCluster.ep_attribute,
+        attribute_name=TuyaIlluminanceCluster.AttributeDefs.measured_value.name,
+        converter=lambda x: {0: 10, 1: 20, 2: 50, 3: 100}[
+            x
+        ],  # z2m has 10lux, 20lux, 50lux, then 24hrs?
+    )
+    .adds(TuyaIlluminanceCluster)
+    .tuya_number(
+        dp_id=103,
+        attribute_name="output_time",
+        type=t.uint16_t,
+        unit=UnitOfTime.SECONDS,
+        min_value=10,
+        max_value=1800,
+        step=1,
+        translation_key="output_time",
+        fallback_name="Output time",
+    )
+    .tuya_switch(
+        dp_id=104,
+        attribute_name="output_switch",
+        entity_type=EntityType.STANDARD,
+        translation_key="output_switch",
+        fallback_name="Output switch",
+    )
+    .tuya_switch(
+        dp_id=105,
+        attribute_name="find_switch",
+        entity_type=EntityType.STANDARD,
+        translation_key="led_indicator",
+        fallback_name="LED indicator",
+    )
     .skip_configuration()
     .add_to_registry()
 )
