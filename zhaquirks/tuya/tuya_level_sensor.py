@@ -16,8 +16,8 @@ class TuyaLiquidState(t.enum8):
     High = 0x02
 
 
-(
-    TuyaQuirkBuilder("_TZE284_kyyu8rbj", "TS0601")
+base_level_quirk = (
+    TuyaQuirkBuilder()
     .tuya_enum(
         dp_id=1,
         attribute_name="liquid_state",
@@ -32,9 +32,8 @@ class TuyaLiquidState(t.enum8):
         type=t.uint16_t,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.DISTANCE,
-        unit=UnitOfLength.METERS,
+        unit=UnitOfLength.CENTIMETERS,
         entity_type=EntityType.STANDARD,
-        converter=lambda x: x / 100,
         translation_key="liquid_depth",
         fallback_name="Liquid depth",
     )
@@ -70,6 +69,13 @@ class TuyaLiquidState(t.enum8):
         translation_key="mini_set",
         fallback_name="Liquid minimal percentage",
     )
+    .skip_configuration()
+)
+
+
+(
+    base_level_quirk.clone()
+    .applies_to("_TZE284_kyyu8rbj", "TS0601")
     .tuya_number(
         dp_id=19,
         attribute_name="installation_height",
@@ -94,6 +100,36 @@ class TuyaLiquidState(t.enum8):
         translation_key="liquid_depth_max",
         fallback_name="Height from sensor to liquid level",
     )
-    .skip_configuration()
+    .add_to_registry()
+)
+
+
+(
+    base_level_quirk.clone()
+    .applies_to("_TZE200_lvkk0hdg", "TS0601")
+    .tuya_number(
+        dp_id=19,
+        attribute_name="installation_height",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DISTANCE,
+        unit=UnitOfLength.MILLIMETERS,
+        min_value=10,
+        max_value=4000,
+        step=1,
+        translation_key="installation_height",
+        fallback_name="Height from sensor to tank bottom",
+    )
+    .tuya_number(
+        dp_id=21,
+        attribute_name="liquid_depth_max",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DISTANCE,
+        unit=UnitOfLength.MILLIMETERS,
+        min_value=10,
+        max_value=4000,
+        step=1,
+        translation_key="liquid_depth_max",
+        fallback_name="Height from sensor to liquid level",
+    )
     .add_to_registry()
 )
