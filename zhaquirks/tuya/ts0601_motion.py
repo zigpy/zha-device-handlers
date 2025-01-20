@@ -640,6 +640,7 @@ base_tuya_motion = (
     .add_to_registry()
 )
 
+
 (
     base_tuya_motion.clone()
     .applies_to("_TZE204_sbyx0lm6", "TS0601")
