@@ -787,7 +787,7 @@ base_tuya_motion = (
         enum_class=TuyaMotionWorkMode,
         entity_type=EntityType.STANDARD,
         translation_key="work_mode",
-        fallback_name="Work Mode",
+        fallback_name="Work mode",
     )
     .tuya_dp(
         dp_id=102,
