@@ -130,9 +130,9 @@ tuya_gas_alarm_base = (
         type=t.int16s,
         divisor=10,
         state_class=SensorStateClass.MEASUREMENT,
-        unit=r"\%LEL",  # Not present in zigpy
+        unit=r"%LEL",  # Not present in zigpy
         translation_key="lower_explosive_limit",
-        fallback_name=r"\% Lower explosive limit",
+        fallback_name=r"% Lower explosive limit",
     )
     .tuya_enum(
         dp_id=6,
