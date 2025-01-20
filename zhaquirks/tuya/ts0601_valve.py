@@ -536,7 +536,7 @@ class GiexIrrigationStatus(t.enum8):
         unit=UnitOfTime.MINUTES,
         entity_type=EntityType.STANDARD,
         translation_key="valve_duration",
-        fallback_name="Elapsed irrigation duration",
+        fallback_name="Irrigation duration",
     )
     .tuya_dp(
         dp_id=9,
