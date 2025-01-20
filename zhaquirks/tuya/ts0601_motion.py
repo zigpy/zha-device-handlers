@@ -1090,6 +1090,7 @@ base_tuya_motion = (
     .add_to_registry()
 )
 
+
 # Tuya PIR Motion Sensor ZM-35ZH-Q occupancy sensor
 (
     TuyaQuirkBuilder("_TZE200_gjldowol", "TS0601")
