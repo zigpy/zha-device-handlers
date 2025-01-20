@@ -9,11 +9,7 @@ import zigpy.types as t
 from zigpy.zcl.clusters.general import BatterySize
 from zigpy.zcl.clusters.smartenergy import Metering
 
-from zhaquirks.tuya import (
-    TUYA_CLUSTER_ID,
-    TuyaPowerConfigurationCluster2AA,
-    TuyaPowerConfigurationCluster4AA,
-)
+from zhaquirks.tuya import TUYA_CLUSTER_ID
 from zhaquirks.tuya.builder import TuyaQuirkBuilder, TuyaValveWaterConsumed
 from zhaquirks.tuya.mcu import TuyaMCUCluster
 
@@ -548,7 +544,7 @@ class GiexIrrigationStatus(t.enum8):
         attribute_name=Metering.AttributeDefs.instantaneous_demand.name,
     )
     .tuya_metering(dp_id=15, metering_cfg=TuyaValveWaterConsumedInstDemand)
-    .tuya_battery(dp_id=11, power_cfg=TuyaPowerConfigurationCluster2AA)
+    .tuya_battery(dp_id=11, battery_type=BatterySize.AA, battery_qty=2)
     .tuya_binary_sensor(
         dp_id=19,
         attribute_name="valve_fault",
