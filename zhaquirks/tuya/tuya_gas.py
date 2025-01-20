@@ -2,14 +2,15 @@
 
 from zigpy.quirks.v2 import BinarySensorDeviceClass, EntityPlatform, EntityType
 from zigpy.quirks.v2.homeassistant import CONCENTRATION_PARTS_PER_MILLION
-from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 from zigpy.quirks.v2.homeassistant import UnitOfTime
+from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 from zigpy.zcl.clusters.general import BatterySize
 
 
 import zigpy.types as t
+from zigpy.zcl.clusters.security import IasZone
 
-from zhaquirks.tuya import TuyaPowerConfigurationCluster2AA
+from zhaquirks.tuya import TuyaLocalCluster
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 
@@ -30,6 +31,21 @@ class TuyaSirenRingtone(t.enum8):
     Ringtone_03 = 0x02
     Ringtone_04 = 0x03
     Ringtone_05 = 0x04
+
+
+class TuyaGasState(t.enum8):
+    """Tuya enum gas state."""
+
+    Present = 0x00
+    Clear = 0x01
+
+
+class TuyaIasGasLEL(IasZone, TuyaLocalCluster):
+    """Tuya local IAS LEL gas cluster."""
+
+    _CONSTANT_ATTRIBUTES = {
+        IasZone.AttributeDefs.zone_type.id: IasZone.ZoneType.Standard_Warning_Device
+    }
 
 (
     TuyaQuirkBuilder("_TZE200_ggev5fsl", "TS0601")
@@ -70,21 +86,28 @@ class TuyaSirenRingtone(t.enum8):
 
 tuya_gas_alarm_base = (
     TuyaQuirkBuilder()
-    .tuya_gas(dp_id=1) # Reports as enum, not bool
+    .tuya_ias(
+        dp_id=1,
+        ias_cfg=TuyaIasGasLEL,
+        converter=lambda x: IasZone.ZoneStatus.Alarm_1
+        if x == TuyaGasState.Present
+        else 0,
+    )  # Reports as enum, not bool
     .tuya_switch(
         dp_id=8,
         attribute_name="self_test_switch",
+        attribute_name="self_test_switch",
         entity_type=EntityType.STANDARD,
         translation_key="self_test_switch",
-        fallback_name="Self test switch",
+        fallback_name="Self test",
     )
     .tuya_enum(
         dp_id=9,
-        attribute_name="self_test_result",
+        attribute_name="self_test",
         enum_class=TuyaSelfTestResult,
         entity_type=EntityType.DIAGNOSTIC,
         entity_platform=EntityPlatform.SENSOR,
-        translation_key="self_test_result",
+        translation_key="self_test",
         fallback_name="Self test result",
     )
     .tuya_binary_sensor(
@@ -95,16 +118,16 @@ tuya_gas_alarm_base = (
         fallback_name="Silence alarm",
     )
     .tuya_enchantment()
+    .tuya_enchantment()
     .skip_configuration()
-
 )
 
 (
-    tuya_gas_alarm_base.clone() # 1, 8, 9, and 16 from base
+    tuya_gas_alarm_base.clone()  # 1, 8, 9, and 16 from base
     .applies_to("'_TZE200_yojqa8xn", "TS0601")
-    .applies_to("_TZE204_zougpkpy","TS0601")
-    .applies_to("_TZE204_chbyv06x","TS0601")
-    .applies_to("_TZE204_yojqa8xn","TS0601")
+    .applies_to("_TZE204_zougpkpy", "TS0601")
+    .applies_to("_TZE204_chbyv06x", "TS0601")
+    .applies_to("_TZE204_yojqa8xn", "TS0601")
     .tuya_sensor(
         dp_id=2,
         attribute_name="lower_explosive_limit",
@@ -145,10 +168,10 @@ tuya_gas_alarm_base = (
 )
 
 (
-    tuya_gas_alarm_base.clone() # 1, 8, 9, and 16 from base
+    tuya_gas_alarm_base.clone()  # 1, 8, 9, and 16 from base
     .applies_to("'_TZE200_ggev5fsl", "TS0601")
-    .applies_to("_TZE200_u319yc66","TS0601")
-    .applies_to("_TZE200_kvpwq8z7","TS0601")
+    .applies_to("_TZE200_u319yc66", "TS0601")
+    .applies_to("_TZE200_kvpwq8z7", "TS0601")
     .tuya_binary_sensor(
         dp_id=11,
         attribute_name="fault_alarm",
