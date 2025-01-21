@@ -212,6 +212,8 @@ class NeoBatteryState(t.enum8):
         dp_id=101,
         attribute_name="power_type",
         enum_class=NeoBatteryState,
+        entity_type=EntityType.DIAGNOSTIC,
+        entity_platform=EntityPlatform.SENSOR,
         translation_key="power_type",
         fallback_name="Power type",
     )
