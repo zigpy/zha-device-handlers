@@ -1,0 +1,154 @@
+"""Tuya Din Power Meter."""
+
+from zigpy.quirks.v2.homeassistant import (
+    UnitOfElectricCurrent,
+    UnitOfElectricPotential,
+    UnitOfEnergy,
+    UnitOfFrequency,
+    UnitOfPower,
+)
+from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
+import zigpy.types as t
+
+from zhaquirks.tuya.builder import TuyaQuirkBuilder
+
+(
+    TuyaQuirkBuilder("_TZE200_ny94onlb", "TS0601")
+    .tuya_sensor(
+        dp_id=1,
+        attribute_name="energy",
+        fallback_name="energy",
+        type=t.uint16_t,
+        state_class=SensorStateClass.TOTAL,
+        device_class=SensorDeviceClass.ENERGY,
+        unit=UnitOfEnergy.KILO_WATT_HOUR,
+        divisor=100,
+    )
+    .tuya_sensor(
+        dp_id=23,
+        attribute_name="produced_energy",
+        fallback_name="produced_energy",
+        type=t.uint16_t,
+        state_class=SensorStateClass.TOTAL,
+        device_class=SensorDeviceClass.ENERGY,
+        unit=UnitOfEnergy.KILO_WATT_HOUR,
+        divisor=100,
+    )
+    .tuya_sensor(
+        dp_id=29,
+        attribute_name="power",
+        fallback_name="power",
+        type=t.uint16_t,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.POWER,
+        unit=UnitOfPower.WATT,
+    )
+    .tuya_sensor(
+        dp_id=32,
+        attribute_name="ac_frequency",
+        fallback_name="ac_frequency",
+        type=t.uint16_t,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.FREQUENCY,
+        unit=UnitOfFrequency.HERTZ,
+        divisor=100,
+    )
+    .tuya_sensor(
+        dp_id=50,
+        attribute_name="power_factor",
+        fallback_name="power_factor",
+        type=t.uint16_t,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.POWER_FACTOR,
+        #        unit=PERCENTAGE,
+    )
+    .tuya_sensor(
+        dp_id=102,
+        attribute_name="voltage_phase_1",
+        fallback_name="voltage_phase_1",
+        type=t.uint16_t,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.VOLTAGE,
+        divisor=10,
+        unit=UnitOfElectricPotential.VOLT,
+    )
+    .tuya_sensor(
+        dp_id=103,
+        attribute_name="phase_a_current",
+        translation_key="phase_a_current",
+        fallback_name="Current (phase A)",
+        type=t.uint16_t,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.CURRENT,
+        divisor=1000,
+        unit=UnitOfElectricCurrent.AMPERE,
+    )
+    .tuya_sensor(
+        dp_id=104,
+        attribute_name="power_phase_1",
+        fallback_name="power_phase_1",
+        type=t.uint16_t,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.POWER,
+        unit=UnitOfPower.WATT,
+    )
+    .tuya_sensor(
+        dp_id=105,
+        attribute_name="voltage_phase_2",
+        fallback_name="voltage_phase_2",
+        type=t.uint16_t,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.VOLTAGE,
+        divisor=10,
+        unit=UnitOfElectricPotential.VOLT,
+    )
+    .tuya_sensor(
+        dp_id=106,
+        attribute_name="current_phase_2",
+        fallback_name="current_phase_2",
+        type=t.uint16_t,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.CURRENT,
+        divisor=1000,
+        unit=UnitOfElectricCurrent.AMPERE,
+    )
+    .tuya_sensor(
+        dp_id=107,
+        attribute_name="power_phase_2",
+        fallback_name="power_phase_2",
+        type=t.uint16_t,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.POWER,
+        unit=UnitOfPower.WATT,
+    )
+    .tuya_sensor(
+        dp_id=108,
+        attribute_name="voltage_phase_3",
+        fallback_name="voltage_phase_3",
+        type=t.uint16_t,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.VOLTAGE,
+        divisor=10,
+        unit=UnitOfElectricPotential.VOLT,
+    )
+    .tuya_sensor(
+        dp_id=109,
+        attribute_name="current_phase_3",
+        fallback_name="current_phase_3",
+        type=t.uint16_t,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.CURRENT,
+        divisor=1000,
+        unit=UnitOfElectricCurrent.AMPERE,
+    )
+    .tuya_sensor(
+        dp_id=110,
+        attribute_name="power_phase_3",
+        fallback_name="power_phase_3",
+        type=t.uint16_t,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.POWER,
+        unit=UnitOfPower.WATT,
+    )
+    .add_to_registry()
+)
