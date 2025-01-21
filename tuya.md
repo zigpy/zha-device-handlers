@@ -70,7 +70,7 @@ Adds a battery power cluster.
 .tuya_battery(dp_id=2, battery_type=BatterySize.AA, battery_qty=4)
 ```
 
-#### tuya_metering(dp_id: int, metering_cfg: TuyaLocalCluster = TuyaValveWaterConsumed)
+#### tuya_metering(dp_id: int, metering_cfg: TuyaLocalCluster = TuyaValveWaterConsumedNoInstDemand)
 
 Adds a metering cluster.
 

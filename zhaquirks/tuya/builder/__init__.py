@@ -115,8 +115,12 @@ class TuyaValveWaterConsumed(Metering, TuyaLocalCluster):
         Metering.AttributeDefs.metering_device_type.id: WATER_METERING,
     }
 
+
+class TuyaValveWaterConsumedNoInstDemand(TuyaValveWaterConsumed):
+    """Tuya Valve Water consumed cluster without instantaneous demand."""
+
     def __init__(self, *args, **kwargs):
-        """Init a TuyaValveWaterConsumed cluster."""
+        """Init a TuyaValveWaterConsumedNoInstDemand cluster."""
         super().__init__(*args, **kwargs)
         self.add_unsupported_attribute(Metering.AttributeDefs.instantaneous_demand.id)
 
@@ -316,7 +320,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
     def tuya_metering(
         self,
         dp_id: int,
-        metering_cfg: TuyaLocalCluster = TuyaValveWaterConsumed,
+        metering_cfg: TuyaLocalCluster = TuyaValveWaterConsumedNoInstDemand,
         scale: float = 1,
     ) -> QuirkBuilder:
         """Add a Tuya Metering Configuration."""

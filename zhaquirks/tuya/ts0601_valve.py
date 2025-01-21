@@ -51,14 +51,6 @@ class TuyaValveStatus(t.enum8):
     Disabled = 0x02
 
 
-class TuyaValveWaterConsumedInstDemand(TuyaValveWaterConsumed):
-    """Tuya Valve Water consumed cluster, with instantaneous_demand."""
-
-    def __init__(self, *args, **kwargs):
-        """Init a TuyaValveWaterConsumed cluster."""
-        pass
-
-
 (
     TuyaQuirkBuilder("_TZE200_81isopgh", "TS0601")
     .applies_to("_TZE200_1n2zev06", "TS0601")
@@ -540,10 +532,10 @@ class GiexIrrigationStatus(t.enum8):
     )
     .tuya_dp(
         dp_id=9,
-        ep_attribute=TuyaValveWaterConsumedInstDemand.ep_attribute,
+        ep_attribute=TuyaValveWaterConsumed.ep_attribute,
         attribute_name=Metering.AttributeDefs.instantaneous_demand.name,
     )
-    .tuya_metering(dp_id=15, metering_cfg=TuyaValveWaterConsumedInstDemand)
+    .tuya_metering(dp_id=15, metering_cfg=TuyaValveWaterConsumed)
     .tuya_battery(dp_id=11, battery_type=BatterySize.AA, battery_qty=2)
     .tuya_binary_sensor(
         dp_id=19,
