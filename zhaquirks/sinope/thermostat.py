@@ -101,39 +101,39 @@ class TimeFormat(t.enum8):
 class WeatherIcon(t.enum8):
     """weather_icons values."""
 
-    Hide = 0x00
-    Sun = 0x01
-    Sun2 = 0x02
-    Cloudsun = 0x03
-    Cloudsun2 = 0x04
     Cloud = 0x05
     Cloud2 = 0x08
     Cloud3 = 0x09
+    Cloudfog = 0x11
+    Cloudlightning = 0x0B
+    Cloudlightning2 = 0x0C
+    Cloudmoon = 0x13
+    Cloudmoon2 = 0x14
+    Cloudmoon3 = 0x15
+    Cloudrain = 0x0A
+    Cloudrain2 = 0x1C
+    Cloudrain3 = 0x1D
+    Cloudrainmoon = 0x17
+    Cloudrainmoon2 = 0x18
+    Cloudrainmoon3 = 0X19
+    Cloudrainmoon4 = 0X1F
+    Cloudrainmoon5 = 0X21
     Cloudrainsun = 0x06
     Cloudrainsun2 = 0x07
     Cloudrainsun3 = 0x1E
     Cloudrainsun4 = 0x20
-    Cloudrain = 0x0A
-    Cloudrain2 = 0x1C
-    Cloudrain3 = 0x1D
-    Cloudlightning = 0x0B
-    Cloudlightning2 = 0x0C
     Cloudsnow = 0x0D
     Cloudsnow2 = 0x0E
     Cloudsnow3 = 0x0F
     Cloudsnow4 = 0x10
     Cloudsnow5 = 0x16
     Cloudsnow6 = 0x1A
-    Cloudfog = 0x11
-    Cloudmoon = 0x13
-    Cloudmoon2 = 0x14
-    Cloudmoon3 = 0x15
-    Cloudrainmoon = 0x17
-    Cloudrainmoon2 = 0x18
-    Cloudrainmoon3 = 0X19
-    Cloudrainmoon4 = 0X1F
-    Cloudrainmoon5 = 0X21
+    Cloudsun = 0x03
+    Cloudsun2 = 0x04
+    Hide = 0x00
     Moonstar = 0x12
+    Sun = 0x01
+    Sun2 = 0x02
 
 
 class GfciStatus(t.enum8):
