@@ -3,6 +3,7 @@
 from unittest import mock
 
 import pytest
+import zigpy.types as t
 from zigpy.zcl.clusters.security import IasZone
 
 import zhaquirks
@@ -105,7 +106,15 @@ async def test_button_triggers(zigpy_device_from_quirk, message, button, press_t
     listener = mock.MagicMock()
     cluster.add_listener(listener)
 
-    device.handle_message(260, cluster.cluster_id, 1, 1, message)
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=260,
+            cluster_id=cluster.cluster_id,
+            src_ep=1,
+            dst_ep=1,
+            data=t.SerializableBytes(message),
+        )
+    )
     assert listener.zha_send_event.call_count == 1
     assert listener.zha_send_event.call_args == mock.call(
         f"{button}_{press_type}",

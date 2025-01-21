@@ -3,6 +3,7 @@
 from unittest import mock
 
 import pytest
+import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import AnalogOutput, Basic, LevelControl, OnOff
 
@@ -177,12 +178,14 @@ async def test_receive_serial_data(zigpy_device_from_quirk):
     ].add_listener(listener)
 
     # Receive serial data
-    xbee3_device.handle_message(
-        XBEE_PROFILE_ID,
-        XBEE_DATA_CLUSTER,
-        XBEE_DATA_ENDPOINT,
-        XBEE_DATA_ENDPOINT,
-        b"Test UART data",
+    xbee3_device.packet_received(
+        t.ZigbeePacket(
+            profile_id=XBEE_PROFILE_ID,
+            cluster_id=XBEE_DATA_CLUSTER,
+            src_ep=XBEE_DATA_ENDPOINT,
+            dst_ep=XBEE_DATA_ENDPOINT,
+            data=t.SerializableBytes(b"Test UART data"),
+        )
     )
 
     listener.zha_send_event.assert_called_once_with(
@@ -350,12 +353,14 @@ async def test_remote_at_non_native(
 
     def mock_at_response(*args, **kwargs):
         """Simulate remote AT command response from device."""
-        xbee3_device.handle_message(
-            XBEE_PROFILE_ID,
-            XBEE_AT_RESPONSE_CLUSTER,
-            XBEE_AT_ENDPOINT,
-            XBEE_AT_ENDPOINT,
-            response_data,
+        xbee3_device.packet_received(
+            t.ZigbeePacket(
+                profile_id=XBEE_PROFILE_ID,
+                cluster_id=XBEE_AT_RESPONSE_CLUSTER,
+                src_ep=XBEE_AT_ENDPOINT,
+                dst_ep=XBEE_AT_ENDPOINT,
+                data=t.SerializableBytes(response_data),
+            )
         )
         return mock.DEFAULT
 
@@ -477,12 +482,14 @@ async def test_remote_at_tx_failure(zigpy_device_from_quirk):
 
     def mock_at_response(*args, **kwargs):
         """Simulate remote AT command response from device."""
-        xbee3_device.handle_message(
-            XBEE_PROFILE_ID,
-            XBEE_AT_RESPONSE_CLUSTER,
-            XBEE_AT_ENDPOINT,
-            XBEE_AT_ENDPOINT,
-            b"\x01TP\x04",
+        xbee3_device.packet_received(
+            t.ZigbeePacket(
+                profile_id=XBEE_PROFILE_ID,
+                cluster_id=XBEE_AT_RESPONSE_CLUSTER,
+                src_ep=XBEE_AT_ENDPOINT,
+                dst_ep=XBEE_AT_ENDPOINT,
+                data=t.SerializableBytes(b"\x01TP\x04"),
+            )
         )
         return mock.DEFAULT
 
@@ -515,12 +522,16 @@ async def test_io_sample_report(zigpy_device_from_quirk):
     ]
 
     #   {'digital_samples': [1, None, 0, None, 1, None, 0, None, 1, None, 0, None, 1, None, 0], 'analog_samples': [341, None, 682, None, None, None, None, 3305]}
-    xbee3_device.handle_message(
-        XBEE_PROFILE_ID,
-        XBEE_IO_CLUSTER,
-        XBEE_DATA_ENDPOINT,
-        XBEE_DATA_ENDPOINT,
-        b"\x01\x55\x55\x85\x11\x11\x01\x55\x02\xaa\x0c\xe9",
+    xbee3_device.packet_received(
+        t.ZigbeePacket(
+            profile_id=XBEE_PROFILE_ID,
+            cluster_id=XBEE_IO_CLUSTER,
+            src_ep=XBEE_DATA_ENDPOINT,
+            dst_ep=XBEE_DATA_ENDPOINT,
+            data=t.SerializableBytes(
+                b"\x01\x55\x55\x85\x11\x11\x01\x55\x02\xaa\x0c\xe9"
+            ),
+        )
     )
 
     for i in range(len(digital_listeners)):
@@ -564,12 +575,16 @@ async def test_io_sample_report_on_at_response(zigpy_device_from_quirk):
 
     def mock_at_response(*args, **kwargs):
         """Simulate remote AT command response from device."""
-        xbee_device.handle_message(
-            XBEE_PROFILE_ID,
-            XBEE_AT_RESPONSE_CLUSTER,
-            XBEE_AT_ENDPOINT,
-            XBEE_AT_ENDPOINT,
-            b"\x01IS\x00\x01\x55\x55\x85\x11\x11\x01\x55\x02\xaa\x0c\xe9",
+        xbee_device.packet_received(
+            t.ZigbeePacket(
+                profile_id=XBEE_PROFILE_ID,
+                cluster_id=XBEE_AT_RESPONSE_CLUSTER,
+                src_ep=XBEE_AT_ENDPOINT,
+                dst_ep=XBEE_AT_ENDPOINT,
+                data=t.SerializableBytes(
+                    b"\x01IS\x00\x01\x55\x55\x85\x11\x11\x01\x55\x02\xaa\x0c\xe9"
+                ),
+            )
         )
         return mock.DEFAULT
 
@@ -649,7 +664,15 @@ async def test_zdo(handle_mgmt_lqi_resp, zigpy_device_from_quirk):
     xbee3_device = zigpy_device_from_quirk(XBee3Sensor)
 
     # Receive ZDOCmd.IEEE_addr_req
-    xbee3_device.handle_message(0, 0x0001, 0, 0, b"\x07\x34\x12\x00\x00")
+    xbee3_device.packet_received(
+        t.ZigbeePacket(
+            profile_id=0,
+            cluster_id=0x01,
+            src_ep=0,
+            dst_ep=0,
+            data=t.SerializableBytes(b"\x07\x34\x12\x00\x00"),
+        )
+    )
 
     assert handle_mgmt_lqi_resp.call_count == 1
     assert len(handle_mgmt_lqi_resp.call_args_list[0][0]) == 4

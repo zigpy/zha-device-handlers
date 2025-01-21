@@ -336,8 +336,14 @@ async def test_xiaomi_battery(zigpy_device_from_quirk, voltage, bpr):
     )
 
     device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.vibration_aq1.VibrationAQ1)
-    device.handle_message(
-        0x260, 0x0000, 1, 1, data_1 + t.uint16_t(voltage).serialize() + data_2
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=0x260,
+            cluster_id=0x0000,
+            src_ep=1,
+            dst_ep=1,
+            data=t.SerializableBytes(data_1 + t.uint16_t(voltage).serialize() + data_2),
+        )
     )
     power_cluster = device.endpoints[1].power
     assert power_cluster["battery_percentage_remaining"] == bpr
@@ -362,8 +368,14 @@ async def test_mija_battery(zigpy_device_from_quirk, voltage, bpr):
     data_2 = b"!\xa8\x01$\x00\x00\x00\x00\x00!n\x00 P"
 
     device = zigpy_device_from_quirk(zhaquirks.xiaomi.mija.motion.Motion)
-    device.handle_message(
-        0x260, 0x0000, 1, 1, data_1 + t.uint16_t(voltage).serialize() + data_2
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=0x260,
+            cluster_id=0x0000,
+            src_ep=1,
+            dst_ep=1,
+            data=t.SerializableBytes(data_1 + t.uint16_t(voltage).serialize() + data_2),
+        )
     )
     power_cluster = device.endpoints[1].power
     assert power_cluster["battery_percentage_remaining"] == bpr
@@ -764,12 +776,14 @@ async def test_aqara_feeder_attr_reports(
     cluster_listener = Listener()
     opple_cluster.add_listener(cluster_listener)
 
-    device.handle_message(
-        260,
-        opple_cluster.cluster_id,
-        opple_cluster.endpoint.endpoint_id,
-        opple_cluster.endpoint.endpoint_id,
-        bytes_received,
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=0x260,
+            cluster_id=opple_cluster.cluster_id,
+            src_ep=opple_cluster.endpoint.endpoint_id,
+            dst_ep=opple_cluster.endpoint.endpoint_id,
+            data=t.SerializableBytes(bytes_received),
+        )
     )
 
     assert cluster_listener.attribute_updated.call_count == call_count
@@ -840,12 +854,14 @@ async def test_aqara_smoke_sensor_xiaomi_attribute_report(
     ias_cluster = device.endpoints[1].ias_zone
     ias_listener = ClusterListener(ias_cluster)
 
-    device.handle_message(
-        260,
-        opple_cluster.cluster_id,
-        opple_cluster.endpoint.endpoint_id,
-        opple_cluster.endpoint.endpoint_id,
-        raw_report,
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=0x260,
+            cluster_id=opple_cluster.cluster_id,
+            src_ep=opple_cluster.endpoint.endpoint_id,
+            dst_ep=opple_cluster.endpoint.endpoint_id,
+            data=t.SerializableBytes(raw_report),
+        )
     )
 
     # check that Xiaomi attribute report also updates attribute cache
@@ -1264,12 +1280,14 @@ async def test_xiaomi_weather(
         PowerConfiguration.AttributeDefs.battery_percentage_remaining.id
     )
 
-    device.handle_message(
-        260,
-        xiaomi_attr_cluster.cluster_id,
-        xiaomi_attr_cluster.endpoint.endpoint_id,
-        xiaomi_attr_cluster.endpoint.endpoint_id,
-        raw_report,
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=260,
+            cluster_id=xiaomi_attr_cluster.cluster_id,
+            src_ep=xiaomi_attr_cluster.endpoint.endpoint_id,
+            dst_ep=xiaomi_attr_cluster.endpoint.endpoint_id,
+            data=t.SerializableBytes(raw_report),
+        )
     )
 
     assert len(temperature_listener.attribute_updates) == 1
@@ -1331,12 +1349,14 @@ async def test_xiaomi_motion_sensor_misc(
         PowerConfiguration.AttributeDefs.battery_percentage_remaining.id
     )
 
-    device.handle_message(
-        260,
-        basic_cluster.cluster_id,
-        basic_cluster.endpoint.endpoint_id,
-        basic_cluster.endpoint.endpoint_id,
-        raw_report,
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=260,
+            cluster_id=basic_cluster.cluster_id,
+            src_ep=basic_cluster.endpoint.endpoint_id,
+            dst_ep=basic_cluster.endpoint.endpoint_id,
+            data=t.SerializableBytes(raw_report),
+        )
     )
 
     assert len(device_temperature_listener.attribute_updates) == 1
@@ -1451,12 +1471,14 @@ async def test_xiaomi_t1_door_sensor(
     on_off_listener = ClusterListener(on_off_cluster)
 
     # check open state
-    device.handle_message(
-        260,
-        on_off_cluster.cluster_id,
-        on_off_cluster.endpoint.endpoint_id,
-        on_off_cluster.endpoint.endpoint_id,
-        bytes.fromhex("185D0A00001001"),
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=260,
+            cluster_id=on_off_cluster.cluster_id,
+            src_ep=on_off_cluster.endpoint.endpoint_id,
+            dst_ep=on_off_cluster.endpoint.endpoint_id,
+            data=t.SerializableBytes(bytes.fromhex("185D0A00001001")),
+        )
     )
 
     assert len(on_off_listener.attribute_updates) == 1
@@ -1464,12 +1486,14 @@ async def test_xiaomi_t1_door_sensor(
     assert on_off_listener.attribute_updates[0][1] == t.Bool.true
 
     # check closed state
-    device.handle_message(
-        260,
-        on_off_cluster.cluster_id,
-        on_off_cluster.endpoint.endpoint_id,
-        on_off_cluster.endpoint.endpoint_id,
-        bytes.fromhex("18640A00001000"),
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=260,
+            cluster_id=on_off_cluster.cluster_id,
+            src_ep=on_off_cluster.endpoint.endpoint_id,
+            dst_ep=on_off_cluster.endpoint.endpoint_id,
+            data=t.SerializableBytes(bytes.fromhex("185D0A00001000")),
+        )
     )
 
     assert len(on_off_listener.attribute_updates) == 2
@@ -1488,12 +1512,14 @@ async def test_xiaomi_t1_door_sensor(
     )
 
     # check Xiaomi attribute report
-    device.handle_message(
-        260,
-        opple_cluster.cluster_id,
-        opple_cluster.endpoint.endpoint_id,
-        opple_cluster.endpoint.endpoint_id,
-        raw_report,
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=260,
+            cluster_id=opple_cluster.cluster_id,
+            src_ep=opple_cluster.endpoint.endpoint_id,
+            dst_ep=opple_cluster.endpoint.endpoint_id,
+            data=t.SerializableBytes(raw_report),
+        )
     )
 
     assert len(power_listener.attribute_updates) == 2
