@@ -381,6 +381,7 @@ base_avatto_quirk = (
     .add_to_registry()
 )
 
+
 (
     base_avatto_quirk.clone()
     .applies_to("_TZE200_viy9ihs7", "TS0601")
