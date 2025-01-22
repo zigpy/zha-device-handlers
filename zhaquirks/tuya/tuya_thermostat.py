@@ -1,5 +1,7 @@
 """Tuya TS0601 Thermostat."""
 
+import copy
+
 from zigpy.quirks.v2 import BinarySensorDeviceClass, EntityType
 from zigpy.quirks.v2.homeassistant import (
     UnitOfElectricCurrent,
@@ -13,8 +15,9 @@ from zigpy.types import t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.hvac import Thermostat
 
+from zhaquirks.tuya import TUYA_MCU_VERSION_RSP, TUYA_SET_TIME, TuyaTimePayload
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
-from zhaquirks.tuya.mcu import TuyaAttributesCluster
+from zhaquirks.tuya.mcu import TuyaAttributesCluster, TuyaMCUCluster
 
 
 class RegulatorPeriod(t.enum8):
@@ -112,6 +115,25 @@ class TuyaThermostat(Thermostat, TuyaAttributesCluster):
             Thermostat.AttributeDefs.setpoint_change_source_timestamp.id
         )
         self.add_unsupported_attribute(Thermostat.AttributeDefs.pi_heating_demand.id)
+
+
+class NoManufTimeNoVersionRespTuyaMCUCluster(TuyaMCUCluster):
+    """Tuya Manufacturer Cluster with set_time mod."""
+
+    server_commands = copy.deepcopy(TuyaMCUCluster.server_commands)
+    server_commands.update(
+        {
+            TUYA_SET_TIME: foundation.ZCLCommandDef(
+                "set_time",
+                {"time": TuyaTimePayload},
+                False,
+                is_manufacturer_specific=False,
+            ),
+        }
+    )
+
+    client_commands = copy.deepcopy(TuyaMCUCluster.client_commands)
+    client_commands.pop(TUYA_MCU_VERSION_RSP)
 
 
 (
@@ -378,7 +400,7 @@ base_avatto_quirk = (
         translation_key="working_day",
         fallback_name="Working day",
     )
-    .add_to_registry()
+    .add_to_registry(replacement_cluster=NoManufTimeNoVersionRespTuyaMCUCluster)
 )
 
 
@@ -399,7 +421,7 @@ base_avatto_quirk = (
         translation_key="working_day",
         fallback_name="Working day",
     )
-    .add_to_registry()
+    .add_to_registry(replacement_cluster=NoManufTimeNoVersionRespTuyaMCUCluster)
 )
 
 
@@ -421,5 +443,5 @@ base_avatto_quirk = (
         translation_key="working_day",
         fallback_name="Working day",
     )
-    .add_to_registry()
+    .add_to_registry(replacement_cluster=NoManufTimeNoVersionRespTuyaMCUCluster)
 )
