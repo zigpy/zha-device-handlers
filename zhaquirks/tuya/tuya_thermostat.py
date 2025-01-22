@@ -15,7 +15,7 @@ from zigpy.types import t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.hvac import Thermostat
 
-from zhaquirks.tuya import TUYA_MCU_VERSION_RSP, TUYA_SET_TIME, TuyaTimePayload
+from zhaquirks.tuya import TUYA_SET_TIME, TuyaTimePayload
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import TuyaAttributesCluster, TuyaMCUCluster
 
@@ -132,8 +132,12 @@ class NoManufTimeNoVersionRespTuyaMCUCluster(TuyaMCUCluster):
         }
     )
 
-    client_commands = copy.deepcopy(TuyaMCUCluster.client_commands)
-    client_commands.pop(TUYA_MCU_VERSION_RSP)
+    def handle_mcu_version_response(
+        self, payload: TuyaMCUCluster.MCUVersion
+    ) -> foundation.Status:
+        """Handle MCU version response."""
+
+        return foundation.Status.SUCCESS
 
 
 (
