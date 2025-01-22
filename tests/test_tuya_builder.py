@@ -12,7 +12,12 @@ from zigpy.zcl.clusters.general import Basic, BatterySize
 
 from tests.common import ClusterListener, MockDatetime, wait_for_zigpy_tasks
 import zhaquirks
-from zhaquirks.tuya import TUYA_QUERY_DATA, TUYA_SET_TIME
+from zhaquirks.tuya import (
+    TUYA_QUERY_DATA,
+    TUYA_SET_TIME,
+    TuyaPowerConfigurationCluster,
+    TuyaPowerConfigurationCluster2AAA,
+)
 from zhaquirks.tuya.builder import (
     TuyaAirQualityVOC,
     TuyaCO2Concentration,

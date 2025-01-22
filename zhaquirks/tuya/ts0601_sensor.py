@@ -1,5 +1,7 @@
 """Tuya temp and humidity sensors."""
 
+import copy
+
 from zigpy.quirks.v2 import EntityPlatform, EntityType
 from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature, UnitOfTime
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
@@ -89,7 +91,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     set_time_offset = 1970
     set_time_local_offset = 1970
 
-    server_commands = TuyaMCUCluster.server_commands.copy()
+    server_commands = copy.deepcopy(TuyaMCUCluster.server_commands)
     server_commands.update(
         {
             TUYA_SET_TIME: foundation.ZCLCommandDef(
