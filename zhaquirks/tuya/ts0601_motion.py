@@ -13,7 +13,7 @@ from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
 
 from zhaquirks.tuya import TuyaLocalCluster
-from zhaquirks.tuya.builder import TuyaIlluminanceCluster, TuyaQuirkBuilder
+from zhaquirks.tuya.builder import TuyaIlluminance, TuyaQuirkBuilder
 
 
 class TuyaOccupancySensing(OccupancySensing, TuyaLocalCluster):
@@ -203,7 +203,7 @@ base_tuya_motion = (
         translation_key="distance",
         fallback_name="Target distance",
     )
-    .adds(TuyaIlluminanceCluster)
+    .adds(TuyaIlluminance)
     .skip_configuration()
 )
 
@@ -407,11 +407,11 @@ base_tuya_motion = (
     )
     .tuya_dp(
         dp_id=102,
-        ep_attribute=TuyaIlluminanceCluster.ep_attribute,
-        attribute_name=TuyaIlluminanceCluster.AttributeDefs.measured_value.name,
+        ep_attribute=TuyaIlluminance.ep_attribute,
+        attribute_name=TuyaIlluminance.AttributeDefs.measured_value.name,
         converter=lambda x: 10000 * math.log10(x) + 1 if x != 0 else 0,
     )
-    .adds(TuyaIlluminanceCluster)
+    .adds(TuyaIlluminance)
     .tuya_number(
         dp_id=103,
         attribute_name="fading_time",
@@ -493,11 +493,11 @@ base_tuya_motion = (
     )
     .tuya_dp(
         dp_id=102,
-        ep_attribute=TuyaIlluminanceCluster.ep_attribute,
-        attribute_name=TuyaIlluminanceCluster.AttributeDefs.measured_value.name,
+        ep_attribute=TuyaIlluminance.ep_attribute,
+        attribute_name=TuyaIlluminance.AttributeDefs.measured_value.name,
         converter=lambda x: 10000 * math.log10(x) + 1 if x != 0 else 0,
     )
-    .adds(TuyaIlluminanceCluster)
+    .adds(TuyaIlluminance)
     .tuya_number(
         dp_id=103,
         attribute_name="hold_delay_time",
@@ -952,7 +952,7 @@ base_tuya_motion = (
         translation_key="presence_timeout",
         fallback_name="Fade time",
     )
-    .adds(TuyaIlluminanceCluster)
+    .adds(TuyaIlluminance)
     .skip_configuration()
     .add_to_registry()
 )
@@ -1042,13 +1042,13 @@ base_tuya_motion = (
     )
     .tuya_dp(
         dp_id=102,
-        ep_attribute=TuyaIlluminanceCluster.ep_attribute,
-        attribute_name=TuyaIlluminanceCluster.AttributeDefs.measured_value.name,
+        ep_attribute=TuyaIlluminance.ep_attribute,
+        attribute_name=TuyaIlluminance.AttributeDefs.measured_value.name,
         converter=lambda x: {0: 10, 1: 20, 2: 50, 3: 100}[
             x
         ],  # z2m has 10lux, 20lux, 50lux, then 24hrs?
     )
-    .adds(TuyaIlluminanceCluster)
+    .adds(TuyaIlluminance)
     .tuya_number(
         dp_id=103,
         attribute_name="output_time",
@@ -1109,11 +1109,11 @@ base_tuya_motion = (
     )
     .tuya_dp(
         dp_id=12,
-        ep_attribute=TuyaIlluminanceCluster.ep_attribute,
-        attribute_name=TuyaIlluminanceCluster.AttributeDefs.measured_value.name,
+        ep_attribute=TuyaIlluminance.ep_attribute,
+        attribute_name=TuyaIlluminance.AttributeDefs.measured_value.name,
         converter=lambda x: 10000 * math.log10(x) + 1 if x != 0 else 0,
     )
-    .adds(TuyaIlluminanceCluster)
+    .adds(TuyaIlluminance)
     .tuya_number(
         dp_id=105,
         attribute_name="illuminance_interval",
@@ -1137,11 +1137,11 @@ base_tuya_motion = (
     .applies_to("_TZE204_e5m9c5hl", "TS0601")
     .tuya_dp(
         dp_id=104,
-        ep_attribute=TuyaIlluminanceCluster.ep_attribute,
-        attribute_name=TuyaIlluminanceCluster.AttributeDefs.measured_value.name,
+        ep_attribute=TuyaIlluminance.ep_attribute,
+        attribute_name=TuyaIlluminance.AttributeDefs.measured_value.name,
         converter=lambda x: 10000 * math.log10(x) + 1 if x != 0 else 0,
     )
-    .adds(TuyaIlluminanceCluster)
+    .adds(TuyaIlluminance)
     .tuya_dp(
         dp_id=105,
         ep_attribute=TuyaOccupancySensing.ep_attribute,
@@ -1242,13 +1242,8 @@ base_tuya_motion = (
         translation_key="motion_sensitivity",
         fallback_name="Motion sensitivity",
     )
-    .tuya_dp(
-        dp_id=12,
-        ep_attribute=TuyaIlluminanceCluster.ep_attribute,
-        attribute_name=TuyaIlluminanceCluster.AttributeDefs.measured_value.name,
-        converter=lambda x: 10000 * math.log10(x) + 1 if x != 0 else 0,
-    )
-    .adds(TuyaIlluminanceCluster)
+    .tuya_illuminance(dp_id=12)
+    .adds(TuyaIlluminance)
     .tuya_number(
         dp_id=101,
         attribute_name="illuminance_interval",

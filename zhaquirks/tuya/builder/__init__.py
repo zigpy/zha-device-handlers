@@ -159,7 +159,7 @@ class TuyaAirQualityVOC(TuyaLocalCluster):
         )
 
 
-class TuyaIlluminanceCluster(IlluminanceMeasurement, TuyaLocalCluster):
+class TuyaIlluminance(IlluminanceMeasurement, TuyaLocalCluster):
     """Tuya local illuminance cluster."""
 
     _CONSTANT_ATTRIBUTES = {
@@ -231,7 +231,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
     def tuya_illuminance(
         self,
         dp_id: int,
-        illuminance_cfg: TuyaLocalCluster = TuyaIlluminanceCluster,
+        illuminance_cfg: TuyaLocalCluster = TuyaIlluminance,
     ) -> QuirkBuilder:
         """Add a Tuya Illuminance Configuration."""
         self.tuya_dp(
