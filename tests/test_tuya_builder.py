@@ -33,7 +33,7 @@ from zhaquirks.tuya.builder import (
     TuyaValveWaterConsumed,
 )
 from zhaquirks.tuya.mcu import TuyaMCUCluster, TuyaOnOffNM
-from zhaquirks.tuya.ts0601_sensor import NoManufTimeTuyaMCUCluster
+from zhaquirks.tuya.tuya_sensor import NoManufTimeTuyaMCUCluster
 
 ZCL_TUYA_SET_TIME = b"\x09\x12\x24\x0d\x00"
 
