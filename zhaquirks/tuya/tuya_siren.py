@@ -359,9 +359,7 @@ class NeoBatteryState(t.enum8):
 
 # Tuya ZA03
 (
-    TuyaQuirkBuilder("_TZE200_t1blo2bj", "TS0601")
-    .applies_to("_TZE204_t1blo2bj", "TS0601")
-    .applies_to("_TZE204_q76rtoa9", "TS0601")
+    TuyaQuirkBuilder("_TZE204_hcxvyxa5", "TS0601")
     .tuya_enum(
         dp_id=5,
         attribute_name="alarm_volume",
