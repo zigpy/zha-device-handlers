@@ -101,6 +101,7 @@ async def test_handle_get_data(
         ("_TZE204_utkemkbs", "TS0601", 100, 10),
         ("_TZE204_yjjdcqsq", "TS0601", 100, 10),
         ("_TZE204_ksz749x8", "TS0601", 100, 10),
+        ("_TZE204_upagmta9", "TS0601", 100, 10),
     ],
 )
 async def test_handle_get_data_enum_batt(
@@ -117,7 +118,10 @@ async def test_handle_get_data_enum_batt(
     assert ep.tuya_manufacturer is not None
     assert isinstance(ep.tuya_manufacturer, TuyaMCUCluster)
 
-    message = b"\x09\xe0\x02\x0b\x33\x01\x02\x00\x04\x00\x00\x00\xfd\x02\x02\x00\x04\x00\x00\x00\x47\x04\x02\x00\x04\x00\x00\x00\x01"
+    if model == "_TZE204_upagmta9":  # Uses dp 3 for battery
+        message = b"\x09\xe0\x02\x0b\x33\x01\x02\x00\x04\x00\x00\x00\xfd\x02\x02\x00\x04\x00\x00\x00\x47\x03\x02\x00\x04\x00\x00\x00\x01"
+    else:
+        message = b"\x09\xe0\x02\x0b\x33\x01\x02\x00\x04\x00\x00\x00\xfd\x02\x02\x00\x04\x00\x00\x00\x47\x04\x02\x00\x04\x00\x00\x00\x01"
     hdr, data = ep.tuya_manufacturer.deserialize(message)
 
     status = ep.tuya_manufacturer.handle_get_data(data.data)
@@ -164,6 +168,3 @@ def test_valid_attributes(zigpy_device_from_v2_quirk):
     assert {temperature_attr_id} == temperature_cluster._VALID_ATTRIBUTES
     assert {humidity_attr_id} == humidity_cluster._VALID_ATTRIBUTES
     assert {power_attr_id} == power_config_cluster._VALID_ATTRIBUTES
-
-
-# _TZE204_upagmta9
