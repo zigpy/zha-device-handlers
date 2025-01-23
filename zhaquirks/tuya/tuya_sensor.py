@@ -4,7 +4,7 @@ import copy
 
 from zigpy.quirks.v2 import EntityPlatform, EntityType
 from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature, UnitOfTime
-from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
+from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass
 import zigpy.types as t
 from zigpy.zcl import foundation
 
@@ -304,14 +304,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
 (
     TuyaQuirkBuilder("_TZE200_pay2byax", "TS0601")  # Cusam ZG-102ZL
     .applies_to("_TZE200_n8dljorx", "TS0601")
-    .tuya_sensor(
-        dp_id=101,
-        attribute_name="measured_value",
-        type=t.uint16_t,
-        fallback_name="Illuminance",
-        device_class=SensorDeviceClass.ILLUMINANCE,
-        state_class=SensorStateClass.MEASUREMENT,
-    )
+    .tuya_illuminance(dp_id=101)
     .tuya_contact(dp_id=1)
     .tuya_battery(dp_id=2)
     .skip_configuration()
