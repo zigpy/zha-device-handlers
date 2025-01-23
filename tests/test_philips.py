@@ -628,7 +628,7 @@ def test_PhilipsRemoteCluster_long_press(
         (4),
     ),
 )
-def test_ButtonPressQueue_presses_without_pause(button_presses):
+async def test_ButtonPressQueue_presses_without_pause(button_presses):
     """Test ButtonPressQueue presses without pause in between presses."""
 
     q = ButtonPressQueue()
