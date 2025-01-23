@@ -37,9 +37,9 @@ import zhaquirks.tuya.ts0501_fan_switch
 import zhaquirks.tuya.ts0601_electric_heating
 import zhaquirks.tuya.ts0601_motion
 import zhaquirks.tuya.ts0601_trv
-import zhaquirks.tuya.ts0601_valve
 import zhaquirks.tuya.ts601_door
 import zhaquirks.tuya.ts1201
+import zhaquirks.tuya.tuya_valve
 
 zhaquirks.setup()
 

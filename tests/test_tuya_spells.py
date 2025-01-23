@@ -22,7 +22,7 @@ from zhaquirks.tuya import (
     TuyaNewManufCluster,
     TuyaZBOnOffAttributeCluster,
 )
-import zhaquirks.tuya.ts0601_valve
+import zhaquirks.tuya.tuya_valve
 
 zhaquirks.setup()
 

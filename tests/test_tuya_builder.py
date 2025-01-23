@@ -31,7 +31,7 @@ from zhaquirks.tuya.builder import (
     TuyaRelativeHumidity,
     TuyaSoilMoisture,
     TuyaTemperatureMeasurement,
-    TuyaValveWaterConsumed,
+    TuyaValveWaterConsumedNoInstDemand,
 )
 from zhaquirks.tuya.mcu import TuyaMCUCluster, TuyaOnOffNM
 from zhaquirks.tuya.tuya_sensor import NoManufTimeTuyaMCUCluster
@@ -45,7 +45,7 @@ zhaquirks.setup()
     "method_name,attr_name,exp_class",
     [
         ("tuya_battery", "power", TuyaPowerConfigurationCluster),
-        ("tuya_metering", "smartenergy_metering", TuyaValveWaterConsumed),
+        ("tuya_metering", "smartenergy_metering", TuyaValveWaterConsumedNoInstDemand),
         ("tuya_onoff", "on_off", TuyaOnOffNM),
         ("tuya_soil_moisture", "soil_moisture", TuyaSoilMoisture),
         ("tuya_temperature", "temperature", TuyaTemperatureMeasurement),
