@@ -49,6 +49,7 @@ class TuyaNousTempHumiAlarm(t.enum8):
     .add_to_registry()
 )
 
+
 (
     TuyaQuirkBuilder("_TZE200_bq5c8xfe", "TS0601")
     .applies_to("_TZE200_vs0skpuc", "TS0601")
@@ -68,6 +69,7 @@ class TuyaNousTempHumiAlarm(t.enum8):
     .skip_configuration()
     .add_to_registry()
 )
+
 
 (
     TuyaQuirkBuilder("_TZE200_a8sdabtg", "TS0601")  # Variant without screen, round
@@ -91,6 +93,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     set_time_offset = 1970
     set_time_local_offset = 1970
 
+    # Deepcopy required to override 'set_time', without, it will revert
     server_commands = copy.deepcopy(TuyaMCUCluster.server_commands)
     server_commands.update(
         {
@@ -248,6 +251,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .add_to_registry(replacement_cluster=NoManufTimeTuyaMCUCluster)
 )
 
+
 (
     TuyaQuirkBuilder("_TZE200_yjjdcqsq", "TS0601")
     .applies_to("_TZE200_9yapgbuv", "TS0601")
@@ -295,6 +299,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .skip_configuration()
     .add_to_registry()
 )
+
 
 (
     TuyaQuirkBuilder("_TZE200_pay2byax", "TS0601")  # Cusam ZG-102ZL
