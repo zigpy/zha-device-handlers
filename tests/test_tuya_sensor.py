@@ -37,6 +37,7 @@ zhaquirks.setup()
         ("_TZE200_ydrdfkim", "TS0601", 100, 10, False),
         ("_TZE284_locansqn", "TS0601", 100, 10, False),
         ("_TZE200_vvmbj46n", "TS0601", 100, 10, True),
+        ("_TZE204_upagmta9", "TS0601", 100, 10, False),
     ],
 )
 async def test_handle_get_data(
@@ -163,3 +164,6 @@ def test_valid_attributes(zigpy_device_from_v2_quirk):
     assert {temperature_attr_id} == temperature_cluster._VALID_ATTRIBUTES
     assert {humidity_attr_id} == humidity_cluster._VALID_ATTRIBUTES
     assert {power_attr_id} == power_config_cluster._VALID_ATTRIBUTES
+
+
+# _TZE204_upagmta9
