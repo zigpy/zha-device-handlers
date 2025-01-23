@@ -47,6 +47,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     ZONE_STATUS_CHANGE_COMMAND,
+    BatterySize,
 )
 from zhaquirks.xiaomi import (
     LUMI,
@@ -384,10 +385,10 @@ async def test_mija_battery(zigpy_device_from_quirk, voltage, bpr):
 @pytest.mark.parametrize(
     "quirk, batt_size",
     (
-        (zhaquirks.xiaomi.aqara.vibration_aq1.VibrationAQ1, 0x0A),
-        (zhaquirks.xiaomi.mija.motion.Motion, 0x09),
-        (zhaquirks.xiaomi.mija.sensor_switch.MijaButton, 0x0A),
-        (zhaquirks.xiaomi.mija.sensor_magnet.Magnet, 0x0B),
+        (zhaquirks.xiaomi.aqara.vibration_aq1.VibrationAQ1, BatterySize.CR2032),
+        (zhaquirks.xiaomi.mija.motion.Motion, BatterySize.CR2450),
+        (zhaquirks.xiaomi.mija.sensor_switch.MijaButton, BatterySize.CR2032),
+        (zhaquirks.xiaomi.mija.sensor_magnet.Magnet, BatterySize.CR1632),
     ),
 )
 async def test_xiaomi_batt_size(zigpy_device_from_quirk, quirk, batt_size):

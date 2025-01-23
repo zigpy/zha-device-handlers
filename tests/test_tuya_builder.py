@@ -8,10 +8,11 @@ from zigpy.quirks.registry import DeviceRegistry
 from zigpy.quirks.v2 import CustomDeviceV2
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import Basic, BatterySize
+from zigpy.zcl.clusters.general import Basic
 
 from tests.common import ClusterListener, MockDatetime, wait_for_zigpy_tasks
 import zhaquirks
+from zhaquirks.const import BatterySize
 from zhaquirks.tuya import (
     TUYA_QUERY_DATA,
     TUYA_SET_TIME,
@@ -93,6 +94,9 @@ async def test_convenience_methods(device_mock, method_name, attr_name, exp_clas
         (TuyaPowerConfigurationCluster2AAA, None, None, None, BatterySize.AAA, 2, 15),
         (None, BatterySize.CR123A, 1, 60, BatterySize.CR123A, 1, 60),
         (None, BatterySize.CR123A, 1, None, BatterySize.CR123A, 1, 30),
+        (None, BatterySize.CR2450, 1, None, BatterySize.CR2450, 1, 30),
+        (None, BatterySize.CR2032, 1, None, BatterySize.CR2032, 1, 30),
+        (None, BatterySize.CR1632, 1, None, BatterySize.CR1632, 1, 30),
         (None, BatterySize.AA, None, None, BatterySize.AA, None, None),
         (None, None, None, None, None, None, None),
     ],
