@@ -17,7 +17,6 @@ from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import BatterySize
 from zigpy.zcl.clusters.measurement import (
     PM25,
     CarbonDioxideConcentration,
@@ -31,6 +30,7 @@ from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
+from zhaquirks.const import BatterySize
 from zhaquirks.tuya import (
     TUYA_CLUSTER_ID,
     BaseEnchantedDevice,
@@ -54,6 +54,9 @@ BATTERY_VOLTAGES = {
     BatterySize.AA: 15,
     BatterySize.CR2: 30,
     BatterySize.CR123A: 30,
+    BatterySize.CR2450: 30,
+    BatterySize.CR2032: 30,
+    BatterySize.CR1632: 30,
     BatterySize.Unknown: None,
 }
 

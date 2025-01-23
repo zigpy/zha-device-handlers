@@ -8,6 +8,7 @@ from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass
 import zigpy.types as t
 from zigpy.zcl import foundation
 
+from zhaquirks.const import BatterySize
 from zhaquirks.tuya import (
     TUYA_SET_TIME,
     TuyaPowerConfigurationCluster2AAA,
@@ -305,7 +306,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .applies_to("_TZE200_n8dljorx", "TS0601")
     .tuya_illuminance(dp_id=101)
     .tuya_contact(dp_id=1)
-    .tuya_battery(dp_id=2)
+    .tuya_battery(dp_id=2, battery_type=BatterySize.CR2032, battery_qty=1)
     .skip_configuration()
     .add_to_registry()
 )
