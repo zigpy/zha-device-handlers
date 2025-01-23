@@ -10,6 +10,8 @@ from zigpy.zcl import foundation
 
 from zhaquirks.const import BatterySize
 from zhaquirks.tuya import (
+    TUYA_MCU_VERSION_REQ,
+    TUYA_QUERY_DATA,
     TUYA_SET_TIME,
     TuyaPowerConfigurationCluster2AAA,
     TuyaTimePayload,
@@ -31,6 +33,53 @@ class TuyaNousTempHumiAlarm(t.enum8):
     LowerAlarm = 0x00
     UpperAlarm = 0x01
     Canceled = 0x02
+
+
+class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
+    """Tuya Manufacturer Cluster with set_time mod."""
+
+    set_time_offset = 1970
+    set_time_local_offset = 1970
+
+    # Deepcopy required to override 'set_time', without, it will revert
+    server_commands = copy.deepcopy(TuyaMCUCluster.server_commands)
+    server_commands.update(
+        {
+            TUYA_SET_TIME: foundation.ZCLCommandDef(
+                "set_time",
+                {"time": TuyaTimePayload},
+                False,
+                is_manufacturer_specific=False,
+            ),
+        }
+    )
+
+
+class RespondingTuyaMCUCluster(TuyaMCUCluster):
+    """Tuya Manufacturer Cluster with mcu version response."""
+
+    def handle_mcu_version_response(
+        self, payload: TuyaMCUCluster.MCUVersion
+    ) -> foundation.Status:
+        """Handle MCU version response."""
+
+        self.create_catching_task(
+            super().command(TUYA_MCU_VERSION_REQ, 2, expect_reply=False)
+        )
+        self.create_catching_task(super().command(TUYA_QUERY_DATA, expect_reply=False))
+        super().handle_mcu_version_response(payload)
+
+    server_commands = copy.deepcopy(TuyaMCUCluster.server_commands)
+    server_commands.update(
+        {
+            TUYA_MCU_VERSION_REQ: foundation.ZCLCommandDef(
+                "mcu_version_req",
+                {"data": t.uint16_t},
+                True,
+                is_manufacturer_specific=False,
+            ),
+        }
+    )
 
 
 (
@@ -87,26 +136,6 @@ class TuyaNousTempHumiAlarm(t.enum8):
     .skip_configuration()
     .add_to_registry()
 )
-
-
-class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
-    """Tuya Manufacturer Cluster with set_time mod."""
-
-    set_time_offset = 1970
-    set_time_local_offset = 1970
-
-    # Deepcopy required to override 'set_time', without, it will revert
-    server_commands = copy.deepcopy(TuyaMCUCluster.server_commands)
-    server_commands.update(
-        {
-            TUYA_SET_TIME: foundation.ZCLCommandDef(
-                "set_time",
-                {"time": TuyaTimePayload},
-                False,
-                is_manufacturer_specific=False,
-            ),
-        }
-    )
 
 
 # TH01Z - Temperature and humidity sensor with clock
@@ -310,4 +339,20 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .tuya_battery(dp_id=2, battery_type=BatterySize.CR2032, battery_qty=1)
     .skip_configuration()
     .add_to_registry()
+)
+
+
+(
+    TuyaQuirkBuilder("_TZE204_upagmta9", "TS0601")
+    .tuya_temperature(dp_id=1, scale=10)
+    .tuya_humidity(dp_id=2)
+    .tuya_dp(
+        dp_id=3,
+        ep_attribute=TuyaPowerConfigurationCluster2AAA.ep_attribute,
+        attribute_name="battery_percentage_remaining",
+        converter=lambda x: {0: 50, 1: 100, 2: 200}[x],
+    )
+    .adds(TuyaPowerConfigurationCluster2AAA)
+    .skip_configuration()
+    .add_to_registry(replacement_cluster=RespondingTuyaMCUCluster)
 )
