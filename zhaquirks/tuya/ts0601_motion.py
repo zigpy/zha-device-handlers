@@ -1033,6 +1033,7 @@ base_tuya_motion = (
             x
         ],  # z2m has 10lux, 20lux, 50lux, then 24hrs?
     )
+    .adds(TuyaIlluminance)
     .tuya_number(
         dp_id=103,
         attribute_name="output_time",
