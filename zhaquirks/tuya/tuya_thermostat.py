@@ -120,6 +120,7 @@ class TuyaThermostat(Thermostat, TuyaAttributesCluster):
 class NoManufTimeNoVersionRespTuyaMCUCluster(TuyaMCUCluster):
     """Tuya Manufacturer Cluster with set_time mod."""
 
+    # Deepcopy required to override 'set_time', without, it will revert
     server_commands = copy.deepcopy(TuyaMCUCluster.server_commands)
     server_commands.update(
         {
@@ -136,7 +137,6 @@ class NoManufTimeNoVersionRespTuyaMCUCluster(TuyaMCUCluster):
         self, payload: TuyaMCUCluster.MCUVersion
     ) -> foundation.Status:
         """Handle MCU version response."""
-
         return foundation.Status.SUCCESS
 
 
