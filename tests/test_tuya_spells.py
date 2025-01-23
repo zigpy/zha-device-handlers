@@ -65,7 +65,7 @@ class TuyaTestSpellDevice(EnchantedDevice):
 
 
 ENCHANTED_QUIRKS = [TuyaTestSpellDevice]
-for manufacturer in zigpy.quirks._DEVICE_REGISTRY.registry_v1.values():
+for manufacturer in zigpy.quirks.DEVICE_REGISTRY.registry_v1.values():
     for model_quirk_list in manufacturer.values():
         for quirk_entry in model_quirk_list:
             if quirk_entry in ENCHANTED_QUIRKS:

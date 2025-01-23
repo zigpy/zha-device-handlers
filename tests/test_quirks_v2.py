@@ -12,7 +12,7 @@ zhaquirks.setup()
 
 
 ALL_QUIRK_V2_CLASSES: list[QuirksV2RegistryEntry] = itertools.chain.from_iterable(
-    zigpy.quirks._DEVICE_REGISTRY.registry_v2.values()
+    zigpy.quirks.DEVICE_REGISTRY.registry_v2.values()
 )
 
 
