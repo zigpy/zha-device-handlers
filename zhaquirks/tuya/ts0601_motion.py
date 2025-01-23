@@ -202,7 +202,6 @@ base_tuya_motion = (
         translation_key="distance",
         fallback_name="Target distance",
     )
-    .adds(TuyaIlluminance)
     .skip_configuration()
 )
 
@@ -939,7 +938,6 @@ base_tuya_motion = (
         translation_key="presence_timeout",
         fallback_name="Fade time",
     )
-    .adds(TuyaIlluminance)
     .skip_configuration()
     .add_to_registry()
 )
@@ -1035,7 +1033,6 @@ base_tuya_motion = (
             x
         ],  # z2m has 10lux, 20lux, 50lux, then 24hrs?
     )
-    .adds(TuyaIlluminance)
     .tuya_number(
         dp_id=103,
         attribute_name="output_time",
@@ -1218,7 +1215,6 @@ base_tuya_motion = (
         fallback_name="Motion sensitivity",
     )
     .tuya_illuminance(dp_id=12)
-    .adds(TuyaIlluminance)
     .tuya_number(
         dp_id=101,
         attribute_name="illuminance_interval",
