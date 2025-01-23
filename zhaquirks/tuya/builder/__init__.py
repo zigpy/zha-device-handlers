@@ -2,7 +2,10 @@
 
 from collections.abc import Callable
 from enum import Enum
+import inspect
 import math
+import pathlib
+from types import FrameType
 from typing import Any, Optional
 
 from zigpy.quirks import _DEVICE_REGISTRY
@@ -185,6 +188,12 @@ class TuyaQuirkBuilder(QuirkBuilder):
         self.tuya_dp_to_attribute: dict[int, DPToAttributeMapping] = {}
         self.new_attributes: set[foundation.ZCLAttributeDef] = set()
         super().__init__(manufacturer, model, registry)
+        # quirk_file will point to the init call above if called from this QuirkBuilder,
+        # so we need to re-set it correctly
+        current_frame: FrameType = inspect.currentframe()
+        caller: FrameType = current_frame.f_back
+        self.quirk_file = pathlib.Path(caller.f_code.co_filename)
+        self.quirk_file_line = caller.f_lineno
 
     def _tuya_battery(
         self,
