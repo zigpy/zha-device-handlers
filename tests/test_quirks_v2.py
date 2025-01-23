@@ -10,8 +10,9 @@ import zhaquirks
 
 zhaquirks.setup()
 
-
-ALL_QUIRK_V2_CLASSES: list[QuirksV2RegistryEntry] = list(
+# zigpy registry v2 contains duplicates (due to being keyed by manufacturer and model),
+# so to avoid duplicates but maintain insertion order, we use a dict instead of a set
+ALL_QUIRK_V2_CLASSES: dict[QuirksV2RegistryEntry, None] = dict.fromkeys(
     itertools.chain.from_iterable(zigpy.quirks.DEVICE_REGISTRY.registry_v2.values())
 )
 
@@ -46,3 +47,26 @@ def test_translation_key_and_fallback_name_match() -> None:
             assert (
                 len(set(fallback_names)) == 1
             ), f"Translation key '{translation_key}' is shared by quirks with different fallback names: {quirk_locations}"
+
+
+def test_manufacturer_model_metadata_unique() -> None:
+    """Ensure that each manufacturer-model pair is unique across all v2 quirks."""
+    # quirk_locations are a list and not a set below,
+    # as they are not guaranteed to be unique when set up incorrectly
+
+    # (manufacturer, model) -> {quirk_location}
+    man_model_quirk_map: dict[tuple[str, str], list[str]] = collections.defaultdict(
+        list
+    )
+
+    for quirk in ALL_QUIRK_V2_CLASSES:
+        for metadata in quirk.manufacturer_model_metadata:
+            man_model_quirk_map[(metadata.manufacturer, metadata.model)].append(
+                f"{quirk.quirk_file}:{quirk.quirk_file_line}"
+            )
+
+    # check that each manufacturer-model pair is unique
+    for (manufacturer, model), quirk_locations in man_model_quirk_map.items():
+        assert (
+            len(quirk_locations) == 1
+        ), f"Manufacturer-model pair '{manufacturer}' '{model}' is shared by multiple quirks: {quirk_locations}"
