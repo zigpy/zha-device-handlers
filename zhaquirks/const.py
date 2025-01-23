@@ -141,6 +141,6 @@ class BatterySize(t.enum8):
     CR2 = 0x07
     CR123A = 0x08
     CR2450 = 0x09
-    CR2032 = 0x10
-    CR1632 = 0x11
+    CR2032 = 0x0A
+    CR1632 = 0x0B
     Unknown = 0xFF

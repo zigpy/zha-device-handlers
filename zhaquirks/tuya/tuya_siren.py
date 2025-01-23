@@ -4,8 +4,8 @@ from zigpy.quirks.v2 import EntityPlatform, EntityType
 from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature, UnitOfTime
 from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 import zigpy.types as t
-from zigpy.zcl.clusters.general import BatterySize
 
+from zhaquirks.const import BatterySize
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 
