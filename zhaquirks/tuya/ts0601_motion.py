@@ -1,7 +1,6 @@
 """BlitzWolf IS-3/Tuya motion rechargeable occupancy sensor."""
 
 import asyncio
-import math
 from typing import Any
 
 from zigpy.quirks.v2 import EntityPlatform, EntityType
@@ -237,7 +236,7 @@ base_tuya_motion = (
         translation_key="presence_sensitivity",
         fallback_name="Presence sensitivity",
     )
-    .tuya_illuminance(103)
+    .tuya_illuminance(dp_id=103)
     .tuya_number(
         dp_id=105,
         attribute_name="presence_timeout",
@@ -306,7 +305,7 @@ base_tuya_motion = (
         translation_key="presence_sensitivity",
         fallback_name="Presence sensitivity",
     )
-    .tuya_illuminance(104)
+    .tuya_illuminance(dp_id=104)
     # 103 cli, z2m lists as not working
     .add_to_registry()
 )
@@ -349,7 +348,7 @@ base_tuya_motion = (
         translation_key="fading_time",
         fallback_name="Fading time",
     )
-    .tuya_illuminance(104)
+    .tuya_illuminance(dp_id=104)
     .add_to_registry()
 )
 
@@ -405,13 +404,7 @@ base_tuya_motion = (
         translation_key="target_distance",
         fallback_name="Target distance",
     )
-    .tuya_dp(
-        dp_id=102,
-        ep_attribute=TuyaIlluminance.ep_attribute,
-        attribute_name=TuyaIlluminance.AttributeDefs.measured_value.name,
-        converter=lambda x: 10000 * math.log10(x) + 1 if x != 0 else 0,
-    )
-    .adds(TuyaIlluminance)
+    .tuya_illuminance(dp_id=102)
     .tuya_number(
         dp_id=103,
         attribute_name="fading_time",
@@ -491,13 +484,7 @@ base_tuya_motion = (
         translation_key="target_distance",
         fallback_name="Target distance",
     )
-    .tuya_dp(
-        dp_id=102,
-        ep_attribute=TuyaIlluminance.ep_attribute,
-        attribute_name=TuyaIlluminance.AttributeDefs.measured_value.name,
-        converter=lambda x: 10000 * math.log10(x) + 1 if x != 0 else 0,
-    )
-    .adds(TuyaIlluminance)
+    .tuya_illuminance(dp_id=102)
     .tuya_number(
         dp_id=103,
         attribute_name="hold_delay_time",
@@ -667,7 +654,7 @@ base_tuya_motion = (
         fallback_name="Fading time",
     )
     # 103 cline, z2m doesn't expose
-    .tuya_illuminance(104)
+    .tuya_illuminance(dp_id=104)
     .tuya_number(
         dp_id=105,
         attribute_name="entry_sensitivity",
@@ -913,7 +900,7 @@ base_tuya_motion = (
         attribute_name=OccupancySensing.AttributeDefs.occupancy.name,
         converter=lambda x: x == 1,
     )
-    .tuya_illuminance(101)
+    .tuya_illuminance(dp_id=101)
     .adds(TuyaOccupancySensing)
     .tuya_switch(
         dp_id=102,
@@ -1107,13 +1094,7 @@ base_tuya_motion = (
         translation_key="fade_time",
         fallback_name="Fade time",
     )
-    .tuya_dp(
-        dp_id=12,
-        ep_attribute=TuyaIlluminance.ep_attribute,
-        attribute_name=TuyaIlluminance.AttributeDefs.measured_value.name,
-        converter=lambda x: 10000 * math.log10(x) + 1 if x != 0 else 0,
-    )
-    .adds(TuyaIlluminance)
+    .tuya_illuminance(dp_id=12)
     .tuya_number(
         dp_id=105,
         attribute_name="illuminance_interval",
@@ -1135,13 +1116,7 @@ base_tuya_motion = (
 (
     TuyaQuirkBuilder("_TZE204_sxm7l9xa", "TS0601")
     .applies_to("_TZE204_e5m9c5hl", "TS0601")
-    .tuya_dp(
-        dp_id=104,
-        ep_attribute=TuyaIlluminance.ep_attribute,
-        attribute_name=TuyaIlluminance.AttributeDefs.measured_value.name,
-        converter=lambda x: 10000 * math.log10(x) + 1 if x != 0 else 0,
-    )
-    .adds(TuyaIlluminance)
+    .tuya_illuminance(dp_id=104)
     .tuya_dp(
         dp_id=105,
         ep_attribute=TuyaOccupancySensing.ep_attribute,
