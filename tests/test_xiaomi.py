@@ -59,6 +59,8 @@ from zhaquirks.xiaomi import (
     XiaomiQuickInitDevice,
     handle_quick_init,
 )
+import zhaquirks.xiaomi.aqara.cube
+import zhaquirks.xiaomi.aqara.cube_aqgl01
 import zhaquirks.xiaomi.aqara.driver_curtain_e1
 from zhaquirks.xiaomi.aqara.feeder_acn001 import (
     FEEDER_ATTR,
@@ -76,9 +78,14 @@ from zhaquirks.xiaomi.aqara.feeder_acn001 import (
     AqaraFeederAcn001,
     OppleCluster,
 )
+import zhaquirks.xiaomi.aqara.magnet_ac01
+import zhaquirks.xiaomi.aqara.magnet_acn001
 import zhaquirks.xiaomi.aqara.magnet_agl02
+import zhaquirks.xiaomi.aqara.magnet_aq2
 import zhaquirks.xiaomi.aqara.motion_ac02
+import zhaquirks.xiaomi.aqara.motion_acn001
 import zhaquirks.xiaomi.aqara.motion_agl02
+import zhaquirks.xiaomi.aqara.motion_agl04
 import zhaquirks.xiaomi.aqara.motion_aq2
 import zhaquirks.xiaomi.aqara.motion_aq2b
 import zhaquirks.xiaomi.aqara.plug
@@ -90,6 +97,7 @@ import zhaquirks.xiaomi.aqara.switch_t1
 from zhaquirks.xiaomi.aqara.thermostat_agl001 import ScheduleEvent, ScheduleSettings
 import zhaquirks.xiaomi.aqara.weather
 import zhaquirks.xiaomi.mija.motion
+import zhaquirks.xiaomi.mija.smoke
 
 zhaquirks.setup()
 
@@ -386,9 +394,26 @@ async def test_mija_battery(zigpy_device_from_quirk, voltage, bpr):
     "quirk, batt_size",
     (
         (zhaquirks.xiaomi.aqara.vibration_aq1.VibrationAQ1, BatterySize.CR2032),
+        (zhaquirks.xiaomi.aqara.cube.Cube, BatterySize.CR2450),
+        (zhaquirks.xiaomi.aqara.cube_aqgl01.CubeAQGL01, BatterySize.CR2450),
+        (zhaquirks.xiaomi.aqara.cube_aqgl01.CubeCAGL02, BatterySize.CR2450),
+        (zhaquirks.xiaomi.aqara.magnet_ac01.LumiMagnetAC01, BatterySize.CR123A),
+        (zhaquirks.xiaomi.aqara.magnet_acn001.MagnetE1, BatterySize.CR1632),
+        (zhaquirks.xiaomi.aqara.magnet_agl02.MagnetT1, BatterySize.CR1632),
+        (zhaquirks.xiaomi.aqara.magnet_aq2.MagnetAQ2, BatterySize.CR1632),
+        (zhaquirks.xiaomi.aqara.motion_ac02.LumiMotionAC02, BatterySize.CR1632),
+        (zhaquirks.xiaomi.aqara.motion_acn001.MotionE1, BatterySize.CR1632),
+        (zhaquirks.xiaomi.aqara.motion_agl02.MotionT1, BatterySize.CR1632),
+        (zhaquirks.xiaomi.aqara.motion_agl04.LumiLumiMotionAgl04, BatterySize.CR1632),
+        (zhaquirks.xiaomi.aqara.motion_aq2.MotionAQ2, BatterySize.CR2450),
+        (zhaquirks.xiaomi.aqara.motion_aq2b.MotionAQ2, BatterySize.CR2450),
         (zhaquirks.xiaomi.mija.motion.Motion, BatterySize.CR2450),
         (zhaquirks.xiaomi.mija.sensor_switch.MijaButton, BatterySize.CR2032),
         (zhaquirks.xiaomi.mija.sensor_magnet.Magnet, BatterySize.CR1632),
+        (
+            zhaquirks.xiaomi.mija.smoke.MijiaHoneywellSmokeDetectorSensor,
+            BatterySize.CR123A,
+        ),
     ),
 )
 async def test_xiaomi_batt_size(zigpy_device_from_quirk, quirk, batt_size):
