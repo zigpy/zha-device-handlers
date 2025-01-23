@@ -12,7 +12,7 @@ from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
 
 from zhaquirks.tuya import TuyaLocalCluster
-from zhaquirks.tuya.builder import TuyaIlluminance, TuyaQuirkBuilder
+from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 
 class TuyaOccupancySensing(OccupancySensing, TuyaLocalCluster):
@@ -1025,15 +1025,10 @@ base_tuya_motion = (
         translation_key="work_mode",
         fallback_name="Work mode",
     )
-    .tuya_dp(
+    .tuya_illuminance(
         dp_id=102,
-        ep_attribute=TuyaIlluminance.ep_attribute,
-        attribute_name=TuyaIlluminance.AttributeDefs.measured_value.name,
-        converter=lambda x: {0: 10, 1: 20, 2: 50, 3: 100}[
-            x
-        ],  # z2m has 10lux, 20lux, 50lux, then 24hrs?
+        converter=lambda x: {0: 10, 1: 20, 2: 50, 3: 100}[x],
     )
-    .adds(TuyaIlluminance)
     .tuya_number(
         dp_id=103,
         attribute_name="output_time",
