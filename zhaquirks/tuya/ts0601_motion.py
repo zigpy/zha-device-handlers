@@ -406,6 +406,7 @@ base_tuya_motion = (
     .add_to_registry()
 )
 
+
 (
     TuyaQuirkBuilder("_TYST11_i5j6ifxj", "5j6ifxj")
     .applies_to("_TYST11_7hfcudw5", "hfcudw5")
