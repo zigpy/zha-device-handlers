@@ -23,11 +23,11 @@ from zhaquirks.tuya.mcu import TuyaAttributesCluster, TuyaMCUCluster
 class RegulatorPeriod(t.enum8):
     """Tuya regulator period enum."""
 
-    FifteenMin = 0x00
-    ThirtyMin = 0x01
-    FortyFiveMin = 0x02
-    SixtyMin = 0x03
-    NinetyMin = 0x04
+    _15_min = 0x00
+    _30_min = 0x01
+    _45_min = 0x02
+    _60_min = 0x03
+    _90_min = 0x04
 
 
 class ThermostatMode(t.enum8):
