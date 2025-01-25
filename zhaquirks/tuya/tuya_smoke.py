@@ -9,7 +9,11 @@ from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 from zhaquirks import LocalDataCluster
-from zhaquirks.tuya import TuyaManufClusterAttributes, TuyaPowerConfigurationCluster2AAA
+from zhaquirks.tuya import (
+    BatterySize,
+    TuyaManufClusterAttributes,
+    TuyaPowerConfigurationCluster2AAA,
+)
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 
@@ -60,8 +64,22 @@ class TuyaSmokeDetectorCluster(TuyaManufClusterAttributes):
     .applies_to("_TZE284_rccxox8p", "TS0601")
     .applies_to("_TZE200_vzekyi4c", "TS0601")
     .applies_to("_TZE204_vawy74yh", "TS0601")
+    .tuya_smoke(dp_id=1)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+(
+    TuyaQuirkBuilder("TZE200_0zaf1cr8", "TS0601")
     .applies_to("_TZE284_0zaf1cr8", "TS0601")
     .tuya_smoke(dp_id=1)
+    .tuya_binary_sensor(
+        dp_id=14,
+        attribute_name="battery_low",
+        translation_key="battery_low",
+        fallback_name="Battery low",
+    )
+    .tuya_battery(dp_id=15, battery_type=BatterySize.CR123A, battery_qty=1)
     .skip_configuration()
     .add_to_registry()
 )
