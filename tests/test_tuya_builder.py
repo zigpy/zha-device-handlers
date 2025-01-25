@@ -1,5 +1,6 @@
 """Tests for TuyaQuirkBuilder."""
 
+import datetime
 from unittest import mock
 
 import pytest
@@ -9,20 +10,34 @@ import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic
 
-from tests.common import ClusterListener, wait_for_zigpy_tasks
+from tests.common import ClusterListener, MockDatetime, wait_for_zigpy_tasks
 import zhaquirks
-from zhaquirks.tuya import TUYA_QUERY_DATA
+from zhaquirks.const import BatterySize
+from zhaquirks.tuya import (
+    TUYA_QUERY_DATA,
+    TUYA_SET_TIME,
+    TuyaPowerConfigurationCluster,
+    TuyaPowerConfigurationCluster2AAA,
+)
 from zhaquirks.tuya.builder import (
+    TuyaAirQualityVOC,
+    TuyaCO2Concentration,
+    TuyaFormaldehydeConcentration,
     TuyaIasContact,
     TuyaIasFire,
-    TuyaPowerConfigurationCluster2AAA,
+    TuyaIasGas,
+    TuyaIlluminance,
+    TuyaPM25Concentration,
     TuyaQuirkBuilder,
     TuyaRelativeHumidity,
     TuyaSoilMoisture,
     TuyaTemperatureMeasurement,
-    TuyaValveWaterConsumed,
+    TuyaValveWaterConsumedNoInstDemand,
 )
 from zhaquirks.tuya.mcu import TuyaMCUCluster, TuyaOnOffNM
+from zhaquirks.tuya.tuya_sensor import NoManufTimeTuyaMCUCluster
+
+ZCL_TUYA_SET_TIME = b"\x09\x12\x24\x0d\x00"
 
 zhaquirks.setup()
 
@@ -30,14 +45,24 @@ zhaquirks.setup()
 @pytest.mark.parametrize(
     "method_name,attr_name,exp_class",
     [
-        ("tuya_battery", "power", TuyaPowerConfigurationCluster2AAA),
-        ("tuya_metering", "smartenergy_metering", TuyaValveWaterConsumed),
+        ("tuya_battery", "power", TuyaPowerConfigurationCluster),
+        ("tuya_metering", "smartenergy_metering", TuyaValveWaterConsumedNoInstDemand),
         ("tuya_onoff", "on_off", TuyaOnOffNM),
         ("tuya_soil_moisture", "soil_moisture", TuyaSoilMoisture),
         ("tuya_temperature", "temperature", TuyaTemperatureMeasurement),
         ("tuya_humidity", "humidity", TuyaRelativeHumidity),
         ("tuya_smoke", "ias_zone", TuyaIasFire),
         ("tuya_contact", "ias_zone", TuyaIasContact),
+        ("tuya_co2", "carbon_dioxide_concentration", TuyaCO2Concentration),
+        ("tuya_pm25", "pm25", TuyaPM25Concentration),
+        ("tuya_voc", "voc_level", TuyaAirQualityVOC),
+        (
+            "tuya_formaldehyde",
+            "formaldehyde_concentration",
+            TuyaFormaldehydeConcentration,
+        ),
+        ("tuya_gas", "ias_zone", TuyaIasGas),
+        ("tuya_illuminance", "illuminance", TuyaIlluminance),
     ],
 )
 async def test_convenience_methods(device_mock, method_name, attr_name, exp_class):
@@ -62,6 +87,59 @@ async def test_convenience_methods(device_mock, method_name, attr_name, exp_clas
     assert isinstance(ep_attr, exp_class)
 
 
+@pytest.mark.parametrize(
+    "power_cfg,battery_type,battery_qty,battery_voltage,"
+    "expected_size,expected_qty,expected_voltage",
+    [
+        (TuyaPowerConfigurationCluster2AAA, None, None, None, BatterySize.AAA, 2, 15),
+        (None, BatterySize.CR123A, 1, 60, BatterySize.CR123A, 1, 60),
+        (None, BatterySize.CR123A, 1, None, BatterySize.CR123A, 1, 30),
+        (None, BatterySize.CR2450, 1, None, BatterySize.CR2450, 1, 30),
+        (None, BatterySize.CR2032, 1, None, BatterySize.CR2032, 1, 30),
+        (None, BatterySize.CR1632, 1, None, BatterySize.CR1632, 1, 30),
+        (None, BatterySize.AA, None, None, BatterySize.AA, None, None),
+        (None, None, None, None, None, None, None),
+    ],
+)
+async def test_battery_methods(
+    device_mock,
+    power_cfg,
+    battery_type,
+    battery_qty,
+    battery_voltage,
+    expected_size,
+    expected_qty,
+    expected_voltage,
+):
+    """Test the battery convenience method."""
+
+    registry = DeviceRegistry()
+
+    (
+        TuyaQuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
+        .tuya_battery(
+            dp_id=1,
+            power_cfg=power_cfg,
+            battery_type=battery_type,
+            battery_qty=battery_qty,
+            battery_voltage=battery_voltage,
+        )
+        .tuya_onoff(dp_id=3)
+        .skip_configuration()
+        .add_to_registry()
+    )
+
+    quirked = registry.get_device(device_mock)
+    ep = quirked.endpoints[1]
+
+    assert ep.power is not None
+    assert isinstance(ep.power, power_cfg or TuyaPowerConfigurationCluster)
+
+    assert ep.power.get("battery_size") == expected_size
+    assert ep.power.get("battery_quantity") == expected_qty
+    assert ep.power.get("battery_rated_voltage") == expected_voltage
+
+
 async def test_tuya_quirkbuilder(device_mock):
     """Test adding a v2 Tuya Quirk to the registry and getting back a quirked device."""
 
@@ -72,6 +150,9 @@ async def test_tuya_quirkbuilder(device_mock):
 
         A = 0x00
         B = 0x01
+
+    class ModTuyaMCUCluster(TuyaMCUCluster):
+        """Modified Cluster."""
 
     entry = (
         TuyaQuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
@@ -111,7 +192,7 @@ async def test_tuya_quirkbuilder(device_mock):
             fallback_name="Test enum",
         )
         .skip_configuration()
-        .add_to_registry()
+        .add_to_registry(replacement_cluster=ModTuyaMCUCluster)
     )
 
     # coverage for overridden __eq__ method
@@ -128,6 +209,7 @@ async def test_tuya_quirkbuilder(device_mock):
     assert isinstance(ep.basic, Basic)
 
     assert ep.tuya_manufacturer is not None
+    assert isinstance(ep.tuya_manufacturer, ModTuyaMCUCluster)
     assert isinstance(ep.tuya_manufacturer, TuyaMCUCluster)
 
     tuya_cluster = ep.tuya_manufacturer
@@ -236,3 +318,49 @@ async def test_tuya_spell(device_mock, read_attr_spell, data_query_spell):
             messages += 1
 
         request_mock.reset_mock()
+
+
+async def test_tuya_mcu_set_time(device_mock):
+    """Test TuyaQuirkBuilder replacement cluster, set_time requests (0x24) messages for MCU devices."""
+
+    registry = DeviceRegistry()
+
+    (
+        TuyaQuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
+        .tuya_battery(dp_id=1)
+        .skip_configuration()
+        .add_to_registry(replacement_cluster=NoManufTimeTuyaMCUCluster)
+    )
+
+    quirked = registry.get_device(device_mock)
+    assert isinstance(quirked, CustomDeviceV2)
+    assert quirked in registry
+
+    ep = quirked.endpoints[1]
+
+    assert not ep.tuya_manufacturer._is_manuf_specific
+    assert not ep.tuya_manufacturer.server_commands[
+        TUYA_SET_TIME
+    ].is_manufacturer_specific
+
+    # Mock datetime
+    origdatetime = datetime.datetime
+    datetime.datetime = MockDatetime
+
+    # simulate a SET_TIME message
+    hdr, args = ep.tuya_manufacturer.deserialize(ZCL_TUYA_SET_TIME)
+    assert hdr.command_id == TUYA_SET_TIME
+
+    with mock.patch.object(
+        ep.tuya_manufacturer._endpoint,
+        "request",
+        return_value=foundation.Status.SUCCESS,
+    ) as m1:
+        ep.tuya_manufacturer.handle_message(hdr, args)
+        await wait_for_zigpy_tasks()
+
+        res_hdr = foundation.ZCLHeader.deserialize(m1.await_args[1]["data"])
+        assert not res_hdr[0].manufacturer
+        assert not res_hdr[0].frame_control.is_manufacturer_specific
+
+    datetime.datetime = origdatetime  # restore datetime

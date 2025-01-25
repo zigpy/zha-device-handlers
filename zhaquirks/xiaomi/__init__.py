@@ -48,6 +48,7 @@ from zhaquirks.const import (
     UNKNOWN,
     VALUE,
     ZHA_SEND_EVENT,
+    BatterySize,
 )
 
 BATTERY_LEVEL = "battery_level"
@@ -116,7 +117,7 @@ class XiaomiCustomDevice(CustomDevice):
     def __init__(self, *args, **kwargs):
         """Init."""
         if not hasattr(self, BATTERY_SIZE):
-            self.battery_size = 10
+            self.battery_size = BatterySize.CR2032
         super().__init__(*args, **kwargs)
 
 
@@ -507,7 +508,9 @@ class XiaomiPowerConfiguration(PowerConfiguration, LocalDataCluster):
         super().__init__(*args, **kwargs)
         self._CONSTANT_ATTRIBUTES = {
             BATTERY_QUANTITY_ATTR: 1,
-            BATTERY_SIZE_ATTR: getattr(self.endpoint.device, BATTERY_SIZE, 0xFF),
+            BATTERY_SIZE_ATTR: getattr(
+                self.endpoint.device, BATTERY_SIZE, BatterySize.Unknown
+            ),
         }
         self._slope = 200 / (self.MAX_VOLTS_MV - self.MIN_VOLTS_MV)
 
