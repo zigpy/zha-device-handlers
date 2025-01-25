@@ -5,6 +5,7 @@ from unittest.mock import MagicMock
 
 import pytest
 import zigpy.profiles.zha
+import zigpy.types as t
 
 import zhaquirks
 from zhaquirks.tuya import TuyaNewManufCluster
@@ -65,8 +66,14 @@ def air_quality_device(zigpy_device_from_v2_quirk):
 def test_co2_sensor(air_quality_device, data, ep_attr, expected_value):
     """Test Tuya Air Quality Sensor."""
 
-    air_quality_device.handle_message(
-        zigpy.profiles.zha.PROFILE_ID, TuyaNewManufCluster.cluster_id, 1, 1, data
+    air_quality_device.packet_received(
+        t.ZigbeePacket(
+            profile_id=zigpy.profiles.zha.PROFILE_ID,
+            cluster_id=TuyaNewManufCluster.cluster_id,
+            src_ep=1,
+            dst_ep=1,
+            data=t.SerializableBytes(data),
+        )
     )
     cluster = getattr(air_quality_device.endpoints[1], ep_attr)
     assert cluster.get("measured_value") == expected_value
@@ -132,8 +139,14 @@ def smart_air_quality_device(zigpy_device_from_v2_quirk):
 def test_smart_air_sensor(smart_air_quality_device, data, ep_attr, expected_value):
     """Test Tuya Smart Air Sensor."""
 
-    smart_air_quality_device.handle_message(
-        zigpy.profiles.zha.PROFILE_ID, TuyaNewManufCluster.cluster_id, 1, 1, data
+    smart_air_quality_device.packet_received(
+        t.ZigbeePacket(
+            profile_id=zigpy.profiles.zha.PROFILE_ID,
+            cluster_id=TuyaNewManufCluster.cluster_id,
+            src_ep=1,
+            dst_ep=1,
+            data=t.SerializableBytes(data),
+        )
     )
     cluster = getattr(smart_air_quality_device.endpoints[1], ep_attr)
     assert cluster.get("measured_value") == expected_value

@@ -58,11 +58,13 @@ nodon = (
     .replaces(NodOnPilotWireCluster)
 )  # fmt: skip
 
+
 adeo = (
     nodon.clone(omit_man_model_data=True)
     .applies_to(ADEO, "SIN-4-FP-21_EQU")
     .replaces(AdeoPilotWireCluster)
 )
+
 
 nodon.add_to_registry()
 adeo.add_to_registry()

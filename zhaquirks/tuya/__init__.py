@@ -11,13 +11,7 @@ from zigpy.quirks import BaseCustomDevice, CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl import BaseAttributeDefs, foundation
 from zigpy.zcl.clusters.closures import WindowCovering
-from zigpy.zcl.clusters.general import (
-    Basic,
-    BatterySize,
-    LevelControl,
-    OnOff,
-    PowerConfiguration,
-)
+from zigpy.zcl.clusters.general import Basic, LevelControl, OnOff, PowerConfiguration
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
 from zigpy.zcl.clusters.smartenergy import Metering
@@ -30,6 +24,7 @@ from zhaquirks.const import (
     RIGHT,
     SHORT_PRESS,
     ZHA_SEND_EVENT,
+    BatterySize,
 )
 
 # ---------------------------------------------------------

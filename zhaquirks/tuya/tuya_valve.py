@@ -3,16 +3,14 @@
 from datetime import datetime, timedelta, timezone
 
 from zigpy.quirks.v2 import EntityPlatform, EntityType
-from zigpy.quirks.v2.homeassistant import UnitOfTime
+from zigpy.quirks.v2.homeassistant import UnitOfTime, UnitOfVolume
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
+from zigpy.zcl.clusters.smartenergy import Metering
 
-from zhaquirks.tuya import (
-    TUYA_CLUSTER_ID,
-    TuyaPowerConfigurationCluster2AA,
-    TuyaPowerConfigurationCluster4AA,
-)
-from zhaquirks.tuya.builder import TuyaQuirkBuilder
+from zhaquirks.const import BatterySize
+from zhaquirks.tuya import TUYA_CLUSTER_ID
+from zhaquirks.tuya.builder import TuyaQuirkBuilder, TuyaValveWaterConsumed
 from zhaquirks.tuya.mcu import TuyaMCUCluster
 
 
@@ -25,12 +23,32 @@ class TuyaValveWeatherDelay(t.enum8):
     Delayed_72h = 0x03
 
 
+class TuyaValveWeatherDelayVar02(t.enum8):
+    """Tuya Irrigation Valve weather delay enum var 02.
+
+    Disabled is 0x03
+    """
+
+    Delayed_24h = 0x00
+    Delayed_48h = 0x01
+    Delayed_72h = 0x02
+    Disabled = 0x03
+
+
 class TuyaValveTimerState(t.enum8):
     """Tuya Irrigation Valve timer state enum."""
 
     Disabled = 0x00
     Active = 0x01
     Enabled = 0x02
+
+
+class TuyaValveStatus(t.enum8):
+    """Tuya Irrigation Valve status enum."""
+
+    Off = 0x00
+    Auto = 0x01
+    Disabled = 0x02
 
 
 (
@@ -45,7 +63,7 @@ class TuyaValveTimerState(t.enum8):
         attribute_name="dp_6",
         type=t.uint32_t,
     )
-    .tuya_battery(dp_id=7, power_cfg=TuyaPowerConfigurationCluster4AA)
+    .tuya_battery(dp_id=7, battery_type=BatterySize.AA, battery_qty=4)
     .tuya_enum(
         dp_id=10,
         attribute_name="weather_delay",
@@ -134,7 +152,7 @@ class ParksideTuyaValveManufCluster(TuyaMCUCluster):
         translation_key="time_left",
         fallback_name="Time left",
     )
-    .tuya_battery(dp_id=11, power_cfg=TuyaPowerConfigurationCluster4AA)
+    .tuya_battery(dp_id=11, battery_type=BatterySize.AA, battery_qty=4)
     .tuya_switch(
         dp_id=108,
         attribute_name="frost_lock",
@@ -202,7 +220,7 @@ def giex_string_to_ts(v: str) -> int | None:
 
 gx02_base_quirk = (
     TuyaQuirkBuilder()
-    .tuya_battery(dp_id=108, power_cfg=TuyaPowerConfigurationCluster4AA)
+    .tuya_battery(dp_id=108, battery_type=BatterySize.AA, battery_qty=4)
     .tuya_metering(dp_id=111)
     .tuya_onoff(dp_id=2)
     .tuya_number(
@@ -244,7 +262,7 @@ gx02_base_quirk = (
         device_class=SensorDeviceClass.DURATION,
         unit=UnitOfTime.SECONDS,
         translation_key="irrigation_duration",
-        fallback_name="Last irrigation duration",
+        fallback_name="Irrigation duration",
     )
     .tuya_sensor(
         dp_id=101,
@@ -294,6 +312,8 @@ gx02_base_quirk = (
     )
     .add_to_registry()
 )
+
+
 (
     gx02_base_quirk.clone()
     .applies_to("_TZE200_a7sghmms", "TS0601")
@@ -337,7 +357,7 @@ class GiexIrrigationStatus(t.enum8):
 (
     TuyaQuirkBuilder("_TZE284_8zizsafo", "TS0601")  # Giex GX04
     .applies_to("_TZE284_eaet5qt5", "TS0601")  # Insoma SGW08W
-    .tuya_battery(dp_id=59, power_cfg=TuyaPowerConfigurationCluster4AA)
+    .tuya_battery(dp_id=59, battery_type=BatterySize.AA, battery_qty=4)
     .tuya_switch(
         dp_id=1,
         attribute_name="valve_on_off_1",
@@ -424,7 +444,7 @@ class GiexIrrigationStatus(t.enum8):
 (
     TuyaQuirkBuilder("_TZE200_2wg5qrjy", "TS0601")
     .tuya_onoff(dp_id=1)
-    .tuya_battery(dp_id=7, power_cfg=TuyaPowerConfigurationCluster2AA)
+    .tuya_battery(dp_id=7, battery_type=BatterySize.AA, battery_qty=2)
     # Water consumed (value comes in deciliters - convert it to liters)
     .tuya_metering(dp_id=5, scale=0.1)
     # Timer time left/remaining (raw value in seconds)
@@ -470,5 +490,185 @@ class GiexIrrigationStatus(t.enum8):
         translation_key="last_valve_open_duration",
         fallback_name="Last valve open duration",
     )
+    .add_to_registry()
+)
+
+
+# NEO NAS-WV03B
+(
+    TuyaQuirkBuilder("_TZE204_rzrrjkz2", "TS0601")
+    .applies_to("_TZE204_uab532m0", "TS0601")
+    .applies_to("_TZE204_z7a2jmyy", "TS0601")
+    .tuya_onoff(dp_id=1)
+    .tuya_enum(
+        dp_id=3,
+        attribute_name="valve_status",
+        enum_class=TuyaValveStatus,
+        entity_platform=EntityPlatform.SENSOR,
+        translation_key="valve_status",
+        fallback_name="Valve status",
+    )
+    .tuya_number(
+        dp_id=5,
+        attribute_name="valve_countdown",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.MINUTES,
+        min_value=1,
+        max_value=240,
+        step=1,
+        translation_key="valve_countdown",
+        fallback_name="Irrigation time",
+    )
+    .tuya_sensor(
+        dp_id=6,
+        attribute_name="valve_duration",
+        type=t.uint32_t,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.MINUTES,
+        entity_type=EntityType.STANDARD,
+        translation_key="valve_duration",
+        fallback_name="Irrigation duration",
+    )
+    .tuya_dp(
+        dp_id=9,
+        ep_attribute=TuyaValveWaterConsumed.ep_attribute,
+        attribute_name=Metering.AttributeDefs.instantaneous_demand.name,
+    )
+    .tuya_metering(dp_id=15, metering_cfg=TuyaValveWaterConsumed)
+    .tuya_battery(dp_id=11, battery_type=BatterySize.AA, battery_qty=2)
+    .tuya_binary_sensor(
+        dp_id=19,
+        attribute_name="valve_fault",
+        translation_key="valve_fault",
+        fallback_name="Valve fault",
+    )
+    .tuya_enum(
+        dp_id=37,
+        attribute_name="weather_delay",
+        enum_class=TuyaValveWeatherDelayVar02,
+        translation_key="weather_delay",
+        fallback_name="Weather delay",
+        initially_disabled=True,
+    )
+    # Charstring normal timed, dp 38 omitted
+    .tuya_switch(
+        dp_id=42,
+        attribute_name="switch_enabled",
+        entity_type=EntityType.STANDARD,
+        translation_key="switch_enabled",
+        fallback_name="Switch enabled",
+    )
+    .tuya_sensor(
+        dp_id=47,
+        attribute_name="smart_irrigation",
+        type=t.uint16_t,
+        entity_type=EntityType.DIAGNOSTIC,
+        translation_key="smart_irrigation",
+        fallback_name="Smart irrigation",
+    )
+    .tuya_switch(
+        dp_id=101,
+        attribute_name="total_flow_reset_switch",
+        entity_type=EntityType.STANDARD,
+        translation_key="total_flow_reset_switch",
+        fallback_name="Total flow reset switch",
+    )
+    .tuya_sensor(
+        dp_id=102,
+        attribute_name="irrigation_duration",
+        type=t.uint32_t,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.VOLUME,
+        unit=UnitOfVolume.LITERS,
+        translation_key="irrigation_duration",
+        fallback_name="Irrigation duration",
+    )
+    .tuya_number(
+        dp_id=102,
+        attribute_name="quantitative_watering",
+        type=t.uint16_t,
+        unit=UnitOfVolume.LITERS,
+        device_class=SensorDeviceClass.VOLUME,
+        min_value=0,
+        max_value=10000,
+        step=1,
+        translation_key="quantitative_watering",
+        fallback_name="Quantitative watering",
+    )
+    .tuya_binary_sensor(
+        dp_id=103,
+        attribute_name="flow_switch",
+        entity_type=EntityType.STANDARD,
+        translation_key="flow_switch",
+        fallback_name="Flow switch",
+    )
+    .tuya_binary_sensor(
+        dp_id=104,
+        attribute_name="child_lock",
+        entity_type=EntityType.STANDARD,
+        translation_key="child_lock",
+        fallback_name="Child lock",
+    )
+    .tuya_sensor(
+        dp_id=105,
+        attribute_name="surplus_flow",
+        type=t.uint16_t,
+        entity_type=EntityType.DIAGNOSTIC,
+        translation_key="surplus_flow",
+        fallback_name="Surplus flow",
+    )
+    .tuya_sensor(
+        dp_id=106,
+        attribute_name="single_watering_duration",
+        type=t.CharacterString,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        translation_key="single_watering_duration",
+        fallback_name="Single watering duration",
+    )
+    .tuya_sensor(
+        dp_id=108,
+        attribute_name="single_watering_amount",
+        type=t.CharacterString,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.VOLUME,
+        unit=UnitOfVolume.LITERS,
+        translation_key="single_watering_amount",
+        fallback_name="Single watering amount",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# Tuya Rain Seer Valve
+(
+    TuyaQuirkBuilder("_TZ3210_0jxeoadc", "TS0049")
+    .tuya_sensor(
+        dp_id=26,
+        attribute_name="error_status",
+        type=t.uint32_t,
+        entity_type=EntityType.DIAGNOSTIC,
+        translation_key="error_status",
+        fallback_name="Error status",
+    )
+    .tuya_onoff(dp_id=101)
+    .tuya_number(
+        dp_id=111,
+        attribute_name="valve_duration",
+        type=t.uint32_t,
+        min_value=0,
+        max_value=255,
+        step=1,
+        unit=UnitOfTime.MINUTES,
+        translation_key="valve_duration",
+        fallback_name="Irrigation duration",
+    )
+    .tuya_battery(dp_id=115, battery_type=BatterySize.AA, battery_qty=2)
+    .tuya_enchantment()
+    .skip_configuration()
     .add_to_registry()
 )

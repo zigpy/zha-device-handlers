@@ -11,6 +11,7 @@ from zhaquirks.const import (
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
+    BatterySize,
 )
 from zhaquirks.xiaomi import (
     LUMI,
@@ -28,7 +29,7 @@ class MagnetE1(XiaomiCustomDevice):
 
     def __init__(self, *args, **kwargs):
         """Init."""
-        self.battery_size = 11
+        self.battery_size = BatterySize.CR1632
         super().__init__(*args, **kwargs)
 
     signature = {
