@@ -57,6 +57,7 @@ class TuyaNousTempHumiAlarm(t.enum8):
     .applies_to("_TZE200_qyflbnbj", "TS0601")
     .applies_to("_TZE284_qyflbnbj", "TS0601")
     .applies_to("_TZE200_44af8vyi", "TS0601")
+    .applies_to("_TZE200_vvmbj46n", "TS0601")
     # Not using tuya_temperature because device reports negative values incorrectly
     .tuya_dp(
         dp_id=1,
