@@ -384,7 +384,6 @@ base_tuya_motion = (
         min_value=0.1,
         max_value=10,
         step=0.1,
-        multiplier=1,
         translation_key="detection_delay",
         fallback_name="Detection delay",
     )
@@ -397,7 +396,6 @@ base_tuya_motion = (
         min_value=5,
         max_value=1500,
         step=5,
-        multiplier=1,
         translation_key="fading_time",
         fallback_name="Fading time",
     )
