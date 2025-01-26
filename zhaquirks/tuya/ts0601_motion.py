@@ -245,8 +245,8 @@ base_tuya_motion = (
         min_value=1,
         max_value=15000,
         step=1,
-        translation_key="presence_timeout",
-        fallback_name="Fade time",
+        translation_key="fading_time",
+        fallback_name="Fading time",
     )
     .add_to_registry()
 )
@@ -987,8 +987,8 @@ base_tuya_motion = (
         min_value=1,
         max_value=30,
         step=1,
-        translation_key="presence_timeout",
-        fallback_name="Fade time",
+        translation_key="fading_time",
+        fallback_name="Fading time",
     )
     .skip_configuration()
     .add_to_registry()
