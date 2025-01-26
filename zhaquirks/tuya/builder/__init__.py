@@ -778,9 +778,9 @@ class TuyaQuirkBuilder(QuirkBuilder):
 
         if (
             self.new_attributes
-            or force_add_cluster
             or self.tuya_data_point_handlers
             or self.tuya_dp_to_attribute
+            or force_add_cluster
         ):
 
             class NewAttributeDefs(TuyaMCUCluster.AttributeDefs):
