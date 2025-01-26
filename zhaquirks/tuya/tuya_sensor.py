@@ -10,8 +10,6 @@ from zigpy.zcl import foundation
 
 from zhaquirks.const import BatterySize
 from zhaquirks.tuya import (
-    TUYA_MCU_VERSION_REQ,
-    TUYA_QUERY_DATA,
     TUYA_SET_TIME,
     TuyaPowerConfigurationCluster2AAA,
     TuyaTimePayload,
@@ -49,33 +47,6 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
                 "set_time",
                 {"time": TuyaTimePayload},
                 False,
-                is_manufacturer_specific=False,
-            ),
-        }
-    )
-
-
-class RespondingTuyaMCUCluster(TuyaMCUCluster):
-    """Tuya Manufacturer Cluster with mcu version response."""
-
-    def handle_mcu_version_response(
-        self, payload: TuyaMCUCluster.MCUVersion
-    ) -> foundation.Status:
-        """Handle MCU version response."""
-
-        self.create_catching_task(
-            super().command(TUYA_MCU_VERSION_REQ, 2, expect_reply=False)
-        )
-        self.create_catching_task(super().command(TUYA_QUERY_DATA, expect_reply=False))
-        super().handle_mcu_version_response(payload)
-
-    server_commands = copy.deepcopy(TuyaMCUCluster.server_commands)
-    server_commands.update(
-        {
-            TUYA_MCU_VERSION_REQ: foundation.ZCLCommandDef(
-                "mcu_version_req",
-                {"data": t.uint16_t},
-                True,
                 is_manufacturer_specific=False,
             ),
         }
@@ -353,6 +324,7 @@ class RespondingTuyaMCUCluster(TuyaMCUCluster):
         converter=lambda x: {0: 50, 1: 100, 2: 200}[x],
     )
     .adds(TuyaPowerConfigurationCluster2AAA)
+    .tuya_enchantment(data_query_spell=True)
     .skip_configuration()
-    .add_to_registry(replacement_cluster=RespondingTuyaMCUCluster)
+    .add_to_registry()
 )

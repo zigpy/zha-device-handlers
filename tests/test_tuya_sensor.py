@@ -1,17 +1,13 @@
 """Tests for Tuya Sensor quirks."""
 
-from unittest import mock
-
 import pytest
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, PowerConfiguration
 from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
 
-from tests.common import wait_for_zigpy_tasks
 import zhaquirks
-from zhaquirks.tuya import TUYA_MCU_VERSION_RSP, TuyaLocalCluster
+from zhaquirks.tuya import TuyaLocalCluster
 from zhaquirks.tuya.mcu import TuyaMCUCluster
-from zhaquirks.tuya.tuya_sensor import RespondingTuyaMCUCluster
 
 # Temp DP 1, Humidity DP 2, Battery DP 3
 TUYA_TEMP01_HUM02_BAT03 = b"\x09\xe0\x02\x0b\x33\x01\x02\x00\x04\x00\x00\x00\xfd\x02\x02\x00\x04\x00\x00\x00\x47\x03\x02\x00\x04\x00\x00\x00\x01"
@@ -49,7 +45,6 @@ zhaquirks.setup()
         ("_TZE200_ydrdfkim", "TS0601", 100, 10, False),
         ("_TZE284_locansqn", "TS0601", 100, 10, False),
         ("_TZE200_vvmbj46n", "TS0601", 100, 10, True),
-        ("_TZE204_upagmta9", "TS0601", 100, 10, False),
     ],
 )
 async def test_handle_get_data(
@@ -113,6 +108,7 @@ async def test_handle_get_data(
         ("_TZE204_yjjdcqsq", "TS0601", 100, 10, TUYA_TEMP01_HUM02_BAT04),
         ("_TZE204_ksz749x8", "TS0601", 100, 10, TUYA_TEMP01_HUM02_BAT04),
         ("_TZE204_upagmta9", "TS0601", 100, 10, TUYA_TEMP01_HUM02_BAT03),
+        ("_TZE204_upagmta9", "TS0601", 100, 10, TUYA_TEMP01_HUM02_BAT03),
     ],
 )
 async def test_handle_get_data_enum_batt(
@@ -174,32 +170,3 @@ def test_valid_attributes(zigpy_device_from_v2_quirk):
     assert {temperature_attr_id} == temperature_cluster._VALID_ATTRIBUTES
     assert {humidity_attr_id} == humidity_cluster._VALID_ATTRIBUTES
     assert {power_attr_id} == power_config_cluster._VALID_ATTRIBUTES
-
-
-async def test_tuya_version(zigpy_device_from_v2_quirk):
-    """Test TUYA_MCU_VERSION_RSP messages, ensure response."""
-
-    quirked = zigpy_device_from_v2_quirk("_TZE204_upagmta9", "TS0601")
-    ep = quirked.endpoints[1]
-
-    tuya_cluster = ep.tuya_manufacturer
-
-    assert ep.tuya_manufacturer is not None
-    assert isinstance(ep.tuya_manufacturer, TuyaMCUCluster)
-    assert isinstance(ep.tuya_manufacturer, RespondingTuyaMCUCluster)
-
-    # simulate a TUYA_MCU_VERSION_RSP message
-    hdr, args = tuya_cluster.deserialize(ZCL_TUYA_VERSION_RSP)
-    assert hdr.command_id == TUYA_MCU_VERSION_RSP
-
-    with mock.patch.object(
-        ep.tuya_manufacturer._endpoint,
-        "request",
-        return_value=foundation.Status.SUCCESS,
-    ) as m1:
-        ep.tuya_manufacturer.handle_message(hdr, args)
-        await wait_for_zigpy_tasks()
-
-        res_hdr = foundation.ZCLHeader.deserialize(m1.await_args[1]["data"])
-        assert not res_hdr[0].manufacturer
-        assert not res_hdr[0].frame_control.is_manufacturer_specific
