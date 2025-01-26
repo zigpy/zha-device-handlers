@@ -1,6 +1,7 @@
 name: Device support request
 description: Request support for an unsupported device or a missing device feature.
 title: "[Device Support Request] "
+labels: ["device support request"]
 body:
   - type: markdown
     attributes:
@@ -53,7 +54,9 @@ body:
         <details><summary>Device signature</summary>
 
         ```json
+
         [Paste the device signature here]
+
         ```
 
         </details>
@@ -68,7 +71,9 @@ body:
         <details><summary>Diagnostic information</summary>
 
         ```json
+
         [Paste the diagnostic information here]
+
         ```
 
         </details>
@@ -88,7 +93,9 @@ body:
         <details><summary>Logs</summary>
 
         ```python
+
         [Paste the logs here]
+
         ```
 
         </details>
@@ -101,7 +108,9 @@ body:
         <details><summary>Custom quirk</summary>
 
         ```python
+
         [Paste your custom quirk here]
+
         ```
 
         </details>

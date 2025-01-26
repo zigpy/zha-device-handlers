@@ -1,6 +1,7 @@
 name: Bug report
 description: Report a bug in an existing quirk or a general issue with the project.
 title: "[BUG] "
+labels: ["possible bug"]
 body:
   - type: markdown
     attributes:
@@ -64,7 +65,9 @@ body:
         <details><summary>Device signature</summary>
 
         ```json
+
         [Paste the device signature here]
+
         ```
 
         </details>
@@ -79,7 +82,9 @@ body:
         <details><summary>Diagnostic information</summary>
 
         ```json
+
         [Paste the diagnostic information here]
+
         ```
 
         </details>
@@ -99,7 +104,9 @@ body:
         <details><summary>Logs</summary>
 
         ```python
+
         [Paste the logs here]
+
         ```
 
         </details>
