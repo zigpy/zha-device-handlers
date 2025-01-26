@@ -770,34 +770,43 @@ class TuyaQuirkBuilder(QuirkBuilder):
         return self
 
     def add_to_registry(
-        self, replacement_cluster: TuyaMCUCluster = TuyaMCUCluster
+        self,
+        replacement_cluster: TuyaMCUCluster = TuyaMCUCluster,
+        force_add_cluster: bool = False,
     ) -> QuirksV2RegistryEntry:
         """Build the quirks v2 registry entry."""
 
-        class NewAttributeDefs(TuyaMCUCluster.AttributeDefs):
-            """Attribute Definitions."""
+        if (
+            self.new_attributes
+            or self.tuya_data_point_handlers
+            or self.tuya_dp_to_attribute
+            or force_add_cluster
+        ):
 
-        for attr in self.new_attributes:
-            setattr(NewAttributeDefs, attr.name, attr)
-
-        class TuyaReplacementCluster(replacement_cluster):  # type: ignore[valid-type]
-            """Replacement Tuya Cluster."""
-
-            data_point_handlers: dict[int, str]
-            dp_to_attribute: dict[int, DPToAttributeMapping]
-
-            class AttributeDefs(NewAttributeDefs):
+            class NewAttributeDefs(TuyaMCUCluster.AttributeDefs):
                 """Attribute Definitions."""
 
-            async def write_attributes(self, attributes, manufacturer=None):
-                """Overwrite to force manufacturer code."""
+            for attr in self.new_attributes:
+                setattr(NewAttributeDefs, attr.name, attr)
 
-                return await super().write_attributes(
-                    attributes, manufacturer=foundation.ZCLHeader.NO_MANUFACTURER_ID
-                )
+            class TuyaReplacementCluster(replacement_cluster):  # type: ignore[valid-type]
+                """Replacement Tuya Cluster."""
 
-        TuyaReplacementCluster.data_point_handlers = self.tuya_data_point_handlers
-        TuyaReplacementCluster.dp_to_attribute = self.tuya_dp_to_attribute
+                data_point_handlers: dict[int, str]
+                dp_to_attribute: dict[int, DPToAttributeMapping]
 
-        self.replaces(TuyaReplacementCluster)
+                class AttributeDefs(NewAttributeDefs):
+                    """Attribute Definitions."""
+
+                async def write_attributes(self, attributes, manufacturer=None):
+                    """Overwrite to force manufacturer code."""
+
+                    return await super().write_attributes(
+                        attributes, manufacturer=foundation.ZCLHeader.NO_MANUFACTURER_ID
+                    )
+
+            TuyaReplacementCluster.data_point_handlers = self.tuya_data_point_handlers
+            TuyaReplacementCluster.dp_to_attribute = self.tuya_dp_to_attribute
+
+            self.replaces(TuyaReplacementCluster)
         return super().add_to_registry()
