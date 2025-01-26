@@ -776,7 +776,12 @@ class TuyaQuirkBuilder(QuirkBuilder):
     ) -> QuirksV2RegistryEntry:
         """Build the quirks v2 registry entry."""
 
-        if self.new_attributes or force_add_cluster:
+        if (
+            self.new_attributes
+            or force_add_cluster
+            or self.tuya_data_point_handlers
+            or self.tuya_dp_to_attribute
+        ):
 
             class NewAttributeDefs(TuyaMCUCluster.AttributeDefs):
                 """Attribute Definitions."""
