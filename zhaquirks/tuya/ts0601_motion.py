@@ -372,7 +372,6 @@ base_tuya_motion = (
         min_value=1,
         max_value=3600,
         step=1,
-        multiplier=1,
         translation_key="interval_time",
         fallback_name="Interval time",
     )
