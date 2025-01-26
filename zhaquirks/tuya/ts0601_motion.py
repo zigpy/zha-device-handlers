@@ -980,7 +980,7 @@ base_tuya_motion = (
     )
     .tuya_number(
         dp_id=105,
-        attribute_name="presence_timeout",
+        attribute_name="fading_time",
         type=t.uint16_t,
         device_class=SensorDeviceClass.DURATION,
         unit=UnitOfTime.MINUTES,
