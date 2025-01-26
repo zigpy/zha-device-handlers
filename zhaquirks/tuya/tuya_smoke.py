@@ -76,7 +76,8 @@ class TuyaSmokeDetectorCluster(TuyaManufClusterAttributes):
     .tuya_binary_sensor(
         dp_id=14,
         attribute_name="battery_low",
-        translation_key="battery_low",
+        device_class=BinarySensorDeviceClass.BATTERY,
+        entity_type=EntityType.DIAGNOSTIC,
         fallback_name="Battery low",
     )
     .tuya_battery(dp_id=15, battery_type=BatterySize.CR123A, battery_qty=1)
