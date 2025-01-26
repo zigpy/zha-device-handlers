@@ -84,7 +84,6 @@ def smart_air_quality_device(zigpy_device_from_v2_quirk):
     """Tuya Smart Air Quality Sensor."""
 
     dev = zigpy_device_from_v2_quirk("_TZE200_mja3fuja", "TS0601")
-    # dev = zigpy_device_from_quirk(TuyaSmartAirSensor)
     dev._packet_debouncer.filter = MagicMock(return_value=False)
     cluster = dev.endpoints[1].in_clusters[TuyaNewManufCluster.cluster_id]
     with mock.patch.object(cluster, "send_default_rsp"):
