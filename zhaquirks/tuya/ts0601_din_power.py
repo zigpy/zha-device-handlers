@@ -2,7 +2,7 @@
 
 from zigpy.profiles import zha
 from zigpy.quirks.v2 import SensorDeviceClass, SensorStateClass
-from zigpy.quirks.v2.homeassistant import UnitOfEnergy
+from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfEnergy
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
@@ -407,7 +407,7 @@ class Tuya3PhaseElectricalMeasurement(ElectricalMeasurement, TuyaLocalCluster):
         type=t.uint8_t,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.POWER_FACTOR,
-        # unit=PERCENTAGE, # ZHA fails to validate this one
+        unit=PERCENTAGE,
         translation_key="total_power_factor",
         fallback_name="Total power factor",
     )
