@@ -26,6 +26,7 @@ from zhaquirks.const import (
     TURN_ON,
     VALUE,
     ZHA_SEND_EVENT,
+    BatterySize,
 )
 from zhaquirks.xiaomi import (
     LUMI,
@@ -161,7 +162,7 @@ class Cube(XiaomiQuickInitDevice):
 
     def __init__(self, *args, **kwargs):
         """Init."""
-        self.battery_size = 9
+        self.battery_size = BatterySize.CR2450
         super().__init__(*args, **kwargs)
 
     class MultistateInputCluster(CustomCluster, MultistateInput):

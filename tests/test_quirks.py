@@ -14,7 +14,7 @@ import zigpy.device
 import zigpy.endpoint
 import zigpy.profiles
 import zigpy.quirks as zq
-from zigpy.quirks import CustomDevice
+from zigpy.quirks import CustomDevice, DeviceRegistry
 from zigpy.quirks.v2 import QuirkBuilder
 import zigpy.types
 from zigpy.zcl import foundation
@@ -60,7 +60,7 @@ import zhaquirks.xiaomi.aqara.vibration_aq1
 zhaquirks.setup()
 
 ALL_QUIRK_CLASSES = []
-for manufacturer in zq._DEVICE_REGISTRY._registry.values():
+for manufacturer in zq.DEVICE_REGISTRY.registry_v1.values():
     for model_quirk_list in manufacturer.values():
         for quirk in model_quirk_list:
             if quirk in ALL_QUIRK_CLASSES:
@@ -309,15 +309,7 @@ def test_quirk_quickinit(quirk: zigpy.quirks.CustomDevice) -> None:
 
 @pytest.mark.parametrize(
     "quirk",
-    [
-        quirk_cls
-        for quirk_cls in ALL_QUIRK_CLASSES
-        if quirk_cls
-        not in (
-            # Some devices have empty model info:
-            zhaquirks.tuya.ty0201.TuyaTempHumiditySensorNoModel,
-        )
-    ],
+    ALL_QUIRK_CLASSES,
 )
 def test_signature(quirk: CustomDevice) -> None:
     """Make sure signature look sane for all custom devices."""
@@ -845,8 +837,9 @@ def test_no_duplicate_clusters(quirk: CustomDevice) -> None:
         check_for_duplicate_cluster_ids(ep_data.get(OUTPUT_CLUSTERS, []))
 
 
-async def test_local_data_cluster(zigpy_device_from_v2_quirk) -> None:
+async def test_local_data_cluster(device_mock) -> None:
     """Ensure reading attributes from a LocalDataCluster works as expected."""
+    registry = DeviceRegistry()
 
     class TestLocalCluster(zhaquirks.LocalDataCluster):
         """Test cluster."""
@@ -856,11 +849,11 @@ async def test_local_data_cluster(zigpy_device_from_v2_quirk) -> None:
         _VALID_ATTRIBUTES = [2]
 
     (
-        QuirkBuilder("manufacturer-local-test", "model")
+        QuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
         .adds(TestLocalCluster)
         .add_to_registry()
     )
-    device = zigpy_device_from_v2_quirk("manufacturer-local-test", "model")
+    device = registry.get_device(device_mock)
     assert isinstance(device.endpoints[1].in_clusters[0x1234], TestLocalCluster)
 
     # reading invalid attribute return unsupported attribute

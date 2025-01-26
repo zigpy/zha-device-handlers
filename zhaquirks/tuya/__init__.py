@@ -7,7 +7,7 @@ import enum
 import logging
 from typing import Any, Optional, Union
 
-from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.quirks import BaseCustomDevice, CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl import BaseAttributeDefs, foundation
 from zigpy.zcl.clusters.closures import WindowCovering
@@ -24,6 +24,7 @@ from zhaquirks.const import (
     RIGHT,
     SHORT_PRESS,
     ZHA_SEND_EVENT,
+    BatterySize,
 )
 
 # ---------------------------------------------------------
@@ -529,7 +530,7 @@ class TuyaManufClusterAttributes(TuyaManufCluster):
         return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
 
-class EnchantedDevice(CustomDevice):
+class BaseEnchantedDevice(BaseCustomDevice):
     """Class for Tuya devices which need to be unlocked by casting a 'spell'.
 
     The spell is applied during device configuration.
@@ -568,6 +569,10 @@ class EnchantedDevice(CustomDevice):
         tuya_cluster = self.endpoints[1].in_clusters[TuyaNewManufCluster.cluster_id]
         await tuya_cluster.command(TUYA_QUERY_DATA)
         self.debug("Executed data query spell on Tuya device %s", self.ieee)
+
+
+class EnchantedDevice(CustomDevice, BaseEnchantedDevice):
+    """Enchanted device class for v1 quirks."""
 
 
 class TuyaOnOff(CustomCluster, OnOff):
@@ -905,7 +910,7 @@ class TuyaPowerConfigurationCluster2AAA(PowerConfiguration, TuyaLocalCluster):
     """PowerConfiguration cluster for devices with 2 AAA."""
 
     _CONSTANT_ATTRIBUTES = {
-        PowerConfiguration.AttributeDefs.battery_size.id: 4,
+        PowerConfiguration.AttributeDefs.battery_size.id: BatterySize.AAA,
         PowerConfiguration.AttributeDefs.battery_rated_voltage.id: 15,
         PowerConfiguration.AttributeDefs.battery_quantity.id: 2,
     }
@@ -915,7 +920,7 @@ class TuyaPowerConfigurationCluster2AA(TuyaPowerConfigurationCluster):
     """PowerConfiguration cluster for devices with 2 AA."""
 
     _CONSTANT_ATTRIBUTES = {
-        PowerConfiguration.AttributeDefs.battery_size.id: 3,
+        PowerConfiguration.AttributeDefs.battery_size.id: BatterySize.AA,
         PowerConfiguration.AttributeDefs.battery_rated_voltage.id: 15,
         PowerConfiguration.AttributeDefs.battery_quantity.id: 2,
     }
@@ -925,7 +930,7 @@ class TuyaPowerConfigurationCluster3AA(TuyaPowerConfigurationCluster):
     """PowerConfiguration cluster for devices with 3 AA."""
 
     _CONSTANT_ATTRIBUTES = {
-        PowerConfiguration.AttributeDefs.battery_size.id: 3,
+        PowerConfiguration.AttributeDefs.battery_size.id: BatterySize.AA,
         PowerConfiguration.AttributeDefs.battery_rated_voltage.id: 15,
         PowerConfiguration.AttributeDefs.battery_quantity.id: 3,
     }
@@ -935,9 +940,19 @@ class TuyaPowerConfigurationCluster4AA(PowerConfiguration, TuyaLocalCluster):
     """PowerConfiguration cluster for devices with 4 AA."""
 
     _CONSTANT_ATTRIBUTES = {
-        PowerConfiguration.AttributeDefs.battery_size.id: 3,
+        PowerConfiguration.AttributeDefs.battery_size.id: BatterySize.AA,
         PowerConfiguration.AttributeDefs.battery_rated_voltage.id: 15,
         PowerConfiguration.AttributeDefs.battery_quantity.id: 4,
+    }
+
+
+class TuyaPowerConfigurationClusterOther(PowerConfiguration, TuyaLocalCluster):
+    """PowerConfiguration cluster for devices with other."""
+
+    _CONSTANT_ATTRIBUTES = {
+        PowerConfiguration.AttributeDefs.battery_size.id: BatterySize.Other,
+        PowerConfiguration.AttributeDefs.battery_rated_voltage.id: 36,
+        PowerConfiguration.AttributeDefs.battery_quantity.id: 1,
     }
 
 

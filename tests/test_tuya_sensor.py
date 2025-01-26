@@ -13,19 +13,34 @@ zhaquirks.setup()
 
 
 @pytest.mark.parametrize(
-    "model,manuf,rh_scale,temp_scale",
+    "model,manuf,rh_scale,temp_scale,test_neg",
     [
-        ("_TZE200_bjawzodf", "TS0601", 10, 10),
-        ("_TZE200_zl1kmjqx", "TS0601", 10, 10),
-        ("_TZE200_a8sdabtg", "TS0601", 100, 10),  # Variant without screen, round
-        ("_TZE200_qoy0ekbd", "TS0601", 100, 10),
-        ("_TZE200_znbl8dj5", "TS0601", 100, 10),
-        ("_TZE200_qyflbnbj", "TS0601", 100, 10),
-        ("_TZE200_zppcgbdj", "TS0601", 100, 10),
+        ("_TZE200_bjawzodf", "TS0601", 10, 10, True),
+        ("_TZE200_zl1kmjqx", "TS0601", 10, 10, True),
+        ("_TZE200_a8sdabtg", "TS0601", 100, 10, False),  # Variant without screen, round
+        ("_TZE200_qoy0ekbd", "TS0601", 100, 10, False),
+        ("_TZE200_znbl8dj5", "TS0601", 100, 10, False),
+        ("_TZE200_qyflbnbj", "TS0601", 100, 10, True),
+        ("_TZE200_zppcgbdj", "TS0601", 100, 10, False),
+        ("_TZE200_s1xgth2u", "TS0601", 100, 10, False),
+        ("_TZE284_qyflbnbj", "TS0601", 100, 10, True),
+        ("_TZE204_s139roas", "TS0601", 100, 10, False),
+        ("_TZE200_bq5c8xfe", "TS0601", 100, 10, True),
+        ("_TZE200_vs0skpuc", "TS0601", 100, 10, True),
+        ("_TZE200_44af8vyi", "TS0601", 100, 10, True),
+        ("_TZE200_lve3dvpy", "TS0601", 100, 10, False),  # TH01Z - Temp & humid w/ clock
+        ("_TZE200_c7emyjom", "TS0601", 100, 10, False),
+        ("_TZE200_locansqn", "TS0601", 100, 10, False),
+        ("_TZE200_qrztc3ev", "TS0601", 100, 10, False),
+        ("_TZE200_snloy4rw", "TS0601", 100, 10, False),
+        ("_TZE200_eanjj2pa", "TS0601", 100, 10, False),
+        ("_TZE200_ydrdfkim", "TS0601", 100, 10, False),
+        ("_TZE284_locansqn", "TS0601", 100, 10, False),
+        ("_TZE200_vvmbj46n", "TS0601", 100, 10, True),
     ],
 )
 async def test_handle_get_data(
-    zigpy_device_from_v2_quirk, model, manuf, rh_scale, temp_scale
+    zigpy_device_from_v2_quirk, model, manuf, rh_scale, temp_scale, test_neg
 ):
     """Test handle_get_data for multiple attributes - normal battery."""
 
@@ -64,6 +79,15 @@ async def test_handle_get_data(
 
     status = ep.tuya_manufacturer.handle_get_data(data.data)
     assert status == foundation.Status.UNSUPPORTED_ATTRIBUTE
+
+    if test_neg:
+        message = b"\tH\x01\x00\xd8\x01\x02\x00\x04\x00\x00\xff\xe0"  # -3.1 deg c
+        hdr, data = ep.tuya_manufacturer.deserialize(message)
+
+        status = ep.tuya_manufacturer.handle_get_data(data.data)
+        assert status == foundation.Status.SUCCESS
+
+        assert ep.temperature.get("measured_value") == -310
 
 
 @pytest.mark.parametrize(
