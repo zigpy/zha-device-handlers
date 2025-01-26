@@ -2,6 +2,7 @@ name: Bug report
 description: Report a bug in an existing quirk or a general issue with the project.
 title: "[BUG] "
 labels: ["possible bug"]
+type: "bug"
 body:
   - type: markdown
     attributes:
