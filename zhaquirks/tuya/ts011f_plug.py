@@ -1295,6 +1295,57 @@ class Plug_v4(EnchantedDevice):
     }
 
 
+class Plug_v6(EnchantedDevice):
+    """Another TS011F Tuya plug. This one using this definition is _TZ3000_r6buo8ba."""
+
+    signature = {
+        MODEL: "TS011F",
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    Metering.cluster_id,
+                    ElectricalMeasurement.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    OnOff.cluster_id,
+                    Ota.cluster_id,
+                    TuyaZBExternalSwitchTypeCluster.cluster_id,
+                ],
+            },
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaZBOnOffAttributeCluster,
+                    TuyaZBMeteringClusterWithUnit,
+                    TuyaZBElectricalMeasurement,
+                    TuyaZBExternalSwitchTypeCluster,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Ota.cluster_id,
+                ],
+            },
+        },
+    }
+
+
 class Plug_v5(EnchantedDevice):
     """Another TS011F Tuya plug. This one using this definition is _TZ3000_okaz9tjs."""
 
