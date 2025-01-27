@@ -14,7 +14,24 @@ from zhaquirks.tuya import (
     TuyaManufClusterAttributes,
     TuyaPowerConfigurationCluster2AAA,
 )
-from zhaquirks.tuya.builder import TuyaQuirkBuilder
+from zhaquirks.tuya.builder import TuyaIasFire, TuyaQuirkBuilder
+
+
+class TuyaSensitivityMode(t.enum8):
+    """Tuya sensitivity mode enum."""
+
+    Low = 0x00
+    Medium = 0x01
+    High = 0x02
+
+
+class TuyaSmokeState(t.enum8):
+    """Tuya smoke state enum."""
+
+    Alarm = 0x00
+    Normal = 0x01
+    Detecting = 0x02
+    Unknown = 0x03
 
 
 class TuyaIasZone(LocalDataCluster, IasZone):
@@ -103,6 +120,41 @@ class TuyaSmokeDetectorCluster(TuyaManufClusterAttributes):
         converter=lambda x: {0: 10, 1: 80, 2: 200}[x],
     )
     .adds(TuyaPowerConfigurationCluster2AAA)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+(
+    TuyaQuirkBuilder("_TZE204_kgaxpvxr", "TS0601")
+    .tuya_ias(
+        dp_id=1,
+        ias_cfg=TuyaIasFire,
+        converter=lambda x: IasZone.ZoneStatus.Alarm_1
+        if x == TuyaSmokeState.Alarm
+        else 0,
+    )
+    .tuya_battery(dp_id=15, battery_type=BatterySize.CR123A, battery_qty=1)
+    .tuya_switch(
+        dp_id=16,
+        attribute_name="silence_alarm",
+        translation_key="silence_alarm",
+        fallback_name="Silence alarm",
+    )
+    .tuya_binary_sensor(
+        dp_id=101,
+        attribute_name="self_test_result",
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        entity_type=EntityType.DIAGNOSTIC,
+        fallback_name="Self test result",
+    )
+    .tuya_enum(
+        dp_id=102,
+        attribute_name="motion_sensitivity",
+        enum_class=TuyaSensitivityMode,
+        translation_key="motion_sensitivity",
+        fallback_name="Motion sensitivity",
+    )
     .skip_configuration()
     .add_to_registry()
 )
