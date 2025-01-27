@@ -2,7 +2,7 @@ name: Device support request
 description: Request support for an unsupported device or a missing device feature.
 title: "[Device Support Request] "
 labels: ["device support request"]
-type: "feature request"
+type: "feature"
 body:
   - type: markdown
     attributes:
