@@ -44,9 +44,9 @@ def test_translation_key_and_fallback_name_match() -> None:
             quirk_locations, fallback_names = zip(*quirks)
             # check that only one fallback name exists for the translation key
             # if not, we print the quirk locations to help identify the issue
-            assert (
-                len(set(fallback_names)) == 1
-            ), f"Translation key '{translation_key}' is shared by quirks with different fallback names: {quirk_locations}"
+            assert len(set(fallback_names)) == 1, (
+                f"Translation key '{translation_key}' is shared by quirks with different fallback names: {quirk_locations}"
+            )
 
 
 def test_manufacturer_model_metadata_unique() -> None:
@@ -67,6 +67,6 @@ def test_manufacturer_model_metadata_unique() -> None:
 
     # check that each manufacturer-model pair is unique
     for (manufacturer, model), quirk_locations in man_model_quirk_map.items():
-        assert (
-            len(quirk_locations) == 1
-        ), f"Manufacturer-model pair '{manufacturer}' '{model}' is shared by multiple quirks: {quirk_locations}"
+        assert len(quirk_locations) == 1, (
+            f"Manufacturer-model pair '{manufacturer}' '{model}' is shared by multiple quirks: {quirk_locations}"
+        )
