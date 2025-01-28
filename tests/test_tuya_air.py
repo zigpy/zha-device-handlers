@@ -79,17 +79,6 @@ def test_co2_sensor(air_quality_device, data, ep_attr, expected_value):
     assert cluster.get("measured_value") == expected_value
 
 
-# @pytest.fixture
-# def smart_air_quality_device(zigpy_device_from_v2_quirk):
-#     """Tuya Smart Air Quality Sensor."""
-
-#     dev = zigpy_device_from_v2_quirk("_TZE200_mja3fuja", "TS0601")
-#     dev._packet_debouncer.filter = MagicMock(return_value=False)
-#     cluster = dev.endpoints[1].in_clusters[TuyaNewManufCluster.cluster_id]
-#     with mock.patch.object(cluster, "send_default_rsp"):
-#         yield dev
-
-
 TUYA_AIR_TEST_VAR00 = (
     (
         b"\t\x02\x01\x00\x00\x12\x02\x00\x04\x00\x00\x01 ",
