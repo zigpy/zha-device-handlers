@@ -13,7 +13,7 @@ from zigpy.zcl.clusters.hvac import (
     Thermostat,
     UserInterface,
 )
-from zigpy.zcl.foundation import Direction, ZCLAttributeDef, ZCLCommandDef
+from zigpy.zcl.foundation import DataTypeId, Direction, ZCLAttributeDef, ZCLCommandDef
 
 """Bosch specific thermostat attribute ids."""
 
@@ -423,8 +423,8 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
 
         display_orientation: Final = ZCLAttributeDef(
             id=SCREEN_ORIENTATION_ATTR_ID,
-            # To be matched to BoschDisplayOrientation enum.
-            type=t.uint8_t,
+            type=BoschDisplayOrientation,
+            zcl_type=DataTypeId.uint8,
             is_manufacturer_specific=True,
         )
 
@@ -447,37 +447,6 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
             type=BoschDisplayedTemperature,
             is_manufacturer_specific=True,
         )
-
-    async def write_attributes(
-        self, attributes: dict[str | int, Any], manufacturer: int | None = None
-    ) -> list:
-        """display_orientation special handling.
-
-        - convert from enum to uint8_t
-        """
-        display_orientation_attr = self.AttributeDefs.display_orientation
-
-        remaining_attributes = attributes.copy()
-        display_orientation_attribute_id = None
-
-        """Check if display_orientation is being written (can be numeric or string)."""
-        if display_orientation_attr.id in attributes:
-            display_orientation_attribute_id = display_orientation_attr.id
-        elif display_orientation_attr.name in attributes:
-            display_orientation_attribute_id = display_orientation_attr.name
-
-        if display_orientation_attribute_id is not None:
-            display_orientation_value = remaining_attributes.pop(
-                display_orientation_attribute_id
-            )
-            new_display_orientation_value = DISPLAY_ORIENTATION_ENUM_TO_INT_MAP[
-                display_orientation_value
-            ]
-            remaining_attributes[display_orientation_attribute_id] = (
-                new_display_orientation_value
-            )
-
-        return await super().write_attributes(remaining_attributes, manufacturer)
 
 
 (

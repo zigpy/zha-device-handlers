@@ -2,17 +2,14 @@
 
 from unittest import mock
 
+import zhaquirks
+from zhaquirks.bosch.rbsh_trv0_zb_eu import (
+    BoschOperatingMode,
+    BoschThermostatCluster as BoschTrvThermostatCluster,
+)
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.hvac import ControlSequenceOfOperation, Thermostat
 from zigpy.zcl.foundation import WriteAttributesStatusRecord
-
-import zhaquirks
-from zhaquirks.bosch.rbsh_trv0_zb_eu import (
-    BoschDisplayOrientation,
-    BoschOperatingMode,
-    BoschThermostatCluster as BoschTrvThermostatCluster,
-    BoschUserInterfaceCluster as BoschTrvUserInterfaceCluster,
-)
 
 zhaquirks.setup()
 
@@ -543,89 +540,4 @@ async def test_bosch_room_thermostat_II_230v_write_attributes(
                 Thermostat.AttributeDefs.ctrl_sequence_of_oper.id
             ]
             == ControlSequenceOfOperation.Cooling_Only
-        )
-
-
-async def test_bosch_radiator_thermostat_II_user_interface_write_attributes(
-    zigpy_device_from_v2_quirk,
-):
-    """Test the Radiator Thermostat II user-interface writes behaving correctly."""
-
-    device = zigpy_device_from_v2_quirk(manufacturer="BOSCH", model="RBSH-TRV0-ZB-EU")
-
-    bosch_thermostat_ui_cluster = device.endpoints[1].thermostat_ui
-
-    def mock_write(attributes, manufacturer=None):
-        records = [
-            WriteAttributesStatusRecord(foundation.Status.SUCCESS) for _ in attributes
-        ]
-        return [records, []]
-
-    # data is written to trv ui
-    patch_bosch_trv_ui_write = mock.patch.object(
-        bosch_thermostat_ui_cluster,
-        "_write_attributes",
-        mock.AsyncMock(side_effect=mock_write),
-    )
-
-    # check that display_orientation gets converted to supported value type:
-    with patch_bosch_trv_ui_write:
-        # - orientation (by-id) normal
-        success, fail = await bosch_thermostat_ui_cluster.write_attributes(
-            {
-                BoschTrvUserInterfaceCluster.AttributeDefs.display_orientation.id: BoschDisplayOrientation.Normal
-            }
-        )
-        assert success
-        assert not fail
-        assert (
-            bosch_thermostat_ui_cluster._attr_cache[
-                BoschTrvUserInterfaceCluster.AttributeDefs.display_orientation.id
-            ]
-            == 0
-        )
-
-        # - orientation (by-id) flipped
-        success, fail = await bosch_thermostat_ui_cluster.write_attributes(
-            {
-                BoschTrvUserInterfaceCluster.AttributeDefs.display_orientation.id: BoschDisplayOrientation.Flipped
-            }
-        )
-        assert success
-        assert not fail
-        assert (
-            bosch_thermostat_ui_cluster._attr_cache[
-                BoschTrvUserInterfaceCluster.AttributeDefs.display_orientation.id
-            ]
-            == 1
-        )
-
-        # - orientation (by-name) normal
-        success, fail = await bosch_thermostat_ui_cluster.write_attributes(
-            {
-                BoschTrvUserInterfaceCluster.AttributeDefs.display_orientation.name: BoschDisplayOrientation.Normal
-            }
-        )
-        assert success
-        assert not fail
-        assert (
-            bosch_thermostat_ui_cluster._attr_cache[
-                BoschTrvUserInterfaceCluster.AttributeDefs.display_orientation.id
-            ]
-            == 0
-        )
-
-        # - orientation (by-name) flipped
-        success, fail = await bosch_thermostat_ui_cluster.write_attributes(
-            {
-                BoschTrvUserInterfaceCluster.AttributeDefs.display_orientation.name: BoschDisplayOrientation.Flipped
-            }
-        )
-        assert success
-        assert not fail
-        assert (
-            bosch_thermostat_ui_cluster._attr_cache[
-                BoschTrvUserInterfaceCluster.AttributeDefs.display_orientation.id
-            ]
-            == 1
         )
