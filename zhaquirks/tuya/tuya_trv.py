@@ -7,7 +7,6 @@ import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.hvac import Thermostat
 
-from zhaquirks.tuya import TuyaPowerConfigurationCluster2AA
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import TuyaAttributesCluster
 
@@ -102,11 +101,11 @@ class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
         attribute_name=TuyaThermostatV2.AttributeDefs.running_state.name,
         converter=lambda x: 0x01 if not x else 0x00,  # Heat, Idle
     )
-    .tuya_binary_sensor(
+    .tuya_switch(
         dp_id=8,
-        attribute_name="window_open",
-        device_class=BinarySensorDeviceClass.WINDOW,
-        fallback_name="Window open",
+        attribute_name="window_detection",
+        translation_key="window_detection",
+        fallback_name="Window detection",
     )
     .tuya_switch(
         dp_id=10,
@@ -162,13 +161,12 @@ class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
         translation_key="valve_position",
         fallback_name="Valve position",
     )
-    .tuya_dp(
+    .tuya_binary_sensor(
         dp_id=105,
-        ep_attribute=TuyaPowerConfigurationCluster2AA.ep_attribute,
-        attribute_name="battery_percentage_remaining",
-        converter=lambda x: 0 if x == BatteryState.Low else 100,
+        attribute_name="battery_low",
+        device_class=BinarySensorDeviceClass.BATTERY,
+        fallback_name="Battery low",
     )
-    .adds(TuyaPowerConfigurationCluster2AA)
     .tuya_switch(
         dp_id=106,
         attribute_name="away_mode",
