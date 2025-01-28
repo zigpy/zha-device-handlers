@@ -106,7 +106,6 @@ class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
         dp_id=8,
         attribute_name="window_open",
         device_class=BinarySensorDeviceClass.WINDOW,
-        translation_key="window_open",
         fallback_name="Window open",
     )
     .tuya_switch(
