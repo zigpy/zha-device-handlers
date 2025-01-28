@@ -70,7 +70,6 @@ class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
 
     async def write_attributes(self, attributes, manufacturer=None):
         """Overwrite to force manufacturer code."""
-
         return await super().write_attributes(
             attributes, manufacturer=foundation.ZCLHeader.NO_MANUFACTURER_ID
         )
