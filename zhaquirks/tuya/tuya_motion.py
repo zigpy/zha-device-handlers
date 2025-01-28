@@ -245,8 +245,8 @@ base_tuya_motion = (
         min_value=1,
         max_value=15000,
         step=1,
-        translation_key="presence_timeout",
-        fallback_name="Fade time",
+        translation_key="fading_time",
+        fallback_name="Fading time",
     )
     .add_to_registry()
 )
@@ -348,6 +348,58 @@ base_tuya_motion = (
         fallback_name="Fading time",
     )
     .tuya_illuminance(dp_id=104)
+    .add_to_registry()
+)
+
+# Whenzi Tuya WZ-M100
+# https://github.com/wzwenzhi/Wenzhi-ZigBee2mqtt/blob/main/wenzhi_tuya_M100_240704.js
+(
+    base_tuya_motion.clone()
+    .applies_to("_TZE204_laokfqwu", "TS0601")
+    .tuya_dp(
+        dp_id=1,
+        ep_attribute=TuyaOccupancySensing.ep_attribute,
+        attribute_name=OccupancySensing.AttributeDefs.occupancy.name,
+        converter=lambda x: x == 1,
+    )
+    # 2, 3, 4, and 9 from base
+    .tuya_number(
+        dp_id=104,
+        attribute_name="interval_time",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        min_value=1,
+        max_value=3600,
+        step=1,
+        translation_key="interval_time",
+        fallback_name="Interval time",
+    )
+    .tuya_number(
+        dp_id=105,
+        attribute_name="detection_delay",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        min_value=0.1,
+        max_value=10,
+        step=0.1,
+        translation_key="detection_delay",
+        fallback_name="Detection delay",
+    )
+    .tuya_number(
+        dp_id=106,
+        attribute_name="fading_time",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        min_value=5,
+        max_value=1500,
+        step=5,
+        translation_key="fading_time",
+        fallback_name="Fading time",
+    )
+    .tuya_illuminance(dp_id=103)
     .add_to_registry()
 )
 
@@ -928,15 +980,15 @@ base_tuya_motion = (
     )
     .tuya_number(
         dp_id=105,
-        attribute_name="presence_timeout",
+        attribute_name="fading_time",
         type=t.uint16_t,
         device_class=SensorDeviceClass.DURATION,
         unit=UnitOfTime.MINUTES,
         min_value=1,
         max_value=30,
         step=1,
-        translation_key="presence_timeout",
-        fallback_name="Fade time",
+        translation_key="fading_time",
+        fallback_name="Fading time",
     )
     .skip_configuration()
     .add_to_registry()

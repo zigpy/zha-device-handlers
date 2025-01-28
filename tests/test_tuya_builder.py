@@ -364,3 +364,34 @@ async def test_tuya_mcu_set_time(device_mock):
         assert not res_hdr[0].frame_control.is_manufacturer_specific
 
     datetime.datetime = origdatetime  # restore datetime
+
+
+@pytest.mark.parametrize(
+    "force",
+    [
+        (False),
+        (True),
+    ],
+)
+async def test_tuya_quirkbuilder_force(device_mock, force):
+    """Test adding an empty TuyaQuirkBuilder doesn't add a MCU cluster unless forced to."""
+
+    registry = DeviceRegistry()
+
+    (
+        TuyaQuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
+        .skip_configuration()
+        .add_to_registry(force_add_cluster=force)
+    )
+
+    quirked = registry.get_device(device_mock)
+    assert isinstance(quirked, CustomDeviceV2)
+    assert quirked in registry
+
+    ep = quirked.endpoints[1]
+
+    if force:
+        assert ep.tuya_manufacturer is not None
+        assert isinstance(ep.tuya_manufacturer, TuyaMCUCluster)
+    else:
+        assert not hasattr(ep, "tuya_manufacturer")

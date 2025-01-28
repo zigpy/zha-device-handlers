@@ -33,6 +33,26 @@ class TuyaNousTempHumiAlarm(t.enum8):
     Canceled = 0x02
 
 
+class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
+    """Tuya Manufacturer Cluster with set_time mod."""
+
+    set_time_offset = 1970
+    set_time_local_offset = 1970
+
+    # Deepcopy required to override 'set_time', without, it will revert
+    server_commands = copy.deepcopy(TuyaMCUCluster.server_commands)
+    server_commands.update(
+        {
+            TUYA_SET_TIME: foundation.ZCLCommandDef(
+                "set_time",
+                {"time": TuyaTimePayload},
+                False,
+                is_manufacturer_specific=False,
+            ),
+        }
+    )
+
+
 (
     TuyaQuirkBuilder("_TZE200_bjawzodf", "TS0601")
     .applies_to("_TZE200_zl1kmjqx", "TS0601")
@@ -57,6 +77,7 @@ class TuyaNousTempHumiAlarm(t.enum8):
     .applies_to("_TZE200_qyflbnbj", "TS0601")
     .applies_to("_TZE284_qyflbnbj", "TS0601")
     .applies_to("_TZE200_44af8vyi", "TS0601")
+    .applies_to("_TZE200_vvmbj46n", "TS0601")
     # Not using tuya_temperature because device reports negative values incorrectly
     .tuya_dp(
         dp_id=1,
@@ -86,26 +107,6 @@ class TuyaNousTempHumiAlarm(t.enum8):
     .skip_configuration()
     .add_to_registry()
 )
-
-
-class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
-    """Tuya Manufacturer Cluster with set_time mod."""
-
-    set_time_offset = 1970
-    set_time_local_offset = 1970
-
-    # Deepcopy required to override 'set_time', without, it will revert
-    server_commands = copy.deepcopy(TuyaMCUCluster.server_commands)
-    server_commands.update(
-        {
-            TUYA_SET_TIME: foundation.ZCLCommandDef(
-                "set_time",
-                {"time": TuyaTimePayload},
-                False,
-                is_manufacturer_specific=False,
-            ),
-        }
-    )
 
 
 # TH01Z - Temperature and humidity sensor with clock
@@ -307,6 +308,23 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .tuya_illuminance(dp_id=101)
     .tuya_contact(dp_id=1)
     .tuya_battery(dp_id=2, battery_type=BatterySize.CR2032, battery_qty=1)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+(
+    TuyaQuirkBuilder("_TZE204_upagmta9", "TS0601")
+    .tuya_temperature(dp_id=1, scale=10)
+    .tuya_humidity(dp_id=2)
+    .tuya_dp(
+        dp_id=3,
+        ep_attribute=TuyaPowerConfigurationCluster2AAA.ep_attribute,
+        attribute_name="battery_percentage_remaining",
+        converter=lambda x: {0: 50, 1: 100, 2: 200}[x],
+    )
+    .adds(TuyaPowerConfigurationCluster2AAA)
+    .tuya_enchantment(data_query_spell=True)
     .skip_configuration()
     .add_to_registry()
 )
