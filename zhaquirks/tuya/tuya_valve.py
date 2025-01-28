@@ -2,7 +2,7 @@
 
 from datetime import datetime, timedelta, timezone
 
-from zigpy.quirks.v2 import EntityPlatform, EntityType
+from zigpy.quirks.v2 import BinarySensorDeviceClass, EntityPlatform, EntityType
 from zigpy.quirks.v2.homeassistant import UnitOfTime, UnitOfVolume
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
@@ -540,9 +540,10 @@ class GiexIrrigationStatus(t.enum8):
     .tuya_battery(dp_id=11, battery_type=BatterySize.AA, battery_qty=2)
     .tuya_binary_sensor(
         dp_id=19,
-        attribute_name="valve_fault",
-        translation_key="valve_fault",
-        fallback_name="Valve fault",
+        attribute_name="valve_alarm",
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        translation_key="valve_alarm",
+        fallback_name="Valve alarm",
     )
     .tuya_enum(
         dp_id=37,
