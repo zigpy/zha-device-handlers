@@ -328,3 +328,13 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .skip_configuration()
     .add_to_registry()
 )
+
+
+(
+    TuyaQuirkBuilder("_TZE200_kzm5w4iz", "TS0601")
+    .tuya_contact(dp_id=1)
+    .tuya_battery(dp_id=3, battery_type=BatterySize.AAA, battery_qty=2)
+    .tuya_vibration(dp_id=10)
+    .skip_configuration()
+    .add_to_registry()
+)

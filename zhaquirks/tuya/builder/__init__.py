@@ -87,6 +87,14 @@ class TuyaIasFire(IasZone, TuyaLocalCluster):
     }
 
 
+class TuyaIasVibration(IasZone, TuyaLocalCluster):
+    """Tuya local IAS vibration cluster."""
+
+    _CONSTANT_ATTRIBUTES = {
+        IasZone.AttributeDefs.zone_type.id: IasZone.ZoneType.Vibration_Movement_Sensor
+    }
+
+
 class TuyaPM25Concentration(PM25, TuyaLocalCluster):
     """Tuya PM25 concentration measurement."""
 
@@ -433,6 +441,15 @@ class TuyaQuirkBuilder(QuirkBuilder):
             converter=lambda x: x * scale,
         )
         self.adds(temp_cfg)
+        return self
+
+    def tuya_vibration(self, dp_id: int):
+        """Add a Tuya IAS vibration sensor."""
+        self.tuya_ias(
+            dp_id=dp_id,
+            ias_cfg=TuyaIasVibration,
+            converter=lambda x: IasZone.ZoneStatus.Alarm_1 if x != 0 else 0,
+        )
         return self
 
     def tuya_voc(

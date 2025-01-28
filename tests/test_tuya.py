@@ -36,7 +36,6 @@ import zhaquirks.tuya.ts011f_plug
 import zhaquirks.tuya.ts0501_fan_switch
 import zhaquirks.tuya.ts0601_electric_heating
 import zhaquirks.tuya.ts0601_trv
-import zhaquirks.tuya.ts601_door
 import zhaquirks.tuya.ts1201
 import zhaquirks.tuya.tuya_motion
 import zhaquirks.tuya.tuya_valve
@@ -1955,59 +1954,35 @@ async def test_ts1201_ir_blaster(zigpy_device_from_quirk):
         )
 
 
-def test_ts601_door_sensor_signature(assert_signature_matches_quirk):
-    """Test TS601 Vibration Door Sensor signature against quirk."""
-    signature = {
-        "node_descriptor": "NodeDescriptor(logical_type=<LogicalType.EndDevice: 2>, complex_descriptor_available=0, user_descriptor_available=0, reserved=0, aps_flags=0, frequency_band=<FrequencyBand.Freq2400MHz: 8>, mac_capability_flags=<MACCapabilityFlags.AllocateAddress: 128>, manufacturer_code=4417, maximum_buffer_size=66, maximum_incoming_transfer_size=66, server_mask=10752, maximum_outgoing_transfer_size=66, descriptor_capability_field=<DescriptorCapability.NONE: 0>, *allocate_address=True, *is_alternate_pan_coordinator=False, *is_coordinator=False, *is_end_device=True, *is_full_function_device=False, *is_mains_powered=False, *is_receiver_on_when_idle=False, *is_router=False, *is_security_capable=False)",
-        "endpoints": {
-            "1": {
-                "profile_id": 260,
-                "device_type": "0x0051",
-                "in_clusters": ["0x0000", "0x0004", "0x0005", "0xef00"],
-                "out_clusters": ["0x000a", "0x0019"],
-            }
-        },
-        "manufacturer": "_TZE200_kzm5w4iz",
-        "model": "TS0601",
-        "class": "zigpy.device.Device",
-    }
-    assert_signature_matches_quirk(zhaquirks.tuya.ts601_door.TS0601Door, signature)
-
-
 @pytest.mark.parametrize(
-    ("data", "endpoint_id", "ep_attr", "attribute", "expected_value"),
+    ("data", "ep_attr", "attribute", "expected_value"),
     [
         (
             b"\t\xfc\x02\x007\x01\x01\x00\x01\x01",
-            zhaquirks.tuya.ts601_door.DOOR_HANDLE_EP_ID,
             IasZone.ep_attribute,
             IasZone.AttributeDefs.zone_status.id,
             ZoneStatus.Alarm_1,
         ),
         (
             b"\t\xfc\x02\x007\x01\x01\x00\x01\x00",
-            zhaquirks.tuya.ts601_door.DOOR_HANDLE_EP_ID,
             IasZone.ep_attribute,
             IasZone.AttributeDefs.zone_status.id,
             0x0000,
         ),
         (
             b"\t\xfc\x02\x007\n\x04\x00\x01\x01",
-            zhaquirks.tuya.ts601_door.VIBRATION_EP_ID,
             IasZone.ep_attribute,
             IasZone.AttributeDefs.zone_status.id,
             ZoneStatus.Alarm_1,
         ),
         (
             b"\t\xfc\x02\x007\n\x04\x00\x01\x00",
-            zhaquirks.tuya.ts601_door.VIBRATION_EP_ID,
             IasZone.ep_attribute,
             IasZone.AttributeDefs.zone_status.id,
             0x0000,
         ),
         (
             b"\to\x02\x00P\x03\x02\x00\x04\x00\x00\x00T",
-            zhaquirks.tuya.ts601_door.DP_HANDLER_EP_ID,
             PowerConfiguration.ep_attribute,
             PowerConfiguration.AttributeDefs.battery_percentage_remaining.id,
             84 * 2,
@@ -2015,7 +1990,7 @@ def test_ts601_door_sensor_signature(assert_signature_matches_quirk):
     ],
 )
 async def test_ts601_door_sensor(
-    zigpy_device_from_quirk, data, endpoint_id, ep_attr, attribute, expected_value
+    zigpy_device_from_v2_quirk, data, ep_attr, attribute, expected_value
 ):
     """Test TS601 Vibration Door Sensor quirk.
 
@@ -2024,25 +1999,22 @@ async def test_ts601_door_sensor(
         - Vibration On/Off
         - Remaining battery percentage
     """
-    device: Device = zigpy_device_from_quirk(zhaquirks.tuya.ts601_door.TS0601Door)
+    device: Device = zigpy_device_from_v2_quirk("_TZE200_kzm5w4iz", "TS0601")
     device._packet_debouncer.filter = mock.MagicMock(return_value=False)
 
-    dp_processor_ep = zhaquirks.tuya.ts601_door.DP_HANDLER_EP_ID
-    cluster = device.endpoints[dp_processor_ep].in_clusters[
-        TuyaNewManufCluster.cluster_id
-    ]
+    cluster = device.endpoints[1].in_clusters[TuyaNewManufCluster.cluster_id]
 
     with mock.patch.object(cluster, "send_default_rsp"):
         device.packet_received(
             t.ZigbeePacket(
                 profile_id=zha.PROFILE_ID,
-                src_ep=dp_processor_ep,
+                src_ep=1,
                 cluster_id=TuyaNewManufCluster.cluster_id,
                 data=t.SerializableBytes(data),
             )
         )
 
-    cluster = getattr(device.endpoints[endpoint_id], ep_attr)
+    cluster = getattr(device.endpoints[1], ep_attr)
     attrs = await cluster.read_attributes(attributes=[attribute])
 
     assert attrs[0].get(attribute) == expected_value
