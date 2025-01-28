@@ -1,6 +1,8 @@
 """Map from manufacturer to standard clusters for thermostatic valves."""
 
+from zigpy.quirks.v2.homeassistant import PERCENTAGE
 from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
+from zigpy.quirks.v2.homeassistant.sensor import SensorStateClass
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.hvac import Thermostat
@@ -100,12 +102,31 @@ class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
         attribute_name=TuyaThermostatV2.AttributeDefs.running_state.name,
         converter=lambda x: 0x01 if not x else 0x00,  # Heat, Idle
     )
+    .tuya_binary_sensor(
+        dp_id=8,
+        attribute_name="window_open",
+        device_class=BinarySensorDeviceClass.WINDOW,
+        translation_key="window_open",
+        fallback_name="Window open",
+    )
+    .tuya_switch(
+        dp_id=10,
+        attribute_name="frost_protection",
+        translation_key="frost_protection",
+        fallback_name="Frost protection",
+    )
     .tuya_dp(
         dp_id=27,
         ep_attribute=TuyaThermostatV2.ep_attribute,
         attribute_name=TuyaThermostatV2.AttributeDefs.local_temperature_calibration.name,
         converter=lambda x: x,
         dp_converter=lambda x: 0xFFFFFFFF - x if x > 6 else x,
+    )
+    .tuya_switch(
+        dp_id=40,
+        attribute_name="child_lock",
+        translation_key="child_lock",
+        fallback_name="Child lock",
     )
     .tuya_dp(
         dp_id=101,
@@ -132,18 +153,15 @@ class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
         dp_converter=lambda x: x // 10,
     )
     .adds(TuyaThermostatV2)
-    .tuya_switch(
-        dp_id=40,
-        attribute_name="child_lock",
-        translation_key="child_lock",
-        fallback_name="Child lock",
-    )
-    .tuya_binary_sensor(
-        dp_id=8,
-        attribute_name="window_open",
-        device_class=BinarySensorDeviceClass.WINDOW,
-        translation_key="window_open",
-        fallback_name="Window open",
+    .tuya_sensor(
+        dp_id=104,
+        attribute_name="valve_position",
+        type=t.int16s,
+        divisor=10,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=PERCENTAGE,
+        translation_key="valve_position",
+        fallback_name="Valve position",
     )
     .tuya_dp(
         dp_id=105,
@@ -153,10 +171,22 @@ class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
     )
     .adds(TuyaPowerConfigurationCluster2AA)
     .tuya_switch(
+        dp_id=106,
+        attribute_name="away_mode",
+        translation_key="away_mode",
+        fallback_name="Away mode",
+    )
+    .tuya_switch(
         dp_id=108,
         attribute_name="schedule_enable",
         translation_key="schedule_enable",
         fallback_name="Schedule enable",
+    )
+    .tuya_switch(
+        dp_id=130,
+        attribute_name="scale_protection",
+        translation_key="scale_protection",
+        fallback_name="Scale protection",
     )
     .skip_configuration()
     .add_to_registry()
