@@ -965,7 +965,6 @@ base_tuya_motion = (
         attribute_name="tamper",
         device_class=BinarySensorDeviceClass.TAMPER,
         entity_type=EntityType.DIAGNOSTIC,
-        translation_key="tamper",
         fallback_name="Tamper",
     )
     .tuya_number(
