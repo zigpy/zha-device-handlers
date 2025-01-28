@@ -605,10 +605,9 @@ class GiexIrrigationStatus(t.enum8):
         translation_key="flow_switch",
         fallback_name="Flow switch",
     )
-    .tuya_binary_sensor(
+    .tuya_switch(
         dp_id=104,
         attribute_name="child_lock",
-        entity_type=EntityType.STANDARD,
         translation_key="child_lock",
         fallback_name="Child lock",
     )
