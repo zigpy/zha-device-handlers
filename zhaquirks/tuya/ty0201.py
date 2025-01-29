@@ -1,7 +1,11 @@
 """Tuya TY0201 temperature and humidity sensor."""
 
 from zhaquirks.tuya import TuyaPowerConfigurationCluster2AA
-from zhaquirks.tuya.builder import TuyaQuirkBuilder, TuyaRelativeHumidity, TuyaTemperatureMeasurement
+from zhaquirks.tuya.builder import (
+    TuyaQuirkBuilder,
+    TuyaRelativeHumidity,
+    TuyaTemperatureMeasurement,
+)
 
 (
     TuyaQuirkBuilder("_TZ3000_bjawzodf", "TY0201")
