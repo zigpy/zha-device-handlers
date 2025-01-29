@@ -2,15 +2,14 @@
 
 from unittest import mock
 
-from zigpy.zcl import foundation
-from zigpy.zcl.clusters.hvac import ControlSequenceOfOperation, Thermostat
-from zigpy.zcl.foundation import WriteAttributesStatusRecord
-
 import zhaquirks
 from zhaquirks.bosch.rbsh_trv0_zb_eu import (
     BoschOperatingMode,
     BoschThermostatCluster as BoschTrvThermostatCluster,
 )
+from zigpy.zcl import foundation
+from zigpy.zcl.clusters.hvac import ControlSequenceOfOperation, Thermostat
+from zigpy.zcl.foundation import WriteAttributesStatusRecord
 
 zhaquirks.setup()
 
@@ -58,9 +57,24 @@ async def test_bosch_radiator_thermostat_II_write_attributes(
 
     # check that system_mode ends-up writing operating_mode:
     with patch_bosch_trv_write, patch_bosch_trv_read:
-        # - Heating operation
+        # - Heating operation - by name
         success, fail = await bosch_thermostat_cluster.write_attributes(
             {"ctrl_sequence_of_oper": ControlSequenceOfOperation.Heating_Only}
+        )
+        assert success
+        assert not fail
+        assert (
+            bosch_thermostat_cluster._attr_cache[
+                Thermostat.AttributeDefs.ctrl_sequence_of_oper.id
+            ]
+            == ControlSequenceOfOperation.Heating_Only
+        )
+
+        # - Heating operation - by id
+        success, fail = await bosch_thermostat_cluster.write_attributes(
+            {
+                Thermostat.AttributeDefs.ctrl_sequence_of_oper.id: ControlSequenceOfOperation.Heating_Only
+            }
         )
         assert success
         assert not fail
