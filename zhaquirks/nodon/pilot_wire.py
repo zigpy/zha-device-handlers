@@ -1,7 +1,7 @@
 """NodOn pilot wire heating module."""
 
 from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder
+from zigpy.quirks.v2 import EntityType, QuirkBuilder
 import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
 
@@ -56,6 +56,14 @@ class AdeoPilotWireCluster(NodOnPilotWireCluster):
 nodon = (
     QuirkBuilder(NODON, "SIN-4-FP-21")
     .replaces(NodOnPilotWireCluster)
+    .enum(
+        attribute_name=NodOnPilotWireCluster.AttributeDefs.pilot_wire_mode.name,
+        enum_class=NodOnPilotWireMode,
+        cluster_id=NodOnPilotWireCluster.cluster_id,
+        entity_type=EntityType.STANDARD,
+        translation_key="pilot_wire_mode",
+        fallback_name="Pilot wire mode",
+    )
 )  # fmt: skip
 
 

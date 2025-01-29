@@ -26,6 +26,7 @@ from zhaquirks.tuya.builder import (
     TuyaIasContact,
     TuyaIasFire,
     TuyaIasGas,
+    TuyaIasVibration,
     TuyaIlluminance,
     TuyaPM25Concentration,
     TuyaQuirkBuilder,
@@ -56,6 +57,7 @@ zhaquirks.setup()
         ("tuya_co2", "carbon_dioxide_concentration", TuyaCO2Concentration),
         ("tuya_pm25", "pm25", TuyaPM25Concentration),
         ("tuya_voc", "voc_level", TuyaAirQualityVOC),
+        ("tuya_vibration", "ias_zone", TuyaIasVibration),
         (
             "tuya_formaldehyde",
             "formaldehyde_concentration",
