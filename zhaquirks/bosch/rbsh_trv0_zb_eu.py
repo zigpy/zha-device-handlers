@@ -122,12 +122,6 @@ SYSTEM_MODE_TO_OPERATING_MODE_MAP = {
     Thermostat.SystemMode.Auto: BoschOperatingMode.Schedule,
 }
 
-"""Bosch display orientation enum to uint8_t mapping."""
-DISPLAY_ORIENTATION_ENUM_TO_INT_MAP = {
-    BoschDisplayOrientation.Normal: 0x00,
-    BoschDisplayOrientation.Flipped: 0x01,
-}
-
 """Bosch Attributes Reporting Configuration"""
 BOSCH_ATTR_REPORT_CONFIG = ReportingConfig(
     min_interval=10, max_interval=10800, reportable_change=1

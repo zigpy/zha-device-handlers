@@ -240,6 +240,12 @@ async def test_bosch_radiator_thermostat_II_write_attributes(
             ]
             == ControlSequenceOfOperation.Cooling_Only
         )
+        assert (
+            bosch_thermostat_cluster._attr_cache[
+                Thermostat.AttributeDefs.system_mode.id
+            ]
+            == Thermostat.SystemMode.Cool
+        )
 
         # -- Off (by-name)
         success, fail = await bosch_thermostat_cluster.write_attributes(
