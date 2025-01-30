@@ -12,11 +12,11 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.tuya import (
+    TUYA_CLUSTER_ED00_ID,
     TuyaManufacturerWindowCover,
     TuyaManufCluster,
     TuyaWindowCover,
     TuyaWindowCoverControl,
-    TUYA_CLUSTER_ED00_ID
 )
 
 
@@ -371,7 +371,7 @@ class TuyaZemismartSmartCover0601_4(TuyaWindowCover):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     TuyaManufCluster.cluster_id,
-                    TUYA_CLUSTER_ED00_ID
+                    TUYA_CLUSTER_ED00_ID,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
