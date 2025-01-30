@@ -72,6 +72,7 @@ class TuyaIlluminance(CustomDevice):
         #  input_clusters=[4, 5, 61184, 0], output_clusters=[25, 10])
         MODELS_INFO: [
             ("_TZE200_khx7nnka", "TS0601"),
+            ("_TZE204_khx7nnka", "TS0601"),
             ("_TZE200_yi4jtqq1", "TS0601"),
         ],
         ENDPOINTS: {

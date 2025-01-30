@@ -22,7 +22,6 @@ from zhaquirks.tuya import (
     PowerOnState,
     TuyaCommand,
     TuyaDatapointData,
-    TuyaEnchantableCluster,
     TuyaLocalCluster,
     TuyaNewManufCluster,
     TuyaTimePayload,
@@ -131,6 +130,16 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
     set_time_offset = 1970  # MCU timestamp from 1/1/1970
     set_time_local_offset = None
 
+    class AttributeDefs(TuyaNewManufCluster.AttributeDefs):
+        """Attribute Definitions."""
+
+        mcu_version = foundation.ZCLAttributeDef(
+            id=ATTR_MCU_VERSION,
+            type=t.uint48_t,
+            access=foundation.ZCLAttributeAccess.Read,
+            is_manufacturer_specific=True,
+        )
+
     class MCUVersion(t.Struct):
         """Tuya MCU version response Zcl payload."""
 
@@ -160,14 +169,6 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
 
         tsn: t.uint8_t
         status: t.LVBytes
-
-    attributes = TuyaNewManufCluster.attributes.copy()
-    attributes.update(
-        {
-            # MCU version
-            ATTR_MCU_VERSION: ("mcu_version", t.uint48_t, True),
-        }
-    )
 
     client_commands = TuyaNewManufCluster.client_commands.copy()
     client_commands.update(
@@ -358,7 +359,7 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
         return foundation.Status.SUCCESS
 
 
-class TuyaOnOff(TuyaEnchantableCluster, OnOff, TuyaLocalCluster):
+class TuyaOnOff(OnOff, TuyaLocalCluster):
     """Tuya MCU OnOff cluster."""
 
     async def command(
