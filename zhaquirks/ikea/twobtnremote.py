@@ -263,6 +263,7 @@ class IkeaRodretRemote2Btn(CustomDevice):
 
     device_automation_triggers = IkeaTradfriRemote2Btn.device_automation_triggers.copy()
 
+
 class IkeaRodretRemote2BtnNew(CustomDevice):
     """Custom device representing IKEA of Sweden RODRET remote control."""
 
