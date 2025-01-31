@@ -11,13 +11,7 @@ from zigpy.quirks import BaseCustomDevice, CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl import BaseAttributeDefs, foundation
 from zigpy.zcl.clusters.closures import WindowCovering
-from zigpy.zcl.clusters.general import (
-    Basic,
-    BatterySize,
-    LevelControl,
-    OnOff,
-    PowerConfiguration,
-)
+from zigpy.zcl.clusters.general import Basic, LevelControl, OnOff, PowerConfiguration
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
 from zigpy.zcl.clusters.smartenergy import Metering
@@ -30,6 +24,7 @@ from zhaquirks.const import (
     RIGHT,
     SHORT_PRESS,
     ZHA_SEND_EVENT,
+    BatterySize,
 )
 
 # ---------------------------------------------------------
@@ -1616,6 +1611,15 @@ class TuyaNewManufCluster(CustomCluster):
                 self.debug("No datapoint handler for %s", record)
                 dp_error = True
                 # return foundation.Status.UNSUPPORTED_ATTRIBUTE
+
+        _LOGGER.debug(
+            "[0x%04x:%s:0x%04x] Received value %s for attribute 0x%04x",
+            self.endpoint.device.nwk,
+            self.endpoint.endpoint_id,
+            self.cluster_id,
+            record.data.payload,
+            record.dp,
+        )
 
         return (
             foundation.Status.SUCCESS

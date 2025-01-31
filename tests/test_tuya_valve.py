@@ -173,15 +173,15 @@ async def test_giex_02_quirk(zigpy_device_from_v2_quirk, model, manuf, use_minut
         ][entity]
 
         if not use_minutes:
-            assert number_metadata.max == zhaquirks.tuya.ts0601_valve.GIEX_12HRS_AS_SEC
+            assert number_metadata.max == zhaquirks.tuya.tuya_valve.GIEX_12HRS_AS_SEC
         else:
-            assert number_metadata.max == zhaquirks.tuya.ts0601_valve.GIEX_24HRS_AS_MIN
+            assert number_metadata.max == zhaquirks.tuya.tuya_valve.GIEX_24HRS_AS_MIN
 
 
 async def test_giex_functions():
     """Test various Giex Valve functions."""
-    assert zhaquirks.tuya.ts0601_valve.giex_string_to_td("12:01:05,3") == 43265
-    assert zhaquirks.tuya.ts0601_valve.giex_string_to_ts("--:--:--") is None
+    assert zhaquirks.tuya.tuya_valve.giex_string_to_td("12:01:05,3") == 43265
+    assert zhaquirks.tuya.tuya_valve.giex_string_to_ts("--:--:--") is None
 
     class MockDatetime:
         def now(self, tz: timezone):
@@ -192,11 +192,11 @@ async def test_giex_functions():
             """Mock strptime."""
             return datetime.strptime(v, fmt)
 
-    with patch("zhaquirks.tuya.ts0601_valve.datetime", MockDatetime()):
+    with patch("zhaquirks.tuya.tuya_valve.datetime", MockDatetime()):
         assert (
-            zhaquirks.tuya.ts0601_valve.giex_string_to_ts("20:12:01")
+            zhaquirks.tuya.tuya_valve.giex_string_to_ts("20:12:01")
             == datetime.fromisoformat("2024-10-02T12:10:23+04:00").timestamp()
-            + zhaquirks.tuya.ts0601_valve.UNIX_EPOCH_TO_ZCL_EPOCH
+            + zhaquirks.tuya.tuya_valve.UNIX_EPOCH_TO_ZCL_EPOCH
         )
 
 

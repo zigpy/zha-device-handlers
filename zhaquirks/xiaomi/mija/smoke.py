@@ -34,6 +34,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     SKIP_CONFIGURATION,
+    BatterySize,
 )
 from zhaquirks.xiaomi import (
     LUMI,
@@ -66,7 +67,7 @@ class MijiaHoneywellSmokeDetectorSensor(XiaomiQuickInitDevice):
 
     def __init__(self, *args, **kwargs):
         """Init method."""
-        self.battery_size = 8  # CR123a
+        self.battery_size = BatterySize.CR123A
         super().__init__(*args, **kwargs)
 
     signature = {

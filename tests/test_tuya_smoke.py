@@ -39,6 +39,7 @@ zhaquirks.setup()
             ),
         ),
         ("_TZE284_0zaf1cr8", "TS0601", []),
+        ("_TZE204_kgaxpvxr", "TS0601", []),
     ],
 )
 async def test_handle_get_data(zigpy_device_from_v2_quirk, model, manuf, battery_test):
