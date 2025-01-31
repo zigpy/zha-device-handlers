@@ -1610,7 +1610,7 @@ class TuyaNewManufCluster(CustomCluster):
                 # return foundation.Status.UNSUPPORTED_ATTRIBUTE
 
         _LOGGER.debug(
-            "[0x%04x:%s:0x%04x] Received value %s " "for attribute 0x%04x",
+            "[0x%04x:%s:0x%04x] Received value %s for attribute 0x%04x",
             self.endpoint.device.nwk,
             self.endpoint.endpoint_id,
             self.cluster_id,

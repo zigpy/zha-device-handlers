@@ -434,9 +434,9 @@ def test_quirk_importable(quirk: CustomDevice) -> None:
     """Ensure all quirks can be imported with a normal Python `import` statement."""
 
     path = f"{quirk.__module__}.{quirk.__name__}"
-    assert all(
-        m and m.isidentifier() for m in path.split(".")
-    ), f"{path} is not importable"
+    assert all(m and m.isidentifier() for m in path.split(".")), (
+        f"{path} is not importable"
+    )
 
 
 def test_quirk_loading_error(tmp_path: Path, caplog) -> None:

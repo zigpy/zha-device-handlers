@@ -356,6 +356,7 @@ base_tuya_motion = (
 (
     base_tuya_motion.clone()
     .applies_to("_TZE204_laokfqwu", "TS0601")
+    .applies_to("_TZE200_clrdrnya", "TS0601")
     .tuya_dp(
         dp_id=1,
         ep_attribute=TuyaOccupancySensing.ep_attribute,
