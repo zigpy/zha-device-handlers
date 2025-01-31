@@ -1533,6 +1533,11 @@ class TuyaNewManufCluster(CustomCluster):
     def __init__(self, *args, **kwargs):
         """Initialize the cluster and mark attributes as valid on LocalDataClusters."""
         super().__init__(*args, **kwargs)
+
+        self._dp_to_attributes: dict[int, list[DPToAttributeMapping]] = {
+            dp: attr if isinstance(attr, list) else [attr]
+            for dp, attr in self.dp_to_attribute.items()
+        }
         for dp_map in self._dp_to_attributes.values():
             # get the endpoint that is being mapped to
             endpoint = self.endpoint
@@ -1633,14 +1638,6 @@ class TuyaNewManufCluster(CustomCluster):
     def handle_set_time_request(self, payload: t.uint16_t) -> foundation.Status:
         """Handle Time set request."""
         return foundation.Status.SUCCESS
-
-    @property
-    def _dp_to_attributes(self) -> dict[int, list[DPToAttributeMapping]]:
-        """Convert from legacy single attribute dp mappings."""
-        return {
-            dp: attr if isinstance(attr, list) else [attr]
-            for dp, attr in self.dp_to_attribute.items()
-        }
 
     def _dp_2_attr_update(self, datapoint: TuyaDatapointData) -> None:
         """Handle data point to attribute report conversion."""
