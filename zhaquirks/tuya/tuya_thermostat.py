@@ -2,7 +2,7 @@
 
 import copy
 
-from zigpy.quirks.v2 import BinarySensorDeviceClass, EntityPlatform, EntityType
+from zigpy.quirks.v2 import BinarySensorDeviceClass, EntityType
 from zigpy.quirks.v2.homeassistant import (
     UnitOfElectricCurrent,
     UnitOfElectricPotential,
@@ -20,14 +20,6 @@ from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import TuyaAttributesCluster, TuyaMCUCluster
 
 
-class TuyaThermostatSystemMode(t.enum8):
-    """Tuya thermostat system mode enum."""
-
-    Cool = 0x00
-    Heat = 0x01
-    FanOnly = 0x02
-
-
 class RegulatorPeriod(t.enum8):
     """Tuya regulator period enum."""
 
@@ -36,22 +28,6 @@ class RegulatorPeriod(t.enum8):
     _45_min = 0x02
     _60_min = 0x03
     _90_min = 0x04
-
-
-class ValveState(t.enum8):
-    """Tuya valve current state enum."""
-
-    Open = 0x00
-    Closed = 0x01
-
-
-class FanMode(t.enum8):
-    """Tuya HVAC fan mode enum."""
-
-    Low = 0x00
-    Medium = 0x01
-    High = 0x02
-    Auto = 0x03
 
 
 class ThermostatMode(t.enum8):
@@ -125,6 +101,10 @@ class TuyaThermostat(Thermostat, TuyaAttributesCluster):
 
     manufacturer_id_override: t.uint16_t = foundation.ZCLHeader.NO_MANUFACTURER_ID
 
+    _CONSTANT_ATTRIBUTES = {
+        Thermostat.AttributeDefs.ctrl_sequence_of_oper.id: Thermostat.ControlSequenceOfOperation.Heating_Only
+    }
+
     def __init__(self, *args, **kwargs):
         """Init a TuyaThermostat cluster."""
         super().__init__(*args, **kwargs)
@@ -135,22 +115,6 @@ class TuyaThermostat(Thermostat, TuyaAttributesCluster):
             Thermostat.AttributeDefs.setpoint_change_source_timestamp.id
         )
         self.add_unsupported_attribute(Thermostat.AttributeDefs.pi_heating_demand.id)
-
-
-class TuyaThermostatHeatOnly(TuyaThermostat):
-    """Tuya local thermostat with heat only."""
-
-    _CONSTANT_ATTRIBUTES = {
-        Thermostat.AttributeDefs.ctrl_sequence_of_oper.id: Thermostat.ControlSequenceOfOperation.Heating_Only
-    }
-
-
-class TuyaThermostatHeatCool(TuyaThermostat):
-    """Tuya local thermostat with heat and cool."""
-
-    _CONSTANT_ATTRIBUTES = {
-        Thermostat.AttributeDefs.ctrl_sequence_of_oper.id: Thermostat.ControlSequenceOfOperation.Cooling_and_Heating
-    }
 
 
 class NoManufTimeNoVersionRespTuyaMCUCluster(TuyaMCUCluster):
@@ -180,8 +144,8 @@ class NoManufTimeNoVersionRespTuyaMCUCluster(TuyaMCUCluster):
     TuyaQuirkBuilder("_TZE204_p3lqqy2r", "TS0601")
     .tuya_dp(
         dp_id=1,
-        ep_attribute=TuyaThermostatHeatOnly.ep_attribute,
-        attribute_name=TuyaThermostatHeatOnly.AttributeDefs.system_mode.name,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.system_mode.name,
         converter=lambda x: 0x00 if not x else 0x04,
         dp_converter=lambda x: x != 0x00,
     )
@@ -194,21 +158,21 @@ class NoManufTimeNoVersionRespTuyaMCUCluster(TuyaMCUCluster):
     )
     .tuya_dp(
         dp_id=16,
-        ep_attribute=TuyaThermostatHeatOnly.ep_attribute,
-        attribute_name=TuyaThermostatHeatOnly.AttributeDefs.occupied_heating_setpoint.name,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.occupied_heating_setpoint.name,
         converter=lambda x: x * 100,
         dp_converter=lambda x: x // 100,
     )
     .tuya_dp(
         dp_id=24,
-        ep_attribute=TuyaThermostatHeatOnly.ep_attribute,
-        attribute_name=TuyaThermostatHeatOnly.AttributeDefs.local_temperature.name,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.local_temperature.name,
         converter=lambda x: x * 100,
     )
     .tuya_dp(
         dp_id=28,
-        ep_attribute=TuyaThermostatHeatOnly.ep_attribute,
-        attribute_name=TuyaThermostatHeatOnly.AttributeDefs.local_temperature_calibration.name,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=Thermostat.AttributeDefs.local_temperature_calibration.name,
         converter=lambda x: x * 100,
         dp_converter=lambda x: x // 100,
     )
@@ -237,8 +201,8 @@ class NoManufTimeNoVersionRespTuyaMCUCluster(TuyaMCUCluster):
     )
     .tuya_dp(
         dp_id=104,
-        ep_attribute=TuyaThermostatHeatOnly.ep_attribute,
-        attribute_name=TuyaThermostatHeatOnly.AttributeDefs.running_state.name,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.running_state.name,
         converter=lambda x: 0x00 if not x else 0x01,
     )
     .tuya_binary_sensor(
@@ -249,8 +213,8 @@ class NoManufTimeNoVersionRespTuyaMCUCluster(TuyaMCUCluster):
     )
     .tuya_dp(
         dp_id=107,
-        ep_attribute=TuyaThermostatHeatOnly.ep_attribute,
-        attribute_name=TuyaThermostatHeatOnly.AttributeDefs.max_heat_setpoint_limit.name,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.max_heat_setpoint_limit.name,
         converter=lambda x: x * 100,
         dp_converter=lambda x: x // 100,
     )
@@ -279,7 +243,7 @@ class NoManufTimeNoVersionRespTuyaMCUCluster(TuyaMCUCluster):
         translation_key="regulator_set_point",
         fallback_name="Regulator set point",
     )
-    .adds(TuyaThermostatHeatOnly)
+    .adds(TuyaThermostat)
     .tuya_sensor(
         dp_id=120,
         attribute_name="current",
@@ -328,22 +292,22 @@ base_avatto_quirk = (
     TuyaQuirkBuilder()
     .tuya_dp(
         dp_id=1,
-        ep_attribute=TuyaThermostatHeatOnly.ep_attribute,
-        attribute_name=TuyaThermostatHeatOnly.AttributeDefs.system_mode.name,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.system_mode.name,
         converter=lambda x: 0x00 if not x else 0x04,
         dp_converter=lambda x: x != 0x00,
     )
     .tuya_dp(
         dp_id=2,
-        ep_attribute=TuyaThermostatHeatOnly.ep_attribute,
-        attribute_name=TuyaThermostatHeatOnly.AttributeDefs.occupied_heating_setpoint.name,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.occupied_heating_setpoint.name,
         converter=lambda x: x * 10,
         dp_converter=lambda x: x // 10,
     )
     .tuya_dp(
         dp_id=3,
-        ep_attribute=TuyaThermostatHeatOnly.ep_attribute,
-        attribute_name=TuyaThermostatHeatOnly.AttributeDefs.local_temperature.name,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.local_temperature.name,
         converter=lambda x: x * 10,
     )
     .tuya_switch(
@@ -362,22 +326,22 @@ base_avatto_quirk = (
     )
     .tuya_dp(
         dp_id=15,
-        ep_attribute=TuyaThermostatHeatOnly.ep_attribute,
-        attribute_name=TuyaThermostatHeatOnly.AttributeDefs.max_heat_setpoint_limit.name,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.max_heat_setpoint_limit.name,
         converter=lambda x: x * 10,
         dp_converter=lambda x: x // 10,
     )
     .tuya_dp(
         dp_id=19,
-        ep_attribute=TuyaThermostatHeatOnly.ep_attribute,
-        attribute_name=TuyaThermostatHeatOnly.AttributeDefs.local_temperature_calibration.name,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.local_temperature_calibration.name,
         converter=lambda x: x * 10,
         dp_converter=lambda x: x // 10,
     )
     .tuya_dp(
         dp_id=101,
-        ep_attribute=TuyaThermostatHeatOnly.ep_attribute,
-        attribute_name=TuyaThermostatHeatOnly.AttributeDefs.running_state.name,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.running_state.name,
         converter=lambda x: 0x00 if not x else 0x01,
     )
     .tuya_switch(
@@ -418,7 +382,7 @@ base_avatto_quirk = (
         translation_key="backlight_mode",
         fallback_name="Backlight mode",
     )
-    .adds(TuyaThermostatHeatOnly)
+    .adds(TuyaThermostat)
     .skip_configuration()
 )
 
@@ -484,127 +448,4 @@ base_avatto_quirk = (
         fallback_name="Working day",
     )
     .add_to_registry(replacement_cluster=NoManufTimeNoVersionRespTuyaMCUCluster)
-)
-
-
-(
-    TuyaQuirkBuilder("_TZE204_mpbki2zm", "TS0601")
-    .tuya_onoff(dp_id=1)
-    .tuya_dp(
-        dp_id=2,
-        ep_attribute=TuyaThermostatHeatCool.ep_attribute,
-        attribute_name=TuyaThermostatHeatCool.AttributeDefs.system_mode.name,
-        converter=lambda x: {
-            TuyaThermostatSystemMode.Cool: Thermostat.SystemMode.Cool,
-            TuyaThermostatSystemMode.Heat: Thermostat.SystemMode.Heat,
-            TuyaThermostatSystemMode.FanOnly: Thermostat.SystemMode.Fan_only,
-        }[x],
-        dp_converter=lambda x: {
-            Thermostat.SystemMode.Cool: TuyaThermostatSystemMode.Cool,
-            Thermostat.SystemMode.Heat: TuyaThermostatSystemMode.Heat,
-            Thermostat.SystemMode.Fan_only: TuyaThermostatSystemMode.FanOnly,
-        }[x],
-    )
-    .tuya_switch(
-        dp_id=4,
-        attribute_name="eco_mode",
-        translation_key="eco_mode",
-        fallback_name="Eco mode",
-    )
-    .tuya_dp(
-        dp_id=16,
-        ep_attribute=TuyaThermostatHeatCool.ep_attribute,
-        attribute_name=TuyaThermostatHeatCool.AttributeDefs.occupied_heating_setpoint.name,
-        converter=lambda x: x * 100,
-        dp_converter=lambda x: x // 100,
-    )
-    # Uncertain if this is the correct method, since we can set both heat and cool max
-    .tuya_dp(
-        dp_id=19,
-        ep_attribute=TuyaThermostatHeatCool.ep_attribute,
-        attribute_name=TuyaThermostatHeatCool.AttributeDefs.max_heat_setpoint_limit.name,
-        converter=lambda x: x * 100,
-        dp_converter=lambda x: x // 100,
-    )
-    .tuya_dp(
-        dp_id=24,
-        ep_attribute=TuyaThermostatHeatCool.ep_attribute,
-        attribute_name=TuyaThermostatHeatCool.AttributeDefs.local_temperature.name,
-        converter=lambda x: x * 100,
-    )
-    # Uncertain if this is the correct method, since we can set both heat and cool min
-    .tuya_dp(
-        dp_id=26,
-        ep_attribute=TuyaThermostatHeatCool.ep_attribute,
-        attribute_name=TuyaThermostatHeatCool.AttributeDefs.min_cool_setpoint_limit.name,
-        converter=lambda x: x * 100,
-        dp_converter=lambda x: x // 100,
-    )
-    .tuya_dp(
-        dp_id=27,
-        ep_attribute=TuyaThermostatHeatCool.ep_attribute,
-        attribute_name=TuyaThermostatHeatCool.AttributeDefs.local_temperature_calibration.name,
-        converter=lambda x: x * 100,
-        dp_converter=lambda x: x // 100,
-    )
-    .adds(TuyaThermostatHeatCool)
-    # This should be part of the climate entity, but don't think we can do that yet
-    .tuya_enum(
-        dp_id=28,
-        attribute_name="fan_mode",
-        enum_class=FanMode,
-        translation_key="fan_mode",
-        fallback_name="Fan mode",
-    )
-    .tuya_enum(
-        dp_id=36,
-        attribute_name="valve_state",
-        enum_class=ValveState,
-        entity_platform=EntityPlatform.SENSOR,
-        entity_type=EntityType.DIAGNOSTIC,
-        translation_key="valve_state",
-        fallback_name="Valve state",
-    )
-    .tuya_switch(
-        dp_id=40,
-        attribute_name="child_lock",
-        translation_key="child_lock",
-        fallback_name="Child lock",
-    )
-    .tuya_switch(
-        dp_id=101,
-        attribute_name="manual_mode",
-        translation_key="manual_mode",
-        fallback_name="Manual mode",
-    )
-    .tuya_number(
-        dp_id=103,
-        attribute_name="dead_zone",
-        type=t.uint16_t,
-        unit=UnitOfTemperature.CELSIUS,
-        min_value=0,
-        max_value=5,
-        step=1,
-        translation_key="dead_zone",
-        fallback_name="Dead zone",
-    )
-    # Uncertain if this is the correct method, since we can set both heat and cool abs min
-    .tuya_dp(
-        dp_id=104,
-        ep_attribute=TuyaThermostatHeatCool.ep_attribute,
-        attribute_name=TuyaThermostatHeatCool.AttributeDefs.abs_min_cool_setpoint_limit.name,
-        converter=lambda x: x * 100,
-        dp_converter=lambda x: x // 100,
-    )
-    # Uncertain if this is the correct method, since we can set both heat and cool abs max
-    .tuya_dp(
-        dp_id=105,
-        ep_attribute=TuyaThermostatHeatCool.ep_attribute,
-        attribute_name=TuyaThermostatHeatCool.AttributeDefs.abs_max_heat_setpoint_limit.name,
-        converter=lambda x: x * 100,
-        dp_converter=lambda x: x // 100,
-    )
-    .tuya_enchantment()
-    .skip_configuration()
-    .add_to_registry()
 )
