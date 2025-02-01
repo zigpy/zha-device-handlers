@@ -46,10 +46,12 @@ class CustomMultistateInputCluster(CustomCluster, MultistateInput):
 
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
-        if attrid == MultistateInput.AttributeDefs.present_value.id:
-            if (action := ACTION_TYPE.get(value)) is not None:
-                event_args = {VALUE: value}
-                self.listener_event(ZHA_SEND_EVENT, action, event_args)
+        if (
+            attrid == MultistateInput.AttributeDefs.present_value.id
+            and (action := ACTION_TYPE.get(value)) is not None
+        ):
+            event_args = {VALUE: value}
+            self.listener_event(ZHA_SEND_EVENT, action, event_args)
 
 
 (
