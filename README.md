@@ -1,6 +1,6 @@
 # ZHA Device Handlers For Home Assistant
 
-![CI](https://github.com/zigpy/zha-device-handlers/workflows/CI/badge.svg?branch=dev)
+[![CI](https://github.com/zigpy/zha-device-handlers/actions/workflows/ci.yml/badge.svg)](https://github.com/zigpy/zha-device-handlers/actions/workflows/ci.yml)
 [![Coverage Status](https://codecov.io/gh/zigpy/zha-device-handlers/branch/dev/graph/badge.svg)](https://app.codecov.io/gh/zigpy/zha-device-handlers/tree/dev)
 
 ZHA Device Handlers are custom quirks implementations for [Zigpy](https://github.com/zigpy/zigpy), the library that provides the [Zigbee](http://www.zigbee.org) support for the [ZHA](https://www.home-assistant.io/components/zha/) component in [Home Assistant](https://www.home-assistant.io).
@@ -8,6 +8,9 @@ ZHA Device Handlers are custom quirks implementations for [Zigpy](https://github
 ZHA device handlers bridge the functionality gap created when manufacturers deviate from the ZCL specification, handling deviations and exceptions by parsing custom messages to and from Zigbee devices. Zigbee devices that deviate from or do not fully conform to the standard specifications set by the Zigbee Alliance may require the development of custom ZHA Device Handlers (ZHA custom quirks handler implementation) to for all their functions to work properly with the ZHA component in Home Assistant.
 
 Custom quirks implementations for zigpy implemented as ZHA Device Handlers are a similar concept to that of [Hub-connected Device Handlers for the SmartThings Classics platform](https://stdavedemo.readthedocs.io/en/latest/device-type-developers-guide/) as well that of [Zigbee-Herdsman Converters (formerly Zigbee-Shepherd Converters) as used by Zigbee2mqtt](https://www.zigbee2mqtt.io/advanced/support-new-devices/01_support_new_devices.html), meaning they are virtual representation of a physical device that expose additional functionality that is not provided out-of-the-box by the existing integration between these platforms. See [Device Specifics](#Device-Specifics) for details.
+
+
+For supporting Tuya devices, see [using the TuyaQuirkBuilder](/tuya.md).
 
 # How to contribute
 
@@ -397,7 +400,7 @@ replacement = {
 
 You can see that we have replaced `ElectricalMeasurement.cluster_id` from endpoint 1 in the `signature` dict with the name of our cluster that we created: `ElectricalMeasurementCluster` and on endpoint 2 we replaced `AnalogInput.cluster_id` with the implementation we created for that: `AnalogInputCluster`. This instructs Zigpy to use these `CustomCluster` derivatives instead of the normal cluster definitions for these clusters and this is why this part of the quirk is called `replacement`.
 
-Now lets put this all together. If you examine the device definition above you will see that we have defined our custom device, we defined the `signature` dict where we transcribed the `SimpleDescriptor` output we obtained when the device joined the network and we defined the `replacement` dict where we swapped the cluster ids for the culsters that we wanted to replace with the `CustomCluster` implementations that we created.
+Now lets put this all together. If you examine the device definition above you will see that we have defined our custom device, we defined the `signature` dict where we transcribed the `SimpleDescriptor` output we obtained when the device joined the network and we defined the `replacement` dict where we swapped the cluster ids for the clusters that we wanted to replace with the `CustomCluster` implementations that we created.
 
 # Contribution Guidelines
 

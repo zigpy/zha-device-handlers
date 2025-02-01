@@ -8,6 +8,7 @@ from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, PowerConfiguration, Scenes
 
 from zhaquirks import EventableCluster
+from zhaquirks.const import BatterySize
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -148,7 +149,7 @@ class PowerConfig1AAACluster(CustomCluster, PowerConfiguration):
     """Updating power attributes: 2 AAA."""
 
     _CONSTANT_ATTRIBUTES = {
-        BATTERY_SIZE: 4,
+        BATTERY_SIZE: BatterySize.AAA,
         BATTERY_QUANTITY: 1,
         BATTERY_RATED_VOLTAGE: 15,
     }
@@ -158,7 +159,7 @@ class PowerConfig2AAACluster(CustomCluster, PowerConfiguration):
     """Updating power attributes: 2 AAA."""
 
     _CONSTANT_ATTRIBUTES = {
-        BATTERY_SIZE: 4,
+        BATTERY_SIZE: BatterySize.AAA,
         BATTERY_QUANTITY: 2,
         BATTERY_RATED_VOLTAGE: 15,
     }
@@ -168,7 +169,7 @@ class PowerConfig2CRCluster(CustomCluster, PowerConfiguration):
     """Updating power attributes: 2 CR2032."""
 
     _CONSTANT_ATTRIBUTES = {
-        BATTERY_SIZE: 10,
+        BATTERY_SIZE: BatterySize.CR2032,
         BATTERY_QUANTITY: 2,
         BATTERY_RATED_VOLTAGE: 30,
     }
@@ -178,7 +179,7 @@ class PowerConfig1CRCluster(CustomCluster, PowerConfiguration):
     """Updating power attributes: 1 CR2032."""
 
     _CONSTANT_ATTRIBUTES = {
-        BATTERY_SIZE: 10,
+        BATTERY_SIZE: BatterySize.CR2032,
         BATTERY_QUANTITY: 1,
         BATTERY_RATED_VOLTAGE: 30,
     }
@@ -189,7 +190,7 @@ class PowerConfig1CRXCluster(CustomCluster, PowerConfiguration):
 
     _CONSTANT_ATTRIBUTES = {
         BATTERY_VOLTAGE: 0,
-        BATTERY_SIZE: 10,
+        BATTERY_SIZE: BatterySize.CR2032,
         BATTERY_QUANTITY: 1,
         BATTERY_RATED_VOLTAGE: 30,
     }

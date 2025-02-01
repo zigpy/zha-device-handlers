@@ -47,6 +47,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     ZONE_STATUS_CHANGE_COMMAND,
+    BatterySize,
 )
 from zhaquirks.xiaomi import (
     LUMI,
@@ -58,6 +59,8 @@ from zhaquirks.xiaomi import (
     XiaomiQuickInitDevice,
     handle_quick_init,
 )
+import zhaquirks.xiaomi.aqara.cube
+import zhaquirks.xiaomi.aqara.cube_aqgl01
 import zhaquirks.xiaomi.aqara.driver_curtain_e1
 from zhaquirks.xiaomi.aqara.feeder_acn001 import (
     FEEDER_ATTR,
@@ -75,9 +78,14 @@ from zhaquirks.xiaomi.aqara.feeder_acn001 import (
     AqaraFeederAcn001,
     OppleCluster,
 )
+import zhaquirks.xiaomi.aqara.magnet_ac01
+import zhaquirks.xiaomi.aqara.magnet_acn001
 import zhaquirks.xiaomi.aqara.magnet_agl02
+import zhaquirks.xiaomi.aqara.magnet_aq2
 import zhaquirks.xiaomi.aqara.motion_ac02
+import zhaquirks.xiaomi.aqara.motion_acn001
 import zhaquirks.xiaomi.aqara.motion_agl02
+import zhaquirks.xiaomi.aqara.motion_agl04
 import zhaquirks.xiaomi.aqara.motion_aq2
 import zhaquirks.xiaomi.aqara.motion_aq2b
 import zhaquirks.xiaomi.aqara.plug
@@ -89,6 +97,7 @@ import zhaquirks.xiaomi.aqara.switch_t1
 from zhaquirks.xiaomi.aqara.thermostat_agl001 import ScheduleEvent, ScheduleSettings
 import zhaquirks.xiaomi.aqara.weather
 import zhaquirks.xiaomi.mija.motion
+import zhaquirks.xiaomi.mija.smoke
 
 zhaquirks.setup()
 
@@ -336,8 +345,14 @@ async def test_xiaomi_battery(zigpy_device_from_quirk, voltage, bpr):
     )
 
     device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.vibration_aq1.VibrationAQ1)
-    device.handle_message(
-        0x260, 0x0000, 1, 1, data_1 + t.uint16_t(voltage).serialize() + data_2
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=0x260,
+            cluster_id=0x0000,
+            src_ep=1,
+            dst_ep=1,
+            data=t.SerializableBytes(data_1 + t.uint16_t(voltage).serialize() + data_2),
+        )
     )
     power_cluster = device.endpoints[1].power
     assert power_cluster["battery_percentage_remaining"] == bpr
@@ -362,8 +377,14 @@ async def test_mija_battery(zigpy_device_from_quirk, voltage, bpr):
     data_2 = b"!\xa8\x01$\x00\x00\x00\x00\x00!n\x00 P"
 
     device = zigpy_device_from_quirk(zhaquirks.xiaomi.mija.motion.Motion)
-    device.handle_message(
-        0x260, 0x0000, 1, 1, data_1 + t.uint16_t(voltage).serialize() + data_2
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=0x260,
+            cluster_id=0x0000,
+            src_ep=1,
+            dst_ep=1,
+            data=t.SerializableBytes(data_1 + t.uint16_t(voltage).serialize() + data_2),
+        )
     )
     power_cluster = device.endpoints[1].power
     assert power_cluster["battery_percentage_remaining"] == bpr
@@ -372,10 +393,27 @@ async def test_mija_battery(zigpy_device_from_quirk, voltage, bpr):
 @pytest.mark.parametrize(
     "quirk, batt_size",
     (
-        (zhaquirks.xiaomi.aqara.vibration_aq1.VibrationAQ1, 0x0A),
-        (zhaquirks.xiaomi.mija.motion.Motion, 0x09),
-        (zhaquirks.xiaomi.mija.sensor_switch.MijaButton, 0x0A),
-        (zhaquirks.xiaomi.mija.sensor_magnet.Magnet, 0x0B),
+        (zhaquirks.xiaomi.aqara.vibration_aq1.VibrationAQ1, BatterySize.CR2032),
+        (zhaquirks.xiaomi.aqara.cube.Cube, BatterySize.CR2450),
+        (zhaquirks.xiaomi.aqara.cube_aqgl01.CubeAQGL01, BatterySize.CR2450),
+        (zhaquirks.xiaomi.aqara.cube_aqgl01.CubeCAGL02, BatterySize.CR2450),
+        (zhaquirks.xiaomi.aqara.magnet_ac01.LumiMagnetAC01, BatterySize.CR123A),
+        (zhaquirks.xiaomi.aqara.magnet_acn001.MagnetE1, BatterySize.CR1632),
+        (zhaquirks.xiaomi.aqara.magnet_agl02.MagnetT1, BatterySize.CR1632),
+        (zhaquirks.xiaomi.aqara.magnet_aq2.MagnetAQ2, BatterySize.CR1632),
+        (zhaquirks.xiaomi.aqara.motion_ac02.LumiMotionAC02, BatterySize.CR1632),
+        (zhaquirks.xiaomi.aqara.motion_acn001.MotionE1, BatterySize.CR1632),
+        (zhaquirks.xiaomi.aqara.motion_agl02.MotionT1, BatterySize.CR1632),
+        (zhaquirks.xiaomi.aqara.motion_agl04.LumiLumiMotionAgl04, BatterySize.CR1632),
+        (zhaquirks.xiaomi.aqara.motion_aq2.MotionAQ2, BatterySize.CR2450),
+        (zhaquirks.xiaomi.aqara.motion_aq2b.MotionAQ2, BatterySize.CR2450),
+        (zhaquirks.xiaomi.mija.motion.Motion, BatterySize.CR2450),
+        (zhaquirks.xiaomi.mija.sensor_switch.MijaButton, BatterySize.CR2032),
+        (zhaquirks.xiaomi.mija.sensor_magnet.Magnet, BatterySize.CR1632),
+        (
+            zhaquirks.xiaomi.mija.smoke.MijiaHoneywellSmokeDetectorSensor,
+            BatterySize.CR123A,
+        ),
     ),
 )
 async def test_xiaomi_batt_size(zigpy_device_from_quirk, quirk, batt_size):
@@ -511,20 +549,19 @@ async def test_xiaomi_eu_plug_binding(zigpy_device_from_quirk, quirk):
         assert len(request_mock.mock_calls) == 1
         assert mock_task.call_count == 1
 
-        assert request_mock.mock_calls[0][1] == (
-            4,
-            1,
-            b"\x01\x01\x03\x00\x00",
-        )
+        assert request_mock.mock_calls[0]
+        assert request_mock.mock_calls[0].kwargs["cluster"] == 4
+        assert request_mock.mock_calls[0].kwargs["sequence"] == 1
+        assert request_mock.mock_calls[0].kwargs["data"] == b"\x01\x01\x03\x00\x00"
 
         # Await call writing OppleMode attribute
         await mock_task.call_args[0][0]
 
         assert len(request_mock.mock_calls) == 2
-        assert request_mock.mock_calls[1][1] == (
-            64704,
-            2,
-            b"\x04_\x11\x02\x02\t\x00 \x01",
+        assert request_mock.mock_calls[1].kwargs["cluster"] == 64704
+        assert request_mock.mock_calls[1].kwargs["sequence"] == 2
+        assert (
+            request_mock.mock_calls[1].kwargs["data"] == b"\x04_\x11\x02\x02\t\x00 \x01"
         )
 
 
@@ -765,12 +802,14 @@ async def test_aqara_feeder_attr_reports(
     cluster_listener = Listener()
     opple_cluster.add_listener(cluster_listener)
 
-    device.handle_message(
-        260,
-        opple_cluster.cluster_id,
-        opple_cluster.endpoint.endpoint_id,
-        opple_cluster.endpoint.endpoint_id,
-        bytes_received,
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=0x260,
+            cluster_id=opple_cluster.cluster_id,
+            src_ep=opple_cluster.endpoint.endpoint_id,
+            dst_ep=opple_cluster.endpoint.endpoint_id,
+            data=t.SerializableBytes(bytes_received),
+        )
     )
 
     assert cluster_listener.attribute_updated.call_count == call_count
@@ -841,12 +880,14 @@ async def test_aqara_smoke_sensor_xiaomi_attribute_report(
     ias_cluster = device.endpoints[1].ias_zone
     ias_listener = ClusterListener(ias_cluster)
 
-    device.handle_message(
-        260,
-        opple_cluster.cluster_id,
-        opple_cluster.endpoint.endpoint_id,
-        opple_cluster.endpoint.endpoint_id,
-        raw_report,
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=0x260,
+            cluster_id=opple_cluster.cluster_id,
+            src_ep=opple_cluster.endpoint.endpoint_id,
+            dst_ep=opple_cluster.endpoint.endpoint_id,
+            data=t.SerializableBytes(raw_report),
+        )
     )
 
     # check that Xiaomi attribute report also updates attribute cache
@@ -1265,12 +1306,14 @@ async def test_xiaomi_weather(
         PowerConfiguration.AttributeDefs.battery_percentage_remaining.id
     )
 
-    device.handle_message(
-        260,
-        xiaomi_attr_cluster.cluster_id,
-        xiaomi_attr_cluster.endpoint.endpoint_id,
-        xiaomi_attr_cluster.endpoint.endpoint_id,
-        raw_report,
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=260,
+            cluster_id=xiaomi_attr_cluster.cluster_id,
+            src_ep=xiaomi_attr_cluster.endpoint.endpoint_id,
+            dst_ep=xiaomi_attr_cluster.endpoint.endpoint_id,
+            data=t.SerializableBytes(raw_report),
+        )
     )
 
     assert len(temperature_listener.attribute_updates) == 1
@@ -1332,12 +1375,14 @@ async def test_xiaomi_motion_sensor_misc(
         PowerConfiguration.AttributeDefs.battery_percentage_remaining.id
     )
 
-    device.handle_message(
-        260,
-        basic_cluster.cluster_id,
-        basic_cluster.endpoint.endpoint_id,
-        basic_cluster.endpoint.endpoint_id,
-        raw_report,
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=260,
+            cluster_id=basic_cluster.cluster_id,
+            src_ep=basic_cluster.endpoint.endpoint_id,
+            dst_ep=basic_cluster.endpoint.endpoint_id,
+            data=t.SerializableBytes(raw_report),
+        )
     )
 
     assert len(device_temperature_listener.attribute_updates) == 1
@@ -1452,12 +1497,14 @@ async def test_xiaomi_t1_door_sensor(
     on_off_listener = ClusterListener(on_off_cluster)
 
     # check open state
-    device.handle_message(
-        260,
-        on_off_cluster.cluster_id,
-        on_off_cluster.endpoint.endpoint_id,
-        on_off_cluster.endpoint.endpoint_id,
-        bytes.fromhex("185D0A00001001"),
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=260,
+            cluster_id=on_off_cluster.cluster_id,
+            src_ep=on_off_cluster.endpoint.endpoint_id,
+            dst_ep=on_off_cluster.endpoint.endpoint_id,
+            data=t.SerializableBytes(bytes.fromhex("185D0A00001001")),
+        )
     )
 
     assert len(on_off_listener.attribute_updates) == 1
@@ -1465,12 +1512,14 @@ async def test_xiaomi_t1_door_sensor(
     assert on_off_listener.attribute_updates[0][1] == t.Bool.true
 
     # check closed state
-    device.handle_message(
-        260,
-        on_off_cluster.cluster_id,
-        on_off_cluster.endpoint.endpoint_id,
-        on_off_cluster.endpoint.endpoint_id,
-        bytes.fromhex("18640A00001000"),
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=260,
+            cluster_id=on_off_cluster.cluster_id,
+            src_ep=on_off_cluster.endpoint.endpoint_id,
+            dst_ep=on_off_cluster.endpoint.endpoint_id,
+            data=t.SerializableBytes(bytes.fromhex("185D0A00001000")),
+        )
     )
 
     assert len(on_off_listener.attribute_updates) == 2
@@ -1489,12 +1538,14 @@ async def test_xiaomi_t1_door_sensor(
     )
 
     # check Xiaomi attribute report
-    device.handle_message(
-        260,
-        opple_cluster.cluster_id,
-        opple_cluster.endpoint.endpoint_id,
-        opple_cluster.endpoint.endpoint_id,
-        raw_report,
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=260,
+            cluster_id=opple_cluster.cluster_id,
+            src_ep=opple_cluster.endpoint.endpoint_id,
+            dst_ep=opple_cluster.endpoint.endpoint_id,
+            data=t.SerializableBytes(raw_report),
+        )
     )
 
     assert len(power_listener.attribute_updates) == 2
@@ -1757,3 +1808,68 @@ def test_aqara_acn014_signature_match(assert_signature_matches_quirk):
     assert_signature_matches_quirk(
         zhaquirks.xiaomi.aqara.light_acn.LumiLightAcn014, signature
     )
+
+
+@pytest.mark.parametrize(
+    "occupancy_value, expected_occ_status, motion_value, expected_motion_status",
+    [
+        (0, OccupancySensing.Occupancy.Unoccupied, 2, 0),
+        (1, OccupancySensing.Occupancy.Occupied, 3, IasZone.ZoneStatus.Alarm_1),
+        (1, OccupancySensing.Occupancy.Occupied, 4, 0),
+    ],
+)
+async def test_aqara_fp1e_sensor(
+    zigpy_device_from_v2_quirk,
+    occupancy_value,
+    expected_occ_status,
+    motion_value,
+    expected_motion_status,
+):
+    """Test Aqara FP1E sensor."""
+    quirk = zigpy_device_from_v2_quirk("aqara", "lumi.sensor_occupy.agl1")
+
+    opple_cluster = quirk.endpoints[1].opple_cluster
+    ias_cluster = quirk.endpoints[1].ias_zone
+    occupancy_cluster = quirk.endpoints[1].occupancy
+
+    opple_listener = ClusterListener(opple_cluster)
+    ias_listener = ClusterListener(ias_cluster)
+    occupancy_listener = ClusterListener(occupancy_cluster)
+
+    # update custom occupancy attribute id
+    opple_cluster.update_attribute(0x0142, occupancy_value)
+    assert len(opple_listener.attribute_updates) == 1
+
+    # confirm occupancy cluster is updated
+    assert len(occupancy_listener.attribute_updates) == 1
+    assert (
+        occupancy_listener.attribute_updates[0][0]
+        == OccupancySensing.AttributeDefs.occupancy.id
+    )
+    assert occupancy_listener.attribute_updates[0][1] == expected_occ_status
+
+    # update custom motion attribute id
+    opple_cluster.update_attribute(0x0160, motion_value)
+    assert len(opple_listener.attribute_updates) == 2
+
+    # confirm ias cluster is updated
+    assert len(ias_listener.attribute_updates) == 1
+    assert ias_listener.attribute_updates[0][0] == IasZone.AttributeDefs.zone_status.id
+    assert ias_listener.attribute_updates[0][1] == expected_motion_status
+
+
+def test_h1_wireless_remotes(zigpy_device_from_v2_quirk):
+    """Test Aqara H1 wireless remote quirk adds missing endpoints."""
+    # create device with endpoint 1 only and verify we don't get a KeyError
+    quirk = zigpy_device_from_v2_quirk(LUMI, "lumi.remote.b28ac1")
+
+    # verify the quirk adds endpoints 2 and 3
+    assert 2 in quirk.endpoints
+    assert 3 in quirk.endpoints
+
+    # verify the quirk adds the correct clusters to the new endpoints
+    assert OnOff.cluster_id in quirk.endpoints[2].out_clusters
+    assert OnOff.cluster_id in quirk.endpoints[3].out_clusters
+
+    assert MultistateInput.cluster_id in quirk.endpoints[2].in_clusters
+    assert MultistateInput.cluster_id in quirk.endpoints[3].in_clusters
