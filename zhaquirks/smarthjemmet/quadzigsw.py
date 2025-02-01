@@ -23,8 +23,7 @@ from zhaquirks.const import (
     ZHA_SEND_EVENT,
 )
 
-MANUFACTURER = "smarthjemmet.dk"
-MODEL_ID = "QUAD-ZIG-SW"
+SMARTHJEMMET = "smarthjemmet.dk"
 
 ACTION_TYPE = {
     0: COMMAND_RELEASE,
@@ -54,7 +53,8 @@ class CustomMultistateInputCluster(CustomCluster, MultistateInput):
 
 
 (
-    QuirkBuilder(MANUFACTURER, MODEL_ID)
+    QuirkBuilder(SMARTHJEMMET, "QUAD-ZIG-SW")
+    .applies_to(SMARTHJEMMET, "MULTI-ZIG-SW")
     .skip_configuration()
     .replaces(CR2032PowerConfigurationCluster)
     .removes(MultistateInput.cluster_id, cluster_type=ClusterType.Client, endpoint_id=2)
