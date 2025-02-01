@@ -52,8 +52,6 @@ class CustomMultistateInputCluster(CustomCluster, MultistateInput):
                 event_args = {VALUE: value}
                 self.listener_event(ZHA_SEND_EVENT, action, event_args)
 
-            super()._update_attribute(0, action)
-
 
 (
     QuirkBuilder(MANUFACTURER, MODEL_ID)
