@@ -65,7 +65,9 @@ class AuxMode(t.enum8):
     """Aux_output_mode values."""
 
     Off = 0x00
-    On = 0x01
+    On_15m = 0x01
+    On_15s = 0x02
+    Exp_module = 0x03
 
 
 class PumpStatus(t.uint8_t):
@@ -273,7 +275,7 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
             id=0x0073, type=t.uint8_t, access="rwp", is_manufacturer_specific=True
         )
         unknown_attr_5: Final = foundation.ZCLAttributeDef(
-            id=0x0101, type=Array, access="r", is_manufacturer_specific=True
+            id=0x0101, type=Array, access="rp", is_manufacturer_specific=True
         )
         setpoint: Final = foundation.ZCLAttributeDef(
             id=0x0104, type=t.int16s, access="rw", is_manufacturer_specific=True
@@ -375,7 +377,7 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
             id=0x0281, type=CycleLength, access="rwp", is_manufacturer_specific=True
         )
         cool_cycle_length: Final = foundation.ZCLAttributeDef(
-            id=0x0282, type=t.uint16_t, access="rwp", is_manufacturer_specific=True
+            id=0x0282, type=CycleLength, access="rwp", is_manufacturer_specific=True
         )
         cluster_revision: Final = foundation.ZCL_CLUSTER_REVISION_ATTR
 
