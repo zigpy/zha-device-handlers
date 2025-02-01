@@ -495,7 +495,7 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
         max_value=30,
         unit=UnitOfTemperature.CELSIUS,
         step=1,
-        translation_key="holday_temperature",
+        translation_key="holiday_temperature",
         fallback_name="Holiday temperature",
     )
     .tuya_switch(
