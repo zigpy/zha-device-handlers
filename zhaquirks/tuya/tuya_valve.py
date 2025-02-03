@@ -577,7 +577,7 @@ class GiexIrrigationStatus(t.enum8):
         fallback_name="Total flow reset switch",
     )
     .tuya_sensor(
-        dp_id=102,
+        dp_id=38,
         attribute_name="irrigation_duration",
         type=t.uint32_t,
         state_class=SensorStateClass.MEASUREMENT,

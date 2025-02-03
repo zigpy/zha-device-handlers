@@ -252,6 +252,23 @@ async def test_tuya_quirkbuilder(device_mock):
     assert tuya_listener.attribute_updates[0][1] == TestEnum.B
 
 
+async def test_tuya_quirkbuilder_duplicated_mappings(device_mock):
+    """Test that mapping the same DP multiple times will raise."""
+
+    registry = DeviceRegistry()
+
+    with pytest.raises(ValueError):
+        (
+            TuyaQuirkBuilder(
+                device_mock.manufacturer, device_mock.model, registry=registry
+            )
+            .tuya_battery(dp_id=1)
+            .tuya_onoff(dp_id=1)
+            .skip_configuration()
+            .add_to_registry()
+        )
+
+
 @pytest.mark.parametrize(
     "read_attr_spell,data_query_spell",
     [

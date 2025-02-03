@@ -502,6 +502,10 @@ class TuyaQuirkBuilder(QuirkBuilder):
         dp_handler: str = "_dp_2_attr_update",
     ) -> QuirkBuilder:  # fmt: skip
         """Add Tuya DP Converter."""
+
+        if dp_id in self.tuya_dp_to_attribute:
+            raise ValueError(f"DP {dp_id} is already mapped.")
+
         self.tuya_dp_to_attribute.update(
             {
                 dp_id: DPToAttributeMapping(
