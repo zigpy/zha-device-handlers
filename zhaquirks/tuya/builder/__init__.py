@@ -503,23 +503,19 @@ class TuyaQuirkBuilder(QuirkBuilder):
     ) -> QuirkBuilder:  # fmt: skip
         """Add Tuya DP Converter."""
 
-        if dp_id in self.tuya_dp_to_attribute:
-            raise ValueError(f"DP {dp_id} is already mapped.")
-
-        self.tuya_dp_to_attribute.update(
-            {
-                dp_id: [
-                    DPToAttributeMapping(
-                        ep_attribute,
-                        attribute_name,
-                        converter=converter,
-                        dp_converter=dp_converter,
-                        endpoint_id=endpoint_id,
-                    )
-                ]
-            }
+        self.tuya_dp_multi(
+            dp_id,
+            [
+                DPToAttributeMapping(
+                    ep_attribute,
+                    attribute_name,
+                    converter=converter,
+                    dp_converter=dp_converter,
+                    endpoint_id=endpoint_id,
+                )
+            ],
+            dp_handler,
         )
-        self.tuya_data_point_handlers.update({dp_id: dp_handler})
         return self
 
     def tuya_dp_multi(
@@ -529,6 +525,10 @@ class TuyaQuirkBuilder(QuirkBuilder):
         dp_handler: str = "_dp_2_attr_update",
     ) -> QuirkBuilder:  # fmt: skip
         """Add Tuya DP Converter that maps to multiple attributes."""
+
+        if dp_id in self.tuya_dp_to_attribute:
+            raise ValueError(f"DP {dp_id} is already mapped.")
+
         self.tuya_dp_to_attribute.update({dp_id: attribute_mapping})
         self.tuya_data_point_handlers.update({dp_id: dp_handler})
         return self

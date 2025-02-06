@@ -319,6 +319,24 @@ async def test_tuya_quirkbuilder_duplicated_mappings(device_mock):
             .add_to_registry()
         )
 
+    with pytest.raises(ValueError):
+        (
+            TuyaQuirkBuilder(
+                device_mock.manufacturer, device_mock.model, registry=registry
+            )
+            .tuya_battery(dp_id=1)
+            .tuya_dp_multi(
+                dp_id=1,
+                attribute_mapping=[
+                    DPToAttributeMapping(
+                        ep_attribute=ElectricalMeasurement.ep_attribute,
+                        attribute_name="active_power",
+                    ),
+                ],
+            )
+            .add_to_registry()
+        )
+
 
 @pytest.mark.parametrize(
     "read_attr_spell,data_query_spell",
