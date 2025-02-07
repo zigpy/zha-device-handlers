@@ -22,20 +22,27 @@ from zigpy.zcl.clusters.manufacturer_specific import ManufacturerSpecificCluster
 
 from zhaquirks import PowerConfigurationCluster
 from zhaquirks.const import (
+    BUTTON,
+    BUTTON_1,
+    BUTTON_2,
+    BUTTON_3,
+    BUTTON_4,
+    COMMAND,
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
-    MANUFACTURER,
+    LONG_PRESS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
+    PRESS_TYPE,
     PROFILE_ID,
+    SHORT_PRESS,
     ZHA_SEND_EVENT,
 )
 
 MANUFACTURER_SPECIFIC_CLUSTER_ID = 0xFCCC  # decimal = 64716
 
 
-# Define the unknown cluster (0xFCCC)
 class AduroSmartCluster(CustomCluster, ManufacturerSpecificCluster):
     """Custom cluster for handling unknown cluster command 0xFCCC."""
 
@@ -50,17 +57,41 @@ class AduroSmartCluster(CustomCluster, ManufacturerSpecificCluster):
     ):
         """Handle incoming cluster commands."""
         if hdr.command_id == 0x00:
-            data = args[0]
-            if data == b"\x00\x00\x00":
-                self.listener_event(ZHA_SEND_EVENT, "BUTTON_PRESS_0", args)
-            elif data == b"\x00\x01\x00":
-                self.listener_event(ZHA_SEND_EVENT, "BUTTON_PRESS_1", args)
-            elif data == b"\x00\x02\x00":
-                self.listener_event(ZHA_SEND_EVENT, "BUTTON_PRESS_2", args)
-            elif data == b"\x00\x03\x00":
-                self.listener_event(ZHA_SEND_EVENT, "BUTTON_PRESS_3", args)
-            else:
+            button = None
+            press_type = SHORT_PRESS
+
+            if args == b"\x00\x00\x00":
+                button = BUTTON_1
+            elif args == b"\x00\x01\x00":
+                button = BUTTON_2
+            elif args == b"\x00\x02\x00":
+                button = BUTTON_3
+            elif args == b"\x00\x03\x00":
+                button = BUTTON_4
+            elif args == b"\x01\x00\x00":
+                button = BUTTON_1
+                press_type = LONG_PRESS
+            elif args == b"\x01\x01\x00":
+                button = BUTTON_2
+                press_type = LONG_PRESS
+            elif args == b"\x01\x02\x00":
+                button = BUTTON_3
+                press_type = LONG_PRESS
+            elif args == b"\x01\x03\x00":
+                button = BUTTON_4
+                press_type = LONG_PRESS
+
+            event_args = {
+                BUTTON: button,
+                PRESS_TYPE: press_type,
+            }
+
+            if button is None:
                 self.debug("Unknown args for cluster command 0: %s", args)
+                return
+
+            action = f"{button}_{press_type}"
+            self.listener_event(ZHA_SEND_EVENT, action, event_args)
 
             return
 
@@ -77,8 +108,7 @@ class AduroSmartCSC(CustomDevice):
     # input_clusters=[ 0, 1, 3, 4, 5, 6, 8, 768, 4096, 64716 ]
     # output_clusters=[ 0, 3, 4, 5, 6, 8, 768, 4096, 64716 ]>
     signature = {
-        MANUFACTURER: "AduroSmart Eria",
-        MODELS_INFO: [("ADUROLIGHT_CSC", "AduroSmart Eria")],
+        MODELS_INFO: [("AduroSmart Eria", "ADUROLIGHT_CSC")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: 0xC05E,
@@ -97,7 +127,6 @@ class AduroSmartCSC(CustomDevice):
                 ],
                 OUTPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    PowerConfigurationCluster.cluster_id,
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
@@ -109,10 +138,60 @@ class AduroSmartCSC(CustomDevice):
                 ],
             },
             2: {
-                "profile_id": 0xC05E,
-                "device_type": 0x03F2,
-                "input_clusters": [LightLink.cluster_id],
-                "output_clusters": [LightLink.cluster_id],
+                PROFILE_ID: 0xC05E,
+                DEVICE_TYPE: 0x03F2,
+                INPUT_CLUSTERS: [LightLink.cluster_id],
+                OUTPUT_CLUSTERS: [LightLink.cluster_id],
             },
         },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: 0xC05E,
+                DEVICE_TYPE: DeviceType.COLOR_SCENE_CONTROLLER,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    PowerConfigurationCluster.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                    Color.cluster_id,
+                    LightLink.cluster_id,
+                    AduroSmartCluster,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    PowerConfigurationCluster.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                    Color.cluster_id,
+                    LightLink.cluster_id,
+                    AduroSmartCluster,
+                ],
+            },
+            2: {
+                PROFILE_ID: 0xC05E,
+                DEVICE_TYPE: 0x03F2,
+                INPUT_CLUSTERS: [LightLink.cluster_id],
+                OUTPUT_CLUSTERS: [LightLink.cluster_id],
+            },
+        }
+    }
+
+    device_automation_triggers = {
+        (SHORT_PRESS, BUTTON_1): {COMMAND: f"{BUTTON_1}_{SHORT_PRESS}"},
+        (SHORT_PRESS, BUTTON_2): {COMMAND: f"{BUTTON_2}_{SHORT_PRESS}"},
+        (SHORT_PRESS, BUTTON_3): {COMMAND: f"{BUTTON_3}_{SHORT_PRESS}"},
+        (SHORT_PRESS, BUTTON_4): {COMMAND: f"{BUTTON_4}_{SHORT_PRESS}"},
+        (LONG_PRESS, BUTTON_1): {COMMAND: f"{BUTTON_1}_{LONG_PRESS}"},
+        (LONG_PRESS, BUTTON_2): {COMMAND: f"{BUTTON_2}_{LONG_PRESS}"},
+        (LONG_PRESS, BUTTON_3): {COMMAND: f"{BUTTON_3}_{LONG_PRESS}"},
+        (LONG_PRESS, BUTTON_4): {COMMAND: f"{BUTTON_4}_{LONG_PRESS}"},
     }
