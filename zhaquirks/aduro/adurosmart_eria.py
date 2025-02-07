@@ -1,13 +1,13 @@
 """ADUROSMART Eria SceneSwitch 81847 device."""
+
 from __future__ import annotations
 
 from typing import Any
-from zigpy.typing import AddressingMode
-from zigpy.profiles import zha
+
 from zigpy.profiles.zha import DeviceType
-from zigpy.quirks import CustomDevice, CustomCluster
+from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.typing import AddressingMode
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.manufacturer_specific import ManufacturerSpecificCluster
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -18,8 +18,9 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.lightlink import LightLink
+from zigpy.zcl.clusters.manufacturer_specific import ManufacturerSpecificCluster
 
-from zhaquirks import EventableCluster, PowerConfigurationCluster
+from zhaquirks import PowerConfigurationCluster
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -33,9 +34,11 @@ from zhaquirks.const import (
 
 MANUFACTURER_SPECIFIC_CLUSTER_ID = 0xFCCC  # decimal = 64716
 
+
 # Define the unknown cluster (0xFCCC)
 class AduroSmartCluster(CustomCluster, ManufacturerSpecificCluster):
     """Custom cluster for handling unknown cluster command 0xFCCC."""
+
     cluster_id = MANUFACTURER_SPECIFIC_CLUSTER_ID
 
     def handle_cluster_request(
@@ -63,6 +66,7 @@ class AduroSmartCluster(CustomCluster, ManufacturerSpecificCluster):
 
         super().handle_cluster_request(hdr, args, dst_addressing=dst_addressing)
 
+
 class AduroSmartCSC(CustomDevice):
     """ADUROSMART Eria SceneSwitch 81847 device."""
 
@@ -77,7 +81,7 @@ class AduroSmartCSC(CustomDevice):
         MODELS_INFO: [("ADUROLIGHT_CSC", "AduroSmart Eria")],
         ENDPOINTS: {
             1: {
-                PROFILE_ID: 0xc05e,
+                PROFILE_ID: 0xC05E,
                 DEVICE_TYPE: DeviceType.COLOR_SCENE_CONTROLLER,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
