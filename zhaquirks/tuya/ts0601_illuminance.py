@@ -45,21 +45,17 @@ class TuyaIlluminanceMeasurement(IlluminanceMeasurement, TuyaLocalCluster):
 class TuyaIlluminanceCluster(TuyaMCUCluster):
     """Tuya Illuminance cluster."""
 
-    dp_to_attribute: dict[int, list[DPToAttributeMapping]] = {
-        TUYA_BRIGHTNESS_LEVEL_DP: [
-            DPToAttributeMapping(
-                TuyaIlluminanceMeasurement.ep_attribute,
-                "manufacturer_brightness_level",
-                converter=lambda x: BrightnessLevel(x),
-            )
-        ],
-        TUYA_ILLUMINANCE_DP: [
-            DPToAttributeMapping(
-                TuyaIlluminanceMeasurement.ep_attribute,
-                "measured_value",
-                converter=lambda x: (10000.0 * math.log10(x) + 1.0 if x != 0 else 0),
-            )
-        ],
+    dp_to_attribute: dict[int, DPToAttributeMapping] = {
+        TUYA_BRIGHTNESS_LEVEL_DP: DPToAttributeMapping(
+            TuyaIlluminanceMeasurement.ep_attribute,
+            "manufacturer_brightness_level",
+            converter=lambda x: BrightnessLevel(x),
+        ),
+        TUYA_ILLUMINANCE_DP: DPToAttributeMapping(
+            TuyaIlluminanceMeasurement.ep_attribute,
+            "measured_value",
+            converter=lambda x: (10000.0 * math.log10(x) + 1.0 if x != 0 else 0),
+        ),
     }
 
     data_point_handlers = {

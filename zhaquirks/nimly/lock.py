@@ -33,6 +33,7 @@ NIMLY_LOCK_NODE_DESCRIPTOR = NodeDescriptor(
     .add_to_registry()
 )
 
+
 (
     QuirkBuilder(NIMLY, "NimlyPRO")
     .applies_to(NIMLY, "NimlyCode")

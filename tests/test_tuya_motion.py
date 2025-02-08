@@ -4,7 +4,7 @@ import asyncio
 
 import pytest
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.measurement import OccupancySensing
+from zigpy.zcl.clusters.measurement import IlluminanceMeasurement, OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
 
 from tests.common import ClusterListener
@@ -15,6 +15,9 @@ from zhaquirks.tuya.mcu import TuyaMCUCluster
 ZCL_TUYA_MOTION = b"\tL\x01\x00\x05\x01\x01\x00\x01\x01"  # DP 1
 ZCL_TUYA_MOTION_V2 = b"\tL\x01\x00\x05\x65\x01\x00\x01\x01"  # DP 101
 ZCL_TUYA_MOTION_V3 = b"\tL\x01\x00\x05\x03\x04\x00\x01\x02"  # DP 3, enum
+ZCL_TUYA_MOTION_V4 = b"\tL\x01\x00\x05\x69\x01\x00\x01\x01"  # DP 105
+ZCL_TUYA_MOTION_V5 = b"\tL\x01\x00\x05\x01\x01\x00\x01\x04"  # DP 1, motion is 0x04
+ZCL_TUYA_MOTION_V6 = b"\tL\x01\x00\x05\x01\x04\x00\x01\x02"  # DP 1, enum
 
 
 zhaquirks.setup()
@@ -36,6 +39,28 @@ zhaquirks.setup()
         ("_TZE200_ztc6ggyl", "TS0601", ZCL_TUYA_MOTION),
         ("_TZE204_ztc6ggyl", "TS0601", ZCL_TUYA_MOTION),
         ("_TZE204_ztqnh5cg", "TS0601", ZCL_TUYA_MOTION),
+        ("_TZE204_sbyx0lm6", "TS0601", ZCL_TUYA_MOTION),
+        ("_TZE204_clrdrnya", "TS0601", ZCL_TUYA_MOTION),
+        ("_TZE204_dtzziy1e", "TS0601", ZCL_TUYA_MOTION),
+        ("_TZE204_iaeejhvf", "TS0601", ZCL_TUYA_MOTION),
+        ("_TZE204_mtoaryre", "TS0601", ZCL_TUYA_MOTION),
+        ("_TZE200_mp902om5", "TS0601", ZCL_TUYA_MOTION),
+        ("_TZE204_pfayrzcw", "TS0601", ZCL_TUYA_MOTION),
+        ("_TZE284_4qznlkbu", "TS0601", ZCL_TUYA_MOTION),
+        ("_TZE200_sbyx0lm6", "TS0601", ZCL_TUYA_MOTION),
+        ("_TZE204_muvkrjr5", "TS0601", ZCL_TUYA_MOTION),
+        ("_TZE204_kyhbrfyl", "TS0601", ZCL_TUYA_MOTION),
+        ("_TZ6210_duv6fhwt", "TS0601", ZCL_TUYA_MOTION),
+        ("_TZE204_1youk3hj", "TS0601", ZCL_TUYA_MOTION),
+        ("_TZE200_3towulqd", "TS0601", ZCL_TUYA_MOTION),
+        ("_TZE200_1ibpyhdc", "TS0601", ZCL_TUYA_MOTION),
+        ("_TZE200_bh3n6gk8", "TS0601", ZCL_TUYA_MOTION),
+        ("_TZE200_ttcovulf", "TS0601", ZCL_TUYA_MOTION),
+        ("_TZE204_sxm7l9xa", "TS0601", ZCL_TUYA_MOTION_V4),
+        ("_TZE204_e5m9c5hl", "TS0601", ZCL_TUYA_MOTION_V4),
+        ("_TZE204_dapwryy7", "TS0601", ZCL_TUYA_MOTION_V6),
+        ("_TZE204_uxllnywp", "TS0601", ZCL_TUYA_MOTION_V5),
+        ("_TZE200_gjldowol", "TS0601", ZCL_TUYA_MOTION),
     ],
 )
 async def test_tuya_motion_quirk_occ(zigpy_device_from_v2_quirk, model, manuf, occ_msg):
@@ -108,3 +133,36 @@ async def test_tuya_motion_quirk_ias(zigpy_device_from_v2_quirk, model, manuf, o
     assert len(ias_zone_listener.attribute_updates) == 2
     assert ias_zone_listener.attribute_updates[1][0] == zcl_zone_status_id
     assert ias_zone_listener.attribute_updates[1][1] == 0
+
+
+@pytest.mark.parametrize(
+    "model,manuf,illum_msg,exp_value",
+    [
+        ("_TZE204_1youk3hj", "TS0601", b"\tL\x01\x00\x05\x66\x04\x00\x01\x00", 10),
+        ("_TZE204_1youk3hj", "TS0601", b"\tL\x01\x00\x05\x66\x04\x00\x01\x01", 20),
+        ("_TZE204_1youk3hj", "TS0601", b"\tL\x01\x00\x05\x66\x04\x00\x01\x02", 50),
+        ("_TZE204_1youk3hj", "TS0601", b"\tL\x01\x00\x05\x66\x04\x00\x01\x03", 100),
+    ],
+)
+async def test_tuya_motion_quirk_enum_illum(
+    zigpy_device_from_v2_quirk, model, manuf, illum_msg, exp_value
+):
+    """Test Tuya Motion Quirks using enum illumination."""
+    quirked_device = zigpy_device_from_v2_quirk(model, manuf)
+    ep = quirked_device.endpoints[1]
+
+    assert ep.illuminance is not None
+    assert isinstance(ep.illuminance, IlluminanceMeasurement)
+
+    illum_listener = ClusterListener(ep.illuminance)
+
+    hdr, data = ep.tuya_manufacturer.deserialize(illum_msg)
+    status = ep.tuya_manufacturer.handle_get_data(data.data)
+
+    assert status == foundation.Status.SUCCESS
+
+    zcl_illum_id = IlluminanceMeasurement.AttributeDefs.measured_value.id
+
+    assert len(illum_listener.attribute_updates) == 1
+    assert illum_listener.attribute_updates[0][0] == zcl_illum_id
+    assert illum_listener.attribute_updates[0][1] == exp_value

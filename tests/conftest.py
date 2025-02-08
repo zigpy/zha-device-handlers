@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, Mock
 import pytest
 import zigpy.application
 import zigpy.device
+from zigpy.device import Device
 import zigpy.quirks
 import zigpy.types
 from zigpy.zcl import foundation
@@ -20,6 +21,8 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+
+from .async_mock import sentinel
 
 
 class MockApp(zigpy.application.ControllerApplication):
@@ -202,6 +205,25 @@ def zigpy_device_from_v2_quirk(MockAppController, ieee_mock):
         return quirked
 
     return _dev
+
+
+@pytest.fixture(name="device_mock")
+def real_device(MockAppController):
+    """Device fixture with a single endpoint."""
+    ieee = sentinel.ieee
+    nwk = 0x2233
+    device = Device(MockAppController, ieee, nwk)
+
+    device.add_endpoint(1)
+    device[1].profile_id = 0x0104
+    device[1].device_type = 0x0051
+    device.model = "model"
+    device.manufacturer = "manufacturer"
+    device[1].add_input_cluster(0x0000)
+    device[1].add_input_cluster(0xEF00)
+    device[1].add_output_cluster(0x000A)
+    device[1].add_output_cluster(0x0019)
+    return device
 
 
 @pytest.fixture
