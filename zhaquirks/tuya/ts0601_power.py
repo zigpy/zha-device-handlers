@@ -38,11 +38,6 @@ def dpToVoltage(data: ByteString) -> int:
 class Tuya3PhaseElectricalMeasurement(ElectricalMeasurement, TuyaLocalCluster):
     """Tuya Electrical Measurement cluster."""
 
-    _CONSTANT_ATTRIBUTES = {
-        # ElectricalMeasurement.AttributeDefs.ac_current_divisor.id: 1000,
-        # ElectricalMeasurement.AttributeDefs.ac_voltage_divisor.id: 10,
-    }
-
 
 (
     TuyaQuirkBuilder("_TZE200_nslr42tt", "TS0601")
