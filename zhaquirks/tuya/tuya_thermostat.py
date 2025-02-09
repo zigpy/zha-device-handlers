@@ -116,6 +116,10 @@ class TuyaThermostat(Thermostat, TuyaAttributesCluster):
         )
         self.add_unsupported_attribute(Thermostat.AttributeDefs.pi_heating_demand.id)
 
+
+class TuyaThermostatNoManuf(TuyaThermostat):
+    """Tuya local thermostat cluster, no manufacturer id on attribute write."""
+
     async def write_attributes(self, attributes, manufacturer=None):
         """Overwrite to force manufacturer code."""
         return await super().write_attributes(
@@ -298,22 +302,22 @@ base_avatto_quirk = (
     TuyaQuirkBuilder()
     .tuya_dp(
         dp_id=1,
-        ep_attribute=TuyaThermostat.ep_attribute,
-        attribute_name=TuyaThermostat.AttributeDefs.system_mode.name,
+        ep_attribute=TuyaThermostatNoManuf.ep_attribute,
+        attribute_name=TuyaThermostatNoManuf.AttributeDefs.system_mode.name,
         converter=lambda x: 0x00 if not x else 0x04,
         dp_converter=lambda x: x != 0x00,
     )
     .tuya_dp(
         dp_id=2,
-        ep_attribute=TuyaThermostat.ep_attribute,
-        attribute_name=TuyaThermostat.AttributeDefs.occupied_heating_setpoint.name,
+        ep_attribute=TuyaThermostatNoManuf.ep_attribute,
+        attribute_name=TuyaThermostatNoManuf.AttributeDefs.occupied_heating_setpoint.name,
         converter=lambda x: x * 10,
         dp_converter=lambda x: x // 10,
     )
     .tuya_dp(
         dp_id=3,
-        ep_attribute=TuyaThermostat.ep_attribute,
-        attribute_name=TuyaThermostat.AttributeDefs.local_temperature.name,
+        ep_attribute=TuyaThermostatNoManuf.ep_attribute,
+        attribute_name=TuyaThermostatNoManuf.AttributeDefs.local_temperature.name,
         converter=lambda x: x * 10,
     )
     .tuya_switch(
@@ -332,22 +336,22 @@ base_avatto_quirk = (
     )
     .tuya_dp(
         dp_id=15,
-        ep_attribute=TuyaThermostat.ep_attribute,
-        attribute_name=TuyaThermostat.AttributeDefs.max_heat_setpoint_limit.name,
+        ep_attribute=TuyaThermostatNoManuf.ep_attribute,
+        attribute_name=TuyaThermostatNoManuf.AttributeDefs.max_heat_setpoint_limit.name,
         converter=lambda x: x * 10,
         dp_converter=lambda x: x // 10,
     )
     .tuya_dp(
         dp_id=19,
-        ep_attribute=TuyaThermostat.ep_attribute,
-        attribute_name=TuyaThermostat.AttributeDefs.local_temperature_calibration.name,
+        ep_attribute=TuyaThermostatNoManuf.ep_attribute,
+        attribute_name=TuyaThermostatNoManuf.AttributeDefs.local_temperature_calibration.name,
         converter=lambda x: x * 10,
         dp_converter=lambda x: x // 10,
     )
     .tuya_dp(
         dp_id=101,
-        ep_attribute=TuyaThermostat.ep_attribute,
-        attribute_name=TuyaThermostat.AttributeDefs.running_state.name,
+        ep_attribute=TuyaThermostatNoManuf.ep_attribute,
+        attribute_name=TuyaThermostatNoManuf.AttributeDefs.running_state.name,
         converter=lambda x: 0x00 if not x else 0x01,
     )
     .tuya_switch(
@@ -388,7 +392,7 @@ base_avatto_quirk = (
         translation_key="backlight_mode",
         fallback_name="Backlight mode",
     )
-    .adds(TuyaThermostat)
+    .adds(TuyaThermostatNoManuf)
     .skip_configuration()
 )
 
