@@ -23,6 +23,7 @@ from zhaquirks.schneiderelectric import (
     .add_to_registry()
 )
 
+
 (
     QuirkBuilder(SE_MANUF_NAME, "NHPB/SWITCH/1")
     .replaces(SEBasic)

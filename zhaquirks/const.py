@@ -12,6 +12,7 @@ from zigpy.quirks import (
     SIG_NODE_DESC,
     SIG_SKIP_CONFIG,
 )
+import zigpy.types as t
 
 ARGS = "args"
 ATTR_ID = "attr_id"
@@ -125,3 +126,21 @@ ZONE_STATUS_CHANGE_COMMAND = 0x0000
 ZONE_STATE = 0x0000
 ZONE_TYPE = 0x0001
 ZONE_STATUS = 0x0002
+
+
+class BatterySize(t.enum8):
+    """Battery sizes."""
+
+    No_battery = 0x00
+    Built_in = 0x01
+    Other = 0x02
+    AA = 0x03
+    AAA = 0x04
+    C = 0x05
+    D = 0x06
+    CR2 = 0x07
+    CR123A = 0x08
+    CR2450 = 0x09
+    CR2032 = 0x0A
+    CR1632 = 0x0B
+    Unknown = 0xFF
