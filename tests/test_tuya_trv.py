@@ -3,6 +3,7 @@
 from unittest import mock
 
 import pytest
+from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.hvac import Thermostat
@@ -50,19 +51,33 @@ TUYA_TEST_PLAN_V02 = (
 
 
 @pytest.mark.parametrize(
-    "model, manuf, test_plan, set_pnt_msg",
+    "model, manuf, test_plan, set_pnt_msg, ep_type",
     (
-        ("_TZE204_ogx8u5z6", "TS0601", TUYA_TEST_PLAN_V01, TUYA_SP_V01),
-        ("_TZE200_3yp57tby", "TS0601", TUYA_TEST_PLAN_V02, TUYA_SP_V02),
+        (
+            "_TZE204_ogx8u5z6",
+            "TS0601",
+            TUYA_TEST_PLAN_V01,
+            TUYA_SP_V01,
+            None,  # test device has specific device type, real one has SMART_PLUG
+        ),
+        (
+            "_TZE200_3yp57tby",
+            "TS0601",
+            TUYA_TEST_PLAN_V02,
+            TUYA_SP_V02,
+            zha.DeviceType.THERMOSTAT,  # quirk replaces device type with THERMOSTAT
+        ),
     ),
 )
 async def test_handle_get_data(
-    zigpy_device_from_v2_quirk, model, manuf, test_plan, set_pnt_msg
+    zigpy_device_from_v2_quirk, model, manuf, test_plan, set_pnt_msg, ep_type
 ):
     """Test handle_get_data for multiple attributes."""
 
     quirked = zigpy_device_from_v2_quirk(model, manuf)
     ep = quirked.endpoints[1]
+
+    assert ep.device_type == ep_type
 
     assert ep.tuya_manufacturer is not None
     assert isinstance(ep.tuya_manufacturer, TuyaMCUCluster)

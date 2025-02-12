@@ -1,5 +1,6 @@
 """Map from manufacturer to standard clusters for thermostatic valves."""
 
+from zigpy.profiles import zha
 from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature
 from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 from zigpy.quirks.v2.homeassistant.sensor import SensorStateClass
@@ -101,6 +102,9 @@ class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
     .applies_to("_TZE200_exfrnlow", "TS0601")
     .applies_to("_TZE200_9m4kmbfu", "TS0601")
     .applies_to("_TZE200_3yp57tby", "TS0601")
+    # default device type is `SMART_PLUG` for this,
+    # so change it back to keep UID/entity the same
+    .replaces_endpoint(1, device_type=zha.DeviceType.THERMOSTAT)
     .tuya_dp(
         dp_id=3,
         ep_attribute=TuyaThermostatV2.ep_attribute,
