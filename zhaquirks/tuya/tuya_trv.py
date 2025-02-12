@@ -141,7 +141,7 @@ class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
         ep_attribute=TuyaThermostatV2.ep_attribute,
         attribute_name=TuyaThermostatV2.AttributeDefs.system_mode.name,
         converter=lambda x: Thermostat.SystemMode.Heat
-        if x == TuyaThermostatSystemMode.Heat
+        if x == TuyaThermostatSystemModeV2.Heat
         else Thermostat.SystemMode.Off,
         dp_converter=lambda x: TuyaThermostatSystemModeV2.Heat
         if x == Thermostat.SystemMode.Heat
