@@ -431,7 +431,7 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
         dp_id=3,
         ep_attribute=TuyaThermostatV2.ep_attribute,
         attribute_name=TuyaThermostatV2.AttributeDefs.running_state.name,
-        converter=lambda x: 0x01 if not x else 0x00,  # Heat, Idle
+        converter=lambda x: 0x01 if x else 0x00,  # Heat, Idle
     )
     .tuya_switch(
         dp_id=8,
@@ -439,12 +439,22 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
         translation_key="window_detection",
         fallback_name="Open window detection",
     )
-    .tuya_dp(
+    .tuya_switch(
+        dp_id=10,
+        attribute_name="frost_protection",
+        translation_key="frost_protection",
+        fallback_name="Frost protection",
+    )
+    .tuya_number(
         dp_id=27,
-        ep_attribute=TuyaThermostatV2.ep_attribute,
         attribute_name=TuyaThermostatV2.AttributeDefs.local_temperature_calibration.name,
-        converter=lambda x: x,
-        dp_converter=lambda x: x + 0x100000000 if x < 0 else x,
+        type=t.uint32_t,
+        min_value=-6,
+        max_value=6,
+        unit=UnitOfTemperature.CELSIUS,
+        step=1,
+        translation_key="local_temperature_calibration",
+        fallback_name="Local temperature calibration",
     )
     .tuya_switch(
         dp_id=40,
@@ -457,12 +467,12 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
         ep_attribute=TuyaThermostatV2.ep_attribute,
         attribute_name=TuyaThermostatV2.AttributeDefs.system_mode.name,
         converter=lambda x: {
-            TuyaThermostatSystemMode.Heat: Thermostat.SystemMode.Heat,
-            TuyaThermostatSystemMode.Off: Thermostat.SystemMode.Off,
+            True: Thermostat.SystemMode.Heat,
+            False: Thermostat.SystemMode.Off,
         }[x],
         dp_converter=lambda x: {
-            Thermostat.SystemMode.Heat: TuyaThermostatSystemMode.Heat,
-            Thermostat.SystemMode.Off: TuyaThermostatSystemMode.Off,
+            Thermostat.SystemMode.Heat: True,
+            Thermostat.SystemMode.Off: False,
         }[x],
     )
     .tuya_dp(
