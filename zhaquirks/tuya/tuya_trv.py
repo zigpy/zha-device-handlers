@@ -524,7 +524,7 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
         fallback_name="Boost heating",
     )
     .tuya_number(
-        dp_id=21,
+        dp_id=102,
         attribute_name="boost_time",
         type=t.uint16_t,
         min_value=0,
