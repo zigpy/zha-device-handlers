@@ -223,7 +223,7 @@ class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
         dp_id=6,
         ep_attribute=TuyaThermostatV2.ep_attribute,
         attribute_name=TuyaThermostatV2.AttributeDefs.running_state.name,
-        converter=lambda x: 0x01 if not x else 0x00,  # Heat, Idle
+        converter=lambda x: 0x01 if x else 0x00,  # Heat, Idle
     )
     .tuya_binary_sensor(
         dp_id=7,
