@@ -510,12 +510,16 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
         translation_key="scale_protection",
         fallback_name="Scale protection",
     )
-    .tuya_dp(  # z2m has this for DP 114 also?
+    .tuya_number(
         dp_id=47,
-        ep_attribute=TuyaThermostatV2.ep_attribute,
         attribute_name=TuyaThermostatV2.AttributeDefs.local_temperature_calibration.name,
-        converter=lambda x: x,
-        dp_converter=lambda x: 0xFFFFFFFF - x if x > 6 else x,
+        type=t.uint32_t,
+        min_value=-6,
+        max_value=6,
+        unit=UnitOfTemperature.CELSIUS,
+        step=1,
+        translation_key="local_temperature_calibration",
+        fallback_name="Local temperature calibration",
     )
     .tuya_switch(
         dp_id=101,
