@@ -553,7 +553,11 @@ class GiexIrrigationStatus(t.enum8):
         fallback_name="Weather delay",
         initially_disabled=True,
     )
-    # Charstring normal timed, dp 38 omitted
+    .tuya_dp_attribute(
+        dp_id=38,
+        attribute_name="normal_timer",
+        type=t.CharacterString,
+    )
     .tuya_switch(
         dp_id=42,
         attribute_name="switch_enabled",
@@ -575,16 +579,6 @@ class GiexIrrigationStatus(t.enum8):
         entity_type=EntityType.STANDARD,
         translation_key="total_flow_reset_switch",
         fallback_name="Total flow reset switch",
-    )
-    .tuya_sensor(
-        dp_id=102,
-        attribute_name="irrigation_duration",
-        type=t.uint32_t,
-        state_class=SensorStateClass.MEASUREMENT,
-        device_class=SensorDeviceClass.VOLUME,
-        unit=UnitOfVolume.LITERS,
-        translation_key="irrigation_duration",
-        fallback_name="Irrigation duration",
     )
     .tuya_number(
         dp_id=102,
@@ -622,7 +616,7 @@ class GiexIrrigationStatus(t.enum8):
     .tuya_sensor(
         dp_id=106,
         attribute_name="single_watering_duration",
-        type=t.CharacterString,
+        type=t.uint32_t,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.DURATION,
         unit=UnitOfTime.SECONDS,
@@ -632,7 +626,7 @@ class GiexIrrigationStatus(t.enum8):
     .tuya_sensor(
         dp_id=108,
         attribute_name="single_watering_amount",
-        type=t.CharacterString,
+        type=t.uint32_t,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.VOLUME,
         unit=UnitOfVolume.LITERS,

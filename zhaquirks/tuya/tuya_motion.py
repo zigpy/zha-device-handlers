@@ -1192,7 +1192,7 @@ base_tuya_motion = (
         fallback_name="Maximum range",
     )
     .tuya_number(
-        dp_id=107,
+        dp_id=108,
         attribute_name="detection_distance_min",
         type=t.uint16_t,
         device_class=SensorDeviceClass.DISTANCE,
