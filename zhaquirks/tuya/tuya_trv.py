@@ -20,13 +20,6 @@ class TuyaThermostatSystemMode(t.enum8):
     Off = 0x02
 
 
-class TuyaThermostatSystemModeV2(t.enum8):
-    """Tuya thermostat system mode enum, off and heat only."""
-
-    Off = 0x00
-    Heat = 0x01
-
-
 class TuyaThermostatEcoMode(t.enum8):
     """Tuya thermostat eco mode enum."""
 
@@ -144,12 +137,14 @@ class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
         dp_id=101,
         ep_attribute=TuyaThermostatV2.ep_attribute,
         attribute_name=TuyaThermostatV2.AttributeDefs.system_mode.name,
-        converter=lambda x: Thermostat.SystemMode.Heat
-        if x == TuyaThermostatSystemModeV2.Heat
-        else Thermostat.SystemMode.Off,
-        dp_converter=lambda x: TuyaThermostatSystemModeV2.Heat
-        if x == Thermostat.SystemMode.Heat
-        else TuyaThermostatSystemModeV2.Off,
+        converter=lambda x: {
+            True: Thermostat.SystemMode.Heat,
+            False: Thermostat.SystemMode.Off,
+        }[x],
+        dp_converter=lambda x: {
+            Thermostat.SystemMode.Heat: True,
+            Thermostat.SystemMode.Off: False,
+        }[x],
     )
     .tuya_dp(
         dp_id=102,
