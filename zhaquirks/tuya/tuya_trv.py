@@ -273,12 +273,16 @@ class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
         translation_key="max_temperature",
         fallback_name="Max temperature",
     )
-    .tuya_dp(
+    .tuya_number(
         dp_id=101,
-        ep_attribute=TuyaThermostatV2.ep_attribute,
         attribute_name=TuyaThermostatV2.AttributeDefs.local_temperature_calibration.name,
-        converter=lambda x: x,
-        dp_converter=lambda x: x + 0x100000000 if x < 0 else x,
+        type=t.uint32_t,
+        min_value=-6,
+        max_value=6,
+        unit=UnitOfTemperature.CELSIUS,
+        step=1,
+        translation_key="local_temperature_calibration",
+        fallback_name="Local temperature calibration",
     )
     .tuya_enum(
         dp_id=114,
