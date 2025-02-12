@@ -238,7 +238,7 @@ class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
         dp_id=6,
         ep_attribute=TuyaThermostatV2.ep_attribute,
         attribute_name=TuyaThermostatV2.AttributeDefs.running_state.name,
-        converter=lambda x: 0x01 if not x else 0x00,  # Heat, Idle
+        converter=lambda x: 0x01 if x else 0x00,  # Heat, Idle
     )
     .tuya_binary_sensor(
         dp_id=7,
@@ -288,12 +288,16 @@ class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
         translation_key="max_temperature",
         fallback_name="Max temperature",
     )
-    .tuya_dp(
+    .tuya_number(
         dp_id=101,
-        ep_attribute=TuyaThermostatV2.ep_attribute,
         attribute_name=TuyaThermostatV2.AttributeDefs.local_temperature_calibration.name,
-        converter=lambda x: x,
-        dp_converter=lambda x: x + 0x100000000 if x < 0 else x,
+        type=t.uint32_t,
+        min_value=-6,
+        max_value=6,
+        unit=UnitOfTemperature.CELSIUS,
+        step=1,
+        translation_key="local_temperature_calibration",
+        fallback_name="Local temperature calibration",
     )
     .tuya_enum(
         dp_id=114,
@@ -357,12 +361,16 @@ class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
         attribute_name=TuyaThermostatV2.AttributeDefs.local_temperature.name,
         converter=lambda x: x * 10,
     )
-    .tuya_dp(
+    .tuya_number(
         dp_id=47,
-        ep_attribute=TuyaThermostatV2.ep_attribute,
         attribute_name=TuyaThermostatV2.AttributeDefs.local_temperature_calibration.name,
-        converter=lambda x: x,
-        dp_converter=lambda x: x + 0x100000000 if x < 0 else x,
+        type=t.uint32_t,
+        min_value=-6,
+        max_value=6,
+        unit=UnitOfTemperature.CELSIUS,
+        step=1,
+        translation_key="local_temperature_calibration",
+        fallback_name="Local temperature calibration",
     )
     .tuya_switch(
         dp_id=7,
