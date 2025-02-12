@@ -126,7 +126,7 @@ class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
         min_value=-6,
         max_value=6,
         unit=UnitOfTemperature.CELSIUS,
-        step=0.1,
+        step=1,
         translation_key="local_temperature_calibration",
         fallback_name="Local temperature calibration",
     )
