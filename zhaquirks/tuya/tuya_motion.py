@@ -1121,7 +1121,7 @@ base_tuya_motion = (
         dp_id=1,
         ep_attribute=TuyaOccupancySensing.ep_attribute,
         attribute_name=OccupancySensing.AttributeDefs.occupancy.name,
-        converter=lambda x: x == 1,
+        converter=lambda x: x == 0,
     )
     .adds(TuyaOccupancySensing)
     .tuya_battery(dp_id=4)
