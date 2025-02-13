@@ -136,6 +136,7 @@ def zigpy_device_from_quirk(MockAppController, ieee_mock):
         raw_device = zigpy.device.Device(MockAppController, ieee, nwk)
         raw_device.manufacturer = manufacturer
         raw_device.model = model
+        raw_device.node_desc = NodeDescriptor(manufacturer_code=1234)
 
         endpoints = quirk.signature.get(ENDPOINTS, {})
         for ep_id, ep_data in endpoints.items():
