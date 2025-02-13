@@ -13,7 +13,7 @@ from zigpy.quirks.v2.homeassistant import (
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 from zigpy.types import t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.hvac import Thermostat
+from zigpy.zcl.clusters.hvac import RunningState, Thermostat
 
 from zhaquirks.tuya import TUYA_SET_TIME, TuyaTimePayload
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
@@ -144,8 +144,14 @@ class NoManufTimeNoVersionRespTuyaMCUCluster(TuyaMCUCluster):
         dp_id=1,
         ep_attribute=TuyaThermostat.ep_attribute,
         attribute_name=TuyaThermostat.AttributeDefs.system_mode.name,
-        converter=lambda x: 0x00 if not x else 0x04,
-        dp_converter=lambda x: x != 0x00,
+        converter=lambda x: {
+            True: Thermostat.SystemMode.Heat,
+            False: Thermostat.SystemMode.Off,
+        }[x],
+        dp_converter=lambda x: {
+            Thermostat.SystemMode.Heat: True,
+            Thermostat.SystemMode.Off: False,
+        }[x],
     )
     .tuya_enum(
         dp_id=2,
@@ -201,7 +207,7 @@ class NoManufTimeNoVersionRespTuyaMCUCluster(TuyaMCUCluster):
         dp_id=104,
         ep_attribute=TuyaThermostat.ep_attribute,
         attribute_name=TuyaThermostat.AttributeDefs.running_state.name,
-        converter=lambda x: 0x00 if not x else 0x01,
+        converter=lambda x: RunningState.Heat_State_On if x else RunningState.Idle,
     )
     .tuya_binary_sensor(
         dp_id=106,
@@ -292,8 +298,14 @@ base_avatto_quirk = (
         dp_id=1,
         ep_attribute=TuyaThermostat.ep_attribute,
         attribute_name=TuyaThermostat.AttributeDefs.system_mode.name,
-        converter=lambda x: 0x00 if not x else 0x04,
-        dp_converter=lambda x: x != 0x00,
+        converter=lambda x: {
+            True: Thermostat.SystemMode.Heat,
+            False: Thermostat.SystemMode.Off,
+        }[x],
+        dp_converter=lambda x: {
+            Thermostat.SystemMode.Heat: True,
+            Thermostat.SystemMode.Off: False,
+        }[x],
     )
     .tuya_dp(
         dp_id=2,
@@ -340,7 +352,7 @@ base_avatto_quirk = (
         dp_id=101,
         ep_attribute=TuyaThermostat.ep_attribute,
         attribute_name=TuyaThermostat.AttributeDefs.running_state.name,
-        converter=lambda x: 0x00 if not x else 0x01,
+        converter=lambda x: RunningState.Heat_State_On if x else RunningState.Idle,
     )
     .tuya_switch(
         dp_id=102,
