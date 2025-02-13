@@ -813,11 +813,6 @@ class TuyaQuirkBuilder(QuirkBuilder):
             class TuyaReplacementCluster(replacement_cluster):  # type: ignore[valid-type]
                 """Replacement Tuya Cluster."""
 
-                # remove manufacturer id for all datapoint `TUYA_SET_DATA` commands
-                manufacturer_id_override: t.uint16_t = (
-                    foundation.ZCLHeader.NO_MANUFACTURER_ID
-                )
-
                 data_point_handlers: dict[int, str]
                 dp_to_attribute: dict[int, DPToAttributeMapping]
 

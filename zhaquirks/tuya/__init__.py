@@ -1488,6 +1488,9 @@ class TuyaNewManufCluster(CustomCluster):
     cluster_id: t.uint16_t = TUYA_CLUSTER_ID
     ep_attribute: str = "tuya_manufacturer"
 
+    # remove manufacturer id for cluster, important for `TUYA_SET_DATA` commands
+    manufacturer_id_override: t.uint16_t = foundation.ZCLHeader.NO_MANUFACTURER_ID
+
     class AttributeDefs(BaseAttributeDefs):
         """Attribute Definitions."""
 
