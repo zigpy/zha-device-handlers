@@ -6,7 +6,7 @@ from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 from zigpy.quirks.v2.homeassistant.sensor import SensorStateClass
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.hvac import Thermostat
+from zigpy.zcl.clusters.hvac import RunningState, Thermostat
 
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import TuyaAttributesCluster
@@ -102,7 +102,7 @@ class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
         dp_id=3,
         ep_attribute=TuyaThermostatV2.ep_attribute,
         attribute_name=TuyaThermostatV2.AttributeDefs.running_state.name,
-        converter=lambda x: 0x01 if not x else 0x00,  # Heat, Idle
+        converter=lambda x: RunningState.Heat_State_On if x else RunningState.Idle,
     )
     .tuya_switch(
         dp_id=8,
@@ -116,12 +116,16 @@ class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
         translation_key="frost_protection",
         fallback_name="Frost protection",
     )
-    .tuya_dp(
+    .tuya_number(
         dp_id=27,
-        ep_attribute=TuyaThermostatV2.ep_attribute,
         attribute_name=TuyaThermostatV2.AttributeDefs.local_temperature_calibration.name,
-        converter=lambda x: x,
-        dp_converter=lambda x: 0xFFFFFFFF - x if x > 6 else x,
+        type=t.uint32_t,
+        min_value=-6,
+        max_value=6,
+        unit=UnitOfTemperature.CELSIUS,
+        step=1,
+        translation_key="local_temperature_calibration",
+        fallback_name="Local temperature calibration",
     )
     .tuya_switch(
         dp_id=40,
@@ -133,12 +137,14 @@ class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
         dp_id=101,
         ep_attribute=TuyaThermostatV2.ep_attribute,
         attribute_name=TuyaThermostatV2.AttributeDefs.system_mode.name,
-        converter=lambda x: Thermostat.SystemMode.Heat
-        if x == TuyaThermostatSystemMode.Heat
-        else Thermostat.SystemMode.Off,
-        dp_converter=lambda x: TuyaThermostatSystemMode.Heat
-        if x == Thermostat.SystemMode.Heat
-        else 0x00,
+        converter=lambda x: {
+            True: Thermostat.SystemMode.Heat,
+            False: Thermostat.SystemMode.Off,
+        }[x],
+        dp_converter=lambda x: {
+            Thermostat.SystemMode.Heat: True,
+            Thermostat.SystemMode.Off: False,
+        }[x],
     )
     .tuya_dp(
         dp_id=102,

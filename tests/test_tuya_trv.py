@@ -38,26 +38,37 @@ TUYA_TEST_PLAN_V01 = (
 
 TUYA_TEST_PLAN_V02 = (
     (
-        b"\t\xc3\x02\x00r\x65\x04\x00\x01\x01",
+        b"\t\xc3\x02\x00r\x65\x01\x00\x01\x01",
         Thermostat.AttributeDefs.system_mode,
         Thermostat.SystemMode.Heat,
     ),  # Set to Heat (0x01), dp 3
     (
-        b"\t\xc2\x02\x00q\x65\x04\x00\x01\x02",
+        b"\t\xc2\x02\x00q\x65\x01\x00\x01\x00",
         Thermostat.AttributeDefs.system_mode,
         Thermostat.SystemMode.Off,
     ),  # Set to Off (0x02), dp 3
 )
 
+TUYA_SYS_MODE_V01 = {
+    Thermostat.SystemMode.Heat: b"\x01\x02\x00\x00\x02\x02\x04\x00\x01\x01",
+    Thermostat.SystemMode.Off: b"\x01\x03\x00\x00\x03\x02\x04\x00\x01\x02",
+}
+
+TUYA_SYS_MODE_V02 = {
+    Thermostat.SystemMode.Heat: b"\x01\x02\x00\x00\x02\x65\x01\x00\x01\x01",
+    Thermostat.SystemMode.Off: b"\x01\x03\x00\x00\x03\x65\x01\x00\x01\x00",
+}
+
 
 @pytest.mark.parametrize(
-    "model, manuf, test_plan, set_pnt_msg, ep_type",
+    "model, manuf, test_plan, set_pnt_msg, sys_mode_msg, ep_type",
     (
         (
             "_TZE204_ogx8u5z6",
             "TS0601",
             TUYA_TEST_PLAN_V01,
             TUYA_SP_V01,
+            TUYA_SYS_MODE_V01,
             None,  # test device has specific device type, real one has SMART_PLUG
         ),
         (
@@ -65,12 +76,19 @@ TUYA_TEST_PLAN_V02 = (
             "TS0601",
             TUYA_TEST_PLAN_V02,
             TUYA_SP_V02,
+            TUYA_SYS_MODE_V02,
             zha.DeviceType.THERMOSTAT,  # quirk replaces device type with THERMOSTAT
         ),
     ),
 )
 async def test_handle_get_data(
-    zigpy_device_from_v2_quirk, model, manuf, test_plan, set_pnt_msg, ep_type
+    zigpy_device_from_v2_quirk,
+    model,
+    manuf,
+    test_plan,
+    set_pnt_msg,
+    sys_mode_msg,
+    ep_type,
 ):
     """Test handle_get_data for multiple attributes."""
 
@@ -114,6 +132,54 @@ async def test_handle_get_data(
             cluster=0xEF00,
             sequence=1,
             data=set_pnt_msg,
+            command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
+        )
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
+
+    with mock.patch.object(
+        ep.tuya_manufacturer.endpoint, "request", side_effect=async_success
+    ) as m1:
+        (status,) = await ep.thermostat.write_attributes(
+            {
+                "system_mode": Thermostat.SystemMode.Heat,
+            }
+        )
+        await wait_for_zigpy_tasks()
+        m1.assert_called_with(
+            cluster=0xEF00,
+            sequence=2,
+            data=sys_mode_msg[Thermostat.SystemMode.Heat],
+            command_id=0,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
+        )
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
+
+    with mock.patch.object(
+        ep.tuya_manufacturer.endpoint, "request", side_effect=async_success
+    ) as m1:
+        (status,) = await ep.thermostat.write_attributes(
+            {
+                "system_mode": Thermostat.SystemMode.Off,
+            }
+        )
+        await wait_for_zigpy_tasks()
+        m1.assert_called_with(
+            cluster=0xEF00,
+            sequence=3,
+            data=sys_mode_msg[Thermostat.SystemMode.Off],
             command_id=0,
             timeout=5,
             expect_reply=False,
