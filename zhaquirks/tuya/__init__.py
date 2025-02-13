@@ -322,6 +322,9 @@ class TuyaManufCluster(CustomCluster):
     set_time_offset = 0
     set_time_local_offset = None
 
+    # remove manufacturer id for cluster, important for `TUYA_SET_DATA` commands
+    manufacturer_id_override: t.uint16_t = foundation.ZCLHeader.NO_MANUFACTURER_ID
+
     class Command(t.Struct):
         """Tuya manufacturer cluster command."""
 
