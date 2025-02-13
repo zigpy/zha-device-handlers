@@ -87,6 +87,14 @@ TUYA_SYS_MODE_V02 = {
             zha.DeviceType.THERMOSTAT,  # quirk replaces device type with THERMOSTAT
             True,  # Enusure schedule is turned off
         ),
+        (
+            "_TZE200_ne4pikwm",
+            "TS0601",
+            TUYA_TEST_PLAN_V02,
+            TUYA_SP_V02,
+            TUYA_SYS_MODE_V02,
+            None,  # test device has specific device type, real one has SMART_PLUG
+        ),
     ),
 )
 async def test_handle_get_data(

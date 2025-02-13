@@ -431,7 +431,7 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
         dp_id=3,
         ep_attribute=TuyaThermostatV2.ep_attribute,
         attribute_name=TuyaThermostatV2.AttributeDefs.running_state.name,
-        converter=lambda x: 0x01 if x else 0x00,  # Heat, Idle
+        converter=lambda x: RunningState.Heat_State_On if not x else RunningState.Idle,
     )
     .tuya_switch(
         dp_id=8,
