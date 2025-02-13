@@ -38,12 +38,12 @@ TUYA_TEST_PLAN_V01 = (
 
 TUYA_TEST_PLAN_V02 = (
     (
-        b"\t\xc3\x02\x00r\x65\x04\x00\x01\x01",
+        b"\t\xc3\x02\x00r\x65\x01\x00\x01\x01",
         Thermostat.AttributeDefs.system_mode,
         Thermostat.SystemMode.Heat,
     ),  # Set to Heat (0x01), dp 3
     (
-        b"\t\xc2\x02\x00q\x65\x04\x00\x01\x02",
+        b"\t\xc2\x02\x00q\x65\x01\x00\x01\x00",
         Thermostat.AttributeDefs.system_mode,
         Thermostat.SystemMode.Off,
     ),  # Set to Off (0x02), dp 3
