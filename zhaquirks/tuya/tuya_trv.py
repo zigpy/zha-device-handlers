@@ -6,7 +6,7 @@ from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 from zigpy.quirks.v2.homeassistant.sensor import SensorStateClass
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.hvac import Thermostat
+from zigpy.zcl.clusters.hvac import RunningState, Thermostat
 
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import TuyaAttributesCluster
@@ -102,6 +102,7 @@ class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
         dp_id=3,
         ep_attribute=TuyaThermostatV2.ep_attribute,
         attribute_name=TuyaThermostatV2.AttributeDefs.running_state.name,
+        converter=lambda x: RunningState.Heat_State_On if x else RunningState.Idle,
     )
     .tuya_switch(
         dp_id=8,
