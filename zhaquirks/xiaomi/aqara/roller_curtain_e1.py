@@ -315,7 +315,7 @@ class MultistateOutputRollerE1(CustomCluster, MultistateOutput):
     .prevent_default_entity_creation(
         endpoint_id=1, cluster_id=MultistateOutput.cluster_id
     )
-    .removes(OnOff.cluster_id)
+    .prevent_default_entity_creation(endpoint_id=1, cluster_id=OnOff.cluster_id)
     .replaces(AnalogOutputRollerE1)
     .replaces(BasicCluster)
     .replaces(MultistateOutputRollerE1)
