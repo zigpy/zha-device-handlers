@@ -14,13 +14,12 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import NoManufacturerCluster
 from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster
 
 TUYA_MANUFACTURER_GARAGE = "tuya_manufacturer_garage"
 
 
-class TuyaGarageManufCluster(NoManufacturerCluster, TuyaMCUCluster):
+class TuyaGarageManufCluster(TuyaMCUCluster):
     """Tuya garage door opener."""
 
     ep_attribute = TUYA_MANUFACTURER_GARAGE
