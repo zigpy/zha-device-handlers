@@ -813,18 +813,16 @@ class TuyaQuirkBuilder(QuirkBuilder):
             class TuyaReplacementCluster(replacement_cluster):  # type: ignore[valid-type]
                 """Replacement Tuya Cluster."""
 
+                # remove manufacturer id for all datapoint `TUYA_SET_DATA` commands
+                manufacturer_id_override: t.uint16_t = (
+                    foundation.ZCLHeader.NO_MANUFACTURER_ID
+                )
+
                 data_point_handlers: dict[int, str]
                 dp_to_attribute: dict[int, DPToAttributeMapping]
 
                 class AttributeDefs(NewAttributeDefs):
                     """Attribute Definitions."""
-
-                async def write_attributes(self, attributes, manufacturer=None):
-                    """Overwrite to force manufacturer code."""
-
-                    return await super().write_attributes(
-                        attributes, manufacturer=foundation.ZCLHeader.NO_MANUFACTURER_ID
-                    )
 
             TuyaReplacementCluster.data_point_handlers = self.tuya_data_point_handlers
             TuyaReplacementCluster.dp_to_attribute = self.tuya_dp_to_attribute

@@ -5,7 +5,6 @@ from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature
 from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 from zigpy.quirks.v2.homeassistant.sensor import SensorStateClass
 import zigpy.types as t
-from zigpy.zcl import foundation
 from zigpy.zcl.clusters.hvac import RunningState, Thermostat
 
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
@@ -51,7 +50,6 @@ class ScheduleState(t.enum8):
 class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
     """Tuya local thermostat cluster."""
 
-    manufacturer_id_override: t.uint16_t = foundation.ZCLHeader.NO_MANUFACTURER_ID
     _CONSTANT_ATTRIBUTES = {
         Thermostat.AttributeDefs.min_heat_setpoint_limit.id: 500,
         Thermostat.AttributeDefs.max_heat_setpoint_limit.id: 3000,
@@ -68,12 +66,6 @@ class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
             Thermostat.AttributeDefs.setpoint_change_source_timestamp.id
         )
         self.add_unsupported_attribute(Thermostat.AttributeDefs.pi_heating_demand.id)
-
-    async def write_attributes(self, attributes, manufacturer=None):
-        """Overwrite to force manufacturer code."""
-        return await super().write_attributes(
-            attributes, manufacturer=foundation.ZCLHeader.NO_MANUFACTURER_ID
-        )
 
 
 (
