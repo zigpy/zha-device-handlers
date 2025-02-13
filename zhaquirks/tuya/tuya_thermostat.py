@@ -146,8 +146,14 @@ class NoManufTimeNoVersionRespTuyaMCUCluster(TuyaMCUCluster):
         dp_id=1,
         ep_attribute=TuyaThermostat.ep_attribute,
         attribute_name=TuyaThermostat.AttributeDefs.system_mode.name,
-        converter=lambda x: 0x00 if not x else 0x04,
-        dp_converter=lambda x: x != 0x00,
+        converter=lambda x: {
+            True: Thermostat.SystemMode.Heat,
+            False: Thermostat.SystemMode.Off,
+        }[x],
+        dp_converter=lambda x: {
+            Thermostat.SystemMode.Heat: True,
+            Thermostat.SystemMode.Off: False,
+        }[x],
     )
     .tuya_enum(
         dp_id=2,
@@ -294,8 +300,14 @@ base_avatto_quirk = (
         dp_id=1,
         ep_attribute=TuyaThermostat.ep_attribute,
         attribute_name=TuyaThermostat.AttributeDefs.system_mode.name,
-        converter=lambda x: 0x00 if not x else 0x04,
-        dp_converter=lambda x: x != 0x00,
+        converter=lambda x: {
+            True: Thermostat.SystemMode.Heat,
+            False: Thermostat.SystemMode.Off,
+        }[x],
+        dp_converter=lambda x: {
+            Thermostat.SystemMode.Heat: True,
+            Thermostat.SystemMode.Off: False,
+        }[x],
     )
     .tuya_dp(
         dp_id=2,
