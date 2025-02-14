@@ -1,7 +1,5 @@
 """Tuya Fingerbot device."""
 
-from typing import Any, Optional, Union
-
 from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl import foundation
@@ -15,7 +13,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import TUYA_SEND_DATA, EnchantedDevice
+from zhaquirks.tuya import EnchantedDevice
 from zhaquirks.tuya.mcu import (
     DPToAttributeMapping,
     TuyaMCUCluster,
@@ -64,26 +62,6 @@ class TuyaFingerbotCluster(TuyaMCUCluster):
         )
         touch_control = foundation.ZCLAttributeDef(
             id=107, type=t.Bool, is_manufacturer_specific=True
-        )
-
-    async def command(
-        self,
-        command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
-        *args,
-        manufacturer: Optional[Union[int, t.uint16_t]] = None,
-        expect_reply: bool = True,
-        tsn: Optional[Union[int, t.uint8_t]] = None,
-        **kwargs: Any,
-    ):
-        """Override the default Cluster command."""
-
-        return await super().command(
-            TUYA_SEND_DATA,
-            *args,
-            manufacturer=foundation.ZCLHeader.NO_MANUFACTURER_ID,
-            expect_reply=expect_reply,
-            tsn=tsn,
-            **kwargs,
         )
 
     dp_to_attribute: dict[int, DPToAttributeMapping] = {
