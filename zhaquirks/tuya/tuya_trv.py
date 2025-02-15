@@ -68,6 +68,25 @@ class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
         self.add_unsupported_attribute(Thermostat.AttributeDefs.pi_heating_demand.id)
 
 
+class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
+    """Ensures schedule is disabled on system_mode change."""
+
+    async def write_attributes(self, attributes, manufacturer=None):
+        """Defer attributes writing to the set_data tuya command."""
+
+        if (
+            Thermostat.AttributeDefs.system_mode.id in attributes
+            or Thermostat.AttributeDefs.system_mode.name in attributes
+        ):
+            await super().write_attributes(attributes, manufacturer)
+
+            tuya_cluster = self.endpoint.tuya_manufacturer
+            return await tuya_cluster.write_attributes({"schedule_enable": False})
+
+        else:
+            return await super().write_attributes(attributes, manufacturer)
+
+
 (
     TuyaQuirkBuilder("_TYST11_KGbxAXL2", "GbxAXL2")
     .applies_to("_TYST11_c88teujp", "88teujp")
@@ -92,8 +111,8 @@ class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
     .replaces_endpoint(1, device_type=zha.DeviceType.THERMOSTAT)
     .tuya_dp(
         dp_id=3,
-        ep_attribute=TuyaThermostatV2.ep_attribute,
-        attribute_name=TuyaThermostatV2.AttributeDefs.running_state.name,
+        ep_attribute=TuyaThermostatV2NoSchedule.ep_attribute,
+        attribute_name=TuyaThermostatV2NoSchedule.AttributeDefs.running_state.name,
         converter=lambda x: RunningState.Heat_State_On if x else RunningState.Idle,
     )
     .tuya_switch(
@@ -110,7 +129,7 @@ class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
     )
     .tuya_number(
         dp_id=27,
-        attribute_name=TuyaThermostatV2.AttributeDefs.local_temperature_calibration.name,
+        attribute_name=TuyaThermostatV2NoSchedule.AttributeDefs.local_temperature_calibration.name,
         type=t.uint32_t,
         min_value=-6,
         max_value=6,
@@ -127,8 +146,8 @@ class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
     )
     .tuya_dp(
         dp_id=101,
-        ep_attribute=TuyaThermostatV2.ep_attribute,
-        attribute_name=TuyaThermostatV2.AttributeDefs.system_mode.name,
+        ep_attribute=TuyaThermostatV2NoSchedule.ep_attribute,
+        attribute_name=TuyaThermostatV2NoSchedule.AttributeDefs.system_mode.name,
         converter=lambda x: {
             True: Thermostat.SystemMode.Heat,
             False: Thermostat.SystemMode.Off,
@@ -140,18 +159,18 @@ class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
     )
     .tuya_dp(
         dp_id=102,
-        ep_attribute=TuyaThermostatV2.ep_attribute,
-        attribute_name=TuyaThermostatV2.AttributeDefs.local_temperature.name,
+        ep_attribute=TuyaThermostatV2NoSchedule.ep_attribute,
+        attribute_name=TuyaThermostatV2NoSchedule.AttributeDefs.local_temperature.name,
         converter=lambda x: x * 10,
     )
     .tuya_dp(
         dp_id=103,
-        ep_attribute=TuyaThermostatV2.ep_attribute,
-        attribute_name=TuyaThermostatV2.AttributeDefs.occupied_heating_setpoint.name,
+        ep_attribute=TuyaThermostatV2NoSchedule.ep_attribute,
+        attribute_name=TuyaThermostatV2NoSchedule.AttributeDefs.occupied_heating_setpoint.name,
         converter=lambda x: x * 10,
         dp_converter=lambda x: x // 10,
     )
-    .adds(TuyaThermostatV2)
+    .adds(TuyaThermostatV2NoSchedule)
     .tuya_sensor(
         dp_id=104,
         attribute_name="valve_position",

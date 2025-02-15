@@ -50,13 +50,19 @@ TUYA_TEST_PLAN_V02 = (
 )
 
 TUYA_SYS_MODE_V01 = {
-    Thermostat.SystemMode.Heat: b"\x01\x02\x00\x00\x02\x02\x04\x00\x01\x01",
-    Thermostat.SystemMode.Off: b"\x01\x03\x00\x00\x03\x02\x04\x00\x01\x02",
+    Thermostat.SystemMode.Heat: [b"\x01\x02\x00\x00\x02\x02\x04\x00\x01\x01"],
+    Thermostat.SystemMode.Off: [b"\x01\x03\x00\x00\x03\x02\x04\x00\x01\x02"],
 }
 
 TUYA_SYS_MODE_V02 = {
-    Thermostat.SystemMode.Heat: b"\x01\x02\x00\x00\x02\x65\x01\x00\x01\x01",
-    Thermostat.SystemMode.Off: b"\x01\x03\x00\x00\x03\x65\x01\x00\x01\x00",
+    Thermostat.SystemMode.Heat: [
+        b"\x01\x02\x00\x00\x02\x65\x01\x00\x01\x01",
+        b"\x01\x03\x00\x00\x03\x6c\x01\x00\x01\x00",
+    ],
+    Thermostat.SystemMode.Off: [
+        b"\x01\x04\x00\x00\x04\x65\x01\x00\x01\x00",
+        b"\x01\x05\x00\x00\x05\x6c\x01\x00\x01\x00",
+    ],
 }
 
 
@@ -152,10 +158,11 @@ async def test_handle_get_data(
             }
         )
         await wait_for_zigpy_tasks()
-        m1.assert_called_with(
+
+        assert m1.call_args_list[0] == mock.call(
             cluster=0xEF00,
             sequence=2,
-            data=sys_mode_msg[Thermostat.SystemMode.Heat],
+            data=sys_mode_msg[Thermostat.SystemMode.Heat][0],
             command_id=0,
             timeout=5,
             expect_reply=False,
@@ -163,23 +170,36 @@ async def test_handle_get_data(
             ask_for_ack=None,
             priority=t.PacketPriority.NORMAL,
         )
+        if m1.call_count == 2:
+            # Ensure schedule_enable set to off
+            assert m1.call_args_list[1] == mock.call(
+                cluster=0xEF00,
+                sequence=3,
+                data=sys_mode_msg[Thermostat.SystemMode.Heat][1],
+                command_id=0,
+                timeout=5,
+                expect_reply=False,
+                use_ieee=False,
+                ask_for_ack=None,
+                priority=t.PacketPriority.NORMAL,
+            )
+
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
         ]
 
-    with mock.patch.object(
-        ep.tuya_manufacturer.endpoint, "request", side_effect=async_success
-    ) as m1:
+        m1.reset_mock()
+
         (status,) = await ep.thermostat.write_attributes(
             {
                 "system_mode": Thermostat.SystemMode.Off,
             }
         )
         await wait_for_zigpy_tasks()
-        m1.assert_called_with(
+        assert m1.call_args_list[0] == mock.call(
             cluster=0xEF00,
-            sequence=3,
-            data=sys_mode_msg[Thermostat.SystemMode.Off],
+            sequence=2 + m1.call_count,
+            data=sys_mode_msg[Thermostat.SystemMode.Off][0],
             command_id=0,
             timeout=5,
             expect_reply=False,
@@ -187,6 +207,19 @@ async def test_handle_get_data(
             ask_for_ack=None,
             priority=t.PacketPriority.NORMAL,
         )
+        if m1.call_count == 2:
+            # Ensure schedule_enable set to off
+            assert m1.call_args_list[1] == mock.call(
+                cluster=0xEF00,
+                sequence=5,
+                data=sys_mode_msg[Thermostat.SystemMode.Off][1],
+                command_id=0,
+                timeout=5,
+                expect_reply=False,
+                use_ieee=False,
+                ask_for_ack=None,
+                priority=t.PacketPriority.NORMAL,
+            )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
         ]
