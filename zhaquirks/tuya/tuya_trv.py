@@ -1,5 +1,7 @@
 """Map from manufacturer to standard clusters for thermostatic valves."""
 
+from typing import Any
+
 from zigpy.profiles import zha
 from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature
 from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
@@ -71,20 +73,22 @@ class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
 class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
     """Ensures schedule is disabled on system_mode change."""
 
-    async def write_attributes(self, attributes, manufacturer=None):
-        """Defer attributes writing to the set_data tuya command."""
-
+    async def write_attributes(
+        self,
+        attributes: dict[str | int, Any],
+        manufacturer: int | None = None,
+        **kwargs,
+    ) -> list:
+        """Catch attribute writes for system_mode and set schedule to off."""
+        results = await super().write_attributes(attributes, manufacturer)
         if (
             Thermostat.AttributeDefs.system_mode.id in attributes
             or Thermostat.AttributeDefs.system_mode.name in attributes
         ):
-            await super().write_attributes(attributes, manufacturer)
-
             tuya_cluster = self.endpoint.tuya_manufacturer
-            return await tuya_cluster.write_attributes({"schedule_enable": False})
+            await tuya_cluster.write_attributes({"schedule_enable": False})
 
-        else:
-            return await super().write_attributes(attributes, manufacturer)
+        return results
 
 
 (
