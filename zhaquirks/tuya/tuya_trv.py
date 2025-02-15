@@ -111,7 +111,7 @@ class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
     .tuya_number(
         dp_id=27,
         attribute_name=TuyaThermostatV2.AttributeDefs.local_temperature_calibration.name,
-        type=t.uint32_t,
+        type=t.int32s,
         min_value=-6,
         max_value=6,
         unit=UnitOfTemperature.CELSIUS,
@@ -278,7 +278,7 @@ class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
     .tuya_number(
         dp_id=101,
         attribute_name=TuyaThermostatV2.AttributeDefs.local_temperature_calibration.name,
-        type=t.uint32_t,
+        type=t.int32s,
         min_value=-6,
         max_value=6,
         unit=UnitOfTemperature.CELSIUS,
@@ -351,7 +351,7 @@ class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
     .tuya_number(
         dp_id=47,
         attribute_name=TuyaThermostatV2.AttributeDefs.local_temperature_calibration.name,
-        type=t.uint32_t,
+        type=t.int32s,
         min_value=-6,
         max_value=6,
         unit=UnitOfTemperature.CELSIUS,
