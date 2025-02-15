@@ -473,3 +473,73 @@ base_avatto_quirk = (
     )
     .add_to_registry(replacement_cluster=NoManufTimeNoVersionRespTuyaMCUCluster)
 )
+
+
+(
+    TuyaQuirkBuilder("_TZE200_aoclfnxz", "TS0601")
+    .applies_to("_TZE200_ztvwu4nk", "TS0601")
+    .applies_to("_TZE204_5toc8efa", "TS0601")
+    .applies_to("_TZE200_5toc8efa", "TS0601")
+    .applies_to("_TZE200_ye5jkfsb", "TS0601")
+    .applies_to("_TZE204_aoclfnxz", "TS0601")
+    .applies_to("_TZE200_u9bfwha0", "TS0601")
+    .applies_to("_TZE204_u9bfwha0", "TS0601")
+    .applies_to("_TZE204_xalsoe3m", "TS0601")
+    .tuya_dp(
+        dp_id=1,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.system_mode.name,
+        converter=lambda x: {
+            0x01: Thermostat.SystemMode.Heat,
+            0x00: Thermostat.SystemMode.Off,
+        }[x],
+        dp_converter=lambda x: {
+            Thermostat.SystemMode.Heat: 0x01,
+            Thermostat.SystemMode.Off: 0x00,
+        }[x],
+    )
+    .tuya_switch(
+        dp_id=2,
+        attribute_name="manual_mode",
+        translation_key="manual_mode",
+        on_value=0,
+        off_value=1,
+        fallback_name="Manual mode",
+    )
+    .tuya_switch(
+        dp_id=3,
+        attribute_name="schedule_mode",
+        on_value=0,
+        off_value=1,
+        translation_key="schedule_mode",
+        fallback_name="Schedule mode",
+    )
+    .tuya_dp(
+        dp_id=16,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.occupied_heating_setpoint.name,
+        converter=lambda x: x * 100,
+        dp_converter=lambda x: x // 100,
+    )
+    .tuya_dp(
+        dp_id=24,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.local_temperature.name,
+        converter=lambda x: x * 10,
+    )
+    .tuya_dp(
+        dp_id=36,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.running_state.name,
+        converter=lambda x: RunningState.Heat_State_On if not x else RunningState.Idle,
+    )
+    .tuya_switch(
+        dp_id=40,
+        attribute_name="child_lock",
+        translation_key="child_lock",
+        fallback_name="Child lock",
+    )
+    .adds(TuyaThermostat)
+    .skip_configuration()
+    .add_to_registry()
+)
