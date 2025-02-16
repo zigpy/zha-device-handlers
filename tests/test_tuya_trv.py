@@ -67,7 +67,7 @@ TUYA_SYS_MODE_V02 = {
 
 
 @pytest.mark.parametrize(
-    "model, manuf, test_plan, set_pnt_msg, sys_mode_msg, ep_type",
+    "model, manuf, test_plan, set_pnt_msg, sys_mode_msg, ep_type, set_schedule_off",
     (
         (
             "_TZE204_ogx8u5z6",
@@ -76,6 +76,7 @@ TUYA_SYS_MODE_V02 = {
             TUYA_SP_V01,
             TUYA_SYS_MODE_V01,
             None,  # test device has specific device type, real one has SMART_PLUG
+            False,
         ),
         (
             "_TZE200_3yp57tby",
@@ -84,6 +85,7 @@ TUYA_SYS_MODE_V02 = {
             TUYA_SP_V02,
             TUYA_SYS_MODE_V02,
             zha.DeviceType.THERMOSTAT,  # quirk replaces device type with THERMOSTAT
+            True,  # Enusure schedule is turned off
         ),
     ),
 )
@@ -95,6 +97,7 @@ async def test_handle_get_data(
     set_pnt_msg,
     sys_mode_msg,
     ep_type,
+    set_schedule_off,
 ):
     """Test handle_get_data for multiple attributes."""
 
@@ -170,7 +173,7 @@ async def test_handle_get_data(
             ask_for_ack=None,
             priority=t.PacketPriority.NORMAL,
         )
-        if m1.call_count == 2:
+        if set_schedule_off:
             # Ensure schedule_enable set to off
             assert m1.call_args_list[1] == mock.call(
                 cluster=0xEF00,
@@ -207,7 +210,7 @@ async def test_handle_get_data(
             ask_for_ack=None,
             priority=t.PacketPriority.NORMAL,
         )
-        if m1.call_count == 2:
+        if set_schedule_off:
             # Ensure schedule_enable set to off
             assert m1.call_args_list[1] == mock.call(
                 cluster=0xEF00,
