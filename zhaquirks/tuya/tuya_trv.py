@@ -66,6 +66,11 @@ class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
             Thermostat.AttributeDefs.setpoint_change_source_timestamp.id
         )
         self.add_unsupported_attribute(Thermostat.AttributeDefs.pi_heating_demand.id)
+
+        # Previously mapped, marking as explicitly unsupported.
+        self.add_unsupported_attribute(
+            Thermostat.AttributeDefs.local_temperature_calibration.id
+        )
         self.add_unsupported_attribute(
             Thermostat.AttributeDefs.min_heat_setpoint_limit.id
         )

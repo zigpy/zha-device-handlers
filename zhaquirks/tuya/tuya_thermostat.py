@@ -114,6 +114,11 @@ class TuyaThermostat(Thermostat, TuyaAttributesCluster):
         )
         self.add_unsupported_attribute(Thermostat.AttributeDefs.pi_heating_demand.id)
 
+        # Previously mapped, marking as explicitly unsupported.
+        self.add_unsupported_attribute(
+            Thermostat.AttributeDefs.local_temperature_calibration.id
+        )
+
 
 class NoManufTimeNoVersionRespTuyaMCUCluster(TuyaMCUCluster):
     """Tuya Manufacturer Cluster with set_time mod."""
