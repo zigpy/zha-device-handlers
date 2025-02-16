@@ -353,7 +353,7 @@ base_avatto_quirk = (
         max_value=9.9,
         unit=UnitOfTemperature.CELSIUS,
         step=0.1,
-        multiplier=10,
+        multiplier=0.1,
         translation_key="local_temperature_calibration",
         fallback_name="Local temperature calibration",
     )

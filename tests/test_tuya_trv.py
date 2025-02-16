@@ -190,3 +190,52 @@ async def test_handle_get_data(
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
         ]
+
+
+@pytest.mark.parametrize(
+    "manuf,msg,dp_id,value",
+    [
+        (
+            "_TZE200_3yp57tby",
+            b"\t\x1d\x02\x00\x10\x1b\x02\x00\x04\xff\xff\xff\xfa",
+            27,
+            -6,
+        ),  # Local temp calibration to -6, dp 27
+        (
+            "_TZE204_rtrmfadk",
+            b"\t\x1d\x02\x00\x10\x65\x02\x00\x04\xff\xff\xff\xfa",
+            101,
+            -6,
+        ),  # Local temp calibration to -6, dp 101
+        (
+            "_TZE284_ogx8u5z6",
+            b"\t\x1d\x02\x00\x10\x2f\x02\x00\x04\xff\xff\xff\xfa",
+            47,
+            -6,
+        ),  # Local temp calibration to -6, dp 47
+    ],
+)
+async def test_handle_get_data_tmcu(
+    zigpy_device_from_v2_quirk, manuf, msg, dp_id, value
+):
+    """Test handle_get_data for multiple attributes."""
+
+    attr_id = (0xEF << 8) | dp_id
+
+    quirked = zigpy_device_from_v2_quirk(manuf, "TS0601")
+    ep = quirked.endpoints[1]
+
+    assert ep.tuya_manufacturer is not None
+    assert isinstance(ep.tuya_manufacturer, TuyaMCUCluster)
+
+    tmcu_listener = ClusterListener(ep.tuya_manufacturer)
+
+    hdr, data = ep.tuya_manufacturer.deserialize(msg)
+    status = ep.tuya_manufacturer.handle_get_data(data.data)
+    assert status == foundation.Status.SUCCESS
+
+    assert len(tmcu_listener.attribute_updates) == 1
+    assert tmcu_listener.attribute_updates[0][0] == attr_id
+    assert tmcu_listener.attribute_updates[0][1] == value
+
+    assert ep.tuya_manufacturer.get(attr_id) == value
