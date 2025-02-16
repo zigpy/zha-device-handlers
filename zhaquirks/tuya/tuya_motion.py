@@ -1320,6 +1320,78 @@ base_tuya_motion = (
 )
 
 
+# Tuya 24G MmWave radar human presence motion sensor ZY-M100-24G
+(
+    TuyaQuirkBuilder("_TZE204_ijxvkhd0", "TS0601")
+    .tuya_dp(
+        dp_id=112,
+        ep_attribute=TuyaOccupancySensing.ep_attribute,
+        attribute_name=OccupancySensing.AttributeDefs.occupancy.name,
+        converter=lambda x: x == 1,
+    )
+    .adds(TuyaOccupancySensing)
+    .tuya_illuminance(dp_id=104)
+    .tuya_sensor(
+        dp_id=109,
+        attribute_name="distance",
+        type=t.uint16_t,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.DISTANCE,
+        unit=UnitOfLength.METERS,
+        multiplier=0.01,  # Correct conversion from cm to meters
+        translation_key="distance",
+        fallback_name="Target distance",
+    )
+    .tuya_number(
+        dp_id=107,
+        attribute_name="max_range",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DISTANCE,
+        unit=UnitOfLength.METERS,
+        min_value=1.5,  # Direct meter values instead of cm
+        max_value=5.5,
+        step=1.0,
+        multiplier=0.01,  # Replaces divisor=100
+        translation_key="max_range",
+        fallback_name="Maximum range",
+    )
+    .tuya_number(
+        dp_id=106,
+        attribute_name="motion_sensitivity",
+        type=t.uint8_t,
+        min_value=1,
+        max_value=10,
+        step=1,
+        translation_key="motion_sensitivity",
+        fallback_name="Motion sensitivity",
+    )
+    .tuya_number(
+        dp_id=111,
+        attribute_name="presence_sensitivity",
+        type=t.uint8_t,
+        min_value=1,
+        max_value=10,
+        step=1,
+        translation_key="presence_sensitivity",
+        fallback_name="Presence sensitivity",
+    )
+    .tuya_number(
+        dp_id=110,
+        attribute_name="presence_timeout",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        min_value=1,
+        max_value=1500,
+        step=1,
+        translation_key="presence_timeout",
+        fallback_name="Presence timeout",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
 # Tuya ZG-205Z/A, 5.8Ghz/24Ghz Human presence sensor.
 (
     TuyaQuirkBuilder("_TZE200_2aaelwxk", "TS0225")
