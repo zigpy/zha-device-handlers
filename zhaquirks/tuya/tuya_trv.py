@@ -51,8 +51,8 @@ class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
     """Tuya local thermostat cluster."""
 
     _CONSTANT_ATTRIBUTES = {
-        Thermostat.AttributeDefs.min_heat_setpoint_limit.id: 500,
-        Thermostat.AttributeDefs.max_heat_setpoint_limit.id: 3000,
+        Thermostat.AttributeDefs.abs_min_heat_setpoint_limit.id: 500,
+        Thermostat.AttributeDefs.abs_max_heat_setpoint_limit.id: 3000,
         Thermostat.AttributeDefs.ctrl_sequence_of_oper.id: Thermostat.ControlSequenceOfOperation.Heating_Only,
     }
 
@@ -66,6 +66,12 @@ class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
             Thermostat.AttributeDefs.setpoint_change_source_timestamp.id
         )
         self.add_unsupported_attribute(Thermostat.AttributeDefs.pi_heating_demand.id)
+        self.add_unsupported_attribute(
+            Thermostat.AttributeDefs.min_heat_setpoint_limit.id
+        )
+        self.add_unsupported_attribute(
+            Thermostat.AttributeDefs.max_heat_setpoint_limit.id
+        )
 
 
 (
