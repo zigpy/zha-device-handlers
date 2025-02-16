@@ -34,7 +34,6 @@ import zhaquirks.tuya.ts0042
 import zhaquirks.tuya.ts0043
 import zhaquirks.tuya.ts011f_plug
 import zhaquirks.tuya.ts0501_fan_switch
-import zhaquirks.tuya.ts0601_electric_heating
 import zhaquirks.tuya.ts0601_trv
 import zhaquirks.tuya.ts1201
 import zhaquirks.tuya.tuya_motion
@@ -1326,11 +1325,24 @@ async def test_moes(zigpy_device_from_quirk, quirk):
         datetime.datetime = origdatetime
 
 
-@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_electric_heating.MoesBHT,))
-async def test_eheating_state_report(zigpy_device_from_quirk, quirk):
+@pytest.mark.parametrize(
+    "model,manuf",
+    [
+        ("_TZE200_aoclfnxz", "TS0601"),
+        ("_TZE200_ztvwu4nk", "TS0601"),
+        ("_TZE204_5toc8efa", "TS0601"),
+        ("_TZE200_5toc8efa", "TS0601"),
+        ("_TZE200_ye5jkfsb", "TS0601"),
+        ("_TZE204_aoclfnxz", "TS0601"),
+        ("_TZE200_u9bfwha0", "TS0601"),
+        ("_TZE204_u9bfwha0", "TS0601"),
+        ("_TZE204_xalsoe3m", "TS0601"),
+    ],
+)
+async def test_eheating_state_report(zigpy_device_from_v2_quirk, model, manuf):
     """Test thermostatic valves standard reporting from incoming commands."""
 
-    electric_dev = zigpy_device_from_quirk(quirk)
+    electric_dev = zigpy_device_from_v2_quirk(model, manuf)
     tuya_cluster = electric_dev.endpoints[1].tuya_manufacturer
 
     thermostat_listener = ClusterListener(electric_dev.endpoints[1].thermostat)
@@ -1348,11 +1360,24 @@ async def test_eheating_state_report(zigpy_device_from_quirk, quirk):
     assert thermostat_listener.attribute_updates[1][1] == 2100
 
 
-@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_electric_heating.MoesBHT,))
-async def test_eheat_send_attribute(zigpy_device_from_quirk, quirk):
+@pytest.mark.parametrize(
+    "model,manuf",
+    [
+        ("_TZE200_aoclfnxz", "TS0601"),
+        ("_TZE200_ztvwu4nk", "TS0601"),
+        ("_TZE204_5toc8efa", "TS0601"),
+        ("_TZE200_5toc8efa", "TS0601"),
+        ("_TZE200_ye5jkfsb", "TS0601"),
+        ("_TZE204_aoclfnxz", "TS0601"),
+        ("_TZE200_u9bfwha0", "TS0601"),
+        ("_TZE204_u9bfwha0", "TS0601"),
+        ("_TZE204_xalsoe3m", "TS0601"),
+    ],
+)
+async def test_eheat_send_attribute(zigpy_device_from_v2_quirk, model, manuf):
     """Test electric thermostat outgoing commands."""
 
-    eheat_dev = zigpy_device_from_quirk(quirk)
+    eheat_dev = zigpy_device_from_v2_quirk(model, manuf)
     tuya_cluster = eheat_dev.endpoints[1].tuya_manufacturer
     thermostat_cluster = eheat_dev.endpoints[1].thermostat
 
@@ -1367,6 +1392,7 @@ async def test_eheat_send_attribute(zigpy_device_from_quirk, quirk):
                 "occupied_heating_setpoint": 2500,
             }
         )
+        await wait_for_zigpy_tasks()
         m1.assert_called_with(
             cluster=0xEF00,
             sequence=1,
@@ -1387,6 +1413,7 @@ async def test_eheat_send_attribute(zigpy_device_from_quirk, quirk):
                 "system_mode": 0x00,
             }
         )
+        await wait_for_zigpy_tasks()
         m1.assert_called_with(
             cluster=0xEF00,
             sequence=2,
@@ -1407,6 +1434,7 @@ async def test_eheat_send_attribute(zigpy_device_from_quirk, quirk):
                 "system_mode": 0x04,
             }
         )
+        await wait_for_zigpy_tasks()
         m1.assert_called_with(
             cluster=0xEF00,
             sequence=3,
@@ -1421,26 +1449,6 @@ async def test_eheat_send_attribute(zigpy_device_from_quirk, quirk):
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
         ]
-
-        # simulate a target temp update so that relative changes can work
-        hdr, args = tuya_cluster.deserialize(ZCL_TUYA_EHEAT_TARGET_TEMP)
-        tuya_cluster.handle_message(hdr, args)
-        _, status = await thermostat_cluster.command(0x0000, 0x00, 20)
-        m1.assert_called_with(
-            cluster=0xEF00,
-            sequence=4,
-            data=b"\x01\x04\x00\x00\x04\x10\x02\x00\x04\x00\x00\x00\x17",
-            command_id=0,
-            timeout=5,
-            expect_reply=False,
-            use_ieee=False,
-            ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
-        )
-        assert status == foundation.Status.SUCCESS
-
-        _, status = await thermostat_cluster.command(0x0002)
-        assert status == foundation.Status.UNSUP_CLUSTER_COMMAND
 
 
 @pytest.mark.parametrize(

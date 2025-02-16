@@ -490,12 +490,12 @@ base_avatto_quirk = (
         ep_attribute=TuyaThermostat.ep_attribute,
         attribute_name=TuyaThermostat.AttributeDefs.system_mode.name,
         converter=lambda x: {
-            0x01: Thermostat.SystemMode.Heat,
-            0x00: Thermostat.SystemMode.Off,
+            True: Thermostat.SystemMode.Heat,
+            False: Thermostat.SystemMode.Off,
         }[x],
         dp_converter=lambda x: {
-            Thermostat.SystemMode.Heat: 0x01,
-            Thermostat.SystemMode.Off: 0x00,
+            Thermostat.SystemMode.Heat: True,
+            Thermostat.SystemMode.Off: False,
         }[x],
     )
     .tuya_switch(
