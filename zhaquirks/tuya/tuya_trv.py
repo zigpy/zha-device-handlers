@@ -497,7 +497,7 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
     .tuya_number(
         dp_id=47,
         attribute_name=TuyaThermostatV2NoSchedule.AttributeDefs.local_temperature_calibration.name,
-        type=t.int32_t,
+        type=t.int32s,
         min_value=-6,
         max_value=6,
         unit=UnitOfTemperature.CELSIUS,

@@ -89,10 +89,10 @@ TUYA_SYS_MODE_V02 = {
     ],
 }
 
-TUYA_SYS_MODE_V03 = {
-    Thermostat.SystemMode.Heat: b"\x01\x02\x00\x00\x02\x02\x04\x00\x01\x03",
-    Thermostat.SystemMode.Off: b"\x01\x03\x00\x00\x03\x02\x04\x00\x01\x02",
-    Thermostat.SystemMode.Auto: b"\x01\x03\x00\x00\x03\x02\x04\x00\x01\x01",
+TUYA_SYS_MODE_V04 = {
+    Thermostat.SystemMode.Heat: [b"\x01\x02\x00\x00\x02\x02\x04\x00\x01\x03"],
+    Thermostat.SystemMode.Off: [b"\x01\x03\x00\x00\x03\x02\x04\x00\x01\x02"],
+    Thermostat.SystemMode.Auto: [b"\x01\x03\x00\x00\x03\x02\x04\x00\x01\x01"],
 }
 
 
@@ -122,8 +122,9 @@ TUYA_SYS_MODE_V03 = {
             "TS0601",
             TUYA_TEST_PLAN_V03,
             TUYA_SP_V01,
-            TUYA_SYS_MODE_V03,
+            TUYA_SYS_MODE_V04,
             None,  # test device has specific device type, real one has SMART_PLUG
+            False,
         ),
     ),
 )
