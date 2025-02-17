@@ -65,6 +65,15 @@ TUYA_SYS_MODE_V02 = {
     ],
 }
 
+TUYA_SYS_MODE_V03 = {
+    Thermostat.SystemMode.Heat: [
+        b"\x01\x02\x00\x00\x02\x65\x01\x00\x01\x01",
+    ],
+    Thermostat.SystemMode.Off: [
+        b"\x01\x03\x00\x00\x03\x65\x01\x00\x01\x00",
+    ],
+}
+
 
 @pytest.mark.parametrize(
     "model, manuf, test_plan, set_pnt_msg, sys_mode_msg, ep_type, set_schedule_off",
@@ -92,8 +101,9 @@ TUYA_SYS_MODE_V02 = {
             "TS0601",
             TUYA_TEST_PLAN_V02,
             TUYA_SP_V02,
-            TUYA_SYS_MODE_V02,
+            TUYA_SYS_MODE_V03,
             None,  # test device has specific device type, real one has SMART_PLUG
+            False,
         ),
     ),
 )
