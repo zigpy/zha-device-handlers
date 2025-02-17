@@ -1376,7 +1376,7 @@ base_tuya_motion = (
         max_value=10,
         step=1,
         translation_key="medium_motion_detection_sensitivity",
-        fallback_name="Medium mootion detection sensitivity",
+        fallback_name="Medium motion detection sensitivity",
     )
     .tuya_illuminance(dp_id=106)
     .tuya_switch(
@@ -1407,7 +1407,7 @@ base_tuya_motion = (
         max_value=10,
         step=1,
         translation_key="small_motion_detection_sensitivity",
-        fallback_name="Small mootion detection sensitivity",
+        fallback_name="Small motion detection sensitivity",
     )
     # Remaining DPs not exposed in z2m.
     .skip_configuration()
