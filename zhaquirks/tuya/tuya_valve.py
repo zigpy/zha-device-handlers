@@ -677,7 +677,7 @@ class GiexIrrigationStatus(t.enum8):
     TuyaQuirkBuilder("_TZE200_zlwr0raf", "TS0601")
     .tuya_metering(dp_id=1, metering_cfg=TuyaValveWaterConsumed)
     # Skipped DP 2,3,4,5,6,16,18
-    .tuya_onff(dp_id=13)
+    .tuya_onoff(dp_id=13)
     .tuya_switch(
         dp_id=14,
         attribute_name="auto_clean",
