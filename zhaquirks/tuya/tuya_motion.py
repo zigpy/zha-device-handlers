@@ -1290,3 +1290,97 @@ base_tuya_motion = (
     .skip_configuration()
     .add_to_registry()
 )
+
+
+# Tuya mmWave radar 5.8GHz, ZY_HPS01
+(
+    TuyaQuirkBuilder("_TZE204_ex3rcdha", "TS0601")
+    .tuya_illuminance(dp_id=12)
+    .tuya_dp(
+        dp_id=101,
+        ep_attribute=TuyaOccupancySensing.ep_attribute,
+        attribute_name=OccupancySensing.AttributeDefs.occupancy.name,
+        converter=lambda x: x == 0,
+    )
+    .adds(TuyaOccupancySensing)
+    .tuya_number(
+        dp_id=104,
+        attribute_name="presence_timeout",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        min_value=1,
+        max_value=180,
+        step=1,
+        translation_key="fading_time",
+        fallback_name="Fading time",
+    )
+    .tuya_number(
+        dp_id=105,
+        attribute_name="move_sensitivity",
+        type=t.uint16_t,
+        min_value=0,
+        max_value=10,
+        step=1,
+        translation_key="move_sensitivity",
+        fallback_name="Motion sensitivity",
+    )
+    .tuya_number(
+        dp_id=107,
+        attribute_name="breath_sensitivity",
+        type=t.uint16_t,
+        min_value=0,
+        max_value=10,
+        step=1,
+        translation_key="breath_sensitivity",
+        fallback_name="Breath sensitivity",
+    )
+    .tuya_number(
+        dp_id=109,
+        attribute_name="detection_distance_max",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DISTANCE,
+        unit=UnitOfLength.CENTIMETERS,
+        min_value=0,
+        max_value=600,
+        step=1,
+        translation_key="detection_distance_max",
+        fallback_name="Maximum range",
+    )
+    .tuya_number(
+        dp_id=110,
+        attribute_name="detection_distance_min",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DISTANCE,
+        unit=UnitOfLength.CENTIMETERS,
+        min_value=0,
+        max_value=600,
+        step=1,
+        translation_key="detection_distance_min",
+        fallback_name="Minimum range",
+    )
+    .tuya_number(
+        dp_id=111,
+        attribute_name="detection_distance_min",
+        type=t.uint16_t,
+        min_value=0,
+        max_value=600,
+        step=10,
+        unit=UnitOfLength.CENTIMETERS,
+        translation_key="detection_distance_min",
+        fallback_name="Minimum range",
+    )
+    .tuya_number(
+        dp_id=112,
+        attribute_name="breath_detection_max",
+        type=t.uint16_t,
+        min_value=0,
+        max_value=600,
+        step=10,
+        unit=UnitOfLength.CENTIMETERS,
+        translation_key="breath_detection_max",
+        fallback_name="Breath detection max",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
