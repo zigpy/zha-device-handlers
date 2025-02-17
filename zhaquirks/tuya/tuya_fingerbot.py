@@ -79,5 +79,6 @@ class FingerBotReverse(t.enum8):
         translation_key="touch_control",
         fallback_name="Touch control",
     )
+    .tuya_enchantment()
     .add_to_registry()
 )
