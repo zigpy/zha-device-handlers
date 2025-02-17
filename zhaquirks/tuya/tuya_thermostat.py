@@ -483,7 +483,7 @@ base_avatto_quirk = (
 )
 
 
-# TGM50-ZB-WPB
+# Beok TGM50-ZB-WPB
 (
     TuyaQuirkBuilder("_TZE204_cvub6xbb", "TS0601")
     .tuya_dp(
