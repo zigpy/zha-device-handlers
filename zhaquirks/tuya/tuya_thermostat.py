@@ -216,8 +216,6 @@ class NoManufTimeNoVersionRespTuyaMCUCluster(TuyaMCUCluster):
     .tuya_number(
         dp_id=28,
         attribute_name=TuyaThermostatHeatOnly.AttributeDefs.local_temperature_calibration.name,
-        converter=lambda x: x * 100,
-        dp_converter=lambda x: x // 100,
         type=t.int32s,
         min_value=-9,
         max_value=9,
