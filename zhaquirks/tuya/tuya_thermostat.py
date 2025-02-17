@@ -565,12 +565,17 @@ base_avatto_quirk = (
         converter=lambda x: x * 100,
         dp_converter=lambda x: x // 100,
     )
-    .tuya_dp(
+    .tuya_number(
         dp_id=27,
-        ep_attribute=TuyaThermostatHeatCool.ep_attribute,
-        attribute_name=TuyaThermostatHeatCool.AttributeDefs.local_temperature_calibration.name,
-        converter=lambda x: x * 100,
-        dp_converter=lambda x: x // 100,
+        attribute_name=TuyaThermostat.AttributeDefs.local_temperature_calibration.name,
+        type=t.int32s,
+        min_value=-9.9,
+        max_value=9.9,
+        unit=UnitOfTemperature.CELSIUS,
+        step=0.1,
+        multiplier=0.1,
+        translation_key="local_temperature_calibration",
+        fallback_name="Local temperature calibration",
     )
     .adds(TuyaThermostatHeatCool)
     # This should be part of the climate entity, but don't think we can do that yet
@@ -613,19 +618,19 @@ base_avatto_quirk = (
         translation_key="dead_zone",
         fallback_name="Dead zone",
     )
-    # Uncertain if this is the correct method, since we can set both heat and cool abs min
+    # Uncertain if this is the correct method, since we can set both heat and cool min
     .tuya_dp(
         dp_id=104,
         ep_attribute=TuyaThermostatHeatCool.ep_attribute,
-        attribute_name=TuyaThermostatHeatCool.AttributeDefs.abs_min_cool_setpoint_limit.name,
+        attribute_name=TuyaThermostatHeatCool.AttributeDefs.min_cool_setpoint_limit.name,
         converter=lambda x: x * 100,
         dp_converter=lambda x: x // 100,
     )
-    # Uncertain if this is the correct method, since we can set both heat and cool abs max
+    # Uncertain if this is the correct method, since we can set both heat and cool max
     .tuya_dp(
         dp_id=105,
         ep_attribute=TuyaThermostatHeatCool.ep_attribute,
-        attribute_name=TuyaThermostatHeatCool.AttributeDefs.abs_max_heat_setpoint_limit.name,
+        attribute_name=TuyaThermostatHeatCool.AttributeDefs.max_heat_setpoint_limit.name,
         converter=lambda x: x * 100,
         dp_converter=lambda x: x // 100,
     )
