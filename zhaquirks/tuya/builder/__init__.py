@@ -691,6 +691,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         self,
         dp_id: int,
         attribute_name: str,
+        converter: Optional[Callable[[Any], Any]] = None,
         endpoint_id: int = 1,
         entity_type: EntityType = EntityType.DIAGNOSTIC,
         device_class: BinarySensorDeviceClass | None = None,
@@ -706,6 +707,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         self.tuya_dp_attribute(
             dp_id=dp_id,
             attribute_name=attribute_name,
+            converter=converter,
             type=t.Bool,
             access=foundation.ZCLAttributeAccess.Read
             | foundation.ZCLAttributeAccess.Report,
