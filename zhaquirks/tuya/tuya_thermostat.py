@@ -524,6 +524,17 @@ moes_base_quirk = (
         translation_key="sensor_mode",
         fallback_name="Sensor mode",
     )
+    .tuya_number(
+        dp_id=28,
+        attribute_name=TuyaThermostat.AttributeDefs.local_temperature_calibration.name,
+        type=t.int32s,
+        min_value=-30,
+        max_value=30,
+        unit=UnitOfTemperature.CELSIUS,
+        step=0.1,
+        translation_key="local_temperature_calibration",
+        fallback_name="Local temperature calibration",
+    )
     .adds(TuyaThermostat)
     .skip_configuration()
 )

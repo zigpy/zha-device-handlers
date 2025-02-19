@@ -1403,20 +1403,56 @@ async def test_eheating_state_report(zigpy_device_from_v2_quirk, model, manuf, f
 
 
 @pytest.mark.parametrize(
-    "model,manuf",
+    "model,manuf,sp_data",
     [
-        ("_TZE200_aoclfnxz", "TS0601"),
-        ("_TZE200_ztvwu4nk", "TS0601"),
-        ("_TZE204_5toc8efa", "TS0601"),
-        ("_TZE200_5toc8efa", "TS0601"),
-        ("_TZE200_ye5jkfsb", "TS0601"),
-        ("_TZE204_aoclfnxz", "TS0601"),
-        ("_TZE200_u9bfwha0", "TS0601"),
-        ("_TZE204_u9bfwha0", "TS0601"),
-        ("_TZE204_xalsoe3m", "TS0601"),
+        (
+            "_TZE200_aoclfnxz",
+            "TS0601",
+            b"\x01\x01\x00\x00\x01\x10\x02\x00\x04\x00\x00\x00\x19",
+        ),
+        (
+            "_TZE200_ztvwu4nk",
+            "TS0601",
+            b"\x01\x01\x00\x00\x01\x10\x02\x00\x04\x00\x00\x00\x19",
+        ),
+        (
+            "_TZE204_5toc8efa",
+            "TS0601",
+            b"\x01\x01\x00\x00\x01\x10\x02\x00\x04\x00\x00\x00\xfa",
+        ),
+        (
+            "_TZE200_5toc8efa",
+            "TS0601",
+            b"\x01\x01\x00\x00\x01\x10\x02\x00\x04\x00\x00\x00\xfa",
+        ),
+        (
+            "_TZE200_ye5jkfsb",
+            "TS0601",
+            b"\x01\x01\x00\x00\x01\x10\x02\x00\x04\x00\x00\x00\x19",
+        ),
+        (
+            "_TZE204_aoclfnxz",
+            "TS0601",
+            b"\x01\x01\x00\x00\x01\x10\x02\x00\x04\x00\x00\x00\x19",
+        ),
+        (
+            "_TZE200_u9bfwha0",
+            "TS0601",
+            b"\x01\x01\x00\x00\x01\x10\x02\x00\x04\x00\x00\x00\x19",
+        ),
+        (
+            "_TZE204_u9bfwha0",
+            "TS0601",
+            b"\x01\x01\x00\x00\x01\x10\x02\x00\x04\x00\x00\x00\x19",
+        ),
+        (
+            "_TZE204_xalsoe3m",
+            "TS0601",
+            b"\x01\x01\x00\x00\x01\x10\x02\x00\x04\x00\x00\x00\x19",
+        ),
     ],
 )
-async def test_eheat_send_attribute(zigpy_device_from_v2_quirk, model, manuf):
+async def test_eheat_send_attribute(zigpy_device_from_v2_quirk, model, manuf, sp_data):
     """Test electric thermostat outgoing commands."""
 
     eheat_dev = zigpy_device_from_v2_quirk(model, manuf)
@@ -1438,7 +1474,7 @@ async def test_eheat_send_attribute(zigpy_device_from_v2_quirk, model, manuf):
         m1.assert_called_with(
             cluster=0xEF00,
             sequence=1,
-            data=b"\x01\x01\x00\x00\x01\x10\x02\x00\x04\x00\x00\x00\x19",
+            data=sp_data,
             command_id=0,
             timeout=5,
             expect_reply=False,
