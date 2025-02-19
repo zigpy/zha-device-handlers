@@ -474,17 +474,8 @@ base_avatto_quirk = (
     .add_to_registry(replacement_cluster=NoManufTimeNoVersionRespTuyaMCUCluster)
 )
 
-
-(
-    TuyaQuirkBuilder("_TZE200_aoclfnxz", "TS0601")
-    .applies_to("_TZE200_ztvwu4nk", "TS0601")
-    .applies_to("_TZE204_5toc8efa", "TS0601")
-    .applies_to("_TZE200_5toc8efa", "TS0601")
-    .applies_to("_TZE200_ye5jkfsb", "TS0601")
-    .applies_to("_TZE204_aoclfnxz", "TS0601")
-    .applies_to("_TZE200_u9bfwha0", "TS0601")
-    .applies_to("_TZE204_u9bfwha0", "TS0601")
-    .applies_to("_TZE204_xalsoe3m", "TS0601")
+moes_base_quirk = (
+    TuyaQuirkBuilder()
     .tuya_dp(
         dp_id=1,
         ep_attribute=TuyaThermostat.ep_attribute,
@@ -515,6 +506,39 @@ base_avatto_quirk = (
         fallback_name="Schedule mode",
     )
     .tuya_dp(
+        dp_id=36,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.running_state.name,
+        converter=lambda x: RunningState.Heat_State_On if not x else RunningState.Idle,
+    )
+    .tuya_switch(
+        dp_id=40,
+        attribute_name="child_lock",
+        translation_key="child_lock",
+        fallback_name="Child lock",
+    )
+    .tuya_enum(
+        dp_id=43,
+        attribute_name="temperature_sensor_select",
+        enum_class=SensorMode,
+        translation_key="sensor_mode",
+        fallback_name="Sensor mode",
+    )
+    .adds(TuyaThermostat)
+    .skip_configuration()
+)
+
+
+(
+    moes_base_quirk.clone()
+    .applies_to("_TZE200_aoclfnxz", "TS0601")
+    .applies_to("_TZE200_ztvwu4nk", "TS0601")
+    .applies_to("_TZE200_ye5jkfsb", "TS0601")
+    .applies_to("_TZE204_aoclfnxz", "TS0601")
+    .applies_to("_TZE200_u9bfwha0", "TS0601")
+    .applies_to("_TZE204_u9bfwha0", "TS0601")
+    .applies_to("_TZE204_xalsoe3m", "TS0601")
+    .tuya_dp(
         dp_id=16,
         ep_attribute=TuyaThermostat.ep_attribute,
         attribute_name=TuyaThermostat.AttributeDefs.occupied_heating_setpoint.name,
@@ -528,18 +552,72 @@ base_avatto_quirk = (
         converter=lambda x: x * 10,
     )
     .tuya_dp(
-        dp_id=36,
+        dp_id=18,
         ep_attribute=TuyaThermostat.ep_attribute,
-        attribute_name=TuyaThermostat.AttributeDefs.running_state.name,
-        converter=lambda x: RunningState.Heat_State_On if not x else RunningState.Idle,
+        attribute_name=TuyaThermostat.AttributeDefs.max_heat_setpoint_limit.name,
+        converter=lambda x: x * 10,
+        dp_converter=lambda x: x // 10,
     )
-    .tuya_switch(
-        dp_id=40,
-        attribute_name="child_lock",
-        translation_key="child_lock",
-        fallback_name="Child lock",
+    .tuya_number(
+        dp_id=20,
+        attribute_name="deadzone_temperature",
+        type=t.uint16_t,
+        unit=UnitOfTemperature.CELSIUS,
+        min_value=0,
+        max_value=5,
+        step=1,
+        translation_key="deadzone_temperature",
+        fallback_name="Deadzone temperature",
     )
-    .adds(TuyaThermostat)
-    .skip_configuration()
+    .tuya_dp(
+        dp_id=26,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.min_heat_setpoint_limit.name,
+        converter=lambda x: x * 10,
+        dp_converter=lambda x: x // 10,
+    )
+    .add_to_registry()
+)
+
+
+# 5toc8efa temps are scaled by 10.
+(
+    moes_base_quirk.clone()
+    .applies_to("_TZE204_5toc8efa", "TS0601")
+    .applies_to("_TZE200_5toc8efa", "TS0601")
+    .tuya_dp(
+        dp_id=16,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.occupied_heating_setpoint.name,
+        converter=lambda x: x * 10,
+        dp_converter=lambda x: x // 10,
+    )
+    .tuya_dp(
+        dp_id=24,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.local_temperature.name,
+    )
+    .tuya_dp(
+        dp_id=18,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.max_heat_setpoint_limit.name,
+    )
+    .tuya_number(
+        dp_id=20,
+        attribute_name="deadzone_temperature",
+        type=t.uint16_t,
+        unit=UnitOfTemperature.CELSIUS,
+        min_value=0,
+        max_value=5,
+        step=1,
+        multiplier=0.1,
+        translation_key="deadzone_temperature",
+        fallback_name="Deadzone temperature",
+    )
+    .tuya_dp(
+        dp_id=26,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.min_heat_setpoint_limit.name,
+    )
     .add_to_registry()
 )

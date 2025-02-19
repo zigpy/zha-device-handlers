@@ -89,6 +89,13 @@ ZCL_TUYA_VALVE_ZONNSMART_HEAT_STOP = b"\t2\x01\x03\x04\x6b\x01\x00\x01\x00"
 ZCL_TUYA_EHEAT_TEMPERATURE = b"\tp\x02\x00\x02\x18\x02\x00\x04\x00\x00\x00\xb3"
 ZCL_TUYA_EHEAT_TARGET_TEMP = b"\t3\x01\x03\x05\x10\x02\x00\x04\x00\x00\x00\x15"
 
+ZCL_TUYA_EHEAT_TEMPERATURE_V2 = (
+    b"\tp\x02\x00\x02\x18\x02\x00\x04\x00\x00\x06\xfe"  # _5toc8efa scales by 10
+)
+ZCL_TUYA_EHEAT_TARGET_TEMP_V2 = (
+    b"\t3\x01\x03\x05\x10\x02\x00\x04\x00\x00\x00\xd2"  # _5toc8efa scales by 10
+)
+
 
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_switch.TuyaSingleSwitchTI,))
 async def test_singleswitch_state_report(zigpy_device_from_quirk, quirk):
@@ -1326,20 +1333,56 @@ async def test_moes(zigpy_device_from_quirk, quirk):
 
 
 @pytest.mark.parametrize(
-    "model,manuf",
+    "model,manuf,frames",
     [
-        ("_TZE200_aoclfnxz", "TS0601"),
-        ("_TZE200_ztvwu4nk", "TS0601"),
-        ("_TZE204_5toc8efa", "TS0601"),
-        ("_TZE200_5toc8efa", "TS0601"),
-        ("_TZE200_ye5jkfsb", "TS0601"),
-        ("_TZE204_aoclfnxz", "TS0601"),
-        ("_TZE200_u9bfwha0", "TS0601"),
-        ("_TZE204_u9bfwha0", "TS0601"),
-        ("_TZE204_xalsoe3m", "TS0601"),
+        (
+            "_TZE200_aoclfnxz",
+            "TS0601",
+            (ZCL_TUYA_EHEAT_TEMPERATURE, ZCL_TUYA_EHEAT_TARGET_TEMP),
+        ),
+        (
+            "_TZE200_ztvwu4nk",
+            "TS0601",
+            (ZCL_TUYA_EHEAT_TEMPERATURE, ZCL_TUYA_EHEAT_TARGET_TEMP),
+        ),
+        (
+            "_TZE204_5toc8efa",
+            "TS0601",
+            (ZCL_TUYA_EHEAT_TEMPERATURE_V2, ZCL_TUYA_EHEAT_TARGET_TEMP_V2),
+        ),
+        (
+            "_TZE200_5toc8efa",
+            "TS0601",
+            (ZCL_TUYA_EHEAT_TEMPERATURE_V2, ZCL_TUYA_EHEAT_TARGET_TEMP_V2),
+        ),
+        (
+            "_TZE200_ye5jkfsb",
+            "TS0601",
+            (ZCL_TUYA_EHEAT_TEMPERATURE, ZCL_TUYA_EHEAT_TARGET_TEMP),
+        ),
+        (
+            "_TZE204_aoclfnxz",
+            "TS0601",
+            (ZCL_TUYA_EHEAT_TEMPERATURE, ZCL_TUYA_EHEAT_TARGET_TEMP),
+        ),
+        (
+            "_TZE200_u9bfwha0",
+            "TS0601",
+            (ZCL_TUYA_EHEAT_TEMPERATURE, ZCL_TUYA_EHEAT_TARGET_TEMP),
+        ),
+        (
+            "_TZE204_u9bfwha0",
+            "TS0601",
+            (ZCL_TUYA_EHEAT_TEMPERATURE, ZCL_TUYA_EHEAT_TARGET_TEMP),
+        ),
+        (
+            "_TZE204_xalsoe3m",
+            "TS0601",
+            (ZCL_TUYA_EHEAT_TEMPERATURE, ZCL_TUYA_EHEAT_TARGET_TEMP),
+        ),
     ],
 )
-async def test_eheating_state_report(zigpy_device_from_v2_quirk, model, manuf):
+async def test_eheating_state_report(zigpy_device_from_v2_quirk, model, manuf, frames):
     """Test thermostatic valves standard reporting from incoming commands."""
 
     electric_dev = zigpy_device_from_v2_quirk(model, manuf)
@@ -1347,7 +1390,6 @@ async def test_eheating_state_report(zigpy_device_from_v2_quirk, model, manuf):
 
     thermostat_listener = ClusterListener(electric_dev.endpoints[1].thermostat)
 
-    frames = (ZCL_TUYA_EHEAT_TEMPERATURE, ZCL_TUYA_EHEAT_TARGET_TEMP)
     for frame in frames:
         hdr, args = tuya_cluster.deserialize(frame)
         tuya_cluster.handle_message(hdr, args)
