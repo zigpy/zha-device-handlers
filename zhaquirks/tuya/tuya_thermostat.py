@@ -114,6 +114,11 @@ class TuyaThermostat(Thermostat, TuyaAttributesCluster):
         )
         self.add_unsupported_attribute(Thermostat.AttributeDefs.pi_heating_demand.id)
 
+        # Previously mapped, marking as explicitly unsupported.
+        self.add_unsupported_attribute(
+            Thermostat.AttributeDefs.local_temperature_calibration.id
+        )
+
 
 class NoManufTimeNoVersionRespTuyaMCUCluster(TuyaMCUCluster):
     """Tuya Manufacturer Cluster with set_time mod."""
@@ -173,12 +178,16 @@ class NoManufTimeNoVersionRespTuyaMCUCluster(TuyaMCUCluster):
         attribute_name=TuyaThermostat.AttributeDefs.local_temperature.name,
         converter=lambda x: x * 100,
     )
-    .tuya_dp(
+    .tuya_number(
         dp_id=28,
-        ep_attribute=TuyaThermostat.ep_attribute,
-        attribute_name=Thermostat.AttributeDefs.local_temperature_calibration.name,
-        converter=lambda x: x * 100,
-        dp_converter=lambda x: x // 100,
+        attribute_name=TuyaThermostat.AttributeDefs.local_temperature_calibration.name,
+        type=t.int32s,
+        min_value=-9,
+        max_value=9,
+        unit=UnitOfTemperature.CELSIUS,
+        step=1,
+        translation_key="local_temperature_calibration",
+        fallback_name="Local temperature calibration",
     )
     .tuya_switch(
         dp_id=30,
@@ -341,12 +350,17 @@ base_avatto_quirk = (
         converter=lambda x: x * 10,
         dp_converter=lambda x: x // 10,
     )
-    .tuya_dp(
+    .tuya_number(
         dp_id=19,
-        ep_attribute=TuyaThermostat.ep_attribute,
         attribute_name=TuyaThermostat.AttributeDefs.local_temperature_calibration.name,
-        converter=lambda x: x * 10,
-        dp_converter=lambda x: x // 10,
+        type=t.int32s,
+        min_value=-9.9,
+        max_value=9.9,
+        unit=UnitOfTemperature.CELSIUS,
+        step=0.1,
+        multiplier=0.1,
+        translation_key="local_temperature_calibration",
+        fallback_name="Local temperature calibration",
     )
     .tuya_dp(
         dp_id=101,

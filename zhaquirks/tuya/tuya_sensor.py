@@ -257,6 +257,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     TuyaQuirkBuilder("_TZE284_aao3yzhs", "TS0601")
     .applies_to("_TZE284_sgabhwa6", "TS0601")
     .applies_to("_TZE284_nhgdf6qr", "TS0601")  # Giex GX04
+    .applies_to("_TZE284_ap9owrsa", "TS0601")  # Novadigital SG-ZB
     .tuya_temperature(dp_id=5, scale=10)
     .tuya_battery(dp_id=15)
     .tuya_soil_moisture(dp_id=3)
