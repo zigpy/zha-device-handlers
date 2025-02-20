@@ -3,6 +3,8 @@
 from unittest import mock
 
 import pytest
+from zigpy.quirks import CustomEndpoint
+from zigpy.zcl import Cluster
 from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.foundation import ZCLHeader
 
@@ -317,15 +319,10 @@ class ManuallyFiredButtonPressQueue:
 
         self._click_counter = 0
         self._callback = None
-        self._button = None
 
-    def press(self, callback, button):
+    def press(self, callback):
         """Process a button press."""
-        if button != self._button:
-            self._click_counter = 1
-        else:
-            self._click_counter += 1
-        self._button = button
+        self._click_counter += 1
         self._callback = callback
 
 
@@ -374,11 +371,14 @@ def test_PhilipsRemoteCluster_short_press(
     cluster = device.endpoints[ep].philips_remote_cluster
     listener = mock.MagicMock()
     cluster.add_listener(listener)
-    cluster.button_press_queue = ManuallyFiredButtonPressQueue()
+    cluster.button_press_queue = {
+        k: ManuallyFiredButtonPressQueue() for k in cluster.BUTTONS
+    }
 
     cluster.handle_cluster_request(ZCLHeader(), [1, 0, 0, 0, 0])
     cluster.handle_cluster_request(ZCLHeader(), [1, 0, 2, 0, 0])
-    cluster.button_press_queue.fire()
+    for q in cluster.button_press_queue.values():
+        q.fire()
 
     assert listener.zha_send_event.call_count == 2
 
@@ -462,14 +462,17 @@ def test_PhilipsRemoteCluster_multi_press(
     cluster = device.endpoints[ep].philips_remote_cluster
     listener = mock.MagicMock()
     cluster.add_listener(listener)
-    cluster.button_press_queue = ManuallyFiredButtonPressQueue()
+    cluster.button_press_queue = {
+        k: ManuallyFiredButtonPressQueue() for k in cluster.BUTTONS
+    }
 
     for _ in range(0, count):
         # btn1 short press
         cluster.handle_cluster_request(ZCLHeader(), [1, 0, 0, 0, 0])
         # btn1 short release
         cluster.handle_cluster_request(ZCLHeader(), [1, 0, 2, 0, 0])
-    cluster.button_press_queue.fire()
+    for q in cluster.button_press_queue.values():
+        q.fire()
 
     assert listener.zha_send_event.call_count == 1
     args_button_id = count + 2
@@ -620,30 +623,21 @@ def test_PhilipsRemoteCluster_long_press(
 
 
 @pytest.mark.parametrize(
-    "button_presses, result_count",
+    "button_presses",
     (
-        (
-            [1],
-            1,
-        ),
-        (
-            [1, 1],
-            2,
-        ),
-        (
-            [1, 1, 3, 3, 3, 2, 2, 2, 2],
-            4,
-        ),
+        (1),
+        (2),
+        (4),
     ),
 )
-def test_ButtonPressQueue_presses_without_pause(button_presses, result_count):
+async def test_ButtonPressQueue_presses_without_pause(button_presses):
     """Test ButtonPressQueue presses without pause in between presses."""
 
     q = ButtonPressQueue()
     q._ms_threshold = 50
     cb = mock.MagicMock()
-    for btn in button_presses:
-        q.press(cb, btn)
+    for _ in range(button_presses):
+        q.press(cb)
 
     # await cluster.button_press_queue._task
     # Instead of awaiting the job, significantly extending the time
@@ -653,33 +647,17 @@ def test_ButtonPressQueue_presses_without_pause(button_presses, result_count):
     q._task.cancel()
     q._ms_last_click = 0
     q._callback(q._click_counter)
-    cb.assert_called_once_with(result_count)
+    cb.assert_called_once_with(button_presses)
 
 
 @pytest.mark.parametrize(
-    "press_sequence, results",
+    "press_sequence",
     (
-        (
-            # switch buttons within a sequence,
-            # new sequence start with different button
-            (
-                [1, 1, 3, 3],
-                [2, 2, 2],
-            ),
-            (2, 3),
-        ),
-        (
-            # no button switch within a sequence,
-            # new sequence with same button
-            (
-                [1, 1, 1],
-                [1],
-            ),
-            (3, 1),
-        ),
+        ((2, 3)),
+        ((3, 1)),
     ),
 )
-async def test_ButtonPressQueue_presses_with_pause(press_sequence, results):
+async def test_ButtonPressQueue_presses_with_pause(press_sequence):
     """Test ButtonPressQueue with pauses in between button press sequences."""
 
     q = ButtonPressQueue()
@@ -687,14 +665,14 @@ async def test_ButtonPressQueue_presses_with_pause(press_sequence, results):
     cb = mock.MagicMock()
 
     for seq in press_sequence:
-        for btn in seq:
-            q.press(cb, btn)
+        for _ in range(seq):
+            q.press(cb)
         await q._task
 
-    assert cb.call_count == len(results)
+    assert cb.call_count == len(press_sequence)
 
     calls = []
-    for res in results:
+    for res in press_sequence:
         calls.append(mock.call(res))
 
     cb.assert_has_calls(calls)
@@ -768,3 +746,151 @@ def test_contact_sensor(zigpy_device_from_v2_quirk):
     # update again with the same value and except no new update
     hue_cluster.update_attribute(hue_cluster.AttributeDefs.contact.id, 1)
     assert len(on_off_listener.attribute_updates) == 2
+
+
+@pytest.mark.parametrize(
+    "dev, ep, button_events, expected_actions",
+    (
+        (
+            PhilipsWallSwitch,
+            1,
+            (
+                [
+                    b"\x1d\x0b\x106\x00\x01\x00\x000\x00!\x00\x00",
+                    b"\x1d\x0b\x107\x00\x01\x00\x000\x02!\x01\x00",
+                ],
+                [
+                    b"\x1d\x0b\x108\x00\x02\x00\x000\x00!\x00\x00",
+                    b"\x1d\x0b\x109\x00\x02\x00\x000\x02!\x01\x00",
+                ],
+            ),
+            ["left_press", "left_short_release", "right_press", "right_short_release"],
+        ),
+    ),
+)
+def test_PhilipsRemoteCluster_multi_button_press(
+    zigpy_device_from_quirk, dev, ep, button_events, expected_actions
+):
+    """Test PhilipsRemoteCluster short button press logic."""
+
+    device = zigpy_device_from_quirk(dev)
+
+    remote_cluster = device.endpoints[ep].philips_remote_cluster
+    remote_cluster.button_press_queue = {
+        k: ManuallyFiredButtonPressQueue() for k in remote_cluster.BUTTONS
+    }
+    remote_listener = mock.MagicMock()
+    remote_cluster.add_listener(remote_listener)
+
+    expected_event_count = 0
+    for button in button_events:
+        for eventData in button:
+            hdr, args = remote_cluster.deserialize(eventData)
+            remote_cluster.handle_message(hdr, args)
+            expected_event_count += 1
+
+    for q in remote_cluster.button_press_queue.values():
+        q.fire()
+
+    assert remote_listener.zha_send_event.call_count == expected_event_count
+
+    for i, expected_action in enumerate(expected_actions):
+        assert remote_listener.zha_send_event.call_args_list[i][0][0] == expected_action
+
+
+def listen_to_all(device) -> mock.MagicMock:
+    """Add a mock listener to all clusters of all endpoints of a device."""
+
+    listener = mock.MagicMock()
+
+    for endpoint in device.endpoints.values():
+        if not isinstance(endpoint, CustomEndpoint):
+            continue
+
+        for cluster in endpoint.in_clusters.values():
+            if isinstance(cluster, Cluster):
+                cluster.add_listener(listener)
+
+        for cluster in endpoint.out_clusters.values():
+            if isinstance(cluster, Cluster):
+                cluster.add_listener(listener)
+
+    return listener
+
+
+def test_RDM002_no_levelcontrol_on_long_press(zigpy_device_from_quirk):
+    """Button long-presses shouldn't trigger LevelControl events."""
+
+    device = zigpy_device_from_quirk(PhilipsRDM002)
+    listener = listen_to_all(device)
+
+    # All below messages are triggered when long pressing button 1 for ~1.5 seconds
+
+    # Received command 0x00 (TSN 223): notification(button=1, param2=3145728, press_type=0, param4=33, param5=0)
+    hdr, args = (
+        device.endpoints[1]
+        .in_clusters[0xFC00]
+        .deserialize(b"\x1d\x0b\x10\xdf\x00\x01\x00\x000\x00!\x00\x00")
+    )
+    device.endpoints[1].in_clusters[0xFC00].handle_message(hdr, args)
+
+    # Received command 0x06 (TSN 224): step_with_on_off(step_mode=<StepMode.Down: 1>, step_size=255, transition_time=8)
+    hdr, args = (
+        device.endpoints[1]
+        .out_clusters[0x0008]
+        .deserialize(b"\x01\xe0\x06\x01\xff\x08\x00")
+    )
+    device.endpoints[1].out_clusters[0x0008].handle_message(hdr, args)
+
+    # Received command 0x00 (TSN 225): notification(button=1, param2=3145728, press_type=1, param4=33, param5=8)
+    hdr, args = (
+        device.endpoints[1]
+        .in_clusters[0xFC00]
+        .deserialize(b"\x1d\x0b\x10\xe1\x00\x01\x00\x000\x01!\x08\x00")
+    )
+    device.endpoints[1].in_clusters[0xFC00].handle_message(hdr, args)
+
+    # Received command 0x00 (TSN 226): notification(button=1, param2=3145728, press_type=3, param4=33, param5=10)
+    hdr, args = (
+        device.endpoints[1]
+        .in_clusters[0xFC00]
+        .deserialize(b"\x1d\x0b\x10\xe2\x00\x01\x00\x000\x03!\n\x00")
+    )
+    device.endpoints[1].in_clusters[0xFC00].handle_message(hdr, args)
+
+    # we emit those from PhilipsRdm002RemoteCluster. One hold, one long_press_release event.
+    assert listener.zha_send_event.call_count == 2
+
+    # one for each frame received, except for the one we balckhole, so 4 - 1
+    assert listener.cluster_command.call_count == 3
+
+
+def test_RDM002_levelcontrol_on_dial_rotary_event(zigpy_device_from_quirk):
+    """Dial rotary events shouldn't be muted by PhilipsRdm002LevelControl."""
+
+    device = zigpy_device_from_quirk(PhilipsRDM002)
+    listener = listen_to_all(device)
+
+    # All below messages are triggered when quickly rotating the dial counterclockwise
+
+    # Received command 0x06 (TSN 231): step_with_on_off(step_mode=<StepMode.Down: 1>, step_size=68, transition_time=4)
+    hdr, args = (
+        device.endpoints[1]
+        .out_clusters[0x0008]
+        .deserialize(b"\x01\xe7\x06\x01D\x04\x00")
+    )
+    device.endpoints[1].out_clusters[0x0008].handle_message(hdr, args)
+
+    # Received command 0x00 (TSN 232): notification(button=20, param2=3145984, press_type=1, param4=41, param5=65370)
+    hdr, args = (
+        device.endpoints[1]
+        .in_clusters[0xFC00]
+        .deserialize(
+            b"\x1d\x0b\x10\xe8\x00\x14\x00\x010\x01)Z\xff!d\x00)Z\xff!d\x00)Z\xff!\x90\x01"
+        )
+    )
+    device.endpoints[1].in_clusters[0xFC00].handle_message(hdr, args)
+
+    # These call counts is the same, regardless of whether PhilipsRdm002LevelControl is used or not.
+    assert listener.zha_send_event.call_count == 0
+    assert listener.cluster_command.call_count == 2

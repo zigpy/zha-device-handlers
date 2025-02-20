@@ -288,25 +288,26 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
     def get_dp_mapping(
         self, endpoint_id: int, attribute_name: str
     ) -> Optional[tuple[int, DPToAttributeMapping]]:
-        """Search for the DP in dp_to_attribute."""
+        """Search for the DP in _dp_to_attributes."""
 
         result = {}
-        for dp, dp_mapping in self.dp_to_attribute.items():
-            if (
-                attribute_name == dp_mapping.attribute_name
-                or (
-                    isinstance(dp_mapping.attribute_name, tuple)
-                    and attribute_name in dp_mapping.attribute_name
-                )
-            ) and (
-                (
-                    dp_mapping.endpoint_id is None
-                    and endpoint_id == self.endpoint.endpoint_id
-                )
-                or (endpoint_id == dp_mapping.endpoint_id)
-            ):
-                self.debug("get_dp_mapping --> found DP: %s", dp)
-                result[dp] = dp_mapping
+        for dp, dp_mapping in self._dp_to_attributes.items():
+            for mapped_attr in dp_mapping:
+                if (
+                    attribute_name == mapped_attr.attribute_name
+                    or (
+                        isinstance(mapped_attr.attribute_name, tuple)
+                        and attribute_name in mapped_attr.attribute_name
+                    )
+                ) and (
+                    (
+                        mapped_attr.endpoint_id is None
+                        and endpoint_id == self.endpoint.endpoint_id
+                    )
+                    or (endpoint_id == mapped_attr.endpoint_id)
+                ):
+                    self.debug("get_dp_mapping --> found DP: %s", dp)
+                    result[dp] = mapped_attr
         return result
 
     def handle_mcu_version_response(self, payload: MCUVersion) -> foundation.Status:
