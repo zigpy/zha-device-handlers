@@ -62,11 +62,11 @@ class PresetModeV03(t.enum8):
 
 
 class PresetModeV04(t.enum8):
-    """Tuya preset mode v03 enum."""
+    """Tuya preset mode v04 enum."""
 
-    Off = 0x00
+    Manual = 0x00
     Auto = 0x01
-    Eco = 0x02
+    Eco = 0x03
 
 
 class SensorMode(t.enum8):
@@ -583,6 +583,7 @@ base_avatto_quirk = (
         min_value=0.5,
         max_value=10,
         step=0.5,
+        multiplier=0.1,
         translation_key="deadzone_temperature",
         fallback_name="Deadzone temperature",
     )
