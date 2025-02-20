@@ -196,7 +196,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
     ) -> None:
         """Init the TuyaQuirkBuilder."""
         self.tuya_data_point_handlers: dict[int, str] = {}
-        self.tuya_dp_to_attribute: dict[int, DPToAttributeMapping] = {}
+        self.tuya_dp_to_attribute: dict[int, list[DPToAttributeMapping]] = {}
         self.new_attributes: set[foundation.ZCLAttributeDef] = set()
         super().__init__(manufacturer, model, registry)
         # quirk_file will point to the init call above if called from this QuirkBuilder,
@@ -503,20 +503,33 @@ class TuyaQuirkBuilder(QuirkBuilder):
     ) -> QuirkBuilder:  # fmt: skip
         """Add Tuya DP Converter."""
 
-        if dp_id in self.tuya_dp_to_attribute:
-            raise ValueError(f"DP {dp_id} is already mapped.")
-
-        self.tuya_dp_to_attribute.update(
-            {
-                dp_id: DPToAttributeMapping(
+        self.tuya_dp_multi(
+            dp_id,
+            [
+                DPToAttributeMapping(
                     ep_attribute,
                     attribute_name,
                     converter=converter,
                     dp_converter=dp_converter,
                     endpoint_id=endpoint_id,
                 )
-            }
+            ],
+            dp_handler,
         )
+        return self
+
+    def tuya_dp_multi(
+        self,
+        dp_id: int,
+        attribute_mapping: list[DPToAttributeMapping],
+        dp_handler: str = "_dp_2_attr_update",
+    ) -> QuirkBuilder:  # fmt: skip
+        """Add Tuya DP Converter that maps to multiple attributes."""
+
+        if dp_id in self.tuya_dp_to_attribute:
+            raise ValueError(f"DP {dp_id} is already mapped.")
+
+        self.tuya_dp_to_attribute.update({dp_id: attribute_mapping})
         self.tuya_data_point_handlers.update({dp_id: dp_handler})
         return self
 
@@ -814,7 +827,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
                 """Replacement Tuya Cluster."""
 
                 data_point_handlers: dict[int, str]
-                dp_to_attribute: dict[int, DPToAttributeMapping]
+                dp_to_attribute: dict[int, list[DPToAttributeMapping]]
 
                 class AttributeDefs(NewAttributeDefs):
                     """Attribute Definitions."""

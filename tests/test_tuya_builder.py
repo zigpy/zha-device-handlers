@@ -1,5 +1,6 @@
 """Tests for TuyaQuirkBuilder."""
 
+from collections.abc import ByteString
 import datetime
 from unittest import mock
 
@@ -9,6 +10,7 @@ from zigpy.quirks.v2 import CustomDeviceV2
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic
+from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 
 from tests.common import ClusterListener, MockDatetime, wait_for_zigpy_tasks
 import zhaquirks
@@ -16,6 +18,11 @@ from zhaquirks.const import BatterySize
 from zhaquirks.tuya import (
     TUYA_QUERY_DATA,
     TUYA_SET_TIME,
+    DPToAttributeMapping,
+    TuyaCommand,
+    TuyaData,
+    TuyaDatapointData,
+    TuyaLocalCluster,
     TuyaPowerConfigurationCluster,
     TuyaPowerConfigurationCluster2AAA,
 )
@@ -156,6 +163,18 @@ async def test_tuya_quirkbuilder(device_mock):
     class ModTuyaMCUCluster(TuyaMCUCluster):
         """Modified Cluster."""
 
+    class Tuya3PhaseElectricalMeasurement(ElectricalMeasurement, TuyaLocalCluster):
+        """Tuya Electrical Measurement cluster."""
+
+    def dpToPower(data: ByteString) -> int:
+        return data[0]
+
+    def dpToCurrent(data: ByteString) -> int:
+        return data[1]
+
+    def dpToVoltage(data: ByteString) -> int:
+        return data[2]
+
     entry = (
         TuyaQuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
         .tuya_battery(dp_id=1)
@@ -193,6 +212,27 @@ async def test_tuya_quirkbuilder(device_mock):
             translation_key="test_enum",
             fallback_name="Test enum",
         )
+        .tuya_dp_multi(
+            dp_id=11,
+            attribute_mapping=[
+                DPToAttributeMapping(
+                    ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
+                    attribute_name="active_power",
+                    converter=dpToPower,
+                ),
+                DPToAttributeMapping(
+                    ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
+                    attribute_name="rms_current",
+                    converter=dpToCurrent,
+                ),
+                DPToAttributeMapping(
+                    ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
+                    attribute_name="rms_voltage",
+                    converter=dpToVoltage,
+                ),
+            ],
+        )
+        .adds(Tuya3PhaseElectricalMeasurement)
         .skip_configuration()
         .add_to_registry(replacement_cluster=ModTuyaMCUCluster)
     )
@@ -251,6 +291,17 @@ async def test_tuya_quirkbuilder(device_mock):
     assert tuya_listener.attribute_updates[0][0] == 0xEF0A
     assert tuya_listener.attribute_updates[0][1] == TestEnum.B
 
+    electric_data = TuyaCommand(
+        status=0,
+        tsn=2,
+        datapoints=[TuyaDatapointData(11, TuyaData("345"))],
+    )
+    tuya_cluster.handle_get_data(electric_data)
+    electrical_meas_cluster = ep.electrical_measurement
+    assert electrical_meas_cluster.get("active_power") == "3"
+    assert electrical_meas_cluster.get("rms_current") == "4"
+    assert electrical_meas_cluster.get("rms_voltage") == "5"
+
 
 async def test_tuya_quirkbuilder_duplicated_mappings(device_mock):
     """Test that mapping the same DP multiple times will raise."""
@@ -265,6 +316,24 @@ async def test_tuya_quirkbuilder_duplicated_mappings(device_mock):
             .tuya_battery(dp_id=1)
             .tuya_onoff(dp_id=1)
             .skip_configuration()
+            .add_to_registry()
+        )
+
+    with pytest.raises(ValueError):
+        (
+            TuyaQuirkBuilder(
+                device_mock.manufacturer, device_mock.model, registry=registry
+            )
+            .tuya_battery(dp_id=1)
+            .tuya_dp_multi(
+                dp_id=1,
+                attribute_mapping=[
+                    DPToAttributeMapping(
+                        ep_attribute=ElectricalMeasurement.ep_attribute,
+                        attribute_name="active_power",
+                    ),
+                ],
+            )
             .add_to_registry()
         )
 
