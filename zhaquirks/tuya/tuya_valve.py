@@ -696,10 +696,10 @@ class GiexIrrigationStatus(t.enum8):
         attribute_name="voltage",
         type=t.uint16_t,
         converter=lambda x: x * 100,
+        device_class=SensorDeviceClass.VOLTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         unit=UnitOfElectricPotential.VOLT,
         entity_type=EntityType.STANDARD,
-        translation_key="voltage",
         fallback_name="Voltage",
     )
     .skip_configuration()
