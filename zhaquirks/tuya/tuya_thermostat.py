@@ -61,6 +61,14 @@ class PresetModeV03(t.enum8):
     Temporary_Manual = 0x02
 
 
+class PresetModeV04(t.enum8):
+    """Tuya preset mode v04 enum."""
+
+    Manual = 0x00
+    Auto = 0x01
+    Eco = 0x03
+
+
 class SensorMode(t.enum8):
     """Tuya sensor mode enum."""
 
@@ -472,4 +480,130 @@ base_avatto_quirk = (
         fallback_name="Working day",
     )
     .add_to_registry(replacement_cluster=NoManufTimeNoVersionRespTuyaMCUCluster)
+)
+
+
+# Beok TGM50-ZB-WPB
+(
+    TuyaQuirkBuilder("_TZE204_cvub6xbb", "TS0601")
+    .tuya_dp(
+        dp_id=1,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.system_mode.name,
+        converter=lambda x: {
+            True: Thermostat.SystemMode.Heat,
+            False: Thermostat.SystemMode.Off,
+        }[x],
+        dp_converter=lambda x: {
+            Thermostat.SystemMode.Heat: True,
+            Thermostat.SystemMode.Off: False,
+        }[x],
+    )
+    .tuya_dp(
+        dp_id=2,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.occupied_heating_setpoint.name,
+        converter=lambda x: x * 10,
+        dp_converter=lambda x: x // 10,
+    )
+    .tuya_dp(
+        dp_id=3,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.local_temperature.name,
+        converter=lambda x: x * 10,
+    )
+    .tuya_enum(
+        dp_id=4,
+        attribute_name="preset_mode",
+        enum_class=PresetModeV04,
+        translation_key="preset_mode",
+        fallback_name="Preset mode",
+    )
+    .tuya_switch(
+        dp_id=9,
+        attribute_name="child_lock",
+        translation_key="child_lock",
+        fallback_name="Child lock",
+    )
+    .tuya_dp(
+        dp_id=15,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.max_heat_setpoint_limit.name,
+        converter=lambda x: x * 10,
+        dp_converter=lambda x: x // 10,
+    )
+    .tuya_number(
+        dp_id=19,
+        attribute_name=TuyaThermostat.AttributeDefs.local_temperature_calibration.name,
+        type=t.int32s,
+        min_value=-9.9,
+        max_value=9.9,
+        unit=UnitOfTemperature.CELSIUS,
+        step=0.1,
+        multiplier=0.1,
+        translation_key="local_temperature_calibration",
+        fallback_name="Local temperature calibration",
+    )
+    .tuya_dp(
+        dp_id=101,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.running_state.name,
+        converter=lambda x: RunningState.Heat_State_On if x else RunningState.Idle,
+    )
+    .tuya_switch(
+        dp_id=102,
+        attribute_name="frost_protection",
+        translation_key="frost_protection",
+        fallback_name="Frost protection",
+    )
+    .tuya_switch(
+        dp_id=103,
+        attribute_name="factory_reset",
+        translation_key="factory_reset",
+        fallback_name="Factory reset",
+    )
+    .tuya_switch(
+        dp_id=105,
+        attribute_name="sound_enabled",
+        translation_key="sound_enabled",
+        fallback_name="Sound enabled",
+    )
+    .tuya_enum(
+        dp_id=106,
+        attribute_name="temperature_sensor_select",
+        enum_class=SensorMode,
+        translation_key="sensor_mode",
+        fallback_name="Sensor mode",
+    )
+    .tuya_number(
+        dp_id=107,
+        attribute_name="deadzone_temperature",
+        type=t.uint16_t,
+        unit=UnitOfTemperature.CELSIUS,
+        min_value=0.5,
+        max_value=10,
+        step=0.5,
+        multiplier=0.1,
+        translation_key="deadzone_temperature",
+        fallback_name="Deadzone temperature",
+    )
+    # 109 ZWT198 schedule, skipped
+    .tuya_enum(
+        dp_id=110,
+        attribute_name="backlight_mode",
+        enum_class=BacklightMode,
+        translation_key="backlight_mode",
+        fallback_name="Backlight mode",
+    )
+    .tuya_switch(
+        dp_id=111,
+        attribute_name="invert_relay",
+        on_value=0,
+        off_value=1,
+        translation_key="invert_relay",
+        fallback_name="Invert relay",
+    )
+    .adds(TuyaThermostat)
+    .skip_configuration()
+    .add_to_registry()
 )
