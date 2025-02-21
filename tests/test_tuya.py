@@ -34,7 +34,6 @@ import zhaquirks.tuya.ts0042
 import zhaquirks.tuya.ts0043
 import zhaquirks.tuya.ts011f_plug
 import zhaquirks.tuya.ts0501_fan_switch
-import zhaquirks.tuya.ts0601_electric_heating
 import zhaquirks.tuya.ts0601_trv
 import zhaquirks.tuya.ts1201
 import zhaquirks.tuya.tuya_motion
@@ -89,6 +88,13 @@ ZCL_TUYA_VALVE_ZONNSMART_HEAT_STOP = b"\t2\x01\x03\x04\x6b\x01\x00\x01\x00"
 
 ZCL_TUYA_EHEAT_TEMPERATURE = b"\tp\x02\x00\x02\x18\x02\x00\x04\x00\x00\x00\xb3"
 ZCL_TUYA_EHEAT_TARGET_TEMP = b"\t3\x01\x03\x05\x10\x02\x00\x04\x00\x00\x00\x15"
+
+ZCL_TUYA_EHEAT_TEMPERATURE_V2 = (
+    b"\tp\x02\x00\x02\x18\x02\x00\x04\x00\x00\x06\xfe"  # _5toc8efa scales by 10
+)
+ZCL_TUYA_EHEAT_TARGET_TEMP_V2 = (
+    b"\t3\x01\x03\x05\x10\x02\x00\x04\x00\x00\x00\xd2"  # _5toc8efa scales by 10
+)
 
 
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_switch.TuyaSingleSwitchTI,))
@@ -1326,16 +1332,64 @@ async def test_moes(zigpy_device_from_quirk, quirk):
         datetime.datetime = origdatetime
 
 
-@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_electric_heating.MoesBHT,))
-async def test_eheating_state_report(zigpy_device_from_quirk, quirk):
+@pytest.mark.parametrize(
+    "model,manuf,frames",
+    [
+        (
+            "_TZE200_aoclfnxz",
+            "TS0601",
+            (ZCL_TUYA_EHEAT_TEMPERATURE, ZCL_TUYA_EHEAT_TARGET_TEMP),
+        ),
+        (
+            "_TZE200_ztvwu4nk",
+            "TS0601",
+            (ZCL_TUYA_EHEAT_TEMPERATURE, ZCL_TUYA_EHEAT_TARGET_TEMP),
+        ),
+        (
+            "_TZE204_5toc8efa",
+            "TS0601",
+            (ZCL_TUYA_EHEAT_TEMPERATURE_V2, ZCL_TUYA_EHEAT_TARGET_TEMP_V2),
+        ),
+        (
+            "_TZE200_5toc8efa",
+            "TS0601",
+            (ZCL_TUYA_EHEAT_TEMPERATURE_V2, ZCL_TUYA_EHEAT_TARGET_TEMP_V2),
+        ),
+        (
+            "_TZE200_ye5jkfsb",
+            "TS0601",
+            (ZCL_TUYA_EHEAT_TEMPERATURE, ZCL_TUYA_EHEAT_TARGET_TEMP),
+        ),
+        (
+            "_TZE204_aoclfnxz",
+            "TS0601",
+            (ZCL_TUYA_EHEAT_TEMPERATURE, ZCL_TUYA_EHEAT_TARGET_TEMP),
+        ),
+        (
+            "_TZE200_u9bfwha0",
+            "TS0601",
+            (ZCL_TUYA_EHEAT_TEMPERATURE, ZCL_TUYA_EHEAT_TARGET_TEMP),
+        ),
+        (
+            "_TZE204_u9bfwha0",
+            "TS0601",
+            (ZCL_TUYA_EHEAT_TEMPERATURE, ZCL_TUYA_EHEAT_TARGET_TEMP),
+        ),
+        (
+            "_TZE204_xalsoe3m",
+            "TS0601",
+            (ZCL_TUYA_EHEAT_TEMPERATURE, ZCL_TUYA_EHEAT_TARGET_TEMP),
+        ),
+    ],
+)
+async def test_eheating_state_report(zigpy_device_from_v2_quirk, model, manuf, frames):
     """Test thermostatic valves standard reporting from incoming commands."""
 
-    electric_dev = zigpy_device_from_quirk(quirk)
+    electric_dev = zigpy_device_from_v2_quirk(model, manuf)
     tuya_cluster = electric_dev.endpoints[1].tuya_manufacturer
 
     thermostat_listener = ClusterListener(electric_dev.endpoints[1].thermostat)
 
-    frames = (ZCL_TUYA_EHEAT_TEMPERATURE, ZCL_TUYA_EHEAT_TARGET_TEMP)
     for frame in frames:
         hdr, args = tuya_cluster.deserialize(frame)
         tuya_cluster.handle_message(hdr, args)
@@ -1348,11 +1402,60 @@ async def test_eheating_state_report(zigpy_device_from_quirk, quirk):
     assert thermostat_listener.attribute_updates[1][1] == 2100
 
 
-@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_electric_heating.MoesBHT,))
-async def test_eheat_send_attribute(zigpy_device_from_quirk, quirk):
+@pytest.mark.parametrize(
+    "model,manuf,sp_data",
+    [
+        (
+            "_TZE200_aoclfnxz",
+            "TS0601",
+            b"\x01\x01\x00\x00\x01\x10\x02\x00\x04\x00\x00\x00\x19",
+        ),
+        (
+            "_TZE200_ztvwu4nk",
+            "TS0601",
+            b"\x01\x01\x00\x00\x01\x10\x02\x00\x04\x00\x00\x00\x19",
+        ),
+        (
+            "_TZE204_5toc8efa",
+            "TS0601",
+            b"\x01\x01\x00\x00\x01\x10\x02\x00\x04\x00\x00\x00\xfa",
+        ),
+        (
+            "_TZE200_5toc8efa",
+            "TS0601",
+            b"\x01\x01\x00\x00\x01\x10\x02\x00\x04\x00\x00\x00\xfa",
+        ),
+        (
+            "_TZE200_ye5jkfsb",
+            "TS0601",
+            b"\x01\x01\x00\x00\x01\x10\x02\x00\x04\x00\x00\x00\x19",
+        ),
+        (
+            "_TZE204_aoclfnxz",
+            "TS0601",
+            b"\x01\x01\x00\x00\x01\x10\x02\x00\x04\x00\x00\x00\x19",
+        ),
+        (
+            "_TZE200_u9bfwha0",
+            "TS0601",
+            b"\x01\x01\x00\x00\x01\x10\x02\x00\x04\x00\x00\x00\x19",
+        ),
+        (
+            "_TZE204_u9bfwha0",
+            "TS0601",
+            b"\x01\x01\x00\x00\x01\x10\x02\x00\x04\x00\x00\x00\x19",
+        ),
+        (
+            "_TZE204_xalsoe3m",
+            "TS0601",
+            b"\x01\x01\x00\x00\x01\x10\x02\x00\x04\x00\x00\x00\x19",
+        ),
+    ],
+)
+async def test_eheat_send_attribute(zigpy_device_from_v2_quirk, model, manuf, sp_data):
     """Test electric thermostat outgoing commands."""
 
-    eheat_dev = zigpy_device_from_quirk(quirk)
+    eheat_dev = zigpy_device_from_v2_quirk(model, manuf)
     tuya_cluster = eheat_dev.endpoints[1].tuya_manufacturer
     thermostat_cluster = eheat_dev.endpoints[1].thermostat
 
@@ -1367,10 +1470,11 @@ async def test_eheat_send_attribute(zigpy_device_from_quirk, quirk):
                 "occupied_heating_setpoint": 2500,
             }
         )
+        await wait_for_zigpy_tasks()
         m1.assert_called_with(
             cluster=0xEF00,
             sequence=1,
-            data=b"\x01\x01\x00\x00\x01\x10\x02\x00\x04\x00\x00\x00\x19",
+            data=sp_data,
             command_id=0,
             timeout=5,
             expect_reply=False,
@@ -1387,6 +1491,7 @@ async def test_eheat_send_attribute(zigpy_device_from_quirk, quirk):
                 "system_mode": 0x00,
             }
         )
+        await wait_for_zigpy_tasks()
         m1.assert_called_with(
             cluster=0xEF00,
             sequence=2,
@@ -1407,6 +1512,7 @@ async def test_eheat_send_attribute(zigpy_device_from_quirk, quirk):
                 "system_mode": 0x04,
             }
         )
+        await wait_for_zigpy_tasks()
         m1.assert_called_with(
             cluster=0xEF00,
             sequence=3,
@@ -1421,26 +1527,6 @@ async def test_eheat_send_attribute(zigpy_device_from_quirk, quirk):
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
         ]
-
-        # simulate a target temp update so that relative changes can work
-        hdr, args = tuya_cluster.deserialize(ZCL_TUYA_EHEAT_TARGET_TEMP)
-        tuya_cluster.handle_message(hdr, args)
-        _, status = await thermostat_cluster.command(0x0000, 0x00, 20)
-        m1.assert_called_with(
-            cluster=0xEF00,
-            sequence=4,
-            data=b"\x01\x04\x00\x00\x04\x10\x02\x00\x04\x00\x00\x00\x17",
-            command_id=0,
-            timeout=5,
-            expect_reply=False,
-            use_ieee=False,
-            ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
-        )
-        assert status == foundation.Status.SUCCESS
-
-        _, status = await thermostat_cluster.command(0x0002)
-        assert status == foundation.Status.UNSUP_CLUSTER_COMMAND
 
 
 @pytest.mark.parametrize(
