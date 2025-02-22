@@ -1533,35 +1533,43 @@ class TuyaNewManufCluster(CustomCluster):
         ),
     }
 
-    dp_to_attribute: dict[int, DPToAttributeMapping] = {}
+    dp_to_attribute: dict[int, DPToAttributeMapping | list[DPToAttributeMapping]] = {}
     data_point_handlers: dict[int, str] = {}
 
     def __init__(self, *args, **kwargs):
         """Initialize the cluster and mark attributes as valid on LocalDataClusters."""
         super().__init__(*args, **kwargs)
-        for dp_map in self.dp_to_attribute.values():
+
+        self._dp_to_attributes: dict[int, list[DPToAttributeMapping]] = {
+            dp: attr if isinstance(attr, list) else [attr]
+            for dp, attr in self.dp_to_attribute.items()
+        }
+        for dp_map in self._dp_to_attributes.values():
             # get the endpoint that is being mapped to
             endpoint = self.endpoint
-            if dp_map.endpoint_id:
-                endpoint = self.endpoint.device.endpoints.get(dp_map.endpoint_id)
+            for mapped_attr in dp_map:
+                if mapped_attr.endpoint_id:
+                    endpoint = self.endpoint.device.endpoints.get(
+                        mapped_attr.endpoint_id
+                    )
 
-            # the endpoint to be mapped to might not actually exist within all quirks
-            if not endpoint:
-                continue
+                # the endpoint to be mapped to might not actually exist within all quirks
+                if not endpoint:
+                    continue
 
-            cluster = getattr(endpoint, dp_map.ep_attribute, None)
-            # the cluster to be mapped to might not actually exist within all quirks
-            if not cluster:
-                continue
+                cluster = getattr(endpoint, mapped_attr.ep_attribute, None)
+                # the cluster to be mapped to might not actually exist within all quirks
+                if not cluster:
+                    continue
 
-            # mark mapped to attribute as valid if existing and if on a LocalDataCluster
-            attr = cluster.attributes_by_name.get(dp_map.attribute_name)
-            if attr and isinstance(cluster, LocalDataCluster):
-                # _VALID_ATTRIBUTES is only a class variable, but as want to modify it
-                # per instance here, we need to create an instance variable first
-                if "_VALID_ATTRIBUTES" not in cluster.__dict__:
-                    cluster._VALID_ATTRIBUTES = set()
-                cluster._VALID_ATTRIBUTES.add(attr.id)
+                # mark mapped to attribute as valid if existing and if on a LocalDataCluster
+                attr = cluster.attributes_by_name.get(mapped_attr.attribute_name)
+                if attr and isinstance(cluster, LocalDataCluster):
+                    # _VALID_ATTRIBUTES is only a class variable, but as want to modify it
+                    # per instance here, we need to create an instance variable first
+                    if "_VALID_ATTRIBUTES" not in cluster.__dict__:
+                        cluster._VALID_ATTRIBUTES = set()
+                    cluster._VALID_ATTRIBUTES.add(attr.id)
 
     def handle_cluster_request(
         self,
@@ -1640,27 +1648,29 @@ class TuyaNewManufCluster(CustomCluster):
     def _dp_2_attr_update(self, datapoint: TuyaDatapointData) -> None:
         """Handle data point to attribute report conversion."""
         try:
-            dp_map = self.dp_to_attribute[datapoint.dp]
+            dp_map = self._dp_to_attributes[datapoint.dp]
         except KeyError:
             self.debug("No attribute mapping for %s data point", datapoint.dp)
             return
 
         endpoint = self.endpoint
-        if dp_map.endpoint_id:
-            endpoint = self.endpoint.device.endpoints[dp_map.endpoint_id]
-        cluster = getattr(endpoint, dp_map.ep_attribute)
-        value = datapoint.data.payload
-        if dp_map.converter:
-            value = dp_map.converter(value)
+        for mapped_attr in dp_map:
+            if mapped_attr.endpoint_id:
+                endpoint = self.endpoint.device.endpoints[mapped_attr.endpoint_id]
+            cluster = getattr(endpoint, mapped_attr.ep_attribute)
+            value = datapoint.data.payload
+            if mapped_attr.converter:
+                value = mapped_attr.converter(value)
 
-        if isinstance(dp_map.attribute_name, tuple):
-            for k, v in zip(dp_map.attribute_name, value):
-                if isinstance(v, AttributeWithMask):
-                    v = cluster.get(k, 0) & (~v.mask) | v.value
-                cluster.update_attribute(k, v)
-        else:
-            if isinstance(value, AttributeWithMask):
-                value = (
-                    cluster.get(dp_map.attribute_name, 0) & (~value.mask) | value.value
-                )
-            cluster.update_attribute(dp_map.attribute_name, value)
+            if isinstance(mapped_attr.attribute_name, tuple):
+                for k, v in zip(mapped_attr.attribute_name, value):
+                    if isinstance(v, AttributeWithMask):
+                        v = cluster.get(k, 0) & (~v.mask) | v.value
+                    cluster.update_attribute(k, v)
+            else:
+                if isinstance(value, AttributeWithMask):
+                    value = (
+                        cluster.get(mapped_attr.attribute_name, 0) & (~value.mask)
+                        | value.value
+                    )
+                cluster.update_attribute(mapped_attr.attribute_name, value)
