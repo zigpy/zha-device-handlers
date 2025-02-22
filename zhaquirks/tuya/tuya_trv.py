@@ -10,8 +10,13 @@ from zigpy.quirks.v2.homeassistant.sensor import SensorStateClass
 import zigpy.types as t
 from zigpy.zcl.clusters.hvac import RunningState, Thermostat
 
+from zhaquirks.tuya import TUYA_CLUSTER_ID
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
-from zhaquirks.tuya.mcu import TuyaAttributesCluster
+from zhaquirks.tuya.mcu import (
+    DPToAttributeMapping,
+    TuyaAttributesCluster,
+    TuyaMCUCluster,
+)
 
 
 class TuyaThermostatSystemMode(t.enum8):
@@ -505,30 +510,42 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
         translation_key="local_temperature_calibration",
         fallback_name="Local temperature calibration",
     )
-    # preset mode and system mode are on the same datapoint, using only system mode
-    # until we support multiple values on a single DP
-    # .tuya_enum(
-    #     dp_id=2,
-    #     attribute_name="preset_mode",
-    #     enum_class=TuyaPresetMode,
-    #     translation_key="preset_mode",
-    #     fallback_name="Preset mode",
-    # )
-    .tuya_dp(
+    .tuya_dp_multi(
         dp_id=2,
-        ep_attribute=TuyaThermostatV2.ep_attribute,
-        attribute_name=TuyaThermostatV2.AttributeDefs.system_mode.name,
-        converter=lambda x: {
-            TuyaPresetMode.Auto: Thermostat.SystemMode.Auto,
-            TuyaPresetMode.Eco: Thermostat.SystemMode.Auto,
-            TuyaPresetMode.Heat: Thermostat.SystemMode.Heat,
-            TuyaPresetMode.Off: Thermostat.SystemMode.Off,
-        }[x],
-        dp_converter=lambda x: {
-            Thermostat.SystemMode.Auto: TuyaPresetMode.Auto,
-            Thermostat.SystemMode.Heat: TuyaPresetMode.Heat,
-            Thermostat.SystemMode.Off: TuyaPresetMode.Off,
-        }[x],
+        attribute_mapping=[
+            DPToAttributeMapping(
+                ep_attribute=TuyaThermostatV2.ep_attribute,
+                attribute_name=TuyaThermostatV2.AttributeDefs.system_mode.name,
+                converter=lambda x: {
+                    TuyaPresetMode.Auto: Thermostat.SystemMode.Auto,
+                    TuyaPresetMode.Eco: Thermostat.SystemMode.Auto,
+                    TuyaPresetMode.Heat: Thermostat.SystemMode.Heat,
+                    TuyaPresetMode.Off: Thermostat.SystemMode.Off,
+                }[x],
+                dp_converter=lambda x: {
+                    Thermostat.SystemMode.Auto: TuyaPresetMode.Auto,
+                    Thermostat.SystemMode.Heat: TuyaPresetMode.Heat,
+                    Thermostat.SystemMode.Off: TuyaPresetMode.Off,
+                }[x],
+            ),
+            DPToAttributeMapping(
+                ep_attribute=TuyaMCUCluster.ep_attribute,
+                attribute_name="preset_mode",
+            ),
+        ],
+    )
+    .tuya_attribute(
+        dp_id=2,
+        attribute_name="preset_mode",
+        type=t.uint16_t,
+        is_manufacturer_specific=True,
+    )
+    .enum(
+        attribute_name="preset_mode",
+        cluster_id=TUYA_CLUSTER_ID,
+        enum_class=TuyaPresetMode,
+        translation_key="preset_mode",
+        fallback_name="Preset mode",
     )
     .tuya_battery(dp_id=6)
     .tuya_switch(
