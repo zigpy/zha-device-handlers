@@ -1361,14 +1361,14 @@ base_tuya_motion = (
     )
     .tuya_number(
         dp_id=111,
-        attribute_name="detection_distance_min",
+        attribute_name="breath_detection_min",
         type=t.uint16_t,
         min_value=0,
         max_value=600,
         step=10,
         unit=UnitOfLength.CENTIMETERS,
-        translation_key="detection_distance_min",
-        fallback_name="Minimum range",
+        translation_key="breath_detection_min",
+        fallback_name="Breath detection min",
     )
     .tuya_number(
         dp_id=112,
