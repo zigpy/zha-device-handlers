@@ -1,12 +1,18 @@
 """Quirk for TS0207 rain sensors."""
 
-from zigpy.quirks.v2.homeassistant import LIGHT_LUX, EntityType
+from zigpy.quirks.v2.homeassistant import LIGHT_LUX, EntityType, UnitOfElectricPotential
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
 from zigpy.zcl.clusters.security import IasZone
 
-from zhaquirks.tuya import BatterySize, TuyaLocalCluster
+from zhaquirks.tuya import (
+    TUYA_CLUSTER_ID,
+    BatterySize,
+    DPToAttributeMapping,
+    TuyaLocalCluster,
+)
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
+from zhaquirks.tuya.mcu import TuyaMCUCluster
 
 
 class TuyaIasZone(IasZone, TuyaLocalCluster):
@@ -51,19 +57,35 @@ class TuyaIasZone(IasZone, TuyaLocalCluster):
         translation_key="cleaning_reminder",
         fallback_name="Cleaning reminder",
     )
-    .tuya_dp(
+    .tuya_dp_multi(
         dp_id=105,
-        ep_attribute=TuyaIasZone.ep_attribute,
-        attribute_name=TuyaIasZone.AttributeDefs.zone_status.name,
-        converter=lambda x: IasZone.ZoneStatus.Alarm_1 if x > 100 else 0,
+        attribute_mapping=[
+            DPToAttributeMapping(
+                ep_attribute=TuyaIasZone.ep_attribute,
+                attribute_name=TuyaIasZone.AttributeDefs.zone_status.name,
+                converter=lambda x: IasZone.ZoneStatus.Alarm_1 if x > 100 else 0,
+            ),
+            DPToAttributeMapping(
+                ep_attribute=TuyaMCUCluster.ep_attribute,
+                attribute_name="rain_intensity",
+            ),
+        ],
     )
-    # .sensor(
-    #     type=t.uint32_t,
-    #     attribute_name=TuyaIasZone.AttributeDefs.zone_status.name,
-    #     device_class=SensorDeviceClass.VOLTAGE,
-    #     unit=UnitOfElectricPotential.MILLIVOLT,
-    #     fallback_name="Rain Intensity",
-    # )
+    .tuya_attribute(
+        dp_id=105,
+        attribute_name="rain_intensity",
+        type=t.uint32_t,
+        is_manufacturer_specific=True,
+    )
+    .sensor(
+        "rain_intensity",
+        TUYA_CLUSTER_ID,
+        device_class=SensorDeviceClass.VOLTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=UnitOfElectricPotential.MILLIVOLT,
+        entity_type=EntityType.STANDARD,
+        fallback_name="Rain Intensity",
+    )
     .adds(TuyaIasZone)
     .skip_configuration()
     .add_to_registry()
