@@ -708,20 +708,12 @@ class GiexIrrigationStatus(t.enum8):
     .add_to_registry()
 )
 
-
-# Proportion units
-class UnitOfProportion(StrEnum):
-    """Proportion units."""
-
-    PERCENT = "%"
-
-
 # Tuya Solar Valve
 (
     TuyaQuirkBuilder("_TZE200_arge1ptm", "TS0601")
     .applies_to("_TZE200_anv5ujhv", "TS0601")
     .applies_to("_TZE200_xlppj4f5", "TS0601")
-    #    .tuya_onoff(dp_id=1)                           # onoff does not appear to do anything.  Z2M ignores it, so commented out until somebody works out what it does
+
     .tuya_number(
         dp_id=2,
         attribute_name="valve_state_auto_shutdown",
@@ -729,7 +721,7 @@ class UnitOfProportion(StrEnum):
         min_value=0,
         max_value=100,
         step=5,
-        unit=UnitOfProportion.PERCENT,
+        unit=UnitOfProportion.PERCENTAGE,
         translation_key="valve_state_auto_shutdown",
         fallback_name="Valve state auto shutdown",
     )
@@ -737,7 +729,7 @@ class UnitOfProportion(StrEnum):
         dp_id=3,
         attribute_name="water_flow",
         type=t.uint32_t,
-        unit=UnitOfProportion.PERCENT,
+        unit=UnitOfProportion.PERCENTAGE,
         translation_key="water_flow",
         fallback_name="Water flow",
     )
