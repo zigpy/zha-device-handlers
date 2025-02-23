@@ -2,7 +2,6 @@
 
 from datetime import datetime, timedelta, timezone
 
-from zigpy.backports.enum import StrEnum
 from zigpy.quirks.v2 import BinarySensorDeviceClass, EntityPlatform, EntityType
 from zigpy.quirks.v2.homeassistant import (
     UnitOfElectricPotential,
@@ -17,7 +16,6 @@ from zhaquirks.const import BatterySize
 from zhaquirks.tuya import TUYA_CLUSTER_ID
 from zhaquirks.tuya.builder import TuyaQuirkBuilder, TuyaValveWaterConsumed
 from zhaquirks.tuya.mcu import TuyaMCUCluster
-from zigpy.quirks.v2.homeassistant import PERCENTAGE
 
 
 class TuyaValveWeatherDelay(t.enum8):
@@ -713,7 +711,6 @@ class GiexIrrigationStatus(t.enum8):
     TuyaQuirkBuilder("_TZE200_arge1ptm", "TS0601")
     .applies_to("_TZE200_anv5ujhv", "TS0601")
     .applies_to("_TZE200_xlppj4f5", "TS0601")
-
     .tuya_number(
         dp_id=2,
         attribute_name="valve_state_auto_shutdown",
