@@ -2,6 +2,7 @@
 
 from datetime import datetime, timedelta, timezone
 
+from zigpy.backports.enum import StrEnum
 from zigpy.quirks.v2 import BinarySensorDeviceClass, EntityPlatform, EntityType
 from zigpy.quirks.v2.homeassistant import (
     UnitOfElectricPotential,
@@ -707,6 +708,7 @@ class GiexIrrigationStatus(t.enum8):
     .add_to_registry()
 )
 
+
 # Proportion units
 class UnitOfProportion(StrEnum):
     """Proportion units."""
@@ -719,7 +721,7 @@ class UnitOfProportion(StrEnum):
     TuyaQuirkBuilder("_TZE200_arge1ptm", "TS0601")
     .applies_to("_TZE200_anv5ujhv", "TS0601")
     .applies_to("_TZE200_xlppj4f5", "TS0601")
-#    .tuya_onoff(dp_id=1)                           # onoff does not appear to do anything.  Z2M ignores it, so commented out until somebody works out what it does
+    #    .tuya_onoff(dp_id=1)                           # onoff does not appear to do anything.  Z2M ignores it, so commented out until somebody works out what it does
     .tuya_number(
         dp_id=2,
         attribute_name="valve_state_auto_shutdown",
