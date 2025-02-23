@@ -1,11 +1,13 @@
 """Map from manufacturer to standard clusters for thermostatic valves."""
 
+from typing import Any
+
+from zigpy.profiles import zha
 from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature
 from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 from zigpy.quirks.v2.homeassistant.sensor import SensorStateClass
 import zigpy.types as t
-from zigpy.zcl import foundation
-from zigpy.zcl.clusters.hvac import Thermostat
+from zigpy.zcl.clusters.hvac import RunningState, Thermostat
 
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import TuyaAttributesCluster
@@ -50,10 +52,9 @@ class ScheduleState(t.enum8):
 class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
     """Tuya local thermostat cluster."""
 
-    manufacturer_id_override: t.uint16_t = foundation.ZCLHeader.NO_MANUFACTURER_ID
     _CONSTANT_ATTRIBUTES = {
-        Thermostat.AttributeDefs.min_heat_setpoint_limit.id: 500,
-        Thermostat.AttributeDefs.max_heat_setpoint_limit.id: 3000,
+        Thermostat.AttributeDefs.abs_min_heat_setpoint_limit.id: 500,
+        Thermostat.AttributeDefs.abs_max_heat_setpoint_limit.id: 3000,
         Thermostat.AttributeDefs.ctrl_sequence_of_oper.id: Thermostat.ControlSequenceOfOperation.Heating_Only,
     }
 
@@ -68,11 +69,37 @@ class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
         )
         self.add_unsupported_attribute(Thermostat.AttributeDefs.pi_heating_demand.id)
 
-    async def write_attributes(self, attributes, manufacturer=None):
-        """Overwrite to force manufacturer code."""
-        return await super().write_attributes(
-            attributes, manufacturer=foundation.ZCLHeader.NO_MANUFACTURER_ID
+        # Previously mapped, marking as explicitly unsupported.
+        self.add_unsupported_attribute(
+            Thermostat.AttributeDefs.local_temperature_calibration.id
         )
+        self.add_unsupported_attribute(
+            Thermostat.AttributeDefs.min_heat_setpoint_limit.id
+        )
+        self.add_unsupported_attribute(
+            Thermostat.AttributeDefs.max_heat_setpoint_limit.id
+        )
+
+
+class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
+    """Ensures schedule is disabled on system_mode change."""
+
+    async def write_attributes(
+        self,
+        attributes: dict[str | int, Any],
+        manufacturer: int | None = None,
+        **kwargs,
+    ) -> list:
+        """Catch attribute writes for system_mode and set schedule to off."""
+        results = await super().write_attributes(attributes, manufacturer)
+        if (
+            Thermostat.AttributeDefs.system_mode.id in attributes
+            or Thermostat.AttributeDefs.system_mode.name in attributes
+        ):
+            tuya_cluster = self.endpoint.tuya_manufacturer
+            await tuya_cluster.write_attributes({"schedule_enable": False})
+
+        return results
 
 
 (
@@ -94,11 +121,14 @@ class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
     .applies_to("_TZE200_exfrnlow", "TS0601")
     .applies_to("_TZE200_9m4kmbfu", "TS0601")
     .applies_to("_TZE200_3yp57tby", "TS0601")
+    # default device type is `SMART_PLUG` for this,
+    # so change it back to keep UID/entity the same
+    .replaces_endpoint(1, device_type=zha.DeviceType.THERMOSTAT)
     .tuya_dp(
         dp_id=3,
-        ep_attribute=TuyaThermostatV2.ep_attribute,
-        attribute_name=TuyaThermostatV2.AttributeDefs.running_state.name,
-        converter=lambda x: 0x01 if not x else 0x00,  # Heat, Idle
+        ep_attribute=TuyaThermostatV2NoSchedule.ep_attribute,
+        attribute_name=TuyaThermostatV2NoSchedule.AttributeDefs.running_state.name,
+        converter=lambda x: RunningState.Heat_State_On if x else RunningState.Idle,
     )
     .tuya_switch(
         dp_id=8,
@@ -112,12 +142,16 @@ class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
         translation_key="frost_protection",
         fallback_name="Frost protection",
     )
-    .tuya_dp(
+    .tuya_number(
         dp_id=27,
-        ep_attribute=TuyaThermostatV2.ep_attribute,
-        attribute_name=TuyaThermostatV2.AttributeDefs.local_temperature_calibration.name,
-        converter=lambda x: x,
-        dp_converter=lambda x: 0xFFFFFFFF - x if x > 6 else x,
+        attribute_name=TuyaThermostatV2NoSchedule.AttributeDefs.local_temperature_calibration.name,
+        type=t.int32s,
+        min_value=-6,
+        max_value=6,
+        unit=UnitOfTemperature.CELSIUS,
+        step=1,
+        translation_key="local_temperature_calibration",
+        fallback_name="Local temperature calibration",
     )
     .tuya_switch(
         dp_id=40,
@@ -127,29 +161,31 @@ class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
     )
     .tuya_dp(
         dp_id=101,
-        ep_attribute=TuyaThermostatV2.ep_attribute,
-        attribute_name=TuyaThermostatV2.AttributeDefs.system_mode.name,
-        converter=lambda x: Thermostat.SystemMode.Heat
-        if x == TuyaThermostatSystemMode.Heat
-        else Thermostat.SystemMode.Off,
-        dp_converter=lambda x: TuyaThermostatSystemMode.Heat
-        if x == Thermostat.SystemMode.Heat
-        else 0x00,
+        ep_attribute=TuyaThermostatV2NoSchedule.ep_attribute,
+        attribute_name=TuyaThermostatV2NoSchedule.AttributeDefs.system_mode.name,
+        converter=lambda x: {
+            True: Thermostat.SystemMode.Heat,
+            False: Thermostat.SystemMode.Off,
+        }[x],
+        dp_converter=lambda x: {
+            Thermostat.SystemMode.Heat: True,
+            Thermostat.SystemMode.Off: False,
+        }[x],
     )
     .tuya_dp(
         dp_id=102,
-        ep_attribute=TuyaThermostatV2.ep_attribute,
-        attribute_name=TuyaThermostatV2.AttributeDefs.local_temperature.name,
+        ep_attribute=TuyaThermostatV2NoSchedule.ep_attribute,
+        attribute_name=TuyaThermostatV2NoSchedule.AttributeDefs.local_temperature.name,
         converter=lambda x: x * 10,
     )
     .tuya_dp(
         dp_id=103,
-        ep_attribute=TuyaThermostatV2.ep_attribute,
-        attribute_name=TuyaThermostatV2.AttributeDefs.occupied_heating_setpoint.name,
+        ep_attribute=TuyaThermostatV2NoSchedule.ep_attribute,
+        attribute_name=TuyaThermostatV2NoSchedule.AttributeDefs.occupied_heating_setpoint.name,
         converter=lambda x: x * 10,
         dp_converter=lambda x: x // 10,
     )
-    .adds(TuyaThermostatV2)
+    .adds(TuyaThermostatV2NoSchedule)
     .tuya_sensor(
         dp_id=104,
         attribute_name="valve_position",
@@ -223,7 +259,7 @@ class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
         dp_id=6,
         ep_attribute=TuyaThermostatV2.ep_attribute,
         attribute_name=TuyaThermostatV2.AttributeDefs.running_state.name,
-        converter=lambda x: 0x01 if not x else 0x00,  # Heat, Idle
+        converter=lambda x: RunningState.Heat_State_On if x else RunningState.Idle,
     )
     .tuya_binary_sensor(
         dp_id=7,
@@ -273,12 +309,16 @@ class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
         translation_key="max_temperature",
         fallback_name="Max temperature",
     )
-    .tuya_dp(
+    .tuya_number(
         dp_id=101,
-        ep_attribute=TuyaThermostatV2.ep_attribute,
         attribute_name=TuyaThermostatV2.AttributeDefs.local_temperature_calibration.name,
-        converter=lambda x: x,
-        dp_converter=lambda x: x + 0x100000000 if x < 0 else x,
+        type=t.int32s,
+        min_value=-6,
+        max_value=6,
+        unit=UnitOfTemperature.CELSIUS,
+        step=1,
+        translation_key="local_temperature_calibration",
+        fallback_name="Local temperature calibration",
     )
     .tuya_enum(
         dp_id=114,
@@ -327,7 +367,7 @@ class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
         dp_id=3,
         ep_attribute=TuyaThermostatV2.ep_attribute,
         attribute_name=TuyaThermostatV2.AttributeDefs.running_state.name,
-        converter=lambda x: 0x01 if not x else 0x00,  # Heat, Idle
+        converter=lambda x: RunningState.Heat_State_On if not x else RunningState.Idle,
     )
     .tuya_dp(
         dp_id=4,
@@ -342,12 +382,16 @@ class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
         attribute_name=TuyaThermostatV2.AttributeDefs.local_temperature.name,
         converter=lambda x: x * 10,
     )
-    .tuya_dp(
+    .tuya_number(
         dp_id=47,
-        ep_attribute=TuyaThermostatV2.ep_attribute,
         attribute_name=TuyaThermostatV2.AttributeDefs.local_temperature_calibration.name,
-        converter=lambda x: x,
-        dp_converter=lambda x: x + 0x100000000 if x < 0 else x,
+        type=t.int32s,
+        min_value=-6,
+        max_value=6,
+        unit=UnitOfTemperature.CELSIUS,
+        step=1,
+        translation_key="local_temperature_calibration",
+        fallback_name="Local temperature calibration",
     )
     .tuya_switch(
         dp_id=7,

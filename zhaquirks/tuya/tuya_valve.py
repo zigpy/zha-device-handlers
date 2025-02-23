@@ -3,7 +3,11 @@
 from datetime import datetime, timedelta, timezone
 
 from zigpy.quirks.v2 import BinarySensorDeviceClass, EntityPlatform, EntityType
-from zigpy.quirks.v2.homeassistant import UnitOfTime, UnitOfVolume
+from zigpy.quirks.v2.homeassistant import (
+    UnitOfElectricPotential,
+    UnitOfTime,
+    UnitOfVolume,
+)
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
 from zigpy.zcl.clusters.smartenergy import Metering
@@ -663,6 +667,41 @@ class GiexIrrigationStatus(t.enum8):
     )
     .tuya_battery(dp_id=115, battery_type=BatterySize.AA, battery_qty=2)
     .tuya_enchantment()
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# Tuya 214C Ultrasonic water meter valve
+(
+    TuyaQuirkBuilder("_TZE200_zlwr0raf", "TS0601")
+    .tuya_metering(dp_id=1, metering_cfg=TuyaValveWaterConsumed)
+    # Skipped DP 2,3,4,5,6,16,18
+    .tuya_onoff(dp_id=13)
+    .tuya_switch(
+        dp_id=14,
+        attribute_name="auto_clean",
+        entity_type=EntityType.CONFIG,
+        translation_key="auto_clean",
+        fallback_name="Auto clean",
+    )
+    .tuya_dp(
+        dp_id=21,
+        ep_attribute=TuyaValveWaterConsumed.ep_attribute,
+        attribute_name=Metering.AttributeDefs.instantaneous_demand.name,
+    )
+    .tuya_temperature(dp_id=22)
+    .tuya_sensor(
+        dp_id=26,
+        attribute_name="voltage",
+        type=t.uint16_t,
+        converter=lambda x: x * 100,
+        device_class=SensorDeviceClass.VOLTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=UnitOfElectricPotential.VOLT,
+        entity_type=EntityType.STANDARD,
+        fallback_name="Voltage",
+    )
     .skip_configuration()
     .add_to_registry()
 )
