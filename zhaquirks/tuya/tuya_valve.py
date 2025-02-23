@@ -16,7 +16,7 @@ from zhaquirks.const import BatterySize
 from zhaquirks.tuya import TUYA_CLUSTER_ID
 from zhaquirks.tuya.builder import TuyaQuirkBuilder, TuyaValveWaterConsumed
 from zhaquirks.tuya.mcu import TuyaMCUCluster
-from zigpy.backports.enum import StrEnum
+from zigpy.quirks.v2.homeassistant import PERCENTAGE
 
 
 class TuyaValveWeatherDelay(t.enum8):
