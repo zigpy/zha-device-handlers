@@ -721,7 +721,7 @@ class GiexIrrigationStatus(t.enum8):
         min_value=0,
         max_value=100,
         step=5,
-        unit=UnitOfProportion.PERCENTAGE,
+        unit=PERCENTAGE,
         translation_key="valve_state_auto_shutdown",
         fallback_name="Valve state auto shutdown",
     )
@@ -729,7 +729,7 @@ class GiexIrrigationStatus(t.enum8):
         dp_id=3,
         attribute_name="water_flow",
         type=t.uint32_t,
-        unit=UnitOfProportion.PERCENTAGE,
+        unit=PERCENTAGE,
         translation_key="water_flow",
         fallback_name="Water flow",
     )
