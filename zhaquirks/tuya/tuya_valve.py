@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 
 from zigpy.quirks.v2 import BinarySensorDeviceClass, EntityPlatform, EntityType
 from zigpy.quirks.v2.homeassistant import (
+    PERCENTAGE,
     UnitOfElectricPotential,
     UnitOfTime,
     UnitOfVolume,
@@ -16,7 +17,7 @@ from zhaquirks.const import BatterySize
 from zhaquirks.tuya import TUYA_CLUSTER_ID
 from zhaquirks.tuya.builder import TuyaQuirkBuilder, TuyaValveWaterConsumed
 from zhaquirks.tuya.mcu import TuyaMCUCluster
-from zigpy.quirks.v2.homeassistant import PERCENTAGE
+
 
 class TuyaValveWeatherDelay(t.enum8):
     """Tuya Irrigation Valve weather delay enum."""
