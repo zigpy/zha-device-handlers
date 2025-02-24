@@ -1,6 +1,7 @@
 """Quirk for TS0207 rain sensors."""
 
 from zigpy.quirks.v2.homeassistant import LIGHT_LUX, EntityType, UnitOfElectricPotential
+from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
 from zigpy.zcl.clusters.security import IasZone
@@ -54,7 +55,7 @@ class TuyaIasZone(IasZone, TuyaLocalCluster):
     .tuya_binary_sensor(
         dp_id=104,
         attribute_name="cleaning_reminder",
-        translation_key="cleaning_reminder",
+        device_class=BinarySensorDeviceClass.PROBLEM,
         fallback_name="Cleaning reminder",
     )
     .tuya_dp_multi(
@@ -84,7 +85,7 @@ class TuyaIasZone(IasZone, TuyaLocalCluster):
         state_class=SensorStateClass.MEASUREMENT,
         unit=UnitOfElectricPotential.MILLIVOLT,
         entity_type=EntityType.STANDARD,
-        fallback_name="Rain Intensity",
+        fallback_name="Rain intensity",
     )
     .adds(TuyaIasZone)
     .skip_configuration()
