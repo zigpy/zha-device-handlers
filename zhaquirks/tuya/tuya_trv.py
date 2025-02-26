@@ -916,9 +916,9 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
     )
     .tuya_switch(
         dp_id=106,
-        attribute_name="leave_home",
-        translation_key="leave_home",
-        fallback_name="Leave home",
+        attribute_name="away_mode",
+        translation_key="away_mode",
+        fallback_name="Away mode",
     )
     .tuya_switch(
         dp_id=108,
