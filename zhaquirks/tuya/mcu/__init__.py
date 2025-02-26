@@ -276,7 +276,7 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
     ) -> dict[int, DPToAttributeMapping]:
         """Search for the DP in _dp_to_attributes."""
 
-        result = {}
+        result: dict[int, DPToAttributeMapping] = {}
         for dp, dp_mapping in self._dp_to_attributes.items():
             for mapped_attr in dp_mapping:
                 if (
