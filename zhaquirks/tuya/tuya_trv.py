@@ -3,7 +3,7 @@
 from typing import Any
 
 from zigpy.profiles import zha
-from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature
+from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature, UnitOfTime
 from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 from zigpy.quirks.v2.homeassistant.sensor import SensorStateClass
 import zigpy.types as t
@@ -19,6 +19,13 @@ class TuyaThermostatSystemMode(t.enum8):
     Auto = 0x00
     Heat = 0x01
     Off = 0x02
+
+
+class TuyaThermostatSystemModeV02(t.enum8):
+    """Tuya thermostat system mode enum, auto and manual."""
+
+    Auto = 0x00
+    Manual = 0x02
 
 
 class TuyaThermostatEcoMode(t.enum8):
@@ -47,6 +54,15 @@ class ScheduleState(t.enum8):
 
     Disabled = 0x00
     Enabled = 0x01
+
+
+class ScreenOrientation(t.enum8):
+    """Screen orientation enum."""
+
+    Up = 0x00
+    Right = 0x01
+    Down = 0x02
+    Left = 0x03
 
 
 class TuyaThermostatV2(Thermostat, TuyaAttributesCluster):
@@ -419,6 +435,172 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
         fallback_name="Scale protection",
     )
     .adds(TuyaThermostatV2)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+(
+    TuyaQuirkBuilder("_TZE284_ymldrmzx", "TS0601")  # Tuya TRV603-WZ
+    .tuya_dp(
+        dp_id=2,
+        ep_attribute=TuyaThermostatV2.ep_attribute,
+        attribute_name=TuyaThermostatV2.AttributeDefs.system_mode.name,
+        converter=lambda x: {
+            TuyaThermostatSystemModeV02.Auto: Thermostat.SystemMode.Auto,
+            TuyaThermostatSystemModeV02.Manual: Thermostat.SystemMode.Heat,
+        }[x],
+        dp_converter=lambda x: {
+            Thermostat.SystemMode.Auto: TuyaThermostatSystemModeV02.Auto,
+            Thermostat.SystemMode.Heat: TuyaThermostatSystemModeV02.Manual,
+        }[x],
+    )
+    .tuya_dp(
+        dp_id=4,
+        ep_attribute=TuyaThermostatV2.ep_attribute,
+        attribute_name=TuyaThermostatV2.AttributeDefs.occupied_heating_setpoint.name,
+        converter=lambda x: x * 10,
+        dp_converter=lambda x: x // 10,
+    )
+    .tuya_dp(
+        dp_id=5,
+        ep_attribute=TuyaThermostatV2.ep_attribute,
+        attribute_name=TuyaThermostatV2.AttributeDefs.local_temperature.name,
+        converter=lambda x: x * 10,
+    )
+    .tuya_battery(dp_id=6)
+    .tuya_switch(
+        dp_id=7,
+        attribute_name="child_lock",
+        translation_key="child_lock",
+        fallback_name="Child lock",
+    )
+    .tuya_switch(
+        dp_id=14,
+        attribute_name="window_detection",
+        translation_key="window_detection",
+        fallback_name="Open window detection",
+    )
+    .tuya_binary_sensor(
+        dp_id=15,
+        attribute_name="window_open",
+        device_class=BinarySensorDeviceClass.WINDOW,
+        fallback_name="Window open",
+    )
+    .tuya_number(
+        dp_id=21,
+        attribute_name="holiday_temperature",
+        type=t.uint16_t,
+        min_value=5,
+        max_value=30,
+        unit=UnitOfTemperature.CELSIUS,
+        step=1,
+        translation_key="holiday_temperature",
+        fallback_name="Holiday temperature",
+    )
+    .tuya_switch(
+        dp_id=36,
+        attribute_name="frost_protection",
+        translation_key="frost_protection",
+        fallback_name="Frost protection",
+    )
+    .tuya_switch(
+        dp_id=39,
+        attribute_name="scale_protection",
+        translation_key="scale_protection",
+        fallback_name="Scale protection",
+    )
+    .tuya_number(
+        dp_id=47,
+        attribute_name=TuyaThermostatV2.AttributeDefs.local_temperature_calibration.name,
+        type=t.int32s,
+        min_value=-6,
+        max_value=6,
+        unit=UnitOfTemperature.CELSIUS,
+        step=1,
+        translation_key="local_temperature_calibration",
+        fallback_name="Local temperature calibration",
+    )
+    .tuya_switch(
+        dp_id=101,
+        attribute_name="boost_heating",
+        translation_key="boost_heating",
+        fallback_name="Boost heating",
+    )
+    .tuya_number(
+        dp_id=102,
+        attribute_name="boost_time",
+        type=t.uint16_t,
+        min_value=0,
+        max_value=1000,
+        unit=UnitOfTime.MINUTES,
+        step=1,
+        translation_key="boost_time",
+        fallback_name="Boost time",
+    )
+    # 103-109 are schedule DPs, skipped
+    .tuya_switch(
+        dp_id=110,
+        attribute_name="holiday_mode",
+        translation_key="holiday_mode",
+        fallback_name="Holiday mode",
+    )
+    .tuya_enum(
+        dp_id=111,
+        attribute_name="screen_orientation",
+        enum_class=ScreenOrientation,
+        translation_key="screen_orientation",
+        fallback_name="Screen orientation",
+    )
+    .tuya_number(
+        dp_id=112,
+        attribute_name="antifrost_temperature",
+        type=t.uint16_t,
+        min_value=5,
+        max_value=30,
+        unit=UnitOfTemperature.CELSIUS,
+        step=1,
+        translation_key="antifrost_temperature",
+        fallback_name="Antifrost temperature",
+    )
+    .tuya_switch(
+        dp_id=113,
+        attribute_name="heating_stop",
+        translation_key="heating_stop",
+        fallback_name="Heating stop",
+    )
+    # DP 115 programming_mode, z2m doesn't expose
+    .tuya_number(
+        dp_id=116,
+        attribute_name="eco_temperature",
+        type=t.uint16_t,
+        min_value=5,
+        max_value=30,
+        unit=UnitOfTemperature.CELSIUS,
+        step=1,
+        translation_key="eco_temperature",
+        fallback_name="Eco temperature",
+    )
+    .tuya_number(
+        dp_id=117,
+        attribute_name="comfort_temperature",
+        type=t.uint16_t,
+        min_value=5,
+        max_value=30,
+        unit=UnitOfTemperature.CELSIUS,
+        step=1,
+        translation_key="comfort_temperature",
+        fallback_name="Comfort temperature",
+    )
+    .tuya_sensor(
+        dp_id=118,
+        attribute_name="fault_code",
+        type=t.int16s,
+        translation_key="fault_code",
+        fallback_name="Fault code",
+    )
+    .adds(TuyaThermostatV2)
+    .tuya_enchantment()
     .skip_configuration()
     .add_to_registry()
 )
