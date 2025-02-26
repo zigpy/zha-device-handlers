@@ -42,7 +42,7 @@ class DPToAttributeMapping:
     attribute_name: Union[str, tuple]
     converter: Callable[[Any], Any] | None = None
     dp_converter: Callable[[Any], Any] | None = None
-    endpoint_id: Optional[int] = None
+    endpoint_id: int | None = None
 
 
 class TuyaClusterData(t.Struct):

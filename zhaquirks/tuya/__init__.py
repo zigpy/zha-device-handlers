@@ -1460,7 +1460,7 @@ class DPToAttributeMapping:
     ep_attribute: str
     attribute_name: Union[str, tuple]
     converter: Callable[[Any], Any] | None = None
-    endpoint_id: Optional[int] = None
+    endpoint_id: int | None = None
 
 
 @dataclasses.dataclass
