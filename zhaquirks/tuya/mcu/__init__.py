@@ -3,7 +3,7 @@
 from collections.abc import Callable
 import dataclasses
 import datetime
-from typing import Any, Optional, Union
+from typing import Any
 
 import zigpy.types as t
 from zigpy.zcl import foundation
@@ -39,7 +39,7 @@ class DPToAttributeMapping:
     """Container for datapoint to cluster attribute update mapping."""
 
     ep_attribute: str
-    attribute_name: Union[str, tuple]
+    attribute_name: str | tuple[str, ...]
     converter: Callable[[Any], Any] | None = None
     dp_converter: Callable[[Any], Any] | None = None
     endpoint_id: int | None = None
@@ -273,7 +273,7 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
 
     def get_dp_mapping(
         self, endpoint_id: int, attribute_name: str
-    ) -> Optional[tuple[int, DPToAttributeMapping]]:
+    ) -> dict[int, DPToAttributeMapping]:
         """Search for the DP in _dp_to_attributes."""
 
         result = {}
@@ -351,11 +351,12 @@ class TuyaOnOff(OnOff, TuyaLocalCluster):
 
     async def command(
         self,
-        command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
+        command_id: foundation.GeneralCommand | int | t.uint8_t,
         *args,
-        manufacturer: Optional[Union[int, t.uint16_t]] = None,
+        manufacturer: int | t.uint16_t | None = None,
         expect_reply: bool = True,
-        tsn: Optional[Union[int, t.uint8_t]] = None,
+        tsn: int | t.uint8_t | None = None,
+        **kwargs: Any,
     ):
         """Override the default Cluster command."""
 
@@ -541,11 +542,11 @@ class TuyaLevelControl(LevelControl, TuyaLocalCluster):
 
     async def command(
         self,
-        command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
+        command_id: foundation.GeneralCommand | int | t.uint8_t,
         *args,
-        manufacturer: Optional[Union[int, t.uint16_t]] = None,
+        manufacturer: int | t.uint16_t | None = None,
         expect_reply: bool = True,
-        tsn: Optional[Union[int, t.uint8_t]] = None,
+        tsn: int | t.uint8_t | None = None,
         **kwargs: Any,
     ):
         """Override the default Cluster command."""
