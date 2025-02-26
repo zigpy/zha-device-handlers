@@ -4,15 +4,17 @@ from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic
-from zigpy.zcl.foundation import ZCLAttributeDef, DataTypeId
+from zigpy.zcl.foundation import DataTypeId, ZCLAttributeDef
 
 CANDEO = "Candeo"
+
 
 class CandeoSwitchType(t.enum8):
     """Candeo Switch Type."""
 
     Momentary = 0x00
     Toggle = 0x01
+
 
 class CandeoBasicCluster(Basic, CustomCluster):
     """Candeo Basic Cluster."""
@@ -32,6 +34,7 @@ class CandeoBasicCluster(Basic, CustomCluster):
     async def apply_custom_configuration(self, *args, **kwargs):
         """Apply Custom Configuration."""
         await self.write_attributes(self.attr_config, manufacturer=0x1224)
+
 
 (
     QuirkBuilder(CANDEO, "C-ZB-SM205-2G")
