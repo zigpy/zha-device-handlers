@@ -70,13 +70,6 @@ class ScreenOrientation(t.enum8):
     Left = 0x03
 
 
-class TuyaWindowOpen(t.enum8):
-    """Tuya window open state."""
-
-    Closed = 0x00
-    Open = 0x01
-
-
 class TuyaDisplayBrightness(t.enum8):
     """Tuya display brightness mode."""
 
