@@ -1,4 +1,4 @@
-"""Test for Tuya Siren."""
+"""Test for Tuya rain sensor."""
 
 import pytest
 from zigpy.zcl.clusters.security import IasZone
@@ -17,7 +17,7 @@ ZCL_TUYA_RAIN_MV_02 = b"\tp\x02\x00\x02i\x02\x00\x04\x00\x00\x01\xf4"  # 500mv
     "frame,value,rain_detected",
     [(ZCL_TUYA_RAIN_MV_01, 32, False), (ZCL_TUYA_RAIN_MV_02, 500, True)],
 )
-async def test_siren_state_report(
+async def test_rain_sensor_state_report(
     zigpy_device_from_v2_quirk, frame, value, rain_detected
 ):
     """Test tuya rain sensor standard state reporting."""
