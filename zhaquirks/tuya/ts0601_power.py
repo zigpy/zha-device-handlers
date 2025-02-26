@@ -16,7 +16,7 @@ from zhaquirks.tuya import DPToAttributeMapping, TuyaLocalCluster
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 
-def dpToPower(data: ByteString) -> int:
+def dp_to_power(data: ByteString) -> int:
     """Convert DP data to power value."""
     # From https://github.com/Koenkk/zigbee2mqtt/issues/18603#issuecomment-2277697295
     power = int(data)
@@ -25,7 +25,7 @@ def dpToPower(data: ByteString) -> int:
     return power
 
 
-def multiDpToPower(data: ByteString) -> int:
+def multi_dp_to_power(data: ByteString) -> int:
     """Convert DP data to power value."""
     # Support negative power readings
     # From https://github.com/Koenkk/zigbee2mqtt/issues/18603#issuecomment-2277697295
@@ -35,12 +35,12 @@ def multiDpToPower(data: ByteString) -> int:
     return power
 
 
-def multiDpToCurrent(data: ByteString) -> int:
+def multi_dp_to_current(data: ByteString) -> int:
     """Convert DP data to current value."""
     return data[4] | (data[3] << 8)
 
 
-def multiDpToVoltage(data: ByteString) -> int:
+def multi_dp_to_voltage(data: ByteString) -> int:
     """Convert DP data to voltage value."""
     return data[1] | (data[0] << 8)
 
@@ -123,7 +123,7 @@ class Tuya3PhaseElectricalMeasurement(ElectricalMeasurement, TuyaLocalCluster):
         device_class=SensorDeviceClass.POWER,
         unit=UnitOfPower.WATT,
         fallback_name="Total power",
-        converter=dpToPower,
+        converter=dp_to_power,
     )
     .tuya_sensor(
         dp_id=0x83,
@@ -141,17 +141,17 @@ class Tuya3PhaseElectricalMeasurement(ElectricalMeasurement, TuyaLocalCluster):
             DPToAttributeMapping(
                 ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
                 attribute_name="active_power",
-                converter=multiDpToPower,
+                converter=multi_dp_to_power,
             ),
             DPToAttributeMapping(
                 ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
                 attribute_name="rms_voltage",
-                converter=multiDpToVoltage,
+                converter=multi_dp_to_voltage,
             ),
             DPToAttributeMapping(
                 ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
                 attribute_name="rms_current",
-                converter=multiDpToCurrent,
+                converter=multi_dp_to_current,
             ),
         ],
     )
@@ -161,17 +161,17 @@ class Tuya3PhaseElectricalMeasurement(ElectricalMeasurement, TuyaLocalCluster):
             DPToAttributeMapping(
                 ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
                 attribute_name="active_power_ph_b",
-                converter=multiDpToPower,
+                converter=multi_dp_to_power,
             ),
             DPToAttributeMapping(
                 ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
                 attribute_name="rms_voltage_ph_b",
-                converter=multiDpToVoltage,
+                converter=multi_dp_to_voltage,
             ),
             DPToAttributeMapping(
                 ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
                 attribute_name="rms_current_ph_b",
-                converter=multiDpToCurrent,
+                converter=multi_dp_to_current,
             ),
         ],
     )
@@ -181,17 +181,17 @@ class Tuya3PhaseElectricalMeasurement(ElectricalMeasurement, TuyaLocalCluster):
             DPToAttributeMapping(
                 ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
                 attribute_name="active_power_ph_c",
-                converter=multiDpToPower,
+                converter=multi_dp_to_power,
             ),
             DPToAttributeMapping(
                 ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
                 attribute_name="rms_voltage_ph_c",
-                converter=multiDpToVoltage,
+                converter=multi_dp_to_voltage,
             ),
             DPToAttributeMapping(
                 ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
                 attribute_name="rms_current_ph_c",
-                converter=multiDpToCurrent,
+                converter=multi_dp_to_current,
             ),
         ],
     )
