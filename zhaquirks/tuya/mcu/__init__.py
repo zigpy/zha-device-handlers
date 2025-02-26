@@ -40,22 +40,8 @@ class DPToAttributeMapping:
 
     ep_attribute: str
     attribute_name: Union[str, tuple]
-    converter: Optional[
-        Callable[
-            [
-                Any,
-            ],
-            Any,
-        ]
-    ] = None
-    dp_converter: Optional[
-        Callable[
-            [
-                Any,
-            ],
-            Any,
-        ]
-    ] = None
+    converter: Callable[[Any], Any] | None = None
+    dp_converter: Callable[[Any], Any] | None = None
     endpoint_id: Optional[int] = None
 
 

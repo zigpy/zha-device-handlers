@@ -6,7 +6,7 @@ import inspect
 import math
 import pathlib
 from types import FrameType
-from typing import Any, Optional
+from typing import Any
 
 from zigpy.quirks import _DEVICE_REGISTRY
 from zigpy.quirks.registry import DeviceRegistry
@@ -256,7 +256,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         self,
         dp_id: int,
         illuminance_cfg: TuyaLocalCluster = TuyaIlluminance,
-        converter: Optional[Callable[[Any], Any]] = (
+        converter: Callable[[Any], Any] | None = (
             lambda x: 10000 * math.log10(x) + 1 if x != 0 else 0
         ),
     ) -> QuirkBuilder:
@@ -353,7 +353,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         self,
         dp_id: int,
         ias_cfg: TuyaLocalCluster,
-        converter: Optional[Callable[[Any], Any]] = None,
+        converter: Callable[[Any], Any] | None = None,
     ) -> QuirkBuilder:
         """Add a Tuya IAS Configuration."""
         self.tuya_dp(
@@ -496,11 +496,11 @@ class TuyaQuirkBuilder(QuirkBuilder):
         dp_id: int,
         ep_attribute: str,
         attribute_name: str,
-        converter: Optional[Callable[[Any], Any]] = None,
-        dp_converter: Optional[Callable[[Any], Any]] = None,
-        endpoint_id: Optional[int] = None,
+        converter: Callable[[Any], Any] | None = None,
+        dp_converter: Callable[[Any], Any] | None = None,
+        endpoint_id: int | None = None,
         dp_handler: str = "_dp_2_attr_update",
-    ) -> QuirkBuilder:  # fmt: skip
+    ) -> QuirkBuilder:
         """Add Tuya DP Converter."""
 
         self.tuya_dp_multi(
@@ -538,14 +538,14 @@ class TuyaQuirkBuilder(QuirkBuilder):
         dp_id: int,
         attribute_name: str,
         ep_attribute: str = TuyaMCUCluster.ep_attribute,
-        converter: Optional[Callable[[Any], Any]] = None,
-        dp_converter: Optional[Callable[[Any], Any]] = None,
-        endpoint_id: Optional[int] = None,
+        converter: Callable[[Any], Any] | None = None,
+        dp_converter: Callable[[Any], Any] | None = None,
+        endpoint_id: int | None = None,
         dp_handler: str = "_dp_2_attr_update",
         type: type = t.uint16_t,
         access: foundation.ZCLAttributeAccess = foundation.ZCLAttributeAccess.NONE,
         is_manufacturer_specific=True,
-    ) -> QuirkBuilder:  # fmt: skip
+    ) -> QuirkBuilder:
         """Add an Tuya DataPoint and corresponding AttributeDef."""
         self.tuya_attribute(
             dp_id=dp_id,
@@ -742,8 +742,8 @@ class TuyaQuirkBuilder(QuirkBuilder):
         dp_id: int,
         attribute_name: str,
         type: type,
-        converter: Optional[Callable[[Any], Any]] = None,
-        dp_converter: Optional[Callable[[Any], Any]] = None,
+        converter: Callable[[Any], Any] | None = None,
+        dp_converter: Callable[[Any], Any] | None = None,
         endpoint_id: int = 1,
         divisor: int = 1,
         multiplier: int = 1,
@@ -755,7 +755,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         attribute_initialized_from_cache: bool = True,
         translation_key: str | None = None,
         fallback_name: str | None = None,
-    ) -> QuirkBuilder:  # fmt: skip
+    ) -> QuirkBuilder:
         """Add an EntityMetadata containing ZCLSensorMetadata and return self.
 
         This method allows exposing a sensor entity in Home Assistant.
