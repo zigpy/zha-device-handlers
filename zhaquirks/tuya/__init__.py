@@ -1239,7 +1239,7 @@ class TuyaWindowCoverControl(LocalDataCluster, WindowCovering):
             self._attr_cache,
         )
 
-    async def command(
+    def command(
         self,
         command_id: foundation.GeneralCommand | int | t.uint8_t,
         *args,
@@ -1403,7 +1403,7 @@ class TuyaLevelControl(CustomCluster, LevelControl):
         )
         self._update_attribute(self.attributes_by_name["current_level"].id, level)
 
-    async def command(
+    def command(
         self,
         command_id: foundation.GeneralCommand | int | t.uint8_t,
         *args,
