@@ -197,7 +197,7 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
         self.endpoint.device.command_bus = Bus()
         self.endpoint.device.command_bus.add_listener(self)
 
-    def from_cluster_data(self, data: TuyaClusterData) -> Optional[TuyaCommand]:
+    def from_cluster_data(self, data: TuyaClusterData) -> list[TuyaCommand]:
         """Convert from cluster data to a tuya data payload."""
 
         dp_mapping = self.get_dp_mapping(data.endpoint_id, data.cluster_attr)
@@ -210,7 +210,7 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
             )
             return []
 
-        tuya_commands = []
+        tuya_commands: list[TuyaCommand] = []
         for dp, mapping in dp_mapping.items():
             cmd_payload = TuyaCommand()
             cmd_payload.status = 0
@@ -235,7 +235,7 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
 
             dpd = TuyaDatapointData(dp, val)
             self.debug("raw: %s", dpd.data.raw)
-            cmd_payload.datapoints = [dpd]
+            cmd_payload.datapoints = t.List([dpd])
 
             tuya_commands.append(cmd_payload)
         return tuya_commands
