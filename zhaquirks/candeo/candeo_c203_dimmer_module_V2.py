@@ -1,4 +1,4 @@
-"""Candeo C203 Dimmer Module"""
+"""Candeo C203 Dimmer Module."""
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
@@ -15,7 +15,7 @@ class CandeoSwitchType(t.enum8):
     Toggle = 0x01
 
 class CandeoBasicCluster(Basic, CustomCluster):
-    """Candeo Basic Cluster"""
+    """Candeo Basic Cluster."""
 
     class AttributeDefs(Basic.AttributeDefs):
         """Attribute Definitions."""
