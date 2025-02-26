@@ -3,7 +3,6 @@
 from typing import Any
 
 from zigpy.profiles import zha
-from zigpy.quirks.v2 import EntityPlatform, EntityType
 from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature, UnitOfTime
 from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 from zigpy.quirks.v2.homeassistant.sensor import SensorStateClass
@@ -766,13 +765,10 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
         translation_key="window_detection",
         fallback_name="Open window detection",
     )
-    .tuya_enum(
+    .tuya_binary_sensor(
         dp_id=15,
         attribute_name="window_open",
-        enum_class=TuyaWindowOpen,
-        entity_platform=EntityPlatform.SENSOR,
-        entity_type=EntityType.STANDARD,
-        translation_key="window_open",
+        device_class=BinarySensorDeviceClass.WINDOW,
         fallback_name="Window open",
     )
     .tuya_enum(
