@@ -99,6 +99,7 @@ class InovelliCluster(CustomCluster):
 
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
+
         dimming_speed_up_remote = ZCLAttributeDef(
             id=0x0001,
             type=t.uint8_t,
@@ -278,6 +279,7 @@ class InovelliVZM30SNCluster(InovelliCluster):
 
     class AttributeDefs(InovelliCluster.AttributeDefs):
         """Attribute definitions."""
+
         dimming_speed_up_local = ZCLAttributeDef(
             id=0x0002,
             type=t.uint8_t,
@@ -607,6 +609,7 @@ class InovelliVZM31SNCluster(InovelliCluster):
 
     class AttributeDefs(InovelliCluster.AttributeDefs):
         """Attribute definitions."""
+
         dimming_speed_up_local = ZCLAttributeDef(
             id=0x0002,
             type=t.uint8_t,
@@ -936,6 +939,7 @@ class InovelliVZM32SNCluster(InovelliCluster):
 
     class AttributeDefs(InovelliCluster.AttributeDefs):
         """Attribute definitions."""
+
         dimming_speed_up_local = ZCLAttributeDef(
             id=0x0002,
             type=t.uint8_t,
@@ -1270,6 +1274,7 @@ class InovelliVZM35SNCluster(InovelliCluster):
 
     class AttributeDefs(InovelliCluster.AttributeDefs):
         """Attribute definitions."""
+
         dimming_speed_up_local = ZCLAttributeDef(
             id=0x0002,
             type=t.uint8_t,
@@ -1589,6 +1594,7 @@ class InovelliVZM36LightCluster(InovelliCluster):
 
     class AttributeDefs(InovelliCluster.AttributeDefs):
         """Attribute definitions."""
+
         quick_start_time = ZCLAttributeDef(
             id=0x0017,
             type=t.uint8_t,
@@ -1618,6 +1624,7 @@ class InovelliVZM36FanCluster(InovelliCluster):
 
     class AttributeDefs(InovelliCluster.AttributeDefs):
         """Attribute definitions."""
+
         quick_start_time = ZCLAttributeDef(
             id=0x0017,
             type=t.uint8_t,
