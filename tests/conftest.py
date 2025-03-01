@@ -5,10 +5,12 @@ from unittest.mock import AsyncMock, Mock
 import pytest
 import zigpy.application
 import zigpy.device
+from zigpy.device import Device
 import zigpy.quirks
 import zigpy.types
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic
+from zigpy.zdo.types import NodeDescriptor
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -20,6 +22,8 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+
+from .async_mock import sentinel
 
 
 class MockApp(zigpy.application.ControllerApplication):
@@ -88,7 +92,6 @@ class MockApp(zigpy.application.ControllerApplication):
 def app_controller_mock():
     """App controller mock."""
     config = {"device": {"path": "/dev/ttyUSB0"}, "database": None}
-    config = MockApp.SCHEMA(config)
     app = MockApp(config)
     return app
 
@@ -133,6 +136,7 @@ def zigpy_device_from_quirk(MockAppController, ieee_mock):
         raw_device = zigpy.device.Device(MockAppController, ieee, nwk)
         raw_device.manufacturer = manufacturer
         raw_device.model = model
+        raw_device.node_desc = NodeDescriptor(manufacturer_code=1234)
 
         endpoints = quirk.signature.get(ENDPOINTS, {})
         for ep_id, ep_data in endpoints.items():
@@ -175,6 +179,7 @@ def zigpy_device_from_v2_quirk(MockAppController, ieee_mock):
         raw_device = zigpy.device.Device(MockAppController, ieee, nwk)
         raw_device.manufacturer = manufacturer
         raw_device.model = model
+        raw_device.node_desc = NodeDescriptor(manufacturer_code=1234)
 
         for endpoint_id in endpoint_ids:
             ep = raw_device.add_endpoint(endpoint_id)
@@ -203,6 +208,25 @@ def zigpy_device_from_v2_quirk(MockAppController, ieee_mock):
         return quirked
 
     return _dev
+
+
+@pytest.fixture(name="device_mock")
+def real_device(MockAppController):
+    """Device fixture with a single endpoint."""
+    ieee = sentinel.ieee
+    nwk = 0x2233
+    device = Device(MockAppController, ieee, nwk)
+
+    device.add_endpoint(1)
+    device[1].profile_id = 0x0104
+    device[1].device_type = 0x0051
+    device.model = "model"
+    device.manufacturer = "manufacturer"
+    device[1].add_input_cluster(0x0000)
+    device[1].add_input_cluster(0xEF00)
+    device[1].add_output_cluster(0x000A)
+    device[1].add_output_cluster(0x0019)
+    return device
 
 
 @pytest.fixture

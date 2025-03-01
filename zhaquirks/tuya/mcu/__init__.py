@@ -1,9 +1,11 @@
 """Tuya MCU communications."""
 
+from __future__ import annotations
+
 from collections.abc import Callable
 import dataclasses
 import datetime
-from typing import Any, Optional, Union
+from typing import Any
 
 import zigpy.types as t
 from zigpy.zcl import foundation
@@ -22,7 +24,6 @@ from zhaquirks.tuya import (
     PowerOnState,
     TuyaCommand,
     TuyaDatapointData,
-    TuyaEnchantableCluster,
     TuyaLocalCluster,
     TuyaNewManufCluster,
     TuyaTimePayload,
@@ -40,24 +41,10 @@ class DPToAttributeMapping:
     """Container for datapoint to cluster attribute update mapping."""
 
     ep_attribute: str
-    attribute_name: Union[str, tuple]
-    converter: Optional[
-        Callable[
-            [
-                Any,
-            ],
-            Any,
-        ]
-    ] = None
-    dp_converter: Optional[
-        Callable[
-            [
-                Any,
-            ],
-            Any,
-        ]
-    ] = None
-    endpoint_id: Optional[int] = None
+    attribute_name: str | tuple[str, ...]
+    converter: Callable[[Any], Any] | None = None
+    dp_converter: Callable[[Any], Any] | None = None
+    endpoint_id: int | None = None
 
 
 class TuyaClusterData(t.Struct):
@@ -131,6 +118,16 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
     set_time_offset = 1970  # MCU timestamp from 1/1/1970
     set_time_local_offset = None
 
+    class AttributeDefs(TuyaNewManufCluster.AttributeDefs):
+        """Attribute Definitions."""
+
+        mcu_version = foundation.ZCLAttributeDef(
+            id=ATTR_MCU_VERSION,
+            type=t.uint48_t,
+            access=foundation.ZCLAttributeAccess.Read,
+            is_manufacturer_specific=True,
+        )
+
     class MCUVersion(t.Struct):
         """Tuya MCU version response Zcl payload."""
 
@@ -160,14 +157,6 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
 
         tsn: t.uint8_t
         status: t.LVBytes
-
-    attributes = TuyaNewManufCluster.attributes.copy()
-    attributes.update(
-        {
-            # MCU version
-            ATTR_MCU_VERSION: ("mcu_version", t.uint48_t, True),
-        }
-    )
 
     client_commands = TuyaNewManufCluster.client_commands.copy()
     client_commands.update(
@@ -210,7 +199,7 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
         self.endpoint.device.command_bus = Bus()
         self.endpoint.device.command_bus.add_listener(self)
 
-    def from_cluster_data(self, data: TuyaClusterData) -> Optional[TuyaCommand]:
+    def from_cluster_data(self, data: TuyaClusterData) -> list[TuyaCommand]:
         """Convert from cluster data to a tuya data payload."""
 
         dp_mapping = self.get_dp_mapping(data.endpoint_id, data.cluster_attr)
@@ -223,7 +212,7 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
             )
             return []
 
-        tuya_commands = []
+        tuya_commands: list[TuyaCommand] = []
         for dp, mapping in dp_mapping.items():
             cmd_payload = TuyaCommand()
             cmd_payload.status = 0
@@ -248,7 +237,7 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
 
             dpd = TuyaDatapointData(dp, val)
             self.debug("raw: %s", dpd.data.raw)
-            cmd_payload.datapoints = [dpd]
+            cmd_payload.datapoints = t.List([dpd])
 
             tuya_commands.append(cmd_payload)
         return tuya_commands
@@ -286,26 +275,27 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
 
     def get_dp_mapping(
         self, endpoint_id: int, attribute_name: str
-    ) -> Optional[tuple[int, DPToAttributeMapping]]:
-        """Search for the DP in dp_to_attribute."""
+    ) -> dict[int, DPToAttributeMapping]:
+        """Search for the DP in _dp_to_attributes."""
 
-        result = {}
-        for dp, dp_mapping in self.dp_to_attribute.items():
-            if (
-                attribute_name == dp_mapping.attribute_name
-                or (
-                    isinstance(dp_mapping.attribute_name, tuple)
-                    and attribute_name in dp_mapping.attribute_name
-                )
-            ) and (
-                (
-                    dp_mapping.endpoint_id is None
-                    and endpoint_id == self.endpoint.endpoint_id
-                )
-                or (endpoint_id == dp_mapping.endpoint_id)
-            ):
-                self.debug("get_dp_mapping --> found DP: %s", dp)
-                result[dp] = dp_mapping
+        result: dict[int, DPToAttributeMapping] = {}
+        for dp, dp_mapping in self._dp_to_attributes.items():
+            for mapped_attr in dp_mapping:
+                if (
+                    attribute_name == mapped_attr.attribute_name
+                    or (
+                        isinstance(mapped_attr.attribute_name, tuple)
+                        and attribute_name in mapped_attr.attribute_name
+                    )
+                ) and (
+                    (
+                        mapped_attr.endpoint_id is None
+                        and endpoint_id == self.endpoint.endpoint_id
+                    )
+                    or (endpoint_id == mapped_attr.endpoint_id)
+                ):
+                    self.debug("get_dp_mapping --> found DP: %s", dp)
+                    result[dp] = mapped_attr
         return result
 
     def handle_mcu_version_response(self, payload: MCUVersion) -> foundation.Status:
@@ -358,16 +348,17 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
         return foundation.Status.SUCCESS
 
 
-class TuyaOnOff(TuyaEnchantableCluster, OnOff, TuyaLocalCluster):
+class TuyaOnOff(OnOff, TuyaLocalCluster):
     """Tuya MCU OnOff cluster."""
 
     async def command(
         self,
-        command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
+        command_id: foundation.GeneralCommand | int | t.uint8_t,
         *args,
-        manufacturer: Optional[Union[int, t.uint16_t]] = None,
+        manufacturer: int | t.uint16_t | None = None,
         expect_reply: bool = True,
-        tsn: Optional[Union[int, t.uint8_t]] = None,
+        tsn: int | t.uint8_t | None = None,
+        **kwargs: Any,
     ):
         """Override the default Cluster command."""
 
@@ -553,11 +544,11 @@ class TuyaLevelControl(LevelControl, TuyaLocalCluster):
 
     async def command(
         self,
-        command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
+        command_id: foundation.GeneralCommand | int | t.uint8_t,
         *args,
-        manufacturer: Optional[Union[int, t.uint16_t]] = None,
+        manufacturer: int | t.uint16_t | None = None,
         expect_reply: bool = True,
-        tsn: Optional[Union[int, t.uint8_t]] = None,
+        tsn: int | t.uint8_t | None = None,
         **kwargs: Any,
     ):
         """Override the default Cluster command."""

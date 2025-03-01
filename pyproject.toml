@@ -11,10 +11,10 @@ authors = [
     {name = "David F. Mulcahey", email = "david.mulcahey@icloud.com"}
 ]
 readme = "README.md"
-license = {text = "Apache License Version 2.0"}
+license = {text = "Apache-2.0"}
 requires-python = ">=3.12"
 dependencies = [
-    "zigpy>=0.65.2",
+    "zigpy>=0.76.0",
 ]
 
 [tool.setuptools.packages.find]
@@ -79,7 +79,7 @@ norecursedirs = ".git testing_config"
 
 [tool.codespell]
 skip = "Contributors.md"
-ignore-words-list = "hass, dout, potentiels"
+ignore-words-list = "hass, dout, potentiels, checkin"
 quiet-level = 2
 
 [tool.ruff]

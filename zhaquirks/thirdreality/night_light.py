@@ -2,6 +2,7 @@
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
+import zigpy.types as t
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -16,6 +17,7 @@ from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.lightlink import LightLink
 from zigpy.zcl.clusters.measurement import IlluminanceMeasurement
 from zigpy.zcl.clusters.security import IasZone
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 from zhaquirks import LocalDataCluster
 from zhaquirks.const import (
@@ -36,6 +38,25 @@ class ThirdRealitySpecificCluster(CustomCluster):
     """Manufacturer specific cluster to relay motion event to IAS Zone cluster."""
 
     cluster_id = THIRD_REALITY_CLUSTER_ID
+
+    class AttributeDefs(BaseAttributeDefs):
+        """Attribute definitions."""
+
+        cooldown_time = ZCLAttributeDef(
+            id=0x0003,
+            type=t.uint16_t,
+            is_manufacturer_specific=True,
+        )
+        local_routine_time = ZCLAttributeDef(
+            id=0x0004,
+            type=t.uint16_t,
+            is_manufacturer_specific=True,
+        )
+        lux_threshold = ZCLAttributeDef(
+            id=0x0005,
+            type=t.uint16_t,
+            is_manufacturer_specific=True,
+        )
 
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)

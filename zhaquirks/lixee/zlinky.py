@@ -11,6 +11,7 @@ from zigpy.zcl.clusters.general import (
     Identify,
     Ota,
     PowerConfiguration,
+    Time,
 )
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement, MeterIdentification
 from zigpy.zcl.clusters.smartenergy import Metering
@@ -24,6 +25,7 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.lixee import LIXEE, ZLINKY_MANUFACTURER_CLUSTER_ID
+from zhaquirks.tuya import TuyaManufCluster
 
 
 class ZLinkyTICManufacturerCluster(CustomCluster):
@@ -62,6 +64,8 @@ class ZLinkyTICManufacturerCluster(CustomCluster):
         0x0008: ("hist_current_exceeding_warning_phase_3", t.uint16_t, True),
         # Historical mode: MOTDETAT "Etat du Linky (From V13)" / String 6 car
         0x0009: ("linky_status", t.LimitedCharString(6), True),
+        # Historical and standard mode: "Tariff Period (From V15)" / String 16 car
+        0x0010: ("linky_tariff_period", t.LimitedCharString(16), True),
         # Historical and Standard mode: "Linky acquisition time (From V7)"" / Uint8 1 car
         0x0100: ("linky_acquisition_time", t.uint8_t, True),
         # Standard mode: LTARF "Libellé tarif fournisseur en cours" / String 16 car
@@ -103,7 +107,7 @@ class ZLinkyTICManufacturerCluster(CustomCluster):
         0x0215: ("std_message_short", t.LimitedCharString(32), True),
         # Standard mode: MSG2 "Message ultra court" / String 16 car
         0x0216: ("std_message_ultra_short", t.LimitedCharString(16), True),
-        # Standard mode: STGE "Registre de Statuts" / String 8 car
+        # Standard mode: STGE "Registre de Statuts" / String 8 car /* codespell:ignore */
         0x0217: ("std_status_register", t.LimitedCharString(8), True),
         # Standard mode: DPM1 "Début Pointe Mobile 1" / Uint8 2 car
         0x0218: ("std_mobile_peak_start_1", t.uint8_t, True),
@@ -200,9 +204,35 @@ class ZLinkyTIC(CustomDevice):
 
 
 class ZLinkyTICFWV12(ZLinkyTIC):
-    """ZLinky_TIC from LiXee with firmware v12.0+."""
+    """ZLinky_TIC from LiXee with firmware v12.0 & v13.0."""
 
     signature = deepcopy(ZLinkyTIC.signature)
 
-    # Insert PowerConfiguration cluster in signature for devices with firmware v12.0+
+    # Insert PowerConfiguration cluster in signature for devices with firmware v12.0 & v13.0
     signature[ENDPOINTS][1][INPUT_CLUSTERS].insert(1, PowerConfiguration.cluster_id)
+
+
+class ZLinkyTICFWV14(ZLinkyTICFWV12):
+    """ZLinky_TIC from LiXee with firmware v14.0+."""
+
+    signature = deepcopy(ZLinkyTICFWV12.signature)
+    replacement = deepcopy(ZLinkyTICFWV12.replacement)
+
+    # Insert Time configuration cluster in signature for devices with firmware v14.0+
+    signature[ENDPOINTS][1][INPUT_CLUSTERS].insert(1, Time.cluster_id)
+
+    # Insert Tuya cluster in signature for devices with firmware v14.0+
+    signature[ENDPOINTS][1][INPUT_CLUSTERS].insert(7, TuyaManufCluster.cluster_id)
+    signature[ENDPOINTS][1][OUTPUT_CLUSTERS].insert(1, TuyaManufCluster.cluster_id)
+
+    replacement[ENDPOINTS][1][INPUT_CLUSTERS].insert(1, Time.cluster_id)
+
+
+class ZLinkyTICFWV15(ZLinkyTICFWV14):
+    """ZLinky_TIC from LiXee with firmware v15.0+."""
+
+    signature = deepcopy(ZLinkyTICFWV14.signature)
+    replacement = deepcopy(ZLinkyTICFWV14.replacement)
+
+    signature[ENDPOINTS][1][DEVICE_TYPE] = zha.DeviceType.DIMMABLE_LIGHT
+    replacement[ENDPOINTS][1][DEVICE_TYPE] = zha.DeviceType.DIMMABLE_LIGHT
