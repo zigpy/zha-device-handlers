@@ -306,7 +306,6 @@ def test_quirk_quickinit(quirk: zigpy.quirks.CustomDevice) -> None:
         assert isinstance(ep_data[INPUT_CLUSTERS], list)
         assert isinstance(ep_data[OUTPUT_CLUSTERS], list)
 
-"""
 @pytest.mark.parametrize(
     "quirk",
     [
@@ -315,11 +314,10 @@ def test_quirk_quickinit(quirk: zigpy.quirks.CustomDevice) -> None:
         if quirk_cls
         not in (
             # Some devices have empty model info:
-            zhaquirks.tuya.ty0201.TuyaTempHumiditySensorNoModel,
+            #zhaquirks.tuya.ty0201.TuyaTempHumiditySensorNoModel,
         )
     ],
 )
-"""
 def test_signature(quirk: CustomDevice) -> None:
     """Make sure signature look sane for all custom devices."""
 
@@ -405,7 +403,7 @@ def test_signature(quirk: CustomDevice) -> None:
         if node_desc is not None:
             assert isinstance(node_desc, zigpy.zdo.types.NodeDescriptor)
 
-"""
+
 @pytest.mark.parametrize(
     "quirk",
     [
@@ -424,7 +422,7 @@ def test_signature(quirk: CustomDevice) -> None:
         )
     ],
 )
-"""
+
 def test_signature_model_info_given(quirk: CustomDevice) -> None:
     """Verify that quirks have MODELS_INFO, MODEL or MANUFACTURER in their signature."""
 
