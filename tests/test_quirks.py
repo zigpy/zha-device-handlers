@@ -306,6 +306,7 @@ def test_quirk_quickinit(quirk: zigpy.quirks.CustomDevice) -> None:
         assert isinstance(ep_data[INPUT_CLUSTERS], list)
         assert isinstance(ep_data[OUTPUT_CLUSTERS], list)
 
+
 @pytest.mark.parametrize(
     "quirk",
     [
@@ -314,7 +315,7 @@ def test_quirk_quickinit(quirk: zigpy.quirks.CustomDevice) -> None:
         if quirk_cls
         not in (
             # Some devices have empty model info:
-            #zhaquirks.tuya.ty0201.TuyaTempHumiditySensorNoModel,
+            # zhaquirks.tuya.ty0201.TuyaTempHumiditySensorNoModel,
         )
     ],
 )
@@ -422,7 +423,6 @@ def test_signature(quirk: CustomDevice) -> None:
         )
     ],
 )
-
 def test_signature_model_info_given(quirk: CustomDevice) -> None:
     """Verify that quirks have MODELS_INFO, MODEL or MANUFACTURER in their signature."""
 
@@ -442,9 +442,9 @@ def test_quirk_importable(quirk: CustomDevice) -> None:
     """Ensure all quirks can be imported with a normal Python `import` statement."""
 
     path = f"{quirk.__module__}.{quirk.__name__}"
-    assert all(
-        m and m.isidentifier() for m in path.split(".")
-    ), f"{path} is not importable"
+    assert all(m and m.isidentifier() for m in path.split(".")), (
+        f"{path} is not importable"
+    )
 
 
 def test_quirk_loading_error(tmp_path: Path, caplog) -> None:
@@ -668,7 +668,7 @@ KNOWN_DUPLICATE_TRIGGERS = {
             (const.LONG_RELEASE, const.BUTTON_3),
             (const.LONG_RELEASE, const.BUTTON_4),
         ],
-    ]
+    ],
 }
 
 

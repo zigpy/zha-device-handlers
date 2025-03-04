@@ -1,4 +1,5 @@
 """Third Reality button devices."""
+
 from typing import Final
 
 from zigpy.quirks.v2 import QuirkBuilder
@@ -36,6 +37,7 @@ MOVEMENT_TYPE = {
     255: COMMAND_RELEASE,
 }
 
+
 class MultistateInputCluster(CustomCluster, MultistateInput):
     """Multistate input cluster."""
 
@@ -70,16 +72,19 @@ class ThirdRealityButtonCluster(CustomCluster):
             is_manufacturer_specific=True,
         )
 
+
 (
     QuirkBuilder("Third Reality, Inc", "3RSB22BZ")
     .replaces(MultistateInputCluster)
     .replaces(ThirdRealityButtonCluster)
-    .device_automation_triggers({
-        (DOUBLE_PRESS, DOUBLE_PRESS): {COMMAND: COMMAND_DOUBLE},
-        (SHORT_PRESS, SHORT_PRESS): {COMMAND: COMMAND_SINGLE},
-        (LONG_PRESS, LONG_PRESS): {COMMAND: COMMAND_HOLD},
-        (LONG_RELEASE, LONG_RELEASE): {COMMAND: COMMAND_HOLD},
-    })
+    .device_automation_triggers(
+        {
+            (DOUBLE_PRESS, DOUBLE_PRESS): {COMMAND: COMMAND_DOUBLE},
+            (SHORT_PRESS, SHORT_PRESS): {COMMAND: COMMAND_SINGLE},
+            (LONG_PRESS, LONG_PRESS): {COMMAND: COMMAND_HOLD},
+            (LONG_RELEASE, LONG_RELEASE): {COMMAND: COMMAND_HOLD},
+        }
+    )
     .switch(
         attribute_name=ThirdRealityButtonCluster.AttributeDefs.Cancel_Double_Button.name,
         cluster_id=ThirdRealityButtonCluster.cluster_id,
