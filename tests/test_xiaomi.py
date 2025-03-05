@@ -1719,9 +1719,7 @@ async def test_xiaomi_e1_roller_commands_1(
             ]
 
             # confirm the position was updated on the ZCL WindowCovering cluster
-            assert (
-                len(window_covering_listener.attribute_updates) == 1
-            )
+            assert len(window_covering_listener.attribute_updates) == 1
             assert window_covering_listener.attribute_updates[0] == (
                 window_covering_attr_id,
                 100 - 1,
@@ -1816,9 +1814,7 @@ async def test_xiaomi_e1_roller_commands_2(
             ]
 
             # confirm the position was updated on the ZCL WindowCovering cluster with the read value
-            assert (
-                len(window_covering_listener.attribute_updates) == 1
-            )
+            assert len(window_covering_listener.attribute_updates) == 1
             assert window_covering_listener.attribute_updates[0] == (
                 window_covering_attr_id,
                 100 - 1,
@@ -1828,9 +1824,7 @@ async def test_xiaomi_e1_roller_commands_2(
             assert len(analog_cluster._read_attributes.mock_calls) == 0
 
             # confirm the AnalogOutput write did not update the current WindowCovering position
-            assert (
-                len(window_covering_listener.attribute_updates) == 0
-            )
+            assert len(window_covering_listener.attribute_updates) == 0
 
     # confirm non-mapped commands return status UNSUP_CLUSTER_COMMAND
     _, status = await window_covering_cluster.go_to_tilt_percentage(value)
