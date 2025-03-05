@@ -1639,8 +1639,8 @@ async def test_xiaomi_e1_driver_light_level(
 @pytest.mark.parametrize(
     "command, value, read_current_position",
     [
-        (WindowCovering.ServerCommandDefs.up_open.id, 1, False),
-        (WindowCovering.ServerCommandDefs.down_close.id, 0, False),
+        (WindowCovering.ServerCommandDefs.up_open.id, 1, True),
+        (WindowCovering.ServerCommandDefs.down_close.id, 0, True),
         (WindowCovering.ServerCommandDefs.stop.id, 2, True),
     ],
 )
@@ -1711,35 +1711,67 @@ async def test_xiaomi_e1_roller_commands_1(
         if read_current_position:
             # confirm the window covering cluster read was redirected
             assert len(window_covering_cluster._read_attributes.mock_calls) == 0
+
             # confirm the analog output read occurs
             assert len(analog_cluster._read_attributes.mock_calls) == 1
             assert analog_cluster._read_attributes.mock_calls[0][1][0] == [
                 analog_attr_id
             ]
+
+            # confirm the position was updated on the ZCL WindowCovering cluster
+            assert (
+                len(window_covering_listener.attribute_updates) == 1
+            )
             assert window_covering_listener.attribute_updates[0] == (
                 window_covering_attr_id,
                 100 - 1,
-            )  # confirm the position was updated on the ZCL WindowCovering cluster
+            )
         else:
+            # confirm the command did not read the current position
             assert len(analog_cluster._read_attributes.mock_calls) == 0
 
 
 @pytest.mark.parametrize(
-    "command, value",
+    "command, value, read_current_position",
     [
-        (WindowCovering.ServerCommandDefs.go_to_lift_percentage.id, 60),
+        (WindowCovering.ServerCommandDefs.go_to_lift_percentage.id, 60, True),
     ],
 )
-async def test_xiaomi_e1_roller_commands_2(zigpy_device_from_v2_quirk, command, value):
+async def test_xiaomi_e1_roller_commands_2(
+    zigpy_device_from_v2_quirk, command, value, read_current_position
+):
     """Test Aqara E1 roller commands for go to lift percentage using AnalogOutput cluster."""
     device = zigpy_device_from_v2_quirk(LUMI, "lumi.curtain.acn002")
 
     window_covering_cluster = device.endpoints[1].window_covering
     window_covering_listener = ClusterListener(window_covering_cluster)
+    window_covering_attr_id = (
+        WindowCovering.AttributeDefs.current_position_lift_percentage.id
+    )
 
     analog_cluster = device.endpoints[1].analog_output
     analog_listener = ClusterListener(analog_cluster)
     analog_attr_id = AnalogOutput.AttributeDefs.present_value.id
+
+    # fake read response for attributes: return 1 for all attributes
+    def mock_read(attributes, manufacturer=None):
+        records = [
+            foundation.ReadAttributeRecord(
+                attr, foundation.Status.SUCCESS, foundation.TypeValue(None, 1)
+            )
+            for attr in attributes
+        ]
+        return (records,)
+
+    # patch read commands
+    patch_window_covering_read = mock.patch.object(
+        window_covering_cluster,
+        "_read_attributes",
+        mock.AsyncMock(side_effect=mock_read),
+    )
+    patch_analog_read = mock.patch.object(
+        analog_cluster, "_read_attributes", mock.AsyncMock(side_effect=mock_read)
+    )
 
     # patch write commands
     patch_analog_write = mock.patch.object(
@@ -1753,6 +1785,8 @@ async def test_xiaomi_e1_roller_commands_2(zigpy_device_from_v2_quirk, command, 
     )
 
     with (
+        patch_window_covering_read,
+        patch_analog_read,
         patch_analog_write,
     ):
         # test go to lift percentage command
@@ -1765,13 +1799,38 @@ async def test_xiaomi_e1_roller_commands_2(zigpy_device_from_v2_quirk, command, 
             analog_cluster._write_attributes.call_args[0][0][0].value.value
             == 100 - value
         )
-        assert (
-            len(window_covering_listener.attribute_updates) == 0
-        )  # confirm the AnalogOutput write did not update the current WindowCovering position
+
+        # confirm the AnalogOutput present_value was updated
         assert analog_listener.attribute_updates[0] == (
             analog_attr_id,
             100 - value,
-        )  # confirm the AnalogOutput present_value was updated
+        )
+        if read_current_position:
+            # confirm the window covering cluster read was redirected
+            assert len(window_covering_cluster._read_attributes.mock_calls) == 0
+
+            # confirm the analog output read occurs
+            assert len(analog_cluster._read_attributes.mock_calls) == 1
+            assert analog_cluster._read_attributes.mock_calls[0][1][0] == [
+                analog_attr_id
+            ]
+
+            # confirm the position was updated on the ZCL WindowCovering cluster with the read value
+            assert (
+                len(window_covering_listener.attribute_updates) == 1
+            )
+            assert window_covering_listener.attribute_updates[0] == (
+                window_covering_attr_id,
+                100 - 1,
+            )
+        else:
+            # confirm the command did not read the current position
+            assert len(analog_cluster._read_attributes.mock_calls) == 0
+
+            # confirm the AnalogOutput write did not update the current WindowCovering position
+            assert (
+                len(window_covering_listener.attribute_updates) == 0
+            )
 
     # confirm non-mapped commands return status UNSUP_CLUSTER_COMMAND
     _, status = await window_covering_cluster.go_to_tilt_percentage(value)

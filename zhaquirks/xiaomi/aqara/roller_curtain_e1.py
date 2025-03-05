@@ -240,14 +240,20 @@ class WindowCoveringRollerE1(RedirectAttributes, CustomCluster, WindowCovering):
     ) -> Any:
         """Overwrite the commands to make it work for both firmware 1425 and 1427.
 
-        We either overwrite analog_output's current_value or multistate_output's current
-        value to make the roller work.
+        Write to AnalogOutput current_value for go go_to_lift_percentage.
+        Write to MultistateOutput current_value for up_open/down_close/stop.
+
+        The current_position_lift_percentage is read prior to returning the command response
+        to ensure that ZHA has the correct position during changes in direction/stopping.
         """
         if command_id == WindowCovering.ServerCommandDefs.up_open.id:
             (res,) = await self.endpoint.multistate_output.write_attributes(
                 {
                     MultistateOutput.AttributeDefs.present_value.name: AqaraRollerControl.Open
                 }
+            )
+            await self.read_attributes(
+                [self.AttributeDefs.current_position_lift_percentage.id]
             )
             return foundation.GENERAL_COMMANDS[
                 foundation.GeneralCommand.Default_Response
@@ -259,6 +265,9 @@ class WindowCoveringRollerE1(RedirectAttributes, CustomCluster, WindowCovering):
                     MultistateOutput.AttributeDefs.present_value.name: AqaraRollerControl.Close
                 }
             )
+            await self.read_attributes(
+                [self.AttributeDefs.current_position_lift_percentage.id]
+            )
             return foundation.GENERAL_COMMANDS[
                 foundation.GeneralCommand.Default_Response
             ].schema(command_id=command_id, status=res[0].status)
@@ -266,6 +275,9 @@ class WindowCoveringRollerE1(RedirectAttributes, CustomCluster, WindowCovering):
         if command_id == WindowCovering.ServerCommandDefs.go_to_lift_percentage.id:
             (res,) = await self.endpoint.analog_output.write_attributes(
                 {AnalogOutput.AttributeDefs.present_value.name: (100 - args[0])}
+            )
+            await self.read_attributes(
+                [self.AttributeDefs.current_position_lift_percentage.id]
             )
             return foundation.GENERAL_COMMANDS[
                 foundation.GeneralCommand.Default_Response
@@ -277,7 +289,6 @@ class WindowCoveringRollerE1(RedirectAttributes, CustomCluster, WindowCovering):
                     MultistateOutput.AttributeDefs.present_value.name: AqaraRollerControl.Stop
                 }
             )
-            # Read current position because it is not consistently reported
             await self.read_attributes(
                 [self.AttributeDefs.current_position_lift_percentage.id]
             )
