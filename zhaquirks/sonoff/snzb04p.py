@@ -1,6 +1,7 @@
 """Sonoff SNZB-04 device."""
 
 from zigpy import types
+from zigpy.zcl.clusters.general import OnOff
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import (
     BinarySensorDeviceClass,
@@ -34,6 +35,7 @@ class SonoffContactCluster(CustomCluster):
     #  input_clusters=[0, 1, 3, 32, 1280, 64529, 64567]
     #  output_clusters=[3, 6, 25]>
     QuirkBuilder("eWeLink", "SNZB-04P")
+    .prevent_default_entity_creation(endpoint_id=1, cluster_id=OnOff.cluster_id)
     .replaces(SonoffContactCluster, endpoint_id=1)
     .binary_sensor(
         "tamper",
