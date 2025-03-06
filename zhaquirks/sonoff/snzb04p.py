@@ -36,10 +36,6 @@ class SonoffContactCluster(CustomCluster):
     #  output_clusters=[3, 6, 25]>
     QuirkBuilder("eWeLink", "SNZB-04P")
     .prevent_default_entity_creation(endpoint_id=1, cluster_id=OnOff.cluster_id)
-    .replaces(
-        cluster_type=ClusterType.Client,
-        endpoint_id=1,
-    )
     .replaces(SonoffContactCluster, endpoint_id=1)
     .binary_sensor(
         "tamper",
