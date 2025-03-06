@@ -8,7 +8,6 @@ from zigpy.quirks.v2 import (
     QuirkBuilder,
     ReportingConfig,
 )
-from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 
