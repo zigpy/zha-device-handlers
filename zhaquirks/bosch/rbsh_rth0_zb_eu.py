@@ -131,7 +131,7 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         BoschThermostatCluster.AttributeDefs.boost_heating.name,
         BoschThermostatCluster.cluster_id,
         translation_key="boost_heating",
-        fallback_name="Boost",
+        fallback_name="Boost heating",
     )
     # Window open switch: manually set or through an automation.
     .switch(

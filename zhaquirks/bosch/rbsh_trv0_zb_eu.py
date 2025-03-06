@@ -481,7 +481,7 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         BoschThermostatCluster.cluster_id,
         reporting_config=BOSCH_ATTR_REPORT_CONFIG,
         translation_key="boost_heating",
-        fallback_name="Boost",
+        fallback_name="Boost heating",
     )
     # Window open switch: manually set or through an automation.
     .switch(
