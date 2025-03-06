@@ -1,7 +1,6 @@
 """Sonoff SNZB-04 device."""
 
 from zigpy import types
-from zigpy.zcl.clusters.general import OnOff
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import (
     BinarySensorDeviceClass,
@@ -9,6 +8,7 @@ from zigpy.quirks.v2 import (
     QuirkBuilder,
     ReportingConfig,
 )
+from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 
