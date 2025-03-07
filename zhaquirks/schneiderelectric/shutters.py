@@ -115,3 +115,106 @@ class OneGangShutter1(CustomDevice):
             },
         }
     }
+
+
+class NhpbShutter1(CustomDevice):
+    """NHPB/SHUTTER/1 from Schneider Electric."""
+
+    signature = {
+        MODELS_INFO: [
+            (SE_MANUF_NAME, "NHPB/SHUTTER/1"),
+        ],
+        ENDPOINTS: {
+            # <SimpleDescriptor endpoint=5, profile=260, device_type=514,
+            # device_version=0,
+            # input_clusters=[0, 3, 4, 5, 258, 2821],
+            # output_clusters=[25]>
+            5: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    WindowCovering.cluster_id,
+                    Diagnostic.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Ota.cluster_id],
+            },
+            # <SimpleDescriptor endpoint=21, profile=260, device_type=260,
+            # device_version=0,
+            # input_clusters=[0, 3, 2821, 65303],
+            # output_clusters=[3, 4, 5, 6, 8, 258]>
+            21: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.DIMMER_SWITCH,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Diagnostic.cluster_id,
+                    SESpecific.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                    WindowCovering.cluster_id,
+                ],
+            },
+            # <SimpleDescriptor endpoint=242, profile=41440, device_type=97,
+            # device_version=0,
+            # input_clusters=[],
+            # output_clusters=[33]>
+            242: {
+                PROFILE_ID: 41440,
+                DEVICE_TYPE: 97,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [33],
+            },
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            5: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
+                INPUT_CLUSTERS: [
+                    SEBasic,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    SEWindowCovering,
+                    Diagnostic.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Ota.cluster_id],
+            },
+            21: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.DIMMER_SWITCH,
+                INPUT_CLUSTERS: [
+                    SEBasic,
+                    Identify.cluster_id,
+                    Diagnostic.cluster_id,
+                    SESpecific,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                    SEWindowCovering,
+                ],
+            },
+            242: {
+                PROFILE_ID: 41440,
+                DEVICE_TYPE: 97,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [33],
+            },
+        }
+    }
