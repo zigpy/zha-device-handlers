@@ -180,47 +180,47 @@ class SEWindowCovering(CustomCluster, WindowCovering):
     class AttributeDefs(WindowCovering.AttributeDefs):
         """Attribute definitions."""
 
-        unknown_attribute_65533: Final = ZCLAttributeDef(
+        se_cluster_revision: Final = ZCLAttributeDef(
             id=0xFFFD,
             type=t.uint16_t,
             is_manufacturer_specific=True,
         )
-        lift_duration: Final = ZCLAttributeDef(
+        se_drive_close_duration: Final = ZCLAttributeDef(
             id=0xE000,
             type=t.uint16_t,
             is_manufacturer_specific=True,
         )
-        unknown_attribute_57360: Final = ZCLAttributeDef(
+        se_protection_status: Final = ZCLAttributeDef(
             id=0xE010,
             type=t.bitmap8,
             is_manufacturer_specific=True,
         )
-        unknown_attribute_57362: Final = ZCLAttributeDef(
+        se_sun_protection_illuminance_threshold: Final = ZCLAttributeDef(
             id=0xE012,
             type=t.uint16_t,
             is_manufacturer_specific=True,
         )
-        unknown_attribute_57363: Final = ZCLAttributeDef(
+        se_protection_sensor: Final = ZCLAttributeDef(
             id=0xE013,
             type=t.bitmap8,
             is_manufacturer_specific=True,
         )
-        unknown_attribute_57364: Final = ZCLAttributeDef(
+        se_lift_drive_up_time: Final = ZCLAttributeDef(
             id=0xE014,
             type=t.uint16_t,
             is_manufacturer_specific=True,
         )
-        unknown_attribute_57365: Final = ZCLAttributeDef(
+        se_lift_drive_down_time: Final = ZCLAttributeDef(
             id=0xE015,
             type=t.uint16_t,
             is_manufacturer_specific=True,
         )
-        unknown_attribute_57366: Final = ZCLAttributeDef(
+        se_tilt_open_close_and_step_time: Final = ZCLAttributeDef(
             id=0xE016,
             type=t.uint16_t,
             is_manufacturer_specific=True,
         )
-        unknown_attribute_57367: Final = ZCLAttributeDef(
+        se_tilt_position_percentage_after_move_to_level: Final = ZCLAttributeDef(
             id=0xE017,
             type=t.uint8_t,
             is_manufacturer_specific=True,
