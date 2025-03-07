@@ -12,6 +12,7 @@ from zigpy.zcl.clusters.general import (
     Scenes,
     Time,
 )
+from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
 
 from zhaquirks.const import (
@@ -30,6 +31,14 @@ class MeteringCluster(CustomCluster, Metering):
     MULTIPLIER = 0x0301
     DIVISOR = 0x0302
     _CONSTANT_ATTRIBUTES = {MULTIPLIER: 1, DIVISOR: 100}
+
+
+class TuyaZBElectricalMeasurement(CustomCluster, ElectricalMeasurement):
+    """Divides the Current for tuya."""
+
+    AC_CURRENT_MULTIPLIER = 0x0602
+    AC_CURRENT_DIVISOR = 0x0603
+    _CONSTANT_ATTRIBUTES = {AC_CURRENT_MULTIPLIER: 1, AC_CURRENT_DIVISOR: 1000}
 
 
 class NousOutdoor2Plug(CustomDevice):
@@ -90,7 +99,7 @@ class NousOutdoor2Plug(CustomDevice):
                     Scenes.cluster_id,
                     OnOff.cluster_id,
                     MeteringCluster,
-                    0x0B04,
+                    TuyaZBElectricalMeasurement,
                     0xE000,
                     0xE001,
                 ],
@@ -104,8 +113,7 @@ class NousOutdoor2Plug(CustomDevice):
                     Groups.cluster_id,
                     Scenes.cluster_id,
                     OnOff.cluster_id,
-                    MeteringCluster,
-                    0x0B04,
+                    TuyaZBElectricalMeasurement,
                     0xE000,
                     0xE001,
                 ],
