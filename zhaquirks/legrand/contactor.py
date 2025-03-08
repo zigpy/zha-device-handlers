@@ -397,7 +397,7 @@ class LegrandContactorAutoOnOff(CustomCluster):
         )
 
     async def turn_off(self, manufacturer=None, expect_reply=False, tsn=None):
-        """Force Off"""
+        """Force Off."""
         _LOGGER.debug("LegrandContactorAutoOnOff.turn_off")
 
         status = await self._read_status()
@@ -433,7 +433,7 @@ class LegrandContactorAutoOnOff(CustomCluster):
         )
 
     async def toggle(self, manufacturer=None, expect_reply=False, tsn=None):
-        """Toggle ForcedOff/ForcedOn"""
+        """Toggle ForcedOff/ForcedOn."""
         _LOGGER.debug("LegrandContactorAutoOnOff.toggle")
 
         status = await self._read_status()
@@ -745,7 +745,7 @@ class LegrandContactorV2(CustomDeviceV2):
 
     4- the led turns OFF when the controller stops the pairing process.
 
-    It instanciates, in replacement, three custom clusters classes:
+    It instantiates, in replacement, three custom clusters classes:
     - The LegrandContactorMode cluster (id: 0xfc01) controls the operation mode of the device.
     - The LegrandContactorAutoOnOff cluster (id: 0xfc41) controls the device in Auto mode.
     - The LegrandContactorSwitchOnOff cluster (id: OnOff cluster id) controls the device in Switch mode and
