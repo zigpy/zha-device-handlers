@@ -6,6 +6,11 @@ import pytest
 
 import zhaquirks
 from zhaquirks.legrand import LEGRAND
+from zhaquirks.legrand.contactor import (
+    LegrandContactorMode,
+    LegrandContactorAutoOnOff,
+    LegrandContactorSwitchOnOff
+)
 
 zhaquirks.setup()
 
@@ -82,3 +87,50 @@ async def test_legrand_wire_pilot_cluster_write_attrs(zigpy_device_from_v2_quirk
         [],
         manufacturer=0xFC40,
     )
+
+async def test_legrand_contactor_switch(zigpy_device_from_v2_quirk):
+    """Test Legrand contactor switch."""
+
+    device = zigpy_device_from_v2_quirk(f" {LEGRAND}", " Contactor")
+
+    mode_cluster = device.endpoints[1].in_clusters[LegrandContactorMode.cluster_id]
+    auto_on_off_cluster = device.endpoints[1].in_clusters[LegrandContactorAutoOnOff.cluster_id]
+    switch_on_off_cluster = device.endpoints[1].in_clusters[LegrandContactorSwitchOnOff.cluster_id]
+
+    switch_on_off_cluster._contactor_is_switch = False
+
+    # test sending turn_on command
+    mode_cluster._read_mode = mock.AsyncMock()
+    auto_on_off_cluster.turn_on = mock.AsyncMock()
+    auto_on_off_cluster.turn_off = mock.AsyncMock()
+    auto_on_off_cluster.toggle = mock.AsyncMock()
+    await switch_on_off_cluster.command(LegrandContactorSwitchOnOff.ON_CMD_ID)
+    mode_cluster._read_mode.assert_awaited_once()
+    auto_on_off_cluster.turn_on.assert_awaited_once()
+    auto_on_off_cluster.turn_off.assert_not_awaited()
+    auto_on_off_cluster.toggle.assert_not_awaited()
+    
+    # test sending turn_off command 
+    mode_cluster._read_mode = mock.AsyncMock()
+    auto_on_off_cluster.turn_on = mock.AsyncMock()
+    auto_on_off_cluster.turn_off = mock.AsyncMock()
+    auto_on_off_cluster.toggle = mock.AsyncMock()
+    await switch_on_off_cluster.command(LegrandContactorSwitchOnOff.OFF_CMD_ID)
+    mode_cluster._read_mode.assert_awaited_once()
+    auto_on_off_cluster.turn_on.assert_not_awaited()
+    auto_on_off_cluster.turn_off.assert_awaited_once()
+    auto_on_off_cluster.toggle.assert_not_awaited()
+    
+    # test sending toggle command 
+    mode_cluster._read_mode = mock.AsyncMock()
+    auto_on_off_cluster.turn_on = mock.AsyncMock()
+    auto_on_off_cluster.turn_off = mock.AsyncMock()
+    auto_on_off_cluster.toggle = mock.AsyncMock()
+    await switch_on_off_cluster.command(LegrandContactorSwitchOnOff.TOGGLE_CMD_ID)
+    mode_cluster._read_mode.assert_awaited_once()
+    auto_on_off_cluster.turn_on.assert_not_awaited()
+    auto_on_off_cluster.turn_off.assert_not_awaited()
+    auto_on_off_cluster.toggle.assert_awaited_once()
+
+    
+    
