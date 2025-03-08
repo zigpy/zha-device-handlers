@@ -107,6 +107,7 @@ class DeviceMode(t.enum16):
 
 class LegrandMode(Enum):
     """Device readable mode."""
+
     Switch = [3, 0]
     Auto = [4, 0]
 
@@ -218,7 +219,7 @@ class LegrandContactorMode(CustomCluster):
 
         new_attributes = attributes.copy()
         for k in new_attributes:
-            if k in [0, 'mode']:
+            if k in [0, "mode"]:
                 v = new_attributes[k]
                 if isinstance(v, LegrandMode):
                     if v == LegrandMode.Switch:
@@ -232,16 +233,18 @@ class LegrandContactorMode(CustomCluster):
         """Attribute update."""
 
         _LOGGER.debug(
-            'LegrandContactorMode._update_attribute: attrid=%s, value=%s',
-            str(attrid), str(value))
+            "LegrandContactorMode._update_attribute: attrid=%s, value=%s",
+            str(attrid),
+            str(value),
+        )
 
         super()._update_attribute(attrid, value)
         if attrid == self.MODE_ID and value is not None:
             mode = (int(value[0]) * 10) + int(value[1])
             if mode in self.MODES:
                 self.endpoint.device.reporting_bus.listener_event(
-                    self.CONTACTOR_IS_SWITCH_REPORTED,
-                    mode == DeviceMode.MODE_SWITCH)
+                    self.CONTACTOR_IS_SWITCH_REPORTED, mode == DeviceMode.MODE_SWITCH
+                )
 
     async def _read_mode(self):
         """Read  mode."""
@@ -297,6 +300,7 @@ class LegrandContactorAutoStatus(Enum):
 
 class LegrandContactorSwitchStatus(Enum):
     """Switch status values for UI display."""
+
     Off = 0x00
     On = 0x01
 
@@ -412,7 +416,7 @@ class LegrandContactorAutoOnOff(CustomCluster):
 
     async def turn_on(self, manufacturer=None, expect_reply=False, tsn=None):
         """Force On."""
-        _LOGGER.debug('LegrandContactorAutoOnOff.turn_on')
+        _LOGGER.debug("LegrandContactorAutoOnOff.turn_on")
 
         status = await self._read_status()
 
@@ -458,15 +462,16 @@ class LegrandContactorAutoOnOff(CustomCluster):
 
     async def _read_states(self):
         """Read states."""
-        await self.read_attributes([self.STATUS_ID, self.ON_OFF_ID],
-                                   allow_cache=False)
+        await self.read_attributes([self.STATUS_ID, self.ON_OFF_ID], allow_cache=False)
 
     def _update_attribute(self, attrid, value):
         """Attribute update."""
 
         _LOGGER.debug(
-            'LegrandContactorAutoOnOff._update_attribute: attrid=%s, value=%s',
-            str(attrid), str(value))
+            "LegrandContactorAutoOnOff._update_attribute: attrid=%s, value=%s",
+            str(attrid),
+            str(value),
+        )
 
         super()._update_attribute(attrid, value)
 
@@ -475,12 +480,12 @@ class LegrandContactorAutoOnOff(CustomCluster):
                 self.AUTO_ON_OFF_REPORTED, value
             )
 
-    async def command(self, command_id, *args,
-                      manufacturer=None, expect_reply=True, tsn=None):
+    async def command(
+        self, command_id, *args, manufacturer=None, expect_reply=True, tsn=None
+    ):
         """Command."""
 
-        _LOGGER.debug(
-            'LegrandContactorAutoOnOff.command: id=%s', str(command_id))
+        _LOGGER.debug("LegrandContactorAutoOnOff.command: id=%s", str(command_id))
 
         result = await super().command(
             command_id,
@@ -531,16 +536,18 @@ class LegrandContactorSwitchOnOff(CustomCluster, OnOff):
         """Contactor is switch reported."""
 
         _LOGGER.debug(
-            'LegrandContactorSwitchOnOff.contactor_is_switch_reported: value=%s',
-            str(value))
+            "LegrandContactorSwitchOnOff.contactor_is_switch_reported: value=%s",
+            str(value),
+        )
 
         self._contactor_is_switch = value
 
     def auto_on_off_reported(self, value):
         """Auto mode on_off status reported."""
 
-        _LOGGER.debug('LegrandContactorSwitchOnOff.on_off_reported: value=%s',
-                      str(value))
+        _LOGGER.debug(
+            "LegrandContactorSwitchOnOff.on_off_reported: value=%s", str(value)
+        )
 
         if self._contactor_is_switch:
             _LOGGER.debug(
@@ -599,8 +606,9 @@ class LegrandContactorSwitchOnOff(CustomCluster, OnOff):
 
         await auto_cluster._read_states()
 
-    async def command(self, command_id, *args,
-                      manufacturer=None, expect_reply=True, tsn=None):
+    async def command(
+        self, command_id, *args, manufacturer=None, expect_reply=True, tsn=None
+    ):
         """Legrand switch OnOff command.
 
         Redirects on, off and toggle commands to AutoOnOff cluster (id: 0xfc41) when the device is Auto mode.
@@ -621,15 +629,17 @@ class LegrandContactorSwitchOnOff(CustomCluster, OnOff):
         """
         _LOGGER.debug("LegrandContactorSwitchOnOff.command")
 
-        if command_id not in [self.ON_CMD_ID,
-                              self.OFF_CMD_ID,
-                              self.TOGGLE_CMD_ID]:
+        if command_id not in [self.ON_CMD_ID, self.OFF_CMD_ID, self.TOGGLE_CMD_ID]:
             _LOGGER.debug(
-                'LegrandContactorSwitchOnOff.command is neither on, off nor toggle.')
-            return await super().command(command_id, *args,
-                                         manufacturer=manufacturer,
-                                         expect_reply=expect_reply,
-                                         tsn=tsn)
+                "LegrandContactorSwitchOnOff.command is neither on, off nor toggle."
+            )
+            return await super().command(
+                command_id,
+                *args,
+                manufacturer=manufacturer,
+                expect_reply=expect_reply,
+                tsn=tsn,
+            )
 
         await self._update_contactor_mode()
 
@@ -677,8 +687,10 @@ class LegrandContactorSwitchOnOff(CustomCluster, OnOff):
         """
 
         _LOGGER.debug(
-            'LegrandContactorSwitchOnOff._update_attribute: attrid=%s, value=%s',
-            str(attrid), str(value))
+            "LegrandContactorSwitchOnOff._update_attribute: attrid=%s, value=%s",
+            str(attrid),
+            str(value),
+        )
 
         # await self._update_contactor_mode()
 
@@ -694,9 +706,9 @@ class LegrandContactorSwitchOnOff(CustomCluster, OnOff):
 class LegrandContactorV2(CustomDeviceV2):
     """Legrand Contactor device.
 
-The device offers two modes of operation:
-  - the, factory default, Auto mode where an external input can control the output.
-  - and a Switch mode where normal operations of a controlled switch are supported.
+    The device offers two modes of operation:
+    - the, factory default, Auto mode where an external input can control the output.
+    - and a Switch mode where normal operations of a controlled switch are supported.
 
     When the device is in Auto mode, its operation button selects three modes of operation:
     - a ForcedOff mode where the switch output is opened,
@@ -707,7 +719,7 @@ The device offers two modes of operation:
     - the Off mode where the switch output is opened,
     - and the On mode where the switch output is closed.
 
-Two leds reflect the states of the device.
+    Two leds reflect the states of the device.
 
     The LED on the operation button reflects the device's state. It is:
     - OFF when the device is (forced) OFF
