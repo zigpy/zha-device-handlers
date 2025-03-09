@@ -13,6 +13,7 @@ from zhaquirks.legrand.contactor import (
     LegrandContactorAutoOnOff,
     LegrandContactorMode,
     LegrandContactorSwitchOnOff,
+    AutoStatus,
     LegrandMode,
 )
 
@@ -226,9 +227,61 @@ async def test_legrand_contactor_switch(zigpy_device_from_v2_quirk):
     # cover _update_attribute
     switch_on_off_cluster._update_attribute(LegrandContactorSwitchOnOff.ON_OFF_ID, 0)
 
+async def test_legrand_contactor_auto(zigpy_device_from_v2_quirk):
+    """Test Legrand contactor auto."""
+
+    device = zigpy_device_from_v2_quirk(f" {LEGRAND}", " Contactor")
+
+    auto_on_off_cluster = device.endpoints[1].in_clusters[
+        LegrandContactorAutoOnOff.cluster_id
+    ]
+
+    # cover turn_off
+    auto_on_off_cluster.command = mock.AsyncMock()
+    auto_on_off_cluster._read_status = mock.AsyncMock(return_value = AutoStatus.ForcedOn)
+    await auto_on_off_cluster.turn_off()
+    auto_on_off_cluster.command.assert_awaited_once()
+
+    auto_on_off_cluster.command = mock.AsyncMock()
+    auto_on_off_cluster._read_status = mock.AsyncMock(return_value = AutoStatus.ForcedOff)
+    await auto_on_off_cluster.turn_off()
+    auto_on_off_cluster.command.assert_not_awaited()
+    
+    # cover turn_on
+    auto_on_off_cluster.command = mock.AsyncMock()
+    auto_on_off_cluster._read_status = mock.AsyncMock(return_value = AutoStatus.ForcedOff)
+    await auto_on_off_cluster.turn_on()
+    auto_on_off_cluster.command.assert_awaited_once()
+
+    auto_on_off_cluster.command = mock.AsyncMock()
+    auto_on_off_cluster._read_status = mock.AsyncMock(return_value = AutoStatus.ForcedOn)
+    await auto_on_off_cluster.turn_on()
+    auto_on_off_cluster.command.assert_not_awaited()
+    
+    # cover toggle
+    auto_on_off_cluster.command = mock.AsyncMock()
+    auto_on_off_cluster._read_status = mock.AsyncMock(return_value = AutoStatus.ForcedOff)
+    await auto_on_off_cluster.toggle()
+    auto_on_off_cluster.command.assert_awaited_once()
+
+    auto_on_off_cluster.command = mock.AsyncMock()
+    auto_on_off_cluster._read_status = mock.AsyncMock(return_value = AutoStatus.ForcedOn)
+    await auto_on_off_cluster.toggle()
+    auto_on_off_cluster.command.assert_awaited_once()
+
+    auto_on_off_cluster.command = mock.AsyncMock()
+    auto_on_off_cluster._read_status = mock.AsyncMock(return_value = AutoStatus.ManualOn)
+    await auto_on_off_cluster.toggle()
+    auto_on_off_cluster.command.assert_not_awaited()
+
+    auto_on_off_cluster.command = mock.AsyncMock()
+    auto_on_off_cluster._read_status = mock.AsyncMock(return_value = AutoStatus.Auto)
+    await auto_on_off_cluster.toggle()
+    auto_on_off_cluster.command.assert_not_awaited()
+
 
 async def test_legrand_contactor_mode(zigpy_device_from_v2_quirk):
-    """Test Legrand contactor switch."""
+    """Test Legrand contactor mode."""
 
     device = zigpy_device_from_v2_quirk(f" {LEGRAND}", " Contactor")
 
