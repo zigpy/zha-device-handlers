@@ -105,7 +105,7 @@ async def test_legrand_contactor_switch(zigpy_device_from_v2_quirk):
     ##
     ## Test Auto mode
     ##
-    switch_on_off_cluster._contactor_is_switch = False
+    switch_on_off_cluster.contactor_is_switch_reported(False)
 
     # test sending turn_on command
     mode_cluster._read_mode = mock.AsyncMock()
@@ -160,7 +160,7 @@ async def test_legrand_contactor_switch(zigpy_device_from_v2_quirk):
     ##
     ## Test Switch mode
     ##
-    switch_on_off_cluster._contactor_is_switch = True
+    switch_on_off_cluster.contactor_is_switch_reported(True)
 
     # test sending turn_on command
     mode_cluster._read_mode = mock.AsyncMock()
