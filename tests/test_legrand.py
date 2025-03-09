@@ -10,10 +10,10 @@ import zigpy.zcl.foundation as f
 import zhaquirks
 from zhaquirks.legrand import LEGRAND
 from zhaquirks.legrand.contactor import (
+    AutoStatus,
     LegrandContactorAutoOnOff,
     LegrandContactorMode,
     LegrandContactorSwitchOnOff,
-    AutoStatus,
     LegrandMode,
 )
 
@@ -227,6 +227,7 @@ async def test_legrand_contactor_switch(zigpy_device_from_v2_quirk):
     # cover _update_attribute
     switch_on_off_cluster._update_attribute(LegrandContactorSwitchOnOff.ON_OFF_ID, 0)
 
+
 async def test_legrand_contactor_auto(zigpy_device_from_v2_quirk):
     """Test Legrand contactor auto."""
 
@@ -238,44 +239,44 @@ async def test_legrand_contactor_auto(zigpy_device_from_v2_quirk):
 
     # cover turn_off
     auto_on_off_cluster.command = mock.AsyncMock()
-    auto_on_off_cluster._read_status = mock.AsyncMock(return_value = AutoStatus.ForcedOn)
+    auto_on_off_cluster._read_status = mock.AsyncMock(return_value=AutoStatus.ForcedOn)
     await auto_on_off_cluster.turn_off()
     auto_on_off_cluster.command.assert_awaited_once()
 
     auto_on_off_cluster.command = mock.AsyncMock()
-    auto_on_off_cluster._read_status = mock.AsyncMock(return_value = AutoStatus.ForcedOff)
+    auto_on_off_cluster._read_status = mock.AsyncMock(return_value=AutoStatus.ForcedOff)
     await auto_on_off_cluster.turn_off()
     auto_on_off_cluster.command.assert_not_awaited()
-    
+
     # cover turn_on
     auto_on_off_cluster.command = mock.AsyncMock()
-    auto_on_off_cluster._read_status = mock.AsyncMock(return_value = AutoStatus.ForcedOff)
+    auto_on_off_cluster._read_status = mock.AsyncMock(return_value=AutoStatus.ForcedOff)
     await auto_on_off_cluster.turn_on()
     auto_on_off_cluster.command.assert_awaited_once()
 
     auto_on_off_cluster.command = mock.AsyncMock()
-    auto_on_off_cluster._read_status = mock.AsyncMock(return_value = AutoStatus.ForcedOn)
+    auto_on_off_cluster._read_status = mock.AsyncMock(return_value=AutoStatus.ForcedOn)
     await auto_on_off_cluster.turn_on()
     auto_on_off_cluster.command.assert_not_awaited()
-    
+
     # cover toggle
     auto_on_off_cluster.command = mock.AsyncMock()
-    auto_on_off_cluster._read_status = mock.AsyncMock(return_value = AutoStatus.ForcedOff)
+    auto_on_off_cluster._read_status = mock.AsyncMock(return_value=AutoStatus.ForcedOff)
     await auto_on_off_cluster.toggle()
     auto_on_off_cluster.command.assert_awaited_once()
 
     auto_on_off_cluster.command = mock.AsyncMock()
-    auto_on_off_cluster._read_status = mock.AsyncMock(return_value = AutoStatus.ForcedOn)
+    auto_on_off_cluster._read_status = mock.AsyncMock(return_value=AutoStatus.ForcedOn)
     await auto_on_off_cluster.toggle()
     auto_on_off_cluster.command.assert_awaited_once()
 
     auto_on_off_cluster.command = mock.AsyncMock()
-    auto_on_off_cluster._read_status = mock.AsyncMock(return_value = AutoStatus.ManualOn)
+    auto_on_off_cluster._read_status = mock.AsyncMock(return_value=AutoStatus.ManualOn)
     await auto_on_off_cluster.toggle()
     auto_on_off_cluster.command.assert_not_awaited()
 
     auto_on_off_cluster.command = mock.AsyncMock()
-    auto_on_off_cluster._read_status = mock.AsyncMock(return_value = AutoStatus.Auto)
+    auto_on_off_cluster._read_status = mock.AsyncMock(return_value=AutoStatus.Auto)
     await auto_on_off_cluster.toggle()
     auto_on_off_cluster.command.assert_not_awaited()
 
