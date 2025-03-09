@@ -367,8 +367,7 @@ class LegrandContactorAutoOnOff(CustomCluster):
     OVERRIDE_CMD_ID = 0x00
     TOGGLE_MAP = {
         AutoStatus.ForcedOn: AutoOverride.ForceOff,
-        AutoStatus.ManualOn: AutoOverride.ForceOff,
-        AutoStatus.ForcedOff: AutoOverride.ForceOff,
+        AutoStatus.ForcedOff: AutoOverride.ForceOn,
     }
 
     class AttributeDefs(BaseAttributeDefs):
