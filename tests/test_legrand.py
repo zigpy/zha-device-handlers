@@ -233,9 +233,6 @@ async def test_legrand_contactor_mode(zigpy_device_from_v2_quirk):
     device = zigpy_device_from_v2_quirk(f" {LEGRAND}", " Contactor")
 
     mode_cluster = device.endpoints[1].in_clusters[LegrandContactorMode.cluster_id]
-    auto_on_off_cluster = device.endpoints[1].in_clusters[
-        LegrandContactorAutoOnOff.cluster_id
-    ]
     switch_on_off_cluster = device.endpoints[1].in_clusters[
         LegrandContactorSwitchOnOff.cluster_id
     ]
@@ -252,9 +249,9 @@ async def test_legrand_contactor_mode(zigpy_device_from_v2_quirk):
 
     # cover _update_attribute
     mode_cluster._update_attribute(LegrandContactorMode.MODE_ID, [3, 0])
-    assert switch_on_off_cluster._contactor_is_switch == True
+    assert switch_on_off_cluster._contactor_is_switch
     mode_cluster._update_attribute(LegrandContactorMode.MODE_ID, [4, 0])
-    assert switch_on_off_cluster._contactor_is_switch == False
+    assert not switch_on_off_cluster._contactor_is_switch
 
     # cover write_attributes
     mode_cluster._write_attributes = mock.AsyncMock()
