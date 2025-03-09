@@ -10,8 +10,8 @@ import zigpy.zcl.foundation as f
 import zhaquirks
 from zhaquirks.legrand import LEGRAND
 from zhaquirks.legrand.contactor import (
-    AutoStatus,
     AutoOverride,
+    AutoStatus,
     LegrandContactorAutoOnOff,
     LegrandContactorMode,
     LegrandContactorSwitchOnOff,
@@ -241,20 +241,24 @@ async def test_legrand_contactor_auto(zigpy_device_from_v2_quirk):
     # cover _read_states
     auto_on_off_cluster.read_attributes = mock.AsyncMock()
     await auto_on_off_cluster._read_states()
-    auto_on_off_cluster.read_attributes.assert_awaited_with([LegrandContactorAutoOnOff.STATUS_ID,
-                                                             LegrandContactorAutoOnOff.ON_OFF_ID],
-                                                            allow_cache=False)
+    auto_on_off_cluster.read_attributes.assert_awaited_with(
+        [LegrandContactorAutoOnOff.STATUS_ID, LegrandContactorAutoOnOff.ON_OFF_ID],
+        allow_cache=False,
+    )
 
     # cover _read_status
     auto_on_off_cluster.read_attributes = mock.AsyncMock()
     await auto_on_off_cluster._read_status()
-    auto_on_off_cluster.read_attributes.assert_awaited_with([LegrandContactorAutoOnOff.STATUS_ID],
-                                                            allow_cache=False)
+    auto_on_off_cluster.read_attributes.assert_awaited_with(
+        [LegrandContactorAutoOnOff.STATUS_ID], allow_cache=False
+    )
 
     # cover command
     auto_on_off_cluster.request = mock.AsyncMock()
     auto_on_off_cluster._read_states = mock.AsyncMock()
-    await auto_on_off_cluster.command(LegrandContactorAutoOnOff.OVERRIDE_CMD_ID, t.data16([]))
+    await auto_on_off_cluster.command(
+        LegrandContactorAutoOnOff.OVERRIDE_CMD_ID, t.data16([])
+    )
     auto_on_off_cluster._read_states.assert_awaited_once()
     auto_on_off_cluster.request.assert_awaited_once()
 
@@ -310,7 +314,7 @@ async def test_legrand_contactor_auto(zigpy_device_from_v2_quirk):
     auto_on_off_cluster._read_status.assert_awaited_once()
     auto_on_off_cluster.command.assert_not_awaited()
 
-    #cover _update_attribute
+    # cover _update_attribute
     auto_on_off_cluster._update_attribute(LegrandContactorAutoOnOff.ON_OFF_ID, False)
     auto_on_off_cluster._update_attribute(LegrandContactorAutoOnOff.ON_OFF_ID, True)
 
