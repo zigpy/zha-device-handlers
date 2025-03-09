@@ -355,7 +355,10 @@ async def test_legrand_contactor_mode(zigpy_device_from_v2_quirk):
             manufacturer=0xFC40,
         )
     except AssertionError as e:
-        logging.warning("hum... Wrong assertion error due to unhashable nested list in data16 value.\n%s", str(e))
+        logging.warning(
+            "hum... Wrong assertion error due to unhashable nested list in data16 value.\n%s",
+            str(e),
+        )
 
     mode_cluster._write_attributes = mock.AsyncMock()
     await mode_cluster.write_attributes({0: LegrandMode.Auto}, manufacturer=0xFC40)
@@ -366,7 +369,10 @@ async def test_legrand_contactor_mode(zigpy_device_from_v2_quirk):
             manufacturer=0xFC40,
         )
     except AssertionError as e:
-        logging.warning("hum... Wrong assertion error due to unhashable nested list in data16 value.\n%s", str(e))
+        logging.warning(
+            "hum... Wrong assertion error due to unhashable nested list in data16 value.\n%s",
+            str(e),
+        )
 
     mode_cluster._write_attributes = mock.AsyncMock()
     await mode_cluster.write_attributes(
@@ -379,7 +385,10 @@ async def test_legrand_contactor_mode(zigpy_device_from_v2_quirk):
             manufacturer=0xFC40,
         )
     except AssertionError as e:
-        logging.warning("hum... Wrong assertion error due to unhashable nested list in data16 value.\n%s", str(e))
+        logging.warning(
+            "hum... Wrong assertion error due to unhashable nested list in data16 value.\n%s",
+            str(e),
+        )
 
     mode_cluster._write_attributes = mock.AsyncMock()
     await mode_cluster.write_attributes({"mode": LegrandMode.Auto}, manufacturer=0xFC40)
@@ -390,4 +399,7 @@ async def test_legrand_contactor_mode(zigpy_device_from_v2_quirk):
             manufacturer=0xFC40,
         )
     except AssertionError as e:
-        logging.warning("hum... Wrong assertion error due to unhashable nested list in data16 value.\n%s", str(e))
+        logging.warning(
+            "hum... Wrong assertion error due to unhashable nested list in data16 value.\n%s",
+            str(e),
+        )
