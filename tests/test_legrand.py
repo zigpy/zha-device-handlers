@@ -287,7 +287,7 @@ async def test_legrand_contactor_auto(zigpy_device_from_v2_quirk):
     # cover toggle
     assert auto_on_off_cluster.TOGGLE_MAP[AutoStatus.ForcedOn] == AutoOverride.ForceOff
     assert auto_on_off_cluster.TOGGLE_MAP[AutoStatus.ForcedOff] == AutoOverride.ForceOn
-    assert AutoStatus.ManualOn not in auto_on_off_cluster.TOGGLE_MAP
+    assert auto_on_off_cluster.TOGGLE_MAP[AutoStatus.ManualOn] == AutoOverride.ForceOff
     assert AutoStatus.Auto not in auto_on_off_cluster.TOGGLE_MAP
 
     auto_on_off_cluster.command = mock.AsyncMock()
@@ -306,7 +306,7 @@ async def test_legrand_contactor_auto(zigpy_device_from_v2_quirk):
     auto_on_off_cluster._read_status = mock.AsyncMock(return_value=AutoStatus.ManualOn)
     await auto_on_off_cluster.toggle()
     auto_on_off_cluster._read_status.assert_awaited_once()
-    auto_on_off_cluster.command.assert_not_awaited()
+    auto_on_off_cluster.command.assert_awaited_once()
 
     auto_on_off_cluster.command = mock.AsyncMock()
     auto_on_off_cluster._read_status = mock.AsyncMock(return_value=AutoStatus.Auto)

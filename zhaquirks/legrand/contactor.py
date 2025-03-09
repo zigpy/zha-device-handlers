@@ -368,7 +368,7 @@ class LegrandContactorAutoOnOff(CustomCluster):
     TOGGLE_MAP = {
         AutoStatus.ForcedOn: AutoOverride.ForceOff,
         AutoStatus.ManualOn: AutoOverride.ForceOff,
-        AutoStatus.ForcedOff: AutoOverride.ForceOff,
+        AutoStatus.ForcedOff: AutoOverride.ForceOn,
     }
 
     class AttributeDefs(BaseAttributeDefs):
@@ -615,6 +615,7 @@ class LegrandContactorSwitchOnOff(CustomCluster, OnOff):
         The on and off commands FORCE the corresponding states.
         The toggle command is only operationnal if the AutoOnOff cluster is in a FORCED state.
         It toggles the ForcedOff (resp. ForcedOn) state to the FocedOn (resp. ForcedOff) state.
+        The device is alse toggled to ForcedOff state if it is manually set to on.
 
         When the device is in Switch mode, operates as a normal OnOff cluster.
 
