@@ -20,6 +20,7 @@ from zigpy.zcl import foundation
 from zigpy.zcl.clusters.measurement import (
     PM25,
     CarbonDioxideConcentration,
+    ElectricalConductivity,
     FormaldehydeConcentration,
     IlluminanceMeasurement,
     RelativeHumidity,
@@ -63,6 +64,10 @@ BATTERY_VOLTAGES = {
 
 class TuyaCO2Concentration(CarbonDioxideConcentration, TuyaLocalCluster):
     """Tuya Carbon Dioxide concentration measurement."""
+
+
+class TuyaElectricalConductivity(ElectricalConductivity, TuyaLocalCluster):
+    """Tuya Electrical Conductivity measurement."""
 
 
 class TuyaFormaldehydeConcentration(FormaldehydeConcentration, TuyaLocalCluster):
@@ -293,6 +298,22 @@ class TuyaQuirkBuilder(QuirkBuilder):
             converter=lambda x: x * scale,
         )
         self.adds(co2_cfg)
+        return self
+
+    def tuya_electrical_conductivity(
+        self,
+        dp_id: int,
+        ec_cfg: TuyaLocalCluster = TuyaElectricalConductivity,
+        scale: float = 1,
+    ) -> QuirkBuilder:
+        """Add a Tuya Electrical Conductivity Configuration."""
+        self.tuya_dp(
+            dp_id,
+            ec_cfg.ep_attribute,
+            ElectricalConductivity.AttributeDefs.measured_value.name,
+            converter=lambda x: x * scale,
+        )
+        self.adds(ec_cfg)
         return self
 
     def tuya_formaldehyde(
