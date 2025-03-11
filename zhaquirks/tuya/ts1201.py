@@ -56,6 +56,9 @@ class ZosungIRControl(CustomCluster):
     cluster_id = 0xE004
     ep_attribute = "zosung_ircontrol"
 
+    # remove manufacturer id for cluster
+    manufacturer_id_override: t.uint16_t = foundation.ZCLHeader.NO_MANUFACTURER_ID
+
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
 
@@ -159,6 +162,9 @@ class ZosungIRTransmit(CustomCluster):
     name = "Zosung IR Transmit Cluster"
     cluster_id = 0xED00
     ep_attribute = "zosung_irtransmit"
+
+    # remove manufacturer id for cluster
+    manufacturer_id_override: t.uint16_t = foundation.ZCLHeader.NO_MANUFACTURER_ID
 
     current_position = 0
     msg_length = 0
