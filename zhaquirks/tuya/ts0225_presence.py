@@ -1,7 +1,7 @@
 """TS0225 presence sensor."""
 
-from homeassistant.const import UnitOfLength, UnitOfTime
 from zigpy.quirks import CustomCluster
+from zigpy.quirks.v2.homeassistant import UnitOfLength, UnitOfTime
 from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
