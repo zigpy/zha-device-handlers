@@ -88,8 +88,8 @@ class TS0225Cluster(CustomCluster):
         max_value=10000,
         step=1,
         unit=UnitOfTime.SECONDS,
+        fallback_name="Fading time",
         translation_key="fading_time",
-        fallback_name="fading_time",
     )
     .skip_configuration()
     .add_to_registry()
