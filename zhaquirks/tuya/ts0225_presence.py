@@ -10,9 +10,13 @@ from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 
 class TS0225Cluster(CustomCluster):
+    """ TS0225 specific cluster """
+
     cluster_id = 0xE002
 
     class AttributeDefs(BaseAttributeDefs):
+        """Attribute Definitions."""
+
         presence_keep_time = ZCLAttributeDef(
             id=0xE001, type=t.uint16_t, is_manufacturer_specific=False
         )
