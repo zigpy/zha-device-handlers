@@ -10,7 +10,7 @@ from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 
 class TS0225Cluster(CustomCluster):
-    """TS0225 specific cluster"""
+    """TS0225 specific cluster."""
 
     cluster_id = 0xE002
 
