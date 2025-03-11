@@ -104,6 +104,13 @@ class WorkingDayV02(t.enum8):
     Seven = 0x03
 
 
+class RunningMode(t.enum8):
+    """Tuya running mode enum."""
+
+    Heat = 0x00
+    Cool = 0x01
+
+
 class TuyaThermostat(Thermostat, TuyaAttributesCluster):
     """Tuya local thermostat cluster."""
 
@@ -603,6 +610,211 @@ base_avatto_quirk = (
         off_value=1,
         translation_key="invert_relay",
         fallback_name="Invert relay",
+    )
+    .adds(TuyaThermostat)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+# Tervix Pro Line Zigbee
+(
+    TuyaQuirkBuilder("_TZE200_6kijc7nd", "TS0601")
+    .tuya_dp(
+        dp_id=1,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.system_mode.name,
+        converter=lambda x: {
+            True: Thermostat.SystemMode.Heat,
+            False: Thermostat.SystemMode.Off,
+        }[x],
+        dp_converter=lambda x: {
+            Thermostat.SystemMode.Heat: True,
+            Thermostat.SystemMode.Off: False,
+        }[x],
+    )
+    .tuya_enum(
+        dp_id=2,
+        attribute_name="preset_mode",
+        enum_class=PresetModeV02,
+        translation_key="preset_mode",
+        fallback_name="Preset mode",
+    )
+    .tuya_dp(
+        dp_id=3,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.running_state.name,
+        converter=lambda x: RunningState.Heat_State_On if x else RunningState.Idle,
+    )
+    .tuya_binary_sensor(
+        dp_id=8,
+        attribute_name="window_detection",
+        translation_key="window_detection",
+        fallback_name="Window Detection",
+    )
+    .tuya_binary_sensor(
+        dp_id=10,
+        attribute_name="frost_protection",
+        translation_key="frost_protection",
+        fallback_name="Frost Protection",
+    )
+    .tuya_dp(
+        dp_id=16,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.occupied_heating_setpoint.name,
+        converter=lambda x: x * 10,
+        dp_converter=lambda x: x // 10,
+    )
+    .tuya_number(
+        dp_id=19,
+        attribute_name="temperature_ceiling",
+        type=t.uint16_t,
+        unit=UnitOfTemperature.CELSIUS,
+        min_value=35,
+        max_value=95,
+        multiplier=0.1,
+        step=0.5,
+        translation_key="temperature_ceiling",
+        fallback_name="Temperature Ceiling",
+    )
+    .tuya_dp(
+        dp_id=24,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.local_temperature.name,
+        converter=lambda x: x * 10,
+    )
+    .tuya_binary_sensor(
+        dp_id=25,
+        attribute_name="window_state",
+        translation_key="window_state",
+        fallback_name="Window State",
+    )
+    .tuya_number(
+        dp_id=27,
+        attribute_name=TuyaThermostat.AttributeDefs.local_temperature_calibration.name,
+        type=t.int32s,
+        min_value=-9,
+        max_value=9,
+        unit=UnitOfTemperature.CELSIUS,
+        step=1,
+        translation_key="local_temperature_calibration",
+        fallback_name="Temperature Correction",
+    )
+    .tuya_binary_sensor(
+        dp_id=34,
+        attribute_name="humidity_display",
+        translation_key="humidity_display",
+        fallback_name="Humidity Display",
+    )
+    .tuya_binary_sensor(
+        dp_id=39,
+        attribute_name="factory_reset",
+        translation_key="factory_reset",
+        fallback_name="Factory Reset",
+    )
+    .tuya_switch(
+        dp_id=40,
+        attribute_name="child_lock",
+        translation_key="child_lock",
+        fallback_name="Child Lock",
+    )
+    .tuya_enum(
+        dp_id=43,
+        attribute_name="sensor_selection",
+        enum_class=SensorMode,
+        translation_key="sensor_selection",
+        fallback_name="Sensor Selection",
+    )
+    .tuya_enum(
+        dp_id=58,
+        attribute_name="running_mode",
+        enum_class=RunningMode,
+        translation_key="running_mode",
+        fallback_name="Running Mode (Heat/Cool)",
+    )
+    .tuya_number(
+        dp_id=101,
+        attribute_name="switch_sensitivity",
+        type=t.uint8_t,
+        min_value=0,
+        max_value=100,
+        step=1,
+        translation_key="switch_sensitivity",
+        fallback_name="Switch Sensitivity",
+    )
+    .tuya_number(
+        dp_id=102,
+        attribute_name="floor_max_temperature",
+        type=t.uint16_t,
+        unit=UnitOfTemperature.CELSIUS,
+        min_value=5,
+        max_value=60,
+        multiplier=0.1,
+        step=0.5,
+        translation_key="floor_max_temperature",
+        fallback_name="Floor Maximum Temperature Protection",
+    )
+    .tuya_number(
+        dp_id=103,
+        attribute_name="floor_min_temperature",
+        type=t.uint16_t,
+        unit=UnitOfTemperature.CELSIUS,
+        min_value=10,
+        max_value=30,
+        multiplier=0.1,
+        step=0.5,
+        translation_key="floor_min_temperature",
+        fallback_name="Floor Minimum Temperature",
+    )
+    .tuya_number(
+        dp_id=104,
+        attribute_name="open_window_time",
+        type=t.uint16_t,
+        unit="min",
+        min_value=0,
+        max_value=60,
+        step=1,
+        translation_key="open_window_time",
+        fallback_name="Open Window Time",
+    )
+    .tuya_number(
+        dp_id=105,
+        attribute_name="open_window_temp",
+        type=t.uint16_t,
+        unit=UnitOfTemperature.CELSIUS,
+        min_value=0,
+        max_value=30,
+        multiplier=0.1,
+        step=0.5,
+        translation_key="open_window_temp",
+        fallback_name="Open Window Temperature",
+    )
+    .tuya_number(
+        dp_id=106,
+        attribute_name="open_window_delay_time",
+        type=t.uint16_t,
+        unit="min",
+        min_value=0,
+        max_value=60,
+        step=1,
+        translation_key="open_window_delay_time",
+        fallback_name="Open Window Delay Time",
+    )
+    .tuya_binary_sensor(
+        dp_id=107,
+        attribute_name="humidity_control",
+        translation_key="humidity_control",
+        fallback_name="Humidity Control",
+    )
+    .tuya_number(
+        dp_id=108,
+        attribute_name="upper_humidity_limit",
+        type=t.uint8_t,
+        unit="%",
+        min_value=0,
+        max_value=100,
+        step=1,
+        translation_key="upper_humidity_limit",
+        fallback_name="Upper Humidity Limit",
     )
     .adds(TuyaThermostat)
     .skip_configuration()
