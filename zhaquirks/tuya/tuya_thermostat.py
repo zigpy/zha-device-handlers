@@ -649,13 +649,13 @@ base_avatto_quirk = (
         dp_id=8,
         attribute_name="window_detection",
         translation_key="window_detection",
-        fallback_name="Window Detection",
+        fallback_name="Open window detection",
     )
     .tuya_binary_sensor(
         dp_id=10,
         attribute_name="frost_protection",
         translation_key="frost_protection",
-        fallback_name="Frost Protection",
+        fallback_name="Frost protection",
     )
     .tuya_dp(
         dp_id=16,
@@ -697,7 +697,7 @@ base_avatto_quirk = (
         unit=UnitOfTemperature.CELSIUS,
         step=1,
         translation_key="local_temperature_calibration",
-        fallback_name="Temperature Correction",
+        fallback_name="Local temperature calibration",
     )
     .tuya_binary_sensor(
         dp_id=34,
@@ -709,13 +709,13 @@ base_avatto_quirk = (
         dp_id=39,
         attribute_name="factory_reset",
         translation_key="factory_reset",
-        fallback_name="Factory Reset",
+        fallback_name="Factory reset",
     )
     .tuya_switch(
         dp_id=40,
         attribute_name="child_lock",
         translation_key="child_lock",
-        fallback_name="Child Lock",
+        fallback_name="Child lock",
     )
     .tuya_enum(
         dp_id=43,
