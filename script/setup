@@ -29,6 +29,6 @@ if ! [ -x "$(command -v uv)" ]; then
 fi
 
 uv pip install -r requirements_test.txt
-pre-commit install
-
 uv pip install -e .
+
+pre-commit install
