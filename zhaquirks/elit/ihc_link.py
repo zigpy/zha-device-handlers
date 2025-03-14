@@ -1,12 +1,12 @@
 """Device handler for ELIT Scandinavia IHC Link, require firmware version 1.1.14 or later."""
 
+import logging
+
 from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.quirks.v2 import CustomDeviceV2
+from zigpy.quirks.v2 import CustomDeviceV2, QuirkBuilder
+from zigpy.zcl.clusters.general import MultistateInput, OnOff
 from zigpy.zdo import ZDO
-from zigpy.zcl import ClusterType
-from zigpy.zcl.clusters.general import MultistateInput
-from zigpy.zcl.clusters.general import OnOff
+
 from zhaquirks.const import (
     COMMAND,
     COMMAND_DOUBLE,
@@ -24,8 +24,6 @@ from zhaquirks.const import (
     ZHA_SEND_EVENT,
 )
 
-import logging
-
 ELIT = "ELIT Scandinavia"
 
 ACTION_TYPE = {
@@ -38,8 +36,10 @@ ACTION_TYPE = {
 
 _LOGGER = logging.getLogger(__name__)
 
+
 async def do_binding(cluster):
     await cluster.bind()
+
 
 class EHCLinkDevice(CustomDeviceV2):
     """Quirk for ELIT Scandinavia EHC DIM Zigbee device."""
@@ -54,8 +54,10 @@ class EHCLinkDevice(CustomDeviceV2):
             cluster = endpoint.in_clusters.get(MultistateInput.cluster_id)
             if cluster:
                 await cluster.bind()
-                await cluster.configure_reporting(MultistateInput.AttributeDefs.present_value.id, 0, 0, 0)
-        
+                await cluster.configure_reporting(
+                    MultistateInput.AttributeDefs.present_value.id, 0, 0, 0
+                )
+
             cluster = endpoint.in_clusters.get(OnOff.cluster_id)
             if cluster:
                 await cluster.bind()
@@ -63,20 +65,27 @@ class EHCLinkDevice(CustomDeviceV2):
         # also apply custom configuration to clusters if defined
         await super().apply_custom_configuration(*args, **kwargs)
 
+
 class CustomMultistateInputCluster(CustomCluster, MultistateInput):
     """Multistate input cluster."""
 
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
-        if (attrid == MultistateInput.AttributeDefs.present_value.id and (action := ACTION_TYPE.get(value)) is not None):
+        if (
+            attrid == MultistateInput.AttributeDefs.present_value.id
+            and (action := ACTION_TYPE.get(value)) is not None
+        ):
             event_args = {VALUE: value}
             self.listener_event(ZHA_SEND_EVENT, action, event_args)
+
 
 (
     QuirkBuilder(ELIT, "IHC Link")
     .device_class(EHCLinkDevice)
     .skip_configuration()
-    .replace_cluster_occurrences(CustomMultistateInputCluster, replace_client_instances=False)
+    .replace_cluster_occurrences(
+        CustomMultistateInputCluster, replace_client_instances=False
+    )
     .device_automation_triggers(
         {
             **{
@@ -106,7 +115,7 @@ class CustomMultistateInputCluster(CustomCluster, MultistateInput):
                     (LONG_PRESS, COMMAND_HOLD),
                     (LONG_RELEASE, COMMAND_RELEASE),
                 }
-            }
+            },
         }
     )
     .add_to_registry()
