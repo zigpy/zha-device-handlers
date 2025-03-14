@@ -36,18 +36,11 @@ ACTION_TYPE = {
 
 _LOGGER = logging.getLogger(__name__)
 
-
-async def do_binding(cluster):
-    await cluster.bind()
-
-
 class EHCLinkDevice(CustomDeviceV2):
     """Quirk for ELIT Scandinavia EHC DIM Zigbee device."""
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
     async def apply_custom_configuration(self, *args, **kwargs):
+        """Apply custom configuration to device. Bind multistate input cluster and configure reporting."""
         for endpoint in self.endpoints.values():
             if isinstance(endpoint, ZDO):
                 continue
