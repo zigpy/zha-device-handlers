@@ -36,6 +36,7 @@ ACTION_TYPE = {
 
 _LOGGER = logging.getLogger(__name__)
 
+
 class EHCLinkDevice(CustomDeviceV2):
     """Quirk for ELIT Scandinavia EHC DIM Zigbee device."""
 
