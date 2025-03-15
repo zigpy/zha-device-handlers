@@ -113,7 +113,7 @@ async def test_legrand_contactor_switch(zigpy_device_from_v2_quirk):
     ##
     switch_on_off_cluster.contactor_is_switch_reported(False)
     assert not switch_on_off_cluster._contactor_is_switch
-    
+
     switch_on_off_cluster.auto_on_off_reported(True)
     switch_on_off_cluster.auto_on_off_reported(False)
 
@@ -231,7 +231,7 @@ async def test_legrand_contactor_switch(zigpy_device_from_v2_quirk):
     switch_on_off_cluster.request.assert_awaited_once()
 
     await switch_on_off_cluster._read_attributes(
-        [LegrandContactorSwitchOnOff.ON_OFF_ID+1]
+        [LegrandContactorSwitchOnOff.ON_OFF_ID + 1]
     )
 
     # cover _update_attribute
@@ -243,7 +243,9 @@ async def test_legrand_contactor_switch(zigpy_device_from_v2_quirk):
         auto_on_off_cluster.turn_on = mock.AsyncMock()
         auto_on_off_cluster.turn_off = mock.AsyncMock()
         auto_on_off_cluster.toggle = mock.AsyncMock()
-        await switch_on_off_cluster.command(LegrandContactorSwitchOnOff.TOGGLE_CMD_ID+1)
+        await switch_on_off_cluster.command(
+            LegrandContactorSwitchOnOff.TOGGLE_CMD_ID + 1
+        )
         mode_cluster._read_mode.assert_not_awaited()
         auto_on_off_cluster.turn_on.assert_not_awaited()
         auto_on_off_cluster.turn_off.assert_not_awaited()

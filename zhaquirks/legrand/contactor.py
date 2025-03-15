@@ -668,7 +668,7 @@ class LegrandContactorSwitchOnOff(CustomCluster, OnOff):
                 manufacturer=manufacturer, expect_reply=expect_reply, tsn=tsn
             )
 
-        else: # if command_id == self.TOGGLE_CMD_ID:
+        else:  # if command_id == self.TOGGLE_CMD_ID:
             result = await auto_cluster.toggle(
                 manufacturer=manufacturer, expect_reply=expect_reply, tsn=tsn
             )
