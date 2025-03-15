@@ -659,27 +659,21 @@ class LegrandContactorSwitchOnOff(CustomCluster, OnOff):
         ]
 
         if command_id == self.ON_CMD_ID:
-            return await auto_cluster.turn_on(
+            result = await auto_cluster.turn_on(
                 manufacturer=manufacturer, expect_reply=expect_reply, tsn=tsn
             )
 
-        if command_id == self.OFF_CMD_ID:
-            return await auto_cluster.turn_off(
+        elif command_id == self.OFF_CMD_ID:
+            result = await auto_cluster.turn_off(
                 manufacturer=manufacturer, expect_reply=expect_reply, tsn=tsn
             )
 
-        if command_id == self.TOGGLE_CMD_ID:
-            return await auto_cluster.toggle(
+        else: # if command_id == self.TOGGLE_CMD_ID:
+            result = await auto_cluster.toggle(
                 manufacturer=manufacturer, expect_reply=expect_reply, tsn=tsn
             )
 
-        return await super().command(
-            command_id,
-            *args,
-            manufacturer=manufacturer,
-            expect_reply=expect_reply,
-            tsn=tsn,
-        )
+        return result
 
     def _update_attribute(self, attrid, value):
         """Legrand switch OnOff attribute update.

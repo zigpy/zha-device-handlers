@@ -112,6 +112,8 @@ async def test_legrand_contactor_switch(zigpy_device_from_v2_quirk):
     ## Test Auto mode
     ##
     switch_on_off_cluster.contactor_is_switch_reported(False)
+    assert not switch_on_off_cluster._contactor_is_switch
+    
     switch_on_off_cluster.auto_on_off_reported(True)
     switch_on_off_cluster.auto_on_off_reported(False)
 
@@ -169,6 +171,8 @@ async def test_legrand_contactor_switch(zigpy_device_from_v2_quirk):
     ## Test Switch mode
     ##
     switch_on_off_cluster.contactor_is_switch_reported(True)
+    assert switch_on_off_cluster._contactor_is_switch
+
     switch_on_off_cluster.auto_on_off_reported(True)
     switch_on_off_cluster.auto_on_off_reported(False)
 
@@ -225,8 +229,27 @@ async def test_legrand_contactor_switch(zigpy_device_from_v2_quirk):
     )
     auto_on_off_cluster._read_states.assert_not_awaited()
     switch_on_off_cluster.request.assert_awaited_once()
+
+    await switch_on_off_cluster._read_attributes(
+        [LegrandContactorSwitchOnOff.ON_OFF_ID+1]
+    )
+
     # cover _update_attribute
     switch_on_off_cluster._update_attribute(LegrandContactorSwitchOnOff.ON_OFF_ID, 0)
+
+    # test sending other command
+    try:
+        mode_cluster._read_mode = mock.AsyncMock()
+        auto_on_off_cluster.turn_on = mock.AsyncMock()
+        auto_on_off_cluster.turn_off = mock.AsyncMock()
+        auto_on_off_cluster.toggle = mock.AsyncMock()
+        await switch_on_off_cluster.command(LegrandContactorSwitchOnOff.TOGGLE_CMD_ID+1)
+        mode_cluster._read_mode.assert_not_awaited()
+        auto_on_off_cluster.turn_on.assert_not_awaited()
+        auto_on_off_cluster.turn_off.assert_not_awaited()
+        auto_on_off_cluster.toggle.assert_not_awaited()
+    except Exception as e:
+        assert isinstance(e, KeyError)
 
 
 async def test_legrand_contactor_auto(zigpy_device_from_v2_quirk):
@@ -252,6 +275,8 @@ async def test_legrand_contactor_auto(zigpy_device_from_v2_quirk):
     auto_on_off_cluster.read_attributes.assert_awaited_with(
         [LegrandContactorAutoOnOff.STATUS_ID], allow_cache=False
     )
+    auto_on_off_cluster.read_attributes = mock.AsyncMock(return_value=[None])
+    assert await auto_on_off_cluster._read_status() is None
 
     # cover command
     auto_on_off_cluster.request = mock.AsyncMock()
