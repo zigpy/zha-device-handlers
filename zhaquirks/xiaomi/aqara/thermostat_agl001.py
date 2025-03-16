@@ -1,15 +1,16 @@
 """Aqara E1 Radiator Thermostat Quirk."""
+
 from __future__ import annotations
 
-from functools import reduce
 import math
 import struct
 import time
+from functools import reduce
 from typing import Any
 
+import zigpy.types as t
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster
-import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, Time
 from zigpy.zcl.clusters.hvac import Thermostat
 
@@ -301,7 +302,7 @@ class ScheduleSettings(t.LVBytes):
         if len(days) != len(set(days)):
             raise ValueError("Duplicate day names present")
         for d in days:
-            if d not in DAYS_MAP.keys():
+            if d not in DAYS_MAP:
                 raise ValueError(
                     f"String: {d} is not a valid day name, valid names: mon, tue, wed, thu, fri, sat, sun"
                 )
@@ -491,7 +492,7 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
                         self.aqaraHeader(0x13, params2, 0x04) + params2
                     )
 
-                    result = await super().write_attributes(attrs1, manufacturer)
+                    await super().write_attributes(attrs1, manufacturer)
                 else:
                     # external sensor
                     params1 = timestamp
@@ -553,7 +554,7 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
                         self.aqaraHeader(0x13, params2, 0x02) + params2
                     )
 
-                    result = await super().write_attributes(attrs1, manufacturer)
+                    await super().write_attributes(attrs1, manufacturer)
             else:
                 attrs[attr] = value
 
