@@ -456,7 +456,7 @@ The tests use the [pytest](https://docs.pytest.org/en/latest/) framework.
 To get set up, you need install the test dependencies:
 
 ```bash
-pip install -r requirements_test_all.txt
+pip install -r requirements_test.txt
 ```
 
 ### Running the tests
