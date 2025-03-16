@@ -1,10 +1,10 @@
 """Aqara E1 Radiator Thermostat Quirk."""
-
 from __future__ import annotations
 
 from functools import reduce
 import math
 import struct
+import time
 from typing import Any
 
 from zigpy.profiles import zha
@@ -48,6 +48,10 @@ SCHEDULE = 0x027D
 SCHEDULE_SETTINGS = 0x0276
 SENSOR = 0x027E
 BATTERY_PERCENTAGE = 0x040A
+
+SENSOR_TEMP = 0x1392  # Fake address to pass external sensor temperature
+SENSOR_ATTR = 0xFFF2
+SENSOR_ATTR_NAME = "sensor_attr"
 
 XIAOMI_CLUSTER_ID = 0xFCC0
 
@@ -140,12 +144,11 @@ class ThermostatCluster(CustomCluster, Thermostat):
 
 
 class ScheduleEvent:
-    """Schedule event object."""
+    """Schedule event object"""
 
     _is_next_day = False
 
     def __init__(self, value, is_next_day=False):
-        """Create ScheduleEvent object from bytes or string."""
         if isinstance(value, bytes):
             self._verify_buffer_len(value)
             self._time = self._read_time_from_buf(value)
@@ -178,8 +181,8 @@ class ScheduleEvent:
         return time
 
     @staticmethod
-    def _parse_time(string):
-        parts = string.split(":")
+    def _parse_time(str):
+        parts = str.split(":")
         if len(parts) != 2:
             raise ValueError("Time must contain ':' separator")
 
@@ -193,8 +196,8 @@ class ScheduleEvent:
         return struct.unpack_from(">H", buf, offset=4)[0] / 100
 
     @staticmethod
-    def _parse_temp(string):
-        return float(string)
+    def _parse_temp(str):
+        return float(str)
 
     @staticmethod
     def _validate_time(time):
@@ -222,23 +225,18 @@ class ScheduleEvent:
         struct.pack_into(">H", buf, 4, int(self._temp * 100))
 
     def is_next_day(self):
-        """Return if event is on the next day."""
         return self._is_next_day
 
     def set_next_day(self, is_next_day):
-        """Set if event is on the next day."""
         self._is_next_day = is_next_day
 
     def get_time(self):
-        """Return event time."""
         return self._time
 
     def __str__(self):
-        """Return event as string."""
         return f"{math.floor(self._time / 60)}:{f'{self._time % 60:0>2}'},{f'{self._temp:.1f}'}"
 
     def serialize(self):
-        """Serialize event to bytes."""
         result = bytearray(6)
         self._write_time_to_buf(result)
         self._write_temp_to_buf(result)
@@ -246,10 +244,9 @@ class ScheduleEvent:
 
 
 class ScheduleSettings(t.LVBytes):
-    """Schedule settings object."""
+    """Schedule settings object"""
 
     def __new__(cls, value):
-        """Create ScheduleSettings object from bytes or string."""
         day_selection = None
         events = [None] * 4
         if isinstance(value, bytes):
@@ -304,7 +301,7 @@ class ScheduleSettings(t.LVBytes):
         if len(days) != len(set(days)):
             raise ValueError("Duplicate day names present")
         for d in days:
-            if d not in DAYS_MAP:
+            if d not in DAYS_MAP.keys():
                 raise ValueError(
                     f"String: {d} is not a valid day name, valid names: mon, tue, wed, thu, fri, sat, sun"
                 )
@@ -316,8 +313,8 @@ class ScheduleSettings(t.LVBytes):
             byte = struct.unpack_from("c", value, offset=1)[0][0]
             if byte & 0x01:
                 raise ValueError("Incorrect day selected")
-            for i, v in DAYS_MAP.items():
-                if byte & v:
+            for i in DAYS_MAP:
+                if byte & DAYS_MAP[i]:
                     day_selection.append(i)
             ScheduleSettings._verify_day_selection_in_str(day_selection)
         elif isinstance(value, str):
@@ -358,7 +355,6 @@ class ScheduleSettings(t.LVBytes):
         return byte
 
     def __str__(self):
-        """Return ScheduleSettings as string."""
         day_selection = ScheduleSettings._read_day_selection(self)
         events = [None] * 4
         for i in range(4):
@@ -388,6 +384,8 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
             SCHEDULE_SETTINGS: ("schedule_settings", ScheduleSettings, True),
             SENSOR: ("sensor", t.uint8_t, True),
             BATTERY_PERCENTAGE: ("battery_percentage", t.uint8_t, True),
+            SENSOR_TEMP: ("sensor_temp", t.uint32_t, True),
+            SENSOR_ATTR: (SENSOR_ATTR_NAME, t.LVBytes, True),
         }
     )
 
@@ -401,6 +399,166 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
                 ZCL_SYSTEM_MODE, XIAOMI_SYSTEM_MODE_MAP[value]
             )
         super()._update_attribute(attrid, value)
+
+    def aqaraHeader(self, counter: int, params: bytearray, action: int) -> bytearray:
+        """Create Aqara header for setting external sensor."""
+        header = bytes([0xAA, 0x71, len(params) + 3, 0x44, counter])
+        integrity = 512 - sum(header)
+
+        return header + bytes([integrity, action, 0x41, len(params)])
+
+    def _float_to_hex(self, f):
+        """Convert float to hex."""
+        return hex(struct.unpack("<I", struct.pack("<f", f))[0])
+
+    async def write_attributes(
+        self, attributes: dict[str | int, Any], manufacturer: int | None = None
+    ) -> list:
+        """Write attributes to device with internal 'attributes' validation."""
+        sensor = bytearray.fromhex("00158d00019d1b98")
+        attrs = {}
+
+        for attr, value in attributes.items():
+            # implemented with help from https://github.com/Koenkk/zigbee-herdsman-converters/blob/master/devices/xiaomi.js
+
+            if attr == SENSOR_TEMP:
+                # set external sensor temp. this function expect value to be passed multiplied by 100
+                temperatureBuf = bytearray.fromhex(
+                    self._float_to_hex(round(float(value)))[2:]
+                )
+
+                params = sensor
+                params += bytes([0x00, 0x01, 0x00, 0x55])
+                params += temperatureBuf
+
+                attrs = {}
+                attrs[SENSOR_ATTR_NAME] = self.aqaraHeader(0x12, params, 0x05) + params
+
+            elif attr == SENSOR:
+                # set internal/external temperature sensor
+                device = bytearray.fromhex(
+                    ("%s" % (self.endpoint.device.ieee)).replace(":", "")
+                )
+                timestamp = bytes(reversed(t.uint32_t(int(time.time())).serialize()))
+
+                if value == 0:
+                    # internal sensor
+                    params1 = timestamp
+                    params1 += bytes([0x3D, 0x05])
+                    params1 += device
+                    params1 += bytes(
+                        [
+                            0x00,
+                            0x00,
+                            0x00,
+                            0x00,
+                            0x00,
+                            0x00,
+                            0x00,
+                            0x00,
+                            0x00,
+                            0x00,
+                            0x00,
+                            0x00,
+                        ]
+                    )
+
+                    params2 = timestamp
+                    params2 += bytes([0x3D, 0x04])
+                    params2 += device
+                    params2 += bytes(
+                        [
+                            0x00,
+                            0x00,
+                            0x00,
+                            0x00,
+                            0x00,
+                            0x00,
+                            0x00,
+                            0x00,
+                            0x00,
+                            0x00,
+                            0x00,
+                            0x00,
+                        ]
+                    )
+
+                    attrs1 = {}
+                    attrs1[SENSOR_ATTR_NAME] = (
+                        self.aqaraHeader(0x12, params1, 0x04) + params1
+                    )
+                    attrs[SENSOR_ATTR_NAME] = (
+                        self.aqaraHeader(0x13, params2, 0x04) + params2
+                    )
+
+                    result = await super().write_attributes(attrs1, manufacturer)
+                else:
+                    # external sensor
+                    params1 = timestamp
+                    params1 += bytes([0x3D, 0x04])
+                    params1 += device
+                    params1 += sensor
+                    params1 += bytes([0x00, 0x01, 0x00, 0x55])
+                    params1 += bytes(
+                        [
+                            0x13,
+                            0x0A,
+                            0x02,
+                            0x00,
+                            0x00,
+                            0x64,
+                            0x04,
+                            0xCE,
+                            0xC2,
+                            0xB6,
+                            0xC8,
+                        ]
+                    )
+                    params1 += bytes([0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x3D])
+                    params1 += bytes([0x64])
+                    params1 += bytes([0x65])
+
+                    params2 = timestamp
+                    params2 += bytes([0x3D, 0x05])
+                    params2 += device
+                    params2 += sensor
+                    params2 += bytes([0x08, 0x00, 0x07, 0xFD])
+                    params2 += bytes(
+                        [
+                            0x16,
+                            0x0A,
+                            0x02,
+                            0x0A,
+                            0xC9,
+                            0xE8,
+                            0xB1,
+                            0xB8,
+                            0xD4,
+                            0xDA,
+                            0xCF,
+                            0xDF,
+                            0xC0,
+                            0xEB,
+                        ]
+                    )
+                    params2 += bytes([0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x3D])
+                    params2 += bytes([0x04])
+                    params2 += bytes([0x65])
+
+                    attrs1 = {}
+                    attrs1[SENSOR_ATTR_NAME] = (
+                        self.aqaraHeader(0x12, params1, 0x02) + params1
+                    )
+                    attrs[SENSOR_ATTR_NAME] = (
+                        self.aqaraHeader(0x13, params2, 0x02) + params2
+                    )
+
+                    result = await super().write_attributes(attrs1, manufacturer)
+            else:
+                attrs[attr] = value
+
+        result = await super().write_attributes(attrs, manufacturer)
+        return result
 
 
 class AGL001(XiaomiCustomDevice):
