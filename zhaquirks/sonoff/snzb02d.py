@@ -4,6 +4,7 @@ from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature
 import zigpy.types as t
+from zigpy.zcl import foundation
 from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
 
 
@@ -18,6 +19,7 @@ class CustomSonoffCluster(CustomCluster):
     """Sonoff custom cluster."""
 
     cluster_id = 0xFC11
+    manufacturer_id_override: t.uint16_t = foundation.ZCLHeader.NO_MANUFACTURER_ID
 
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
@@ -47,10 +49,6 @@ class CustomSonoffCluster(CustomCluster):
             type=TemperatureUnit,
             zcl_type=DataTypeId.uint16,
         )
-
-    @property
-    def _is_manuf_specific(self):
-        return False
 
 
 (
@@ -104,8 +102,8 @@ class CustomSonoffCluster(CustomCluster):
         CustomSonoffCluster.AttributeDefs.temperature_unit.name,
         TemperatureUnit,
         CustomSonoffCluster.cluster_id,
-        translation_key="temperature_unit",
-        fallback_name="Temperature unit",
+        translation_key="display_unit",
+        fallback_name="Display unit",
     )
     .add_to_registry()
 )
