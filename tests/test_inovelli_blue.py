@@ -3,6 +3,8 @@
 from unittest import mock
 from unittest.mock import MagicMock
 
+import zigpy.types as t
+
 import zhaquirks
 from zhaquirks.inovelli.VZM31SN import InovelliVZM31SNv11
 
@@ -25,7 +27,15 @@ def test_mfg_cluster_events(zigpy_device_from_quirk):
         cluster_listener
     )
 
-    device.handle_message(260, cluster_id, endpoint_id, endpoint_id, data)
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=260,
+            cluster_id=cluster_id,
+            src_ep=endpoint_id,
+            dst_ep=endpoint_id,
+            data=t.SerializableBytes(data),
+        )
+    )
 
     assert cluster_listener.zha_send_event.call_count == 1
     assert cluster_listener.zha_send_event.call_args == mock.call(
@@ -35,8 +45,14 @@ def test_mfg_cluster_events(zigpy_device_from_quirk):
     cluster_listener.zha_send_event.reset_mock()
 
     led_effect_complete_data = b"\x15/\x12\x0c$\x10"
-    device.handle_message(
-        260, cluster_id, endpoint_id, endpoint_id, led_effect_complete_data
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=260,
+            cluster_id=cluster_id,
+            src_ep=endpoint_id,
+            dst_ep=endpoint_id,
+            data=t.SerializableBytes(led_effect_complete_data),
+        )
     )
 
     assert cluster_listener.zha_send_event.call_count == 1
