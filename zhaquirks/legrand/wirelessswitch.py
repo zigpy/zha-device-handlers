@@ -37,7 +37,7 @@ from zhaquirks.legrand import LEGRAND, LegrandCluster, LegrandPowerConfiguration
 
 
 class RadiantWirelessSwitch(CustomDevice):
-    """Wireless radiant switch"""
+    """Wireless radiant switch."""
 
     signature = {
         # SizePrefixedSimpleDescriptor(endpoint=1, profile=260, device_type=260,
