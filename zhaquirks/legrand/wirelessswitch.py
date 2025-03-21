@@ -6,32 +6,32 @@ from zigpy.zcl.clusters.general import (
     Basic,
     BinaryInput,
     Identify,
+    LevelControl,
     OnOff,
     Ota,
     PollControl,
-    LevelControl,
 )
 
 from zhaquirks import PowerConfigurationCluster
 from zhaquirks.const import (
+    BUTTON,
     COMMAND,
+    COMMAND_MOVE,
+    COMMAND_OFF,
+    COMMAND_ON,
+    COMMAND_STOP,
     DEVICE_TYPE,
     ENDPOINTS,
     INPUT_CLUSTERS,
     LONG_PRESS,
+    LONG_RELEASE,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
+    PARAMS,
     PROFILE_ID,
     SHORT_PRESS,
-    TURN_ON,
-    COMMAND_ON,
     TURN_OFF,
-    COMMAND_OFF,
-    COMMAND_MOVE,
-    PARAMS,
-    LONG_RELEASE,
-    BUTTON,
-    COMMAND_STOP,
+    TURN_ON,
 )
 from zhaquirks.legrand import LEGRAND, LegrandCluster, LegrandPowerConfigurationCluster
 
