@@ -196,7 +196,7 @@ def test_nhpb_shutter_1_signature(assert_signature_matches_quirk):
         "class": "zigpy.device.Device",
     }
     assert_signature_matches_quirk(
-        zhaquirks.schneiderelectric.shutters.OneGangShutter1, signature
+        zhaquirks.schneiderelectric.shutters.NhpbShutter1, signature
     )
 
 
@@ -223,7 +223,7 @@ async def test_nhpb_shutter_1_unpatched_cmd(zigpy_device_from_quirk):
     """Asserts that unpatched ZCL commands keep working."""
 
     device = zigpy_device_from_quirk(
-        zhaquirks.schneiderelectric.shutters.OneGangShutter1
+        zhaquirks.schneiderelectric.shutters.NhpbShutter1
     )
     window_covering_cluster = device.endpoints[5].window_covering
 
@@ -246,7 +246,7 @@ async def test_nhpb_shutter_1_lift_percentage_updates(zigpy_device_from_quirk):
     """
 
     device = zigpy_device_from_quirk(
-        zhaquirks.schneiderelectric.shutters.OneGangShutter1
+        zhaquirks.schneiderelectric.shutters.NhpbShutter1
     )
     window_covering_cluster = device.endpoints[5].window_covering
     cluster_listener = ClusterListener(window_covering_cluster)
