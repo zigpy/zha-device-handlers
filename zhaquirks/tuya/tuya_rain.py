@@ -6,14 +6,9 @@ from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateC
 import zigpy.types as t
 from zigpy.zcl.clusters.security import IasZone
 
-from zhaquirks.tuya import (
-    TUYA_CLUSTER_ID,
-    BatterySize,
-    DPToAttributeMapping,
-    TuyaLocalCluster,
-)
+from zhaquirks.tuya import TUYA_CLUSTER_ID, BatterySize, TuyaLocalCluster
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
-from zhaquirks.tuya.mcu import TuyaMCUCluster
+from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster
 
 
 class TuyaIasZone(IasZone, TuyaLocalCluster):
