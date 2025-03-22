@@ -222,9 +222,7 @@ async def test_nhpb_shutter_1_go_to_lift_percentage_cmd(zigpy_device_from_quirk)
 async def test_nhpb_shutter_1_unpatched_cmd(zigpy_device_from_quirk):
     """Asserts that unpatched ZCL commands keep working."""
 
-    device = zigpy_device_from_quirk(
-        zhaquirks.schneiderelectric.shutters.NhpbShutter1
-    )
+    device = zigpy_device_from_quirk(zhaquirks.schneiderelectric.shutters.NhpbShutter1)
     window_covering_cluster = device.endpoints[5].window_covering
 
     p = mock.patch.object(window_covering_cluster, "request", mock.AsyncMock())
@@ -245,9 +243,7 @@ async def test_nhpb_shutter_1_lift_percentage_updates(zigpy_device_from_quirk):
     (e.g., by the device) invert the reported percentage value.
     """
 
-    device = zigpy_device_from_quirk(
-        zhaquirks.schneiderelectric.shutters.NhpbShutter1
-    )
+    device = zigpy_device_from_quirk(zhaquirks.schneiderelectric.shutters.NhpbShutter1)
     window_covering_cluster = device.endpoints[5].window_covering
     cluster_listener = ClusterListener(window_covering_cluster)
 
