@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
+from functools import reduce
 import math
 import struct
 import time
-from functools import reduce
 from typing import Any
 
-import zigpy.types as t
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster
+import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, Time
 from zigpy.zcl.clusters.hvac import Thermostat
 
