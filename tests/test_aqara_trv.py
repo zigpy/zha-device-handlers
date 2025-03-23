@@ -34,14 +34,14 @@ async def test_external_sensor_mode(zigpy_device_from_quirk, quirk):
         # Verify that the request was called twice (once for each write_attributes call)
         assert m1.call_count == 2
 
-        # Verify that the SENSOR_ATTR_NAME attribute was used in both calls
+        # Verify that the SENSOR_ATTR attribute was used in both calls
         first_call_args = m1.call_args_list[0][0]
         second_call_args = m1.call_args_list[1][0]
 
         assert first_call_args[1] == foundation.GeneralCommand.Write_Attributes
         assert second_call_args[1] == foundation.GeneralCommand.Write_Attributes
 
-        # Verify that the SENSOR_ATTR_NAME is present in the attributes list
+        # Verify that the SENSOR_ATTR is present in the attributes list
         assert any(attr.attrid == SENSOR_ATTR for attr in first_call_args[3])
         assert any(attr.attrid == SENSOR_ATTR for attr in second_call_args[3])
 
@@ -84,14 +84,14 @@ async def test_internal_sensor_mode(zigpy_device_from_quirk, quirk):
         # Verify that the request was called twice (once for each write_attributes call)
         assert m1.call_count == 2
 
-        # Verify that the SENSOR_ATTR_NAME attribute was used in both calls
+        # Verify that the SENSOR_ATTR attribute was used in both calls
         first_call_args = m1.call_args_list[0][0]
         second_call_args = m1.call_args_list[1][0]
 
         assert first_call_args[1] == foundation.GeneralCommand.Write_Attributes
         assert second_call_args[1] == foundation.GeneralCommand.Write_Attributes
 
-        # Verify that the SENSOR_ATTR_NAME is present in the attributes list
+        # Verify that the SENSOR_ATTR is present in the attributes list
         assert any(attr.attrid == SENSOR_ATTR for attr in first_call_args[3])
         assert any(attr.attrid == SENSOR_ATTR for attr in second_call_args[3])
 
@@ -134,7 +134,7 @@ async def test_external_sensor_temperature(zigpy_device_from_quirk, quirk):
         # Verify that the request was called
         assert m1.call_count == 1
 
-        # Verify that the SENSOR_ATTR_NAME attribute was used
+        # Verify that the SENSOR_ATTR attribute was used
         args = m1.call_args[0]
         assert args[1] == foundation.GeneralCommand.Write_Attributes
         attr = next(attr for attr in args[3] if attr.attrid == SENSOR_ATTR)
