@@ -6,7 +6,7 @@ from zigpy.zcl import foundation
 from zhaquirks.xiaomi.aqara.thermostat_agl001 import (
     AGL001,
     SENSOR,
-    SENSOR_ATTR_NAME,
+    SENSOR_ATTR,
     SENSOR_TEMP,
 )
 
@@ -36,15 +36,23 @@ async def test_external_sensor_mode(zigpy_device_from_quirk, quirk):
         first_call_args = m1.call_args_list[0][0]
         second_call_args = m1.call_args_list[1][0]
 
-        assert first_call_args[0] == foundation.GeneralCommand.Write_Attributes
-        assert SENSOR_ATTR_NAME in first_call_args[1]
+        assert first_call_args[1] == foundation.GeneralCommand.Write_Attributes
+        assert second_call_args[1] == foundation.GeneralCommand.Write_Attributes
 
-        assert second_call_args[0] == foundation.GeneralCommand.Write_Attributes
-        assert SENSOR_ATTR_NAME in second_call_args[1]
+        # Verify that the SENSOR_ATTR_NAME is present in the attributes list
+        assert any(attr.attrid == SENSOR_ATTR for attr in first_call_args[3])
+        assert any(attr.attrid == SENSOR_ATTR for attr in second_call_args[3])
 
-        # Verify that the Aqara header is present in both calls
-        first_attr_value = first_call_args[1][SENSOR_ATTR_NAME]
-        second_attr_value = second_call_args[1][SENSOR_ATTR_NAME]
+        # Get the attribute values
+        first_attr = next(
+            attr for attr in first_call_args[3] if attr.attrid == SENSOR_ATTR
+        )
+        second_attr = next(
+            attr for attr in second_call_args[3] if attr.attrid == SENSOR_ATTR
+        )
+
+        first_attr_value = first_attr.value.value
+        second_attr_value = second_attr.value.value
 
         assert first_attr_value.startswith(b"\xaa\x71")
         assert b"\x02" in first_attr_value  # Action code for external sensor
@@ -78,15 +86,23 @@ async def test_internal_sensor_mode(zigpy_device_from_quirk, quirk):
         first_call_args = m1.call_args_list[0][0]
         second_call_args = m1.call_args_list[1][0]
 
-        assert first_call_args[0] == foundation.GeneralCommand.Write_Attributes
-        assert SENSOR_ATTR_NAME in first_call_args[1]
+        assert first_call_args[1] == foundation.GeneralCommand.Write_Attributes
+        assert second_call_args[1] == foundation.GeneralCommand.Write_Attributes
 
-        assert second_call_args[0] == foundation.GeneralCommand.Write_Attributes
-        assert SENSOR_ATTR_NAME in second_call_args[1]
+        # Verify that the SENSOR_ATTR_NAME is present in the attributes list
+        assert any(attr.attrid == SENSOR_ATTR for attr in first_call_args[3])
+        assert any(attr.attrid == SENSOR_ATTR for attr in second_call_args[3])
 
-        # Verify that the Aqara header is present in both calls
-        first_attr_value = first_call_args[1][SENSOR_ATTR_NAME]
-        second_attr_value = second_call_args[1][SENSOR_ATTR_NAME]
+        # Get the attribute values
+        first_attr = next(
+            attr for attr in first_call_args[3] if attr.attrid == SENSOR_ATTR
+        )
+        second_attr = next(
+            attr for attr in second_call_args[3] if attr.attrid == SENSOR_ATTR
+        )
+
+        first_attr_value = first_attr.value.value
+        second_attr_value = second_attr.value.value
 
         assert first_attr_value.startswith(b"\xaa\x71")
         assert b"\x04" in first_attr_value  # Action code for internal sensor
@@ -118,11 +134,11 @@ async def test_external_sensor_temperature(zigpy_device_from_quirk, quirk):
 
         # Verify that the SENSOR_ATTR_NAME attribute was used
         args = m1.call_args[0]
-        assert args[0] == foundation.GeneralCommand.Write_Attributes
-        assert SENSOR_ATTR_NAME in args[1]
+        assert args[1] == foundation.GeneralCommand.Write_Attributes
+        attr = next(attr for attr in args[3] if attr.attrid == SENSOR_ATTR)
 
         # Verify that the Aqara header is present
-        attr_value = args[1][SENSOR_ATTR_NAME]
+        attr_value = attr.value.value
         assert attr_value.startswith(b"\xaa\x71")
         assert b"\x05" in attr_value  # Action code for setting temperature
 
