@@ -18,7 +18,6 @@ from zhaquirks.const import BatterySize
 from zhaquirks.tuya import (
     TUYA_QUERY_DATA,
     TUYA_SET_TIME,
-    DPToAttributeMapping,
     TuyaCommand,
     TuyaData,
     TuyaDatapointData,
@@ -42,7 +41,7 @@ from zhaquirks.tuya.builder import (
     TuyaTemperatureMeasurement,
     TuyaValveWaterConsumedNoInstDemand,
 )
-from zhaquirks.tuya.mcu import TuyaMCUCluster, TuyaOnOffNM
+from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster, TuyaOnOffNM
 from zhaquirks.tuya.tuya_sensor import NoManufTimeTuyaMCUCluster
 
 ZCL_TUYA_SET_TIME = b"\x09\x12\x24\x0d\x00"
