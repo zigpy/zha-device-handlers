@@ -1,3 +1,5 @@
+"""Tests for Aqara E1 thermostat."""
+
 from unittest import mock
 
 import pytest
