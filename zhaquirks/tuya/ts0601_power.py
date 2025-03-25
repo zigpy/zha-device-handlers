@@ -123,7 +123,7 @@ class Tuya3PhaseElectricalMeasurement(ElectricalMeasurement, TuyaLocalCluster):
         device_class=SensorDeviceClass.POWER,
         unit=UnitOfPower.WATT,
         fallback_name="Total power",
-        converter=dpToPower,
+        converter=dp_to_power,
     )
     .tuya_sensor(
         dp_id=131,
@@ -141,17 +141,17 @@ class Tuya3PhaseElectricalMeasurement(ElectricalMeasurement, TuyaLocalCluster):
             DPToAttributeMapping(
                 ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
                 attribute_name="active_power",
-                converter=multiDpToPower,
+                converter=multi_dp_to_power,
             ),
             DPToAttributeMapping(
                 ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
                 attribute_name="rms_voltage",
-                converter=multiDpToVoltage,
+                converter=multi_dp_to_voltage,
             ),
             DPToAttributeMapping(
                 ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
                 attribute_name="rms_current",
-                converter=multiDpToCurrent,
+                converter=multi_dp_to_current,
             ),
         ],
     )
@@ -161,17 +161,17 @@ class Tuya3PhaseElectricalMeasurement(ElectricalMeasurement, TuyaLocalCluster):
             DPToAttributeMapping(
                 ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
                 attribute_name="active_power_ph_b",
-                converter=multiDpToPower,
+                converter=multi_dp_to_power,
             ),
             DPToAttributeMapping(
                 ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
                 attribute_name="rms_voltage_ph_b",
-                converter=multiDpToVoltage,
+                converter=multi_dp_to_voltage,
             ),
             DPToAttributeMapping(
                 ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
                 attribute_name="rms_current_ph_b",
-                converter=multiDpToCurrent,
+                converter=multi_dp_to_current,
             ),
         ],
     )
@@ -181,17 +181,17 @@ class Tuya3PhaseElectricalMeasurement(ElectricalMeasurement, TuyaLocalCluster):
             DPToAttributeMapping(
                 ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
                 attribute_name="active_power_ph_c",
-                converter=multiDpToPower,
+                converter=multi_dp_to_power,
             ),
             DPToAttributeMapping(
                 ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
                 attribute_name="rms_voltage_ph_c",
-                converter=multiDpToVoltage,
+                converter=multi_dp_to_voltage,
             ),
             DPToAttributeMapping(
                 ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
                 attribute_name="rms_current_ph_c",
-                converter=multiDpToCurrent,
+                converter=multi_dp_to_current,
             ),
         ],
     )
