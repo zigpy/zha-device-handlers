@@ -38,7 +38,7 @@ class CustomSonoffCluster(CustomCluster):
     .binary_sensor(
         CustomSonoffCluster.AttributeDefs.water_valve_state.name,
         CustomSonoffCluster.cluster_id,
-        device_class=BinarySensorDeviceClass.PROBLEM,
+        device_class=BinarySensorDeviceClass.MOISTURE,
         attribute_converter=lambda x: x & ValveState.Water_Leakage,
         unique_id_suffix="water_leak_status",
         reporting_config=ReportingConfig(
