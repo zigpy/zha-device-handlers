@@ -58,16 +58,16 @@ class Tuya3PhaseElectricalMeasurement(ElectricalMeasurement, TuyaLocalCluster):
 
 (
     TuyaQuirkBuilder("_TZE200_nslr42tt", "TS0601")
-    .tuya_temperature(dp_id=0x85, scale=10)
+    .tuya_temperature(dp_id=133, scale=10)
     .tuya_sensor(
-        dp_id=0x86,
+        dp_id=134,
         attribute_name="device_status",
         type=t.int32s,
         fallback_name="Device status",
         translation_key="device_status",
     )
     .tuya_dp(
-        dp_id=0x84,
+        dp_id=132,
         ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
         attribute_name="ac_frequency",
     )
@@ -83,7 +83,7 @@ class Tuya3PhaseElectricalMeasurement(ElectricalMeasurement, TuyaLocalCluster):
         fallback_name="Total energy",
     )
     .tuya_sensor(
-        dp_id=0x65,
+        dp_id=101,
         attribute_name="energy_ph_a",
         type=t.int32s,
         divisor=1000,
@@ -94,7 +94,7 @@ class Tuya3PhaseElectricalMeasurement(ElectricalMeasurement, TuyaLocalCluster):
         fallback_name="Energy phase A",
     )
     .tuya_sensor(
-        dp_id=0x6F,
+        dp_id=111,
         attribute_name="energy_ph_b",
         type=t.int32s,
         divisor=1000,
@@ -105,7 +105,7 @@ class Tuya3PhaseElectricalMeasurement(ElectricalMeasurement, TuyaLocalCluster):
         fallback_name="Energy phase B",
     )
     .tuya_sensor(
-        dp_id=0x79,
+        dp_id=121,
         attribute_name="energy_ph_c",
         type=t.int32s,
         divisor=1000,
@@ -116,17 +116,17 @@ class Tuya3PhaseElectricalMeasurement(ElectricalMeasurement, TuyaLocalCluster):
         fallback_name="Energy phase C",
     )
     .tuya_sensor(
-        dp_id=0x9,
+        dp_id=9,
         attribute_name="power",
         type=t.int32s,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.POWER,
         unit=UnitOfPower.WATT,
         fallback_name="Total power",
-        converter=dp_to_power,
+        converter=dpToPower,
     )
     .tuya_sensor(
-        dp_id=0x83,
+        dp_id=131,
         attribute_name="current",
         type=t.int32s,
         divisor=1000,
@@ -136,77 +136,77 @@ class Tuya3PhaseElectricalMeasurement(ElectricalMeasurement, TuyaLocalCluster):
         fallback_name="Total current",
     )
     .tuya_dp_multi(
-        dp_id=0x6,
+        dp_id=6,
         attribute_mapping=[
             DPToAttributeMapping(
                 ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
                 attribute_name="active_power",
-                converter=multi_dp_to_power,
+                converter=multiDpToPower,
             ),
             DPToAttributeMapping(
                 ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
                 attribute_name="rms_voltage",
-                converter=multi_dp_to_voltage,
+                converter=multiDpToVoltage,
             ),
             DPToAttributeMapping(
                 ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
                 attribute_name="rms_current",
-                converter=multi_dp_to_current,
+                converter=multiDpToCurrent,
             ),
         ],
     )
     .tuya_dp_multi(
-        dp_id=0x7,
+        dp_id=7,
         attribute_mapping=[
             DPToAttributeMapping(
                 ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
                 attribute_name="active_power_ph_b",
-                converter=multi_dp_to_power,
+                converter=multiDpToPower,
             ),
             DPToAttributeMapping(
                 ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
                 attribute_name="rms_voltage_ph_b",
-                converter=multi_dp_to_voltage,
+                converter=multiDpToVoltage,
             ),
             DPToAttributeMapping(
                 ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
                 attribute_name="rms_current_ph_b",
-                converter=multi_dp_to_current,
+                converter=multiDpToCurrent,
             ),
         ],
     )
     .tuya_dp_multi(
-        dp_id=0x8,
+        dp_id=8,
         attribute_mapping=[
             DPToAttributeMapping(
                 ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
                 attribute_name="active_power_ph_c",
-                converter=multi_dp_to_power,
+                converter=multiDpToPower,
             ),
             DPToAttributeMapping(
                 ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
                 attribute_name="rms_voltage_ph_c",
-                converter=multi_dp_to_voltage,
+                converter=multiDpToVoltage,
             ),
             DPToAttributeMapping(
                 ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
                 attribute_name="rms_current_ph_c",
-                converter=multi_dp_to_current,
+                converter=multiDpToCurrent,
             ),
         ],
     )
     .tuya_dp(
-        dp_id=0x66,
+        dp_id=102,
         ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
         attribute_name="power_factor",
     )
     .tuya_dp(
-        dp_id=0x70,
+        dp_id=112,
         ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
         attribute_name="power_factor_ph_b",
     )
     .tuya_dp(
-        dp_id=0x7A,
+        dp_id=122,
         ep_attribute=Tuya3PhaseElectricalMeasurement.ep_attribute,
         attribute_name="power_factor_ph_c",
     )
