@@ -33,6 +33,7 @@ from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 from zhaquirks.const import BatterySize
 from zhaquirks.tuya import (
     TUYA_CLUSTER_ID,
+    TUYA_SET_DATA,
     BaseEnchantedDevice,
     PowerConfiguration,
     TuyaLocalCluster,
@@ -807,8 +808,17 @@ class TuyaQuirkBuilder(QuirkBuilder):
         self,
         replacement_cluster: TuyaMCUCluster = TuyaMCUCluster,
         force_add_cluster: bool = False,
+        mcu_write_command: foundation.GeneralCommand | int | t.uint8_t = TUYA_SET_DATA,
     ) -> QuirksV2RegistryEntry:
-        """Build the quirks v2 registry entry."""
+        """Build the quirks v2 registry entry.
+
+        :param replacement_cluster: The cluster to add or replace the Tuya cluster with.
+        :param force_add_cluster: Force add the Tuya cluster,
+            even if no new Tuya attributes/datapoints were added before.
+        :param mcu_write_command: The MCU command to use for the Tuya MCU cluster.
+            Default is TUYA_SET_DATA. Few devices use TUYA_SEND_DATA instead.
+        :return: The quirks v2 registry entry.
+        """
 
         if (
             self.new_attributes
@@ -834,6 +844,8 @@ class TuyaQuirkBuilder(QuirkBuilder):
 
             TuyaReplacementCluster.data_point_handlers = self.tuya_data_point_handlers
             TuyaReplacementCluster.dp_to_attribute = self.tuya_dp_to_attribute
+
+            TuyaReplacementCluster.MCU_WRITE_COMMAND = mcu_write_command
 
             self.replaces(TuyaReplacementCluster)
         return super().add_to_registry()
