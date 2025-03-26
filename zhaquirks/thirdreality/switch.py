@@ -35,7 +35,7 @@ class ThirdRealitySwitchCluster(CustomCluster):
         unit=UnitOfTime.SECONDS,
         cluster_id=ThirdRealitySwitchCluster.cluster_id,
         translation_key="count_down_time",
-        fallback_name="Count Down Time",
+        fallback_name="Count down time",
     )
     .add_to_registry()
 )
