@@ -10,6 +10,7 @@ import zigpy.types as t
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
+
 class ThirdRealityWateringKitCluster(CustomCluster):
     """Third Reality's watering kit private cluster."""
 
