@@ -1,6 +1,5 @@
 """Third Reality watering kit devices."""
 
-
 from typing import Final
 
 from zigpy.quirks import CustomCluster
@@ -12,7 +11,6 @@ from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 class ThirdRealityWateringKitCluster(CustomCluster):
     """Third Reality's watering kit private cluster."""
-
 
     cluster_id = 0xFFF2
 
