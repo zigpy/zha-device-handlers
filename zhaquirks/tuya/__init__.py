@@ -1456,6 +1456,26 @@ class DPToAttributeMapping:
     converter: Callable[[Any], Any] | None = None
     endpoint_id: int | None = None
 
+    def decompose_attributes(self) -> list[DPToAttributeMapping]:
+        """Decompose attributes into multiple mappings."""
+
+        def wrap_converter(converter: Callable[[Any], Any] | None, attr_index: int):
+            if converter is None:
+                return None
+            return lambda args: converter(args)[attr_index]
+
+        if isinstance(self.attribute_name, tuple):
+            return [
+                DPToAttributeMapping(
+                    self.ep_attribute,
+                    attr_name,
+                    wrap_converter(self.converter, attr_index),
+                    self.endpoint_id,
+                )
+                for attr_index, attr_name in enumerate(self.attribute_name)
+            ]
+        return [self]
+
 
 @dataclasses.dataclass
 class AttributeWithMask:
@@ -1528,8 +1548,10 @@ class TuyaNewManufCluster(CustomCluster):
         super().__init__(*args, **kwargs)
 
         self._dp_to_attributes: dict[int, list[DPToAttributeMapping]] = {
-            dp: attr if isinstance(attr, list) else [attr]
-            for dp, attr in self.dp_to_attribute.items()
+            dp: [x for mapping in mappings for x in mapping.decompose_attributes()]
+            if isinstance(mappings, list)
+            else mappings.decompose_attributes()
+            for dp, mappings in self.dp_to_attribute.items()
         }
         for dp_map in self._dp_to_attributes.values():
             # get the endpoint that is being mapped to
@@ -1647,15 +1669,9 @@ class TuyaNewManufCluster(CustomCluster):
             if mapped_attr.converter:
                 value = mapped_attr.converter(value)
 
-            if isinstance(mapped_attr.attribute_name, tuple):
-                for k, v in zip(mapped_attr.attribute_name, value):
-                    if isinstance(v, AttributeWithMask):
-                        v = cluster.get(k, 0) & (~v.mask) | v.value
-                    cluster.update_attribute(k, v)
-            else:
-                if isinstance(value, AttributeWithMask):
-                    value = (
-                        cluster.get(mapped_attr.attribute_name, 0) & (~value.mask)
-                        | value.value
-                    )
-                cluster.update_attribute(mapped_attr.attribute_name, value)
+            if isinstance(value, AttributeWithMask):
+                value = (
+                    cluster.get(mapped_attr.attribute_name, 0) & (~value.mask)
+                    | value.value
+                )
+            cluster.update_attribute(mapped_attr.attribute_name, value)

@@ -696,7 +696,8 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
                     TuyaPresetMode.Heat: Thermostat.SystemMode.Heat,
                     TuyaPresetMode.Off: Thermostat.SystemMode.Off,
                 }[x],
-                dp_converter=lambda x: {
+                dp_converter=lambda x,
+                _: {  # TODO: add a new dp_converter argument to tuya_dp_multi and remove from this
                     Thermostat.SystemMode.Auto: TuyaPresetMode.Auto,
                     Thermostat.SystemMode.Heat: TuyaPresetMode.Heat,
                     Thermostat.SystemMode.Off: TuyaPresetMode.Off,
