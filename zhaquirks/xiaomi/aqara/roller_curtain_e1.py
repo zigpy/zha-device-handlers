@@ -25,8 +25,8 @@ from zhaquirks.xiaomi import (
 class AqaraRollerDriverCharging(t.enum8):
     """Aqara roller driver charging status attribute values."""
 
-    true = 0x01
-    false = 0x02
+    Charging = 0x01
+    NotCharging = 0x02
 
 
 class AqaraRollerDriverSpeed(t.enum8):
@@ -346,9 +346,7 @@ class MultistateOutputRollerE1(CustomCluster, MultistateOutput):
         device_class=BinarySensorDeviceClass.BATTERY_CHARGING,
         translation_key="charging",
         fallback_name="Charging",
-        attribute_converter=lambda x: True
-        if x == AqaraRollerDriverCharging.true
-        else False,
+        attribute_converter=lambda x: x == AqaraRollerDriverCharging.Charging,
     )
     .binary_sensor(
         XiaomiAqaraRollerE1.AttributeDefs.positions_stored.name,
