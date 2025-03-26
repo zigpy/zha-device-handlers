@@ -26,13 +26,13 @@ class VOCIndex(CustomCluster):
         """Attribute definitions."""
 
         measured_value: Final = ZCLAttributeDef(
-            type=t.Single, access="rp", is_manufacturer_specific=True
+            id=0x0000, type=t.Single, access="rp", is_manufacturer_specific=True
         )
         min_measured_value: Final = ZCLAttributeDef(
-            type=t.Single, access="r", is_manufacturer_specific=True
+            id=0x0001, type=t.Single, access="r", is_manufacturer_specific=True
         )
         max_measured_value: Final = ZCLAttributeDef(
-            type=t.Single, access="r", is_manufacturer_specific=True
+            id=0x0002, type=t.Single, access="r", is_manufacturer_specific=True
         )
 
 

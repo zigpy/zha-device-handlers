@@ -102,6 +102,16 @@ class TuyaSmokeDetectorCluster(TuyaManufClusterAttributes):
     .add_to_registry()
 )
 
+
+(
+    TuyaQuirkBuilder("_TZE284_n4ttsck2", "TS0601")
+    .tuya_smoke(dp_id=1)
+    .tuya_battery(dp_id=15, battery_type=BatterySize.CR123A, battery_qty=1)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
 (
     TuyaQuirkBuilder("_TZE204_ntcy3xu1", "TS0601")
     .applies_to("_TZE200_ntcy3xu1", "TS0601")

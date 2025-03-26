@@ -10,6 +10,7 @@ import zigpy.quirks
 import zigpy.types
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic
+from zigpy.zdo.types import NodeDescriptor
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -135,6 +136,7 @@ def zigpy_device_from_quirk(MockAppController, ieee_mock):
         raw_device = zigpy.device.Device(MockAppController, ieee, nwk)
         raw_device.manufacturer = manufacturer
         raw_device.model = model
+        raw_device.node_desc = NodeDescriptor(manufacturer_code=1234)
 
         endpoints = quirk.signature.get(ENDPOINTS, {})
         for ep_id, ep_data in endpoints.items():
@@ -177,6 +179,7 @@ def zigpy_device_from_v2_quirk(MockAppController, ieee_mock):
         raw_device = zigpy.device.Device(MockAppController, ieee, nwk)
         raw_device.manufacturer = manufacturer
         raw_device.model = model
+        raw_device.node_desc = NodeDescriptor(manufacturer_code=1234)
 
         for endpoint_id in endpoint_ids:
             ep = raw_device.add_endpoint(endpoint_id)

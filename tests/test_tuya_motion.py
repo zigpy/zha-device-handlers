@@ -18,6 +18,8 @@ ZCL_TUYA_MOTION_V3 = b"\tL\x01\x00\x05\x03\x04\x00\x01\x02"  # DP 3, enum
 ZCL_TUYA_MOTION_V4 = b"\tL\x01\x00\x05\x69\x01\x00\x01\x01"  # DP 105
 ZCL_TUYA_MOTION_V5 = b"\tL\x01\x00\x05\x01\x01\x00\x01\x04"  # DP 1, motion is 0x04
 ZCL_TUYA_MOTION_V6 = b"\tL\x01\x00\x05\x01\x04\x00\x01\x02"  # DP 1, enum
+ZCL_TUYA_MOTION_V7 = b"\tL\x01\x00\x05\x01\x01\x00\x01\x00"  # DP 1, Inv
+ZCL_TUYA_MOTION_V8 = b"\tL\x01\x00\x05\x65\x01\x00\x01\x00"  # DP 101, Inv
 
 
 zhaquirks.setup()
@@ -52,15 +54,19 @@ zhaquirks.setup()
         ("_TZE204_kyhbrfyl", "TS0601", ZCL_TUYA_MOTION),
         ("_TZ6210_duv6fhwt", "TS0601", ZCL_TUYA_MOTION),
         ("_TZE204_1youk3hj", "TS0601", ZCL_TUYA_MOTION),
-        ("_TZE200_3towulqd", "TS0601", ZCL_TUYA_MOTION),
-        ("_TZE200_1ibpyhdc", "TS0601", ZCL_TUYA_MOTION),
-        ("_TZE200_bh3n6gk8", "TS0601", ZCL_TUYA_MOTION),
-        ("_TZE200_ttcovulf", "TS0601", ZCL_TUYA_MOTION),
+        ("_TZE200_3towulqd", "TS0601", ZCL_TUYA_MOTION_V7),
+        ("_TZE200_1ibpyhdc", "TS0601", ZCL_TUYA_MOTION_V7),
+        ("_TZE200_bh3n6gk8", "TS0601", ZCL_TUYA_MOTION_V7),
+        ("_TZE200_ttcovulf", "TS0601", ZCL_TUYA_MOTION_V7),
         ("_TZE204_sxm7l9xa", "TS0601", ZCL_TUYA_MOTION_V4),
         ("_TZE204_e5m9c5hl", "TS0601", ZCL_TUYA_MOTION_V4),
         ("_TZE204_dapwryy7", "TS0601", ZCL_TUYA_MOTION_V6),
         ("_TZE204_uxllnywp", "TS0601", ZCL_TUYA_MOTION_V5),
         ("_TZE200_gjldowol", "TS0601", ZCL_TUYA_MOTION),
+        ("_TZE200_2aaelwxk", "TS0225", ZCL_TUYA_MOTION),
+        ("_TZE200_2aaelwxk", "TS0601", ZCL_TUYA_MOTION),
+        ("_TZE200_kb5noeto", "TS0601", ZCL_TUYA_MOTION),
+        ("_TZE204_ex3rcdha", "TS0601", ZCL_TUYA_MOTION_V8),
     ],
 )
 async def test_tuya_motion_quirk_occ(zigpy_device_from_v2_quirk, model, manuf, occ_msg):
