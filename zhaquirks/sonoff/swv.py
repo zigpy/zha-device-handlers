@@ -57,4 +57,4 @@ class CustomSonoffCluster(CustomCluster):
         fallback_name="Water supply",
     )
     .add_to_registry()
-)  # fmt: skip
+)
