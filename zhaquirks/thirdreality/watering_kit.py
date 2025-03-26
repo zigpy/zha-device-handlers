@@ -41,7 +41,7 @@ class ThirdRealityWateringKitCluster(CustomCluster):
         unit=UnitOfTime.SECONDS,
         cluster_id=ThirdRealityWateringKitCluster.cluster_id,
         translation_key="water_duration",
-        fallback_name="Water Duration",
+        fallback_name="Water duration",
     )
     .number(
         attribute_name=ThirdRealityWateringKitCluster.AttributeDefs.water_interval.name,
@@ -51,7 +51,7 @@ class ThirdRealityWateringKitCluster(CustomCluster):
         unit=UnitOfTime.DAYS,
         cluster_id=ThirdRealityWateringKitCluster.cluster_id,
         translation_key="water_interval",
-        fallback_name="Water Interval",
+        fallback_name="Water interval",
     )
     .add_to_registry()
 )
