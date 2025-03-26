@@ -10,7 +10,7 @@ from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 
 class ThirdRealitySwitchCluster(CustomCluster):
-    """Third Reality's temperature and humidity sensor private cluster."""
+    """Third Reality's switch private cluster."""
 
     cluster_id = 0xFF02
 
