@@ -267,6 +267,18 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
 
 
 (
+    TuyaQuirkBuilder("_TZE284_rqcuwlsa", "TS0601")  # NEO NAS-STH02B2
+    .tuya_battery(dp_id=15)
+    .tuya_electrical_conductivity(dp_id=1)
+    .tuya_soil_moisture(dp_id=3)
+    .tuya_temperature(dp_id=5, scale=10)
+    .tuya_enchantment(data_query_spell=True)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+(
     TuyaQuirkBuilder("_TZE200_myd45weu", "TS0601")
     .applies_to("_TZE200_ga1maeof", "TS0601")
     .applies_to("_TZE200_9cqcpkgb", "TS0601")

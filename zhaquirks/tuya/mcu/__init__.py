@@ -17,7 +17,6 @@ from zhaquirks import Bus, DoublingPowerConfigurationCluster
 from zhaquirks.tuya import (
     TUYA_MCU_COMMAND,
     TUYA_MCU_VERSION_RSP,
-    TUYA_SET_DATA,
     TUYA_SET_TIME,
     EnchantedDevice,  # noqa: F401
     NoManufacturerCluster,
@@ -262,7 +261,7 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
         for tuya_command in tuya_commands:
             self.create_catching_task(
                 self.command(
-                    TUYA_SET_DATA,
+                    self.mcu_write_command,
                     tuya_command,
                     expect_reply=cluster_data.expect_reply,
                     manufacturer=cluster_data.manufacturer,
