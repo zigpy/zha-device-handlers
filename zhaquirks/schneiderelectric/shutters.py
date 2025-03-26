@@ -1,10 +1,11 @@
 """Quirks for Schneider Electric shutters."""
 
-from zigpy.profiles import zha
+from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import (
     Basic,
+    GreenPowerProxy,
     Groups,
     Identify,
     LevelControl,
@@ -169,10 +170,12 @@ class NhpbShutter1(CustomDevice):
             # input_clusters=[],
             # output_clusters=[33]>
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [33],
+                OUTPUT_CLUSTERS: [
+                    GreenPowerProxy.cluster_id,
+                ],
             },
         },
     }
@@ -211,10 +214,12 @@ class NhpbShutter1(CustomDevice):
                 ],
             },
             242: {
-                PROFILE_ID: 41440,
-                DEVICE_TYPE: 97,
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [33],
+                OUTPUT_CLUSTERS: [
+                    GreenPowerProxy.cluster_id,
+                ],
             },
         }
     }
