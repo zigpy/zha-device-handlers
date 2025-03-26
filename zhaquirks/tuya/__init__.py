@@ -1478,6 +1478,9 @@ class TuyaNewManufCluster(CustomCluster):
     cluster_id: t.uint16_t = TUYA_CLUSTER_ID
     ep_attribute: str = "tuya_manufacturer"
 
+    # command for writing datapoint values to the device, some use TUYA_SEND_DATA
+    mcu_write_command: foundation.GeneralCommand | int | t.uint8_t = TUYA_SET_DATA
+
     # remove manufacturer id for cluster, important for `TUYA_SET_DATA` commands
     manufacturer_id_override: t.uint16_t = foundation.ZCLHeader.NO_MANUFACTURER_ID
 
