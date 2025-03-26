@@ -7,7 +7,6 @@ from zigpy.quirks.v2 import QuirkBuilder, ReportingConfig
 from zigpy.quirks.v2.homeassistant import UnitOfTime
 from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 import zigpy.types as t
-from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 
@@ -34,7 +33,6 @@ class ThirdRealityWateringKitCluster(CustomCluster):
 
 (
     QuirkBuilder("Third Reality, Inc", "3RWK0148Z")
-    .prevent_default_entity_creation(endpoint_id=1, cluster_id=IasZone.cluster_id)
     .replaces(ThirdRealityWateringKitCluster)
     .number(
         attribute_name=ThirdRealityWateringKitCluster.AttributeDefs.water_duration.name,
