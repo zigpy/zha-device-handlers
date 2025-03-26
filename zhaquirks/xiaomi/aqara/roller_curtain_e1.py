@@ -344,7 +344,6 @@ class MultistateOutputRollerE1(CustomCluster, MultistateOutput):
         XiaomiAqaraRollerE1.AttributeDefs.charging.name,
         XiaomiAqaraRollerE1.cluster_id,
         device_class=BinarySensorDeviceClass.BATTERY_CHARGING,
-        translation_key="charging",
         fallback_name="Charging",
         attribute_converter=lambda x: x == AqaraRollerDriverCharging.Charging,
     )
