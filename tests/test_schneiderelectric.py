@@ -183,11 +183,19 @@ def test_nhpb_shutter_1_signature(assert_signature_matches_quirk):
                 ],
                 "out_clusters": [
                     "0x0003",
+                    "0x0004",
                     "0x0005",
                     "0x0006",
                     "0x0008",
-                    "0x0019",
                     "0x0102",
+                ],
+            },
+            "242": {
+                "profile_id": 0xA1E0,
+                "device_type": "0x0061",
+                "in_clusters": [],
+                "out_clusters": [
+                    "0x0021",
                 ],
             },
         },
