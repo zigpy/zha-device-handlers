@@ -1456,6 +1456,26 @@ class DPToAttributeMapping:
     converter: Callable[[Any], Any] | None = None
     endpoint_id: int | None = None
 
+    def __init__(
+        self,
+        ep_attribute: str,
+        attribute_name: str | tuple[str, ...],
+        converter: Callable[[Any], Any] | None = None,
+        endpoint_id: int | None = None,
+    ):
+        """Init DPToAttributeMapping."""
+        self.ep_attribute = ep_attribute
+        self.attribute_name = attribute_name
+        self.converter = converter
+        self.endpoint_id = endpoint_id
+
+        if not isinstance(attribute_name, str):
+            _LOGGER.info(
+                "Using tuple attribute_name is deprecated, please multiple "
+                "DPToAttributeMapping instances instead. %s",
+                attribute_name,
+            )
+
     def decompose_attributes(self) -> list[DPToAttributeMapping]:
         """Decompose attributes into multiple mappings."""
 

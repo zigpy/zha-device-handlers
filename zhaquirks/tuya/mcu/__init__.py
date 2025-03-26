@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 import datetime
+import logging
 from typing import Any
 
 import zigpy.types as t
@@ -29,6 +30,8 @@ from zhaquirks.tuya import (
     TuyaTimePayload,
 )
 
+_LOGGER = logging.getLogger(__name__)
+
 # New manufacturer attributes
 ATTR_MCU_VERSION = 0xEF00
 
@@ -50,6 +53,13 @@ class DPToAttributeMapping(DpToAttributeMappingBase):
         """Init method for compatibility with previous quirks using positional arguments."""
         super().__init__(ep_attribute, attribute_name, converter, endpoint_id)
         self.dp_converter = dp_converter
+
+        if dp_converter:
+            _LOGGER.info(
+                "DPToAttributeMapping with dp_converter is deprecated, use TuyaQuirksBuilder "
+                "(or TuyaMCUCluster.attributes_to_dp_converters) instead. attribute_name: %s",
+                attribute_name,
+            )
 
 
 class TuyaClusterData(t.Struct):
