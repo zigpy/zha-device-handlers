@@ -3,12 +3,12 @@
 from typing import Final
 
 from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder
+from zigpy.quirks.v2 import QuirkBuilder, ReportingConfig
 from zigpy.quirks.v2.homeassistant import UnitOfTime
 from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 import zigpy.types as t
+from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
-
 
 class ThirdRealityWateringKitCluster(CustomCluster):
     """Third Reality's watering kit private cluster."""
@@ -33,15 +33,19 @@ class ThirdRealityWateringKitCluster(CustomCluster):
 
 (
     QuirkBuilder("Third Reality, Inc", "3RWK0148Z")
+    .prevent_default_entity_creation(endpoint_id=1, cluster_id=IasZone.cluster_id)
     .replaces(ThirdRealityWateringKitCluster)
     .number(
         attribute_name=ThirdRealityWateringKitCluster.AttributeDefs.water_duration.name,
-        min_value=1,
-        max_value=1800,
-        step=1,
+        min_value=10,
+        max_value=7200,
+        step=10,
         device_class=NumberDeviceClass.DURATION,
         unit=UnitOfTime.SECONDS,
         cluster_id=ThirdRealityWateringKitCluster.cluster_id,
+        reporting_config=ReportingConfig(
+            min_interval=0, max_interval=900, reportable_change=1
+        ),
         translation_key="water_duration",
         fallback_name="Water duration",
     )
@@ -53,6 +57,9 @@ class ThirdRealityWateringKitCluster(CustomCluster):
         device_class=NumberDeviceClass.DURATION,
         unit=UnitOfTime.DAYS,
         cluster_id=ThirdRealityWateringKitCluster.cluster_id,
+        reporting_config=ReportingConfig(
+            min_interval=0, max_interval=900, reportable_change=1
+        ),
         translation_key="water_interval",
         fallback_name="Water interval",
     )
