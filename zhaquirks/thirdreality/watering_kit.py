@@ -7,6 +7,7 @@ from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.quirks.v2.homeassistant import UnitOfTime
 import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 
 
 class ThirdRealityWateringKitCluster(CustomCluster):
@@ -38,6 +39,7 @@ class ThirdRealityWateringKitCluster(CustomCluster):
         min_value=1,
         max_value=1800,
         step=1,
+        device_class=NumberDeviceClass.DURATION,
         unit=UnitOfTime.SECONDS,
         cluster_id=ThirdRealityWateringKitCluster.cluster_id,
         translation_key="water_duration",
@@ -48,6 +50,7 @@ class ThirdRealityWateringKitCluster(CustomCluster):
         min_value=0,
         max_value=30,
         step=1,
+        device_class=NumberDeviceClass.DURATION,
         unit=UnitOfTime.DAYS,
         cluster_id=ThirdRealityWateringKitCluster.cluster_id,
         translation_key="water_interval",
