@@ -20,6 +20,7 @@ from zigpy.zcl import foundation
 from zigpy.zcl.clusters.measurement import (
     PM25,
     CarbonDioxideConcentration,
+    ElectricalConductivity,
     FormaldehydeConcentration,
     IlluminanceMeasurement,
     RelativeHumidity,
@@ -33,6 +34,7 @@ from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 from zhaquirks.const import BatterySize
 from zhaquirks.tuya import (
     TUYA_CLUSTER_ID,
+    TUYA_SET_DATA,
     BaseEnchantedDevice,
     PowerConfiguration,
     TuyaLocalCluster,
@@ -63,6 +65,10 @@ BATTERY_VOLTAGES = {
 
 class TuyaCO2Concentration(CarbonDioxideConcentration, TuyaLocalCluster):
     """Tuya Carbon Dioxide concentration measurement."""
+
+
+class TuyaElectricalConductivity(ElectricalConductivity, TuyaLocalCluster):
+    """Tuya Electrical Conductivity measurement."""
 
 
 class TuyaFormaldehydeConcentration(FormaldehydeConcentration, TuyaLocalCluster):
@@ -294,6 +300,22 @@ class TuyaQuirkBuilder(QuirkBuilder):
             converter=lambda x: x * scale,
         )
         self.adds(co2_cfg)
+        return self
+
+    def tuya_electrical_conductivity(
+        self,
+        dp_id: int,
+        ec_cfg: TuyaLocalCluster = TuyaElectricalConductivity,
+        scale: float = 1,
+    ) -> QuirkBuilder:
+        """Add a Tuya Electrical Conductivity Configuration."""
+        self.tuya_dp(
+            dp_id,
+            ec_cfg.ep_attribute,
+            ElectricalConductivity.AttributeDefs.measured_value.name,
+            converter=lambda x: x * scale,
+        )
+        self.adds(ec_cfg)
         return self
 
     def tuya_formaldehyde(
@@ -811,8 +833,17 @@ class TuyaQuirkBuilder(QuirkBuilder):
         self,
         replacement_cluster: TuyaMCUCluster = TuyaMCUCluster,
         force_add_cluster: bool = False,
+        mcu_write_command: foundation.GeneralCommand | int | t.uint8_t = TUYA_SET_DATA,
     ) -> QuirksV2RegistryEntry:
-        """Build the quirks v2 registry entry."""
+        """Build the quirks v2 registry entry.
+
+        :param replacement_cluster: The cluster to add or replace the Tuya cluster with.
+        :param force_add_cluster: Force add the Tuya cluster,
+            even if no new Tuya attributes/datapoints were added before.
+        :param mcu_write_command: The MCU command to use for the Tuya MCU cluster.
+            Default is TUYA_SET_DATA. Few devices use TUYA_SEND_DATA instead.
+        :return: The quirks v2 registry entry.
+        """
 
         if (
             self.new_attributes
@@ -842,5 +873,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
             TuyaReplacementCluster.attributes_to_dp_converters = (
                 self.tuya_attributes_to_dp_converters
             )
+            TuyaReplacementCluster.MCU_WRITE_COMMAND = mcu_write_command
+
             self.replaces(TuyaReplacementCluster)
         return super().add_to_registry()

@@ -486,6 +486,7 @@ class TuyaMoesCover0601_alt_controls2(TuyaWindowCover):
         # }
         MODELS_INFO: [
             ("_TZE200_2odrmqwq", "TS0601"),
+            ("_TZE200_hojryzzd", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
