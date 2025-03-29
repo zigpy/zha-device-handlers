@@ -37,7 +37,7 @@ class ThirdRealityWateringKitCluster(CustomCluster):
     .number(
         attribute_name=ThirdRealityWateringKitCluster.AttributeDefs.water_duration.name,
         min_value=10,
-        max_value=7200,
+        max_value=1800,
         step=10,
         device_class=NumberDeviceClass.DURATION,
         unit=UnitOfTime.SECONDS,
