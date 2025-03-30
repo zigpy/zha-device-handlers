@@ -50,6 +50,16 @@ class CustomSonoffCluster(CustomCluster):
             zcl_type=DataTypeId.uint16,
         )
 
+        temperature_calibration = ZCLAttributeDef(
+            id=0x2003,
+            type=t.int16s,
+        )
+
+        humidity_calibration = ZCLAttributeDef(
+            id=0x2004,
+            type=t.int16s,
+        )
+
 
 (
     QuirkBuilder("SONOFF", "SNZB-02D")
@@ -104,6 +114,28 @@ class CustomSonoffCluster(CustomCluster):
         CustomSonoffCluster.cluster_id,
         translation_key="display_unit",
         fallback_name="Display unit",
+    )
+    .number(
+        CustomSonoffCluster.AttributeDefs.temperature_calibration.name,
+        CustomSonoffCluster.cluster_id,
+        min_value=-50,
+        max_value=50,
+        step=0.1,
+        unit=TemperatureUnit,
+        multiplier=0.01,
+        translation_key="temperature_calibration",
+        fallback_name="Temperature calibration",
+    )
+    .number(
+        CustomSonoffCluster.AttributeDefs.humidity_calibration.name,
+        CustomSonoffCluster.cluster_id,
+        min_value=-50,
+        max_value=50,
+        step=0.1,
+        unit=PERCENTAGE,
+        multiplier=0.01,
+        translation_key="humidity_calibration",
+        fallback_name="Humidity calibration",
     )
     .add_to_registry()
 )
