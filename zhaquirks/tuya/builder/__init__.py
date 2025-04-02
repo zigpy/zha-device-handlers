@@ -866,7 +866,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
             TuyaReplacementCluster.data_point_handlers = self.tuya_data_point_handlers
             TuyaReplacementCluster.dp_to_attribute = self.tuya_dp_to_attribute
 
-            TuyaReplacementCluster.MCU_WRITE_COMMAND = mcu_write_command
+            TuyaReplacementCluster.mcu_write_command = mcu_write_command
 
             self.replaces(TuyaReplacementCluster)
         return super().add_to_registry()
