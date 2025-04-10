@@ -2,6 +2,7 @@
 
 from typing import Final
 
+from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.security import IasZone, ZoneStatus
@@ -19,7 +20,7 @@ class DevelcoPowerConfiguration(PowerConfigurationCluster):
     MAX_VOLTS = 3.0  # old 3.2
 
 
-class DevelcoIasZone(IasZone):
+class DevelcoIasZone(CustomCluster, IasZone):
     """IAS Zone, patched to fix a bug with the status change notification command."""
 
     class ClientCommandDefs(IasZone.ClientCommandDefs):

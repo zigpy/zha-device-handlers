@@ -7,10 +7,15 @@ from zigpy.zcl.clusters.security import IasWd, IasZone
 
 (
     QuirkBuilder("frient A/S", "KEPZB-110")
-    .prevent_default_entity_creation(endpoint_id=35, cluster_id=BinaryInput.cluster_id)
-    .prevent_default_entity_creation(endpoint_id=35, cluster_id=IasZone.cluster_id)
+    .prevent_default_entity_creation(endpoint_id=44, cluster_id=BinaryInput.cluster_id)
+    # Hide the default `ias_zone` entity
     .prevent_default_entity_creation(
-        endpoint_id=35,
+        endpoint_id=44,
+        cluster_id=IasZone.cluster_id,
+        function=lambda entity: entity.translation_key == "ias_zone",
+    )
+    .prevent_default_entity_creation(
+        endpoint_id=44,
         cluster_id=IasWd.cluster_id,
         function=lambda entity: entity.translation_key
         in (
@@ -21,7 +26,7 @@ from zigpy.zcl.clusters.security import IasWd, IasZone
         ),
     )
     .binary_sensor(
-        endpoint_id=35,
+        endpoint_id=44,
         cluster_id=IasZone.cluster_id,
         attribute_name=IasZone.AttributeDefs.zone_status.name,
         device_class=BinarySensorDeviceClass.TAMPER,
