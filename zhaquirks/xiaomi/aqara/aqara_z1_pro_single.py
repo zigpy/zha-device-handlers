@@ -49,8 +49,8 @@ _LOGGER.addHandler(console_handler)
 # Log at module level to verify the file is being loaded
 _LOGGER.debug("AqaraZ1ProSingleRockerSwitch quirk module is being loaded! ZHA Profile ID: 0x%04x, Device Type: 0x%04x", zha.PROFILE_ID, zha.DeviceType.ON_OFF_SWITCH)
 
-class AqaraZ1ProSliderCluster(CustomCluster):
-    """Custom cluster for Aqara Z1 Pro slider events."""
+class AqaraZ1ProManufacturerSpecificCluster(CustomCluster):
+    """Custom cluster for Aqara Z1 Pro manufacturer specific events."""
     
     cluster_id = 0xfcc0
     
@@ -73,25 +73,25 @@ class AqaraZ1ProSliderCluster(CustomCluster):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._attr_id = self.ATTR_SLIDER_ACTION
-        _LOGGER.debug("AqaraZ1ProSliderCluster initialized for device %s", self._endpoint.device.ieee)
+        _LOGGER.debug("AqaraZ1ProManufacturerSpecificCluster initialized for device %s", self._endpoint.device.ieee)
         
     def _update_attribute(self, attrid, value):
         """Handle attribute updates."""
-        _LOGGER.debug("AqaraZ1ProSliderCluster attribute update: attrid=0x%04x, value=%s", attrid, value)
+        _LOGGER.debug("AqaraZ1ProManufacturerSpecificCluster attribute update: attrid=0x%04x, value=%s", attrid, value)
         super()._update_attribute(attrid, value)
         
         # Store all attributes for the event
-        if not hasattr(self, "_slider_attrs"):
-            self._slider_attrs = {}
+        if not hasattr(self, "_manufacturer_attrs"):
+            self._manufacturer_attrs = {}
         
         # Update the attribute value
-        self._slider_attrs[attrid] = value
+        self._manufacturer_attrs[attrid] = value
         
         # If this is the slider action attribute, send the event
         if attrid == self.ATTR_SLIDER_ACTION:
             # Get the action name from the mapping
             action = self.ACTION_MAPPING.get(value, f"slider_unknown_{value}")
-            _LOGGER.debug("AqaraZ1ProSliderCluster detected action: %s (value: %s)", action, value)
+            _LOGGER.debug("AqaraZ1ProManufacturerSpecificCluster detected action: %s (value: %s)", action, value)
             
             # Prepare the event data
             event_data = {
@@ -102,14 +102,14 @@ class AqaraZ1ProSliderCluster(CustomCluster):
                 "args": {
                     "action": action,
                     "value": value,
-                    "slide_time": self._slider_attrs.get(self.ATTR_SLIDE_TIME),
-                    "slide_speed": self._slider_attrs.get(self.ATTR_SLIDE_SPEED),
-                    "slide_relative_displacement": self._slider_attrs.get(self.ATTR_SLIDE_RELATIVE_DISPLACEMENT),
-                    "slide_time_delta": self._slider_attrs.get(self.ATTR_SLIDE_TIME_DELTA),
+                    "slide_time": self._manufacturer_attrs.get(self.ATTR_SLIDE_TIME),
+                    "slide_speed": self._manufacturer_attrs.get(self.ATTR_SLIDE_SPEED),
+                    "slide_relative_displacement": self._manufacturer_attrs.get(self.ATTR_SLIDE_RELATIVE_DISPLACEMENT),
+                    "slide_time_delta": self._manufacturer_attrs.get(self.ATTR_SLIDE_TIME_DELTA),
                 },
             }
             
-            _LOGGER.debug("AqaraZ1ProSliderCluster sending event data: %s", event_data)
+            _LOGGER.debug("AqaraZ1ProManufacturerSpecificCluster sending event data: %s", event_data)
             
             # Send the event
             self.listener_event(
@@ -124,7 +124,7 @@ class AqaraZ1ProSliderCluster(CustomCluster):
                 "slider_event",
                 event_data,
             )
-            _LOGGER.debug("AqaraZ1ProSliderCluster events sent successfully")
+            _LOGGER.debug("AqaraZ1ProManufacturerSpecificCluster events sent successfully")
 
 
 class AqaraZ1ProSingleRockerSwitch(XiaomiCustomDevice):
@@ -207,7 +207,7 @@ class AqaraZ1ProSingleRockerSwitch(XiaomiCustomDevice):
                     MultistateInputCluster,
                     MeteringCluster,
                     ElectricalMeasurementCluster,
-                    AqaraZ1ProSliderCluster,
+                    AqaraZ1ProManufacturerSpecificCluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     Time.cluster_id,
