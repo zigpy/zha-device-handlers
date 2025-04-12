@@ -60,6 +60,12 @@ class AqaraZ1ProManufacturerSpecificCluster(CustomCluster):
     ATTR_SLIDE_SPEED = 0x0232    # 562
     ATTR_SLIDE_RELATIVE_DISPLACEMENT = 0x0233  # 563
     ATTR_SLIDE_TIME_DELTA = 0x0301  # 769
+
+    # ATTR_DEVICE_ID_SHADE = 0x0200 # 512
+    # ATTR_LOCK_RELAY = 0x0285 # 645
+    # ATTR_SWITCH_MODE = 0x0004 # 4
+    # ATTR_POWER_ON_BEHAVIOR = 0x0517 # 1303
+    # ATTR_CLICK_MODE = 0x0125 # 293
     
     # Action mapping
     ACTION_MAPPING = {
