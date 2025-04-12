@@ -73,11 +73,11 @@ class AqaraZ1ProSliderCluster(CustomCluster):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._attr_id = self.ATTR_SLIDER_ACTION
-        _LOGGER.critical("AqaraZ1ProSliderCluster initialized for device %s", self._endpoint.device.ieee)
+        _LOGGER.debug("AqaraZ1ProSliderCluster initialized for device %s", self._endpoint.device.ieee)
         
     async def _update_attribute(self, attrid, value):
         """Handle attribute updates."""
-        _LOGGER.critical("AqaraZ1ProSliderCluster attribute update: attrid=0x%04x, value=%s", attrid, value)
+        _LOGGER.debug("AqaraZ1ProSliderCluster attribute update: attrid=0x%04x, value=%s", attrid, value)
         super()._update_attribute(attrid, value)
         
         # Store all attributes for the event
@@ -91,7 +91,7 @@ class AqaraZ1ProSliderCluster(CustomCluster):
         if attrid == self.ATTR_SLIDER_ACTION:
             # Get the action name from the mapping
             action = self.ACTION_MAPPING.get(value, f"slider_unknown_{value}")
-            _LOGGER.critical("AqaraZ1ProSliderCluster detected action: %s (value: %s)", action, value)
+            _LOGGER.debug("AqaraZ1ProSliderCluster detected action: %s (value: %s)", action, value)
             
             # Prepare the event data
             event_data = {
@@ -109,7 +109,7 @@ class AqaraZ1ProSliderCluster(CustomCluster):
                 },
             }
             
-            _LOGGER.critical("AqaraZ1ProSliderCluster sending event data: %s", event_data)
+            _LOGGER.debug("AqaraZ1ProSliderCluster sending event data: %s", event_data)
             
             # Send the event
             self.listener_event(
@@ -124,12 +124,7 @@ class AqaraZ1ProSliderCluster(CustomCluster):
                 "slider_event",
                 event_data,
             )
-            _LOGGER.critical("AqaraZ1ProSliderCluster events sent successfully")
-    
-    async def test_logging(self):
-        """Test method to verify logging is working."""
-        _LOGGER.critical("AqaraZ1ProSliderCluster TEST LOGGING - This should appear in Home Assistant logs")
-        return True
+            _LOGGER.debug("AqaraZ1ProSliderCluster events sent successfully")
 
 
 class AqaraZ1ProSingleRockerSwitch(XiaomiCustomDevice):
@@ -212,7 +207,7 @@ class AqaraZ1ProSingleRockerSwitch(XiaomiCustomDevice):
                     MultistateInputCluster,
                     MeteringCluster,
                     ElectricalMeasurementCluster,
-                    MANUFACTURER_SPECIFIC_CLUSTER_ID,
+                    AqaraZ1ProSliderCluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     Time.cluster_id,
