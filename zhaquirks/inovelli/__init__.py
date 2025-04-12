@@ -7,7 +7,6 @@ from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl.foundation import (
     BaseAttributeDefs,
-    BaseCommandDefs,
     Direction,
     ZCLAttributeDef,
     ZCLCommandDef,
@@ -662,6 +661,16 @@ class InovelliVZM31SNCluster(InovelliCluster):
         )
         switch_type = ZCLAttributeDef(
             id=0x0016,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        quick_start_time = ZCLAttributeDef(
+            id=0x0017,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        quick_start_level = ZCLAttributeDef(
+            id=0x0018,
             type=t.uint8_t,
             is_manufacturer_specific=True,
         )
