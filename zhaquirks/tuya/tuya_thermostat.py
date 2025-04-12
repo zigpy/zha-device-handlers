@@ -400,9 +400,10 @@ base_avatto_quirk = (
         attribute_name="deadzone_temperature",
         type=t.uint16_t,
         unit=UnitOfTemperature.CELSIUS,
-        min_value=0.1,
+        min_value=0.5,
         max_value=10,
-        step=0.1,
+        step=0.5,
+        multiplier=0.1,
         translation_key="deadzone_temperature",
         fallback_name="Deadzone temperature",
     )
