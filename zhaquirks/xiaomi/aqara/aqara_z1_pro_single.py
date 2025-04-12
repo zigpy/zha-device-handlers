@@ -75,7 +75,7 @@ class AqaraZ1ProSliderCluster(CustomCluster):
         self._attr_id = self.ATTR_SLIDER_ACTION
         _LOGGER.debug("AqaraZ1ProSliderCluster initialized for device %s", self._endpoint.device.ieee)
         
-    async def _update_attribute(self, attrid, value):
+    def _update_attribute(self, attrid, value):
         """Handle attribute updates."""
         _LOGGER.debug("AqaraZ1ProSliderCluster attribute update: attrid=0x%04x, value=%s", attrid, value)
         super()._update_attribute(attrid, value)
