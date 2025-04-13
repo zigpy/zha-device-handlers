@@ -57,7 +57,7 @@ class PowerMeasurementCluster(AnalogInputCluster):
         """Bind cluster."""
         result = await super().bind()
         await self.configure_reporting(
-            self.PRESENT_VALUE_ATTRIBUTE,  # attribute
+            self.PRESENT_VALUE_ATTRIBUTE,
             0,  # minimum reporting interval
             600,  # maximum reporting interval
             1,  # reportable change
@@ -65,12 +65,7 @@ class PowerMeasurementCluster(AnalogInputCluster):
         return result
     
     def _update_attribute(self, attrid, value):
-        """Override to handle power measurement attribute."""
-        if attrid == self.PRESENT_VALUE_ATTRIBUTE:
-            # Convert value if needed (e.g., scaling factor)
-            # For example, if the value is in 0.01W units:
-            # value = value / 100.0
-            
+        if attrid == self.PRESENT_VALUE_ATTRIBUTE:            
             super()._update_attribute(attrid, value)
             self.listener_event(
                 ZHA_SEND_EVENT,
