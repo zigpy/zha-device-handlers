@@ -23,6 +23,7 @@ from zhaquirks.const import (
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
+    ZHA_SEND_EVENT,
 )
 from zhaquirks.xiaomi import (
     LUMI,
@@ -83,8 +84,6 @@ class AqaraZ1ProManufacturerSpecificCluster(CustomCluster):
         
     def _update_attribute(self, attrid, value):
         """Handle attribute updates."""
-        _LOGGER.debug("AqaraZ1ProManufacturerSpecificCluster attribute update: attrid=0x%04x, value=%s", attrid, value)
-        super()._update_attribute(attrid, value)
         
         # Store all attributes for the event
         if not hasattr(self, "_manufacturer_attrs"):
@@ -119,19 +118,21 @@ class AqaraZ1ProManufacturerSpecificCluster(CustomCluster):
             
             # Send the event
             self.listener_event(
-                "zha_send_event",
+                ZHA_SEND_EVENT,
                 action,
                 event_data,
             )
             
             # Also send a generic slider event for easier automation
             self.listener_event(
-                "zha_send_event",
+                ZHA_SEND_EVENT,
                 "slider_event",
                 event_data,
             )
             _LOGGER.debug("AqaraZ1ProManufacturerSpecificCluster events sent successfully")
 
+        _LOGGER.debug("AqaraZ1ProManufacturerSpecificCluster attribute update: attrid=0x%04x, value=%s", attrid, value)
+        super()._update_attribute(attrid, value)
 
 class AqaraZ1ProSingleRockerSwitch(XiaomiCustomDevice):
     """Aqara Z1 Pro Single Rocker Switch"""
