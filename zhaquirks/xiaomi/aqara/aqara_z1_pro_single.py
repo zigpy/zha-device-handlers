@@ -100,18 +100,12 @@ class AqaraZ1ProManufacturerSpecificCluster(CustomCluster):
             
             # Prepare the event data
             event_data = {
-                "device_ieee": str(self._endpoint.device.ieee),
-                "endpoint_id": self._endpoint.endpoint_id,
-                "cluster_id": self.cluster_id,
-                "command": action,
-                "args": {
-                    "action": action,
-                    "value": value,
-                    "slide_time": self._manufacturer_attrs.get(self.ATTR_SLIDE_TIME),
-                    "slide_speed": self._manufacturer_attrs.get(self.ATTR_SLIDE_SPEED),
-                    "slide_relative_displacement": self._manufacturer_attrs.get(self.ATTR_SLIDE_RELATIVE_DISPLACEMENT),
-                    "slide_time_delta": self._manufacturer_attrs.get(self.ATTR_SLIDE_TIME_DELTA),
-                },
+                "action": action,
+                "value": value,
+                "slide_time": self._manufacturer_attrs.get(self.ATTR_SLIDE_TIME),
+                "slide_speed": self._manufacturer_attrs.get(self.ATTR_SLIDE_SPEED),
+                "slide_relative_displacement": self._manufacturer_attrs.get(self.ATTR_SLIDE_RELATIVE_DISPLACEMENT),
+                "slide_time_delta": self._manufacturer_attrs.get(self.ATTR_SLIDE_TIME_DELTA),
             }
             
             _LOGGER.debug("AqaraZ1ProManufacturerSpecificCluster sending event data: %s", event_data)
