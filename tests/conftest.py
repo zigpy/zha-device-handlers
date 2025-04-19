@@ -1,6 +1,5 @@
 """Fixtures for all tests."""
 
-from collections import defaultdict
 from unittest.mock import AsyncMock, Mock
 
 import pytest
@@ -192,10 +191,10 @@ def zigpy_device_from_v2_quirk(MockAppController, ieee_mock):
         if ieee is None:
             ieee = ieee_mock
 
-        # copy cluster_ids entries to endpoint_clusters default dict
-        endpoint_clusters: defaultdict[int, dict[int, ClusterType]] = defaultdict(
-            dict, {ep_id: dict(clusters) for ep_id, clusters in cluster_ids.items()}
-        )
+        # copy cluster_ids entries to endpoint_clusters dict
+        endpoint_clusters: dict[int, dict[int, ClusterType]] = {
+            ep_id: clusters.copy() for ep_id, clusters in cluster_ids.items()
+        }
 
         # convert simple arg and add mandatory basic cluster to ep 1 if in endpoint_ids
         for ep_id in endpoint_ids:
