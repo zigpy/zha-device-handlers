@@ -193,20 +193,15 @@ def zigpy_device_from_v2_quirk(MockAppController, ieee_mock):
             ieee = ieee_mock
 
         # copy cluster_ids entries to endpoint_clusters default dict
-        endpoint_clusters: dict[int, dict[int, ClusterType]] = defaultdict(dict)
-        for ep_id, clusters in cluster_ids.items():
-            for cluster_id, cluster_type in clusters.items():
-                endpoint_clusters[ep_id][cluster_id] = cluster_type
+        endpoint_clusters: defaultdict[int, dict[int, ClusterType]] = defaultdict(
+            dict, {ep_id: dict(clusters) for ep_id, clusters in cluster_ids.items()}
+        )
 
-        # convert simple endpoint_ids argument to advanced cluster_ids dictionary
+        # convert simple arg and add mandatory basic cluster to ep 1 if in endpoint_ids
         for ep_id in endpoint_ids:
-            # add mandatory basic cluster to endpoint 1 if in endpoint_ids
+            endpoint_clusters.setdefault(ep_id, {})
             if ep_id == 1:
-                endpoint_clusters[ep_id] |= {Basic.cluster_id: ClusterType.Server}
-
-            # add other specified endpoints with no clusters
-            if ep_id not in endpoint_clusters:
-                endpoint_clusters[ep_id] = {}
+                endpoint_clusters[ep_id][Basic.cluster_id] = ClusterType.Server
 
         raw_device = zigpy.device.Device(MockAppController, ieee, nwk)
         raw_device.manufacturer = manufacturer
