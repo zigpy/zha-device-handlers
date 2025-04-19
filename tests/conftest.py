@@ -116,7 +116,7 @@ def zigpy_device_mock(MockAppController, ieee_mock):
 
 
 @pytest.fixture
-def zigpy_device_from_quirk(MockAppController, ieee_mock) -> Device:
+def zigpy_device_from_quirk(MockAppController, ieee_mock):
     """Create zigpy device from Quirk's signature."""
 
     def _dev(quirk, ieee=None, nwk=zigpy.types.NWK(0x1234), apply_quirk=True):
