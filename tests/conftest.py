@@ -8,7 +8,7 @@ import zigpy.device
 from zigpy.device import Device
 import zigpy.quirks
 import zigpy.types
-from zigpy.zcl import foundation
+from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.general import Basic
 from zigpy.zdo.types import NodeDescriptor
 
@@ -163,29 +163,60 @@ def zigpy_device_from_quirk(MockAppController, ieee_mock):
 
 @pytest.fixture
 def zigpy_device_from_v2_quirk(MockAppController, ieee_mock):
-    """Create zigpy device from Quirk's signature."""
+    """Create zigpy device for v2 quirks test by manufacturer and model."""
 
     def _dev(
         manufacturer: str,
         model: str,
         endpoint_ids: list[int] = [1],
+        cluster_ids: dict[int, dict[int, ClusterType]] = {},
         ieee=None,
         nwk=zigpy.types.NWK(0x1234),
         apply_quirk=True,
-    ):
+    ) -> Device:
+        """Create zigpy device for v2 quirks test by manufacturer and model.
+
+        :param manufacturer: Manufacturer name.
+        :param model: Model name.
+        :param endpoint_ids: Endpoint ids to be added to the device, ep 1 by default.
+        :param cluster_ids: Dictionary of additional endpoints
+            and their cluster ids and types to be added to the device.
+            More advanced version of endpoint_ids argument.
+            Example: `cluster_ids={2: {OnOff.cluster_id: ClusterType.Client}}`
+        :param ieee: IEEE address of the device.
+        :param nwk: Network address of the device.
+        :param apply_quirk: Whether to apply the quirk to the device.
+        :return: Zigpy device object.
+        """
         if ieee is None:
             ieee = ieee_mock
+
+        # copy cluster_ids entries to endpoint_clusters dict
+        endpoint_clusters: dict[int, dict[int, ClusterType]] = {
+            ep_id: clusters.copy() for ep_id, clusters in cluster_ids.items()
+        }
+
+        # convert simple arg and add mandatory basic cluster to ep 1 if in endpoint_ids
+        for ep_id in endpoint_ids:
+            endpoint_clusters.setdefault(ep_id, {})
+            if ep_id == 1:
+                endpoint_clusters[ep_id][Basic.cluster_id] = ClusterType.Server
 
         raw_device = zigpy.device.Device(MockAppController, ieee, nwk)
         raw_device.manufacturer = manufacturer
         raw_device.model = model
         raw_device.node_desc = NodeDescriptor(manufacturer_code=1234)
 
-        for endpoint_id in endpoint_ids:
+        # add additional endpoints to the device
+        for endpoint_id, clusters in endpoint_clusters.items():
             ep = raw_device.add_endpoint(endpoint_id)
-            # basic is mandatory
-            if endpoint_id == 1:
-                ep.add_input_cluster(Basic.cluster_id)
+
+            # add custom cluster ids to test device
+            for cluster_id, cluster_type in clusters.items():
+                if cluster_type == ClusterType.Client:
+                    ep.add_output_cluster(cluster_id)
+                else:
+                    ep.add_input_cluster(cluster_id)
 
         quirked = zigpy.quirks.get_device(raw_device)
 
