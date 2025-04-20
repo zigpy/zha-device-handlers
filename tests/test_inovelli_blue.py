@@ -19,7 +19,9 @@ def test_mfg_cluster_events(zigpy_device_from_v2_quirk):
     class Listener:
         zha_send_event = mock.MagicMock()
 
-    device = zigpy_device_from_v2_quirk("Inovelli", "VZM31-SN", cluster_ids={2: {0xFC31: ClusterType.Client}})
+    device = zigpy_device_from_v2_quirk(
+        "Inovelli", "VZM31-SN", cluster_ids={2: {0xFC31: ClusterType.Client}}
+    )
     device._packet_debouncer.filter = MagicMock(return_value=False)
     cluster_listener = Listener()
     device.endpoints[endpoint_id].out_clusters[cluster_id].add_listener(
