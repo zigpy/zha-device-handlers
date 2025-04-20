@@ -2,6 +2,7 @@
 
 from unittest import mock
 from unittest.mock import MagicMock
+from zigpy.zcl import ClusterType
 
 import zigpy.types as t
 
