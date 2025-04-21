@@ -13,6 +13,7 @@ from zigpy.zcl.clusters.security import IasZone
 
 (
     QuirkBuilder("frient A/S", "SIRZB-111")
+    .applies_to("frient A/S", "SIRZB-110")
     # Hide the default `ias_zone` entity
     .prevent_default_entity_creation(
         endpoint_id=43,
@@ -30,6 +31,7 @@ from zigpy.zcl.clusters.security import IasZone
         translation_key="tamper",
         fallback_name="Tamper",
     )
+    # This is a mains-powered device that has a backup battery
     .sensor(
         attribute_name=PowerConfiguration.AttributeDefs.battery_percentage_remaining.name,
         cluster_id=PowerConfiguration.cluster_id,
