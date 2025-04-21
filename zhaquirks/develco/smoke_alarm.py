@@ -1,4 +1,4 @@
-"""Develco Smoke Alarm."""
+"""Frient Smoke Alarm."""
 
 from zigpy.quirks.v2 import QuirkBuilder
 
