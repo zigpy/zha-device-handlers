@@ -17,6 +17,7 @@ import zhaquirks
 from zhaquirks.const import BatterySize
 from zhaquirks.tuya import (
     TUYA_QUERY_DATA,
+    TUYA_SEND_DATA,
     TUYA_SET_TIME,
     TuyaCommand,
     TuyaData,
@@ -461,7 +462,7 @@ async def test_tuya_mcu_set_time(device_mock):
     ],
 )
 async def test_tuya_quirkbuilder_force(device_mock, force):
-    """Test adding an empty TuyaQuirkBuilder doesn't add a MCU cluster unless forced to."""
+    """Test adding an empty TuyaQuirkBuilder doesn't add an MCU cluster unless forced to."""
 
     registry = DeviceRegistry()
 
@@ -482,3 +483,86 @@ async def test_tuya_quirkbuilder_force(device_mock, force):
         assert isinstance(ep.tuya_manufacturer, TuyaMCUCluster)
     else:
         assert not hasattr(ep, "tuya_manufacturer")
+
+
+@pytest.mark.parametrize(
+    "kwargs,expected_cmd,expected_data",
+    [
+        (
+            {},  # no kwarg should use default of TUYA_SET_DATA
+            0,
+            b"\x01\x01\x00\x00\x01\n\x04\x00\x01\x01",
+        ),
+        (
+            {"mcu_write_command": TUYA_SEND_DATA},
+            4,
+            b"\x01\x01\x04\x00\x01\n\x04\x00\x01\x01",
+        ),
+    ],
+)
+async def test_tuya_override_mcu_command(
+    device_mock, kwargs, expected_cmd, expected_data
+):
+    """Test TuyaQuirkBuilder overriding MCU datapoint write command."""
+
+    registry = DeviceRegistry()
+
+    class TestEnum(t.enum8):
+        """Test Enum."""
+
+        A = 0x00
+        B = 0x01
+
+    (
+        TuyaQuirkBuilder(device_mock.manufacturer, device_mock.model, registry=registry)
+        .tuya_enum(
+            dp_id=10,
+            attribute_name="test_enum",
+            enum_class=TestEnum,
+            translation_key="test_enum",
+            fallback_name="Test enum",
+        )
+        .skip_configuration()
+        .add_to_registry(**kwargs)
+    )
+
+    quirked = registry.get_device(device_mock)
+    assert isinstance(quirked, CustomDeviceV2)
+    assert quirked in registry
+
+    ep = quirked.endpoints[1]
+
+    assert ep.tuya_manufacturer is not None
+    assert isinstance(ep.tuya_manufacturer, TuyaMCUCluster)
+
+    tuya_cluster = ep.tuya_manufacturer
+    tuya_listener = ClusterListener(tuya_cluster)
+    assert tuya_cluster.attributes_by_name["test_enum"].id == 0xEF0A
+
+    with mock.patch.object(
+        tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
+    ) as m1:
+        (status,) = await tuya_cluster.write_attributes(
+            {
+                "test_enum": 0x01,
+            },
+        )
+
+        await wait_for_zigpy_tasks()
+        m1.assert_called_with(
+            cluster=61184,
+            sequence=1,
+            data=expected_data,
+            command_id=expected_cmd,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
+        )
+        assert status == [
+            foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
+        ]
+
+    assert tuya_listener.attribute_updates[0][0] == 0xEF0A
+    assert tuya_listener.attribute_updates[0][1] == TestEnum.B

@@ -14,7 +14,7 @@ import zigpy.types as t
 from zigpy.zcl.clusters.smartenergy import Metering
 
 from zhaquirks.const import BatterySize
-from zhaquirks.tuya import TUYA_CLUSTER_ID
+from zhaquirks.tuya import TUYA_CLUSTER_ID, TUYA_SEND_DATA
 from zhaquirks.tuya.builder import TuyaQuirkBuilder, TuyaValveWaterConsumed
 from zhaquirks.tuya.mcu import TuyaMCUCluster
 
@@ -669,7 +669,7 @@ class GiexIrrigationStatus(t.enum8):
     .tuya_battery(dp_id=115, battery_type=BatterySize.AA, battery_qty=2)
     .tuya_enchantment()
     .skip_configuration()
-    .add_to_registry()
+    .add_to_registry(mcu_write_command=TUYA_SEND_DATA)
 )
 
 

@@ -52,7 +52,6 @@ class DPToAttributeMapping(DpToAttributeMappingBase):
         """Init method for compatibility with previous quirks using positional arguments."""
         super().__init__(ep_attribute, attribute_name, converter, endpoint_id)
         self.dp_converter = dp_converter
-
         if dp_converter:
             _LOGGER.info(
                 "DPToAttributeMapping with dp_converter is deprecated, use TuyaQuirksBuilder "
