@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-import dataclasses
 import datetime
 from typing import Any
 
@@ -18,6 +17,7 @@ from zhaquirks.tuya import (
     TUYA_MCU_COMMAND,
     TUYA_MCU_VERSION_RSP,
     TUYA_SET_TIME,
+    DPToAttributeMapping as DpToAttributeMappingBase,
     EnchantedDevice,  # noqa: F401
     NoManufacturerCluster,
     PowerOnState,
@@ -35,15 +35,20 @@ ATTR_MCU_VERSION = 0xEF00
 TUYA_MCU_CONNECTION_STATUS = 0x25
 
 
-@dataclasses.dataclass
-class DPToAttributeMapping:
+class DPToAttributeMapping(DpToAttributeMappingBase):
     """Container for datapoint to cluster attribute update mapping."""
 
-    ep_attribute: str
-    attribute_name: str | tuple[str, ...]
-    converter: Callable[[Any], Any] | None = None
-    dp_converter: Callable[[Any], Any] | None = None
-    endpoint_id: int | None = None
+    def __init__(
+        self,
+        ep_attribute: str,
+        attribute_name: str | tuple[str, ...],
+        converter: Callable[[Any], Any] | None = None,
+        dp_converter: Callable[[Any], Any] | None = None,
+        endpoint_id: int | None = None,
+    ):
+        """Init method for compatibility with previous quirks using positional arguments."""
+        super().__init__(ep_attribute, attribute_name, converter, endpoint_id)
+        self.dp_converter = dp_converter
 
 
 class TuyaClusterData(t.Struct):
