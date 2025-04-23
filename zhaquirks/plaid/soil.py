@@ -36,15 +36,17 @@ class PowerConfigurationClusterMains(PowerConfigurationCluster):
             return self.MAINS_VOLTAGE_ATTR
         return attr
 
-    def read_attributes(self, attributes, *args, **kwargs):  # pylint: disable=W0221
+    async def read_attributes(self, attributes, *args, **kwargs):
         """Replace battery voltage with mains voltage."""
-        return super().read_attributes(
+        return await super().read_attributes(
             [self._remap(attr) for attr in attributes], *args, **kwargs
         )
 
-    def configure_reporting(self, attribute, *args, **kwargs):  # pylint: disable=W0221
+    async def configure_reporting(self, attribute, *args, **kwargs):
         """Replace battery voltage with mains voltage."""
-        return super().configure_reporting(self._remap(attribute), *args, **kwargs)
+        return await super().configure_reporting(
+            self._remap(attribute), *args, **kwargs
+        )
 
 
 class SoilMoisture(CustomDevice):
