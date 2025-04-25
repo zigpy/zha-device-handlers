@@ -35,8 +35,8 @@ class PaulmannHomeRemote(CustomDevice):
     """
 
     signature = {
-        "model": "unk_model",
-        "manufacturer": "unk_manufacturer",
+        "model": "50141",
+        "manufacturer": "Paulmann Licht GmbH",
         "endpoints": {
             EP: {
                 PROFILE_ID: 0x0104,
