@@ -70,7 +70,7 @@ class LightControlMode(t.enum8):
         max_value=100,
         step=1,
         translation_key="motion_sensitivity",
-        fallback_name="Motion Sensitivity",
+        fallback_name="Motion sensitivity",
     )
     .skip_configuration()
     .add_to_registry()
