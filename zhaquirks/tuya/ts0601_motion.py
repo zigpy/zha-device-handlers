@@ -1,10 +1,10 @@
-from zhaquirks.tuya import TuyaLocalCluster
-from zhaquirks.tuya.builder import TuyaQuirkBuilder
-import zigpy.types as t
 from zigpy.quirks.v2 import EntityType
-from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass
-from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 from zigpy.quirks.v2.homeassistant import UnitOfTime
+from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
+from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass
+import zigpy.types as t
+
+from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 
 # Enum class for light control mode (dp_id=105)
