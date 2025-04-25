@@ -1,3 +1,6 @@
+from zhaquirks.tuya import TuyaLocalCluster
+from zhaquirks.tuya.builder import TuyaQuirkBuilder
+import zigpy.types as t
 from zigpy.quirks.v2 import EntityType
 from zigpy.quirks.v2.homeassistant import UnitOfTime
 from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
@@ -7,11 +10,12 @@ import zigpy.types as t
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 
-# Enum class for light control mode (dp_id=105)
 class LightControlMode(t.enum8):
+    """Enum for the backlight mode setting (dp_id=105)."""
     On = 0
     Off = 1
     Auto = 2
+
 
 
 # Quirk definition for the Mercator Ikuu Combination Sensor (_TZE200_agumlajc)
