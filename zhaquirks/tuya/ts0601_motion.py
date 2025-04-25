@@ -1,4 +1,3 @@
-
 from zhaquirks.tuya import TuyaLocalCluster
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 import zigpy.types as t
@@ -7,11 +6,13 @@ from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass
 from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 from zigpy.quirks.v2.homeassistant import UnitOfTime
 
+
 # Enum class for light control mode (dp_id=105)
 class LightControlMode(t.enum8):
     On = 0
     Off = 1
     Auto = 2
+
 
 # Quirk definition for the Mercator Ikuu Combination Sensor (_TZE200_agumlajc)
 (
@@ -29,7 +30,7 @@ class LightControlMode(t.enum8):
         max_value=1000,
         step=1,
         translation_key="brightness_threshold",
-        fallback_name="Brightness Threshold"
+        fallback_name="Brightness Threshold",
     )
     .tuya_number(
         dp_id=103,
@@ -41,7 +42,7 @@ class LightControlMode(t.enum8):
         max_value=3600,
         step=1,
         translation_key="motion_hold_time",
-        fallback_name="Motion Hold Time"
+        fallback_name="Motion Hold Time",
     )
     .tuya_binary_sensor(
         dp_id=104,
@@ -49,14 +50,14 @@ class LightControlMode(t.enum8):
         device_class=BinarySensorDeviceClass.MOTION,
         entity_type=EntityType.STANDARD,
         translation_key="motion",
-        fallback_name="Motion"
+        fallback_name="Motion",
     )
     .tuya_enum(
         dp_id=105,
         attribute_name="light_control_mode",
         enum_class=LightControlMode,
         translation_key="light_control_mode",
-        fallback_name="Light Control Mode"
+        fallback_name="Light Control Mode",
     )
     .tuya_number(
         dp_id=106,
@@ -66,7 +67,7 @@ class LightControlMode(t.enum8):
         max_value=100,
         step=1,
         translation_key="motion_sensitivity",
-        fallback_name="Motion Sensitivity"
+        fallback_name="Motion Sensitivity",
     )
     .skip_configuration()
     .add_to_registry()
