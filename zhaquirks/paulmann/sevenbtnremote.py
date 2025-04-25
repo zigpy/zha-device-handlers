@@ -1,25 +1,8 @@
 """Device handler for Paulmann Smart Home 7-button remote control."""
 
-from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
-from zigpy.zcl.clusters.general import (
-    Basic,
-    PowerConfiguration,
-    Identify,
-    Groups,
-    Scenes,
-    OnOff,
-    LevelControl,
-)
-from zigpy.zcl.clusters.lighting import Color
-from zigpy.zcl.clusters.general import Ota
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-)
+
+from zhaquirks.const import DEVICE_TYPE, INPUT_CLUSTERS, OUTPUT_CLUSTERS, PROFILE_ID
 
 EP = 1
 CLUSTER_ONOFF = 6
