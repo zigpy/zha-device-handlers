@@ -1,3 +1,5 @@
+"""Quirk for the Mercator Ikuü TS0601 motion sensor (_TZE200_agumlajc)."""
+
 from zigpy.quirks.v2 import EntityType
 from zigpy.quirks.v2.homeassistant import UnitOfTime
 from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
