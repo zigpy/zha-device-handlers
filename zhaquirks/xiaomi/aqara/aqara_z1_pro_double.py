@@ -31,7 +31,7 @@ from zhaquirks.xiaomi import (
     MeteringCluster,
     OnOffCluster,
     XiaomiCustomDevice,
-    AqaraZ1ProManufacturerSpecificCluster
+    AqaraZ1ProManufacturerSpecificCluster,
 )
 from zhaquirks.xiaomi.aqara.opple_remote import MultistateInputCluster
 
@@ -42,22 +42,29 @@ _LOGGER.setLevel(logging.DEBUG)
 # Add a console handler to ensure logs go to stdout
 console_handler = logging.StreamHandler(sys.stdout)
 console_handler.setLevel(logging.DEBUG)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 console_handler.setFormatter(formatter)
 _LOGGER.addHandler(console_handler)
 
 # Log at module level to verify the file is being loaded
-_LOGGER.debug("AqaraZ1ProDoubleRockerSwitch quirk module is being loaded! ZHA Profile ID: 0x%04x, Device Type: 0x%04x", zha.PROFILE_ID, zha.DeviceType.ON_OFF_SWITCH)
+_LOGGER.debug(
+    "AqaraZ1ProDoubleRockerSwitch quirk module is being loaded! ZHA Profile ID: 0x%04x, Device Type: 0x%04x",
+    zha.PROFILE_ID,
+    zha.DeviceType.ON_OFF_SWITCH,
+)
+
 
 class AqaraZ1ProDoubleRockerSwitch(XiaomiCustomDevice):
     """Aqara Z1 Pro Double Rocker Switch"""
 
-    MANUFACTURER_SPECIFIC_CLUSTER_ID = 0xfcc0
+    MANUFACTURER_SPECIFIC_CLUSTER_ID = 0xFCC0
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        _LOGGER.debug("AqaraZ1ProDoubleRockerSwitch device initialized with IEEE: %s", self.ieee)
-    
+        _LOGGER.debug(
+            "AqaraZ1ProDoubleRockerSwitch device initialized with IEEE: %s", self.ieee
+        )
+
     signature = {
         MODELS_INFO: [("Aqara", "lumi.switch.acn057")],
         ENDPOINTS: {
