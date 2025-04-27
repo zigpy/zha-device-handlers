@@ -44,6 +44,7 @@ from zhaquirks.const import (
     ATTRIBUTE_ID,
     ATTRIBUTE_NAME,
     COMMAND_ATTRIBUTE_UPDATED,
+    COMMAND_SLIDER_EVENT,
     COMMAND_TRIPLE,
     UNKNOWN,
     VALUE,
@@ -822,7 +823,7 @@ class AqaraZ1ProManufacturerSpecificCluster(CustomCluster):
             # Also send a generic slider event for easier automation
             self.listener_event(
                 ZHA_SEND_EVENT,
-                "slider_event",
+                COMMAND_SLIDER_EVENT,
                 event_data,
             )
             _LOGGER.debug(
