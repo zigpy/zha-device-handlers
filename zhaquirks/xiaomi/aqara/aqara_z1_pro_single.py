@@ -16,12 +16,32 @@ from zigpy.zcl.clusters.general import (
 )
 
 from zhaquirks.const import (
+    ACTION,
+    ARGS,
+    ATTRIBUTE_ID,
+    BUTTON,
+    COMMAND,
+    COMMAND_SLIDER_EVENT,
+    CLUSTER_ID,
     DEVICE_TYPE,
+    DOUBLE_PRESS,
+    DIM_UP,
+    DIM_DOWN,
     ENDPOINTS,
+    ENDPOINT_ID,
     INPUT_CLUSTERS,
+    LONG_PRESS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
+    SHORT_PRESS,
+    SLIDER,
+    SLIDER_DOUBLE,
+    SLIDER_DOWN,
+    SLIDER_HOLD,
+    SLIDER_SINGLE,
+    SLIDER_UP,
+    VALUE,
 )
 from zhaquirks.xiaomi import (
     LUMI,
@@ -58,6 +78,7 @@ class AqaraZ1ProSingleRockerSwitch(XiaomiCustomDevice):
     """Aqara Z1 Pro Single Rocker Switch"""
 
     MANUFACTURER_SPECIFIC_CLUSTER_ID = 0xFCC0
+    XIAOMI_COMMAND_SINGLE = "1_single"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -190,5 +211,44 @@ class AqaraZ1ProSingleRockerSwitch(XiaomiCustomDevice):
                 ],
                 OUTPUT_CLUSTERS: [],
             },
+        },
+    }
+
+    device_automation_triggers = {
+        (SHORT_PRESS, BUTTON): {
+            COMMAND: XIAOMI_COMMAND_SINGLE,
+            CLUSTER_ID: 18,
+            ENDPOINT_ID: 1,
+            ARGS: {ATTRIBUTE_ID: 85, VALUE: 1},
+        },
+        (SHORT_PRESS, SLIDER): {
+            COMMAND: COMMAND_SLIDER_EVENT,
+            CLUSTER_ID: 64704,
+            ENDPOINT_ID: 1,
+            ARGS: {ACTION: SLIDER_SINGLE, VALUE: 1},
+        },
+        (DOUBLE_PRESS, SLIDER): {
+            COMMAND: COMMAND_SLIDER_EVENT,
+            CLUSTER_ID: 64704,
+            ENDPOINT_ID: 1,
+            ARGS: {ACTION: SLIDER_DOUBLE, VALUE: 2},
+        },
+        (LONG_PRESS, SLIDER): {
+            COMMAND: COMMAND_SLIDER_EVENT,
+            CLUSTER_ID: 64704,
+            ENDPOINT_ID: 1,
+            ARGS: {ACTION: SLIDER_HOLD, VALUE: 3},
+        },
+        (DIM_UP, SLIDER): {
+            COMMAND: COMMAND_SLIDER_EVENT,
+            CLUSTER_ID: 64704,
+            ENDPOINT_ID: 1,
+            ARGS: {ACTION: SLIDER_UP, VALUE: 4},
+        },
+        (DIM_DOWN, SLIDER): {
+            COMMAND: COMMAND_SLIDER_EVENT,
+            CLUSTER_ID: 64704,
+            ENDPOINT_ID: 1,
+            ARGS: {ACTION: SLIDER_DOWN, VALUE: 5},
         },
     }

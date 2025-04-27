@@ -14,6 +14,7 @@ from zigpy.quirks import (
 )
 import zigpy.types as t
 
+ACTION="action"
 ARGS = "args"
 ATTR_ID = "attr_id"
 ATTRIBUTE_ID = "attribute_id"
@@ -73,6 +74,7 @@ COMMAND_STORE = "store"
 COMMAND_TILT = "Tilt"
 COMMAND_TOGGLE = "toggle"
 COMMAND_TRIPLE = "triple"
+COMMAND_SLIDER_EVENT = "slider_event"
 DESCRIPTION = "description"
 DEVICE_TYPE = SIG_EP_TYPE
 DIM_DOWN = "dim_down"
@@ -116,9 +118,15 @@ ALT_SHORT_PRESS = "remote_button_alt_short_press"
 SKIP_CONFIGURATION = SIG_SKIP_CONFIG
 SHORT_RELEASE = "remote_button_short_release"
 TOGGLE = "toggle"
+SLIDER = "slider"
 TRIPLE_PRESS = "remote_button_triple_press"
 TURN_OFF = "turn_off"
 TURN_ON = "turn_on"
+SLIDER_SINGLE = "slider_single"
+SLIDER_DOUBLE = "slider_double"
+SLIDER_HOLD = "slider_hold"
+SLIDER_UP = "slider_up"
+SLIDER_DOWN = "slider_down"
 UNKNOWN = "Unknown"
 VALUE = "value"
 ZHA_SEND_EVENT = "zha_send_event"

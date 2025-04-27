@@ -48,6 +48,11 @@ from zhaquirks.const import (
     UNKNOWN,
     VALUE,
     ZHA_SEND_EVENT,
+    SLIDER_DOUBLE,
+    SLIDER_DOWN,
+    SLIDER_HOLD,
+    SLIDER_SINGLE,
+    SLIDER_UP,
     BatterySize,
 )
 
@@ -753,11 +758,11 @@ class AqaraZ1ProManufacturerSpecificCluster(CustomCluster):
 
     # Action mapping
     ACTION_MAPPING = {
-        1: "slider_single",
-        2: "slider_double",
-        3: "slider_hold",
-        4: "slider_up",
-        5: "slider_down",
+        1: SLIDER_SINGLE,
+        2: SLIDER_DOUBLE,
+        3: SLIDER_HOLD,
+        4: SLIDER_UP,
+        5: SLIDER_DOWN,
     }
 
     def __init__(self, *args, **kwargs):
