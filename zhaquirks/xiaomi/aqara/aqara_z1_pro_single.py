@@ -61,6 +61,9 @@ class AqaraZ1ProSingleRockerSwitch(XiaomiCustomDevice):
     signature = {
         MODELS_INFO: [("Aqara", "lumi.switch.acn056")],
         ENDPOINTS: {
+            # <SimpleDescriptor endpoint=1 profile=260 device_type=0
+            # input_clusters=[0, 3, 4, 5, 6, 18, 1794, 2820, 64704]
+            # output_clusters=[10, 25]>
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
@@ -80,6 +83,9 @@ class AqaraZ1ProSingleRockerSwitch(XiaomiCustomDevice):
                     Ota.cluster_id,
                 ],
             },
+            # <SimpleDescriptor endpoint=2 profile=260 device_type=0
+            # input_clusters=[64704]
+            # output_clusters=[]>
             2: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
@@ -88,6 +94,9 @@ class AqaraZ1ProSingleRockerSwitch(XiaomiCustomDevice):
                 ],
                 OUTPUT_CLUSTERS: [],
             },
+            # <SimpleDescriptor endpoint=3 profile=260 device_type=0
+            # input_clusters=[64704]
+            # output_clusters=[]>
             3: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
@@ -96,6 +105,9 @@ class AqaraZ1ProSingleRockerSwitch(XiaomiCustomDevice):
                 ],
                 OUTPUT_CLUSTERS: [],
             },
+            # <SimpleDescriptor endpoint=4 profile=260 device_type=0
+            # input_clusters=[64704]
+            # output_clusters=[]>
             4: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
@@ -104,6 +116,9 @@ class AqaraZ1ProSingleRockerSwitch(XiaomiCustomDevice):
                 ],
                 OUTPUT_CLUSTERS: [],
             },
+            # <SimpleDescriptor endpoint=21 profile=260 device_type=0
+            # input_clusters=[12]
+            # output_clusters=[]>
             21: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
