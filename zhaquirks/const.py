@@ -14,7 +14,7 @@ from zigpy.quirks import (
 )
 import zigpy.types as t
 
-ACTION="action"
+ACTION = "action"
 ARGS = "args"
 ATTR_ID = "attr_id"
 ATTRIBUTE_ID = "attribute_id"
