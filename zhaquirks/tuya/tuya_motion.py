@@ -3,7 +3,7 @@
 import asyncio
 from typing import Any
 
-from zigpy.quirks.v2 import ClusterType, EntityPlatform, EntityType
+from zigpy.quirks.v2 import EntityPlatform, EntityType
 from zigpy.quirks.v2.homeassistant import LIGHT_LUX, UnitOfLength, UnitOfTime
 from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
@@ -1611,6 +1611,7 @@ base_tuya_motion = (
     .add_to_registry()
 )
 
+
 # Mercator Ikuü TS0601 motion sensor (_TZE200_agumlajc)
 class LightControlMode(t.enum8):
     """Enum for the light control mode setting (dp_id=105)."""
@@ -1618,6 +1619,7 @@ class LightControlMode(t.enum8):
     On = 0
     Off = 1
     Auto = 2
+
 
 (
     TuyaQuirkBuilder("_TZE200_agumlajc", "TS0601")
@@ -1634,7 +1636,7 @@ class LightControlMode(t.enum8):
         max_value=1000,
         step=1,
         translation_key="brightness_threshold",
-        fallback_name="Brightness threshold"
+        fallback_name="Brightness threshold",
     )
     .tuya_number(
         dp_id=103,
@@ -1646,7 +1648,7 @@ class LightControlMode(t.enum8):
         max_value=3600,
         step=1,
         translation_key="motion_hold_time",
-        fallback_name="Motion hold time"
+        fallback_name="Motion hold time",
     )
     .tuya_binary_sensor(
         dp_id=104,
@@ -1654,14 +1656,14 @@ class LightControlMode(t.enum8):
         device_class=BinarySensorDeviceClass.MOTION,
         entity_type=EntityType.STANDARD,
         translation_key="motion",
-        fallback_name="Motion"
+        fallback_name="Motion",
     )
     .tuya_enum(
         dp_id=105,
         attribute_name="light_control_mode",
         enum_class=LightControlMode,
         translation_key="light_control_mode",
-        fallback_name="Light control mode"
+        fallback_name="Light control mode",
     )
     .tuya_number(
         dp_id=106,
@@ -1671,7 +1673,7 @@ class LightControlMode(t.enum8):
         max_value=100,
         step=1,
         translation_key="motion_sensitivity",
-        fallback_name="Motion sensitivity"
+        fallback_name="Motion sensitivity",
     )
     .skip_configuration()
     .add_to_registry()
