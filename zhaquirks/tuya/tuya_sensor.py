@@ -250,6 +250,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
         translation_key="humidity_sensitivity",
         fallback_name="Humidity sensitivity",
     )
+    .tuya_enchantment(data_query_spell=True)
     .skip_configuration()
     .add_to_registry(replacement_cluster=NoManufTimeTuyaMCUCluster)
 )
