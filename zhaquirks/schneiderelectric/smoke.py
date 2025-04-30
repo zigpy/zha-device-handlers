@@ -129,7 +129,6 @@ class SEAlarmConfiguration(CustomCluster):
         attribute_name=SEAlarmConfiguration.AttributeDefs.se_lifetime.name,
         translation_key="lifetime",
         fallback_name="Lifetime",
-        device_class=NumberDeviceClass.DURATION,
         unit=UnitOfTime.YEARS,
         multiplier=0.5,
         entity_type=EntityType.DIAGNOSTIC,
