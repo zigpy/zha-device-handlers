@@ -11,8 +11,8 @@ import zigpy.types as t
 from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
 
-from zhaquirks.tuya import TuyaLocalCluster, tuya
-from zhaquirks.tuya.builder import TuyaQuirkBuilder
+from zhaquirks.tuya import TuyaLocalCluster
+from zhaquirks.tuya.builder import TuyaQuirkBuilder, tuya
 
 
 class TuyaOccupancySensing(OccupancySensing, TuyaLocalCluster):
