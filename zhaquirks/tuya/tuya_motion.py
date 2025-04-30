@@ -12,7 +12,7 @@ from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
 
 from zhaquirks.tuya import TuyaLocalCluster
-from zhaquirks.tuya.builder import TuyaQuirkBuilder, tuya
+from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 
 class TuyaOccupancySensing(OccupancySensing, TuyaLocalCluster):
@@ -1612,15 +1612,12 @@ base_tuya_motion = (
 )
 
 # Mercator Ikuü TS0601 motion sensor (_TZE200_agumlajc)
-
-
 class LightControlMode(t.enum8):
     """Enum for the light control mode setting (dp_id=105)."""
 
     On = 0
     Off = 1
     Auto = 2
-
 
 (
     TuyaQuirkBuilder("_TZE200_agumlajc", "TS0601")
@@ -1637,7 +1634,7 @@ class LightControlMode(t.enum8):
         max_value=1000,
         step=1,
         translation_key="brightness_threshold",
-        fallback_name="Brightness threshold",
+        fallback_name="Brightness threshold"
     )
     .tuya_number(
         dp_id=103,
@@ -1649,24 +1646,22 @@ class LightControlMode(t.enum8):
         max_value=3600,
         step=1,
         translation_key="motion_hold_time",
-        fallback_name="Motion hold time",
+        fallback_name="Motion hold time"
     )
-    .tuya_dp(
+    .tuya_binary_sensor(
         dp_id=104,
-        dp_type=tuya.DATA,
         attribute_name="motion",
-        cluster_id=IasZone.cluster_id,
-        cluster_type=ClusterType.Server,
-        endpoint_id=1,
-        attribute_type=t.Bool,
-        converter=tuya.value_converter.true_false_1,
+        device_class=BinarySensorDeviceClass.MOTION,
+        entity_type=EntityType.STANDARD,
+        translation_key="motion",
+        fallback_name="Motion"
     )
     .tuya_enum(
         dp_id=105,
         attribute_name="light_control_mode",
         enum_class=LightControlMode,
         translation_key="light_control_mode",
-        fallback_name="Light control mode",
+        fallback_name="Light control mode"
     )
     .tuya_number(
         dp_id=106,
@@ -1676,7 +1671,7 @@ class LightControlMode(t.enum8):
         max_value=100,
         step=1,
         translation_key="motion_sensitivity",
-        fallback_name="Motion sensitivity",
+        fallback_name="Motion sensitivity"
     )
     .skip_configuration()
     .add_to_registry()
