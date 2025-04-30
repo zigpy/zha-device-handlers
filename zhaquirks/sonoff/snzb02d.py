@@ -121,7 +121,7 @@ class CustomSonoffCluster(CustomCluster):
         min_value=-50,
         max_value=50,
         step=0.1,
-        unit=TemperatureUnit,
+        unit=UnitOfTemperature.CELSIUS,
         multiplier=0.01,
         translation_key="temperature_calibration",
         fallback_name="Temperature calibration",
