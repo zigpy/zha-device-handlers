@@ -12,7 +12,7 @@ from zhaquirks.inovelli import (
 (
     QuirkBuilder("Inovelli", "VZM36")
     .replaces(InovelliVZM36LightCluster)
-    .replaces(InovelliVZM36FanCluster, endpoint_id=2, cluster_type=ClusterType.Client)
+    .replaces(InovelliVZM36FanCluster, endpoint_id=2)
     .device_automation_triggers(INOVELLI_AUTOMATION_TRIGGERS)
     .add_to_registry()
 )
