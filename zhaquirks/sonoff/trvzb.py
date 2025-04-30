@@ -150,7 +150,7 @@ class CustomSonoffCluster(CustomCluster):
     .switch(
         CustomSonoffCluster.AttributeDefs.external_temperature_sensor_enable.name,
         CustomSonoffCluster.cluster_id,
-        translation_key="external_temperature_sensor_enable",
+        translation_key="external_temperature_sensor",
         fallback_name="External temperature sensor",
     )
     .number(
