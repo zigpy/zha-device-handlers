@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 
 from zigpy.quirks.v2 import BinarySensorDeviceClass, EntityPlatform, EntityType
 from zigpy.quirks.v2.homeassistant import (
+    PERCENTAGE,
     UnitOfElectricPotential,
     UnitOfTime,
     UnitOfVolume,
@@ -13,7 +14,7 @@ import zigpy.types as t
 from zigpy.zcl.clusters.smartenergy import Metering
 
 from zhaquirks.const import BatterySize
-from zhaquirks.tuya import TUYA_CLUSTER_ID
+from zhaquirks.tuya import TUYA_CLUSTER_ID, TUYA_SEND_DATA
 from zhaquirks.tuya.builder import TuyaQuirkBuilder, TuyaValveWaterConsumed
 from zhaquirks.tuya.mcu import TuyaMCUCluster
 
@@ -668,7 +669,7 @@ class GiexIrrigationStatus(t.enum8):
     .tuya_battery(dp_id=115, battery_type=BatterySize.AA, battery_qty=2)
     .tuya_enchantment()
     .skip_configuration()
-    .add_to_registry()
+    .add_to_registry(mcu_write_command=TUYA_SEND_DATA)
 )
 
 
@@ -702,6 +703,63 @@ class GiexIrrigationStatus(t.enum8):
         entity_type=EntityType.STANDARD,
         fallback_name="Voltage",
     )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+# Tuya Solar Valve
+(
+    TuyaQuirkBuilder("_TZE200_arge1ptm", "TS0601")
+    .applies_to("_TZE200_anv5ujhv", "TS0601")
+    .applies_to("_TZE200_xlppj4f5", "TS0601")
+    .tuya_number(
+        dp_id=2,
+        attribute_name="valve_state_auto_shutdown",
+        type=t.uint32_t,
+        min_value=0,
+        max_value=100,
+        step=5,
+        unit=PERCENTAGE,
+        translation_key="valve_state_auto_shutdown",
+        fallback_name="Valve state auto shutdown",
+    )
+    .tuya_sensor(
+        dp_id=3,
+        attribute_name="water_flow",
+        type=t.uint32_t,
+        unit=PERCENTAGE,
+        translation_key="water_flow",
+        fallback_name="Water flow",
+    )
+    .tuya_number(
+        dp_id=11,
+        attribute_name="shutdown_timer",
+        type=t.uint32_t,
+        min_value=0,
+        max_value=14400,
+        step=5,
+        unit=UnitOfTime.SECONDS,
+        translation_key="shutdown_timer",
+        fallback_name="Shutdown timer",
+    )
+    .tuya_sensor(
+        dp_id=101,
+        attribute_name="remaining_watering_time",
+        type=t.uint32_t,
+        unit=UnitOfTime.SECONDS,
+        translation_key="remaining_watering_time",
+        fallback_name="Remaining watering time",
+    )
+    .tuya_sensor(
+        dp_id=107,
+        attribute_name="last_watering_duration",
+        type=t.uint32_t,
+        unit=UnitOfTime.SECONDS,
+        translation_key="last_watering_duration",
+        fallback_name="Last watering duration",
+    )
+    .tuya_battery(dp_id=110, battery_type=BatterySize.AA, battery_qty=2)
+    .tuya_enchantment()
     .skip_configuration()
     .add_to_registry()
 )

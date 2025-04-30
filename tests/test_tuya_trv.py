@@ -49,6 +49,30 @@ TUYA_TEST_PLAN_V02 = (
     ),  # Set to Off (0x02), dp 3
 )
 
+
+TUYA_TEST_PLAN_V03 = (
+    (
+        b"\t\xc2\x02\x00q\x02\x04\x00\x01\x00",
+        Thermostat.AttributeDefs.system_mode,
+        Thermostat.SystemMode.Auto,
+    ),  # Set to Auto (0x00), dp 2
+    (
+        b"\t\xc2\x02\x00q\x02\x04\x00\x01\x01",
+        Thermostat.AttributeDefs.system_mode,
+        Thermostat.SystemMode.Auto,
+    ),  # Set to Auto (0x01), dp 2
+    (
+        b"\t\xc3\x02\x00r\x02\x04\x00\x01\x03",
+        Thermostat.AttributeDefs.system_mode,
+        Thermostat.SystemMode.Heat,
+    ),  # Set to Heat (0x03), dp 2
+    (
+        b"\t\xc2\x02\x00q\x02\x04\x00\x01\x02",
+        Thermostat.AttributeDefs.system_mode,
+        Thermostat.SystemMode.Off,
+    ),  # Set to Off (0x02), dp 2
+)
+
 TUYA_SYS_MODE_V01 = {
     Thermostat.SystemMode.Heat: [b"\x01\x02\x00\x00\x02\x02\x04\x00\x01\x01"],
     Thermostat.SystemMode.Off: [b"\x01\x03\x00\x00\x03\x02\x04\x00\x01\x02"],
@@ -63,6 +87,21 @@ TUYA_SYS_MODE_V02 = {
         b"\x01\x04\x00\x00\x04\x65\x01\x00\x01\x00",
         b"\x01\x05\x00\x00\x05\x6c\x01\x00\x01\x00",
     ],
+}
+
+TUYA_SYS_MODE_V03 = {
+    Thermostat.SystemMode.Heat: [
+        b"\x01\x02\x00\x00\x02\x65\x01\x00\x01\x01",
+    ],
+    Thermostat.SystemMode.Off: [
+        b"\x01\x03\x00\x00\x03\x65\x01\x00\x01\x00",
+    ],
+}
+
+TUYA_SYS_MODE_V04 = {
+    Thermostat.SystemMode.Heat: [b"\x01\x02\x00\x00\x02\x02\x04\x00\x01\x03"],
+    Thermostat.SystemMode.Off: [b"\x01\x03\x00\x00\x03\x02\x04\x00\x01\x02"],
+    Thermostat.SystemMode.Auto: [b"\x01\x03\x00\x00\x03\x02\x04\x00\x01\x01"],
 }
 
 
@@ -86,6 +125,24 @@ TUYA_SYS_MODE_V02 = {
             TUYA_SYS_MODE_V02,
             zha.DeviceType.THERMOSTAT,  # quirk replaces device type with THERMOSTAT
             True,  # Enusure schedule is turned off
+        ),
+        (
+            "_TZE200_ne4pikwm",
+            "TS0601",
+            TUYA_TEST_PLAN_V02,
+            TUYA_SP_V02,
+            TUYA_SYS_MODE_V03,
+            None,  # test device has specific device type, real one has SMART_PLUG
+            False,
+        ),
+        (
+            "_TZE204_qyr2m29i",
+            "TS0601",
+            TUYA_TEST_PLAN_V03,
+            TUYA_SP_V01,
+            TUYA_SYS_MODE_V04,
+            None,  # test device has specific device type, real one has SMART_PLUG
+            False,
         ),
     ),
 )

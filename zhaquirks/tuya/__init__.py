@@ -1,14 +1,17 @@
 """Tuya devices."""
 
+from __future__ import annotations
+
 from collections.abc import Callable
 import dataclasses
 import datetime
 import enum
 import logging
-from typing import Any, Optional, Union
+from typing import Any
 
 from zigpy.quirks import BaseCustomDevice, CustomCluster, CustomDevice
 import zigpy.types as t
+from zigpy.typing import AddressingMode
 from zigpy.zcl import BaseAttributeDefs, foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import Basic, LevelControl, OnOff, PowerConfiguration
@@ -155,16 +158,16 @@ class TuyaData(t.Struct):
     @property
     def payload(
         self,
-    ) -> Union[
-        t.int32s_be,
-        t.Bool,
-        t.CharacterString,
-        t.enum8,
-        t.bitmap8,
-        t.bitmap16,
-        t.bitmap32,
-        t.LVBytes,
-    ]:
+    ) -> (
+        t.int32s_be
+        | t.Bool
+        | t.CharacterString
+        | t.enum8
+        | t.bitmap8
+        | t.bitmap16
+        | t.bitmap32
+        | t.LVBytes
+    ):
         """Payload accordingly to data point type."""
         if self.dp_type == TuyaDPType.VALUE:
             return t.int32s_be.deserialize(self.raw)[0]
@@ -294,11 +297,11 @@ class NoManufacturerCluster(CustomCluster):
 
     async def command(
         self,
-        command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
+        command_id: foundation.GeneralCommand | int | t.uint8_t,
         *args,
-        manufacturer: Optional[Union[int, t.uint16_t]] = None,
+        manufacturer: int | t.uint16_t | None = None,
         expect_reply: bool = True,
-        tsn: Optional[Union[int, t.uint8_t]] = None,
+        tsn: int | t.uint8_t | None = None,
         **kwargs: Any,
     ):
         """Override the default Cluster command."""
@@ -410,11 +413,9 @@ class TuyaManufCluster(CustomCluster):
     def handle_cluster_request(
         self,
         hdr: foundation.ZCLHeader,
-        args: tuple,
+        args: list[Any],
         *,
-        dst_addressing: Optional[
-            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
-        ] = None,
+        dst_addressing: AddressingMode | None = None,
     ) -> None:
         """Handle time request."""
 
@@ -463,11 +464,9 @@ class TuyaManufClusterAttributes(TuyaManufCluster):
     def handle_cluster_request(
         self,
         hdr: foundation.ZCLHeader,
-        args: tuple,
+        args: list[Any],
         *,
-        dst_addressing: Optional[
-            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
-        ] = None,
+        dst_addressing: AddressingMode | None = None,
     ) -> None:
         """Handle cluster request."""
         if hdr.command_id not in (0x0001, 0x0002):
@@ -500,12 +499,12 @@ class TuyaManufClusterAttributes(TuyaManufCluster):
         zvalue = ztype(tuya_data)
         self._update_attribute(tuya_cmd, zvalue)
 
-    def read_attributes(
+    async def read_attributes(
         self, attributes, allow_cache=False, only_cache=False, manufacturer=None
     ):
         """Ignore remote reads as the "get_data" command doesn't seem to do anything."""
 
-        return super().read_attributes(
+        return await super().read_attributes(
             attributes, allow_cache=True, only_cache=True, manufacturer=manufacturer
         )
 
@@ -600,11 +599,12 @@ class TuyaOnOff(CustomCluster, OnOff):
 
     async def command(
         self,
-        command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
+        command_id: foundation.GeneralCommand | int | t.uint8_t,
         *args,
-        manufacturer: Optional[Union[int, t.uint16_t]] = None,
+        manufacturer: int | t.uint16_t | None = None,
         expect_reply: bool = True,
-        tsn: Optional[Union[int, t.uint8_t]] = None,
+        tsn: int | t.uint8_t | None = None,
+        **kwargs: Any,
     ):
         """Override the default Cluster command."""
 
@@ -636,11 +636,9 @@ class TuyaManufacturerClusterOnOff(TuyaManufCluster):
     def handle_cluster_request(
         self,
         hdr: foundation.ZCLHeader,
-        args: tuple[TuyaManufCluster.Command],
+        args: list[Any],
         *,
-        dst_addressing: Optional[
-            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
-        ] = None,
+        dst_addressing: AddressingMode | None = None,
     ) -> None:
         """Handle cluster request."""
 
@@ -757,11 +755,12 @@ class TuyaThermostatCluster(LocalDataCluster, Thermostat):
     # pylint: disable=W0236
     async def command(
         self,
-        command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
+        command_id: foundation.GeneralCommand | int | t.uint8_t,
         *args,
-        manufacturer: Optional[Union[int, t.uint16_t]] = None,
+        manufacturer: int | t.uint16_t | None = None,
         expect_reply: bool = True,
-        tsn: Optional[Union[int, t.uint8_t]] = None,
+        tsn: int | t.uint8_t | None = None,
+        **kwargs: Any,
     ):
         """Implement thermostat commands."""
 
@@ -1052,10 +1051,8 @@ class TuyaSmartRemoteOnOffCluster(OnOff, EventableCluster):
         hdr: foundation.ZCLHeader,
         args: list[Any],
         *,
-        dst_addressing: Optional[
-            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
-        ] = None,
-    ):
+        dst_addressing: AddressingMode | None = None,
+    ) -> None:
         """Handle press_types command."""
         # normally if default response sent, TS004x wouldn't send such repeated zclframe (with same sequence number),
         # but for stability reasons (e. g. the case the response doesn't arrive the device), we can simply ignore it
@@ -1152,11 +1149,9 @@ class TuyaManufacturerWindowCover(TuyaManufCluster):
     def handle_cluster_request(
         self,
         hdr: foundation.ZCLHeader,
-        args: tuple[TuyaManufCluster.Command],
+        args: list[Any],
         *,
-        dst_addressing: Optional[
-            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
-        ] = None,
+        dst_addressing: AddressingMode | None = None,
     ) -> None:
         """Handle cluster request."""
         # Tuya Specific Cluster Commands
@@ -1246,11 +1241,12 @@ class TuyaWindowCoverControl(LocalDataCluster, WindowCovering):
 
     def command(
         self,
-        command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
+        command_id: foundation.GeneralCommand | int | t.uint8_t,
         *args,
-        manufacturer: Optional[Union[int, t.uint16_t]] = None,
+        manufacturer: int | t.uint16_t | None = None,
         expect_reply: bool = True,
-        tsn: Optional[Union[int, t.uint8_t]] = None,
+        tsn: int | t.uint8_t | None = None,
+        **kwargs: Any,
     ):
         """Override the default Cluster command."""
         if manufacturer is None:
@@ -1353,11 +1349,9 @@ class TuyaManufacturerLevelControl(TuyaManufCluster):
     def handle_cluster_request(
         self,
         hdr: foundation.ZCLHeader,
-        args: tuple[TuyaManufCluster.Command],
+        args: list[Any],
         *,
-        dst_addressing: Optional[
-            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
-        ] = None,
+        dst_addressing: AddressingMode | None = None,
     ) -> None:
         """Handle cluster request."""
         tuya_payload = args[0]
@@ -1411,11 +1405,11 @@ class TuyaLevelControl(CustomCluster, LevelControl):
 
     def command(
         self,
-        command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
+        command_id: foundation.GeneralCommand | int | t.uint8_t,
         *args,
-        manufacturer: Optional[Union[int, t.uint16_t]] = None,
+        manufacturer: int | t.uint16_t | None = None,
         expect_reply: bool = True,
-        tsn: Optional[Union[int, t.uint8_t]] = None,
+        tsn: int | t.uint8_t | None = None,
         **kwargs: Any,
     ):
         """Override the default Cluster command."""
@@ -1458,16 +1452,9 @@ class DPToAttributeMapping:
     """Container for datapoint to cluster attribute update mapping."""
 
     ep_attribute: str
-    attribute_name: Union[str, tuple]
-    converter: Optional[
-        Callable[
-            [
-                Any,
-            ],
-            Any,
-        ]
-    ] = None
-    endpoint_id: Optional[int] = None
+    attribute_name: str | tuple[str, ...]
+    converter: Callable[[Any], Any] | None = None
+    endpoint_id: int | None = None
 
 
 @dataclasses.dataclass
@@ -1490,6 +1477,9 @@ class TuyaNewManufCluster(CustomCluster):
     name: str = "Tuya Manufacturer Specific"
     cluster_id: t.uint16_t = TUYA_CLUSTER_ID
     ep_attribute: str = "tuya_manufacturer"
+
+    # command for writing datapoint values to the device, some use TUYA_SEND_DATA
+    mcu_write_command: foundation.GeneralCommand | int | t.uint8_t = TUYA_SET_DATA
 
     # remove manufacturer id for cluster, important for `TUYA_SET_DATA` commands
     manufacturer_id_override: t.uint16_t = foundation.ZCLHeader.NO_MANUFACTURER_ID
@@ -1574,11 +1564,9 @@ class TuyaNewManufCluster(CustomCluster):
     def handle_cluster_request(
         self,
         hdr: foundation.ZCLHeader,
-        args: tuple,
+        args: list[Any],
         *,
-        dst_addressing: Optional[
-            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
-        ] = None,
+        dst_addressing: AddressingMode | None = None,
     ) -> None:
         """Handle cluster specific request."""
 

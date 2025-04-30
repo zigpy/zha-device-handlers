@@ -6,7 +6,9 @@ from unittest.mock import MagicMock
 import pytest
 import zigpy.profiles.zha
 import zigpy.types as t
+from zigpy.zcl.clusters.measurement import PM25
 
+from tests.common import ClusterListener
 import zhaquirks
 from zhaquirks.tuya import TuyaNewManufCluster
 
@@ -79,6 +81,7 @@ def test_co2_sensor(air_quality_device, data, ep_attr, expected_value):
     assert cluster.get("measured_value") == expected_value
 
 
+# XXX: variant 00 is not used, PM2.5 is untested for sensors
 TUYA_AIR_TEST_VAR00 = (
     (
         b"\t\x02\x01\x00\x00\x12\x02\x00\x04\x00\x00\x01 ",
@@ -310,3 +313,22 @@ def test_smart_air_sensor(zigpy_device_from_v2_quirk, model, manuf, test_plan):
             )
             cluster = getattr(dev.endpoints[1], ep_attr)
             assert cluster.get("measured_value") == expected_value
+
+
+async def test_smart_air_pm25_dropping_high_values(zigpy_device_from_v2_quirk):
+    """Test Tuya Smart Air Sensor _TZE200_dwcarsat dropping high PM2.5 values."""
+
+    dev = zigpy_device_from_v2_quirk("_TZE200_dwcarsat", "TS0601")
+    pm25_cluster = dev.endpoints[1].pm25
+    pm25_listener = ClusterListener(pm25_cluster)
+
+    # check that valid value updates the attribute
+    # We call the Tuya TuyaLocalCluster update_attribute method which accepts a string,
+    # it'll call the underlying _update_attribute method with the id then.
+    pm25_cluster.update_attribute(PM25.AttributeDefs.measured_value.name, 1000)
+    assert len(pm25_listener.attribute_updates) == 1
+    assert pm25_listener.attribute_updates[0][1] == 1000
+
+    # check that invalid value is ignored
+    pm25_cluster.update_attribute(PM25.AttributeDefs.measured_value.name, 1001)
+    assert len(pm25_listener.attribute_updates) == 1

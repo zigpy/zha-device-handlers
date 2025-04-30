@@ -77,6 +77,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .applies_to("_TZE284_qyflbnbj", "TS0601")
     .applies_to("_TZE200_44af8vyi", "TS0601")
     .applies_to("_TZE200_vvmbj46n", "TS0601")
+    .applies_to("_TZE284_vvmbj46n", "TS0601")
     # Not using tuya_temperature because device reports negative values incorrectly
     .tuya_dp(
         dp_id=1,
@@ -118,6 +119,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .applies_to("_TZE200_eanjj2pa", "TS0601")
     .applies_to("_TZE200_ydrdfkim", "TS0601")
     .applies_to("_TZE284_locansqn", "TS0601")
+    .applies_to("_TZE200_w6n8jeuu", "TS0601")
     .tuya_temperature(dp_id=1, scale=10)
     .tuya_humidity(dp_id=2)
     .tuya_battery(dp_id=4)
@@ -261,6 +263,18 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .tuya_temperature(dp_id=5, scale=10)
     .tuya_battery(dp_id=15)
     .tuya_soil_moisture(dp_id=3)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+(
+    TuyaQuirkBuilder("_TZE284_rqcuwlsa", "TS0601")  # NEO NAS-STH02B2
+    .tuya_battery(dp_id=15)
+    .tuya_electrical_conductivity(dp_id=1)
+    .tuya_soil_moisture(dp_id=3)
+    .tuya_temperature(dp_id=5, scale=10)
+    .tuya_enchantment(data_query_spell=True)
     .skip_configuration()
     .add_to_registry()
 )
