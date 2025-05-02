@@ -8,23 +8,6 @@ import logging
 from typing import Any, Final, Optional, Union
 
 import zigpy.profiles.zha as zha_p
-from zigpy.quirks import CustomCluster, CustomDevice
-import zigpy.types as t
-from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import (
-    Basic,
-    DeviceTemperature,
-    Groups,
-    Identify,
-    LevelControl,
-    OnOff,
-    Ota,
-    Scenes,
-    Time,
-)
-from zigpy.zcl.clusters.homeautomation import Diagnostic, ElectricalMeasurement
-from zigpy.zcl.clusters.smartenergy import Metering
-
 from zhaquirks import EventableCluster
 from zhaquirks.const import (
     ATTRIBUTE_ID,
@@ -54,6 +37,41 @@ from zhaquirks.sinope import (
     ButtonAction,
     CustomDeviceTemperatureCluster,
 )
+from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.quirks.v2 import (
+    EntityType,
+    QuirkBuilder,
+    SensorDeviceClass,
+    SensorStateClass,
+)
+from zigpy.quirks.v2.homeassistant import (
+    UnitOfEnergy,
+    UnitOfTime,
+)
+import zigpy.types as t
+from zigpy.zcl.clusters.general import (
+    Basic,
+    DeviceTemperature,
+    Groups,
+    Identify,
+    LevelControl,
+    OnOff,
+    Ota,
+    Scenes,
+    Time,
+)
+from zigpy.zcl.clusters.homeautomation import Diagnostic, ElectricalMeasurement
+from zigpy.zcl.clusters.smartenergy import Metering
+
+from zigpy.zcl.foundation import (
+    BaseAttributeDefs,
+    Direction,
+    GeneralCommand,
+    ZCL_CLUSTER_REVISION_ATTR,
+    ZCLAttributeDef,
+    ZCLCommandDef,
+    ZCLHeader,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -80,6 +98,25 @@ class DoubleFull(t.enum8):
     On = 0x01
 
 
+class DeviceStatus(t.bitmap32):
+    """Device general status."""
+
+    Ok = 0x00000000
+    Temp_sensor = 0x00000040
+
+
+class SinopeLightLedColors(t.enum32):
+    """Color values for Sinope light switch status LEDs."""
+
+    Lim = 0x0AFFDC
+    Amber = 0x000A4B
+    Fushia = 0x0100A5
+    Perle = 0x64FFFF
+    Blue = 0xFFFF00
+    Green = 0x00FF00
+    Red = 0xFF0000
+
+
 class SinopeTechnologiesManufacturerCluster(CustomCluster):
     """SinopeTechnologiesManufacturerCluster manufacturer cluster."""
 
@@ -87,79 +124,80 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
     PhaseControl: Final = PhaseControl
     DoubleFull: Final = DoubleFull
     Action: Final = ButtonAction
+    DeviceStatus: Final = DeviceStatus
 
     cluster_id: Final[t.uint16_t] = SINOPE_MANUFACTURER_CLUSTER_ID
     name: Final = "SinopeTechnologiesManufacturerCluster"
     ep_attribute: Final = "sinope_manufacturer_specific"
 
-    class AttributeDefs(foundation.BaseAttributeDefs):
+    class AttributeDefs(BaseAttributeDefs):
         """Sinope Manufacturer Cluster Attributes."""
 
-        keypad_lockout: Final = foundation.ZCLAttributeDef(
+        keypad_lockout: Final = ZCLAttributeDef(
             id=0x0002, type=KeypadLock, access="rw", is_manufacturer_specific=True
         )
-        firmware_number: Final = foundation.ZCLAttributeDef(
+        firmware_number: Final = ZCLAttributeDef(
             id=0x0003, type=t.uint16_t, access="r", is_manufacturer_specific=True
         )
-        firmware_version: Final = foundation.ZCLAttributeDef(
+        firmware_version: Final = ZCLAttributeDef(
             id=0x0004, type=t.CharacterString, access="r", is_manufacturer_specific=True
         )
-        on_intensity: Final = foundation.ZCLAttributeDef(
+        on_intensity: Final = ZCLAttributeDef(
             id=0x0010, type=t.int16s, access="rw", is_manufacturer_specific=True
         )
-        on_led_color: Final = foundation.ZCLAttributeDef(
+        on_led_color: Final = ZCLAttributeDef(
             id=0x0050, type=t.uint24_t, access="rw", is_manufacturer_specific=True
         )
-        off_led_color: Final = foundation.ZCLAttributeDef(
+        off_led_color: Final = ZCLAttributeDef(
             id=0x0051, type=t.uint24_t, access="rw", is_manufacturer_specific=True
         )
-        on_led_intensity: Final = foundation.ZCLAttributeDef(
+        on_led_intensity: Final = ZCLAttributeDef(
             id=0x0052, type=t.uint8_t, access="rw", is_manufacturer_specific=True
         )
-        off_led_intensity: Final = foundation.ZCLAttributeDef(
+        off_led_intensity: Final = ZCLAttributeDef(
             id=0x0053, type=t.uint8_t, access="rw", is_manufacturer_specific=True
         )
-        action_report: Final = foundation.ZCLAttributeDef(
+        action_report: Final = ZCLAttributeDef(
             id=0x0054, type=ButtonAction, access="rp", is_manufacturer_specific=True
         )
-        min_intensity: Final = foundation.ZCLAttributeDef(
+        min_intensity: Final = ZCLAttributeDef(
             id=0x0055, type=t.uint16_t, access="rw", is_manufacturer_specific=True
         )
-        phase_control: Final = foundation.ZCLAttributeDef(
+        phase_control: Final = ZCLAttributeDef(
             id=0x0056, type=PhaseControl, access="rw", is_manufacturer_specific=True
         )
-        double_up_full: Final = foundation.ZCLAttributeDef(
+        double_up_full: Final = ZCLAttributeDef(
             id=0x0058, type=DoubleFull, access="rw", is_manufacturer_specific=True
         )
-        current_summation_delivered: Final = foundation.ZCLAttributeDef(
+        current_summation_delivered: Final = ZCLAttributeDef(
             id=0x0090, type=t.uint32_t, access="rp", is_manufacturer_specific=True
         )
-        timer: Final = foundation.ZCLAttributeDef(
+        timer: Final = ZCLAttributeDef(
             id=0x00A0, type=t.uint32_t, access="rw", is_manufacturer_specific=True
         )
-        timer_countdown: Final = foundation.ZCLAttributeDef(
+        timer_countdown: Final = ZCLAttributeDef(
             id=0x00A1, type=t.uint32_t, access="r", is_manufacturer_specific=True
         )
-        connected_load: Final = foundation.ZCLAttributeDef(
+        connected_load: Final = ZCLAttributeDef(
             id=0x0119, type=t.uint16_t, access="rw", is_manufacturer_specific=True
         )
-        status: Final = foundation.ZCLAttributeDef(
-            id=0x0200, type=t.bitmap32, access="rp", is_manufacturer_specific=True
+        status: Final = ZCLAttributeDef(
+            id=0x0200, type=DeviceStatus, access="rp", is_manufacturer_specific=True
         )
-        cluster_revision: Final = foundation.ZCL_CLUSTER_REVISION_ATTR
+        cluster_revision: Final = ZCL_CLUSTER_REVISION_ATTR
 
     server_commands = {
-        0x54: foundation.ZCLCommandDef(
+        0x54: ZCLCommandDef(
             "button_press",
             {"command": t.uint8_t},
-            direction=foundation.Direction.Server_to_Client,
+            direction=Direction.Server_to_Client,
             is_manufacturer_specific=True,
         )
     }
 
     def handle_cluster_general_request(
         self,
-        hdr: foundation.ZCLHeader,
+        hdr: ZCLHeader,
         args: list[Any],
         *,
         dst_addressing: Optional[
@@ -173,7 +211,7 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
             args,
         )
 
-        if hdr.command_id != foundation.GeneralCommand.Report_Attributes:
+        if hdr.command_id != GeneralCommand.Report_Attributes:
             return super().handle_cluster_general_request(
                 hdr, args, dst_addressing=dst_addressing
             )
@@ -237,199 +275,262 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
 class LightManufacturerCluster(EventableCluster, SinopeTechnologiesManufacturerCluster):
     """LightManufacturerCluster: fire events corresponding to press type."""
 
-
-class SinopeTechnologieslight(CustomDevice):
-    """SinopeTechnologiesLight custom device."""
-
-    signature = {
-        # <SimpleDescriptor endpoint=1 profile=260 device_type=259
-        # device_version=0 input_clusters=[0, 2, 3, 4, 5, 6, 1794, 2821, 65281]
-        # output_clusters=[3, 4, 25]>
-        MODELS_INFO: [
-            (SINOPE, "SW2500ZB"),
-            (SINOPE, "SW2500ZB-G2"),
-        ],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha_p.PROFILE_ID,
-                DEVICE_TYPE: zha_p.DeviceType.ON_OFF_LIGHT_SWITCH,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    DeviceTemperature.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    Metering.cluster_id,
-                    Diagnostic.cluster_id,
-                    SINOPE_MANUFACTURER_CLUSTER_ID,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Ota.cluster_id,
-                ],
-            }
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha_p.PROFILE_ID,
-                DEVICE_TYPE: zha_p.DeviceType.ON_OFF_LIGHT,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    CustomDeviceTemperatureCluster,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    Metering.cluster_id,
-                    Diagnostic.cluster_id,
-                    LightManufacturerCluster,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Ota.cluster_id,
-                ],
-            }
-        }
-    }
-
-    device_automation_triggers = LIGHT_DEVICE_TRIGGERS
+    def _update_attribute(self, attrid, value):
+        if attrid == self.AttributeDefs.current_summation_delivered.id:
+            value = value / 100
+        super()._update_attribute(attrid, value)
 
 
-class SinopeDM2500ZB(CustomDevice):
-    """DM2500ZB, DM2500ZB-G2 Dimmers."""
+(
+    # <SimpleDescriptor endpoint=1 profile=260 device_type=259
+    # device_version=0 input_clusters=[0, 2, 3, 4, 5, 6, 1794, 2821, 65281]
+    # output_clusters=[3, 4, 25]>
+    QuirkBuilder(SINOPE, "SW2500ZB")
+    .applies_to(SINOPE, "SW2500ZB-G2")
+    .replaces_endpoint(1, device_type=zha_p.DeviceType.ON_OFF_LIGHT)
+    .adds(Basic, endpoint_id=1)
+    .adds(Identify, endpoint_id=1)
+    .adds(Groups, endpoint_id=1)
+    .adds(Scenes, endpoint_id=1)
+    .adds(OnOff, endpoint_id=1)
+    .adds(Metering, endpoint_id=1)
+    .adds(Diagnostic, endpoint_id=1)
+    .replaces(CustomDeviceTemperatureCluster)
+    .replaces(LightManufacturerCluster)
+    .device_automation_triggers(LIGHT_DEVICE_TRIGGERS)
+    .enum( # Keypad lock
+        attribute_name=LightManufacturerCluster.AttributeDefs.keypad_lockout.name,
+        cluster_id=LightManufacturerCluster.cluster_id,
+        enum_class=KeypadLock,
+        translation_key="keypad_lockout",
+        fallback_name="Keypad lockout",
+        entity_type=EntityType.STANDARD,
+    )
+    .enum( # On led color
+        attribute_name=LightManufacturerCluster.AttributeDefs.on_led_color.name,
+        cluster_id=LightManufacturerCluster.cluster_id,
+        enum_class=SinopeLightLedColors,
+        translation_key="on_led_color",
+        fallback_name="On led color",
+        entity_type=EntityType.CONFIG,
+    )
+    .enum( # Off led color
+        attribute_name=LightManufacturerCluster.AttributeDefs.off_led_color.name,
+        cluster_id=LightManufacturerCluster.cluster_id,
+        enum_class=SinopeLightLedColors,
+        translation_key="off_led_color",
+        fallback_name="Off led color",
+        entity_type=EntityType.CONFIG,
+    )
+    .number( # Connected load
+        attribute_name=LightManufacturerCluster.AttributeDefs.connected_load.name,
+        cluster_id=LightManufacturerCluster.cluster_id,
+        step=1,
+        min_value=0,
+        max_value=5000,
+        unit=UnitOfEnergy.WATT_HOUR,
+        translation_key="connected_load",
+        fallback_name="Connected load",
+    )
+    .number( # Timer
+        attribute_name=LightManufacturerCluster.AttributeDefs.timer.name,
+        cluster_id=LightManufacturerCluster.cluster_id,
+        step=1,
+        min_value=0,
+        max_value=86400,
+        unit=UnitOfTime.SECONDS,
+        translation_key="timer",
+        fallback_name="Timer",
+    )
+    .sensor( # Timer countdown
+        attribute_name=LightManufacturerCluster.AttributeDefs.timer_countdown.name,
+        cluster_id=LightManufacturerCluster.cluster_id,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=UnitOfTime.SECONDS,
+        translation_key="timer_countdown",
+        fallback_name="Timer countdown",
+        entity_type=EntityType.DIAGNOSTIC,
+    )
+    .sensor( # Device status
+        attribute_name=LightManufacturerCluster.AttributeDefs.status.name,
+        cluster_id=LightManufacturerCluster.cluster_id,
+        state_class=SensorStateClass.MEASUREMENT,
+        translation_key="status",
+        fallback_name="Device status",
+        entity_type=EntityType.DIAGNOSTIC,
+    )
+    .add_to_registry()
+)
 
-    signature = {
-        # <SimpleDescriptor endpoint=1 profile=260 device_type=260 device_version=1
-        # input_clusters=[0, 2, 3, 4, 5, 6, 8, 1794, 2821, 65281]
-        # output_clusters=[3, 4, 25]>
-        MODELS_INFO: [
-            (SINOPE, "DM2500ZB"),
-            (SINOPE, "DM2500ZB-G2"),
-        ],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha_p.PROFILE_ID,
-                DEVICE_TYPE: zha_p.DeviceType.DIMMER_SWITCH,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    DeviceTemperature.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    LevelControl.cluster_id,
-                    Metering.cluster_id,
-                    Diagnostic.cluster_id,
-                    SINOPE_MANUFACTURER_CLUSTER_ID,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Ota.cluster_id,
-                ],
-            }
-        },
-    }
+(
+    # <SimpleDescriptor endpoint=1 profile=260 device_type=260 device_version=1
+    # input_clusters=[0, 2, 3, 4, 5, 6, 8, 1794, 2821, 65281]
+    # output_clusters=[3, 4, 25]>
+    QuirkBuilder(SINOPE, "DM2500ZB")
+    .applies_to(SINOPE, "DM2500ZB-G2")
+    .replaces_endpoint(1, device_type=zha_p.DeviceType.DIMMABLE_LIGHT)
+    .adds(Basic, endpoint_id=1)
+    .adds(Identify, endpoint_id=1)
+    .adds(Groups, endpoint_id=1)
+    .adds(Scenes, endpoint_id=1)
+    .adds(OnOff, endpoint_id=1)
+    .adds(LevelControl, endpoint_id=1)
+    .adds(Metering, endpoint_id=1)
+    .adds(Diagnostic, endpoint_id=1)
+    .replaces(CustomDeviceTemperatureCluster)
+    .replaces(LightManufacturerCluster)
+    .device_automation_triggers(LIGHT_DEVICE_TRIGGERS)
+    .enum( # Keypad lock
+        attribute_name=LightManufacturerCluster.AttributeDefs.keypad_lockout.name,
+        cluster_id=LightManufacturerCluster.cluster_id,
+        enum_class=KeypadLock,
+        translation_key="keypad_lockout",
+        fallback_name="Keypad lockout",
+        entity_type=EntityType.STANDARD,
+    )
+    .enum( # On led color
+        attribute_name=LightManufacturerCluster.AttributeDefs.on_led_color.name,
+        cluster_id=LightManufacturerCluster.cluster_id,
+        enum_class=SinopeLightLedColors,
+        translation_key="on_led_color",
+        fallback_name="On led color",
+        entity_type=EntityType.CONFIG,
+    )
+    .enum( # Off led color
+        attribute_name=LightManufacturerCluster.AttributeDefs.off_led_color.name,
+        cluster_id=LightManufacturerCluster.cluster_id,
+        enum_class=SinopeLightLedColors,
+        translation_key="off_led_color",
+        fallback_name="Off led color",
+        entity_type=EntityType.CONFIG,
+    )
+    .number( # Connected load
+        attribute_name=LightManufacturerCluster.AttributeDefs.connected_load.name,
+        cluster_id=LightManufacturerCluster.cluster_id,
+        step=1,
+        min_value=0,
+        max_value=5000,
+        unit=UnitOfEnergy.WATT_HOUR,
+        translation_key="connected_load",
+        fallback_name="Connected load",
+        entity_type=EntityType.STANDARD,
+    )
+    .number( # Timer
+        attribute_name=LightManufacturerCluster.AttributeDefs.timer.name,
+        cluster_id=LightManufacturerCluster.cluster_id,
+        step=1,
+        min_value=0,
+        max_value=86400,
+        unit=UnitOfTime.SECONDS,
+        translation_key="timer",
+        fallback_name="Timer",
+    )
+    .sensor( # Timer countdown
+        attribute_name=LightManufacturerCluster.AttributeDefs.timer_countdown.name,
+        cluster_id=LightManufacturerCluster.cluster_id,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=UnitOfTime.SECONDS,
+        translation_key="timer_countdown",
+        fallback_name="Timer countdown",
+        entity_type=EntityType.DIAGNOSTIC,
+    )
+    .sensor( # Device status
+        attribute_name=LightManufacturerCluster.AttributeDefs.status.name,
+        cluster_id=LightManufacturerCluster.cluster_id,
+        state_class=SensorStateClass.MEASUREMENT,
+        translation_key="status",
+        fallback_name="Device status",
+        entity_type=EntityType.DIAGNOSTIC,
+    )
+    .add_to_registry()
+)
 
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha_p.PROFILE_ID,
-                DEVICE_TYPE: zha_p.DeviceType.DIMMABLE_LIGHT,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    CustomDeviceTemperatureCluster,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    LevelControl.cluster_id,
-                    Metering.cluster_id,
-                    Diagnostic.cluster_id,
-                    LightManufacturerCluster,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Ota.cluster_id,
-                ],
-            }
-        }
-    }
-
-    device_automation_triggers = LIGHT_DEVICE_TRIGGERS
-
-
-class SinopeDM2550ZB(CustomDevice):
-    """DM2550ZB, DM2550ZB-G2 Dimmers."""
-
-    signature = {
-        # <SimpleDescriptor endpoint=1 profile=260 device_type=260 device_version=1
-        # input_clusters=[0, 2, 3, 4, 5, 6, 8, 1794, 2820, 2821, 65281]
-        # output_clusters=[3, 4, 10, 25]>
-        MODELS_INFO: [
-            (SINOPE, "DM2550ZB"),
-            (SINOPE, "DM2550ZB-G2"),
-        ],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha_p.PROFILE_ID,
-                DEVICE_TYPE: zha_p.DeviceType.DIMMER_SWITCH,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    DeviceTemperature.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    LevelControl.cluster_id,
-                    Metering.cluster_id,
-                    ElectricalMeasurement.cluster_id,
-                    Diagnostic.cluster_id,
-                    SINOPE_MANUFACTURER_CLUSTER_ID,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Time.cluster_id,
-                    Ota.cluster_id,
-                ],
-            }
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha_p.PROFILE_ID,
-                DEVICE_TYPE: zha_p.DeviceType.DIMMABLE_LIGHT,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    CustomDeviceTemperatureCluster,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    LevelControl.cluster_id,
-                    Metering.cluster_id,
-                    ElectricalMeasurement.cluster_id,
-                    Diagnostic.cluster_id,
-                    LightManufacturerCluster,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Time.cluster_id,
-                    Ota.cluster_id,
-                ],
-            }
-        }
-    }
-
-    device_automation_triggers = LIGHT_DEVICE_TRIGGERS
+(
+    # <SimpleDescriptor endpoint=1 profile=260 device_type=260 device_version=1
+    # input_clusters=[0, 2, 3, 4, 5, 6, 8, 1794, 2820, 2821, 65281]
+    # output_clusters=[3, 4, 10, 25]>
+    QuirkBuilder(SINOPE, "DM2550ZB")
+    .applies_to(SINOPE, "DM2550ZB-G2")
+    .replaces_endpoint(1, device_type=zha_p.DeviceType.DIMMABLE_LIGHT)
+    .adds(Basic, endpoint_id=1)
+    .adds(Identify, endpoint_id=1)
+    .adds(Groups, endpoint_id=1)
+    .adds(Scenes, endpoint_id=1)
+    .adds(OnOff, endpoint_id=1)
+    .adds(LevelControl, endpoint_id=1)
+    .adds(Metering, endpoint_id=1)
+    .adds(ElectricalMeasurement, endpoint_id=1)
+    .adds(Diagnostic, endpoint_id=1)
+    .replaces(CustomDeviceTemperatureCluster)
+    .replaces(LightManufacturerCluster)
+    .device_automation_triggers(LIGHT_DEVICE_TRIGGERS)
+    .enum( # Keypad lock
+        attribute_name=LightManufacturerCluster.AttributeDefs.keypad_lockout.name,
+        cluster_id=LightManufacturerCluster.cluster_id,
+        enum_class=KeypadLock,
+        translation_key="keypad_lockout",
+        fallback_name="Keypad lockout",
+        entity_type=EntityType.STANDARD,
+    )
+    .enum( # Phase control
+        attribute_name=LightManufacturerCluster.AttributeDefs.phase_control.name,
+        cluster_id=LightManufacturerCluster.cluster_id,
+        enum_class=PhaseControl,
+        translation_key="phase_control",
+        fallback_name="Phase control",
+        entity_type=EntityType.STANDARD,
+    )
+    .enum( # On led color
+        attribute_name=LightManufacturerCluster.AttributeDefs.on_led_color.name,
+        cluster_id=LightManufacturerCluster.cluster_id,
+        enum_class=SinopeLightLedColors,
+        translation_key="on_led_color",
+        fallback_name="On led color",
+        entity_type=EntityType.CONFIG,
+    )
+    .enum( # Off led color
+        attribute_name=LightManufacturerCluster.AttributeDefs.off_led_color.name,
+        cluster_id=LightManufacturerCluster.cluster_id,
+        enum_class=SinopeLightLedColors,
+        translation_key="off_led_color",
+        fallback_name="Off led color",
+        entity_type=EntityType.CONFIG,
+    )
+    .number( # Minimum intensity
+        attribute_name=LightManufacturerCluster.AttributeDefs.min_intensity.name,
+        cluster_id=LightManufacturerCluster.cluster_id,
+        step=1,
+        min_value=1,
+        max_value=255,
+        translation_key="min_intensity",
+        fallback_name="Minimum on level",
+    )
+    .number( # Timer
+        attribute_name=LightManufacturerCluster.AttributeDefs.timer.name,
+        cluster_id=LightManufacturerCluster.cluster_id,
+        step=1,
+        min_value=0,
+        max_value=86400,
+        unit=UnitOfTime.SECONDS,
+        translation_key="timer",
+        fallback_name="Timer",
+    )
+    .sensor( # Timer countdown
+        attribute_name=LightManufacturerCluster.AttributeDefs.timer_countdown.name,
+        cluster_id=LightManufacturerCluster.cluster_id,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=UnitOfTime.SECONDS,
+        translation_key="timer_countdown",
+        fallback_name="Timer countdown",
+        entity_type=EntityType.DIAGNOSTIC,
+    )
+    .sensor( # Device status
+        attribute_name=LightManufacturerCluster.AttributeDefs.status.name,
+        cluster_id=LightManufacturerCluster.cluster_id,
+        state_class=SensorStateClass.MEASUREMENT,
+        translation_key="status",
+        fallback_name="Device status",
+        entity_type=EntityType.DIAGNOSTIC,
+    )
+    .add_to_registry()
+)
