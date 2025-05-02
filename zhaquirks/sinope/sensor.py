@@ -4,29 +4,11 @@ It add manufacturer attributes for IasZone cluster for the water leak alarm.
 Supported devices are WL4200, WL4200S and LM4110-ZB
 """
 
-import logging
 from typing import Final
 
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-)
-from zhaquirks.sinope import SINOPE, SINOPE_MANUFACTURER_CLUSTER_ID
-from zhaquirks.sinope.switch import (
-    SinopeTechnologiesBasicCluster,
-    EnergySource,
-)
-
 import zigpy.profiles.zha as zha_p
-import zigpy.types as t
-
-from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import (
-    BinarySensorDeviceClass,
     EntityType,
     QuirkBuilder,
     ReportingConfig,
@@ -34,31 +16,30 @@ from zigpy.quirks.v2 import (
     SensorStateClass,
 )
 from zigpy.quirks.v2.homeassistant import (
+    DEGREE,
+    UnitOfElectricPotential,
     UnitOfTemperature,
     UnitOfTime,
-    UnitOfEnergy,
-    UnitOfElectricPotential,
-    PERCENTAGE,
-    DEGREE,
 )
-
+import zigpy.types as t
 from zigpy.zcl.clusters.general import (
     AnalogInput,
     Basic,
     Identify,
-    Ota,
     PollControl,
     PowerConfiguration,
 )
 from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone
-from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.foundation import (
+    ZCL_CLUSTER_REVISION_ATTR,
     BaseAttributeDefs,
     ZCLAttributeDef,
-    ZCL_CLUSTER_REVISION_ATTR,
 )
+
+from zhaquirks.sinope import SINOPE, SINOPE_MANUFACTURER_CLUSTER_ID
+from zhaquirks.sinope.switch import EnergySource, SinopeTechnologiesBasicCluster
 
 
 class LeakStatus(t.enum8):
@@ -82,7 +63,7 @@ class ZoneStatus(t.uint16_t):
     Connector_1 = 0x0031
     Connector_2 = 0x0032
     Low_battery = 0x0038
-    Connector_low_bat = 0x003a
+    Connector_low_bat = 0x003A
 
 
 class SinopeManufacturerCluster(CustomCluster):
@@ -146,7 +127,7 @@ class SinopeTechnologiesIasZoneCluster(CustomCluster, IasZone):
     .applies_to(SINOPE, "WL4200S")
     .replaces(SinopeTechnologiesIasZoneCluster)
     .replaces(SinopeManufacturerCluster)
-    .enum( # Power source
+    .enum(  # Power source
         attribute_name=SinopeTechnologiesBasicCluster.AttributeDefs.power_source.name,
         cluster_id=SinopeTechnologiesBasicCluster.cluster_id,
         enum_class=EnergySource,
@@ -154,7 +135,7 @@ class SinopeTechnologiesIasZoneCluster(CustomCluster, IasZone):
         fallback_name="Power source",
         entity_type=EntityType.DIAGNOSTIC,
     )
-    .number( # Checkin interval
+    .number(  # Checkin interval
         attribute_name=PollControl.AttributeDefs.checkin_interval.name,
         cluster_id=PollControl.cluster_id,
         step=60,
@@ -164,7 +145,7 @@ class SinopeTechnologiesIasZoneCluster(CustomCluster, IasZone):
         translation_key="checkin_interval",
         fallback_name="Checkin interval",
     )
-    .sensor( # battery voltage
+    .sensor(  # battery voltage
         attribute_name=PowerConfiguration.AttributeDefs.battery_voltage.name,
         cluster_id=PowerConfiguration.cluster_id,
         state_class=SensorStateClass.MEASUREMENT,
@@ -177,7 +158,7 @@ class SinopeTechnologiesIasZoneCluster(CustomCluster, IasZone):
         fallback_name="Battery voltage",
         entity_type=EntityType.DIAGNOSTIC,
     )
-    .sensor(# Device status
+    .sensor(  # Device status
         attribute_name=SinopeManufacturerCluster.AttributeDefs.status.name,
         cluster_id=SinopeManufacturerCluster.cluster_id,
         endpoint_id=1,
@@ -197,7 +178,7 @@ class SinopeTechnologiesIasZoneCluster(CustomCluster, IasZone):
     .applies_to(SINOPE, "WL4200S")
     .replaces(SinopeTechnologiesIasZoneCluster)
     .replaces(SinopeManufacturerCluster)
-    .enum( # power source
+    .enum(  # power source
         attribute_name=SinopeTechnologiesBasicCluster.AttributeDefs.power_source.name,
         cluster_id=SinopeTechnologiesBasicCluster.cluster_id,
         enum_class=EnergySource,
@@ -205,7 +186,7 @@ class SinopeTechnologiesIasZoneCluster(CustomCluster, IasZone):
         fallback_name="Power source",
         entity_type=EntityType.DIAGNOSTIC,
     )
-    .sensor( # battery voltage
+    .sensor(  # battery voltage
         attribute_name=PowerConfiguration.AttributeDefs.battery_voltage.name,
         cluster_id=PowerConfiguration.cluster_id,
         state_class=SensorStateClass.MEASUREMENT,
@@ -235,7 +216,7 @@ class SinopeTechnologiesIasZoneCluster(CustomCluster, IasZone):
     .adds(TemperatureMeasurement, endpoint_id=1)
     .adds(Diagnostic, endpoint_id=1)
     .replaces(SinopeManufacturerCluster)
-    .sensor( # Device temperature
+    .sensor(  # Device temperature
         attribute_name=TemperatureMeasurement.AttributeDefs.measured_value.name,
         cluster_id=TemperatureMeasurement.cluster_id,
         state_class=SensorStateClass.MEASUREMENT,
@@ -248,7 +229,7 @@ class SinopeTechnologiesIasZoneCluster(CustomCluster, IasZone):
         fallback_name="Outside temperature",
         entity_type=EntityType.DIAGNOSTIC,
     )
-    .sensor( # Battery voltage
+    .sensor(  # Battery voltage
         attribute_name=PowerConfiguration.AttributeDefs.battery_voltage.name,
         cluster_id=PowerConfiguration.cluster_id,
         state_class=SensorStateClass.MEASUREMENT,
@@ -261,7 +242,7 @@ class SinopeTechnologiesIasZoneCluster(CustomCluster, IasZone):
         fallback_name="Battery voltage",
         entity_type=EntityType.DIAGNOSTIC,
     )
-    .sensor( # Gauge angle
+    .sensor(  # Gauge angle
         attribute_name=AnalogInput.AttributeDefs.present_value.name,
         cluster_id=AnalogInput.cluster_id,
         state_class=SensorStateClass.MEASUREMENT,
@@ -274,7 +255,7 @@ class SinopeTechnologiesIasZoneCluster(CustomCluster, IasZone):
         fallback_name="Gauge angle",
         entity_type=EntityType.DIAGNOSTIC,
     )
-    .sensor(# Device status
+    .sensor(  # Device status
         attribute_name=SinopeManufacturerCluster.AttributeDefs.status.name,
         cluster_id=SinopeManufacturerCluster.cluster_id,
         endpoint_id=1,
