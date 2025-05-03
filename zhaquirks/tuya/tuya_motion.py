@@ -1622,7 +1622,7 @@ base_tuya_motion = (
     .tuya_enum(
         dp_id=1,
         attribute_name="presence",
-        enum_class=TuyaPresenceStateV02, # needs more work
+        enum_class=TuyaPresenceStateV02,  # needs more work
         entity_platform=EntityPlatform.SENSOR,
         entity_type=EntityType.STANDARD,
         translation_key="presence_state",
@@ -1666,7 +1666,7 @@ base_tuya_motion = (
         device_class=SensorDeviceClass.DISTANCE,
         unit=UnitOfLength.METERS,
         min_value=0.5,
-        max_value=9, # tested on 6m
+        max_value=9,  # tested on 6m
         step=0.5,
         translation_key="detection_distance_max",
         fallback_name="Maximum range",
