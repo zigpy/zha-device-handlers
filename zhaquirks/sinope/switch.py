@@ -168,7 +168,7 @@ class DeviceStatus(t.bitmap32):
 
 
 class ZoneStatus(t.uint16_t):
-    """IAS zone status"""
+    """IAS zone status."""
 
     Ok = 0x0030
     Connector_1 = 0x0031
@@ -178,6 +178,8 @@ class ZoneStatus(t.uint16_t):
 
 
 class FlowMeter(t.LVList):
+    """Flow meter configuration values."""
+
     No_flow_meter = [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0]
     FS4220 = [194, 17, 0, 0, 136, 119, 0, 0, 1, 0, 0, 0]
     FS4221 = [159, 38, 0, 0, 76, 85, 1, 0, 1, 0, 0, 0]
