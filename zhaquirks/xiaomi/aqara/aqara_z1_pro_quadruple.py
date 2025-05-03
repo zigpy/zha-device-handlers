@@ -2,6 +2,7 @@
 
 import logging
 import sys
+
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import (
     AnalogInput,
@@ -23,15 +24,15 @@ from zhaquirks.const import (
     BUTTON_2,
     BUTTON_3,
     BUTTON_4,
+    CLUSTER_ID,
     COMMAND,
     COMMAND_SLIDER_EVENT,
-    CLUSTER_ID,
     DEVICE_TYPE,
-    DOUBLE_PRESS,
-    DIM_UP,
     DIM_DOWN,
-    ENDPOINTS,
+    DIM_UP,
+    DOUBLE_PRESS,
     ENDPOINT_ID,
+    ENDPOINTS,
     INPUT_CLUSTERS,
     LONG_PRESS,
     MODELS_INFO,
@@ -47,14 +48,13 @@ from zhaquirks.const import (
     VALUE,
 )
 from zhaquirks.xiaomi import (
-    LUMI,
     AnalogInputCluster,
+    AqaraZ1ProManufacturerSpecificCluster,
     BasicCluster,
     ElectricalMeasurementCluster,
     MeteringCluster,
     OnOffCluster,
     XiaomiCustomDevice,
-    AqaraZ1ProManufacturerSpecificCluster,
 )
 from zhaquirks.xiaomi.aqara.opple_remote import MultistateInputCluster
 
@@ -78,7 +78,7 @@ _LOGGER.debug(
 
 
 class AqaraZ1ProQuadrupleRockerSwitch(XiaomiCustomDevice):
-    """Aqara Z1 Pro Quadruple Rocker Switch"""
+    """Aqara Z1 Pro Quadruple Rocker Switch."""
 
     MANUFACTURER_SPECIFIC_CLUSTER_ID = 0xFCC0
     XIAOMI_COMMAND_SINGLE_1 = "1_single"
@@ -87,6 +87,7 @@ class AqaraZ1ProQuadrupleRockerSwitch(XiaomiCustomDevice):
     XIAOMI_COMMAND_SINGLE_4 = "4_single"
 
     def __init__(self, *args, **kwargs):
+        """Init."""
         super().__init__(*args, **kwargs)
         _LOGGER.debug(
             "AqaraZ1ProQuadrupleRockerSwitch device initialized with IEEE: %s",

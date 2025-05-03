@@ -46,14 +46,14 @@ from zhaquirks.const import (
     COMMAND_ATTRIBUTE_UPDATED,
     COMMAND_SLIDER_EVENT,
     COMMAND_TRIPLE,
-    UNKNOWN,
-    VALUE,
-    ZHA_SEND_EVENT,
     SLIDER_DOUBLE,
     SLIDER_DOWN,
     SLIDER_HOLD,
     SLIDER_SINGLE,
     SLIDER_UP,
+    UNKNOWN,
+    VALUE,
+    ZHA_SEND_EVENT,
     BatterySize,
 )
 
@@ -767,6 +767,7 @@ class AqaraZ1ProManufacturerSpecificCluster(CustomCluster):
     }
 
     def __init__(self, *args, **kwargs):
+        """Init."""
         super().__init__(*args, **kwargs)
         self._attr_id = self.ATTR_SLIDER_ACTION
         _LOGGER.debug(
