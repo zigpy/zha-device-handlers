@@ -1617,12 +1617,12 @@ base_tuya_motion = (
 (
     TuyaQuirkBuilder("_TZE204_gkfbdvyx", "TS0601")
     # 0: presence="none", state=false
-    # 1: presence="presence" state=true triggers only with presence sensitivy on low
+    # 1: presence="presence" state=true triggers only with presence sensitivity on low
     # 2: presence="move?" state=true
     .tuya_enum(
         dp_id=1,
         attribute_name="presence",
-        enum_class=TuyaPresenceStateV02, # needs more work
+        enum_class=TuyaPresenceStateV02,  # needs more work
         entity_platform=EntityPlatform.SENSOR,
         entity_type=EntityType.STANDARD,
         translation_key="presence_state",
@@ -1666,7 +1666,7 @@ base_tuya_motion = (
         device_class=SensorDeviceClass.DISTANCE,
         unit=UnitOfLength.METERS,
         min_value=0.5,
-        max_value=9, # tested on 6m
+        max_value=9,  # tested on 6m
         step=0.5,
         translation_key="detection_distance_max",
         fallback_name="Maximum range",
@@ -1699,7 +1699,7 @@ base_tuya_motion = (
         max_value=10,
         step=1,
         translation_key="presence_sensitivity",
-        fallback_name="Presence Sensitivity",
+        fallback_name="Presence sensitivity",
     )
     .tuya_illuminance(dp_id=103)
     .tuya_number(
