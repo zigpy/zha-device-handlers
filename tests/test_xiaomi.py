@@ -86,6 +86,7 @@ import zhaquirks.xiaomi.aqara.roller_curtain_e1
 import zhaquirks.xiaomi.aqara.sensor_ht_agl02
 import zhaquirks.xiaomi.aqara.smoke
 import zhaquirks.xiaomi.aqara.switch_t1
+import zhaquirks.xiaomi.aqara.thermostat_agl001
 from zhaquirks.xiaomi.aqara.thermostat_agl001 import (
     XIAOMI_SENSOR_VALUE,
     AqaraThermostatSpecificCluster,
@@ -1191,6 +1192,46 @@ async def test_xiaomi_e1_thermostat_temp_sensor(input, ieee_mock):
         if input == 1:
             assert XIAOMI_SENSOR_VALUE in b
 
+
+async def test_xiaomi_e1_thermostat_temp_write(
+    zigpy_device_from_quirk,
+):
+    # """Test opple cluster write attributes for enabling external sensor and providing sensor temp"""
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.thermostat_agl001.AGL001)
+
+    opple_cluster = device.endpoints[1].opple_cluster
+    opple_listener = ClusterListener(opple_cluster)
+
+    # patch write commands
+    patch_opple_write = mock.patch.object(
+        opple_cluster,
+        "_write_attributes",
+        mock.AsyncMock(
+            return_value=(
+                [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)],
+            )
+        ),
+    )
+
+    with (
+        patch_opple_write,
+    ):
+        # enable external sensor
+        await opple_cluster.write_attributes(
+            {zhaquirks.xiaomi.aqara.thermostat_agl001.SENSOR: 1}
+        )
+
+        # enabling requires two calls
+        assert len(opple_cluster._write_attributes.mock_calls) == 2
+        
+        opple_cluster._write_attributes.reset_mock()
+        # set external temp
+        await opple_cluster.write_attributes(
+            {zhaquirks.xiaomi.aqara.thermostat_agl001.SENSOR_TEMP: "20.0"}
+        )
+
+        # setting temp requires one call
+        assert len(opple_cluster._write_attributes.mock_calls) == 1
 
 @pytest.mark.parametrize(
     "quirk, invalid_iilluminance_report",
