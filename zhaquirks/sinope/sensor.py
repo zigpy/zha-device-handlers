@@ -57,7 +57,7 @@ class DeviceStatus(t.bitmap32):
 
 
 class ZoneStatus(t.uint16_t):
-    """IAS zone status"""
+    """IAS zone status."""
 
     Ok = 0x0030
     Connector_1 = 0x0031
