@@ -208,7 +208,7 @@ class Language(t.enum8):
 
 
 class TempFormat(t.enum8):
-    """Change temperature display format"""
+    """Change temperature display format."""
 
     Celsius = 0x00
     Fahrenheit = 0x01
@@ -283,7 +283,7 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
             id=0x0073, type=t.uint8_t, access="rwp", is_manufacturer_specific=True
         )
         unknown_attr_1: Final = ZCLAttributeDef(
-            id=0x0101, type=Array, access="r", is_manufacturer_specific=True
+            id=0x0101, type=t.LVList, access="r", is_manufacturer_specific=True
         )
         setpoint: Final = ZCLAttributeDef(
             id=0x0104, type=t.int16s, access="rw", is_manufacturer_specific=True
