@@ -1223,7 +1223,7 @@ async def test_xiaomi_e1_thermostat_temp_write(
 
         # enabling requires two calls
         assert len(opple_cluster._write_attributes.mock_calls) == 2
-        
+
         opple_cluster._write_attributes.reset_mock()
         # set external temp
         await opple_cluster.write_attributes(
@@ -1232,6 +1232,7 @@ async def test_xiaomi_e1_thermostat_temp_write(
 
         # setting temp requires one call
         assert len(opple_cluster._write_attributes.mock_calls) == 1
+
 
 @pytest.mark.parametrize(
     "quirk, invalid_iilluminance_report",
