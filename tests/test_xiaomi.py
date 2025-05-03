@@ -1196,7 +1196,7 @@ async def test_xiaomi_e1_thermostat_temp_sensor(input, ieee_mock):
 async def test_xiaomi_e1_thermostat_temp_write(
     zigpy_device_from_quirk,
 ):
-    """Test opple cluster write attributes for enabling external sensor and providing sensor temp"""
+    """Test Opple cluster write attributes for enabling the external sensor and providing sensor temperature."""
     device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.thermostat_agl001.AGL001)
 
     opple_cluster = device.endpoints[1].opple_cluster
