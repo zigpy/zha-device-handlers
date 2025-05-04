@@ -20,6 +20,7 @@ from zigpy.quirks.v2 import (
 from zigpy.quirks.v2.homeassistant import (
     PERCENTAGE,
     UnitOfElectricPotential,
+    UnitOfEnergy,
     UnitOfTemperature,
     UnitOfTime,
     UnitOfVolumeFlowRate,
@@ -371,23 +372,27 @@ class SinopeTechnologiesFlowMeasurementCluster(CustomCluster, FlowMeasurement):
     # device_type=81, device_version=0,
     # input_clusters=[0, 3, 6, 1794, 2820, 65281]
     # output_clusters=[25]>
+    # <SimpleDescriptor(endpoint=1, profile=260,
+    # device_type=81, device_version=0,
+    # input_clusters=[0, 3, 6, 1794, 2820, 4096, 65281]
+    # output_clusters=[25, 4096]>
     QuirkBuilder(SINOPE, "SP2600ZB")
     .applies_to(SINOPE, "SP2610ZB")
     .replaces(SinopeTechnologiesMeteringCluster)
     .replaces(SinopeManufacturerCluster)
-    #    .sensor( # Current summ delivered
-    #        attribute_name=SinopeTechnologiesMeteringCluster.AttributeDefs.current_summ_delivered.name,
-    #        cluster_id=SinopeTechnologiesMeteringCluster.cluster_id,
-    #        state_class=SensorStateClass.TOTAL_INCREASING,
-    #        unit=UnitOfEnergy.KILO_WATT_HOUR,
-    #        device_class=SensorDeviceClass.ENERGY,
-    #        reporting_config=ReportingConfig(
-    #            min_interval=59, max_interval=1799, reportable_change=60
-    #        ),
-    #        translation_key="current_summ_delivered",
-    #        fallback_name="Current summ delivered",
-    #        entity_type=EntityType.STANDARD,
-    #    )
+    .sensor(  # Current summ delivered
+        attribute_name=SinopeTechnologiesMeteringCluster.AttributeDefs.current_summ_delivered.name,
+        cluster_id=SinopeTechnologiesMeteringCluster.cluster_id,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        unit=UnitOfEnergy.KILO_WATT_HOUR,
+        device_class=SensorDeviceClass.ENERGY,
+        reporting_config=ReportingConfig(
+            min_interval=59, max_interval=1799, reportable_change=60
+        ),
+        translation_key="current_summ_delivered",
+        fallback_name="Current summ delivered",
+        entity_type=EntityType.STANDARD,
+    )
     .add_to_registry()
 )
 
@@ -396,47 +401,6 @@ class SinopeTechnologiesFlowMeasurementCluster(CustomCluster, FlowMeasurement):
     # device_type=2, device_version=0,
     # input_clusters=[0, 3, 4, 5, 6, 1794, 2820, 2821, 65281]
     # output_clusters=[3, 4, 25]>
-    QuirkBuilder(SINOPE, "RM3250ZB")
-    .replaces(SinopeManufacturerCluster)
-    .enum(  # Keypad lock
-        attribute_name=SinopeManufacturerCluster.AttributeDefs.keypad_lockout.name,
-        cluster_id=SinopeManufacturerCluster.cluster_id,
-        enum_class=KeypadLock,
-        translation_key="keypad_lockout",
-        fallback_name="Keypad lockout",
-        entity_type=EntityType.CONFIG,
-    )
-    .number(  # Timer
-        attribute_name=SinopeManufacturerCluster.AttributeDefs.timer.name,
-        cluster_id=SinopeManufacturerCluster.cluster_id,
-        step=1,
-        min_value=0,
-        max_value=86400,
-        unit=UnitOfTime.SECONDS,
-        translation_key="timer",
-        fallback_name="Timer",
-    )
-    .sensor(  # Timer countdown
-        attribute_name=SinopeManufacturerCluster.AttributeDefs.timer_countdown.name,
-        cluster_id=SinopeManufacturerCluster.cluster_id,
-        state_class=SensorStateClass.MEASUREMENT,
-        unit=UnitOfTime.SECONDS,
-        translation_key="timer_countdown",
-        fallback_name="Timer countdown",
-        entity_type=EntityType.DIAGNOSTIC,
-    )
-    .sensor(  # Device status
-        attribute_name=SinopeManufacturerCluster.AttributeDefs.status.name,
-        cluster_id=SinopeManufacturerCluster.cluster_id,
-        state_class=SensorStateClass.MEASUREMENT,
-        translation_key="status",
-        fallback_name="Device status",
-        entity_type=EntityType.DIAGNOSTIC,
-    )
-    .add_to_registry()
-)
-
-(
     # <SimpleDescriptor(endpoint=1, profile=260,
     # device_type=2, device_version=0,
     # input_clusters=[0, 2, 3, 4, 5, 6, 1794, 2820, 2821, 65281]
@@ -471,6 +435,14 @@ class SinopeTechnologiesFlowMeasurementCluster(CustomCluster, FlowMeasurement):
         fallback_name="Timer countdown",
         entity_type=EntityType.DIAGNOSTIC,
     )
+    .sensor(  # Device status
+        attribute_name=SinopeManufacturerCluster.AttributeDefs.status.name,
+        cluster_id=SinopeManufacturerCluster.cluster_id,
+        state_class=SensorStateClass.MEASUREMENT,
+        translation_key="status",
+        fallback_name="Device status",
+        entity_type=EntityType.DIAGNOSTIC,
+    )
     .sensor(  # Device temperature
         attribute_name=CustomDeviceTemperatureCluster.AttributeDefs.current_temperature.name,
         cluster_id=CustomDeviceTemperatureCluster.cluster_id,
@@ -484,14 +456,6 @@ class SinopeTechnologiesFlowMeasurementCluster(CustomCluster, FlowMeasurement):
         fallback_name="Current temperature",
         entity_type=EntityType.DIAGNOSTIC,
     )
-    .sensor(  # Device status
-        attribute_name=SinopeManufacturerCluster.AttributeDefs.status.name,
-        cluster_id=SinopeManufacturerCluster.cluster_id,
-        state_class=SensorStateClass.MEASUREMENT,
-        translation_key="status",
-        fallback_name="Device status",
-        entity_type=EntityType.DIAGNOSTIC,
-    )
     .add_to_registry()
 )
 
@@ -500,6 +464,10 @@ class SinopeTechnologiesFlowMeasurementCluster(CustomCluster, FlowMeasurement):
     # device_type=3, device_version=0,
     # input_clusters=[0, 1, 3, 4, 5, 6, 8, 2821, 65281]
     # output_clusters=[3, 25]>
+    # <SimpleDescriptor(endpoint=1, profile=260,
+    # device_type=3, device_version=0,
+    # input_clusters=[0, 1, 3, 4, 5, 6, 8, 1026, 1280, 1794, 2821, 65281]
+    # output_clusters=[3, 6, 25]>
     QuirkBuilder(SINOPE, "VA4200WZ")
     .applies_to(SINOPE, "VA4201WZ")
     .applies_to(SINOPE, "VA4200ZB")
@@ -508,6 +476,8 @@ class SinopeTechnologiesFlowMeasurementCluster(CustomCluster, FlowMeasurement):
     .applies_to(SINOPE, "VA4221ZB")
     .replaces(SinopeTechnologiesBasicCluster)
     .replaces(SinopeTechnologiesIasZoneCluster)
+    .replaces(SinopeTechnologiesFlowMeasurementCluster)
+    .replaces(SinopeTechnologiesMeteringCluster)
     .replaces(SinopeManufacturerCluster)
     .enum(  # energy source
         attribute_name=SinopeTechnologiesBasicCluster.AttributeDefs.power_source.name,
@@ -515,6 +485,30 @@ class SinopeTechnologiesFlowMeasurementCluster(CustomCluster, FlowMeasurement):
         enum_class=EnergySource,
         translation_key="power_source",
         fallback_name="Power source",
+        entity_type=EntityType.CONFIG,
+    )
+    .enum(  # Alarm action status
+        attribute_name=SinopeManufacturerCluster.AttributeDefs.alarm_options.name,
+        cluster_id=SinopeManufacturerCluster.cluster_id,
+        enum_class=AlarmAction,
+        translation_key="alarm_options",
+        fallback_name="Alarm options",
+        entity_type=EntityType.CONFIG,
+    )
+    .enum( # Flow alarm
+        attribute_name=SinopeManufacturerCluster.AttributeDefs.alarm_flow_threshold.name,
+        cluster_id=SinopeManufacturerCluster.cluster_id,
+        enum_class=FlowAlarm,
+        translation_key="alarm_flow",
+        fallback_name="Alarm flow",
+        entity_type=EntityType.CONFIG,
+    )
+    .enum(  # Abnormal Flow action
+        attribute_name=SinopeManufacturerCluster.AttributeDefs.abnormal_flow_action.name,
+        cluster_id=SinopeManufacturerCluster.cluster_id,
+        enum_class=AbnormalAction,
+        translation_key="abnormal_flow_action",
+        fallback_name="Abnormal flow action",
         entity_type=EntityType.CONFIG,
     )
     .sensor(  # Device temperature
@@ -564,63 +558,29 @@ class SinopeTechnologiesFlowMeasurementCluster(CustomCluster, FlowMeasurement):
         fallback_name="Device status",
         entity_type=EntityType.DIAGNOSTIC,
     )
-    .add_to_registry()
-)
-
-(
-    # <SimpleDescriptor(endpoint=1, profile=260,
-    # device_type=3, device_version=0,
-    # input_clusters=[0, 1, 3, 4, 5, 6, 8, 1026, 1280, 1794, 2821, 65281]
-    # output_clusters=[3, 6, 25]>
-    QuirkBuilder(SINOPE, "VA4220ZB")
-    .applies_to(SINOPE, "VA4221ZB")
-    .replaces(SinopeTechnologiesBasicCluster)
-    .replaces(SinopeTechnologiesFlowMeasurementCluster)
-    .replaces(SinopeTechnologiesMeteringCluster)
-    .replaces(SinopeTechnologiesIasZoneCluster)
-    .replaces(SinopeManufacturerCluster)
-    .enum(  # Alarm action status
-        attribute_name=SinopeManufacturerCluster.AttributeDefs.alarm_options.name,
-        cluster_id=SinopeManufacturerCluster.cluster_id,
-        enum_class=AlarmAction,
-        translation_key="alarm_options",
-        fallback_name="Alarm options",
-        entity_type=EntityType.CONFIG,
-    )
-    .enum(  # energy source
-        attribute_name=SinopeTechnologiesBasicCluster.AttributeDefs.power_source.name,
-        cluster_id=SinopeTechnologiesBasicCluster.cluster_id,
-        enum_class=EnergySource,
-        translation_key="power_source",
-        fallback_name="Power source",
+    .sensor(  # Flow rate
+        attribute_name=SinopeTechnologiesMeteringCluster.AttributeDefs.instantaneous_demand.name,
+        cluster_id=SinopeTechnologiesMeteringCluster.cluster_id,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=UnitOfVolumeFlowRate.LITERS_PER_MINUTE,
+        device_class=SensorDeviceClass.VOLUME_FLOW_RATE,
+        reporting_config=ReportingConfig(
+            min_interval=30, max_interval=600, reportable_change=1
+        ),
+        translation_key="instantaneous_demand",
+        fallback_name="Instantaneous demand",
         entity_type=EntityType.DIAGNOSTIC,
     )
-    .enum(  # Flow alarm
-        attribute_name=SinopeManufacturerCluster.AttributeDefs.alarm_flow_threshold.name,
+    .number(  # Emergency_power_source
+        attribute_name=SinopeManufacturerCluster.AttributeDefs.emergency_power_source.name,
         cluster_id=SinopeManufacturerCluster.cluster_id,
-        enum_class=FlowAlarm,
-        translation_key="alarm_flow",
-        fallback_name="Alarm flow",
-        entity_type=EntityType.CONFIG,
+        step=1,
+        min_value=0,
+        max_value=60,
+        unit=UnitOfTime.SECONDS,
+        translation_key="emergency_power_source",
+        fallback_name="Emergency power source",
     )
-    .enum(  # Abnormal Flow action
-        attribute_name=SinopeManufacturerCluster.AttributeDefs.abnormal_flow_action.name,
-        cluster_id=SinopeManufacturerCluster.cluster_id,
-        enum_class=AbnormalAction,
-        translation_key="abnormal_flow_action",
-        fallback_name="Abnormal flow action",
-        entity_type=EntityType.CONFIG,
-    )
-    #    .number( # Emergency_power_source
-    #        attribute_name=SinopeManufacturerCluster.AttributeDefs.emergency_power_source.name,
-    #        cluster_id=SinopeManufacturerCluster.cluster_id,
-    #        step=1,
-    #        min_value=0,
-    #        max_value=60,
-    #        unit=UnitOfTime.SECONDS,
-    #        translation_key="emergency_power_source",
-    #        fallback_name="Emergency power source",
-    #    )
     .number(  # Abnormal Flow Duration
         attribute_name=SinopeManufacturerCluster.AttributeDefs.abnormal_flow_duration.name,
         cluster_id=SinopeManufacturerCluster.cluster_id,
@@ -640,53 +600,6 @@ class SinopeTechnologiesFlowMeasurementCluster(CustomCluster, FlowMeasurement):
         unit=UnitOfTime.SECONDS,
         translation_key="valve_countdown",
         fallback_name="Valve countdown",
-    )
-    .sensor(  # Flow rate
-        attribute_name=SinopeTechnologiesMeteringCluster.AttributeDefs.instantaneous_demand.name,
-        cluster_id=SinopeTechnologiesMeteringCluster.cluster_id,
-        state_class=SensorStateClass.MEASUREMENT,
-        unit=UnitOfVolumeFlowRate.LITERS_PER_MINUTE,
-        device_class=SensorDeviceClass.VOLUME_FLOW_RATE,
-        reporting_config=ReportingConfig(
-            min_interval=30, max_interval=600, reportable_change=1
-        ),
-        translation_key="instantaneous_demand",
-        fallback_name="Instantaneous demand",
-        entity_type=EntityType.DIAGNOSTIC,
-    )
-    .sensor(  # battery percent
-        attribute_name=PowerConfiguration.AttributeDefs.battery_percentage_remaining.name,
-        cluster_id=PowerConfiguration.cluster_id,
-        state_class=SensorStateClass.MEASUREMENT,
-        unit=PERCENTAGE,
-        device_class=SensorDeviceClass.BATTERY,
-        reporting_config=ReportingConfig(
-            min_interval=30, max_interval=43200, reportable_change=1
-        ),
-        translation_key="battery_percentage_remaining",
-        fallback_name="Battery percentage remaining",
-        entity_type=EntityType.DIAGNOSTIC,
-    )
-    .sensor(  # battery voltage
-        attribute_name=PowerConfiguration.AttributeDefs.battery_voltage.name,
-        cluster_id=PowerConfiguration.cluster_id,
-        state_class=SensorStateClass.MEASUREMENT,
-        unit=UnitOfElectricPotential.VOLT,
-        device_class=SensorDeviceClass.VOLTAGE,
-        reporting_config=ReportingConfig(
-            min_interval=30, max_interval=43200, reportable_change=1
-        ),
-        translation_key="battery_voltage",
-        fallback_name="Battery voltage",
-        entity_type=EntityType.DIAGNOSTIC,
-    )
-    .sensor(  # Device status
-        attribute_name=SinopeManufacturerCluster.AttributeDefs.status.name,
-        cluster_id=SinopeManufacturerCluster.cluster_id,
-        state_class=SensorStateClass.MEASUREMENT,
-        translation_key="status",
-        fallback_name="Device status",
-        entity_type=EntityType.DIAGNOSTIC,
     )
     .add_to_registry()
 )
@@ -892,30 +805,5 @@ class SinopeTechnologiesFlowMeasurementCluster(CustomCluster, FlowMeasurement):
         fallback_name="Device status",
         entity_type=EntityType.DIAGNOSTIC,
     )
-    .add_to_registry()
-)
-
-(
-    # <SimpleDescriptor(endpoint=1, profile=260,
-    # device_type=81, device_version=0,
-    # input_clusters=[0, 3, 6, 1794, 2820, 4096, 65281]
-    # output_clusters=[25, 4096]>
-    QuirkBuilder(SINOPE, "SP2600ZB")
-    .applies_to(SINOPE, "SP2610ZB")
-    .replaces(SinopeTechnologiesMeteringCluster)
-    .replaces(SinopeManufacturerCluster)
-    #    .sensor( # current summ delivered
-    #        attribute_name=SinopeTechnologiesMeteringCluster.AttributeDefs.current_summ_delivered.name,
-    #        cluster_id=SinopeTechnologiesMeteringCluster.cluster_id,
-    #        state_class=SensorStateClass.TOTAL_INCREASING,
-    #        unit=UnitOfEnergy.KILO_WATT_HOUR,
-    #        device_class=SensorDeviceClass.ENERGY,
-    #        reporting_config=ReportingConfig(
-    #            min_interval=59, max_interval=1799, reportable_change=60
-    #        ),
-    #        translation_key="current_summ_delivered",
-    #        fallback_name="Current summ delivered",
-    #        entity_type=EntityType.STANDARD,
-    #    )
     .add_to_registry()
 )
