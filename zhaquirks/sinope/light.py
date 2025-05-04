@@ -9,11 +9,18 @@ from typing import Any, Final, Optional, Union
 
 import zigpy.profiles.zha as zha_p
 from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import EntityType, QuirkBuilder, SensorStateClass
+from zigpy.quirks.v2 import (
+    EntityType,
+    QuirkBuilder,
+    ReportingConfig,
+    SensorDeviceClass,
+    SensorStateClass,
+)
 from zigpy.quirks.v2.homeassistant import UnitOfEnergy, UnitOfTime
 import zigpy.types as t
 from zigpy.zcl.clusters.general import (
     Basic,
+    DeviceTemperature,
     Groups,
     Identify,
     LevelControl,
@@ -342,6 +349,19 @@ class LightManufacturerCluster(EventableCluster, SinopeTechnologiesManufacturerC
         fallback_name="Device status",
         entity_type=EntityType.DIAGNOSTIC,
     )
+    .sensor(  # Current summ delivered
+        attribute_name=LightManufacturerCluster.AttributeDefs.current_summation_delivered.name,
+        cluster_id=LightManufacturerCluster.cluster_id,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        unit=UnitOfEnergy.KILO_WATT_HOUR,
+        device_class=SensorDeviceClass.ENERGY,
+        reporting_config=ReportingConfig(
+            min_interval=59, max_interval=1799, reportable_change=60
+        ),
+        translation_key="current_summation_delivered",
+        fallback_name="Current summation delivered",
+        entity_type=EntityType.STANDARD,
+    )
     .add_to_registry()
 )
 
@@ -424,6 +444,19 @@ class LightManufacturerCluster(EventableCluster, SinopeTechnologiesManufacturerC
         translation_key="status",
         fallback_name="Device status",
         entity_type=EntityType.DIAGNOSTIC,
+    )
+    .sensor(  # Current summ delivered
+        attribute_name=LightManufacturerCluster.AttributeDefs.current_summation_delivered.name,
+        cluster_id=LightManufacturerCluster.cluster_id,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        unit=UnitOfEnergy.KILO_WATT_HOUR,
+        device_class=SensorDeviceClass.ENERGY,
+        reporting_config=ReportingConfig(
+            min_interval=59, max_interval=1799, reportable_change=60
+        ),
+        translation_key="current_summation_delivered",
+        fallback_name="Current summation delivered",
+        entity_type=EntityType.STANDARD,
     )
     .add_to_registry()
 )
