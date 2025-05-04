@@ -20,7 +20,6 @@ from zigpy.quirks.v2.homeassistant import UnitOfEnergy, UnitOfTime
 import zigpy.types as t
 from zigpy.zcl.clusters.general import (
     Basic,
-    DeviceTemperature,
     Groups,
     Identify,
     LevelControl,
