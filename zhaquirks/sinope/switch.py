@@ -495,7 +495,7 @@ class SinopeTechnologiesFlowMeasurementCluster(CustomCluster, FlowMeasurement):
         fallback_name="Alarm options",
         entity_type=EntityType.CONFIG,
     )
-    .enum( # Flow alarm
+    .enum(  # Flow alarm
         attribute_name=SinopeManufacturerCluster.AttributeDefs.alarm_flow_threshold.name,
         cluster_id=SinopeManufacturerCluster.cluster_id,
         enum_class=FlowAlarm,
