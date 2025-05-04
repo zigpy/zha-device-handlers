@@ -4,6 +4,7 @@ It add manufacturer attributes for IasZone cluster for the water leak alarm.
 Supported devices are WL4200, WL4200S and LM4110-ZB
 """
 
+import logging
 from typing import Final
 
 import zigpy.profiles.zha as zha_p
@@ -158,6 +159,15 @@ class SinopeTechnologiesIasZoneCluster(CustomCluster, IasZone):
         fallback_name="Battery voltage",
         entity_type=EntityType.DIAGNOSTIC,
     )
+    .sensor(  # Zone status
+        attribute_name=SinopeTechnologiesIasZoneCluster.AttributeDefs.zone_status.name,
+        cluster_id=SinopeTechnologiesIasZoneCluster.cluster_id,
+        endpoint_id=1,
+        state_class=SensorStateClass.MEASUREMENT,
+        translation_key="zone_status",
+        fallback_name="Zone status",
+        entity_type=EntityType.DIAGNOSTIC,
+    )
     .sensor(  # Device status
         attribute_name=SinopeManufacturerCluster.AttributeDefs.status.name,
         cluster_id=SinopeManufacturerCluster.cluster_id,
@@ -165,38 +175,6 @@ class SinopeTechnologiesIasZoneCluster(CustomCluster, IasZone):
         state_class=SensorStateClass.MEASUREMENT,
         translation_key="status",
         fallback_name="Device status",
-        entity_type=EntityType.DIAGNOSTIC,
-    )
-    .add_to_registry()
-)
-
-(
-    # <SimpleDescriptor endpoint=1 profile=260 device_type=1026
-    # device_version=0 input_clusters=[0, 1, 3, 1026, 1280, 2821, 65281]
-    # output_clusters=[3, 25]>
-    QuirkBuilder(SINOPE, "WL4200")
-    .applies_to(SINOPE, "WL4200S")
-    .replaces(SinopeTechnologiesIasZoneCluster)
-    .replaces(SinopeManufacturerCluster)
-    .enum(  # power source
-        attribute_name=SinopeTechnologiesBasicCluster.AttributeDefs.power_source.name,
-        cluster_id=SinopeTechnologiesBasicCluster.cluster_id,
-        enum_class=EnergySource,
-        translation_key="power_source",
-        fallback_name="Power source",
-        entity_type=EntityType.DIAGNOSTIC,
-    )
-    .sensor(  # battery voltage
-        attribute_name=PowerConfiguration.AttributeDefs.battery_voltage.name,
-        cluster_id=PowerConfiguration.cluster_id,
-        state_class=SensorStateClass.MEASUREMENT,
-        unit=UnitOfElectricPotential.VOLT,
-        device_class=SensorDeviceClass.VOLTAGE,
-        reporting_config=ReportingConfig(
-            min_interval=30, max_interval=43200, reportable_change=1
-        ),
-        translation_key="battery_voltage",
-        fallback_name="Battery voltage",
         entity_type=EntityType.DIAGNOSTIC,
     )
     .add_to_registry()
