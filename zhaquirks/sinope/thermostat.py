@@ -9,7 +9,7 @@ from typing import Final
 import zigpy.profiles.zha as zha_p
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import EntityType, QuirkBuilder, ReportingConfig, SensorStateClass
-from zigpy.quirks.v2.homeassistant import UnitOfTemperature, UnitOfTime
+from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature, UnitOfTime
 import zigpy.types as t
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
@@ -434,14 +434,18 @@ class SinopeTechnologiesElectricalMeasurementCluster(
 
 
 (
-    # <SimpleDescriptor endpoint=1 profile=260 device_type=769
-    # device_version=0 input_clusters=[0, 3, 4, 5, 513, 516, 1026, 2820,
-    # 2821, 65281] output_clusters=[65281, 25]>
-    # <SimpleDescriptor endpoint=196 profile=49757 device_type=769
-    # device_version=0 input_clusters=[1] output_clusters=[]>
+    # <SimpleDescriptor endpoint=1 profile=260 device_type=769 device_version=0
+    # input_clusters=[0, 3, 4, 5, 513, 516, 1026, 2820, 2821, 65281]
+    # output_clusters=[65281, 25]>
+    # <SimpleDescriptor endpoint=196 profile=49757 device_type=769 device_version=0
+    # input_clusters=[1] output_clusters=[]>
+    # <SimpleDescriptor endpoint=1 profile=260 device_type=769 device_version=1
+    # input_clusters=[0, 3, 4, 5, 513, 516, 1026, 1794, 2820, 2821, 65281]
+    # output_clusters=[10, 25, 65281]>
     QuirkBuilder(SINOPE, "TH1123ZB")
     .applies_to(SINOPE, "TH1124ZB")
     .applies_to(SINOPE, "TH1500ZB")
+    .applies_to(SINOPE, "OTH3600-GA-ZB")
     .replaces(SinopeTechnologiesElectricalMeasurementCluster)
     .replaces(SinopeTechnologiesThermostatCluster)
     .replaces(SinopeTechnologiesManufacturerCluster)
@@ -495,6 +499,26 @@ class SinopeTechnologiesElectricalMeasurementCluster(
         translation_key="eco_delta_setpoint",
         fallback_name="Eco delta setpoint",
     )
+    .number(  # eco max pi heating demand
+        attribute_name=SinopeTechnologiesManufacturerCluster.AttributeDefs.eco_max_pi_heating_demand.name,
+        cluster_id=SinopeTechnologiesManufacturerCluster.cluster_id,
+        step=1,
+        min_value=0,
+        max_value=255,
+        unit=PERCENTAGE,
+        translation_key="eco_max_pi_heating_demand",
+        fallback_name="Eco max pi heating demand",
+    )
+    .number(  # eco safety temperature delta
+        attribute_name=SinopeTechnologiesManufacturerCluster.AttributeDefs.eco_safety_temperature_delta.name,
+        cluster_id=SinopeTechnologiesManufacturerCluster.cluster_id,
+        step=1,
+        min_value=0,
+        max_value=255,
+        unit=PERCENTAGE,
+        translation_key="eco_safety_temperature_delta",
+        fallback_name="Eco safety temperature delta",
+    )
     .sensor(  # Device status
         attribute_name=SinopeTechnologiesManufacturerCluster.AttributeDefs.status.name,
         cluster_id=SinopeTechnologiesManufacturerCluster.cluster_id,
@@ -527,6 +551,14 @@ class SinopeTechnologiesElectricalMeasurementCluster(
         enum_class=Display,
         translation_key="config_2nd_display",
         fallback_name="Config 2nd display",
+        entity_type=EntityType.CONFIG,
+    )
+    .enum(  # Config air floor mode
+        attribute_name=SinopeTechnologiesManufacturerCluster.AttributeDefs.air_floor_mode.name,
+        cluster_id=SinopeTechnologiesManufacturerCluster.cluster_id,
+        enum_class=FloorMode,
+        translation_key="air_floor_mode",
+        fallback_name="Air floor mode",
         entity_type=EntityType.CONFIG,
     )
     .enum(  # Pump protection duration
@@ -569,21 +601,18 @@ class SinopeTechnologiesElectricalMeasurementCluster(
         fallback_name="Aux output mode",
         entity_type=EntityType.CONFIG,
     )
-    .sensor(  # floor_limit_status
-        attribute_name=SinopeTechnologiesManufacturerCluster.AttributeDefs.floor_limit_status.name,
+    .enum(  # Floor sensor type
+        attribute_name=SinopeTechnologiesManufacturerCluster.AttributeDefs.floor_sensor_type_param.name,
         cluster_id=SinopeTechnologiesManufacturerCluster.cluster_id,
-        state_class=SensorStateClass.MEASUREMENT,
-        reporting_config=ReportingConfig(
-            min_interval=10, max_interval=3600, reportable_change=1
-        ),
-        translation_key="floor_limit_status",
-        fallback_name="Floor limit status",
+        enum_class=SensorType,
+        translation_key="floor_sensor_type",
+        fallback_name="Floor sensor type",
         entity_type=EntityType.CONFIG,
     )
-    .switch(  # Pump protection status
+    .enum(  # Pump protection status
         attribute_name=SinopeTechnologiesManufacturerCluster.AttributeDefs.pump_protection_status.name,
         cluster_id=SinopeTechnologiesManufacturerCluster.cluster_id,
-        endpoint_id=1,
+        enum_class=PumpStatus,
         translation_key="pump_protection_status",
         fallback_name="Pump protection status",
         entity_type=EntityType.CONFIG,
@@ -597,6 +626,37 @@ class SinopeTechnologiesElectricalMeasurementCluster(
         unit=UnitOfTemperature.CELSIUS,
         translation_key="eco_delta_setpoint",
         fallback_name="Eco delta setpoint",
+    )
+    .number(  # eco max pi heating demand
+        attribute_name=SinopeTechnologiesManufacturerCluster.AttributeDefs.eco_max_pi_heating_demand.name,
+        cluster_id=SinopeTechnologiesManufacturerCluster.cluster_id,
+        step=1,
+        min_value=0,
+        max_value=255,
+        unit=PERCENTAGE,
+        translation_key="eco_max_pi_heating_demand",
+        fallback_name="Eco max pi heating demand",
+    )
+    .number(  # eco safety temperature delta
+        attribute_name=SinopeTechnologiesManufacturerCluster.AttributeDefs.eco_safety_temperature_delta.name,
+        cluster_id=SinopeTechnologiesManufacturerCluster.cluster_id,
+        step=1,
+        min_value=0,
+        max_value=255,
+        unit=PERCENTAGE,
+        translation_key="eco_safety_temperature_delta",
+        fallback_name="Eco safety temperature delta",
+    )
+    .sensor(  # floor_limit_status
+        attribute_name=SinopeTechnologiesManufacturerCluster.AttributeDefs.floor_limit_status.name,
+        cluster_id=SinopeTechnologiesManufacturerCluster.cluster_id,
+        state_class=SensorStateClass.MEASUREMENT,
+        reporting_config=ReportingConfig(
+            min_interval=10, max_interval=3600, reportable_change=1
+        ),
+        translation_key="floor_limit_status",
+        fallback_name="Floor limit status",
+        entity_type=EntityType.CONFIG,
     )
     .sensor(  # Device status
         attribute_name=SinopeTechnologiesManufacturerCluster.AttributeDefs.status.name,
@@ -681,6 +741,44 @@ class SinopeTechnologiesElectricalMeasurementCluster(
         fallback_name="Aux output mode",
         entity_type=EntityType.CONFIG,
     )
+    .enum(  # Floor sensor type
+        attribute_name=SinopeTechnologiesManufacturerCluster.AttributeDefs.floor_sensor_type_param.name,
+        cluster_id=SinopeTechnologiesManufacturerCluster.cluster_id,
+        enum_class=SensorType,
+        translation_key="floor_sensor_type",
+        fallback_name="Floor sensor type",
+        entity_type=EntityType.CONFIG,
+    )
+    .number(  # eco delta setpoint
+        attribute_name=SinopeTechnologiesManufacturerCluster.AttributeDefs.eco_delta_setpoint.name,
+        cluster_id=SinopeTechnologiesManufacturerCluster.cluster_id,
+        step=1,
+        min_value=-128,
+        max_value=100,
+        unit=UnitOfTemperature.CELSIUS,
+        translation_key="eco_delta_setpoint",
+        fallback_name="Eco delta setpoint",
+    )
+    .number(  # eco max pi heating demand
+        attribute_name=SinopeTechnologiesManufacturerCluster.AttributeDefs.eco_max_pi_heating_demand.name,
+        cluster_id=SinopeTechnologiesManufacturerCluster.cluster_id,
+        step=1,
+        min_value=0,
+        max_value=255,
+        unit=PERCENTAGE,
+        translation_key="eco_max_pi_heating_demand",
+        fallback_name="Eco max pi heating demand",
+    )
+    .number(  # eco safety temperature delta
+        attribute_name=SinopeTechnologiesManufacturerCluster.AttributeDefs.eco_safety_temperature_delta.name,
+        cluster_id=SinopeTechnologiesManufacturerCluster.cluster_id,
+        step=1,
+        min_value=0,
+        max_value=255,
+        unit=PERCENTAGE,
+        translation_key="eco_safety_temperature_delta",
+        fallback_name="Eco safety temperature delta",
+    )
     .sensor(  # floor_limit_status
         attribute_name=SinopeTechnologiesManufacturerCluster.AttributeDefs.floor_limit_status.name,
         cluster_id=SinopeTechnologiesManufacturerCluster.cluster_id,
@@ -702,96 +800,6 @@ class SinopeTechnologiesElectricalMeasurementCluster(
         translation_key="gfci_status",
         fallback_name="Gfci status",
         entity_type=EntityType.DIAGNOSTIC,
-    )
-    .switch(  # Floor sensor type
-        attribute_name=SinopeTechnologiesManufacturerCluster.AttributeDefs.floor_sensor_type_param.name,
-        cluster_id=SinopeTechnologiesManufacturerCluster.cluster_id,
-        endpoint_id=1,
-        translation_key="floor_sensor_type",
-        fallback_name="Floor sensor type",
-        entity_type=EntityType.CONFIG,
-    )
-    .number(  # eco delta setpoint
-        attribute_name=SinopeTechnologiesManufacturerCluster.AttributeDefs.eco_delta_setpoint.name,
-        cluster_id=SinopeTechnologiesManufacturerCluster.cluster_id,
-        step=1,
-        min_value=-128,
-        max_value=100,
-        unit=UnitOfTemperature.CELSIUS,
-        translation_key="eco_delta_setpoint",
-        fallback_name="Eco delta setpoint",
-    )
-    .sensor(  # Device status
-        attribute_name=SinopeTechnologiesManufacturerCluster.AttributeDefs.status.name,
-        cluster_id=SinopeTechnologiesManufacturerCluster.cluster_id,
-        state_class=SensorStateClass.MEASUREMENT,
-        translation_key="status",
-        fallback_name="Device status",
-        entity_type=EntityType.DIAGNOSTIC,
-    )
-    .add_to_registry()
-)
-
-(
-    # <SimpleDescriptor endpoint=1 profile=260 device_type=769 device_version=1
-    # input_clusters=[0, 3, 4, 5, 513, 516, 1026, 1794, 2820, 2821, 65281]
-    # output_clusters=[10, 25, 65281]>
-    QuirkBuilder(SINOPE, "TH1123ZB")
-    .applies_to(SINOPE, "TH1124ZB")
-    .applies_to(SINOPE, "TH1500ZB")
-    .applies_to(SINOPE, "OTH3600-GA-ZB")
-    .replaces(SinopeTechnologiesElectricalMeasurementCluster)
-    .replaces(SinopeTechnologiesThermostatCluster)
-    .replaces(SinopeTechnologiesManufacturerCluster)
-    .enum(  # Keypad lock
-        attribute_name=SinopeTechnologiesManufacturerCluster.AttributeDefs.keypad_lockout.name,
-        cluster_id=SinopeTechnologiesManufacturerCluster.cluster_id,
-        enum_class=KeypadLock,
-        translation_key="keypad_lockout",
-        fallback_name="Keypad lockout",
-        entity_type=EntityType.CONFIG,
-    )
-    .enum(  # Config second display
-        attribute_name=SinopeTechnologiesManufacturerCluster.AttributeDefs.config_2nd_display.name,
-        cluster_id=SinopeTechnologiesManufacturerCluster.cluster_id,
-        enum_class=Display,
-        translation_key="config_2nd_display",
-        fallback_name="Config 2nd display",
-        entity_type=EntityType.CONFIG,
-    )
-    .enum(  # Config backlight auto dim
-        attribute_name=SinopeTechnologiesThermostatCluster.AttributeDefs.backlight_auto_dim_param.name,
-        cluster_id=SinopeTechnologiesThermostatCluster.cluster_id,
-        enum_class=Simplebacklight,
-        translation_key="backlight_auto_dim",
-        fallback_name="Backlight auto dim",
-        entity_type=EntityType.CONFIG,
-    )
-    .enum(  # Temperature format
-        attribute_name=UserInterface.AttributeDefs.temperature_display_mode.name,
-        cluster_id=UserInterface.cluster_id,
-        enum_class=TempFormat,
-        translation_key="temperature_display_mode",
-        fallback_name="Temperature display mode",
-        entity_type=EntityType.CONFIG,
-    )
-    .enum(  # Time format
-        attribute_name=SinopeTechnologiesManufacturerCluster.AttributeDefs.time_format.name,
-        cluster_id=SinopeTechnologiesManufacturerCluster.cluster_id,
-        enum_class=TimeFormat,
-        translation_key="time_format",
-        fallback_name="Time format",
-        entity_type=EntityType.CONFIG,
-    )
-    .number(  # eco delta setpoint
-        attribute_name=SinopeTechnologiesManufacturerCluster.AttributeDefs.eco_delta_setpoint.name,
-        cluster_id=SinopeTechnologiesManufacturerCluster.cluster_id,
-        step=1,
-        min_value=-128,
-        max_value=100,
-        unit=UnitOfTemperature.CELSIUS,
-        translation_key="eco_delta_setpoint",
-        fallback_name="Eco delta setpoint",
     )
     .sensor(  # Device status
         attribute_name=SinopeTechnologiesManufacturerCluster.AttributeDefs.status.name,
@@ -863,6 +871,26 @@ class SinopeTechnologiesElectricalMeasurementCluster(
         translation_key="eco_delta_setpoint",
         fallback_name="Eco delta setpoint",
     )
+    .number(  # eco max pi heating demand
+        attribute_name=SinopeTechnologiesManufacturerCluster.AttributeDefs.eco_max_pi_heating_demand.name,
+        cluster_id=SinopeTechnologiesManufacturerCluster.cluster_id,
+        step=1,
+        min_value=0,
+        max_value=255,
+        unit=PERCENTAGE,
+        translation_key="eco_max_pi_heating_demand",
+        fallback_name="Eco max pi heating demand",
+    )
+    .number(  # eco safety temperature delta
+        attribute_name=SinopeTechnologiesManufacturerCluster.AttributeDefs.eco_safety_temperature_delta.name,
+        cluster_id=SinopeTechnologiesManufacturerCluster.cluster_id,
+        step=1,
+        min_value=0,
+        max_value=255,
+        unit=PERCENTAGE,
+        translation_key="eco_safety_temperature_delta",
+        fallback_name="Eco safety temperature delta",
+    )
     .sensor(  # Device status
         attribute_name=SinopeTechnologiesManufacturerCluster.AttributeDefs.status.name,
         cluster_id=SinopeTechnologiesManufacturerCluster.cluster_id,
@@ -915,6 +943,26 @@ class SinopeTechnologiesElectricalMeasurementCluster(
         unit=UnitOfTemperature.CELSIUS,
         translation_key="eco_delta_setpoint",
         fallback_name="Eco delta setpoint",
+    )
+    .number(  # eco max pi heating demand
+        attribute_name=SinopeTechnologiesManufacturerCluster.AttributeDefs.eco_max_pi_heating_demand.name,
+        cluster_id=SinopeTechnologiesManufacturerCluster.cluster_id,
+        step=1,
+        min_value=0,
+        max_value=255,
+        unit=PERCENTAGE,
+        translation_key="eco_max_pi_heating_demand",
+        fallback_name="Eco max pi heating demand",
+    )
+    .number(  # eco safety temperature delta
+        attribute_name=SinopeTechnologiesManufacturerCluster.AttributeDefs.eco_safety_temperature_delta.name,
+        cluster_id=SinopeTechnologiesManufacturerCluster.cluster_id,
+        step=1,
+        min_value=0,
+        max_value=255,
+        unit=PERCENTAGE,
+        translation_key="eco_safety_temperature_delta",
+        fallback_name="Eco safety temperature delta",
     )
     .sensor(  # Device status
         attribute_name=SinopeTechnologiesManufacturerCluster.AttributeDefs.status.name,
@@ -1018,6 +1066,26 @@ class SinopeTechnologiesElectricalMeasurementCluster(
         unit=UnitOfTemperature.CELSIUS,
         translation_key="eco_delta_setpoint",
         fallback_name="Eco delta setpoint",
+    )
+    .number(  # eco max pi heating demand
+        attribute_name=SinopeTechnologiesManufacturerCluster.AttributeDefs.eco_max_pi_heating_demand.name,
+        cluster_id=SinopeTechnologiesManufacturerCluster.cluster_id,
+        step=1,
+        min_value=0,
+        max_value=255,
+        unit=PERCENTAGE,
+        translation_key="eco_max_pi_heating_demand",
+        fallback_name="Eco max pi heating demand",
+    )
+    .number(  # eco safety temperature delta
+        attribute_name=SinopeTechnologiesManufacturerCluster.AttributeDefs.eco_safety_temperature_delta.name,
+        cluster_id=SinopeTechnologiesManufacturerCluster.cluster_id,
+        step=1,
+        min_value=0,
+        max_value=255,
+        unit=PERCENTAGE,
+        translation_key="eco_safety_temperature_delta",
+        fallback_name="Eco safety temperature delta",
     )
     .sensor(  # Device status
         attribute_name=SinopeTechnologiesManufacturerCluster.AttributeDefs.status.name,
