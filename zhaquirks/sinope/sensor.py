@@ -4,7 +4,6 @@ It add manufacturer attributes for IasZone cluster for the water leak alarm.
 Supported devices are WL4200, WL4200S and LM4110-ZB
 """
 
-import logging
 from typing import Final
 
 import zigpy.profiles.zha as zha_p
