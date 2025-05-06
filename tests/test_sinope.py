@@ -19,7 +19,7 @@ from zhaquirks.const import (
     TURN_OFF,
     TURN_ON,
 )
-from zhaquirks.sinope import SINOPE_MANUFACTURER_CLUSTER_ID
+from zhaquirks.sinope import SINOPE, SINOPE_MANUFACTURER_CLUSTER_ID
 from zhaquirks.sinope.light import (
     SinopeTechnologieslight,
     SinopeTechnologiesManufacturerCluster,
@@ -33,10 +33,9 @@ ButtonAction = SinopeTechnologiesManufacturerCluster.Action
 SINOPE_MANUFACTURER_ID = 4508  # 0x119C
 
 
-@pytest.mark.parametrize("quirk", (SinopeTechnologiesCalypso,))
-async def test_sinope_device_temp(zigpy_device_from_quirk, quirk):
+async def test_sinope_device_temp(zigpy_device_from_v2_quirk):
     """Test that device temperature is multiplied."""
-    device = zigpy_device_from_quirk(quirk)
+    device = zigpy_device_from_v2_quirk(SINOPE, "RM3500ZB")
 
     dev_temp_cluster = device.endpoints[1].device_temperature
     dev_temp_listener = ClusterListener(dev_temp_cluster)
@@ -56,10 +55,10 @@ async def test_sinope_device_temp(zigpy_device_from_quirk, quirk):
     assert dev_temp_listener.attribute_updates[1][1] == 25  # not modified
 
 
-@pytest.mark.parametrize("quirk", (SinopeTechnologiesValveG2,))
-async def test_sinope_flow_measurement(zigpy_device_from_quirk, quirk):
+async def test_sinope_flow_measurement(zigpy_device_from_v2_quirk):
     """Test that flow measurement measured value is divided."""
-    device = zigpy_device_from_quirk(quirk)
+    device = zigpy_device_from_v2_quirk(SINOPE, "VA4220ZB")
+    device = zigpy_device_from_v2_quirk(SINOPE, "VA4221ZB")
 
     flow_measurement_cluster = device.endpoints[1].flow
     flow_measurement_listener = ClusterListener(flow_measurement_cluster)
@@ -117,7 +116,7 @@ async def test_sinope_light_switch(
     zigpy_device_from_quirk, quirk, press_type, button, exp_event
 ):
     """Test that button presses are sent as events."""
-    device: Device = zigpy_device_from_quirk(quirk)
+    device = zigpy_device_from_v2_quirk(SINOPE, "DM2500ZB")
     cluster_id = SINOPE_MANUFACTURER_CLUSTER_ID
     endpoint_id = 1
 
@@ -162,7 +161,6 @@ async def test_sinope_light_switch(
         )
 
 
-@pytest.mark.parametrize("quirk", (SinopeTechnologieslight,))
 async def test_sinope_light_switch_non_action_report(zigpy_device_from_quirk, quirk):
     """Test commands not handled by custom handler.
 
@@ -170,7 +168,7 @@ async def test_sinope_light_switch_non_action_report(zigpy_device_from_quirk, qu
     concern action_report are passed through to base class.
     """
 
-    device: Device = zigpy_device_from_quirk(quirk)
+    device = zigpy_device_from_v2_quirk(SINOPE, "SW2500ZB")
     cluster_id = SINOPE_MANUFACTURER_CLUSTER_ID
     endpoint_id = 1
 
@@ -216,10 +214,9 @@ async def test_sinope_light_switch_non_action_report(zigpy_device_from_quirk, qu
     assert cluster_listener.zha_send_event.call_count == 1
 
 
-@pytest.mark.parametrize("quirk", (SinopeTechnologieslight,))
 async def test_sinope_light_switch_reporting(zigpy_device_from_quirk, quirk):
     """Test that configuring reporting for action_report works."""
-    device: Device = zigpy_device_from_quirk(quirk)
+    device = zigpy_device_from_v2_quirk(SINOPE, "SW2500ZB")
 
     manu_cluster = device.endpoints[1].in_clusters[SINOPE_MANUFACTURER_CLUSTER_ID]
 
@@ -241,14 +238,13 @@ async def test_sinope_light_switch_reporting(zigpy_device_from_quirk, quirk):
         assert len(bind_mock.mock_calls) == 1
 
 
-@pytest.mark.parametrize("quirk", (SinopeTechnologieslight,))
 async def test_sinope_light_device_triggers_def(zigpy_device_from_quirk, quirk):
     """Test device automation triggers.
 
     Make sure that values are actual ints and not instances of an enum class.
     """
 
-    device: Device = zigpy_device_from_quirk(quirk)
+    device = zigpy_device_from_v2_quirk(SINOPE, "SW2500ZB")
 
     for config in device.device_automation_triggers.values():
         val = config.get("args", {}).get("value")
