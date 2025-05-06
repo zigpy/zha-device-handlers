@@ -519,6 +519,16 @@ class SinopeTechnologiesElectricalMeasurementCluster(
         translation_key="eco_safety_temperature_delta",
         fallback_name="Eco safety temperature delta",
     )
+    .number(  # outdor temperature
+        attribute_name=SinopeTechnologiesManufacturerCluster.AttributeDefs.outdoor_temp.name,
+        cluster_id=SinopeTechnologiesManufacturerCluster.cluster_id,
+        step=1,
+        min_value=-32768,
+        max_value=3500,
+        unit=UnitOfTemperature.CELSIUS,
+        translation_key="outdoor_temp",
+        fallback_name="Outdoor temperature",
+    )
     .sensor(  # Device status
         attribute_name=SinopeTechnologiesManufacturerCluster.AttributeDefs.status.name,
         cluster_id=SinopeTechnologiesManufacturerCluster.cluster_id,
@@ -646,6 +656,16 @@ class SinopeTechnologiesElectricalMeasurementCluster(
         unit=PERCENTAGE,
         translation_key="eco_safety_temperature_delta",
         fallback_name="Eco safety temperature delta",
+    )
+    .number(  # outdor temperature
+        attribute_name=SinopeTechnologiesManufacturerCluster.AttributeDefs.outdoor_temp.name,
+        cluster_id=SinopeTechnologiesManufacturerCluster.cluster_id,
+        step=1,
+        min_value=-32768,
+        max_value=3500,
+        unit=UnitOfTemperature.CELSIUS,
+        translation_key="outdoor_temp",
+        fallback_name="Outdoor temperature",
     )
     .sensor(  # floor_limit_status
         attribute_name=SinopeTechnologiesManufacturerCluster.AttributeDefs.floor_limit_status.name,
@@ -779,6 +799,16 @@ class SinopeTechnologiesElectricalMeasurementCluster(
         translation_key="eco_safety_temperature_delta",
         fallback_name="Eco safety temperature delta",
     )
+    .number(  # outdor temperature
+        attribute_name=SinopeTechnologiesManufacturerCluster.AttributeDefs.outdoor_temp.name,
+        cluster_id=SinopeTechnologiesManufacturerCluster.cluster_id,
+        step=1,
+        min_value=-32768,
+        max_value=3500,
+        unit=UnitOfTemperature.CELSIUS,
+        translation_key="outdoor_temp",
+        fallback_name="Outdoor temperature",
+    )
     .sensor(  # floor_limit_status
         attribute_name=SinopeTechnologiesManufacturerCluster.AttributeDefs.floor_limit_status.name,
         cluster_id=SinopeTechnologiesManufacturerCluster.cluster_id,
@@ -890,6 +920,16 @@ class SinopeTechnologiesElectricalMeasurementCluster(
         unit=PERCENTAGE,
         translation_key="eco_safety_temperature_delta",
         fallback_name="Eco safety temperature delta",
+    )
+    .number(  # outdor temperature
+        attribute_name=SinopeTechnologiesManufacturerCluster.AttributeDefs.outdoor_temp.name,
+        cluster_id=SinopeTechnologiesManufacturerCluster.cluster_id,
+        step=1,
+        min_value=-32768,
+        max_value=3500,
+        unit=UnitOfTemperature.CELSIUS,
+        translation_key="outdoor_temp",
+        fallback_name="Outdoor temperature",
     )
     .sensor(  # Device status
         attribute_name=SinopeTechnologiesManufacturerCluster.AttributeDefs.status.name,
@@ -1086,6 +1126,16 @@ class SinopeTechnologiesElectricalMeasurementCluster(
         unit=PERCENTAGE,
         translation_key="eco_safety_temperature_delta",
         fallback_name="Eco safety temperature delta",
+    )
+    .number(  # outdor temperature
+        attribute_name=SinopeTechnologiesManufacturerCluster.AttributeDefs.outdoor_temp.name,
+        cluster_id=SinopeTechnologiesManufacturerCluster.cluster_id,
+        step=1,
+        min_value=-32768,
+        max_value=3500,
+        unit=UnitOfTemperature.CELSIUS,
+        translation_key="outdoor_temp",
+        fallback_name="Outdoor temperature",
     )
     .sensor(  # Device status
         attribute_name=SinopeTechnologiesManufacturerCluster.AttributeDefs.status.name,
