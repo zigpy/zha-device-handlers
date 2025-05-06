@@ -490,38 +490,38 @@ class Tuya3PhaseElectricalMeasurementV1_5(ElectricalMeasurement, TuyaLocalCluste
     )
     # Update the frequency at which the device reports its data
     # did not manage to test this fully
-    # .tuya_number(
-    #     dp_id=102,
-    #     attribute_name="update_frequency",
-    #     type=t.uint16_t,
-    #     device_class=SensorDeviceClass.DURATION,
-    #     unit=UnitOfTime.SECONDS,
-    #     min_value=5,
-    #     max_value=3600,
-    #     step=1,
-    #     translation_key="update_frequency",
-    #     fallback_name="Update frequency",
-    #     access=foundation.ZCLAttributeAccess.Write,
-    # )
+    .tuya_number(
+        dp_id=102,
+        attribute_name="update_frequency",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        min_value=5,
+        max_value=3600,
+        step=1,
+        translation_key="update_frequency",
+        fallback_name="Update frequency",
+        access=foundation.ZCLAttributeAccess.Write,
+    )
     .tuya_dp(
         dp_id=103,
         ep_attribute=Tuya3PhaseElectricalMeasurementV1_5.ep_attribute,
-        attribute_name="rms_voltage_ph_a",
+        attribute_name="rms_voltage",
     )
     .tuya_dp(
         dp_id=104,
         ep_attribute=Tuya3PhaseElectricalMeasurementV1_5.ep_attribute,
-        attribute_name="rms_current_ph_a",
+        attribute_name="rms_current",
     )
     .tuya_dp(
         dp_id=105,
         ep_attribute=Tuya3PhaseElectricalMeasurementV1_5.ep_attribute,
-        attribute_name="active_power_ph_a",
+        attribute_name="active_power",
     )
     .tuya_dp(
         dp_id=108,
         ep_attribute=Tuya3PhaseElectricalMeasurementV1_5.ep_attribute,
-        attribute_name="power_factor_ph_a",
+        attribute_name="power_factor",
     )
     .tuya_sensor(
         dp_id=109,
