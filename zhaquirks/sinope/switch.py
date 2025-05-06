@@ -715,7 +715,7 @@ class SinopeTechnologiesFlowMeasurementCluster(CustomCluster, FlowMeasurement):
         fallback_name="Device status",
         entity_type=EntityType.DIAGNOSTIC,
     )
-    .switch(
+    .switch(  # 2nd on_off switch
         attribute_name=OnOff.AttributeDefs.on_off.name,
         cluster_id=OnOff.cluster_id,
         endpoint_id=2,
