@@ -121,6 +121,9 @@ class SinopeTechnologiesIasZoneCluster(CustomCluster, IasZone):
 
 (
     # <SimpleDescriptor endpoint=1 profile=260 device_type=1026
+    # device_version=0 input_clusters=[0, 1, 3, 1026, 1280, 2821, 65281]
+    # output_clusters=[3, 25]>
+    # <SimpleDescriptor endpoint=1 profile=260 device_type=1026
     # device_version=0 input_clusters=[0, 1, 3, 20, 1026, 1280, 2821, 65281]
     # output_clusters=[3, 25]>
     QuirkBuilder(SINOPE, "WL4200")
