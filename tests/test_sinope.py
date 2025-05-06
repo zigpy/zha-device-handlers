@@ -111,7 +111,7 @@ def _get_packet_data(
     ),
 )
 async def test_sinope_light_switch(
-    zigpy_device_from_quirk, quirk, press_type, button, exp_event
+    zigpy_device_from_v2_quirk, press_type, button, exp_event
 ):
     """Test that button presses are sent as events."""
     device = zigpy_device_from_v2_quirk(SINOPE, "DM2500ZB")
@@ -159,7 +159,7 @@ async def test_sinope_light_switch(
         )
 
 
-async def test_sinope_light_switch_non_action_report(zigpy_device_from_quirk, quirk):
+async def test_sinope_light_switch_non_action_report(zigpy_device_from_v2_quirk):
     """Test commands not handled by custom handler.
 
     Make sure that non attribute report commands and attribute reports that don't
@@ -212,7 +212,7 @@ async def test_sinope_light_switch_non_action_report(zigpy_device_from_quirk, qu
     assert cluster_listener.zha_send_event.call_count == 1
 
 
-async def test_sinope_light_switch_reporting(zigpy_device_from_quirk, quirk):
+async def test_sinope_light_switch_reporting(zigpy_device_from_v2_quirk):
     """Test that configuring reporting for action_report works."""
     device = zigpy_device_from_v2_quirk(SINOPE, "SW2500ZB")
 
@@ -236,7 +236,7 @@ async def test_sinope_light_switch_reporting(zigpy_device_from_quirk, quirk):
         assert len(bind_mock.mock_calls) == 1
 
 
-async def test_sinope_light_device_triggers_def(zigpy_device_from_quirk, quirk):
+async def test_sinope_light_device_triggers_def(zigpy_device_from_v2_quirk):
     """Test device automation triggers.
 
     Make sure that values are actual ints and not instances of an enum class.
