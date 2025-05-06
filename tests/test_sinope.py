@@ -20,7 +20,7 @@ from zhaquirks.const import (
 )
 from zhaquirks.sinope import SINOPE, SINOPE_MANUFACTURER_CLUSTER_ID
 from zhaquirks.sinope.light import (
-    SinopeTechnologieslight,
+    LightManufacturerCluster,
     SinopeTechnologiesManufacturerCluster,
 )
 
@@ -94,7 +94,7 @@ def _get_packet_data(
     return t.SerializableBytes(hdr + cmd).serialize()
 
 
-@pytest.mark.parametrize("quirk", (SinopeTechnologieslight,))
+@pytest.mark.parametrize("quirk", (LightManufacturerCluster,))
 @pytest.mark.parametrize(
     "press_type,button,exp_event",
     (
