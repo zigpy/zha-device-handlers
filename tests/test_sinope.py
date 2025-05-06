@@ -3,7 +3,6 @@
 from unittest import mock
 
 import pytest
-from zigpy.device import Device
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import DeviceTemperature
@@ -24,7 +23,6 @@ from zhaquirks.sinope.light import (
     SinopeTechnologieslight,
     SinopeTechnologiesManufacturerCluster,
 )
-from zhaquirks.sinope.switch import SinopeTechnologiesCalypso, SinopeTechnologiesValveG2
 
 zhaquirks.setup()
 
