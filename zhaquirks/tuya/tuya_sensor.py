@@ -286,6 +286,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .applies_to("_TZE200_ga1maeof", "TS0601")
     .applies_to("_TZE200_9cqcpkgb", "TS0601")
     .applies_to("_TZE204_myd45weu", "TS0601")
+    .applies_to("_TZE284_myd45weu", "TS0601")
     .applies_to("_TZE200_2se8efxh", "TS0601")  # Immax Neo
     .tuya_temperature(dp_id=5)
     .tuya_battery(dp_id=15)
