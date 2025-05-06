@@ -94,7 +94,7 @@ def _get_packet_data(
     return t.SerializableBytes(hdr + cmd).serialize()
 
 
-@pytest.mark.parametrize("quirk", (LightManufacturerCluster,))
+@pytest.mark.parametrize(LightManufacturerCluster)
 @pytest.mark.parametrize(
     "press_type,button,exp_event",
     (
