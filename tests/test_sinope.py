@@ -247,3 +247,24 @@ async def test_sinope_light_device_triggers_def(zigpy_device_from_v2_quirk):
         val = config.get("args", {}).get("value")
         if val is not None:
             assert type(val) is int, type(val)
+
+
+async def test_sinope_device_current_sum(zigpy_device_from_v2_quirk):
+    """Test that device current_summation_delivered is divided by 100."""
+    device = zigpy_device_from_v2_quirk(SINOPE, "SW2500ZB")
+
+    dev_summ_cluster = device.endpoints[1].current_summation_delivered
+    dev_summ_listener = ClusterListener(dev_summ_cluster)
+    dev_summ_attr_id = DeviceTemperature.AttributeDefs.current_summation_delivered.id
+
+    # verify current temperature is divided by 100
+    dev_summ_cluster.update_attribute(dev_summ_attr_id, 2500)
+    assert len(dev_summ_listener.attribute_updates) == 1
+    assert dev_summ_listener.attribute_updates[0][0] == dev_summ_attr_id
+    assert dev_summ_listener.attribute_updates[0][1] == 25  # divided by 100
+
+    # verify other attributes are not modified
+    dev_summ_cluster.update_attribute(dev_temp_other_attr_id, 2500)
+    assert len(dev_summ_listener.attribute_updates) == 2
+    assert dev_summ_listener.attribute_updates[1][0] == dev_summ_other_attr_id
+    assert dev_summ_listener.attribute_updates[1][1] == 2500  # not modified
