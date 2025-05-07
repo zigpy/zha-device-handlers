@@ -56,7 +56,6 @@ async def test_sinope_device_temp(zigpy_device_from_v2_quirk):
 async def test_sinope_flow_measurement(zigpy_device_from_v2_quirk):
     """Test that flow measurement measured value is divided."""
     device = zigpy_device_from_v2_quirk(SINOPE, "VA4220ZB")
-    device = zigpy_device_from_v2_quirk(SINOPE, "VA4221ZB")
 
     flow_measurement_cluster = device.endpoints[1].flow
     flow_measurement_listener = ClusterListener(flow_measurement_cluster)
