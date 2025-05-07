@@ -499,12 +499,12 @@ class TuyaManufClusterAttributes(TuyaManufCluster):
         zvalue = ztype(tuya_data)
         self._update_attribute(tuya_cmd, zvalue)
 
-    def read_attributes(
+    async def read_attributes(
         self, attributes, allow_cache=False, only_cache=False, manufacturer=None
     ):
         """Ignore remote reads as the "get_data" command doesn't seem to do anything."""
 
-        return super().read_attributes(
+        return await super().read_attributes(
             attributes, allow_cache=True, only_cache=True, manufacturer=manufacturer
         )
 

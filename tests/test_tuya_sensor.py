@@ -44,7 +44,7 @@ zhaquirks.setup()
         ("_TZE200_eanjj2pa", "TS0601", 100, 10, False),
         ("_TZE200_ydrdfkim", "TS0601", 100, 10, False),
         ("_TZE284_locansqn", "TS0601", 100, 10, False),
-        ("_TZE200_vvmbj46n", "TS0601", 100, 10, True),
+        ("_TZE200_vvmbj46n", "TS0601", 100, 10, False),
     ],
 )
 async def test_handle_get_data(
