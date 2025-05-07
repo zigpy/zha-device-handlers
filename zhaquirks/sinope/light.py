@@ -415,7 +415,6 @@ class LightManufacturerCluster(EventableCluster, SinopeTechnologiesManufacturerC
         unit=UnitOfEnergy.WATT_HOUR,
         translation_key="connected_load",
         fallback_name="Connected load",
-        entity_type=EntityType.STANDARD,
     )
     .number(  # Timer
         attribute_name=LightManufacturerCluster.AttributeDefs.timer.name,
