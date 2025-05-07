@@ -279,7 +279,7 @@ class SinopeManufacturerCluster(CustomCluster):
         flow_meter_config: Final = ZCLAttributeDef(
             id=0x0240, type=FlowMeter, access="rw", is_manufacturer_specific=True
         )
-        valve_countdown: Final = ZCLAttributeDef(
+        closure_countdown: Final = ZCLAttributeDef(
             id=0x0241, type=t.uint32_t, access="rw", is_manufacturer_specific=True
         )
         power_source: Final = ZCLAttributeDef(
@@ -591,15 +591,15 @@ class SinopeTechnologiesFlowMeasurementCluster(CustomCluster, FlowMeasurement):
         translation_key="abnormal_flow_duration",
         fallback_name="Abnormal flow duration",
     )
-    .number(  # Valve closing countdown
-        attribute_name=SinopeManufacturerCluster.AttributeDefs.valve_countdown.name,
+    .number(  # Valve closure countdown
+        attribute_name=SinopeManufacturerCluster.AttributeDefs.closure_countdown.name,
         cluster_id=SinopeManufacturerCluster.cluster_id,
         step=10,
         min_value=300,
         max_value=86400,
         unit=UnitOfTime.SECONDS,
-        translation_key="valve_countdown",
-        fallback_name="Valve countdown",
+        translation_key="closure_countdown",
+        fallback_name="Closure countdown",
     )
     .add_to_registry()
 )
