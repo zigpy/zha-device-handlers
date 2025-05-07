@@ -471,7 +471,7 @@ class Tuya3PhaseElectricalMeasurementV1_5(ElectricalMeasurement, TuyaLocalCluste
     .tuya_dp(
         dp_id=29,
         ep_attribute=Tuya3PhaseElectricalMeasurementV1_5.ep_attribute,
-        attribute_name="total_active_power",
+        attribute_name="apparent_power",
     )
     .tuya_dp(
         dp_id=32,
