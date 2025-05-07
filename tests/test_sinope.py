@@ -255,7 +255,9 @@ async def test_sinope_device_current_sum(zigpy_device_from_v2_quirk):
 
     dev_summ_cluster = device.endpoints[1].LightManufacturerCluster
     dev_summ_listener = ClusterListener(dev_summ_cluster)
-    dev_summ_attr_id = LightManufacturerCluster.AttributeDefs.current_summation_delivered.id
+    dev_summ_attr_id = (
+        LightManufacturerCluster.AttributeDefs.current_summation_delivered.id
+    )
     dev_summ_other_attr_id = LightManufacturerCluster.AttributeDefs.connected_load.id
 
     # verify current temperature is divided by 100
