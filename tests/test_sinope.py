@@ -264,7 +264,7 @@ async def test_sinope_device_current_sum(zigpy_device_from_v2_quirk):
     assert dev_summ_listener.attribute_updates[0][1] == 25  # divided by 100
 
     # verify other attributes are not modified
-    dev_summ_cluster.update_attribute(dev_temp_other_attr_id, 2500)
+    dev_summ_cluster.update_attribute(dev_summ_other_attr_id, 2500)
     assert len(dev_summ_listener.attribute_updates) == 2
     assert dev_summ_listener.attribute_updates[1][0] == dev_summ_other_attr_id
     assert dev_summ_listener.attribute_updates[1][1] == 2500  # not modified
