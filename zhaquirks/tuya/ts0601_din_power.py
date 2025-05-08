@@ -2,7 +2,7 @@
 
 from zigpy.profiles import zha
 from zigpy.quirks.v2 import SensorDeviceClass, SensorStateClass
-from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfEnergy, UnitOfTime
+from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfPower, UnitOfEnergy, UnitOfTime
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time
@@ -468,10 +468,16 @@ class Tuya3PhaseElectricalMeasurementV1_5(ElectricalMeasurement, TuyaLocalCluste
         translation_key="energy_produced",
         fallback_name="Energy produced",
     )
-    .tuya_dp(
+    .tuya_sensor(
         dp_id=29,
-        ep_attribute=Tuya3PhaseElectricalMeasurementV1_5.ep_attribute,
-        attribute_name="apparent_power",
+        attribute_name="active_power",
+        type=t.uint16_t,
+        divisor=1,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.POWER,
+        unit=UnitOfPower.WATT,
+        translation_key="total_active_power",
+        fallback_name="Total Active Power",
     )
     .tuya_dp(
         dp_id=32,
@@ -490,19 +496,20 @@ class Tuya3PhaseElectricalMeasurementV1_5(ElectricalMeasurement, TuyaLocalCluste
     )
     # Update the frequency at which the device reports its data
     # did not manage to test this fully
-    .tuya_number(
-        dp_id=102,
-        attribute_name="update_frequency",
-        type=t.uint16_t,
-        device_class=SensorDeviceClass.DURATION,
-        unit=UnitOfTime.SECONDS,
-        min_value=5,
-        max_value=3600,
-        step=1,
-        translation_key="update_frequency",
-        fallback_name="Update frequency",
-        access=foundation.ZCLAttributeAccess.Write,
-    )
+    # See: https://github.com/zigpy/zha-device-handlers/issues/3971#issuecomment-2863969991
+    # .tuya_number(
+    #     dp_id=102,
+    #     attribute_name="update_frequency",
+    #     type=t.uint16_t,
+    #     device_class=SensorDeviceClass.DURATION,
+    #     unit=UnitOfTime.SECONDS,
+    #     min_value=5,
+    #     max_value=3600,
+    #     step=1,
+    #     translation_key="update_frequency",
+    #     fallback_name="Update frequency",
+    #     access=foundation.ZCLAttributeAccess.Write,
+    # )
     .tuya_dp(
         dp_id=103,
         ep_attribute=Tuya3PhaseElectricalMeasurementV1_5.ep_attribute,
