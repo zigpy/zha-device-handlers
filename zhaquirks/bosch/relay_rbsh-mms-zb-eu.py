@@ -16,7 +16,7 @@ class BoschDeviceMode(t.enum8):
     """Device mode enum."""
 
     Disabled = 0x00
-    Window_Cover = 0x01
+    Cover = 0x01
     Light = 0x04
 
 
@@ -24,9 +24,9 @@ class BoschSwitchType(t.enum8):
     """Switch type enum."""
 
     Button = 0x01
-    Button_Key_Change = 0x02
-    Rocker_Switch = 0x03
-    Rocker_Switch_Key_Change = 0x04
+    Button_key_change = 0x02
+    Rocker_switch = 0x03
+    Rocker_switch_key_change = 0x04
 
 
 class BoschMotorState(t.enum8):
@@ -119,11 +119,9 @@ class BoschWindowCovering(CustomCluster, WindowCovering):
     .friendly_name(manufacturer=BOSCH, model="BMCT-SLZ")
     .replace_cluster_occurrences(BoschLightShutterControlII)
     .replaces(BoschWindowCovering)
-    .enum(
+    .sensor(
         BoschLightShutterControlII.AttributeDefs.motor_state.name,
-        BoschMotorState,
         BoschLightShutterControlII.cluster_id,
-        entity_type=EntityType.STANDARD,
         translation_key="motor_state",
         fallback_name="Motor state",
     )
@@ -148,6 +146,7 @@ class BoschWindowCovering(CustomCluster, WindowCovering):
         max_value=90,
         step=0.1,
         unit=UnitOfTime.SECONDS,
+        multiplier=0.1,
         translation_key="closing_duration",
         fallback_name="Closing duration",
     )
@@ -158,6 +157,7 @@ class BoschWindowCovering(CustomCluster, WindowCovering):
         max_value=90,
         step=0.1,
         unit=UnitOfTime.SECONDS,
+        multiplier=0.1,
         translation_key="opening_duration",
         fallback_name="Opening duration",
     )
@@ -168,6 +168,7 @@ class BoschWindowCovering(CustomCluster, WindowCovering):
         max_value=2,
         step=0.1,
         unit=UnitOfTime.SECONDS,
+        multiplier=0.1,
         translation_key="long_press_duration",
         fallback_name="Long press duration",
     )
@@ -178,6 +179,7 @@ class BoschWindowCovering(CustomCluster, WindowCovering):
         max_value=20,
         step=0.1,
         unit=UnitOfTime.SECONDS,
+        multiplier=0.1,
         translation_key="motor_start_delay",
         fallback_name="Motor start delay",
     )
