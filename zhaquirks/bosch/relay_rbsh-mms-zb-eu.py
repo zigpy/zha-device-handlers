@@ -140,7 +140,7 @@ class BoschWindowCovering(CustomCluster, WindowCovering):
         fallback_name="Switch type",
     )
     .number(
-        BoschLightShutterControlII.AttributeDefs.calibration_closing_time,
+        BoschLightShutterControlII.AttributeDefs.calibration_closing_time.name,
         BoschLightShutterControlII.cluster_id,
         min_value=1,
         max_value=90,
@@ -152,7 +152,7 @@ class BoschWindowCovering(CustomCluster, WindowCovering):
         fallback_name="Closing duration",
     )
     .number(
-        BoschLightShutterControlII.AttributeDefs.calibration_opening_time,
+        BoschLightShutterControlII.AttributeDefs.calibration_opening_time.name,
         BoschLightShutterControlII.cluster_id,
         min_value=1,
         max_value=90,
@@ -164,7 +164,7 @@ class BoschWindowCovering(CustomCluster, WindowCovering):
         fallback_name="Opening duration",
     )
     .number(
-        BoschLightShutterControlII.AttributeDefs.calibration_button_hold_time,
+        BoschLightShutterControlII.AttributeDefs.calibration_button_hold_time.name,
         BoschLightShutterControlII.cluster_id,
         min_value=0.1,
         max_value=2,
@@ -176,7 +176,7 @@ class BoschWindowCovering(CustomCluster, WindowCovering):
         fallback_name="Long press duration",
     )
     .number(
-        BoschLightShutterControlII.AttributeDefs.calibration_motor_start_delay,
+        BoschLightShutterControlII.AttributeDefs.calibration_motor_start_delay.name,
         BoschLightShutterControlII.cluster_id,
         min_value=0,
         max_value=20,
