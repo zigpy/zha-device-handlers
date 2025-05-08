@@ -4,7 +4,7 @@ from typing import Final
 
 from zigpy import types as t
 from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.quirks.v2.homeassistant import EntityType, UnitOfTime
+from zigpy.quirks.v2.homeassistant import UnitOfTime
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
@@ -146,6 +146,7 @@ class BoschWindowCovering(CustomCluster, WindowCovering):
         max_value=90,
         step=0.1,
         unit=UnitOfTime.SECONDS,
+        mode="box",
         multiplier=0.1,
         translation_key="closing_duration",
         fallback_name="Closing duration",
@@ -157,6 +158,7 @@ class BoschWindowCovering(CustomCluster, WindowCovering):
         max_value=90,
         step=0.1,
         unit=UnitOfTime.SECONDS,
+        mode="box",
         multiplier=0.1,
         translation_key="opening_duration",
         fallback_name="Opening duration",
@@ -168,6 +170,7 @@ class BoschWindowCovering(CustomCluster, WindowCovering):
         max_value=2,
         step=0.1,
         unit=UnitOfTime.SECONDS,
+        mode="box",
         multiplier=0.1,
         translation_key="long_press_duration",
         fallback_name="Long press duration",
@@ -179,6 +182,7 @@ class BoschWindowCovering(CustomCluster, WindowCovering):
         max_value=20,
         step=0.1,
         unit=UnitOfTime.SECONDS,
+        mode="box",
         multiplier=0.1,
         translation_key="motor_start_delay",
         fallback_name="Motor start delay",
