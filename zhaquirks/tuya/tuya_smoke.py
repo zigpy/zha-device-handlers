@@ -1,7 +1,10 @@
 """Smoke Sensor."""
 
+from typing import Final
+
 from zigpy.quirks.v2 import EntityType, QuirkBuilder
 from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
+from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
 from zigpy.zcl.clusters.general import OnOff, Time
 from zigpy.zcl.clusters.lightlink import LightLink
@@ -63,6 +66,9 @@ class TuyaSmokeDetectorCluster(TuyaManufClusterAttributes):
             )
 
 
+CONCENTRATION_PARTS_PER_MILLION: Final = "ppm"
+
+
 (
     QuirkBuilder("_TZ3210_up3pngle", "TS0205")
     .removes(LightLink.cluster_id)
@@ -76,12 +82,55 @@ class TuyaSmokeDetectorCluster(TuyaManufClusterAttributes):
 (
     TuyaQuirkBuilder("_TZE200_aycxwiau", "TS0601")
     .applies_to("_TZE200_dq1mfjug", "TS0601")
-    .applies_to("_TZE200_m9skfctm", "TS0601")
-    .applies_to("_TZE200_rccxox8p", "TS0601")
-    .applies_to("_TZE284_rccxox8p", "TS0601")
     .applies_to("_TZE200_vzekyi4c", "TS0601")
     .applies_to("_TZE204_vawy74yh", "TS0601")
     .tuya_smoke(dp_id=1)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+(
+    TuyaQuirkBuilder("_TZE284_rccxox8p", "TS0601")
+    .applies_to("_TZE200_m9skfctm", "TS0601")
+    .applies_to("_TZE200_rccxox8p", "TS0601")
+    .tuya_smoke(dp_id=1)
+    .tuya_sensor(
+        dp_id=2,
+        type=t.int16s,
+        attribute_name="smoke_concentration",
+        translation_key="smoke_concentration",
+        fallback_name="Smoke concentration",
+        device_class=SensorDeviceClass.PM10,
+        state_class=SensorStateClass.MEASUREMENT,
+        converter=lambda value: value / 10,
+        unit=CONCENTRATION_PARTS_PER_MILLION,
+    )
+    .tuya_binary_sensor(
+        dp_id=11,
+        attribute_name="device_fault",
+        translation_key="device_fault",
+        fallback_name="Device failure",
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        entity_type=EntityType.DIAGNOSTIC,
+    )
+    .tuya_battery(
+        dp_id=15,
+        battery_type=BatterySize.AA,
+        battery_qty=2,
+    )
+    .tuya_switch(
+        dp_id=16,
+        attribute_name="silence_alarm",
+        translation_key="silence_alarm",
+        fallback_name="Silence alarm",
+    )
+    .tuya_binary_sensor(
+        dp_id=101,
+        attribute_name="_self_test",
+        translation_key="self_test",
+        fallback_name="Self test result",
+        entity_type=EntityType.DIAGNOSTIC,
+    )
     .skip_configuration()
     .add_to_registry()
 )
