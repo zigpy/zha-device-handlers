@@ -1,6 +1,7 @@
 """Sonoff S60ZBTPG - Zigbee Smart Plug."""
 
 from typing import Final
+
 from zigpy import types
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
@@ -9,15 +10,11 @@ from zigpy.quirks.v2.homeassistant import (
     UnitOfElectricPotential,
     UnitOfPower,
 )
-import zigpy.types as t
-from zigpy.zcl import foundation
-from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
-from zha.application.platforms.number.const import NumberMode
-from zigpy.zcl.clusters.general import OnOff
-from zigpy.zcl import ClusterType
-from zigpy.quirks import CustomDevice
+import zigpy.types as t
+from zigpy.zcl import ClusterType, foundation
 import zigpy.zcl.foundation as zcl_f
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 
 class SonoffCluster(CustomCluster):
@@ -65,7 +62,6 @@ class SonoffCluster(CustomCluster):
             type=t.uint32_t,
         )
 
-
     class ServerCommandDefs(zcl_f.BaseCommandDefs):
         """Server command definitions."""
 
@@ -95,8 +91,10 @@ class SonoffCluster(CustomCluster):
 
 class SonoffNetworkLedSetType(types.enum8):
     """network led set type."""
+
     Off = 0x00
     On = 0x01
+
 
 (
     QuirkBuilder("SONOFF", "S60ZBTPG")
@@ -141,11 +139,11 @@ class SonoffNetworkLedSetType(types.enum8):
         0.1,
         14.0,
         0.1,
-        unit = UnitOfElectricCurrent.AMPERE,
-        multiplier = 0.001,
-        translation_key = "ac_current_max_overload",
-        device_class = NumberDeviceClass.CURRENT,
-        fallback_name = "AC current max overload",
+        unit=UnitOfElectricCurrent.AMPERE,
+        multiplier=0.001,
+        translation_key="ac_current_max_overload",
+        device_class=NumberDeviceClass.CURRENT,
+        fallback_name="AC current max overload",
     )
     .number(
         "ac_voltage_max_overload",
@@ -155,11 +153,11 @@ class SonoffNetworkLedSetType(types.enum8):
         165.0,
         277.0,
         1.0,
-        unit = UnitOfElectricPotential.VOLT,
-        multiplier = 0.001,
-        translation_key = "ac_voltage_max_overload",
-        device_class = NumberDeviceClass.POWER,
-        fallback_name = "AC voltage max overload",
+        unit=UnitOfElectricPotential.VOLT,
+        multiplier=0.001,
+        translation_key="ac_voltage_max_overload",
+        device_class=NumberDeviceClass.POWER,
+        fallback_name="AC voltage max overload",
     )
     .number(
         "ac_power_max_overload",
@@ -169,11 +167,11 @@ class SonoffNetworkLedSetType(types.enum8):
         0.1,
         3250.0,
         0.1,
-        unit = UnitOfPower.WATT,
-        multiplier = 0.001,
-        translation_key = "ac_power_max_overload",
-        device_class = NumberDeviceClass.POWER,
-        fallback_name = "AC power max overload",
+        unit=UnitOfPower.WATT,
+        multiplier=0.001,
+        translation_key="ac_power_max_overload",
+        device_class=NumberDeviceClass.POWER,
+        fallback_name="AC power max overload",
     )
     .add_to_registry()
 )
