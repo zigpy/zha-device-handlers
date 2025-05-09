@@ -1,3 +1,5 @@
+"""Aqara H2 single rocker switch quirks. Also see opple_switch.py for similar switches."""
+
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import (
     AnalogInput,
@@ -21,9 +23,9 @@ from zhaquirks.const import (
     BUTTON_2,
     CLUSTER_ID,
     COMMAND_DOUBLE,
+    COMMAND_SINGLE,
     COMMAND_HOLD,
     COMMAND_RELEASE,
-    COMMAND_SINGLE,
     DEVICE_TYPE,
     ENDPOINT_ID,
     ENDPOINTS,
@@ -35,6 +37,7 @@ from zhaquirks.const import (
     VALUE,
     ZHA_SEND_EVENT,
 )
+
 from zhaquirks.xiaomi import (
     AnalogInputCluster,
     BasicCluster,
@@ -42,15 +45,16 @@ from zhaquirks.xiaomi import (
     OnOffCluster,
     XiaomiCustomDevice,
 )
+
 from zhaquirks.xiaomi.aqara.opple_remote import MultistateInputCluster
 from zhaquirks.xiaomi.aqara.opple_switch import OppleSwitchCluster
 
 
 class PowerMeasurementCluster(AnalogInputCluster):
     """Custom cluster for power measurement."""
-
+    
     PRESENT_VALUE_ATTRIBUTE = 0x0055
-
+    
     async def bind(self):
         """Bind cluster."""
         result = await super().bind()
@@ -61,10 +65,10 @@ class PowerMeasurementCluster(AnalogInputCluster):
             1,  # reportable change
         )
         return result
-
+    
     def _update_attribute(self, attrid, value):
-        if attrid == self.PRESENT_VALUE_ATTRIBUTE:
-            super()._update_attribute(attrid, value)
+        super()._update_attribute(attrid, value)
+        if attrid == self.PRESENT_VALUE_ATTRIBUTE:            
             self.listener_event(
                 ZHA_SEND_EVENT,
                 {
@@ -72,13 +76,10 @@ class PowerMeasurementCluster(AnalogInputCluster):
                     "value": value,
                 },
             )
-        else:
-            super()._update_attribute(attrid, value)
 
 
 class AqaraLightSwitchH2US2B1C(XiaomiCustomDevice):
-    """Wrapper for Aqara Light Switch H2 US with 2 buttons and 1 channel."""
-
+    """Wrapper for Aqara Light Switch H2 US with 2 buttons and 1 channel (WS-K02E)"""
     signature = {
         MODELS_INFO: [("Aqara", "lumi.switch.agl004")],
         ENDPOINTS: {
@@ -158,7 +159,6 @@ class AqaraLightSwitchH2US2B1C(XiaomiCustomDevice):
                     OnOffCluster,
                     MultistateInputCluster,
                     MeteringCluster,
-                    # ElectricalMeasurementCluster,
                     ElectricalMeasurement.cluster_id,
                     OppleSwitchCluster,
                 ],
@@ -241,8 +241,7 @@ class AqaraLightSwitchH2US2B1C(XiaomiCustomDevice):
 
 
 class AqaraLightSwitchH2US2B2C(XiaomiCustomDevice):
-    """Wrapper for Aqara Light Switch H2 US with 2 buttons and 2 channels."""
-
+    """Wrapper for Aqara Light Switch H2 US with 2 buttons and 2 channels (WS-K03E)"""
     signature = {
         MODELS_INFO: [("Aqara", "lumi.switch.agl005")],
         ENDPOINTS: {
