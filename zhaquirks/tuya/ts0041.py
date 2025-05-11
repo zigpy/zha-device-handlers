@@ -249,7 +249,7 @@ class TuyaSmartRemote0041_var04(CustomDevice):
 
 
 class TuyaSmartRemote0041PollControl(CustomDevice):
-    """Tuya 1-button remote device with poll control"""
+    """Tuya 1-button remote device with poll control."""
 
     signature = {
         MODEL: "TS0041",
