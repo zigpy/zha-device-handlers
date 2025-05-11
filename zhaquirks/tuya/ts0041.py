@@ -2,7 +2,16 @@
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
-from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, PollControl, PowerConfiguration, Time
+from zigpy.zcl.clusters.general import (
+    Basic,
+    Groups,
+    Identify,
+    OnOff,
+    Ota,
+    PollControl,
+    PowerConfiguration,
+    Time,
+)
 
 from zhaquirks.const import (
     BUTTON_1,
@@ -238,6 +247,7 @@ class TuyaSmartRemote0041_var04(CustomDevice):
         (DOUBLE_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: DOUBLE_PRESS},
     }
 
+
 class TuyaSmartRemote0041PollControl(CustomDevice):
     """Tuya 1-button remote device with poll control"""
 
@@ -289,4 +299,3 @@ class TuyaSmartRemote0041PollControl(CustomDevice):
         (LONG_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: LONG_PRESS},
         (DOUBLE_PRESS, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: DOUBLE_PRESS},
     }
-
