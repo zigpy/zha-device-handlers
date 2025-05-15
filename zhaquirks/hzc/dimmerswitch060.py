@@ -1,25 +1,25 @@
 """Quirk for Repenic Ltd. dimmer (e.g. HZC Smart Dimmer D060-ZG)."""
+
 import re
+
 from zigpy import types as t
-from zigpy.zcl import foundation
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import LevelControl
-
 
 
 class OutEdge(t.enum8):
     TrailingEdge = 0
     LeadingEdge = 1
+
+
 class HzcLevelControl(CustomCluster, LevelControl):
     name = "HzcLevelControl"
     manufacturer_id_override = None
     attributes = LevelControl.attributes.copy()
     attributes.update(
-        {
-            0xA004: ("boost", t.uint8_t, False),
-            0xB000: ("out_edge", OutEdge, False)
-        }
+        {0xA004: ("boost", t.uint8_t, False), 0xB000: ("out_edge", OutEdge, False)}
     )
 
 
@@ -35,44 +35,41 @@ class ModeType(list, metaclass=t.KwargTypeMeta):
         current_chunk = []
         current_type = None  #'digit' 或 'space'
         for c in arr:
-            if c == ' ':
-                if current_type == 'space':
+            if c == " ":
+                if current_type == "space":
                     current_chunk.append(c)
                 else:
                     if current_chunk:
-                        chunks.append(''.join(current_chunk))
+                        chunks.append("".join(current_chunk))
                         current_chunk = []
-                    current_type = 'space'
+                    current_type = "space"
                     current_chunk.append(c)
+            elif current_type == "digit":
+                current_chunk.append(c)
             else:
-                if current_type == 'digit':
-                    current_chunk.append(c)
-                else:
-                    if current_chunk:
-                        chunks.append(''.join(current_chunk))
-                        current_chunk = []
-                    current_type = 'digit'
-                    current_chunk.append(c)
+                if current_chunk:
+                    chunks.append("".join(current_chunk))
+                    current_chunk = []
+                current_type = "digit"
+                current_chunk.append(c)
 
-        #
         if current_chunk:
-            chunks.append(''.join(current_chunk))
+            chunks.append("".join(current_chunk))
 
-        result = ''.join(chunks)
+        result = "".join(chunks)
         return result
+
     """General data"""
+
     def serialize(self) -> bytes:
         assert self._length is not None
         res = self.getStr()
-        res = re.split("\s+", res)
+        res = re.split(r"\s+", res)
         if len(res) != 6:
-            raise ValueError(
-                f"Invalid length for {res}: expected {6}, got {len(res)}"
-            )
+            raise ValueError(f"Invalid length for {res}: expected {6}, got {len(res)}")
         # 1 17 45 255 00 00
         res = b"".join([self._item_type(i).serialize() for i in res])
         return res
-
 
 
 class WorkModeCluster(CustomCluster):
@@ -107,6 +104,7 @@ class WorkModeCluster(CustomCluster):
             False,
         ),
     }
+
 
 class WorkProgramCluster(CustomCluster):
     cluster_id = 0xE002
