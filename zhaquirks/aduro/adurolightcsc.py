@@ -1,14 +1,9 @@
 """ADUROLIGHT Adurolight_CSC device."""
 
-"""
-- Supports all 4 buttons (short + long press), with debounce to prevent duplicate automations
-- Tested with Home Assistant 2024.5.x, ZHA, real device
-- Device signature and cluster mappings included
-"""
+import time
 
-from zigpy.profiles import zha
+from zigpy.profiles import zha, zll
 from zigpy.quirks import CustomDevice
-from zhaquirks import CustomCluster, EventableCluster
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
     Basic,
@@ -21,6 +16,7 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.lighting import Color as ColorControl
 from zigpy.zcl.clusters.lightlink import LightLink
+from zhaquirks import CustomCluster, EventableCluster
 from zhaquirks.const import (
     ZHA_SEND_EVENT,
     COMMAND,
@@ -39,7 +35,6 @@ from zhaquirks.const import (
     BUTTON_4,
     CLUSTER_ID,
 )
-import time
 
 ADUROLIGHT_CLUSTER_ID = 0xFCCC
 
@@ -73,14 +68,15 @@ _last_event = {}
 def _debounce_key(button, press_type):
     return (button, press_type)
 
-
 class AdurolightFcccCluster(EventableCluster, CustomCluster):
+    """Custom cluster for AduroSmart Eria FCCC manufacturer-specific events."""
     cluster_id = ADUROLIGHT_CLUSTER_ID
     manufacturer_specific = True
 
     def handle_cluster_request(
         self, hdr: foundation.ZCLHeader, args, dst_addressing=None
     ):
+        """Handle incoming cluster requests and emit ZHA events with debounce logic."""
         cmd = hdr.command_id
         seq = getattr(hdr, "tsn", None)
         self.debug(f"[FCCC] seq={seq}, cmd={cmd}, args={args}")
@@ -115,6 +111,7 @@ class AdurolightFcccCluster(EventableCluster, CustomCluster):
 
 
 class AdurolightCSCRemote(CustomDevice):
+    """Device quirk for AduroSmart Eria ADUROLIGHT_CSC remote."""
     signature = {
         MODELS_INFO: [("AduroSmart Eria", "ADUROLIGHT_CSC")],
         ENDPOINTS: {
