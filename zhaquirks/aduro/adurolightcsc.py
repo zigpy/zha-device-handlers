@@ -2,38 +2,38 @@
 
 import time
 
-from zigpy.profiles import zha, zll
+from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
     Basic,
-    Identify,
     Groups,
-    Scenes,
-    OnOff,
+    Identify,
     LevelControl,
+    OnOff,
     PowerConfiguration,
+    Scenes,
 )
 from zigpy.zcl.clusters.lighting import Color as ColorControl
 from zigpy.zcl.clusters.lightlink import LightLink
 from zhaquirks import CustomCluster, EventableCluster
 from zhaquirks.const import (
-    ZHA_SEND_EVENT,
-    COMMAND,
-    ENDPOINT_ID,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-    DEVICE_TYPE,
-    MODELS_INFO,
-    SHORT_PRESS,
-    LONG_PRESS,
     BUTTON_1,
     BUTTON_2,
     BUTTON_3,
     BUTTON_4,
     CLUSTER_ID,
+    COMMAND,
+    DEVICE_TYPE,
+    ENDPOINT_ID,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    LONG_PRESS,
+    MODELS_INFO,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
+    SHORT_PRESS,
+    ZHA_SEND_EVENT,
 )
 
 ADUROLIGHT_CLUSTER_ID = 0xFCCC
