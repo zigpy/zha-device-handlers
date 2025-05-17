@@ -16,6 +16,7 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.lighting import Color as ColorControl
 from zigpy.zcl.clusters.lightlink import LightLink
+
 from zhaquirks import CustomCluster, EventableCluster
 from zhaquirks.const import (
     BUTTON_1,
@@ -68,8 +69,10 @@ _last_event = {}
 def _debounce_key(button, press_type):
     return (button, press_type)
 
+
 class AdurolightFcccCluster(EventableCluster, CustomCluster):
     """Custom cluster for AduroSmart Eria FCCC manufacturer-specific events."""
+
     cluster_id = ADUROLIGHT_CLUSTER_ID
     manufacturer_specific = True
 
@@ -112,6 +115,7 @@ class AdurolightFcccCluster(EventableCluster, CustomCluster):
 
 class AdurolightCSCRemote(CustomDevice):
     """Device quirk for AduroSmart Eria ADUROLIGHT_CSC remote."""
+
     signature = {
         MODELS_INFO: [("AduroSmart Eria", "ADUROLIGHT_CSC")],
         ENDPOINTS: {
