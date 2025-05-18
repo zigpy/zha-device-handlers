@@ -150,15 +150,12 @@ class AqaraZ1ProQuadrupleRockerSwitch(XiaomiCustomDevice):
                 OUTPUT_CLUSTERS: [],
             },
             # <SimpleDescriptor endpoint=4 profile=260 device_type=0
-            # input_clusters=[4, 5, 6, 18, 64704]
+            # input_clusters=[18, 64704]
             # output_clusters=[]>
             4: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
                     MultistateInput.cluster_id,
                     MANUFACTURER_SPECIFIC_CLUSTER_ID,
                 ],
@@ -227,9 +224,6 @@ class AqaraZ1ProQuadrupleRockerSwitch(XiaomiCustomDevice):
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOffCluster,
                     MultistateInputCluster,
                     MANUFACTURER_SPECIFIC_CLUSTER_ID,
                 ],
