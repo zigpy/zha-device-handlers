@@ -314,7 +314,7 @@ class Tuya3PhaseElectricalMeasurement(ElectricalMeasurement, TuyaLocalCluster):
         dp_id=110,
         attribute_name="energy_produced_ph_a",
         type=t.uint32_t,
-        converter=lambda x: x / 100,
+        divisor=100,
         state_class=SensorStateClass.TOTAL_INCREASING,
         device_class=SensorDeviceClass.ENERGY,
         unit=UnitOfEnergy.KILO_WATT_HOUR,
