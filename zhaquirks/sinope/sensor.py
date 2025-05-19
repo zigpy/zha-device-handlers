@@ -66,10 +66,27 @@ class ZoneStatus(t.uint16_t):
     Connector_low_bat = 0x003A
 
 
+class SensorStatus(t.uint16_t):
+    """Sensor probe state."""
+
+    Disconected = 0x0021
+    Ok = 0x004E
+    Min_temp_alert = 0x004F
+    Max_temp_alert = 0x0051
+
+
+class BatteryStatus(t.bitmap32):
+    """Battery status."""
+
+    Ok = 0x00000000
+    Low = 0x00000001
+
+
 class SinopeManufacturerCluster(CustomCluster):
     """SinopeManufacturerCluster manufacturer cluster."""
 
     DeviceStatus: Final = DeviceStatus
+    SensorStatus: Final = SensorStatus
 
     cluster_id: Final[t.uint16_t] = SINOPE_MANUFACTURER_CLUSTER_ID
     name: Final = "SinopeManufacturerCluster"
@@ -92,6 +109,9 @@ class SinopeManufacturerCluster(CustomCluster):
         )
         device_status: Final = ZCLAttributeDef(
             id=0x0034, type=t.bitmap8, access="rp", is_manufacturer_specific=True
+        )
+        sensor_status: Final = ZCLAttributeDef(
+            id=0x0035, type=SensorStatus, access="r", is_manufacturer_specific=True
         )
         battery_type: Final = ZCLAttributeDef(
             id=0x0036, type=t.uint16_t, access="rw", is_manufacturer_specific=True
@@ -116,6 +136,24 @@ class SinopeTechnologiesIasZoneCluster(CustomCluster, IasZone):
         )
         leak_status: Final = ZCLAttributeDef(
             id=0x0030, type=LeakStatus, access="rw", is_manufacturer_specific=True
+        )
+
+
+class SinopeTechnologiesPowerConfigurationCluster(CustomCluster, PowerConfiguration):
+    """SinopeTechnologiesPowerConfigurationCluster custom cluster."""
+
+    def _update_attribute(self, attrid, value):
+        if attrid == self.AttributeDefs.battery_voltage.id:
+            value = value / 10
+        super()._update_attribute(attrid, value)
+
+    BatteryStatus: Final = BatteryStatus
+
+    class AttributeDefs(PowerConfiguration.AttributeDefs):
+        """Sinope Manufacturer ias Cluster Attributes."""
+
+        battery_alarm_state: Final = ZCLAttributeDef(
+            id=0x003e, type=BatteryStatus, access="rp", is_manufacturer_specific=True
         )
 
 
@@ -148,6 +186,26 @@ class SinopeTechnologiesIasZoneCluster(CustomCluster, IasZone):
         translation_key="checkin_interval",
         fallback_name="Checkin interval",
     )
+    .number(  # Min temperature limit
+        attribute_name=SinopeManufacturerCluster.AttributeDefs.min_temperature_limit.name,
+        cluster_id=SinopeManufacturerCluster.cluster_id,
+        step=1,
+        min_value=300,
+        max_value=1500,
+        unit=UnitOfTemperature.CELSIUS,
+        translation_key="min_temperature_limit",
+        fallback_name="Min temperature limit",
+    )
+    .number(  # Max temperature limit
+        attribute_name=SinopeManufacturerCluster.AttributeDefs.max_temperature_limit.name,
+        cluster_id=SinopeManufacturerCluster.cluster_id,
+        step=1,
+        min_value=1500,
+        max_value=5000,
+        unit=UnitOfTemperature.CELSIUS,
+        translation_key="max_temperature_limit",
+        fallback_name="Max temperature limit",
+    )
     .sensor(  # battery voltage
         attribute_name=PowerConfiguration.AttributeDefs.battery_voltage.name,
         cluster_id=PowerConfiguration.cluster_id,
@@ -166,21 +224,24 @@ class SinopeTechnologiesIasZoneCluster(CustomCluster, IasZone):
         cluster_id=SinopeTechnologiesIasZoneCluster.cluster_id,
         endpoint_id=1,
         state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=0,
         translation_key="zone_status",
         fallback_name="Zone status",
         entity_type=EntityType.DIAGNOSTIC,
     )
-    .sensor(  # Device status
-        attribute_name=SinopeManufacturerCluster.AttributeDefs.status.name,
+    .sensor(  # Sensor status
+        attribute_name=SinopeManufacturerCluster.AttributeDefs.sensor_status.name,
         cluster_id=SinopeManufacturerCluster.cluster_id,
         endpoint_id=1,
         state_class=SensorStateClass.MEASUREMENT,
-        translation_key="status",
-        fallback_name="Device status",
+        suggested_display_precision=0,
+        translation_key="sensor_status",
+        fallback_name="Sensor status",
         entity_type=EntityType.DIAGNOSTIC,
     )
     .add_to_registry()
 )
+
 
 (
     # <SimpleDescriptor endpoint=1 profile=260 device_type=0
@@ -189,29 +250,25 @@ class SinopeTechnologiesIasZoneCluster(CustomCluster, IasZone):
     QuirkBuilder(SINOPE, "LM4110-ZB")
     .replaces_endpoint(1, device_type=zha_p.DeviceType.METER_INTERFACE)
     .adds(Basic, endpoint_id=1)
-    .adds(PowerConfiguration, endpoint_id=1)
     .adds(Identify, endpoint_id=1)
     .adds(AnalogInput, endpoint_id=1)
     .adds(PollControl, endpoint_id=1)
     .adds(TemperatureMeasurement, endpoint_id=1)
     .adds(Diagnostic, endpoint_id=1)
+    .replaces(SinopeTechnologiesPowerConfigurationCluster)
     .replaces(SinopeManufacturerCluster)
-    .sensor(  # Device temperature
-        attribute_name=TemperatureMeasurement.AttributeDefs.measured_value.name,
-        cluster_id=TemperatureMeasurement.cluster_id,
+    .sensor(  # Battery status
+        attribute_name=SinopeTechnologiesPowerConfigurationCluster.AttributeDefs.battery_alarm_state.name,
+        cluster_id=SinopeTechnologiesPowerConfigurationCluster.cluster_id,
         state_class=SensorStateClass.MEASUREMENT,
-        unit=UnitOfTemperature.CELSIUS,
-        device_class=SensorDeviceClass.TEMPERATURE,
-        reporting_config=ReportingConfig(
-            min_interval=60, max_interval=3678, reportable_change=1
-        ),
-        translation_key="outside_temperature",
-        fallback_name="Outside temperature",
+        suggested_display_precision=0,
+        translation_key="battery_alarm_state",
+        fallback_name="Battery alarm",
         entity_type=EntityType.DIAGNOSTIC,
     )
     .sensor(  # Battery voltage
-        attribute_name=PowerConfiguration.AttributeDefs.battery_voltage.name,
-        cluster_id=PowerConfiguration.cluster_id,
+        attribute_name=SinopeTechnologiesPowerConfigurationCluster.AttributeDefs.battery_voltage.name,
+        cluster_id=SinopeTechnologiesPowerConfigurationCluster.cluster_id,
         state_class=SensorStateClass.MEASUREMENT,
         unit=UnitOfElectricPotential.VOLT,
         device_class=SensorDeviceClass.VOLTAGE,
@@ -243,6 +300,16 @@ class SinopeTechnologiesIasZoneCluster(CustomCluster, IasZone):
         translation_key="status",
         fallback_name="Device status",
         entity_type=EntityType.DIAGNOSTIC,
+    )
+    .number(  # Checkin interval
+        attribute_name=PollControl.AttributeDefs.checkin_interval.name,
+        cluster_id=PollControl.cluster_id,
+        step=60,
+        min_value=3600,
+        max_value=21600,
+        unit=UnitOfTime.SECONDS,
+        translation_key="checkin_interval",
+        fallback_name="Checkin interval",
     )
     .add_to_registry()
 )
