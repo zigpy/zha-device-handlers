@@ -97,7 +97,7 @@ class BoschLightShutterControlII(CustomCluster):
         motor_state = ZCLAttributeDef(
             id=0x0013,
             type=BoschMotorState,
-            access="rwp",
+            access="rp",
             is_manufacturer_specific=True,
         )
 
