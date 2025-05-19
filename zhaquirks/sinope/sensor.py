@@ -153,7 +153,7 @@ class SinopeTechnologiesPowerConfigurationCluster(CustomCluster, PowerConfigurat
         """Sinope Manufacturer ias Cluster Attributes."""
 
         battery_alarm_state: Final = ZCLAttributeDef(
-            id=0x003e, type=BatteryStatus, access="rp", is_manufacturer_specific=True
+            id=0x003E, type=BatteryStatus, access="rp", is_manufacturer_specific=True
         )
 
 
