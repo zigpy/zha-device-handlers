@@ -123,10 +123,47 @@ from zhaquirks.philips import PHILIPS, SIGNIFY, PhilipsHueLightCluster
 
 (
     QuirkBuilder()
+    .applies_to(SIGNIFY, "LTA001")
+    .friendly_name(
+        model="Hue white ambiance E27 with Bluetooth",
+        manufacturer="Philips",
+    )
+    .replaces(PhilipsHueLightCluster, endpoint_id=11)
+    .add_to_registry()
+)
+
+(
+    QuirkBuilder()
+    .applies_to(SIGNIFY, "LWU001")
+    .friendly_name(
+        model="Hue P45 light bulb",
+        manufacturer="Philips",
+    )
+    .replaces(PhilipsHueLightCluster, endpoint_id=11)
+    .add_to_registry()
+)
+
+(
+    QuirkBuilder()
     .applies_to(PHILIPS, "7602031P7")
     .applies_to(PHILIPS, "7602031U7")
     .friendly_name(
         model="Hue Go",
+        manufacturer="Philips",
+    )
+    .replaces(PhilipsHueLightCluster, endpoint_id=11)
+    .add_to_registry()
+)
+
+(
+    QuirkBuilder()
+    .applies_to(PHILIPS, "1743130P7")
+    .applies_to(PHILIPS, "1743430P7")
+    .applies_to(PHILIPS, "1743230P7")
+    .applies_to(PHILIPS, "1745430A7")
+    .applies_to(PHILIPS, "1745430P7")
+    .friendly_name(
+        model="Hue Impress outdoor Pedestal",
         manufacturer="Philips",
     )
     .replaces(PhilipsHueLightCluster, endpoint_id=11)
