@@ -304,6 +304,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .applies_to("_TZE204_jygvp6fk", "TS0601")
     .applies_to("_TZE200_yjjdcqsq", "TS0601")
     .applies_to("_TZE204_yjjdcqsq", "TS0601")
+    .applies_to("_TZE284_yjjdcqsq", "TS0601")
     .applies_to("_TZE200_9yapgbuv", "TS0601")
     .applies_to("_TZE204_9yapgbuv", "TS0601")
     .applies_to("_TZE200_utkemkbs", "TS0601")
