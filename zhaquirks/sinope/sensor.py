@@ -69,7 +69,7 @@ class ZoneStatus(t.uint16_t):
 class SensorStatus(t.uint16_t):
     """Sensor probe state."""
 
-    Disconected = 0x0021
+    Disconnected = 0x0021
     Ok = 0x004E
     Min_temp_alert = 0x004F
     Max_temp_alert = 0x0051
