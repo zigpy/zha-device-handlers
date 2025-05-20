@@ -32,3 +32,10 @@ from zhaquirks.schneiderelectric import (
     .replaces(SESpecific, endpoint_id=21)
     .add_to_registry()
 )
+
+(
+    QuirkBuilder(SE_MANUF_NAME, "FLS/AIRLINK/4")
+    .replaces(SESpecific, endpoint_id=21)
+    .replaces(SESpecific, endpoint_id=22)
+    .add_to_registry()
+)
