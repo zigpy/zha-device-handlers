@@ -43,28 +43,6 @@ class SonoffCluster(CustomCluster):
             is_manufacturer_specific=True,
         )
 
-    async def _read_attributes(
-            self,
-            attribute_ids: list[t.uint16_t],
-            *args,
-            manufacturer: int | t.uint16_t | None = None,
-            **kwargs,
-    ):
-        return await super()._read_attributes(
-            attribute_ids, *args, manufacturer=manufacturer, **kwargs
-        )
-
-    async def _write_attributes(  # type:ignore[override]
-            self,
-            attributes: list[foundation.Attribute],
-            *args,
-            manufacturer: int | t.uint16_t | None = None,
-            **kwargs,
-    ):
-        return await super()._write_attributes(
-            attributes, *args, manufacturer=manufacturer, **kwargs
-        )
-
 
 class SonoffExternalSwitchTriggerType(types.enum8):
     """extern switch trigger type."""
