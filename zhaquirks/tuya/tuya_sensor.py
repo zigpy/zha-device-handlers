@@ -76,7 +76,6 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .applies_to("_TZE200_qyflbnbj", "TS0601")
     .applies_to("_TZE284_qyflbnbj", "TS0601")
     .applies_to("_TZE200_44af8vyi", "TS0601")
-    .applies_to("_TZE200_vvmbj46n", "TS0601")
     # Not using tuya_temperature because device reports negative values incorrectly
     .tuya_dp(
         dp_id=1,
@@ -118,6 +117,9 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .applies_to("_TZE200_eanjj2pa", "TS0601")
     .applies_to("_TZE200_ydrdfkim", "TS0601")
     .applies_to("_TZE284_locansqn", "TS0601")
+    .applies_to("_TZE200_w6n8jeuu", "TS0601")
+    .applies_to("_TZE200_vvmbj46n", "TS0601")
+    .applies_to("_TZE284_vvmbj46n", "TS0601")
     .tuya_temperature(dp_id=1, scale=10)
     .tuya_humidity(dp_id=2)
     .tuya_battery(dp_id=4)
@@ -248,6 +250,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
         translation_key="humidity_sensitivity",
         fallback_name="Humidity sensitivity",
     )
+    .tuya_enchantment(data_query_spell=True)
     .skip_configuration()
     .add_to_registry(replacement_cluster=NoManufTimeTuyaMCUCluster)
 )
@@ -283,6 +286,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .applies_to("_TZE200_ga1maeof", "TS0601")
     .applies_to("_TZE200_9cqcpkgb", "TS0601")
     .applies_to("_TZE204_myd45weu", "TS0601")
+    .applies_to("_TZE284_myd45weu", "TS0601")
     .applies_to("_TZE200_2se8efxh", "TS0601")  # Immax Neo
     .tuya_temperature(dp_id=5)
     .tuya_battery(dp_id=15)
@@ -300,6 +304,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .applies_to("_TZE204_jygvp6fk", "TS0601")
     .applies_to("_TZE200_yjjdcqsq", "TS0601")
     .applies_to("_TZE204_yjjdcqsq", "TS0601")
+    .applies_to("_TZE284_yjjdcqsq", "TS0601")
     .applies_to("_TZE200_9yapgbuv", "TS0601")
     .applies_to("_TZE204_9yapgbuv", "TS0601")
     .applies_to("_TZE200_utkemkbs", "TS0601")
