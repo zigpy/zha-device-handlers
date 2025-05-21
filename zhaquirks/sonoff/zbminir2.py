@@ -5,13 +5,26 @@ from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
-
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef, ZCLCommandDef
+from typing import Any, Final
+import logging
+_LOGGER = logging.getLogger(__name__)
 
 class SonoffCluster(CustomCluster):
     """Custom Sonoff cluster."""
 
     cluster_id = 0xFC11
+
+    manufacturer_id_override = foundation.ZCLHeader.NO_MANUFACTURER_ID
+
+    class ClientCommandDefs(BaseAttributeDefs):
+        """Client command definitions."""
+
+        toggle: Final = ZCLCommandDef(
+            id=0x02,
+            schema={},
+            is_manufacturer_specific=True,
+        )
 
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
@@ -19,34 +32,42 @@ class SonoffCluster(CustomCluster):
         external_trigger_mode = ZCLAttributeDef(
             id=0x0016,
             type=t.uint8_t,
+            is_manufacturer_specific=True,
         )
         detach_relay = ZCLAttributeDef(
             id=0x0017,
             type=t.Bool,
+            is_manufacturer_specific=True,
         )
         turbo_mode = ZCLAttributeDef(
             id=0x0012,
             type=t.int16s,
+            is_manufacturer_specific=True,
         )
 
     async def _read_attributes(
-        self,
-        attribute_ids: list[t.uint16_t],
-        *args,
-        manufacturer: int | t.uint16_t | None = None,
-        **kwargs,
-    ):
-        """Read attributes ZCL foundation command."""
-        return await super()._read_attributes(
-            attribute_ids,
+            self,
+            attribute_ids: list[t.uint16_t],
             *args,
-            manufacturer=foundation.ZCLHeader.NO_MANUFACTURER_ID,
+            manufacturer: int | t.uint16_t | None = None,
             **kwargs,
+    ):
+        _LOGGER.info(f"read_attributes: {manufacturer}")
+        return await super()._read_attributes(
+            attribute_ids, *args, manufacturer=manufacturer, **kwargs
         )
 
-    @property
-    def _is_manuf_specific(self):
-        return False
+    async def _write_attributes(  # type:ignore[override]
+            self,
+            attributes: list[foundation.Attribute],
+            *args,
+            manufacturer: int | t.uint16_t | None = None,
+            **kwargs,
+    ):
+        _LOGGER.info(f"write_attributes: {manufacturer}")
+        return await super()._write_attributes(
+            attributes, *args, manufacturer=manufacturer, **kwargs
+        )
 
 
 class SonoffExternalSwitchTriggerType(types.enum8):
