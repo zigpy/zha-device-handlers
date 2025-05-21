@@ -15,15 +15,6 @@ class SonoffCluster(CustomCluster):
 
     manufacturer_id_override = foundation.ZCLHeader.NO_MANUFACTURER_ID
 
-    class ClientCommandDefs(BaseAttributeDefs):
-        """Client command definitions."""
-
-        toggle: Final = ZCLCommandDef(
-            id=0x02,
-            schema={},
-            is_manufacturer_specific=True,
-        )
-
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
 
