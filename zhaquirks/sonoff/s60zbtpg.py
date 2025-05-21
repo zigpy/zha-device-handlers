@@ -1,7 +1,7 @@
 """Sonoff S60ZBTPG - Zigbee Smart Plug."""
 
 from typing import Final
-
+from zigpy import types
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.quirks.v2.homeassistant import (
@@ -9,11 +9,15 @@ from zigpy.quirks.v2.homeassistant import (
     UnitOfElectricPotential,
     UnitOfPower,
 )
-from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 import zigpy.types as t
-from zigpy.zcl import ClusterType, foundation
-import zigpy.zcl.foundation as zcl_f
+from zigpy.zcl import foundation
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
+from zha.application.platforms.number.const import NumberMode
+from zigpy.zcl.clusters.general import OnOff
+from zigpy.zcl import ClusterType
+from zigpy.quirks import CustomDevice
+import zigpy.zcl.foundation as zcl_f
 
 
 class SonoffCluster(CustomCluster):
@@ -61,6 +65,7 @@ class SonoffCluster(CustomCluster):
             type=t.uint32_t,
         )
 
+
     class ServerCommandDefs(zcl_f.BaseCommandDefs):
         """Server command definitions."""
 
@@ -68,25 +73,10 @@ class SonoffCluster(CustomCluster):
             id=0x00, schema={"identify_time": t.uint8_t}, direction=False
         )
 
-    async def _read_attributes(
-        self,
-        attribute_ids: list[t.uint16_t],
-        *args,
-        manufacturer: int | t.uint16_t | None = None,
-        **kwargs,
-    ):
-        """Read attributes ZCL foundation command."""
-        return await super()._read_attributes(
-            attribute_ids,
-            *args,
-            manufacturer=foundation.ZCLHeader.NO_MANUFACTURER_ID,
-            **kwargs,
-        )
-
     @property
     def _is_manuf_specific(self):
         return False
-
+    
 
 (
     QuirkBuilder("SONOFF", "S60ZBTPG")
@@ -131,11 +121,11 @@ class SonoffCluster(CustomCluster):
         0.1,
         14.0,
         0.1,
-        unit=UnitOfElectricCurrent.AMPERE,
-        multiplier=0.001,
-        translation_key="ac_current_max_overload",
-        device_class=NumberDeviceClass.CURRENT,
-        fallback_name="AC current max overload",
+        unit = UnitOfElectricCurrent.AMPERE,
+        multiplier = 0.001,
+        translation_key = "ac_current_max_overload",
+        device_class = NumberDeviceClass.CURRENT,
+        fallback_name = "AC current max overload",
     )
     .number(
         SonoffCluster.AttributeDefs.ac_voltage_max_overload.name,
@@ -145,11 +135,11 @@ class SonoffCluster(CustomCluster):
         165.0,
         277.0,
         1.0,
-        unit=UnitOfElectricPotential.VOLT,
-        multiplier=0.001,
-        translation_key="ac_voltage_max_overload",
-        device_class=NumberDeviceClass.POWER,
-        fallback_name="AC voltage max overload",
+        unit = UnitOfElectricPotential.VOLT,
+        multiplier = 0.001,
+        translation_key = "ac_voltage_max_overload",
+        device_class = NumberDeviceClass.POWER,
+        fallback_name = "AC voltage max overload",
     )
     .number(
         SonoffCluster.AttributeDefs.ac_power_max_overload.name,
@@ -159,11 +149,11 @@ class SonoffCluster(CustomCluster):
         0.1,
         3250.0,
         0.1,
-        unit=UnitOfPower.WATT,
-        multiplier=0.001,
-        translation_key="ac_power_max_overload",
-        device_class=NumberDeviceClass.POWER,
-        fallback_name="AC power max overload",
+        unit = UnitOfPower.WATT,
+        multiplier = 0.001,
+        translation_key = "ac_power_max_overload",
+        device_class = NumberDeviceClass.POWER,
+        fallback_name = "AC power max overload",
     )
     .add_to_registry()
 )
