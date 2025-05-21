@@ -5,8 +5,7 @@ from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef, ZCLCommandDef
-from typing import Final
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 class SonoffCluster(CustomCluster):
     """Custom Sonoff cluster."""
