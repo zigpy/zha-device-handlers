@@ -7,6 +7,7 @@ import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
+
 class SonoffCluster(CustomCluster):
     """Custom Sonoff cluster."""
 
