@@ -6,9 +6,7 @@ from zigpy.quirks.v2 import QuirkBuilder
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef, ZCLCommandDef
-from typing import Any, Final
-import logging
-_LOGGER = logging.getLogger(__name__)
+from typing import Final
 
 class SonoffCluster(CustomCluster):
     """Custom Sonoff cluster."""
@@ -52,7 +50,6 @@ class SonoffCluster(CustomCluster):
             manufacturer: int | t.uint16_t | None = None,
             **kwargs,
     ):
-        _LOGGER.info(f"read_attributes: {manufacturer}")
         return await super()._read_attributes(
             attribute_ids, *args, manufacturer=manufacturer, **kwargs
         )
@@ -64,7 +61,6 @@ class SonoffCluster(CustomCluster):
             manufacturer: int | t.uint16_t | None = None,
             **kwargs,
     ):
-        _LOGGER.info(f"write_attributes: {manufacturer}")
         return await super()._write_attributes(
             attributes, *args, manufacturer=manufacturer, **kwargs
         )
