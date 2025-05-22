@@ -3,15 +3,17 @@
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic
-from zigpy.zcl.foundation import ZCLAttributeDef, DataTypeId
+from zigpy.zcl.foundation import DataTypeId, ZCLAttributeDef
 
 CANDEO = "Candeo"
+
 
 class CandeoSwitchType(t.enum8):
     """Candeo Switch Type."""
 
     Momentary = 0x00
     Toggle = 0x01
+
 
 class CandeoBasicCluster(Basic, CustomCluster):
     """Candeo Basic Cluster."""

@@ -1,16 +1,12 @@
 """Candeo modules."""
 
-from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
-import zigpy.types as t
-from zigpy.zcl.clusters.general import Basic
-from zigpy.zcl.foundation import ZCLAttributeDef, DataTypeId
 
-from zhaquirks.candeo import CANDEO, CandeoSwitchType, CandeoBasicCluster
+from zhaquirks.candeo import CANDEO, CandeoBasicCluster, CandeoSwitchType
 
 (
     QuirkBuilder(CANDEO, "C203")
-    .applies_to(CANDEO, "HK-LN-DIM-A")   
+    .applies_to(CANDEO, "HK-LN-DIM-A")
     .applies_to(CANDEO, "C204")
     .applies_to(CANDEO, "C-ZB-DM204")
     .applies_to(CANDEO, "C205")
