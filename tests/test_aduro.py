@@ -1,13 +1,12 @@
 """Tests for AduroSmart Eria Quirks."""
 
-from time import monotonic
-
 import pytest
 
 import zhaquirks
 from zhaquirks.aduro.adurolightcsc import AdurolightCSCRemote, AdurolightFcccCluster
 
 zhaquirks.setup()
+
 
 def test_adurolightcsc_signature(assert_signature_matches_quirk):
     """Test AduroSmart Eria Scene Switch signature is matched to its quirk."""
@@ -54,16 +53,20 @@ def test_adurolightcsc_signature(assert_signature_matches_quirk):
     }
     assert_signature_matches_quirk(AdurolightCSCRemote, signature)
 
-@pytest.mark.parametrize("args,expected_event", [
-    ([0, 0], "button_1_short_press"),
-    ([0, 1], "button_2_short_press"),
-    ([0, 2], "button_3_short_press"),
-    ([0, 3], "button_4_short_press"),
-    ([1, 0], "button_1_long_press"),
-    ([1, 1], "button_2_long_press"),
-    ([1, 2], "button_3_long_press"),
-    ([1, 3], "button_4_long_press"),
-])
+
+@pytest.mark.parametrize(
+    "args,expected_event",
+    [
+        ([0, 0], "button_1_short_press"),
+        ([0, 1], "button_2_short_press"),
+        ([0, 2], "button_3_short_press"),
+        ([0, 3], "button_4_short_press"),
+        ([1, 0], "button_1_long_press"),
+        ([1, 1], "button_2_long_press"),
+        ([1, 2], "button_3_long_press"),
+        ([1, 3], "button_4_long_press"),
+    ],
+)
 def test_handle_all_buttons(zigpy_device_from_quirk, args, expected_event):
     """Test handling of all button presses."""
     device = zigpy_device_from_quirk(AdurolightCSCRemote)
@@ -77,6 +80,7 @@ def test_handle_all_buttons(zigpy_device_from_quirk, args, expected_event):
     assert result is True
     assert events[0][0][1] == expected_event
 
+
 def test_handle_invalid_command(zigpy_device_from_quirk):
     """Test handling of an invalid command."""
     device = zigpy_device_from_quirk(AdurolightCSCRemote)
@@ -87,6 +91,7 @@ def test_handle_invalid_command(zigpy_device_from_quirk):
     result = cluster.handle_cluster_request(hdr, args)
 
     assert result is False
+
 
 def test_handle_unknown_button(zigpy_device_from_quirk, caplog):
     """Test handling of an unknown button press."""
@@ -101,11 +106,12 @@ def test_handle_unknown_button(zigpy_device_from_quirk, caplog):
     assert result is False
     assert "[FCCC] Unknown button key:" in caplog.text
 
+
 def test_debounce_logic(zigpy_device_from_quirk, monkeypatch):
     """Test debounce logic for button presses."""
     # Reset debounce state!
     zhaquirks.aduro.adurolightcsc._last_event.clear()
-    
+
     device = zigpy_device_from_quirk(AdurolightCSCRemote)
     cluster = device.endpoints[1].in_clusters[AdurolightFcccCluster.cluster_id]
     events = []
@@ -130,4 +136,3 @@ def test_debounce_logic(zigpy_device_from_quirk, monkeypatch):
     assert len(events) == 2
     assert events[0][0][1] == "button_1_short_press"
     assert events[1][0][1] == "button_1_short_press"
-
