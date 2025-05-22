@@ -6,6 +6,7 @@ from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, Groups, Identify, LevelControl, OnOff
 from zigpy.zcl.clusters.lightlink import LightLink
 
+from zhaquirks.aduro import ADUROLIGHT_CLUSTER_ID
 from zhaquirks.const import (
     CLUSTER_ID,
     COMMAND,
@@ -26,8 +27,6 @@ from zhaquirks.const import (
     TURN_OFF,
     TURN_ON,
 )
-
-ADUROLIGHT_CLUSTER_ID = 64716
 
 
 class AdurolightNCC(CustomDevice):

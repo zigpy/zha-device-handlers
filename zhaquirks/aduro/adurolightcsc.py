@@ -1,4 +1,4 @@
-"""ADUROLIGHT Adurolight_CSC device."""
+"""AduroSmart Eria Adurolight_CSC device."""
 
 import time
 
@@ -18,6 +18,7 @@ from zigpy.zcl.clusters.lighting import Color as ColorControl
 from zigpy.zcl.clusters.lightlink import LightLink
 
 from zhaquirks import CustomCluster, EventableCluster
+from zhaquirks.aduro import ADUROLIGHT_CLUSTER_ID
 from zhaquirks.const import (
     BUTTON_1,
     BUTTON_2,
@@ -36,8 +37,6 @@ from zhaquirks.const import (
     SHORT_PRESS,
     ZHA_SEND_EVENT,
 )
-
-ADUROLIGHT_CLUSTER_ID = 0xFCCC
 
 BTN_CODE_MAP = {
     (0, 0): (BUTTON_1, SHORT_PRESS),
