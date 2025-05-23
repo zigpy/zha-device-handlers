@@ -1,4 +1,4 @@
-"""Sensoro Window Sensor (TS0601)"""
+"""Sensoro Window Sensor (TS0601)."""
 
 from zigpy.quirks.v2.homeassistant import EntityPlatform, EntityType
 import zigpy.types as t
