@@ -1,5 +1,6 @@
-from zigpy.quirks.v2.homeassistant import EntityType, EntityPlatform
+from zigpy.quirks.v2.homeassistant import EntityPlatform, EntityType
 import zigpy.types as t
+
 from zhaquirks.tuya import BatterySize
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
