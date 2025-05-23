@@ -1,3 +1,4 @@
+"""Sensoro Window Sensor (TS0601)"""
 from zigpy.quirks.v2.homeassistant import EntityType, EntityPlatform
 import zigpy.types as t
 from zhaquirks.tuya import BatterySize
@@ -5,6 +6,7 @@ from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 
 class OpeningStateEnum(t.enum8):
+    """Enum for opening state."""
     open = 0
     closed = 1
     tilted = 2
