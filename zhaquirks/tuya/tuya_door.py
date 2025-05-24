@@ -1,6 +1,6 @@
-"""Sensoro Window Sensor (TS0601)."""
+"""Senoro Window Sensor (TS0601)."""
 
-from zigpy.quirks.v2.homeassistant import EntityPlatform, EntityType
+from zigpy.quirks.v2 import EntityPlatform, EntityType
 import zigpy.types as t
 
 from zhaquirks.tuya import BatterySize
@@ -10,9 +10,9 @@ from zhaquirks.tuya.builder import TuyaQuirkBuilder
 class OpeningStateEnum(t.enum8):
     """Enum for opening state."""
 
-    open = 0
-    closed = 1
-    tilted = 2
+    Open = 0
+    Closed = 1
+    Tilted = 2
 
 
 (
@@ -25,18 +25,18 @@ class OpeningStateEnum(t.enum8):
     .tuya_enum(
         dp_id=101,
         attribute_name="opening_state",
-        enum_class=OpeningStateEnum,
-        translation_key="opening_state",
-        fallback_name="Opening state",
+        enum_class=OpeningStateEnum,        
         entity_type=EntityType.STANDARD,
         entity_platform=EntityPlatform.SENSOR,
+        translation_key="opening",
+        fallback_name="Opening",
     )
     .tuya_switch(
         dp_id=16,
         attribute_name="alarm",
         entity_type=EntityType.STANDARD,
         translation_key="alarm",
-        fallback_name="Tamper Alarm",
+        fallback_name="Tamper alarm",
     )
     .skip_configuration()
     .add_to_registry()
