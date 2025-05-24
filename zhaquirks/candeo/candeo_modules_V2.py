@@ -15,7 +15,6 @@ from zhaquirks.candeo import CANDEO, CandeoBasicCluster, CandeoSwitchType
         attribute_name=CandeoBasicCluster.AttributeDefs.external_switch_type.name,
         enum_class=CandeoSwitchType,
         cluster_id=CandeoBasicCluster.cluster_id,
-        initially_disabled=False,
         translation_key="external_switch_type",
         fallback_name="External switch type",
     )
@@ -30,7 +29,6 @@ from zhaquirks.candeo import CANDEO, CandeoBasicCluster, CandeoSwitchType
         enum_class=CandeoSwitchType,
         cluster_id=CandeoBasicCluster.cluster_id,
         endpoint_id=11,
-        initially_disabled=False,
         translation_key="external_switch_type",
         fallback_name="External switch type",
     )
