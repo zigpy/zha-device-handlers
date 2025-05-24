@@ -22,7 +22,7 @@ from zhaquirks.legrand import LEGRAND, LegrandPowerConfigurationCluster
 (
     QuirkBuilder(f" {LEGRAND}", " Remote switch")
     .replaces(LegrandPowerConfigurationCluster)
-    .removes(BinaryInput.cluster_id)
+    .prevent_default_entity_creation(endpoint_id=1, cluster_id=BinaryInput.cluster_id)
     .device_automation_triggers(
         {
             (SHORT_PRESS, TURN_ON): {COMMAND: COMMAND_ON},
