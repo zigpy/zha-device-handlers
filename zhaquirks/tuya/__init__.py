@@ -208,10 +208,6 @@ class TuyaData(t.Struct):
         else:
             raise ValueError(f"Unknown {self.dp_type} datapoint type")
 
-    def __new__(cls, *args, **kwargs):
-        """Disable copy constructor."""
-        return super().__new__(cls)
-
     def __init__(self, value=None, function=0, *args, **kwargs):
         """Convert from a zigpy typed value to a tuya data payload."""
         self.function = function
