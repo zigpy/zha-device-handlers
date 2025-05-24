@@ -1,10 +1,12 @@
 import logging
+
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
-from zigpy.zcl.clusters.general import Basic, PowerConfiguration, Identify
-from zigpy.zcl.clusters.security import IasZone
-from zhaquirks.tuya import TuyaManufCluster
 import zigpy.types as t
+from zigpy.zcl.clusters.general import Basic, Identify, PowerConfiguration
+from zigpy.zcl.clusters.security import IasZone
+
+from zhaquirks.tuya import TuyaManufCluster
 
 _LOGGER = logging.getLogger(__name__)
 
