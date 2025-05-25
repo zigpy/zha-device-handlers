@@ -50,12 +50,12 @@ class CustomSonoffCluster(CustomCluster):
             zcl_type=DataTypeId.uint16,
         )
 
-        temperature_calibration = ZCLAttributeDef(
+        temperature_offset = ZCLAttributeDef(
             id=0x2003,
             type=t.int16s,
         )
 
-        humidity_calibration = ZCLAttributeDef(
+        humidity_offset = ZCLAttributeDef(
             id=0x2004,
             type=t.int16s,
         )
@@ -120,7 +120,7 @@ class CustomSonoffCluster(CustomCluster):
         fallback_name="Display unit",
     )
     .number(
-        CustomSonoffCluster.AttributeDefs.temperature_calibration.name,
+        CustomSonoffCluster.AttributeDefs.temperature_offset.name,
         CustomSonoffCluster.cluster_id,
         min_value=-50,
         max_value=50,
@@ -128,11 +128,11 @@ class CustomSonoffCluster(CustomCluster):
         device_class=NumberDeviceClass.TEMPERATURE,
         unit=UnitOfTemperature.CELSIUS,
         multiplier=0.01,
-        translation_key="temperature_calibration",
-        fallback_name="Temperature calibration",
+        translation_key="temperature_offset",
+        fallback_name="Temperature offset",
     )
     .number(
-        CustomSonoffCluster.AttributeDefs.humidity_calibration.name,
+        CustomSonoffCluster.AttributeDefs.humidity_offset.name,
         CustomSonoffCluster.cluster_id,
         min_value=-50,
         max_value=50,
@@ -140,8 +140,8 @@ class CustomSonoffCluster(CustomCluster):
         device_class=NumberDeviceClass.HUMIDITY,
         unit=PERCENTAGE,
         multiplier=0.01,
-        translation_key="humidity_calibration",
-        fallback_name="Humidity calibration",
+        translation_key="humidity_offset",
+        fallback_name="Humidity offset",
     )
     .add_to_registry()
 )
