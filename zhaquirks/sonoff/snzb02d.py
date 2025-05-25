@@ -1,7 +1,7 @@
 """Sonoff SNZB-02D - Zigbee LCD smart temperature humidity sensor."""
 
 from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder
+from zigpy.quirks.v2 import NumberDeviceClass, QuirkBuilder
 from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature
 import zigpy.types as t
 from zigpy.zcl import foundation
@@ -70,6 +70,7 @@ class CustomSonoffCluster(CustomCluster):
         min_value=-10,
         max_value=60,
         step=0.1,
+        device_class=NumberDeviceClass.TEMPERATURE,
         unit=UnitOfTemperature.CELSIUS,
         multiplier=0.01,
         translation_key="comfort_temperature_min",
@@ -81,6 +82,7 @@ class CustomSonoffCluster(CustomCluster):
         min_value=-10,
         max_value=60,
         step=0.1,
+        device_class=NumberDeviceClass.TEMPERATURE,
         unit=UnitOfTemperature.CELSIUS,
         multiplier=0.01,
         translation_key="comfort_temperature_max",
@@ -92,6 +94,7 @@ class CustomSonoffCluster(CustomCluster):
         min_value=5,
         max_value=95,
         step=0.1,
+        device_class=NumberDeviceClass.HUMIDITY,
         unit=PERCENTAGE,
         multiplier=0.01,
         translation_key="comfort_humidity_min",
@@ -103,6 +106,7 @@ class CustomSonoffCluster(CustomCluster):
         min_value=5,
         max_value=95,
         step=0.1,
+        device_class=NumberDeviceClass.HUMIDITY,
         unit=PERCENTAGE,
         multiplier=0.01,
         translation_key="comfort_humidity_max",
@@ -121,6 +125,7 @@ class CustomSonoffCluster(CustomCluster):
         min_value=-50,
         max_value=50,
         step=0.1,
+        device_class=NumberDeviceClass.TEMPERATURE,
         unit=UnitOfTemperature.CELSIUS,
         multiplier=0.01,
         translation_key="temperature_calibration",
@@ -132,6 +137,7 @@ class CustomSonoffCluster(CustomCluster):
         min_value=-50,
         max_value=50,
         step=0.1,
+        device_class=NumberDeviceClass.HUMIDITY,
         unit=PERCENTAGE,
         multiplier=0.01,
         translation_key="humidity_calibration",
