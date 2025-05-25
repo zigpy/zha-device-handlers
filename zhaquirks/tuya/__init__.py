@@ -156,11 +156,15 @@ class TuyaData:
     raw: t.LVBytes
 
     def __init__(
-        self, value: TuyaDPType | None = None, function: t.uint8_t = t.uint8_t(0)
+        self,
+        value: TuyaDPType | None = None,
+        function: t.uint8_t = t.uint8_t(0),
+        raw: bytes | None = None,
     ):
         """Convert from a zigpy typed value to a tuya data payload."""
         self.dp_type = None
         self.function = function
+        self.raw = raw
 
         if value is None:
             return
