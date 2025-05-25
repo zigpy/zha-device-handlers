@@ -132,6 +132,7 @@ class TuyaSingleSwitch_GP(TuyaSwitch):
             ("_TZE204_6fk3gewc", "TS0601"),
             ("_TZE204_d0ypnbvn", "TS0601"),  # reported in #3220 & #3291
             ("_TZE204_ptaqh9tk", "TS0601"),  # reported in #2780
+            ("_TZE204_v5xjyphj", "TS0601"),  # reported in #4078
         ],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=51 device_version=1
