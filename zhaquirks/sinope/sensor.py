@@ -283,6 +283,7 @@ class SinopeTechnologiesPowerConfigurationCluster(CustomCluster, PowerConfigurat
         attribute_name=AnalogInput.AttributeDefs.present_value.name,
         cluster_id=AnalogInput.cluster_id,
         state_class=SensorStateClass.MEASUREMENT,
+        attribute_converter=lambda x: None if x == -2 else x,
         unit=DEGREE,
         device_class=SensorDeviceClass.VOLUME_STORAGE,
         reporting_config=ReportingConfig(
