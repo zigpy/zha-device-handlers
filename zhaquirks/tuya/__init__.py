@@ -1580,7 +1580,7 @@ class TuyaNewManufCluster(CustomCluster):
                 self.send_default_rsp(
                     hdr, status=foundation.Status.UNSUP_CLUSTER_COMMAND
                 )
-                return
+            return
 
         try:
             status = getattr(self, handler_name)(*args)
