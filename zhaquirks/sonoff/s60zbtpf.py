@@ -1,7 +1,7 @@
 """Sonoff S60ZBTPF - Zigbee Smart Plug."""
 
 from typing import Final
-
+from zigpy import types
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.quirks.v2.homeassistant import (
@@ -9,11 +9,15 @@ from zigpy.quirks.v2.homeassistant import (
     UnitOfElectricPotential,
     UnitOfPower,
 )
-from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 import zigpy.types as t
-from zigpy.zcl import ClusterType, foundation
-import zigpy.zcl.foundation as zcl_f
+from zigpy.zcl import foundation
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
+from zha.application.platforms.number.const import NumberMode
+from zigpy.zcl.clusters.general import OnOff
+from zigpy.zcl import ClusterType
+from zigpy.quirks import CustomDevice
+import zigpy.zcl.foundation as zcl_f
 
 
 class SonoffCluster(CustomCluster):
@@ -26,40 +30,34 @@ class SonoffCluster(CustomCluster):
         """Attribute definitions."""
 
         outlet_control_protect_setting = ZCLAttributeDef(
-            name="outlet_control_protect_setting",
             id=0x7007,
             type=t.uint8_t,
         )
         ac_current_max_overload_enable = ZCLAttributeDef(
-            name="ac_current_max_overload_enable",
             id=0x700C,
             type=t.uint8_t,
         )
         ac_voltage_max_overload_enable = ZCLAttributeDef(
-            name="ac_voltage_max_overload_enable",
             id=0x700E,
             type=t.uint8_t,
         )
         ac_power_max_overload_enable = ZCLAttributeDef(
-            name="ac_power_max_overload_enable",
             id=0x7010,
             type=t.uint8_t,
         )
         ac_current_max_overload = ZCLAttributeDef(
-            name="ac_current_max_overload",
             id=0x700D,
             type=t.uint32_t,
         )
         ac_voltage_max_overload = ZCLAttributeDef(
-            name="ac_voltage_max_overload",
             id=0x700F,
             type=t.uint32_t,
         )
         ac_power_max_overload = ZCLAttributeDef(
-            name="ac_power_max_overload",
             id=0x7011,
             type=t.uint32_t,
         )
+
 
     class ServerCommandDefs(zcl_f.BaseCommandDefs):
         """Server command definitions."""
@@ -67,8 +65,7 @@ class SonoffCluster(CustomCluster):
         self_test: Final = zcl_f.ZCLCommandDef(
             id=0x00, schema={"identify_time": t.uint8_t}, direction=False
         )
-
-
+ 
 (
     QuirkBuilder("SONOFF", "S60ZBTPF")
     .replaces(SonoffCluster)
@@ -107,44 +104,44 @@ class SonoffCluster(CustomCluster):
     .number(
         SonoffCluster.AttributeDefs.ac_current_max_overload.name,
         SonoffCluster.cluster_id,
-        ClusterType.Server,
-        1,
-        0.1,
-        17.0,
-        0.1,
-        unit=UnitOfElectricCurrent.AMPERE,
-        multiplier=0.001,
-        translation_key="ac_current_max_overload",
-        device_class=NumberDeviceClass.CURRENT,
-        fallback_name="AC current max overload",
+        cluster_type=ClusterType.Server,
+        endpoint_id=1,
+        min_value=0.1,
+        max_value=17.0,
+        step=0.1,
+        unit = UnitOfElectricCurrent.AMPERE,
+        multiplier = 0.001,
+        translation_key = "ac_current_max_overload",
+        device_class = NumberDeviceClass.CURRENT,
+        fallback_name = "AC current max overload",
     )
     .number(
         SonoffCluster.AttributeDefs.ac_voltage_max_overload.name,
         SonoffCluster.cluster_id,
-        ClusterType.Server,
-        1,
-        165.0,
-        277.0,
-        1.0,
-        unit=UnitOfElectricPotential.VOLT,
-        multiplier=0.001,
-        translation_key="ac_voltage_max_overload",
-        device_class=NumberDeviceClass.POWER,
-        fallback_name="AC voltage max overload",
+        cluster_type=ClusterType.Server,
+        endpoint_id=1,
+        min_value=165.0,
+        max_value=277.0,
+        step=1.0,
+        unit = UnitOfElectricPotential.VOLT,
+        multiplier = 0.001,
+        translation_key = "ac_voltage_max_overload",
+        device_class = NumberDeviceClass.POWER,
+        fallback_name = "AC voltage max overload",
     )
     .number(
         SonoffCluster.AttributeDefs.ac_power_max_overload.name,
         SonoffCluster.cluster_id,
-        ClusterType.Server,
-        1,
-        0.1,
-        4000.0,
-        0.1,
-        unit=UnitOfPower.WATT,
-        multiplier=0.001,
-        translation_key="ac_power_max_overload",
-        device_class=NumberDeviceClass.POWER,
-        fallback_name="AC power max overload",
+        cluster_type=ClusterType.Server,
+        endpoint_id=1,
+        min_value=0.1,
+        max_value=4000.0,
+        step=0.1,
+        unit = UnitOfPower.WATT,
+        multiplier = 0.001,
+        translation_key = "ac_power_max_overload",
+        device_class = NumberDeviceClass.POWER,
+        fallback_name = "AC power max overload",
     )
     .add_to_registry()
 )
