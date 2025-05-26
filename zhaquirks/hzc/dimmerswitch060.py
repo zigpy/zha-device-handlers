@@ -35,47 +35,17 @@ class ModeType(list, metaclass=t.KwargTypeMeta):
 
     _getitem_kwargs = {"item_type": None, "length": None}
 
-    def getStr(self):
-        """Parse [1, 17 00 10 18 00] to '1 17 00 10 18 00'."""
+    def get_arr(self):
+        """Parse ['1', ' ', '1', '7', ' ', '0', ' ', '1', '0', ' ', '1', '8', ' ', '0'] to ['1', '17', '0', '10', '18', '0']."""
         arr = list(self)
-        chunks = []
-        current_chunk = []
-        current_type = None  # 'digit' or 'space'
-        for c in arr:
-            if c == " ":
-                if current_type == "space":
-                    current_chunk.append(c)
-                else:
-                    if current_chunk:
-                        chunks.append("".join(current_chunk))
-                        current_chunk = []
-                    current_type = "space"
-                    current_chunk.append(c)
-            elif current_type == "digit":
-                current_chunk.append(c)
-            else:
-                if current_chunk:
-                    chunks.append("".join(current_chunk))
-                    current_chunk = []
-                current_type = "digit"
-                current_chunk.append(c)
-
-        if current_chunk:
-            chunks.append("".join(current_chunk))
-
-        result = "".join(chunks)
-        return result
-
-    """General data"""
+        return re.split(r"\s+", "".join(arr))
 
     def serialize(self) -> bytes:
         """Return serialize data."""
         assert self._length is not None
-        res = self.getStr()
-        res = re.split(r"\s+", res)
+        res = self.get_arr()
         if len(res) != 6:
             raise ValueError(f"Invalid length for {res}: expected {6}, got {len(res)}")
-        # 1 17 45 255 00 00
         res = b"".join([self._item_type(i).serialize() for i in res])
         return res
 
