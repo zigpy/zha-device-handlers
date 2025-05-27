@@ -38,7 +38,7 @@ class ThirdRealityTemperatureAndHumidityCluster(CustomCluster):
 
 (
     QuirkBuilder("Third Reality, Inc", "3RTHS0224Z")
-    .also_applies_to("Third Reality","3RTHS0224Z")
+    .also_applies_to("Third Reality", "3RTHS0224Z")
     .replaces(ThirdRealityTemperatureAndHumidityCluster)
     .removes(PollControl.cluster_id)
     .number(
