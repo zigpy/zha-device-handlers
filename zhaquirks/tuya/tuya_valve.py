@@ -211,16 +211,17 @@ def giex_string_to_td(v: str) -> int:
     return timedelta(hours=dt.hour, minutes=dt.minute, seconds=dt.second).seconds
 
 
-def giex_string_to_ts(v: str) -> int | None:
+def giex_string_to_dt(v: str) -> datetime | None:
     """Convert Giex String Duration datetime."""
     dev_tz = timezone(timedelta(hours=4))
     dev_dt = datetime.now(dev_tz)
+
     try:
         dt = datetime.strptime(v, "%H:%M:%S").replace(tzinfo=dev_tz)
-        dev_dt.replace(hour=dt.hour, minute=dt.minute, second=dt.second)
     except ValueError:
         return None  # on initial start the device will return '--:--:--'
-    return int(dev_dt.timestamp() + UNIX_EPOCH_TO_ZCL_EPOCH)
+    else:
+        return dev_dt.replace(hour=dt.hour, minute=dt.minute, second=dt.second)
 
 
 gx02_base_quirk = (
@@ -273,7 +274,7 @@ gx02_base_quirk = (
         dp_id=101,
         attribute_name="irrigation_start_time",
         type=t.CharacterString,
-        converter=lambda x: giex_string_to_ts(x),
+        converter=lambda x: giex_string_to_dt(x),
         device_class=SensorDeviceClass.TIMESTAMP,
         translation_key="irrigation_start_time",
         fallback_name="Irrigation start time",
@@ -282,7 +283,7 @@ gx02_base_quirk = (
         dp_id=102,
         attribute_name="irrigation_end_time",
         type=t.CharacterString,
-        converter=lambda x: giex_string_to_ts(x),
+        converter=lambda x: giex_string_to_dt(x),
         device_class=SensorDeviceClass.TIMESTAMP,
         translation_key="irrigation_end_time",
         fallback_name="Irrigation end time",
