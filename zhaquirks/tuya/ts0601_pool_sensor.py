@@ -4,7 +4,6 @@ from typing import Final
 
 from zigpy.quirks.v2.homeassistant import (
     CONCENTRATION_PARTS_PER_MILLION,
-    CONDUCTIVITY,
     UnitOfConductivity,
     UnitOfElectricPotential,
 )
@@ -35,7 +34,7 @@ class TuyaPoolManufCluster(TuyaMCUCluster):
         attribute_name="ph_measured_value",
         divisor=100,
         type=t.uint16_t,
-        state_class=SensorStateClass.VOLTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.PH,
         fallback_name="pH",
     )
@@ -53,7 +52,8 @@ class TuyaPoolManufCluster(TuyaMCUCluster):
         attribute_name="ec_measured_value",
         type=t.uint16_t,
         unit=UnitOfConductivity.MICROSIEMENS_PER_CM,
-        state_class=SensorStateClass.CONDUCTIVITY,
+        state_class=SensorStateClass.MEASUREMENT,
+        translation_key="ec_measured_value",
         fallback_name="Electrical conductivity",
     )
     .tuya_sensor(
@@ -71,7 +71,7 @@ class TuyaPoolManufCluster(TuyaMCUCluster):
         type=t.uint16_t,
         unit=UnitOfElectricPotential.MILLIVOLT,
         device_class=SensorDeviceClass.VOLTAGE,
-        state_class=SensorStateClass.VOLTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
         translation_key="redox_potential",
         fallback_name="ORP level",
     )
@@ -122,7 +122,7 @@ class TuyaPoolManufCluster(TuyaMCUCluster):
         min_value=0,
         max_value=20000,
         mode="box",
-        unit=CONDUCTIVITY,
+        unit=UnitOfConductivity.MICROSIEMENS_PER_CM,
         device_class=SensorDeviceClass.VOLTAGE,
         translation_key="ec_max_value",
         fallback_name="EC maximum value",
@@ -136,7 +136,7 @@ class TuyaPoolManufCluster(TuyaMCUCluster):
         min_value=0,
         max_value=20000,
         mode="box",
-        unit=CONDUCTIVITY,
+        unit=UnitOfConductivity.MICROSIEMENS_PER_CM,
         device_class=SensorDeviceClass.VOLTAGE,
         translation_key="ec_min_value",
         fallback_name="EC minimum value",
