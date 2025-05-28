@@ -11,7 +11,12 @@ import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic
 from zigpy.zcl.clusters.measurement import OccupancySensing
-from zigpy.zcl.foundation import ZCLAttributeDef
+from zigpy.zcl.foundation import (
+    BaseCommandDefs,
+    Direction,
+    ZCLAttributeDef,
+    ZCLCommandDef,
+)
 
 from zhaquirks.const import (
     ARGS,
@@ -340,3 +345,21 @@ class PhilipsRwlRemoteCluster(PhilipsRemoteCluster):
         3: Button("down", DIM_DOWN),
         4: Button("off", TURN_OFF),
     }
+
+
+class PhilipsHueLightCluster(CustomCluster):
+    """Philips Hue manufacturer cluster."""
+
+    cluster_id: Final[t.uint16_t] = 0xFC03
+    ep_attribute: Final[str] = "philips_hue_light_cluster"
+    name: Final[str] = "PhilipsHueLightCluster"
+
+    class ServerCommandDefs(BaseCommandDefs):
+        """Server command definitions."""
+
+        multicolor: Final = ZCLCommandDef(
+            id=0x00,
+            schema={"data": t.SerializableBytes},
+            direction=Direction.Client_to_Server,
+            is_manufacturer_specific=True,
+        )

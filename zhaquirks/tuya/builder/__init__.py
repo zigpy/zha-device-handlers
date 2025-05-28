@@ -6,7 +6,7 @@ import inspect
 import math
 import pathlib
 from types import FrameType
-from typing import Any, Optional
+from typing import Any
 
 from zigpy.quirks import _DEVICE_REGISTRY
 from zigpy.quirks.registry import DeviceRegistry
@@ -20,6 +20,7 @@ from zigpy.zcl import foundation
 from zigpy.zcl.clusters.measurement import (
     PM25,
     CarbonDioxideConcentration,
+    ElectricalConductivity,
     FormaldehydeConcentration,
     IlluminanceMeasurement,
     RelativeHumidity,
@@ -33,6 +34,7 @@ from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 from zhaquirks.const import BatterySize
 from zhaquirks.tuya import (
     TUYA_CLUSTER_ID,
+    TUYA_SET_DATA,
     BaseEnchantedDevice,
     PowerConfiguration,
     TuyaLocalCluster,
@@ -65,6 +67,10 @@ class TuyaCO2Concentration(CarbonDioxideConcentration, TuyaLocalCluster):
     """Tuya Carbon Dioxide concentration measurement."""
 
 
+class TuyaElectricalConductivity(ElectricalConductivity, TuyaLocalCluster):
+    """Tuya Electrical Conductivity measurement."""
+
+
 class TuyaFormaldehydeConcentration(FormaldehydeConcentration, TuyaLocalCluster):
     """Tuya Formaldehyde concentration measurement."""
 
@@ -84,6 +90,14 @@ class TuyaIasFire(IasZone, TuyaLocalCluster):
 
     _CONSTANT_ATTRIBUTES = {
         IasZone.AttributeDefs.zone_type.id: IasZone.ZoneType.Fire_Sensor
+    }
+
+
+class TuyaIasVibration(IasZone, TuyaLocalCluster):
+    """Tuya local IAS vibration cluster."""
+
+    _CONSTANT_ATTRIBUTES = {
+        IasZone.AttributeDefs.zone_type.id: IasZone.ZoneType.Vibration_Movement_Sensor
     }
 
 
@@ -188,7 +202,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
     ) -> None:
         """Init the TuyaQuirkBuilder."""
         self.tuya_data_point_handlers: dict[int, str] = {}
-        self.tuya_dp_to_attribute: dict[int, DPToAttributeMapping] = {}
+        self.tuya_dp_to_attribute: dict[int, list[DPToAttributeMapping]] = {}
         self.new_attributes: set[foundation.ZCLAttributeDef] = set()
         super().__init__(manufacturer, model, registry)
         # quirk_file will point to the init call above if called from this QuirkBuilder,
@@ -248,7 +262,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         self,
         dp_id: int,
         illuminance_cfg: TuyaLocalCluster = TuyaIlluminance,
-        converter: Optional[Callable[[Any], Any]] = (
+        converter: Callable[[Any], Any] | None = (
             lambda x: 10000 * math.log10(x) + 1 if x != 0 else 0
         ),
     ) -> QuirkBuilder:
@@ -285,6 +299,22 @@ class TuyaQuirkBuilder(QuirkBuilder):
             converter=lambda x: x * scale,
         )
         self.adds(co2_cfg)
+        return self
+
+    def tuya_electrical_conductivity(
+        self,
+        dp_id: int,
+        ec_cfg: TuyaLocalCluster = TuyaElectricalConductivity,
+        scale: float = 1,
+    ) -> QuirkBuilder:
+        """Add a Tuya Electrical Conductivity Configuration."""
+        self.tuya_dp(
+            dp_id,
+            ec_cfg.ep_attribute,
+            ElectricalConductivity.AttributeDefs.measured_value.name,
+            converter=lambda x: x * scale,
+        )
+        self.adds(ec_cfg)
         return self
 
     def tuya_formaldehyde(
@@ -345,7 +375,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         self,
         dp_id: int,
         ias_cfg: TuyaLocalCluster,
-        converter: Optional[Callable[[Any], Any]] = None,
+        converter: Callable[[Any], Any] | None = None,
     ) -> QuirkBuilder:
         """Add a Tuya IAS Configuration."""
         self.tuya_dp(
@@ -435,6 +465,15 @@ class TuyaQuirkBuilder(QuirkBuilder):
         self.adds(temp_cfg)
         return self
 
+    def tuya_vibration(self, dp_id: int):
+        """Add a Tuya IAS vibration sensor."""
+        self.tuya_ias(
+            dp_id=dp_id,
+            ias_cfg=TuyaIasVibration,
+            converter=lambda x: IasZone.ZoneStatus.Alarm_1 if x != 0 else 0,
+        )
+        return self
+
     def tuya_voc(
         self,
         dp_id: int,
@@ -479,23 +518,40 @@ class TuyaQuirkBuilder(QuirkBuilder):
         dp_id: int,
         ep_attribute: str,
         attribute_name: str,
-        converter: Optional[Callable[[Any], Any]] = None,
-        dp_converter: Optional[Callable[[Any], Any]] = None,
-        endpoint_id: Optional[int] = None,
+        converter: Callable[[Any], Any] | None = None,
+        dp_converter: Callable[[Any], Any] | None = None,
+        endpoint_id: int | None = None,
         dp_handler: str = "_dp_2_attr_update",
-    ) -> QuirkBuilder:  # fmt: skip
+    ) -> QuirkBuilder:
         """Add Tuya DP Converter."""
-        self.tuya_dp_to_attribute.update(
-            {
-                dp_id: DPToAttributeMapping(
+
+        self.tuya_dp_multi(
+            dp_id,
+            [
+                DPToAttributeMapping(
                     ep_attribute,
                     attribute_name,
                     converter=converter,
                     dp_converter=dp_converter,
                     endpoint_id=endpoint_id,
                 )
-            }
+            ],
+            dp_handler,
         )
+        return self
+
+    def tuya_dp_multi(
+        self,
+        dp_id: int,
+        attribute_mapping: list[DPToAttributeMapping],
+        dp_handler: str = "_dp_2_attr_update",
+    ) -> QuirkBuilder:  # fmt: skip
+        """Add Tuya DP Converter that maps to multiple attributes."""
+
+        if dp_id in self.tuya_dp_to_attribute:
+            raise ValueError(f"DP {dp_id} is already mapped.")
+
+        self.tuya_dp_to_attribute.update({dp_id: attribute_mapping})
         self.tuya_data_point_handlers.update({dp_id: dp_handler})
         return self
 
@@ -504,14 +560,14 @@ class TuyaQuirkBuilder(QuirkBuilder):
         dp_id: int,
         attribute_name: str,
         ep_attribute: str = TuyaMCUCluster.ep_attribute,
-        converter: Optional[Callable[[Any], Any]] = None,
-        dp_converter: Optional[Callable[[Any], Any]] = None,
-        endpoint_id: Optional[int] = None,
+        converter: Callable[[Any], Any] | None = None,
+        dp_converter: Callable[[Any], Any] | None = None,
+        endpoint_id: int | None = None,
         dp_handler: str = "_dp_2_attr_update",
         type: type = t.uint16_t,
         access: foundation.ZCLAttributeAccess = foundation.ZCLAttributeAccess.NONE,
         is_manufacturer_specific=True,
-    ) -> QuirkBuilder:  # fmt: skip
+    ) -> QuirkBuilder:
         """Add an Tuya DataPoint and corresponding AttributeDef."""
         self.tuya_attribute(
             dp_id=dp_id,
@@ -708,8 +764,8 @@ class TuyaQuirkBuilder(QuirkBuilder):
         dp_id: int,
         attribute_name: str,
         type: type,
-        converter: Optional[Callable[[Any], Any]] = None,
-        dp_converter: Optional[Callable[[Any], Any]] = None,
+        converter: Callable[[Any], Any] | None = None,
+        dp_converter: Callable[[Any], Any] | None = None,
         endpoint_id: int = 1,
         divisor: int = 1,
         multiplier: int = 1,
@@ -721,7 +777,7 @@ class TuyaQuirkBuilder(QuirkBuilder):
         attribute_initialized_from_cache: bool = True,
         translation_key: str | None = None,
         fallback_name: str | None = None,
-    ) -> QuirkBuilder:  # fmt: skip
+    ) -> QuirkBuilder:
         """Add an EntityMetadata containing ZCLSensorMetadata and return self.
 
         This method allows exposing a sensor entity in Home Assistant.
@@ -770,34 +826,47 @@ class TuyaQuirkBuilder(QuirkBuilder):
         return self
 
     def add_to_registry(
-        self, replacement_cluster: TuyaMCUCluster = TuyaMCUCluster
+        self,
+        replacement_cluster: TuyaMCUCluster = TuyaMCUCluster,
+        force_add_cluster: bool = False,
+        mcu_write_command: foundation.GeneralCommand | int | t.uint8_t = TUYA_SET_DATA,
     ) -> QuirksV2RegistryEntry:
-        """Build the quirks v2 registry entry."""
+        """Build the quirks v2 registry entry.
 
-        class NewAttributeDefs(TuyaMCUCluster.AttributeDefs):
-            """Attribute Definitions."""
+        :param replacement_cluster: The cluster to add or replace the Tuya cluster with.
+        :param force_add_cluster: Force add the Tuya cluster,
+            even if no new Tuya attributes/datapoints were added before.
+        :param mcu_write_command: The MCU command to use for the Tuya MCU cluster.
+            Default is TUYA_SET_DATA. Few devices use TUYA_SEND_DATA instead.
+        :return: The quirks v2 registry entry.
+        """
 
-        for attr in self.new_attributes:
-            setattr(NewAttributeDefs, attr.name, attr)
+        if (
+            self.new_attributes
+            or self.tuya_data_point_handlers
+            or self.tuya_dp_to_attribute
+            or force_add_cluster
+        ):
 
-        class TuyaReplacementCluster(replacement_cluster):  # type: ignore[valid-type]
-            """Replacement Tuya Cluster."""
-
-            data_point_handlers: dict[int, str]
-            dp_to_attribute: dict[int, DPToAttributeMapping]
-
-            class AttributeDefs(NewAttributeDefs):
+            class NewAttributeDefs(TuyaMCUCluster.AttributeDefs):
                 """Attribute Definitions."""
 
-            async def write_attributes(self, attributes, manufacturer=None):
-                """Overwrite to force manufacturer code."""
+            for attr in self.new_attributes:
+                setattr(NewAttributeDefs, attr.name, attr)
 
-                return await super().write_attributes(
-                    attributes, manufacturer=foundation.ZCLHeader.NO_MANUFACTURER_ID
-                )
+            class TuyaReplacementCluster(replacement_cluster):  # type: ignore[valid-type]
+                """Replacement Tuya Cluster."""
 
-        TuyaReplacementCluster.data_point_handlers = self.tuya_data_point_handlers
-        TuyaReplacementCluster.dp_to_attribute = self.tuya_dp_to_attribute
+                data_point_handlers: dict[int, str]
+                dp_to_attribute: dict[int, list[DPToAttributeMapping]]
 
-        self.replaces(TuyaReplacementCluster)
+                class AttributeDefs(NewAttributeDefs):
+                    """Attribute Definitions."""
+
+            TuyaReplacementCluster.data_point_handlers = self.tuya_data_point_handlers
+            TuyaReplacementCluster.dp_to_attribute = self.tuya_dp_to_attribute
+
+            TuyaReplacementCluster.mcu_write_command = mcu_write_command
+
+            self.replaces(TuyaReplacementCluster)
         return super().add_to_registry()

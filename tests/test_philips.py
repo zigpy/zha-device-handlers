@@ -3,6 +3,8 @@
 from unittest import mock
 
 import pytest
+from zigpy.quirks import CustomEndpoint
+from zigpy.zcl import Cluster
 from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.foundation import ZCLHeader
 
@@ -794,3 +796,101 @@ def test_PhilipsRemoteCluster_multi_button_press(
 
     for i, expected_action in enumerate(expected_actions):
         assert remote_listener.zha_send_event.call_args_list[i][0][0] == expected_action
+
+
+def listen_to_all(device) -> mock.MagicMock:
+    """Add a mock listener to all clusters of all endpoints of a device."""
+
+    listener = mock.MagicMock()
+
+    for endpoint in device.endpoints.values():
+        if not isinstance(endpoint, CustomEndpoint):
+            continue
+
+        for cluster in endpoint.in_clusters.values():
+            if isinstance(cluster, Cluster):
+                cluster.add_listener(listener)
+
+        for cluster in endpoint.out_clusters.values():
+            if isinstance(cluster, Cluster):
+                cluster.add_listener(listener)
+
+    return listener
+
+
+def test_RDM002_no_levelcontrol_on_long_press(zigpy_device_from_quirk):
+    """Button long-presses shouldn't trigger LevelControl events."""
+
+    device = zigpy_device_from_quirk(PhilipsRDM002)
+    listener = listen_to_all(device)
+
+    # All below messages are triggered when long pressing button 1 for ~1.5 seconds
+
+    # Received command 0x00 (TSN 223): notification(button=1, param2=3145728, press_type=0, param4=33, param5=0)
+    hdr, args = (
+        device.endpoints[1]
+        .in_clusters[0xFC00]
+        .deserialize(b"\x1d\x0b\x10\xdf\x00\x01\x00\x000\x00!\x00\x00")
+    )
+    device.endpoints[1].in_clusters[0xFC00].handle_message(hdr, args)
+
+    # Received command 0x06 (TSN 224): step_with_on_off(step_mode=<StepMode.Down: 1>, step_size=255, transition_time=8)
+    hdr, args = (
+        device.endpoints[1]
+        .out_clusters[0x0008]
+        .deserialize(b"\x01\xe0\x06\x01\xff\x08\x00")
+    )
+    device.endpoints[1].out_clusters[0x0008].handle_message(hdr, args)
+
+    # Received command 0x00 (TSN 225): notification(button=1, param2=3145728, press_type=1, param4=33, param5=8)
+    hdr, args = (
+        device.endpoints[1]
+        .in_clusters[0xFC00]
+        .deserialize(b"\x1d\x0b\x10\xe1\x00\x01\x00\x000\x01!\x08\x00")
+    )
+    device.endpoints[1].in_clusters[0xFC00].handle_message(hdr, args)
+
+    # Received command 0x00 (TSN 226): notification(button=1, param2=3145728, press_type=3, param4=33, param5=10)
+    hdr, args = (
+        device.endpoints[1]
+        .in_clusters[0xFC00]
+        .deserialize(b"\x1d\x0b\x10\xe2\x00\x01\x00\x000\x03!\n\x00")
+    )
+    device.endpoints[1].in_clusters[0xFC00].handle_message(hdr, args)
+
+    # we emit those from PhilipsRdm002RemoteCluster. One hold, one long_press_release event.
+    assert listener.zha_send_event.call_count == 2
+
+    # one for each frame received, except for the one we balckhole, so 4 - 1
+    assert listener.cluster_command.call_count == 3
+
+
+def test_RDM002_levelcontrol_on_dial_rotary_event(zigpy_device_from_quirk):
+    """Dial rotary events shouldn't be muted by PhilipsRdm002LevelControl."""
+
+    device = zigpy_device_from_quirk(PhilipsRDM002)
+    listener = listen_to_all(device)
+
+    # All below messages are triggered when quickly rotating the dial counterclockwise
+
+    # Received command 0x06 (TSN 231): step_with_on_off(step_mode=<StepMode.Down: 1>, step_size=68, transition_time=4)
+    hdr, args = (
+        device.endpoints[1]
+        .out_clusters[0x0008]
+        .deserialize(b"\x01\xe7\x06\x01D\x04\x00")
+    )
+    device.endpoints[1].out_clusters[0x0008].handle_message(hdr, args)
+
+    # Received command 0x00 (TSN 232): notification(button=20, param2=3145984, press_type=1, param4=41, param5=65370)
+    hdr, args = (
+        device.endpoints[1]
+        .in_clusters[0xFC00]
+        .deserialize(
+            b"\x1d\x0b\x10\xe8\x00\x14\x00\x010\x01)Z\xff!d\x00)Z\xff!d\x00)Z\xff!\x90\x01"
+        )
+    )
+    device.endpoints[1].in_clusters[0xFC00].handle_message(hdr, args)
+
+    # These call counts is the same, regardless of whether PhilipsRdm002LevelControl is used or not.
+    assert listener.zha_send_event.call_count == 0
+    assert listener.cluster_command.call_count == 2

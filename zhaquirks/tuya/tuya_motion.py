@@ -74,6 +74,17 @@ class TuyaPresenceState(t.enum8):
     Large_movement = 0x04
 
 
+class TuyaPresenceStateV02(t.enum8):
+    """Tuya presence state enum, variation 02."""
+
+    Unoccupied = 0x00
+    Large = 0x01
+    Medium = 0x02
+    Small = 0x03
+    Huge = 0x04
+    Gigantic = 0x05
+
+
 class TuyaBreakerMode(t.enum8):
     """Tuya breaker mode enum."""
 
@@ -119,6 +130,15 @@ class TuyaHumanMotionState(t.enum8):
     Large = 0x02
 
 
+class TuyaHumanMotionStateV02(t.enum8):
+    """Tuya human motion state enum, variation 02."""
+
+    Off = 0x00
+    Large = 0x01
+    Small = 0x02
+    Static = 0x03
+
+
 class TuyaMotionWorkMode(t.enum8):
     """Tuya motion working mode enum."""
 
@@ -149,6 +169,14 @@ class TuyaSensitivityMode(t.enum8):
     Low = 0x00
     Medium = 0x01
     High = 0x02
+
+
+class TuyaMotionDetectionMode(t.enum8):
+    """Tuya motion detection mode enum."""
+
+    Only_PIR = 0x00
+    PIR_and_radar = 0x01
+    Only_radar = 0x03
 
 
 base_tuya_motion = (
@@ -245,8 +273,8 @@ base_tuya_motion = (
         min_value=1,
         max_value=15000,
         step=1,
-        translation_key="presence_timeout",
-        fallback_name="Fade time",
+        translation_key="fading_time",
+        fallback_name="Fading time",
     )
     .add_to_registry()
 )
@@ -348,6 +376,59 @@ base_tuya_motion = (
         fallback_name="Fading time",
     )
     .tuya_illuminance(dp_id=104)
+    .add_to_registry()
+)
+
+# Whenzi Tuya WZ-M100
+# https://github.com/wzwenzhi/Wenzhi-ZigBee2mqtt/blob/main/wenzhi_tuya_M100_240704.js
+(
+    base_tuya_motion.clone()
+    .applies_to("_TZE204_laokfqwu", "TS0601")
+    .applies_to("_TZE200_clrdrnya", "TS0601")
+    .tuya_dp(
+        dp_id=1,
+        ep_attribute=TuyaOccupancySensing.ep_attribute,
+        attribute_name=OccupancySensing.AttributeDefs.occupancy.name,
+        converter=lambda x: x == 1,
+    )
+    # 2, 3, 4, and 9 from base
+    .tuya_number(
+        dp_id=104,
+        attribute_name="interval_time",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        min_value=1,
+        max_value=3600,
+        step=1,
+        translation_key="interval_time",
+        fallback_name="Interval time",
+    )
+    .tuya_number(
+        dp_id=105,
+        attribute_name="detection_delay",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        min_value=0.1,
+        max_value=10,
+        step=0.1,
+        translation_key="detection_delay",
+        fallback_name="Detection delay",
+    )
+    .tuya_number(
+        dp_id=106,
+        attribute_name="fading_time",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        min_value=5,
+        max_value=1500,
+        step=5,
+        translation_key="fading_time",
+        fallback_name="Fading time",
+    )
+    .tuya_illuminance(dp_id=103)
     .add_to_registry()
 )
 
@@ -913,7 +994,6 @@ base_tuya_motion = (
         attribute_name="tamper",
         device_class=BinarySensorDeviceClass.TAMPER,
         entity_type=EntityType.DIAGNOSTIC,
-        translation_key="tamper",
         fallback_name="Tamper",
     )
     .tuya_number(
@@ -928,15 +1008,15 @@ base_tuya_motion = (
     )
     .tuya_number(
         dp_id=105,
-        attribute_name="presence_timeout",
+        attribute_name="fading_time",
         type=t.uint16_t,
         device_class=SensorDeviceClass.DURATION,
         unit=UnitOfTime.MINUTES,
         min_value=1,
         max_value=30,
         step=1,
-        translation_key="presence_timeout",
-        fallback_name="Fade time",
+        translation_key="fading_time",
+        fallback_name="Fading time",
     )
     .skip_configuration()
     .add_to_registry()
@@ -1069,7 +1149,7 @@ base_tuya_motion = (
         dp_id=1,
         ep_attribute=TuyaOccupancySensing.ep_attribute,
         attribute_name=OccupancySensing.AttributeDefs.occupancy.name,
-        converter=lambda x: x == 1,
+        converter=lambda x: x == 0,
     )
     .adds(TuyaOccupancySensing)
     .tuya_battery(dp_id=4)
@@ -1082,10 +1162,10 @@ base_tuya_motion = (
     )
     .tuya_enum(
         dp_id=10,
-        attribute_name="fade_time",
+        attribute_name="fading_time",
         enum_class=TuyaMotionFadeTime,
-        translation_key="fade_time",
-        fallback_name="Fade time",
+        translation_key="fading_time",
+        fallback_name="Fading time",
     )
     .tuya_illuminance(dp_id=12)
     .tuya_number(
@@ -1140,7 +1220,7 @@ base_tuya_motion = (
         fallback_name="Maximum range",
     )
     .tuya_number(
-        dp_id=107,
+        dp_id=108,
         attribute_name="detection_distance_min",
         type=t.uint16_t,
         device_class=SensorDeviceClass.DISTANCE,
@@ -1234,6 +1314,298 @@ base_tuya_motion = (
         step=1,
         translation_key="fading_time",
         fallback_name="Fading time",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# Tuya ZG-205Z/A, 5.8Ghz/24Ghz Human presence sensor.
+(
+    TuyaQuirkBuilder("_TZE200_2aaelwxk", "TS0225")
+    .tuya_dp(
+        dp_id=1,
+        ep_attribute=TuyaOccupancySensing.ep_attribute,
+        attribute_name=OccupancySensing.AttributeDefs.occupancy.name,
+        converter=lambda x: x == 1,
+    )
+    .adds(TuyaOccupancySensing)
+    .tuya_number(
+        dp_id=2,
+        attribute_name="large_motion_detection_sensitivity",
+        type=t.uint16_t,
+        min_value=0,
+        max_value=10,
+        step=1,
+        translation_key="large_motion_detection_sensitivity",
+        fallback_name="Motion detection sensitivity",
+    )
+    .tuya_number(
+        dp_id=4,
+        attribute_name="large_motion_detection_distance",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DISTANCE,
+        unit=UnitOfLength.METERS,
+        min_value=0,
+        max_value=10,
+        step=1,
+        multiplier=0.01,
+        translation_key="large_motion_detection_distance",
+        fallback_name="Motion detection distance",
+    )
+    .tuya_enum(
+        dp_id=101,
+        attribute_name="motion_state",
+        enum_class=TuyaPresenceStateV02,
+        translation_key="motion_state",
+        fallback_name="Motion state",
+    )
+    .tuya_number(
+        dp_id=102,
+        attribute_name="presence_timeout",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        min_value=0,
+        max_value=28800,
+        step=1,
+        translation_key="fading_time",
+        fallback_name="Fading time",
+    )
+    .tuya_number(
+        dp_id=104,
+        attribute_name="medium_motion_detection_distance",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DISTANCE,
+        unit=UnitOfLength.METERS,
+        min_value=0,
+        max_value=6,
+        step=0.01,
+        multiplier=0.01,
+        translation_key="medium_motion_detection_distance",
+        fallback_name="Medium motion detection distance",
+    )
+    .tuya_number(
+        dp_id=105,
+        attribute_name="medium_motion_detection_sensitivity",
+        type=t.uint16_t,
+        min_value=0,
+        max_value=10,
+        step=1,
+        translation_key="medium_motion_detection_sensitivity",
+        fallback_name="Medium motion detection sensitivity",
+    )
+    .tuya_illuminance(dp_id=106)
+    .tuya_switch(
+        dp_id=107,
+        attribute_name="find_switch",
+        entity_type=EntityType.STANDARD,
+        translation_key="led_indicator",
+        fallback_name="LED indicator",
+    )
+    .tuya_number(
+        dp_id=108,
+        attribute_name="small_motion_detection_distance",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DISTANCE,
+        unit=UnitOfLength.METERS,
+        min_value=0,
+        max_value=6,
+        step=0.01,
+        multiplier=0.01,
+        translation_key="small_motion_detection_distance",
+        fallback_name="Small motion detection distance",
+    )
+    .tuya_number(
+        dp_id=109,
+        attribute_name="small_motion_detection_sensitivity",
+        type=t.uint16_t,
+        min_value=0,
+        max_value=10,
+        step=1,
+        translation_key="small_motion_detection_sensitivity",
+        fallback_name="Small motion detection sensitivity",
+    )
+    # Remaining DPs not exposed in z2m.
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# Tuya PIR 24Ghz human presence sensor, ZG-204ZM
+(
+    TuyaQuirkBuilder("_TZE200_2aaelwxk", "TS0601")
+    .applies_to("_TZE200_kb5noeto", "TS0601")
+    .tuya_dp(
+        dp_id=1,
+        ep_attribute=TuyaOccupancySensing.ep_attribute,
+        attribute_name=OccupancySensing.AttributeDefs.occupancy.name,
+        converter=lambda x: x == 1,
+    )
+    .adds(TuyaOccupancySensing)
+    .tuya_number(
+        dp_id=2,
+        attribute_name="static_detection_sensitivity",
+        type=t.uint16_t,
+        min_value=0,
+        max_value=10,
+        step=1,
+        translation_key="static_detection_sensitivity",
+        fallback_name="Static detection sensitivity",
+    )
+    .tuya_number(
+        dp_id=4,
+        attribute_name="static_detection_distance",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DISTANCE,
+        unit=UnitOfLength.METERS,
+        min_value=0,
+        max_value=10,
+        step=1,
+        multiplier=0.01,
+        translation_key="static_detection_distance",
+        fallback_name="Static detection distance",
+    )
+    .tuya_enum(
+        dp_id=101,
+        attribute_name="human_motion_state",
+        enum_class=TuyaHumanMotionStateV02,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.STANDARD,
+        translation_key="human_motion_state",
+        fallback_name="Human motion state",
+    )
+    .tuya_number(
+        dp_id=102,
+        attribute_name="presence_timeout",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        min_value=0,
+        max_value=28800,
+        step=1,
+        translation_key="fading_time",
+        fallback_name="Fading time",
+    )
+    .tuya_illuminance(dp_id=106)
+    .tuya_switch(
+        dp_id=107,
+        attribute_name="find_switch",
+        entity_type=EntityType.STANDARD,
+        translation_key="led_indicator",
+        fallback_name="LED indicator",
+    )
+    .tuya_battery(dp_id=121)
+    .tuya_enum(
+        dp_id=122,
+        attribute_name="motion_detection_mode",
+        enum_class=TuyaMotionDetectionMode,
+        translation_key="motion_detection_mode",
+        fallback_name="Motion detection mode",
+    )
+    .tuya_number(
+        dp_id=123,
+        attribute_name="motion_detection_sensitivity",
+        type=t.uint16_t,
+        min_value=0,
+        max_value=10,
+        step=1,
+        translation_key="motion_detection_sensitivity",
+        fallback_name="Motion detection sensitivity",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# Tuya mmWave radar 5.8GHz, ZY_HPS01
+(
+    TuyaQuirkBuilder("_TZE204_ex3rcdha", "TS0601")
+    .tuya_illuminance(dp_id=12)
+    .tuya_dp(
+        dp_id=101,
+        ep_attribute=TuyaOccupancySensing.ep_attribute,
+        attribute_name=OccupancySensing.AttributeDefs.occupancy.name,
+        converter=lambda x: x == 0,
+    )
+    .adds(TuyaOccupancySensing)
+    .tuya_number(
+        dp_id=104,
+        attribute_name="presence_timeout",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        min_value=1,
+        max_value=180,
+        step=1,
+        translation_key="fading_time",
+        fallback_name="Fading time",
+    )
+    .tuya_number(
+        dp_id=105,
+        attribute_name="move_sensitivity",
+        type=t.uint16_t,
+        min_value=0,
+        max_value=10,
+        step=1,
+        translation_key="move_sensitivity",
+        fallback_name="Motion sensitivity",
+    )
+    .tuya_number(
+        dp_id=107,
+        attribute_name="breath_sensitivity",
+        type=t.uint16_t,
+        min_value=0,
+        max_value=10,
+        step=1,
+        translation_key="breath_sensitivity",
+        fallback_name="Breath sensitivity",
+    )
+    .tuya_number(
+        dp_id=109,
+        attribute_name="detection_distance_max",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DISTANCE,
+        unit=UnitOfLength.CENTIMETERS,
+        min_value=0,
+        max_value=600,
+        step=1,
+        translation_key="detection_distance_max",
+        fallback_name="Maximum range",
+    )
+    .tuya_number(
+        dp_id=110,
+        attribute_name="detection_distance_min",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DISTANCE,
+        unit=UnitOfLength.CENTIMETERS,
+        min_value=0,
+        max_value=600,
+        step=1,
+        translation_key="detection_distance_min",
+        fallback_name="Minimum range",
+    )
+    .tuya_number(
+        dp_id=111,
+        attribute_name="breath_detection_min",
+        type=t.uint16_t,
+        min_value=0,
+        max_value=600,
+        step=10,
+        unit=UnitOfLength.CENTIMETERS,
+        translation_key="breath_detection_min",
+        fallback_name="Breath detection min",
+    )
+    .tuya_number(
+        dp_id=112,
+        attribute_name="breath_detection_max",
+        type=t.uint16_t,
+        min_value=0,
+        max_value=600,
+        step=10,
+        unit=UnitOfLength.CENTIMETERS,
+        translation_key="breath_detection_max",
+        fallback_name="Breath detection max",
     )
     .skip_configuration()
     .add_to_registry()

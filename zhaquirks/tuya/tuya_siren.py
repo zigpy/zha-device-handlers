@@ -133,6 +133,8 @@ class NeoBatteryState(t.enum8):
 
 (
     TuyaQuirkBuilder("_TZE204_nlrfgpny", "TS0601")
+    .applies_to("TZE200_nlrfgpny", "TS0601")
+    .applies_to("_TZE284_nlrfgpny", "TS0601")
     .tuya_enum(
         dp_id=1,
         attribute_name="alarm_state",
@@ -171,11 +173,10 @@ class NeoBatteryState(t.enum8):
     )
     .tuya_binary_sensor(
         dp_id=20,
-        attribute_name="tamper_state",
+        attribute_name="tamper",
         device_class=BinarySensorDeviceClass.TAMPER,
         entity_type=EntityType.STANDARD,
-        translation_key="tamper_state",
-        fallback_name="Tamper state",
+        fallback_name="Tamper",
     )
     .tuya_enum(
         dp_id=21,
