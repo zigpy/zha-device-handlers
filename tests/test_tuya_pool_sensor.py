@@ -2,14 +2,12 @@
 
 # These tests specifically cover the refresh logic.
 
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import Mock
 
 import pytest
 
 import zhaquirks
-from zhaquirks.tuya import TUYA_QUERY_DATA
 from zhaquirks.tuya.mcu import TuyaMCUCluster
-from zhaquirks.tuya.ts0601_pool_sensor import TuyaPoolManufCluster
 
 zhaquirks.setup()
 

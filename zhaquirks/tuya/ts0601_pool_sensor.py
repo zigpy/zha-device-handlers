@@ -1,21 +1,18 @@
 """Tuya pool sensor."""
 
-import asyncio
 from typing import Final
 
 from zigpy.quirks.v2.homeassistant import (
     CONCENTRATION_PARTS_PER_MILLION,
     CONDUCTIVITY,
+    UnitOfConductivity,
     UnitOfElectricPotential,
-    UnitOfTime,
 )
-
-from zigpy.quirks.v2.homeassistant import UnitOfConductivity
 from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
 
-from zhaquirks.tuya import TUYA_QUERY_DATA, TuyaNewManufCluster
+from zhaquirks.tuya import TuyaNewManufCluster
 from zhaquirks.tuya.builder import BatterySize, TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import TuyaMCUCluster
 
@@ -24,6 +21,8 @@ CONCENTRATION_MICROGRAMS_PER_LITER: Final = "mg/L"
 
 class TuyaPoolManufCluster(TuyaMCUCluster):
     """Tuya Manufacturer cluster"""
+
+
 (
     TuyaQuirkBuilder("_TZE200_v1jqz5cy", "TS0601")
     .tuya_enchantment(read_attr_spell=True, data_query_spell=True)
