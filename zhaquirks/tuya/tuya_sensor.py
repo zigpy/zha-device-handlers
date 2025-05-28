@@ -8,7 +8,6 @@ from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass
 import zigpy.types as t
 from zigpy.zcl import foundation
 
-from zhaquirks.const import BatterySize
 from zhaquirks.tuya import (
     TUYA_SET_TIME,
     TuyaPowerConfigurationCluster2AAA,
@@ -31,6 +30,26 @@ class TuyaNousTempHumiAlarm(t.enum8):
     LowerAlarm = 0x00
     UpperAlarm = 0x01
     Canceled = 0x02
+
+
+class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
+    """Tuya Manufacturer Cluster with set_time mod."""
+
+    set_time_offset = 1970
+    set_time_local_offset = 1970
+
+    # Deepcopy required to override 'set_time', without, it will revert
+    server_commands = copy.deepcopy(TuyaMCUCluster.server_commands)
+    server_commands.update(
+        {
+            TUYA_SET_TIME: foundation.ZCLCommandDef(
+                "set_time",
+                {"time": TuyaTimePayload},
+                False,
+                is_manufacturer_specific=False,
+            ),
+        }
+    )
 
 
 (
@@ -88,26 +107,6 @@ class TuyaNousTempHumiAlarm(t.enum8):
 )
 
 
-class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
-    """Tuya Manufacturer Cluster with set_time mod."""
-
-    set_time_offset = 1970
-    set_time_local_offset = 1970
-
-    # Deepcopy required to override 'set_time', without, it will revert
-    server_commands = copy.deepcopy(TuyaMCUCluster.server_commands)
-    server_commands.update(
-        {
-            TUYA_SET_TIME: foundation.ZCLCommandDef(
-                "set_time",
-                {"time": TuyaTimePayload},
-                False,
-                is_manufacturer_specific=False,
-            ),
-        }
-    )
-
-
 # TH01Z - Temperature and humidity sensor with clock
 (
     TuyaQuirkBuilder("_TZE200_lve3dvpy", "TS0601")
@@ -118,6 +117,9 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .applies_to("_TZE200_eanjj2pa", "TS0601")
     .applies_to("_TZE200_ydrdfkim", "TS0601")
     .applies_to("_TZE284_locansqn", "TS0601")
+    .applies_to("_TZE200_w6n8jeuu", "TS0601")
+    .applies_to("_TZE200_vvmbj46n", "TS0601")
+    .applies_to("_TZE284_vvmbj46n", "TS0601")
     .tuya_temperature(dp_id=1, scale=10)
     .tuya_humidity(dp_id=2)
     .tuya_battery(dp_id=4)
@@ -248,30 +250,9 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
         translation_key="humidity_sensitivity",
         fallback_name="Humidity sensitivity",
     )
+    .tuya_enchantment(data_query_spell=True)
     .skip_configuration()
     .add_to_registry(replacement_cluster=NoManufTimeTuyaMCUCluster)
-)
-
-
-(
-    TuyaQuirkBuilder("_TZE200_yjjdcqsq", "TS0601")
-    .applies_to("_TZE200_9yapgbuv", "TS0601")
-    .applies_to("_TZE204_9yapgbuv", "TS0601")
-    .applies_to("_TZE200_utkemkbs", "TS0601")
-    .applies_to("_TZE204_utkemkbs", "TS0601")
-    .applies_to("_TZE204_yjjdcqsq", "TS0601")
-    .applies_to("_TZE204_ksz749x8", "TS0601")
-    .tuya_temperature(dp_id=1, scale=10)
-    .tuya_humidity(dp_id=2)
-    .tuya_dp(
-        dp_id=4,
-        ep_attribute=TuyaPowerConfigurationCluster2AAA.ep_attribute,
-        attribute_name="battery_percentage_remaining",
-        converter=lambda x: {0: 50, 1: 100, 2: 200}[x],
-    )
-    .adds(TuyaPowerConfigurationCluster2AAA)
-    .skip_configuration()
-    .add_to_registry()
 )
 
 
@@ -279,9 +260,22 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     TuyaQuirkBuilder("_TZE284_aao3yzhs", "TS0601")
     .applies_to("_TZE284_sgabhwa6", "TS0601")
     .applies_to("_TZE284_nhgdf6qr", "TS0601")  # Giex GX04
+    .applies_to("_TZE284_ap9owrsa", "TS0601")  # Novadigital SG-ZB
     .tuya_temperature(dp_id=5, scale=10)
     .tuya_battery(dp_id=15)
     .tuya_soil_moisture(dp_id=3)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+(
+    TuyaQuirkBuilder("_TZE284_rqcuwlsa", "TS0601")  # NEO NAS-STH02B2
+    .tuya_battery(dp_id=15)
+    .tuya_electrical_conductivity(dp_id=1)
+    .tuya_soil_moisture(dp_id=3)
+    .tuya_temperature(dp_id=5, scale=10)
+    .tuya_enchantment(data_query_spell=True)
     .skip_configuration()
     .add_to_registry()
 )
@@ -292,6 +286,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .applies_to("_TZE200_ga1maeof", "TS0601")
     .applies_to("_TZE200_9cqcpkgb", "TS0601")
     .applies_to("_TZE204_myd45weu", "TS0601")
+    .applies_to("_TZE284_myd45weu", "TS0601")
     .applies_to("_TZE200_2se8efxh", "TS0601")  # Immax Neo
     .tuya_temperature(dp_id=5)
     .tuya_battery(dp_id=15)
@@ -302,11 +297,37 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
 
 
 (
-    TuyaQuirkBuilder("_TZE200_pay2byax", "TS0601")  # Cusam ZG-102ZL
-    .applies_to("_TZE200_n8dljorx", "TS0601")
-    .tuya_illuminance(dp_id=101)
-    .tuya_contact(dp_id=1)
-    .tuya_battery(dp_id=2, battery_type=BatterySize.CR2032, battery_qty=1)
+    TuyaQuirkBuilder("_TZE200_upagmta9", "TS0601")
+    .applies_to("_TZE204_upagmta9", "TS0601")
+    .applies_to("_TZE200_cirvgep4", "TS0601")
+    .applies_to("_TZE204_cirvgep4", "TS0601")
+    .applies_to("_TZE204_jygvp6fk", "TS0601")
+    .applies_to("_TZE200_yjjdcqsq", "TS0601")
+    .applies_to("_TZE204_yjjdcqsq", "TS0601")
+    .applies_to("_TZE284_yjjdcqsq", "TS0601")
+    .applies_to("_TZE200_9yapgbuv", "TS0601")
+    .applies_to("_TZE204_9yapgbuv", "TS0601")
+    .applies_to("_TZE200_utkemkbs", "TS0601")
+    .applies_to("_TZE204_utkemkbs", "TS0601")
+    .applies_to("_TZE204_ksz749x8", "TS0601")
+    .tuya_temperature(dp_id=1, scale=10)
+    .tuya_humidity(dp_id=2)
+    .tuya_dp(
+        dp_id=3,
+        ep_attribute=TuyaPowerConfigurationCluster2AAA.ep_attribute,
+        attribute_name="battery_percentage_remaining",
+        converter=lambda x: {0: 50, 1: 100, 2: 200}[x],
+    )
+    .tuya_enum(
+        dp_id=9,
+        attribute_name="display_unit",
+        enum_class=TuyaTempUnitConvert,
+        entity_type=EntityType.CONFIG,
+        translation_key="display_unit",
+        fallback_name="Display unit",
+    )
+    .adds(TuyaPowerConfigurationCluster2AAA)
+    .tuya_enchantment(data_query_spell=True)
     .skip_configuration()
     .add_to_registry()
 )
