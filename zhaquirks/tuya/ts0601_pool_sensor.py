@@ -23,7 +23,7 @@ CONCENTRATION_MICROGRAMS_PER_LITER: Final = "mg/L"
 
 
 class TuyaPoolManufCluster(TuyaMCUCluster):
-    """Tuya Manufacturer cluster"""
+    """Tuya Pool Sensor Manufacturer cluster."""
 (
     TuyaQuirkBuilder("_TZE200_v1jqz5cy", "TS0601")
     .tuya_enchantment(read_attr_spell=True, data_query_spell=True)
