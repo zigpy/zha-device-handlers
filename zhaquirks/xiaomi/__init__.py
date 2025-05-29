@@ -303,10 +303,6 @@ class XiaomiCluster(CustomCluster):
 
         if CONSUMPTION in attributes:
             zcl_consumption = round(attributes[CONSUMPTION] * 1000)
-            self.endpoint.electrical_measurement.update_attribute(
-                ElectricalMeasurement.AttributeDefs.total_active_power.id,
-                zcl_consumption,
-            )
             self.endpoint.smartenergy_metering.update_attribute(
                 Metering.AttributeDefs.current_summ_delivered.id, zcl_consumption
             )
