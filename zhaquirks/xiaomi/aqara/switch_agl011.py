@@ -1,4 +1,4 @@
-"""Aqara H2 EU dimmer switch"""
+"""Aqara H2 EU dimmer switch (KD-R01D)."""
 
 from zigpy import types as t
 from zigpy.profiles import zha
@@ -39,12 +39,12 @@ from zhaquirks.xiaomi import (
 class OppleCluster(XiaomiAqaraE1Cluster):
     """Opple cluster."""
 
-    class Sensitivity(t.enum8):
+    class Sensitivity(t.enum16):
         """Rotation sensitivity."""
 
-        Low = 0x02D0  # 720
-        Medium = 0x0168  # 360
-        High = 0x00B4  # 180
+        Low = 0x02D0
+        Medium = 0x0168
+        High = 0x00B4
 
     class Phase(t.enum8):
         """Startup mode."""
@@ -91,7 +91,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
 
 
 class AqaraDimmerSwitchH2EU(XiaomiCustomDevice):
-    """Aqara H2 EU dimmer switch (KD-R01D)"""
+    """Aqara H2 EU dimmer switch (KD-R01D)."""
 
     signature = {
         MODELS_INFO: [("Aqara", "lumi.switch.agl011")],
@@ -113,7 +113,7 @@ class AqaraDimmerSwitchH2EU(XiaomiCustomDevice):
                     MultistateInput.cluster_id,
                     Metering.cluster_id,
                     ElectricalMeasurement.cluster_id,
-                    OppleCluster.cluster_id
+                    OppleCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
