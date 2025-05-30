@@ -27,6 +27,7 @@ from zhaquirks.const import (
     ZHA_SEND_EVENT,
 )
 from zhaquirks.xiaomi import (
+    AnalogInputCluster,
     BasicCluster,
     ElectricalMeasurementCluster,
     MeteringCluster,
@@ -97,7 +98,7 @@ class AqaraDimmerSwitchH2EU(XiaomiCustomDevice):
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=0
             # device_version=1
-            # input_clusters=[0, 3, 4, 5, 6, 8, 12, 1794, 2820, 64704]
+            # input_clusters=[0, 3, 4, 5, 6, 8, 18, 1794, 2820, 64704]
             # output_clusters=[10, 25]>
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
@@ -173,7 +174,7 @@ class AqaraDimmerSwitchH2EU(XiaomiCustomDevice):
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.DIMMABLE_LIGHT,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
                     BasicCluster,
                     Identify.cluster_id,
@@ -187,6 +188,36 @@ class AqaraDimmerSwitchH2EU(XiaomiCustomDevice):
                     OppleCluster,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
+                INPUT_CLUSTERS: [OppleCluster.cluster_id],
+                OUTPUT_CLUSTERS: [],
+            },
+            3: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
+                INPUT_CLUSTERS: [OppleCluster.cluster_id],
+                OUTPUT_CLUSTERS: [],
+            },
+            21: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
+                INPUT_CLUSTERS: [AnalogInputCluster],
+                OUTPUT_CLUSTERS: [],
+            },
+            71: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
+                INPUT_CLUSTERS: [OppleCluster.cluster_id],
+                OUTPUT_CLUSTERS: [],
+            },
+            72: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
+                INPUT_CLUSTERS: [OppleCluster.cluster_id],
+                OUTPUT_CLUSTERS: [],
             },
         },
     }
