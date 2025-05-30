@@ -2240,59 +2240,117 @@ def test_aqara_agl011_signature_match(assert_signature_matches_quirk):
                     "0x0012",
                     "0x0702",
                     "0x0b04",
-                    "0xfcc0"
+                    "0xfcc0",
                 ],
-                "out_clusters": [
-                    "0x000a",
-                    "0x0019"
-                ]
+                "out_clusters": ["0x000a", "0x0019"],
             },
             "2": {
                 "profile_id": 0x0104,
                 "device_type": "0x0000",
-                "in_clusters": [
-                    "0xfcc0"
-                ],
-                "out_clusters": []
+                "in_clusters": ["0xfcc0"],
+                "out_clusters": [],
             },
             "3": {
                 "profile_id": 0x0104,
                 "device_type": "0x0000",
-                "in_clusters": [
-                    "0xfcc0"
-                ],
-                "out_clusters": []
+                "in_clusters": ["0xfcc0"],
+                "out_clusters": [],
             },
             "21": {
                 "profile_id": 0x0104,
                 "device_type": "0x0000",
-                "in_clusters": [
-                    "0x000c"
-                ],
-                "out_clusters": []
+                "in_clusters": ["0x000c"],
+                "out_clusters": [],
             },
             "71": {
                 "profile_id": 0x0104,
                 "device_type": "0x0000",
-                "in_clusters": [
-                    "0xfcc0"
-                ],
-                "out_clusters": []
+                "in_clusters": ["0xfcc0"],
+                "out_clusters": [],
             },
             "72": {
                 "profile_id": 0x0104,
                 "device_type": "0x0000",
-                "in_clusters": [
-                    "0xfcc0"
-                ],
-                "out_clusters": []
-            }
+                "in_clusters": ["0xfcc0"],
+                "out_clusters": [],
+            },
         },
         "manufacturer": "Aqara",
         "model": "lumi.switch.agl011",
-        "class": "zigpy.device.Device"
+        "class": "zigpy.device.Device",
     }
 
     assert_signature_matches_quirk(
         zhaquirks.xiaomi.aqara.switch_agl011.AqaraDimmerSwitchH2EU, signature
     )
+
+
+@pytest.mark.parametrize(
+    "quirk", (zhaquirks.xiaomi.aqara.switch_agl011.AqaraDimmerSwitchH2EU,)
+)
+def test_aqara_agl011_opplecluster_sensitivity_enum(zigpy_device_from_quirk, quirk):
+    """Test Sensitivity enum values."""
+
+    device = zigpy_device_from_quirk(quirk)
+    opple_cluster = device.endpoints[1].opple_cluster
+
+    assert opple_cluster.Sensitivity.Low == 0x02D0
+    assert opple_cluster.Sensitivity.Medium == 0x0168
+    assert opple_cluster.Sensitivity.High == 0x00B4
+
+
+@pytest.mark.parametrize(
+    "quirk", (zhaquirks.xiaomi.aqara.switch_agl011.AqaraDimmerSwitchH2EU,)
+)
+def test_aqara_agl011_opplecluster_update_attribute(zigpy_device_from_quirk, quirk):
+    """Test _update_attribute method."""
+
+    device = zigpy_device_from_quirk(quirk)
+    opple_cluster = device.endpoints[1].opple_cluster
+
+    # Add a ClusterListener to track attribute updates
+    cluster_listener = ClusterListener(opple_cluster)
+
+    # Test updating min_brightness
+    opple_cluster._update_attribute(0x0515, 10)
+    assert len(cluster_listener.attribute_updates) == 1
+    assert cluster_listener.attribute_updates[0] == (0x0515, 10)
+
+    # Test updating max_brightness
+    opple_cluster._update_attribute(0x0516, 80)
+    assert len(cluster_listener.attribute_updates) == 2
+    assert cluster_listener.attribute_updates[1] == (0x0516, 80)
+
+    # Test updating sensitivity
+    opple_cluster._update_attribute(0x0234, opple_cluster.Sensitivity.Medium)
+    assert len(cluster_listener.attribute_updates) == 3
+    assert cluster_listener.attribute_updates[2] == (
+        0x0234,
+        opple_cluster.Sensitivity.Medium,
+    )
+
+    # Test updating phase
+    opple_cluster._update_attribute(0x030A, opple_cluster.Phase.Forward)
+    assert len(cluster_listener.attribute_updates) == 4
+    assert cluster_listener.attribute_updates[3] == (
+        0x030A,
+        opple_cluster.Phase.Forward,
+    )
+
+    # Test updating an invalid attribute
+    opple_cluster._update_attribute(0x9999, 100)  # unknown attribute
+    assert (
+        len(cluster_listener.attribute_updates) == 4
+    )  # No new updates for invalid attribute
+
+    # Test updating min_brightness with an invalid value
+    opple_cluster._update_attribute(0x0515, -1)  # invalid min_brightness
+    assert (
+        len(cluster_listener.attribute_updates) == 4
+    )  # No new updates for invalid value
+
+    # Test updating max_brightness with an invalid value
+    opple_cluster._update_attribute(0x0516, 101)
+    assert (
+        len(cluster_listener.attribute_updates) == 4
+    )  # No new updates for invalid value

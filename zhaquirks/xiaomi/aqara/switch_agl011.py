@@ -24,7 +24,6 @@ from zhaquirks.const import (
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
-    ZHA_SEND_EVENT,
 )
 from zhaquirks.xiaomi import (
     AnalogInputCluster,
@@ -34,6 +33,11 @@ from zhaquirks.xiaomi import (
     XiaomiAqaraE1Cluster,
     XiaomiCustomDevice,
 )
+
+SENSITIVITY = 0x0234
+PHASE = 0x030A
+MIN_BRIGHTNESS = 0x0515
+MAX_BRIGHTNESS = 0x0516
 
 
 class OppleCluster(XiaomiAqaraE1Cluster):
@@ -52,42 +56,24 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         Forward = 0x0000
         Reverse = 0x0001
 
-    class MinBrightness(t.uint8_t):
-        """Minimum brightness."""
-
-        def __init__(self, value: int = 0):
-            """Initialize with a default value."""
-            super().__init__(value)
-            if not (0 <= value <= 99):
-                raise ValueError("Minimum brightness must be between 0 and 100.")
-
-    class MaxBrightness(t.uint8_t):
-        """Maximum brightness."""
-
-        def __init__(self, value: int = 100):
-            """Initialize with a default value."""
-            super().__init__(value)
-            if not (1 <= value <= 100):
-                raise ValueError("Maximum brightness must be between 1 and 100.")
-
     attributes = {
-        0x0234: ("sensitivity", Sensitivity, True),
-        0x030A: ("phase", Phase, True),
-        0x0515: ("min_brightness", MinBrightness, True),
-        0x0516: ("max_brightness", MaxBrightness, True),
+        SENSITIVITY: ("sensitivity", Sensitivity, True),
+        PHASE: ("phase", Phase, True),
+        MIN_BRIGHTNESS: ("min_brightness", t.uint8_t, True),
+        MAX_BRIGHTNESS: ("max_brightness", t.uint8_t, True),
     }
 
     def _update_attribute(self, attrid, value):
-        """Handle attribute updates."""
-        super()._update_attribute(attrid, value)
         if attrid in self.attributes:
-            self.listener_event(
-                ZHA_SEND_EVENT,
-                {
-                    "type": self.attributes[attrid][0],
-                    "value": value,
-                },
-            )
+            if attrid == MIN_BRIGHTNESS and not (0 <= value <= 99):
+                self.debug("Minimum brightness must be between 0 and 100.")
+                return
+            if attrid == MAX_BRIGHTNESS and not (1 <= value <= 100):
+                self.debug("Maximum brightness must be between 1 and 100.")
+                return
+            super()._update_attribute(attrid, value)
+        else:
+            self.debug(f"Attribute {attrid} is not valid for this cluster.")
 
 
 class AqaraDimmerSwitchH2EU(XiaomiCustomDevice):
