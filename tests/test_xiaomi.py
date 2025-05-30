@@ -2240,57 +2240,44 @@ def test_aqara_agl011_signature_match(assert_signature_matches_quirk):
                     "0x0012",
                     "0x0702",
                     "0x0b04",
-                    "0xfcc0"
+                    "0xfcc0",
                 ],
-                "out_clusters": [
-                    "0x000a",
-                    "0x0019"
-                ]
+                "out_clusters": ["0x000a", "0x0019"],
             },
             "2": {
                 "profile_id": 0x0104,
                 "device_type": "0x0000",
-                "in_clusters": [
-                    "0xfcc0"
-                ],
-                "out_clusters": []
+                "in_clusters": ["0xfcc0"],
+                "out_clusters": [],
             },
             "3": {
                 "profile_id": 0x0104,
                 "device_type": "0x0000",
-                "in_clusters": [
-                    "0xfcc0"
-                ],
-                "out_clusters": []
+                "in_clusters": ["0xfcc0"],
+                "out_clusters": [],
             },
             "21": {
                 "profile_id": 0x0104,
                 "device_type": "0x0000",
-                "in_clusters": [
-                    "0x000c"
-                ],
-                "out_clusters": []
+                "in_clusters": ["0x000c"],
+                "out_clusters": [],
             },
             "71": {
                 "profile_id": 0x0104,
                 "device_type": "0x0000",
-                "in_clusters": [
-                    "0xfcc0"
-                ],
-                "out_clusters": []
+                "in_clusters": ["0xfcc0"],
+                "out_clusters": [],
             },
             "72": {
                 "profile_id": 0x0104,
                 "device_type": "0x0000",
-                "in_clusters": [
-                    "0xfcc0"
-                ],
-                "out_clusters": []
-            }
+                "in_clusters": ["0xfcc0"],
+                "out_clusters": [],
+            },
         },
         "manufacturer": "Aqara",
         "model": "lumi.switch.agl011",
-        "class": "zigpy.device.Device"
+        "class": "zigpy.device.Device",
     }
 
     assert_signature_matches_quirk(
