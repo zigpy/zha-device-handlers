@@ -2,7 +2,7 @@
 
 from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomDevice
-from zigpy.zcl.clusters.general import ( # Ruff changed this to multi-line in CI
+from zigpy.zcl.clusters.general import (  # Ruff changed this to multi-line in CI
     Basic,
     Groups,
     Identify,
