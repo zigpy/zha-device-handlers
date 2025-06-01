@@ -3,7 +3,15 @@
 
 from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomDevice
-from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time # Bot changed this to single line
+from zigpy.zcl.clusters.general import (  # Bot changed this to single line
+    Basic,
+    Groups,
+    Identify,
+    OnOff,
+    Ota,
+    Scenes,
+    Time,
+)
 
 MANUFACTURER = "_TZ3000_iedbgyxt"
 MODEL = "TS0001"
