@@ -1,6 +1,16 @@
+"""Quirk for Tuya TS0001 (_TZ3000_iedbgyxt) water shutoff valve."""
+
 from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomDevice
-from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
+from zigpy.zcl.clusters.general import (
+    Basic,
+    Groups,
+    Identify,
+    OnOff,
+    Ota,
+    Scenes,
+    Time,
+)
 
 MANUFACTURER = "_TZ3000_iedbgyxt"
 MODEL = "TS0001"
@@ -12,8 +22,9 @@ GREEN_POWER_DEVICE_ID_COMBO_BASIC = 0x0061
 
 
 class TuyaValve_TZ3000_iedbgyxt(CustomDevice):
-    """Custom quirk for Tuya water shutoff valve (TS0001 / _TZ3000_iedbgyxt)
-    to be recognized as a switch instead of a light.
+    """Custom quirk for Tuya water shutoff valve (TS0001 / _TZ3000_iedbgyxt).
+
+    Recognizes the device as a switch instead of a light. # D205 Fix: Blank line added above.
     Includes definition for Green Power endpoint 242.
     Uses raw IDs for GreenPower cluster and device type to avoid import/attribute issues.
     """
@@ -38,13 +49,18 @@ class TuyaValve_TZ3000_iedbgyxt(CustomDevice):
                     TUYA_MFG_CLUSTER_E000,
                     TUYA_MFG_CLUSTER_E001,
                 ],
-                "output_clusters": [Time.cluster_id, Ota.cluster_id],
+                "output_clusters": [
+                    Time.cluster_id,
+                    Ota.cluster_id,
+                ],
             },
             242: {
                 "profile_id": zgp.PROFILE_ID,  # 0xa1e0 (Green Power Profile ID)
                 "device_type": GREEN_POWER_DEVICE_ID_COMBO_BASIC,  # Use raw ID: 0x0061
                 "input_clusters": [],
-                "output_clusters": [GREEN_POWER_CLUSTER_ID],  # Use raw ID: 0x0021
+                "output_clusters": [
+                    GREEN_POWER_CLUSTER_ID,
+                ],
             },
         },
     }
@@ -63,13 +79,18 @@ class TuyaValve_TZ3000_iedbgyxt(CustomDevice):
                     TUYA_MFG_CLUSTER_E000,
                     TUYA_MFG_CLUSTER_E001,
                 ],
-                "output_clusters": [Time.cluster_id, Ota.cluster_id],
+                "output_clusters": [
+                    Time.cluster_id,
+                    Ota.cluster_id,
+                ],
             },
             242: {
                 "profile_id": zgp.PROFILE_ID,
                 "device_type": GREEN_POWER_DEVICE_ID_COMBO_BASIC,  # Use raw ID: 0x0061
                 "input_clusters": [],
-                "output_clusters": [GREEN_POWER_CLUSTER_ID],  # Use raw ID: 0x0021
+                "output_clusters": [
+                    GREEN_POWER_CLUSTER_ID,
+                ],
             },
         },
     }
