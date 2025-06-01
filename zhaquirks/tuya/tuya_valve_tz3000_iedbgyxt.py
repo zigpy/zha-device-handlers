@@ -1,8 +1,9 @@
+# File: zhaquirks/tuya/tuya_valve_tz3000_iedbgyxt.py
 """Quirk for Tuya TS0001 (_TZ3000_iedbgyxt) water shutoff valve."""
 
 from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomDevice
-from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time
+from zigpy.zcl.clusters.general import Basic, Groups, Identify, OnOff, Ota, Scenes, Time # Bot changed this to single line
 
 MANUFACTURER = "_TZ3000_iedbgyxt"
 MODEL = "TS0001"
@@ -16,7 +17,7 @@ GREEN_POWER_DEVICE_ID_COMBO_BASIC = 0x0061
 class TuyaValve_TZ3000_iedbgyxt(CustomDevice):
     """Custom quirk for Tuya water shutoff valve (TS0001 / _TZ3000_iedbgyxt).
 
-    Recognizes the device as a switch instead of a light. # D205 Fix: Blank line added above.
+    Recognizes the device as a switch instead of a light.
     Includes definition for Green Power endpoint 242.
     Uses raw IDs for GreenPower cluster and device type to avoid import/attribute issues.
     """
@@ -24,7 +25,7 @@ class TuyaValve_TZ3000_iedbgyxt(CustomDevice):
     signature = {
         "manufacturer": MANUFACTURER,
         "model": MODEL,
-        "node_descriptor": {
+        "node_desc": {  # <<< THIS IS THE KEY FIX for the test failure
             "logical_type": 1,
             "mac_capability_flags": 142,
         },
@@ -47,8 +48,8 @@ class TuyaValve_TZ3000_iedbgyxt(CustomDevice):
                 ],
             },
             242: {
-                "profile_id": zgp.PROFILE_ID,  # 0xa1e0 (Green Power Profile ID)
-                "device_type": GREEN_POWER_DEVICE_ID_COMBO_BASIC,  # Use raw ID: 0x0061
+                "profile_id": zgp.PROFILE_ID,
+                "device_type": GREEN_POWER_DEVICE_ID_COMBO_BASIC,
                 "input_clusters": [],
                 "output_clusters": [
                     GREEN_POWER_CLUSTER_ID,
@@ -78,7 +79,7 @@ class TuyaValve_TZ3000_iedbgyxt(CustomDevice):
             },
             242: {
                 "profile_id": zgp.PROFILE_ID,
-                "device_type": GREEN_POWER_DEVICE_ID_COMBO_BASIC,  # Use raw ID: 0x0061
+                "device_type": GREEN_POWER_DEVICE_ID_COMBO_BASIC,
                 "input_clusters": [],
                 "output_clusters": [
                     GREEN_POWER_CLUSTER_ID,
