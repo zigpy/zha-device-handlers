@@ -1,9 +1,8 @@
-# File: zhaquirks/tuya/tuya_valve_tz3000_iedbgyxt.py
 """Quirk for Tuya TS0001 (_TZ3000_iedbgyxt) water shutoff valve."""
 
 from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomDevice
-from zigpy.zcl.clusters.general import (  # Bot changed this to single line
+from zigpy.zcl.clusters.general import ( # Ruff changed this to multi-line in CI
     Basic,
     Groups,
     Identify,
@@ -33,7 +32,7 @@ class TuyaValve_TZ3000_iedbgyxt(CustomDevice):
     signature = {
         "manufacturer": MANUFACTURER,
         "model": MODEL,
-        "node_desc": {  # <<< THIS IS THE KEY FIX for the test failure
+        "node_desc": {
             "logical_type": 1,
             "mac_capability_flags": 142,
         },
