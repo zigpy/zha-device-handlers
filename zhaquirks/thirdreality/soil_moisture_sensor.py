@@ -6,6 +6,7 @@ from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
 import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+from zigpy.zcl.clusters.measurement import SoilMoisture
 
 
 class ThirdRealitySoilMoistureCluster(CustomCluster):
@@ -38,6 +39,7 @@ class ThirdRealitySoilMoistureCluster(CustomCluster):
 (
     QuirkBuilder("Third Reality, Inc", "3RSM0147Z")
     .replaces(ThirdRealitySoilMoistureCluster)
+    .replaces(SoilMoisture)
     .number(
         attribute_name=ThirdRealitySoilMoistureCluster.AttributeDefs.temperature_correction_celsius.name,
         min_value=-10,
