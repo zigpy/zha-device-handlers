@@ -5,8 +5,8 @@ from typing import Final
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
 import zigpy.types as t
-from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 from zigpy.zcl.clusters.measurement import SoilMoisture
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 
 class ThirdRealitySoilMoistureCluster(CustomCluster):
