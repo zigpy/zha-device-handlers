@@ -604,10 +604,9 @@ sinope_base_quirk = (
         fallback_name="Floor sensor type",
         entity_type=EntityType.CONFIG,
     )
-    .enum(  # Pump protection status
+    .switch(  # Pump protection status
         attribute_name=SinopeTechnologiesManufacturerCluster.AttributeDefs.pump_protection_status.name,
         cluster_id=SinopeTechnologiesManufacturerCluster.cluster_id,
-        enum_class=PumpStatus,
         translation_key="pump_protection_status",
         fallback_name="Pump protection status",
         entity_type=EntityType.CONFIG,
