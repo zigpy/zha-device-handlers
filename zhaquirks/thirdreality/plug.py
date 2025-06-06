@@ -21,11 +21,26 @@ class ThirdRealityPlugCluster(CustomCluster):
             type=t.uint8_t,
             is_manufacturer_specific=True,
         )
+        
+        on_to_off_delay: Final = ZCLAttributeDef(
+            id=0x0001,
+            type=t.uint16_t,
+            is_manufacturer_specific=True,
+        )
+        
+        off_to_on_delay: Final = ZCLAttributeDef(
+            id=0x0002,
+            type=t.uint16_t,
+            is_manufacturer_specific=True,
+        )
 
 
 (
     QuirkBuilder("Third Reality, Inc", "3RSP02028BZ")
     .also_applies_to("Third Reality, Inc", "3RSPE01044BZ")
+    .also_applies_to("Third Reality, Inc", "3RSPU01080Z")
+    .also_applies_to("Third Reality, Inc", "3RSP02064Z")
+    .also_applies_to("Third Reality, Inc", "3RSPE02065Z")
     .replaces(ThirdRealityPlugCluster)
     .write_attr_button(
         attribute_name=ThirdRealityPlugCluster.AttributeDefs.reset_summation_delivered.name,
@@ -33,6 +48,28 @@ class ThirdRealityPlugCluster(CustomCluster):
         cluster_id=ThirdRealityPlugCluster.cluster_id,
         translation_key="reset_summation_delivered",
         fallback_name="Reset summation delivered",
+    )
+    .number(
+        attribute_name=ThirdRealityPlugCluster.AttributeDefs.on_to_off_delay.name,
+        cluster_id=ThirdRealityPlugCluster.cluster_id,
+        endpoint_id=1,
+        min_value=0,
+        max_value=65535,
+        step=1,
+        mode="box",
+        translation_key="on_to_off_delay",
+        fallback_name="On to off delay",
+    )
+    .number(
+        attribute_name=ThirdRealityPlugCluster.AttributeDefs.off_to_on_delay.name,
+        cluster_id=ThirdRealityPlugCluster.cluster_id,
+        endpoint_id=1,
+        min_value=0,
+        max_value=65535,
+        step=1,
+        mode="box",
+        translation_key="off_to_on_delay",
+        fallback_name="Off to on delay",
     )
     .add_to_registry()
 )
