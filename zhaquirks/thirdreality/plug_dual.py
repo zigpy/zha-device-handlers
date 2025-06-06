@@ -21,13 +21,13 @@ class ThirdRealityPlugCluster(CustomCluster):
             type=t.uint8_t,
             is_manufacturer_specific=True,
         )
-        
+
         on_to_off_delay: Final = ZCLAttributeDef(
             id=0x0001,
             type=t.uint16_t,
             is_manufacturer_specific=True,
         )
-        
+
         off_to_on_delay: Final = ZCLAttributeDef(
             id=0x0002,
             type=t.uint16_t,
@@ -39,7 +39,7 @@ class ThirdRealityPlugCluster(CustomCluster):
     QuirkBuilder("Third Reality, Inc", "3RDP01072Z")
     .also_applies_to("Third Reality, Inc", "3RSPE01044BZ")
     .replaces(ThirdRealityPlugCluster, endpoint_id=1)
-	.replaces(ThirdRealityPlugCluster, endpoint_id=2)
+    .replaces(ThirdRealityPlugCluster, endpoint_id=2)
     .write_attr_button(
         attribute_name=ThirdRealityPlugCluster.AttributeDefs.reset_summation_delivered.name,
         attribute_value=0x01,
@@ -48,7 +48,7 @@ class ThirdRealityPlugCluster(CustomCluster):
         fallback_name="Reset summation delivered1",
         endpoint_id=1,
     )
-	.write_attr_button(
+    .write_attr_button(
         attribute_name=ThirdRealityPlugCluster.AttributeDefs.reset_summation_delivered.name,
         attribute_value=0x01,
         cluster_id=ThirdRealityPlugCluster.cluster_id,
