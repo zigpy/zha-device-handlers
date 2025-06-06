@@ -44,16 +44,16 @@ class ThirdRealityPlugCluster(CustomCluster):
         attribute_name=ThirdRealityPlugCluster.AttributeDefs.reset_summation_delivered.name,
         attribute_value=0x01,
         cluster_id=ThirdRealityPlugCluster.cluster_id,
-        translation_key="reset_summation_delivered",
-        fallback_name="Reset summation delivered1",
+        translation_key="reset_summation_delivered_ep1",
+        fallback_name="Reset summation delivered",
         endpoint_id=1,
     )
     .write_attr_button(
         attribute_name=ThirdRealityPlugCluster.AttributeDefs.reset_summation_delivered.name,
         attribute_value=0x01,
         cluster_id=ThirdRealityPlugCluster.cluster_id,
-        translation_key="reset_summation_delivered",
-        fallback_name="Reset summation delivered1",
+        translation_key="reset_summation_delivered_ep2",
+        fallback_name="Reset summation delivered",
         endpoint_id=2,
     )
     .number(
@@ -64,7 +64,7 @@ class ThirdRealityPlugCluster(CustomCluster):
         max_value=65535,
         step=1,
         mode="box",
-        translation_key="on_to_off_delay",
+        translation_key="on_to_off_delay_ep1",
         fallback_name="On to off delay",
     )
     .number(
@@ -75,7 +75,7 @@ class ThirdRealityPlugCluster(CustomCluster):
         max_value=65535,
         step=1,
         mode="box",
-        translation_key="on_to_off_delay",
+        translation_key="on_to_off_delay_ep2",
         fallback_name="On to off delay",
     )
     .number(
@@ -86,7 +86,7 @@ class ThirdRealityPlugCluster(CustomCluster):
         max_value=65535,
         step=1,
         mode="box",
-        translation_key="off_to_on_delay",
+        translation_key="off_to_on_delay_ep1",
         fallback_name="Off to on delay",
     )
     .number(
@@ -97,7 +97,7 @@ class ThirdRealityPlugCluster(CustomCluster):
         max_value=65535,
         step=1,
         mode="box",
-        translation_key="off_to_on_delay",
+        translation_key="off_to_on_delay_ep2",
         fallback_name="Off to on delay",
     )
     .add_to_registry()
