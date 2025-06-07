@@ -100,8 +100,6 @@ class SonoffCluster(CustomCluster):
     .number(
         SonoffCluster.AttributeDefs.ac_current_max_overload.name,
         SonoffCluster.cluster_id,
-        cluster_type=ClusterType.Server,
-        endpoint_id=1,
         min_value=0.1,
         max_value=14.0,
         step=0.1,
@@ -114,8 +112,6 @@ class SonoffCluster(CustomCluster):
     .number(
         SonoffCluster.AttributeDefs.ac_voltage_max_overload.name,
         SonoffCluster.cluster_id,
-        cluster_type=ClusterType.Server,
-        endpoint_id=1,
         min_value=165.0,
         max_value=277.0,
         step=1.0,
@@ -128,8 +124,6 @@ class SonoffCluster(CustomCluster):
     .number(
         SonoffCluster.AttributeDefs.ac_power_max_overload.name,
         SonoffCluster.cluster_id,
-        cluster_type=ClusterType.Server,
-        endpoint_id=1,
         min_value=0.1,
         max_value=3250.0,
         step=0.1,
