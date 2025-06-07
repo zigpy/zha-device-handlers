@@ -11,7 +11,7 @@ from zigpy.quirks.v2.homeassistant import (
 )
 from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 import zigpy.types as t
-from zigpy.zcl import ClusterType, foundation
+from zigpy.zcl import foundation
 import zigpy.zcl.foundation as zcl_f
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
