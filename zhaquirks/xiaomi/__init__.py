@@ -128,6 +128,17 @@ class XiaomiQuickInitDevice(XiaomiCustomDevice, QuickInitDevice):
 class XiaomiCluster(CustomCluster):
     """Xiaomi cluster implementation."""
 
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        # Previously, this cluster was wrongly setting the total_active_power attribute,
+        # which was not added to HA.
+        # Since it is now added to HA and the incorrect value could be set, we need to
+        # reset it.
+        self._update_attribute(
+            ElectricalMeasurement.AttributeDefs.total_active_power.id, None
+        )
+
     def _iter_parse_attr_report(
         self, data: bytes
     ) -> Iterator[tuple[foundation.Attribute, bytes]]:
