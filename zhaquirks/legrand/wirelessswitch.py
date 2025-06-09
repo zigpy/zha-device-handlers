@@ -1,4 +1,4 @@
-"""Module for Legrand wireless radiant switch."""
+"""Module for Legrand wireless switches (Radiant, NLD, NLT, NLW)."""
 
 from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.zcl.clusters.general import BinaryInput
@@ -21,6 +21,50 @@ from zhaquirks.legrand import LEGRAND, LegrandPowerConfigurationCluster
 
 (
     QuirkBuilder(f" {LEGRAND}", " Remote switch")
+    .replaces(LegrandPowerConfigurationCluster)
+    .prevent_default_entity_creation(endpoint_id=1, cluster_id=BinaryInput.cluster_id)
+    .device_automation_triggers(
+        {
+            (SHORT_PRESS, TURN_ON): {COMMAND: COMMAND_ON},
+            (LONG_PRESS, TURN_ON): {
+                COMMAND: COMMAND_MOVE,
+                PARAMS: {"move_mode": 0, "rate": 255},
+            },
+            (SHORT_PRESS, TURN_OFF): {COMMAND: COMMAND_OFF},
+            (LONG_PRESS, TURN_OFF): {
+                COMMAND: COMMAND_MOVE,
+                PARAMS: {"move_mode": 1, "rate": 255},
+            },
+            (LONG_RELEASE, BUTTON): {COMMAND: COMMAND_STOP},
+        }
+    )
+    .add_to_registry()
+)
+
+(
+    QuirkBuilder(f" {LEGRAND}", " NLWO - Triple remote switch")
+    .replaces(LegrandPowerConfigurationCluster)
+    .prevent_default_entity_creation(endpoint_id=1, cluster_id=BinaryInput.cluster_id)
+    .device_automation_triggers(
+        {
+            (SHORT_PRESS, TURN_ON): {COMMAND: COMMAND_ON},
+            (LONG_PRESS, TURN_ON): {
+                COMMAND: COMMAND_MOVE,
+                PARAMS: {"move_mode": 0, "rate": 255},
+            },
+            (SHORT_PRESS, TURN_OFF): {COMMAND: COMMAND_OFF},
+            (LONG_PRESS, TURN_OFF): {
+                COMMAND: COMMAND_MOVE,
+                PARAMS: {"move_mode": 1, "rate": 255},
+            },
+            (LONG_RELEASE, BUTTON): {COMMAND: COMMAND_STOP},
+        }
+    )
+    .add_to_registry()
+)
+
+(
+    QuirkBuilder(f" {LEGRAND}", " Double gangs remote switch")
     .replaces(LegrandPowerConfigurationCluster)
     .prevent_default_entity_creation(endpoint_id=1, cluster_id=BinaryInput.cluster_id)
     .device_automation_triggers(
