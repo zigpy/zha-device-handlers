@@ -1,8 +1,11 @@
 """Tests for Legrand."""
 
+from unittest import mock
+
 import pytest
 
 import zhaquirks
+from zhaquirks.legrand import LEGRAND
 
 zhaquirks.setup()
 
@@ -55,4 +58,27 @@ def test_light_switch_with_neutral_signature(assert_signature_matches_quirk):
     }
     assert_signature_matches_quirk(
         zhaquirks.legrand.switch.LightSwitchWithNeutral, signature
+    )
+
+
+async def test_legrand_wire_pilot_cluster_write_attrs(zigpy_device_from_v2_quirk):
+    """Test Legrand cable outlet pilot_wire_mode attr writing."""
+
+    device = zigpy_device_from_v2_quirk(f" {LEGRAND}", " Cable outlet")
+
+    cable_cluster = device.endpoints[1].legrand_cable_outlet_cluster
+    cable_cluster._write_attributes = mock.AsyncMock()
+    cable_cluster._read_attributes = mock.AsyncMock()
+    cable_cluster.set_pilot_wire_mode = mock.AsyncMock()
+
+    # test writing read-only pilot_wire_mode attribute, should call set_pilot_wire_mode
+    await cable_cluster.write_attributes({0x00: 0x02}, manufacturer=0xFC40)
+
+    cable_cluster.set_pilot_wire_mode.assert_awaited_with(
+        0x02,
+        manufacturer=0xFC40,
+    )
+    cable_cluster._write_attributes.assert_awaited_with(
+        [],
+        manufacturer=0xFC40,
     )

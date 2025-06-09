@@ -64,6 +64,8 @@ class ZLinkyTICManufacturerCluster(CustomCluster):
         0x0008: ("hist_current_exceeding_warning_phase_3", t.uint16_t, True),
         # Historical mode: MOTDETAT "Etat du Linky (From V13)" / String 6 car
         0x0009: ("linky_status", t.LimitedCharString(6), True),
+        # Historical and standard mode: "Tariff Period (From V15)" / String 16 car
+        0x0010: ("linky_tariff_period", t.LimitedCharString(16), True),
         # Historical and Standard mode: "Linky acquisition time (From V7)"" / Uint8 1 car
         0x0100: ("linky_acquisition_time", t.uint8_t, True),
         # Standard mode: LTARF "Libellé tarif fournisseur en cours" / String 16 car
@@ -224,3 +226,13 @@ class ZLinkyTICFWV14(ZLinkyTICFWV12):
     signature[ENDPOINTS][1][OUTPUT_CLUSTERS].insert(1, TuyaManufCluster.cluster_id)
 
     replacement[ENDPOINTS][1][INPUT_CLUSTERS].insert(1, Time.cluster_id)
+
+
+class ZLinkyTICFWV15(ZLinkyTICFWV14):
+    """ZLinky_TIC from LiXee with firmware v15.0+."""
+
+    signature = deepcopy(ZLinkyTICFWV14.signature)
+    replacement = deepcopy(ZLinkyTICFWV14.replacement)
+
+    signature[ENDPOINTS][1][DEVICE_TYPE] = zha.DeviceType.DIMMABLE_LIGHT
+    replacement[ENDPOINTS][1][DEVICE_TYPE] = zha.DeviceType.DIMMABLE_LIGHT

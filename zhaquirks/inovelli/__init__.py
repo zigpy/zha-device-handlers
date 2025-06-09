@@ -196,6 +196,82 @@ class InovelliCluster(CustomCluster):
             return
 
 
+class InovelliVZM30SNCluster(InovelliCluster):
+    """Inovelli VZM30-SN custom cluster."""
+
+    name = "InovelliVZM30SNCluster"
+
+    attributes = InovelliCluster.attributes.copy()
+    attributes.update(
+        {
+            0x0002: ("dimming_speed_up_local", t.uint8_t, True),
+            0x0004: ("ramp_rate_off_to_on_local", t.uint8_t, True),
+            0x0006: ("dimming_speed_down_local", t.uint8_t, True),
+            0x0008: ("ramp_rate_on_to_off_local", t.uint8_t, True),
+            0x000B: ("invert_switch", t.Bool, True),
+            0x000D: ("default_level_local", t.uint8_t, True),
+            0x0011: ("load_level_indicator_timeout", t.uint8_t, True),
+            0x0012: ("active_power_reports", t.uint8_t, True),
+            0x0013: ("periodic_power_and_energy_reports", t.uint8_t, True),
+            0x0014: ("active_energy_reports", t.uint16_t, True),
+            0x0016: ("switch_type", t.uint8_t, True),
+            0x0019: ("increased_non_neutral_output", t.Bool, True),
+            0x001A: ("leading_or_trailing_edge", t.Bool, True),
+            0x0032: ("button_delay", t.uint8_t, True),
+            0x0033: ("device_bind_number", t.uint8_t, True),
+            0x0035: ("double_tap_up_enabled", t.Bool, True),
+            0x0036: ("double_tap_down_enabled", t.Bool, True),
+            0x0037: ("double_tap_up_level", t.uint8_t, True),
+            0x0038: ("double_tap_down_level", t.uint8_t, True),
+            0x003C: ("default_led1_strip_color_when_on", t.uint8_t, True),
+            0x003D: ("default_led1_strip_color_when_off", t.uint8_t, True),
+            0x003E: ("default_led1_strip_intensity_when_on", t.uint8_t, True),
+            0x003F: ("default_led1_strip_intensity_when_off", t.uint8_t, True),
+            0x0041: ("default_led2_strip_color_when_on", t.uint8_t, True),
+            0x0042: ("default_led2_strip_color_when_off", t.uint8_t, True),
+            0x0043: ("default_led2_strip_intensity_when_on", t.uint8_t, True),
+            0x0044: ("default_led2_strip_intensity_when_off", t.uint8_t, True),
+            0x0046: ("default_led3_strip_color_when_on", t.uint8_t, True),
+            0x0047: ("default_led3_strip_color_when_off", t.uint8_t, True),
+            0x0048: ("default_led3_strip_intensity_when_on", t.uint8_t, True),
+            0x0049: ("default_led3_strip_intensity_when_off", t.uint8_t, True),
+            0x004B: ("default_led4_strip_color_when_on", t.uint8_t, True),
+            0x004C: ("default_led4_strip_color_when_off", t.uint8_t, True),
+            0x004D: ("default_led4_strip_intensity_when_on", t.uint8_t, True),
+            0x004E: ("default_led4_strip_intensity_when_off", t.uint8_t, True),
+            0x0050: ("default_led5_strip_color_when_on", t.uint8_t, True),
+            0x0051: ("default_led5_strip_color_when_off", t.uint8_t, True),
+            0x0052: ("default_led5_strip_intensity_when_on", t.uint8_t, True),
+            0x0053: ("default_led5_strip_intensity_when_off", t.uint8_t, True),
+            0x0055: ("default_led6_strip_color_when_on", t.uint8_t, True),
+            0x0056: ("default_led6_strip_color_when_off", t.uint8_t, True),
+            0x0057: ("default_led6_strip_intensity_when_on", t.uint8_t, True),
+            0x0058: ("default_led6_strip_intensity_when_off", t.uint8_t, True),
+            0x005A: ("default_led7_strip_color_when_on", t.uint8_t, True),
+            0x005B: ("default_led7_strip_color_when_off", t.uint8_t, True),
+            0x005C: ("default_led7_strip_intensity_when_on", t.uint8_t, True),
+            0x005D: ("default_led7_strip_intensity_when_off", t.uint8_t, True),
+            0x0060: ("led_color_when_off", t.uint8_t, True),
+            0x0062: ("led_intensity_when_off", t.uint8_t, True),
+            0x0064: ("led_scaling_mode", t.Bool, True),
+            0x007B: ("aux_switch_scenes", t.Bool, True),
+            0x007D: ("binding_off_to_on_sync_level", t.Bool, True),
+            0x0078: ("fan_single_tap_behavior", t.uint8_t, True),
+            0x0079: ("fan_timer_display", t.Bool, True),
+            0x0082: ("fan_module_binding_control", t.uint8_t, True),
+            0x0083: ("low_for_bound_control", t.uint8_t, True),
+            0x0084: ("medium_for_bound_control", t.uint8_t, True),
+            0x0085: ("high_for_bound_control", t.uint8_t, True),
+            0x0086: ("led_color_for_bound_control", t.uint8_t, True),
+            0x0100: ("local_protection", t.Bool, True),
+            0x0103: ("on_off_led_mode", t.Bool, True),
+            0x0104: ("firmware_progress_led", t.Bool, True),
+            0x0105: ("relay_click_in_on_off_mode", t.Bool, True),
+            0x0106: ("disable_clear_notifications_double_tap", t.Bool, True),
+        }
+    )
+
+
 class InovelliVZM31SNCluster(InovelliCluster):
     """Inovelli VZM31-SN custom cluster."""
 

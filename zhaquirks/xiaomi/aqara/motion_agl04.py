@@ -17,6 +17,7 @@ from zhaquirks.const import (
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
+    BatterySize,
 )
 from zhaquirks.xiaomi import (
     DeviceTemperatureCluster,
@@ -64,7 +65,7 @@ class LumiLumiMotionAgl04(XiaomiCustomDevice):
 
     def __init__(self, *args, **kwargs):
         """Init."""
-        self.battery_size = 11
+        self.battery_size = BatterySize.CR1632
         self.battery_quantity = 2
         self.motion_bus = Bus()
         super().__init__(*args, **kwargs)

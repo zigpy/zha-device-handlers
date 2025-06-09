@@ -222,6 +222,7 @@ class TuyaZemismartSmartCover0601_3_inv_position(TuyaWindowCover):
         # <SimpleDescriptor endpoint=1 profile=260 device_type=51 input_clusters=[0, 4, 5, 61184] output_clusters=[25]>
         MODELS_INFO: [
             ("_TZE200_zpzndjez", "TS0601"),
+            ("_TZE200_ba69l9ol", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
@@ -486,6 +487,7 @@ class TuyaMoesCover0601_alt_controls2(TuyaWindowCover):
         # }
         MODELS_INFO: [
             ("_TZE200_2odrmqwq", "TS0601"),
+            ("_TZE200_hojryzzd", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
