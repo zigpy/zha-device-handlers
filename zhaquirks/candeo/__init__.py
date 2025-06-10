@@ -1,9 +1,13 @@
 """Module for Candeo quirks implementations."""
 
+import math
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic
+from zigpy.zcl.clusters.measurement import IlluminanceMeasurement
+from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.foundation import DataTypeId, ZCLAttributeDef
+from zhaquirks.const import ZONE_TYPE
 
 CANDEO = "Candeo"
 
@@ -13,6 +17,30 @@ class CandeoSwitchType(t.enum8):
 
     Momentary = 0x00
     Toggle = 0x01
+
+
+class CandeoIlluminanceMeasurementCluster(IlluminanceMeasurement):
+    """Candeo Illuminance Measurement Cluster."""
+
+    def _update_attribute(self, attrid, value):
+        if attrid == self.AttributeDefs.measured_value.id:
+            value = pow(10, ((value - 1) / 10000))
+            value = self.lux_calibration(value)
+            value = 10000 * math.log10(value) + 1
+        super()._update_attribute(attrid, value)
+
+    def lux_calibration(self, value):
+        """Calibrate Lux Reading From Device."""
+        tempvalue = 1
+        if value > 0 and value <= 2200:
+            tempvalue = -7.969192 + (0.0151988 * value)
+        elif value > 2200 and value <= 2500:
+            tempvalue = -1069.189434 + (0.4950663 * value)
+        elif value > 2500:
+            tempvalue = (78029.21628 - (61.73575 * value)) + (0.01223567 * (value ** 2))
+        if tempvalue < 1:
+            tempvalue = 1
+        return tempvalue
 
 
 class CandeoBasicCluster(Basic, CustomCluster):
@@ -28,3 +56,21 @@ class CandeoBasicCluster(Basic, CustomCluster):
             access="rw",
             is_manufacturer_specific=True,
         )
+
+
+class CandeoIasZoneContactCluster(IasZone, CustomCluster):
+    """Candeo IasZone Contact Cluster."""
+
+    _CONSTANT_ATTRIBUTES = {ZONE_TYPE: IasZone.ZoneType.Contact_Switch}
+
+
+class CandeoIasZoneMotionCluster(IasZone, CustomCluster):
+    """Candeo IasZone Motion Cluster."""
+
+    _CONSTANT_ATTRIBUTES = {ZONE_TYPE: IasZone.ZoneType.Motion_Sensor}
+
+
+class CandeoIasZoneWaterCluster(IasZone, CustomCluster):
+    """Candeo IasZone Water Cluster."""
+
+    _CONSTANT_ATTRIBUTES = {ZONE_TYPE: IasZone.ZoneType.Water_Sensor}
