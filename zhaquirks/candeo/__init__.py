@@ -21,7 +21,7 @@ class CandeoSwitchType(t.enum8):
     Toggle = 0x01
 
 
-class CandeoIlluminanceMeasurementCluster(IlluminanceMeasurement):
+class CandeoIlluminanceMeasurementCluster(IlluminanceMeasurement, CustomCluster):
     """Candeo Illuminance Measurement Cluster."""
 
     def _update_attribute(self, attrid, value):
