@@ -4,7 +4,7 @@ from zigpy.quirks.v2 import QuirkBuilder
 
 from zigpy.zcl.clusters.general import Identify
 
-from candeo import CANDEO, CandeoIasZoneContactCluster, CandeoIasZoneMotionCluster, CandeoIasZoneWaterCluster, CandeoIlluminanceMeasurementCluster
+from zhaquirks.candeo import CANDEO, CandeoIasZoneContactCluster, CandeoIasZoneMotionCluster, CandeoIasZoneWaterCluster, CandeoIlluminanceMeasurementCluster
 
 base_quirk = (
     QuirkBuilder()
