@@ -1,12 +1,14 @@
 """Module for Candeo quirks implementations."""
 
 import math
+
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic
 from zigpy.zcl.clusters.measurement import IlluminanceMeasurement
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.foundation import DataTypeId, ZCLAttributeDef
+
 from zhaquirks.const import ZONE_TYPE
 
 CANDEO = "Candeo"
@@ -37,9 +39,8 @@ class CandeoIlluminanceMeasurementCluster(IlluminanceMeasurement):
         elif value > 2200 and value <= 2500:
             tempvalue = -1069.189434 + (0.4950663 * value)
         elif value > 2500:
-            tempvalue = (78029.21628 - (61.73575 * value)) + (0.01223567 * (value ** 2))
-        if tempvalue < 1:
-            tempvalue = 1
+            tempvalue = (78029.21628 - (61.73575 * value)) + (0.01223567 * (value**2))
+        tempvalue = max(tempvalue, 1)
         return tempvalue
 
 
