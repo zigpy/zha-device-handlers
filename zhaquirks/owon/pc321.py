@@ -19,34 +19,73 @@ class OwonPC321MeteringCluster(CustomCluster, Metering):
     name = "OwonPC321Metering"
     ep_attribute = "smartenergy_metering"
 
-    attributes = Metering.attributes.copy()
-    attributes.update(
-        {
-            0x2000: ("phase_1_power", t.uint24_t, True),
-            0x2001: ("phase_2_power", t.uint24_t, True),
-            0x2002: ("phase_3_power", t.uint24_t, True),
-            0x2100: ("phase_1_reactive_power", t.uint24_t, True),
-            0x2101: ("phase_2_reactive_power", t.uint24_t, True),
-            0x2102: ("phase_3_reactive_power", t.uint24_t, True),
-            0x2103: ("reactive_power_summation_of_the_3_phases", t.uint24_t, True),
-            0x3000: ("phase_1_voltage", t.uint24_t, True),
-            0x3001: ("phase_2_voltage", t.uint24_t, True),
-            0x3002: ("phase_3_voltage", t.uint24_t, True),
-            0x3100: ("phase_1_current", t.uint24_t, True),
-            0x3101: ("phase_2_current", t.uint24_t, True),
-            0x3102: ("phase_3_current", t.uint24_t, True),
-            0x3103: ("current_summation_of_the_3_phases", t.uint24_t, True),
-            0x3104: ("leakage_current", t.uint24_t, True),
-            0x4000: ("phase_1_energy_consumption", t.uint48_t, True),
-            0x4001: ("phase_2_energy_consumption", t.uint48_t, True),
-            0x4002: ("phase_3_energy_consumption", t.uint48_t, True),
-            0x4100: ("phase_1_reactive_energy_consumption", t.uint48_t, True),
-            0x4101: ("phase_2_reactive_energy_consumption", t.uint48_t, True),
-            0x4102: ("phase_3_reactive_energy_consumption", t.uint48_t, True),
-            0x4103: ("reactive_energy_summation_of_the_3_phases", t.uint48_t, True),
-        }
-    )
-
+    class AttributeDefs(Metering.AttributeDefs):
+        phase_1_power: Final = foundation.ZCLAttributeDef(
+            id=0x2000, type=t.uint24_t, access="r", is_manufacturer_specific=True
+        )
+        phase_2_power: Final = foundation.ZCLAttributeDef(
+            id=0x2001, type=t.uint24_t, access="r", is_manufacturer_specific=True
+        )
+        phase_3_power: Final = foundation.ZCLAttributeDef(
+            id=0x2002, type=t.uint24_t, access="r", is_manufacturer_specific=True
+        )
+        phase_1_reactive_power: Final = foundation.ZCLAttributeDef(
+            id=0x2100, type=t.uint24_t, access="r", is_manufacturer_specific=True
+        )
+        phase_2_reactive_power: Final = foundation.ZCLAttributeDef(
+            id=0x2101, type=t.uint24_t, access="r", is_manufacturer_specific=True
+        )
+        phase_3_reactive_power: Final = foundation.ZCLAttributeDef(
+            id=0x2102, type=t.uint24_t, access="r", is_manufacturer_specific=True
+        )
+        reactive_power_summation_of_the_3_phases: Final = foundation.ZCLAttributeDef(
+            id=0x2103, type=t.uint24_t, access="r", is_manufacturer_specific=True
+        )
+        phase_1_voltage: Final = foundation.ZCLAttributeDef(
+            id=0x3000, type=t.uint24_t, access="r", is_manufacturer_specific=True
+        )
+        phase_2_voltage: Final = foundation.ZCLAttributeDef(
+            id=0x3001, type=t.uint24_t, access="r", is_manufacturer_specific=True
+        )
+        phase_3_voltage: Final = foundation.ZCLAttributeDef(
+            id=0x3002, type=t.uint24_t, access="r", is_manufacturer_specific=True
+        )
+        phase_1_current: Final = foundation.ZCLAttributeDef(
+            id=0x3100, type=t.uint24_t, access="r", is_manufacturer_specific=True
+        )
+        phase_2_current: Final = foundation.ZCLAttributeDef(
+            id=0x3101, type=t.uint24_t, access="r", is_manufacturer_specific=True
+        )
+        phase_3_current: Final = foundation.ZCLAttributeDef(
+            id=0x3102, type=t.uint24_t, access="r", is_manufacturer_specific=True
+        )
+        current_summation_of_the_3_phases: Final = foundation.ZCLAttributeDef(
+            id=0x3103, type=t.uint24_t, access="r", is_manufacturer_specific=True
+        )
+        leakage_current: Final = foundation.ZCLAttributeDef(
+            id=0x3104, type=t.uint24_t, access="r", is_manufacturer_specific=True
+        )
+        phase_1_energy_consumption: Final = foundation.ZCLAttributeDef(
+            id=0x4000, type=t.uint48_t, access="r", is_manufacturer_specific=True
+        )
+        phase_2_energy_consumption: Final = foundation.ZCLAttributeDef(
+            id=0x4001, type=t.uint48_t, access="r", is_manufacturer_specific=True
+        )
+        phase_3_energy_consumption: Final = foundation.ZCLAttributeDef(
+            id=0x4002, type=t.uint48_t, access="r", is_manufacturer_specific=True
+        )
+        phase_1_reactive_energy_consumption: Final = foundation.ZCLAttributeDef(
+            id=0x4100, type=t.uint48_t, access="r", is_manufacturer_specific=True
+        )
+        phase_2_reactive_energy_consumption: Final = foundation.ZCLAttributeDef(
+            id=0x4101, type=t.uint48_t, access="r", is_manufacturer_specific=True
+        )
+        phase_3_reactive_energy_consumption: Final = foundation.ZCLAttributeDef(
+            id=0x4102, type=t.uint48_t, access="r", is_manufacturer_specific=True
+        )
+        reactive_energy_summation_of_the_3_phases: Final = foundation.ZCLAttributeDef(
+            id=0x4103, type=t.uint48_t, access="r", is_manufacturer_specific=True
+        )
 
 (
     QuirkBuilder("OWON Technology Inc.", "PC321")
