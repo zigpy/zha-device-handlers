@@ -1,4 +1,4 @@
-"""Quirk for Owon PC321"""
+"""Quirk for Owon PC321."""
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder, SensorDeviceClass, SensorStateClass
