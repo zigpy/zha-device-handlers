@@ -1,16 +1,15 @@
 """Quirk for Owon PC321"""
 
 from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import EntityPlatform, EntityType, QuirkBuilder, SensorDeviceClass, SensorStateClass
+from zigpy.quirks.v2 import QuirkBuilder, SensorDeviceClass, SensorStateClass
+from zigpy.quirks.v2.homeassistant import (
+    UnitOfElectricCurrent,
+    UnitOfElectricPotential,
+    UnitOfEnergy,
+    UnitOfPower,
+)
 import zigpy.types as t
 from zigpy.zcl.clusters.smartenergy import Metering
-from zigpy.quirks.v2.homeassistant import (
-    UnitOfApparentPower,
-    UnitOfElectricCurrent,
-    UnitOfPower,
-    UnitOfEnergy,
-    UnitOfElectricPotential,
-)
 
 
 class OwonPC321MeteringCluster(CustomCluster, Metering):
@@ -23,30 +22,31 @@ class OwonPC321MeteringCluster(CustomCluster, Metering):
     attributes = Metering.attributes.copy()
     attributes.update(
         {
-        0x2000: ("phase_1_power", t.uint24_t, True),
-        0x2001: ("phase_2_power", t.uint24_t, True),
-        0x2002: ("phase_3_power", t.uint24_t, True),
-        0x2100: ("phase_1_reactive_power", t.uint24_t, True),
-        0x2101: ("phase_2_reactive_power", t.uint24_t, True),
-        0x2102: ("phase_3_reactive_power", t.uint24_t, True),
-        0x2103: ("reactive_power_summation_of_the_3_phases", t.uint24_t, True),
-        0x3000: ("phase_1_voltage", t.uint24_t, True),
-        0x3001: ("phase_2_voltage", t.uint24_t, True),
-        0x3002: ("phase_3_voltage", t.uint24_t, True),
-        0x3100: ("phase_1_current", t.uint24_t, True),
-        0x3101: ("phase_2_current", t.uint24_t, True),
-        0x3102: ("phase_3_current", t.uint24_t, True),
-        0x3103: ("current_summation_of_the_3_phases", t.uint24_t, True),
-        0x3104: ("leakage_current", t.uint24_t, True),
-        0x4000: ("phase_1_energy_consumption", t.uint48_t, True),
-        0x4001: ("phase_2_energy_consumption", t.uint48_t, True),
-        0x4002: ("phase_3_energy_consumption", t.uint48_t, True),
-        0x4100: ("phase_1_reactive_energy_consumption", t.uint48_t, True),
-        0x4101: ("phase_2_reactive_energy_consumption", t.uint48_t, True),
-        0x4102: ("phase_3_reactive_energy_consumption", t.uint48_t, True),
-        0x4103: ("reactive_energy_summation_of_the_3_phases", t.uint48_t, True),
+            0x2000: ("phase_1_power", t.uint24_t, True),
+            0x2001: ("phase_2_power", t.uint24_t, True),
+            0x2002: ("phase_3_power", t.uint24_t, True),
+            0x2100: ("phase_1_reactive_power", t.uint24_t, True),
+            0x2101: ("phase_2_reactive_power", t.uint24_t, True),
+            0x2102: ("phase_3_reactive_power", t.uint24_t, True),
+            0x2103: ("reactive_power_summation_of_the_3_phases", t.uint24_t, True),
+            0x3000: ("phase_1_voltage", t.uint24_t, True),
+            0x3001: ("phase_2_voltage", t.uint24_t, True),
+            0x3002: ("phase_3_voltage", t.uint24_t, True),
+            0x3100: ("phase_1_current", t.uint24_t, True),
+            0x3101: ("phase_2_current", t.uint24_t, True),
+            0x3102: ("phase_3_current", t.uint24_t, True),
+            0x3103: ("current_summation_of_the_3_phases", t.uint24_t, True),
+            0x3104: ("leakage_current", t.uint24_t, True),
+            0x4000: ("phase_1_energy_consumption", t.uint48_t, True),
+            0x4001: ("phase_2_energy_consumption", t.uint48_t, True),
+            0x4002: ("phase_3_energy_consumption", t.uint48_t, True),
+            0x4100: ("phase_1_reactive_energy_consumption", t.uint48_t, True),
+            0x4101: ("phase_2_reactive_energy_consumption", t.uint48_t, True),
+            0x4102: ("phase_3_reactive_energy_consumption", t.uint48_t, True),
+            0x4103: ("reactive_energy_summation_of_the_3_phases", t.uint48_t, True),
         }
     )
+
 
 (
     QuirkBuilder("OWON Technology Inc.", "PC321")
@@ -139,7 +139,7 @@ class OwonPC321MeteringCluster(CustomCluster, Metering):
         "phase_1_voltage",
         OwonPC321MeteringCluster.cluster_id,
         translation_key="voltage_1",
-        unit=UnitOfElectricPotential.VOLT  ,
+        unit=UnitOfElectricPotential.VOLT,
         fallback_name="Voltage 1",
         device_class=SensorDeviceClass.VOLTAGE,
         state_class=SensorStateClass.MEASUREMENT,
@@ -159,7 +159,7 @@ class OwonPC321MeteringCluster(CustomCluster, Metering):
         "phase_3_voltage",
         OwonPC321MeteringCluster.cluster_id,
         translation_key="voltage_3",
-        unit=UnitOfElectricPotential.VOLT  ,
+        unit=UnitOfElectricPotential.VOLT,
         fallback_name="Voltage 3",
         device_class=SensorDeviceClass.VOLTAGE,
         state_class=SensorStateClass.MEASUREMENT,
