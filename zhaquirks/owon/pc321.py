@@ -87,6 +87,7 @@ class OwonPC321MeteringCluster(CustomCluster, Metering):
             id=0x4103, type=t.uint48_t, access="r", is_manufacturer_specific=True
         )
 
+
 (
     QuirkBuilder("OWON Technology Inc.", "PC321")
     .replaces(OwonPC321MeteringCluster)
