@@ -24,7 +24,7 @@ class OwonPC321MeteringCluster(CustomCluster, Metering):
 
     class AttributeDefs(Metering.AttributeDefs):
         """OwonPC321 Manufacturer Cluster Attributes."""
-        
+
         phase_1_power: Final = foundation.ZCLAttributeDef(
             id=0x2000, type=t.uint24_t, access="r", is_manufacturer_specific=True
         )
