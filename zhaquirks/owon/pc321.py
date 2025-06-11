@@ -1,9 +1,9 @@
 """Quirk for Owon PC321."""
 
 from typing import Final
+
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder, SensorDeviceClass, SensorStateClass
-from zigpy.zcl import foundation
 from zigpy.quirks.v2.homeassistant import (
     UnitOfElectricCurrent,
     UnitOfElectricPotential,
@@ -11,6 +11,7 @@ from zigpy.quirks.v2.homeassistant import (
     UnitOfPower,
 )
 import zigpy.types as t
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.smartenergy import Metering
 
 
