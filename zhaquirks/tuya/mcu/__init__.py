@@ -53,8 +53,8 @@ class DPToAttributeMapping(DpToAttributeMappingBase):
         super().__init__(ep_attribute, attribute_name, converter, endpoint_id)
         self.dp_converter = dp_converter
         if dp_converter:
-            _LOGGER.info(
-                "DPToAttributeMapping with dp_converter is deprecated, use TuyaQuirksBuilder "
+            _LOGGER.debug(
+                "DPToAttributeMapping with dp_converter is deprecated, use TuyaQuirkBuilder "
                 "(or TuyaMCUCluster.attributes_to_dp_converters) instead. attribute_name: %s",
                 attribute_name,
             )

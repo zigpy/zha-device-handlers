@@ -1470,9 +1470,9 @@ class DPToAttributeMapping:
         self.endpoint_id = endpoint_id
 
         if not isinstance(attribute_name, str):
-            _LOGGER.info(
-                "Using tuple attribute_name is deprecated, please multiple "
-                "DPToAttributeMapping instances instead. %s",
+            _LOGGER.warning(
+                "Using a tuple for attribute_name is deprecated, please update ZHA quirks "
+                "to use multiple DPToAttributeMapping instances instead. Affected tuple: %s",
                 attribute_name,
             )
 
