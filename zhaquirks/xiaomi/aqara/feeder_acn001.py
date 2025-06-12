@@ -373,20 +373,31 @@ class OppleCluster(XiaomiAqaraE1Cluster):
             ):
                 try:
                     schedule_val = str(getattr(value, "value", value))
-                    if schedule_val.strip().isdigit():
-                        packet = self._encode_schedule(schedule_val)
-                        if packet:
-                            tv = foundation.TypeValue()
-                            tv.type = 0x41
-                            tv.value = types.LongOctetString(packet)
-                            return await self._write_attributes(
-                                [foundation.Attribute(FEEDER_ATTR, tv)],
-                                manufacturer=0x115F,
+                    packet = self._encode_schedule(schedule_val)
+    
+                    if packet:
+                        tv = foundation.TypeValue()
+                        tv.type = 0x41
+                        tv.value = types.LongOctetString(packet)
+                        return await self._write_attributes(
+                            [foundation.Attribute(FEEDER_ATTR, tv)],
+                            manufacturer=0x115F,
+                        )
+                    else:
+                        LOGGER.error("Failed to encode schedule: %s", schedule_val)
+                        return [
+                            foundation.WriteAttributesStatusRecord(
+                                foundation.Status.INVALID_VALUE
                             )
+                        ]
                 except Exception as e:
                     LOGGER.error("Schedule processing error: %s", e)
-                continue
-
+                    return [
+                        foundation.WriteAttributesStatusRecord(
+                            foundation.Status.FAILURE
+                        )
+                    ]
+            
             attr_def = self.find_attribute(attr)
             if not attr_def:
                 continue
@@ -400,7 +411,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
                 attrs[attribute] = cooked_value
             else:
                 attrs[attr] = value
-
+    
         return await super().write_attributes(attrs, manufacturer=0x115F)
 
     async def write_attributes_raw(
