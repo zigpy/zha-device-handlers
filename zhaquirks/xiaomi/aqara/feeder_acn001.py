@@ -374,7 +374,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
                 try:
                     schedule_val = str(getattr(value, "value", value))
                     packet = self._encode_schedule(schedule_val)
-    
+
                     if packet:
                         tv = foundation.TypeValue()
                         tv.type = 0x41
@@ -397,7 +397,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
                             foundation.Status.FAILURE
                         )
                     ]
-            
+
             attr_def = self.find_attribute(attr)
             if not attr_def:
                 continue
@@ -411,7 +411,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
                 attrs[attribute] = cooked_value
             else:
                 attrs[attr] = value
-    
+
         return await super().write_attributes(attrs, manufacturer=0x115F)
 
     async def write_attributes_raw(
