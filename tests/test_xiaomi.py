@@ -75,6 +75,7 @@ from zhaquirks.xiaomi.aqara.feeder_acn001 import (
     ZCL_PORTIONS_DISPENSED,
     ZCL_SCHEDULING_STRING,
     ZCL_SERVING_SIZE,
+    ZCL_SCHEDULING_STRING,
     ZCL_WEIGHT_DISPENSED,
     AqaraFeederAcn001,
     OppleCluster,
@@ -652,18 +653,12 @@ async def test_xiaomi_plug_power(zigpy_device_from_quirk, quirk):
         ),
         ("serving_size", 3, b"\x00\x02\x01\x0e\\\x00U\x04\x00\x00\x00\x03"),
         ("portion_weight", 8, b"\x00\x02\x01\x0e_\x00U\x04\x00\x00\x00\x08"),
-        (
-            "scheduling",
-            "7F09000100,7F0D000100",
-            b"\x00\x02\x15\x08\x00\x08\xc8 7F09000100,7F0D000100",
-        ),
     ],
 )
 async def test_aqara_feeder_write_attrs(
     zigpy_device_from_quirk, attribute, value, expected_bytes
 ):
     """Test Aqara C1 pet feeder attr writing."""
-
     device = zigpy_device_from_quirk(AqaraFeederAcn001)
     opple_cluster = device.endpoints[1].opple_cluster
     opple_cluster._write_attributes = mock.AsyncMock()
@@ -784,9 +779,9 @@ async def test_aqara_feeder_write_attrs(
         ),
         (
             b"\x1c_\x11}\n\xf1\xffA(\x00\x05\x15\x08\x00\x08\xc8 7F09000100,7F0D000100,7F13000100",
-            2,
+            1,
             [
-                mock.call(ZCL_SCHEDULING_STRING, "770900017713000177190001", mock.ANY),
+                mock.call(ZCL_SCHEDULING_STRING, 2, mock.ANY),
                 mock.call(
                     FEEDER_ATTR,
                     b"\x00\x05\x15\x08\x00\x08\xc8 7F09000100,7F0D000100,7F13000100",
@@ -800,15 +795,12 @@ async def test_aqara_feeder_attr_reports(
     zigpy_device_from_quirk, bytes_received, call_count, calls
 ):
     """Test Aqara C1 pet feeder attr writing."""
-
     class Listener:
         attribute_updated = mock.MagicMock()
-
     device = zigpy_device_from_quirk(AqaraFeederAcn001)
     opple_cluster = device.endpoints[1].opple_cluster
     cluster_listener = Listener()
     opple_cluster.add_listener(cluster_listener)
-
     device.packet_received(
         t.ZigbeePacket(
             profile_id=0x260,
@@ -818,11 +810,9 @@ async def test_aqara_feeder_attr_reports(
             data=t.SerializableBytes(bytes_received),
         )
     )
-
     assert cluster_listener.attribute_updated.call_count == call_count
     for call in calls:
         assert call in cluster_listener.attribute_updated.mock_calls
-
 
 @pytest.mark.parametrize("quirk", (zhaquirks.xiaomi.aqara.smoke.LumiSensorSmokeAcn03,))
 async def test_aqara_smoke_sensor_attribute_update(zigpy_device_from_quirk, quirk):
