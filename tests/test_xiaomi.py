@@ -778,7 +778,7 @@ async def test_aqara_feeder_write_attrs(
         ),
         (
             b"\x1c_\x11}\n\xf1\xffA(\x00\x05\x15\x08\x00\x08\xc8 7F09000100,7F0D000100,7F13000100",
-            1,
+            2,
             [
                 mock.call(ZCL_SCHEDULING_STRING, 2, mock.ANY),
                 mock.call(
