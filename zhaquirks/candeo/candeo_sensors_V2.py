@@ -1,7 +1,6 @@
 """Candeo sensors."""
 
 from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.zcl.clusters.general import Identify
 
 from zhaquirks.candeo import (
     CANDEO,
