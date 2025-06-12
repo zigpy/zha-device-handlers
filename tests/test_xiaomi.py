@@ -783,7 +783,7 @@ async def test_aqara_feeder_write_attrs(
                 mock.call(ZCL_SCHEDULING_STRING, 2, mock.ANY),
                 mock.call(
                     FEEDER_ATTR,
-                    b"\x00\x05\x15\x08\x00\x08\xc8 7F09000100,7F0D000100,7F13000100",
+                    b"\x00\x05\x15\x08\x00\x08\xc8 770900017713000177190001",
                     mock.ANY,
                 ),
             ],
