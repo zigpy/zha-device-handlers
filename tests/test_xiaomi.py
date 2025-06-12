@@ -75,7 +75,6 @@ from zhaquirks.xiaomi.aqara.feeder_acn001 import (
     ZCL_PORTIONS_DISPENSED,
     ZCL_SCHEDULING_STRING,
     ZCL_SERVING_SIZE,
-    ZCL_SCHEDULING_STRING,
     ZCL_WEIGHT_DISPENSED,
     AqaraFeederAcn001,
     OppleCluster,
@@ -795,8 +794,10 @@ async def test_aqara_feeder_attr_reports(
     zigpy_device_from_quirk, bytes_received, call_count, calls
 ):
     """Test Aqara C1 pet feeder attr writing."""
+
     class Listener:
         attribute_updated = mock.MagicMock()
+
     device = zigpy_device_from_quirk(AqaraFeederAcn001)
     opple_cluster = device.endpoints[1].opple_cluster
     cluster_listener = Listener()
@@ -813,6 +814,7 @@ async def test_aqara_feeder_attr_reports(
     assert cluster_listener.attribute_updated.call_count == call_count
     for call in calls:
         assert call in cluster_listener.attribute_updated.mock_calls
+
 
 @pytest.mark.parametrize("quirk", (zhaquirks.xiaomi.aqara.smoke.LumiSensorSmokeAcn03,))
 async def test_aqara_smoke_sensor_attribute_update(zigpy_device_from_quirk, quirk):
