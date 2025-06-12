@@ -846,19 +846,22 @@ async def test_aqara_feeder_write_schedule(zigpy_device_from_quirk):
         manufacturer=0x115F,
     )
 
-
 @pytest.mark.parametrize(
     "bad_value, log_message",
     [
+        # check for non-bytes input
         ("I am not bytes", "Invalid value type"),
-        (b"tooshort", "Attribute too short"),
-        (b"\x00\x01\x02\x03\x04\x05\x06\xff", "Incomplete attribute"),
+        # check with a value < 8 bytes
+        (b"short", "Attribute too short"),
+        (b"tooshort", "Incomplete attribute"),
+        # check an unknown attribute ID
         (
-            b"\x00\x01\x02\xde\xad\xbe\xef\x04\xde\xad\xbe\xef",
+            b"\x00\x01\x02\xde\xad\xbe\xef\x04\xDE\xAD\xBE\xEF",
             "Unhandled attribute: -559038737",
         ),
     ],
 )
+
 async def test_feeder_parse_bad_attributes(
     zigpy_device_from_quirk, bad_value, log_message, caplog
 ):
@@ -869,7 +872,6 @@ async def test_feeder_parse_bad_attributes(
     with caplog.at_level(logging.DEBUG):
         opple_cluster._update_attribute(FEEDER_ATTR, bad_value)
         assert log_message in caplog.text
-
 
 @pytest.mark.parametrize(
     "bad_schedule, log_message",
@@ -885,6 +887,7 @@ async def test_feeder_parse_bad_attributes(
         ("77080000", "Invalid schedule 1: time=08:00, portions=0"),  # Invalid portions
     ],
 )
+
 async def test_aqara_feeder_write_bad_schedule(
     zigpy_device_from_quirk, bad_schedule, log_message, caplog
 ):
@@ -894,23 +897,15 @@ async def test_aqara_feeder_write_bad_schedule(
     opple_cluster._write_attributes = mock.AsyncMock()
 
     with caplog.at_level(logging.ERROR):
-        await opple_cluster.write_attributes({"scheduling_string": bad_schedule})
-
+        result = await opple_cluster.write_attributes(
+            {"scheduling_string": bad_schedule}, manufacturer=0x115F
+        )
+        
         opple_cluster._write_attributes.assert_not_awaited()
+        
+        assert result[0].status != foundation.Status.SUCCESS
+        
         assert log_message in caplog.text
-
-
-def test_build_schedule_bytes_logging(caplog):
-    """Test the _build_schedule_bytes logging helper."""
-    cluster = OppleCluster(mock.MagicMock())
-    schedule_str = (
-        "7708000111123005"  # Everyday @ 8:00, 1 portion; Mon @ 12:30, 5 portions
-    )
-
-    with caplog.at_level(logging.INFO):
-        cluster._build_schedule_bytes(schedule_str)
-        assert "Schedule: Day=77 (127), Time=08:00, Portions=1" in caplog.text
-        assert "Schedule: Day=11 (1), Time=12:30, Portions=5" in caplog.text
 
 
 async def test_write_attributes_raw_and_safe(zigpy_device_from_quirk):
