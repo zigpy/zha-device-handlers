@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 import logging
 from typing import Any
 
@@ -169,7 +170,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         """Parse the feeder attribute."""
         try:
             if isinstance(value, str) and value.startswith("b'"):
-                value = eval(value)
+                value = ast.literal_eval(value)
 
             if not isinstance(value, bytes):
                 LOGGER.error("Invalid value type: %s", type(value))
