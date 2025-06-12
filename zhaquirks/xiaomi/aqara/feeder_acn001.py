@@ -171,54 +171,51 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         try:
             if isinstance(value, str) and value.startswith("b'"):
                 value = ast.literal_eval(value)
-
+            
             if not isinstance(value, bytes):
                 LOGGER.error("Invalid value type: %s", type(value))
                 return
-
+                
             if len(value) < 8:
                 LOGGER.debug("Attribute too short: %s bytes", len(value))
                 return
 
             attribute, _ = types.int32s_be.deserialize(value[3:7])
             length, _ = types.uint8_t.deserialize(value[7:8])
-
+            
             if len(value) < length + 8:
-                LOGGER.debug(
-                    "Incomplete attribute %s: %s < %s",
-                    attribute,
-                    len(value),
-                    length + 8,
-                )
+                LOGGER.debug("Incomplete attribute %s: %s < %s", 
+                           attribute, len(value), length + 8)
                 return
-
+                
             attribute_value = value[8 : (length + 8)]
-            LOGGER.debug(
-                "Processing attr %s: %s (%s bytes)",
-                attribute,
-                attribute_value.hex(),
-                len(attribute_value),
-            )
+            LOGGER.debug("Processing attr %s: %s (%s bytes)", 
+                        attribute, attribute_value.hex(), len(attribute_value))
 
-            if attribute in AQARA_TO_ZCL:
+            
+            if attribute == SCHEDULING_STRING:
+                try:
+                    schedule_value = attribute_value.decode("utf-8")
+                    self._update_attribute(ZCL_SCHEDULING_STRING, schedule_value)
+                except ValueError as e:
+                    LOGGER.debug("Failed to parse scheduling string: %s", e)            
+            elif attribute in AQARA_TO_ZCL:
                 self._update_feeder_attribute(attribute, attribute_value)
             elif attribute == FEEDING_REPORT:
                 try:
                     attr_str = attribute_value.decode("utf-8")
                     LOGGER.debug("Raw feeding report: %r", attr_str)
-
+                    
                     raw_source = attr_str[0:2]
                     feeding_source = int(raw_source, 16)
                     LOGGER.debug("Parsed source value: %r", feeding_source)
-
+                    
                     enum_value = self.FeedingSource(feeding_source)
                     LOGGER.debug("Created enum: %r (%s)", enum_value, str(enum_value))
-
+                    
                     self._update_attribute(ZCL_LAST_FEEDING_SOURCE, enum_value)
                     feeding_size = attr_str[3:4]
-                    self._update_attribute(
-                        ZCL_LAST_FEEDING_SIZE, int(feeding_size, base=16)
-                    )
+                    self._update_attribute(ZCL_LAST_FEEDING_SIZE, int(feeding_size, base=16))
                 except Exception as e:
                     LOGGER.debug("Failed to parse feeding report: %s", e)
             elif attribute == PORTIONS_DISPENSED:
@@ -233,12 +230,6 @@ class OppleCluster(XiaomiAqaraE1Cluster):
                     self._update_attribute(ZCL_WEIGHT_DISPENSED, weight_per_day)
                 except ValueError as e:
                     LOGGER.debug("Failed to parse weight: %s", e)
-            elif attribute == SCHEDULING_STRING:
-                try:
-                    schedule_value = attribute_value.decode("utf-8")
-                    self._update_attribute(ZCL_SCHEDULING_STRING, schedule_value)
-                except ValueError as e:
-                    LOGGER.debug("Failed to parse scheduling string: %s", e)
             else:
                 LOGGER.debug("Unhandled attribute: %s = %s", attribute, attribute_value)
 
