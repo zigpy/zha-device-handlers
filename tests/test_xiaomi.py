@@ -75,6 +75,7 @@ from zhaquirks.xiaomi.aqara.feeder_acn001 import (
     ZCL_PORTIONS_DISPENSED,
     ZCL_SERVING_SIZE,
     ZCL_WEIGHT_DISPENSED,
+    ZCL_SCHEDULING_STRING,
     AqaraFeederAcn001,
     OppleCluster,
 )
@@ -651,6 +652,7 @@ async def test_xiaomi_plug_power(zigpy_device_from_quirk, quirk):
         ),
         ("serving_size", 3, b"\x00\x02\x01\x0e\\\x00U\x04\x00\x00\x00\x03"),
         ("portion_weight", 8, b"\x00\x02\x01\x0e_\x00U\x04\x00\x00\x00\x08"),
+        ("scheduling", "7F09000100,7F0D000100", b"\x00\x02\x15\x08\x00\x08\xc8 7F09000100,7F0D000100"),
     ],
 )
 async def test_aqara_feeder_write_attrs(
@@ -778,8 +780,9 @@ async def test_aqara_feeder_write_attrs(
         ),
         (
             b"\x1c_\x11}\n\xf1\xffA(\x00\x05\x15\x08\x00\x08\xc8 7F09000100,7F0D000100,7F13000100",
-            1,
+            2,
             [
+                mock.call(ZCL_SCHEDULING_STRING, "770900017713000177190001", mock.ANY),
                 mock.call(
                     FEEDER_ATTR,
                     b"\x00\x05\x15\x08\x00\x08\xc8 7F09000100,7F0D000100,7F13000100",
