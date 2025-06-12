@@ -676,6 +676,7 @@ async def test_aqara_feeder_write_attrs(
         manufacturer=0x115F,
     )
 
+
 @pytest.mark.parametrize(
     "bytes_received, call_count, calls",
     [
@@ -791,7 +792,6 @@ async def test_aqara_feeder_write_attrs(
         ),
     ],
 )
-
 async def test_aqara_feeder_attr_reports(
     zigpy_device_from_quirk, bytes_received, call_count, calls
 ):
@@ -846,6 +846,7 @@ async def test_aqara_feeder_write_schedule(zigpy_device_from_quirk):
         manufacturer=0x115F,
     )
 
+
 @pytest.mark.parametrize(
     "bad_value, log_message",
     [
@@ -853,8 +854,7 @@ async def test_aqara_feeder_write_schedule(zigpy_device_from_quirk):
         (b"tooshort", "Attribute too short"),
         (b"\x00\x01\x02\x03\x04\x05\x06\xff", "Incomplete attribute"),
         (
-
-            b"\x00\x01\x02\xde\xad\xbe\xef\x04\xDE\xAD\xBE\xEF",
+            b"\x00\x01\x02\xde\xad\xbe\xef\x04\xde\xad\xbe\xef",
             "Unhandled attribute: -559038737",
         ),
     ],
@@ -870,15 +870,19 @@ async def test_feeder_parse_bad_attributes(
         opple_cluster._update_attribute(FEEDER_ATTR, bad_value)
         assert log_message in caplog.text
 
+
 @pytest.mark.parametrize(
     "bad_schedule, log_message",
     [
         ("not digits", "Schedule must be digits only"),
         ("1234567", "Schedule length must be multiple of 8"),
-        ("111111011111110111111101111111011111110111111101", "Max 5 schedules allowed"), # 6 schedules of 8 digits
-        ("77250001", "Invalid schedule 1: time=25:00"), # Invalid hour
-        ("77086001", "Invalid schedule 1: time=08:60"), # Invalid minute
-        ("77080000", "Invalid schedule 1: time=08:00, portions=0"), # Invalid portions
+        (
+            "111111011111110111111101111111011111110111111101",
+            "Max 5 schedules allowed",
+        ),  # 6 schedules of 8 digits
+        ("77250001", "Invalid schedule 1: time=25:00"),  # Invalid hour
+        ("77086001", "Invalid schedule 1: time=08:60"),  # Invalid minute
+        ("77080000", "Invalid schedule 1: time=08:00, portions=0"),  # Invalid portions
     ],
 )
 async def test_aqara_feeder_write_bad_schedule(
@@ -895,15 +899,19 @@ async def test_aqara_feeder_write_bad_schedule(
         opple_cluster._write_attributes.assert_not_awaited()
         assert log_message in caplog.text
 
+
 def test_build_schedule_bytes_logging(caplog):
     """Test the _build_schedule_bytes logging helper."""
     cluster = OppleCluster(mock.MagicMock())
-    schedule_str = "7708000111123005" # Everyday @ 8:00, 1 portion; Mon @ 12:30, 5 portions
-    
+    schedule_str = (
+        "7708000111123005"  # Everyday @ 8:00, 1 portion; Mon @ 12:30, 5 portions
+    )
+
     with caplog.at_level(logging.INFO):
         cluster._build_schedule_bytes(schedule_str)
         assert "Schedule: Day=77 (127), Time=08:00, Portions=1" in caplog.text
         assert "Schedule: Day=11 (1), Time=12:30, Portions=5" in caplog.text
+
 
 async def test_write_attributes_raw_and_safe(zigpy_device_from_quirk):
     """Test the write_attributes_raw and write_attributes_safe methods."""
@@ -914,15 +922,12 @@ async def test_write_attributes_raw_and_safe(zigpy_device_from_quirk):
     # Test write_attributes_raw
     dummy_attr = [foundation.Attribute(0x1234, foundation.TypeValue(None, 5))]
     await opple_cluster.write_attributes_raw(dummy_attr, manufacturer=0x115F)
-    opple_cluster._write_attributes.assert_awaited_with(
-        dummy_attr, manufacturer=0x115F
-    )
-    
+    opple_cluster._write_attributes.assert_awaited_with(dummy_attr, manufacturer=0x115F)
+
     # Test write_attributes_safe (which should behave like write_attributes)
-    await opple_cluster.write_attributes_safe(
-        {"child_lock": True}, manufacturer=0x115F
-    )
+    await opple_cluster.write_attributes_safe({"child_lock": True}, manufacturer=0x115F)
     assert opple_cluster._write_attributes.call_count == 2
+
 
 @pytest.mark.parametrize("quirk", (zhaquirks.xiaomi.aqara.smoke.LumiSensorSmokeAcn03,))
 async def test_aqara_smoke_sensor_attribute_update(zigpy_device_from_quirk, quirk):
