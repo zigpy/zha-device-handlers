@@ -780,7 +780,9 @@ async def test_aqara_feeder_write_attrs(
             b"\x1c_\x11}\n\xf1\xffA(\x00\x05\x15\x08\x00\x08\xc8 7F09000100,7F0D000100,7F13000100",
             2,
             [
-                mock.call(ZCL_SCHEDULING_STRING, "7F09000100,7F0D000100,7F13000100", mock.ANY),
+                mock.call(
+                    ZCL_SCHEDULING_STRING, "7F09000100,7F0D000100,7F13000100", mock.ANY
+                ),
                 mock.call(
                     FEEDER_ATTR,
                     b"\x00\x05\x15\x08\x00\x08\xc8 7F09000100,7F0D000100,7F13000100",
@@ -815,17 +817,20 @@ async def test_aqara_feeder_attr_reports(
     for call in calls:
         assert call in cluster_listener.attribute_updated.mock_calls
 
+
 async def test_aqara_feeder_write_schedule(zigpy_device_from_quirk):
     """Test writing the scheduling_string attribute to the Aqara C1 pet feeder."""
 
     device = zigpy_device_from_quirk(AqaraFeederAcn001)
     opple_cluster = device.endpoints[1].opple_cluster
-    
+
     opple_cluster._write_attributes = mock.AsyncMock()
 
     input_schedule_str = "770900017713000177190001"
 
-    expected_packet_payload = b"\x05\x15\x08\x00\x08\xc8 7F09000100,7F0D000100,7F13000100"
+    expected_packet_payload = (
+        b"\x05\x15\x08\x00\x08\xc8 7F09000100,7F0D000100,7F13000100"
+    )
 
     expected_tv = foundation.TypeValue()
     expected_tv.type = 0x41  # LongOctetString
@@ -840,6 +845,7 @@ async def test_aqara_feeder_write_schedule(zigpy_device_from_quirk):
         [expected_attribute_call],
         manufacturer=0x115F,
     )
+
 
 @pytest.mark.parametrize("quirk", (zhaquirks.xiaomi.aqara.smoke.LumiSensorSmokeAcn03,))
 async def test_aqara_smoke_sensor_attribute_update(zigpy_device_from_quirk, quirk):
