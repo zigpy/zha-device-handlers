@@ -963,38 +963,39 @@ def test_update_attribute_unknown_id_logging(zigpy_device_from_quirk, caplog):
 
 
 @pytest.mark.parametrize(
-    "attribute_id, value, log_message",
+    "attribute_id, malformed_data, log_message",
     [
         (FEEDING_REPORT, b"not_a_valid_report", "Failed to parse feeding report"),
-        (PORTIONS_DISPENSED, b"b", "Failed to parse portions"),
-        (WEIGHT_DISPENSED, b"bad", "Failed to parse weight"),
+        (PORTIONS_DISPENSED, b"\x01", "Failed to parse portions"),
+        (WEIGHT_DISPENSED, b"\x01\x02\x03", "Failed to parse weight"),
     ],
 )
 async def test_feeder_parse_edge_cases(
-    zigpy_device_from_quirk, attribute_id, value, log_message, caplog
+    zigpy_device_from_quirk, attribute_id, malformed_data, log_message, caplog
 ):
     """Test parser edge cases for various parsing failures."""
     device = zigpy_device_from_quirk(AqaraFeederAcn001)
     opple_cluster = device.endpoints[1].opple_cluster
 
-    full_payload = opple_cluster._build_feeder_attribute(
-        attribute_id, value, len(value)
-    )[1]
+    header = b"\x00\x02\x01"
+    attr_bytes = types.int32s_be(attribute_id).serialize()
+    len_bytes = types.uint8_t(len(malformed_data)).serialize()
+    full_payload = header + attr_bytes + len_bytes + malformed_data
 
     with caplog.at_level(logging.DEBUG):
         opple_cluster._parse_feeder_attribute(full_payload)
         assert log_message in caplog.text
-
 
 async def test_feeder_parse_stringified_bytes(zigpy_device_from_quirk, caplog):
     """Test the parser's ast.literal_eval path for stringified bytes."""
     device = zigpy_device_from_quirk(AqaraFeederAcn001)
     opple_cluster = device.endpoints[1].opple_cluster
 
-    stringified_payload = "b'\\x00\\x02\\x01\\xd1\\r\\x68\\x00\\x55\\x02\\x00\\x21'"
+    stringified_payload = "b'\\x00\\x02\\x01\\x0d\\x68\\x00\\x55\\x02\\x00\\x21'"
 
     with caplog.at_level(logging.DEBUG):
         opple_cluster._update_attribute(FEEDER_ATTR, stringified_payload)
+
         assert "Processing attr 224919637" in caplog.text
 
 
