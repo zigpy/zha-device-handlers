@@ -986,6 +986,7 @@ async def test_feeder_parse_edge_cases(
         opple_cluster._parse_feeder_attribute(full_payload)
         assert log_message in caplog.text
 
+
 async def test_feeder_parse_stringified_bytes(zigpy_device_from_quirk, caplog):
     """Test the parser's ast.literal_eval path for stringified bytes."""
     device = zigpy_device_from_quirk(AqaraFeederAcn001)
