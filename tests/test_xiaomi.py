@@ -680,6 +680,7 @@ async def test_aqara_feeder_write_attrs(
         manufacturer=0x115F,
     )
 
+
 @pytest.mark.parametrize(
     "bytes_received, call_count, calls",
     [
@@ -950,39 +951,41 @@ async def test_write_attributes_raw_and_safe(zigpy_device_from_quirk):
     await opple_cluster.write_attributes_safe({"child_lock": True}, manufacturer=0x115F)
     assert opple_cluster._write_attributes.call_count == 2
 
+
 def test_update_attribute_unknown_id_logging(zigpy_device_from_quirk, caplog):
     """Test that updating an unknown attribute ID is logged correctly."""
     device = zigpy_device_from_quirk(AqaraFeederAcn001)
     opple_cluster = device.endpoints[1].opple_cluster
-    
+
     with caplog.at_level(logging.DEBUG):
         opple_cluster._update_attribute(0x9999, "some_value")
         assert "OppleCluster._update_attribute: 39321," in caplog.text
 
+
 @pytest.mark.parametrize(
     "attribute_id, value, log_message",
     [
-        ( # Test the ast.literal_eval path
+        (  # Test the ast.literal_eval path
             PORTIONS_DISPENSED,
             "b'\\x00\\x05\\xd1\\rh\\x00U\\x02\\x00!'",
-            "Processing attr 218968405"
+            "Processing attr 218968405",
         ),
-        ( # Test a FEEDING_REPORT parsing failure
+        (  # Test a FEEDING_REPORT parsing failure
             FEEDING_REPORT,
             b"not_a_valid_report",
-            "Failed to parse feeding report"
+            "Failed to parse feeding report",
         ),
-        ( # Test a PORTIONS_DISPENSED parsing failure (not valid uint16)
+        (  # Test a PORTIONS_DISPENSED parsing failure (not valid uint16)
             PORTIONS_DISPENSED,
             b"bad",
-            "Failed to parse portions"
+            "Failed to parse portions",
         ),
-        ( # Test a WEIGHT_DISPENSED parsing failure (not valid uint32)
+        (  # Test a WEIGHT_DISPENSED parsing failure (not valid uint32)
             WEIGHT_DISPENSED,
             b"bad",
-            "Failed to parse weight"
+            "Failed to parse weight",
         ),
-    ]
+    ],
 )
 async def test_feeder_parse_edge_cases(
     zigpy_device_from_quirk, attribute_id, value, log_message, caplog
@@ -991,11 +994,14 @@ async def test_feeder_parse_edge_cases(
     device = zigpy_device_from_quirk(AqaraFeederAcn001)
     opple_cluster = device.endpoints[1].opple_cluster
 
-    full_payload = opple_cluster._build_feeder_attribute(attribute_id, value, len(value))[1]
+    full_payload = opple_cluster._build_feeder_attribute(
+        attribute_id, value, len(value)
+    )[1]
 
     with caplog.at_level(logging.DEBUG):
         opple_cluster._parse_feeder_attribute(full_payload)
         assert log_message in caplog.text
+
 
 @pytest.mark.parametrize("quirk", (zhaquirks.xiaomi.aqara.smoke.LumiSensorSmokeAcn03,))
 async def test_aqara_smoke_sensor_attribute_update(zigpy_device_from_quirk, quirk):
