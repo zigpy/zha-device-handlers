@@ -4,9 +4,9 @@ import asyncio
 import logging
 import math
 from unittest import mock
-from zigpy import types
 
 import pytest
+from zigpy import types
 import zigpy.device
 import zigpy.types as t
 from zigpy.zcl import Cluster, foundation
