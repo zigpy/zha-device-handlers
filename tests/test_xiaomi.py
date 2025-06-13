@@ -907,6 +907,28 @@ async def test_aqara_feeder_write_bad_schedule(
 
         assert log_message in caplog.text
 
+def test_build_schedule_bytes_error(caplog):
+    """Test the _build_schedule_bytes logging helper with bad data."""
+    cluster = OppleCluster(mock.MagicMock())
+    
+    with caplog.at_level(logging.ERROR):
+        cluster._build_schedule_bytes("not a valid schedule string")
+        assert "Schedule parse error" in caplog.text
+
+async def test_write_attributes_fallback_path(zigpy_device_from_quirk):
+    """Test the write_attributes fallback path for non-Opple attributes."""
+    device = zigpy_device_from_quirk(AqaraFeederAcn001)
+    opple_cluster = device.endpoints[1].opple_cluster
+
+    with mock.patch.object(
+        XiaomiAqaraE1Cluster, "write_attributes", mock.AsyncMock()
+    ) as mock_super_write:
+    
+        await opple_cluster.write_attributes({"last_feeding_size": 5})
+
+        mock_super_write.assert_awaited_with(
+            {"last_feeding_size": 5}, manufacturer=0x115F
+        )
 
 async def test_write_attributes_raw_and_safe(zigpy_device_from_quirk):
     """Test the write_attributes_raw and write_attributes_safe methods."""
@@ -922,6 +944,8 @@ async def test_write_attributes_raw_and_safe(zigpy_device_from_quirk):
     # Test write_attributes_safe (which should behave like write_attributes)
     await opple_cluster.write_attributes_safe({"child_lock": True}, manufacturer=0x115F)
     assert opple_cluster._write_attributes.call_count == 2
+
+
 
 
 @pytest.mark.parametrize("quirk", (zhaquirks.xiaomi.aqara.smoke.LumiSensorSmokeAcn03,))
