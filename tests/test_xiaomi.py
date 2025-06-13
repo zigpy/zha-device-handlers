@@ -55,6 +55,7 @@ from zhaquirks.xiaomi import (
     XIAOMI_AQARA_ATTRIBUTE_E1,
     XIAOMI_NODE_DESC,
     BasicCluster,
+    XiaomiAqaraE1Cluster,
     XiaomiCustomDevice,
     XiaomiQuickInitDevice,
     handle_quick_init,
