@@ -965,32 +965,17 @@ def test_update_attribute_unknown_id_logging(zigpy_device_from_quirk, caplog):
 @pytest.mark.parametrize(
     "attribute_id, value, log_message",
     [
-        (  # Test the ast.literal_eval path
-            PORTIONS_DISPENSED,
-            "b'\\x00\\x05\\xd1\\rh\\x00U\\x02\\x00!'",
-            "Processing attr 218968405",
-        ),
-        (  # Test a FEEDING_REPORT parsing failure
-            FEEDING_REPORT,
-            b"not_a_valid_report",
-            "Failed to parse feeding report",
-        ),
-        (  # Test a PORTIONS_DISPENSED parsing failure (not valid uint16)
-            PORTIONS_DISPENSED,
-            b"bad",
-            "Failed to parse portions",
-        ),
-        (  # Test a WEIGHT_DISPENSED parsing failure (not valid uint32)
-            WEIGHT_DISPENSED,
-            b"bad",
-            "Failed to parse weight",
-        ),
+        (FEEDING_REPORT, b"not_a_valid_report", "Failed to parse feeding report"),
+        
+        (PORTIONS_DISPENSED, b"b", "Failed to parse portions"),
+        
+        (WEIGHT_DISPENSED, b"bad", "Failed to parse weight"),
     ],
 )
 async def test_feeder_parse_edge_cases(
     zigpy_device_from_quirk, attribute_id, value, log_message, caplog
 ):
-    """Test parser edge cases like string input and parsing failures."""
+    """Test parser edge cases for various parsing failures."""
     device = zigpy_device_from_quirk(AqaraFeederAcn001)
     opple_cluster = device.endpoints[1].opple_cluster
 
@@ -1002,6 +987,16 @@ async def test_feeder_parse_edge_cases(
         opple_cluster._parse_feeder_attribute(full_payload)
         assert log_message in caplog.text
 
+async def test_feeder_parse_stringified_bytes(zigpy_device_from_quirk, caplog):
+    """Test the parser's ast.literal_eval path for stringified bytes."""
+    device = zigpy_device_from_quirk(AqaraFeederAcn001)
+    opple_cluster = device.endpoints[1].opple_cluster
+
+    stringified_payload = "b'\\x00\\x02\\x01\\xd1\\r\\x68\\x00\\x55\\x02\\x00\\x21'"
+
+    with caplog.at_level(logging.DEBUG):
+        opple_cluster._update_attribute(FEEDER_ATTR, stringified_payload)
+        assert "Processing attr 224919637" in caplog.text
 
 @pytest.mark.parametrize("quirk", (zhaquirks.xiaomi.aqara.smoke.LumiSensorSmokeAcn03,))
 async def test_aqara_smoke_sensor_attribute_update(zigpy_device_from_quirk, quirk):
