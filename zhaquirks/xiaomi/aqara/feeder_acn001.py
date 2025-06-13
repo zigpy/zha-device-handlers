@@ -265,15 +265,6 @@ class OppleCluster(XiaomiAqaraE1Cluster):
                 val += value
         return FEEDER_ATTR_NAME, val
 
-    def _build_xiaomi_attribute(self, attr_id: int, value: bytes, length: int) -> bytes:
-        """Build Xiaomi attribute data format."""
-        self._send_sequence = ((self._send_sequence or 0) + 1) % 256
-        header = bytearray([0x00, 0x02, self._send_sequence])
-        header.extend(attr_id.to_bytes(4, "big"))
-        header.append(length)
-        header.extend(value)
-        return bytes(header)
-
     def _build_schedule_bytes(self, value: Any) -> None:
         """Log schedule integer segments."""
         try:
