@@ -68,6 +68,7 @@ from zhaquirks.xiaomi.aqara.feeder_acn001 import (
     FEEDER_ATTR,
     FEEDING_REPORT,
     PORTIONS_DISPENSED,
+    SCHEDULING_STRING,
     WEIGHT_DISPENSED,
     ZCL_CHILD_LOCK,
     ZCL_DISABLE_LED_INDICATOR,
@@ -987,7 +988,6 @@ async def test_feeder_parse_edge_cases(
         opple_cluster._parse_feeder_attribute(full_payload)
         assert log_message in caplog.text
 
-
 async def test_feeder_parse_stringified_bytes(zigpy_device_from_quirk, caplog):
     """Test the parser's ast.literal_eval path for stringified bytes."""
     device = zigpy_device_from_quirk(AqaraFeederAcn001)
@@ -1000,6 +1000,49 @@ async def test_feeder_parse_stringified_bytes(zigpy_device_from_quirk, caplog):
 
         assert "Processing attr 224919637" in caplog.text
 
+async def test_feeder_parse_schedule_decode_error(zigpy_device_from_quirk, caplog):
+    """Test parsing a schedule string with invalid utf-8 characters."""
+    device = zigpy_device_from_quirk(AqaraFeederAcn001)
+    opple_cluster = device.endpoints[1].opple_cluster
+
+    header = b"\x00\x02\x01"
+    attr_bytes = types.int32s_be(SCHEDULING_STRING).serialize()
+    malformed_data = b"\x01\xff\x02"  # \xff is not valid in UTF-8
+    len_bytes = types.uint8_t(len(malformed_data)).serialize()
+    full_payload = header + attr_bytes + len_bytes + malformed_data
+
+    with caplog.at_level(logging.DEBUG):
+        opple_cluster._parse_feeder_attribute(full_payload)
+        assert "Failed to parse scheduling string" in caplog.text
+
+async def test_aqara_feeder_write_schedule_with_bad_object(
+    zigpy_device_from_quirk, caplog
+):
+    """Test writing a schedule with an object that fails string conversion."""
+    
+    class ExplodingObject:
+        """An object that raises an exception when converted to a string."""
+        def __str__(self):
+            raise TypeError("I am failing!")
+
+    device = zigpy_device_from_quirk(AqaraFeederAcn001)
+    opple_cluster = device.endpoints[1].opple_cluster
+    
+    with caplog.at_level(logging.ERROR):
+        result = await opple_cluster.write_attributes(
+            {"scheduling_string": ExplodingObject()}
+        )
+        assert "Schedule processing error" in caplog.text
+        assert result[0].status == foundation.Status.FAILURE
+
+def test_build_schedule_bytes_parse_error(caplog):
+    """Test the _build_schedule_bytes helper with data that fails parsing."""
+    cluster = OppleCluster(mock.MagicMock())
+    bad_schedule_str = "XX080001"
+    
+    with caplog.at_level(logging.ERROR):
+        cluster._build_schedule_bytes(bad_schedule_str)
+        assert "Schedule parse error" in caplog.text
 
 @pytest.mark.parametrize("quirk", (zhaquirks.xiaomi.aqara.smoke.LumiSensorSmokeAcn03,))
 async def test_aqara_smoke_sensor_attribute_update(zigpy_device_from_quirk, quirk):
