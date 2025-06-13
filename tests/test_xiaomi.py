@@ -4,6 +4,7 @@ import asyncio
 import logging
 import math
 from unittest import mock
+from zigpy import types
 
 import pytest
 import zigpy.device
