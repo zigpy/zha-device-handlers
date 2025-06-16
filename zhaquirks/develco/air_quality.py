@@ -4,7 +4,12 @@ import logging
 from typing import Final
 
 from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder, SensorDeviceClass, SensorStateClass
+from zigpy.quirks.v2 import (
+    QuirkBuilder,
+    ReportingConfig,
+    SensorDeviceClass,
+    SensorStateClass,
+)
 from zigpy.quirks.v2.homeassistant import CONCENTRATION_PARTS_PER_BILLION
 import zigpy.types as t
 from zigpy.zcl.foundation import (
@@ -75,6 +80,11 @@ class DevelcoVOCMeasurement(CustomCluster):
         unit=CONCENTRATION_PARTS_PER_BILLION,
         fallback_name="VOC Level",
         unique_id_suffix="voc_level",
+        reporting_config=ReportingConfig(
+            min_interval=30,
+            max_interval=900,
+            reportable_change=10,  # TVOC fluctuates a lot
+        ),
     )
     .add_to_registry()
 )
