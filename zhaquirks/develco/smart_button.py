@@ -2,7 +2,7 @@
 
 from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.zcl import ClusterType
-from zigpy.zcl.clusters.general import BinaryInput, OnOff
+from zigpy.zcl.clusters.general import OnOff
 
 from zhaquirks.const import BUTTON, CLUSTER_ID, COMMAND, COMMAND_CLICK, ENDPOINT_ID
 
@@ -12,11 +12,6 @@ from zhaquirks.const import BUTTON, CLUSTER_ID, COMMAND, COMMAND_CLICK, ENDPOINT
         endpoint_id=32,
         cluster_id=OnOff.cluster_id,
         cluster_type=ClusterType.Client,
-    )
-    # Don't create a binary entity for a button, instead create automation triggers
-    .prevent_default_entity_creation(
-        endpoint_id=32,
-        cluster_id=BinaryInput.cluster_id,
     )
     .device_automation_triggers(
         {
