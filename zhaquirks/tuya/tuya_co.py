@@ -114,6 +114,7 @@ base_air_quality = (
 
 (
     base_air_quality.clone()  # Tuya NIDR CO2 sensor with GPP.
+    .applies_to("_TZE200_ogkdpgy2", "TS0601")
     .applies_to("_TZE204_ogkdpgy2", "TS0601")
     .applies_to("_TZE200_3ejwxpmu", "TS0601")
     .applies_to("_TZE204_3ejwxpmu", "TS0601")
