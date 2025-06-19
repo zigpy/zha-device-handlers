@@ -126,7 +126,7 @@ class UserInterfaceCustom(CustomCluster, UserInterface):
         attribute_name=RelativeHumidityCustom.AttributeDefs.humidity_calibration.name,
         cluster_id=RelativeHumidityCustom.cluster_id,
         endpoint_id=1,
-        min_value=0,
+        min_value=-99,
         max_value=99,
         step=0.01,
         unit=PERCENTAGE,
