@@ -1610,3 +1610,44 @@ base_tuya_motion = (
     .skip_configuration()
     .add_to_registry()
 )
+
+# Tuya 24G MmWave Radar Human Body Presence Motion Sensor
+(
+    TuyaQuirkBuilder("_TZE284_iadro9bf", "TS0601")
+    .tuya_dp(
+        dp_id=1,
+        ep_attribute=TuyaOccupancySensing.ep_attribute,
+        attribute_name=OccupancySensing.AttributeDefs.occupancy.name,
+        converter=lambda x: x == 0,
+    )
+    .adds(TuyaOccupancySensing)
+    .tuya_enum(
+        dp_id=9,
+        attribute_name="trigger_sensitivity",
+        enum_class=TuyaSensitivityMode,
+        translation_key="trigger_sensitivity",
+        fallback_name="Trigger sensitivity",
+    )
+    .tuya_illuminance(dp_id=12)
+    .tuya_enum(
+        dp_id=101,
+        attribute_name="exist_Sensitivity",
+        enum_class=TuyaMotionPresenceSensitivity,
+        translation_key="presence_sensitivity",
+        fallback_name="Presence Sensitivity",
+    )
+    .tuya_number(
+        dp_id=102,
+        attribute_name="hold_time",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        min_value=10,
+        max_value=600,
+        step=1,
+        translation_key="fading_time",
+        fallback_name="Fading time",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
