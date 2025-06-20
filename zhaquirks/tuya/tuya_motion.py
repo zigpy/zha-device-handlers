@@ -1634,7 +1634,7 @@ base_tuya_motion = (
         attribute_name="exist_Sensitivity",
         enum_class=TuyaMotionPresenceSensitivity,
         translation_key="presence_sensitivity",
-        fallback_name="Presence Sensitivity",
+        fallback_name="Presence sensitivity",
     )
     .tuya_number(
         dp_id=102,
