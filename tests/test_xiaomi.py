@@ -93,6 +93,7 @@ import zhaquirks.xiaomi.aqara.plug_eu
 import zhaquirks.xiaomi.aqara.roller_curtain_e1
 import zhaquirks.xiaomi.aqara.sensor_ht_agl02
 import zhaquirks.xiaomi.aqara.smoke
+from zhaquirks.xiaomi.aqara.switch_h2 import PowerMeasurementCluster
 import zhaquirks.xiaomi.aqara.switch_t1
 from zhaquirks.xiaomi.aqara.thermostat_agl001 import ScheduleEvent, ScheduleSettings
 import zhaquirks.xiaomi.aqara.weather
@@ -2219,3 +2220,26 @@ def test_h1_wireless_remotes(zigpy_device_from_v2_quirk):
 
     assert MultistateInput.cluster_id in device.endpoints[2].in_clusters
     assert MultistateInput.cluster_id in device.endpoints[3].in_clusters
+
+
+@pytest.mark.parametrize(
+    "quirk", (zhaquirks.xiaomi.aqara.switch_h2.AqaraLightSwitchH2US2B1C,)
+)
+async def test_h2_switch_attribute_update(zigpy_device_from_quirk, quirk):
+    """Test Aqara H2 switch quirk adds power measurement cluster."""
+    device = zigpy_device_from_quirk(quirk)
+
+    # verify the quirk adds endpoint 21
+    assert 21 in device.endpoints
+
+    # verify the quirk adds the correct clusters to the new endpoints
+    assert PowerMeasurementCluster.cluster_id in device.endpoints[21].in_clusters
+
+    # verify update attribute works
+    powermeasurement_cluster = device.endpoints[21].in_clusters[
+        PowerMeasurementCluster.cluster_id
+    ]
+    powermeasurement_listener = ClusterListener(powermeasurement_cluster)
+
+    powermeasurement_cluster.update_attribute(0x0055, 0)
+    assert len(powermeasurement_listener.attribute_updates) == 1
