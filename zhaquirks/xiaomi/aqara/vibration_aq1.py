@@ -109,6 +109,9 @@ class VibrationAQ1(XiaomiQuickInitDevice):
                 x = value & 0xFFFF
                 y = (value >> 16) & 0xFFFF
                 z = (value >> 32) & 0xFFFF
+                x = x - 0x10000 if x & 0x8000 else x
+                y = y - 0x10000 if y & 0x8000 else y
+                z = z - 0x10000 if z & 0x8000 else z
                 X = 0.0 + x
                 Y = 0.0 + y
                 Z = 0.0 + z
