@@ -49,6 +49,7 @@ from zhaquirks.xiaomi import (
 from zhaquirks.xiaomi.aqara.opple_remote import MultistateInputCluster
 from zhaquirks.xiaomi.aqara.opple_switch import OppleSwitchCluster
 
+
 class PowerMeasurementCluster(AnalogInputCluster):
     """Custom cluster for power measurement."""
 
@@ -75,6 +76,7 @@ class PowerMeasurementCluster(AnalogInputCluster):
                     "value": value,
                 },
             )
+
 
 class AqaraLightSwitchH2US2B1C(XiaomiCustomDevice):
     """Wrapper for Aqara Light Switch H2 US with 2 buttons and 1 channel (WS-K02E)."""
@@ -238,6 +240,7 @@ class AqaraLightSwitchH2US2B1C(XiaomiCustomDevice):
         },
     }
 
+
 class AqaraLightSwitchH2EU2B1C(XiaomiCustomDevice):
     """Wrapper for Aqara Light Switch H2 EU with 2 buttons and 1 channel (WS-K07E/WS-K07D)."""
 
@@ -380,6 +383,7 @@ class AqaraLightSwitchH2EU2B1C(XiaomiCustomDevice):
             ARGS: {BUTTON: 4, ATTR_ID: 0x0055, PRESS_TYPE: COMMAND_SINGLE, VALUE: 1},
         },
     }
+
 
 class AqaraLightSwitchH2US2B2C(XiaomiCustomDevice):
     """Wrapper for Aqara Light Switch H2 US with 2 buttons and 2 channels (WS-K03E)."""
@@ -534,6 +538,7 @@ class AqaraLightSwitchH2US2B2C(XiaomiCustomDevice):
         },
     }
 
+
 class AqaraLightSwitchH2EU2B2C(XiaomiCustomDevice):
     """Wrapper for Aqara Light Switch H2 EU with 2 buttons and 2 channels (no neutral) (WS-K08E)."""
 
@@ -550,7 +555,7 @@ class AqaraLightSwitchH2EU2B2C(XiaomiCustomDevice):
                     MultistateInput.cluster_id,
                     Metering.cluster_id,
                     ElectricalMeasurement.cluster_id,
-                    OppleSwitchCluster.cluster_id
+                    OppleSwitchCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Time.cluster_id,
@@ -580,7 +585,7 @@ class AqaraLightSwitchH2EU2B2C(XiaomiCustomDevice):
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
                     MultistateInput.cluster_id,
-                    OppleSwitchCluster.cluster_id
+                    OppleSwitchCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [],
             },
@@ -589,7 +594,7 @@ class AqaraLightSwitchH2EU2B2C(XiaomiCustomDevice):
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
                     MultistateInput.cluster_id,
-                    OppleSwitchCluster.cluster_id
+                    OppleSwitchCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [],
             },
@@ -616,7 +621,7 @@ class AqaraLightSwitchH2EU2B2C(XiaomiCustomDevice):
                     MultistateInput,
                     Metering,
                     ElectricalMeasurement,
-                    OppleSwitchCluster
+                    OppleSwitchCluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     Time,
@@ -644,19 +649,13 @@ class AqaraLightSwitchH2EU2B2C(XiaomiCustomDevice):
             4: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
-                INPUT_CLUSTERS: [
-                    MultistateInputCluster,
-                    OppleSwitchCluster
-                ],
+                INPUT_CLUSTERS: [MultistateInputCluster, OppleSwitchCluster],
                 OUTPUT_CLUSTERS: [],
             },
             5: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
-                INPUT_CLUSTERS: [
-                    MultistateInputCluster,
-                    OppleSwitchCluster
-                ],
+                INPUT_CLUSTERS: [MultistateInputCluster, OppleSwitchCluster],
                 OUTPUT_CLUSTERS: [],
             },
             21: {
@@ -692,6 +691,7 @@ class AqaraLightSwitchH2EU2B2C(XiaomiCustomDevice):
             ARGS: {BUTTON: 5, ATTR_ID: 0x0055, PRESS_TYPE: COMMAND_SINGLE, VALUE: 1},
         },
     }
+
 
 class AqaraLightSwitchH2EU2B2CNeutral(XiaomiCustomDevice):
     """Wrapper for Aqara Light Switch H2 EU with 2 buttons and 2 channels (with neutral) (WS-K08E)."""
@@ -743,7 +743,7 @@ class AqaraLightSwitchH2EU2B2CNeutral(XiaomiCustomDevice):
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
                     MultistateInput.cluster_id,
-                    OppleSwitchCluster.cluster_id
+                    OppleSwitchCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [],
             },
@@ -752,7 +752,7 @@ class AqaraLightSwitchH2EU2B2CNeutral(XiaomiCustomDevice):
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
                 INPUT_CLUSTERS: [
                     MultistateInput.cluster_id,
-                    OppleSwitchCluster.cluster_id
+                    OppleSwitchCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [],
             },
@@ -811,19 +811,13 @@ class AqaraLightSwitchH2EU2B2CNeutral(XiaomiCustomDevice):
             4: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
-                INPUT_CLUSTERS: [
-                    MultistateInputCluster,
-                    OppleSwitchCluster
-                ],
+                INPUT_CLUSTERS: [MultistateInputCluster, OppleSwitchCluster],
                 OUTPUT_CLUSTERS: [],
             },
             5: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_SWITCH,
-                INPUT_CLUSTERS: [
-                    MultistateInputCluster,
-                    OppleSwitchCluster
-                ],
+                INPUT_CLUSTERS: [MultistateInputCluster, OppleSwitchCluster],
                 OUTPUT_CLUSTERS: [],
             },
             21: {
