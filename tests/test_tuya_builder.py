@@ -1,6 +1,5 @@
 """Tests for TuyaQuirkBuilder."""
 
-from collections.abc import ByteString
 import datetime
 from unittest import mock
 
@@ -166,13 +165,13 @@ async def test_tuya_quirkbuilder(device_mock):
     class Tuya3PhaseElectricalMeasurement(ElectricalMeasurement, TuyaLocalCluster):
         """Tuya Electrical Measurement cluster."""
 
-    def dpToPower(data: ByteString) -> int:
+    def dpToPower(data: bytes) -> int:
         return data[0]
 
-    def dpToCurrent(data: ByteString) -> int:
+    def dpToCurrent(data: bytes) -> int:
         return data[1]
 
-    def dpToVoltage(data: ByteString) -> int:
+    def dpToVoltage(data: bytes) -> int:
         return data[2]
 
     entry = (
