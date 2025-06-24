@@ -40,11 +40,11 @@ from zhaquirks.xiaomi import (
 )
 
 
-class LumiPowerOnBehaviorMode(t.enum8):
-    """Power on behavior mode."""
+class LumiPowerOnStateMode(t.enum8):
+    """Power on state mode."""
 
     On = 0x00
-    PreserveState = 0x01
+    LastState = 0x01
     Off = 0x02
 
 
@@ -57,16 +57,14 @@ class OppleClusterLight(XiaomiAqaraE1Cluster):
 
 
 class AqaraLightT1M(XiaomiAqaraE1Cluster):
-    """Add power on behavior management for Lumi devices."""
-
-    manufacturer_id_override = 4447
+    """Add power on state management for Lumi devices."""
 
     class AttributeDefs(BaseAttributeDefs):
         """Manufacturer specific attributes."""
 
-        power_on_behavior = ZCLAttributeDef(
+        power_on_state = ZCLAttributeDef(
             id=0x0517,
-            type=LumiPowerOnBehaviorMode,
+            type=LumiPowerOnStateMode,
             zcl_type=DataTypeId.uint8,
             access="rw",
             is_manufacturer_specific=True,
@@ -233,22 +231,22 @@ class LumiLightAcn014(XiaomiCustomDevice):
 (
     QuirkBuilder(AQARA, "lumi.light.acn032")
     .friendly_name(manufacturer="Aqara", model="Ceiling Light T1M")
-    .adds_endpoint(2, device_type=zha.DeviceType.COLOR_DIMMABLE_LIGHT)
+    .replaces_endpoint(2, device_type=zha.DeviceType.COLOR_DIMMABLE_LIGHT)
     .replaces(AqaraLightT1M)
     .replaces(AqaraLightT1M, endpoint_id=2)
     .enum(
-        AqaraLightT1M.AttributeDefs.power_on_behavior.name,
-        LumiPowerOnBehaviorMode,
+        AqaraLightT1M.AttributeDefs.power_on_state.name,
+        LumiPowerOnStateMode,
         AqaraLightT1M.cluster_id,
-        translation_key="power_on_behavior",
-        fallback_name="Power on behavior",
+        translation_key="power_on_state",
+        fallback_name="Power on state",
     )
     .enum(
-        AqaraLightT1M.AttributeDefs.power_on_behavior.name,
-        LumiPowerOnBehaviorMode,
+        AqaraLightT1M.AttributeDefs.power_on_state.name,
+        LumiPowerOnStateMode,
         AqaraLightT1M.cluster_id,
-        translation_key="power_on_behavior",
-        fallback_name="Power on behavior",
+        translation_key="power_on_state",
+        fallback_name="Power on state",
         endpoint_id=2,
     )
     .add_to_registry()

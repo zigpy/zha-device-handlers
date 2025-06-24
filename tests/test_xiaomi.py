@@ -79,7 +79,7 @@ from zhaquirks.xiaomi.aqara.feeder_acn001 import (
     AqaraFeederAcn001,
     OppleCluster,
 )
-from zhaquirks.xiaomi.aqara.light_acn import AqaraLightT1M, LumiPowerOnBehaviorMode
+from zhaquirks.xiaomi.aqara.light_acn import AqaraLightT1M, LumiPowerOnStateMode
 import zhaquirks.xiaomi.aqara.magnet_ac01
 import zhaquirks.xiaomi.aqara.magnet_acn001
 import zhaquirks.xiaomi.aqara.magnet_agl02
@@ -2233,25 +2233,18 @@ def test_t1m_ceiling_light(zigpy_device_from_v2_quirk, endpoint):
     aqara_cluster = device.endpoints[endpoint].opple_cluster
     cluster_listener = ClusterListener(aqara_cluster)
 
-    aqara_cluster.update_attribute(
-        AqaraLightT1M.AttributeDefs.power_on_behavior.id, 0x01
-    )
+    aqara_cluster.update_attribute(AqaraLightT1M.AttributeDefs.power_on_state.id, 0x01)
     assert len(cluster_listener.attribute_updates) == 1
     assert (
         cluster_listener.attribute_updates[0][0]
-        == AqaraLightT1M.AttributeDefs.power_on_behavior.id
+        == AqaraLightT1M.AttributeDefs.power_on_state.id
     )
-    assert (
-        cluster_listener.attribute_updates[0][1]
-        == LumiPowerOnBehaviorMode.PreserveState
-    )
+    assert cluster_listener.attribute_updates[0][1] == LumiPowerOnStateMode.LastState
 
-    aqara_cluster.update_attribute(
-        AqaraLightT1M.AttributeDefs.power_on_behavior.id, 0x02
-    )
+    aqara_cluster.update_attribute(AqaraLightT1M.AttributeDefs.power_on_state.id, 0x02)
     assert len(cluster_listener.attribute_updates) == 2
     assert (
         cluster_listener.attribute_updates[1][0]
-        == AqaraLightT1M.AttributeDefs.power_on_behavior.id
+        == AqaraLightT1M.AttributeDefs.power_on_state.id
     )
-    assert cluster_listener.attribute_updates[1][1] == LumiPowerOnBehaviorMode.Off
+    assert cluster_listener.attribute_updates[1][1] == LumiPowerOnStateMode.Off
