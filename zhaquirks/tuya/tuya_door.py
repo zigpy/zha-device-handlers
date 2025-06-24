@@ -25,7 +25,7 @@ class OpeningStateEnum(t.enum8):
     .tuya_enum(
         dp_id=101,
         attribute_name="opening_state",
-        enum_class=OpeningStateEnum,        
+        enum_class=OpeningStateEnum,
         entity_type=EntityType.STANDARD,
         entity_platform=EntityPlatform.SENSOR,
         translation_key="opening",
