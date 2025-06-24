@@ -2223,7 +2223,7 @@ def test_h1_wireless_remotes(zigpy_device_from_v2_quirk):
     assert MultistateInput.cluster_id in device.endpoints[2].in_clusters
     assert MultistateInput.cluster_id in device.endpoints[3].in_clusters
 
-    
+
 @pytest.mark.parametrize(
     "quirk", (zhaquirks.xiaomi.aqara.switch_h2.AqaraLightSwitchH2US2B1C,)
 )
@@ -2246,7 +2246,7 @@ async def test_h2_switch_attribute_update(zigpy_device_from_quirk, quirk):
     powermeasurement_cluster.update_attribute(0x0055, 0)
     assert len(powermeasurement_listener.attribute_updates) == 1
 
-    
+
 @pytest.mark.parametrize("endpoint", [(1), (2)])
 def test_t1m_ceiling_light(zigpy_device_from_v2_quirk, endpoint):
     """Test Aqara T1M ceiling light quirk adds missing endpoints."""
@@ -2273,4 +2273,3 @@ def test_t1m_ceiling_light(zigpy_device_from_v2_quirk, endpoint):
         == AqaraLightT1M.AttributeDefs.power_on_state.id
     )
     assert cluster_listener.attribute_updates[1][1] == LumiPowerOnStateMode.Off
-
