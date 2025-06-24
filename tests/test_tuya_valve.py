@@ -1,9 +1,9 @@
 """Tests for Tuya quirks."""
 
-from datetime import datetime, timezone
+from datetime import datetime
 from unittest import mock
-from unittest.mock import patch
 
+from freezegun import freeze_time
 import pytest
 from zigpy.quirks.v2 import EntityMetadata
 import zigpy.types as t
@@ -183,16 +183,7 @@ async def test_giex_functions():
     assert zhaquirks.tuya.tuya_valve.giex_string_to_td("12:01:05,3") == 43265
     assert zhaquirks.tuya.tuya_valve.giex_string_to_dt("--:--:--") is None
 
-    class MockDatetime:
-        def now(self, tz: timezone):
-            """Mock now."""
-            return datetime(2024, 10, 2, 12, 10, 23, tzinfo=tz)
-
-        def strptime(self, v: str, fmt: str):
-            """Mock strptime."""
-            return datetime.strptime(v, fmt)
-
-    with patch("zhaquirks.tuya.tuya_valve.datetime", MockDatetime()):
+    with freeze_time("2024-10-02 12:10:23", tz_offset=1):
         assert zhaquirks.tuya.tuya_valve.giex_string_to_dt(
             "20:12:01"
         ) == datetime.fromisoformat("2024-10-02T20:12:01+04:00")

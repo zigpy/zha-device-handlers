@@ -2,10 +2,11 @@
 
 from unittest import mock
 
+from freezegun import freeze_time
 import pytest
 from zigpy.zcl import foundation
 
-from tests.common import ClusterListener, MockDatetime
+from tests.common import ClusterListener
 import zhaquirks
 from zhaquirks.tuya import TUYA_MCU_VERSION_RSP, TUYA_SET_TIME, TuyaDPType
 from zhaquirks.tuya.mcu import (
@@ -185,7 +186,7 @@ async def test_tuya_mcu_set_time(zigpy_device_from_quirk, quirk):
     tuya_cluster = tuya_device.endpoints[1].tuya_manufacturer
     cluster_listener = ClusterListener(tuya_cluster)
 
-    with mock.patch("datetime.datetime", MockDatetime):
+    with freeze_time("1970-01-01 02:00:00", tz_offset=-1):
         # simulate a SET_TIME message
         hdr, args = tuya_cluster.deserialize(ZCL_TUYA_SET_TIME)
         assert hdr.command_id == TUYA_SET_TIME

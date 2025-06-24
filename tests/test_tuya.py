@@ -4,6 +4,7 @@ import base64
 import struct
 from unittest import mock
 
+from freezegun import freeze_time
 import pytest
 from zigpy.device import Device
 from zigpy.profiles import zha
@@ -13,7 +14,7 @@ from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import PowerConfiguration
 from zigpy.zcl.clusters.security import IasZone, ZoneStatus
 
-from tests.common import ClusterListener, MockDatetime, wait_for_zigpy_tasks
+from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -1305,7 +1306,7 @@ async def test_moes(zigpy_device_from_quirk, quirk):
         _, status = await onoff_cluster.command(0x0009)
         assert status == foundation.Status.UNSUP_CLUSTER_COMMAND
 
-        with mock.patch("datetime.datetime", MockDatetime):
+        with freeze_time("1970-01-01 02:00:00", tz_offset=-1):
             hdr, args = tuya_cluster.deserialize(ZCL_TUYA_SET_TIME_REQUEST)
             tuya_cluster.handle_message(hdr, args)
             await wait_for_zigpy_tasks()

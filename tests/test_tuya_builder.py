@@ -2,6 +2,7 @@
 
 from unittest import mock
 
+from freezegun import freeze_time
 import pytest
 from zigpy.quirks.registry import DeviceRegistry
 from zigpy.quirks.v2 import CustomDeviceV2
@@ -10,7 +11,7 @@ from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 
-from tests.common import ClusterListener, MockDatetime, wait_for_zigpy_tasks
+from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
 from zhaquirks.const import BatterySize
 from zhaquirks.tuya import (
@@ -429,7 +430,7 @@ async def test_tuya_mcu_set_time(device_mock):
         TUYA_SET_TIME
     ].is_manufacturer_specific
 
-    with mock.patch("datetime.datetime", MockDatetime):
+    with freeze_time("1970-01-01 02:00:00", tz_offset=-1):
         # simulate a SET_TIME message
         hdr, args = ep.tuya_manufacturer.deserialize(ZCL_TUYA_SET_TIME)
         assert hdr.command_id == TUYA_SET_TIME
