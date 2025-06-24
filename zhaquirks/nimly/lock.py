@@ -124,7 +124,7 @@ def last_action_user_converter(value: int) -> int:
         attribute_converter=lambda value: value.hex(),
         initially_disabled=True,
         translation_key="last_pin_code",
-        fallback_name="Last pin code",
+        fallback_name="Last PIN code",
     )
     .switch(
         endpoint_id=11,
@@ -192,7 +192,7 @@ def last_action_user_converter(value: int) -> int:
         attribute_converter=lambda value: value.hex(),
         initially_disabled=True,
         translation_key="last_pin_code",
-        fallback_name="Last pin code",
+        fallback_name="Last PIN code",
     )
     .switch(
         endpoint_id=11,
