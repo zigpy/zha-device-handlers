@@ -1,7 +1,5 @@
 """Tuya Power Meter."""
 
-from collections.abc import ByteString
-
 from zigpy.quirks.v2 import EntityType, SensorDeviceClass, SensorStateClass
 from zigpy.quirks.v2.homeassistant import (
     PERCENTAGE,
@@ -18,7 +16,7 @@ from zhaquirks.tuya import DPToAttributeMapping, TuyaLocalCluster
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 
-def dp_to_power(data: ByteString) -> int:
+def dp_to_power(data: bytes) -> int:
     """Convert DP data to power value."""
     # From https://github.com/Koenkk/zigbee2mqtt/issues/18603#issuecomment-2277697295
     power = int(data)
@@ -27,7 +25,7 @@ def dp_to_power(data: ByteString) -> int:
     return power
 
 
-def multi_dp_to_power(data: ByteString) -> int:
+def multi_dp_to_power(data: bytes) -> int:
     """Convert DP data to power value."""
     # Support negative power readings
     # From https://github.com/Koenkk/zigbee2mqtt/issues/18603#issuecomment-2277697295
@@ -37,12 +35,12 @@ def multi_dp_to_power(data: ByteString) -> int:
     return power
 
 
-def multi_dp_to_current(data: ByteString) -> int:
+def multi_dp_to_current(data: bytes) -> int:
     """Convert DP data to current value."""
     return data[4] | (data[3] << 8)
 
 
-def multi_dp_to_voltage(data: ByteString) -> int:
+def multi_dp_to_voltage(data: bytes) -> int:
     """Convert DP data to voltage value."""
     return data[1] | (data[0] << 8)
 
