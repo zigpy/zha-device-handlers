@@ -31,13 +31,6 @@ class OpeningStateEnum(t.enum8):
         translation_key="opening",
         fallback_name="Opening",
     )
-    .tuya_switch(
-        dp_id=16,
-        attribute_name="alarm",
-        entity_type=EntityType.STANDARD,
-        translation_key="alarm",
-        fallback_name="Tamper alarm",
-    )
     .skip_configuration()
     .add_to_registry()
 )
