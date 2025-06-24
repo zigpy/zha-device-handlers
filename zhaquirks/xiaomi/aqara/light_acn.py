@@ -231,7 +231,6 @@ class LumiLightAcn014(XiaomiCustomDevice):
 (
     QuirkBuilder(AQARA, "lumi.light.acn032")
     .friendly_name(manufacturer="Aqara", model="Ceiling Light T1M")
-    .replaces_endpoint(2, device_type=zha.DeviceType.COLOR_DIMMABLE_LIGHT)
     .replaces(AqaraLightT1M)
     .replaces(AqaraLightT1M, endpoint_id=2)
     .enum(

@@ -2227,7 +2227,8 @@ def test_h1_wireless_remotes(zigpy_device_from_v2_quirk):
 def test_t1m_ceiling_light(zigpy_device_from_v2_quirk, endpoint):
     """Test Aqara T1M ceiling light quirk adds missing endpoints."""
 
-    device = zigpy_device_from_v2_quirk(AQARA, "lumi.light.acn032")
+    # create the device with 2 endpoints (one for each light on the T1M)
+    device = zigpy_device_from_v2_quirk(AQARA, "lumi.light.acn032", endpoint_ids=[1, 2])
     assert AqaraLightT1M.cluster_id in device.endpoints[endpoint].in_clusters
 
     aqara_cluster = device.endpoints[endpoint].opple_cluster
