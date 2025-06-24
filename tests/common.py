@@ -29,16 +29,9 @@ class MockDatetime(datetime.datetime):
     """Override for datetime functions."""
 
     @classmethod
-    def now(cls):
+    def now(cls, tz: datetime.timezone | None = None):
         """Return testvalue."""
-
-        return cls(1970, 1, 1, 1, 0, 0)
-
-    @classmethod
-    def utcnow(cls):
-        """Return testvalue."""
-
-        return cls(1970, 1, 1, 2, 0, 0)
+        return cls(1970, 1, 1, 1, 0, 0, tzinfo=tz)
 
 
 async def wait_for_zigpy_tasks() -> None:
