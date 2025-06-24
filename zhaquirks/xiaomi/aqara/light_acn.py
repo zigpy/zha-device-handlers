@@ -244,9 +244,9 @@ class LumiLightAcn014(XiaomiCustomDevice):
         AqaraLightT1M.AttributeDefs.power_on_state.name,
         LumiPowerOnStateMode,
         AqaraLightT1M.cluster_id,
+        endpoint_id=2,
         translation_key="power_on_state",
         fallback_name="Power on state",
-        endpoint_id=2,
     )
     .add_to_registry()
 )
