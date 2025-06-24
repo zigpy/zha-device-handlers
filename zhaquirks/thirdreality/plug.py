@@ -42,15 +42,15 @@ class ThirdRealityPlugCluster(CustomCluster):
     .also_applies_to("Third Reality, Inc", "3RSP02064Z")
     .also_applies_to("Third Reality, Inc", "3RSPE02065Z")
     .replaces(ThirdRealityPlugCluster)
-    .write_attr_button(                        #reset the accumulated power of the plug
+    .write_attr_button(  # reset the accumulated power of the plug
         attribute_name=ThirdRealityPlugCluster.AttributeDefs.reset_summation_delivered.name,
-        attribute_value=0x01,                  #Setting the attribute to 1 represents resetting the accumulated battery level, while other values represent invalidity
+        attribute_value=0x01,  # Setting the attribute to 1 represents resetting the accumulated battery level, while other values represent invalidity
         cluster_id=ThirdRealityPlugCluster.cluster_id,
         translation_key="reset_summation_delivered",
         fallback_name="Reset summation delivered",
     )
-    .number(                                   #off delay
-        attribute_name=ThirdRealityPlugCluster.AttributeDefs.on_to_off_delay.name,       
+    .number(  # off delay
+        attribute_name=ThirdRealityPlugCluster.AttributeDefs.on_to_off_delay.name,
         cluster_id=ThirdRealityPlugCluster.cluster_id,
         endpoint_id=1,
         min_value=0,
@@ -60,7 +60,7 @@ class ThirdRealityPlugCluster(CustomCluster):
         translation_key="on_to_off_delay",
         fallback_name="Turn off delay",
     )
-    .number(                                  #on delay
+    .number(  # on delay
         attribute_name=ThirdRealityPlugCluster.AttributeDefs.off_to_on_delay.name,
         cluster_id=ThirdRealityPlugCluster.cluster_id,
         endpoint_id=1,
