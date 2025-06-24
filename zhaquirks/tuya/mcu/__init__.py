@@ -315,10 +315,10 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
         self.debug("handle_set_time_request payload: %s", payload)
         payload_rsp = TuyaTimePayload()
 
-        utc_now = datetime.datetime.now(datetime.UTC)
+        utc_now = datetime.datetime.utcnow()  # noqa: DTZ003
         now = datetime.datetime.now()
 
-        offset_time = datetime.datetime(self.set_time_offset, 1, 1, tzinfo=datetime.UTC)
+        offset_time = datetime.datetime(self.set_time_offset, 1, 1)
         offset_time_local = datetime.datetime(
             self.set_time_local_offset or self.set_time_offset, 1, 1
         )

@@ -464,8 +464,8 @@ class TuyaManufCluster(CustomCluster):
         payload = TuyaTimePayload()
         utc_timestamp = int(
             (
-                datetime.datetime.now(datetime.UTC)
-                - datetime.datetime(self.set_time_offset, 1, 1, tzinfo=datetime.UTC)
+                datetime.datetime.utcnow()  # noqa: DTZ003
+                - datetime.datetime(self.set_time_offset, 1, 1)
             ).total_seconds()
         )
         local_timestamp = int(
