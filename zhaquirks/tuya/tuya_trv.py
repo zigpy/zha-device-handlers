@@ -209,7 +209,8 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
         min_value=-6,
         max_value=6,
         unit=UnitOfTemperature.CELSIUS,
-        step=1,
+        step=0.1,
+        multiplier=0.1,
         translation_key="local_temperature_calibration",
         fallback_name="Local temperature calibration",
     )
