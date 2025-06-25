@@ -17,12 +17,21 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.foundation import BaseAttributeDefs, BaseCommandDefs
 
 from zhaquirks.const import (
+    CLUSTER_ID,
+    COMMAND,
+    COMMAND_OFF,
+    COMMAND_ON,
+    COMMAND_TOGGLE,
     DEVICE_TYPE,
+    DOUBLE_PRESS,
+    ENDPOINT_ID,
     ENDPOINTS,
     INPUT_CLUSTERS,
+    LONG_PRESS,
     MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
+    SHORT_PRESS,
 )
 from zhaquirks.yandex import (
     YANDEX,
@@ -122,7 +131,23 @@ class YandexDimmer(CustomDevice):
     }
 
 
-### YNDX-00531 AND YNDX-00532 SINGLE-GANG AND DOUBLE-GANG SWITCHES ###
+### YNDX-00531 & YNDX-00532 SINGLE-GANG & DOUBLE-GANG SWITCHES, ###
+
+YANDEX_SINGLE_GANG_SWITCH_BUTTON_DOWN_ENDPOINT_ID = 2
+YANDEX_SINGLE_GANG_SWITCH_BUTTON_UP_ENDPOINT_ID = 3
+
+YANDEX_SINGLE_GANG_SWITCH_BUTTON_DOWN_NAME = "Button (Down)"
+YANDEX_SINGLE_GANG_SWITCH_BUTTON_UP_NAME = "Button (Up)"
+
+YANDEX_DOUBLE_GANG_SWITCH_BUTTON_1_DOWN_ENDPOINT_ID = 3
+YANDEX_DOUBLE_GANG_SWITCH_BUTTON_2_DOWN_ENDPOINT_ID = 4
+YANDEX_DOUBLE_GANG_SWITCH_BUTTON_1_UP_ENDPOINT_ID = 5
+YANDEX_DOUBLE_GANG_SWITCH_BUTTON_2_UP_ENDPOINT_ID = 6
+
+YANDEX_DOUBLE_GANG_SWITCH_BUTTON_1_DOWN_NAME = "Button 1 (Down)"
+YANDEX_DOUBLE_GANG_SWITCH_BUTTON_2_DOWN_NAME = "Button 2 (Down)"
+YANDEX_DOUBLE_GANG_SWITCH_BUTTON_1_UP_NAME = "Button 1 (Up)"
+YANDEX_DOUBLE_GANG_SWITCH_BUTTON_2_UP_NAME = "Button 2 (Up)"
 
 
 class YandexClusterSwitchMain(YandexCluster):
@@ -192,7 +217,7 @@ class YandexSingleGangSwitch(CustomDevice):
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
             # Down
-            2: {
+            YANDEX_SINGLE_GANG_SWITCH_BUTTON_DOWN_ENDPOINT_ID: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
                 INPUT_CLUSTERS: [
@@ -202,7 +227,7 @@ class YandexSingleGangSwitch(CustomDevice):
                 OUTPUT_CLUSTERS: [Identify.cluster_id, OnOff.cluster_id],
             },
             # Up
-            3: {
+            YANDEX_SINGLE_GANG_SWITCH_BUTTON_UP_ENDPOINT_ID: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
                 INPUT_CLUSTERS: [
@@ -212,6 +237,39 @@ class YandexSingleGangSwitch(CustomDevice):
                 OUTPUT_CLUSTERS: [Identify.cluster_id, OnOff.cluster_id],
             },
         }
+    }
+
+    device_automation_triggers = {
+        (SHORT_PRESS, YANDEX_SINGLE_GANG_SWITCH_BUTTON_DOWN_NAME): {
+            COMMAND: COMMAND_TOGGLE,
+            CLUSTER_ID: OnOff.cluster_id,
+            ENDPOINT_ID: YANDEX_SINGLE_GANG_SWITCH_BUTTON_DOWN_ENDPOINT_ID,
+        },
+        (DOUBLE_PRESS, YANDEX_SINGLE_GANG_SWITCH_BUTTON_DOWN_NAME): {
+            COMMAND: COMMAND_ON,
+            CLUSTER_ID: OnOff.cluster_id,
+            ENDPOINT_ID: YANDEX_SINGLE_GANG_SWITCH_BUTTON_DOWN_ENDPOINT_ID,
+        },
+        (LONG_PRESS, YANDEX_SINGLE_GANG_SWITCH_BUTTON_DOWN_NAME): {
+            COMMAND: COMMAND_OFF,
+            CLUSTER_ID: OnOff.cluster_id,
+            ENDPOINT_ID: YANDEX_SINGLE_GANG_SWITCH_BUTTON_DOWN_ENDPOINT_ID,
+        },
+        (SHORT_PRESS, YANDEX_SINGLE_GANG_SWITCH_BUTTON_UP_NAME): {
+            COMMAND: COMMAND_TOGGLE,
+            CLUSTER_ID: OnOff.cluster_id,
+            ENDPOINT_ID: YANDEX_SINGLE_GANG_SWITCH_BUTTON_UP_ENDPOINT_ID,
+        },
+        (DOUBLE_PRESS, YANDEX_SINGLE_GANG_SWITCH_BUTTON_UP_NAME): {
+            COMMAND: COMMAND_ON,
+            CLUSTER_ID: OnOff.cluster_id,
+            ENDPOINT_ID: YANDEX_SINGLE_GANG_SWITCH_BUTTON_UP_ENDPOINT_ID,
+        },
+        (LONG_PRESS, YANDEX_SINGLE_GANG_SWITCH_BUTTON_UP_NAME): {
+            COMMAND: COMMAND_OFF,
+            CLUSTER_ID: OnOff.cluster_id,
+            ENDPOINT_ID: YANDEX_SINGLE_GANG_SWITCH_BUTTON_UP_ENDPOINT_ID,
+        },
     }
 
 
@@ -279,7 +337,7 @@ class YandexDoubleGangSwitch(CustomDevice):
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
             # Button 1 Down
-            3: {
+            YANDEX_DOUBLE_GANG_SWITCH_BUTTON_1_DOWN_ENDPOINT_ID: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
                 INPUT_CLUSTERS: [
@@ -289,7 +347,7 @@ class YandexDoubleGangSwitch(CustomDevice):
                 OUTPUT_CLUSTERS: [Identify.cluster_id, OnOff.cluster_id],
             },
             # Button 2 Down
-            4: {
+            YANDEX_DOUBLE_GANG_SWITCH_BUTTON_2_DOWN_ENDPOINT_ID: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
                 INPUT_CLUSTERS: [
@@ -299,7 +357,7 @@ class YandexDoubleGangSwitch(CustomDevice):
                 OUTPUT_CLUSTERS: [Identify.cluster_id, OnOff.cluster_id],
             },
             # Button 1 Up
-            5: {
+            YANDEX_DOUBLE_GANG_SWITCH_BUTTON_1_UP_ENDPOINT_ID: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
                 INPUT_CLUSTERS: [
@@ -309,7 +367,7 @@ class YandexDoubleGangSwitch(CustomDevice):
                 OUTPUT_CLUSTERS: [Identify.cluster_id, OnOff.cluster_id],
             },
             # Button 2 Up
-            6: {
+            YANDEX_DOUBLE_GANG_SWITCH_BUTTON_2_UP_ENDPOINT_ID: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
                 INPUT_CLUSTERS: [
@@ -321,8 +379,81 @@ class YandexDoubleGangSwitch(CustomDevice):
         }
     }
 
+    device_automation_triggers = {
+        (SHORT_PRESS, YANDEX_DOUBLE_GANG_SWITCH_BUTTON_1_DOWN_NAME): {
+            COMMAND: COMMAND_TOGGLE,
+            CLUSTER_ID: OnOff.cluster_id,
+            ENDPOINT_ID: YANDEX_DOUBLE_GANG_SWITCH_BUTTON_1_DOWN_ENDPOINT_ID,
+        },
+        (DOUBLE_PRESS, YANDEX_DOUBLE_GANG_SWITCH_BUTTON_1_DOWN_NAME): {
+            COMMAND: COMMAND_ON,
+            CLUSTER_ID: OnOff.cluster_id,
+            ENDPOINT_ID: YANDEX_DOUBLE_GANG_SWITCH_BUTTON_1_DOWN_ENDPOINT_ID,
+        },
+        (LONG_PRESS, YANDEX_DOUBLE_GANG_SWITCH_BUTTON_1_DOWN_NAME): {
+            COMMAND: COMMAND_OFF,
+            CLUSTER_ID: OnOff.cluster_id,
+            ENDPOINT_ID: YANDEX_DOUBLE_GANG_SWITCH_BUTTON_1_DOWN_ENDPOINT_ID,
+        },
+        (SHORT_PRESS, YANDEX_DOUBLE_GANG_SWITCH_BUTTON_2_DOWN_NAME): {
+            COMMAND: COMMAND_TOGGLE,
+            CLUSTER_ID: OnOff.cluster_id,
+            ENDPOINT_ID: YANDEX_DOUBLE_GANG_SWITCH_BUTTON_2_DOWN_ENDPOINT_ID,
+        },
+        (DOUBLE_PRESS, YANDEX_DOUBLE_GANG_SWITCH_BUTTON_2_DOWN_NAME): {
+            COMMAND: COMMAND_ON,
+            CLUSTER_ID: OnOff.cluster_id,
+            ENDPOINT_ID: YANDEX_DOUBLE_GANG_SWITCH_BUTTON_2_DOWN_ENDPOINT_ID,
+        },
+        (LONG_PRESS, YANDEX_DOUBLE_GANG_SWITCH_BUTTON_2_DOWN_NAME): {
+            COMMAND: COMMAND_OFF,
+            CLUSTER_ID: OnOff.cluster_id,
+            ENDPOINT_ID: YANDEX_DOUBLE_GANG_SWITCH_BUTTON_2_DOWN_ENDPOINT_ID,
+        },
+        (SHORT_PRESS, YANDEX_DOUBLE_GANG_SWITCH_BUTTON_1_UP_NAME): {
+            COMMAND: COMMAND_TOGGLE,
+            CLUSTER_ID: OnOff.cluster_id,
+            ENDPOINT_ID: YANDEX_DOUBLE_GANG_SWITCH_BUTTON_1_UP_ENDPOINT_ID,
+        },
+        (DOUBLE_PRESS, YANDEX_DOUBLE_GANG_SWITCH_BUTTON_1_UP_NAME): {
+            COMMAND: COMMAND_ON,
+            CLUSTER_ID: OnOff.cluster_id,
+            ENDPOINT_ID: YANDEX_DOUBLE_GANG_SWITCH_BUTTON_1_UP_ENDPOINT_ID,
+        },
+        (LONG_PRESS, YANDEX_DOUBLE_GANG_SWITCH_BUTTON_1_UP_NAME): {
+            COMMAND: COMMAND_OFF,
+            CLUSTER_ID: OnOff.cluster_id,
+            ENDPOINT_ID: YANDEX_DOUBLE_GANG_SWITCH_BUTTON_1_UP_ENDPOINT_ID,
+        },
+        (SHORT_PRESS, YANDEX_DOUBLE_GANG_SWITCH_BUTTON_2_UP_NAME): {
+            COMMAND: COMMAND_TOGGLE,
+            CLUSTER_ID: OnOff.cluster_id,
+            ENDPOINT_ID: YANDEX_DOUBLE_GANG_SWITCH_BUTTON_2_UP_ENDPOINT_ID,
+        },
+        (DOUBLE_PRESS, YANDEX_DOUBLE_GANG_SWITCH_BUTTON_2_UP_NAME): {
+            COMMAND: COMMAND_ON,
+            CLUSTER_ID: OnOff.cluster_id,
+            ENDPOINT_ID: YANDEX_DOUBLE_GANG_SWITCH_BUTTON_2_UP_ENDPOINT_ID,
+        },
+        (LONG_PRESS, YANDEX_DOUBLE_GANG_SWITCH_BUTTON_2_UP_NAME): {
+            COMMAND: COMMAND_OFF,
+            CLUSTER_ID: OnOff.cluster_id,
+            ENDPOINT_ID: YANDEX_DOUBLE_GANG_SWITCH_BUTTON_2_UP_ENDPOINT_ID,
+        },
+    }
+
 
 ### YNDX-00537 SINGLE RELAY ###
+
+YANDEX_SINGLE_RELAY_BUTTON_ENDPOINT_ID = 2
+
+YANDEX_SINGLE_RELAY_BUTTON_NAME = "Button"
+
+YANDEX_DOUBLE_RELAY_BUTTON_1_ENDPOINT_ID = 3
+YANDEX_DOUBLE_RELAY_BUTTON_2_ENDPOINT_ID = 4
+
+YANDEX_DOUBLE_RELAY_BUTTON_1_NAME = "Button 1"
+YANDEX_DOUBLE_RELAY_BUTTON_2_NAME = "Button 2"
 
 
 class YandexClusterSingleRelay(YandexCluster):
@@ -379,7 +510,7 @@ class YandexSingleRelay(CustomDevice):
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
             # Button (decoupled)
-            2: {
+            YANDEX_SINGLE_RELAY_BUTTON_ENDPOINT_ID: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
                 INPUT_CLUSTERS: [
@@ -388,6 +519,24 @@ class YandexSingleRelay(CustomDevice):
                 ],
                 OUTPUT_CLUSTERS: [Identify.cluster_id, OnOff.cluster_id],
             },
+        },
+    }
+
+    device_automation_triggers = {
+        (SHORT_PRESS, YANDEX_SINGLE_RELAY_BUTTON_NAME): {
+            COMMAND: COMMAND_TOGGLE,
+            CLUSTER_ID: OnOff.cluster_id,
+            ENDPOINT_ID: YANDEX_SINGLE_RELAY_BUTTON_ENDPOINT_ID,
+        },
+        (DOUBLE_PRESS, YANDEX_SINGLE_RELAY_BUTTON_NAME): {
+            COMMAND: COMMAND_ON,
+            CLUSTER_ID: OnOff.cluster_id,
+            ENDPOINT_ID: YANDEX_SINGLE_RELAY_BUTTON_ENDPOINT_ID,
+        },
+        (LONG_PRESS, YANDEX_SINGLE_RELAY_BUTTON_NAME): {
+            COMMAND: COMMAND_OFF,
+            CLUSTER_ID: OnOff.cluster_id,
+            ENDPOINT_ID: YANDEX_SINGLE_RELAY_BUTTON_ENDPOINT_ID,
         },
     }
 
@@ -491,7 +640,7 @@ class YandexDoubleRelay(CustomDevice):
                 OUTPUT_CLUSTERS: [Ota.cluster_id],
             },
             # Button 1
-            3: {
+            YANDEX_DOUBLE_RELAY_BUTTON_1_ENDPOINT_ID: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
                 INPUT_CLUSTERS: [
@@ -501,7 +650,7 @@ class YandexDoubleRelay(CustomDevice):
                 OUTPUT_CLUSTERS: [Identify.cluster_id, OnOff.cluster_id],
             },
             # Button 2
-            4: {
+            YANDEX_DOUBLE_RELAY_BUTTON_2_ENDPOINT_ID: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
                 INPUT_CLUSTERS: [
@@ -510,5 +659,38 @@ class YandexDoubleRelay(CustomDevice):
                 ],
                 OUTPUT_CLUSTERS: [Identify.cluster_id, OnOff.cluster_id],
             },
+        },
+    }
+
+    device_automation_triggers = {
+        (SHORT_PRESS, YANDEX_DOUBLE_RELAY_BUTTON_1_NAME): {
+            COMMAND: COMMAND_TOGGLE,
+            CLUSTER_ID: OnOff.cluster_id,
+            ENDPOINT_ID: YANDEX_DOUBLE_RELAY_BUTTON_1_ENDPOINT_ID,
+        },
+        (DOUBLE_PRESS, YANDEX_DOUBLE_RELAY_BUTTON_1_NAME): {
+            COMMAND: COMMAND_ON,
+            CLUSTER_ID: OnOff.cluster_id,
+            ENDPOINT_ID: YANDEX_DOUBLE_RELAY_BUTTON_1_ENDPOINT_ID,
+        },
+        (LONG_PRESS, YANDEX_DOUBLE_RELAY_BUTTON_1_NAME): {
+            COMMAND: COMMAND_OFF,
+            CLUSTER_ID: OnOff.cluster_id,
+            ENDPOINT_ID: YANDEX_DOUBLE_RELAY_BUTTON_1_ENDPOINT_ID,
+        },
+        (SHORT_PRESS, YANDEX_DOUBLE_RELAY_BUTTON_2_NAME): {
+            COMMAND: COMMAND_TOGGLE,
+            CLUSTER_ID: OnOff.cluster_id,
+            ENDPOINT_ID: YANDEX_DOUBLE_RELAY_BUTTON_2_ENDPOINT_ID,
+        },
+        (DOUBLE_PRESS, YANDEX_DOUBLE_RELAY_BUTTON_2_NAME): {
+            COMMAND: COMMAND_ON,
+            CLUSTER_ID: OnOff.cluster_id,
+            ENDPOINT_ID: YANDEX_DOUBLE_RELAY_BUTTON_2_ENDPOINT_ID,
+        },
+        (LONG_PRESS, YANDEX_DOUBLE_RELAY_BUTTON_2_NAME): {
+            COMMAND: COMMAND_OFF,
+            CLUSTER_ID: OnOff.cluster_id,
+            ENDPOINT_ID: YANDEX_DOUBLE_RELAY_BUTTON_2_ENDPOINT_ID,
         },
     }
