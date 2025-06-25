@@ -194,14 +194,22 @@ class YandexSingleGangSwitch(CustomDevice):
             # Down
             2: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_SENSOR,
-                INPUT_CLUSTERS: [OnOff.cluster_id],
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Identify.cluster_id, OnOff.cluster_id],
             },
             # Up
             3: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_SENSOR,
-                INPUT_CLUSTERS: [OnOff.cluster_id],
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Identify.cluster_id, OnOff.cluster_id],
             },
         }
     }
@@ -273,26 +281,42 @@ class YandexDoubleGangSwitch(CustomDevice):
             # Button 1 Down
             3: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_SENSOR,
-                INPUT_CLUSTERS: [OnOff.cluster_id],
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Identify.cluster_id, OnOff.cluster_id],
             },
             # Button 2 Down
             4: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_SENSOR,
-                INPUT_CLUSTERS: [OnOff.cluster_id],
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Identify.cluster_id, OnOff.cluster_id],
             },
             # Button 1 Up
             5: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_SENSOR,
-                INPUT_CLUSTERS: [OnOff.cluster_id],
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Identify.cluster_id, OnOff.cluster_id],
             },
             # Button 2 Up
             6: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_SENSOR,
-                INPUT_CLUSTERS: [OnOff.cluster_id],
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Identify.cluster_id, OnOff.cluster_id],
             },
         }
     }
@@ -357,8 +381,12 @@ class YandexSingleRelay(CustomDevice):
             # Button (decoupled)
             2: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_SENSOR,
-                INPUT_CLUSTERS: [OnOff.cluster_id],
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Identify.cluster_id, OnOff.cluster_id],
             },
         },
     }
@@ -465,14 +493,22 @@ class YandexDoubleRelay(CustomDevice):
             # Button 1
             3: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_SENSOR,
-                INPUT_CLUSTERS: [OnOff.cluster_id],
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Identify.cluster_id, OnOff.cluster_id],
             },
             # Button 2
             4: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_SENSOR,
-                INPUT_CLUSTERS: [OnOff.cluster_id],
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT_SWITCH,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Identify.cluster_id, OnOff.cluster_id],
             },
         },
     }
