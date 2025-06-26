@@ -834,7 +834,7 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
     .tuya_enum(
         dp_id=127,
         attribute_name="hysteresis_mode",
-        enum_class=TuyaDisplayOrientation,
+        enum_class=TuyaHysteresis,
         translation_key="hysteresis_mode",
         fallback_name="Hysteresis mode",
     )

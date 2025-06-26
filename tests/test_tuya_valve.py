@@ -181,7 +181,7 @@ async def test_giex_02_quirk(zigpy_device_from_v2_quirk, model, manuf, use_minut
 async def test_giex_functions():
     """Test various Giex Valve functions."""
     assert zhaquirks.tuya.tuya_valve.giex_string_to_td("12:01:05,3") == 43265
-    assert zhaquirks.tuya.tuya_valve.giex_string_to_ts("--:--:--") is None
+    assert zhaquirks.tuya.tuya_valve.giex_string_to_dt("--:--:--") is None
 
     class MockDatetime:
         def now(self, tz: timezone):
@@ -193,11 +193,9 @@ async def test_giex_functions():
             return datetime.strptime(v, fmt)
 
     with patch("zhaquirks.tuya.tuya_valve.datetime", MockDatetime()):
-        assert (
-            zhaquirks.tuya.tuya_valve.giex_string_to_ts("20:12:01")
-            == datetime.fromisoformat("2024-10-02T12:10:23+04:00").timestamp()
-            + zhaquirks.tuya.tuya_valve.UNIX_EPOCH_TO_ZCL_EPOCH
-        )
+        assert zhaquirks.tuya.tuya_valve.giex_string_to_dt(
+            "20:12:01"
+        ) == datetime.fromisoformat("2024-10-02T20:12:01+04:00")
 
 
 @pytest.mark.parametrize(
