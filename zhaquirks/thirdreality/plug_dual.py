@@ -42,7 +42,7 @@ class ThirdRealityPlugCluster(CustomCluster):
     QuirkBuilder("Third Reality, Inc", "3RDP01072Z")
     .also_applies_to("Third Reality, Inc", "3RWP01073Z")
     .replaces(ThirdRealityPlugCluster, endpoint_id=1)
-    .replaces(ThirdRealityPlugCluster, endpoint_id=2)  # have two endpoint
+    .replaces(ThirdRealityPlugCluster, endpoint_id=2)
     .write_attr_button(
         attribute_name=ThirdRealityPlugCluster.AttributeDefs.reset_summation_delivered.name,
         attribute_value=0x01,                                         # 1 reset summation delivered
@@ -51,9 +51,9 @@ class ThirdRealityPlugCluster(CustomCluster):
         translation_key="reset_summation_delivered_ep1",
         fallback_name="Reset left summation delivered",  # ep1 is left
     )
-    .write_attr_button(  # reset the accumulated power of the plug
+    .write_attr_button(
         attribute_name=ThirdRealityPlugCluster.AttributeDefs.reset_summation_delivered.name,
-        attribute_value=0x01,  # 1 reset summation delivered
+        attribute_value=0x01,
         cluster_id=ThirdRealityPlugCluster.cluster_id,
         endpoint_id=2,
         translation_key="reset_summation_delivered_ep2",
