@@ -4,6 +4,8 @@ from typing import Final
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
+from zigpy.quirks.v2.homeassistant import UnitOfTime
+from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
@@ -67,6 +69,8 @@ class ThirdRealityPlugCluster(CustomCluster):
         max_value=65535,
         step=1,
         mode="box",
+        unit=UnitOfTime.SECONDS,
+        device_class=NumberDeviceClass.DURATION,
         translation_key="on_to_off_delay_ep1",
         fallback_name="Turn off delay",
     )
@@ -78,6 +82,8 @@ class ThirdRealityPlugCluster(CustomCluster):
         max_value=65535,
         step=1,
         mode="box",
+        unit=UnitOfTime.SECONDS,
+        device_class=NumberDeviceClass.DURATION,
         translation_key="on_to_off_delay_ep2",
         fallback_name="Turn off delay",
     )
@@ -89,6 +95,8 @@ class ThirdRealityPlugCluster(CustomCluster):
         max_value=65535,
         step=1,
         mode="box",
+        unit=UnitOfTime.SECONDS,
+        device_class=NumberDeviceClass.DURATION,
         translation_key="off_to_on_delay_ep1",
         fallback_name="Turn on delay",
     )
@@ -100,6 +108,8 @@ class ThirdRealityPlugCluster(CustomCluster):
         max_value=65535,
         step=1,
         mode="box",
+        unit=UnitOfTime.SECONDS,
+        device_class=NumberDeviceClass.DURATION,
         translation_key="off_to_on_delay_ep2",
         fallback_name="Turn on delay",
     )
