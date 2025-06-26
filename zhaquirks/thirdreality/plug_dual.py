@@ -45,7 +45,7 @@ class ThirdRealityPlugCluster(CustomCluster):
     .replaces(ThirdRealityPlugCluster, endpoint_id=2)
     .write_attr_button(
         attribute_name=ThirdRealityPlugCluster.AttributeDefs.reset_summation_delivered.name,
-        attribute_value=0x01,                                         # 1 reset summation delivered
+        attribute_value=0x01,  # 1 reset summation delivered
         cluster_id=ThirdRealityPlugCluster.cluster_id,
         endpoint_id=1,
         translation_key="reset_summation_delivered_ep1",
