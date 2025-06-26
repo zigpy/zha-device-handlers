@@ -16,18 +16,21 @@ class ThirdRealityPlugCluster(CustomCluster):
     class AttributeDefs(BaseAttributeDefs):
         """Define the attributes of a private cluster."""
 
-        reset_summation_delivered: Final = ZCLAttributeDef(
+        # reset the accumulated power of the plug
+        reset_summation_delivered: Final = ZCLAttributeDef(                 
             id=0x0000,
             type=t.uint8_t,
             is_manufacturer_specific=True,
         )
-
+        
+        # turn off delay
         on_to_off_delay: Final = ZCLAttributeDef(
             id=0x0001,
             type=t.uint16_t,
             is_manufacturer_specific=True,
         )
-
+        
+        # turn on delay
         off_to_on_delay: Final = ZCLAttributeDef(
             id=0x0002,
             type=t.uint16_t,
@@ -42,14 +45,14 @@ class ThirdRealityPlugCluster(CustomCluster):
     .also_applies_to("Third Reality, Inc", "3RSP02064Z")
     .also_applies_to("Third Reality, Inc", "3RSPE02065Z")
     .replaces(ThirdRealityPlugCluster)
-    .write_attr_button(  # reset the accumulated power of the plug
+    .write_attr_button(
         attribute_name=ThirdRealityPlugCluster.AttributeDefs.reset_summation_delivered.name,
-        attribute_value=0x01,  # Setting the attribute to 1 represents resetting the accumulated battery level, while other values represent invalidity
+        attribute_value=0x01,                               # 1 reset summation delivered
         cluster_id=ThirdRealityPlugCluster.cluster_id,
         translation_key="reset_summation_delivered",
         fallback_name="Reset summation delivered",
     )
-    .number(  # off delay
+    .number(
         attribute_name=ThirdRealityPlugCluster.AttributeDefs.on_to_off_delay.name,
         cluster_id=ThirdRealityPlugCluster.cluster_id,
         endpoint_id=1,
@@ -60,7 +63,7 @@ class ThirdRealityPlugCluster(CustomCluster):
         translation_key="on_to_off_delay",
         fallback_name="Turn off delay",
     )
-    .number(  # on delay
+    .number(
         attribute_name=ThirdRealityPlugCluster.AttributeDefs.off_to_on_delay.name,
         cluster_id=ThirdRealityPlugCluster.cluster_id,
         endpoint_id=1,
