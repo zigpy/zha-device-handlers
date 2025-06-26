@@ -51,6 +51,7 @@ from zhaquirks.const import (
     BatterySize,
 )
 
+AQARA = "Aqara"
 BATTERY_LEVEL = "battery_level"
 BATTERY_PERCENTAGE_REMAINING = 0x0021
 BATTERY_PERCENTAGE_REMAINING_ATTRIBUTE = "battery_percentage"

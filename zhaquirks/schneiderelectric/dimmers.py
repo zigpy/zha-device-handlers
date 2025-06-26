@@ -7,7 +7,7 @@ from zhaquirks.schneiderelectric import (
     SEBallast,
     SEBasic,
     SEOnOff,
-    SESpecific,
+    SESwitchConfiguration,
 )
 
 (
@@ -19,7 +19,7 @@ from zhaquirks.schneiderelectric import (
     .replaces(SEBallast, endpoint_id=3)
     .replaces(SEOnOff, endpoint_id=3)
     .replaces(SEBasic, endpoint_id=21)
-    .replaces(SESpecific, endpoint_id=21)
+    .replaces(SESwitchConfiguration, endpoint_id=21)
     .add_to_registry()
 )
 
@@ -29,6 +29,6 @@ from zhaquirks.schneiderelectric import (
     .replaces(SEBasic)
     .replaces(SEOnOff)
     .replaces(SEBasic, endpoint_id=21)
-    .replaces(SESpecific, endpoint_id=21)
+    .replaces(SESwitchConfiguration, endpoint_id=21)
     .add_to_registry()
 )
