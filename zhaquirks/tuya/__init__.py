@@ -148,12 +148,40 @@ class TuyaDPType(t.enum8):
     BITMAP = 0x05
 
 
-class TuyaData(t.Struct):
+class TuyaData:
     """Tuya Data type."""
 
     dp_type: TuyaDPType
     function: t.uint8_t
     raw: t.LVBytes
+
+    def __init__(
+        self,
+        value: TuyaDPType | None = None,
+        function: t.uint8_t = t.uint8_t(0),
+        raw: bytes | None = None,
+    ):
+        """Convert from a zigpy typed value to a tuya data payload."""
+        self.dp_type = None
+        self.function = function
+        self.raw = raw
+
+        if value is None:
+            return
+        elif isinstance(value, (t.bitmap8, t.bitmap16, t.bitmap32)):
+            self.dp_type = TuyaDPType.BITMAP
+        elif isinstance(value, (bool, t.Bool)):
+            self.dp_type = TuyaDPType.BOOL
+        elif isinstance(value, enum.Enum):
+            self.dp_type = TuyaDPType.ENUM
+        elif isinstance(value, int):
+            self.dp_type = TuyaDPType.VALUE
+        elif isinstance(value, str):
+            self.dp_type = TuyaDPType.STRING
+        else:
+            self.dp_type = TuyaDPType.RAW
+
+        self.payload = value
 
     @property
     def payload(
@@ -208,30 +236,28 @@ class TuyaData(t.Struct):
         else:
             raise ValueError(f"Unknown {self.dp_type} datapoint type")
 
-    def __new__(cls, *args, **kwargs):
-        """Disable copy constructor."""
-        return super().__new__(cls)
+    def serialize(self) -> bytes:
+        """Serialize Tuya data."""
+        return (
+            self.dp_type.serialize()
+            + self.function.serialize()
+            + bytes([len(self.raw)])
+            + self.raw
+        )
 
-    def __init__(self, value=None, function=0, *args, **kwargs):
-        """Convert from a zigpy typed value to a tuya data payload."""
-        self.function = function
+    @classmethod
+    def deserialize(cls, data: bytes) -> tuple[TuyaData, bytes]:
+        """Deserialize Tuya data."""
+        dp_type, data = TuyaDPType.deserialize(data)
+        function, data = t.uint8_t.deserialize(data)
+        raw, data = t.LVBytes.deserialize(data)
 
-        if value is None:
-            return
-        elif isinstance(value, (t.bitmap8, t.bitmap16, t.bitmap32)):
-            self.dp_type = TuyaDPType.BITMAP
-        elif isinstance(value, (bool, t.Bool)):
-            self.dp_type = TuyaDPType.BOOL
-        elif isinstance(value, enum.Enum):  # type: ignore
-            self.dp_type = TuyaDPType.ENUM
-        elif isinstance(value, int):
-            self.dp_type = TuyaDPType.VALUE
-        elif isinstance(value, str):
-            self.dp_type = TuyaDPType.STRING
-        else:
-            self.dp_type = TuyaDPType.RAW
+        instance = cls()
+        instance.dp_type = dp_type
+        instance.function = function
+        instance.raw = raw
 
-        self.payload = value
+        return instance, data
 
 
 class Data(t.List, item_type=t.uint8_t):
@@ -1584,7 +1610,7 @@ class TuyaNewManufCluster(CustomCluster):
                 self.send_default_rsp(
                     hdr, status=foundation.Status.UNSUP_CLUSTER_COMMAND
                 )
-                return
+            return
 
         try:
             status = getattr(self, handler_name)(*args)
