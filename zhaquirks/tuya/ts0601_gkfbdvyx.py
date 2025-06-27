@@ -1,33 +1,32 @@
-"""
-Quirk for Tuya 24GHz mmWave human presence sensor.
+"""Quirk for Tuya 24GHz mmWave human presence sensor.
 Model: TS0601
 Manufacturer: _TZE200_gkfbdvyx
 author: @albertjh
 """
-import math
-from zigpy.quirks.v2 import EntityType
-from homeassistant.components.sensor import (
-    SensorDeviceClass,
-    SensorStateClass,
-)
-from homeassistant.const import UnitOfLength, UnitOfTime
 
+import math
+
+from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
+from homeassistant.const import UnitOfLength, UnitOfTime
+from zigpy.quirks.v2 import EntityType
 import zigpy.types as t
 from zigpy.zcl.clusters.measurement import IlluminanceMeasurement, OccupancySensing
 
 from zhaquirks.tuya import TuyaLocalCluster
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
-
 # --- Custom Tuya Clusters ---
+
 
 class TuyaIlluminanceCluster(IlluminanceMeasurement, TuyaLocalCluster):
     """Custom Tuya illuminance cluster."""
+
     # This cluster will receive illuminance data from the corresponding DP.
 
 
 class TuyaOccupancySensing(OccupancySensing, TuyaLocalCluster):
     """Custom Tuya occupancy sensing cluster."""
+
     # This cluster will receive presence data from the corresponding DP.
 
 
@@ -44,7 +43,6 @@ class TuyaOccupancySensing(OccupancySensing, TuyaLocalCluster):
         converter=lambda x: True if x in (1, 2) else False,
     )
     .adds(TuyaOccupancySensing)  # Adds the occupancy cluster to the device
-
     # DP 2: Motion sensitivity (0-10)
     .tuya_number(
         dp_id=2,
@@ -129,7 +127,6 @@ class TuyaOccupancySensing(OccupancySensing, TuyaLocalCluster):
         converter=lambda x: round(10000 * math.log10(x) + 1) if x > 0 else 0,
     )
     .adds(TuyaIlluminanceCluster)  # Adds the illuminance cluster
-
     # DP 105: Fading time (timeout) in seconds
     .tuya_number(
         dp_id=105,
