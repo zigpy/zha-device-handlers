@@ -1,4 +1,5 @@
 """VZM32-SN mmWave Dimmer Switch."""
+
 """Configuration entities need to:"""
 """zha/zha/application/platforms/number/__init__.py"""
 
@@ -16,10 +17,7 @@ from zigpy.zcl.clusters.general import (
     Scenes,
 )
 from zigpy.zcl.clusters.homeautomation import Diagnostic, ElectricalMeasurement
-from zigpy.zcl.clusters.measurement import (
-    IlluminanceMeasurement,
-    OccupancySensing
-)
+from zigpy.zcl.clusters.measurement import IlluminanceMeasurement, OccupancySensing
 from zigpy.zcl.clusters.smartenergy import Metering
 
 from zhaquirks.const import (
@@ -30,11 +28,16 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.inovelli import INOVELLI_AUTOMATION_TRIGGERS, InovelliVZM32SNCluster, InovelliVZM32SNMMWaveCluster
+from zhaquirks.inovelli import (
+    INOVELLI_AUTOMATION_TRIGGERS,
+    InovelliVZM32SNCluster,
+    InovelliVZM32SNMMWaveCluster,
+)
 
 INOVELLI_VZM32SN_CLUSTER_ID = 64561
 INOVELLI_VZM32SN_MMWAVE_CLUSTER_ID = 64562
 WWAH_CLUSTER_ID = 64599
+
 
 class InovelliVZM32SNv1(CustomDevice):
     """VZM32-SN mmWave Dimmer Switch."""
@@ -116,7 +119,6 @@ class InovelliVZM32SNv1(CustomDevice):
                     InovelliVZM32SNCluster,
                     InovelliVZM32SNMMWaveCluster,
                     WWAH_CLUSTER_ID,
-
                 ],
                 OUTPUT_CLUSTERS: [
                     Ota.cluster_id,
@@ -154,6 +156,7 @@ class InovelliVZM32SNv1(CustomDevice):
             },
         },
     }
+
 
 class InovelliVZM32SNv2(CustomDevice):
     """VZM32-SN mmWave Dimmer Switch."""
@@ -242,7 +245,6 @@ class InovelliVZM32SNv2(CustomDevice):
                     InovelliVZM32SNCluster,
                     InovelliVZM32SNMMWaveCluster,
                     WWAH_CLUSTER_ID,
-
                 ],
                 OUTPUT_CLUSTERS: [
                     Ota.cluster_id,
