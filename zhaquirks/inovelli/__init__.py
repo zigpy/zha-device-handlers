@@ -42,6 +42,7 @@ INOVELLI_VZM31SN_CLUSTER_ID = 64561
 # 4 - 3x
 # 5 - 4x
 # 6 - 5x
+
 COMMAND_QUINTUPLE = "quintuple"
 PRESS_TYPES = {
     0: COMMAND_PRESS,
@@ -72,6 +73,7 @@ LED_NOTIFICATION_TYPES = {
 # 4 - aux down button
 # 5 - aux up button
 # 6 - aux config button
+
 
 BUTTONS = {1: BUTTON_1, 2: BUTTON_2, 3: BUTTON_3, 4: BUTTON_4, 5: BUTTON_5, 6: BUTTON_6}
 ON = "Up"
@@ -347,6 +349,7 @@ class InovelliVZM31SNCluster(InovelliCluster):
         }
     )
 
+
 class InovelliVZM32SNCluster(InovelliCluster):
     """Inovelli VZM32-SN custom cluster."""
 
@@ -424,6 +427,7 @@ class InovelliVZM32SNCluster(InovelliCluster):
         }
     )
 
+
 class InovelliVZM32SNMMWaveCluster(CustomCluster):
     """Inovelli VZM32-SN MMWave custom cluster."""
 
@@ -474,6 +478,7 @@ class InovelliVZM32SNMMWaveCluster(CustomCluster):
             hdr.command_id,
             args,
         )
+
 
 class InovelliVZM35SNCluster(InovelliCluster):
     """Inovelli VZM35-SN custom cluster."""
