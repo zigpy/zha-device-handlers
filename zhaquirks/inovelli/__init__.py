@@ -405,7 +405,7 @@ class InovelliVZM32SNCluster(InovelliCluster):
             0x0060: ("led_color_when_off", t.uint8_t, True),
             0x0062: ("led_intensity_when_off", t.uint8_t, True),
             0x0064: ("led_scaling_mode", t.Bool, True),
-            0x006E: ("light_on_presence_behavior", t.uint8_t, True),
+            0x006E: ("mmwave_light_on_presence_behavior", t.uint8_t, True),
             0x0075: ("mmwave_room_size_preset", t.uint8_t, True),
             0x0078: ("fan_single_tap_behavior", t.uint8_t, True),
             0x0079: ("fan_timer_display", t.Bool, True),
