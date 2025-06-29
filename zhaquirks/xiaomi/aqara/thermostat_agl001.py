@@ -413,7 +413,7 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
             )
         super()._update_attribute(attrid, value)
 
-    def aqaraHeader(self, counter: int, params: bytearray, action: int) -> bytearray:
+    def aqara_header(self, counter: int, params: bytearray, action: int) -> bytearray:
         """Create Aqara header for setting external sensor."""
         header = bytes([0xAA, 0x71, len(params) + 3, 0x44, counter])
         integrity = 512 - sum(header)
@@ -444,7 +444,7 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
                 params += bytes([0x00, 0x01, 0x00, 0x55])
                 params += temperatureBuf
 
-                attrs[SENSOR_ATTR_NAME] = self.aqaraHeader(0x12, params, 0x05) + params
+                attrs[SENSOR_ATTR_NAME] = self.aqara_header(0x12, params, 0x05) + params
 
             elif attr_def and attr_def.id == SENSOR:
                 # set internal/external temperature sensor
@@ -468,10 +468,10 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
 
                     attrs1 = {}
                     attrs1[SENSOR_ATTR_NAME] = (
-                        self.aqaraHeader(0x12, params1, 0x04) + params1
+                        self.aqara_header(0x12, params1, 0x04) + params1
                     )
                     attrs[SENSOR_ATTR_NAME] = (
-                        self.aqaraHeader(0x13, params2, 0x04) + params2
+                        self.aqara_header(0x13, params2, 0x04) + params2
                     )
 
                     await super().write_attributes(attrs1, manufacturer)
@@ -530,10 +530,10 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
 
                     attrs1 = {}
                     attrs1[SENSOR_ATTR_NAME] = (
-                        self.aqaraHeader(0x12, params1, 0x02) + params1
+                        self.aqara_header(0x12, params1, 0x02) + params1
                     )
                     attrs[SENSOR_ATTR_NAME] = (
-                        self.aqaraHeader(0x13, params2, 0x02) + params2
+                        self.aqara_header(0x13, params2, 0x02) + params2
                     )
 
                     await super().write_attributes(attrs1, manufacturer)
