@@ -56,6 +56,8 @@ SENSOR_ATTR_NAME = "sensor_attr"
 
 XIAOMI_CLUSTER_ID = 0xFCC0
 
+SENSOR_ID = bytearray.fromhex("00158d00019d1b98")
+
 DAYS_MAP = {
     "mon": 0x02,
     "tue": 0x04,
@@ -426,26 +428,25 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
         self, attributes: dict[str | int, Any], manufacturer: int | None = None
     ) -> list:
         """Write attributes to device with internal 'attributes' validation."""
-        sensor = bytearray.fromhex("00158d00019d1b98")
-        attrs = {}
+        attrs: dict[str | int, Any] = {}
 
         for attr, value in attributes.items():
             # implemented with help from https://github.com/Koenkk/zigbee-herdsman-converters/blob/master/devices/xiaomi.js
+            attr_def = self.find_attribute(attr)
 
-            if attr == SENSOR_TEMP:
+            if attr_def and attr_def.id == SENSOR_TEMP:
                 # set external sensor temp. this function expect value to be passed multiplied by 100
                 temperatureBuf = bytearray.fromhex(
                     self._float_to_hex(round(float(value)))[2:]
                 )
 
-                params = sensor
+                params = SENSOR_ID
                 params += bytes([0x00, 0x01, 0x00, 0x55])
                 params += temperatureBuf
 
-                attrs = {}
                 attrs[SENSOR_ATTR_NAME] = self.aqaraHeader(0x12, params, 0x05) + params
 
-            elif attr == SENSOR:
+            elif attr_def and attr_def.id == SENSOR:
                 # set internal/external temperature sensor
                 device = bytearray.fromhex(
                     f"{self.endpoint.device.ieee}".replace(":", "")
@@ -458,42 +459,12 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
                     params1 = timestamp
                     params1 += bytes([0x3D, 0x05])
                     params1 += device
-                    params1 += bytes(
-                        [
-                            0x00,
-                            0x00,
-                            0x00,
-                            0x00,
-                            0x00,
-                            0x00,
-                            0x00,
-                            0x00,
-                            0x00,
-                            0x00,
-                            0x00,
-                            0x00,
-                        ]
-                    )
+                    params1 += bytes(12)
 
                     params2 = timestamp
                     params2 += bytes([0x3D, 0x04])
                     params2 += device
-                    params2 += bytes(
-                        [
-                            0x00,
-                            0x00,
-                            0x00,
-                            0x00,
-                            0x00,
-                            0x00,
-                            0x00,
-                            0x00,
-                            0x00,
-                            0x00,
-                            0x00,
-                            0x00,
-                        ]
-                    )
+                    params2 += bytes(12)
 
                     attrs1 = {}
                     attrs1[SENSOR_ATTR_NAME] = (
@@ -509,7 +480,7 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
                     params1 = timestamp
                     params1 += bytes([0x3D, 0x04])
                     params1 += device
-                    params1 += sensor
+                    params1 += SENSOR_ID
                     params1 += bytes([0x00, 0x01, 0x00, 0x55])
                     params1 += bytes(
                         [
@@ -533,7 +504,7 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
                     params2 = timestamp
                     params2 += bytes([0x3D, 0x05])
                     params2 += device
-                    params2 += sensor
+                    params2 += SENSOR_ID
                     params2 += bytes([0x08, 0x00, 0x07, 0xFD])
                     params2 += bytes(
                         [
