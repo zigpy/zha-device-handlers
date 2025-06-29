@@ -810,6 +810,47 @@ class TuyaQuirkBuilder(QuirkBuilder):
 
         return self
 
+    def tuya_write_attr_button(
+        self,
+        dp_id: int,
+        attribute_name: str,
+        attribute_value: int,
+        endpoint_id: int = 1,
+        entity_type: EntityType = EntityType.CONFIG,
+        initially_disabled: bool = False,
+        attribute_initialized_from_cache: bool = True,
+        unique_id_suffix: str | None = None,
+        translation_key: str | None = None,
+        fallback_name: str | None = None,
+        primary: bool | None = None,
+    ) -> QuirkBuilder:
+        """Add an EntityMetadata containing WriteAttributeButtonMetadata and return self.
+
+        This method allows exposing a button entity in Home Assistant that writes
+        a value to a Tuya datapoint when pressed.
+        """
+        self.tuya_dp_attribute(
+            dp_id=dp_id,
+            attribute_name=attribute_name,
+            type=t.Bool,
+            access=foundation.ZCLAttributeAccess.Read
+            | foundation.ZCLAttributeAccess.Write,
+        )
+        self.write_attr_button(
+            attribute_name=attribute_name,
+            cluster_id=TUYA_CLUSTER_ID,
+            endpoint_id=endpoint_id,
+            attribute_value=attribute_value,
+            entity_type=entity_type,
+            initially_disabled=initially_disabled,
+            attribute_initialized_from_cache=attribute_initialized_from_cache,
+            unique_id_suffix=unique_id_suffix,
+            translation_key=translation_key,
+            fallback_name=fallback_name,
+            primary=primary,
+        )
+        return self
+
     def tuya_enchantment(
         self, read_attr_spell: bool = True, data_query_spell: bool = False
     ) -> QuirkBuilder:
