@@ -211,6 +211,13 @@ async def test_tuya_quirkbuilder(device_mock):
             translation_key="test_enum",
             fallback_name="Test enum",
         )
+        .tuya_write_attr_button(
+            dp_id=12,
+            attribute_name="test_button",
+            attribute_value=1,
+            translation_key="test_button",
+            fallback_name="Test button",
+        )
         .tuya_dp_multi(
             dp_id=11,
             attribute_mapping=[
@@ -261,6 +268,7 @@ async def test_tuya_quirkbuilder(device_mock):
     assert tuya_cluster.attributes_by_name["test_binary"].id == 0xEF08
     assert tuya_cluster.attributes_by_name["test_sensor"].id == 0xEF09
     assert tuya_cluster.attributes_by_name["test_enum"].id == 0xEF0A
+    assert tuya_cluster.attributes_by_name["test_button"].id == 0xEF0C
 
     with mock.patch.object(
         tuya_cluster.endpoint, "request", return_value=foundation.Status.SUCCESS
