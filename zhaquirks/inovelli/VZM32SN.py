@@ -1,8 +1,5 @@
 """VZM32-SN mmWave Dimmer Switch."""
 
-"""Configuration entities need to:"""
-"""zha/zha/application/platforms/number/__init__.py"""
-
 from zigpy.profiles import zgp, zha
 from zigpy.profiles.zha import DeviceType
 from zigpy.quirks import CustomDevice
