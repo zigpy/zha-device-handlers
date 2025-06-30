@@ -3,8 +3,8 @@
 from datetime import datetime
 from unittest import mock
 
-from freezegun import freeze_time
 import pytest
+import time_machine
 from zigpy.quirks.v2 import EntityMetadata
 import zigpy.types as t
 from zigpy.zcl import ClusterType, foundation
@@ -183,7 +183,7 @@ async def test_giex_functions():
     assert zhaquirks.tuya.tuya_valve.giex_string_to_td("12:01:05,3") == 43265
     assert zhaquirks.tuya.tuya_valve.giex_string_to_dt("--:--:--") is None
 
-    with freeze_time("2024-10-02 12:10:23", tz_offset=1):
+    with time_machine.travel("2024-10-02 12:10:23 +0100"):
         assert zhaquirks.tuya.tuya_valve.giex_string_to_dt(
             "20:12:01"
         ) == datetime.fromisoformat("2024-10-02T20:12:01+04:00")

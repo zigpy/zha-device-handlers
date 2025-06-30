@@ -4,8 +4,8 @@ import base64
 import struct
 from unittest import mock
 
-from freezegun import freeze_time
 import pytest
+import time_machine
 from zigpy.device import Device
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice, get_device
@@ -1306,7 +1306,7 @@ async def test_moes(zigpy_device_from_quirk, quirk):
         _, status = await onoff_cluster.command(0x0009)
         assert status == foundation.Status.UNSUP_CLUSTER_COMMAND
 
-        with freeze_time("1970-01-01 02:00:00", tz_offset=-1):
+        with time_machine.travel("1970-01-01 01:00:00 -0100"):
             hdr, args = tuya_cluster.deserialize(ZCL_TUYA_SET_TIME_REQUEST)
             tuya_cluster.handle_message(hdr, args)
             await wait_for_zigpy_tasks()

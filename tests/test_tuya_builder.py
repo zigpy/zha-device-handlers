@@ -2,8 +2,8 @@
 
 from unittest import mock
 
-from freezegun import freeze_time
 import pytest
+import time_machine
 from zigpy.quirks.registry import DeviceRegistry
 from zigpy.quirks.v2 import CustomDeviceV2
 import zigpy.types as t
@@ -430,7 +430,7 @@ async def test_tuya_mcu_set_time(device_mock):
         TUYA_SET_TIME
     ].is_manufacturer_specific
 
-    with freeze_time("1970-01-01 02:00:00", tz_offset=-1):
+    with time_machine.travel("1970-01-01 01:00:00 -0100"):
         # simulate a SET_TIME message
         hdr, args = ep.tuya_manufacturer.deserialize(ZCL_TUYA_SET_TIME)
         assert hdr.command_id == TUYA_SET_TIME
