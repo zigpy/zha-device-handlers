@@ -1,6 +1,8 @@
 """Tests for TuyaQuirkBuilder."""
 
+import datetime
 from unittest import mock
+from zoneinfo import ZoneInfo
 
 import pytest
 import time_machine
@@ -407,7 +409,7 @@ async def test_tuya_spell(device_mock, read_attr_spell, data_query_spell):
         request_mock.reset_mock()
 
 
-@time_machine.travel("1970-01-01 01:00:00 -0100")
+@time_machine.travel(datetime.datetime(1970, 1, 1, 1, 0, tzinfo=ZoneInfo("Etc/GMT+1")))
 async def test_tuya_mcu_set_time(device_mock):
     """Test TuyaQuirkBuilder replacement cluster, set_time requests (0x24) messages for MCU devices."""
 

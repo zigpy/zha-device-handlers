@@ -1,8 +1,10 @@
 """Tests for Tuya quirks."""
 
 import base64
+import datetime
 import struct
 from unittest import mock
+from zoneinfo import ZoneInfo
 
 import pytest
 import time_machine
@@ -717,7 +719,7 @@ async def test_valve_send_attribute(zigpy_device_from_quirk, quirk):
         assert status == foundation.Status.UNSUP_CLUSTER_COMMAND
 
 
-@time_machine.travel("1970-01-01 01:00:00 -0100")
+@time_machine.travel(datetime.datetime(1970, 1, 1, 1, 0, tzinfo=ZoneInfo("Etc/GMT+1")))
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_trv.MoesHY368_Type1,))
 async def test_moes(zigpy_device_from_quirk, quirk):
     """Test thermostatic valve outgoing commands."""

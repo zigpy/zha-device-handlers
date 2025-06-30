@@ -1,6 +1,8 @@
 """Tests for Tuya quirks."""
 
+import datetime
 from unittest import mock
+from zoneinfo import ZoneInfo
 
 import pytest
 import time_machine
@@ -175,7 +177,7 @@ async def test_tuya_version(zigpy_device_from_quirk, quirk):
     assert succ["mcu_version"] == "2.0.2"
 
 
-@time_machine.travel("1970-01-01 01:00:00 -0100")
+@time_machine.travel(datetime.datetime(1970, 1, 1, 1, 0, tzinfo=ZoneInfo("Etc/GMT+1")))
 @pytest.mark.parametrize(
     "quirk", (zhaquirks.tuya.ts0601_dimmer.TuyaDoubleSwitchDimmer,)
 )
