@@ -119,8 +119,8 @@ class TuyaAttributesCluster(TuyaLocalCluster):
 class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
     """Manufacturer specific cluster for sending Tuya MCU commands."""
 
-    set_time_offset = 1970  # MCU timestamp from 1/1/1970
-    set_time_local_offset = None
+    set_time_offset = datetime.datetime(1970, 1, 1, tzinfo=datetime.UTC)
+    set_time_local_offset = datetime.datetime(1970, 1, 1)
 
     class AttributeDefs(TuyaNewManufCluster.AttributeDefs):
         """Attribute Definitions."""
@@ -315,16 +315,12 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
         self.debug("handle_set_time_request payload: %s", payload)
         payload_rsp = TuyaTimePayload()
 
-        utc_now = datetime.datetime.now(datetime.UTC)
-        now = datetime.datetime.now()
-
-        offset_time = datetime.datetime(self.set_time_offset, 1, 1, tzinfo=datetime.UTC)
-        offset_time_local = datetime.datetime(
-            self.set_time_local_offset or self.set_time_offset, 1, 1
+        utc_timestamp = int(
+            (datetime.datetime.now(datetime.UTC) - self.set_time_offset).total_seconds()
         )
-
-        utc_timestamp = int((utc_now - offset_time).total_seconds())
-        local_timestamp = int((now - offset_time_local).total_seconds())
+        local_timestamp = int(
+            (datetime.datetime.now() - self.set_time_local_offset).total_seconds()
+        )
 
         payload_rsp.extend(utc_timestamp.to_bytes(4, "big", signed=False))
         payload_rsp.extend(local_timestamp.to_bytes(4, "big", signed=False))

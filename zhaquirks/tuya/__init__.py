@@ -348,8 +348,8 @@ class TuyaManufCluster(CustomCluster):
     name = "Tuya Manufacturer Specicific"
     cluster_id = TUYA_CLUSTER_ID
     ep_attribute = "tuya_manufacturer"
-    set_time_offset = 0
-    set_time_local_offset = None
+    set_time_offset: datetime.datetime | None = None
+    set_time_local_offset: datetime.datetime | None = None
 
     # remove manufacturer id for cluster, important for `TUYA_SET_DATA` commands
     manufacturer_id_override: t.uint16_t = foundation.ZCLHeader.NO_MANUFACTURER_ID
@@ -445,7 +445,7 @@ class TuyaManufCluster(CustomCluster):
     ) -> None:
         """Handle time request."""
 
-        if hdr.command_id != 0x0024 or self.set_time_offset == 0:
+        if hdr.command_id != 0x0024 or self.set_time_offset is None:
             return super().handle_cluster_request(
                 hdr, args, dst_addressing=dst_addressing
             )
@@ -461,20 +461,15 @@ class TuyaManufCluster(CustomCluster):
             self.cluster_id,
             hdr.command_id,
         )
+
+        assert self.set_time_local_offset is not None
+
         payload = TuyaTimePayload()
         utc_timestamp = int(
-            (
-                datetime.datetime.now(datetime.UTC)
-                - datetime.datetime(self.set_time_offset, 1, 1, tzinfo=datetime.UTC)
-            ).total_seconds()
+            (datetime.datetime.now(datetime.UTC) - self.set_time_offset).total_seconds()
         )
         local_timestamp = int(
-            (
-                datetime.datetime.now()
-                - datetime.datetime(
-                    self.set_time_local_offset or self.set_time_offset, 1, 1
-                )
-            ).total_seconds()
+            (datetime.datetime.now() - self.set_time_local_offset).total_seconds()
         )
         payload.extend(utc_timestamp.to_bytes(4, "big", signed=False))
         payload.extend(local_timestamp.to_bytes(4, "big", signed=False))
