@@ -407,6 +407,7 @@ async def test_tuya_spell(device_mock, read_attr_spell, data_query_spell):
         request_mock.reset_mock()
 
 
+@time_machine.travel("1970-01-01 01:00:00 -0100")
 async def test_tuya_mcu_set_time(device_mock):
     """Test TuyaQuirkBuilder replacement cluster, set_time requests (0x24) messages for MCU devices."""
 
@@ -430,22 +431,21 @@ async def test_tuya_mcu_set_time(device_mock):
         TUYA_SET_TIME
     ].is_manufacturer_specific
 
-    with time_machine.travel("1970-01-01 01:00:00 -0100"):
-        # simulate a SET_TIME message
-        hdr, args = ep.tuya_manufacturer.deserialize(ZCL_TUYA_SET_TIME)
-        assert hdr.command_id == TUYA_SET_TIME
+    # simulate a SET_TIME message
+    hdr, args = ep.tuya_manufacturer.deserialize(ZCL_TUYA_SET_TIME)
+    assert hdr.command_id == TUYA_SET_TIME
 
-        with mock.patch.object(
-            ep.tuya_manufacturer._endpoint,
-            "request",
-            return_value=foundation.Status.SUCCESS,
-        ) as m1:
-            ep.tuya_manufacturer.handle_message(hdr, args)
-            await wait_for_zigpy_tasks()
+    with mock.patch.object(
+        ep.tuya_manufacturer._endpoint,
+        "request",
+        return_value=foundation.Status.SUCCESS,
+    ) as m1:
+        ep.tuya_manufacturer.handle_message(hdr, args)
+        await wait_for_zigpy_tasks()
 
-            res_hdr = foundation.ZCLHeader.deserialize(m1.await_args[1]["data"])
-            assert not res_hdr[0].manufacturer
-            assert not res_hdr[0].frame_control.is_manufacturer_specific
+        res_hdr = foundation.ZCLHeader.deserialize(m1.await_args[1]["data"])
+        assert not res_hdr[0].manufacturer
+        assert not res_hdr[0].frame_control.is_manufacturer_specific
 
 
 @pytest.mark.parametrize(

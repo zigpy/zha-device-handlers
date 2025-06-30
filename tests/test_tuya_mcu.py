@@ -175,6 +175,7 @@ async def test_tuya_version(zigpy_device_from_quirk, quirk):
     assert succ["mcu_version"] == "2.0.2"
 
 
+@time_machine.travel("1970-01-01 01:00:00 -0100")
 @pytest.mark.parametrize(
     "quirk", (zhaquirks.tuya.ts0601_dimmer.TuyaDoubleSwitchDimmer,)
 )
@@ -186,22 +187,21 @@ async def test_tuya_mcu_set_time(zigpy_device_from_quirk, quirk):
     tuya_cluster = tuya_device.endpoints[1].tuya_manufacturer
     cluster_listener = ClusterListener(tuya_cluster)
 
-    with time_machine.travel("1970-01-01 01:00:00 -0100"):
-        # simulate a SET_TIME message
-        hdr, args = tuya_cluster.deserialize(ZCL_TUYA_SET_TIME)
-        assert hdr.command_id == TUYA_SET_TIME
+    # simulate a SET_TIME message
+    hdr, args = tuya_cluster.deserialize(ZCL_TUYA_SET_TIME)
+    assert hdr.command_id == TUYA_SET_TIME
 
-        with mock.patch.object(
-            TuyaAttributesCluster, "command"
-        ) as m1:  # tuya_cluster parent class (because of super() call)
-            tuya_cluster.handle_message(hdr, args)
+    with mock.patch.object(
+        TuyaAttributesCluster, "command"
+    ) as m1:  # tuya_cluster parent class (because of super() call)
+        tuya_cluster.handle_message(hdr, args)
 
-            assert len(cluster_listener.cluster_commands) == 1
-            assert cluster_listener.cluster_commands[0][1] == TUYA_SET_TIME
+        assert len(cluster_listener.cluster_commands) == 1
+        assert cluster_listener.cluster_commands[0][1] == TUYA_SET_TIME
 
-            m1.assert_called_once_with(
-                TUYA_SET_TIME, [0, 0, 28, 32, 0, 0, 14, 16], expect_reply=False
-            )
+        m1.assert_called_once_with(
+            TUYA_SET_TIME, [0, 0, 28, 32, 0, 0, 14, 16], expect_reply=False
+        )
 
 
 @pytest.mark.parametrize(

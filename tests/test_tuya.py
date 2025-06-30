@@ -717,6 +717,7 @@ async def test_valve_send_attribute(zigpy_device_from_quirk, quirk):
         assert status == foundation.Status.UNSUP_CLUSTER_COMMAND
 
 
+@time_machine.travel("1970-01-01 01:00:00 -0100")
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_trv.MoesHY368_Type1,))
 async def test_moes(zigpy_device_from_quirk, quirk):
     """Test thermostatic valve outgoing commands."""
@@ -1306,21 +1307,20 @@ async def test_moes(zigpy_device_from_quirk, quirk):
         _, status = await onoff_cluster.command(0x0009)
         assert status == foundation.Status.UNSUP_CLUSTER_COMMAND
 
-        with time_machine.travel("1970-01-01 01:00:00 -0100"):
-            hdr, args = tuya_cluster.deserialize(ZCL_TUYA_SET_TIME_REQUEST)
-            tuya_cluster.handle_message(hdr, args)
-            await wait_for_zigpy_tasks()
-            m1.assert_called_with(
-                cluster=0xEF00,
-                sequence=1,
-                data=b"\x01\x01\x24\x00\x08\x00\x00\x1c\x20\x00\x00\x0e\x10",
-                command_id=0x24,
-                timeout=5,
-                expect_reply=False,
-                use_ieee=False,
-                ask_for_ack=None,
-                priority=t.PacketPriority.NORMAL,
-            )
+        hdr, args = tuya_cluster.deserialize(ZCL_TUYA_SET_TIME_REQUEST)
+        tuya_cluster.handle_message(hdr, args)
+        await wait_for_zigpy_tasks()
+        m1.assert_called_with(
+            cluster=0xEF00,
+            sequence=1,
+            data=b"\x01\x01\x24\x00\x08\x00\x00\x1c\x20\x00\x00\x0e\x10",
+            command_id=0x24,
+            timeout=5,
+            expect_reply=False,
+            use_ieee=False,
+            ask_for_ack=None,
+            priority=t.PacketPriority.NORMAL,
+        )
 
 
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_electric_heating.MoesBHT,))
