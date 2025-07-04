@@ -1204,6 +1204,11 @@ class InovelliVZM32SNCluster(InovelliCluster):
             type=t.uint8_t,
             is_manufacturer_specific=True,
         )
+        mmwave_room_size_preset = ZCLAttributeDef(
+            id=0x0075,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
         fan_single_tap_behavior = ZCLAttributeDef(
             id=0x0078,
             type=t.uint8_t,
