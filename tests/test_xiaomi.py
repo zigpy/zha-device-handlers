@@ -50,6 +50,7 @@ from zhaquirks.const import (
     BatterySize,
 )
 from zhaquirks.xiaomi import (
+    AQARA,
     LUMI,
     XIAOMI_AQARA_ATTRIBUTE,
     XIAOMI_AQARA_ATTRIBUTE_E1,
@@ -78,6 +79,7 @@ from zhaquirks.xiaomi.aqara.feeder_acn001 import (
     AqaraFeederAcn001,
     OppleCluster,
 )
+from zhaquirks.xiaomi.aqara.light_acn import AqaraLightT1M, LumiPowerOnStateMode
 import zhaquirks.xiaomi.aqara.magnet_ac01
 import zhaquirks.xiaomi.aqara.magnet_acn001
 import zhaquirks.xiaomi.aqara.magnet_agl02
@@ -2219,3 +2221,31 @@ def test_h1_wireless_remotes(zigpy_device_from_v2_quirk):
 
     assert MultistateInput.cluster_id in device.endpoints[2].in_clusters
     assert MultistateInput.cluster_id in device.endpoints[3].in_clusters
+
+
+@pytest.mark.parametrize("endpoint", [(1), (2)])
+def test_t1m_ceiling_light(zigpy_device_from_v2_quirk, endpoint):
+    """Test Aqara T1M ceiling light quirk adds missing endpoints."""
+
+    # create the device with 2 endpoints (one for each light on the T1M)
+    device = zigpy_device_from_v2_quirk(AQARA, "lumi.light.acn032", endpoint_ids=[1, 2])
+    assert AqaraLightT1M.cluster_id in device.endpoints[endpoint].in_clusters
+
+    aqara_cluster = device.endpoints[endpoint].opple_cluster
+    cluster_listener = ClusterListener(aqara_cluster)
+
+    aqara_cluster.update_attribute(AqaraLightT1M.AttributeDefs.power_on_state.id, 0x01)
+    assert len(cluster_listener.attribute_updates) == 1
+    assert (
+        cluster_listener.attribute_updates[0][0]
+        == AqaraLightT1M.AttributeDefs.power_on_state.id
+    )
+    assert cluster_listener.attribute_updates[0][1] == LumiPowerOnStateMode.LastState
+
+    aqara_cluster.update_attribute(AqaraLightT1M.AttributeDefs.power_on_state.id, 0x02)
+    assert len(cluster_listener.attribute_updates) == 2
+    assert (
+        cluster_listener.attribute_updates[1][0]
+        == AqaraLightT1M.AttributeDefs.power_on_state.id
+    )
+    assert cluster_listener.attribute_updates[1][1] == LumiPowerOnStateMode.Off

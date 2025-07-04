@@ -2,6 +2,7 @@
 
 from zigpy import types as t
 from zigpy.profiles import zgp, zha
+from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.zcl.clusters.general import (
     Alarms,
     AnalogInput,
@@ -20,6 +21,7 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.smartenergy import Metering
+from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -30,11 +32,20 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.xiaomi import (
+    AQARA,
     LUMI,
     BasicCluster,
     XiaomiAqaraE1Cluster,
     XiaomiCustomDevice,
 )
+
+
+class LumiPowerOnStateMode(t.enum8):
+    """Power on state mode."""
+
+    On = 0x00
+    LastState = 0x01
+    Off = 0x02
 
 
 class OppleClusterLight(XiaomiAqaraE1Cluster):
@@ -43,6 +54,21 @@ class OppleClusterLight(XiaomiAqaraE1Cluster):
     attributes = {
         0x0201: ("power_outage_memory", t.Bool, True),
     }
+
+
+class AqaraLightT1M(XiaomiAqaraE1Cluster):
+    """Add power on state management for Lumi devices."""
+
+    class AttributeDefs(BaseAttributeDefs):
+        """Manufacturer specific attributes."""
+
+        power_on_state = ZCLAttributeDef(
+            id=0x0517,
+            type=LumiPowerOnStateMode,
+            zcl_type=DataTypeId.uint8,
+            access="rw",
+            is_manufacturer_specific=True,
+        )
 
 
 class LumiLightAcn003(XiaomiCustomDevice):
@@ -200,3 +226,27 @@ class LumiLightAcn014(XiaomiCustomDevice):
             },
         }
     }
+
+
+(
+    QuirkBuilder(AQARA, "lumi.light.acn032")
+    .friendly_name(manufacturer="Aqara", model="Ceiling Light T1M")
+    .replaces(AqaraLightT1M)
+    .replaces(AqaraLightT1M, endpoint_id=2)
+    .enum(
+        AqaraLightT1M.AttributeDefs.power_on_state.name,
+        LumiPowerOnStateMode,
+        AqaraLightT1M.cluster_id,
+        translation_key="power_on_state",
+        fallback_name="Power on state",
+    )
+    .enum(
+        AqaraLightT1M.AttributeDefs.power_on_state.name,
+        LumiPowerOnStateMode,
+        AqaraLightT1M.cluster_id,
+        endpoint_id=2,
+        translation_key="power_on_state",
+        fallback_name="Power on state",
+    )
+    .add_to_registry()
+)
