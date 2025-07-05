@@ -723,7 +723,7 @@ class GiexIrrigationStatus(t.enum8):
         step=5,
         unit=PERCENTAGE,
         translation_key="valve_state_auto_shutdown",
-        fallback_name="Valve state auto shutdown",
+        fallback_name="Valve state auto-shutdown",
     )
     .tuya_sensor(
         dp_id=3,
