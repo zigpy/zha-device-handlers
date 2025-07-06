@@ -20,11 +20,16 @@ from zhaquirks.const import (
     ENDPOINTS,
     INPUT_CLUSTERS,
     MODEL,
+    MODELS_INFO,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
-    MODELS_INFO
 )
-from zhaquirks.tuya import SwitchBackLight, TuyaZBExternalSwitchTypeCluster, TUYA_CLUSTER_E001_ID, TUYA_CLUSTER_E000_ID
+from zhaquirks.tuya import (
+    TUYA_CLUSTER_E000_ID,
+    TUYA_CLUSTER_E001_ID,
+    SwitchBackLight,
+    TuyaZBExternalSwitchTypeCluster,
+)
 
 ATTR_CURRENT_POSITION_LIFT_PERCENTAGE = 0x0008
 CMD_GO_TO_LIFT_PERCENTAGE = 0x0005
@@ -359,7 +364,7 @@ class TuyaTS130FZana8d08(CustomDevice):
                     Scenes.cluster_id,
                     TuyaWithBacklightOnOffCluster,
                     TuyaCoveringCluster,
-                    TuyaZBExternalSwitchTypeCluster
+                    TuyaZBExternalSwitchTypeCluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     Time.cluster_id,
