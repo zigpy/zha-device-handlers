@@ -22,8 +22,9 @@ from zhaquirks.const import (
     MODEL,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
+    MODELS_INFO
 )
-from zhaquirks.tuya import SwitchBackLight, TuyaZBExternalSwitchTypeCluster
+from zhaquirks.tuya import SwitchBackLight, TuyaZBExternalSwitchTypeCluster, TUYA_CLUSTER_E001_ID, TUYA_CLUSTER_E000_ID
 
 ATTR_CURRENT_POSITION_LIFT_PERCENTAGE = 0x0008
 CMD_GO_TO_LIFT_PERCENTAGE = 0x0005
@@ -311,6 +312,65 @@ class TuyaTS130FTI2(CustomDevice):
                     Time.cluster_id,
                     Ota.cluster_id,
                 ],
+            },
+        },
+    }
+
+
+class TuyaTS130FZana8d08(CustomDevice):
+    """Tuya smart curtain roller shutter for _TZ3210_zana8d08."""
+
+    signature = {
+        MODELS_INFO: [("_TZ3210_zana8d08", "TS130F")],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: 0x0104,
+                DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    WindowCovering.cluster_id,
+                    TUYA_CLUSTER_E001_ID,
+                    TUYA_CLUSTER_E000_ID,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Time.cluster_id,
+                    Ota.cluster_id,
+                ],
+            },
+            242: {
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        },
+    }
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_CONTROLLER,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaWithBacklightOnOffCluster,
+                    TuyaCoveringCluster,
+                    TuyaZBExternalSwitchTypeCluster
+                ],
+                OUTPUT_CLUSTERS: [
+                    Time.cluster_id,
+                    Ota.cluster_id,
+                ],
+            },
+            242: {
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
         },
     }
