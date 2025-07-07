@@ -25,7 +25,7 @@ async def test_candeo_motion_illuminance(zigpy_device_from_v2_quirk):
         dev_illuminance_listener = ClusterListener(dev_illuminance_cluster)
         dev_illuminance_attr_id = IlluminanceMeasurement.AttributeDefs.measured_value.id
         test_in = test_value.get("in")
-        dev_illuminance_listener.update_attribute(dev_illuminance_attr_id, test_in)
+        dev_illuminance_cluster.update_attribute(dev_illuminance_attr_id, test_in)
         assert len(dev_illuminance_listener.attribute_updates) == 1
         assert (
             dev_illuminance_listener.attribute_updates[0][0] == dev_illuminance_attr_id
