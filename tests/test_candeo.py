@@ -20,7 +20,7 @@ async def test_candeo_motion_illuminance(zigpy_device_from_v2_quirk):
         "test4": {"in": 34299, "out": 26989},
     }
 
-    for test, test_value in test_values.items():
+    for test_value in test_values.values():
         dev_illuminance_cluster = device.endpoints[1].illuminance
         dev_illuminance_listener = ClusterListener(dev_illuminance_cluster)
         dev_illuminance_attr_id = IlluminanceMeasurement.AttributeDefs.measured_value.id
