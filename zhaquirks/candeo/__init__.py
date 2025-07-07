@@ -29,6 +29,7 @@ class CandeoIlluminanceMeasurementCluster(IlluminanceMeasurement, CustomCluster)
             value = pow(10, ((value - 1) / 10000))
             value = self.lux_calibration(value)
             value = 10000 * math.log10(value) + 1
+            value = round(value)
         super()._update_attribute(attrid, value)
 
     def lux_calibration(self, value):
