@@ -24,11 +24,11 @@ async def test_candeo_motion_illuminance(zigpy_device_from_v2_quirk):
         dev_illuminance_cluster = device.endpoints[1].illuminance
         dev_illuminance_listener = ClusterListener(dev_illuminance_cluster)
         dev_illuminance_attr_id = IlluminanceMeasurement.AttributeDefs.measured_value.id
-        testin = test_value.get("in")
-        dev_illuminance_listener.update_attribute(dev_illuminance_attr_id, testin)
+        test_in = test_value.get("in")
+        dev_illuminance_listener.update_attribute(dev_illuminance_attr_id, test_in)
         assert len(dev_illuminance_listener.attribute_updates) == 1
         assert (
             dev_illuminance_listener.attribute_updates[0][0] == dev_illuminance_attr_id
         )
-        testout = test_value.get("out")
-        assert dev_illuminance_listener.attribute_updates[0][1] == testout
+        test_out = test_value.get("out")
+        assert dev_illuminance_listener.attribute_updates[0][1] == test_out
