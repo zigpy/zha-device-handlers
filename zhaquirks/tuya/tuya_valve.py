@@ -510,6 +510,7 @@ class GiexIrrigationStatus(t.enum8):
         dp_id=3,
         attribute_name="valve_status",
         enum_class=TuyaValveStatus,
+        entity_type=EntityType.STANDARD,
         entity_platform=EntityPlatform.SENSOR,
         translation_key="valve_status",
         fallback_name="Valve status",
