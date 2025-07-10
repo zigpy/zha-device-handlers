@@ -1,4 +1,4 @@
-"""Xiaomi LYWSD03MMC Bluetooth temperature and humidity sensor."""
+"""Xiaomi LYWSD03MMC Bluetooth temperature and humidity sensor with custom firmware."""
 
 from zigpy.profiles import zha
 from zigpy.types import Bool, int16s, uint16_t
