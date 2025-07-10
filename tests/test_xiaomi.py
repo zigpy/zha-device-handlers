@@ -2183,7 +2183,7 @@ def test_custom_z03mmc_signature_match(assert_signature_matches_quirk):
     }
 
     assert_signature_matches_quirk(
-        zhaquirks.xiaomi.custom.z03mmc.LYWSD03MMC_devbis, signature
+        zhaquirks.xiaomi.custom.z03mmc.DevbisLYWSD03MMC, signature
     )
 
 
