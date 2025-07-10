@@ -46,10 +46,21 @@ body:
         # Debug information
   - type: textarea
     attributes:
+      label: Diagnostics information
+      placeholder: "Drag-and-drop the diagnostics file here. Do not copy-paste the content."
+      description: >-
+        Diagnostics information is crucial for debugging issues with ZHA devices.
+        
+        You can find the diagnostics information by going to the device page, clicking the three dots, and then by clicking on "Download diagnostics".
+        Drag-and-drop the downloaded file into the textbox below.
+  - type: textarea
+    attributes:
       label: Device signature
       description: |
-        You can find the device signature by going to the device page, clicking the three dots, clicking on "Manage Zigbee device", and then selecting the "Signature" tab at the top.
+        Additionally providing the device signature allows us to quickly get an overview of the device clusters and see if a quirk is already applied to the device.
+        It's optional to provide, since this information is already available in the diagnostics file, but it can help us to quickly identify issues.
         
+        You can find the device signature by going to the device page, clicking the three dots, clicking on "Manage Zigbee device", and then selecting the "Signature" tab at the top.
         Copy the contents and paste your device signature in between the lines with the backticks below.
       value: |
         <details><summary>Device signature</summary>
@@ -57,23 +68,6 @@ body:
         ```json
 
         [Paste the device signature here]
-
-        ```
-
-        </details>
-  - type: textarea
-    attributes:
-      label: Diagnostic information
-      description: |
-        You can find the diagnostic information of the device by going to the device page, clicking the three dots, and then by clicking on "Download diagnostics".
-        
-        Copy the contents of the downloaded text file and paste it in between the lines with the backticks below.
-      value: |
-        <details><summary>Diagnostic information</summary>
-
-        ```json
-
-        [Paste the diagnostic information here]
 
         ```
 
