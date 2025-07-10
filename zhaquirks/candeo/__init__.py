@@ -34,15 +34,15 @@ class CandeoIlluminanceMeasurementCluster(IlluminanceMeasurement, CustomCluster)
 
     def lux_calibration(self, value):
         """Calibrate Lux Reading From Device."""
-        tempvalue = 1
-        if value > 0 and value <= 2200:
-            tempvalue = -7.969192 + (0.0151988 * value)
-        elif value > 2200 and value <= 2500:
-            tempvalue = -1069.189434 + (0.4950663 * value)
+        lux_value = 1
+        if 0 < value <= 2200:
+            lux_value = -7.969192 + (0.0151988 * value)
+        elif 2200 < value <= 2500:
+            lux_value = -1069.189434 + (0.4950663 * value)
         elif value > 2500:
-            tempvalue = (78029.21628 - (61.73575 * value)) + (0.01223567 * (value**2))
-        tempvalue = max(tempvalue, 1)
-        return tempvalue
+            lux_value = (78029.21628 - (61.73575 * value)) + (0.01223567 * (value**2))
+        lux_value = max(lux_value, 1)
+        return lux_value
 
 
 class CandeoBasicCluster(Basic, CustomCluster):
