@@ -32,7 +32,8 @@ class CandeoIlluminanceMeasurementCluster(IlluminanceMeasurement, CustomCluster)
             value = round(value)
         super()._update_attribute(attrid, value)
 
-    def lux_calibration(self, value):
+    @staticmethod
+    def lux_calibration(value):
         """Calibrate Lux Reading From Device."""
         lux_value = 1
         if 0 < value <= 2200:
