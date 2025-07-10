@@ -1,6 +1,7 @@
 """Xiaomi LYWSD03MMC Bluetooth temperature and humidity sensor with custom firmware."""
 
 from zigpy.profiles import zha
+from zigpy.quirks import CustomDevice
 from zigpy.types import Bool, int16s, uint16_t
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PowerConfiguration
 from zigpy.zcl.clusters.hvac import UserInterface
@@ -16,7 +17,6 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.xiaomi import XiaomiCustomDevice
 
 
 class TemperatureMeasurementCustom(CustomCluster, TemperatureMeasurement):
@@ -113,7 +113,7 @@ class UserInterfaceCustom(CustomCluster, UserInterface):
 # https://github.com/devbis/z03mmc
 # defined by 1.1.0 firmware (0x11003001)
 # see README.md in the repo for more info
-class LYWSD03MMC_devbis(XiaomiCustomDevice):
+class LYWSD03MMC_devbis(CustomDevice):
     """LYWSD03MMC sensor with devbis custom firmware."""
 
     signature = {
