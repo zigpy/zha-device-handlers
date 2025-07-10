@@ -113,7 +113,7 @@ class UserInterfaceCustom(CustomCluster, UserInterface):
 # https://github.com/devbis/z03mmc
 # defined by 1.1.0 firmware (0x11003001)
 # see README.md in the repo for more info
-class LYWSD03MMC_devbis(CustomDevice):
+class DevbisLYWSD03MMC(CustomDevice):
     """LYWSD03MMC sensor with devbis custom firmware."""
 
     signature = {
