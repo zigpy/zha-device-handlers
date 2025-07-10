@@ -8,7 +8,7 @@ from unittest import mock
 import pytest
 import zigpy.device
 import zigpy.types as t
-from zigpy.zcl import foundation
+from zigpy.zcl import Cluster, foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import (
     AnalogInput,
@@ -47,8 +47,10 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
     ZONE_STATUS_CHANGE_COMMAND,
+    BatterySize,
 )
 from zhaquirks.xiaomi import (
+    AQARA,
     LUMI,
     XIAOMI_AQARA_ATTRIBUTE,
     XIAOMI_AQARA_ATTRIBUTE_E1,
@@ -58,6 +60,8 @@ from zhaquirks.xiaomi import (
     XiaomiQuickInitDevice,
     handle_quick_init,
 )
+import zhaquirks.xiaomi.aqara.cube
+import zhaquirks.xiaomi.aqara.cube_aqgl01
 import zhaquirks.xiaomi.aqara.driver_curtain_e1
 from zhaquirks.xiaomi.aqara.feeder_acn001 import (
     FEEDER_ATTR,
@@ -75,9 +79,15 @@ from zhaquirks.xiaomi.aqara.feeder_acn001 import (
     AqaraFeederAcn001,
     OppleCluster,
 )
+from zhaquirks.xiaomi.aqara.light_acn import AqaraLightT1M, LumiPowerOnStateMode
+import zhaquirks.xiaomi.aqara.magnet_ac01
+import zhaquirks.xiaomi.aqara.magnet_acn001
 import zhaquirks.xiaomi.aqara.magnet_agl02
+import zhaquirks.xiaomi.aqara.magnet_aq2
 import zhaquirks.xiaomi.aqara.motion_ac02
+import zhaquirks.xiaomi.aqara.motion_acn001
 import zhaquirks.xiaomi.aqara.motion_agl02
+import zhaquirks.xiaomi.aqara.motion_agl04
 import zhaquirks.xiaomi.aqara.motion_aq2
 import zhaquirks.xiaomi.aqara.motion_aq2b
 import zhaquirks.xiaomi.aqara.plug
@@ -89,6 +99,7 @@ import zhaquirks.xiaomi.aqara.switch_t1
 from zhaquirks.xiaomi.aqara.thermostat_agl001 import ScheduleEvent, ScheduleSettings
 import zhaquirks.xiaomi.aqara.weather
 import zhaquirks.xiaomi.mija.motion
+import zhaquirks.xiaomi.mija.smoke
 
 zhaquirks.setup()
 
@@ -336,8 +347,14 @@ async def test_xiaomi_battery(zigpy_device_from_quirk, voltage, bpr):
     )
 
     device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.vibration_aq1.VibrationAQ1)
-    device.handle_message(
-        0x260, 0x0000, 1, 1, data_1 + t.uint16_t(voltage).serialize() + data_2
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=0x260,
+            cluster_id=0x0000,
+            src_ep=1,
+            dst_ep=1,
+            data=t.SerializableBytes(data_1 + t.uint16_t(voltage).serialize() + data_2),
+        )
     )
     power_cluster = device.endpoints[1].power
     assert power_cluster["battery_percentage_remaining"] == bpr
@@ -362,8 +379,14 @@ async def test_mija_battery(zigpy_device_from_quirk, voltage, bpr):
     data_2 = b"!\xa8\x01$\x00\x00\x00\x00\x00!n\x00 P"
 
     device = zigpy_device_from_quirk(zhaquirks.xiaomi.mija.motion.Motion)
-    device.handle_message(
-        0x260, 0x0000, 1, 1, data_1 + t.uint16_t(voltage).serialize() + data_2
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=0x260,
+            cluster_id=0x0000,
+            src_ep=1,
+            dst_ep=1,
+            data=t.SerializableBytes(data_1 + t.uint16_t(voltage).serialize() + data_2),
+        )
     )
     power_cluster = device.endpoints[1].power
     assert power_cluster["battery_percentage_remaining"] == bpr
@@ -372,10 +395,27 @@ async def test_mija_battery(zigpy_device_from_quirk, voltage, bpr):
 @pytest.mark.parametrize(
     "quirk, batt_size",
     (
-        (zhaquirks.xiaomi.aqara.vibration_aq1.VibrationAQ1, 0x0A),
-        (zhaquirks.xiaomi.mija.motion.Motion, 0x09),
-        (zhaquirks.xiaomi.mija.sensor_switch.MijaButton, 0x0A),
-        (zhaquirks.xiaomi.mija.sensor_magnet.Magnet, 0x0B),
+        (zhaquirks.xiaomi.aqara.vibration_aq1.VibrationAQ1, BatterySize.CR2032),
+        (zhaquirks.xiaomi.aqara.cube.Cube, BatterySize.CR2450),
+        (zhaquirks.xiaomi.aqara.cube_aqgl01.CubeAQGL01, BatterySize.CR2450),
+        (zhaquirks.xiaomi.aqara.cube_aqgl01.CubeCAGL02, BatterySize.CR2450),
+        (zhaquirks.xiaomi.aqara.magnet_ac01.LumiMagnetAC01, BatterySize.CR123A),
+        (zhaquirks.xiaomi.aqara.magnet_acn001.MagnetE1, BatterySize.CR1632),
+        (zhaquirks.xiaomi.aqara.magnet_agl02.MagnetT1, BatterySize.CR1632),
+        (zhaquirks.xiaomi.aqara.magnet_aq2.MagnetAQ2, BatterySize.CR1632),
+        (zhaquirks.xiaomi.aqara.motion_ac02.LumiMotionAC02, BatterySize.CR1632),
+        (zhaquirks.xiaomi.aqara.motion_acn001.MotionE1, BatterySize.CR1632),
+        (zhaquirks.xiaomi.aqara.motion_agl02.MotionT1, BatterySize.CR1632),
+        (zhaquirks.xiaomi.aqara.motion_agl04.LumiLumiMotionAgl04, BatterySize.CR1632),
+        (zhaquirks.xiaomi.aqara.motion_aq2.MotionAQ2, BatterySize.CR2450),
+        (zhaquirks.xiaomi.aqara.motion_aq2b.MotionAQ2, BatterySize.CR2450),
+        (zhaquirks.xiaomi.mija.motion.Motion, BatterySize.CR2450),
+        (zhaquirks.xiaomi.mija.sensor_switch.MijaButton, BatterySize.CR2032),
+        (zhaquirks.xiaomi.mija.sensor_magnet.Magnet, BatterySize.CR1632),
+        (
+            zhaquirks.xiaomi.mija.smoke.MijiaHoneywellSmokeDetectorSensor,
+            BatterySize.CR123A,
+        ),
     ),
 )
 async def test_xiaomi_batt_size(zigpy_device_from_quirk, quirk, batt_size):
@@ -764,12 +804,14 @@ async def test_aqara_feeder_attr_reports(
     cluster_listener = Listener()
     opple_cluster.add_listener(cluster_listener)
 
-    device.handle_message(
-        260,
-        opple_cluster.cluster_id,
-        opple_cluster.endpoint.endpoint_id,
-        opple_cluster.endpoint.endpoint_id,
-        bytes_received,
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=0x260,
+            cluster_id=opple_cluster.cluster_id,
+            src_ep=opple_cluster.endpoint.endpoint_id,
+            dst_ep=opple_cluster.endpoint.endpoint_id,
+            data=t.SerializableBytes(bytes_received),
+        )
     )
 
     assert cluster_listener.attribute_updated.call_count == call_count
@@ -840,12 +882,14 @@ async def test_aqara_smoke_sensor_xiaomi_attribute_report(
     ias_cluster = device.endpoints[1].ias_zone
     ias_listener = ClusterListener(ias_cluster)
 
-    device.handle_message(
-        260,
-        opple_cluster.cluster_id,
-        opple_cluster.endpoint.endpoint_id,
-        opple_cluster.endpoint.endpoint_id,
-        raw_report,
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=0x260,
+            cluster_id=opple_cluster.cluster_id,
+            src_ep=opple_cluster.endpoint.endpoint_id,
+            dst_ep=opple_cluster.endpoint.endpoint_id,
+            data=t.SerializableBytes(raw_report),
+        )
     )
 
     # check that Xiaomi attribute report also updates attribute cache
@@ -1264,12 +1308,14 @@ async def test_xiaomi_weather(
         PowerConfiguration.AttributeDefs.battery_percentage_remaining.id
     )
 
-    device.handle_message(
-        260,
-        xiaomi_attr_cluster.cluster_id,
-        xiaomi_attr_cluster.endpoint.endpoint_id,
-        xiaomi_attr_cluster.endpoint.endpoint_id,
-        raw_report,
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=260,
+            cluster_id=xiaomi_attr_cluster.cluster_id,
+            src_ep=xiaomi_attr_cluster.endpoint.endpoint_id,
+            dst_ep=xiaomi_attr_cluster.endpoint.endpoint_id,
+            data=t.SerializableBytes(raw_report),
+        )
     )
 
     assert len(temperature_listener.attribute_updates) == 1
@@ -1331,12 +1377,14 @@ async def test_xiaomi_motion_sensor_misc(
         PowerConfiguration.AttributeDefs.battery_percentage_remaining.id
     )
 
-    device.handle_message(
-        260,
-        basic_cluster.cluster_id,
-        basic_cluster.endpoint.endpoint_id,
-        basic_cluster.endpoint.endpoint_id,
-        raw_report,
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=260,
+            cluster_id=basic_cluster.cluster_id,
+            src_ep=basic_cluster.endpoint.endpoint_id,
+            dst_ep=basic_cluster.endpoint.endpoint_id,
+            data=t.SerializableBytes(raw_report),
+        )
     )
 
     assert len(device_temperature_listener.attribute_updates) == 1
@@ -1388,15 +1436,12 @@ async def test_xiaomi_power_cluster_not_used(zigpy_device_from_quirk, caplog, qu
     )
 
 
-@pytest.mark.parametrize(
-    "quirk", (zhaquirks.xiaomi.aqara.roller_curtain_e1.RollerE1AQ,)
-)
-async def test_xiaomi_e1_roller_curtain_battery(zigpy_device_from_quirk, quirk):
+def test_xiaomi_e1_roller_curtain_battery(zigpy_device_from_v2_quirk):
     """Test Aqara E1 roller curtain battery reporting."""
     # Ideally, get a real Xiaomi "heartbeat" message to test.
     # For now, fake the heartbeat message and check if battery parsing works.
 
-    device = zigpy_device_from_quirk(quirk)
+    device = zigpy_device_from_v2_quirk(LUMI, "lumi.curtain.acn002")
 
     basic_cluster = device.endpoints[1].basic
     ClusterListener(basic_cluster)
@@ -1451,12 +1496,14 @@ async def test_xiaomi_t1_door_sensor(
     on_off_listener = ClusterListener(on_off_cluster)
 
     # check open state
-    device.handle_message(
-        260,
-        on_off_cluster.cluster_id,
-        on_off_cluster.endpoint.endpoint_id,
-        on_off_cluster.endpoint.endpoint_id,
-        bytes.fromhex("185D0A00001001"),
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=260,
+            cluster_id=on_off_cluster.cluster_id,
+            src_ep=on_off_cluster.endpoint.endpoint_id,
+            dst_ep=on_off_cluster.endpoint.endpoint_id,
+            data=t.SerializableBytes(bytes.fromhex("185D0A00001001")),
+        )
     )
 
     assert len(on_off_listener.attribute_updates) == 1
@@ -1464,12 +1511,14 @@ async def test_xiaomi_t1_door_sensor(
     assert on_off_listener.attribute_updates[0][1] == t.Bool.true
 
     # check closed state
-    device.handle_message(
-        260,
-        on_off_cluster.cluster_id,
-        on_off_cluster.endpoint.endpoint_id,
-        on_off_cluster.endpoint.endpoint_id,
-        bytes.fromhex("18640A00001000"),
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=260,
+            cluster_id=on_off_cluster.cluster_id,
+            src_ep=on_off_cluster.endpoint.endpoint_id,
+            dst_ep=on_off_cluster.endpoint.endpoint_id,
+            data=t.SerializableBytes(bytes.fromhex("185D0A00001000")),
+        )
     )
 
     assert len(on_off_listener.attribute_updates) == 2
@@ -1488,12 +1537,14 @@ async def test_xiaomi_t1_door_sensor(
     )
 
     # check Xiaomi attribute report
-    device.handle_message(
-        260,
-        opple_cluster.cluster_id,
-        opple_cluster.endpoint.endpoint_id,
-        opple_cluster.endpoint.endpoint_id,
-        raw_report,
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=260,
+            cluster_id=opple_cluster.cluster_id,
+            src_ep=opple_cluster.endpoint.endpoint_id,
+            dst_ep=opple_cluster.endpoint.endpoint_id,
+            data=t.SerializableBytes(raw_report),
+        )
     )
 
     assert len(power_listener.attribute_updates) == 2
@@ -1588,63 +1639,412 @@ async def test_xiaomi_e1_driver_light_level(
 
 
 @pytest.mark.parametrize(
-    "command, value",
+    "command, value, read_current_position",
     [
-        (WindowCovering.ServerCommandDefs.up_open.id, 1),
-        (WindowCovering.ServerCommandDefs.down_close.id, 0),
-        (WindowCovering.ServerCommandDefs.stop.id, 2),
+        (WindowCovering.ServerCommandDefs.up_open.id, 1, True),
+        (WindowCovering.ServerCommandDefs.down_close.id, 0, True),
+        (WindowCovering.ServerCommandDefs.stop.id, 2, True),
     ],
 )
-async def test_xiaomi_e1_roller_commands_1(zigpy_device_from_quirk, command, value):
+async def test_xiaomi_e1_roller_commands_1(
+    zigpy_device_from_v2_quirk, command, value, read_current_position
+):
     """Test Aqara E1 roller commands for basic movement functions using MultistateOutput Cluster."""
-    device = zigpy_device_from_quirk(
-        zhaquirks.xiaomi.aqara.roller_curtain_e1.RollerE1AQ
-    )
+    device = zigpy_device_from_v2_quirk(LUMI, "lumi.curtain.acn002")
 
     window_covering_cluster = device.endpoints[1].window_covering
-    multistate_cluster = device.endpoints[1].multistate_output
-    multistate_cluster._write_attributes = mock.AsyncMock(
-        return_value=(
-            [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)],
-        )
+    window_covering_listener = ClusterListener(window_covering_cluster)
+    window_covering_attr_id = (
+        WindowCovering.AttributeDefs.current_position_lift_percentage.id
     )
-    attr_id = MultistateOutput.AttributeDefs.present_value.id
 
-    # test command
-    await window_covering_cluster.command(command)
-    assert multistate_cluster._write_attributes.call_count == 1
-    assert multistate_cluster._write_attributes.call_args[0][0][0].attrid == attr_id
-    assert multistate_cluster._write_attributes.call_args[0][0][0].value.value == value
+    analog_cluster = device.endpoints[1].analog_output
+    analog_attr_id = AnalogOutput.AttributeDefs.present_value.id
+
+    multistate_cluster = device.endpoints[1].multistate_output
+    multistate_attr_id = MultistateOutput.AttributeDefs.present_value.id
+
+    # fake read response for attributes: return 1 for all attributes
+    def mock_read(attributes, manufacturer=None):
+        records = [
+            foundation.ReadAttributeRecord(
+                attr, foundation.Status.SUCCESS, foundation.TypeValue(None, 1)
+            )
+            for attr in attributes
+        ]
+        return (records,)
+
+    # patch read commands
+    patch_window_covering_read = mock.patch.object(
+        window_covering_cluster,
+        "_read_attributes",
+        mock.AsyncMock(side_effect=mock_read),
+    )
+    patch_analog_read = mock.patch.object(
+        analog_cluster, "_read_attributes", mock.AsyncMock(side_effect=mock_read)
+    )
+
+    # patch write commands
+    patch_multistate_write = mock.patch.object(
+        multistate_cluster,
+        "_write_attributes",
+        mock.AsyncMock(
+            return_value=(
+                [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)],
+            )
+        ),
+    )
+
+    with (
+        patch_window_covering_read,
+        patch_analog_read,
+        patch_multistate_write,
+    ):
+        # test command
+        await window_covering_cluster.command(command)
+        assert multistate_cluster._write_attributes.call_count == 1
+        assert (
+            multistate_cluster._write_attributes.call_args[0][0][0].attrid
+            == multistate_attr_id
+        )
+        assert (
+            multistate_cluster._write_attributes.call_args[0][0][0].value.value == value
+        )
+        if read_current_position:
+            # confirm the window covering cluster read was redirected
+            assert len(window_covering_cluster._read_attributes.mock_calls) == 0
+
+            # confirm the analog output read occurs
+            assert len(analog_cluster._read_attributes.mock_calls) == 1
+            assert analog_cluster._read_attributes.mock_calls[0][1][0] == [
+                analog_attr_id
+            ]
+
+            # confirm the position was updated on the ZCL WindowCovering cluster
+            assert len(window_covering_listener.attribute_updates) == 1
+            assert window_covering_listener.attribute_updates[0] == (
+                window_covering_attr_id,
+                100 - 1,
+            )
+        else:
+            # confirm the command did not read the current position
+            assert len(analog_cluster._read_attributes.mock_calls) == 0
 
 
 @pytest.mark.parametrize(
-    "command, value",
+    "command, value, read_current_position",
     [
-        (WindowCovering.ServerCommandDefs.go_to_lift_percentage.id, 60),
+        (WindowCovering.ServerCommandDefs.go_to_lift_percentage.id, 60, True),
     ],
 )
-async def test_xiaomi_e1_roller_commands_2(zigpy_device_from_quirk, command, value):
+async def test_xiaomi_e1_roller_commands_2(
+    zigpy_device_from_v2_quirk, command, value, read_current_position
+):
     """Test Aqara E1 roller commands for go to lift percentage using AnalogOutput cluster."""
-    device = zigpy_device_from_quirk(
-        zhaquirks.xiaomi.aqara.roller_curtain_e1.RollerE1AQ
-    )
+    device = zigpy_device_from_v2_quirk(LUMI, "lumi.curtain.acn002")
 
     window_covering_cluster = device.endpoints[1].window_covering
-    analog_cluster = device.endpoints[1].analog_output
-    analog_cluster._write_attributes = mock.AsyncMock(
-        return_value=(
-            [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)],
-        )
+    window_covering_listener = ClusterListener(window_covering_cluster)
+    window_covering_attr_id = (
+        WindowCovering.AttributeDefs.current_position_lift_percentage.id
     )
-    attr_id = AnalogOutput.AttributeDefs.present_value.id
 
-    # test go to lift percentage command
-    await window_covering_cluster.go_to_lift_percentage(value)
-    assert analog_cluster._write_attributes.call_count == 1
-    assert analog_cluster._write_attributes.call_args[0][0][0].attrid == attr_id
-    assert (
-        analog_cluster._write_attributes.call_args[0][0][0].value.value == 100 - value
+    analog_cluster = device.endpoints[1].analog_output
+    analog_listener = ClusterListener(analog_cluster)
+    analog_attr_id = AnalogOutput.AttributeDefs.present_value.id
+
+    # fake read response for attributes: return 1 for all attributes
+    def mock_read(attributes, manufacturer=None):
+        records = [
+            foundation.ReadAttributeRecord(
+                attr, foundation.Status.SUCCESS, foundation.TypeValue(None, 1)
+            )
+            for attr in attributes
+        ]
+        return (records,)
+
+    # patch read commands
+    patch_window_covering_read = mock.patch.object(
+        window_covering_cluster,
+        "_read_attributes",
+        mock.AsyncMock(side_effect=mock_read),
     )
+    patch_analog_read = mock.patch.object(
+        analog_cluster, "_read_attributes", mock.AsyncMock(side_effect=mock_read)
+    )
+
+    # patch write commands
+    patch_analog_write = mock.patch.object(
+        analog_cluster,
+        "_write_attributes",
+        mock.AsyncMock(
+            return_value=(
+                [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)],
+            )
+        ),
+    )
+
+    with (
+        patch_window_covering_read,
+        patch_analog_read,
+        patch_analog_write,
+    ):
+        # test go to lift percentage command
+        await window_covering_cluster.go_to_lift_percentage(value)
+        assert analog_cluster._write_attributes.call_count == 1
+        assert (
+            analog_cluster._write_attributes.call_args[0][0][0].attrid == analog_attr_id
+        )
+        assert (
+            analog_cluster._write_attributes.call_args[0][0][0].value.value
+            == 100 - value
+        )
+
+        # confirm the AnalogOutput present_value was updated
+        assert analog_listener.attribute_updates[0] == (
+            analog_attr_id,
+            100 - value,
+        )
+        if read_current_position:
+            # confirm the window covering cluster read was redirected
+            assert len(window_covering_cluster._read_attributes.mock_calls) == 0
+
+            # confirm the analog output read occurs
+            assert len(analog_cluster._read_attributes.mock_calls) == 1
+            assert analog_cluster._read_attributes.mock_calls[0][1][0] == [
+                analog_attr_id
+            ]
+
+            # confirm the position was updated on the ZCL WindowCovering cluster with the read value
+            assert len(window_covering_listener.attribute_updates) == 1
+            assert window_covering_listener.attribute_updates[0] == (
+                window_covering_attr_id,
+                100 - 1,
+            )
+        else:
+            # confirm the command did not read the current position
+            assert len(analog_cluster._read_attributes.mock_calls) == 0
+
+            # confirm the AnalogOutput write did not update the current WindowCovering position
+            assert len(window_covering_listener.attribute_updates) == 0
+
+    # confirm non-mapped commands return status UNSUP_CLUSTER_COMMAND
+    _, status = await window_covering_cluster.go_to_tilt_percentage(value)
+    assert status == foundation.Status.UNSUP_CLUSTER_COMMAND
+
+
+@pytest.mark.parametrize(
+    "attr, expected_value, target_attr, target_cluster",
+    [
+        (
+            WindowCovering.AttributeDefs.current_position_lift_percentage,
+            99,
+            AnalogOutput.AttributeDefs.present_value,
+            AnalogOutput,
+        ),  # Redirect with read success
+        (
+            WindowCovering.AttributeDefs.current_position_lift_percentage,
+            None,
+            AnalogOutput.AttributeDefs.present_value,
+            AnalogOutput,
+        ),  # Redirect with read failure
+        (
+            WindowCovering.AttributeDefs.config_status,
+            1,
+            None,
+            None,
+        ),  # Regular read success
+        (
+            WindowCovering.AttributeDefs.config_status,
+            None,
+            None,
+            None,
+        ),  # Regular read failure
+    ],
+)
+async def test_xiaomi_e1_roller_window_covering_read_redirection(
+    zigpy_device_from_v2_quirk,
+    attr: foundation.ZCLAttributeDef,
+    expected_value: int | None,
+    target_attr: foundation.ZCLAttributeDef | None,
+    target_cluster: Cluster | None,
+):
+    """Test Aqara E1 roller WindowCovering attribute read redirection."""
+    device = zigpy_device_from_v2_quirk(LUMI, "lumi.curtain.acn002")
+
+    window_covering_cluster = device.endpoints[1].window_covering
+    window_covering_listener = ClusterListener(window_covering_cluster)
+
+    redirect = False
+    if target_attr and target_cluster:
+        target_cluster = getattr(device.endpoints[1], target_cluster.ep_attribute)
+        redirect = True
+
+    # fake read response for attributes, a value of 1 is returned if expected_value is not None
+    def mock_read(attributes, manufacturer=None):
+        records = [
+            foundation.ReadAttributeRecord(
+                attr,
+                foundation.Status.SUCCESS
+                if expected_value
+                else foundation.Status.FAILURE,
+                foundation.TypeValue(None, 1),
+            )
+            for attr in attributes
+        ]
+        return (records,)
+
+    # patch window covering read command
+    patch_window_covering_read = mock.patch.object(
+        window_covering_cluster,
+        "_read_attributes",
+        mock.AsyncMock(side_effect=(mock_read)),
+    )
+
+    if redirect:
+        # patch target cluster read command
+        patch_target_read = mock.patch.object(
+            target_cluster,
+            "_read_attributes",
+            mock.AsyncMock(side_effect=(mock_read)),
+        )
+        with (
+            patch_window_covering_read,
+            patch_target_read,
+        ):
+            # read attribute from WindowCovering cluster using id and name
+            await window_covering_cluster.read_attributes([attr.id])
+            await window_covering_cluster.read_attributes([attr.name])
+
+            # confirm the reads were redirected to the target cluster
+            assert len(window_covering_cluster._read_attributes.mock_calls) == 0
+            assert len(target_cluster._read_attributes.mock_calls) == 2
+            assert target_cluster._read_attributes.mock_calls[0][1][0] == [
+                target_attr.id
+            ]
+            assert target_cluster._read_attributes.mock_calls[1][1][0] == [
+                target_attr.id
+            ]
+    else:
+        with (
+            patch_window_covering_read,
+        ):
+            # read attribute from WindowCovering cluster using id and name
+            await window_covering_cluster.read_attributes([attr.id])
+            await window_covering_cluster.read_attributes([attr.name])
+
+            # confirm the reads occurred normally
+            assert len(window_covering_cluster._read_attributes.mock_calls) == 2
+            assert window_covering_cluster._read_attributes.mock_calls[0][1][0] == [
+                attr.id
+            ]
+            assert window_covering_cluster._read_attributes.mock_calls[1][1][0] == [
+                attr.id
+            ]
+
+    if not expected_value:
+        # check read fails do not trigger an attribute update
+        assert len(window_covering_listener.attribute_updates) == 0
+        return
+
+    # check the WindowCovering attribute was updated by the reads
+    assert len(window_covering_listener.attribute_updates) == 2
+    assert window_covering_listener.attribute_updates[0] == (
+        attr.id,
+        expected_value,
+    )
+    assert window_covering_listener.attribute_updates[1] == (
+        attr.id,
+        expected_value,
+    )
+
+
+async def test_xiaomi_e1_roller_write_aware_update_attribute(
+    zigpy_device_from_v2_quirk,
+):
+    """Test Aqara E1 roller AnalogOutput write-aware update_attribute method."""
+    device = zigpy_device_from_v2_quirk(LUMI, "lumi.curtain.acn002")
+
+    window_covering_cluster = device.endpoints[1].window_covering
+    window_covering_listener = ClusterListener(window_covering_cluster)
+
+    analog_cluster = device.endpoints[1].analog_output
+    analog_listener = ClusterListener(analog_cluster)
+    analog_attr = AnalogOutput.AttributeDefs.present_value
+    analog_attr_max = AnalogOutput.AttributeDefs.max_present_value
+
+    # patch write command for a success response
+    patch_analog_write = mock.patch.object(
+        analog_cluster,
+        "_write_attributes",
+        mock.AsyncMock(
+            return_value=(
+                [foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)],
+            )
+        ),
+    )
+
+    # patch write command for a fail response
+    patch_analog_write_fail = mock.patch.object(
+        analog_cluster,
+        "_write_attributes",
+        mock.AsyncMock(
+            return_value=(
+                [
+                    foundation.WriteAttributesStatusRecord(
+                        foundation.Status.INVALID_VALUE, analog_attr.id
+                    ),
+                ],
+            )
+        ),
+    )
+
+    with (
+        patch_analog_write,
+    ):
+        # test writing valid and invalid values using name & id
+        await analog_cluster.write_attributes({analog_attr.id: 50})
+        await analog_cluster.write_attributes({analog_attr.name: 60})
+        assert analog_cluster._write_attributes.call_count == 2
+
+        # confirm the two successful writes updated the analog cluster
+        assert len(analog_listener.attribute_updates) == 2
+        assert analog_listener.attribute_updates[0] == (
+            analog_attr.id,
+            50,
+        )
+        assert analog_listener.attribute_updates[1] == (
+            analog_attr.id,
+            60,
+        )
+
+    with (
+        patch_analog_write_fail,
+    ):
+        # test writing valid and invalid values using name & id
+        await analog_cluster.write_attributes(
+            {analog_attr_max.id: 100, analog_attr.id: 150}
+        )
+        await analog_cluster.write_attributes(
+            {analog_attr_max.name: 100, analog_attr.name: 160}
+        )
+        assert analog_cluster._write_attributes.call_count == 2
+
+        # confirm the two failed attr writes did not update the analog cluster
+        assert len(analog_listener.attribute_updates) == 4
+
+        # confirm the two successful writes updated the analog cluster
+        assert analog_listener.attribute_updates[2] == (
+            analog_attr_max.id,
+            100,
+        )
+        assert analog_listener.attribute_updates[3] == (
+            analog_attr_max.id,
+            100,
+        )
+
+    # confirm the write invoked update_attributes did not update the covering cluster
+    assert len(window_covering_listener.attribute_updates) == 0
 
 
 @pytest.mark.parametrize("endpoint", [(1), (2)])
@@ -1803,11 +2203,11 @@ async def test_aqara_fp1e_sensor(
     expected_motion_status,
 ):
     """Test Aqara FP1E sensor."""
-    quirk = zigpy_device_from_v2_quirk("aqara", "lumi.sensor_occupy.agl1")
+    device = zigpy_device_from_v2_quirk("aqara", "lumi.sensor_occupy.agl1")
 
-    opple_cluster = quirk.endpoints[1].opple_cluster
-    ias_cluster = quirk.endpoints[1].ias_zone
-    occupancy_cluster = quirk.endpoints[1].occupancy
+    opple_cluster = device.endpoints[1].opple_cluster
+    ias_cluster = device.endpoints[1].ias_zone
+    occupancy_cluster = device.endpoints[1].occupancy
 
     opple_listener = ClusterListener(opple_cluster)
     ias_listener = ClusterListener(ias_cluster)
@@ -1838,15 +2238,43 @@ async def test_aqara_fp1e_sensor(
 def test_h1_wireless_remotes(zigpy_device_from_v2_quirk):
     """Test Aqara H1 wireless remote quirk adds missing endpoints."""
     # create device with endpoint 1 only and verify we don't get a KeyError
-    quirk = zigpy_device_from_v2_quirk(LUMI, "lumi.remote.b28ac1")
+    device = zigpy_device_from_v2_quirk(LUMI, "lumi.remote.b28ac1")
 
     # verify the quirk adds endpoints 2 and 3
-    assert 2 in quirk.endpoints
-    assert 3 in quirk.endpoints
+    assert 2 in device.endpoints
+    assert 3 in device.endpoints
 
     # verify the quirk adds the correct clusters to the new endpoints
-    assert OnOff.cluster_id in quirk.endpoints[2].out_clusters
-    assert OnOff.cluster_id in quirk.endpoints[3].out_clusters
+    assert OnOff.cluster_id in device.endpoints[2].out_clusters
+    assert OnOff.cluster_id in device.endpoints[3].out_clusters
 
-    assert MultistateInput.cluster_id in quirk.endpoints[2].in_clusters
-    assert MultistateInput.cluster_id in quirk.endpoints[3].in_clusters
+    assert MultistateInput.cluster_id in device.endpoints[2].in_clusters
+    assert MultistateInput.cluster_id in device.endpoints[3].in_clusters
+
+
+@pytest.mark.parametrize("endpoint", [(1), (2)])
+def test_t1m_ceiling_light(zigpy_device_from_v2_quirk, endpoint):
+    """Test Aqara T1M ceiling light quirk adds missing endpoints."""
+
+    # create the device with 2 endpoints (one for each light on the T1M)
+    device = zigpy_device_from_v2_quirk(AQARA, "lumi.light.acn032", endpoint_ids=[1, 2])
+    assert AqaraLightT1M.cluster_id in device.endpoints[endpoint].in_clusters
+
+    aqara_cluster = device.endpoints[endpoint].opple_cluster
+    cluster_listener = ClusterListener(aqara_cluster)
+
+    aqara_cluster.update_attribute(AqaraLightT1M.AttributeDefs.power_on_state.id, 0x01)
+    assert len(cluster_listener.attribute_updates) == 1
+    assert (
+        cluster_listener.attribute_updates[0][0]
+        == AqaraLightT1M.AttributeDefs.power_on_state.id
+    )
+    assert cluster_listener.attribute_updates[0][1] == LumiPowerOnStateMode.LastState
+
+    aqara_cluster.update_attribute(AqaraLightT1M.AttributeDefs.power_on_state.id, 0x02)
+    assert len(cluster_listener.attribute_updates) == 2
+    assert (
+        cluster_listener.attribute_updates[1][0]
+        == AqaraLightT1M.AttributeDefs.power_on_state.id
+    )
+    assert cluster_listener.attribute_updates[1][1] == LumiPowerOnStateMode.Off

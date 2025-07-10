@@ -6,6 +6,8 @@ from zigpy.quirks.v2 import BinarySensorDeviceClass, EntityType, QuirkBuilder
 from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
+from zhaquirks.philips import SIGNIFY
+
 
 class PhilipsContactCluster(CustomCluster):
     """Philips manufacturer specific cluster for contact sensor."""
@@ -60,7 +62,7 @@ class PhilipsContactCluster(CustomCluster):
     #  device_version=0
     #  input_clusters=[0, 1, 3, 64518]
     #  output_clusters=[0, 3, 6, 25]>
-    QuirkBuilder("Signify Netherlands B.V.", "SOC001")
+    QuirkBuilder(SIGNIFY, "SOC001")
     .replaces(PhilipsContactCluster, endpoint_id=2)
     .binary_sensor(
         "tamper",

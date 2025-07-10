@@ -5,6 +5,7 @@ from typing import Final
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import EntityType, QuirkBuilder
 from zigpy.quirks.v2.homeassistant import (
+    PERCENTAGE,
     EntityPlatform,
     UnitOfPower,
     UnitOfTemperature,
@@ -597,7 +598,7 @@ class SEHeatingCoolingOutput(CustomCluster):
         attribute_name=SEUserInterface.AttributeDefs.se_brightness.name,
         translation_key="display_brightness",
         fallback_name="Display brightness",
-        # unit="%",
+        unit=PERCENTAGE,
         min_value=0,
         max_value=100,
         step=1,
@@ -608,7 +609,7 @@ class SEHeatingCoolingOutput(CustomCluster):
         attribute_name=SEUserInterface.AttributeDefs.se_inactive_brightness.name,
         translation_key="display_inactive_brightness",
         fallback_name="Display inactive brightness",
-        # unit="%",
+        unit=PERCENTAGE,
         min_value=0,
         max_value=100,
         step=1,
@@ -642,7 +643,7 @@ class SEHeatingCoolingOutput(CustomCluster):
         device_class=NumberDeviceClass.TEMPERATURE,
         unit=UnitOfTemperature.CELSIUS,
         min_value=0,
-        max_value=12,
+        max_value=1.2,
         multiplier=0.1,
         step=0.1,
     )
@@ -690,7 +691,7 @@ class SEHeatingCoolingOutput(CustomCluster):
         fallback_name="Boost amount",
         device_class=NumberDeviceClass.TEMPERATURE,
         unit=UnitOfTemperature.CELSIUS,
-        min_value=0,
+        min_value=0.5,
         max_value=10,
         multiplier=0.01,
         step=0.5,

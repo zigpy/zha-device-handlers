@@ -13,40 +13,26 @@ class SonoffCluster(CustomCluster):
 
     cluster_id = 0xFC11
 
+    manufacturer_id_override = foundation.ZCLHeader.NO_MANUFACTURER_ID
+
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
 
         external_trigger_mode = ZCLAttributeDef(
             id=0x0016,
             type=t.uint8_t,
+            is_manufacturer_specific=True,
         )
         detach_relay = ZCLAttributeDef(
             id=0x0017,
             type=t.Bool,
+            is_manufacturer_specific=True,
         )
         turbo_mode = ZCLAttributeDef(
             id=0x0012,
             type=t.int16s,
+            is_manufacturer_specific=True,
         )
-
-    async def _read_attributes(
-        self,
-        attribute_ids: list[t.uint16_t],
-        *args,
-        manufacturer: int | t.uint16_t | None = None,
-        **kwargs,
-    ):
-        """Read attributes ZCL foundation command."""
-        return await super()._read_attributes(
-            attribute_ids,
-            *args,
-            manufacturer=foundation.ZCLHeader.NO_MANUFACTURER_ID,
-            **kwargs,
-        )
-
-    @property
-    def _is_manuf_specific(self):
-        return False
 
 
 class SonoffExternalSwitchTriggerType(types.enum8):

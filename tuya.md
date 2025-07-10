@@ -56,15 +56,21 @@ TuyaQuirkBuilder is a subclass of QuirkBuilder, retaining all of the v2 QuirkBui
 
 These methods allow exposing the most common Tuya clusters. These methods were added as part of the quirk building process and it is likely that there are other convenience methods that should be created. If you find that you are repeating the `.tuya_dp` and `.adds` formula, please PR or suggest additional methods.
 
-#### tuya_battery(dp_id: int, power_cfg: PowerConfiguration = TuyaPowerConfigurationCluster2AAA, scale: float = 2)
+#### def tuya_battery(
+####        dp_id: int,
+####        power_cfg: PowerConfiguration | None = None,
+####        battery_type: BatterySize | None = BatterySize.AA,
+####        battery_qty: int | None = 2,
+####        battery_voltage: int | None = None,
+####        scale: float = 2,
 
 Adds a battery power cluster.
 
 ```python
-.tuya_battery(dp_id=2, power_config=TuyaPowerConfigurationCluster4AAA)
+.tuya_battery(dp_id=2, battery_type=BatterySize.AA, battery_qty=4)
 ```
 
-#### tuya_metering(dp_id: int, metering_cfg: TuyaLocalCluster = TuyaValveWaterConsumed)
+#### tuya_metering(dp_id: int, metering_cfg: TuyaLocalCluster = TuyaValveWaterConsumedNoInstDemand)
 
 Adds a metering cluster.
 

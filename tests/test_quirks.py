@@ -60,7 +60,7 @@ import zhaquirks.xiaomi.aqara.vibration_aq1
 zhaquirks.setup()
 
 ALL_QUIRK_CLASSES = []
-for manufacturer in zq._DEVICE_REGISTRY._registry.values():
+for manufacturer in zq.DEVICE_REGISTRY.registry_v1.values():
     for model_quirk_list in manufacturer.values():
         for quirk in model_quirk_list:
             if quirk in ALL_QUIRK_CLASSES:
@@ -434,9 +434,9 @@ def test_quirk_importable(quirk: CustomDevice) -> None:
     """Ensure all quirks can be imported with a normal Python `import` statement."""
 
     path = f"{quirk.__module__}.{quirk.__name__}"
-    assert all(
-        m and m.isidentifier() for m in path.split(".")
-    ), f"{path} is not importable"
+    assert all(m and m.isidentifier() for m in path.split(".")), (
+        f"{path} is not importable"
+    )
 
 
 def test_quirk_loading_error(tmp_path: Path, caplog) -> None:
