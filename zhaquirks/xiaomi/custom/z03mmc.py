@@ -184,6 +184,8 @@ class UserInterfaceCustom(CustomCluster, UserInterface):
         unit=PERCENTAGE,
         multiplier=0.01,
         mode="box",
+        translation_key="comfort_humidity_max",
+        fallback_name="Comfort humidity max",
     )
     .switch(
         attribute_name=UserInterfaceCustom.AttributeDefs.display.name,
@@ -193,8 +195,6 @@ class UserInterfaceCustom(CustomCluster, UserInterface):
         on_value=True,
         translation_key="display_enabled",
         fallback_name="Display enabled",
-        translation_key="comfort_humidity_max",
-        fallback_name="Comfort humidity max",
     )
     .switch(
         attribute_name=UserInterfaceCustom.AttributeDefs.smiley.name,
