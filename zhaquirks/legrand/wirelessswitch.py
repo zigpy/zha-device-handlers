@@ -5,11 +5,17 @@ from zigpy.zcl.clusters.general import BinaryInput
 
 from zhaquirks.const import (
     BUTTON,
+    BUTTON_1,
+    BUTTON_2,
+    BUTTON_3,
     COMMAND,
     COMMAND_MOVE,
     COMMAND_OFF,
     COMMAND_ON,
     COMMAND_STOP,
+    DIM_DOWN,
+    DIM_UP,
+    ENDPOINT_ID,
     LONG_PRESS,
     LONG_RELEASE,
     PARAMS,
