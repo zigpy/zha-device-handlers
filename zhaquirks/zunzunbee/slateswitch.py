@@ -77,7 +77,7 @@ class ZunZunBeeIASCluster(CustomCluster, IasZone):
                 button = BUTTON_8
                 press_type = PRESS_TYPES[press]
             else:
-                # discard invalid values: 0, 6, 12, 18
+                # discard invalid values:
                 return
 
             action = f"{button}_{press_type}"

@@ -80,3 +80,20 @@ async def test_button_triggers(zigpy_device_from_quirk, message, button, press_t
         f"{button}_{press_type}",
         {"button": button, "press_type": press_type},
     )
+
+
+async def test_discard_invalid_value(zigpy_device_from_quirk):
+    """Test that invalid values are discarded without triggering events."""
+    device = zigpy_device_from_quirk(zhaquirks.zunzunbee.slateswitch.ZunZunBeeButton)
+    cluster = device.endpoints[1].ias_zone
+    listener = mock.MagicMock()
+    cluster.add_listener(listener)
+
+    ias_zone_status_attr_id = IasZone.AttributeDefs.zone_status.id
+    invalid_value = 6  # example invalid value
+    cluster.update_attribute(ias_zone_status_attr_id, invalid_value)
+
+    assert listener.attribute_updated.call_args[0][0] == ias_zone_status_attr_id
+    assert listener.attribute_updated.call_args[0][1] == invalid_value
+
+    listener.zha_send_event.assert_not_called()
