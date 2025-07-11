@@ -22,10 +22,22 @@ async def test_button_ias(zigpy_device_from_quirk):
 
     # Define button press values (hex + long press variants)
     button_values = [
-        0x2, 0x3, 0x4, 0x5,
-        0x8, 0x9, 0x10, 0x11,
-        0x20, 0x21, 0x40, 0x41,
-        0x80, 0x81, 0x100, 0x101,
+        0x2,
+        0x3,
+        0x4,
+        0x5,
+        0x8,
+        0x9,
+        0x10,
+        0x11,
+        0x20,
+        0x21,
+        0x40,
+        0x41,
+        0x80,
+        0x81,
+        0x100,
+        0x101,
     ]
 
     for value in button_values:
@@ -40,22 +52,86 @@ async def test_button_ias(zigpy_device_from_quirk):
 @pytest.mark.parametrize(
     "message, button, press_type",
     [
-        (b"\x18\n\n\x02\x00\x19\x02\x00\xfe\xff0\x01", "button_1", "remote_button_short_press"),
-        (b"\x18\n\n\x02\x00\x19\x03\x00\xfe\xff0\x01", "button_1", "remote_button_long_press"),
-        (b"\x18\n\n\x02\x00\x19\x04\x00\xfe\xff0\x01", "button_2", "remote_button_short_press"),
-        (b"\x18\n\n\x02\x00\x19\x05\x00\xfe\xff0\x01", "button_2", "remote_button_long_press"),
-        (b"\x18\n\n\x02\x00\x19\x08\x00\xfe\xff0\x01", "button_3", "remote_button_short_press"),
-        (b"\x18\n\n\x02\x00\x19\x09\x00\xfe\xff0\x01", "button_3", "remote_button_long_press"),
-        (b"\x18\n\n\x02\x00\x19\x10\x00\xfe\xff0\x01", "button_4", "remote_button_short_press"),
-        (b"\x18\n\n\x02\x00\x19\x11\x00\xfe\xff0\x01", "button_4", "remote_button_long_press"),
-        (b"\x18\n\n\x02\x00\x19\x20\x00\xfe\xff0\x01", "button_5", "remote_button_short_press"),
-        (b"\x18\n\n\x02\x00\x19\x21\x00\xfe\xff0\x01", "button_5", "remote_button_long_press"),
-        (b"\x18\n\n\x02\x00\x19\x40\x00\xfe\xff0\x01", "button_6", "remote_button_short_press"),
-        (b"\x18\n\n\x02\x00\x19\x41\x00\xfe\xff0\x01", "button_6", "remote_button_long_press"),
-        (b"\x18\n\n\x02\x00\x19\x80\x00\xfe\xff0\x01", "button_7", "remote_button_short_press"),
-        (b"\x18\n\n\x02\x00\x19\x81\x00\xfe\xff0\x01", "button_7", "remote_button_long_press"),
-        (b"\x18\n\n\x02\x00\x19\x00\x01\xfe\xff0\x01", "button_8", "remote_button_short_press"),
-        (b"\x18\n\n\x02\x00\x19\x01\x01\xfe\xff0\x01", "button_8", "remote_button_long_press"),
+        (
+            b"\x18\n\n\x02\x00\x19\x02\x00\xfe\xff0\x01",
+            "button_1",
+            "remote_button_short_press",
+        ),
+        (
+            b"\x18\n\n\x02\x00\x19\x03\x00\xfe\xff0\x01",
+            "button_1",
+            "remote_button_long_press",
+        ),
+        (
+            b"\x18\n\n\x02\x00\x19\x04\x00\xfe\xff0\x01",
+            "button_2",
+            "remote_button_short_press",
+        ),
+        (
+            b"\x18\n\n\x02\x00\x19\x05\x00\xfe\xff0\x01",
+            "button_2",
+            "remote_button_long_press",
+        ),
+        (
+            b"\x18\n\n\x02\x00\x19\x08\x00\xfe\xff0\x01",
+            "button_3",
+            "remote_button_short_press",
+        ),
+        (
+            b"\x18\n\n\x02\x00\x19\x09\x00\xfe\xff0\x01",
+            "button_3",
+            "remote_button_long_press",
+        ),
+        (
+            b"\x18\n\n\x02\x00\x19\x10\x00\xfe\xff0\x01",
+            "button_4",
+            "remote_button_short_press",
+        ),
+        (
+            b"\x18\n\n\x02\x00\x19\x11\x00\xfe\xff0\x01",
+            "button_4",
+            "remote_button_long_press",
+        ),
+        (
+            b"\x18\n\n\x02\x00\x19\x20\x00\xfe\xff0\x01",
+            "button_5",
+            "remote_button_short_press",
+        ),
+        (
+            b"\x18\n\n\x02\x00\x19\x21\x00\xfe\xff0\x01",
+            "button_5",
+            "remote_button_long_press",
+        ),
+        (
+            b"\x18\n\n\x02\x00\x19\x40\x00\xfe\xff0\x01",
+            "button_6",
+            "remote_button_short_press",
+        ),
+        (
+            b"\x18\n\n\x02\x00\x19\x41\x00\xfe\xff0\x01",
+            "button_6",
+            "remote_button_long_press",
+        ),
+        (
+            b"\x18\n\n\x02\x00\x19\x80\x00\xfe\xff0\x01",
+            "button_7",
+            "remote_button_short_press",
+        ),
+        (
+            b"\x18\n\n\x02\x00\x19\x81\x00\xfe\xff0\x01",
+            "button_7",
+            "remote_button_long_press",
+        ),
+        (
+            b"\x18\n\n\x02\x00\x19\x00\x01\xfe\xff0\x01",
+            "button_8",
+            "remote_button_short_press",
+        ),
+        (
+            b"\x18\n\n\x02\x00\x19\x01\x01\xfe\xff0\x01",
+            "button_8",
+            "remote_button_long_press",
+        ),
     ],
 )
 async def test_button_triggers(zigpy_device_from_quirk, message, button, press_type):
