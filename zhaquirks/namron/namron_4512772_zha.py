@@ -15,11 +15,27 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 
-
 class Namron4512772(CustomDevice):
     """Custom device handler for Namron 4512772 8-button Zigbee switch."""
 
     signature = {
+        "manufacturer": "NAMRON AS",
+        "model": "4512772",
+        "node_desc": {
+            "logical_type": 0,
+            "complex_descriptor_available": 0,
+            "user_descriptor_available": 0,
+            "aps_flags": 0,
+            "frequency_band": 8,
+            "mac_capability_flags": 132,
+            "manufacturer_code": 4447,
+            "maximum_buffer_size": 82,
+            "maximum_incoming_transfer_size": 82,
+            "server_mask": 11264,
+            "maximum_outgoing_transfer_size": 82,
+            "descriptor_capability_field": 0,
+        },
+        "skip_configuration": False,
         MODELS_INFO: [("NAMRON AS", "4512772")],
         ENDPOINTS: {
             1: {
