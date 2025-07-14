@@ -15,6 +15,7 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 
+
 class Namron4512772(CustomDevice):
     """Custom device handler for Namron 4512772 8-button Zigbee switch."""
 
