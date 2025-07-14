@@ -92,7 +92,6 @@ class Namron4512772(CustomDevice):
     }
 
     replacement = {
-        MODELS_INFO: [("NAMRON AS", "4512772")],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: 0x0104,
