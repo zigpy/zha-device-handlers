@@ -36,7 +36,6 @@ class Namron4512772(CustomDevice):
             "maximum_outgoing_transfer_size": 82,
             "descriptor_capability_field": 0,
         },
-        "skip_configuration": False,
         "models_info": [("NAMRON AS", "4512772")],
         "endpoints": {
             1: {
