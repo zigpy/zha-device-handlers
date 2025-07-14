@@ -15,7 +15,6 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 
-
 class Namron4512772(CustomDevice):
     """Custom device handler for Namron 4512772 8-button Zigbee switch."""
 
@@ -116,7 +115,7 @@ class Namron4512772(CustomDevice):
                 DEVICE_TYPE: 0x0001,
                 INPUT_CLUSTERS: [
                     0x0000,  # Basic
-                    0x0001,  # PowerConfiguration (battery, only here!)
+                    0x0001,  # PowerConfiguration (bare på endpoint 1)
                     0x0003,  # Identify
                     0x0B05,  # Diagnostic
                     0x1000,  # LightLink
@@ -127,7 +126,7 @@ class Namron4512772(CustomDevice):
                     0x0005,  # Scenes
                     0x0006,  # OnOff
                     0x0008,  # LevelControl
-                    0x0019,  # OTA (firmware, only here!)
+                    0x0019,  # OTA (firmware, bare på endpoint 1)
                     0x0300,  # ColorControl
                     0x1000,  # LightLink
                 ],
