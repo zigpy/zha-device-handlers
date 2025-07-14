@@ -42,10 +42,10 @@ class ThirdRealityPlugCluster(CustomCluster):
 
 (
     QuirkBuilder("Third Reality, Inc", "3RSP02028BZ")
-    .also_applies_to("Third Reality, Inc", "3RSPE01044BZ")
-    .also_applies_to("Third Reality, Inc", "3RSPU01080Z")
-    .also_applies_to("Third Reality, Inc", "3RSP02064Z")
-    .also_applies_to("Third Reality, Inc", "3RSPE02065Z")
+    .applies_to("Third Reality, Inc", "3RSPE01044BZ")
+    .applies_to("Third Reality, Inc", "3RSPU01080Z")
+    .applies_to("Third Reality, Inc", "3RSP02064Z")
+    .applies_to("Third Reality, Inc", "3RSPE02065Z")
     .replaces(ThirdRealityPlugCluster)
     .write_attr_button(
         attribute_name=ThirdRealityPlugCluster.AttributeDefs.reset_summation_delivered.name,
@@ -61,7 +61,6 @@ class ThirdRealityPlugCluster(CustomCluster):
         min_value=0,
         max_value=65535,
         step=1,
-        mode="box",
         unit=UnitOfTime.SECONDS,
         device_class=NumberDeviceClass.DURATION,
         translation_key="on_to_off_delay",
@@ -74,7 +73,6 @@ class ThirdRealityPlugCluster(CustomCluster):
         min_value=0,
         max_value=65535,
         step=1,
-        mode="box",
         unit=UnitOfTime.SECONDS,
         device_class=NumberDeviceClass.DURATION,
         translation_key="off_to_on_delay",

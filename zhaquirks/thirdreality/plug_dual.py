@@ -42,7 +42,7 @@ class ThirdRealityPlugCluster(CustomCluster):
 
 (
     QuirkBuilder("Third Reality, Inc", "3RDP01072Z")
-    .also_applies_to("Third Reality, Inc", "3RWP01073Z")
+    .applies_to("Third Reality, Inc", "3RSP02028BZ")
     .replaces(ThirdRealityPlugCluster, endpoint_id=1)
     .replaces(ThirdRealityPlugCluster, endpoint_id=2)
     .write_attr_button(
@@ -50,7 +50,7 @@ class ThirdRealityPlugCluster(CustomCluster):
         attribute_value=0x01,  # 1 reset summation delivered
         cluster_id=ThirdRealityPlugCluster.cluster_id,
         endpoint_id=1,
-        translation_key="reset_summation_delivered_ep1",
+        translation_key="reset_summation_delivered",
         fallback_name="Reset left summation delivered",  # ep1 is left
     )
     .write_attr_button(
@@ -58,8 +58,8 @@ class ThirdRealityPlugCluster(CustomCluster):
         attribute_value=0x01,
         cluster_id=ThirdRealityPlugCluster.cluster_id,
         endpoint_id=2,
-        translation_key="reset_summation_delivered_ep2",
-        fallback_name="Reset right summation delivered ep2",  # ep2 is right
+        translation_key="reset_summation_delivered",
+        fallback_name="Reset right summation delivered",  # ep2 is right
     )
     .number(
         attribute_name=ThirdRealityPlugCluster.AttributeDefs.on_to_off_delay.name,
@@ -68,11 +68,10 @@ class ThirdRealityPlugCluster(CustomCluster):
         min_value=0,
         max_value=65535,
         step=1,
-        mode="box",
         unit=UnitOfTime.SECONDS,
         device_class=NumberDeviceClass.DURATION,
-        translation_key="on_to_off_delay_ep1",
-        fallback_name="Turn off delay",
+        translation_key="on_to_off_delay",
+        fallback_name="Turn off delay left",
     )
     .number(
         attribute_name=ThirdRealityPlugCluster.AttributeDefs.on_to_off_delay.name,
@@ -81,11 +80,10 @@ class ThirdRealityPlugCluster(CustomCluster):
         min_value=0,
         max_value=65535,
         step=1,
-        mode="box",
         unit=UnitOfTime.SECONDS,
         device_class=NumberDeviceClass.DURATION,
-        translation_key="on_to_off_delay_ep2",
-        fallback_name="Turn off delay",
+        translation_key="on_to_off_delay",
+        fallback_name="Turn off delay right",
     )
     .number(
         attribute_name=ThirdRealityPlugCluster.AttributeDefs.off_to_on_delay.name,
@@ -94,11 +92,10 @@ class ThirdRealityPlugCluster(CustomCluster):
         min_value=0,
         max_value=65535,
         step=1,
-        mode="box",
         unit=UnitOfTime.SECONDS,
         device_class=NumberDeviceClass.DURATION,
-        translation_key="off_to_on_delay_ep1",
-        fallback_name="Turn on delay",
+        translation_key="off_to_on_delay",
+        fallback_name="Turn on delay left",
     )
     .number(
         attribute_name=ThirdRealityPlugCluster.AttributeDefs.off_to_on_delay.name,
@@ -107,11 +104,10 @@ class ThirdRealityPlugCluster(CustomCluster):
         min_value=0,
         max_value=65535,
         step=1,
-        mode="box",
         unit=UnitOfTime.SECONDS,
         device_class=NumberDeviceClass.DURATION,
-        translation_key="off_to_on_delay_ep2",
-        fallback_name="Turn on delay",
+        translation_key="off_to_on_delay",
+        fallback_name="Turn on delay right",
     )
     .add_to_registry()
 )
