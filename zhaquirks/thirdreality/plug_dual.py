@@ -42,7 +42,7 @@ class ThirdRealityPlugCluster(CustomCluster):
 
 (
     QuirkBuilder("Third Reality, Inc", "3RDP01072Z")
-    .applies_to("Third Reality, Inc", "3RSP02028BZ")
+    .applies_to("Third Reality, Inc", "3RWP01073Z")
     .replaces(ThirdRealityPlugCluster, endpoint_id=1)
     .replaces(ThirdRealityPlugCluster, endpoint_id=2)
     .write_attr_button(
