@@ -50,7 +50,7 @@ class ThirdRealityPlugCluster(CustomCluster):
         attribute_value=0x01,  # 1 reset summation delivered
         cluster_id=ThirdRealityPlugCluster.cluster_id,
         endpoint_id=1,
-        translation_key="reset_summation_delivered",
+        translation_key="reset_summation_delivered1",
         fallback_name="Reset left summation delivered",  # ep1 is left
     )
     .write_attr_button(
@@ -58,7 +58,7 @@ class ThirdRealityPlugCluster(CustomCluster):
         attribute_value=0x01,
         cluster_id=ThirdRealityPlugCluster.cluster_id,
         endpoint_id=2,
-        translation_key="reset_summation_delivered",
+        translation_key="reset_summation_delivered2",
         fallback_name="Reset right summation delivered",  # ep2 is right
     )
     .number(
@@ -70,7 +70,7 @@ class ThirdRealityPlugCluster(CustomCluster):
         step=1,
         unit=UnitOfTime.SECONDS,
         device_class=NumberDeviceClass.DURATION,
-        translation_key="on_to_off_delay",
+        translation_key="on_to_off_delay1",
         fallback_name="Turn off delay left",
     )
     .number(
@@ -82,7 +82,7 @@ class ThirdRealityPlugCluster(CustomCluster):
         step=1,
         unit=UnitOfTime.SECONDS,
         device_class=NumberDeviceClass.DURATION,
-        translation_key="on_to_off_delay",
+        translation_key="on_to_off_delay2",
         fallback_name="Turn off delay right",
     )
     .number(
@@ -94,7 +94,7 @@ class ThirdRealityPlugCluster(CustomCluster):
         step=1,
         unit=UnitOfTime.SECONDS,
         device_class=NumberDeviceClass.DURATION,
-        translation_key="off_to_on_delay",
+        translation_key="off_to_on_delay1",
         fallback_name="Turn on delay left",
     )
     .number(
@@ -106,7 +106,7 @@ class ThirdRealityPlugCluster(CustomCluster):
         step=1,
         unit=UnitOfTime.SECONDS,
         device_class=NumberDeviceClass.DURATION,
-        translation_key="off_to_on_delay",
+        translation_key="off_to_on_delay2",
         fallback_name="Turn on delay right",
     )
     .add_to_registry()
