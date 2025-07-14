@@ -15,40 +15,23 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 
-
 class Namron4512772(CustomDevice):
     """Custom device handler for Namron 4512772 8-button Zigbee switch."""
 
     signature = {
-        "manufacturer": "NAMRON AS",
-        "model": "4512772",
-        "node_desc": {
-            "logical_type": 0,
-            "complex_descriptor_available": 0,
-            "user_descriptor_available": 0,
-            "aps_flags": 0,
-            "frequency_band": 8,
-            "mac_capability_flags": 132,
-            "manufacturer_code": 4447,
-            "maximum_buffer_size": 82,
-            "maximum_incoming_transfer_size": 82,
-            "server_mask": 11264,
-            "maximum_outgoing_transfer_size": 82,
-            "descriptor_capability_field": 0,
-        },
-        "models_info": [("NAMRON AS", "4512772")],
-        "endpoints": {
+        MODELS_INFO: [("NAMRON AS", "4512772")],
+        ENDPOINTS: {
             1: {
-                "profile_id": 0x0104,
-                "device_type": 0x0001,
-                "input_clusters": [
+                PROFILE_ID: 0x0104,
+                DEVICE_TYPE: 0x0001,
+                INPUT_CLUSTERS: [
                     0x0000,  # Basic
                     0x0001,  # PowerConfiguration (battery)
                     0x0003,  # Identify
                     0x0B05,  # Diagnostic
                     0x1000,  # LightLink
                 ],
-                "output_clusters": [
+                OUTPUT_CLUSTERS: [
                     0x0003,  # Identify
                     0x0004,  # Groups
                     0x0005,  # Scenes
@@ -60,10 +43,10 @@ class Namron4512772(CustomDevice):
                 ],
             },
             2: {
-                "profile_id": 0x0104,
-                "device_type": 0x0001,
-                "input_clusters": [0x0000, 0x0001, 0x0003, 0x0B05, 0x1000],
-                "output_clusters": [
+                PROFILE_ID: 0x0104,
+                DEVICE_TYPE: 0x0001,
+                INPUT_CLUSTERS: [0x0000, 0x0001, 0x0003, 0x0B05, 0x1000],
+                OUTPUT_CLUSTERS: [
                     0x0003,
                     0x0004,
                     0x0005,
@@ -75,10 +58,10 @@ class Namron4512772(CustomDevice):
                 ],
             },
             3: {
-                "profile_id": 0x0104,
-                "device_type": 0x0001,
-                "input_clusters": [0x0000, 0x0001, 0x0003, 0x0B05, 0x1000],
-                "output_clusters": [
+                PROFILE_ID: 0x0104,
+                DEVICE_TYPE: 0x0001,
+                INPUT_CLUSTERS: [0x0000, 0x0001, 0x0003, 0x0B05, 0x1000],
+                OUTPUT_CLUSTERS: [
                     0x0003,
                     0x0004,
                     0x0005,
@@ -90,10 +73,10 @@ class Namron4512772(CustomDevice):
                 ],
             },
             4: {
-                "profile_id": 0x0104,
-                "device_type": 0x0001,
-                "input_clusters": [0x0000, 0x0001, 0x0003, 0x0B05, 0x1000],
-                "output_clusters": [
+                PROFILE_ID: 0x0104,
+                DEVICE_TYPE: 0x0001,
+                INPUT_CLUSTERS: [0x0000, 0x0001, 0x0003, 0x0B05, 0x1000],
+                OUTPUT_CLUSTERS: [
                     0x0003,
                     0x0004,
                     0x0005,
