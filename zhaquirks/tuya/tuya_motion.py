@@ -236,6 +236,7 @@ base_tuya_motion = (
 
 (
     base_tuya_motion.clone()
+    .applies_to("_TZE200_gkfbdvyx", "TS0601")
     .applies_to("_TZE200_ya4ft0w4", "TS0601")
     .applies_to("_TZE204_ya4ft0w4", "TS0601")
     .tuya_dp(
