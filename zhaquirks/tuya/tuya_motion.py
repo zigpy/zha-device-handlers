@@ -247,10 +247,10 @@ base_tuya_motion = (
     # 2, 3, 4, and 9 from base
     .tuya_switch(
         dp_id=101,
-        attribute_name="find_switch",
-        entity_type=EntityType.STANDARD,
-        translation_key="led_indicator",
-        fallback_name="LED indicator",
+        attribute_name="distance_tracking",
+        entity_type=EntityType.CONFIG,
+        translation_key="distance_tracking",
+        fallback_name="Distance tracking",
     )
     .tuya_number(
         dp_id=102,
