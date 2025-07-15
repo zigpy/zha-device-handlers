@@ -259,7 +259,6 @@ base_tuya_motion = (
         min_value=0,
         max_value=10,
         step=1,
-        multiplier=0.1,
         translation_key="presence_sensitivity",
         fallback_name="Presence sensitivity",
     )
