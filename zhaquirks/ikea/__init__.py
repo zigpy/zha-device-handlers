@@ -32,28 +32,24 @@ BATTERY_RATED_VOLTAGE = PowerConfiguration.attributes_by_name[
 class ScenesCluster(CustomCluster, Scenes):
     """Ikea Scenes cluster."""
 
-    server_commands = Scenes.server_commands.copy()
-    server_commands.update(
-        {
-            0x0007: foundation.ZCLCommandDef(
-                "press",
-                {"param1": t.int16s, "param2": t.int8s, "param3": t.int8s},
-                is_manufacturer_specific=True,
-            ),
-            0x0008: foundation.ZCLCommandDef(
-                "hold",
-                {"param1": t.int16s, "param2": t.int8s},
-                is_manufacturer_specific=True,
-            ),
-            0x0009: foundation.ZCLCommandDef(
-                "release",
-                {
-                    "param1": t.int16s,
-                },
-                is_manufacturer_specific=True,
-            ),
-        }
-    )
+    class ServerCommandDefs(Scenes.ServerCommandDefs):
+        """Server command definitions."""
+
+        press = foundation.ZCLCommandDef(
+            id=0x0007,
+            schema={"param1": t.int16s, "param2": t.int8s, "param3": t.int8s},
+            is_manufacturer_specific=True,
+        )
+        hold = foundation.ZCLCommandDef(
+            id=0x0008,
+            schema={"param1": t.int16s, "param2": t.int8s},
+            is_manufacturer_specific=True,
+        )
+        release = foundation.ZCLCommandDef(
+            id=0x0009,
+            schema={"param1": t.int16s},
+            is_manufacturer_specific=True,
+        )
 
 
 class ShortcutV1Cluster(EventableCluster):

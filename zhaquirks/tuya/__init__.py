@@ -13,12 +13,12 @@ from zigpy.quirks import BaseCustomDevice, CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.typing import AddressingMode
 from zigpy.zcl import BaseAttributeDefs, foundation
-from zigpy.zcl.foundation import ZCLAttributeDef
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import Basic, LevelControl, OnOff, PowerConfiguration
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
 from zigpy.zcl.clusters.smartenergy import Metering
+from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks import Bus, EventableCluster, LocalDataCluster
 from zhaquirks.const import (
@@ -1038,6 +1038,7 @@ class TuyaSmartRemoteOnOffCluster(OnOff, EventableCluster):
     }
     name = "TS004X_cluster"
     ep_attribute = "TS004X_cluster"
+
     class AttributeDefs(OnOff.AttributeDefs):
         """Attribute definitions."""
 
@@ -1050,17 +1051,19 @@ class TuyaSmartRemoteOnOffCluster(OnOff, EventableCluster):
         self.last_tsn = -1
         super().__init__(*args, **kwargs)
 
-    server_commands = OnOff.server_commands.copy()
-    server_commands.update(
-        {
-            0xFC: foundation.ZCLCommandDef(
-                "rotate_type", {"rotate_type": t.uint8_t}, is_manufacturer_specific=True
-            ),
-            0xFD: foundation.ZCLCommandDef(
-                "press_type", {"press_type": t.uint8_t}, is_manufacturer_specific=True
-            ),
-        }
-    )
+    class ServerCommandDefs(OnOff.ServerCommandDefs):
+        """Server command definitions."""
+
+        rotate_type = foundation.ZCLCommandDef(
+            id=0xFC,
+            schema={"rotate_type": t.uint8_t},
+            is_manufacturer_specific=True,
+        )
+        press_type = foundation.ZCLCommandDef(
+            id=0xFD,
+            schema={"press_type": t.uint8_t},
+            is_manufacturer_specific=True,
+        )
 
     def handle_cluster_request(
         self,

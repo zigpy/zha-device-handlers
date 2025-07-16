@@ -56,12 +56,14 @@ class TuyaBulbType(t.enum8):
 class F000LevelControlCluster(NoManufacturerCluster, LevelControl):
     """LevelControlCluster that reports to attrid 0xF000."""
 
-    server_commands = LevelControl.server_commands.copy()
-    server_commands[TUYA_CUSTOM_LEVEL_COMMAND] = foundation.ZCLCommandDef(
-        "moveToLevelTuya",
-        {"payload": TuyaLevelPayload},
-        is_manufacturer_specific=False,
-    )
+    class ServerCommandDefs(LevelControl.ServerCommandDefs):
+        """Server command definitions."""
+
+        moveToLevelTuya = foundation.ZCLCommandDef(
+            id=TUYA_CUSTOM_LEVEL_COMMAND,
+            schema={"payload": TuyaLevelPayload},
+            is_manufacturer_specific=False,
+        )
 
     class AttributeDefs(LevelControl.AttributeDefs):
         """Attribute definitions."""

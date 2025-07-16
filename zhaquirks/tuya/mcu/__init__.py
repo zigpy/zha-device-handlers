@@ -8,8 +8,8 @@ from typing import Any, Final
 
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.foundation import ZCLAttributeDef
 from zigpy.zcl.clusters.general import LevelControl, OnOff
+from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks import Bus, DoublingPowerConfigurationCluster
 
@@ -163,36 +163,28 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
         tsn: t.uint8_t
         status: t.LVBytes
 
-    client_commands = TuyaNewManufCluster.client_commands.copy()
-    client_commands.update(
-        {
-            TUYA_MCU_VERSION_RSP: foundation.ZCLCommandDef(
-                "mcu_version_response",
-                {"version": MCUVersion},
-                is_manufacturer_specific=True,
-            ),
-        }
-    )
-    client_commands.update(
-        {
-            TUYA_MCU_CONNECTION_STATUS: foundation.ZCLCommandDef(
-                "mcu_connection_status",
-                {"payload": TuyaConnectionStatus},
-                is_manufacturer_specific=True,
-            ),
-        }
-    )
+    class ClientCommandDefs(TuyaNewManufCluster.ClientCommandDefs):
+        """Client command definitions."""
 
-    server_commands = TuyaNewManufCluster.server_commands.copy()
-    server_commands.update(
-        {
-            TUYA_MCU_CONNECTION_STATUS: foundation.ZCLCommandDef(
-                "mcu_connection_status_rsp",
-                {"payload": TuyaConnectionStatus},
-                is_manufacturer_specific=True,
-            ),
-        }
-    )
+        mcu_version_response = foundation.ZCLCommandDef(
+            id=TUYA_MCU_VERSION_RSP,
+            schema={"version": MCUVersion},
+            is_manufacturer_specific=True,
+        )
+        mcu_connection_status = foundation.ZCLCommandDef(
+            id=TUYA_MCU_CONNECTION_STATUS,
+            schema={"payload": TuyaConnectionStatus},
+            is_manufacturer_specific=True,
+        )
+
+    class ServerCommandDefs(TuyaNewManufCluster.ServerCommandDefs):
+        """Server command definitions."""
+
+        mcu_connection_status_rsp = foundation.ZCLCommandDef(
+            id=TUYA_MCU_CONNECTION_STATUS,
+            schema={"payload": TuyaConnectionStatus},
+            is_manufacturer_specific=True,
+        )
 
     def __init__(self, *args, **kwargs):
         """Init."""

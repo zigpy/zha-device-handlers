@@ -6,7 +6,6 @@ from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.foundation import ZCLAttributeDef
 from zigpy.zcl.clusters.general import (
     Basic,
     DeviceTemperature,
@@ -17,6 +16,7 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
+from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -148,12 +148,13 @@ class TuyaRCBOOnOff(TuyaOnOff, TuyaAttributesCluster):
         countdown_timer: Final = ZCLAttributeDef(id=0xF090, type=t.uint32_t)
         trip: Final = ZCLAttributeDef(id=0xF740, type=t.Bool)
 
-    server_commands = TuyaOnOff.server_commands.copy()
-    server_commands.update(
-        {
-            0x74: foundation.ZCLCommandDef("clear_locking", {}),
-        }
-    )
+    class ServerCommandDefs(TuyaOnOff.ServerCommandDefs):
+        """Server command definitions."""
+
+        clear_locking = foundation.ZCLCommandDef(
+            id=0x74,
+            schema={},
+        )
 
     async def command(
         self,
@@ -220,7 +221,9 @@ class TuyaRCBOElectricalMeasurement(ElectricalMeasurement, TuyaAttributesCluster
         self_test_auto_days: Final = ZCLAttributeDef(id=0xF6D0, type=t.uint8_t)
         self_test_auto_hours: Final = ZCLAttributeDef(id=0xF6D1, type=t.uint8_t)
         self_test_auto: Final = ZCLAttributeDef(id=0xF6D2, type=t.Bool)
-        over_leakage_current_threshold: Final = ZCLAttributeDef(id=0xF6D3, type=t.uint16_t)
+        over_leakage_current_threshold: Final = ZCLAttributeDef(
+            id=0xF6D3, type=t.uint16_t
+        )
         over_leakage_current_trip: Final = ZCLAttributeDef(id=0xF6D5, type=t.Bool)
         over_leakage_current_alarm: Final = ZCLAttributeDef(id=0xF6D6, type=t.Bool)
         self_test: Final = ZCLAttributeDef(id=0xF6D7, type=SelfTest)
@@ -276,12 +279,13 @@ class TuyaRCBOMetering(Metering, TuyaAttributesCluster):
         cost_parameters_enabled: Final = ZCLAttributeDef(id=0xF6C1, type=t.Bool)
         meter_number: Final = ZCLAttributeDef(id=0xF720, type=t.LimitedCharString(20))
 
-    server_commands = Metering.server_commands.copy()
-    server_commands.update(
-        {
-            0x73: foundation.ZCLCommandDef("clear_device_data", {}),
-        }
-    )
+    class ServerCommandDefs(Metering.ServerCommandDefs):
+        """Server command definitions."""
+
+        clear_device_data = foundation.ZCLCommandDef(
+            id=0x73,
+            schema={},
+        )
 
     async def command(
         self,
