@@ -386,40 +386,31 @@ class TuyaManufCluster(CustomCluster):
 
     server_commands = {
         0x0000: foundation.ZCLCommandDef(
-            "set_data", {"param": Command}, False, is_manufacturer_specific=True
+            "set_data", {"param": Command}, is_manufacturer_specific=True
         ),
         0x0010: foundation.ZCLCommandDef(
-            "mcu_version_req",
-            {"param": t.uint16_t},
-            False,
-            is_manufacturer_specific=True,
+            "mcu_version_req", {"param": t.uint16_t}, is_manufacturer_specific=True
         ),
         0x0024: foundation.ZCLCommandDef(
-            "set_time", {"param": TuyaTimePayload}, False, is_manufacturer_specific=True
+            "set_time", {"param": TuyaTimePayload}, is_manufacturer_specific=True
         ),
     }
 
     client_commands = {
         0x0001: foundation.ZCLCommandDef(
-            "get_data", {"param": Command}, True, is_manufacturer_specific=True
+            "get_data", {"param": Command}, is_manufacturer_specific=True
         ),
         0x0002: foundation.ZCLCommandDef(
-            "set_data_response", {"param": Command}, True, is_manufacturer_specific=True
+            "set_data_response", {"param": Command}, is_manufacturer_specific=True
         ),
         0x0006: foundation.ZCLCommandDef(
-            "active_status_report",
-            {"param": Command},
-            True,
-            is_manufacturer_specific=True,
+            "active_status_report", {"param": Command}, is_manufacturer_specific=True
         ),
         0x0011: foundation.ZCLCommandDef(
-            "mcu_version_rsp",
-            {"param": MCUVersionRsp},
-            True,
-            is_manufacturer_specific=True,
+            "mcu_version_rsp", {"param": MCUVersionRsp}, is_manufacturer_specific=True
         ),
         0x0024: foundation.ZCLCommandDef(
-            "set_time_request", {"param": t.data16}, True, is_manufacturer_specific=True
+            "set_time_request", {"param": t.data16}, is_manufacturer_specific=True
         ),
     }
 
@@ -1058,16 +1049,10 @@ class TuyaSmartRemoteOnOffCluster(OnOff, EventableCluster):
     server_commands.update(
         {
             0xFC: foundation.ZCLCommandDef(
-                "rotate_type",
-                {"rotate_type": t.uint8_t},
-                False,
-                is_manufacturer_specific=True,
+                "rotate_type", {"rotate_type": t.uint8_t}, is_manufacturer_specific=True
             ),
             0xFD: foundation.ZCLCommandDef(
-                "press_type",
-                {"press_type": t.uint8_t},
-                False,
-                is_manufacturer_specific=True,
+                "press_type", {"press_type": t.uint8_t}, is_manufacturer_specific=True
             ),
         }
     )
@@ -1515,37 +1500,31 @@ class TuyaNewManufCluster(CustomCluster):
 
     server_commands = {
         TUYA_QUERY_DATA: foundation.ZCLCommandDef(
-            "query_data", {}, False, is_manufacturer_specific=True
+            "query_data", {}, is_manufacturer_specific=True
         ),
         TUYA_SET_DATA: foundation.ZCLCommandDef(
-            "set_data", {"data": TuyaCommand}, False, is_manufacturer_specific=True
+            "set_data", {"data": TuyaCommand}, is_manufacturer_specific=True
         ),
         TUYA_SEND_DATA: foundation.ZCLCommandDef(
-            "send_data", {"data": TuyaCommand}, False, is_manufacturer_specific=True
+            "send_data", {"data": TuyaCommand}, is_manufacturer_specific=True
         ),
         TUYA_SET_TIME: foundation.ZCLCommandDef(
-            "set_time", {"time": TuyaTimePayload}, False, is_manufacturer_specific=True
+            "set_time", {"time": TuyaTimePayload}, is_manufacturer_specific=True
         ),
     }
 
     client_commands = {
         TUYA_GET_DATA: foundation.ZCLCommandDef(
-            "get_data", {"data": TuyaCommand}, True, is_manufacturer_specific=True
+            "get_data", {"data": TuyaCommand}, is_manufacturer_specific=True
         ),
         TUYA_SET_DATA_RESPONSE: foundation.ZCLCommandDef(
-            "set_data_response",
-            {"data": TuyaCommand},
-            True,
-            is_manufacturer_specific=True,
+            "set_data_response", {"data": TuyaCommand}, is_manufacturer_specific=True
         ),
         TUYA_ACTIVE_STATUS_RPT: foundation.ZCLCommandDef(
-            "active_status_report",
-            {"data": TuyaCommand},
-            True,
-            is_manufacturer_specific=True,
+            "active_status_report", {"data": TuyaCommand}, is_manufacturer_specific=True
         ),
         TUYA_SET_TIME: foundation.ZCLCommandDef(
-            "set_time_request", {"data": t.data16}, True, is_manufacturer_specific=True
+            "set_time_request", {"data": t.data16}, is_manufacturer_specific=True
         ),
     }
 

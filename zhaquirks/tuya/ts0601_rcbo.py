@@ -154,7 +154,7 @@ class TuyaRCBOOnOff(TuyaOnOff, TuyaAttributesCluster):
     server_commands = TuyaOnOff.server_commands.copy()
     server_commands.update(
         {
-            0x74: foundation.ZCLCommandDef("clear_locking", {}, False),
+            0x74: foundation.ZCLCommandDef("clear_locking", {}),
         }
     )
 
@@ -288,7 +288,7 @@ class TuyaRCBOMetering(Metering, TuyaAttributesCluster):
     server_commands = Metering.server_commands.copy()
     server_commands.update(
         {
-            0x73: foundation.ZCLCommandDef("clear_device_data", {}, False),
+            0x73: foundation.ZCLCommandDef("clear_device_data", {}),
         }
     )
 

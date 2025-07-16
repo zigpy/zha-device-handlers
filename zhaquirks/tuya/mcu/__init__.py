@@ -168,7 +168,6 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
             TUYA_MCU_VERSION_RSP: foundation.ZCLCommandDef(
                 "mcu_version_response",
                 {"version": MCUVersion},
-                True,
                 is_manufacturer_specific=True,
             ),
         }
@@ -178,7 +177,6 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
             TUYA_MCU_CONNECTION_STATUS: foundation.ZCLCommandDef(
                 "mcu_connection_status",
                 {"payload": TuyaConnectionStatus},
-                True,
                 is_manufacturer_specific=True,
             ),
         }
@@ -190,7 +188,6 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
             TUYA_MCU_CONNECTION_STATUS: foundation.ZCLCommandDef(
                 "mcu_connection_status_rsp",
                 {"payload": TuyaConnectionStatus},
-                False,
                 is_manufacturer_specific=True,
             ),
         }

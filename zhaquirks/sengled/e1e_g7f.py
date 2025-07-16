@@ -78,7 +78,6 @@ class SengledE1EG7FManufacturerSpecificCluster(CustomCluster):
                 "param3": t.uint8_t,
                 "param4": t.uint8_t,
             },
-            direction=foundation.Direction.Client_to_Server,
             is_manufacturer_specific=True,
         )
     }

@@ -14,6 +14,6 @@ class LedvanceLightCluster(CustomCluster):
     name = "LedvanceLight"
     server_commands = {
         0x0001: foundation.ZCLCommandDef(
-            "save_defaults", {}, False, is_manufacturer_specific=True
+            "save_defaults", {}, is_manufacturer_specific=True
         )
     }

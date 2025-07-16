@@ -284,7 +284,6 @@ class XBeeRemoteATRequest(LocalDataCluster):
             name=v[0].replace("%V", "PercentV").replace("V+", "VPlus"),
             schema={"param?": v[1]} if v[1] else {},
             is_manufacturer_specific=True,
-            direction=foundation.Direction.Client_to_Server,
         )
         for k, v in zip(range(1, len(AT_COMMANDS) + 1), AT_COMMANDS.items())
     }
@@ -473,7 +472,6 @@ class XBeeRemoteATResponse(LocalDataCluster):
                 "value": Bytes,
             },
             is_manufacturer_specific=True,
-            direction=foundation.Direction.Client_to_Server,
         )
     }
 
@@ -527,7 +525,6 @@ class XBeeDigitalIOCluster(LocalDataCluster, BinaryInput):
             name="io_sample",
             schema={"io_sample": IOSample},
             is_manufacturer_specific=True,
-            direction=foundation.Direction.Client_to_Server,
         )
     }
 
@@ -544,7 +541,6 @@ class XBeeEventRelayCluster(EventableCluster, LocalDataCluster, LevelControl):
             + "_command_response",
             schema={"response?": v[1]} if v[1] else {},
             is_manufacturer_specific=True,
-            direction=foundation.Direction.Client_to_Server,
         )
         for k, v in zip(range(1, len(AT_COMMANDS) + 1), AT_COMMANDS.items())
     }
@@ -552,7 +548,6 @@ class XBeeEventRelayCluster(EventableCluster, LocalDataCluster, LevelControl):
         name="receive_data",
         schema={"data": str},
         is_manufacturer_specific=True,
-        direction=foundation.Direction.Client_to_Server,
     )
 
 
@@ -612,7 +607,6 @@ class XBeeSerialDataCluster(LocalDataCluster):
             name="send_data",
             schema={"data": BinaryString},
             is_manufacturer_specific=True,
-            direction=foundation.Direction.Server_to_Client,
         )
     }
     server_commands = {
@@ -620,7 +614,6 @@ class XBeeSerialDataCluster(LocalDataCluster):
             name="receive_data",
             schema={"data": BinaryString},
             is_manufacturer_specific=True,
-            direction=foundation.Direction.Client_to_Server,
         )
     }
 

@@ -131,13 +131,11 @@ class TerncyRawCluster(CustomCluster):
         0x00: foundation.ZCLCommandDef(
             "click_event",
             {"count": t.uint8_t, "state": t.uint8_t},
-            False,
             is_manufacturer_specific=True,
         ),
         0x04: foundation.ZCLCommandDef(
             "motion_event",
             {"param1": t.uint8_t, "param2": t.uint8_t, "state": t.uint8_t},
-            False,
             is_manufacturer_specific=True,
         ),
     }

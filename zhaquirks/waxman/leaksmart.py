@@ -66,7 +66,6 @@ class WAXMANApplianceEventAlerts(CustomCluster, ApplianceEventAlerts):
         WAXMAN_CMDID: foundation.ZCLCommandDef(
             "alerts_notification",
             {"param1": t.uint8_t, "state": t.bitmap24},
-            False,
             is_manufacturer_specific=True,
         )
     }

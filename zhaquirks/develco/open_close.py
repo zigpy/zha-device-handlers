@@ -50,7 +50,6 @@ class DevelcoIASZone(CustomCluster, IasZone):
             "zone_id?": t.uint8_t,
             "delay?": t.uint16_t,
         },
-        False,
         is_manufacturer_specific=True,
     )
 

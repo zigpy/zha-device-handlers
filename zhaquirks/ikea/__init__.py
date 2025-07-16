@@ -38,13 +38,11 @@ class ScenesCluster(CustomCluster, Scenes):
             0x0007: foundation.ZCLCommandDef(
                 "press",
                 {"param1": t.int16s, "param2": t.int8s, "param3": t.int8s},
-                False,
                 is_manufacturer_specific=True,
             ),
             0x0008: foundation.ZCLCommandDef(
                 "hold",
                 {"param1": t.int16s, "param2": t.int8s},
-                False,
                 is_manufacturer_specific=True,
             ),
             0x0009: foundation.ZCLCommandDef(
@@ -52,7 +50,6 @@ class ScenesCluster(CustomCluster, Scenes):
                 {
                     "param1": t.int16s,
                 },
-                False,
                 is_manufacturer_specific=True,
             ),
         }
@@ -71,7 +68,6 @@ class ShortcutV1Cluster(EventableCluster):
                 "shortcut_button": t.int8s,
                 "shortcut_event": t.int8s,
             },
-            False,
             is_manufacturer_specific=True,
         ),
     }
@@ -88,7 +84,6 @@ class ShortcutV2Cluster(EventableCluster):
             {
                 "new_position": t.int8s,
             },
-            False,
             is_manufacturer_specific=True,
         ),
         0x01: foundation.ZCLCommandDef(
@@ -96,7 +91,6 @@ class ShortcutV2Cluster(EventableCluster):
             {
                 "new_position": t.int8s,
             },
-            False,
             is_manufacturer_specific=True,
         ),
         0x02: foundation.ZCLCommandDef(
@@ -104,7 +98,6 @@ class ShortcutV2Cluster(EventableCluster):
             {
                 "previous_position": t.int8s,
             },
-            False,
             is_manufacturer_specific=True,
         ),
         0x03: foundation.ZCLCommandDef(
@@ -112,7 +105,6 @@ class ShortcutV2Cluster(EventableCluster):
             {
                 "previous_position": t.int8s,
             },
-            False,
             is_manufacturer_specific=True,
         ),
         0x04: foundation.ZCLCommandDef(
@@ -120,7 +112,6 @@ class ShortcutV2Cluster(EventableCluster):
             {
                 "previous_position": t.int8s,
             },
-            False,
             is_manufacturer_specific=True,
         ),
         0x05: foundation.ZCLCommandDef(
@@ -129,7 +120,6 @@ class ShortcutV2Cluster(EventableCluster):
                 "new_position": t.int8s,
                 # "current_number_of_presses_counted": t.int8s, # not implemented
             },
-            False,
             is_manufacturer_specific=True,
         ),
         0x06: foundation.ZCLCommandDef(
@@ -138,7 +128,6 @@ class ShortcutV2Cluster(EventableCluster):
                 "previous_position": t.int8s,
                 "total_number_of_presses_counted": t.int8s,
             },
-            False,
             is_manufacturer_specific=True,
         ),
     }

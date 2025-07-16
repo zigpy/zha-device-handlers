@@ -43,10 +43,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     server_commands.update(
         {
             TUYA_SET_TIME: foundation.ZCLCommandDef(
-                "set_time",
-                {"time": TuyaTimePayload},
-                False,
-                is_manufacturer_specific=False,
+                "set_time", {"time": TuyaTimePayload}, is_manufacturer_specific=False
             ),
         }
     )

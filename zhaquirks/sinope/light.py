@@ -152,7 +152,6 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
         0x54: foundation.ZCLCommandDef(
             "button_press",
             {"command": t.uint8_t},
-            direction=foundation.Direction.Server_to_Client,
             is_manufacturer_specific=True,
         )
     }
