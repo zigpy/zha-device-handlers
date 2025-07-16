@@ -1149,7 +1149,13 @@ class TuyaZBExternalSwitchTypeCluster(CustomCluster):
     name = "Tuya External Switch Type Cluster"
     cluster_id = TUYA_CLUSTER_E001_ID
     ep_attribute = "tuya_external_switch_type"
-    attributes = {0xD030: ("external_switch_type", ExternalSwitchType)}
+
+    class AttributeDefs(BaseAttributeDefs):
+        """Attribute definitions."""
+
+        external_switch_type: Final = ZCLAttributeDef(
+            id=0xD030, type=ExternalSwitchType
+        )
 
 
 # Tuya Zigbee Cluster 0x1888 Implementation
