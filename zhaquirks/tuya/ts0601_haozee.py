@@ -1,8 +1,11 @@
 """Map from manufacturer to standard clusters for thermostatic valves."""
 
+from typing import Final
+
 import zigpy.profiles.zha
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time
+from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -79,42 +82,65 @@ class HY08WEManufCluster(TuyaManufClusterAttributes):
     set_time_offset = 2000
     set_time_local_offset = 1970
 
-    attributes = TuyaManufClusterAttributes.attributes.copy()
-    attributes.update(
-        {
-            HAOZEE_HEATING_ENABLED_ATTR: ("heating_enabled", t.uint8_t),
-            HAOZEE_MAX_TEMP_PROTECTION_ENABLED_ATTR: (
-                "max_temp_protection_enabled",
-                t.uint8_t,
-            ),
-            HAOZEE_MIN_TEMP_PROTECTION_ENABLED_ATTR: (
-                "min_temp_protection_enabled",
-                t.uint8_t,
-            ),
-            HAOZEE_ENABLED_ATTR: ("enabled", t.uint8_t),
-            HAOZEE_CHILD_LOCK_ATTR: ("child_lock", t.uint8_t),
-            HAOZEE_EXT_TEMP_ATTR: ("external_temperature", t.uint32_t),
-            HAOZEE_AWAY_DAYS_ATTR: ("away_duration_days", t.uint32_t),
-            HAOZEE_AWAY_TEMP_ATTR: ("away_mode_temperature", t.uint32_t),
-            HAOZEE_TEMP_CALIBRATION_ATTR: ("temperature_calibration", t.int32s),
-            HAOZEE_TEMP_HYSTERESIS_ATTR: ("hysterisis_temperature", t.uint32_t),
-            HAOZEE_TEMP_PROTECT_HYSTERESIS_ATTR: (
-                "hysterisis_protection_temperature",
-                t.uint32_t,
-            ),
-            HAOZEE_MAX_PROTECT_TEMP_ATTR: ("max_protection_temperature", t.uint32_t),
-            HAOZEE_MIN_PROTECT_TEMP_ATTR: ("min_protection_temperature", t.uint32_t),
-            HAOZEE_MAX_TEMP_LIMIT_ATTR: ("max_temperature", t.uint32_t),
-            HAOZEE_MIN_TEMP_LIMIT_ATTR: ("min_temperature", t.uint32_t),
-            HAOZEE_TARGET_TEMP_ATTR: ("target_temperature", t.uint32_t),
-            HAOZEE_CURRENT_ROOM_TEMP_ATTR: ("internal_temperature", t.uint32_t),
-            HAOZEE_SENSOR_TYPE_ATTR: ("sensor_settings", t.uint8_t),
-            HAOZEE_POWERON_BEHAVIOR_ATTR: ("poweron_behavior", t.uint8_t),
-            HAOZEE_WEEKFORMAT: ("week_format", t.uint8_t),
-            HAOZEE_CURRENT_MODE_ATTR: ("mode", t.uint8_t),
-            HAOZEE_FAULT_ATTR: ("fault", t.uint8_t),
-        }
-    )
+    class AttributeDefs(TuyaManufClusterAttributes.AttributeDefs):
+        """Attribute definitions."""
+
+        heating_enabled: Final = ZCLAttributeDef(
+            id=HAOZEE_HEATING_ENABLED_ATTR, type=t.uint8_t
+        )
+        max_temp_protection_enabled: Final = ZCLAttributeDef(
+            id=HAOZEE_MAX_TEMP_PROTECTION_ENABLED_ATTR, type=t.uint8_t
+        )
+        min_temp_protection_enabled: Final = ZCLAttributeDef(
+            id=HAOZEE_MIN_TEMP_PROTECTION_ENABLED_ATTR, type=t.uint8_t
+        )
+        enabled: Final = ZCLAttributeDef(id=HAOZEE_ENABLED_ATTR, type=t.uint8_t)
+        child_lock: Final = ZCLAttributeDef(id=HAOZEE_CHILD_LOCK_ATTR, type=t.uint8_t)
+        external_temperature: Final = ZCLAttributeDef(
+            id=HAOZEE_EXT_TEMP_ATTR, type=t.uint32_t
+        )
+        away_duration_days: Final = ZCLAttributeDef(
+            id=HAOZEE_AWAY_DAYS_ATTR, type=t.uint32_t
+        )
+        away_mode_temperature: Final = ZCLAttributeDef(
+            id=HAOZEE_AWAY_TEMP_ATTR, type=t.uint32_t
+        )
+        temperature_calibration: Final = ZCLAttributeDef(
+            id=HAOZEE_TEMP_CALIBRATION_ATTR, type=t.int32s
+        )
+        hysterisis_temperature: Final = ZCLAttributeDef(
+            id=HAOZEE_TEMP_HYSTERESIS_ATTR, type=t.uint32_t
+        )
+        hysterisis_protection_temperature: Final = ZCLAttributeDef(
+            id=HAOZEE_TEMP_PROTECT_HYSTERESIS_ATTR, type=t.uint32_t
+        )
+        max_protection_temperature: Final = ZCLAttributeDef(
+            id=HAOZEE_MAX_PROTECT_TEMP_ATTR, type=t.uint32_t
+        )
+        min_protection_temperature: Final = ZCLAttributeDef(
+            id=HAOZEE_MIN_PROTECT_TEMP_ATTR, type=t.uint32_t
+        )
+        max_temperature: Final = ZCLAttributeDef(
+            id=HAOZEE_MAX_TEMP_LIMIT_ATTR, type=t.uint32_t
+        )
+        min_temperature: Final = ZCLAttributeDef(
+            id=HAOZEE_MIN_TEMP_LIMIT_ATTR, type=t.uint32_t
+        )
+        target_temperature: Final = ZCLAttributeDef(
+            id=HAOZEE_TARGET_TEMP_ATTR, type=t.uint32_t
+        )
+        internal_temperature: Final = ZCLAttributeDef(
+            id=HAOZEE_CURRENT_ROOM_TEMP_ATTR, type=t.uint32_t
+        )
+        sensor_settings: Final = ZCLAttributeDef(
+            id=HAOZEE_SENSOR_TYPE_ATTR, type=t.uint8_t
+        )
+        poweron_behavior: Final = ZCLAttributeDef(
+            id=HAOZEE_POWERON_BEHAVIOR_ATTR, type=t.uint8_t
+        )
+        week_format: Final = ZCLAttributeDef(id=HAOZEE_WEEKFORMAT, type=t.uint8_t)
+        mode: Final = ZCLAttributeDef(id=HAOZEE_CURRENT_MODE_ATTR, type=t.uint8_t)
+        fault: Final = ZCLAttributeDef(id=HAOZEE_FAULT_ATTR, type=t.uint8_t)
 
     DIRECT_MAPPED_ATTRS = {
         HAOZEE_CURRENT_ROOM_TEMP_ATTR: ("local_temp", lambda value: value * 10),
