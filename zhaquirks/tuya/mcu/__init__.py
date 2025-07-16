@@ -4,10 +4,11 @@ from __future__ import annotations
 
 from collections.abc import Callable
 import datetime
-from typing import Any
+from typing import Any, Final
 
 import zigpy.types as t
 from zigpy.zcl import foundation
+from zigpy.zcl.foundation import ZCLAttributeDef
 from zigpy.zcl.clusters.general import LevelControl, OnOff
 
 from zhaquirks import Bus, DoublingPowerConfigurationCluster
@@ -505,13 +506,11 @@ class TuyaOnOffManufCluster(TuyaMCUCluster):
 class MoesSwitchManufCluster(TuyaOnOffManufCluster):
     """On/Off Tuya cluster with extra device attributes."""
 
-    attributes = TuyaOnOffManufCluster.attributes.copy()
-    attributes.update(
-        {
-            0x8001: ("backlight_mode", MoesBacklight),
-            0x8002: ("power_on_state", PowerOnState),
-        }
-    )
+    class AttributeDefs(TuyaOnOffManufCluster.AttributeDefs):
+        """Attribute definitions."""
+
+        backlight_mode: Final = ZCLAttributeDef(id=0x8001, type=MoesBacklight)
+        power_on_state: Final = ZCLAttributeDef(id=0x8002, type=PowerOnState)
 
     dp_to_attribute: dict[int, DPToAttributeMapping] = (
         TuyaOnOffManufCluster.dp_to_attribute.copy()
@@ -618,14 +617,15 @@ class TuyaLevelControl(LevelControl, TuyaLocalCluster):
 class TuyaInWallLevelControl(TuyaAttributesCluster, TuyaLevelControl):
     """Tuya Level cluster for inwall dimmable device."""
 
-    # Not sure if these are 'inwall' specific attributes or common to dimmers
-    attributes = TuyaLevelControl.attributes.copy()
-    attributes.update(
-        {
-            0xEF01: ("minimum_level", t.uint32_t, True),
-            0xEF02: ("bulb_type", t.enum8, True),
-        }
-    )
+    class AttributeDefs(TuyaLevelControl.AttributeDefs):
+        """Attribute definitions."""
+
+        minimum_level: Final = ZCLAttributeDef(
+            id=0xEF01, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        bulb_type: Final = ZCLAttributeDef(
+            id=0xEF02, type=t.enum8, is_manufacturer_specific=True
+        )
 
 
 class TuyaLevelControlManufCluster(TuyaMCUCluster):

@@ -7,12 +7,13 @@ import dataclasses
 import datetime
 import enum
 import logging
-from typing import Any
+from typing import Any, Final
 
 from zigpy.quirks import BaseCustomDevice, CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.typing import AddressingMode
 from zigpy.zcl import BaseAttributeDefs, foundation
+from zigpy.zcl.foundation import ZCLAttributeDef
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import Basic, LevelControl, OnOff, PowerConfiguration
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
@@ -1013,11 +1014,13 @@ class PowerOnState(t.enum8):
 class TuyaZBOnOffAttributeCluster(CustomCluster, OnOff):
     """Tuya Zigbee On Off cluster with extra attributes."""
 
-    attributes = OnOff.attributes.copy()
-    attributes.update({0x8000: ("child_lock", t.Bool)})
-    attributes.update({0x8001: ("backlight_mode", SwitchBackLight)})
-    attributes.update({0x8002: ("power_on_state", PowerOnState)})
-    attributes.update({0x8004: ("switch_mode", SwitchMode)})
+    class AttributeDefs(OnOff.AttributeDefs):
+        """Attribute definitions."""
+
+        child_lock: Final = ZCLAttributeDef(id=0x8000, type=t.Bool)
+        backlight_mode: Final = ZCLAttributeDef(id=0x8001, type=SwitchBackLight)
+        power_on_state: Final = ZCLAttributeDef(id=0x8002, type=PowerOnState)
+        switch_mode: Final = ZCLAttributeDef(id=0x8004, type=SwitchMode)
 
 
 class TuyaSmartRemoteOnOffCluster(OnOff, EventableCluster):
@@ -1035,10 +1038,12 @@ class TuyaSmartRemoteOnOffCluster(OnOff, EventableCluster):
     }
     name = "TS004X_cluster"
     ep_attribute = "TS004X_cluster"
-    attributes = OnOff.attributes.copy()
-    attributes.update({0x8001: ("backlight_mode", SwitchBackLight)})
-    attributes.update({0x8002: ("power_on_state", PowerOnState)})
-    attributes.update({0x8004: ("switch_mode", SwitchMode)})
+    class AttributeDefs(OnOff.AttributeDefs):
+        """Attribute definitions."""
+
+        backlight_mode: Final = ZCLAttributeDef(id=0x8001, type=SwitchBackLight)
+        power_on_state: Final = ZCLAttributeDef(id=0x8002, type=PowerOnState)
+        switch_mode: Final = ZCLAttributeDef(id=0x8004, type=SwitchMode)
 
     def __init__(self, *args, **kwargs):
         """Init."""
@@ -1223,10 +1228,11 @@ class TuyaManufacturerWindowCover(TuyaManufCluster):
 class TuyaWindowCoverControl(LocalDataCluster, WindowCovering):
     """Manufacturer Specific Cluster of Device cover."""
 
-    # Add additional attributes for direction
-    attributes = WindowCovering.attributes.copy()
-    attributes.update({ATTR_COVER_DIRECTION: ("motor_direction", t.Bool)})
-    attributes.update({ATTR_COVER_INVERTED: ("cover_inverted", t.Bool)})
+    class AttributeDefs(WindowCovering.AttributeDefs):
+        """Attribute definitions."""
+
+        motor_direction: Final = ZCLAttributeDef(id=ATTR_COVER_DIRECTION, type=t.Bool)
+        cover_inverted: Final = ZCLAttributeDef(id=ATTR_COVER_INVERTED, type=t.Bool)
 
     def __init__(self, *args, **kwargs):
         """Initialize instance."""
