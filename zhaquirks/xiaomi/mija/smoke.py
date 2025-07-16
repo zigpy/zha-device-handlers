@@ -13,6 +13,8 @@ Medium Sensitivity: 0x0102000011010003,
 Low Sensitivity: 0x0103000011010003.
 """
 
+from typing import Final
+
 from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl.clusters.general import (
@@ -23,6 +25,7 @@ from zigpy.zcl.clusters.general import (
     PowerConfiguration,
 )
 from zigpy.zcl.clusters.security import IasZone
+from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks import CustomCluster
 from zhaquirks.const import (
@@ -53,13 +56,15 @@ class XiaomiSmokeIASCluster(CustomCluster, IasZone):
         IasZone.attributes_by_name["zone_type"].id: IasZone.ZoneType.Fire_Sensor
     }
 
-    attributes = IasZone.attributes.copy()
-    attributes.update(
-        {
-            0xFFF0: ("get_status", t.uint32_t, True),
-            0xFFF1: ("set_options", t.uint32_t, True),
-        }
-    )
+    class AttributeDefs(IasZone.AttributeDefs):
+        """Attribute definitions."""
+
+        get_status: Final = ZCLAttributeDef(
+            id=0xFFF0, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        set_options: Final = ZCLAttributeDef(
+            id=0xFFF1, type=t.uint32_t, is_manufacturer_specific=True
+        )
 
 
 class MijiaHoneywellSmokeDetectorSensor(XiaomiQuickInitDevice):

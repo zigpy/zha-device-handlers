@@ -49,12 +49,15 @@ class PhilipsOccupancySensing(CustomCluster):
     cluster_id = OccupancySensing.cluster_id
     ep_attribute = "philips_occupancy"
 
-    attributes = OccupancySensing.attributes.copy()
-    attributes[0x0030] = ("sensitivity", t.uint8_t, True)
-    attributes[0x0031] = ("sensitivity_max", t.uint8_t, True)
+    class AttributeDefs(OccupancySensing.AttributeDefs):
+        """Attribute definitions."""
 
-    server_commands = OccupancySensing.server_commands.copy()
-    client_commands = OccupancySensing.client_commands.copy()
+        sensitivity: Final = ZCLAttributeDef(
+            id=0x0030, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        sensitivity_max: Final = ZCLAttributeDef(
+            id=0x0031, type=t.uint8_t, is_manufacturer_specific=True
+        )
 
 
 class PhilipsBasicCluster(CustomCluster, Basic):
