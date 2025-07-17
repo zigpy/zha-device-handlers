@@ -57,13 +57,14 @@ class ZigfredCluster(CustomCluster):
     cluster_id = ZIGFRED_CLUSTER_ID
     buttons_attribute_id = ZIGFRED_CLUSTER_BUTTONS_ATTRIBUTE_ID
 
-    server_commands = {
-        ZIGFRED_CLUSTER_COMMAND_BUTTON_EVENT: foundation.ZCLCommandDef(
-            "button_event",
-            {"param1": t.uint32_t},
+    class ServerCommandDefs:
+        """Server command definitions."""
+        
+        button_event = foundation.ZCLCommandDef(
+            id=ZIGFRED_CLUSTER_COMMAND_BUTTON_EVENT,
+            schema={"param1": t.uint32_t},
             is_manufacturer_specific=True,
-        ),
-    }
+        )
 
     def _process_button_event(self, value: t.uint32_t):
         button_lookup = {

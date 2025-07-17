@@ -38,15 +38,14 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     set_time_offset = 1970
     set_time_local_offset = 1970
 
-    # Deepcopy required to override 'set_time', without, it will revert
-    server_commands = copy.deepcopy(TuyaMCUCluster.server_commands)
-    server_commands.update(
-        {
-            TUYA_SET_TIME: foundation.ZCLCommandDef(
-                "set_time", {"time": TuyaTimePayload}, is_manufacturer_specific=False
-            ),
-        }
-    )
+    class ServerCommandDefs(TuyaMCUCluster.ServerCommandDefs):
+        """Server command definitions."""
+
+        set_time = foundation.ZCLCommandDef(
+            id=TUYA_SET_TIME,
+            schema={"time": TuyaTimePayload},
+            is_manufacturer_specific=False,
+        )
 
 
 (

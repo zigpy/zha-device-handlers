@@ -144,10 +144,12 @@ class PhilipsRemoteCluster(CustomCluster):
     cluster_id = 0xFC00
     name = "PhilipsRemoteCluster"
     ep_attribute = "philips_remote_cluster"
-    client_commands = {
-        0x0000: foundation.ZCLCommandDef(
-            "notification",
-            {
+    class ClientCommandDefs:
+        """Client command definitions."""
+        
+        notification = foundation.ZCLCommandDef(
+            id=0x0000,
+            schema={
                 "button": t.uint8_t,
                 "param2": t.uint24_t,
                 "press_type": t.uint8_t,
@@ -156,7 +158,6 @@ class PhilipsRemoteCluster(CustomCluster):
             },
             is_manufacturer_specific=True,
         )
-    }
 
     BUTTONS: dict[int, Button] = {}
 

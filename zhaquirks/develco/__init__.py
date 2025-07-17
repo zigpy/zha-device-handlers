@@ -21,17 +21,19 @@ class DevelcoPowerConfiguration(PowerConfigurationCluster):
 class DevelcoIasZone(CustomCluster, IasZone):
     """Custom IasZone for Develco."""
 
-    client_commands = {
-        0x00: foundation.ZCLCommandDef(
-            "status_change_notification",
-            {
+    class ClientCommandDefs:
+        """Client command definitions."""
+        
+        status_change_notification = foundation.ZCLCommandDef(
+            id=0x00,
+            schema={
                 "zone_status": IasZone.ZoneStatus,
                 "extended_status?": t.bitmap8,
                 "zone_id?": t.uint8_t,
                 "delay?": t.uint16_t,
             },
-        ),
-        0x01: foundation.ZCLCommandDef(
-            "enroll", {"zone_type": IasZone.ZoneType, "manufacturer_code": t.uint16_t}
-        ),
-    }
+        )
+        enroll = foundation.ZCLCommandDef(
+            id=0x01,
+            schema={"zone_type": IasZone.ZoneType, "manufacturer_code": t.uint16_t},
+        )

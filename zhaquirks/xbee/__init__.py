@@ -278,15 +278,21 @@ class XBeeRemoteATRequest(LocalDataCluster):
     """Remote AT Command Request Cluster."""
 
     cluster_id = XBEE_AT_REQUEST_CLUSTER
-    client_commands = {}
-    server_commands = {
-        k: foundation.ZCLCommandDef(
-            name=v[0].replace("%V", "PercentV").replace("V+", "VPlus"),
-            schema={"param?": v[1]} if v[1] else {},
-            is_manufacturer_specific=True,
+    class ServerCommandDefs:
+        """Server command definitions."""
+        pass
+
+    # Dynamically create command definitions
+    for k, v in zip(range(1, len(AT_COMMANDS) + 1), AT_COMMANDS.items()):
+        setattr(
+            ServerCommandDefs,
+            v[0].replace("%V", "PercentV").replace("V+", "VPlus"),
+            foundation.ZCLCommandDef(
+                id=k,
+                schema={"param?": v[1]} if v[1] else {},
+                is_manufacturer_specific=True,
+            )
         )
-        for k, v in zip(range(1, len(AT_COMMANDS) + 1), AT_COMMANDS.items())
-    }
 
     _seq: int = 1
 
@@ -461,10 +467,11 @@ class XBeeRemoteATResponse(LocalDataCluster):
         else:
             super().handle_cluster_request(hdr, args)
 
-    client_commands = {}
-    server_commands = {
-        AT_RESPONSE_CMD: foundation.ZCLCommandDef(
-            name="remote_at_response",
+    class ServerCommandDefs:
+        """Server command definitions."""
+        
+        remote_at_response = foundation.ZCLCommandDef(
+            id=AT_RESPONSE_CMD,
             schema={
                 "frame_id": t.uint8_t,
                 "cmd": ATCommand,
@@ -473,7 +480,6 @@ class XBeeRemoteATResponse(LocalDataCluster):
             },
             is_manufacturer_specific=True,
         )
-    }
 
 
 class XBeeDigitalIOCluster(LocalDataCluster, BinaryInput):
@@ -519,14 +525,14 @@ class XBeeDigitalIOCluster(LocalDataCluster, BinaryInput):
         else:
             super().handle_cluster_request(hdr, args)
 
-    client_commands = {}
-    server_commands = {
-        SAMPLE_DATA_CMD: foundation.ZCLCommandDef(
-            name="io_sample",
+    class ServerCommandDefs:
+        """Server command definitions."""
+        
+        io_sample = foundation.ZCLCommandDef(
+            id=SAMPLE_DATA_CMD,
             schema={"io_sample": IOSample},
             is_manufacturer_specific=True,
         )
-    }
 
 
 # pylint: disable=too-many-ancestors
@@ -534,21 +540,27 @@ class XBeeEventRelayCluster(EventableCluster, LocalDataCluster, LevelControl):
     """A cluster with cluster_id which is allowed to send events."""
 
     attributes = {}
-    client_commands = {}
-    server_commands = {
-        k: foundation.ZCLCommandDef(
-            name=v[0].replace("%V", "PercentV").replace("V+", "VPlus").lower()
-            + "_command_response",
-            schema={"response?": v[1]} if v[1] else {},
+    
+    class ServerCommandDefs:
+        """Server command definitions."""
+        
+        receive_data = foundation.ZCLCommandDef(
+            id=SERIAL_DATA_CMD,
+            schema={"data": str},
             is_manufacturer_specific=True,
         )
-        for k, v in zip(range(1, len(AT_COMMANDS) + 1), AT_COMMANDS.items())
-    }
-    server_commands[SERIAL_DATA_CMD] = foundation.ZCLCommandDef(
-        name="receive_data",
-        schema={"data": str},
-        is_manufacturer_specific=True,
-    )
+
+    # Dynamically create command definitions
+    for k, v in zip(range(1, len(AT_COMMANDS) + 1), AT_COMMANDS.items()):
+        setattr(
+            ServerCommandDefs,
+            v[0].replace("%V", "PercentV").replace("V+", "VPlus").lower() + "_command_response",
+            foundation.ZCLCommandDef(
+                id=k,
+                schema={"response?": v[1]} if v[1] else {},
+                is_manufacturer_specific=True,
+            )
+        )
 
 
 class XBeeSerialDataCluster(LocalDataCluster):
@@ -602,20 +614,24 @@ class XBeeSerialDataCluster(LocalDataCluster):
             super().handle_cluster_request(hdr, args)
 
     attributes = {}
-    client_commands = {
-        SERIAL_DATA_CMD: foundation.ZCLCommandDef(
-            name="send_data",
+    
+    class ClientCommandDefs:
+        """Client command definitions."""
+        
+        send_data = foundation.ZCLCommandDef(
+            id=SERIAL_DATA_CMD,
             schema={"data": BinaryString},
             is_manufacturer_specific=True,
         )
-    }
-    server_commands = {
-        SERIAL_DATA_CMD: foundation.ZCLCommandDef(
-            name="receive_data",
+    
+    class ServerCommandDefs:
+        """Server command definitions."""
+        
+        receive_data = foundation.ZCLCommandDef(
+            id=SERIAL_DATA_CMD,
             schema={"data": BinaryString},
             is_manufacturer_specific=True,
         )
-    }
 
 
 class XBeeCommon(CustomDevice):

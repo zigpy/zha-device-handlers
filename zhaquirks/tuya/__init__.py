@@ -385,35 +385,37 @@ class TuyaManufCluster(CustomCluster):
 
             NOTE: You need to wait for time request before setting it. You can't set time without request."""
 
-    server_commands = {
-        0x0000: foundation.ZCLCommandDef(
-            "set_data", {"param": Command}, is_manufacturer_specific=True
-        ),
-        0x0010: foundation.ZCLCommandDef(
-            "mcu_version_req", {"param": t.uint16_t}, is_manufacturer_specific=True
-        ),
-        0x0024: foundation.ZCLCommandDef(
-            "set_time", {"param": TuyaTimePayload}, is_manufacturer_specific=True
-        ),
-    }
+    class ServerCommandDefs:
+        """Server command definitions."""
+        
+        set_data = foundation.ZCLCommandDef(
+            id=0x0000, schema={"param": Command}, is_manufacturer_specific=True
+        )
+        mcu_version_req = foundation.ZCLCommandDef(
+            id=0x0010, schema={"param": t.uint16_t}, is_manufacturer_specific=True
+        )
+        set_time = foundation.ZCLCommandDef(
+            id=0x0024, schema={"param": TuyaTimePayload}, is_manufacturer_specific=True
+        )
 
-    client_commands = {
-        0x0001: foundation.ZCLCommandDef(
-            "get_data", {"param": Command}, is_manufacturer_specific=True
-        ),
-        0x0002: foundation.ZCLCommandDef(
-            "set_data_response", {"param": Command}, is_manufacturer_specific=True
-        ),
-        0x0006: foundation.ZCLCommandDef(
-            "active_status_report", {"param": Command}, is_manufacturer_specific=True
-        ),
-        0x0011: foundation.ZCLCommandDef(
-            "mcu_version_rsp", {"param": MCUVersionRsp}, is_manufacturer_specific=True
-        ),
-        0x0024: foundation.ZCLCommandDef(
-            "set_time_request", {"param": t.data16}, is_manufacturer_specific=True
-        ),
-    }
+    class ClientCommandDefs:
+        """Client command definitions."""
+        
+        get_data = foundation.ZCLCommandDef(
+            id=0x0001, schema={"param": Command}, is_manufacturer_specific=True
+        )
+        set_data_response = foundation.ZCLCommandDef(
+            id=0x0002, schema={"param": Command}, is_manufacturer_specific=True
+        )
+        active_status_report = foundation.ZCLCommandDef(
+            id=0x0006, schema={"param": Command}, is_manufacturer_specific=True
+        )
+        mcu_version_rsp = foundation.ZCLCommandDef(
+            id=0x0011, schema={"param": MCUVersionRsp}, is_manufacturer_specific=True
+        )
+        set_time_request = foundation.ZCLCommandDef(
+            id=0x0024, schema={"param": t.data16}, is_manufacturer_specific=True
+        )
 
     def __init__(self, *args, **kwargs):
         """Init."""
@@ -1513,35 +1515,37 @@ class TuyaNewManufCluster(CustomCluster):
     class AttributeDefs(BaseAttributeDefs):
         """Attribute Definitions."""
 
-    server_commands = {
-        TUYA_QUERY_DATA: foundation.ZCLCommandDef(
-            "query_data", {}, is_manufacturer_specific=True
-        ),
-        TUYA_SET_DATA: foundation.ZCLCommandDef(
-            "set_data", {"data": TuyaCommand}, is_manufacturer_specific=True
-        ),
-        TUYA_SEND_DATA: foundation.ZCLCommandDef(
-            "send_data", {"data": TuyaCommand}, is_manufacturer_specific=True
-        ),
-        TUYA_SET_TIME: foundation.ZCLCommandDef(
-            "set_time", {"time": TuyaTimePayload}, is_manufacturer_specific=True
-        ),
-    }
+    class ServerCommandDefs:
+        """Server command definitions."""
+        
+        query_data = foundation.ZCLCommandDef(
+            id=TUYA_QUERY_DATA, schema={}, is_manufacturer_specific=True
+        )
+        set_data = foundation.ZCLCommandDef(
+            id=TUYA_SET_DATA, schema={"data": TuyaCommand}, is_manufacturer_specific=True
+        )
+        send_data = foundation.ZCLCommandDef(
+            id=TUYA_SEND_DATA, schema={"data": TuyaCommand}, is_manufacturer_specific=True
+        )
+        set_time = foundation.ZCLCommandDef(
+            id=TUYA_SET_TIME, schema={"time": TuyaTimePayload}, is_manufacturer_specific=True
+        )
 
-    client_commands = {
-        TUYA_GET_DATA: foundation.ZCLCommandDef(
-            "get_data", {"data": TuyaCommand}, is_manufacturer_specific=True
-        ),
-        TUYA_SET_DATA_RESPONSE: foundation.ZCLCommandDef(
-            "set_data_response", {"data": TuyaCommand}, is_manufacturer_specific=True
-        ),
-        TUYA_ACTIVE_STATUS_RPT: foundation.ZCLCommandDef(
-            "active_status_report", {"data": TuyaCommand}, is_manufacturer_specific=True
-        ),
-        TUYA_SET_TIME: foundation.ZCLCommandDef(
-            "set_time_request", {"data": t.data16}, is_manufacturer_specific=True
-        ),
-    }
+    class ClientCommandDefs:
+        """Client command definitions."""
+        
+        get_data = foundation.ZCLCommandDef(
+            id=TUYA_GET_DATA, schema={"data": TuyaCommand}, is_manufacturer_specific=True
+        )
+        set_data_response = foundation.ZCLCommandDef(
+            id=TUYA_SET_DATA_RESPONSE, schema={"data": TuyaCommand}, is_manufacturer_specific=True
+        )
+        active_status_report = foundation.ZCLCommandDef(
+            id=TUYA_ACTIVE_STATUS_RPT, schema={"data": TuyaCommand}, is_manufacturer_specific=True
+        )
+        set_time_request = foundation.ZCLCommandDef(
+            id=TUYA_SET_TIME, schema={"data": t.data16}, is_manufacturer_specific=True
+        )
 
     dp_to_attribute: dict[int, DPToAttributeMapping | list[DPToAttributeMapping]] = {}
     data_point_handlers: dict[int, str] = {}

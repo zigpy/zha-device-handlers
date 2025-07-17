@@ -66,8 +66,6 @@ class DevelcoVOCMeasurement(CustomCluster):
         resolution: Final = ZCLAttributeDef(
             id=VOC_RESOLUTION, type=t.uint16_t, is_manufacturer_specific=True
         )
-    server_commands = {}
-    client_commands = {}
 
     def __init__(self, *args, **kwargs):
         """Init."""

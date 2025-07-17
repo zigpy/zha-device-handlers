@@ -62,13 +62,14 @@ class EmulatedIasZone(LocalDataCluster, IasZone):
 class WAXMANApplianceEventAlerts(CustomCluster, ApplianceEventAlerts):
     """WAXMAN specific ApplianceEventAlert cluster."""
 
-    client_commands = {
-        WAXMAN_CMDID: foundation.ZCLCommandDef(
-            "alerts_notification",
-            {"param1": t.uint8_t, "state": t.bitmap24},
+    class ClientCommandDefs:
+        """Client command definitions."""
+        
+        alerts_notification = foundation.ZCLCommandDef(
+            id=WAXMAN_CMDID,
+            schema={"param1": t.uint8_t, "state": t.bitmap24},
             is_manufacturer_specific=True,
         )
-    }
 
     def __init__(self, *args, **kwargs):
         """Init."""
