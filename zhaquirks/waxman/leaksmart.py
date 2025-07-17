@@ -7,6 +7,7 @@ from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
+from zigpy.zcl.foundation import BaseCommandDefs
 from zigpy.zcl.clusters.general import (
     Basic,
     Identify,
@@ -62,7 +63,7 @@ class EmulatedIasZone(LocalDataCluster, IasZone):
 class WAXMANApplianceEventAlerts(CustomCluster, ApplianceEventAlerts):
     """WAXMAN specific ApplianceEventAlert cluster."""
 
-    class ClientCommandDefs:
+    class ClientCommandDefs(BaseCommandDefs):
         """Client command definitions."""
         
         alerts_notification = foundation.ZCLCommandDef(

@@ -7,7 +7,7 @@ from zigpy.profiles.zha import DeviceType
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PowerConfiguration, Time
-from zigpy.zcl.foundation import ZCLAttributeDef
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 from zigpy.zcl.clusters.measurement import (
     IlluminanceMeasurement,
     RelativeHumidity,
@@ -40,7 +40,7 @@ class TuyaTemperatureHumidityAlarmCluster(CustomCluster):
     name = "Tuya Temperature and Humidity Alarm Cluster"
     cluster_id = 0xE002
 
-    class AttributeDefs:
+    class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
 
         # Alarm settings

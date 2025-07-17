@@ -11,6 +11,7 @@ from typing import Any, Optional
 from zigpy.quirks import CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
+from zigpy.zcl.foundation import BaseCommandDefs
 from zigpy.zcl.clusters.general import (
     AnalogInput,
     AnalogOutput,
@@ -278,7 +279,7 @@ class XBeeRemoteATRequest(LocalDataCluster):
     """Remote AT Command Request Cluster."""
 
     cluster_id = XBEE_AT_REQUEST_CLUSTER
-    class ServerCommandDefs:
+    class ServerCommandDefs(BaseCommandDefs):
         """Server command definitions."""
         pass
 
@@ -467,7 +468,7 @@ class XBeeRemoteATResponse(LocalDataCluster):
         else:
             super().handle_cluster_request(hdr, args)
 
-    class ServerCommandDefs:
+    class ServerCommandDefs(BaseCommandDefs):
         """Server command definitions."""
         
         remote_at_response = foundation.ZCLCommandDef(
@@ -525,7 +526,7 @@ class XBeeDigitalIOCluster(LocalDataCluster, BinaryInput):
         else:
             super().handle_cluster_request(hdr, args)
 
-    class ServerCommandDefs:
+    class ServerCommandDefs(BaseCommandDefs):
         """Server command definitions."""
         
         io_sample = foundation.ZCLCommandDef(
@@ -541,7 +542,7 @@ class XBeeEventRelayCluster(EventableCluster, LocalDataCluster, LevelControl):
 
     attributes = {}
     
-    class ServerCommandDefs:
+    class ServerCommandDefs(BaseCommandDefs):
         """Server command definitions."""
         
         receive_data = foundation.ZCLCommandDef(
@@ -615,7 +616,7 @@ class XBeeSerialDataCluster(LocalDataCluster):
 
     attributes = {}
     
-    class ClientCommandDefs:
+    class ClientCommandDefs(BaseCommandDefs):
         """Client command definitions."""
         
         send_data = foundation.ZCLCommandDef(
@@ -624,7 +625,7 @@ class XBeeSerialDataCluster(LocalDataCluster):
             is_manufacturer_specific=True,
         )
     
-    class ServerCommandDefs:
+    class ServerCommandDefs(BaseCommandDefs):
         """Server command definitions."""
         
         receive_data = foundation.ZCLCommandDef(

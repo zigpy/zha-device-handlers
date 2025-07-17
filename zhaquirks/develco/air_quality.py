@@ -6,7 +6,7 @@ from typing import Final
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
-from zigpy.zcl.foundation import ZCLAttributeDef
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 from zigpy.zcl.clusters.general import (
     Basic,
     Identify,
@@ -51,7 +51,7 @@ class DevelcoVOCMeasurement(CustomCluster):
     name = "VOC Level"
     ep_attribute = "voc_level"
 
-    class AttributeDefs:
+    class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
 
         measured_value: Final = ZCLAttributeDef(
@@ -125,7 +125,7 @@ class EmulatedVOCMeasurement(LocalDataCluster):
     name = "VOC Level"
     ep_attribute = "voc_level"
 
-    class AttributeDefs:
+    class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
 
         measured_value: Final = ZCLAttributeDef(

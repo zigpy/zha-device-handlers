@@ -13,6 +13,7 @@ from zigpy.quirks import BaseCustomDevice, CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.typing import AddressingMode
 from zigpy.zcl import BaseAttributeDefs, foundation
+from zigpy.zcl.foundation import BaseCommandDefs
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import Basic, LevelControl, OnOff, PowerConfiguration
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
@@ -385,7 +386,7 @@ class TuyaManufCluster(CustomCluster):
 
             NOTE: You need to wait for time request before setting it. You can't set time without request."""
 
-    class ServerCommandDefs:
+    class ServerCommandDefs(BaseCommandDefs):
         """Server command definitions."""
         
         set_data = foundation.ZCLCommandDef(
@@ -398,7 +399,7 @@ class TuyaManufCluster(CustomCluster):
             id=0x0024, schema={"param": TuyaTimePayload}, is_manufacturer_specific=True
         )
 
-    class ClientCommandDefs:
+    class ClientCommandDefs(BaseCommandDefs):
         """Client command definitions."""
         
         get_data = foundation.ZCLCommandDef(
@@ -1515,7 +1516,7 @@ class TuyaNewManufCluster(CustomCluster):
     class AttributeDefs(BaseAttributeDefs):
         """Attribute Definitions."""
 
-    class ServerCommandDefs:
+    class ServerCommandDefs(BaseCommandDefs):
         """Server command definitions."""
         
         query_data = foundation.ZCLCommandDef(
@@ -1531,7 +1532,7 @@ class TuyaNewManufCluster(CustomCluster):
             id=TUYA_SET_TIME, schema={"time": TuyaTimePayload}, is_manufacturer_specific=True
         )
 
-    class ClientCommandDefs:
+    class ClientCommandDefs(BaseCommandDefs):
         """Client command definitions."""
         
         get_data = foundation.ZCLCommandDef(

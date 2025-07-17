@@ -5,6 +5,7 @@ import logging
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl import foundation
+from zigpy.zcl.foundation import BaseCommandDefs
 from zigpy.zcl.clusters.general import Basic, PowerConfiguration, Scenes
 
 from zhaquirks import EventableCluster
@@ -57,7 +58,7 @@ class ShortcutV1Cluster(EventableCluster):
 
     cluster_id = IKEA_SHORTCUT_CLUSTER_V1_ID
 
-    class ServerCommandDefs:
+    class ServerCommandDefs(BaseCommandDefs):
         """Server command definitions."""
         
         shortcut_v1 = foundation.ZCLCommandDef(
@@ -75,7 +76,7 @@ class ShortcutV2Cluster(EventableCluster):
 
     cluster_id = IKEA_MATTER_SWITCH_CLUSTER_ID
 
-    class ServerCommandDefs:
+    class ServerCommandDefs(BaseCommandDefs):
         """Server command definitions."""
         
         switch_latched = foundation.ZCLCommandDef(

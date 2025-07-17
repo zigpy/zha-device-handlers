@@ -3,6 +3,7 @@
 from zigpy import types as t
 from zigpy.quirks import CustomCluster
 from zigpy.zcl import foundation
+from zigpy.zcl.foundation import BaseCommandDefs
 from zigpy.zcl.clusters.security import IasZone
 
 from zhaquirks import PowerConfigurationCluster
@@ -21,7 +22,7 @@ class DevelcoPowerConfiguration(PowerConfigurationCluster):
 class DevelcoIasZone(CustomCluster, IasZone):
     """Custom IasZone for Develco."""
 
-    class ClientCommandDefs:
+    class ClientCommandDefs(BaseCommandDefs):
         """Client command definitions."""
         
         status_change_notification = foundation.ZCLCommandDef(

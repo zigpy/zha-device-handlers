@@ -6,6 +6,7 @@ from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
+from zigpy.zcl.foundation import BaseCommandDefs
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -69,7 +70,7 @@ class SengledE1EG7FManufacturerSpecificCluster(CustomCluster):
     name = "Sengled Manufacturer Specific"
     ep_attribute = "sengled_manufacturer_specific"
 
-    class ServerCommandDefs:
+    class ServerCommandDefs(BaseCommandDefs):
         """Server command definitions."""
         
         command = foundation.ZCLCommandDef(

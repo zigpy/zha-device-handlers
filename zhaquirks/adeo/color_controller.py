@@ -6,6 +6,7 @@ from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
+from zigpy.zcl.foundation import BaseCommandDefs
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -68,7 +69,7 @@ class AdeoManufacturerCluster(EventableCluster):
     cluster_id = MANUFACTURER_SPECIFIC_CLUSTER_ID
     name = "AdeoManufacturerCluster"
     ep_attribute = "adeo_manufacturer_cluster"
-    class ClientCommandDefs:
+    class ClientCommandDefs(BaseCommandDefs):
         """Client command definitions."""
         
         preset = foundation.ZCLCommandDef(

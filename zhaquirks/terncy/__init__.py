@@ -7,6 +7,7 @@ from typing import Any, Optional, Union
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl import foundation
+from zigpy.zcl.foundation import BaseCommandDefs
 from zigpy.zcl.clusters.measurement import (
     IlluminanceMeasurement,
     TemperatureMeasurement,
@@ -127,7 +128,7 @@ class TerncyRawCluster(CustomCluster):
     cluster_id = MANUFACTURER_SPECIFIC_CLUSTER_ID
     name = "Terncy Raw cluster"
 
-    class ClientCommandDefs:
+    class ClientCommandDefs(BaseCommandDefs):
         """Client command definitions."""
         
         click_event = foundation.ZCLCommandDef(

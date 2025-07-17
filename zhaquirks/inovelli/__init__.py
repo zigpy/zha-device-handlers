@@ -6,7 +6,7 @@ from typing import Any, Final, Optional, Union
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.foundation import ZCLAttributeDef
+from zigpy.zcl.foundation import BaseAttributeDefs, BaseCommandDefs, ZCLAttributeDef
 
 from zhaquirks.const import (
     BUTTON,
@@ -91,7 +91,7 @@ class InovelliCluster(CustomCluster):
     cluster_id = 0xFC31
     ep_attribute = "inovelli_vzm31sn_cluster"
 
-    class AttributeDefs:
+    class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
 
         dimming_speed_up_remote: Final = ZCLAttributeDef(
@@ -146,7 +146,7 @@ class InovelliCluster(CustomCluster):
             id=0x0102, type=t.Bool, is_manufacturer_specific=True
         )
 
-    class ServerCommandDefs:
+    class ServerCommandDefs(BaseCommandDefs):
         """Server command definitions."""
 
         button_event = foundation.ZCLCommandDef(

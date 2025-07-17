@@ -2,6 +2,7 @@
 
 from zigpy.quirks import CustomCluster
 from zigpy.zcl import foundation
+from zigpy.zcl.foundation import BaseCommandDefs
 
 LEDVANCE = "LEDVANCE"
 
@@ -12,7 +13,7 @@ class LedvanceLightCluster(CustomCluster):
     cluster_id = 0xFC01
     ep_attribute = "ledvance_light"
     name = "LedvanceLight"
-    class ServerCommandDefs:
+    class ServerCommandDefs(BaseCommandDefs):
         """Server command definitions."""
         
         save_defaults = foundation.ZCLCommandDef(

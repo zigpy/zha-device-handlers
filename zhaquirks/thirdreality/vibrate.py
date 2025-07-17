@@ -7,7 +7,7 @@ from zigpy.quirks import CustomDevice
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Ota, PowerConfiguration
 from zigpy.zcl.clusters.security import IasZone
-from zigpy.zcl.foundation import ZCLAttributeDef
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 from zhaquirks import CustomCluster
 from zhaquirks.const import (
@@ -28,7 +28,7 @@ class ThirdRealityAccelCluster(CustomCluster):
 
     cluster_id = MANUFACTURER_SPECIFIC_CLUSTER_ID
 
-    class AttributeDefs:
+    class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
 
         x_axis: Final = ZCLAttributeDef(

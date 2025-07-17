@@ -11,6 +11,7 @@ import zigpy.profiles.zha as zha_p
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
+from zigpy.zcl.foundation import BaseCommandDefs
 from zigpy.zcl.clusters.general import (
     Basic,
     DeviceTemperature,
@@ -148,7 +149,7 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
         )
         cluster_revision: Final = foundation.ZCL_CLUSTER_REVISION_ATTR
 
-    class ServerCommandDefs:
+    class ServerCommandDefs(BaseCommandDefs):
         """Server command definitions."""
         
         button_press = foundation.ZCLCommandDef(

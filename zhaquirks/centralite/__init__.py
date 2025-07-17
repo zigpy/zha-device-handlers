@@ -4,7 +4,7 @@ from typing import Final
 
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
-from zigpy.zcl.foundation import ZCLAttributeDef
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 CENTRALITE = "CentraLite"
 
@@ -16,7 +16,7 @@ class CentraLiteAccelCluster(CustomCluster):
     name = "CentraLite Accelerometer"
     ep_attribute = "accelerometer"
 
-    class AttributeDefs:
+    class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
 
         motion_threshold_multiplier: Final = ZCLAttributeDef(

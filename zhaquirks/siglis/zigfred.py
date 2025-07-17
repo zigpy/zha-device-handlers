@@ -7,6 +7,7 @@ from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
+from zigpy.zcl.foundation import BaseCommandDefs
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import (
     Basic,
@@ -57,7 +58,7 @@ class ZigfredCluster(CustomCluster):
     cluster_id = ZIGFRED_CLUSTER_ID
     buttons_attribute_id = ZIGFRED_CLUSTER_BUTTONS_ATTRIBUTE_ID
 
-    class ServerCommandDefs:
+    class ServerCommandDefs(BaseCommandDefs):
         """Server command definitions."""
         
         button_event = foundation.ZCLCommandDef(
