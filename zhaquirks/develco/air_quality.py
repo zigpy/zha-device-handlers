@@ -1,10 +1,12 @@
 """Develco Air Quality Sensor."""
 
 import logging
+from typing import Final
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
+from zigpy.zcl.foundation import ZCLAttributeDef
 from zigpy.zcl.clusters.general import (
     Basic,
     Identify,
@@ -48,12 +50,22 @@ class DevelcoVOCMeasurement(CustomCluster):
     cluster_id = 0xFC03
     name = "VOC Level"
     ep_attribute = "voc_level"
-    attributes = {
-        VOC_MEASURED_VALUE: ("measured_value", t.uint16_t, True),
-        VOC_MIN_MEASURED_VALUE: ("min_measured_value", t.uint16_t, True),
-        VOC_MAX_MEASURED_VALUE: ("max_measured_value", t.uint16_t, True),
-        VOC_RESOLUTION: ("resolution", t.uint16_t, True),
-    }
+
+    class AttributeDefs:
+        """Attribute definitions."""
+
+        measured_value: Final = ZCLAttributeDef(
+            id=VOC_MEASURED_VALUE, type=t.uint16_t, is_manufacturer_specific=True
+        )
+        min_measured_value: Final = ZCLAttributeDef(
+            id=VOC_MIN_MEASURED_VALUE, type=t.uint16_t, is_manufacturer_specific=True
+        )
+        max_measured_value: Final = ZCLAttributeDef(
+            id=VOC_MAX_MEASURED_VALUE, type=t.uint16_t, is_manufacturer_specific=True
+        )
+        resolution: Final = ZCLAttributeDef(
+            id=VOC_RESOLUTION, type=t.uint16_t, is_manufacturer_specific=True
+        )
     server_commands = {}
     client_commands = {}
 
@@ -114,12 +126,22 @@ class EmulatedVOCMeasurement(LocalDataCluster):
     cluster_id = 0x042E
     name = "VOC Level"
     ep_attribute = "voc_level"
-    attributes = {
-        VOC_MEASURED_VALUE: ("measured_value", t.uint16_t, True),
-        VOC_MIN_MEASURED_VALUE: ("min_measured_value", t.uint16_t, True),
-        VOC_MAX_MEASURED_VALUE: ("max_measured_value", t.uint16_t, True),
-        VOC_RESOLUTION: ("resolution", t.uint16_t, True),
-    }
+
+    class AttributeDefs:
+        """Attribute definitions."""
+
+        measured_value: Final = ZCLAttributeDef(
+            id=VOC_MEASURED_VALUE, type=t.uint16_t, is_manufacturer_specific=True
+        )
+        min_measured_value: Final = ZCLAttributeDef(
+            id=VOC_MIN_MEASURED_VALUE, type=t.uint16_t, is_manufacturer_specific=True
+        )
+        max_measured_value: Final = ZCLAttributeDef(
+            id=VOC_MAX_MEASURED_VALUE, type=t.uint16_t, is_manufacturer_specific=True
+        )
+        resolution: Final = ZCLAttributeDef(
+            id=VOC_RESOLUTION, type=t.uint16_t, is_manufacturer_specific=True
+        )
     MEASURED_VALUE_ID = 0x0000
     MIN_MEASURED_VALUE_ID = 0x0001
     MAX_MEASURED_VALUE_ID = 0x0002
