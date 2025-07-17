@@ -286,9 +286,7 @@ class XBeeRemoteATRequest(LocalDataCluster):
         pass
 
     # Dynamically create command definitions
-    for index, (command_id, command_type) in zip(
-        range(len(AT_COMMANDS)), AT_COMMANDS.items()
-    ):
+    for index, (command_id, command_type) in enumerate(AT_COMMANDS.items()):
         setattr(
             ServerCommandDefs,
             command_id.replace("%", "Percent").replace("+", "Plus"),
@@ -554,13 +552,13 @@ class XBeeEventRelayCluster(EventableCluster, LocalDataCluster, LevelControl):
         )
 
     # Dynamically create command definitions
-    for index, (command_id, command_type) in zip(
-        range(len(AT_COMMANDS)), AT_COMMANDS.items()
-    ):
+    for index, (command_id, command_type) in enumerate(AT_COMMANDS.items()):
         setattr(
             ServerCommandDefs,
-            command_id.replace("%", "Percent").replace("+", "Plus").lower()
-            + "_command_response",
+            (
+                command_id.replace("%", "Percent").replace("+", "Plus").lower()
+                + "_command_response"
+            ),
             foundation.ZCLCommandDef(
                 id=index + 1,
                 schema={"response?": command_type} if command_type is not None else {},
