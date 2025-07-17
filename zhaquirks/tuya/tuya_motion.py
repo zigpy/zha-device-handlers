@@ -1436,6 +1436,7 @@ base_tuya_motion = (
 (
     TuyaQuirkBuilder("_TZE200_2aaelwxk", "TS0601")
     .applies_to("_TZE200_kb5noeto", "TS0601")
+    .applies_to("HOBEIAN", "ZG-204ZM")
     .tuya_dp(
         dp_id=1,
         ep_attribute=TuyaOccupancySensing.ep_attribute,
