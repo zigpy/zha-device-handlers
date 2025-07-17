@@ -6,7 +6,6 @@ from typing import Final, Optional, Union
 from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.foundation import ZCLAttributeDef
 from zigpy.zcl.clusters.general import (
     AnalogOutput,
     Basic,
@@ -19,6 +18,7 @@ from zigpy.zcl.clusters.general import (
     Time,
 )
 from zigpy.zcl.clusters.hvac import Thermostat
+from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks import Bus, LocalDataCluster
 from zhaquirks.const import (
@@ -63,19 +63,29 @@ class SiterwellManufCluster(TuyaManufClusterAttributes):
             id=SITERWELL_CHILD_LOCK_ATTR, type=t.uint8_t, is_manufacturer_specific=True
         )
         window_detection: Final = ZCLAttributeDef(
-            id=SITERWELL_WINDOW_DETECT_ATTR, type=t.uint8_t, is_manufacturer_specific=True
+            id=SITERWELL_WINDOW_DETECT_ATTR,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
         )
         valve_detect: Final = ZCLAttributeDef(
-            id=SITERWELL_VALVE_DETECT_ATTR, type=t.uint8_t, is_manufacturer_specific=True
+            id=SITERWELL_VALVE_DETECT_ATTR,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
         )
         valve_state: Final = ZCLAttributeDef(
-            id=SITERWELL_VALVE_STATE_ATTR, type=t.uint32_t, is_manufacturer_specific=True
+            id=SITERWELL_VALVE_STATE_ATTR,
+            type=t.uint32_t,
+            is_manufacturer_specific=True,
         )
         target_temperature: Final = ZCLAttributeDef(
-            id=SITERWELL_TARGET_TEMP_ATTR, type=t.uint32_t, is_manufacturer_specific=True
+            id=SITERWELL_TARGET_TEMP_ATTR,
+            type=t.uint32_t,
+            is_manufacturer_specific=True,
         )
         temperature: Final = ZCLAttributeDef(
-            id=SITERWELL_TEMPERATURE_ATTR, type=t.uint32_t, is_manufacturer_specific=True
+            id=SITERWELL_TEMPERATURE_ATTR,
+            type=t.uint32_t,
+            is_manufacturer_specific=True,
         )
         battery: Final = ZCLAttributeDef(
             id=SITERWELL_BATTERY_ATTR, type=t.uint32_t, is_manufacturer_specific=True
@@ -370,6 +380,7 @@ class MoesManufClusterNew(MoesManufCluster):
         MOES_FORCE_VALVE_ATTR: ("valve_force_state", None),
     }
 
+
 class Preset(t.enum8):
     """Working modes of the thermostat."""
 
@@ -381,12 +392,14 @@ class Preset(t.enum8):
     Boost = 0x05
     Complex = 0x06
 
+
 class WorkDays(t.enum8):
     """Workday configuration for scheduler operation mode."""
 
     MonToFri = 0x00
     MonToSat = 0x01
     MonToSun = 0x02
+
 
 class ForceValveState(t.enum8):
     """Force valve state option."""
@@ -1091,58 +1104,84 @@ class ZONNSMARTManufCluster(TuyaManufClusterAttributes):
             id=ZONNSMART_MODE_ATTR, type=t.uint8_t, is_manufacturer_specific=True
         )
         window_detection: Final = ZCLAttributeDef(
-            id=ZONNSMART_WINDOW_DETECT_ATTR, type=t.uint8_t, is_manufacturer_specific=True
+            id=ZONNSMART_WINDOW_DETECT_ATTR,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
         )
         frost_protection: Final = ZCLAttributeDef(
-            id=ZONNSMART_FROST_PROTECT_ATTR, type=t.uint8_t, is_manufacturer_specific=True
+            id=ZONNSMART_FROST_PROTECT_ATTR,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
         )
         target_temperature: Final = ZCLAttributeDef(
-            id=ZONNSMART_TARGET_TEMP_ATTR, type=t.uint32_t, is_manufacturer_specific=True
+            id=ZONNSMART_TARGET_TEMP_ATTR,
+            type=t.uint32_t,
+            is_manufacturer_specific=True,
         )
         temperature: Final = ZCLAttributeDef(
-            id=ZONNSMART_TEMPERATURE_ATTR, type=t.uint32_t, is_manufacturer_specific=True
+            id=ZONNSMART_TEMPERATURE_ATTR,
+            type=t.uint32_t,
+            is_manufacturer_specific=True,
         )
         temperature_calibration: Final = ZCLAttributeDef(
-            id=ZONNSMART_TEMPERATURE_CALIBRATION_ATTR, type=t.int32s, is_manufacturer_specific=True
+            id=ZONNSMART_TEMPERATURE_CALIBRATION_ATTR,
+            type=t.int32s,
+            is_manufacturer_specific=True,
         )
         week_format: Final = ZCLAttributeDef(
             id=ZONNSMART_WEEK_FORMAT_ATTR, type=t.uint8_t, is_manufacturer_specific=True
         )
         holiday_temperature: Final = ZCLAttributeDef(
-            id=ZONNSMART_HOLIDAY_TEMP_ATTR, type=t.uint32_t, is_manufacturer_specific=True
+            id=ZONNSMART_HOLIDAY_TEMP_ATTR,
+            type=t.uint32_t,
+            is_manufacturer_specific=True,
         )
         battery: Final = ZCLAttributeDef(
             id=ZONNSMART_BATTERY_ATTR, type=t.uint32_t, is_manufacturer_specific=True
         )
         uptime: Final = ZCLAttributeDef(
-            id=ZONNSMART_UPTIME_TIME_ATTR, type=t.uint32_t, is_manufacturer_specific=True
+            id=ZONNSMART_UPTIME_TIME_ATTR,
+            type=t.uint32_t,
+            is_manufacturer_specific=True,
         )
         child_lock: Final = ZCLAttributeDef(
             id=ZONNSMART_CHILD_LOCK_ATTR, type=t.uint8_t, is_manufacturer_specific=True
         )
         fault_detected: Final = ZCLAttributeDef(
-            id=ZONNSMART_FAULT_DETECTION_ATTR, type=t.uint8_t, is_manufacturer_specific=True
+            id=ZONNSMART_FAULT_DETECTION_ATTR,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
         )
         boost_duration_seconds: Final = ZCLAttributeDef(
             id=ZONNSMART_BOOST_TIME_ATTR, type=t.uint32_t, is_manufacturer_specific=True
         )
         opened_window_temperature: Final = ZCLAttributeDef(
-            id=ZONNSMART_OPENED_WINDOW_TEMP, type=t.uint32_t, is_manufacturer_specific=True
+            id=ZONNSMART_OPENED_WINDOW_TEMP,
+            type=t.uint32_t,
+            is_manufacturer_specific=True,
         )
         comfort_mode_temperature: Final = ZCLAttributeDef(
-            id=ZONNSMART_COMFORT_TEMP_ATTR, type=t.uint32_t, is_manufacturer_specific=True
+            id=ZONNSMART_COMFORT_TEMP_ATTR,
+            type=t.uint32_t,
+            is_manufacturer_specific=True,
         )
         eco_mode_temperature: Final = ZCLAttributeDef(
             id=ZONNSMART_ECO_TEMP_ATTR, type=t.uint32_t, is_manufacturer_specific=True
         )
         heating_stop: Final = ZCLAttributeDef(
-            id=ZONNSMART_HEATING_STOPPING_ATTR, type=t.uint8_t, is_manufacturer_specific=True
+            id=ZONNSMART_HEATING_STOPPING_ATTR,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
         )
         online_set: Final = ZCLAttributeDef(
-            id=ZONNSMART_ONLINE_MODE_BOOL_ATTR, type=t.uint8_t, is_manufacturer_specific=True
+            id=ZONNSMART_ONLINE_MODE_BOOL_ATTR,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
         )
         online: Final = ZCLAttributeDef(
-            id=ZONNSMART_ONLINE_MODE_ENUM_ATTR, type=t.uint8_t, is_manufacturer_specific=True
+            id=ZONNSMART_ONLINE_MODE_ENUM_ATTR,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
         )
 
     DIRECT_MAPPED_ATTRS = {

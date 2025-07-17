@@ -45,6 +45,7 @@ UNKNOWN_7 = 0x0417
 UNKNOWN_8 = 0x0418
 UNKNOWN_9 = 0x0419
 
+
 class ActiveSensor(t.enum8):
     """Working modes of the thermostat."""
 

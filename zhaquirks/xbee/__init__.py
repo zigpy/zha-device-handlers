@@ -11,7 +11,6 @@ from typing import Any, Optional
 from zigpy.quirks import CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.foundation import BaseCommandDefs
 from zigpy.zcl.clusters.general import (
     AnalogInput,
     AnalogOutput,
@@ -20,6 +19,7 @@ from zigpy.zcl.clusters.general import (
     LevelControl,
     OnOff,
 )
+from zigpy.zcl.foundation import BaseCommandDefs
 
 from zhaquirks import EventableCluster, LocalDataCluster
 from zhaquirks.const import ENDPOINTS, INPUT_CLUSTERS, OUTPUT_CLUSTERS
@@ -279,20 +279,24 @@ class XBeeRemoteATRequest(LocalDataCluster):
     """Remote AT Command Request Cluster."""
 
     cluster_id = XBEE_AT_REQUEST_CLUSTER
+
     class ServerCommandDefs(BaseCommandDefs):
         """Server command definitions."""
+
         pass
 
     # Dynamically create command definitions
-    for k, v in zip(range(1, len(AT_COMMANDS) + 1), AT_COMMANDS.items()):
+    for index, (command_id, command_type) in zip(
+        range(len(AT_COMMANDS)), AT_COMMANDS.items()
+    ):
         setattr(
             ServerCommandDefs,
-            v[0].replace("%V", "PercentV").replace("V+", "VPlus"),
+            command_id.replace("%", "Percent").replace("+", "Plus"),
             foundation.ZCLCommandDef(
-                id=k,
-                schema={"param?": v[1]} if v[1] else {},
+                id=index + 1,
+                schema={"param?": command_type} if command_type is not None else {},
                 is_manufacturer_specific=True,
-            )
+            ),
         )
 
     _seq: int = 1
@@ -470,7 +474,7 @@ class XBeeRemoteATResponse(LocalDataCluster):
 
     class ServerCommandDefs(BaseCommandDefs):
         """Server command definitions."""
-        
+
         remote_at_response = foundation.ZCLCommandDef(
             id=AT_RESPONSE_CMD,
             schema={
@@ -528,7 +532,7 @@ class XBeeDigitalIOCluster(LocalDataCluster, BinaryInput):
 
     class ServerCommandDefs(BaseCommandDefs):
         """Server command definitions."""
-        
+
         io_sample = foundation.ZCLCommandDef(
             id=SAMPLE_DATA_CMD,
             schema={"io_sample": IOSample},
@@ -540,11 +544,9 @@ class XBeeDigitalIOCluster(LocalDataCluster, BinaryInput):
 class XBeeEventRelayCluster(EventableCluster, LocalDataCluster, LevelControl):
     """A cluster with cluster_id which is allowed to send events."""
 
-    attributes = {}
-    
     class ServerCommandDefs(BaseCommandDefs):
         """Server command definitions."""
-        
+
         receive_data = foundation.ZCLCommandDef(
             id=SERIAL_DATA_CMD,
             schema={"data": str},
@@ -552,15 +554,18 @@ class XBeeEventRelayCluster(EventableCluster, LocalDataCluster, LevelControl):
         )
 
     # Dynamically create command definitions
-    for k, v in zip(range(1, len(AT_COMMANDS) + 1), AT_COMMANDS.items()):
+    for index, (command_id, command_type) in zip(
+        range(len(AT_COMMANDS)), AT_COMMANDS.items()
+    ):
         setattr(
             ServerCommandDefs,
-            v[0].replace("%V", "PercentV").replace("V+", "VPlus").lower() + "_command_response",
+            command_id.replace("%", "Percent").replace("+", "Plus").lower()
+            + "_command_response",
             foundation.ZCLCommandDef(
-                id=k,
-                schema={"response?": v[1]} if v[1] else {},
+                id=index + 1,
+                schema={"response?": command_type} if command_type is not None else {},
                 is_manufacturer_specific=True,
-            )
+            ),
         )
 
 
@@ -614,20 +619,18 @@ class XBeeSerialDataCluster(LocalDataCluster):
         else:
             super().handle_cluster_request(hdr, args)
 
-    attributes = {}
-    
     class ClientCommandDefs(BaseCommandDefs):
         """Client command definitions."""
-        
+
         send_data = foundation.ZCLCommandDef(
             id=SERIAL_DATA_CMD,
             schema={"data": BinaryString},
             is_manufacturer_specific=True,
         )
-    
+
     class ServerCommandDefs(BaseCommandDefs):
         """Server command definitions."""
-        
+
         receive_data = foundation.ZCLCommandDef(
             id=SERIAL_DATA_CMD,
             schema={"data": BinaryString},

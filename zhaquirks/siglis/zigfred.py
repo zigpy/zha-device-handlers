@@ -7,7 +7,6 @@ from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.foundation import BaseCommandDefs
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import (
     Basic,
@@ -19,6 +18,7 @@ from zigpy.zcl.clusters.general import (
     Scenes,
 )
 from zigpy.zcl.clusters.lighting import Color
+from zigpy.zcl.foundation import BaseCommandDefs
 
 from zhaquirks.const import (
     BUTTON,
@@ -60,7 +60,7 @@ class ZigfredCluster(CustomCluster):
 
     class ServerCommandDefs(BaseCommandDefs):
         """Server command definitions."""
-        
+
         button_event = foundation.ZCLCommandDef(
             id=ZIGFRED_CLUSTER_COMMAND_BUTTON_EVENT,
             schema={"param1": t.uint32_t},

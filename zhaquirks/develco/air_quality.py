@@ -6,7 +6,6 @@ from typing import Final
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
-from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 from zigpy.zcl.clusters.general import (
     Basic,
     Identify,
@@ -18,6 +17,7 @@ from zigpy.zcl.clusters.general import (
     Time,
 )
 from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 from zhaquirks import Bus, LocalDataCluster
 from zhaquirks.const import (
@@ -140,6 +140,7 @@ class EmulatedVOCMeasurement(LocalDataCluster):
         resolution: Final = ZCLAttributeDef(
             id=VOC_RESOLUTION, type=t.uint16_t, is_manufacturer_specific=True
         )
+
     MEASURED_VALUE_ID = 0x0000
     MIN_MEASURED_VALUE_ID = 0x0001
     MAX_MEASURED_VALUE_ID = 0x0002

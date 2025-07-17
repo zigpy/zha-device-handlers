@@ -141,11 +141,13 @@ class MCUVersion(t.Struct):
 
         return None
 
+
 class TuyaConnectionStatus(t.Struct):
     """Tuya connection status data."""
 
     tsn: t.uint8_t
     status: t.LVBytes
+
 
 class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
     """Manufacturer specific cluster for sending Tuya MCU commands."""

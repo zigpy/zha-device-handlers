@@ -57,9 +57,7 @@ class EmulatedTVOCMeasurement(LocalDataCluster):
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
 
-        measured_value: Final = ZCLAttributeDef(
-            id=MEASURED_VALUE, type=t.Single
-        )
+        measured_value: Final = ZCLAttributeDef(id=MEASURED_VALUE, type=t.Single)
 
     async def bind(self):
         """Bind cluster."""

@@ -1,7 +1,5 @@
 """Tuya TS0601 Thermostat."""
 
-import copy
-
 from zigpy.quirks.v2 import BinarySensorDeviceClass, EntityType
 from zigpy.quirks.v2.homeassistant import (
     UnitOfElectricCurrent,

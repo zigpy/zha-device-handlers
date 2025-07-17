@@ -1,11 +1,9 @@
 """Xiaomi Aqara wall switch devices. Also see switch_h1 files for similar H1 rocker switches."""
 
-import copy
 from enum import Enum
 from typing import Final
 
 from zigpy import types as t
-from zigpy.zcl.foundation import ZCLAttributeDef
 from zigpy.profiles import zgp, zha
 from zigpy.zcl.clusters.general import (
     Alarms,
@@ -23,6 +21,7 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
+from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks.const import (
     ARGS,

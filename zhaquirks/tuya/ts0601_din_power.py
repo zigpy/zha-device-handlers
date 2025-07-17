@@ -167,13 +167,19 @@ class HikingManufClusterDinPower(TuyaManufClusterAttributes):
             id=HIKING_DIN_SWITCH_ATTR, type=t.uint8_t, is_manufacturer_specific=True
         )
         energy_delivered: Final = ZCLAttributeDef(
-            id=HIKING_TOTAL_ENERGY_DELIVERED_ATTR, type=t.uint32_t, is_manufacturer_specific=True
+            id=HIKING_TOTAL_ENERGY_DELIVERED_ATTR,
+            type=t.uint32_t,
+            is_manufacturer_specific=True,
         )
         energy_received: Final = ZCLAttributeDef(
-            id=HIKING_TOTAL_ENERGY_RECEIVED_ATTR, type=t.uint16_t, is_manufacturer_specific=True
+            id=HIKING_TOTAL_ENERGY_RECEIVED_ATTR,
+            type=t.uint16_t,
+            is_manufacturer_specific=True,
         )
         voltage_current: Final = ZCLAttributeDef(
-            id=HIKING_VOLTAGE_CURRENT_ATTR, type=t.uint32_t, is_manufacturer_specific=True
+            id=HIKING_VOLTAGE_CURRENT_ATTR,
+            type=t.uint32_t,
+            is_manufacturer_specific=True,
         )
         power: Final = ZCLAttributeDef(
             id=HIKING_POWER_ATTR, type=t.uint16_t, is_manufacturer_specific=True

@@ -6,7 +6,6 @@ from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.foundation import BaseCommandDefs
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -16,6 +15,7 @@ from zigpy.zcl.clusters.general import (
     PollControl,
     PowerConfiguration,
 )
+from zigpy.zcl.foundation import BaseCommandDefs
 
 from zhaquirks import Bus
 from zhaquirks.const import (
@@ -72,7 +72,7 @@ class SengledE1EG7FManufacturerSpecificCluster(CustomCluster):
 
     class ServerCommandDefs(BaseCommandDefs):
         """Server command definitions."""
-        
+
         command = foundation.ZCLCommandDef(
             id=0x0000,
             schema={

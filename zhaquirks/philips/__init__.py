@@ -144,9 +144,10 @@ class PhilipsRemoteCluster(CustomCluster):
     cluster_id = 0xFC00
     name = "PhilipsRemoteCluster"
     ep_attribute = "philips_remote_cluster"
+
     class ClientCommandDefs(BaseCommandDefs):
         """Client command definitions."""
-        
+
         notification = foundation.ZCLCommandDef(
             id=0x0000,
             schema={

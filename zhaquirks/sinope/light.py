@@ -11,7 +11,6 @@ import zigpy.profiles.zha as zha_p
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.foundation import BaseCommandDefs
 from zigpy.zcl.clusters.general import (
     Basic,
     DeviceTemperature,
@@ -25,6 +24,7 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.homeautomation import Diagnostic, ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
+from zigpy.zcl.foundation import BaseCommandDefs
 
 from zhaquirks import EventableCluster
 from zhaquirks.const import (
@@ -151,7 +151,7 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
 
     class ServerCommandDefs(BaseCommandDefs):
         """Server command definitions."""
-        
+
         button_press = foundation.ZCLCommandDef(
             id=0x54,
             schema={"command": t.uint8_t},

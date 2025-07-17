@@ -7,11 +7,11 @@ from typing import Any, Optional, Union
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.foundation import BaseCommandDefs
 from zigpy.zcl.clusters.measurement import (
     IlluminanceMeasurement,
     TemperatureMeasurement,
 )
+from zigpy.zcl.foundation import BaseCommandDefs
 
 from zhaquirks import LocalDataCluster, OccupancyOnEvent, _Motion
 from zhaquirks.const import (
@@ -130,7 +130,7 @@ class TerncyRawCluster(CustomCluster):
 
     class ClientCommandDefs(BaseCommandDefs):
         """Client command definitions."""
-        
+
         click_event = foundation.ZCLCommandDef(
             id=0x00,
             schema={"count": t.uint8_t, "state": t.uint8_t},

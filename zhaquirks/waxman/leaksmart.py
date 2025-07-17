@@ -7,7 +7,6 @@ from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.foundation import BaseCommandDefs
 from zigpy.zcl.clusters.general import (
     Basic,
     Identify,
@@ -18,6 +17,7 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.homeautomation import ApplianceEventAlerts
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone
+from zigpy.zcl.foundation import BaseCommandDefs
 
 from zhaquirks import Bus, LocalDataCluster
 from zhaquirks.const import (
@@ -65,7 +65,7 @@ class WAXMANApplianceEventAlerts(CustomCluster, ApplianceEventAlerts):
 
     class ClientCommandDefs(BaseCommandDefs):
         """Client command definitions."""
-        
+
         alerts_notification = foundation.ZCLCommandDef(
             id=WAXMAN_CMDID,
             schema={"param1": t.uint8_t, "state": t.bitmap24},
