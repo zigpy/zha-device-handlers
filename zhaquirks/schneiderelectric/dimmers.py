@@ -26,7 +26,6 @@ from zhaquirks.schneiderelectric import (
 
 (
     QuirkBuilder(SE_MANUF_NAME, "NHPB/SWITCH/1")
-    .applies_to(SE_MANUF_NAME, "CH2AX/SWITCH/1")
     .replaces(SEBasic)
     .replaces(SEOnOff)
     .replaces(SEBasic, endpoint_id=21)
