@@ -91,50 +91,87 @@ class InovelliCluster(CustomCluster):
     cluster_id = 0xFC31
     ep_attribute = "inovelli_vzm31sn_cluster"
 
-    attributes = {
-        0x0001: ("dimming_speed_up_remote", t.uint8_t, True),
-        0x0003: ("ramp_rate_off_to_on_remote", t.uint8_t, True),
-        0x0005: ("dimming_speed_down_remote", t.uint8_t, True),
-        0x0007: ("ramp_rate_on_to_off_remote", t.uint8_t, True),
-        0x0009: ("minimum_level", t.uint8_t, True),
-        0x000A: ("maximum_level", t.uint8_t, True),
-        0x000C: ("auto_off_timer", t.uint16_t, True),
-        0x000E: ("default_level_remote", t.uint8_t, True),
-        0x000F: ("state_after_power_restored", t.uint8_t, True),
-        0x0015: ("power_type", t.uint8_t, True),
-        0x0020: ("internal_temp_monitor", t.uint8_t, True),
-        0x0021: ("overheated", t.Bool, True),
-        0x0034: ("smart_bulb_mode", t.Bool, True),
-        0x005F: ("led_color_when_on", t.uint8_t, True),
-        0x0061: ("led_intensity_when_on", t.uint8_t, True),
-        0x0101: ("remote_protection", t.Bool, True),
-        0x0102: ("output_mode", t.Bool, True),
-    }
+    class AttributeDefs:
+        """Attribute definitions."""
 
-    server_commands = {
-        0x00: foundation.ZCLCommandDef(
-            "button_event",
-            {"button_pressed": t.uint8_t, "press_type": t.uint8_t},
+        dimming_speed_up_remote: Final = ZCLAttributeDef(
+            id=0x0001, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        ramp_rate_off_to_on_remote: Final = ZCLAttributeDef(
+            id=0x0003, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        dimming_speed_down_remote: Final = ZCLAttributeDef(
+            id=0x0005, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        ramp_rate_on_to_off_remote: Final = ZCLAttributeDef(
+            id=0x0007, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        minimum_level: Final = ZCLAttributeDef(
+            id=0x0009, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        maximum_level: Final = ZCLAttributeDef(
+            id=0x000A, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        auto_off_timer: Final = ZCLAttributeDef(
+            id=0x000C, type=t.uint16_t, is_manufacturer_specific=True
+        )
+        default_level_remote: Final = ZCLAttributeDef(
+            id=0x000E, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        state_after_power_restored: Final = ZCLAttributeDef(
+            id=0x000F, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        power_type: Final = ZCLAttributeDef(
+            id=0x0015, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        internal_temp_monitor: Final = ZCLAttributeDef(
+            id=0x0020, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        overheated: Final = ZCLAttributeDef(
+            id=0x0021, type=t.Bool, is_manufacturer_specific=True
+        )
+        smart_bulb_mode: Final = ZCLAttributeDef(
+            id=0x0034, type=t.Bool, is_manufacturer_specific=True
+        )
+        led_color_when_on: Final = ZCLAttributeDef(
+            id=0x005F, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        led_intensity_when_on: Final = ZCLAttributeDef(
+            id=0x0061, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        remote_protection: Final = ZCLAttributeDef(
+            id=0x0101, type=t.Bool, is_manufacturer_specific=True
+        )
+        output_mode: Final = ZCLAttributeDef(
+            id=0x0102, type=t.Bool, is_manufacturer_specific=True
+        )
+
+    class ServerCommandDefs:
+        """Server command definitions."""
+
+        button_event = foundation.ZCLCommandDef(
+            id=0x00,
+            schema={"button_pressed": t.uint8_t, "press_type": t.uint8_t},
             is_manufacturer_specific=True,
-        ),
-        0x01: foundation.ZCLCommandDef(
-            "led_effect",
-            {
+        )
+        led_effect = foundation.ZCLCommandDef(
+            id=0x01,
+            schema={
                 "led_effect": t.uint8_t,
                 "led_color": t.uint8_t,
                 "led_level": t.uint8_t,
                 "led_duration": t.uint8_t,
             },
             is_manufacturer_specific=True,
-        ),
-        0x02: foundation.ZCLCommandDef(
-            "reset_energy_meter",
-            {},
+        )
+        reset_energy_meter = foundation.ZCLCommandDef(
+            id=0x02,
+            schema={},
             is_manufacturer_specific=True,
-        ),
-        0x03: foundation.ZCLCommandDef(
-            "individual_led_effect",
-            {
+        )
+        individual_led_effect = foundation.ZCLCommandDef(
+            id=0x03,
+            schema={
                 "led_number": t.uint8_t,
                 "led_effect": t.uint8_t,
                 "led_color": t.uint8_t,
@@ -142,15 +179,14 @@ class InovelliCluster(CustomCluster):
                 "led_duration": t.uint8_t,
             },
             is_manufacturer_specific=True,
-        ),
-        0x24: foundation.ZCLCommandDef(
-            "led_effect_complete",
-            {
+        )
+        led_effect_complete = foundation.ZCLCommandDef(
+            id=0x24,
+            schema={
                 "notification_type": t.uint8_t,
             },
             is_manufacturer_specific=True,
-        ),
-    }
+        )
 
     def handle_cluster_request(
         self,
@@ -168,7 +204,7 @@ class InovelliCluster(CustomCluster):
             hdr.command_id,
             args,
         )
-        if hdr.command_id == self.commands_by_name["button_event"].id:
+        if hdr.command_id == self.ServerCommandDefs.button_event.id:
             button = BUTTONS[args.button_pressed]
             press_type = PRESS_TYPES[args.press_type]
             action = f"{button}_{press_type}"
@@ -179,7 +215,7 @@ class InovelliCluster(CustomCluster):
             }
             self.listener_event(ZHA_SEND_EVENT, action, event_args)
             return
-        if hdr.command_id == self.commands_by_name["led_effect_complete"].id:
+        if hdr.command_id == self.ServerCommandDefs.led_effect_complete.id:
             notification_type = LED_NOTIFICATION_TYPES.get(
                 args.notification_type, "unknown"
             )

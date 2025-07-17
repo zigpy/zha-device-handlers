@@ -45,23 +45,23 @@ UNKNOWN_7 = 0x0417
 UNKNOWN_8 = 0x0418
 UNKNOWN_9 = 0x0419
 
+class ActiveSensor(t.enum8):
+    """Working modes of the thermostat."""
+
+    AIR = 0x00
+    FLOOR = 0x01
+    PROTECTION = 0x03
+
 
 class ElkoSuperTRThermostatCluster(ElkoThermostatCluster):
     """Elko custom thermostat cluster."""
-
-    class Sensor(t.enum8):
-        """Working modes of the thermostat."""
-
-        AIR = 0x00
-        FLOOR = 0x01
-        PROTECTION = 0x03
 
     class AttributeDefs(ElkoThermostatCluster.AttributeDefs):
         """Attribute definitions."""
 
         unknown_1: Final = ZCLAttributeDef(id=UNKNOWN_1, type=t.uint16_t)
         display_text: Final = ZCLAttributeDef(id=DISPLAY_TEXT, type=t.CharacterString)
-        active_sensor: Final = ZCLAttributeDef(id=ACTIVE_SENSOR, type=Sensor)
+        active_sensor: Final = ZCLAttributeDef(id=ACTIVE_SENSOR, type=ActiveSensor)
         unknown_2: Final = ZCLAttributeDef(id=UNKNOWN_2, type=t.uint8_t)
         regulator_mode: Final = ZCLAttributeDef(id=REGULATOR_MODE, type=t.Bool)
         device_on: Final = ZCLAttributeDef(id=DEVICE_ON, type=t.Bool)

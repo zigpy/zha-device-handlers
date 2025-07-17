@@ -117,11 +117,45 @@ class TuyaAttributesCluster(TuyaLocalCluster):
         return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
 
+class MCUVersion(t.Struct):
+    """Tuya MCU version response Zcl payload."""
+
+    status: t.uint8_t
+    tsn: t.uint8_t
+    version_raw: t.uint8_t
+
+    @property
+    def version(self) -> str:
+        """Format the raw version to X.Y.Z."""
+
+        if self.version_raw:
+            # MCU version is 1 byte length
+            # is converted from HEX -> BIN -> XX.XX.XXXX -> DEC (x.y.z)
+            # example: 0x98 -> 10011000 -> 10.01.1000 -> 2.1.8
+            # https://developer.tuya.com/en/docs/iot-device-dev/firmware-version-description?id=K9zzuc5n2gff8#title-1-Zigbee%20firmware%20versions
+            major = self.version_raw >> 6
+            minor = (self.version_raw & 63) >> 4
+            release = self.version_raw & 15
+
+            return f"{major}.{minor}.{release}"
+
+        return None
+
+class TuyaConnectionStatus(t.Struct):
+    """Tuya connection status data."""
+
+    tsn: t.uint8_t
+    status: t.LVBytes
+
 class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
     """Manufacturer specific cluster for sending Tuya MCU commands."""
 
     set_time_offset = 1970  # MCU timestamp from 1/1/1970
     set_time_local_offset = None
+
+    # TODO: Backwards compatibility, remove
+    MCUVersion = MCUVersion
+    TuyaConnectionStatus = TuyaConnectionStatus
 
     class AttributeDefs(TuyaNewManufCluster.AttributeDefs):
         """Attribute Definitions."""
@@ -132,36 +166,6 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
             access=foundation.ZCLAttributeAccess.Read,
             is_manufacturer_specific=True,
         )
-
-    class MCUVersion(t.Struct):
-        """Tuya MCU version response Zcl payload."""
-
-        status: t.uint8_t
-        tsn: t.uint8_t
-        version_raw: t.uint8_t
-
-        @property
-        def version(self) -> str:
-            """Format the raw version to X.Y.Z."""
-
-            if self.version_raw:
-                # MCU version is 1 byte length
-                # is converted from HEX -> BIN -> XX.XX.XXXX -> DEC (x.y.z)
-                # example: 0x98 -> 10011000 -> 10.01.1000 -> 2.1.8
-                # https://developer.tuya.com/en/docs/iot-device-dev/firmware-version-description?id=K9zzuc5n2gff8#title-1-Zigbee%20firmware%20versions
-                major = self.version_raw >> 6
-                minor = (self.version_raw & 63) >> 4
-                release = self.version_raw & 15
-
-                return f"{major}.{minor}.{release}"
-
-            return None
-
-    class TuyaConnectionStatus(t.Struct):
-        """Tuya connection status data."""
-
-        tsn: t.uint8_t
-        status: t.LVBytes
 
     class ClientCommandDefs(TuyaNewManufCluster.ClientCommandDefs):
         """Client command definitions."""

@@ -370,34 +370,34 @@ class MoesManufClusterNew(MoesManufCluster):
         MOES_FORCE_VALVE_ATTR: ("valve_force_state", None),
     }
 
+class Preset(t.enum8):
+    """Working modes of the thermostat."""
+
+    Away = 0x00
+    Schedule = 0x01
+    Manual = 0x02
+    Comfort = 0x03
+    Eco = 0x04
+    Boost = 0x05
+    Complex = 0x06
+
+class WorkDays(t.enum8):
+    """Workday configuration for scheduler operation mode."""
+
+    MonToFri = 0x00
+    MonToSat = 0x01
+    MonToSun = 0x02
+
+class ForceValveState(t.enum8):
+    """Force valve state option."""
+
+    Normal = 0x00
+    Open = 0x01
+    Close = 0x02
+
 
 class MoesThermostat(TuyaThermostatCluster):
     """Thermostat cluster for some thermostatic valves."""
-
-    class Preset(t.enum8):
-        """Working modes of the thermostat."""
-
-        Away = 0x00
-        Schedule = 0x01
-        Manual = 0x02
-        Comfort = 0x03
-        Eco = 0x04
-        Boost = 0x05
-        Complex = 0x06
-
-    class WorkDays(t.enum8):
-        """Workday configuration for scheduler operation mode."""
-
-        MonToFri = 0x00
-        MonToSat = 0x01
-        MonToSun = 0x02
-
-    class ForceValveState(t.enum8):
-        """Force valve state option."""
-
-        Normal = 0x00
-        Open = 0x01
-        Close = 0x02
 
     _CONSTANT_ATTRIBUTES = {
         0x001B: Thermostat.ControlSequenceOfOperation.Heating_Only,
