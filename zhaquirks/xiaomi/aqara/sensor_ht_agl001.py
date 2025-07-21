@@ -1,44 +1,42 @@
 """Quirk for Aqara W100 Climate Sensor with 3 buttons"""
+
 import logging
 
 from zigpy.profiles import zha
 from zigpy.zcl.clusters.general import (
     Basic,
-    PowerConfiguration,
     Identify,
     MultistateInput,
     Ota,
+    PowerConfiguration,
 )
-from zigpy.zcl.clusters.measurement import TemperatureMeasurement, RelativeHumidity
+from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
 
 from zhaquirks import CustomCluster
 from zhaquirks.const import (
+    ATTR_ID,
     COMMAND,
-    COMMAND_SINGLE,
     COMMAND_DOUBLE,
     COMMAND_HOLD,
     COMMAND_RELEASE,
+    COMMAND_SINGLE,
     DEVICE_TYPE,
+    DOUBLE_PRESS,
+    ENDPOINT_ID,
     ENDPOINTS,
     INPUT_CLUSTERS,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
+    LONG_PRESS,
+    LONG_RELEASE,
     MODELS_INFO,
+    OUTPUT_CLUSTERS,
+    PRESS_TYPE,
+    PROFILE_ID,
+    SHORT_PRESS,
     SKIP_CONFIGURATION,
     VALUE,
-    PRESS_TYPE,
-    ATTR_ID,
     ZHA_SEND_EVENT,
-    ENDPOINT_ID,
-    LONG_RELEASE,
-    LONG_PRESS,
-    DOUBLE_PRESS,
-    SHORT_PRESS,
 )
-from zhaquirks.xiaomi import (
-    XiaomiCustomDevice,
-    XiaomiPowerConfiguration,
-)
+from zhaquirks.xiaomi import XiaomiCustomDevice, XiaomiPowerConfiguration
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -79,7 +77,9 @@ class MultistateInputCluster(CustomCluster, MultistateInput):
 
         if attrid == STATUS_TYPE_ATTR:
             self._current_state = PRESS_TYPES.get(value, f"unknown_{value}")
-            button = BUTTON_NAMES.get(self.endpoint.endpoint_id, f"ep{self.endpoint.endpoint_id}")
+            button = BUTTON_NAMES.get(
+                self.endpoint.endpoint_id, f"ep{self.endpoint.endpoint_id}"
+            )
 
             event_args = {
                 PRESS_TYPE: self._current_state,
@@ -90,7 +90,9 @@ class MultistateInputCluster(CustomCluster, MultistateInput):
             }
 
             self.listener_event(ZHA_SEND_EVENT, self._current_state, event_args)
-            _LOGGER.debug(f"[W100] Button={button}, Action={self._current_state}, Value={value}")
+            _LOGGER.debug(
+                f"[W100] Button={button}, Action={self._current_state}, Value={value}"
+            )
             # Optionally update attr 0 for diagnostics
             super()._update_attribute(0, self._current_state)
 
@@ -166,12 +168,10 @@ class AqaraW100(XiaomiCustomDevice):
         (PLUS_BUTTON, DOUBLE_PRESS): {COMMAND: COMMAND_DOUBLE, ENDPOINT_ID: 1},
         (PLUS_BUTTON, LONG_PRESS): {COMMAND: COMMAND_HOLD, ENDPOINT_ID: 1},
         (PLUS_BUTTON, LONG_RELEASE): {COMMAND: COMMAND_RELEASE, ENDPOINT_ID: 1},
-
         (CENTER_BUTTON, SHORT_PRESS): {COMMAND: COMMAND_SINGLE, ENDPOINT_ID: 2},
         (CENTER_BUTTON, DOUBLE_PRESS): {COMMAND: COMMAND_DOUBLE, ENDPOINT_ID: 2},
         (CENTER_BUTTON, LONG_PRESS): {COMMAND: COMMAND_HOLD, ENDPOINT_ID: 2},
         (CENTER_BUTTON, LONG_RELEASE): {COMMAND: COMMAND_RELEASE, ENDPOINT_ID: 2},
-
         (MINUS_BUTTON, SHORT_PRESS): {COMMAND: COMMAND_SINGLE, ENDPOINT_ID: 3},
         (MINUS_BUTTON, DOUBLE_PRESS): {COMMAND: COMMAND_DOUBLE, ENDPOINT_ID: 3},
         (MINUS_BUTTON, LONG_PRESS): {COMMAND: COMMAND_HOLD, ENDPOINT_ID: 3},
