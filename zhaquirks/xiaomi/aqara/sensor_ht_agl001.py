@@ -1,4 +1,4 @@
-"""Quirk for Aqara W100 Climate Sensor with 3 buttons"""
+"""Quirk for Aqara W100 Climate Sensor with 3 buttons."""
 
 import logging
 
@@ -69,6 +69,7 @@ class MultistateInputCluster(CustomCluster, MultistateInput):
     """MultistateInput cluster that emits zha_event with button and press type."""
 
     def __init__(self, *args, **kwargs):
+        """Initialize the MultistateInput cluster."""
         self._current_state = None
         super().__init__(*args, **kwargs)
 
@@ -91,7 +92,7 @@ class MultistateInputCluster(CustomCluster, MultistateInput):
 
             self.listener_event(ZHA_SEND_EVENT, self._current_state, event_args)
             _LOGGER.debug(
-                f"[W100] Button={button}, Action={self._current_state}, Value={value}"
+                "[W100] Button=%s, Action=%s, Value=%s", button, self._current_state, value
             )
             # Optionally update attr 0 for diagnostics
             super()._update_attribute(0, self._current_state)
