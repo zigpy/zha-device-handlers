@@ -92,7 +92,10 @@ class MultistateInputCluster(CustomCluster, MultistateInput):
 
             self.listener_event(ZHA_SEND_EVENT, self._current_state, event_args)
             _LOGGER.debug(
-                "[W100] Button=%s, Action=%s, Value=%s", button, self._current_state, value
+                "[W100] Button=%s, Action=%s, Value=%s",
+                button,
+                self._current_state,
+                value,
             )
             # Optionally update attr 0 for diagnostics
             super()._update_attribute(0, self._current_state)
