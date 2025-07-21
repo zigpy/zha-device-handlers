@@ -7,6 +7,15 @@ from zigpy.zcl import foundation
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 
+class SonoffExternalSwitchTriggerType(t.enum8):
+    """extern switch trigger type."""
+
+    Edge_trigger = 0x00
+    Pulse_trigger = 0x01
+    Normally_off_follow_trigger = 0x02
+    Normally_on_follow_trigger = 0x82
+
+
 class SonoffCluster(CustomCluster):
     """Custom Sonoff cluster."""
 
@@ -19,7 +28,8 @@ class SonoffCluster(CustomCluster):
 
         external_trigger_mode = ZCLAttributeDef(
             id=0x0016,
-            type=t.uint8_t,
+            type=SonoffExternalSwitchTriggerType,
+            zcl_type=foundation.DataTypeId.uint8,
             is_manufacturer_specific=True,
         )
         detach_relay = ZCLAttributeDef(
@@ -32,15 +42,6 @@ class SonoffCluster(CustomCluster):
             type=t.uint8_t,
             is_manufacturer_specific=True,
         )
-
-
-class SonoffExternalSwitchTriggerType(t.enum8):
-    """extern switch trigger type."""
-
-    Edge_trigger = 0x00
-    Pulse_trigger = 0x01
-    Normally_off_follow_trigger = 0x02
-    Normally_on_follow_trigger = 0x82
 
 
 zbm_1c_quirk = (
