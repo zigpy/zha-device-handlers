@@ -827,7 +827,7 @@ class TuyaReportingPeriod(t.enum8):
     )
     # Working temperature
     .tuya_temperature(dp_id=22, scale=1.0)
-    # Power supply volatage
+    # Power supply voltage
     .tuya_sensor(
         dp_id=26,
         attribute_name="voltage",
