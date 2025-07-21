@@ -1,7 +1,7 @@
 """Sonoff ZBMINIR2 - Zigbee Switch."""
 
 from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import EntityType, QuirkBuilder
+from zigpy.quirks.v2 import EntityPlatform, EntityType, QuirkBuilder
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
@@ -14,6 +14,13 @@ class SonoffExternalSwitchTriggerType(t.enum8):
     Pulse_trigger = 0x01
     Normally_off_follow_trigger = 0x02
     Normally_on_follow_trigger = 0x82
+
+
+class SonoffWorkMode(t.enum8):
+    """work mode."""
+
+    EndDevice = 0x00
+    Router = 0x01
 
 
 class SonoffCluster(CustomCluster):
@@ -39,7 +46,8 @@ class SonoffCluster(CustomCluster):
         )
         work_mode = ZCLAttributeDef(
             id=0x0018,
-            type=t.uint8_t,
+            type=SonoffWorkMode,
+            zcl_type=foundation.DataTypeId.uint8,
             is_manufacturer_specific=True,
         )
 
@@ -48,12 +56,14 @@ zbm_1c_quirk = (
     QuirkBuilder("SONOFF", "ZBM5-1C-80/86")
     .applies_to("SONOFF", "ZBM5-1C-120")
     .adds(SonoffCluster, endpoint_id=1)
-    .sensor(
+    .enum(
         SonoffCluster.AttributeDefs.work_mode.name,
+        SonoffWorkMode,
         SonoffCluster.cluster_id,
         translation_key="work_mode",
         fallback_name="Work mode",
         entity_type=EntityType.DIAGNOSTIC,
+        entity_platform=EntityPlatform.SENSOR,
         initially_disabled=True,
     )
     .enum(
