@@ -304,10 +304,6 @@ class XiaomiCluster(CustomCluster):
 
         if CONSUMPTION in attributes:
             zcl_consumption = round(attributes[CONSUMPTION] * 1000)
-            self.endpoint.electrical_measurement.update_attribute(
-                ElectricalMeasurement.AttributeDefs.total_active_power.id,
-                zcl_consumption,
-            )
             self.endpoint.smartenergy_metering.update_attribute(
                 Metering.AttributeDefs.current_summ_delivered.id, zcl_consumption
             )
@@ -660,6 +656,14 @@ class ElectricalMeasurementCluster(LocalDataCluster, ElectricalMeasurement):
             self._update_attribute(self.VOLTAGE_ID, 0)
         if self.CONSUMPTION_ID not in self._attr_cache:
             self._update_attribute(self.CONSUMPTION_ID, 0)
+
+        # Previously, this cluster was wrongly setting the total_active_power attribute,
+        # which was not added to HA.
+        # Since it is now added to HA and the incorrect value could be set, we need to
+        # reset it.
+        self._update_attribute(
+            ElectricalMeasurement.AttributeDefs.total_active_power.id, None
+        )
 
 
 class MeteringCluster(LocalDataCluster, Metering):
