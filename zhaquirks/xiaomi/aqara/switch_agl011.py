@@ -3,15 +3,12 @@
 from typing import Any
 
 from zigpy import types
+from zigpy.profiles import zha
 from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.quirks.v2.homeassistant import EntityType
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
-import zigpy.profiles.zha as zha
 
-from zhaquirks.xiaomi import (
-    XiaomiCluster,
-    DeviceTemperatureCluster,
-)
+from zhaquirks.xiaomi import DeviceTemperatureCluster, XiaomiCluster
+
 
 class OperationMode(types.enum8):
     """Enum for dimmer operation mode."""
@@ -19,11 +16,13 @@ class OperationMode(types.enum8):
     Decoupled = 0x00
     Relay = 0x01
 
+
 class Phase(types.enum8):
     """Enum for dimmer phase."""
 
     Leading = 0x00
     Trailing = 0x01
+
 
 class PowerOnBehaviour(types.enum8):
     """Enum for dimmer power-on behaviour."""
@@ -33,6 +32,7 @@ class PowerOnBehaviour(types.enum8):
     Off = 0x02
     Inverted = 0x03
 
+
 class OppleCluster(XiaomiCluster):
     """Aqara manufacturer-specific cluster for the dimmer switch H2 EU."""
 
@@ -41,63 +41,37 @@ class OppleCluster(XiaomiCluster):
 
     class AttributeDefs(BaseAttributeDefs):
         flip_indicator_light = ZCLAttributeDef(
-            id=0x00F0,
-            type=types.uint8_t,
-            access="rw",
-            is_manufacturer_specific=True
+            id=0x00F0, type=types.uint8_t, access="rw", is_manufacturer_specific=True
         )
         led_indicator = ZCLAttributeDef(
-            id=0x0203,
-            type=types.Bool,
-            access="rw",
-            is_manufacturer_specific=True
+            id=0x0203, type=types.Bool, access="rw", is_manufacturer_specific=True
         )
         max_brightness = ZCLAttributeDef(
-            id=0x0516,
-            type=types.uint8_t,
-            access="rw",
-            is_manufacturer_specific=True
+            id=0x0516, type=types.uint8_t, access="rw", is_manufacturer_specific=True
         )
         min_brightness = ZCLAttributeDef(
-            id=0x0515,
-            type=types.uint8_t,
-            access="rw",
-            is_manufacturer_specific=True
+            id=0x0515, type=types.uint8_t, access="rw", is_manufacturer_specific=True
         )
         operation_mode = ZCLAttributeDef(
-            id=0x0200,
-            type=types.uint8_t,
-            access="rw",
-            is_manufacturer_specific=True
+            id=0x0200, type=types.uint8_t, access="rw", is_manufacturer_specific=True
         )
         phase = ZCLAttributeDef(
-            id=0x030A,
-            type=types.uint8_t,
-            access="rw",
-            is_manufacturer_specific=True
+            id=0x030A, type=types.uint8_t, access="rw", is_manufacturer_specific=True
         )
         power_on_behaviour = ZCLAttributeDef(
-            id=0x0517,
-            type=types.uint8_t,
-            access="rw",
-            is_manufacturer_specific=True
+            id=0x0517, type=types.uint8_t, access="rw", is_manufacturer_specific=True
         )
         reporting_interval = ZCLAttributeDef(
-            id=0x00F6,
-            type=types.uint16_t,
-            access="rw",
-            is_manufacturer_specific=True
+            id=0x00F6, type=types.uint16_t, access="rw", is_manufacturer_specific=True
         )
         sensitivity = ZCLAttributeDef(
-            id=0x0234,
-            type=types.uint16_t,
-            access="rw",
-            is_manufacturer_specific=True
+            id=0x0234, type=types.uint16_t, access="rw", is_manufacturer_specific=True
         )
 
     def _update_attribute(self, attrid: int, value: Any) -> None:
         if value is not None:
             super()._update_attribute(attrid, value)
+
 
 (
     QuirkBuilder("Aqara", "lumi.switch.agl011")
