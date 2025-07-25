@@ -40,6 +40,8 @@ class OppleCluster(XiaomiCluster):
     ep_attribute = "opple_cluster"
 
     class AttributeDefs(BaseAttributeDefs):
+        """Attribute Definitions."""
+
         flip_indicator_light = ZCLAttributeDef(
             id=0x00F0, type=types.uint8_t, access="rw", is_manufacturer_specific=True
         )
