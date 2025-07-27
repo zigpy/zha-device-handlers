@@ -169,3 +169,36 @@ from zhaquirks.philips import PHILIPS, SIGNIFY, PhilipsHueLightCluster
     .replaces(PhilipsHueLightCluster, endpoint_id=11)
     .add_to_registry()
 )
+
+(
+    QuirkBuilder()
+    .applies_to(SIGNIFY, "LCD003")
+    .friendly_name(
+        model="Hue Akari Downlight",
+        manufacturer="Philips",
+    )
+    .replaces(PhilipsHueLightCluster, endpoint_id=11)
+    .add_to_registry()
+)
+
+(
+    QuirkBuilder()
+    .applies_to(PHILIPS, "1743530P7")
+    .friendly_name(
+        model="Hue Discover Outdoor Floodlight RGBCCT",
+        manufacturer="Philips",
+    )
+    .replaces(PhilipsHueLightCluster, endpoint_id=11)
+    .add_to_registry()
+)
+
+(
+    QuirkBuilder()
+    .applies_to(SIGNIFY, "LCL008")
+    .friendly_name(
+        model="Hue Lightstrip Solo",
+        manufacturer="Philips",
+    )
+    .replaces(PhilipsHueLightCluster, endpoint_id=11)
+    .add_to_registry()
+)
