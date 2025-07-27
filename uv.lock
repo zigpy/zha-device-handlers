@@ -1206,7 +1206,7 @@ dev = [
     { name = "pytest-cov" },
     { name = "pytest-sugar" },
     { name = "pytest-timeout" },
-    { name = "ruff", specifier = ">=0.12.0" },
+    { name = "ruff", specifier = "==0.12.5" },
 ]
 
 [[package]]

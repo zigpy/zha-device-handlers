@@ -30,7 +30,7 @@ dev = [
     "pytest-cov",
     "pytest-sugar",
     "pytest-timeout",
-    "ruff>=0.12.0",
+    "ruff==0.12.5",     # Keep this in sync with .pre-commit-config.yaml
 ]
 
 [tool.setuptools-git-versioning]

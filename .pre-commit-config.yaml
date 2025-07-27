@@ -15,11 +15,11 @@ repos:
     rev: v1.14.1
     hooks:
       - id: mypy
-  
+
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.9.4 # Keep this in sync with requirements_test.txt
+    rev: v0.12.5 # Keep this in sync with pyproject.toml
     hooks:
-      - id: ruff
+      - id: ruff-check
         args: ["--fix", "--exit-non-zero-on-fix", "--config", "pyproject.toml"]
       - id: ruff-format
         args: ["--config", "pyproject.toml"]
