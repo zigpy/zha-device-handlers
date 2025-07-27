@@ -4,37 +4,22 @@ ci:
   skip: [mypy]
 
 repos:
-  - repo: local
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.4.1
     hooks:
       - id: codespell
-        name: codespell
-        entry: uv run --active codespell --toml=pyproject.toml
-        language: system
-        types: [text]
+        additional_dependencies: [tomli]
+        args: ["--toml", "pyproject.toml"]
 
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.14.1
+    hooks:
       - id: mypy
-        name: mypy
-        entry: uv run --active mypy
-        language: python
-        types: [python]
-
-      - id: ruff-check
-        name: ruff check
-        entry: uv run --active ruff check
-        args:
-          [
-            "--force-exclude",
-            "--fix",
-            "--exit-non-zero-on-fix",
-            "--config",
-            "pyproject.toml",
-          ]
-        language: python
-        types: [python]
-
+  
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.9.4 # Keep this in sync with requirements_test.txt
+    hooks:
+      - id: ruff
+        args: ["--fix", "--exit-non-zero-on-fix", "--config", "pyproject.toml"]
       - id: ruff-format
-        name: ruff format
-        entry: uv run --active ruff format
-        args: ["--force-exclude", "--config", "pyproject.toml"]
-        language: python
-        types: [python]
+        args: ["--config", "pyproject.toml"]

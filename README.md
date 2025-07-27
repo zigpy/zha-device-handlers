@@ -456,14 +456,6 @@ depend on, the lockfile needs to be updated using the command
 $ uv lock -P zigpy
 ```
 
-### Running the linters
-
-To run all the linters configured in the pre-commit hooks:
-
-```bash
-$ pre-commit run --all-files
-```
-
 ### Running the tests
 
 See the [pytest documentation](https://docs.pytest.org/en/latest/) for details about how to run
