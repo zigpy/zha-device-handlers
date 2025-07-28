@@ -16,17 +16,20 @@ class ModeSwitch(types.enum16):
     Quick = 0x01
     Anti_Flicker = 0x04
 
+
 class OperationMode(types.enum8):
     """Enum for dimmer operation mode."""
 
     Decoupled = 0x00
     Relay = 0x01
 
+
 class Phase(types.enum8):
     """Enum for dimmer phase."""
 
     Leading = 0x00
     Trailing = 0x01
+
 
 class PowerOnState(types.enum8):
     """Enum for dimmer power-on state."""
