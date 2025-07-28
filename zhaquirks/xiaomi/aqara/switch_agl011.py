@@ -33,11 +33,8 @@ class PowerOnBehaviour(types.enum8):
     Inverted = 0x03
 
 
-class OppleCluster(XiaomiCluster):
+class OppleCluster(XiaomiAqaraE1Cluster):
     """Aqara manufacturer-specific cluster for the dimmer switch H2 EU."""
-
-    cluster_id = 0xFCC0
-    ep_attribute = "opple_cluster"
 
     class AttributeDefs(BaseAttributeDefs):
         """Attribute Definitions."""
