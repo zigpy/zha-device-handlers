@@ -8,7 +8,6 @@ from zigpy.quirks.v2 import (
 )
 from zigpy.quirks.v2.homeassistant import UnitOfTemperature
 from zigpy.zcl.clusters.general import DeviceTemperature
-from zigpy.zcl.clusters.smartenergy import Metering
 
 (
     QuirkBuilder("frient A/S", "SPLZB-141")
@@ -17,14 +16,6 @@ from zigpy.zcl.clusters.smartenergy import Metering
         endpoint_id=2,
         cluster_id=DeviceTemperature.cluster_id,
         function=lambda entity: entity.__class__.__name__ == "DeviceTemperature",
-    )
-    # This attribute does not actually work
-    .prevent_default_entity_creation(
-        endpoint_id=2,
-        cluster_id=Metering.cluster_id,
-        function=lambda entity: (
-            entity.info_object.translation_key == "summation_delivered"
-        ),
     )
     .sensor(
         endpoint_id=2,
