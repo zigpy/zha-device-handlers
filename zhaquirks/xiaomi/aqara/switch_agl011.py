@@ -9,11 +9,12 @@ from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 from zhaquirks.xiaomi import DeviceTemperatureCluster, XiaomiAqaraE1Cluster
 
+
 class ModeSwitch(types.enum16):
     """Enum for dimmer mode switch."""
 
-    Quick Mode = 0x01
-    Anti Flicker Mode = 0x04
+    Quick = 0x01
+    Anti_Flicker = 0x04
 
 class OperationMode(types.enum8):
     """Enum for dimmer operation mode."""
@@ -63,7 +64,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         phase = ZCLAttributeDef(
             id=0x030A, type=types.uint8_t, access="rw", is_manufacturer_specific=True
         )
-        power_on_behaviour = ZCLAttributeDef(
+        power_on_state = ZCLAttributeDef(
             id=0x0517, type=types.uint8_t, access="rw", is_manufacturer_specific=True
         )
         reporting_interval = ZCLAttributeDef(
@@ -84,6 +85,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
     .adds(DeviceTemperatureCluster)
     .adds(OppleCluster)
     .switch(
+        OppleCluster.AttributeDefs.flip_indicator_light.name,
         OppleCluster.cluster_id,
         translation_key="flip_indicator_light",
         fallback_name="Flip indicator light",
@@ -112,7 +114,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         translation_key="min_brightness",
         fallback_name="Minimum brightness",
     )
-    .number(
+    .enum(
         OppleCluster.AttributeDefs.mode_switch.name,
         ModeSwitch,
         OppleCluster.cluster_id,
