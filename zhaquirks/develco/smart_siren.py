@@ -11,25 +11,13 @@ from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 from zigpy.zcl.clusters.general import PowerConfiguration
 from zigpy.zcl.clusters.security import IasZone
 
-(
-    QuirkBuilder("frient A/S", "SIRZB-111")
-    .applies_to("frient A/S", "SIRZB-110")
+BASE_SIREN_QUIRK = (
+    QuirkBuilder()
     # Hide the default `ias_zone` entity
     .prevent_default_entity_creation(
         endpoint_id=43,
         cluster_id=IasZone.cluster_id,
         function=lambda entity: entity.translation_key == "ias_zone",
-    )
-    # And instead create a tamper sensor
-    .binary_sensor(
-        endpoint_id=43,
-        cluster_id=IasZone.cluster_id,
-        attribute_name=IasZone.AttributeDefs.zone_status.name,
-        device_class=BinarySensorDeviceClass.TAMPER,
-        attribute_converter=lambda value: bool(value & IasZone.ZoneStatus.Tamper),
-        unique_id_suffix="tamper",
-        translation_key="tamper",
-        fallback_name="Tamper",
     )
     # This is a mains-powered device that has a backup battery
     .sensor(
@@ -44,5 +32,27 @@ from zigpy.zcl.clusters.security import IasZone
         unique_id_suffix="battery",
         entity_type=EntityType.DIAGNOSTIC,
     )
+)
+
+(
+    # Device with tamper
+    BASE_SIREN_QUIRK.clone()
+    .applies_to("frient A/S", "SIRZB-110")
+    # Create a tamper sensor
+    .binary_sensor(
+        endpoint_id=43,
+        cluster_id=IasZone.cluster_id,
+        attribute_name=IasZone.AttributeDefs.zone_status.name,
+        device_class=BinarySensorDeviceClass.TAMPER,
+        attribute_converter=lambda value: bool(value & IasZone.ZoneStatus.Tamper),
+        unique_id_suffix="tamper",
+        translation_key="tamper",
+        fallback_name="Tamper",
+    )
     .add_to_registry()
+)
+
+(
+    # Device without tamper
+    BASE_SIREN_QUIRK.clone().applies_to("frient A/S", "SIRZB-111").add_to_registry()
 )
