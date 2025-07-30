@@ -268,7 +268,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
 
 
 (
-    TuyaQuirkBuilder("_TZE284_awepdiwi", "TS0601") # Solar powered - 3 AA battery
+    TuyaQuirkBuilder("_TZE284_awepdiwi", "TS0601")  # Solar powered - 3 AA battery
     .tuya_electrical_conductivity(dp_id=1)
     .tuya_soil_moisture(dp_id=3, scale=3.0 * 100.0)
     .tuya_temperature(dp_id=5, scale=10)
