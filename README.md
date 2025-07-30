@@ -396,6 +396,8 @@ replacement = {
             INPUT_CLUSTERS: [BinaryInput.cluster_id],
             OUTPUT_CLUSTERS: [BinaryInput.cluster_id, Groups.cluster_id],
         },
+    },
+}
 ```
 
 You can see that we have replaced `ElectricalMeasurement.cluster_id` from endpoint 1 in the `signature` dict with the name of our cluster that we created: `ElectricalMeasurementCluster` and on endpoint 2 we replaced `AnalogInput.cluster_id` with the implementation we created for that: `AnalogInputCluster`. This instructs Zigpy to use these `CustomCluster` derivatives instead of the normal cluster definitions for these clusters and this is why this part of the quirk is called `replacement`.
