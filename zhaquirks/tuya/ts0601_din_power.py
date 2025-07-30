@@ -2,7 +2,12 @@
 
 from zigpy.profiles import zha
 from zigpy.quirks.v2 import SensorDeviceClass, SensorStateClass
-from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfPower, UnitOfEnergy, UnitOfTime
+from zigpy.quirks.v2.homeassistant import (
+    PERCENTAGE,
+    UnitOfPower,
+    UnitOfEnergy,
+    UnitOfTime,
+)
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time
