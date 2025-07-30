@@ -391,6 +391,11 @@ class TuyaManufCluster(CustomCluster):
 
             NOTE: You need to wait for time request before setting it. You can't set time without request."""
 
+    class AttributeDefs(BaseAttributeDefs):
+        """Attribute definitions."""
+
+        pass
+
     class ServerCommandDefs(BaseCommandDefs):
         """Server command definitions."""
 
@@ -429,7 +434,7 @@ class TuyaManufCluster(CustomCluster):
         self.endpoint.device.command_bus = Bus()
         self.endpoint.device.command_bus.add_listener(self)  # listen MCU commands
 
-    def tuya_mcu_command(self, command: Command):
+    def tuya_mcu_command(self, command: Command):  # type:ignore[valid-type]
         """Tuya MCU command listener. Only endpoint:1 must listen to MCU commands."""
 
         self.create_catching_task(
