@@ -6,7 +6,6 @@ from unittest.mock import patch
 
 import pytest
 from zigpy.quirks.v2 import EntityMetadata
-import zigpy.types as t
 from zigpy.zcl import ClusterType, foundation
 
 from tests.common import ClusterListener, wait_for_zigpy_tasks
@@ -93,7 +92,7 @@ async def test_command_psbzs(zigpy_device_from_v2_quirk):
             expect_reply=True,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert rsp.status == foundation.Status.SUCCESS
 
@@ -122,7 +121,7 @@ async def test_write_attr_psbzs(zigpy_device_from_v2_quirk):
             expect_reply=False,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -143,7 +142,7 @@ async def test_write_attr_psbzs(zigpy_device_from_v2_quirk):
             expect_reply=False,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -228,7 +227,7 @@ async def test_giex_03_quirk(zigpy_device_from_v2_quirk, model, manuf):
             expect_reply=False,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)

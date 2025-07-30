@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterable, Iterator
 import logging
 import math
-from typing import Any
+from typing import Any, Final
 
 from zigpy import types as t
 import zigpy.device
@@ -31,6 +31,7 @@ from zigpy.zcl.clusters.measurement import (
 )
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.clusters.smartenergy import Metering
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 import zigpy.zdo
 from zigpy.zdo.types import NodeDescriptor
 
@@ -304,10 +305,6 @@ class XiaomiCluster(CustomCluster):
 
         if CONSUMPTION in attributes:
             zcl_consumption = round(attributes[CONSUMPTION] * 1000)
-            self.endpoint.electrical_measurement.update_attribute(
-                ElectricalMeasurement.AttributeDefs.total_active_power.id,
-                zcl_consumption,
-            )
             self.endpoint.smartenergy_metering.update_attribute(
                 Metering.AttributeDefs.current_summ_delivered.id, zcl_consumption
             )
@@ -463,12 +460,18 @@ class XiaomiCluster(CustomCluster):
 class BasicCluster(XiaomiCluster, Basic):
     """Xiaomi basic cluster implementation."""
 
+    class AttributeDefs(Basic.AttributeDefs):
+        """Cluster attributes."""
+
 
 class XiaomiAqaraE1Cluster(XiaomiCluster):
     """Xiaomi mfg cluster implementation."""
 
     cluster_id = 0xFCC0
     ep_attribute = "opple_cluster"
+
+    class AttributeDefs(BaseAttributeDefs):
+        """Cluster attributes."""
 
 
 class XiaomiMotionManufacturerCluster(XiaomiAqaraE1Cluster):
@@ -490,8 +493,12 @@ class XiaomiMotionManufacturerCluster(XiaomiAqaraE1Cluster):
 class BinaryOutputInterlock(CustomCluster, BinaryOutput):
     """Xiaomi binaryoutput cluster with added interlock attribute."""
 
-    attributes = BinaryOutput.attributes.copy()
-    attributes[0xFF06] = ("interlock", t.Bool, True)
+    class AttributeDefs(BinaryOutput.AttributeDefs):
+        """Attribute definitions."""
+
+        interlock: Final = ZCLAttributeDef(
+            id=0xFF06, type=t.Bool, is_manufacturer_specific=True
+        )
 
 
 class XiaomiPowerConfiguration(PowerConfiguration, LocalDataCluster):
@@ -660,6 +667,14 @@ class ElectricalMeasurementCluster(LocalDataCluster, ElectricalMeasurement):
             self._update_attribute(self.VOLTAGE_ID, 0)
         if self.CONSUMPTION_ID not in self._attr_cache:
             self._update_attribute(self.CONSUMPTION_ID, 0)
+
+        # Previously, this cluster was wrongly setting the total_active_power attribute,
+        # which was not added to HA.
+        # Since it is now added to HA and the incorrect value could be set, we need to
+        # reset it.
+        self._update_attribute(
+            ElectricalMeasurement.AttributeDefs.total_active_power.id, None
+        )
 
 
 class MeteringCluster(LocalDataCluster, Metering):

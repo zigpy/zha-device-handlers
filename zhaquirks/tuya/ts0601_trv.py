@@ -1,7 +1,7 @@
 """Map from manufacturer to standard clusters for thermostatic valves."""
 
 import logging
-from typing import Optional, Union
+from typing import Final, Optional, Union
 
 from zigpy.profiles import zha
 import zigpy.types as t
@@ -18,6 +18,7 @@ from zigpy.zcl.clusters.general import (
     Time,
 )
 from zigpy.zcl.clusters.hvac import Thermostat
+from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks import Bus, LocalDataCluster
 from zhaquirks.const import (
@@ -55,19 +56,43 @@ class SiterwellManufCluster(TuyaManufClusterAttributes):
 
     set_time_offset = 1970
 
-    attributes = TuyaManufClusterAttributes.attributes.copy()
-    attributes.update(
-        {
-            SITERWELL_CHILD_LOCK_ATTR: ("child_lock", t.uint8_t, True),
-            SITERWELL_WINDOW_DETECT_ATTR: ("window_detection", t.uint8_t, True),
-            SITERWELL_VALVE_DETECT_ATTR: ("valve_detect", t.uint8_t, True),
-            SITERWELL_VALVE_STATE_ATTR: ("valve_state", t.uint32_t, True),
-            SITERWELL_TARGET_TEMP_ATTR: ("target_temperature", t.uint32_t, True),
-            SITERWELL_TEMPERATURE_ATTR: ("temperature", t.uint32_t, True),
-            SITERWELL_BATTERY_ATTR: ("battery", t.uint32_t, True),
-            SITERWELL_MODE_ATTR: ("mode", t.uint8_t, True),
-        }
-    )
+    class AttributeDefs(TuyaManufClusterAttributes.AttributeDefs):
+        """Attribute definitions."""
+
+        child_lock: Final = ZCLAttributeDef(
+            id=SITERWELL_CHILD_LOCK_ATTR, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        window_detection: Final = ZCLAttributeDef(
+            id=SITERWELL_WINDOW_DETECT_ATTR,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        valve_detect: Final = ZCLAttributeDef(
+            id=SITERWELL_VALVE_DETECT_ATTR,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        valve_state: Final = ZCLAttributeDef(
+            id=SITERWELL_VALVE_STATE_ATTR,
+            type=t.uint32_t,
+            is_manufacturer_specific=True,
+        )
+        target_temperature: Final = ZCLAttributeDef(
+            id=SITERWELL_TARGET_TEMP_ATTR,
+            type=t.uint32_t,
+            is_manufacturer_specific=True,
+        )
+        temperature: Final = ZCLAttributeDef(
+            id=SITERWELL_TEMPERATURE_ATTR,
+            type=t.uint32_t,
+            is_manufacturer_specific=True,
+        )
+        battery: Final = ZCLAttributeDef(
+            id=SITERWELL_BATTERY_ATTR, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        mode: Final = ZCLAttributeDef(
+            id=SITERWELL_MODE_ATTR, type=t.uint8_t, is_manufacturer_specific=True
+        )
 
     TEMPERATURE_ATTRS = {
         SITERWELL_TEMPERATURE_ATTR: "local_temperature",
@@ -193,32 +218,72 @@ class MoesManufCluster(TuyaManufClusterAttributes):
 
     set_time_offset = 1970
 
-    attributes = TuyaManufClusterAttributes.attributes.copy()
-    attributes.update(
-        {
-            MOES_CHILD_LOCK_ATTR: ("child_lock", t.uint8_t, True),
-            MOES_WINDOW_DETECT_ATTR: ("window_detection", t.data24, True),
-            MOES_VALVE_DETECT_ATTR: ("valve_detect", t.uint8_t, True),
-            MOES_VALVE_STATE_ATTR: ("valve_state", t.uint32_t, True),
-            MOES_TARGET_TEMP_ATTR: ("target_temperature", t.uint32_t, True),
-            MOES_TEMPERATURE_ATTR: ("temperature", t.uint32_t, True),
-            MOES_MODE_ATTR: ("mode", t.uint8_t, True),
-            MOES_TEMP_CALIBRATION_ATTR: ("temperature_calibration", t.int32s, True),
-            MOES_MIN_TEMPERATURE_ATTR: ("min_temperature", t.uint32_t, True),
-            MOES_MAX_TEMPERATURE_ATTR: ("max_temperature", t.uint32_t, True),
-            MOES_BOOST_TIME_ATTR: ("boost_duration_seconds", t.uint32_t, True),
-            MOES_FORCE_VALVE_ATTR: ("valve_force_state", t.uint8_t, True),
-            MOES_COMFORT_TEMP_ATTR: ("comfort_mode_temperature", t.uint32_t, True),
-            MOES_ECO_TEMP_ATTR: ("eco_mode_temperature", t.uint32_t, True),
-            MOES_BATTERY_LOW_ATTR: ("battery_low", t.uint8_t, True),
-            MOES_WEEK_FORMAT_ATTR: ("week_format", t.uint8_t, True),
-            MOES_AWAY_TEMP_ATTR: ("away_mode_temperature", t.uint32_t, True),
-            MOES_AUTO_LOCK_ATTR: ("auto_lock", t.uint8_t, True),
-            MOES_AWAY_DAYS_ATTR: ("away_duration_days", t.uint32_t, True),
-            MOES_SCHEDULE_WORKDAY_ATTR: ("workday_schedule", data144, True),
-            MOES_SCHEDULE_WEEKEND_ATTR: ("weekend_schedule", data144, True),
-        }
-    )
+    class AttributeDefs(TuyaManufClusterAttributes.AttributeDefs):
+        """Attribute definitions."""
+
+        child_lock: Final = ZCLAttributeDef(
+            id=MOES_CHILD_LOCK_ATTR, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        window_detection: Final = ZCLAttributeDef(
+            id=MOES_WINDOW_DETECT_ATTR, type=t.data24, is_manufacturer_specific=True
+        )
+        valve_detect: Final = ZCLAttributeDef(
+            id=MOES_VALVE_DETECT_ATTR, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        valve_state: Final = ZCLAttributeDef(
+            id=MOES_VALVE_STATE_ATTR, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        target_temperature: Final = ZCLAttributeDef(
+            id=MOES_TARGET_TEMP_ATTR, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        temperature: Final = ZCLAttributeDef(
+            id=MOES_TEMPERATURE_ATTR, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        mode: Final = ZCLAttributeDef(
+            id=MOES_MODE_ATTR, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        temperature_calibration: Final = ZCLAttributeDef(
+            id=MOES_TEMP_CALIBRATION_ATTR, type=t.int32s, is_manufacturer_specific=True
+        )
+        min_temperature: Final = ZCLAttributeDef(
+            id=MOES_MIN_TEMPERATURE_ATTR, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        max_temperature: Final = ZCLAttributeDef(
+            id=MOES_MAX_TEMPERATURE_ATTR, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        boost_duration_seconds: Final = ZCLAttributeDef(
+            id=MOES_BOOST_TIME_ATTR, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        valve_force_state: Final = ZCLAttributeDef(
+            id=MOES_FORCE_VALVE_ATTR, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        comfort_mode_temperature: Final = ZCLAttributeDef(
+            id=MOES_COMFORT_TEMP_ATTR, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        eco_mode_temperature: Final = ZCLAttributeDef(
+            id=MOES_ECO_TEMP_ATTR, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        battery_low: Final = ZCLAttributeDef(
+            id=MOES_BATTERY_LOW_ATTR, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        week_format: Final = ZCLAttributeDef(
+            id=MOES_WEEK_FORMAT_ATTR, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        away_mode_temperature: Final = ZCLAttributeDef(
+            id=MOES_AWAY_TEMP_ATTR, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        auto_lock: Final = ZCLAttributeDef(
+            id=MOES_AUTO_LOCK_ATTR, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        away_duration_days: Final = ZCLAttributeDef(
+            id=MOES_AWAY_DAYS_ATTR, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        workday_schedule: Final = ZCLAttributeDef(
+            id=MOES_SCHEDULE_WORKDAY_ATTR, type=data144, is_manufacturer_specific=True
+        )
+        weekend_schedule: Final = ZCLAttributeDef(
+            id=MOES_SCHEDULE_WEEKEND_ATTR, type=data144, is_manufacturer_specific=True
+        )
 
     DIRECT_MAPPED_ATTRS = {
         MOES_TEMPERATURE_ATTR: ("local_temperature", lambda value: value * 10),
@@ -316,88 +381,177 @@ class MoesManufClusterNew(MoesManufCluster):
     }
 
 
+class Preset(t.enum8):
+    """Working modes of the thermostat."""
+
+    Away = 0x00
+    Schedule = 0x01
+    Manual = 0x02
+    Comfort = 0x03
+    Eco = 0x04
+    Boost = 0x05
+    Complex = 0x06
+
+
+class WorkDays(t.enum8):
+    """Workday configuration for scheduler operation mode."""
+
+    MonToFri = 0x00
+    MonToSat = 0x01
+    MonToSun = 0x02
+
+
+class ForceValveState(t.enum8):
+    """Force valve state option."""
+
+    Normal = 0x00
+    Open = 0x01
+    Close = 0x02
+
+
 class MoesThermostat(TuyaThermostatCluster):
     """Thermostat cluster for some thermostatic valves."""
-
-    class Preset(t.enum8):
-        """Working modes of the thermostat."""
-
-        Away = 0x00
-        Schedule = 0x01
-        Manual = 0x02
-        Comfort = 0x03
-        Eco = 0x04
-        Boost = 0x05
-        Complex = 0x06
-
-    class WorkDays(t.enum8):
-        """Workday configuration for scheduler operation mode."""
-
-        MonToFri = 0x00
-        MonToSat = 0x01
-        MonToSun = 0x02
-
-    class ForceValveState(t.enum8):
-        """Force valve state option."""
-
-        Normal = 0x00
-        Open = 0x01
-        Close = 0x02
 
     _CONSTANT_ATTRIBUTES = {
         0x001B: Thermostat.ControlSequenceOfOperation.Heating_Only,
         0x001C: Thermostat.SystemMode.Heat,
     }
 
-    attributes = TuyaThermostatCluster.attributes.copy()
-    attributes.update(
-        {
-            0x4000: ("comfort_heating_setpoint", t.int16s, True),
-            0x4001: ("eco_heating_setpoint", t.int16s, True),
-            0x4002: ("operation_preset", Preset, True),
-            0x4003: ("work_days", WorkDays, True),
-            0x4004: ("valve_open_percentage", t.uint8_t, True),
-            0x4005: ("boost_duration_seconds", t.uint32_t, True),
-            0x4006: ("valve_force_state", ForceValveState, True),
-            0x4007: ("unoccupied_duration_days", t.uint32_t, True),
-            0x4110: ("workday_schedule_1_hour", t.uint8_t, True),
-            0x4111: ("workday_schedule_1_minute", t.uint8_t, True),
-            0x4112: ("workday_schedule_1_temperature", t.int16s, True),
-            0x4120: ("workday_schedule_2_hour", t.uint8_t, True),
-            0x4121: ("workday_schedule_2_minute", t.uint8_t, True),
-            0x4122: ("workday_schedule_2_temperature", t.int16s, True),
-            0x4130: ("workday_schedule_3_hour", t.uint8_t, True),
-            0x4131: ("workday_schedule_3_minute", t.uint8_t, True),
-            0x4132: ("workday_schedule_3_temperature", t.int16s, True),
-            0x4140: ("workday_schedule_4_hour", t.uint8_t, True),
-            0x4141: ("workday_schedule_4_minute", t.uint8_t, True),
-            0x4142: ("workday_schedule_4_temperature", t.int16s, True),
-            0x4150: ("workday_schedule_5_hour", t.uint8_t, True),
-            0x4151: ("workday_schedule_5_minute", t.uint8_t, True),
-            0x4152: ("workday_schedule_5_temperature", t.int16s, True),
-            0x4160: ("workday_schedule_6_hour", t.uint8_t, True),
-            0x4161: ("workday_schedule_6_minute", t.uint8_t, True),
-            0x4162: ("workday_schedule_6_temperature", t.int16s, True),
-            0x4210: ("weekend_schedule_1_hour", t.uint8_t, True),
-            0x4211: ("weekend_schedule_1_minute", t.uint8_t, True),
-            0x4212: ("weekend_schedule_1_temperature", t.int16s, True),
-            0x4220: ("weekend_schedule_2_hour", t.uint8_t, True),
-            0x4221: ("weekend_schedule_2_minute", t.uint8_t, True),
-            0x4222: ("weekend_schedule_2_temperature", t.int16s, True),
-            0x4230: ("weekend_schedule_3_hour", t.uint8_t, True),
-            0x4231: ("weekend_schedule_3_minute", t.uint8_t, True),
-            0x4232: ("weekend_schedule_3_temperature", t.int16s, True),
-            0x4240: ("weekend_schedule_4_hour", t.uint8_t, True),
-            0x4241: ("weekend_schedule_4_minute", t.uint8_t, True),
-            0x4242: ("weekend_schedule_4_temperature", t.int16s, True),
-            0x4250: ("weekend_schedule_5_hour", t.uint8_t, True),
-            0x4251: ("weekend_schedule_5_minute", t.uint8_t, True),
-            0x4252: ("weekend_schedule_5_temperature", t.int16s, True),
-            0x4260: ("weekend_schedule_6_hour", t.uint8_t, True),
-            0x4261: ("weekend_schedule_6_minute", t.uint8_t, True),
-            0x4262: ("weekend_schedule_6_temperature", t.int16s, True),
-        }
-    )
+    class AttributeDefs(TuyaThermostatCluster.AttributeDefs):
+        """Attribute definitions."""
+
+        comfort_heating_setpoint: Final = ZCLAttributeDef(
+            id=0x4000, type=t.int16s, is_manufacturer_specific=True
+        )
+        eco_heating_setpoint: Final = ZCLAttributeDef(
+            id=0x4001, type=t.int16s, is_manufacturer_specific=True
+        )
+        operation_preset: Final = ZCLAttributeDef(
+            id=0x4002, type=Preset, is_manufacturer_specific=True
+        )
+        work_days: Final = ZCLAttributeDef(
+            id=0x4003, type=WorkDays, is_manufacturer_specific=True
+        )
+        valve_open_percentage: Final = ZCLAttributeDef(
+            id=0x4004, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        boost_duration_seconds: Final = ZCLAttributeDef(
+            id=0x4005, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        valve_force_state: Final = ZCLAttributeDef(
+            id=0x4006, type=ForceValveState, is_manufacturer_specific=True
+        )
+        unoccupied_duration_days: Final = ZCLAttributeDef(
+            id=0x4007, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        workday_schedule_1_hour: Final = ZCLAttributeDef(
+            id=0x4110, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        workday_schedule_1_minute: Final = ZCLAttributeDef(
+            id=0x4111, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        workday_schedule_1_temperature: Final = ZCLAttributeDef(
+            id=0x4112, type=t.int16s, is_manufacturer_specific=True
+        )
+        workday_schedule_2_hour: Final = ZCLAttributeDef(
+            id=0x4120, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        workday_schedule_2_minute: Final = ZCLAttributeDef(
+            id=0x4121, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        workday_schedule_2_temperature: Final = ZCLAttributeDef(
+            id=0x4122, type=t.int16s, is_manufacturer_specific=True
+        )
+        workday_schedule_3_hour: Final = ZCLAttributeDef(
+            id=0x4130, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        workday_schedule_3_minute: Final = ZCLAttributeDef(
+            id=0x4131, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        workday_schedule_3_temperature: Final = ZCLAttributeDef(
+            id=0x4132, type=t.int16s, is_manufacturer_specific=True
+        )
+        workday_schedule_4_hour: Final = ZCLAttributeDef(
+            id=0x4140, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        workday_schedule_4_minute: Final = ZCLAttributeDef(
+            id=0x4141, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        workday_schedule_4_temperature: Final = ZCLAttributeDef(
+            id=0x4142, type=t.int16s, is_manufacturer_specific=True
+        )
+        workday_schedule_5_hour: Final = ZCLAttributeDef(
+            id=0x4150, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        workday_schedule_5_minute: Final = ZCLAttributeDef(
+            id=0x4151, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        workday_schedule_5_temperature: Final = ZCLAttributeDef(
+            id=0x4152, type=t.int16s, is_manufacturer_specific=True
+        )
+        workday_schedule_6_hour: Final = ZCLAttributeDef(
+            id=0x4160, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        workday_schedule_6_minute: Final = ZCLAttributeDef(
+            id=0x4161, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        workday_schedule_6_temperature: Final = ZCLAttributeDef(
+            id=0x4162, type=t.int16s, is_manufacturer_specific=True
+        )
+        weekend_schedule_1_hour: Final = ZCLAttributeDef(
+            id=0x4210, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        weekend_schedule_1_minute: Final = ZCLAttributeDef(
+            id=0x4211, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        weekend_schedule_1_temperature: Final = ZCLAttributeDef(
+            id=0x4212, type=t.int16s, is_manufacturer_specific=True
+        )
+        weekend_schedule_2_hour: Final = ZCLAttributeDef(
+            id=0x4220, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        weekend_schedule_2_minute: Final = ZCLAttributeDef(
+            id=0x4221, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        weekend_schedule_2_temperature: Final = ZCLAttributeDef(
+            id=0x4222, type=t.int16s, is_manufacturer_specific=True
+        )
+        weekend_schedule_3_hour: Final = ZCLAttributeDef(
+            id=0x4230, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        weekend_schedule_3_minute: Final = ZCLAttributeDef(
+            id=0x4231, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        weekend_schedule_3_temperature: Final = ZCLAttributeDef(
+            id=0x4232, type=t.int16s, is_manufacturer_specific=True
+        )
+        weekend_schedule_4_hour: Final = ZCLAttributeDef(
+            id=0x4240, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        weekend_schedule_4_minute: Final = ZCLAttributeDef(
+            id=0x4241, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        weekend_schedule_4_temperature: Final = ZCLAttributeDef(
+            id=0x4242, type=t.int16s, is_manufacturer_specific=True
+        )
+        weekend_schedule_5_hour: Final = ZCLAttributeDef(
+            id=0x4250, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        weekend_schedule_5_minute: Final = ZCLAttributeDef(
+            id=0x4251, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        weekend_schedule_5_temperature: Final = ZCLAttributeDef(
+            id=0x4252, type=t.int16s, is_manufacturer_specific=True
+        )
+        weekend_schedule_6_hour: Final = ZCLAttributeDef(
+            id=0x4260, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        weekend_schedule_6_minute: Final = ZCLAttributeDef(
+            id=0x4261, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        weekend_schedule_6_temperature: Final = ZCLAttributeDef(
+            id=0x4262, type=t.int16s, is_manufacturer_specific=True
+        )
 
     DIRECT_MAPPING_ATTRS = {
         "occupied_heating_setpoint": (
@@ -753,12 +907,12 @@ class MoesUserInterface(TuyaUserInterfaceCluster):
 
     _CHILD_LOCK_ATTR = MOES_CHILD_LOCK_ATTR
 
-    attributes = TuyaUserInterfaceCluster.attributes.copy()
-    attributes.update(
-        {
-            0x5000: ("auto_lock", t.Bool, True),
-        }
-    )
+    class AttributeDefs(TuyaUserInterfaceCluster.AttributeDefs):
+        """Attribute definitions."""
+
+        auto_lock: Final = ZCLAttributeDef(
+            id=0x5000, type=t.Bool, is_manufacturer_specific=True
+        )
 
     def autolock_change(self, value):
         """Automatic lock change."""
@@ -780,13 +934,15 @@ class MoesWindowDetection(LocalDataCluster, OnOff):
         super().__init__(*args, **kwargs)
         self.endpoint.device.window_detection_bus.add_listener(self)
 
-    attributes = OnOff.attributes.copy()
-    attributes.update(
-        {
-            0x6000: ("window_detection_temperature", t.int16s, True),
-            0x6001: ("window_detection_timeout_minutes", t.uint8_t, True),
-        }
-    )
+    class AttributeDefs(OnOff.AttributeDefs):
+        """Attribute definitions."""
+
+        window_detection_temperature: Final = ZCLAttributeDef(
+            id=0x6000, type=t.int16s, is_manufacturer_specific=True
+        )
+        window_detection_timeout_minutes: Final = ZCLAttributeDef(
+            id=0x6001, type=t.uint8_t, is_manufacturer_specific=True
+        )
 
     def window_detect_change(self, value):
         """Window detection change."""
@@ -941,38 +1097,92 @@ class ZONNSMARTManufCluster(TuyaManufClusterAttributes):
         global ZonnsmartManuClusterSelf  # noqa: PLW0603
         ZonnsmartManuClusterSelf = self
 
-    attributes = TuyaManufClusterAttributes.attributes.copy()
-    attributes.update(
-        {
-            ZONNSMART_MODE_ATTR: ("mode", t.uint8_t, True),
-            ZONNSMART_WINDOW_DETECT_ATTR: ("window_detection", t.uint8_t, True),
-            ZONNSMART_FROST_PROTECT_ATTR: ("frost_protection", t.uint8_t, True),
-            ZONNSMART_TARGET_TEMP_ATTR: ("target_temperature", t.uint32_t, True),
-            ZONNSMART_TEMPERATURE_ATTR: ("temperature", t.uint32_t, True),
-            ZONNSMART_TEMPERATURE_CALIBRATION_ATTR: (
-                "temperature_calibration",
-                t.int32s,
-                True,
-            ),
-            ZONNSMART_WEEK_FORMAT_ATTR: ("week_format", t.uint8_t, True),
-            ZONNSMART_HOLIDAY_TEMP_ATTR: ("holiday_temperature", t.uint32_t, True),
-            ZONNSMART_BATTERY_ATTR: ("battery", t.uint32_t, True),
-            ZONNSMART_UPTIME_TIME_ATTR: ("uptime", t.uint32_t, True),
-            ZONNSMART_CHILD_LOCK_ATTR: ("child_lock", t.uint8_t, True),
-            ZONNSMART_FAULT_DETECTION_ATTR: ("fault_detected", t.uint8_t, True),
-            ZONNSMART_BOOST_TIME_ATTR: ("boost_duration_seconds", t.uint32_t, True),
-            ZONNSMART_OPENED_WINDOW_TEMP: (
-                "opened_window_temperature",
-                t.uint32_t,
-                True,
-            ),
-            ZONNSMART_COMFORT_TEMP_ATTR: ("comfort_mode_temperature", t.uint32_t, True),
-            ZONNSMART_ECO_TEMP_ATTR: ("eco_mode_temperature", t.uint32_t, True),
-            ZONNSMART_HEATING_STOPPING_ATTR: ("heating_stop", t.uint8_t, True),
-            ZONNSMART_ONLINE_MODE_BOOL_ATTR: ("online_set", t.uint8_t, True),
-            ZONNSMART_ONLINE_MODE_ENUM_ATTR: ("online", t.uint8_t, True),
-        }
-    )
+    class AttributeDefs(TuyaManufClusterAttributes.AttributeDefs):
+        """Attribute definitions."""
+
+        mode: Final = ZCLAttributeDef(
+            id=ZONNSMART_MODE_ATTR, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        window_detection: Final = ZCLAttributeDef(
+            id=ZONNSMART_WINDOW_DETECT_ATTR,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        frost_protection: Final = ZCLAttributeDef(
+            id=ZONNSMART_FROST_PROTECT_ATTR,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        target_temperature: Final = ZCLAttributeDef(
+            id=ZONNSMART_TARGET_TEMP_ATTR,
+            type=t.uint32_t,
+            is_manufacturer_specific=True,
+        )
+        temperature: Final = ZCLAttributeDef(
+            id=ZONNSMART_TEMPERATURE_ATTR,
+            type=t.uint32_t,
+            is_manufacturer_specific=True,
+        )
+        temperature_calibration: Final = ZCLAttributeDef(
+            id=ZONNSMART_TEMPERATURE_CALIBRATION_ATTR,
+            type=t.int32s,
+            is_manufacturer_specific=True,
+        )
+        week_format: Final = ZCLAttributeDef(
+            id=ZONNSMART_WEEK_FORMAT_ATTR, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        holiday_temperature: Final = ZCLAttributeDef(
+            id=ZONNSMART_HOLIDAY_TEMP_ATTR,
+            type=t.uint32_t,
+            is_manufacturer_specific=True,
+        )
+        battery: Final = ZCLAttributeDef(
+            id=ZONNSMART_BATTERY_ATTR, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        uptime: Final = ZCLAttributeDef(
+            id=ZONNSMART_UPTIME_TIME_ATTR,
+            type=t.uint32_t,
+            is_manufacturer_specific=True,
+        )
+        child_lock: Final = ZCLAttributeDef(
+            id=ZONNSMART_CHILD_LOCK_ATTR, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        fault_detected: Final = ZCLAttributeDef(
+            id=ZONNSMART_FAULT_DETECTION_ATTR,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        boost_duration_seconds: Final = ZCLAttributeDef(
+            id=ZONNSMART_BOOST_TIME_ATTR, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        opened_window_temperature: Final = ZCLAttributeDef(
+            id=ZONNSMART_OPENED_WINDOW_TEMP,
+            type=t.uint32_t,
+            is_manufacturer_specific=True,
+        )
+        comfort_mode_temperature: Final = ZCLAttributeDef(
+            id=ZONNSMART_COMFORT_TEMP_ATTR,
+            type=t.uint32_t,
+            is_manufacturer_specific=True,
+        )
+        eco_mode_temperature: Final = ZCLAttributeDef(
+            id=ZONNSMART_ECO_TEMP_ATTR, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        heating_stop: Final = ZCLAttributeDef(
+            id=ZONNSMART_HEATING_STOPPING_ATTR,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        online_set: Final = ZCLAttributeDef(
+            id=ZONNSMART_ONLINE_MODE_BOOL_ATTR,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        online: Final = ZCLAttributeDef(
+            id=ZONNSMART_ONLINE_MODE_ENUM_ATTR,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
 
     DIRECT_MAPPED_ATTRS = {
         ZONNSMART_TEMPERATURE_ATTR: ("local_temperature", lambda value: value * 10),
@@ -1052,12 +1262,12 @@ class ZONNSMARTThermostat(TuyaThermostatCluster):
         HolidayTemp = 0x03
         FrostProtect = 0x04
 
-    attributes = TuyaThermostatCluster.attributes.copy()
-    attributes.update(
-        {
-            0x4002: ("operation_preset", Preset, True),
-        }
-    )
+    class AttributeDefs(TuyaThermostatCluster.AttributeDefs):
+        """Attribute definitions."""
+
+        operation_preset: Final = ZCLAttributeDef(
+            id=0x4002, type=Preset, is_manufacturer_specific=True
+        )
 
     DIRECT_MAPPING_ATTRS = {
         "occupied_heating_setpoint": (

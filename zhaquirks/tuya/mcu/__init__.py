@@ -4,11 +4,12 @@ from __future__ import annotations
 
 from collections.abc import Callable
 import datetime
-from typing import Any
+from typing import Any, Final
 
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import LevelControl, OnOff
+from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks import Bus, DoublingPowerConfigurationCluster
 
@@ -116,11 +117,47 @@ class TuyaAttributesCluster(TuyaLocalCluster):
         return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
 
+class MCUVersion(t.Struct):
+    """Tuya MCU version response Zcl payload."""
+
+    status: t.uint8_t
+    tsn: t.uint8_t
+    version_raw: t.uint8_t
+
+    @property
+    def version(self) -> str:
+        """Format the raw version to X.Y.Z."""
+
+        if self.version_raw:
+            # MCU version is 1 byte length
+            # is converted from HEX -> BIN -> XX.XX.XXXX -> DEC (x.y.z)
+            # example: 0x98 -> 10011000 -> 10.01.1000 -> 2.1.8
+            # https://developer.tuya.com/en/docs/iot-device-dev/firmware-version-description?id=K9zzuc5n2gff8#title-1-Zigbee%20firmware%20versions
+            major = self.version_raw >> 6
+            minor = (self.version_raw & 63) >> 4
+            release = self.version_raw & 15
+
+            return f"{major}.{minor}.{release}"
+
+        return None
+
+
+class TuyaConnectionStatus(t.Struct):
+    """Tuya connection status data."""
+
+    tsn: t.uint8_t
+    status: t.LVBytes
+
+
 class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
     """Manufacturer specific cluster for sending Tuya MCU commands."""
 
     set_time_offset = 1970  # MCU timestamp from 1/1/1970
     set_time_local_offset = None
+
+    # TODO: Backwards compatibility, remove
+    MCUVersion = MCUVersion
+    TuyaConnectionStatus = TuyaConnectionStatus
 
     class AttributeDefs(TuyaNewManufCluster.AttributeDefs):
         """Attribute Definitions."""
@@ -132,69 +169,28 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
             is_manufacturer_specific=True,
         )
 
-    class MCUVersion(t.Struct):
-        """Tuya MCU version response Zcl payload."""
+    class ClientCommandDefs(TuyaNewManufCluster.ClientCommandDefs):
+        """Client command definitions."""
 
-        status: t.uint8_t
-        tsn: t.uint8_t
-        version_raw: t.uint8_t
+        mcu_version_response = foundation.ZCLCommandDef(
+            id=TUYA_MCU_VERSION_RSP,
+            schema={"version": MCUVersion},
+            is_manufacturer_specific=True,
+        )
+        mcu_connection_status = foundation.ZCLCommandDef(
+            id=TUYA_MCU_CONNECTION_STATUS,
+            schema={"payload": TuyaConnectionStatus},
+            is_manufacturer_specific=True,
+        )
 
-        @property
-        def version(self) -> str:
-            """Format the raw version to X.Y.Z."""
+    class ServerCommandDefs(TuyaNewManufCluster.ServerCommandDefs):
+        """Server command definitions."""
 
-            if self.version_raw:
-                # MCU version is 1 byte length
-                # is converted from HEX -> BIN -> XX.XX.XXXX -> DEC (x.y.z)
-                # example: 0x98 -> 10011000 -> 10.01.1000 -> 2.1.8
-                # https://developer.tuya.com/en/docs/iot-device-dev/firmware-version-description?id=K9zzuc5n2gff8#title-1-Zigbee%20firmware%20versions
-                major = self.version_raw >> 6
-                minor = (self.version_raw & 63) >> 4
-                release = self.version_raw & 15
-
-                return f"{major}.{minor}.{release}"
-
-            return None
-
-    class TuyaConnectionStatus(t.Struct):
-        """Tuya connection status data."""
-
-        tsn: t.uint8_t
-        status: t.LVBytes
-
-    client_commands = TuyaNewManufCluster.client_commands.copy()
-    client_commands.update(
-        {
-            TUYA_MCU_VERSION_RSP: foundation.ZCLCommandDef(
-                "mcu_version_response",
-                {"version": MCUVersion},
-                True,
-                is_manufacturer_specific=True,
-            ),
-        }
-    )
-    client_commands.update(
-        {
-            TUYA_MCU_CONNECTION_STATUS: foundation.ZCLCommandDef(
-                "mcu_connection_status",
-                {"payload": TuyaConnectionStatus},
-                True,
-                is_manufacturer_specific=True,
-            ),
-        }
-    )
-
-    server_commands = TuyaNewManufCluster.server_commands.copy()
-    server_commands.update(
-        {
-            TUYA_MCU_CONNECTION_STATUS: foundation.ZCLCommandDef(
-                "mcu_connection_status_rsp",
-                {"payload": TuyaConnectionStatus},
-                False,
-                is_manufacturer_specific=True,
-            ),
-        }
-    )
+        mcu_connection_status_rsp = foundation.ZCLCommandDef(
+            id=TUYA_MCU_CONNECTION_STATUS,
+            schema={"payload": TuyaConnectionStatus},
+            is_manufacturer_specific=True,
+        )
 
     def __init__(self, *args, **kwargs):
         """Init."""
@@ -302,7 +298,7 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
                     result[dp] = mapped_attr
         return result
 
-    def handle_mcu_version_response(self, payload: MCUVersion) -> foundation.Status:
+    def handle_mcu_version_response(self, payload: MCUVersion) -> foundation.Status:  # type:ignore[valid-type]
         """Handle MCU version response."""
 
         self.debug("MCU version: %s", payload.version)
@@ -337,7 +333,8 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
         return foundation.Status.SUCCESS
 
     def handle_mcu_connection_status(
-        self, payload: TuyaConnectionStatus
+        self,
+        payload: TuyaConnectionStatus,  # type:ignore[valid-type]
     ) -> foundation.Status:
         """Handle gateway connection status requests (0x25)."""
 
@@ -354,6 +351,12 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
 
 class TuyaOnOff(OnOff, TuyaLocalCluster):
     """Tuya MCU OnOff cluster."""
+
+    class AttributeDefs(OnOff.AttributeDefs):
+        """Cluster attributes."""
+
+    class ServerCommandDefs(OnOff.ServerCommandDefs):
+        """Server command definitions."""
 
     async def command(
         self,
@@ -508,13 +511,11 @@ class TuyaOnOffManufCluster(TuyaMCUCluster):
 class MoesSwitchManufCluster(TuyaOnOffManufCluster):
     """On/Off Tuya cluster with extra device attributes."""
 
-    attributes = TuyaOnOffManufCluster.attributes.copy()
-    attributes.update(
-        {
-            0x8001: ("backlight_mode", MoesBacklight),
-            0x8002: ("power_on_state", PowerOnState),
-        }
-    )
+    class AttributeDefs(TuyaOnOffManufCluster.AttributeDefs):
+        """Attribute definitions."""
+
+        backlight_mode: Final = ZCLAttributeDef(id=0x8001, type=MoesBacklight)
+        power_on_state: Final = ZCLAttributeDef(id=0x8002, type=PowerOnState)
 
     dp_to_attribute: dict[int, DPToAttributeMapping] = (
         TuyaOnOffManufCluster.dp_to_attribute.copy()
@@ -545,6 +546,9 @@ class MoesSwitchManufCluster(TuyaOnOffManufCluster):
 
 class TuyaLevelControl(LevelControl, TuyaLocalCluster):
     """Tuya MCU Level cluster for dimmable device."""
+
+    class AttributeDefs(LevelControl.AttributeDefs):
+        """Cluster attributes."""
 
     async def command(
         self,
@@ -621,14 +625,15 @@ class TuyaLevelControl(LevelControl, TuyaLocalCluster):
 class TuyaInWallLevelControl(TuyaAttributesCluster, TuyaLevelControl):
     """Tuya Level cluster for inwall dimmable device."""
 
-    # Not sure if these are 'inwall' specific attributes or common to dimmers
-    attributes = TuyaLevelControl.attributes.copy()
-    attributes.update(
-        {
-            0xEF01: ("minimum_level", t.uint32_t, True),
-            0xEF02: ("bulb_type", t.enum8, True),
-        }
-    )
+    class AttributeDefs(TuyaLevelControl.AttributeDefs):
+        """Attribute definitions."""
+
+        minimum_level: Final = ZCLAttributeDef(
+            id=0xEF01, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        bulb_type: Final = ZCLAttributeDef(
+            id=0xEF02, type=t.enum8, is_manufacturer_specific=True
+        )
 
 
 class TuyaLevelControlManufCluster(TuyaMCUCluster):

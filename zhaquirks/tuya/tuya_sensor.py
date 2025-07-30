@@ -1,7 +1,5 @@
 """Tuya temp and humidity sensors."""
 
-import copy
-
 from zigpy.quirks.v2 import EntityPlatform, EntityType
 from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature, UnitOfTime
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass
@@ -38,18 +36,14 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     set_time_offset = 1970
     set_time_local_offset = 1970
 
-    # Deepcopy required to override 'set_time', without, it will revert
-    server_commands = copy.deepcopy(TuyaMCUCluster.server_commands)
-    server_commands.update(
-        {
-            TUYA_SET_TIME: foundation.ZCLCommandDef(
-                "set_time",
-                {"time": TuyaTimePayload},
-                False,
-                is_manufacturer_specific=False,
-            ),
-        }
-    )
+    class ServerCommandDefs(TuyaMCUCluster.ServerCommandDefs):
+        """Server command definitions."""
+
+        set_time = foundation.ZCLCommandDef(
+            id=TUYA_SET_TIME,
+            schema={"time": TuyaTimePayload},
+            is_manufacturer_specific=False,
+        )
 
 
 (
@@ -261,6 +255,8 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .applies_to("_TZE284_sgabhwa6", "TS0601")
     .applies_to("_TZE284_nhgdf6qr", "TS0601")  # Giex GX04
     .applies_to("_TZE284_ap9owrsa", "TS0601")  # Novadigital SG-ZB
+    .applies_to("_TZE284_awepdiwi", "TS0601")  # Solar powered
+    .applies_to("_TZE284_33bwcga2", "TS0601")  # iHseno
     .tuya_temperature(dp_id=5, scale=10)
     .tuya_battery(dp_id=15)
     .tuya_soil_moisture(dp_id=3)
@@ -311,6 +307,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .applies_to("_TZE204_utkemkbs", "TS0601")
     .applies_to("_TZE284_utkemkbs", "TS0601")
     .applies_to("_TZE204_ksz749x8", "TS0601")
+    .applies_to("_TZE284_upagmta9", "TS0601")
     .tuya_temperature(dp_id=1, scale=10)
     .tuya_humidity(dp_id=2)
     .tuya_dp(

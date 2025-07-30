@@ -686,7 +686,7 @@ class GiexIrrigationStatus(t.enum8):
         attribute_name="auto_clean",
         entity_type=EntityType.CONFIG,
         translation_key="auto_clean",
-        fallback_name="Auto clean",
+        fallback_name="Autoclean",
     )
     .tuya_dp(
         dp_id=21,
@@ -723,7 +723,7 @@ class GiexIrrigationStatus(t.enum8):
         step=5,
         unit=PERCENTAGE,
         translation_key="valve_state_auto_shutdown",
-        fallback_name="Valve state auto shutdown",
+        fallback_name="Valve state auto-shutdown",
     )
     .tuya_sensor(
         dp_id=3,
