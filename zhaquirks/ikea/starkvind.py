@@ -39,6 +39,8 @@ class IkeaAirpurifier(CustomCluster):
     ep_attribute: str = "ikea_airpurifier"
 
     class AttributeDefs(BaseAttributeDefs):
+        """Cluster attributes."""
+
         filter_run_time = ZCLAttributeDef(
             id=0x0000, type=t.uint32_t, is_manufacturer_specific=True
         )

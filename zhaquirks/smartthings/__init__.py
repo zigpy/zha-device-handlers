@@ -17,6 +17,8 @@ class SmartThingsAccelCluster(CustomCluster):
     ep_attribute = "accelerometer"
 
     class AttributeDefs(BaseAttributeDefs):
+        """Cluster attributes."""
+
         motion_threshold_multiplier = ZCLAttributeDef(
             id=0x0000, type=t.uint8_t, is_manufacturer_specific=True
         )

@@ -59,7 +59,7 @@ class F000LevelControlCluster(NoManufacturerCluster, LevelControl):
     class ServerCommandDefs(LevelControl.ServerCommandDefs):
         """Server command definitions."""
 
-        moveToLevelTuya = foundation.ZCLCommandDef(
+        moveToLevelTuya = foundation.ZCLCommandDef(  # noqa: N815
             id=TUYA_CUSTOM_LEVEL_COMMAND,
             schema={"payload": TuyaLevelPayload},
             is_manufacturer_specific=False,

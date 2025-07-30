@@ -139,7 +139,8 @@ class NoManufTimeNoVersionRespTuyaMCUCluster(TuyaMCUCluster):
         )
 
     def handle_mcu_version_response(
-        self, payload: TuyaMCUCluster.MCUVersion
+        self,
+        payload: TuyaMCUCluster.MCUVersion,  # type:ignore[valid-type]
     ) -> foundation.Status:
         """Handle MCU version response."""
         return foundation.Status.SUCCESS

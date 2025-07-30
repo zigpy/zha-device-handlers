@@ -55,6 +55,8 @@ class OsramButtonCluster(CustomCluster):
     ep_attribute = "osram_cluster"
 
     class AttributeDefs(BaseAttributeDefs):
+        """Cluster attributes."""
+
         osram_1 = ZCLAttributeDef(
             id=0x000A, type=t.uint8_t, is_manufacturer_specific=True
         )

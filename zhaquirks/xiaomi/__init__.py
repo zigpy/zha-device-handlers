@@ -31,7 +31,7 @@ from zigpy.zcl.clusters.measurement import (
 )
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.clusters.smartenergy import Metering
-from zigpy.zcl.foundation import ZCLAttributeDef
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 import zigpy.zdo
 from zigpy.zdo.types import NodeDescriptor
 
@@ -460,12 +460,18 @@ class XiaomiCluster(CustomCluster):
 class BasicCluster(XiaomiCluster, Basic):
     """Xiaomi basic cluster implementation."""
 
+    class AttributeDefs(Basic.AttributeDefs):
+        """Cluster attributes."""
+
 
 class XiaomiAqaraE1Cluster(XiaomiCluster):
     """Xiaomi mfg cluster implementation."""
 
     cluster_id = 0xFCC0
     ep_attribute = "opple_cluster"
+
+    class AttributeDefs(BaseAttributeDefs):
+        """Cluster attributes."""
 
 
 class XiaomiMotionManufacturerCluster(XiaomiAqaraE1Cluster):

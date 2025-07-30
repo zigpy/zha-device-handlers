@@ -82,7 +82,7 @@ class VibrationAQ1(XiaomiQuickInitDevice):
     class VibrationBasicCluster(BasicCluster):
         """Vibration cluster."""
 
-        class AttributeDefs(BasicCluster.AttributeDefs):  # type:ignore[name-defined]
+        class AttributeDefs(BasicCluster.AttributeDefs):
             """Attribute definitions."""
 
             sensitivity: Final = ZCLAttributeDef(

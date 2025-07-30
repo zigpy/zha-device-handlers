@@ -715,6 +715,9 @@ class TuyaThermostatCluster(LocalDataCluster, Thermostat):
 
     _CONSTANT_ATTRIBUTES = {0x001B: Thermostat.ControlSequenceOfOperation.Heating_Only}
 
+    class AttributeDefs(Thermostat.AttributeDefs):
+        """Cluster attributes."""
+
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
@@ -830,6 +833,9 @@ class TuyaThermostatCluster(LocalDataCluster, Thermostat):
 
 class TuyaUserInterfaceCluster(LocalDataCluster, UserInterface):
     """HVAC User interface cluster for tuya thermostats."""
+
+    class AttributeDefs(UserInterface.AttributeDefs):
+        """Cluster attributes."""
 
     def __init__(self, *args, **kwargs):
         """Init."""

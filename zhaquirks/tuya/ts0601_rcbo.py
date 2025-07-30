@@ -133,8 +133,8 @@ class TuyaRCBOBasic(CustomCluster, Basic):
     class AttributeDefs(Basic.AttributeDefs):
         """Attribute definitions."""
 
-        tuya_FFE2: Final = ZCLAttributeDef(id=0xFFE2, type=t.uint8_t)
-        tuya_FFE4: Final = ZCLAttributeDef(id=0xFFE4, type=t.uint8_t)
+        tuya_FFE2: Final = ZCLAttributeDef(id=0xFFE2, type=t.uint8_t)  # noqa: N815
+        tuya_FFE4: Final = ZCLAttributeDef(id=0xFFE4, type=t.uint8_t)  # noqa: N815
 
 
 class TuyaRCBOOnOff(TuyaOnOff, TuyaAttributesCluster):

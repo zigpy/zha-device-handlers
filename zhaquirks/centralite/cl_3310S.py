@@ -30,6 +30,8 @@ class SmartthingsRelativeHumidityCluster(CustomCluster):
     ep_attribute = "humidity"
 
     class AttributeDefs(BaseAttributeDefs):
+        """Cluster attributes."""
+
         # Relative Humidity Measurement Information
         measured_value = ZCLAttributeDef(
             id=0x0000, type=t.int16s, is_manufacturer_specific=True

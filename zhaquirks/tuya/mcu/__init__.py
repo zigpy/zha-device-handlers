@@ -298,7 +298,7 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
                     result[dp] = mapped_attr
         return result
 
-    def handle_mcu_version_response(self, payload: MCUVersion) -> foundation.Status:
+    def handle_mcu_version_response(self, payload: MCUVersion) -> foundation.Status:  # type:ignore[valid-type]
         """Handle MCU version response."""
 
         self.debug("MCU version: %s", payload.version)
@@ -333,7 +333,8 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
         return foundation.Status.SUCCESS
 
     def handle_mcu_connection_status(
-        self, payload: TuyaConnectionStatus
+        self,
+        payload: TuyaConnectionStatus,  # type:ignore[valid-type]
     ) -> foundation.Status:
         """Handle gateway connection status requests (0x25)."""
 
@@ -350,6 +351,12 @@ class TuyaMCUCluster(TuyaAttributesCluster, TuyaNewManufCluster):
 
 class TuyaOnOff(OnOff, TuyaLocalCluster):
     """Tuya MCU OnOff cluster."""
+
+    class AttributeDefs(OnOff.AttributeDefs):
+        """Cluster attributes."""
+
+    class ServerCommandDefs(OnOff.ServerCommandDefs):
+        """Server command definitions."""
 
     async def command(
         self,
@@ -539,6 +546,9 @@ class MoesSwitchManufCluster(TuyaOnOffManufCluster):
 
 class TuyaLevelControl(LevelControl, TuyaLocalCluster):
     """Tuya MCU Level cluster for dimmable device."""
+
+    class AttributeDefs(LevelControl.AttributeDefs):
+        """Cluster attributes."""
 
     async def command(
         self,
