@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -116,3 +117,16 @@ class CeilingFan(CustomDevice):
             }
         }
     }
+
+
+(
+    QuirkBuilder("King Of Fans,  Inc.", "MR101Z")
+    .replaces_endpoint(1, zha.PROFILE_ID, zha.DeviceType.DIMMABLE_LIGHT)
+    .replaces(KofBasic)
+    .replaces(KofIdentify)
+    .replaces(KofGroups)
+    .replaces(KofScenes)
+    .replaces(KofOnOff)
+    .replaces(KofLevelControl)
+    .add_to_registry()
+)
