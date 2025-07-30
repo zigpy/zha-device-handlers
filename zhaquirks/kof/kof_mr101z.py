@@ -77,56 +77,15 @@ class KofLevelControl(NoReplyMixin, CustomCluster, LevelControl):
     void_input_commands = {cmd.id for cmd in LevelControl.commands_by_name.values()}
 
 
-class CeilingFan(CustomDevice):
-    """Ceiling Fan Device."""
-
-    signature = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: 14,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    LevelControl.cluster_id,
-                    Fan.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],
-            }
-        },
-        MANUFACTURER: "King Of Fans,  Inc.",
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                DEVICE_TYPE: zha.DeviceType.DIMMABLE_LIGHT,
-                INPUT_CLUSTERS: [
-                    KofBasic,
-                    KofIdentify,
-                    KofGroups,
-                    KofScenes,
-                    KofOnOff,
-                    KofLevelControl,
-                    Fan,
-                ],
-                OUTPUT_CLUSTERS: [Identify, Ota],
-            }
-        }
-    }
-
 
 (
     QuirkBuilder("King Of Fans,  Inc.", "MR101Z")
-    .replaces_endpoint(1, zha.PROFILE_ID, zha.DeviceType.DIMMABLE_LIGHT)
-    .replaces(KofBasic)
-    .replaces(KofIdentify)
-    .replaces(KofGroups)
-    .replaces(KofScenes)
-    .replaces(KofOnOff)
-    .replaces(KofLevelControl)
+    .replaces_endpoint(endpoint_id=1, profile_id=zha.PROFILE_ID, device_type=zha.DeviceType.DIMMABLE_LIGHT)
+    .replaces(replacement_cluster_class=KofBasic, cluster_id=Basic.cluster_id)
+    .replaces(replacement_cluster_class=KofIdentify, cluster_id=Identify.cluster_id)
+    .replaces(replacement_cluster_class=KofGroups, cluster_id=Groups.cluster_id)
+    .replaces(replacement_cluster_class=KofScenes, cluster_id=Scenes.cluster_id)
+    .replaces(replacement_cluster_class=KofOnOff, cluster_id=OnOff.cluster_id)
+    .replaces(replacement_cluster_class=KofLevelControl, cluster_id=LevelControl.cluster_id)
     .add_to_registry()
 )
