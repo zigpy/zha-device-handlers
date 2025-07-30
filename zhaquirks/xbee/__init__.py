@@ -371,7 +371,7 @@ class XBeeRemoteATRequest(LocalDataCluster):
                 XBEE_AT_REQUEST_CLUSTER,
                 XBEE_AT_ENDPOINT,
                 XBEE_AT_ENDPOINT,
-                self._endpoint.device.application.get_sequence(),
+                self._endpoint.device.get_sequence(),
                 data,
                 expect_reply=False,
             )
@@ -401,14 +401,14 @@ class XBeeRemoteATRequest(LocalDataCluster):
         else:
             value = await self.remote_at_command(command)
 
-        tsn = self._endpoint.device.application.get_sequence()
+        tsn = self._endpoint.device.get_sequence()
         hdr = foundation.ZCLHeader.cluster(tsn, command_id)
         self._endpoint.device.endpoints[XBEE_DATA_ENDPOINT].out_clusters[
             LevelControl.cluster_id
         ].handle_cluster_request(hdr, {"response": value})
 
         if command == "IS" and value:
-            tsn = self._endpoint.device.application.get_sequence()
+            tsn = self._endpoint.device.get_sequence()
             hdr = foundation.ZCLHeader.cluster(tsn, SAMPLE_DATA_CMD)
             self._endpoint.device.endpoints[XBEE_DATA_ENDPOINT].in_clusters[
                 XBEE_IO_CLUSTER
@@ -583,24 +583,20 @@ class XBeeSerialDataCluster(LocalDataCluster):
         tsn=None,
     ):
         """Handle outgoing data."""
-        data = BinaryString(data).serialize()
+        status, _ = await self._endpoint.device.application.request(
+            self._endpoint.device,
+            XBEE_PROFILE_ID,
+            XBEE_DATA_CLUSTER,
+            XBEE_DATA_ENDPOINT,
+            XBEE_DATA_ENDPOINT,
+            self._endpoint.device.get_sequence(),
+            BinaryString(data).serialize(),
+            expect_reply=False,
+        )
+
         return foundation.GENERAL_COMMANDS[
             foundation.GeneralCommand.Default_Response
-        ].schema(
-            command_id=0x00,
-            status=(
-                await self._endpoint.device.application.request(
-                    self._endpoint.device,
-                    XBEE_PROFILE_ID,
-                    XBEE_DATA_CLUSTER,
-                    XBEE_DATA_ENDPOINT,
-                    XBEE_DATA_ENDPOINT,
-                    self._endpoint.device.application.get_sequence(),
-                    data,
-                    expect_reply=False,
-                )
-            )[0],
-        )
+        ].schema(command_id=0x00, status=status)
 
     def handle_cluster_request(
         self,
@@ -647,15 +643,21 @@ class XBeeCommon(CustomDevice):
             .remote_at_command(command, *args, apply_changes=True, **kwargs)
         )
 
-    def deserialize(self, endpoint_id, cluster_id, data):
+    def custom_profile_packet_received(self, packet: t.ZigbeePacket) -> None:
         """Deserialize."""
-        if endpoint_id == 0:
-            return super().deserialize(endpoint_id, cluster_id, data)
+        if packet.profile_id != XBEE_PROFILE_ID:
+            return
+
+        # TODO: get rid of this roundabout fake ZCL cluster stuff
         tsn = self._application.get_sequence()
-        command_id = 0x0000
+        command_id = 0x00
         hdr = foundation.ZCLHeader.cluster(tsn, command_id)
-        data = hdr.serialize() + data
-        return super().deserialize(endpoint_id, cluster_id, data)
+        data = hdr.serialize() + packet.data.serialize()
+
+        zcl_cluster = self.endpoints[packet.src_ep].in_clusters[packet.cluster_id]
+        _, args = zcl_cluster.deserialize(data)
+
+        zcl_cluster.handle_message(hdr, args)
 
     replacement = {
         ENDPOINTS: {
