@@ -2,6 +2,7 @@
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
+from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
@@ -46,61 +47,9 @@ from zhaquirks.const import (
 )
 
 
-class IcasaKPD14S(CustomDevice):
-    """icasa KPD14S device (looks like a white label Sunricher)."""
-
-    signature = {
-        MODELS_INFO: [("icasa", "ICZB-KPD14S")],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.LEVEL_CONTROL_SWITCH,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    Identify.cluster_id,
-                    Diagnostic.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    LevelControl.cluster_id,
-                    Ota.cluster_id,
-                    Color.cluster_id,
-                    LightLink.cluster_id,
-                ],
-            }
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.LEVEL_CONTROL_SWITCH,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    Identify.cluster_id,
-                    Diagnostic.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    LevelControl.cluster_id,
-                    Ota.cluster_id,
-                    Color.cluster_id,
-                    LightLink.cluster_id,
-                ],
-            }
-        }
-    }
-
-    device_automation_triggers = {
+(
+    QuirkBuilder("icasa", "ICZB-KPD14S")
+    .device_automation_triggers({
         (SHORT_PRESS, TURN_ON): {
             COMMAND: COMMAND_ON,
             ENDPOINT_ID: 1,
@@ -152,4 +101,6 @@ class IcasaKPD14S(CustomDevice):
             CLUSTER_ID: 5,
             PARAMS: {"group_id": 0, "scene_id": 2},
         },
-    }
+    })
+    .add_to_registry()
+)

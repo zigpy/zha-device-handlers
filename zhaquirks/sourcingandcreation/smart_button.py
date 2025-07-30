@@ -2,6 +2,7 @@
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
+from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,

@@ -2,6 +2,7 @@
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
+from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.zcl.clusters.general import Basic, LevelControl, MultistateInput, OnOff, Ota
 
 from zhaquirks import CustomCluster, PowerConfigurationCluster
@@ -63,50 +64,17 @@ class MultistateInputCluster(CustomCluster, MultistateInput):
             super()._update_attribute(0, action)
 
 
-class Button(CustomDevice):
-    """thirdreality button device - alternate version."""
-
-    signature = {
-        MODELS_INFO: [(THIRD_REALITY, "3RSB22BZ")],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: 0x0104,
-                DEVICE_TYPE: 0x0006,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    MultistateInput.cluster_id,
-                    CustomPowerConfigurationCluster.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [
-                    OnOff.cluster_id,
-                    LevelControl.cluster_id,
-                    Ota.cluster_id,
-                ],
-            }
-        },
-    }
-    replacement = {
-        SKIP_CONFIGURATION: True,
-        ENDPOINTS: {
-            1: {
-                DEVICE_TYPE: zha.DeviceType.REMOTE_CONTROL,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    CustomPowerConfigurationCluster,
-                    MultistateInputCluster,
-                ],
-                OUTPUT_CLUSTERS: [
-                    OnOff.cluster_id,
-                    LevelControl.cluster_id,
-                    Ota.cluster_id,
-                ],
-            }
-        },
-    }
-
-    device_automation_triggers = {
+(
+    QuirkBuilder(THIRD_REALITY, "3RSB22BZ")
+    .replaces_endpoint(endpoint_id=1, profile_id=0x0104, device_type=zha.DeviceType.REMOTE_CONTROL)
+    .replaces(replacement_cluster_class=CustomPowerConfigurationCluster, cluster_id=CustomPowerConfigurationCluster.cluster_id)
+    .replaces(replacement_cluster_class=MultistateInputCluster, cluster_id=MultistateInput.cluster_id)
+    .skip_configuration()
+    .device_automation_triggers({
         (DOUBLE_PRESS, DOUBLE_PRESS): {COMMAND: COMMAND_DOUBLE},
         (SHORT_PRESS, SHORT_PRESS): {COMMAND: COMMAND_SINGLE},
         (LONG_PRESS, LONG_PRESS): {COMMAND: COMMAND_HOLD},
         (LONG_RELEASE, LONG_RELEASE): {COMMAND: COMMAND_RELEASE},
-    }
+    })
+    .add_to_registry()
+)

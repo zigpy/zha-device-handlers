@@ -2,6 +2,7 @@
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.quirks.v2 import QuirkBuilder
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PollControl
 from zigpy.zcl.clusters.homeautomation import Diagnostic
@@ -38,50 +39,11 @@ class SmartthingsRelativeHumidityCluster(CustomCluster):
         )
 
 
-class CentraLite3310S(CustomDevice):
-    """CentraLite3310S custom device implementation."""
-
-    signature = {
-        #  <SimpleDescriptor endpoint=1 profile=260 device_type=770
-        #  device_version=0
-        #  input_clusters=[0, 1, 3, 32, 1026, 2821, 64581]
-        #  output_clusters=[3, 25]>
-        MODELS_INFO: [
-            (CENTRALITE, "3310-G"),
-            (CENTRALITE, "3310-S"),
-            (CENTRALITE, "3310"),
-        ],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.TEMPERATURE_SENSOR,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfigurationCluster.cluster_id,
-                    Identify.cluster_id,
-                    PollControl.cluster_id,
-                    TemperatureMeasurement.cluster_id,
-                    Diagnostic.cluster_id,
-                    SmartthingsRelativeHumidityCluster.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],
-            }
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfigurationCluster,
-                    Identify.cluster_id,
-                    PollControl.cluster_id,
-                    TemperatureMeasurement.cluster_id,
-                    Diagnostic.cluster_id,
-                    SmartthingsRelativeHumidityCluster,
-                ],
-                OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],
-            }
-        }
-    }
+(
+    QuirkBuilder(CENTRALITE, "3310-G")
+    .applies_to(CENTRALITE, "3310-S")
+    .applies_to(CENTRALITE, "3310")
+    .replaces(replacement_cluster_class=PowerConfigurationCluster, cluster_id=PowerConfigurationCluster.cluster_id)
+    .replaces(replacement_cluster_class=SmartthingsRelativeHumidityCluster, cluster_id=SMRT_THINGS_REL_HUM_CLSTR)
+    .add_to_registry()
+)

@@ -2,6 +2,7 @@
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
+from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.zcl.clusters.general import (
     Basic,
     Identify,
@@ -32,97 +33,19 @@ from zhaquirks.const import (
 from zhaquirks.samjin import SAMJIN, SamjinIASCluster
 
 
-class SamjinButton(CustomDevice):
-    """Samjin button device."""
+SAMJIN_BUTTON_TRIGGERS = {
+    (DOUBLE_PRESS, DOUBLE_PRESS): {COMMAND: COMMAND_BUTTON_DOUBLE},
+    (SHORT_PRESS, SHORT_PRESS): {COMMAND: COMMAND_BUTTON_SINGLE},
+    (LONG_PRESS, LONG_PRESS): {COMMAND: COMMAND_BUTTON_HOLD},
+}
 
-    signature = {
-        # <SimpleDescriptor endpoint=1 profile=260 device_type=1026
-        # device_version=0
-        # input_clusters=[0, 1, 3, 32, 1026, 1280, 2821]
-        # output_clusters=[3, 25]>
-        MODELS_INFO: [(SAMJIN, BUTTON)],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    Identify.cluster_id,
-                    PollControl.cluster_id,
-                    TemperatureMeasurement.cluster_id,
-                    IasZone.cluster_id,
-                    Diagnostic.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],
-            }
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    Identify.cluster_id,
-                    PollControl.cluster_id,
-                    TemperatureMeasurement.cluster_id,
-                    SamjinIASCluster,
-                    Diagnostic.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],
-            }
-        }
-    }
-
-    device_automation_triggers = {
-        (DOUBLE_PRESS, DOUBLE_PRESS): {COMMAND: COMMAND_BUTTON_DOUBLE},
-        (SHORT_PRESS, SHORT_PRESS): {COMMAND: COMMAND_BUTTON_SINGLE},
-        (LONG_PRESS, LONG_PRESS): {COMMAND: COMMAND_BUTTON_HOLD},
-    }
+(
+    QuirkBuilder(SAMJIN, BUTTON)
+    .replaces(replacement_cluster_class=SamjinIASCluster, cluster_id=IasZone.cluster_id)
+    .device_automation_triggers(SAMJIN_BUTTON_TRIGGERS)
+    .add_to_registry()
+)
 
 
-class SamjinButton2(SamjinButton):
-    """Samjin button device variation without Diagnostic cluster."""
-
-    signature = {
-        # <SimpleDescriptor endpoint=1 profile=260 device_type=1026
-        # device_version=0
-        # input_clusters=[0, 1, 3, 32, 1026, 1280]
-        # output_clusters=[3, 25]>
-        MODELS_INFO: [(SAMJIN, BUTTON)],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    Identify.cluster_id,
-                    PollControl.cluster_id,
-                    TemperatureMeasurement.cluster_id,
-                    IasZone.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],
-            }
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    Identify.cluster_id,
-                    PollControl.cluster_id,
-                    TemperatureMeasurement.cluster_id,
-                    SamjinIASCluster,
-                ],
-                OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],
-            }
-        }
-    }
+# Note: SamjinButton2 variation without Diagnostic cluster is handled by the same v2 quirk above
+# since v2 API only replaces the IasZone cluster, other differences are handled automatically
