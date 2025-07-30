@@ -261,6 +261,8 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .applies_to("_TZE284_sgabhwa6", "TS0601")
     .applies_to("_TZE284_nhgdf6qr", "TS0601")  # Giex GX04
     .applies_to("_TZE284_ap9owrsa", "TS0601")  # Novadigital SG-ZB
+    .applies_to("_TZE284_awepdiwi", "TS0601")  # Solar powered
+    .applies_to("_TZE284_33bwcga2", "TS0601")  # iHseno
     .tuya_temperature(dp_id=5, scale=10)
     .tuya_battery(dp_id=15)
     .tuya_soil_moisture(dp_id=3)
@@ -309,7 +311,9 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .applies_to("_TZE204_9yapgbuv", "TS0601")
     .applies_to("_TZE200_utkemkbs", "TS0601")
     .applies_to("_TZE204_utkemkbs", "TS0601")
+    .applies_to("_TZE284_utkemkbs", "TS0601")
     .applies_to("_TZE204_ksz749x8", "TS0601")
+    .applies_to("_TZE284_upagmta9", "TS0601")
     .tuya_temperature(dp_id=1, scale=10)
     .tuya_humidity(dp_id=2)
     .tuya_dp(
