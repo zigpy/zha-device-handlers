@@ -68,7 +68,7 @@ class CustomSonoffCluster(CustomCluster):
         off_value=0,
         on_value=30,
         translation_key="auto_close_when_water_shortage",
-        fallback_name="Auto close when water shortage",
+        fallback_name="Water shortage auto-close",
     )
     .add_to_registry()
 )
