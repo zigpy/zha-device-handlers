@@ -1,4 +1,4 @@
-"""Tuya temp and humidity sensors."""
+"""Tuya temp, humidity and soil sensors."""
 
 import datetime
 
@@ -11,6 +11,7 @@ from zigpy.zcl import foundation
 from zhaquirks.tuya import (
     TUYA_SET_TIME,
     TuyaPowerConfigurationCluster2AAA,
+    TuyaPowerConfigurationCluster3AA,
     TuyaTimePayload,
 )
 from zhaquirks.tuya.builder import TuyaQuirkBuilder, TuyaTemperatureMeasurement
@@ -257,11 +258,22 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .applies_to("_TZE284_sgabhwa6", "TS0601")
     .applies_to("_TZE284_nhgdf6qr", "TS0601")  # Giex GX04
     .applies_to("_TZE284_ap9owrsa", "TS0601")  # Novadigital SG-ZB
-    .applies_to("_TZE284_awepdiwi", "TS0601")  # Solar powered
     .applies_to("_TZE284_33bwcga2", "TS0601")  # iHseno
     .tuya_temperature(dp_id=5, scale=10)
     .tuya_battery(dp_id=15)
     .tuya_soil_moisture(dp_id=3)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+(
+    TuyaQuirkBuilder("_TZE284_awepdiwi", "TS0601") # Solar powered - 3 AA battery
+    .tuya_electrical_conductivity(dp_id=1)
+    .tuya_soil_moisture(dp_id=3, scale=3.0 * 100.0)
+    .tuya_temperature(dp_id=5, scale=10)
+    .tuya_battery(dp_id=15)
+    .adds(TuyaPowerConfigurationCluster3AA)
     .skip_configuration()
     .add_to_registry()
 )
