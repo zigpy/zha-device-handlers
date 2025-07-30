@@ -1,28 +1,9 @@
 """Schneider Electric (Wiser) Outlet Quirks."""
 
-from zigpy.profiles import zgp, zha
-from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.zcl.clusters.general import (
-    Basic,
-    GreenPowerProxy,
-    Groups,
-    Identify,
-    OnOff,
-    Ota,
-    Scenes,
-)
-from zigpy.zcl.clusters.homeautomation import Diagnostic, ElectricalMeasurement
-from zigpy.zcl.clusters.smartenergy import DeviceManagement, Metering
+from zigpy.zcl.clusters.smartenergy import Metering
 
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-)
 from zhaquirks.schneiderelectric import SE_MANUF_NAME
 
 
@@ -38,6 +19,10 @@ class MeteringCluster(CustomCluster, Metering):
 (
     QuirkBuilder(SE_MANUF_NAME, "SOCKET/OUTLET/1")
     .applies_to(SE_MANUF_NAME, "SOCKET/OUTLET/2")
-    .replaces(replacement_cluster_class=MeteringCluster, cluster_id=Metering.cluster_id, endpoint_id=6)
+    .replaces(
+        replacement_cluster_class=MeteringCluster,
+        cluster_id=Metering.cluster_id,
+        endpoint_id=6,
+    )
     .add_to_registry()
 )

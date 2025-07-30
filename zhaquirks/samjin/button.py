@@ -1,17 +1,6 @@
 """Samjin button device."""
 
-from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
 from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.zcl.clusters.general import (
-    Basic,
-    Identify,
-    Ota,
-    PollControl,
-    PowerConfiguration,
-)
-from zigpy.zcl.clusters.homeautomation import Diagnostic
-from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone
 
 from zhaquirks.const import (
@@ -20,18 +9,11 @@ from zhaquirks.const import (
     COMMAND_BUTTON_DOUBLE,
     COMMAND_BUTTON_HOLD,
     COMMAND_BUTTON_SINGLE,
-    DEVICE_TYPE,
     DOUBLE_PRESS,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
     LONG_PRESS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
     SHORT_PRESS,
 )
 from zhaquirks.samjin import SAMJIN, SamjinIASCluster
-
 
 SAMJIN_BUTTON_TRIGGERS = {
     (DOUBLE_PRESS, DOUBLE_PRESS): {COMMAND: COMMAND_BUTTON_DOUBLE},

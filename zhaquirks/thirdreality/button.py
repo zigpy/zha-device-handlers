@@ -1,9 +1,8 @@
 """Third Reality button devices."""
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
 from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.zcl.clusters.general import Basic, LevelControl, MultistateInput, OnOff, Ota
+from zigpy.zcl.clusters.general import MultistateInput
 
 from zhaquirks import CustomCluster, PowerConfigurationCluster
 from zhaquirks.const import (
@@ -12,17 +11,10 @@ from zhaquirks.const import (
     COMMAND_HOLD,
     COMMAND_RELEASE,
     COMMAND_SINGLE,
-    DEVICE_TYPE,
     DOUBLE_PRESS,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
     LONG_PRESS,
     LONG_RELEASE,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
     SHORT_PRESS,
-    SKIP_CONFIGURATION,
     VALUE,
     ZHA_SEND_EVENT,
 )
@@ -66,15 +58,25 @@ class MultistateInputCluster(CustomCluster, MultistateInput):
 
 (
     QuirkBuilder(THIRD_REALITY, "3RSB22BZ")
-    .replaces_endpoint(endpoint_id=1, profile_id=0x0104, device_type=zha.DeviceType.REMOTE_CONTROL)
-    .replaces(replacement_cluster_class=CustomPowerConfigurationCluster, cluster_id=CustomPowerConfigurationCluster.cluster_id)
-    .replaces(replacement_cluster_class=MultistateInputCluster, cluster_id=MultistateInput.cluster_id)
+    .replaces_endpoint(
+        endpoint_id=1, profile_id=0x0104, device_type=zha.DeviceType.REMOTE_CONTROL
+    )
+    .replaces(
+        replacement_cluster_class=CustomPowerConfigurationCluster,
+        cluster_id=CustomPowerConfigurationCluster.cluster_id,
+    )
+    .replaces(
+        replacement_cluster_class=MultistateInputCluster,
+        cluster_id=MultistateInput.cluster_id,
+    )
     .skip_configuration()
-    .device_automation_triggers({
-        (DOUBLE_PRESS, DOUBLE_PRESS): {COMMAND: COMMAND_DOUBLE},
-        (SHORT_PRESS, SHORT_PRESS): {COMMAND: COMMAND_SINGLE},
-        (LONG_PRESS, LONG_PRESS): {COMMAND: COMMAND_HOLD},
-        (LONG_RELEASE, LONG_RELEASE): {COMMAND: COMMAND_RELEASE},
-    })
+    .device_automation_triggers(
+        {
+            (DOUBLE_PRESS, DOUBLE_PRESS): {COMMAND: COMMAND_DOUBLE},
+            (SHORT_PRESS, SHORT_PRESS): {COMMAND: COMMAND_SINGLE},
+            (LONG_PRESS, LONG_PRESS): {COMMAND: COMMAND_HOLD},
+            (LONG_RELEASE, LONG_RELEASE): {COMMAND: COMMAND_RELEASE},
+        }
+    )
     .add_to_registry()
 )

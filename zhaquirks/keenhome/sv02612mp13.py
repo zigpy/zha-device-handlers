@@ -1,30 +1,8 @@
 """Smart vent quirk."""
 
-from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
 from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.zcl.clusters.general import (
-    Basic,
-    Groups,
-    Identify,
-    LevelControl,
-    OnOff,
-    Ota,
-    PollControl,
-    Scenes,
-)
-from zigpy.zcl.clusters.homeautomation import Diagnostic
-from zigpy.zcl.clusters.measurement import PressureMeasurement, TemperatureMeasurement
 
 from zhaquirks import DoublingPowerConfigurationCluster
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-)
 
 KEEN1_CLUSTER_ID = 0xFC01  # decimal = 64513
 KEEN2_CLUSTER_ID = 0xFC02  # decimal = 64514
@@ -42,6 +20,9 @@ KEEN2_CLUSTER_ID = 0xFC02  # decimal = 64514
     .applies_to("Keen Home Inc", "SV02-610-MP-1.3")
     .applies_to("Keen Home Inc", "SV01-612-MP-1.0")
     .applies_to("Keen Home Inc", "SV02-612-MP-1.3")
-    .replaces(replacement_cluster_class=DoublingPowerConfigurationCluster, cluster_id=DoublingPowerConfigurationCluster.cluster_id)
+    .replaces(
+        replacement_cluster_class=DoublingPowerConfigurationCluster,
+        cluster_id=DoublingPowerConfigurationCluster.cluster_id,
+    )
     .add_to_registry()
 )
