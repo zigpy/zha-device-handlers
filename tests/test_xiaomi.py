@@ -601,8 +601,7 @@ async def test_xiaomi_plug_power(zigpy_device_from_quirk, quirk):
     assert em_listener.attribute_updates[1][0] == zcl_em_current_power
     assert em_listener.attribute_updates[1][1] == 150  # multiplied by 10
 
-    # Test total power consumption on ElectricalMeasurement cluster and SmartEnergy cluster
-    zcl_em_total_power = ElectricalMeasurement.AttributeDefs.total_active_power.id
+    # Test total power consumption on SmartEnergy cluster
     zcl_se_total_power = Metering.AttributeDefs.current_summ_delivered.id
     se_cluster = device.endpoints[1].smartenergy_metering
     se_listener = ClusterListener(se_cluster)
@@ -610,10 +609,6 @@ async def test_xiaomi_plug_power(zigpy_device_from_quirk, quirk):
     basic_cluster.update_attribute(
         XIAOMI_AQARA_ATTRIBUTE, create_aqara_attr_report({149: 0.001})
     )
-    # electrical measurement cluster
-    assert len(em_listener.attribute_updates) == 3
-    assert em_listener.attribute_updates[2][0] == zcl_em_total_power
-    assert em_listener.attribute_updates[2][1] == 1  # multiplied by 1000
 
     # smart energy cluster
     assert len(se_listener.attribute_updates) == 1
@@ -630,8 +625,20 @@ async def test_xiaomi_plug_power(zigpy_device_from_quirk, quirk):
     assert analog_input_listener.attribute_updates[0][0] == zcl_analog_input_value
     assert analog_input_listener.attribute_updates[0][1] == 40
 
-    assert em_listener.attribute_updates[3][0] == zcl_em_current_power
-    assert em_listener.attribute_updates[3][1] == 400  # multiplied by 10
+    assert em_listener.attribute_updates[2][0] == zcl_em_current_power
+    assert em_listener.attribute_updates[2][1] == 400  # multiplied by 10
+
+
+async def test_xiaomi_total_active_power_clear(zigpy_device_from_quirk):
+    """Tests that the total_active_power attribute is cleared during init."""
+
+    with mock.patch(
+        "zhaquirks.xiaomi.ElectricalMeasurementCluster._update_attribute"
+    ) as update_attribute_mock:
+        zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.plug_eu.PlugMAEU01)
+        update_attribute_mock.assert_called_with(
+            ElectricalMeasurement.AttributeDefs.total_active_power.id, None
+        )
 
 
 @pytest.mark.parametrize(
