@@ -1,5 +1,7 @@
 """Device handler for loratap TS130F smart curtain switch."""
 
+from typing import Final
+
 from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomCluster, CustomDevice
 import zigpy.types as t
@@ -14,6 +16,7 @@ from zigpy.zcl.clusters.general import (
     Scenes,
     Time,
 )
+from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -32,8 +35,10 @@ CMD_GO_TO_LIFT_PERCENTAGE = 0x0005
 class TuyaWithBacklightOnOffCluster(CustomCluster, OnOff):
     """Tuya Zigbee On Off cluster with extra attributes."""
 
-    attributes = OnOff.attributes.copy()
-    attributes.update({0x8001: ("backlight_mode", SwitchBackLight)})
+    class AttributeDefs(OnOff.AttributeDefs):
+        """Attribute definitions."""
+
+        backlight_mode: Final = ZCLAttributeDef(id=0x8001, type=SwitchBackLight)
 
 
 class MotorMode(t.enum8):
@@ -46,12 +51,14 @@ class MotorMode(t.enum8):
 class TuyaCoveringCluster(CustomCluster, WindowCovering):
     """TuyaSmartCurtainWindowCoveringCluster: Allow to setup Window covering tuya devices."""
 
-    attributes = WindowCovering.attributes.copy()
-    attributes.update({0x8000: ("motor_mode", MotorMode)})
-    attributes.update({0xF000: ("tuya_moving_state", t.enum8)})
-    attributes.update({0xF001: ("calibration", t.enum8)})
-    attributes.update({0xF002: ("motor_reversal", t.enum8)})
-    attributes.update({0xF003: ("calibration_time", t.uint16_t)})
+    class AttributeDefs(WindowCovering.AttributeDefs):
+        """Attribute definitions."""
+
+        motor_mode: Final = ZCLAttributeDef(id=0x8000, type=MotorMode)
+        tuya_moving_state: Final = ZCLAttributeDef(id=0xF000, type=t.enum8)
+        calibration: Final = ZCLAttributeDef(id=0xF001, type=t.enum8)
+        motor_reversal: Final = ZCLAttributeDef(id=0xF002, type=t.enum8)
+        calibration_time: Final = ZCLAttributeDef(id=0xF003, type=t.uint16_t)
 
     def _update_attribute(self, attrid, value):
         if attrid == ATTR_CURRENT_POSITION_LIFT_PERCENTAGE:
