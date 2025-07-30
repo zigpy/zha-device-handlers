@@ -32,7 +32,6 @@ from zigpy.zcl.clusters.security import IasWd, IasZone
         device_class=BinarySensorDeviceClass.TAMPER,
         attribute_converter=lambda value: bool(value & IasZone.ZoneStatus.Tamper),
         unique_id_suffix="tamper",
-        translation_key="tamper",
         fallback_name="Tamper",
     )
     .add_to_registry()

@@ -46,7 +46,6 @@ BASE_SIREN_QUIRK = (
         device_class=BinarySensorDeviceClass.TAMPER,
         attribute_converter=lambda value: bool(value & IasZone.ZoneStatus.Tamper),
         unique_id_suffix="tamper",
-        translation_key="tamper",
         fallback_name="Tamper",
     )
     .add_to_registry()

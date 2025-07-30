@@ -1,6 +1,5 @@
 """Develco Air Quality Sensor."""
 
-import logging
 from typing import Final
 
 from zigpy.quirks import CustomCluster
@@ -20,8 +19,6 @@ from zigpy.zcl.foundation import (
 )
 
 from zhaquirks.develco import DevelcoPowerConfiguration
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class DevelcoVOCMeasurement(CustomCluster):
@@ -78,7 +75,7 @@ class DevelcoVOCMeasurement(CustomCluster):
         device_class=SensorDeviceClass.VOLATILE_ORGANIC_COMPOUNDS,
         state_class=SensorStateClass.MEASUREMENT,
         unit=CONCENTRATION_PARTS_PER_BILLION,
-        fallback_name="VOC Level",
+        fallback_name="VOC level",
         unique_id_suffix="voc_level",
         reporting_config=ReportingConfig(
             min_interval=30,
