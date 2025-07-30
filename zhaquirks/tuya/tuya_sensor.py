@@ -1,6 +1,5 @@
 """Tuya temp and humidity sensors."""
 
-import copy
 import datetime
 
 from zigpy.quirks.v2 import EntityPlatform, EntityType
@@ -39,18 +38,14 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     set_time_offset = datetime.datetime(1970, 1, 1, tzinfo=datetime.UTC)
     set_time_local_offset = datetime.datetime(1970, 1, 1)
 
-    # Deepcopy required to override 'set_time', without, it will revert
-    server_commands = copy.deepcopy(TuyaMCUCluster.server_commands)
-    server_commands.update(
-        {
-            TUYA_SET_TIME: foundation.ZCLCommandDef(
-                "set_time",
-                {"time": TuyaTimePayload},
-                False,
-                is_manufacturer_specific=False,
-            ),
-        }
-    )
+    class ServerCommandDefs(TuyaMCUCluster.ServerCommandDefs):
+        """Server command definitions."""
+
+        set_time = foundation.ZCLCommandDef(
+            id=TUYA_SET_TIME,
+            schema={"time": TuyaTimePayload},
+            is_manufacturer_specific=False,
+        )
 
 
 (

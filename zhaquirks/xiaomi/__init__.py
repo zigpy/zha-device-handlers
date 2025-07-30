@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterable, Iterator
 import logging
 import math
-from typing import Any
+from typing import Any, Final
 
 from zigpy import types as t
 import zigpy.device
@@ -31,6 +31,7 @@ from zigpy.zcl.clusters.measurement import (
 )
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.clusters.smartenergy import Metering
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 import zigpy.zdo
 from zigpy.zdo.types import NodeDescriptor
 
@@ -459,12 +460,18 @@ class XiaomiCluster(CustomCluster):
 class BasicCluster(XiaomiCluster, Basic):
     """Xiaomi basic cluster implementation."""
 
+    class AttributeDefs(Basic.AttributeDefs):
+        """Cluster attributes."""
+
 
 class XiaomiAqaraE1Cluster(XiaomiCluster):
     """Xiaomi mfg cluster implementation."""
 
     cluster_id = 0xFCC0
     ep_attribute = "opple_cluster"
+
+    class AttributeDefs(BaseAttributeDefs):
+        """Cluster attributes."""
 
 
 class XiaomiMotionManufacturerCluster(XiaomiAqaraE1Cluster):
@@ -486,8 +493,12 @@ class XiaomiMotionManufacturerCluster(XiaomiAqaraE1Cluster):
 class BinaryOutputInterlock(CustomCluster, BinaryOutput):
     """Xiaomi binaryoutput cluster with added interlock attribute."""
 
-    attributes = BinaryOutput.attributes.copy()
-    attributes[0xFF06] = ("interlock", t.Bool, True)
+    class AttributeDefs(BinaryOutput.AttributeDefs):
+        """Attribute definitions."""
+
+        interlock: Final = ZCLAttributeDef(
+            id=0xFF06, type=t.Bool, is_manufacturer_specific=True
+        )
 
 
 class XiaomiPowerConfiguration(PowerConfiguration, LocalDataCluster):

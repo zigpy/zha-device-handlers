@@ -283,7 +283,7 @@ async def test_tuya_quirkbuilder(device_mock):
             expect_reply=False,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -554,7 +554,7 @@ async def test_tuya_override_mcu_command(
             expect_reply=False,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)

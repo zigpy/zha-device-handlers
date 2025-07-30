@@ -7,6 +7,7 @@ from unittest import mock
 
 import pytest
 import zigpy.device
+from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl import Cluster, foundation
 from zigpy.zcl.clusters.closures import WindowCovering
@@ -349,7 +350,7 @@ async def test_xiaomi_battery(zigpy_device_from_quirk, voltage, bpr):
     device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.vibration_aq1.VibrationAQ1)
     device.packet_received(
         t.ZigbeePacket(
-            profile_id=0x260,
+            profile_id=zha.PROFILE_ID,
             cluster_id=0x0000,
             src_ep=1,
             dst_ep=1,
@@ -381,7 +382,7 @@ async def test_mija_battery(zigpy_device_from_quirk, voltage, bpr):
     device = zigpy_device_from_quirk(zhaquirks.xiaomi.mija.motion.Motion)
     device.packet_received(
         t.ZigbeePacket(
-            profile_id=0x260,
+            profile_id=zha.PROFILE_ID,
             cluster_id=0x0000,
             src_ep=1,
             dst_ep=1,
@@ -813,7 +814,7 @@ async def test_aqara_feeder_attr_reports(
 
     device.packet_received(
         t.ZigbeePacket(
-            profile_id=0x260,
+            profile_id=zha.PROFILE_ID,
             cluster_id=opple_cluster.cluster_id,
             src_ep=opple_cluster.endpoint.endpoint_id,
             dst_ep=opple_cluster.endpoint.endpoint_id,
@@ -891,7 +892,7 @@ async def test_aqara_smoke_sensor_xiaomi_attribute_report(
 
     device.packet_received(
         t.ZigbeePacket(
-            profile_id=0x260,
+            profile_id=zha.PROFILE_ID,
             cluster_id=opple_cluster.cluster_id,
             src_ep=opple_cluster.endpoint.endpoint_id,
             dst_ep=opple_cluster.endpoint.endpoint_id,

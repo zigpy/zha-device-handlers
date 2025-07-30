@@ -7,7 +7,7 @@ from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl.foundation import (
     BaseAttributeDefs,
-    Direction,
+    BaseCommandDefs,
     ZCLAttributeDef,
     ZCLCommandDef,
     ZCLHeader,
@@ -185,51 +185,47 @@ class InovelliCluster(CustomCluster):
             is_manufacturer_specific=True,
         )
 
-    server_commands = {
-        0x00: ZCLCommandDef(
-            "button_event",
-            {"button_pressed": t.uint8_t, "press_type": t.uint8_t},
-            direction=Direction.Client_to_Server,
+    class ServerCommandDefs(BaseCommandDefs):
+        """Server command definitions."""
+
+        button_event = ZCLCommandDef(
+            id=0x00,
+            schema={"button_pressed": t.uint8_t, "press_type": t.uint8_t},
             is_manufacturer_specific=True,
-        ),
-        0x01: ZCLCommandDef(
-            "led_effect",
-            {
+        )
+        led_effect = ZCLCommandDef(
+            id=0x01,
+            schema={
                 "led_effect": t.uint8_t,
                 "led_color": t.uint8_t,
                 "led_level": t.uint8_t,
                 "led_duration": t.uint8_t,
             },
-            direction=Direction.Client_to_Server,
             is_manufacturer_specific=True,
-        ),
-        0x02: ZCLCommandDef(
-            "reset_energy_meter",
-            {},
-            direction=Direction.Client_to_Server,
+        )
+        reset_energy_meter = ZCLCommandDef(
+            id=0x02,
+            schema={},
             is_manufacturer_specific=True,
-        ),
-        0x03: ZCLCommandDef(
-            "individual_led_effect",
-            {
+        )
+        individual_led_effect = ZCLCommandDef(
+            id=0x03,
+            schema={
                 "led_number": t.uint8_t,
                 "led_effect": t.uint8_t,
                 "led_color": t.uint8_t,
                 "led_level": t.uint8_t,
                 "led_duration": t.uint8_t,
             },
-            direction=Direction.Client_to_Server,
             is_manufacturer_specific=True,
-        ),
-        0x24: ZCLCommandDef(
-            "led_effect_complete",
-            {
+        )
+        led_effect_complete = ZCLCommandDef(
+            id=0x24,
+            schema={
                 "notification_type": t.uint8_t,
             },
-            direction=Direction.Client_to_Server,
             is_manufacturer_specific=True,
-        ),
-    }
+        )
 
     def handle_cluster_request(
         self,
@@ -247,7 +243,7 @@ class InovelliCluster(CustomCluster):
             hdr.command_id,
             args,
         )
-        if hdr.command_id == self.commands_by_name["button_event"].id:
+        if hdr.command_id == self.ServerCommandDefs.button_event.id:
             button = BUTTONS[args.button_pressed]
             press_type = PRESS_TYPES[args.press_type]
             action = f"{button}_{press_type}"
@@ -258,7 +254,7 @@ class InovelliCluster(CustomCluster):
             }
             self.listener_event(ZHA_SEND_EVENT, action, event_args)
             return
-        if hdr.command_id == self.commands_by_name["led_effect_complete"].id:
+        if hdr.command_id == self.ServerCommandDefs.led_effect_complete.id:
             notification_type = LED_NOTIFICATION_TYPES.get(
                 args.notification_type, "unknown"
             )

@@ -4,6 +4,7 @@ from zigpy import types as t
 from zigpy.quirks import CustomCluster
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.security import IasZone
+from zigpy.zcl.foundation import BaseCommandDefs
 
 from zhaquirks import PowerConfigurationCluster
 
@@ -21,20 +22,19 @@ class DevelcoPowerConfiguration(PowerConfigurationCluster):
 class DevelcoIasZone(CustomCluster, IasZone):
     """Custom IasZone for Develco."""
 
-    client_commands = {
-        0x00: foundation.ZCLCommandDef(
-            "status_change_notification",
-            {
+    class ClientCommandDefs(BaseCommandDefs):
+        """Client command definitions."""
+
+        status_change_notification = foundation.ZCLCommandDef(
+            id=0x00,
+            schema={
                 "zone_status": IasZone.ZoneStatus,
                 "extended_status?": t.bitmap8,
                 "zone_id?": t.uint8_t,
                 "delay?": t.uint16_t,
             },
-            False,
-        ),
-        0x01: foundation.ZCLCommandDef(
-            "enroll",
-            {"zone_type": IasZone.ZoneType, "manufacturer_code": t.uint16_t},
-            False,
-        ),
-    }
+        )
+        enroll = foundation.ZCLCommandDef(
+            id=0x01,
+            schema={"zone_type": IasZone.ZoneType, "manufacturer_code": t.uint16_t},
+        )

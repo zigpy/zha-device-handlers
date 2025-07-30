@@ -40,19 +40,20 @@ class DevelcoPowerConfiguration(PowerConfigurationCluster):
 class DevelcoIASZone(CustomCluster, IasZone):
     """IAS Zone."""
 
-    client_commands = IasZone.client_commands.copy()
-    client_commands[0x0000] = foundation.ZCLCommandDef(
-        "status_change_notification",
-        {
-            "zone_status": IasZone.ZoneStatus,
-            "extended_status": t.bitmap8,
-            # These two should not be optional
-            "zone_id?": t.uint8_t,
-            "delay?": t.uint16_t,
-        },
-        False,
-        is_manufacturer_specific=True,
-    )
+    class ClientCommandDefs(IasZone.ClientCommandDefs):
+        """Client command definitions."""
+
+        status_change_notification = foundation.ZCLCommandDef(
+            id=0x0000,
+            schema={
+                "zone_status": IasZone.ZoneStatus,
+                "extended_status": t.bitmap8,
+                # These two should not be optional
+                "zone_id?": t.uint8_t,
+                "delay?": t.uint16_t,
+            },
+            is_manufacturer_specific=True,
+        )
 
 
 class WISZB120(CustomDevice):
