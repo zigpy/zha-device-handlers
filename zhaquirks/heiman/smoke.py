@@ -1,37 +1,10 @@
 """Smoke Sensor."""
 
-from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
 from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.zcl.clusters.general import (
-    Alarms,
-    Basic,
-    Identify,
-    Ota,
-    PollControl,
-    PowerConfiguration,
-)
-from zigpy.zcl.clusters.homeautomation import Diagnostic
-from zigpy.zcl.clusters.security import IasWd, IasZone
+from zigpy.zcl.clusters.security import IasWd
 import zigpy.zdo.types
 
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    NODE_DESCRIPTOR,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-)
 from zhaquirks.heiman import HEIMAN
-
-
-
-
-
-
-
 
 # Node descriptor for SMOK_YDLV10 and CO_V15
 node_descriptor_1 = zigpy.zdo.types.NodeDescriptor(

@@ -2,21 +2,11 @@
 
 from typing import Final
 
-from zigpy.profiles import zgp, zha
-from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
 import zigpy.types as t
-from zigpy.zcl.clusters.general import Basic, GreenPowerProxy, Identify
+from zigpy.zcl.clusters.general import Basic
 from zigpy.zcl.foundation import ZCLAttributeDef
-
-from zhaquirks import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-)
 
 
 class BasicCluster(CustomCluster, Basic):
@@ -32,7 +22,16 @@ class BasicCluster(CustomCluster, Basic):
 
 (
     QuirkBuilder("TexasInstruments", "ti.router")
-    .replaces(replacement_cluster_class=BasicCluster, cluster_id=Basic.cluster_id, endpoint_id=8)
-    .replaces(replacement_cluster_class=BasicCluster, cluster_id=Basic.cluster_id, endpoint_id=8, cluster_type="output")
+    .replaces(
+        replacement_cluster_class=BasicCluster,
+        cluster_id=Basic.cluster_id,
+        endpoint_id=8,
+    )
+    .replaces(
+        replacement_cluster_class=BasicCluster,
+        cluster_id=Basic.cluster_id,
+        endpoint_id=8,
+        cluster_type="output",
+    )
     .add_to_registry()
 )

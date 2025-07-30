@@ -8,7 +8,7 @@ expect replies at all.
 from __future__ import annotations
 
 from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.zcl.clusters.general import (
     Basic,
@@ -16,20 +16,10 @@ from zigpy.zcl.clusters.general import (
     Identify,
     LevelControl,
     OnOff,
-    Ota,
     Scenes,
 )
-from zigpy.zcl.clusters.hvac import Fan
 
 from zhaquirks import NoReplyMixin
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MANUFACTURER,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-)
 
 
 class KofBasic(NoReplyMixin, CustomCluster, Basic):
@@ -77,15 +67,20 @@ class KofLevelControl(NoReplyMixin, CustomCluster, LevelControl):
     void_input_commands = {cmd.id for cmd in LevelControl.commands_by_name.values()}
 
 
-
 (
     QuirkBuilder("King Of Fans,  Inc.", "MR101Z")
-    .replaces_endpoint(endpoint_id=1, profile_id=zha.PROFILE_ID, device_type=zha.DeviceType.DIMMABLE_LIGHT)
+    .replaces_endpoint(
+        endpoint_id=1,
+        profile_id=zha.PROFILE_ID,
+        device_type=zha.DeviceType.DIMMABLE_LIGHT,
+    )
     .replaces(replacement_cluster_class=KofBasic, cluster_id=Basic.cluster_id)
     .replaces(replacement_cluster_class=KofIdentify, cluster_id=Identify.cluster_id)
     .replaces(replacement_cluster_class=KofGroups, cluster_id=Groups.cluster_id)
     .replaces(replacement_cluster_class=KofScenes, cluster_id=Scenes.cluster_id)
     .replaces(replacement_cluster_class=KofOnOff, cluster_id=OnOff.cluster_id)
-    .replaces(replacement_cluster_class=KofLevelControl, cluster_id=LevelControl.cluster_id)
+    .replaces(
+        replacement_cluster_class=KofLevelControl, cluster_id=LevelControl.cluster_id
+    )
     .add_to_registry()
 )

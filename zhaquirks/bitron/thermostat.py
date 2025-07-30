@@ -1,29 +1,9 @@
 """Module for Bitron/SMaBiT thermostats."""
 
-from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
 from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.zcl.clusters.general import (
-    Basic,
-    Identify,
-    Ota,
-    PollControl,
-    PowerConfiguration,
-    Time,
-)
-from zigpy.zcl.clusters.homeautomation import Diagnostic
-from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
 
 from zhaquirks import PowerConfigurationCluster
 from zhaquirks.bitron import BITRON
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-)
 
 
 class Av201032PowerConfigurationCluster(PowerConfigurationCluster):

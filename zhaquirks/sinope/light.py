@@ -8,23 +8,11 @@ import logging
 from typing import Any, Final, Optional, Union
 
 import zigpy.profiles.zha as zha_p
-from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import (
-    Basic,
-    DeviceTemperature,
-    Groups,
-    Identify,
-    LevelControl,
-    OnOff,
-    Ota,
-    Scenes,
-    Time,
-)
-from zigpy.zcl.clusters.homeautomation import Diagnostic, ElectricalMeasurement
-from zigpy.zcl.clusters.smartenergy import Metering
+from zigpy.zcl.clusters.general import DeviceTemperature
 from zigpy.zcl.foundation import BaseCommandDefs
 
 from zhaquirks import EventableCluster
@@ -37,12 +25,6 @@ from zhaquirks.const import (
     COMMAND_M_MULTI_PRESS_COMPLETE,
     COMMAND_M_SHORT_RELEASE,
     DESCRIPTION,
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
     TURN_OFF,
     TURN_ON,
     VALUE,
@@ -243,9 +225,19 @@ class LightManufacturerCluster(EventableCluster, SinopeTechnologiesManufacturerC
 (
     QuirkBuilder(SINOPE, "SW2500ZB")
     .applies_to(SINOPE, "SW2500ZB-G2")
-    .replaces_endpoint(endpoint_id=1, profile_id=zha_p.PROFILE_ID, device_type=zha_p.DeviceType.ON_OFF_LIGHT)
-    .replaces(replacement_cluster_class=CustomDeviceTemperatureCluster, cluster_id=DeviceTemperature.cluster_id)
-    .replaces(replacement_cluster_class=LightManufacturerCluster, cluster_id=SINOPE_MANUFACTURER_CLUSTER_ID)
+    .replaces_endpoint(
+        endpoint_id=1,
+        profile_id=zha_p.PROFILE_ID,
+        device_type=zha_p.DeviceType.ON_OFF_LIGHT,
+    )
+    .replaces(
+        replacement_cluster_class=CustomDeviceTemperatureCluster,
+        cluster_id=DeviceTemperature.cluster_id,
+    )
+    .replaces(
+        replacement_cluster_class=LightManufacturerCluster,
+        cluster_id=SINOPE_MANUFACTURER_CLUSTER_ID,
+    )
     .device_automation_triggers(LIGHT_DEVICE_TRIGGERS)
     .add_to_registry()
 )
@@ -254,9 +246,19 @@ class LightManufacturerCluster(EventableCluster, SinopeTechnologiesManufacturerC
 (
     QuirkBuilder(SINOPE, "DM2500ZB")
     .applies_to(SINOPE, "DM2500ZB-G2")
-    .replaces_endpoint(endpoint_id=1, profile_id=zha_p.PROFILE_ID, device_type=zha_p.DeviceType.DIMMABLE_LIGHT)
-    .replaces(replacement_cluster_class=CustomDeviceTemperatureCluster, cluster_id=DeviceTemperature.cluster_id)
-    .replaces(replacement_cluster_class=LightManufacturerCluster, cluster_id=SINOPE_MANUFACTURER_CLUSTER_ID)
+    .replaces_endpoint(
+        endpoint_id=1,
+        profile_id=zha_p.PROFILE_ID,
+        device_type=zha_p.DeviceType.DIMMABLE_LIGHT,
+    )
+    .replaces(
+        replacement_cluster_class=CustomDeviceTemperatureCluster,
+        cluster_id=DeviceTemperature.cluster_id,
+    )
+    .replaces(
+        replacement_cluster_class=LightManufacturerCluster,
+        cluster_id=SINOPE_MANUFACTURER_CLUSTER_ID,
+    )
     .device_automation_triggers(LIGHT_DEVICE_TRIGGERS)
     .add_to_registry()
 )
@@ -265,9 +267,19 @@ class LightManufacturerCluster(EventableCluster, SinopeTechnologiesManufacturerC
 (
     QuirkBuilder(SINOPE, "DM2550ZB")
     .applies_to(SINOPE, "DM2550ZB-G2")
-    .replaces_endpoint(endpoint_id=1, profile_id=zha_p.PROFILE_ID, device_type=zha_p.DeviceType.DIMMABLE_LIGHT)
-    .replaces(replacement_cluster_class=CustomDeviceTemperatureCluster, cluster_id=DeviceTemperature.cluster_id)
-    .replaces(replacement_cluster_class=LightManufacturerCluster, cluster_id=SINOPE_MANUFACTURER_CLUSTER_ID)
+    .replaces_endpoint(
+        endpoint_id=1,
+        profile_id=zha_p.PROFILE_ID,
+        device_type=zha_p.DeviceType.DIMMABLE_LIGHT,
+    )
+    .replaces(
+        replacement_cluster_class=CustomDeviceTemperatureCluster,
+        cluster_id=DeviceTemperature.cluster_id,
+    )
+    .replaces(
+        replacement_cluster_class=LightManufacturerCluster,
+        cluster_id=SINOPE_MANUFACTURER_CLUSTER_ID,
+    )
     .device_automation_triggers(LIGHT_DEVICE_TRIGGERS)
     .add_to_registry()
 )

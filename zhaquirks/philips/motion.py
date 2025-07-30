@@ -2,36 +2,12 @@
 
 from typing import Final
 
-from zigpy.profiles import zha, zll
-from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
 import zigpy.types as t
-from zigpy.zcl.clusters.general import (
-    Basic,
-    Groups,
-    Identify,
-    LevelControl,
-    OnOff,
-    Ota,
-    PowerConfiguration,
-    Scenes,
-)
-from zigpy.zcl.clusters.lighting import Color
-from zigpy.zcl.clusters.measurement import (
-    IlluminanceMeasurement,
-    OccupancySensing,
-    TemperatureMeasurement,
-)
+from zigpy.zcl.clusters.general import Basic
 from zigpy.zcl.foundation import ZCLAttributeDef
 
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-)
 from zhaquirks.philips import PHILIPS, SIGNIFY, PhilipsOccupancySensing
 
 
@@ -44,8 +20,6 @@ class BasicCluster(CustomCluster, Basic):
         trigger_indicator: Final = ZCLAttributeDef(
             id=0x0033, type=t.Bool, is_manufacturer_specific=True
         )
-
-
 
 
 # Old Philips motion sensors (SML001, SML002) with dual endpoints

@@ -5,30 +5,14 @@ from __future__ import annotations
 from collections.abc import Coroutine
 from typing import Any
 
-from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.closures import WindowCovering
-from zigpy.zcl.clusters.general import (
-    Basic,
-    Groups,
-    Identify,
-    Ota,
-    PowerConfiguration,
-    Scenes,
-)
+from zigpy.zcl.clusters.general import PowerConfiguration
 
 from zhaquirks import DoublingPowerConfigurationCluster
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-)
 
 
 class InvertedWindowCoveringCluster(CustomCluster, WindowCovering):
@@ -65,7 +49,13 @@ class InvertedWindowCoveringCluster(CustomCluster, WindowCovering):
 
 (
     QuirkBuilder("Smartwings", "WM25/L-Z")
-    .replaces(replacement_cluster_class=DoublingPowerConfigurationCluster, cluster_id=PowerConfiguration.cluster_id)
-    .replaces(replacement_cluster_class=InvertedWindowCoveringCluster, cluster_id=WindowCovering.cluster_id)
+    .replaces(
+        replacement_cluster_class=DoublingPowerConfigurationCluster,
+        cluster_id=PowerConfiguration.cluster_id,
+    )
+    .replaces(
+        replacement_cluster_class=InvertedWindowCoveringCluster,
+        cluster_id=WindowCovering.cluster_id,
+    )
     .add_to_registry()
 )
