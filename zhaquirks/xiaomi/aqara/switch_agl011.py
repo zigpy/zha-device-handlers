@@ -77,11 +77,6 @@ class OppleCluster(XiaomiAqaraE1Cluster):
             id=0x0234, type=types.uint16_t, access="rw", is_manufacturer_specific=True
         )
 
-    def _update_attribute(self, attrid: int, value: Any) -> None:
-        if value is not None:
-            super()._update_attribute(attrid, value)
-
-
 (
     QuirkBuilder("Aqara", "lumi.switch.agl011")
     .replaces_endpoint(1, device_type=zha.DeviceType.DIMMABLE_LIGHT)
