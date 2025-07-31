@@ -1,7 +1,5 @@
 """Quirk for Aqara Dimmer Switch H2 EU (lumi.switch.agl011)."""
 
-from typing import Any
-
 from zigpy import types
 from zigpy.profiles import zha
 from zigpy.quirks.v2 import QuirkBuilder
@@ -76,6 +74,7 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         sensitivity = ZCLAttributeDef(
             id=0x0234, type=types.uint16_t, access="rw", is_manufacturer_specific=True
         )
+
 
 (
     QuirkBuilder("Aqara", "lumi.switch.agl011")
