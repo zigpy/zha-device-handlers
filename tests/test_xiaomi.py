@@ -7,6 +7,7 @@ from unittest import mock
 
 import pytest
 import zigpy.device
+from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl import Cluster, foundation
 from zigpy.zcl.clusters.closures import WindowCovering
@@ -349,7 +350,7 @@ async def test_xiaomi_battery(zigpy_device_from_quirk, voltage, bpr):
     device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.vibration_aq1.VibrationAQ1)
     device.packet_received(
         t.ZigbeePacket(
-            profile_id=0x260,
+            profile_id=zha.PROFILE_ID,
             cluster_id=0x0000,
             src_ep=1,
             dst_ep=1,
@@ -381,7 +382,7 @@ async def test_mija_battery(zigpy_device_from_quirk, voltage, bpr):
     device = zigpy_device_from_quirk(zhaquirks.xiaomi.mija.motion.Motion)
     device.packet_received(
         t.ZigbeePacket(
-            profile_id=0x260,
+            profile_id=zha.PROFILE_ID,
             cluster_id=0x0000,
             src_ep=1,
             dst_ep=1,
@@ -813,7 +814,7 @@ async def test_aqara_feeder_attr_reports(
 
     device.packet_received(
         t.ZigbeePacket(
-            profile_id=0x260,
+            profile_id=zha.PROFILE_ID,
             cluster_id=opple_cluster.cluster_id,
             src_ep=opple_cluster.endpoint.endpoint_id,
             dst_ep=opple_cluster.endpoint.endpoint_id,
@@ -891,7 +892,7 @@ async def test_aqara_smoke_sensor_xiaomi_attribute_report(
 
     device.packet_received(
         t.ZigbeePacket(
-            profile_id=0x260,
+            profile_id=zha.PROFILE_ID,
             cluster_id=opple_cluster.cluster_id,
             src_ep=opple_cluster.endpoint.endpoint_id,
             dst_ep=opple_cluster.endpoint.endpoint_id,
@@ -2162,35 +2163,6 @@ def test_aqara_acn014_signature_match(assert_signature_matches_quirk):
 
     assert_signature_matches_quirk(
         zhaquirks.xiaomi.aqara.light_acn.LumiLightAcn014, signature
-    )
-
-
-def test_custom_z03mmc_signature_match(assert_signature_matches_quirk):
-    """Test signature."""
-    signature = {
-        "node_descriptor": "NodeDescriptor(logical_type=<LogicalType.EndDevice: 2>, complex_descriptor_available=0, user_descriptor_available=0, reserved=0, aps_flags=0, frequency_band=<FrequencyBand.Freq2400MHz: 8>, mac_capability_flags=<MACCapabilityFlags.AllocateAddress: 128>, manufacturer_code=56085, maximum_buffer_size=74, maximum_incoming_transfer_size=404, server_mask=10752, maximum_outgoing_transfer_size=404, descriptor_capability_field=<DescriptorCapability.NONE: 0>, *allocate_address=True, *is_alternate_pan_coordinator=False, *is_coordinator=False, *is_end_device=True, *is_full_function_device=False, *is_mains_powered=False, *is_receiver_on_when_idle=False, *is_router=False, *is_security_capable=False)",
-        "endpoints": {
-            "1": {
-                "profile_id": 0x0104,
-                "device_type": "0x0302",
-                "in_clusters": [
-                    "0x0000",
-                    "0x0001",
-                    "0x0003",
-                    "0x0204",
-                    "0x0402",
-                    "0x0405",
-                ],
-                "out_clusters": ["0x0019"],
-            }
-        },
-        "manufacturer": "Xiaomi",
-        "model": "LYWSD03MMC",
-        "class": "zigpy.device.Device",
-    }
-
-    assert_signature_matches_quirk(
-        zhaquirks.xiaomi.custom.z03mmc.DevbisLYWSD03MMC, signature
     )
 
 

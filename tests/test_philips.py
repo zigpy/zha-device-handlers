@@ -818,7 +818,7 @@ def listen_to_all(device) -> mock.MagicMock:
     return listener
 
 
-def test_RDM002_no_levelcontrol_on_long_press(zigpy_device_from_quirk):
+async def test_RDM002_no_levelcontrol_on_long_press(zigpy_device_from_quirk):
     """Button long-presses shouldn't trigger LevelControl events."""
 
     device = zigpy_device_from_quirk(PhilipsRDM002)
@@ -865,7 +865,7 @@ def test_RDM002_no_levelcontrol_on_long_press(zigpy_device_from_quirk):
     assert listener.cluster_command.call_count == 3
 
 
-def test_RDM002_levelcontrol_on_dial_rotary_event(zigpy_device_from_quirk):
+async def test_RDM002_levelcontrol_on_dial_rotary_event(zigpy_device_from_quirk):
     """Dial rotary events shouldn't be muted by PhilipsRdm002LevelControl."""
 
     device = zigpy_device_from_quirk(PhilipsRDM002)
