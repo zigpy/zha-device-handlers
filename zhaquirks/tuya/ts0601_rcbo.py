@@ -1,6 +1,6 @@
 """Tuya Din RCBO Circuit Breaker."""
 
-from typing import Any, Optional, Union
+from typing import Any, Final, Optional, Union
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
@@ -16,6 +16,7 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
+from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -129,34 +130,31 @@ class TemperatureSetting(t.Struct):
 class TuyaRCBOBasic(CustomCluster, Basic):
     """Provide Tuya Basic Cluster with custom attributes."""
 
-    attributes = Basic.attributes.copy()
-    attributes.update(
-        {
-            0xFFE2: ("tuya_FFE2", t.uint8_t),
-            0xFFE4: ("tuya_FFE4", t.uint8_t),
-        }
-    )
+    class AttributeDefs(Basic.AttributeDefs):
+        """Attribute definitions."""
+
+        tuya_FFE2: Final = ZCLAttributeDef(id=0xFFE2, type=t.uint8_t)  # noqa: N815
+        tuya_FFE4: Final = ZCLAttributeDef(id=0xFFE4, type=t.uint8_t)  # noqa: N815
 
 
 class TuyaRCBOOnOff(TuyaOnOff, TuyaAttributesCluster):
     """Custom class for on off switch."""
 
-    attributes = TuyaOnOff.attributes.copy()
-    attributes.update(
-        {
-            0x8000: ("child_lock", t.Bool),
-            0x8002: ("power_on_state", PowerOnState),
-            0xF090: ("countdown_timer", t.uint32_t),
-            0xF740: ("trip", t.Bool),
-        }
-    )
+    class AttributeDefs(TuyaOnOff.AttributeDefs):
+        """Attribute definitions."""
 
-    server_commands = TuyaOnOff.server_commands.copy()
-    server_commands.update(
-        {
-            0x74: foundation.ZCLCommandDef("clear_locking", {}, False),
-        }
-    )
+        child_lock: Final = ZCLAttributeDef(id=0x8000, type=t.Bool)
+        power_on_state: Final = ZCLAttributeDef(id=0x8002, type=PowerOnState)
+        countdown_timer: Final = ZCLAttributeDef(id=0xF090, type=t.uint32_t)
+        trip: Final = ZCLAttributeDef(id=0xF740, type=t.Bool)
+
+    class ServerCommandDefs(TuyaOnOff.ServerCommandDefs):
+        """Server command definitions."""
+
+        clear_locking = foundation.ZCLCommandDef(
+            id=0x74,
+            schema={},
+        )
 
     async def command(
         self,
@@ -214,26 +212,26 @@ class TuyaRCBOElectricalMeasurement(ElectricalMeasurement, TuyaAttributesCluster
         AC_POWER_DIVISOR: 10,
     }
 
-    attributes = ElectricalMeasurement.attributes.copy()
-    attributes.update(
-        {
-            0x0802: ("ac_current_overload", t.uint24_t),
-            0xF1A0: ("alarm", FaultCode),
-            0xF680: ("leakage_current", t.uint32_t),
-            0xF6D0: ("self_test_auto_days", t.uint8_t),
-            0xF6D1: ("self_test_auto_hours", t.uint8_t),
-            0xF6D2: ("self_test_auto", t.Bool),
-            0xF6D3: ("over_leakage_current_threshold", t.uint16_t),
-            0xF6D5: ("over_leakage_current_trip", t.Bool),
-            0xF6D6: ("over_leakage_current_alarm", t.Bool),
-            0xF6D7: ("self_test", SelfTest),
-            0xF6E3: ("over_voltage_trip", t.Bool),
-            0xF6E7: ("under_voltage_trip", t.Bool),
-            0xF6F3: ("over_current_trip", t.Bool),
-            0xF760: ("rms_historical_voltage", t.uint16_t),
-            0xF770: ("rms_historical_current", t.uint16_t),
-        }
-    )
+    class AttributeDefs(ElectricalMeasurement.AttributeDefs):
+        """Attribute definitions."""
+
+        ac_current_overload: Final = ZCLAttributeDef(id=0x0802, type=t.uint24_t)
+        alarm: Final = ZCLAttributeDef(id=0xF1A0, type=FaultCode)
+        leakage_current: Final = ZCLAttributeDef(id=0xF680, type=t.uint32_t)
+        self_test_auto_days: Final = ZCLAttributeDef(id=0xF6D0, type=t.uint8_t)
+        self_test_auto_hours: Final = ZCLAttributeDef(id=0xF6D1, type=t.uint8_t)
+        self_test_auto: Final = ZCLAttributeDef(id=0xF6D2, type=t.Bool)
+        over_leakage_current_threshold: Final = ZCLAttributeDef(
+            id=0xF6D3, type=t.uint16_t
+        )
+        over_leakage_current_trip: Final = ZCLAttributeDef(id=0xF6D5, type=t.Bool)
+        over_leakage_current_alarm: Final = ZCLAttributeDef(id=0xF6D6, type=t.Bool)
+        self_test: Final = ZCLAttributeDef(id=0xF6D7, type=SelfTest)
+        over_voltage_trip: Final = ZCLAttributeDef(id=0xF6E3, type=t.Bool)
+        under_voltage_trip: Final = ZCLAttributeDef(id=0xF6E7, type=t.Bool)
+        over_current_trip: Final = ZCLAttributeDef(id=0xF6F3, type=t.Bool)
+        rms_historical_voltage: Final = ZCLAttributeDef(id=0xF760, type=t.uint16_t)
+        rms_historical_current: Final = ZCLAttributeDef(id=0xF770, type=t.uint16_t)
 
     def update_attribute(self, attr_name: str, value: Any) -> None:
         """Calculate active current and power factor."""
@@ -257,12 +255,10 @@ class TuyaRCBOElectricalMeasurement(ElectricalMeasurement, TuyaAttributesCluster
 class TuyaRCBODeviceTemperature(DeviceTemperature, TuyaAttributesCluster):
     """Tuya device temperature."""
 
-    attributes = DeviceTemperature.attributes.copy()
-    attributes.update(
-        {
-            0xFF10: ("over_temp_trip", t.Bool),
-        }
-    )
+    class AttributeDefs(DeviceTemperature.AttributeDefs):
+        """Attribute definitions."""
+
+        over_temp_trip: Final = ZCLAttributeDef(id=0xFF10, type=t.Bool)
 
 
 class TuyaRCBOMetering(Metering, TuyaAttributesCluster):
@@ -275,22 +271,21 @@ class TuyaRCBOMetering(Metering, TuyaAttributesCluster):
 
     _CONSTANT_ATTRIBUTES = {UNIT_OF_MEASURE: POWER_WATT, MULTIPLIER: 1, DIVISOR: 100}
 
-    attributes = Metering.attributes.copy()
-    attributes.update(
-        {
-            0xF6A0: ("remaining_energy", t.uint32_t),
-            0xF6C0: ("cost_parameters", t.uint16_t),
-            0xF6C1: ("cost_parameters_enabled", t.Bool),
-            0xF720: ("meter_number", t.LimitedCharString(20)),
-        }
-    )
+    class AttributeDefs(Metering.AttributeDefs):
+        """Attribute definitions."""
 
-    server_commands = Metering.server_commands.copy()
-    server_commands.update(
-        {
-            0x73: foundation.ZCLCommandDef("clear_device_data", {}, False),
-        }
-    )
+        remaining_energy: Final = ZCLAttributeDef(id=0xF6A0, type=t.uint32_t)
+        cost_parameters: Final = ZCLAttributeDef(id=0xF6C0, type=t.uint16_t)
+        cost_parameters_enabled: Final = ZCLAttributeDef(id=0xF6C1, type=t.Bool)
+        meter_number: Final = ZCLAttributeDef(id=0xF720, type=t.LimitedCharString(20))
+
+    class ServerCommandDefs(Metering.ServerCommandDefs):
+        """Server command definitions."""
+
+        clear_device_data = foundation.ZCLCommandDef(
+            id=0x73,
+            schema={},
+        )
 
     async def command(
         self,

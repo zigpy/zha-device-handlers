@@ -31,6 +31,12 @@ class CustomSonoffCluster(CustomCluster):
             type=ValveState,
         )
 
+        auto_close_water_shortage = ZCLAttributeDef(
+            id=0x5011,
+            type=t.uint16_t,
+            is_manufacturer_specific=True,
+        )
+
 
 (
     QuirkBuilder("SONOFF", "SWV")
@@ -55,6 +61,14 @@ class CustomSonoffCluster(CustomCluster):
         unique_id_suffix="water_supply_status",
         translation_key="water_supply",
         fallback_name="Water supply",
+    )
+    .switch(
+        CustomSonoffCluster.AttributeDefs.auto_close_water_shortage.name,
+        CustomSonoffCluster.cluster_id,
+        off_value=0,
+        on_value=30,
+        translation_key="water_shortage_auto_close",
+        fallback_name="Water shortage auto-close",
     )
     .add_to_registry()
 )

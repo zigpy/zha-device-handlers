@@ -1,4 +1,4 @@
-"""Frient Smoke Alarm."""
+"""Frient Water Leak."""
 
 from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.quirks.v2.homeassistant import EntityType
@@ -8,8 +8,7 @@ from zigpy.zcl.clusters.security import IasWd, IasZone
 from . import DevelcoIasZone, DevelcoPowerConfiguration
 
 (
-    QuirkBuilder("frient A/S", "SMSZB-120")
-    .applies_to("Develco Products A/S", "SMSZB-120")
+    QuirkBuilder("frient A/S", "FLSZB-110")
     .replaces(DevelcoIasZone, endpoint_id=35)
     .replaces(DevelcoPowerConfiguration, endpoint_id=35)
     # Hide the default binary input sensor
