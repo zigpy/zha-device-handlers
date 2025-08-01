@@ -252,6 +252,7 @@ class TuyaDoubleSwitchGP(TuyaSwitch):
         MODELS_INFO: [
             ("_TZE200_7deq70b8", "TS0601"),
             ("_TZE200_nh9m9emk", "TS0601"),  # reported in #1634
+            ("_TZE204_nh9m9emk", "TS0601"),  # reported in #4100
         ],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=51 device_version=1
