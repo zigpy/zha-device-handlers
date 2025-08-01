@@ -126,21 +126,17 @@ class XiaomiCustomDevice(CustomDevice):
         self, hdr: foundation.ZCLHeader, packet: t.ZigbeePacket
     ) -> Cluster:
         """Find a cluster for the packet."""
-        assert packet.src_ep is not None
-        endpoint = self.endpoints[packet.src_ep]
 
-        # Aqara devices seem to be very lax with their ZCL header's `direction` field
-        if (
-            hdr.frame_control.direction == foundation.Direction.Client_to_Server
-            and packet.cluster_id not in endpoint.out_clusters
-        ) or (
-            hdr.frame_control.direction == foundation.Direction.Server_to_Client
-            and packet.cluster_id not in endpoint.in_clusters
-        ):
+        # Aqara devices seem to be very lax with their ZCL header's `direction` field,
+        # we should try "flipping" it if matching doesn't work normally.
+        try:
+            return super()._find_zcl_cluster(hdr, packet)
+        except KeyError:
             _LOGGER.debug(
                 "Packet is coming in the wrong direction for cluster %s on endpoint %s,"
                 " swapping direction and trying again"
             )
+
             return super()._find_zcl_cluster(
                 hdr.replace(
                     frame_control=hdr.frame_control.replace(
@@ -149,8 +145,6 @@ class XiaomiCustomDevice(CustomDevice):
                 ),
                 packet,
             )
-
-        return super()._find_zcl_cluster(hdr, packet)
 
 
 class XiaomiQuickInitDevice(XiaomiCustomDevice, QuickInitDevice):
