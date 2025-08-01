@@ -12,7 +12,7 @@ import zigpy.device
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.typing import AddressingMode
-from zigpy.zcl import foundation
+from zigpy.zcl import Cluster, foundation
 from zigpy.zcl.clusters.general import (
     AnalogInput,
     Basic,
@@ -121,6 +121,36 @@ class XiaomiCustomDevice(CustomDevice):
         if not hasattr(self, BATTERY_SIZE):
             self.battery_size = BatterySize.CR2032
         super().__init__(*args, **kwargs)
+
+    def _find_zcl_cluster(
+        self, hdr: foundation.ZCLHeader, packet: t.ZigbeePacket
+    ) -> Cluster:
+        """Find a cluster for the packet."""
+        assert packet.src_ep is not None
+        endpoint = self.endpoints[packet.src_ep]
+
+        # Aqara devices seem to be very lax with their ZCL header's `direction` field
+        if (
+            hdr.frame_control.direction == foundation.Direction.Client_to_Server
+            and packet.cluster_id not in endpoint.out_clusters
+        ) or (
+            hdr.frame_control.direction == foundation.Direction.Server_to_Client
+            and packet.cluster_id not in endpoint.in_clusters
+        ):
+            _LOGGER.debug(
+                "Packet is coming in the wrong direction for cluster %s on endpoint %s,"
+                " swapping direction and trying again"
+            )
+            return super()._find_zcl_cluster(
+                hdr.replace(
+                    frame_control=hdr.frame_control.replace(
+                        direction=hdr.frame_control.direction.flip()
+                    )
+                ),
+                packet,
+            )
+
+        return super()._find_zcl_cluster(hdr, packet)
 
 
 class XiaomiQuickInitDevice(XiaomiCustomDevice, QuickInitDevice):
