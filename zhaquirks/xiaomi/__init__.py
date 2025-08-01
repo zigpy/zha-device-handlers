@@ -133,8 +133,7 @@ class XiaomiCustomDevice(CustomDevice):
             return super()._find_zcl_cluster(hdr, packet)
         except KeyError:
             _LOGGER.debug(
-                "Packet is coming in the wrong direction for cluster %s on endpoint %s,"
-                " swapping direction and trying again"
+                "Packet is coming in the wrong direction, swapping direction and trying again",
             )
 
             return super()._find_zcl_cluster(
