@@ -122,7 +122,7 @@ class TuyaSingleSwitchTO(TuyaSwitch):
     }
 
 
-class TuyaSingleSwitch_GP(TuyaSwitch):
+class TuyaSingleSwitchGP(TuyaSwitch):
     """Tuya single channel switch with GreenPowerProxy cluster device."""
 
     signature = {
@@ -243,7 +243,7 @@ class TuyaDoubleSwitchTO(TuyaSwitch):
     }
 
 
-class TuyaDoubleSwitch_GP(TuyaSwitch):
+class TuyaDoubleSwitchGP(TuyaSwitch):
     """Tuya double channel switch with GreenPowerProxy cluster device."""
 
     quirk_id = TUYA_PLUG_MANUFACTURER
@@ -370,7 +370,7 @@ class TuyaTripleSwitchTO(TuyaSwitch):
     }
 
 
-class TuyaTripleSwitch_GP(TuyaSwitch):
+class TuyaTripleSwitchGP(TuyaSwitch):
     """Tuya triple channel switch with GreenPowerProxy cluster device."""
 
     quirk_id = TUYA_PLUG_MANUFACTURER
@@ -571,7 +571,7 @@ class TuyaQuadrupleSwitchTO(TuyaSwitch):
     }
 
 
-class TuyaQuadrupleSwitch_GP(TuyaSwitch):
+class TuyaQuadrupleSwitchGP(TuyaSwitch):
     """Tuya quadruple channel switch with GreenPowerProxy cluster device."""
 
     signature = {
@@ -902,7 +902,7 @@ class TuyaSextupleSwitchTO(TuyaSwitch):
     }
 
 
-class TuyaSextupleSwitchTO_GP(TuyaSwitch):
+class TuyaSextupleSwitchTOGP(TuyaSwitch):
     """Tuya sextuple channel switch time on out cluster device with GreenPowerProxy cluster device."""
 
     quirk_id = TUYA_PLUG_MANUFACTURER
@@ -1002,7 +1002,7 @@ class TuyaSextupleSwitchTO_GP(TuyaSwitch):
     }
 
 
-class TuyaSwitchX8_GP(TuyaSwitch):
+class TuyaSwitchX8GP(TuyaSwitch):
     """Tuya x8 channels switch with GreenPowerProxy cluster device."""
 
     signature = {
@@ -1116,7 +1116,7 @@ class TuyaSwitchX8_GP(TuyaSwitch):
     }
 
 
-class TuyaSwitchX12_GP(TuyaSwitch):
+class TuyaSwitchX12GP(TuyaSwitch):
     """Tuya x12 channels switch with GreenPowerProxy cluster device."""
 
     signature = {
@@ -1261,7 +1261,7 @@ class TuyaSwitchX12_GP(TuyaSwitch):
     }
 
 
-class TuyaSwitchX16_GP(TuyaSwitch):
+class TuyaSwitchX16GP(TuyaSwitch):
     """Tuya x16 channels switch with GreenPowerProxy cluster device."""
 
     signature = {
