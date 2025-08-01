@@ -652,6 +652,7 @@ class TuyaQuadrupleSwitchGP(TuyaSwitch):
         }
     }
 
+
 class TuyaQuintupleSwitchGP(TuyaSwitch):
     """Tuya quintuple channel switch with GreenPowerProxy cluster device."""
 
