@@ -1,9 +1,12 @@
 """Module to handle quirks of the Elko Smart Super thermostat."""
 
+from typing import Final
+
 import zigpy.profiles.zha as zha_p
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Groups, Identify, Ota, Scenes
 from zigpy.zcl.clusters.hvac import Thermostat
+from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -43,40 +46,43 @@ UNKNOWN_8 = 0x0418
 UNKNOWN_9 = 0x0419
 
 
+class ActiveSensor(t.enum8):
+    """Working modes of the thermostat."""
+
+    AIR = 0x00
+    FLOOR = 0x01
+    PROTECTION = 0x03
+
+
 class ElkoSuperTRThermostatCluster(ElkoThermostatCluster):
     """Elko custom thermostat cluster."""
 
-    class Sensor(t.enum8):
-        """Working modes of the thermostat."""
+    class AttributeDefs(ElkoThermostatCluster.AttributeDefs):
+        """Attribute definitions."""
 
-        AIR = 0x00
-        FLOOR = 0x01
-        PROTECTION = 0x03
-
-    attributes = ElkoThermostatCluster.attributes.copy()
-    attributes.update(
-        {
-            UNKNOWN_1: ("unknown_1", t.uint16_t),
-            DISPLAY_TEXT: ("display_text", t.CharacterString),
-            ACTIVE_SENSOR: ("active_sensor", Sensor),
-            UNKNOWN_2: ("unknown_2", t.uint8_t),
-            REGULATOR_MODE: ("regulator_mode", t.Bool),
-            DEVICE_ON: ("device_on", t.Bool),
-            UNKNOWN_3: ("unknown_3", t.LongOctetString),
-            POWER_CONSUMPTION: ("power_consumtion", t.uint16_t),
-            FLOOR_SENSOR_TEMPERATURE: ("floor_sensor_temperature", t.int16s),
-            UNKNOWN_4: ("unknown_4", t.uint16_t),
-            NIGHT_LOWERING: ("night_lowering", t.Bool),
-            UNKNOWN_5: ("unknown_5", t.Bool),
-            CHILD_LOCK: ("child_lock", t.Bool),
-            PROTECTION_MAX_TEMP: ("protection_max_temp", t.uint8_t),
-            HEATING_ACTIVE: ("heating_active", t.Bool),
-            UNKNOWN_6: ("unknown_6", t.LongOctetString),
-            UNKNOWN_7: ("unknown_7", t.int8s),
-            UNKNOWN_8: ("unknown_8", t.uint8_t),
-            UNKNOWN_9: ("unknown_9", t.uint8_t),
-        }
-    )
+        unknown_1: Final = ZCLAttributeDef(id=UNKNOWN_1, type=t.uint16_t)
+        display_text: Final = ZCLAttributeDef(id=DISPLAY_TEXT, type=t.CharacterString)
+        active_sensor: Final = ZCLAttributeDef(id=ACTIVE_SENSOR, type=ActiveSensor)
+        unknown_2: Final = ZCLAttributeDef(id=UNKNOWN_2, type=t.uint8_t)
+        regulator_mode: Final = ZCLAttributeDef(id=REGULATOR_MODE, type=t.Bool)
+        device_on: Final = ZCLAttributeDef(id=DEVICE_ON, type=t.Bool)
+        unknown_3: Final = ZCLAttributeDef(id=UNKNOWN_3, type=t.LongOctetString)
+        power_consumtion: Final = ZCLAttributeDef(id=POWER_CONSUMPTION, type=t.uint16_t)
+        floor_sensor_temperature: Final = ZCLAttributeDef(
+            id=FLOOR_SENSOR_TEMPERATURE, type=t.int16s
+        )
+        unknown_4: Final = ZCLAttributeDef(id=UNKNOWN_4, type=t.uint16_t)
+        night_lowering: Final = ZCLAttributeDef(id=NIGHT_LOWERING, type=t.Bool)
+        unknown_5: Final = ZCLAttributeDef(id=UNKNOWN_5, type=t.Bool)
+        child_lock: Final = ZCLAttributeDef(id=CHILD_LOCK, type=t.Bool)
+        protection_max_temp: Final = ZCLAttributeDef(
+            id=PROTECTION_MAX_TEMP, type=t.uint8_t
+        )
+        heating_active: Final = ZCLAttributeDef(id=HEATING_ACTIVE, type=t.Bool)
+        unknown_6: Final = ZCLAttributeDef(id=UNKNOWN_6, type=t.LongOctetString)
+        unknown_7: Final = ZCLAttributeDef(id=UNKNOWN_7, type=t.int8s)
+        unknown_8: Final = ZCLAttributeDef(id=UNKNOWN_8, type=t.uint8_t)
+        unknown_9: Final = ZCLAttributeDef(id=UNKNOWN_9, type=t.uint8_t)
 
     def __init__(self, *args, **kwargs):
         """Init Elko thermostat."""

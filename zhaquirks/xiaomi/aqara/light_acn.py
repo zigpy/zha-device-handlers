@@ -1,5 +1,7 @@
 """Aqara light."""
 
+from typing import Final
+
 from zigpy import types as t
 from zigpy.profiles import zgp, zha
 from zigpy.quirks.v2 import QuirkBuilder
@@ -51,9 +53,12 @@ class LumiPowerOnStateMode(t.enum8):
 class OppleClusterLight(XiaomiAqaraE1Cluster):
     """Add Opple cluster for power outage memory attribute."""
 
-    attributes = {
-        0x0201: ("power_outage_memory", t.Bool, True),
-    }
+    class AttributeDefs(XiaomiAqaraE1Cluster.AttributeDefs):
+        """Attribute definitions."""
+
+        power_outage_memory: Final = ZCLAttributeDef(
+            id=0x0201, type=t.Bool, is_manufacturer_specific=True
+        )
 
 
 class AqaraLightT1M(XiaomiAqaraE1Cluster):
