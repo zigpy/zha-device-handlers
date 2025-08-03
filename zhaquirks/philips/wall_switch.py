@@ -112,7 +112,6 @@ class PhilipsWallSwitch(CustomDevice):
                     PhilipsWallSwitchRemoteCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
-                    Basic.cluster_id,
                     Identify.cluster_id,
                     Groups.cluster_id,
                     OnOff.cluster_id,
