@@ -104,7 +104,7 @@ class PhilipsWallSwitch(CustomDevice):
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.NON_COLOR_CONTROLLER,
+                DEVICE_TYPE: zha.DeviceType.NON_COLOR_SCENE_CONTROLLER,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
