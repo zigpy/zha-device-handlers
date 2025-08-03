@@ -4,7 +4,7 @@ Exposes button events as device triggers for Home Assistant.
 """
 
 from zhaquirks import CustomDevice
-from zhaquirks.const import MODELS_INFO
+
 
 class Namron4512772(CustomDevice):
     """Namron 4512772 8-button Zigbee switch (v2 interface)."""
