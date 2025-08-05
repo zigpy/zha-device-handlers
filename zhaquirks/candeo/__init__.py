@@ -37,7 +37,7 @@ class CandeoSwitchType(t.enum8):
 
 
 class CandeoRemoteDirection(t.enum8):
-    """Candeo Remote Direction"""
+    """Candeo Remote Direction."""
 
     Right = 0x00
     Left = 0x01
