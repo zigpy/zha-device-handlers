@@ -43,6 +43,7 @@ import zhaquirks.tuya.ts0601_trv
 import zhaquirks.tuya.ts1201
 import zhaquirks.tuya.tuya_motion
 import zhaquirks.tuya.tuya_valve
+import zhaquirks.tuya.ts0601_din_power_meter_switch
 
 zhaquirks.setup()
 
@@ -2023,3 +2024,64 @@ async def test_ts601_door_sensor(
     attrs = await cluster.read_attributes(attributes=[attribute])
 
     assert attrs[0].get(attribute) == expected_value
+
+
+def test_ts0601_din_power_meter_switch_signature(assert_signature_matches_quirk):
+    """Test matching of DIN Power Meter Switch ZCR1-40EM signature with quirk."""
+    signature = {
+        # NodeDescriptor: manufacturer_code=4417, max_buffer_size=66, server_mask=10752
+        # device_version=1
+        # input_clusters=[0x0000, 0x0004, 0x0005, 0xef00]
+        # output_clusters=[0x000a, 0x0019]
+        "endpoints": {
+            # <SimpleDescriptor endpoint=1 profile=260 device_type=81 device_version=1
+            # input_clusters=[4, 5, 61184, 0] -> [Groups, Scenes, TuyaMCU, Basic]
+            # output_clusters=[25, 10] -> [OTA, Time]>
+            1: {
+                "profile_id": 260,
+                "device_type": "0x0051",
+                "in_clusters": [
+                    "0x0000",
+                    "0x0004",
+                    "0x0005",
+                    "0xEF00"
+                ],
+                "out_clusters": [
+                    "0x0019",
+                    "0x000A"
+                ]
+            },
+            # <SimpleDescriptor endpoint=242 profile=41440 device_type=97 device_version=0
+            # input_clusters=[] output_clusters=[33]>
+            242: {
+                "profile_id": 41440,
+                "device_type": "0x0061",
+                "in_clusters": [],
+                "out_clusters": ["0x0021"]
+            }
+        },
+        "manufacturer": "_TZE200_abatw3kj",
+        "model": "TS0601"
+    }
+
+    assert_signature_matches_quirk(
+        zhaquirks.tuya.ts0601_din_power_meter_switch.TuyaDinPowerMeterSwitch,
+        signature
+    )
+
+
+@pytest.mark.parametrize(
+    "raw_data, expected_voltage, expected_current, expected_power",
+    (
+            ([0x01, 0x2C, 0x00, 0x00, 0x32, 0x00, 0x00, 0x64], 300, 50, 100),  # przykładowe dane
+            ([0x00, 0xFA, 0x00, 0x00, 0x0A, 0x00, 0x00, 0x32], 250, 10, 50),
+    ),
+)
+def test_convert_electrical_measurements(raw_data, expected_voltage, expected_current, expected_power):
+    """Test electrical measurements data conversion."""
+    voltage, current, power = (
+        zhaquirks.tuya.ts0601_din_power_meter_switch.convert_electrical_measurements(raw_data)
+    )
+    assert voltage == expected_voltage
+    assert current == expected_current
+    assert power == expected_power
