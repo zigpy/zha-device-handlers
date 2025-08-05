@@ -1,15 +1,21 @@
 """Module for Candeo quirks implementations."""
 
 import math
-
 from typing import Final
+
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
-from zigpy.zcl.clusters.general import Basic, OnOff, LevelControl
-from zigpy.zcl.clusters.measurement import IlluminanceMeasurement
+from zigpy.zcl.clusters.general import Basic, LevelControl, OnOff
 from zigpy.zcl.clusters.lighting import Color
+from zigpy.zcl.clusters.measurement import IlluminanceMeasurement
 from zigpy.zcl.clusters.security import IasZone
-from zigpy.zcl.foundation import DataTypeId, ZCLAttributeDef, BaseCommandDefs, Direction, ZCLCommandDef
+from zigpy.zcl.foundation import (
+    BaseCommandDefs,
+    DataTypeId,
+    Direction,
+    ZCLAttributeDef,
+    ZCLCommandDef,
+)
 
 from zhaquirks.const import ZONE_TYPE
 
@@ -98,19 +104,28 @@ class CandeoIasZoneWaterCluster(IasZone, CustomCluster):
 class CandeoRGBColorCluster(Color, CustomCluster):
     """Candeo RGB Color Cluster."""
 
-    _CONSTANT_ATTRIBUTES = {Color.AttributeDefs.color_capabilities.id: Color.ColorCapabilities.XY_attributes, Color.AttributeDefs.color_temperature.id: None, Color.AttributeDefs.start_up_color_temperature.id: None}
+    _CONSTANT_ATTRIBUTES = {
+        Color.AttributeDefs.color_capabilities.id: Color.ColorCapabilities.XY_attributes,
+        Color.AttributeDefs.color_temperature.id: None,
+        Color.AttributeDefs.start_up_color_temperature.id: None,
+    }
 
 
 class CandeoCCTColorCluster(Color, CustomCluster):
     """Candeo CCT Color Cluster."""
 
-    _CONSTANT_ATTRIBUTES = {Color.AttributeDefs.color_capabilities.id: Color.ColorCapabilities.Color_temperature}
+    _CONSTANT_ATTRIBUTES = {
+        Color.AttributeDefs.color_capabilities.id: Color.ColorCapabilities.Color_temperature
+    }
 
 
 class CandeoRGBCCTColorCluster(Color, CustomCluster):
     """Candeo RGBCCT Color Cluster."""
 
-    _CONSTANT_ATTRIBUTES = {Color.AttributeDefs.color_capabilities.id: Color.ColorCapabilities.XY_attributes + Color.ColorCapabilities.Color_temperature}
+    _CONSTANT_ATTRIBUTES = {
+        Color.AttributeDefs.color_capabilities.id: Color.ColorCapabilities.XY_attributes
+        + Color.ColorCapabilities.Color_temperature
+    }
 
 
 class CandeoOnOffRemoteCluster(OnOff, CustomCluster):
@@ -120,24 +135,16 @@ class CandeoOnOffRemoteCluster(OnOff, CustomCluster):
         """overwrite ServerCommandDefs."""
 
         double_press: Final = ZCLCommandDef(
-            id=0x00,
-            schema={},
-            direction=Direction.Client_to_Server
+            id=0x00, schema={}, direction=Direction.Client_to_Server
         )
         press: Final = ZCLCommandDef(
-            id=0x01,
-            schema={},
-            direction=Direction.Client_to_Server
+            id=0x01, schema={}, direction=Direction.Client_to_Server
         )
         hold: Final = ZCLCommandDef(
-            id=0x02,
-            schema={},
-            direction=Direction.Client_to_Server
+            id=0x02, schema={}, direction=Direction.Client_to_Server
         )
         release: Final = ZCLCommandDef(
-            id=0x03,
-            schema={},
-            direction=Direction.Client_to_Server
+            id=0x03, schema={}, direction=Direction.Client_to_Server
         )
 
 
