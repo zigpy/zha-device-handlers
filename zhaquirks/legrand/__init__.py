@@ -2,6 +2,7 @@
 
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 from zhaquirks import PowerConfigurationCluster
 
@@ -15,11 +16,17 @@ class LegrandCluster(CustomCluster):
     cluster_id = MANUFACTURER_SPECIFIC_CLUSTER_ID
     name = "LegrandCluster"
     ep_attribute = "legrand_cluster"
-    attributes = {
-        0x0000: ("dimmer", t.data16, True),
-        0x0001: ("led_dark", t.Bool, True),
-        0x0002: ("led_on", t.Bool, True),
-    }
+
+    class AttributeDefs(BaseAttributeDefs):
+        """Cluster attributes."""
+
+        dimmer = ZCLAttributeDef(
+            id=0x0000, type=t.data16, is_manufacturer_specific=True
+        )
+        led_dark = ZCLAttributeDef(
+            id=0x0001, type=t.Bool, is_manufacturer_specific=True
+        )
+        led_on = ZCLAttributeDef(id=0x0002, type=t.Bool, is_manufacturer_specific=True)
 
 
 class LegrandPowerConfigurationCluster(PowerConfigurationCluster):

@@ -1,7 +1,5 @@
 """Tuya TS0601 Thermostat."""
 
-import copy
-
 from zigpy.quirks.v2 import BinarySensorDeviceClass, EntityType
 from zigpy.quirks.v2.homeassistant import (
     UnitOfElectricCurrent,
@@ -131,21 +129,18 @@ class TuyaThermostat(Thermostat, TuyaAttributesCluster):
 class NoManufTimeNoVersionRespTuyaMCUCluster(TuyaMCUCluster):
     """Tuya Manufacturer Cluster with set_time mod."""
 
-    # Deepcopy required to override 'set_time', without, it will revert
-    server_commands = copy.deepcopy(TuyaMCUCluster.server_commands)
-    server_commands.update(
-        {
-            TUYA_SET_TIME: foundation.ZCLCommandDef(
-                "set_time",
-                {"time": TuyaTimePayload},
-                False,
-                is_manufacturer_specific=False,
-            ),
-        }
-    )
+    class ServerCommandDefs(TuyaMCUCluster.ServerCommandDefs):
+        """Server command definitions."""
+
+        set_time = foundation.ZCLCommandDef(
+            id=TUYA_SET_TIME,
+            schema={"time": TuyaTimePayload},
+            is_manufacturer_specific=False,
+        )
 
     def handle_mcu_version_response(
-        self, payload: TuyaMCUCluster.MCUVersion
+        self,
+        payload: TuyaMCUCluster.MCUVersion,  # type:ignore[valid-type]
     ) -> foundation.Status:
         """Handle MCU version response."""
         return foundation.Status.SUCCESS

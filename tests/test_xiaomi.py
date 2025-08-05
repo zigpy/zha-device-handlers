@@ -7,6 +7,7 @@ from unittest import mock
 
 import pytest
 import zigpy.device
+from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl import Cluster, foundation
 from zigpy.zcl.clusters.closures import WindowCovering
@@ -349,7 +350,7 @@ async def test_xiaomi_battery(zigpy_device_from_quirk, voltage, bpr):
     device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.vibration_aq1.VibrationAQ1)
     device.packet_received(
         t.ZigbeePacket(
-            profile_id=0x260,
+            profile_id=zha.PROFILE_ID,
             cluster_id=0x0000,
             src_ep=1,
             dst_ep=1,
@@ -381,7 +382,7 @@ async def test_mija_battery(zigpy_device_from_quirk, voltage, bpr):
     device = zigpy_device_from_quirk(zhaquirks.xiaomi.mija.motion.Motion)
     device.packet_received(
         t.ZigbeePacket(
-            profile_id=0x260,
+            profile_id=zha.PROFILE_ID,
             cluster_id=0x0000,
             src_ep=1,
             dst_ep=1,
@@ -813,7 +814,7 @@ async def test_aqara_feeder_attr_reports(
 
     device.packet_received(
         t.ZigbeePacket(
-            profile_id=0x260,
+            profile_id=zha.PROFILE_ID,
             cluster_id=opple_cluster.cluster_id,
             src_ep=opple_cluster.endpoint.endpoint_id,
             dst_ep=opple_cluster.endpoint.endpoint_id,
@@ -891,7 +892,7 @@ async def test_aqara_smoke_sensor_xiaomi_attribute_report(
 
     device.packet_received(
         t.ZigbeePacket(
-            profile_id=0x260,
+            profile_id=zha.PROFILE_ID,
             cluster_id=opple_cluster.cluster_id,
             src_ep=opple_cluster.endpoint.endpoint_id,
             dst_ep=opple_cluster.endpoint.endpoint_id,
@@ -2256,3 +2257,24 @@ def test_t1m_ceiling_light(zigpy_device_from_v2_quirk, endpoint):
         == AqaraLightT1M.AttributeDefs.power_on_state.id
     )
     assert cluster_listener.attribute_updates[1][1] == LumiPowerOnStateMode.Off
+
+
+async def test_lumi_magnet_sensor_aq2_bad_direction(zigpy_device_from_quirk):
+    """Test Aqara Magnet Sensor AQ2 quirk dealing with bad ZCL command direction."""
+
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.magnet_aq2.MagnetAQ2)
+    listener = ClusterListener(device.endpoints[1].out_clusters[OnOff.cluster_id])
+
+    # The device has a bad ZCL header and reports the incorrect direction for commands
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=260,
+            cluster_id=6,
+            src_ep=1,
+            dst_ep=1,
+            data=t.SerializableBytes(bytes.fromhex("18930A00001001")),
+        )
+    )
+
+    # Our matching logic should be forgiving
+    assert listener.attribute_updates == [(0, t.Bool.true)]
