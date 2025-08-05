@@ -1,19 +1,12 @@
 """Tuya DIN Power Meter Switch ZCR1-40EM."""
 
-from typing import Optional, Union, Any
+from typing import Any, Optional, Union
 
-import zigpy.types as t
 from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomCluster, CustomDevice
+import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import (
-    Basic,
-    GreenPowerProxy,
-    Groups,
-    Ota,
-    Scenes,
-    Time,
-)
+from zigpy.zcl.clusters.general import Basic, GreenPowerProxy, Groups, Ota, Scenes, Time
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
 
