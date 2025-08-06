@@ -130,13 +130,13 @@ class XiaomiCustomDevice(CustomDevice):
         # Aqara devices seem to be very lax with their ZCL header's `direction` field,
         # we should try "flipping" it if matching doesn't work normally.
         try:
-            return super()._find_zcl_cluster(hdr, packet)
+            return super()._find_zcl_cluster_strict(hdr, packet)
         except KeyError:
             _LOGGER.debug(
                 "Packet is coming in the wrong direction, swapping direction and trying again",
             )
 
-            return super()._find_zcl_cluster(
+            return super()._find_zcl_cluster_strict(
                 hdr.replace(
                     frame_control=hdr.frame_control.replace(
                         direction=hdr.frame_control.direction.flip()
