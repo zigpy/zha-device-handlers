@@ -135,16 +135,20 @@ class CandeoOnOffRemoteCluster(OnOff, CustomCluster):
         """overwrite ServerCommandDefs."""
 
         double_press: Final = ZCLCommandDef(
-            id=0x00, schema={},
+            id=0x00,
+            schema={},
         )
         press: Final = ZCLCommandDef(
-            id=0x01, schema={},
+            id=0x01,
+            schema={},
         )
         hold: Final = ZCLCommandDef(
-            id=0x02, schema={},
+            id=0x02,
+            schema={},
         )
         release: Final = ZCLCommandDef(
-            id=0x03, schema={},
+            id=0x03,
+            schema={},
         )
 
 
@@ -155,11 +159,14 @@ class CandeoLevelControlRemoteCluster(LevelControl, CustomCluster):
         """overwrite ServerCommandDefs."""
 
         started_rotating: Final = ZCLCommandDef(
-            id=0x05, schema={"direction": CandeoRemoteDirection},
+            id=0x05,
+            schema={"direction": CandeoRemoteDirection},
         )
         continued_rotating: Final = ZCLCommandDef(
-            id=0x06, schema={"direction": CandeoRemoteDirection},
+            id=0x06,
+            schema={"direction": CandeoRemoteDirection},
         )
         stopped_rotating: Final = ZCLCommandDef(
-            id=0x03, schema={},
+            id=0x03,
+            schema={},
         )
