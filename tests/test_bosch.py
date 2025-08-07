@@ -2,14 +2,15 @@
 
 from unittest import mock
 
+from zigpy.zcl import foundation
+from zigpy.zcl.clusters.hvac import ControlSequenceOfOperation, Thermostat
+from zigpy.zcl.foundation import WriteAttributesStatusRecord
+
 import zhaquirks
 from zhaquirks.bosch.rbsh_trv0_zb_eu import (
     BoschOperatingMode,
     BoschThermostatCluster as BoschTrvThermostatCluster,
 )
-from zigpy.zcl import foundation
-from zigpy.zcl.clusters.hvac import ControlSequenceOfOperation, Thermostat
-from zigpy.zcl.foundation import WriteAttributesStatusRecord
 
 zhaquirks.setup()
 
