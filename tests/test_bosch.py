@@ -2,15 +2,14 @@
 
 from unittest import mock
 
-from zigpy.zcl import foundation
-from zigpy.zcl.clusters.hvac import ControlSequenceOfOperation, Thermostat
-from zigpy.zcl.foundation import WriteAttributesStatusRecord
-
 import zhaquirks
 from zhaquirks.bosch.rbsh_trv0_zb_eu import (
     BoschOperatingMode,
     BoschThermostatCluster as BoschTrvThermostatCluster,
 )
+from zigpy.zcl import foundation
+from zigpy.zcl.clusters.hvac import ControlSequenceOfOperation, Thermostat
+from zigpy.zcl.foundation import WriteAttributesStatusRecord
 
 zhaquirks.setup()
 
@@ -451,9 +450,31 @@ async def test_bosch_radiator_thermostat_II_read_attributes_paused(
         assert not fail
         assert Thermostat.SystemMode.Off in success.values()
 
+        # - system_mode by id along other attributes
+        success, fail = await bosch_thermostat_cluster.read_attributes(
+            [
+                Thermostat.AttributeDefs.system_mode.id,
+                Thermostat.AttributeDefs.pi_heating_demand.id,
+            ]
+        )
+        assert success
+        assert not fail
+        assert Thermostat.SystemMode.Off in success.values()
+
         # - system_mode by name
         success, fail = await bosch_thermostat_cluster.read_attributes(
             [Thermostat.AttributeDefs.system_mode.name]
+        )
+        assert success
+        assert not fail
+        assert Thermostat.SystemMode.Off in success.values()
+
+        # - system_mode by name along other attributes
+        success, fail = await bosch_thermostat_cluster.read_attributes(
+            [
+                Thermostat.AttributeDefs.system_mode.name,
+                Thermostat.AttributeDefs.pi_heating_demand.name,
+            ]
         )
         assert success
         assert not fail
