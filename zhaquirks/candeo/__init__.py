@@ -12,7 +12,6 @@ from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.foundation import (
     BaseCommandDefs,
     DataTypeId,
-    Direction,
     ZCLAttributeDef,
     ZCLCommandDef,
 )
