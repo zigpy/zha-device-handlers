@@ -2,8 +2,10 @@
 
 import datetime
 from unittest import mock
+from zoneinfo import ZoneInfo
 
 import pytest
+import time_machine
 from zigpy.quirks.registry import DeviceRegistry
 from zigpy.quirks.v2 import CustomDeviceV2
 import zigpy.types as t
@@ -11,7 +13,7 @@ from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 
-from tests.common import ClusterListener, MockDatetime, wait_for_zigpy_tasks
+from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
 from zhaquirks.const import BatterySize
 from zhaquirks.tuya import (
@@ -281,7 +283,7 @@ async def test_tuya_quirkbuilder(device_mock):
             expect_reply=False,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -407,6 +409,7 @@ async def test_tuya_spell(device_mock, read_attr_spell, data_query_spell):
         request_mock.reset_mock()
 
 
+@time_machine.travel(datetime.datetime(1970, 1, 1, 1, 0, tzinfo=ZoneInfo("Etc/GMT+1")))
 async def test_tuya_mcu_set_time(device_mock):
     """Test TuyaQuirkBuilder replacement cluster, set_time requests (0x24) messages for MCU devices."""
 
@@ -430,10 +433,6 @@ async def test_tuya_mcu_set_time(device_mock):
         TUYA_SET_TIME
     ].is_manufacturer_specific
 
-    # Mock datetime
-    origdatetime = datetime.datetime
-    datetime.datetime = MockDatetime
-
     # simulate a SET_TIME message
     hdr, args = ep.tuya_manufacturer.deserialize(ZCL_TUYA_SET_TIME)
     assert hdr.command_id == TUYA_SET_TIME
@@ -449,8 +448,6 @@ async def test_tuya_mcu_set_time(device_mock):
         res_hdr = foundation.ZCLHeader.deserialize(m1.await_args[1]["data"])
         assert not res_hdr[0].manufacturer
         assert not res_hdr[0].frame_control.is_manufacturer_specific
-
-    datetime.datetime = origdatetime  # restore datetime
 
 
 @pytest.mark.parametrize(
@@ -557,7 +554,7 @@ async def test_tuya_override_mcu_command(
             expect_reply=False,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)

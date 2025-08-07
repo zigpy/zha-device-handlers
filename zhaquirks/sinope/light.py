@@ -24,6 +24,7 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.homeautomation import Diagnostic, ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
+from zigpy.zcl.foundation import BaseCommandDefs
 
 from zhaquirks import EventableCluster
 from zhaquirks.const import (
@@ -148,14 +149,14 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
         )
         cluster_revision: Final = foundation.ZCL_CLUSTER_REVISION_ATTR
 
-    server_commands = {
-        0x54: foundation.ZCLCommandDef(
-            "button_press",
-            {"command": t.uint8_t},
-            direction=foundation.Direction.Server_to_Client,
+    class ServerCommandDefs(BaseCommandDefs):
+        """Server command definitions."""
+
+        button_press = foundation.ZCLCommandDef(
+            id=0x54,
+            schema={"command": t.uint8_t},
             is_manufacturer_specific=True,
         )
-    }
 
     def handle_cluster_general_request(
         self,

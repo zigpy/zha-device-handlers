@@ -1,6 +1,7 @@
 """Xiaomi aqara smart motion sensor device."""
 
 import math
+from typing import Final
 
 from zigpy import types
 from zigpy.profiles import zha
@@ -15,6 +16,7 @@ from zigpy.zcl.clusters.general import (
     Scenes,
 )
 from zigpy.zcl.clusters.security import IasZone
+from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks import Bus, LocalDataCluster, MotionOnEvent
 from zhaquirks.const import (
@@ -80,8 +82,12 @@ class VibrationAQ1(XiaomiQuickInitDevice):
     class VibrationBasicCluster(BasicCluster):
         """Vibration cluster."""
 
-        attributes = BasicCluster.attributes.copy()
-        attributes[0xFF0D] = ("sensitivity", types.uint8_t, True)
+        class AttributeDefs(BasicCluster.AttributeDefs):
+            """Attribute definitions."""
+
+            sensitivity: Final = ZCLAttributeDef(
+                id=0xFF0D, type=types.uint8_t, is_manufacturer_specific=True
+            )
 
     class MultistateInputCluster(CustomCluster, MultistateInput):
         """Multistate input cluster."""

@@ -18,6 +18,7 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.lighting import Color
 from zigpy.zcl.clusters.lightlink import LightLink
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 from zhaquirks.const import (
     BUTTON_1,
@@ -52,37 +53,68 @@ class OsramButtonCluster(CustomCluster):
     cluster_id = OSRAM_CLUSTER
     name = "OsramCluster"
     ep_attribute = "osram_cluster"
-    attributes = {
-        0x000A: ("osram_1", t.uint8_t, True),
-        0x000B: ("osram_2", t.uint8_t, True),
-        0x000C: ("osram_3", t.uint16_t, True),
-        0x000D: ("osram_4", t.uint16_t, True),
-        0x0019: ("osram_5", t.uint8_t, True),
-        0x001A: ("osram_6", t.uint16_t, True),
-        0x001B: ("osram_7", t.uint16_t, True),
-        0x001C: ("osram_8", t.uint8_t, True),
-        0x001D: ("osram_9", t.uint16_t, True),
-        0x001E: ("osram_10", t.uint16_t, True),
-        0x002C: ("osram_11", t.uint16_t, True),
-        0x002D: ("osram_12", t.uint16_t, True),
-        0x002E: ("osram_13", t.uint16_t, True),
-        0x002F: ("osram_14", t.uint16_t, True),
-    }
+
+    class AttributeDefs(BaseAttributeDefs):
+        """Cluster attributes."""
+
+        osram_1 = ZCLAttributeDef(
+            id=0x000A, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        osram_2 = ZCLAttributeDef(
+            id=0x000B, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        osram_3 = ZCLAttributeDef(
+            id=0x000C, type=t.uint16_t, is_manufacturer_specific=True
+        )
+        osram_4 = ZCLAttributeDef(
+            id=0x000D, type=t.uint16_t, is_manufacturer_specific=True
+        )
+        osram_5 = ZCLAttributeDef(
+            id=0x0019, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        osram_6 = ZCLAttributeDef(
+            id=0x001A, type=t.uint16_t, is_manufacturer_specific=True
+        )
+        osram_7 = ZCLAttributeDef(
+            id=0x001B, type=t.uint16_t, is_manufacturer_specific=True
+        )
+        osram_8 = ZCLAttributeDef(
+            id=0x001C, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        osram_9 = ZCLAttributeDef(
+            id=0x001D, type=t.uint16_t, is_manufacturer_specific=True
+        )
+        osram_10 = ZCLAttributeDef(
+            id=0x001E, type=t.uint16_t, is_manufacturer_specific=True
+        )
+        osram_11 = ZCLAttributeDef(
+            id=0x002C, type=t.uint16_t, is_manufacturer_specific=True
+        )
+        osram_12 = ZCLAttributeDef(
+            id=0x002D, type=t.uint16_t, is_manufacturer_specific=True
+        )
+        osram_13 = ZCLAttributeDef(
+            id=0x002E, type=t.uint16_t, is_manufacturer_specific=True
+        )
+        osram_14 = ZCLAttributeDef(
+            id=0x002F, type=t.uint16_t, is_manufacturer_specific=True
+        )
+
     attr_config = {
-        0x000A: 0x01,
-        0x000B: 0x00,
-        0x000C: 0xFFFF,
-        0x000D: 0xFFFF,
-        0x0019: 0x06,
-        0x001A: 0x0001,
-        0x001B: 0x0026,
-        0x001C: 0x07,
-        0x001D: 0xFFFF,
-        0x001E: 0xFFFF,
-        0x002C: 0xFFFF,
-        0x002D: 0xFFFF,
-        0x002E: 0xFFFF,
-        0x002F: 0xFFFF,
+        AttributeDefs.osram_1.id: 0x01,
+        AttributeDefs.osram_2.id: 0x00,
+        AttributeDefs.osram_3.id: 0xFFFF,
+        AttributeDefs.osram_4.id: 0xFFFF,
+        AttributeDefs.osram_5.id: 0x06,
+        AttributeDefs.osram_6.id: 0x0001,
+        AttributeDefs.osram_7.id: 0x0026,
+        AttributeDefs.osram_8.id: 0x07,
+        AttributeDefs.osram_9.id: 0xFFFF,
+        AttributeDefs.osram_10.id: 0xFFFF,
+        AttributeDefs.osram_11.id: 0xFFFF,
+        AttributeDefs.osram_12.id: 0xFFFF,
+        AttributeDefs.osram_13.id: 0xFFFF,
+        AttributeDefs.osram_14.id: 0xFFFF,
     }
 
     async def bind(self):
