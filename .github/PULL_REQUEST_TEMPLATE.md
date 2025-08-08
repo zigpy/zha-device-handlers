@@ -21,7 +21,7 @@
 
   You can find the diagnostics information by going to the device page, clicking the
   three dots, and then by clicking on "Download diagnostics". Drag-and-drop the
-  downloaded into this section.
+  downloaded file into this section.
 -->
 
 
