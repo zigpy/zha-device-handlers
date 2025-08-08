@@ -34,4 +34,4 @@
 - [ ] The changes are tested and work correctly
 - [ ] `pre-commit` checks pass / the code has been formatted using Black
 - [ ] Tests have been added to verify that the new code works
-- [ ] Device diagnostics data has been attached.
+- [ ] Device diagnostics data has been attached
