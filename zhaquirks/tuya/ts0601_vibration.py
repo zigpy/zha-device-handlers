@@ -2,16 +2,16 @@
 
 """ts0601_vibration_TZE200_v2.py"""
 
-from zhaquirks.tuya.builder import TuyaQuirkBuilder
-from zigpy.quirks.v2.homeassistant import EntityPlatform, EntityType
+from zigpy.quirks.v2.homeassistant import EntityType
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
-from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 import zigpy.types as t
+
+from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 
 def uint_to_sint(value: t.uint8_t) -> t.int8s:
     if value > 127:
-      value = value - 256
+        value = value - 256
     return value
 
 
@@ -54,4 +54,3 @@ def uint_to_sint(value: t.uint8_t) -> t.int8s:
     )
     .add_to_registry()
 )
-
