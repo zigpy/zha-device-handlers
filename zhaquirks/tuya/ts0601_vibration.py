@@ -9,7 +9,7 @@ from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateC
 
 
 def uint_to_sint(value: t.uint8_t) -> t.int8s:
-    """convert raw data to signed integer
+    """convert raw data to signed integer"""
     if value & 0x80:
         return t.int8s(value - 256)
     else:
