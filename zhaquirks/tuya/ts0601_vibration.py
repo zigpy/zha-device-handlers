@@ -3,12 +3,12 @@
 from zigpy.quirks.v2.homeassistant import EntityType
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
-
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 
 def uint_to_sint(value: t.uint8_t) -> t.int8s:
     """Convert raw data to a signed integer."""
+    _LOGGER.debug("converting value 0x%0x from uint to int8s",value)
     if value & 0x80:
         return t.int8s(value - 256)
     else:
