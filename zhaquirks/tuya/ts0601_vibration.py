@@ -1,12 +1,15 @@
 """Quirks v2 for Tuya vibration sensor with accelerometer data (_TZE200_iba1ckek)."""
 
-from zigpy.quirks.v2.homeassistant import EntityType
-from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
-from zhaquirks.tuya.builder import TuyaQuirkBuilder
-import zigpy.types as t
 import logging
 
+from zigpy.quirks.v2.homeassistant import EntityType
+from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
+import zigpy.types as t
+
+from zhaquirks.tuya.builder import TuyaQuirkBuilder
+
 _LOGGER = logging.getLogger(__name__)
+
 
 def uint_to_sint(value: t.uint8_t) -> t.int8s:
     """Convert raw data to a signed integer."""
