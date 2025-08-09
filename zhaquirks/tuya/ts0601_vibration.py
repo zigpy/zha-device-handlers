@@ -1,12 +1,9 @@
 """Quirks v2 for Tuya vibration sensor with accelerometer data (_TZE200_iba1ckek)."""
 
-"""ts0601_vibration_TZE200_v2.py"""
-
+from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zigpy.quirks.v2.homeassistant import EntityType
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
-
-from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 
 def uint_to_sint(value: t.uint8_t) -> t.int8s:
