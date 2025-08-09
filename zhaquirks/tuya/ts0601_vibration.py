@@ -10,9 +10,10 @@ from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 
 def uint_to_sint(value: t.uint8_t) -> t.int8s:
-    if value > 127:
-        value = value - 256
-    return value
+   if value & 0x80:
+        return t.int8s(value - 256)
+    else:
+        return t.int8s(value)
 
 
 (
