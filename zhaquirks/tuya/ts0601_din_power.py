@@ -173,7 +173,7 @@ class HikingManufClusterDinPower(TuyaManufClusterAttributes):
         )
         energy_received: Final = ZCLAttributeDef(
             id=HIKING_TOTAL_ENERGY_RECEIVED_ATTR,
-            type=t.uint16_t,
+            type=t.uint32_t,
             is_manufacturer_specific=True,
         )
         voltage_current: Final = ZCLAttributeDef(
