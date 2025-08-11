@@ -31,7 +31,10 @@ base_air_quality = (
         attribute_name=TuyaTemperatureMeasurement.AttributeDefs.measured_value.name,
         # The device sends a 4-byte structure: [field_1 (2 bytes), temperature (2 bytes)]
         # Extract temperature from bytes 2-4 of the data payload and convert to centidegrees.
-        converter=lambda x: int.from_bytes(x.serialize()[2:4], byteorder='big', signed=True) * 10,
+        converter=lambda x: int.from_bytes(
+            x.serialize()[2:4], byteorder="big", signed=True
+        )
+        * 10,
     )
     .adds(TuyaTemperatureMeasurement)
     .tuya_humidity(dp_id=19, scale=10)
@@ -111,7 +114,10 @@ base_air_quality = (
         attribute_name=TuyaTemperatureMeasurement.AttributeDefs.measured_value.name,
         # The device sends a 4-byte structure: [field_1 (2 bytes), temperature (2 bytes)]
         # Extract temperature from bytes 2-4 of the data payload and convert to centidegrees.
-        converter=lambda x: int.from_bytes(x.serialize()[2:4], byteorder='big', signed=True) * 10,
+        converter=lambda x: int.from_bytes(
+            x.serialize()[2:4], byteorder="big", signed=True
+        )
+        * 10,
     )
     .adds(TuyaTemperatureMeasurement)
     .tuya_humidity(dp_id=19, scale=10)
@@ -129,7 +135,10 @@ base_air_quality = (
         attribute_name=TuyaTemperatureMeasurement.AttributeDefs.measured_value.name,
         # The device sends a 4-byte structure: [field_1 (2 bytes), temperature (2 bytes)]
         # Extract temperature from bytes 2-4 of the data payload and convert to centidegrees.
-        converter=lambda x: int.from_bytes(x.serialize()[2:4], byteorder='big', signed=True) * 10,
+        converter=lambda x: int.from_bytes(
+            x.serialize()[2:4], byteorder="big", signed=True
+        )
+        * 10,
     )
     .adds(TuyaTemperatureMeasurement)
     .tuya_humidity(dp_id=19, scale=10)
