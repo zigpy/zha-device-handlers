@@ -13,6 +13,16 @@ from zhaquirks.tuya.builder import (
 )
 
 
+def tuya_air_quality_temperature_converter(value: Any) -> int:
+    """
+    Convert Tuya air quality temperature data to centidegrees.
+
+    Extract temperature from bytes 2-4 of the data payload and convert to centidegrees.
+    The device sends a 4-byte structure: [field_1 (2 bytes), temperature (2 bytes)]
+    """
+    return int.from_bytes(value.serialize()[2:4], byteorder='big', signed=True) * 10
+
+
 class TuyaPM25ConcentrationIgnoreValues(TuyaPM25Concentration):
     """Tuya PM25 concentration measurement cluster that ignores invalid high values."""
 
@@ -29,12 +39,7 @@ base_air_quality = (
         dp_id=18,
         ep_attribute=TuyaTemperatureMeasurement.ep_attribute,
         attribute_name=TuyaTemperatureMeasurement.AttributeDefs.measured_value.name,
-        # The device sends a 4-byte structure: [field_1 (2 bytes), temperature (2 bytes)]
-        # Extract temperature from bytes 2-4 of the data payload and convert to centidegrees.
-        converter=lambda x: int.from_bytes(
-            x.serialize()[2:4], byteorder="big", signed=True
-        )
-        * 10,
+        converter=tuya_air_quality_temperature_converter,
     )
     .adds(TuyaTemperatureMeasurement)
     .tuya_humidity(dp_id=19, scale=10)
@@ -112,12 +117,7 @@ base_air_quality = (
         dp_id=18,
         ep_attribute=TuyaTemperatureMeasurement.ep_attribute,
         attribute_name=TuyaTemperatureMeasurement.AttributeDefs.measured_value.name,
-        # The device sends a 4-byte structure: [field_1 (2 bytes), temperature (2 bytes)]
-        # Extract temperature from bytes 2-4 of the data payload and convert to centidegrees.
-        converter=lambda x: int.from_bytes(
-            x.serialize()[2:4], byteorder="big", signed=True
-        )
-        * 10,
+        converter=tuya_air_quality_temperature_converter,
     )
     .adds(TuyaTemperatureMeasurement)
     .tuya_humidity(dp_id=19, scale=10)
@@ -133,12 +133,7 @@ base_air_quality = (
         dp_id=18,
         ep_attribute=TuyaTemperatureMeasurement.ep_attribute,
         attribute_name=TuyaTemperatureMeasurement.AttributeDefs.measured_value.name,
-        # The device sends a 4-byte structure: [field_1 (2 bytes), temperature (2 bytes)]
-        # Extract temperature from bytes 2-4 of the data payload and convert to centidegrees.
-        converter=lambda x: int.from_bytes(
-            x.serialize()[2:4], byteorder="big", signed=True
-        )
-        * 10,
+        converter=tuya_air_quality_temperature_converter,
     )
     .adds(TuyaTemperatureMeasurement)
     .tuya_humidity(dp_id=19, scale=10)
