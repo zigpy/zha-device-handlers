@@ -14,13 +14,12 @@ from zhaquirks.tuya.builder import (
 
 
 def tuya_air_quality_temperature_converter(value: Any) -> int:
-    """
-    Convert Tuya air quality temperature data to centidegrees.
+    """Convert Tuya air quality temperature data to centidegrees.
 
     Extract temperature from bytes 2-4 of the data payload and convert to centidegrees.
     The device sends a 4-byte structure: [field_1 (2 bytes), temperature (2 bytes)]
     """
-    return int.from_bytes(value.serialize()[2:4], byteorder='big', signed=True) * 10
+    return int.from_bytes(value.serialize()[2:4], byteorder="big", signed=True) * 10
 
 
 class TuyaPM25ConcentrationIgnoreValues(TuyaPM25Concentration):
