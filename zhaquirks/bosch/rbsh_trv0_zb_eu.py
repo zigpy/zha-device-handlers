@@ -156,7 +156,8 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
         pi_heating_demand: Final = ZCLAttributeDef(
             id=VALVE_POSITION_ATTR_ID,
             # Values range from 0-100
-            type=t.enum8,
+            type=t.uint8_t,
+            zcl_type=DataTypeId.enum8,
             is_manufacturer_specific=True,
         )
 
