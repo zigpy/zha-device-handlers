@@ -114,6 +114,7 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
 
 (
     QuirkBuilder("Bosch", "RBSH-RTH0-ZB-EU")
+    .applies_to("Bosch", "RBSH-RTH0-BAT-ZB-EU")
     .replaces(BoschThermostatCluster)
     .replaces(BoschUserInterfaceCluster)
     # Operating mode - read-only: controlled automatically through Thermostat.system_mode (HAVC mode).
