@@ -837,6 +837,61 @@ def test_no_duplicate_clusters(quirk: CustomDevice) -> None:
         check_for_duplicate_cluster_ids(ep_data.get(OUTPUT_CLUSTERS, []))
 
 
+@pytest.mark.parametrize("quirk", ALL_QUIRK_CLASSES)
+def test_suspicious_cluster_moves(quirk: CustomDevice) -> None:
+    """Verify that no quirks do suspicious moves or copy/pastes of clusters."""
+    for ep_id, ep_data in quirk.replacement[ENDPOINTS].items():
+        # Originals
+        orig_in_clusters = set(
+            quirk.signature.get(ENDPOINTS, {}).get(ep_id, {}).get(INPUT_CLUSTERS, [])
+        )
+        orig_out_clusters = set(
+            quirk.signature.get(ENDPOINTS, {}).get(ep_id, {}).get(OUTPUT_CLUSTERS, [])
+        )
+
+        # New
+        new_in_clusters = {
+            cluster.cluster_id if isinstance(cluster, zcl.Cluster) else cluster
+            for cluster in ep_data.get(INPUT_CLUSTERS, [])
+        }
+        new_out_clusters = {
+            cluster.cluster_id if isinstance(cluster, zcl.Cluster) else cluster
+            for cluster in ep_data.get(OUTPUT_CLUSTERS, [])
+        }
+
+        added_in_clusters = set(new_in_clusters) - set(orig_in_clusters)
+        added_out_clusters = set(new_out_clusters) - set(orig_out_clusters)
+
+        removed_in_clusters = set(orig_in_clusters) - set(new_in_clusters)
+        removed_out_clusters = set(orig_out_clusters) - set(new_out_clusters)
+
+        in_clusters_moved_to_out = added_out_clusters & removed_in_clusters
+        out_clusters_moved_to_in = added_in_clusters & removed_out_clusters
+
+        if in_clusters_moved_to_out:
+            pytest.fail(
+                f"Quirk {quirk!r} moved input to output cluster: {in_clusters_moved_to_out!r}"
+            )
+
+        if out_clusters_moved_to_in:
+            pytest.fail(
+                f"Quirk {quirk!r} moved output to input cluster: {out_clusters_moved_to_in!r}"
+            )
+
+        out_mirrored_to_in = added_in_clusters & orig_out_clusters
+        in_mirrored_to_out = added_out_clusters & orig_in_clusters
+
+        if out_mirrored_to_in:
+            pytest.fail(
+                f"Quirk {quirk!r} mirrored output to input cluster: {out_mirrored_to_in!r}"
+            )
+
+        if in_mirrored_to_out:
+            pytest.fail(
+                f"Quirk {quirk!r} mirrored input to output cluster: {in_mirrored_to_out!r}"
+            )
+
+
 async def test_local_data_cluster(device_mock) -> None:
     """Ensure reading attributes from a LocalDataCluster works as expected."""
     registry = DeviceRegistry()
