@@ -61,7 +61,7 @@ class ShortcutV1Cluster(EventableCluster):
     class ServerCommandDefs(BaseCommandDefs):
         """Server command definitions."""
 
-        shortcut_v1 = foundation.ZCLCommandDef(
+        shortcut_v1_event = foundation.ZCLCommandDef(
             id=0x01,
             schema={
                 "shortcut_button": t.int8s,
