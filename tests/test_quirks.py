@@ -865,30 +865,46 @@ def test_suspicious_cluster_moves(quirk: CustomDevice) -> None:
         removed_in_clusters = set(orig_in_clusters) - set(new_in_clusters)
         removed_out_clusters = set(orig_out_clusters) - set(new_out_clusters)
 
+        # Moved clusters
         in_clusters_moved_to_out = added_out_clusters & removed_in_clusters
         out_clusters_moved_to_in = added_in_clusters & removed_out_clusters
 
         if in_clusters_moved_to_out:
             pytest.fail(
-                f"Quirk {quirk!r} moved input to output cluster: {in_clusters_moved_to_out!r}"
+                f"Quirk {quirk!r} moved input to output cluster on EP {ep_id}: {in_clusters_moved_to_out!r}"
             )
 
         if out_clusters_moved_to_in:
             pytest.fail(
-                f"Quirk {quirk!r} moved output to input cluster: {out_clusters_moved_to_in!r}"
+                f"Quirk {quirk!r} moved output to input cluster on EP {ep_id}: {out_clusters_moved_to_in!r}"
             )
 
+        # Mirrored clusters
         out_mirrored_to_in = added_in_clusters & orig_out_clusters
         in_mirrored_to_out = added_out_clusters & orig_in_clusters
 
         if out_mirrored_to_in:
             pytest.fail(
-                f"Quirk {quirk!r} mirrored output to input cluster: {out_mirrored_to_in!r}"
+                f"Quirk {quirk!r} mirrored output to input cluster on EP {ep_id}: {out_mirrored_to_in!r}"
             )
 
         if in_mirrored_to_out:
             pytest.fail(
-                f"Quirk {quirk!r} mirrored input to output cluster: {in_mirrored_to_out!r}"
+                f"Quirk {quirk!r} mirrored input to output cluster on EP {ep_id}: {in_mirrored_to_out!r}"
+            )
+
+        # Removed clusters where one exists of the opposite type
+        removed_duplicate_in_clusters = removed_in_clusters & orig_out_clusters
+        removed_duplicate_out_clusters = removed_out_clusters & orig_in_clusters
+
+        if removed_duplicate_in_clusters:
+            pytest.fail(
+                f"Quirk {quirk!r} removed input cluster that has output cluster with same ID on EP {ep_id}: {removed_duplicate_in_clusters!r}"
+            )
+
+        if removed_duplicate_out_clusters:
+            pytest.fail(
+                f"Quirk {quirk!r} removed output cluster that has input cluster with same ID on EP {ep_id}: {removed_duplicate_out_clusters!r}"
             )
 
 
