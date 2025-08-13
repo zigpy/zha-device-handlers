@@ -152,7 +152,6 @@ class IkeaSymfoniskGen2v1(CustomDevice):
                     PollControl.cluster_id,
                     LightLink.cluster_id,
                     WWAH_CLUSTER_ID,
-                    ShortcutV1Cluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
