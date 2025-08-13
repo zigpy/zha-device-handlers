@@ -851,11 +851,11 @@ def test_suspicious_cluster_moves(quirk: CustomDevice) -> None:
 
         # New
         new_in_clusters = {
-            cluster.cluster_id if isinstance(cluster, zcl.Cluster) else cluster
+            cluster if isinstance(cluster, int) else cluster.cluster_id
             for cluster in ep_data.get(INPUT_CLUSTERS, [])
         }
         new_out_clusters = {
-            cluster.cluster_id if isinstance(cluster, zcl.Cluster) else cluster
+            cluster if isinstance(cluster, int) else cluster.cluster_id
             for cluster in ep_data.get(OUTPUT_CLUSTERS, [])
         }
 
