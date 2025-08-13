@@ -5,13 +5,7 @@ Aka. ZHONGXING. Based on Orvibo motion sensor code.
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
-from zigpy.zcl.clusters.general import (
-    Basic,
-    Groups,
-    Identify,
-    PowerConfiguration,
-    Scenes,
-)
+from zigpy.zcl.clusters.general import Basic, Identify, PowerConfiguration
 from zigpy.zcl.clusters.security import IasZone
 
 from zhaquirks import Bus, PowerConfigurationCluster
@@ -67,11 +61,7 @@ class SN10ZW(CustomDevice):
                     MotionCluster,
                 ],
                 OUTPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
                     Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
                 ],
             }
         }
