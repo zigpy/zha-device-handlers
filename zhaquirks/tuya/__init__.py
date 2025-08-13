@@ -1065,7 +1065,7 @@ class TuyaSmartRemoteOnOffCluster(OnOff, EventableCluster):
         self.last_tsn = -1
         super().__init__(*args, **kwargs)
 
-    class ServerCommandDefs(OnOff.ServerCommandDefs):
+    class ClientCommandDefs(OnOff.ClientCommandDefs):
         """Server command definitions."""
 
         rotate_type = foundation.ZCLCommandDef(
