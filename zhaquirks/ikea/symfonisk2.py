@@ -172,27 +172,27 @@ class IkeaSymfoniskGen2v1(CustomDevice):
     device_automation_triggers.update(
         {
             (SHORT_PRESS, BUTTON_1): {
-                COMMAND: ShortcutV1Cluster.ServerCommandDefs.shortcut_v1_event.name,
+                COMMAND: ShortcutV1Cluster.ServerCommandDefs.shortcut_v1_events.name,
                 PARAMS: {"shortcut_button": 1, "shortcut_event": 1},
             },
             (DOUBLE_PRESS, BUTTON_1): {
-                COMMAND: ShortcutV1Cluster.ServerCommandDefs.shortcut_v1_event.name,
+                COMMAND: ShortcutV1Cluster.ServerCommandDefs.shortcut_v1_events.name,
                 PARAMS: {"shortcut_button": 1, "shortcut_event": 2},
             },
             (LONG_PRESS, BUTTON_1): {
-                COMMAND: ShortcutV1Cluster.ServerCommandDefs.shortcut_v1_event.name,
+                COMMAND: ShortcutV1Cluster.ServerCommandDefs.shortcut_v1_events.name,
                 PARAMS: {"shortcut_button": 1, "shortcut_event": 3},
             },
             (SHORT_PRESS, BUTTON_2): {
-                COMMAND: ShortcutV1Cluster.ServerCommandDefs.shortcut_v1_event.name,
+                COMMAND: ShortcutV1Cluster.ServerCommandDefs.shortcut_v1_events.name,
                 PARAMS: {"shortcut_button": 2, "shortcut_event": 1},
             },
             (DOUBLE_PRESS, BUTTON_2): {
-                COMMAND: ShortcutV1Cluster.ServerCommandDefs.shortcut_v1_event.name,
+                COMMAND: ShortcutV1Cluster.ServerCommandDefs.shortcut_v1_events.name,
                 PARAMS: {"shortcut_button": 2, "shortcut_event": 2},
             },
             (LONG_PRESS, BUTTON_2): {
-                COMMAND: ShortcutV1Cluster.ServerCommandDefs.shortcut_v1_event.name,
+                COMMAND: ShortcutV1Cluster.ServerCommandDefs.shortcut_v1_events.name,
                 PARAMS: {"shortcut_button": 2, "shortcut_event": 3},
             },
         },
