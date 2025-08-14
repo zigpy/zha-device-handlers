@@ -901,8 +901,6 @@ def test_no_duplicate_clusters(quirk: CustomDevice) -> None:
             zhaquirks.ikea.twobtnremote.IkeaRodretRemote2BtnNew,
             # remove WindowCovering input cluster (IKEA remote):
             zhaquirks.ikea.twobtnremote.IkeaTradfriRemote2BtnZLL,
-            # add ShortcutV1 cluster as input cluster (IKEA remote) (fixed upstream):
-            zhaquirks.ikea.symfonisk2.IkeaSymfoniskGen2v1,
             #
             # -- other devices --
             # adds DoorLock cluster to output clusters (Yale door locks):
