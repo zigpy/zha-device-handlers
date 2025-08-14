@@ -87,7 +87,9 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
 )
 
 (
-    TuyaQuirkBuilder("_TZE204_navtwmd0", "TS0601") # Only temperature with alarm, display and external sensor
+    TuyaQuirkBuilder(
+        "_TZE204_navtwmd0", "TS0601"
+    )  # Only temperature with alarm, display and external sensor
     .tuya_temperature(dp_id=1, scale=10)
     .tuya_enum(
         dp_id=9,
