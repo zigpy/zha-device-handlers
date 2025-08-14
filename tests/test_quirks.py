@@ -837,7 +837,87 @@ def test_no_duplicate_clusters(quirk: CustomDevice) -> None:
         check_for_duplicate_cluster_ids(ep_data.get(OUTPUT_CLUSTERS, []))
 
 
-@pytest.mark.parametrize("quirk", ALL_QUIRK_CLASSES)
+@pytest.mark.parametrize(
+    "quirk",
+    [
+        quirk_cls
+        for quirk_cls in ALL_QUIRK_CLASSES
+        if quirk_cls
+        not in (
+            # -- Tuya devices --
+            # remove duplicated OnOff from input cluster (Tuya remotes):
+            zhaquirks.tuya.ts004f.TuyaSmartRemote004F,
+            zhaquirks.tuya.ts004f.TuyaSmartRemote004FROK,
+            zhaquirks.tuya.ts004f.TuyaSmartRemote004FDMS,
+            zhaquirks.tuya.ts004f.TuyaSmartRemote004FSK,
+            zhaquirks.tuya.ts004f.TuyaSmartRemote004FSK_v2,
+            # swap OnOff from input to output cluster (Tuya remotes):
+            zhaquirks.tuya.ts0041.TuyaSmartRemote0041TOPlusA,
+            zhaquirks.tuya.ts0042.TuyaSmartRemote0042TOPlusA,
+            zhaquirks.tuya.ts0043.TuyaSmartRemote0043TOPlusB,
+            zhaquirks.tuya.ts0044.TuyaSmartRemote0044TOPlusB,
+            zhaquirks.tuya.ts0046.TuyaSmartRemote0046,
+            # swap TuyaZBExternalSwitchTypeCluster input to output cluster (Tuya plug):
+            zhaquirks.tuya.ts011f_plug.Plug_v6,
+            #
+            # -- Xiaomi/Aqara devices --
+            # swap OnOff from input to output cluster (binary sensor):
+            zhaquirks.xiaomi.aqara.magnet_aq2.MagnetAQ2,
+            # swap OnOff from input to output cluster (Aqara remotes):
+            zhaquirks.xiaomi.aqara.sensor_switch_aq3.SwitchAQ3,
+            zhaquirks.xiaomi.aqara.switch_aq2.SwitchAQ2,
+            # remove MultistateInput output cluster (Xiaomi cube):
+            zhaquirks.xiaomi.aqara.cube.Cube,
+            zhaquirks.xiaomi.aqara.cube_aqgl01.CubeAQGL01,
+            # also add OTA input cluster (Aqara cube):
+            zhaquirks.xiaomi.aqara.cube_aqgl01.CubeCAGL02,
+            # remove custom Xiaomi output cluster (E1 curtain driver):
+            zhaquirks.xiaomi.aqara.driver_curtain_e1.DriverE1,
+            # remove random AnalogInput input cluster (Aqara remote + temp sensor):
+            zhaquirks.xiaomi.aqara.remote_b186acn01.RemoteB186ACN01,
+            zhaquirks.xiaomi.aqara.remote_b286acn01.RemoteB286ACN01,
+            zhaquirks.xiaomi.mija.sensor_ht.Weather,
+            # remove Time input cluster (Aqara switch):
+            zhaquirks.xiaomi.aqara.switch_t1.SwitchT1Alt2,
+            zhaquirks.xiaomi.aqara.switch_t1.SwitchT1,
+            # remove OnOff output cluster (Aqara switch):
+            zhaquirks.xiaomi.aqara.switch_t1.SwitchT1Alt3,
+            # remove OTA input cluster (Aqara remote + motion sensor):
+            zhaquirks.xiaomi.mija.motion.Motion,
+            zhaquirks.xiaomi.mija.sensor_switch.MijaButton,
+            # remove a bunch of incorrect output clusters (LUMI/Keen temp sensor):
+            zhaquirks.keenhome.weather.TemperatureHumidtyPressureSensor,
+            # this just exposed all ZCL clusters, remove a lot (Aqara light):
+            zhaquirks.xiaomi.aqara.light_aqcn2.LightAqcn02,
+            # DoorLock cluster that's actually a MultistateInput cluster
+            # removed as output cluster (Aqara vibration sensor):
+            zhaquirks.xiaomi.aqara.vibration_aq1.VibrationAQ1,
+            #
+            # -- IKEA devices --
+            # swap PM25 cluster from output to input cluster (IKEA Starkvind):
+            zhaquirks.ikea.starkvind.IkeaSTARKVIND,
+            zhaquirks.ikea.starkvind.IkeaSTARKVIND_v2,
+            # removes Group input cluster (IKEA remote):
+            zhaquirks.ikea.twobtnremote.IkeaRodretRemote2BtnNew,
+            # remove WindowCovering input cluster (IKEA remote):
+            zhaquirks.ikea.twobtnremote.IkeaTradfriRemote2BtnZLL,
+            # add ShortcutV1 cluster as input cluster (IKEA remote) (fixed upstream):
+            zhaquirks.ikea.symfonisk2.IkeaSymfoniskGen2v1,
+            #
+            # -- other devices --
+            # adds DoorLock cluster to output clusters (Yale door locks):
+            zhaquirks.yale.realliving.YRD210PBDB220TSLL,
+            zhaquirks.yale.realliving.YRD220240TSDB,
+            # remove LevelControl input cluster (Adurolight remote):
+            zhaquirks.aduro.adurolightncc.AdurolightNCC,
+            # add a bunch of output clusters (Zhongxing motion sensor):
+            zhaquirks.zhongxing.motion.SN10ZW,
+            # remove Tuya clusters from input and output clusters (ZLinky):
+            zhaquirks.lixee.zlinky.ZLinkyTICFWV14,
+            zhaquirks.lixee.zlinky.ZLinkyTICFWV15,
+        )
+    ],
+)
 def test_suspicious_cluster_moves(quirk: CustomDevice) -> None:
     """Verify that no quirks do suspicious moves or copy/pastes of clusters."""
     for ep_id, ep_data in quirk.replacement[ENDPOINTS].items():
