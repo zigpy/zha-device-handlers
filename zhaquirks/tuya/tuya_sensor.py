@@ -142,7 +142,6 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .applies_to("_TZE200_znbl8dj5", "TS0601")
     .applies_to("_TZE200_zppcgbdj", "TS0601")
     .applies_to("_TZE204_s139roas", "TS0601")
-#    .applies_to("_TZE204_navtwmd0", "TS0601")
     .applies_to("_TZE200_s1xgth2u", "TS0601")  # Nedis ZBSC30WT
     .tuya_temperature(dp_id=1, scale=10)
     .adds(TuyaTemperatureMeasurement)
