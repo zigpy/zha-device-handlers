@@ -2,30 +2,12 @@
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.quirks.v2.homeassistant import (
-    UnitOfTemperature,
-    PERCENTAGE,
-)
-import zigpy.types as t
-from enum import Enum
-from zigpy import types
-from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature
 from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
-from zigpy.quirks.registry import DeviceRegistry
+import zigpy.types as t
 from zigpy.zcl import ClusterType
-from zigpy.quirks.v2 import (
-    BinarySensorMetadata,
-    CustomDeviceV2,
-    EntityMetadata,
-    EntityPlatform,
-    EntityType,
-    NumberMetadata,
-    SwitchMetadata,
-    WriteAttributeButtonMetadata,
-    ZCLCommandButtonMetadata,
-    ZCLSensorMetadata,
-    add_to_registry_v2,
-)
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+
 
 class CustomSonoffCluster(CustomCluster):
     """Custom Sonoff cluster."""
@@ -41,7 +23,7 @@ class CustomSonoffCluster(CustomCluster):
             type=t.int16s,
         )
 
-        RelativeHumidityCompensation  = ZCLAttributeDef(
+        RelativeHumidityCompensation = ZCLAttributeDef(
             name="RelativeHumidityCompensation",
             id=0x2004,
             type=t.int16s,
@@ -51,7 +33,7 @@ class CustomSonoffCluster(CustomCluster):
     def _is_manuf_specific(self):
         return False
 
-    
+
 (
     QuirkBuilder("eWeLink", "SNZB-02P")
     .replaces(CustomSonoffCluster, 0xFC11, ClusterType.Server, 1)
@@ -63,11 +45,11 @@ class CustomSonoffCluster(CustomCluster):
         -50.0,
         50.0,
         0.1,
-        unit = UnitOfTemperature.CELSIUS,
-        multiplier = 0.01,
-        translation_key = "TemperatureCompensation",
-        device_class = NumberDeviceClass.TEMPERATURE,
-        fallback_name = "TemperatureCompensation",
+        unit=UnitOfTemperature.CELSIUS,
+        multiplier=0.01,
+        translation_key="TemperatureCompensation",
+        device_class=NumberDeviceClass.TEMPERATURE,
+        fallback_name="TemperatureCompensation",
     )
     .number(
         "RelativeHumidityCompensation",
@@ -77,11 +59,11 @@ class CustomSonoffCluster(CustomCluster):
         -50.0,
         50.0,
         0.1,
-        unit = PERCENTAGE,
-        multiplier = 0.01,
-        translation_key = "RelativeHumidityCompensation",
-        device_class = NumberDeviceClass.HUMIDITY,
-        fallback_name = "RelativeHumidityCompensation",
+        unit=PERCENTAGE,
+        multiplier=0.01,
+        translation_key="RelativeHumidityCompensation",
+        device_class=NumberDeviceClass.HUMIDITY,
+        fallback_name="RelativeHumidityCompensation",
     )
     .add_to_registry()
-)    
+)
