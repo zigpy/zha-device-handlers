@@ -1,37 +1,29 @@
 """TS011F Circuit Breaker * Tongou TO-Q-SY2-JZT."""
 
-from typing import Any, Optional, Union
 import logging
-import enum
 from struct import iter_unpack, pack
+from typing import Any, Optional, Union
 
-from zigpy.profiles import zgp, zha
-from zigpy.quirks.v2 import QuirkBuilder, CustomDeviceV2
+from zigpy.quirks.v2 import CustomDeviceV2, QuirkBuilder
 from zigpy.quirks.v2.homeassistant import (
-    UnitOfTemperature,
-    UnitOfElectricPotential,
     UnitOfElectricCurrent,
+    UnitOfElectricPotential,
     UnitOfPower,
+    UnitOfTemperature,
 )
 from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
-
 import zigpy.types as t
 from zigpy.zcl import foundation
 
 from zhaquirks import LocalDataCluster
-
 from zhaquirks.quirk_ids import TUYA_PLUG_ONOFF
 from zhaquirks.tuya import (
     EnchantedDevice,
-    TuyaNewManufCluster,
-    TuyaZB1888Cluster,
     TuyaZBE000Cluster,
     TuyaZBElectricalMeasurement,
     TuyaZBExternalSwitchTypeCluster,
     TuyaZBMeteringCluster,
-    TuyaZBMeteringClusterWithUnit,
     TuyaZBOnOffAttributeCluster,
-    TuyaLocalCluster,
 )
 
 _LOGGER = logging.getLogger("ts011f_breaker")
@@ -140,7 +132,7 @@ class TuyaZBExternalSwitchTypeThresholdCluster(
         )
 
         if hdr.command_id in (TUYA_OPTIONS_2_DATA, TUYA_OPTIONS_3_DATA):
-            for (attr_id, breaker, threshold) in iter_unpack(">bbH", data):
+            for attr_id, breaker, threshold in iter_unpack(">bbH", data):
                 self._update_attribute((hdr.command_id << 8) + attr_id, breaker)
                 self._update_attribute(
                     (hdr.command_id << 8) + 0x80 + attr_id, threshold
@@ -187,7 +179,7 @@ class TuyaZBExternalSwitchTypeThresholdCluster(
                 attr_id = attribute.attrid
                 command_id = attr_id >> 8
                 comp_attr_id = attr_id ^ 0x80
-                if not attr_id in command_attributes[command_id]:
+                if attr_id not in command_attributes[command_id]:
                     if comp_attr_id in local:
                         comp_attr = next(
                             filter(lambda a: a.id == comp_attr_id, records), None
