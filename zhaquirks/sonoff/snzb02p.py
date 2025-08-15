@@ -2,12 +2,30 @@
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature
-from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
+from zigpy.quirks.v2.homeassistant import (
+    UnitOfTemperature,
+    PERCENTAGE,
+)
 import zigpy.types as t
-from zigpy.zcl import ClusterType
+from enum import Enum
+from zigpy import types
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
-
+from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
+from zigpy.quirks.registry import DeviceRegistry
+from zigpy.zcl import ClusterType
+from zigpy.quirks.v2 import (
+    BinarySensorMetadata,
+    CustomDeviceV2,
+    EntityMetadata,
+    EntityPlatform,
+    EntityType,
+    NumberMetadata,
+    SwitchMetadata,
+    WriteAttributeButtonMetadata,
+    ZCLCommandButtonMetadata,
+    ZCLSensorMetadata,
+    add_to_registry_v2,
+)
 
 class CustomSonoffCluster(CustomCluster):
     """Custom Sonoff cluster."""
@@ -17,14 +35,14 @@ class CustomSonoffCluster(CustomCluster):
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
 
-        TemperatureCompensation = ZCLAttributeDef(
-            name="TemperatureCompensation",
+        Temperature_Compensation = ZCLAttributeDef(
+            name="Temperature_Compensation",
             id=0x2003,
             type=t.int16s,
         )
 
-        RelativeHumidityCompensation = ZCLAttributeDef(
-            name="RelativeHumidityCompensation",
+        Relative_Humidity_Compensation  = ZCLAttributeDef(
+            name="Relative_Humidity_Compensation",
             id=0x2004,
             type=t.int16s,
         )
@@ -33,37 +51,37 @@ class CustomSonoffCluster(CustomCluster):
     def _is_manuf_specific(self):
         return False
 
-
+    
 (
     QuirkBuilder("eWeLink", "SNZB-02P")
     .replaces(CustomSonoffCluster, 0xFC11, ClusterType.Server, 1)
     .number(
-        "TemperatureCompensation",
-        0xFC11,
+        CustomSonoffCluster.AttributeDefs.Temperature_Compensation.name,
+        CustomSonoffCluster.cluster_id,
         ClusterType.Server,
         1,
         -50.0,
         50.0,
         0.1,
-        unit=UnitOfTemperature.CELSIUS,
-        multiplier=0.01,
-        translation_key="TemperatureCompensation",
-        device_class=NumberDeviceClass.TEMPERATURE,
-        fallback_name="TemperatureCompensation",
+        unit = UnitOfTemperature.CELSIUS,
+        multiplier = 0.01,
+        translation_key = "Temperature_Compensation",
+        device_class = NumberDeviceClass.TEMPERATURE,
+        fallback_name = "Temperature Compensation",
     )
     .number(
-        "RelativeHumidityCompensation",
-        0xFC11,
+        CustomSonoffCluster.AttributeDefs.Relative_Humidity_Compensation.name,
+        CustomSonoffCluster.cluster_id,
         ClusterType.Server,
         1,
         -50.0,
         50.0,
         0.1,
-        unit=PERCENTAGE,
-        multiplier=0.01,
-        translation_key="RelativeHumidityCompensation",
-        device_class=NumberDeviceClass.HUMIDITY,
-        fallback_name="RelativeHumidityCompensation",
+        unit = PERCENTAGE,
+        multiplier = 0.01,
+        translation_key = "Relative_Humidity_Compensation",
+        device_class = NumberDeviceClass.HUMIDITY,
+        fallback_name = "Relative Humidity Compensation",
     )
     .add_to_registry()
-)
+)    
