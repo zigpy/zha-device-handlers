@@ -62,29 +62,28 @@ class LegrandIdentify(CustomCluster, Identify):
         self,
         command_id: GeneralCommand | int | t.uint8_t,
         *args: Any,
-        manufacturer: int | t.uint16_t | None = None,
-        expect_reply: bool = True,
-        tsn: int | t.uint8_t | None = None,
         **kwargs: Any,
     ) -> Any:
         """Override the command method to customize the identify command."""
 
         if command_id == Identify.ServerCommandDefs.identify.id:
+            # Remove identify command specific arguments
+            identify_time = kwargs.pop("identify_time", None)
+
             await super().command(
                 command_id=Identify.ServerCommandDefs.trigger_effect.id,
                 effect_id=EffectIdentifier.Blink,
                 effect_variant=EffectVariant.Default,
-                manufacturer=manufacturer,
-                expect_reply=expect_reply,
-                tsn=tsn,
+                **kwargs,
             )
+
+            # Restore identify command specific arguments
+            if identify_time is not None:
+                kwargs["identify_time"] = identify_time
 
         return await super().command(
             command_id,
             *args,
-            manufacturer=manufacturer,
-            expect_reply=expect_reply,
-            tsn=tsn,
             **kwargs,
         )
 
