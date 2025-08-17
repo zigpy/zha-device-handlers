@@ -53,3 +53,36 @@ async def test_legrand_wire_pilot_cluster_write_attrs(zigpy_device_from_v2_quirk
         [],
         manufacturer=0xFC40,
     )
+
+
+async def test_legrand_identify_command(zigpy_device_from_v2_quirk):
+    """Test Legrand Identify cluster command handling."""
+
+    device = zigpy_device_from_v2_quirk(f" {LEGRAND}", " Light switch with neutral")
+    identify_cluster = device.endpoints[1].identify
+    request = identify_cluster.request = mock.AsyncMock()
+
+    # Expected values for the mocked function calls
+    IDENTIFY_TIME = 1234
+    IDENTIFY_COMMAND = 0x00
+    TRIGGER_EFFECT_COMMAND = 0x40
+    EFFECT_ID = 0x00
+    EFFECT_VARIANT = 0x00
+
+    # Test the identify command
+    await identify_cluster.identify(identify_time=IDENTIFY_TIME)
+
+    # The identify command should produce two requests
+    assert request.call_count == 2
+
+    # The first call is for the trigger effect command
+    assert request.call_args_list[0].args[1] == TRIGGER_EFFECT_COMMAND
+    assert request.call_args_list[0].kwargs["effect_id"] == EFFECT_ID
+    assert request.call_args_list[0].kwargs["effect_variant"] == EFFECT_VARIANT
+    assert "identify_time" not in request.call_args_list[0].kwargs
+
+    # The second call is for the identify command
+    assert request.call_args_list[1].args[1] == IDENTIFY_COMMAND
+    assert request.call_args_list[1].kwargs["identify_time"] == IDENTIFY_TIME
+    assert "effect_id" not in request.call_args_list[1].kwargs
+    assert "effect_variant" not in request.call_args_list[1].kwargs
