@@ -113,32 +113,13 @@ base_air_quality = (
 
 
 (
-    TuyaQuirkBuilder("_TZE200_3ejwxpmu", "TS0601")  # Tuya NIDR CO2 sensor
-    .tuya_co2(dp_id=2)
-    .tuya_dp(
-        dp_id=18,
-        ep_attribute=TuyaTemperatureMeasurement.ep_attribute,
-        attribute_name=TuyaTemperatureMeasurement.AttributeDefs.measured_value.name,
-        converter=lambda x: CustomTemperature.from_value(x).temperature * 10,
-    )
-    .adds(TuyaTemperatureMeasurement)
-    .tuya_humidity(dp_id=19, scale=10)
-    .skip_configuration()
-    .add_to_registry()
-)
-
-(
-    TuyaQuirkBuilder("_TZE200_ogkdpgy2", "TS0601")  # Tuya NIDR CO2 sensor with GPP.
+    base_air_quality.clone()  # Tuya NIDR CO2 sensor with GPP.
+    # 18 and 19 from base
+    .applies_to("_TZE200_ogkdpgy2", "TS0601")
     .applies_to("_TZE204_ogkdpgy2", "TS0601")
+    .applies_to("_TZE200_3ejwxpmu", "TS0601")
+    .applies_to("_TZE204_3ejwxpmu", "TS0601")
     .tuya_co2(dp_id=2)
-    .tuya_dp(
-        dp_id=18,
-        ep_attribute=TuyaTemperatureMeasurement.ep_attribute,
-        attribute_name=TuyaTemperatureMeasurement.AttributeDefs.measured_value.name,
-        converter=lambda x: CustomTemperature.from_value(x).temperature * 10,
-    )
-    .adds(TuyaTemperatureMeasurement)
-    .tuya_humidity(dp_id=19, scale=10)
     .skip_configuration()
     .add_to_registry()
 )
