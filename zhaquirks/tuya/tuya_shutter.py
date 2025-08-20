@@ -54,26 +54,26 @@ class BorderLimitEnum(t.enum8):
     # Working
     .tuya_number(
         dp_id=2,
-        attribute_name="curtain_target_setting",
+        attribute_name="shutter_target_setting",
         type=t.uint32_t,
         min_value=0,
         max_value=100,
         step=1,
         unit=PERCENTAGE,
-        translation_key="curtain_target_setting",
-        fallback_name="Curtain Target Setting",
+        translation_key="shutter_target_setting",
+        fallback_name="Shutter Target Setting",
     )
     # Working
     .tuya_number(
         dp_id=3,
-        attribute_name="curtain_postion",
+        attribute_name="shutter_postion",
         type=t.uint32_t,
         min_value=0,
         max_value=100,
         step=1,
         unit=PERCENTAGE,
-        translation_key="curtain_position",
-        fallback_name="Curtain Position",
+        translation_key="shutter_position",
+        fallback_name="Shutter Position",
     )
     # Working Needs to be manually triggered to pick up sensor
     .tuya_enum(
