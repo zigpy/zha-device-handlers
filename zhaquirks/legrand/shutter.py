@@ -37,9 +37,9 @@ from zhaquirks.legrand import (
     .enum(
         attribute_name=LegrandShutterCluster.AttributeDefs.calibration_mode.name,
         cluster_id=LegrandShutterCluster.cluster_id,
+        enum_class=ShutterCalibrationMode,
         translation_key="calibration_mode",
         fallback_name="Calibration mode",
-        enum_class=ShutterCalibrationMode,
     )
     .add_to_registry()
 )

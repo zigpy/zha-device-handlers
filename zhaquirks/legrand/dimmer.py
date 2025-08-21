@@ -294,10 +294,10 @@ class DimmerWithoutNeutralAndBallast(CustomDevice):
     .switch(
         attribute_name=LegrandCluster.AttributeDefs.device_mode.name,
         cluster_id=LegrandCluster.cluster_id,
-        translation_key="dimmer_mode",
-        fallback_name="Dimmer mode",
         on_value=DeviceMode.Dimmer_On,
         off_value=DeviceMode.Dimmer_Off,
+        translation_key="dimmer_mode",
+        fallback_name="Dimmer mode",
     )
     .switch(
         attribute_name=LegrandCluster.AttributeDefs.led_dark.name,
