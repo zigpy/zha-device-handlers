@@ -363,6 +363,7 @@ class GiexIrrigationStatus(t.enum8):
 (
     TuyaQuirkBuilder("_TZE284_8zizsafo", "TS0601")  # Giex GX04
     .applies_to("_TZE284_eaet5qt5", "TS0601")  # Insoma SGW08W
+    .applies_to("_TZE284_iilebqoo", "TS0601")  # NovaDigital ZVL_DUAL
     .tuya_battery(dp_id=59, battery_type=BatterySize.AA, battery_qty=4)
     .tuya_switch(
         dp_id=1,
