@@ -185,7 +185,6 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
         calibrate_valve: Final = ZCLCommandDef(
             id=CALIBRATE_VALVE_CMD_ID,
             schema={},
-            direction=Direction.Client_to_Server,
             is_manufacturer_specific=True,
         )
 
