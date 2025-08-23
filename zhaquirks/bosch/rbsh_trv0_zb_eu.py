@@ -13,7 +13,7 @@ from zigpy.zcl.clusters.hvac import (
     Thermostat,
     UserInterface,
 )
-from zigpy.zcl.foundation import DataTypeId, Direction, ZCLAttributeDef, ZCLCommandDef
+from zigpy.zcl.foundation import DataTypeId, ZCLAttributeDef, ZCLCommandDef
 
 """Bosch specific thermostat attribute ids."""
 
