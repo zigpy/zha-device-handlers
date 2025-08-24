@@ -1,5 +1,6 @@
 """Fixtures for all tests."""
 
+import logging
 from unittest.mock import AsyncMock, Mock
 
 import pytest
@@ -305,3 +306,31 @@ def assert_signature_matches_quirk():
         assert isinstance(device, quirk)
 
     return _check
+
+
+class FailOnBadFormattingHandler(logging.Handler):
+    """Logging handler that fails the test if a log message cannot be formatted."""
+
+    def emit(self, record):
+        """No-op record emitter."""
+        try:
+            record.msg % record.args
+        except Exception as e:  # noqa: BLE001
+            pytest.fail(
+                f"Failed to format log message {record.msg!r} with {record.args!r}: {e}"
+            )
+
+
+@pytest.fixture(autouse=True)
+def raise_on_bad_log_formatting():
+    """Fixture to ensure that all log messages can be formatted correctly."""
+    handler = FailOnBadFormattingHandler()
+
+    root = logging.getLogger()
+    root.addHandler(handler)
+    root.setLevel(logging.DEBUG)
+
+    try:
+        yield
+    finally:
+        root.removeHandler(handler)

@@ -148,7 +148,8 @@ def last_action_user_converter(value: int) -> int:
 
 
 (
-    QuirkBuilder(NIMLY, "NimlyPRO")
+    QuirkBuilder(NIMLY, "NimlyPRO24")
+    .applies_to(NIMLY, "NimlyPRO")
     .applies_to(NIMLY, "NimlyCode")
     .applies_to(NIMLY, "NimlyTouch")
     .applies_to(NIMLY, "NimlyIn")
