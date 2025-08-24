@@ -408,6 +408,8 @@ class XiaomiCluster(CustomCluster):
             "lumi.switch.n0acn2",
         ]:
             attribute_names.update({149: CONSUMPTION, 150: VOLTAGE, 152: POWER})
+        elif self.endpoint.device.model == "lumi.switch.agl011":
+            attribute_names.update({150: VOLTAGE, 151: CONSUMPTION, 152: POWER})
         elif self.endpoint.device.model == "lumi.sensor_motion.aq2":
             attribute_names.update({11: ILLUMINANCE_MEASUREMENT})
         elif self.endpoint.device.model == "lumi.curtain.acn002":
