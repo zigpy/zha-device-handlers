@@ -312,51 +312,6 @@ class TuyaDoubleSwitchGP(TuyaSwitch):
     }
 
 
-class TuyaDoubleSwitchNOC(TuyaSwitch):
-    """Tuya double channel switch with No Output Clusters."""
-
-    signature = {
-        MODELS_INFO: [
-            ("_TZE200_wvovwe9h", "TS0601"),  # reported in #4100
-        ],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    TuyaOnOffManufCluster.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [],
-            },
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    MoesSwitchManufCluster,
-                    TuyaOnOff,
-                ],
-                OUTPUT_CLUSTERS: [],
-            },
-            2: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
-                INPUT_CLUSTERS: [TuyaOnOff],
-                OUTPUT_CLUSTERS: [],
-            },
-        }
-    }
-
-
 class TuyaTripleSwitchTO(TuyaSwitch):
     """Tuya triple channel switch time on out cluster device."""
 
