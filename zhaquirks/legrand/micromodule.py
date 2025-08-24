@@ -1,4 +1,4 @@
-"""Module for Legrand switches (without dimming functionality)."""
+"""Module for Legrand micromodule switches."""
 
 from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.zcl.clusters.general import BinaryInput, OnOff
@@ -6,7 +6,7 @@ from zigpy.zcl.clusters.general import BinaryInput, OnOff
 from zhaquirks.legrand import LEGRAND, LegrandCluster, LegrandIdentify
 
 (
-    QuirkBuilder(f" {LEGRAND}", " Light switch with neutral")
+    QuirkBuilder(f" {LEGRAND}", " Micromodule switch")
     .replaces(LegrandCluster)
     .replaces(LegrandIdentify)
     .prevent_default_entity_creation(endpoint_id=1, cluster_id=BinaryInput.cluster_id)
