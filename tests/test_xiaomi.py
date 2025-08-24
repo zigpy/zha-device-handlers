@@ -2259,22 +2259,26 @@ def test_t1m_ceiling_light(zigpy_device_from_v2_quirk, endpoint):
     assert cluster_listener.attribute_updates[1][1] == LumiPowerOnStateMode.Off
 
 
-async def test_lumi_magnet_sensor_aq2_bad_direction(zigpy_device_from_quirk):
+async def test_lumi_magnet_sensor_aq2_bad_direction(zigpy_device_from_quirk, caplog):
     """Test Aqara Magnet Sensor AQ2 quirk dealing with bad ZCL command direction."""
 
     device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.magnet_aq2.MagnetAQ2)
     listener = ClusterListener(device.endpoints[1].out_clusters[OnOff.cluster_id])
 
     # The device has a bad ZCL header and reports the incorrect direction for commands
-    device.packet_received(
-        t.ZigbeePacket(
-            profile_id=260,
-            cluster_id=6,
-            src_ep=1,
-            dst_ep=1,
-            data=t.SerializableBytes(bytes.fromhex("18930A00001001")),
+    with caplog.at_level(logging.WARNING):
+        device.packet_received(
+            t.ZigbeePacket(
+                profile_id=260,
+                cluster_id=6,
+                src_ep=1,
+                dst_ep=1,
+                data=t.SerializableBytes(bytes.fromhex("18930A00001001")),
+            )
         )
-    )
+
+    # No warning gets logged
+    assert not caplog.text
 
     # Our matching logic should be forgiving
     assert listener.attribute_updates == [(0, t.Bool.true)]

@@ -6,7 +6,7 @@ from zigpy.zcl.clusters.general import BinaryInput, OnOff
 from zhaquirks.legrand import LEGRAND, LegrandCluster, LegrandIdentify
 
 (
-    QuirkBuilder(f" {LEGRAND}", " Light switch with neutral")
+    QuirkBuilder(f" {LEGRAND}", " Connected outlet")
     .replaces(LegrandCluster)
     .replaces(LegrandIdentify)
     .prevent_default_entity_creation(endpoint_id=1, cluster_id=BinaryInput.cluster_id)
