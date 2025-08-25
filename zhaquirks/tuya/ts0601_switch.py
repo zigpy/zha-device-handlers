@@ -337,6 +337,7 @@ class TuyaDoubleSwitchNOC(TuyaSwitch):
     replacement = {
         ENDPOINTS: {
             1: {
+                PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
