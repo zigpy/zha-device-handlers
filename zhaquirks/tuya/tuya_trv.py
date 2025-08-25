@@ -658,7 +658,7 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
         dp_id=3,
         ep_attribute=TuyaThermostatV2.ep_attribute,
         attribute_name=TuyaThermostatV2.AttributeDefs.running_state.name,
-        converter=lambda x: 0x01 if not x else 0x00,  # Heat, Idle
+        converter=lambda x: RunningState.Heat_State_On if x else RunningState.Idle,
     )
     .tuya_dp(
         dp_id=4,
@@ -834,7 +834,7 @@ class TuyaThermostatV2NoSchedule(TuyaThermostatV2):
     .tuya_enum(
         dp_id=127,
         attribute_name="hysteresis_mode",
-        enum_class=TuyaDisplayOrientation,
+        enum_class=TuyaHysteresis,
         translation_key="hysteresis_mode",
         fallback_name="Hysteresis mode",
     )
