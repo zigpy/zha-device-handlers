@@ -776,7 +776,7 @@ REPORTING_WHEN_CHANGED = ReportingConfig(
         attribute_initialized_from_cache=True,
         reporting_config=REPORTING_WHEN_CHANGED,
         translation_key="operating_mode",
-        fallback_name="Mode",
+        fallback_name="Operating mode",
     )
     .command_button(
         command_name="override",
