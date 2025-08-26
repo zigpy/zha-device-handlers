@@ -15,7 +15,6 @@ from zhaquirks.candeo import (
     COMMAND_STOPPED_ROTATING,
     CandeoLevelControlRemoteCluster,
     CandeoOnOffRemoteCluster,
-    CandeoRemoteDirection,
 )
 from zhaquirks.const import CLUSTER_ID, COMMAND, ENDPOINT_ID, PARAMS
 
@@ -51,25 +50,25 @@ remote_quirk = (
                 COMMAND: COMMAND_STARTED_ROTATING,
                 CLUSTER_ID: 8,
                 ENDPOINT_ID: 2,
-                PARAMS: {"direction": CandeoRemoteDirection.Left},
+                PARAMS: {"direction": 1},
             },
             ("Rotating left", "Rotary knob"): {
                 COMMAND: COMMAND_CONTINUED_ROTATING,
                 CLUSTER_ID: 8,
                 ENDPOINT_ID: 2,
-                PARAMS: {"direction": CandeoRemoteDirection.Left},
+                PARAMS: {"direction": 1},
             },
             ("Started rotating right", "Rotary knob"): {
                 COMMAND: COMMAND_STARTED_ROTATING,
                 CLUSTER_ID: 8,
                 ENDPOINT_ID: 2,
-                PARAMS: {"direction": CandeoRemoteDirection.Right},
+                PARAMS: {"direction": 0},
             },
             ("Rotating right", "Rotary knob"): {
                 COMMAND: COMMAND_CONTINUED_ROTATING,
                 CLUSTER_ID: 8,
                 ENDPOINT_ID: 2,
-                PARAMS: {"direction": CandeoRemoteDirection.Right},
+                PARAMS: {"direction": 0},
             },
             ("Stopped rotating", "Rotary knob"): {
                 COMMAND: COMMAND_STOPPED_ROTATING,
