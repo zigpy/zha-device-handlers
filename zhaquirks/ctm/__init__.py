@@ -22,20 +22,6 @@ class AlarmStatus(t.enum8):
     Error = 0x08
 
 
-class BatteryStatus(t.enum8):
-    """Battery alarm status of the cooktop guard."""
-
-    OK = 0x00
-    BatteryAlarm = 0x01
-
-
-class ActiveStatus(t.enum8):
-    """Active status of the cooktop guard (In use)."""
-
-    Inactive = 0x00
-    Active = 0x01
-
-
 class CTMDiagnosticsCluster(CustomCluster):
     """CTM Lyng custom diagnostics cluster."""
 
@@ -118,25 +104,26 @@ class CTMCooktopGuardCluster(CustomCluster):
 
     name = "CtmCooktopGuard"
     cluster_id = 0xFFC9
+    ep_attribute = "ctm_cooktop_guard"
 
     class AttributeDefs(CustomCluster.AttributeDefs):
         """CTM Lyng cooktop guard cluster attribute definitions."""
 
         ctm_alarm_status: Final = foundation.ZCLAttributeDef(
             id=0x0001,
-            type=AlarmStatus,
-            zcl_type=foundation.DataTypeId.uint8,
+            type=t.uint8_t,
+            # type=AlarmStatus,
+            # zcl_type=foundation.DataTypeId.uint8,
             access="r",
             is_manufacturer_specific=True,
         )
-        ctm_battery_status: Final = foundation.ZCLAttributeDef(
+        ctm_battery_alarm: Final = foundation.ZCLAttributeDef(
             id=0x0002,
-            type=BatteryStatus,
-            zcl_type=foundation.DataTypeId.uint8,
+            type=t.uint8_t,
             access="r",
             is_manufacturer_specific=True,
         )
-        ctm_temperature: Final = foundation.ZCLAttributeDef(
+        ctm_cooktop_temperature: Final = foundation.ZCLAttributeDef(
             id=0x0003,
             type=t.uint16_t,
             access="r",
@@ -148,10 +135,9 @@ class CTMCooktopGuardCluster(CustomCluster):
             access="r",
             is_manufacturer_specific=True,
         )
-        ctm_active_status: Final = foundation.ZCLAttributeDef(
+        ctm_cooktop_active: Final = foundation.ZCLAttributeDef(
             id=0x0005,
-            type=ActiveStatus,
-            zcl_type=foundation.DataTypeId.uint8,
+            type=t.uint8_t,
             access="r",
             is_manufacturer_specific=True,
         )

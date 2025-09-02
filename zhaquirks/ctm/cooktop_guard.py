@@ -6,9 +6,7 @@ from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 
 from zhaquirks.ctm import (
     CTM_MANUF_NAME,
-    ActiveStatus,
     AlarmStatus,
-    BatteryStatus,
     CTMCooktopGuardCluster,
     CTMDiagnosticsCluster,
 )
@@ -22,7 +20,7 @@ from zhaquirks.ctm import (
     .sensor(
         cluster_id=CTMCooktopGuardCluster.cluster_id,
         endpoint_id=1,
-        attribute_name=CTMCooktopGuardCluster.AttributeDefs.ctm_temperature.name,
+        attribute_name=CTMCooktopGuardCluster.AttributeDefs.ctm_cooktop_temperature.name,
         translation_key="cooktop_temperature",
         fallback_name="Cooktop temperature",
         device_class=NumberDeviceClass.TEMPERATURE,
@@ -41,32 +39,33 @@ from zhaquirks.ctm import (
         fallback_name="Alarm status",
         enum_class=AlarmStatus,
         entity_platform=EntityPlatform.SENSOR,
-        entity_type=EntityType.DIAGNOSTIC,
+        entity_type=EntityType.STANDARD,
         reporting_config=ReportingConfig(
             min_interval=0,
             max_interval=0,
             reportable_change=1,
         ),
     )
-    .enum(
+    .binary_sensor(
         cluster_id=CTMCooktopGuardCluster.cluster_id,
         endpoint_id=1,
-        attribute_name=CTMCooktopGuardCluster.AttributeDefs.ctm_battery_status.name,
-        translation_key="battery_status",
-        fallback_name="Battery status",
-        enum_class=BatteryStatus,
-        entity_platform=EntityPlatform.SENSOR,
-        entity_type=EntityType.DIAGNOSTIC,
+        attribute_name=CTMCooktopGuardCluster.AttributeDefs.ctm_battery_alarm.name,
+        translation_key="battery_alarm",
+        fallback_name="Battery alarm",
+        entity_type=EntityType.STANDARD,
+        reporting_config=ReportingConfig(
+            min_interval=0,
+            max_interval=0,
+            reportable_change=1,
+        ),
     )
-    .enum(
+    .binary_sensor(
         cluster_id=CTMCooktopGuardCluster.cluster_id,
         endpoint_id=1,
-        attribute_name=CTMCooktopGuardCluster.AttributeDefs.ctm_active_status.name,
-        translation_key="active_status",
-        fallback_name="Active status",
-        enum_class=ActiveStatus,
-        entity_platform=EntityPlatform.SENSOR,
-        entity_type=EntityType.DIAGNOSTIC,
+        attribute_name=CTMCooktopGuardCluster.AttributeDefs.ctm_cooktop_active.name,
+        translation_key="cooktop_active",
+        fallback_name="Cooktop active",
+        entity_type=EntityType.STANDARD,
         reporting_config=ReportingConfig(
             min_interval=0,
             max_interval=0,
