@@ -111,9 +111,8 @@ class CTMCooktopGuardCluster(CustomCluster):
 
         ctm_alarm_status: Final = foundation.ZCLAttributeDef(
             id=0x0001,
-            type=t.uint8_t,
-            # type=AlarmStatus,
-            # zcl_type=foundation.DataTypeId.uint8,
+            type=AlarmStatus,
+            zcl_type=foundation.DataTypeId.uint8,
             access="r",
             is_manufacturer_specific=True,
         )
