@@ -1083,7 +1083,7 @@ def test_aqara_feeder_recently_written_tracking(zigpy_device_from_quirk):
 #     """Test device NWK address caching."""
 #     device = zigpy_device_from_quirk(AqaraFeederAcn001)
 #     opple_cluster = device.endpoints[1].opple_cluster
-#     
+#
 #     # Test that repeated calls work
 #     nwk1 = opple_cluster._get_device_nwk()
 #     nwk2 = opple_cluster._get_device_nwk()
