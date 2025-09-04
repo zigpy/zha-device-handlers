@@ -257,7 +257,7 @@ class OppleCluster(XiaomiAqaraE1Cluster, EventableCluster):
             except Exception:
                 self._cached_nwk = 0
         # Since we always set _cached_nwk to an int above, this cast is safe
-        result: int = self._cached_nwk  # type: ignore[assignment]
+        result: int = self._cached_nwk
         return result
 
     def _is_recently_written(self, attr_id: int) -> bool:
@@ -639,36 +639,36 @@ class OppleCluster(XiaomiAqaraE1Cluster, EventableCluster):
             if attr == ZCL_SCHEDULE or (isinstance(attr, str) and attr == "schedule"):
                 try:
                     schedule_val = str(getattr(value, "value", value))
-                    if schedule_val.strip():
-                        packet = self._encode_schedule(schedule_val)
-                        if packet:
-                            self._update_attribute(ZCL_SCHEDULE, schedule_val)
-
-                            tv = foundation.TypeValue()
-                            tv.type = 0x41
-                            tv.value = types.LongOctetString(packet)
-                            result = await self._write_attributes(
-                                [foundation.Attribute(FEEDER_ATTR, tv)],
-                                manufacturer=0x115F,
-                            )
-                            return result
-                        else:
-                            # Log error and return failure status if encoding failed
-                            LOGGER.error(
-                                "[0x%04X] Failed to encode schedule",
-                                self._get_device_nwk(),
-                            )
-                            return [
-                                foundation.WriteAttributesStatusRecord(
-                                    foundation.Status.FAILURE
-                                )
-                            ]
-                    else:
+                    if not schedule_val.strip() or schedule_val == "[]":
                         # Empty schedule - update attribute and return success
                         self._update_attribute(ZCL_SCHEDULE, "[]")
                         return [
                             foundation.WriteAttributesStatusRecord(
                                 foundation.Status.SUCCESS
+                            )
+                        ]
+
+                    packet = self._encode_schedule(schedule_val)
+                    if packet:
+                        self._update_attribute(ZCL_SCHEDULE, schedule_val)
+
+                        tv = foundation.TypeValue()
+                        tv.type = 0x41
+                        tv.value = types.LongOctetString(packet)
+                        result = await self._write_attributes(
+                            [foundation.Attribute(FEEDER_ATTR, tv)],
+                            manufacturer=0x115F,
+                        )
+                        return result
+                    else:
+                        # Log error and return failure status if encoding failed
+                        LOGGER.error(
+                            "[0x%04X] Failed to encode schedule",
+                            self._get_device_nwk(),
+                        )
+                        return [
+                            foundation.WriteAttributesStatusRecord(
+                                foundation.Status.FAILURE
                             )
                         ]
                 except Exception as e:
