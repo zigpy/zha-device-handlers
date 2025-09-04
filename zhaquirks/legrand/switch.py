@@ -1,77 +1,31 @@
 """Module for Legrand switches (without dimming functionality)."""
 
-from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
-from zigpy.zcl.clusters.general import (
-    Basic,
-    BinaryInput,
-    Groups,
-    Identify,
-    OnOff,
-    Ota,
-    Scenes,
+from zigpy.quirks.v2 import QuirkBuilder
+from zigpy.zcl.clusters.general import BinaryInput, OnOff
+
+from zhaquirks.legrand import LEGRAND, LegrandCluster, LegrandIdentify
+
+(
+    QuirkBuilder(f" {LEGRAND}", " Light switch with neutral")
+    .replaces(LegrandCluster)
+    .replaces(LegrandIdentify)
+    .prevent_default_entity_creation(endpoint_id=1, cluster_id=BinaryInput.cluster_id)
+    .prevent_default_entity_creation(
+        endpoint_id=1,
+        cluster_id=OnOff.cluster_id,
+        function=lambda entity: entity.device_class == "opening",
+    )
+    .switch(
+        attribute_name=LegrandCluster.AttributeDefs.led_dark.name,
+        cluster_id=LegrandCluster.cluster_id,
+        translation_key="turn_on_led_when_off",
+        fallback_name="Turn on LED when off",
+    )
+    .switch(
+        attribute_name=LegrandCluster.AttributeDefs.led_on.name,
+        cluster_id=LegrandCluster.cluster_id,
+        translation_key="turn_on_led_when_on",
+        fallback_name="Turn on LED when on",
+    )
+    .add_to_registry()
 )
-
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-)
-from zhaquirks.legrand import LEGRAND, MANUFACTURER_SPECIFIC_CLUSTER_ID, LegrandCluster
-
-
-class LightSwitchWithNeutral(CustomDevice):
-    """Light switch with neutral wire."""
-
-    signature = {
-        #  <SimpleDescriptor endpoint=1 profile=260 device_type=256
-        # input_clusters=[0, 3, 4, 5, 6, 15, 64513]
-        # output_clusters=[0, 25, 64513]>
-        MODELS_INFO: [(f" {LEGRAND}", " Light switch with neutral")],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    BinaryInput.cluster_id,
-                    MANUFACTURER_SPECIFIC_CLUSTER_ID,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Ota.cluster_id,
-                    MANUFACTURER_SPECIFIC_CLUSTER_ID,
-                ],
-            }
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    BinaryInput.cluster_id,
-                    LegrandCluster,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Ota.cluster_id,
-                    LegrandCluster,
-                ],
-            }
-        }
-    }

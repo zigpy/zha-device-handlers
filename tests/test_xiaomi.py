@@ -8,6 +8,7 @@ from unittest import mock
 import pytest
 from zigpy import types
 import zigpy.device
+from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl import Cluster, foundation
 from zigpy.zcl.clusters.closures import WindowCovering
@@ -51,6 +52,7 @@ from zhaquirks.const import (
     BatterySize,
 )
 from zhaquirks.xiaomi import (
+    AQARA,
     LUMI,
     XIAOMI_AQARA_ATTRIBUTE,
     XIAOMI_AQARA_ATTRIBUTE_E1,
@@ -85,6 +87,7 @@ from zhaquirks.xiaomi.aqara.feeder_acn001 import (
     AqaraFeederAcn001,
     OppleCluster,
 )
+from zhaquirks.xiaomi.aqara.light_acn import AqaraLightT1M, LumiPowerOnStateMode
 import zhaquirks.xiaomi.aqara.magnet_ac01
 import zhaquirks.xiaomi.aqara.magnet_acn001
 import zhaquirks.xiaomi.aqara.magnet_agl02
@@ -354,7 +357,7 @@ async def test_xiaomi_battery(zigpy_device_from_quirk, voltage, bpr):
     device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.vibration_aq1.VibrationAQ1)
     device.packet_received(
         t.ZigbeePacket(
-            profile_id=0x260,
+            profile_id=zha.PROFILE_ID,
             cluster_id=0x0000,
             src_ep=1,
             dst_ep=1,
@@ -386,7 +389,7 @@ async def test_mija_battery(zigpy_device_from_quirk, voltage, bpr):
     device = zigpy_device_from_quirk(zhaquirks.xiaomi.mija.motion.Motion)
     device.packet_received(
         t.ZigbeePacket(
-            profile_id=0x260,
+            profile_id=zha.PROFILE_ID,
             cluster_id=0x0000,
             src_ep=1,
             dst_ep=1,
@@ -606,8 +609,7 @@ async def test_xiaomi_plug_power(zigpy_device_from_quirk, quirk):
     assert em_listener.attribute_updates[1][0] == zcl_em_current_power
     assert em_listener.attribute_updates[1][1] == 150  # multiplied by 10
 
-    # Test total power consumption on ElectricalMeasurement cluster and SmartEnergy cluster
-    zcl_em_total_power = ElectricalMeasurement.AttributeDefs.total_active_power.id
+    # Test total power consumption on SmartEnergy cluster
     zcl_se_total_power = Metering.AttributeDefs.current_summ_delivered.id
     se_cluster = device.endpoints[1].smartenergy_metering
     se_listener = ClusterListener(se_cluster)
@@ -615,10 +617,6 @@ async def test_xiaomi_plug_power(zigpy_device_from_quirk, quirk):
     basic_cluster.update_attribute(
         XIAOMI_AQARA_ATTRIBUTE, create_aqara_attr_report({149: 0.001})
     )
-    # electrical measurement cluster
-    assert len(em_listener.attribute_updates) == 3
-    assert em_listener.attribute_updates[2][0] == zcl_em_total_power
-    assert em_listener.attribute_updates[2][1] == 1  # multiplied by 1000
 
     # smart energy cluster
     assert len(se_listener.attribute_updates) == 1
@@ -635,8 +633,20 @@ async def test_xiaomi_plug_power(zigpy_device_from_quirk, quirk):
     assert analog_input_listener.attribute_updates[0][0] == zcl_analog_input_value
     assert analog_input_listener.attribute_updates[0][1] == 40
 
-    assert em_listener.attribute_updates[3][0] == zcl_em_current_power
-    assert em_listener.attribute_updates[3][1] == 400  # multiplied by 10
+    assert em_listener.attribute_updates[2][0] == zcl_em_current_power
+    assert em_listener.attribute_updates[2][1] == 400  # multiplied by 10
+
+
+async def test_xiaomi_total_active_power_clear(zigpy_device_from_quirk):
+    """Tests that the total_active_power attribute is cleared during init."""
+
+    with mock.patch(
+        "zhaquirks.xiaomi.ElectricalMeasurementCluster._update_attribute"
+    ) as update_attribute_mock:
+        zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.plug_eu.PlugMAEU01)
+        update_attribute_mock.assert_called_with(
+            ElectricalMeasurement.AttributeDefs.total_active_power.id, None
+        )
 
 
 @pytest.mark.parametrize(
@@ -812,7 +822,7 @@ async def test_aqara_feeder_attr_reports(
     opple_cluster.add_listener(cluster_listener)
     device.packet_received(
         t.ZigbeePacket(
-            profile_id=0x260,
+            profile_id=zha.PROFILE_ID,
             cluster_id=opple_cluster.cluster_id,
             src_ep=opple_cluster.endpoint.endpoint_id,
             dst_ep=opple_cluster.endpoint.endpoint_id,
@@ -1115,7 +1125,7 @@ async def test_aqara_smoke_sensor_xiaomi_attribute_report(
 
     device.packet_received(
         t.ZigbeePacket(
-            profile_id=0x260,
+            profile_id=zha.PROFILE_ID,
             cluster_id=opple_cluster.cluster_id,
             src_ep=opple_cluster.endpoint.endpoint_id,
             dst_ep=opple_cluster.endpoint.endpoint_id,
@@ -2452,3 +2462,56 @@ def test_h1_wireless_remotes(zigpy_device_from_v2_quirk):
 
     assert MultistateInput.cluster_id in device.endpoints[2].in_clusters
     assert MultistateInput.cluster_id in device.endpoints[3].in_clusters
+
+
+@pytest.mark.parametrize("endpoint", [(1), (2)])
+def test_t1m_ceiling_light(zigpy_device_from_v2_quirk, endpoint):
+    """Test Aqara T1M ceiling light quirk adds missing endpoints."""
+
+    # create the device with 2 endpoints (one for each light on the T1M)
+    device = zigpy_device_from_v2_quirk(AQARA, "lumi.light.acn032", endpoint_ids=[1, 2])
+    assert AqaraLightT1M.cluster_id in device.endpoints[endpoint].in_clusters
+
+    aqara_cluster = device.endpoints[endpoint].opple_cluster
+    cluster_listener = ClusterListener(aqara_cluster)
+
+    aqara_cluster.update_attribute(AqaraLightT1M.AttributeDefs.power_on_state.id, 0x01)
+    assert len(cluster_listener.attribute_updates) == 1
+    assert (
+        cluster_listener.attribute_updates[0][0]
+        == AqaraLightT1M.AttributeDefs.power_on_state.id
+    )
+    assert cluster_listener.attribute_updates[0][1] == LumiPowerOnStateMode.LastState
+
+    aqara_cluster.update_attribute(AqaraLightT1M.AttributeDefs.power_on_state.id, 0x02)
+    assert len(cluster_listener.attribute_updates) == 2
+    assert (
+        cluster_listener.attribute_updates[1][0]
+        == AqaraLightT1M.AttributeDefs.power_on_state.id
+    )
+    assert cluster_listener.attribute_updates[1][1] == LumiPowerOnStateMode.Off
+
+
+async def test_lumi_magnet_sensor_aq2_bad_direction(zigpy_device_from_quirk, caplog):
+    """Test Aqara Magnet Sensor AQ2 quirk dealing with bad ZCL command direction."""
+
+    device = zigpy_device_from_quirk(zhaquirks.xiaomi.aqara.magnet_aq2.MagnetAQ2)
+    listener = ClusterListener(device.endpoints[1].out_clusters[OnOff.cluster_id])
+
+    # The device has a bad ZCL header and reports the incorrect direction for commands
+    with caplog.at_level(logging.WARNING):
+        device.packet_received(
+            t.ZigbeePacket(
+                profile_id=260,
+                cluster_id=6,
+                src_ep=1,
+                dst_ep=1,
+                data=t.SerializableBytes(bytes.fromhex("18930A00001001")),
+            )
+        )
+
+    # No warning gets logged
+    assert not caplog.text
+
+    # Our matching logic should be forgiving
+    assert listener.attribute_updates == [(0, t.Bool.true)]

@@ -5,14 +5,14 @@ from __future__ import annotations
 from collections.abc import Iterable, Iterator
 import logging
 import math
-from typing import Any
+from typing import Any, Final
 
 from zigpy import types as t
 import zigpy.device
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster, CustomDevice
 from zigpy.typing import AddressingMode
-from zigpy.zcl import foundation
+from zigpy.zcl import Cluster, foundation
 from zigpy.zcl.clusters.general import (
     AnalogInput,
     Basic,
@@ -31,6 +31,7 @@ from zigpy.zcl.clusters.measurement import (
 )
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.clusters.smartenergy import Metering
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 import zigpy.zdo
 from zigpy.zdo.types import NodeDescriptor
 
@@ -51,6 +52,7 @@ from zhaquirks.const import (
     BatterySize,
 )
 
+AQARA = "Aqara"
 BATTERY_LEVEL = "battery_level"
 BATTERY_PERCENTAGE_REMAINING = 0x0021
 BATTERY_PERCENTAGE_REMAINING_ATTRIBUTE = "battery_percentage"
@@ -119,6 +121,29 @@ class XiaomiCustomDevice(CustomDevice):
         if not hasattr(self, BATTERY_SIZE):
             self.battery_size = BatterySize.CR2032
         super().__init__(*args, **kwargs)
+
+    def _find_zcl_cluster(
+        self, hdr: foundation.ZCLHeader, packet: t.ZigbeePacket
+    ) -> Cluster:
+        """Find a cluster for the packet."""
+
+        # Aqara devices seem to be very lax with their ZCL header's `direction` field,
+        # we should try "flipping" it if matching doesn't work normally.
+        try:
+            return super()._find_zcl_cluster_strict(hdr, packet)
+        except KeyError:
+            _LOGGER.debug(
+                "Packet is coming in the wrong direction, swapping direction and trying again",
+            )
+
+            return super()._find_zcl_cluster_strict(
+                hdr.replace(
+                    frame_control=hdr.frame_control.replace(
+                        direction=hdr.frame_control.direction.flip()
+                    )
+                ),
+                packet,
+            )
 
 
 class XiaomiQuickInitDevice(XiaomiCustomDevice, QuickInitDevice):
@@ -303,10 +328,6 @@ class XiaomiCluster(CustomCluster):
 
         if CONSUMPTION in attributes:
             zcl_consumption = round(attributes[CONSUMPTION] * 1000)
-            self.endpoint.electrical_measurement.update_attribute(
-                ElectricalMeasurement.AttributeDefs.total_active_power.id,
-                zcl_consumption,
-            )
             self.endpoint.smartenergy_metering.update_attribute(
                 Metering.AttributeDefs.current_summ_delivered.id, zcl_consumption
             )
@@ -387,6 +408,8 @@ class XiaomiCluster(CustomCluster):
             "lumi.switch.n0acn2",
         ]:
             attribute_names.update({149: CONSUMPTION, 150: VOLTAGE, 152: POWER})
+        elif self.endpoint.device.model == "lumi.switch.agl011":
+            attribute_names.update({150: VOLTAGE, 151: CONSUMPTION, 152: POWER})
         elif self.endpoint.device.model == "lumi.sensor_motion.aq2":
             attribute_names.update({11: ILLUMINANCE_MEASUREMENT})
         elif self.endpoint.device.model == "lumi.curtain.acn002":
@@ -462,12 +485,18 @@ class XiaomiCluster(CustomCluster):
 class BasicCluster(XiaomiCluster, Basic):
     """Xiaomi basic cluster implementation."""
 
+    class AttributeDefs(Basic.AttributeDefs):
+        """Cluster attributes."""
+
 
 class XiaomiAqaraE1Cluster(XiaomiCluster):
     """Xiaomi mfg cluster implementation."""
 
     cluster_id = 0xFCC0
     ep_attribute = "opple_cluster"
+
+    class AttributeDefs(BaseAttributeDefs):
+        """Cluster attributes."""
 
 
 class XiaomiMotionManufacturerCluster(XiaomiAqaraE1Cluster):
@@ -489,8 +518,12 @@ class XiaomiMotionManufacturerCluster(XiaomiAqaraE1Cluster):
 class BinaryOutputInterlock(CustomCluster, BinaryOutput):
     """Xiaomi binaryoutput cluster with added interlock attribute."""
 
-    attributes = BinaryOutput.attributes.copy()
-    attributes[0xFF06] = ("interlock", t.Bool, True)
+    class AttributeDefs(BinaryOutput.AttributeDefs):
+        """Attribute definitions."""
+
+        interlock: Final = ZCLAttributeDef(
+            id=0xFF06, type=t.Bool, is_manufacturer_specific=True
+        )
 
 
 class XiaomiPowerConfiguration(PowerConfiguration, LocalDataCluster):
@@ -659,6 +692,14 @@ class ElectricalMeasurementCluster(LocalDataCluster, ElectricalMeasurement):
             self._update_attribute(self.VOLTAGE_ID, 0)
         if self.CONSUMPTION_ID not in self._attr_cache:
             self._update_attribute(self.CONSUMPTION_ID, 0)
+
+        # Previously, this cluster was wrongly setting the total_active_power attribute,
+        # which was not added to HA.
+        # Since it is now added to HA and the incorrect value could be set, we need to
+        # reset it.
+        self._update_attribute(
+            ElectricalMeasurement.AttributeDefs.total_active_power.id, None
+        )
 
 
 class MeteringCluster(LocalDataCluster, Metering):
