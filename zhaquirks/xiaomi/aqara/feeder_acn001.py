@@ -256,7 +256,9 @@ class OppleCluster(XiaomiAqaraE1Cluster, EventableCluster):
                 self._cached_nwk = self._endpoint.device.nwk
             except Exception:
                 self._cached_nwk = 0
-        return self._cached_nwk
+        # Since we always set _cached_nwk to an int above, this cast is safe
+        result: int = self._cached_nwk  # type: ignore[assignment]
+        return result
 
     def _is_recently_written(self, attr_id: int) -> bool:
         """Check if attribute was recently written (within 10 seconds)."""
