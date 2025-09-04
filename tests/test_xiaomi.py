@@ -707,7 +707,9 @@ async def test_aqara_feeder_write_attrs(
             2,
             [
                 mock.call(ZCL_FEEDING, True, mock.ANY),
-                mock.call(FEEDER_ATTR, "000501041500550101", mock.ANY),  # Hex string instead of bytes
+                mock.call(
+                    FEEDER_ATTR, "000501041500550101", mock.ANY
+                ),  # Hex string instead of bytes
             ],
         ),
         (
@@ -719,7 +721,9 @@ async def test_aqara_feeder_write_attrs(
                     ZCL_LAST_FEEDING_SOURCE, OppleCluster.FeedingSource.Remote, mock.ANY
                 ),
                 mock.call(
-                    FEEDER_ATTR, "0005d00415023c040203", mock.ANY  # Hex string
+                    FEEDER_ATTR,
+                    "0005d00415023c040203",
+                    mock.ANY,  # Hex string
                 ),
             ],
         ),
@@ -737,7 +741,9 @@ async def test_aqara_feeder_write_attrs(
             [
                 mock.call(ZCL_WEIGHT_DISPENSED, 264, mock.ANY),
                 mock.call(
-                    FEEDER_ATTR, "0005d20d6900550400000108", mock.ANY  # Hex string
+                    FEEDER_ATTR,
+                    "0005d20d6900550400000108",
+                    mock.ANY,  # Hex string
                 ),
             ],
         ),
@@ -795,7 +801,9 @@ async def test_aqara_feeder_write_attrs(
             b"\x1c_\x11{\n\xf7\x00A\x0e\x05!\x0e\x00\r#!%\x00\x00\t!\x02\x03",
             1,
             [
-                mock.call(0x00F7, "05210e000d2321250000092102003", mock.ANY),  # Hex string
+                mock.call(
+                    0x00F7, "05210e000d2321250000092102003", mock.ANY
+                ),  # Hex string
             ],
         ),
         (
@@ -1039,7 +1047,7 @@ async def test_aqara_feeder_encode_schedule_edge_cases_invalid(
     "valid_schedule",
     [
         '[{"days":"everyday","hour":8,"minute":0}]',  # Missing portions - should work with default
-        '[{"hour":8,"minute":0,"portions":1}]',       # Missing days - should work with default  
+        '[{"hour":8,"minute":0,"portions":1}]',  # Missing days - should work with default
     ],
 )
 async def test_aqara_feeder_encode_schedule_edge_cases_valid(
