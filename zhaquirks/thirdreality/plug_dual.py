@@ -82,7 +82,7 @@ class ThirdRealityPlugCluster(CustomCluster):
         step=1,
         unit=UnitOfTime.SECONDS,
         device_class=NumberDeviceClass.DURATION,
-        translation_key="on_to_off_delay_1",
+        translation_key="on_to_off_delay_2",
         fallback_name="Turn off delay right",
     )
     .number(
