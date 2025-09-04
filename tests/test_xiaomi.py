@@ -1079,7 +1079,7 @@ async def test_aqara_feeder_attribute_caching(zigpy_device_from_quirk):
     assert opple_cluster._attr_cache[ZCL_SERVING_SIZE] == 3
 
 
-async def test_aqara_feeder_recently_written_tracking(zigpy_device_from_quirk):
+def test_aqara_feeder_recently_written_tracking(zigpy_device_from_quirk):
     """Test the recently written attribute tracking."""
     device = zigpy_device_from_quirk(AqaraFeederAcn001)
     opple_cluster = device.endpoints[1].opple_cluster
