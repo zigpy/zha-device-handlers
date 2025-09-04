@@ -707,7 +707,7 @@ async def test_aqara_feeder_write_attrs(
             2,
             [
                 mock.call(ZCL_FEEDING, True, mock.ANY),
-                mock.call(FEEDER_ATTR, b"\x00\x05\x01\x04\x15\x00U\x01\x01", mock.ANY),
+                mock.call(FEEDER_ATTR, "000501041500550101", mock.ANY),  # Hex string instead of bytes
             ],
         ),
         (
@@ -719,7 +719,7 @@ async def test_aqara_feeder_write_attrs(
                     ZCL_LAST_FEEDING_SOURCE, OppleCluster.FeedingSource.Remote, mock.ANY
                 ),
                 mock.call(
-                    FEEDER_ATTR, b"\x00\x05\xd0\x04\x15\x02\xbc\x040203", mock.ANY
+                    FEEDER_ATTR, "0005d00415023c040203", mock.ANY  # Hex string
                 ),
             ],
         ),
@@ -728,7 +728,7 @@ async def test_aqara_feeder_write_attrs(
             2,
             [
                 mock.call(ZCL_PORTIONS_DISPENSED, 33, mock.ANY),
-                mock.call(FEEDER_ATTR, b"\x00\x05\xd1\rh\x00U\x02\x00!", mock.ANY),
+                mock.call(FEEDER_ATTR, "0005d10d6800550200021", mock.ANY),  # Hex string
             ],
         ),
         (
@@ -737,7 +737,7 @@ async def test_aqara_feeder_write_attrs(
             [
                 mock.call(ZCL_WEIGHT_DISPENSED, 264, mock.ANY),
                 mock.call(
-                    FEEDER_ATTR, b"\x00\x05\xd2\ri\x00U\x04\x00\x00\x01\x08", mock.ANY
+                    FEEDER_ATTR, "0005d20d6900550400000108", mock.ANY  # Hex string
                 ),
             ],
         ),
@@ -746,7 +746,7 @@ async def test_aqara_feeder_write_attrs(
             2,
             [
                 mock.call(ZCL_ERROR_DETECTED, False, mock.ANY),
-                mock.call(FEEDER_ATTR, b"\x00\x05\xd3\r\x0b\x00U\x01\x00", mock.ANY),
+                mock.call(FEEDER_ATTR, "0005d30d0b00550100", mock.ANY),  # Hex string
             ],
         ),
         (
@@ -754,7 +754,7 @@ async def test_aqara_feeder_write_attrs(
             2,
             [
                 mock.call(ZCL_CHILD_LOCK, True, mock.ANY),
-                mock.call(FEEDER_ATTR, b"\x00\x05\x05\x04\x16\x00U\x01\x01", mock.ANY),
+                mock.call(FEEDER_ATTR, "000505041600550101", mock.ANY),  # Hex string
             ],
         ),
         (
@@ -762,7 +762,7 @@ async def test_aqara_feeder_write_attrs(
             2,
             [
                 mock.call(ZCL_DISABLE_LED_INDICATOR, True, mock.ANY),
-                mock.call(FEEDER_ATTR, b"\x00\x05\t\x04\x17\x00U\x01\x01", mock.ANY),
+                mock.call(FEEDER_ATTR, "000509041700550101", mock.ANY),  # Hex string
             ],
         ),
         (
@@ -772,7 +772,7 @@ async def test_aqara_feeder_write_attrs(
                 mock.call(
                     ZCL_FEEDING_MODE, OppleCluster.FeedingMode.Schedule, mock.ANY
                 ),
-                mock.call(FEEDER_ATTR, b"\x00\x05\x0b\x04\x18\x00U\x01\x01", mock.ANY),
+                mock.call(FEEDER_ATTR, "00050b041800550101", mock.ANY),  # Hex string
             ],
         ),
         (
@@ -780,7 +780,7 @@ async def test_aqara_feeder_write_attrs(
             2,
             [
                 mock.call(ZCL_PORTION_WEIGHT, 6, mock.ANY),
-                mock.call(FEEDER_ATTR, b"\x00\x05\x0f\x0e_\x00U\x01\x06", mock.ANY),
+                mock.call(FEEDER_ATTR, "00050f0e5f00550106", mock.ANY),  # Hex string
             ],
         ),
         (
@@ -788,14 +788,14 @@ async def test_aqara_feeder_write_attrs(
             2,
             [
                 mock.call(ZCL_SERVING_SIZE, 2, mock.ANY),
-                mock.call(FEEDER_ATTR, b"\x00\x05\x11\x0e\\\x00U\x01\x02", mock.ANY),
+                mock.call(FEEDER_ATTR, "00050e5c00550102", mock.ANY),  # Hex string
             ],
         ),
         (
             b"\x1c_\x11{\n\xf7\x00A\x0e\x05!\x0e\x00\r#!%\x00\x00\t!\x02\x03",
             1,
             [
-                mock.call(0x00F7, b"\x05!\x0e\x00\r#!%\x00\x00\t!\x02\x03", mock.ANY),
+                mock.call(0x00F7, "05210e000d2321250000092102003", mock.ANY),  # Hex string
             ],
         ),
         (
@@ -809,7 +809,7 @@ async def test_aqara_feeder_write_attrs(
                 ),
                 mock.call(
                     FEEDER_ATTR,
-                    b"\x00\x05\x15\x08\x00\x08\xc8 7F09000100,7F0D000100,7F13000100",
+                    "000515080008c8203746303930303031303020374630443030303130302c37463133303030313030",  # Hex string
                     mock.ANY,
                 ),
             ],
@@ -1021,26 +1021,38 @@ async def test_feeder_parse_edge_cases(
         ('{"not_a_list": true}', "Invalid schedule format"),  # Updated
         (123, "Invalid schedule format"),  # Updated
         (None, "Invalid schedule format"),  # Updated
-        (
-            '[{"days":"everyday","hour":8,"minute":0}]',
-            "",
-        ),  # Missing portions - might work with defaults
-        (
-            '[{"hour":8,"minute":0,"portions":1}]',
-            "",
-        ),  # Missing days - might work with defaults
     ],
 )
-async def test_aqara_feeder_encode_schedule_edge_cases(
+async def test_aqara_feeder_encode_schedule_edge_cases_invalid(
     zigpy_device_from_quirk, bad_schedule, expected_error_log, caplog
 ):
-    """Test _encode_schedule with various edge cases."""
+    """Test _encode_schedule with invalid cases that should return None."""
     device = zigpy_device_from_quirk(AqaraFeederAcn001)
     opple_cluster = device.endpoints[1].opple_cluster
 
     result = opple_cluster._encode_schedule(bad_schedule)
 
     assert result is None
+
+
+@pytest.mark.parametrize(
+    "valid_schedule",
+    [
+        '[{"days":"everyday","hour":8,"minute":0}]',  # Missing portions - should work with default
+        '[{"hour":8,"minute":0,"portions":1}]',       # Missing days - should work with default  
+    ],
+)
+async def test_aqara_feeder_encode_schedule_edge_cases_valid(
+    zigpy_device_from_quirk, valid_schedule
+):
+    """Test _encode_schedule with cases that should work with defaults."""
+    device = zigpy_device_from_quirk(AqaraFeederAcn001)
+    opple_cluster = device.endpoints[1].opple_cluster
+
+    result = opple_cluster._encode_schedule(valid_schedule)
+
+    assert result is not None
+    assert isinstance(result, bytes)
 
 
 async def test_aqara_feeder_attribute_caching(zigpy_device_from_quirk):
@@ -1073,7 +1085,7 @@ async def test_aqara_feeder_recently_written_tracking(zigpy_device_from_quirk):
     assert not opple_cluster._is_recently_written(ZCL_CHILD_LOCK)
 
 
-async def test_aqara_feeder_nwk_caching(zigpy_device_from_quirk):
+def test_aqara_feeder_nwk_caching(zigpy_device_from_quirk):
     """Test device NWK address caching."""
     device = zigpy_device_from_quirk(AqaraFeederAcn001)
     opple_cluster = device.endpoints[1].opple_cluster
@@ -1094,15 +1106,17 @@ async def test_aqara_feeder_event_firing_conditions(zigpy_device_from_quirk):
 
     opple_cluster.listener_event = mock.MagicMock()
 
+    # Test that non-important attributes don't fire custom events
     opple_cluster._fire_attribute_event(ZCL_LAST_FEEDING_SIZE, "test", 1, 2)
     assert opple_cluster.listener_event.call_count == 0
 
-    opple_cluster._fire_attribute_event(ZCL_CHILD_LOCK, "child_lock", False, True)
+    # Test that FEEDER_ATTR fires custom event
+    opple_cluster._fire_attribute_event(FEEDER_ATTR, "feeder_attr", b"old", b"new")
     assert opple_cluster.listener_event.call_count == 1
 
     call_args = opple_cluster.listener_event.call_args
     assert call_args[0][0] == "zha_event"
-    assert call_args[0][1] == "child_lock_changed"
+    assert call_args[0][1] == "device_response_received"
 
 
 async def test_aqara_feeder_initialize_attributes_idempotent(zigpy_device_from_quirk):
@@ -1300,7 +1314,7 @@ def test_aqara_feeder_constants_consistency():
     for aqara_id, zcl_id in AQARA_TO_ZCL.items():
         assert ZCL_TO_AQARA[zcl_id] == aqara_id
 
-    for zcl_id in IMPORTANT_ATTRS.keys():
+    for zcl_id in IMPORTANT_ATTRS:
         assert zcl_id in [
             ZCL_SCHEDULE,
             ZCL_FEEDING_MODE,
