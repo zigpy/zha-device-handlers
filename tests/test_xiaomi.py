@@ -722,7 +722,7 @@ async def test_aqara_feeder_write_attrs(
                 ),
                 mock.call(
                     FEEDER_ATTR,
-                    "0005d00415023c040203",
+                    "0005d0041502bc0430323033",
                     mock.ANY,  # Hex string
                 ),
             ],
@@ -794,7 +794,7 @@ async def test_aqara_feeder_write_attrs(
             2,
             [
                 mock.call(ZCL_SERVING_SIZE, 2, mock.ANY),
-                mock.call(FEEDER_ATTR, "00050e5c00550102", mock.ANY),  # Hex string
+                mock.call(FEEDER_ATTR, "0005110e5c00550102", mock.ANY),  # Hex string
             ],
         ),
         (
@@ -802,7 +802,7 @@ async def test_aqara_feeder_write_attrs(
             1,
             [
                 mock.call(
-                    0x00F7, "05210e000d2321250000092102003", mock.ANY
+                    0x00F7, "05210e000d232125000009210203", mock.ANY
                 ),  # Hex string
             ],
         ),
@@ -817,7 +817,7 @@ async def test_aqara_feeder_write_attrs(
                 ),
                 mock.call(
                     FEEDER_ATTR,
-                    "000515080008c8203746303930303031303020374630443030303130302c37463133303030313030",  # Hex string
+                    "000515080008c820374630393030303130302c374630443030303130302c37463133303030313030",  # Hex string
                     mock.ANY,
                 ),
             ],
