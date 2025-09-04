@@ -1,7 +1,6 @@
 """Quirks common helpers."""
 
 import asyncio
-import datetime
 
 ZCL_IAS_MOTION_COMMAND = b"\t!\x00\x01\x00\x00\x00\x00\x00"
 ZCL_OCC_ATTR_RPT_OCC = b"\x18d\n\x00\x00\x18\x01"
@@ -23,22 +22,6 @@ class ClusterListener:
     def cluster_command(self, tsn, command_id, args):
         """Command received listener."""
         self.cluster_commands.append((tsn, command_id, args))
-
-
-class MockDatetime(datetime.datetime):
-    """Override for datetime functions."""
-
-    @classmethod
-    def now(cls):
-        """Return testvalue."""
-
-        return cls(1970, 1, 1, 1, 0, 0)
-
-    @classmethod
-    def utcnow(cls):
-        """Return testvalue."""
-
-        return cls(1970, 1, 1, 2, 0, 0)
 
 
 async def wait_for_zigpy_tasks() -> None:

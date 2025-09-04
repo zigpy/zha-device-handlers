@@ -1,11 +1,14 @@
 """Quirk for lumi.airmonitor.acn01 tvoc air monitor."""
 
+from typing import Final
+
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl.clusters.general import AnalogInput, Basic, Identify, Ota
 from zigpy.zcl.clusters.measurement import RelativeHumidity, TemperatureMeasurement
 from zigpy.zcl.clusters.security import IasZone
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 from zigpy.zdo.types import NodeDescriptor
 
 from zhaquirks import LocalDataCluster, PowerConfigurationCluster
@@ -51,9 +54,10 @@ class EmulatedTVOCMeasurement(LocalDataCluster):
     name = "VOC Level"
     ep_attribute = "voc_level"
 
-    attributes = {
-        MEASURED_VALUE: ("measured_value", t.Single),
-    }
+    class AttributeDefs(BaseAttributeDefs):
+        """Attribute definitions."""
+
+        measured_value: Final = ZCLAttributeDef(id=MEASURED_VALUE, type=t.Single)
 
     async def bind(self):
         """Bind cluster."""
@@ -79,9 +83,12 @@ class TVOCDisplayUnit(t.enum_factory(t.uint8_t)):
 class TVOCCluster(XiaomiAqaraE1Cluster):
     """Aqara LUMI Config cluster."""
 
-    attributes = {
-        DISPLAY_UNIT: ("display_unit", TVOCDisplayUnit, True),
-    }
+    class AttributeDefs(XiaomiAqaraE1Cluster.AttributeDefs):
+        """Attribute definitions."""
+
+        display_unit: Final = ZCLAttributeDef(
+            id=DISPLAY_UNIT, type=TVOCDisplayUnit, is_manufacturer_specific=True
+        )
 
 
 class TVOCMonitor(XiaomiCustomDevice):
