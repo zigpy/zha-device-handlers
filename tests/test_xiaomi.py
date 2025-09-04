@@ -91,7 +91,7 @@ from zhaquirks.xiaomi.aqara.feeder_acn001 import (
     ZCL_TO_AQARA,
     ZCL_WEIGHT_DISPENSED,
     AqaraFeederAcn001,
-    OppleCluster
+    OppleCluster,
 )
 from zhaquirks.xiaomi.aqara.light_acn import AqaraLightT1M, LumiPowerOnStateMode
 import zhaquirks.xiaomi.aqara.magnet_ac01
@@ -803,7 +803,9 @@ async def test_aqara_feeder_write_attrs(
             2,
             [
                 mock.call(
-                    ZCL_SCHEDULE, '[{"days":"everyday","hour":9,"minute":0,"portions":1},{"days":"everyday","hour":13,"minute":0,"portions":1},{"days":"everyday","hour":19,"minute":0,"portions":1}]', mock.ANY
+                    ZCL_SCHEDULE,
+                    '[{"days":"everyday","hour":9,"minute":0,"portions":1},{"days":"everyday","hour":13,"minute":0,"portions":1},{"days":"everyday","hour":19,"minute":0,"portions":1}]',
+                    mock.ANY,
                 ),
                 mock.call(
                     FEEDER_ATTR,
@@ -860,7 +862,8 @@ async def test_aqara_feeder_write_schedule(zigpy_device_from_quirk):
     expected_attribute_call = foundation.Attribute(FEEDER_ATTR, expected_tv)
 
     await opple_cluster.write_attributes(
-        {"schedule": input_schedule}, manufacturer=0x115F  # Changed from "scheduling_string" to "schedule"
+        {"schedule": input_schedule},
+        manufacturer=0x115F,  # Changed from "scheduling_string" to "schedule"
     )
 
     opple_cluster._write_attributes.assert_awaited_with(
@@ -899,12 +902,24 @@ async def test_feeder_parse_bad_attributes(
 @pytest.mark.parametrize(
     "bad_schedule, log_message",
     [
-        ('invalid_json', "Failed to encode schedule"),
-        ('[]', ""),  # Empty schedule should be fine
-        ('[{"days":"invalid","hour":8,"minute":0,"portions":1}]', ""),  # Invalid day should use default
-        ('[{"days":"everyday","hour":25,"minute":0,"portions":1}]', "Failed to encode schedule"),  # Invalid hour should fail
-        ('[{"days":"everyday","hour":8,"minute":60,"portions":1}]', "Failed to encode schedule"),  # Invalid minute should fail
-        ('[{"days":"everyday","hour":8,"minute":0,"portions":0}]', "Failed to encode schedule"),  # Invalid portions should fail
+        ("invalid_json", "Failed to encode schedule"),
+        ("[]", ""),  # Empty schedule should be fine
+        (
+            '[{"days":"invalid","hour":8,"minute":0,"portions":1}]',
+            "",
+        ),  # Invalid day should use default
+        (
+            '[{"days":"everyday","hour":25,"minute":0,"portions":1}]',
+            "Failed to encode schedule",
+        ),  # Invalid hour should fail
+        (
+            '[{"days":"everyday","hour":8,"minute":60,"portions":1}]',
+            "Failed to encode schedule",
+        ),  # Invalid minute should fail
+        (
+            '[{"days":"everyday","hour":8,"minute":0,"portions":0}]',
+            "Failed to encode schedule",
+        ),  # Invalid portions should fail
     ],
 )
 async def test_aqara_feeder_write_bad_schedule(
@@ -922,7 +937,7 @@ async def test_aqara_feeder_write_bad_schedule(
 
         if log_message:
             assert log_message in caplog.text
-        
+
         if bad_schedule == "invalid_json":
             opple_cluster._write_attributes.assert_not_awaited()
         elif bad_schedule == "[]":
@@ -931,7 +946,6 @@ async def test_aqara_feeder_write_bad_schedule(
         elif "Failed to encode schedule" in log_message:
             # Invalid schedules should not call _write_attributes
             opple_cluster._write_attributes.assert_not_awaited()
-
 
 
 async def test_write_attributes_fallback_path(zigpy_device_from_quirk):
@@ -968,8 +982,12 @@ async def test_write_attributes_raw_and_safe(zigpy_device_from_quirk):
 @pytest.mark.parametrize(
     "attribute_id, malformed_data, log_message",
     [
-        (FEEDING_REPORT, b"not_a_valid_report", "Failed to parse feeding report"),  # Updated to match actual log
-        (PORTIONS_DISPENSED, b"\x01", "Failed to parse portions"),  # Updated  
+        (
+            FEEDING_REPORT,
+            b"not_a_valid_report",
+            "Failed to parse feeding report",
+        ),  # Updated to match actual log
+        (PORTIONS_DISPENSED, b"\x01", "Failed to parse portions"),  # Updated
         (WEIGHT_DISPENSED, b"\x01\x02\x03", "Failed to parse weight"),  # Updated
     ],
 )
@@ -996,12 +1014,21 @@ async def test_feeder_parse_edge_cases(
     "bad_schedule, expected_error_log",
     [
         ('{"invalid": "json"}', "Failed to encode schedule"),
-        ('[{"days":"everyday","hour":8,"minute":0,"portions":6}]', "Invalid schedule values"),  # Updated
+        (
+            '[{"days":"everyday","hour":8,"minute":0,"portions":6}]',
+            "Invalid schedule values",
+        ),  # Updated
         ('{"not_a_list": true}', "Invalid schedule format"),  # Updated
         (123, "Invalid schedule format"),  # Updated
         (None, "Invalid schedule format"),  # Updated
-        ('[{"days":"everyday","hour":8,"minute":0}]', ""),  # Missing portions - might work with defaults
-        ('[{"hour":8,"minute":0,"portions":1}]', ""),  # Missing days - might work with defaults
+        (
+            '[{"days":"everyday","hour":8,"minute":0}]',
+            "",
+        ),  # Missing portions - might work with defaults
+        (
+            '[{"hour":8,"minute":0,"portions":1}]',
+            "",
+        ),  # Missing days - might work with defaults
     ],
 )
 async def test_aqara_feeder_encode_schedule_edge_cases(
@@ -1012,7 +1039,7 @@ async def test_aqara_feeder_encode_schedule_edge_cases(
     opple_cluster = device.endpoints[1].opple_cluster
 
     result = opple_cluster._encode_schedule(bad_schedule)
-    
+
     assert result is None
 
 
@@ -1055,7 +1082,7 @@ async def test_aqara_feeder_nwk_caching(zigpy_device_from_quirk):
 
     nwk1 = opple_cluster._get_device_nwk()
     assert opple_cluster._cached_nwk is not None
-    
+
     nwk2 = opple_cluster._get_device_nwk()
     assert nwk1 == nwk2
 
@@ -1064,7 +1091,7 @@ async def test_aqara_feeder_event_firing_conditions(zigpy_device_from_quirk):
     """Test that events are only fired for important attributes."""
     device = zigpy_device_from_quirk(AqaraFeederAcn001)
     opple_cluster = device.endpoints[1].opple_cluster
-    
+
     opple_cluster.listener_event = mock.MagicMock()
 
     opple_cluster._fire_attribute_event(ZCL_LAST_FEEDING_SIZE, "test", 1, 2)
@@ -1072,7 +1099,7 @@ async def test_aqara_feeder_event_firing_conditions(zigpy_device_from_quirk):
 
     opple_cluster._fire_attribute_event(ZCL_CHILD_LOCK, "child_lock", False, True)
     assert opple_cluster.listener_event.call_count == 1
-    
+
     call_args = opple_cluster.listener_event.call_args
     assert call_args[0][0] == "zha_event"
     assert call_args[0][1] == "child_lock_changed"
@@ -1083,7 +1110,7 @@ async def test_aqara_feeder_initialize_attributes_idempotent(zigpy_device_from_q
     device = zigpy_device_from_quirk(AqaraFeederAcn001)
     opple_cluster = device.endpoints[1].opple_cluster
 
-    with mock.patch.object(XiaomiAqaraE1Cluster, '_update_attribute') as mock_update:
+    with mock.patch.object(XiaomiAqaraE1Cluster, "_update_attribute") as mock_update:
         opple_cluster._initialize_attributes()
         initial_call_count = mock_update.call_count
         assert initial_call_count > 0
@@ -1098,7 +1125,10 @@ async def test_aqara_feeder_initialize_attributes_idempotent(zigpy_device_from_q
         (b"short", "return early"),  # Too short
         (b"b'short'", "return early"),  # String representation too short
         ("not_bytes", "return early"),  # Not bytes
-        (b"\x00\x02\x01\x04\x15\x00U\x01\x01\xff\xff", "parse normally"),  # Extra data at end
+        (
+            b"\x00\x02\x01\x04\x15\x00U\x01\x01\xff\xff",
+            "parse normally",
+        ),  # Extra data at end
     ],
 )
 async def test_aqara_feeder_parse_malformed_data(
@@ -1115,20 +1145,20 @@ async def test_aqara_feeder_feeding_event_generation(zigpy_device_from_quirk):
     """Test that feeding events are generated correctly."""
     device = zigpy_device_from_quirk(AqaraFeederAcn001)
     opple_cluster = device.endpoints[1].opple_cluster
-    
+
     opple_cluster.listener_event = mock.MagicMock()
 
     feeding_report_data = b"0203"
     opple_cluster._parse_feeding_report(feeding_report_data)
 
     assert opple_cluster.listener_event.call_count >= 1
-    
+
     feeding_call = None
     for call in opple_cluster.listener_event.call_args_list:
         if len(call[0]) >= 2 and call[0][1] == "feeding_completed":
             feeding_call = call
             break
-    
+
     assert feeding_call is not None
     event_args = feeding_call[0][2]
     assert event_args["feeding_source"] == "Remote"
@@ -1149,7 +1179,7 @@ async def test_aqara_feeder_schedule_validation(zigpy_device_from_quirk):
     # Too many schedules (>5)
     too_many = []
     for i in range(6):
-        too_many.append({"days":"mon","hour":8,"minute":i,"portions":1})
+        too_many.append({"days": "mon", "hour": 8, "minute": i, "portions": 1})
     result = opple_cluster._encode_schedule(too_many)
     assert result is None
 
@@ -1223,7 +1253,7 @@ async def test_aqara_feeder_error_handling_in_parsing(zigpy_device_from_quirk, c
 
     # Create data that will cause parsing errors
     bad_data = b"\x00\x02\x01\x04\x15\x02\xbc\x04INVALID"
-    
+
     with caplog.at_level(logging.ERROR):
         opple_cluster._parse_feeder_attribute(bad_data)
 
@@ -1238,7 +1268,9 @@ async def test_aqara_feeder_error_handling_in_parsing(zigpy_device_from_quirk, c
         (OppleCluster.FeedingMode.Schedule, "Schedule"),
     ],
 )
-async def test_aqara_feeder_enum_serialization(zigpy_device_from_quirk, enum_value, expected_str):
+async def test_aqara_feeder_enum_serialization(
+    zigpy_device_from_quirk, enum_value, expected_str
+):
     """Test that enums serialize correctly for events."""
     device = zigpy_device_from_quirk(AqaraFeederAcn001)
     opple_cluster = device.endpoints[1].opple_cluster
@@ -1253,13 +1285,13 @@ def test_aqara_feeder_build_command_sequence_increment(zigpy_device_from_quirk):
     opple_cluster = device.endpoints[1].opple_cluster
 
     initial_seq = opple_cluster._send_sequence
-    
+
     opple_cluster._build_feeder_attribute(CHILD_LOCK, 1, 1)
-    
+
     assert opple_cluster._send_sequence == (initial_seq + 1) % 256
-    
+
     opple_cluster._build_feeder_attribute(FEEDING_MODE, 0, 1)
-    
+
     assert opple_cluster._send_sequence == (initial_seq + 2) % 256
 
 
@@ -1267,12 +1299,17 @@ def test_aqara_feeder_constants_consistency():
     """Test that constants are consistent."""
     for aqara_id, zcl_id in AQARA_TO_ZCL.items():
         assert ZCL_TO_AQARA[zcl_id] == aqara_id
-    
+
     for zcl_id in IMPORTANT_ATTRS.keys():
         assert zcl_id in [
-            ZCL_SCHEDULE, ZCL_FEEDING_MODE, ZCL_CHILD_LOCK,
-            ZCL_DISABLE_LED_INDICATOR, ZCL_SERVING_SIZE,
-            ZCL_PORTION_WEIGHT, ZCL_LAST_FEEDING_SOURCE, ZCL_ERROR_DETECTED
+            ZCL_SCHEDULE,
+            ZCL_FEEDING_MODE,
+            ZCL_CHILD_LOCK,
+            ZCL_DISABLE_LED_INDICATOR,
+            ZCL_SERVING_SIZE,
+            ZCL_PORTION_WEIGHT,
+            ZCL_LAST_FEEDING_SOURCE,
+            ZCL_ERROR_DETECTED,
         ]
 
 
@@ -1306,9 +1343,7 @@ async def test_aqara_feeder_write_schedule_with_bad_object(
     opple_cluster = device.endpoints[1].opple_cluster
 
     with caplog.at_level(logging.ERROR):
-        result = await opple_cluster.write_attributes(
-            {"schedule": ExplodingObject()}
-        )
+        result = await opple_cluster.write_attributes({"schedule": ExplodingObject()})
         assert result is not None
 
 
