@@ -24,12 +24,14 @@ class TuyaBatteryState(t.enum8):
     Medium = 0x01
     High = 0x02
 
+
 class TuyaSelfCheckResult(t.enum8):
     """Tuya self check result enum."""
 
     Checking = 0x00
     CheckSuccess = 0x01
     CheckFailure = 0x02
+
 
 class TuyaSensitivityMode(t.enum8):
     """Tuya sensitivity mode enum."""
