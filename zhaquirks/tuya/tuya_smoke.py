@@ -174,8 +174,8 @@ class TuyaSmokeDetectorCluster(TuyaManufClusterAttributes):
 
 (
     TuyaQuirkBuilder("_TZE284_vawy74yh", "TS0601")
-    .applies_to("_TZE200_ai4rqhky", "TS0601") # From z2m
-    .applies_to("_TZE284_ai4rqhky", "TS0601") # From z2m
+    .applies_to("_TZE200_ai4rqhky", "TS0601")  # From z2m
+    .applies_to("_TZE284_ai4rqhky", "TS0601")  # From z2m
     .tuya_smoke(dp_id=1)
     .tuya_enum(
         dp_id=9,
