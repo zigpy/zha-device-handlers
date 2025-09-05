@@ -1,6 +1,6 @@
 """Smoke Sensor."""
 
-from zigpy.quirks.v2 import EntityType, QuirkBuilder
+from zigpy.quirks.v2 import EntityPlatform, EntityType, QuirkBuilder
 from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 import zigpy.types as t
 from zigpy.zcl.clusters.general import OnOff, Time
@@ -16,6 +16,20 @@ from zhaquirks.tuya import (
 )
 from zhaquirks.tuya.builder import TuyaIasFire, TuyaQuirkBuilder
 
+
+class TuyaBatteryState(t.enum8):
+    """Tuya battery state enum."""
+
+    Low = 0x00
+    Medium = 0x01
+    High = 0x02
+
+class TuyaSelfCheckResult(t.enum8):
+    """Tuya self check result enum."""
+
+    Checking = 0x00
+    CheckSuccess = 0x01
+    CheckFailure = 0x02
 
 class TuyaSensitivityMode(t.enum8):
     """Tuya sensitivity mode enum."""
