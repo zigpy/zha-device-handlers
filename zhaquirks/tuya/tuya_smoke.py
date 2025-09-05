@@ -105,7 +105,6 @@ class TuyaSmokeDetectorCluster(TuyaManufClusterAttributes):
 
 (
     TuyaQuirkBuilder("_TZE284_n4ttsck2", "TS0601")
-    .applies_to("_TZE284_vawy74yh", "TS0601")
     .tuya_smoke(dp_id=1)
     .tuya_battery(dp_id=15, battery_type=BatterySize.CR123A, battery_qty=1)
     .skip_configuration()
@@ -165,6 +164,43 @@ class TuyaSmokeDetectorCluster(TuyaManufClusterAttributes):
         enum_class=TuyaSensitivityMode,
         translation_key="motion_sensitivity",
         fallback_name="Motion sensitivity",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# MOES HS2SA-1 Photoelectric Smoke Alarm
+
+(
+    TuyaQuirkBuilder("_TZE284_vawy74yh", "TS0601")
+    .applies_to("_TZE200_ai4rqhky", "TS0601") # From z2m
+    .applies_to("_TZE284_ai4rqhky", "TS0601") # From z2m
+    .tuya_smoke(dp_id=1)
+    .tuya_enum(
+        dp_id=9,
+        attribute_name="self_test",
+        enum_class=TuyaSelfCheckResult,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.DIAGNOSTIC,
+        translation_key="self_test",
+        fallback_name="Self test result",
+    )
+    .tuya_enum(
+        dp_id=14,
+        attribute_name="battery_state",
+        enum_class=TuyaBatteryState,
+        entity_platform=EntityPlatform.SENSOR,
+        entity_type=EntityType.DIAGNOSTIC,
+        translation_key="battery_state",
+        fallback_name="Battery state",
+    )
+    .tuya_battery(dp_id=15, battery_type=BatterySize.CR123A, battery_qty=1)
+    .tuya_switch(
+        dp_id=16,
+        attribute_name="silence_alarm",
+        translation_key="silence_alarm",
+        fallback_name="Silence alarm",
     )
     .skip_configuration()
     .add_to_registry()
