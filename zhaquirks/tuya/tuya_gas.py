@@ -49,6 +49,7 @@ class TuyaIasGasLEL(IasZone, TuyaLocalCluster):
     TuyaQuirkBuilder("_TZE200_hr0tdd47", "TS0601")
     .applies_to("_TZE200_rjxqso4a", "TS0601")
     .applies_to("_TZE284_rjxqso4a", "TS0601")
+    .applies_to("_TZE284_chbyv06x", "TS0601")
     .tuya_gas(dp_id=1)
     .tuya_sensor(
         dp_id=2,
