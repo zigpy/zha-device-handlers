@@ -2,6 +2,7 @@
 
 import base64
 import datetime
+import logging
 import struct
 from typing import Final
 from unittest import mock
@@ -14,7 +15,7 @@ from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice, get_device
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import PowerConfiguration
+from zigpy.zcl.clusters.general import Basic, PowerConfiguration
 from zigpy.zcl.clusters.security import IasZone, ZoneStatus
 from zigpy.zcl.foundation import ZCLAttributeDef
 
@@ -2023,3 +2024,31 @@ async def test_ts601_door_sensor(
     attrs = await cluster.read_attributes(attributes=[attribute])
 
     assert attrs[0].get(attribute) == expected_value
+
+
+async def test_ty0201_bad_direction(zigpy_device_from_v2_quirk, caplog):
+    """Test TY0201 quirk dealing with bad ZCL command direction."""
+
+    device = zigpy_device_from_v2_quirk("_TZ3000_zl1kmjqx", "TY0201")
+    listener = ClusterListener(device.endpoints[1].in_clusters[Basic.cluster_id])
+
+    # The device has a bad ZCL header and reports the incorrect direction for commands
+    with caplog.at_level(logging.WARNING):
+        device.packet_received(
+            t.ZigbeePacket(
+                profile_id=260,
+                cluster_id=0,  # Basic cluster
+                src_ep=1,
+                dst_ep=1,
+                data=t.SerializableBytes(bytes.fromhex("00930A00001001")),
+            )
+        )
+
+    # No warning gets logged
+    warning_messages = [
+        record.message for record in caplog.records if record.levelname == "WARNING"
+    ]
+    assert not warning_messages
+
+    # Our matching logic should be forgiving
+    assert listener.attribute_updates == [(0, t.Bool.true)]
