@@ -1,5 +1,7 @@
 """Aqara T2 relay device."""
 
+from typing import Final
+
 from zigpy import types as t
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster
@@ -17,6 +19,7 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
+from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks.const import (
     ATTR_ID,
@@ -102,14 +105,27 @@ class OppleCluster(XiaomiAqaraE1Cluster):
         Pulse = 0x01
         Dry = 0x03
 
-    attributes = {
-        0x000A: ("switch_type", t.uint8_t, True),
-        0x0517: ("startup_on_off", t.uint8_t, True),
-        0x0200: ("decoupled_mode", t.uint8_t, True),
-        0x02D0: ("interlock", t.Bool, True),
-        0x0289: ("switch_mode", t.uint8_t, True),
-        0x00EB: ("pulse_length", t.uint16_t, True),
-    }
+    class AttributeDefs(XiaomiAqaraE1Cluster.AttributeDefs):
+        """Attribute definitions."""
+
+        switch_type: Final = ZCLAttributeDef(
+            id=0x000A, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        startup_on_off: Final = ZCLAttributeDef(
+            id=0x0517, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        decoupled_mode: Final = ZCLAttributeDef(
+            id=0x0200, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        interlock: Final = ZCLAttributeDef(
+            id=0x02D0, type=t.Bool, is_manufacturer_specific=True
+        )
+        switch_mode: Final = ZCLAttributeDef(
+            id=0x0289, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        pulse_length: Final = ZCLAttributeDef(
+            id=0x00EB, type=t.uint16_t, is_manufacturer_specific=True
+        )
 
 
 class AqaraT2Relay(XiaomiCustomDevice):
