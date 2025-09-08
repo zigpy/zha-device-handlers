@@ -122,7 +122,7 @@ class TuyaSingleSwitchTO(TuyaSwitch):
     }
 
 
-class TuyaSingleSwitch_GP(TuyaSwitch):
+class TuyaSingleSwitchGP(TuyaSwitch):
     """Tuya single channel switch with GreenPowerProxy cluster device."""
 
     signature = {
@@ -133,6 +133,7 @@ class TuyaSingleSwitch_GP(TuyaSwitch):
             ("_TZE204_d0ypnbvn", "TS0601"),  # reported in #3220 & #3291
             ("_TZE204_ptaqh9tk", "TS0601"),  # reported in #2780
             ("_TZE204_v5xjyphj", "TS0601"),  # reported in #4078
+            ("_TZE204_gbagoilo", "TS0601"),  # reported in #4101
         ],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=51 device_version=1
@@ -242,7 +243,7 @@ class TuyaDoubleSwitchTO(TuyaSwitch):
     }
 
 
-class TuyaDoubleSwitch_GP(TuyaSwitch):
+class TuyaDoubleSwitchGP(TuyaSwitch):
     """Tuya double channel switch with GreenPowerProxy cluster device."""
 
     quirk_id = TUYA_PLUG_MANUFACTURER
@@ -251,6 +252,7 @@ class TuyaDoubleSwitch_GP(TuyaSwitch):
         MODELS_INFO: [
             ("_TZE200_7deq70b8", "TS0601"),
             ("_TZE200_nh9m9emk", "TS0601"),  # reported in #1634
+            ("_TZE204_nh9m9emk", "TS0601"),  # reported in #4100
         ],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=51 device_version=1
@@ -305,6 +307,52 @@ class TuyaDoubleSwitch_GP(TuyaSwitch):
                 DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        }
+    }
+
+
+class TuyaDoubleSwitchNOC(TuyaSwitch):
+    """Tuya double channel switch with No Output Clusters."""
+
+    signature = {
+        MODELS_INFO: [
+            ("_TZE200_wvovwe9h", "TS0601"),  # reported in #4077
+        ],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaOnOffManufCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    MoesSwitchManufCluster,
+                    TuyaOnOff,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [TuyaOnOff],
+                OUTPUT_CLUSTERS: [],
             },
         }
     }
@@ -369,7 +417,7 @@ class TuyaTripleSwitchTO(TuyaSwitch):
     }
 
 
-class TuyaTripleSwitch_GP(TuyaSwitch):
+class TuyaTripleSwitchGP(TuyaSwitch):
     """Tuya triple channel switch with GreenPowerProxy cluster device."""
 
     quirk_id = TUYA_PLUG_MANUFACTURER
@@ -570,7 +618,7 @@ class TuyaQuadrupleSwitchTO(TuyaSwitch):
     }
 
 
-class TuyaQuadrupleSwitch_GP(TuyaSwitch):
+class TuyaQuadrupleSwitchGP(TuyaSwitch):
     """Tuya quadruple channel switch with GreenPowerProxy cluster device."""
 
     signature = {
@@ -635,6 +683,95 @@ class TuyaQuadrupleSwitch_GP(TuyaSwitch):
                 OUTPUT_CLUSTERS: [],
             },
             4: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    TuyaOnOffNM,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            242: {
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        }
+    }
+
+
+class TuyaQuintupleSwitchGP(TuyaSwitch):
+    """Tuya quintuple channel switch with GreenPowerProxy cluster device."""
+
+    signature = {
+        MODELS_INFO: [
+            ("_TZE200_jwsjbxjs", "TS0601"),  # reported #4219
+        ],
+        ENDPOINTS: {
+            # <SimpleDescriptor endpoint=1 profile=260 device_type=51 device_version=1
+            # input_clusters=[0, 4, 5, 61184]
+            # output_clusters=[10, 25]>
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaOnOffManufCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            # <SimpleDescriptor endpoint=242 profile=41440 device_type=97
+            # input_clusters=[]
+            # output_clusters=[33]
+            242: {
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    MoesSwitchManufCluster,
+                    TuyaOnOffNM,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    TuyaOnOffNM,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            3: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    TuyaOnOffNM,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            4: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    TuyaOnOffNM,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            5: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
                 INPUT_CLUSTERS: [
@@ -813,7 +950,7 @@ class TuyaSextupleSwitchTO(TuyaSwitch):
     }
 
 
-class TuyaSextupleSwitchTO_GP(TuyaSwitch):
+class TuyaSextupleSwitchTOGP(TuyaSwitch):
     """Tuya sextuple channel switch time on out cluster device with GreenPowerProxy cluster device."""
 
     quirk_id = TUYA_PLUG_MANUFACTURER
@@ -913,7 +1050,7 @@ class TuyaSextupleSwitchTO_GP(TuyaSwitch):
     }
 
 
-class TuyaSwitchX8_GP(TuyaSwitch):
+class TuyaSwitchX8GP(TuyaSwitch):
     """Tuya x8 channels switch with GreenPowerProxy cluster device."""
 
     signature = {
@@ -1027,7 +1164,7 @@ class TuyaSwitchX8_GP(TuyaSwitch):
     }
 
 
-class TuyaSwitchX12_GP(TuyaSwitch):
+class TuyaSwitchX12GP(TuyaSwitch):
     """Tuya x12 channels switch with GreenPowerProxy cluster device."""
 
     signature = {
@@ -1172,7 +1309,7 @@ class TuyaSwitchX12_GP(TuyaSwitch):
     }
 
 
-class TuyaSwitchX16_GP(TuyaSwitch):
+class TuyaSwitchX16GP(TuyaSwitch):
     """Tuya x16 channels switch with GreenPowerProxy cluster device."""
 
     signature = {
