@@ -1,4 +1,5 @@
 """Custom quirk for TS0003 (_TZ3000_mw1pqqqt) 3-USB switch — without power metering."""
+
 from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
