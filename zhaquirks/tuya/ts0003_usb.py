@@ -1,23 +1,23 @@
-from zigpy.profiles import zha, zgp
+from zigpy.profiles import zgp, zha
 from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import (
     Basic,
-    Identify,
+    GreenPowerProxy,
     Groups,
-    Scenes,
+    Identify,
     OnOff,
     Ota,
+    Scenes,
     Time,
-    GreenPowerProxy,
 )
 
 from zhaquirks.const import (
-    MODELS_INFO,
-    ENDPOINTS,
-    PROFILE_ID,
     DEVICE_TYPE,
+    ENDPOINTS,
     INPUT_CLUSTERS,
+    MODELS_INFO,
     OUTPUT_CLUSTERS,
+    PROFILE_ID,
 )
 
 
