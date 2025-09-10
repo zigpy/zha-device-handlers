@@ -14,7 +14,6 @@
 import contextlib
 import logging
 import math
-import time
 
 from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.zcl.clusters.general import LevelControl as ZigpyLevelControl
@@ -44,7 +43,6 @@ CMD_STEP_WITH_ON_OFF = L_CMD.step_with_on_off.id
 CMD_MOVE_TO_COLOR_TEMP = C_CMD.move_to_color_temp.id
 CMD_MOVE_TO_COLOR = C_CMD.move_to_color.id
 CMD_MOVE_TO_HUE_SAT = C_CMD.move_to_hue_and_saturation.id
-CMD_ENHANCED_MOVE_TO_HUE_SAT = C_CMD.enhanced_move_to_hue_and_saturation.id
 
 ATTR_CURRENT_LEVEL = L_ATTR.current_level.id
 ATTR_COLOR_TEMP = C_ATTR.color_temperature.id
@@ -74,10 +72,6 @@ DEFAULT_LEVEL = 128
 DEFAULT_TRANSITION_TIME = 0
 DEFAULT_COLOR_TRANSITION_TENTHS = 4
 
-# Try setting non-zero values for these if you encounter HA UI clider bouncing.
-# A sticky window of 2.8 and a hysteresis counts of 3 may help with stability.
-STICKY_WINDOW_S = 0  # echo last HA value for this many seconds (debounce)
-HYSTERESIS_COUNTS = 0  # device-level tolerance for stickiness
 
 # These 3 control the perceptual curve for brightness.
 BRIGHTNESS_THRESHOLD_PERCENT = (
@@ -389,9 +383,7 @@ class Color(CustomCluster, ZigpyColor):
             y_in=int(y_in),
         )
 
-    async def _handle_move_to_hs(
-        self, h_deg: float, s01: float, trans: int, enhanced: bool
-    ):
+    async def _handle_move_to_hs(self, h_deg: float, s01: float, trans: int):
         xf, yf = self._hsv_to_xy(h_deg, s01)
         s_raw = s01 * 254.0
         return await self._handle_xy_common(
@@ -469,15 +461,15 @@ class Color(CustomCluster, ZigpyColor):
             )
         return int(x16 or 0), int(y16 or 0), int(transition)
 
-    def _parse_move_to_hs(self, args, kwargs, enhanced: bool):
-        """Return (hue_deg, sat01, transition)."""
+    def _parse_move_to_hs(self, args, kwargs):
+        """Return (hue_deg, sat01, transition) for non-enhanced HS."""
 
-        def _extract(inp_args, inp_kwargs, is_enhanced):
+        def _extract(inp_args, inp_kwargs):
             h = None
             s = None
             t = None
             if inp_kwargs:
-                h = inp_kwargs.get("enhanced_hue" if is_enhanced else "hue")
+                h = inp_kwargs.get("hue")
                 s = inp_kwargs.get("saturation")
                 t = inp_kwargs.get("transition_time")
             if h is None and inp_args:
@@ -492,16 +484,14 @@ class Color(CustomCluster, ZigpyColor):
                 )
             return h, s, t
 
-        def _normalize(h, s, is_enhanced):
-            if is_enhanced:
-                h_deg_local = (int(h or 0) % 65536) * (360.0 / 65536.0)
-            else:
-                h_deg_local = (int(h or 0) % 255) * (360.0 / 254.0)
+        def _normalize(h, s):
+            # Hue/Sat: 0..254 -> 0..360 degrees (254 maps ~360)
+            h_deg_local = (int(h or 0) % 255) * (360.0 / 254.0)
             s01_local = _clamp_value(int(s or 0), 0, 254) / 254.0
             return float(h_deg_local), float(s01_local)
 
-        hue, sat, transition = _extract(args, kwargs, enhanced)
-        h_deg, s01 = _normalize(hue, sat, enhanced)
+        hue, sat, transition = _extract(args, kwargs)
+        h_deg, s01 = _normalize(hue, sat)
         return float(h_deg), float(s01), int(transition)
 
     @staticmethod
@@ -684,16 +674,11 @@ class Color(CustomCluster, ZigpyColor):
                     **kwargs,
                 )
             return await self._handle_move_to_color(x_in, y_in, trans)
-        elif command_id in (CMD_MOVE_TO_HUE_SAT, CMD_ENHANCED_MOVE_TO_HUE_SAT):
-            enhanced = command_id == CMD_ENHANCED_MOVE_TO_HUE_SAT
+        elif command_id == CMD_MOVE_TO_HUE_SAT:
             try:
-                h_deg, s, trans = self._parse_move_to_hs(args, kwargs, enhanced)
+                h_deg, s, trans = self._parse_move_to_hs(args, kwargs)
             except (TypeError, ValueError, KeyError) as ex:
-                _LOGGER.warning(
-                    "Color.command: parse error for %s: %s",
-                    "EnhancedMoveToHueSat" if enhanced else "MoveToHueSat",
-                    ex,
-                )
+                _LOGGER.warning("Color.command: parse error for MoveToHueSat: %s", ex)
                 return await super().command(
                     command_id,
                     *args,
@@ -702,7 +687,7 @@ class Color(CustomCluster, ZigpyColor):
                     tsn=tsn,
                     **kwargs,
                 )
-            return await self._handle_move_to_hs(h_deg, s, trans, enhanced)
+            return await self._handle_move_to_hs(h_deg, s, trans)
 
         return await super().command(
             command_id,
@@ -937,16 +922,14 @@ class LevelControl(CustomCluster, ZigpyLevelControl):
     """
 
     def __init__(self, *args, **kwargs):
-        """Build LUTs and initialize hysteresis."""
+        """Build LUTs."""
         super().__init__(*args, **kwargs)
         self._ha2dev = None
         self._dev2ha = None
         self._last_dev = None
         self._last_ha = None
-        self._hysteresis = HYSTERESIS_COUNTS
-        self._sticky_until = 0.0
         self._build_brightness_lookup_tables()
-        _LOGGER.debug("LevelControl.__init__: hysteresis=%s", self._hysteresis)
+        _LOGGER.debug("LevelControl.__init__: tables attached")
 
     def _build_brightness_lookup_tables(self):
         """Attach precomputed brightness LUTs (deep copies to allow per-instance tweaks)."""
@@ -958,9 +941,6 @@ class LevelControl(CustomCluster, ZigpyLevelControl):
             START_SLOPE_NORM,
             END_SLOPE_NORM,
         )
-
-    def _now(self) -> float:
-        return time.monotonic()
 
     def _map_brightness_level(self, v: int) -> int:
         if self._ha2dev is None:
@@ -1016,64 +996,12 @@ class LevelControl(CustomCluster, ZigpyLevelControl):
             )
             return int(round(p * 255 / 100))
 
-        def _identity_when_no_last_ha(dv: int) -> int | None:
-            if self._last_ha is None:
-                _LOGGER.debug(
-                    "LevelControl._convert_device_level_to_ha: device=%s -> ha=%s (group-compat identity)",
-                    dv,
-                    dv,
-                )
-                return int(dv)
-            return None
-
-        def _sticky_choice(dv: int, now_ts: float) -> int | None:
-            if self._last_ha is not None and now_ts <= (self._sticky_until or 0):
-                _LOGGER.debug(
-                    "LevelControl._convert_device_level_to_ha: device=%s -> ha=%s (sticky-window remain=%.3fs)",
-                    dv,
-                    self._last_ha,
-                    (self._sticky_until - now_ts),
-                )
-                return int(self._last_ha)
-            return None
-
-        def _hysteresis_choice(dv: int, mapped_default: int) -> int | None:
-            if (
-                self._last_dev is not None
-                and abs(dv - self._last_dev) <= self._hysteresis
-            ):
-                chosen_loc = int(
-                    self._last_ha if self._last_ha is not None else mapped_default
-                )
-                _LOGGER.debug(
-                    "LevelControl._convert_device_level_to_ha: device=%s -> ha=%s (hysteresis<=%s last_dev=%s)",
-                    dv,
-                    chosen_loc,
-                    self._hysteresis,
-                    self._last_dev,
-                )
-                return chosen_loc
-            return None
-
+        # Identity fallback, sticky window, and hysteresis removed for simplicity.
         if self._dev2ha is None:
             return _fallback_map_device_to_percent(dev)
 
         d = _clamp_value(int(dev), MIN_LEVEL, MAX_LEVEL)
-        ident = _identity_when_no_last_ha(d)
-        if ident is not None:
-            return ident
-
-        now = self._now()
-        sticky = _sticky_choice(d, now)
-        if sticky is not None:
-            return sticky
-
-        mapped_default = int(self._dev2ha[d])
-        hyster = _hysteresis_choice(d, mapped_default)
-        if hyster is not None:
-            return hyster
-
-        mapped = mapped_default
+        mapped = int(self._dev2ha[d])
         _LOGGER.debug(
             "LevelControl._convert_device_level_to_ha: device=%s -> ha=%s (normal)",
             d,
@@ -1085,12 +1013,10 @@ class LevelControl(CustomCluster, ZigpyLevelControl):
         """Call after sending a level to make inbound reports sticky."""
         self._last_ha = _clamp_value(int(ha_level), MIN_LEVEL, MAX_LEVEL)
         self._last_dev = self._map_brightness_level(self._last_ha)
-        self._sticky_until = self._now() + STICKY_WINDOW_S
         _LOGGER.debug(
-            "LevelControl._remember_set: ha=%s last_dev=%s sticky_window=%.3fs",
+            "LevelControl._remember_set: ha=%s last_dev=%s",
             self._last_ha,
             self._last_dev,
-            STICKY_WINDOW_S,
         )
 
     def _avoid_zero_result(self, cmd_id: int, dev_level: int) -> int:
@@ -1274,11 +1200,9 @@ class LevelControl(CustomCluster, ZigpyLevelControl):
                 raw = int(value)
                 value = self._convert_device_level_to_ha(int(value))
                 _LOGGER.debug(
-                    "LevelControl._update_attribute: device=%s -> ha=%s (sticky_until=%.3f now=%.3f last_dev=%s last_ha=%s)",
+                    "LevelControl._update_attribute: device=%s -> ha=%s (last_dev=%s last_ha=%s)",
                     raw,
                     value,
-                    self._sticky_until,
-                    self._now(),
                     self._last_dev,
                     self._last_ha,
                 )
