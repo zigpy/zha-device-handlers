@@ -107,11 +107,7 @@ BASE_ROTARY_DIMMER = (
     )
 )
 
-(
-    BASE_DIMMER.clone()
-    .applies_to(SE_MANUF_NAME, "PUCK/DIMMER/1")
-    .add_to_registry()
-)
+(BASE_DIMMER.clone().applies_to(SE_MANUF_NAME, "PUCK/DIMMER/1").add_to_registry())
 
 (
     BASE_ROTARY_DIMMER.clone()

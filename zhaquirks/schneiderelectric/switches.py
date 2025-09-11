@@ -78,8 +78,4 @@ BASE_SWITCH = (
     .add_to_registry()
 )
 
-(
-    BASE_SWITCH.clone()
-    .applies_to(SE_MANUF_NAME, "PUCK/SWITCH/1")
-    .add_to_registry()
-)
+(BASE_SWITCH.clone().applies_to(SE_MANUF_NAME, "PUCK/SWITCH/1").add_to_registry())
