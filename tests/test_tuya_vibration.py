@@ -1,4 +1,4 @@
-# tests/test_tuya_vibration.py
+"""Tests for _TZE200_iba1ckek vibration sensor."""
 import pytest
 from zigpy.quirks.v2 import CustomDeviceV2
 
@@ -26,7 +26,7 @@ async def test_ts0601_vibration_quirk_loads(zigpy_device_from_v2_quirk):
 
 
 def test_uint_to_sint_converter():
-    """Test the uint_to_sint converter function"""
+    """Test the uint_to_sint converter function."""
     assert uint_to_sint(0) == 0
     assert uint_to_sint(50) == 50
     assert uint_to_sint(127) == 127
