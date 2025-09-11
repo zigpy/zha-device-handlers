@@ -1,4 +1,5 @@
 """Tests for _TZE200_iba1ckek vibration sensor."""
+
 import pytest
 from zigpy.quirks.v2 import CustomDeviceV2
 
