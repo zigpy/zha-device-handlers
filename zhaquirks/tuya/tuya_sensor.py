@@ -310,6 +310,8 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .applies_to("_TZE284_utkemkbs", "TS0601")
     .applies_to("_TZE204_ksz749x8", "TS0601")
     .applies_to("_TZE284_upagmta9", "TS0601")
+    .applies_to("_TZE204_1wnh8bqp", "TS0601")
+    .applies_to("_TZE284_1wnh8bqp", "TS0601")
     .tuya_temperature(dp_id=1, scale=10)
     .tuya_humidity(dp_id=2)
     .tuya_dp(
