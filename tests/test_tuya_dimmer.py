@@ -324,7 +324,6 @@ async def test_triple_command(zigpy_device_from_quirk, quirk):
     dimmer_dev = zigpy_device_from_quirk(quirk)
     tuya_cluster = dimmer_dev.endpoints[1].tuya_manufacturer
     dimmer1_cluster = dimmer_dev.endpoints[1].level
-    switch1_cluster = dimmer_dev.endpoints[1].on_off
     switch2_cluster = dimmer_dev.endpoints[2].on_off
     switch3_cluster = dimmer_dev.endpoints[3].on_off
     tuya_listener = ClusterListener(tuya_cluster)
