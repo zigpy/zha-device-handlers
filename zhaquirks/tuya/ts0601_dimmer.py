@@ -27,6 +27,7 @@ class TuyaInWallLevelControlNM(NoManufacturerCluster, TuyaInWallLevelControl):
 # --- DEVICE SUMMARY ---
 # TuyaSingleSwitchDimmer: 0x00, 0x04, 0x05, 0xEF00; 0x000A, 0x0019
 # TuyaDoubleSwitchDimmer: 0x00, 0x04, 0x05, 0xEF00; 0x000A, 0x0019
+# TuyaTripleSwitchDimmer: 0x00, 0x04, 0x05, 0xEF00; 0x000A, 0x0019
 # - Dimmer with Green Power Proxy: Endpoint=242 profile=41440 device_type=0x0061, output_clusters: 0x0021 -
 # TuyaSingleSwitchDimmerGP: 0x00, 0x04, 0x05, 0xEF00; 0x000A, 0x0019
 # TuyaDoubleSwitchDimmerGP: 0x00, 0x04, 0x05, 0xEF00; 0x000A, 0x0019
@@ -132,6 +133,71 @@ class TuyaDoubleSwitchDimmer(TuyaDimmerSwitch):
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
             2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    TuyaOnOff,
+                    TuyaInWallLevelControl,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+        }
+    }
+
+
+class TuyaTripleSwitchDimmer(TuyaDimmerSwitch):
+    """Tuya triple-channel dimmer (TS0601, Zemismart/Moes), non-GP."""
+
+    signature = {
+        MODELS_INFO: [
+            ("_TZE204_znvwzxkq", "TS0601"),
+            ("_TZE284_znvwzxkq", "TS0601"),
+            ("_TZE204_1v1dxkck", "TS0601"),
+            ("_TZE200_vm1gyrso", "TS0601"),
+        ],
+        ENDPOINTS: {
+            # <SimpleDescriptor endpoint=1 profile=260 device_type=0x0051
+            # device_version=1
+            # input_clusters=[0, 4, 5, 61184]
+            # output_clusters=[10, 25]>
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaLevelControlManufCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaLevelControlManufCluster,
+                    TuyaOnOff,
+                    TuyaInWallLevelControl,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    TuyaOnOff,
+                    TuyaInWallLevelControl,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            3: {
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
                 INPUT_CLUSTERS: [
