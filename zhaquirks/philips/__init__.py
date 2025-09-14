@@ -11,12 +11,7 @@ import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic
 from zigpy.zcl.clusters.measurement import OccupancySensing
-from zigpy.zcl.foundation import (
-    BaseCommandDefs,
-    Direction,
-    ZCLAttributeDef,
-    ZCLCommandDef,
-)
+from zigpy.zcl.foundation import BaseCommandDefs, ZCLAttributeDef, ZCLCommandDef
 
 from zhaquirks.const import (
     ARGS,
@@ -54,12 +49,15 @@ class PhilipsOccupancySensing(CustomCluster):
     cluster_id = OccupancySensing.cluster_id
     ep_attribute = "philips_occupancy"
 
-    attributes = OccupancySensing.attributes.copy()
-    attributes[0x0030] = ("sensitivity", t.uint8_t, True)
-    attributes[0x0031] = ("sensitivity_max", t.uint8_t, True)
+    class AttributeDefs(OccupancySensing.AttributeDefs):
+        """Attribute definitions."""
 
-    server_commands = OccupancySensing.server_commands.copy()
-    client_commands = OccupancySensing.client_commands.copy()
+        sensitivity: Final = ZCLAttributeDef(
+            id=0x0030, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        sensitivity_max: Final = ZCLAttributeDef(
+            id=0x0031, type=t.uint8_t, is_manufacturer_specific=True
+        )
 
 
 class PhilipsBasicCluster(CustomCluster, Basic):
@@ -146,20 +144,21 @@ class PhilipsRemoteCluster(CustomCluster):
     cluster_id = 0xFC00
     name = "PhilipsRemoteCluster"
     ep_attribute = "philips_remote_cluster"
-    client_commands = {
-        0x0000: foundation.ZCLCommandDef(
-            "notification",
-            {
+
+    class ClientCommandDefs(BaseCommandDefs):
+        """Client command definitions."""
+
+        notification = foundation.ZCLCommandDef(
+            id=0x0000,
+            schema={
                 "button": t.uint8_t,
                 "param2": t.uint24_t,
                 "press_type": t.uint8_t,
                 "param4": t.uint8_t,
                 "param5": t.uint16_t,
             },
-            False,
             is_manufacturer_specific=True,
         )
-    }
 
     BUTTONS: dict[int, Button] = {}
 
@@ -360,6 +359,5 @@ class PhilipsHueLightCluster(CustomCluster):
         multicolor: Final = ZCLCommandDef(
             id=0x00,
             schema={"data": t.SerializableBytes},
-            direction=Direction.Client_to_Server,
             is_manufacturer_specific=True,
         )

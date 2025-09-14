@@ -1,9 +1,11 @@
 """Quirks for Develco Products A/S."""
 
-from zigpy import types as t
+from typing import Final
+
 from zigpy.quirks import CustomCluster
+import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.security import IasZone
+from zigpy.zcl.clusters.security import IasZone, ZoneStatus
 
 from zhaquirks import PowerConfigurationCluster
 
@@ -19,22 +21,19 @@ class DevelcoPowerConfiguration(PowerConfigurationCluster):
 
 
 class DevelcoIasZone(CustomCluster, IasZone):
-    """Custom IasZone for Develco."""
+    """IAS Zone, patched to fix a bug with the status change notification command."""
 
-    client_commands = {
-        0x00: foundation.ZCLCommandDef(
-            "status_change_notification",
-            {
-                "zone_status": IasZone.ZoneStatus,
-                "extended_status?": t.bitmap8,
+    class ClientCommandDefs(IasZone.ClientCommandDefs):
+        """IAS Zone command definitions."""
+
+        status_change_notification: Final = foundation.ZCLCommandDef(
+            id=0x00,
+            schema={
+                "zone_status": ZoneStatus,
+                "extended_status": t.bitmap8,
+                # These two should not be optional
                 "zone_id?": t.uint8_t,
                 "delay?": t.uint16_t,
             },
-            False,
-        ),
-        0x01: foundation.ZCLCommandDef(
-            "enroll",
-            {"zone_type": IasZone.ZoneType, "manufacturer_code": t.uint16_t},
-            False,
-        ),
-    }
+            direction=foundation.Direction.Client_to_Server,
+        )

@@ -13,16 +13,13 @@ from zhaquirks.tuya.builder import (
 )
 
 
-class CustomTemperature(t.Struct):
-    """Custom temperature wrapper."""
+def tuya_air_quality_temperature_converter(value: Any) -> int:
+    """Convert Tuya air quality temperature data to centidegrees.
 
-    field_1: t.int16s_be
-    temperature: t.int16s_be
-
-    @classmethod
-    def from_value(cls, value):
-        """Convert from a raw value to a Struct data."""
-        return cls.deserialize(value.serialize())[0]
+    Extract temperature from bytes 2-4 of the data payload and convert to centidegrees.
+    The device sends a 4-byte structure: [field_1 (2 bytes), temperature (2 bytes)]
+    """
+    return int.from_bytes(value.serialize()[2:4], byteorder="big", signed=True) * 10
 
 
 class TuyaPM25ConcentrationIgnoreValues(TuyaPM25Concentration):
@@ -41,7 +38,7 @@ base_air_quality = (
         dp_id=18,
         ep_attribute=TuyaTemperatureMeasurement.ep_attribute,
         attribute_name=TuyaTemperatureMeasurement.AttributeDefs.measured_value.name,
-        converter=lambda x: CustomTemperature.from_value(x).temperature * 10,
+        converter=tuya_air_quality_temperature_converter,
     )
     .adds(TuyaTemperatureMeasurement)
     .tuya_humidity(dp_id=19, scale=10)
@@ -119,7 +116,7 @@ base_air_quality = (
         dp_id=18,
         ep_attribute=TuyaTemperatureMeasurement.ep_attribute,
         attribute_name=TuyaTemperatureMeasurement.AttributeDefs.measured_value.name,
-        converter=lambda x: CustomTemperature.from_value(x).temperature * 10,
+        converter=tuya_air_quality_temperature_converter,
     )
     .adds(TuyaTemperatureMeasurement)
     .tuya_humidity(dp_id=19, scale=10)
@@ -135,7 +132,7 @@ base_air_quality = (
         dp_id=18,
         ep_attribute=TuyaTemperatureMeasurement.ep_attribute,
         attribute_name=TuyaTemperatureMeasurement.AttributeDefs.measured_value.name,
-        converter=lambda x: CustomTemperature.from_value(x).temperature * 10,
+        converter=tuya_air_quality_temperature_converter,
     )
     .adds(TuyaTemperatureMeasurement)
     .tuya_humidity(dp_id=19, scale=10)
