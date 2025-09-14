@@ -2,14 +2,10 @@
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.quirks.v2.homeassistant import EntityType, PERCENTAGE
-import zigpy.types as t
-from zigpy.zcl.clusters.hvac import (
-    Thermostat,
-    UserInterface,
-    TemperatureDisplayMode,
-)
+from zigpy.quirks.v2.homeassistant import PERCENTAGE, EntityType
 from zigpy.quirks.v2.homeassistant.sensor import SensorStateClass
+import zigpy.types as t
+from zigpy.zcl.clusters.hvac import TemperatureDisplayMode, Thermostat, UserInterface
 from zigpy.zcl.foundation import ZCLAttributeDef
 
 """Bosch specific thermostat attribute ids."""
@@ -55,9 +51,7 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
 
     # Works around an issue where ZHA thinks "Heating_Only" can't be changed
     # 0x06 is "centralite specific", but works perfectly for this thermostat as well
-    _CONSTANT_ATTRIBUTES = {
-        Thermostat.AttributeDefs.ctrl_sequence_of_oper.id: 0x06
-    }
+    _CONSTANT_ATTRIBUTES = {Thermostat.AttributeDefs.ctrl_sequence_of_oper.id: 0x06}
 
     class AttributeDefs(Thermostat.AttributeDefs):
         """Bosch thermostat manufacturer specific attributes."""
