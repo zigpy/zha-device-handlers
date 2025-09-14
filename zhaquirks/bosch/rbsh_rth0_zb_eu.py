@@ -2,19 +2,23 @@
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.quirks.v2.homeassistant import EntityPlatform, EntityType
+from zigpy.quirks.v2.homeassistant import EntityType, PERCENTAGE
 import zigpy.types as t
 from zigpy.zcl.clusters.hvac import (
-    ControlSequenceOfOperation,
     Thermostat,
     UserInterface,
+    TemperatureDisplayMode,
 )
+from zigpy.quirks.v2.homeassistant.sensor import SensorStateClass
 from zigpy.zcl.foundation import ZCLAttributeDef
 
 """Bosch specific thermostat attribute ids."""
 
 # Mode of operation with values BoschOperatingMode.
 OPERATING_MODE_ATTR_ID = 0x4007
+
+# Valve duty cycle: 0% - 100%
+VALVE_DUTY_CYCLE_ATTR_ID = 0x4020
 
 # Window open switch (changes to a lower target temperature when on).
 WINDOW_OPEN_ATTR_ID = 0x4042
@@ -30,12 +34,9 @@ SCREEN_TIMEOUT_ATTR_ID = 0x403A
 # Display brightness (0 - 10).
 SCREEN_BRIGHTNESS_ATTR_ID = 0x403B
 
-# Control sequence of operation (heating/cooling)
-CTRL_SEQUENCE_OF_OPERATION_ID = Thermostat.AttributeDefs.ctrl_sequence_of_oper.id
-
 
 class BoschOperatingMode(t.enum8):
-    """Bosh operating mode attribute values."""
+    """Bosch operating mode attribute values."""
 
     Schedule = 0x00
     Manual = 0x01
@@ -49,15 +50,14 @@ class State(t.enum8):
     On = 0x01
 
 
-class BoschControlSequenceOfOperation(t.enum8):
-    """Supported ControlSequenceOfOperation modes."""
-
-    Cooling = ControlSequenceOfOperation.Cooling_Only
-    Heating = ControlSequenceOfOperation.Heating_Only
-
-
 class BoschThermostatCluster(CustomCluster, Thermostat):
     """Bosch thermostat cluster."""
+
+    # Works around an issue where ZHA thinks "Heating_Only" can't be changed
+    # 0x06 is "centralite specific", but works perfectly for this thermostat as well
+    _CONSTANT_ATTRIBUTES = {
+        Thermostat.AttributeDefs.ctrl_sequence_of_oper.id: 0x06
+    }
 
     class AttributeDefs(Thermostat.AttributeDefs):
         """Bosch thermostat manufacturer specific attributes."""
@@ -65,6 +65,13 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
         operating_mode = ZCLAttributeDef(
             id=OPERATING_MODE_ATTR_ID,
             type=BoschOperatingMode,
+            is_manufacturer_specific=True,
+        )
+
+        valve_duty_cycle = ZCLAttributeDef(
+            id=VALVE_DUTY_CYCLE_ATTR_ID,
+            # Values range from 0-100
+            type=t.uint8_t,
             is_manufacturer_specific=True,
         )
 
@@ -78,6 +85,12 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
             id=BOOST_HEATING_ATTR_ID,
             type=State,
             is_manufacturer_specific=True,
+        )
+
+        temperature_display_mode = ZCLAttributeDef(
+            id=0x0000,
+            type=TemperatureDisplayMode,
+            access="rw",
         )
 
 
@@ -107,17 +120,34 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
     .applies_to("Bosch", "RBSH-RTH0-BAT-ZB-EU")
     .replaces(BoschThermostatCluster)
     .replaces(BoschUserInterfaceCluster)
-    # Operating mode - read-only: controlled automatically through Thermostat.system_mode (HAVC mode).
+    # Valve duty cycle, PWM controlled.
+    .sensor(
+        BoschThermostatCluster.AttributeDefs.valve_duty_cycle.name,
+        BoschThermostatCluster.cluster_id,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=PERCENTAGE,
+        translation_key="valve_duty_cycle",
+        fallback_name="Valve duty cycle",
+    )
+    # Operating mode - On/Pause automatically from HVAC mode, Schedule/Manual configured here.
     .enum(
         BoschThermostatCluster.AttributeDefs.operating_mode.name,
         BoschOperatingMode,
         BoschThermostatCluster.cluster_id,
-        entity_platform=EntityPlatform.SENSOR,
-        entity_type=EntityType.DIAGNOSTIC,
+        entity_type=EntityType.CONFIG,
         translation_key="operating_mode",
         fallback_name="Operating mode",
     )
-    # Fast heating/boost.
+    # Temperature display type.
+    .enum(
+        BoschUserInterfaceCluster.AttributeDefs.temperature_display_mode.name,
+        TemperatureDisplayMode,
+        BoschUserInterfaceCluster.cluster_id,
+        entity_type=EntityType.CONFIG,
+        translation_key="temperature_display_mode",
+        fallback_name="Temperature display mode",
+    )
+    # Fast heating/boost - Only works with Heater type: Radiator.
     .switch(
         BoschThermostatCluster.AttributeDefs.boost_heating.name,
         BoschThermostatCluster.cluster_id,
@@ -150,14 +180,6 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         step=1,
         translation_key="display_brightness",
         fallback_name="Display brightness",
-    )
-    # Heating vs Cooling.
-    .enum(
-        Thermostat.AttributeDefs.ctrl_sequence_of_oper.name,
-        BoschControlSequenceOfOperation,
-        BoschThermostatCluster.cluster_id,
-        translation_key="ctrl_sequence_of_oper",
-        fallback_name="Control sequence",
     )
     .add_to_registry()
 )
