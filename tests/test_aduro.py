@@ -109,25 +109,23 @@ def test_handle_unknown_button(zigpy_device_from_quirk, caplog):
 
 def test_debounce_logic(zigpy_device_from_quirk, monkeypatch):
     """Test debounce logic for button presses."""
-    # Reset debounce state!
-    zhaquirks.aduro.adurolightcsc._last_event.clear()
-
     device = zigpy_device_from_quirk(AdurolightCSCRemote)
     cluster = device.endpoints[1].in_clusters[AdurolightFcccCluster.cluster_id]
     events = []
     cluster.listener_event = lambda *a, **k: events.append((a, k))
 
-    fake_time = [1000.0]  # start time
-
-    monkeypatch.setattr("time.monotonic", lambda: fake_time[0])
+    fake_time = [1000.0]
+    monkeypatch.setattr(
+        "zhaquirks.aduro.adurolightcsc.time.monotonic", lambda: fake_time[0]
+    )
 
     hdr = type("ZCLHeader", (), {"command_id": 0, "tsn": 4})()
     args = [0, 0]
 
     result1 = cluster.handle_cluster_request(hdr, args)
-    fake_time[0] += 0.5  # less than debounce interval
+    fake_time[0] += 0.5
     result2 = cluster.handle_cluster_request(hdr, args)
-    fake_time[0] += 2.0  # more than debounce interval
+    fake_time[0] += 2.0
     result3 = cluster.handle_cluster_request(hdr, args)
 
     assert result1 is True

@@ -60,13 +60,7 @@ ACTION_MAP = {
     (BUTTON_4, LONG_PRESS): "button_4_long_press",
 }
 
-# DEBOUNCE settings (ADUROLIGHT_CSC buttons tend to send duplicate events)
-_DEBOUNCE_INTERVAL = 1  # seconds
-_last_event = {}
-
-
-def _debounce_key(button, press_type):
-    return (button, press_type)
+_DEBOUNCE_INTERVAL = 0.7  # seconds
 
 
 class AdurolightFcccCluster(EventableCluster, CustomCluster):
@@ -75,45 +69,51 @@ class AdurolightFcccCluster(EventableCluster, CustomCluster):
     cluster_id = ADUROLIGHT_CLUSTER_ID
     manufacturer_specific = True
 
+    def __init__(self, *a, **kw):
+        """Initialize per-instance debounce cache."""
+        super().__init__(*a, **kw)
+        self._last_event = {}
+
     def handle_cluster_request(
         self, hdr: foundation.ZCLHeader, args, dst_addressing=None
     ):
-        """Handle incoming cluster requests and emit ZHA events with debounce logic."""
+        """Decode FCCC payload and emit zha_event with debounce."""
         cmd = hdr.command_id
         seq = getattr(hdr, "tsn", None)
-        self.debug(f"[FCCC] seq={seq}, cmd={cmd}, args={args}")
+        self.debug(f"[FCCC] tsn={seq}, cmd={cmd}, args={args}")
+
         if cmd != 0 or len(args) < 2:
             return False
+
         btn_key = (args[0], args[1])
         if btn_key not in BTN_CODE_MAP:
             self.debug(f"[FCCC] Unknown button key: {btn_key}, args={args}")
             return False
+
         button, press_type = BTN_CODE_MAP[btn_key]
         action = ACTION_MAP.get((button, press_type), f"button_{button}_{press_type}")
+
+        key = (button, press_type)
+        now = time.monotonic()
+        last = self._last_event.get(key, 0)
+        if now - last < _DEBOUNCE_INTERVAL:
+            self.debug(f"[FCCC] Debounced: {action} (Δ={now - last:.2f}s)")
+            return True
+
+        self._last_event[key] = now
         event_args = {
             "button": button,
             "press_type": press_type,
             "args": args,
             "params": {},
         }
-        # --- Debounce logic: only emit if enough time has passed since last identical event ---
-        key = _debounce_key(button, press_type)
-        now = time.monotonic()
-        last_time = _last_event.get(key, 0)
-        if now - last_time < _DEBOUNCE_INTERVAL:
-            self.debug(
-                f"[FCCC] Debounced duplicate event: {action} (delta={now - last_time:.2f}s)"
-            )
-            return True  # don't emit again
-        _last_event[key] = now
-        # ---
-        self.debug(f"[FCCC] Emitting event: {action}, {event_args}")
+        self.debug(f"[FCCC] Emitting: {action}, {event_args}")
         self.listener_event(ZHA_SEND_EVENT, action, event_args)
         return True
 
 
 class AdurolightCSCRemote(CustomDevice):
-    """Device quirk for AduroSmart Eria ADUROLIGHT_CSC remote."""
+    """Device quirk for AduroSmart Eria ADUROLIGHT_CSC remote (buttons only)."""
 
     signature = {
         MODELS_INFO: [("AduroSmart Eria", "ADUROLIGHT_CSC")],
@@ -173,13 +173,11 @@ class AdurolightCSCRemote(CustomDevice):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    LevelControl.cluster_id,
-                    ColorControl.cluster_id,
                     AdurolightFcccCluster,
                     LightLink.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
+                    Basic.cluster_id,
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
