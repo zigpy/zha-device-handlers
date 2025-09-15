@@ -9,12 +9,9 @@ from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
     Identify,
-    LevelControl,
-    OnOff,
     PowerConfiguration,
     Scenes,
 )
-from zigpy.zcl.clusters.lighting import Color as ColorControl
 from zigpy.zcl.clusters.lightlink import LightLink
 
 from zhaquirks import CustomCluster, EventableCluster
@@ -120,10 +117,10 @@ class AdurolightCSCRemote(CustomDevice):
         ENDPOINTS: {
             #  <SimpleDescriptor endpoint=1 profile=49246 device_type=2064
             #  device_version=0
-            #  input_clusters=[0, 1, 3, 4, 5, 6, 8, 768, 4096, 64716]
-            #  output_clusters=[0, 3, 4, 5, 6, 8, 768, 4096, 64716]>
+            #  input_clusters=[0, 1, 3, 4, 5, 4096, 64716]
+            #  output_clusters=[0, 3, 4, 5, 4096, 64716]>
             1: {
-                PROFILE_ID: 0xC05E,
+                PROFILE_ID: 0xC05E,  # ZLL
                 DEVICE_TYPE: 0x0810,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
@@ -131,9 +128,6 @@ class AdurolightCSCRemote(CustomDevice):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    LevelControl.cluster_id,
-                    ColorControl.cluster_id,
                     LightLink.cluster_id,
                     ADUROLIGHT_CLUSTER_ID,
                 ],
@@ -142,9 +136,6 @@ class AdurolightCSCRemote(CustomDevice):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    LevelControl.cluster_id,
-                    ColorControl.cluster_id,
                     LightLink.cluster_id,
                     ADUROLIGHT_CLUSTER_ID,
                 ],
