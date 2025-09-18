@@ -90,7 +90,7 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
             type=TemperatureDisplayMode,
             access="rw",
         )
-        
+
         outdoor_temperature_input = ZCLAttributeDef(
             id=OUTDOOR_TEMP_INPUT_ATTR_ID,
             type=t.int16s,
