@@ -299,6 +299,7 @@ class CO2Cluster(CarbonDioxideConcentration, CustomCluster):
 ```
 
 After successfully restarting Home Assistant, we've got a new configuration entity:
+
 <img width="339" height="148" alt="image" src="https://github.com/user-attachments/assets/e91dc4a3-eba7-4edc-bb37-c425a57cdbbf" />
 
 ## 4. Conclusion
