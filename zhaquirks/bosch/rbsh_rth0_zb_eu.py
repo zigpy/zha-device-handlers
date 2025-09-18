@@ -2,7 +2,8 @@
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.quirks.v2.homeassistant import PERCENTAGE, EntityType
+from zigpy.quirks.v2.homeassistant import PERCENTAGE, EntityType, UnitOfTemperature
+from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 from zigpy.quirks.v2.homeassistant.sensor import SensorStateClass
 import zigpy.types as t
 from zigpy.zcl.clusters.hvac import TemperatureDisplayMode, Thermostat, UserInterface
@@ -21,6 +22,9 @@ WINDOW_OPEN_ATTR_ID = 0x4042
 
 # Boost heating preset mode.
 BOOST_HEATING_ATTR_ID = 0x4043
+
+# Outdoor temperature input
+OUTDOOR_TEMP_INPUT_ATTR_ID = 0x4051
 
 """Bosch specific user interface attribute ids."""
 
@@ -85,6 +89,12 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
             id=0x0000,
             type=TemperatureDisplayMode,
             access="rw",
+        )
+        
+        outdoor_temperature_input = ZCLAttributeDef(
+            id=OUTDOOR_TEMP_INPUT_ATTR_ID,
+            type=t.int16s,
+            is_manufacturer_specific=True,
         )
 
 
@@ -174,6 +184,20 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         step=1,
         translation_key="display_brightness",
         fallback_name="Display brightness",
+    )
+    # Input for displaying outdoor temperature in the corner of the screen.
+    .number(
+        BoschThermostatCluster.AttributeDefs.outdoor_temperature_input.name,
+        BoschThermostatCluster.cluster_id,
+        min_value=-32768,
+        max_value=32767,
+        step=1,
+        unit=UnitOfTemperature.CELSIUS,
+        multiplier=0.01,
+        entity_type=EntityType.CONFIG,
+        device_class=NumberDeviceClass.TEMPERATURE,
+        translation_key="outdoor_temperature_input",
+        fallback_name="Outdoor temperature input",
     )
     .add_to_registry()
 )
