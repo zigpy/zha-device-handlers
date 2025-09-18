@@ -115,7 +115,6 @@ Otherwise, you are on your own, and you are now a reverse engineer. Try doing so
 1. Go to your instance's `configuration.yaml` file and add the following configuration:
 ```yaml
 zha:
-    enable_quirks: true
     custom_quirks_path: your/quirks/dir/
 ```
 Where `your/quirks/dir/` is the path to the directory where you'll be placing your quirks. If this string doesn't start with a slash, the path is relative to the directory the `configuration.yaml` file is contained in. Create the directory if necessary.
