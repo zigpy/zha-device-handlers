@@ -134,7 +134,7 @@ from zigpy.quirks.v2 import QuirkBuilder
 ```
 Pay special attention to the arguments of the constructor (manufacturer name, device name), as the device will be matched against that to decide whether to apply the quirk or not. Also notice the import at the beginning of a file - you can't use something without importing it first. Here, the `QuirkBuilder` is imported from [this file](https://github.com/zigpy/zigpy/blob/dev/zigpy/quirks/v2/__init__.py#L578). See examples of other quirks, or use the "search in repository" function if unsure where you need to import something from.
 
-### 3.1. Exposing a supproted attribute.
+### 3.1. Exposing a supported attribute.
 Now, for already available attributes (the ones with non-numerical names) the process of exposing them to ZHA is relatively simple:
 ```python
 from zigpy.quirks.v2 import (
@@ -192,7 +192,7 @@ If you've done everything right, your device will now expose a new sensor entity
 
 <img width="329" height="471" alt="image" src="https://github.com/user-attachments/assets/e68a40e9-c57e-43ca-af91-da91890b0465" />
 
-### 3.2. Exposing an unsupproted attribute.
+### 3.2. Exposing an unsupported attribute.
 The device we're working on has a read-write attribute in the Carbon Dioxide (CO₂) Concentration (`0x040d`) cluster under the endpoint `2` with ID `0x0205`, which tells the device the current altitude above sea level in meters for more accurate CO₂ measurements. This attribute being writeable means that it is a _configuration attribute_. 
 
 Sadly, we cannot use its name directly (as it doesn't _have_ one) - we need to give it a name, and for that we need to _replace_ this device's CO₂ cluster with a virtual one we will write. This virtual cluster will find the attribute by its ID (`0x0205`), define its type and access level (all present in the `scan_device` result), and finally give it a name. 
