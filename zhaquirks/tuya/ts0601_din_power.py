@@ -4,12 +4,17 @@ from typing import Final
 
 from zigpy.profiles import zha
 from zigpy.quirks.v2 import SensorDeviceClass, SensorStateClass
-from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfEnergy, UnitOfPower
+from zigpy.quirks.v2.homeassistant import (
+    PERCENTAGE,
+    UnitOfEnergy,
+    UnitOfPower,
+    UnitOfTime,
+)
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
-from zigpy.zcl.foundation import ZCLAttributeDef
+from zigpy.zcl.foundation import ZCLAttributeAccess, ZCLAttributeDef
 
 from zhaquirks import Bus, LocalDataCluster
 from zhaquirks.const import (
@@ -533,21 +538,20 @@ class Tuya3PhaseElectricalMeasurementV1_5(ElectricalMeasurement, TuyaLocalCluste
         fallback_name="Total power factor",
     )
     # Update the frequency at which the device reports its data
-    # did not manage to test this fully
     # See: https://github.com/zigpy/zha-device-handlers/issues/3971#issuecomment-2863969991
-    # .tuya_number(
-    #     dp_id=102,
-    #     attribute_name="update_frequency",
-    #     type=t.uint16_t,
-    #     device_class=SensorDeviceClass.DURATION,
-    #     unit=UnitOfTime.SECONDS,
-    #     min_value=5,
-    #     max_value=3600,
-    #     step=1,
-    #     translation_key="update_frequency",
-    #     fallback_name="Update frequency",
-    #     access=foundation.ZCLAttributeAccess.Write,
-    # )
+    .tuya_number(
+        dp_id=102,
+        attribute_name="update_frequency",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        min_value=5,
+        max_value=3600,
+        step=1,
+        translation_key="update_frequency",
+        fallback_name="Update frequency",
+        access=ZCLAttributeAccess.Write,
+    )
     .tuya_dp(
         dp_id=103,
         ep_attribute=Tuya3PhaseElectricalMeasurementV1_5.ep_attribute,
