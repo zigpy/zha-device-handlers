@@ -1,7 +1,7 @@
 """Device handler for Bosch RBSH-RTH0-ZB-EU thermostat."""
 
 from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder
+from zigpy.quirks.v2 import QuirkBuilder, ReportingConfig
 from zigpy.quirks.v2.homeassistant import PERCENTAGE, EntityType, UnitOfTemperature
 from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 from zigpy.quirks.v2.homeassistant.sensor import SensorStateClass
