@@ -163,7 +163,7 @@ class AqaraManuSpecificCluster(XiaomiAqaraE1Cluster):
         AqaraManuSpecificCluster.cluster_id,
         endpoint_id=1,
         translation_key="power_on_mode",
-        fallback_name="Power On Mode",
+        fallback_name="Power on mode",
     )
     .enum(
         AqaraManuSpecificCluster.AttributeDefs.operation_mode.name,
@@ -171,7 +171,7 @@ class AqaraManuSpecificCluster(XiaomiAqaraE1Cluster):
         AqaraManuSpecificCluster.cluster_id,
         endpoint_id=1,
         translation_key="operation_mode_left",
-        fallback_name="Operation Mode Left",
+        fallback_name="Operation mode left",
         unique_id_suffix="left",
     )
     .enum(
@@ -180,7 +180,7 @@ class AqaraManuSpecificCluster(XiaomiAqaraE1Cluster):
         AqaraManuSpecificCluster.cluster_id,
         endpoint_id=2,
         translation_key="operation_mode_right",
-        fallback_name="Operation Mode Right",
+        fallback_name="Operation mode right",
         unique_id_suffix="right",
     )
     .switch(
@@ -188,7 +188,7 @@ class AqaraManuSpecificCluster(XiaomiAqaraE1Cluster):
         AqaraManuSpecificCluster.cluster_id,
         endpoint_id=1,
         translation_key="lock_relay_left",
-        fallback_name="Lock Relay Left",
+        fallback_name="Lock relay left",
         unique_id_suffix="left",
     )
     .switch(
@@ -196,7 +196,7 @@ class AqaraManuSpecificCluster(XiaomiAqaraE1Cluster):
         AqaraManuSpecificCluster.cluster_id,
         endpoint_id=2,
         translation_key="lock_relay_right",
-        fallback_name="Lock Relay Right",
+        fallback_name="Lock relay right",
         unique_id_suffix="right",
     )
     .switch(
@@ -206,7 +206,7 @@ class AqaraManuSpecificCluster(XiaomiAqaraE1Cluster):
         on_value=2,
         endpoint_id=4,
         translation_key="multi_click_left",
-        fallback_name="Multi Click Left",
+        fallback_name="Multi click left",
         unique_id_suffix="left",
     )
     .switch(
@@ -216,7 +216,7 @@ class AqaraManuSpecificCluster(XiaomiAqaraE1Cluster):
         on_value=2,
         endpoint_id=5,
         translation_key="multi_click_right",
-        fallback_name="Multi Click Right",
+        fallback_name="Multi click right",
         unique_id_suffix="right",
     )
     .device_automation_triggers(
@@ -401,7 +401,7 @@ class AqaraManuSpecificCluster(XiaomiAqaraE1Cluster):
         AqaraManuSpecificCluster.cluster_id,
         endpoint_id=1,
         translation_key="power_on_mode",
-        fallback_name="Power On Mode",
+        fallback_name="Power on mode",
     )
     .enum(
         AqaraManuSpecificCluster.AttributeDefs.operation_mode.name,
@@ -409,14 +409,14 @@ class AqaraManuSpecificCluster(XiaomiAqaraE1Cluster):
         AqaraManuSpecificCluster.cluster_id,
         endpoint_id=1,
         translation_key="operation_mode",
-        fallback_name="Operation Mode",
+        fallback_name="Operation mode",
     )
     .switch(
         AqaraManuSpecificCluster.AttributeDefs.lock_relay.name,
         AqaraManuSpecificCluster.cluster_id,
         endpoint_id=1,
         translation_key="lock_relay",
-        fallback_name="Lock Relay",
+        fallback_name="Lock relay",
     )
     .switch(
         AqaraManuSpecificCluster.AttributeDefs.multi_click.name,
@@ -425,7 +425,7 @@ class AqaraManuSpecificCluster(XiaomiAqaraE1Cluster):
         on_value=2,
         endpoint_id=4,
         translation_key="multi_click",
-        fallback_name="Multi Click",
+        fallback_name="Multi click",
     )
     .device_automation_triggers(
         {
