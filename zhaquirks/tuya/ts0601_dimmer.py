@@ -51,6 +51,7 @@ class TuyaSingleSwitchDimmer(TuyaDimmerSwitch):
             ("_TZE200_p0gzbqct", "TS0601"),
             ("_TZE200_w4cryh2i", "TS0601"),
             ("_TZE204_dcnsggvz", "TS0601"),
+            ("_TZE200_6fjev1mn", "TS0601"),  # reported in #4238
         ],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=0x0051

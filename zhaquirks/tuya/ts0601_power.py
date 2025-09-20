@@ -12,8 +12,9 @@ import zigpy.types as t
 from zigpy.zcl.clusters.general import LevelControl, OnOff
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 
-from zhaquirks.tuya import DPToAttributeMapping, TuyaLocalCluster
+from zhaquirks.tuya import TuyaLocalCluster
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
+from zhaquirks.tuya.mcu import DPToAttributeMapping
 
 
 def dp_to_power(data: bytes) -> int:
@@ -221,6 +222,7 @@ class Tuya3PhaseElectricalMeasurement(ElectricalMeasurement, TuyaLocalCluster):
     TuyaQuirkBuilder("_TZE200_dikb3dp6", "TS0601")
     .applies_to("_TZE204_dikb3dp6", "TS0601")
     .applies_to("_TZE284_dikb3dp6", "TS0601")
+    .applies_to("_TZE284_wbhaespm", "TS0601")  # reported in #4277
     .tuya_sensor(
         dp_id=1,
         attribute_name="energy",

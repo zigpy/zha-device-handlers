@@ -362,7 +362,9 @@ class GiexIrrigationStatus(t.enum8):
 
 (
     TuyaQuirkBuilder("_TZE284_8zizsafo", "TS0601")  # Giex GX04
+    .applies_to("_TZE284_iilebqoo", "TS0601")  # NovaDigital ZVL_DUAL
     .applies_to("_TZE284_eaet5qt5", "TS0601")  # Insoma SGW08W
+    .applies_to("_TZE284_fhvpaltk", "TS0601")  # SGW08
     .tuya_battery(dp_id=59, battery_type=BatterySize.AA, battery_qty=4)
     .tuya_switch(
         dp_id=1,
@@ -686,7 +688,7 @@ class GiexIrrigationStatus(t.enum8):
         attribute_name="auto_clean",
         entity_type=EntityType.CONFIG,
         translation_key="auto_clean",
-        fallback_name="Auto clean",
+        fallback_name="Autoclean",
     )
     .tuya_dp(
         dp_id=21,
@@ -723,7 +725,7 @@ class GiexIrrigationStatus(t.enum8):
         step=5,
         unit=PERCENTAGE,
         translation_key="valve_state_auto_shutdown",
-        fallback_name="Valve state auto shutdown",
+        fallback_name="Valve state auto-shutdown",
     )
     .tuya_sensor(
         dp_id=3,

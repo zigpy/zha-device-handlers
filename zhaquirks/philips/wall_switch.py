@@ -88,7 +88,7 @@ class PhilipsWallSwitchRemoteCluster(PhilipsRemoteCluster):
 
 
 class PhilipsWallSwitch(CustomDevice):
-    """Philips RDM001 or RDM004 device."""
+    """Philips RDM001 or RDM004 device using old firmware."""
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=2080
@@ -149,11 +149,16 @@ class PhilipsWallSwitch(CustomDevice):
     )
 
 
-class PhilipsWallSwitchRDM004(CustomDevice):
-    """Philips RDM004 variant."""
+class PhilipsWallSwitchNewFirmware(CustomDevice):
+    """Philips RDM001 or RDM004 device using new firmware."""
 
     signature = {
-        MODELS_INFO: [(SIGNIFY, "RDM004")],
+        MODELS_INFO: [
+            (PHILIPS, "RDM001"),
+            (SIGNIFY, "RDM001"),
+            (PHILIPS, "RDM004"),  # likely not needed
+            (SIGNIFY, "RDM004"),
+        ],
         ENDPOINTS: {
             1: {
                 PROFILE_ID: zha.PROFILE_ID,

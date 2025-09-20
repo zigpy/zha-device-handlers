@@ -131,7 +131,7 @@ def last_action_user_converter(value: int) -> int:
         cluster_id=NimlyDoorLock.cluster_id,
         attribute_name=NimlyDoorLock.AttributeDefs.auto_relock_time.name,
         translation_key="auto_relock",
-        fallback_name="Auto relock",
+        fallback_name="Autorelock",
     )
     .number(
         endpoint_id=11,
@@ -148,7 +148,8 @@ def last_action_user_converter(value: int) -> int:
 
 
 (
-    QuirkBuilder(NIMLY, "NimlyPRO")
+    QuirkBuilder(NIMLY, "NimlyPRO24")
+    .applies_to(NIMLY, "NimlyPRO")
     .applies_to(NIMLY, "NimlyCode")
     .applies_to(NIMLY, "NimlyTouch")
     .applies_to(NIMLY, "NimlyIn")
@@ -199,7 +200,7 @@ def last_action_user_converter(value: int) -> int:
         cluster_id=NimlyDoorLock.cluster_id,
         attribute_name=NimlyDoorLock.AttributeDefs.auto_relock_time.name,
         translation_key="auto_relock",
-        fallback_name="Auto relock",
+        fallback_name="Autorelock",
     )
     .number(
         endpoint_id=11,
