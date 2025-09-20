@@ -5,6 +5,7 @@ from zigpy.quirks.v2 import QuirkBuilder, ReportingConfig
 from zigpy.quirks.v2.homeassistant import PERCENTAGE, EntityType, UnitOfTemperature
 from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 from zigpy.quirks.v2.homeassistant.sensor import SensorStateClass
+from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 import zigpy.types as t
 from zigpy.zcl.clusters.hvac import TemperatureDisplayMode, Thermostat, UserInterface
 from zigpy.zcl.foundation import ZCLAttributeDef
@@ -123,6 +124,7 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
             id=OPERATING_MODE_ATTR_ID,
             type=BoschOperatingMode,
             is_manufacturer_specific=True,
+            access="rwp",
         )
 
         valve_duty_cycle = ZCLAttributeDef(
@@ -130,54 +132,56 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
             # Values range from 0-100
             type=t.uint8_t,
             is_manufacturer_specific=True,
-        )
-
-        window_open = ZCLAttributeDef(
-            id=WINDOW_OPEN_ATTR_ID,
-            type=State,
-            is_manufacturer_specific=True,
-        )
-
-        boost_heating = ZCLAttributeDef(
-            id=BOOST_HEATING_ATTR_ID,
-            type=State,
-            is_manufacturer_specific=True,
-        )
-
-        temperature_display_mode = ZCLAttributeDef(
-            id=0x0000,
-            type=TemperatureDisplayMode,
-            access="rw",
-        )
-
-        outdoor_temperature = ZCLAttributeDef(
-            id=OUTDOOR_TEMP_ATTR_ID,
-            type=t.int16s,
-            is_manufacturer_specific=True,
-        )
-
-        external_sensor_temperature = ZCLAttributeDef(
-            id=EXTERNAL_SENSOR_TEMP_ATTR_ID,
-            type=t.int16s,
-            is_manufacturer_specific=True,
+            access="rwp",
         )
 
         valve_state = ZCLAttributeDef(
             id=VALVE_STATE_ATTR_ID,
             type=State,
             is_manufacturer_specific=True,
+            access="rwp",
+        )
+
+        window_open = ZCLAttributeDef(
+            id=WINDOW_OPEN_ATTR_ID,
+            type=State,
+            is_manufacturer_specific=True,
+            access="rwp",
+        )
+
+        boost_heating = ZCLAttributeDef(
+            id=BOOST_HEATING_ATTR_ID,
+            type=State,
+            is_manufacturer_specific=True,
+            access="rwp",
+        )
+
+        outdoor_temperature = ZCLAttributeDef(
+            id=OUTDOOR_TEMP_ATTR_ID,
+            type=t.int16s,
+            is_manufacturer_specific=True,
+            access="rwp",
+        )
+
+        external_sensor_temperature = ZCLAttributeDef(
+            id=EXTERNAL_SENSOR_TEMP_ATTR_ID,
+            type=t.int16s,
+            is_manufacturer_specific=True,
+            access="rwp",
         )
 
         actuator_type = ZCLAttributeDef(
             id=ACTUATOR_TYPE_ATTR_ID,
             type=BoschActuatorType,
             is_manufacturer_specific=True,
+            access="rwp",
         )
 
         sensor_connection = ZCLAttributeDef(
             id=SENSOR_CONNECTION_ATTR_ID,
             type=BoschSensorConnection,
             is_manufacturer_specific=True,
+            access="rwp",
         )
 
 
@@ -187,11 +191,18 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
     class AttributeDefs(UserInterface.AttributeDefs):
         """Bosch user interface manufacturer specific attributes."""
 
+        temperature_display_mode = ZCLAttributeDef(
+            id=0x0000,
+            type=TemperatureDisplayMode,
+            access="rwp",
+        )
+
         display_on_time = ZCLAttributeDef(
             id=SCREEN_TIMEOUT_ATTR_ID,
             # Usable values range from 5-30
             type=t.enum8,
             is_manufacturer_specific=True,
+            access="rwp",
         )
 
         display_brightness = ZCLAttributeDef(
@@ -199,12 +210,14 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
             # Values range from 0-10
             type=t.enum8,
             is_manufacturer_specific=True,
+            access="rwp",
         )
 
         valve_status_led = ZCLAttributeDef(
             id=VALVE_STATUS_LED_ATTR_ID,
             type=BoschValveStatusLed,
             is_manufacturer_specific=True,
+            access="rwp",
         )
 
 
@@ -217,15 +230,17 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
     .sensor(
         BoschThermostatCluster.AttributeDefs.valve_duty_cycle.name,
         BoschThermostatCluster.cluster_id,
+        entity_type=EntityType.DIAGNOSTIC,
         state_class=SensorStateClass.MEASUREMENT,
         unit=PERCENTAGE,
         translation_key="valve_duty_cycle",
         fallback_name="Valve duty cycle",
     )
     # Valve state (open/closed).
-    .sensor(
+    .binary_sensor(
         BoschThermostatCluster.AttributeDefs.valve_state.name,
         BoschThermostatCluster.cluster_id,
+        device_class=BinarySensorDeviceClass.RUNNING,
         translation_key="valve_state",
         fallback_name="Valve state",
         reporting_config=ReportingConfig(
@@ -243,7 +258,7 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         translation_key="external_sensor_temperature",
         fallback_name="External sensor temperature",
         reporting_config=ReportingConfig(
-            min_interval=30, max_interval=900, reportable_change=5
+            min_interval=30, max_interval=900, reportable_change=25
         ),
     )
     # Operating mode - On/Pause automatically from HVAC mode, Schedule/Manual configured here.
@@ -366,7 +381,7 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         translation_key="outdoor_temperature",
         fallback_name="Outdoor temperature",
         reporting_config=ReportingConfig(
-            min_interval=30, max_interval=900, reportable_change=5
+            min_interval=30, max_interval=900, reportable_change=25
         ),
     )
     .add_to_registry()
