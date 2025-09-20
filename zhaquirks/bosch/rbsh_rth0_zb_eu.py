@@ -1,5 +1,23 @@
 """Device handler for Bosch RBSH-RTH0-ZB-EU thermostat."""
 
+"""
+There are some more undocumented values that have not been figured out what they do.
+In Thermostat cluster:
+0x4023: Valid values 0-7
+0x4024: Valid values 0-23
+0x4025: Valid values 0-100
+0x4050: Valid values 5-10
+0x405b: Valid values 0-255
+0x4063: Valid values 0-3 (turns on display when changed, probably the UFH/Boiler/Radiator setting, but the values are unknown)
+
+In UserInterface cluster:
+0x4032: Valid values 0-15
+0x406a: Valid values 0-255
+0x406b: Valid values 0-255
+0x406c: Valid values 0-255
+0x406d: Valid values 0-255
+"""
+
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.quirks.v2.homeassistant import PERCENTAGE, EntityType, UnitOfTemperature
@@ -14,8 +32,11 @@ from zigpy.zcl.foundation import ZCLAttributeDef
 # Mode of operation with values BoschOperatingMode.
 OPERATING_MODE_ATTR_ID = 0x4007
 
-# Valve duty cycle: 0% - 100%
+# Valve duty cycle: 0% - 100%.
 VALVE_DUTY_CYCLE_ATTR_ID = 0x4020
+
+# Valve state (relay on/off).
+VALVE_STATE_ATTR_ID = 0x4022
 
 # Window open switch (changes to a lower target temperature when on).
 WINDOW_OPEN_ATTR_ID = 0x4042
@@ -23,10 +44,22 @@ WINDOW_OPEN_ATTR_ID = 0x4042
 # Boost heating preset mode.
 BOOST_HEATING_ATTR_ID = 0x4043
 
-# Outdoor temperature input
-OUTDOOR_TEMP_INPUT_ATTR_ID = 0x4051
+# Outdoor temperature (writing to this adds it to the corner of the screen).
+OUTDOOR_TEMP_ATTR_ID = 0x4051
+
+# External sensor (S1/S2 10K NTC) temperature.
+EXTERNAL_SENSOR_TEMP_ATTR_ID = 0x4052
+
+# Actuator type setting (NO/NC).
+ACTUATOR_TYPE_ATTR_ID = 0x4060
+
+# External sensor connection config.
+SENSOR_CONNECTION_ATTR_ID = 0x4062
 
 """Bosch specific user interface attribute ids."""
+
+# Valve status LED config.
+VALVE_STATUS_LED_ATTR_ID = 0x4033
 
 # Display on-time (5s - 30s).
 SCREEN_TIMEOUT_ATTR_ID = 0x403A
@@ -48,6 +81,29 @@ class State(t.enum8):
 
     Off = 0x00
     On = 0x01
+
+
+class BoschActuatorType(t.enum8):
+    """Actuator type: Normally Open or Normally Closed."""
+
+    NormallyClosed = 0x00
+    NormallyOpen = 0x01
+
+
+class BoschValveStatusLed(t.enum8):
+    """Valve status LED (dot next to heat/cool icon) functionality"""
+
+    AlwaysOff = 0x00
+    Normal = 0x01
+    AlwaysOn = 0x02
+
+
+class BoschSensorConnection(t.enum8):
+    """Sensor connection setting (for external 10K NTC sensor on S1/S2)"""
+
+    NotUsed = 0x00
+    WithoutRegulation = 0xb0
+    WithRegulation = 0xb1
 
 
 class BoschThermostatCluster(CustomCluster, Thermostat):
@@ -91,9 +147,33 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
             access="rw",
         )
 
-        outdoor_temperature_input = ZCLAttributeDef(
-            id=OUTDOOR_TEMP_INPUT_ATTR_ID,
+        outdoor_temperature = ZCLAttributeDef(
+            id=OUTDOOR_TEMP_ATTR_ID,
             type=t.int16s,
+            is_manufacturer_specific=True,
+        )
+
+        external_sensor_temperature = ZCLAttributeDef(
+            id=EXTERNAL_SENSOR_TEMP_ATTR_ID,
+            type=t.int16s,
+            is_manufacturer_specific=True,
+        )
+
+        valve_state = ZCLAttributeDef(
+            id=VALVE_STATE_ATTR_ID,
+            type=State,
+            is_manufacturer_specific=True,
+        )
+
+        actuator_type = ZCLAttributeDef(
+            id=ACTUATOR_TYPE_ATTR_ID,
+            type=BoschActuatorType,
+            is_manufacturer_specific=True,
+        )
+
+        sensor_connection = ZCLAttributeDef(
+            id=SENSOR_CONNECTION_ATTR_ID,
+            type=BoschSensorConnection,
             is_manufacturer_specific=True,
         )
 
@@ -118,6 +198,12 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
             is_manufacturer_specific=True,
         )
 
+        valve_status_led = ZCLAttributeDef(
+            id=VALVE_STATUS_LED_ATTR_ID,
+            type=BoschValveStatusLed,
+            is_manufacturer_specific=True,
+        )
+
 
 (
     QuirkBuilder("Bosch", "RBSH-RTH0-ZB-EU")
@@ -133,6 +219,24 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         translation_key="valve_duty_cycle",
         fallback_name="Valve duty cycle",
     )
+    # Valve state (open/closed).
+    .sensor(
+        BoschThermostatCluster.AttributeDefs.valve_state.name,
+        BoschThermostatCluster.cluster_id,
+        translation_key="valve_state",
+        fallback_name="Valve state",
+    )
+    # External sensor temperature.
+    # You CAN write to this, but it does not make any sense.
+    .sensor(
+        BoschThermostatCluster.AttributeDefs.external_sensor_temperature.name,
+        BoschThermostatCluster.cluster_id,
+        unit=UnitOfTemperature.CELSIUS,
+        multiplier=0.01,
+        device_class=NumberDeviceClass.TEMPERATURE,
+        translation_key="external_sensor_temperature",
+        fallback_name="External sensor temperature",
+    )
     # Operating mode - On/Pause automatically from HVAC mode, Schedule/Manual configured here.
     .enum(
         BoschThermostatCluster.AttributeDefs.operating_mode.name,
@@ -142,7 +246,25 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         translation_key="operating_mode",
         fallback_name="Operating mode",
     )
-    # Temperature display type.
+    # Actuator type config.
+    .enum(
+        BoschThermostatCluster.AttributeDefs.actuator_type.name,
+        BoschActuatorType,
+        BoschThermostatCluster.cluster_id,
+        entity_type=EntityType.CONFIG,
+        translation_key="actuator_type",
+        fallback_name="Actuator type",
+    )
+    # External sensor config.
+    .enum(
+        BoschThermostatCluster.AttributeDefs.sensor_connection.name,
+        BoschSensorConnection,
+        BoschThermostatCluster.cluster_id,
+        entity_type=EntityType.CONFIG,
+        translation_key="sensor_connection",
+        fallback_name="Sensor connection",
+    )
+    # Temperature display mode.
     .enum(
         BoschUserInterfaceCluster.AttributeDefs.temperature_display_mode.name,
         TemperatureDisplayMode,
@@ -157,6 +279,33 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         BoschThermostatCluster.cluster_id,
         translation_key="boost_heating",
         fallback_name="Boost heating",
+    )
+    # Cooling setpoint limits.
+    .number(
+        BoschThermostatCluster.AttributeDefs.min_cool_setpoint_limit.name,
+        BoschThermostatCluster.cluster_id,
+        min_value=-500,
+        max_value=3000,
+        step=0.5,
+        unit=UnitOfTemperature.CELSIUS,
+        multiplier=0.01,
+        entity_type=EntityType.CONFIG,
+        device_class=NumberDeviceClass.TEMPERATURE,
+        translation_key="min_cool_setpoint_limit",
+        fallback_name="Min cool setpoint limit",
+    )
+    .number(
+        BoschThermostatCluster.AttributeDefs.max_cool_setpoint_limit.name,
+        BoschThermostatCluster.cluster_id,
+        min_value=-500,
+        max_value=3000,
+        step=0.5,
+        unit=UnitOfTemperature.CELSIUS,
+        multiplier=0.01,
+        entity_type=EntityType.CONFIG,
+        device_class=NumberDeviceClass.TEMPERATURE,
+        translation_key="max_cool_setpoint_limit",
+        fallback_name="Max cool setpoint limit",
     )
     # Window open switch: manually set or through an automation.
     .switch(
@@ -185,19 +334,28 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         translation_key="display_brightness",
         fallback_name="Display brightness",
     )
+    # Valve status LED config.
+    .enum(
+        BoschUserInterfaceCluster.AttributeDefs.valve_status_led.name,
+        BoschValveStatusLed,
+        BoschUserInterfaceCluster.cluster_id,
+        entity_type=EntityType.CONFIG,
+        translation_key="valve_status_led",
+        fallback_name="Valve status LED",
+    )
     # Input for displaying outdoor temperature in the corner of the screen.
     .number(
-        BoschThermostatCluster.AttributeDefs.outdoor_temperature_input.name,
+        BoschThermostatCluster.AttributeDefs.outdoor_temperature.name,
         BoschThermostatCluster.cluster_id,
         min_value=-32768,
         max_value=32767,
-        step=1,
+        step=0.1,
         unit=UnitOfTemperature.CELSIUS,
         multiplier=0.01,
         entity_type=EntityType.CONFIG,
         device_class=NumberDeviceClass.TEMPERATURE,
-        translation_key="outdoor_temperature_input",
-        fallback_name="Outdoor temperature input",
+        translation_key="outdoor_temperature",
+        fallback_name="Outdoor temperature",
     )
     .add_to_registry()
 )
