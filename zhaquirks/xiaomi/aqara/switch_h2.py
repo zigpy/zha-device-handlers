@@ -148,14 +148,14 @@ class AqaraManuSpecificCluster(XiaomiAqaraE1Cluster):
         AqaraManuSpecificCluster.cluster_id,
         endpoint_id=1,
         translation_key="led_indicator",
-        fallback_name="LED Indicator",
+        fallback_name="LED indicator",
     )
     .switch(
         AqaraManuSpecificCluster.AttributeDefs.flip_led_indicator.name,
         AqaraManuSpecificCluster.cluster_id,
         endpoint_id=1,
         translation_key="flip_led_indicator",
-        fallback_name="Flip LED Indicator",
+        fallback_name="Flip LED indicator",
     )
     .enum(
         AqaraManuSpecificCluster.AttributeDefs.power_on_mode.name,
@@ -386,14 +386,14 @@ class AqaraManuSpecificCluster(XiaomiAqaraE1Cluster):
         AqaraManuSpecificCluster.cluster_id,
         endpoint_id=1,
         translation_key="led_indicator",
-        fallback_name="LED Indicator",
+        fallback_name="LED indicator",
     )
     .switch(
         AqaraManuSpecificCluster.AttributeDefs.flip_led_indicator.name,
         AqaraManuSpecificCluster.cluster_id,
         endpoint_id=1,
         translation_key="flip_led_indicator",
-        fallback_name="Flip LED Indicator",
+        fallback_name="Flip LED indicator",
     )
     .enum(
         AqaraManuSpecificCluster.AttributeDefs.power_on_mode.name,
