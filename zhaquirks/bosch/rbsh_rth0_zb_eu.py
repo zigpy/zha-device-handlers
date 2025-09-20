@@ -102,8 +102,8 @@ class BoschSensorConnection(t.enum8):
     """Sensor connection setting (for external 10K NTC sensor on S1/S2)"""
 
     NotUsed = 0x00
-    WithoutRegulation = 0xb0
-    WithRegulation = 0xb1
+    WithoutRegulation = 0xB0
+    WithRegulation = 0xB1
 
 
 class BoschThermostatCluster(CustomCluster, Thermostat):
