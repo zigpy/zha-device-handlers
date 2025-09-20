@@ -2251,6 +2251,8 @@ def test_h2_switch(zigpy_device_from_v2_quirk):
     powermeasurement_cluster.update_attribute(0x0055, 1)
     assert len(powermeasurement_listener.attribute_updates) == 1
 
+    powermeasurement_cluster.bind()
+
 
 @pytest.mark.parametrize("endpoint", [(1), (2)])
 def test_t1m_ceiling_light(zigpy_device_from_v2_quirk, endpoint):
