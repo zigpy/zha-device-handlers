@@ -1,4 +1,4 @@
-"""Third Reality plug devices."""
+"""Third Reality button devices."""
 
 from typing import Final
 
