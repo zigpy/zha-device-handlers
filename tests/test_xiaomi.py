@@ -96,7 +96,6 @@ import zhaquirks.xiaomi.aqara.plug_eu
 import zhaquirks.xiaomi.aqara.roller_curtain_e1
 import zhaquirks.xiaomi.aqara.sensor_ht_agl02
 import zhaquirks.xiaomi.aqara.smoke
-from zhaquirks.xiaomi.aqara.switch_h2 import PowerMeasurementCluster
 import zhaquirks.xiaomi.aqara.switch_t1
 from zhaquirks.xiaomi.aqara.thermostat_agl001 import ScheduleEvent, ScheduleSettings
 import zhaquirks.xiaomi.aqara.weather
@@ -2238,6 +2237,7 @@ def test_h2_switch(zigpy_device_from_v2_quirk):
 
     # verify the quirk adds endpoint 21
     assert 21 in device.endpoints
+
 
 @pytest.mark.parametrize("endpoint", [(1), (2)])
 def test_t1m_ceiling_light(zigpy_device_from_v2_quirk, endpoint):
