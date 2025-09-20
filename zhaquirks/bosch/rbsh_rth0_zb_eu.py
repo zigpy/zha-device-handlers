@@ -228,6 +228,9 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         BoschThermostatCluster.cluster_id,
         translation_key="valve_state",
         fallback_name="Valve state",
+        reporting_config=ReportingConfig(
+            min_interval=30, max_interval=900, reportable_change=1
+        ),
     )
     # External sensor temperature.
     # You CAN write to this, but it does not make any sense.
@@ -239,6 +242,9 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         device_class=NumberDeviceClass.TEMPERATURE,
         translation_key="external_sensor_temperature",
         fallback_name="External sensor temperature",
+        reporting_config=ReportingConfig(
+            min_interval=30, max_interval=900, reportable_change=5
+        ),
     )
     # Operating mode - On/Pause automatically from HVAC mode, Schedule/Manual configured here.
     .enum(
@@ -359,6 +365,9 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         device_class=NumberDeviceClass.TEMPERATURE,
         translation_key="outdoor_temperature",
         fallback_name="Outdoor temperature",
+        reporting_config=ReportingConfig(
+            min_interval=30, max_interval=900, reportable_change=5
+        ),
     )
     .add_to_registry()
 )
