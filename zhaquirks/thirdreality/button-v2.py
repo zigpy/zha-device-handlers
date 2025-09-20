@@ -4,9 +4,10 @@ from typing import Final
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.zcl.clusters.general import  MultistateInput
 import zigpy.types as t
+from zigpy.zcl.clusters.general import MultistateInput
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+
 from zhaquirks.const import (
     COMMAND,
     COMMAND_DOUBLE,
@@ -17,8 +18,8 @@ from zhaquirks.const import (
     LONG_PRESS,
     LONG_RELEASE,
     SHORT_PRESS,
-    ZHA_SEND_EVENT,
     VALUE,
+    ZHA_SEND_EVENT,
 )
 
 MOVEMENT_TYPE = {
@@ -27,6 +28,7 @@ MOVEMENT_TYPE = {
     2: COMMAND_DOUBLE,
     255: COMMAND_RELEASE,
 }
+
 
 class MultistateInputCluster(CustomCluster, MultistateInput):
     """Multistate input cluster."""
@@ -62,7 +64,6 @@ class ThirdRealityButtonCluster(CustomCluster):
             type=t.uint8_t,
             is_manufacturer_specific=True,
         )
-
 
 
 (
