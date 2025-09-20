@@ -1,3 +1,5 @@
+"""Aqara H2 (EU) rocker switch quirks. Also see opple_switch.py for similar switches."""
+
 from zigpy import types
 from zigpy.profiles import zha
 from zigpy.quirks.v2 import QuirkBuilder
