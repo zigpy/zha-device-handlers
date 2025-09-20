@@ -2,8 +2,9 @@
 
 from zigpy import types
 from zigpy.profiles import zha
+from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.zcl.clusters.general import Identify
+from zigpy.zcl.clusters.general import AnalogInput, Identify
 from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
 
 from zhaquirks.const import (
@@ -18,7 +19,7 @@ from zhaquirks.const import (
     COMMAND_SINGLE,
     ZHA_SEND_EVENT,
 )
-from zhaquirks.xiaomi import AnalogInputCluster, XiaomiAqaraE1Cluster
+from zhaquirks.xiaomi import XiaomiAqaraE1Cluster
 from zhaquirks.xiaomi.aqara.opple_remote import (
     COMMAND_1_DOUBLE,
     COMMAND_1_HOLD,
@@ -56,7 +57,7 @@ class AqaraPowerOnMode(types.enum8):
     Inverted = 0x03
 
 
-class PowerMeasurementCluster(AnalogInputCluster):
+class PowerMeasurementCluster(CustomCluster, AnalogInput):
     """Custom cluster for power measurement."""
 
     PRESENT_VALUE_ATTRIBUTE = 0x0055
