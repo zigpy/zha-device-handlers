@@ -2234,7 +2234,7 @@ def test_h1_wireless_remotes(zigpy_device_from_v2_quirk):
 
 def test_h2_switch_attribute_update(zigpy_device_from_v2_quirk):
     """Test Aqara H2 switch quirk adds power measurement cluster."""
-    device = zigpy_device_from_v2_quirk(LUMI, "lumi.switch.agl010")
+    device = zigpy_device_from_v2_quirk(AQARA, "lumi.switch.agl010")
 
     # verify the quirk adds endpoint 21
     assert 21 in device.endpoints
