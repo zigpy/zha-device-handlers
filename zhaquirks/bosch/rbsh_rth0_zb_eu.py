@@ -1,23 +1,5 @@
 """Device handler for Bosch RBSH-RTH0-ZB-EU thermostat."""
 
-"""
-There are some more undocumented values that have not been figured out what they do.
-In Thermostat cluster:
-0x4023: Valid values 0-7
-0x4024: Valid values 0-23
-0x4025: Valid values 0-100
-0x4050: Valid values 5-10
-0x405b: Valid values 0-255
-0x4063: Valid values 0-3 (turns on display when changed, probably the UFH/Boiler/Radiator setting, but the values are unknown)
-
-In UserInterface cluster:
-0x4032: Valid values 0-15
-0x406a: Valid values 0-255
-0x406b: Valid values 0-255
-0x406c: Valid values 0-255
-0x406d: Valid values 0-255
-"""
-
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.quirks.v2.homeassistant import PERCENTAGE, EntityType, UnitOfTemperature
@@ -56,6 +38,17 @@ ACTUATOR_TYPE_ATTR_ID = 0x4060
 # External sensor connection config.
 SENSOR_CONNECTION_ATTR_ID = 0x4062
 
+"""
+There are some more undocumented attributes that have not been figured out what they do.
+
+0x4023: Valid range 0-7
+0x4024: Valid range 0-23
+0x4025: Valid range 0-100
+0x4050: Valid range 5-10
+0x405b: Valid range 0-255
+0x4063: Valid range 0-3 (turns on display when changed, probably the UFH/Boiler/Radiator setting, but the values are unknown)
+"""
+
 """Bosch specific user interface attribute ids."""
 
 # Valve status LED config.
@@ -66,6 +59,16 @@ SCREEN_TIMEOUT_ATTR_ID = 0x403A
 
 # Display brightness (0 - 10).
 SCREEN_BRIGHTNESS_ATTR_ID = 0x403B
+
+"""
+More undocumented and unknown attributes in the UserInterface cluster.
+
+0x4032: Valid range 0-15
+0x406a: Valid range 0-255
+0x406b: Valid range 0-255
+0x406c: Valid range 0-255
+0x406d: Valid range 0-255
+"""
 
 
 class BoschOperatingMode(t.enum8):
@@ -91,7 +94,7 @@ class BoschActuatorType(t.enum8):
 
 
 class BoschValveStatusLed(t.enum8):
-    """Valve status LED (dot next to heat/cool icon) functionality"""
+    """Valve status LED (dot next to heat/cool icon) functionality."""
 
     AlwaysOff = 0x00
     Normal = 0x01
@@ -99,7 +102,7 @@ class BoschValveStatusLed(t.enum8):
 
 
 class BoschSensorConnection(t.enum8):
-    """Sensor connection setting (for external 10K NTC sensor on S1/S2)"""
+    """Sensor connection setting (for external 10K NTC sensor on S1/S2)."""
 
     NotUsed = 0x00
     WithoutRegulation = 0xB0
