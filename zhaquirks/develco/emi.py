@@ -83,8 +83,8 @@ class MeteringClusterEMI(CustomCluster, Metering):
         return await super().write_attributes(attributes, manufacturer, **kwargs)
 
 
-(
-    QuirkBuilder("frient A/S", "EMIZB-151")
+base_quirk = (
+    QuirkBuilder()
     .replaces(MeteringClusterEMI, endpoint_id=2)  # TODO: check if this ep is correct
     .number(
         attribute_name=MeteringClusterEMI.AttributeDefs.pulse_configuration.name,
@@ -98,6 +98,18 @@ class MeteringClusterEMI(CustomCluster, Metering):
         translation_key="pulse_configuration",
         fallback_name="Pulse configuration",
     )
+)
+
+(
+    base_quirk.clone()
+    .applies_to("frient A/S", "EMIZB-141")
+    .add_to_registry()
+)  # fmt: skip
+
+
+(
+    base_quirk.clone()
+    .applies_to("frient A/S", "EMIZB-151")
     # These endpoints are duplicates and completely broken: each one is a "mirror" of
     # endpoint 2 and will set up duplicate attribute reporting for every attribute, the
     # attribute reports will instead be emitted from endpoint 2!
