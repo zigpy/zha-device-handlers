@@ -69,7 +69,7 @@ class MeteringClusterEMI(CustomCluster, Metering):
             == self.AttributeDefs.pulse_configuration
         ):
             # redirect to 0x0300 with manufacturer code and fixed type
-            value = attributes[key]
+            value = t.uint16_t(attributes[key])
             return await super().write_attributes_raw(
                 [
                     foundation.Attribute(
