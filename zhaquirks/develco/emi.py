@@ -70,7 +70,7 @@ class MeteringClusterEMI(CustomCluster, Metering):
         ):
             # redirect to 0x0300 with manufacturer code and fixed type
             value = t.uint16_t(attributes[key])
-            return await super().write_attributes_raw(
+            return await super()._write_attributes(
                 [
                     foundation.Attribute(
                         attrid=0x0300, value=TypeValue(type=t.uint16_t, value=value)
@@ -84,20 +84,22 @@ class MeteringClusterEMI(CustomCluster, Metering):
 
 
 base_quirk = (
-    QuirkBuilder()
-    .replaces(MeteringClusterEMI, endpoint_id=2)  # TODO: check if this ep is correct
-    .number(
-        attribute_name=MeteringClusterEMI.AttributeDefs.pulse_configuration.name,
-        cluster_id=MeteringClusterEMI.cluster_id,
-        endpoint_id=2,
-        min_value=0,
-        max_value=65535,
-        step=1,
-        unit="pulses/kWh",
-        mode="box",
-        translation_key="pulse_configuration",
-        fallback_name="Pulse configuration",
-    )
+    QuirkBuilder().replaces(
+        MeteringClusterEMI, endpoint_id=2
+    )  # TODO: check if this ep is correct
+    # todo: adding the entity below might cause unexpected reading of the attribute
+    # .number(
+    #     attribute_name=MeteringClusterEMI.AttributeDefs.pulse_configuration.name,
+    #     cluster_id=MeteringClusterEMI.cluster_id,
+    #     endpoint_id=2,
+    #     min_value=0,
+    #     max_value=65535,
+    #     step=1,
+    #     unit="pulses/kWh",
+    #     mode="box",
+    #     translation_key="pulse_configuration",
+    #     fallback_name="Pulse configuration",
+    # )
 )
 
 (
