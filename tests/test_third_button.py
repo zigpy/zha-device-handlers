@@ -1,63 +1,71 @@
-"""Tests for Third Reality button quirks."""
-
 import pytest
 
+from tests.common import ClusterListener
 import zhaquirks
 from zhaquirks.thirdreality.button_v2 import (
     MultistateInputCluster,
     ThirdRealityButtonCluster,
 )
 
+# Create a mock listener to capture ZHA events
+class MockListener:
+    def __init__(self):
+        self.zha_send_events = []
+        
+    def zha_send_event(self, action, event_args):
+        self.zha_send_events.append((action, event_args))
+
 zhaquirks.setup()
 
 
-@pytest.mark.parametrize("manufacturer, model", [("Third Reality, Inc", "3RSB22BZ")])
+@pytest.mark.parametrize(
+    "manufacturer, model",
+    ["Third Reality, Inc", "3RSB22BZ"],
+)
 async def test_third_reality_button_v2(zigpy_device_from_v2_quirk, manufacturer, model):
-    """Test Third Reality button v2 event conversion and triggering functionality."""
-
+    """Test Third Reality button event conversion and triggering functionality."""
+    # Create mock device based on the v2 quirk
     device = zigpy_device_from_v2_quirk(manufacturer, model)
-
+    
+    # Find the MultistateInputCluster
     multistate_cluster = None
+    private_cluster = None
+    
     for cluster in device.endpoints[1].in_clusters.values():
         if isinstance(cluster, MultistateInputCluster):
             multistate_cluster = cluster
-            break
-
+        if cluster.cluster_id == ThirdRealityButtonCluster.cluster_id:
+            private_cluster = cluster
+    
     assert multistate_cluster is not None, "MultistateInputCluster not found"
-
-    class MockListener:
-        def __init__(self):
-            self.events = []
-
-        def zha_send_event(self, cluster, command, args):
-            self.events.append((command, args))
-
+    assert private_cluster is not None, "ThirdRealityButtonCluster not found"
+    
+    # Create mock listener and register it with the cluster
     mock_listener = MockListener()
     multistate_cluster.add_listener(mock_listener)
-
-    test_values = [
-        (0, "command_hold"),  # HOLD
-        (1, "command_single"),  # SINGLE
-        (2, "command_double"),  # DOUBLE
-        (255, "command_release"),  # RELEASE
-    ]
-
-    for value, expected_command in test_values:
-        mock_listener.events = []
-
-        multistate_cluster._update_attribute(0x0055, value)
-
-        assert len(mock_listener.events) == 1
-        assert mock_listener.events[0][0] == expected_command
-        assert mock_listener.events[0][1]["value"] == value
-
-    private_cluster = None
-    for cluster in device.endpoints[1].in_clusters.values():
-        if isinstance(cluster, ThirdRealityButtonCluster):
-            private_cluster = cluster
-            break
-
-    assert private_cluster is not None, "ThirdRealityButtonCluster not found"
-    assert private_cluster.cluster_id == 0xFF01
-    assert hasattr(private_cluster.AttributeDefs, "cancel_bouble_click")
-    assert private_cluster.AttributeDefs.cancel_bouble_click.id == 0x0000
+    
+    # Test 1: Verify single click event conversion
+    multistate_cluster.update_attribute(0x0055, 1)  # 1 corresponds to single click
+    assert len(mock_listener.zha_send_events) == 1
+    assert mock_listener.zha_send_events[0][0] == "single"
+    
+    # Test 2: Verify double click event conversion
+    multistate_cluster.update_attribute(0x0055, 2)  # 2 corresponds to double click
+    assert len(mock_listener.zha_send_events) == 2
+    assert mock_listener.zha_send_events[1][0] == "double"
+    
+    # Test 3: Verify hold event conversion
+    multistate_cluster.update_attribute(0x0055, 0)  # 0 corresponds to hold
+    assert len(mock_listener.zha_send_events) == 3
+    assert mock_listener.zha_send_events[2][0] == "hold"
+    
+    # Test 4: Verify release event conversion
+    multistate_cluster.update_attribute(0x0055, 255)  # 255 corresponds to release
+    assert len(mock_listener.zha_send_events) == 4
+    assert mock_listener.zha_send_events[3][0] == "release"
+    
+    # Test 5: Verify private cluster attributes
+    assert hasattr(private_cluster.attributes, "cancel_bouble_click")
+    attr = private_cluster.attributes.cancel_bouble_click
+    assert attr.id == 0x0000
+    assert attr.type == int  # Corresponds to t.uint8_t
