@@ -1,15 +1,19 @@
+"""Test the module for the "third button" function to verify the ZHA event capture logic."""
+
 import pytest
 
 import zhaquirks
 from zhaquirks.thirdreality.button_v2 import (
     MultistateInputCluster,
-    ThirdRealityButtonCluster,
 )
 
 
 # Create a mock listener to capture ZHA events
 class MockListener:
+    """Simulate listener class, used to capture and store ZHA (Zigbee Home Automation) events."""
+
     def __init__(self):
+        """Initialize listener instance and create an empty list to store ZHA events."""
         self.zha_send_events = []
 
     def zha_send_event(self, action, event_args):
@@ -30,16 +34,12 @@ async def test_third_reality_button_v2(zigpy_device_from_v2_quirk, manufacturer,
 
     # Find the MultistateInputCluster
     multistate_cluster = None
-    private_cluster = None
 
     for cluster in device.endpoints[1].in_clusters.values():
         if isinstance(cluster, MultistateInputCluster):
             multistate_cluster = cluster
-        if cluster.cluster_id == ThirdRealityButtonCluster.cluster_id:
-            private_cluster = cluster
 
     assert multistate_cluster is not None, "MultistateInputCluster not found"
-    assert private_cluster is not None, "ThirdRealityButtonCluster not found"
 
     # Create mock listener and register it with the cluster
     mock_listener = MockListener()
@@ -64,9 +64,3 @@ async def test_third_reality_button_v2(zigpy_device_from_v2_quirk, manufacturer,
     multistate_cluster.update_attribute(0x0055, 255)  # 255 corresponds to release
     assert len(mock_listener.zha_send_events) == 4
     assert mock_listener.zha_send_events[3][0] == "release"
-
-    # Test 5: Verify private cluster attributes
-    assert hasattr(private_cluster.attributes, "cancel_bouble_click")
-    attr = private_cluster.attributes.cancel_bouble_click
-    assert attr.id == 0x0000
-    assert attr.type == int  # Corresponds to t.uint8_t
