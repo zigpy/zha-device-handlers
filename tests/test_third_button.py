@@ -3,9 +3,7 @@
 import pytest
 
 import zhaquirks
-from zhaquirks.thirdreality.button_v2 import (
-    MultistateInputCluster,
-)
+from zhaquirks.thirdreality.button_v2 import MultistateInputCluster
 
 
 # Create a mock listener to capture ZHA events
