@@ -15,6 +15,11 @@ class MockListener:
         self.zha_send_events = []
 
     def zha_send_event(self, action, event_args):
+        """The method of recording ZHA events.
+        Parameters:
+        Action: The type of action for an event
+        Event_args: Relevant parameters of the event
+        """
         self.zha_send_events.append((action, event_args))
 
 
