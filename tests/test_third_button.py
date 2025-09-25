@@ -3,7 +3,7 @@
 import pytest
 
 import zhaquirks
-from zhaquirks.thirdreality.button_v2 import MultistateInputCluster
+from zhaquirks.thirdreality.button-v2 import MultistateInputCluster
 
 
 class MockListener:
