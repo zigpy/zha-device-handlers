@@ -19,6 +19,7 @@ class MockListener:
         Args:
             action (str): The type of action for the event.
             event_args (dict): Relevant parameters of the event.
+
         """
         self.zha_send_events.append((action, event_args))
 
@@ -37,9 +38,12 @@ async def test_third_reality_button_v2(zigpy_device_from_v2_quirk, manufacturer,
 
     # Find the MultistateInputCluster
     multistate_cluster = next(
-        (cluster for cluster in device.endpoints[1].in_clusters.values() 
-         if isinstance(cluster, MultistateInputCluster)),
-        None
+        (
+            cluster
+            for cluster in device.endpoints[1].in_clusters.values()
+            if isinstance(cluster, MultistateInputCluster)
+        ),
+        None,
     )
     assert multistate_cluster is not None, "MultistateInputCluster not found"
 
