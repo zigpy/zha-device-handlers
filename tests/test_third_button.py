@@ -1,19 +1,20 @@
 import pytest
 
-from tests.common import ClusterListener
 import zhaquirks
 from zhaquirks.thirdreality.button_v2 import (
     MultistateInputCluster,
     ThirdRealityButtonCluster,
 )
 
+
 # Create a mock listener to capture ZHA events
 class MockListener:
     def __init__(self):
         self.zha_send_events = []
-        
+
     def zha_send_event(self, action, event_args):
         self.zha_send_events.append((action, event_args))
+
 
 zhaquirks.setup()
 
@@ -26,44 +27,44 @@ async def test_third_reality_button_v2(zigpy_device_from_v2_quirk, manufacturer,
     """Test Third Reality button event conversion and triggering functionality."""
     # Create mock device based on the v2 quirk
     device = zigpy_device_from_v2_quirk(manufacturer, model)
-    
+
     # Find the MultistateInputCluster
     multistate_cluster = None
     private_cluster = None
-    
+
     for cluster in device.endpoints[1].in_clusters.values():
         if isinstance(cluster, MultistateInputCluster):
             multistate_cluster = cluster
         if cluster.cluster_id == ThirdRealityButtonCluster.cluster_id:
             private_cluster = cluster
-    
+
     assert multistate_cluster is not None, "MultistateInputCluster not found"
     assert private_cluster is not None, "ThirdRealityButtonCluster not found"
-    
+
     # Create mock listener and register it with the cluster
     mock_listener = MockListener()
     multistate_cluster.add_listener(mock_listener)
-    
+
     # Test 1: Verify single click event conversion
     multistate_cluster.update_attribute(0x0055, 1)  # 1 corresponds to single click
     assert len(mock_listener.zha_send_events) == 1
     assert mock_listener.zha_send_events[0][0] == "single"
-    
+
     # Test 2: Verify double click event conversion
     multistate_cluster.update_attribute(0x0055, 2)  # 2 corresponds to double click
     assert len(mock_listener.zha_send_events) == 2
     assert mock_listener.zha_send_events[1][0] == "double"
-    
+
     # Test 3: Verify hold event conversion
     multistate_cluster.update_attribute(0x0055, 0)  # 0 corresponds to hold
     assert len(mock_listener.zha_send_events) == 3
     assert mock_listener.zha_send_events[2][0] == "hold"
-    
+
     # Test 4: Verify release event conversion
     multistate_cluster.update_attribute(0x0055, 255)  # 255 corresponds to release
     assert len(mock_listener.zha_send_events) == 4
     assert mock_listener.zha_send_events[3][0] == "release"
-    
+
     # Test 5: Verify private cluster attributes
     assert hasattr(private_cluster.attributes, "cancel_bouble_click")
     attr = private_cluster.attributes.cancel_bouble_click
