@@ -221,10 +221,10 @@ class TuyaSmartRemote0041_var04(CustomDevice):
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
-                    TuyaSmartRemoteOnOffCluster,
+                    OnOff.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
-                    OnOff.cluster_id,
+                    TuyaSmartRemoteOnOffCluster,
                     Time.cluster_id,
                     Ota.cluster_id,
                 ],

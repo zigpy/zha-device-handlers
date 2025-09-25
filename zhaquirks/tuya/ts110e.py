@@ -1,6 +1,6 @@
 """Tuya Dimmer TS110E."""
 
-from typing import Any, Optional, Union
+from typing import Any, Final, Optional, Union
 
 from zigpy.profiles import zgp, zha
 import zigpy.types as t
@@ -15,6 +15,7 @@ from zigpy.zcl.clusters.general import (
     Scenes,
     Time,
 )
+from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -55,26 +56,34 @@ class TuyaBulbType(t.enum8):
 class F000LevelControlCluster(NoManufacturerCluster, LevelControl):
     """LevelControlCluster that reports to attrid 0xF000."""
 
-    server_commands = LevelControl.server_commands.copy()
-    server_commands[TUYA_CUSTOM_LEVEL_COMMAND] = foundation.ZCLCommandDef(
-        "moveToLevelTuya",
-        {"payload": TuyaLevelPayload},
-        is_manufacturer_specific=False,
-    )
+    class ServerCommandDefs(LevelControl.ServerCommandDefs):
+        """Server command definitions."""
 
-    attributes = LevelControl.attributes.copy()
-    attributes.update(
-        {
-            # 0xF000
-            TUYA_LEVEL_ATTRIBUTE: ("manufacturer_current_level", t.uint16_t),
-            # 0xFC02
-            TUYA_BULB_TYPE_ATTRIBUTE: ("bulb_type", TuyaBulbType),
-            # 0xFC03
-            TUYA_MIN_LEVEL_ATTRIBUTE: ("manufacturer_min_level", t.uint16_t),
-            # 0xFC04
-            TUYA_MAX_LEVEL_ATTRIBUTE: ("manufacturer_max_level", t.uint16_t),
-        }
-    )
+        moveToLevelTuya = foundation.ZCLCommandDef(  # noqa: N815
+            id=TUYA_CUSTOM_LEVEL_COMMAND,
+            schema={"payload": TuyaLevelPayload},
+            is_manufacturer_specific=False,
+        )
+
+    class AttributeDefs(LevelControl.AttributeDefs):
+        """Attribute definitions."""
+
+        # 0xF000
+        manufacturer_current_level: Final = ZCLAttributeDef(
+            id=TUYA_LEVEL_ATTRIBUTE, type=t.uint16_t
+        )
+        # 0xFC02
+        bulb_type: Final = ZCLAttributeDef(
+            id=TUYA_BULB_TYPE_ATTRIBUTE, type=TuyaBulbType
+        )
+        # 0xFC03
+        manufacturer_min_level: Final = ZCLAttributeDef(
+            id=TUYA_MIN_LEVEL_ATTRIBUTE, type=t.uint16_t
+        )
+        # 0xFC04
+        manufacturer_max_level: Final = ZCLAttributeDef(
+            id=TUYA_MAX_LEVEL_ATTRIBUTE, type=t.uint16_t
+        )
 
     # 0xF000 reported values are 10-1000, convert to 0-254
     def _update_attribute(self, attrid, value):

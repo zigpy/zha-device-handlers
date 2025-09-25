@@ -56,6 +56,9 @@ class ZosungIRControl(CustomCluster):
     cluster_id = 0xE004
     ep_attribute = "zosung_ircontrol"
 
+    # remove manufacturer id for cluster
+    manufacturer_id_override: t.uint16_t = foundation.ZCLHeader.NO_MANUFACTURER_ID
+
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
 
@@ -69,19 +72,16 @@ class ZosungIRControl(CustomCluster):
         data: Final = foundation.ZCLCommandDef(
             id=0x00,
             schema={"data": Bytes},
-            direction=foundation.Direction.Server_to_Client,
             is_manufacturer_specific=True,
         )
         IRLearn: Final = foundation.ZCLCommandDef(
             id=0x01,
             schema={"on_off": t.Bool},
-            direction=foundation.Direction.Server_to_Client,
             is_manufacturer_specific=True,
         )
         IRSend: Final = foundation.ZCLCommandDef(
             id=0x02,
             schema={"code": t.CharacterString},
-            direction=foundation.Direction.Server_to_Client,
             is_manufacturer_specific=True,
         )
 
@@ -160,6 +160,9 @@ class ZosungIRTransmit(CustomCluster):
     cluster_id = 0xED00
     ep_attribute = "zosung_irtransmit"
 
+    # remove manufacturer id for cluster
+    manufacturer_id_override: t.uint16_t = foundation.ZCLHeader.NO_MANUFACTURER_ID
+
     current_position = 0
     msg_length = 0
     ir_msg = []
@@ -178,7 +181,6 @@ class ZosungIRTransmit(CustomCluster):
                 "cmd": t.uint8_t,
                 "unk3": t.uint16_t,
             },
-            direction=foundation.Direction.Server_to_Client,
             is_manufacturer_specific=True,
         )
         receive_ir_frame_01: Final = foundation.ZCLCommandDef(
@@ -193,7 +195,6 @@ class ZosungIRTransmit(CustomCluster):
                 "cmd": t.uint8_t,
                 "unk3": t.uint16_t,
             },
-            direction=foundation.Direction.Server_to_Client,
             is_manufacturer_specific=True,
         )
         receive_ir_frame_02: Final = foundation.ZCLCommandDef(
@@ -203,7 +204,6 @@ class ZosungIRTransmit(CustomCluster):
                 "position": t.uint32_t,
                 "maxlen": t.uint8_t,
             },
-            direction=foundation.Direction.Server_to_Client,
             is_manufacturer_specific=True,
         )
         receive_ir_frame_03: Final = foundation.ZCLCommandDef(
@@ -215,7 +215,6 @@ class ZosungIRTransmit(CustomCluster):
                 "msgpart": t.LVBytes,
                 "msgpartcrc": t.uint8_t,
             },
-            direction=foundation.Direction.Client_to_Server,
             is_manufacturer_specific=False,
         )
         receive_ir_frame_04: Final = foundation.ZCLCommandDef(
@@ -225,7 +224,6 @@ class ZosungIRTransmit(CustomCluster):
                 "seq": t.uint16_t,
                 "zero1": t.uint16_t,
             },
-            direction=foundation.Direction.Server_to_Client,
             is_manufacturer_specific=True,
         )
         receive_ir_frame_05: Final = foundation.ZCLCommandDef(
@@ -234,7 +232,6 @@ class ZosungIRTransmit(CustomCluster):
                 "seq": t.uint16_t,
                 "zero": t.uint16_t,
             },
-            direction=foundation.Direction.Server_to_Client,
             is_manufacturer_specific=True,
         )
 
@@ -250,7 +247,6 @@ class ZosungIRTransmit(CustomCluster):
                 "msgpart": t.LVBytes,
                 "msgpartcrc": t.uint8_t,
             },
-            direction=foundation.Direction.Client_to_Server,
             is_manufacturer_specific=False,
         )
         resp_ir_frame_05: Final = foundation.ZCLCommandDef(
@@ -259,7 +255,6 @@ class ZosungIRTransmit(CustomCluster):
                 "seq": t.uint16_t,
                 "zero": t.uint16_t,
             },
-            direction=foundation.Direction.Server_to_Client,
             is_manufacturer_specific=True,
         )
 
@@ -506,6 +501,7 @@ class ZosungIRBlaster_ZS06(ZosungIRBlaster):
             ("_TZ3290_7v1k4vufotpowp9z", "TS1201"),
             ("_TZ3290_acv1iuslxi3shaaj", "TS1201"),
             ("_TZ3290_gnl5a6a5xvql7c2a", "TS1201"),
+            ("_TZ3290_rlkmy85q4pzoxobl", "TS1201"),
         ],
         ENDPOINTS: {
             1: {

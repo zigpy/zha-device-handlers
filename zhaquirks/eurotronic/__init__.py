@@ -1,11 +1,13 @@
 """Eurotronic devices."""
 
 import logging
+from typing import Final
 
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.hvac import Thermostat
+from zigpy.zcl.foundation import ZCLAttributeDef
 
 EUROTRONIC = "Eurotronic"
 
@@ -41,20 +43,24 @@ _LOGGER = logging.getLogger(__name__)
 class ThermostatCluster(CustomCluster, Thermostat):
     """Thermostat cluster."""
 
-    attributes = Thermostat.attributes.copy()
-    attributes.update(
-        {
-            TRV_MODE_ATTR: ("trv_mode", t.enum8, True),
-            SET_VALVE_POS_ATTR: ("set_valve_position", t.uint8_t, True),
-            ERRORS_ATTR: ("errors", t.uint8_t, True),
-            CURRENT_TEMP_SETPOINT_ATTR: (
-                "current_temperature_setpoint",
-                t.int16s,
-                True,
-            ),
-            HOST_FLAGS_ATTR: ("host_flags", t.uint24_t, True),
-        }
-    )
+    class AttributeDefs(Thermostat.AttributeDefs):
+        """Attribute definitions."""
+
+        trv_mode: Final = ZCLAttributeDef(
+            id=TRV_MODE_ATTR, type=t.enum8, is_manufacturer_specific=True
+        )
+        set_valve_position: Final = ZCLAttributeDef(
+            id=SET_VALVE_POS_ATTR, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        errors: Final = ZCLAttributeDef(
+            id=ERRORS_ATTR, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        current_temperature_setpoint: Final = ZCLAttributeDef(
+            id=CURRENT_TEMP_SETPOINT_ATTR, type=t.int16s, is_manufacturer_specific=True
+        )
+        host_flags: Final = ZCLAttributeDef(
+            id=HOST_FLAGS_ATTR, type=t.uint24_t, is_manufacturer_specific=True
+        )
 
     def _update_attribute(self, attrid, value):
         _LOGGER.debug("update attribute %04x to %s... ", attrid, value)
@@ -72,7 +78,7 @@ class ThermostatCluster(CustomCluster, Thermostat):
         _LOGGER.debug("update attribute %04x to %s... [ ok ]", attrid, value)
         super()._update_attribute(attrid, value)
 
-    async def read_attributes_raw(self, attributes, manufacturer=None):
+    async def read_attributes_raw(self, attributes, manufacturer=None, **kwargs):
         """Override wrong attribute reports from the thermostat."""
         success = []
         error = []
@@ -95,7 +101,7 @@ class ThermostatCluster(CustomCluster, Thermostat):
             _LOGGER.debug("intercepting OCC_HS")
 
             values = await super().read_attributes_raw(
-                [CURRENT_TEMP_SETPOINT_ATTR], manufacturer=MANUFACTURER
+                [CURRENT_TEMP_SETPOINT_ATTR], manufacturer=MANUFACTURER, **kwargs
             )
 
             if len(values) == 2:
@@ -122,7 +128,9 @@ class ThermostatCluster(CustomCluster, Thermostat):
         )
 
         if attributes:
-            values = await super().read_attributes_raw(attributes, manufacturer)
+            values = await super().read_attributes_raw(
+                attributes, manufacturer, **kwargs
+            )
 
             success.extend(values[0])
 
@@ -131,19 +139,19 @@ class ThermostatCluster(CustomCluster, Thermostat):
 
         return success, error
 
-    def write_attributes(self, attributes, manufacturer=None):
+    async def write_attributes(self, attributes, manufacturer=None, **kwargs):
         """Override wrong writes to thermostat attributes."""
         if "system_mode" in attributes:
             host_flags = self._attr_cache.get(HOST_FLAGS_ATTR, 1)
             _LOGGER.debug("current host_flags: %s", host_flags)
 
             if attributes.get("system_mode") == 0x0:
-                return super().write_attributes(
+                return await super().write_attributes(
                     {"host_flags": host_flags | SET_OFF_MODE_FLAG}, MANUFACTURER
                 )
             if attributes.get("system_mode") == 0x4:
-                return super().write_attributes(
+                return await super().write_attributes(
                     {"host_flags": host_flags | CLR_OFF_MODE_FLAG}, MANUFACTURER
                 )
 
-        return super().write_attributes(attributes, manufacturer)
+        return await super().write_attributes(attributes, manufacturer, **kwargs)
