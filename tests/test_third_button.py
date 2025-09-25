@@ -4,55 +4,68 @@ import pytest
 
 from tests.common import ClusterListener
 import zhaquirks
-from zhaquirks.thirdreality.button import ThirdRealityButtonCluster
+from zhaquirks.thirdreality.button_v2 import (
+    MultistateInputCluster,
+    ThirdRealityButtonCluster,
+)
 
 zhaquirks.setup()
 
 
-@pytest.mark.parametrize(
-    "quirk",
-    (
-        zhaquirks.thirdreality.button.ThirdRealityButton,
-    ),  # Replace with actual device quirk class name
-)
-async def test_third_reality_button(zigpy_device_from_quirk, quirk):
-    """Test Third Reality button event conversion and triggering functionality."""
-    # Create mock device based on the quirk
-    device = zigpy_device_from_quirk(quirk)
 
-    # Get relevant clusters
-    multistate_cluster = device.endpoints[1].multistate_input
-    private_cluster = device.endpoints[1].in_clusters[
-        ThirdRealityButtonCluster.cluster_id
+@pytest.mark.parametrize("manufacturer, model", [("Third Reality, Inc", "3RSB22BZ")])
+async def test_third_reality_button_v2(zigpy_device_from_v2_quirk, manufacturer, model):
+    """Test Third Reality button v2 event conversion and triggering functionality."""
+
+    device = zigpy_device_from_v2_quirk(manufacturer, model)
+    
+
+    multistate_cluster = None
+    for cluster in device.endpoints[1].in_clusters.values():
+        if isinstance(cluster, MultistateInputCluster):
+            multistate_cluster = cluster
+            break
+    
+    assert multistate_cluster is not None, "MultistateInputCluster not found"
+    
+
+    class MockListener:
+        def __init__(self):
+            self.events = []
+        
+        def zha_send_event(self, cluster, command, args):
+            self.events.append((command, args))
+    
+    mock_listener = MockListener()
+    multistate_cluster.add_listener(mock_listener)
+
+    test_values = [
+        (0, "command_hold"),     # HOLD
+        (1, "command_single"),   # SINGLE
+        (2, "command_double"),   # DOUBLE
+        (255, "command_release") # RELEASE
     ]
+    
+    for value, expected_command in test_values:
 
-    # Create cluster listener
-    multistate_listener = ClusterListener(multistate_cluster)
+        mock_listener.events = []
+        
 
-    # Test 1: Verify single click event conversion
-    multistate_cluster.update_attribute(0x0055, 1)  # 1 corresponds to single click
-    assert len(multistate_listener.zha_send_events) == 1
-    assert multistate_listener.zha_send_events[0][0] == "single"
-    assert multistate_listener.attribute_updates[-1][0] == 0
-    assert multistate_listener.attribute_updates[-1][1] == "single"
+        multistate_cluster._update_attribute(0x0055, value)
+        
 
-    # Test 2: Verify double click event conversion
-    multistate_cluster.update_attribute(0x0055, 2)  # 2 corresponds to double click
-    assert len(multistate_listener.zha_send_events) == 2
-    assert multistate_listener.zha_send_events[1][0] == "double"
+        assert len(mock_listener.events) == 1
+        assert mock_listener.events[0][0] == expected_command
+        assert mock_listener.events[0][1]["value"] == value
+    
 
-    # Test 3: Verify hold event conversion
-    multistate_cluster.update_attribute(0x0055, 0)  # 0 corresponds to hold
-    assert len(multistate_listener.zha_send_events) == 3
-    assert multistate_listener.zha_send_events[2][0] == "hold"
-
-    # Test 4: Verify release event conversion
-    multistate_cluster.update_attribute(0x0055, 255)  # 255 corresponds to release
-    assert len(multistate_listener.zha_send_events) == 4
-    assert multistate_listener.zha_send_events[3][0] == "release"
-
-    # Test 5: Verify private cluster attributes
-    assert hasattr(private_cluster.attributes, "cancel_bouble_click")
-    attr = private_cluster.attributes.cancel_bouble_click
-    assert attr.id == 0x0000
-    assert attr.type == int  # Corresponds to t.uint8_t
+    private_cluster = None
+    for cluster in device.endpoints[1].in_clusters.values():
+        if isinstance(cluster, ThirdRealityButtonCluster):
+            private_cluster = cluster
+            break
+    
+    assert private_cluster is not None, "ThirdRealityButtonCluster not found"
+    assert private_cluster.cluster_id == 0xFF01
+    assert hasattr(private_cluster.AttributeDefs, "cancel_bouble_click")
+    assert private_cluster.AttributeDefs.cancel_bouble_click.id == 0x0000
