@@ -16,9 +16,6 @@ from zigpy.zcl.foundation import ZCLAttributeDef
 # Mode of operation with values BoschOperatingMode.
 OPERATING_MODE_ATTR_ID = 0x4007
 
-# Valve position: 0% - 100%
-VALVE_POSITION_ATTR_ID = 0x4020
-
 # Window open switch (changes to a lower target temperature when on).
 WINDOW_OPEN_ATTR_ID = 0x4042
 
@@ -68,13 +65,6 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
         operating_mode = ZCLAttributeDef(
             id=OPERATING_MODE_ATTR_ID,
             type=BoschOperatingMode,
-            is_manufacturer_specific=True,
-        )
-
-        pi_heating_demand = ZCLAttributeDef(
-            id=VALVE_POSITION_ATTR_ID,
-            # Values range from 0-100
-            type=t.uint8_t,
             is_manufacturer_specific=True,
         )
 
