@@ -89,6 +89,7 @@ class TuyaSingleSwitchTO(TuyaSwitch):
             ("_TZE200_wfxuhoea", "TS0601"),
             ("_TZE200_tviaymwx", "TS0601"),
             ("_TZE204_ptaqh9tk", "TS0601"),  # reported in #3099
+            ("_TZE200_7tdtqgwv", "TS0601"),
         ],
         ENDPOINTS: {
             1: {
