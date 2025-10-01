@@ -85,6 +85,14 @@ class TuyaPresenceStateV02(t.enum8):
     Gigantic = 0x05
 
 
+class TuyaPresenceStateV03(t.enum8):
+    """Tuya presence state enum, variation 03"""
+
+    Unoccupied = 0x00
+    Presence = 0x01
+    Move = 0x02
+
+
 class TuyaBreakerMode(t.enum8):
     """Tuya breaker mode enum."""
 
@@ -236,7 +244,6 @@ base_tuya_motion = (
 
 (
     base_tuya_motion.clone()
-    .applies_to("_TZE200_gkfbdvyx", "TS0601")
     .applies_to("_TZE200_ya4ft0w4", "TS0601")
     .applies_to("_TZE204_ya4ft0w4", "TS0601")
     .tuya_dp(
@@ -1612,18 +1619,20 @@ base_tuya_motion = (
     .add_to_registry()
 )
 
+
 # Tuya mmWave radar 24GHz, _TZE204_gkfbdvyx
 # Loginovo Smart Human Presence Sensor M100, Model C3007
 # TZ-HS-24G / ZY-M100-24G / Ceiling Human Breathe Sensor 24G
 (
     TuyaQuirkBuilder("_TZE204_gkfbdvyx", "TS0601")
+    .applies_to("_TZE200_gkfbdvyx", "TS0601")
     # 0: presence="none", state=false
     # 1: presence="presence" state=true triggers only with presence sensitivity on low
-    # 2: presence="move?" state=true
+    # 2: presence="move" state=true
     .tuya_enum(
         dp_id=1,
         attribute_name="presence",
-        enum_class=TuyaPresenceStateV02,  # needs more work
+        enum_class=TuyaPresenceStateV03,
         entity_platform=EntityPlatform.SENSOR,
         entity_type=EntityType.STANDARD,
         translation_key="presence_state",
@@ -1638,13 +1647,13 @@ base_tuya_motion = (
     .adds(TuyaOccupancySensing)
     .tuya_number(
         dp_id=2,
-        attribute_name="radar_sensitivity",
+        attribute_name="motion_sensitivity",
         type=t.uint16_t,
         min_value=1,
         max_value=10,
         step=1,
-        translation_key="radar_sensitivity",
-        fallback_name="Radar sensitivity",
+        translation_key="motion_sensitivity",
+        fallback_name="Motion Sensitivity",
     )
     .tuya_number(
         dp_id=3,
@@ -1688,7 +1697,7 @@ base_tuya_motion = (
         # Turns distance reporting on and off
         dp_id=101,
         attribute_name="distance_tracking",
-        entity_type=EntityType.STANDARD,
+        entity_type=EntityType.CONFIG,
         translation_key="distance_tracking",
         fallback_name="Distance tracking",
     )
@@ -1709,9 +1718,9 @@ base_tuya_motion = (
         type=t.uint16_t,
         device_class=SensorDeviceClass.DURATION,
         unit=UnitOfTime.SECONDS,
-        min_value=1,
-        max_value=1500,
-        step=1,
+        min_value=5,
+        max_value=15000,
+        step=5,
         translation_key="fading_time",
         fallback_name="Fading time",
     )
