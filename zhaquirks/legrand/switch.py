@@ -1,7 +1,7 @@
 """Module for Legrand switches (without dimming functionality)."""
 
 from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.zcl.clusters.general import BinaryInput, OnOff
+from zigpy.zcl.clusters.general import OnOff
 
 from zhaquirks.legrand import LEGRAND, LegrandCluster, LegrandIdentify
 
@@ -9,7 +9,9 @@ from zhaquirks.legrand import LEGRAND, LegrandCluster, LegrandIdentify
     QuirkBuilder(f" {LEGRAND}", " Light switch with neutral")
     .replaces(LegrandCluster)
     .replaces(LegrandIdentify)
-    .prevent_default_entity_creation(endpoint_id=1, cluster_id=BinaryInput.cluster_id)
+    # It seems that the binary input is mostly non-functional. However some users report
+    # that the BinaryInput is actually working for them. So we leave it commented out for now.
+    # .prevent_default_entity_creation(endpoint_id=1, cluster_id=BinaryInput.cluster_id)
     .prevent_default_entity_creation(
         endpoint_id=1,
         cluster_id=OnOff.cluster_id,
