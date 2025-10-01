@@ -236,6 +236,7 @@ base_tuya_motion = (
 
 (
     base_tuya_motion.clone()
+    .applies_to("_TZE200_gkfbdvyx", "TS0601")
     .applies_to("_TZE200_ya4ft0w4", "TS0601")
     .applies_to("_TZE204_ya4ft0w4", "TS0601")
     .tuya_dp(
@@ -247,10 +248,10 @@ base_tuya_motion = (
     # 2, 3, 4, and 9 from base
     .tuya_switch(
         dp_id=101,
-        attribute_name="find_switch",
-        entity_type=EntityType.STANDARD,
-        translation_key="led_indicator",
-        fallback_name="LED indicator",
+        attribute_name="distance_tracking",
+        entity_type=EntityType.CONFIG,
+        translation_key="distance_tracking",
+        fallback_name="Distance tracking",
     )
     .tuya_number(
         dp_id=102,
@@ -259,7 +260,6 @@ base_tuya_motion = (
         min_value=0,
         max_value=10,
         step=1,
-        multiplier=0.1,
         translation_key="presence_sensitivity",
         fallback_name="Presence sensitivity",
     )
@@ -1436,6 +1436,7 @@ base_tuya_motion = (
 (
     TuyaQuirkBuilder("_TZE200_2aaelwxk", "TS0601")
     .applies_to("_TZE200_kb5noeto", "TS0601")
+    .applies_to("HOBEIAN", "ZG-204ZM")
     .tuya_dp(
         dp_id=1,
         ep_attribute=TuyaOccupancySensing.ep_attribute,
