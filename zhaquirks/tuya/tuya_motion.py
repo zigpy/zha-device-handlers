@@ -86,7 +86,7 @@ class TuyaPresenceStateV02(t.enum8):
 
 
 class TuyaPresenceStateV03(t.enum8):
-    """Tuya presence state enum, variation 03"""
+    """Tuya presence state enum, variation 03."""
 
     Unoccupied = 0x00
     Presence = 0x01
@@ -1653,7 +1653,7 @@ base_tuya_motion = (
         max_value=10,
         step=1,
         translation_key="motion_sensitivity",
-        fallback_name="Motion Sensitivity",
+        fallback_name="Motion sensitivity",
     )
     .tuya_number(
         dp_id=3,
