@@ -15,8 +15,8 @@ from zigpy.zcl.foundation import ZCLAttributeDef
 # Mode of operation with values BoschOperatingMode.
 OPERATING_MODE_ATTR_ID = 0x4007
 
-# Valve duty cycle: 0% - 100%.
-VALVE_DUTY_CYCLE_ATTR_ID = 0x4020
+# Heating demand (valve duty cycle / PWM output): 0% - 100%.
+HEATING_DEMAND_ATTR_ID = 0x4020
 
 # Valve state (relay on/off).
 VALVE_STATE_ATTR_ID = 0x4022
@@ -31,7 +31,7 @@ BOOST_HEATING_ATTR_ID = 0x4043
 OUTDOOR_TEMP_ATTR_ID = 0x4051
 
 # External sensor (S1/S2 10K NTC) temperature.
-EXTERNAL_SENSOR_TEMP_ATTR_ID = 0x4052
+EXTERNAL_TEMP_ATTR_ID = 0x4052
 
 # Actuator type setting (NO/NC).
 ACTUATOR_TYPE_ATTR_ID = 0x4060
@@ -39,15 +39,21 @@ ACTUATOR_TYPE_ATTR_ID = 0x4060
 # External sensor connection config.
 SENSOR_CONNECTION_ATTR_ID = 0x4062
 
+# Heater type (UFH, boiler, radiator, central heating).
+HEATER_TYPE_ATTR_ID = 0x4063
+
+# Error codes (these do not match the E**-codes displayed on the screen).
+ERROR_CODE_ATTR_ID = 0x5000
+
 """
 There are some more undocumented attributes that have not been figured out what they do.
 
-0x4023: Valid range 0-7
-0x4024: Valid range 0-23
-0x4025: Valid range 0-100
-0x4050: Valid range 5-10
-0x405b: Valid range 0-255
-0x4063: Valid range 0-3 (turns on display when changed, probably the UFH/Boiler/Radiator setting, but the values are unknown)
+0x4023: R/W. Valid range 0-7.
+0x4024: R/W. Valid range 0-23.
+0x4025: R/W. Valid range 0-100. Changes depending on heater type (0x00: 0x03, 0x01: 0x01, 0x02: 0x02)
+0x4050: R/W. Valid range 5-10.
+0x405b: R/W. Valid range 0-255.
+0x4061: Read-only. Changes depending on heater type (0x00: 0x14, 0x01: 0x06, 0x02: 0x0a)
 """
 
 """Bosch specific user interface attribute ids."""
@@ -64,11 +70,11 @@ SCREEN_BRIGHTNESS_ATTR_ID = 0x403B
 """
 More undocumented and unknown attributes in the UserInterface cluster.
 
-0x4032: Valid range 0-15
-0x406a: Valid range 0-255
-0x406b: Valid range 0-255
-0x406c: Valid range 0-255
-0x406d: Valid range 0-255
+0x4032: R/W. Valid range 0-15.
+0x406a: R/W. Valid range 0-255.
+0x406b: R/W. Valid range 0-255.
+0x406c: R/W. Valid range 0-255. Changes depending on heater type (0x00: 0x00, 0x02: 0x05)
+0x406d: R/W. Valid range 0-255.
 """
 
 
@@ -94,16 +100,31 @@ class BoschActuatorType(t.enum8):
     NormallyOpen = 0x01
 
 
+class BoschHeaterType(t.enum8):
+    """
+    Heater type:
+    1. Underfloor heating (230V)
+    2. Boiler (potential free)
+    3. Radiator (radio only)
+    4. Central Heating (relay disconnected, controlled externally).
+    """
+
+    UnderfloorHeating = 0x00
+    Boiler = 0x01
+    Radiator = 0x02
+    CentralHeating = 0x03
+
+
 class BoschValveStatusLed(t.enum8):
     """Valve status LED (dot next to heat/cool icon) functionality."""
 
-    AlwaysOff = 0x00
+    Off = 0x00
     Normal = 0x01
-    AlwaysOn = 0x02
+    On = 0x02
 
 
 class BoschSensorConnection(t.enum8):
-    """Sensor connection setting (for external 10K NTC sensor on S1/S2)."""
+    """Sensor connection setting (for an external 10K NTC sensor on S1/S2)."""
 
     NotUsed = 0x00
     WithoutRegulation = 0xB0
@@ -127,8 +148,8 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
             access="rwp",
         )
 
-        valve_duty_cycle = ZCLAttributeDef(
-            id=VALVE_DUTY_CYCLE_ATTR_ID,
+        heating_demand = ZCLAttributeDef(
+            id=HEATING_DEMAND_ATTR_ID,
             # Values range from 0-100
             type=t.uint8_t,
             is_manufacturer_specific=True,
@@ -163,9 +184,16 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
             access="rwp",
         )
 
-        external_sensor_temperature = ZCLAttributeDef(
-            id=EXTERNAL_SENSOR_TEMP_ATTR_ID,
+        external_temperature = ZCLAttributeDef(
+            id=EXTERNAL_TEMP_ATTR_ID,
             type=t.int16s,
+            is_manufacturer_specific=True,
+            access="rwp",
+        )
+
+        heater_type = ZCLAttributeDef(
+            id=HEATER_TYPE_ATTR_ID,
+            type=BoschHeaterType,
             is_manufacturer_specific=True,
             access="rwp",
         )
@@ -180,6 +208,13 @@ class BoschThermostatCluster(CustomCluster, Thermostat):
         sensor_connection = ZCLAttributeDef(
             id=SENSOR_CONNECTION_ATTR_ID,
             type=BoschSensorConnection,
+            is_manufacturer_specific=True,
+            access="rwp",
+        )
+
+        error_code = ZCLAttributeDef(
+            id=ERROR_CODE_ATTR_ID,
+            type=t.bitmap8,
             is_manufacturer_specific=True,
             access="rwp",
         )
@@ -226,15 +261,18 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
     .applies_to("Bosch", "RBSH-RTH0-BAT-ZB-EU")
     .replaces(BoschThermostatCluster)
     .replaces(BoschUserInterfaceCluster)
-    # Valve duty cycle, PWM controlled.
+    # Heating demand, either valve duty cycle or PWM output.
     .sensor(
-        BoschThermostatCluster.AttributeDefs.valve_duty_cycle.name,
+        BoschThermostatCluster.AttributeDefs.heating_demand.name,
         BoschThermostatCluster.cluster_id,
         entity_type=EntityType.DIAGNOSTIC,
         state_class=SensorStateClass.MEASUREMENT,
         unit=PERCENTAGE,
-        translation_key="valve_duty_cycle",
-        fallback_name="Valve duty cycle",
+        translation_key="heating_demand",
+        fallback_name="Heating demand",
+        reporting_config=ReportingConfig(
+            min_interval=1, max_interval=900, reportable_change=1
+        ),
     )
     # Valve state (open/closed).
     .binary_sensor(
@@ -244,19 +282,32 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         translation_key="valve_state",
         fallback_name="Valve state",
         reporting_config=ReportingConfig(
-            min_interval=30, max_interval=900, reportable_change=1
+            min_interval=1, max_interval=900, reportable_change=1
         ),
     )
-    # External sensor temperature.
-    # You CAN write to this, but it does not make any sense.
+    # Local temperature.
     .sensor(
-        BoschThermostatCluster.AttributeDefs.external_sensor_temperature.name,
+        BoschThermostatCluster.AttributeDefs.local_temperature.name,
         BoschThermostatCluster.cluster_id,
         unit=UnitOfTemperature.CELSIUS,
         multiplier=0.01,
         device_class=NumberDeviceClass.TEMPERATURE,
-        translation_key="external_sensor_temperature",
-        fallback_name="External sensor temperature",
+        translation_key="local_temperature",
+        fallback_name="Local temperature",
+        reporting_config=ReportingConfig(
+            min_interval=30, max_interval=900, reportable_change=25
+        ),
+    )
+    # External temperature.
+    # You CAN write to this, but it does not make any sense.
+    .sensor(
+        BoschThermostatCluster.AttributeDefs.external_temperature.name,
+        BoschThermostatCluster.cluster_id,
+        unit=UnitOfTemperature.CELSIUS,
+        multiplier=0.01,
+        device_class=NumberDeviceClass.TEMPERATURE,
+        translation_key="external_temperature",
+        fallback_name="External temperature",
         reporting_config=ReportingConfig(
             min_interval=30, max_interval=900, reportable_change=25
         ),
@@ -269,6 +320,15 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         entity_type=EntityType.CONFIG,
         translation_key="operating_mode",
         fallback_name="Operating mode",
+    )
+    # Heater type config.
+    .enum(
+        BoschThermostatCluster.AttributeDefs.heater_type.name,
+        BoschHeaterType,
+        BoschThermostatCluster.cluster_id,
+        entity_type=EntityType.CONFIG,
+        translation_key="heater_type",
+        fallback_name="Heater type",
     )
     # Actuator type config.
     .enum(
@@ -297,7 +357,7 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         translation_key="temperature_display_mode",
         fallback_name="Temperature display mode",
     )
-    # Fast heating/boost - Only works with Heater type: Radiator.
+    # Fast heating/boost - Only works with Heater type: Radiator and when heating.
     .switch(
         BoschThermostatCluster.AttributeDefs.boost_heating.name,
         BoschThermostatCluster.cluster_id,
@@ -382,6 +442,17 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
         fallback_name="Outdoor temperature",
         reporting_config=ReportingConfig(
             min_interval=30, max_interval=900, reportable_change=25
+        ),
+    )
+    # Error codes
+    .sensor(
+        BoschThermostatCluster.AttributeDefs.error_code.name,
+        BoschThermostatCluster.cluster_id,
+        entity_type=EntityType.DIAGNOSTIC,
+        translation_key="error_code",
+        fallback_name="Error code",
+        reporting_config=ReportingConfig(
+            min_interval=1, max_interval=900, reportable_change=1
         ),
     )
     .add_to_registry()
