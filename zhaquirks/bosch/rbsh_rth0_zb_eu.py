@@ -101,8 +101,7 @@ class BoschActuatorType(t.enum8):
 
 
 class BoschHeaterType(t.enum8):
-    """
-    Heater type:
+    """Heater type:
     1. Underfloor heating (230V)
     2. Boiler (potential free)
     3. Radiator (radio only)
