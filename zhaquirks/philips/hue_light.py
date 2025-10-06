@@ -174,7 +174,7 @@ from zhaquirks.philips import PHILIPS, SIGNIFY, PhilipsHueLightCluster
     QuirkBuilder()
     .applies_to(SIGNIFY, "LCD003")
     .friendly_name(
-        model="Hue Akari Downlight",
+        model="Hue Akari downlight",
         manufacturer="Philips",
     )
     .replaces(PhilipsHueLightCluster, endpoint_id=11)
