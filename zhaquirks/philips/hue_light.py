@@ -185,7 +185,7 @@ from zhaquirks.philips import PHILIPS, SIGNIFY, PhilipsHueLightCluster
     QuirkBuilder()
     .applies_to(PHILIPS, "1743530P7")
     .friendly_name(
-        model="Hue Discover Outdoor Floodlight RGBCCT",
+        model="Hue Discover outdoor floodlight",
         manufacturer="Philips",
     )
     .replaces(PhilipsHueLightCluster, endpoint_id=11)
