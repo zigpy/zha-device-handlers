@@ -101,13 +101,7 @@ class BoschActuatorType(t.enum8):
 
 
 class BoschHeaterType(t.enum8):
-    """Heater type:
-
-    1. Underfloor heating (230V)
-    2. Boiler (potential free)
-    3. Radiator (radio only)
-    4. Central Heating (relay disconnected, controlled externally).
-    """
+    """Heater type: Underfloor heating (230V), Boiler (potential free), Radiator (radio only), Central Heating (relay disconnected, controlled externally)."""
 
     UnderfloorHeating = 0x00
     Boiler = 0x01
@@ -444,7 +438,7 @@ class BoschUserInterfaceCluster(CustomCluster, UserInterface):
             min_interval=30, max_interval=900, reportable_change=25
         ),
     )
-    # Error codes
+    # Error codes.
     .sensor(
         BoschThermostatCluster.AttributeDefs.error_code.name,
         BoschThermostatCluster.cluster_id,
