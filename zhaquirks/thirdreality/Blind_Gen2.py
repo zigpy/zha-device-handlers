@@ -53,10 +53,6 @@ class THIRD_REALITY_Blind_Gen2_CLUSTER(CustomCluster):
         min_value=-100,
         max_value=100,
         step=1,
-        # mode="box",  # 也可以用"slider"
-        #multiplier=1,
-        #entity_type="number",
-        #device_class="duration",
         translation_key="compensation_speed",
         fallback_name="compensation_speed",
     )
@@ -67,10 +63,6 @@ class THIRD_REALITY_Blind_Gen2_CLUSTER(CustomCluster):
         min_value=0,
         max_value=3800,
         step=1,
-        # mode="box",  # 也可以用"slider"
-        #multiplier=1,
-        #entity_type="number",
-        #device_class="duration",
         translation_key="limit_position",
         fallback_name="limit_position",
     )
