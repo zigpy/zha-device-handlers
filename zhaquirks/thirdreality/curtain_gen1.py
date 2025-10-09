@@ -21,7 +21,7 @@ class ThirdRealityCurtainCluster(CustomCluster):
             type=t.uint8_t,
             is_manufacturer_specific=True,
         )
-        
+
         allow_bind: Final = ZCLAttributeDef(
             id=0x0020,
             type=t.uint8_t,
