@@ -15,20 +15,19 @@ class THIRD_REALITY_Blind_Gen2_CLUSTER(CustomCluster):
 
     class AttributeDefs(BaseAttributeDefs):
         """Define the attributes of a private cluster."""
-		
-        
+
         enable_disable_pir_remote: Final = ZCLAttributeDef(
             id=0x0000,
             type=t.uint8_t,
             is_manufacturer_specific=True,
         )
-        
+
         compensation_speed: Final = ZCLAttributeDef(
             id=0x0001,
             type=t.int8s,
             is_manufacturer_specific=True,
         )
-          
+
         limit_position: Final = ZCLAttributeDef(
             id=0x0002,
             type=t.uint16_t,
