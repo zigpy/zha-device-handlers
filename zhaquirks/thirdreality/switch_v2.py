@@ -51,6 +51,7 @@ class THIRD_REALITY_Switch_CLUSTER(CustomCluster):
         min_value=0,
         max_value=65535,
         unit=UnitOfTime.SECONDS,
+        device_class=NumberDeviceClass.DURATION,
         step=1,
         translation_key="off_to_on_delay",
         fallback_name="off_to_on_delay",
