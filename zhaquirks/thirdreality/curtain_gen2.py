@@ -52,6 +52,7 @@ class THIRD_REALITY_Blind_Gen2_CLUSTER(CustomCluster):
         min_value=-100,
         max_value=100,
         step=1,
+        mode="box",
         translation_key="compensation_speed",
         fallback_name="compensation_speed",
     )
