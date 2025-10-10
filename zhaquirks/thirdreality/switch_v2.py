@@ -6,6 +6,7 @@ from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.quirks.v2.homeassistant import UnitOfTime
 import zigpy.types as t
+from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 
