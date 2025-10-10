@@ -4,10 +4,11 @@ from typing import Final
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
+from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature
 import zigpy.types as t
 from zigpy.zcl.clusters.general import PollControl
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
-from zigpy.quirks.v2.homeassistant import UnitOfTemperature, PERCENTAGE
+
 
 class ThirdRealityTemperatureAndHumidityCluster(CustomCluster):
     """Third Reality's temperature and humidity sensor lite private cluster."""
