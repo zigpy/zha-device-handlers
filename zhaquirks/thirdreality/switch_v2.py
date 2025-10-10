@@ -8,6 +8,7 @@ from zigpy.quirks.v2.homeassistant import UnitOfTime
 import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
+
 class THIRD_REALITY_Switch_CLUSTER(CustomCluster):
     """Third Reality's Switch private cluster."""
 
