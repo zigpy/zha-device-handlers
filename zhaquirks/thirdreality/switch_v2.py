@@ -55,7 +55,7 @@ class THIRD_REALITY_Switch_CLUSTER(CustomCluster):
         device_class=NumberDeviceClass.DURATION,
         step=1,
         translation_key="off_to_on_delay",
-        fallback_name="off_to_on_delay",
+        fallback_name="Off to on delay",
     )
     .add_to_registry()
 )
