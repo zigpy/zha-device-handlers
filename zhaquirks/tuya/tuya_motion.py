@@ -90,7 +90,7 @@ class TuyaPresenceStateV03(t.enum8):
 
     Unoccupied = 0x00
     Presence = 0x01
-    Move = 0x02
+    Movement = 0x02
 
 
 class TuyaBreakerMode(t.enum8):
@@ -1714,7 +1714,7 @@ base_tuya_motion = (
     .tuya_illuminance(dp_id=103)
     .tuya_number(
         dp_id=105,
-        attribute_name="presence_timeout",
+        attribute_name="fading_time",
         type=t.uint16_t,
         device_class=SensorDeviceClass.DURATION,
         unit=UnitOfTime.SECONDS,
