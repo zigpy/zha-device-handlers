@@ -64,7 +64,7 @@ class THIRD_REALITY_Blind_Gen2_CLUSTER(CustomCluster):
         max_value=3800,
         step=1,
         translation_key="limit_position",
-        fallback_name="limit_position",
+        fallback_name="Limit position",
     )
     .add_to_registry()
 )
