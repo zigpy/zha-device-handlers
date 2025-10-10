@@ -36,6 +36,7 @@ class SonoffExternalSwitchTriggerType(types.enum8):
     Normally_off_follow_trigger = 0x02
     Normally_on_follow_trigger = 0x82
 
+
 (
     QuirkBuilder("SONOFF", "MINI-ZB2GS-L")
     .replaces(SonoffCluster)
