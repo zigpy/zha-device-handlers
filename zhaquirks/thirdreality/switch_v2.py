@@ -1,4 +1,4 @@
-"""Third Reality Blind Gen2 devices."""
+"""Third Reality Switch Gen2 devices."""
 
 from typing import Final
 
