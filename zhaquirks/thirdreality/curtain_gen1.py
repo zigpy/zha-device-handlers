@@ -36,8 +36,8 @@ class ThirdRealityCurtainCluster(CustomCluster):
         attribute_name=ThirdRealityCurtainCluster.AttributeDefs.enable_disable_pir_remote.name,
         cluster_id=ThirdRealityCurtainCluster.cluster_id,
         force_inverted=True,
-        translation_key="enable_disable_pir_mode",
-        fallback_name="Enable/Disable pir remote",
+        translation_key="enable_pir_mode",
+        fallback_name="Enable PIR remote",
     )
     .write_attr_button(
         attribute_name=ThirdRealityCurtainCluster.AttributeDefs.allow_bind.name,
@@ -45,7 +45,6 @@ class ThirdRealityCurtainCluster(CustomCluster):
         cluster_id=ThirdRealityCurtainCluster.cluster_id,
         translation_key="allow_bind",
         fallback_name="Allow bind",
-        endpoint_id=1,
     )
     .add_to_registry()
 )
