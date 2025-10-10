@@ -2,6 +2,7 @@
 
 from enum import Enum
 import logging
+from typing import Final
 
 import zigpy
 from zigpy import types
@@ -24,6 +25,7 @@ from zigpy.zcl.clusters.general import (
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -368,14 +370,30 @@ class AqaraPowerOutageMemoryEnum(types.uint8_t, Enum):
 class PlugAEU001Cluster(XiaomiAqaraE1Cluster):
     """Custom cluster for Aqara lumi plug AEU001."""
 
-    attributes = {
-        0x0200: ("button_lock", types.uint8_t, True),
-        0x0202: ("charging_protection", types.Bool, True),
-        0x0203: ("led_indicator", types.Bool, True),
-        0x0206: ("charging_limit", types.Single, True),
-        0x020B: ("overload_protection", types.Single, True),
-        0x0517: ("power_on_behavior", AqaraPowerOutageMemoryEnum, True),
-    }
+    class AttributeDefs(BaseAttributeDefs):
+        """Attribute definitions."""
+
+        button_lock: Final = ZCLAttributeDef(
+            id=0x0200, type=types.uint8_t, access="rw", is_manufacturer_specific=True
+        )
+        charging_protection: Final = ZCLAttributeDef(
+            id=0x0202, type=types.Bool, access="rw", is_manufacturer_specific=True
+        )
+        led_indicator: Final = ZCLAttributeDef(
+            id=0x0203, type=types.Bool, access="rw", is_manufacturer_specific=True
+        )
+        charging_limit: Final = ZCLAttributeDef(
+            id=0x0206, type=types.Single, access="rw", is_manufacturer_specific=True
+        )
+        overload_protection: Final = ZCLAttributeDef(
+            id=0x020B, type=types.Single, access="rw", is_manufacturer_specific=True
+        )
+        power_on_behavior: Final = ZCLAttributeDef(
+            id=0x0517,
+            type=AqaraPowerOutageMemoryEnum,
+            access="rw",
+            is_manufacturer_specific=True,
+        )
 
 
 class PlugAEU001MeteringCluster(MeteringCluster):
