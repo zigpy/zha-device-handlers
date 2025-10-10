@@ -13,15 +13,25 @@ from zhaquirks.candeo import (
     COMMAND_RELEASE,
     COMMAND_STARTED_ROTATING,
     COMMAND_STOPPED_ROTATING,
+    CONTINUED_ROTATING,
     ROTARY_KNOB,
     STARTED_ROTATING,
-    CONTINUED_ROTATING,
     STOPPED_ROTATING,
     CandeoLevelControlRemoteCluster,
     CandeoOnOffRemoteCluster,
 )
-
-from zhaquirks.const import CLUSTER_ID, COMMAND, ENDPOINT_ID, PARAMS, RIGHT, LEFT, SHORT_PRESS, DOUBLE_PRESS, LONG_PRESS, LONG_RELEASE
+from zhaquirks.const import (
+    CLUSTER_ID,
+    COMMAND,
+    DOUBLE_PRESS,
+    ENDPOINT_ID,
+    LEFT,
+    LONG_PRESS,
+    LONG_RELEASE,
+    PARAMS,
+    RIGHT,
+    SHORT_PRESS,
+)
 
 remote_quirk = (
     QuirkBuilder()
