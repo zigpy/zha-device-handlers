@@ -1,6 +1,7 @@
 """Xiaomi Aqara EU plugs."""
 
 from enum import Enum
+import logging
 
 import zigpy
 from zigpy import types
@@ -43,6 +44,8 @@ from zhaquirks.xiaomi import (
 )
 
 OPPLE_MFG_CODE = 0x115F
+
+_LOGGER = logging.getLogger(__name__)
 
 
 async def remove_from_ep(dev: zigpy.device.Device) -> None:
@@ -375,6 +378,23 @@ class PlugAEU001Cluster(XiaomiAqaraE1Cluster):
     }
 
 
+class PlugAEU001MeteringCluster(MeteringCluster):
+    """Custom cluster for Aqara lumi plug AEU001."""
+
+    def _update_attribute(self, attrid, value):
+        if attrid == self.CURRENT_SUMM_DELIVERED_ID:
+            current_value = self._attr_cache.get(attrid, 0)
+            if value < current_value:
+                _LOGGER.debug(
+                    "Ignoring attribute update for %s: new value %s is less than current value %s",
+                    attrid,
+                    value,
+                    current_value,
+                )
+                return
+        super()._update_attribute(attrid, value)
+
+
 (
     QuirkBuilder("Aqara", "lumi.plug.aeu001")
     .friendly_name(model="Wall Outlet H2 EU", manufacturer="Aqara")
@@ -382,7 +402,7 @@ class PlugAEU001Cluster(XiaomiAqaraE1Cluster):
     .adds(DeviceTemperature)
     .removes(OnOff.cluster_id, endpoint_id=2)
     .replaces(BasicCluster)
-    .replaces(MeteringCluster)
+    .replaces(PlugAEU001MeteringCluster)
     .replaces(ElectricalMeasurementCluster)
     .replaces(PlugAEU001Cluster)
     .replaces(AnalogInputCluster, endpoint_id=21)
