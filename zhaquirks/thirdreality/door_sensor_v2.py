@@ -6,6 +6,7 @@ from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.quirks.v2.homeassistant import UnitOfTime
 import zigpy.types as t
+from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 
@@ -32,9 +33,10 @@ class ThirdRealityDoorCluster(CustomCluster):
         min_value=0,
         max_value=3600,
         unit=UnitOfTime.SECONDS,
+        device_class=NumberDeviceClass.DURATION,
         cluster_id=ThirdRealityDoorCluster.cluster_id,
         translation_key="open_delay_time",
-        fallback_name="Open Delay Time",
+        fallback_name="Open delay time",
     )
     .add_to_registry()
 )
