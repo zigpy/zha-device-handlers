@@ -410,15 +410,15 @@ class PlugAEU001MeteringCluster(MeteringCluster):
         attribute_name="button_lock",
         cluster_id=PlugAEU001Cluster.cluster_id,
         force_inverted=True,
-        translation_key="button_lock",
-        fallback_name="Button Lock",
+        translation_key="child_lock",
+        fallback_name="Child lock",
     )
     .enum(
         attribute_name="power_on_behavior",
         enum_class=AqaraPowerOutageMemoryEnum,
         cluster_id=PlugAEU001Cluster.cluster_id,
         translation_key="power_on_behavior",
-        fallback_name="Power On Behavior",
+        fallback_name="Power on behavior",
     )
     .number(
         attribute_name="overload_protection",
@@ -427,19 +427,19 @@ class PlugAEU001MeteringCluster(MeteringCluster):
         max_value=3840,
         unit=UnitOfPower.WATT,
         translation_key="overload_protection",
-        fallback_name="Overload Protection",
+        fallback_name="Overload protection",
     )
     .switch(
         attribute_name="led_indicator",
         cluster_id=PlugAEU001Cluster.cluster_id,
         translation_key="led_indicator",
-        fallback_name="LED Indicator",
+        fallback_name="LED indicator",
     )
     .switch(
         attribute_name="charging_protection",
         cluster_id=PlugAEU001Cluster.cluster_id,
         translation_key="charging_protection",
-        fallback_name="Charging Protection",
+        fallback_name="Charging protection",
     )
     .number(
         attribute_name="charging_limit",
@@ -449,7 +449,7 @@ class PlugAEU001MeteringCluster(MeteringCluster):
         step=0.1,
         unit=UnitOfPower.WATT,
         translation_key="charging_limit",
-        fallback_name="Charging Limit",
+        fallback_name="Charging limit",
     )
     .add_to_registry()
 )
