@@ -1,8 +1,12 @@
 """Xiaomi Aqara EU plugs."""
 
+from enum import Enum
+
 import zigpy
 from zigpy import types
 from zigpy.profiles import zgp, zha
+from zigpy.quirks.v2 import QuirkBuilder
+from zigpy.quirks.v2.homeassistant import UnitOfPower
 from zigpy.zcl.clusters.general import (
     Alarms,
     AnalogInput,
@@ -17,6 +21,7 @@ from zigpy.zcl.clusters.general import (
     Time,
 )
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
+from zigpy.zcl.clusters.measurement import TemperatureMeasurement
 from zigpy.zcl.clusters.smartenergy import Metering
 
 from zhaquirks.const import (
@@ -346,3 +351,84 @@ class PlugMAEU01Alt3(PlugMAEU01):
     }
 
     replacement = PlugMAEU01.replacement
+
+
+class AqaraPowerOutageMemoryEnum(types.uint8_t, Enum):
+    """Power Outage Memory enum."""
+
+    On = 0x00
+    Previous = 0x01
+    Off = 0x02
+    Inverted = 0x03
+
+
+class PlugAEU001Cluster(XiaomiAqaraE1Cluster):
+    """Custom cluster for Aqara lumi plug AEU001."""
+
+    attributes = {
+        0x0200: ("button_lock", types.uint8_t, True),
+        0x0202: ("charging_protection", types.Bool, True),
+        0x0203: ("led_indicator", types.Bool, True),
+        0x0206: ("charging_limit", types.Single, True),
+        0x020B: ("overload_protection", types.Single, True),
+        0x0517: ("power_on_behavior", AqaraPowerOutageMemoryEnum, True),
+    }
+
+
+(
+    QuirkBuilder("Aqara", "lumi.plug.aeu001")
+    .friendly_name(model="Wall Outlet H2 EU", manufacturer="Aqara")
+    .removes(TemperatureMeasurement.cluster_id)
+    .removes(OnOff.cluster_id, endpoint_id=2)
+    .replaces(BasicCluster)
+    .replaces(MeteringCluster)
+    .replaces(ElectricalMeasurementCluster)
+    .replaces(PlugAEU001Cluster)
+    .replaces(AnalogInputCluster, endpoint_id=21)
+    .switch(
+        attribute_name="button_lock",
+        cluster_id=PlugAEU001Cluster.cluster_id,
+        force_inverted=True,
+        translation_key="button_lock",
+        fallback_name="Button Lock",
+    )
+    .enum(
+        attribute_name="power_on_behavior",
+        enum_class=AqaraPowerOutageMemoryEnum,
+        cluster_id=PlugAEU001Cluster.cluster_id,
+        translation_key="power_on_behavior",
+        fallback_name="Power On Behavior",
+    )
+    .number(
+        attribute_name="overload_protection",
+        cluster_id=PlugAEU001Cluster.cluster_id,
+        min_value=100,
+        max_value=3840,
+        unit=UnitOfPower.WATT,
+        translation_key="overload_protection",
+        fallback_name="Overload Protection",
+    )
+    .switch(
+        attribute_name="led_indicator",
+        cluster_id=PlugAEU001Cluster.cluster_id,
+        translation_key="led_indicator",
+        fallback_name="LED Indicator",
+    )
+    .switch(
+        attribute_name="charging_protection",
+        cluster_id=PlugAEU001Cluster.cluster_id,
+        translation_key="charging_protection",
+        fallback_name="Charging Protection",
+    )
+    .number(
+        attribute_name="charging_limit",
+        cluster_id=PlugAEU001Cluster.cluster_id,
+        min_value=0.1,
+        max_value=2,
+        step=0.1,
+        unit=UnitOfPower.WATT,
+        translation_key="charging_limit",
+        fallback_name="Charging Limit",
+    )
+    .add_to_registry()
+)
