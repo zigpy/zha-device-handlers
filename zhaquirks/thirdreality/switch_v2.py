@@ -42,7 +42,7 @@ class THIRD_REALITY_Switch_CLUSTER(CustomCluster):
         unit=UnitOfTime.SECONDS,
         step=1,
         translation_key="on_to_off_delay",
-        fallback_name="on_to_off_delay",
+        fallback_name="On to off delay",
     )
     .number(
         attribute_name=THIRD_REALITY_Switch_CLUSTER.AttributeDefs.off_to_on_delay.name,
