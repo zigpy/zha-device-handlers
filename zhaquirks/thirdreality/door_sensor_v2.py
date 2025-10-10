@@ -30,11 +30,11 @@ class ThirdRealityDoorCluster(CustomCluster):
     .replaces(ThirdRealityDoorCluster)
     .number(
         attribute_name=ThirdRealityDoorCluster.AttributeDefs.open_delay_time.name,
+        cluster_id=ThirdRealityDoorCluster.cluster_id,
         min_value=0,
         max_value=3600,
         unit=UnitOfTime.SECONDS,
         device_class=NumberDeviceClass.DURATION,
-        cluster_id=ThirdRealityDoorCluster.cluster_id,
         translation_key="open_delay_time",
         fallback_name="Open delay time",
     )
