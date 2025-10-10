@@ -13,10 +13,15 @@ from zhaquirks.candeo import (
     COMMAND_RELEASE,
     COMMAND_STARTED_ROTATING,
     COMMAND_STOPPED_ROTATING,
+    ROTARY_KNOB,
+    STARTED_ROTATING,
+    CONTINUED_ROTATING,
+    STOPPED_ROTATING,
     CandeoLevelControlRemoteCluster,
     CandeoOnOffRemoteCluster,
 )
-from zhaquirks.const import CLUSTER_ID, COMMAND, ENDPOINT_ID, PARAMS
+
+from zhaquirks.const import CLUSTER_ID, COMMAND, ENDPOINT_ID, PARAMS, RIGHT, LEFT, SHORT_PRESS, DOUBLE_PRESS, LONG_PRESS, LONG_RELEASE
 
 remote_quirk = (
     QuirkBuilder()
@@ -26,51 +31,51 @@ remote_quirk = (
     )
     .device_automation_triggers(
         {
-            ("Pressed", "Rotary knob"): {
+            (SHORT_PRESS, ROTARY_KNOB): {
                 COMMAND: COMMAND_PRESS,
                 CLUSTER_ID: 6,
                 ENDPOINT_ID: 2,
             },
-            ("Double pressed", "Rotary knob"): {
+            (DOUBLE_PRESS, ROTARY_KNOB): {
                 COMMAND: COMMAND_DOUBLE_PRESS,
                 CLUSTER_ID: 6,
                 ENDPOINT_ID: 2,
             },
-            ("Held", "Rotary knob"): {
+            (LONG_PRESS, ROTARY_KNOB): {
                 COMMAND: COMMAND_HOLD,
                 CLUSTER_ID: 6,
                 ENDPOINT_ID: 2,
             },
-            ("Released", "Rotary knob"): {
+            (LONG_RELEASE, ROTARY_KNOB): {
                 COMMAND: COMMAND_RELEASE,
                 CLUSTER_ID: 6,
                 ENDPOINT_ID: 2,
             },
-            ("Started rotating left", "Rotary knob"): {
+            (STARTED_ROTATING, LEFT): {
                 COMMAND: COMMAND_STARTED_ROTATING,
                 CLUSTER_ID: 8,
                 ENDPOINT_ID: 2,
                 PARAMS: {"direction": 1},
             },
-            ("Rotating left", "Rotary knob"): {
+            (CONTINUED_ROTATING, LEFT): {
                 COMMAND: COMMAND_CONTINUED_ROTATING,
                 CLUSTER_ID: 8,
                 ENDPOINT_ID: 2,
                 PARAMS: {"direction": 1},
             },
-            ("Started rotating right", "Rotary knob"): {
+            (STARTED_ROTATING, RIGHT): {
                 COMMAND: COMMAND_STARTED_ROTATING,
                 CLUSTER_ID: 8,
                 ENDPOINT_ID: 2,
                 PARAMS: {"direction": 0},
             },
-            ("Rotating right", "Rotary knob"): {
+            (CONTINUED_ROTATING, RIGHT): {
                 COMMAND: COMMAND_CONTINUED_ROTATING,
                 CLUSTER_ID: 8,
                 ENDPOINT_ID: 2,
                 PARAMS: {"direction": 0},
             },
-            ("Stopped rotating", "Rotary knob"): {
+            (STOPPED_ROTATING, ROTARY_KNOB): {
                 COMMAND: COMMAND_STOPPED_ROTATING,
                 CLUSTER_ID: 8,
                 ENDPOINT_ID: 2,

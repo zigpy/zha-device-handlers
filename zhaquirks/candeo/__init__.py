@@ -27,6 +27,11 @@ COMMAND_STARTED_ROTATING = "started_rotating"
 COMMAND_CONTINUED_ROTATING = "continued_rotating"
 COMMAND_STOPPED_ROTATING = "stopped_rotating"
 
+ROTARY_KNOB = "rotary_knob"
+STARTED_ROTATING = "rotary_knob_started_rotating"
+CONTINUED_ROTATING = "rotary_knob_continued_rotating"
+STOPPED_ROTATING = "rotary_knob_stopped_rotating"
+
 
 class CandeoSwitchType(t.enum8):
     """Candeo Switch Type."""
