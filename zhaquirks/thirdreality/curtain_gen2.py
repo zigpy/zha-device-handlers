@@ -54,7 +54,7 @@ class THIRD_REALITY_Blind_Gen2_CLUSTER(CustomCluster):
         step=1,
         mode="box",
         translation_key="compensation_speed",
-        fallback_name="compensation_speed",
+        fallback_name="Compensation speed",
     )
     .number(
         attribute_name=THIRD_REALITY_Blind_Gen2_CLUSTER.AttributeDefs.limit_position.name,
