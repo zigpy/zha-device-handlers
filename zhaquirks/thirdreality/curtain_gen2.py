@@ -42,8 +42,8 @@ class THIRD_REALITY_Blind_Gen2_CLUSTER(CustomCluster):
         attribute_name=THIRD_REALITY_Blind_Gen2_CLUSTER.AttributeDefs.enable_disable_pir_remote.name,
         cluster_id=THIRD_REALITY_Blind_Gen2_CLUSTER.cluster_id,
         force_inverted=True,
-        translation_key="enable_disable_pir_mode",
-        fallback_name="Enable/Disable PIR Remote",
+        translation_key="enable_pir_mode",
+        fallback_name="Enable PIR remote",
     )
     .number(
         attribute_name=THIRD_REALITY_Blind_Gen2_CLUSTER.AttributeDefs.compensation_speed.name,
