@@ -379,6 +379,7 @@ class PlugAEU001Cluster(XiaomiAqaraE1Cluster):
     QuirkBuilder("Aqara", "lumi.plug.aeu001")
     .friendly_name(model="Wall Outlet H2 EU", manufacturer="Aqara")
     .removes(TemperatureMeasurement.cluster_id)
+    .adds(DeviceTemperature)
     .removes(OnOff.cluster_id, endpoint_id=2)
     .replaces(BasicCluster)
     .replaces(MeteringCluster)
