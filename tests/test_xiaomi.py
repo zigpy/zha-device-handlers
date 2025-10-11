@@ -2282,3 +2282,27 @@ async def test_lumi_magnet_sensor_aq2_bad_direction(zigpy_device_from_quirk, cap
 
     # Our matching logic should be forgiving
     assert listener.attribute_updates == [(0, t.Bool.true)]
+
+
+def test_plug_aeu001_metering_integration(zigpy_device_from_v2_quirk):
+    """Test Aqara lumi plug AEU001 Metering ignores decreases."""
+
+    device = zigpy_device_from_v2_quirk(
+        manufacturer=AQARA,
+        model="lumi.plug.aeu001",
+        endpoint_ids=[1, 2, 21],
+    )
+
+    metering_cluster = device.endpoints[1].smartenergy_metering
+    listener = ClusterListener(metering_cluster)
+    attr_id = Metering.AttributeDefs.current_summ_delivered.id
+
+    # 3 updates: initial, decrease (should be ignored), increase
+    metering_cluster.update_attribute(attr_id, 100)
+    assert listener.attribute_updates[-1] == (attr_id, 100)
+
+    metering_cluster.update_attribute(attr_id, 50)
+    assert listener.attribute_updates[-1] == (attr_id, 100)
+
+    metering_cluster.update_attribute(attr_id, 150)
+    assert listener.attribute_updates[-1] == (attr_id, 150)
