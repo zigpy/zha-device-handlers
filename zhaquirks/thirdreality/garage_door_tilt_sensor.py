@@ -18,7 +18,7 @@ class ThirdRealityGarageCluster(CustomCluster):
     class AttributeDefs(BaseAttributeDefs):
         """Define the attributes of a private cluster."""
 
-        undetected_to_detected_delay: Final = ZCLAttributeDef(
+        open_delay_time: Final = ZCLAttributeDef(
             id=0x0000,
             type=t.uint16_t,
             is_manufacturer_specific=True,
@@ -36,14 +36,14 @@ class ThirdRealityGarageCluster(CustomCluster):
     .replaces(ThirdRealityGarageCluster)
     .removes(PollControl.cluster_id)
     .number(
-        attribute_name=ThirdRealityGarageCluster.AttributeDefs.undetected_to_detected_delay.name,
+        attribute_name=ThirdRealityGarageCluster.AttributeDefs.open_delay_time.name,
         cluster_id=ThirdRealityGarageCluster.cluster_id,
         min_value=0,
         max_value=3600,
         unit=UnitOfTime.SECONDS,
         device_class=NumberDeviceClass.DURATION,
-        translation_key="undetected_to_detected_delay",
-        fallback_name="Undetected to detected delay",
+        translation_key="open_delay_time",
+        fallback_name="Open delay time",
     )
     .write_attr_button(
         attribute_name=ThirdRealityGarageCluster.AttributeDefs.z_axis_calibration.name,
