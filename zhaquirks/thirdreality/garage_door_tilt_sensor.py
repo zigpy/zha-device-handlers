@@ -4,10 +4,10 @@ from typing import Final
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
+from zigpy.quirks.v2.homeassistant import NumberDeviceClass, UnitOfTime
 import zigpy.types as t
 from zigpy.zcl.clusters.general import PollControl
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
-from zigpy.quirks.v2.homeassistant import UnitOfTime, NumberDeviceClass
 
 
 class ThirdRealityGarageCluster(CustomCluster):
@@ -31,7 +31,6 @@ class ThirdRealityGarageCluster(CustomCluster):
         )
 
 
-
 (
     QuirkBuilder("Third Reality, Inc", "3RDTS01056Z")
     .replaces(ThirdRealityGarageCluster)
@@ -49,8 +48,8 @@ class ThirdRealityGarageCluster(CustomCluster):
     .write_attr_button(
         attribute_name=ThirdRealityGarageCluster.AttributeDefs.z_axis_calibration.name,
         cluster_id=ThirdRealityGarageCluster.cluster_id,
-		attribute_value=0x01,
-		translation_key="enable_z_axis_calibration",
+        attribute_value=0x01,
+        translation_key="enable_z_axis_calibration",
         fallback_name="Enable Z axis calibration",
     )
     .add_to_registry()
