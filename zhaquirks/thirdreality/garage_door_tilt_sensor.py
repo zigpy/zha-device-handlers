@@ -34,7 +34,6 @@ class ThirdRealityGarageCluster(CustomCluster):
 (
     QuirkBuilder("Third Reality, Inc", "3RDTS01056Z")
     .replaces(ThirdRealityGarageCluster)
-    .removes(PollControl.cluster_id)
     .number(
         attribute_name=ThirdRealityGarageCluster.AttributeDefs.open_delay_time.name,
         cluster_id=ThirdRealityGarageCluster.cluster_id,
