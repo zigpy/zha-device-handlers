@@ -2,9 +2,11 @@
 
 from unittest import mock
 
+import zigpy.types as t
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.smartenergy import Metering
 
+from tests.common import ClusterListener
 import zhaquirks
 
 zhaquirks.setup()
@@ -137,3 +139,65 @@ async def test_frient_emi(zigpy_device_from_v2_quirk):
         assert attr_data == b"\x00\x00%d\x00\x00\x00\x00\x00"
 
         assert result == (foundation.Status.SUCCESS, "done")
+
+
+def _get_packet_data(
+    command: foundation.GeneralCommand,
+    attr: foundation.Attribute | None = None,
+    dirc: foundation.Direction = foundation.Direction.Server_to_Client,
+) -> bytes:
+    hdr = foundation.ZCLHeader.general(1, command, 0, dirc).serialize()
+    if attr is not None:
+        cmd = foundation.GENERAL_COMMANDS[command].schema([attr]).serialize()
+    else:
+        cmd = b""
+    return t.SerializableBytes(hdr + cmd).serialize()
+
+
+async def test_mfg_cluster_events(zigpy_device_from_v2_quirk):
+    """Test Frient EMI Norwegian HAN ignoring incorrect divisor attribute reports."""
+    device = zigpy_device_from_v2_quirk("frient A/S", "EMIZB-132", endpoint_ids=[1, 2])
+
+    # TODO: maybe get data from real device
+
+    metering_cluster = device.endpoints[2].smartenergy_metering
+    metering_listener = ClusterListener(metering_cluster)
+
+    # divisor already fixed at 1000
+    assert metering_cluster.get(Metering.AttributeDefs.divisor.id) == 1000
+
+    # send incorrect divisor attribute report
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=260,
+            cluster_id=Metering.cluster_id,
+            src_ep=2,
+            dst_ep=2,
+            data=t.SerializableBytes(b'\x1c\x00\x00\x01\n\x02\x03"\x00\x02\x00'),
+        )
+    )
+
+    # attribute_updated event should not be emitted
+    assert len(metering_listener.attribute_updates) == 0
+
+    # divisor should still be fixed at 1000
+    assert metering_cluster.get(Metering.AttributeDefs.divisor.id) == 1000
+
+    # send current_summ_delivered attribute report
+    device.packet_received(
+        t.ZigbeePacket(
+            profile_id=260,
+            cluster_id=Metering.cluster_id,
+            src_ep=2,
+            dst_ep=2,
+            data=t.SerializableBytes(
+                b"\x1c\x00\x00\x01\n\x00\x00%\xd2\x04\x00\x00\x00\x00"
+            ),
+        )
+    )
+
+    # attribute_updated event should be emitted
+    assert len(metering_listener.attribute_updates) == 1
+    assert (
+        metering_cluster.get(Metering.AttributeDefs.current_summ_delivered.id) == 1234
+    )
