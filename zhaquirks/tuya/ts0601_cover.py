@@ -16,8 +16,10 @@ from zhaquirks.tuya import (
     TuyaManufCluster,
     TuyaWindowCover,
     TuyaWindowCoverControl,
+    TuyaPowerConfigurationCluster,
 )
 
+ZEMISMART_BATTERY_ATTR = 0x0D
 
 class TuyaZemismartSmartCover0601(TuyaWindowCover):
     """Tuya Zemismart blind cover motor."""
@@ -352,6 +354,8 @@ class TuyaZemismartSmartCover0601_2_inv_position(TuyaWindowCover):
 class TuyaMoesCover0601(TuyaWindowCover):
     """Tuya blind controller device."""
 
+    tuya_battery_attr = ZEMISMART_BATTERY_ATTR
+
     signature = {
         # "node_descriptor": "NodeDescriptor(byte1=2, byte2=64, mac_capability_flags=128, manufacturer_code=4098,
         #                    maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264,
@@ -408,6 +412,7 @@ class TuyaMoesCover0601(TuyaWindowCover):
                     Scenes.cluster_id,
                     TuyaManufacturerWindowCover,
                     TuyaWindowCoverControl,
+                    TuyaPowerConfigurationCluster,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             }
