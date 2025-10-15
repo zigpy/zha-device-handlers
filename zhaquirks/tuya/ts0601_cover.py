@@ -14,12 +14,13 @@ from zhaquirks.const import (
 from zhaquirks.tuya import (
     TuyaManufacturerWindowCover,
     TuyaManufCluster,
+    TuyaPowerConfigurationCluster,
     TuyaWindowCover,
     TuyaWindowCoverControl,
-    TuyaPowerConfigurationCluster,
 )
 
 ZEMISMART_BATTERY_ATTR = 0x0D
+
 
 class TuyaZemismartSmartCover0601(TuyaWindowCover):
     """Tuya Zemismart blind cover motor."""
