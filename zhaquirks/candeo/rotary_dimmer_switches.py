@@ -5,18 +5,7 @@ from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import Identify, Ota
 
 from zhaquirks.candeo import (
-    CANDEO,
-    COMMAND_CONTINUED_ROTATING,
-    COMMAND_DOUBLE_PRESS,
-    COMMAND_HOLD,
-    COMMAND_PRESS,
-    COMMAND_RELEASE,
-    COMMAND_STARTED_ROTATING,
-    COMMAND_STOPPED_ROTATING,
-    CONTINUED_ROTATING,
-    ROTARY_KNOB,
-    STARTED_ROTATING,
-    STOPPED_ROTATING,
+    CANDEO,    
     CandeoLevelControlRemoteCluster,
     CandeoOnOffRemoteCluster,
 )
@@ -31,6 +20,17 @@ from zhaquirks.const import (
     PARAMS,
     RIGHT,
     SHORT_PRESS,
+    COMMAND_CONTINUED_ROTATING,
+    COMMAND_DOUBLE,
+    COMMAND_HOLD,
+    COMMAND_PRESS,
+    COMMAND_RELEASE,
+    COMMAND_STARTED_ROTATING,
+    COMMAND_STOPPED_ROTATING,
+    CONTINUED_ROTATING,
+    ROTARY_KNOB,
+    STARTED_ROTATING,
+    STOPPED_ROTATING,
 )
 
 remote_quirk = (
@@ -47,7 +47,7 @@ remote_quirk = (
                 ENDPOINT_ID: 2,
             },
             (DOUBLE_PRESS, ROTARY_KNOB): {
-                COMMAND: COMMAND_DOUBLE_PRESS,
+                COMMAND: COMMAND_DOUBLE,
                 CLUSTER_ID: 6,
                 ENDPOINT_ID: 2,
             },

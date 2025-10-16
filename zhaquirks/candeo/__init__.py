@@ -19,18 +19,6 @@ from zigpy.zcl.foundation import (
 from zhaquirks.const import ZONE_TYPE
 
 CANDEO = "Candeo"
-COMMAND_PRESS = "press"
-COMMAND_DOUBLE_PRESS = "double_press"
-COMMAND_HOLD = "hold"
-COMMAND_RELEASE = "release"
-COMMAND_STARTED_ROTATING = "started_rotating"
-COMMAND_CONTINUED_ROTATING = "continued_rotating"
-COMMAND_STOPPED_ROTATING = "stopped_rotating"
-
-ROTARY_KNOB = "rotary_knob"
-STARTED_ROTATING = "rotary_knob_started_rotating"
-CONTINUED_ROTATING = "rotary_knob_continued_rotating"
-STOPPED_ROTATING = "rotary_knob_stopped_rotating"
 
 
 class CandeoSwitchType(t.enum8):
@@ -138,7 +126,7 @@ class CandeoOnOffRemoteCluster(OnOff, CustomCluster):
     class ServerCommandDefs(BaseCommandDefs):
         """overwrite ServerCommandDefs."""
 
-        double_press: Final = ZCLCommandDef(
+        double: Final = ZCLCommandDef(
             id=0x00,
             schema={},
         )
