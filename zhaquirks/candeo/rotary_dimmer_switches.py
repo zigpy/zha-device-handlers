@@ -5,21 +5,13 @@ from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import Identify, Ota
 
 from zhaquirks.candeo import (
-    CANDEO,    
+    CANDEO,
     CandeoLevelControlRemoteCluster,
     CandeoOnOffRemoteCluster,
 )
 from zhaquirks.const import (
     CLUSTER_ID,
     COMMAND,
-    DOUBLE_PRESS,
-    ENDPOINT_ID,
-    LEFT,
-    LONG_PRESS,
-    LONG_RELEASE,
-    PARAMS,
-    RIGHT,
-    SHORT_PRESS,
     COMMAND_CONTINUED_ROTATING,
     COMMAND_DOUBLE,
     COMMAND_HOLD,
@@ -28,7 +20,15 @@ from zhaquirks.const import (
     COMMAND_STARTED_ROTATING,
     COMMAND_STOPPED_ROTATING,
     CONTINUED_ROTATING,
+    DOUBLE_PRESS,
+    ENDPOINT_ID,
+    LEFT,
+    LONG_PRESS,
+    LONG_RELEASE,
+    PARAMS,
+    RIGHT,
     ROTARY_KNOB,
+    SHORT_PRESS,
     STARTED_ROTATING,
     STOPPED_ROTATING,
 )
