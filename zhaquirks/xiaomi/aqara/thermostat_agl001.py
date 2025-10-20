@@ -375,29 +375,8 @@ class ScheduleSettings(t.LVBytes):
             result += f"|{e}"
         return result
 
-
-class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
-    """Aqara manufacturer specific settings."""
-
-    attributes = XiaomiAqaraE1Cluster.attributes.copy()
-    attributes.update(
-        {
-            SYSTEM_MODE: ("system_mode", t.uint8_t, True),
-            PRESET: ("preset", t.uint8_t, True),
-            WINDOW_DETECTION: ("window_detection", t.uint8_t, True),
-            VALVE_DETECTION: ("valve_detection", t.uint8_t, True),
-            VALVE_ALARM: ("valve_alarm", t.uint8_t, True),
-            CHILD_LOCK: ("child_lock", t.uint8_t, True),
-            AWAY_PRESET_TEMPERATURE: ("away_preset_temperature", t.uint32_t, True),
-            WINDOW_OPEN: ("window_open", t.uint8_t, True),
-            CALIBRATED: ("calibrated", t.uint8_t, True),
-            SCHEDULE: ("schedule", t.uint8_t, True),
-            SCHEDULE_SETTINGS: ("schedule_settings", ScheduleSettings, True),
-            SENSOR: ("sensor", t.uint8_t, True),
-            BATTERY_PERCENTAGE: ("battery_percentage", t.uint8_t, True),
-            SENSOR_TEMP: ("sensor_temp", t.LVBytes, True),
-        }
-    )
+class SensorTemp(t.LVBytes):
+    """Sensor temperature object."""
 
     @staticmethod
     def lumi_header(counter: int, params: bytes, action: int) -> bytes:
@@ -408,7 +387,7 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
         return bytes(header + bytearray([integrity, action, 0x41, len(params)]))
 
     @staticmethod
-    def convert_sensor_write(value: Any, ieee: t.EUI64) -> list[bytes]:
+    def toggle_sensor_serialize(value: Any, ieee: t.EUI64) -> list[bytes]:
         """Convert sensor write value to bytes."""
         device = bytes(reversed(ieee))
         timestamp = struct.pack(">I", int(datetime.now().timestamp()))
@@ -431,9 +410,9 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
             )
 
             return [
-                AqaraThermostatSpecificCluster.lumi_header(0x12, params1, 0x02)
+                SensorTemp.lumi_header(0x12, params1, 0x02)
                 + params1,
-                AqaraThermostatSpecificCluster.lumi_header(0x13, params2, 0x02)
+                SensorTemp.lumi_header(0x13, params2, 0x02)
                 + params2,
             ]
         else:
@@ -452,24 +431,61 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
             )
 
             return [
-                AqaraThermostatSpecificCluster.lumi_header(0x12, params1, 0x04)
+                SensorTemp.lumi_header(0x12, params1, 0x04)
                 + params1,
-                AqaraThermostatSpecificCluster.lumi_header(0x13, params2, 0x04)
+                SensorTemp.lumi_header(0x13, params2, 0x04)
                 + params2,
             ]
 
-    @staticmethod
-    def convert_sensor_temp_write(value: Any) -> bytes:
-        """Convert sensor temperature write value to bytes."""
-        value = float(value)
-        value = max(value, 0)
+    def __new__(cls, value):
+        """Create SensorTemp object from string, int, float temperature value, or bytes."""
 
-        value = min(value, 55)
+        if isinstance(value, bytes):
+            # If bytes are provided (e.g., from toggle_sensor_serialize), pass through
+            result = value
+        elif isinstance(value, (str, int, float)):
+            # Parse temperature value
+            temp = float(value)
 
-        temp = struct.pack(">f", round(value * 100))
+            # Apply bounds: min 0, max 55
+            temp = max(temp, 0)
+            temp = min(temp, 55)
 
-        params = XIAOMI_SENSOR_VALUE + b"\x00\x01\x00\x55" + temp
-        return AqaraThermostatSpecificCluster.lumi_header(0x12, params, 0x05) + params
+            # Pack as big-endian float (multiplied by 100 and rounded)
+            temp_packed = struct.pack(">f", round(temp * 100))
+
+            # Build the result: XIAOMI_SENSOR_VALUE + b"\x00\x01\x00\x55" + temp
+            params = XIAOMI_SENSOR_VALUE + b"\x00\x01\x00\x55" + temp_packed
+
+            # Add lumi header
+            result = SensorTemp.lumi_header(0x12, params, 0x05) + params
+        else:
+            raise TypeError(f"Cannot create SensorTemp object from type: {type(value)}")
+
+        return super().__new__(cls, result)
+
+class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
+    """Aqara manufacturer specific settings."""
+
+    attributes = XiaomiAqaraE1Cluster.attributes.copy()
+    attributes.update(
+        {
+            SYSTEM_MODE: ("system_mode", t.uint8_t, True),
+            PRESET: ("preset", t.uint8_t, True),
+            WINDOW_DETECTION: ("window_detection", t.uint8_t, True),
+            VALVE_DETECTION: ("valve_detection", t.uint8_t, True),
+            VALVE_ALARM: ("valve_alarm", t.uint8_t, True),
+            CHILD_LOCK: ("child_lock", t.uint8_t, True),
+            AWAY_PRESET_TEMPERATURE: ("away_preset_temperature", t.uint32_t, True),
+            WINDOW_OPEN: ("window_open", t.uint8_t, True),
+            CALIBRATED: ("calibrated", t.uint8_t, True),
+            SCHEDULE: ("schedule", t.uint8_t, True),
+            SCHEDULE_SETTINGS: ("schedule_settings", ScheduleSettings, True),
+            SENSOR: ("sensor", t.uint8_t, True),
+            BATTERY_PERCENTAGE: ("battery_percentage", t.uint8_t, True),
+            SENSOR_TEMP: ("sensor_temp", SensorTemp, True),
+        }
+    )
 
     async def write_attributes(
         self, attributes: dict[str | int, Any], manufacturer: int | None = None
@@ -478,7 +494,7 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
         result = []
 
         if SENSOR in attributes:
-            values = AqaraThermostatSpecificCluster.convert_sensor_write(
+            values = SensorTemp.toggle_sensor_serialize(
                 attributes[SENSOR], self.endpoint.device.ieee
             )
 
@@ -492,17 +508,6 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
             # keep only last result in list
             if len(result) > 1:
                 result = result[-1]
-
-        elif SENSOR_TEMP in attributes:
-            result += await super().write_attributes(
-                {
-                    SENSOR_TEMP: AqaraThermostatSpecificCluster.convert_sensor_temp_write(
-                        attributes[SENSOR_TEMP]
-                    )
-                },
-                manufacturer=MANUFACTUER_ID,
-            )
-            attributes.pop(SENSOR_TEMP)
 
         if len(attributes) == 0:
             return result

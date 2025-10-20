@@ -92,6 +92,7 @@ from zhaquirks.xiaomi.aqara.thermostat_agl001 import (
     AqaraThermostatSpecificCluster,
     ScheduleEvent,
     ScheduleSettings,
+    SensorTemp,
 )
 import zhaquirks.xiaomi.aqara.weather
 import zhaquirks.xiaomi.mija.motion
@@ -1136,14 +1137,34 @@ async def test_xiaomi_e1_thermostat_schedule_settings_deserialization(
 
 
 @pytest.mark.parametrize(
-    "input, attr",
+    "input, expected",
     [
         (
             "24.0",
             b"\xaa\x71\x13\x44\x12\x7c\x05\x41\x10\x00\x15\x8d\x00\x01\x9d\x1b\x98\x00\x01\x00\x55\x45\x16\x00\x00",
         ),
         (
+            "20.0",
+            b"\xaa\x71\x13\x44\x12\x7c\x05\x41\x10\x00\x15\x8d\x00\x01\x9d\x1b\x98\x00\x01\x00\x55\x44\xfa\x00\x00",
+        ),
+        (
+            "20",
+            b"\xaa\x71\x13\x44\x12\x7c\x05\x41\x10\x00\x15\x8d\x00\x01\x9d\x1b\x98\x00\x01\x00\x55\x44\xfa\x00\x00",
+        ),
+        (
+            20.0,
+            b"\xaa\x71\x13\x44\x12\x7c\x05\x41\x10\x00\x15\x8d\x00\x01\x9d\x1b\x98\x00\x01\x00\x55\x44\xfa\x00\x00",
+        ),
+        (
+            20,
+            b"\xaa\x71\x13\x44\x12\x7c\x05\x41\x10\x00\x15\x8d\x00\x01\x9d\x1b\x98\x00\x01\x00\x55\x44\xfa\x00\x00",
+        ),
+        (
             "20.3",
+            b"\xaa\x71\x13\x44\x12\x7c\x05\x41\x10\x00\x15\x8d\x00\x01\x9d\x1b\x98\x00\x01\x00\x55\x44\xfd\xc0\x00",
+        ),
+        (
+            20.3,
             b"\xaa\x71\x13\x44\x12\x7c\x05\x41\x10\x00\x15\x8d\x00\x01\x9d\x1b\x98\x00\x01\x00\x55\x44\xfd\xc0\x00",
         ),
         (
@@ -1151,7 +1172,15 @@ async def test_xiaomi_e1_thermostat_schedule_settings_deserialization(
             b"\xaa\x71\x13\x44\x12\x7c\x05\x41\x10\x00\x15\x8d\x00\x01\x9d\x1b\x98\x00\x01\x00\x55\x00\x00\x00\x00",
         ),
         (
+            0,
+            b"\xaa\x71\x13\x44\x12\x7c\x05\x41\x10\x00\x15\x8d\x00\x01\x9d\x1b\x98\x00\x01\x00\x55\x00\x00\x00\x00",
+        ),
+        (
             "-5",
+            b"\xaa\x71\x13\x44\x12\x7c\x05\x41\x10\x00\x15\x8d\x00\x01\x9d\x1b\x98\x00\x01\x00\x55\x00\x00\x00\x00",
+        ),
+        (
+            -5,
             b"\xaa\x71\x13\x44\x12\x7c\x05\x41\x10\x00\x15\x8d\x00\x01\x9d\x1b\x98\x00\x01\x00\x55\x00\x00\x00\x00",
         ),
         (
@@ -1159,18 +1188,37 @@ async def test_xiaomi_e1_thermostat_schedule_settings_deserialization(
             b"\xaa\x71\x13\x44\x12\x7c\x05\x41\x10\x00\x15\x8d\x00\x01\x9d\x1b\x98\x00\x01\x00\x55\x45\xab\xe0\x00",
         ),
         (
+            55,
+            b"\xaa\x71\x13\x44\x12\x7c\x05\x41\x10\x00\x15\x8d\x00\x01\x9d\x1b\x98\x00\x01\x00\x55\x45\xab\xe0\x00",
+        ),
+        (
             "55.5",
+            b"\xaa\x71\x13\x44\x12\x7c\x05\x41\x10\x00\x15\x8d\x00\x01\x9d\x1b\x98\x00\x01\x00\x55\x45\xab\xe0\x00",
+        ),
+        (
+            55.5,
             b"\xaa\x71\x13\x44\x12\x7c\x05\x41\x10\x00\x15\x8d\x00\x01\x9d\x1b\x98\x00\x01\x00\x55\x45\xab\xe0\x00",
         ),
     ],
 )
-async def test_xiaomi_e1_thermostat_sensor_temp_serialization(
-    input,
-    attr,
-):
-    """Test that temperature serialization works correctly."""
+async def test_sensor_temp_creation(input, expected):
+    """Test SensorTemp class creation from string, int, and float."""
+    sensor_temp = SensorTemp(input)
+    assert sensor_temp.serialize() == expected
 
-    assert AqaraThermostatSpecificCluster.convert_sensor_temp_write(input) == attr
+
+@pytest.mark.parametrize(
+    "input",
+    [
+        None,
+        [],
+        {},
+    ],
+)
+async def test_sensor_temp_invalid_input(input):
+    """Test SensorTemp class with invalid input types."""
+    with pytest.raises(TypeError):
+        SensorTemp(input)
 
 
 @pytest.mark.parametrize(
@@ -1183,7 +1231,7 @@ async def test_xiaomi_e1_thermostat_sensor_temp_serialization(
 async def test_xiaomi_e1_thermostat_temp_sensor(input, ieee_mock):
     """Test that temperature source switch works correctly."""
 
-    msgs = AqaraThermostatSpecificCluster.convert_sensor_write(input, ieee_mock)
+    msgs = SensorTemp.toggle_sensor_serialize(input, ieee_mock)
     assert len(msgs) == 2
 
     for msg in msgs:
@@ -1224,9 +1272,27 @@ async def test_xiaomi_e1_thermostat_temp_write(
         assert len(opple_cluster._write_attributes.mock_calls) == 2
 
         opple_cluster._write_attributes.reset_mock()
-        # set external temp
+        # set external temp with string
         await opple_cluster.write_attributes(
             {zhaquirks.xiaomi.aqara.thermostat_agl001.SENSOR_TEMP: "20.0"}
+        )
+
+        # setting temp requires one call
+        assert len(opple_cluster._write_attributes.mock_calls) == 1
+
+        opple_cluster._write_attributes.reset_mock()
+        # set external temp with float
+        await opple_cluster.write_attributes(
+            {zhaquirks.xiaomi.aqara.thermostat_agl001.SENSOR_TEMP: 25.5}
+        )
+
+        # setting temp requires one call
+        assert len(opple_cluster._write_attributes.mock_calls) == 1
+
+        opple_cluster._write_attributes.reset_mock()
+        # set external temp with int
+        await opple_cluster.write_attributes(
+            {zhaquirks.xiaomi.aqara.thermostat_agl001.SENSOR_TEMP: 22}
         )
 
         # setting temp requires one call
