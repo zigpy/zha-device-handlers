@@ -625,6 +625,7 @@ class TuyaQuadrupleSwitchGP(TuyaSwitch):
         MODELS_INFO: [
             ("_TZE200_1n2kyphz", "TS0601"),
             ("_TZE200_mexisfik", "TS0601"),  # reported #1634
+            ("_TZE204_58of2pfn", "TS0601"),  # 4-channel relay
         ],
         ENDPOINTS: {
             # <SimpleDescriptor endpoint=1 profile=260 device_type=51 device_version=1
