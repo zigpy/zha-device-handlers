@@ -19,14 +19,16 @@ class ManufacturerDevice(CustomDeviceV2):
     ):
         """Remap cluster IDs for clusters that substitute for others."""
         # TODO: verify these are always kwargs
-        endpoint_id = kwargs["src_ep"]
-        cluster_id = kwargs["cluster"]
 
-        cluster = self.endpoints[endpoint_id].in_clusters.get(cluster_id)
-        substitution_cluster = getattr(cluster, "SUBSTITUTION_FOR", None)
+        # ignore ZDO and narrow down to manufacturer specific clusters
+        if (endpoint_id := kwargs["src_ep"]) != 0 and (
+            cluster_id := kwargs["cluster"]
+        ) >= 0xFC00:
+            cluster = self.endpoints[endpoint_id].in_clusters.get(cluster_id)
+            substitution_cluster = getattr(cluster, "SUBSTITUTION_FOR", None)
 
-        if substitution_cluster:
-            kwargs["cluster"] = t.ClusterId(substitution_cluster)
+            if substitution_cluster:
+                kwargs["cluster"] = t.ClusterId(substitution_cluster)
 
         return await super().request(
             *args,
