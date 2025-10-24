@@ -1,4 +1,4 @@
-"""IKEA TRADFRI plug quirk."""
+"""IKEA TRADFRI and TRETAKT plugs quirk."""
 
 from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.zcl.clusters.general import LevelControl
