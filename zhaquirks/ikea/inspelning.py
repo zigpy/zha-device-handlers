@@ -29,7 +29,6 @@ class IkeaSmartPlugCluster(CustomCluster):
 # remove LevelControl for plugs to not show config options in ZHA
 (
     QuirkBuilder(IKEA, "INSPELNING Smart plug")
-    .firmware_version_filter(min_version=0x02040045, allow_missing=True)
     .removes(LevelControl.cluster_id)
     .replaces(IkeaSmartPlugCluster)
     .switch(
