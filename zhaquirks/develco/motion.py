@@ -2,9 +2,9 @@
 
 from typing import Final
 
-import zigpy.types as t
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
+import zigpy.types as t
 from zigpy.types import uint16_t
 from zigpy.zcl.clusters.general import BinaryInput
 from zigpy.zcl.clusters.measurement import OccupancySensing
@@ -16,10 +16,10 @@ from zhaquirks.develco import DEVELCO, FRIENT, DevelcoIasZone, DevelcoPowerConfi
 
 class FrientOccupancySensing(CustomCluster, OccupancySensing):
     """Custom occupancy sensing cluster for frient motion sensors."""
-    
+
     class AttributeDefs(OccupancySensing.AttributeDefs):
         """Attribute definitions."""
-        
+
         pir_o_to_u_delay: Final = ZCLAttributeDef(
             id=0x0010,
             type=uint16_t,
@@ -43,9 +43,11 @@ class FrientIasZone(DevelcoIasZone):
             tamper_state = bool(value & 0b00000100)
             super()._update_attribute(self.AttributeDefs.tamper.id, tamper_state)
 
-    class AttributeDefs(IasZone.AttributeDefs):  # Changed from DevelcoIasZone.AttributeDefs
+    class AttributeDefs(
+        IasZone.AttributeDefs
+    ):  # Changed from DevelcoIasZone.AttributeDefs
         """Attribute definitions."""
-        
+
         tamper: Final = ZCLAttributeDef(
             id=0xFFF2,  # Custom attribute ID
             type=t.Bool,
@@ -55,15 +57,17 @@ class FrientIasZone(DevelcoIasZone):
 class FrientPETIasZone(DevelcoIasZone):
     """Custom IAS Zone cluster for frient PET motion sensor with sensitivity levels."""
 
-    class AttributeDefs(IasZone.AttributeDefs):  # Changed from DevelcoIasZone.AttributeDefs
+    class AttributeDefs(
+        IasZone.AttributeDefs
+    ):  # Changed from DevelcoIasZone.AttributeDefs
         """Attribute definitions."""
-        
+
         number_of_zone_sensitivity_levels_supported: Final = ZCLAttributeDef(
             id=0x0012,
             type=t.uint8_t,
             access="r",
         )
-        
+
         current_zone_sensitivity_level: Final = ZCLAttributeDef(
             id=0x0013,
             type=t.uint8_t,
@@ -77,7 +81,9 @@ class FrientPETIasZone(DevelcoIasZone):
     .applies_to(DEVELCO, "MOSZB-140")
     .replaces(DevelcoPowerConfiguration, endpoint_id=35)
     .replaces(FrientIasZone, endpoint_id=35)
-    .replaces(FrientOccupancySensing, cluster_id=OccupancySensing.cluster_id, endpoint_id=34)
+    .replaces(
+        FrientOccupancySensing, cluster_id=OccupancySensing.cluster_id, endpoint_id=34
+    )
     .binary_sensor(
         attribute_name="tamper",
         cluster_id=IasZone.cluster_id,
@@ -118,7 +124,9 @@ class FrientPETIasZone(DevelcoIasZone):
     .applies_to(DEVELCO, "MOSZB-141")
     .replaces(DevelcoPowerConfiguration, endpoint_id=35)
     .replaces(DevelcoIasZone, endpoint_id=35)
-    .replaces(FrientOccupancySensing, cluster_id=OccupancySensing.cluster_id, endpoint_id=34)
+    .replaces(
+        FrientOccupancySensing, cluster_id=OccupancySensing.cluster_id, endpoint_id=34
+    )
     .number(
         attribute_name="pir_o_to_u_delay",
         cluster_id=OccupancySensing.cluster_id,
@@ -150,7 +158,9 @@ class FrientPETIasZone(DevelcoIasZone):
     QuirkBuilder(FRIENT, "MOSZB-153")
     .replaces(DevelcoPowerConfiguration, endpoint_id=35)
     .replaces(FrientPETIasZone, endpoint_id=35)
-    .replaces(FrientOccupancySensing, cluster_id=OccupancySensing.cluster_id, endpoint_id=34)
+    .replaces(
+        FrientOccupancySensing, cluster_id=OccupancySensing.cluster_id, endpoint_id=34
+    )
     .number(
         attribute_name="current_zone_sensitivity_level",
         cluster_id=IasZone.cluster_id,
