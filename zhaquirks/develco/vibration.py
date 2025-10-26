@@ -174,4 +174,3 @@ class FrientVibrationIasZone(DevelcoIasZone):
     .prevent_default_entity_creation(endpoint_id=45, cluster_id=BinaryInput.cluster_id)
     .add_to_registry()
 )
-
