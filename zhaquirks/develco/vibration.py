@@ -1,4 +1,4 @@
-"""frient Vibration Sensor WISZB-137"""
+"""frient Vibration Sensor WISZB-137."""
 
 from typing import Final
 
@@ -174,3 +174,4 @@ class FrientVibrationIasZone(DevelcoIasZone):
     .prevent_default_entity_creation(endpoint_id=45, cluster_id=BinaryInput.cluster_id)
     .add_to_registry()
 )
+
