@@ -2,9 +2,9 @@
 
 from typing import Final
 
-import zigpy.types as t
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder, ReportingConfig, SensorStateClass
+import zigpy.types as t
 from zigpy.zcl.clusters.general import BinaryInput
 from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
@@ -57,29 +57,29 @@ class FrientVibrationIasZone(DevelcoIasZone):
             # Bit5: Restore reports
             movement_state = bool(value & 0b00000001)  # Bit 0
             vibration_state = bool(value & 0b00000010)  # Bit 1
-            
+
             super()._update_attribute(self.AttributeDefs.movement.id, movement_state)
             super()._update_attribute(self.AttributeDefs.vibration.id, vibration_state)
 
     class AttributeDefs(IasZone.AttributeDefs):
         """Attribute definitions."""
-        
+
         movement: Final = ZCLAttributeDef(
             id=0xFFF0,  # Custom attribute ID for movement detection
             type=t.Bool,
         )
-        
+
         vibration: Final = ZCLAttributeDef(
             id=0xFFF1,  # Custom attribute ID for vibration detection
             type=t.Bool,
         )
-        
+
         number_of_zone_sensitivity_levels_supported: Final = ZCLAttributeDef(
             id=0x0012,
             type=t.uint8_t,
             access="r",
         )
-        
+
         current_zone_sensitivity_level: Final = ZCLAttributeDef(
             id=0x0013,
             type=t.uint8_t,
@@ -98,7 +98,7 @@ class FrientVibrationIasZone(DevelcoIasZone):
         cluster_id=IasZone.cluster_id,
         endpoint_id=45,
         entity_type="vibration",
-        translation_key="vibration", 
+        translation_key="vibration",
         fallback_name="Vibration",
     )
     .binary_sensor(
