@@ -57,8 +57,8 @@ COMMAND_LONG_RELESE_DIM_UP = "long_release_dim_up"
 COMMAND_LONG_RELESE_DIM_DOWN = "long_release_dim_down"
 
 
-class IkeaRemoteLongReleaseControl(CustomCluster, LevelControl):
-    """Ikea Remote Long Release Control cluster."""
+class IkeaLevelControl(CustomCluster, LevelControl):
+    """Ikea Level Control cluster."""
 
     def __init__(self, *args, **kwargs):
         """Initialize instance."""
@@ -146,7 +146,7 @@ class IkeaTradfriRemote2Btn(CustomDevice):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     OnOff.cluster_id,
-                    IkeaRemoteLongReleaseControl,
+                    IkeaLevelControl,
                     Ota.cluster_id,
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
@@ -235,7 +235,7 @@ class IkeaTradfriRemote2BtnZLL(CustomDevice):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     OnOff.cluster_id,
-                    IkeaRemoteLongReleaseControl,
+                    IkeaLevelControl,
                     Ota.cluster_id,
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
@@ -297,7 +297,7 @@ class IkeaRodretRemote2Btn(CustomDevice):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     OnOff.cluster_id,
-                    IkeaRemoteLongReleaseControl,
+                    IkeaLevelControl,
                     Ota.cluster_id,
                     LightLink.cluster_id,
                 ],
@@ -359,7 +359,7 @@ class IkeaRodretRemote2BtnNew(CustomDevice):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     OnOff.cluster_id,
-                    IkeaRemoteLongReleaseControl,
+                    IkeaLevelControl,
                     Ota.cluster_id,
                     LightLink.cluster_id,
                 ],
