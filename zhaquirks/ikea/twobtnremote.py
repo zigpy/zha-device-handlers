@@ -1,7 +1,11 @@
 """Device handler for IKEA of Sweden TRADFRI remote control."""
 
+from typing import Any, Optional, Union
+
 from zigpy.profiles import zha, zll
-from zigpy.quirks import CustomDevice
+from zigpy.quirks import CustomCluster, CustomDevice
+import zigpy.types as t
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import (
     Alarms,
@@ -40,6 +44,7 @@ from zhaquirks.const import (
     SHORT_PRESS,
     TURN_OFF,
     TURN_ON,
+    ZHA_SEND_EVENT,
 )
 from zhaquirks.ikea import (
     IKEA,
@@ -47,6 +52,45 @@ from zhaquirks.ikea import (
     DoublingPowerConfig1CRCluster,
     PowerConfig1AAACluster,
 )
+
+COMMAND_LONG_RELESE_DIM_UP = "long_release_dim_up"
+COMMAND_LONG_RELESE_DIM_DOWN = "long_release_dim_down"
+
+
+class IkeaRemoteLongReleaseControl(CustomCluster, LevelControl):
+    """Ikea Remote Long Release Control cluster."""
+
+    def __init__(self, *args, **kwargs):
+        """Initialize instance."""
+        super().__init__(*args, **kwargs)
+        self._dim_direction_down = None
+
+    def handle_cluster_request(
+        self,
+        hdr: foundation.ZCLHeader,
+        args: list[Any],
+        *,
+        dst_addressing: Optional[
+            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        ] = None,
+    ) -> None:
+        """Handle cluster specific commands.
+
+        We just want to keep track of direction, to associate it with the stop command.
+        """
+
+        cmd_name = self.server_commands[hdr.command_id].name
+        if cmd_name == COMMAND_MOVE_ON_OFF:
+            self._dim_direction_down = False
+        elif cmd_name == COMMAND_MOVE:
+            self._dim_direction_down = True
+        elif cmd_name in (COMMAND_STOP_ON_OFF, COMMAND_STOP):
+            action = (
+                COMMAND_LONG_RELESE_DIM_DOWN
+                if self._dim_direction_down
+                else COMMAND_LONG_RELESE_DIM_UP
+            )
+            self.listener_event(ZHA_SEND_EVENT, action, [])
 
 
 class IkeaTradfriRemote2Btn(CustomDevice):
@@ -102,7 +146,7 @@ class IkeaTradfriRemote2Btn(CustomDevice):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id,
+                    IkeaRemoteLongReleaseControl,
                     Ota.cluster_id,
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
@@ -120,7 +164,7 @@ class IkeaTradfriRemote2Btn(CustomDevice):
             PARAMS: {"move_mode": 0},
         },
         (LONG_RELEASE, DIM_UP): {
-            COMMAND: COMMAND_STOP_ON_OFF,
+            COMMAND: COMMAND_LONG_RELESE_DIM_UP,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
         },
@@ -132,7 +176,7 @@ class IkeaTradfriRemote2Btn(CustomDevice):
             PARAMS: {"move_mode": 1},
         },
         (LONG_RELEASE, DIM_DOWN): {
-            COMMAND: COMMAND_STOP,
+            COMMAND: COMMAND_LONG_RELESE_DIM_DOWN,
             CLUSTER_ID: 8,
             ENDPOINT_ID: 1,
         },
@@ -191,7 +235,7 @@ class IkeaTradfriRemote2BtnZLL(CustomDevice):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id,
+                    IkeaRemoteLongReleaseControl,
                     Ota.cluster_id,
                     WindowCovering.cluster_id,
                     LightLink.cluster_id,
@@ -253,7 +297,7 @@ class IkeaRodretRemote2Btn(CustomDevice):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id,
+                    IkeaRemoteLongReleaseControl,
                     Ota.cluster_id,
                     LightLink.cluster_id,
                 ],
@@ -315,7 +359,7 @@ class IkeaRodretRemote2BtnNew(CustomDevice):
                     Identify.cluster_id,
                     Groups.cluster_id,
                     OnOff.cluster_id,
-                    LevelControl.cluster_id,
+                    IkeaRemoteLongReleaseControl,
                     Ota.cluster_id,
                     LightLink.cluster_id,
                 ],
