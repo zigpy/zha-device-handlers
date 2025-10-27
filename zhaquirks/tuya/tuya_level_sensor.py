@@ -133,3 +133,34 @@ base_level_quirk = (
     )
     .add_to_registry()
 )
+
+
+(
+    base_level_quirk.clone()
+    .applies_to("_TZE204_7yyuo8sr", "TS0601")
+    .tuya_number(
+        dp_id=19,
+        attribute_name="installation_height",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DISTANCE,
+        unit=UnitOfLength.CENTIMETERS,
+        min_value=10,
+        max_value=500,
+        step=1,
+        translation_key="installation_height",
+        fallback_name="Height from sensor to tank bottom",
+    )
+    .tuya_number(
+        dp_id=21,
+        attribute_name="liquid_depth_max",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DISTANCE,
+        unit=UnitOfLength.CENTIMETERS,
+        min_value=10,
+        max_value=500,
+        step=1,
+        translation_key="liquid_depth_max",
+        fallback_name="Height from sensor to liquid level",
+    )
+    .add_to_registry()
+)
