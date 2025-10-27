@@ -48,8 +48,8 @@ class ThirdRealityGarageCluster(CustomCluster):
         attribute_name=ThirdRealityGarageCluster.AttributeDefs.z_axis_calibration.name,
         cluster_id=ThirdRealityGarageCluster.cluster_id,
         attribute_value=0x01,
-        translation_key="enable_z_axis_calibration",
-        fallback_name="Enable Z axis calibration",
+        translation_key="calibrate_z_axis",
+        fallback_name="Calibrate Z axis",
     )
     .add_to_registry()
 )
