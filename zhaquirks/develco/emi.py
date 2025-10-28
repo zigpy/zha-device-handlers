@@ -18,7 +18,6 @@ class ManufacturerDevice(CustomDeviceV2):
         **kwargs,
     ):
         """Remap cluster IDs for clusters that substitute for others."""
-        # TODO: verify these are always kwargs
         endpoint_id = kwargs["src_ep"]
         cluster_id = kwargs["cluster"]
 
@@ -40,7 +39,7 @@ class ManufacturerMetering(CustomCluster):
     """Fake manufacturer specific cluster for Metering manufacturer attributes."""
 
     SUBSTITUTION_FOR: int = Metering.cluster_id
-    cluster_id = 0xFD10  # TODO: use a different one? (0xEF01?)
+    cluster_id = 0xFD10
 
     class AttributeDefs(BaseAttributeDefs):
         """Define manufacturer specific attributes."""
