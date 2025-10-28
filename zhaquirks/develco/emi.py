@@ -54,7 +54,6 @@ class ManufacturerMetering(CustomCluster):
 
 base_quirk = (
     QuirkBuilder()
-    .adds(Metering, endpoint_id=2)  # TODO: remove, only for tests
     .replaces(ManufacturerMetering, endpoint_id=2)
     .device_class(ManufacturerDevice)
     .number(

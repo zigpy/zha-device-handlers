@@ -3,7 +3,7 @@
 from unittest import mock
 
 import zigpy.types as t
-from zigpy.zcl import foundation
+from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.smartenergy import Metering
 
 import zhaquirks
@@ -15,7 +15,11 @@ async def test_frient_emi(zigpy_device_from_v2_quirk):
     """Test that the EMI correctly forwards custom attributes."""
     # TODO: fix/improve
 
-    device = zigpy_device_from_v2_quirk("frient A/S", "EMIZB-141", endpoint_ids=[1, 2])
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "EMIZB-141",
+        cluster_ids={2: {Metering.cluster_id: ClusterType.Server}},
+    )
 
     metering_cluster = device.endpoints[2].smartenergy_metering
     # metering_listener = ClusterListener(metering_cluster)
