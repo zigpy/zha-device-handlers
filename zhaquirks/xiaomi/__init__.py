@@ -45,7 +45,13 @@ from zhaquirks.const import (
     ATTRIBUTE_ID,
     ATTRIBUTE_NAME,
     COMMAND_ATTRIBUTE_UPDATED,
+    COMMAND_SLIDER_EVENT,
     COMMAND_TRIPLE,
+    SLIDER_DOUBLE,
+    SLIDER_DOWN,
+    SLIDER_HOLD,
+    SLIDER_SINGLE,
+    SLIDER_UP,
     UNKNOWN,
     VALUE,
     ZHA_SEND_EVENT,
@@ -772,6 +778,106 @@ class OnOffCluster(OnOff, CustomCluster):
             bytes([src_ep, tsn, command_id]),
             expect_reply=expect_reply,
         )
+
+
+class AqaraZ1ProManufacturerSpecificCluster(CustomCluster):
+    """Custom cluster for Aqara Z1 Pro manufacturer specific events."""
+
+    cluster_id = 0xFCC0
+
+    # Attribute IDs
+    ATTR_SLIDER_ACTION = 0x028C  # 652
+    ATTR_SLIDE_TIME = 0x0231  # 561
+    ATTR_SLIDE_SPEED = 0x0232  # 562
+    ATTR_SLIDE_RELATIVE_DISPLACEMENT = 0x0233  # 563
+    ATTR_SLIDE_TIME_DELTA = 0x0301  # 769
+
+    # ATTR_DEVICE_ID_SHADE = 0x0200 # 512
+    # ATTR_LOCK_RELAY = 0x0285 # 645
+    # ATTR_SWITCH_MODE = 0x0004 # 4
+    # ATTR_POWER_ON_BEHAVIOR = 0x0517 # 1303
+    # ATTR_CLICK_MODE = 0x0125 # 293
+
+    # Action mapping
+    ACTION_MAPPING = {
+        1: SLIDER_SINGLE,
+        2: SLIDER_DOUBLE,
+        3: SLIDER_HOLD,
+        4: SLIDER_UP,
+        5: SLIDER_DOWN,
+    }
+
+    def __init__(self, *args, **kwargs):
+        """Init."""
+        super().__init__(*args, **kwargs)
+        self._attr_id = self.ATTR_SLIDER_ACTION
+        _LOGGER.debug(
+            "AqaraZ1ProManufacturerSpecificCluster initialized for device %s",
+            self._endpoint.device.ieee,
+        )
+
+    def _update_attribute(self, attrid, value):
+        """Handle attribute updates."""
+
+        # Store all attributes for the event
+        if not hasattr(self, "_manufacturer_attrs"):
+            self._manufacturer_attrs = {}
+
+        # Update the attribute value
+        self._manufacturer_attrs[attrid] = value
+
+        # If this is the slider action attribute, send the event
+        if attrid == self.ATTR_SLIDER_ACTION:
+            # Get the action name from the mapping
+            action = self.ACTION_MAPPING.get(value, f"slider_unknown_{value}")
+            _LOGGER.debug(
+                "AqaraZ1ProManufacturerSpecificCluster detected action: %s (value: %s)",
+                action,
+                value,
+            )
+
+            # Prepare the event data
+            event_data = {
+                "action": action,
+                "value": value,
+                "slide_time": self._manufacturer_attrs.get(self.ATTR_SLIDE_TIME),
+                "slide_speed": self._manufacturer_attrs.get(self.ATTR_SLIDE_SPEED),
+                "slide_relative_displacement": self._manufacturer_attrs.get(
+                    self.ATTR_SLIDE_RELATIVE_DISPLACEMENT
+                ),
+                "slide_time_delta": self._manufacturer_attrs.get(
+                    self.ATTR_SLIDE_TIME_DELTA
+                ),
+            }
+
+            _LOGGER.debug(
+                "AqaraZ1ProManufacturerSpecificCluster sending event data: %s",
+                event_data,
+            )
+
+            # Send the event
+            self.listener_event(
+                ZHA_SEND_EVENT,
+                action,
+                event_data,
+            )
+
+            # Also send a generic slider event for easier automation
+            self.listener_event(
+                ZHA_SEND_EVENT,
+                COMMAND_SLIDER_EVENT,
+                event_data,
+            )
+            _LOGGER.debug(
+                "AqaraZ1ProManufacturerSpecificCluster events sent successfully"
+            )
+
+        _LOGGER.debug(
+            "AqaraZ1ProManufacturerSpecificCluster attribute update: attrid=0x%04x, value=%s",
+            attrid,
+            value,
+        )
+        super()._update_attribute(attrid, value)
 
 
 def handle_quick_init(
