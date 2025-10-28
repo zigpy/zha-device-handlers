@@ -13,24 +13,6 @@ import zhaquirks.thirdreality.night_light
 zhaquirks.setup()
 
 
-class MockListener:
-    """Simulate listener class for capturing ZHA events."""
-
-    def __init__(self):
-        """Initialize listener with empty event list."""
-        self.zha_send_events = []
-
-    def zha_send_event(self, action, event_args):
-        """Record ZHA events.
-
-        Args:
-            action (str): The type of action for the event.
-            event_args (dict): Relevant parameters of the event.
-
-        """
-        self.zha_send_events.append((action, event_args))
-
-
 @pytest.mark.parametrize("quirk", (zhaquirks.thirdreality.night_light.Nightlight,))
 async def test_third_reality_nightlight(zigpy_device_from_quirk, quirk):
     """Test Third Reality night light forwarding motion attribute to IasZone cluster."""
