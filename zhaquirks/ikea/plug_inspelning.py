@@ -1,4 +1,4 @@
-"""IKEA INSPELNING plug quirk."""
+"""IKEA INSPELNING and TRETAKT plug quirk."""
 
 from zigpy.quirks.v2 import CustomCluster, QuirkBuilder
 import zigpy.types as t
@@ -29,6 +29,7 @@ class IkeaSmartPlugCluster(CustomCluster):
 # remove LevelControl for plugs to not show config options in ZHA
 (
     QuirkBuilder(IKEA, "INSPELNING Smart plug")
+    .applies_to(IKEA, "TRETAKT Smart plug")
     .removes(LevelControl.cluster_id)
     .replaces(IkeaSmartPlugCluster)
     .switch(
