@@ -81,10 +81,12 @@ base_quirk = (
 (
     base_quirk.clone()
     .applies_to("Third Reality, Inc", "3RTHS24BZ")
+    .add_to_registry()
 )  # fmt: skip
 
 (
     base_quirk.clone()
     .applies_to("Third Reality, Inc", "3RTHS0224Z")
     .removes(PollControl.cluster_id)
+    .add_to_registry()
 )
