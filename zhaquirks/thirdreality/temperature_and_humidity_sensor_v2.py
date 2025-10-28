@@ -3,7 +3,7 @@
 from typing import Final
 
 from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder
+from zigpy.quirks.v2 import NumberDeviceClass, QuirkBuilder
 from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature
 import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
@@ -41,36 +41,39 @@ class ThirdRealityTemperatureAndHumidityCluster(CustomCluster):
     .replaces(ThirdRealityTemperatureAndHumidityCluster)
     .number(
         attribute_name=ThirdRealityTemperatureAndHumidityCluster.AttributeDefs.temperature_correction_celsius.name,
+        cluster_id=ThirdRealityTemperatureAndHumidityCluster.cluster_id,
         min_value=-10000,
         max_value=10000,
         multiplier=0.01,
         step=0.1,
+        device_class=NumberDeviceClass.TEMPERATURE,
         unit=UnitOfTemperature.CELSIUS,
-        cluster_id=ThirdRealityTemperatureAndHumidityCluster.cluster_id,
-        translation_key="temperature_correction_celsius",
-        fallback_name="Celsius correction",
+        translation_key="temperature_offset_celsius",
+        fallback_name="Celsius offset",
     )
     .number(
         attribute_name=ThirdRealityTemperatureAndHumidityCluster.AttributeDefs.temperature_correction_fahrenheit.name,
+        cluster_id=ThirdRealityTemperatureAndHumidityCluster.cluster_id,
         min_value=-10000,
         max_value=10000,
         multiplier=0.01,
         step=0.1,
+        device_class=NumberDeviceClass.TEMPERATURE,
         unit=UnitOfTemperature.FAHRENHEIT,
-        cluster_id=ThirdRealityTemperatureAndHumidityCluster.cluster_id,
-        translation_key="temperature_correction_fahrenheit",
-        fallback_name="Fahrenheit correction",
+        translation_key="temperature_offset_fahrenheit",
+        fallback_name="Fahrenheit offset",
     )
     .number(
         attribute_name=ThirdRealityTemperatureAndHumidityCluster.AttributeDefs.humidity_correction.name,
+        cluster_id=ThirdRealityTemperatureAndHumidityCluster.cluster_id,
         min_value=-10000,
         max_value=10000,
         multiplier=0.01,
         step=0.1,
+        device_class=NumberDeviceClass.HUMIDITY,
         unit=PERCENTAGE,
-        cluster_id=ThirdRealityTemperatureAndHumidityCluster.cluster_id,
-        translation_key="humidity_correction",
-        fallback_name="Humidity correction",
+        translation_key="humidity_offset",
+        fallback_name="Humidity offset",
     )
     .add_to_registry()
 )
