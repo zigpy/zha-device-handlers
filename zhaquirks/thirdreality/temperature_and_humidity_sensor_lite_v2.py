@@ -50,8 +50,8 @@ class ThirdRealityTemperatureAndHumidityCluster(CustomCluster):
         step=0.1,
         device_class=NumberDeviceClass.TEMPERATURE,
         unit=UnitOfTemperature.CELSIUS,
-        translation_key="temperature_correction_celsius",
-        fallback_name="Celsius correction",
+        translation_key="temperature_offset_celsius",
+        fallback_name="Celsius offset",
     )
     .number(
         attribute_name=ThirdRealityTemperatureAndHumidityCluster.AttributeDefs.temperature_correction_fahrenheit.name,
@@ -62,8 +62,8 @@ class ThirdRealityTemperatureAndHumidityCluster(CustomCluster):
         step=0.1,
         device_class=NumberDeviceClass.TEMPERATURE,
         unit=UnitOfTemperature.FAHRENHEIT,
-        translation_key="temperature_correction_fahrenheit",
-        fallback_name="Fahrenheit correction",
+        translation_key="temperature_offset_fahrenheit",
+        fallback_name="Fahrenheit offset",
     )
     .number(
         attribute_name=ThirdRealityTemperatureAndHumidityCluster.AttributeDefs.humidity_correction.name,
@@ -74,8 +74,8 @@ class ThirdRealityTemperatureAndHumidityCluster(CustomCluster):
         step=0.1,
         device_class=NumberDeviceClass.HUMIDITY,
         unit=PERCENTAGE,
-        translation_key="humidity_correction",
-        fallback_name="Humidity Correction",
+        translation_key="humidity_offset",
+        fallback_name="Humidity offset",
     )
     .add_to_registry()
 )
