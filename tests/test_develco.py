@@ -33,21 +33,23 @@ async def test_frient_emi(zigpy_device_from_v2_quirk):
 
         # read custom attribute
         result = await manufacturer_cluster.read_attributes([pulse_config_attr_id])
+
+        # verify the request
         assert request_mock.call_count == 1
-        assert request_mock.call_args == mock.call(
-            profile=None,
-            cluster=Metering.cluster_id,  # correctly forwarded to Metering cluster
-            src_ep=2,
-            dst_ep=2,
-            sequence=mock.ANY,
-            # manufacturer specific + manufacturer id: 1234, command id: 0
-            data=b"\x04\xd2\x04\x01\x00\x00\x03",
-            timeout=5,
-            expect_reply=True,
-            use_ieee=False,
-            ask_for_ack=None,
-            priority=None,
+        assert request_mock.call_args[0] == ()  # no args
+        assert request_mock.call_args[1]["cluster"] == Metering.cluster_id
+        assert request_mock.call_args[1]["data"] == b"\x04\xd2\x04\x01\x00\x00\x03"
+
+        zcl_header, attr_data = foundation.ZCLHeader.deserialize(
+            request_mock.call_args[1]["data"]
         )
+        assert (
+            zcl_header.frame_control.frame_type == foundation.FrameType.GLOBAL_COMMAND
+        )
+        assert zcl_header.frame_control.is_manufacturer_specific == 1
+        assert zcl_header.manufacturer == 1234  # manufacturer id used by mock device
+        assert zcl_header.command_id == foundation.GeneralCommand.Read_Attributes
+        assert attr_data == b"\x00\x03"
 
         assert result == ({}, {0x0300: foundation.Status.SUCCESS})
         request_mock.reset_mock()
@@ -56,21 +58,26 @@ async def test_frient_emi(zigpy_device_from_v2_quirk):
         result = await manufacturer_cluster.write_attributes(
             {pulse_config_attr_id: "42"}
         )
+
+        # verify the request
         assert request_mock.call_count == 1
-        assert request_mock.call_args == mock.call(
-            profile=None,
-            cluster=Metering.cluster_id,  # correctly forwarded to Metering cluster
-            src_ep=2,
-            dst_ep=2,
-            sequence=mock.ANY,
-            # manufacturer specific + manufacturer id: 1234, command id: 2
-            data=b"\x04\xd2\x04\x02\x02\x00\x03!*\x00",
-            timeout=5,
-            expect_reply=True,
-            use_ieee=False,
-            ask_for_ack=None,
-            priority=None,
+        assert request_mock.call_args[0] == ()  # no args
+        assert request_mock.call_args[1]["cluster"] == Metering.cluster_id
+        assert (
+            request_mock.call_args[1]["data"] == b"\x04\xd2\x04\x02\x02\x00\x03!*\x00"
         )
+
+        zcl_header, attr_data = foundation.ZCLHeader.deserialize(
+            request_mock.call_args[1]["data"]
+        )
+        assert (
+            zcl_header.frame_control.frame_type == foundation.FrameType.GLOBAL_COMMAND
+        )
+        assert zcl_header.frame_control.is_manufacturer_specific == 1
+        assert zcl_header.manufacturer == 1234  # manufacturer id used by mock device
+        assert zcl_header.command_id == foundation.GeneralCommand.Write_Attributes
+        assert attr_data == b"\x00\x03!*\x00"
+
         assert result == (foundation.Status.SUCCESS, "done")
         request_mock.reset_mock()
 
@@ -78,21 +85,24 @@ async def test_frient_emi(zigpy_device_from_v2_quirk):
         result = await metering_cluster.read_attributes(
             [metering_cluster.AttributeDefs.current_summ_delivered.id]
         )
+
+        # verify the request
         assert request_mock.call_count == 1
-        assert request_mock.call_args == mock.call(
-            profile=None,
-            cluster=Metering.cluster_id,  # not forwarded
-            src_ep=2,
-            dst_ep=2,
-            sequence=mock.ANY,
-            # not manufacturer specific, manufacturer id: None, command id: 0
-            data=b"\x00\x03\x00\x00\x00",
-            timeout=5,
-            expect_reply=True,
-            use_ieee=False,
-            ask_for_ack=None,
-            priority=None,
+        assert request_mock.call_args[0] == ()  # no args
+        assert request_mock.call_args[1]["cluster"] == Metering.cluster_id
+        assert request_mock.call_args[1]["data"] == b"\x00\x03\x00\x00\x00"
+
+        zcl_header, attr_data = foundation.ZCLHeader.deserialize(
+            request_mock.call_args[1]["data"]
         )
+        assert (
+            zcl_header.frame_control.frame_type == foundation.FrameType.GLOBAL_COMMAND
+        )
+        assert zcl_header.frame_control.is_manufacturer_specific == 0
+        assert zcl_header.manufacturer is None
+        assert zcl_header.command_id == foundation.GeneralCommand.Read_Attributes
+        assert attr_data == b"\x00\x00"
+
         assert result == (
             {},
             {
@@ -105,19 +115,25 @@ async def test_frient_emi(zigpy_device_from_v2_quirk):
         result = await metering_cluster.write_attributes(
             {metering_cluster.AttributeDefs.current_summ_delivered.id: 100}
         )
+
+        # verify the request
         assert request_mock.call_count == 1
-        assert request_mock.call_args == mock.call(
-            profile=None,
-            cluster=Metering.cluster_id,  # not forwarded
-            src_ep=2,
-            dst_ep=2,
-            sequence=mock.ANY,
-            # not manufacturer specific, manufacturer id: None, command id: 2
-            data=b"\x00\x04\x02\x00\x00%d\x00\x00\x00\x00\x00",
-            timeout=5,
-            expect_reply=True,
-            use_ieee=False,
-            ask_for_ack=None,
-            priority=None,
+        assert request_mock.call_args[0] == ()  # no args
+        assert request_mock.call_args[1]["cluster"] == Metering.cluster_id
+        assert (
+            request_mock.call_args[1]["data"]
+            == b"\x00\x04\x02\x00\x00%d\x00\x00\x00\x00\x00"
         )
+
+        zcl_header, attr_data = foundation.ZCLHeader.deserialize(
+            request_mock.call_args[1]["data"]
+        )
+        assert (
+            zcl_header.frame_control.frame_type == foundation.FrameType.GLOBAL_COMMAND
+        )
+        assert zcl_header.frame_control.is_manufacturer_specific == 0
+        assert zcl_header.manufacturer is None
+        assert zcl_header.command_id == foundation.GeneralCommand.Write_Attributes
+        assert attr_data == b"\x00\x00%d\x00\x00\x00\x00\x00"
+
         assert result == (foundation.Status.SUCCESS, "done")
