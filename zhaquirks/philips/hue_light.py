@@ -7,7 +7,7 @@ from zhaquirks.philips import PHILIPS, SIGNIFY, PhilipsHueLightCluster
 (
     QuirkBuilder()
     .applies_to(SIGNIFY, "929004610402")
-    .friendly_name(model="Hue Flux Gradient lightstrip", manufacturer="Philips")
+    .friendly_name(model="Hue Flux gradient lightstrip", manufacturer="Philips",)
     .replaces(PhilipsHueLightCluster, endpoint_id=11)
     .add_to_registry()
 )
