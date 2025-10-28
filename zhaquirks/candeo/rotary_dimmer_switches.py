@@ -35,9 +35,15 @@ from zhaquirks.const import (
 
 remote_quirk = (
     QuirkBuilder()
-    .replaces(CandeoOnOffRemoteCluster, endpoint_id=2, cluster_type=ClusterType.Client,)
     .replaces(
-        CandeoLevelControlRemoteCluster, endpoint_id=2, cluster_type=ClusterType.Client,
+        CandeoOnOffRemoteCluster,
+        endpoint_id=2,
+        cluster_type=ClusterType.Client,
+    )
+    .replaces(
+        CandeoLevelControlRemoteCluster,
+        endpoint_id=2,
+        cluster_type=ClusterType.Client,
     )
     .device_automation_triggers(
         {
