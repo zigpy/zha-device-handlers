@@ -10,7 +10,7 @@ from zigpy.zcl.clusters.general import PollControl
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 
-class ThirdRealityTemperatureAndHumidityCluster(CustomCluster):
+class ThirdRealityCluster(CustomCluster):
     """Third Reality's temperature and humidity sensor private cluster."""
 
     cluster_id = 0xFF01
@@ -18,20 +18,21 @@ class ThirdRealityTemperatureAndHumidityCluster(CustomCluster):
     class AttributeDefs(BaseAttributeDefs):
         """Define the attributes of a private cluster."""
 
-        temperature_correction_fahrenheit: Final = ZCLAttributeDef(
-            id=0x0033,
-            type=t.int16s,
-            is_manufacturer_specific=True,
-        )
-
-        temperature_correction_celsius: Final = ZCLAttributeDef(
+        temperature_offset_celsius: Final = ZCLAttributeDef(
             id=0x0031,
             type=t.int16s,
             is_manufacturer_specific=True,
         )
 
-        humidity_correction: Final = ZCLAttributeDef(
+        humidity_offset: Final = ZCLAttributeDef(
             id=0x0032,
+            type=t.int16s,
+            is_manufacturer_specific=True,
+        )
+
+        # intentionally not exposed as an entity
+        temperature_offset_fahrenheit: Final = ZCLAttributeDef(
+            id=0x0033,
             type=t.int16s,
             is_manufacturer_specific=True,
         )
@@ -39,34 +40,22 @@ class ThirdRealityTemperatureAndHumidityCluster(CustomCluster):
 
 base_quirk = (
     QuirkBuilder()
-    .replaces(ThirdRealityTemperatureAndHumidityCluster)
+    .replaces(ThirdRealityCluster)
     .number(
-        attribute_name=ThirdRealityTemperatureAndHumidityCluster.AttributeDefs.temperature_correction_celsius.name,
-        cluster_id=ThirdRealityTemperatureAndHumidityCluster.cluster_id,
+        attribute_name=ThirdRealityCluster.AttributeDefs.temperature_offset_celsius.name,
+        cluster_id=ThirdRealityCluster.cluster_id,
         min_value=-10000,
         max_value=10000,
         multiplier=0.01,
         step=0.1,
         device_class=NumberDeviceClass.TEMPERATURE,
         unit=UnitOfTemperature.CELSIUS,
-        translation_key="temperature_offset_celsius",
-        fallback_name="Celsius offset",
+        translation_key="temperature_offset",
+        fallback_name="Temperature offset",
     )
     .number(
-        attribute_name=ThirdRealityTemperatureAndHumidityCluster.AttributeDefs.temperature_correction_fahrenheit.name,
-        cluster_id=ThirdRealityTemperatureAndHumidityCluster.cluster_id,
-        min_value=-10000,
-        max_value=10000,
-        multiplier=0.01,
-        step=0.1,
-        device_class=NumberDeviceClass.TEMPERATURE,
-        unit=UnitOfTemperature.FAHRENHEIT,
-        translation_key="temperature_offset_fahrenheit",
-        fallback_name="Fahrenheit offset",
-    )
-    .number(
-        attribute_name=ThirdRealityTemperatureAndHumidityCluster.AttributeDefs.humidity_correction.name,
-        cluster_id=ThirdRealityTemperatureAndHumidityCluster.cluster_id,
+        attribute_name=ThirdRealityCluster.AttributeDefs.humidity_offset.name,
+        cluster_id=ThirdRealityCluster.cluster_id,
         min_value=-10000,
         max_value=10000,
         multiplier=0.01,
