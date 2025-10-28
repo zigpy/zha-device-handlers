@@ -1,4 +1,4 @@
-"""Frient Electricity Meter Interface."""
+"""Frient Electricity Meter Interface LED variant."""
 
 from typing import Final
 
@@ -27,8 +27,8 @@ class ManufacturerMetering(CustomCluster):
         )
 
 
-base_quirk = (
-    QuirkBuilder()
+(
+    QuirkBuilder("frient A/S", "EMIZB-141")
     .replaces(ManufacturerMetering, endpoint_id=2)
     .device_class(ManufacturerDeviceV2)
     .number(
@@ -43,24 +43,5 @@ base_quirk = (
         translation_key="pulse_configuration",
         fallback_name="Pulse configuration",
     )
-)
-
-(
-    base_quirk.clone()
-    .applies_to("frient A/S", "EMIZB-141")
-    .add_to_registry()
-)  # fmt: skip
-
-
-(
-    base_quirk.clone()
-    .applies_to("frient A/S", "EMIZB-151")
-    # These endpoints are duplicates and completely broken: each one is a "mirror" of
-    # endpoint 2 and will set up duplicate attribute reporting for every attribute, the
-    # attribute reports will instead be emitted from endpoint 2!
-    .prevent_default_entity_creation(endpoint_id=64)
-    .prevent_default_entity_creation(endpoint_id=65)
-    .prevent_default_entity_creation(endpoint_id=66)
-    .prevent_default_entity_creation(endpoint_id=67)
     .add_to_registry()
 )
