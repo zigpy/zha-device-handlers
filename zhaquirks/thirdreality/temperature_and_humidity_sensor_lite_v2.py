@@ -43,34 +43,34 @@ class ThirdRealityTemperatureAndHumidityCluster(CustomCluster):
     .removes(PollControl.cluster_id)
     .number(
         attribute_name=ThirdRealityTemperatureAndHumidityCluster.AttributeDefs.temperature_correction_celsius.name,
+        cluster_id=ThirdRealityTemperatureAndHumidityCluster.cluster_id,
         min_value=-10000,
         max_value=10000,
         multiplier=0.01,
         step=0.1,
         unit=UnitOfTemperature.CELSIUS,
-        cluster_id=ThirdRealityTemperatureAndHumidityCluster.cluster_id,
         translation_key="temperature_correction_celsius",
         fallback_name="Celsius correction",
     )
     .number(
         attribute_name=ThirdRealityTemperatureAndHumidityCluster.AttributeDefs.temperature_correction_fahrenheit.name,
+        cluster_id=ThirdRealityTemperatureAndHumidityCluster.cluster_id,
         min_value=-10000,
         max_value=10000,
         multiplier=0.01,
         step=0.1,
         unit=UnitOfTemperature.FAHRENHEIT,
-        cluster_id=ThirdRealityTemperatureAndHumidityCluster.cluster_id,
         translation_key="temperature_correction_fahrenheit",
         fallback_name="Fahrenheit correction",
     )
     .number(
         attribute_name=ThirdRealityTemperatureAndHumidityCluster.AttributeDefs.humidity_correction.name,
+        cluster_id=ThirdRealityTemperatureAndHumidityCluster.cluster_id,
         min_value=-10000,
         max_value=10000,
         multiplier=0.01,
         step=0.1,
         unit=PERCENTAGE,
-        cluster_id=ThirdRealityTemperatureAndHumidityCluster.cluster_id,
         translation_key="humidity_correction",
         fallback_name="Humidity Correction",
     )
