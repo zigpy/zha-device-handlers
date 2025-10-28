@@ -3,7 +3,7 @@
 from typing import Final
 
 from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder
+from zigpy.quirks.v2 import NumberDeviceClass, QuirkBuilder
 from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature
 import zigpy.types as t
 from zigpy.zcl.clusters.general import PollControl
@@ -48,6 +48,7 @@ class ThirdRealityTemperatureAndHumidityCluster(CustomCluster):
         max_value=10000,
         multiplier=0.01,
         step=0.1,
+        device_class=NumberDeviceClass.TEMPERATURE,
         unit=UnitOfTemperature.CELSIUS,
         translation_key="temperature_correction_celsius",
         fallback_name="Celsius correction",
@@ -59,6 +60,7 @@ class ThirdRealityTemperatureAndHumidityCluster(CustomCluster):
         max_value=10000,
         multiplier=0.01,
         step=0.1,
+        device_class=NumberDeviceClass.TEMPERATURE,
         unit=UnitOfTemperature.FAHRENHEIT,
         translation_key="temperature_correction_fahrenheit",
         fallback_name="Fahrenheit correction",
@@ -70,6 +72,7 @@ class ThirdRealityTemperatureAndHumidityCluster(CustomCluster):
         max_value=10000,
         multiplier=0.01,
         step=0.1,
+        device_class=NumberDeviceClass.HUMIDITY,
         unit=PERCENTAGE,
         translation_key="humidity_correction",
         fallback_name="Humidity Correction",
