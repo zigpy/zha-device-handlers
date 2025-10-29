@@ -1,21 +1,25 @@
-from zhaquirks import CustomDevice, CustomCluster
-from zhaquirks.const import (
-    MODELS_INFO,
-    ENDPOINTS,
-    PROFILE_ID,
-    DEVICE_TYPE,
-    INPUT_CLUSTERS,
-    OUTPUT_CLUSTERS,
-    SHORT_PRESS, DOUBLE_PRESS, LONG_PRESS, TRIPLE_PRESS,
-    COMMAND,
-    ZHA_SEND_EVENT,
-)
-import zigpy.profiles.zha as zha
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
+from zhaquirks import CustomCluster, CustomDevice
+from zhaquirks.const import (
+    COMMAND,
+    DEVICE_TYPE,
+    DOUBLE_PRESS,
+    ENDPOINTS,
+    INPUT_CLUSTERS,
+    LONG_PRESS,
+    MODELS_INFO,
+    OUTPUT_CLUSTERS,
+    PROFILE_ID,
+    SHORT_PRESS,
+    TRIPLE_PRESS,
+    ZHA_SEND_EVENT,
+)
+
 SONOFF_CLUSTER_ID_FC12 = 0xFC12
+
 
 class SonoffButtonCluster(CustomCluster):
     cluster_id = SONOFF_CLUSTER_ID_FC12
@@ -30,11 +34,13 @@ class SonoffButtonCluster(CustomCluster):
             is_manufacturer_specific=True,
         )
 
-    
     def _update_attribute(self, attrid, value):
         import logging
+
         _LOGGER = logging.getLogger(__name__)
-        _LOGGER.warning(f"SonoffButtonCluster收到属性上报:endpoint={self.endpoint.endpoint_id}, attrid={attrid}, value={value}")
+        _LOGGER.warning(
+            f"SonoffButtonCluster收到属性上报:endpoint={self.endpoint.endpoint_id}, attrid={attrid}, value={value}"
+        )
         super()._update_attribute(attrid, value)
         if attrid == self.AttributeDefs.key_action_event.id:
             event = button_event_from_report(self.endpoint.endpoint_id, value)
@@ -45,16 +51,23 @@ class SonoffButtonCluster(CustomCluster):
                 except Exception as e:
                     _LOGGER.error(f"派发zha_event失败: {e}")
             else:
-                _LOGGER.warning(f"无法解析的按钮事件: endpoint={self.endpoint.endpoint_id}, value={value}")
+                _LOGGER.warning(
+                    f"无法解析的按钮事件: endpoint={self.endpoint.endpoint_id}, value={value}"
+                )
         else:
-            _LOGGER.warning(f"未知属性上报: attrid={attrid}, value={value}, endpoint={self.endpoint.endpoint_id}")
+            _LOGGER.warning(
+                f"未知属性上报: attrid={attrid}, value={value}, endpoint={self.endpoint.endpoint_id}"
+            )
+
+
 # 直接用整数做key
 ACTION_MAP = {
-    1: SHORT_PRESS,    # 0x01
-    2: DOUBLE_PRESS,   # 0x02
-    3: LONG_PRESS,     # 0x03
-    4: TRIPLE_PRESS,   # 0x04
+    1: SHORT_PRESS,  # 0x01
+    2: DOUBLE_PRESS,  # 0x02
+    3: LONG_PRESS,  # 0x03
+    4: TRIPLE_PRESS,  # 0x04
 }
+
 
 def button_event_from_report(endpoint_id, value):
     action = ACTION_MAP.get(value)
@@ -66,18 +79,30 @@ def button_event_from_report(endpoint_id, value):
         }
     return None
 
+
 device_automation_triggers = {
-    (SHORT_PRESS, f"button{ep}"): {COMMAND: SHORT_PRESS, "endpoint_id": ep} for ep in range(1, 5)
+    (SHORT_PRESS, f"button{ep}"): {COMMAND: SHORT_PRESS, "endpoint_id": ep}
+    for ep in range(1, 5)
 }
-device_automation_triggers.update({
-    (DOUBLE_PRESS, f"button{ep}"): {COMMAND: DOUBLE_PRESS, "endpoint_id": ep} for ep in range(1, 5)
-})
-device_automation_triggers.update({
-    (LONG_PRESS, f"button{ep}"): {COMMAND: LONG_PRESS, "endpoint_id": ep} for ep in range(1, 5)
-})
-device_automation_triggers.update({
-    (TRIPLE_PRESS, f"button{ep}"): {COMMAND: TRIPLE_PRESS, "endpoint_id": ep} for ep in range(1, 5)
-})
+device_automation_triggers.update(
+    {
+        (DOUBLE_PRESS, f"button{ep}"): {COMMAND: DOUBLE_PRESS, "endpoint_id": ep}
+        for ep in range(1, 5)
+    }
+)
+device_automation_triggers.update(
+    {
+        (LONG_PRESS, f"button{ep}"): {COMMAND: LONG_PRESS, "endpoint_id": ep}
+        for ep in range(1, 5)
+    }
+)
+device_automation_triggers.update(
+    {
+        (TRIPLE_PRESS, f"button{ep}"): {COMMAND: TRIPLE_PRESS, "endpoint_id": ep}
+        for ep in range(1, 5)
+    }
+)
+
 
 class SNZB01M(CustomDevice):
     signature = {
