@@ -41,37 +41,11 @@ class SonoffButtonCluster(CustomCluster):
         )
 
     def _update_attribute(self, attrid, value):
-        import logging
-
-        _LOGGER = logging.getLogger(__name__)
-        _LOGGER.warning(
-            "SonoffButtonCluster收到属性上报:endpoint=%s, attrid=%s, value=%s",
-            self.endpoint.endpoint_id,
-            attrid,
-            value,
-        )
         super()._update_attribute(attrid, value)
         if attrid == self.AttributeDefs.key_action_event.id:
             event = button_event_from_report(self.endpoint.endpoint_id, value)
             if event:
-                try:
-                    self.listener_event(ZHA_SEND_EVENT, event["event"], event)
-                    _LOGGER.warning("派发zha_event成功: %s", event)
-                except Exception as e:
-                    _LOGGER.error("派发zha_event失败: %s", e)
-            else:
-                _LOGGER.warning(
-                    "无法解析的按钮事件: endpoint=%s, value=%s",
-                    self.endpoint.endpoint_id,
-                    value,
-                )
-        else:
-            _LOGGER.warning(
-                "未知属性上报: attrid=%s, value=%s, endpoint=%s",
-                attrid,
-                value,
-                self.endpoint.endpoint_id,
-            )
+                self.listener_event(ZHA_SEND_EVENT, event["event"], event)
 
 
 # 直接用整数做key
@@ -237,3 +211,4 @@ class SNZB01M(CustomDevice):
             for ep in range(1, 5)
         }
     )
+
