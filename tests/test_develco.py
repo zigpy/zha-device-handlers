@@ -141,24 +141,9 @@ async def test_frient_emi(zigpy_device_from_v2_quirk):
         assert result == (foundation.Status.SUCCESS, "done")
 
 
-def _get_packet_data(
-    command: foundation.GeneralCommand,
-    attr: foundation.Attribute | None = None,
-    dirc: foundation.Direction = foundation.Direction.Server_to_Client,
-) -> bytes:
-    hdr = foundation.ZCLHeader.general(1, command, 0, dirc).serialize()
-    if attr is not None:
-        cmd = foundation.GENERAL_COMMANDS[command].schema([attr]).serialize()
-    else:
-        cmd = b""
-    return t.SerializableBytes(hdr + cmd).serialize()
-
-
 async def test_mfg_cluster_events(zigpy_device_from_v2_quirk):
     """Test Frient EMI Norwegian HAN ignoring incorrect divisor attribute reports."""
     device = zigpy_device_from_v2_quirk("frient A/S", "EMIZB-132", endpoint_ids=[1, 2])
-
-    # TODO: maybe get data from real device
 
     metering_cluster = device.endpoints[2].smartenergy_metering
     metering_listener = ClusterListener(metering_cluster)
@@ -173,6 +158,7 @@ async def test_mfg_cluster_events(zigpy_device_from_v2_quirk):
             cluster_id=Metering.cluster_id,
             src_ep=2,
             dst_ep=2,
+            # XXX: get data from real device
             data=t.SerializableBytes(b'\x1c\x00\x00\x01\n\x02\x03"\x00\x02\x00'),
         )
     )
