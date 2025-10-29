@@ -4,6 +4,7 @@ from typing import Final
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
+from zigpy.quirks.v2.homeassistant import UnitOfTime
 import zigpy.types as t
 from zigpy.types import uint16_t
 from zigpy.zcl.clusters.general import BinaryInput
@@ -33,7 +34,7 @@ class FrientOccupancySensing(CustomCluster, OccupancySensing):
         )
 
 
-class FrientIasZone(DevelcoIasZone):
+class FrientTamperIasZone(DevelcoIasZone):
     """Custom IAS Zone cluster for frient motion sensors with tamper support."""
 
     def _update_attribute(self, attrid, value):
@@ -45,7 +46,7 @@ class FrientIasZone(DevelcoIasZone):
 
     class AttributeDefs(
         IasZone.AttributeDefs
-    ):  # Changed from DevelcoIasZone.AttributeDefs
+    ):
         """Attribute definitions."""
 
         tamper: Final = ZCLAttributeDef(
@@ -54,12 +55,12 @@ class FrientIasZone(DevelcoIasZone):
         )
 
 
-class FrientPETIasZone(DevelcoIasZone):
+class FrientPETSensitivityIasZone(DevelcoIasZone):
     """Custom IAS Zone cluster for frient PET motion sensor with sensitivity levels."""
 
     class AttributeDefs(
         IasZone.AttributeDefs
-    ):  # Changed from DevelcoIasZone.AttributeDefs
+    ):
         """Attribute definitions."""
 
         number_of_zone_sensitivity_levels_supported: Final = ZCLAttributeDef(
@@ -80,7 +81,7 @@ class FrientPETIasZone(DevelcoIasZone):
     QuirkBuilder(FRIENT, "MOSZB-140")
     .applies_to(DEVELCO, "MOSZB-140")
     .replaces(DevelcoPowerConfiguration, endpoint_id=35)
-    .replaces(FrientIasZone, endpoint_id=35)
+    .replaces(FrientTamperIasZone, endpoint_id=35)
     .replaces(
         FrientOccupancySensing, cluster_id=OccupancySensing.cluster_id, endpoint_id=34
     )
@@ -100,7 +101,8 @@ class FrientPETIasZone(DevelcoIasZone):
         max_value=65535,
         step=1,
         translation_key="occupancy_delay",
-        fallback_name="Occupied to Unoccupied Delay (seconds)",
+        fallback_name="Occupied to unoccupied delay",
+        unit=UnitOfTime.SECONDS,
     )
     .number(
         attribute_name="pir_u_to_o_delay",
@@ -110,7 +112,8 @@ class FrientPETIasZone(DevelcoIasZone):
         max_value=65535,
         step=1,
         translation_key="unoccupancy_delay",
-        fallback_name="Unoccupied to Occupied Delay (seconds)",
+        fallback_name="Unoccupied to occupied delay",
+        unit=UnitOfTime.SECONDS,
     )
     .prevent_default_entity_creation(endpoint_id=35, cluster_id=BinaryInput.cluster_id)
     .prevent_default_entity_creation(endpoint_id=40)
@@ -135,7 +138,8 @@ class FrientPETIasZone(DevelcoIasZone):
         max_value=65535,
         step=1,
         translation_key="occupancy_delay",
-        fallback_name="Occupied to Unoccupied Delay (seconds)",
+        fallback_name="Occupied to unoccupied delay",
+        unit=UnitOfTime.SECONDS,
     )
     .number(
         attribute_name="pir_u_to_o_delay",
@@ -145,7 +149,8 @@ class FrientPETIasZone(DevelcoIasZone):
         max_value=65535,
         step=1,
         translation_key="unoccupancy_delay",
-        fallback_name="Unoccupied to Occupied Delay (seconds)",
+        fallback_name="Unoccupied to occupied delay",
+        unit=UnitOfTime.SECONDS,
     )
     .prevent_default_entity_creation(endpoint_id=35, cluster_id=BinaryInput.cluster_id)
     .prevent_default_entity_creation(endpoint_id=40)
@@ -157,7 +162,7 @@ class FrientPETIasZone(DevelcoIasZone):
 (
     QuirkBuilder(FRIENT, "MOSZB-153")
     .replaces(DevelcoPowerConfiguration, endpoint_id=35)
-    .replaces(FrientPETIasZone, endpoint_id=35)
+    .replaces(FrientPETSensitivityIasZone, endpoint_id=35)
     .replaces(
         FrientOccupancySensing, cluster_id=OccupancySensing.cluster_id, endpoint_id=34
     )
@@ -169,7 +174,7 @@ class FrientPETIasZone(DevelcoIasZone):
         max_value=4,
         step=1,
         translation_key="sensitivity_level",
-        fallback_name="Sensitivity Level (1-4)",
+        fallback_name="Sensitivity level (1-4)",
     )
     .number(
         attribute_name="pir_o_to_u_delay",
@@ -179,7 +184,8 @@ class FrientPETIasZone(DevelcoIasZone):
         max_value=65535,
         step=1,
         translation_key="occupancy_delay",
-        fallback_name="Occupied to Unoccupied Delay (seconds)",
+        fallback_name="Occupied to unoccupied delay",
+        unit=UnitOfTime.SECONDS,
     )
     .number(
         attribute_name="pir_u_to_o_delay",
@@ -189,14 +195,15 @@ class FrientPETIasZone(DevelcoIasZone):
         max_value=65535,
         step=1,
         translation_key="unoccupancy_delay",
-        fallback_name="Unoccupied to Occupied Delay (seconds)",
+        fallback_name="Unoccupied to occupied delay",
+        unit=UnitOfTime.SECONDS,
     )
     .sensor(
         attribute_name="number_of_zone_sensitivity_levels_supported",
         cluster_id=IasZone.cluster_id,
         endpoint_id=35,
         translation_key="sensitivity_levels_supported",
-        fallback_name="Sensitivity Levels Supported",
+        fallback_name="Sensitivity levels supported",
     )
     .prevent_default_entity_creation(endpoint_id=35, cluster_id=BinaryInput.cluster_id)
     .prevent_default_entity_creation(endpoint_id=40)

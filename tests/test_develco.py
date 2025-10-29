@@ -1,12 +1,14 @@
 """Tests for Develco/Frient."""
 
 from unittest import mock
+from unittest.mock import MagicMock
 
 import zigpy.types as t
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.smartenergy import Metering
 
 from tests.common import ClusterListener
+from zhaquirks.develco.motion import FrientTamperIasZone
 import zhaquirks
 
 zhaquirks.setup()
@@ -187,3 +189,27 @@ async def test_mfg_cluster_events(zigpy_device_from_v2_quirk):
     assert (
         metering_cluster.get(Metering.AttributeDefs.current_summ_delivered.id) == 1234
     )
+
+
+def test_frient_tamper_zone_updates_tamper_state():
+    """Verify tamper attribute mirrors zone status bit 2."""
+    endpoint = MagicMock()
+    cluster = FrientTamperIasZone(endpoint)
+
+    cluster._update_attribute(
+        FrientTamperIasZone.AttributeDefs.zone_status.id,
+        0x0000,
+    )
+    assert cluster._attr_cache[FrientTamperIasZone.AttributeDefs.tamper.id] is False
+
+    cluster._update_attribute(
+        FrientTamperIasZone.AttributeDefs.zone_status.id,
+        0x0004,
+    )
+    assert cluster._attr_cache[FrientTamperIasZone.AttributeDefs.tamper.id] is True
+
+    cluster._update_attribute(
+        FrientTamperIasZone.AttributeDefs.zone_status.id,
+        0x0000,
+    )
+    assert cluster._attr_cache[FrientTamperIasZone.AttributeDefs.tamper.id] is False
