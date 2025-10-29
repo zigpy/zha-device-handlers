@@ -211,4 +211,3 @@ class SNZB01M(CustomDevice):
             for ep in range(1, 5)
         }
     )
-
