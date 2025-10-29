@@ -93,7 +93,7 @@ class ThirdRealityPlugCluster(CustomCluster):
         attribute_value=0x01,  # 1 reset summation delivered
         cluster_id=ThirdRealityPlugCluster.cluster_id,
         endpoint_id=1,
-        translation_key="reset_summation_delivered__left",
+        translation_key="reset_summation_delivered_left",
         fallback_name="Reset left summation delivered",  # ep1 is left
     )
     .write_attr_button(
