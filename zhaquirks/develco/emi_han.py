@@ -25,9 +25,7 @@ class FrientMetering(CustomCluster, Metering):
 
 
 (
-    # TODO: check which manufacturer name is used by the device
     QuirkBuilder("frient A/S", "EMIZB-132")
-    .applies_to("Develco Products A/S", "EMIZB-132")
-    .replaces(FrientMetering, endpoint_id=2)  # TODO: check endpoint
+    .replaces(FrientMetering, endpoint_id=2)
     .add_to_registry()
 )
