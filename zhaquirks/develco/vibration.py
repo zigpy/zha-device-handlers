@@ -114,7 +114,7 @@ class FrientVibrationIasZone(DevelcoIasZone):
         cluster_id=IasZone.cluster_id,
         endpoint_id=45,
         translation_key="sensitivity_levels_supported",
-        fallback_name="Sensitivity Levels Supported",
+        fallback_name="Sensitivity levels supported",
     )
     .number(
         attribute_name="current_zone_sensitivity_level",
@@ -124,7 +124,7 @@ class FrientVibrationIasZone(DevelcoIasZone):
         max_value=15,
         step=1,
         translation_key="sensitivity_level",
-        fallback_name="Sensitivity Level (1-15)",
+        fallback_name="Sensitivity level (1-15)",
     )
     .sensor(
         attribute_name=FrientAccelerationMeasurement.AttributeDefs.measured_value_x.name,
@@ -134,7 +134,7 @@ class FrientVibrationIasZone(DevelcoIasZone):
         unit="g",
         divisor=1000,
         translation_key="acceleration_x",
-        fallback_name="Acceleration X",
+        fallback_name="Acceleration x",
         reporting_config=ReportingConfig(
             min_interval=0,
             max_interval=900,
@@ -149,7 +149,7 @@ class FrientVibrationIasZone(DevelcoIasZone):
         unit="g",
         divisor=1000,
         translation_key="acceleration_y",
-        fallback_name="Acceleration Y",
+        fallback_name="Acceleration y",
         reporting_config=ReportingConfig(
             min_interval=0,
             max_interval=900,
@@ -164,7 +164,7 @@ class FrientVibrationIasZone(DevelcoIasZone):
         unit="g",
         divisor=1000,
         translation_key="acceleration_z",
-        fallback_name="Acceleration Z",
+        fallback_name="Acceleration z",
         reporting_config=ReportingConfig(
             min_interval=0,
             max_interval=900,

@@ -8,6 +8,10 @@ from zigpy.zcl.clusters.smartenergy import Metering
 
 from tests.common import ClusterListener
 import zhaquirks
+from zhaquirks.develco.vibration import (
+    FrientAccelerationMeasurement,
+    FrientVibrationIasZone,
+)
 
 zhaquirks.setup()
 
@@ -186,4 +190,84 @@ async def test_mfg_cluster_events(zigpy_device_from_v2_quirk):
     assert len(metering_listener.attribute_updates) == 1
     assert (
         metering_cluster.get(Metering.AttributeDefs.current_summ_delivered.id) == 1234
+    )
+
+
+async def test_frient_vibration_zone_status(zigpy_device_from_v2_quirk):
+    """Ensure vibration IAS zone exposes movement and vibration state attributes."""
+
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "WISZB-137",
+        endpoint_ids=[1, 45],
+        cluster_ids={
+            45: {
+                FrientAccelerationMeasurement.cluster_id: ClusterType.Server,
+                FrientVibrationIasZone.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+
+    vibration_cluster = device.endpoints[45].ias_zone
+    assert isinstance(vibration_cluster, FrientVibrationIasZone)
+
+    vibration_cluster._update_attribute(
+        vibration_cluster.AttributeDefs.zone_status.id,
+        0b00000011,
+    )
+    assert vibration_cluster.get(vibration_cluster.AttributeDefs.movement.id) is True
+    assert vibration_cluster.get(vibration_cluster.AttributeDefs.vibration.id) is True
+
+    vibration_cluster._update_attribute(
+        vibration_cluster.AttributeDefs.zone_status.id,
+        0,
+    )
+    assert vibration_cluster.get(vibration_cluster.AttributeDefs.movement.id) is False
+    assert vibration_cluster.get(vibration_cluster.AttributeDefs.vibration.id) is False
+
+
+async def test_frient_vibration_acceleration_attributes(zigpy_device_from_v2_quirk):
+    """Ensure acceleration cluster stores axis readings via custom attribute defs."""
+
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "WISZB-137",
+        endpoint_ids=[1, 45],
+        cluster_ids={
+            45: {
+                FrientAccelerationMeasurement.cluster_id: ClusterType.Server,
+                FrientVibrationIasZone.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+
+    acceleration_cluster = device.endpoints[45].in_clusters[
+        FrientAccelerationMeasurement.cluster_id
+    ]
+    assert isinstance(acceleration_cluster, FrientAccelerationMeasurement)
+
+    acceleration_cluster._update_attribute(
+        acceleration_cluster.AttributeDefs.measured_value_x.id,
+        1500,
+    )
+    acceleration_cluster._update_attribute(
+        acceleration_cluster.AttributeDefs.measured_value_y.id,
+        -500,
+    )
+    acceleration_cluster._update_attribute(
+        acceleration_cluster.AttributeDefs.measured_value_z.id,
+        0,
+    )
+
+    assert (
+        acceleration_cluster.get(acceleration_cluster.AttributeDefs.measured_value_x.id)
+        == 1500
+    )
+    assert (
+        acceleration_cluster.get(acceleration_cluster.AttributeDefs.measured_value_y.id)
+        == -500
+    )
+    assert (
+        acceleration_cluster.get(acceleration_cluster.AttributeDefs.measured_value_z.id)
+        == 0
     )
