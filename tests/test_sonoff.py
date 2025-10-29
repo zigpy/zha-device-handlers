@@ -1,12 +1,11 @@
 """Tests for Sonoff quirks."""
 
+from typing import Any, cast
 from unittest import mock
 
 import pytest
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.foundation import ZCLHeader
-from typing import Any, cast
 
 import zhaquirks
 from zhaquirks.const import (
@@ -18,11 +17,11 @@ from zhaquirks.const import (
     ZHA_SEND_EVENT,
 )
 from zhaquirks.sonoff.snzb01m import (
+    ACTION_MAP,
     SNZB01M,
+    SONOFF_CLUSTER_ID_FC12,
     SonoffButtonCluster,
     button_event_from_report,
-    ACTION_MAP,
-    SONOFF_CLUSTER_ID_FC12,
 )
 
 zhaquirks.setup()
@@ -234,7 +233,9 @@ async def test_sonoff_button_cluster_super_update_attribute(zigpy_device_from_qu
     device = zigpy_device_from_quirk(SNZB01M)
     cluster = device.endpoints[1].sonoff_button_cluster
 
-    with mock.patch.object(cluster.__class__.__bases__[0], "_update_attribute") as mock_super:
+    with mock.patch.object(
+        cluster.__class__.__bases__[0], "_update_attribute"
+    ) as mock_super:
         cluster._update_attribute(0x0000, 1)
         # Verify super()._update_attribute was called
         mock_super.assert_called_once_with(0x0000, 1)
@@ -278,7 +279,9 @@ async def test_sonoff_button_cluster_update_attribute_no_event(zigpy_device_from
     cluster.add_listener(listener)
 
     # Mock button_event_from_report to return None
-    with mock.patch("zhaquirks.sonoff.snzb01m.button_event_from_report", return_value=None):
+    with mock.patch(
+        "zhaquirks.sonoff.snzb01m.button_event_from_report", return_value=None
+    ):
         cluster._update_attribute(0x0000, 1)
         # No event should be sent when button_event_from_report returns None
         assert listener.zha_send_event.call_count == 0
