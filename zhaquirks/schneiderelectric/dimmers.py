@@ -18,7 +18,7 @@ from zhaquirks.schneiderelectric import (
     SEWiringMode,
 )
 
-BASE_DIMMER = (
+base_micro_dimmer = (
     QuirkBuilder()
     .replaces(SEBasic, endpoint_id=3)
     .replaces(SEBallast, endpoint_id=3)
@@ -85,8 +85,8 @@ BASE_DIMMER = (
     )
 )
 
-BASE_ROTARY_DIMMER = (
-    BASE_DIMMER.clone()
+base_dimmer = (
+    base_micro_dimmer.clone()
     .replaces(SEBasic, endpoint_id=21)
     .replaces(SESwitchConfiguration, endpoint_id=21)
     .enum(
@@ -107,10 +107,14 @@ BASE_ROTARY_DIMMER = (
     )
 )
 
-(BASE_DIMMER.clone().applies_to(SE_MANUF_NAME, "PUCK/DIMMER/1").add_to_registry())
+(
+    base_micro_dimmer.clone()
+    .applies_to(SE_MANUF_NAME, "PUCK/DIMMER/1")
+    .add_to_registry()
+)  # fmt: skip
 
 (
-    BASE_ROTARY_DIMMER.clone()
+    base_dimmer.clone()
     .applies_to(SE_MANUF_NAME, "NHROTARY/DIMMER/1")
     .applies_to(SE_MANUF_NAME, "NHPB/DIMMER/1")
     .applies_to(SE_MANUF_NAME, "CH/DIMMER/1")
@@ -118,7 +122,7 @@ BASE_ROTARY_DIMMER = (
 )
 
 (
-    BASE_ROTARY_DIMMER.clone()
+    base_dimmer.clone()
     .applies_to(SE_MANUF_NAME, "NHROTARY/UNIDIM/1")
     .applies_to(SE_MANUF_NAME, "NHPB/UNIDIM/1")
     .enum(

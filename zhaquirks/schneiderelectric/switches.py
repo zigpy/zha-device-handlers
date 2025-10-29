@@ -14,7 +14,7 @@ from zhaquirks.schneiderelectric import (
     SESwitchIndication,
 )
 
-BASE_SWITCH = (
+base_micro_switch = (
     QuirkBuilder()
     .replaces(SEBasic)
     .replaces(SEOnOff)
@@ -53,7 +53,7 @@ BASE_SWITCH = (
 )
 
 (
-    BASE_SWITCH.clone()
+    base_micro_switch.clone()
     .applies_to(SE_MANUF_NAME, "NHPB/SWITCH/1")
     .applies_to(SE_MANUF_NAME, "CH2AX/SWITCH/1")
     .applies_to(SE_MANUF_NAME, "CH10AX/SWITCH/1")
@@ -78,4 +78,8 @@ BASE_SWITCH = (
     .add_to_registry()
 )
 
-(BASE_SWITCH.clone().applies_to(SE_MANUF_NAME, "PUCK/SWITCH/1").add_to_registry())
+(
+    base_micro_switch.clone()
+    .applies_to(SE_MANUF_NAME, "PUCK/SWITCH/1")
+    .add_to_registry()
+)  # fmt: skip
