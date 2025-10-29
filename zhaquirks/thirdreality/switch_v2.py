@@ -10,7 +10,7 @@ import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 
-class THIRD_REALITY_Switch_CLUSTER(CustomCluster):
+class ThirdRealitySwitchCluster(CustomCluster):
     """Third Reality's Switch private cluster."""
 
     cluster_id = 0xFF02
@@ -33,30 +33,30 @@ class THIRD_REALITY_Switch_CLUSTER(CustomCluster):
 
 (
     QuirkBuilder("Third Reality, Inc", "3RSS009Z")
-    .replaces(THIRD_REALITY_Switch_CLUSTER)
+    .replaces(ThirdRealitySwitchCluster)
     .number(
-        attribute_name=THIRD_REALITY_Switch_CLUSTER.AttributeDefs.on_to_off_delay.name,
-        cluster_id=THIRD_REALITY_Switch_CLUSTER.cluster_id,
+        attribute_name=ThirdRealitySwitchCluster.AttributeDefs.on_to_off_delay.name,
+        cluster_id=ThirdRealitySwitchCluster.cluster_id,
         endpoint_id=1,
         min_value=0,
         max_value=65535,
+        mode="box",
         unit=UnitOfTime.SECONDS,
         device_class=NumberDeviceClass.DURATION,
-        step=1,
-        translation_key="on_to_off_delay",
-        fallback_name="On to off delay",
+        translation_key="turn_off_delay",
+        fallback_name="Turn off delay",
     )
     .number(
-        attribute_name=THIRD_REALITY_Switch_CLUSTER.AttributeDefs.off_to_on_delay.name,
-        cluster_id=THIRD_REALITY_Switch_CLUSTER.cluster_id,
+        attribute_name=ThirdRealitySwitchCluster.AttributeDefs.off_to_on_delay.name,
+        cluster_id=ThirdRealitySwitchCluster.cluster_id,
         endpoint_id=1,
         min_value=0,
         max_value=65535,
+        mode="box",
         unit=UnitOfTime.SECONDS,
         device_class=NumberDeviceClass.DURATION,
-        step=1,
-        translation_key="off_to_on_delay",
-        fallback_name="Off to on delay",
+        translation_key="turn_on_delay",
+        fallback_name="Turn on delay",
     )
     .add_to_registry()
 )
