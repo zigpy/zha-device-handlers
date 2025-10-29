@@ -8,8 +8,8 @@ from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.smartenergy import Metering
 
 from tests.common import ClusterListener
-from zhaquirks.develco.motion import FrientTamperIasZone
 import zhaquirks
+from zhaquirks.develco.motion import FrientTamperIasZone
 
 zhaquirks.setup()
 

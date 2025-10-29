@@ -44,9 +44,7 @@ class FrientTamperIasZone(DevelcoIasZone):
             tamper_state = bool(value & 0b00000100)
             super()._update_attribute(self.AttributeDefs.tamper.id, tamper_state)
 
-    class AttributeDefs(
-        IasZone.AttributeDefs
-    ):
+    class AttributeDefs(IasZone.AttributeDefs):
         """Attribute definitions."""
 
         tamper: Final = ZCLAttributeDef(
@@ -58,9 +56,7 @@ class FrientTamperIasZone(DevelcoIasZone):
 class FrientPETSensitivityIasZone(DevelcoIasZone):
     """Custom IAS Zone cluster for frient PET motion sensor with sensitivity levels."""
 
-    class AttributeDefs(
-        IasZone.AttributeDefs
-    ):
+    class AttributeDefs(IasZone.AttributeDefs):
         """Attribute definitions."""
 
         number_of_zone_sensitivity_levels_supported: Final = ZCLAttributeDef(
