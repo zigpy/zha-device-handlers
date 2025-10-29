@@ -33,6 +33,7 @@ class SonoffButtonCluster(CustomCluster):
 
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions for the Sonoff button cluster."""
+
         key_action_event = ZCLAttributeDef(
             id=0x0000,
             type=t.uint8_t,  # 用标准uint8类型
