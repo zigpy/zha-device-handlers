@@ -1,4 +1,6 @@
-# References for attributes:https://github.com/Koenkk/zigbee2mqtt/issues/14651
+# References for attributes of the termostat:https://github.com/Koenkk/zigbee2mqtt/issues/14651 - Also, they show up in the logs when ZHA runs in Debug mode.
+# Guide for QuirkV2 https://github.com/zigpy/zha-device-handlers/discussions/4339
+
 from typing import Final
 import zigpy.types as t
 from zigpy.quirks import CustomCluster
@@ -35,7 +37,7 @@ class AlliaThermostatCluster(Thermostat, CustomCluster):
     # Expose Instant Power (W)
     .sensor(
         attribute_name=AlliaThermostatCluster.AttributeDefs.allia_power_w.name,
-        cluster_id=AlliaThermostatCluster.cluster_id,   # guide: use target cluster's id
+        cluster_id=AlliaThermostatCluster.cluster_id,
         endpoint_id=EP_THERMOSTAT,
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
