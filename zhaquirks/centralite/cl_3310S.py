@@ -6,6 +6,7 @@ import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, PollControl
 from zigpy.zcl.clusters.homeautomation import Diagnostic
 from zigpy.zcl.clusters.measurement import TemperatureMeasurement
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 from zhaquirks import PowerConfigurationCluster
 from zhaquirks.centralite import CENTRALITE
@@ -27,10 +28,14 @@ class SmartthingsRelativeHumidityCluster(CustomCluster):
     cluster_id = SMRT_THINGS_REL_HUM_CLSTR
     name = "Smartthings Relative Humidity Measurement"
     ep_attribute = "humidity"
-    attributes = {
+
+    class AttributeDefs(BaseAttributeDefs):
+        """Cluster attributes."""
+
         # Relative Humidity Measurement Information
-        0x0000: ("measured_value", t.int16s, True)
-    }
+        measured_value = ZCLAttributeDef(
+            id=0x0000, type=t.int16s, is_manufacturer_specific=True
+        )
 
 
 class CentraLite3310S(CustomDevice):
