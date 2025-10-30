@@ -28,7 +28,7 @@ from zhaquirks.candeo import (
 
 (
     QuirkBuilder(CANDEO, "C-ZB-LC20-RGB")
-     .applies_to(CANDEO, "C-ZB-LC20v2-RGB")
+    .applies_to(CANDEO, "C-ZB-LC20v2-RGB")
     .replaces(CandeoRGBColorCluster, endpoint_id=11)
     .add_to_registry()
 )
