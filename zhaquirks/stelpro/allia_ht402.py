@@ -1,6 +1,6 @@
 """ZHA Quirk (v2) for Stello HT402.
 
-Exposes vendor attributes 0x4008 (instant power, W), 0x4009 (cumulative energy, Wh) 
+Exposes vendor attributes 0x4008 (instant power, W), 0x4009 (cumulative energy, Wh)
 from the Thermostat cluster on endpoint 25 (0x19).
 
 """
@@ -37,6 +37,7 @@ class AlliaThermostatCluster(Thermostat, CustomCluster):
         - 0x4008: instant power (W), uint16
         - 0x4009: cumulative energy (Wh), uint32
         """
+
         # 0x4008: Instant power in Watts (uint16)
         allia_power_w = ZCLAttributeDef(id=0x4008, type=t.uint16_t, access="rp")
         # 0x4009: Cumulative energy in Watt-hours (uint32)
