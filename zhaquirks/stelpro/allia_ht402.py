@@ -1,5 +1,9 @@
-# References for attributes of the termostat:https://github.com/Koenkk/zigbee2mqtt/issues/14651 - Also, they show up in the logs when ZHA runs in Debug mode.
-# Guide for QuirkV2 https://github.com/zigpy/zha-device-handlers/discussions/4339
+"""ZHA Quirk (v2) for Stello HT402.
+
+Exposes vendor attributes 0x4008 (instant power, W), 0x4009 (cumulative energy, Wh) 
+from the Thermostat cluster on endpoint 25 (0x19).
+
+"""
 
 from typing import Final
 
@@ -25,9 +29,14 @@ EP_THERMOSTAT: Final = 25  # Thermostat cluster
 
 
 class AlliaThermostatCluster(Thermostat, CustomCluster):
-    """Thermostat cluster extended with Stello/Allia manufacturer attributes."""
+    """Thermostat cluster extended with Stelpro(Stello)/Allia manufacturer attributes."""
 
     class AttributeDefs(Thermostat.AttributeDefs):
+        """Vendor-specific attributes added to the Thermostat cluster.
+
+        - 0x4008: instant power (W), uint16
+        - 0x4009: cumulative energy (Wh), uint32
+        """
         # 0x4008: Instant power in Watts (uint16)
         allia_power_w = ZCLAttributeDef(id=0x4008, type=t.uint16_t, access="rp")
         # 0x4009: Cumulative energy in Watt-hours (uint32)
