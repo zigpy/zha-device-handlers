@@ -1,6 +1,11 @@
 """Quirk for TS0207 rain sensors."""
 
-from zigpy.quirks.v2.homeassistant import LIGHT_LUX, EntityType, UnitOfElectricPotential
+from zigpy.quirks.v2.homeassistant import (
+    LIGHT_LUX,
+    EntityType,
+    UnitOfElectricPotential,
+    UnitOfTime,
+)
 from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
@@ -83,6 +88,47 @@ class TuyaIasZone(IasZone, TuyaLocalCluster):
         entity_type=EntityType.STANDARD,
         fallback_name="Rain intensity",
     )
+    .adds(TuyaIasZone)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# HOBEIAN ZG-223Z Rainwater detection sensor
+(
+    TuyaQuirkBuilder("_TZE200_jsaqgakf", "TS0601")
+    .applies_to("HOBEIAN", "ZG-223Z")
+    .applies_to("_TZE200_u6x1zyv2", "TS0601")
+    .applies_to("_TZE200_2pddnnrk", "TS0601")
+    .tuya_ias(
+        dp_id=1,
+        ias_cfg=TuyaIasZone,
+        converter=lambda x: IasZone.ZoneStatus.Alarm_1 if x == 1 else 0,
+    )
+    .tuya_number(
+        dp_id=2,
+        attribute_name="sensitivity",
+        type=t.uint8_t,
+        min_value=0,
+        max_value=9,
+        step=1,
+        unit="x",
+        translation_key="sensitivity",
+        fallback_name="Sensitivity",
+    )
+    .tuya_number(
+        dp_id=101,
+        attribute_name="illuminance_sampling",
+        type=t.uint16_t,
+        min_value=1,
+        max_value=480,
+        step=1,
+        unit=UnitOfTime.MINUTES,
+        translation_key="illuminance_sampling",
+        fallback_name="Illuminance sampling",
+    )
+    .tuya_illuminance(dp_id=102)
+    .tuya_battery(dp_id=104)
     .adds(TuyaIasZone)
     .skip_configuration()
     .add_to_registry()
