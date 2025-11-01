@@ -13,6 +13,7 @@ from zigpy.zcl.clusters.security import IasZone
 
 from zhaquirks.tuya import TuyaLocalCluster
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
+from zhaquirks.tuya.tuya_sensor import TuyaTempUnitConvert
 
 
 class TuyaOccupancySensing(OccupancySensing, TuyaLocalCluster):
@@ -1513,6 +1514,98 @@ base_tuya_motion = (
         step=1,
         translation_key="motion_detection_sensitivity",
         fallback_name="Motion detection sensitivity",
+    )
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+# HOBEIAN ZG-204ZV, 10GHz mmWave presence sensor with temp/humidity/illuminance
+# Sensor data (battery, temperature, humidity, illuminance) reported via standard
+# Zigbee clusters (0x0001, 0x0402, 0x0405, 0x0400) by the device itself
+# Tuya datapoints used for: occupancy detection (DP 1) and device configuration
+# (sensitivity, fading time, sensor offsets, illuminance interval, LED, temp unit)
+(
+    TuyaQuirkBuilder("HOBEIAN", "ZG-204ZV")
+    .applies_to("_TZE200_uli8wasj", "TS0601")
+    .applies_to("_TZE200_grgol3xp", "TS0601")
+    .applies_to("_TZE200_rhgsbacq", "TS0601")
+    .applies_to("_TZE200_y8jijhba", "TS0601")
+    .tuya_dp(
+        dp_id=1,
+        ep_attribute=TuyaOccupancySensing.ep_attribute,
+        attribute_name=OccupancySensing.AttributeDefs.occupancy.name,
+        converter=lambda x: x == 1,
+    )
+    .adds(TuyaOccupancySensing)
+    .tuya_number(
+        dp_id=2,
+        attribute_name="motion_detection_sensitivity",
+        type=t.uint16_t,
+        min_value=0,
+        max_value=19,
+        step=1,
+        translation_key="motion_detection_sensitivity",
+        fallback_name="Motion detection sensitivity",
+    )
+    .tuya_number(
+        dp_id=102,
+        attribute_name="fading_time",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.SECONDS,
+        min_value=0,
+        max_value=28800,
+        step=1,
+        translation_key="fading_time",
+        fallback_name="Motion keep time",
+    )
+    .tuya_number(
+        dp_id=104,
+        attribute_name="humidity_offset",
+        type=t.int16s,
+        min_value=-30,
+        max_value=30,
+        step=1,
+        translation_key="humidity_offset",
+        fallback_name="Humidity offset",
+    )
+    .tuya_number(
+        dp_id=105,
+        attribute_name="temperature_offset",
+        type=t.int16s,
+        min_value=-2,
+        max_value=2,
+        step=0.1,
+        multiplier=0.1,
+        translation_key="temperature_offset",
+        fallback_name="Temperature offset",
+    )
+    .tuya_number(
+        dp_id=107,
+        attribute_name="illuminance_interval",
+        type=t.uint16_t,
+        device_class=SensorDeviceClass.DURATION,
+        unit=UnitOfTime.MINUTES,
+        min_value=1,
+        max_value=720,
+        step=1,
+        translation_key="illuminance_interval",
+        fallback_name="Illuminance interval",
+    )
+    .tuya_switch(
+        dp_id=108,
+        attribute_name="led_indicator",
+        entity_type=EntityType.STANDARD,
+        translation_key="led_indicator",
+        fallback_name="LED indicator",
+    )
+    .tuya_enum(
+        dp_id=109,
+        attribute_name="temperature_unit_convert",
+        enum_class=TuyaTempUnitConvert,
+        translation_key="temperature_unit_convert",
+        fallback_name="Temperature unit",
     )
     .skip_configuration()
     .add_to_registry()
