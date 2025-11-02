@@ -2,12 +2,17 @@
 
 from unittest import mock
 
+from zigpy.quirks.v2 import EntityType
+from zigpy.quirks.v2.homeassistant import UnitOfTime
 import zigpy.types as t
 from zigpy.zcl import ClusterType, foundation
+from zigpy.zcl.clusters.general import BinaryInput, PowerConfiguration
+from zigpy.zcl.clusters.security import IasWd, IasZone, ZoneStatus
 from zigpy.zcl.clusters.smartenergy import Metering
 
 from tests.common import ClusterListener
 import zhaquirks
+from zhaquirks.develco.smoke_heat_water_alarm import FrientSmokeHeatWaterIasZone
 
 zhaquirks.setup()
 
@@ -187,3 +192,56 @@ async def test_mfg_cluster_events(zigpy_device_from_v2_quirk):
     assert (
         metering_cluster.get(Metering.AttributeDefs.current_summ_delivered.id) == 1234
     )
+
+
+async def test_frient_smoke_heat_water_alarm_entities(zigpy_device_from_v2_quirk):
+    """Test Frient Smoke/Heat/Water alarm exposes test bit and max duration number."""
+
+    device = zigpy_device_from_v2_quirk(
+        "frient A/S",
+        "SMSZB-120",
+        endpoint_ids=[1, 35],
+        cluster_ids={
+            35: {
+                IasZone.cluster_id: ClusterType.Server,
+                IasWd.cluster_id: ClusterType.Server,
+                PowerConfiguration.cluster_id: ClusterType.Server,
+                BinaryInput.cluster_id: ClusterType.Server,
+            }
+        },
+    )
+
+    zone_cluster = device.endpoints[35].ias_zone
+    assert isinstance(zone_cluster, FrientSmokeHeatWaterIasZone)
+
+    test_attr_id = zone_cluster.AttributeDefs.test.id
+    zone_status_attr_id = zone_cluster.AttributeDefs.zone_status.id
+
+    zone_cluster._update_attribute(zone_status_attr_id, ZoneStatus(0x0000))
+    assert zone_cluster.get(test_attr_id) is False
+
+    zone_cluster._update_attribute(zone_status_attr_id, ZoneStatus(0x0100))
+    assert zone_cluster.get(test_attr_id) is True
+
+    binary_sensor_key = (35, IasZone.cluster_id, ClusterType.Server)
+    binary_sensor_metadata = next(
+        meta
+        for meta in device.exposes_metadata[binary_sensor_key]
+        if getattr(meta, "attribute_name", None) == "test"
+    )
+    assert binary_sensor_metadata.entity_type == EntityType.DIAGNOSTIC
+    assert binary_sensor_metadata.translation_key == "test"
+    assert binary_sensor_metadata.fallback_name == "IAS test"
+
+    number_key = (35, IasWd.cluster_id, ClusterType.Server)
+    number_metadata = next(
+        meta
+        for meta in device.exposes_metadata[number_key]
+        if getattr(meta, "attribute_name", None) == "max_duration"
+    )
+    assert number_metadata.min == 0
+    assert number_metadata.max == 65535
+    assert number_metadata.step == 1
+    assert number_metadata.unit == UnitOfTime.SECONDS
+    assert number_metadata.unique_id_suffix == "max_duration"
+    assert number_metadata.translation_key == "max_duration"
