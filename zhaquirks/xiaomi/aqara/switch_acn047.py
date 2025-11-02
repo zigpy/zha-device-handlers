@@ -77,10 +77,9 @@ class MultistateInputCluster(CustomCluster, MultistateInput):
 class T2MeteringCluster(MeteringCluster):
     """T2 Metering cluster to fix divisor."""
 
-    def _update_attribute(self, attrid, value):
-        if attrid == self.CURRENT_SUMM_DELIVERED_ID and value > 0:
-            value = value / 1000
-        super()._update_attribute(attrid, value)
+    _CONSTANT_ATTRIBUTES = {
+        MeteringCluster.AttributeDefs.divisor.id: 1000000,
+    }
 
 
 class OppleCluster(XiaomiAqaraE1Cluster):
