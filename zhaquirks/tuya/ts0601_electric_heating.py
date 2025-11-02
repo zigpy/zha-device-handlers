@@ -5,7 +5,7 @@ from typing import Final, Optional, Union
 from zigpy.profiles import zha
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import Basic, Groups, GreenPowerProxy, Ota, Scenes, Time
+from zigpy.zcl.clusters.general import Basic, GreenPowerProxy, Groups, Ota, Scenes, Time
 from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks.const import (
@@ -17,13 +17,13 @@ from zhaquirks.const import (
     PROFILE_ID,
 )
 from zhaquirks.tuya import (
+    TUYA_MCU_COMMAND,
     NoManufacturerCluster,
     TuyaLocalCluster,
     TuyaManufClusterAttributes,
     TuyaThermostat,
     TuyaThermostatCluster,
     TuyaUserInterfaceCluster,
-    TUYA_MCU_COMMAND,
 )
 from zhaquirks.tuya.mcu import TuyaClusterData
 
@@ -208,7 +208,9 @@ class MoesBHT(TuyaThermostat):
     }
 
 
-class MoesBHT6ManufCluster(TuyaManufClusterAttributes, NoManufacturerCluster, TuyaLocalCluster):
+class MoesBHT6ManufCluster(
+    TuyaManufClusterAttributes, NoManufacturerCluster, TuyaLocalCluster
+):
     """Manufacturer Specific Cluster for MoesBHT6 variant thermostats."""
 
     class AttributeDefs(TuyaManufClusterAttributes.AttributeDefs):
@@ -230,7 +232,9 @@ class MoesBHT6ManufCluster(TuyaManufClusterAttributes, NoManufacturerCluster, Tu
             id=MOESBHT6_RUNNING_MODE_ATTR, type=t.uint8_t, is_manufacturer_specific=True
         )
         running_state: Final = ZCLAttributeDef(
-            id=MOESBHT6_RUNNING_STATE_ATTR, type=t.uint8_t, is_manufacturer_specific=True
+            id=MOESBHT6_RUNNING_STATE_ATTR,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
         )
         child_lock: Final = ZCLAttributeDef(
             id=MOESBHT6_CHILD_LOCK_ATTR, type=t.uint8_t, is_manufacturer_specific=True
@@ -295,9 +299,7 @@ class MoesBHT6ManufCluster(TuyaManufClusterAttributes, NoManufacturerCluster, Tu
                 )
         elif attrid == MOESBHT6_ENABLED_ATTR:
             self.endpoint.device.thermostat_bus.listener_event("enabled_change", value)
-        elif attrid == MOESBHT6_RUNNING_MODE_ATTR:
-            self.endpoint.device.thermostat_bus.listener_event("running_change", value)
-        elif attrid == MOESBHT6_RUNNING_STATE_ATTR:
+        elif attrid in (MOESBHT6_RUNNING_MODE_ATTR, MOESBHT6_RUNNING_STATE_ATTR):
             self.endpoint.device.thermostat_bus.listener_event("running_change", value)
         elif attrid == MOESBHT6_CHILD_LOCK_ATTR:
             self.endpoint.device.ui_bus.listener_event("child_lock_change", value)
@@ -359,7 +361,7 @@ class MoesBHT6Thermostat(TuyaThermostatCluster):
         self._update_attribute(self.attributes_by_name["system_mode"].id, mode)
 
     def running_change(self, value):
-        """Running state change."""
+        """Change running state."""
         if value == 0:
             mode = self.RunningMode.Heat
             state = self.RunningState.Heat_State_On
