@@ -2,13 +2,15 @@
 
 from typing import Final
 
-import zigpy.types as t
 from zigpy.quirks.v2 import EntityType, QuirkBuilder
 from zigpy.quirks.v2.homeassistant import UnitOfTime
+import zigpy.types as t
 from zigpy.zcl.clusters.general import BinaryInput
 from zigpy.zcl.clusters.security import IasWd, IasZone
 from zigpy.zcl.foundation import ZCLAttributeDef
+
 from zhaquirks.develco import DevelcoIasZone, DevelcoPowerConfiguration
+
 
 class FrientSmokeHeatWaterIasZone(DevelcoIasZone):
     """Custom IAS Zone cluster for Smoke Alarm, Heat Alarm and Water Alarm with test support bit exposed."""
@@ -23,11 +25,12 @@ class FrientSmokeHeatWaterIasZone(DevelcoIasZone):
 
     class AttributeDefs(IasZone.AttributeDefs):
         """Attribute definitions."""
-        
+
         test: Final = ZCLAttributeDef(
             id=0xFFF2,  # Custom attribute ID
             type=t.Bool,
         )
+
 
 (
     QuirkBuilder("frient A/S", "SMSZB-120")
@@ -58,7 +61,6 @@ class FrientSmokeHeatWaterIasZone(DevelcoIasZone):
         fallback_name="Max duration",
         unique_id_suffix="max_duration",
     )
-
     .prevent_default_entity_creation(
         endpoint_id=35,
         cluster_id=IasWd.cluster_id,
