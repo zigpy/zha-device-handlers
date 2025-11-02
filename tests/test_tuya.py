@@ -2299,3 +2299,200 @@ async def test_moesbht6_command_on_off(zigpy_device_from_quirk, quirk):
     result = await tuya_manuf_cluster.command(0x0000)
     assert result.command_id == 0x0000
     assert result.status == foundation.Status.SUCCESS
+
+
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_electric_heating.MoesBHT6,))
+async def test_moesbht6_setpoint_rounding(zigpy_device_from_quirk, quirk):
+    """Test MoesBHT6 setpoint rounding and boundary behavior."""
+
+    eheat_dev = zigpy_device_from_quirk(quirk)
+    thermostat_cluster = eheat_dev.endpoints[1].thermostat
+
+    # Test various setpoint values and rounding
+    test_cases = [
+        (1500, 15),  # 15.00°C → 15°C
+        (1550, 16),  # 15.50°C → 16°C (rounds up)
+        (2050, 20),  # 20.50°C → 20°C (rounds to even)
+        (2150, 22),  # 21.50°C → 22°C (rounds to even)
+        (2549, 25),  # 25.49°C → 25°C (rounds down)
+        (2551, 26),  # 25.51°C → 26°C (rounds up)
+        (500, 5),  # 5.00°C → 5°C
+        (3500, 35),  # 35.00°C → 35°C
+    ]
+
+    for input_val, expected in test_cases:
+        result = thermostat_cluster.map_attribute(
+            "occupied_heating_setpoint", input_val
+        )
+        assert result == {0x0210: expected}, (
+            f"Input {input_val} should map to {expected}"
+        )
+
+
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_electric_heating.MoesBHT6,))
+async def test_moesbht6_unsupported_system_mode(zigpy_device_from_quirk, quirk, caplog):
+    """Test MoesBHT6 error handling for unsupported system modes."""
+
+    eheat_dev = zigpy_device_from_quirk(quirk)
+    thermostat_cluster = eheat_dev.endpoints[1].thermostat
+
+    # Test supported modes first
+    result = thermostat_cluster.map_attribute(
+        "system_mode", thermostat_cluster.SystemMode.Off
+    )
+    assert result == {0x0101: 0}
+
+    result = thermostat_cluster.map_attribute(
+        "system_mode", thermostat_cluster.SystemMode.Heat
+    )
+    assert result == {0x0101: 1}
+
+    # Test unsupported modes - these should call self.error() and fall through to super()
+    import logging
+
+    with caplog.at_level(logging.ERROR):
+        result = thermostat_cluster.map_attribute(
+            "system_mode", thermostat_cluster.SystemMode.Cool
+        )
+        # self.error() logs but doesn't prevent super().map_attribute() from being called
+        # super() returns {} for unsupported attributes
+        assert result == {}
+        assert "Unsupported value for SystemMode" in caplog.text
+
+    caplog.clear()
+    with caplog.at_level(logging.ERROR):
+        result = thermostat_cluster.map_attribute(
+            "system_mode", thermostat_cluster.SystemMode.Auto
+        )
+        assert result == {}
+        assert "Unsupported value for SystemMode" in caplog.text
+
+
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_electric_heating.MoesBHT6,))
+async def test_moesbht6_unsupported_programming_mode(
+    zigpy_device_from_quirk, quirk, caplog
+):
+    """Test MoesBHT6 error handling for unsupported programming modes."""
+
+    eheat_dev = zigpy_device_from_quirk(quirk)
+    thermostat_cluster = eheat_dev.endpoints[1].thermostat
+
+    # Test supported modes first
+    result = thermostat_cluster.map_attribute(
+        "programing_oper_mode", thermostat_cluster.ProgrammingOperationMode.Simple
+    )
+    assert result == {0x0402: 0}
+
+    result = thermostat_cluster.map_attribute(
+        "programing_oper_mode",
+        thermostat_cluster.ProgrammingOperationMode.Schedule_programming_mode,
+    )
+    assert result == {0x0402: 1}
+
+    # Test unsupported mode
+    import logging
+
+    with caplog.at_level(logging.ERROR):
+        # Try an unsupported programming mode if available
+        # ProgrammingOperationMode only has Simple (0) and Schedule_programming_mode (1)
+        # Test with an invalid value
+        result = thermostat_cluster.map_attribute("programing_oper_mode", 0xFF)
+        assert result == {}
+        assert "Unsupported value for ProgrammingOperationMode" in caplog.text
+
+
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_electric_heating.MoesBHT6,))
+async def test_moesbht6_unsupported_running_state(
+    zigpy_device_from_quirk, quirk, caplog
+):
+    """Test MoesBHT6 error handling for unsupported running states."""
+
+    eheat_dev = zigpy_device_from_quirk(quirk)
+    thermostat_cluster = eheat_dev.endpoints[1].thermostat
+
+    # Test supported states first
+    result = thermostat_cluster.map_attribute(
+        "running_state", thermostat_cluster.RunningState.Idle
+    )
+    assert result == {0x0424: 1}
+
+    result = thermostat_cluster.map_attribute(
+        "running_state", thermostat_cluster.RunningState.Heat_State_On
+    )
+    assert result == {0x0424: 0}
+
+    # Test unsupported state
+    import logging
+
+    with caplog.at_level(logging.ERROR):
+        result = thermostat_cluster.map_attribute(
+            "running_state", thermostat_cluster.RunningState.Cool_State_On
+        )
+        assert result == {}
+        assert "Unsupported value for RunningState" in caplog.text
+
+
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_electric_heating.MoesBHT6,))
+async def test_moesbht6_unsupported_running_mode(
+    zigpy_device_from_quirk, quirk, caplog
+):
+    """Test MoesBHT6 error handling for unsupported running modes."""
+
+    eheat_dev = zigpy_device_from_quirk(quirk)
+    thermostat_cluster = eheat_dev.endpoints[1].thermostat
+
+    # Test supported modes first
+    result = thermostat_cluster.map_attribute(
+        "running_mode", thermostat_cluster.RunningMode.Off
+    )
+    assert result == {0x0424: 1}
+
+    result = thermostat_cluster.map_attribute(
+        "running_mode", thermostat_cluster.RunningMode.Heat
+    )
+    assert result == {0x0424: 0}
+
+    # Test unsupported mode
+    import logging
+
+    with caplog.at_level(logging.ERROR):
+        result = thermostat_cluster.map_attribute(
+            "running_mode", thermostat_cluster.RunningMode.Cool
+        )
+        assert result == {}
+        assert "Unsupported value for RunningMode" in caplog.text
+
+
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_electric_heating.MoesBHT6,))
+async def test_moesbht6_program_change_modes(zigpy_device_from_quirk, quirk):
+    """Test MoesBHT6 program_change with various mode strings."""
+
+    eheat_dev = zigpy_device_from_quirk(quirk)
+    thermostat_cluster = eheat_dev.endpoints[1].thermostat
+
+    # Test manual mode
+    thermostat_cluster.program_change("manual")
+    assert (
+        thermostat_cluster.get(0x0025)
+        == thermostat_cluster.ProgrammingOperationMode.Simple
+    )
+
+    # Test scheduled mode (any non-"manual" string)
+    thermostat_cluster.program_change("scheduled")
+    assert (
+        thermostat_cluster.get(0x0025)
+        == thermostat_cluster.ProgrammingOperationMode.Schedule_programming_mode
+    )
+
+    # Test other strings also map to scheduled
+    thermostat_cluster.program_change("schedule")
+    assert (
+        thermostat_cluster.get(0x0025)
+        == thermostat_cluster.ProgrammingOperationMode.Schedule_programming_mode
+    )
+
+    thermostat_cluster.program_change("auto")
+    assert (
+        thermostat_cluster.get(0x0025)
+        == thermostat_cluster.ProgrammingOperationMode.Schedule_programming_mode
+    )
