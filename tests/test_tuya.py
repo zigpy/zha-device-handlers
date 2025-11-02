@@ -2496,3 +2496,34 @@ async def test_moesbht6_program_change_modes(zigpy_device_from_quirk, quirk):
         thermostat_cluster.get(0x0025)
         == thermostat_cluster.ProgrammingOperationMode.Schedule_programming_mode
     )
+
+
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_electric_heating.MoesBHT6,))
+async def test_moesbht6_child_lock_report(zigpy_device_from_quirk, quirk):
+    """Test MoesBHT6 child lock reporting."""
+
+    electric_dev = zigpy_device_from_quirk(quirk)
+    tuya_cluster = electric_dev.endpoints[1].tuya_manufacturer
+    ui_cluster = electric_dev.endpoints[1].thermostat_ui
+
+    from tests.common import ClusterListener
+
+    ui_listener = ClusterListener(ui_cluster)
+
+    # Test child lock on
+    hdr, args = tuya_cluster.deserialize(ZCL_TUYA_EHEAT6_CHILD_LOCK_ON)
+    tuya_cluster.handle_message(hdr, args)
+
+    assert len(ui_listener.attribute_updates) == 1
+    assert ui_listener.attribute_updates[0][0] == 0x0001  # child_lock attribute
+    assert ui_listener.attribute_updates[0][1] == 1  # Locked
+
+    ui_listener.attribute_updates.clear()
+
+    # Test child lock off
+    hdr, args = tuya_cluster.deserialize(ZCL_TUYA_EHEAT6_CHILD_LOCK_OFF)
+    tuya_cluster.handle_message(hdr, args)
+
+    assert len(ui_listener.attribute_updates) == 1
+    assert ui_listener.attribute_updates[0][0] == 0x0001  # child_lock attribute
+    assert ui_listener.attribute_updates[0][1] == 0  # Unlocked
