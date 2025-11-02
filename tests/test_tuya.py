@@ -1,12 +1,14 @@
 """Tests for Tuya quirks."""
 
-import asyncio
 import base64
 import datetime
 import struct
+from typing import Final
 from unittest import mock
+from zoneinfo import ZoneInfo
 
 import pytest
+import time_machine
 from zigpy.device import Device
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice, get_device
@@ -14,8 +16,9 @@ import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import PowerConfiguration
 from zigpy.zcl.clusters.security import IasZone, ZoneStatus
+from zigpy.zcl.foundation import ZCLAttributeDef
 
-from tests.common import ClusterListener, MockDatetime, wait_for_zigpy_tasks
+from tests.common import ClusterListener, wait_for_zigpy_tasks
 import zhaquirks
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -26,7 +29,6 @@ from zhaquirks.const import (
     ON,
     OUTPUT_CLUSTERS,
     PROFILE_ID,
-    ZONE_STATUS_CHANGE_COMMAND,
 )
 from zhaquirks.tuya import Data, TuyaManufClusterAttributes, TuyaNewManufCluster
 import zhaquirks.tuya.sm0202_motion
@@ -37,12 +39,10 @@ import zhaquirks.tuya.ts0043
 import zhaquirks.tuya.ts011f_plug
 import zhaquirks.tuya.ts0501_fan_switch
 import zhaquirks.tuya.ts0601_electric_heating
-import zhaquirks.tuya.ts0601_motion
-import zhaquirks.tuya.ts0601_siren
 import zhaquirks.tuya.ts0601_trv
-import zhaquirks.tuya.ts0601_valve
-import zhaquirks.tuya.ts601_door
 import zhaquirks.tuya.ts1201
+import zhaquirks.tuya.tuya_motion
+import zhaquirks.tuya.tuya_valve
 
 zhaquirks.setup()
 
@@ -54,14 +54,9 @@ ZCL_TUYA_BUTTON_1_LONG_PRESS = b"\tk\x06\x03\x11\x01\x04\x00\x01\x02"
 ZCL_TUYA_BUTTON_2_SINGLE_PRESS = b"\tN\x06\x01\x1f\x02\x04\x00\x01\x00"
 ZCL_TUYA_BUTTON_2_DOUBLE_PRESS = b"\tj\x06\x03\x10\x02\x04\x00\x01\x01"
 ZCL_TUYA_BUTTON_2_LONG_PRESS = b"\tl\x06\x03\x12\x02\x04\x00\x01\x02"
-ZCL_TUYA_MOTION = b"\tL\x01\x00\x05\x03\x04\x00\x01\x02"
 ZCL_TUYA_SWITCH_ON = b"\tQ\x02\x006\x01\x01\x00\x01\x01"
 ZCL_TUYA_SWITCH_OFF = b"\tQ\x02\x006\x01\x01\x00\x01\x00"
 ZCL_TUYA_ATTRIBUTE_617_TO_179 = b"\tp\x02\x00\x02i\x02\x00\x04\x00\x00\x00\xb3"
-ZCL_TUYA_SIREN_TEMPERATURE = ZCL_TUYA_ATTRIBUTE_617_TO_179
-ZCL_TUYA_SIREN_HUMIDITY = b"\tp\x02\x00\x02j\x02\x00\x04\x00\x00\x00U"
-ZCL_TUYA_SIREN_ON = b"\t\t\x02\x00\x04h\x01\x00\x01\x01"
-ZCL_TUYA_SIREN_OFF = b"\t\t\x02\x00\x04h\x01\x00\x01\x00"
 ZCL_TUYA_VALVE_TEMPERATURE = b"\tp\x02\x00\x02\x03\x02\x00\x04\x00\x00\x00\xb3"
 ZCL_TUYA_VALVE_TARGET_TEMP = b"\t3\x01\x03\x05\x02\x02\x00\x04\x00\x00\x002"
 ZCL_TUYA_VALVE_OFF = b"\t2\x01\x03\x04\x04\x04\x00\x01\x00"
@@ -98,33 +93,6 @@ ZCL_TUYA_VALVE_ZONNSMART_HEAT_STOP = b"\t2\x01\x03\x04\x6b\x01\x00\x01\x00"
 
 ZCL_TUYA_EHEAT_TEMPERATURE = b"\tp\x02\x00\x02\x18\x02\x00\x04\x00\x00\x00\xb3"
 ZCL_TUYA_EHEAT_TARGET_TEMP = b"\t3\x01\x03\x05\x10\x02\x00\x04\x00\x00\x00\x15"
-
-
-@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_motion.TuyaMotion,))
-async def test_motion(zigpy_device_from_quirk, quirk):
-    """Test tuya motion sensor."""
-
-    motion_dev = zigpy_device_from_quirk(quirk)
-
-    motion_cluster = motion_dev.endpoints[1].ias_zone
-    motion_listener = ClusterListener(motion_cluster)
-
-    tuya_cluster = motion_dev.endpoints[1].tuya_manufacturer
-
-    # send motion on Tuya manufacturer specific cluster
-    hdr, args = tuya_cluster.deserialize(ZCL_TUYA_MOTION)
-    with mock.patch.object(motion_cluster, "reset_s", 0):
-        tuya_cluster.handle_message(hdr, args)
-
-    assert len(motion_listener.cluster_commands) == 1
-    assert motion_listener.cluster_commands[0][1] == ZONE_STATUS_CHANGE_COMMAND
-    assert motion_listener.cluster_commands[0][2][0] == ON
-
-    await asyncio.gather(asyncio.sleep(0), asyncio.sleep(0), asyncio.sleep(0))
-
-    assert len(motion_listener.cluster_commands) == 2
-    assert motion_listener.cluster_commands[1][1] == ZONE_STATUS_CHANGE_COMMAND
-    assert motion_listener.cluster_commands[1][2][0] == OFF
 
 
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_switch.TuyaSingleSwitchTI,))
@@ -309,7 +277,7 @@ async def test_singleswitch_requests(zigpy_device_from_quirk, quirk):
             expect_reply=True,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert rsp.status == 0
 
@@ -324,7 +292,7 @@ async def test_singleswitch_requests(zigpy_device_from_quirk, quirk):
             expect_reply=True,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert rsp.status == 0
 
@@ -372,8 +340,12 @@ async def test_tuya_data_conversion():
 class TuyaTestManufCluster(TuyaManufClusterAttributes):
     """Cluster for synthetic tests."""
 
-    attributes = TuyaManufClusterAttributes.attributes.copy()
-    attributes[617] = ("test_attribute", t.uint32_t, True)
+    class AttributeDefs(TuyaManufClusterAttributes.AttributeDefs):
+        """Attribute definitions."""
+
+        test_attribute: Final = ZCLAttributeDef(
+            id=617, type=t.uint32_t, is_manufacturer_specific=True
+        )
 
 
 class TuyaTestDevice(CustomDevice):
@@ -442,96 +414,11 @@ async def test_tuya_send_attribute(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
         ]
-
-
-@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_siren.TuyaSiren,))
-async def test_siren_state_report(zigpy_device_from_quirk, quirk):
-    """Test tuya siren standard state reporting from incoming commands."""
-
-    siren_dev = zigpy_device_from_quirk(quirk)
-    tuya_cluster = siren_dev.endpoints[1].tuya_manufacturer
-
-    temp_listener = ClusterListener(siren_dev.endpoints[1].temperature)
-    humid_listener = ClusterListener(siren_dev.endpoints[1].humidity)
-    switch_listener = ClusterListener(siren_dev.endpoints[1].on_off)
-
-    frames = (
-        ZCL_TUYA_SIREN_TEMPERATURE,
-        ZCL_TUYA_SIREN_HUMIDITY,
-        ZCL_TUYA_SIREN_ON,
-        ZCL_TUYA_SIREN_OFF,
-    )
-    for frame in frames:
-        hdr, args = tuya_cluster.deserialize(frame)
-        tuya_cluster.handle_message(hdr, args)
-
-    assert len(temp_listener.cluster_commands) == 0
-    assert len(temp_listener.attribute_updates) == 1
-    assert temp_listener.attribute_updates[0][0] == 0x0000
-    assert temp_listener.attribute_updates[0][1] == 1790
-
-    assert len(humid_listener.cluster_commands) == 0
-    assert len(humid_listener.attribute_updates) == 1
-    assert humid_listener.attribute_updates[0][0] == 0x0000
-    assert humid_listener.attribute_updates[0][1] == 8500
-
-    assert len(switch_listener.cluster_commands) == 0
-    assert len(switch_listener.attribute_updates) == 2
-    assert switch_listener.attribute_updates[0][0] == 0x0000
-    assert switch_listener.attribute_updates[0][1] == ON
-    assert switch_listener.attribute_updates[1][0] == 0x0000
-    assert switch_listener.attribute_updates[1][1] == OFF
-
-
-@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_siren.TuyaSiren,))
-async def test_siren_send_attribute(zigpy_device_from_quirk, quirk):
-    """Test tuya siren outgoing commands."""
-
-    siren_dev = zigpy_device_from_quirk(quirk)
-    tuya_cluster = siren_dev.endpoints[1].tuya_manufacturer
-    switch_cluster = siren_dev.endpoints[1].on_off
-
-    async def async_success(*args, **kwargs):
-        return foundation.Status.SUCCESS
-
-    with mock.patch.object(
-        tuya_cluster.endpoint, "request", side_effect=async_success
-    ) as m1:
-        _, status = await switch_cluster.command(0x0000)
-        m1.assert_called_with(
-            cluster=0xEF00,
-            sequence=1,
-            data=b"\x01\x01\x00\x00\x01h\x01\x00\x01\x00",
-            command_id=0,
-            timeout=5,
-            expect_reply=False,
-            use_ieee=False,
-            ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
-        )
-        assert status == foundation.Status.SUCCESS
-
-        _, status = await switch_cluster.command(0x0001)
-        m1.assert_called_with(
-            cluster=0xEF00,
-            sequence=2,
-            data=b"\x01\x02\x00\x00\x02h\x01\x00\x01\x01",
-            command_id=0,
-            timeout=5,
-            expect_reply=False,
-            use_ieee=False,
-            ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
-        )
-        assert status == foundation.Status.SUCCESS
-
-        _, status = await switch_cluster.command(0x0003)
-        assert status == foundation.Status.UNSUP_CLUSTER_COMMAND
 
 
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_trv.ZonnsmartTV01_ZG,))
@@ -606,7 +493,7 @@ async def test_zonnsmart_send_attribute(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -626,7 +513,7 @@ async def test_zonnsmart_send_attribute(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -646,7 +533,7 @@ async def test_zonnsmart_send_attribute(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -666,7 +553,7 @@ async def test_zonnsmart_send_attribute(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -751,7 +638,7 @@ async def test_valve_send_attribute(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -771,7 +658,7 @@ async def test_valve_send_attribute(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -791,7 +678,7 @@ async def test_valve_send_attribute(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -811,7 +698,7 @@ async def test_valve_send_attribute(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -830,7 +717,7 @@ async def test_valve_send_attribute(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert status == foundation.Status.SUCCESS
 
@@ -838,6 +725,7 @@ async def test_valve_send_attribute(zigpy_device_from_quirk, quirk):
         assert status == foundation.Status.UNSUP_CLUSTER_COMMAND
 
 
+@time_machine.travel(datetime.datetime(1970, 1, 1, 1, 0, tzinfo=ZoneInfo("Etc/GMT+1")))
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_trv.MoesHY368_Type1,))
 async def test_moes(zigpy_device_from_quirk, quirk):
     """Test thermostatic valve outgoing commands."""
@@ -1047,7 +935,7 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1067,7 +955,7 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1087,7 +975,7 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1106,7 +994,7 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert status == foundation.Status.SUCCESS
 
@@ -1126,7 +1014,7 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1146,7 +1034,7 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1167,7 +1055,7 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1187,7 +1075,7 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1207,7 +1095,7 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1227,7 +1115,7 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1247,7 +1135,7 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1267,7 +1155,7 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1287,7 +1175,7 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1307,7 +1195,7 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1327,7 +1215,7 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1347,7 +1235,7 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1367,7 +1255,7 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1383,7 +1271,7 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert status == foundation.Status.SUCCESS
 
@@ -1398,7 +1286,7 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert status == foundation.Status.SUCCESS
 
@@ -1412,7 +1300,7 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert status == foundation.Status.SUCCESS
 
@@ -1427,9 +1315,6 @@ async def test_moes(zigpy_device_from_quirk, quirk):
         _, status = await onoff_cluster.command(0x0009)
         assert status == foundation.Status.UNSUP_CLUSTER_COMMAND
 
-        origdatetime = datetime.datetime
-        datetime.datetime = MockDatetime
-
         hdr, args = tuya_cluster.deserialize(ZCL_TUYA_SET_TIME_REQUEST)
         tuya_cluster.handle_message(hdr, args)
         await wait_for_zigpy_tasks()
@@ -1442,9 +1327,8 @@ async def test_moes(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
-        datetime.datetime = origdatetime
 
 
 @pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_electric_heating.MoesBHT,))
@@ -1497,7 +1381,7 @@ async def test_eheat_send_attribute(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1517,7 +1401,7 @@ async def test_eheat_send_attribute(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1537,7 +1421,7 @@ async def test_eheat_send_attribute(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
@@ -1556,7 +1440,7 @@ async def test_eheat_send_attribute(zigpy_device_from_quirk, quirk):
             expect_reply=False,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert status == foundation.Status.SUCCESS
 
@@ -1607,44 +1491,6 @@ async def test_tuya_wildcard_manufacturer(zigpy_device_from_quirk, quirk, manufa
 
     quirked_dev = get_device(zigpy_dev)
     assert isinstance(quirked_dev, quirk)
-
-
-def test_ts0601_valve_signature(assert_signature_matches_quirk):
-    """Test TS0601 valve remote signature is matched to its quirk."""
-    signature = {
-        "node_descriptor": "NodeDescriptor(logical_type=<LogicalType.EndDevice: 2>, complex_descriptor_available=0, user_descriptor_available=0, reserved=0, aps_flags=0, frequency_band=<FrequencyBand.Freq2400MHz: 8>, mac_capability_flags=<MACCapabilityFlags.AllocateAddress: 128>, manufacturer_code=4098, maximum_buffer_size=82, maximum_incoming_transfer_size=82, server_mask=11264, maximum_outgoing_transfer_size=82, descriptor_capability_field=<DescriptorCapability.NONE: 0>, *allocate_address=True, *is_alternate_pan_coordinator=False, *is_coordinator=False, *is_end_device=True, *is_full_function_device=False, *is_mains_powered=False, *is_receiver_on_when_idle=False, *is_router=False, *is_security_capable=False)",
-        "endpoints": {
-            "1": {
-                "profile_id": 260,
-                "device_type": "0x0051",
-                "in_clusters": ["0x0000", "0x0004", "0x0005", "0xef00"],
-                "out_clusters": ["0x000a", "0x0019"],
-            }
-        },
-        "manufacturer": "_TZE200_81isopgh",
-        "model": "TS0601",
-        "class": "ts0601_valve.TuyaValve",
-    }
-    assert_signature_matches_quirk(zhaquirks.tuya.ts0601_valve.TuyaValve, signature)
-
-
-def test_ts0601_motion_signature(assert_signature_matches_quirk):
-    """Test TS0601 motion by TreatLife remote signature is matched to its quirk."""
-    signature = {
-        "node_descriptor": "NodeDescriptor(logical_type=<LogicalType.EndDevice: 2>, complex_descriptor_available=0, user_descriptor_available=0, reserved=0, aps_flags=0, frequency_band=<FrequencyBand.Freq2400MHz: 8>, mac_capability_flags=<MACCapabilityFlags.AllocateAddress: 128>, manufacturer_code=4417, maximum_buffer_size=66, maximum_incoming_transfer_size=66, server_mask=10752, maximum_outgoing_transfer_size=66, descriptor_capability_field=<DescriptorCapability.NONE: 0>, *allocate_address=True, *is_alternate_pan_coordinator=False, *is_coordinator=False, *is_end_device=True, *is_full_function_device=False, *is_mains_powered=False, *is_receiver_on_when_idle=False, *is_router=False, *is_security_capable=False)",
-        "endpoints": {
-            "1": {
-                "profile_id": 260,
-                "device_type": "0x0051",
-                "in_clusters": ["0x0000", "0x0004", "0x0005", "0xef00"],
-                "out_clusters": ["0x000a", "0x0019"],
-            }
-        },
-        "manufacturer": "_TZE200_ppuj1vem",
-        "model": "TS0601",
-        "class": "zigpy.device.Device",
-    }
-    assert_signature_matches_quirk(zhaquirks.tuya.ts0601_motion.NeoMotion, signature)
 
 
 def test_multiple_attributes_report():
@@ -1845,7 +1691,7 @@ async def test_ts1201_ir_blaster(zigpy_device_from_quirk):
             expect_reply=True,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert rsp == foundation.Status.SUCCESS
 
@@ -1868,7 +1714,7 @@ async def test_ts1201_ir_blaster(zigpy_device_from_quirk):
             expect_reply=True,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert (
             ts1201_transmit_listener.cluster_commands[0][2].command.name
@@ -1904,7 +1750,7 @@ async def test_ts1201_ir_blaster(zigpy_device_from_quirk):
             expect_reply=False,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert (
             ts1201_transmit_listener.cluster_commands[1][2].command.name
@@ -1933,7 +1779,7 @@ async def test_ts1201_ir_blaster(zigpy_device_from_quirk):
             expect_reply=False,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert (
             ts1201_transmit_listener.cluster_commands[2][2].command.name
@@ -1962,7 +1808,7 @@ async def test_ts1201_ir_blaster(zigpy_device_from_quirk):
             expect_reply=True,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert (
             ts1201_transmit_listener.cluster_commands[3][2].command.name
@@ -2000,7 +1846,7 @@ async def test_ts1201_ir_blaster(zigpy_device_from_quirk):
             expect_reply=False,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
 
         # simulate receive_ir_frame_00
@@ -2021,7 +1867,7 @@ async def test_ts1201_ir_blaster(zigpy_device_from_quirk):
             expect_reply=True,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert (
             ts1201_transmit_listener.cluster_commands[4][2].command.name
@@ -2077,7 +1923,7 @@ async def test_ts1201_ir_blaster(zigpy_device_from_quirk):
             expect_reply=False,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert (
             ts1201_transmit_listener.cluster_commands[7][2].command.name
@@ -2098,7 +1944,7 @@ async def test_ts1201_ir_blaster(zigpy_device_from_quirk):
             expect_reply=True,
             use_ieee=False,
             ask_for_ack=None,
-            priority=t.PacketPriority.NORMAL,
+            priority=None,
         )
         assert rsp == foundation.Status.SUCCESS
 
@@ -2113,59 +1959,35 @@ async def test_ts1201_ir_blaster(zigpy_device_from_quirk):
         )
 
 
-def test_ts601_door_sensor_signature(assert_signature_matches_quirk):
-    """Test TS601 Vibration Door Sensor signature against quirk."""
-    signature = {
-        "node_descriptor": "NodeDescriptor(logical_type=<LogicalType.EndDevice: 2>, complex_descriptor_available=0, user_descriptor_available=0, reserved=0, aps_flags=0, frequency_band=<FrequencyBand.Freq2400MHz: 8>, mac_capability_flags=<MACCapabilityFlags.AllocateAddress: 128>, manufacturer_code=4417, maximum_buffer_size=66, maximum_incoming_transfer_size=66, server_mask=10752, maximum_outgoing_transfer_size=66, descriptor_capability_field=<DescriptorCapability.NONE: 0>, *allocate_address=True, *is_alternate_pan_coordinator=False, *is_coordinator=False, *is_end_device=True, *is_full_function_device=False, *is_mains_powered=False, *is_receiver_on_when_idle=False, *is_router=False, *is_security_capable=False)",
-        "endpoints": {
-            "1": {
-                "profile_id": 260,
-                "device_type": "0x0051",
-                "in_clusters": ["0x0000", "0x0004", "0x0005", "0xef00"],
-                "out_clusters": ["0x000a", "0x0019"],
-            }
-        },
-        "manufacturer": "_TZE200_kzm5w4iz",
-        "model": "TS0601",
-        "class": "zigpy.device.Device",
-    }
-    assert_signature_matches_quirk(zhaquirks.tuya.ts601_door.TS0601Door, signature)
-
-
 @pytest.mark.parametrize(
-    ("data", "endpoint_id", "ep_attr", "attribute", "expected_value"),
+    ("data", "ep_attr", "attribute", "expected_value"),
     [
         (
             b"\t\xfc\x02\x007\x01\x01\x00\x01\x01",
-            zhaquirks.tuya.ts601_door.DOOR_HANDLE_EP_ID,
             IasZone.ep_attribute,
             IasZone.AttributeDefs.zone_status.id,
             ZoneStatus.Alarm_1,
         ),
         (
             b"\t\xfc\x02\x007\x01\x01\x00\x01\x00",
-            zhaquirks.tuya.ts601_door.DOOR_HANDLE_EP_ID,
             IasZone.ep_attribute,
             IasZone.AttributeDefs.zone_status.id,
             0x0000,
         ),
         (
             b"\t\xfc\x02\x007\n\x04\x00\x01\x01",
-            zhaquirks.tuya.ts601_door.VIBRATION_EP_ID,
             IasZone.ep_attribute,
             IasZone.AttributeDefs.zone_status.id,
             ZoneStatus.Alarm_1,
         ),
         (
             b"\t\xfc\x02\x007\n\x04\x00\x01\x00",
-            zhaquirks.tuya.ts601_door.VIBRATION_EP_ID,
             IasZone.ep_attribute,
             IasZone.AttributeDefs.zone_status.id,
             0x0000,
         ),
         (
             b"\to\x02\x00P\x03\x02\x00\x04\x00\x00\x00T",
-            zhaquirks.tuya.ts601_door.DP_HANDLER_EP_ID,
             PowerConfiguration.ep_attribute,
             PowerConfiguration.AttributeDefs.battery_percentage_remaining.id,
             84 * 2,
@@ -2173,7 +1995,7 @@ def test_ts601_door_sensor_signature(assert_signature_matches_quirk):
     ],
 )
 async def test_ts601_door_sensor(
-    zigpy_device_from_quirk, data, endpoint_id, ep_attr, attribute, expected_value
+    zigpy_device_from_v2_quirk, data, ep_attr, attribute, expected_value
 ):
     """Test TS601 Vibration Door Sensor quirk.
 
@@ -2182,25 +2004,22 @@ async def test_ts601_door_sensor(
         - Vibration On/Off
         - Remaining battery percentage
     """
-    device: Device = zigpy_device_from_quirk(zhaquirks.tuya.ts601_door.TS0601Door)
+    device: Device = zigpy_device_from_v2_quirk("_TZE200_kzm5w4iz", "TS0601")
     device._packet_debouncer.filter = mock.MagicMock(return_value=False)
 
-    dp_processor_ep = zhaquirks.tuya.ts601_door.DP_HANDLER_EP_ID
-    cluster = device.endpoints[dp_processor_ep].in_clusters[
-        TuyaNewManufCluster.cluster_id
-    ]
+    cluster = device.endpoints[1].in_clusters[TuyaNewManufCluster.cluster_id]
 
     with mock.patch.object(cluster, "send_default_rsp"):
         device.packet_received(
             t.ZigbeePacket(
                 profile_id=zha.PROFILE_ID,
-                src_ep=dp_processor_ep,
+                src_ep=1,
                 cluster_id=TuyaNewManufCluster.cluster_id,
                 data=t.SerializableBytes(data),
             )
         )
 
-    cluster = getattr(device.endpoints[endpoint_id], ep_attr)
+    cluster = getattr(device.endpoints[1], ep_attr)
     attrs = await cluster.read_attributes(attributes=[attribute])
 
     assert attrs[0].get(attribute) == expected_value

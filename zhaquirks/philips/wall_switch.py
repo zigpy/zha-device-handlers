@@ -40,7 +40,14 @@ from zhaquirks.philips import (
     PressType,
 )
 
-DEVICE_SPECIFIC_UNKNOWN = 64512
+
+class SwitchMode(t.enum8):
+    """Wall switch modes. See https://zigbee.blakadder.com/Philips_RDM001.html."""
+
+    SingleRocker = 0x00
+    SinglePush = 0x01
+    DoubleRocker = 0x02
+    DoublePush = 0x03
 
 
 class PhilipsWallSwitchBasicCluster(PhilipsBasicCluster):
@@ -51,11 +58,14 @@ class PhilipsWallSwitchBasicCluster(PhilipsBasicCluster):
 
         mode: Final = ZCLAttributeDef(
             id=0x0034,
-            type=t.enum8,
+            type=SwitchMode,
             is_manufacturer_specific=True,
         )
 
-    attr_config = {**PhilipsBasicCluster.attr_config, AttributeDefs.mode.id: 0x02}
+    attr_config = {
+        **PhilipsBasicCluster.attr_config,
+        AttributeDefs.mode.id: SwitchMode.DoublePush,
+    }
 
 
 class PhilipsWallSwitchRemoteCluster(PhilipsRemoteCluster):
@@ -78,7 +88,7 @@ class PhilipsWallSwitchRemoteCluster(PhilipsRemoteCluster):
 
 
 class PhilipsWallSwitch(CustomDevice):
-    """Philips RDM001 or RDM004 device."""
+    """Philips RDM001 or RDM004 device using old firmware."""
 
     signature = {
         #  <SimpleDescriptor endpoint=1 profile=260 device_type=2080
@@ -99,7 +109,7 @@ class PhilipsWallSwitch(CustomDevice):
                     Basic.cluster_id,
                     PowerConfiguration.cluster_id,
                     Identify.cluster_id,
-                    DEVICE_SPECIFIC_UNKNOWN,
+                    PhilipsWallSwitchRemoteCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
@@ -132,6 +142,66 @@ class PhilipsWallSwitch(CustomDevice):
                 ],
             }
         }
+    }
+
+    device_automation_triggers = (
+        PhilipsWallSwitchRemoteCluster.generate_device_automation_triggers()
+    )
+
+
+class PhilipsWallSwitchNewFirmware(CustomDevice):
+    """Philips RDM001 or RDM004 device using new firmware."""
+
+    signature = {
+        MODELS_INFO: [
+            (PHILIPS, "RDM001"),
+            (SIGNIFY, "RDM001"),
+            (PHILIPS, "RDM004"),  # likely not needed
+            (SIGNIFY, "RDM004"),
+        ],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.NON_COLOR_SCENE_CONTROLLER,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    Identify.cluster_id,
+                    PhilipsWallSwitchRemoteCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                    Ota.cluster_id,
+                ],
+            },
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.NON_COLOR_SCENE_CONTROLLER,
+                INPUT_CLUSTERS: [
+                    PhilipsWallSwitchBasicCluster,
+                    PowerConfiguration.cluster_id,
+                    Identify.cluster_id,
+                    PhilipsWallSwitchRemoteCluster,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    OnOff.cluster_id,
+                    LevelControl.cluster_id,
+                    Ota.cluster_id,
+                ],
+            },
+        },
     }
 
     device_automation_triggers = (

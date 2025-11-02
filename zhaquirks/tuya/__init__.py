@@ -1,20 +1,24 @@
 """Tuya devices."""
 
+from __future__ import annotations
+
 from collections.abc import Callable
 import dataclasses
 import datetime
 import enum
 import logging
-from typing import Any, Optional, Union
+from typing import Any, Final
 
-from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.quirks import BaseCustomDevice, CustomCluster, CustomDevice
 import zigpy.types as t
+from zigpy.typing import AddressingMode
 from zigpy.zcl import BaseAttributeDefs, foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.general import Basic, LevelControl, OnOff, PowerConfiguration
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
 from zigpy.zcl.clusters.smartenergy import Metering
+from zigpy.zcl.foundation import BaseCommandDefs, ZCLAttributeDef
 
 from zhaquirks import Bus, EventableCluster, LocalDataCluster
 from zhaquirks.const import (
@@ -24,6 +28,7 @@ from zhaquirks.const import (
     RIGHT,
     SHORT_PRESS,
     ZHA_SEND_EVENT,
+    BatterySize,
 )
 
 # ---------------------------------------------------------
@@ -144,26 +149,54 @@ class TuyaDPType(t.enum8):
     BITMAP = 0x05
 
 
-class TuyaData(t.Struct):
+class TuyaData:
     """Tuya Data type."""
 
     dp_type: TuyaDPType
     function: t.uint8_t
     raw: t.LVBytes
 
+    def __init__(
+        self,
+        value: TuyaDPType | None = None,
+        function: t.uint8_t = t.uint8_t(0),
+        raw: bytes | None = None,
+    ):
+        """Convert from a zigpy typed value to a tuya data payload."""
+        self.dp_type = None
+        self.function = function
+        self.raw = raw
+
+        if value is None:
+            return
+        elif isinstance(value, (t.bitmap8, t.bitmap16, t.bitmap32)):
+            self.dp_type = TuyaDPType.BITMAP
+        elif isinstance(value, (bool, t.Bool)):
+            self.dp_type = TuyaDPType.BOOL
+        elif isinstance(value, enum.Enum):
+            self.dp_type = TuyaDPType.ENUM
+        elif isinstance(value, int):
+            self.dp_type = TuyaDPType.VALUE
+        elif isinstance(value, str):
+            self.dp_type = TuyaDPType.STRING
+        else:
+            self.dp_type = TuyaDPType.RAW
+
+        self.payload = value
+
     @property
     def payload(
         self,
-    ) -> Union[
-        t.int32s_be,
-        t.Bool,
-        t.CharacterString,
-        t.enum8,
-        t.bitmap8,
-        t.bitmap16,
-        t.bitmap32,
-        t.LVBytes,
-    ]:
+    ) -> (
+        t.int32s_be
+        | t.Bool
+        | t.CharacterString
+        | t.enum8
+        | t.bitmap8
+        | t.bitmap16
+        | t.bitmap32
+        | t.LVBytes
+    ):
         """Payload accordingly to data point type."""
         if self.dp_type == TuyaDPType.VALUE:
             return t.int32s_be.deserialize(self.raw)[0]
@@ -204,30 +237,28 @@ class TuyaData(t.Struct):
         else:
             raise ValueError(f"Unknown {self.dp_type} datapoint type")
 
-    def __new__(cls, *args, **kwargs):
-        """Disable copy constructor."""
-        return super().__new__(cls)
+    def serialize(self) -> bytes:
+        """Serialize Tuya data."""
+        return (
+            self.dp_type.serialize()
+            + self.function.serialize()
+            + bytes([len(self.raw)])
+            + self.raw
+        )
 
-    def __init__(self, value=None, function=0, *args, **kwargs):
-        """Convert from a zigpy typed value to a tuya data payload."""
-        self.function = function
+    @classmethod
+    def deserialize(cls, data: bytes) -> tuple[TuyaData, bytes]:
+        """Deserialize Tuya data."""
+        dp_type, data = TuyaDPType.deserialize(data)
+        function, data = t.uint8_t.deserialize(data)
+        raw, data = t.LVBytes.deserialize(data)
 
-        if value is None:
-            return
-        elif isinstance(value, (t.bitmap8, t.bitmap16, t.bitmap32)):
-            self.dp_type = TuyaDPType.BITMAP
-        elif isinstance(value, (bool, t.Bool)):
-            self.dp_type = TuyaDPType.BOOL
-        elif isinstance(value, enum.Enum):  # type: ignore
-            self.dp_type = TuyaDPType.ENUM
-        elif isinstance(value, int):
-            self.dp_type = TuyaDPType.VALUE
-        elif isinstance(value, str):
-            self.dp_type = TuyaDPType.STRING
-        else:
-            self.dp_type = TuyaDPType.RAW
+        instance = cls()
+        instance.dp_type = dp_type
+        instance.function = function
+        instance.raw = raw
 
-        self.payload = value
+        return instance, data
 
 
 class Data(t.List, item_type=t.uint8_t):
@@ -288,16 +319,33 @@ class TuyaCommand(t.Struct):
     datapoints: t.List[TuyaDatapointData]
 
 
+class Command(t.Struct):
+    """Tuya manufacturer cluster command."""
+
+    status: t.uint8_t
+    tsn: t.uint8_t
+    command_id: t.uint16_t
+    function: t.uint8_t
+    data: Data
+
+
+class MCUVersionRsp(t.Struct):
+    """Tuya MCU version response Zcl payload."""
+
+    tsn: t.uint16_t
+    version: t.uint8_t
+
+
 class NoManufacturerCluster(CustomCluster):
     """Forces the NO manufacturer id in command."""
 
     async def command(
         self,
-        command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
+        command_id: foundation.GeneralCommand | int | t.uint8_t,
         *args,
-        manufacturer: Optional[Union[int, t.uint16_t]] = None,
+        manufacturer: int | t.uint16_t | None = None,
         expect_reply: bool = True,
-        tsn: Optional[Union[int, t.uint8_t]] = None,
+        tsn: int | t.uint8_t | None = None,
         **kwargs: Any,
     ):
         """Override the default Cluster command."""
@@ -318,23 +366,15 @@ class TuyaManufCluster(CustomCluster):
     name = "Tuya Manufacturer Specicific"
     cluster_id = TUYA_CLUSTER_ID
     ep_attribute = "tuya_manufacturer"
-    set_time_offset = 0
-    set_time_local_offset = None
+    set_time_offset: datetime.datetime | None = None
+    set_time_local_offset: datetime.datetime | None = None
 
-    class Command(t.Struct):
-        """Tuya manufacturer cluster command."""
+    # remove manufacturer id for cluster, important for `TUYA_SET_DATA` commands
+    manufacturer_id_override: t.uint16_t = foundation.ZCLHeader.NO_MANUFACTURER_ID
 
-        status: t.uint8_t
-        tsn: t.uint8_t
-        command_id: t.uint16_t
-        function: t.uint8_t
-        data: Data
-
-    class MCUVersionRsp(t.Struct):
-        """Tuya MCU version response Zcl payload."""
-
-        tsn: t.uint16_t
-        version: t.uint8_t
+    # TODO: remove, kept for backwards compatibility
+    Command = Command
+    MCUVersionRsp = MCUVersionRsp
 
     """ Time sync command (It's transparent between MCU and server)
             Time request device -> server
@@ -351,44 +391,42 @@ class TuyaManufCluster(CustomCluster):
 
             NOTE: You need to wait for time request before setting it. You can't set time without request."""
 
-    server_commands = {
-        0x0000: foundation.ZCLCommandDef(
-            "set_data", {"param": Command}, False, is_manufacturer_specific=True
-        ),
-        0x0010: foundation.ZCLCommandDef(
-            "mcu_version_req",
-            {"param": t.uint16_t},
-            False,
-            is_manufacturer_specific=True,
-        ),
-        0x0024: foundation.ZCLCommandDef(
-            "set_time", {"param": TuyaTimePayload}, False, is_manufacturer_specific=True
-        ),
-    }
+    class AttributeDefs(BaseAttributeDefs):
+        """Attribute definitions."""
 
-    client_commands = {
-        0x0001: foundation.ZCLCommandDef(
-            "get_data", {"param": Command}, True, is_manufacturer_specific=True
-        ),
-        0x0002: foundation.ZCLCommandDef(
-            "set_data_response", {"param": Command}, True, is_manufacturer_specific=True
-        ),
-        0x0006: foundation.ZCLCommandDef(
-            "active_status_report",
-            {"param": Command},
-            True,
-            is_manufacturer_specific=True,
-        ),
-        0x0011: foundation.ZCLCommandDef(
-            "mcu_version_rsp",
-            {"param": MCUVersionRsp},
-            True,
-            is_manufacturer_specific=True,
-        ),
-        0x0024: foundation.ZCLCommandDef(
-            "set_time_request", {"param": t.data16}, True, is_manufacturer_specific=True
-        ),
-    }
+        pass
+
+    class ServerCommandDefs(BaseCommandDefs):
+        """Server command definitions."""
+
+        set_data = foundation.ZCLCommandDef(
+            id=0x0000, schema={"param": Command}, is_manufacturer_specific=True
+        )
+        mcu_version_req = foundation.ZCLCommandDef(
+            id=0x0010, schema={"param": t.uint16_t}, is_manufacturer_specific=True
+        )
+        set_time = foundation.ZCLCommandDef(
+            id=0x0024, schema={"param": TuyaTimePayload}, is_manufacturer_specific=True
+        )
+
+    class ClientCommandDefs(BaseCommandDefs):
+        """Client command definitions."""
+
+        get_data = foundation.ZCLCommandDef(
+            id=0x0001, schema={"param": Command}, is_manufacturer_specific=True
+        )
+        set_data_response = foundation.ZCLCommandDef(
+            id=0x0002, schema={"param": Command}, is_manufacturer_specific=True
+        )
+        active_status_report = foundation.ZCLCommandDef(
+            id=0x0006, schema={"param": Command}, is_manufacturer_specific=True
+        )
+        mcu_version_rsp = foundation.ZCLCommandDef(
+            id=0x0011, schema={"param": MCUVersionRsp}, is_manufacturer_specific=True
+        )
+        set_time_request = foundation.ZCLCommandDef(
+            id=0x0024, schema={"param": t.data16}, is_manufacturer_specific=True
+        )
 
     def __init__(self, *args, **kwargs):
         """Init."""
@@ -396,7 +434,7 @@ class TuyaManufCluster(CustomCluster):
         self.endpoint.device.command_bus = Bus()
         self.endpoint.device.command_bus.add_listener(self)  # listen MCU commands
 
-    def tuya_mcu_command(self, command: Command):
+    def tuya_mcu_command(self, command: Command):  # type:ignore[valid-type]
         """Tuya MCU command listener. Only endpoint:1 must listen to MCU commands."""
 
         self.create_catching_task(
@@ -406,15 +444,13 @@ class TuyaManufCluster(CustomCluster):
     def handle_cluster_request(
         self,
         hdr: foundation.ZCLHeader,
-        args: tuple,
+        args: list[Any],
         *,
-        dst_addressing: Optional[
-            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
-        ] = None,
+        dst_addressing: AddressingMode | None = None,
     ) -> None:
         """Handle time request."""
 
-        if hdr.command_id != 0x0024 or self.set_time_offset == 0:
+        if hdr.command_id != 0x0024 or self.set_time_offset is None:
             return super().handle_cluster_request(
                 hdr, args, dst_addressing=dst_addressing
             )
@@ -430,20 +466,15 @@ class TuyaManufCluster(CustomCluster):
             self.cluster_id,
             hdr.command_id,
         )
+
+        assert self.set_time_local_offset is not None
+
         payload = TuyaTimePayload()
         utc_timestamp = int(
-            (
-                datetime.datetime.utcnow()  # noqa: DTZ003
-                - datetime.datetime(self.set_time_offset, 1, 1)
-            ).total_seconds()
+            (datetime.datetime.now(datetime.UTC) - self.set_time_offset).total_seconds()
         )
         local_timestamp = int(
-            (
-                datetime.datetime.now()
-                - datetime.datetime(
-                    self.set_time_local_offset or self.set_time_offset, 1, 1
-                )
-            ).total_seconds()
+            (datetime.datetime.now() - self.set_time_local_offset).total_seconds()
         )
         payload.extend(utc_timestamp.to_bytes(4, "big", signed=False))
         payload.extend(local_timestamp.to_bytes(4, "big", signed=False))
@@ -459,11 +490,9 @@ class TuyaManufClusterAttributes(TuyaManufCluster):
     def handle_cluster_request(
         self,
         hdr: foundation.ZCLHeader,
-        args: tuple,
+        args: list[Any],
         *,
-        dst_addressing: Optional[
-            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
-        ] = None,
+        dst_addressing: AddressingMode | None = None,
     ) -> None:
         """Handle cluster request."""
         if hdr.command_id not in (0x0001, 0x0002):
@@ -496,12 +525,12 @@ class TuyaManufClusterAttributes(TuyaManufCluster):
         zvalue = ztype(tuya_data)
         self._update_attribute(tuya_cmd, zvalue)
 
-    def read_attributes(
+    async def read_attributes(
         self, attributes, allow_cache=False, only_cache=False, manufacturer=None
     ):
         """Ignore remote reads as the "get_data" command doesn't seem to do anything."""
 
-        return super().read_attributes(
+        return await super().read_attributes(
             attributes, allow_cache=True, only_cache=True, manufacturer=manufacturer
         )
 
@@ -529,7 +558,7 @@ class TuyaManufClusterAttributes(TuyaManufCluster):
         return [[foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)]]
 
 
-class EnchantedDevice(CustomDevice):
+class BaseEnchantedDevice(BaseCustomDevice):
     """Class for Tuya devices which need to be unlocked by casting a 'spell'.
 
     The spell is applied during device configuration.
@@ -570,6 +599,10 @@ class EnchantedDevice(CustomDevice):
         self.debug("Executed data query spell on Tuya device %s", self.ieee)
 
 
+class EnchantedDevice(CustomDevice, BaseEnchantedDevice):
+    """Enchanted device class for v1 quirks."""
+
+
 class TuyaOnOff(CustomCluster, OnOff):
     """Tuya On/Off cluster for On/Off device."""
 
@@ -592,11 +625,12 @@ class TuyaOnOff(CustomCluster, OnOff):
 
     async def command(
         self,
-        command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
+        command_id: foundation.GeneralCommand | int | t.uint8_t,
         *args,
-        manufacturer: Optional[Union[int, t.uint16_t]] = None,
+        manufacturer: int | t.uint16_t | None = None,
         expect_reply: bool = True,
-        tsn: Optional[Union[int, t.uint8_t]] = None,
+        tsn: int | t.uint8_t | None = None,
+        **kwargs: Any,
     ):
         """Override the default Cluster command."""
 
@@ -628,11 +662,9 @@ class TuyaManufacturerClusterOnOff(TuyaManufCluster):
     def handle_cluster_request(
         self,
         hdr: foundation.ZCLHeader,
-        args: tuple[TuyaManufCluster.Command],
+        args: list[Any],
         *,
-        dst_addressing: Optional[
-            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
-        ] = None,
+        dst_addressing: AddressingMode | None = None,
     ) -> None:
         """Handle cluster request."""
 
@@ -677,6 +709,9 @@ class TuyaThermostatCluster(LocalDataCluster, Thermostat):
     """Thermostat cluster for Tuya thermostats."""
 
     _CONSTANT_ATTRIBUTES = {0x001B: Thermostat.ControlSequenceOfOperation.Heating_Only}
+
+    class AttributeDefs(Thermostat.AttributeDefs):
+        """Cluster attributes."""
 
     def __init__(self, *args, **kwargs):
         """Init."""
@@ -749,11 +784,12 @@ class TuyaThermostatCluster(LocalDataCluster, Thermostat):
     # pylint: disable=W0236
     async def command(
         self,
-        command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
+        command_id: foundation.GeneralCommand | int | t.uint8_t,
         *args,
-        manufacturer: Optional[Union[int, t.uint16_t]] = None,
+        manufacturer: int | t.uint16_t | None = None,
         expect_reply: bool = True,
-        tsn: Optional[Union[int, t.uint8_t]] = None,
+        tsn: int | t.uint8_t | None = None,
+        **kwargs: Any,
     ):
         """Implement thermostat commands."""
 
@@ -792,6 +828,9 @@ class TuyaThermostatCluster(LocalDataCluster, Thermostat):
 
 class TuyaUserInterfaceCluster(LocalDataCluster, UserInterface):
     """HVAC User interface cluster for tuya thermostats."""
+
+    class AttributeDefs(UserInterface.AttributeDefs):
+        """Cluster attributes."""
 
     def __init__(self, *args, **kwargs):
         """Init."""
@@ -892,7 +931,9 @@ class TuyaPowerConfigurationCluster(PowerConfiguration, TuyaLocalCluster):
     def __init__(self, *args, **kwargs):
         """Init."""
         super().__init__(*args, **kwargs)
-        self.endpoint.device.battery_bus.add_listener(self)
+        # listening to battery_bus required for legacy and custom Tuya TRV quirks
+        if hasattr(self.endpoint.device, "battery_bus"):
+            self.endpoint.device.battery_bus.add_listener(self)
 
     def battery_change(self, value):
         """Change of reported battery percentage remaining."""
@@ -903,7 +944,7 @@ class TuyaPowerConfigurationCluster2AAA(PowerConfiguration, TuyaLocalCluster):
     """PowerConfiguration cluster for devices with 2 AAA."""
 
     _CONSTANT_ATTRIBUTES = {
-        PowerConfiguration.AttributeDefs.battery_size.id: 4,
+        PowerConfiguration.AttributeDefs.battery_size.id: BatterySize.AAA,
         PowerConfiguration.AttributeDefs.battery_rated_voltage.id: 15,
         PowerConfiguration.AttributeDefs.battery_quantity.id: 2,
     }
@@ -913,7 +954,7 @@ class TuyaPowerConfigurationCluster2AA(TuyaPowerConfigurationCluster):
     """PowerConfiguration cluster for devices with 2 AA."""
 
     _CONSTANT_ATTRIBUTES = {
-        PowerConfiguration.AttributeDefs.battery_size.id: 3,
+        PowerConfiguration.AttributeDefs.battery_size.id: BatterySize.AA,
         PowerConfiguration.AttributeDefs.battery_rated_voltage.id: 15,
         PowerConfiguration.AttributeDefs.battery_quantity.id: 2,
     }
@@ -923,7 +964,7 @@ class TuyaPowerConfigurationCluster3AA(TuyaPowerConfigurationCluster):
     """PowerConfiguration cluster for devices with 3 AA."""
 
     _CONSTANT_ATTRIBUTES = {
-        PowerConfiguration.AttributeDefs.battery_size.id: 3,
+        PowerConfiguration.AttributeDefs.battery_size.id: BatterySize.AA,
         PowerConfiguration.AttributeDefs.battery_rated_voltage.id: 15,
         PowerConfiguration.AttributeDefs.battery_quantity.id: 3,
     }
@@ -933,9 +974,19 @@ class TuyaPowerConfigurationCluster4AA(PowerConfiguration, TuyaLocalCluster):
     """PowerConfiguration cluster for devices with 4 AA."""
 
     _CONSTANT_ATTRIBUTES = {
-        PowerConfiguration.AttributeDefs.battery_size.id: 3,
+        PowerConfiguration.AttributeDefs.battery_size.id: BatterySize.AA,
         PowerConfiguration.AttributeDefs.battery_rated_voltage.id: 15,
         PowerConfiguration.AttributeDefs.battery_quantity.id: 4,
+    }
+
+
+class TuyaPowerConfigurationClusterOther(PowerConfiguration, TuyaLocalCluster):
+    """PowerConfiguration cluster for devices with other."""
+
+    _CONSTANT_ATTRIBUTES = {
+        PowerConfiguration.AttributeDefs.battery_size.id: BatterySize.Other,
+        PowerConfiguration.AttributeDefs.battery_rated_voltage.id: 36,
+        PowerConfiguration.AttributeDefs.battery_quantity.id: 1,
     }
 
 
@@ -977,11 +1028,13 @@ class PowerOnState(t.enum8):
 class TuyaZBOnOffAttributeCluster(CustomCluster, OnOff):
     """Tuya Zigbee On Off cluster with extra attributes."""
 
-    attributes = OnOff.attributes.copy()
-    attributes.update({0x8000: ("child_lock", t.Bool)})
-    attributes.update({0x8001: ("backlight_mode", SwitchBackLight)})
-    attributes.update({0x8002: ("power_on_state", PowerOnState)})
-    attributes.update({0x8004: ("switch_mode", SwitchMode)})
+    class AttributeDefs(OnOff.AttributeDefs):
+        """Attribute definitions."""
+
+        child_lock: Final = ZCLAttributeDef(id=0x8000, type=t.Bool)
+        backlight_mode: Final = ZCLAttributeDef(id=0x8001, type=SwitchBackLight)
+        power_on_state: Final = ZCLAttributeDef(id=0x8002, type=PowerOnState)
+        switch_mode: Final = ZCLAttributeDef(id=0x8004, type=SwitchMode)
 
 
 class TuyaSmartRemoteOnOffCluster(OnOff, EventableCluster):
@@ -999,43 +1052,40 @@ class TuyaSmartRemoteOnOffCluster(OnOff, EventableCluster):
     }
     name = "TS004X_cluster"
     ep_attribute = "TS004X_cluster"
-    attributes = OnOff.attributes.copy()
-    attributes.update({0x8001: ("backlight_mode", SwitchBackLight)})
-    attributes.update({0x8002: ("power_on_state", PowerOnState)})
-    attributes.update({0x8004: ("switch_mode", SwitchMode)})
+
+    class AttributeDefs(OnOff.AttributeDefs):
+        """Attribute definitions."""
+
+        backlight_mode: Final = ZCLAttributeDef(id=0x8001, type=SwitchBackLight)
+        power_on_state: Final = ZCLAttributeDef(id=0x8002, type=PowerOnState)
+        switch_mode: Final = ZCLAttributeDef(id=0x8004, type=SwitchMode)
 
     def __init__(self, *args, **kwargs):
         """Init."""
         self.last_tsn = -1
         super().__init__(*args, **kwargs)
 
-    server_commands = OnOff.server_commands.copy()
-    server_commands.update(
-        {
-            0xFC: foundation.ZCLCommandDef(
-                "rotate_type",
-                {"rotate_type": t.uint8_t},
-                False,
-                is_manufacturer_specific=True,
-            ),
-            0xFD: foundation.ZCLCommandDef(
-                "press_type",
-                {"press_type": t.uint8_t},
-                False,
-                is_manufacturer_specific=True,
-            ),
-        }
-    )
+    class ServerCommandDefs(OnOff.ServerCommandDefs):
+        """Server command definitions."""
+
+        rotate_type = foundation.ZCLCommandDef(
+            id=0xFC,
+            schema={"rotate_type": t.uint8_t},
+            is_manufacturer_specific=True,
+        )
+        press_type = foundation.ZCLCommandDef(
+            id=0xFD,
+            schema={"press_type": t.uint8_t},
+            is_manufacturer_specific=True,
+        )
 
     def handle_cluster_request(
         self,
         hdr: foundation.ZCLHeader,
         args: list[Any],
         *,
-        dst_addressing: Optional[
-            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
-        ] = None,
-    ):
+        dst_addressing: AddressingMode | None = None,
+    ) -> None:
         """Handle press_types command."""
         # normally if default response sent, TS004x wouldn't send such repeated zclframe (with same sequence number),
         # but for stability reasons (e. g. the case the response doesn't arrive the device), we can simply ignore it
@@ -1113,7 +1163,13 @@ class TuyaZBExternalSwitchTypeCluster(CustomCluster):
     name = "Tuya External Switch Type Cluster"
     cluster_id = TUYA_CLUSTER_E001_ID
     ep_attribute = "tuya_external_switch_type"
-    attributes = {0xD030: ("external_switch_type", ExternalSwitchType)}
+
+    class AttributeDefs(BaseAttributeDefs):
+        """Attribute definitions."""
+
+        external_switch_type: Final = ZCLAttributeDef(
+            id=0xD030, type=ExternalSwitchType
+        )
 
 
 # Tuya Zigbee Cluster 0x1888 Implementation
@@ -1132,11 +1188,9 @@ class TuyaManufacturerWindowCover(TuyaManufCluster):
     def handle_cluster_request(
         self,
         hdr: foundation.ZCLHeader,
-        args: tuple[TuyaManufCluster.Command],
+        args: list[Any],
         *,
-        dst_addressing: Optional[
-            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
-        ] = None,
+        dst_addressing: AddressingMode | None = None,
     ) -> None:
         """Handle cluster request."""
         # Tuya Specific Cluster Commands
@@ -1197,10 +1251,11 @@ class TuyaManufacturerWindowCover(TuyaManufCluster):
 class TuyaWindowCoverControl(LocalDataCluster, WindowCovering):
     """Manufacturer Specific Cluster of Device cover."""
 
-    # Add additional attributes for direction
-    attributes = WindowCovering.attributes.copy()
-    attributes.update({ATTR_COVER_DIRECTION: ("motor_direction", t.Bool)})
-    attributes.update({ATTR_COVER_INVERTED: ("cover_inverted", t.Bool)})
+    class AttributeDefs(WindowCovering.AttributeDefs):
+        """Attribute definitions."""
+
+        motor_direction: Final = ZCLAttributeDef(id=ATTR_COVER_DIRECTION, type=t.Bool)
+        cover_inverted: Final = ZCLAttributeDef(id=ATTR_COVER_INVERTED, type=t.Bool)
 
     def __init__(self, *args, **kwargs):
         """Initialize instance."""
@@ -1226,11 +1281,12 @@ class TuyaWindowCoverControl(LocalDataCluster, WindowCovering):
 
     def command(
         self,
-        command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
+        command_id: foundation.GeneralCommand | int | t.uint8_t,
         *args,
-        manufacturer: Optional[Union[int, t.uint16_t]] = None,
+        manufacturer: int | t.uint16_t | None = None,
         expect_reply: bool = True,
-        tsn: Optional[Union[int, t.uint8_t]] = None,
+        tsn: int | t.uint8_t | None = None,
+        **kwargs: Any,
     ):
         """Override the default Cluster command."""
         if manufacturer is None:
@@ -1333,11 +1389,9 @@ class TuyaManufacturerLevelControl(TuyaManufCluster):
     def handle_cluster_request(
         self,
         hdr: foundation.ZCLHeader,
-        args: tuple[TuyaManufCluster.Command],
+        args: list[Any],
         *,
-        dst_addressing: Optional[
-            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
-        ] = None,
+        dst_addressing: AddressingMode | None = None,
     ) -> None:
         """Handle cluster request."""
         tuya_payload = args[0]
@@ -1391,11 +1445,11 @@ class TuyaLevelControl(CustomCluster, LevelControl):
 
     def command(
         self,
-        command_id: Union[foundation.GeneralCommand, int, t.uint8_t],
+        command_id: foundation.GeneralCommand | int | t.uint8_t,
         *args,
-        manufacturer: Optional[Union[int, t.uint16_t]] = None,
+        manufacturer: int | t.uint16_t | None = None,
         expect_reply: bool = True,
-        tsn: Optional[Union[int, t.uint8_t]] = None,
+        tsn: int | t.uint8_t | None = None,
         **kwargs: Any,
     ):
         """Override the default Cluster command."""
@@ -1438,16 +1492,9 @@ class DPToAttributeMapping:
     """Container for datapoint to cluster attribute update mapping."""
 
     ep_attribute: str
-    attribute_name: Union[str, tuple]
-    converter: Optional[
-        Callable[
-            [
-                Any,
-            ],
-            Any,
-        ]
-    ] = None
-    endpoint_id: Optional[int] = None
+    attribute_name: str | tuple[str, ...]
+    converter: Callable[[Any], Any] | None = None
+    endpoint_id: int | None = None
 
 
 @dataclasses.dataclass
@@ -1471,83 +1518,103 @@ class TuyaNewManufCluster(CustomCluster):
     cluster_id: t.uint16_t = TUYA_CLUSTER_ID
     ep_attribute: str = "tuya_manufacturer"
 
+    # command for writing datapoint values to the device, some use TUYA_SEND_DATA
+    mcu_write_command: foundation.GeneralCommand | int | t.uint8_t = TUYA_SET_DATA
+
+    # remove manufacturer id for cluster, important for `TUYA_SET_DATA` commands
+    manufacturer_id_override: t.uint16_t = foundation.ZCLHeader.NO_MANUFACTURER_ID
+
     class AttributeDefs(BaseAttributeDefs):
         """Attribute Definitions."""
 
-    server_commands = {
-        TUYA_QUERY_DATA: foundation.ZCLCommandDef(
-            "query_data", {}, False, is_manufacturer_specific=True
-        ),
-        TUYA_SET_DATA: foundation.ZCLCommandDef(
-            "set_data", {"data": TuyaCommand}, False, is_manufacturer_specific=True
-        ),
-        TUYA_SEND_DATA: foundation.ZCLCommandDef(
-            "send_data", {"data": TuyaCommand}, False, is_manufacturer_specific=True
-        ),
-        TUYA_SET_TIME: foundation.ZCLCommandDef(
-            "set_time", {"time": TuyaTimePayload}, False, is_manufacturer_specific=True
-        ),
-    }
+    class ServerCommandDefs(BaseCommandDefs):
+        """Server command definitions."""
 
-    client_commands = {
-        TUYA_GET_DATA: foundation.ZCLCommandDef(
-            "get_data", {"data": TuyaCommand}, True, is_manufacturer_specific=True
-        ),
-        TUYA_SET_DATA_RESPONSE: foundation.ZCLCommandDef(
-            "set_data_response",
-            {"data": TuyaCommand},
-            True,
+        query_data = foundation.ZCLCommandDef(
+            id=TUYA_QUERY_DATA, schema={}, is_manufacturer_specific=True
+        )
+        set_data = foundation.ZCLCommandDef(
+            id=TUYA_SET_DATA,
+            schema={"data": TuyaCommand},
             is_manufacturer_specific=True,
-        ),
-        TUYA_ACTIVE_STATUS_RPT: foundation.ZCLCommandDef(
-            "active_status_report",
-            {"data": TuyaCommand},
-            True,
+        )
+        send_data = foundation.ZCLCommandDef(
+            id=TUYA_SEND_DATA,
+            schema={"data": TuyaCommand},
             is_manufacturer_specific=True,
-        ),
-        TUYA_SET_TIME: foundation.ZCLCommandDef(
-            "set_time_request", {"data": t.data16}, True, is_manufacturer_specific=True
-        ),
-    }
+        )
+        set_time = foundation.ZCLCommandDef(
+            id=TUYA_SET_TIME,
+            schema={"time": TuyaTimePayload},
+            is_manufacturer_specific=True,
+        )
 
-    dp_to_attribute: dict[int, DPToAttributeMapping] = {}
+    class ClientCommandDefs(BaseCommandDefs):
+        """Client command definitions."""
+
+        get_data = foundation.ZCLCommandDef(
+            id=TUYA_GET_DATA,
+            schema={"data": TuyaCommand},
+            is_manufacturer_specific=True,
+        )
+        set_data_response = foundation.ZCLCommandDef(
+            id=TUYA_SET_DATA_RESPONSE,
+            schema={"data": TuyaCommand},
+            is_manufacturer_specific=True,
+        )
+        active_status_report = foundation.ZCLCommandDef(
+            id=TUYA_ACTIVE_STATUS_RPT,
+            schema={"data": TuyaCommand},
+            is_manufacturer_specific=True,
+        )
+        set_time_request = foundation.ZCLCommandDef(
+            id=TUYA_SET_TIME, schema={"data": t.data16}, is_manufacturer_specific=True
+        )
+
+    dp_to_attribute: dict[int, DPToAttributeMapping | list[DPToAttributeMapping]] = {}
     data_point_handlers: dict[int, str] = {}
 
     def __init__(self, *args, **kwargs):
         """Initialize the cluster and mark attributes as valid on LocalDataClusters."""
         super().__init__(*args, **kwargs)
-        for dp_map in self.dp_to_attribute.values():
+
+        self._dp_to_attributes: dict[int, list[DPToAttributeMapping]] = {
+            dp: attr if isinstance(attr, list) else [attr]
+            for dp, attr in self.dp_to_attribute.items()
+        }
+        for dp_map in self._dp_to_attributes.values():
             # get the endpoint that is being mapped to
             endpoint = self.endpoint
-            if dp_map.endpoint_id:
-                endpoint = self.endpoint.device.endpoints.get(dp_map.endpoint_id)
+            for mapped_attr in dp_map:
+                if mapped_attr.endpoint_id:
+                    endpoint = self.endpoint.device.endpoints.get(
+                        mapped_attr.endpoint_id
+                    )
 
-            # the endpoint to be mapped to might not actually exist within all quirks
-            if not endpoint:
-                continue
+                # the endpoint to be mapped to might not actually exist within all quirks
+                if not endpoint:
+                    continue
 
-            cluster = getattr(endpoint, dp_map.ep_attribute, None)
-            # the cluster to be mapped to might not actually exist within all quirks
-            if not cluster:
-                continue
+                cluster = getattr(endpoint, mapped_attr.ep_attribute, None)
+                # the cluster to be mapped to might not actually exist within all quirks
+                if not cluster:
+                    continue
 
-            # mark mapped to attribute as valid if existing and if on a LocalDataCluster
-            attr = cluster.attributes_by_name.get(dp_map.attribute_name)
-            if attr and isinstance(cluster, LocalDataCluster):
-                # _VALID_ATTRIBUTES is only a class variable, but as want to modify it
-                # per instance here, we need to create an instance variable first
-                if "_VALID_ATTRIBUTES" not in cluster.__dict__:
-                    cluster._VALID_ATTRIBUTES = set()
-                cluster._VALID_ATTRIBUTES.add(attr.id)
+                # mark mapped to attribute as valid if existing and if on a LocalDataCluster
+                attr = cluster.attributes_by_name.get(mapped_attr.attribute_name)
+                if attr and isinstance(cluster, LocalDataCluster):
+                    # _VALID_ATTRIBUTES is only a class variable, but as want to modify it
+                    # per instance here, we need to create an instance variable first
+                    if "_VALID_ATTRIBUTES" not in cluster.__dict__:
+                        cluster._VALID_ATTRIBUTES = set()
+                    cluster._VALID_ATTRIBUTES.add(attr.id)
 
     def handle_cluster_request(
         self,
         hdr: foundation.ZCLHeader,
-        args: tuple,
+        args: list[Any],
         *,
-        dst_addressing: Optional[
-            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
-        ] = None,
+        dst_addressing: AddressingMode | None = None,
     ) -> None:
         """Handle cluster specific request."""
 
@@ -1565,7 +1632,7 @@ class TuyaNewManufCluster(CustomCluster):
                 self.send_default_rsp(
                     hdr, status=foundation.Status.UNSUP_CLUSTER_COMMAND
                 )
-                return
+            return
 
         try:
             status = getattr(self, handler_name)(*args)
@@ -1592,6 +1659,15 @@ class TuyaNewManufCluster(CustomCluster):
                 dp_error = True
                 # return foundation.Status.UNSUPPORTED_ATTRIBUTE
 
+        _LOGGER.debug(
+            "[0x%04x:%s:0x%04x] Received value %s for attribute 0x%04x",
+            self.endpoint.device.nwk,
+            self.endpoint.endpoint_id,
+            self.cluster_id,
+            record.data.payload,
+            record.dp,
+        )
+
         return (
             foundation.Status.SUCCESS
             if not dp_error
@@ -1608,27 +1684,29 @@ class TuyaNewManufCluster(CustomCluster):
     def _dp_2_attr_update(self, datapoint: TuyaDatapointData) -> None:
         """Handle data point to attribute report conversion."""
         try:
-            dp_map = self.dp_to_attribute[datapoint.dp]
+            dp_map = self._dp_to_attributes[datapoint.dp]
         except KeyError:
             self.debug("No attribute mapping for %s data point", datapoint.dp)
             return
 
         endpoint = self.endpoint
-        if dp_map.endpoint_id:
-            endpoint = self.endpoint.device.endpoints[dp_map.endpoint_id]
-        cluster = getattr(endpoint, dp_map.ep_attribute)
-        value = datapoint.data.payload
-        if dp_map.converter:
-            value = dp_map.converter(value)
+        for mapped_attr in dp_map:
+            if mapped_attr.endpoint_id:
+                endpoint = self.endpoint.device.endpoints[mapped_attr.endpoint_id]
+            cluster = getattr(endpoint, mapped_attr.ep_attribute)
+            value = datapoint.data.payload
+            if mapped_attr.converter:
+                value = mapped_attr.converter(value)
 
-        if isinstance(dp_map.attribute_name, tuple):
-            for k, v in zip(dp_map.attribute_name, value):
-                if isinstance(v, AttributeWithMask):
-                    v = cluster.get(k, 0) & (~v.mask) | v.value
-                cluster.update_attribute(k, v)
-        else:
-            if isinstance(value, AttributeWithMask):
-                value = (
-                    cluster.get(dp_map.attribute_name, 0) & (~value.mask) | value.value
-                )
-            cluster.update_attribute(dp_map.attribute_name, value)
+            if isinstance(mapped_attr.attribute_name, tuple):
+                for k, v in zip(mapped_attr.attribute_name, value):
+                    if isinstance(v, AttributeWithMask):
+                        v = cluster.get(k, 0) & (~v.mask) | v.value
+                    cluster.update_attribute(k, v)
+            else:
+                if isinstance(value, AttributeWithMask):
+                    value = (
+                        cluster.get(mapped_attr.attribute_name, 0) & (~value.mask)
+                        | value.value
+                    )
+                cluster.update_attribute(mapped_attr.attribute_name, value)

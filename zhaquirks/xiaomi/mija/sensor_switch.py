@@ -44,6 +44,7 @@ from zhaquirks.const import (
     TRIPLE_PRESS,
     UNKNOWN,
     ZHA_SEND_EVENT,
+    BatterySize,
 )
 from zhaquirks.xiaomi import (
     LUMI,
@@ -68,7 +69,7 @@ class MijaButton(XiaomiQuickInitDevice):
 
     def __init__(self, *args, **kwargs):
         """Init."""
-        self.battery_size = 10
+        self.battery_size = BatterySize.CR2032
         super().__init__(*args, **kwargs)
 
     class MijaOnOff(CustomCluster, OnOff):

@@ -3,7 +3,10 @@
 from zigpy import types
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import BinarySensorDeviceClass, EntityType, QuirkBuilder
+from zigpy.zcl.clusters.general import OnOff
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
+
+from zhaquirks.philips import SIGNIFY
 
 
 class PhilipsContactCluster(CustomCluster):
@@ -37,13 +40,29 @@ class PhilipsContactCluster(CustomCluster):
             is_manufacturer_specific=True,
         )
 
+    # catch when contact attribute is updated and forward to OnOff cluster
+    def _update_attribute(self, attrid, value):
+        super()._update_attribute(attrid, value)
+
+        on_off_cluster = self.endpoint.out_clusters[OnOff.cluster_id]
+        if (
+            attrid == self.AttributeDefs.contact.id
+            and on_off_cluster.get(OnOff.AttributeDefs.on_off.id) != value
+        ):
+            # This seems to happen after the real OnOff attribute change,
+            # so we can avoid a duplicate event by checking the current value.
+            # We'll only update the OnOff cluster if the value is different then,
+            # this is likely only the case when an update was missed, and we later
+            # get an attribute report for the custom contact attribute.
+            on_off_cluster.update_attribute(OnOff.AttributeDefs.on_off.id, value)
+
 
 (
     #  <SimpleDescriptor endpoint=2 profile=260 device_type=1026
     #  device_version=0
     #  input_clusters=[0, 1, 3, 64518]
     #  output_clusters=[0, 3, 6, 25]>
-    QuirkBuilder("Signify Netherlands B.V.", "SOC001")
+    QuirkBuilder(SIGNIFY, "SOC001")
     .replaces(PhilipsContactCluster, endpoint_id=2)
     .binary_sensor(
         "tamper",
@@ -51,7 +70,6 @@ class PhilipsContactCluster(CustomCluster):
         endpoint_id=2,
         device_class=BinarySensorDeviceClass.TAMPER,
         entity_type=EntityType.DIAGNOSTIC,
-        translation_key="tamper",
         fallback_name="Tamper",
     )
     .add_to_registry()

@@ -2,11 +2,13 @@
 
 import datetime
 from unittest import mock
+from zoneinfo import ZoneInfo
 
 import pytest
+import time_machine
 from zigpy.zcl import foundation
 
-from tests.common import ClusterListener, MockDatetime
+from tests.common import ClusterListener
 import zhaquirks
 from zhaquirks.tuya import TUYA_MCU_VERSION_RSP, TUYA_SET_TIME, TuyaDPType
 from zhaquirks.tuya.mcu import (
@@ -175,6 +177,7 @@ async def test_tuya_version(zigpy_device_from_quirk, quirk):
     assert succ["mcu_version"] == "2.0.2"
 
 
+@time_machine.travel(datetime.datetime(1970, 1, 1, 1, 0, tzinfo=ZoneInfo("Etc/GMT+1")))
 @pytest.mark.parametrize(
     "quirk", (zhaquirks.tuya.ts0601_dimmer.TuyaDoubleSwitchDimmer,)
 )
@@ -185,10 +188,6 @@ async def test_tuya_mcu_set_time(zigpy_device_from_quirk, quirk):
 
     tuya_cluster = tuya_device.endpoints[1].tuya_manufacturer
     cluster_listener = ClusterListener(tuya_cluster)
-
-    # Mock datetime
-    origdatetime = datetime.datetime
-    datetime.datetime = MockDatetime
 
     # simulate a SET_TIME message
     hdr, args = tuya_cluster.deserialize(ZCL_TUYA_SET_TIME)
@@ -205,9 +204,6 @@ async def test_tuya_mcu_set_time(zigpy_device_from_quirk, quirk):
         m1.assert_called_once_with(
             TUYA_SET_TIME, [0, 0, 28, 32, 0, 0, 14, 16], expect_reply=False
         )
-
-    # restore datetime
-    datetime.datetime = origdatetime  # restore datetime
 
 
 @pytest.mark.parametrize(

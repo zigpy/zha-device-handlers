@@ -11,7 +11,7 @@ import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic
 from zigpy.zcl.clusters.measurement import OccupancySensing
-from zigpy.zcl.foundation import ZCLAttributeDef
+from zigpy.zcl.foundation import BaseCommandDefs, ZCLAttributeDef, ZCLCommandDef
 
 from zhaquirks.const import (
     ARGS,
@@ -49,12 +49,15 @@ class PhilipsOccupancySensing(CustomCluster):
     cluster_id = OccupancySensing.cluster_id
     ep_attribute = "philips_occupancy"
 
-    attributes = OccupancySensing.attributes.copy()
-    attributes[0x0030] = ("sensitivity", t.uint8_t, True)
-    attributes[0x0031] = ("sensitivity_max", t.uint8_t, True)
+    class AttributeDefs(OccupancySensing.AttributeDefs):
+        """Attribute definitions."""
 
-    server_commands = OccupancySensing.server_commands.copy()
-    client_commands = OccupancySensing.client_commands.copy()
+        sensitivity: Final = ZCLAttributeDef(
+            id=0x0030, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        sensitivity_max: Final = ZCLAttributeDef(
+            id=0x0031, type=t.uint8_t, is_manufacturer_specific=True
+        )
 
 
 class PhilipsBasicCluster(CustomCluster, Basic):
@@ -69,11 +72,9 @@ class PhilipsBasicCluster(CustomCluster, Basic):
 
     attr_config = {AttributeDefs.philips.id: 0x000B}
 
-    async def bind(self):
-        """Bind cluster."""
-        result = await super().bind()
+    async def apply_custom_configuration(self, *args, **kwargs):
+        """Apply custom configuration."""
         await self.write_attributes(self.attr_config, manufacturer=0x100B)
-        return result
 
 
 class ButtonPressQueue:
@@ -84,7 +85,6 @@ class ButtonPressQueue:
         self._ms_threshold = 300
         self._ms_last_click = 0
         self._click_counter = 1
-        self._button = None
         self._callback = lambda x: None
         self._task = None
 
@@ -92,19 +92,11 @@ class ButtonPressQueue:
         await asyncio.sleep(self._ms_threshold / 1000)
         self._callback(self._click_counter)
 
-    def _reset(self, button):
-        if self._task:
-            self._task.cancel()
-        self._click_counter = 1
-        self._button = button
-
-    def press(self, callback, button):
+    def press(self, callback):
         """Process a button press."""
         self._callback = callback
         now_ms = time.time() * 1000
-        if self._button != button:
-            self._reset(button)
-        elif now_ms - self._ms_last_click > self._ms_threshold:
+        if now_ms - self._ms_last_click > self._ms_threshold:
             self._click_counter = 1
         else:
             self._task.cancel()
@@ -152,20 +144,21 @@ class PhilipsRemoteCluster(CustomCluster):
     cluster_id = 0xFC00
     name = "PhilipsRemoteCluster"
     ep_attribute = "philips_remote_cluster"
-    client_commands = {
-        0x0000: foundation.ZCLCommandDef(
-            "notification",
-            {
+
+    class ClientCommandDefs(BaseCommandDefs):
+        """Client command definitions."""
+
+        notification = foundation.ZCLCommandDef(
+            id=0x0000,
+            schema={
                 "button": t.uint8_t,
                 "param2": t.uint24_t,
                 "press_type": t.uint8_t,
                 "param4": t.uint8_t,
                 "param5": t.uint16_t,
             },
-            False,
             is_manufacturer_specific=True,
         )
-    }
 
     BUTTONS: dict[int, Button] = {}
 
@@ -190,7 +183,10 @@ class PhilipsRemoteCluster(CustomCluster):
         PressType(SHORT_RELEASE, COMMAND_M_SHORT_RELEASE),
     ]
 
-    button_press_queue = ButtonPressQueue()
+    def __init__(self, endpoint, is_server=True):
+        """Initialize button press queue for each button."""
+        super().__init__(endpoint, is_server)
+        self.button_press_queue = {k: ButtonPressQueue() for k in self.BUTTONS}
 
     def handle_cluster_request(
         self,
@@ -211,15 +207,20 @@ class PhilipsRemoteCluster(CustomCluster):
         )
 
         button = self.BUTTONS.get(args[0])
+        # Bail on unknown buttons. (This gets rid of dial button "presses")
+        if button is None:
+            _LOGGER.debug(
+                "%s - handle_cluster_request unknown button id [%s]",
+                self.__class__.__name__,
+                args[0],
+            )
+            return
         _LOGGER.debug(
             "%s - handle_cluster_request button id: [%s], button name: [%s]",
             self.__class__.__name__,
             args[0],
             button,
         )
-        # Bail on unknown buttons. (This gets rid of dial button "presses")
-        if button is None:
-            return
 
         press_type = self.PRESS_TYPES.get(args[2])
         if (
@@ -229,6 +230,11 @@ class PhilipsRemoteCluster(CustomCluster):
         ):
             press_type = self.SIMULATE_SHORT_EVENTS[1]
         if press_type is None:
+            _LOGGER.debug(
+                "%s - handle_cluster_request unknown button press type: [%s]",
+                self.__class__.__name__,
+                press_type,
+            )
             return
 
         duration = args[4]
@@ -290,15 +296,21 @@ class PhilipsRemoteCluster(CustomCluster):
                 sim_event_args[ARGS][2] = 2
                 action = f"{button.action}_{press_type.action}"
                 _LOGGER.debug(
-                    "%s - send_press_event emitting simulated action: [%s]",
+                    "%s - send_press_event emitting simulated action: [%s], event_args: %s",
                     self.__class__.__name__,
                     action,
+                    sim_event_args,
                 )
                 self.listener_event(ZHA_SEND_EVENT, action, sim_event_args)
 
         # Derive Multiple Presses
         if press_type.name == SHORT_RELEASE:
-            self.button_press_queue.press(send_press_event, button.id)
+            _LOGGER.debug(
+                "%s - handle_cluster_request handling short release. Push to button press queue for button %s",
+                self.__class__.__name__,
+                args[0],
+            )
+            self.button_press_queue[args[0]].press(send_press_event)
         else:
             action = f"{button.action}_{press_type.action}"
             self.listener_event(ZHA_SEND_EVENT, action, event_args)
@@ -332,3 +344,20 @@ class PhilipsRwlRemoteCluster(PhilipsRemoteCluster):
         3: Button("down", DIM_DOWN),
         4: Button("off", TURN_OFF),
     }
+
+
+class PhilipsHueLightCluster(CustomCluster):
+    """Philips Hue manufacturer cluster."""
+
+    cluster_id: Final[t.uint16_t] = 0xFC03
+    ep_attribute: Final[str] = "philips_hue_light_cluster"
+    name: Final[str] = "PhilipsHueLightCluster"
+
+    class ServerCommandDefs(BaseCommandDefs):
+        """Server command definitions."""
+
+        multicolor: Final = ZCLCommandDef(
+            id=0x00,
+            schema={"data": t.SerializableBytes},
+            is_manufacturer_specific=True,
+        )
