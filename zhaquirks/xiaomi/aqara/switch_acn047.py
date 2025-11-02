@@ -78,6 +78,7 @@ class T2MeteringCluster(MeteringCluster):
     """T2 Metering cluster to fix divisor."""
 
     _CONSTANT_ATTRIBUTES = {
+        **MeteringCluster._CONSTANT_ATTRIBUTES,
         MeteringCluster.AttributeDefs.divisor.id: 1000000,
     }
 
