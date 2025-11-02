@@ -376,6 +376,7 @@ class ScheduleSettings(t.LVBytes):
             result += f"|{e}"
         return result
 
+
 class SensorTemp(t.LVBytes):
     """Sensor temperature object."""
 
@@ -411,10 +412,8 @@ class SensorTemp(t.LVBytes):
             )
 
             return [
-                SensorTemp.lumi_header(0x12, params1, 0x02)
-                + params1,
-                SensorTemp.lumi_header(0x13, params2, 0x02)
-                + params2,
+                SensorTemp.lumi_header(0x12, params1, 0x02) + params1,
+                SensorTemp.lumi_header(0x13, params2, 0x02) + params2,
             ]
         else:
             params1 = (
@@ -432,10 +431,8 @@ class SensorTemp(t.LVBytes):
             )
 
             return [
-                SensorTemp.lumi_header(0x12, params1, 0x04)
-                + params1,
-                SensorTemp.lumi_header(0x13, params2, 0x04)
-                + params2,
+                SensorTemp.lumi_header(0x12, params1, 0x04) + params1,
+                SensorTemp.lumi_header(0x13, params2, 0x04) + params2,
             ]
 
     def __new__(cls, value):
@@ -464,6 +461,7 @@ class SensorTemp(t.LVBytes):
             raise TypeError(f"Cannot create SensorTemp object from type: {type(value)}")
 
         return super().__new__(cls, result)
+
 
 class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
     """Aqara manufacturer specific settings."""

@@ -100,7 +100,6 @@ import zhaquirks.xiaomi.aqara.switch_t1
 import zhaquirks.xiaomi.aqara.thermostat_agl001
 from zhaquirks.xiaomi.aqara.thermostat_agl001 import (
     XIAOMI_SENSOR_VALUE,
-    AqaraThermostatSpecificCluster,
     ScheduleEvent,
     ScheduleSettings,
     SensorTemp,
