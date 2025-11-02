@@ -2281,3 +2281,21 @@ async def test_moesbht6_send_attribute(zigpy_device_from_quirk, quirk):
         assert status == [
             foundation.WriteAttributesStatusRecord(foundation.Status.SUCCESS)
         ]
+
+
+@pytest.mark.parametrize("quirk", (zhaquirks.tuya.ts0601_electric_heating.MoesBHT6,))
+async def test_moesbht6_command_on_off(zigpy_device_from_quirk, quirk):
+    """Test MoesBHT6 on/off command handling via ManufCluster."""
+
+    eheat_dev = zigpy_device_from_quirk(quirk)
+    tuya_manuf_cluster = eheat_dev.endpoints[1].tuya_manufacturer
+
+    # Test on command (0x0001)
+    result = await tuya_manuf_cluster.command(0x0001)
+    assert result.command_id == 0x0001
+    assert result.status == foundation.Status.SUCCESS
+
+    # Test off command (0x0000)
+    result = await tuya_manuf_cluster.command(0x0000)
+    assert result.command_id == 0x0000
+    assert result.status == foundation.Status.SUCCESS
