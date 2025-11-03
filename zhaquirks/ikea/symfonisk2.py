@@ -48,7 +48,6 @@ from zhaquirks.const import (
     TOGGLE,
 )
 from zhaquirks.ikea import (
-    COMMAND_SHORTCUT_V1,
     IKEA,
     IKEA_CLUSTER_ID,
     WWAH_CLUSTER_ID,
@@ -153,7 +152,6 @@ class IkeaSymfoniskGen2v1(CustomDevice):
                     PollControl.cluster_id,
                     LightLink.cluster_id,
                     WWAH_CLUSTER_ID,
-                    ShortcutV1Cluster,
                 ],
                 OUTPUT_CLUSTERS: [
                     Identify.cluster_id,
@@ -174,27 +172,27 @@ class IkeaSymfoniskGen2v1(CustomDevice):
     device_automation_triggers.update(
         {
             (SHORT_PRESS, BUTTON_1): {
-                COMMAND: COMMAND_SHORTCUT_V1,
+                COMMAND: ShortcutV1Cluster.ServerCommandDefs.shortcut_v1_events.name,
                 PARAMS: {"shortcut_button": 1, "shortcut_event": 1},
             },
             (DOUBLE_PRESS, BUTTON_1): {
-                COMMAND: COMMAND_SHORTCUT_V1,
+                COMMAND: ShortcutV1Cluster.ServerCommandDefs.shortcut_v1_events.name,
                 PARAMS: {"shortcut_button": 1, "shortcut_event": 2},
             },
             (LONG_PRESS, BUTTON_1): {
-                COMMAND: COMMAND_SHORTCUT_V1,
+                COMMAND: ShortcutV1Cluster.ServerCommandDefs.shortcut_v1_events.name,
                 PARAMS: {"shortcut_button": 1, "shortcut_event": 3},
             },
             (SHORT_PRESS, BUTTON_2): {
-                COMMAND: COMMAND_SHORTCUT_V1,
+                COMMAND: ShortcutV1Cluster.ServerCommandDefs.shortcut_v1_events.name,
                 PARAMS: {"shortcut_button": 2, "shortcut_event": 1},
             },
             (DOUBLE_PRESS, BUTTON_2): {
-                COMMAND: COMMAND_SHORTCUT_V1,
+                COMMAND: ShortcutV1Cluster.ServerCommandDefs.shortcut_v1_events.name,
                 PARAMS: {"shortcut_button": 2, "shortcut_event": 2},
             },
             (LONG_PRESS, BUTTON_2): {
-                COMMAND: COMMAND_SHORTCUT_V1,
+                COMMAND: ShortcutV1Cluster.ServerCommandDefs.shortcut_v1_events.name,
                 PARAMS: {"shortcut_button": 2, "shortcut_event": 3},
             },
         },

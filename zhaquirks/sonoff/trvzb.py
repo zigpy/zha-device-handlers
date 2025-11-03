@@ -1,7 +1,7 @@
 """Sonoff TRVZB - Zigbee Thermostatic Radiator Valve."""
 
 from zigpy.quirks import CustomCluster
-from zigpy.quirks.v2 import QuirkBuilder
+from zigpy.quirks.v2 import NumberDeviceClass, QuirkBuilder
 from zigpy.quirks.v2.homeassistant import UnitOfTemperature
 import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
@@ -70,6 +70,21 @@ class CustomSonoffCluster(CustomCluster):
             type=t.uint8_t,
         )
 
+        external_temperature_sensor_enable = ZCLAttributeDef(
+            id=0x600E,
+            type=t.uint8_t,
+        )
+
+        external_temperature_sensor_value = ZCLAttributeDef(
+            id=0x600D,
+            type=t.int16s,
+        )
+
+        temperature_control_accuracy = ZCLAttributeDef(
+            id=0x6011,
+            type=t.int16s,
+        )
+
     @property
     def _is_manuf_specific(self):
         return False
@@ -120,6 +135,36 @@ class CustomSonoffCluster(CustomCluster):
         translation_key="valve_closing_degree",
         fallback_name="Valve closing degree",
         initially_disabled=True,
+    )
+    .number(
+        CustomSonoffCluster.AttributeDefs.temperature_control_accuracy.name,
+        CustomSonoffCluster.cluster_id,
+        min_value=-1.0,
+        max_value=-0.2,
+        step=0.2,
+        device_class=NumberDeviceClass.TEMPERATURE,
+        unit=UnitOfTemperature.CELSIUS,
+        multiplier=0.01,
+        translation_key="temperature_control_accuracy",
+        fallback_name="Temperature control accuracy",
+    )
+    .switch(
+        CustomSonoffCluster.AttributeDefs.external_temperature_sensor_enable.name,
+        CustomSonoffCluster.cluster_id,
+        translation_key="external_temperature_sensor",
+        fallback_name="External temperature sensor",
+    )
+    .number(
+        CustomSonoffCluster.AttributeDefs.external_temperature_sensor_value.name,
+        CustomSonoffCluster.cluster_id,
+        min_value=0.0,
+        max_value=99.9,
+        step=0.1,
+        device_class=NumberDeviceClass.TEMPERATURE,
+        unit=UnitOfTemperature.CELSIUS,
+        multiplier=0.01,
+        translation_key="external_temperature_sensor_value",
+        fallback_name="External temperature sensor value",
     )
     .add_to_registry()
 )
