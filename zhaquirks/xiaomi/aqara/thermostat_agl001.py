@@ -42,6 +42,36 @@ class Constants:
     """Constants specific for Aqara E1 TRV."""
 
     SENSOR_ID = bytearray.fromhex("00158d00019d1b98")
+    SENSOR_ID_SUFFIX = bytes([0x00, 0x01, 0x00, 0x55])
+    INTERNAL_SENSOR_ACTION_CODES = [bytes([0x3D, 0x05]), bytes([0x3D, 0x04])]
+    EXTERNAL_SENSOR_ACTION_CODES = [bytes([0x3D, 0x04]), bytes([0x3D, 0x05])]
+    INTERNAL_SENSOR_PADDING = bytes(12)
+    EXTERNAL_SENSOR_DATA_BLOCK_1 = bytes(
+        [0x13, 0x0A, 0x02, 0x00, 0x00, 0x64, 0x04, 0xCE, 0xC2, 0xB6, 0xC8]
+    )
+    EXTERNAL_SENSOR_DATA_BLOCK_2 = bytes(
+        [
+            0x16,
+            0x0A,
+            0x02,
+            0x0A,
+            0xC9,
+            0xE8,
+            0xB1,
+            0xB8,
+            0xD4,
+            0xDA,
+            0xCF,
+            0xDF,
+            0xC0,
+            0xEB,
+        ]
+    )
+    EXTERNAL_SENSOR_TRAILING_1 = bytes([0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x3D])
+    EXTERNAL_SENSOR_TRAILING_2 = bytes([0x64])
+    EXTERNAL_SENSOR_TRAILING_3 = bytes([0x65])
+    EXTERNAL_SENSOR_PARAMS2_SUFFIX = bytes([0x08, 0x00, 0x07, 0xFD])
+    EXTERNAL_SENSOR_TRAILING_4 = bytes([0x04])
 
 
 DAYS_MAP = {
@@ -463,6 +493,54 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
         """Convert float to hex."""
         return hex(struct.unpack("<I", struct.pack("<f", f))[0])
 
+    def _build_sensor_mode_params(
+        self, is_external: bool, device: bytes, timestamp: bytes
+    ):
+        """Build params1 and params2 for internal/external sensor mode."""
+        if is_external:
+            # External sensor
+            # params1
+            p1 = (
+                timestamp
+                + Constants.EXTERNAL_SENSOR_ACTION_CODES[0]
+                + device
+                + Constants.SENSOR_ID
+            )
+            p1 += Constants.SENSOR_ID_SUFFIX
+            p1 += Constants.EXTERNAL_SENSOR_DATA_BLOCK_1
+            p1 += Constants.EXTERNAL_SENSOR_TRAILING_1
+            p1 += Constants.EXTERNAL_SENSOR_TRAILING_2
+            p1 += Constants.EXTERNAL_SENSOR_TRAILING_3
+            # params2
+            p2 = (
+                timestamp
+                + Constants.EXTERNAL_SENSOR_ACTION_CODES[1]
+                + device
+                + Constants.SENSOR_ID
+            )
+            p2 += Constants.EXTERNAL_SENSOR_PARAMS2_SUFFIX
+            p2 += Constants.EXTERNAL_SENSOR_DATA_BLOCK_2
+            p2 += Constants.EXTERNAL_SENSOR_TRAILING_1
+            p2 += Constants.EXTERNAL_SENSOR_TRAILING_4
+            p2 += Constants.EXTERNAL_SENSOR_TRAILING_3
+        else:
+            # Internal sensor
+            # params1
+            p1 = (
+                timestamp
+                + Constants.INTERNAL_SENSOR_ACTION_CODES[0]
+                + device
+                + Constants.INTERNAL_SENSOR_PADDING
+            )
+            # params2
+            p2 = (
+                timestamp
+                + Constants.INTERNAL_SENSOR_ACTION_CODES[1]
+                + device
+                + Constants.INTERNAL_SENSOR_PADDING
+            )
+        return p1, p2
+
     async def write_attributes(
         self, attributes: dict[str | int, Any], manufacturer: int | None = None
     ) -> list:
@@ -495,90 +573,28 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
 
                 timestamp = bytes(reversed(t.uint32_t(int(time.time())).serialize()))
 
-                if value == 0:
-                    # internal sensor
-                    params1 = timestamp
-                    params1 += bytes([0x3D, 0x05])
-                    params1 += device
-                    params1 += bytes(12)
+                is_external = bool(value)
+                params1, params2 = self._build_sensor_mode_params(
+                    is_external, device, timestamp
+                )
 
-                    params2 = timestamp
-                    params2 += bytes([0x3D, 0x04])
-                    params2 += device
-                    params2 += bytes(12)
+                attrs1 = {}
+                attrs1[self.AttributeDefs.sensor_attr.name] = (
+                    self.aqara_header(0x12, params1, 0x02 if is_external else 0x04)
+                    + params1
+                )
+                attrs[self.AttributeDefs.sensor_attr.name] = (
+                    self.aqara_header(0x13, params2, 0x02 if is_external else 0x04)
+                    + params2
+                )
 
-                    attrs1 = {}
-                    attrs1[self.AttributeDefs.sensor_attr.name] = (
-                        self.aqara_header(0x12, params1, 0x04) + params1
-                    )
-                    attrs[self.AttributeDefs.sensor_attr.name] = (
-                        self.aqara_header(0x13, params2, 0x04) + params2
-                    )
-
-                    await super().write_attributes(attrs1, manufacturer)
-                else:
-                    # external sensor
-                    params1 = timestamp
-                    params1 += bytes([0x3D, 0x04])
-                    params1 += device
-                    params1 += Constants.SENSOR_ID
-                    params1 += bytes([0x00, 0x01, 0x00, 0x55])
-                    params1 += bytes(
-                        [
-                            0x13,
-                            0x0A,
-                            0x02,
-                            0x00,
-                            0x00,
-                            0x64,
-                            0x04,
-                            0xCE,
-                            0xC2,
-                            0xB6,
-                            0xC8,
-                        ]
-                    )
-                    params1 += bytes([0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x3D])
-                    params1 += bytes([0x64])
-                    params1 += bytes([0x65])
-
-                    params2 = timestamp
-                    params2 += bytes([0x3D, 0x05])
-                    params2 += device
-                    params2 += Constants.SENSOR_ID
-                    params2 += bytes([0x08, 0x00, 0x07, 0xFD])
-                    params2 += bytes(
-                        [
-                            0x16,
-                            0x0A,
-                            0x02,
-                            0x0A,
-                            0xC9,
-                            0xE8,
-                            0xB1,
-                            0xB8,
-                            0xD4,
-                            0xDA,
-                            0xCF,
-                            0xDF,
-                            0xC0,
-                            0xEB,
-                        ]
-                    )
-                    params2 += bytes([0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x3D])
-                    params2 += bytes([0x04])
-                    params2 += bytes([0x65])
-
-                    attrs1 = {}
-                    attrs1[self.AttributeDefs.sensor_attr.name] = (
-                        self.aqara_header(0x12, params1, 0x02) + params1
-                    )
-                    attrs[self.AttributeDefs.sensor_attr.name] = (
-                        self.aqara_header(0x13, params2, 0x02) + params2
-                    )
-
-                    await super().write_attributes(attrs1, manufacturer)
+                await super().write_attributes(attrs1, manufacturer)
             else:
+                self.debug(
+                    "Passing through attribute %r (value: %r) to base implementation; not handled by Aqara quirk.",
+                    attr,
+                    value,
+                )
                 attrs[attr] = value
 
         result = await super().write_attributes(attrs, manufacturer)

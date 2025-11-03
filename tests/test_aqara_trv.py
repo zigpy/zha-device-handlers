@@ -10,6 +10,7 @@ from zhaquirks.xiaomi.aqara.thermostat_agl001 import (
     AqaraThermostatSpecificCluster,
 )
 
+# Avoids writing out the AqaraThermostatSpecificCluster.AttributeDefs every time.
 Defs = AqaraThermostatSpecificCluster.AttributeDefs
 
 
