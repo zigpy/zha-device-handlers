@@ -5,6 +5,7 @@ from __future__ import annotations
 from functools import reduce
 import math
 import struct
+import time
 from typing import Any, Final
 
 from zigpy.profiles import zha
@@ -36,21 +37,12 @@ XIAOMI_SYSTEM_MODE_MAP = {
     1: Thermostat.SystemMode.Heat,
 }
 
-SYSTEM_MODE = 0x0271
-PRESET = 0x0272
-WINDOW_DETECTION = 0x0273
-VALVE_DETECTION = 0x0274
-VALVE_ALARM = 0x0275
-CHILD_LOCK = 0x0277
-AWAY_PRESET_TEMPERATURE = 0x0279
-WINDOW_OPEN = 0x027A
-CALIBRATED = 0x027B
-SCHEDULE = 0x027D
-SCHEDULE_SETTINGS = 0x0276
-SENSOR = 0x027E
-BATTERY_PERCENTAGE = 0x040A
 
-XIAOMI_CLUSTER_ID = 0xFCC0
+class Constants:
+    """Constants specific for Aqara E1 TRV."""
+
+    SENSOR_ID = bytearray.fromhex("00158d00019d1b98")
+
 
 DAYS_MAP = {
     "mon": 0x02,
@@ -86,21 +78,38 @@ class ThermostatCluster(CustomCluster, Thermostat):
         remaining_attributes = attributes.copy()
 
         # read system_mode from Xiaomi cluster (can be numeric or string)
-        if ZCL_SYSTEM_MODE in attributes or "system_mode" in attributes:
+        if (
+            ZCL_SYSTEM_MODE in attributes
+            or AqaraThermostatSpecificCluster.AttributeDefs.system_mode.name
+            in attributes
+        ):
             self.debug("Passing 'system_mode' read to Xiaomi cluster")
 
             if ZCL_SYSTEM_MODE in attributes:
                 remaining_attributes.remove(ZCL_SYSTEM_MODE)
-            if "system_mode" in attributes:
-                remaining_attributes.remove("system_mode")
+            if (
+                AqaraThermostatSpecificCluster.AttributeDefs.system_mode.name
+                in attributes
+            ):
+                remaining_attributes.remove(
+                    AqaraThermostatSpecificCluster.AttributeDefs.system_mode.name
+                )
 
             successful_r, failed_r = await self.endpoint.opple_cluster.read_attributes(
-                [SYSTEM_MODE], allow_cache, only_cache, manufacturer
+                [AqaraThermostatSpecificCluster.AttributeDefs.system_mode.id],
+                allow_cache,
+                only_cache,
+                manufacturer,
             )
             # convert Xiaomi system_mode to ZCL attribute
-            if SYSTEM_MODE in successful_r:
+            if (
+                AqaraThermostatSpecificCluster.AttributeDefs.system_mode.id
+                in successful_r
+            ):
                 successful_r[ZCL_SYSTEM_MODE] = XIAOMI_SYSTEM_MODE_MAP[
-                    successful_r.pop(SYSTEM_MODE)
+                    successful_r.pop(
+                        AqaraThermostatSpecificCluster.AttributeDefs.system_mode.id
+                    )
                 ]
         # read remaining attributes from thermostat cluster
         if remaining_attributes:
@@ -123,15 +132,23 @@ class ThermostatCluster(CustomCluster, Thermostat):
         if ZCL_SYSTEM_MODE in attributes:
             remaining_attributes.pop(ZCL_SYSTEM_MODE)
             system_mode_value = attributes.get(ZCL_SYSTEM_MODE)
-        if "system_mode" in attributes:
-            remaining_attributes.pop("system_mode")
-            system_mode_value = attributes.get("system_mode")
+        if AqaraThermostatSpecificCluster.AttributeDefs.system_mode.name in attributes:
+            remaining_attributes.pop(
+                AqaraThermostatSpecificCluster.AttributeDefs.system_mode.name
+            )
+            system_mode_value = attributes.get(
+                AqaraThermostatSpecificCluster.AttributeDefs.system_mode.name
+            )
 
         # write system_mode to Xiaomi cluster if applicable
         if system_mode_value is not None:
             self.debug("Passing 'system_mode' write to Xiaomi cluster")
             result += await self.endpoint.opple_cluster.write_attributes(
-                {SYSTEM_MODE: min(int(system_mode_value), 1)}
+                {
+                    AqaraThermostatSpecificCluster.AttributeDefs.system_mode.id: min(
+                        int(system_mode_value), 1
+                    )
+                }
             )
 
         # write remaining attributes to thermostat cluster
@@ -377,55 +394,195 @@ class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
         """Attribute definitions."""
 
         system_mode: Final = ZCLAttributeDef(
-            id=SYSTEM_MODE, type=t.uint8_t, is_manufacturer_specific=True
+            id=0x0271, type=t.uint8_t, is_manufacturer_specific=True
         )
         preset: Final = ZCLAttributeDef(
-            id=PRESET, type=t.uint8_t, is_manufacturer_specific=True
+            id=0x0272, type=t.uint8_t, is_manufacturer_specific=True
         )
         window_detection: Final = ZCLAttributeDef(
-            id=WINDOW_DETECTION, type=t.uint8_t, is_manufacturer_specific=True
+            id=0x0273, type=t.uint8_t, is_manufacturer_specific=True
         )
         valve_detection: Final = ZCLAttributeDef(
-            id=VALVE_DETECTION, type=t.uint8_t, is_manufacturer_specific=True
+            id=0x0274, type=t.uint8_t, is_manufacturer_specific=True
         )
         valve_alarm: Final = ZCLAttributeDef(
-            id=VALVE_ALARM, type=t.uint8_t, is_manufacturer_specific=True
-        )
-        child_lock: Final = ZCLAttributeDef(
-            id=CHILD_LOCK, type=t.uint8_t, is_manufacturer_specific=True
-        )
-        away_preset_temperature: Final = ZCLAttributeDef(
-            id=AWAY_PRESET_TEMPERATURE, type=t.uint32_t, is_manufacturer_specific=True
-        )
-        window_open: Final = ZCLAttributeDef(
-            id=WINDOW_OPEN, type=t.uint8_t, is_manufacturer_specific=True
-        )
-        calibrated: Final = ZCLAttributeDef(
-            id=CALIBRATED, type=t.uint8_t, is_manufacturer_specific=True
-        )
-        schedule: Final = ZCLAttributeDef(
-            id=SCHEDULE, type=t.uint8_t, is_manufacturer_specific=True
+            id=0x0275, type=t.uint8_t, is_manufacturer_specific=True
         )
         schedule_settings: Final = ZCLAttributeDef(
-            id=SCHEDULE_SETTINGS, type=ScheduleSettings, is_manufacturer_specific=True
+            id=0x0276, type=ScheduleSettings, is_manufacturer_specific=True
+        )
+        child_lock: Final = ZCLAttributeDef(
+            id=0x0277, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        away_preset_temperature: Final = ZCLAttributeDef(
+            id=0x0279, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        window_open: Final = ZCLAttributeDef(
+            id=0x027A, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        calibrated: Final = ZCLAttributeDef(
+            id=0x027B, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        schedule: Final = ZCLAttributeDef(
+            id=0x027D, type=t.uint8_t, is_manufacturer_specific=True
         )
         sensor: Final = ZCLAttributeDef(
-            id=SENSOR, type=t.uint8_t, is_manufacturer_specific=True
+            id=0x027E, type=t.uint8_t, is_manufacturer_specific=True
         )
         battery_percentage: Final = ZCLAttributeDef(
-            id=BATTERY_PERCENTAGE, type=t.uint8_t, is_manufacturer_specific=True
+            id=0x040A, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        sensor_temp: Final = (
+            ZCLAttributeDef(  # Fake address to pass external sensor temperature
+                id=0x1392, type=t.uint32_t, is_manufacturer_specific=True
+            )
+        )
+        sensor_attr: Final = ZCLAttributeDef(
+            id=0xFFF2, type=t.LVBytes, is_manufacturer_specific=True
         )
 
     def _update_attribute(self, attrid, value):
         self.debug("Updating attribute on Xiaomi cluster %s with %s", attrid, value)
-        if attrid == BATTERY_PERCENTAGE:
+        if attrid == self.AttributeDefs.battery_percentage.id:
             self.endpoint.power.battery_percent_reported(value)
-        elif attrid == SYSTEM_MODE:
+        elif attrid == self.AttributeDefs.system_mode.id:
             # update ZCL system_mode attribute (e.g. on attribute reports)
             self.endpoint.thermostat.update_attribute(
                 ZCL_SYSTEM_MODE, XIAOMI_SYSTEM_MODE_MAP[value]
             )
         super()._update_attribute(attrid, value)
+
+    def aqara_header(self, counter: int, params: bytearray, action: int) -> bytearray:
+        """Create Aqara header for setting external sensor."""
+        header = bytes([0xAA, 0x71, len(params) + 3, 0x44, counter])
+        integrity = 512 - sum(header)
+
+        return header + bytes([integrity, action, 0x41, len(params)])
+
+    def _float_to_hex(self, f):
+        """Convert float to hex."""
+        return hex(struct.unpack("<I", struct.pack("<f", f))[0])
+
+    async def write_attributes(
+        self, attributes: dict[str | int, Any], manufacturer: int | None = None
+    ) -> list:
+        """Write attributes to device with internal 'attributes' validation."""
+        attrs: dict[str | int, Any] = {}
+
+        for attr, value in attributes.items():
+            # implemented with help from https://github.com/Koenkk/zigbee-herdsman-converters/blob/master/devices/xiaomi.js
+            attr_def = self.find_attribute(attr)
+
+            if attr_def and attr_def.id == self.AttributeDefs.sensor_temp.id:
+                # set external sensor temp. this function expect value to be passed multiplied by 100
+                temperatureBuf = bytearray.fromhex(
+                    self._float_to_hex(round(float(value)))[2:]
+                )
+
+                params = bytearray(Constants.SENSOR_ID)
+                params += bytes([0x00, 0x01, 0x00, 0x55])
+                params += temperatureBuf
+
+                attrs[self.AttributeDefs.sensor_attr.name] = (
+                    self.aqara_header(0x12, params, 0x05) + params
+                )
+
+            elif attr_def and attr_def.id == self.AttributeDefs.sensor.id:
+                # set internal/external temperature sensor
+                device = bytearray.fromhex(
+                    f"{self.endpoint.device.ieee}".replace(":", "")
+                )
+
+                timestamp = bytes(reversed(t.uint32_t(int(time.time())).serialize()))
+
+                if value == 0:
+                    # internal sensor
+                    params1 = timestamp
+                    params1 += bytes([0x3D, 0x05])
+                    params1 += device
+                    params1 += bytes(12)
+
+                    params2 = timestamp
+                    params2 += bytes([0x3D, 0x04])
+                    params2 += device
+                    params2 += bytes(12)
+
+                    attrs1 = {}
+                    attrs1[self.AttributeDefs.sensor_attr.name] = (
+                        self.aqara_header(0x12, params1, 0x04) + params1
+                    )
+                    attrs[self.AttributeDefs.sensor_attr.name] = (
+                        self.aqara_header(0x13, params2, 0x04) + params2
+                    )
+
+                    await super().write_attributes(attrs1, manufacturer)
+                else:
+                    # external sensor
+                    params1 = timestamp
+                    params1 += bytes([0x3D, 0x04])
+                    params1 += device
+                    params1 += Constants.SENSOR_ID
+                    params1 += bytes([0x00, 0x01, 0x00, 0x55])
+                    params1 += bytes(
+                        [
+                            0x13,
+                            0x0A,
+                            0x02,
+                            0x00,
+                            0x00,
+                            0x64,
+                            0x04,
+                            0xCE,
+                            0xC2,
+                            0xB6,
+                            0xC8,
+                        ]
+                    )
+                    params1 += bytes([0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x3D])
+                    params1 += bytes([0x64])
+                    params1 += bytes([0x65])
+
+                    params2 = timestamp
+                    params2 += bytes([0x3D, 0x05])
+                    params2 += device
+                    params2 += Constants.SENSOR_ID
+                    params2 += bytes([0x08, 0x00, 0x07, 0xFD])
+                    params2 += bytes(
+                        [
+                            0x16,
+                            0x0A,
+                            0x02,
+                            0x0A,
+                            0xC9,
+                            0xE8,
+                            0xB1,
+                            0xB8,
+                            0xD4,
+                            0xDA,
+                            0xCF,
+                            0xDF,
+                            0xC0,
+                            0xEB,
+                        ]
+                    )
+                    params2 += bytes([0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x3D])
+                    params2 += bytes([0x04])
+                    params2 += bytes([0x65])
+
+                    attrs1 = {}
+                    attrs1[self.AttributeDefs.sensor_attr.name] = (
+                        self.aqara_header(0x12, params1, 0x02) + params1
+                    )
+                    attrs[self.AttributeDefs.sensor_attr.name] = (
+                        self.aqara_header(0x13, params2, 0x02) + params2
+                    )
+
+                    await super().write_attributes(attrs1, manufacturer)
+            else:
+                attrs[attr] = value
+
+        result = await super().write_attributes(attrs, manufacturer)
+        return result
 
 
 class AGL001(XiaomiCustomDevice):
