@@ -7,6 +7,8 @@ from zigpy.zcl import foundation
 
 from zhaquirks.xiaomi.aqara.thermostat_agl001 import (
     AGL001,
+    XIAOMI_SYSTEM_MODE_MAP,
+    ZCL_SYSTEM_MODE,
     AqaraThermostatSpecificCluster,
 )
 
@@ -184,3 +186,47 @@ async def test_external_sensor_temp_message_length_regression(
             f"Message length changed: {len(first_value)} vs {len(second_value)}"
         )
         assert first_value == second_value, "Message content changed between calls"
+
+
+@pytest.mark.parametrize("quirk", (AGL001,))
+@pytest.mark.asyncio
+async def test_system_mode_read_forwarding(zigpy_device_from_quirk, quirk):
+    """Test that system_mode read is forwarded to the Xiaomi cluster and mapped."""
+
+    # Create virtual device from the quirk
+    thermostat_dev = zigpy_device_from_quirk(quirk)
+    thermostat_cluster = thermostat_dev.endpoints[1].thermostat
+
+    # Patch the Xiaomi cluster's read_attributes method
+    opple_cluster = thermostat_dev.endpoints[1].opple_cluster
+    # Simulate Xiaomi cluster returning system_mode = 1 (heat)
+    xiaomi_system_mode_value = 1
+    xiaomi_attr_id = Defs.system_mode.id
+    xiaomi_result = ({xiaomi_attr_id: xiaomi_system_mode_value}, {})
+
+    with mock.patch.object(
+        opple_cluster, "read_attributes", new=mock.AsyncMock(return_value=xiaomi_result)
+    ) as mock_read:
+        # Test reading by attribute ID
+        successful_r, failed_r = await thermostat_cluster.read_attributes(
+            [ZCL_SYSTEM_MODE]
+        )
+        assert mock_read.called
+        # Should be mapped to standard ZCL value
+        assert ZCL_SYSTEM_MODE in successful_r
+        assert (
+            successful_r[ZCL_SYSTEM_MODE]
+            == XIAOMI_SYSTEM_MODE_MAP[xiaomi_system_mode_value]
+        )
+
+        # Test reading by attribute name
+        mock_read.reset_mock()
+        successful_r, failed_r = await thermostat_cluster.read_attributes(
+            [Defs.system_mode.name]
+        )
+        assert mock_read.called
+        assert ZCL_SYSTEM_MODE in successful_r
+        assert (
+            successful_r[ZCL_SYSTEM_MODE]
+            == XIAOMI_SYSTEM_MODE_MAP[xiaomi_system_mode_value]
+        )
