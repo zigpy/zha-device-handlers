@@ -1839,9 +1839,10 @@ class Plug_v7(EnchantedDevice):
         },
     }
 
-class Plug_4AC_4USB(EnchantedDevice):
 
+class Plug_4AC_4USB(EnchantedDevice):
     """Tuya 4 outlet + 4 USB with restore power state support."""
+
     quirk_id = TUYA_PLUG_ONOFF
 
     signature = {
