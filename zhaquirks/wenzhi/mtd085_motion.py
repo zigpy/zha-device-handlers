@@ -8,9 +8,10 @@ Current functionality:
 - Motion detection via IAS Zone (binary_sensor.motion)
 - Occupancy clear when leaving the room
 - Basic device info
+- Uses Tuya enchantment spell to initialize proper occupancy reporting
+- Periodic reporting configured to detect device disconnection faster
 """
 
-from zigpy.quirks import CustomDevice
 from zigpy.zcl.clusters.general import Basic, Groups, Scenes
 from zigpy.zcl.clusters.security import IasZone
 
@@ -22,33 +23,40 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
+from zhaquirks.tuya import EnchantedDevice
 
 
-class WenzhiMTD085_ZB(CustomDevice):
+class WenzhiMTD085_ZB(EnchantedDevice):
     """Wenzhi MTD085-ZB 24GHz mmWave radar presence sensor.
 
-    Basic IAS Zone motion sensor mode. Requires "magic packet" initialization
-    to properly report occupancy state changes.
+    Basic IAS Zone motion sensor mode.
+    Uses Tuya enchantment spell to report occupancy state changes.
 
     Manufacturer: _TZ321C_fkzihax8 / _TZ321C_4slreunp
     Model: TS0225
     """
 
     async def apply_custom_configuration(self, *args, **kwargs):
-        """Send magic packet to initialize proper IAS Zone reporting."""
-        try:
-            # Read Basic cluster attributes to initialize device
-            # This enables proper occupancy state reporting
-            basic_cluster = self.endpoints[1].in_clusters[Basic.cluster_id]
-            await basic_cluster.read_attributes(
-                [0, 1, 4, 5, 7, 0xFFFE],
-                allow_cache=False,
-            )
-        except Exception:
-            # Ignore errors - device may not support all attributes
-            pass
-
+        """Apply custom configuration including IAS Zone reporting."""
+        # First apply the Tuya enchantment spell from parent class
         await super().apply_custom_configuration(*args, **kwargs)
+
+        try:
+            # Configure periodic reporting on IAS Zone cluster
+            # This ensures the device reports regularly to maintain availability
+            # Home Assistant marks devices unavailable after missing several reports
+            # Using shorter intervals for faster disconnection detection
+            ias_zone_cluster = self.endpoints[1].in_clusters[IasZone.cluster_id]
+            await ias_zone_cluster.bind()
+            await ias_zone_cluster.configure_reporting(
+                IasZone.AttributeDefs.zone_status.id,
+                min_interval=10,  # Report at least every 10 seconds on state changes
+                max_interval=300,  # Report at most every 5 minutes even if no change
+                reportable_change=1,  # Report on any zone status change
+            )
+        except Exception as ex:
+            # Log the error but continue - device may not support reporting config
+            self.debug("Failed to configure IAS Zone reporting: %s", ex)
 
     signature = {
         MODELS_INFO: [
