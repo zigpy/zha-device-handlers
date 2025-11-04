@@ -5,7 +5,7 @@ from zigpy.quirks import CustomDevice
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, GreenPowerProxy, Groups, Ota, Scenes, Time
-
+from zigpy.zcl.clusters.security import IasZone
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -14,9 +14,20 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster
+from zhaquirks.tuya import TuyaLocalCluster
+from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster, TuyaOnOffNM
 
 TUYA_MANUFACTURER_GARAGE = "tuya_manufacturer_garage"
+
+
+class ContactSwitchCluster(TuyaLocalCluster, IasZone):
+    """Contact sensor cluster for door status."""
+
+    _CONSTANT_ATTRIBUTES = {0x0001: IasZone.ZoneType.Contact_Switch}
+
+    def _update_attribute(self, attrid, value):
+        self.debug("_update_attribute '%s': %s", attrid, value)
+        super()._update_attribute(attrid, value)
 
 
 class TuyaGarageManufCluster(TuyaMCUCluster):
@@ -30,22 +41,22 @@ class TuyaGarageManufCluster(TuyaMCUCluster):
         button = foundation.ZCLAttributeDef(
             id=0xEF01, type=t.Bool, is_manufacturer_specific=True
         )
-        dp_2 = foundation.ZCLAttributeDef(
+        countdown = foundation.ZCLAttributeDef(
             id=0xEF02, type=t.uint32_t, is_manufacturer_specific=True
         )
         contact_sensor = foundation.ZCLAttributeDef(
             id=0xEF03, type=t.Bool, is_manufacturer_specific=True
         )
-        dp_4 = foundation.ZCLAttributeDef(
+        run_time = foundation.ZCLAttributeDef(
             id=0xEF04, type=t.uint32_t, is_manufacturer_specific=True
         )
-        dp_5 = foundation.ZCLAttributeDef(
+        open_alarm_time = foundation.ZCLAttributeDef(
             id=0xEF05, type=t.uint32_t, is_manufacturer_specific=True
         )
         dp_11 = foundation.ZCLAttributeDef(
             id=0xEF0B, type=t.Bool, is_manufacturer_specific=True
         )
-        dp_12 = foundation.ZCLAttributeDef(
+        status = foundation.ZCLAttributeDef(
             id=0xEF0C, type=t.enum8, is_manufacturer_specific=True
         )
 
@@ -57,7 +68,7 @@ class TuyaGarageManufCluster(TuyaMCUCluster):
         ),
         2: DPToAttributeMapping(
             TUYA_MANUFACTURER_GARAGE,
-            "dp_2",
+            "countdown",
         ),
         3: DPToAttributeMapping(
             TUYA_MANUFACTURER_GARAGE,
@@ -65,11 +76,11 @@ class TuyaGarageManufCluster(TuyaMCUCluster):
         ),
         4: DPToAttributeMapping(
             TUYA_MANUFACTURER_GARAGE,
-            "dp_4",
+            "run_time",
         ),
         5: DPToAttributeMapping(
             TUYA_MANUFACTURER_GARAGE,
-            "dp_5",
+            "open_alarm_time",
         ),
         11: DPToAttributeMapping(
             TUYA_MANUFACTURER_GARAGE,
@@ -78,7 +89,7 @@ class TuyaGarageManufCluster(TuyaMCUCluster):
         # garage door status (open, closed, ...)
         12: DPToAttributeMapping(
             TUYA_MANUFACTURER_GARAGE,
-            "dp_12",
+            "status",
         ),
     }
 
@@ -140,6 +151,62 @@ class TuyaGarageSwitchTO(CustomDevice):
                     TuyaGarageManufCluster,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            242: {
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        },
+    }
+
+class TuyaMoesGarageSwitch(CustomDevice):
+    """Tuya Garage switch."""
+
+    signature = {
+        MODELS_INFO: [
+            ("_TZE204_jktmrpoj", "TS0601"),
+        ],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaGarageManufCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            242: {
+                PROFILE_ID: zgp.PROFILE_ID,
+                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
+                INPUT_CLUSTERS: [],
+                OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
+            },
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                DEVICE_TYPE: zha.DeviceType.ON_OFF_LIGHT,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaGarageManufCluster,
+                    TuyaOnOffNM,
+                ],
+                OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
+            },
+            2: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
+                INPUT_CLUSTERS: [ContactSwitchCluster],
+                OUTPUT_CLUSTERS: [],
             },
             242: {
                 PROFILE_ID: zgp.PROFILE_ID,
