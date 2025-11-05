@@ -6,6 +6,7 @@ import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, GreenPowerProxy, Groups, Ota, Scenes, Time
 from zigpy.zcl.clusters.security import IasZone
+
 from zhaquirks.const import (
     DEVICE_TYPE,
     ENDPOINTS,
@@ -160,6 +161,7 @@ class TuyaGarageSwitchTO(CustomDevice):
             },
         },
     }
+
 
 class TuyaMoesGarageSwitch(CustomDevice):
     """Tuya Garage switch."""
