@@ -182,7 +182,7 @@ class TuyaMoesGarageSwitch(CustomDevice):
             },
             242: {
                 PROFILE_ID: zgp.PROFILE_ID,
-                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
+                DEVICE_TYPE: 97,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
             },
@@ -209,7 +209,7 @@ class TuyaMoesGarageSwitch(CustomDevice):
                 OUTPUT_CLUSTERS: [],
             },
             242: {
-                PROFILE_ID: zgp.PROFILE_ID,
+                PROFILE_ID: 0xA1E0,
                 DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
                 INPUT_CLUSTERS: [],
                 OUTPUT_CLUSTERS: [GreenPowerProxy.cluster_id],
