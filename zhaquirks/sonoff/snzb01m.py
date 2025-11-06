@@ -1,5 +1,6 @@
 """SONOFF SNZB-01M 4-button wireless switch quirk."""
 
+from zigpy.quirks.v2 import QuirkBuilder
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
@@ -7,14 +8,8 @@ from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 from zhaquirks import CustomCluster
 from zhaquirks.const import (
     COMMAND,
-    DEVICE_TYPE,
     DOUBLE_PRESS,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
     LONG_PRESS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
     SHORT_PRESS,
     TRIPLE_PRESS,
     ZHA_SEND_EVENT,
@@ -67,13 +62,8 @@ def button_event_from_report(endpoint_id, value):
             "button": f"button{endpoint_id}",
         }
     return None
-from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.zcl.clusters.general import Basic
-
-
-(
+SNZB01M = (
     QuirkBuilder("SONOFF", "SNZB-01M")
-    .applies_to("SONOFF", "SNZB-01M")
     .adds(SonoffButtonCluster, endpoint_id=1)
     .adds(SonoffButtonCluster, endpoint_id=2)
     .adds(SonoffButtonCluster, endpoint_id=3)
@@ -104,3 +94,4 @@ from zigpy.zcl.clusters.general import Basic
     )
     .add_to_registry()
 )
+
