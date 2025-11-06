@@ -1,1 +1,1 @@
-"""Quirks for Sunricher devices."""
+"""Module for Sunricher devices."""

@@ -418,6 +418,7 @@ base_avatto_quirk = (
 (
     base_avatto_quirk.clone()
     .applies_to("_TZE204_lzriup1j", "TS0601")
+    .applies_to("_TZE204_gops3slb", "TS0601")
     .tuya_enum(
         dp_id=4,
         attribute_name="preset_mode",
