@@ -62,6 +62,8 @@ def button_event_from_report(endpoint_id, value):
             "button": f"button{endpoint_id}",
         }
     return None
+
+
 SNZB01M = (
     QuirkBuilder("SONOFF", "SNZB-01M")
     .adds(SonoffButtonCluster, endpoint_id=1)
@@ -94,4 +96,3 @@ SNZB01M = (
     )
     .add_to_registry()
 )
-
