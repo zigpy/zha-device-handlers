@@ -4,7 +4,7 @@ import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
-from zhaquirks import CustomCluster, CustomDevice
+from zhaquirks import CustomCluster
 from zhaquirks.const import (
     COMMAND,
     DEVICE_TYPE,
@@ -67,147 +67,40 @@ def button_event_from_report(endpoint_id, value):
             "button": f"button{endpoint_id}",
         }
     return None
+from zigpy.quirks.v2 import QuirkBuilder
+from zigpy.zcl.clusters.general import Basic
 
 
-class SNZB01M(CustomDevice):
-    """SONOFF SNZB-01M 4-button wireless switch device."""
-
-    signature = {
-        MODELS_INFO: [("SONOFF", "SNZB-01M")],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: 0x0104,
-                DEVICE_TYPE: 0x0001,
-                INPUT_CLUSTERS: [
-                    0x0000,  # Basic
-                    0x0001,  # Power Configuration
-                    0x0003,  # Identify
-                    0x0020,  # Poll Control
-                    0xFC12,  # Sonoff FC12
-                ],
-                OUTPUT_CLUSTERS: [
-                    0x0003,  # Identify
-                    0x0004,  # Groups
-                    0x0005,  # Scenes
-                    0x0006,  # On/Off
-                    0x0008,  # Level Control
-                    0x0019,  # OTA
-                    0x1000,  # Touchlink Commissioning
-                ],
-            },
-            2: {
-                PROFILE_ID: 0x0104,
-                DEVICE_TYPE: 0x0001,
-                INPUT_CLUSTERS: [
-                    0x0000,  # Basic
-                    0xFC12,  # Sonoff FC12
-                ],
-                OUTPUT_CLUSTERS: [
-                    0x0008,  # Level Control
-                ],
-            },
-            3: {
-                PROFILE_ID: 0x0104,
-                DEVICE_TYPE: 0x0001,
-                INPUT_CLUSTERS: [
-                    0x0000,  # Basic
-                    0xFC12,  # Sonoff FC12
-                ],
-                OUTPUT_CLUSTERS: [
-                    0x0008,  # Level Control
-                ],
-            },
-            4: {
-                PROFILE_ID: 0x0104,
-                DEVICE_TYPE: 0x0001,
-                INPUT_CLUSTERS: [
-                    0x0000,  # Basic
-                    0xFC12,  # Sonoff FC12
-                ],
-                OUTPUT_CLUSTERS: [
-                    0x0008,  # Level Control
-                ],
-            },
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: 0x0104,
-                DEVICE_TYPE: 0x0001,
-                INPUT_CLUSTERS: [
-                    0x0000,  # Basic
-                    0x0001,  # Power Configuration
-                    0x0003,  # Identify
-                    0x0020,  # Poll Control
-                    SonoffButtonCluster,  # 自定义 cluster
-                ],
-                OUTPUT_CLUSTERS: [
-                    0x0003,  # Identify
-                    0x0004,  # Groups
-                    0x0005,  # Scenes
-                    0x0006,  # On/Off
-                    0x0008,  # Level Control
-                    0x0019,  # OTA
-                    0x1000,  # Touchlink Commissioning
-                ],
-            },
-            2: {
-                PROFILE_ID: 0x0104,
-                DEVICE_TYPE: 0x0001,
-                INPUT_CLUSTERS: [
-                    0x0000,  # Basic
-                    SonoffButtonCluster,
-                ],
-                OUTPUT_CLUSTERS: [
-                    0x0008,  # Level Control
-                ],
-            },
-            3: {
-                PROFILE_ID: 0x0104,
-                DEVICE_TYPE: 0x0001,
-                INPUT_CLUSTERS: [
-                    0x0000,  # Basic
-                    SonoffButtonCluster,
-                ],
-                OUTPUT_CLUSTERS: [
-                    0x0008,  # Level Control
-                ],
-            },
-            4: {
-                PROFILE_ID: 0x0104,
-                DEVICE_TYPE: 0x0001,
-                INPUT_CLUSTERS: [
-                    0x0000,  # Basic
-                    SonoffButtonCluster,
-                ],
-                OUTPUT_CLUSTERS: [
-                    0x0008,  # Level Control
-                ],
-            },
-        },
-    }
-
-    device_automation_triggers = {
-        (SHORT_PRESS, f"button{ep}"): {COMMAND: SHORT_PRESS, "endpoint_id": ep}
-        for ep in range(1, 5)
-    }
-    device_automation_triggers.update(
+(
+    QuirkBuilder("SONOFF", "SNZB-01M")
+    .applies_to("SONOFF", "SNZB-01M")
+    .adds(SonoffButtonCluster, endpoint_id=1)
+    .adds(SonoffButtonCluster, endpoint_id=2)
+    .adds(SonoffButtonCluster, endpoint_id=3)
+    .adds(SonoffButtonCluster, endpoint_id=4)
+    .device_automation_triggers(
+        {
+            (SHORT_PRESS, f"button{ep}"): {COMMAND: SHORT_PRESS, "endpoint_id": ep}
+            for ep in range(1, 5)
+        }
+    )
+    .device_automation_triggers(
         {
             (DOUBLE_PRESS, f"button{ep}"): {COMMAND: DOUBLE_PRESS, "endpoint_id": ep}
             for ep in range(1, 5)
         }
     )
-    device_automation_triggers.update(
+    .device_automation_triggers(
         {
             (LONG_PRESS, f"button{ep}"): {COMMAND: LONG_PRESS, "endpoint_id": ep}
             for ep in range(1, 5)
         }
     )
-    device_automation_triggers.update(
+    .device_automation_triggers(
         {
             (TRIPLE_PRESS, f"button{ep}"): {COMMAND: TRIPLE_PRESS, "endpoint_id": ep}
             for ep in range(1, 5)
         }
     )
+    .add_to_registry()
+)
