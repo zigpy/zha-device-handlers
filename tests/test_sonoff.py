@@ -206,7 +206,7 @@ async def test_sonoff_button_cluster_update_attribute_no_event(
     zigpy_device_from_v2_quirk,
 ):
     """No event is sent when button_event_from_report returns None."""
-    
+
     device = zigpy_device_from_v2_quirk("SONOFF", "SNZB-01M", endpoint_ids=[1, 2, 3, 4])
     cluster = device.endpoints[1].sonoff_button_cluster
     listener = mock.MagicMock()
