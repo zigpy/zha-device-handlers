@@ -186,9 +186,10 @@ class CandeoSceneSwitchRemoteCluster(CustomCluster):
                                     {ROTATED: ring_direction},
                                 )
                             self.previous_rotation_event = COMMAND_CONTINUED_ROTATING
-                    elif (
-                        self.previous_rotation_event in {COMMAND_STARTED_ROTATING, COMMAND_CONTINUED_ROTATING}
-                    ):
+                    elif self.previous_rotation_event in {
+                        COMMAND_STARTED_ROTATING,
+                        COMMAND_CONTINUED_ROTATING,
+                    }:
                         self.listener_event(
                             ZHA_SEND_EVENT,
                             COMMAND_CONTINUED_ROTATING,
