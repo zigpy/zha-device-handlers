@@ -42,22 +42,22 @@ class TuyaGarageManufCluster(TuyaMCUCluster):
         button = foundation.ZCLAttributeDef(
             id=0xEF01, type=t.Bool, is_manufacturer_specific=True
         )
-        countdown = foundation.ZCLAttributeDef(
+        dp_2 = foundation.ZCLAttributeDef(
             id=0xEF02, type=t.uint32_t, is_manufacturer_specific=True
         )
         contact_sensor = foundation.ZCLAttributeDef(
             id=0xEF03, type=t.Bool, is_manufacturer_specific=True
         )
-        run_time = foundation.ZCLAttributeDef(
+        dp_4 = foundation.ZCLAttributeDef(
             id=0xEF04, type=t.uint32_t, is_manufacturer_specific=True
         )
-        open_alarm_time = foundation.ZCLAttributeDef(
+        dp_5 = foundation.ZCLAttributeDef(
             id=0xEF05, type=t.uint32_t, is_manufacturer_specific=True
         )
         dp_11 = foundation.ZCLAttributeDef(
             id=0xEF0B, type=t.Bool, is_manufacturer_specific=True
         )
-        status = foundation.ZCLAttributeDef(
+        dp_12 = foundation.ZCLAttributeDef(
             id=0xEF0C, type=t.enum8, is_manufacturer_specific=True
         )
 
@@ -69,7 +69,7 @@ class TuyaGarageManufCluster(TuyaMCUCluster):
         ),
         2: DPToAttributeMapping(
             TUYA_MANUFACTURER_GARAGE,
-            "countdown",
+            "dp_2",
         ),
         3: DPToAttributeMapping(
             TUYA_MANUFACTURER_GARAGE,
@@ -77,11 +77,11 @@ class TuyaGarageManufCluster(TuyaMCUCluster):
         ),
         4: DPToAttributeMapping(
             TUYA_MANUFACTURER_GARAGE,
-            "run_time",
+            "dp_4",
         ),
         5: DPToAttributeMapping(
             TUYA_MANUFACTURER_GARAGE,
-            "open_alarm_time",
+            "dp_5",
         ),
         11: DPToAttributeMapping(
             TUYA_MANUFACTURER_GARAGE,
@@ -90,7 +90,7 @@ class TuyaGarageManufCluster(TuyaMCUCluster):
         # garage door status (open, closed, ...)
         12: DPToAttributeMapping(
             TUYA_MANUFACTURER_GARAGE,
-            "status",
+            "dp_12",
         ),
     }
 
@@ -163,8 +163,71 @@ class TuyaGarageSwitchTO(CustomDevice):
     }
 
 
+class TuyaMoesGarageManufCluster(TuyaMCUCluster):
+    """Tuya Moes garage door opener manufacturer cluster."""
+
+    ep_attribute = TUYA_MANUFACTURER_GARAGE
+
+    class AttributeDefs(TuyaMCUCluster.AttributeDefs):
+        """Attribute Definitions."""
+
+        countdown = foundation.ZCLAttributeDef(
+            id=0xEF02, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        garage_door_contact = foundation.ZCLAttributeDef(
+            id=0xEF03, type=t.Bool, is_manufacturer_specific=True
+        )
+        run_time = foundation.ZCLAttributeDef(
+            id=0xEF04, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        open_alarm_time = foundation.ZCLAttributeDef(
+            id=0xEF05, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        status = foundation.ZCLAttributeDef(
+            id=0xEF0C, type=t.enum8, is_manufacturer_specific=True
+        )
+
+    dp_to_attribute: dict[int, DPToAttributeMapping] = {
+        1: DPToAttributeMapping(
+            TuyaOnOffNM.ep_attribute,
+            "on_off",
+        ),
+        2: DPToAttributeMapping(
+            TUYA_MANUFACTURER_GARAGE,
+            "countdown",
+        ),
+        3: DPToAttributeMapping(
+            ContactSwitchCluster.ep_attribute,
+            "zone_status",
+            lambda x: IasZone.ZoneStatus.Alarm_1 if x else 0,
+            endpoint_id=2,
+        ),
+        4: DPToAttributeMapping(
+            TUYA_MANUFACTURER_GARAGE,
+            "run_time",
+        ),
+        5: DPToAttributeMapping(
+            TUYA_MANUFACTURER_GARAGE,
+            "open_alarm_time",
+        ),
+        12: DPToAttributeMapping(
+            TUYA_MANUFACTURER_GARAGE,
+            "status",
+        ),
+    }
+
+    data_point_handlers = {
+        1: "_dp_2_attr_update",
+        2: "_dp_2_attr_update",
+        3: "_dp_2_attr_update",
+        4: "_dp_2_attr_update",
+        5: "_dp_2_attr_update",
+        12: "_dp_2_attr_update",
+    }
+
+
 class TuyaMoesGarageSwitch(CustomDevice):
-    """Tuya Garage switch."""
+    """Tuya Moes Garage Door Opener."""
 
     signature = {
         MODELS_INFO: [
@@ -178,7 +241,7 @@ class TuyaMoesGarageSwitch(CustomDevice):
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaGarageManufCluster.cluster_id,
+                    TuyaMoesGarageManufCluster.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
@@ -199,7 +262,7 @@ class TuyaMoesGarageSwitch(CustomDevice):
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
-                    TuyaGarageManufCluster,
+                    TuyaMoesGarageManufCluster,
                     TuyaOnOffNM,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
