@@ -13,7 +13,7 @@ from zigpy.zcl.clusters.measurement import (
 
 from tests.common import ClusterListener
 import zhaquirks
-from zhaquirks.efecta.iaq3 import (
+from zhaquirks.efekta.iaq3 import (
     AnalogInputCluster,
     CO2ConcentrationConfig,
     EmulatedVOCMeasurement,
