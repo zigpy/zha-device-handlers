@@ -25,6 +25,7 @@ BUTTON_3 = "button_3"
 BUTTON_4 = "button_4"
 BUTTON_5 = "button_5"
 BUTTON_6 = "button_6"
+BUTTON_CENTRE = "button_centre"
 CLICK_TYPE = "click_type"
 CLOSE = "close"
 CLUSTER_COMMAND = "cluster_command"
@@ -133,6 +134,7 @@ ROTARY_KNOB = "rotary_knob"
 STARTED_ROTATING = "rotary_knob_started_rotating"
 CONTINUED_ROTATING = "rotary_knob_continued_rotating"
 STOPPED_ROTATING = "rotary_knob_stopped_rotating"
+STOPPED_ROTATING_WITH_DIRECTION = "rotary_knob_stopped_rotating_with_direction"
 
 
 class BatterySize(t.enum8):
