@@ -14,8 +14,8 @@ from zigpy.zcl.clusters.measurement import (
 from tests.common import ClusterListener
 import zhaquirks
 from zhaquirks.efekta.iaq3 import (
-    AnalogInputCluster,
     CO2ConcentrationConfig,
+    EfektaVocAnalogInput,
     EmulatedVOCMeasurement,
     RelativeHumidityConfig,
     TemperatureMeasurementConfig,
@@ -62,7 +62,7 @@ async def test_efekta_iaq3_device_creation(zigpy_device_from_v2_quirk):
     assert EmulatedVOCMeasurement.cluster_id in ep2.in_clusters
 
     analog_cluster = ep2.in_clusters[AnalogInput.cluster_id]
-    assert isinstance(analog_cluster, AnalogInputCluster)
+    assert isinstance(analog_cluster, EfektaVocAnalogInput)
 
     voc_cluster = ep2.in_clusters[EmulatedVOCMeasurement.cluster_id]
     assert isinstance(voc_cluster, EmulatedVOCMeasurement)
@@ -88,7 +88,7 @@ async def test_voc_relay_functionality(zigpy_device_from_v2_quirk):
 
     for test_value in test_voc_values:
         # Update AnalogInput present_value
-        analog_cluster._update_attribute(AnalogInputCluster.PRESENT_VALUE, test_value)
+        analog_cluster._update_attribute(EfektaVocAnalogInput.PRESENT_VALUE, test_value)
 
         # Verify VOC cluster was updated with the same value
         assert len(voc_listener.attribute_updates) > 0
@@ -114,13 +114,13 @@ async def test_voc_relay_ignores_none_values(zigpy_device_from_v2_quirk):
     voc_listener = ClusterListener(voc_cluster)
 
     # Update with None value - should not trigger VOC update
-    analog_cluster._update_attribute(AnalogInputCluster.PRESENT_VALUE, None)
+    analog_cluster._update_attribute(EfektaVocAnalogInput.PRESENT_VALUE, None)
 
     # No updates should have occurred
     assert len(voc_listener.attribute_updates) == 0
 
     # Now update with valid value - should trigger update
-    analog_cluster._update_attribute(AnalogInputCluster.PRESENT_VALUE, 100.0)
+    analog_cluster._update_attribute(EfektaVocAnalogInput.PRESENT_VALUE, 100.0)
     assert len(voc_listener.attribute_updates) == 1
     assert voc_listener.attribute_updates[0] == (0x0000, 100.0)
 
@@ -250,7 +250,7 @@ async def test_voc_bind_and_configure_reporting(zigpy_device_from_v2_quirk):
         # Verify configure_reporting was called with correct parameters
         assert analog_cluster.configure_reporting.called
         call_args = analog_cluster.configure_reporting.call_args[0]
-        assert call_args[0] == AnalogInputCluster.PRESENT_VALUE  # attribute
+        assert call_args[0] == EfektaVocAnalogInput.PRESENT_VALUE  # attribute
         assert call_args[1] == 30  # min_interval
         assert call_args[2] == 600  # max_interval
         assert call_args[3] == 1.0  # reportable_change

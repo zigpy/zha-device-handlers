@@ -22,8 +22,6 @@ from zhaquirks import LocalDataCluster
 
 _LOGGER = logging.getLogger(__name__)
 
-MEASURED_VALUE = 0x0000
-
 
 class DisplayRotation(t.enum16):
     """Display rotation options."""
@@ -102,7 +100,7 @@ class CO2ConcentrationConfig(CustomCluster, CarbonDioxideConcentration):
         )
 
 
-class AnalogInputCluster(CustomCluster, AnalogInput):
+class EfektaVocAnalogInput(CustomCluster, AnalogInput):
     """Analog input cluster that relays VOC index to emulated VOC measurement cluster."""
 
     cluster_id = AnalogInput.cluster_id
@@ -112,7 +110,9 @@ class AnalogInputCluster(CustomCluster, AnalogInput):
         """Intercept present_value updates and relay to VOC cluster."""
         super()._update_attribute(attrid, value)
         if attrid == self.PRESENT_VALUE and value is not None:
-            self.endpoint.voc_level._update_attribute(MEASURED_VALUE, value)
+            self.endpoint.voc_level._update_attribute(
+                EmulatedVOCMeasurement.AttributeDefs.measured_value.id, value
+            )
 
 
 class EmulatedVOCMeasurement(LocalDataCluster):
@@ -130,18 +130,16 @@ class EmulatedVOCMeasurement(LocalDataCluster):
     class AttributeDefs(BaseAttributeDefs):
         """Attribute definitions."""
 
-        measured_value: Final = ZCLAttributeDef(
-            id=MEASURED_VALUE, type=t.Single, access="rp"
-        )
+        measured_value: Final = ZCLAttributeDef(id=0x0000, type=t.Single, access="rp")
 
     async def bind(self):
         """Bind cluster and configure reporting on the physical AnalogInput cluster."""
         result = await self.endpoint.analog_input.bind()
         await self.endpoint.analog_input.configure_reporting(
-            AnalogInputCluster.PRESENT_VALUE,
-            30,  # min_interval: 30 seconds
-            600,  # max_interval: 10 minutes
-            1.0,  # reportable_change: 1 unit
+            EfektaVocAnalogInput.AttributeDefs.present_value.id,
+            30,
+            600,
+            1.0,
         )
         return result
 
@@ -153,7 +151,7 @@ class EmulatedVOCMeasurement(LocalDataCluster):
     .replaces(RelativeHumidityConfig, endpoint_id=1)
     .replaces(CO2ConcentrationConfig, endpoint_id=1)
     # VOC sensor support (Endpoint 2)
-    .replaces(AnalogInputCluster, endpoint_id=2)
+    .replaces(EfektaVocAnalogInput, endpoint_id=2)
     .adds(EmulatedVOCMeasurement, endpoint_id=2)
     # VOC sensor entity
     .sensor(
