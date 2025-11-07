@@ -111,7 +111,7 @@ class CandeoSceneSwitchRemoteCluster(CustomCluster):
         await self.bind()
 
     def __init__(self, *args, **kwargs):
-        """__init___"""
+        """__init___."""
         self.last_tsn = -1
         self.previous_rotation_direction = "unknown"
         self.previous_rotation_event = COMMAND_STOPPED_ROTATING
@@ -179,7 +179,7 @@ class CandeoSceneSwitchRemoteCluster(CustomCluster):
                         )
                         self.previous_rotation_event = COMMAND_STARTED_ROTATING
                         if ring_clicks > 1:
-                            for x in range(1, ring_clicks):
+                            for _x in range(1, ring_clicks):
                                 self.listener_event(
                                     ZHA_SEND_EVENT,
                                     COMMAND_CONTINUED_ROTATING,
@@ -187,8 +187,7 @@ class CandeoSceneSwitchRemoteCluster(CustomCluster):
                                 )
                             self.previous_rotation_event = COMMAND_CONTINUED_ROTATING
                     elif (
-                        self.previous_rotation_event == COMMAND_STARTED_ROTATING
-                        or self.previous_rotation_event == COMMAND_CONTINUED_ROTATING
+                        self.previous_rotation_event in {COMMAND_STARTED_ROTATING, COMMAND_CONTINUED_ROTATING}
                     ):
                         self.listener_event(
                             ZHA_SEND_EVENT,
@@ -196,7 +195,7 @@ class CandeoSceneSwitchRemoteCluster(CustomCluster):
                             {ROTATED: ring_direction},
                         )
                         if ring_clicks > 1:
-                            for x in range(1, ring_clicks):
+                            for _x in range(1, ring_clicks):
                                 self.listener_event(
                                     ZHA_SEND_EVENT,
                                     COMMAND_CONTINUED_ROTATING,
