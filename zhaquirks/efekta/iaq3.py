@@ -137,9 +137,9 @@ class EmulatedVOCMeasurement(LocalDataCluster):
         result = await self.endpoint.analog_input.bind()
         await self.endpoint.analog_input.configure_reporting(
             EfektaVocAnalogInput.AttributeDefs.present_value.id,
-            30,
-            600,
-            1.0,
+            min_interval=30,
+            max_interval=600,
+            reportable_change=1,
         )
         return result
 
