@@ -249,11 +249,11 @@ async def test_voc_bind_and_configure_reporting(zigpy_device_from_v2_quirk):
 
         # Verify configure_reporting was called with correct parameters
         assert analog_cluster.configure_reporting.called
-        call_args = analog_cluster.configure_reporting.call_args[0]
-        assert call_args[0] == EfektaVocAnalogInput.PRESENT_VALUE  # attribute
-        assert call_args[1] == 30  # min_interval
-        assert call_args[2] == 600  # max_interval
-        assert call_args[3] == 1.0  # reportable_change
+        call_args = analog_cluster.configure_reporting.call_args
+        assert call_args[0][0] == AnalogInput.AttributeDefs.present_value.id
+        assert call_args[1]["min_interval"] == 30
+        assert call_args[1]["max_interval"] == 600
+        assert call_args[1]["reportable_change"] == 1
 
         # Result should be from the AnalogInput bind
         assert result == [foundation.Status.SUCCESS]
