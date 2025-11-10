@@ -1,5 +1,5 @@
 """Sonoff TRVZB - Zigbee Thermostatic Radiator Valve."""
-from zigpy import types
+
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import NumberDeviceClass, QuirkBuilder
 from zigpy.quirks.v2.homeassistant import UnitOfTemperature, UnitOfTime
@@ -7,7 +7,6 @@ import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 
-    
 class CustomSonoffCluster(CustomCluster):
     """Custom Sonoff cluster."""
 
@@ -152,7 +151,6 @@ class CustomSonoffCluster(CustomCluster):
         return False
 
 
-
 (
     QuirkBuilder("SONOFF", "TRVZB")
     .replaces(CustomSonoffCluster)
@@ -186,7 +184,7 @@ class CustomSonoffCluster(CustomCluster):
         max_value=1440,
         step=1,
         unit=UnitOfTime.MINUTES,
-        multiplier=1/60,
+        multiplier=1 / 60,
         translation_key="temporary_mode_duration",
         fallback_name="Temporary mode duration",
     )
