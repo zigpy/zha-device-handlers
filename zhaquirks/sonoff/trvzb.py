@@ -1,12 +1,13 @@
 """Sonoff TRVZB - Zigbee Thermostatic Radiator Valve."""
-
+from zigpy import types
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import NumberDeviceClass, QuirkBuilder
-from zigpy.quirks.v2.homeassistant import UnitOfTemperature
+from zigpy.quirks.v2.homeassistant import UnitOfTemperature, UnitOfTime
 import zigpy.types as t
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 
+    
 class CustomSonoffCluster(CustomCluster):
     """Custom Sonoff cluster."""
 
@@ -85,9 +86,71 @@ class CustomSonoffCluster(CustomCluster):
             type=t.int16s,
         )
 
+        temporary_mode = ZCLAttributeDef(
+            id=0x6014,
+            type=t.uint8_t,
+        )
+
+        boost_mode = ZCLAttributeDef(
+            id=0x6017,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+
+        timer_mode = ZCLAttributeDef(
+            id=0x6018,
+            type=t.Bool,
+            is_manufacturer_specific=True,
+        )
+
+        temporary_mode_duration = ZCLAttributeDef(
+            id=0x6015,
+            type=t.uint32_t,
+        )
+
+        timer_mode_target_temperature = ZCLAttributeDef(
+            id=0x6016,
+            type=t.int16s,
+        )
+
+    def _update_attribute(self, attrid, value):
+        """Update attribute and handle temporary mode conversion."""
+        super()._update_attribute(attrid, value)
+
+        if attrid == self.AttributeDefs.temporary_mode.id:
+            # Convert value to individual mode states
+            self._update_attribute(
+                self.AttributeDefs.boost_mode.id,
+                value == 0x00,
+            )
+            self._update_attribute(
+                self.AttributeDefs.timer_mode.id,
+                value == 0x01,
+            )
+
+    async def write_attributes(self, attributes, manufacturer=None, **kwargs):
+        """Handle writing individual mode attributes by updating temporary_mode."""
+        mode_attr = self.AttributeDefs.temporary_mode.id
+        new_attributes = attributes.copy()
+
+        mode_attr_defs = [
+            (self.AttributeDefs.boost_mode, 0x00),
+            (self.AttributeDefs.timer_mode, 0x01),
+        ]
+
+        for attrid, value in attributes.items():
+            for attr_def, mode_value in mode_attr_defs:
+                if attrid in (attr_def.id, attr_def.name):
+                    new_attributes.pop(attrid)
+                    new_attributes[mode_attr] = mode_value
+                    break
+
+        return await super().write_attributes(new_attributes, manufacturer, **kwargs)
+
     @property
     def _is_manuf_specific(self):
         return False
+
 
 
 (
@@ -104,6 +167,42 @@ class CustomSonoffCluster(CustomCluster):
         CustomSonoffCluster.cluster_id,
         translation_key="open_window",
         fallback_name="Open window",
+    )
+    .number(
+        CustomSonoffCluster.AttributeDefs.timer_mode_target_temperature.name,
+        CustomSonoffCluster.cluster_id,
+        min_value=4.0,
+        max_value=35.0,
+        step=0.5,
+        unit=UnitOfTemperature.CELSIUS,
+        multiplier=0.01,
+        translation_key="timer_mode_target_temperature",
+        fallback_name="Timer mode target temperature",
+    )
+    .number(
+        CustomSonoffCluster.AttributeDefs.temporary_mode_duration.name,
+        CustomSonoffCluster.cluster_id,
+        min_value=0,
+        max_value=1440,
+        step=1,
+        unit=UnitOfTime.MINUTES,
+        multiplier=1/60,
+        translation_key="temporary_mode_duration",
+        fallback_name="Temporary mode duration",
+    )
+    .write_attr_button(
+        attribute_name=CustomSonoffCluster.AttributeDefs.boost_mode.name,
+        cluster_id=CustomSonoffCluster.cluster_id,
+        attribute_value=0x00,
+        translation_key="boost_mode",
+        fallback_name="Boost mode",
+    )
+    .write_attr_button(
+        attribute_name=CustomSonoffCluster.AttributeDefs.timer_mode.name,
+        cluster_id=CustomSonoffCluster.cluster_id,
+        attribute_value=0x01,
+        translation_key="timer_mode",
+        fallback_name="Timer mode",
     )
     .number(
         CustomSonoffCluster.AttributeDefs.frost_protection_temperature.name,
