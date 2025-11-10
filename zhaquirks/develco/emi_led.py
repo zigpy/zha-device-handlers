@@ -48,5 +48,13 @@ class ManufacturerMetering(CustomCluster):
         translation_key="pulse_configuration",
         fallback_name="Pulse configuration",
     )
+    .write_attr_button(
+        attribute_name=ManufacturerMetering.AttributeDefs.current_summation.name,
+        attribute_value=0,
+        cluster_id=ManufacturerMetering.cluster_id,
+        endpoint_id=2,
+        translation_key="reset_summation_delivered",
+        fallback_name="Reset summation delivered",
+    )
     .add_to_registry()
 )
