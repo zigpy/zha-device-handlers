@@ -115,27 +115,16 @@ class CustomSonoffCluster(CustomCluster):
     def _update_attribute(self, attrid, value):
         """Update attribute and handle temporary mode conversion."""
         super()._update_attribute(attrid, value)
-
         if attrid == self.AttributeDefs.temporary_mode.id:
             # Convert value to individual mode states
-            self._update_attribute(
-                self.AttributeDefs.boost_mode.id,
-                value == 0x00,
-            )
-            self._update_attribute(
-                self.AttributeDefs.timer_mode.id,
-                value == 0x01,
-            )
-
+            self._update_attribute(self.AttributeDefs.boost_mode.id,value == 0x00)
+            self._update_attribute(self.AttributeDefs.timer_mode.id,value == 0x01)
     async def write_attributes(self, attributes, manufacturer=None, **kwargs):
         """Handle writing individual mode attributes by updating temporary_mode."""
         mode_attr = self.AttributeDefs.temporary_mode.id
         new_attributes = attributes.copy()
 
-        mode_attr_defs = [
-            (self.AttributeDefs.boost_mode, 0x00),
-            (self.AttributeDefs.timer_mode, 0x01),
-        ]
+        mode_attr_defs = [(self.AttributeDefs.boost_mode, 0x00),(self.AttributeDefs.timer_mode, 0x01)]
 
         for attrid in attributes:
             for attr_def, mode_value in mode_attr_defs:
