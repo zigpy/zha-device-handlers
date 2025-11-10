@@ -25,6 +25,11 @@ class ManufacturerMetering(CustomCluster):
             type=t.uint16_t,
             is_manufacturer_specific=True,
         )
+        current_summation: Final = ZCLAttributeDef(
+            id=0x0301,
+            type=t.uint48_t,
+            is_manufacturer_specific=True,
+        )
 
 
 (
