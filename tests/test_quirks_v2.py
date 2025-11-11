@@ -56,7 +56,7 @@ def test_translation_key_and_fallback_name_match() -> None:
 
 def test_manufacturer_model_metadata_unique() -> None:
     """Ensure that each manufacturer-model pair is unique across all v2 quirks."""
-    # quirk_locations are a list and not a set below,
+    # quirk_locations is a list and not a set below,
     # as they are not guaranteed to be unique when set up incorrectly
 
     # (manufacturer, model) -> {quirk_location}
@@ -65,6 +65,9 @@ def test_manufacturer_model_metadata_unique() -> None:
     )
 
     for quirk in ALL_QUIRK_V2_CLASSES:
+        if quirk.fw_version_filter is not None:
+            # skip quirks with firmware filter, as they can share manufacturer/model
+            continue
         for metadata in quirk.manufacturer_model_metadata:
             man_model_quirk_map[(metadata.manufacturer, metadata.model)].append(
                 f"{quirk.quirk_file}:{quirk.quirk_file_line}"
