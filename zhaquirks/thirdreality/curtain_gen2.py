@@ -33,18 +33,18 @@ class THIRD_REALITY_Blind_Gen2_CLUSTER(CustomCluster):
             type=t.uint16_t,
             is_manufacturer_specific=True,
         )
-        
+
         total_cycle_times: Final = ZCLAttributeDef(
-			id=0x0003,
-			type=t.uint16_t,
-			is_manufacturer_specific=True,
-		)
+            id=0x0003,
+            type=t.uint16_t,
+            is_manufacturer_specific=True,
+        )
 
         last_remaining_battery_percentage: Final = ZCLAttributeDef(
-			id=0x0004,
-			type=t.uint8_t,
-			is_manufacturer_specific=True,
-		)
+            id=0x0004,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
 
 
 (
