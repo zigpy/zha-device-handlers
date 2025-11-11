@@ -61,7 +61,7 @@ class CandeoSceneSwitchRemoteButtonActionMap(t.enum8):
     """Candeo Scene Switch Remote Button Action Map."""
 
     press = 0x01
-    double_press = 0x02
+    double = 0x02
     hold = 0x03
     release = 0x04
 
@@ -134,15 +134,15 @@ class CandeoSceneSwitchRemoteCluster(CustomCluster):
         self.last_tsn = hdr.tsn
         if (
             hdr.command_id == self.ServerCommandDefs.candeo_scene_switch_remote.id
-            and CandeoSceneSwitchRemoteMessageType(args.message_type)
+            and args.message_type is not None
             and args.field_1 is not None
             and args.field_2 is not None
             and args.field_3 is not None
         ):
             if (
                 args.message_type == CandeoSceneSwitchRemoteMessageType.button_press
-                and CandeoSceneSwitchRemoteButtonNumberMap(args.field_2)
-                and CandeoSceneSwitchRemoteButtonActionMap(args.field_3)
+                and args.field_2 in CandeoSceneSwitchRemoteButtonNumberMap._value2member_map_
+                and args.field_3 in CandeoSceneSwitchRemoteButtonActionMap._value2member_map_
             ):
                 button_number = CandeoSceneSwitchRemoteButtonNumberMap(
                     args.field_2
@@ -155,7 +155,7 @@ class CandeoSceneSwitchRemoteCluster(CustomCluster):
                 )
             elif (
                 args.message_type == CandeoSceneSwitchRemoteMessageType.ring_rotation
-                and CandeoSceneSwitchRemoteRingActionMap(args.field_2)
+                and args.field_2 in CandeoSceneSwitchRemoteRingActionMap._value2member_map_
             ):
                 ring_action = CandeoSceneSwitchRemoteRingActionMap(args.field_2).name
                 if ring_action == COMMAND_STOPPED_ROTATING:
@@ -166,7 +166,7 @@ class CandeoSceneSwitchRemoteCluster(CustomCluster):
                             {ROTATED: self.previous_rotation_direction},
                         )
                     self.previous_rotation_event = COMMAND_STOPPED_ROTATING
-                elif CandeoSceneSwitchRemoteRingDirectionMap(args.field_1):
+                elif args.field_1 in CandeoSceneSwitchRemoteRingDirectionMap._value2member_map_:
                     ring_direction = CandeoSceneSwitchRemoteRingDirectionMap(
                         args.field_1
                     ).name
