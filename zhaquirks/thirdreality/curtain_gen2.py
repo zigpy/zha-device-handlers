@@ -33,6 +33,18 @@ class THIRD_REALITY_Blind_Gen2_CLUSTER(CustomCluster):
             type=t.uint16_t,
             is_manufacturer_specific=True,
         )
+        
+        total_cycle_times: Final = ZCLAttributeDef(
+			id=0x0003,
+			type=t.uint16_t,
+			is_manufacturer_specific=True,
+		)
+
+        last_remaining_battery_percentage: Final = ZCLAttributeDef(
+			id=0x0004,
+			type=t.uint8_t,
+			is_manufacturer_specific=True,
+		)
 
 
 (
@@ -64,6 +76,16 @@ class THIRD_REALITY_Blind_Gen2_CLUSTER(CustomCluster):
         step=1,
         translation_key="limit_position",
         fallback_name="limit_position",
+    )
+    .number(
+        attribute_name=THIRD_REALITY_Blind_Gen2_CLUSTER.AttributeDefs.total_cycle_times.name,
+        cluster_id=THIRD_REALITY_Blind_Gen2_CLUSTER.cluster_id,
+        endpoint_id=1,
+        min_value=200,
+        max_value=334,
+        step=1,
+        translation_key="total_cycle_times",
+        fallback_name="Total cycle times",
     )
     .add_to_registry()
 )
