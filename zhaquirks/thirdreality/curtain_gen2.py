@@ -33,18 +33,6 @@ class THIRD_REALITY_Blind_Gen2_CLUSTER(CustomCluster):
             type=t.uint16_t,
             is_manufacturer_specific=True,
         )
-        
-        total_cycle_times: Final = ZCLAttributeDef(
-			id=0x0003,
-			type=t.uint16_t,
-			is_manufacturer_specific=True,
-		)
-
-        last_remaining_battery_percentage: Final = ZCLAttributeDef(
-			id=0x0004,
-			type=t.uint8_t,
-			is_manufacturer_specific=True,
-		)
 
 
 (
@@ -54,8 +42,8 @@ class THIRD_REALITY_Blind_Gen2_CLUSTER(CustomCluster):
         attribute_name=THIRD_REALITY_Blind_Gen2_CLUSTER.AttributeDefs.enable_disable_pir_remote.name,
         cluster_id=THIRD_REALITY_Blind_Gen2_CLUSTER.cluster_id,
         force_inverted=True,
-        translation_key="enable_disable_pir_mode",
-        fallback_name="Enable/Disable PIR Remote",
+        translation_key="enable_pir_mode",
+        fallback_name="Enable PIR remote",
     )
     .number(
         attribute_name=THIRD_REALITY_Blind_Gen2_CLUSTER.AttributeDefs.compensation_speed.name,
@@ -64,8 +52,9 @@ class THIRD_REALITY_Blind_Gen2_CLUSTER(CustomCluster):
         min_value=-100,
         max_value=100,
         step=1,
+        mode="box",
         translation_key="compensation_speed",
-        fallback_name="compensation_speed",
+        fallback_name="Compensation speed",
     )
     .number(
         attribute_name=THIRD_REALITY_Blind_Gen2_CLUSTER.AttributeDefs.limit_position.name,
@@ -75,17 +64,7 @@ class THIRD_REALITY_Blind_Gen2_CLUSTER(CustomCluster):
         max_value=3800,
         step=1,
         translation_key="limit_position",
-        fallback_name="limit_position",
-    )
-    .number(
-        attribute_name=THIRD_REALITY_Blind_Gen2_CLUSTER.AttributeDefs.total_cycle_times.name,
-        cluster_id=THIRD_REALITY_Blind_Gen2_CLUSTER.cluster_id,
-        endpoint_id=1,
-        min_value=200,
-        max_value=334,
-        step=1,
-        translation_key="total_cycle_times",
-        fallback_name="Total cycle times",
+        fallback_name="Limit position",
     )
     .add_to_registry()
 )
