@@ -141,8 +141,10 @@ class CandeoSceneSwitchRemoteCluster(CustomCluster):
         ):
             if (
                 args.message_type == CandeoSceneSwitchRemoteMessageType.button_press
-                and args.field_2 in CandeoSceneSwitchRemoteButtonNumberMap._value2member_map_
-                and args.field_3 in CandeoSceneSwitchRemoteButtonActionMap._value2member_map_
+                and args.field_2
+                in CandeoSceneSwitchRemoteButtonNumberMap._value2member_map_
+                and args.field_3
+                in CandeoSceneSwitchRemoteButtonActionMap._value2member_map_
             ):
                 button_number = CandeoSceneSwitchRemoteButtonNumberMap(
                     args.field_2
@@ -155,7 +157,8 @@ class CandeoSceneSwitchRemoteCluster(CustomCluster):
                 )
             elif (
                 args.message_type == CandeoSceneSwitchRemoteMessageType.ring_rotation
-                and args.field_2 in CandeoSceneSwitchRemoteRingActionMap._value2member_map_
+                and args.field_2
+                in CandeoSceneSwitchRemoteRingActionMap._value2member_map_
             ):
                 ring_action = CandeoSceneSwitchRemoteRingActionMap(args.field_2).name
                 if ring_action == COMMAND_STOPPED_ROTATING:
@@ -166,7 +169,10 @@ class CandeoSceneSwitchRemoteCluster(CustomCluster):
                             {ROTATED: self.previous_rotation_direction},
                         )
                     self.previous_rotation_event = COMMAND_STOPPED_ROTATING
-                elif args.field_1 in CandeoSceneSwitchRemoteRingDirectionMap._value2member_map_:
+                elif (
+                    args.field_1
+                    in CandeoSceneSwitchRemoteRingDirectionMap._value2member_map_
+                ):
                     ring_direction = CandeoSceneSwitchRemoteRingDirectionMap(
                         args.field_1
                     ).name
