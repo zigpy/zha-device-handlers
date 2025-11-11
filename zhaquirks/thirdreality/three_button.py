@@ -2,7 +2,6 @@
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
-import zigpy.types as t
 from zigpy.zcl.clusters.general import MultistateInput
 
 from zhaquirks.const import (
@@ -35,7 +34,7 @@ class MultistateInputCluster(CustomCluster, MultistateInput):
         super()._update_attribute(attrid, value)
         if attrid == 0x0055 and (action := PRESS_TYPE.get(value)) is not None:
             self.listener_event(ZHA_SEND_EVENT, action, {VALUE: value})
-            
+
 
 (
     QuirkBuilder("Third Reality, Inc", "3RSB01085Z")
@@ -53,7 +52,6 @@ class MultistateInputCluster(CustomCluster, MultistateInput):
             (DOUBLE_PRESS, BUTTON_3): {COMMAND: COMMAND_DOUBLE, ENDPOINT_ID: 1},
             (SHORT_PRESS, BUTTON_3): {COMMAND: COMMAND_SINGLE, ENDPOINT_ID: 1},
             (LONG_PRESS, BUTTON_3): {COMMAND: COMMAND_HOLD, ENDPOINT_ID: 1},
-            
         }
     )
     .add_to_registry()
