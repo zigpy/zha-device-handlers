@@ -8,10 +8,7 @@ Adds manufacturer attributes:
 
 from typing import Final
 
-import zigpy.types as t
 from zigpy.quirks import CustomCluster
-from zigpy.zcl.clusters.hvac import Thermostat
-from zigpy.zcl.foundation import ZCLAttributeDef
 from zigpy.quirks.v2 import (
     QuirkBuilder,
     ReportingConfig,
@@ -19,6 +16,9 @@ from zigpy.quirks.v2 import (
     SensorStateClass,
 )
 from zigpy.quirks.v2.homeassistant import UnitOfEnergy, UnitOfPower, UnitOfTemperature
+import zigpy.types as t
+from zigpy.zcl.clusters.hvac import Thermostat
+from zigpy.zcl.foundation import ZCLAttributeDef
 
 MANUFACTURER: Final = "Stello"
 MODEL: Final = "HT402"
@@ -86,7 +86,7 @@ class AlliaThermostatCluster(Thermostat, CustomCluster):
         endpoint_id=EP_THERMOSTAT,
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
-        unit=UnitOfTemperature.CELSIUS, # Would need to convert to F
+        unit=UnitOfTemperature.CELSIUS,  # Would need to convert to F
         translation_key="allia_outdoor_temperature",
         fallback_name="Outdoor Temperature",
     )
