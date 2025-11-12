@@ -2,8 +2,9 @@
 
 from unittest import mock
 
+import pytest
 import zigpy.types as t
-from zigpy.zcl import ClusterType, foundation
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.smartenergy import Metering
 
 from tests.common import ClusterListener
@@ -17,7 +18,7 @@ async def test_frient_emi(zigpy_device_from_v2_quirk):
     device = zigpy_device_from_v2_quirk(
         "frient A/S",
         "EMIZB-141",
-        cluster_ids={2: {Metering.cluster_id: ClusterType.Server}},
+        endpoint_ids=[2],
     )
 
     metering_cluster = device.endpoints[2].smartenergy_metering
@@ -141,9 +142,16 @@ async def test_frient_emi(zigpy_device_from_v2_quirk):
         assert result == (foundation.Status.SUCCESS, "done")
 
 
-async def test_mfg_cluster_events(zigpy_device_from_v2_quirk):
+@pytest.mark.parametrize(
+    ("manufacturer", "model"),
+    [
+        ("frient A/S", "EMIZB-132"),
+        ("frient A/S", "EMIZB-141"),
+    ],
+)
+async def test_mfg_cluster_events(zigpy_device_from_v2_quirk, manufacturer, model):
     """Test Frient EMI Norwegian HAN ignoring incorrect divisor attribute reports."""
-    device = zigpy_device_from_v2_quirk("frient A/S", "EMIZB-132", endpoint_ids=[1, 2])
+    device = zigpy_device_from_v2_quirk(manufacturer, model, endpoint_ids=[1, 2])
 
     metering_cluster = device.endpoints[2].smartenergy_metering
     metering_listener = ClusterListener(metering_cluster)
