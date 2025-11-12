@@ -34,7 +34,7 @@ class ManufacturerMetering(CustomCluster):
 
 
 class FrientMetering(CustomCluster, Metering):
-    """Frient EMI P1 Metering cluster definition."""
+    """Frient EMI LED Metering cluster definition."""
 
     # fix device issue (conflicting with manufacturer specific interface mode attr)
     _CONSTANT_ATTRIBUTES = {
