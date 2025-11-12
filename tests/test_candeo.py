@@ -1,30 +1,23 @@
 """Tests for Candeo."""
 
-import pytest
-
 from unittest import mock
 
+import pytest
 from zigpy.zcl import foundation
-
 from zigpy.zcl.clusters.measurement import IlluminanceMeasurement
 
 from tests.common import ClusterListener
 import zhaquirks
-
-import zigpy.types as t
-
 from zhaquirks.candeo import CANDEO
-
 from zhaquirks.candeo.scene_switch_remote_5_button_rotary import (
+    CandeoSceneSwitchRemoteButtonActionMap,
+    CandeoSceneSwitchRemoteButtonNumberMap,
     CandeoSceneSwitchRemoteCluster,
     CandeoSceneSwitchRemoteClusterCommand,
     CandeoSceneSwitchRemoteMessageType,
-    CandeoSceneSwitchRemoteButtonNumberMap,
-    CandeoSceneSwitchRemoteButtonActionMap,
-    CandeoSceneSwitchRemoteRingDirectionMap,
     CandeoSceneSwitchRemoteRingActionMap,
+    CandeoSceneSwitchRemoteRingDirectionMap,
 )
-
 from zhaquirks.const import (
     BUTTON,
     BUTTON_1,
@@ -39,16 +32,13 @@ from zhaquirks.const import (
     COMMAND_RELEASE,
     COMMAND_STARTED_ROTATING,
     COMMAND_STOPPED_ROTATING,
-    COMMAND_DOUBLE,
     LEFT,
-    COMMAND_HOLD,
-    COMMAND_RELEASE,
     RIGHT,
     ROTATED,
-    COMMAND_PRESS,
 )
 
 zhaquirks.setup()
+
 
 # candeo motion tests
 @pytest.mark.parametrize(
@@ -77,8 +67,11 @@ async def test_candeo_motion_illuminance(zigpy_device_from_v2_quirk, lux_in, lux
 
 # candeo scene switch remote 5 button rotarty tests
 
+
 @pytest.mark.asyncio
-async def test_CandeoSceneSwitchRemoteCluster_apply_custom_configuration(zigpy_device_from_v2_quirk):
+async def test_CandeoSceneSwitchRemoteCluster_apply_custom_configuration(
+    zigpy_device_from_v2_quirk,
+):
     """Test apply custom configuration is called and calls bind on the cluster."""
     device = zigpy_device_from_v2_quirk(manufacturer=CANDEO, model="C-ZB-SR5BR")
     cluster = device.endpoints[1].CandeoSceneSwitchRemoteCluster_Cluster
@@ -87,7 +80,9 @@ async def test_CandeoSceneSwitchRemoteCluster_apply_custom_configuration(zigpy_d
     cluster.bind.assert_awaited_once()
 
 
-def test_CandeoSceneSwitchRemoteCluster_duplicate_sequence_number(zigpy_device_from_v2_quirk):
+def test_CandeoSceneSwitchRemoteCluster_duplicate_sequence_number(
+    zigpy_device_from_v2_quirk,
+):
     """Test duplicate sequence number ignored."""
     device = zigpy_device_from_v2_quirk(manufacturer=CANDEO, model="C-ZB-SR5BR")
 
@@ -98,11 +93,18 @@ def test_CandeoSceneSwitchRemoteCluster_duplicate_sequence_number(zigpy_device_f
     cluster.send_default_rsp = mock.MagicMock()
 
     header = foundation.ZCLHeader()
-    header.command_id = CandeoSceneSwitchRemoteCluster.ServerCommandDefs.candeo_scene_switch_remote.id
+    header.command_id = (
+        CandeoSceneSwitchRemoteCluster.ServerCommandDefs.candeo_scene_switch_remote.id
+    )
     header.frame_control = foundation.FrameControl.cluster()
     header.tsn = 5
 
-    args = CandeoSceneSwitchRemoteClusterCommand(CandeoSceneSwitchRemoteMessageType.button_press, 0x0, CandeoSceneSwitchRemoteButtonNumberMap.button_1, CandeoSceneSwitchRemoteButtonNumberMap.button_1)
+    args = CandeoSceneSwitchRemoteClusterCommand(
+        CandeoSceneSwitchRemoteMessageType.button_press,
+        0x0,
+        CandeoSceneSwitchRemoteButtonNumberMap.button_1,
+        CandeoSceneSwitchRemoteButtonNumberMap.button_1,
+    )
 
     cluster.handle_cluster_request(header, args)
     cluster.handle_cluster_request(header, args)
@@ -130,7 +132,9 @@ def test_CandeoSceneSwitchRemoteCluster_unknown_command_id(zigpy_device_from_v2_
     assert listener.zha_send_event.call_count == 0
 
 
-def test_CandeoSceneSwitchRemoteCluster_missing_schema_fields(zigpy_device_from_v2_quirk):
+def test_CandeoSceneSwitchRemoteCluster_missing_schema_fields(
+    zigpy_device_from_v2_quirk,
+):
     """Test missing CandeoSceneSwitchRemoteClusterCommand schema fields."""
     device = zigpy_device_from_v2_quirk(manufacturer=CANDEO, model="C-ZB-SR5BR")
 
@@ -141,7 +145,9 @@ def test_CandeoSceneSwitchRemoteCluster_missing_schema_fields(zigpy_device_from_
     cluster.send_default_rsp = mock.MagicMock()
 
     header = foundation.ZCLHeader()
-    header.command_id = CandeoSceneSwitchRemoteCluster.ServerCommandDefs.candeo_scene_switch_remote.id
+    header.command_id = (
+        CandeoSceneSwitchRemoteCluster.ServerCommandDefs.candeo_scene_switch_remote.id
+    )
     header.frame_control = foundation.FrameControl.cluster()
 
     args = CandeoSceneSwitchRemoteClusterCommand(None, None, None, None)
@@ -151,7 +157,9 @@ def test_CandeoSceneSwitchRemoteCluster_missing_schema_fields(zigpy_device_from_
     assert listener.zha_send_event.call_count == 0
 
 
-def test_CandeoSceneSwitchRemoteCluster_unknown_message_type(zigpy_device_from_v2_quirk):
+def test_CandeoSceneSwitchRemoteCluster_unknown_message_type(
+    zigpy_device_from_v2_quirk,
+):
     """Test unknown CandeoSceneSwitchRemoteMessageType."""
     device = zigpy_device_from_v2_quirk(manufacturer=CANDEO, model="C-ZB-SR5BR")
 
@@ -162,10 +170,17 @@ def test_CandeoSceneSwitchRemoteCluster_unknown_message_type(zigpy_device_from_v
     cluster.send_default_rsp = mock.MagicMock()
 
     header = foundation.ZCLHeader()
-    header.command_id = CandeoSceneSwitchRemoteCluster.ServerCommandDefs.candeo_scene_switch_remote.id
+    header.command_id = (
+        CandeoSceneSwitchRemoteCluster.ServerCommandDefs.candeo_scene_switch_remote.id
+    )
     header.frame_control = foundation.FrameControl.cluster()
 
-    args = CandeoSceneSwitchRemoteClusterCommand(0x99, 0x0, CandeoSceneSwitchRemoteButtonNumberMap.button_1, CandeoSceneSwitchRemoteButtonActionMap.press)
+    args = CandeoSceneSwitchRemoteClusterCommand(
+        0x99,
+        0x0,
+        CandeoSceneSwitchRemoteButtonNumberMap.button_1,
+        CandeoSceneSwitchRemoteButtonActionMap.press,
+    )
 
     cluster.handle_cluster_request(header, args)
 
@@ -175,29 +190,135 @@ def test_CandeoSceneSwitchRemoteCluster_unknown_message_type(zigpy_device_from_v
 @pytest.mark.parametrize(
     "button_number, button_action, expected_button_name, expected_button_action_name",
     [
-        (CandeoSceneSwitchRemoteButtonNumberMap.button_1, CandeoSceneSwitchRemoteButtonActionMap.press, BUTTON_1, COMMAND_PRESS),
-        (CandeoSceneSwitchRemoteButtonNumberMap.button_1, CandeoSceneSwitchRemoteButtonActionMap.double, BUTTON_1, COMMAND_DOUBLE),
-        (CandeoSceneSwitchRemoteButtonNumberMap.button_1, CandeoSceneSwitchRemoteButtonActionMap.hold, BUTTON_1, COMMAND_HOLD),
-        (CandeoSceneSwitchRemoteButtonNumberMap.button_1, CandeoSceneSwitchRemoteButtonActionMap.release, BUTTON_1, COMMAND_RELEASE),
-        (CandeoSceneSwitchRemoteButtonNumberMap.button_2, CandeoSceneSwitchRemoteButtonActionMap.press, BUTTON_2, COMMAND_PRESS),
-        (CandeoSceneSwitchRemoteButtonNumberMap.button_2, CandeoSceneSwitchRemoteButtonActionMap.double, BUTTON_2, COMMAND_DOUBLE),
-        (CandeoSceneSwitchRemoteButtonNumberMap.button_2, CandeoSceneSwitchRemoteButtonActionMap.hold, BUTTON_2, COMMAND_HOLD),
-        (CandeoSceneSwitchRemoteButtonNumberMap.button_2, CandeoSceneSwitchRemoteButtonActionMap.release, BUTTON_2, COMMAND_RELEASE),
-        (CandeoSceneSwitchRemoteButtonNumberMap.button_3, CandeoSceneSwitchRemoteButtonActionMap.press, BUTTON_3, COMMAND_PRESS),
-        (CandeoSceneSwitchRemoteButtonNumberMap.button_3, CandeoSceneSwitchRemoteButtonActionMap.double, BUTTON_3, COMMAND_DOUBLE),
-        (CandeoSceneSwitchRemoteButtonNumberMap.button_3, CandeoSceneSwitchRemoteButtonActionMap.hold, BUTTON_3, COMMAND_HOLD),
-        (CandeoSceneSwitchRemoteButtonNumberMap.button_3, CandeoSceneSwitchRemoteButtonActionMap.release, BUTTON_3, COMMAND_RELEASE),
-        (CandeoSceneSwitchRemoteButtonNumberMap.button_4, CandeoSceneSwitchRemoteButtonActionMap.press, BUTTON_4, COMMAND_PRESS),
-        (CandeoSceneSwitchRemoteButtonNumberMap.button_4, CandeoSceneSwitchRemoteButtonActionMap.double, BUTTON_4, COMMAND_DOUBLE),
-        (CandeoSceneSwitchRemoteButtonNumberMap.button_4, CandeoSceneSwitchRemoteButtonActionMap.hold, BUTTON_4, COMMAND_HOLD),
-        (CandeoSceneSwitchRemoteButtonNumberMap.button_4, CandeoSceneSwitchRemoteButtonActionMap.release, BUTTON_4, COMMAND_RELEASE),
-        (CandeoSceneSwitchRemoteButtonNumberMap.button_centre, CandeoSceneSwitchRemoteButtonActionMap.press, BUTTON_CENTRE, COMMAND_PRESS),
-        (CandeoSceneSwitchRemoteButtonNumberMap.button_centre, CandeoSceneSwitchRemoteButtonActionMap.double, BUTTON_CENTRE, COMMAND_DOUBLE),
-        (CandeoSceneSwitchRemoteButtonNumberMap.button_centre, CandeoSceneSwitchRemoteButtonActionMap.hold, BUTTON_CENTRE, COMMAND_HOLD),
-        (CandeoSceneSwitchRemoteButtonNumberMap.button_centre, CandeoSceneSwitchRemoteButtonActionMap.release, BUTTON_CENTRE, COMMAND_RELEASE)
+        (
+            CandeoSceneSwitchRemoteButtonNumberMap.button_1,
+            CandeoSceneSwitchRemoteButtonActionMap.press,
+            BUTTON_1,
+            COMMAND_PRESS,
+        ),
+        (
+            CandeoSceneSwitchRemoteButtonNumberMap.button_1,
+            CandeoSceneSwitchRemoteButtonActionMap.double,
+            BUTTON_1,
+            COMMAND_DOUBLE,
+        ),
+        (
+            CandeoSceneSwitchRemoteButtonNumberMap.button_1,
+            CandeoSceneSwitchRemoteButtonActionMap.hold,
+            BUTTON_1,
+            COMMAND_HOLD,
+        ),
+        (
+            CandeoSceneSwitchRemoteButtonNumberMap.button_1,
+            CandeoSceneSwitchRemoteButtonActionMap.release,
+            BUTTON_1,
+            COMMAND_RELEASE,
+        ),
+        (
+            CandeoSceneSwitchRemoteButtonNumberMap.button_2,
+            CandeoSceneSwitchRemoteButtonActionMap.press,
+            BUTTON_2,
+            COMMAND_PRESS,
+        ),
+        (
+            CandeoSceneSwitchRemoteButtonNumberMap.button_2,
+            CandeoSceneSwitchRemoteButtonActionMap.double,
+            BUTTON_2,
+            COMMAND_DOUBLE,
+        ),
+        (
+            CandeoSceneSwitchRemoteButtonNumberMap.button_2,
+            CandeoSceneSwitchRemoteButtonActionMap.hold,
+            BUTTON_2,
+            COMMAND_HOLD,
+        ),
+        (
+            CandeoSceneSwitchRemoteButtonNumberMap.button_2,
+            CandeoSceneSwitchRemoteButtonActionMap.release,
+            BUTTON_2,
+            COMMAND_RELEASE,
+        ),
+        (
+            CandeoSceneSwitchRemoteButtonNumberMap.button_3,
+            CandeoSceneSwitchRemoteButtonActionMap.press,
+            BUTTON_3,
+            COMMAND_PRESS,
+        ),
+        (
+            CandeoSceneSwitchRemoteButtonNumberMap.button_3,
+            CandeoSceneSwitchRemoteButtonActionMap.double,
+            BUTTON_3,
+            COMMAND_DOUBLE,
+        ),
+        (
+            CandeoSceneSwitchRemoteButtonNumberMap.button_3,
+            CandeoSceneSwitchRemoteButtonActionMap.hold,
+            BUTTON_3,
+            COMMAND_HOLD,
+        ),
+        (
+            CandeoSceneSwitchRemoteButtonNumberMap.button_3,
+            CandeoSceneSwitchRemoteButtonActionMap.release,
+            BUTTON_3,
+            COMMAND_RELEASE,
+        ),
+        (
+            CandeoSceneSwitchRemoteButtonNumberMap.button_4,
+            CandeoSceneSwitchRemoteButtonActionMap.press,
+            BUTTON_4,
+            COMMAND_PRESS,
+        ),
+        (
+            CandeoSceneSwitchRemoteButtonNumberMap.button_4,
+            CandeoSceneSwitchRemoteButtonActionMap.double,
+            BUTTON_4,
+            COMMAND_DOUBLE,
+        ),
+        (
+            CandeoSceneSwitchRemoteButtonNumberMap.button_4,
+            CandeoSceneSwitchRemoteButtonActionMap.hold,
+            BUTTON_4,
+            COMMAND_HOLD,
+        ),
+        (
+            CandeoSceneSwitchRemoteButtonNumberMap.button_4,
+            CandeoSceneSwitchRemoteButtonActionMap.release,
+            BUTTON_4,
+            COMMAND_RELEASE,
+        ),
+        (
+            CandeoSceneSwitchRemoteButtonNumberMap.button_centre,
+            CandeoSceneSwitchRemoteButtonActionMap.press,
+            BUTTON_CENTRE,
+            COMMAND_PRESS,
+        ),
+        (
+            CandeoSceneSwitchRemoteButtonNumberMap.button_centre,
+            CandeoSceneSwitchRemoteButtonActionMap.double,
+            BUTTON_CENTRE,
+            COMMAND_DOUBLE,
+        ),
+        (
+            CandeoSceneSwitchRemoteButtonNumberMap.button_centre,
+            CandeoSceneSwitchRemoteButtonActionMap.hold,
+            BUTTON_CENTRE,
+            COMMAND_HOLD,
+        ),
+        (
+            CandeoSceneSwitchRemoteButtonNumberMap.button_centre,
+            CandeoSceneSwitchRemoteButtonActionMap.release,
+            BUTTON_CENTRE,
+            COMMAND_RELEASE,
+        ),
     ],
 )
-def test_CandeoSceneSwitchRemoteCluster__button_number_and_button_action_combinations(zigpy_device_from_v2_quirk, button_number, button_action, expected_button_name, expected_button_action_name):
+def test_CandeoSceneSwitchRemoteCluster__button_number_and_button_action_combinations(
+    zigpy_device_from_v2_quirk,
+    button_number,
+    button_action,
+    expected_button_name,
+    expected_button_action_name,
+):
     """Test button numbers and button actions generate events correctly."""
     device = zigpy_device_from_v2_quirk(manufacturer=CANDEO, model="C-ZB-SR5BR")
 
@@ -208,10 +329,17 @@ def test_CandeoSceneSwitchRemoteCluster__button_number_and_button_action_combina
     cluster.send_default_rsp = mock.MagicMock()
 
     header = foundation.ZCLHeader()
-    header.command_id = CandeoSceneSwitchRemoteCluster.ServerCommandDefs.candeo_scene_switch_remote.id
+    header.command_id = (
+        CandeoSceneSwitchRemoteCluster.ServerCommandDefs.candeo_scene_switch_remote.id
+    )
     header.frame_control = foundation.FrameControl.cluster()
 
-    args = CandeoSceneSwitchRemoteClusterCommand(CandeoSceneSwitchRemoteMessageType.button_press, 0x0, button_number, button_action)
+    args = CandeoSceneSwitchRemoteClusterCommand(
+        CandeoSceneSwitchRemoteMessageType.button_press,
+        0x0,
+        button_number,
+        button_action,
+    )
 
     cluster.handle_cluster_request(header, args)
 
@@ -229,7 +357,9 @@ def test_CandeoSceneSwitchRemoteCluster__button_number_and_button_action_combina
         (CandeoSceneSwitchRemoteButtonNumberMap.button_1, 0x99),
     ],
 )
-def test_CandeoSceneSwitchRemoteCluster_unknown_button_number_or_button_action(zigpy_device_from_v2_quirk, button_number, button_action):
+def test_CandeoSceneSwitchRemoteCluster_unknown_button_number_or_button_action(
+    zigpy_device_from_v2_quirk, button_number, button_action
+):
     """Test unknown button numbers and button actiona are ignored."""
 
     device = zigpy_device_from_v2_quirk(manufacturer=CANDEO, model="C-ZB-SR5BR")
@@ -241,10 +371,17 @@ def test_CandeoSceneSwitchRemoteCluster_unknown_button_number_or_button_action(z
     cluster.send_default_rsp = mock.MagicMock()
 
     header = foundation.ZCLHeader()
-    header.command_id = CandeoSceneSwitchRemoteCluster.ServerCommandDefs.candeo_scene_switch_remote.id
+    header.command_id = (
+        CandeoSceneSwitchRemoteCluster.ServerCommandDefs.candeo_scene_switch_remote.id
+    )
     header.frame_control = foundation.FrameControl.cluster()
 
-    args = CandeoSceneSwitchRemoteClusterCommand(CandeoSceneSwitchRemoteMessageType.button_press, 0x0, button_number, button_action)
+    args = CandeoSceneSwitchRemoteClusterCommand(
+        CandeoSceneSwitchRemoteMessageType.button_press,
+        0x0,
+        button_number,
+        button_action,
+    )
 
     cluster.handle_cluster_request(header, args)
 
@@ -258,7 +395,9 @@ def test_CandeoSceneSwitchRemoteCluster_unknown_button_number_or_button_action(z
         (CandeoSceneSwitchRemoteRingDirectionMap.right),
     ],
 )
-def test_CandeoSceneSwitchRemoteCluster_ring_started_rotating(zigpy_device_from_v2_quirk, ring_direction):
+def test_CandeoSceneSwitchRemoteCluster_ring_started_rotating(
+    zigpy_device_from_v2_quirk, ring_direction
+):
     """Test ring started rotating actions generate events correctly."""
     device = zigpy_device_from_v2_quirk(manufacturer=CANDEO, model="C-ZB-SR5BR")
 
@@ -269,10 +408,17 @@ def test_CandeoSceneSwitchRemoteCluster_ring_started_rotating(zigpy_device_from_
     cluster.send_default_rsp = mock.MagicMock()
 
     header = foundation.ZCLHeader()
-    header.command_id = CandeoSceneSwitchRemoteCluster.ServerCommandDefs.candeo_scene_switch_remote.id
+    header.command_id = (
+        CandeoSceneSwitchRemoteCluster.ServerCommandDefs.candeo_scene_switch_remote.id
+    )
     header.frame_control = foundation.FrameControl.cluster()
 
-    args = CandeoSceneSwitchRemoteClusterCommand(CandeoSceneSwitchRemoteMessageType.ring_rotation, ring_direction, CandeoSceneSwitchRemoteRingActionMap.started_rotating, 0x01)
+    args = CandeoSceneSwitchRemoteClusterCommand(
+        CandeoSceneSwitchRemoteMessageType.ring_rotation,
+        ring_direction,
+        CandeoSceneSwitchRemoteRingActionMap.started_rotating,
+        0x01,
+    )
 
     cluster.handle_cluster_request(header, args)
 
@@ -280,7 +426,11 @@ def test_CandeoSceneSwitchRemoteCluster_ring_started_rotating(zigpy_device_from_
 
     assert ring_event[0] == COMMAND_STARTED_ROTATING
 
-    expected_ring_direction_name = LEFT if ring_direction == CandeoSceneSwitchRemoteRingDirectionMap.left else RIGHT
+    expected_ring_direction_name = (
+        LEFT
+        if ring_direction == CandeoSceneSwitchRemoteRingDirectionMap.left
+        else RIGHT
+    )
 
     assert ring_event[1][ROTATED] == expected_ring_direction_name
 
@@ -294,7 +444,9 @@ def test_CandeoSceneSwitchRemoteCluster_ring_started_rotating(zigpy_device_from_
         (CandeoSceneSwitchRemoteRingDirectionMap.right, 0x99),
     ],
 )
-def test_CandeoSceneSwitchRemoteCluster_unknown_ring_direction_or_ring_action(zigpy_device_from_v2_quirk, ring_direction, ring_action):
+def test_CandeoSceneSwitchRemoteCluster_unknown_ring_direction_or_ring_action(
+    zigpy_device_from_v2_quirk, ring_direction, ring_action
+):
     """Test unknown ring directions and ring actions are ignored."""
     device = zigpy_device_from_v2_quirk(manufacturer=CANDEO, model="C-ZB-SR5BR")
 
@@ -305,10 +457,17 @@ def test_CandeoSceneSwitchRemoteCluster_unknown_ring_direction_or_ring_action(zi
     cluster.send_default_rsp = mock.MagicMock()
 
     header = foundation.ZCLHeader()
-    header.command_id = CandeoSceneSwitchRemoteCluster.ServerCommandDefs.candeo_scene_switch_remote.id
+    header.command_id = (
+        CandeoSceneSwitchRemoteCluster.ServerCommandDefs.candeo_scene_switch_remote.id
+    )
     header.frame_control = foundation.FrameControl.cluster()
 
-    args = CandeoSceneSwitchRemoteClusterCommand(CandeoSceneSwitchRemoteMessageType.ring_rotation, ring_direction, ring_action, 0x01)
+    args = CandeoSceneSwitchRemoteClusterCommand(
+        CandeoSceneSwitchRemoteMessageType.ring_rotation,
+        ring_direction,
+        ring_action,
+        0x01,
+    )
 
     cluster.handle_cluster_request(header, args)
 
@@ -324,7 +483,9 @@ def test_CandeoSceneSwitchRemoteCluster_unknown_ring_direction_or_ring_action(zi
         (CandeoSceneSwitchRemoteRingDirectionMap.right, 0x06),
     ],
 )
-def test_CandeoSceneSwitchRemoteCluster_ring_continued_rotating(zigpy_device_from_v2_quirk, ring_direction, ring_clicks):
+def test_CandeoSceneSwitchRemoteCluster_ring_continued_rotating(
+    zigpy_device_from_v2_quirk, ring_direction, ring_clicks
+):
     """Test ring continued rotating actions generate events correctly."""
     device = zigpy_device_from_v2_quirk(manufacturer=CANDEO, model="C-ZB-SR5BR")
 
@@ -335,28 +496,43 @@ def test_CandeoSceneSwitchRemoteCluster_ring_continued_rotating(zigpy_device_fro
     cluster.send_default_rsp = mock.MagicMock()
 
     header = foundation.ZCLHeader()
-    header.command_id = CandeoSceneSwitchRemoteCluster.ServerCommandDefs.candeo_scene_switch_remote.id
+    header.command_id = (
+        CandeoSceneSwitchRemoteCluster.ServerCommandDefs.candeo_scene_switch_remote.id
+    )
     header.frame_control = foundation.FrameControl.cluster()
 
-    args = CandeoSceneSwitchRemoteClusterCommand(CandeoSceneSwitchRemoteMessageType.ring_rotation, ring_direction, CandeoSceneSwitchRemoteRingActionMap.started_rotating, ring_clicks)
+    args = CandeoSceneSwitchRemoteClusterCommand(
+        CandeoSceneSwitchRemoteMessageType.ring_rotation,
+        ring_direction,
+        CandeoSceneSwitchRemoteRingActionMap.started_rotating,
+        ring_clicks,
+    )
 
     cluster.handle_cluster_request(header, args)
 
     for x in range(0, ring_clicks, -1):
         ring_event = listener.zha_send_event.call_args[x]
 
-        expected_ring_action_name = COMMAND_STARTED_ROTATING if x == 0 else COMMAND_CONTINUED_ROTATING
+        expected_ring_action_name = (
+            COMMAND_STARTED_ROTATING if x == 0 else COMMAND_CONTINUED_ROTATING
+        )
 
         assert ring_event[0] == expected_ring_action_name
 
-        expected_ring_direction_name = LEFT if ring_direction == CandeoSceneSwitchRemoteRingDirectionMap.left else RIGHT
+        expected_ring_direction_name = (
+            LEFT
+            if ring_direction == CandeoSceneSwitchRemoteRingDirectionMap.left
+            else RIGHT
+        )
 
         assert ring_event[1][ROTATED] == expected_ring_direction_name
 
     assert listener.zha_send_event.call_count == ring_clicks
 
 
-def test_CandeoSceneSwitchRemoteCluster_ring_direction_and_ring_action_persistence(zigpy_device_from_v2_quirk):
+def test_CandeoSceneSwitchRemoteCluster_ring_direction_and_ring_action_persistence(
+    zigpy_device_from_v2_quirk,
+):
     """Test ring continued rotating actions generate events correctly."""
     device = zigpy_device_from_v2_quirk(manufacturer=CANDEO, model="C-ZB-SR5BR")
 
@@ -367,18 +543,30 @@ def test_CandeoSceneSwitchRemoteCluster_ring_direction_and_ring_action_persisten
     cluster.send_default_rsp = mock.MagicMock()
 
     header = foundation.ZCLHeader()
-    header.command_id = CandeoSceneSwitchRemoteCluster.ServerCommandDefs.candeo_scene_switch_remote.id
+    header.command_id = (
+        CandeoSceneSwitchRemoteCluster.ServerCommandDefs.candeo_scene_switch_remote.id
+    )
     header.frame_control = foundation.FrameControl.cluster()
     header.tsn = 1
 
-    args = CandeoSceneSwitchRemoteClusterCommand(CandeoSceneSwitchRemoteMessageType.ring_rotation, CandeoSceneSwitchRemoteRingDirectionMap.left, CandeoSceneSwitchRemoteRingActionMap.started_rotating, 0x01)
+    args = CandeoSceneSwitchRemoteClusterCommand(
+        CandeoSceneSwitchRemoteMessageType.ring_rotation,
+        CandeoSceneSwitchRemoteRingDirectionMap.left,
+        CandeoSceneSwitchRemoteRingActionMap.started_rotating,
+        0x01,
+    )
 
     cluster.handle_cluster_request(header, args)
 
     assert cluster.previous_rotation_direction == LEFT
     assert cluster.previous_rotation_event == COMMAND_STARTED_ROTATING
 
-    args = CandeoSceneSwitchRemoteClusterCommand(CandeoSceneSwitchRemoteMessageType.ring_rotation, 0x0, CandeoSceneSwitchRemoteRingActionMap.stopped_rotating, 0x0)
+    args = CandeoSceneSwitchRemoteClusterCommand(
+        CandeoSceneSwitchRemoteMessageType.ring_rotation,
+        0x0,
+        CandeoSceneSwitchRemoteRingActionMap.stopped_rotating,
+        0x0,
+    )
 
     header.tsn = 2
 
@@ -387,7 +575,12 @@ def test_CandeoSceneSwitchRemoteCluster_ring_direction_and_ring_action_persisten
     assert cluster.previous_rotation_direction == LEFT
     assert cluster.previous_rotation_event == COMMAND_STOPPED_ROTATING
 
-    args = CandeoSceneSwitchRemoteClusterCommand(CandeoSceneSwitchRemoteMessageType.ring_rotation, CandeoSceneSwitchRemoteRingDirectionMap.right, CandeoSceneSwitchRemoteRingActionMap.started_rotating, 0x01)
+    args = CandeoSceneSwitchRemoteClusterCommand(
+        CandeoSceneSwitchRemoteMessageType.ring_rotation,
+        CandeoSceneSwitchRemoteRingDirectionMap.right,
+        CandeoSceneSwitchRemoteRingActionMap.started_rotating,
+        0x01,
+    )
 
     header.tsn = 3
 
@@ -396,7 +589,12 @@ def test_CandeoSceneSwitchRemoteCluster_ring_direction_and_ring_action_persisten
     assert cluster.previous_rotation_direction == RIGHT
     assert cluster.previous_rotation_event == COMMAND_STARTED_ROTATING
 
-    args = CandeoSceneSwitchRemoteClusterCommand(CandeoSceneSwitchRemoteMessageType.ring_rotation, 0x0, CandeoSceneSwitchRemoteRingActionMap.stopped_rotating, 0x0)
+    args = CandeoSceneSwitchRemoteClusterCommand(
+        CandeoSceneSwitchRemoteMessageType.ring_rotation,
+        0x0,
+        CandeoSceneSwitchRemoteRingActionMap.stopped_rotating,
+        0x0,
+    )
 
     header.tsn = 4
 
@@ -405,7 +603,12 @@ def test_CandeoSceneSwitchRemoteCluster_ring_direction_and_ring_action_persisten
     assert cluster.previous_rotation_direction == RIGHT
     assert cluster.previous_rotation_event == COMMAND_STOPPED_ROTATING
 
-    args = CandeoSceneSwitchRemoteClusterCommand(CandeoSceneSwitchRemoteMessageType.ring_rotation, CandeoSceneSwitchRemoteRingDirectionMap.left, CandeoSceneSwitchRemoteRingActionMap.started_rotating, 0x03)
+    args = CandeoSceneSwitchRemoteClusterCommand(
+        CandeoSceneSwitchRemoteMessageType.ring_rotation,
+        CandeoSceneSwitchRemoteRingDirectionMap.left,
+        CandeoSceneSwitchRemoteRingActionMap.started_rotating,
+        0x03,
+    )
 
     header.tsn = 5
 
@@ -414,7 +617,12 @@ def test_CandeoSceneSwitchRemoteCluster_ring_direction_and_ring_action_persisten
     assert cluster.previous_rotation_direction == LEFT
     assert cluster.previous_rotation_event == COMMAND_CONTINUED_ROTATING
 
-    args = CandeoSceneSwitchRemoteClusterCommand(CandeoSceneSwitchRemoteMessageType.ring_rotation, 0x0, CandeoSceneSwitchRemoteRingActionMap.stopped_rotating, 0x0)
+    args = CandeoSceneSwitchRemoteClusterCommand(
+        CandeoSceneSwitchRemoteMessageType.ring_rotation,
+        0x0,
+        CandeoSceneSwitchRemoteRingActionMap.stopped_rotating,
+        0x0,
+    )
 
     header.tsn = 6
 
@@ -433,7 +641,9 @@ def test_CandeoSceneSwitchRemoteCluster_ring_direction_and_ring_action_persisten
         (RIGHT, COMMAND_CONTINUED_ROTATING),
     ],
 )
-def test_CandeoSceneSwitchRemoteCluster_ring_stopped_rotating(zigpy_device_from_v2_quirk, previous_rotation_direction, previous_rotation_event):
+def test_CandeoSceneSwitchRemoteCluster_ring_stopped_rotating(
+    zigpy_device_from_v2_quirk, previous_rotation_direction, previous_rotation_event
+):
     """Test ring stopped rotating actions generate events correctly."""
     device = zigpy_device_from_v2_quirk(manufacturer=CANDEO, model="C-ZB-SR5BR")
 
@@ -447,10 +657,17 @@ def test_CandeoSceneSwitchRemoteCluster_ring_stopped_rotating(zigpy_device_from_
     cluster.previous_rotation_event = previous_rotation_event
 
     header = foundation.ZCLHeader()
-    header.command_id = CandeoSceneSwitchRemoteCluster.ServerCommandDefs.candeo_scene_switch_remote.id
+    header.command_id = (
+        CandeoSceneSwitchRemoteCluster.ServerCommandDefs.candeo_scene_switch_remote.id
+    )
     header.frame_control = foundation.FrameControl.cluster()
 
-    args = CandeoSceneSwitchRemoteClusterCommand(CandeoSceneSwitchRemoteMessageType.ring_rotation, 0x0, CandeoSceneSwitchRemoteRingActionMap.stopped_rotating, 0x0)
+    args = CandeoSceneSwitchRemoteClusterCommand(
+        CandeoSceneSwitchRemoteMessageType.ring_rotation,
+        0x0,
+        CandeoSceneSwitchRemoteRingActionMap.stopped_rotating,
+        0x0,
+    )
 
     cluster.handle_cluster_request(header, args)
 
@@ -461,4 +678,3 @@ def test_CandeoSceneSwitchRemoteCluster_ring_stopped_rotating(zigpy_device_from_
     assert ring_event[1][ROTATED] == previous_rotation_direction
 
     assert listener.zha_send_event.call_count == 1
-
