@@ -1,6 +1,6 @@
 """Frient Electricity Meter Interface LED variant."""
 
-from typing import Final
+from typing import Any, Final
 
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
@@ -33,8 +33,29 @@ class ManufacturerMetering(CustomCluster):
         )
 
 
+class FrientMetering(CustomCluster, Metering):
+    """Frient EMI P1 Metering cluster definition."""
+
+    # fix device issue (conflicting with manufacturer specific interface mode attr)
+    _CONSTANT_ATTRIBUTES = {
+        Metering.AttributeDefs.divisor.id: 1000,
+        Metering.AttributeDefs.multiplier.id: 1,
+    }
+
+    def _update_attribute(self, attrid: int | t.uint16_t, value: Any) -> None:
+        """Update attribute with value."""
+        # prevent attribute_updated events for divisor and multiplier
+        if attrid in (
+            Metering.AttributeDefs.divisor.id,
+            Metering.AttributeDefs.multiplier.id,
+        ):
+            return
+        super()._update_attribute(attrid, value)
+
+
 (
     QuirkBuilder("frient A/S", "EMIZB-141")
+    .replaces(FrientMetering, endpoint_id=2)
     .replaces(ManufacturerMetering, endpoint_id=2)
     .device_class(ManufacturerDeviceV2)
     .number(
