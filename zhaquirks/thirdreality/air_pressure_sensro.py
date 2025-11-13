@@ -18,13 +18,11 @@ class ThirdRealityAirPressureSensorCluster(CustomCluster):
     class AttributeDefs(BaseAttributeDefs):
         """Define the attributes of a private cluster."""
 
-
         send_command_up_threshold: Final = ZCLAttributeDef(
             id=0x0040,
             type=t.uint16_t,
             is_manufacturer_specific=True,
         )
-
 
         send_command_down_threshold: Final = ZCLAttributeDef(
             id=0x0041,
