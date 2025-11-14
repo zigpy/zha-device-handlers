@@ -88,3 +88,539 @@ async def test_ts0601_power_converter(zigpy_device_from_v2_quirk, msg, expected_
     assert status == foundation.Status.SUCCESS
 
     assert tuya_manufacturer.get("power") == expected_power
+
+
+@pytest.mark.parametrize(
+    "manufacturer,power_a_msg,flow_a_msg,power_b_msg,flow_b_msg,expected_power_a,expected_power_b,expected_total",
+    [
+        # Forward flow for both CTs - _TZE204 model
+        (
+            "_TZE204_81yrt3lo",
+            b"\x09\x1f\x02\x00\x04\x65\x02\x00\x04\x00\x00\x03\xe8",  # DP 101: power_a = 1000
+            b"\x09\x11\x02\x00\x87\x66\x04\x00\x01\x00",  # DP 102: energy_flow_a = 0 (Forward)
+            b"\x09\x1f\x02\x00\x04\x69\x02\x00\x04\x00\x00\x01\xf4",  # DP 105: power_b = 500
+            b"\x09\x11\x02\x00\x87\x68\x04\x00\x01\x00",  # DP 104: energy_flow_b = 0 (Forward)
+            1000,  # Expected power A (positive for forward)
+            500,  # Expected power B (positive for forward)
+            1500,  # Expected total
+        ),
+        # Reverse flow for both CTs - _TZE204 model
+        (
+            "_TZE204_81yrt3lo",
+            b"\x09\x1f\x02\x00\x04\x65\x02\x00\x04\x00\x00\x03\xe8",  # DP 101: power_a = 1000
+            b"\x09\x0a\x02\x00\x80\x66\x04\x00\x01\x01",  # DP 102: energy_flow_a = 1 (Reverse)
+            b"\x09\x1f\x02\x00\x04\x69\x02\x00\x04\x00\x00\x01\xf4",  # DP 105: power_b = 500
+            b"\x09\x0a\x02\x00\x80\x68\x04\x00\x01\x01",  # DP 104: energy_flow_b = 1 (Reverse)
+            -1000,  # Expected power A (negative for reverse)
+            -500,  # Expected power B (negative for reverse)
+            -1500,  # Expected total
+        ),
+        # Mixed flow directions - _TZE204 model
+        (
+            "_TZE204_81yrt3lo",
+            b"\x09\x1f\x02\x00\x04\x65\x02\x00\x04\x00\x00\x04\x00",  # DP 101: power_a = 1024
+            b"\x09\x11\x02\x00\x87\x66\x04\x00\x01\x00",  # DP 102: energy_flow_a = 0 (Forward)
+            b"\x09\x0a\x02\x00\x04\x69\x02\x00\x04\x00\x00\x02\x00",  # DP 105: power_b = 512
+            b"\x09\x0a\x02\x00\x80\x68\x04\x00\x01\x01",  # DP 104: energy_flow_b = 1 (Reverse)
+            1024,  # Expected power A (positive for forward)
+            -512,  # Expected power B (negative for reverse)
+            512,  # Expected total (1024 - 512)
+        ),
+        # Forward flow for both CTs - _TZE284 model
+        (
+            "_TZE284_81yrt3lo",
+            b"\x09\x1f\x02\x00\x04\x65\x02\x00\x04\x00\x00\x03\xe8",  # DP 101: power_a = 1000
+            b"\x09\x11\x02\x00\x87\x66\x04\x00\x01\x00",  # DP 102: energy_flow_a = 0 (Forward)
+            b"\x09\x1f\x02\x00\x04\x69\x02\x00\x04\x00\x00\x01\xf4",  # DP 105: power_b = 500
+            b"\x09\x11\x02\x00\x87\x68\x04\x00\x01\x00",  # DP 104: energy_flow_b = 0 (Forward)
+            1000,  # Expected power A (positive for forward)
+            500,  # Expected power B (positive for forward)
+            1500,  # Expected total
+        ),
+    ],
+)
+async def test_matseeplus_power_reporting(
+    zigpy_device_from_v2_quirk,
+    manufacturer,
+    power_a_msg,
+    flow_a_msg,
+    power_b_msg,
+    flow_b_msg,
+    expected_power_a,
+    expected_power_b,
+    expected_total,
+):
+    """Test power reporting using Tuya DP messages with default settings (late flow mitigation disabled)."""
+    quirked = zigpy_device_from_v2_quirk(manufacturer, "TS0601")
+    ep = quirked.endpoints[1]
+
+    tuya_manufacturer = ep.tuya_manufacturer
+
+    def send_dp_message(msg):
+        """Send and verify a DP message."""
+        hdr, data = tuya_manufacturer.deserialize(msg)
+        status = tuya_manufacturer.handle_get_data(data.data)
+        assert status == foundation.Status.SUCCESS
+
+    # Send messages in order: flow first, then power (flow is sent first for correct sign application)
+    send_dp_message(flow_a_msg)
+    send_dp_message(power_a_msg)
+    send_dp_message(flow_b_msg)
+    send_dp_message(power_b_msg)
+
+    # Check power values on electrical measurement clusters
+    ep1_electrical = quirked.endpoints[1].electrical_measurement
+    ep2_electrical = quirked.endpoints[2].electrical_measurement
+    ep3_electrical = quirked.endpoints[3].electrical_measurement
+
+    assert ep1_electrical.get("active_power") == expected_power_a
+    assert ep2_electrical.get("active_power") == expected_power_b
+    assert ep3_electrical.get("active_power") == expected_total
+
+
+@pytest.mark.parametrize(
+    "msg,endpoint_id,cluster_name,attr_name,expected_value",
+    [
+        # Metering DP messages
+        (
+            b"\x09\x1f\x02\x00\x04\x6a\x02\x00\x04\x00\x00\x30\x39",
+            1,
+            "smartenergy_metering",
+            "current_summ_delivered",
+            12345,
+        ),  # DP 106: current_summ_delivered CT A
+        (
+            b"\x09\x1f\x02\x00\x04\x6b\x02\x00\x04\x00\x00\x1a\x85",
+            1,
+            "smartenergy_metering",
+            "current_summ_received",
+            6789,
+        ),  # DP 107: current_summ_received CT A
+        (
+            b"\x09\x1f\x02\x00\x04\x6c\x02\x00\x04\x00\x00\xd4\x31",
+            2,
+            "smartenergy_metering",
+            "current_summ_delivered",
+            54321,
+        ),  # DP 108: current_summ_delivered CT B
+        (
+            b"\x09\x1f\x02\x00\x04\x6d\x02\x00\x04\x00\x00\x26\x94",
+            2,
+            "smartenergy_metering",
+            "current_summ_received",
+            9876,
+        ),  # DP 109: current_summ_received CT B
+        # Electrical measurement DP messages
+        (
+            b"\x09\x1f\x02\x00\x04\x6e\x02\x00\x04\x00\x00\x03\xe8",
+            1,
+            "electrical_measurement",
+            "power_factor",
+            1000,
+        ),  # DP 110: power_factor CT A
+        (
+            b"\x09\x1f\x02\x00\x04\x71\x02\x00\x04\x00\x00\x03\xe8",
+            1,
+            "electrical_measurement",
+            "rms_current",
+            1000,
+        ),  # DP 113: rms_current CT A
+        (
+            b"\x09\x1f\x02\x00\x04\x72\x02\x00\x04\x00\x00\x07\xd0",
+            2,
+            "electrical_measurement",
+            "rms_current",
+            2000,
+        ),  # DP 114: rms_current CT B
+        (
+            b"\x09\x1f\x02\x00\x04\x70\x02\x00\x04\x00\x00\x08\xfc",
+            3,
+            "electrical_measurement",
+            "rms_voltage",
+            2300,
+        ),  # DP 112: rms_voltage (total)
+        (
+            b"\x09\x1f\x02\x00\x04\x6f\x02\x00\x04\x00\x00\x13\x88",
+            3,
+            "electrical_measurement",
+            "ac_frequency",
+            5000,
+        ),  # DP 111: ac_frequency (total)
+        (
+            b"\x09\x1f\x02\x00\x04\x79\x02\x00\x04\x00\x00\x03\xe8",
+            2,
+            "electrical_measurement",
+            "power_factor",
+            1000,
+        ),  # DP 121: power_factor CT B
+    ],
+)
+async def test_matseeplus_electrical_and_metering(
+    zigpy_device_from_v2_quirk,
+    msg,
+    endpoint_id,
+    cluster_name,
+    attr_name,
+    expected_value,
+):
+    """Test electrical measurement and metering attributes."""
+    quirked = zigpy_device_from_v2_quirk("_TZE204_81yrt3lo", "TS0601")
+    ep = quirked.endpoints[1]
+
+    tuya_manufacturer = ep.tuya_manufacturer
+    hdr, data = tuya_manufacturer.deserialize(msg)
+    status = tuya_manufacturer.handle_get_data(data.data)
+    assert status == foundation.Status.SUCCESS
+
+    cluster = getattr(quirked.endpoints[endpoint_id], cluster_name)
+    assert cluster.get(attr_name) == expected_value
+
+
+@pytest.mark.parametrize(
+    "late_flow_a,late_flow_b",
+    [
+        (False, False),  # Both late flow disabled (default behavior)
+        (True, False),  # Only A late flow enabled
+        (False, True),  # Only B late flow enabled
+        (True, True),  # Both late flow enabled
+    ],
+)
+async def test_matseeplus_power_signing(
+    zigpy_device_from_v2_quirk, late_flow_a, late_flow_b
+):
+    """Test power sign application (positive/negative based on energy flow) with and without late flow mitigation."""
+    quirked = zigpy_device_from_v2_quirk("_TZE204_81yrt3lo", "TS0601")
+    ep = quirked.endpoints[1]
+
+    # Set mitigation settings
+    local_config = ep.local_config
+    await local_config.write_attributes(
+        {"late_energy_flow_a": late_flow_a, "late_energy_flow_b": late_flow_b}
+    )
+
+    tuya_manufacturer = ep.tuya_manufacturer
+    ep1_electrical = quirked.endpoints[1].electrical_measurement
+    ep2_electrical = quirked.endpoints[2].electrical_measurement
+    ep3_electrical = quirked.endpoints[3].electrical_measurement
+
+    def send_dp_message(msg):
+        """Send and verify a DP message."""
+        hdr, data = tuya_manufacturer.deserialize(msg)
+        status = tuya_manufacturer.handle_get_data(data.data)
+        assert status == foundation.Status.SUCCESS
+
+    # Test with correct device sequence over two intervals
+    # Interval 1: Establish baseline power values (stored but not reported with mitigation)
+    send_dp_message(
+        b"\x09\x11\x02\x00\x87\x66\x04\x00\x01\x00"
+    )  # DP 102: energy_flow_a = 0 (Forward, for previous/initial)
+
+    send_dp_message(
+        b"\x09\x1f\x02\x00\x04\x65\x02\x00\x04\x00\x00\x03\x20"
+    )  # DP 101: power_a = 800 (for current interval)
+
+    # With mitigation enabled, power_a is stored but not reported yet (waits for next interval's flow)
+    # Without mitigation, power_a uses current flow and reports immediately
+    if late_flow_a:
+        assert ep1_electrical.get("active_power") is None
+    else:
+        assert ep1_electrical.get("active_power") == 800
+
+    send_dp_message(
+        b"\x09\x0a\x02\x00\x80\x68\x04\x00\x01\x01"
+    )  # DP 104: energy_flow_b = 1 (Reverse, for previous/initial)
+
+    send_dp_message(
+        b"\x09\x1f\x02\x00\x04\x69\x02\x00\x04\x00\x00\x02\x58"
+    )  # DP 105: power_b = 600 (for current interval)
+
+    # Check power B and total after interval 1
+    if late_flow_b:
+        assert ep2_electrical.get("active_power") is None
+    else:
+        # Without mitigation, power_b uses current flow_b and reports immediately
+        assert ep2_electrical.get("active_power") == -600
+
+    # Total calculation
+    if late_flow_a and late_flow_b:
+        # Both deferred to next interval
+        assert ep3_electrical.get("active_power") is None
+    elif late_flow_a:
+        # A deferred, B reported, but intervals don't match so no total
+        assert ep3_electrical.get("active_power") is None
+    elif late_flow_b:
+        # B deferred, A reported, but intervals don't match so no total
+        assert ep3_electrical.get("active_power") is None
+    else:
+        # Both reported in interval 1: A=800, B=-600, total=200
+        assert ep3_electrical.get("active_power") == 200
+
+    # Interval 2: Flow messages process powers from interval 1 (flow sent because interval 2 power ≠ 0)
+    send_dp_message(
+        b"\x09\x11\x02\x00\x87\x66\x04\x00\x01\x00"
+    )  # DP 102: energy_flow_a = 0 (Forward, for interval 1)
+
+    # If mitigation enabled, flow_a now processes stored power_a(800) from interval 1
+    if late_flow_a:
+        assert ep1_electrical.get("active_power") == 800
+    else:
+        # Already reported, unchanged
+        assert ep1_electrical.get("active_power") == 800
+
+    send_dp_message(
+        b"\x09\x1f\x02\x00\x04\x65\x02\x00\x04\x00\x00\x03\x20"
+    )  # DP 101: power_a = 800 (for interval 2, stored for next interval if mitigation enabled)
+
+    send_dp_message(
+        b"\x09\x0a\x02\x00\x80\x68\x04\x00\x01\x01"
+    )  # DP 104: energy_flow_b = 1 (Reverse, for interval 1)
+
+    send_dp_message(
+        b"\x09\x1f\x02\x00\x04\x69\x02\x00\x04\x00\x00\x02\x58"
+    )  # DP 105: power_b = 600 (for interval 2, stored for next interval if mitigation enabled)
+
+    # Check final power B and total after interval 2
+    if late_flow_b:
+        # flow_b processes stored power_b(600) with reverse flow = -600
+        assert ep2_electrical.get("active_power") == -600
+        # Both channels now at interval 2, total calculated
+        assert ep3_electrical.get("active_power") == 200  # 800 + (-600)
+    else:
+        # Already reported as -600
+        assert ep2_electrical.get("active_power") == -600
+        # Total already calculated or now calculated
+        assert ep3_electrical.get("active_power") == 200
+
+
+@pytest.mark.parametrize("late_flow_a,late_flow_b", [(True, True), (False, False)])
+async def test_matseeplus_late_flow_non_power_attribute_delay(
+    zigpy_device_from_v2_quirk, late_flow_a, late_flow_b
+):
+    """Test that non-power attributes are delayed when late flow mitigation is enabled."""
+    quirked = zigpy_device_from_v2_quirk("_TZE204_81yrt3lo", "TS0601")
+    ep = quirked.endpoints[1]
+
+    # Set mitigation settings
+    local_config = ep.local_config
+    await local_config.write_attributes(
+        {"late_energy_flow_a": late_flow_a, "late_energy_flow_b": late_flow_b}
+    )
+
+    tuya_manufacturer = ep.tuya_manufacturer
+    ep1_electrical = quirked.endpoints[1].electrical_measurement
+    ep2_electrical = quirked.endpoints[2].electrical_measurement
+    ep3_electrical = quirked.endpoints[3].electrical_measurement
+
+    def send_dp_message(msg):
+        """Send and verify a DP message."""
+        hdr, data = tuya_manufacturer.deserialize(msg)
+        status = tuya_manufacturer.handle_get_data(data.data)
+        assert status == foundation.Status.SUCCESS
+
+    # Test CT A current (endpoint 1)
+    send_dp_message(
+        b"\x09\x1f\x02\x00\x04\x71\x02\x00\x04\x00\x00\x03\xe8"
+    )  # DP 113: rms_current CT A = 1000
+
+    if late_flow_a:
+        # Current is held
+        assert ep1_electrical.get("rms_current") is None
+
+        # Send another current message - releases the previous one
+        send_dp_message(
+            b"\x09\x1f\x02\x00\x04\x71\x02\x00\x04\x00\x00\x07\xd0"
+        )  # DP 113: rms_current CT A = 2000
+
+        # Previous current (1000) is now available
+        assert ep1_electrical.get("rms_current") == 1000
+    else:
+        # Without mitigation, current is available immediately
+        assert ep1_electrical.get("rms_current") == 1000
+
+    # Test CT B current (endpoint 2)
+    send_dp_message(
+        b"\x09\x1f\x02\x00\x04\x72\x02\x00\x04\x00\x00\x0b\xb8"
+    )  # DP 114: rms_current CT B = 3000
+
+    if late_flow_b:
+        # Current is held
+        assert ep2_electrical.get("rms_current") is None
+
+        # Send another current message - releases the previous one
+        send_dp_message(
+            b"\x09\x1f\x02\x00\x04\x72\x02\x00\x04\x00\x00\x0f\xa0"
+        )  # DP 114: rms_current CT B = 4000
+
+        # Previous current (3000) is now available
+        assert ep2_electrical.get("rms_current") == 3000
+    else:
+        # Without mitigation, current is available immediately
+        assert ep2_electrical.get("rms_current") == 3000
+
+    # Test voltage (endpoint 3 - total/shared)
+    send_dp_message(
+        b"\x09\x1f\x02\x00\x04\x70\x02\x00\x04\x00\x00\x08\xfc"
+    )  # DP 112: rms_voltage = 2300
+
+    # Voltage is on endpoint 3 (total) and has no delay - always reported immediately
+    assert ep3_electrical.get("rms_voltage") == 2300
+
+
+@pytest.mark.parametrize(
+    "late_flow_a,late_flow_b",
+    [
+        (False, False),  # Both late flow disabled (default behavior)
+        (True, False),  # Only A late flow enabled
+        (False, True),  # Only B late flow enabled
+        (True, True),  # Both late flow enabled
+    ],
+)
+async def test_matseeplus_late_flow_zero_power_deferral(
+    zigpy_device_from_v2_quirk, late_flow_a, late_flow_b
+):
+    """Test zero power deferral and cross-channel release with all configuration combinations."""
+    quirked = zigpy_device_from_v2_quirk("_TZE204_81yrt3lo", "TS0601")
+    ep = quirked.endpoints[1]
+
+    # Set mitigation settings
+    local_config = ep.local_config
+    await local_config.write_attributes(
+        {"late_energy_flow_a": late_flow_a, "late_energy_flow_b": late_flow_b}
+    )
+
+    tuya_manufacturer = ep.tuya_manufacturer
+    ep1_electrical = quirked.endpoints[1].electrical_measurement
+    ep2_electrical = quirked.endpoints[2].electrical_measurement
+    ep3_electrical = quirked.endpoints[3].electrical_measurement
+
+    def send_dp_message(msg):
+        """Send and verify a DP message."""
+        hdr, data = tuya_manufacturer.deserialize(msg)
+        status = tuya_manufacturer.handle_get_data(data.data)
+        assert status == foundation.Status.SUCCESS
+
+    # Establish baseline with both channels using correct device sequence over two intervals
+    # Interval 1: Store initial power values
+    send_dp_message(
+        b"\x09\x11\x02\x00\x87\x66\x04\x00\x01\x00"
+    )  # DP 102: energy_flow_a = 0 (Forward, for previous/init)
+    send_dp_message(
+        b"\x09\x1f\x02\x00\x04\x65\x02\x00\x04\x00\x00\x03\x20"
+    )  # DP 101: power_a = 800 (for interval 1)
+    send_dp_message(
+        b"\x09\x0a\x02\x00\x80\x68\x04\x00\x01\x01"
+    )  # DP 104: energy_flow_b = 1 (Reverse, for previous/init)
+    send_dp_message(
+        b"\x09\x1f\x02\x00\x04\x69\x02\x00\x04\x00\x00\x02\x58"
+    )  # DP 105: power_b = 600 (for interval 1)
+
+    # Interval 2: Flow processes powers from interval 1
+    send_dp_message(
+        b"\x09\x11\x02\x00\x87\x66\x04\x00\x01\x00"
+    )  # DP 102: energy_flow_a = 0 (Forward, for interval 1, sent because interval 2 power ≠ 0)
+    send_dp_message(
+        b"\x09\x1f\x02\x00\x04\x65\x02\x00\x04\x00\x00\x03\x20"
+    )  # DP 101: power_a = 800 (for interval 2)
+    send_dp_message(
+        b"\x09\x0a\x02\x00\x80\x68\x04\x00\x01\x01"
+    )  # DP 104: energy_flow_b = 1 (Reverse, for interval 1, sent because interval 2 power ≠ 0)
+    send_dp_message(
+        b"\x09\x1f\x02\x00\x04\x69\x02\x00\x04\x00\x00\x02\x58"
+    )  # DP 105: power_b = 600 (for interval 2)
+
+    # After interval 2, baseline is established
+    assert ep1_electrical.get("active_power") == 800
+    if late_flow_b:
+        # flow_b processed power_b(600) from interval 1 with reverse flow
+        assert ep2_electrical.get("active_power") == -600
+        # Both at interval 2, total calculated
+        assert ep3_electrical.get("active_power") == 200  # 800 + (-600)
+    else:
+        # Without mitigation, power_b used current flow and reported in both intervals
+        # Still shows -600 from interval 2 flow_b processing
+        assert ep2_electrical.get("active_power") == -600
+        # Total calculated
+        assert ep3_electrical.get("active_power") == 200  # 800 + (-600)
+
+    # Interval 3: Test channel A zero power deferral - device omits flow DP when power is 0
+    # Since interval 3 power_a = 0, no flow_a is sent at start of interval 3
+    send_dp_message(
+        b"\x09\x1f\x02\x00\x04\x65\x02\x00\x04\x00\x00\x00\x00"
+    )  # DP 101: power_a = 0 (no flow_a DP sent because current power is 0)
+
+    if late_flow_a:
+        # Zero power is deferred to next interval
+        assert (
+            ep1_electrical.get("active_power") == 800
+        )  # Still showing from interval 2
+    else:
+        # Without mitigation, zero is reported immediately
+        assert ep1_electrical.get("active_power") == 0
+
+    # Test channel B zero power deferral - no flow_b sent because power_b = 0
+    send_dp_message(
+        b"\x09\x1f\x02\x00\x04\x69\x02\x00\x04\x00\x00\x00\x00"
+    )  # DP 105: power_b = 0 (no flow_b DP sent because current power is 0)
+
+    if late_flow_b:
+        # Zero power is deferred to next interval
+        assert ep2_electrical.get("active_power") == -600
+    else:
+        # Without mitigation, zero is reported immediately
+        assert ep2_electrical.get("active_power") == 0
+        # Total recalculated based on interval matching
+        if late_flow_a:
+            # A deferred to interval 4, B at interval 3, intervals don't match
+            assert ep3_electrical.get("active_power") == 200  # Unchanged from baseline
+        else:
+            # Both at interval 3, total recalculated
+            assert ep3_electrical.get("active_power") == 0  # 0 + 0
+
+    # Interval 4: Non-zero power returns, flow sent for interval 3
+    # flow_a sent because interval 4 power ≠ 0, reports direction for interval 3
+    send_dp_message(
+        b"\x09\x11\x02\x00\x87\x66\x04\x00\x01\x00"
+    )  # DP 102: energy_flow_a = 0 (Forward, for interval 3 which had power=0)
+
+    if late_flow_a:
+        # flow_a processes stored power from interval 3 (which was 0)
+        assert ep1_electrical.get("active_power") == 0
+    else:
+        # Already reported as 0
+        assert ep1_electrical.get("active_power") == 0
+
+    send_dp_message(
+        b"\x09\x1f\x02\x00\x04\x65\x02\x00\x04\x00\x00\x03\x84"
+    )  # DP 101: power_a = 900 (for interval 4)
+
+    # flow_b sent because interval 4 power ≠ 0
+    send_dp_message(
+        b"\x09\x0a\x02\x00\x80\x68\x04\x00\x01\x00"
+    )  # DP 104: energy_flow_b = 0 (Forward, for interval 3 which had power=0)
+
+    if late_flow_b:
+        # flow_b processes stored power from interval 3 (which was 0)
+        assert ep2_electrical.get("active_power") == 0
+        # When late_flow_a=False, power_a(900) already reported at interval 4
+        # When late_flow_a=True, power_a(0) processed from interval 3
+        # Both channels now at interval 4, total calculated
+        if late_flow_a:
+            assert ep3_electrical.get("active_power") == 0  # 0 + 0
+        else:
+            assert (
+                ep3_electrical.get("active_power") == 900
+            )  # 900 + 0 (power_a already reported)
+    else:
+        # Already showing 0
+        assert ep2_electrical.get("active_power") == 0
+        # Total depends on interval matching
+        if late_flow_a:
+            # A at interval 4, B at interval 4, both match
+            assert ep3_electrical.get("active_power") == 0  # 0 + 0
+        else:
+            # power_a(900) was reported, power_b(0) was reported, but they're at same interval now
+            assert ep3_electrical.get("active_power") == 900  # 900 + 0
+
+    send_dp_message(
+        b"\x09\x1f\x02\x00\x04\x69\x02\x00\x04\x00\x00\x02\x58"
+    )  # DP 105: power_b = 600 (for interval 4)
