@@ -8,22 +8,10 @@ import logging
 from typing import Any, Final, Optional, Union
 
 import zigpy.profiles.zha as zha_p
-from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.quirks import CustomCluster
+from zigpy.quirks.v2 import QuirkBuilder
 import zigpy.types as t
 from zigpy.zcl import foundation
-from zigpy.zcl.clusters.general import (
-    Basic,
-    DeviceTemperature,
-    Groups,
-    Identify,
-    LevelControl,
-    OnOff,
-    Ota,
-    Scenes,
-    Time,
-)
-from zigpy.zcl.clusters.homeautomation import Diagnostic, ElectricalMeasurement
-from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.foundation import BaseCommandDefs
 
 from zhaquirks import EventableCluster
@@ -36,12 +24,6 @@ from zhaquirks.const import (
     COMMAND_M_MULTI_PRESS_COMPLETE,
     COMMAND_M_SHORT_RELEASE,
     DESCRIPTION,
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
     TURN_OFF,
     TURN_ON,
     VALUE,
@@ -239,198 +221,37 @@ class LightManufacturerCluster(EventableCluster, SinopeTechnologiesManufacturerC
     """LightManufacturerCluster: fire events corresponding to press type."""
 
 
-class SinopeTechnologieslight(CustomDevice):
-    """SinopeTechnologiesLight custom device."""
+(
+    QuirkBuilder(SINOPE, "SW2500ZB")
+    .applies_to(SINOPE, "SW2500ZB-G2")
+    .replaces_endpoint(
+        1, device_type=zha_p.DeviceType.ON_OFF_LIGHT
+    )  # Was ON_OFF_LIGHT_SWITCH
+    .replaces(LightManufacturerCluster, endpoint_id=1)
+    .device_automation_triggers(LIGHT_DEVICE_TRIGGERS)
+    .add_to_registry()
+)
 
-    signature = {
-        # <SimpleDescriptor endpoint=1 profile=260 device_type=259
-        # device_version=0 input_clusters=[0, 2, 3, 4, 5, 6, 1794, 2821, 65281]
-        # output_clusters=[3, 4, 25]>
-        MODELS_INFO: [
-            (SINOPE, "SW2500ZB"),
-            (SINOPE, "SW2500ZB-G2"),
-        ],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha_p.PROFILE_ID,
-                DEVICE_TYPE: zha_p.DeviceType.ON_OFF_LIGHT_SWITCH,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    DeviceTemperature.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    Metering.cluster_id,
-                    Diagnostic.cluster_id,
-                    SINOPE_MANUFACTURER_CLUSTER_ID,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Ota.cluster_id,
-                ],
-            }
-        },
-    }
+(
+    QuirkBuilder(SINOPE, "DM2500ZB")
+    .applies_to(SINOPE, "DM2500ZB-G2")
+    .replaces_endpoint(
+        1, device_type=zha_p.DeviceType.DIMMABLE_LIGHT
+    )  # Was DIMMER_SWITCH
+    .replaces(CustomDeviceTemperatureCluster, endpoint_id=1)
+    .replaces(LightManufacturerCluster, endpoint_id=1)
+    .device_automation_triggers(LIGHT_DEVICE_TRIGGERS)
+    .add_to_registry()
+)
 
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha_p.PROFILE_ID,
-                DEVICE_TYPE: zha_p.DeviceType.ON_OFF_LIGHT,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    CustomDeviceTemperatureCluster,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    Metering.cluster_id,
-                    Diagnostic.cluster_id,
-                    LightManufacturerCluster,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Ota.cluster_id,
-                ],
-            }
-        }
-    }
-
-    device_automation_triggers = LIGHT_DEVICE_TRIGGERS
-
-
-class SinopeDM2500ZB(CustomDevice):
-    """DM2500ZB, DM2500ZB-G2 Dimmers."""
-
-    signature = {
-        # <SimpleDescriptor endpoint=1 profile=260 device_type=260 device_version=1
-        # input_clusters=[0, 2, 3, 4, 5, 6, 8, 1794, 2821, 65281]
-        # output_clusters=[3, 4, 25]>
-        MODELS_INFO: [
-            (SINOPE, "DM2500ZB"),
-            (SINOPE, "DM2500ZB-G2"),
-        ],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha_p.PROFILE_ID,
-                DEVICE_TYPE: zha_p.DeviceType.DIMMER_SWITCH,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    DeviceTemperature.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    LevelControl.cluster_id,
-                    Metering.cluster_id,
-                    Diagnostic.cluster_id,
-                    SINOPE_MANUFACTURER_CLUSTER_ID,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Ota.cluster_id,
-                ],
-            }
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha_p.PROFILE_ID,
-                DEVICE_TYPE: zha_p.DeviceType.DIMMABLE_LIGHT,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    CustomDeviceTemperatureCluster,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    LevelControl.cluster_id,
-                    Metering.cluster_id,
-                    Diagnostic.cluster_id,
-                    LightManufacturerCluster,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Ota.cluster_id,
-                ],
-            }
-        }
-    }
-
-    device_automation_triggers = LIGHT_DEVICE_TRIGGERS
-
-
-class SinopeDM2550ZB(CustomDevice):
-    """DM2550ZB, DM2550ZB-G2 Dimmers."""
-
-    signature = {
-        # <SimpleDescriptor endpoint=1 profile=260 device_type=260 device_version=1
-        # input_clusters=[0, 2, 3, 4, 5, 6, 8, 1794, 2820, 2821, 65281]
-        # output_clusters=[3, 4, 10, 25]>
-        MODELS_INFO: [
-            (SINOPE, "DM2550ZB"),
-            (SINOPE, "DM2550ZB-G2"),
-        ],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha_p.PROFILE_ID,
-                DEVICE_TYPE: zha_p.DeviceType.DIMMER_SWITCH,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    DeviceTemperature.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    LevelControl.cluster_id,
-                    Metering.cluster_id,
-                    ElectricalMeasurement.cluster_id,
-                    Diagnostic.cluster_id,
-                    SINOPE_MANUFACTURER_CLUSTER_ID,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Time.cluster_id,
-                    Ota.cluster_id,
-                ],
-            }
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha_p.PROFILE_ID,
-                DEVICE_TYPE: zha_p.DeviceType.DIMMABLE_LIGHT,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    CustomDeviceTemperatureCluster,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    LevelControl.cluster_id,
-                    Metering.cluster_id,
-                    ElectricalMeasurement.cluster_id,
-                    Diagnostic.cluster_id,
-                    LightManufacturerCluster,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Time.cluster_id,
-                    Ota.cluster_id,
-                ],
-            }
-        }
-    }
-
-    device_automation_triggers = LIGHT_DEVICE_TRIGGERS
+(
+    QuirkBuilder(SINOPE, "DM2550ZB")
+    .applies_to(SINOPE, "DM2550ZB-G2")
+    .replaces_endpoint(
+        1, device_type=zha_p.DeviceType.DIMMABLE_LIGHT
+    )  # Was DIMMER_SWITCH
+    .replaces(CustomDeviceTemperatureCluster, endpoint_id=1)
+    .replaces(LightManufacturerCluster, endpoint_id=1)
+    .device_automation_triggers(LIGHT_DEVICE_TRIGGERS)
+    .add_to_registry()
+)
