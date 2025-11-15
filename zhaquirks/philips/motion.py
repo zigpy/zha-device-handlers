@@ -4,6 +4,7 @@ from typing import Final
 
 from zigpy.profiles import zha, zll
 from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.quirks.v2 import QuirkBuilder
 import zigpy.types as t
 from zigpy.zcl.clusters.general import (
     Basic,
@@ -122,52 +123,10 @@ class PhilipsMotion(CustomDevice):
     }
 
 
-class SignifyMotion(CustomDevice):
-    """New Philips motion sensor devices."""
-
-    signature = {
-        MODELS_INFO: [(SIGNIFY, "SML003"), (SIGNIFY, "SML004")],
-        ENDPOINTS: {
-            2: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.OCCUPANCY_SENSOR,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    Identify.cluster_id,
-                    IlluminanceMeasurement.cluster_id,
-                    TemperatureMeasurement.cluster_id,
-                    OccupancySensing.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    OnOff.cluster_id,
-                    Ota.cluster_id,
-                ],
-            },
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            2: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.OCCUPANCY_SENSOR,
-                INPUT_CLUSTERS: [
-                    BasicCluster,
-                    PowerConfiguration.cluster_id,
-                    Identify.cluster_id,
-                    IlluminanceMeasurement.cluster_id,
-                    TemperatureMeasurement.cluster_id,
-                    PhilipsOccupancySensing,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    OnOff.cluster_id,
-                    Ota.cluster_id,
-                ],
-            },
-        }
-    }
+(
+    QuirkBuilder(SIGNIFY, "SML003")
+    .applies_to(SIGNIFY, "SML004")
+    .replaces(BasicCluster, endpoint_id=2)
+    .replaces(PhilipsOccupancySensing, endpoint_id=2)
+    .add_to_registry()
+)
