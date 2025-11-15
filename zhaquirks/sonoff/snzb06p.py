@@ -1,20 +1,9 @@
 """Sonoff SNZB-06 - Zigbee presence sensor."""
 
-from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.quirks import CustomCluster
+from zigpy.quirks.v2 import QuirkBuilder
 import zigpy.types as t
-from zigpy.zcl.clusters.general import Basic, Identify, Ota
-from zigpy.zcl.clusters.measurement import OccupancySensing
 from zigpy.zcl.clusters.security import IasZone
-
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-)
 
 SONOFF_CLUSTER_FC11_ID = 0xFC11
 SONOFF_CLUSTER_FC57_ID = 0xFC57
@@ -38,52 +27,9 @@ class SonoffFC11Cluster(CustomCluster):
     }
 
 
-class SonoffPresenceSenorSNZB06P(CustomDevice):
-    """Sonoff human presence senor - model SNZB-06P."""
-
-    signature = {
-        # <SimpleDescriptor endpoint=1, profile=260, device_type=263
-        # device_version=1
-        # input_clusters=[0, 3, 1030, 1280, 64599, 64529]
-        # output_clusters=[3, 25]>
-        MODELS_INFO: [
-            ("SONOFF", "SNZB-06P"),
-        ],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.OCCUPANCY_SENSOR,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    OccupancySensing.cluster_id,
-                    IasZone.cluster_id,
-                    SONOFF_CLUSTER_FC11_ID,
-                    SONOFF_CLUSTER_FC57_ID,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Ota.cluster_id,
-                ],
-            },
-        },
-    }
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.OCCUPANCY_SENSOR,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    OccupancySensing.cluster_id,
-                    SonoffFC11Cluster,
-                    SONOFF_CLUSTER_FC57_ID,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Ota.cluster_id,
-                ],
-            },
-        },
-    }
+(
+    QuirkBuilder("SONOFF", "SNZB-06P")
+    .replaces(SonoffFC11Cluster, cluster_id=SONOFF_CLUSTER_FC11_ID, endpoint_id=1)
+    .removes(IasZone.cluster_id, endpoint_id=1)
+    .add_to_registry()
+)
