@@ -2,41 +2,24 @@
 
 from typing import Any, Optional, Union
 
-from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.quirks import CustomCluster
+from zigpy.quirks.v2 import QuirkBuilder
 import zigpy.types as t
-from zigpy.zcl import foundation
+from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.closures import WindowCovering
-from zigpy.zcl.clusters.general import (
-    Alarms,
-    Basic,
-    Groups,
-    Identify,
-    LevelControl,
-    OnOff,
-    Ota,
-    PollControl,
-    PowerConfiguration,
-)
-from zigpy.zcl.clusters.lightlink import LightLink
+from zigpy.zcl.clusters.general import OnOff
 
 from zhaquirks.const import (
     ARGS,
     CLOSE,
     COMMAND,
     COMMAND_STOP,
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
     LONG_RELEASE,
-    MODELS_INFO,
     OPEN,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
     SHORT_PRESS,
     ZHA_SEND_EVENT,
 )
-from zhaquirks.ikea import IKEA, IKEA_CLUSTER_ID, DoublingPowerConfig1CRCluster
+from zhaquirks.ikea import IKEA, DoublingPowerConfig1CRCluster
 
 COMMAND_CLOSE = "down_close"
 COMMAND_STOP_OPENING = "stop_opening"
@@ -76,73 +59,19 @@ class IkeaWindowCovering(CustomCluster, WindowCovering):
             self.listener_event(ZHA_SEND_EVENT, action, [])
 
 
-class IkeaTradfriOpenCloseRemote(CustomDevice):
-    """Custom device representing IKEA of Sweden TRADFRI remote control."""
-
-    signature = {
-        # <SimpleDescriptor endpoint=1 profile=260 device_type=515
-        # device_version=1
-        # input_clusters=[0, 1, 3, 9, 32, 4096, 64636]
-        # output_clusters=[3, 4, 6, 8, 25, 258, 4096]>
-        MODELS_INFO: [
-            ("\x02KE", "TRADFRI open/close remote"),
-            (IKEA, "TRADFRI open/close remote"),
-        ],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_CONTROLLER,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    Identify.cluster_id,
-                    Alarms.cluster_id,
-                    PollControl.cluster_id,
-                    LightLink.cluster_id,
-                    IKEA_CLUSTER_ID,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    OnOff.cluster_id,
-                    LevelControl.cluster_id,
-                    Ota.cluster_id,
-                    WindowCovering.cluster_id,
-                    LightLink.cluster_id,
-                ],
-            }
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_CONTROLLER,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    DoublingPowerConfig1CRCluster,
-                    Identify.cluster_id,
-                    Alarms.cluster_id,
-                    PollControl.cluster_id,
-                    LightLink.cluster_id,
-                    IKEA_CLUSTER_ID,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    LevelControl.cluster_id,
-                    Ota.cluster_id,
-                    IkeaWindowCovering,
-                    LightLink.cluster_id,
-                ],
-            }
-        },
-    }
-
-    device_automation_triggers = {
-        (SHORT_PRESS, OPEN): {COMMAND: COMMAND_OPEN, ARGS: []},
-        (LONG_RELEASE, OPEN): {COMMAND: COMMAND_STOP_OPENING, ARGS: []},
-        (SHORT_PRESS, CLOSE): {COMMAND: COMMAND_CLOSE, ARGS: []},
-        (LONG_RELEASE, CLOSE): {COMMAND: COMMAND_STOP_CLOSING, ARGS: []},
-    }
+(
+    QuirkBuilder("\x02KE", "TRADFRI open/close remote")
+    .applies_to(IKEA, "TRADFRI open/close remote")
+    .replaces(DoublingPowerConfig1CRCluster, endpoint_id=1)
+    .removes(OnOff.cluster_id, cluster_type=ClusterType.Client, endpoint_id=1)
+    .adds(IkeaWindowCovering, cluster_type=ClusterType.Client, endpoint_id=1)
+    .device_automation_triggers(
+        {
+            (SHORT_PRESS, OPEN): {COMMAND: COMMAND_OPEN, ARGS: []},
+            (LONG_RELEASE, OPEN): {COMMAND: COMMAND_STOP_OPENING, ARGS: []},
+            (SHORT_PRESS, CLOSE): {COMMAND: COMMAND_CLOSE, ARGS: []},
+            (LONG_RELEASE, CLOSE): {COMMAND: COMMAND_STOP_CLOSING, ARGS: []},
+        }
+    )
+    .add_to_registry()
+)
