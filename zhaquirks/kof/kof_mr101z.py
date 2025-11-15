@@ -5,30 +5,18 @@ module overrides all server commands that do not have a mandatory reply to not
 expect replies at all.
 """
 
-from __future__ import annotations
-
-from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.quirks import CustomCluster
+from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.zcl.clusters.general import (
     Basic,
     Groups,
     Identify,
     LevelControl,
     OnOff,
-    Ota,
     Scenes,
 )
-from zigpy.zcl.clusters.hvac import Fan
 
 from zhaquirks import NoReplyMixin
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MANUFACTURER,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-)
 
 
 class KofBasic(NoReplyMixin, CustomCluster, Basic):
@@ -76,43 +64,13 @@ class KofLevelControl(NoReplyMixin, CustomCluster, LevelControl):
     void_input_commands = {cmd.id for cmd in LevelControl.commands_by_name.values()}
 
 
-class CeilingFan(CustomDevice):
-    """Ceiling Fan Device."""
-
-    signature = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: 14,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    LevelControl.cluster_id,
-                    Fan.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],
-            }
-        },
-        MANUFACTURER: "King Of Fans,  Inc.",
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                DEVICE_TYPE: zha.DeviceType.DIMMABLE_LIGHT,
-                INPUT_CLUSTERS: [
-                    KofBasic,
-                    KofIdentify,
-                    KofGroups,
-                    KofScenes,
-                    KofOnOff,
-                    KofLevelControl,
-                    Fan,
-                ],
-                OUTPUT_CLUSTERS: [Identify, Ota],
-            }
-        }
-    }
+(
+    QuirkBuilder("King Of Fans, Inc.", "MR101Z")
+    .replaces(KofBasic)
+    .replaces(KofIdentify)
+    .replaces(KofGroups)
+    .replaces(KofScenes)
+    .replaces(KofOnOff)
+    .replaces(KofLevelControl)
+    .add_to_registry()
+)
