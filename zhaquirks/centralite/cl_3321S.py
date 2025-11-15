@@ -6,13 +6,11 @@ from zigpy.zcl.clusters.general import PowerConfiguration
 
 from zhaquirks import PowerConfigurationCluster
 from zhaquirks.centralite import CENTRALITE, CentraLiteAccelCluster
-from zhaquirks.samjin import SAMJIN
 
 (
     QuirkBuilder(CENTRALITE, "3320")
     .applies_to(CENTRALITE, "3321-S")
     .applies_to(CENTRALITE, "3321")
-    .applies_to(SAMJIN, "multi")
     .replaces(PowerConfigurationCluster, endpoint_id=1)
     .replaces(CentraLiteAccelCluster, endpoint_id=1)
     .removes(PowerConfiguration.cluster_id, endpoint_id=2)
