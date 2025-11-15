@@ -6,29 +6,19 @@ from typing import Any, Final
 
 from zigpy import types as t
 from zigpy.profiles import zha
+from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.closures import WindowCovering
-from zigpy.zcl.clusters.general import Basic, Identify, Ota, PowerConfiguration, Time
 from zigpy.zcl.clusters.measurement import IlluminanceMeasurement
 from zigpy.zcl.foundation import ZCLAttributeDef
-from zigpy.zdo.types import NodeDescriptor
+from zigpy.zdo.types import LogicalType, NodeDescriptor
 
 from zhaquirks import CustomCluster
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    NODE_DESCRIPTOR,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-)
 from zhaquirks.xiaomi import (
     LUMI,
     BasicCluster,
     LocalIlluminanceMeasurementCluster,
     XiaomiAqaraE1Cluster,
-    XiaomiCustomDevice,
     XiaomiPowerConfigurationPercent,
 )
 
@@ -106,58 +96,31 @@ class WindowCoveringE1(CustomCluster, WindowCovering):
         )
 
 
-class DriverE1(XiaomiCustomDevice):
-    """Aqara Curtain Driver E1 device."""
-
-    signature = {
-        MODELS_INFO: [(LUMI, "lumi.curtain.agl001")],
-        ENDPOINTS: {
-            # <SizePrefixedSimpleDescriptor endpoint=1 profile=260 device_type=263
-            # device_version=1
-            # input_clusters=[0, 1, 3, 10, 258, 64704]
-            # output_clusters=[3, 10, 25, 64704]>
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.OCCUPANCY_SENSOR,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    Identify.cluster_id,
-                    Time.cluster_id,
-                    WindowCovering.cluster_id,
-                    XiaomiAqaraDriverE1.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Time.cluster_id,
-                    Ota.cluster_id,
-                    XiaomiAqaraDriverE1.cluster_id,
-                ],
-            }
-        },
-    }
-    replacement = {
-        NODE_DESCRIPTOR: NodeDescriptor(
-            0x02, 0x40, 0x80, 0x115F, 0x7F, 0x0064, 0x2C00, 0x0064, 0x00
-        ),
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.WINDOW_COVERING_DEVICE,
-                INPUT_CLUSTERS: [
-                    BasicCluster,
-                    XiaomiPowerConfigurationPercent,
-                    Identify.cluster_id,
-                    Time.cluster_id,
-                    WindowCoveringE1,
-                    LocalIlluminanceMeasurementCluster,
-                    XiaomiAqaraDriverE1,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Time.cluster_id,
-                    Ota.cluster_id,
-                ],
-            }
-        },
-    }
+(
+    QuirkBuilder(LUMI, "lumi.curtain.agl001")
+    .replaces_endpoint(1, device_type=zha.DeviceType.WINDOW_COVERING_DEVICE)
+    .replaces(BasicCluster, endpoint_id=1)
+    .replaces(XiaomiPowerConfigurationPercent, endpoint_id=1)
+    .replaces(WindowCoveringE1, endpoint_id=1)
+    .adds(LocalIlluminanceMeasurementCluster, endpoint_id=1)
+    .replaces(XiaomiAqaraDriverE1, endpoint_id=1)
+    .removes(XiaomiAqaraDriverE1, cluster_type="output", endpoint_id=1)
+    .node_descriptor(
+        NodeDescriptor(
+            logical_type=LogicalType.EndDevice,
+            complex_descriptor_available=0,
+            user_descriptor_available=0,
+            reserved=0,
+            aps_flags=0,
+            frequency_band=NodeDescriptor.FrequencyBand.Freq2400MHz,
+            mac_capability_flags=NodeDescriptor.MACCapabilityFlags.AllocateAddress,  # removes `MainsPowered`
+            manufacturer_code=4447,
+            maximum_buffer_size=127,
+            maximum_incoming_transfer_size=100,
+            server_mask=11264,
+            maximum_outgoing_transfer_size=100,
+            descriptor_capability_field=NodeDescriptor.DescriptorCapability.NONE,
+        )
+    )
+    .add_to_registry()
+)
