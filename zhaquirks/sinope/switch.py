@@ -336,6 +336,6 @@ class SinopeTechnologiesFlowMeasurementCluster(CustomCluster, FlowMeasurement):
 (
     QuirkBuilder(SINOPE, "MC3100ZB")
     .replaces(SinopeManufacturerCluster, endpoint_id=1)
-    .replaces(SinopeManufacturerCluster, endpoint_id=1)
+    .replaces(SinopeManufacturerCluster, endpoint_id=2)
     .add_to_registry()
 )
