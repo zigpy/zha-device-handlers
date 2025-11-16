@@ -9,6 +9,7 @@ from typing import Final
 
 import zigpy.profiles.zha as zha_p
 from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.quirks.v2 import QuirkBuilder
 import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import (
@@ -311,50 +312,13 @@ class SinopeTechnologiesFlowMeasurementCluster(CustomCluster, FlowMeasurement):
         super()._update_attribute(attrid, value)
 
 
-class SinopeTechnologiesSwitch(CustomDevice):
-    """SinopeTechnologiesSwitch custom device."""
-
-    signature = {
-        # <SimpleDescriptor(endpoint=1, profile=260,
-        # device_type=81, device_version=0,
-        # input_clusters=[0, 3, 6, 1794, 2820, 65281]
-        # output_clusters=[25]>
-        MODELS_INFO: [
-            (SINOPE, "SP2600ZB"),
-            (SINOPE, "SP2610ZB"),
-        ],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha_p.PROFILE_ID,
-                DEVICE_TYPE: zha_p.DeviceType.SMART_PLUG,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    OnOff.cluster_id,
-                    Metering.cluster_id,
-                    ElectricalMeasurement.cluster_id,
-                    SINOPE_MANUFACTURER_CLUSTER_ID,
-                ],
-                OUTPUT_CLUSTERS: [Ota.cluster_id],
-            }
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Identify.cluster_id,
-                    OnOff.cluster_id,
-                    SinopeTechnologiesMeteringCluster,
-                    ElectricalMeasurement.cluster_id,
-                    SinopeManufacturerCluster,
-                ],
-                OUTPUT_CLUSTERS: [Ota.cluster_id],
-            }
-        }
-    }
+(
+    QuirkBuilder(SINOPE, "SP2600ZB")
+    .applies_to(SINOPE, "SP2610ZB")
+    .replaces(SinopeTechnologiesMeteringCluster, endpoint_id=1)
+    .replaces(SinopeManufacturerCluster, endpoint_id=1)
+    .add_to_registry()
+)
 
 
 class SinopeTechnologiesLoadController(CustomDevice):
@@ -477,66 +441,17 @@ class SinopeTechnologiesLoadController_V2(CustomDevice):
     }
 
 
-class SinopeTechnologiesValve(CustomDevice):
-    """SinopeTechnologiesValve custom device."""
-
-    signature = {
-        # <SimpleDescriptor(endpoint=1, profile=260,
-        # device_type=3, device_version=0,
-        # input_clusters=[0, 1, 3, 4, 5, 6, 8, 2821, 65281]
-        # output_clusters=[3, 25]>
-        MODELS_INFO: [
-            (SINOPE, "VA4200WZ"),
-            (SINOPE, "VA4201WZ"),
-            (SINOPE, "VA4200ZB"),
-            (SINOPE, "VA4201ZB"),
-            (SINOPE, "VA4220ZB"),
-            (SINOPE, "VA4221ZB"),
-        ],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha_p.PROFILE_ID,
-                DEVICE_TYPE: zha_p.DeviceType.LEVEL_CONTROLLABLE_OUTPUT,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    LevelControl.cluster_id,
-                    Diagnostic.cluster_id,
-                    SINOPE_MANUFACTURER_CLUSTER_ID,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Ota.cluster_id,
-                ],
-            }
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                INPUT_CLUSTERS: [
-                    SinopeTechnologiesBasicCluster,
-                    PowerConfiguration.cluster_id,
-                    Identify.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    OnOff.cluster_id,
-                    LevelControl.cluster_id,
-                    Diagnostic.cluster_id,
-                    SinopeManufacturerCluster,
-                ],
-                OUTPUT_CLUSTERS: [
-                    Identify.cluster_id,
-                    Ota.cluster_id,
-                ],
-            }
-        }
-    }
+(
+    QuirkBuilder(SINOPE, "VA4200WZ")
+    .applies_to(SINOPE, "VA4201WZ")
+    .applies_to(SINOPE, "VA4200ZB")
+    .applies_to(SINOPE, "VA4201ZB")
+    .applies_to(SINOPE, "VA4220ZB")
+    .applies_to(SINOPE, "VA4221ZB")
+    .replaces(SinopeTechnologiesBasicCluster, endpoint_id=1)
+    .replaces(SinopeManufacturerCluster, endpoint_id=1)
+    .add_to_registry()
+)
 
 
 class SinopeTechnologiesValveG2(CustomDevice):
