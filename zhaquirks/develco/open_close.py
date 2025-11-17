@@ -25,11 +25,7 @@ base_quirk = (
 )
 
 # Entry Sensor 2 Pro, no tamper
-(
-    base_quirk.clone()
-    .applies_to("frient A/S", "WISZB-131")
-    .add_to_registry()
-)
+(base_quirk.clone().applies_to("frient A/S", "WISZB-131").add_to_registry())
 
 # Entry Sensor Pro + Entry Sensor (basic), with tamper
 (
