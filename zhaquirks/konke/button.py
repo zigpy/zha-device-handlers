@@ -15,7 +15,7 @@ from zhaquirks.const import (
 from zhaquirks.konke import KONKE, KonkeOnOffCluster
 
 (
-    QuirkBuilder(KONKE, "3AFE280100510001Z")
+    QuirkBuilder(KONKE, "3AFE280100510001")
     .applies_to(KONKE, "3AFE170100510001")
     .replaces(PowerConfigurationCluster, endpoint_id=1)
     .replaces(KonkeOnOffCluster, endpoint_id=1)
