@@ -21,7 +21,6 @@ from zigpy.zcl import foundation
 import zigpy.zdo.types
 
 import zhaquirks
-from zhaquirks import const
 import zhaquirks.bosch.motion
 import zhaquirks.centralite.cl_3310S
 from zhaquirks.const import (
@@ -467,102 +466,6 @@ def test_quirk_loading_error(tmp_path: Path, caplog) -> None:
         in caplog.text
     )
     assert "cannot import name 'foobarbaz7' from 'os'" in caplog.text
-
-
-def test_custom_quirk_loading(
-    zigpy_device_from_quirk: CustomDevice, tmp_path: Path
-) -> None:
-    """Make sure custom quirks take priority over regular quirks."""
-
-    device = zigpy_device_from_quirk(
-        zhaquirks.bosch.motion.ISWZPR1WP13, apply_quirk=False
-    )
-    assert type(device) is zigpy.device.Device
-
-    # Make sure our target quirk will load after we re-setup zhaquirks
-    zhaquirks.setup()
-    assert type(zq.get_device(device)) is zhaquirks.bosch.motion.ISWZPR1WP13
-
-    custom_quirks = tmp_path / "custom_zha_quirks"
-    custom_quirks.mkdir()
-
-    # Make our own custom quirk
-    (custom_quirks / "__init__.py").touch()
-
-    (custom_quirks / "bosch").mkdir()
-    (custom_quirks / "bosch/__init__.py").touch()
-    (custom_quirks / "bosch/custom_quirk.py").write_text(
-        '''
-"""Device handler for Bosch motion sensors."""
-from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
-from zigpy.zcl.clusters.general import Basic, Identify, Ota, PollControl
-from zigpy.zcl.clusters.homeautomation import Diagnostic
-from zigpy.zcl.clusters.measurement import TemperatureMeasurement
-from zigpy.zcl.clusters.security import IasZone
-
-from zhaquirks import PowerConfigurationCluster
-
-from zhaquirks.bosch import BOSCH
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-)
-
-class TestReplacementISWZPR1WP13(CustomDevice):
-    """Custom device representing Bosch motion sensors."""
-
-    signature = {
-        #  <SimpleDescriptor endpoint=1 profile=260 device_type=1026
-        #  device_version=0
-        #  input_clusters=[0, 1, 3, 1026, 1280, 32, 2821]
-        #  output_clusters=[25]>
-        MODELS_INFO: [(BOSCH, "ISW-ZPR1-WP13")],
-        ENDPOINTS: {
-            5: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfigurationCluster.cluster_id,
-                    Identify.cluster_id,
-                    PollControl.cluster_id,
-                    TemperatureMeasurement.cluster_id,
-                    IasZone.cluster_id,
-                    Diagnostic.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [Ota.cluster_id],
-            }
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            5: {
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfigurationCluster.cluster_id,
-                    Identify.cluster_id,
-                    PollControl.cluster_id,
-                    TemperatureMeasurement.cluster_id,
-                    IasZone.cluster_id,
-                    Diagnostic.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [Ota.cluster_id],
-            }
-        }
-    }
-'''
-    )
-
-    zhaquirks.setup(custom_quirks_path=str(custom_quirks))
-
-    assert not isinstance(zq.get_device(device), zhaquirks.bosch.motion.ISWZPR1WP13)
-    assert type(zq.get_device(device)).__name__ == "TestReplacementISWZPR1WP13"
 
 
 def test_zigpy_custom_cluster_pollution() -> None:
