@@ -19,6 +19,7 @@ from zhaquirks.xiaomi import (
     BasicCluster,
     LocalIlluminanceMeasurementCluster,
     XiaomiAqaraE1Cluster,
+    XiaomiCustomDeviceV2,
     XiaomiPowerConfigurationPercent,
 )
 
@@ -91,6 +92,7 @@ class WindowCoveringE1(CustomCluster, WindowCovering):
 
 (
     QuirkBuilder(LUMI, "lumi.curtain.agl001")
+    .device_class(XiaomiCustomDeviceV2)
     .replaces_endpoint(1, device_type=zha.DeviceType.WINDOW_COVERING_DEVICE)
     .replaces(BasicCluster, endpoint_id=1)
     .replaces(XiaomiPowerConfigurationPercent, endpoint_id=1)
