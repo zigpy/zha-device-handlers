@@ -7,7 +7,7 @@ from typing import Any, Final
 from zigpy import types as t
 from zigpy.profiles import zha
 from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.zcl import foundation
+from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.measurement import IlluminanceMeasurement
 from zigpy.zcl.foundation import ZCLAttributeDef
@@ -22,13 +22,6 @@ from zhaquirks.xiaomi import (
     XiaomiPowerConfigurationPercent,
 )
 
-HAND_OPEN = 0x0401
-POSITIONS_STORED = 0x0402
-STORE_POSITION = 0x0407
-HOOKS_LOCK = 0x0427
-HOOKS_STATE = 0x0428
-LIGHT_LEVEL = 0x0429
-
 
 class XiaomiAqaraDriverE1(XiaomiAqaraE1Cluster):
     """Xiaomi Aqara Curtain Driver E1 cluster."""
@@ -37,26 +30,26 @@ class XiaomiAqaraDriverE1(XiaomiAqaraE1Cluster):
         """Attribute definitions."""
 
         hand_open: Final = ZCLAttributeDef(
-            id=HAND_OPEN, type=t.Bool, is_manufacturer_specific=True
+            id=0x0401, type=t.Bool, is_manufacturer_specific=True
         )
         positions_stored: Final = ZCLAttributeDef(
-            id=POSITIONS_STORED, type=t.Bool, is_manufacturer_specific=True
+            id=0x0402, type=t.Bool, is_manufacturer_specific=True
         )
         store_position: Final = ZCLAttributeDef(
-            id=STORE_POSITION, type=t.uint8_t, is_manufacturer_specific=True
+            id=0x0407, type=t.uint8_t, is_manufacturer_specific=True
         )
         hooks_lock: Final = ZCLAttributeDef(
-            id=HOOKS_LOCK, type=t.uint8_t, is_manufacturer_specific=True
+            id=0x0427, type=t.uint8_t, is_manufacturer_specific=True
         )
         hooks_state: Final = ZCLAttributeDef(
-            id=HOOKS_STATE, type=t.uint8_t, is_manufacturer_specific=True
+            id=0x0428, type=t.uint8_t, is_manufacturer_specific=True
         )
         light_level: Final = ZCLAttributeDef(
-            id=LIGHT_LEVEL, type=t.uint8_t, is_manufacturer_specific=True
+            id=0x0429, type=t.uint8_t, is_manufacturer_specific=True
         )
 
     def _update_attribute(self, attrid, value):
-        if attrid == LIGHT_LEVEL:
+        if attrid == self.AttributeDefs.light_level.id:
             # Light level value seems like it can be 0, 1, or 2.
             # Multiply by 50 to map those values to later show: 1 lx, 50 lx, 100 lx.
             self.endpoint.illuminance.update_attribute(
@@ -104,7 +97,7 @@ class WindowCoveringE1(CustomCluster, WindowCovering):
     .replaces(WindowCoveringE1, endpoint_id=1)
     .adds(LocalIlluminanceMeasurementCluster, endpoint_id=1)
     .replaces(XiaomiAqaraDriverE1, endpoint_id=1)
-    .removes(XiaomiAqaraDriverE1, cluster_type="output", endpoint_id=1)
+    .removes(XiaomiAqaraDriverE1, cluster_type=ClusterType.Client, endpoint_id=1)
     .node_descriptor(
         NodeDescriptor(
             logical_type=LogicalType.EndDevice,
