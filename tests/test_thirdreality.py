@@ -1,20 +1,22 @@
 """Tests for Third Reality quirks."""
 
-import pytest
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.security import IasZone
 
 from tests.common import ClusterListener
 import zhaquirks
-import zhaquirks.thirdreality.night_light
 
 zhaquirks.setup()
 
 
-@pytest.mark.parametrize("quirk", (zhaquirks.thirdreality.night_light.Nightlight,))
-async def test_third_reality_nightlight(zigpy_device_from_quirk, quirk):
+async def test_third_reality_nightlight(zigpy_device_from_v2_quirk):
     """Test Third Reality night light forwarding motion attribute to IasZone cluster."""
 
-    device = zigpy_device_from_quirk(quirk)
+    device = zigpy_device_from_v2_quirk(
+        "Third Reality, Inc",
+        "3RSNL02043Z",
+        cluster_ids={1: {0xFC00: ClusterType.Server}},
+    )
 
     ias_zone_cluster = device.endpoints[1].ias_zone
     ias_zone_listener = ClusterListener(ias_zone_cluster)

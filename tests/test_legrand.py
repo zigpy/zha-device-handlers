@@ -23,10 +23,10 @@ zhaquirks.setup()
         (24.0, 0),  # below min
     ),
 )
-async def test_legrand_battery(zigpy_device_from_quirk, voltage, bpr):
+async def test_legrand_battery(zigpy_device_from_v2_quirk, voltage, bpr):
     """Test Legrand battery voltage to % battery left."""
 
-    device = zigpy_device_from_quirk(zhaquirks.legrand.dimmer.RemoteDimmer)
+    device = zigpy_device_from_v2_quirk(f" {LEGRAND}", " Remote dimmer switch")
     power_cluster = device.endpoints[1].power
     power_cluster.update_attribute(0x0020, voltage)
     assert power_cluster["battery_percentage_remaining"] == bpr

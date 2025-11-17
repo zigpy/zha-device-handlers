@@ -171,6 +171,7 @@ def zigpy_device_from_v2_quirk(MockAppController, ieee_mock):
         model: str,
         endpoint_ids: list[int] = [1],
         cluster_ids: dict[int, dict[int, ClusterType]] = {},
+        device_types: dict[int, int] = {},
         ieee=None,
         nwk=zigpy.types.NWK(0x1234),
         apply_quirk=True,
@@ -184,6 +185,8 @@ def zigpy_device_from_v2_quirk(MockAppController, ieee_mock):
             and their cluster ids and types to be added to the device.
             More advanced version of endpoint_ids argument.
             Example: `cluster_ids={2: {OnOff.cluster_id: ClusterType.Client}}`
+        :param device_types: Dictionary mapping endpoint ids to device_type values.
+            Example: `device_types={1: 0x0820}`
         :param ieee: IEEE address of the device.
         :param nwk: Network address of the device.
         :param apply_quirk: Whether to apply the quirk to the device.
@@ -212,6 +215,10 @@ def zigpy_device_from_v2_quirk(MockAppController, ieee_mock):
         for endpoint_id, clusters in endpoint_clusters.items():
             ep = raw_device.add_endpoint(endpoint_id)
 
+            # set device_type if provided
+            if endpoint_id in device_types:
+                ep.device_type = device_types[endpoint_id]
+
             # add custom cluster ids to test device
             for cluster_id, cluster_type in clusters.items():
                 if cluster_type == ClusterType.Client:
@@ -219,21 +226,10 @@ def zigpy_device_from_v2_quirk(MockAppController, ieee_mock):
                 else:
                     ep.add_input_cluster(cluster_id)
 
-        quirked = zigpy.quirks.get_device(raw_device)
-
         if not apply_quirk:
-            for ep_id, ep_data in quirked.endpoints.items():
-                if ep_id != 0:
-                    ep = raw_device.add_endpoint(ep_id)
-                    ep.profile_id = ep_data.get(PROFILE_ID, 0x0260)
-                    ep.device_type = ep_data.get(DEVICE_TYPE, 0xFEDB)
-                    in_clusters = ep_data.get(INPUT_CLUSTERS, [])
-                    for cluster_id in in_clusters:
-                        ep.add_input_cluster(cluster_id)
-                    out_clusters = ep_data.get(OUTPUT_CLUSTERS, [])
-                    for cluster_id in out_clusters:
-                        ep.add_output_cluster(cluster_id)
             return raw_device
+
+        quirked = zigpy.quirks.get_device(raw_device)
 
         MockAppController.devices[ieee] = quirked
 

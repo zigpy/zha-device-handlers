@@ -3,6 +3,7 @@
 from unittest import mock
 
 import pytest
+from zigpy.profiles import zha
 from zigpy.quirks import CustomEndpoint
 from zigpy.zcl import Cluster
 from zigpy.zcl.clusters.general import OnOff
@@ -35,21 +36,27 @@ from zhaquirks.const import (
     TURN_ON,
 )
 import zhaquirks.philips
-from zhaquirks.philips import Button, ButtonPressQueue, PhilipsRemoteCluster, PressType
-from zhaquirks.philips.rdm002 import PhilipsRDM002
-from zhaquirks.philips.rom001 import PhilipsROM001
-from zhaquirks.philips.rwl022 import PhilipsRWL022
-from zhaquirks.philips.rwlfirstgen import PhilipsRWLFirstGen, PhilipsRWLFirstGen2
-from zhaquirks.philips.wall_switch import PhilipsWallSwitch
+from zhaquirks.philips import (
+    PHILIPS,
+    SIGNIFY,
+    Button,
+    ButtonPressQueue,
+    PhilipsRemoteCluster,
+    PhilipsRwlRemoteCluster,
+    PressType,
+)
+from zhaquirks.philips.rdm002 import DIAL_TRIGGERS, PhilipsRdm002RemoteCluster
+from zhaquirks.philips.rom001 import PhilipsRom001RemoteCluster
+from zhaquirks.philips.wall_switch import PhilipsWallSwitchRemoteCluster
 
 zhaquirks.setup()
 
 
 @pytest.mark.parametrize(
-    "classes, triggers",
+    "cluster_class, triggers",
     (
         (
-            [PhilipsRWLFirstGen, PhilipsRWLFirstGen2, PhilipsRWL022],
+            PhilipsRwlRemoteCluster,
             {
                 (SHORT_PRESS, TURN_ON): {COMMAND: "on_press"},
                 (SHORT_PRESS, TURN_OFF): {COMMAND: "off_press"},
@@ -86,7 +93,7 @@ zhaquirks.setup()
             },
         ),
         (
-            [PhilipsROM001],
+            PhilipsRom001RemoteCluster,
             {
                 (SHORT_PRESS, TURN_ON): {COMMAND: "on_press"},
                 (LONG_PRESS, TURN_ON): {COMMAND: "on_hold"},
@@ -99,7 +106,7 @@ zhaquirks.setup()
             },
         ),
         (
-            [PhilipsWallSwitch],
+            PhilipsWallSwitchRemoteCluster,
             {
                 (SHORT_PRESS, TURN_ON): {COMMAND: "left_press"},
                 (LONG_PRESS, TURN_ON): {COMMAND: "left_hold"},
@@ -121,11 +128,10 @@ zhaquirks.setup()
         ),
     ),
 )
-def test_legacy_remote_automation_triggers(classes, triggers):
+def test_legacy_remote_automation_triggers(cluster_class, triggers):
     """Ensure we don't break any automation triggers by changing their values."""
 
-    for cls in classes:
-        assert cls.device_automation_triggers == triggers
+    assert cluster_class.generate_device_automation_triggers() == triggers
 
 
 class _SimpleRemote(PhilipsRemoteCluster):
@@ -327,34 +333,39 @@ class ManuallyFiredButtonPressQueue:
 
 
 @pytest.mark.parametrize(
-    "dev, ep, button, events",
+    "manufacturer, model, ep, button, events",
     (
         (
-            PhilipsWallSwitch,
+            SIGNIFY,
+            "RDM001",
             1,
             "left",
             ["press", "short_release"],
         ),
         (
-            PhilipsROM001,
+            SIGNIFY,
+            "ROM001",
             1,
             "on",
             ["press", "short_release"],
         ),
         (
-            PhilipsRWLFirstGen,
+            PHILIPS,
+            "RWL020",
             2,
             "on",
             ["press", "short_release"],
         ),
         (
-            PhilipsRWLFirstGen2,
+            PHILIPS,
+            "RWL021",
             2,
             "on",
             ["press", "short_release"],
         ),
         (
-            PhilipsRWL022,
+            SIGNIFY,
+            "RWL022",
             1,
             "on",
             ["press", "short_release"],
@@ -362,11 +373,13 @@ class ManuallyFiredButtonPressQueue:
     ),
 )
 def test_PhilipsRemoteCluster_short_press(
-    zigpy_device_from_quirk, dev, ep, button, events
+    zigpy_device_from_v2_quirk, manufacturer, model, ep, button, events
 ):
     """Test PhilipsRemoteCluster short button press logic."""
 
-    device = zigpy_device_from_quirk(dev)
+    device = zigpy_device_from_v2_quirk(
+        manufacturer, model, endpoint_ids=[1, 2], device_types={1: zha.DeviceType.NON_COLOR_CONTROLLER}
+    )
 
     cluster = device.endpoints[ep].philips_remote_cluster
     listener = mock.MagicMock()
@@ -409,30 +422,35 @@ def test_PhilipsRemoteCluster_short_press(
 
 
 @pytest.mark.parametrize(
-    "dev, ep, button",
+    "manufacturer, model, ep, button",
     (
         (
-            PhilipsROM001,
+            PHILIPS,
+            "ROM001",
             1,
             "on",
         ),
         (
-            PhilipsWallSwitch,
+            PHILIPS,
+            "RDM001",
             1,
             "left",
         ),
         (
-            PhilipsRWLFirstGen,
+            PHILIPS,
+            "RWL020",
             2,
             "on",
         ),
         (
-            PhilipsRWLFirstGen2,
+            PHILIPS,
+            "RWL021",
             2,
             "on",
         ),
         (
-            PhilipsRWL022,
+            SIGNIFY,
+            "RWL022",
             1,
             "on",
         ),
@@ -448,8 +466,9 @@ def test_PhilipsRemoteCluster_short_press(
     ),
 )
 def test_PhilipsRemoteCluster_multi_press(
-    zigpy_device_from_quirk,
-    dev,
+    zigpy_device_from_v2_quirk,
+    manufacturer,
+    model,
     ep,
     button,
     count,
@@ -457,7 +476,9 @@ def test_PhilipsRemoteCluster_multi_press(
 ):
     """Test PhilipsRemoteCluster button multi-press logic."""
 
-    device = zigpy_device_from_quirk(dev)
+    device = zigpy_device_from_v2_quirk(
+        manufacturer, model, endpoint_ids=[1, 2], device_types={1: zha.DeviceType.NON_COLOR_CONTROLLER}
+    )
 
     cluster = device.endpoints[ep].philips_remote_cluster
     listener = mock.MagicMock()
@@ -493,19 +514,21 @@ def test_PhilipsRemoteCluster_multi_press(
 
 
 @pytest.mark.parametrize(
-    "dev, ep",
+    "manufacturer, model, ep",
     (
-        (PhilipsWallSwitch, 1),
-        (PhilipsROM001, 1),
-        (PhilipsRWLFirstGen, 2),
-        (PhilipsRWLFirstGen2, 2),
-        (PhilipsRWL022, 1),
+        (PHILIPS, "RDM001", 1),
+        (PHILIPS, "ROM001", 1),
+        (PHILIPS, "RWL020", 2),
+        (PHILIPS, "RWL021", 2),
+        (SIGNIFY, "RWL022", 1),
     ),
 )
-def test_PhilipsRemoteCluster_ignore_unknown_buttons(zigpy_device_from_quirk, dev, ep):
+def test_PhilipsRemoteCluster_ignore_unknown_buttons(zigpy_device_from_v2_quirk, manufacturer, model, ep):
     """Ensure PhilipsRemoteCluster ignores unknown buttons."""
 
-    device = zigpy_device_from_quirk(dev)
+    device = zigpy_device_from_v2_quirk(
+        manufacturer, model, endpoint_ids=[1, 2], device_types={1: zha.DeviceType.NON_COLOR_CONTROLLER}
+    )
 
     cluster = device.endpoints[ep].philips_remote_cluster
     listener = mock.MagicMock()
@@ -517,11 +540,12 @@ def test_PhilipsRemoteCluster_ignore_unknown_buttons(zigpy_device_from_quirk, de
 
 
 @pytest.mark.parametrize(
-    "dev, ep, button, hold_press_type, release_press_type, release_press_type_arg",
+    "manufacturer, model, ep, button, hold_press_type, release_press_type, release_press_type_arg",
     (
-        (PhilipsROM001, 1, "on", "hold", "long_release", "hold_release"),
+        (PHILIPS, "ROM001", 1, "on", "hold", "long_release", "hold_release"),
         (
-            PhilipsWallSwitch,
+            PHILIPS,
+            "RDM001",
             1,
             "left",
             "hold",
@@ -529,7 +553,8 @@ def test_PhilipsRemoteCluster_ignore_unknown_buttons(zigpy_device_from_quirk, de
             "hold_release",
         ),
         (
-            PhilipsRWLFirstGen,
+            PHILIPS,
+            "RWL020",
             2,
             "on",
             "hold",
@@ -537,7 +562,8 @@ def test_PhilipsRemoteCluster_ignore_unknown_buttons(zigpy_device_from_quirk, de
             "long_release",
         ),
         (
-            PhilipsRWLFirstGen2,
+            PHILIPS,
+            "RWL021",
             2,
             "on",
             "hold",
@@ -545,7 +571,8 @@ def test_PhilipsRemoteCluster_ignore_unknown_buttons(zigpy_device_from_quirk, de
             "long_release",
         ),
         (
-            PhilipsRWL022,
+            SIGNIFY,
+            "RWL022",
             1,
             "on",
             "hold",
@@ -563,8 +590,9 @@ def test_PhilipsRemoteCluster_ignore_unknown_buttons(zigpy_device_from_quirk, de
     ),
 )
 def test_PhilipsRemoteCluster_long_press(
-    zigpy_device_from_quirk,
-    dev,
+    zigpy_device_from_v2_quirk,
+    manufacturer,
+    model,
     ep,
     button,
     hold_press_type,
@@ -574,7 +602,9 @@ def test_PhilipsRemoteCluster_long_press(
 ):
     """Test PhilipsRemoteCluster button long press logic."""
 
-    device = zigpy_device_from_quirk(dev)
+    device = zigpy_device_from_v2_quirk(
+        manufacturer, model, endpoint_ids=[1, 2], device_types={1: zha.DeviceType.NON_COLOR_CONTROLLER}
+    )
 
     cluster = device.endpoints[ep].philips_remote_cluster
     listener = mock.MagicMock()
@@ -715,7 +745,9 @@ def test_rdm002_triggers():
         }
     )
 
-    actual_triggers = PhilipsRDM002.device_automation_triggers
+    actual_triggers = PhilipsRdm002RemoteCluster.generate_device_automation_triggers(
+        DIAL_TRIGGERS
+    )
 
     assert actual_triggers == expected_triggers
 
@@ -749,10 +781,11 @@ def test_contact_sensor(zigpy_device_from_v2_quirk):
 
 
 @pytest.mark.parametrize(
-    "dev, ep, button_events, expected_actions",
+    "manufacturer, model, ep, button_events, expected_actions",
     (
         (
-            PhilipsWallSwitch,
+            PHILIPS,
+            "RDM001",
             1,
             (
                 [
@@ -769,11 +802,13 @@ def test_contact_sensor(zigpy_device_from_v2_quirk):
     ),
 )
 def test_PhilipsRemoteCluster_multi_button_press(
-    zigpy_device_from_quirk, dev, ep, button_events, expected_actions
+    zigpy_device_from_v2_quirk, manufacturer, model, ep, button_events, expected_actions
 ):
     """Test PhilipsRemoteCluster short button press logic."""
 
-    device = zigpy_device_from_quirk(dev)
+    device = zigpy_device_from_v2_quirk(
+        manufacturer, model, endpoint_ids=[1, 2], device_types={1: zha.DeviceType.NON_COLOR_CONTROLLER}
+    )
 
     remote_cluster = device.endpoints[ep].philips_remote_cluster
     remote_cluster.button_press_queue = {
@@ -818,10 +853,10 @@ def listen_to_all(device) -> mock.MagicMock:
     return listener
 
 
-async def test_RDM002_no_levelcontrol_on_long_press(zigpy_device_from_quirk):
+async def test_RDM002_no_levelcontrol_on_long_press(zigpy_device_from_v2_quirk):
     """Button long-presses shouldn't trigger LevelControl events."""
 
-    device = zigpy_device_from_quirk(PhilipsRDM002)
+    device = zigpy_device_from_v2_quirk(PHILIPS, "RDM002")
     listener = listen_to_all(device)
 
     # All below messages are triggered when long pressing button 1 for ~1.5 seconds
@@ -865,10 +900,10 @@ async def test_RDM002_no_levelcontrol_on_long_press(zigpy_device_from_quirk):
     assert listener.cluster_command.call_count == 3
 
 
-async def test_RDM002_levelcontrol_on_dial_rotary_event(zigpy_device_from_quirk):
+async def test_RDM002_levelcontrol_on_dial_rotary_event(zigpy_device_from_v2_quirk):
     """Dial rotary events shouldn't be muted by PhilipsRdm002LevelControl."""
 
-    device = zigpy_device_from_quirk(PhilipsRDM002)
+    device = zigpy_device_from_v2_quirk(PHILIPS, "RDM002")
     listener = listen_to_all(device)
 
     # All below messages are triggered when quickly rotating the dial counterclockwise

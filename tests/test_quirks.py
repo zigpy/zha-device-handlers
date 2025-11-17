@@ -408,10 +408,6 @@ def test_signature(quirk: CustomDevice) -> None:
             zhaquirks.xbee.xbee_io.XBeeSensor,
             zhaquirks.xbee.xbee3_io.XBee3Sensor,
             zhaquirks.tuya.ts0201.MoesTemperatureHumidtySensorWithScreen,
-            zhaquirks.smartthings.tag_v4.SmartThingsTagV4,
-            zhaquirks.smartthings.multi.SmartthingsMultiPurposeSensor,
-            zhaquirks.netvox.z308e3ed.Z308E3ED,
-            zhaquirks.gledopto.soposhgu10.SoposhGU10,
         )
     ],
 )
@@ -640,33 +636,7 @@ def test_migrated_lighting_automation_triggers(quirk: CustomDevice) -> None:
 
 
 KNOWN_DUPLICATE_TRIGGERS = {
-    zhaquirks.aurora.aurora_dimmer.AuroraDimmerBatteryPowered: [
-        [
-            # XXX: why is this constant defined in the module?
-            (zhaquirks.aurora.aurora_dimmer.COLOR_UP, const.RIGHT),
-            (zhaquirks.aurora.aurora_dimmer.COLOR_UP, const.LEFT),
-        ],
-        [
-            (zhaquirks.aurora.aurora_dimmer.COLOR_DOWN, const.RIGHT),
-            (zhaquirks.aurora.aurora_dimmer.COLOR_DOWN, const.LEFT),
-        ],
-    ],
-    zhaquirks.paulmann.fourbtnremote.PaulmannRemote4Btn: [
-        [
-            (const.LONG_RELEASE, const.BUTTON_1),
-            (const.LONG_RELEASE, const.BUTTON_2),
-        ],
-        [
-            (const.LONG_RELEASE, const.BUTTON_3),
-            (const.LONG_RELEASE, const.BUTTON_4),
-        ],
-    ],
-    zhaquirks.thirdreality.button.Button: [
-        [
-            (const.LONG_PRESS, const.LONG_PRESS),
-            (const.LONG_RELEASE, const.LONG_RELEASE),
-        ]
-    ],
+    # v2 quirks removed: aurora.aurora_dimmer, paulmann.fourbtnremote, thirdreality.button
 }
 
 
@@ -871,8 +841,6 @@ def test_no_duplicate_clusters(quirk: CustomDevice) -> None:
             zhaquirks.xiaomi.aqara.cube_aqgl01.CubeAQGL01,
             # also add OTA input cluster (Aqara cube):
             zhaquirks.xiaomi.aqara.cube_aqgl01.CubeCAGL02,
-            # remove custom Xiaomi output cluster (E1 curtain driver):
-            zhaquirks.xiaomi.aqara.driver_curtain_e1.DriverE1,
             # remove random AnalogInput input cluster (Aqara remote + temp sensor):
             zhaquirks.xiaomi.aqara.remote_b186acn01.RemoteB186ACN01,
             zhaquirks.xiaomi.aqara.remote_b286acn01.RemoteB286ACN01,
@@ -885,8 +853,6 @@ def test_no_duplicate_clusters(quirk: CustomDevice) -> None:
             # remove OTA input cluster (Aqara remote + motion sensor):
             zhaquirks.xiaomi.mija.motion.Motion,
             zhaquirks.xiaomi.mija.sensor_switch.MijaButton,
-            # remove a bunch of incorrect output clusters (LUMI/Keen temp sensor):
-            zhaquirks.keenhome.weather.TemperatureHumidtyPressureSensor,
             # this just exposed all ZCL clusters, remove a lot (Aqara light):
             zhaquirks.xiaomi.aqara.light_aqcn2.LightAqcn02,
             # DoorLock cluster that's actually a MultistateInput cluster
@@ -896,20 +862,8 @@ def test_no_duplicate_clusters(quirk: CustomDevice) -> None:
             # -- IKEA devices --
             # swap PM25 cluster from output to input cluster (IKEA Starkvind):
             zhaquirks.ikea.starkvind.IkeaSTARKVIND,
-            zhaquirks.ikea.starkvind.IkeaSTARKVIND_v2,
-            # removes Group input cluster (IKEA remote):
-            zhaquirks.ikea.twobtnremote.IkeaRodretRemote2BtnNew,
-            # remove WindowCovering input cluster (IKEA remote):
-            zhaquirks.ikea.twobtnremote.IkeaTradfriRemote2BtnZLL,
             #
             # -- other devices --
-            # remove LevelControl input cluster (Adurolight remote):
-            zhaquirks.aduro.adurolightncc.AdurolightNCC,
-            # add a bunch of output clusters (Zhongxing motion sensor):
-            zhaquirks.zhongxing.motion.SN10ZW,
-            # remove Tuya clusters from input and output clusters (ZLinky):
-            zhaquirks.lixee.zlinky.ZLinkyTICFWV14,
-            zhaquirks.lixee.zlinky.ZLinkyTICFWV15,
         )
     ],
 )

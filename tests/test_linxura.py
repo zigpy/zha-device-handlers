@@ -12,10 +12,10 @@ import zhaquirks.linxura
 zhaquirks.setup()
 
 
-async def test_button_ias(zigpy_device_from_quirk):
+async def test_button_ias(zigpy_device_from_v2_quirk):
     """Test Linxura button remotes."""
 
-    device = zigpy_device_from_quirk(zhaquirks.linxura.button.LinxuraButton)
+    device = zigpy_device_from_v2_quirk("Linxura", "Smart Controller")
     ias_zone_status_attr_id = IasZone.AttributeDefs.zone_status.id
     cluster = device.endpoints[1].ias_zone
     listener = mock.MagicMock()
@@ -99,9 +99,9 @@ async def test_button_ias(zigpy_device_from_quirk):
         ),
     ],
 )
-async def test_button_triggers(zigpy_device_from_quirk, message, button, press_type):
+async def test_button_triggers(zigpy_device_from_v2_quirk, message, button, press_type):
     """Test ZHA_SEND_EVENT case."""
-    device = zigpy_device_from_quirk(zhaquirks.linxura.button.LinxuraButton)
+    device = zigpy_device_from_v2_quirk("Linxura", "Smart Controller")
     cluster = device.endpoints[1].ias_zone
     listener = mock.MagicMock()
     cluster.add_listener(listener)
