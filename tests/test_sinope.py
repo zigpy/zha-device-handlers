@@ -218,7 +218,9 @@ async def test_sinope_light_switch_non_action_report(zigpy_device_from_v2_quirk)
 
 async def test_sinope_light_switch_reporting(zigpy_device_from_v2_quirk):
     """Test that configuring reporting for action_report works."""
-    device: Device = zigpy_device_from_v2_quirk(manufacturer="Sinope Technologies", model="SW2500ZB")
+    device: Device = zigpy_device_from_v2_quirk(
+        manufacturer="Sinope Technologies", model="SW2500ZB"
+    )
 
     manu_cluster = device.endpoints[1].in_clusters[SINOPE_MANUFACTURER_CLUSTER_ID]
 
