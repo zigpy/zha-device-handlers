@@ -4,31 +4,16 @@ from __future__ import annotations
 
 from typing import Any
 
-from zigpy.profiles import zgp, zha
-from zigpy.quirks import CustomCluster, CustomDevice
+from zigpy.quirks import CustomCluster
+from zigpy.quirks.v2 import CustomDeviceV2, QuirkBuilder
 import zigpy.types as t
-from zigpy.zcl.clusters.general import (
-    Basic,
-    GreenPowerProxy,
-    Groups,
-    Identify,
-    Ota,
-    Scenes,
-)
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.hvac import Fan
-from zigpy.zcl.clusters.measurement import PM25, IlluminanceMeasurement
+from zigpy.zcl.clusters.measurement import PM25
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 from zhaquirks import Bus
-from zhaquirks.const import (
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
-    PROFILE_ID,
-)
-from zhaquirks.ikea import IKEA, IKEA_CLUSTER_ID, WWAH_CLUSTER_ID
+from zhaquirks.ikea import IKEA
 
 
 class IkeaAirpurifier(CustomCluster):
@@ -144,7 +129,7 @@ class PM25Cluster(CustomCluster, PM25):
             )
 
 
-class IkeaSTARKVIND(CustomDevice):
+class IkeaSTARKVIND(CustomDeviceV2):
     """STARKVIND Air purifier by IKEA of Sweden."""
 
     def __init__(self, *args, **kwargs):
@@ -154,153 +139,14 @@ class IkeaSTARKVIND(CustomDevice):
         self.change_fan_mode_ha_bus = Bus()
         super().__init__(*args, **kwargs)
 
-    signature = {
-        # <SimpleDescriptor endpoint=1 profile=260 device_type=7 (0x0007)
-        # device_version=0
-        # input_clusters=[0, 3, 4, 5, 514, 64599, 64637] output_clusters=[25, 1024, 1066]>
-        MODELS_INFO: [
-            (IKEA, "STARKVIND Air purifier"),
-            (IKEA, "STARKVIND Air purifier table"),
-        ],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.COMBINED_INTERFACE,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,  # 0
-                    Identify.cluster_id,  # 3
-                    Groups.cluster_id,  # 4
-                    Scenes.cluster_id,  # 5
-                    Fan.cluster_id,  # 514    0x0202
-                    WWAH_CLUSTER_ID,  # 64599  0xFC57
-                    IkeaAirpurifier.cluster_id,  # 64637  0xFC7D
-                ],
-                OUTPUT_CLUSTERS: [
-                    Ota.cluster_id,  # 25      0x0019
-                    IlluminanceMeasurement.cluster_id,  # 1024    0x0400
-                    PM25.cluster_id,  # 1066    0x042A PM2.5 Measurement Cluster
-                ],
-            },
-            # <SimpleDescriptor endpoint=242 profile=41440 device_type=97
-            # device_version=0
-            # input_clusters=[33] output_clusters=[33]>
-            242: {
-                PROFILE_ID: zgp.PROFILE_ID,  # 41440 (dec)
-                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
-                INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [
-                    GreenPowerProxy.cluster_id,  # 0x0021 = GreenPowerProxy.cluster_id
-                ],
-            },
-        },
-    }
 
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.COMBINED_INTERFACE,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,  # 0
-                    Identify.cluster_id,  # 3
-                    Groups.cluster_id,  # 4
-                    Scenes.cluster_id,  # 5
-                    WWAH_CLUSTER_ID,  # 64599  0xFC57
-                    IkeaAirpurifier,  # 64637  0xFC7D control air purifier with manufacturer-specific attributes
-                    PM25Cluster,  # 1066    0x042A PM2.5 Measurement Cluster
-                ],
-                OUTPUT_CLUSTERS: [
-                    Ota.cluster_id,  # 25      0x0019
-                    IlluminanceMeasurement.cluster_id,  # 1024    0x0400
-                ],
-            },
-            # <SimpleDescriptor endpoint=242 profile=41440 device_type=97
-            # device_version=0
-            # input_clusters=[33] output_clusters=[33]>
-            242: {
-                PROFILE_ID: zgp.PROFILE_ID,  # 41440 (dec)
-                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
-                INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [
-                    GreenPowerProxy.cluster_id,  # 0x0021 = GreenPowerProxy.cluster_id
-                ],
-            },
-        },
-    }
-
-
-class IkeaSTARKVIND_v2(IkeaSTARKVIND):
-    """STARKVIND Air purifier by IKEA of Sweden."""
-
-    signature = {
-        # <SimpleDescriptor endpoint=1 profile=260 device_type=7 (0x0007)
-        # device_version=0
-        # input_clusters=[0, 3, 4, 5, 514, 64599, 64637] output_clusters=[25, 1024, 1066]>
-        MODELS_INFO: IkeaSTARKVIND.signature[MODELS_INFO].copy(),
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.COMBINED_INTERFACE,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,  # 0
-                    Identify.cluster_id,  # 3
-                    Groups.cluster_id,  # 4
-                    Scenes.cluster_id,  # 5
-                    Fan.cluster_id,  # 514    0x0202
-                    WWAH_CLUSTER_ID,  # 64599  0xFC57
-                    IKEA_CLUSTER_ID,  # 64636  0xFC7C
-                    IkeaAirpurifier.cluster_id,  # 64637  0xFC7D
-                ],
-                OUTPUT_CLUSTERS: [
-                    Ota.cluster_id,  # 25      0x0019
-                    IlluminanceMeasurement.cluster_id,  # 1024    0x0400
-                    PM25.cluster_id,  # 1066    0x042A PM2.5 Measurement Cluster
-                ],
-            },
-            # <SimpleDescriptor endpoint=242 profile=41440 device_type=97
-            # device_version=0
-            # input_clusters=[33] output_clusters=[33]>
-            242: {
-                PROFILE_ID: zgp.PROFILE_ID,  # 41440 (dec)
-                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
-                INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [
-                    GreenPowerProxy.cluster_id,  # 0x0021 = GreenPowerProxy.cluster_id
-                ],
-            },
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                DEVICE_TYPE: zha.DeviceType.COMBINED_INTERFACE,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,  # 0
-                    Identify.cluster_id,  # 3
-                    Groups.cluster_id,  # 4
-                    Scenes.cluster_id,  # 5
-                    WWAH_CLUSTER_ID,  # 64599  0xFC57
-                    IKEA_CLUSTER_ID,  # 64636  0xFC7C
-                    IkeaAirpurifier,  # 64637  0xFC7D control air purifier with manufacturer-specific attributes
-                    PM25Cluster,  # 1066    0x042A PM2.5 Measurement Cluster
-                ],
-                OUTPUT_CLUSTERS: [
-                    Ota.cluster_id,  # 25      0x0019
-                    IlluminanceMeasurement.cluster_id,  # 1024    0x0400
-                ],
-            },
-            # <SimpleDescriptor endpoint=242 profile=41440 device_type=97
-            # device_version=0
-            # input_clusters=[33] output_clusters=[33]>
-            242: {
-                PROFILE_ID: zgp.PROFILE_ID,  # 41440 (dec)
-                DEVICE_TYPE: zgp.DeviceType.PROXY_BASIC,
-                INPUT_CLUSTERS: [],
-                OUTPUT_CLUSTERS: [
-                    GreenPowerProxy.cluster_id,  # 0x0021 = GreenPowerProxy.cluster_id
-                ],
-            },
-        },
-    }
+(
+    QuirkBuilder(IKEA, "STARKVIND Air purifier")
+    .applies_to(IKEA, "STARKVIND Air purifier table")
+    .device_class(IkeaSTARKVIND)
+    .removes(Fan.cluster_id, endpoint_id=1)
+    .removes(PM25.cluster_id, cluster_type=ClusterType.Client, endpoint_id=1)
+    .adds(PM25Cluster, cluster_type=ClusterType.Server, endpoint_id=1)
+    .replaces(IkeaAirpurifier, endpoint_id=1)
+    .add_to_registry()
+)
