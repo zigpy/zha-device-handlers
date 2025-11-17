@@ -2,8 +2,8 @@
 
 from typing import Final
 
-from zigpy.quirks import CustomCluster, CustomDevice
-from zigpy.quirks.v2 import QuirkBuilder
+from zigpy.quirks import CustomCluster
+from zigpy.quirks.v2 import CustomDeviceV2, QuirkBuilder
 import zigpy.types as t
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 from zigpy.zcl.clusters.hvac import Thermostat, UserInterface
@@ -92,7 +92,7 @@ class ElkoElectricalMeasurementCluster(LocalDataCluster, ElectricalMeasurement):
         self._update_attribute(self.ACTIVE_POWER_ID, value)
 
 
-class ElkoThermostat(CustomDevice):
+class ElkoThermostat(CustomDeviceV2):
     """Generic Elko Thermostat device."""
 
     def __init__(self, *args, **kwargs):
