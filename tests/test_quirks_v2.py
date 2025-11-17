@@ -65,8 +65,8 @@ def test_manufacturer_model_metadata_unique() -> None:
     )
 
     for quirk in ALL_QUIRK_V2_CLASSES:
-        if quirk.fw_version_filter is not None:
-            # skip quirks with firmware filter, as they can share manufacturer/model
+        if quirk.fw_version_filter is not None or quirk.filters:
+            # skip quirks with firmware filter or general filters, as they can share manufacturer/model
             continue
         for metadata in quirk.manufacturer_model_metadata:
             man_model_quirk_map[(metadata.manufacturer, metadata.model)].append(

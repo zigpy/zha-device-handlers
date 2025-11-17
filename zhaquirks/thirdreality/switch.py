@@ -19,10 +19,3 @@ class CustomPowerConfigurationCluster(PowerConfigurationCluster):
     .replaces(CustomPowerConfigurationCluster, endpoint_id=1)
     .add_to_registry()
 )
-
-
-(
-    QuirkBuilder(THIRD_REALITY, "3RSS008Z")
-    .replaces(CustomPowerConfigurationCluster, endpoint_id=1)
-    .add_to_registry()
-)
