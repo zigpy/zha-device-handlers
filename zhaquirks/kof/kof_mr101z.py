@@ -66,6 +66,8 @@ class KofLevelControl(NoReplyMixin, CustomCluster, LevelControl):
 
 (
     QuirkBuilder("King Of Fans, Inc.", "MR101Z")
+    # TODO: add support for wildcard matching in `applies_to`
+    .applies_to("King Of Fans, Inc.", "HDC52EastwindFan")
     .replaces(KofBasic)
     .replaces(KofIdentify)
     .replaces(KofGroups)
