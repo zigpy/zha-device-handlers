@@ -1,6 +1,7 @@
 """Device handler for IKEA of Sweden SOMRIG shortcut button."""
 
 from zigpy.quirks.v2 import QuirkBuilder
+from zigpy.zcl import ClusterType
 from zigpy.zcl.clusters.general import PowerConfiguration
 
 from zhaquirks.const import (
@@ -25,9 +26,9 @@ from zhaquirks.ikea import IKEA, PowerConfig1AAACluster, ShortcutV2Cluster
     QuirkBuilder(IKEA, "SOMRIG shortcut button")
     .replaces(PowerConfig1AAACluster, PowerConfiguration.cluster_id, endpoint_id=1)
     .replaces(ShortcutV2Cluster, endpoint_id=1)
-    .replaces(ShortcutV2Cluster, endpoint_id=1, cluster_type="output")
+    .replaces(ShortcutV2Cluster, endpoint_id=1, cluster_type=ClusterType.Client)
     .replaces(ShortcutV2Cluster, endpoint_id=2)
-    .replaces(ShortcutV2Cluster, endpoint_id=2, cluster_type="output")
+    .replaces(ShortcutV2Cluster, endpoint_id=2, cluster_type=ClusterType.Client)
     .device_automation_triggers(
         {
             (PRESSED, BUTTON_1): {ENDPOINT_ID: 1, COMMAND: COMMAND_M_INITIAL_PRESS},
