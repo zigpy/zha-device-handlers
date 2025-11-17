@@ -24,20 +24,20 @@ base_quirk = (
     .prevent_default_entity_creation(endpoint_id=35, cluster_id=BinaryInput.cluster_id)
 )
 
-# Entry Sensor 2 Pro + Entry Sensor (basic), no tamper
+# Entry Sensor 2 Pro, no tamper
 (
     base_quirk.clone()
     .applies_to("frient A/S", "WISZB-131")
-    .applies_to("Develco Products A/S", "WISZB-121")
-    .applies_to("frient A/S", "WISZB-121")
     .add_to_registry()
 )
 
-# Entry Sensor Pro, with tamper
+# Entry Sensor Pro + Entry Sensor (basic), with tamper
 (
     base_quirk.clone()
     .applies_to("Develco Products A/S", "WISZB-120")
     .applies_to("frient A/S", "WISZB-120")
+    .applies_to("Develco Products A/S", "WISZB-121")
+    .applies_to("frient A/S", "WISZB-121")
     .binary_sensor(
         endpoint_id=35,
         cluster_id=IasZone.cluster_id,
