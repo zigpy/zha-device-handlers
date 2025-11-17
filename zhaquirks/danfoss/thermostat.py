@@ -481,9 +481,9 @@ class DanfossThermostat(CustomDeviceV2):
     .applies_to(POPP, "eT093WRG")
     .applies_to(HIVE, "TRV001")
     .applies_to(HIVE, "TRV003")
-    .replaces(DanfossTimeCluster, endpoint_id=1)  # was Time
-    .replaces(DanfossThermostatCluster, endpoint_id=1)  # was Thermostat
-    .replaces(DanfossUserInterfaceCluster, endpoint_id=1)  # was UserInterface
-    .replaces(DanfossDiagnosticCluster, endpoint_id=1)  # was Diagnostic
+    .replaces(DanfossTimeCluster, endpoint_id=1)
+    .replaces(DanfossThermostatCluster, endpoint_id=1)
+    .replaces(DanfossUserInterfaceCluster, endpoint_id=1)
+    .replaces(DanfossDiagnosticCluster, endpoint_id=1)
     .add_to_registry()
 )

@@ -2,7 +2,6 @@
 
 from typing import Final
 
-from zigpy.profiles import zha
 from zigpy.quirks.v2 import QuirkBuilder
 import zigpy.types as t
 from zigpy.zcl.foundation import ZCLAttributeDef
@@ -82,31 +81,6 @@ class PhilipsWallSwitchRemoteCluster(PhilipsRemoteCluster):
     .applies_to(SIGNIFY, "RDM001")
     .applies_to(PHILIPS, "RDM004")  # likely not needed
     .applies_to(SIGNIFY, "RDM004")
-    # TODO: use real firmware version filters
-    .filter(
-        lambda device: device.endpoints[1].device_type
-        == zha.DeviceType.NON_COLOR_CONTROLLER
-    )
-    .replaces(PhilipsWallSwitchBasicCluster, endpoint_id=1)
-    .replaces(PhilipsWallSwitchRemoteCluster, endpoint_id=1)
-    .device_automation_triggers(
-        PhilipsWallSwitchRemoteCluster.generate_device_automation_triggers()
-    )
-    .add_to_registry()
-)
-
-
-# Philips RDM001 or RDM004 device using new firmware.
-(
-    QuirkBuilder(PHILIPS, "RDM001")
-    .applies_to(SIGNIFY, "RDM001")
-    .applies_to(PHILIPS, "RDM004")  # likely not needed
-    .applies_to(SIGNIFY, "RDM004")
-    # TODO: use real firmware version filters
-    .filter(
-        lambda device: device.endpoints[1].device_type
-        == zha.DeviceType.NON_COLOR_SCENE_CONTROLLER
-    )
     .replaces(PhilipsWallSwitchBasicCluster, endpoint_id=1)
     .replaces(PhilipsWallSwitchRemoteCluster, endpoint_id=1)
     .device_automation_triggers(

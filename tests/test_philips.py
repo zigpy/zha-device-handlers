@@ -3,7 +3,6 @@
 from unittest import mock
 
 import pytest
-from zigpy.profiles import zha
 from zigpy.quirks import CustomEndpoint
 from zigpy.zcl import Cluster
 from zigpy.zcl.clusters.general import OnOff
@@ -377,9 +376,7 @@ def test_PhilipsRemoteCluster_short_press(
 ):
     """Test PhilipsRemoteCluster short button press logic."""
 
-    device = zigpy_device_from_v2_quirk(
-        manufacturer, model, endpoint_ids=[1, 2], device_types={1: zha.DeviceType.NON_COLOR_CONTROLLER}
-    )
+    device = zigpy_device_from_v2_quirk(manufacturer, model, endpoint_ids=[1, 2])
 
     cluster = device.endpoints[ep].philips_remote_cluster
     listener = mock.MagicMock()
@@ -476,9 +473,7 @@ def test_PhilipsRemoteCluster_multi_press(
 ):
     """Test PhilipsRemoteCluster button multi-press logic."""
 
-    device = zigpy_device_from_v2_quirk(
-        manufacturer, model, endpoint_ids=[1, 2], device_types={1: zha.DeviceType.NON_COLOR_CONTROLLER}
-    )
+    device = zigpy_device_from_v2_quirk(manufacturer, model, endpoint_ids=[1, 2])
 
     cluster = device.endpoints[ep].philips_remote_cluster
     listener = mock.MagicMock()
@@ -523,12 +518,12 @@ def test_PhilipsRemoteCluster_multi_press(
         (SIGNIFY, "RWL022", 1),
     ),
 )
-def test_PhilipsRemoteCluster_ignore_unknown_buttons(zigpy_device_from_v2_quirk, manufacturer, model, ep):
+def test_PhilipsRemoteCluster_ignore_unknown_buttons(
+    zigpy_device_from_v2_quirk, manufacturer, model, ep
+):
     """Ensure PhilipsRemoteCluster ignores unknown buttons."""
 
-    device = zigpy_device_from_v2_quirk(
-        manufacturer, model, endpoint_ids=[1, 2], device_types={1: zha.DeviceType.NON_COLOR_CONTROLLER}
-    )
+    device = zigpy_device_from_v2_quirk(manufacturer, model, endpoint_ids=[1, 2])
 
     cluster = device.endpoints[ep].philips_remote_cluster
     listener = mock.MagicMock()
@@ -602,9 +597,7 @@ def test_PhilipsRemoteCluster_long_press(
 ):
     """Test PhilipsRemoteCluster button long press logic."""
 
-    device = zigpy_device_from_v2_quirk(
-        manufacturer, model, endpoint_ids=[1, 2], device_types={1: zha.DeviceType.NON_COLOR_CONTROLLER}
-    )
+    device = zigpy_device_from_v2_quirk(manufacturer, model, endpoint_ids=[1, 2])
 
     cluster = device.endpoints[ep].philips_remote_cluster
     listener = mock.MagicMock()
@@ -806,9 +799,7 @@ def test_PhilipsRemoteCluster_multi_button_press(
 ):
     """Test PhilipsRemoteCluster short button press logic."""
 
-    device = zigpy_device_from_v2_quirk(
-        manufacturer, model, endpoint_ids=[1, 2], device_types={1: zha.DeviceType.NON_COLOR_CONTROLLER}
-    )
+    device = zigpy_device_from_v2_quirk(manufacturer, model, endpoint_ids=[1, 2])
 
     remote_cluster = device.endpoints[ep].philips_remote_cluster
     remote_cluster.button_press_queue = {
