@@ -5,6 +5,7 @@ module overrides all server commands that do not have a mandatory reply to not
 expect replies at all.
 """
 
+from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster
 from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.zcl.clusters.general import (
@@ -65,9 +66,14 @@ class KofLevelControl(NoReplyMixin, CustomCluster, LevelControl):
 
 
 (
-    QuirkBuilder("King Of Fans, Inc.", "MR101Z")
+    # The manufacturer has two spaces in its name
+    QuirkBuilder("King Of Fans,  Inc.", "MR101Z")
     # TODO: add support for wildcard matching in `applies_to`
-    .applies_to("King Of Fans, Inc.", "HDC52EastwindFan")
+    .applies_to("King Of Fans,  Inc.", "HDC52EastwindFan")
+    .applies_to("King Of Fans,  Inc.", "HBUniversalCFRemote")
+    .replaces_endpoint(
+        endpoint_id=1, device_type=zha.DeviceType.DIMMABLE_LIGHT
+    )  # was 257
     .replaces(KofBasic)
     .replaces(KofIdentify)
     .replaces(KofGroups)
