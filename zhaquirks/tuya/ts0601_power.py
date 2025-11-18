@@ -223,6 +223,7 @@ class Tuya3PhaseElectricalMeasurement(ElectricalMeasurement, TuyaLocalCluster):
     .applies_to("_TZE204_dikb3dp6", "TS0601")
     .applies_to("_TZE284_dikb3dp6", "TS0601")
     .applies_to("_TZE284_wbhaespm", "TS0601")  # reported in #4277
+    .applies_to("_TZE284_gomuk3dc", "TS0601")
     .tuya_sensor(
         dp_id=1,
         attribute_name="energy",
