@@ -12,15 +12,16 @@ from zigpy.zcl.foundation import BaseAttributeDefs, DataTypeId, ZCLAttributeDef
 
 from zhaquirks import LocalDataCluster
 from zhaquirks.xiaomi import (
+    BATTERY_PERCENTAGE_REMAINING_ATTRIBUTE,
+    BATTERY_VOLTAGE_MV,
     XiaomiAqaraE1Cluster,
     XiaomiPowerConfigurationPercent,
-    BATTERY_PERCENTAGE_REMAINING_ATTRIBUTE,
-    BATTERY_VOLTAGE_MV
 )
 
 # Manufacturer-specific attribute keys present in the non-standard AQARA payloads
 MANU_ATTR_BATTERY_VOLTAGE: Final = "0xff01-23"
 MANU_ATTR_BATTERY_PERCENT: Final = "0xff01-24"
+
 
 #
 # Enums matching Zigbee2MQTT converter semantics
@@ -317,7 +318,9 @@ class AqaraFP300ManuCluster(XiaomiAqaraE1Cluster):
             attributes[BATTERY_VOLTAGE_MV] = attributes.pop(MANU_ATTR_BATTERY_VOLTAGE)
 
         if MANU_ATTR_BATTERY_PERCENT in attributes:
-            attributes[BATTERY_PERCENTAGE_REMAINING_ATTRIBUTE] = attributes.pop(MANU_ATTR_BATTERY_PERCENT)
+            attributes[BATTERY_PERCENTAGE_REMAINING_ATTRIBUTE] = attributes.pop(
+                MANU_ATTR_BATTERY_PERCENT
+            )
 
         return attributes
 
@@ -331,12 +334,13 @@ class AqaraFP300ManuCluster(XiaomiAqaraE1Cluster):
         """
 
         if attrid == self.AttributeDefs.detection_range_raw.id:
-            dr_cluster = self.endpoint.in_clusters.get(FP300DetectionRangeCluster.cluster_id)
+            dr_cluster = self.endpoint.in_clusters.get(
+                FP300DetectionRangeCluster.cluster_id
+            )
             if dr_cluster is not None:
                 dr_cluster._update_from_raw(value)
 
         return super()._update_attribute(attrid, value)
-
 
 
 class FP300DetectionRangeCluster(LocalDataCluster):
@@ -391,13 +395,10 @@ class FP300DetectionRangeCluster(LocalDataCluster):
             access="rwp",
         )
 
-
     def _update_from_raw(self, raw: t.LVBytes | bytes | bytearray | None) -> None:
-        """updates from raw buffer of 0x019A attribute from manu cluster."""
+        """Updates from raw buffer of 0x019A attribute from manu cluster."""
 
-        if isinstance(raw, t.LVBytes):
-            data = bytes(raw)
-        elif isinstance(raw, (bytes, bytearray)):
+        if isinstance(raw, t.LVBytes) or isinstance(raw, (bytes, bytearray)):
             data = bytes(raw)
         else:
             data = b""
@@ -425,9 +426,8 @@ class FP300DetectionRangeCluster(LocalDataCluster):
             enabled = (mask & seg_mask) != 0
             super()._update_attribute(attr_id, bool(enabled))
 
-
     def _build_raw(self) -> t.LVBytes:
-        """builds raw buffer for 0x019A attribute for manu cluster from local range switches."""
+        """Builds raw buffer for 0x019A attribute for manu cluster from local range switches."""
 
         prefix = self._attr_cache.get(self.AttributeDefs.prefix.id, 0x0300)
         try:
@@ -459,9 +459,11 @@ class FP300DetectionRangeCluster(LocalDataCluster):
         manufacturer: int | None = None,
         **kwargs: Any,
     ) -> Any:
-        """Override write_attributes to also update manu cluster."""    
+        """Override write_attributes to also update manu cluster."""
 
-        res = await super().write_attributes(attributes, manufacturer=manufacturer, **kwargs)
+        res = await super().write_attributes(
+            attributes, manufacturer=manufacturer, **kwargs
+        )
 
         raw = self._build_raw()
 
