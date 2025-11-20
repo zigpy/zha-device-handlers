@@ -60,18 +60,23 @@ class TuyaElectricalMeasurementPJ1203(TuyaLocalCluster, ElectricalMeasurement):
             # Calculate apparent power: V * A
             # voltage is in dV (tenths), current is in mA
             # Result in VA (same scale as active_power in W)
-            apparent_power = (rms_voltage * rms_current) // 10000
+            apparent_power = round((rms_voltage * rms_current) / 10000)
             super()._update_attribute(
                 self.AttributeDefs.apparent_power.id, apparent_power
             )
 
-            # Calculate power factor if we have active power
+            # Calculate power factor if we have active power and apparent power
             if active_power is not None and apparent_power > 0:
                 # Power factor as percentage (0-100)
-                power_factor = (abs(active_power) * 100) // apparent_power
+                power_factor = round((abs(active_power) * 100) / apparent_power)
                 power_factor = min(power_factor, 100)
                 super()._update_attribute(
                     self.AttributeDefs.power_factor.id, power_factor
+                )
+            elif apparent_power == 0:
+                # No apparent power means power factor is undefined, set to 0
+                super()._update_attribute(
+                    self.AttributeDefs.power_factor.id, 0
                 )
 
     async def read_attributes(
