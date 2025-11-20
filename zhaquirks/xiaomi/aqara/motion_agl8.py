@@ -396,7 +396,7 @@ class FP300DetectionRangeCluster(LocalDataCluster):
         )
 
     def _update_from_raw(self, raw: t.LVBytes | bytes | bytearray | None) -> None:
-        """Updates from raw buffer of 0x019A attribute from manu cluster."""
+        """Update local detection range from raw 0x019A buffer."""
 
         if isinstance(raw, t.LVBytes) or isinstance(raw, (bytes, bytearray)):
             data = bytes(raw)
@@ -427,7 +427,7 @@ class FP300DetectionRangeCluster(LocalDataCluster):
             super()._update_attribute(attr_id, bool(enabled))
 
     def _build_raw(self) -> t.LVBytes:
-        """Builds raw buffer for 0x019A attribute for manu cluster from local range switches."""
+        """Build raw 0x019A buffer for the manufacturer cluster from local range switches."""
 
         prefix = self._attr_cache.get(self.AttributeDefs.prefix.id, 0x0300)
         try:
