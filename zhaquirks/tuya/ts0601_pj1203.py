@@ -75,9 +75,7 @@ class TuyaElectricalMeasurementPJ1203(TuyaLocalCluster, ElectricalMeasurement):
                 )
             elif apparent_power == 0:
                 # No apparent power means power factor is undefined, set to 0
-                super()._update_attribute(
-                    self.AttributeDefs.power_factor.id, 0
-                )
+                super()._update_attribute(self.AttributeDefs.power_factor.id, 0)
 
     async def read_attributes(
         self, attributes, allow_cache=False, only_cache=False, manufacturer=None
