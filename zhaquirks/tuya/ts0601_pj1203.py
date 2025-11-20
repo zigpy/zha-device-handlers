@@ -4,13 +4,8 @@ This quirk supports the Tuya PJ-1203 single channel clamp power meter.
 The device reports voltage, current, and power. Apparent power and power
 factor are calculated from these values.
 
-Note: This device variant does not report cumulative energy (kWh). Use
-Home Assistant's Riemann Sum integration to calculate energy from power.
-
 Manufacturer IDs: _TZE204_cjbofhxw, _TZE284_cjbofhxw
 Model: TS0601
-
-Purchase link: https://www.aliexpress.com/item/1005005994777032.html
 
 Datapoints:
 - DP 18: Current (mA)
@@ -22,6 +17,8 @@ from typing import Dict
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
+import zigpy.types as t
+from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
 
@@ -36,23 +33,22 @@ from zhaquirks.const import (
 from zhaquirks.tuya import (
     NoManufacturerCluster,
     TuyaLocalCluster,
-    TuyaZBElectricalMeasurement,
 )
 from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster
 
 
-class TuyaElectricalMeasurementPJ1203(TuyaLocalCluster, TuyaZBElectricalMeasurement):
+class TuyaElectricalMeasurementPJ1203(TuyaLocalCluster, ElectricalMeasurement):
     """ElectricalMeasurement cluster for PJ-1203 with calculated apparent power and power factor."""
 
     cluster_id = ElectricalMeasurement.cluster_id
 
     _CONSTANT_ATTRIBUTES = {
-        TuyaZBElectricalMeasurement.AttributeDefs.ac_current_divisor.id: 1000,
-        TuyaZBElectricalMeasurement.AttributeDefs.ac_current_multiplier.id: 1,
-        TuyaZBElectricalMeasurement.AttributeDefs.ac_power_divisor.id: 1,
-        TuyaZBElectricalMeasurement.AttributeDefs.ac_power_multiplier.id: 1,
-        TuyaZBElectricalMeasurement.AttributeDefs.ac_voltage_divisor.id: 10,
-        TuyaZBElectricalMeasurement.AttributeDefs.ac_voltage_multiplier.id: 1,
+        ElectricalMeasurement.AttributeDefs.ac_current_divisor.id: 1000,
+        ElectricalMeasurement.AttributeDefs.ac_current_multiplier.id: 1,
+        ElectricalMeasurement.AttributeDefs.ac_power_divisor.id: 1,
+        ElectricalMeasurement.AttributeDefs.ac_power_multiplier.id: 1,
+        ElectricalMeasurement.AttributeDefs.ac_voltage_divisor.id: 10,
+        ElectricalMeasurement.AttributeDefs.ac_voltage_multiplier.id: 1,
     }
 
     def _update_attribute(self, attrid, value):
@@ -68,7 +64,7 @@ class TuyaElectricalMeasurementPJ1203(TuyaLocalCluster, TuyaZBElectricalMeasurem
         if rms_voltage is not None and rms_current is not None:
             # Calculate apparent power: V * A
             # voltage is in dV (tenths), current is in mA
-            # Result in VA (same scale as active_power)
+            # Result in VA (same scale as active_power in W)
             apparent_power = (rms_voltage * rms_current) // 10000
             super()._update_attribute(
                 self.AttributeDefs.apparent_power.id, apparent_power
@@ -84,9 +80,60 @@ class TuyaElectricalMeasurementPJ1203(TuyaLocalCluster, TuyaZBElectricalMeasurem
                     self.AttributeDefs.power_factor.id, power_factor
                 )
 
+    async def read_attributes(
+        self, attributes, allow_cache=False, only_cache=False, manufacturer=None
+    ):
+        """Read attributes ZCL foundation command."""
+        records = []
+        for attr in attributes:
+            if isinstance(attr, str):
+                attr_id = self.attributes_by_name[attr].id
+            else:
+                attr_id = attr
+
+            # Check constant attributes first
+            if attr_id in self._CONSTANT_ATTRIBUTES:
+                records.append(
+                    foundation.ReadAttributeRecord(
+                        attr_id,
+                        foundation.Status.SUCCESS,
+                        foundation.TypeValue(
+                            type=t.uint16_t, value=self._CONSTANT_ATTRIBUTES[attr_id]
+                        ),
+                    )
+                )
+            elif attr_id in self._attr_cache:
+                # Determine the correct type for the attribute
+                if attr_id == self.AttributeDefs.active_power.id:
+                    attr_type = t.int16s
+                else:
+                    attr_type = t.uint16_t
+
+                records.append(
+                    foundation.ReadAttributeRecord(
+                        attr_id,
+                        foundation.Status.SUCCESS,
+                        foundation.TypeValue(
+                            type=attr_type, value=self._attr_cache[attr_id]
+                        ),
+                    )
+                )
+            else:
+                records.append(
+                    foundation.ReadAttributeRecord(
+                        attr_id,
+                        foundation.Status.UNSUPPORTED_ATTRIBUTE,
+                        foundation.TypeValue(),
+                    )
+                )
+
+        return (records,)
+
 
 class TuyaPJ1203ManufCluster(NoManufacturerCluster, TuyaMCUCluster):
     """Manufacturer cluster for PJ-1203 single channel energy meter."""
+
+    set_time_offset = 1970
 
     dp_to_attribute: Dict[int, DPToAttributeMapping] = {
         18: DPToAttributeMapping(
@@ -124,11 +171,11 @@ class TuyaPJ1203PowerMeter(CustomDevice):
                 PROFILE_ID: zha.PROFILE_ID,
                 DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
                 INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    TuyaMCUCluster.cluster_id,
-                    0xED00,
+                    Basic.cluster_id,  # 0x0000
+                    Groups.cluster_id,  # 0x0004
+                    Scenes.cluster_id,  # 0x0005
+                    TuyaMCUCluster.cluster_id,  # 0xef00
+                    0xED00,  # 60672
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             }
