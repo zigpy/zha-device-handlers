@@ -13,8 +13,6 @@ Datapoints:
 - DP 20: Voltage (V * 10)
 """
 
-from typing import Dict
-
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 import zigpy.types as t
@@ -131,7 +129,7 @@ class TuyaPJ1203ManufCluster(NoManufacturerCluster, TuyaMCUCluster):
 
     set_time_offset = 1970
 
-    dp_to_attribute: Dict[int, DPToAttributeMapping] = {
+    dp_to_attribute: dict[int, DPToAttributeMapping] = {
         18: DPToAttributeMapping(
             TuyaElectricalMeasurementPJ1203.ep_attribute,
             "rms_current",
