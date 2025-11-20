@@ -30,10 +30,7 @@ from zhaquirks.const import (
     OUTPUT_CLUSTERS,
     PROFILE_ID,
 )
-from zhaquirks.tuya import (
-    NoManufacturerCluster,
-    TuyaLocalCluster,
-)
+from zhaquirks.tuya import NoManufacturerCluster, TuyaLocalCluster
 from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster
 
 
@@ -74,8 +71,7 @@ class TuyaElectricalMeasurementPJ1203(TuyaLocalCluster, ElectricalMeasurement):
             if active_power is not None and apparent_power > 0:
                 # Power factor as percentage (0-100)
                 power_factor = (abs(active_power) * 100) // apparent_power
-                if power_factor > 100:
-                    power_factor = 100
+                power_factor = min(power_factor, 100)
                 super()._update_attribute(
                     self.AttributeDefs.power_factor.id, power_factor
                 )
