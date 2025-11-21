@@ -169,9 +169,9 @@ class TuyaData:
 
         if value is None:
             return
-        elif isinstance(value, (t.bitmap8, t.bitmap16, t.bitmap32)):
+        elif isinstance(value, t.bitmap8 | t.bitmap16 | t.bitmap32):
             self.dp_type = TuyaDPType.BITMAP
-        elif isinstance(value, (bool, t.Bool)):
+        elif isinstance(value, bool | t.Bool):
             self.dp_type = TuyaDPType.BOOL
         elif isinstance(value, enum.Enum):
             self.dp_type = TuyaDPType.ENUM
@@ -229,7 +229,7 @@ class TuyaData:
         elif self.dp_type == TuyaDPType.ENUM:
             self.raw = t.enum8(value).serialize()
         elif self.dp_type == TuyaDPType.BITMAP:
-            if not isinstance(value, (t.bitmap8, t.bitmap16, t.bitmap32)):
+            if not isinstance(value, t.bitmap8 | t.bitmap16 | t.bitmap32):
                 value = t.bitmap8(value)
             self.raw = value.serialize()[::-1]
         elif self.dp_type == TuyaDPType.RAW:
