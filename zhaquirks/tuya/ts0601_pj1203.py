@@ -1,8 +1,8 @@
 """Tuya PJ-1203 Single Channel Clamp Energy Meter.
 
 This quirk supports the Tuya PJ-1203 single channel clamp power meter.
-The device reports voltage, current, and power. Apparent power and power
-factor are calculated from these values.
+The device reports voltage, current, power, and total energy. Apparent power
+and power factor are calculated from these values.
 
 Manufacturer IDs: _TZE204_cjbofhxw, _TZE284_cjbofhxw
 Model: TS0601
@@ -11,6 +11,7 @@ Datapoints:
 - DP 18: Current (mA)
 - DP 19: Power (W * 10)
 - DP 20: Voltage (V * 10)
+- DP 101: Total Energy (Wh)
 """
 
 from zigpy.profiles import zha
@@ -19,6 +20,7 @@ import zigpy.types as t
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
+from zigpy.zcl.clusters.smartenergy import Metering
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -127,6 +129,72 @@ class TuyaElectricalMeasurementPJ1203(TuyaLocalCluster, ElectricalMeasurement):
         return (records,)
 
 
+class TuyaMeteringPJ1203(TuyaLocalCluster, Metering):
+    """Metering cluster for PJ-1203 to report total energy consumption."""
+
+    cluster_id = Metering.cluster_id
+
+    POWER_WATT = 0x0000
+
+    _CONSTANT_ATTRIBUTES = {
+        Metering.AttributeDefs.unit_of_measure.id: POWER_WATT,
+        Metering.AttributeDefs.multiplier.id: 1,
+        Metering.AttributeDefs.divisor.id: 1000,
+        Metering.AttributeDefs.summation_formatting.id: 0b0_0100_011,  # 4 digits after decimal
+    }
+
+    async def read_attributes(
+        self, attributes, allow_cache=False, only_cache=False, manufacturer=None
+    ):
+        """Read attributes ZCL foundation command."""
+        records = []
+        for attr in attributes:
+            if isinstance(attr, str):
+                attr_id = self.attributes_by_name[attr].id
+            else:
+                attr_id = attr
+
+            # Check constant attributes first
+            if attr_id in self._CONSTANT_ATTRIBUTES:
+                # Determine the correct type for each constant attribute
+                if attr_id == Metering.AttributeDefs.summation_formatting.id:
+                    attr_type = t.bitmap8
+                elif attr_id == Metering.AttributeDefs.unit_of_measure.id:
+                    attr_type = t.enum8
+                else:
+                    attr_type = t.uint24_t
+
+                records.append(
+                    foundation.ReadAttributeRecord(
+                        attr_id,
+                        foundation.Status.SUCCESS,
+                        foundation.TypeValue(
+                            type=attr_type, value=self._CONSTANT_ATTRIBUTES[attr_id]
+                        ),
+                    )
+                )
+            elif attr_id in self._attr_cache:
+                records.append(
+                    foundation.ReadAttributeRecord(
+                        attr_id,
+                        foundation.Status.SUCCESS,
+                        foundation.TypeValue(
+                            type=t.uint48_t, value=self._attr_cache[attr_id]
+                        ),
+                    )
+                )
+            else:
+                records.append(
+                    foundation.ReadAttributeRecord(
+                        attr_id,
+                        foundation.Status.UNSUPPORTED_ATTRIBUTE,
+                        foundation.TypeValue(),
+                    )
+                )
+
+        return (records,)
+
+
 class TuyaPJ1203ManufCluster(NoManufacturerCluster, TuyaMCUCluster):
     """Manufacturer cluster for PJ-1203 single channel energy meter."""
 
@@ -146,12 +214,17 @@ class TuyaPJ1203ManufCluster(NoManufacturerCluster, TuyaMCUCluster):
             TuyaElectricalMeasurementPJ1203.ep_attribute,
             "rms_voltage",
         ),
+        101: DPToAttributeMapping(
+            TuyaMeteringPJ1203.ep_attribute,
+            "current_summ_delivered",
+        ),
     }
 
     data_point_handlers = {
         18: "_dp_2_attr_update",
         19: "_dp_2_attr_update",
         20: "_dp_2_attr_update",
+        101: "_dp_2_attr_update",
     }
 
 
@@ -190,6 +263,7 @@ class TuyaPJ1203PowerMeter(CustomDevice):
                     Scenes.cluster_id,
                     TuyaPJ1203ManufCluster,
                     TuyaElectricalMeasurementPJ1203,
+                    TuyaMeteringPJ1203,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             }

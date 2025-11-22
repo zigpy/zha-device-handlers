@@ -4,11 +4,13 @@ import pytest
 from zigpy.profiles import zha
 from zigpy.zcl import foundation
 from zigpy.zcl.clusters.homeautomation import ElectricalMeasurement
+from zigpy.zcl.clusters.smartenergy import Metering
 
 from tests.common import ClusterListener
 from zhaquirks.const import MODELS_INFO
 from zhaquirks.tuya.ts0601_pj1203 import (
     TuyaElectricalMeasurementPJ1203,
+    TuyaMeteringPJ1203,
     TuyaPJ1203ManufCluster,
     TuyaPJ1203PowerMeter,
 )
@@ -40,6 +42,7 @@ def test_pj1203_clusters_present(pj1203_device):
     """Test that the device has required clusters."""
     assert hasattr(pj1203_device.endpoints[1], "electrical_measurement")
     assert hasattr(pj1203_device.endpoints[1], "tuya_manufacturer")
+    assert hasattr(pj1203_device.endpoints[1], "smartenergy_metering")
 
 
 def test_pj1203_cluster_constants():
@@ -77,6 +80,10 @@ def test_pj1203_dp_mappings():
     assert 20 in dp_mappings
     assert dp_mappings[20].attribute_name == "rms_voltage"
 
+    # DP 101 should map to total energy
+    assert 101 in dp_mappings
+    assert dp_mappings[101].attribute_name == "current_summ_delivered"
+
 
 def test_pj1203_data_point_handlers():
     """Test that all DPs have handlers defined."""
@@ -85,10 +92,12 @@ def test_pj1203_data_point_handlers():
     assert 18 in handlers
     assert 19 in handlers
     assert 20 in handlers
+    assert 101 in handlers
 
     assert handlers[18] == "_dp_2_attr_update"
     assert handlers[19] == "_dp_2_attr_update"
     assert handlers[20] == "_dp_2_attr_update"
+    assert handlers[101] == "_dp_2_attr_update"
 
 
 def test_pj1203_time_offset():
@@ -361,3 +370,76 @@ async def test_pj1203_read_active_power_type(pj1203_device):
     assert records[0].status == foundation.Status.SUCCESS
     # Should preserve negative value (signed int)
     assert records[0].value.value == -50
+
+
+def test_pj1203_metering_cluster_constants():
+    """Test that metering cluster constants are correctly defined."""
+    constants = TuyaMeteringPJ1203._CONSTANT_ATTRIBUTES
+
+    # Unit of measure: kWh (0x00)
+    assert constants[Metering.AttributeDefs.unit_of_measure.id] == 0x0000
+
+    # Multiplier and divisor for kWh conversion (raw value is in Wh)
+    assert constants[Metering.AttributeDefs.multiplier.id] == 1
+    assert constants[Metering.AttributeDefs.divisor.id] == 1000
+
+    # Summation formatting
+    assert constants[Metering.AttributeDefs.summation_formatting.id] == 0b0_0100_011
+
+
+async def test_pj1203_energy_attribute_update(pj1203_device):
+    """Test energy attribute update on metering cluster."""
+    metering_cluster = pj1203_device.endpoints[1].smartenergy_metering
+    metering_listener = ClusterListener(metering_cluster)
+
+    # Simulate energy update (12345 Wh = 12.345 kWh)
+    metering_cluster._update_attribute(
+        Metering.AttributeDefs.current_summ_delivered.id, 12345
+    )
+
+    assert len(metering_listener.attribute_updates) >= 1
+    energy_update = next(
+        (
+            u
+            for u in metering_listener.attribute_updates
+            if u[0] == Metering.AttributeDefs.current_summ_delivered.id
+        ),
+        None,
+    )
+    assert energy_update is not None
+    assert energy_update[1] == 12345
+
+
+async def test_pj1203_read_metering_attributes_constant(pj1203_device):
+    """Test reading constant metering attributes."""
+    metering_cluster = pj1203_device.endpoints[1].smartenergy_metering
+
+    # Read divisor (constant attribute)
+    result = await metering_cluster.read_attributes(
+        [Metering.AttributeDefs.divisor.id], allow_cache=False
+    )
+
+    records = result[0]
+    assert len(records) == 1
+    assert records[0].status == foundation.Status.SUCCESS
+    assert records[0].value.value == 1000
+
+
+async def test_pj1203_read_metering_attributes_cached(pj1203_device):
+    """Test reading cached metering attributes."""
+    metering_cluster = pj1203_device.endpoints[1].smartenergy_metering
+
+    # First update an attribute
+    metering_cluster._update_attribute(
+        Metering.AttributeDefs.current_summ_delivered.id, 54321
+    )
+
+    # Then read it back
+    result = await metering_cluster.read_attributes(
+        [Metering.AttributeDefs.current_summ_delivered.id], allow_cache=False
+    )
+
+    records = result[0]
+    assert len(records) == 1
+    assert records[0].status == foundation.Status.SUCCESS
+    assert records[0].value.value == 54321
