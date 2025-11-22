@@ -4,6 +4,20 @@ from zigpy.quirks.v2 import QuirkBuilder
 
 from zhaquirks.philips import PHILIPS, SIGNIFY, PhilipsHueLightCluster
 
+
+(
+    QuirkBuilder()
+    .applies_to(SIGNIFY, "929004608001")
+    .applies_to(SIGNIFY, "929004608101")
+    .applies_to(SIGNIFY, "929004608201")
+    .friendly_name(
+        model="Hue OmniGlow Lightstrip",
+        manufacturer="Philips",
+    )
+    .replaces(PhilipsHueLightCluster, endpoint_id=11)
+    .add_to_registry()
+)
+
 (
     QuirkBuilder()
     .applies_to(SIGNIFY, "LCX001")
