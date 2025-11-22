@@ -4,6 +4,7 @@ from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTime
 import zigpy.types as t
 
 from zhaquirks.const import BatterySize
+from zhaquirks.tuya import TUYA_SEND_DATA
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
 
@@ -80,5 +81,5 @@ class FingerBotReverse(t.enum8):
         fallback_name="Touch control",
     )
     .tuya_enchantment()
-    .add_to_registry()
+    .add_to_registry(mcu_write_command=TUYA_SEND_DATA)
 )

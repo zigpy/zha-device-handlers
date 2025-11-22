@@ -1,7 +1,5 @@
 """Tuya TS0601 Thermostat."""
 
-import copy
-
 from zigpy.quirks.v2 import BinarySensorDeviceClass, EntityType
 from zigpy.quirks.v2.homeassistant import (
     UnitOfElectricCurrent,
@@ -131,21 +129,18 @@ class TuyaThermostat(Thermostat, TuyaAttributesCluster):
 class NoManufTimeNoVersionRespTuyaMCUCluster(TuyaMCUCluster):
     """Tuya Manufacturer Cluster with set_time mod."""
 
-    # Deepcopy required to override 'set_time', without, it will revert
-    server_commands = copy.deepcopy(TuyaMCUCluster.server_commands)
-    server_commands.update(
-        {
-            TUYA_SET_TIME: foundation.ZCLCommandDef(
-                "set_time",
-                {"time": TuyaTimePayload},
-                False,
-                is_manufacturer_specific=False,
-            ),
-        }
-    )
+    class ServerCommandDefs(TuyaMCUCluster.ServerCommandDefs):
+        """Server command definitions."""
+
+        set_time = foundation.ZCLCommandDef(
+            id=TUYA_SET_TIME,
+            schema={"time": TuyaTimePayload},
+            is_manufacturer_specific=False,
+        )
 
     def handle_mcu_version_response(
-        self, payload: TuyaMCUCluster.MCUVersion
+        self,
+        payload: TuyaMCUCluster.MCUVersion,  # type:ignore[valid-type]
     ) -> foundation.Status:
         """Handle MCU version response."""
         return foundation.Status.SUCCESS
@@ -400,9 +395,10 @@ base_avatto_quirk = (
         attribute_name="deadzone_temperature",
         type=t.uint16_t,
         unit=UnitOfTemperature.CELSIUS,
-        min_value=0.1,
+        min_value=0.5,
         max_value=10,
-        step=0.1,
+        step=0.5,
+        multiplier=0.1,
         translation_key="deadzone_temperature",
         fallback_name="Deadzone temperature",
     )
@@ -422,6 +418,7 @@ base_avatto_quirk = (
 (
     base_avatto_quirk.clone()
     .applies_to("_TZE204_lzriup1j", "TS0601")
+    .applies_to("_TZE204_gops3slb", "TS0601")
     .tuya_enum(
         dp_id=4,
         attribute_name="preset_mode",
