@@ -136,6 +136,9 @@ class TuyaMeteringPJ1203(TuyaLocalCluster, Metering):
 
     POWER_WATT = 0x0000
 
+    # Mark instantaneous_demand as unsupported since this device only reports total energy
+    set_unsupported_attributes = {Metering.AttributeDefs.instantaneous_demand.id}
+
     _CONSTANT_ATTRIBUTES = {
         Metering.AttributeDefs.unit_of_measure.id: POWER_WATT,
         Metering.AttributeDefs.multiplier.id: 1,
