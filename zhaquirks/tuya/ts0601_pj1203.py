@@ -11,7 +11,7 @@ Datapoints:
 - DP 18: Current (mA)
 - DP 19: Power (W * 10)
 - DP 20: Voltage (V * 10)
-- DP 101: Total Energy (Wh)
+- DP 101: Total Energy (kWh)
 """
 
 from zigpy.profiles import zha
