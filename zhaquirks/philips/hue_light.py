@@ -4,7 +4,6 @@ from zigpy.quirks.v2 import QuirkBuilder
 
 from zhaquirks.philips import PHILIPS, SIGNIFY, PhilipsHueLightCluster
 
-
 (
     QuirkBuilder()
     .applies_to(SIGNIFY, "929004608001")
