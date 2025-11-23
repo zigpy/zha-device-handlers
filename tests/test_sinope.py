@@ -269,3 +269,25 @@ async def test_sinope_device_current_sum(zigpy_device_from_v2_quirk):
     assert len(dev_summ_listener.attribute_updates) == 2
     assert dev_summ_listener.attribute_updates[1][0] == dev_summ_other_attr_id
     assert dev_summ_listener.attribute_updates[1][1] == 2500  # not modified
+
+
+async def test_sinope_device_battery_voltage(zigpy_device_from_v2_quirk):
+    """Test that device battery voltage is divided by 10."""
+    device = zigpy_device_from_v2_quirk(SINOPE, "VA4220ZB")
+
+    dev_volt_cluster = device.endpoints[1].SinopeTechnologiesPowerConfigurationCluster
+    dev_volt_listener = ClusterListener(dev_volt_cluster)
+    dev_volt_attr_id = dev_volt_cluster.AttributeDefs.battery_voltage.id
+    dev_volt_other_attr_id = dev_volt_cluster.AttributeDefs.battery_percentage_remaining.id
+
+    # verify battery voltage is divided by 10
+    dev_volt_cluster.update_attribute(dev_volt_attr_id, 55)
+    assert len(dev_volt_listener.attribute_updates) == 1
+    assert dev_volt_listener.attribute_updates[0][0] == dev_volt_attr_id
+    assert dev_volt_listener.attribute_updates[0][1] == 5.5  # divided by 10
+
+    # verify other attributes are not modified
+    dev_volt_cluster.update_attribute(dev_volt_other_attr_id, 55)
+    assert len(dev_volt_listener.attribute_updates) == 2
+    assert dev_volt_listener.attribute_updates[1][0] == dev_volt_other_attr_id
+    assert dev_volt_listener.attribute_updates[1][1] == 55  # not modified
