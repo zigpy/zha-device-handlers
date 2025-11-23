@@ -1613,3 +1613,55 @@ class Plug_TZ3000_2AC_var02(EnchantedDevice):
             },
         },
     }
+
+
+class Plug_TZ3000_5f43h46b(EnchantedDevice):
+    """Tuya TS011F plug _TZ3000_5f43h46b with metering."""
+
+    quirk_id = TUYA_PLUG_ONOFF
+
+    signature = {
+        MODELS_INFO: [("_TZ3000_5f43h46b", "TS011F")],
+        ENDPOINTS: {
+            # <SimpleDescriptor endpoint=1 profile=260 device_type=81
+            # device_version=1
+            # input_clusters=[0, 3, 4, 5, 6, 1794, 2820, 57345, 64529]
+            # output_clusters=[]>
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    OnOff.cluster_id,
+                    Metering.cluster_id,
+                    ElectricalMeasurement.cluster_id,
+                    TuyaZBExternalSwitchTypeCluster.cluster_id,
+                    0xFC11,  # Manufacturer specific cluster
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+        },
+    }
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.SMART_PLUG,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    Identify.cluster_id,
+                    Groups.cluster_id,
+                    Scenes.cluster_id,
+                    TuyaZBOnOffAttributeCluster,
+                    TuyaZBMeteringClusterWithUnit,
+                    TuyaZBElectricalMeasurement,
+                    TuyaZBExternalSwitchTypeCluster,
+                    0xFC11,  # Manufacturer specific cluster
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+        },
+    }
