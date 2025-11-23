@@ -31,13 +31,11 @@ from zigpy.zcl.clusters.smartenergy import Metering
 from zigpy.zcl.foundation import (
     ZCL_CLUSTER_REVISION_ATTR,
     BaseAttributeDefs,
-    Direction,
+    BaseCommandDefs,
     GeneralCommand,
     ZCLAttributeDef,
-    ZCLCommandDef,
     ZCLHeader,
 )
-from zigpy.zcl.foundation import BaseCommandDefs
 
 from zhaquirks import EventableCluster
 from zhaquirks.const import (
