@@ -1,5 +1,7 @@
 """Tuya TS201 temperature, humidity and optional illumination sensors."""
 
+from typing import Final
+
 from zigpy.profiles import zha
 from zigpy.profiles.zha import DeviceType
 from zigpy.quirks import CustomCluster, CustomDevice
@@ -10,6 +12,7 @@ from zigpy.zcl.clusters.measurement import (
     RelativeHumidity,
     TemperatureMeasurement,
 )
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 from zigpy.zdo.types import NodeDescriptor
 
 from zhaquirks.const import (
@@ -37,18 +40,33 @@ class TuyaTemperatureHumidityAlarmCluster(CustomCluster):
     name = "Tuya Temperature and Humidity Alarm Cluster"
     cluster_id = 0xE002
 
-    attributes = {
+    class AttributeDefs(BaseAttributeDefs):
+        """Attribute definitions."""
+
         # Alarm settings
-        0xD00A: ("alarm_temperature_max", t.uint16_t, True),
-        0xD00B: ("alarm_temperature_min", t.uint16_t, True),
-        0xD00C: ("alarm_humidity_max", t.uint16_t, True),
-        0xD00E: ("alarm_humidity_min", t.uint16_t, True),
+        alarm_temperature_max: Final = ZCLAttributeDef(
+            id=0xD00A, type=t.uint16_t, is_manufacturer_specific=True
+        )
+        alarm_temperature_min: Final = ZCLAttributeDef(
+            id=0xD00B, type=t.uint16_t, is_manufacturer_specific=True
+        )
+        alarm_humidity_max: Final = ZCLAttributeDef(
+            id=0xD00C, type=t.uint16_t, is_manufacturer_specific=True
+        )
+        alarm_humidity_min: Final = ZCLAttributeDef(
+            id=0xD00E, type=t.uint16_t, is_manufacturer_specific=True
+        )
         # Alarm information
-        0xD00F: ("alarm_humidity", ValueAlarm, True),
-        0xD006: ("temperature_humidity", ValueAlarm, True),
+        alarm_humidity: Final = ZCLAttributeDef(
+            id=0xD00F, type=ValueAlarm, is_manufacturer_specific=True
+        )
+        temperature_humidity: Final = ZCLAttributeDef(
+            id=0xD006, type=ValueAlarm, is_manufacturer_specific=True
+        )
         # Unknown
-        0xD010: ("unknown", t.uint8_t, True),
-    }
+        unknown: Final = ZCLAttributeDef(
+            id=0xD010, type=t.uint8_t, is_manufacturer_specific=True
+        )
 
 
 class NeoTemperatureHumidtyIlluminanceSensor(CustomDevice):

@@ -37,6 +37,7 @@ from zigpy.zcl.foundation import (
     ZCLCommandDef,
     ZCLHeader,
 )
+from zigpy.zcl.foundation import BaseCommandDefs
 
 from zhaquirks import EventableCluster
 from zhaquirks.const import (
@@ -175,14 +176,14 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
         )
         cluster_revision: Final = ZCL_CLUSTER_REVISION_ATTR
 
-    server_commands = {
-        0x54: ZCLCommandDef(
-            "button_press",
-            {"command": t.uint8_t},
-            direction=Direction.Server_to_Client,
+    class ServerCommandDefs(BaseCommandDefs):
+        """Server command definitions."""
+
+        button_press = foundation.ZCLCommandDef(
+            id=0x54,
+            schema={"command": t.uint8_t},
             is_manufacturer_specific=True,
         )
-    }
 
     def handle_cluster_general_request(
         self,

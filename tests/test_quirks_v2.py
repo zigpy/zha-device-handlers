@@ -4,7 +4,12 @@ import collections
 import itertools
 
 import zigpy.quirks
-from zigpy.quirks.v2 import QuirksV2RegistryEntry
+from zigpy.quirks.v2 import (
+    EntityPlatform,
+    EntityType,
+    QuirksV2RegistryEntry,
+    ZCLEnumMetadata,
+)
 
 import zhaquirks
 
@@ -51,7 +56,7 @@ def test_translation_key_and_fallback_name_match() -> None:
 
 def test_manufacturer_model_metadata_unique() -> None:
     """Ensure that each manufacturer-model pair is unique across all v2 quirks."""
-    # quirk_locations are a list and not a set below,
+    # quirk_locations is a list and not a set below,
     # as they are not guaranteed to be unique when set up incorrectly
 
     # (manufacturer, model) -> {quirk_location}
@@ -60,6 +65,9 @@ def test_manufacturer_model_metadata_unique() -> None:
     )
 
     for quirk in ALL_QUIRK_V2_CLASSES:
+        if quirk.fw_version_filter is not None:
+            # skip quirks with firmware filter, as they can share manufacturer/model
+            continue
         for metadata in quirk.manufacturer_model_metadata:
             man_model_quirk_map[(metadata.manufacturer, metadata.model)].append(
                 f"{quirk.quirk_file}:{quirk.quirk_file_line}"
@@ -70,3 +78,21 @@ def test_manufacturer_model_metadata_unique() -> None:
         assert len(quirk_locations) == 1, (
             f"Manufacturer-model pair '{manufacturer}' '{model}' is shared by multiple quirks: {quirk_locations}"
         )
+
+
+def test_enum_sensor_category() -> None:
+    """Ensure enum metadata with sensor entity platform has valid entity category."""
+    for quirk in ALL_QUIRK_V2_CLASSES:
+        for entity_metadata in quirk.entity_metadata:
+            if (
+                isinstance(entity_metadata, ZCLEnumMetadata)
+                and entity_metadata.entity_platform is EntityPlatform.SENSOR
+            ):
+                assert entity_metadata.entity_type in (
+                    EntityType.STANDARD,
+                    EntityType.DIAGNOSTIC,
+                ), (
+                    f"Enum sensor '{entity_metadata.translation_key}' in "
+                    f"{quirk.quirk_file}:{quirk.quirk_file_line} "
+                    f"has invalid entity type '{entity_metadata.entity_type}'"
+                )

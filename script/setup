@@ -17,18 +17,17 @@ fi
 
 if [ ! -n "$VIRTUAL_ENV" ]; then
   if [ -x "$(command -v uv)" ]; then
-    uv venv venv
+    uv venv
   else
-    python3 -m venv venv
+    python3 -m venv .venv
   fi
-  source venv/bin/activate
+  source .venv/bin/activate
 fi
 
 if ! [ -x "$(command -v uv)" ]; then
   python3 -m pip install uv
 fi
 
-uv pip install -r requirements_test.txt
-uv pip install -e .
+uv sync
 
 pre-commit install
