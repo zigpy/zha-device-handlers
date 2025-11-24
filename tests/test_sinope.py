@@ -66,7 +66,7 @@ async def test_sinope_flow_measurement(zigpy_device_from_v2_quirk):
     metering_cluster.update_attribute(metering_attr_id, 2500)
     assert len(metering_listener.attribute_updates) == 1
     assert metering_listener.attribute_updates[0][0] == metering_attr_id
-    assert metering_listener.attribute_updates[0][1] == 2.5  # divided by 1000
+    assert metering_listener.attribute_updates[0][1] == 2500  # not divided
 
     # verify other attributes are not modified
     metering_cluster.update_attribute(metering_other_attr_id, 25)
