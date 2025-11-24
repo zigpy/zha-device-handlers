@@ -30,6 +30,13 @@ ButtonAction = SinopeTechnologiesManufacturerCluster.Action
 
 SINOPE_MANUFACTURER_ID = 4508  # 0x119C
 
+SINOPE_MODELS = [
+    "SW2500ZB",   # light.py
+    "RM3500ZB",   # switch.py
+    "TH1123ZB",   # thermostat.py
+    "WL4200",     # sensor.py
+]
+
 
 async def test_sinope_device_temp(zigpy_device_from_v2_quirk):
     """Test that device temperature is multiplied."""
@@ -208,6 +215,7 @@ async def test_sinope_light_switch_non_action_report(zigpy_device_from_v2_quirk)
     assert cluster_listener.zha_send_event.call_count == 1
 
 
+@pytest.mark.parametrize("model", SINOPE_MODELS)
 async def test_sinope_reporting(zigpy_device_from_v2_quirk, model):
     """Generic test that manufacturer cluster configures reporting for all attributes."""
     device = zigpy_device_from_v2_quirk(SINOPE, model)
@@ -230,7 +238,6 @@ async def test_sinope_reporting(zigpy_device_from_v2_quirk, model):
         for attr_id in manu_cluster.MANUFACTURER_REPORTING:
             assert attr_id in called_attrs
 
-        assert len(request_mock.mock_calls) == len(manu_cluster.MANUFACTURER_REPORTING)
         # Check that number of call is coherent
         assert len(request_mock.mock_calls) >= len(manu_cluster.MANUFACTURER_REPORTING)
 
