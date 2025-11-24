@@ -440,6 +440,7 @@ class SinopeTechnologiesManufacturerCluster(CustomCluster):
         cluster_revision: Final = ZCL_CLUSTER_REVISION_ATTR
 
     async def bind(self):
+        """Bind the cluster and configure reporting."""
         await super().bind()
         await self.configure_reporting_all()
 
