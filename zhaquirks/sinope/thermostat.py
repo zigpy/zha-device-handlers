@@ -264,7 +264,7 @@ class TempFormat(t.enum8):
     Fahrenheit = 0x01
 
 
-class SinopeTechnologiesManufacturerCluster(CustomCluster):
+class SinopeTechnologiesManufacturerCluster(ManufacturerReportingMixin, CustomCluster):
     """SinopeTechnologiesManufacturerCluster manufacturer cluster."""
 
     KeypadLock: Final = KeypadLock
