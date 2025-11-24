@@ -207,7 +207,7 @@ class TuyaMatSeePlusManufCluster(TuyaMCUCluster):
         late_energy_flow: bool,
         report_endpoint_id: int,
         current_power: int | None,
-    ) -> tuple[int | None, int | None, int | None]:
+    ) -> tuple[int | None, int | None]:
         """Process power and energy flow DP updates.
 
         Computes signed power based on DP reporting order and user configuration.
@@ -221,10 +221,9 @@ class TuyaMatSeePlusManufCluster(TuyaMCUCluster):
         until the next interval. This prevents the zero from overwriting the stored value
         before total power calculation and maintains consistent update timing.
 
-        Returns tuple of (current_power, deferred_power, report_interval).
+        Returns tuple of (current_power, deferred_power).
         """
         power = None
-        report_interval = self._interval
         deferred_power = None
 
         # Compute signed power based on configuration and DP reporting order
@@ -251,7 +250,7 @@ class TuyaMatSeePlusManufCluster(TuyaMCUCluster):
         if power is not None:
             current_power = power
             self._report_power_value(power, report_endpoint_id)
-        return current_power, deferred_power, report_interval
+        return current_power, deferred_power
 
     def update_attribute(self, attr_name: str, value):
         """Handle reports to Electrical Measurement power attributes after aligning with energy flow.
@@ -264,56 +263,56 @@ class TuyaMatSeePlusManufCluster(TuyaMCUCluster):
         """
 
         if attr_name in (self.POWER_A, self.ENERGY_FLOW_A):
-            #  Increment interval when the next A Sequence is received
+            # Increment interval when the next A Sequence is received
             if self._interval_complete:
                 self._interval_complete = False
                 self._interval = (self._interval or 0) + 1
 
-                # Release deferred 0 power values (handles _Z2E204_81yrt3lo bug)
-                if self._deferred_power_a is not None:
-                    self._power_a = self._deferred_power_a
-                    self._report_power_value(self._power_a, ENDPOINT_ID_CT_A)
-                if self._deferred_power_b is not None:
-                    self._power_b = self._deferred_power_b
-                    self._report_power_value(self._power_b, ENDPOINT_ID_CT_B)
-                self._maybe_report_total_power()
+            # Release deferred power value
+            if self._deferred_power_a is not None:
+                self._power_a = self._deferred_power_a
+                self._report_power_value(self._power_a, ENDPOINT_ID_CT_A)
 
             # Process new values for power A and energy flow A
-            self._power_a, self._deferred_power_a, self._report_interval_a = (
-                self._process_power_and_energy_flow(
-                    attr_name,
-                    value,
-                    power_attr=self.POWER_A,
-                    energy_flow_attr=self.ENERGY_FLOW_A,
-                    late_energy_flow=self.endpoint.local_config.get(
-                        MatSeePlusLocalConfig.AttributeDefs.late_energy_flow_a.name
-                    ),
-                    report_endpoint_id=ENDPOINT_ID_CT_A,
-                    current_power=self._power_a,
-                )
+            self._power_a, self._deferred_power_a = self._process_power_and_energy_flow(
+                attr_name,
+                value,
+                power_attr=self.POWER_A,
+                energy_flow_attr=self.ENERGY_FLOW_A,
+                late_energy_flow=self.endpoint.local_config.get(
+                    MatSeePlusLocalConfig.AttributeDefs.late_energy_flow_a.name
+                ),
+                report_endpoint_id=ENDPOINT_ID_CT_A,
+                current_power=self._power_a,
             )
-            self._maybe_report_total_power()
+            self._report_interval_a = self._interval
 
         elif attr_name in (self.POWER_B, self.ENERGY_FLOW_B):
+            # Release deferred power value
+            if self._deferred_power_b is not None:
+                self._power_b = self._deferred_power_b
+                self._report_power_value(self._power_b, ENDPOINT_ID_CT_B)
+
             # Process new values for power B and energy flow B
-            self._power_b, self._deferred_power_b, self._report_interval_b = (
-                self._process_power_and_energy_flow(
-                    attr_name,
-                    value,
-                    power_attr=self.POWER_B,
-                    energy_flow_attr=self.ENERGY_FLOW_B,
-                    late_energy_flow=self.endpoint.local_config.get(
-                        MatSeePlusLocalConfig.AttributeDefs.late_energy_flow_b.name
-                    ),
-                    report_endpoint_id=ENDPOINT_ID_CT_B,
-                    current_power=self._power_b,
-                )
+            self._power_b, self._deferred_power_b = self._process_power_and_energy_flow(
+                attr_name,
+                value,
+                power_attr=self.POWER_B,
+                energy_flow_attr=self.ENERGY_FLOW_B,
+                late_energy_flow=self.endpoint.local_config.get(
+                    MatSeePlusLocalConfig.AttributeDefs.late_energy_flow_b.name
+                ),
+                report_endpoint_id=ENDPOINT_ID_CT_B,
+                current_power=self._power_b,
             )
+            self._report_interval_b = self._interval
+
+            # Attempt to report total power after each POWER_B update
             self._maybe_report_total_power()
 
-        # Mark interval complete after POWER_B is processed
-        if attr_name == self.POWER_B:
-            self._interval_complete = True
+            # Mark interval complete after POWER_B is processed
+            if attr_name == self.POWER_B:
+                self._interval_complete = True
 
         super().update_attribute(attr_name, value)
 
