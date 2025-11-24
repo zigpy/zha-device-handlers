@@ -165,6 +165,8 @@ class TuyaMatSeePlusManufCluster(TuyaMCUCluster):
         self._report_interval_b: int | None = None
         self._power_a: int | None = None
         self._power_b: int | None = None
+        self._deferred_power_a: int | None = None
+        self._deferred_power_b: int | None = None
         super().__init__(*args, **kwargs)
 
     @staticmethod
@@ -204,22 +206,26 @@ class TuyaMatSeePlusManufCluster(TuyaMCUCluster):
         energy_flow_attr: str,
         late_energy_flow: bool,
         report_endpoint_id: int,
-        stored_power: int | None,
-    ) -> tuple[int | None, int | None]:
+        current_power: int | None,
+    ) -> tuple[int | None, int | None, int | None]:
         """Process power and energy flow DP updates.
 
         Computes signed power based on DP reporting order and user configuration.
 
-        If late_energy_flow == True, then the flow DP value of the previous interval
-        is reported prior to current power, therefore we must use the stored power value.
+        If late_energy_flow == True, the flow DP value applies to the previous interval's power
+        (firmware bug on _TZE204_81yrt3lo), so power is signed when the flow DP arrives.
 
-        The device omits the energy flow DP in intervals with 0 power, so we must defer reporting
-        of 0 power until the next interval to ensure consistent timing of attribute updates.
+        Special handling for zero power with late_energy_flow enabled:
+        The device omits the energy flow DP when power is zero, so when zero power arrives,
+        we sign the last received power value with the stored flow and defer the actual zero
+        until the next interval. This prevents the zero from overwriting the stored value
+        before total power calculation and maintains consistent update timing.
 
-        Returns the signed power value and its reporting interval.
+        Returns tuple of (current_power, deferred_power, report_interval).
         """
         power = None
         report_interval = self._interval
+        deferred_power = None
 
         # Compute signed power based on configuration and DP reporting order
         if self._interval is None:
@@ -229,24 +235,23 @@ class TuyaMatSeePlusManufCluster(TuyaMCUCluster):
                 # value is TuyaEnergyFlow when attr_name is energy_flow_attr
                 power = self._align_value_with_energy_flow(self.get(power_attr), value)
             elif attr_name == power_attr and value == 0:
-                # Hold zero power until next interval because the flow DP is not reported with 0 power
-                power = 0
-                report_interval = self._interval + 1
+                # The flow DP was omitted in this interval due to 0 power, sign previous power using stored energy flow
+                power = self._align_value_with_energy_flow(
+                    self.get(power_attr), self.get(energy_flow_attr)
+                )
+                # Defer zero power until next interval
+                deferred_power = 0
         elif attr_name == power_attr:
             # value is int when attr_name is power_attr
             power = self._align_value_with_energy_flow(
                 value, self.get(energy_flow_attr)
             )
 
-        # Update stored power if we have a new value, otherwise keep existing value
+        # Update and report current power if there is a new value, otherwise keep existing value
         if power is not None:
-            stored_power = power
-
-        # Report the signed value to the cluster (unless deferred)
-        if report_interval == self._interval and power is not None:
+            current_power = power
             self._report_power_value(power, report_endpoint_id)
-
-        return stored_power, report_interval
+        return current_power, deferred_power, report_interval
 
     def update_attribute(self, attr_name: str, value):
         """Handle reports to Electrical Measurement power attributes after aligning with energy flow.
@@ -257,23 +262,24 @@ class TuyaMatSeePlusManufCluster(TuyaMCUCluster):
         3. ENERGY_FLOW_B (for previous interval on _TZE204_81yrt3lo, omitted if current interval power is 0)
         4. POWER_B (for current interval)
         """
-        super().update_attribute(attr_name, value)
-
-        #  Increment interval when ENERGY_FLOW_A is received
-        if self._interval_complete and attr_name in (self.ENERGY_FLOW_A, self.POWER_A):
-            self._interval_complete = False
-            self._interval = (self._interval or 0) + 1
-
-            # Release deferred values from the previous interval before processing updates (handles _Z2E204_81yrt3lo bug)
-            if self._report_interval_a == self._interval and self._power_a is not None:
-                self._report_power_value(self._power_a, ENDPOINT_ID_CT_A)
-            if self._report_interval_b == self._interval and self._power_b is not None:
-                self._report_power_value(self._power_b, ENDPOINT_ID_CT_B)
-            self._maybe_report_total_power()
 
         if attr_name in (self.POWER_A, self.ENERGY_FLOW_A):
+            #  Increment interval when the next A Sequence is received
+            if self._interval_complete:
+                self._interval_complete = False
+                self._interval = (self._interval or 0) + 1
+
+                # Release deferred 0 power values (handles _Z2E204_81yrt3lo bug)
+                if self._deferred_power_a is not None:
+                    self._power_a = self._deferred_power_a
+                    self._report_power_value(self._power_a, ENDPOINT_ID_CT_A)
+                if self._deferred_power_b is not None:
+                    self._power_b = self._deferred_power_b
+                    self._report_power_value(self._power_b, ENDPOINT_ID_CT_B)
+                self._maybe_report_total_power()
+
             # Process new values for power A and energy flow A
-            self._power_a, self._report_interval_a = (
+            self._power_a, self._deferred_power_a, self._report_interval_a = (
                 self._process_power_and_energy_flow(
                     attr_name,
                     value,
@@ -283,14 +289,14 @@ class TuyaMatSeePlusManufCluster(TuyaMCUCluster):
                         MatSeePlusLocalConfig.AttributeDefs.late_energy_flow_a.name
                     ),
                     report_endpoint_id=ENDPOINT_ID_CT_A,
-                    stored_power=self._power_a,
+                    current_power=self._power_a,
                 )
             )
             self._maybe_report_total_power()
 
         elif attr_name in (self.POWER_B, self.ENERGY_FLOW_B):
             # Process new values for power B and energy flow B
-            self._power_b, self._report_interval_b = (
+            self._power_b, self._deferred_power_b, self._report_interval_b = (
                 self._process_power_and_energy_flow(
                     attr_name,
                     value,
@@ -300,13 +306,16 @@ class TuyaMatSeePlusManufCluster(TuyaMCUCluster):
                         MatSeePlusLocalConfig.AttributeDefs.late_energy_flow_b.name
                     ),
                     report_endpoint_id=ENDPOINT_ID_CT_B,
-                    stored_power=self._power_b,
+                    current_power=self._power_b,
                 )
             )
             self._maybe_report_total_power()
 
+        # Mark interval complete after POWER_B is processed
         if attr_name == self.POWER_B:
             self._interval_complete = True
+
+        super().update_attribute(attr_name, value)
 
 
 (
