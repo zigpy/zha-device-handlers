@@ -66,7 +66,7 @@ async def test_sinope_flow_measurement(zigpy_device_from_v2_quirk):
     metering_cluster.update_attribute(metering_attr_id, 2500)
     assert len(metering_listener.attribute_updates) == 1
     assert metering_listener.attribute_updates[0][0] == metering_attr_id
-    assert metering_listener.attribute_updates[0][1] == 250.0  # divided by 10
+    assert metering_listener.attribute_updates[0][1] == 2.5  # divided by 1000
 
     # verify other attributes are not modified
     metering_cluster.update_attribute(metering_other_attr_id, 25)
@@ -208,9 +208,9 @@ async def test_sinope_light_switch_non_action_report(zigpy_device_from_v2_quirk)
     assert cluster_listener.zha_send_event.call_count == 1
 
 
-async def test_sinope_light_switch_reporting(zigpy_device_from_v2_quirk):
-    """Test that manufacturer cluster configures reporting for all attributes."""
-    device = zigpy_device_from_v2_quirk(SINOPE, "SW2500ZB")
+async def test_sinope_reporting(zigpy_device_from_v2_quirk, model):
+    """Generic test that manufacturer cluster configures reporting for all attributes."""
+    device = zigpy_device_from_v2_quirk(SINOPE, model)
 
     manu_cluster = device.endpoints[1].in_clusters[SINOPE_MANUFACTURER_CLUSTER_ID]
 
@@ -224,11 +224,15 @@ async def test_sinope_light_switch_reporting(zigpy_device_from_v2_quirk):
         await manu_cluster.configure_reporting_all()
 
         assert len(bind_mock.mock_calls) == 1
-        assert len(request_mock.mock_calls) == len(manu_cluster.MANUFACTURER_REPORTING)
 
+        # Check that all attributes have been configured
         called_attrs = [call.args[1] for call in request_mock.mock_calls]
         for attr_id in manu_cluster.MANUFACTURER_REPORTING:
             assert attr_id in called_attrs
+
+        assert len(request_mock.mock_calls) == len(manu_cluster.MANUFACTURER_REPORTING)
+        # Check that number of call is coherent
+        assert len(request_mock.mock_calls) >= len(manu_cluster.MANUFACTURER_REPORTING)
 
 
 async def test_sinope_light_device_triggers_def(zigpy_device_from_v2_quirk):
