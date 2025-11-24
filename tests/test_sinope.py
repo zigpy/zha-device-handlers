@@ -234,7 +234,12 @@ async def test_sinope_reporting(zigpy_device_from_v2_quirk, model):
         assert len(bind_mock.mock_calls) == 1
 
         # Check that all attributes have been configured
-        called_attrs = [call.args[1] for call in request_mock.mock_calls]
+        called_attrs = []
+        for call in request_mock.mock_calls:
+            reports = call.args[3]  # list of AttributeReport
+            for report in reports:
+                called_attrs.append(report.attrid)
+
         for attr_id in manu_cluster.MANUFACTURER_REPORTING:
             assert attr_id in called_attrs
 
