@@ -9,9 +9,9 @@ Model: TS0601
 
 Datapoints:
 - DP 18: Current (mA)
-- DP 19: Power (W * 10)
-- DP 20: Voltage (V * 10)
-- DP 101: Total Energy (kWh)
+- DP 19: Power (dW - deciwatts, W * 10)
+- DP 20: Voltage (dV - decivolts, V * 10)
+- DP 101: Total Energy (dWh - deciwatt-hours, Wh * 10)
 """
 
 from zigpy.profiles import zha
@@ -142,8 +142,8 @@ class TuyaMeteringPJ1203(TuyaLocalCluster, Metering):
     _CONSTANT_ATTRIBUTES = {
         Metering.AttributeDefs.unit_of_measure.id: POWER_WATT,
         Metering.AttributeDefs.multiplier.id: 1,
-        Metering.AttributeDefs.divisor.id: 1000,
-        Metering.AttributeDefs.summation_formatting.id: 0b0_0100_011,  # 4 digits after decimal
+        Metering.AttributeDefs.divisor.id: 10000,  # Device reports in dWh (Wh * 10), convert to kWh
+        Metering.AttributeDefs.summation_formatting.id: 0b0_0101_011,  # 5 digits after decimal
     }
 
     async def read_attributes(
