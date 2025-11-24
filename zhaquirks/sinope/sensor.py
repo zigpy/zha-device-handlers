@@ -107,7 +107,7 @@ class BatteryStatus(t.bitmap32):
     Low = 0x00000001
 
 
-class SinopeManufacturerCluster(CustomCluster):
+class SinopeManufacturerCluster(ManufacturerReportingMixin, CustomCluster):
     """SinopeManufacturerCluster manufacturer cluster."""
 
     DeviceStatus: Final = DeviceStatus
