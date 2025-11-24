@@ -185,6 +185,7 @@ class SinopeTechnologiesPowerConfigurationCluster(CustomCluster, PowerConfigurat
             id=0x003E, type=BatteryStatus, access="rp", is_manufacturer_specific=True
         )
 
+
 (
     # <SimpleDescriptor endpoint=1 profile=260 device_type=1026
     # device_version=0 input_clusters=[0, 1, 3, 1026, 1280, 2821, 65281]
