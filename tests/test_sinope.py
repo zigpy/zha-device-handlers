@@ -273,7 +273,9 @@ async def test_sinope_device_battery_voltage(zigpy_device_from_v2_quirk):
     dev_volt_cluster = device.endpoints[1].in_clusters[PowerConfiguration.cluster_id]
     dev_volt_listener = ClusterListener(dev_volt_cluster)
     dev_volt_attr_id = dev_volt_cluster.AttributeDefs.battery_voltage.id
-    dev_volt_other_attr_id = dev_volt_cluster.AttributeDefs.battery_percentage_remaining.id
+    dev_volt_other_attr_id = (
+        dev_volt_cluster.AttributeDefs.battery_percentage_remaining.id
+    )
 
     # verify battery voltage is divided by 10
     dev_volt_cluster.update_attribute(dev_volt_attr_id, 55)
