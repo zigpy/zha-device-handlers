@@ -34,9 +34,10 @@ class ZunZunBeeIASCluster(CustomCluster, IasZone):
 
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
-        press = (value & 1) + 1
-        value = value & 0x01FE
         if attrid == self.AttributeDefs.zone_status.id:
+            press = (value & 1) + 1
+            value = value & 0x01FE
+
             if value == 2:
                 button = BUTTON_1
                 press_type = PRESS_TYPES[press]
