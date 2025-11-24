@@ -59,7 +59,8 @@ async def test_sinope_flow_measurement(zigpy_device_from_v2_quirk):
 
     metering_cluster = device.endpoints[1].smartenergy_metering
     metering_listener = ClusterListener(metering_cluster)
-    metering_attr_id = Metering.AttributeDefs.current_summation_delivered.id
+    metering_attr_id = Metering.AttributeDefs.current_summ_delivered.id
+    metering_other_attr_id = Metering.AttributeDefs.multiplier.id
 
     # verify measured value is divided by 10
     metering_cluster.update_attribute(metering_attr_id, 2500)
@@ -223,10 +224,10 @@ async def test_sinope_light_switch_reporting(zigpy_device_from_v2_quirk):
         await manu_cluster.configure_reporting_all()
 
         assert len(bind_mock.mock_calls) == 1
-        assert len(request_mock.mock_calls) == 1
+        assert len(request_mock.mock_calls) == len(manu_cluster.MANUFACTURER_REPORTING)
 
         called_attrs = [call.args[1] for call in request_mock.mock_calls]
-        for attr_id in manu_cluster.MANUFACTURER_REPORTING.keys():
+        for attr_id in manu_cluster.MANUFACTURER_REPORTING:
             assert attr_id in called_attrs
 
 
