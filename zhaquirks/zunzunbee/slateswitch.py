@@ -1,15 +1,7 @@
-"""zunzunbee button device."""
+"""ZunZunBee button device."""
 
-from zigpy.profiles import zha
-from zigpy.quirks import CustomCluster, CustomDevice
-from zigpy.zcl.clusters.general import (
-    Basic,
-    Identify,
-    Ota,
-    PollControl,
-    PowerConfiguration,
-)
-from zigpy.zcl.clusters.measurement import TemperatureMeasurement
+from zigpy.quirks import CustomCluster
+from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.zcl.clusters.security import IasZone
 
 from zhaquirks.const import (
@@ -22,14 +14,8 @@ from zhaquirks.const import (
     BUTTON_6,
     CLUSTER_ID,
     COMMAND,
-    DEVICE_TYPE,
-    ENDPOINTS,
-    INPUT_CLUSTERS,
     LONG_PRESS,
-    MODELS_INFO,
-    OUTPUT_CLUSTERS,
     PRESS_TYPE,
-    PROFILE_ID,
     SHORT_PRESS,
     ZHA_SEND_EVENT,
 )
@@ -88,63 +74,27 @@ class ZunZunBeeIASCluster(CustomCluster, IasZone):
             self.listener_event(ZHA_SEND_EVENT, action, event_args)
 
 
-class ZunZunBeeButton(CustomDevice):
-    """zunzunbee button device."""
-
-    signature = {
-        # <SimpleDescriptor endpoint=1 profile=260 device_type=1026
-        # device_version=0
-        # input_clusters=[0, 1, 3, 32, 1026, 1280, 2821]
-        # output_clusters=[3, 25]>
-        MODELS_INFO: [(ZUNZUNBEE, "SSWZ8T")],
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: 0x0104,
-                DEVICE_TYPE: 0x0104,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    Identify.cluster_id,
-                    PollControl.cluster_id,
-                    TemperatureMeasurement.cluster_id,
-                    IasZone.cluster_id,
-                ],
-                OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],
+(
+    QuirkBuilder(ZUNZUNBEE, "SSWZ8T")
+    .replaces(ZunZunBeeIASCluster)
+    .device_automation_triggers(
+        {
+            (press_type, button): {
+                COMMAND: f"{button}_{press_type}",
+                CLUSTER_ID: IasZone.cluster_id,
             }
-        },
-    }
-
-    replacement = {
-        ENDPOINTS: {
-            1: {
-                PROFILE_ID: zha.PROFILE_ID,
-                INPUT_CLUSTERS: [
-                    Basic.cluster_id,
-                    PowerConfiguration.cluster_id,
-                    Identify.cluster_id,
-                    PollControl.cluster_id,
-                    TemperatureMeasurement.cluster_id,
-                    ZunZunBeeIASCluster,
-                ],
-                OUTPUT_CLUSTERS: [Identify.cluster_id, Ota.cluster_id],
-            }
+            for press_type in (SHORT_PRESS, LONG_PRESS)
+            for button in (
+                BUTTON_1,
+                BUTTON_2,
+                BUTTON_3,
+                BUTTON_4,
+                BUTTON_5,
+                BUTTON_6,
+                BUTTON_7,
+                BUTTON_8,
+            )
         }
-    }
-
-    device_automation_triggers = {
-        (press_type, button): {
-            COMMAND: f"{button}_{press_type}",
-            CLUSTER_ID: IasZone.cluster_id,
-        }
-        for press_type in (SHORT_PRESS, LONG_PRESS)
-        for button in (
-            BUTTON_1,
-            BUTTON_2,
-            BUTTON_3,
-            BUTTON_4,
-            BUTTON_5,
-            BUTTON_6,
-            BUTTON_7,
-            BUTTON_8,
-        )
-    }
+    )
+    .add_to_registry()
+)
