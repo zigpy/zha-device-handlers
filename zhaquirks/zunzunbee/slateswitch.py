@@ -12,6 +12,8 @@ from zhaquirks.const import (
     BUTTON_4,
     BUTTON_5,
     BUTTON_6,
+    BUTTON_7,
+    BUTTON_8,
     CLUSTER_ID,
     COMMAND,
     LONG_PRESS,
@@ -20,9 +22,6 @@ from zhaquirks.const import (
     ZHA_SEND_EVENT,
 )
 from zhaquirks.zunzunbee import ZUNZUNBEE
-
-BUTTON_7 = "button_7"
-BUTTON_8 = "button_8"
 
 PRESS_TYPES = {
     1: SHORT_PRESS,
