@@ -404,7 +404,7 @@ Now lets put this all together. If you examine the device definition above you w
 
 # Contribution Guidelines
 
-- All code is formatted with black. The check format script that runs in CI will ensure that code meets this requirement and that it is correctly formatted with black. Instructions for installing black in many editors can be found here: <https://github.com/psf/black#editor-integration>
+- All code is formatted with ruff. The check format script that runs in CI will ensure that code meets this requirement and that it is correctly formatted with ruff. Instructions for integrating ruff in many editors can be found here: <https://docs.astral.sh/ruff/editors/>
 
 - Capture the SimpleDescriptor log entries for each endpoint on the device. These can be found in the HA logs after joining a device and they look like this: `<SimpleDescriptor endpoint=1 profile=260 device_type=1026 device_version=0 input_clusters=[0, 1, 3, 32, 1026, 1280, 2821] output_clusters=[25]>`. This information can also be obtained from the zigbee.db if you want to take the time to query the tables and reconstitute the log entry. I find it easier to just remove and rejoin the device. ZHA entity ids are stable for the most part so it _shouldn't_ disrupt anything you have configured. These need to match what the device reports EXACTLY or zigpy will not match them when a device joins and the handler will not be used for the device. You can also obtain this information from the device screen in HA for the device. The `Zigbee Device Signature` button will launch a dialog that contains all of the information necessary to create quirks.
 
@@ -449,15 +449,9 @@ You can see a pattern that illustrates how to match a more complex event. In thi
 
 Open a terminal at the root of the project and run the setup script: `script/setup` This script will install all necessary dependencies and it will install the precommit hook.
 
-The tests use the [pytest](https://docs.pytest.org/en/latest/) framework.
-
-### Getting started
-
-To get set up, you need install the test dependencies:
-
-```bash
-pip install -r requirements_test.txt
-```
+All the dependencies are installed using the locked versions in the `uv.lock` file.
+To keep the environment up to date with the locked versions of the dependencies, run `uv sync` make sure the
+environment matches the `uv.lock` file.
 
 ### Running the tests
 
@@ -559,6 +553,51 @@ def test_ts0121_signature(assert_signature_matches_quirk):
     }
     assert_signature_matches_quirk(zhaquirks.tuya.ts0121_plug.Plug, signature)
 ```
+
+## Managing dependencies
+
+This project uses [uv] to manage dependencies and ensure reproducible environments.
+
+[uv]: https://docs.astral.sh/uv/
+
+### Sync the virtual environment
+
+Running `uv sync` will install all packages using the locked version from the `uv.lock` file into the virtual environment.
+It will also *remove* any package that is not listed in the `uv.lock` file.
+
+If/when the `uv.lock` file has been changed, which can be the case when for example switching branch or after merging `dev`
+branch into the current branch, you will usually need to re-sync the virtual environment using `uv sync` to ensure that the
+environment is up to date with the locked versions of the dependencies.
+The `script/setup` script will do this for you (and some more), so use the script once and then use `uv sync` to keep the
+environment up to date.
+
+The `dev` dependency group is installed by default by `uv sync`.
+
+### Updating locked dependencies
+
+After modifying a constraint for a dependency in the `pyproject.toml` file, for example bumping the minimum version
+of `zigpy`, use `uv lock` to update the locked versions for the dependency and all its dependencies so that the new
+constraint is fulfilled.
+Note that the `lock` command will not update packages already in the lockfile that already fulfills the constraints,
+even if there are newer versions available.
+
+To update a *single* package to its latest available version that fulfills the constraints use `uv lock --upgrade-package <package>`.
+
+To update *all* packages to their latest version that fulfills the constraints use `uv lock --upgrade`.
+
+### Adding new dependencies
+
+Use `uv add <package>` to add a project dependency, `uv add --dev <package>` to add to the `dev` group,
+or `uv add --group ci <package>` to add to the `ci` group.
+Alternatively just add it to the appropriate field in the `pyproject.toml` file and run `uv lock`
+to update the lockfile. Only the new package and its dependencies will be added/updated in the lockfile.
+
+In short, project dependencies, packages that should be installed when
+installing the project, go into `dependencies`. Packages used only for development go into the `dev`
+group in `dependency-groups` and packages used only for CI go into the `ci` group.
+See [uv dependency fields] for details.
+
+[uv dependency fields]: https://docs.astral.sh/uv/concepts/projects/dependencies/#dependency-fields
 
 # Thanks
 

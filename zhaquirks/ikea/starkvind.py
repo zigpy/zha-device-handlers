@@ -17,6 +17,7 @@ from zigpy.zcl.clusters.general import (
 )
 from zigpy.zcl.clusters.hvac import Fan
 from zigpy.zcl.clusters.measurement import PM25, IlluminanceMeasurement
+from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 
 from zhaquirks import Bus
 from zhaquirks.const import (
@@ -37,25 +38,36 @@ class IkeaAirpurifier(CustomCluster):
     cluster_id: t.uint16_t = 0xFC7D  # 64637  0xFC7D control air purifier with manufacturer-specific attributes
     ep_attribute: str = "ikea_airpurifier"
 
-    attributes = {
-        0x0000: ("filter_run_time", t.uint32_t, True),
-        0x0001: ("replace_filter", t.uint8_t, True),
-        0x0002: ("filter_life_time", t.uint32_t, True),
-        0x0003: ("disable_led", t.Bool, True),
-        0x0004: ("air_quality_25pm", t.uint16_t, True),
-        0x0005: ("child_lock", t.Bool, True),
-        0x0006: (
-            "fan_mode",
-            t.uint8_t,
-            True,
-        ),  # fan mode (Off, Auto, fanspeed 10 - 50)  read/write
-        0x0007: (
-            "fan_speed",
-            t.uint8_t,
-            True,
-        ),  # current fan speed (only fan speed 10-50)
-        0x0008: ("device_run_time", t.uint32_t, True),
-    }
+    class AttributeDefs(BaseAttributeDefs):
+        """Cluster attributes."""
+
+        filter_run_time = ZCLAttributeDef(
+            id=0x0000, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        replace_filter = ZCLAttributeDef(
+            id=0x0001, type=t.uint8_t, is_manufacturer_specific=True
+        )
+        filter_life_time = ZCLAttributeDef(
+            id=0x0002, type=t.uint32_t, is_manufacturer_specific=True
+        )
+        disable_led = ZCLAttributeDef(
+            id=0x0003, type=t.Bool, is_manufacturer_specific=True
+        )
+        air_quality_25pm = ZCLAttributeDef(
+            id=0x0004, type=t.uint16_t, is_manufacturer_specific=True
+        )
+        child_lock = ZCLAttributeDef(
+            id=0x0005, type=t.Bool, is_manufacturer_specific=True
+        )
+        fan_mode = ZCLAttributeDef(
+            id=0x0006, type=t.uint8_t, is_manufacturer_specific=True
+        )  # fan mode (Off, Auto, fanspeed 10 - 50)  read/write
+        fan_speed = ZCLAttributeDef(
+            id=0x0007, type=t.uint8_t, is_manufacturer_specific=True
+        )  # current fan speed (only fan speed 10-50)
+        device_run_time = ZCLAttributeDef(
+            id=0x0008, type=t.uint32_t, is_manufacturer_specific=True
+        )
 
     def __init__(self, *args, **kwargs):
         """Init."""
