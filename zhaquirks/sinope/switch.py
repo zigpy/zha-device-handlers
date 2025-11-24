@@ -484,6 +484,7 @@ class SinopeTechnologiesMeteringCluster(CustomCluster, Metering):
             id=0x0300, type=UnitOfMeasure, access="r", is_manufacturer_specific=True
         )
 
+
 (
     # <SimpleDescriptor(endpoint=1, profile=260,
     # device_type=81, device_version=0,
