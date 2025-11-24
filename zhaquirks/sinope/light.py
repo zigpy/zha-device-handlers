@@ -134,7 +134,7 @@ class SinopeLightLedColors(t.enum32):
     Red = 0xFF0000
 
 
-class SinopeTechnologiesManufacturerCluster(CustomCluster):
+class SinopeTechnologiesManufacturerCluster(ManufacturerReportingMixin, CustomCluster):
     """SinopeTechnologiesManufacturerCluster manufacturer cluster."""
 
     KeypadLock: Final = KeypadLock
