@@ -31,10 +31,10 @@ ButtonAction = SinopeTechnologiesManufacturerCluster.Action
 SINOPE_MANUFACTURER_ID = 4508  # 0x119C
 
 SINOPE_MODELS = [
-    "SW2500ZB",   # light.py
-    "RM3500ZB",   # switch.py
-    "TH1123ZB",   # thermostat.py
-    "WL4200",     # sensor.py
+    "SW2500ZB",  # light.py
+    "RM3500ZB",  # switch.py
+    "TH1123ZB",  # thermostat.py
+    "WL4200",  # sensor.py
 ]
 
 
