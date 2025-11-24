@@ -379,12 +379,12 @@ def test_pj1203_metering_cluster_constants():
     # Unit of measure: kWh (0x00)
     assert constants[Metering.AttributeDefs.unit_of_measure.id] == 0x0000
 
-    # Multiplier and divisor for kWh conversion (raw value is in Wh)
+    # Multiplier and divisor for kWh conversion (raw value is in dWh)
     assert constants[Metering.AttributeDefs.multiplier.id] == 1
-    assert constants[Metering.AttributeDefs.divisor.id] == 1000
+    assert constants[Metering.AttributeDefs.divisor.id] == 10000
 
     # Summation formatting
-    assert constants[Metering.AttributeDefs.summation_formatting.id] == 0b0_0100_011
+    assert constants[Metering.AttributeDefs.summation_formatting.id] == 0b0_0101_011
 
 
 async def test_pj1203_energy_attribute_update(pj1203_device):
@@ -392,7 +392,7 @@ async def test_pj1203_energy_attribute_update(pj1203_device):
     metering_cluster = pj1203_device.endpoints[1].smartenergy_metering
     metering_listener = ClusterListener(metering_cluster)
 
-    # Simulate energy update (12345 Wh = 12.345 kWh)
+    # Simulate energy update (12345 dWh = 1.2345 kWh)
     metering_cluster._update_attribute(
         Metering.AttributeDefs.current_summ_delivered.id, 12345
     )
@@ -422,7 +422,7 @@ async def test_pj1203_read_metering_attributes_constant(pj1203_device):
     records = result[0]
     assert len(records) == 1
     assert records[0].status == foundation.Status.SUCCESS
-    assert records[0].value.value == 1000
+    assert records[0].value.value == 10000
 
 
 async def test_pj1203_read_metering_attributes_cached(pj1203_device):
