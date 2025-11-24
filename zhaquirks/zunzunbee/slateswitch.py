@@ -28,6 +28,17 @@ PRESS_TYPES = {
     2: LONG_PRESS,
 }
 
+BUTTON_MAPPING = {
+    2: BUTTON_1,
+    4: BUTTON_2,
+    8: BUTTON_3,
+    16: BUTTON_4,
+    32: BUTTON_5,
+    64: BUTTON_6,
+    128: BUTTON_7,
+    256: BUTTON_8,
+}
+
 
 class ZunZunBeeIASCluster(CustomCluster, IasZone):
     """IAS cluster used for ZunZunBee button."""
@@ -35,36 +46,17 @@ class ZunZunBeeIASCluster(CustomCluster, IasZone):
     def _update_attribute(self, attrid, value):
         super()._update_attribute(attrid, value)
         if attrid == self.AttributeDefs.zone_status.id:
-            press = (value & 1) + 1
-            value = value & 0x01FE
+            # Ignore first bit for determining button id
+            button_id = value & 0x01FE
 
-            if value == 2:
-                button = BUTTON_1
-                press_type = PRESS_TYPES[press]
-            elif value == 4:
-                button = BUTTON_2
-                press_type = PRESS_TYPES[press]
-            elif value == 8:
-                button = BUTTON_3
-                press_type = PRESS_TYPES[press]
-            elif value == 16:
-                button = BUTTON_4
-                press_type = PRESS_TYPES[press]
-            elif value == 32:
-                button = BUTTON_5
-                press_type = PRESS_TYPES[press]
-            elif value == 64:
-                button = BUTTON_6
-                press_type = PRESS_TYPES[press]
-            elif value == 128:
-                button = BUTTON_7
-                press_type = PRESS_TYPES[press]
-            elif value == 256:
-                button = BUTTON_8
-                press_type = PRESS_TYPES[press]
-            else:
-                # discard invalid values:
+            # Map to button presses, ignore invalid buttons
+            button = BUTTON_MAPPING.get(button_id)
+            if button is None:
                 return
+
+            # Only check first bit for press type
+            press_id = (value & 1) + 1
+            press_type = PRESS_TYPES[press_id]
 
             action = f"{button}_{press_type}"
             event_args = {
