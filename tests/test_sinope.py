@@ -293,7 +293,7 @@ async def test_sinope_device_current_sum(zigpy_device_from_v2_quirk):
     assert dev_summ_listener.attribute_updates[1][1] == 2500  # not modified
 
 
-@pytest.mark.parametrize("model", ["VA4220ZB", "WL4200"])
+@pytest.mark.parametrize("model", ["VA4220ZB", "LM4110-ZB"])
 async def test_sinope_device_battery_voltage(zigpy_device_from_v2_quirk, model):
     """Test that device battery voltage is divided by 10."""
     device = zigpy_device_from_v2_quirk(SINOPE, model)
