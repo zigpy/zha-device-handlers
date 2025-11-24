@@ -247,6 +247,16 @@ async def test_sinope_reporting(zigpy_device_from_v2_quirk, model):
         assert len(request_mock.mock_calls) >= len(manu_cluster.MANUFACTURER_REPORTING)
 
 
+@pytest.mark.parametrize("model", SINOPE_MODELS)
+async def test_sinope_reporting_failure(zigpy_device_from_v2_quirk, model):
+    """Test that reporting failure is handled gracefully for all models."""
+    device = zigpy_device_from_v2_quirk(SINOPE, model)
+    manu_cluster = device.endpoints[1].in_clusters[SINOPE_MANUFACTURER_CLUSTER_ID]
+
+    with mock.patch("zigpy.zcl.Cluster.request", side_effect=Exception("boom")):
+        await manu_cluster.configure_reporting_all()
+
+
 async def test_sinope_light_device_triggers_def(zigpy_device_from_v2_quirk):
     """Test device automation triggers.
 
@@ -283,9 +293,10 @@ async def test_sinope_device_current_sum(zigpy_device_from_v2_quirk):
     assert dev_summ_listener.attribute_updates[1][1] == 2500  # not modified
 
 
-async def test_sinope_device_battery_voltage(zigpy_device_from_v2_quirk):
+@pytest.mark.parametrize("model", ["VA4220ZB", "WL4200"])
+async def test_sinope_device_battery_voltage(zigpy_device_from_v2_quirk, model):
     """Test that device battery voltage is divided by 10."""
-    device = zigpy_device_from_v2_quirk(SINOPE, "VA4220ZB")
+    device = zigpy_device_from_v2_quirk(SINOPE, model)
 
     dev_volt_cluster = device.endpoints[1].in_clusters[PowerConfiguration.cluster_id]
     dev_volt_listener = ClusterListener(dev_volt_cluster)
