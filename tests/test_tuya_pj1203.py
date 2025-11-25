@@ -190,7 +190,7 @@ async def test_pj1203_calculated_apparent_power(pj1203_device):
     )
 
     # Find apparent power update
-    # Calculation: (2398 * 305) // 10000 = 73 VA
+    # Calculation: round((2398 * 305) / 10000) = 73 VA
     apparent_power_update = next(
         (
             u
@@ -200,7 +200,7 @@ async def test_pj1203_calculated_apparent_power(pj1203_device):
         None,
     )
     assert apparent_power_update is not None
-    expected_apparent_power = (2398 * 305) // 10000
+    expected_apparent_power = round((2398 * 305) / 10000)
     assert apparent_power_update[1] == expected_apparent_power
 
 
@@ -226,7 +226,7 @@ async def test_pj1203_calculated_power_factor(pj1203_device):
 
     # Find power factor update
     # Apparent power = 73 VA
-    # Power factor = (41 * 100) // 73 = 56%
+    # Power factor = round((41 * 100) / 73) = 56%
     power_factor_update = next(
         (
             u
@@ -236,8 +236,8 @@ async def test_pj1203_calculated_power_factor(pj1203_device):
         None,
     )
     assert power_factor_update is not None
-    apparent_power = (2398 * 305) // 10000
-    expected_pf = (abs(41) * 100) // apparent_power
+    apparent_power = round((2398 * 305) / 10000)
+    expected_pf = min(round((abs(41) * 100) / apparent_power), 100)
     assert power_factor_update[1] == expected_pf
 
 
