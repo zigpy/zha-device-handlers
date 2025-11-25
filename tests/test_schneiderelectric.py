@@ -2,7 +2,6 @@
 
 from unittest import mock
 
-import pytest
 from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.smartenergy import Metering
