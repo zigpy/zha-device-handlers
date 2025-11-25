@@ -18,6 +18,7 @@ Datapoints:
 - DP 101: Total Energy (Wh)
 """
 
+import datetime
 import time
 
 from zigpy.profiles import zha
@@ -322,7 +323,7 @@ class TuyaMeteringPJ1203(TuyaLocalCluster, Metering):
 class TuyaPJ1203ManufCluster(NoManufacturerCluster, TuyaMCUCluster):
     """Manufacturer cluster for PJ-1203 single channel energy meter."""
 
-    set_time_offset = 1970
+    set_time_offset = datetime.datetime(1970, 1, 1, tzinfo=datetime.UTC)
 
     dp_to_attribute: dict[int, DPToAttributeMapping] = {
         18: DPToAttributeMapping(
