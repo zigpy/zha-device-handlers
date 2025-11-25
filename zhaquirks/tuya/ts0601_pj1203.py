@@ -111,6 +111,7 @@ class TuyaElectricalMeasurementPJ1203(TuyaLocalCluster, ElectricalMeasurement):
 
         Args:
             power_watts: Current power reading in watts
+
         """
         current_time = time.monotonic()
 
@@ -128,9 +129,7 @@ class TuyaElectricalMeasurementPJ1203(TuyaLocalCluster, ElectricalMeasurement):
                 # Update the metering cluster with integrated energy (in Wh)
                 metering = self.endpoint.smartenergy_metering
                 if hasattr(metering, "update_integrated_energy"):
-                    metering.update_integrated_energy(
-                        round(self._integrated_energy_wh)
-                    )
+                    metering.update_integrated_energy(round(self._integrated_energy_wh))
 
         self._last_power_time = current_time
         self._last_power_value = power_watts
@@ -231,7 +230,10 @@ class TuyaMeteringPJ1203(TuyaLocalCluster, Metering):
         """Update attribute and handle device energy counter resets."""
         if attrid == Metering.AttributeDefs.current_summ_delivered.id:
             # Track device energy and detect resets
-            if self._last_device_energy is not None and value < self._last_device_energy:
+            if (
+                self._last_device_energy is not None
+                and value < self._last_device_energy
+            ):
                 # Device counter reset detected - add previous value to offset
                 self._energy_offset += self._last_device_energy
 
@@ -251,6 +253,7 @@ class TuyaMeteringPJ1203(TuyaLocalCluster, Metering):
 
         Args:
             energy_wh: Integrated energy in Wh
+
         """
         self._integrated_energy_wh = energy_wh
 

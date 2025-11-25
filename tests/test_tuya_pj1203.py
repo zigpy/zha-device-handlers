@@ -570,9 +570,7 @@ async def test_pj1203_power_integration_trapezoidal(pj1203_device, monkeypatch):
     monkeypatch.setattr(ts0601_pj1203.time, "monotonic", mock_monotonic)
 
     # Start at 0W
-    em_cluster._update_attribute(
-        ElectricalMeasurement.AttributeDefs.active_power.id, 0
-    )
+    em_cluster._update_attribute(ElectricalMeasurement.AttributeDefs.active_power.id, 0)
 
     # 60 seconds later, power jumps to 200W
     mock_time[0] = 60.0
