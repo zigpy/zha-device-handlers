@@ -3,7 +3,7 @@
 from unittest import mock
 
 import pytest
-from zigpy.zcl import foundation
+from zigpy.zcl import ClusterType, foundation
 from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.smartenergy import Metering
 
@@ -86,10 +86,13 @@ async def test_1gang_shutter_1_lift_percentage_updates(zigpy_device_from_v2_quir
     assert len(cluster_listener.cluster_commands) == 0
 
 
-@pytest.mark.parametrize("quirk", (zhaquirks.schneiderelectric.outlet.SocketOutlet,))
-async def test_schneider_device_temp(zigpy_device_from_quirk, quirk):
+async def test_schneider_device_temp(zigpy_device_from_v2_quirk):
     """Test that instant demand is divided by 1000."""
-    device = zigpy_device_from_quirk(quirk)
+    device = zigpy_device_from_v2_quirk(
+        manufacturer=SE_MANUF_NAME,
+        model="SOCKET/OUTLET/1",
+        cluster_ids={6: {Metering.cluster_id: ClusterType.Server}},
+    )
 
     metering_cluster = device.endpoints[6].smartenergy_metering
     metering_listener = ClusterListener(metering_cluster)
