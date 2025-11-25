@@ -7,8 +7,8 @@ from zigpy.zcl.clusters.closures import WindowCovering
 from zigpy.zcl.clusters.smartenergy import Metering
 
 from tests.common import ClusterListener
+import zhaquirks
 from zhaquirks.schneiderelectric import SE_MANUF_NAME
-import zhaquirks.schneiderelectric.outlet
 
 zhaquirks.setup()
 
