@@ -28,7 +28,7 @@ class ManufacturerMetering(CustomCluster):
         current_summation: Final = ZCLAttributeDef(
             id=0x0301,
             type=t.uint48_t,
-            access="r",
+            access="w",
             is_manufacturer_specific=True,
         )
 
