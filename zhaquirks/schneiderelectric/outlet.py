@@ -109,4 +109,5 @@ class SEMeteringCluster(CustomCluster, Metering):
         translation_key="local_control_mode",
         fallback_name="Local control mode",
     )
+    .add_to_registry()
 )
