@@ -508,7 +508,7 @@ async def test_pj1203_energy_counter_multiple_resets(pj1203_device):
     assert metering_cluster.get_compensated_energy_wh() == 725
 
 
-async def test_pj1203_power_integration_basic(pj1203_device):
+def test_pj1203_power_integration_basic(pj1203_device):
     """Test basic power-to-energy integration."""
     em_cluster = pj1203_device.endpoints[1].electrical_measurement
 
