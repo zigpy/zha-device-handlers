@@ -4,6 +4,10 @@ This quirk supports the Tuya PJ-1203 single channel clamp power meter.
 The device reports voltage, current, power, and total energy. Apparent power
 and power factor are calculated from these values.
 
+Energy tracking: The device's native energy counter (DP 101) resets on reconnects.
+This quirk provides an additional calculated energy value that integrates power
+over time, providing a more reliable cumulative energy measurement.
+
 Manufacturer IDs: _TZE204_cjbofhxw, _TZE284_cjbofhxw
 Model: TS0601
 
@@ -13,6 +17,8 @@ Datapoints:
 - DP 20: Voltage (V * 10)
 - DP 101: Total Energy (Wh)
 """
+
+import time
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
@@ -35,7 +41,10 @@ from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster
 
 
 class TuyaElectricalMeasurementPJ1203(TuyaLocalCluster, ElectricalMeasurement):
-    """ElectricalMeasurement cluster for PJ-1203 with calculated apparent power and power factor."""
+    """ElectricalMeasurement cluster for PJ-1203 with calculated apparent power and power factor.
+
+    Also integrates power over time to calculate cumulative energy consumption.
+    """
 
     cluster_id = ElectricalMeasurement.cluster_id
 
@@ -47,6 +56,17 @@ class TuyaElectricalMeasurementPJ1203(TuyaLocalCluster, ElectricalMeasurement):
         ElectricalMeasurement.AttributeDefs.ac_voltage_divisor.id: 10,
         ElectricalMeasurement.AttributeDefs.ac_voltage_multiplier.id: 1,
     }
+
+    # Maximum gap between power readings to consider for integration (seconds)
+    # If gap is larger, we skip integration to avoid counting offline time
+    MAX_INTEGRATION_GAP = 300  # 5 minutes
+
+    def __init__(self, *args, **kwargs):
+        """Initialize the cluster with energy integration state."""
+        super().__init__(*args, **kwargs)
+        self._last_power_time: float | None = None
+        self._last_power_value: int | None = None
+        self._integrated_energy_wh: float = 0.0
 
     def _update_attribute(self, attrid, value):
         """Update attribute and calculate derived values."""
@@ -78,6 +98,52 @@ class TuyaElectricalMeasurementPJ1203(TuyaLocalCluster, ElectricalMeasurement):
             elif apparent_power == 0:
                 # No apparent power means power factor is undefined, set to 0
                 super()._update_attribute(self.AttributeDefs.power_factor.id, 0)
+
+        # Integrate power over time when active_power is updated
+        if attrid == self.AttributeDefs.active_power.id and value is not None:
+            self._integrate_power(value)
+
+    def _integrate_power(self, power_watts: int) -> None:
+        """Integrate power over time to calculate energy consumption.
+
+        Uses trapezoidal integration for better accuracy: takes average of
+        previous and current power readings multiplied by time delta.
+
+        Args:
+            power_watts: Current power reading in watts
+        """
+        current_time = time.monotonic()
+
+        if self._last_power_time is not None and self._last_power_value is not None:
+            time_delta = current_time - self._last_power_time
+
+            # Only integrate if the gap is reasonable
+            if 0 < time_delta <= self.MAX_INTEGRATION_GAP:
+                # Trapezoidal integration: average power * time
+                avg_power = (self._last_power_value + power_watts) / 2
+                # Convert: W * seconds -> Wh (divide by 3600)
+                energy_wh = (avg_power * time_delta) / 3600
+                self._integrated_energy_wh += energy_wh
+
+                # Update the metering cluster with integrated energy (in Wh)
+                metering = self.endpoint.smartenergy_metering
+                if hasattr(metering, "update_integrated_energy"):
+                    metering.update_integrated_energy(
+                        round(self._integrated_energy_wh)
+                    )
+
+        self._last_power_time = current_time
+        self._last_power_value = power_watts
+
+    def get_integrated_energy_wh(self) -> float:
+        """Return the current integrated energy value in Wh."""
+        return self._integrated_energy_wh
+
+    def reset_integrated_energy(self) -> None:
+        """Reset the integrated energy counter."""
+        self._integrated_energy_wh = 0.0
+        self._last_power_time = None
+        self._last_power_value = None
 
     async def read_attributes(
         self, attributes, allow_cache=False, only_cache=False, manufacturer=None
@@ -130,7 +196,15 @@ class TuyaElectricalMeasurementPJ1203(TuyaLocalCluster, ElectricalMeasurement):
 
 
 class TuyaMeteringPJ1203(TuyaLocalCluster, Metering):
-    """Metering cluster for PJ-1203 to report total energy consumption."""
+    """Metering cluster for PJ-1203 to report total energy consumption.
+
+    This cluster tracks energy in two ways:
+    1. Device's native counter (DP 101) - resets on reconnects
+    2. Integrated energy from power readings - more reliable cumulative value
+
+    When the device's counter resets (value decreases), we compensate by
+    tracking the offset to maintain a continuous cumulative reading.
+    """
 
     cluster_id = Metering.cluster_id
 
@@ -145,6 +219,50 @@ class TuyaMeteringPJ1203(TuyaLocalCluster, Metering):
         Metering.AttributeDefs.divisor.id: 1000,  # Device reports in Wh, convert to kWh
         Metering.AttributeDefs.summation_formatting.id: 0b0_0100_011,  # 4 digits after decimal
     }
+
+    def __init__(self, *args, **kwargs):
+        """Initialize the cluster with energy tracking state."""
+        super().__init__(*args, **kwargs)
+        self._last_device_energy: int | None = None
+        self._energy_offset: int = 0  # Offset to add when device counter resets
+        self._integrated_energy_wh: int = 0
+
+    def _update_attribute(self, attrid, value):
+        """Update attribute and handle device energy counter resets."""
+        if attrid == Metering.AttributeDefs.current_summ_delivered.id:
+            # Track device energy and detect resets
+            if self._last_device_energy is not None and value < self._last_device_energy:
+                # Device counter reset detected - add previous value to offset
+                self._energy_offset += self._last_device_energy
+
+            self._last_device_energy = value
+
+            # Report the compensated value (device value + offset)
+            compensated_value = value + self._energy_offset
+            super()._update_attribute(attrid, compensated_value)
+        else:
+            super()._update_attribute(attrid, value)
+
+    def update_integrated_energy(self, energy_wh: int) -> None:
+        """Update the integrated energy value from power readings.
+
+        This provides an alternative energy measurement that doesn't rely
+        on the device's resetting counter.
+
+        Args:
+            energy_wh: Integrated energy in Wh
+        """
+        self._integrated_energy_wh = energy_wh
+
+    def get_integrated_energy_wh(self) -> int:
+        """Return the integrated energy value in Wh."""
+        return self._integrated_energy_wh
+
+    def get_compensated_energy_wh(self) -> int:
+        """Return the compensated device energy (with reset handling) in Wh."""
+        if self._last_device_energy is not None:
+            return self._last_device_energy + self._energy_offset
+        return self._energy_offset
 
     async def read_attributes(
         self, attributes, allow_cache=False, only_cache=False, manufacturer=None

@@ -443,3 +443,265 @@ async def test_pj1203_read_metering_attributes_cached(pj1203_device):
     assert len(records) == 1
     assert records[0].status == foundation.Status.SUCCESS
     assert records[0].value.value == 54321
+
+
+# Tests for energy integration feature
+
+
+async def test_pj1203_energy_counter_reset_compensation(pj1203_device):
+    """Test that metering cluster compensates for device energy counter resets."""
+    metering_cluster = pj1203_device.endpoints[1].smartenergy_metering
+
+    # Initial energy reading
+    metering_cluster._update_attribute(
+        Metering.AttributeDefs.current_summ_delivered.id, 1000
+    )
+    assert metering_cluster.get_compensated_energy_wh() == 1000
+
+    # Energy increases normally
+    metering_cluster._update_attribute(
+        Metering.AttributeDefs.current_summ_delivered.id, 1500
+    )
+    assert metering_cluster.get_compensated_energy_wh() == 1500
+
+    # Device resets - value drops (simulating reconnect)
+    metering_cluster._update_attribute(
+        Metering.AttributeDefs.current_summ_delivered.id, 100
+    )
+    # Should compensate: 100 + 1500 (previous max) = 1600
+    assert metering_cluster.get_compensated_energy_wh() == 1600
+
+    # Continue accumulating after reset
+    metering_cluster._update_attribute(
+        Metering.AttributeDefs.current_summ_delivered.id, 300
+    )
+    assert metering_cluster.get_compensated_energy_wh() == 1800
+
+
+async def test_pj1203_energy_counter_multiple_resets(pj1203_device):
+    """Test that multiple device resets are handled correctly."""
+    metering_cluster = pj1203_device.endpoints[1].smartenergy_metering
+
+    # First session: accumulate to 500
+    metering_cluster._update_attribute(
+        Metering.AttributeDefs.current_summ_delivered.id, 500
+    )
+    assert metering_cluster.get_compensated_energy_wh() == 500
+
+    # First reset
+    metering_cluster._update_attribute(
+        Metering.AttributeDefs.current_summ_delivered.id, 50
+    )
+    assert metering_cluster.get_compensated_energy_wh() == 550
+
+    # Accumulate more
+    metering_cluster._update_attribute(
+        Metering.AttributeDefs.current_summ_delivered.id, 200
+    )
+    assert metering_cluster.get_compensated_energy_wh() == 700
+
+    # Second reset
+    metering_cluster._update_attribute(
+        Metering.AttributeDefs.current_summ_delivered.id, 25
+    )
+    # Offset should now be 500 + 200 = 700, plus new value 25 = 725
+    assert metering_cluster.get_compensated_energy_wh() == 725
+
+
+async def test_pj1203_power_integration_basic(pj1203_device):
+    """Test basic power-to-energy integration."""
+    em_cluster = pj1203_device.endpoints[1].electrical_measurement
+
+    # Verify initial state
+    assert em_cluster._integrated_energy_wh == 0.0
+    assert em_cluster._last_power_time is None
+    assert em_cluster._last_power_value is None
+
+    # First power reading - just sets the baseline, no integration yet
+    em_cluster._update_attribute(
+        ElectricalMeasurement.AttributeDefs.active_power.id, 100
+    )
+    assert em_cluster._last_power_value == 100
+    assert em_cluster._last_power_time is not None
+    assert em_cluster._integrated_energy_wh == 0.0  # No integration on first reading
+
+
+async def test_pj1203_power_integration_accumulation(pj1203_device, monkeypatch):
+    """Test that power readings are integrated over time."""
+    from zhaquirks.tuya import ts0601_pj1203
+
+    em_cluster = pj1203_device.endpoints[1].electrical_measurement
+
+    # Mock time.monotonic to control time progression
+    mock_time = [0.0]
+
+    def mock_monotonic():
+        return mock_time[0]
+
+    monkeypatch.setattr(ts0601_pj1203.time, "monotonic", mock_monotonic)
+
+    # First reading at t=0
+    em_cluster._update_attribute(
+        ElectricalMeasurement.AttributeDefs.active_power.id, 100
+    )
+
+    # Second reading at t=60 (1 minute later) with same power
+    mock_time[0] = 60.0
+    em_cluster._update_attribute(
+        ElectricalMeasurement.AttributeDefs.active_power.id, 100
+    )
+
+    # Energy = avg_power * time = 100W * 60s / 3600 = 1.6667 Wh
+    expected_energy = (100 * 60) / 3600
+    assert abs(em_cluster._integrated_energy_wh - expected_energy) < 0.01
+
+
+async def test_pj1203_power_integration_trapezoidal(pj1203_device, monkeypatch):
+    """Test trapezoidal integration with changing power levels."""
+    from zhaquirks.tuya import ts0601_pj1203
+
+    em_cluster = pj1203_device.endpoints[1].electrical_measurement
+
+    mock_time = [0.0]
+
+    def mock_monotonic():
+        return mock_time[0]
+
+    monkeypatch.setattr(ts0601_pj1203.time, "monotonic", mock_monotonic)
+
+    # Start at 0W
+    em_cluster._update_attribute(
+        ElectricalMeasurement.AttributeDefs.active_power.id, 0
+    )
+
+    # 60 seconds later, power jumps to 200W
+    mock_time[0] = 60.0
+    em_cluster._update_attribute(
+        ElectricalMeasurement.AttributeDefs.active_power.id, 200
+    )
+
+    # Trapezoidal: avg(0, 200) * 60s / 3600 = 100 * 60 / 3600 = 1.6667 Wh
+    expected_energy = (100 * 60) / 3600
+    assert abs(em_cluster._integrated_energy_wh - expected_energy) < 0.01
+
+
+async def test_pj1203_power_integration_gap_handling(pj1203_device, monkeypatch):
+    """Test that large time gaps don't cause spurious energy accumulation."""
+    from zhaquirks.tuya import ts0601_pj1203
+
+    em_cluster = pj1203_device.endpoints[1].electrical_measurement
+
+    mock_time = [0.0]
+
+    def mock_monotonic():
+        return mock_time[0]
+
+    monkeypatch.setattr(ts0601_pj1203.time, "monotonic", mock_monotonic)
+
+    # Initial reading
+    em_cluster._update_attribute(
+        ElectricalMeasurement.AttributeDefs.active_power.id, 1000
+    )
+
+    # Gap larger than MAX_INTEGRATION_GAP (5 minutes = 300 seconds)
+    mock_time[0] = 600.0  # 10 minutes
+    em_cluster._update_attribute(
+        ElectricalMeasurement.AttributeDefs.active_power.id, 1000
+    )
+
+    # Should NOT integrate due to large gap
+    assert em_cluster._integrated_energy_wh == 0.0
+
+
+async def test_pj1203_power_integration_updates_metering(pj1203_device, monkeypatch):
+    """Test that integrated energy is passed to metering cluster."""
+    from zhaquirks.tuya import ts0601_pj1203
+
+    em_cluster = pj1203_device.endpoints[1].electrical_measurement
+    metering_cluster = pj1203_device.endpoints[1].smartenergy_metering
+
+    mock_time = [0.0]
+
+    def mock_monotonic():
+        return mock_time[0]
+
+    monkeypatch.setattr(ts0601_pj1203.time, "monotonic", mock_monotonic)
+
+    # First reading
+    em_cluster._update_attribute(
+        ElectricalMeasurement.AttributeDefs.active_power.id, 100
+    )
+
+    # Second reading 60 seconds later
+    mock_time[0] = 60.0
+    em_cluster._update_attribute(
+        ElectricalMeasurement.AttributeDefs.active_power.id, 100
+    )
+
+    # Check metering cluster received the integrated value (rounded)
+    # 100W * 60s / 3600 = 1.6667 Wh -> rounded to 2
+    assert metering_cluster.get_integrated_energy_wh() == 2
+
+
+async def test_pj1203_reset_integrated_energy(pj1203_device, monkeypatch):
+    """Test resetting the integrated energy counter."""
+    from zhaquirks.tuya import ts0601_pj1203
+
+    em_cluster = pj1203_device.endpoints[1].electrical_measurement
+
+    mock_time = [0.0]
+
+    def mock_monotonic():
+        return mock_time[0]
+
+    monkeypatch.setattr(ts0601_pj1203.time, "monotonic", mock_monotonic)
+
+    # Accumulate some energy
+    em_cluster._update_attribute(
+        ElectricalMeasurement.AttributeDefs.active_power.id, 100
+    )
+    mock_time[0] = 60.0  # 60 seconds
+    em_cluster._update_attribute(
+        ElectricalMeasurement.AttributeDefs.active_power.id, 100
+    )
+
+    # 100W * 60s / 3600 = 1.6667 Wh
+    expected_energy = (100 * 60) / 3600
+    assert abs(em_cluster._integrated_energy_wh - expected_energy) < 0.01
+
+    # Reset
+    em_cluster.reset_integrated_energy()
+
+    assert em_cluster._integrated_energy_wh == 0.0
+    assert em_cluster._last_power_time is None
+    assert em_cluster._last_power_value is None
+
+
+async def test_pj1203_get_integrated_energy(pj1203_device, monkeypatch):
+    """Test get_integrated_energy_wh method."""
+    from zhaquirks.tuya import ts0601_pj1203
+
+    em_cluster = pj1203_device.endpoints[1].electrical_measurement
+
+    mock_time = [0.0]
+
+    def mock_monotonic():
+        return mock_time[0]
+
+    monkeypatch.setattr(ts0601_pj1203.time, "monotonic", mock_monotonic)
+
+    # Initial state
+    assert em_cluster.get_integrated_energy_wh() == 0.0
+
+    # Accumulate energy
+    em_cluster._update_attribute(
+        ElectricalMeasurement.AttributeDefs.active_power.id, 50
+    )
+    mock_time[0] = 120.0  # 2 minutes
+    em_cluster._update_attribute(
+        ElectricalMeasurement.AttributeDefs.active_power.id, 50
+    )
+
+    # 50W * 120s / 3600 = 1.6667 Wh
+    expected_energy = (50 * 120) / 3600
+    assert abs(em_cluster.get_integrated_energy_wh() - expected_energy) < 0.01
