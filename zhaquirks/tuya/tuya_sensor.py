@@ -2,9 +2,9 @@
 
 import datetime
 
-from zigpy.quirks.v2 import EntityPlatform, EntityType
+from zigpy.quirks.v2 import BinarySensorDeviceClass, EntityPlatform, EntityType
 from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature, UnitOfTime
-from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass
+from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
 from zigpy.zcl import foundation
 
@@ -40,6 +40,21 @@ class TuyaNousTempHumiAlarm(t.enum8):
     Canceled = 0x02
 
 
+class TuyaBatteryState(t.enum8):
+    """Tuya battery state enum."""
+
+    Low = 0x00
+    Medium = 0x01
+    Full = 0x02
+
+
+class TuyaTimeFormat(t.enum8):
+    """Tuya time format enum."""
+
+    Format24h = 0x00
+    Format12h = 0x01
+
+
 class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     """Tuya Manufacturer Cluster with set_time mod."""
 
@@ -53,6 +68,13 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
             id=TUYA_SET_TIME,
             schema={"time": TuyaTimePayload},
             is_manufacturer_specific=False,
+        )
+
+    class ClientCommandDefs(TuyaMCUCluster.ClientCommandDefs):
+        """Client command definitions."""
+
+        set_time_request = foundation.ZCLCommandDef(
+            id=TUYA_SET_TIME, schema={"data": t.data16}, is_manufacturer_specific=False
         )
 
 
@@ -373,4 +395,35 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
     .tuya_enchantment(data_query_spell=True)
     .skip_configuration()
     .add_to_registry()
+)
+
+# Sensor with clock, internal/external temperature and humidity
+(
+    TuyaQuirkBuilder("_TZE284_hodyryli", "TS0601")
+    # Internal temperature (DP 1, scale=10)
+    .tuya_temperature(dp_id=1, scale=10)
+    # Internal humidity (DP 2)
+    .tuya_humidity(dp_id=2)
+    # Battery from battery_state (DP 3: 0=10%, 1=50%, 2=100%)
+    .tuya_dp(
+        dp_id=3,
+        ep_attribute=TuyaPowerConfigurationCluster2AAA.ep_attribute,
+        attribute_name="battery_percentage_remaining",
+        converter=lambda x: {0: 10, 1: 50, 2: 100}[x],
+    )
+    .adds(TuyaPowerConfigurationCluster2AAA)
+    # External temperature sensor (DP 38, value needs to be divided by 100 to get correct temperature)
+    .tuya_sensor(
+        dp_id=38,
+        attribute_name="temperature_external",
+        type=t.int32s,
+        converter=lambda x: x / 100,  # Divide by 100 to get correct temperature
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        unit=UnitOfTemperature.CELSIUS,
+        translation_key="temperature_external",
+        fallback_name="Temperature Probe",
+    )
+    .skip_configuration()
+    .add_to_registry(replacement_cluster=NoManufTimeTuyaMCUCluster)
 )
