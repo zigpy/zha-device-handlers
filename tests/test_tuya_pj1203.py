@@ -102,7 +102,10 @@ def test_pj1203_data_point_handlers():
 
 def test_pj1203_time_offset():
     """Test that time offset is set to 1970."""
-    assert TuyaPJ1203ManufCluster.set_time_offset == 1970
+    import datetime
+
+    expected_offset = datetime.datetime(1970, 1, 1, tzinfo=datetime.UTC)
+    assert TuyaPJ1203ManufCluster.set_time_offset == expected_offset
 
 
 async def test_pj1203_voltage_attribute_update(pj1203_device):
@@ -508,7 +511,7 @@ async def test_pj1203_energy_counter_multiple_resets(pj1203_device):
     assert metering_cluster.get_compensated_energy_wh() == 725
 
 
-def test_pj1203_power_integration_basic(pj1203_device):
+async def test_pj1203_power_integration_basic(pj1203_device):
     """Test basic power-to-energy integration."""
     em_cluster = pj1203_device.endpoints[1].electrical_measurement
 
@@ -522,8 +525,8 @@ def test_pj1203_power_integration_basic(pj1203_device):
         ElectricalMeasurement.AttributeDefs.active_power.id, 100
     )
     assert em_cluster._last_power_value == 100
-    assert em_cluster._last_power_time is not None
     assert em_cluster._integrated_energy_wh == 0.0  # No integration on first reading
+    assert em_cluster._last_power_time is not None
 
 
 async def test_pj1203_power_integration_accumulation(pj1203_device, monkeypatch):
