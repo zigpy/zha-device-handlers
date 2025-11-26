@@ -63,7 +63,7 @@ class CustomSonoffCluster(CustomCluster):
 
 (
     QuirkBuilder("SONOFF", "SNZB-02D")
-    .add_model("SONOFF", "SNZB-02DR2")
+    .applies_to("SONOFF", "SNZB-02DR2")
     .replaces(CustomSonoffCluster)
     .number(
         CustomSonoffCluster.AttributeDefs.comfort_temperature_min.name,
