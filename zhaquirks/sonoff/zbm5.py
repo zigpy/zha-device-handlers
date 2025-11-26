@@ -118,19 +118,19 @@ zbm_1c_quirk = (
         SonoffCluster.AttributeDefs.work_mode.name,
         SonoffWorkMode,
         SonoffCluster.cluster_id,
-        translation_key="work_mode",
-        fallback_name="Work mode",
         entity_type=EntityType.DIAGNOSTIC,
         entity_platform=EntityPlatform.SENSOR,
         initially_disabled=True,
+        translation_key="work_mode",
+        fallback_name="Work mode",
     )
     .switch(
         SonoffCluster.AttributeDefs.relay_1_detached.name,
         SonoffCluster.cluster_id,
-        translation_key="relay_1_detached",
-        fallback_name="Detach Relay 1",
         entity_type=EntityType.CONFIG,
         initially_disabled=True,
+        translation_key="detach_relay_1",
+        fallback_name="Detach relay 1",
     )
 )
 zbm_1c_quirk.add_to_registry()
@@ -142,10 +142,10 @@ zbm_2c_quirk = (
     .switch(
         SonoffCluster.AttributeDefs.relay_2_detached.name,
         SonoffCluster.cluster_id,
-        translation_key="relay_2_detached",
-        fallback_name="Detach Relay 2",
         entity_type=EntityType.CONFIG,
         initially_disabled=True,
+        translation_key="detach_relay_2",
+        fallback_name="Detach relay 2",
     )
 )
 zbm_2c_quirk.add_to_registry()
@@ -157,10 +157,10 @@ zbm_3c_quirk = (
     .switch(
         SonoffCluster.AttributeDefs.relay_3_detached.name,
         SonoffCluster.cluster_id,
-        translation_key="relay_3_detached",
-        fallback_name="Detach Relay 3",
         entity_type=EntityType.CONFIG,
         initially_disabled=True,
+        translation_key="detach_relay_3",
+        fallback_name="Detach relay 3",
     )
 )
 zbm_3c_quirk.add_to_registry()
