@@ -706,3 +706,146 @@ async def test_pj1203_get_integrated_energy(pj1203_device, monkeypatch):
     # 50W * 120s / 3600 = 1.6667 Wh
     expected_energy = (50 * 120) / 3600
     assert abs(em_cluster.get_integrated_energy_wh() - expected_energy) < 0.01
+
+
+# Tests for cache restoration on quirk reload
+
+
+async def test_pj1203_cache_restoration_on_reload(pj1203_device):
+    """Test that energy offset is restored from cache after quirk reload."""
+    metering_cluster = pj1203_device.endpoints[1].smartenergy_metering
+
+    # Simulate previous session: device accumulated to 500 Wh
+    # This would be in the cache after ZHA persisted it
+    metering_cluster._attr_cache[Metering.AttributeDefs.current_summ_delivered.id] = 500
+
+    # Simulate quirk reload - reset the internal state but keep the cache
+    metering_cluster._last_device_energy = None
+    metering_cluster._energy_offset = 0
+    metering_cluster._initialized_from_cache = False
+
+    # Device reports new value lower than cached (device reset to 100 Wh)
+    metering_cluster._update_attribute(
+        Metering.AttributeDefs.current_summ_delivered.id, 100
+    )
+
+    # Should restore offset from cache (500) and add device value (100)
+    # Compensated = 100 + 500 = 600 Wh
+    assert metering_cluster.get_compensated_energy_wh() == 600
+    assert metering_cluster._energy_offset == 500
+
+
+async def test_pj1203_cache_restoration_device_higher_than_cache(pj1203_device):
+    """Test that no offset is restored when device value >= cached value."""
+    metering_cluster = pj1203_device.endpoints[1].smartenergy_metering
+
+    # Cache has 500 Wh from previous session
+    metering_cluster._attr_cache[Metering.AttributeDefs.current_summ_delivered.id] = 500
+
+    # Reset internal state (simulating reload)
+    metering_cluster._last_device_energy = None
+    metering_cluster._energy_offset = 0
+    metering_cluster._initialized_from_cache = False
+
+    # Device reports value higher than cache (no reset occurred)
+    metering_cluster._update_attribute(
+        Metering.AttributeDefs.current_summ_delivered.id, 600
+    )
+
+    # No offset should be added since device value >= cached
+    assert metering_cluster.get_compensated_energy_wh() == 600
+    assert metering_cluster._energy_offset == 0
+
+
+async def test_pj1203_cache_restoration_no_cache(pj1203_device):
+    """Test behavior when no cached value exists (first boot or cache cleared)."""
+    metering_cluster = pj1203_device.endpoints[1].smartenergy_metering
+
+    # No cached value (empty cache)
+    # _attr_cache should be empty or not contain the attribute
+
+    # Reset internal state
+    metering_cluster._last_device_energy = None
+    metering_cluster._energy_offset = 0
+    metering_cluster._initialized_from_cache = False
+
+    # Device reports initial value
+    metering_cluster._update_attribute(
+        Metering.AttributeDefs.current_summ_delivered.id, 100
+    )
+
+    # Should just use device value as-is (no restoration possible)
+    assert metering_cluster.get_compensated_energy_wh() == 100
+    assert metering_cluster._energy_offset == 0
+
+
+async def test_pj1203_cache_restoration_then_device_reset(pj1203_device):
+    """Test cache restoration followed by a device reset during operation."""
+    metering_cluster = pj1203_device.endpoints[1].smartenergy_metering
+
+    # Cache has 500 Wh
+    metering_cluster._attr_cache[Metering.AttributeDefs.current_summ_delivered.id] = 500
+
+    # Reset internal state (simulating reload)
+    metering_cluster._last_device_energy = None
+    metering_cluster._energy_offset = 0
+    metering_cluster._initialized_from_cache = False
+
+    # First update: device at 100 Wh (lower than cache)
+    metering_cluster._update_attribute(
+        Metering.AttributeDefs.current_summ_delivered.id, 100
+    )
+    assert metering_cluster._energy_offset == 500
+    assert metering_cluster.get_compensated_energy_wh() == 600
+
+    # Device accumulates to 300 Wh
+    metering_cluster._update_attribute(
+        Metering.AttributeDefs.current_summ_delivered.id, 300
+    )
+    assert metering_cluster.get_compensated_energy_wh() == 800
+
+    # Device resets again to 50 Wh
+    metering_cluster._update_attribute(
+        Metering.AttributeDefs.current_summ_delivered.id, 50
+    )
+    # Offset should be 500 (from cache) + 300 (from device reset) = 800
+    assert metering_cluster._energy_offset == 800
+    assert metering_cluster.get_compensated_energy_wh() == 850
+
+
+async def test_pj1203_cache_restoration_only_happens_once(pj1203_device):
+    """Test that cache restoration only happens on first update."""
+    metering_cluster = pj1203_device.endpoints[1].smartenergy_metering
+
+    # Cache has 1000 Wh
+    metering_cluster._attr_cache[Metering.AttributeDefs.current_summ_delivered.id] = (
+        1000
+    )
+
+    # Reset internal state
+    metering_cluster._last_device_energy = None
+    metering_cluster._energy_offset = 0
+    metering_cluster._initialized_from_cache = False
+
+    # First update: device at 200 Wh (lower than cache)
+    metering_cluster._update_attribute(
+        Metering.AttributeDefs.current_summ_delivered.id, 200
+    )
+    assert metering_cluster._initialized_from_cache is True
+    assert metering_cluster._energy_offset == 1000
+
+    # Update cache to simulate ZHA updating it
+    metering_cluster._attr_cache[Metering.AttributeDefs.current_summ_delivered.id] = (
+        1200
+    )
+
+    # Second update with lower value - should NOT re-check cache
+    # This is a normal device reset, not a cache restoration
+    metering_cluster._update_attribute(
+        Metering.AttributeDefs.current_summ_delivered.id, 100
+    )
+
+    # Offset should be 1000 (initial) + 200 (from device reset) = 1200
+    # NOT 1200 (from re-reading cache)
+    assert metering_cluster._energy_offset == 1200
+    assert metering_cluster.get_compensated_energy_wh() == 1300

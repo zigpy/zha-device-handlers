@@ -8,6 +8,10 @@ Energy tracking: The device's native energy counter (DP 101) resets on reconnect
 This quirk provides an additional calculated energy value that integrates power
 over time, providing a more reliable cumulative energy measurement.
 
+Reset handling: The metering cluster tracks device counter resets and maintains
+a cumulative offset. On quirk reload/restart, it attempts to restore the offset
+from ZHA's attribute cache to maintain continuity.
+
 Manufacturer IDs: _TZE204_cjbofhxw, _TZE284_cjbofhxw
 Model: TS0601
 
@@ -19,6 +23,7 @@ Datapoints:
 """
 
 import datetime
+import logging
 import time
 
 from zigpy.profiles import zha
@@ -39,6 +44,8 @@ from zhaquirks.const import (
 )
 from zhaquirks.tuya import NoManufacturerCluster, TuyaLocalCluster
 from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class TuyaElectricalMeasurementPJ1203(TuyaLocalCluster, ElectricalMeasurement):
@@ -226,17 +233,56 @@ class TuyaMeteringPJ1203(TuyaLocalCluster, Metering):
         self._last_device_energy: int | None = None
         self._energy_offset: int = 0  # Offset to add when device counter resets
         self._integrated_energy_wh: int = 0
+        self._initialized_from_cache: bool = False  # Track if we've restored from cache
 
     def _update_attribute(self, attrid, value):
-        """Update attribute and handle device energy counter resets."""
+        """Update attribute and handle device energy counter resets.
+
+        On first update after initialization, attempts to restore the energy
+        offset from ZHA's attribute cache to maintain continuity across
+        quirk reloads/restarts.
+        """
         if attrid == Metering.AttributeDefs.current_summ_delivered.id:
-            # Track device energy and detect resets
+            # On first update, try to restore offset from cached value
+            if not self._initialized_from_cache:
+                self._initialized_from_cache = True
+                cached_value = self._attr_cache.get(attrid)
+                if cached_value is not None and value < cached_value:
+                    # Device value is lower than cached - restore offset to maintain continuity
+                    self._energy_offset = cached_value
+                    _LOGGER.debug(
+                        "PJ1203: Restored energy offset from cache. "
+                        "Cached: %s Wh, Device: %s Wh, Offset set to: %s Wh",
+                        cached_value,
+                        value,
+                        self._energy_offset,
+                    )
+                elif cached_value is not None:
+                    _LOGGER.debug(
+                        "PJ1203: Cache value (%s Wh) <= device value (%s Wh), "
+                        "no offset restoration needed",
+                        cached_value,
+                        value,
+                    )
+                else:
+                    _LOGGER.debug(
+                        "PJ1203: No cached value available for offset restoration"
+                    )
+
+            # Track device energy and detect resets during normal operation
             if (
                 self._last_device_energy is not None
                 and value < self._last_device_energy
             ):
                 # Device counter reset detected - add previous value to offset
                 self._energy_offset += self._last_device_energy
+                _LOGGER.debug(
+                    "PJ1203: Device counter reset detected. "
+                    "Previous: %s Wh, New: %s Wh, Offset now: %s Wh",
+                    self._last_device_energy,
+                    value,
+                    self._energy_offset,
+                )
 
             self._last_device_energy = value
 
