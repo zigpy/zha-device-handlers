@@ -11,17 +11,6 @@ from zigpy.zcl.foundation import DataTypeId, ZCLAttributeDef
 from zhaquirks.schneiderelectric import SE_MANUF_NAME, SEBasic
 
 
-class SEIndicatorLuminanceLevel(t.enum8):
-    """Indicator luminance level."""
-
-    Level100 = 0x00
-    Level80 = 0x01
-    Level60 = 0x02
-    Level40 = 0x03
-    Level20 = 0x04
-    Level0 = 0x05
-
-
 class SEIndicatorMode(t.enum8):
     """Indicator mode."""
 
@@ -50,7 +39,6 @@ class SEOutletConfiguration(CustomCluster):
         se_indicator_luminance_level: Final = ZCLAttributeDef(
             id=0x0000,
             type=t.uint8_t,
-            zcl_type=DataTypeId.uint8,
             access="rw",
             is_manufacturer_specific=True,
         )
@@ -85,11 +73,13 @@ class SEMeteringCluster(CustomCluster, Metering):
     .replaces(SEBasic, endpoint_id=6)
     .replaces(SEMeteringCluster, endpoint_id=6)
     .replaces(SEOutletConfiguration, endpoint_id=6)
-    .enum(
+    .number(
         cluster_id=SEOutletConfiguration.cluster_id,
         endpoint_id=6,
         attribute_name=SEOutletConfiguration.AttributeDefs.se_indicator_luminance_level.name,
-        enum_class=SEIndicatorLuminanceLevel,
+        min_value=0,
+        max_value=5,
+        step=1,
         translation_key="indicator_luminance_level",
         fallback_name="Indicator luminance level",
     )
