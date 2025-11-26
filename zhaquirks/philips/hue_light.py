@@ -10,7 +10,7 @@ from zhaquirks.philips import PHILIPS, SIGNIFY, PhilipsHueLightCluster
     .applies_to(SIGNIFY, "929004608101")
     .applies_to(SIGNIFY, "929004608201")
     .friendly_name(
-        model="Hue OmniGlow Lightstrip",
+        model="Hue OmniGlow lightstrip",
         manufacturer="Philips",
     )
     .replaces(PhilipsHueLightCluster, endpoint_id=11)
