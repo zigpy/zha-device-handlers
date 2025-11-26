@@ -12,6 +12,7 @@ from zigpy.zcl.clusters.measurement import (
     RelativeHumidity,
     TemperatureMeasurement,
 )
+from zigpy.zcl.clusters.security import IasZone
 from zigpy.zcl.foundation import BaseAttributeDefs, ZCLAttributeDef
 from zigpy.zdo.types import NodeDescriptor
 
@@ -233,5 +234,56 @@ class MoesTemperatureHumidtySensorWithScreen(CustomDevice):
                     Ota.cluster_id,
                 ],
             },
+        },
+    }
+
+
+class TuyaTempHumiditySensorWithIPRating(CustomDevice):
+    """Tuya temperature and humidity sensor with IP Rating and weather sealing."""
+
+    signature = {
+        MODELS_INFO: [("_TZ3000_isw9u95y", "TS0201")],
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: DeviceType.TEMPERATURE_SENSOR,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    Identify.cluster_id,
+                    IlluminanceMeasurement.cluster_id,  # 0x0400 Ghost Cluster
+                    TemperatureMeasurement.cluster_id,
+                    RelativeHumidity.cluster_id,
+                    IasZone.cluster_id,  # 0x0500 Ghost Cluster
+                    TuyaTemperatureHumidityAlarmCluster.cluster_id,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Time.cluster_id,
+                    Ota.cluster_id,
+                ],
+            }
+        },
+    }
+
+    replacement = {
+        ENDPOINTS: {
+            1: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: DeviceType.TEMPERATURE_SENSOR,
+                INPUT_CLUSTERS: [
+                    Basic.cluster_id,
+                    PowerConfiguration.cluster_id,
+                    Identify.cluster_id,
+                    # 0x0400 Ghost Cluster Illuminance Removed
+                    TemperatureMeasurement.cluster_id,
+                    RelativeHumidityX10,
+                    # 0x0500 Ghost Cluster IAD Removed
+                    TuyaTemperatureHumidityAlarmCluster,
+                ],
+                OUTPUT_CLUSTERS: [
+                    Time.cluster_id,
+                    Ota.cluster_id,
+                ],
+            }
         },
     }
