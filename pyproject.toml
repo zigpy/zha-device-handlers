@@ -26,7 +26,7 @@ dev = [
     "codespell>=2.3.0",
     "colorlog",
     "coveralls",
-    "mypy==0.942",
+    "mypy==1.14.1",  # Keep this in sync with .pre-commit-config.yaml
     "pre-commit",
     "pylint",
     "pytest>=7.1.3",
@@ -34,7 +34,7 @@ dev = [
     "pytest-cov",
     "pytest-sugar",
     "pytest-timeout",
-    "ruff==0.9.4",        # Keep this in sync with .pre-commit-config.yaml
+    "ruff==0.11.12",       # Keep this in sync with .pre-commit-config.yaml
     "time-machine>=2,<3",
 ]
 
@@ -128,7 +128,7 @@ select = [
     "PLE",     # pylint
     "PLR",     # pylint
     "PLW",     # pylint
-    "Q000",    # Double quotes found but single quotes preferred
+    # "Q000" removed - conflicts with formatter (see ignore list)
     "RUF006",  # Store a reference to the return value of asyncio.create_task
     "S102",    # Use of exec detected
     "S103",    # bad-file-permissions
@@ -189,8 +189,7 @@ ignore = [
     "PLW2901", # Outer {outer_kind} variable {name} overwritten by inner {inner_kind} target
     "UP006",   # keep type annotation style as is
     "UP007",   # keep type annotation style as is
-    # Ignored due to performance: https://github.com/charliermarsh/ruff/issues/2923
-    # "UP038", # Rule removed in newer Ruff versions
+    "UP038",   # Use `X | Y` in `isinstance` call instead of `(X, Y)` - ignored for performance
 
     # May conflict with the formatter, https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules
     "W191",
