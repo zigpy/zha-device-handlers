@@ -1,4 +1,4 @@
-"""Tuya TS0601 Pressure and Temperature Sensor (_TZE204_w2vunxzm)"""
+"""Tuya TS0601 Pressure and Temperature Sensor (_TZE204_w2vunxzm)."""
 
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 import zigpy.types as t
