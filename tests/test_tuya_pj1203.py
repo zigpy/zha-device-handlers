@@ -849,3 +849,99 @@ async def test_pj1203_cache_restoration_only_happens_once(pj1203_device):
     # NOT 1200 (from re-reading cache)
     assert metering_cluster._energy_offset == 1200
     assert metering_cluster.get_compensated_energy_wh() == 1300
+
+
+async def test_pj1203_metering_update_non_energy_attribute(pj1203_device):
+    """Test that non-energy attributes are passed through unchanged on metering cluster."""
+    metering_cluster = pj1203_device.endpoints[1].smartenergy_metering
+    metering_listener = ClusterListener(metering_cluster)
+
+    # Update a non-energy attribute (not current_summ_delivered)
+    # Use status attribute as an example
+    metering_cluster._update_attribute(Metering.AttributeDefs.status.id, 0x01)
+
+    # Should be passed through to parent class
+    status_update = next(
+        (
+            u
+            for u in metering_listener.attribute_updates
+            if u[0] == Metering.AttributeDefs.status.id
+        ),
+        None,
+    )
+    assert status_update is not None
+    assert status_update[1] == 0x01
+
+
+async def test_pj1203_get_compensated_energy_before_any_updates(pj1203_device):
+    """Test get_compensated_energy_wh when no device energy has been received."""
+    metering_cluster = pj1203_device.endpoints[1].smartenergy_metering
+
+    # Reset state - no device energy received yet
+    metering_cluster._last_device_energy = None
+    metering_cluster._energy_offset = 100  # Some offset from cache restoration
+
+    # Should return just the offset when no device energy received
+    assert metering_cluster.get_compensated_energy_wh() == 100
+
+
+async def test_pj1203_read_metering_attributes_by_name(pj1203_device):
+    """Test reading metering attributes by name."""
+    metering_cluster = pj1203_device.endpoints[1].smartenergy_metering
+
+    # Update attribute first
+    metering_cluster._update_attribute(
+        Metering.AttributeDefs.current_summ_delivered.id, 12345
+    )
+
+    # Read by name
+    result = await metering_cluster.read_attributes(
+        ["current_summ_delivered"], allow_cache=False
+    )
+
+    records = result[0]
+    assert len(records) == 1
+    assert records[0].status == foundation.Status.SUCCESS
+    assert records[0].value.value == 12345
+
+
+async def test_pj1203_read_metering_summation_formatting(pj1203_device):
+    """Test reading summation_formatting constant attribute (bitmap8 type)."""
+    metering_cluster = pj1203_device.endpoints[1].smartenergy_metering
+
+    result = await metering_cluster.read_attributes(
+        [Metering.AttributeDefs.summation_formatting.id], allow_cache=False
+    )
+
+    records = result[0]
+    assert len(records) == 1
+    assert records[0].status == foundation.Status.SUCCESS
+    assert records[0].value.value == 0b0_0100_011
+
+
+async def test_pj1203_read_metering_unit_of_measure(pj1203_device):
+    """Test reading unit_of_measure constant attribute (enum8 type)."""
+    metering_cluster = pj1203_device.endpoints[1].smartenergy_metering
+
+    result = await metering_cluster.read_attributes(
+        [Metering.AttributeDefs.unit_of_measure.id], allow_cache=False
+    )
+
+    records = result[0]
+    assert len(records) == 1
+    assert records[0].status == foundation.Status.SUCCESS
+    assert records[0].value.value == 0x0000  # POWER_WATT
+
+
+async def test_pj1203_read_metering_unsupported_attribute(pj1203_device):
+    """Test reading unsupported metering attributes returns UNSUPPORTED_ATTRIBUTE."""
+    metering_cluster = pj1203_device.endpoints[1].smartenergy_metering
+
+    # Read an attribute that's not in cache or constants
+    result = await metering_cluster.read_attributes(
+        [Metering.AttributeDefs.current_tier1_summ_delivered.id], allow_cache=False
+    )
+
+    records = result[0]
+    assert len(records) == 1
+    assert records[0].status == foundation.Status.UNSUPPORTED_ATTRIBUTE
