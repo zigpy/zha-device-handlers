@@ -4,10 +4,14 @@ import datetime
 
 from zigpy.quirks.v2 import EntityPlatform, EntityType
 from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature, UnitOfTime
+from zigpy.quirks.v2.homeassistant.binary_sensor import BinarySensorDeviceClass
+from zigpy.quirks.v2.homeassistant.number import NumberDeviceClass
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass
 import zigpy.types as t
 from zigpy.zcl import foundation
+from zigpy.zcl.clusters.measurement import RelativeHumidity
 
+from zhaquirks.const import BatterySize
 from zhaquirks.tuya import (
     TUYA_SET_TIME,
     TuyaPowerConfigurationCluster2AAA,
@@ -333,6 +337,123 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
         fallback_name="Display unit",
     )
     .adds(TuyaPowerConfigurationCluster2AAA)
+    .tuya_enchantment(data_query_spell=True)
+    .skip_configuration()
+    .add_to_registry()
+)
+
+
+(
+    TuyaQuirkBuilder("HOBEIAN", "ZG-303Z")
+    .applies_to("_TZE200_npj9bug3", "TS0601")  # COOLO CS-201Z
+    .tuya_soil_moisture(dp_id=3)
+    .tuya_temperature(dp_id=5, scale=10)
+    .tuya_enum(
+        dp_id=9,
+        attribute_name="display_unit",
+        enum_class=TuyaTempUnitConvert,
+        entity_type=EntityType.CONFIG,
+        translation_key="display_unit",
+        fallback_name="Display unit",
+    )
+    .tuya_battery(dp_id=15, battery_type=BatterySize.AAA)
+    .tuya_number(
+        dp_id=102,
+        attribute_name="soil_moisture_offset",
+        type=t.uint16_t,
+        unit=PERCENTAGE,
+        min_value=-30,
+        max_value=30,
+        step=1,
+        entity_type=EntityType.CONFIG,
+        device_class=NumberDeviceClass.HUMIDITY,
+        translation_key="soil_moisture_offset",
+        fallback_name="Soil moisture offset",
+    )
+    .tuya_number(
+        dp_id=104,
+        attribute_name="temperature_offset",
+        type=t.uint16_t,
+        unit=UnitOfTemperature.KELVIN,
+        min_value=-2,
+        max_value=2,
+        step=0.1,
+        multiplier=10,
+        entity_type=EntityType.CONFIG,
+        device_class=NumberDeviceClass.TEMPERATURE,
+        translation_key="temperature_offset",
+        fallback_name="Temperature offset",
+    )
+    .tuya_number(
+        dp_id=105,
+        attribute_name="humidity_offset",
+        type=t.uint16_t,
+        unit=PERCENTAGE,
+        min_value=-30,
+        max_value=30,
+        step=1,
+        entity_type=EntityType.CONFIG,
+        device_class=NumberDeviceClass.HUMIDITY,
+        translation_key="humidity_offset",
+        fallback_name="Humidity offset",
+    )
+    .tuya_dp_attribute(
+        dp_id=106,
+        attribute_name="moisture",
+        converter=lambda x: not bool(x),
+    )
+    .binary_sensor(
+        attribute_name="moisture",
+        cluster_id=TuyaMCUCluster.cluster_id,
+        endpoint_id=1,
+        entity_type=EntityType.STANDARD,
+        device_class=BinarySensorDeviceClass.MOISTURE,
+        initially_disabled=False,
+        attribute_initialized_from_cache=False,
+        fallback_name="Moisture",
+    )
+    .removes(RelativeHumidity.cluster_id)
+    .adds_endpoint(2)
+    .tuya_humidity(dp_id=109, endpoint_id=2)
+    .tuya_number(
+        dp_id=110,
+        attribute_name="alarm_soil_moisture_min",
+        type=t.uint16_t,
+        unit=PERCENTAGE,
+        min_value=0,
+        max_value=100,
+        step=1,
+        entity_type=EntityType.CONFIG,
+        device_class=NumberDeviceClass.MOISTURE,
+        translation_key="alarm_soil_moisture_min",
+        fallback_name="Alarm soil moisture min",
+    )
+    .tuya_number(
+        dp_id=111,
+        attribute_name="temperature_report_interval",
+        type=t.uint16_t,
+        unit=UnitOfTime.SECONDS,
+        min_value=5,
+        max_value=3600,
+        step=1,
+        entity_type=EntityType.CONFIG,
+        device_class=NumberDeviceClass.DURATION,
+        translation_key="temperature_report_interval",
+        fallback_name="Temperature report interval",
+    )
+    .tuya_number(
+        dp_id=112,
+        attribute_name="soil_moisture_report_interval",
+        type=t.uint16_t,
+        unit=UnitOfTime.SECONDS,
+        min_value=5,
+        max_value=3600,
+        step=1,
+        entity_type=EntityType.CONFIG,
+        device_class=NumberDeviceClass.DURATION,
+        translation_key="soil_moisture_report_interval",
+        fallback_name="Soil moisture report interval",
+    )
     .tuya_enchantment(data_query_spell=True)
     .skip_configuration()
     .add_to_registry()
