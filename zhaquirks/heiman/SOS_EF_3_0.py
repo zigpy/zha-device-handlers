@@ -1,6 +1,6 @@
 """Heiman SOS-EF-3.0 device."""
 
-from homeassistant.util.dt import as_local, now
+import datetime as dt
 from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
 
@@ -9,7 +9,7 @@ from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateC
     .sensor(
         attribute_name="zone_status",
         cluster_id=0x0500,
-        attribute_converter=lambda x: as_local(now()),
+        attribute_converter=lambda x: dt.datetime.now().astimezone(),
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.TIMESTAMP,
         fallback_name="Timestamp",
