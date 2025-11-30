@@ -11,7 +11,7 @@ from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateC
         attribute_name="zone_status",
         cluster_id=0x0500,
         attribute_converter=lambda x: dt.datetime.now().astimezone(),
-        state_class=SensorStateClass.MEASUREMENT,
+        state_class=None,
         device_class=SensorDeviceClass.TIMESTAMP,
         fallback_name="Timestamp",
     )
