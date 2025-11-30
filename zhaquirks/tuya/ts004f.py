@@ -62,6 +62,7 @@ from zhaquirks.tuya import (
     TuyaNoBindPowerConfigurationCluster,
     TuyaSmartRemoteOnOffCluster,
     TuyaZBExternalSwitchTypeCluster,
+    TuyaZBOnOffAttributeCluster,
 )
 
 
@@ -116,6 +117,7 @@ class TuyaSmartRemote004FROK(EnchantedDevice):
                     TuyaNoBindPowerConfigurationCluster,
                     Identify.cluster_id,
                     Groups.cluster_id,  # Is needed for adding group then binding is not working.
+                    TuyaZBOnOffAttributeCluster,
                     LightLink.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
@@ -233,6 +235,7 @@ class TuyaSmartRemote004FDMS(EnchantedDevice):
                     TuyaNoBindPowerConfigurationCluster,
                     Identify.cluster_id,
                     Groups.cluster_id,  # Is needed for adding group then binding is not working.
+                    TuyaZBOnOffAttributeCluster,
                     LightLink.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
@@ -367,6 +370,7 @@ class TuyaSmartRemote004FSK(EnchantedDevice):
                     TuyaNoBindPowerConfigurationCluster,
                     Identify.cluster_id,
                     Groups.cluster_id,  # Is needed for adding group then binding is not working.
+                    TuyaZBOnOffAttributeCluster,
                     LightLink.cluster_id,
                     TuyaZBExternalSwitchTypeCluster,
                 ],
@@ -483,6 +487,7 @@ class TuyaSmartRemote004F(EnchantedDevice):
                     TuyaNoBindPowerConfigurationCluster,
                     Identify.cluster_id,
                     Groups.cluster_id,  # Is needed for adding group then binding is not working.
+                    TuyaZBOnOffAttributeCluster,
                     LightLink.cluster_id,
                 ],
                 OUTPUT_CLUSTERS: [
