@@ -1,3 +1,5 @@
+"""Heiman SOS-EF-3.0 device."""
+
 from homeassistant.util.dt import as_local, now
 from zigpy.quirks.v2 import QuirkBuilder
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
