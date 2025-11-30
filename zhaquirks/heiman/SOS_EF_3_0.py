@@ -3,7 +3,7 @@
 import datetime as dt
 
 from zigpy.quirks.v2 import QuirkBuilder
-from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
+from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass
 
 (
     QuirkBuilder("HEIMAN", "SOS-EF-3.0")
