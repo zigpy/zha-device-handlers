@@ -417,7 +417,7 @@ class NoManufTimeTuyaMCUCluster(TuyaMCUCluster):
         dp_id=38,
         attribute_name="temperature_external",
         type=t.int32s,
-        converter=lambda x: x / 100,  # Divide by 100 to get correct temperature
+        converter=lambda x: x / 10,  # Divide by 10 to get correct temperature
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         unit=UnitOfTemperature.CELSIUS,
