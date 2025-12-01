@@ -81,6 +81,7 @@ class TuyaSmokeDetectorCluster(TuyaManufClusterAttributes):
     .applies_to("_TZE284_rccxox8p", "TS0601")
     .applies_to("_TZE200_vzekyi4c", "TS0601")
     .applies_to("_TZE204_vawy74yh", "TS0601")
+    .applies_to("_TZE284_btsuytky", "TS0601")
     .tuya_smoke(dp_id=1)
     .skip_configuration()
     .add_to_registry()
@@ -89,6 +90,7 @@ class TuyaSmokeDetectorCluster(TuyaManufClusterAttributes):
 (
     TuyaQuirkBuilder("TZE200_0zaf1cr8", "TS0601")
     .applies_to("_TZE284_0zaf1cr8", "TS0601")
+    .applies_to("_TZE284_btsuytky", "TS0601")
     .tuya_smoke(dp_id=1)
     .tuya_binary_sensor(
         dp_id=14,
