@@ -1,10 +1,10 @@
 """Senoro Window Sensor (TS0601)."""
 
 from zigpy.quirks.v2 import BinarySensorDeviceClass, EntityPlatform, EntityType
+from zigpy.quirks.v2.homeassistant import UnitOfTime
 import zigpy.types as t
 from zigpy.zcl import foundation
 
-from zigpy.quirks.v2.homeassistant import UnitOfTime
 from zhaquirks.tuya import TUYA_CLUSTER_ID, BatterySize
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 
@@ -15,6 +15,7 @@ class OpeningStateEnum(t.enum8):
     Open = 0
     Closed = 1
     Tilted = 2
+
 
 (
     TuyaQuirkBuilder("_TZE200_ytx9fudw", "TS0601")
@@ -126,9 +127,9 @@ class OpeningStateEnum(t.enum8):
         dp_id=103,
         attribute_name="alarm_siren",
         type=t.Bool,
-        access=foundation.ZCLAttributeAccess.Read |
-            foundation.ZCLAttributeAccess.Write |
-            foundation.ZCLAttributeAccess.Report,
+        access=foundation.ZCLAttributeAccess.Read
+        | foundation.ZCLAttributeAccess.Write
+        | foundation.ZCLAttributeAccess.Report,
     )
     .switch(
         attribute_name="alarm_siren",
@@ -139,50 +140,49 @@ class OpeningStateEnum(t.enum8):
         fallback_name="Use Alarm Siren",
     )
     .tuya_number(
-        dp_id=109, 
-        attribute_name="alarm_siren_duration", 
+        dp_id=109,
+        attribute_name="alarm_siren_duration",
         type=t.uint16_t,
-        min_value=5, 
-        max_value=180, 
+        min_value=5,
+        max_value=180,
         unit=UnitOfTime.SECONDS,
-        step=1, 
-        fallback_name="Alarm Siren Duration", 
-        translation_key="alarm_siren_duration"
+        step=1,
+        fallback_name="Alarm Siren Duration",
+        translation_key="alarm_siren_duration",
     )
     .tuya_dp_attribute(
-        dp_id=102, 
-        attribute_name="vibration", 
+        dp_id=102,
+        attribute_name="vibration",
         type=t.uint16_t,
-        access=foundation.ZCLAttributeAccess.Read | 
-            foundation.ZCLAttributeAccess.Report
+        access=foundation.ZCLAttributeAccess.Read
+        | foundation.ZCLAttributeAccess.Report,
     )
     .tuya_number(
-        dp_id=106, 
-        attribute_name="vibration_limit", 
+        dp_id=106,
+        attribute_name="vibration_limit",
         type=t.uint16_t,
-        min_value=0, 
-        max_value=100, 
-        step=1, 
-        fallback_name="Value of vibration.", 
-        translation_key="vibration_limit"
+        min_value=0,
+        max_value=100,
+        step=1,
+        fallback_name="Value of vibration.",
+        translation_key="vibration_limit",
     )
     .tuya_number(
-        dp_id=110, 
-        attribute_name="vibration_siren_duration", 
+        dp_id=110,
+        attribute_name="vibration_siren_duration",
         type=t.uint16_t,
-        min_value=5, 
-        max_value=180, 
+        min_value=5,
+        max_value=180,
         unit=UnitOfTime.SECONDS,
-        step=1, 
-        fallback_name="Duration of the vibrating siren.", 
-        translation_key="vibration_siren_duration"
+        step=1,
+        fallback_name="Duration of the vibrating siren.",
+        translation_key="vibration_siren_duration",
     )
     .tuya_dp_attribute(
-        dp_id=108, 
-        attribute_name="vibration_siren", 
+        dp_id=108,
+        attribute_name="vibration_siren",
         type=t.Bool,
-        access=foundation.ZCLAttributeAccess.Read | 
-            foundation.ZCLAttributeAccess.Write
+        access=foundation.ZCLAttributeAccess.Read | foundation.ZCLAttributeAccess.Write,
     )
     .switch(
         attribute_name="vibration_siren",
@@ -192,11 +192,11 @@ class OpeningStateEnum(t.enum8):
         fallback_name="Activate the siren when vibrating.",
     )
     .tuya_dp_attribute(
-        dp_id=104, 
-        attribute_name="close_signal", 
+        dp_id=104,
+        attribute_name="close_signal",
         type=t.Bool,
-        access=foundation.ZCLAttributeAccess.Read | 
-            foundation.ZCLAttributeAccess.Write)
+        access=foundation.ZCLAttributeAccess.Read | foundation.ZCLAttributeAccess.Write,
+    )
     .switch(
         attribute_name="close_signal",
         cluster_id=TUYA_CLUSTER_ID,
@@ -205,30 +205,32 @@ class OpeningStateEnum(t.enum8):
         fallback_name="Enable sound when closing the window.",
     )
     .tuya_number(
-        dp_id=105, 
-        attribute_name="transmission_power", 
+        dp_id=105,
+        attribute_name="transmission_power",
         type=t.uint8_t,
-        min_value=11, 
-        max_value=19, 
-        step=1, 
-        fallback_name="Transmission power 11-19. High value > battery consumption.", 
-        translation_key="transmission_power"
-    )  
+        min_value=11,
+        max_value=19,
+        step=1,
+        fallback_name="Transmission power 11-19. High value > battery consumption.",
+        translation_key="transmission_power",
+    )
     .tuya_dp_attribute(
-        dp_id=111, 
+        dp_id=111,
         attribute_name="magnetic_status",
         type=t.Bool,
         converter=lambda value: not value,
         dp_converter=lambda value: not value,
-        access=foundation.ZCLAttributeAccess.Read | 
-            foundation.ZCLAttributeAccess.Report)    
-    .binary_sensor(attribute_name="magnetic_status",
+        access=foundation.ZCLAttributeAccess.Read
+        | foundation.ZCLAttributeAccess.Report,
+    )
+    .binary_sensor(
+        attribute_name="magnetic_status",
         cluster_id=TUYA_CLUSTER_ID,
         entity_type=EntityType.STANDARD,
-        device_class=BinarySensorDeviceClass.DOOR,        
+        device_class=BinarySensorDeviceClass.DOOR,
         translation_key="magnetic_status",
-        fallback_name="Magnetic status."
+        fallback_name="Magnetic status.",
     )
-    .skip_configuration()    
+    .skip_configuration()
     .add_to_registry()
 )
