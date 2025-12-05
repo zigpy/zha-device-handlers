@@ -7,8 +7,6 @@ References:
 
 """
 
-from typing import Any
-
 from zigpy.quirks.v2 import EntityType
 from zigpy.quirks.v2.homeassistant import PERCENTAGE, UnitOfTemperature
 from zigpy.quirks.v2.homeassistant.sensor import SensorDeviceClass, SensorStateClass
@@ -19,6 +17,7 @@ from zigpy.zcl.clusters.hvac import Thermostat
 from zhaquirks.tuya import TUYA_SET_TIME, TuyaTimePayload
 from zhaquirks.tuya.builder import TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import TuyaMCUCluster
+from zhaquirks.tuya.tuya_thermostat import TuyaThermostat
 
 
 def parse_schedule(data: bytes) -> str:
@@ -154,28 +153,6 @@ class SensorError(t.enum8):
     E2 = 0x02
 
 
-class EngoThermostat(Thermostat):
-    """Tuya local thermostat cluster for ENGO devices."""
-
-    _CONSTANT_ATTRIBUTES = {
-        Thermostat.AttributeDefs.ctrl_sequence_of_oper.id: Thermostat.ControlSequenceOfOperation.Heating_Only
-    }
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Init an EngoThermostat cluster."""
-        super().__init__(*args, **kwargs)
-        self.add_unsupported_attribute(
-            Thermostat.AttributeDefs.setpoint_change_source.id
-        )
-        self.add_unsupported_attribute(
-            Thermostat.AttributeDefs.setpoint_change_source_timestamp.id
-        )
-        self.add_unsupported_attribute(Thermostat.AttributeDefs.pi_heating_demand.id)
-        self.add_unsupported_attribute(
-            Thermostat.AttributeDefs.local_temperature_calibration.id
-        )
-
-
 class EngoThermostatMCUCluster(TuyaMCUCluster):
     """Tuya Manufacturer Cluster with time sync for ENGO thermostats."""
 
@@ -196,8 +173,8 @@ class EngoThermostatMCUCluster(TuyaMCUCluster):
     # DP 1: ON/OFF state
     .tuya_dp(
         dp_id=1,
-        ep_attribute=EngoThermostat.ep_attribute,
-        attribute_name=EngoThermostat.AttributeDefs.system_mode.name,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.system_mode.name,
         converter=lambda x: Thermostat.SystemMode.Off
         if not x
         else Thermostat.SystemMode.Heat,
@@ -214,8 +191,8 @@ class EngoThermostatMCUCluster(TuyaMCUCluster):
     # DP 3: Running state - is heating/cooling currently active
     .tuya_dp(
         dp_id=3,
-        ep_attribute=EngoThermostat.ep_attribute,
-        attribute_name=EngoThermostat.AttributeDefs.running_state.name,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.running_state.name,
         converter=lambda x: Thermostat.RunningState.Heat_State_On
         if x in (0x01, 0x03)
         else Thermostat.RunningState.Idle,
@@ -223,31 +200,31 @@ class EngoThermostatMCUCluster(TuyaMCUCluster):
     # DP 16: Heating/cooling setpoint (device sends decidegrees)
     .tuya_dp(
         dp_id=16,
-        ep_attribute=EngoThermostat.ep_attribute,
-        attribute_name=EngoThermostat.AttributeDefs.occupied_heating_setpoint.name,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.occupied_heating_setpoint.name,
         converter=lambda x: x * 10,
         dp_converter=lambda x: x // 10,
     )
     # DP 19: Maximum temperature limit
     .tuya_dp(
         dp_id=19,
-        ep_attribute=EngoThermostat.ep_attribute,
-        attribute_name=EngoThermostat.AttributeDefs.max_heat_setpoint_limit.name,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.max_heat_setpoint_limit.name,
         converter=lambda x: x * 10,
         dp_converter=lambda x: x // 10,
     )
     # DP 24: Current local temperature
     .tuya_dp(
         dp_id=24,
-        ep_attribute=EngoThermostat.ep_attribute,
-        attribute_name=EngoThermostat.AttributeDefs.local_temperature.name,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.local_temperature.name,
         converter=lambda x: x * 10,
     )
     # DP 26: Minimum temperature limit
     .tuya_dp(
         dp_id=26,
-        ep_attribute=EngoThermostat.ep_attribute,
-        attribute_name=EngoThermostat.AttributeDefs.min_heat_setpoint_limit.name,
+        ep_attribute=TuyaThermostat.ep_attribute,
+        attribute_name=TuyaThermostat.AttributeDefs.min_heat_setpoint_limit.name,
         converter=lambda x: x * 10,
         dp_converter=lambda x: x // 10,
     )
@@ -262,9 +239,9 @@ class EngoThermostatMCUCluster(TuyaMCUCluster):
         step=0.5,
         multiplier=0.1,
         translation_key="local_temperature_calibration",
-        fallback_name="Temperature calibration",
+        fallback_name="Local temperature calibration",
     )
-    .adds(EngoThermostat)
+    .adds(TuyaThermostat)
     # === PRESET / MODE SETTINGS ===
     # DP 58: Operating preset mode
     .tuya_enum(
