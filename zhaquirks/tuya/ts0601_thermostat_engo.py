@@ -3,7 +3,6 @@
 References:
     - Z2M: https://github.com/Koenkk/zigbee-herdsman-converters/blob/master/src/devices/engo.ts
     - Device: https://www.zigbee2mqtt.io/devices/EONE-230W.html
-    - Product: https://engocontrols.com/en/produkt/eone-230b-3/
 
 """
 
