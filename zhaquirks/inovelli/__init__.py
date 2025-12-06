@@ -1277,6 +1277,105 @@ class InovelliVZM32SNCluster(InovelliCluster):
         )
 
 
+class InovelliVZM32SNMMWaveCluster(CustomCluster):
+    """Inovelli VZM32-SN MMWave custom cluster."""
+
+    cluster_id = 0xFC32
+    ep_attribute = "inovelli_vzm32snmmwave_cluster"
+
+    class AttributeDefs(BaseAttributeDefs):
+        """Attribute definitions."""
+
+        mmwave_z_min = ZCLAttributeDef(
+            id=0x0065,
+            type=t.int16s,
+            is_manufacturer_specific=True,
+        )
+        mmwave_z_max = ZCLAttributeDef(
+            id=0x0066,
+            type=t.int16s,
+            is_manufacturer_specific=True,
+        )
+        mmwave_x_min = ZCLAttributeDef(
+            id=0x0067,
+            type=t.int16s,
+            is_manufacturer_specific=True,
+        )
+        mmwave_x_max = ZCLAttributeDef(
+            id=0x0068,
+            type=t.int16s,
+            is_manufacturer_specific=True,
+        )
+        mmwave_y_min = ZCLAttributeDef(
+            id=0x0069,
+            type=t.int16s,
+            is_manufacturer_specific=True,
+        )
+        mmwave_y_max = ZCLAttributeDef(
+            id=0x006A,
+            type=t.int16s,
+            is_manufacturer_specific=True,
+        )
+        mmwave_target_info_report = ZCLAttributeDef(
+            id=0x006B,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        mmwave_stay_life = ZCLAttributeDef(
+            id=0x006C,
+            type=t.uint32_t,
+            is_manufacturer_specific=True,
+        )
+        mmwave_detect_sensitivity = ZCLAttributeDef(
+            id=0x0070,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        mmwave_detect_trigger = ZCLAttributeDef(
+            id=0x0071,
+            type=t.uint8_t,
+            is_manufacturer_specific=True,
+        )
+        mmwave_hold_time = ZCLAttributeDef(
+            id=0x0072,
+            type=t.uint32_t,
+            is_manufacturer_specific=True,
+        )
+        mmwave_version = ZCLAttributeDef(
+            id=0x0073,
+            type=t.uint32_t,
+            is_manufacturer_specific=True,
+        )
+
+    class ServerCommandDefs(BaseCommandDefs):
+        """Server command definitions."""
+
+        mmwave_control_command = ZCLCommandDef(
+            id=0x00,
+            schema={
+                "control_id": t.uint8_t,
+            },
+            is_manufacturer_specific=True,
+        )
+
+    def handle_cluster_request(
+        self,
+        hdr: ZCLHeader,
+        args: list[Any],
+        *,
+        dst_addressing: Optional[
+            Union[t.Addressing.Group, t.Addressing.IEEE, t.Addressing.NWK]
+        ] = None,
+    ):
+        """Handle a cluster request."""
+        _LOGGER.debug(
+            "%s: handle_cluster_request - Command: %s Data: %s",
+            self.name,
+            hdr.command_id,
+            args,
+        )
+
+
 class InovelliVZM35SNCluster(InovelliCluster):
     """Inovelli VZM35-SN custom cluster."""
 
