@@ -182,7 +182,7 @@ class HikingManufClusterDinPower(TuyaManufClusterAttributes):
             is_manufacturer_specific=True,
         )
         power: Final = ZCLAttributeDef(
-            id=HIKING_POWER_ATTR, type=t.uint16_t, is_manufacturer_specific=True
+            id=HIKING_POWER_ATTR, type=t.int32s, is_manufacturer_specific=True
         )
         frequency: Final = ZCLAttributeDef(
             id=HIKING_FREQUENCY_ATTR, type=t.uint16_t, is_manufacturer_specific=True

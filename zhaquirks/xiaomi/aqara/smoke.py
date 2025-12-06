@@ -81,6 +81,13 @@ class LocalIasZone(LocalDataCluster, IasZone):
     }
 
 
+class XiaomiSmokePowerConfiguration(XiaomiPowerConfiguration):
+    """Xiaomi Smoke Power Configuration cluster."""
+
+    MIN_VOLTS_MV = 2475
+    MAX_VOLTS_MV = 3000
+
+
 class LumiSensorSmokeAcn03(CustomDevice):
     """lumi.sensor_smoke.acn03 smoke sensor."""
 
@@ -113,7 +120,7 @@ class LumiSensorSmokeAcn03(CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.IAS_ZONE,
                 INPUT_CLUSTERS: [
                     Basic.cluster_id,
-                    XiaomiPowerConfiguration,
+                    XiaomiSmokePowerConfiguration,
                     Identify.cluster_id,
                     LocalIasZone,
                     OppleCluster,
