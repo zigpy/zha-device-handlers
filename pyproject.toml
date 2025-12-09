@@ -11,7 +11,7 @@ authors = [{ name = "David F. Mulcahey", email = "david.mulcahey@icloud.com" }]
 readme = "README.md"
 license = { text = "Apache-2.0" }
 requires-python = ">=3.12"
-dependencies = ["zigpy>=0.82.2"]
+dependencies = ["zigpy>=0.85.0"]
 
 [tool.setuptools.packages.find]
 exclude = ["tests", "tests.*"]

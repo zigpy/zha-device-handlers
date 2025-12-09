@@ -440,6 +440,7 @@ class ZosungIRBlaster(CustomDevice):
         MODELS_INFO: [
             ("_TZ3290_ot6ewjvmejq5ekhl", "TS1201"),
             ("_TZ3290_j37rooaxrcdcqo5n", "TS1201"),
+            ("_TZ3290_u9xac5rv", "TS1201"),
         ],
         ENDPOINTS: {
             1: {
@@ -502,6 +503,7 @@ class ZosungIRBlaster_ZS06(ZosungIRBlaster):
             ("_TZ3290_acv1iuslxi3shaaj", "TS1201"),
             ("_TZ3290_gnl5a6a5xvql7c2a", "TS1201"),
             ("_TZ3290_rlkmy85q4pzoxobl", "TS1201"),
+            ("_TZ3290_nba3knpsarkawgnt", "TS1201"),
         ],
         ENDPOINTS: {
             1: {
