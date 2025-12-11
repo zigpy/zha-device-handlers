@@ -8,7 +8,7 @@ Based on the Zigbee2MQTT implementation in zigbee-herdsman-converters/lib/lumi.t
 
 Original quirk: zhaquirks/xiaomi/aqara/thermostat_agl001.py
 Modification by: Andy (Carse IT Services) with Claude assistance
-Date: December 2024
+Date: December 2025
 """
 from __future__ import annotations
 
