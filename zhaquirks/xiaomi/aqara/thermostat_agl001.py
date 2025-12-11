@@ -1,18 +1,26 @@
-"""Aqara E1 Radiator Thermostat Quirk."""
+"""Aqara E1 Radiator Thermostat Quirk - Version 4 with Full External Sensor Support.
 
+This quirk adds complete external temperature sensor support including:
+- Sensor registration (switching between internal/external modes)
+- External temperature input
+
+Based on the Zigbee2MQTT implementation in zigbee-herdsman-converters/lib/lumi.ts
+
+Original quirk: zhaquirks/xiaomi/aqara/thermostat_agl001.py
+Modification by: Andy (Carse IT Services) with Claude assistance
+Date: December 2024
+"""
 from __future__ import annotations
 
-from functools import reduce
-import math
 import struct
-from typing import Any, Final
+import time
+from typing import Any
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomCluster
 import zigpy.types as t
 from zigpy.zcl.clusters.general import Basic, Identify, Ota, Time
 from zigpy.zcl.clusters.hvac import Thermostat
-from zigpy.zcl.foundation import ZCLAttributeDef
 
 from zhaquirks.const import (
     DEVICE_TYPE,
@@ -29,13 +37,13 @@ from zhaquirks.xiaomi import (
     XiaomiPowerConfiguration,
 )
 
+# =============================================================================
+# CONSTANTS
+# =============================================================================
+
 ZCL_SYSTEM_MODE = Thermostat.attributes_by_name["system_mode"].id
 
-XIAOMI_SYSTEM_MODE_MAP = {
-    0: Thermostat.SystemMode.Off,
-    1: Thermostat.SystemMode.Heat,
-}
-
+# Aqara TRV attribute IDs
 SYSTEM_MODE = 0x0271
 PRESET = 0x0272
 WINDOW_DETECTION = 0x0273
@@ -46,28 +54,167 @@ AWAY_PRESET_TEMPERATURE = 0x0279
 WINDOW_OPEN = 0x027A
 CALIBRATED = 0x027B
 SCHEDULE = 0x027D
-SCHEDULE_SETTINGS = 0x0276
-SENSOR = 0x027E
+SENSOR = 0x027E  # 638 decimal - sensor mode (0=internal, 1=external)
 BATTERY_PERCENTAGE = 0x040A
 
+# Binary data attribute
+AQARA_FFF2 = 0xFFF2
+
+# Custom virtual attributes for our quirk
+EXTERNAL_TEMPERATURE_INPUT = 0x0EE0  # For sending temperature values
+SENSOR_REGISTER = 0x0EE1  # For triggering sensor registration
+
 XIAOMI_CLUSTER_ID = 0xFCC0
+MANUFACTURER_CODE = 0x115F  # 4447
 
-DAYS_MAP = {
-    "mon": 0x02,
-    "tue": 0x04,
-    "wed": 0x08,
-    "thu": 0x10,
-    "fri": 0x20,
-    "sat": 0x40,
-    "sun": 0x80,
+# Fake sensor IEEE address (from Z2M implementation)
+FAKE_SENSOR_IEEE = bytes.fromhex('00158d00019d1b98')
+
+# System mode mapping
+XIAOMI_SYSTEM_MODE_MAP = {
+    0: Thermostat.SystemMode.Off,
+    1: Thermostat.SystemMode.Heat,
 }
-NEXT_DAY_FLAG = 1 << 15
 
+
+# =============================================================================
+# HELPER FUNCTIONS - Binary payload builders
+# =============================================================================
+
+def build_lumi_header(counter: int, params_length: int, action: int) -> bytes:
+    """
+    Build the Aqara/Lumi message header.
+    
+    Args:
+        counter: Message sequence counter (0x12 or 0x13 typically)
+        params_length: Length of the parameters section
+        action: Action code (0x02=register, 0x04=unregister, 0x05=send temp)
+    
+    Returns:
+        9-byte header
+    """
+    header_start = bytes([0xAA, 0x71, params_length + 3, 0x44, counter])
+    integrity = (512 - sum(header_start)) & 0xFF
+    return header_start + bytes([integrity, action, 0x41, params_length])
+
+
+def build_sensor_registration_payloads(device_ieee: bytes) -> tuple[bytes, bytes]:
+    """
+    Build the two registration payloads to enable external sensor mode.
+    
+    This registers a fake sensor with the TRV so it will accept external
+    temperature readings.
+    
+    Args:
+        device_ieee: The TRV's IEEE address as 8 bytes
+    
+    Returns:
+        Tuple of (message1, message2) to send in sequence
+    """
+    # Current timestamp as 4-byte big-endian
+    timestamp = struct.pack('>I', int(time.time()))
+    
+    # Message 1: Register humidity-type sensor
+    # The Chinese characters in the original are sensor type descriptors
+    params1 = (
+        timestamp +
+        bytes([0x3d, 0x04]) +
+        device_ieee +
+        FAKE_SENSOR_IEEE +
+        bytes([
+            0x00, 0x01, 0x00, 0x55,  # Fixed bytes
+            0x13, 0x0a, 0x02, 0x00, 0x00, 0x64, 0x04,  # Sensor config
+            0xce, 0xc2, 0xb6, 0xc8,  # Chinese chars (湿度)
+            0x00, 0x00, 0x00, 0x00, 0x00,
+            0x01, 0x3d, 0x64, 0x65
+        ])
+    )
+    
+    # Message 2: Register temperature-type sensor
+    params2 = (
+        timestamp +
+        bytes([0x3d, 0x05]) +
+        device_ieee +
+        FAKE_SENSOR_IEEE +
+        bytes([
+            0x08, 0x00, 0x07, 0xfd,  # Fixed bytes
+            0x16, 0x0a, 0x02, 0x0a,  # Sensor config
+            0xc9, 0xe8, 0xb1, 0xb8, 0xd4, 0xda, 0xcf, 0xdf, 0xc0, 0xeb,  # Chinese chars
+            0x00, 0x00, 0x00, 0x00, 0x00,
+            0x01, 0x3d, 0x04, 0x65
+        ])
+    )
+    
+    # Build complete messages with headers
+    # Action 0x02 = register sensor
+    msg1 = build_lumi_header(0x12, len(params1), 0x02) + params1
+    msg2 = build_lumi_header(0x13, len(params2), 0x02) + params2
+    
+    return msg1, msg2
+
+
+def build_sensor_unregistration_payloads(device_ieee: bytes) -> tuple[bytes, bytes]:
+    """
+    Build the two payloads to disable external sensor mode (return to internal).
+    
+    Args:
+        device_ieee: The TRV's IEEE address as 8 bytes
+    
+    Returns:
+        Tuple of (message1, message2) to send in sequence
+    """
+    timestamp = struct.pack('>I', int(time.time()))
+    
+    # Messages to unregister - just device IEEE with zeros for sensor
+    params1 = (
+        timestamp +
+        bytes([0x3d, 0x05]) +
+        device_ieee +
+        bytes([0x00] * 12)  # 12 zero bytes instead of sensor IEEE + extra
+    )
+    
+    params2 = (
+        timestamp +
+        bytes([0x3d, 0x04]) +
+        device_ieee +
+        bytes([0x00] * 12)
+    )
+    
+    # Action 0x04 = unregister sensor
+    msg1 = build_lumi_header(0x12, len(params1), 0x04) + params1
+    msg2 = build_lumi_header(0x13, len(params2), 0x04) + params2
+    
+    return msg1, msg2
+
+
+def build_external_temp_payload(temperature: float) -> bytes:
+    """
+    Build the payload to send an external temperature reading.
+    
+    Args:
+        temperature: Temperature in Celsius
+    
+    Returns:
+        Complete binary payload for attribute 0xFFF2
+    """
+    # Convert temperature: multiply by 100, encode as big-endian float
+    temp_value = round(temperature * 100)
+    temp_bytes = struct.pack('>f', temp_value)
+    
+    # Params: sensor_id (8) + fixed bytes (4) + temperature (4) = 16 bytes
+    params = FAKE_SENSOR_IEEE + bytes([0x00, 0x01, 0x00, 0x55]) + temp_bytes
+    
+    # Action 0x05 = send temperature
+    return build_lumi_header(0x12, len(params), 0x05) + params
+
+
+# =============================================================================
+# THERMOSTAT CLUSTER
+# =============================================================================
 
 class ThermostatCluster(CustomCluster, Thermostat):
-    """Thermostat cluster."""
+    """Custom thermostat cluster that redirects system_mode to Xiaomi cluster."""
 
-    # remove cooling mode
     _CONSTANT_ATTRIBUTES = {
         Thermostat.attributes_by_name[
             "ctrl_sequence_of_oper"
@@ -81,11 +228,10 @@ class ThermostatCluster(CustomCluster, Thermostat):
         only_cache: bool = False,
         manufacturer: int | t.uint16_t | None = None,
     ):
-        """Pass reading attributes to Xiaomi cluster if applicable."""
+        """Pass reading system_mode to Xiaomi cluster."""
         successful_r, failed_r = {}, {}
         remaining_attributes = attributes.copy()
 
-        # read system_mode from Xiaomi cluster (can be numeric or string)
         if ZCL_SYSTEM_MODE in attributes or "system_mode" in attributes:
             self.debug("Passing 'system_mode' read to Xiaomi cluster")
 
@@ -97,12 +243,11 @@ class ThermostatCluster(CustomCluster, Thermostat):
             successful_r, failed_r = await self.endpoint.opple_cluster.read_attributes(
                 [SYSTEM_MODE], allow_cache, only_cache, manufacturer
             )
-            # convert Xiaomi system_mode to ZCL attribute
             if SYSTEM_MODE in successful_r:
                 successful_r[ZCL_SYSTEM_MODE] = XIAOMI_SYSTEM_MODE_MAP[
                     successful_r.pop(SYSTEM_MODE)
                 ]
-        # read remaining attributes from thermostat cluster
+
         if remaining_attributes:
             remaining_result = await super().read_attributes(
                 remaining_attributes, allow_cache, only_cache, manufacturer
@@ -114,12 +259,11 @@ class ThermostatCluster(CustomCluster, Thermostat):
     async def write_attributes(
         self, attributes: dict[str | int, Any], manufacturer: int | None = None
     ) -> list:
-        """Pass writing attributes to Xiaomi cluster if applicable."""
+        """Pass writing system_mode to Xiaomi cluster."""
         result = []
         remaining_attributes = attributes.copy()
         system_mode_value = None
 
-        # check if system_mode is being written (can be numeric or string)
         if ZCL_SYSTEM_MODE in attributes:
             remaining_attributes.pop(ZCL_SYSTEM_MODE)
             system_mode_value = attributes.get(ZCL_SYSTEM_MODE)
@@ -127,315 +271,209 @@ class ThermostatCluster(CustomCluster, Thermostat):
             remaining_attributes.pop("system_mode")
             system_mode_value = attributes.get("system_mode")
 
-        # write system_mode to Xiaomi cluster if applicable
         if system_mode_value is not None:
             self.debug("Passing 'system_mode' write to Xiaomi cluster")
             result += await self.endpoint.opple_cluster.write_attributes(
                 {SYSTEM_MODE: min(int(system_mode_value), 1)}
             )
 
-        # write remaining attributes to thermostat cluster
         if remaining_attributes:
             result += await super().write_attributes(remaining_attributes, manufacturer)
         return result
 
 
-class ScheduleEvent:
-    """Schedule event object."""
-
-    _is_next_day = False
-
-    def __init__(self, value, is_next_day=False):
-        """Create ScheduleEvent object from bytes or string."""
-        if isinstance(value, bytes):
-            self._verify_buffer_len(value)
-            self._time = self._read_time_from_buf(value)
-            self._temp = self._read_temp_from_buf(value)
-            self._validate_time(self._time)
-            self._validate_temp(self._temp)
-        elif isinstance(value, str):
-            groups = value.split(",")
-            if len(groups) != 2:
-                raise ValueError("Time and temperature must contain ',' separator")
-            self._time = self._parse_time(groups[0])
-            self._temp = self._parse_temp(groups[1])
-            self._validate_time(self._time)
-            self._validate_temp(self._temp)
-        else:
-            raise TypeError(
-                f"Cannot create ScheduleEvent object from type: {type(value)}"
-            )
-        self._is_next_day = is_next_day
-
-    @staticmethod
-    def _verify_buffer_len(buf):
-        if len(buf) != 6:
-            raise ValueError("Buffer size must equal 6")
-
-    @staticmethod
-    def _read_time_from_buf(buf):
-        time = struct.unpack_from(">H", buf, offset=0)[0]
-        time &= ~NEXT_DAY_FLAG
-        return time
-
-    @staticmethod
-    def _parse_time(string):
-        parts = string.split(":")
-        if len(parts) != 2:
-            raise ValueError("Time must contain ':' separator")
-
-        hours = int(parts[0])
-        minutes = int(parts[1])
-
-        return hours * 60 + minutes
-
-    @staticmethod
-    def _read_temp_from_buf(buf):
-        return struct.unpack_from(">H", buf, offset=4)[0] / 100
-
-    @staticmethod
-    def _parse_temp(string):
-        return float(string)
-
-    @staticmethod
-    def _validate_time(time):
-        if time <= 0:
-            raise ValueError("Time must be between 00:00 and 23:59")
-        if time > 24 * 60:
-            raise ValueError("Time must be between 00:00 and 23:59")
-
-    @staticmethod
-    def _validate_temp(temp):
-        if temp < 5:
-            raise ValueError("Temperature must be between 5 and 30 °C")
-        if temp > 30:
-            raise ValueError("Temperature must be between 5 and 30 °C")
-        if (temp * 10) % 5 != 0:
-            raise ValueError("Temperature must be whole or half degrees")
-
-    def _write_time_to_buf(self, buf):
-        time = self._time
-        if self._is_next_day:
-            time |= NEXT_DAY_FLAG
-        struct.pack_into(">H", buf, 0, time)
-
-    def _write_temp_to_buf(self, buf):
-        struct.pack_into(">H", buf, 4, int(self._temp * 100))
-
-    def is_next_day(self):
-        """Return if event is on the next day."""
-        return self._is_next_day
-
-    def set_next_day(self, is_next_day):
-        """Set if event is on the next day."""
-        self._is_next_day = is_next_day
-
-    def get_time(self):
-        """Return event time."""
-        return self._time
-
-    def __str__(self):
-        """Return event as string."""
-        return f"{math.floor(self._time / 60)}:{f'{self._time % 60:0>2}'},{f'{self._temp:.1f}'}"
-
-    def serialize(self):
-        """Serialize event to bytes."""
-        result = bytearray(6)
-        self._write_time_to_buf(result)
-        self._write_temp_to_buf(result)
-        return result
-
-
-class ScheduleSettings(t.LVBytes):
-    """Schedule settings object."""
-
-    def __new__(cls, value):
-        """Create ScheduleSettings object from bytes or string."""
-        day_selection = None
-        events = [None] * 4
-        if isinstance(value, bytes):
-            ScheduleSettings._verify_buffer_len(value)
-            ScheduleSettings._verify_magic_byte(value)
-            day_selection = ScheduleSettings._read_day_selection(value)
-            for i in range(4):
-                events[i] = ScheduleSettings._read_event(value, i)
-        elif isinstance(value, str):
-            groups = value.split("|")
-            ScheduleSettings._verify_string(groups)
-            day_selection = ScheduleSettings._read_day_selection(groups[0])
-            for i in range(4):
-                events[i] = ScheduleSettings._read_event(groups[i + 1], i)
-        else:
-            raise TypeError(
-                f"Cannot create ScheduleSettings object from type: {type(value)}"
-            )
-
-        for i in range(1, 4):
-            if events[i].get_time() < events[i - 1].get_time():
-                events[i].set_next_day(True)
-        ScheduleSettings._verify_event_durations(events)
-
-        result = bytearray(b"\x04")
-        result.append(ScheduleSettings._get_day_selection_byte(day_selection))
-        for e in events:
-            result.extend(e.serialize())
-        return super().__new__(cls, bytes(result))
-
-    @staticmethod
-    def _verify_buffer_len(buf):
-        if len(buf) != 26:
-            raise ValueError("Buffer size must equal 26")
-
-    @staticmethod
-    def _verify_magic_byte(buf):
-        if struct.unpack_from("c", buf, offset=0)[0][0] != 0x04:
-            raise ValueError("Magic byte must be equal to 0x04")
-
-    @staticmethod
-    def _verify_string(groups):
-        if len(groups) != 5:
-            raise ValueError("There must be 5 groups in a string")
-        days = groups[0].split(",")
-        ScheduleSettings._verify_day_selection_in_str(days)
-
-    @staticmethod
-    def _verify_day_selection_in_str(days):
-        if len(days) == 0 or len(days) > 7:
-            raise ValueError("Number of days selected must be between 1 and 7")
-        if len(days) != len(set(days)):
-            raise ValueError("Duplicate day names present")
-        for d in days:
-            if d not in DAYS_MAP:
-                raise ValueError(
-                    f"String: {d} is not a valid day name, valid names: mon, tue, wed, thu, fri, sat, sun"
-                )
-
-    @staticmethod
-    def _read_day_selection(value):
-        day_selection = []
-        if isinstance(value, bytes):
-            byte = struct.unpack_from("c", value, offset=1)[0][0]
-            if byte & 0x01:
-                raise ValueError("Incorrect day selected")
-            for i, v in DAYS_MAP.items():
-                if byte & v:
-                    day_selection.append(i)
-            ScheduleSettings._verify_day_selection_in_str(day_selection)
-        elif isinstance(value, str):
-            day_selection = value.split(",")
-            ScheduleSettings._verify_day_selection_in_str(day_selection)
-        return day_selection
-
-    @staticmethod
-    def _read_event(value, index):
-        if isinstance(value, bytes):
-            event_buf = value[2 + index * 6 : 8 + index * 6]
-            return ScheduleEvent(event_buf)
-        elif isinstance(value, str):
-            return ScheduleEvent(value)
-
-    @staticmethod
-    def _verify_event_durations(events):
-        full_day = 24 * 60
-        prev_time = events[0].get_time()
-        durations = []
-        for i in range(1, 4):
-            event = events[i]
-            if event.is_next_day():
-                durations.append(full_day - prev_time + event.get_time())
-            else:
-                durations.append(event.get_time() - prev_time)
-            prev_time = event.get_time()
-        if any(d < 60 for d in durations):
-            raise ValueError("The individual times must be at least 1 hour apart")
-        if reduce((lambda x, y: x + y), durations) > full_day:
-            raise ValueError("The start and end times must be at most 24 hours apart")
-
-    @staticmethod
-    def _get_day_selection_byte(day_selection):
-        byte = 0x00
-        for d in day_selection:
-            byte |= DAYS_MAP[d]
-        return byte
-
-    def __str__(self):
-        """Return ScheduleSettings as string."""
-        day_selection = ScheduleSettings._read_day_selection(self)
-        events = [None] * 4
-        for i in range(4):
-            events[i] = ScheduleSettings._read_event(self, i)
-        result = ",".join(day_selection)
-        for e in events:
-            result += f"|{e}"
-        return result
-
+# =============================================================================
+# AQARA-SPECIFIC CLUSTER WITH EXTERNAL SENSOR SUPPORT
+# =============================================================================
 
 class AqaraThermostatSpecificCluster(XiaomiAqaraE1Cluster):
-    """Aqara manufacturer specific settings."""
+    """
+    Aqara manufacturer-specific cluster with full external temperature support.
+    
+    Supports:
+    - sensor_register: Write "external" or "internal" to switch modes
+    - external_temperature_input: Write temperature values (0-55°C)
+    """
 
-    class AttributeDefs(XiaomiAqaraE1Cluster.AttributeDefs):
-        """Attribute definitions."""
+    ep_attribute = "opple_cluster"
 
-        system_mode: Final = ZCLAttributeDef(
-            id=SYSTEM_MODE, type=t.uint8_t, is_manufacturer_specific=True
-        )
-        preset: Final = ZCLAttributeDef(
-            id=PRESET, type=t.uint8_t, is_manufacturer_specific=True
-        )
-        window_detection: Final = ZCLAttributeDef(
-            id=WINDOW_DETECTION, type=t.uint8_t, is_manufacturer_specific=True
-        )
-        valve_detection: Final = ZCLAttributeDef(
-            id=VALVE_DETECTION, type=t.uint8_t, is_manufacturer_specific=True
-        )
-        valve_alarm: Final = ZCLAttributeDef(
-            id=VALVE_ALARM, type=t.uint8_t, is_manufacturer_specific=True
-        )
-        child_lock: Final = ZCLAttributeDef(
-            id=CHILD_LOCK, type=t.uint8_t, is_manufacturer_specific=True
-        )
-        away_preset_temperature: Final = ZCLAttributeDef(
-            id=AWAY_PRESET_TEMPERATURE, type=t.uint32_t, is_manufacturer_specific=True
-        )
-        window_open: Final = ZCLAttributeDef(
-            id=WINDOW_OPEN, type=t.uint8_t, is_manufacturer_specific=True
-        )
-        calibrated: Final = ZCLAttributeDef(
-            id=CALIBRATED, type=t.uint8_t, is_manufacturer_specific=True
-        )
-        schedule: Final = ZCLAttributeDef(
-            id=SCHEDULE, type=t.uint8_t, is_manufacturer_specific=True
-        )
-        schedule_settings: Final = ZCLAttributeDef(
-            id=SCHEDULE_SETTINGS, type=ScheduleSettings, is_manufacturer_specific=True
-        )
-        sensor: Final = ZCLAttributeDef(
-            id=SENSOR, type=t.uint8_t, is_manufacturer_specific=True
-        )
-        battery_percentage: Final = ZCLAttributeDef(
-            id=BATTERY_PERCENTAGE, type=t.uint8_t, is_manufacturer_specific=True
-        )
+    attributes = XiaomiAqaraE1Cluster.attributes.copy()
+    attributes.update(
+        {
+            SYSTEM_MODE: ("system_mode", t.uint8_t, True),
+            PRESET: ("preset", t.uint8_t, True),
+            WINDOW_DETECTION: ("window_detection", t.uint8_t, True),
+            VALVE_DETECTION: ("valve_detection", t.uint8_t, True),
+            VALVE_ALARM: ("valve_alarm", t.uint8_t, True),
+            CHILD_LOCK: ("child_lock", t.uint8_t, True),
+            AWAY_PRESET_TEMPERATURE: ("away_preset_temperature", t.uint32_t, True),
+            WINDOW_OPEN: ("window_open", t.uint8_t, True),
+            CALIBRATED: ("calibrated", t.uint8_t, True),
+            SCHEDULE: ("schedule", t.uint8_t, True),
+            SENSOR: ("sensor", t.uint8_t, True),
+            BATTERY_PERCENTAGE: ("battery_percentage", t.uint8_t, True),
+            # Virtual attributes for external sensor control
+            EXTERNAL_TEMPERATURE_INPUT: ("external_temperature_input", t.Single, True),
+            SENSOR_REGISTER: ("sensor_register", t.uint8_t, True),
+            # Binary data attribute
+            AQARA_FFF2: ("aqara_fff2", t.LVBytes, True),
+        }
+    )
 
     def _update_attribute(self, attrid, value):
+        """Handle attribute updates from the device."""
         self.debug("Updating attribute on Xiaomi cluster %s with %s", attrid, value)
-        if attrid == BATTERY_PERCENTAGE:
-            self.endpoint.power.battery_percent_reported(value)
-        elif attrid == SYSTEM_MODE:
-            # update ZCL system_mode attribute (e.g. on attribute reports)
+        
+        if attrid == SYSTEM_MODE:
             self.endpoint.thermostat.update_attribute(
                 ZCL_SYSTEM_MODE, XIAOMI_SYSTEM_MODE_MAP[value]
             )
+        
         super()._update_attribute(attrid, value)
 
+    def _get_device_ieee_bytes(self) -> bytes:
+        """Get the device's IEEE address as bytes."""
+        ieee_str = str(self.endpoint.device.ieee)
+        # Remove colons and convert to bytes
+        ieee_hex = ieee_str.replace(':', '')
+        return bytes.fromhex(ieee_hex)
+
+    async def write_attributes(
+        self, attributes: dict[str | int, Any], manufacturer: int | None = None
+    ) -> list:
+        """
+        Handle attribute writes with special handling for sensor registration
+        and external temperature input.
+        """
+        result = []
+        remaining_attributes = attributes.copy()
+
+        # Handle sensor_register (switch between internal/external mode)
+        sensor_mode = None
+        if SENSOR_REGISTER in attributes:
+            sensor_mode = attributes.pop(SENSOR_REGISTER)
+            remaining_attributes.pop(SENSOR_REGISTER, None)
+        if "sensor_register" in attributes:
+            sensor_mode = attributes.pop("sensor_register")
+            remaining_attributes.pop("sensor_register", None)
+
+        if sensor_mode is not None:
+            await self._handle_sensor_registration(sensor_mode)
+
+        # Handle external_temperature_input
+        ext_temp = None
+        if EXTERNAL_TEMPERATURE_INPUT in attributes:
+            ext_temp = attributes.pop(EXTERNAL_TEMPERATURE_INPUT)
+            remaining_attributes.pop(EXTERNAL_TEMPERATURE_INPUT, None)
+        if "external_temperature_input" in attributes:
+            ext_temp = attributes.pop("external_temperature_input")
+            remaining_attributes.pop("external_temperature_input", None)
+
+        if ext_temp is not None:
+            await self._handle_external_temperature(ext_temp)
+
+        # Write remaining attributes normally
+        if remaining_attributes:
+            result.extend(
+                await super().write_attributes(remaining_attributes, manufacturer)
+            )
+
+        return result
+
+    async def _handle_sensor_registration(self, mode) -> None:
+        """
+        Handle switching between internal and external sensor modes.
+        
+        Args:
+            mode: 1/"external" for external, 0/"internal" for internal
+        """
+        import asyncio
+        
+        # Normalize mode value
+        if isinstance(mode, str):
+            mode = 1 if mode.lower() == "external" else 0
+        
+        device_ieee = self._get_device_ieee_bytes()
+        
+        if mode == 1:
+            self.debug("Registering external sensor for device %s", device_ieee.hex())
+            msg1, msg2 = build_sensor_registration_payloads(device_ieee)
+        else:
+            self.debug("Unregistering external sensor, returning to internal")
+            msg1, msg2 = build_sensor_unregistration_payloads(device_ieee)
+        
+        # Send both registration messages IN PARALLEL to beat sleepy device timeout
+        try:
+            self.debug("Sending BOTH registration messages in parallel...")
+            self.debug("Message 1: %s", msg1.hex())
+            self.debug("Message 2: %s", msg2.hex())
+            
+            # Fire both writes simultaneously - don't wait for first to complete
+            results = await asyncio.gather(
+                super().write_attributes(
+                    {AQARA_FFF2: msg1},
+                    manufacturer=MANUFACTURER_CODE
+                ),
+                super().write_attributes(
+                    {AQARA_FFF2: msg2},
+                    manufacturer=MANUFACTURER_CODE
+                ),
+                return_exceptions=True  # Don't fail if one times out
+            )
+            
+            self.debug("Parallel registration results: %s", results)
+            
+            # Check results
+            for i, result in enumerate(results):
+                if isinstance(result, Exception):
+                    self.warning("Registration message %d failed: %s", i+1, result)
+                else:
+                    self.debug("Registration message %d succeeded: %s", i+1, result)
+            
+            self.debug("Sensor registration complete")
+        except Exception as e:
+            self.error("Failed to register sensor: %s", e)
+            raise
+
+    async def _handle_external_temperature(self, temperature: float) -> None:
+        """
+        Send an external temperature reading to the TRV.
+        
+        Args:
+            temperature: Temperature in Celsius (0-55 range)
+        """
+        # Validate and clamp
+        if not 0 <= temperature <= 55:
+            self.warning(
+                "External temperature %s out of range (0-55), clamping",
+                temperature
+            )
+            temperature = max(0, min(55, temperature))
+        
+        self.debug("Writing external temperature: %s°C", temperature)
+        
+        payload = build_external_temp_payload(temperature)
+        
+        try:
+            self.debug("Sending temperature payload: %s", payload.hex())
+            await super().write_attributes(
+                {AQARA_FFF2: payload},
+                manufacturer=MANUFACTURER_CODE
+            )
+            self.debug("External temperature write completed")
+        except Exception as e:
+            self.error("Failed to write external temperature: %s", e)
+            raise
+
+
+# =============================================================================
+# DEVICE DEFINITION
+# =============================================================================
 
 class AGL001(XiaomiCustomDevice):
-    """Aqara E1 Radiator Thermostat (AGL001) Device."""
+    """Aqara E1 Radiator Thermostat with external sensor support."""
 
     signature = {
-        # <SimpleDescriptor endpoint=1 profile=260 device_type=769
-        # device_version=1
-        # input_clusters=[0, 1, 3, 513, 64704]
-        # output_clusters=[3, 513, 64704]>
         MODELS_INFO: [(LUMI, "lumi.airrtc.agl001")],
         ENDPOINTS: {
             1: {
